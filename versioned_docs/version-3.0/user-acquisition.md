@@ -10,7 +10,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import ZoomImage from '@site/src/components/ZoomImage';
 
-User Acquisition helps you connect ad spend with subscription revenue, giving you a complete view of your app's economy in one place. 
+User Acquisition helps you connect ad spend with subscription revenue in web-to-app campaigns, giving you a complete view of your app's economy in one place.
 
 This is a one-way integration — to see your revenue data in User Acquisition, you must first enable the integration in the Adapty dashboard. You don't need to pass any API keys, tokens, or identifiers. Just update and configure the Adapty SDK.
 
@@ -36,7 +36,7 @@ To connect your revenue data with the campaign performance, let Adapty keep trac
     - [Kotlin Multiplatform](implement-observer-mode-kmp.md)
     - [Capacitor (Beta)](implement-observer-mode-capacitor.md)
 
-This way:
+This setup enables web-to-app attribution:
 - When users install your app, the Adapty SDK gets the installation details from the link parameters, so Adapty UA can get the campaign details
 - The Adapty SDK knows about all revenue-related events inside the app and can attribute them to web campaigns.
 
