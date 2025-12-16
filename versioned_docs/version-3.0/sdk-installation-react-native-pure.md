@@ -40,7 +40,11 @@ Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Libr
 
 1. Install Adapty SDK:
    ```sh showLineNumbers title="Shell"
-   yarn add react-native-adapty
+   # using npm
+   npm install react-native-adapty
+   
+   # or using yarn
+   yarn add react-native-adapty  
    ```
 2. For iOS, install pods:
    ```sh showLineNumbers title="Shell"
@@ -225,13 +229,14 @@ try {
 
 #### Set up mock mode for local testing
 
-For local development and testing, you can enable mock mode to avoid needing sandbox App Store/Google Play accounts and speed up iteration. Mock mode replaces native StoreKit and Google Play Billing calls with simulated data.
+For local development and testing, you can enable mock mode to avoid needing sandbox App Store/Google Play accounts and speed up iteration. Mock mode completely bypasses Adapty's native modules and returns simulated data.
 
 :::important
 Mock mode is **not** a tool for testing real purchases:
 
 - It **doesn't open** App Store / Google Play purchase flows and **doesn't create** real transactions.
 - It **doesn't render** paywalls/onboardings created with **Adapty Paywall Builder (AdaptyUI)**.
+- Adapty's native modules are **completely bypassed**—even missing native SDK files in the Xcode/Android build or an invalid API key won't trigger errors.
 - No data is sent to Adapty's servers.
 
 To test real purchases and Paywall Builder paywalls, disable mock mode and use sandbox accounts.
@@ -250,50 +255,30 @@ When mock mode is active:
 - By default, the initial mock profile has no active subscriptions.
 - By default, `makePurchase(...)` simulates a successful purchase and grants premium access.
 
-You can customize the mock data using `__mockConfig`:
+You can customize the mock data using `__mockConfig` during activation. See the config format and supported parameters [here](https://react-native.adapty.io/types/adaptymockconfig).
 
 ```typescript showLineNumbers title="App.tsx"
 import { adapty } from 'react-native-adapty';
 
 try {
-  await adapty.activate('YOUR_PUBLIC_SDK_KEY', {
-    __enableMock: true,
-    __mockConfig: {
-      // Customize the initial mock profile (optional)
-      profile: {
-        customerUserId: 'test_user_123',
+   await adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+      __mockConfig: {
+         // Customize the initial mock profile (optional)
       },
-      
-      // Whether to grant premium after makePurchase (default: true)
-      autoGrantPremium: true,
-      
-      // Which access level ID to grant (default: 'premium')
-      premiumAccessLevelId: 'premium',
-      
-      // Custom paywalls by placement ID (optional)
-      paywalls: {
-        'onboarding': {
-          name: 'Custom Onboarding Paywall',
-          // ... other paywall properties
-        },
-      },
-      
-      // Custom products by variation ID (optional)
-      products: {
-        'mock_variation_id': [
-          {
-            vendorProductId: 'custom_monthly',
-            localizedTitle: 'Custom Monthly Plan',
-            price: { amount: 4.99, currencyCode: 'USD' },
-            // ... other product properties
-          },
-        ],
-      },
-    },
-  });
+   });
 } catch (error) {
-  console.error('Failed to activate Adapty SDK:', error);
+   console.error('Failed to activate Adapty SDK:', error);
 }
+```
+
+If you need to call SDK methods before activation (such as `isActivated()`, `getPaywallForDefaultAudience()`, or `getOnboardingForDefaultAudience()`), use `enableMock()` before `activate()`. If the bridge is already initialized, this method does nothing.
+
+```typescript showLineNumbers title="App.tsx"
+adapty.enableMock(); // Optional: pass mockConfig to customize mock data
+
+// Now you can call methods before activation
+
+await adapty.activate('YOUR_PUBLIC_SDK_KEY');
 ```
 
 ## Troubleshooting
