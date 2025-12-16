@@ -9,7 +9,7 @@ import ZoomImage from '@site/src/components/ZoomImage';
 
 <CustomDocCardList ids={['user-acquisition', 'ua-analytics', 'ua-integrations', 'ua-tracking-links', 'ua-deferred-data']} />
 
-Adapty User Acquisition (Adapty UA) connects your ad spend with subscription revenue (in-app and web purchases) to give you complete user acquisition analytics. This helps you:
+Adapty User Acquisition is a web-to-app attribution solution that connects ad campaigns with app installs and subscription revenue by combining data from ad platforms, tracking links, and your app.
 
 - Calculate ROAS (return on ad spend) across all your channels
 - See your entire app economy in one place
@@ -31,7 +31,7 @@ Adapty User Acquisition attributes app installs and subscription revenue to ad c
 
 At a high level:
 - Ad platforms provide campaign structure and ad spend
-- Tracking links generated in Adapty UA carry campaign context
+- Tracking links generated in Adapty UA carry campaign context from the web to the app install
 - The Adapty SDK sends install and revenue events from your app
 
 <ZoomImage id="ua-flow.png" width="500px" />
