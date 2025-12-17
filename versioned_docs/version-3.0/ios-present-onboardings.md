@@ -28,10 +28,10 @@ In order to display the visual onboarding on the device screen, do the following
 
    Request parameters:
 
-   | Parameter                    | Presence | Description                                                                                                                        |
-   |:-----------------------------|:---------|:-----------------------------------------------------------------------------------------------------------------------------------|
-   | **onboarding configuration** | required | An `AdaptyOnboarding` object containing all the onboarding properties. Use the [`AdaptyUI.getOnboarding`](get-onboardings) method. |
-   | **delegate**                 | required | An `AdaptyOnboardingControllerDelegate` to listen to onboarding events.                                                            |
+   | Parameter                    | Presence | Description                                                                                                                                                 |
+   |:-----------------------------|:---------|:------------------------------------------------------------------------------------------------------------------------------------------------------------|
+   | **onboarding configuration** | required | An `AdaptyUI.OnboardingConfiguration` object containing all the onboarding properties. Use the `AdaptyUI.getOnboardingConfiguration` method to obtain it. |
+   | **delegate**                 | required | An `AdaptyOnboardingControllerDelegate` to listen to onboarding events.                                                                                     |
 
    Returns:
 
@@ -46,15 +46,15 @@ In order to display the visual onboarding on the device screen, do the following
    import AdaptyUI
    
    // 0. Get an onboarding if you haven't done it yet     
-   let onboarding = try await Adapty.getOnboarding("YOUR_PLACEMENT_ID")
+   let onboarding = try await Adapty.getOnboarding(placementId: "YOUR_PLACEMENT_ID")
    
    // 1. Obtain the onboarding view configuration:
    let configuration = try AdaptyUI.getOnboardingConfiguration(forOnboarding: onboarding)
 
    // 2. Create Onboarding View Controller
-   let onboardingController = AdaptyUI.onboardingController(
-   configuration: configuration,
-   delegate: <AdaptyOnboardingControllerDelegate>
+   let onboardingController = try AdaptyUI.onboardingController(
+       with: configuration,
+       delegate: <AdaptyOnboardingControllerDelegate>
    ) 
 
    // 3. Present it to the user
@@ -116,4 +116,44 @@ AdaptyOnboardingView(
 ```
 </TabItem>
 
+</Tabs>
+
+## Open links in onboardings in an in-app browser
+
+:::important
+Opening links in onboardings in an in-app browser is supported starting from Adapty SDK v. 3.15.1.
+:::
+
+By default, links in onboardings open in the external browser.
+
+To provide a seamless user experience, you can open links in an in-app browser. This displays web pages within your application, allowing users to see them without switching apps.
+
+To enable this, set the `externalUrlsPresentation` parameter to `.inAppBrowser`:
+
+<Tabs>
+<TabItem value="swift" label="UIKit">
+
+```swift showLineNumbers
+import Adapty
+import AdaptyUI
+
+let configuration = try AdaptyUI.getOnboardingConfiguration(
+    forOnboarding: onboarding,
+    externalUrlsPresentation: .inAppBrowser // default – .externalBrowser
+)
+```
+</TabItem>
+
+<TabItem value="swiftui" label="SwiftUI">
+
+```swift showLineNumbers
+import Adapty
+import AdaptyUI
+
+let configuration = try AdaptyUI.getOnboardingConfiguration(
+    forOnboarding: onboarding,
+    externalUrlsPresentation: .inAppBrowser // default – .externalBrowser
+)
+```
+</TabItem>
 </Tabs>
