@@ -224,14 +224,14 @@ When mock mode is active:
 - By default, the initial mock profile has no active subscriptions.
 - By default, `makePurchase(...)` simulates a successful purchase and grants premium access.
 
-You can customize the mock data using `__mockConfig` during activation. See the config format and supported parameters [here](https://react-native.adapty.io/types/adaptymockconfig).
+You can customize the mock data using `mockConfig` during activation. See the config format and supported parameters [here](https://react-native.adapty.io/interfaces/adaptymockconfig).
 
 ```typescript showLineNumbers title="App.tsx"
 import { adapty } from 'react-native-adapty';
 
 try {
   await adapty.activate('YOUR_PUBLIC_SDK_KEY', {
-    __mockConfig: {
+    mockConfig: {
       // Customize the initial mock profile (optional)
     },
   });
@@ -240,7 +240,7 @@ try {
 }
 ```
 
-If you need to call SDK methods before activation (such as `isActivated()`, `getPaywallForDefaultAudience()`, or `getOnboardingForDefaultAudience()`), use `enableMock()` before `activate()`. If the bridge is already initialized, this method does nothing.
+If you need to call SDK methods before activation (such as `isActivated()` or `setLogLevel()`), use `enableMock()` before `activate()`. If the bridge is already initialized, this method does nothing.
 
 ```typescript showLineNumbers title="App.tsx"
 import { adapty } from 'react-native-adapty';

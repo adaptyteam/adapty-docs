@@ -33,7 +33,6 @@ Adapty.openWebPaywall(
         // the web paywall was opened successfully
     } else {
         // handle the error
-        val adaptyError = error
     }
 }
 ```

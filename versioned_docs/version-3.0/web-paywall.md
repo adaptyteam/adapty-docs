@@ -10,7 +10,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 :::important
-Before you begin, make sure you have installed Adapty SDK version 3.6.1 or later. To display web paywalls in Android apps, you need Adapty SDK version 3.15 or later.
+Before you begin, make sure you have installed Adapty SDK version 3.6.1 or later for iOS or Adapty SDK version 3.15 or later for Android.
 :::
 
 With Adapty, you can create a paywall with a button that redirects your app users to their browser for payment. Then, when they return to your app after a successful purchase, the subscription activates.

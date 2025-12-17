@@ -1,16 +1,23 @@
 ---
-title: "Apple Search Ads (ASA)"
-description: "Integrate Apple Search Ads with Adapty to optimize subscription conversions."
-metadataTitle: "Apple Search Ads Integration | Adapty Docs"
-keywords: ['apple ads', 'asa', 'apple search ads']
+title: "Apple Ads"
+description: "Integrate Apple Ads with Adapty to optimize subscription conversions."
+metadataTitle: "Apple Ads Integration | Adapty Docs"
+keywords: ['apple ads', 'asa', 'Apple Ads']
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Adapty can help you get attribution data from Apple Search Ads and analyze your metrics with campaign and keyword segmentation. Adapty collects the attribution data for Apple Search Ads automatically through its SDK and AdServices Framework.
+:::important
+The Apple Ads integration in **App settings** is used only for basic analytics and for SplitMetrics Acquire and Asapty integrations.
 
-Once you've set up the Apple Search Ads integration, Adapty will start receiving attribution data from Apple Search Ads. You can easily access and view this data on the profiles page.
+[Apple Ads Manager](adapty-ads-manager.md) uses a separate connection. Connect your Apple Ads account in the [Apple Ads Manager settings](adapty-ads-manager-get-started.md).
+:::
+
+
+Adapty can help you get attribution data from Apple Ads and analyze your metrics with campaign and keyword segmentation. Adapty collects the attribution data for Apple Ads automatically through its SDK and AdServices Framework.
+
+Once you've set up the Apple Ads integration, Adapty will start receiving attribution data from Apple Ads. You can easily access and view this data on the profiles page.
 
 
 <Zoom>
@@ -32,7 +39,7 @@ There are two ways to get attribution: with the old iAd framework and the modern
 
 ## AdServices framework
 
-Apple Search Ads via [AdServices](https://developer.apple.com/documentation/ad_services) does require some configuration in Adapty Dashboard, and you will also need to enable it on the app side. To set up Apple Search Ads using the AdServices framework through Adapty, follow these steps:
+Apple Ads via [AdServices](https://developer.apple.com/documentation/ad_services) does require some configuration in Adapty Dashboard, and you will also need to enable it on the app side. To set up Apple Ads using the AdServices framework through Adapty, follow these steps:
 
 ### Step 1: Configure Info.plist
 
@@ -40,7 +47,7 @@ Add `AdaptyAppleSearchAdsAttributionCollectionEnabled` to the app’s `Info.plis
 
 ### Step 2: Obtain Public Key
 
-In the Adapty Dashboard, navigate to [Settings -> Apple Search Ads.](https://app.adapty.io/settings/apple-search-ads)  
+In the Adapty Dashboard, navigate to [Settings -> Apple Ads.](https://app.adapty.io/settings/apple-search-ads)  
 Locate the pre-generated public key (Adapty provides a key pair for you) and copy it.
 
 <Zoom>
@@ -55,12 +62,12 @@ Locate the pre-generated public key (Adapty provides a key pair for you) and cop
 </Zoom>
 
 :::note
-If you're using an alternative service or your own solution for Apple Search Ads attribution, you can upload your own private key.
+If you're using an alternative service or your own solution for Apple Ads attribution, you can upload your own private key.
 :::
 
-### Step 3: Configure User Management on Apple Search Ads
+### Step 3: Configure User Management on Apple Ads
 
-In your [Apple Search Ads account](https://searchads.apple.com/) go to Settings > User Management page. In order for Adapty to fetch attribution data you need to invite another Apple ID account and grant it API Account Manager access.
+In your [Apple Ads account](https://searchads.apple.com/) go to **Settings > User Management** page. In order for Adapty to fetch attribution data you need to invite another Apple ID account and grant it API Account Manager access. You can use any account you have access to or create a new one just for this purpose. The important thing is that you must be able to log into Apple Ads using this Apple ID.
 
 <Zoom>
   <img src={require('./img/ec183b2-kdjsfldsfjkdsfdfd.webp').default}
@@ -75,11 +82,11 @@ In your [Apple Search Ads account](https://searchads.apple.com/) go to Settings 
 
 ### Step 4: Generate API Credentials
 
-As a next step, log in to the newly added account in Apple Search Ads. Navigate to Settings -> API in the Apple Search Ads interface. Paste the previously copied public key into the designated field. Generate new API credentials.
+As a next step, log in to the newly added account in Apple Ads. Navigate to Settings -> API in the Apple Ads interface. Paste the previously copied public key into the designated field. Generate new API credentials.
 
-### Step 5: Configure Adapty with Apple Search Ads Credentials
+### Step 5: Configure Adapty with Apple Ads Credentials
 
-Copy the Client ID, Team ID, and Key ID fields from the Apple Search Ads settings. In the Adapty Dashboard, paste these credentials into the corresponding fields.
+Copy the Client ID, Team ID, and Key ID fields from the Apple Ads settings. In the Adapty Dashboard, paste these credentials into the corresponding fields.
 
 <Zoom>
   <img src={require('./img/7356113-CleanShot_2023-08-21_at_15.08.512x.webp').default}
@@ -97,7 +104,7 @@ Copy the Client ID, Team ID, and Key ID fields from the Apple Search Ads setting
 :::note
 Optional
 
-These steps are not required for Apple Search Ads attribution, only for working with other services like Asapty or your own solution.
+These steps are not required for Apple Ads attribution, only for working with other services like Asapty or your own solution.
 :::
 
 You can use your own public-private key pair if you are using other services or own solution for ASA attribution.
@@ -110,7 +117,7 @@ Generate private key in Terminal
 openssl ecparam -genkey -name prime256v1 -noout -out private-key.pem
 ```
 
-Upload it in Adapty Settings -> Apple Search Ads (Upload private key button)
+Upload it in Adapty Settings -> Apple Ads (Upload private key button)
 
 ### Step 2
 
@@ -120,15 +127,15 @@ Generate public key in Terminal
 openssl ec -in private-key.pem -pubout -out public-key.pem
 ```
 
-You can use this public key in your Apple Search Ads settings of account with API Account Manager role. So you can use generated Client ID, Team ID, and Key ID values for Adapty and other services.
+You can use this public key in your Apple Ads settings of account with API Account Manager role. So you can use generated Client ID, Team ID, and Key ID values for Adapty and other services.
 
-## Disabling Apple Search Ads attribution
+## Disabling Apple Ads attribution
 
 Adapty can use attribution data in analytics from only one source at a time. If multiple attribution sources are enabled, the system will decide which attribution to use for each device based on the source that provides more fields. 
 
-For iOS devices, this means non-organic Apple Search Ads attribution will always take priority if it's enabled. 
+For iOS devices, this means non-organic Apple Ads attribution will always take priority if it's enabled. 
 
-You can disable Apple Search Ads attribution receiving by toggling off the **Receive Apple Search Ads attribution in Adapty** in the [**App Settings** -> **Apple Search Ads** tab](https://app.adapty.io/settings/apple-search-ads).
+You can disable Apple Ads attribution receiving by toggling off the **Receive Apple Ads attribution in Adapty** in the [**App Settings** -> **Apple Ads** tab](https://app.adapty.io/settings/apple-search-ads).
 
 <Zoom>
   <img src={require('./img/asa-disable.webp').default}

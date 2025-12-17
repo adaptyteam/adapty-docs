@@ -26,7 +26,7 @@ To display a paywall, use the `view.present()` method on the `view` created by t
 Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
-```typescript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 try {
   await view.present();
 } on AdaptyError catch (e) {
@@ -71,5 +71,19 @@ try {
   // If primary - do nothing, user stays
 } catch (e) {
   // handle error
+}
+```
+
+## Configure iOS presentation style
+
+Configure how the paywall is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `AdaptyUIIOSPresentationStyle.fullScreen` (default) or `AdaptyUIIOSPresentationStyle.pageSheet` values.
+
+```dart showLineNumbers
+try {
+  await view.present(iosPresentationStyle: AdaptyUIIOSPresentationStyle.pageSheet);
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
 }
 ```

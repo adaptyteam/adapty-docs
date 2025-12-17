@@ -10,9 +10,9 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import ZoomImage from '@site/src/components/ZoomImage';
 
-User Acquisition helps you connect ad spend with subscription revenue in web-to-app campaigns, giving you a complete view of your app's economy in one place.
+Adapty User Acquisition helps you connect ad spend with subscription revenue in web-to-app campaigns, giving you a complete view of your app's economy in one place.
 
-This is a one-way integration — to see your revenue data in User Acquisition, you must first enable the integration in the Adapty dashboard. You don't need to pass any API keys, tokens, or identifiers. Just update and configure the Adapty SDK.
+To see your revenue data in Adapty User Acquisition, you must first enable the integration in the Adapty dashboard. You don't need to pass any API keys, tokens, or identifiers. Just update and configure the Adapty SDK.
 
 :::warning
 User Acquisition is only available with:
@@ -27,14 +27,7 @@ To connect your revenue data with the campaign performance, let Adapty keep trac
 
 - If you **already have in-app purchases implemented with Adapty**, you don't need to do anything else at this stage.
 - If you **don't have in-app purchases implemented yet and want to use Adapty**, complete the steps from the [quickstart guide](quickstart.md) to delegate handling purchases to Adapty.
-- If you **already have in-app purchases implemented without Adapty** and don't plan to migrate to Adapty, install the Adapty SDK for your platform in the observer mode. At this stage you only need to add the SDK to your project, activate it with the observer mode enabled, and report transactions:
-    - [iOS](implement-observer-mode.md)
-    - [Android](implement-observer-mode-android.md)
-    - [Flutter](implement-observer-mode-flutter.md)
-    - [React Native](implement-observer-mode-react-native.md)
-    - [Unity](implement-observer-mode-unity.md)
-    - [Kotlin Multiplatform](implement-observer-mode-kmp.md)
-    - [Capacitor (Beta)](implement-observer-mode-capacitor.md)
+- If you **already have in-app purchases implemented without Adapty** and don't plan to migrate to Adapty, [install the Adapty SDK for your platform in the observer mode](implement-observer-mode.md). At this stage you only need to add the SDK to your project, activate it with the observer mode enabled, and report transactions:
 
 This setup enables web-to-app attribution:
 - When users install your app, the Adapty SDK gets the installation details from the link parameters, so Adapty UA can get the campaign details
@@ -111,11 +104,11 @@ To create a tracking link for Meta Ads:
 
 <ZoomImage id="ua-new-campaign.webp" width="500px" />
 
-5. In the **General** tab, paste your App Store and/or Google Play application URLs.
+5. In the **General** tab, expand the **iOS** and/or **Android** section and paste App Store and/or Google Play application URLs. Then, click **Save**.
 
-<ZoomImage id="ua-url.webp" width="900px" />
+<ZoomImage id="ua-url.gif" width="900px" />
 
-6. Copy the **Click link** field value for **one link** or for platform-specific link. Then, in Meta Ads Manager, open your ad and paste this link as a destination URL.
+6. Copy the **Click link** field value for **one link** or for a platform-specific link. Then, in Meta Ads Manager, open your ad and paste this link as a destination URL.
 
 :::important
 In the **Website URL** field, paste `https://api-ua.adapty.io/api/v1/attribution/click`. Paste the rest of the link to the **URL parameters** field in the **Tracking** section. It will help your Meta ad to get approved. See more [recommendations on setting up your ads in Meta Ads Manager](meta-create-campaign.md).
@@ -136,11 +129,11 @@ To create a tracking link for TikTok for Business:
 
     <ZoomImage id="ua-new-campaign-tiktok.webp" width="500px" />
 
-5. In the **General** tab, paste your App Store and/or Google Play application URLs.
+5. In the **General** tab, expand the **iOS** and/or **Android** section and paste App Store and/or Google Play application URLs. Then, click **Save**.
 
-    <ZoomImage id="ua-url.webp" width="900px" />
+    <ZoomImage id="ua-url.gif" width="900px" />
 
-6. Copy the **Click link** field value for **one link** or for platform-specific link. Then, in TikTok Ads Manager, when creating your ad, paste this value in the **Tracking URL** field under the **Advanced Settings** section. This will allow Adapty to connect installs and purchases to ads in TikTok. See the [guide on setting up your campaign in TikTok Ads](tiktok-create-campaign.md).
+6. Copy the **Click link** field value for **one link** or for a platform-specific link. Then, in TikTok Ads Manager, when creating your ad, paste this value in the **Tracking URL** field under the **Advanced Settings** section. This will allow Adapty to connect installs and purchases to ads in TikTok. See the [guide on setting up your campaign in TikTok Ads](tiktok-create-campaign.md).
 
     <ZoomImage id="ua-tiktok-lnk.webp" width="900px" />
 7. Now, when you launch your ad in TikTok for Business, its data will become available for analysis in the Adapty UA dashboard.
