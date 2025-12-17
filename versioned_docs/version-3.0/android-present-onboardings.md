@@ -102,6 +102,8 @@ To do this, create `adapty_onboarding_placeholder_view.xml` in `res/layout` and 
 
 If you define a placeholder, the onboarding will be loaded in the background and automatically displayed once ready.
 
+
+
 ## Disable safe area paddings
 
 By default, the onboarding view automatically applies safe area paddings to avoid system UI elements like status bar and navigation bar. However, if you want to disable this behavior and have full control over the layout, you can do so by setting the `safeAreaPaddings` parameter to `false`.
@@ -159,3 +161,36 @@ Alternatively, you can control this behavior globally by adding a boolean resour
 ```
 
 When `safeAreaPaddings` is set to `false`, the onboarding will extend to the full screen without any automatic padding adjustments, giving you complete control over the layout and allowing the onboarding content to use the entire screen space.
+
+## Open links in onboardings in an in-app browser
+
+:::important
+Opening links in onboardings in an in-app browser is supported starting from Adapty SDK v. 3.15.1.
+:::
+
+By default, links in onboardings open in the external browser.
+
+To provide a seamless user experience, you can open links in an in-app browser. This displays web pages within your application, allowing users to see them without switching apps.
+
+To enable this, set the `externalUrlsPresentation` parameter to `AdaptyWebPresentation.InAppBrowser`:
+
+<Tabs groupId="views-code-examples" queryString>
+  <TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin
+val onboardingConfig = AdaptyUI.getOnboardingConfiguration(
+    onboarding = onboarding,
+    externalUrlsPresentation = AdaptyWebPresentation.InAppBrowser
+)
+```
+  </TabItem>
+  <TabItem value="java" label="Java">
+
+```java
+AdaptyOnboardingConfiguration onboardingConfig = AdaptyUI.getOnboardingConfiguration(
+    onboarding,
+    AdaptyWebPresentation.InAppBrowser
+);
+```
+  </TabItem>
+</Tabs>
