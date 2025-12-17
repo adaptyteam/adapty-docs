@@ -121,7 +121,7 @@ AdaptyOnboardingView(
 ## Customize how links open in onboardings
 
 :::important
-Opening links in onboardings in an in-app browser is supported starting from Adapty SDK v. 3.15.1.
+Customizing how links open in onboardings is supported starting from Adapty SDK v. 3.15.1.
 :::
 
 By default, links in onboardings open in an in-app browser. This provides a seamless user experience by displaying web pages within your application, allowing users to view them without switching apps.
