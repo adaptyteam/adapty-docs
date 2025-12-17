@@ -162,17 +162,15 @@ Alternatively, you can control this behavior globally by adding a boolean resour
 
 When `safeAreaPaddings` is set to `false`, the onboarding will extend to the full screen without any automatic padding adjustments, giving you complete control over the layout and allowing the onboarding content to use the entire screen space.
 
-## Open links in onboardings in an in-app browser
+## Customize how links open in onboardings
 
 :::important
 Opening links in onboardings in an in-app browser is supported starting from Adapty SDK v. 3.15.1.
 :::
 
-By default, links in onboardings open in the external browser.
+By default, links in onboardings open in an in-app browser. This provides a seamless user experience by displaying web pages within your application, allowing users to view them without switching apps.
 
-To provide a seamless user experience, you can open links in an in-app browser. This displays web pages within your application, allowing users to see them without switching apps.
-
-To enable this, set the `externalUrlsPresentation` parameter to `AdaptyWebPresentation.InAppBrowser`:
+If you prefer to open links in an external browser instead, you can customize this behavior by setting the `externalUrlsPresentation` parameter to `AdaptyWebPresentation.ExternalBrowser`:
 
 <Tabs groupId="views-code-examples" queryString>
   <TabItem value="kotlin" label="Kotlin" default>
@@ -180,7 +178,7 @@ To enable this, set the `externalUrlsPresentation` parameter to `AdaptyWebPresen
 ```kotlin
 val onboardingConfig = AdaptyUI.getOnboardingConfiguration(
     onboarding = onboarding,
-    externalUrlsPresentation = AdaptyWebPresentation.InAppBrowser
+    externalUrlsPresentation = AdaptyWebPresentation.ExternalBrowser // default – InAppBrowser
 )
 ```
   </TabItem>
@@ -189,7 +187,7 @@ val onboardingConfig = AdaptyUI.getOnboardingConfiguration(
 ```java
 AdaptyOnboardingConfiguration onboardingConfig = AdaptyUI.getOnboardingConfiguration(
     onboarding,
-    AdaptyWebPresentation.InAppBrowser
+    AdaptyWebPresentation.ExternalBrowser // default – InAppBrowser
 );
 ```
   </TabItem>
