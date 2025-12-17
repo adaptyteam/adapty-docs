@@ -13,6 +13,12 @@ In this guide, you will learn how to start working with Apple Ads Manager in two
 1. Install the Adapty SDK and let it track your purchase data.
 2. Connect Apple Ads Manager to your Apple Ads account to import your historical data and start tracking real-time updates.
 
+:::note
+Apple Ads Manager does not use the [Apple Ads integration](apple-search-ads.md) from **App settings**.
+
+To use Apple Ads Manager, you only need to complete the setup described in this guide.
+:::
+
 ## 1. Install the Adapty SDK
 
 :::important

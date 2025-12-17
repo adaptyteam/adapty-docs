@@ -8,7 +8,7 @@ import ZoomImage from '@site/src/components/ZoomImage';
 import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
 :::important
-Before you start using the Ads Manager, ensure you have completed the steps from [this guide](ads-manager.md).
+Before you start using the Ads Manager, ensure you have completed the steps from [this guide](adapty-ads-manager-get-started.md).
 :::
 
 Apple Ads Manager lets you do three important things in one place:
