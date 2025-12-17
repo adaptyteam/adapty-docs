@@ -160,6 +160,70 @@ try {
 }
 ```
 
+## Customize how links open in onboardings
+
+:::important
+Customizing how links open in onboardings is supported starting from Adapty SDK v. 3.15.1.
+:::
+
+By default, links in onboardings open in an in-app browser. This provides a seamless user experience by displaying web pages within your application, allowing users to view them without switching apps.
+
+If you prefer to open links in an external browser instead, you can customize this behavior by setting the `externalUrlsPresentation` parameter to `WebPresentation.BrowserOutApp`:
+
+<Tabs groupId="rn-onboarding-views" queryString>
+<TabItem value="component" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView, WebPresentation } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
+  const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      externalUrlsPresentation={WebPresentation.BrowserOutApp} // default – BrowserInApp
+      onAnalytics={onAnalytics}
+      onClose={onClose}
+      onCustom={onCustom}
+      onPaywall={onPaywall}
+      onStateUpdated={onStateUpdated}
+      onFinishedLoading={onFinishedLoading}
+      onError={onError}
+    />
+  );
+}
+```
+</TabItem>
+
+<TabItem value="modal" label="Modal presentation">
+
+```typescript showLineNumbers title="React Native (TSX)"
+import { createOnboardingView, WebPresentation } from 'react-native-adapty';
+
+const view = await createOnboardingView(
+  onboarding,
+  WebPresentation.BrowserOutApp // default – BrowserInApp
+);
+
+try {
+    await view.present();
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+</Tabs>
+
 ## Next steps
 
 Once you've presented your onboarding, you'll want to [handle user interactions and events](react-native-handling-onboarding-events.md). Learn how to handle onboarding events to respond to user actions and track analytics.
