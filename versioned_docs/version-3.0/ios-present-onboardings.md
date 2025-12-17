@@ -118,17 +118,15 @@ AdaptyOnboardingView(
 
 </Tabs>
 
-## Open links in onboardings in an in-app browser
+## Customize how links open in onboardings
 
 :::important
 Opening links in onboardings in an in-app browser is supported starting from Adapty SDK v. 3.15.1.
 :::
 
-By default, links in onboardings open in the external browser.
+By default, links in onboardings open in an in-app browser. This provides a seamless user experience by displaying web pages within your application, allowing users to view them without switching apps.
 
-To provide a seamless user experience, you can open links in an in-app browser. This displays web pages within your application, allowing users to see them without switching apps.
-
-To enable this, set the `externalUrlsPresentation` parameter to `.inAppBrowser`:
+If you prefer to open links in an external browser instead, you can customize this behavior by setting the `externalUrlsPresentation` parameter to `.externalBrowser`:
 
 <Tabs>
 <TabItem value="swift" label="UIKit">
@@ -139,7 +137,7 @@ import AdaptyUI
 
 let configuration = try AdaptyUI.getOnboardingConfiguration(
     forOnboarding: onboarding,
-    externalUrlsPresentation: .inAppBrowser // default – .externalBrowser
+    externalUrlsPresentation: .externalBrowser // default – .inAppBrowser
 )
 ```
 </TabItem>
@@ -152,7 +150,7 @@ import AdaptyUI
 
 let configuration = try AdaptyUI.getOnboardingConfiguration(
     forOnboarding: onboarding,
-    externalUrlsPresentation: .inAppBrowser // default – .externalBrowser
+    externalUrlsPresentation: .externalBrowser // default – .inAppBrowser
 )
 ```
 </TabItem>
