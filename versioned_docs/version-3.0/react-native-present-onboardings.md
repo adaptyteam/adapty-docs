@@ -211,8 +211,8 @@ function MyOnboarding({ onboarding }) {
 import { createOnboardingView, WebPresentation } from 'react-native-adapty';
 
 const view = await createOnboardingView(
-  onboarding,
-  WebPresentation.BrowserOutApp // default – BrowserInApp
+  onboarding, 
+  { externalUrlsPresentation: WebPresentation.BrowserOutApp } // default – BrowserInApp
 );
 
 try {
