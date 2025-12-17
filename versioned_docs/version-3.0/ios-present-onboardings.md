@@ -128,9 +128,6 @@ By default, links in onboardings open in an in-app browser. This provides a seam
 
 If you prefer to open links in an external browser instead, you can customize this behavior by setting the `externalUrlsPresentation` parameter to `.externalBrowser`:
 
-<Tabs>
-<TabItem value="swift" label="UIKit">
-
 ```swift showLineNumbers
 import Adapty
 import AdaptyUI
@@ -140,18 +137,3 @@ let configuration = try AdaptyUI.getOnboardingConfiguration(
     externalUrlsPresentation: .externalBrowser // default – .inAppBrowser
 )
 ```
-</TabItem>
-
-<TabItem value="swiftui" label="SwiftUI">
-
-```swift showLineNumbers
-import Adapty
-import AdaptyUI
-
-let configuration = try AdaptyUI.getOnboardingConfiguration(
-    forOnboarding: onboarding,
-    externalUrlsPresentation: .externalBrowser // default – .inAppBrowser
-)
-```
-</TabItem>
-</Tabs>
