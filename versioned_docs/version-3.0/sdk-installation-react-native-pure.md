@@ -255,7 +255,7 @@ When mock mode is active:
 - By default, the initial mock profile has no active subscriptions.
 - By default, `makePurchase(...)` simulates a successful purchase and grants premium access.
 
-You can customize the mock data using `mockConfig` during activation. See the config format and supported parameters [here](https://react-native.adapty.io/types/adaptymockconfig).
+You can customize the mock data using `mockConfig` during activation. See the config format and supported parameters [here](https://react-native.adapty.io/interfaces/adaptymockconfig).
 
 ```typescript showLineNumbers title="App.tsx"
 import { adapty } from 'react-native-adapty';
