@@ -7,7 +7,7 @@ metadataTitle: "Tracking Installs & Attribution | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-The Installs chart shows the total number of app installations, including both first-time installs and reinstalls by existing users. This includes multiple installations by the same user on different devices. Incomplete downloads or installations that are canceled before completion are not counted.
+The Installs chart shows the total number of app installations.
 
 
 <Zoom>
@@ -25,10 +25,7 @@ The Installs chart shows the total number of app installations, including both f
 
 ### Calculation
 
-The Installs chart counts how many times your app has been installed. This includes:
-- first-time installs;
-- reinstalls;
-- installations on multiple devices by the same user.
+The Installs chart counts how many times your app has been installed.
 
 Incomplete installations or downloads that are canceled before completion are not counted.
 
@@ -38,7 +35,8 @@ This setting determines what is considered a new install event.
 
 The available options differ in how installs are grouped:
 
-- **By device installations** — each app installation on a device is counted as a separate install, including reinstalls.
+- **By device installations** — each app installation on a device is counted as a separate install, including reinstalls.  
+  An install represents a completed app installation from the store. Profile creation (on SDK activation or user logout), user authentication, and app upgrades do not generate additional install events.
 - **By unique users** — only the first installation associated with an identified user is counted; installations on additional devices are ignored. Use this setting only if you identify users in Adapty. Note that app stores and attribution platforms (such as App Store Connect, Google Play Console, and AppsFlyer) use a device-based approach to counting installs. If you count installs by customer user IDs in Adapty, install numbers may differ from these external services.
 
 Because a single user may install the app on multiple devices, switching between these options can change install counts and conversion metrics.
