@@ -21,8 +21,8 @@ Checklist to successfully display products in your mobile app
 3. Show paywalls using the placements they belong to in your mobile app:
    - [iOS](ios-quickstart-paywalls.md)
    - [Android](android-quickstart-paywalls.md)
-   - [Flutter](flutter-quickstart-paywalls.md)
    - [React Native](react-native-quickstart-paywalls.md)
+   - [Flutter](flutter-quickstart-paywalls.md)
    - [Unity](unity-quickstart-paywalls.md)
 :::
 

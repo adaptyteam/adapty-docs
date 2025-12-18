@@ -130,8 +130,8 @@ If you are working with a paywall you developed yourself, you need to handle web
 
 - [iOS](ios-web-paywall)
 - [Android](android-web-paywall.md)
-- [Flutter](flutter-web-paywall)
 - [React Native](react-native-web-paywall)
+- [Flutter](flutter-web-paywall)
 - [Unity](unity-web-paywalls.md)
 
 ## Step 3. Set up a placement

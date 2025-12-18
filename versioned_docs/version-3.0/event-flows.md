@@ -10,7 +10,6 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import InlineTooltip from '@site/src/components/InlineTooltip';
 
-
 In Adapty, you'll receive various subscription events throughout a customer’s journey in your app. These subscription flows outline common scenarios to help you understand the events that Adapty generates as users subscribe, cancel, or reactivate subscriptions.
 
 Keep in mind that Apple processes subscription payments several hours before the actual start/ renewal time. In the flows below, we show both the subscription start/ renewal and the charge happening at the same time to keep the diagrams clear.
@@ -27,8 +26,6 @@ If a webhook integration isn’t configured or this event type isn’t enabled, 
 
 ## Subscription Lifecycle
 
-
-
 ### Initial Purchase Flow
 
 This flow happens when a customer buys a subscription for the first time without a trial. In this situation, the following events are created:
@@ -36,7 +33,7 @@ This flow happens when a customer buys a subscription for the first time without
 - **Subscription started**
 - **Access level updated** to grant access to the user
 
-When the subscription renewal date comes, the subscription is renewed. In this case, the following events are created: 
+When the subscription renewal date comes, the subscription is renewed. In this case, the following events are created:
 
 - **Subscription renewal** to start a new period of the subscription
 - **Access level updated** to update the subscription expiration date, extending access for another period
@@ -91,7 +88,7 @@ If a refund is approved, the following event replaces **Subscription expired (ch
 
 For Stripe, a subscription can be canceled immediately, skipping the remaining period. In this case, all events are created simultaneously:
 
-- **Subscription renewal cancelled** 
+- **Subscription renewal cancelled**
 - **Subscription expired (churned)**
 - **Access Level updated** to remove the user’s access
 
@@ -112,7 +109,7 @@ If a refund is approved, a **Subscription refunded** event is also triggered whe
 
 If a user cancels a subscription, it expires, and they later repurchase the same subscription, a **Subscription renewed** event will be created. Even if there’s a gap in access, Adapty treats this as a single transaction chain, linked by the `vendor_original_transaction_id`. So, the repurchase is considered a renewal.
 
-The **Access level updated** events will be created twice: 
+The **Access level updated** events will be created twice:
 
 - at the subscription end to revoke the user's access
 - at the subscription repurchase to grant access
@@ -205,7 +202,7 @@ The user will have access until the end of the trial when the **Trial expired** 
 
 If a trial expires (due to a billing issue or cancellation) and the user later buys a subscription, the following events are created:
 
--  **Access level updated** to grant access to the user
+- **Access level updated** to grant access to the user
 - **Trial converted**
 
 Even with a gap between the trial and subscription, Adapty links the two using `vendor_original_transaction_id`. This conversion is treated as part of a continuous transaction chain, starting with a zero-price trial. That is why the **Trial converted** event is created rather than the **Subscription started**.
@@ -248,7 +245,7 @@ After a user changes a product, it can be changed in the system immediately befo
 
 If a user downgrades the subscription, the first subscription will last till the end of the paid period, and when the subscription ends, it will be replaced with a new, lower-tier subscription. In this situation, only the **Access level updated** event to disable access autorenewal will be created at once. All other events will be created at the moment of the subscription's actual replacement:
 
-- Another **Access level updated** event is created to give access to the second product. 
+- Another **Access level updated** event is created to give access to the second product.
 - The **Subscription expired (churned)** event is created to end the subscription for the first product.
 - The **Subscription started** event is created to start a new subscription for the new product.
 
@@ -284,7 +281,7 @@ There is also a variant when a user changes the product at the moment of the sub
 
 ## Billing Issue Outcome Flow
 
-If attempts to convert a trial or renew a subscription fail due to a billing issue, what happens next depends on whether a grace period is enabled. 
+If attempts to convert a trial or renew a subscription fail due to a billing issue, what happens next depends on whether a grace period is enabled.
 
 With a grace period, if the payment succeeds, the trial converts or the subscription renews. If it fails, the app store will continue to attemp to charge the user for the subscription and if still fails, the app store will end the trial or subscription itself.
 
@@ -316,9 +313,9 @@ Without a grace period, the Billing Retry Period (the period when the app store 
 
 If the payment never succeeds till the end of the grace period, the flow is the same: the same events are created when the app store ends the subscription automatically:
 
--  **Trial expired** or **Subscription expired (churned)** event with a `cancellation_reason` of `billing_error`
+- **Trial expired** or **Subscription expired (churned)** event with a `cancellation_reason` of `billing_error`
 
--  **Access level updated** to revoke the user's access
+- **Access level updated** to revoke the user's access
 
 <Zoom>
   <img src={require('./img_webhook_flows/Billing_Issue_Outcome_Flow_without_Grace_Period.webp').default}
@@ -333,9 +330,9 @@ If the payment never succeeds till the end of the grace period, the flow is the 
 
 ## Sharing Purchases Across User Accounts Flows
 
-When a <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> attempts to restore or extend a subscription already tied to a different <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip>, Adapty's **Sharing paid access between user accounts** setting controls how access is managed. The flow will vary depending on the selected option.
+When a <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> attempts to restore or extend a subscription already tied to a different <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip>, Adapty's **Sharing paid access between user accounts** setting controls how access is managed. The flow will vary depending on the selected option.
 
-###  Transfer Access to New User Flow
+### Transfer Access to New User Flow
 
 The recommended option is to transfer the access level to the new user. This preserves the original user’s transaction history for consistent analytics. Only 2 **Access level updated** events will be created:
 
@@ -394,9 +391,9 @@ Here’s a breakdown of the fields related to access level assignment and transf
   }
   ```
 
-###  Shared Access Between Users Flow
+### Shared Access Between Users Flow
 
-This option allows multiple users to share the same access level if their device is signed in to the same Apple/Google ID. This is useful when a user reinstalls the app and logs in with a different email — they'll still have access to their previous purchase. With this option, multiple identified users can share the same access level. While the access level is shared, all transactions are logged under the original <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> to maintain complete transaction history and analytics.
+This option allows multiple users to share the same access level if their device is signed in to the same Apple/Google ID. This is useful when a user reinstalls the app and logs in with a different email — they'll still have access to their previous purchase. With this option, multiple identified users can share the same access level. While the access level is shared, all transactions are logged under the original <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> to maintain complete transaction history and analytics.
 
 Therefore, only 1 event will be created: **Access level updated** to grant access to the second user.
 
@@ -431,9 +428,9 @@ Here’s a breakdown of the fields related to access level assignment and sharin
   }
   ```
 
-###  Access Not Shared Between Users Flow
+### Access Not Shared Between Users Flow
 
-With this option, only the first user profile to receive the access level retains it permanently. This is ideal if purchases need to be tied to a single <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip>. 
+With this option, only the first user profile to receive the access level retains it permanently. This is ideal if purchases need to be tied to a single <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip>.
 
 <Zoom>
   <img src={require('./img_webhook_flows/Share_Access_Between_Users_Disabled_Flow.webp').default}
