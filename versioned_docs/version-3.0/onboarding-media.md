@@ -32,10 +32,11 @@ To upload media:
 
 ### Supported formats and size
 
-| Specification     | Details                          |
-|-------------------|----------------------------------|
-| Extensions        | PNG, JPG, JPEG, WEBP, MP4, WEBM  |
-| Maximum file size | 15 MB                            |
+| Specification      | Details                         |
+|--------------------|---------------------------------|
+| Extensions         | PNG, JPG, JPEG, WEBP, MP4, WEBM |
+| Maximum file size  | 15 MB                           |
+| Maximum resolution | 1920x1920                       |
 
 If you want to add an unsupported animated element (like Lottie), you can convert it to a video (for example, with [this tool](https://www.lottielab.com/lottie-to-video)) and embed it as a video.
 
