@@ -22,7 +22,7 @@ This integration operates in two key ways:
 2. **Sending subscription events to Tenjin**
    Adapty sends purchase events to Tenjin in real-time. These events help evaluate the effectiveness of your ad campaigns directly within Tenjin’s dashboard.
 
-## Integration Characteristics
+## Integration characteristics
 
 | Integration characteristic | Description                                                  |
 | -------------------------- | ------------------------------------------------------------ |

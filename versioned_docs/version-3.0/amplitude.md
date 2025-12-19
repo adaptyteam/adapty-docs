@@ -282,3 +282,58 @@ try {
 
 </TabItem>
 </Tabs>
+
+
+## Amplitude event structure
+
+Adapty sends events to Amplitude via the HTTP API v2. Each event is structured like this:
+
+```json
+{
+  "api_key": "your_amplitude_api_key",
+  "events": [
+    {
+      "partner_id": "adapty",
+      "event_type": "subscription_renewed",
+      "time": 1709294400000,
+      "insert_id": "123e4567-e89b-12d3-a456-426614174000",
+      "user_id": "user_12345",
+      "device_id": "device_12345",
+      "platform": "iOS",
+      "os_name": "iOS",
+      "productId": "yearly.premium.6999",
+      "revenue": 9.99,
+      "event_properties": {
+        "vendor_product_id": "yearly.premium.6999",
+        "original_transaction_id": "GPA.3383...",
+        "currency": "USD",
+        "environment": "Production",
+        "store": "app_store"
+      },
+      "user_properties": {
+        "subscription_state": "subscribed",
+        "subscription_product": "yearly.premium.6999"
+      }
+    }
+  ]
+}
+```
+
+Where:
+
+| Parameter                   | Type   | Description                                                      |
+|:----------------------------|:-------|:-----------------------------------------------------------------|
+| `api_key`                   | String | Your Amplitude API Key.                                          |
+| `events`                    | Array  | List of event objects (Adapty sends one at a time).              |
+| `events[].partner_id`       | String | Always "adapty".                                                 |
+| `events[].event_type`       | String | The event name (mapped from Adapty event).                       |
+| `events[].time`             | Long   | Timestamp of the event in milliseconds.                          |
+| `events[].insert_id`        | String | Unique event ID (UUID).                                          |
+| `events[].user_id`          | String | Amplitude User ID or Customer User ID.                           |
+| `events[].device_id`        | String | Amplitude Device ID.                                             |
+| `events[].platform`         | String | Platform (e.g., "iOS", "Android").                               |
+| `events[].os_name`          | String | OS Name.                                                         |
+| `events[].productId`        | String | The Product ID from the store.                                   |
+| `events[].revenue`          | Float  | Revenue amount.                                                  |
+| `events[].event_properties` | Object | Detailed event attributes (contains all available event fields). |
+| `events[].user_properties`  | Object | User attributes like subscription state.                         |
