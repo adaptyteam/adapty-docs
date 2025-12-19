@@ -33,8 +33,8 @@ Dark mode is supported:
 
 - iOS: starting with v3.1.0
 - Android: starting with v3.1.1
-- Flutter: starting with v3.2.0
 - React Native: starting with v3.1.0
+- Flutter: starting with v3.2.0
 - Unity: starting with v3.3.0
 
 It’s also available in fallback paywalls.

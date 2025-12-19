@@ -85,7 +85,7 @@ Information on custom string attributes defined for the [user](ff-resources#adap
 
 ### AdaptyError
 
-Contains details about an error. For a complete list of error codes, refer to [Flutter, React Native, Unity - Handle errors](error-handling-on-flutter-react-native-unity).
+Contains details about an error. For a complete list of error codes, refer to [React Native, Flutter, Unity - Handle errors](error-handling-on-flutter-react-native-unity).
 
 | Field Name                | Type | Description |
 |--------------------------|----------|-------------|

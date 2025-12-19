@@ -132,8 +132,8 @@ If you are using the Stripe integration, consider its limitations in the dedicat
 For the integration to work, ensure you add Firebase to your app first:
 - [iOS](https://firebase.google.com/docs/ios/setup)
 - [Android](https://firebase.google.com/docs/android/setup)
-- [Flutter](https://firebase.google.com/docs/flutter/setup)
 - [React Native](https://firebase.google.com/docs/web/setup)
+- [Flutter](https://firebase.google.com/docs/flutter/setup)
 - [Unity](https://firebase.google.com/docs/unity/setup)
 :::
 

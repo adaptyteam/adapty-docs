@@ -275,7 +275,7 @@ If you are using Checkout Sessions, [make sure you're creating a Stripe Customer
 
 ### 5\. Provide access to users on the mobile
 
-To make sure your mobile users arriving from web can access the paid features, just call `Adapty.activate()` or `Adapty.identify()` with the same `customer_user_id` you've provided on the previous step (see <InlineTooltip tooltip="Identifying users">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip> for more).
+To make sure your mobile users arriving from web can access the paid features, just call `Adapty.activate()` or `Adapty.identify()` with the same `customer_user_id` you've provided on the previous step (see <InlineTooltip tooltip="Identifying users">[iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip> for more).
 
 ### 6\. Test your integration
 

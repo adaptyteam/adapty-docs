@@ -20,8 +20,8 @@ export default function SidebarMenu() {
   const platforms = [
     { name: 'iOS', path: '/docs/ios-sdk-overview', sidebarId: 'sdkios' },
     { name: 'Android', path: '/docs/android-sdk-overview', sidebarId: 'sdkandroid' },
-    { name: 'Flutter', path: '/docs/flutter-sdk-overview', sidebarId: 'sdkflutter' },
     { name: 'React Native', path: '/docs/react-native-sdk-overview', sidebarId: 'sdkreactnative' },
+    { name: 'Flutter', path: '/docs/flutter-sdk-overview', sidebarId: 'sdkflutter' },
     { name: 'Unity', path: '/docs/unity-sdk-overview', sidebarId: 'sdkunity' },
     { name: 'Kotlin Multiplatform', path: '/docs/kmp-sdk-overview', sidebarId: 'sdkkmp' },
     { name: 'Capacitor (Beta)', path: '/docs/capacitor-sdk-overview', sidebarId: 'sdkcapacitor' },
