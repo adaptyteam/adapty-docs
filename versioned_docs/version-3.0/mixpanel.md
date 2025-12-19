@@ -180,3 +180,48 @@ try {
 ```
 </TabItem>
 </Tabs>
+
+## Mixpanel event structure
+
+Adapty sends events to Mixpanel using the `track` method. The event properties are structured like this:
+
+```json
+{
+  "event": "subscription_renewed",
+  "properties": {
+    "ip": 0,
+    "time": 1709294400,
+    "$insert_id": "123e4567-e89b-12d3-a456-426614174000",
+    "vendor_product_id": "yearly.premium.6999",
+    "original_transaction_id": "GPA.3383...",
+    "currency": "USD",
+    "environment": "Production",
+    "store": "app_store",
+    "purchase_date": "2024-03-01T12:00:00.000000+0000"
+  }
+}
+```
+
+Where:
+
+| Parameter                            | Type    | Description                                 |
+|:-------------------------------------|:--------|:--------------------------------------------|
+| `event`                              | String  | The event name (mapped from Adapty event).  |
+| `properties`                         | Object  | Event properties.                           |
+| `properties.ip`                      | Integer | IP address (sent as 0 by server-to-server). |
+| `properties.time`                    | Long    | UNIX timestamp of the event in seconds.     |
+| `properties.$insert_id`              | String  | Unique event ID (UUID) for deduplication.   |
+| `properties.vendor_product_id`       | String  | The Product ID from the store.              |
+| `properties.original_transaction_id` | String  | Original transaction ID.                    |
+| `properties.currency`                | String  | Currency code.                              |
+| `properties.store`                   | String  | Store name (e.g., "app_store").             |
+| `properties.environment`             | String  | Environment ("Sandbox" or "Production").    |
+
+### User profile updates
+
+Adapty also updates the Mixpanel User Profile using `people_set` with the following properties:
+
+| Parameter                 | Type   | Description                                      |
+|:--------------------------|:-------|:-------------------------------------------------|
+| `subscription_state`      | String | Current subscription state (e.g., "subscribed"). |
+| `subscription_product_id` | String | ID of the active subscription product.           |

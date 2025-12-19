@@ -183,6 +183,51 @@ try {
 </Tabs>
 
 
+## Facebook Ads event structure
+
+Adapty sends events to Facebook Ads (Meta) via the Graph API. Each event is structured like this:
+
+```json
+{
+  "event": "CUSTOM_APP_EVENTS",
+  "app_user_id": "user_12345",
+  "advertiser_id": "00000000-0000-0000-0000-000000000000",
+  "advertiser_tracking_enabled": 1,
+  "application_tracking_enabled": 1,
+  "custom_events": "[{\"_eventName\":\"Subscribe\",\"_logTime\":1709294400,\"fb_num_items\":1,\"fb_content_type\":\"in_app\",\"fb_content_id\":\"yearly.premium.6999\",\"fb_currency\":\"USD\",\"fb_order_id\":\"GPA.3383...\",\"fb_transaction_id\":\"GPA.3383...\",\"_valueToSum\":9.99}]",
+  "extinfo": "[\"i2\",\"com.example.app\",\"1.0.0\",\"100\",\"17.0.1\",\"iPhone14,3\",\"en_US\",\"GMT+3\",\"\",0,0,0,0,0,0,\"GMT+3\"]",
+  "anon_id": "facebook_anon_id_123"
+}
+```
+
+Where:
+
+| Parameter | Type | Description |
+|:---|:---|:---|
+| `event` | String | Always "CUSTOM_APP_EVENTS". |
+| `app_user_id` | String | The user's Customer User ID. |
+| `advertiser_id` | String | IDFA (iOS) or Advertising ID (Android). |
+| `advertiser_tracking_enabled` | Integer | `1` if tracking is enabled (ATT authorized), `0` otherwise. |
+| `application_tracking_enabled` | Integer | Always `1`. |
+| `custom_events` | String | JSON-encoded string of event objects (see below). |
+| `extinfo` | String | JSON-encoded string containing app/device info (e.g., version, OS, locale). |
+| `anon_id` | String | Facebook Anonymous ID (if available). |
+
+The `custom_events` parameter is a JSON-encoded array of objects, containing:
+
+| Parameter | Type | Description |
+|:---|:---|:---|
+| `_eventName` | String | The Meta Ads event name (e.g., "Subscribe"). |
+| `_logTime` | Long | Timestamp of the event in seconds. |
+| `_valueToSum` | Float | Revenue amount. |
+| `fb_content_id` | String | The Product ID from the store. |
+| `fb_currency` | String | Currency code (e.g., "USD"). |
+| `fb_order_id` | String | Original transaction ID. |
+| `fb_transaction_id` | String | Original transaction ID. |
+| `fb_content_type` | String | Always "in_app". |
+| `fb_num_items` | Integer | Always 1 for purchase events. |
+
+
 
 
 
