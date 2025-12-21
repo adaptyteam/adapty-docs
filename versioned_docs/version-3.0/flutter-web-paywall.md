@@ -1,7 +1,7 @@
 ---
 title: "Implement web paywalls in Flutter SDK"
 description: "Set up a web paywall to get paid without the App Store fees and audits."
-metadataTitle: "Accept payments in web for Flutter apps in the US and Japan"
+metadataTitle: "Accept payments in web for Flutter apps in the US"
 displayed_sidebar: sdkflutter
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: "Web paywall"
 description: "Set up a web paywall to get paid without the App Store fees and audits."
-metadataTitle: "Accept payments in web for iOS apps in the US and Japan"
+metadataTitle: "Accept payments in web for iOS apps in the US"
 keywords: ['web', 'web paywalls']
 rank: 100
 ---
@@ -28,9 +28,9 @@ This allows you to bypass store fees while effectively tracking user payments.
    </Zoom>
 
 :::tip
-The App Store allows external payment options only in the USA and Japan. 
+The App Store allows external payment options only in the USA. 
 
-To use a paywall exclusively for the US/Japan market, duplicate your current paywall and set up a web paywall. This way, you will have two almost identical paywalls in use: one for the US/Japan and another for everybody else.
+To use a paywall exclusively for the US market, duplicate your current paywall and set up a web paywall. This way, you will have two almost identical paywalls in use: one for the US/Japan and another for everybody else.
 :::
 
 ## How it works
@@ -136,7 +136,7 @@ If you are working with a paywall you developed yourself, you need to handle web
 
 ## Step 3. Set up a placement
 
-Since web paywalls are only allowed for iOS apps in the USA and Japan, add a separate user segment for the USA/Japan and set up a placement to target different paywalls at different segments:
+Since web paywalls are only allowed for iOS apps in the USA, add a separate user segment for the USA/Japan and set up a placement to target different paywalls at different segments:
 
 1. [Create a new segment](segments.md) that will have the following attributes:
    - **Country from store account**: United States
