@@ -11,7 +11,7 @@ If you encounter transaction issues, please first make sure you have completed a
 
 ## An error is returned in the mobile app
 
-Refer to the error list for your platform: [for iOS](ios-sdk-error-handling), [for Android](android-sdk-error-handling), [for Flutter](error-handling-on-flutter-react-native-unity), [React Native](react-native-troubleshoot-purchases.md), and [Unity](unity-troubleshoot-purchases.md) and follow our recommendations to resolve the issue.
+Refer to the error list for your platform: [for iOS](ios-sdk-error-handling), [for Android](android-sdk-error-handling), [for React Native](react-native-troubleshoot-purchases.md), [Flutter](error-handling-on-flutter-react-native-unity),  and [Unity](unity-troubleshoot-purchases.md) and follow our recommendations to resolve the issue.
 
 ## Transaction is absent from the Event Feed although no error is returned in the mobile app
 

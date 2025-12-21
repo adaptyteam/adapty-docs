@@ -126,7 +126,7 @@ Adapty sends events to your server and 3rd party analytical systems.
 
 ### Setting the profile's identifier
 
-- Set the profile's identifier for the selected analytics using the <InlineTooltip tooltip="instructions for setting user attributes in your app">[iOS](setting-user-attributes.md), [Android](android-setting-user-attributes.md), [Flutter](flutter-setting-user-attributes.md), [React Native](react-native-setting-user-attributes.md), and [Unity](unity-setting-user-attributes.md)</InlineTooltip>.
+- Set the profile's identifier for the selected analytics using the <InlineTooltip tooltip="instructions for setting user attributes in your app">[iOS](setting-user-attributes.md), [Android](android-setting-user-attributes.md), [React Native](react-native-setting-user-attributes.md), [Flutter](flutter-setting-user-attributes.md), and [Unity](unity-setting-user-attributes.md)</InlineTooltip>.
 
 :::warning
 Avoiding duplication
