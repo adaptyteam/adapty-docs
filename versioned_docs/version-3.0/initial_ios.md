@@ -20,8 +20,8 @@ Integrating Adapty into your mobile app involves establishing connections betwee
 - [ ] [Enable App Store server notifications](enable-app-store-server-notifications)  in the App Store Connect
 - [ ] Install AdaptySDKs for the frameworks you're using: 
   - [ ] [Install Adapty SDK for native iOS](sdk-installation-ios)
-  - [ ] [Install Adapty SDK for Flutter](sdk-installation-flutter.md)
   - [ ] [Install Adapty SDK for React Native](sdk-installation-reactnative.md)
+  - [ ] [Install Adapty SDK for Flutter](sdk-installation-flutter.md)
   - [ ] [Install Adapty SDK for Unity](sdk-installation-unity.md)
   - [ ] [Install Adapty SDK for Kotlin Multiplatform](sdk-installation-kotlin-multiplatform.md)
 - [ ] Build your application and run it in sandbox mode.

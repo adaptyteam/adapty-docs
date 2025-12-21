@@ -106,7 +106,7 @@ Placeholders:
 
 | Parameters         | Type   | Required          | Nullable           | Description                                                  |
 | :----------------- | :----- | :---------------- | :----------------- | :----------------------------------------------------------- |
-| customer\_user\_id | String | :heavy_plus_sign: | :heavy_minus_sign: | The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard -> [Profiles](https://app.adapty.io/profiles/users) -> specific profile page. For it to work, you must <InlineTooltip tooltip="identify the users">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip> in your mobile app code via Adapty SDK. |
+| customer\_user\_id | String | :heavy_plus_sign: | :heavy_minus_sign: | The ID of your user in your system. You can see it in the **Customer user ID** field on the Adapty Dashboard -> [Profiles](https://app.adapty.io/profiles/users) -> specific profile page. For it to work, you must <InlineTooltip tooltip="identify the users">[iOS](identifying-users), [Android](android-identifying-users),  [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip> in your mobile app code via Adapty SDK. |
 | paddle_token       | String | :heavy_plus_sign: | :heavy_minus_sign: | Token of a Paddle object that represents a unique purchase. Could be either a transaction id (txn_...) or a subscription id (sub_...), |
 
 ## Successful response: 200: OK

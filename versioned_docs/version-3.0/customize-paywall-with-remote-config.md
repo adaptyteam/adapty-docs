@@ -212,4 +212,4 @@ Additional row options are mostly useful for [paywall localisations](add-remote-
 
 
 
-Now it's time to [create a placement](create-placement) and add the paywall to it. After that, you can <InlineTooltip tooltip="display your remote config paywalls">[iOS](present-remote-config-paywalls.md), [Android](present-remote-config-paywalls-android.md), [Flutter](present-remote-config-paywalls-flutter.md), [React Native](present-remote-config-paywalls-react-native.md), and [Unity](present-remote-config-paywalls-unity.md)</InlineTooltip> in your mobile app.
+Now it's time to [create a placement](create-placement) and add the paywall to it. After that, you can <InlineTooltip tooltip="display your remote config paywalls">[iOS](present-remote-config-paywalls.md), [Android](present-remote-config-paywalls-android.md), [React Native](present-remote-config-paywalls-react-native.md), [Flutter](present-remote-config-paywalls-flutter.md), and [Unity](present-remote-config-paywalls-unity.md)</InlineTooltip> in your mobile app.

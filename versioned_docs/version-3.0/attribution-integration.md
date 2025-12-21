@@ -338,7 +338,7 @@ Adapty can automatically collect Apple Search Ad attribution data. All you need 
 
 ### Facebook Ads
 
-Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send [`facebookAnonymousId`](https://developers.facebook.com/docs/reference/iossdk/current/FBSDKCoreKit/classes/fbsdkappevents.html/) to Adapty by following the <InlineTooltip tooltip="instructions for setting user attributes in your app">[iOS](setting-user-attributes.md), [Android](android-setting-user-attributes.md), [Flutter](flutter-setting-user-attributes.md), [React Native](react-native-setting-user-attributes.md), and [Unity](unity-setting-user-attributes.md)</InlineTooltip>. It allows Facebook to handle events if IDFA is not available. You should also configure [Facebook Ads](facebook-ads) in Adapty Dashboard.
+Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send [`facebookAnonymousId`](https://developers.facebook.com/docs/reference/iossdk/current/FBSDKCoreKit/classes/fbsdkappevents.html/) to Adapty by following the <InlineTooltip tooltip="instructions for setting user attributes in your app">[iOS](setting-user-attributes.md), [Android](android-setting-user-attributes.md), [React Native](react-native-setting-user-attributes.md), [Flutter](flutter-setting-user-attributes.md), and [Unity](unity-setting-user-attributes.md)</InlineTooltip>. It allows Facebook to handle events if IDFA is not available. You should also configure [Facebook Ads](facebook-ads) in Adapty Dashboard.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
