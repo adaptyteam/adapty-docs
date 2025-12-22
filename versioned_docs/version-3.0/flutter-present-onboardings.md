@@ -7,6 +7,8 @@ displayed_sidebar: sdkflutter
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 If you've customized an onboarding using the builder, you don't need to worry about rendering it in your Flutter app code to display it to the user. Such an onboarding contains both what should be shown within the onboarding and how it should be shown.
 
@@ -115,3 +117,58 @@ By default, between the splash screen and onboarding, you will see the loading s
 - To customize the native loader on Android, create `adapty_onboarding_placeholder_view.xml` in `res/layout` and define a placeholder there.
 
 This helps create seamless transitions and custom loading experiences.
+
+## Customize how links open in onboardings
+
+:::important
+Customizing how links open in onboardings is supported starting from Adapty SDK v.3.15.1.
+:::
+
+By default, links in onboardings open in an in-app browser. This provides a seamless user experience by displaying web pages within your application, allowing users to view them without switching apps.
+
+If you prefer to open links in an external browser instead, you can customize this behavior by setting the `externalUrlsPresentation` parameter to `AdaptyWebPresentation.externalBrowser`:
+
+<Tabs>
+<TabItem value="standalone" label="Standalone screen" default>
+
+```dart showLineNumbers title="Flutter"
+final onboardingView = await AdaptyUI().createOnboardingView(
+  onboarding: onboarding,
+  externalUrlsPresentation: AdaptyWebPresentation.externalBrowser, // default – AdaptyWebPresentation.inAppBrowser
+);
+
+try {
+  await onboardingView.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="embedded" label="Embedded widget">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIOnboardingPlatformView(
+  onboarding: onboarding,
+  externalUrlsPresentation: AdaptyWebPresentation.externalBrowser, // default – AdaptyWebPresentation.inAppBrowser
+  onDidFinishLoading: (meta) {
+  },
+  onDidFailWithError: (error) {
+  },
+  onCloseAction: (meta, actionId) {
+  },
+  onPaywallAction: (meta, actionId) {
+  },
+  onCustomAction: (meta, actionId) {
+  },
+  onStateUpdatedAction: (meta, elementId, params) {
+  },
+  onAnalyticsEvent: (meta, event) {
+  },
+)
+```
+
+</TabItem>
+</Tabs>
