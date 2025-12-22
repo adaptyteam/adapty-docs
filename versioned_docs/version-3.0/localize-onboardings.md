@@ -8,7 +8,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
 :::important
-Localizations in onboardings are supported in the [iOS](get-onboardings.md), [Android](android-get-onboardings.md), [React Native](react-native-get-onboardings.md), [Flutter](flutter-get-onboardings.md), and [Unity](unity-get-onboardings.md) SDKs starting from SDK version 3.11. If your SDK version is below 3.11, the default locale will be used.
+Localizations in onboardings are supported in the Adapty SDKs starting from SDK version 3.11. If your SDK version is below 3.11, the default locale will be used.
 :::
 
 Localization can be a time-consuming process that requires careful attention to detail. When you use Onboarding Builder, Adapty handles most of the heavy lifting for you. This page explains how the localization process works.
@@ -95,5 +95,11 @@ To ensure a successful import, the import file must meet the following requireme
 - **Partial import:**
   The file can include all or just some entities from the current paywall configuration.
 
+## Existing limitations
 
+Once a user opens an onboarding, the displayed language is locked for approximately 24 hours. If the user changes their device or app language during this time, the onboarding will continue to display in the original language. After 24 hours, the new language will be applied.
+
+This affects two scenarios:
+- User opens onboarding in language A, closes the app, changes device language to language B, and reopens the app → onboarding still displays in language A
+- User opens onboarding in language A, closes it, changes in-app language to language B, and reopens the onboarding → onboarding still displays in language A
 
