@@ -22,65 +22,13 @@ This integration operates in two key ways:
 2. **Sending subscription events to Tenjin**
    Adapty sends purchase events to Tenjin in real-time. These events help evaluate the effectiveness of your ad campaigns directly within Tenjin’s dashboard.
 
-## Integration characteristics
-
 | Integration characteristic | Description                                                  |
 | -------------------------- | ------------------------------------------------------------ |
 | Schedule                   | Real-time                                                    |
 | Data direction             | <p>Two-way transmission:</p><ul><li> **Adapty events**: From Adapty server to Tenjin server</li><li> **Tenjin attribution**: From Tenjin SDK to Adapty server</li></ul> |
 | Adapty integration point   | <ul><li> Tenjin and Adapty SDKs in the mobile app code</li><li> Adapty server</li></ul> |
 
-## Tenjin event structure
-
-Adapty sends selected events to Tenjin as configured in the **Events names** section on the [**Tenjin Integration page**](https://app.adapty.io/integrations/tenjin). Each event is structured like this:
-
-```json showLineNumbers title="Json"
-{
-  "price": 99.0,
-  "locale": "en-US",
-  "country": "ME",
-  "postcut": "false",
-  "currency": "USD",
-  "platform": "ios",
-  "quantity": 1,
-  "bundle_id": "com.adapty.adaptydemoapp",
-  "ip_address": "127.0.0.1",
-  "os_version": "18.1.1",
-  "product_id": "month.premium.99",
-  "app_version": "3.2.0",
-  "sdk_version": "server",
-  "device_model": "iPhone 13 Mini",
-  "advertising_id": "00000000-0000-0000-0000-000000000000",
-  "os_version_release": "18.1.1",
-  "developer_device_id": "00000000-0000-0000-0000-000000000000",
-  "analytics_installation_id": "00000000-0000-0000-0000-000000000000"
-}
-```
-
-Where
-
-| **Parameter**                 | **Type**         | **Description**                                              |
-| ----------------------------- | ---------------- | ------------------------------------------------------------ |
-| **price**                     | Float            | The unit price of the item purchased in the currency standard unit (e.g., USD is reported in dollars). |
-| **locale**                    | String           | The locale of the device. For Android: `Locale.getDefault().toString()`. For iOS: `[[NSLocale currentLocale] localeIdentifier]`. |
-| **country**                   | String           | The ISO locale country code standard (e.g., US for the United States). |
-| **postcut**                   | String (Boolean) | Indicates whether the purchase was sent after the platform cut. 1 for true, 0 for false. |
-| **currency**                  | String           | The ISO currency code (e.g., USD for US dollars).            |
-| **platform**                  | String           | The platform of the device (e.g., ios, android, windows, amazon). |
-| **quantity**                  | Integer          | The number of units purchased.                               |
-| **bundle_id**                 | String           | The bundle identifier of the app (e.g., `com.example.app`).  |
-| **ip_address**                | String (IPv4)    | The user’s IP address. Used to look up the country.          |
-| **os_version**                | String           | The OS version of the device. For Android: `String.valueOf(Build.VERSION.SDK_INT)`. For iOS: `[[UIDevice currentDevice] systemVersion]`. |
-| **product_id**                | String           | Unique identifier for the product purchased.                 |
-| **app_version**               | Float, Decimal   | The version of the app. For Android: `context.getPackageManager().getPackageInfo()`. For iOS: `[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"]`. |
-| **sdk_version**               | String           | The SDK version in use, always set to `server`.              |
-| **device_model**              | String           | The model of the device. For Android: `Build.MODEL`. For iOS: `sysctl("hw.machine")`. |
-| **advertising_id**            | UUID             | The advertising ID of the device. Required for Android. For iOS, it can be empty or all zeros. |
-| **os_version_release**        | String           | The OS version release. For Android: `String.valueOf(Build.VERSION.RELEASE)`. For iOS: `[[UIDevice currentDevice] systemVersion]`. |
-| **developer_device_id**       | UUID             | The identifier for the vendor (iOS only).                    |
-| **analytics_installation_id** | UUID             | Analytics installation ID. For details, refer to the documentation at `https://docs.tenjin.com`. |
-
-## Setting up Tenjin integration
+## Initial Setup
 
 1. Open the [**Integrations** -> **Tenjin**](https://app.adapty.io/integrations/tenjin) page in the Adapty Dashboard.
 
@@ -170,9 +118,9 @@ Tenjin only accepts purchase and **Trial started** events. In the **Events names
 />
 </Zoom>
 
-## SDK configuration
+## Attribution Integration
 
-It's very important to send Tenjin attribution data from the device to Adapty using `Adapty.updateAttribution()` SDK method. The example below shows how to do that.
+Use the `Adapty.updateAttribution()` SDK method to retrieve attribution data from Tenjin, and pass it on to Adapty. 
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="iOS (Swift)" default>
@@ -329,3 +277,52 @@ try {
 </TabItem>
 </Tabs>
 
+## Event structure
+
+Adapty sends selected events to Tenjin as configured in the **Events names** section on the [**Tenjin Integration page**](https://app.adapty.io/integrations/tenjin). Each event is structured like this:
+
+```json showLineNumbers title="Json"
+{
+  "price": 99.0,
+  "locale": "en-US",
+  "country": "ME",
+  "postcut": "false",
+  "currency": "USD",
+  "platform": "ios",
+  "quantity": 1,
+  "bundle_id": "com.adapty.adaptydemoapp",
+  "ip_address": "127.0.0.1",
+  "os_version": "18.1.1",
+  "product_id": "month.premium.99",
+  "app_version": "3.2.0",
+  "sdk_version": "server",
+  "device_model": "iPhone 13 Mini",
+  "advertising_id": "00000000-0000-0000-0000-000000000000",
+  "os_version_release": "18.1.1",
+  "developer_device_id": "00000000-0000-0000-0000-000000000000",
+  "analytics_installation_id": "00000000-0000-0000-0000-000000000000"
+}
+```
+
+Where
+
+| **Parameter**                 | **Type**         | **Description**                                              |
+| ----------------------------- | ---------------- | ------------------------------------------------------------ |
+| **price**                     | Float            | The unit price of the item purchased in the currency standard unit (e.g., USD is reported in dollars). |
+| **locale**                    | String           | The locale of the device. For Android: `Locale.getDefault().toString()`. For iOS: `[[NSLocale currentLocale] localeIdentifier]`. |
+| **country**                   | String           | The ISO locale country code standard (e.g., US for the United States). |
+| **postcut**                   | String (Boolean) | Indicates whether the purchase was sent after the platform cut. 1 for true, 0 for false. |
+| **currency**                  | String           | The ISO currency code (e.g., USD for US dollars).            |
+| **platform**                  | String           | The platform of the device (e.g., ios, android, windows, amazon). |
+| **quantity**                  | Integer          | The number of units purchased.                               |
+| **bundle_id**                 | String           | The bundle identifier of the app (e.g., `com.example.app`).  |
+| **ip_address**                | String (IPv4)    | The user’s IP address. Used to look up the country.          |
+| **os_version**                | String           | The OS version of the device. For Android: `String.valueOf(Build.VERSION.SDK_INT)`. For iOS: `[[UIDevice currentDevice] systemVersion]`. |
+| **product_id**                | String           | Unique identifier for the product purchased.                 |
+| **app_version**               | Float, Decimal   | The version of the app. For Android: `context.getPackageManager().getPackageInfo()`. For iOS: `[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"]`. |
+| **sdk_version**               | String           | The SDK version in use, always set to `server`.              |
+| **device_model**              | String           | The model of the device. For Android: `Build.MODEL`. For iOS: `sysctl("hw.machine")`. |
+| **advertising_id**            | UUID             | The advertising ID of the device. Required for Android. For iOS, it can be empty or all zeros. |
+| **os_version_release**        | String           | The OS version release. For Android: `String.valueOf(Build.VERSION.RELEASE)`. For iOS: `[[UIDevice currentDevice] systemVersion]`. |
+| **developer_device_id**       | UUID             | The identifier for the vendor (iOS only).                    |
+| **analytics_installation_id** | UUID             | Analytics installation ID. For details, refer to the documentation at `https://docs.tenjin.com`. |

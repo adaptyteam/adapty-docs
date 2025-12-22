@@ -30,13 +30,10 @@ The integration between Adapty and AppsFlyer operates in two main ways.
 />
 </Zoom>
 
-
-
-
 2. **Sending subscription events to AppsFlyer**  
    Adapty can send all subscription events that are configured in your integration to AppsFlyer. As a result, you'll be able to track these events within the AppsFlyer dashboard. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
-## How to set up AppsFlyer integration
+## Initial Setup
 
 To setup the integration with AppsFlyer:
 
@@ -184,9 +181,13 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Adapty will send subscription events to AppsFlyer using a server-to-server integration, allowing you to view all subscription events in your AppsFlyer dashboard and link them to your acquisition campaigns.
 
-## SDK configuration
+## Attribution Integration
 
-It's very important to send AppsFlyer attribution data from the device to Adapty using the `Adapty.updateAttribution()` SDK method and the `Adapty.setIntegrationIdentifier()` method to set the integration identifier. The example below shows how to do that.
+After you complete the steps described above, call the `updateAttribution` method to save the attribution data, and use the `Adapty.setIntegrationIdentifier()` to set the integration identifier. 
+
+:::warning
+The `networkUserId` parameter is mandatory.
+:::
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="iOS (Swift)" default>
@@ -203,6 +204,7 @@ class YourAppsFlyerLibDelegateImplementation {
 }
 ```
 </TabItem>
+
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
 ```kotlin showLineNumbers
@@ -221,6 +223,29 @@ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversi
         }
     }
 }
+```
+</TabItem>
+<TabItem value="rn" label="React Native (TS)" default>
+
+```typescript showLineNumbers
+import { adapty, AttributionSource } from 'react-native-adapty';
+import appsFlyer from 'react-native-appsflyer';
+
+appsFlyer.onInstallConversionData(installData => {
+    appsFlyer.getAppsFlyerUID((error, networkUserId) => {
+        if (error) {
+            // handle the error
+        }
+        try {
+            adapty.updateAttribution(installData, AttributionSource.AppsFlyer, networkUserId);
+        } catch (error) {
+            // handle the error
+        }
+    });
+});
+
+// ...
+appsFlyer.initSdk(/*...*/);
 ```
 </TabItem>
 <TabItem value="flutter" label="Flutter (Dart)" default>
@@ -283,50 +308,9 @@ void onConversionDataSuccess(string conversionData) {
 }
 ```
 </TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-
-```typescript showLineNumbers
-import { adapty, AttributionSource } from 'react-native-adapty';
-import appsFlyer from 'react-native-appsflyer';
-
-appsFlyer.onInstallConversionData(installData => {
-    appsFlyer.getAppsFlyerUID((error, networkUserId) => {
-        if (error) {
-            // handle the error
-        }
-        try {
-            adapty.updateAttribution(installData, AttributionSource.AppsFlyer, networkUserId);
-        } catch (error) {
-            // handle the error
-        }
-    });
-});
-
-// ...
-appsFlyer.initSdk(/*...*/);
-```
-</TabItem>
 </Tabs>
 
-## Troubleshooting
-
-### Revenue discrepancy
-
-If there is a revenue discrepancy between Adapty and AppsFlyer, that might occur because not all your users use the app version that has the Adapty SDK. To ensure the data consistency, you can force your users to update the app to a version with the Adapty SDK.
-
-### Missing integration data
-
-If event sending fails, that is usually because of the missing integration data. Ensure the following to resolve this issue:
-- Your app has the AppsFlyer SDK installed.
-- You are calling the `getAppsFlyerUID` method.
-
-### Authentication failure
-
-If you are getting the `Failed to authenticate` error in the console, this might be due to the AppsFlyer version and credential version mismatch.
-
-See the [migration guide](switch-from-appsflyer-s2s-api-2-to-3.md) or replace the credentials with the valid ones from [here](https://hq1.appsflyer.com/security-center/api-tokens).
-
-## AppsFlyer event structure
+## Event structure
 
 Adapty sends selected events to AppsFlyer as configured in the **Events names** section on the [**AppsFlyer Integration page**](https://app.adapty.io/integrations/appsflyer). Each event is structured like this:
 
@@ -378,3 +362,21 @@ The `eventValue` parameter is a JSON-encoded string containing the following fie
 | `af_revenue`      | String | Revenue amount formatted to 4 decimal places. |
 | `af_currency`     | String | Currency code.                                |
 | `af_quantity`     | String | Always `1` if revenue is present.             |
+
+## Troubleshooting
+
+### Revenue discrepancy
+
+If there is a revenue discrepancy between Adapty and AppsFlyer, that might occur because not all your users use the app version that has the Adapty SDK. To ensure the data consistency, you can force your users to update the app to a version with the Adapty SDK.
+
+### Missing integration data
+
+If event sending fails, that is usually because of the missing integration data. Ensure the following to resolve this issue:
+- Your app has the AppsFlyer SDK installed.
+- You are calling the `getAppsFlyerUID` method.
+
+### Authentication failure
+
+If you are getting the `Failed to authenticate` error in the console, this might be due to the AppsFlyer version and credential version mismatch.
+
+See the [migration guide](switch-from-appsflyer-s2s-api-2-to-3.md) or replace the credentials with the valid ones from [here](https://hq1.appsflyer.com/security-center/api-tokens).

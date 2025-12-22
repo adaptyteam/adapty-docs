@@ -20,7 +20,7 @@ The integration between Adapty and Airbridge operates in two main ways.
 2. **Sending subscription events to Airbridge**  
    Adapty can send all subscription events which are configured in your integration to Airbridge. As a result, you'll be able to track these events within the Airbridge dashboard. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
-## How to set up Airbridge integration
+## Initial Setup
 
 To integrate Airbridge go to [Integrations > Airbridge](https://app.adapty.io/integrations/airbridge), turn on a toggle from off to on, and fill out fields.
 
@@ -94,12 +94,7 @@ Below the credentials, there are three groups of events you can send to Airbridg
 />
 </Zoom>
 
-
-
-
-
 Simply turn on the ones you need.  
-When subscription-related events happen, Adapty sends events to Airbridge. After receiving them Airbridge sends attribution result information to Adapty. The historical events will be sent in the last 24 hours instead of the real event time
 
 ## SDK configuration
 
@@ -171,7 +166,14 @@ try {
 
 Read more about airbridgeDeviceId in [Airbridge documentation.](https://developers.airbridge.io/v1.1-en/docs/airbridge-device-id)
 
-## Airbridge event structure
+
+## Attribution Integration
+
+Airbridge does not send real-time attribution data to Adapty. As such, there's no need to request attribution data from Airbridge in your application code. 
+
+It may take Adapty up to 24 hours to receive Airbridge attribution data following a subscription event. Adapty will immediately display it on the dashboard.
+
+## Event structure
 
 Adapty sends selected events to Airbridge as configured in the **Events names** section on the [**Airbridge Integration page**](https://app.adapty.io/integrations/airbridge). Each event is structured like this:
 
