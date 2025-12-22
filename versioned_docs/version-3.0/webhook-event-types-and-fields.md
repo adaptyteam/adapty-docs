@@ -44,6 +44,8 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
     "price_local": 4.99,
     "base_plan_id": "b1",
     "developer_id": "onboarding_placement",
+    "ab_test_name": "onboarding_ab_test",
+    "ab_test_revision": 1,
     "paywall_name": "UsedPaywall",
     "proceeds_usd": 4.2315,
     "variation_id": "00000000-0000-0000-0000-000000000000",
@@ -67,7 +69,10 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
     "original_transaction_id": "0000000000000000",
     "subscription_expires_at": "2000-01-31T00:00:00.000000+0000",
     "profile_has_access_level": true,
-    "profile_total_revenue_usd": 4.99
+    "profile_total_revenue_usd": 4.99,
+    "promotional_offer_id": null,
+    "store_offer_category": null,
+    "store_offer_discount_type": null
   },
   "event_api_version": 1,
   "profiles_sharing_access_level": [{"profile_id": "00000000-0000-0000-0000-000000000000", "customer_user_id": "UserIdInYourSystem"}],
@@ -84,7 +89,12 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
     }
   },
   "user_attributes": {"Favourite_color": "Violet", "Pet_name": "Fluffy"}
-  "integration_ids": {"firebase_app_instance_id": "val1", "branch_id": "val2", "one_signal_player_id": "val3"}
+  "integration_ids": {"firebase_app_instance_id": "val1", "branch_id": "val2", "one_signal_player_id": "val3"},
+  "play_store_purchase_token": {
+    "product_id": "product_123",
+    "purchase_token": "token_abc_123",
+    "is_subscription": true
+  }
 }
 ```
 
@@ -166,6 +176,8 @@ The following integration IDs are used now in events:
 - `one_signal_player_id`
 - `one_signal_subscription_id`
 - `tenjin_analytics_installation_id`
+- `posthog_distinct_user_id`
+
 
 ### Play Store purchase token
 
@@ -190,6 +202,8 @@ The event properties for most event types are consistent (except for **Access Le
 | Field                             | Type          | Description                                                  |
 | :-------------------------------- | :------------ | :----------------------------------------------------------- |
 | **ab_test_name**                  | String        | Name of the A/B test where the transaction originated.       |
+| **ab_test_revision**              | Integer       | Revision of the A/B test where the transaction originated.   |
+
 | **base_plan_id**                  | String        | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe. |
 | **cancellation_reason**           | String        | <p>Possible reasons for cancellation: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription_replace`, `upgraded`, `unknown`, `adapty_revoked`.</p><p>Present in the following event types:</p>`subscription_cancelled`, `subscription_refunded`, and `trial_cancelled`. |
 | **cohort_name**                   | String        | Name of the audience to which the profile belongs.           |
@@ -201,7 +215,8 @@ The event properties for most event types are consistent (except for **Access Le
 | **original_purchase_date**        | ISO 8601 date | For recurring subscriptions, the original purchase is the first transaction in the chain, its ID called original transaction ID  links the chain of renewals; later transactions are extensions of it. The original purchase date is the date and time of this first transaction. |
 | **original_transaction_id**       | String        | <p>For recurring subscriptions, this is the original transaction ID that links the chain of renewals. The original transaction is the first in the chain; later transactions are extensions of it.</p><p>If no extensions, `original_transaction_id` matches store_transaction_id.</p> |
 | **paywall_name**                  | String        | Name of the paywall where the transaction originated.        |
-| **paywall_revision**              | Integer       | Revision of the paywall where the transaction originated. The default value is 1. |
+| **paywall_revision**              | String        | Revision of the paywall where the transaction originated. The default value is 1. |
+
 | **price_local**                   | Float         | Product price before Apple/Google cut in local currency. Revenue. |
 | **price_usd**                     | Float         | Product price before Apple/Google cut in USD. Revenue.       |
 | **profile_country**               | String        | Determined by Adapty, based on profile IP.                   |
@@ -210,11 +225,12 @@ The event properties for most event types are consistent (except for **Access Le
 | **profile_id**                    | UUID          | Adapty internal user ID.                                     |
 | **profile_ip_address**            | String        | Profile IP (can be IPv4 or IPv6, with IPv4 preferred when available). |
 | **profile_total_revenue_usd**     | Float         | Total revenue for the profile, refunds included.             |
-| **profiles_sharing_access_level** | JSON          | <p> A list of objects, each containing the IDs of users who share the access level (excluding the current profile):</p><ul>  <li> **profile_id**: (UUID) The Adapty Profile ID sharing the access level, excluding the current profile.</li>  <li> **customer_user_id**: (string) The Customer User ID, if provided.</li> </ul> <p>This is used when your app allows [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts).</p> |
 | **promotional_offer_id**          | String        | ID of promotional offer as indicated in the Product section of the Adapty Dashboard |
 | **purchase_date**                 | ISO 8601 date | The date and time of the product purchase.                   |
 | **rate_after_first_year**         | Boolean       | Boolean indicates that the subscription qualifies for a reduced commission rate (typically 15%) after one year of continuous renewal. Commission rates vary based on program eligibility and country. See [Store commission and taxes](controls-filters-grouping-compare-proceeds#store-commission-and-taxes) for details. |
-| **store**                         | String        | Store where the product was bought. Possible values: **app_store**, **play_store**, **stripe**. |
+| **store**                         | String        | Store where the product was bought. Standard values: **app_store**, **play_store**, **stripe**, **paddle**. <br/>If you set [custom store transactions](https://adapty.io/docs/api-adapty#/operations/setTransaction) using the server-side API, the value from the **store** parameter is used. |
+
+
 | **store_country**                 | String        | The country sent to us by the app store.                     |
 | **store_offer_category**          | String        | Applied offer category. Possible values are `introductory`, `promotional`, `winback`. |
 | **store_offer_discount_type**     | String        | Applied offer type. Possible values are `free_trial`, `pay_as_you_go`, and `pay_up_front`. |
@@ -272,17 +288,20 @@ The **Access Level Updated** event is a specific webhook event generated only wh
 | **original_purchase_date**         | ISO 8601 date | For recurring subscriptions, the original purchase is the first transaction in the chain, its ID called original transaction ID  links the chain of renewals; later transactions are extensions of it. The original purchase date is the date and time of this first transaction. |
 | **original_transaction_id**        | String        | <p>For recurring subscriptions, this is the original transaction ID that links the chain of renewals. The original transaction is the first in the chain; later transactions are extensions of it.</p><p>If no extensions, `original_transaction_id` matches store_transaction_id.</p>The transaction identifier of the original purchase. |
 | **paywall_name**                   | String        | Name of the paywall where the transaction originated.        |
-| **paywall_revision**               | Integer       | Revision of the paywall where the transaction originated. The default value is 1. |
+| **paywall_revision**               | String        | Revision of the paywall where the transaction originated. The default value is 1. |
+
 | **profile_country**                | String        | Determined by Adapty, based on profile IP.                   |
 | **profile_event_id**               | UUID          | Unique event ID that can be used for deduplication.          |
 | **profile_has_access_level**       | Boolean       | Boolean indicating whether the profile has an active access level. |
 | **profile_id**                     | UUID          | Adapty internal user profile ID.                             |
 | **profile_ip_address**             | String        | Profile IP address of the user.                              |
 | **profile_total_revenue_usd**      | Float         | Total revenue for the profile, refunds included.             |
-| **profiles_sharing_access_level**  | JSON          | <p> A list of objects, each containing the IDs of users who share the access level (excluding the current profile):</p><ul>  <li> **profile_id**: (UUID) The Adapty Profile ID sharing the access level, excluding the current profile.</li>  <li> **customer_user_id**: (string) The Customer User ID, if provided.</li> </ul> <p>This is used when your app allows [**Sharing paid access between user accounts**](general#6-sharing-purchases-between-user-accounts).</p> |
 | **purchase_date**                  | ISO 8601 date | The date and time of product purchase.                       |
 | **renewed_at**                     | ISO 8601 date | Date and time when the access will be renewed.               |
-| **store**                          | String        | Store where the product was bought. Possible values: **app_store**, **play_store**, **stripe**. |
+| **starts_at**                      | ISO 8601 date | Date and time when the access level starts.                  |
+| **store**                          | String        | Store where the product was bought. Standard values: **app_store**, **play_store**, **stripe**, **paddle**. <br/>If you set [custom store transactions](https://adapty.io/docs/api-adapty#/operations/setTransaction) using the server-side API, the value from the **store** parameter is used. |
+
+
 | **store_country**                  | String        | Country sent to Adapty by the app store.                     |
 | **subscription_expires_at**        | ISO 8601 date | Expiration date of the subscription.                         |
 | **transaction_id**                 | String        | Unique identifier for a transaction.                         |
