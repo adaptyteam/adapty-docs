@@ -10,11 +10,11 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 :::important
-Before you begin, make sure you have installed Adapty SDK version 3.6.1 or later.
+Before you begin, make sure you have installed Adapty SDK version 3.6.1 or later for iOS or Adapty SDK version 3.15 or later for Android.
 :::
 
-With Adapty, you can create a paywall with a button that redirects your iOS app users to Safari for payment. Then, when they return to your app after a successful purchase, the subscription activates.
-This allows you to bypass App Store fees while effectively tracking user payments.
+With Adapty, you can create a paywall with a button that redirects your app users to their browser for payment. Then, when they return to your app after a successful purchase, the subscription activates.
+This allows you to bypass store fees while effectively tracking user payments.
 
    <Zoom>
    <img src={require('./img/web_paywall.gif').default}
@@ -30,7 +30,7 @@ This allows you to bypass App Store fees while effectively tracking user payment
 :::tip
 The App Store allows external payment options only in the USA. 
 
-To use a paywall exclusively for the US market, duplicate your current paywall and set up a web paywall. This way, you will have two almost identical paywalls in use: one for the US and another for everybody else.
+To use a paywall exclusively for the US market, duplicate your current paywall and set up a web paywall. This way, you will have two almost identical paywalls in use: one for the US/Japan and another for everybody else.
 :::
 
 ## How it works
@@ -129,13 +129,14 @@ If you are using the **paywall from the Builder**, you need to add a web paywall
 If you are working with a paywall you developed yourself, you need to handle web paywalls using the SDK method. Read the framework-specific guides:
 
 - [iOS](ios-web-paywall)
-- [Flutter](flutter-web-paywall)
+- [Android](android-web-paywall.md)
 - [React Native](react-native-web-paywall)
+- [Flutter](flutter-web-paywall)
 - [Unity](unity-web-paywalls.md)
 
 ## Step 3. Set up a placement
 
-Since web paywalls are only allowed for iOS apps in the USA, add a separate user segment for the USA and set up a placement to target different paywalls at different segments:
+Since web paywalls are only allowed for iOS apps in the USA, add a separate user segment for the USA/Japan and set up a placement to target different paywalls at different segments:
 
 1. [Create a new segment](segments.md) that will have the following attributes:
    - **Country from store account**: United States

@@ -34,13 +34,13 @@ Choose your platform and dive right in:
 - **[SDK Quickstart](android-sdk-overview.md)** 
 - **[Sample App](https://github.com/adaptyteam/AdaptySDK-Android/tree/master/app)**
 
+**React Native**
+- **[SDK Quickstart](react-native-sdk-overview.md)**
+- **[Sample Apps](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/)**
+
 **Flutter**
 - **[SDK Quickstart](flutter-sdk-overview.md)** 
 - **[Sample App](https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example)**
-
-**React Native**
-- **[SDK Quickstart](react-native-sdk-overview.md)**
-- **[Sample App](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/AdaptyRnSdkExample)**
 
 **Unity**
 - **[SDK Quickstart](unity-sdk-overview.md)**

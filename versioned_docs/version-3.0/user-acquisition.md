@@ -8,10 +8,11 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import ZoomImage from '@site/src/components/ZoomImage';
 
-User Acquisition helps you connect ad spend with subscription revenue, giving you a complete view of your app's economy in one place. 
+Adapty User Acquisition helps you connect ad spend with subscription revenue in web-to-app campaigns, giving you a complete view of your app's economy in one place.
 
-This is a one-way integration — to see your revenue data in User Acquisition, you must first enable the integration in the Adapty dashboard. You don't need to pass any API keys, tokens, or identifiers. Just update and configure the Adapty SDK.
+To see your revenue data in Adapty User Acquisition, you must first enable the integration in the Adapty dashboard. You don't need to pass any API keys, tokens, or identifiers. Just update and configure the Adapty SDK.
 
 :::warning
 User Acquisition is only available with:
@@ -20,9 +21,21 @@ User Acquisition is only available with:
 - Unity SDK version 3.12.0 or higher.
 :::
 
-## Enable the User Acquisition integration
+## Before you start
 
-To enable the integration:
+To connect your revenue data with the campaign performance, let Adapty keep track of your purchases:
+
+- If you **already have in-app purchases implemented with Adapty**, you don't need to do anything else at this stage.
+- If you **don't have in-app purchases implemented yet and want to use Adapty**, complete the steps from the [quickstart guide](quickstart.md) to delegate handling purchases to Adapty.
+- If you **already have in-app purchases implemented without Adapty** and don't plan to migrate to Adapty, [install the Adapty SDK for your platform in the observer mode](implement-observer-mode.md). At this stage you only need to add the SDK to your project, activate it with the observer mode enabled, and report transactions:
+
+This setup enables web-to-app attribution:
+- When users install your app, the Adapty SDK gets the installation details from the link parameters, so Adapty UA can get the campaign details
+- The Adapty SDK knows about all revenue-related events inside the app and can attribute them to web campaigns.
+
+## Step 1. Enable the User Acquisition integration
+
+To start sending revenue events to Adapty UA:
 1. Go to [Integrations > Adapty](https://app.adapty.io/integrations/user-acquisition) in the Adapty Dashboard.
 2. Turn on the toggle.
 
@@ -43,7 +56,7 @@ Once your events begin firing, you’ll see the following details for each event
 />
 </Zoom>
 
-## Events
+### Supported events
 
 By default, Adapty sends three groups of events to User Acquisition:
 - Trials
@@ -63,217 +76,113 @@ You can check the full list of supported events [here](events.md).
 />
 </Zoom>
 
-## Listen for installation details updates
+## Step 2. Connect your ad platform and add tracking links
+
+Adapty uses tracking links to connect app installs with campaign data.
+You must use a tracking link as the destination URL in every ad campaign you want to measure in Adapty UA.
+
+If you run ads on multiple platforms, set up tracking links for each platform separately.
+
+There are two ways Adapty works with ad platforms:
+
+- **Native integrations (Meta Ads, TikTok Ads).** Adapty connects directly to the ad platform. Tracking links are generated automatically, and campaign parameters are filled dynamically based on where the link is used. You can use the same link across different campaigns, ad sets, or creatives, and Adapty will automatically receive the correct campaign data and ad spend.
+
+- **Tracking links only (all other ad platforms).** Adapty does not connect to the ad platform. Tracking links are created manually, and all campaign parameters must be defined explicitly when creating the link. Ad spend data is not available for these platforms.
+
+<Tabs>
+<TabItem value="meta" label="Meta Ads" default>
+To create a tracking link for Meta Ads:
+1. Go to [Integrations > Meta](https://app.adapty.io/ua/integrations/facebook/accounts) in the Adapty UA Dashboard and click **Continue with Facebook**.
+
+<ZoomImage id="ua-connect-meta.webp" width="700px" />
+2. Sign in using your Facebook account and click **Continue**.
+
+<ZoomImage id="ua-fb-sign.webp" width="500px" />
+
+3. Review the requested permissions and click **Save**.
+4. Switch to the **Web campaigns** tab and click **Create campaign**. Select the app and click **Save**.
+
+<ZoomImage id="ua-new-campaign.webp" width="500px" />
+
+5. In the **General** tab, expand the **iOS** and/or **Android** section and paste App Store and/or Google Play application URLs. Then, click **Save**.
+
+<ZoomImage id="ua-url.gif" width="900px" />
+
+6. Copy the **Click link** field value for **one link** or for a platform-specific link. Then, in Meta Ads Manager, open your ad and paste this link as a destination URL.
 
 :::important
-You need to [install and activate the Adapty SDK](installation-of-adapty-sdks.md) first.
+In the **Website URL** field, paste `https://api-ua.adapty.io/api/v1/attribution/click`. Paste the rest of the link to the **URL parameters** field in the **Tracking** section. It will help your Meta ad to get approved. See more [recommendations on setting up your ads in Meta Ads Manager](meta-create-campaign.md).
 :::
 
-To listen for installation details updates, use these two methods:
+7. Now, when you launch your ad in Meta Ads, its data will become available for analysis in the Adapty UA dashboard.
+</TabItem>
+<TabItem value="tiktok" label="TikTok for Business">
+To create a tracking link for TikTok for Business:
+1. Go to [Integrations > TikTok Ads](https://app.adapty.io/ua/integrations/tiktok/accounts) in the Adapty UA Dashboard and click **Continue with TikTok**.
+   <ZoomImage id="ua-connect-tiktok.webp" width="700px" />
+2. Sign in using your TikTok account and click **Continue**.
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
+3. Review the requested permissions and click **Save**.
 
-```swift showLineNumbers
-Adapty.delegate = self
+    <ZoomImage id="ua-tiktok-sign.webp" width="500px" />
+4. Switch to the **Web campaigns** tab and click **Create campaign**. Select the app and click **Save**.
 
-nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetails) {
-    // use installation details
-}
+    <ZoomImage id="ua-new-campaign-tiktok.webp" width="500px" />
 
-nonisolated func onInstallationDetailsFail(error: AdaptyError) {
-    // installation details update failed
-}
-```
+5. In the **General** tab, expand the **iOS** and/or **Android** section and paste App Store and/or Google Play application URLs. Then, click **Save**.
+
+    <ZoomImage id="ua-url.gif" width="900px" />
+
+6. Copy the **Click link** field value for **one link** or for a platform-specific link. Then, in TikTok Ads Manager, when creating your ad, paste this value in the **Tracking URL** field under the **Advanced Settings** section. This will allow Adapty to connect installs and purchases to ads in TikTok. See the [guide on setting up your campaign in TikTok Ads](tiktok-create-campaign.md).
+
+    <ZoomImage id="ua-tiktok-lnk.webp" width="900px" />
+7. Now, when you launch your ad in TikTok for Business, its data will become available for analysis in the Adapty UA dashboard.
 
 </TabItem>
+<TabItem value="others" label="Other ad platforms">
+To create a tracking link for other ad platforms:
 
-<TabItem value="android" label="Kotlin">
+1. In the Adapty UA dashboard, go to **Tracking links** from the sidebar menu. There, click **Create link**.
 
-```kotlin showLineNumbers
-Adapty.setOnInstallationDetailsListener(object: OnInstallationDetailsListener {
-    override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
-        // use installation details
-    }
-    override fun onInstallationDetailsFailure(error: AdaptyError) {
-        // installation details update failed
-    }
-})
-```
+    <ZoomImage id="new-tracking-link.webp" width="700px" />
 
-</TabItem>
+2. Select your app from the list and click **Next**.
 
-<TabItem value="rn" label="React Native" default>
+    <ZoomImage id="ua-choose-app.webp" width="700px" />
 
-```typescript showLineNumbers
-adapty.addEventListener('onInstallationDetailsSuccess', data => {
-    // use installation details
-});
+3. Fill in the link parameters to match it with the campaign and ad you want to track.
+4. By default, you are creating a One Link. It automatically detects the user’s platform and redirects them to the App Store or Google Play after tracking the click.
 
-adapty.addEventListener('onInstallationDetailsFail', error => {
-    // installation details update failed
-});
-```
+    If you prefer to use separate redirect URLs for each platform, deselect the **One Link** checkbox and provide platform-specific store links manually.
+
+    <ZoomImage id="one-link.webp" width="700px" />
+
+5. Click **Create**.
+6. Open your tracking link page and copy the **Click link** from one of the sections:
+    - **One link** – use this link to track clicks and automatically redirect users to the correct store.
+    - **iOS link** or **Android link** — optional platform-specific versions if you want separate links for each store.
+7. Go to your ad platform and paste the link to your ad as an ad destination URL.
 
 </TabItem>
-
-
-<TabItem value="flutter" label="Flutter">
-
-```javascript showLineNumbers
-Adapty().onUpdateInstallationDetailsSuccessStream.listen((details) {
-    // use installation details
-});
-
-Adapty().onUpdateInstallationDetailsFailStream.listen((error) {
-    // installation details update failed
-});
-```
-
-</TabItem>
-
-<TabItem value="unity" label="Unity">
-
-```csharp showLineNumbers
-Adapty.SetEventListener(this);
-
-public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details)
-{
-    // use installation details
-}
-
-public void OnInstallationDetailsFail(AdaptyError error)
-{
-    // installation details update failed
-}
-```
-
-</TabItem>
-
 </Tabs>
 
-You can also retrieve the installation status manually:
+## Step 3. Launch your web-to-app campaign and view results
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
+Once your campaign is live and users start installing your app, Adapty begins attributing installs and revenue to your campaigns.
 
-```swift showLineNumbers
-do {
-    let status = try await Adapty.getCurrentInstallationStatus()
-    
-    switch status {
-    case .notAvailable:
-        // Installation details are not available on this device
-    case .notDetermined:
-        // Installation details have not been determined yet
-    case .determined(let details):
-        // Use the installation details
-    }
-} catch {
-    // handle the error
-}
-```
+In the [Adapty UA analytics dashboard](ua-analytics.md), you will see campaign-level metrics such as:
+- Installs and conversions
+- Subscription and purchase revenue
+- Performance breakdown by ad platform, campaign, ad set, and creative
 
-</TabItem>
-<TabItem value="android" label="Kotlin">
+Metrics appear as soon as install and revenue events are received from your app. Ad spend data is available for platforms with native integrations.
 
-```kotlin showLineNumbers
-Adapty.getCurrentInstallationStatus { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            when (result.value) {
-                is AdaptyInstallationStatus.Determined.Success -> {
-                    // Use the installation details
-                }
-                is AdaptyInstallationStatus.Determined.NotAvailable -> {
-                    // Installation details are not available on this device
-                }
-                is AdaptyInstallationStatus.NotDetermined -> {
-                    // Installation details have not been determined yet
-                }
-            }
-        }
-        is AdaptyResult.Error -> {
-            // handle the error
-        }
-    }
-}
-```
+## Learn more
 
-</TabItem>
+Continue with in-depth documentation on Adapty User Acquisition analytics and practical guides for running campaigns on major ad platforms:
 
-<TabItem value="rn" label="React Native" default>
-
-```typescript showLineNumbers
-try {
-    const installationStatus = await adapty.getCurrentInstallationStatus();
-
-    switch (installationStatus.status) {
-        case 'not_available':
-            // Installation details are not available on this device
-            break;
-        case 'not_determined':
-            // Installation details have not been determined yet
-            break;
-        case 'determined':
-            const details = installationStatus.details;
-            // Use the installation details
-            break;
-    }
-} catch (error) {
-    // handle the error
-}
-```
-
-</TabItem>
-
-<TabItem value="flutter" label="Flutter">
-
-```javascript showLineNumbers
-try {
-    final status = await Adapty().getCurrentInstallationStatus();
-
-    switch (status) {
-        case AdaptyInstallationStatusNotAvailable():
-        // Installation details are not available on this device
-        case AdaptyInstallationStatusNotDetermined():
-        // Installation details have not been determined yet
-        case AdaptyInstallationStatusDetermined(details: final details):
-        // Use the installation details
-    }
-} on AdaptyError catch (adaptyError) {
-    // handle the error
-} catch (e) {
-    // handle the error
-}
-```
-
-</TabItem>
-
-<TabItem value="unity" label="Unity">
-
-```csharp showLineNumbers
-Adapty.GetCurrentInstallationStatus((status, error) => {
-    if (error != null) {
-        // handle the error
-        return;
-    }
-
-    switch (status) {
-        case AdaptyInstallationStatusNotAvailable notAvailable:
-            // Installation details are not available on this device
-            break;
-        case AdaptyInstallationStatusNotDetermined notDetermined:
-            // Installation details have not been determined yet
-            break;
-        case AdaptyInstallationStatusDetermined determined:
-            // Use the installation details
-            var details = determined.Details;
-            break;
-    }
-});
-```
-
-</TabItem>
-
-</Tabs>
+- [**Analytics in Adapty UA**](ua-analytics.md): See how to use the analytics dashboard effectively.
+- [**Metrics in Adapty UA**](ua-metrics.md): Explore the metrics available for user acquisition analysis.
+- [**Integrations**](ua-integrations.md): Review the ad platforms and integrations supported by Adapty UA.
+- [**Launching ads in Meta Ads Manager**](meta-create-campaign.md): Understand how to set up and launch campaigns in Meta Ads Manager.
+- [**Launching ads in TikTok for Business**](tiktok-create-campaign.md): Understand how to set up and launch campaigns in TikTok for Business.

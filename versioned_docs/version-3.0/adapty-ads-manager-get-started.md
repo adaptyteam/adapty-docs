@@ -13,6 +13,12 @@ In this guide, you will learn how to start working with Apple Ads Manager in two
 1. Install the Adapty SDK and let it track your purchase data.
 2. Connect Apple Ads Manager to your Apple Ads account to import your historical data and start tracking real-time updates.
 
+:::note
+Apple Ads Manager does not use the [Apple Ads integration](apple-search-ads.md) from **App settings**.
+
+To use Apple Ads Manager, you only need to complete the setup described in this guide.
+:::
+
 ## 1. Install the Adapty SDK
 
 :::important
@@ -28,8 +34,8 @@ To connect your revenue data with the campaign performance, let Adapty keep trac
    - If you **already have in-app purchases implemented without Adapty** and don't plan to migrate to Adapty, install the Adapty SDK for your platform in the observer mode. At this stage you only need to add the SDK to your project, activate it with the observer mode enabled, and report transactions:
      - [iOS](implement-observer-mode.md)
      - [Android](implement-observer-mode-android.md)
-     - [Flutter](implement-observer-mode-flutter.md)
      - [React Native](implement-observer-mode-react-native.md)
+     - [Flutter](implement-observer-mode-flutter.md)
      - [Unity](implement-observer-mode-unity.md)
      - [Kotlin Multiplatform](implement-observer-mode-kmp.md)
      - [Capacitor (Beta)](implement-observer-mode-capacitor.md)

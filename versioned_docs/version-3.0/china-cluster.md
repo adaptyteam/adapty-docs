@@ -29,7 +29,7 @@ In China, applications require explicit user permission to access the internet. 
 
 ## Step 1. Configure Adapty SDK for China region
 
-<InlineTooltip tooltip="Install Adapty SDK as described in the installation guide">[iOS](sdk-installation-ios), [Android](sdk-installation-android), [Flutter](sdk-installation-flutter), [React Native](sdk-installation-reactnative), and [Unity](sdk-installation-unity)</InlineTooltip>.
+<InlineTooltip tooltip="Install Adapty SDK as described in the installation guide">[iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), and [Unity](sdk-installation-unity)</InlineTooltip>.
 
 For the China region, when configuring the SDK during the installation, follow the instructions depending on your framework:
 

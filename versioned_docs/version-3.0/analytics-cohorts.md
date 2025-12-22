@@ -210,11 +210,11 @@ For more details on how Adapty calculates taxes and commissions in its analytics
 
 ## Revenue vs Proceeds
 
-Both Revenue and Proceeds are money metrics. You can think of Revenue as gross revenue and Proceeds as net revenue. Revenue doesn't account for App Store / Play Store fees, while Proceeds do. Therefore Proceeds are always less than Revenue (15%-30% less to be exact).
+Both Revenue and Proceeds are money metrics. You can think of Revenue as gross revenue and Proceeds as net revenue. Revenue doesn't account for App Store / Play Store fees, while Proceeds do. Therefore Proceeds are always less than Revenue.
 
-Apple and Google take up to 30% of the price paid by the customers as a fee. For the apps included in Small Business Program (i.e. the app makes less than $1m per year), the fee is always 15%. The rest of the apps (>$1m per year) pay 30% by default and 15% for subscriptions that are consecutively renewed for at least a year. This means 53+ renewals for weekly subscriptions, 13+ renewals for monthly subscriptions, and 2+ renewals for annual subscriptions.
+The actual commission deducted varies based on multiple factors, including eligibility for programs like the Small Business Program (15%), reduced rates for long-term subscriptions (15% after one year of renewal), country-specific rates (such as 26% in Japan), and standard rates (up to 30%). 
 
-Adapty automatically determines the fee for every transaction your customers make and calculates Proceeds based on it.
+Adapty automatically determines the applicable commission rate for every transaction your customers make and calculates Proceeds based on it. For more information on how commission rates are determined, see the [Store commission and taxes](controls-filters-grouping-compare-proceeds#store-commission-and-taxes) documentation.
 
 ### Prediction: Revenue and LTV
 

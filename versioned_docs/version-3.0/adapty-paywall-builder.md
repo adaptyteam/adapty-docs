@@ -173,8 +173,8 @@ The elements you add to your paywall appear in the left pane of the Paywall wind
 Once configured, you can [add paywalls to placements](add-audience-paywall-ab-test) to display them in your mobile app. For more details on displaying paywalls, see the platform-specific articles:
 - [iOS](ios-quickstart-paywalls.md)
 - [Android](android-quickstart-paywalls.md)
-- [Flutter](flutter-quickstart-paywalls.md)
 - [React Native](react-native-quickstart-paywalls.md)
+- [Flutter](flutter-quickstart-paywalls.md)
 - [Unity](unity-quickstart-paywalls.md)
 
 ## Customization Options

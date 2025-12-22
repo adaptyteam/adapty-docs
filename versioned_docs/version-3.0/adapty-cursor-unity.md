@@ -61,8 +61,8 @@ Follow the same process as above, but use the relevant SDK repository URL:
 
 - **iOS SDK**: `https://github.com/adaptyteam/AdaptySDK-iOS`
 - **Android SDK**: `https://github.com/adaptyteam/AdaptySDK-Android`
-- **Flutter SDK**: `https://github.com/adaptyteam/AdaptySDK-Flutter`
 - **React Native SDK**: `https://github.com/adaptyteam/AdaptySDK-React-Native`
+- **Flutter SDK**: `https://github.com/adaptyteam/AdaptySDK-Flutter`
 - **Unity SDK**: `https://github.com/adaptyteam/AdaptySDK-Unity`
 
 Name each doc `Adapty <Platform> SDK` (e.g., `Adapty Unity SDK`).

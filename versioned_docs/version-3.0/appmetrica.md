@@ -325,3 +325,64 @@ try {
 ```
 </TabItem>
 </Tabs>
+
+## AppMetrica event structure
+
+Adapty sends events to AppMetrica via a POST request, but passes parameters in the URL (query parameters). Each event is structured like this:
+
+```json
+{
+  "post_api_key": "your_post_api_key",
+  "application_id": "your_application_id",
+  "event_name": "subscription_renewed",
+  "event_timestamp": 1709294400,
+  "event_json": "{\"vendor_product_id\":\"yearly.premium.6999\",\"original_transaction_id\":\"GPA.3383...\",\"currency\":\"USD\",\"environment\":\"Production\"}",
+  "os_name": "ios",
+  "ios_ifa": "00000000-0000-0000-0000-000000000000",
+  "ios_ifv": "00000000-0000-0000-0000-000000000000",
+  "profile_id": "user_12345",
+  "appmetrica_device_id": "device_hash_123",
+  "session_type": "foreground",
+  "revenue_event_type": "subscription_renewed",
+  "price": 9.99,
+  "currency": "USD",
+  "product_id": "yearly.premium.6999",
+  "quantity": 1,
+  "payload": "{\"vendor_product_id\":\"yearly.premium.6999\",\"original_transaction_id\":\"GPA.3383...\"}",
+  "transaction_id": "GPA.3383..."
+}
+```
+
+Where:
+
+| Parameter              | Type   | Description                                             |
+|:-----------------------|:-------|:--------------------------------------------------------|
+| `post_api_key`         | String | Your AppMetrica Post API Key.                           |
+| `application_id`       | String | Your AppMetrica Application ID.                         |
+| `os_name`              | String | "ios" or "android".                                     |
+| `event_timestamp`      | Long   | UNIX timestamp of the event in seconds.                 |
+| `profile_id`           | String | User Profile ID (Customer User ID if available).        |
+| `appmetrica_device_id` | String | AppMetrica Device ID Hash (if `profile_id` is missing). |
+| `session_type`         | String | Always "foreground".                                    |
+| `ios_ifa`              | String | **iOS only**. ID for Advertisers.                       |
+| `ios_ifv`              | String | **iOS only**. ID for Vendors.                           |
+| `google_aid`           | String | **Android only**. Google Advertising ID.                |
+
+### Profile Events
+
+| Parameter    | Type   | Description                                                  |
+|:-------------|:-------|:-------------------------------------------------------------|
+| `event_name` | String | The event name (mapped from Adapty event).                   |
+| `event_json` | String | JSON string containing event details (all event properties). |
+
+### Revenue Events
+
+| Parameter            | Type    | Description                                                             |
+|:---------------------|:--------|:------------------------------------------------------------------------|
+| `revenue_event_type` | String  | The type of revenue event (e.g., "subscription_renewed").               |
+| `price`              | Float   | Revenue amount.                                                         |
+| `currency`           | String  | Currency code (e.g., "USD").                                            |
+| `product_id`         | String  | The Product ID from the store.                                          |
+| `quantity`           | Integer | Always 1.                                                               |
+| `payload`            | String  | JSON string containing additional event details (trimmed if too large). |
+| `transaction_id`     | String  | Original transaction ID.                                                |

@@ -26,7 +26,7 @@ See our [guide on setting up ads in TikTok for Business](tiktok-create-campaign.
 
 <ZoomImage id="ua-tiktok-sign.webp" width="500px" />
 
-After that, all your companies will be added to Adapty UA. You can proceed with adding campaigns.
+After that, all your ad accounts will be added to Adapty UA. You can proceed with adding campaigns.
 
 ## Step 2. Add campaigns
 
@@ -36,9 +36,9 @@ To add a TikTok for Business campaign to Adapty User Acquisition and track how y
 
 <ZoomImage id="ua-new-campaign-tiktok.webp" width="500px" />
 
-2. In the **General** tab, paste your App Store and/or Google Play application URLs.
+2. In the **General** tab, expand the **iOS** and/or **Android** section and paste App Store and/or Google Play application URLs.
 
-<ZoomImage id="ua-url.webp" width="900px" />
+<ZoomImage id="ua-url.gif" width="900px" />
 
 3. Copy the **Click link** field value. Then, in TikTok Ads Manager, when creating your ad, paste this value in the **Tracking URL** field under the **Advanced Settings** section. This will allow Adapty to connect installs and purchases to ads in TikTok.
 

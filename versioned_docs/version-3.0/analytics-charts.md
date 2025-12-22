@@ -224,7 +224,7 @@ The Installs chart shows the total number of users who have installed the app fo
 />
 </Zoom>
 
-Please note that If your app has in-app user authentication, the Installs chart may also include the count of new logged-in users who have accessed your app multiple times. For more details, see <InlineTooltip tooltip="the guides on how to identify users in your app">[iOS](identifying-users.md), [Android](android-identifying-users.md), [Flutter](flutter-identifying-users.md), [React Native](react-native-identifying-users.md), and [Unity](unity-identifying-users.md)</InlineTooltip>.
+Please note that If your app has in-app user authentication, the Installs chart may also include the count of new logged-in users who have accessed your app multiple times. For more details, see <InlineTooltip tooltip="the guides on how to identify users in your app">[iOS](identifying-users.md), [Android](android-identifying-users.md), [React Native](react-native-identifying-users.md), [Flutter](flutter-identifying-users.md), and [Unity](unity-identifying-users.md)</InlineTooltip>.
 
 ### Subscriptions
 

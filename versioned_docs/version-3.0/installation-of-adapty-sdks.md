@@ -14,8 +14,8 @@ You have three paths to get started depending on your preferences:
 - **Follow platform-specific quickstart guides**: Guides contain production-ready code snippets, so implementation doesn't take long.
     - [iOS](ios-sdk-overview.md)
     - [Android](android-sdk-overview.md)
-    - [Flutter](flutter-sdk-overview.md)
     - [React Native](react-native-sdk-overview.md)
+    - [Flutter](flutter-sdk-overview.md)
     - [Unity](unity-sdk-overview.md)
     - [Kotlin Multiplatform](kmp-sdk-overview.md)
     - [Capacitor (Beta)](capacitor-sdk-overview.md)
@@ -23,9 +23,10 @@ You have three paths to get started depending on your preferences:
 - **Explore sample apps**:
     - [iOS (Swift)](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples)
     - [Android (Kotlin)](https://github.com/adaptyteam/AdaptySDK-Android/tree/master/app)
+    - [React Native (Basic example on pure RN)](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/BasicExample) 
+    - [React Native (Advanced example – useful for development, as it allows you to work with more complicated cases)](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/AdaptyDevtools)
+    - [React Native (Expo)](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo)
     - [Flutter (Dart)](https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example)
-    - [React Native (Pure RN)](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/AdaptyRnSdkExample)
-    - [React Native (Expo)](https://github.com/adaptyteam/Focus-Journal-React-Native-Expo)
     - [Unity (C#)](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Assets)
     - [Kotlin Multiplatform](https://github.com/adaptyteam/AdaptySDK-KMP/tree/main/example)
     - [Capacitor](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples)

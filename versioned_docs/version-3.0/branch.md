@@ -234,5 +234,57 @@ branch.subscribe({
   },
 });
 ```
+
 </TabItem>
 </Tabs>
+
+## Branch event structure
+
+Adapty sends selected events to Branch as configured in the **Events names** section on the [**Branch Integration page**](https://app.adapty.io/integrations/branch). Each event is structured like this:
+
+```json
+{
+  "branch_key": "key_live_kaFuWw8WvY7n1ss7...",
+  "name": "PURCHASE",
+  "user_data": {
+    "os": "iOS",
+    "developer_identity": "user_12345",
+    "country": "US",
+    "ip": "192.168.100.1",
+    "idfa": "00000000-0000-0000-0000-000000000000",
+    "idfv": "00000000-0000-0000-0000-000000000000",
+    "aaid": "00000000-0000-0000-0000-000000000000"
+  },
+  "event_data": {
+    "transaction_id": "GPA.3383-4699-1373-07113",
+    "revenue": 9.99,
+    "currency": "USD"
+  },
+  "custom_data": {
+    "vendor_product_id": "yearly.premium.6999",
+    "original_transaction_id": "GPA.3383-4699-1373-07113",
+    "store": "play_store",
+    "environment": "production"
+  }
+}
+```
+
+Where:
+
+| Parameter                      | Type   | Description                                                            |
+|:-------------------------------|:-------|:-----------------------------------------------------------------------|
+| `branch_key`                   | String | Your Branch Key.                                                       |
+| `name`                         | String | The Branch event name (mapped from Adapty event, e.g., "PURCHASE").    |
+| `user_data`                    | Object | User information.                                                      |
+| `user_data.os`                 | String | "Android" or "iOS".                                                    |
+| `user_data.developer_identity` | String | The user's Customer User ID.                                           |
+| `user_data.country`            | String | Country code based on user's IP.                                       |
+| `user_data.ip`                 | String | User's IP address.                                                     |
+| `user_data.idfa`               | String | **iOS only**. ID for Advertisers.                                      |
+| `user_data.idfv`               | String | **iOS only**. ID for Vendors.                                          |
+| `user_data.aaid`               | String | **Android only**. Google Advertising ID.                               |
+| `event_data`                   | Object | Standard event metrics (only present for PURCHASE and similar events). |
+| `event_data.transaction_id`    | String | Store Transaction ID.                                                  |
+| `event_data.revenue`           | Float  | Revenue amount.                                                        |
+| `event_data.currency`          | String | Currency code (e.g., "USD").                                           |
+| `custom_data`                  | Object | Detailed event attributes (contains all available event fields).       |

@@ -10,6 +10,6 @@ See our detailed migration guides per platforms:
 
 - [iOS](migration-to-ios330)
 - [Android](migration-to-android330)
+- [React Native](migration-to-react-native330)
 - [Flutter](migration-to-flutter330)
 - [Unity](migration-to-unity330)
-- [React Native](migration-to-react-native330)

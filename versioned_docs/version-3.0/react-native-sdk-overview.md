@@ -21,6 +21,8 @@ We've built the Adapty React Native SDK to take the headache out of in-app purch
 - Keep the user subscription status always up to date across app sessions and devices
 - Integrate your app with marketing attribution and analytics services using just one line of code
 
+Whether your app is built with **Expo** or **pure React Native**, the Adapty SDK fully supports both environments.
+
 :::note
 Before diving into the code, you'll need to integrate Adapty with App Store Connect and Google Play Console, then set up products in the dashboard. Check out our [quickstart guide](quickstart.md) to get everything configured first.
 :::
@@ -33,7 +35,7 @@ Our docs are optimized for use with LLMs. Check out [this article](adapty-cursor
 
 Here's what we'll cover in the integration guide:
 
-1. [Install & configure SDK](sdk-installation-reactnative.md): Add the SDK as a dependency to your project and activate it in the code.
+1. [Install & configure SDK](sdk-installation-reactnative.md): Add the SDK as a dependency to your project and activate it in the code. Adapty works in both **Expo** and **pure React Native** projects.
 2. [Enable purchases through paywalls](react-native-quickstart-paywalls.md): Set up the purchase flow so users can buy products.
 3. [Check the subscription status](react-native-check-subscription-status.md): Automatically check the user's subscription state and control their access to paid content.
 4. [Identify users (optional)](react-native-quickstart-identify.md): Associate users with their Adapty profiles to ensure their data is stored consistently across devices.
