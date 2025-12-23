@@ -31,13 +31,7 @@ Once you've set up the Apple Ads integration, Adapty will start receiving attrib
 />
 </Zoom>
 
-
-
-
-
-There are two ways to get attribution: with the old iAd framework and the modern AdServices framework (iOS 14.3+). 
-
-## AdServices framework
+## Connect the AdServices framework
 
 Apple Ads via [AdServices](https://developer.apple.com/documentation/ad_services) does require some configuration in Adapty Dashboard, and you will also need to enable it on the app side. To set up Apple Ads using the AdServices framework through Adapty, follow these steps:
 
@@ -99,6 +93,37 @@ Copy the Client ID, Team ID, and Key ID fields from the Apple Ads settings. In t
 />
 </Zoom>
 
+## Attribution Integration
+
+### Enable Attribution Integration 
+
+Adapty automatically collects Apple Search Ad attribution data. As such, you don't need to request it in application code. If you followed the steps to [Connect the AdServices Framework](#connect-the-adservices-framework), Adapty has already begun collecting attribution data.
+
+### Disable Attribution Integration
+
+Adapty can only store attribution data from one source at a time. If you enable multiple attribution sources, the system gives preference to the service that shares the most information. For iOS devices, this service is Apple Search Ads.
+
+**Once you set the attribution value, you cannot override it.** To turn Apple Search Ads attribution off, open the [**App Settings** -> **Apple Search Ads** tab](https://app.adapty.io/settings/apple-search-ads), and toggle the **Receive Apple Search Ads attribution** switch.
+
+<Zoom>
+  <img src={require('./img/asa-disable.webp').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::warning
+
+Please note that disabling this will completely stop the reception of ASA analytics. As a result, ASA will no longer be used in analytics or sent to integrations. Additionally, SplitMetrics Acquire and Asapty will cease to function, as they rely on ASA attribution to operate correctly.
+
+The attribution received before this change will not be affected.
+
+:::
+
 ## Uploading your own keys
 
 :::note
@@ -129,29 +154,3 @@ openssl ec -in private-key.pem -pubout -out public-key.pem
 
 You can use this public key in your Apple Ads settings of account with API Account Manager role. So you can use generated Client ID, Team ID, and Key ID values for Adapty and other services.
 
-## Disabling Apple Ads attribution
-
-Adapty can use attribution data in analytics from only one source at a time. If multiple attribution sources are enabled, the system will decide which attribution to use for each device based on the source that provides more fields. 
-
-For iOS devices, this means non-organic Apple Ads attribution will always take priority if it's enabled. 
-
-You can disable Apple Ads attribution receiving by toggling off the **Receive Apple Ads attribution in Adapty** in the [**App Settings** -> **Apple Ads** tab](https://app.adapty.io/settings/apple-search-ads).
-
-<Zoom>
-  <img src={require('./img/asa-disable.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-:::warning
-
-Please note that disabling this will completely stop the reception of ASA analytics. As a result, ASA will no longer be used in analytics or sent to integrations. Additionally, SplitMetrics Acquire and Asapty will cease to function, as they rely on ASA attribution to operate correctly.
-
-The attribution received before this change will not be affected.
-
-:::

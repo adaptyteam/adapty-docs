@@ -114,9 +114,11 @@ You can pass either an existing customer user ID (the one you have used before) 
 
 :::note
 By default, creating anonymous profiles does not affect analytics dashboards, because installs are counted based on device IDs.
-A device ID represents a single installation of the app on a device and is regenerated after the app is reinstalled.
 
-Logging in or logging out without reinstalling the app does not create additional installs.
+A device ID represents a single installation of the app from the store on a device and is regenerated only after the app is reinstalled.  
+It does not depend on whether this is a first or repeated installation, or whether an existing customer user ID is used.
+
+Creating a profile (on SDK activation or logout), logging in, or upgrading the app without reinstalling the app does not generate additional install events.
 
 If you want to count installs based on unique users rather than devices, go to **App settings** and configure [**Installs definition for analytics**](general#4-installs-definition-for-analytics).
 :::

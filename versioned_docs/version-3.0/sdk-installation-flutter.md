@@ -63,15 +63,36 @@ The Adapty SDK only needs to be activated once in your app.
 ```dart showLineNumbers title="main.dart"
 import 'package:adapty_flutter/adapty_flutter.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Configure and activate Adapty SDK
-  await Adapty().activate(
-    configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
-  );
-  
+void main() {
   runApp(MyApp());
+}
+
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    _initializeAdapty();
+
+    super.initState();
+  }
+
+  Future<void> _initializeAdapty() async {
+    try {
+      await Adapty().activate(
+        configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY'),
+      );
+    } catch (e) {
+      // handle the error
+    }
+  }
+
+  Widget build(BuildContext context) {
+    return Text("Hello");
+  }
 }
 ```
 

@@ -20,7 +20,7 @@ The integration between Adapty and Airbridge operates in two main ways.
 2. **Sending subscription events to Airbridge**  
    Adapty can send all subscription events which are configured in your integration to Airbridge. As a result, you'll be able to track these events within the Airbridge dashboard. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
-## How to set up Airbridge integration
+## Initial Setup
 
 To integrate Airbridge go to [Integrations > Airbridge](https://app.adapty.io/integrations/airbridge), turn on a toggle from off to on, and fill out fields.
 
@@ -94,12 +94,7 @@ Below the credentials, there are three groups of events you can send to Airbridg
 />
 </Zoom>
 
-
-
-
-
 Simply turn on the ones you need.  
-When subscription-related events happen, Adapty sends events to Airbridge. After receiving them Airbridge sends attribution result information to Adapty. The historical events will be sent in the last 24 hours instead of the real event time
 
 ## SDK configuration
 
@@ -170,3 +165,100 @@ try {
 </Tabs>
 
 Read more about airbridgeDeviceId in [Airbridge documentation.](https://developers.airbridge.io/v1.1-en/docs/airbridge-device-id)
+
+
+## Attribution Integration
+
+Airbridge does not send real-time attribution data to Adapty. As such, there's no need to request attribution data from Airbridge in your application code. 
+
+It may take Adapty up to 24 hours to receive Airbridge attribution data following a subscription event. Adapty will immediately display it on the dashboard.
+
+## Event structure
+
+Adapty sends selected events to Airbridge as configured in the **Events names** section on the [**Airbridge Integration page**](https://app.adapty.io/integrations/airbridge). Each event is structured like this:
+
+```json
+{
+  "user": {
+    "externalUserID": "user_12345",
+    "externalUserEmail": "user@example.com",
+    "attributes": {
+      "is_premium": true
+    }
+  },
+  "device": {
+    "deviceUUID": "550e8400-e29b-41d4-a716-446655440000",
+    "deviceModel": "iPhone 14 Pro",
+    "osName": "iOS",
+    "osVersion": "17.0.1",
+    "locale": "en-US",
+    "timezone": "America/New_York",
+    "ifa": "00000000-0000-0000-0000-000000000000",
+    "ifv": "00000000-0000-0000-0000-000000000000"
+  },
+  "app": {
+    "packageName": "com.example.app",
+    "version": "1.2.3"
+  },
+  "eventUUID": "d4f6f1f4-96fb-4a31-bafd-599fef77be90",
+  "eventTimestamp": 1709294400000,
+  "eventData": {
+    "goal": {
+      "category": "airbridge.subscribe",
+      "customAttributes": {
+        "isTrialConverted": true
+      },
+      "semanticAttributes": {
+        "transactionID": "GPA.3383-4699-1373-07113",
+        "totalValue": 9.99,
+        "currency": "USD",
+        "period": "P1M",
+        "isRenewal": true,
+        "renewalCount": 2,
+        "products": [
+          {
+            "productID": "yearly.premium.6999",
+            "name": "yearly.premium.6999",
+            "position": 1
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+Where:
+
+| Parameter                                    | Type    | Description                                                    |
+|:---------------------------------------------|:--------|:---------------------------------------------------------------|
+| `user`                                       | Object  | User information.                                              |
+| `user.externalUserID`                        | String  | The user's Customer User ID.                                   |
+| `user.externalUserEmail`                     | String  | The user's email address (if available).                       |
+| `user.attributes`                            | Object  | Custom user attributes.                                        |
+| `device`                                     | Object  | Device information.                                            |
+| `device.deviceUUID`                          | String  | The Airbridge Device UUID.                                     |
+| `device.deviceModel`                         | String  | Device model (e.g., "iPhone 14 Pro").                          |
+| `device.osName`                              | String  | OS name (e.g., "iOS", "Android").                              |
+| `device.osVersion`                           | String  | OS version.                                                    |
+| `device.ifa`                                 | String  | **iOS only**. ID for Advertisers.                              |
+| `device.ifv`                                 | String  | **iOS only**. ID for Vendors.                                  |
+| `device.gaid`                                | String  | **Android only**. Google Advertising ID.                       |
+| `app`                                        | Object  | App information.                                               |
+| `app.packageName`                            | String  | The application's package name / bundle ID.                    |
+| `app.version`                                | String  | The application's version.                                     |
+| `eventUUID`                                  | String  | Unique ID for the event in Adapty.                             |
+| `eventTimestamp`                             | Long    | Timestamp of the event in milliseconds.                        |
+| `eventData`                                  | Object  | Event details.                                                 |
+| `eventData.goal.category`                    | String  | The Airbridge event category (mapped from Adapty event).       |
+| `eventData.goal.semanticAttributes`          | Object  | Standard event attributes.                                     |
+| `...semanticAttributes.transactionID`        | String  | Store Transaction ID.                                          |
+| `...semanticAttributes.totalValue`           | Float   | Revenue amount.                                                |
+| `...semanticAttributes.currency`             | String  | Currency code (e.g., "USD").                                   |
+| `...semanticAttributes.period`               | String  | Subscription period in ISO 8601 duration format (e.g., "P1M"). |
+| `...semanticAttributes.isRenewal`            | Boolean | `true` if this is a renewal transaction.                       |
+| `...semanticAttributes.renewalCount`         | Integer | Number of successful renewals.                                 |
+| `...semanticAttributes.products`             | Array   | List of products involved in the event.                        |
+| `...semanticAttributes.products[].productID` | String  | The Product ID from the store (e.g., "yearly.premium.6999").   |
+| `...semanticAttributes.products[].name`      | String  | Same as `productID`.                                           |
+| `...semanticAttributes.products[].position`  | Integer | The position of the product in the list (always 1).            |

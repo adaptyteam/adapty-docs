@@ -37,7 +37,7 @@ The integration between Adapty and Branch operates in two main ways.
 2. **Sending subscription events to Branch**  
    Adapty can send all subscription events which are configured in your integration to Branch. As a result, you'll be able to track these events within the Branch dashboard. 
 
-## How to set up Branch integration
+## Initial Setup
 
 To integrate Branch go to [Integrations > Branch](https://app.adapty.io/integrations/branch) in Adapty Dashboard , turn on a toggle from off to on, and fill out fields.
 
@@ -101,138 +101,188 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Adapty will send subscription events to Branch using a server-to-server integration, allowing you to view all subscription events in your Branch dashboard and link them to your acquisition campaigns. 
 
-## SDK configuration
+## Attribution Integration
 
-It's very important to send Branch attribution data from the device to Adapty using `.setIntegrationIdentifier()` SDK method. The example below shows how to do that.
+1. Call the `.setIntegrationIdentifier()` SDK method to initialize the connection. You can pass your Branch Identity ID to the `customerUserId` parameter.
 
-To connect the Branch and Adapty user, make sure you provide your `customerUserId` to Branch. If you prefer not to use `customerUserId` in Branch, use the `setIntegrationIdentifier method to specify the Branch user ID.
+  <Tabs groupId="current-os" queryString>
+  <TabItem value="swift" label="iOS (Swift)" default>
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="iOS (Swift)" default>
+  ```swift showLineNumbers
+  do {
+      try await Adapty.setIntegrationIdentifier(
+          key: "branch_id", 
+          value: <BRANCH_IDENTITY_ID>
+      )
+  } catch {
+      // handle the error
+  }
+  ```
+  </TabItem>
+  <TabItem value="kotlin" label="Android (Kotlin)" default>
 
-```swift showLineNumbers
-do {
-    try await Adapty.setIntegrationIdentifier(
-        key: "branch_id", 
-        value: <BRANCH_IDENTITY_ID>
-    )
-} catch {
-    // handle the error
-}
-```
-</TabItem>
-<TabItem value="kotlin" label="Android (Kotlin)" default>
+  ```kotlin showLineNumbers
+  // login and update attribution and identifier
+  Branch.getAutoInstance(this)
+      .setIdentity("YOUR_USER_ID") { referringParams, error ->
+          referringParams?.let { data ->
+              Adapty.updateAttribution(data, "branch") { error ->
+                  if (error != null) {
+                      //handle the error
+                  }
+              }
+          }
+      }
 
-```kotlin showLineNumbers
-// login and update attribution and identifier
-Branch.getAutoInstance(this)
-    .setIdentity("YOUR_USER_ID") { referringParams, error ->
-        referringParams?.let { data ->
-            Adapty.updateAttribution(data, "branch") { error ->
-                if (error != null) {
-                    //handle the error
-                }
-            }
-        }
-    }
+  // logout
+  Branch.getAutoInstance(context).logout()
+  ```
+  </TabItem>
+  <TabItem value="flutter" label="Flutter" default>
+  ```javascript showLineNumbers
+  import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
 
-// logout
-Branch.getAutoInstance(context).logout()
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-```javascript showLineNumbers
-import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
+  FlutterBranchSdk.setIdentity('YOUR_USER_ID');
+  ```
+  </TabItem>
+  <TabItem value="unity" label="Unity (C#)" default>
+  ```csharp showLineNumbers
+  Branch.setIdentity("your user id");
+  ```
+  </TabItem>
+  <TabItem value="rn" label="React Native (TS)" default>
 
-FlutterBranchSdk.setIdentity('YOUR_USER_ID');
-```
-</TabItem>
-<TabItem value="unity" label="Unity (C#)" default>
-```csharp showLineNumbers
-Branch.setIdentity("your user id");
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
+  ```typescript showLineNumbers
+  import branch from 'react-native-branch';
 
-```typescript showLineNumbers
-import branch from 'react-native-branch';
+  branch.setIdentity('YOUR_USER_ID');
+  ```
 
-branch.setIdentity('YOUR_USER_ID');
-```
+  </TabItem>
+  </Tabs>
 
-</TabItem>
-</Tabs>
+2. Use the `.updateAttribution()` method to save the attribution data. If you did not specify the Branch user ID in the previous step, pass it to the `networkUserId` parameter here.
 
-Next, pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
+  <Tabs groupId="current-os" queryString>
+  <TabItem value="swift" label="iOS (Swift)" default>
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="iOS (Swift)" default>
+  ```swift showLineNumbers
+  class YourBranchImplementation {
+      func initializeBranch() {
+          // Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
+          Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+              if let data {
+                  Adapty.updateAttribution(data, source: .branch)
+              }
+          }
+      }
+  }
 
-```swift showLineNumbers
-class YourBranchImplementation {
-    func initializeBranch() {
-        // Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
-        Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
-            if let data {
-                Adapty.updateAttribution(data, source: .branch)
-            }
-        }
-    }
-}
+  ```
+  </TabItem>
+  <TabItem value="kotlin" label="Android (Kotlin)" default>
 
-```
-</TabItem>
-<TabItem value="kotlin" label="Android (Kotlin)" default>
+  ```kotlin showLineNumbers
+  //everything is in the above snippet for Android
+  ```
+  </TabItem>
+  <TabItem value="flutter" label="Flutter (Dart)" default>
 
-```kotlin showLineNumbers
-//everything is in the above snippet for Android
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter (Dart)" default>
+  ```javascript showLineNumbers
+  try {
+      await Adapty().setIntegrationIdentifier(
+          key: "branch_id", 
+          value: <BRANCH_IDENTITY_ID>,
+      );
+  } on AdaptyError catch (adaptyError) {
+      // handle the error
+  } catch (e) {
+      // handle the error
+  }
+  ```
+  </TabItem>
+  <TabItem value="unity" label="Unity (C#)" default>
 
-```javascript showLineNumbers
-try {
-    await Adapty().setIntegrationIdentifier(
-        key: "branch_id", 
-        value: <BRANCH_IDENTITY_ID>,
-    );
-} on AdaptyError catch (adaptyError) {
-    // handle the error
-} catch (e) {
-    // handle the error
-}
-```
-</TabItem>
-<TabItem value="unity" label="Unity (C#)" default>
+  ```csharp showLineNumbers
+  using AdaptySDK;
 
-```csharp showLineNumbers
-using AdaptySDK;
+  Branch.initSession(delegate(Dictionary<string, object> parameters, string error) {
+      string attributionString = JsonUtility.ToJson(parameters);
+      
+      Adapty.UpdateAttribution(
+        attributionString, 
+        "branch", 
+        (error) => {
+          // handle the error
+      });
+  });
+  ```
+  </TabItem>
+  <TabItem value="rn" label="React Native (TS)" default>
 
-Branch.initSession(delegate(Dictionary<string, object> parameters, string error) {
-    string attributionString = JsonUtility.ToJson(parameters);
-    
-    Adapty.UpdateAttribution(
-      attributionString, 
-      "branch", 
-      (error) => {
-        // handle the error
-    });
-});
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
+  ```typescript showLineNumbers
+  import { adapty, AttributionSource } from 'react-native-adapty';
+  import branch from 'react-native-branch';
 
-```typescript showLineNumbers
-import { adapty, AttributionSource } from 'react-native-adapty';
-import branch from 'react-native-branch';
+  branch.subscribe({
+    enComplete: ({
+      params,
+    }) => {
+      adapty.updateAttribution(params, "branch");
+    },
+  });
+  ```
 
-branch.subscribe({
-  enComplete: ({
-    params,
-  }) => {
-    adapty.updateAttribution(params, "branch");
+  </TabItem>
+  </Tabs>
+
+## Event structure
+
+Adapty sends selected events to Branch as configured in the **Events names** section on the [**Branch Integration page**](https://app.adapty.io/integrations/branch). Each event is structured like this:
+
+```json
+{
+  "branch_key": "key_live_kaFuWw8WvY7n1ss7...",
+  "name": "PURCHASE",
+  "user_data": {
+    "os": "iOS",
+    "developer_identity": "user_12345",
+    "country": "US",
+    "ip": "192.168.100.1",
+    "idfa": "00000000-0000-0000-0000-000000000000",
+    "idfv": "00000000-0000-0000-0000-000000000000",
+    "aaid": "00000000-0000-0000-0000-000000000000"
   },
-});
+  "event_data": {
+    "transaction_id": "GPA.3383-4699-1373-07113",
+    "revenue": 9.99,
+    "currency": "USD"
+  },
+  "custom_data": {
+    "vendor_product_id": "yearly.premium.6999",
+    "original_transaction_id": "GPA.3383-4699-1373-07113",
+    "store": "play_store",
+    "environment": "production"
+  }
+}
 ```
-</TabItem>
-</Tabs>
+
+Where:
+
+| Parameter                      | Type   | Description                                                            |
+|:-------------------------------|:-------|:-----------------------------------------------------------------------|
+| `branch_key`                   | String | Your Branch Key.                                                       |
+| `name`                         | String | The Branch event name (mapped from Adapty event, e.g., "PURCHASE").    |
+| `user_data`                    | Object | User information.                                                      |
+| `user_data.os`                 | String | "Android" or "iOS".                                                    |
+| `user_data.developer_identity` | String | The user's Customer User ID.                                           |
+| `user_data.country`            | String | Country code based on user's IP.                                       |
+| `user_data.ip`                 | String | User's IP address.                                                     |
+| `user_data.idfa`               | String | **iOS only**. ID for Advertisers.                                      |
+| `user_data.idfv`               | String | **iOS only**. ID for Vendors.                                          |
+| `user_data.aaid`               | String | **Android only**. Google Advertising ID.                               |
+| `event_data`                   | Object | Standard event metrics (only present for PURCHASE and similar events). |
+| `event_data.transaction_id`    | String | Store Transaction ID.                                                  |
+| `event_data.revenue`           | Float  | Revenue amount.                                                        |
+| `event_data.currency`          | String | Currency code (e.g., "USD").                                           |
+| `custom_data`                  | Object | Detailed event attributes (contains all available event fields).       |

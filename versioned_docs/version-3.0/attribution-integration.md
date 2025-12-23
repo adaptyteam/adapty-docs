@@ -10,410 +10,187 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import Contentid from '@site/src/components/InlineTooltip';
-import InlineTooltip from '@site/src/components/InlineTooltip'; 
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
-Adapty allows easy integration with the popular attribution services: [AppsFlyer](appsflyer), [Adjust](adjust), [Branch](branch), [Apple Search Ads](apple-search-ads), and [Facebook Ads](facebook-ads). Adapty will send [subscription events](events) to these services so you can accurately measure the performance of ad campaigns. You can also filter [charts data](analytics-charts) using attribution data.
+You can use marketing data from third-party services to find connections between your advertising efforts and user subscriptions. These connections will help you understand what motivates your users to take action. If you store attribution data in Adapty, you can filter your [subscription charts](analytics-charts) by attribution.
 
-You can also integrate with [Adapty's User Acquisition](user-acquisition.md) to connect ad spend with subscription revenue, giving you a complete view of your app's economy in one place.
+Adapty offers out-of-the-box attribution integration with [9 popular marketing platforms](#automatic-attribution). Users of other platforms can follow a [manual workflow](#manual-attribution) that achieves the same goal.
 
-### Important
-Send subscription events with correct user properties and ID's to attributions services you use.
+### Automatic Attribution
 
-:::warning
+1. **Set up automatic data sharing.** Adapty offers out-of-the-box integration with 9 popular marketing platforms. These platforms can automatically receive real-time [subscription data](events) from Adapty. The marketing platform processes each purchase, and responds with an appropriate attribution (if it finds one).
 
-- **Avoid event duplication**: Be sure to disable subscription event forwarding from both devices and your server to prevent duplicates. If you're using direct integration with Facebook, remember to turn off event forwarding from AppsFlyer, Adjust, or Branch.
+    You can enable attribution integration with **multiple platforms at once**. Adapty will select the most appropriate attribution provider for each transaction.
 
-- **Properly set up attribution integration**: Ensure that attribution is set up in both your mobile app code and the Adapty Dashboard. Without both in place, Adapty won’t be able to send subscription events.
-- **Set a single attribution source**: Adapty can use attribution data in analytics from only one source at a time. If multiple attribution sources are enabled, the system will decide which attribution to use for each device based on the source that provides more fields. 
-  For iOS devices, this means non-organic [Apple Search Ads attribution](apple-search-ads) will always take priority if it's enabled. You can disable Apple Search Ads attribution collection by toggling off the **Receive Apple Search Ads attribution in Adapty** in the [**App Settings** -> **Apple Search Ads** tab](https://app.adapty.io/settings/apple-search-ads). 
-- **Attribution data is never overwritten in analytics**: Attribution data is saved once after the user profile is created and won’t be overwritten in analytics once stored.
+    Each platform has its own integration workflow. Refer to your platform's dedicated documentation page for in-depth instructions:
 
-:::
+    - [Adjust](adjust)
+    - [Airbridge](airbridge)
+    - [Apple Search Ads](apple-search-ads)
+    - [AppsFlyer](appsflyer)
+    - [Asapty](asapty)
+    - [Branch](branch)
+    - [Facebook Ads](facebook-ads)
+    - [Singular](singular)
+    - [Tenjin](tenjin)
 
-Follow our detailed guidance on configuring the following 3d-part attribution integrations:
+    When you complete the setup, [disable other event sharing services](#avoid-event-duplication) to avoid duplicate events.
 
-- [Adjust](adjust)
-- [Airbridge](airbridge)
-- [Apple Search Ads](apple-search-ads)
-- [AppsFlyer](appsflyer)
-- [Asapty](asapty)
-- [Branch](branch)
-- [Facebook Ads](facebook-ads)
-- [Singular](singular)
-- [Tenjin](tenjin)
+    :::note
+    If Adapty doesn't support automatic attribution integration with your favorite marketing platform, contact [Adapty Support](mailto:support@adapty.io) to express your interest.
+    :::
 
-:::note
-Don't see your attribution provider?
+2. **Invoke the `.updateAttribution()` method** to retrieve attribution data from the marketing platform, and set the attribution value for the transaction.
 
-Let us know! [Write to the Adapty support](mailto:support@adapty.io) and we'll consider adding it.
-:::
+    Adapty can only store attribution data from one source at a time. If you enable multiple attribution sources, the system gives preference to the service that shares the most information. **Once you set the attribution value, you cannot override it.**
 
-<!--
+    On iOS, non-organic [Apple Search Ads attribution](apple-search-ads) will always take priority if available. To turn Apple Search Ads attribution off, open the [**App Settings** -> **Apple Search Ads** tab](https://app.adapty.io/settings/apple-search-ads), and toggle the **Receive Apple Search Ads attribution** switch.
 
-### Setting attribution data
+    Attribution integration methods **vary between the platforms**. Refer to your platform's dedicated documentation page for an in-depth overview of the SDK configuration code. The following is a **generic example**:
 
-To set attribution data for the profile, use `.updateAttribution()` method:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
-```swift showLineNumbers
-Adapty.updateAttribution("<attribution>", source: "<source>", networkUserId: "<networkUserId>") { error in
-    if error == nil {
-        // succesfull attribution update
-    }
-}
-```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin showLineNumbers
-Adapty.updateAttribution("<attribution>", "<source>", "<networkUserId>") { error ->
-    if (error == null) {
-        // succesfull attribution update
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-Adapty.updateAttribution("<attribution>", "<source>", "<networkUserId>", error -> {
-    if (error == null) {
-        // succesfull attribution update
-    }
-});
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-```javascript showLineNumbers
-try {
-  await Adapty().updateAttribution("<attribution>", source: "<source>", networkUserId: "<networkUserId>");
-} on AdaptyError catch (adaptyError) {
-  // handle the error
-} catch (e) {
-}
-```
-</TabItem>
-<TabItem value="unity" label="Unity" default>
-```csharp showLineNumbers
-Adapty.UpdateAttribution("<attributions>", source, "<networkUserId>", (error) => {
-    if (error != null) {
-        // handle the error
-    }
-  
-        // succesfull attribution update
-});
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-```typescript showLineNumbers
-// Optionally import enum to JavaScript
-import { AttributionSource } from 'react-native-adapty';
-
-const attribution = { /* ... */ };
-try {
-    await adapty.updateAttribution(
-        attribution,
-        AttributionSource.Branch, // or just 'branch'
-        'networkUserId'
-    );
-    // succesfull attribution update
-} catch (error) {
-    // handle `AdaptyError`
-}
-```
-</TabItem>
-</Tabs>
-
-**Request parameteres:**
-
-- **Attribution** (required): a dictionary containing attribution (conversion) data.
-
-- **Source** (required): a source of attribution. The allowed values are:
-  - `.appsflyer`
-  - `.adjust`
-  - `.branch`
-  - `.custom`
-
-- **Network user Id** (optional): a string profile's identifier from the attribution service.
-
-### AppsFlyer
-
-:::warning
-iOS SDK
-
-To set attribution from AppsFlyer, pass the attribution you receive from the delegate method of AppsFlyer iOS SDK. Don't forget to set `networkUserId`. You should also configure [AppsFlyer integration](appsflyer) in Adapty Dashboard.
-:::
-
-:::warning
-In this case, it is mandatory to pass the `networkUserId` parameter.
-:::
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
-```swift showLineNumbers
-// Find your implementation of AppsFlyerLibDelegate 
-// and update onConversionDataSuccess method:
-func onConversionDataSuccess(_ installData: [AnyHashable : Any]) {
-    // It's important to include the network user ID
-    Adapty.updateAttribution(installData, source: .appsflyer, networkUserId: AppsFlyerLib.shared().getAppsFlyerUID())
-}
-```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin showLineNumbers
-val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
-    override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
-        // It's important to include the network user ID
-        Adapty.updateAttribution(
-            conversionData,
-            AdaptyAttributionSource.APPSFLYER,
-            AppsFlyerLib.getInstance().getAppsFlyerUID(context)
-        ) { error ->
-            if (error != null) {
-                //handle error
-            }
+    <Tabs groupId="current-os" queryString>
+    <TabItem value="swift" label="Swift" default>
+    ```swift showLineNumbers
+    Adapty.updateAttribution("<attribution>", source: "<source>", networkUserId: "<networkUserId>") { error in
+        if error == nil {
+            // succesfull attribution update
         }
     }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-AppsFlyerConversionListener conversionListener = new AppsFlyerConversionListener() {
-    @Override
-    public void onConversionDataSuccess(Map<String, Object> conversionData) {
-        // It's important to include the network user ID
-        Adapty.updateAttribution(
-                conversionData,
-                AdaptyAttributionSource.APPSFLYER,
-                AppsFlyerLib.getInstance().getAppsFlyerUID(context),
-                error -> {
-                    if (error != null) {
-                        //handle error
-                    }
-                }
-        );
+    ```
+    </TabItem>
+    <TabItem value="kotlin" label="Kotlin" default>
+    ```kotlin showLineNumbers
+    Adapty.updateAttribution(
+        mapOf("source" to "appsflyer", "campaign" to "summer_sale_2024"),
+        "appsflyer",
+        "networkUserId"
+    ) { error ->
+        if (error == null) {
+            // succesfull attribution update
+        }
     }
-};
-```
-</TabItem>
-<TabItem value="flutter" label="Flutter" default>
-```javascript showLineNumbers
-@override
-Future<bool> initialize() async {
-    appsflyerSdk.onInstallConversionData((data) {
-      try {
-        await Adapty().updateAttribution(data, 
-                                         source: AdaptyAttributionSource.appsflyer, 
-                                         networkUserId: await appsflyerSdk.getAppsFlyerUID());
-      } on AdaptyError catch (adaptyError) {
-          // handle the error
-      } catch (e) {
-      }        
+    ```
+    </TabItem>
+    <TabItem value="java" label="Java" default>
+    ```java showLineNumbers
+    Adapty.updateAttribution("<attribution>", "<source>", "<networkUserId>", error -> {
+        if (error == null) {
+            // succesfull attribution update
+        }
     });
+    ```
+    </TabItem>
+        <TabItem value="rn" label="React Native (TS)" default>
+    ```typescript showLineNumbers
+    // Optionally import enum to JavaScript
+    import { AttributionSource } from 'react-native-adapty';
 
-    await appsflyerSdk.initSdk(
-        registerConversionDataCallback: true,
-        registerOnAppOpenAttributionCallback: true,
-        registerOnDeepLinkingCallback: true
-    );
-
-    return Future<bool>.value(true);
-}
-```
-</TabItem>
-</Tabs>
-
-### Adjust
-
-:::warning
-iOS SDK
-
-To set attribution from Adjust, pass the attribution you receive from the delegate method of Adjust iOS SDK. You should also configure [Adjust integration](adjust) in Adapty Dashboard.
-:::
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
-```swift showLineNumbers
-// Find your implementation of AdjustDelegate 
-// and update adjustAttributionChanged method:
-func adjustAttributionChanged(_ attribution: ADJAttribution?) {
-    if let attribution = attribution?.dictionary() {
-        Adapty.updateAttribution(attribution, source: .adjust)
+    const attribution = { /* ... */ };
+    try {
+        await adapty.updateAttribution(
+            attribution,
+            AttributionSource.Branch, // or just 'branch'
+            'networkUserId'
+        );
+        // succesfull attribution update
+    } catch (error) {
+        // handle `AdaptyError`
     }
-}
-```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin showLineNumbers
-adjustConfig.setOnAttributionChangedListener { attribution ->
-    attribution?.let { attribution ->
-        Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error ->
-            if (error != null) {
-                //handle error
-            }
+    ```
+    </TabItem>
+    <TabItem value="flutter" label="Flutter" default>
+    ```javascript showLineNumbers
+    try {
+    await Adapty().updateAttribution("<attribution>", source: "<source>", networkUserId: "<networkUserId>");
+    } on AdaptyError catch (adaptyError) {
+    // handle the error
+    } catch (e) {
+    }
+    ```
+    </TabItem>
+    <TabItem value="unity" label="Unity" default>
+    ```csharp showLineNumbers
+    Adapty.UpdateAttribution("<attributions>", source, "<networkUserId>", (error) => {
+        if (error != null) {
+            // handle the error
+        }
+    
+            // succesfull attribution update
+    });
+    ```
+    </TabItem>
+    </Tabs>
+
+    **Parameters:**
+
+    - **Attribution** (required): dictionary with attribution data. Adapty automatically fills it with the data it receives from the marketing platform.
+    - **Source** (required): attribution source. The following values are acceptable:
+        - `.appsflyer`
+        - `.adjust`
+        - `.branch`
+        - `.custom`
+    - **Network user Id** (required for AppsFlyer, optional otherwise): a string with the profile ID from the attribution service.
+
+### Manual Attribution
+
+1. **Send subscription data to the marketing platform**
+
+    If Adapty doesn't offer built-in integration with your marketing platform, you need to manually program the logic necessary to send subscription data to your platform's API.
+
+    When you complete the setup, [disable other event sharing services](#avoid-event-duplication) to avoid duplicate events.
+
+2. **Retrieve attribution data from the marketing platform**
+
+    If Adapty doesn't offer built-in integration with your marketing platform, you need to manually retrieve attribution data from the platform.
+
+3. **Create a dictionary with attribution data**
+
+    The dictionary may contain the following keys:
+
+    - `status` (`organic`, `non-organic`, or `unknown`)
+    - `channel`
+    - `campaign`
+    - `ad_group`
+    - `ad_set`
+    - `creative`
+
+    All the keys are optional. The value of each key may be up to 50 characters long. Adapty ignores custom attribution keys.
+
+    **Example**: 
+
+    ```swift showLineNumbers title="Swift"
+    let attribution = [
+        "status": "non_organic",
+        "channel": "Google Ads",
+        "campaign": "Christmas Sale",
+        "ad_group": "ad group 1",
+        "ad_set": "ad set 1",
+        "creative": "creative id 1"
+    ]
+    ```
+
+4. **Set the attribution data**:
+
+    Pass the attribution dictionary to the `updateAttribution` method:
+
+    ```swift showLineNumbers title="Swift"
+    Adapty.updateAttribution(attribution, source: "custom") { error in
+        if error == nil {
+            // successful attribution update
         }
     }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-adjustConfig.setOnAttributionChangedListener(attribution -> {
-    if (attribution != null) {
-        Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST, error -> {
-            if (error != null) {
-                //handle error
-            }
-        });
-    }
-});
-```
-</TabItem>
-</Tabs>
+    ```
 
+    Once you set the attribution value, you cannot override it.
 
+### Avoid Event Duplication
 
+If you use Adapty to share real-time subscription data with your marketing platforms, **you need to disable** other services that serve the same purpose. If you connected your Facebook account to AppsFlyer, Adjust, or Branch, it will automatically forward your events to these services, unless you opt out.
 
-### Branch
+Duplicate events can skew your analytics, and make it hard to interpret data. Once you configured Adapty event sharing, turn third-party event forwarding capabilities **off**.  
 
-:::warning
-iOS SDK
+### See Also
 
-To connect Branch user and Adapty user, make sure you set your `customerUserId` as Branch Identity Id. If you prefer to not use `customerUserId` in Branch, set `networkUserId` param in `.updateAttribution()` method to specify the Branch user Id.
-:::
+If your marketing platform supports automatic Attribution Integration, it also supports [User Acquisition Analytics](user-acquisition.md)! 
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
-```swift showLineNumbers
-// Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
-Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
-    if let data = data {
-        Adapty.updateAttribution(data, source: .branch)
-    }
-}
-```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin showLineNumbers
-object branchListener : Branch.BranchReferralInitListener {
-    override fun onInitFinished(referringParams: JSONObject?, error: BranchError?) {
-        referringParams?.let { data ->
-            Adapty.updateAttribution(data, AdaptyAttributionSource.BRANCH) { error ->
-                if (error != null) {
-                    //handle error
-                }
-            }
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-Branch.BranchReferralInitListener branchListener = (data, e) -> {
-    if (data != null) {
-        Adapty.updateAttribution(data, AdaptyAttributionSource.BRANCH, error -> {
-            if (error != null) {
-                //handle error
-            }
-        });
-    }
-};
-```
-</TabItem>
-</Tabs>
-
-
-
-
-:::note
-You should also configure [Branch integration](branch) in Adapty Dashboard.
-:::
-
-### Apple Search Ads
-
-Adapty can automatically collect Apple Search Ad attribution data. All you need is to add `AdaptyAppleSearchAdsAttributionCollectionEnabled` to the app’s `Info.plist` file and set it to `YES` (boolean value).
-
-### Facebook Ads
-
-Because of iOS IDFA changes in iOS 14.5, if you use Facebook integration, make sure you send [`facebookAnonymousId`](https://developers.facebook.com/docs/reference/iossdk/current/FBSDKCoreKit/classes/fbsdkappevents.html/) to Adapty by following the <InlineTooltip tooltip="instructions for setting user attributes in your app">[iOS](setting-user-attributes.md), [Android](android-setting-user-attributes.md), [Flutter](flutter-setting-user-attributes.md), [React Native](react-native-setting-user-attributes.md), and [Unity](unity-setting-user-attributes.md)</InlineTooltip>. It allows Facebook to handle events if IDFA is not available. You should also configure [Facebook Ads](facebook-ads) in Adapty Dashboard.
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="Swift" default>
-```swift showLineNumbers
-let builder = ProfileParameterBuilder()
-    .with(facebookAnonymousId: FBSDKCoreKit.AppEvents.anonymousID)
-
-Adapty.updateProfile(parameters: builder.build()) { error in
-    if error == nil {
-        // successful update
-    }
-}
-```
-</TabItem>
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin showLineNumbers
-val builder = AdaptyProfileParameters.Builder()
-    .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context))
-  
-Adapty.updateProfile(builder.build()) { error ->
-    if (error == null) {
-        // successful update
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-```java showLineNumbers
-AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()
-        .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context));
-
-Adapty.updateProfile(builder.build(), error -> {
-    if (error == null) {
-        // successful update
-    }
-});
-```
-</TabItem>
-</Tabs>
-
--->
-
-### Custom
-
-If you use another attribution system that isn't listed above, you can pass custom attribution data to Adapty and segment users based on this data.
-
-To send custom attribution data, you can use only the following keys:
-- `status`
-- `channel`
-- `campaign`
-- `ad_group` 
-- `ad_set`
-- `creative`
-
-All the keys are optional.
-
-:::important
-Note the following:
-- If you set any key that is not on the list, it will be omitted.
-- For `status`, the only possible values are: `organic`, `non-organic`, or `unknown`.
-- The maximum value length is 50 characters.
-:::
- 
-Here is an example of how to pass custom attribution data in your app code:
-
-```swift showLineNumbers title="Swift"
-let attribution = [
-    "status": "non_organic|organic|unknown",
-    "channel": "Google Ads",
-    "campaign": "Christmas Sale",
-    "ad_group": "ad group",
-    "ad_set": "ad set",
-    "creative": "creative id"
-]
-Adapty.updateAttribution(attribution, source: "custom") { error in
-    if error == nil {
-        // successful attribution update
-    }
-}
-```
+This capability pools all the data about your app's economy into one place, allowing you to see the relationship between ad spend and subscription revenue.

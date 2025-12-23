@@ -13,7 +13,7 @@ Adapty provides a complete set of data that lets you track [subscription events]
 
 Adapty can send all subscription events which are configured in your integration to Singular. As a result, you'll be able to track these events within the Singular dashboard. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
-## How to set up Singular integration
+## Initial Setup
 
 To set up the integration with Singular, go to [Integrations > Singular](https://app.adapty.io/integrations/singular) in your Adapty Dashboard, turn on a toggle, and fill out the fields.
 
@@ -61,6 +61,65 @@ Adapty will send subscription events to Singular using a server-to-server integr
 Profiles created prior to configuring the integrations will not be able to deliver their events to Singular. 
 :::
 
-## No need for SDK configuration
+## SDK Configuration and Attribution Integration
 
-There is no need to configure the SDK from your side at the moment — as Adapty already collects the data required by Singular and this integration is server-to-server. In case it ever changes, we'll let you know.
+The integration between Adapty and Singular is server-so-server. As such, there's no need to add any extra code to your application. 
+
+## Event structure
+
+Adapty sends events to Singular via a GET request using query parameters. Each event is structured like this:
+
+```json
+{
+  "n": "subscription_renewed",
+  "a": "singular_sdk_key_123",
+  "p": "iOS",
+  "i": "com.example.app",
+  "ip": "192.168.100.1",
+  "idfa": "00000000-0000-0000-0000-000000000000",
+  "idfv": "00000000-0000-0000-0000-000000000000",
+  "ve": "17.0.1",
+  "att_authorization_status": 3,
+  "custom_user_id": "user_12345",
+  "utime": 1709294400,
+  "amt": 9.99,
+  "cur": "USD",
+  "purchase_product_id": "yearly.premium.6999",
+  "purchase_transaction_id": "GPA.3383...",
+  "e": "{\"is_revenue_event\":true,\"amt\":9.99,\"cur\":\"USD\",\"purchase_product_id\":\"yearly.premium.6999\",\"purchase_transaction_id\":\"GPA.3383...\"}"
+}
+```
+
+Where:
+
+| Parameter                  | Type    | Description                                          |
+|:---------------------------|:--------|:-----------------------------------------------------|
+| `n`                        | String  | The event name (mapped from Adapty event).           |
+| `a`                        | String  | Your Singular SDK Key.                               |
+| `p`                        | String  | Platform ("iOS" or "Android").                       |
+| `i`                        | String  | Store App ID (Bundle ID).                            |
+| `ip`                       | String  | User's IP address.                                   |
+| `idfa`                     | String  | **iOS only**. ID for Advertisers (uppercase).        |
+| `idfv`                     | String  | **iOS only**. ID for Vendors (uppercase).            |
+| `aifa`                     | String  | **Android only**. Google Advertising ID (lowercase). |
+| `andi`                     | String  | **Android only**. Android ID (lowercase).            |
+| `asid`                     | String  | **Android only**. App Set ID (lowercase).            |
+| `ve`                       | String  | OS version.                                          |
+| `att_authorization_status` | Integer | **iOS only**. ATT status (e.g., `3` for authorized). |
+| `custom_user_id`           | String  | The user's Customer User ID.                         |
+| `utime`                    | Long    | UNIX timestamp of the event in seconds.              |
+| `amt`                      | Float   | Revenue amount.                                      |
+| `cur`                      | String  | Currency code (e.g., "USD").                         |
+| `purchase_product_id`      | String  | The Product ID from the store.                       |
+| `purchase_transaction_id`  | String  | Original transaction ID.                             |
+| `e`                        | String  | JSON string containing event details (see below).    |
+
+The `e` parameter (custom event data) is a JSON-encoded string containing:
+
+| Parameter                 | Type    | Description                           |
+|:--------------------------|:--------|:--------------------------------------|
+| `is_revenue_event`        | Boolean | `true` if the event contains revenue. |
+| `amt`                     | Float   | Revenue amount.                       |
+| `cur`                     | String  | Currency code.                        |
+| `purchase_product_id`     | String  | The Product ID from the store.        |
+| `purchase_transaction_id` | String  | Original transaction ID.              |
