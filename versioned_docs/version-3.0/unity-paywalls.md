@@ -19,7 +19,7 @@ To get started with the Adapty Paywall Builder paywalls quickly, see our [quicks
 
 ### Implement paywalls manually
 
-<CustomDocCardList ids={['fetch-paywalls-and-products-unity', 'present-remote-config-paywalls-unity', 'unity-making-purchases']} />
+<CustomDocCardList ids={['unity-quickstart-manual', 'fetch-paywalls-and-products-unity', 'present-remote-config-paywalls-unity', 'unity-making-purchases']} />
 
 For more guides on implementing paywalls and handling purchases manually, see the [category](unity-implement-paywalls-manually).
 

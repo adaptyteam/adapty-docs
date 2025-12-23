@@ -1,6 +1,6 @@
 ---
-title: "Quickstart for integrating purchases with Adapty into your custom paywall in iOS SDK"
-description: "Quickstart guide to setting up Adapty for in-app subscription management."
+title: "Enable purchases in your custom paywall in iOS SDK"
+description: "Integrate Adapty SDK into your custom iOS paywalls to enable in-app purchases."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
 keywords: ['paywalls ios', 'sdk ios', 'paywall', 'getPaywall']
 ---
@@ -8,10 +8,10 @@ keywords: ['paywalls ios', 'sdk ios', 'paywall', 'getPaywall']
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-This guide shows you how to integrate Adapty's purchase handling into your custom paywall UI. You'll fetch products from Adapty, process purchases, and handle restores, while maintaining full control over your paywall design.
+This guide describes how to integrate Adapty into your custom paywalls. Keep full control over paywall implementation, while the Adapty SDK fetches products, handles new purchases, and restores previous ones.
 
 :::important
-**This guide is for implementing custom paywalls.** If you want the easiest way to enable purchases, use the [Adapty Paywall Builder](ios-quickstart-paywalls.md). With Paywall Builder, you create paywalls in a no-code visual editor, and Adapty handles all purchase logic automatically.
+**This guide is for developers who are implementing custom paywalls.** If you want the easiest way to enable purchases, use the [Adapty Paywall Builder](ios-quickstart-paywalls.md). With Paywall Builder, you create paywalls in a no-code visual editor, and Adapty handles all purchase logic automatically.
 :::
 
 ## Before you start
@@ -21,12 +21,12 @@ This guide shows you how to integrate Adapty's purchase handling into your custo
 To enable in-app purchases, you need to understand three key concepts:
 
 - [**Products**](product.md) – anything users can buy (subscriptions, consumables, lifetime access)
-- [**Paywalls**](paywalls.md) are configurations that define which products to offer. In Adapty, paywalls are the only way to retrieve products, but this design lets you modify offerings, pricing, and product combinations without touching your app code.
+- [**Paywalls**](paywalls.md) – configurations that define which products to offer. In Adapty, paywalls are the only way to retrieve products, but this design lets you modify products, prices, and offers without touching your app code.
 - [**Placements**](placements.md) – where and when you show paywalls in your app (like `main`, `onboarding`, `settings`). You set up paywalls for placements in the dashboard, then request them by placement ID in your code. This makes it easy to run A/B tests and show different paywalls to different users.
 
-Working with these concepts is required even if you work with your custom paywall. Basically, they are just your way to manage the products you sell in your app.
+Make sure you understand these concepts even if you work with your custom paywall. Basically, they are just your way to manage the products you sell in your app.
 
-When implementing your custom paywall, you will need to use a **placement ID** to retrieve products, so follow the quickstart guide [here](quickstart.md).
+To implement your custom paywall, you will need to create a **paywall** and add it to a **placement**. This setup allows you to retrieve your products. To understand what you need to do in the dashboard, follow the quickstart guide [here](quickstart.md).
 
 ### Manage users
 
@@ -38,7 +38,7 @@ However, the Adapty SDK handles anonymous and identified users differently. Read
 
 To retrieve products for your custom paywall, you need to:
 
-1. Get the `paywall` object by the [placement](placements.md) ID using the `getPaywall` method.
+1. Get the `paywall` object by passing [placement](placements.md) ID to the `getPaywall` method.
 2. Get the products array for this paywall using the `getPaywallProducts` method.
 
 <Tabs groupId="current-os" queryString>
@@ -151,9 +151,9 @@ func purchaseProduct(_ product: AdaptyPaywallProduct) {
 </TabItem>
 </Tabs>
 
-## Step 3. Handle restores
+## Step 3. Restore purchases
 
-Apple requires all apps with subscriptions to provide a way for users to restore their purchases. While purchases are automatically restored when a user logs in with their Apple ID, you must still implement a restore button in your app.
+Apple requires all apps with subscriptions to provide a way users can restore their purchases. While purchases are automatically restored when a user logs in with their Apple ID, you must still implement a restore button in your app.
 
 Call the `restorePurchases` method when the user taps the restore button. This will sync their purchase history with Adapty and return the updated profile.
 
@@ -198,7 +198,7 @@ func restorePurchases() {
 
 Your paywall is ready to be displayed in the app.
 
-Now, you need to [check the users' access level](ios-check-subscription-status.md) to ensure you display a paywall or give access to paid features to right users.
+Next, [check whether users have completed their purchase](ios-check-subscription-status.md) to determine whether to display the paywall or grant access to paid features.
 
 ## Full example
 

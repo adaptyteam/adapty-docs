@@ -19,7 +19,7 @@ To get started with the Adapty Paywall Builder paywalls quickly, see our [quicks
 
 ### Implement paywalls manually
 
-<CustomDocCardList ids={['fetch-paywalls-and-products', 'present-remote-config-paywalls', 'making-purchases']} />
+<CustomDocCardList ids={['ios-quickstart-manual', 'fetch-paywalls-and-products', 'present-remote-config-paywalls', 'making-purchases']} />
 
 For more guides on implementing paywalls and handling purchases manually, see the [category](ios-implement-paywalls-manually).
 
