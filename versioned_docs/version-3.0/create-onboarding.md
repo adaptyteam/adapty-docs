@@ -112,7 +112,7 @@ Onboardings are available only for apps using Adapty iOS, Android, or Flutter SD
 To start displaying onboardings in your app, integrate them using Adapty SDK:
 - [iOS](ios-onboardings.md)
 - [Android](android-onboardings.md)
-- [Flutter](flutter-onboardings.md)
 - [React Native](react-native-onboardings.md)
+- [Flutter](flutter-onboardings.md)
 
 To understand which onboarding works better, you can also run [A/B tests](ab-tests.md).

@@ -195,7 +195,7 @@ margin: '0 auto' /* center alignment */
 Set up the Adapty SDK for:
 
 - [Android](sdk-installation-android)
-- [Flutter](sdk-installation-flutter)
 - [React Native](sdk-installation-reactnative)
+- [Flutter](sdk-installation-flutter)
 - [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform.md)
 - [Unity](sdk-installation-unity)

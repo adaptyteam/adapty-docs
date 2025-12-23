@@ -25,7 +25,7 @@ You need two different placements: one for a paywall and another for an onboardi
 
 To show a paywall after onboarding, you only need to handle an event generated each time users close the onboarding.
 
-As soon as users close onboarding, the [event](ios-handling-onboarding-events#closing-onboarding) is triggered. So, if you want to display a paywall after your onboarding immediately, you can implement <InlineTooltip tooltip="getting and displaying a paywall">[iOS](ios-present-paywalls.md), [Android](android-present-paywalls.md), [Flutter](flutter-present-paywalls.md), [React Native](react-native-present-paywalls.md), and [Unity](unity-present-paywalls.md)</InlineTooltip> as a reaction to the event.
+As soon as users close onboarding, the [event](ios-handling-onboarding-events#closing-onboarding) is triggered. So, if you want to display a paywall after your onboarding immediately, you can implement <InlineTooltip tooltip="getting and displaying a paywall">[iOS](ios-present-paywalls.md), [Android](android-present-paywalls.md), [React Native](react-native-present-paywalls.md), [Flutter](flutter-present-paywalls.md), and [Unity](unity-present-paywalls.md)</InlineTooltip> as a reaction to the event.
 
 ## Show paywall inside onboarding
 

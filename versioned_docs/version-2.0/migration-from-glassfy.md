@@ -59,7 +59,7 @@ Naming is slightly different:
 
 #### Creating an Adapty account
 
-Create an account using a [special link ](https://app.adapty.io/glassfy-migration-offer). You can also [invite your colleagues](members-settings).
+Create an account using a [special link](https://app.adapty.io/glassfy-migration-offer). You can also [invite your colleagues](members-settings).
 
 #### Set up integration with the App Store and/or Google Play
 

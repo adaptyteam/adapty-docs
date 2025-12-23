@@ -48,7 +48,7 @@ const config = {
           routeBasePath: "/",
           lastVersion: '3.0',
           versions: {
-            "3.0" : {
+            "3.0": {
               label: "3.0",
               path: "/",
               banner: "none",
@@ -108,14 +108,14 @@ const config = {
                 sidebarId: "sdkandroid",
               },
               {
-                label: "Flutter",
-                type: "docSidebar",
-                sidebarId: "sdkflutter",
-              },
-              {
                 label: "React Native",
                 type: "docSidebar",
                 sidebarId: "sdkreactnative",
+              },
+              {
+                label: "Flutter",
+                type: "docSidebar",
+                sidebarId: "sdkflutter",
               },
               {
                 label: "Unity",
@@ -226,16 +226,16 @@ const config = {
                 href: "https://android.adapty.io",
               },
               {
-                label: "Flutter",
-                href: "https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/#classes",
-              },
-              {
                 label: "React Native",
                 href: "https://react-native.adapty.io",
               },
               {
+                label: "Flutter",
+                href: "https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/#classes",
+              },
+              {
                 label: "Unity",
-                href: "https://android.adapty.io",
+                href: "https://unity.adapty.io",
               },
               {
                 label: "Kotlin Multiplatform",
@@ -285,20 +285,20 @@ const config = {
         copyright: `© ${new Date().getFullYear()} Adapty Tech Inc.`,
       },
 
-      
+
       algolia: {
-      // The application ID provided by Algolia
-      appId: 'IPH9RRTSQS',
+        // The application ID provided by Algolia
+        appId: 'IPH9RRTSQS',
 
-      // Public API key: it is safe to commit it
-      apiKey: '5e3fd9357b98f9f0d44bab0f0b7634c0',
+        // Public API key: it is safe to commit it
+        apiKey: '5e3fd9357b98f9f0d44bab0f0b7634c0',
 
-      indexName: 'adapty',
-      
-      // Enable click analytics to get queryID for proper event attribution
-      clickAnalytics: true,
+        indexName: 'adapty',
+
+        // Enable click analytics to get queryID for proper event attribution
+        clickAnalytics: true,
       },
-      
+
       prism: {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
@@ -323,17 +323,17 @@ const config = {
 
         ],
         magicComments: [
-        // Remember to extend the default highlight class name as well!
-        {
-          className: 'theme-code-block-highlighted-line',
-          line: 'highlight-next-line',
-          block: {start: 'highlight-start', end: 'highlight-end'},
-        },
-        {
-          className: 'code-block-error-line',
-          line: 'This will error',
-        },
-      ],
+          // Remember to extend the default highlight class name as well!
+          {
+            className: 'theme-code-block-highlighted-line',
+            line: 'highlight-next-line',
+            block: { start: 'highlight-start', end: 'highlight-end' },
+          },
+          {
+            className: 'code-block-error-line',
+            line: 'This will error',
+          },
+        ],
       },
 
       // Configure the color mode to default to light and disable the dark mode switch
@@ -348,7 +348,7 @@ const config = {
       },
     }),
 
-     scripts: [
+  scripts: [
     {
       src: 'https://survey.survicate.com/workspaces/af55d3f51f8189593de1c948b75c88f6/web_surveys.js',
       async: true,

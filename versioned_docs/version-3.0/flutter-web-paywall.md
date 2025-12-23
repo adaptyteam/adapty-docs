@@ -15,7 +15,7 @@ If you are working with a paywall you developed yourself, you need to handle web
 
 This way, if the payment has been successful and access rights have been updated, the subscription activates in the app almost immediately.
 
-```swift showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 try {
   await Adapty().openWebPaywall(product: <YOUR_PRODUCT>);
   // The web paywall will be opened
@@ -40,3 +40,30 @@ There are two versions of the `openWebPaywall` method:
 | AdaptyError.productWithoutPurchaseUrl   | The product doesn't have a web purchase URL            | Verify the product configuration in the Adapty Dashboard                  |
 | AdaptyError.failedOpeningWebPaywallUrl  | Failed to open the URL in the browser                  | Check device settings or provide an alternative purchase method           |
 | AdaptyError.failedDecodingWebPaywallUrl | Failed to properly encode parameters in the URL        | Verify URL parameters are valid and properly formatted                    |
+
+## Open web paywalls in an in-app browser
+
+:::important
+Opening web paywalls in an in-app browser is supported starting from Adapty SDK v. 3.15.
+:::
+
+By default, web paywalls open in the external browser.
+
+To provide a seamless user experience, you can open web paywalls in an in-app browser. This displays the web purchase page within your application, allowing users to complete transactions without switching apps.
+
+To enable this, set the `in` parameter to `.inAppBrowser`:
+
+```dart showLineNumbers
+try {
+  await Adapty().openWebPaywall(
+    product: <YOUR_PRODUCT>,
+    openIn: AdaptyWebPresentation.inAppBrowser,
+  );
+  // The web paywall will be opened in the in-app browser
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle other errors
+}
+
+```

@@ -19,14 +19,23 @@ This guide is for **new Paywall Builder paywalls** only which require SDK v3.2.0
 
 :::
 
-To display a paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance. 
+Adapty Flutter SDK provides two ways to present paywalls:
+
+- **Standalone screen**
+
+- **Embedded widget**
+
+
+## Present as standalone screen
+
+To display a paywall as a standalone screen, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more time to create a new `view` instance. 
 
 :::warning
 
 Reusing the same `view` without recreating it may result in an `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
-```typescript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 try {
   await view.present();
 } on AdaptyError catch (e) {
@@ -37,7 +46,21 @@ try {
 ```
 <SampleApp />
 
-## Show dialog
+### Dismiss the paywall
+
+When you need to programmatically close the paywall, use the `dismiss()` method:
+
+```dart showLineNumbers title="Flutter"
+try {
+  await view.dismiss();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+### Show dialog
 
 Use this method instead of native alert dialogs when a paywall view is presented on Android. On Android, regular alerts appear behind the paywall view, which makes them invisible to users. This method ensures proper dialog presentation above the paywall on all platforms.
 
@@ -59,3 +82,66 @@ try {
   // handle error
 }
 ```
+
+### Configure iOS presentation style
+
+Configure how the paywall is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `AdaptyUIIOSPresentationStyle.fullScreen` (default) or `AdaptyUIIOSPresentationStyle.pageSheet` values.
+
+```dart showLineNumbers
+try {
+  await view.present(iosPresentationStyle: AdaptyUIIOSPresentationStyle.pageSheet);
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+
+## Embed in widget hierarchy
+
+To embed a paywall within your existing widget tree, use the `AdaptyUIPaywallPlatformView` widget directly in your Flutter widget hierarchy.
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIPaywallPlatformView(
+  paywall: paywall, // The paywall object you fetched
+  onDidAppear: (view) {
+  },
+  onDidDisappear: (view) {
+  },
+  onDidPerformAction: (view, action) {
+  },
+  onDidSelectProduct: (view, productId) {
+  },
+  onDidStartPurchase: (view, product) {
+  },
+  onDidFinishPurchase: (view, product, purchaseResult) {
+  },
+  onDidFailPurchase: (view, product, error) {
+  },
+  onDidStartRestore: (view) {
+  },
+  onDidFinishRestore: (view, profile) {
+  },
+  onDidFailRestore: (view, error) {
+  },
+  onDidFailRendering: (view, error) {
+  },
+  onDidFailLoadingProducts: (view, error) {
+  },
+  onDidFinishWebPaymentNavigation: (view, product, error) {
+  },
+)
+```
+
+:::note 
+For Android platform view to work, ensure your `MainActivity` extends `FlutterFragmentActivity`:
+
+```kotlin showLineNumbers title="Kotlin"
+class MainActivity : FlutterFragmentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
+}
+```
+:::

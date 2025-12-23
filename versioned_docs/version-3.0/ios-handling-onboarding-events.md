@@ -115,31 +115,38 @@ func onboardingController(_ controller: AdaptyOnboardingController, onCloseActio
 Handle this event to open a paywall if you want to open it inside the onboarding. If you want to open a paywall after it is closed, there is a more straightforward way to do it – handle [`AdaptyOnboardingsCloseAction`](#closing-onboarding) and open a paywall without relying on the event data.
 :::
 
-If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID. This way, after the `AdaptyOnboardingsOpenPaywallAction`, you can use the placement ID to get and open the paywall right away:
+If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID. This way, after the `AdaptyOnboardingsOpenPaywallAction`, you can use the placement ID to get and open the paywall right away.
+
+Note that only one view (paywall or onboarding) can be displayed on screen at a time. If you present a paywall on top of an onboarding, you cannot programmatically control the onboarding in the background. Attempting to dismiss the onboarding will close the paywall instead, leaving the onboarding visible. To avoid this, always dismiss the onboarding view before presenting the paywall.
 
 ```swift showLineNumbers
 func onboardingController(_ controller: AdaptyOnboardingController, onPaywallAction action: AdaptyOnboardingsOpenPaywallAction) {
-    Task {
-        do {
-            // Get the paywall using the placement ID from the action
-            let paywall = try await Adapty.getPaywall(placementId: action.actionId)
-            
-            // Get the paywall configuration
-            let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
-                forPaywall: paywall
-            )
-            
-            // Create and present the paywall controller
-            let paywallController = try AdaptyUI.paywallController(
-                with: paywallConfig,
-                delegate: self
-            )
-            
-            // Present the paywall
-            controller.present(paywallController, animated: true)
-        } catch {
-            // Handle any errors that occur during paywall loading
-            print("Failed to present paywall: \(error)")
+    // Dismiss onboarding before presenting paywall
+    controller.dismiss(animated: true) {
+        Task {
+            do {
+                // Get the paywall using the placement ID from the action
+                let paywall = try await Adapty.getPaywall(placementId: action.actionId)
+                
+                // Get the paywall configuration
+                let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
+                    forPaywall: paywall
+                )
+                
+                // Create and present the paywall controller
+                let paywallController = try AdaptyUI.paywallController(
+                    with: paywallConfig,
+                    delegate: self
+                )
+                
+                // Present the paywall from the root view controller
+                if let rootVC = UIApplication.shared.windows.first?.rootViewController {
+                    rootVC.present(paywallController, animated: true)
+                }
+            } catch {
+                // Handle any errors that occur during paywall loading
+                print("Failed to present paywall: \(error)")
+            }
         }
     }
 }

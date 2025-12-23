@@ -25,4 +25,4 @@ For more guides on implementing paywalls and handling purchases manually, see th
 
 ## Useful features
 
-<CustomDocCardList ids={['android-use-fallback-paywalls', 'android-localizations-and-locale-codes']} />
+<CustomDocCardList ids={['android-use-fallback-paywalls', 'android-web-paywall', 'android-localizations-and-locale-codes']} />

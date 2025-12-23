@@ -180,7 +180,7 @@ Don't forget to [Associate paywalls to purchase transactions](report-transaction
    <summary>Before you start presenting paywalls (Click to Expand)</summary>
 
    1. Set up initial integration of Adapty [with the Google Play](initial-android) and [with the App Store](initial_ios). 
-1. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions for [iOS](sdk-installation-ios#configure-adapty-sdk), [Flutter](sdk-installation-flutter#configure-adapty-sdk), [React Native](sdk-installation-reactnative#configure-adapty-sdks), and [Unity](sdk-installation-unity#configure-adapty-sdk).
+1. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to our framework-specific instructions for [iOS](sdk-installation-ios#configure-adapty-sdk), [React Native](sdk-installation-reactnative#configure-adapty-sdks), [Flutter](sdk-installation-flutter#configure-adapty-sdk), and [Unity](sdk-installation-unity#configure-adapty-sdk).
 2. [Create products](create-product) in the Adapty Dashboard.
 3. [Configure paywalls, assign products to them](create-paywall), and customize them using Paywall Builder in the Adapty Dashboard.
 4. [Create placements and assign your paywalls to them](create-placement) in the Adapty Dashboard.
