@@ -15,7 +15,7 @@ If you are working with paywalls you've implemented yourself, you can delegate h
 `makePurchase` works with products created in the Adapty dashboard. Make sure you configure products and ways to retrieve them in the dashboard by following the [quickstart guide](quickstart).
 :::
 
-<CustomDocCardList ids={['fetch-paywalls-and-products-react-native', 'present-remote-config-paywalls-react-native', 'react-native-making-purchases', 'react-native-restore-purchase', 'react-native-troubleshoot-purchases']} />
+<CustomDocCardList ids={['react-native-quickstart-manual', 'fetch-paywalls-and-products-react-native', 'present-remote-config-paywalls-react-native', 'react-native-making-purchases', 'react-native-restore-purchase', 'react-native-troubleshoot-purchases']} />
 
 ## Observer mode
 

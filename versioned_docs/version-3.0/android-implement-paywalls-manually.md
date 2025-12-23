@@ -15,7 +15,7 @@ If you are working with paywalls you've implemented yourself, you can delegate h
 `makePurchase` works with products created in the Adapty dashboard. Make sure you configure products and ways to retrieve them in the dashboard by following the [quickstart guide](quickstart).
 :::
 
-<CustomDocCardList ids={['fetch-paywalls-and-products-android', 'present-remote-config-paywalls-android', 'android-making-purchases', 'android-restore-purchase', 'android-troubleshoot-purchases']} />
+<CustomDocCardList ids={['android-quickstart-manual', 'fetch-paywalls-and-products-android', 'present-remote-config-paywalls-android', 'android-making-purchases', 'android-restore-purchase', 'android-troubleshoot-purchases']} />
 
 ## Observer mode
 
