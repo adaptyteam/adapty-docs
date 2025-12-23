@@ -108,66 +108,6 @@ async function restorePurchases() {
 
 ## Next steps
 
-Your paywall is ready to be displayed in the app.
+Your paywall is ready to be displayed in the app. To see how this works in a production-ready implementation, check out the [App.tsx](https://github.com/adaptyteam/AdaptySDK-Capacitor/blob/master/examples/adapty-devtools/src/screens/app/App.tsx) in our example app, which demonstrates purchase handling with proper error handling, loading states, and comprehensive SDK integration.
 
 Next, [check whether users have completed their purchase](capacitor-check-subscription-status.md) to determine whether to display the paywall or grant access to paid features.
-
-## Full example
-
-Here is how all the steps from this guide can be integrated in your app together.
-
-```typescript showLineNumbers
-import { adapty } from '@adapty/capacitor';
-import type {
-  AdaptyPaywall,
-  AdaptyPaywallProduct,
-  AdaptyProfile,
-  AdaptyPurchaseResult,
-} from '@adapty/capacitor';
-
-class PaywallManager {
-  private paywall: AdaptyPaywall | null = null;
-  private products: AdaptyPaywallProduct[] = [];
-
-  async loadPaywall() {
-    try {
-      this.paywall = await adapty.getPaywall({
-        placementId: 'YOUR_PLACEMENT_ID'
-      });
-
-      this.products = await adapty.getPaywallProducts({
-        paywall: this.paywall
-      });
-
-      // Update your UI with products
-    } catch (error) {
-      // Handle the error
-    }
-  }
-
-  async purchaseProduct(product: AdaptyPaywallProduct) {
-    try {
-      const result: AdaptyPurchaseResult = await adapty.makePurchase({ product });
-
-      if (result.type === 'success') {
-        // Purchase successful, profile updated
-      } else if (result.type === 'user_cancelled') {
-        // User canceled the purchase
-      } else if (result.type === 'pending') {
-        // Purchase is pending
-      }
-    } catch (error) {
-      // Handle the error
-    }
-  }
-
-  async restorePurchases() {
-    try {
-      const profile: AdaptyProfile = await adapty.restorePurchases();
-      // Restore successful, profile updated
-    } catch (error) {
-      // Handle the error
-    }
-  }
-}
-```

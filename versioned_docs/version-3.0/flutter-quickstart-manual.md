@@ -110,65 +110,6 @@ Future<void> restorePurchases() async {
 
 ## Next steps
 
-Your paywall is ready to be displayed in the app.
+Your paywall is ready to be displayed in the app. To see how this works in a production-ready implementation, check out the [PurchasesObserver](https://github.com/adaptyteam/AdaptySDK-Flutter/blob/master/example/lib/purchase_observer.dart) in our example app, which demonstrates purchase handling with proper error handling, UI observers, and comprehensive SDK integration.
 
 Next, [check whether users have completed their purchase](flutter-check-subscription-status.md) to determine whether to display the paywall or grant access to paid features.
-
-## Full example
-
-Here is how all the steps from this guide can be integrated in your app together.
-
-```dart showLineNumbers
-import 'package:adapty_flutter/adapty_flutter.dart';
-
-class PaywallManager {
-  AdaptyPaywall? paywall;
-  List<AdaptyPaywallProduct> products = [];
-  
-  Future<void> loadPaywall() async {
-    try {
-      paywall = await Adapty().getPaywall(placementId: 'YOUR_PLACEMENT_ID');
-      products = await Adapty().getPaywallProducts(paywall: paywall!);
-      
-      // Update your UI with products
-    } on AdaptyError catch (adaptyError) {
-      // Handle the error
-    } catch (e) {
-      // Handle the error
-    }
-  }
-  
-  Future<void> purchaseProduct(AdaptyPaywallProduct product) async {
-    try {
-      final purchaseResult = await Adapty().makePurchase(product: product);
-      
-      switch (purchaseResult) {
-        case AdaptyPurchaseResultSuccess():
-          // Purchase successful, profile updated
-          break;
-        case AdaptyPurchaseResultUserCancelled():
-          // User canceled the purchase
-          break;
-        case AdaptyPurchaseResultPending():
-          // Purchase is pending
-          break;
-      }
-    } on AdaptyError catch (adaptyError) {
-      // Handle the error
-    } catch (e) {
-      // Handle the error
-    }
-  }
-  
-  Future<void> restorePurchases() async {
-    try {
-      final profile = await Adapty().restorePurchases();
-      // Restore successful, profile updated
-    } on AdaptyError catch (adaptyError) {
-      // Handle the error
-    } catch (e) {
-      // Handle the error
-    }
-  }
-}
-```
