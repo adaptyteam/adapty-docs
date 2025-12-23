@@ -15,7 +15,7 @@ If you are working with paywalls you've implemented yourself, you can delegate h
 `makePurchase` works with products created in the Adapty dashboard. Make sure you configure products and ways to retrieve them in the dashboard by following the [quickstart guide](quickstart).
 :::
 
-<CustomDocCardList ids={['fetch-paywalls-and-products-flutter', 'present-remote-config-paywalls-flutter', 'flutter-making-purchases', 'flutter-restore-purchase', 'flutter-troubleshoot-purchases']} />
+<CustomDocCardList ids={['flutter-quickstart-manual', 'fetch-paywalls-and-products-flutter', 'present-remote-config-paywalls-flutter', 'flutter-making-purchases', 'flutter-restore-purchase', 'flutter-troubleshoot-purchases']} />
 
 ## Observer mode
 

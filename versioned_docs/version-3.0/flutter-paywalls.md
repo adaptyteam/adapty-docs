@@ -19,7 +19,7 @@ To get started with the Adapty Paywall Builder paywalls quickly, see our [quicks
 
 ### Implement paywalls manually
 
-<CustomDocCardList ids={['fetch-paywalls-and-products-flutter', 'present-remote-config-paywalls-flutter', 'flutter-making-purchases']} />
+<CustomDocCardList ids={['flutter-quickstart-manual', 'fetch-paywalls-and-products-flutter', 'present-remote-config-paywalls-flutter', 'flutter-making-purchases']} />
 
 For more guides on implementing paywalls and handling purchases manually, see the [category](flutter-implement-paywalls-manually).
 
