@@ -48,3 +48,30 @@ viewModelScope.launch {
     view?.present(iosPresentationStyle = AdaptyUIIOSPresentationStyle.PAGESHEET)
 }
 ```
+
+## Customize how links open in onboardings
+
+:::important
+Customizing how links open in onboardings is supported starting from Adapty SDK v.3.15.1.
+:::
+
+By default, links in onboardings open in an in-app browser. This provides a seamless user experience by displaying web pages within your application, allowing users to view them without switching apps.
+
+If you prefer to open links in an external browser instead, you can customize this behavior by setting the `externalUrlsPresentation` parameter to `AdaptyWebPresentation.EXTERNAL_BROWSER`:
+
+```kotlin showLineNumbers
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.models.AdaptyWebPresentation
+import kotlinx.coroutines.launch
+
+viewModelScope.launch {
+    AdaptyUI.createOnboardingView(
+        onboarding = onboarding,
+        externalUrlsPresentation = AdaptyWebPresentation.EXTERNAL_BROWSER // default – IN_APP_BROWSER
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
