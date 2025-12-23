@@ -25,4 +25,4 @@ For more guides on implementing paywalls and handling purchases manually, see th
 
 ## Useful features
 
-<CustomDocCardList ids={['kmp-use-fallback-paywalls']} />
+<CustomDocCardList ids={['kmp-use-fallback-paywalls', 'kmp-web-paywalls']} />

@@ -95,11 +95,5 @@ To ensure a successful import, the import file must meet the following requireme
 - **Partial import:**
   The file can include all or just some entities from the current paywall configuration.
 
-## Existing limitations
 
-Once a user opens an onboarding, the displayed language is locked for approximately 24 hours. If the user changes their device or app language during this time, the onboarding will continue to display in the original language. After 24 hours, the new language will be applied.
-
-This affects two scenarios:
-- User opens onboarding in language A, closes the app, changes device language to language B, and reopens the app → onboarding still displays in language A
-- User opens onboarding in language A, closes it, changes in-app language to language B, and reopens the onboarding → onboarding still displays in language A
 

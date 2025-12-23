@@ -24,10 +24,10 @@ Adapty.activate(
     AdaptyConfig.Builder("PUBLIC_SDK_KEY")
         .withCustomerUserId("YOUR_USER_ID")
         .build()
-) { error ->
-    error?.let {
-        // handle the error
-    }
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
 }
 ```
 
@@ -40,12 +40,10 @@ If you don't have a user ID in the SDK configuration, you can set it later at an
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
 
-Adapty.identify("YOUR_USER_ID") { error ->
-    error?.let {
-        // handle the error
-    } ?: run {
-        // successful identify
-    }
+Adapty.identify("YOUR_USER_ID").onSuccess {
+    // successful identify
+}.onError { error ->
+    // handle the error
 }
 ```
 
@@ -69,13 +67,95 @@ You can log the user out anytime by calling `.logout()` method:
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
 
-Adapty.logout { error ->
-    error?.let {
-        // handle the error
-    } ?: run {
-        // successful logout
-    }
+Adapty.logout().onSuccess {
+    // successful logout
+}.onError { error ->
+    // handle the error
 }
 ```
 
 You can then login the user using `.identify()` method.
+
+## Assign `appAccountToken` (iOS)
+
+[`iosAppAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) is a **UUID** that lets you link App Store transactions to your internal user identity.  
+StoreKit associates this token with every transaction, so your backend can match App Store data to your users.
+
+Use a stable UUID generated per user and reuse it for the same account across devices.
+This ensures that purchases and App Store notifications stay correctly linked.
+
+You can set the token in two ways – during the SDK activation or when identifying the user.
+
+:::important
+You must always pass `iosAppAccountToken` together with `customerUserId`.
+If you pass only the token, it will not be included in the transaction.
+:::
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyConfig
+
+// During configuration:
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withCustomerUserId(
+            id = "YOUR_USER_ID",
+            iosAppAccountToken = "YOUR_IOS_APP_ACCOUNT_TOKEN"
+        )
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+}
+
+// Or when identifying users
+Adapty.identify(
+    customerUserId = "YOUR_USER_ID",
+    iosAppAccountToken = "YOUR_IOS_APP_ACCOUNT_TOKEN"
+).onSuccess {
+    // successful identify
+}.onError { error ->
+    // handle the error
+}
+```
+
+## Set obfuscated account IDs (Android)
+
+Google Play requires obfuscated account IDs for certain use cases to enhance user privacy and security. These IDs help Google Play identify purchases while keeping user information anonymous, which is particularly important for fraud prevention and analytics.
+
+You may need to set these IDs if your app handles sensitive user data or if you're required to comply with specific privacy regulations. The obfuscated IDs allow Google Play to track purchases without exposing actual user identifiers.
+
+:::important
+You must always pass `androidObfuscatedAccountId` together with `customerUserId`.
+If you pass only the obfuscated account ID, it will not be included in the transaction.
+:::
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyConfig
+
+// During configuration:
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withCustomerUserId(
+            id = "YOUR_USER_ID",
+            androidObfuscatedAccountId = "YOUR_OBFUSCATED_ACCOUNT_ID"
+        )
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+}
+
+// Or when identifying users
+Adapty.identify(
+    customerUserId = "YOUR_USER_ID",
+    androidObfuscatedAccountId = "YOUR_OBFUSCATED_ACCOUNT_ID"
+).onSuccess {
+    // successful identify
+}.onError { error ->
+    // handle the error
+}
+```
