@@ -43,11 +43,13 @@ There are two versions of the `openWebPaywall` method:
 2. `openWebPaywall(paywall = paywall)` that generates URLs by paywall without adding the product data to URLs. Use it when your products in the Adapty paywall differ from those in the web paywall.
    :::
 
-## Customize how web paywalls open
+## Open web paywalls in an in-app browser
 
-By default, web paywalls open in an in-app browser. This provides a seamless user experience by displaying the web purchase page within your application, allowing users to complete transactions without switching apps.
+By default, web paywalls open in the external browser.
 
-If you prefer to open web paywalls in an external browser instead, you can customize this behavior by setting the `openIn` parameter to `AdaptyWebPresentation.EXTERNAL_BROWSER`:
+To provide a seamless user experience, you can open web paywalls in an in-app browser. This displays the web purchase page within your application, allowing users to complete transactions without switching apps.
+
+To enable this, set the `openIn` parameter to `AdaptyWebPresentation.IN_APP_BROWSER`:
 
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
@@ -57,7 +59,7 @@ import kotlinx.coroutines.launch
 viewModelScope.launch {
     Adapty.openWebPaywall(
         product = product,
-        openIn = AdaptyWebPresentation.EXTERNAL_BROWSER // default – IN_APP_BROWSER
+        openIn = AdaptyWebPresentation.IN_APP_BROWSER // default – EXTERNAL_BROWSER
     ).onSuccess {
         // the web paywall was opened successfully
     }.onError { error ->
