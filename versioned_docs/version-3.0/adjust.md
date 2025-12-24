@@ -301,26 +301,26 @@ Adapty sends selected events to Adjust as configured in the **Events names** sec
 
 Where
 
-| Parameter            | Type    | Description                                                 |
-|:---------------------|:--------|:------------------------------------------------------------|
-| `app_token`          | String  | The Adjust App Token from your integration settings.        |
-| `event_token`        | String  | The Adjust Event Token mapped to the specific Adapty event. |
-| `s2s`                | Integer | Server-to-Server event flag.                                |
-| `environment`        | String  | `sandbox` or `production`.                                  |
-| `created_at_unix`    | Integer | Timestamp of the event in seconds.                          |
-| `currency`           | String  | Currency code (e.g., "USD"). Only sent if revenue > 0.001.  |
-| `revenue`            | Float   | Revenue amount. Only sent if > 0.001.                       |
-| `customer_user_id`   | String  | The user's Customer User ID.                                |
-| `external_device_id` | String  | Same as `customer_user_id`.                                 |
-| `ip_address`         | String  | User's IP address (IPv4 only).                              |
-| `user_agent`         | String  | Device User Agent string.                                   |
-| `adid`               | String  | Adjust Device ID (if known).                                |
-| `android_id`         | String  | **Android only**. Google Advertising ID.                    |
-| `gps_adid`           | String  | **Android only**. Google Advertising ID.                    |
-| `idfa`               | String  | **iOS only**. ID for Advertisers.                           |
-| `idfv`               | String  | **iOS only**. ID for Vendors.                               |
-| `callback_params`    | String  | JSON string containing detailed event data. The fields are the same as [webhook event properties](webhook-event-types-and-fields#event-properties), but stringified as JSON. Only non-null fields are included. |
-| `partner_params`     | String  | Same as `callback_params`.                                  |
+| Parameter            | Type    | Description                                                                                                                                  |
+|:---------------------|:--------|:---------------------------------------------------------------------------------------------------------------------------------------------|
+| `app_token`          | String  | The Adjust App Token from your integration settings.                                                                                         |
+| `event_token`        | String  | The Adjust Event Token mapped to the specific Adapty event.                                                                                  |
+| `s2s`                | Integer | Server-to-Server event flag.                                                                                                                 |
+| `environment`        | String  | `sandbox` or `production`.                                                                                                                   |
+| `created_at_unix`    | Integer | Timestamp of the event in seconds.                                                                                                           |
+| `currency`           | String  | Currency code (e.g., "USD"). Only sent if revenue > 0.001.                                                                                   |
+| `revenue`            | Float   | Revenue amount. Only sent if > 0.001.                                                                                                        |
+| `customer_user_id`   | String  | The user's Customer User ID.                                                                                                                 |
+| `external_device_id` | String  | Same as `customer_user_id`.                                                                                                                  |
+| `ip_address`         | String  | User's IP address (IPv4 only).                                                                                                               |
+| `user_agent`         | String  | Device User Agent string.                                                                                                                    |
+| `adid`               | String  | Adjust Device ID (if known).                                                                                                                 |
+| `android_id`         | String  | **Android only**. Google Advertising ID.                                                                                                     |
+| `gps_adid`           | String  | **Android only**. Google Advertising ID.                                                                                                     |
+| `idfa`               | String  | **iOS only**. ID for Advertisers.                                                                                                            |
+| `idfv`               | String  | **iOS only**. ID for Vendors.                                                                                                                |
+| `callback_params`    | String  | JSON string containing all available [event fields](webhook-event-types-and-fields#for-most-event-types). Only non-null fields are included. |
+| `partner_params`     | String  | Same as `callback_params`.                                                                                                                   |
 
 
 ## Troubleshooting

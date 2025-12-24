@@ -132,30 +132,30 @@ Adapty sends events to SplitMetrics Acquire via a GET request using query parame
 
 Where:
 
-| Parameter           | Type   | Description                                |
-|:--------------------|:-------|:-------------------------------------------|
-| `source`            | String | Always "Apple Search Ads".                 |
-| `app_id`            | String | Apple App ID.                              |
-| `name`              | String | Event name (mapped from Adapty event).     |
-| `type`              | String | Event type (same as `name`).               |
-| `revenue`           | Float  | Revenue amount.                            |
-| `currency`          | String | Currency code.                             |
-| `tap_time`          | String | Date and time of the ad tap.               |
-| `open_time`         | String | Date and time of the app open (install).   |
-| `event_time`        | String | Date and time of the event.                |
-| `adaccount_id`      | String | ASA Organization ID.                       |
-| `campaign_id`       | String | ASA Campaign ID.                           |
-| `adgroup_id`        | String | ASA Ad Group ID.                           |
-| `keyword_id`        | String | ASA Keyword ID.                            |
-| `creative_set_id`   | String | ASA Creative Set ID.                       |
-| `Ad_id`             | String | ASA Ad ID.                                 |
-| `country_or_region` | String | Store country or region.                   |
-| `conversion_type`   | String | Conversion type (e.g., "Download").        |
-| `user_id`           | String | Customer User ID or Adapty Profile ID.     |
-| `att_status`        | String | Tracking usage status (0-3).               |
-| `device_type`       | String | Device type (e.g., "iphone", "ipad").      |
-| `app_version`       | String | Application version.                       |
-| `sdk_version`       | String | Adapty SDK version.                        |
-| `ios_version`       | String | iOS version.                               |
-| `event_value`       | String | JSON string containing full event details. |
-| `event_id`          | String | Unique event ID (UUID).                    |
+| Parameter           | Type   | Description                                                                                                |
+|:--------------------|:-------|:-----------------------------------------------------------------------------------------------------------|
+| `source`            | String | Always "Apple Search Ads".                                                                                 |
+| `app_id`            | String | Apple App ID.                                                                                              |
+| `name`              | String | Event name (mapped from Adapty event).                                                                     |
+| `type`              | String | Event type (same as `name`).                                                                               |
+| `revenue`           | Float  | Revenue amount.                                                                                            |
+| `currency`          | String | Currency code.                                                                                             |
+| `tap_time`          | String | Date and time of the ad tap.                                                                               |
+| `open_time`         | String | Date and time of the app open (install).                                                                   |
+| `event_time`        | String | Date and time of the event.                                                                                |
+| `adaccount_id`      | String | ASA Organization ID.                                                                                       |
+| `campaign_id`       | String | ASA Campaign ID.                                                                                           |
+| `adgroup_id`        | String | ASA Ad Group ID.                                                                                           |
+| `keyword_id`        | String | ASA Keyword ID.                                                                                            |
+| `creative_set_id`   | String | ASA Creative Set ID.                                                                                       |
+| `Ad_id`             | String | ASA Ad ID.                                                                                                 |
+| `country_or_region` | String | Store country or region.                                                                                   |
+| `conversion_type`   | String | Conversion type (e.g., "Download").                                                                        |
+| `user_id`           | String | Customer User ID or Adapty Profile ID.                                                                     |
+| `att_status`        | String | Tracking usage status (0-3).                                                                               |
+| `device_type`       | String | Device type (e.g., "iphone", "ipad").                                                                      |
+| `app_version`       | String | Application version.                                                                                       |
+| `sdk_version`       | String | Adapty SDK version.                                                                                        |
+| `ios_version`       | String | iOS version.                                                                                               |
+| `event_value`       | String | JSON string containing all available [event details](webhook-event-types-and-fields#for-most-event-types). |
+| `event_id`          | String | Unique event ID (UUID).                                                                                    |
