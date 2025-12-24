@@ -69,15 +69,18 @@ Actions fire depending on the element they’re attached to:
 
 ## Action ID
 
+:::important
+Action ID is not the same as the [element ID](onboarding-variables.md) used for inserting dynamic data with variables. Be sure not to mix them up.
+:::
+
 When setting up custom actions for buttons, you may want to handle different buttons the same way using action IDs:
 
 1. When [adding a button](onboarding-buttons.md#add-buttons), assign it an ID in the **On Press** section of the **Element** tab.
 2. [Use the assigned action ID in your source code](ios-handling-onboarding-events.md#custom-actions).
 
-:::note
-Action ID is not the same as the [element ID](onboarding-variables.md) used for inserting dynamic data with variables. Be sure not to mix them up.
+::::note
+On iOS devices, onboardings support only actions in the **On Press** section. The **On Press Extra** section won't work because only one view can be displayed at a time—if one action opens a view (like a paywall), the other action cannot execute simultaneously.
 :::
-
 
   <Zoom>
   <img src={require('./img/ios-events-1.webp').default}
