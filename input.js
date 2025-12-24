@@ -325,6 +325,11 @@ const sidebars = {
             },
             {
               type: 'doc',
+              id: 'local-fallback-paywalls',
+              label: 'Download fallback paywalls',
+            },
+            {
+              type: 'doc',
               id: 'paywall-metrics',
               label: 'Paywall metrics',
             },
@@ -332,11 +337,6 @@ const sidebars = {
               type: 'doc',
               id: 'duplicate-paywalls',
               label: 'Duplicate paywall',
-            },
-            {
-              type: 'doc',
-              id: 'local-fallback-paywalls',
-              label: 'Download fallback paywalls',
             },
             {
               type: 'doc',
