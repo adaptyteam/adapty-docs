@@ -7,7 +7,7 @@ metadataTitle: "Understanding Subscription Grace Periods | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-The Grace period chart displays the number of subscriptions that have entered the grace period state due to a billing issue. During this period, the subscription remains active while the store tries to receive payment from the subscriber. If payment is not successfully received before the grace period ends, the subscription enters the billing issue state.
+The Grace period chart displays the number of subscriptions that have entered the grace period state due to a [billing issue](billing-issue). During this period, the subscription remains active while the store tries to receive payment from the subscriber. If payment is not successfully received before the grace period ends, the subscription enters the billing issue state.
 
 
 <Zoom>

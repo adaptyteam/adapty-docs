@@ -9,7 +9,6 @@ import 'react-medium-image-zoom/dist/styles.css';
 
 The Billing issue chart displays the number of subscriptions that have entered the Billing Issue state. This state is typically triggered when the store, such as Apple or Google, is unable to receive payment from the subscriber for some reason. This could happen due to reasons such as an expired credit card or insufficient funds.
 
-
 <Zoom>
   <img src={require('./img/8749d28-CleanShot_2023-07-11_at_15.21.262x.webp').default}
   style={{
@@ -44,6 +43,11 @@ The Billing Issue chart can provide valuable insights into your app's subscripti
 
 In addition to the Billing Issue chart, Adapty also provides metrics for other issues-related events, such as Refund events, Refund money, and Grace period. To learn more about these issue-related metrics, please refer to the following documentation:
 
+- [Billing issue](billing-issue)
+- [Billing issue converted](billing-issue-converted)
+- [Billing issue converted revenue](billing-issue-converted-revenue)
 - [Refund money](new-trials)
 - [Refund events](active-trials)
 - [Grace period](trials-renewal-cancelled)
+- [Grace period converted](grace-period-converted)
+- [Grace period converted revenue](grace-period-converted-revenue)
