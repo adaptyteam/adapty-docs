@@ -59,7 +59,9 @@ We automatically detect which lines have never been translated or have changed i
 
 Rich text formatting (bold, italic, colored text, etc.) won’t be preserved in the translated version. Please adjust the translated text manually as needed.
 
-1. Select the languages for translation.
+1. Click the localization icon to select languages for translation:
+   - **In the language column header**: Translates all lines at once—ideal for initial translation or when updating the entire language.
+   - **In individual lines**: Translates specific lines independently—useful when making targeted changes without affecting other translations.
 
    <Zoom>
      <img src={require('./img/localization-table-language-PB.webp').default}
