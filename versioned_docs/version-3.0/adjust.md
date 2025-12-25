@@ -308,8 +308,8 @@ Where
 | `s2s`                | Integer | Server-to-Server event flag.                                                                                                                 |
 | `environment`        | String  | `sandbox` or `production`.                                                                                                                   |
 | `created_at_unix`    | Integer | Timestamp of the event in seconds.                                                                                                           |
-| `currency`           | String  | Currency code (e.g., "USD"). Only sent if revenue > 0.001.                                                                                   |
-| `revenue`            | Float   | Revenue amount. Only sent if > 0.001.                                                                                                        |
+| `currency`           | String  | Currency code (e.g., "USD") for the transaction. Included only when revenue exceeds 0.001, as Adjust requires both revenue and currency to be sent together. |
+| `revenue`            | Float   | Transaction revenue amount. Only included when the value exceeds 0.001. Note that refund events are sent without revenue properties, since Adjust doesn't support negative revenue values. |
 | `customer_user_id`   | String  | The user's Customer User ID.                                                                                                                 |
 | `external_device_id` | String  | Same as `customer_user_id`.                                                                                                                  |
 | `ip_address`         | String  | User's IP address (IPv4 only).                                                                                                               |
