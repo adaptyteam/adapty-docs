@@ -352,3 +352,21 @@ let configurationBuilder = AdaptyConfiguration
 ```
 
 See more details on how to finish transactions in the [guide](ios-transaction-management).
+
+### Clear data on backup restore
+
+When a user restores their app from an iOS backup, the Adapty SDK can detect this and automatically clear its cached data to start fresh. This prevents potential issues with duplicate profiles and ensures clean analytics data.
+
+Enable this if you want to ensure a fresh SDK state after backup restoration. Keep it disabled (default) if you want to preserve SDK data when users restore from backups.
+
+To enable automatic data clearing on backup restore, set `clearDataOnBackup` to `true`.
+
+:::note
+This only clears the SDK's local cache. The user's actual purchases and subscriptions remain safe and are stored with Apple and in Adapty's servers.
+:::
+
+```swift showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+    .with(clearDataOnBackup: true) // default – false
+```
