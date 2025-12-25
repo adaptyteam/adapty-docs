@@ -187,6 +187,8 @@ This feature gives you access to the underlying data, which you can further anal
 
 One crucial aspect of revenue calculation is the inclusion of taxes (which can vary based on the user's store account country) and store commission fees. Adapty currently supports commission and tax calculation for both App Store and Play Store.
 
+Adapty automatically calculates the applicable store commission for each transaction, accounting for various commission structures set by the App Store and Play Store. These include the Small Business Program (15% commission), reduced rates for long-term subscriptions (15% after one year of continuous renewal), country-specific rates (such as 26% in Japan), and standard rates (up to 30%). For detailed information on how Adapty calculates store commission fees, please refer to the corresponding documentation for [App Store](app-store-small-business-program) and [Play Store.](google-reduced-service-fee)
+
 In the charts tab of the Analytics section, Adapty introduces a dropdown field with three display options.
 
 
@@ -212,7 +214,7 @@ This option displays the total revenue, including taxes and commission fees from
 This option displays the revenue amount after deducting the store commission fee.  
 It represents the revenue that remains after the App Store / Play Store cuts its commission fees from the gross revenue. Taxes are not deducted in this display option. 
 
-Apple and Google take up to 30% of the price paid by the customers as a fee. For the apps included in Small Business Program (i.e. the app makes less than $1m per year), the fee is always 15%. The rest of the apps (>$1m per year) pay 30% by default and 15% for subscriptions that are consecutively renewed for at least a year. For detailed information on how Adapty calculates store commission fees, please refer to the corresponding documentation for [App Store](app-store-small-business-program) and [Play Store.](google-reduced-service-fee)
+Adapty automatically applies the appropriate commission rate for each transaction based on various factors. For detailed information on how Adapty calculates store commission fees, including the Small Business Program, long-term subscription discounts, country-specific rates, and other applicable commission structures, please refer to the corresponding documentation for [App Store](app-store-small-business-program) and [Play Store](google-reduced-service-fee), as well as the [Store commission and taxes](controls-filters-grouping-compare-proceeds#store-commission-and-taxes) section above.
 
 #### Proceeds after store commission and taxes
 

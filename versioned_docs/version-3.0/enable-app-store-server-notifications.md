@@ -63,7 +63,7 @@ Sometimes, you might still want to receive raw S2S events from Apple. To continu
 Set up the Adapty SDK for:
 
 - [iOS](sdk-installation-ios)
-- [Flutter](sdk-installation-flutter)
 - [React Native](sdk-installation-reactnative)
+- [Flutter](sdk-installation-flutter)
 - [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform.md)
 - [Unity](sdk-installation-unity)

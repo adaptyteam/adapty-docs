@@ -6,7 +6,18 @@ metadataTitle: "Using Fallback Paywalls in Flutter | Adapty Docs"
 
 import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
-To use fallback paywalls, call the `.setFallback` method. Pass the path to the fallback JSON file you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard). Place this method in your code **before** fetching a paywall, ensuring that the mobile app possesses it when a fallback paywall is required to replace the standard one.
+import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackPaywallIntroduction.md';
+
+<FallbackPaywallIntroduction />
+
+## Configuration
+
+1. Move the fallback configuration file to your project directory.
+2. Add the `.setFallback` method to your application code. Place it **before** the method that fetches the target paywall or [onboarding](/localize-onboardings).
+3. Pass the fallback configuration file path to the method.
+
+Example:
+
 
 ```javascript showLineNumbers title="javascript"
 import 'dart:async' show Future;
@@ -26,6 +37,6 @@ Parameters:
 
 | Parameter      | Description                                                                                                                                                          |
 | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **assetId**    | The path to the fallback JSON file you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard). |
+| **assetId**    | Path to the fallback paywall / onboarding configuration file. |
 
 <SampleApp />

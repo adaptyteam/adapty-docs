@@ -82,7 +82,7 @@ If your user journey calls for closing the onboarding flow, you can set it up us
 - **Action on** (for quiz only): Select **Option** to unlock navigation settings for the quiz.
 - **Action**: Select **Close onboarding**.
 
-Learn how to handle onboarding closure on [iOS](ios-handling-onboarding-events.md#closing-onboarding), [Android](android-handle-onboarding-events.md#closing-onboarding), [Flutter](flutter-handling-onboarding-events.md#closing-onboarding), and [React Native](react-native-handling-onboarding-events.md#closing-onboarding).
+Learn how to handle onboarding closure on [iOS](ios-handling-onboarding-events.md#closing-onboarding), [Android](android-handle-onboarding-events.md#closing-onboarding), [React Native](react-native-handling-onboarding-events.md#closing-onboarding), and [Flutter](flutter-handling-onboarding-events.md#closing-onboarding).
 
 <Zoom>
   <img src={require('./img/close-onboarding.png').default}

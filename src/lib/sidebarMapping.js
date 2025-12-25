@@ -4,7 +4,7 @@
 import sidebarConfig from '../../versioned_sidebars/version-3.0-sidebars.json';
 
 // Mobile SDK sidebar IDs
-const MOBILE_SDK_SIDEBARS = ['sdkios', 'sdkandroid', 'sdkflutter', 'sdkreactnative', 'sdkunity', 'sdkcapacitor', 'sdkkmp'];
+const MOBILE_SDK_SIDEBARS = ['sdkios', 'sdkandroid', 'sdkreactnative', 'sdkflutter', 'sdkunity', 'sdkcapacitor', 'sdkkmp'];
 
 // Function to extract all documents from a sidebar recursively
 function extractDocumentsFromSidebar(sidebarItems, sidebarId) {

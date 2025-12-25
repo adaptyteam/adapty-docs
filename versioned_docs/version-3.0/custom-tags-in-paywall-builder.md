@@ -176,4 +176,4 @@ view = await createPaywallView(paywall, { customTags })
 
 In this example, `USERNAME` is a custom tag you entered in the Adapty dashboard as `<USERNAME/>`. The `tagResolver` ensures that your app dynamically replaces this custom tag with the specified value—like `John`.
 
-We recommend creating and populating the tagResolver right before presenting your paywall. Once it's ready, pass it to the AdaptyUI method you use for presenting the paywall. You can read more about presenting paywalls on  [iOS](ios-present-paywalls),  [Android](android-present-paywalls), [Flutter](flutter-present-paywalls), [React Native](react-native-present-paywalls), or [Unity](unity-present-paywalls).
+We recommend creating and populating the tagResolver right before presenting your paywall. Once it's ready, pass it to the AdaptyUI method you use for presenting the paywall. You can read more about presenting paywalls on  [iOS](ios-present-paywalls),  [Android](android-present-paywalls), [React Native](react-native-present-paywalls), [Flutter](flutter-present-paywalls), or [Unity](unity-present-paywalls).

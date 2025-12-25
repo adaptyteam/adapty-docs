@@ -39,7 +39,7 @@ To track subscription events, use [Webhook](webhook) integration in Adapty or in
 ## Case 1: Sync subscribers between web and mobile
 
 If you use web payment providers like Stripe, ChargeBee, or others, you can sync your subscribers easily. Here's how:
-1. <InlineTooltip tooltip="Assign a unique ID to each user">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip>.
+1. <InlineTooltip tooltip="Assign a unique ID to each user">[iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip>.
 2. [Check their subscription status](api-adapty#/operations/getProfile) using the API.
 3. If a user is on a freemium plan, display a paywall on your website.
 4. After a successful payment, [update the subscription status](api-adapty#/operations/setTransaction) in Adapty via API.
@@ -53,7 +53,7 @@ Due to security reasons, you can't grant a subscription via mobile SDK.
 
 If you're selling through your own online store, Amazon Appstore, Microsoft Store, or any other platform besides Google Play and App Store, you'll need to sync those transactions with Adapty to provide access and track the transaction in analytics.
 
-1. <InlineTooltip tooltip="Assign a unique ID to each user">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip>.
+1. <InlineTooltip tooltip="Assign a unique ID to each user">[iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip>.
 2. [Set up a custom store for your products in the Adapty Dashboard](custom-store).
 3. Sync the transaction to Adapty using the [Set transaction](api-adapty#/operations/setTransaction) API request.
 
@@ -61,7 +61,7 @@ If you're selling through your own online store, Amazon Appstore, Microsoft Stor
 
 Let's say you're running a promotion offering a 7-day free trial and you want the experience to be consistent across platforms. To sync this with the mobile app:
 
-1. <InlineTooltip tooltip="Assign a unique ID to each user">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip>.
+1. <InlineTooltip tooltip="Assign a unique ID to each user">[iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip>.
 2. Use the API to [grant premium access](api-adapty#/operations/grantAccessLevel) for 7 days.
 
 After the 7 days, users who don't subscribe will be downgraded to the free tier.
@@ -70,7 +70,7 @@ After the 7 days, users who don't subscribe will be downgraded to the free tier.
 
 If you have custom attributes for your users—such as the number of words learned in a language learning app—you can sync them as well.
 
-1. <InlineTooltip tooltip="Assign a unique ID to each user">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip>.
+1. <InlineTooltip tooltip="Assign a unique ID to each user">[iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip>.
 2. [Update the attribute](api-adapty#/operations/updateProfile) via API or SDK.
 
 These custom attributes can be used to create segments and run A/B tests.

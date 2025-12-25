@@ -9,12 +9,18 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-To use fallback paywalls:
+import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackPaywallIntroduction.md';
 
-1. Place the fallback JSON file you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard) in the `assets` or `res/raw` directory of your Android project.
-2. Call the `.setFallback` method. Place this method in your code **before** fetching a paywall, ensuring that the mobile app possesses it when a fallback paywall is required to replace the standard one.
+<FallbackPaywallIntroduction />
 
-Here's an example of retrieving fallback paywall data from locally stored JSON file named `android_fallback.json`.
+## Configuration
+
+1. Move the fallback configuration file to the `assets` or `res/raw` directory of your Android project.
+2. Add the `.setFallback` method to your application code. Place it **before** the method that fetches the target paywall or [onboarding](/localize-onboardings).
+3. Create a FileLocation object that corresponds to the fallback configuration file path.
+4. Pass the FileLocation object to the method.
+
+Example:
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
@@ -57,4 +63,4 @@ Parameters:
 
 | Parameter    | Description                                                  |
 | :----------- | :----------------------------------------------------------- |
-| **location** | The [FileLocation](https://kotlin.adapty.io/adapty/com.adapty.utils/-file-location/-companion/)  for the file with fallback paywalls |
+| **location** | The [FileLocation](https://kotlin.adapty.io/adapty/com.adapty.utils/-file-location/-companion/) object for the fallback configuration file |

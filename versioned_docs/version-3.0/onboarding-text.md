@@ -61,6 +61,35 @@ To edit an existing list element, click on it and make changes in the **Element*
 />
 </Zoom>
 
+## Add external links
+
+To add an external link:
+
+1. Click **Add** at the top left.
+2. In the **Typography** section, select **Title**, **Subtitle**, **Text**, or **Rich text**.
+3. Enter your text. 
+4. Select the text you want to turn into a link. 
+5. Click the **Link** icon in the quick customization menu above the text. 
+6. Paste the external URL. 
+7. Click **✓** to apply the link.
+
+:::info
+In Adapty SDK versions earlier than 3.15.1, external links in onboardings open in the device’s default browser.
+
+Starting with Adapty SDK v3.15.1, external links open in an in-app browser by default, allowing users to stay within your app without switching to another application. If needed, you can [customize this behavior](ios-present-onboardings#customize-how-links-open-in-onboardings).
+:::
+
+<Zoom>
+  <img src={require('./img/onboarding-url.gif').default}
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
 ## Text & list customization
 
 In addition to the basic [element layout](onboarding-layout.md#element-layout), you can customize the appearance of text and lists:

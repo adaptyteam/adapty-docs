@@ -46,7 +46,7 @@ You can attract more attention to purchase buttons by animating them. The Paywal
 
 Each animation lets you choose an easing option (Linear, Ease In, Ease Out, Ease In Out) to control how it speeds up or slows down.
 
-Animations are available in the Adapty iOS, Android, Flutter, and React Native SDKs starting from version 3.10.0. Follow the [migration guide](migration-to-android-310.md) for Android.
+Animations are available in the Adapty iOS, Android, React Native, and Flutter SDKs starting from version 3.10.0. Follow the [migration guide](migration-to-android-310.md) for Android.
 :::
 
 <Zoom>
