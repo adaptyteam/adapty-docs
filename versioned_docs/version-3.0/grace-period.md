@@ -40,6 +40,6 @@ You can find more information about the available controls, filters, grouping op
 
 In addition to the Grace period chart, Adapty also provides metrics for other issues-related events, such as Refund events, Refund money, and Billing issue. To learn more about these issue-related metrics, please refer to the following documentation:
 
-- [Refund money](new-trials)
-- [Refund events](active-trials)
+- [Refund money](refund-money.md)
+- [Refund events](refund-events.md)
 - [Billing issue](billing-issue)

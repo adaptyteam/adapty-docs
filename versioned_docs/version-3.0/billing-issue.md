@@ -43,11 +43,10 @@ The Billing Issue chart can provide valuable insights into your app's subscripti
 
 In addition to the Billing Issue chart, Adapty also provides metrics for other issues-related events, such as Refund events, Refund money, and Grace period. To learn more about these issue-related metrics, please refer to the following documentation:
 
-- [Billing issue](billing-issue)
 - [Billing issue converted](billing-issue-converted)
 - [Billing issue converted revenue](billing-issue-converted-revenue)
-- [Refund money](new-trials)
-- [Refund events](active-trials)
-- [Grace period](trials-renewal-cancelled)
+- [Refund money](refund-money.md)
+- [Refund events](refund-events.md)
+- [Grace period](grace-period.md)
 - [Grace period converted](grace-period-converted)
 - [Grace period converted revenue](grace-period-converted-revenue)

@@ -58,8 +58,8 @@ Adapty offers a wide range of charts to help you analyze and visualize your app'
 - [Grace period converted](grace-period-converted): Track the number of subscriptions that are successfully renewed before the grace period lapses.
 - [Grace period converted revenue](grace-period-converted-revenue): Track the total revenue for grace period conversions.
 - [Billing issues](billing-issue): Track the number of failed payments, chargebacks, and other billing issues.
-- [Billing issues converted](grace-period-converted): Track the number of billing issues that are resolved before the end of the billing cycle.
-- [Billing issues converted revenue](grace-period-converted-revenue): Track the total revenue for billing issue conversions.
+- [Billing issues converted](billing-issue-converted): Track the number of billing issues that are resolved before the end of the billing cycle.
+- [Billing issues converted revenue](billing-issue-converted-revenue): Track the total revenue for billing issue conversions.
 - [Refund events](refund-events): Monitor the number of refunds processed by your app.
 - [Refund money](refund-money): Analyze the amount of revenue lost due to refunds.
 

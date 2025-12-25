@@ -253,7 +253,7 @@ This means that 50% of users who entered their third subscription period on Janu
 
 </details>
 
-### 4th Period -> 5 the Period
+### 4th Period -> 5th Period
 
 This metric shows the percentage of users who renewed after their fourth subscription period.
 
@@ -292,9 +292,7 @@ This metric shows the percentage of users who remained subscribed for longer tha
 <summary>How it works</summary>
 
 **Let**:
-
 - **X** = number of first-time subscriptions on a selected date.
-
 - **Y** = number of those users who renewed at least once after 6 months from the original subscription date.
 
 **Formula**: Conversion = (Y / X) × 100%
@@ -377,32 +375,27 @@ This means that 50% of the users who subscribed on January 1, 2020 were still ac
 
 </details>
 
-### Grace Period -> Paid
+### Grace period -> Paid
 
-This metric shows the percentage of users who encountered a [billing issue](/billing-issue), entered a [subscription grace period](/grace-period), and resolved the issue *before* the end of the grace period.
+This metric shows the percentage of users who entered a [subscription grace period](grace-period) and resolved the issue *before* the end of the grace period.
 
 <details>
 <summary>How it works</summary>
 
 **Let**:
-
 - X = number of subscribers that entered the grace period.
-
 - Y = number of those users who renewed the subscription before the grace period lapsed.
 
 **Formula**: Conversion = (Y / X) × 100%
 
 **Example**:
-
-- On January 1st, 2020, the subscription of 100 people could not be renewed automatically. They entered a 16-day grace period, due to end on January 17th.
-
+- On January 1st, 2025, the subscription of 100 people could not be renewed automatically. They entered a 16-day grace period, due to end on January 17th.
 - 50 people updated their payment information between January 1st and January 17th, and their subscription was successfully renewed.
-
-   - On January 17th, 2020, the conversion = (50 / 100) × 100% = 50%
+- On January 17th, 2025, the conversion = (50 / 100) × 100% = 50%
 
 </details>
 
-### Billing Issue -> Paid
+### Billing issue -> Paid
 
 This metric shows the percentage of users who encountered a [billing issue](/billing-issue), and resumed paying before the end of the billing cycle.
 
@@ -412,18 +405,19 @@ This metric shows the percentage of users who encountered a [billing issue](/bil
 **Let**:
 
 - X = number of subscribers who encountered a billing issue.
-
-- Y = number of those users who renewed their subscription in the time between the billing issue and the the end of the billing cycle.
+- Y = number of those users who renewed their subscription in the time between the billing issue and the end of the billing cycle.
 
 **Formula**: Conversion = (Y / X) × 100%
 
-- On January 1st, 2020, 100 subscribers entered a new billing cycle, but could not renew their subscription automatically. They have a 16-day grace period, due to end on January 17th.
+**Example**:
+- On January 1, 100 subscribers encountered a billing issue when their subscription could not be renewed automatically.
+  - Note: If a grace period is enabled, the billing issue state begins only after the grace period ends. For this example, assume the grace period ended on January 1.
+- By January 8, 10 of those users had resolved the payment issue and renewed.
+  - On January 8, the conversion for January 1 = (10 / 100) × 100% = 10%
+- By January 31 (end of the billing cycle), 10 more users had renewed.
+  - On January 31, the conversion for January 1 = ((10 + 10) / 100) × 100% = 20%
 
-- On January 17th, the grace period ended. During the grace period, 50 people successfully renewed their subscriptions. The remaining 50 people have now entered a Billing Issue state.
-
-- On February 1st, the billing cycle ended. Between January 17nd and January 31st, 2020, 10 people renewed their subscriptions.
-
-   - On February 1st, 2020, the conversion = (10 / 50) × 100% = 20%
+This shows that 20% of users who entered a billing issue state on January 1 resolved the issue and renewed before the end of their billing cycle.
 
 </details>
 
