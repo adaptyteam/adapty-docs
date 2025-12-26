@@ -293,57 +293,34 @@ Adapty sends selected events to Adjust as configured in the **Events names** sec
    "user_agent": "Mozilla/5.0 (Linux; Android 14; SM-S901B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
    "android_id": "875646c2-4a56-4211-8931-168532479006",
    "gps_adid": "875646c2-4a56-4211-8931-168532479006",
-   "callback_params": "{\"integration_event_id\":\"550e8400-e29b-41d4-a716-446655440000\",\"customer_user_id\":\"user_12345\",\"vendor_product_id\":\"com.example.app.yearly.premium\",\"transaction_id\":\"GPA.3312-4512-1100-55923\",\"original_transaction_id\":\"GPA.3312-4512-1100-55923\",\"store\":\"play_store\",\"store_country\":\"US\",\"price_usd\":9.99,\"proceeds_usd\":8.49,\"price_local\":9.99,\"proceeds_local\":8.49,\"net_revenue_usd\":8.49,\"tax_amount_usd\":0.0,\"is_active\":true,\"will_renew\":true,\"is_refund\":false}",
-   "partner_params": "{\"integration_event_id\":\"550e8400-e29b-41d4-a716-446655440000\",\"customer_user_id\":\"user_12345\",\"vendor_product_id\":\"com.example.app.yearly.premium\",\"transaction_id\":\"GPA.3312-4512-1100-55923\",\"original_transaction_id\":\"GPA.3312-4512-1100-55923\",\"store\":\"play_store\",\"store_country\":\"US\",\"price_usd\":9.99,\"proceeds_usd\":8.49,\"price_local\":9.99,\"proceeds_local\":8.49,\"net_revenue_usd\":8.49,\"tax_amount_usd\":0.0,\"is_active\":true,\"will_renew\":true,\"is_refund\":false}"
+   "callback_params": "{\"integration_event_id\":\"550e8400-e29b-41d4-a716-446655440000\",\"customer_user_id\":\"user_12345\",\"vendor_product_id\":\"com.example.app.yearly.premium\",\"transaction_id\":\"GPA.3312-4512-1100-55923\",\"original_transaction_id\":\"GPA.3312-4512-1100-55923\",\"store\":\"play_store\",\"store_country\":\"US\",\"price_usd\":9.99,\"proceeds_usd\":8.49,\"price_local\":9.99,\"proceeds_local\":8.49,\"net_revenue_usd\":8.49,\"net_revenue_local\":8.49,\"tax_amount_usd\":0.0,\"tax_amount_local\":0.0,\"consecutive_payments\":3,\"rate_after_first_year\":false}",
+   "partner_params": "{\"integration_event_id\":\"550e8400-e29b-41d4-a716-446655440000\",\"customer_user_id\":\"user_12345\",\"vendor_product_id\":\"com.example.app.yearly.premium\",\"transaction_id\":\"GPA.3312-4512-1100-55923\",\"original_transaction_id\":\"GPA.3312-4512-1100-55923\",\"store\":\"play_store\",\"store_country\":\"US\",\"price_usd\":9.99,\"proceeds_usd\":8.49,\"price_local\":9.99,\"proceeds_local\":8.49,\"net_revenue_usd\":8.49,\"net_revenue_local\":8.49,\"tax_amount_usd\":0.0,\"tax_amount_local\":0.0,\"consecutive_payments\":3,\"rate_after_first_year\":false}"
 }
 ```
 
 Where
 
-| Parameter            | Type    | Description                                                 |
-|:---------------------|:--------|:------------------------------------------------------------|
-| `app_token`          | String  | The Adjust App Token from your integration settings.        |
-| `event_token`        | String  | The Adjust Event Token mapped to the specific Adapty event. |
-| `s2s`                | Integer | Server-to-Server event flag.                                |
-| `environment`        | String  | `sandbox` or `production`.                                  |
-| `created_at_unix`    | Integer | Timestamp of the event in seconds.                          |
-| `currency`           | String  | Currency code (e.g., "USD").                                |
-| `revenue`            | Float   | Revenue amount. Only sent if > 0.001.                       |
-| `customer_user_id`   | String  | The user's Customer User ID.                                |
-| `external_device_id` | String  | Same as `customer_user_id`.                                 |
-| `ip_address`         | String  | User's IP address.                                          |
-| `user_agent`         | String  | Device User Agent string.                                   |
-| `adid`               | String  | Adjust Device ID (if known).                                |
-| `android_id`         | String  | **Android only**. Google Advertising ID.                    |
-| `gps_adid`           | String  | **Android only**. Google Advertising ID.                    |
-| `idfa`               | String  | **iOS only**. ID for Advertisers.                           |
-| `idfv`               | String  | **iOS only**. ID for Vendors.                               |
-| `callback_params`    | String  | JSON string containing detailed event data (see below).     |
-| `partner_params`     | String  | Same as `callback_params`.                                  |
+| Parameter            | Type    | Description                                                                                                                                  |
+|:---------------------|:--------|:---------------------------------------------------------------------------------------------------------------------------------------------|
+| `app_token`          | String  | The Adjust App Token from your integration settings.                                                                                         |
+| `event_token`        | String  | The Adjust Event Token mapped to the specific Adapty event.                                                                                  |
+| `s2s`                | Integer | Server-to-Server event flag.                                                                                                                 |
+| `environment`        | String  | `sandbox` or `production`.                                                                                                                   |
+| `created_at_unix`    | Integer | Timestamp of the event in seconds.                                                                                                           |
+| `currency`           | String  | Currency code (e.g., "USD") for the transaction. Included only when revenue exceeds 0.001, as Adjust requires both revenue and currency to be sent together. |
+| `revenue`            | Float   | Transaction revenue amount. Only included when the value exceeds 0.001. Note that refund events are sent without revenue properties, since Adjust doesn't support negative revenue values. |
+| `customer_user_id`   | String  | The user's Customer User ID.                                                                                                                 |
+| `external_device_id` | String  | Same as `customer_user_id`.                                                                                                                  |
+| `ip_address`         | String  | User's IP address (IPv4 only).                                                                                                               |
+| `user_agent`         | String  | Device User Agent string.                                                                                                                    |
+| `adid`               | String  | Adjust Device ID (if known).                                                                                                                 |
+| `android_id`         | String  | **Android only**. Google Advertising ID.                                                                                                     |
+| `gps_adid`           | String  | **Android only**. Google Advertising ID.                                                                                                     |
+| `idfa`               | String  | **iOS only**. ID for Advertisers.                                                                                                            |
+| `idfv`               | String  | **iOS only**. ID for Vendors.                                                                                                                |
+| `callback_params`    | String  | JSON string containing all available [event fields](webhook-event-types-and-fields#for-most-event-types). Only non-null fields are included. |
+| `partner_params`     | String  | Same as `callback_params`.                                                                                                                   |
 
-The parameters below are encoded together into a JSON string and sent in the `callback_params` and `partner_params` fields:
-
-| Parameter                 | Type    | Description                                              |
-|:--------------------------|:--------|:---------------------------------------------------------|
-| `integration_event_id`    | String  | Unique ID for the event in Adapty.                       |
-| `customer_user_id`        | String  | The user's Customer User ID.                             |
-| `vendor_product_id`       | String  | Product ID in the store.                                 |
-| `transaction_id`          | String  | Store Transaction ID.                                    |
-| `original_transaction_id` | String  | Original Store Transaction ID.                           |
-| `store`                   | String  | `app_store` or `play_store`.                             |
-| `store_country`           | String  | Country code of the store user.                          |
-| `price_usd`               | Float   | Revenue in USD.                                          |
-| `proceeds_usd`            | Float   | Proceeds (revenue - commission) in USD.                  |
-| `price_local`             | Float   | Revenue in local currency.                               |
-| `proceeds_local`          | Float   | Proceeds in local currency.                              |
-| `net_revenue_usd`         | Float   | Net revenue (after taxes/fees) in USD.                   |
-| `tax_amount_usd`          | Float   | Tax amount in USD.                                       |
-| `is_active`               | Boolean | `true` if subscription is active.                        |
-| `will_renew`              | Boolean | `true` if subscription is set to renew.                  |
-| `is_refund`               | Boolean | `true` if the event is a refund.                         |
-| `is_lifetime`             | Boolean | `true` if the product is lifetime.                       |
-| `cancellation_reason`     | String  | Reason for cancellation (e.g., `voluntarily_cancelled`). |
-| `subscription_expires_at` | String  | ISO 8601 date string of expiration.                      |
 
 ## Troubleshooting
 

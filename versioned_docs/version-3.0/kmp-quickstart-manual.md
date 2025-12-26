@@ -8,7 +8,7 @@ keywords: ['paywalls kmp', 'sdk kmp', 'paywall', 'getPaywall']
 This guide describes how to integrate Adapty into your custom paywalls. Keep full control over paywall implementation, while the Adapty SDK fetches products, handles new purchases, and restores previous ones.
 
 :::important
-**This guide is for developers who are implementing custom paywalls.** If you want the easiest way to enable purchases, use the [Adapty Paywall Builder](kmp-quickstart-paywalls.md). With Paywall Builder, you create paywalls in a no-code visual editor, and Adapty handles all purchase logic automatically.
+**This guide is for developers who are implementing custom paywalls.** If you want the easiest way to enable purchases, use the [Adapty Paywall Builder](kmp-quickstart-paywalls.md). With Paywall Builder, you create paywalls in a no-code visual editor, Adapty handles all purchase logic automatically, and you can test different designs without republishing your app.
 :::
 
 ## Before you start
@@ -119,73 +119,6 @@ fun restorePurchases() {
 
 ## Next steps
 
-Your paywall is ready to be displayed in the app.
+Your paywall is ready to be displayed in the app. To see how this works in a production-ready implementation, check out the [AppViewModel.kt](https://github.com/adaptyteam/AdaptySDK-KMP/blob/main/example/composeApp/src/commonMain/kotlin/com/adapty/exampleapp/AppViewModel.kt) in our example app, which demonstrates purchase handling with proper error handling and state management.
 
 Next, [check whether users have completed their purchase](kmp-check-subscription-status.md) to determine whether to display the paywall or grant access to paid features.
-
-## Full example
-
-Here is how all the steps from this guide can be integrated in your app together.
-
-```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywall
-import com.adapty.kmp.models.AdaptyPaywallProduct
-import com.adapty.kmp.models.AdaptyPurchaseResult
-import com.adapty.kmp.models.onSuccess
-import com.adapty.kmp.models.onError
-
-class PaywallManager {
-    private var paywall: AdaptyPaywall? = null
-    private var products: List<AdaptyPaywallProduct> = emptyList()
-
-    fun loadPaywall() {
-        Adapty.getPaywall(placementId = "YOUR_PLACEMENT_ID")
-            .onSuccess { loadedPaywall ->
-                paywall = loadedPaywall
-
-                Adapty.getPaywallProducts(paywall = loadedPaywall)
-                    .onSuccess { loadedProducts ->
-                        products = loadedProducts
-                        // Update your UI with products
-                    }
-                    .onError { error ->
-                        // Handle the error
-                    }
-            }
-            .onError { error ->
-                // Handle the error
-            }
-    }
-
-    fun purchaseProduct(product: AdaptyPaywallProduct) {
-        Adapty.makePurchase(product = product)
-            .onSuccess { purchaseResult ->
-                when (purchaseResult) {
-                    is AdaptyPurchaseResult.Success -> {
-                        // Purchase successful, profile updated
-                    }
-                    is AdaptyPurchaseResult.UserCanceled -> {
-                        // User canceled the purchase
-                    }
-                    is AdaptyPurchaseResult.Pending -> {
-                        // Purchase is pending
-                    }
-                }
-            }
-            .onError { error ->
-                // Handle the error
-            }
-    }
-
-    fun restorePurchases() {
-        Adapty.restorePurchases()
-            .onSuccess { profile ->
-                // Restore successful, profile updated
-            }
-            .onError { error ->
-                // Handle the error
-            }
-    }
-}
-```

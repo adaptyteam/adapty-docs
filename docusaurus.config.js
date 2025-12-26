@@ -138,22 +138,9 @@ const config = {
             sidebarId: "APISidebar",
           },
           {
-            label: "API Reference",
+            label: "What's new",
             position: "left",
-            items: [
-              {
-                label: "Adapty API",
-                href: "/api-adapty",
-              },
-              {
-                label: "Web API",
-                href: "/api-web",
-              },
-              {
-                label: "Export Analytics API",
-                href: "/api-export-analytics",
-              },
-            ],
+            href: "/whats-new"
           },
           {
             label: "Support Forum",

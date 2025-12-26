@@ -8,7 +8,7 @@ keywords: ['paywalls React Native', 'sdk React Native', 'paywall', 'getPaywall']
 This guide describes how to integrate Adapty into your custom paywalls. Keep full control over paywall implementation, while the Adapty SDK fetches products, handles new purchases, and restores previous ones.
 
 :::important
-**This guide is for developers who are implementing custom paywalls.** If you want the easiest way to enable purchases, use the [Adapty Paywall Builder](react-native-quickstart-paywalls.md). With Paywall Builder, you create paywalls in a no-code visual editor, and Adapty handles all purchase logic automatically.
+**This guide is for developers who are implementing custom paywalls.** If you want the easiest way to enable purchases, use the [Adapty Paywall Builder](react-native-quickstart-paywalls.md). With Paywall Builder, you create paywalls in a no-code visual editor, Adapty handles all purchase logic automatically, and you can test different designs without republishing your app.
 :::
 
 ## Before you start
@@ -107,65 +107,6 @@ async function restorePurchases() {
 
 ## Next steps
 
-Your paywall is ready to be displayed in the app.
+Your paywall is ready to be displayed in the app. To see how this works in a production-ready implementation, check out the [CustomPurchaseScreen.tsx](https://github.com/adaptyteam/AdaptySDK-React-Native/blob/master/examples/ExpoGoWebMock/src/CustomPurchaseScreen.tsx) in our example app, which demonstrates purchase handling with proper error handling, loading states, and UI state management.
 
 Next, [check whether users have completed their purchase](react-native-check-subscription-status.md) to determine whether to display the paywall or grant access to paid features.
-
-## Full example
-
-Here is how all the steps from this guide can be integrated in your app together.
-
-```typescript showLineNumbers
-import { adapty } from 'react-native-adapty';
-import type {
-  AdaptyPaywall,
-  AdaptyPaywallProduct,
-  AdaptyProfile,
-  AdaptyPurchaseResult,
-} from 'react-native-adapty';
-
-class PaywallManager {
-  paywall: AdaptyPaywall | null = null;
-  products: AdaptyPaywallProduct[] = [];
-  
-  async loadPaywall() {
-    try {
-      this.paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID');
-      this.products = await adapty.getPaywallProducts(this.paywall);
-      
-      // Update your UI with products
-    } catch (error) {
-      // Handle the error
-    }
-  }
-  
-  async purchaseProduct(product: AdaptyPaywallProduct) {
-    try {
-      const purchaseResult: AdaptyPurchaseResult = await adapty.makePurchase(product);
-      
-      switch (purchaseResult.type) {
-        case 'success':
-          // Purchase successful, profile updated
-          break;
-        case 'user_cancelled':
-          // User canceled the purchase
-          break;
-        case 'pending':
-          // Purchase is pending
-          break;
-      }
-    } catch (error) {
-      // Handle the error
-    }
-  }
-  
-  async restorePurchases() {
-    try {
-      const profile: AdaptyProfile = await adapty.restorePurchases();
-      // Restore successful, profile updated
-    } catch (error) {
-      // Handle the error
-    }
-  }
-}
-```

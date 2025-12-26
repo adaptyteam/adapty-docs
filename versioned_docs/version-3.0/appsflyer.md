@@ -30,10 +30,13 @@ The integration between Adapty and AppsFlyer operates in two main ways.
 />
 </Zoom>
 
+
+
+
 2. **Sending subscription events to AppsFlyer**  
    Adapty can send all subscription events that are configured in your integration to AppsFlyer. As a result, you'll be able to track these events within the AppsFlyer dashboard. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
-## Initial Setup
+## How to set up AppsFlyer integration
 
 To setup the integration with AppsFlyer:
 
@@ -158,7 +161,7 @@ If you use AppsFlyer API 2, you need to switch to API 3, since the previous vers
 
 Adapty maps some events to AppsFlyer [standard events](https://support.appsflyer.com/hc/en-us/articles/115005544169-Rich-in-app-events-for-Android-and-iOS#event-types) by default. With such a configuration, AppsFlyer can then forward events to each ad network that you use without additional setup.
 
-Another important thing is that AppsFlyer doesn't support events older than 24 hours. So, if you have an event that is more than a day old, Adapty will send it to Appsflyer, but the event date and time will be replaced by the current timestamp.
+Another important thing is that AppsFlyer doesn't support events older than 26 hours. So, if you have an event that is more than 26 hours old, Adapty will send it to AppsFlyer, but the event date and time will be replaced by the current timestamp.
 
 ## Events and tags
 
@@ -181,13 +184,9 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Adapty will send subscription events to AppsFlyer using a server-to-server integration, allowing you to view all subscription events in your AppsFlyer dashboard and link them to your acquisition campaigns.
 
-## Attribution Integration
+## SDK configuration
 
-After you complete the steps described above, call the `updateAttribution` method to save the attribution data, and use the `Adapty.setIntegrationIdentifier()` to set the integration identifier. 
-
-:::warning
-The `networkUserId` parameter is mandatory.
-:::
+It's very important to send AppsFlyer attribution data from the device to Adapty using the `Adapty.updateAttribution()` SDK method and the `Adapty.setIntegrationIdentifier()` method to set the integration identifier. The example below shows how to do that.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="iOS (Swift)" default>
@@ -204,7 +203,6 @@ class YourAppsFlyerLibDelegateImplementation {
 }
 ```
 </TabItem>
-
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
 ```kotlin showLineNumbers
@@ -223,29 +221,6 @@ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversi
         }
     }
 }
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-
-```typescript showLineNumbers
-import { adapty, AttributionSource } from 'react-native-adapty';
-import appsFlyer from 'react-native-appsflyer';
-
-appsFlyer.onInstallConversionData(installData => {
-    appsFlyer.getAppsFlyerUID((error, networkUserId) => {
-        if (error) {
-            // handle the error
-        }
-        try {
-            adapty.updateAttribution(installData, AttributionSource.AppsFlyer, networkUserId);
-        } catch (error) {
-            // handle the error
-        }
-    });
-});
-
-// ...
-appsFlyer.initSdk(/*...*/);
 ```
 </TabItem>
 <TabItem value="flutter" label="Flutter (Dart)" default>
@@ -308,11 +283,56 @@ void onConversionDataSuccess(string conversionData) {
 }
 ```
 </TabItem>
+<TabItem value="rn" label="React Native (TS)" default>
+
+```typescript showLineNumbers
+import { adapty, AttributionSource } from 'react-native-adapty';
+import appsFlyer from 'react-native-appsflyer';
+
+appsFlyer.onInstallConversionData(installData => {
+    appsFlyer.getAppsFlyerUID((error, networkUserId) => {
+        if (error) {
+            // handle the error
+        }
+        try {
+            adapty.updateAttribution(installData, AttributionSource.AppsFlyer, networkUserId);
+        } catch (error) {
+            // handle the error
+        }
+    });
+});
+
+// ...
+appsFlyer.initSdk(/*...*/);
+```
+</TabItem>
 </Tabs>
 
-## Event structure
+## Troubleshooting
 
-Adapty sends selected events to AppsFlyer as configured in the **Events names** section on the [**AppsFlyer Integration page**](https://app.adapty.io/integrations/appsflyer). Each event is structured like this:
+### Revenue discrepancy
+
+If there is a revenue discrepancy between Adapty and AppsFlyer, that might occur because not all your users use the app version that has the Adapty SDK. To ensure the data consistency, you can force your users to update the app to a version with the Adapty SDK.
+
+### Missing integration data
+
+If event sending fails, that is usually because of the missing integration data. Ensure the following to resolve this issue:
+- Your app has the AppsFlyer SDK installed.
+- You are calling the `getAppsFlyerUID` method.
+
+### Authentication failure
+
+If you are getting the `Failed to authenticate` error in the console, this might be due to the AppsFlyer version and credential version mismatch.
+
+See the [migration guide](switch-from-appsflyer-s2s-api-2-to-3.md) or replace the credentials with the valid ones from [here](https://hq1.appsflyer.com/security-center/api-tokens).
+
+## AppsFlyer event structure
+
+Adapty sends selected events to AppsFlyer via POST request with JSON body to:
+- API v2: `https://api2.appsflyer.com/inappevent/{app_id}`
+- API v3: `https://api3.appsflyer.com/inappevent/{app_id}` (recommended)
+
+Each event is structured like this:
 
 ```json
 {
@@ -332,51 +352,41 @@ Adapty sends selected events to AppsFlyer as configured in the **Events names** 
 }
 ```
 
-Where:
+Headers:
 
-| Parameter          | Type   | Description                                                                |
-|:-------------------|:-------|:---------------------------------------------------------------------------|
-| `appsflyer_id`     | String | The AppsFlyer ID (collected via SDK).                                      |
-| `eventName`        | String | The AppsFlyer event name (mapped from Adapty event).                       |
-| `eventTime`        | String | Date and time of the event (UTC, formatted `YYYY-MM-DD HH:MM:SS`).         |
-| `eventValue`       | String | JSON string containing event details (see below).                          |
-| `os`               | String | OS version.                                                                |
-| `bundleIdentifier` | String | The application's bundle ID / package name.                                |
-| `customer_user_id` | String | The user's Customer User ID.                                               |
-| `eventCurrency`    | String | Currency code (e.g., "USD").                                               |
-| `ip`               | String | User's IP address.                                                         |
-| `advertising_id`   | String | **Android only**. Google Advertising ID.                                   |
-| `idfa`             | String | **iOS only**. ID for Advertisers.                                          |
-| `idfv`             | String | **iOS only**. ID for Vendors.                                              |
-| `att`              | String | **iOS only**. App Tracking Transparency status (e.g., "3" for authorized). |
+| Header           | Value              |
+|:-----------------|:-------------------|
+| `accept`         | application/json   |
+| `content-type`   | application/json   |
+| `authentication` | Your Dev Key (S2S) |
 
-The `eventValue` parameter is a JSON-encoded string containing the following fields:
+Request body parameters:
 
-| Parameter         | Type   | Description                                   |
-|:------------------|:-------|:----------------------------------------------|
-| `af_content_id`   | String | The Product ID from the store.                |
-| `af_order_id`     | String | The original transaction ID.                  |
-| `store_country`   | String | Country code of the store user.               |
-| `profile_country` | String | Country code based on user's IP.              |
-| `af_content_type` | String | Always `in_app` if revenue is present.        |
-| `af_revenue`      | String | Revenue amount formatted to 4 decimal places. |
-| `af_currency`     | String | Currency code.                                |
-| `af_quantity`     | String | Always `1` if revenue is present.             |
+| Parameter          | Type   | Description                                                                                                                             |
+|:-------------------|:-------|:----------------------------------------------------------------------------------------------------------------------------------------|
+| `appsflyer_id`     | String | The AppsFlyer ID (collected via SDK).                                                                                                   |
+| `eventName`        | String | The AppsFlyer event name (mapped from Adapty event).                                                                                    |
+| `eventTime`        | String | Date and time of the event in UTC (format: `YYYY-MM-DD HH:MM:SS`). If older than 26 hours, replaced with current timestamp.            |
+| `eventValue`       | String | JSON string containing event details (see below). Only non-null fields included.                                                        |
+| `os`               | String | OS version.                                                                                                                             |
+| `bundleIdentifier` | String | The application's bundle ID / package name.                                                                                             |
+| `customer_user_id` | String | The user's Customer User ID (if available).                                                                                             |
+| `eventCurrency`    | String | Currency code (e.g., "USD"). Only sent if revenue is present.                                                                           |
+| `ip`               | String | User's IP address (if available).                                                                                                       |
+| `advertising_id`   | String | **Android only**. Google Advertising ID. Set to `00000000-0000-0000-0000-000000000000` if not available.                                |
+| `idfa`             | String | **iOS only**. ID for Advertisers. Set to `00000000-0000-0000-0000-000000000000` if not available.                                       |
+| `idfv`             | String | **iOS only**. ID for Vendors. Set to `00000000-0000-0000-0000-000000000000` if not available.                                           |
+| `att`              | String | **iOS only**. App Tracking Transparency status (e.g., "3" for authorized, "0" if not available).                                        |
 
-## Troubleshooting
+The `eventValue` parameter is a JSON string containing the following fields:
 
-### Revenue discrepancy
-
-If there is a revenue discrepancy between Adapty and AppsFlyer, that might occur because not all your users use the app version that has the Adapty SDK. To ensure the data consistency, you can force your users to update the app to a version with the Adapty SDK.
-
-### Missing integration data
-
-If event sending fails, that is usually because of the missing integration data. Ensure the following to resolve this issue:
-- Your app has the AppsFlyer SDK installed.
-- You are calling the `getAppsFlyerUID` method.
-
-### Authentication failure
-
-If you are getting the `Failed to authenticate` error in the console, this might be due to the AppsFlyer version and credential version mismatch.
-
-See the [migration guide](switch-from-appsflyer-s2s-api-2-to-3.md) or replace the credentials with the valid ones from [here](https://hq1.appsflyer.com/security-center/api-tokens).
+| Parameter         | Type   | Description                                                       |
+|:------------------|:-------|:------------------------------------------------------------------|
+| `af_content_id`   | String | The Product ID from the store (if available).                     |
+| `af_order_id`     | String | The original transaction ID (if available).                       |
+| `store_country`   | String | Country code of the store user (if available).                    |
+| `profile_country` | String | Country code based on user's IP (if available).                   |
+| `af_content_type` | String | Always `in_app`. **Only sent if revenue is present.**             |
+| `af_revenue`      | String | Revenue amount formatted to 4 decimal places. **Only sent if revenue is present.** |
+| `af_currency`     | String | Currency code. **Only sent if revenue is present.**               |
+| `af_quantity`     | String | Always `1`. **Only sent if revenue is present.**                  |

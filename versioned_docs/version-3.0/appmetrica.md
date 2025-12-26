@@ -328,61 +328,67 @@ try {
 
 ## AppMetrica event structure
 
-Adapty sends events to AppMetrica via a POST request, but passes parameters in the URL (query parameters). Each event is structured like this:
+Adapty sends events to AppMetrica via POST requests with parameters passed as query parameters. For each Adapty event, AppMetrica receives up to **two separate requests**:
 
-```json
-{
-  "post_api_key": "your_post_api_key",
-  "application_id": "your_application_id",
-  "event_name": "subscription_renewed",
-  "event_timestamp": 1709294400,
-  "event_json": "{\"vendor_product_id\":\"yearly.premium.6999\",\"original_transaction_id\":\"GPA.3383...\",\"currency\":\"USD\",\"environment\":\"Production\"}",
-  "os_name": "ios",
-  "ios_ifa": "00000000-0000-0000-0000-000000000000",
-  "ios_ifv": "00000000-0000-0000-0000-000000000000",
-  "profile_id": "user_12345",
-  "appmetrica_device_id": "device_hash_123",
-  "session_type": "foreground",
-  "revenue_event_type": "subscription_renewed",
-  "price": 9.99,
-  "currency": "USD",
-  "product_id": "yearly.premium.6999",
-  "quantity": 1,
-  "payload": "{\"vendor_product_id\":\"yearly.premium.6999\",\"original_transaction_id\":\"GPA.3383...\"}",
-  "transaction_id": "GPA.3383..."
-}
+1. **Profile event** (always sent): Contains event metadata
+2. **Revenue event** (optional): Contains revenue data if the "Send revenue events" option is enabled in Adapty Dashboard
+
+### Profile Event Request
+
+Sent to: `https://api.appmetrica.yandex.ru/logs/v1/import/events`
+
+Example URL with query parameters:
+
+```
+POST https://api.appmetrica.yandex.ru/logs/v1/import/events?post_api_key=your_key&application_id=your_app_id&event_name=subscription_renewed&event_timestamp=1709294400&event_json=%7B%22vendor_product_id%22%3A%22yearly.premium%22...%7D&os_name=ios&ios_ifa=00000000-0000-0000-0000-000000000000&ios_ifv=12345678-1234-1234-1234-123456789012&profile_id=user_12345&session_type=foreground
 ```
 
-Where:
+Query parameters:
 
-| Parameter              | Type   | Description                                             |
-|:-----------------------|:-------|:--------------------------------------------------------|
-| `post_api_key`         | String | Your AppMetrica Post API Key.                           |
-| `application_id`       | String | Your AppMetrica Application ID.                         |
-| `os_name`              | String | "ios" or "android".                                     |
-| `event_timestamp`      | Long   | UNIX timestamp of the event in seconds.                 |
-| `profile_id`           | String | User Profile ID (Customer User ID if available).        |
-| `appmetrica_device_id` | String | AppMetrica Device ID Hash (if `profile_id` is missing). |
-| `session_type`         | String | Always "foreground".                                    |
-| `ios_ifa`              | String | **iOS only**. ID for Advertisers.                       |
-| `ios_ifv`              | String | **iOS only**. ID for Vendors.                           |
-| `google_aid`           | String | **Android only**. Google Advertising ID.                |
+| Parameter              | Type   | Description                                                                                                                                          |
+|:-----------------------|:-------|:-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| `post_api_key`         | String | Your AppMetrica Post API Key.                                                                                                                        |
+| `application_id`       | String | Your AppMetrica Application ID.                                                                                                                      |
+| `event_name`           | String | The event name (mapped from Adapty event).                                                                                                           |
+| `event_timestamp`      | Long   | UNIX timestamp of the event in seconds. Capped to the last 7 days if older.                                                                         |
+| `event_json`           | String | URL-encoded JSON string containing all available [event fields](webhook-event-types-and-fields#for-most-event-types). Only non-null fields included. |
+| `os_name`              | String | "ios" or "android".                                                                                                                                  |
+| `profile_id`           | String | AppMetrica Profile ID (if set), otherwise Customer User ID (if available).                                                                           |
+| `appmetrica_device_id` | String | AppMetrica Device ID Hash. Only sent if `profile_id` is not available.                                                                               |
+| `session_type`         | String | Always "foreground".                                                                                                                                 |
+| `ios_ifa`              | String | **iOS only**. ID for Advertisers.                                                                                                                    |
+| `ios_ifv`              | String | **iOS only**. ID for Vendors.                                                                                                                        |
+| `google_aid`           | String | **Android only**. Google Advertising ID.                                                                                                             |
 
-### Profile Events
+### Revenue Event Request (Optional)
 
-| Parameter    | Type   | Description                                                  |
-|:-------------|:-------|:-------------------------------------------------------------|
-| `event_name` | String | The event name (mapped from Adapty event).                   |
-| `event_json` | String | JSON string containing event details (all event properties). |
+Sent to: `https://api.appmetrica.yandex.ru/logs/v1/import/revenue`
 
-### Revenue Events
+This request is only sent when the "Send revenue events" option is enabled in your Adapty Dashboard integration settings.
 
-| Parameter            | Type    | Description                                                             |
-|:---------------------|:--------|:------------------------------------------------------------------------|
-| `revenue_event_type` | String  | The type of revenue event (e.g., "subscription_renewed").               |
-| `price`              | Float   | Revenue amount.                                                         |
-| `currency`           | String  | Currency code (e.g., "USD").                                            |
-| `product_id`         | String  | The Product ID from the store.                                          |
-| `quantity`           | Integer | Always 1.                                                               |
-| `payload`            | String  | JSON string containing additional event details (trimmed if too large). |
-| `transaction_id`     | String  | Original transaction ID.                                                |
+Example URL with query parameters:
+
+```
+POST https://api.appmetrica.yandex.ru/logs/v1/import/revenue?post_api_key=your_key&application_id=your_app_id&revenue_event_type=subscription_renewed&price=9.99&currency=USD&product_id=yearly.premium&quantity=1&transaction_id=GPA.3383...&payload=%7B%22vendor_product_id%22%3A%22yearly.premium%22...%7D&os_name=ios&ios_ifa=00000000-0000-0000-0000-000000000000&profile_id=user_12345&session_type=foreground
+```
+
+Query parameters:
+
+| Parameter            | Type    | Description                                                                                                                                                                   |
+|:---------------------|:--------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `post_api_key`       | String  | Your AppMetrica Post API Key.                                                                                                                                                 |
+| `application_id`     | String  | Your AppMetrica Application ID.                                                                                                                                               |
+| `revenue_event_type` | String  | The type of revenue event (e.g., "subscription_renewed", "refund", "intro_started"). See [AppMetrica event mapping](#revenue-event-type-mapping).                             |
+| `price`              | Float   | Revenue amount (based on your revenue calculation settings).                                                                                                                  |
+| `currency`           | String  | Currency code (e.g., "USD").                                                                                                                                                  |
+| `product_id`         | String  | The Product ID from the store.                                                                                                                                                |
+| `quantity`           | Integer | Always 1.                                                                                                                                                                     |
+| `transaction_id`     | String  | Store Transaction ID.                                                                                                                                                         |
+| `payload`            | String  | URL-encoded JSON string containing event details. Automatically trimmed if exceeds 30KB by removing optional fields in order of importance to preserve the most critical data. |
+| `os_name`            | String  | "ios" or "android".                                                                                                                                                           |
+| `profile_id`         | String  | AppMetrica Profile ID (if set), otherwise Customer User ID (if available).                                                                                                    |
+| `appmetrica_device_id` | String  | AppMetrica Device ID Hash. Only sent if `profile_id` is not available.                                                                                                        |
+| `session_type`       | String  | Always "foreground".                                                                                                                                                          |
+| `ios_ifa`            | String  | **iOS only**. ID for Advertisers.                                                                                                                                             |
+| `ios_ifv`            | String  | **iOS only**. ID for Vendors.                                                                                                                                                 |
+| `google_aid`         | String  | **Android only**. Google Advertising ID.                                                                                                                                      |

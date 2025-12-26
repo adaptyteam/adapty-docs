@@ -8,7 +8,7 @@ keywords: ['paywalls Unity', 'sdk Unity', 'paywall', 'getPaywall']
 This guide describes how to integrate Adapty into your custom paywalls. Keep full control over paywall implementation, while the Adapty SDK fetches products, handles new purchases, and restores previous ones.
 
 :::important
-**This guide is for developers who are implementing custom paywalls.** If you want the easiest way to enable purchases, use the [Adapty Paywall Builder](unity-quickstart-paywalls.md). With Paywall Builder, you create paywalls in a no-code visual editor, and Adapty handles all purchase logic automatically.
+**This guide is for developers who are implementing custom paywalls.** If you want the easiest way to enable purchases, use the [Adapty Paywall Builder](unity-quickstart-paywalls.md). With Paywall Builder, you create paywalls in a no-code visual editor, Adapty handles all purchase logic automatically, and you can test different designs without republishing your app.
 :::
 
 ## Before you start
@@ -118,70 +118,3 @@ void RestorePurchases() {
 Your paywall is ready to be displayed in the app.
 
 Next, [check whether users have completed their purchase](unity-check-subscription-status.md) to determine whether to display the paywall or grant access to paid features.
-
-## Full example
-
-Here is how all the steps from this guide can be integrated in your app together.
-
-```csharp showLineNumbers
-using System.Collections.Generic;
-using AdaptySDK;
-
-public class PaywallManager {
-    private AdaptyPaywall paywall;
-    private IList<AdaptyPaywallProduct> products;
-
-    public void LoadPaywall() {
-        Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
-            if (error != null) {
-                // Handle the error
-                return;
-            }
-
-            this.paywall = paywall;
-
-            Adapty.GetPaywallProducts(paywall, (products, productsError) => {
-                if (productsError != null) {
-                    // Handle the error
-                    return;
-                }
-
-                this.products = products;
-                // Update your UI with products
-            });
-        });
-    }
-
-    public void PurchaseProduct(AdaptyPaywallProduct product) {
-        Adapty.MakePurchase(product, (result, error) => {
-            if (error != null) {
-                // Handle the error
-                return;
-            }
-
-            switch (result.Type) {
-                case AdaptyPurchaseResultType.Success:
-                    // Purchase successful, profile updated
-                    break;
-                case AdaptyPurchaseResultType.UserCancelled:
-                    // User canceled the purchase
-                    break;
-                case AdaptyPurchaseResultType.Pending:
-                    // Purchase is pending
-                    break;
-            }
-        });
-    }
-
-    public void RestorePurchases() {
-        Adapty.RestorePurchases((profile, error) => {
-            if (error != null) {
-                // Handle the error
-                return;
-            }
-
-            // Restore successful, profile updated
-        });
-    }
-}
-```
