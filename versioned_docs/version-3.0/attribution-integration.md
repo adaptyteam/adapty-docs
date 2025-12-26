@@ -12,136 +12,53 @@ import TabItem from '@theme/TabItem';
 import Contentid from '@site/src/components/InlineTooltip';
 import InlineTooltip from '@site/src/components/InlineTooltip';
 
-You can use marketing data from third-party services to find connections between your advertising efforts and user subscriptions. These connections will help you understand what motivates your users to take action. If you store attribution data in Adapty, you can filter your [subscription charts](analytics-charts) by attribution.
+Integrate Adapty with an attribution data provider to:
 
-Adapty offers out-of-the-box attribution integration with [9 popular marketing platforms](#automatic-attribution). Users of other platforms can follow a [manual workflow](#manual-attribution) that achieves the same goal.
+* Match subscription events to specific marketing campaigns
+* Discover which marketing strategies yield the most revenue
+* Filter Adapty [subscription charts](analytics-charts) by attribution
+* Use the capabilities of a third-party service to analyze Adapty subscription data
 
-### Automatic Attribution
+Adapty supports a [simplified integration process](#simplified-attribution-process) for 9 popular platforms. You can integrate any other platform with a [manual attribution](#manual-attribution) process.
 
-1. **Set up automatic data sharing.** Adapty offers out-of-the-box integration with 9 popular marketing platforms. These platforms can automatically receive real-time [subscription data](events) from Adapty. The marketing platform processes each purchase, and responds with an appropriate attribution (if it finds one).
 
-    You can enable attribution integration with **multiple platforms at once**. Adapty will select the most appropriate attribution provider for each transaction.
+## Simplified attribution process
 
-    Each platform has its own integration workflow. Refer to your platform's dedicated documentation page for in-depth instructions:
+Adapty offers out-of-the-box attribution integration with [9 popular services](#platform-specific-guides). These platforms can automatically receive [subscription data](events) from Adapty, process each purchase, and respond with an appropriate attribution.
 
-    - [Adjust](adjust)
-    - [Airbridge](airbridge)
-    - [Apple Search Ads](apple-search-ads)
-    - [AppsFlyer](appsflyer)
-    - [Asapty](asapty)
-    - [Branch](branch)
-    - [Facebook Ads](facebook-ads)
-    - [Singular](singular)
-    - [Tenjin](tenjin)
+### General overview
 
-    When you complete the setup, [disable other event sharing services](#avoid-event-duplication) to avoid duplicate events.
+Each platform has a different workflow, but the steps are similarly simple:
 
-    :::note
-    If Adapty doesn't support automatic attribution integration with your favorite marketing platform, contact [Adapty Support](mailto:support@adapty.io) to express your interest.
-    :::
+1. **Set up automatic data sharing.** Authorize Adapty to communicate with your platform of choice.
+2. **Integrate the Aadpty SDK.** Some platforms require extra code to set attribution data.
+3. **Disable other event sharing services and attribution sources** to avoid [event duplication](#avoid-event-duplication) and [data conflicts](#select-a-single-attribution-source).
 
-2. **Invoke the `.updateAttribution()` method** to retrieve attribution data from the marketing platform, and set the attribution value for the transaction.
+### Platform-specific guides
 
-    Adapty can only store attribution data from one source at a time. If you enable multiple attribution sources, the system gives preference to the service that shares the most information. **Once you set the attribution value, you cannot override it.**
+- [Adjust](adjust)
+- [Airbridge](airbridge)
+- [Apple Search Ads](apple-search-ads)
+- [AppsFlyer](appsflyer)
+- [Asapty](asapty)
+- [Branch](branch)
+- [Facebook Ads](facebook-ads)
+- [Singular](singular)
+- [Tenjin](tenjin)
 
-    On iOS, non-organic [Apple Search Ads attribution](apple-search-ads) will always take priority if available. To turn Apple Search Ads attribution off, open the [**App Settings** -> **Apple Search Ads** tab](https://app.adapty.io/settings/apple-search-ads), and toggle the **Receive Apple Search Ads attribution** switch.
+If Adapty doesn't offer a simplified attribution workflow for your favorite service, contact [Adapty Support](mailto:support@adapty.io) to express your interest.
 
-    Attribution integration methods **vary between the platforms**. Refer to your platform's dedicated documentation page for an in-depth overview of the SDK configuration code. The following is a **generic example**:
+## Manual attribution
 
-    <Tabs groupId="current-os" queryString>
-    <TabItem value="swift" label="Swift" default>
-    ```swift showLineNumbers
-    Adapty.updateAttribution("<attribution>", source: "<source>", networkUserId: "<networkUserId>") { error in
-        if error == nil {
-            // succesfull attribution update
-        }
-    }
-    ```
-    </TabItem>
-    <TabItem value="kotlin" label="Kotlin" default>
-    ```kotlin showLineNumbers
-    Adapty.updateAttribution(
-        mapOf("source" to "appsflyer", "campaign" to "summer_sale_2024"),
-        "appsflyer",
-        "networkUserId"
-    ) { error ->
-        if (error == null) {
-            // succesfull attribution update
-        }
-    }
-    ```
-    </TabItem>
-    <TabItem value="java" label="Java" default>
-    ```java showLineNumbers
-    Adapty.updateAttribution("<attribution>", "<source>", "<networkUserId>", error -> {
-        if (error == null) {
-            // succesfull attribution update
-        }
-    });
-    ```
-    </TabItem>
-        <TabItem value="rn" label="React Native (TS)" default>
-    ```typescript showLineNumbers
-    // Optionally import enum to JavaScript
-    import { AttributionSource } from 'react-native-adapty';
+If your attribution source does not suppport the [simplified attribution workflow](#simplified-attribution-process), you need to write your own code that communicates with the attribution source.
 
-    const attribution = { /* ... */ };
-    try {
-        await adapty.updateAttribution(
-            attribution,
-            AttributionSource.Branch, // or just 'branch'
-            'networkUserId'
-        );
-        // succesfull attribution update
-    } catch (error) {
-        // handle `AdaptyError`
-    }
-    ```
-    </TabItem>
-    <TabItem value="flutter" label="Flutter" default>
-    ```javascript showLineNumbers
-    try {
-    await Adapty().updateAttribution("<attribution>", source: "<source>", networkUserId: "<networkUserId>");
-    } on AdaptyError catch (adaptyError) {
-    // handle the error
-    } catch (e) {
-    }
-    ```
-    </TabItem>
-    <TabItem value="unity" label="Unity" default>
-    ```csharp showLineNumbers
-    Adapty.UpdateAttribution("<attributions>", source, "<networkUserId>", (error) => {
-        if (error != null) {
-            // handle the error
-        }
-    
-            // succesfull attribution update
-    });
-    ```
-    </TabItem>
-    </Tabs>
+1. **Send subscription data to the attribution service**
 
-    **Parameters:**
+    Program the logic necessary to send subscription data to your platform's API.
 
-    - **Attribution** (required): dictionary with attribution data. Adapty automatically fills it with the data it receives from the marketing platform.
-    - **Source** (required): attribution source. The following values are acceptable:
-        - `.appsflyer`
-        - `.adjust`
-        - `.branch`
-        - `.custom`
-    - **Network user Id** (required for AppsFlyer, optional otherwise): a string with the profile ID from the attribution service.
+2. **Retrieve attribution data from the attribution service**
 
-### Manual Attribution
-
-1. **Send subscription data to the marketing platform**
-
-    If Adapty doesn't offer built-in integration with your marketing platform, you need to manually program the logic necessary to send subscription data to your platform's API.
-
-    When you complete the setup, [disable other event sharing services](#avoid-event-duplication) to avoid duplicate events.
-
-2. **Retrieve attribution data from the marketing platform**
-
-    If Adapty doesn't offer built-in integration with your marketing platform, you need to manually retrieve attribution data from the platform.
+    Retrieve attribution data from the platform.
 
 3. **Create a dictionary with attribution data**
 
@@ -156,7 +73,7 @@ Adapty offers out-of-the-box attribution integration with [9 popular marketing p
 
     All the keys are optional. The value of each key may be up to 50 characters long. Adapty ignores custom attribution keys.
 
-    **Example**: 
+    **Example**:
 
     ```swift showLineNumbers title="Swift"
     let attribution = [
@@ -171,7 +88,7 @@ Adapty offers out-of-the-box attribution integration with [9 popular marketing p
 
 4. **Set the attribution data**:
 
-    Pass the attribution dictionary to the `updateAttribution` method:
+    Pass the attribution dictionary to the `updateAttribution` method. Once you set the attribution value, you cannot override it:
 
     ```swift showLineNumbers title="Swift"
     Adapty.updateAttribution(attribution, source: "custom") { error in
@@ -181,16 +98,30 @@ Adapty offers out-of-the-box attribution integration with [9 popular marketing p
     }
     ```
 
-    Once you set the attribution value, you cannot override it.
+    **Parameters:**
 
-### Avoid Event Duplication
+    - `attribution` (required): dictionary with attribution data.
+    - `source` (required): attribution source. Set to `.custom` if your attribution provider does not support the [simplified attribution process](#simplified-attribution-process).
+    - `networkUserID` (optional): a string with the profile ID from the attribution service.
 
-If you use Adapty to share real-time subscription data with your marketing platforms, **you need to disable** other services that serve the same purpose. If you connected your Facebook account to AppsFlyer, Adjust, or Branch, it will automatically forward your events to these services, unless you opt out.
+5. **Disable other event sharing services and attribution sources** to avoid [event duplication](#avoid-event-duplication) and [data conflicts](#select-a-single-attribution-source).
+
+## Best practices
+
+### Select a single attribution source
+
+Do not enable attribution integration with multiple platforms at once. Adapty can only accept one attribution source at a time, and once it saves the attribution value, it cannot override it.
+
+If you enable multiple attribution sources, Adapty will select the source with the most data — not necessarily the best data.
+
+For example, non-organic [Apple Search Ads attribution](apple-search-ads) will always take priority on iOS. To turn Apple Search Ads attribution off, open the [**App Settings** -> **Apple Search Ads** tab](https://app.adapty.io/settings/apple-search-ads), and toggle the **Receive Apple Search Ads attribution** switch.
+
+### Avoid event duplication
+
+If you use Adapty to share real-time subscription data with your attribution services, **you need to disable** other services that serve the same purpose. If you connected your Facebook account to AppsFlyer, Adjust, or Branch, it will automatically forward your events to these services, unless you opt out.
 
 Duplicate events can skew your analytics, and make it hard to interpret data. Once you configured Adapty event sharing, turn third-party event forwarding capabilities **off**.  
 
-### See Also
+### What's Next
 
-If your marketing platform supports automatic Attribution Integration, it also supports [User Acquisition Analytics](user-acquisition.md)! 
-
-This capability pools all the data about your app's economy into one place, allowing you to see the relationship between ad spend and subscription revenue.
+Enable [User Acquisition Analytics](user-acquisition.md) to learn more about your application economy. Dive deeper into the complicated relationship between ad spend and subscription revenue.
