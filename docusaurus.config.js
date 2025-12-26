@@ -141,6 +141,11 @@ const config = {
             sidebarId: "APISidebar",
           },
           {
+            label: "What's new",
+            position: "left",
+            href: "/whats-new"
+          },
+          {
             label: "Support Forum",
             position: "left",
             href: "https://ask.adapty.io/questions",
