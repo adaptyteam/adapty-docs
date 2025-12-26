@@ -10,13 +10,17 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
 
-To use fallback paywalls and onboardings, call the `SetFallback` method. 
+import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackPaywallIntroduction.md';
 
-For this to work, place the fallback JSON file you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard) in the `Assets/StreamingAssets` folder of your Unity project.
+<FallbackPaywallIntroduction />
 
-Place the `SetFallback` method in your code **before** fetching a paywall or onboarding, ensuring that the mobile app possesses it when a fallback paywall or onboarding is required to replace the standard one.
+## Configuration
 
-Here's an example of retrieving fallback paywall or onboarding data from locally stored JSON files named `android_fallback.json` and `ios_fallback.json`.
+1. Move the fallback configuration file to your project directory.
+2. Add the `.setFallback` method to your application code. Place it **before** the method that fetches the target paywall or [onboarding](/localize-onboardings).
+3. Pass a string with the name of the fallback configuration file to the method.
+
+Example:
 
 ```csharp
 using UnityEngine;
@@ -45,4 +49,4 @@ Parameters:
 
 | Parameter    | Description                                          |
 |:-------------|:-----------------------------------------------------|
-| **fileName** | The object represents the name of the file resource. |
+| **fileName** | The string with the name of the fallback configuration file. |

@@ -9,12 +9,17 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs'; 
 import TabItem from '@theme/TabItem'; 
 
-To use fallback paywalls and onboardings:
+import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackPaywallIntroduction.md';
 
-1. In Xcode, use the menu **File** -> **Add Files to "YourProjectName"** to add the fallback JSON file you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard) to your project bundle.
-2. Call the `.setFallback` method. Place this method in your code **before** fetching a paywall or onboarding, ensuring that the mobile app possesses it when a fallback paywall or onboarding is required to replace the standard one.
+<FallbackPaywallIntroduction />
 
-Here's an example of retrieving fallback paywall or onboarding data from a locally stored JSON file named `ios_fallback.json`.
+## Configuration
+
+1. Add the fallback JSON file to your project bundle: open the **File** menu in XCode and select the **Add Files to "YourProjectName"** option.
+2. Add the `.setFallback` method to your application code. Place it **before** the method that fetches the target paywall or [onboarding](/localize-onboardings).
+3. Pass the fallback configuration file path to the method.
+
+Example: 
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -44,4 +49,4 @@ Parameters:
 
 | Parameter   | Description                                                                                                                                                                       |
 | :---------- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **fileURL** | Path to the file with fallback paywalls and onboardings you [downloaded in the Adapty Dashboard](fallback-paywalls#download-fallback-paywalls-as-a-file-in-the-adapty-dashboard). |
+| **fileURL** | Path to the fallback paywall / onboarding configuration file. |
