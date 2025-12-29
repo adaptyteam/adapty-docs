@@ -19,12 +19,10 @@ import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackP
     * If your target platform is Android, move the fallback configuration file to the `android/app/src/main/assets/` folder.
     * If your target platform is iOS, add the fallback JSON file to your project bundle. (**File** -> **Add Files to YourProjectName**)
 
-2. Add the `.setFallback` method to your application code. Place it **before** the method that fetches the target paywall or [onboarding](/localize-onboardings).
+2. Call the `.setFallback` method **before** you fetch the target paywall or onboarding.
 3. Set the `assetId` parameter, depending on your target platform.
     * Android: Use the file path relative to the `assets` directory.
     * iOS: Use the complete filename.
-
-Example:
 
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty

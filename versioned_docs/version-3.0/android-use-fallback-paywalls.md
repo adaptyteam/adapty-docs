@@ -16,11 +16,7 @@ import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackP
 ## Configuration
 
 1. Move the fallback configuration file to the `assets` or `res/raw` directory of your Android project.
-2. Add the `.setFallback` method to your application code. Place it **before** the method that fetches the target paywall or [onboarding](/localize-onboardings).
-3. Create a FileLocation object that corresponds to the fallback configuration file path.
-4. Pass the FileLocation object to the method.
-
-Example:
+2. Call the `.setFallback` method **before** you fetch the target paywall or onboarding.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>

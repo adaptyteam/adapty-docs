@@ -17,10 +17,7 @@ import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackP
 ## Configuration
 
 1. Move the fallback configuration file to your project directory.
-2. Add the `.setFallback` method to your application code. Place it **before** the method that fetches the target paywall or [onboarding](/localize-onboardings).
-3. Pass a string with the name of the fallback configuration file to the method.
-
-Example:
+2. Call the `.setFallback` method **before** you fetch the target paywall or onboarding.
 
 ```csharp
 using UnityEngine;

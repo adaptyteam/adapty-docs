@@ -1,6 +1,11 @@
 <!--- FallbackPaywallIntroduction--->
 
-To maintain a fluid user experience, it is important that you set up a [fallback configuration](/fallback-paywalls) for your [paywalls](/paywalls). With a fallback configuration in place, your users will be able to access the paywall even when they cannot connect to Adapty.
+:::warning
+Fallback configurations require Adapty SDK v2.11 or up.
+:::
 
-1. [Download the fallback configuration file](/local-fallback-paywalls) from Adapty
-2. Follow the instructions below to configure the fallback setup:
+To maintain a fluid user experience, it is important that you set up a [fallback configuration](/fallback-paywalls) for your [paywalls](paywalls) and [onboardings](onboardings). That way, if the user encounters connection issues or server outages, the application will display a complete paywall anyway.
+
+:::important
+Before you follow the steps in this guide, make sure you [download the fallback configuration files](/local-fallback-paywalls) from Adapty.
+:::
