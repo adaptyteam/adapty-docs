@@ -61,7 +61,7 @@ Adapty will send subscription events to Singular using a server-to-server integr
 Profiles created prior to configuring the integrations will not be able to deliver their events to Singular. 
 :::
 
-## SDK Configuration and Attribution Integration
+## SDK Configuration
 
 The integration between Adapty and Singular is server-so-server. As such, there's no need to add any extra code to your application. 
 

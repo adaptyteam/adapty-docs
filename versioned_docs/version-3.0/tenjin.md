@@ -30,6 +30,8 @@ This integration operates in two key ways:
 
 ## Web configuration
 
+### Connect Adapty to Tenjin
+
 1. Open the [**Integrations** -> **Tenjin**](https://app.adapty.io/integrations/tenjin) page in the Adapty Dashboard.
 
 2. Enable the toggle to activate the integration.
@@ -103,7 +105,7 @@ This integration operates in two key ways:
 
 Adapty will now send purchase events to Tenjin and receive attribution data. You can adjust event sharing in the **Events names** section.
 
-## Events and tags
+### Set up events and tags
 
 Tenjin only accepts purchase and **Trial started** events. In the **Events names** section, select which events to share with Tenjin to align with your tracking goals.
 
