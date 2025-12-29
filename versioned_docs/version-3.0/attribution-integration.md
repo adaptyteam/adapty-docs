@@ -120,6 +120,6 @@ If you use Adapty to share real-time subscription data with your attribution ser
 
 Duplicate events can skew your analytics, and make it hard to interpret data. Once you configured Adapty event sharing, turn third-party event forwarding capabilities **off**.  
 
-### What's next?
+### Pro tip: Enable User Acquisition Analytics
 
 Enable [User Acquisition Analytics](user-acquisition) to learn more about your application economy. Dive deeper into the complicated relationship between ad spend and subscription revenue.
