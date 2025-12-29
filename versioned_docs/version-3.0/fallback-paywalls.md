@@ -16,7 +16,7 @@ When your application loads a paywall, the Adapty SDK requests paywall configura
 * If the user accessed the paywall before, and the device cached its data, the application loads paywall data **from cache**.
 * If the device did not cache the paywall, the application looks for a locally stored **fallback configuration**. It allows the application to display the paywall without an error.
 
-Adapty automatically generates fallback configuration files for you to download and use. Each file contains platform-specific configurations for *all* your paywalls and onboardings.
+Adapty automatically generates fallback configuration files for you to download and use. Each file contains platform-specific configurations for *all* your placements.
 
 ## Get started
 
@@ -34,6 +34,7 @@ Adapty automatically generates fallback configuration files for you to download 
 
 Fallback configurations are hard-coded and locally stored, so they lack the dynamic capabilities of regular Adapty paywalls.
 
-* Fallback configs do not support internationalization. When Adapty generates the file, it uses the default `en` locale.
-* Fallback paywalls don't support A/B testing. If a paywall participates in an A/B test, its fallback configuration will include the variation with the highest weight.
-* Fallback configuration files cannot be managed remotely. If you want to update the file, you need to release a new version of the app on App Store / Google Play.
+* Fallback configurations don't support [internationalization](paywall-localization). When Adapty generates the file, it uses the default `en` locale.
+* Fallback configurations don't support more than one paywall per placement. If your setup inlcudes different paywall configurations for different [audiences](audience), Adapty uses the configuration intended for "All users".
+* Fallback configurations don't support [A/B testing](ab-tests). If a paywall participates in an A/B test, its fallback configuration will include the variation with the highest weight.
+* Fallback configurations cannot be [managed remotely](customize-paywall-with-remote-config). If you want to update the file, you need to release a new version of the app on App Store / Google Play.
