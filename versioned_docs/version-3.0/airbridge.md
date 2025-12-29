@@ -20,7 +20,9 @@ The integration between Adapty and Airbridge operates in two main ways.
 2. **Sending subscription events to Airbridge**  
    Adapty can send all subscription events which are configured in your integration to Airbridge. As a result, you'll be able to track these events within the Airbridge dashboard. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
-## Initial Setup
+## Web configuration
+
+### Connect Adapty to Airbridge
 
 To integrate Airbridge go to [Integrations > Airbridge](https://app.adapty.io/integrations/airbridge), turn on a toggle from off to on, and fill out fields.
 
@@ -74,11 +76,7 @@ Adapty API token field is pre-generated on the Adapty backend. You will need to 
 />
 </Zoom>
 
-
-
-
-
-## Events and tags
+### Set up events and tags
 
 Below the credentials, there are three groups of events you can send to Airbridge from Adapty
 
@@ -167,7 +165,7 @@ try {
 Read more about airbridgeDeviceId in [Airbridge documentation.](https://developers.airbridge.io/v1.1-en/docs/airbridge-device-id)
 
 
-## Attribution Integration
+## SDK configuration
 
 Airbridge does not send real-time attribution data to Adapty. As such, there's no need to request attribution data from Airbridge in your application code. 
 

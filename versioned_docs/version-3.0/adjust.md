@@ -33,7 +33,9 @@ The integration between Adapty and Adjust works in two main ways.
 2. **Adapty sends subscription events to Adjust**  
    Adapty can send all subscription events which are configured in your integration to Adjust. As a result, you'll be able to track these events within the Adjust dashboard. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
-## Initial Setup
+## Web configuration
+
+### Connect Adapty to Adjust
 
 1. Open the Adapty Dashboard, and navigate to [Integrations > Adjust](https://app.adapty.io/integrations/adjust).
 
@@ -83,7 +85,7 @@ The integration between Adapty and Adjust works in two main ways.
 />
 </Zoom>
 
-## Events and tags
+### Set up events and tags
 
 Adjust works a bit differently from other platforms. You need to manually create events in Adjust dashboard, get event tokens, and copy-paste them to appropriate events in Adapty.
 
@@ -125,7 +127,7 @@ Consider the following:
 
 :::
 
-## Attribution Integration
+## SDK configuration
 
 After you complete the steps described above, add the following two methods to your app. They will establish communication between your app and Adjust:
 

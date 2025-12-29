@@ -37,7 +37,7 @@ The integration between Adapty and Branch operates in two main ways.
 2. **Sending subscription events to Branch**  
    Adapty can send all subscription events which are configured in your integration to Branch. As a result, you'll be able to track these events within the Branch dashboard. 
 
-## Initial Setup
+## Web configuration
 
 To integrate Branch go to [Integrations > Branch](https://app.adapty.io/integrations/branch) in Adapty Dashboard , turn on a toggle from off to on, and fill out fields.
 
@@ -101,7 +101,7 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Adapty will send subscription events to Branch using a server-to-server integration, allowing you to view all subscription events in your Branch dashboard and link them to your acquisition campaigns. 
 
-## Attribution Integration
+## SDK configuration
 
 1. Call the `.setIntegrationIdentifier()` SDK method to initialize the connection. You can pass your Branch Identity ID to the `customerUserId` parameter.
 

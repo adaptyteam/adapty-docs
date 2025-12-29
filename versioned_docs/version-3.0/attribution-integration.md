@@ -21,7 +21,6 @@ Integrate Adapty with an attribution data provider to:
 
 Adapty supports a [simplified integration process](#simplified-attribution-process) for 9 popular platforms. You can integrate any other platform with a [manual attribution](#manual-attribution) process.
 
-
 ## Simplified attribution process
 
 Adapty offers out-of-the-box attribution integration with [9 popular services](#platform-specific-guides). These platforms can automatically receive [subscription data](events) from Adapty, process each purchase, and respond with an appropriate attribution.
@@ -102,7 +101,6 @@ If your attribution source does not suppport the [simplified attribution workflo
 
     - `attribution` (required): dictionary with attribution data.
     - `source` (required): attribution source. Set to `.custom` if your attribution provider does not support the [simplified attribution process](#simplified-attribution-process).
-    - `networkUserID` (optional): a string with the profile ID from the attribution service.
 
 5. **Disable other event sharing services and attribution sources** to avoid [event duplication](#avoid-event-duplication) and [data conflicts](#select-a-single-attribution-source).
 
@@ -122,6 +120,6 @@ If you use Adapty to share real-time subscription data with your attribution ser
 
 Duplicate events can skew your analytics, and make it hard to interpret data. Once you configured Adapty event sharing, turn third-party event forwarding capabilities **off**.  
 
-### What's Next
+### What's next?
 
-Enable [User Acquisition Analytics](user-acquisition.md) to learn more about your application economy. Dive deeper into the complicated relationship between ad spend and subscription revenue.
+Enable [User Acquisition Analytics](user-acquisition) to learn more about your application economy. Dive deeper into the complicated relationship between ad spend and subscription revenue.
