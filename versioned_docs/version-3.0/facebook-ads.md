@@ -16,7 +16,7 @@ With the Facebook Ads integration, you can easily check your app stats in Meta A
 
 The integration between Adapty and Facebook Ads operates in the following way: Adapty sends all subscription events that are configured in your integration to Facebook Ads. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
-## Initial Setup
+## Web configuration
 
 To integrate Facebook Ads and analyze your app metrics, you can set up the integration with Meta Analytics. By sending events to Meta Ads Manager, you can create lookalike audiences based on subscription events like renewals. To configure this integration, navigate to [Integrations > Facebook Ads](https://app.adapty.io/integrations/facebookanalytics) in the Adapty Dashboard and provide the required credentials.
 
@@ -114,7 +114,7 @@ StartTrial, Subscribe, CancelSubscription are standard events.
 
 To enable specific events, simply toggle on the ones you require. In case multiple event names are selected, Adapty will consolidate the data from all the chosen events into a single Adapty event name.
 
-## Attribution Integration
+## SDK configuration
 
 If you follow the steps above, Facebook will automatically receive subscription data from Adapty. 
 

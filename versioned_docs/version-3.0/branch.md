@@ -16,28 +16,25 @@ Adapty provides a complete set of data that lets you track [subscription events]
 The integration between Adapty and Branch operates in two main ways.
 
 1. **Receiving attribution data from Branch**  
-   Once you've set up the Branch integration, Adapty will start receiving attribution data from Branch. You can easily access and view this data on the user's profile page.
+    Once you've set up the Branch integration, Adapty will start receiving attribution data from Branch. You can easily access and view this data on the user's profile page.
 
-
-<Zoom>
-  <img src={require('./img/49f4aa7-CleanShot_2023-08-11_at_17.36.072x.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-
+    <Zoom>
+      <img src={require('./img/49f4aa7-CleanShot_2023-08-11_at_17.36.072x.webp').default}
+      style={{
+        border: '1px solid #727272', /* border width and color */
+        width: '700px', /* image width */
+        display: 'block', /* for alignment */
+        margin: '0 auto' /* center alignment */
+      }}
+    />
+    </Zoom>
 
 2. **Sending subscription events to Branch**  
    Adapty can send all subscription events which are configured in your integration to Branch. As a result, you'll be able to track these events within the Branch dashboard. 
 
-## Initial Setup
+## Web configuration
+
+### Connect Adapty to Branch
 
 To integrate Branch go to [Integrations > Branch](https://app.adapty.io/integrations/branch) in Adapty Dashboard , turn on a toggle from off to on, and fill out fields.
 
@@ -53,12 +50,7 @@ To integrate Branch go to [Integrations > Branch](https://app.adapty.io/integrat
 />
 </Zoom>
 
-
-
-
-
 To get the value for the **Branch Key**,  open your Branch [Account Settings](https://dashboard.branch.io/account-settings/profile) and find the **Branch Key** field. Use it for the **Key test** (for Sandbox) or **Key live** (for Production) field in the Adapty Dashboard. In Branch, switch between Live and Tests environments for the appropriate key.
-
 
 <Zoom>
   <img src={require('./img/130e58b-CleanShot_2023-08-11_at_15.24.162x.webp').default}
@@ -71,11 +63,7 @@ To get the value for the **Branch Key**,  open your Branch [Account Settings](ht
 />
 </Zoom>
 
-
-
-
-
-## Events and tags
+### Set up events and tags
 
 Below the credentials, there are three groups of events you can send to Branch from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
@@ -101,7 +89,7 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Adapty will send subscription events to Branch using a server-to-server integration, allowing you to view all subscription events in your Branch dashboard and link them to your acquisition campaigns. 
 
-## Attribution Integration
+## SDK configuration
 
 1. Call the `.setIntegrationIdentifier()` SDK method to initialize the connection. You can pass your Branch Identity ID to the `customerUserId` parameter.
 
