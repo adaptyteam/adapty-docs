@@ -59,7 +59,7 @@ To add a new product to your app:
         - **Lifetime**: Use a lifetime period for the products that unlock the premium features of the app forever.
         - **Non-Subscriptions**: For the products that are not subscriptions and therefore have no duration, use non-subscriptions. These can be unlocked for additional features, consumable products, etc.
         - **Consumables**: Consumable items can be purchased multiple times. They could be used up during the life of the application. Examples are in-game currency and extras. Please consider that consumable products don’t affect access levels.
-    - **Price (USD)**: The product price in USD. This price will be used as a base to automatically calculate and set prices across all countries. You will be able to customize the price for different countries and regions in the store later. See the guides for [App Store](https://developer.apple.com/help/app-store-connect/manage-subscriptions/manage-pricing-for-auto-renewable-subscriptions/) and [Google Play](https://support.google.com/googleplay/android-developer/answer/140504?sjid=7303890784165167068-EU).
+    - **Price (USD)**: The product price in USD. This price will be used as a base to automatically calculate and set prices across all countries. You will be able to [customize the price for different countries and regions](edit-product#set-country-specific-prices) later.
 
 <Zoom>
   <img src={require('./img/create-product-push.webp').default}
@@ -184,7 +184,7 @@ To add a new product to your app:
       - **Lifetime**: Use a lifetime period for the products that unlock the premium features of the app forever.
       - **Non-Subscriptions**: For the products that are not subscriptions and therefore have no duration, use non-subscriptions. These can be unlocked for additional features, consumable products, etc.
       - **Consumables**: Consumable items can be purchased multiple times. They could be used up during the life of the application. Examples are in-game currency and extras. Please consider that consumable products don’t affect access levels.
-   - **Price (USD)**: The product price in USD. If your product is already in the store, this value won't affect its actual price in the store; you can select any value from the list.
+   - **Price (USD)**: The product price in USD. If your product is already in the store, this value won't affect its actual price in the store; you can select any value from the list. Later, you can [customize prices for different regions](edit-product#set-country-specific-prices) right in the Adapty dashboard.
 
 <Zoom>
   <img src={require('./img/product-info.webp').default}
