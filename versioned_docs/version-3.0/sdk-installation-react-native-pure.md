@@ -186,6 +186,20 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
 });
 ```
 
+### Clear data on backup restore
+
+When `clearDataOnBackup` is set to `true`, the SDK detects when the app is restored from an iCloud backup and deletes all locally stored SDK data, including cached profile information, product details, and paywalls. The SDK then initializes with a clean state. Default value is `false`.
+
+:::note
+Only local SDK cache is deleted. Transaction history with Apple and user data on Adapty servers remain unchanged.
+:::
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+   clearDataOnBackup: true,
+});
+```
+
 ## Development environment tips
 
 #### Delay SDK activation for development purposes
