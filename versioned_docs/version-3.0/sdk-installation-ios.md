@@ -355,7 +355,7 @@ See more details on how to finish transactions in the [guide](ios-transaction-ma
 
 ### Clear data on backup restore
 
-When `clearDataOnBackup` is set to `true`, the SDK detects when the app is restored from an iCloud or iTunes backup and deletes all locally stored SDK data, including cached profile information, product details, and paywalls. The SDK then initializes with a clean state. Default value is `false`.
+When `clearDataOnBackup` is set to `true`, the SDK detects when the app is restored from an iCloud backup and deletes all locally stored SDK data, including cached profile information, product details, and paywalls. The SDK then initializes with a clean state. Default value is `false`.
 
 :::note
 Only local SDK cache is deleted. Transaction history with Apple and user data on Adapty servers remain unchanged.
