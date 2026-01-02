@@ -280,6 +280,21 @@ await Adapty().activate(
 );
 ```
 
+### Clear data on backup restore
+
+When `clearDataOnBackup` is set to `true`, the SDK detects when the app is restored from an iCloud backup and deletes all locally stored SDK data, including cached profile information, product details, and paywalls. The SDK then initializes with a clean state. Default value is `false`.
+
+:::note
+Only local SDK cache is deleted. Transaction history with Apple and user data on Adapty servers remain unchanged.
+:::
+
+```dart showLineNumbers title="main.dart"
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+    ..withClearDataOnBackup(true) // default – false 
+);
+```
+
 ## Troubleshooting
 
 #### Android backup rules (Auto Backup configuration)

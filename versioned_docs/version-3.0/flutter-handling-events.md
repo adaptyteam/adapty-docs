@@ -76,9 +76,9 @@ void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct 
 ```
 </Details>
 
-#### Successful purchase
+#### Finished purchase
 
-If a purchase succeeds, this method will be invoked:
+If a purchase finishes, this method will be invoked. By default, the paywall is automatically dismissed, but you can override this behavior if needed.
 
 ```javascript showLineNumbers title="Flutter"
 void paywallViewDidFinishPurchase(AdaptyUIPaywallView view, 
@@ -287,10 +287,14 @@ void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError err
 
 #### Rendering errors
 
-If an error occurs during the interface rendering, it will be reported by calling this method:
+If an error occurs during the interface rendering, it will be reported by calling this method. By default (since v3.15.2), the paywall is automatically dismissed when a rendering error occurs, but you can override this behavior if needed.
 
 ```javascript showLineNumbers title="Flutter"
 void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
+  // Default behavior: view.dismiss()
+  // Override with custom logic if needed, for example:
+  // - Log the error
+  // - Show an error message to the user
 }
 ```
 
