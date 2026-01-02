@@ -213,7 +213,9 @@ Only local SDK cache is deleted. Transaction history with Apple and user data on
 
 ```typescript showLineNumbers title="App.tsx"
 adapty.activate('YOUR_PUBLIC_SDK_KEY', {
-   clearDataOnBackup: true,
+   ios: {
+       clearDataOnBackup: true
+   },
 });
 ```
 
