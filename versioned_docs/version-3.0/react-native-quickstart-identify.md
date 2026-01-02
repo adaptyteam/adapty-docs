@@ -43,6 +43,10 @@ If you don't have backend authentication, **you don't need to handle authenticat
 
 So, with anonymous users, new profiles will be created on each installation, but that's not a problem because, in the Adapty analytics, you can [configure what will be considered a new installation](general#4-installs-definition-for-analytics).
 
+:::note
+Backup restorations behave differently from reinstalls. By default, when a user restores from a backup, the SDK preserves cached data and does not create a new profile. You can configure this behavior using the `clearDataOnBackup` setting. [Learn more](sdk-installation-react-native-pure#clear-data-on-backup-restore).
+:::
+
 For anonymous users, you need to count installs by **device IDs**. In this case, each app installation on a device is counted as an install, including reinstalls.
 
 ## Identified users
