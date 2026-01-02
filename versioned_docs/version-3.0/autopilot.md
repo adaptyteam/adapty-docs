@@ -139,7 +139,7 @@ If the analysis doesn't start, it may be due to one of the following reasons:
 
 Once your recommendations are ready, it’s time to put them into action. 
 
-Your plan consists of three parts: setting new prices, updating paywalls, and conducting A/B tests with them. After each round, the winning strategy will advance to the next round. The winner of the final round will be your most efficient pricing option. Based on our estimates, completing the entire test cycle could increase your revenue by up to 80%.
+Your plan consists of several parts that include setting new prices, updating paywalls, and conducting A/B tests with them. After each round, the winning strategy will advance to the next round. The winner of the final round will be your most efficient pricing option. Based on our estimates, completing the entire test cycle could increase your revenue by up to 80%.
 
 To start with the first stage:
 
