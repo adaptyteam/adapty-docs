@@ -173,7 +173,7 @@ The method will not be invoked in Observer mode. Refer to the [Android - Present
 
 #### Failed purchase
 
-If purchase fails, this method will be invoked:
+If a purchase fails due to an error, this method will be invoked. This includes Google Play Billing errors (payment restrictions, invalid products, network failures), transaction verification failures, and system errors. Note that user cancellations trigger `onPurchaseFinished` with a cancelled result instead, and pending payments do not trigger this method.
 
 ```kotlin showLineNumbers title="Kotlin"
 public override fun onPurchaseFailure(

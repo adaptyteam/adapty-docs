@@ -47,7 +47,7 @@ public class PaywallEventsHandler : MonoBehaviour, AdaptyPaywallsEventsListener
 
 #### Product selection
 
-If a product was selected for purchase (by a user or by the system), this method will be invoked.
+Invoked when a product is selected for purchase (by a user or by the system).
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidSelectProduct(
@@ -68,7 +68,7 @@ public void PaywallViewDidSelectProduct(
 
 #### Started purchase
 
-If a user initiates the purchase process, this method will be invoked.
+Invoked when a user initiates the purchase process.
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidStartPurchase(
@@ -94,9 +94,9 @@ public void PaywallViewDidStartPurchase(
 ```
 </Details>
 
-#### Successful or canceled purchase
+#### Successful, canceled, or pending purchase
 
-If purchase succeeds, the user cancels their purchase, or the purchase appears to be pending, this method will be invoked:
+If purchase succeeds, the user cancels their purchase, or the purchase appears to be pending, this method will be invoked. User cancellations and pending payments (e.g., parental approval required) trigger this method, not `PaywallViewDidFailPurchase`.
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFinishPurchase(
@@ -170,7 +170,7 @@ We recommend dismissing the screen in that case.
 
 #### Failed purchase
 
-If purchase fails, this method will be invoked:
+If a purchase fails due to an error, this method will be invoked. This includes StoreKit/Google Play Billing errors (payment restrictions, invalid products, network failures), transaction verification failures, and system errors. Note that user cancellations trigger `PaywallViewDidFinishPurchase` with a cancelled result instead, and pending payments do not trigger this method.
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailPurchase(
@@ -206,7 +206,7 @@ public void PaywallViewDidFailPurchase(
 
 #### Successful restore
 
-If restoring a purchase succeeds, this method will be invoked:
+Invoked when purchase restoration succeeds:
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFinishRestore(
@@ -244,7 +244,7 @@ We recommend dismissing the screen if the user has the required `accessLevel`. R
 
 #### Failed restore
 
-If restoring a purchase fails, this method will be invoked:
+Invoked when purchase restoration fails:
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailRestore(
@@ -269,11 +269,65 @@ public void PaywallViewDidFailRestore(
 ```
 </Details>
 
+#### Finished web payment navigation
+
+After attempting to open a [web paywall](web-paywall) for purchase (whether successful or failed), this method will be invoked:
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFinishWebPaymentNavigation(
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product, 
+    AdaptyError error
+) { }
+```
+
+**Parameters:**
+- `product`: The product for which the web paywall was opened (or attempted)
+- `error`: `null` if the web paywall opened successfully, or an `AdaptyError` if it failed
+
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "wrong_param",
+    "message": "Current method is not available for this product",
+    "details": {
+      "underlyingError": "Product not configured for web purchases"
+    }
+  }
+}
+```
+</Details>
+
 ### Data fetching and rendering
 
 #### Product loading errors
 
-If you didn't pass the product array during initialization, AdaptyUI will retrieve the necessary objects from the server by itself. In this case, this operation may fail, and AdaptyUI will report the error by invoking this method:
+Invoked when product loading fails and provides `AdaptyError`. If you didn't pass the product array during initialization, AdaptyUI will retrieve the necessary objects from the server by itself. This operation may fail, and AdaptyUI will report the error by invoking this method:
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailLoadingProducts(
@@ -300,7 +354,7 @@ public void PaywallViewDidFailLoadingProducts(
 
 #### Rendering errors
 
-If an error occurs during the interface rendering, it will be reported by calling this method:
+Invoked when an error occurs during interface rendering and provides `AdaptyError`:
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailRendering(
