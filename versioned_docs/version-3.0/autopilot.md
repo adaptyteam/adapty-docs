@@ -77,7 +77,7 @@ If the analysis doesn't start, it may be due to one of the following reasons:
 />
 </Zoom>
 
-3. Adapty automatically selects the top-performing live paywall for analysis. If you wish to analyze a different paywall, click the **Change Paywall** button, and pick another option. You cannot select a paywall without a current placement.
+3. Adapty automatically selects the top-performing live paywall for analysis. If you wish to analyze a different paywall, click the **Change Paywall** button, and pick another option. You cannot select a paywall that doesn't belong to a placement.
 
     Review the paywall data: products, conversion metrics, the revenue distribution chart. When you're ready to proceed to the next step, click **Go to competitors research**.
    
@@ -92,9 +92,7 @@ If the analysis doesn't start, it may be due to one of the following reasons:
 />
 </Zoom>
 
-4. Select up to 5 competitors for analysis. 
-
-    Adapty will suggest a list of competitors based on your app's category and MRR. You can modify the list, and manually add applications with an App Store / Google Play link. We recommend selecting apps with higher MRR than yours.
+4. Adapty suggests a list of up to 5 competitors for analysis. They are chosen based on your app's category and MRR. You can modify the list, and manually add applications with an App Store link. We recommend selecting apps with higher MRR than yours.
 
     Click **Generate report** to confirm the list of competitors.
    
