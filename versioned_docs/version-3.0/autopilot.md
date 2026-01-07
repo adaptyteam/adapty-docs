@@ -77,7 +77,7 @@ If the analysis doesn't start, it may be due to one of the following reasons:
 />
 </Zoom>
 
-3. Adapty automatically selects the top-performing live paywall for analysis. If you wish to analyze a different paywall, click the **Change Paywall** button, and pick another option. You cannot select a paywall that doesn't belong to a placement.
+3. Adapty automatically selects the top-performing live paywall for analysis. If you wish to analyze a different paywall, click the **Change Paywall** button, and pick another option. You can only select a paywall added to the placement from the previous step.
 
     Review the paywall data: products, conversion metrics, the revenue distribution chart. When you're ready to proceed to the next step, click **Go to competitors research**.
    
