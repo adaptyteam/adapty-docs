@@ -54,7 +54,6 @@ function MyPaywall({ paywall }) {
   }), []);
 
   const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
-  const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {}, []);
   const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {}, []);
   const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {}, []);
   const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {}, []);
@@ -76,7 +75,6 @@ function MyPaywall({ paywall }) {
       params={paywallParams}
       style={styles.paywall}
       onCloseButtonPress={onCloseButtonPress}
-      onAndroidSystemBack={onAndroidSystemBack}
       onProductSelected={onProductSelected}
       onPurchaseStarted={onPurchaseStarted}
       onPurchaseCompleted={onPurchaseCompleted}
