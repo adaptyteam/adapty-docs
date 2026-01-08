@@ -134,12 +134,18 @@ This step starts a sequence of steps with a similar structure. After the 2nd ren
 
 Adapty details *churn* statistics for the Trial stage and later. Every user who entered one stage, but not the next, counts as an instance of churn.
 
-If a specific event (for example, a trial expiration or a billing issue) caused the lack of conversion, Adapty displays the reason. In other cases, Adapty displays the churn reason as *unknown*.
+* If a specific event (for example, a trial expiration or a billing issue) caused the lack of conversion, Adapty displays the reason.
 
-The *unknown* churn status may indicate that the user hasn't had the opportunity to proceed to the next stage. Their subscription / trial may still be active, and they have nothing to renew. Adapty will update this data when the user obtains a definite conversion status: renews the subscription, cancels it, etc.
+* The **unknown** status is a temporary state. It indicates that the user hasn't yet encountered the event that allows them to proceed to the next stage.
+
+      In the Trial stage, this usually means the trial has not yet ended. This commonly occurs when viewing Funnels for short date ranges or single days, since trials take time to resolve. 
+
+      In later stages, the *unknown* churn reason may indicate an active subscription.
+
+      Adapty will update the information once the user converts, cancels the trial, or lets the stage expire.
 
 <Zoom>
-  <img src={require('./img/df40d2f-CleanShot_2022-06-23_at_17.36.08.webp').default}
+  <img src={require('./img/churn-reasons.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
