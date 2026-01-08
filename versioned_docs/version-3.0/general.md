@@ -96,9 +96,7 @@ It is important to consider that the selected option not only affects analytics 
 
 Please ensure that you select the designated option that aligns with your desired approach to handling subscription prices for existing subscribers. This will help maintain accurate data and synchronization between Adapty analytics and the results obtained from the App Store Connect.
 
-## 6. Sharing purchases between user accounts
-
-When a <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> tries to restore transactions or extend a subscription that is already associated with a different identified <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#setting-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration),[React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip>, you can control how Adapty responds by adjusting the **Sharing paid access between user accounts** dropdown:
+## 6. Sharing paid access between user accounts
 
 <Sharingaccesslevel />
 

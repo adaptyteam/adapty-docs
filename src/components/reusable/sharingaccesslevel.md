@@ -4,48 +4,54 @@ no_index: true
 
 <!--- sharingaccesslevel.md --->
 
+> Main article: [Sharing paid access between user accounts](sharing-paid-access-between-user-accounts)
+
+When a user makes a purchase, Adapty assigns a new [access level](access-level) to the active [customer profile](identifying-users).
+
+But the user's customer profile may change — if they reinstall the application, log into a new account, or purchase a new device. How does Adapty ensure that the buyer doesn't lose access to paid content? The **Sharing paid access between user accounts** setting determines Adapty's behavior.
+
+:::important
+If you need to test purchases on a sandbox account, change the setting for [sandbox accounts only](sharing-paid-access-between-user-accounts#sharing-paid-access-on-sandbox).
+:::
+
+:::note
+Anonymous user profiles associated with the same store account *always* share their access level, regardless of this setting.
+:::
+
 **Enabled (default)**
 
-Identified users (those with a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration)) can share the same [access level](https://adapty.io/docs/access-level) provided by Adapty if their device is signed in to the same Apple/Google ID. This is useful when a user reinstalls the app and logs in with a different email — they’ll still have access to their previous purchase. With this option, multiple identified users can share the same access level.
+If the **Sharing paid access between user accounts** setting is on, new customer profiles associated with the same store account will *inherit* the access level of the original. This is the default behavior for Adapty apps.
 
-Even though the access level is shared, all past and future transactions are logged as events in the original Customer User ID to maintain consistent analytics and keep a complete transaction history — including trial periods, subscription purchases, renewals, and more, linked to the same profile.
+* If a user logs into your app with a new set of credentials, they retain access to paid content.
+* If a user reinstalls your application after a factory reset, they retain access to paid content.
+* If a user installs the application on other devices with the same store account, the purchase is made available on all devices. Even if each instance of the application has its own customer profile.
+
+This behavior is best for common use cases and store compliance. Do not change it if your app does not have authentication capabilities, and only uses Adapty’s anonymous profiles.
 
 **Transfer access to new user**
 
-Identified users can keep accessing the [access level](access-level) provided by Adapty, even if they log in with a different [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) or reinstall the app, as long as the device is signed in to the same Apple/Google ID.
+If you select this setting, Adapty limits purchase access to 1 customer ID at a time. The device owner can reinstall the app, log in and out, but cannot access the same product from more than one customer ID simultaneously.
 
-Unlike the previous option, Adapty transfers the purchase between identified users. This ensures that the purchased content is available, but only one user can have access at a time. For example, if UserA buys a subscription and UserB logs in on the same device and restores transactions, UserB will gain access to the subscription, and it will be revoked from UserA.
+For example, if a customer downloads your application on a second device, Adapty will transfer paid access privileges to the customer ID associated with the new device. The original device will lose access.
 
-If one of the users (either the new or the old one) is not identified, the access level will still be shared between those profiles in Adapty.
+If one of the customer profiles is *anonymous* (not associated with a specific customer ID), the two will continue to share the access level. This is necessary to prevent access loss in applications without mandatory authentication.
 
-Although the access level is transferred, all past and future transactions are logged as events in the original Customer User ID to maintain consistent analytics and keep a complete transaction history — including trial periods, subscription purchases, renewals, and more, linked to the same profile.
+:::warning
+When you disable from the default setting, Adapty does not immediately update the access levels of existing customer profiles.
 
-After switching to **Transfer access to new user**, access levels won’t be transferred between profiles immediately. The transfer process for each specific access level is triggered only when Adapty receives an event from the store, such as subscription renewal, restore, or when validating a transaction.
+The switch occurs when a user triggers a new store event: for example, renews the subscription, or restores their purchases.
+:::
 
 **Disabled**
 
-The first identified user profile to get an access level will retain it forever. This is the best option if your business logic requires that purchases be tied to a single Customer User ID.
+If you disable paid access sharing, Adapty ties the product to the active [customer ID](identifying-users#setting-customer-user-id-on-configuration) at the time of the purchase, and does not share these privileges with any other customer profiles. This policy allows for stict 1-to-1 product distribution, but demands mandatory in-app authenticaion.
 
-Note that access levels are still shared between anonymous users.
-
-You can "untie" a purchase by [deleting the owner’s user profile](ss-delete-profile). After deletion, the access level becomes available to the first user profile that claims it, whether anonymous or identified.
-
-Disabling sharing only affects new users. Subscriptions already shared between users will continue to be shared even after this option is disabled.
+You need to implement your own authentication logic to make sure that users retain access to their purchases. Select this setting if your app requires customers to create an account before completing a transaction, with strict rules that tie purchases to a single user entity.
 
 :::warning
+If you disable paid access sharing, some users may not be able to restore their purchases.
 
-Apple and Google require in-app purchases to be shared or transferred between users because they rely on the Apple/Google ID to associate the purchase with. Without sharing, restoring purchases might not work upon subsequent reinstalls.
-
-Disabling sharing may prevent users from regaining access after logging in.
-
-We recommend disabling sharing only if your users **are required to log in** before they make a purchase. Otherwise, an identified user could buy a subscription, log into another account, and lose access permanently.
+If your application does not guarantee that the user retains access to their purchases, it may fail the mandatory store review.
 :::
 
-### Which setting should I choose?
-
-| My app...                                                    | Option to choose                                             |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| Does not have a login system and only uses Adapty’s anonymous profile IDs. | Use the default option, as access levels are always shared between anonymous profile IDs for all three options. |
-| Has an optional login system and allows customers to make purchases before creating an account. | Choose **Transfer access to new user** to ensure that customers who purchase without an account can still restore their transactions later. |
-| Requires customers to create an account before purchasing but allows purchases to be linked to multiple Customer User IDs. | Choose **Transfer access to new user** to ensure that only one Customer User ID has access at a time, while still allowing users to log in with a different Customer User ID without losing their paid access. |
-| Requires customers to create an account before purchasing, with strict rules that tie purchases to a single Customer User ID. | Choose **Disabled** to ensure that transactions are never transferred between accounts. |
+You can transfer the product from one profile to another without sharing paid access. When you [delete a user profile](https://adapty.io/docs/api-adapty#/operations/deleteProfile), Adapty transfers access to the next available profile, whether anonymous or identified.
