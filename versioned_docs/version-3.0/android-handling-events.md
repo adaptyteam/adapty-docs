@@ -209,6 +209,63 @@ public override fun onPurchaseFailure(
 
 The method will not be invoked in Observer mode. Refer to the [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) topic for details.
 
+#### Finished web payment navigation
+
+This method is invoked after an attempt to open a [web paywall](web-paywall.md) for a specific product. This includes both successful and failed navigation attempts:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onFinishWebPaymentNavigation(
+    product: AdaptyPaywallProduct?,
+    error: AdaptyError?,
+    context: Context,
+) {}
+```
+
+**Parameters:**
+
+| Parameter   | Description                                                                                        |
+|:------------|:---------------------------------------------------------------------------------------------------|
+| **product** | An `AdaptyPaywallProduct` for which the web paywall was opened. Can be `null`.                     |
+| **error**   | An `AdaptyError` object if the web paywall navigation failed; `null` if navigation was successful. |
+
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_navigation_failed",
+    "message": "Failed to open web paywall",
+    "details": {
+      "underlyingError": "Browser unavailable"
+    }
+  }
+}
+```
+</Details>
+
 #### Successful restore
 
 If restoring a purchase succeeds, this method will be invoked:
