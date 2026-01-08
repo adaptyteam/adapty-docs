@@ -164,9 +164,7 @@ Why do events show future timestamps in profiles and integrations? Event timesta
 - **Impact on Analytics and Event Feed**: These events will only appear in **Analytics** and the **Event Feed** once their timestamps have passed. Events with future timestamps are not shown in either section.
 - **Impact on Integrations**: Adapty sends events to integrations as soon as they are received. If an event has a future timestamp, it will be shared with your integration exactly as received.
 
-## Sharing access levels between profiles
-
-When a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) tries to restore transactions or extend a subscription that is already associated with a different identified [Customer User ID](identifying-users#setting-customer-user-id-on-configuration), you can control how Adapty responds by adjusting the **Sharing paid access between user accounts** dropdown in the [Adapty Dashboard -> **App settings** -> **General** tab](https://app.adapty.io/settings/general):
+## Sharing paid access between user accounts
 
 <Sharingaccesslevel />
 
