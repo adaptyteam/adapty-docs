@@ -12,6 +12,10 @@ import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
 import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackPaywallIntroduction.md';
 
+:::warning
+Fallback paywall support requires Unity SDK v2.11 and later.
+:::
+
 <FallbackPaywallIntroduction />
 
 ## Configuration

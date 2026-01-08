@@ -10,13 +10,9 @@ import Details from '@site/src/components/Details';
 import Contentid from '@site/src/components/InlineTooltip';
 import InlineTooltip from '@site/src/components/InlineTooltip';
 
-:::warning
-Fallback configurations require Adapty SDK v2.11 or up.
-:::
+Adapty automatically generates [JSON configuration files](/fallback-paywalls) for your fallback paywalls. Download the files from Adapty's web interface to include them in your application.
 
-Adapty automatically generates [fallback configuration files](/fallback-paywalls) in the JSON format. Download the files from Adapty's web interface to include them in your application.
-
-Each file contains configurations for *all* your paywalls and onboardings. If a paywall participates in an A/B test, the fallback configuration will include the variation with the highest weight. Adapty updates these files whenever you modify your paywalls or onboardings.
+Each file contains configurations for *all* your paywalls and onboardings. If a paywall participates in an A/B test, the fallback version will include the variation with the highest weight. Adapty updates these files whenever you modify your paywalls or onboardings.
 
 1. Open the **[Placements](https://app.adapty.io/placements)** page.
 2. Click the **Fallbacks** button.
