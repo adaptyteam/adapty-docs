@@ -1,5 +1,5 @@
 ---
-title: "Use fallbacks in iOS SDK"
+title: "iOS - Use fallback paywalls"
 description: "Handle cases when users are offline or Adapty servers aren't available"
 metadataTitle: "Using Fallback Paywalls on iOS | Adapty Docs"
 ---
@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackPaywallIntroduction.md';
 
 :::warning
-This functionality requires iOS SDK v2.11 or later.
+Fallback paywall support requires iOS SDK v2.11 or later.
 :::
 
 <FallbackPaywallIntroduction />

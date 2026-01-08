@@ -1,5 +1,5 @@
 ---
-title: "Use fallback paywalls in Kotlin Multiplatform SDK"
+title: "Kotlin Multiplatform - Use fallback paywalls"
 description: "Handle cases when users are offline or Adapty servers aren't available"
 metadataTitle: "Using Fallback Paywalls on Kotlin Multiplatform | Adapty Docs"
 ---

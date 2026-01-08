@@ -10,24 +10,32 @@ import Details from '@site/src/components/Details';
 import Contentid from '@site/src/components/InlineTooltip';
 import InlineTooltip from '@site/src/components/InlineTooltip';
 
-Typically, [onboardings](onboardings.md) are fetched from the server when a customer accesses them, and you need to get their configuration before accessing them. However, if you can't get an onboarding config URL at the moment, you can use fallbacks to get the onboarding config URL and other data. 
+To load an [onboarding](onboardings.md), your application requests its configuration data from Adapty. Onboarding configs store the URLs of your onboarding flows. If a network issue disrupts the connection between your application and the Adapty servers, you cannot correctly configure and display your onboardings.
 
-Adapty generates fallbacks as a JSON file in the necessary format, reflecting the default versions of the paywalls and onboardings you've configured in the Adapty Dashboard. To use the file, download it - one per app store, place it alongside your app on the user's device, and pass its contents to the `.setFallback` method, following the instructions outlined below.
+To stop Adapty from losing access to onboarding configuration data, you can store a fallback configuration file offline. Adapty automatically generates fallback files with configuration data for your onboardings and [paywalls](fallback-paywalls).
+
+Follow the instructions below to download the file and add it to your application code.
 
 :::important
-Note that onboarding fallbacks won't let your users access the onboarding if they don't have an Internet connection. Onboarding fallbacks are primarily URLs you can use to download onboarding configs.
+Fallback onboardings **require an internet connection**, since onboarding content is always stored online. The fallback file only stores the onboardings' configuration.
 
-Even if you use onboarding configs, handle the [onboarding offline mode](onboarding-offline.md) in your app.
+To handle onboarding behavior for users without an internet connection, follow the steps in the [onboarding offline mode](onboarding-offline.md) article.
 :::
 
 <details>
-   <summary>Before you start adding local fallback paywalls and onboardings (Click to Expand)</summary>
+   <summary>Before you configure fallback onboardings (Click to Expand)</summary>
 
-1. Create [onboardings](onboardings.md).
-2. [Create placements and add paywalls and onboardings to the placements](create-placement). Placement is the location where the paywall/onboarding will be shown.
+1. Create an [onboarding](onboardings.md).
+2. [Create a placement](create-placement) for the onboarding to determine where in the app the onboarding appears.
+
 </details>
 
-The JSON file with fallbacks contains both paywalls and onboardings at once. To download the JSON file, open **[Placements](https://app.adapty.io/placements)** in the Adapty main menu. Click the **Fallbacks** button. You will get the JSON file. Use its contents in the <InlineTooltip tooltip="setFallback">[iOS](ios-use-fallback-paywalls), [Android](android-use-fallback-paywalls), [React Native](react-native-use-fallback-paywalls), [Flutter](flutter-use-fallback-paywalls), and [Unity](unity-use-fallback-paywalls)</InlineTooltip> method in your mobile app code.
+Adapty generates two fallback files — one per platform. Each file contains configuration data for all your onboardings and paywalls.
+
+1. Open the **[Placements](https://app.adapty.io/placements)** page.
+2. Click the **Fallbacks** button.
+3. Select your target platform (*iOS* or *Android*) from the dropdown.
+4. Select your SDK version to start the download.
 
 <Zoom>
   <img src={require('./img/9c63367-placements.webp').default}
@@ -39,8 +47,6 @@ The JSON file with fallbacks contains both paywalls and onboardings at once. To 
   }}
 />
 </Zoom>
-
-
 
 <details>
    <summary>Onboarding fallback example (Click to Expand)</summary>
@@ -69,3 +75,16 @@ The JSON file with fallbacks contains both paywalls and onboardings at once. To 
 },
 ```
 </details>
+
+
+## After the download
+
+Follow the setup guide for your particular platform:
+
+* [iOS](ios-use-fallback-paywalls)
+* [Android](android-use-fallback-paywalls)
+* [React Native](react-native-use-fallback-paywalls)
+* [Flutter](flutter-use-fallback-paywalls)
+* [Unity](unity-use-fallback-paywalls)
+* [Kotlin Multiplatform](kmp-use-fallback-paywalls)
+* [Capacitor](capacitor-use-fallback-paywalls)

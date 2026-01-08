@@ -1,5 +1,5 @@
 ---
-title: "Use fallbacks in Unity SDK"
+title: "Unity - Use fallback paywalls"
 description: "Handle cases when users are offline or Adapty servers aren't available"
 metadataTitle: "Using fallback paywalls and onboardings | Unity SDK | Adapty Docs"
 slug: /unity-use-fallback-paywalls
