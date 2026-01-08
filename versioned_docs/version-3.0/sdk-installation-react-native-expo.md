@@ -26,7 +26,9 @@ Adapty SDK includes two key modules for seamless integration into your React Nat
 If you need a full tutorial on how to implement IAP in your React Native app, check [this](https://adapty.io/blog/react-native-in-app-purchases-tutorial/) out.
 
 :::tip
-Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
+Want to see a real-world example of how Adapty SDK is integrated into an Expo app? Check out our sample apps:
+- [Expo dev build sample](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo) for full functionality including real purchases and Paywall Builder
+- [Expo Go & Web sample](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/ExpoGoWebMock) for testing with mock mode
 :::
 
 For a complete implementation walkthrough, you can also see the video:

@@ -19,7 +19,7 @@ To get started with the Adapty Paywall Builder paywalls quickly, see our [quicks
 
 ### Implement paywalls manually
 
-<CustomDocCardList ids={['fetch-paywalls-and-products-kmp', 'present-remote-config-paywalls-kmp', 'kmp-making-purchases']} />
+<CustomDocCardList ids={['kmp-quickstart-manual', 'fetch-paywalls-and-products-kmp', 'present-remote-config-paywalls-kmp', 'kmp-making-purchases']} />
 
 For more guides on implementing paywalls and handling purchases manually, see the [category](kmp-implement-paywalls-manually).
 

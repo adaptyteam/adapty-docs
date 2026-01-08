@@ -25,7 +25,11 @@ This guide shows how to handle custom and pre-existing actions in your code.
 To add a button that will close your paywall:
 
 1. In the paywall builder, add a button and assign it the **Close** action.
-2. In your app code, implement a handler for the `close` action that dismisses the paywall.
+2. In your app code, implement a handler for the `CloseAction` and `AndroidSystemBackAction` actions.
+
+:::info
+In the Flutter SDK, the `CloseAction` and `AndroidSystemBackAction` actions trigger closing the paywall by default. However, you can override this behavior in your code if needed. For example, closing one paywall might trigger opening another.
+:::
 
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
