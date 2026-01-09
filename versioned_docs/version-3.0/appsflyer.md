@@ -33,7 +33,9 @@ The integration between Adapty and AppsFlyer operates in two main ways.
 2. **Sending subscription events to AppsFlyer**  
    Adapty can send all subscription events that are configured in your integration to AppsFlyer. As a result, you'll be able to track these events within the AppsFlyer dashboard. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
-## Web configuration
+## Set up configuration
+
+### Connect Adapty to AppsFlyer
 
 To setup the integration with AppsFlyer:
 
@@ -160,7 +162,7 @@ Adapty maps some events to AppsFlyer [standard events](https://support.appsflyer
 
 Another important thing is that AppsFlyer doesn't support events older than 24 hours. So, if you have an event that is more than a day old, Adapty will send it to Appsflyer, but the event date and time will be replaced by the current timestamp.
 
-## Events and tags
+### Configure events and tags
 
 Below the credentials, there are three groups of events you can send to AppsFlyer from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
@@ -181,7 +183,7 @@ We recommend using the default event names provided by Adapty. But you can chang
 
 Adapty will send subscription events to AppsFlyer using a server-to-server integration, allowing you to view all subscription events in your AppsFlyer dashboard and link them to your acquisition campaigns.
 
-## SDK configuration
+### Connect your app to AppsFlyer
 
 After you complete the steps described above, call the `updateAttribution` method to save the attribution data, and use the `Adapty.setIntegrationIdentifier()` to set the integration identifier. 
 

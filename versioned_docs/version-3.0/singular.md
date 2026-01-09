@@ -13,7 +13,9 @@ Adapty provides a complete set of data that lets you track [subscription events]
 
 Adapty can send all subscription events which are configured in your integration to Singular. As a result, you'll be able to track these events within the Singular dashboard. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
-## Web configuration
+## Set up integration
+
+### Connect Adapty to Singuler
 
 To set up the integration with Singular, go to [Integrations > Singular](https://app.adapty.io/integrations/singular) in your Adapty Dashboard, turn on a toggle, and fill out the fields.
 
@@ -61,7 +63,7 @@ Adapty will send subscription events to Singular using a server-to-server integr
 Profiles created prior to configuring the integrations will not be able to deliver their events to Singular. 
 :::
 
-## SDK Configuration
+### Connect your app to Singular
 
 The integration between Adapty and Singular is server-so-server. As such, there's no need to add any extra code to your application. 
 

@@ -11,7 +11,9 @@ Using [Asapty](https://asapty.com/) integration you can optimize your Search Ads
 
 This specific integration doesn't add any attribution data to Adapty, as we already have everything we need from [ASA](apple-search-ads) directly.
 
-## Web configuration
+## Set up integration
+
+### Connect Adapty to Asapty
 
 To integrate Asapty navigate to [Integrations > Asapty](https://app.adapty.io/integrations/asapty) in the Adapty dashboard and fill out the field value for Asapty ID.
 
@@ -28,7 +30,7 @@ To integrate Asapty navigate to [Integrations > Asapty](https://app.adapty.io/in
 
 Asapty ID can be found in Settings> General section in your Asapty account.
 
-## Events and tags
+### Configure events and tags
 
 Below the credentials, there are three groups of events you can send to Asapty from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
 
@@ -45,7 +47,7 @@ Below the credentials, there are three groups of events you can send to Asapty f
 
 We recommend using the default event names provided by Asapty. But you can change the event names based on your needs.
 
-## SDK configuration
+### Connect your app to Asapty
 
 Once you complete the steps outlined above, Adapty automatically receives attribution data from Asapty. There's no need to explicitly request attribution data in your application code. For better attribution data accuracy, configure Asapty to share the `customerUserId` with each event's data.
 

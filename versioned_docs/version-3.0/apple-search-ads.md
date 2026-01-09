@@ -29,15 +29,17 @@ Once you've set up the Apple Ads integration, Adapty will start receiving attrib
 />
 </Zoom>
 
-## Connect the AdServices framework
+## Set up integration
+
+### Connect Adapty to the AdServices framework
 
 Apple Ads via [AdServices](https://developer.apple.com/documentation/ad_services) does require some configuration in Adapty Dashboard, and you will also need to enable it on the app side. To set up Apple Ads using the AdServices framework through Adapty, follow these steps:
 
-### Step 1: Configure Info.plist
+#### Step 1: Configure Info.plist
 
 Add `AdaptyAppleSearchAdsAttributionCollectionEnabled` to the app’s `Info.plist` file and set it to `YES` (boolean value).
 
-### Step 2: Obtain public key
+#### Step 2: Obtain public key
 
 In the Adapty Dashboard, navigate to [Settings -> Apple Ads.](https://app.adapty.io/settings/apple-search-ads)  
 Locate the pre-generated public key (Adapty provides a key pair for you) and copy it.
@@ -57,7 +59,7 @@ Locate the pre-generated public key (Adapty provides a key pair for you) and cop
 If you're using an alternative service or your own solution for Apple Ads attribution, you can upload your own private key.
 :::
 
-### Step 3: Configure user management on Apple Ads
+#### Step 3: Configure user management on Apple Ads
 
 In your [Apple Ads account](https://searchads.apple.com/) go to **Settings > User Management** page. In order for Adapty to fetch attribution data you need to invite another Apple ID account and grant it API Account Manager access. You can use any account you have access to or create a new one just for this purpose. The important thing is that you must be able to log into Apple Ads using this Apple ID.
 
@@ -72,11 +74,11 @@ In your [Apple Ads account](https://searchads.apple.com/) go to **Settings > Use
 />
 </Zoom>
 
-### Step 4: Generate API credentials
+#### Step 4: Generate API credentials
 
 As a next step, log in to the newly added account in Apple Ads. Navigate to Settings -> API in the Apple Ads interface. Paste the previously copied public key into the designated field. Generate new API credentials.
 
-### Step 5: Configure Adapty with Apple Ads credentials
+#### Step 5: Configure Adapty with Apple Ads credentials
 
 Copy the Client ID, Team ID, and Key ID fields from the Apple Ads settings. In the Adapty Dashboard, paste these credentials into the corresponding fields.
 
@@ -91,7 +93,7 @@ Copy the Client ID, Team ID, and Key ID fields from the Apple Ads settings. In t
 />
 </Zoom>
 
-## SDK configuration
+### Connect your app to the AdServices network
 
 Once you complete [the AdServices framework setup](#connect-the-adservices-framework), Adapty automatically starts collecting Apple Search Ad attribution data. You don't need to add any SDK code.
 

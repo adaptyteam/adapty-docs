@@ -28,7 +28,7 @@ This integration operates in two key ways:
 | Data direction             | <p>Two-way transmission:</p><ul><li> **Adapty events**: From Adapty server to Tenjin server</li><li> **Tenjin attribution**: From Tenjin SDK to Adapty server</li></ul> |
 | Adapty integration point   | <ul><li> Tenjin and Adapty SDKs in the mobile app code</li><li> Adapty server</li></ul> |
 
-## Web configuration
+## Set up integration
 
 ### Connect Adapty to Tenjin
 
@@ -105,7 +105,7 @@ This integration operates in two key ways:
 
 Adapty will now send purchase events to Tenjin and receive attribution data. You can adjust event sharing in the **Events names** section.
 
-### Set up events and tags
+### Configure events and tags
 
 Tenjin only accepts purchase and **Trial started** events. In the **Events names** section, select which events to share with Tenjin to align with your tracking goals.
 
@@ -120,7 +120,7 @@ Tenjin only accepts purchase and **Trial started** events. In the **Events names
 />
 </Zoom>
 
-## SDK configuration
+### Connect your app to Tenjin
 
 Use the `Adapty.updateAttribution()` SDK method to retrieve attribution data from Tenjin, and pass it on to Adapty. 
 
