@@ -62,7 +62,6 @@ function MyPaywall({ paywall }) {
   const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {}, []);
   const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {}, []);
   const onPaywallShown = useCallback<EventHandlers['onPaywallShown']>(() => {}, []);
-  const onPaywallClosed = useCallback<EventHandlers['onPaywallClosed']>(() => {}, []);
   const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {}, []);
   const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {}, []);
   const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {}, []);
@@ -83,7 +82,6 @@ function MyPaywall({ paywall }) {
       onRestoreCompleted={onRestoreCompleted}
       onRestoreFailed={onRestoreFailed}
       onPaywallShown={onPaywallShown}
-      onPaywallClosed={onPaywallClosed}
       onRenderingFailed={onRenderingFailed}
       onLoadingProductsFailed={onLoadingProductsFailed}
       onCustomAction={onCustomAction}
