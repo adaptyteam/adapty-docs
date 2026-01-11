@@ -66,7 +66,7 @@ You can register only the closure parameters you need, and omit those you do not
 |:----------------------------------|:---------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **isPresented**                   | required | A binding that manages whether the paywall screen is displayed.                                                                                                                                                                                                                                                                |
 | **paywallConfiguration**          | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)` method. Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details. |
-| **didFailPurchase**               | required | Invoked when purchase fails.                                                                                                                                                                                                                                                                                                   |
+| **didFailPurchase**               | required | Invoked when a purchase fails due to errors (e.g., payment not allowed, network issues, invalid product). Not invoked for user cancellations or pending payments.                                                                                                                                                              |
 | **didFinishRestore**              | required | Invoked when purchase completes successfully.                                                                                                                                                                                                                                                                                  |
 | **didFailRestore**                | required | Invoked when restoring a purchase fails.                                                                                                                                                                                                                                                                                       |
 | **didFailRendering**              | required | Invoked if an error occurs while rendering the interface. In this case, [contact Adapty Support](mailto:support@adapty.io).                                                                                                                                                                                                    |
@@ -77,7 +77,7 @@ You can register only the closure parameters you need, and omit those you do not
 | **didSelectProduct**              | optional | If the product was selected for purchase (by a user or by the system), this callback will be invoked.                                                                                                                                                                                                                          |
 | **didStartPurchase**              | optional | Invoked when the user begins the purchase process.                                                                                                                                                                                                                                                                             |
 | **didFinishPurchase**             | optional | Invoked when purchase completes successfully.                                                                                                                                                                                                                                                                                  |
-| **didFinishWebPaymentNavigation** | optional | Invoked when web payment navigation finishes.                                                                                                                                                                                                                                                                                  |
+| **didFinishWebPaymentNavigation** | optional | Invoked after attempting to open a [web paywall](web-paywall) for purchase, whether successful or failed.                                                                                                                                                                                                                      |
 | **didStartRestore**               | optional | Invoked when the user starts the restore process.                                                                                                                                                                                                                                                                              |
 | **didFailLoadingProducts**        | optional | Invoked when errors occur during product loading. Return `true` to retry loading.                                                                                                                                                                                                                                              |
 | **didPartiallyLoadProducts**      | optional | Invoked when products are partially loaded.                                                                                                                                                                                                                                                                                    |
@@ -151,7 +151,7 @@ It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Bui
 
 #### Started purchase using a web paywall
 
-If a user initiates the purchase process using a web paywall, this method will be invoked:
+If a user initiates the purchase process using a [web paywall](web-paywall.md), this method will be invoked:
 
 ```swift showLineNumbers title="Swift"
 func paywallController(
@@ -242,7 +242,7 @@ It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Bui
 
 #### Failed purchase
 
-If purchase fails, this method will be invoked:
+If a purchase fails due to an error, this method will be invoked. This includes StoreKit errors (payment restrictions, invalid products, network failures), transaction verification failures, and system errors. Note that user cancellations trigger `didFinishPurchase` with a cancelled result instead, and pending payments do not trigger this method.
 
 ```swift showLineNumbers title="Swift"
 func paywallController(
