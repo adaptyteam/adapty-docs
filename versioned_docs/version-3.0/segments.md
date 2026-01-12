@@ -49,6 +49,15 @@ To create a segment, enter a name and select the attributes that define its filt
 While many user attributes are set automatically (like **Country** or **Calculated total revenue USD**), **Age**, **App user ID**, **Attribution** data, **Gender**, and **Custom attributes** are not defined automatically. You must [set user attributes](setting-user-attributes.md) or [pass the attribution data](attribution-integration.md) if you want to use it for segmentation.
 :::
 
+:::tip
+For date-based attributes, you can filter using:
+
+- **Fixed date**: Select specific dates from a calendar (e.g., show a special offer to users who installed between Black Friday and Cyber Monday)
+- **Relative range**: Set dynamic time windows like "Last 7 days" or "Last 3 months" (e.g., re-engage users who were last seen 30+ days ago, or target recent installs)
+
+Relative ranges automatically update, making them ideal for ongoing campaigns. Fixed dates work best for time-bound promotions.
+:::
+
 | Attribute                                               | Filter by                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 |---------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Age**                                                 | The user's age. Note that age is calculated when Adapty first receives it and is not updated later.                                                                                                                                                                                                                                                                                                                                                       |

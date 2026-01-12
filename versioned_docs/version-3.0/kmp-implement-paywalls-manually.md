@@ -15,7 +15,7 @@ If you are working with paywalls you've implemented yourself, you can delegate h
 `makePurchase` works with products created in the Adapty dashboard. Make sure you configure products and ways to retrieve them in the dashboard by following the [quickstart guide](quickstart).
 :::
 
-<CustomDocCardList ids={['fetch-paywalls-and-products-kmp', 'present-remote-config-paywalls-kmp', 'kmp-making-purchases', 'kmp-restore-purchase', 'kmp-troubleshoot-purchases']} />
+<CustomDocCardList ids={['kmp-quickstart-manual', 'fetch-paywalls-and-products-kmp', 'present-remote-config-paywalls-kmp', 'kmp-making-purchases', 'kmp-restore-purchase', 'kmp-troubleshoot-purchases']} />
 
 ## Observer mode
 

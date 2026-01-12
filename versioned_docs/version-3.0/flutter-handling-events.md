@@ -76,9 +76,9 @@ void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct 
 ```
 </Details>
 
-#### Successful purchase
+#### Finished purchase
 
-If a purchase succeeds, this method will be invoked:
+This method is invoked when a purchase succeeds, the user cancels their purchase, or the purchase appears to be pending:
 
 ```javascript showLineNumbers title="Flutter"
 void paywallViewDidFinishPurchase(AdaptyUIPaywallView view, 
@@ -162,9 +162,65 @@ void paywallViewDidFinishPurchase(AdaptyUIPaywallView view,
 
 We recommend dismissing the screen in that case. Refer to [Respond to button actions](flutter-handle-paywall-actions.md) for details on dismissing a paywall screen.
 
+#### Finished web payment navigation
+
+This method is invoked after an attempt to open a [web paywall](web-paywall.md) for a specific product. This includes both successful and failed navigation attempts:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view, 
+                                               AdaptyPaywallProduct? product, 
+                                               AdaptyError? error) {
+}
+```
+
+**Parameters:**
+
+| Parameter   | Description                                                                                        |
+|:------------|:---------------------------------------------------------------------------------------------------|
+| **product** | An `AdaptyPaywallProduct` for which the web paywall was opened. Can be `null`.                     |
+| **error**   | An `AdaptyError` object if the web paywall navigation failed; `null` if navigation was successful. |
+
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_navigation_failed",
+    "message": "Failed to open web paywall",
+    "details": {
+      "underlyingError": "Browser unavailable"
+    }
+  }
+}
+```
+</Details>
+
 #### Failed purchase
 
-If a purchase fails, this method will be invoked:
+This method is invoked when a purchase fails (for example, due to payment issues or network errors). It does **not** fire for user-initiated cancellations or pending transactions—those are handled by `paywallViewDidFinishPurchase`:
 
 ```javascript showLineNumbers title="Flutter"
 void paywallViewDidFailPurchase(AdaptyUIPaywallView view, 
@@ -287,10 +343,14 @@ void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError err
 
 #### Rendering errors
 
-If an error occurs during the interface rendering, it will be reported by calling this method:
+If an error occurs during the interface rendering, it will be reported by calling this method. By default (since v3.15.2), the paywall is automatically dismissed when a rendering error occurs, but you can override this behavior if needed.
 
 ```javascript showLineNumbers title="Flutter"
 void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
+  // Default behavior: view.dismiss()
+  // Override with custom logic if needed, for example:
+  // - Log the error
+  // - Show an error message to the user
 }
 ```
 

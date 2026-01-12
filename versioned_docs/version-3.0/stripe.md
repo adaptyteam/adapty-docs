@@ -328,11 +328,36 @@ When a customer encounters an issue with their payment, Adapty will generate a b
 
 Adapty tracks only full refunds. Proration or partial refunds are currently not supported.
 
-### Transaction ID reusage
+### Transaction ID uniqueness
 
-If you delete an invoice, Stripe might reuse that invoice ID later, even across different environments. So, if you delete an invoice in the Sandbox, the same ID could pop up in a new invoice in Production.
+Adapty matches profiles and transactions using `store_transaction_id` and `store_original_transaction_id`. These **must be unique** across Test and Production environments.
 
-To prevent this issue, set the **Invoice numbering** in the [**Stripe settings** -> **Billing** -> **Invoices** tab](https://dashboard.stripe.com/settings/account/?support_details=true) to **Sequentially for each customer (customer-level)**. Keep in mind, though, that if you delete and then create a new invoice for the same customer, that ID could still be reused. So, it’s best to avoid deleting invoices whenever possible.
+#### Why this matters
+
+If the same transaction ID exists in both environments, Adapty treats them as one transaction, causing:
+- Production purchases to inherit Test access levels and product IDs
+- Wrong product IDs and environments in API responses
+- Disrupted profile linking and subscription events
+
+#### How to ensure uniqueness
+
+Stripe invoice IDs can overlap between Test and Live environments. To prevent cross-environment collisions, choose one approach
+
+#### Option 1: Account-level numbering with environment prefixes
+
+Configure prefixes separately for each environment:
+
+1. In Stripe Dashboard, switch to Test mode.
+2. Go to [Settings → Billing → Invoices](https://dashboard.stripe.com/settings/account/?support_details=true).
+3. Set **Invoice numbering** to **Sequentially across your account**.
+4. Set **Invoice prefix** to TEST- (or some other prefix that will be specific for the test environment).
+5. Switch to Live mode and repeat steps 2-4, using LIVE- (or some other prefix that will be specific for the live environment) as the prefix
+
+#### Option 2: Customer-level numbering
+
+Set **Invoice numbering** in the [**Stripe settings** -> **Billing** -> **Invoices** tab](https://dashboard.stripe.com/settings/account/?support_details=true) to **Sequentially for each customer (customer-level)**.
+
+Even with the above configuration, if you delete an invoice, Stripe may reuse that ID for new invoices of the same customer. It's best to avoid deleting invoices whenever possible.
 
 ## Get more from your Stripe data
 Once you integrate with Stripe, Adapty is ready to provide insights right away. To make the most of your Stripe data, you can set up additional Adapty integrations to forward Stripe events—bringing all your subscription analytics into a single Adapty Dashboard.
