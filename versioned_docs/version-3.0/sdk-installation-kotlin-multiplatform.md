@@ -301,6 +301,23 @@ val config = AdaptyConfig
      .build()  
 ```
 
+### Clear data on backup restore
+
+When `withAppleClearDataOnBackup` is set to `true`, the SDK detects when the app is restored from an iCloud backup and deletes all locally stored SDK data, including cached profile information, product details, and paywalls. The SDK then initializes with a clean state. Default value is `false`.
+
+:::note
+Only local SDK cache is deleted. Transaction history with Apple and user data on Adapty servers remain unchanged.
+:::
+
+```swift showLineNumbers
+import com.adapty.kmp.models.AdaptyConfig
+
+val config = AdaptyConfig
+     .Builder("PUBLIC_SDK_KEY")
+     .withAppleClearDataOnBackup(true)
+     .build()  
+```
+
 ## Troubleshooting
 
 ####  Android backup rules (Auto Backup configuration)
