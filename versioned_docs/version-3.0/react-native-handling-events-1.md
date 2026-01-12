@@ -41,7 +41,6 @@ import type { EventHandlers } from 'react-native-adapty';
 
 function MyPaywall({ paywall }) {
   const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
-  const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {}, []);
   const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {}, []);
   const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {}, []);
   const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {}, []);
@@ -50,7 +49,6 @@ function MyPaywall({ paywall }) {
   const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {}, []);
   const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {}, []);
   const onPaywallShown = useCallback<EventHandlers['onPaywallShown']>(() => {}, []);
-  const onPaywallClosed = useCallback<EventHandlers['onPaywallClosed']>(() => {}, []);
   const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {}, []);
   const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {}, []);
   const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
@@ -64,7 +62,6 @@ function MyPaywall({ paywall }) {
       paywall={paywall}
       style={styles.container}
       onCloseButtonPress={onCloseButtonPress}
-      onAndroidSystemBack={onAndroidSystemBack}
       onProductSelected={onProductSelected}
       onPurchaseStarted={onPurchaseStarted}
       onPurchaseCompleted={onPurchaseCompleted}
@@ -73,7 +70,6 @@ function MyPaywall({ paywall }) {
       onRestoreCompleted={onRestoreCompleted}
       onRestoreFailed={onRestoreFailed}
       onPaywallShown={onPaywallShown}
-      onPaywallClosed={onPaywallClosed}
       onRenderingFailed={onRenderingFailed}
       onLoadingProductsFailed={onLoadingProductsFailed}
       onUrlPress={onUrlPress}
@@ -358,9 +354,10 @@ Event handlers return a boolean. If `true` is returned, the displaying process i
 Some event handlers have a default behavior that you can override if needed:
 - `onCloseButtonPress`: closes paywall when close button pressed.
 - `onUrlPress`: opens the tapped URL and keeps the paywall open.
-- `onAndroidSystemBack`: closes paywall when the **Back** button pressed.
+- `onAndroidSystemBack` (only for modal presentation): closes paywall when the **Back** button pressed.
 - `onRestoreCompleted`: closes paywall after successful restore.
 - `onPurchaseCompleted`: closes paywall unless user cancelled.
+- `onRenderingFailed`: closes paywall if its rendering fails.
 
 ### Event handlers
 
@@ -368,7 +365,7 @@ Some event handlers have a default behavior that you can override if needed:
 |:-----------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **onCustomAction**                 | Invoked when a user performs a custom action, e.g., clicks a [custom button](paywall-buttons).                                                                                                                                                                                                    |
 | **onUrlPress**                     | Invoked when a user clicks a URL in your paywall.                                                                                                                                                                                                                                                 |
-| **onAndroidSystemBack**            | Invoked when a user taps the system Android **Back** button.                                                                                                                                                                                                                                      |
+| **onAndroidSystemBack**            | Modal presentation only: Invoked when a user taps the system Android **Back** button.                                                                                                                                                                                                             |
 | **onCloseButtonPress**             | Invoked when the close button is visible and a user taps it. It is recommended to dismiss the paywall screen in this handler.                                                                                                                                                                     |
 | **onPurchaseCompleted**            | Invoked when the purchase completes, whether successful, cancelled by user, or pending approval. In case of a successful purchase, it provides an updated `AdaptyProfile`. User cancellations and pending payments (e.g., parental approval required) trigger this event, not `onPurchaseFailed`. |
 | **onPurchaseStarted**              | Invoked when a user taps the "Purchase" action button to start the purchase process.                                                                                                                                                                                                              |
@@ -380,5 +377,5 @@ Some event handlers have a default behavior that you can override if needed:
 | **onRenderingFailed**              | Invoked when an error occurs during view rendering and provides `AdaptyError`. Such errors should not occur, so if you come across one, please let us know.                                                                                                                                       |
 | **onLoadingProductsFailed**        | Invoked when product loading fails and provides `AdaptyError`. If you haven't set `prefetchProducts: true` in view creation, AdaptyUI will retrieve the necessary objects from the server by itself.                                                                                              |
 | **onPaywallShown**                 | Invoked when the paywall is displayed to the user.                                                                                                                                                                                                                                                |
-| **onPaywallClosed**                | Invoked when the paywall is closed by the user.                                                                                                                                                                                                                                                   |
+| **onPaywallClosed**                | Modal presentation only: Invoked when the paywall is closed by the user.                                                                                                                                                                                                                          |
 | **onWebPaymentNavigationFinished** | Invoked after attempting to open a [web paywall](web-paywall) for purchase, whether successful or failed.                                                                                                                                                                                         |
