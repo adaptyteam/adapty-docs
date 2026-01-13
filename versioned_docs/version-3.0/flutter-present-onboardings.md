@@ -172,3 +172,20 @@ AdaptyUIOnboardingPlatformView(
 
 </TabItem>
 </Tabs>
+
+
+## Disable safe area paddings (Android)
+
+By default, on Android devices, the onboarding view automatically applies safe area paddings to avoid system UI elements like status bar and navigation bar. However, if you want to disable this behavior and have full control over the layout, you can do so by adding a boolean resource to your app:
+
+1. Go to `android/app/src/main/res/values`. If there is no `bools.xml` file, create it.
+
+2. Add the following resource:
+
+```xml
+<resources>
+    <bool name="adapty_onboarding_enable_safe_area_paddings">false</bool>
+</resources>
+```
+
+Note that the changes apply globally for all onboardings in your app.
