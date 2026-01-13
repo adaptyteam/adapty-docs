@@ -11,7 +11,11 @@ import Details from '@site/src/components/Details';
 import 'react-medium-image-zoom/dist/styles.css';
 import InlineTooltip from '@site/src/components/InlineTooltip';
 
-Adapty supports tracking web payments and subscriptions made through [Stripe](https://stripe.com/). If you're already offering your product on the web or thinking about doing it, there are two scenarios where it can be helpful:
+Adapty supports web2app subscription flows by tracking web payments and subscriptions made through [Stripe](https://stripe.com/). 
+
+This integration covers web-initiated purchases (Stripe Checkout, hosted payment pages, or custom web flows) and synchronizes them with mobile app access and analytics.
+
+It is useful in the following scenarios:
 
 - Automatically providing access to paid features for users who purchased on the web but later installed the app and logged in to their account
 - Having all the subscription analytics in a single Adapty Dashboard (including cohorts, predictions, and the rest of our analytics toolbox)
@@ -19,6 +23,10 @@ Adapty supports tracking web payments and subscriptions made through [Stripe](ht
 Even though web purchases are becoming increasingly popular for apps, the Apple App Store allows a different system than in-app purchases for digital goods only in the USA. Ensure you don't promote your web subscriptions inside your app for other countries. Otherwise, your app may get rejected or banned.
 
 The steps below outline how to configure the Stripe integration.
+
+:::important
+This integration focuses on tracking and syncing Stripe web purchases. If you need to send users from the app to a web checkout, see [Web paywalls](web-paywall.md).
+:::
 
 ### 1\. Connect Stripe to Adapty
 
