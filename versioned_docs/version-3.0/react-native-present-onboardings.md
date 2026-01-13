@@ -224,6 +224,28 @@ try {
 </TabItem>
 </Tabs>
 
+## Disable safe area paddings (Android)
+
+:::note
+This setting is only supported in bare React Native projects.
+
+If you are using an Expo managed workflow, you cannot add this Android resource directly. To apply this setting, you must create a custom Expo config plugin that adds the corresponding Android resource and register it in app.config.js. This is required because Expo manages the native Android project for you.
+:::
+
+By default, on Android devices, the onboarding view automatically applies safe area paddings to avoid system UI elements like status bar and navigation bar. However, if you want to disable this behavior and have full control over the layout, you can do so by adding a boolean resource to your app:
+
+1. Go to `android/app/src/main/res/values`. If there is no `bools.xml` file, create it.
+
+2. Add the following resource:
+
+```xml
+<resources>
+    <bool name="adapty_onboarding_enable_safe_area_paddings">false</bool>
+</resources>
+```
+
+Note that the changes apply globally for all onboardings in your app.
+
 ## Next steps
 
 Once you've presented your onboarding, you'll want to [handle user interactions and events](react-native-handling-onboarding-events.md). Learn how to handle onboarding events to respond to user actions and track analytics.
