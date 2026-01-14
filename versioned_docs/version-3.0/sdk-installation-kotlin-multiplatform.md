@@ -19,6 +19,10 @@ Adapty SDK includes two key modules for seamless integration into your mobile ap
 Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-KMP/tree/main/example), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
 :::
 
+For a complete implementation walkthrough, you can also see the video:
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/JfwJvwnloNw?si=HskPxRk4WGkF_u9s" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 :::info
 Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
 :::
