@@ -9,7 +9,7 @@ import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackPaywallIntroduction.md';
 
 :::warning
-Fallback paywall support requires Flutter SDK v2.11 and later.
+Fallback paywalls are supported by Flutter SDK v2.11 and later.
 :::
 
 <FallbackPaywallIntroduction />

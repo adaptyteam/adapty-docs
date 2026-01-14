@@ -12,14 +12,14 @@ import InlineTooltip from '@site/src/components/InlineTooltip';
 
 To load an [onboarding](onboardings.md), your application requests its configuration data from Adapty. Onboarding configs store the URLs of your onboarding flows. If a network issue disrupts the connection between your application and the Adapty servers, you cannot correctly configure and display your onboardings.
 
-To stop Adapty from losing access to onboarding configuration data, you can store a fallback configuration file offline. Adapty automatically generates fallback files with configuration data for your onboardings and [paywalls](fallback-paywalls).
+To access onboarding configuration data offline, store a fallback configuration file inside your app code. You can download ready-made fallback files with configuration data for your onboardings and [paywalls](fallback-paywalls) directly from Adapty.
 
 Follow the instructions below to download the file and add it to your application code.
 
 :::important
 Fallback onboardings **require an internet connection**, since onboarding content is always stored online. The fallback file only stores the onboardings' configuration.
 
-To handle onboarding behavior for users without an internet connection, follow the steps in the [onboarding offline mode](onboarding-offline.md) article.
+Read the [onboarding offline mode](onboarding-offline) article to understand what happens when the application cannot load the onboarding.
 :::
 
 <details>
@@ -30,7 +30,11 @@ To handle onboarding behavior for users without an internet connection, follow t
 
 </details>
 
-Adapty generates two fallback files — one per platform. Each file contains configuration data for all your onboardings and paywalls.
+Adapty automatically generates JSON configuration files for your fallback onboardings, one per platform. These files contain fallback data for your [paywalls](local-fallback-paywalls), as well.
+
+If a single placement has more than one onboarding or paywall, the fallback version will include the variation with the highest weight, or the widest audience. Adapty updates these files whenever you modify your paywalls or onboardings. 
+
+Follow the steps below to download your fallback configurations:
 
 1. Open the **[Placements](https://app.adapty.io/placements)** page.
 2. Click the **Fallbacks** button.

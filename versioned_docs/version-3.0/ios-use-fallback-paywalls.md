@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackPaywallIntroduction.md';
 
 :::warning
-Fallback paywall support requires iOS SDK v2.11 or later.
+Fallback paywalls are supported by iOS SDK v2.11 or later.
 :::
 
 <FallbackPaywallIntroduction />

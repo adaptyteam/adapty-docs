@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackPaywallIntroduction.md';
 
 :::warning
-Fallback paywall support requires Android SDK v2.11 and later.
+Fallback paywalls are supported by Android SDK v2.11 and later.
 :::
 
 <FallbackPaywallIntroduction />
