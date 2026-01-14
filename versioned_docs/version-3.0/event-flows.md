@@ -129,14 +129,14 @@ The **Access level updated** events will be created twice:
 
 This flow applies when a user pauses and later resumes a subscription on Android.
 
-Pausing a subscription is not an immediate action. Even if the user pauses it during an active subscription period, the subscription will remain active, and the user will retain access until the end of that period.
+Pausing a subscription has delayed effects. If a user pauses a subscription before it is set to renew, the subscription remains active, and the user retains paid access for the remainder of the billing period.
 
-1. When the user pauses the subscription, this action triggers the **Subscription paused (Android only)** event.
-2. At the end of the subscription period Adapty triggers the **Access level updated** event to revoke the user's access.
+1. When the user pauses a subscription, they trigger the **Subscription paused (Android only)** event.
+2. At the end of the subscription period Adapty revokes the user's access and triggers the **Access level updated** event.
 3. When the user resumes the subscription, the following events are triggered:
 
-  - **Subscription renewed**
-  - **Access level updated** to restore the user's access
+    - **Subscription renewed**
+    - **Access level updated** to restore the user's access
 
 These subscriptions will belong to the same transaction chain, linked with the same **vendor_original_transaction_id**.
 
