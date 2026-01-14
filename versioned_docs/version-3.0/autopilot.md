@@ -8,7 +8,7 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
 :::important
-Growth Autopilot can analyze only those apps that already have transactions in production. It's important for us to consider the results you already have when planning the next steps.
+Growth Autopilot works best with apps that already generate revenue. If Adapty can analyze your financial metrics, its suggestions are more likely to be effective.
 :::
 
 Your app growth primarily relies on the following factors:
@@ -28,10 +28,10 @@ Adapty Growth Autopilot helps you to automate these tasks, so you have less to w
 
 ## How it works
 
-1. You select your app to analyze. This app must already have transactions in the production environment.
-2. Adapty selects your live paywall from your largest placement that brings in the most revenue to serve as a baseline for the analysis.
+1. Select one of your apps for analysis.
+2. To establish a baseline for the analysis, Adapty picks the *live paywall* with the *most revenue* from your *largest placement*. If your application hasn't generated any revenue yet, Adapty selects one at random. You can manually select a different paywall with at least 1 product if necessary.
 3. Adapty compares your prices and funnel effectiveness to your top competitors and to the industry benchmarks for your category.
-4. Adapty creates a testing strategy plan for you to boost your revenue growth that includes adjusting app pricing and paywall design and running A/B tests.
+4. Adapty creates a testing strategy for revenue growth, with suggestions for pricing, paywall design, and A/B tests.
 
 ## Analyze your app
 
@@ -57,13 +57,6 @@ To create a report on your app:
 </Zoom>
 
 <br/>
-
-:::note
-If the analysis doesn't start, it may be due to one of the following reasons:
-- Adapty couldn't select a top-performing paywall because there is not enough purchase data yet.
-- There are no purchases in the USA.
-- Your top-performing paywall has two or more products with the same period.
-:::
 
 2. Adapty automaticaly selects the top-performing placement based on revenue data. If you'd like to analyze a different placement, select one from the **Placement** dropdown. Then, click **Analyze this placement**. After that, Adapty will need some time to analyze your app, but don't leave the page – it won't take long.
 <Zoom>
