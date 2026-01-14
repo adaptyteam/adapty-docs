@@ -64,7 +64,7 @@ If you want Adapty to expand the list, [contact support](mailto:support@adapty.i
 If Adapty doesn't offer [integrated attribution](#integrated-attribution) with your service of choice, you need to write your own code to exchange data with the attribution source.
 
 1. **Retrieve data from the attribution service**. Use the service's API to request attribution data .
-2. **Create a dictionary with attribution data you received.**
+2. **Create a dictionary with the attribution data you received.**
 
     The dictionary may contain the following keys:
 
