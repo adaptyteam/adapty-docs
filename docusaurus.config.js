@@ -361,7 +361,8 @@ const config = {
   ],
 
   plugins: [
-    require('./plugins/cookie-checker-plugin'),
+    // Temporarily disabled - comment out to prevent AskAI widget
+    // require('./plugins/cookie-checker-plugin'),
     require.resolve('./plugins/custom-meta-plugin.js'),
     // Webpack plugin for Node.js polyfills
     webpackPlugin,
