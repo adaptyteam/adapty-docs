@@ -26,13 +26,11 @@ You can set it up in one of two ways:
 :::tip
 Enable [User Acquisition Analytics](user-acquisition) for a complete overview of your application's economy.
 
-Adapty UA is an easy-to-configure web dashboard that consolidates data from different sources to detect efficient user acquisition strategies. 
-
-It allows you to explore the relationship between marketing, user behavior, and the resulting revenue — from multiple angles and in a single place.
+Adapty UA is an easy-to-configure web dashboard that consolidates data from different sources to detect efficient user acquisition strategies.
 :::
 
 :::warning
-Keep your data clean: avoid event duplication and attribution conflicts. Follow the advice in the **[Prevent bad data](#prevent-bad-data)** section to ensure that a new data source doesn't pollute your analytics.
+Keep your data clean: avoid event duplication and attribution conflicts. Follow the advice in the **[Prevent data issues](#prevent-data-issues)** section to ensure that a new data source doesn't pollute your analytics.
 :::
 
 ## Integrated attribution
@@ -65,9 +63,8 @@ If you want Adapty to expand the list, [contact support](mailto:support@adapty.i
 
 If Adapty doesn't offer [integrated attribution](#integrated-attribution) with your service of choice, you need to write your own code to exchange data with the attribution source.
 
-1. **Send subscription data to the attribution service**. Program the logic necessary to send subscription data to your platform's API.
-2. **Retrieve attribution data from the attribution service**. Retrieve attribution data from the platform.
-3. **Create a dictionary with attribution data**
+1. **Retrieve data from the attribution service**. Use the service's API to request attribution data .
+2. **Create a dictionary with attribution data you received.**
 
     The dictionary may contain the following keys:
 
@@ -117,7 +114,7 @@ If Adapty doesn't offer [integrated attribution](#integrated-attribution) with y
 
 5. **Disable other event sharing services and attribution sources** to avoid [event duplication](#avoid-event-duplication) and [data conflicts](#select-a-single-attribution-source).
 
-## Prevent bad data
+## Prevent data issues
 
 ### Select a single attribution source
 
