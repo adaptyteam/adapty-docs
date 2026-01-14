@@ -140,9 +140,7 @@ Adapty details *churn* statistics for the Trial stage and later. Every user who 
 
       In the Trial stage, this usually means the trial has not yet ended. This commonly occurs when viewing Funnels for short date ranges or single days, since trials take time to resolve. 
 
-      In later stages, the *unknown* churn reason may indicate an active subscription.
-
-      Adapty will update the information once the user converts, cancels the trial, or lets the stage expire.
+      Adapty will update the information once the user converts or cancels the trial.
 
 <Zoom>
   <img src={require('./img/churn-reasons.webp').default}
