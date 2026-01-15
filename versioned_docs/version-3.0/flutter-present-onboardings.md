@@ -110,13 +110,38 @@ class MainActivity : FlutterFragmentActivity() {
 
 ## Loader during onboarding
 
-By default, between the splash screen and onboarding, you will see the loading screen until the onboarding is fully loaded. However, if you want to make the transition smoother, you can override this in your Flutter app:
+When presenting an onboarding, you may notice a short loading screen between your splash screen and the onboarding while the underlying view is being initialized. You can handle this in different ways depending on your needs.
 
-- To customize the native loader on iOS, add `AdaptyOnboardingPlaceholderView.xib` to your Xcode project.
-- For full control, overlay your own widget above `AdaptyUIOnboardingPlatformView` and hide it on `onDidFinishLoading`.
-- To customize the native loader on Android, create `adapty_onboarding_placeholder_view.xml` in `res/layout` and define a placeholder there.
+#### Control splash screen using onDidFinishLoading
 
-This helps create seamless transitions and custom loading experiences.
+:::note
+This approach is only available when embedding the onboarding as a widget. It is not available for standalone screen presentation.
+:::
+
+The recommended cross-platform approach is to keep your splash screen or custom overlay visible until the onboarding is fully loaded, then hide it manually.
+
+When using the embedded widget, overlay your own widget above it and hide the overlay when `onDidFinishLoading` fires:
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIOnboardingPlatformView(
+  onboarding: onboarding,
+  onDidFinishLoading: (meta) {
+    // Hide your custom splash screen or overlay here
+  },
+  // ... other callbacks
+)
+```
+
+### Customize native loader
+
+:::important
+This approach is platform-specific and requires maintaining native UI code. It's not recommended unless you already maintain separate native layers in your app.
+:::
+
+If you need to customize the default loader itself, you can replace it with platform-specific layouts. This approach requires separate implementations for Android and iOS:
+
+- **iOS**: Add `AdaptyOnboardingPlaceholderView.xib` to your Xcode project
+- **Android**: Create `adapty_onboarding_placeholder_view.xml` in `res/layout` and define a placeholder there
 
 ## Customize how links open in onboardings
 
