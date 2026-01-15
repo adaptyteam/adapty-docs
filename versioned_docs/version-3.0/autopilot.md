@@ -28,10 +28,9 @@ Adapty Growth Autopilot helps you to automate these tasks, so you have less to w
 
 ## How it works
 
-1. Select one of your apps for analysis.
-2. To establish a baseline for the analysis, Adapty picks the *live paywall* with the *most revenue* from your *largest placement*. If your application hasn't generated any revenue yet, Adapty selects one at random. You can manually select a different paywall with at least 1 product if necessary.
-3. Adapty compares your prices and funnel effectiveness to your top competitors and to the industry benchmarks for your category.
-4. Adapty creates a testing strategy for revenue growth, with suggestions for pricing, paywall design, and A/B tests.
+1. To establish a baseline for the analysis, Adapty picks the *live paywall* with the *most revenue* from your *largest placement*. If your application hasn't generated any revenue yet, Adapty selects one at random. If necessary, you can select a different paywall manually.
+2. Adapty compares your prices and funnel effectiveness to your top competitors and to the industry benchmarks for your category.
+3. Adapty creates a testing strategy for revenue growth, with suggestions for pricing, paywall design, and A/B tests.
 
 ## Analyze your app
 
