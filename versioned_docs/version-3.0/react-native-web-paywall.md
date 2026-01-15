@@ -53,7 +53,7 @@ By default, web paywalls open in the external browser.
 
 To provide a seamless user experience, you can open web paywalls in an in-app browser. This displays the web purchase page within your application, allowing users to complete transactions without switching apps.
 
-To enable this, pass `WebPresentation.InAppBrowser` as the second argument to `openWebPaywall`:
+To enable this, pass `WebPresentation.BrowserInApp` as the second argument to `openWebPaywall`:
 
 ```typescript showLineNumbers title="React Native (TSX)"
 import { adapty, WebPresentation } from 'react-native-adapty';

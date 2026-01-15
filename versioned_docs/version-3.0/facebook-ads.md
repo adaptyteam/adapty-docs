@@ -9,12 +9,16 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
 
 With the Facebook Ads integration, you can easily check your app stats in Meta Analytics. Adapty sends events to Meta Ads Manager, helping you make similar audiences based on subscriptions to get better returns. This way, you can accurately see how much money your ads are making from subscriptions.
 
 The integration between Adapty and Facebook Ads operates in the following way: Adapty sends all subscription events that are configured in your integration to Facebook Ads. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
-## How to set up Facebook Ads integration
+## Set up integration
+
+### Connect Adapty to Facebook Ads
 
 To integrate Facebook Ads and analyze your app metrics, you can set up the integration with Meta Analytics. By sending events to Meta Ads Manager, you can create lookalike audiences based on subscription events like renewals. To configure this integration, navigate to [Integrations > Facebook Ads](https://app.adapty.io/integrations/facebookanalytics) in the Adapty Dashboard and provide the required credentials.
 
@@ -72,12 +76,9 @@ Please consider that the Facebook Ads integration works on iOS 14.5+ only for us
 </Zoom>
 
 
-
-
-
 You can use this integration with Android apps as well. If you set up Android SDK configuration in the **App Settings**, setting up the **Facebook App ID** is enough.
 
-## Events and tags
+### Configure events and tags
 
 Please note that the Facebook Ads integration specifically caters to companies using Meta for ad campaigns and optimizing them based on customer behavior. It supports Meta's standard events for optimization purposes. Consequently, modifying the event name is not available for the Meta Ads integration. Adapty effectively maps your customer events to their corresponding Meta events for accurate analysis.
 
@@ -112,16 +113,13 @@ StartTrial, Subscribe, CancelSubscription are standard events.
 </Zoom>
 
 
-
-
-
 To enable specific events, simply toggle on the ones you require. In case multiple event names are selected, Adapty will consolidate the data from all the chosen events into a single Adapty event name.
 
-## SDK configuration
+### Connect your app to Facebook Ads
 
-:::warning
-Because of iOS IDFA changes in iOS 14.5, if you use Meta integration, make sure you send `facebookAnonymousId` to Adapty via `.setIntegrationIdentifier()` method. It helps Meta attribute users better.
-:::
+If you follow the steps above, Facebook will automatically receive subscription data from Adapty. 
+
+Following the changes to IDFA in iOS 14.5, we recommend that you request the user's `facebookAnonymousId` from Facebook. That way, if the user's IDFA is unavailable, the integration will continue to function. Follow the <InlineTooltip tooltip="set user attributes guide">[iOS](setting-user-attributes.md), [Android](android-setting-user-attributes.md), [React Native](react-native-setting-user-attributes.md), [Flutter](flutter-setting-user-attributes.md),  and [Unity](unity-setting-user-attributes.md)</InlineTooltip> to set this parameter. 
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="iOS (Swift)" default>
@@ -152,19 +150,6 @@ Adapty.setIntegrationIdentifier(
 }
 ```
 </TabItem>
-<TabItem value="flutter" label="Flutter (Dart)" default>
-
-```text
-There is no official SDK for Flutter
-```
-</TabItem>
-<TabItem value="unity" label="Unity (C#)" default>
-
-```csharp
-anonymousID is not available in the official SDK
-https://github.com/facebook/facebook-sdk-for-unity/issues/676
-```
-</TabItem>
 <TabItem value="rn" label="React Native (TS)" default>
 
 ```typescript showLineNumbers
@@ -180,10 +165,22 @@ try {
 }
 ```
 </TabItem>
+<TabItem value="flutter" label="Flutter (Dart)" default>
+
+```text
+There is no official SDK for Flutter
+```
+</TabItem>
+<TabItem value="unity" label="Unity (C#)" default>
+
+```csharp
+anonymousID is not available in the official SDK
+https://github.com/facebook/facebook-sdk-for-unity/issues/676
+```
+</TabItem>
 </Tabs>
 
-
-## Facebook Ads event structure
+## Event structure
 
 Adapty sends events to Facebook Ads (Meta) via the Graph API. Each event is structured like this:
 

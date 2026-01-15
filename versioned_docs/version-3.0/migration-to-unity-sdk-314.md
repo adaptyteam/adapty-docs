@@ -9,13 +9,44 @@ import TabItem from '@theme/TabItem';
 
 Adapty SDK 3.14.0 is a major release that brought some improvements that however may require some migration steps from you:
 
-1. Rename `AdaptyUI.CreateView` to `AdaptyUI.CreatePaywallView` and related methods.
-2. Update the `MakePurchase` method to use `AdaptyPurchaseParameters` instead of individual parameters.
-3. Replace `SetFallbackPaywalls` with `SetFallback` method.
-4. Update paywall property access to use `AdaptyPlacement`.
-5. Update remote config access to use `AdaptyRemoteConfig` object.
-6. Replace `VendorProductIds` with `ProductIdentifiers` in the `AdaptyPaywall` model.
-7. Update `GetPaywall` fetch policy to use `AdaptyFetchPolicy`.
+1. Separate event listener for paywall events.
+2. Rename `AdaptyUI.CreateView` to `AdaptyUI.CreatePaywallView` and related methods.
+3. Update the `MakePurchase` method to use `AdaptyPurchaseParameters` instead of individual parameters.
+4. Replace `SetFallbackPaywalls` with `SetFallback` method.
+5. Update paywall property access to use `AdaptyPlacement`.
+6. Update remote config access to use `AdaptyRemoteConfig` object.
+7. Replace `VendorProductIds` with `ProductIdentifiers` in the `AdaptyPaywall` model.
+8. Update `GetPaywall` fetch policy to use `AdaptyFetchPolicy`.
+
+## Separate event listener for paywall events
+
+If you display paywalls designed with the [Paywall Builder](adapty-paywall-builder), paywall view events now use the dedicated `AdaptyPaywallsEventsListener` interface and `SetPaywallsEventsListener` method. The core `AdaptyEventListener` interface remains for profile updates and installation details.
+
+```diff showLineNumbers
+using UnityEngine;
+using AdaptySDK;
+
+public class AdaptyListener : MonoBehaviour, 
+-    AdaptyEventListener {
++    AdaptyEventListener,
++    AdaptyPaywallsEventsListener {
+    
+    void Start() {
+        Adapty.SetEventListener(this);
++       Adapty.SetPaywallsEventsListener(this);
+    }
+    
+    // AdaptyEventListener methods
+    public void OnLoadLatestProfile(AdaptyProfile profile) { }
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+    
++   // AdaptyPaywallsEventsListener methods
++   // Implement paywall event handlers here
+}
+```
+
+[Learn more about handling paywall events](unity-handling-events).
 
 ## Rename view creation and presentation methods
 

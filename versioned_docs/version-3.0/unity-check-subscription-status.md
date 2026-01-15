@@ -55,6 +55,9 @@ public class SubscriptionManager : MonoBehaviour, AdaptyEventListener {
         // Update UI, unlock content, etc.
     }
     
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+    
     // Use stored profile instead of calling getProfile()
     public bool HasAccess() {
         if (currentProfile?.AccessLevels != null && 

@@ -197,7 +197,7 @@ We recommend dismissing the paywall screen in case of successful purchase.
 
 ### Failed purchase
 
-If a purchase fails, this method will be invoked:
+If a purchase fails due to an error, this method will be invoked. This includes StoreKit/Google Play Billing errors (payment restrictions, invalid products, network failures), transaction verification failures, and system errors. Note that user cancellations trigger `paywallViewDidFinishPurchase` with a cancelled result instead, and pending payments do not trigger this method.
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFailPurchase(
@@ -306,7 +306,7 @@ override fun paywallViewDidFailRestore(view: AdaptyUIView, error: AdaptyError) {
 
 ### Web payment navigation completion
 
-If a user completes web payment navigation, this method will be invoked:
+If a user initiates the purchase process using a [web paywall](web-paywall.md), this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFinishWebPaymentNavigation(

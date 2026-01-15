@@ -32,3 +32,4 @@ We'd love to hear from you! Contact us via [support@adapty.io](mailto:support@ad
 
 - **Documentation dark mode** - The docs now support dark mode with automatic system preference detection or manual toggle at the top right.
 
+

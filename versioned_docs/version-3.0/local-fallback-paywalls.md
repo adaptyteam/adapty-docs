@@ -10,24 +10,17 @@ import Details from '@site/src/components/Details';
 import Contentid from '@site/src/components/InlineTooltip';
 import InlineTooltip from '@site/src/components/InlineTooltip';
 
+Adapty automatically generates JSON configuration files for your [fallback paywalls](/fallback-paywalls), one per platform. These files contain fallback data for your [onboardings](local-fallback-onboarding), as well.
 
-Typically, [paywalls](paywalls.md) are fetched from the server when a customer accesses them. 
+If a single placement has more than one paywall or onboarding, the fallback version will include the variation with the highest weight, or the widest audience. Adapty updates these files whenever you modify your paywalls or onboardings. 
 
-Adapty allows you to define fallback paywalls and onboardings for the situations when a user opens the app without a connection to the Adapty backend (e.g., no internet connection or in the rare case of backend unavailability) and there's no cache on the device.
+Follow the steps below to download your fallback configurations:
 
-Adapty generates fallbacks as a JSON file in the necessary format, reflecting the default (English) versions of the paywalls you've configured in the Adapty Dashboard. Simply download the file - one per app store, place it alongside your app on the user's device, and pass its contents to the `.setFallback` method, following the instructions outlined below.
+1. Open the **[Placements](https://app.adapty.io/placements)** page.
+2. Click the **Fallbacks** button.
+3. Select your target platform (*iOS* or *Android*) from the dropdown.
+4. Select your SDK version to start the download.
 
-<details>
-   <summary>Before you start adding local fallback paywalls and onboardings (Click to Expand)</summary>
-
-   1. [Create products](create-product) you want to sell.
-2. Create [paywalls].
-3. [Create placements and add paywalls to the placements](create-placement). Placement is the location where the paywall will be shown.
-</details>
-
-The JSON file with fallbacks contains both paywalls and onboardings at once. To download the JSON file, open **[Placements](https://app.adapty.io/placements)** in the Adapty main menu. Click the **Fallbacks** button. You will get the JSON file. Use its contents in the <InlineTooltip tooltip="setFallback">[iOS](ios-use-fallback-paywalls), [Android](android-use-fallback-paywalls), [React Native](react-native-use-fallback-paywalls), [Flutter](flutter-use-fallback-paywalls), and [Unity](unity-use-fallback-paywalls)</InlineTooltip> method in your mobile app code.
-
-   
 <Zoom>
   <img src={require('./img/9c63367-placements.webp').default}
   style={{
@@ -39,5 +32,14 @@ The JSON file with fallbacks contains both paywalls and onboardings at once. To 
 />
 </Zoom>
 
+## After the download
 
+Follow the setup guide for your particular platform:
 
+* [iOS](ios-use-fallback-paywalls)
+* [Android](android-use-fallback-paywalls)
+* [React Native](react-native-use-fallback-paywalls)
+* [Flutter](flutter-use-fallback-paywalls)
+* [Unity](unity-use-fallback-paywalls)
+* [Kotlin Multiplatform](kmp-use-fallback-paywalls)
+* [Capacitor](capacitor-use-fallback-paywalls)

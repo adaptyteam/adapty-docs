@@ -86,6 +86,10 @@ public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
             }
         });
     }
+
+    public void OnLoadLatestProfile(AdaptyProfile profile) { }
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
 }
 ```
 
@@ -119,9 +123,12 @@ using UnityEngine;
 using AdaptySDK;
 
 public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
-     public void OnLoadLatestProfile(AdaptyProfile profile) {
-       // handle updated profile data
-     }
+    public void OnLoadLatestProfile(AdaptyProfile profile) {
+        // handle updated profile data
+    }
+
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
 }
 ```
 
