@@ -21,7 +21,7 @@ Adapty can exchange information with third-party services to attribute subscript
 You can set it up in one of two ways:
 
 * [Integrated attribution](#integrated-attribution) requires minimum setup, and allows Adapty to exchange data with 9 popular platforms.
-* [Manual attribution](#manual-attribution) requires you to integrate the API of the third-party services with your own code. You can still use Adapty methods to save attribution data.
+* [Manual attribution](#manual-attribution) requires you to fetch attribution data from third-party service APIs yourself before you can send it to Adapty.
 
 :::tip
 Enable [User Acquisition Analytics](user-acquisition) for a complete overview of your application's economy.
@@ -95,7 +95,7 @@ If Adapty doesn't offer [integrated attribution](#integrated-attribution) with y
     ]
     ```
 
-4. **Set the attribution data**:
+3. **Set the attribution data**:
 
     Pass the attribution dictionary to the `updateAttribution` method. Once you set the attribution value, you cannot override it:
 
@@ -112,7 +112,7 @@ If Adapty doesn't offer [integrated attribution](#integrated-attribution) with y
     - `attribution` (required): dictionary with attribution data.
     - `source` (required): attribution source. Set to `.custom` if your attribution provider does not support [integrated attribution](#integrated-attribution).
 
-5. **Disable other event sharing services and attribution sources** to avoid [event duplication](#avoid-event-duplication) and [data conflicts](#select-a-single-attribution-source).
+4. **Disable other event sharing services and attribution sources** to avoid [event duplication](#avoid-event-duplication) and [data conflicts](#select-a-single-attribution-source).
 
 ## Prevent data issues
 
