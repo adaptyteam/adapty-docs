@@ -5,66 +5,32 @@ metadataTitle: "Using Fallback Paywalls in Adapty | Adapty Docs"
 keywords: ['fallback', 'fallbacks']
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
-import Details from '@site/src/components/Details';
+To maintain a fluid user experience, it is important that you set up **fallback versions** for your [paywalls](paywalls) and [onboardings](onboardings).
 
-A paywall is an in-app storefront where customers can see and purchase products within your mobile app. Typically, paywalls are fetched from the server when a customer accesses them. 
+When your application loads a paywall, the Adapty SDK requests paywall configuration data from our servers. But what if the device cannot connect to Adapty due to network issues or server outages?
 
-However, Adapty allows you to have fallback paywalls for situations when a user opens the app without a connection to the Adapty backend (e.g., no internet connection or in the rare case of backend unavailability) and there's no cache on the device.
+* If the user accessed the paywall before, and the device cached its data, the application loads paywall data **from cache**.
+* If the device did not cache the paywall, the application looks for a locally stored configuration file. It allows the application to display the paywall without an error.
 
-Adapty generates fallbacks as a JSON file in the necessary format, showing English versions of the paywalls you've configured in the Adapty Dashboard. 
+Adapty automatically generates fallback configuration files for you to download and use. Each file contains platform-specific configurations for *all* your placements.
 
-To display your fallback paywall to users:
+## Get started
 
-1. Download the file from the Adapty Dashboard - one file per app store and Adapty SDK version - as described below.
-2. Process the file in your mobile app code:
-   1. **For iOS:** Add the file to your Xcode project bundle and pass the file name to the `.setFallback` method. See detailed instructions for [iOS](ios-use-fallback-paywalls).
-   2. **For Android:** Place the file in the `assets` or `res/raw` directory and pass the file location to the `.setFallback` method. See detailed instructions for [Android](android-use-fallback-paywalls).
-   3. **For React Native:** Add the file to your Xcode project bundle for iOS and place it in the `android/app/src/main/assets/` or `android/app/src/main/res/raw/` directory for Android, then pass the file location to the `.setFallback` method. See detailed instructions for [React Native](react-native-use-fallback-paywalls).
-   4. **For Flutter:** Place the file in your app's assets and pass the asset path to the `.setFallback` method. See detailed instructions for [Flutter](flutter-use-fallback-paywalls).
-   5. **For Unity:** Place the file in your app's StreamingAssets folder and pass the file name to the `.SetFallbackPaywalls` method. See detailed instructions for [Unity](unity-use-fallback-paywalls).
+1. [Download the fallback configuration file](/local-fallback-paywalls) from Adapty.
+2. Use the Adapty SDK to configure your fallback paywalls:
+    * [iOS](ios-use-fallback-paywalls)
+    * [Android](android-use-fallback-paywalls)
+    * [React Native](react-native-use-fallback-paywalls)
+    * [Flutter](flutter-use-fallback-paywalls)
+    * [Unity](unity-use-fallback-paywalls)
+    * [Kotlin Multiplatform](kmp-use-fallback-paywalls)
+    * [Capacitor](capacitor-use-fallback-paywalls)
 
+## Limitations
 
-## Download fallback paywalls as a file in the Adapty Dashboard
+Fallback paywalls are hard-coded and locally stored, so they lack the dynamic capabilities of regular Adapty paywalls.
 
-To integrate fallback paywalls into your mobile app code, first download them from the Adapty Dashboard. 
-
-The downloaded JSON file will contain one paywall for each placement. This will be the paywall assigned to the `All users` audience in the Adapty Dashboard.
-
-:::important
-Downloading fallbacks is available only for Adapty SDK version 2.11 or later. Upgrade to the later version or use existing fallbacks.
-:::
-
-<details>
-   <summary>Before you can download a paywall fallback (Click to Expand)</summary>
-
-   1. [Create products](create-product) you want to sell
-2. [Create a paywall and add the products to it](create-paywall). 
-3. [Create placement and add paywalls to it](create-placement). Placement is the location where the paywall will be shown.
-</details>
-
-To download the JSON file with the fallback paywalls:
-
-1. Open the **Paywalls** tab of the **[Placements](https://app.adapty.io/placements)** section from the Adapty main menu.
-
-   
-
-<Zoom>
-  <img src={require('./img/9c63367-placements.webp').default}
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-
-
-2. In the **Products** or **Placements** window, click the **Fallbacks** button. 
-3. Select the platform for the fallbacks - **iOS** or **Android**.
-4. In the **Download iOS/Android Fallback** window, select the SDK version you use for your app and click the **Download** button.
-
-As a result, you will get a JSON file.
+* Fallback paywalls don't support [internationalization](paywall-localization). When Adapty generates the configuration file, it uses the default `en` locale.
+* Each placement can only have one fallback paywall. If your setup inlcudes different paywall configurations for different [audiences](audience), Adapty uses the configuration intended for "All users".
+* Fallback paywalls don't support [A/B testing](ab-tests). If a paywall participates in an A/B test, its fallback configuration file will include the variation with the highest weight.
+* Fallback paywalls cannot be [managed remotely](customize-paywall-with-remote-config). If you want to update the configuration file, you need to release a new version of the app on App Store / Google Play.
