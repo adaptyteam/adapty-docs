@@ -11,7 +11,11 @@ import Details from '@site/src/components/Details';
 import 'react-medium-image-zoom/dist/styles.css';
 import InlineTooltip from '@site/src/components/InlineTooltip';
 
-Adapty supports tracking web payments and subscriptions made through [Stripe](https://stripe.com/). If you're already offering your product on the web or thinking about doing it, there are two scenarios where it can be helpful:
+Adapty supports web2app subscription flows by tracking web payments and subscriptions made through [Stripe](https://stripe.com/). 
+
+This integration covers web-initiated purchases (Stripe Checkout, hosted payment pages, or custom web flows) and synchronizes them with mobile app access and analytics.
+
+It is useful in the following scenarios:
 
 - Automatically providing access to paid features for users who purchased on the web but later installed the app and logged in to their account
 - Having all the subscription analytics in a single Adapty Dashboard (including cohorts, predictions, and the rest of our analytics toolbox)
@@ -19,6 +23,10 @@ Adapty supports tracking web payments and subscriptions made through [Stripe](ht
 Even though web purchases are becoming increasingly popular for apps, the Apple App Store allows a different system than in-app purchases for digital goods only in the USA. Ensure you don't promote your web subscriptions inside your app for other countries. Otherwise, your app may get rejected or banned.
 
 The steps below outline how to configure the Stripe integration.
+
+:::important
+This integration focuses on tracking and syncing Stripe web purchases. If you need to send users from the app to a web checkout, see [Web paywalls](web-paywall.md).
+:::
 
 ### 1\. Connect Stripe to Adapty
 
@@ -275,7 +283,7 @@ If you are using Checkout Sessions, [make sure you're creating a Stripe Customer
 
 ### 5\. Provide access to users on the mobile
 
-To make sure your mobile users arriving from web can access the paid features, just call `Adapty.activate()` or `Adapty.identify()` with the same `customer_user_id` you've provided on the previous step (see <InlineTooltip tooltip="Identifying users">[iOS](identifying-users), [Android](android-identifying-users), [Flutter](flutter-identifying-users), [React Native](react-native-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip> for more).
+To make sure your mobile users arriving from web can access the paid features, just call `Adapty.activate()` or `Adapty.identify()` with the same `customer_user_id` you've provided on the previous step (see <InlineTooltip tooltip="Identifying users">[iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), and [Unity](unity-identifying-users)</InlineTooltip> for more).
 
 ### 6\. Test your integration
 
@@ -328,11 +336,36 @@ When a customer encounters an issue with their payment, Adapty will generate a b
 
 Adapty tracks only full refunds. Proration or partial refunds are currently not supported.
 
-### Transaction ID reusage
+### Transaction ID uniqueness
 
-If you delete an invoice, Stripe might reuse that invoice ID later, even across different environments. So, if you delete an invoice in the Sandbox, the same ID could pop up in a new invoice in Production.
+Adapty matches profiles and transactions using `store_transaction_id` and `store_original_transaction_id`. These **must be unique** across Test and Production environments.
 
-To prevent this issue, set the **Invoice numbering** in the [**Stripe settings** -> **Billing** -> **Invoices** tab](https://dashboard.stripe.com/settings/account/?support_details=true) to **Sequentially for each customer (customer-level)**. Keep in mind, though, that if you delete and then create a new invoice for the same customer, that ID could still be reused. So, it’s best to avoid deleting invoices whenever possible.
+#### Why this matters
+
+If the same transaction ID exists in both environments, Adapty treats them as one transaction, causing:
+- Production purchases to inherit Test access levels and product IDs
+- Wrong product IDs and environments in API responses
+- Disrupted profile linking and subscription events
+
+#### How to ensure uniqueness
+
+Stripe invoice IDs can overlap between Test and Live environments. To prevent cross-environment collisions, choose one approach
+
+#### Option 1: Account-level numbering with environment prefixes
+
+Configure prefixes separately for each environment:
+
+1. In Stripe Dashboard, switch to Test mode.
+2. Go to [Settings → Billing → Invoices](https://dashboard.stripe.com/settings/account/?support_details=true).
+3. Set **Invoice numbering** to **Sequentially across your account**.
+4. Set **Invoice prefix** to TEST- (or some other prefix that will be specific for the test environment).
+5. Switch to Live mode and repeat steps 2-4, using LIVE- (or some other prefix that will be specific for the live environment) as the prefix
+
+#### Option 2: Customer-level numbering
+
+Set **Invoice numbering** in the [**Stripe settings** -> **Billing** -> **Invoices** tab](https://dashboard.stripe.com/settings/account/?support_details=true) to **Sequentially for each customer (customer-level)**.
+
+Even with the above configuration, if you delete an invoice, Stripe may reuse that ID for new invoices of the same customer. It's best to avoid deleting invoices whenever possible.
 
 ## Get more from your Stripe data
 Once you integrate with Stripe, Adapty is ready to provide insights right away. To make the most of your Stripe data, you can set up additional Adapty integrations to forward Stripe events—bringing all your subscription analytics into a single Adapty Dashboard.

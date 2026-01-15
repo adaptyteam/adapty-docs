@@ -15,7 +15,7 @@ import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import Contentid from '@site/src/components/InlineTooltip';
 import InlineTooltip from '@site/src/components/InlineTooltip'; 
 
-Before showcasing remote config and custom paywalls, you need to fetch the information about them. Please be aware that this topic refers to remote config and custom paywalls. For guidance on fetching paywalls for Paywall Builder-customized paywalls, please consult the <InlineTooltip tooltip="guides on how to fetch Paywall Builder paywalls in your app">[iOS](get-pb-paywalls.md), [Android](android-get-pb-paywalls.md), [Flutter](flutter-get-pb-paywalls.md), [React Native](react-native-get-pb-paywalls.md), and [Unity](unity-get-pb-paywalls.md)</InlineTooltip>.
+Before showcasing remote config and custom paywalls, you need to fetch the information about them. Please be aware that this topic refers to remote config and custom paywalls. For guidance on fetching paywalls for Paywall Builder-customized paywalls, please consult the <InlineTooltip tooltip="guides on how to fetch Paywall Builder paywalls in your app">[iOS](get-pb-paywalls.md), [Android](android-get-pb-paywalls.md), [React Native](react-native-get-pb-paywalls.md), [Flutter](flutter-get-pb-paywalls.md), and [Unity](unity-get-pb-paywalls.md)</InlineTooltip>.
 
 <SampleApp />
 

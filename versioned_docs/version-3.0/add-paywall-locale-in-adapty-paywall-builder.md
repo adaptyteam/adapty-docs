@@ -59,7 +59,9 @@ We automatically detect which lines have never been translated or have changed i
 
 Rich text formatting (bold, italic, colored text, etc.) won’t be preserved in the translated version. Please adjust the translated text manually as needed.
 
-1. Select the languages for translation.
+1. Click the localization icon to select languages for translation:
+   - **In the language column header**: Translates all lines at once—ideal for initial translation or when updating the entire language.
+   - **In individual lines**: Translates specific lines independently—useful when making targeted changes without affecting other translations.
 
    <Zoom>
      <img src={require('./img/localization-table-language-PB.webp').default}
@@ -172,7 +174,7 @@ Sometimes, you might want to tweak translations, add different images for specif
 />
 </Zoom>
 
-After adding locales to a paywall, make sure to implement locale codes correctly in your app's code. See <InlineTooltip tooltip="how to use localizations and locale codes in your app">[iOS](localizations-and-locale-codes.md), [Android](android-localizations-and-locale-codes.md), [Flutter](flutter-localizations-and-locale-codes.md), [React Native](react-native-localizations-and-locale-codes.md), and [Unity](unity-localizations-and-locale-codes.md)</InlineTooltip>.
+After adding locales to a paywall, make sure to implement locale codes correctly in your app's code. See <InlineTooltip tooltip="how to use localizations and locale codes in your app">[iOS](localizations-and-locale-codes.md), [Android](android-localizations-and-locale-codes.md), [React Native](react-native-localizations-and-locale-codes.md), [Flutter](flutter-localizations-and-locale-codes.md), and [Unity](unity-localizations-and-locale-codes.md)</InlineTooltip>.
 
 ### Preview the localization result
 
@@ -202,7 +204,7 @@ Pay attention to the locale code (`en`, `fr` and `it` ). You'll need to pass it 
 />
 </Zoom>
 
-You can learn more about it in <InlineTooltip tooltip="the guides on how to fetch Paywall Builder paywalls in your app">[iOS](get-pb-paywalls.md), [Android](android-get-pb-paywalls.md), [Flutter](flutter-get-pb-paywalls.md), [React Native](react-native-get-pb-paywalls.md), and [Unity](unity-get-pb-paywalls.md)</InlineTooltip>.
+You can learn more about it in <InlineTooltip tooltip="the guides on how to fetch Paywall Builder paywalls in your app">[iOS](get-pb-paywalls.md), [Android](android-get-pb-paywalls.md), [React Native](react-native-get-pb-paywalls.md), [Flutter](flutter-get-pb-paywalls.md), and [Unity](unity-get-pb-paywalls.md)</InlineTooltip>.
 :::
 
 

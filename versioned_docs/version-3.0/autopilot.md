@@ -65,7 +65,7 @@ If the analysis doesn't start, it may be due to one of the following reasons:
 - Your top-performing paywall has two or more products with the same period.
 :::
 
-2. We automatically detect your top-performing placement based on revenue data. If you'd like to analyze a different placement, select one from the **Placement** dropdown. Then, click **Analyze this placement**. After that, Adapty will need some time to analyze your app, but don't leave the page – it won't take long.
+2. Adapty automaticaly selects the top-performing placement based on revenue data. If you'd like to analyze a different placement, select one from the **Placement** dropdown. Then, click **Analyze this placement**. After that, Adapty will need some time to analyze your app, but don't leave the page – it won't take long.
 <Zoom>
   <img src={require('./img/select-placement.webp').default}
   style={{
@@ -77,12 +77,12 @@ If the analysis doesn't start, it may be due to one of the following reasons:
 />
 </Zoom>
 
-3. At this stage, we will detect your top-performing paywall. Review the paywall information and click **Proceed to competitors research**.
+3. Adapty automatically selects the top-performing live paywall for analysis. If you wish to analyze a different paywall, click the **Change Paywall** button, and pick another option. You can only select a paywall added to the placement from the previous step.
 
-   Note that we select your top-performing paywall only among **live** paywalls. If your successful paywall is not added to any placement currently, it won't be considered.
+    Review the paywall data: products, conversion metrics, the revenue distribution chart. When you're ready to proceed to the next step, click **Go to competitors research**.
    
 <Zoom>
-  <img src={require('./img/app-analysis.webp').default}
+  <img src={require('./img/autopilot-select-paywall.webp').default}
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -92,10 +92,10 @@ If the analysis doesn't start, it may be due to one of the following reasons:
 />
 </Zoom>
 
-4. Confirm your competitors we've detected, or add some manually using their links from the App Store. Then, click **Generate report**.
-   
-    We recommend focusing on apps with higher MRR that you have.
+4. Adapty suggests a list of up to 5 competitors for analysis. They are chosen based on your app's category and MRR. You can modify the list, and manually add applications with an App Store link. We recommend selecting apps with higher MRR than yours.
 
+    Click **Generate report** to confirm the list of competitors.
+   
 <Zoom>
   <img src={require('./img/competitors.webp').default}
   style={{
@@ -139,7 +139,7 @@ If the analysis doesn't start, it may be due to one of the following reasons:
 
 Once your recommendations are ready, it’s time to put them into action. 
 
-Your plan consists of three parts: setting new prices, updating paywalls, and conducting A/B tests with them. After each round, the winning strategy will advance to the next round. The winner of the final round will be your most efficient pricing option. Based on our estimates, completing the entire test cycle could increase your revenue by up to 80%.
+Your plan consists of several parts that include setting new prices, updating paywalls, and conducting A/B tests with them. After each round, the winning strategy will advance to the next round. The winner of the final round will be your most efficient pricing option. Based on our estimates, completing the entire test cycle could increase your revenue by up to 80%.
 
 To start with the first stage:
 

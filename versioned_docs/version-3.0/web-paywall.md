@@ -30,7 +30,7 @@ This allows you to bypass store fees while effectively tracking user payments.
 :::tip
 The App Store allows external payment options only in the USA. 
 
-To use a paywall exclusively for the US market, duplicate your current paywall and set up a web paywall. This way, you will have two almost identical paywalls in use: one for the US and another for everybody else.
+To use a paywall exclusively for the US market, duplicate your current paywall and set up a web paywall. This way, you will have two almost identical paywalls in use: one for the US/Japan and another for everybody else.
 :::
 
 ## How it works
@@ -130,13 +130,13 @@ If you are working with a paywall you developed yourself, you need to handle web
 
 - [iOS](ios-web-paywall)
 - [Android](android-web-paywall.md)
-- [Flutter](flutter-web-paywall)
 - [React Native](react-native-web-paywall)
+- [Flutter](flutter-web-paywall)
 - [Unity](unity-web-paywalls.md)
 
 ## Step 3. Set up a placement
 
-Since web paywalls are only allowed for iOS apps in the USA, add a separate user segment for the USA and set up a placement to target different paywalls at different segments:
+Since web paywalls are only allowed for iOS apps in the USA, add a separate user segment for the USA/Japan and set up a placement to target different paywalls at different segments:
 
 1. [Create a new segment](segments.md) that will have the following attributes:
    - **Country from store account**: United States

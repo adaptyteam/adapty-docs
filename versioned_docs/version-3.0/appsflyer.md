@@ -160,7 +160,7 @@ If you use AppsFlyer API 2, you need to switch to API 3, since the previous vers
 
 Adapty maps some events to AppsFlyer [standard events](https://support.appsflyer.com/hc/en-us/articles/115005544169-Rich-in-app-events-for-Android-and-iOS#event-types) by default. With such a configuration, AppsFlyer can then forward events to each ad network that you use without additional setup.
 
-Another important thing is that AppsFlyer doesn't support events older than 24 hours. So, if you have an event that is more than a day old, Adapty will send it to Appsflyer, but the event date and time will be replaced by the current timestamp.
+Another important thing is that AppsFlyer doesn't support events older than 26 hours. So, if you have an event that is more than 26 hours old, Adapty will send it to AppsFlyer, but the event date and time will be replaced by the current timestamp.
 
 ### Configure events and tags
 
@@ -314,7 +314,11 @@ void onConversionDataSuccess(string conversionData) {
 
 ## Event structure
 
-Adapty sends selected events to AppsFlyer as configured in the **Events names** section on the [**AppsFlyer Integration page**](https://app.adapty.io/integrations/appsflyer). Each event is structured like this:
+Adapty sends selected events to AppsFlyer via POST request with JSON body to:
+- API v2: `https://api2.appsflyer.com/inappevent/{app_id}`
+- API v3: `https://api3.appsflyer.com/inappevent/{app_id}` (recommended)
+
+Each event is structured like this:
 
 ```json
 {

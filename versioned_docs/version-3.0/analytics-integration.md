@@ -54,7 +54,7 @@ Webhook events are sent in JSON format. All events follow the same structure, bu
 | **cancellation_reason**       | str           | <p>A reason why the user canceled a subscription.</p><p></p><p>Can be</p><p>iOS & Android</p><p>_voluntarily_cancelled_, _billing_error_, _refund_</p><p>iOS</p><p>_price_increase_, _product_was_not_available_, _unknown_</p><p>Android</p><p>_new_subscription_replace_, _cancelled_by_developer_</p> |
 | **subscription_expires_at**   | ISO 8601 date | The Expiration date of subscription. Usually in the future.  |
 | **consecutive_payments**      | int           | The number of periods, that a user is subscribed to without interruptions. Includes the current period. |
-| **rate_after_first_year**     | bool          | Boolean indicates that a vendor reduces cuts to 15%. Apple and Google have 30% first-year cut and 15% after it. |
+| **rate_after_first_year**     | bool          | Boolean indicates that the subscription qualifies for a reduced commission rate (typically 15%) after one year of continuous renewal. Commission rates vary based on program eligibility and country. See [Store commission and taxes](controls-filters-grouping-compare-proceeds#store-commission-and-taxes) for details. |
 | **promotional_offer_id**      | str           | ID of promotional offer as indicated in the Product section of the Adapty Dashboard |
 | **store_offer_category**      | str           | Can be _introductory_ or _promotional_.                      |
 | **store_offer_discount_type** | str           | Can be _free_trial_, _pay_as_you_go_ or _pay_up_front_.      |
@@ -126,7 +126,7 @@ Adapty sends events to your server and 3rd party analytical systems.
 
 ### Setting the profile's identifier
 
-- Set the profile's identifier for the selected analytics using the <InlineTooltip tooltip="instructions for setting user attributes in your app">[iOS](setting-user-attributes.md), [Android](android-setting-user-attributes.md), [Flutter](flutter-setting-user-attributes.md), [React Native](react-native-setting-user-attributes.md), and [Unity](unity-setting-user-attributes.md)</InlineTooltip>.
+- Set the profile's identifier for the selected analytics using the <InlineTooltip tooltip="instructions for setting user attributes in your app">[iOS](setting-user-attributes.md), [Android](android-setting-user-attributes.md), [React Native](react-native-setting-user-attributes.md), [Flutter](flutter-setting-user-attributes.md), and [Unity](unity-setting-user-attributes.md)</InlineTooltip>.
 
 :::warning
 Avoiding duplication

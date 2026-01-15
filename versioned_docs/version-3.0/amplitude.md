@@ -321,19 +321,19 @@ Adapty sends events to Amplitude via the HTTP API v2. Each event is structured l
 
 Where:
 
-| Parameter                   | Type   | Description                                                      |
-|:----------------------------|:-------|:-----------------------------------------------------------------|
-| `api_key`                   | String | Your Amplitude API Key.                                          |
-| `events`                    | Array  | List of event objects (Adapty sends one at a time).              |
-| `events[].partner_id`       | String | Always "adapty".                                                 |
-| `events[].event_type`       | String | The event name (mapped from Adapty event).                       |
-| `events[].time`             | Long   | Timestamp of the event in milliseconds.                          |
-| `events[].insert_id`        | String | Unique event ID (UUID).                                          |
-| `events[].user_id`          | String | Amplitude User ID or Customer User ID.                           |
-| `events[].device_id`        | String | Amplitude Device ID.                                             |
-| `events[].platform`         | String | Platform (e.g., "iOS", "Android").                               |
-| `events[].os_name`          | String | OS Name.                                                         |
-| `events[].productId`        | String | The Product ID from the store.                                   |
-| `events[].revenue`          | Float  | Revenue amount.                                                  |
-| `events[].event_properties` | Object | Detailed event attributes (contains all available event fields). |
-| `events[].user_properties`  | Object | User attributes like subscription state.                         |
+| Parameter                   | Type   | Description                                                          |
+|:----------------------------|:-------|:---------------------------------------------------------------------|
+| `api_key`                   | String | Your Amplitude API Key.                                              |
+| `events`                    | Array  | List of event objects (Adapty sends one at a time).                  |
+| `events[].partner_id`       | String | Always "adapty".                                                     |
+| `events[].event_type`       | String | The event name (mapped from Adapty event).                           |
+| `events[].time`             | Long   | Timestamp of the event in milliseconds.                              |
+| `events[].insert_id`        | String | Unique event ID (UUID).                                              |
+| `events[].user_id`          | String | Amplitude User ID or Customer User ID.                               |
+| `events[].device_id`        | String | Amplitude Device ID.                                                 |
+| `events[].platform`         | String | Platform (e.g., "iOS", "Android").                                   |
+| `events[].os_name`          | String | OS Name.                                                             |
+| `events[].productId`        | String | The Product ID from the store.                                       |
+| `events[].revenue`          | Float  | Revenue amount.                                                      |
+| `events[].event_properties` | Object | Detailed event attributes (contains all available [event fields](webhook-event-types-and-fields#for-most-event-types)). |
+| `events[].user_properties`  | Object | User attributes like subscription state.                             |

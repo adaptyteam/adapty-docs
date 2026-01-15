@@ -4,6 +4,9 @@
 (function() {
   'use strict';
 
+  // Temporarily disabled - skip entire script execution
+  return;
+
   // Function to get cookie value by name
   function getCookie(name) {
     const value = `; ${document.cookie}`;
@@ -21,9 +24,10 @@
       window.frontChatInitialized = true;
       
       // Create custom Ask AI button after Front Chat is initialized
-      setTimeout(() => {
-        createCustomAskAIButton();
-      }, 1000);
+      // Temporarily disabled
+      // setTimeout(() => {
+      //   createCustomAskAIButton();
+      // }, 1000);
     }
   }
 

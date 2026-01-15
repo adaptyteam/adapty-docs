@@ -28,7 +28,7 @@ This section describes the new Paywall Builder, which works with iOS, Android, a
 
 :::
 
-## Using Paywall Templates
+## Why use paywall templates
 
 Templates serve as a fantastic starting point, offering beautifully structured layouts and visual appeal. You can either use them as they are or make slight modifications to align them with your brand's aesthetics. 
 
@@ -71,7 +71,7 @@ However, it's important to note that replacing a template will discard any chang
 />
 </Zoom>
 
-3. In the opened **Choose paywall** window, browse and select a new template.
+3. In the opened **Choose template** window, browse and select a new template.
 
 <Zoom>
   <img src={require('./img/984a1e9-PB_select_template.webp').default}

@@ -44,7 +44,7 @@ Moves the user to another onboarding screen, letting you control flow based on u
 Toggles the visibility of a specified element for conditional content within a screen. Use this to display extra content only when users need it.
 
 #### Open paywall
-Launches your app’s paywall to present purchases or subscriptions. Learn how to handle opening paywall on [iOS](ios-handling-onboarding-events.md#opening-a-paywall), [Android](android-handle-onboarding-events.md#opening-a-paywall), [Flutter](flutter-handling-onboarding-events.md#opening-a-paywall), and [React Native](react-native-handling-onboarding-events.md#opening-a-paywall).
+Launches your app’s paywall to present purchases or subscriptions. Learn how to handle opening paywall on [iOS](ios-handling-onboarding-events.md#opening-a-paywall), [Android](android-handle-onboarding-events.md#opening-a-paywall), [React Native](react-native-handling-onboarding-events.md#opening-a-paywall), and [Flutter](flutter-handling-onboarding-events.md#opening-a-paywall).
 
 #### Scroll to
 Programmatically scrolls the view to a target element on the current screen. Helpful for long-form screens when a “See details” button is pressed.
@@ -52,12 +52,12 @@ Programmatically scrolls the view to a target element on the current screen. Hel
 #### Custom
 Allows you to define and execute your own logic based on the [action ID](#action-id). Use this action to trigger behaviors not covered by the standard action types.
 
-Learn how to handle custom action on [iOS](ios-handling-onboarding-events.md#custom-actions), [Android](android-handle-onboarding-events.md#custom-actions), [Flutter](flutter-handling-onboarding-events.md#handle-custom-actions), and [React Native](react-native-handling-onboarding-events.md#handle-custom-actions).
+Learn how to handle custom action on [iOS](ios-handling-onboarding-events.md#custom-actions), [Android](android-handle-onboarding-events.md#custom-actions), [React Native](react-native-handling-onboarding-events.md#handle-custom-actions), and [Flutter](flutter-handling-onboarding-events.md#handle-custom-actions).
 
 #### Close onboarding
 Ends the onboarding flow and closes the interface. Use when users finish setup to immediately drop back into the main app.
 
-Learn how to handle onboarding closure on [iOS](ios-handling-onboarding-events.md#closing-onboarding), [Android](android-handle-onboarding-events.md#closing-onboarding), [Flutter](flutter-handling-onboarding-events.md#closing-onboarding), and [React Native](react-native-handling-onboarding-events.md#closing-onboarding).
+Learn how to handle onboarding closure on [iOS](ios-handling-onboarding-events.md#closing-onboarding), [Android](android-handle-onboarding-events.md#closing-onboarding), [React Native](react-native-handling-onboarding-events.md#closing-onboarding), and [Flutter](flutter-handling-onboarding-events.md#closing-onboarding).
 
 ## Action triggers
 
@@ -69,15 +69,18 @@ Actions fire depending on the element they’re attached to:
 
 ## Action ID
 
+:::important
+Action ID is not the same as the [element ID](onboarding-variables.md) used for inserting dynamic data with variables. Be sure not to mix them up.
+:::
+
 When setting up custom actions for buttons, you may want to handle different buttons the same way using action IDs:
 
 1. When [adding a button](onboarding-buttons.md#add-buttons), assign it an ID in the **On Press** section of the **Element** tab.
 2. [Use the assigned action ID in your source code](ios-handling-onboarding-events.md#custom-actions).
 
-:::note
-Action ID is not the same as the [element ID](onboarding-variables.md) used for inserting dynamic data with variables. Be sure not to mix them up.
+::::note
+On iOS devices, onboardings support only actions in the **On Press** section. The **On Press Extra** section won't work because only one view can be displayed at a time—if one action opens a view (like a paywall), the other action cannot execute simultaneously.
 :::
-
 
   <Zoom>
   <img src={require('./img/ios-events-1.webp').default}
