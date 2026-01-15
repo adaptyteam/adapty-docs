@@ -40,6 +40,10 @@ public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
             }
         });
     }
+
+    public void OnLoadLatestProfile(AdaptyProfile profile) { }
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
 }
 ```
 
