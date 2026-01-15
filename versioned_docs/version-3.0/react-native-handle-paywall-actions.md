@@ -50,17 +50,11 @@ function MyPaywall({ paywall }) {
     navigation.goBack();
   }, [navigation]);
 
-  const onAndroidSystemBack = useCallback<EventHandlers['onAndroidSystemBack']>(() => {
-    // Handle Android back button
-    navigation.goBack();
-  }, [navigation]);
-
   return (
     <AdaptyPaywallView
       paywall={paywall}
       style={styles.container}
       onCloseButtonPress={onCloseButtonPress}
-      onAndroidSystemBack={onAndroidSystemBack}
     />
   );
 }

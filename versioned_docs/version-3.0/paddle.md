@@ -8,7 +8,11 @@ keywords: ['paddle']
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Adapty lets you manage subscriptions and purchases from both your mobile app and website in one place. The [Paddle](https://www.paddle.com/) integration enables you to:
+Adapty supports web2app subscription flows by tracking web payments and subscriptions made through [Paddle](https://www.paddle.com/).
+
+This integration covers web-initiated purchases and synchronizes them with mobile app access and analytics, alongside in-app purchases from app stores.
+
+It is useful in the following scenarios:
 
 - Collect subscription data from both in-app purchases and website purchases in a single system
 - Grant access to paid features in your mobile app to users who purchased on your website
@@ -16,6 +20,10 @@ Adapty lets you manage subscriptions and purchases from both your mobile app and
 
 :::note
 Apple now allows US App Store apps to include links to external payment systems, though apps may still need to offer in-app purchases alongside external options. Check the current App Store guidelines for your region and app category.
+:::
+
+:::note
+This integration focuses on tracking and syncing Paddle web purchases. If you need to send users from the app to a web checkout, use Adapty [web paywalls](web-paywall.md).
 :::
 
 To set up the Paddle integration, follow these steps:
