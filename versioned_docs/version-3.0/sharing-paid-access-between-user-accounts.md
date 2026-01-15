@@ -1,6 +1,6 @@
 ---
 title: "Sharing paid access between user accounts"
-description: "Sharing paid access between different user accounts to accomodate users with multiple devices or multiple app profiles"
+description: "Sharing paid access between different user accounts to accommodate users with multiple devices or multiple app profiles"
 metadataTitle: "Sharing paid access between different user accounts to make sure the user doesn't lose access to purchases | Adapty Docs"
 ---
 
@@ -10,7 +10,7 @@ import Details from '@site/src/components/Details';
 
 When a user makes a purchase, Adapty assigns a new [access level](access-level) to their active [profile](identifying-users). This access level authorizes the buyer to access paid content.
 
-The buyer may inadvertently change their user profile by reinstalling your app, or logging into a new in-app account. To ensure uninterrupted access, Adapty automatically shares the user's access level between the original profile and the ones that follow.
+The buyer's profile may inadvertently change if they reinstall your app, or log into a new in-app account. To ensure uninterrupted access, Adapty automatically shares the user's access level between the original profile and the ones that follow.
 
 This approach works best for most applications. But if your business logic demands it, you can select a more limited paid access sharing policy.
 
@@ -53,7 +53,7 @@ This setting works best for applications **without built-in authentication**. Af
 
 ## Transfer access to new user
 
-This setting works best for applications with **optional authentication** or a **one-device-per-user** policy.
+This setting works best for applications that allow purchases **with or without authentication**, or want to enforce a **one-device-per-user** policy.
 
 Adapty limits purchase access to 1 customer ID at a time. The device owner can reinstall the app, log in and out, but cannot access the same product from more than one customer ID simultaneously.
 
@@ -69,21 +69,19 @@ The switch occurs when a user triggers a new store event: for example, renews th
 
 This setting is **only appropriate** for applications with **mandatory authentication** or an independent access management implementation. In other cases, the users may not be able to access their purchases, and your application risks **failing the mandatory store review**.
 
-If you disable paid access sharing, Adapty ties the product to the active [customer ID](identifying-users#setting-customer-user-id-on-configuration) at the time of the purchase, and does not share these privileges with any other customer profiles. This policy allows for strict 1-to-1 product distribution.
+If you disable paid access sharing, Adapty ties the product to the active [customer ID](identifying-users#setting-customer-user-id-on-configuration) at the time of the purchase, and does not share the access level with any other customer profiles. This policy allows for strict 1-to-1 product distribution.
 
 :::warning
-When you disable paid access sharing, you prevent customer IDs from inheriting paid access. If a customer ID inherited paid access in the past, this privilege cannot be revoked automatically.
+When you disable paid access sharing, you prevent customer IDs from inheriting paid access. If a customer ID inherited paid access in the past, it cannot be revoked automatically.
 :::
 
 :::important
-In emergency situations, you may need to [delete a user profile](https://adapty.io/docs/api-adapty#/operations/deleteProfile) in order to liberate the access privileges. The next available profile (whether identified or anonymous) will inherit access.
+In emergency situations, you may need to [delete a user profile](https://adapty.io/docs/api-adapty#/operations/deleteProfile) in order for the next available profile (whether identified or anonymous) to claim its access level.
 :::
 
 ## Sharing paid access on sandbox
 
-You can set a sharing paid access policy specifically for the sandbox environment. If you **disable** sharing paid access, Adapty will only grant paid access to the active customer ID at the time of the purchase. Other profiles will not be affected.
-
-However, if you want to buy the same product more than once, you still need to clear your purchase history.
+You can set a sharing paid access policy specifically for the sandbox environment.
 
 :::important
 Clear the purchase history of your sandbox account before you test. A strict paid access sharing policy does not prevent Adapty from detecting existing transactions.

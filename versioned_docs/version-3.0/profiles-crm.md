@@ -148,7 +148,11 @@ This means the parent profile (the one that purchased) shows the complete transa
 />
 </Zoom>
 
-Read the [**Sharing paid access between user accounts**](#sharing-paid-access-between-user-accounts) section for instructions on how to control access inheritance.
+The [**Sharing paid access between user accounts**](#sharing-paid-access-between-user-accounts) setting controls which profiles receive access level updates:
+
+    Enabled (default): Both parent and inheritor profiles receive access_level_updated events as long as access remains shared
+    Transfer access to new user: When access is transferred, the new owner becomes the active profile and receives access_level_updated events, while the previous owner stops receiving them
+    Disabled: Only the parent profile maintains the access level. Inheritor profiles don't receive access unless explicitly granted
 
 ## Event timestamps with future dates
 
