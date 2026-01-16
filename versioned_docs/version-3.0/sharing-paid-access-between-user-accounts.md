@@ -84,10 +84,10 @@ In emergency situations, you may need to [delete a user profile](https://adapty.
 You can set a sharing paid access policy specifically for the sandbox environment. When you test purchases in the sandbox environment, expect the following behavior:
 
 * Apple stores information about your past purchases in the account's purchase history. The Adapty SDK can access it, too.
-* If you reinstall the application, and Adapty detects that the product has already been purchased, the active profile will inherit the access level in accordance with your sharing paid access setting.
+* If you reinstall the application, and Adapty detects that the product has already been purchased, the active profile will inherit the access level.
 * If Apple detects an existing purchase for the product, it won't allow you to make the same purchase twice, even if the active profile doesn't have the necessary access level.
 
-This behavior disrupts the purchase flow. Your app doesn't display the paywall, you can't buy the product. To prevent it from happening, **clear your account's purchase history**. Follow the [sandbox testing guide](test-purchases-in-sandboxes) for in-depth instructions.
+This behavior occurs **independently of your sharing paid access setting**. Your app doesn't display the paywall, you can't buy the product. The only solution is to **clear your account's purchase history**. Follow the [sandbox testing guide](test-purchases-in-sandboxes) for in-depth instructions.
 
 ## Paid access sharing in analytics
 
