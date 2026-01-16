@@ -48,7 +48,7 @@ In addition to the automatic event data export to your custom S3 storage, Adapty
 
 ## Table structure
 
-In custom S3 integration, Adapty provides a table to store historical data for installation events. The table contains information about the user profile, revenue and proceeds, and the origin store, among other data points.
+In custom S3 integration, Adapty UA provides a table to store historical data for installation events. The table contains information about the user profile, revenue and proceeds, and the origin store, among other data points.
 
 :::warning
 Note that this structure may grow over time — with new data being introduced by us or by the 3rd parties we work with. Make sure that your code that processes it is robust enough and relies on the specific fields, but not on the structure as a whole.
