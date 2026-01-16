@@ -44,4 +44,51 @@ You can also specify nested directories in the S3 bucket name field, e.g. `adapt
 
 ## Manual data export
 
-In addition to the automatic event data export to your custom S3 storage, Adapty UA also provides a manual file export functionality. With this feature, you can select a date for the user acquisition data and export it to your S3 bucket manually. This allows you to have greater control over the data you export and when you export it. 
+In addition to the automatic event data export to your custom S3 storage, Adapty UA also provides a manual file export functionality. With this feature, you can select a date for the user acquisition data and export it to your S3 bucket manually. This allows you to have greater control over the data you export and when you export it.
+
+## Table structure
+
+In custom S3 integration, Adapty UA provides a table to store historical data for installation events. The table contains information about the user profile, revenue and proceeds, and the origin store, among other data points.
+
+:::warning
+Note that this structure may grow over time — with new data being introduced by us or by the 3rd parties we work with. Make sure that your code that processes it is robust enough and relies on the specific fields, but not on the structure as a whole.
+:::
+
+Here is the table structure for the events:
+
+| Column                   | Description                               |
+|--------------------------|-------------------------------------------|
+| `adapty_profile_id`      | Unique Adapty profile identifier          |
+| `install_id`             | Unique installation identifier            |
+| `created_at`             | Record creation timestamp (ISO 8601)      |
+| `installed_at`           | App installation timestamp (ISO 8601)     |
+| `store`                  | App store (`ios`, `android`)              |
+| `country`                | User's country code (ISO 3166-1 alpha-2)  |
+| `ip_address`             | Client IP address                         |
+| `idfa`                   | iOS Identifier for Advertisers            |
+| `idfv`                   | iOS Identifier for Vendors                |
+| `gaid`                   | Google Advertising ID (Android)           |
+| `android_id`             | Android device ID                         |
+| `app_set_id`             | Android App Set ID                        |
+| `channel`                | Attribution channel                       |
+| `campaign_id`            | Campaign identifier                       |
+| `campaign_name`          | Campaign name                             |
+| `adset_id`               | Ad set identifier                         |
+| `adset_name`             | Ad set name                               |
+| `ad_id`                  | Ad identifier                             |
+| `ad_name`                | Ad name                                   |
+| `keyword_id`             | Keyword identifier                        |
+| `keyword_name`           | Keyword name                              |
+| `asa_org_id`             | Apple Search Ads organization ID          |
+| `asa_keyword_match_type` | ASA keyword match type (`Exact`, `Broad`) |
+| `asa_attribution`        | ASA attribution data (JSON string)        |
+| `asa_conversion_type`    | ASA conversion type                       |
+| `asa_country_or_region`  | ASA country or region                     |
+| `asa_creative_set_name`  | ASA creative set name                     |
+| `fbclid`                 | Facebook Click ID                         |
+| `ttclid`                 | TikTok Click ID                           |
+| `utm_source`             | UTM source parameter                      |
+| `utm_medium`             | UTM medium parameter                      |
+| `utm_campaign`           | UTM campaign parameter                    |
+| `utm_term`               | UTM term parameter                        |
+| `utm_content`            | UTM content parameter                     |
