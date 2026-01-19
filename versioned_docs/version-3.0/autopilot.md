@@ -134,12 +134,19 @@ If the analysis doesn't start, it may be due to one of the following reasons:
 />
 </Zoom>
 
-
-## What's next 
-
 Once your recommendations are ready, it’s time to put them into action. 
 
-Your plan consists of several parts that include setting new prices, updating paywalls, and conducting A/B tests with them. After each round, the winning strategy will advance to the next round. The winner of the final round will be your most efficient pricing option. Based on our estimates, completing the entire test cycle could increase your revenue by up to 80%.
+## Get to know your growth plan
+
+Adapty presents your growth plan as a series of **_rounds_**, competitions. Each round is an A/B test that compares your existing strategy to our algorithmically generated recommendation.
+
+The winner — the setup that yields the most revenue — gets to advance to the next round. The winner of the final round represents the most efficient strategy.
+
+Based on our estimates, completing the entire test cycle could increase your revenue by up to 80%.
+
+### Experiment with the basics
+
+Adapty automatically sets up several rounds to get you started. These experiments concern the basic components of your in-app purchases: pricing, product selection, and subscription duration. When you're done with these rounds, you can [add extra rounds](#add-new-rounds-explore-the-ideas-library) to explore other ideas and new paywall designs.
 
 To start with the first stage:
 
@@ -161,6 +168,16 @@ The recommendations page will show you the target number of subscribers and the 
   }}
 />
 </Zoom>
+
+### Expand the plan: the ideas library and new paywall designs
+
+Other aspects of your product, such as its visual design, depend on your personal taste and the identity of your brand. The Adapty autopilot can offer you suggestions, but it's up to you to implement them.
+
+To accommodate this workflow, Autopilot allows you to add new rounds to your growth plan.
+
+Click the "Add new round" button on the sidebar to open the **Ideas library**. Inside, you'll find the **Paywall designs** section. It contains suggestions for new paywall elements and layouts.
+
+Click a design suggestion to open the [Paywall Builder](adapty-paywall-builder.md) and customize the paywall to your liking. When you're ready to proceed, you can create a new A/B test straight from the builder interface, and see if the suggestion worked out well.
 
 ## Why will it work?
 
