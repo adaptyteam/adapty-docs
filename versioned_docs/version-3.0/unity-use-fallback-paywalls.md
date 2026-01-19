@@ -20,7 +20,7 @@ Fallback paywalls are supported by Unity SDK v2.11 and later.
 
 ## Configuration
 
-1. Add the fallback configuration files to the `Assets/StreamingAssets` directory in your project.
+1. Add the fallback configuration files to the common `Assets/StreamingAssets` directory in your project.
 2. Call the `.setFallback` method **before** you fetch the target paywall or onboarding.
 
 ```csharp

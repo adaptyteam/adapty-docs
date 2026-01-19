@@ -16,7 +16,7 @@ Fallback paywalls are supported by Flutter SDK v2.11 and later.
 
 ## Configuration
 
-1. Add the fallback configuration files to the `assets` directory in your project. 
+1. Add the fallback configuration files to the common `assets` directory in your project. 
 2. Call the `.setFallback` method **before** you fetch the target paywall or onboarding.
 
 ```javascript showLineNumbers title="javascript"
