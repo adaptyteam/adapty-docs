@@ -60,6 +60,10 @@ On the **Negative keywords** tab, you can see a list of negative keywords and th
 
 <ZoomImage id="negative-keywords.webp" width="700px" />
 
+## Ads
+
+On the **Ads** tab, you can see a list of ads and their metrics, so you can see which ad setup is driving results.
+
 ## Metrics
 
 The columns available for display are grouped into several main categories:
@@ -71,6 +75,10 @@ The columns available for display are grouped into several main categories:
 - **Cohort**: Time-based analytics of user groups.
 
 For the complete metric list and description, see the [article](adapty-ads-manager-metrics.md).
+
+## Charts
+
+On each tab, you can see charts showing how different metrics change over time during the selected date range. Click **+** to add a new metric.
 
 ## Customize which metrics to show
 
@@ -88,7 +96,7 @@ To save a view preset, click the **Columns** dropdown again and click the **Save
 
 On the **Analytics** page, you have five main controls:
 1. **Pinned metrics**: Select metrics to pin in the bar above the table view.
-2. **Time ranges**: See [more](controls-filters-grouping-compare-proceeds#time-ranges).
+2. **Date ranges**: See [more](controls-filters-grouping-compare-proceeds#time-ranges).
 3. **Filters**: Filter by metric values or campaign properties.
 4. **Store commission and taxes**: See [more](controls-filters-grouping-compare-proceeds#store-commission-and-taxes).
 5. **Search**: Search by campaign names.
