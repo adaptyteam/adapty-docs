@@ -364,6 +364,7 @@ const config = {
     // Temporarily disabled - comment out to prevent AskAI widget
     // require('./plugins/cookie-checker-plugin'),
     require('./plugins/livechat-plugin'),
+    require('./plugins/ask-ai-indicator-plugin'),
     require.resolve('./plugins/custom-meta-plugin.js'),
     // Webpack plugin for Node.js polyfills
     webpackPlugin,
