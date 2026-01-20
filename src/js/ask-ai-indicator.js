@@ -4,16 +4,11 @@
 (function() {
   'use strict';
 
-  console.log('[Ask AI Indicator] Script loaded');
-
   function createAskAIIndicator() {
     // Check if indicator already exists
     if (document.querySelector('.ask-ai-indicator')) {
-      console.log('[Ask AI Indicator] Indicator already exists, skipping');
       return;
     }
-
-    console.log('[Ask AI Indicator] Creating indicator');
 
     // Create indicator container
     const indicator = document.createElement('div');
@@ -39,16 +34,12 @@
     indicator.appendChild(label);
     indicator.appendChild(arrow);
     document.body.appendChild(indicator);
-    
-    console.log('[Ask AI Indicator] Indicator added to DOM');
   }
 
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
-    console.log('[Ask AI Indicator] Waiting for DOMContentLoaded');
     document.addEventListener('DOMContentLoaded', createAskAIIndicator);
   } else {
-    console.log('[Ask AI Indicator] DOM already loaded, creating indicator');
     createAskAIIndicator();
   }
 })();
