@@ -3,7 +3,7 @@ title: "Capacitor - Handle paywall events"
 description: "Handle subscription events in Capacitor with Adapty's SDK."
 metadataTitle: "Handling Events in Capacitor | Adapty Docs"
 toc_max_heading_level: 4
-keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed']
+keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed', 'onAppeared', 'onDisappeared']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -33,6 +33,13 @@ const unsubscribe = view.setEventHandlers({
   onAndroidSystemBack() {
     console.log('User pressed back button');
     return true; // Allow the paywall to close
+  }, 
+  onAppeared() {
+    console.log('Paywall appeared');
+    return false; // Don't close the paywall
+  }, 
+  onDisappeared() {
+    console.log('Paywall disappeared');
   },
   onPurchaseCompleted(purchaseResult, product) {
     console.log('Purchase completed:', purchaseResult);
@@ -85,6 +92,16 @@ const unsubscribe = view.setEventHandlers({
 // onAndroidSystemBack
 {
   "event": "android_system_back"
+}
+
+// onAppeared
+{
+  "event": "paywall_shown"
+}
+
+// onDisappeared
+{
+  "event": "paywall_closed"
 }
 
 // onUrlPress
@@ -239,24 +256,27 @@ Some event handlers have a default behavior that you can override if needed:
 - `onAndroidSystemBack`: closes paywall when the **Back** button pressed.
 - `onRestoreCompleted`: closes paywall after successful restore.
 - `onPurchaseCompleted`: closes paywall unless user cancelled.
+- `onRenderingFailed`: closes paywall if its rendering fails.
 - `onUrlPress`: opens URLs in system browser and keeps paywall open. 
 
 ### Event handlers
 
-| Event handler               | Description                                                                                                                                                                                                                                                                                                     |
-| :-------------------------- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **onCustomAction**          | Invoked when a user performs a custom action, e.g., clicks a [custom button](paywall-buttons).                                                                                                                                                                                                                  |
-| **onUrlPress**              | Invoked when a user clicks a URL in your paywall.                                                                                                                                                                                                                                                               |
-| **onAndroidSystemBack**     | Invoked when a user taps the system Android **Back** button.                                                                                                                                                                                                                                                    |
-| **onCloseButtonPress**      | Invoked when the close button is visible and a user taps it. It is recommended to dismiss the paywall screen in this handler.                                                                                                                                                                                   |
-| **onPurchaseCompleted**     | Invoked when the purchase completes, whether successful, cancelled by user, or pending approval. In case of a successful purchase, it provides an updated `AdaptyProfile`. User cancellations and pending payments (e.g., parental approval required) trigger this event, not `onPurchaseFailed`.              |
-| **onPurchaseStarted**       | Invoked when a user taps the "Purchase" action button to start the purchase process.                                                                                                                                                                                                                            |
-| **onPurchaseCancelled**     | Invoked when a user initiates the purchase process and manually interrupts it (cancels the payment dialog).                                                                                                                                                                                                     |
-| **onPurchaseFailed**        | Invoked when a purchase fails due to errors (e.g., payment restrictions, invalid products, network failures, transaction verification failures). Not invoked for user cancellations or pending payments, which trigger `onPurchaseCompleted` instead.                                                           |
-| **onRestoreStarted**        | Invoked when a user starts a purchase restoration process.                                                                                                                                                                                                                                                      |
-| **onRestoreCompleted**      | Invoked when purchase restoration succeeds and provides an updated `AdaptyProfile`. It is recommended to dismiss the screen if the user has the required `accessLevel`. Refer to the [Subscription status](capacitor-listen-subscription-changes) topic to learn how to check it.                            |
-| **onRestoreFailed**         | Invoked when the restore process fails and provides `AdaptyError`.                                                                                                                                                                                                                                              |
-| **onProductSelected**       | Invoked when any product in the paywall view is selected, allowing you to monitor what the user selects before the purchase.                                                                                                                                                                                    |
-| **onRenderingFailed**       | Invoked when an error occurs during view rendering and provides `AdaptyError`. Such errors should not occur, so if you come across one, please let us know.                                                                                                                                                     |
-| **onLoadingProductsFailed** | Invoked when product loading fails and provides `AdaptyError`. If you haven't set `prefetchProducts: true` in view creation, AdaptyUI will retrieve the necessary objects from the server by itself.                                                                                                            |
+| Event handler               | Description                                                                                                                                                                                                                                                                                       |
+|:----------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onCustomAction**          | Invoked when a user performs a custom action, e.g., clicks a [custom button](paywall-buttons).                                                                                                                                                                                                    |
+| **onUrlPress**              | Invoked when a user clicks a URL in your paywall.                                                                                                                                                                                                                                                 |
+| **onAndroidSystemBack**     | Invoked when a user taps the system Android **Back** button.                                                                                                                                                                                                                                      |
+| **onCloseButtonPress**      | Invoked when the close button is visible and a user taps it. It is recommended to dismiss the paywall screen in this handler.                                                                                                                                                                     |
+| **onPurchaseCompleted**     | Invoked when the purchase completes, whether successful, cancelled by user, or pending approval. In case of a successful purchase, it provides an updated `AdaptyProfile`. User cancellations and pending payments (e.g., parental approval required) trigger this event, not `onPurchaseFailed`. |
+| **onPurchaseStarted**       | Invoked when a user taps the "Purchase" action button to start the purchase process.                                                                                                                                                                                                              |
+| **onPurchaseCancelled**     | Invoked when a user initiates the purchase process and manually interrupts it (cancels the payment dialog).                                                                                                                                                                                       |
+| **onPurchaseFailed**        | Invoked when a purchase fails due to errors (e.g., payment restrictions, invalid products, network failures, transaction verification failures). Not invoked for user cancellations or pending payments, which trigger `onPurchaseCompleted` instead.                                             |
+| **onRestoreStarted**        | Invoked when a user starts a purchase restoration process.                                                                                                                                                                                                                                        |
+| **onRestoreCompleted**      | Invoked when purchase restoration succeeds and provides an updated `AdaptyProfile`. It is recommended to dismiss the screen if the user has the required `accessLevel`. Refer to the [Subscription status](capacitor-listen-subscription-changes) topic to learn how to check it.                 |
+| **onRestoreFailed**         | Invoked when the restore process fails and provides `AdaptyError`.                                                                                                                                                                                                                                |
+| **onProductSelected**       | Invoked when any product in the paywall view is selected, allowing you to monitor what the user selects before the purchase.                                                                                                                                                                      |
+| **onAppeared**              | Invoked when the paywall view appears on screen. On iOS, also invoked when a user clicks the [web paywall button](web-paywall#step-2a-add-a-web-purchase-button) inside a paywall, and a web paywall opens in an in-app browser.                                                                  |
+| **onDisappeared**           | Invoked when the paywall view disappears from screen. On iOS, also invoked when a [web paywall](web-paywall#step-2a-add-a-web-purchase-button) opened from a paywall in an in-app browser disappears from the screen.                                                                             |
+| **onRenderingFailed**       | Invoked when an error occurs during view rendering and provides `AdaptyError`. Such errors should not occur, so if you come across one, please let us know.                                                                                                                                       |
+| **onLoadingProductsFailed** | Invoked when product loading fails and provides `AdaptyError`. If you haven't set `prefetchProducts: true` in view creation, AdaptyUI will retrieve the necessary objects from the server by itself.                                                                                              |
 
