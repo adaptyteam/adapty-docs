@@ -49,15 +49,40 @@ To set country-specific prices:
 
 1. [Open the product for editing](#edit-product).
 2. Click **Download** to get your current prices exported from stores in the correct format or create a new CSV file.
-[screenshot]
+   <Zoom>
+   <img src={require('./img/download-prices.webp').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '500px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
 3. Update prices in the CSV file. Stick to the [format](#csv-file-format). If you leave a price for any country unchanged or don't include it in the file at all, nothing will happen. When you upload the CSV, Adapty compares prices and updates only those that differ.
 4. In the **Edit** window, click **Upload** and select the CSV file.
-[screenshot]
+   <Zoom>
+   <img src={require('./img/upload-prices.webp').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '500px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
 5. If you want the changes to be active for existing subscribers as well, select **Apply to existing subscribers**.
-[screenshot]
 6. Review the changes that will be applied and click **Save changes**.
-[screenshot]
-
+   <Zoom>
+   <img src={require('./img/country-level-price.webp').default}
+   style={{
+   border: '1px solid #727272', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
 ### CSV file format
 
 :::tip
