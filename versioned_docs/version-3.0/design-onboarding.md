@@ -151,3 +151,22 @@ If you use web-to-app funnels created in [FunnelFox](https://funnelfox.com/) and
   }}
   />
   </Zoom>
+
+## Revert onboarding to an earlier version
+
+> Main article: [Onboarding version control](onboarding-version-control)
+
+If you create unwanted changes, you can go back to any version of the paywall that you previously saved, previewed, or published.
+
+Open the *versions* menu in the top right corner of the onboarding builder, and select the version you want to go back to.
+
+<Zoom>
+<img src={require('./img/version-history.webp').default}
+style={{
+border: '1px solid #727272', /* border width and color */
+width: '700px', /* image width */
+display: 'block', /* for alignment */
+margin: '0 auto' /* center alignment */
+}}
+/>
+</Zoom>
