@@ -55,6 +55,7 @@ const config = {
             },
           },
           includeCurrentVersion: false,
+          remarkPlugins: [require('./plugins/remark-table-wrapper')],
         },
         blog: {
           showReadingTime: false,
