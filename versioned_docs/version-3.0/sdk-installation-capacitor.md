@@ -173,6 +173,40 @@ Parameters:
 | memoryStorageCountLimit | optional | The item count limit of the memory storage. Defaults to platform-specific value. |
 | diskStorageSizeLimit | optional | The file size limit on disk in bytes. Defaults to platform-specific value. |
 
+### Enable local access levels (Android)
+
+By default, [local access levels](local-access-levels.md) are enabled on iOS and disabled on Android. To enable them on Android as well, set `localAccessLevelAllowed` to `true`:
+
+```typescript showLineNumbers
+await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+        android: {
+            localAccessLevelAllowed: true,
+        },
+    }
+});
+```
+
+### Clear data on backup restore
+
+When `clearDataOnBackup` is set to `true`, the SDK detects when the app is restored from an iCloud backup and deletes all locally stored SDK data, including cached profile information, product details, and paywalls. The SDK then initializes with a clean state. Default value is `false`.
+
+:::note
+Only local SDK cache is deleted. Transaction history with Apple and user data on Adapty servers remain unchanged.
+:::
+
+```swift showLineNumbers
+await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+        ios: {
+            clearDataOnBackup: true,
+        },
+    }
+});
+```
+
 ## Development environment tips
 
 #### Troubleshoot SDK activation errors on Capacitor's live-reload

@@ -37,6 +37,10 @@ If you don't have backend authentication, **you don't need to handle authenticat
 3. When the user **re-installs** the app or installs it from a **new device**, Adapty **creates a new empty profile on activation**.
 4. If the user has previously made purchases in your app, by default, their purchases are automatically synced from the App Store on the SDK activation.
 
+:::note
+Backup restores behave differently from reinstalls. By default, when a user restores from a backup, the SDK preserves cached data and does not create a new profile. You can configure this behavior using the `clearDataOnBackup` setting. [Learn more](sdk-installation-capacitor#clear-data-on-backup-restore).
+:::
+
 ## Identified users
 
 - If a profile doesn't have a customer user ID yet (meaning, **the user isn't signed in**), when you send a customer user ID, it gets associated with that profile.

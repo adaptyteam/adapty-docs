@@ -55,6 +55,20 @@ Configure how the onboarding is presented on iOS by passing the `iosPresentation
 await view.present({ iosPresentationStyle: 'page_sheet' });
 ```
 
+## Customize how links open in onboardings
+
+:::important
+Customizing how links open in onboardings is supported starting from Adapty SDK v.3.15.
+:::
+
+By default, links in onboardings open in an in-app browser. This provides a seamless user experience by displaying web pages within your application, allowing users to view them without switching apps.
+
+If you prefer to open links in an external browser instead, you can customize this behavior by setting the `openIn` parameter to `browser_out_app`:
+
+```typescript showLineNumbers
+await view.present({ openIn: 'browser_out_app' }); // default — browser_in_app
+```
+
 ## Next steps
 
 Once you've presented your onboarding, you'll want to [handle user interactions and events](capacitor-handling-onboarding-events.md). Learn how to handle onboarding events to respond to user actions and track analytics.
