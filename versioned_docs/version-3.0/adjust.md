@@ -274,6 +274,58 @@ try {
 ```
 
 </TabItem>
+
+<TabItem value="unity" label="Unity" default>
+
+```csharp showLineNumbers
+// 1. To update ADID
+Adjust.GetAdid((adid) => {
+    if (adid == null) {
+        // handle the error
+        return;
+    }
+
+    Adapty.SetIntegrationIdentifier("adjust_device_id", adid, (error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
+
+    });
+});
+
+// 2. To update Attribution
+
+// in your adjust configuration scope:
+adjustConfig.AttributionChangedDelegate = AttributionChangedCallback;
+
+public void AttributionChangedCallback(AdjustAttribution attributionData) {
+    var attribution = new Dictionary<string, string>();
+
+    if (attributionData.TrackerToken != null) attribution["trackerToken"] = attributionData.TrackerToken;
+    if (attributionData.TrackerName != null) attribution["trackerName"] = attributionData.TrackerName;
+    if (attributionData.Network != null) attribution["network"] = attributionData.Network;
+    if (attributionData.Adgroup != null) attribution["adgroup"] = attributionData.Adgroup;
+    if (attributionData.Creative != null) attribution["creative"] = attributionData.Creative;
+    if (attributionData.ClickLabel != null) attribution["clickLabel"] = attributionData.ClickLabel;
+    if (attributionData.CostType != null) attribution["costType"] = attributionData.CostType;
+    if (attributionData.CostAmount != null) attribution["costAmount"] = attributionData.CostAmount.ToString();
+    if (attributionData.CostCurrency != null) attribution["costCurrency"] = attributionData.CostCurrency;
+    if (attributionData.FbInstallReferrer != null) attribution["fbInstallReferrer"] = attributionData.FbInstallReferrer;
+
+    // you will probably need to install Newtonsoft.Json package, if not yet
+    var attributionJsonString = Newtonsoft.Json.JsonConvert.SerializeObject(attribution);
+
+    Adapty.UpdateAttribution(attributionJsonString, "adjust", (error) => {
+        if (error != null) {
+            // handle the error
+        }
+    });
+}
+```
+
+</TabItem>
+
 </Tabs>
 
 ## Event structure
