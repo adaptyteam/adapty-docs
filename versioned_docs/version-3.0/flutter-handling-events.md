@@ -2,7 +2,7 @@
 title: "Flutter - Handle paywall events"
 description: "Discover how to handle subscription-related events in Flutter using Adapty to track user interactions effectively."
 metadataTitle: "Handling Events in Flutter | Adapty Docs"
-keywords: ['event', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+keywords: ['event', 'paywallViewDidAppear', 'paywallViewDidDisappear', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
 
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
@@ -30,6 +30,32 @@ AdaptyUI().setPaywallsEventsObserver(this);
 <SampleApp />
 
 ### User-generated events
+
+#### Paywall appeared
+
+This method is invoked when the paywall view is presented on the screen.
+
+:::note
+On iOS, also invoked when a user taps the [web paywall button](web-paywall#step-2a-add-a-web-purchase-button) inside a paywall, and a web paywall opens in an in-app browser.
+:::
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidAppear(AdaptyUIPaywallView view) {
+}
+```
+
+#### Paywall disappeared
+
+This method is invoked when the paywall view is dismissed from the screen.
+
+:::note
+On iOS, also invoked when a [web paywall](web-paywall#step-2a-add-a-web-purchase-button) opened from a paywall in an in-app browser disappears from the screen.
+:::
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidDisappear(AdaptyUIPaywallView view) {
+}
+```
 
 #### Product selection
 
@@ -252,6 +278,15 @@ void paywallViewDidFailPurchase(AdaptyUIPaywallView view,
 }
 ```
 </Details>
+
+#### Started restore
+
+If a user initiates the restore process, this method will be invoked:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidStartRestore(AdaptyUIPaywallView view) {
+}
+```
 
 #### Successful restore
 

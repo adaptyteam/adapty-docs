@@ -3,7 +3,7 @@ title: "Kotlin Multiplatform - Handle paywall events"
 description: "Handle Kotlin Multiplatform subscription events efficiently with Adapty's event tracking tools."
 metadataTitle: "Handling Events in Kotlin Multiplatform | Adapty Docs"
 toc_max_heading_level: 4
-keywords: ['AdaptyUIObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+keywords: ['AdaptyUIObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -40,6 +40,11 @@ override fun paywallViewDidDisappear(view: AdaptyUIView) {
     // You can track analytics or update UI here
 }
 ```
+
+:::note
+- On iOS, `paywallViewDidAppear` is also invoked when a user taps the [web paywall button](web-paywall#step-2a-add-a-web-purchase-button) inside a paywall, and a web paywall opens in an in-app browser.
+- On iOS, `paywallViewDidDisappear` is also invoked when a [web paywall](web-paywall#step-2a-add-a-web-purchase-button) opened from a paywall in an in-app browser disappears from the screen.
+:::
 
 <Details>
 <summary>Event examples (Click to expand)</summary>
@@ -233,6 +238,17 @@ override fun paywallViewDidFailPurchase(
 }
 ```
 </Details>
+
+### Started restore
+
+If a user initiates the restore process, this method will be invoked:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidStartRestore(view: AdaptyUIView) {
+    // Handle restore start
+    // You can show loading indicators or track analytics here
+}
+```
 
 ### Successful restore
 
