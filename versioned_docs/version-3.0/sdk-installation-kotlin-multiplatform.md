@@ -25,7 +25,7 @@ For a complete implementation walkthrough, you can also see the video:
 <iframe width="560" height="315" src="https://www.youtube.com/embed/JfwJvwnloNw?si=HskPxRk4WGkF_u9s" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 :::info
-Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
+Adapty is compatible with Google Play Billing Library up to 8.x. By default, Adapty works with Google Play Billing Library v.7.0.0 but, if you want to force a later version, you can manually [add the dependency](https://developer.android.com/google/play/billing/integrate#dependency).
 :::
 
 

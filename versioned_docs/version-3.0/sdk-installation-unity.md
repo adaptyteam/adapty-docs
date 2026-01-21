@@ -29,7 +29,7 @@ Want to see a real-world example of how Adapty SDK is integrated into a mobile a
 Adapty SDK supports iOS 13.0+, but requires iOS 15.0+ to work with paywalls created in the paywall builder.
 
 :::info
-Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
+Adapty is compatible with Google Play Billing Library up to 8.x. By default, Adapty uses Google Play Billing Library v7.0.0. To use a newer version, [override the Billing dependency](https://developer.android.com/google/play/billing/integrate#dependency) in your Android build. For Expo, this can be done during prebuild or via a config plugin.
 :::
 
 ## Install Adapty SDK
@@ -268,11 +268,12 @@ var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
 ```
 
 Parameters:
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| memoryStorageTotalCostLimit | optional | Total cache size in memory in bytes. Defaults to platform-specific value. |
-| memoryStorageCountLimit | optional | The item count limit of the memory storage. Defaults to platform-specific value. |
-| diskStorageSizeLimit | optional | The file size limit on disk in bytes. Defaults to platform-specific value. |
+
+| Parameter                   | Required | Description                                                                      |
+|-----------------------------|----------|----------------------------------------------------------------------------------|
+| memoryStorageTotalCostLimit | optional | Total cache size in memory in bytes. Defaults to platform-specific value.        |
+| memoryStorageCountLimit     | optional | The item count limit of the memory storage. Defaults to platform-specific value. |
+| diskStorageSizeLimit        | optional | The file size limit on disk in bytes. Defaults to platform-specific value.       |
 
 ## Troubleshooting
 
