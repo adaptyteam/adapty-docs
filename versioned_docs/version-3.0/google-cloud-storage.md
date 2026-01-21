@@ -14,23 +14,23 @@ Every day at 4AM UTC, Adapty will upload .csv files with the previous day's data
 
 To set up the integration, [generate a bucket access key](#create-google-cloud-storage-credentials) in your Google Cloud console, and [add it to your Adapty settings](#set-up-google-cloud-storage-integration).
 
-:::note
-Upload schedule
+## Upload schedule and duration
 
-Adapty sends your data to Google Cloud Storage every 24 hours at 04:00 UTC.
+Adapty uploads data to Google Cloud Storage every 24 hours, at 04:00 UTC.
 
 The files contain data for events created during the previous calendar day (UTC). The file uploaded on March 8th will contain all the events created on March 7th, from 00:00:00 to 23:59:59 UTC.
-:::
+
+The process may take up to several hours, depending on the total number of files in the queue, as well as the amount of data you personally requested. If Adapty includes historical data with your first upload, it will take longer than the subsequent daily uploads.
 
 ## Set up Google Cloud storage integration
 
-Make sure you have a valid Google Cloud service account key with **write access**. To generate the key, follow the steps in the [create credentials](#create-google-cloud-storage-credentials) section.
+You need to have a valid Google Cloud service account key with **write access**. To generate it, follow the steps in the [create credentials](#create-google-cloud-storage-credentials) section.
 
 :::warning
 You can use different buckets with different credentials for events and paywall visits. However, if **either** set of credentials is invalid, [**both uploads will fail**](#troubleshooting).
 :::
 
-Go to [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage), and open the necessary tab (**Events** or **Paywall visits**). Flip the toggle from off to on.
+Go to [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage), and open the necessary tab (**Events** or **Paywall visits**). Enable the integration.
 
 Upload the file with your **Google Cloud service account key**. Specify the target **bucket** and **folder**. Save your changes.
 
