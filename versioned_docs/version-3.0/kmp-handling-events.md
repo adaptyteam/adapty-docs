@@ -3,7 +3,7 @@ title: "Kotlin Multiplatform - Handle paywall events"
 description: "Handle Kotlin Multiplatform subscription events efficiently with Adapty's event tracking tools."
 metadataTitle: "Handling Events in Kotlin Multiplatform | Adapty Docs"
 toc_max_heading_level: 4
-keywords: ['AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+keywords: ['AdaptyUIObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -17,7 +17,7 @@ Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't nee
 This guide is for **new Paywall Builder paywalls** only.
 :::
 
-To control or monitor processes occurring on the paywall screen within your mobile app, implement the `AdaptyUIPaywallsEventsObserver` interface methods. Some methods have default implementations that handle common scenarios automatically.
+To control or monitor processes occurring on the paywall screen within your mobile app, implement the `AdaptyUIObserver` interface methods. Some methods have default implementations that handle common scenarios automatically.
 
 :::note
 **Implementation Notes**: These methods are where you add your custom logic to respond to paywall events. You can use `view.dismiss()` to close the paywall, or implement any other custom behavior you need.
@@ -30,16 +30,21 @@ To control or monitor processes occurring on the paywall screen within your mobi
 When a paywall appears or disappears, these methods will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
-override fun paywallViewDidAppear(view: AdaptyUIPaywallView) {
+override fun paywallViewDidAppear(view: AdaptyUIView) {
     // Handle paywall appearance
     // You can track analytics or update UI here
 }
 
-override fun paywallViewDidDisappear(view: AdaptyUIPaywallView) {
+override fun paywallViewDidDisappear(view: AdaptyUIView) {
     // Handle paywall disappearance
     // You can track analytics or update UI here
 }
 ```
+
+:::note
+- On iOS, `paywallViewDidAppear` is also invoked when a user taps the [web paywall button](web-paywall#step-2a-add-a-web-purchase-button) inside a paywall, and a web paywall opens in an in-app browser.
+- On iOS, `paywallViewDidDisappear` is also invoked when a [web paywall](web-paywall#step-2a-add-a-web-purchase-button) opened from a paywall in an in-app browser disappears from the screen.
+:::
 
 <Details>
 <summary>Event examples (Click to expand)</summary>
@@ -62,7 +67,7 @@ override fun paywallViewDidDisappear(view: AdaptyUIPaywallView) {
 If a user selects a product for purchase, this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
-override fun paywallViewDidSelectProduct(view: AdaptyUIPaywallView, productId: String) {
+override fun paywallViewDidSelectProduct(view: AdaptyUIView, productId: String) {
     // Handle product selection
     // You can update UI or track analytics here
 }
@@ -83,7 +88,7 @@ override fun paywallViewDidSelectProduct(view: AdaptyUIPaywallView, productId: S
 If a user initiates the purchase process, this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
-override fun paywallViewDidStartPurchase(view: AdaptyUIPaywallView, product: AdaptyPaywallProduct) {
+override fun paywallViewDidStartPurchase(view: AdaptyUIView, product: AdaptyPaywallProduct) {
     // Handle purchase start
     // You can show loading indicators or track analytics here
 }
@@ -112,7 +117,7 @@ If a purchase succeeds, this method will be invoked. By default, it automaticall
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFinishPurchase(
-    view: AdaptyUIPaywallView,
+    view: AdaptyUIView,
     product: AdaptyPaywallProduct,
     purchaseResult: AdaptyPurchaseResult
 ) {
@@ -201,7 +206,7 @@ If a purchase fails due to an error, this method will be invoked. This includes 
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFailPurchase(
-    view: AdaptyUIPaywallView,
+    view: AdaptyUIView,
     product: AdaptyPaywallProduct,
     error: AdaptyError
 ) {
@@ -234,12 +239,23 @@ override fun paywallViewDidFailPurchase(
 ```
 </Details>
 
+### Started restore
+
+If a user initiates the restore process, this method will be invoked:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidStartRestore(view: AdaptyUIView) {
+    // Handle restore start
+    // You can show loading indicators or track analytics here
+}
+```
+
 ### Successful restore
 
 If restoring a purchase succeeds, this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
-override fun paywallViewDidFinishRestore(view: AdaptyUIPaywallView, profile: AdaptyProfile) {
+override fun paywallViewDidFinishRestore(view: AdaptyUIView, profile: AdaptyProfile) {
     // Add your successful restore handling logic here
     // For example: show success message, update UI, or dismiss paywall
     
@@ -282,7 +298,7 @@ We recommend dismissing the screen if the user has the required `accessLevel`. R
 If `Adapty.restorePurchases()` fails, this method will be invoked:
 
 ```kotlin showLineNumbers title="Kotlin"
-override fun paywallViewDidFailRestore(view: AdaptyUIPaywallView, error: AdaptyError) {
+override fun paywallViewDidFailRestore(view: AdaptyUIView, error: AdaptyError) {
     // Add your restore failure handling logic here
     // For example: show error message, retry option, or custom error handling
 }
@@ -310,7 +326,7 @@ If a user initiates the purchase process using a [web paywall](web-paywall.md), 
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFinishWebPaymentNavigation(
-    view: AdaptyUIPaywallView,
+    view: AdaptyUIView,
     product: AdaptyPaywallProduct?,
     error: AdaptyError?
 ) {
@@ -360,7 +376,7 @@ override fun paywallViewDidFinishWebPaymentNavigation(
 If you don't pass the products during the initialization, AdaptyUI will retrieve the necessary objects from the server by itself. If this operation fails, AdaptyUI will report the error by calling this method:
 
 ```kotlin showLineNumbers title="Kotlin"
-override fun paywallViewDidFailLoadingProducts(view: AdaptyUIPaywallView, error: AdaptyError) {
+override fun paywallViewDidFailLoadingProducts(view: AdaptyUIView, error: AdaptyError) {
     // Add your product loading failure handling logic here
     // For example: show error message, retry option, or custom error handling
 }
@@ -387,7 +403,7 @@ override fun paywallViewDidFailLoadingProducts(view: AdaptyUIPaywallView, error:
 If an error occurs during the interface rendering, it will be reported by this method:
 
 ```kotlin showLineNumbers title="Kotlin"
-override fun paywallViewDidFailRendering(view: AdaptyUIPaywallView, error: AdaptyError) {
+override fun paywallViewDidFailRendering(view: AdaptyUIView, error: AdaptyError) {
     // Handle rendering error
     // In a normal situation, such errors should not occur
     // If you come across one, please let us know

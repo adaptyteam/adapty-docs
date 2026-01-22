@@ -194,7 +194,6 @@ function MyOnboarding({ onboarding }) {
     <>
       <AdaptyOnboardingView
         onboarding={onboarding}
-        style={styles.container}
         onFinishedLoading={onFinishedLoading}
         // ... other callbacks
       />
@@ -219,7 +218,6 @@ function MyOnboarding({ onboarding }) {
     <>
       <AdaptyOnboardingView
         onboarding={onboarding}
-        style={{ flex: 1 }}
         eventHandlers={{
           onFinishedLoading(meta) {
             // Hide your splash screen or custom overlay here
@@ -240,19 +238,20 @@ function MyOnboarding({ onboarding }) {
 #### Customize native loader
 
 :::important
-Expo does not support placing custom native layouts (e.g., `res/layout` on Android). For Expo apps, controlling the splash screen or using a React Native overlay is the only viable solution.
+Expo-managed workflow does not support placing custom native layouts (e.g., `res/layout` on Android). For Expo apps, controlling the splash screen or using a React Native overlay is the only viable solution.
 :::
 
-You can replace the native loader using platform-specific layouts on Android and iOS. However, this approach is usually less convenient for React Native apps:
+You can replace the native loader using platform-specific layouts on Android and iOS. If you're using modal presentation, this is your only option.
+
+However, this approach is usually less convenient for React Native apps:
 
 - Requires separate Android and iOS implementations
-- Not compatible with Expo (Expo doesn't allow adding custom native layouts)
-- Higher maintenance cost
+- Not compatible with Expo-managed workflow
 
 Define a placeholder for each platform:
 
-- **iOS**: Add `AdaptyOnboardingPlaceholderView.xib` to your Xcode project
-- **Android**: Create `adapty_onboarding_placeholder_view.xml` in `res/layout` and define a placeholder there
+- **iOS**: Add `AdaptyOnboardingPlaceholderView.xib` to your Xcode project. [Learn more](ios-present-onboardings#add-smooth-transitions-between-the-splash-screen-and-onboarding).
+- **Android**: Create `adapty_onboarding_placeholder_view.xml` in `res/layout` and define a placeholder there. [Learn more](https://adapty.io/docs/android-present-onboardings#add-smooth-transitions-between-the-splash-screen-and-onboarding).
 
 ## Customize how links open in onboardings
 

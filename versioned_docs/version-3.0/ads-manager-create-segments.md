@@ -1,0 +1,50 @@
+---
+title: "Create segments based on Apple Ads attribution in Apple Ads Manager"
+description: "Create segments from campaigns, ad groups, and keywords in two clicks in Apple Ads Manager."
+metadataTitle: "Create segments | Apple Ads Manager | Adapty Docs"
+---
+import ZoomImage from '@site/src/components/ZoomImage';
+
+You can create user [segments](segments.md) directly from [Apple Ads Manager](adapty-ads-manager.md) by selecting campaigns, ad groups, or keywords and turning them into segments in a few clicks. It makes it easy to personalize paywalls and offers based on an acquisition source, without setting up segment conditions manually.
+
+After creating a segment, you can use it to assign different products and prices, run A/B tests, and customize paywall appearance.
+
+## Use cases
+
+Here are some examples of how segments created from Apple Ads data can be used in practice:
+
+- **Keyword-based paywalls**. Show a feature-focused paywall to users from high-intent keywords, and a general paywall to users from broader discovery keywords.
+
+- **Campaign-level offers**. Offer longer trials or special pricing to users from selected Apple Ads campaigns, while keeping a standard offer for other users.
+
+- **Creative-to-paywall consistency**. Route users from ad groups promoting specific features to paywalls that highlight those features first.
+
+- **High-ROI campaign optimization**. Show a premium-first, full-price paywall to users from campaigns that consistently drive higher lifetime value.
+
+## Create segments
+
+To create a segment from Apple Ads Manager:
+
+1. Go to **Ads Manager** and switch to **Campaigns**, **Ad groups**, or **Keywords** tab. Select checkboxes next to the entities you want to use. Note that, if you select several entities, they will be used to create one segment for all of them and not one segment for each entity.
+2. Click **Actions > Create segment from campaigns/ad groups/keywords**.
+
+<ZoomImage id="create-segment-from.webp" width="700px" /> 
+
+3. If needed, update the segment details in the **Create segment** window: 
+    - **Adapty project**: App in Adapty in which you want to create this segment.
+    - **Build segment from campaign/ad group**: When creating a segment from campaigns or ad groups, you can adjust selected campaigns or ad groups at this step.
+    - **Segment name**
+    - **Segment description**
+
+<ZoomImage id="asa-segment.png" width="700px" />
+
+4. Click **Create**.
+5. Now, when your segment is created, you can prepare to use it:
+
+- Add it to a [placement](placements.md) to use with an existing paywall or onboarding
+- Design a new [paywall](adapty-paywall-builder.md) or [onboarding](onboardings.md) that will be displayed to users in the segment
+- Run an [A/B test](ab-tests.md)
+
+<ZoomImage id="asa-segment-created.webp" width="500px" />
+
+

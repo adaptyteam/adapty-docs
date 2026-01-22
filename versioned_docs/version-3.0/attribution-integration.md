@@ -12,20 +12,30 @@ import TabItem from '@theme/TabItem';
 import Contentid from '@site/src/components/InlineTooltip';
 import InlineTooltip from '@site/src/components/InlineTooltip';
 
-Integrate Adapty with an attribution data provider to:
+Adapty can exchange information with third-party services to attribute subscription events to specific marketing campaigns. This exchange allows you to:
 
-* Match subscription events to specific marketing campaigns
 * Discover which marketing strategies yield the most revenue
 * Filter Adapty [subscription charts](analytics-charts) by attribution
 * Use the capabilities of a third-party service to analyze Adapty subscription data
 
-Adapty supports a [simplified integration process](#simplified-attribution-process) for 9 popular platforms. You can integrate any other platform with a [manual attribution](#manual-attribution) process.
+You can set it up in one of two ways:
 
-## Simplified attribution process
+* [Integrated attribution](#integrated-attribution) requires minimum setup, and allows Adapty to exchange data with 9 popular platforms.
+* [Manual attribution](#manual-attribution) requires you to fetch attribution data from third-party service APIs yourself before you can send it to Adapty.
 
-Adapty offers out-of-the-box attribution integration with [9 popular services](#platform-specific-guides). These platforms can automatically receive [subscription data](events) from Adapty, process each purchase, and respond with an appropriate attribution.
+:::tip
+Enable [User Acquisition Analytics](user-acquisition) for a complete overview of your application's economy.
 
-### General overview
+Adapty UA is an easy-to-configure web dashboard that consolidates data from different sources to detect efficient user acquisition strategies.
+:::
+
+:::warning
+Keep your data clean: avoid event duplication and attribution conflicts. Follow the advice in the **[Prevent data issues](#prevent-data-issues)** section to ensure that a new data source doesn't pollute your analytics.
+:::
+
+## Integrated attribution
+
+Adapty offers out-of-the-box attribution integration with 9 popular services. These platforms can automatically receive [subscription data](events) from Adapty, process each purchase, and respond with an appropriate attribution.
 
 Each platform has a different workflow, but the steps are similarly simple:
 
@@ -33,7 +43,7 @@ Each platform has a different workflow, but the steps are similarly simple:
 2. **Integrate the Aadpty SDK.** Some platforms require extra code to set attribution data.
 3. **Disable other event sharing services and attribution sources** to avoid [event duplication](#avoid-event-duplication) and [data conflicts](#select-a-single-attribution-source).
 
-### Platform-specific guides
+Read the platform-specific guide for a detailed integration overview:
 
 - [Adjust](adjust)
 - [Airbridge](airbridge)
@@ -45,21 +55,16 @@ Each platform has a different workflow, but the steps are similarly simple:
 - [Singular](singular)
 - [Tenjin](tenjin)
 
-If Adapty doesn't offer a simplified attribution workflow for your favorite service, contact [Adapty Support](mailto:support@adapty.io) to express your interest.
+:::note
+If you want Adapty to expand the list, [contact support](mailto:support@adapty.io) and express your interest in a particular service.
+:::
 
 ## Manual attribution
 
-If your attribution source does not suppport the [simplified attribution workflow](#simplified-attribution-process), you need to write your own code that communicates with the attribution source.
+If Adapty doesn't offer [integrated attribution](#integrated-attribution) with your service of choice, you need to write your own code to exchange data with the attribution source.
 
-1. **Send subscription data to the attribution service**
-
-    Program the logic necessary to send subscription data to your platform's API.
-
-2. **Retrieve attribution data from the attribution service**
-
-    Retrieve attribution data from the platform.
-
-3. **Create a dictionary with attribution data**
+1. **Retrieve data from the attribution service**. Use the service's API to request attribution data .
+2. **Create a dictionary with the attribution data you received.**
 
     The dictionary may contain the following keys:
 
@@ -70,7 +75,12 @@ If your attribution source does not suppport the [simplified attribution workflo
     - `ad_set`
     - `creative`
 
-    All the keys are optional. The value of each key may be up to 50 characters long. Adapty ignores custom attribution keys.
+
+    :::important
+    * All the keys are optional.
+    * Adapty ignores the keys not on the list.
+    * The value of each key may be up to 50 characters long.
+    :::
 
     **Example**:
 
@@ -85,7 +95,7 @@ If your attribution source does not suppport the [simplified attribution workflo
     ]
     ```
 
-4. **Set the attribution data**:
+3. **Set the attribution data**:
 
     Pass the attribution dictionary to the `updateAttribution` method. Once you set the attribution value, you cannot override it:
 
@@ -100,11 +110,11 @@ If your attribution source does not suppport the [simplified attribution workflo
     **Parameters:**
 
     - `attribution` (required): dictionary with attribution data.
-    - `source` (required): attribution source. Set to `.custom` if your attribution provider does not support the [simplified attribution process](#simplified-attribution-process).
+    - `source` (required): attribution source. Set to `.custom` if your attribution provider does not support [integrated attribution](#integrated-attribution).
 
-5. **Disable other event sharing services and attribution sources** to avoid [event duplication](#avoid-event-duplication) and [data conflicts](#select-a-single-attribution-source).
+4. **Disable other event sharing services and attribution sources** to avoid [event duplication](#avoid-event-duplication) and [data conflicts](#select-a-single-attribution-source).
 
-## Best practices
+## Prevent data issues
 
 ### Select a single attribution source
 
@@ -119,7 +129,3 @@ For example, non-organic [Apple Search Ads attribution](apple-search-ads) will a
 If you use Adapty to share real-time subscription data with your attribution services, **you need to disable** other services that serve the same purpose. If you connected your Facebook account to AppsFlyer, Adjust, or Branch, it will automatically forward your events to these services, unless you opt out.
 
 Duplicate events can skew your analytics, and make it hard to interpret data. Once you configured Adapty event sharing, turn third-party event forwarding capabilities **off**.  
-
-### What's next?
-
-Enable [User Acquisition Analytics](user-acquisition) to learn more about your application economy. Dive deeper into the complicated relationship between ad spend and subscription revenue.

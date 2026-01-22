@@ -7,7 +7,7 @@ metadataTitle: "Airbridge Integration | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
+import TabItem from '@theme/TabItem';
 
 [Airbridge](https://www.airbridge.io/) offers an integrated marketing performance analysis for websites and mobile apps by consolidating data collected from multiple devices, platforms, and channels. Using Airbridge's Identity Resolution Engine, you can combine scattered customer identity data from web and app interactions into a unified people-based identity, resulting in more accurate attribution.
 
@@ -20,7 +20,7 @@ The integration between Adapty and Airbridge operates in two main ways.
 2. **Sending subscription events to Airbridge**  
    Adapty can send all subscription events which are configured in your integration to Airbridge. As a result, you'll be able to track these events within the Airbridge dashboard. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
-## Web configuration
+## Set up integration
 
 ### Connect Adapty to Airbridge
 
@@ -76,7 +76,7 @@ Adapty API token field is pre-generated on the Adapty backend. You will need to 
 />
 </Zoom>
 
-### Set up events and tags
+### Configure events and tags
 
 Below the credentials, there are three groups of events you can send to Airbridge from Adapty
 
@@ -94,7 +94,7 @@ Below the credentials, there are three groups of events you can send to Airbridg
 
 Simply turn on the ones you need.  
 
-## SDK configuration
+### Connect your app to Airbridge
 
 For the integration, you should pass `airbridge_device_id` to profile builder and call `setIntegrationIdentifier` as it is shown in the example below: 
 
@@ -163,11 +163,6 @@ try {
 </Tabs>
 
 Read more about airbridgeDeviceId in [Airbridge documentation.](https://developers.airbridge.io/v1.1-en/docs/airbridge-device-id)
-
-
-## SDK configuration
-
-Airbridge does not send real-time attribution data to Adapty. As such, there's no need to request attribution data from Airbridge in your application code. 
 
 It may take Adapty up to 24 hours to receive Airbridge attribution data following a subscription event. Adapty will immediately display it on the dashboard.
 

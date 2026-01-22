@@ -55,6 +55,7 @@ const config = {
             },
           },
           includeCurrentVersion: false,
+          remarkPlugins: [require('./plugins/remark-table-wrapper')],
         },
         blog: {
           showReadingTime: false,
@@ -360,6 +361,8 @@ const config = {
   plugins: [
     // Temporarily disabled - comment out to prevent AskAI widget
     // require('./plugins/cookie-checker-plugin'),
+    require('./plugins/livechat-plugin'),
+    require('./plugins/ask-ai-indicator-plugin'),
     require.resolve('./plugins/custom-meta-plugin.js'),
     // Webpack plugin for Node.js polyfills
     webpackPlugin,

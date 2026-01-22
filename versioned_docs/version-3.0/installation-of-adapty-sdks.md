@@ -18,7 +18,7 @@ You have three paths to get started depending on your preferences:
     - [Flutter](flutter-sdk-overview.md)
     - [Unity](unity-sdk-overview.md)
     - [Kotlin Multiplatform](kmp-sdk-overview.md)
-    - [Capacitor (Beta)](capacitor-sdk-overview.md)
+    - [Capacitor](capacitor-sdk-overview.md)
 - **Use LLMs**: Our docs are LLM-friendly. Read our [guide](adapty-cursor.md) on how to get the most out of using LLMs with the Adapty documentation.
 - **Explore sample apps**:
     - [iOS (Swift)](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples)

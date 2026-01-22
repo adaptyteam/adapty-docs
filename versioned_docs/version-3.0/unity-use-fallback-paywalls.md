@@ -1,5 +1,5 @@
 ---
-title: "Use fallbacks in Unity SDK"
+title: "Unity - Use fallback paywalls"
 description: "Handle cases when users are offline or Adapty servers aren't available"
 metadataTitle: "Using fallback paywalls and onboardings | Unity SDK | Adapty Docs"
 slug: /unity-use-fallback-paywalls
@@ -12,15 +12,16 @@ import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
 import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackPaywallIntroduction.md';
 
+:::warning
+Fallback paywalls are supported by Unity SDK v2.11 and later.
+:::
+
 <FallbackPaywallIntroduction />
 
 ## Configuration
 
-1. Move the fallback configuration file to your project directory.
-2. Add the `.setFallback` method to your application code. Place it **before** the method that fetches the target paywall or [onboarding](/localize-onboardings).
-3. Pass a string with the name of the fallback configuration file to the method.
-
-Example:
+1. Add the fallback configuration files to the common `Assets/StreamingAssets` directory in your project.
+2. Call the `.setFallback` method **before** you fetch the target paywall or onboarding.
 
 ```csharp
 using UnityEngine;

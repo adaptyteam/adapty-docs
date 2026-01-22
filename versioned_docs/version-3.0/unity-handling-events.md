@@ -45,6 +45,30 @@ public class PaywallEventsHandler : MonoBehaviour, AdaptyPaywallsEventsListener
 
 ### User-generated events
 
+#### Paywall appeared
+
+Invoked when the paywall view is presented on the screen.
+
+:::note
+On iOS, also invoked when a user taps the [web paywall button](web-paywall#step-2a-add-a-web-purchase-button) inside a paywall, and a web paywall opens in an in-app browser.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidAppear(AdaptyUIPaywallView view) { }
+```
+
+#### Paywall disappeared
+
+Invoked when the paywall view is dismissed from the screen.
+
+:::note
+On iOS, also invoked when a [web paywall](web-paywall#step-2a-add-a-web-purchase-button) opened from a paywall in an in-app browser disappears from the screen.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidDisappear(AdaptyUIPaywallView view) { }
+```
+
 #### Product selection
 
 Invoked when a product is selected for purchase (by a user or by the system).
@@ -203,6 +227,14 @@ public void PaywallViewDidFailPurchase(
 }
 ```
 </Details>
+
+#### Started restore
+
+Invoked when a user initiates the restore process:
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidStartRestore(AdaptyUIPaywallView view) { }
+```
 
 #### Successful restore
 

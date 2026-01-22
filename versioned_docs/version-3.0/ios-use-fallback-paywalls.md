@@ -1,5 +1,5 @@
 ---
-title: "Use fallbacks in iOS SDK"
+title: "iOS - Use fallback paywalls"
 description: "Handle cases when users are offline or Adapty servers aren't available"
 metadataTitle: "Using Fallback Paywalls on iOS | Adapty Docs"
 ---
@@ -11,15 +11,16 @@ import TabItem from '@theme/TabItem';
 
 import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackPaywallIntroduction.md';
 
+:::warning
+Fallback paywalls are supported by iOS SDK v2.11 or later.
+:::
+
 <FallbackPaywallIntroduction />
 
 ## Configuration
 
 1. Add the fallback JSON file to your project bundle: open the **File** menu in XCode and select the **Add Files to "YourProjectName"** option.
-2. Add the `.setFallback` method to your application code. Place it **before** the method that fetches the target paywall or [onboarding](/localize-onboardings).
-3. Pass the fallback configuration file path to the method.
-
-Example: 
+2. Call the `.setFallback` method **before** you fetch the target paywall or onboarding.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -49,4 +50,4 @@ Parameters:
 
 | Parameter   | Description                                                                                                                                                                       |
 | :---------- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **fileURL** | Path to the fallback paywall / onboarding configuration file. |
+| **fileURL** | Path to the fallback configuration file. |

@@ -10,12 +10,16 @@ import Details from '@site/src/components/Details';
 import Contentid from '@site/src/components/InlineTooltip';
 import InlineTooltip from '@site/src/components/InlineTooltip';
 
-Adapty automatically generates JSON configuration files for your [fallback paywall setup](/fallback-paywalls).
+Adapty automatically generates JSON configuration files for your [fallback paywalls](/fallback-paywalls), one per platform. These files contain fallback data for your [onboardings](local-fallback-onboarding), as well.
 
-1. Open the **[Placements](https://app.adapty.io/placements)** page
-2. Click the **Fallbacks** button
-3. Select your target platform (*iOS* or *Android*) from the dropdown menu
-4. Select your SDK version to start the download
+If a single placement has more than one paywall or onboarding, the fallback version will include the variation with the highest weight, or the widest audience. Adapty updates these files whenever you modify your paywalls or onboardings. 
+
+Follow the steps below to download your fallback configurations:
+
+1. Open the **[Placements](https://app.adapty.io/placements)** page.
+2. Click the **Fallbacks** button.
+3. Select your target platform (*iOS* or *Android*) from the dropdown.
+4. Select your SDK version to start the download.
 
 <Zoom>
   <img src={require('./img/9c63367-placements.webp').default}
@@ -28,14 +32,14 @@ Adapty automatically generates JSON configuration files for your [fallback paywa
 />
 </Zoom>
 
-## Next Steps
+## After the download
 
 Follow the setup guide for your particular platform:
 
 * [iOS](ios-use-fallback-paywalls)
 * [Android](android-use-fallback-paywalls)
-* [Kotlin Multiplatform](kmp-use-fallback-paywalls)
 * [React Native](react-native-use-fallback-paywalls)
 * [Flutter](flutter-use-fallback-paywalls)
-* [Capacitor](capacitor-use-fallback-paywalls)
 * [Unity](unity-use-fallback-paywalls)
+* [Kotlin Multiplatform](kmp-use-fallback-paywalls)
+* [Capacitor](capacitor-use-fallback-paywalls)

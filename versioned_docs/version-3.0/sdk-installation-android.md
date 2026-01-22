@@ -25,7 +25,7 @@ Want to see a real-world example of how Adapty SDK is integrated into a mobile a
 Minimum SDK requirement: `minSdkVersion 21`
 
 :::info
-Adapty is compatible with Google Play Billing Library up to 8.x. 
+Adapty is compatible with Google Play Billing Library up to 8.x. By default, Adapty works with Google Play Billing Library v.7.0.0 but, if you want to force a later version, you can manually [add the dependency](https://developer.android.com/google/play/billing/integrate#dependency).
 :::
 
 ## Install Adapty SDK

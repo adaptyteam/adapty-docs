@@ -8,6 +8,10 @@ import TabItem from '@theme/TabItem';
 
 import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackPaywallIntroduction.md';
 
+:::warning
+Fallback paywalls are supported by React Native SDK v2.11 and later.
+:::
+
 <FallbackPaywallIntroduction />
 
 ## Configuration
@@ -17,8 +21,9 @@ import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackP
 1. Add the fallback configuration file to your application. Select one of the following directories: 
    * **android/app/src/main/assets/**
    * **android/app/src/main/res/raw/**
-   
+
       Note: The `res/raw` folder has a special file naming convention (start with a letter, no capital letters, no special characters except for the underscore, and no spaces in the names).
+
 2. Update the `android` property of the `FileLocation` constant:
    * If the file is located in the `assets` directory, pass the file's path relative to the directory.
    * If the file is located in the `res/raw` directory, pass the name of the file without the extension.

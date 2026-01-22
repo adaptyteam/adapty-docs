@@ -25,7 +25,7 @@ Want to see a real-world example of how Adapty SDK is integrated into a mobile a
 The [Adapty Capacitor SDK](https://github.com/adaptyteam/AdaptySDK-Capacitor/) supports iOS 14.0+, but using paywalls created in the [Adapty paywall builder](adapty-paywall-builder.md) requires iOS 15.0+.
 
 :::info
-Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
+Adapty is compatible with Google Play Billing Library up to 8.x. By default, Adapty works with Google Play Billing Library v.7.0.0 but, if you want to force a later version, you can manually [add the dependency](https://developer.android.com/google/play/billing/integrate#dependency).
 :::
 
 ## Install Adapty SDK
@@ -171,6 +171,40 @@ Parameters:
 | memoryStorageTotalCostLimit | optional | Total cache size in memory in bytes. Defaults to platform-specific value. |
 | memoryStorageCountLimit | optional | The item count limit of the memory storage. Defaults to platform-specific value. |
 | diskStorageSizeLimit | optional | The file size limit on disk in bytes. Defaults to platform-specific value. |
+
+### Enable local access levels (Android)
+
+By default, [local access levels](local-access-levels.md) are enabled on iOS and disabled on Android. To enable them on Android as well, set `localAccessLevelAllowed` to `true`:
+
+```typescript showLineNumbers
+await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+        android: {
+            localAccessLevelAllowed: true,
+        },
+    }
+});
+```
+
+### Clear data on backup restore
+
+When `clearDataOnBackup` is set to `true`, the SDK detects when the app is restored from an iCloud backup and deletes all locally stored SDK data, including cached profile information, product details, and paywalls. The SDK then initializes with a clean state. Default value is `false`.
+
+:::note
+Only local SDK cache is deleted. Transaction history with Apple and user data on Adapty servers remain unchanged.
+:::
+
+```swift showLineNumbers
+await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+        ios: {
+            clearDataOnBackup: true,
+        },
+    }
+});
+```
 
 ## Development environment tips
 

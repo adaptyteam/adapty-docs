@@ -16,7 +16,9 @@ With the Facebook Ads integration, you can easily check your app stats in Meta A
 
 The integration between Adapty and Facebook Ads operates in the following way: Adapty sends all subscription events that are configured in your integration to Facebook Ads. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
-## Web configuration
+## Set up integration
+
+### Connect Adapty to Facebook Ads
 
 To integrate Facebook Ads and analyze your app metrics, you can set up the integration with Meta Analytics. By sending events to Meta Ads Manager, you can create lookalike audiences based on subscription events like renewals. To configure this integration, navigate to [Integrations > Facebook Ads](https://app.adapty.io/integrations/facebookanalytics) in the Adapty Dashboard and provide the required credentials.
 
@@ -77,7 +79,7 @@ Please consider that the Facebook Ads integration works on iOS 14.5+ only for us
 
 You can use this integration with Android apps as well. If you set up Android SDK configuration in the **App Settings**, setting up the **Facebook App ID** is enough.
 
-## Events and tags
+### Configure events and tags
 
 Please note that the Facebook Ads integration specifically caters to companies using Meta for ad campaigns and optimizing them based on customer behavior. It supports Meta's standard events for optimization purposes. Consequently, modifying the event name is not available for the Meta Ads integration. Adapty effectively maps your customer events to their corresponding Meta events for accurate analysis.
 
@@ -114,7 +116,7 @@ StartTrial, Subscribe, CancelSubscription are standard events.
 
 To enable specific events, simply toggle on the ones you require. In case multiple event names are selected, Adapty will consolidate the data from all the chosen events into a single Adapty event name.
 
-## SDK configuration
+### Connect your app to Facebook Ads
 
 If you follow the steps above, Facebook will automatically receive subscription data from Adapty. 
 

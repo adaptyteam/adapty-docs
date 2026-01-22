@@ -1,6 +1,15 @@
 <!--- FallbackPaywallIntroduction--->
 
-To maintain a fluid user experience, it is important that you set up a [fallback configuration](/fallback-paywalls) for your [paywalls](/paywalls). With a fallback configuration in place, your users will be able to access the paywall even when they cannot connect to Adapty.
+To maintain a fluid user experience, it is important to set up [fallbacks](/fallback-paywalls) for your [paywalls](paywalls) and [onboardings](onboardings). This precaution extends the application's capabilities in case of partial or complete loss of internet connection.
 
-1. [Download the fallback configuration file](/local-fallback-paywalls) from Adapty
-2. Follow the instructions below to configure the fallback setup:
+* **If the application cannot access Adapty servers:**
+
+    It will be able to display a fallback paywall, and access the local onboarding configuration.
+
+* **If the application cannot access the internet:**
+
+    It will be able to display a fallback paywall. Onboardings include remote content and require an internet connection to function.
+
+:::important
+Before you follow the steps in this guide, [download](/local-fallback-paywalls) the fallback configuration files from Adapty.
+:::

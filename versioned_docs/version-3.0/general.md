@@ -98,6 +98,10 @@ Please ensure that you select the designated option that aligns with your desire
 
 ## 6. Sharing paid access between user accounts
 
+> Main article: [Sharing paid access between user accounts](sharing-paid-access-between-user-accounts)
+
+The **Sharing paid access between user accounts** setting determines what Adapty does when more than one [user profile](identifying-users) attempts to access the same purchase. You can specify a separate access sharing setting for the [sandbox environment](test-purchases-in-sandbox).
+
 <Sharingaccesslevel />
 
 ## 7. SDK and API keys

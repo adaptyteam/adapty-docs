@@ -8,16 +8,16 @@ import SampleApp from '@site/src/components/reusable/SampleApp.md';
 
 import FallbackPaywallIntroduction from '@site/src/components/reusable/FallbackPaywallIntroduction.md';
 
+:::warning
+Fallback paywalls are supported by Flutter SDK v2.11 and later.
+:::
+
 <FallbackPaywallIntroduction />
 
 ## Configuration
 
-1. Move the fallback configuration file to your project directory.
-2. Add the `.setFallback` method to your application code. Place it **before** the method that fetches the target paywall or [onboarding](/localize-onboardings).
-3. Pass the fallback configuration file path to the method.
-
-Example:
-
+1. Add the fallback configuration files to the app’s `assets` directory at the project root. 
+2. Call the `.setFallback` method **before** you fetch the target paywall or onboarding.
 
 ```javascript showLineNumbers title="javascript"
 import 'dart:async' show Future;
@@ -37,6 +37,6 @@ Parameters:
 
 | Parameter      | Description                                                                                                                                                          |
 | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **assetId**    | Path to the fallback paywall / onboarding configuration file. |
+| **assetId**    | Path to the fallback configuration file. |
 
 <SampleApp />

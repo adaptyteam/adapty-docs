@@ -148,11 +148,11 @@ This means the parent profile (the one that purchased) shows the complete transa
 />
 </Zoom>
 
-The [**Sharing paid access between user accounts**](profiles-crm#sharing-access-levels-between-profiles) setting controls which profiles receive access level updates:
+The [**Sharing paid access between user accounts**](#sharing-paid-access-between-user-accounts) setting controls which profiles receive access level updates:
 
-- **Enabled (default)**: Both parent and inheritor profiles receive access_level_updated events as long as access remains shared
-- **Transfer access to new user**: When access is transferred, the new owner becomes the active profile and receives access_level_updated events, while the previous owner stops receiving them
-- **Disabled**: Only the parent profile maintains the access level. Inheritor profiles don't receive access unless explicitly granted
+    Enabled (default): Both parent and inheritor profiles receive access_level_updated events as long as access remains shared
+    Transfer access to new user: When access is transferred, the new owner becomes the active profile and receives access_level_updated events, while the previous owner stops receiving them
+    Disabled: Only the parent profile maintains the access level. Inheritor profiles don't receive access unless explicitly granted
 
 ## Event timestamps with future dates
 
@@ -165,6 +165,10 @@ Why do events show future timestamps in profiles and integrations? Event timesta
 - **Impact on Integrations**: Adapty sends events to integrations as soon as they are received. If an event has a future timestamp, it will be shared with your integration exactly as received.
 
 ## Sharing paid access between user accounts
+
+> Main article: [Sharing paid access between user accounts](sharing-paid-access-between-user-accounts)
+
+Access the [General](general) settings page to set your access level sharing policy. You can select a separate policy for the [sandbox environment](test-purchases-in-sandbox).
 
 <Sharingaccesslevel />
 

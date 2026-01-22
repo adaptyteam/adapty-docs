@@ -26,7 +26,7 @@ Want to see a real-world example of how Adapty SDK is integrated into a mobile a
 Adapty SDK supports iOS 13.0+, but requires iOS 15.0+ to work properly with paywalls created in the paywall builder.
 
 :::info
-Adapty supports Google Play Billing Library up to 7.x. Support for [Billing Library 8.0.0 (released 30 June, 2025)](https://developer.android.com/google/play/billing/release-notes#8-0-0) is planned.
+Adapty is compatible with Google Play Billing Library up to 8.x. By default, Adapty works with Google Play Billing Library v.7.0.0 but, if you want to force a later version, you can manually [add the dependency](https://developer.android.com/google/play/billing/integrate#dependency).
 :::
 
 ## Install Adapty SDK

@@ -33,7 +33,7 @@ The integration between Adapty and Adjust works in two main ways.
 2. **Adapty sends subscription events to Adjust**  
    Adapty can send all subscription events which are configured in your integration to Adjust. As a result, you'll be able to track these events within the Adjust dashboard. This integration is beneficial for evaluating the effectiveness of your advertising campaigns.
 
-## Web configuration
+## Set up integration
 
 ### Connect Adapty to Adjust
 
@@ -85,7 +85,7 @@ The integration between Adapty and Adjust works in two main ways.
 />
 </Zoom>
 
-### Set up events and tags
+### Configure events and tags
 
 Adjust works a bit differently from other platforms. You need to manually create events in Adjust dashboard, get event tokens, and copy-paste them to appropriate events in Adapty.
 
@@ -127,7 +127,7 @@ Consider the following:
 
 :::
 
-## SDK configuration
+### Connect your app to Adjust
 
 After you complete the steps described above, add the following two methods to your app. They will establish communication between your app and Adjust:
 
@@ -274,6 +274,58 @@ try {
 ```
 
 </TabItem>
+
+<TabItem value="unity" label="Unity" default>
+
+```csharp showLineNumbers
+// 1. To update ADID
+Adjust.GetAdid((adid) => {
+    if (adid == null) {
+        // handle the error
+        return;
+    }
+
+    Adapty.SetIntegrationIdentifier("adjust_device_id", adid, (error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
+
+    });
+});
+
+// 2. To update Attribution
+
+// in your adjust configuration scope:
+adjustConfig.AttributionChangedDelegate = AttributionChangedCallback;
+
+public void AttributionChangedCallback(AdjustAttribution attributionData) {
+    var attribution = new Dictionary<string, string>();
+
+    if (attributionData.TrackerToken != null) attribution["trackerToken"] = attributionData.TrackerToken;
+    if (attributionData.TrackerName != null) attribution["trackerName"] = attributionData.TrackerName;
+    if (attributionData.Network != null) attribution["network"] = attributionData.Network;
+    if (attributionData.Adgroup != null) attribution["adgroup"] = attributionData.Adgroup;
+    if (attributionData.Creative != null) attribution["creative"] = attributionData.Creative;
+    if (attributionData.ClickLabel != null) attribution["clickLabel"] = attributionData.ClickLabel;
+    if (attributionData.CostType != null) attribution["costType"] = attributionData.CostType;
+    if (attributionData.CostAmount != null) attribution["costAmount"] = attributionData.CostAmount.ToString();
+    if (attributionData.CostCurrency != null) attribution["costCurrency"] = attributionData.CostCurrency;
+    if (attributionData.FbInstallReferrer != null) attribution["fbInstallReferrer"] = attributionData.FbInstallReferrer;
+
+    // you will probably need to install Newtonsoft.Json package, if not yet
+    var attributionJsonString = Newtonsoft.Json.JsonConvert.SerializeObject(attribution);
+
+    Adapty.UpdateAttribution(attributionJsonString, "adjust", (error) => {
+        if (error != null) {
+            // handle the error
+        }
+    });
+}
+```
+
+</TabItem>
+
 </Tabs>
 
 ## Event structure
