@@ -100,7 +100,7 @@ After your onboarding is published, click **Back to Adapty**. Your onboarding is
    </Zoom>
 
 2. Enter the placement name and ID. Then, click **Run onboarding** and select an onboarding to show to all users.
-3. If you have a separate onboarding prepared for a specific user group, [add more audiences](#audience) and select a different onboarding for them.
+3. If you have a separate onboarding prepared for a specific user group, [add more audiences](audience) and select a different onboarding for them.
 
 
 ## Step 3. Integrate the onboarding into your app
