@@ -1,0 +1,9 @@
+---
+title: "Capacitor SDK Migration Guides"
+description: "Migration guides for Adapty Capacitor SDK versions."
+metadataTitle: "Capacitor SDK Migration Guides | Adapty Docs"
+---
+
+This page contains all migration guides for Adapty Capacitor SDK. Choose the version you want to migrate to for detailed instructions:
+
+- [**Migrate to v. 3.16**](migration-to-capacitor-316.md)
