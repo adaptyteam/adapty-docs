@@ -12,19 +12,15 @@ import { remarkTransformRequire } from './src/plugins/remark-transform-require.m
 import { remarkTransformDetails } from './src/plugins/remark-transform-details.mjs';
 import { remarkHeadingId } from './src/plugins/remark-heading-id.mjs';
 import { remarkTransformLinks } from './src/plugins/remark-transform-links.mjs';
+import { remarkStripImports } from './src/plugins/remark-strip-imports.mjs';
 
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://adapty.io',
+  base: '/docs',
   outDir: './build',
-  image: {
-    service: {
-      entrypoint: 'astro/assets/services/sharp',
-      config: {
-        limitInputPixels: false,
-      },
-    },
-  },
   build: {
+    assets: '_astro',
     inlineStylesheets: 'never',
   },
   vite: {
@@ -44,7 +40,7 @@ export default defineConfig({
   },
 
   markdown: {
-    remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+    remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkStripImports, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
     shikiConfig: {
       theme: 'github-light',
       wrap: true,
@@ -73,7 +69,7 @@ export default defineConfig({
   integrations: [
     react(),
     mdx({
-      remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+      remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkStripImports, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
       shikiConfig: {
         theme: 'github-light',
         wrap: true,

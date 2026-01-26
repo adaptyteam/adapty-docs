@@ -1,8 +1,6 @@
 ---
 no_index: true 
 ---
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
 
 1. Open [App Store Connect](https://appstoreconnect.apple.com/apps). Select your app and proceed to **General** → **App Information** section.
 
@@ -11,7 +9,7 @@ import 'react-medium-image-zoom/dist/styles.css';
    
 
 <Zoom>
-  <img src="/img/afd5012-bundle_id_apple.webp"
+  <img src="afd5012-bundle_id_apple.webp"
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -29,7 +27,7 @@ import 'react-medium-image-zoom/dist/styles.css';
    
 
 <Zoom>
-  <img src="/img/2d64163-bundle_id.webp"
+  <img src="2d64163-bundle_id.webp"
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
