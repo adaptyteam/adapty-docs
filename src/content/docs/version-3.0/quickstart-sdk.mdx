@@ -46,7 +46,7 @@ Choose your platform and dive right in:
 - **[SDK Quickstart](unity-sdk-overview.md)**
 - **[Sample App](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Assets)**
 
-**Capacitor (Beta)**
+**Capacitor**
 - **[SDK Quickstart](capacitor-sdk-overview.md)**
 - **[Sample Apps](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples)**
 
