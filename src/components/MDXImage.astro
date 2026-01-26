@@ -1,0 +1,131 @@
+---
+// MDXImage.astro - custom image resolution
+interface Props {
+  src: string;
+  alt?: string;
+  width?: string | number;
+  height?: string | number;
+  style?: any;
+  className?: string;
+  [key: string]: any;
+}
+
+const { src: rawSrc, alt, width, height, style, className, ...props } = Astro.props;
+
+// Ensure src is a string
+const src = typeof rawSrc === 'string' ? rawSrc : (rawSrc?.default || rawSrc?.src || String(rawSrc || ''));
+
+let imageSrc: ImageMetadata | undefined;
+const id = src.split('/').pop() || src;
+
+// If src is already a full URL or a path that clearly looks already resolved by Vite (starts with /_astro/ or /@fs/), use it
+if (src.startsWith('http') || src.startsWith('/_astro/') || src.startsWith('/@fs/')) {
+    // Return regular img for external or already resolved public paths
+    imageSrc = undefined;
+} else {
+    // 1. Load all images
+    const allImages = import.meta.glob<{ default: ImageMetadata }>([
+        '/src/assets/**/*.{png,jpg,jpeg,webp,gif}',
+        '/src/content/docs/**/*.{png,jpg,jpeg,webp,gif}'
+    ], { eager: true });
+
+    // 2. Determine article name from URL
+    const currentPath = Astro.url.pathname;
+    const pathSegments = currentPath.split('/').filter(Boolean);
+    const articleName = pathSegments[pathSegments.length - 1] || 'index';
+
+    if (id) {
+        // Priority 1: Article-specific
+        const articleSpecificPart = `/assets/${articleName}/`;
+        for (const [path, module] of Object.entries(allImages)) {
+            if (path.includes(articleSpecificPart) && path.split('/').pop() === id) {
+                imageSrc = module.default;
+                break;
+            }
+        }
+
+        // Priority 2: Shared
+        if (!imageSrc) {
+            const sharedPart = `/assets/shared/`;
+            for (const [path, module] of Object.entries(allImages)) {
+                if (path.includes(sharedPart) && path.split('/').pop() === id) {
+                    imageSrc = module.default;
+                    break;
+                }
+            }
+        }
+
+        // Priority 3: Legacy
+        if (!imageSrc) {
+            const legacyFolders = ['img', 'FF_img', 'img_webhook_flows'];
+            for (const folder of legacyFolders) {
+                const legacyPart = `/version-3.0/${folder}/`;
+                for (const [path, module] of Object.entries(allImages)) {
+                    if (path.includes(legacyPart) && path.split('/').pop() === id) {
+                        imageSrc = module.default;
+                        break;
+                    }
+                }
+                if (imageSrc) break;
+            }
+        }
+
+        // Priority 4: Best match fallback
+        if (!imageSrc) {
+            let bestMatchScore = -1;
+            for (const [path, module] of Object.entries(allImages)) {
+                const filename = path.split('/').pop();
+                if (filename === id) {
+                    const imgParts = path.split('/').filter(Boolean);
+                    const urlParts = currentPath.split('/').filter(Boolean);
+                    let commonPathLength = 0;
+                    const minLength = Math.min(imgParts.length, urlParts.length);
+                    for (let i = 0; i < minLength; i++) {
+                        if (imgParts[i] === urlParts[i]) commonPathLength++;
+                        else break;
+                    }
+                    if (commonPathLength > bestMatchScore) {
+                        bestMatchScore = commonPathLength;
+                        imageSrc = module.default;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Convert width/height to numbers if they are strings like "700px"
+const resolvedWidth = typeof width === 'string' ? parseInt(width.replace('px', '')) : width;
+const resolvedHeight = typeof height === 'string' ? parseInt(height.replace('px', '')) : height;
+const finalWidth = resolvedWidth ?? imageSrc?.width;
+const finalHeight = resolvedHeight ?? imageSrc?.height;
+
+// Merge styles
+const finalStyle = {
+    maxWidth: '100%',
+    height: 'auto',
+    ...(typeof style === 'object' ? style : {}),
+};
+
+// If width is provided in props, use it in style too
+if (width) {
+    finalStyle.width = typeof width === 'number' ? `${width}px` : width;
+}
+---
+
+{imageSrc ? (
+  <img 
+    src={imageSrc.src} 
+    alt={alt || id || ''} 
+    width={finalWidth}
+    height={finalHeight}
+    class:list={[
+      "zoom-image", 
+      className
+    ]}
+    style={finalStyle}
+    {...props}
+  />
+) : (
+  <img src={src} alt={alt} style={finalStyle} class={className} {...props} />
+)}

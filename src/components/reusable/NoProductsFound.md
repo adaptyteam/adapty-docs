@@ -1,4 +1,4 @@
-<!--- NoProductsFound.md --->
+
 
 The request failed because the products linked to the provided token were not found. Please ensure that all required products are added to the correct app in Adapty and that their **Paddle Product ID** and **Paddle Price ID** are correctly filled in.
 

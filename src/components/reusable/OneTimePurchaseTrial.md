@@ -1,4 +1,4 @@
-<!--- OneTimePurchaseTrial.md --->
+
 
 The request failed because a trial was provided with a one-time purchase. Unlike subscriptions, one-time purchases can’t have a trial. To fix this, check the `offer_type` in the [Offer](server-side-api-objects#offer) object within the [One-Time Purchase](server-side-api-objects#one-time-purchase) object. The value for `offer_type` can’t be `free_trial`. Either change the `offer_type` field value or switch to using the [Subscription](server-side-api-objects#subscription) object instead of One-Time Purchase.
 

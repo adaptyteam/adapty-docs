@@ -1,4 +1,4 @@
-<!--- FamilySharePrice.md --->
+
 
 The request failed because the `is_family_shared` parameter is set to `true`, meaning the access level is shared with a family member for free. However, the `value` parameter of the [Price](server-side-api-objects#price) object isn’t set to zero.
 

@@ -1,4 +1,4 @@
-<!--- RefundDateNull.md --->
+
 
 The request failed because it either includes `cancellation_reason` without a `refunded_at` date, or it has `refunded_at` without a `cancellation_reason`.
 

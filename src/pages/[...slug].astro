@@ -1,0 +1,367 @@
+---
+import { getCollection, render } from 'astro:content';
+import DocsLayout from '/src/layouts/DocsLayout.astro';
+import platformsData from '../data/platforms.json';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import Tabs from '../components/Tabs.astro';
+import TabItem from '../components/TabItem.astro';
+import Callout from '../components/Callout.astro';
+import Zoom from '../components/Zoom.astro';
+import CustomDocCardList from '../components/CustomDocCardList.astro';
+import Details from '../components/Details.astro';
+import InlineTooltip from '../components/InlineTooltip.astro';
+import ZoomImage from '../components/ZoomImage.astro';
+import ArticleButtons from '../components/ArticleButtons.astro';
+import MDXImage from '../components/MDXImage.astro';
+import { Calculator } from '../components/Calculator';
+
+export async function getStaticPaths() {
+  const paths = [];
+  const addedSlugs = new Set();
+  // 1. Sidebar Pages
+  const allDocs = await getCollection('docs');
+  const sidebarFiles = (await fs.readdir(path.resolve('./src/data/sidebars')))
+    .filter(f => f.endsWith('.json'))
+    .sort(); // Ensure consistent order (e.g. android before tutorial)
+
+  for (const filename of sidebarFiles) {
+     const platformId = filename.replace('.json', '');
+     const platform = platformsData.sdkPlatforms.find(p => p.id === platformId) || { id: platformId, label: platformId.charAt(0).toUpperCase() + platformId.slice(1) };
+     
+     const sidebarPath = path.resolve(`./src/data/sidebars/${filename}`);
+     try {
+         const sidebarContent = await fs.readFile(sidebarPath, 'utf-8');
+         const sidebar = JSON.parse(sidebarContent);
+         
+         const extractIds = (items) => {
+             items.forEach(item => {
+                 let id = item.id || (item.link && item.link.id);
+                 if (id) {
+                    const doc = allDocs.find(d => {
+                        const idWithoutExt = d.id.replace(/\.(md|mdx)$/, '');
+                        const basename = idWithoutExt.split('/').pop();
+                        return idWithoutExt === id || basename === id || d.id === id;
+                    });
+                    const actualId = doc ? doc.id : id;
+
+                    // Add the slug path
+                    if (!addedSlugs.has(id)) {
+                        // If this doc has a custom slug, the default ID path should redirect to it
+                        const redirectTo = doc?.data.customSlug;
+                        
+                        paths.push({
+                            params: { slug: id },
+                            props: { platform, sidebar, docId: actualId, redirectTo }
+                        });
+                        addedSlugs.add(id);
+                    }
+
+                    // Check if document has a custom slug in frontmatter
+                    if (doc && doc.data.customSlug) {
+                        const customSlug = doc.data.customSlug;
+                        console.log(`[DEBUG] Found customSlug for ${id}: "${customSlug}"`);
+                        // Remove leading slash for params
+                        const slugParam = customSlug === '/' ? undefined : customSlug.replace(/^\//, '');
+                        const slugKey = customSlug === '/' ? 'ROOT_HOME' : customSlug;
+                        
+                        if (!addedSlugs.has(slugKey)) {
+                            console.log(`[DEBUG] Adding route: params.slug=${slugParam}, docId=${actualId}`);
+                            paths.push({
+                                params: { slug: slugParam },
+                                props: { platform, sidebar, docId: actualId }
+                            });
+                            addedSlugs.add(slugKey);
+                        }
+                    }
+                 }
+                 if (item.items) {
+                     extractIds(item.items);
+                 }
+             });
+         }
+         
+         extractIds(sidebar);
+         
+     } catch (e) {
+         // Silently fail for missing sidebars
+     }
+  }
+
+  // 2. Orphaned Pages (ensuring all docs are reachable via their basename as well)
+  for (const doc of allDocs) {
+      // Use the basename without extension as the primary slug for orphans
+      const docBasename = doc.id.split('/').pop()?.replace(/\.(md|mdx)$/, '');
+      
+      if (docBasename && !addedSlugs.has(docBasename)) {
+          paths.push({
+              params: { slug: docBasename },
+              props: { 
+                  platform: { id: '', label: '' },
+                  sidebar: null,
+                  docId: doc.id 
+              }
+          });
+          addedSlugs.add(docBasename);
+      }
+  }
+
+
+
+  return paths;
+}
+
+const { slug } = Astro.params;
+const { platform, sidebar, docId, redirectTo } = Astro.props;
+
+if (redirectTo) {
+  return Astro.redirect(redirectTo);
+}
+
+const allDocs = await getCollection('docs');
+
+
+
+const entry = allDocs.find(d => 
+    d.id === docId || 
+    d.id.replace(/\.(md|mdx)$/, '') === docId ||
+    d.id.split('/').pop()?.replace(/\.(md|mdx)$/, '') === docId
+);
+
+let Content;
+let headings = [];
+let description = "";
+let metadataTitle = "";
+let keywords = [];
+let rank = undefined;
+
+if (entry) {
+  const rendered = await render(entry);
+  Content = rendered.Content;
+  headings = rendered.headings;
+  const frontmatter = (rendered as any).remarkPluginFrontmatter || entry.data;
+
+  description = frontmatter.description;
+  metadataTitle = frontmatter.metadataTitle;
+  keywords = frontmatter.keywords;
+  rank = frontmatter.rank;
+}
+
+// 2. Breadcrumbs and Navigation
+function getBreadcrumbs(items, targetId, path = []) {
+    for (const item of items) {
+        let href = item.href;
+
+        if (!href) {
+            const candidateId = item.link?.id || item.id;
+            // Only link if we can resolve it to a real document
+            if (candidateId) {
+                 const docExists = allDocs.some(d => 
+                    d.id === candidateId || 
+                    d.id.replace(/\.(md|mdx)$/, '') === candidateId ||
+                    d.id.split('/').pop()?.replace(/\.(md|mdx)$/, '') === candidateId
+                 );
+                 if (docExists) {
+                     href = `${import.meta.env.BASE_URL}/${candidateId}`.replace(/\/+/g, '/');
+                 }
+            }
+        }
+        
+        // Avoid linking to the current page (self-link) - redundant if we slice, but good for safety
+        if (href === `/${targetId}` || href === targetId) {
+            href = undefined;
+        }
+
+        const currentPath = [...path, { label: item.label, href }];
+        
+        if (item.id === targetId || item.link?.id === targetId) {
+            return currentPath;
+        }
+        
+        if (item.items) {
+            const found = getBreadcrumbs(item.items, targetId, currentPath);
+            if (found) return found;
+        }
+    }
+    return null;
+}
+
+// Generate breadcrumbs:
+// 1. Get full path
+// 2. Remove the last item (current page) as requested
+const fullBreadcrumbs = sidebar ? getBreadcrumbs(sidebar, slug || 'what-is-adapty') || [] : [];
+const breadcrumbs = fullBreadcrumbs.length > 0 ? fullBreadcrumbs.slice(0, -1) : [];
+
+// 3. Global Reusable Components
+const reusableComponents = import.meta.glob('../components/reusable/*.md', { eager: true });
+const toPascalCase = (str) => {
+  if (/^\d/.test(str)) return `Error${str}`;
+  return str.replace(/(^\w|-\w)/g, clear => clear.replace('-', '').toUpperCase());
+};
+
+const globalComponents = Object.entries(reusableComponents).reduce((acc, [path, module]) => {
+  const fileName = path.split('/').pop().replace('.md', '');
+  if (fileName) {
+    const pascalName = toPascalCase(fileName);
+    acc[pascalName] = (module as any).Content;
+  }
+  return acc;
+}, {});
+
+---
+
+<DocsLayout 
+  title={entry?.data.title || `${docId} - ${platform?.label || 'Docs'}`}
+  sidebarData={sidebar}
+  currentPlatformId={platform?.id || ''}
+  currentSlug={slug || ''}
+  headings={headings}
+  breadcrumbs={breadcrumbs}
+  description={description}
+  metadataTitle={metadataTitle}
+  keywords={keywords}
+  rank={rank}
+>
+  {Content ? (
+    <div class="content-wrapper">
+         <div class="flex items-start gap-3 mb-2">
+           <h1 class="text-3xl font-bold tracking-tight text-slate-900">{entry?.data.title}</h1>
+           <button 
+             id="copy-link-btn" 
+             class="copy-link-button flex-shrink-0 p-2 rounded-lg transition-all duration-200 mt-1"
+             aria-label="Copy link to this page"
+             title="Copy link"
+           >
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+             </svg>
+           </button>
+         </div>
+         <ArticleButtons />
+        <Content components={{ 
+          Tabs, 
+          TabItem, 
+          Callout, 
+          Zoom, 
+          CustomDocCardList, 
+          Details,
+          InlineTooltip,
+          ZoomImage,
+          MDXImage,
+          Calculator,
+          img: MDXImage,
+          ...globalComponents
+        }} />
+    </div>
+  ) : (
+    <div class="py-12">
+        <h1 class="text-2xl font-bold mb-4">Content Not Found</h1>
+        <p class="text-slate-600 mb-6 font-medium">
+            We couldn't find the documentation for: <code>{slug || 'root'}</code>.
+        </p>
+        <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+            <h2 class="text-sm font-semibold text-slate-900 mb-2 uppercase tracking-wider">Debugging Info</h2>
+            <div class="grid grid-cols-2 gap-4 text-sm font-mono text-slate-600">
+              <div>
+                <span class="text-slate-400">docId:</span> {docId}
+              </div>
+              <div>
+                <span class="text-slate-400">Available docs:</span> {allDocs.length}
+              </div>
+            </div>
+        </div>
+    </div>
+  )}
+</DocsLayout>
+
+<style>
+  .copy-link-button {
+    color: #94a3b8; /* grey/slate-400 */
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .copy-link-button:hover {
+    color: #6720ff; /* purple/primary color */
+  }
+
+  .copy-link-button.copied {
+    color: #10b981; /* green for success */
+  }
+
+  /* Dark mode support */
+  :root.dark .copy-link-button,
+  html.dark .copy-link-button,
+  .dark .copy-link-button {
+    color: #64748b;
+  }
+
+  :root.dark .copy-link-button:hover,
+  html.dark .copy-link-button:hover,
+  .dark .copy-link-button:hover {
+    color: #a78bfa;
+  }
+
+  :root.dark .copy-link-button.copied,
+  html.dark .copy-link-button.copied,
+  .dark .copy-link-button.copied {
+    color: #10b981;
+  }
+</style>
+
+<script>
+  function initCopyLinkButton() {
+    const copyLinkBtn = document.getElementById('copy-link-btn');
+    
+    if (!copyLinkBtn) return;
+
+    copyLinkBtn.addEventListener('click', async () => {
+      const currentUrl = window.location.href;
+      
+      try {
+        // Use clipboard API - works in both Safari and Chrome
+        await navigator.clipboard.writeText(currentUrl);
+        
+        // Visual feedback
+        copyLinkBtn.classList.add('copied');
+        const originalTitle = copyLinkBtn.getAttribute('title');
+        copyLinkBtn.setAttribute('title', 'Copied!');
+        
+        setTimeout(() => {
+          copyLinkBtn.classList.remove('copied');
+          copyLinkBtn.setAttribute('title', originalTitle || 'Copy link');
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy link:', err);
+        // Fallback for older browsers
+        try {
+          const textArea = document.createElement('textarea');
+          textArea.value = currentUrl;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-999999px';
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          
+          // Still show visual feedback
+          copyLinkBtn.classList.add('copied');
+          setTimeout(() => {
+            copyLinkBtn.classList.remove('copied');
+          }, 2000);
+        } catch (fallbackErr) {
+          console.error('Fallback copy also failed:', fallbackErr);
+        }
+      }
+    });
+  }
+
+  // Run on load and astro navigation
+  initCopyLinkButton();
+  document.addEventListener('astro:page-load', initCopyLinkButton);
+</script>

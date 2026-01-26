@@ -1,4 +1,4 @@
-<!--- RenewStatusChangedDate --->
+
 
 Renewal is a prolongation of a subscription. The user can cancel the subscription prolongation and then again prolong it. The time of both these actions is stored in the `renew_status_changed_at` parameter. And it can never happen earlier than the transaction itself.
 

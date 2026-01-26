@@ -1,4 +1,4 @@
-<!--- ExpiresDate --->
+
 
 A user can’t buy a subscription that has already expired. So, the `expires_at` date (when the subscription expires) should always be later than the `purchased_at` date (when the transaction occurred).
 

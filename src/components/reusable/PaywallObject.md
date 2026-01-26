@@ -2,7 +2,7 @@
 
 
 
-<!-- PaywallObject -->
+
 
 The object that contains information on a paywall.
 

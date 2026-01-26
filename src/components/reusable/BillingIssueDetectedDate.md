@@ -1,4 +1,4 @@
-<!--- BillingIssueDetectedDate ---> 
+ 
 
 A billing issue happens when there’s a problem during a subscription renewal attempt, so it always occurs after the transaction date (`purchased_at`).
 

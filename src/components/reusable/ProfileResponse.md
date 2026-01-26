@@ -1,6 +1,3 @@
-import ProfileObject from '@site/src/components/reusable/ProfileObject.md';  
-
-<!--- ProfileResponse.md --->
 
 <p> </p>
 
@@ -13,5 +10,3 @@ The request is successful. The response body contains the `data` field, which en
 ### data object structure
 
 The `data` field is the primary container for the user profile. It includes several fields:
-
-<ProfileObject />

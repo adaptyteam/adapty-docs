@@ -1,0 +1,243 @@
+---
+import { getCollection } from 'astro:content';
+import SidebarItem from './SidebarItem.astro';
+import PlatformSwitcher from './PlatformSwitcher.astro';
+import platformsData from '../data/platforms.json';
+
+interface Props {
+  sidebarData: any[];
+  currentPlatformId: string;
+  currentSlug: string;
+}
+
+const { sidebarData, currentPlatformId, currentSlug } = Astro.props;
+
+// Logic to determine active ID from slug (simplified: last part of slug matches id)
+const activeId = currentSlug.split('/').pop() || ''; 
+
+// Load all docs to fetch frontmatter titles and slugs
+const allDocs = await getCollection('docs');
+const docTitles = new Map();
+const docSlugs = new Map(); // Map to store custom slugs
+
+allDocs.forEach(doc => {
+    const idWithoutExt = doc.id.replace(/\.(md|mdx)$/, '');
+    const basename = idWithoutExt.split('/').pop();
+    
+    // Store titles
+    docTitles.set(idWithoutExt, doc.data.title);
+    if (basename) {
+        docTitles.set(basename, doc.data.title);
+    }
+    
+    // Store custom slugs if they exist
+    if (doc.data.customSlug) {
+        docSlugs.set(idWithoutExt, doc.data.customSlug);
+        if (basename) {
+            docSlugs.set(basename, doc.data.customSlug);
+        }
+    }
+});
+
+function transformItems(items: any[]): any[] {
+    return items.map(item => {
+        const newItem = { ...item };
+        
+        // If label is missing or empty, fetch from frontmatter
+        if (item.type === 'doc' && item.id && (!item.label || item.label.trim() === '')) {
+            const title = docTitles.get(item.id);
+            if (title) {
+                newItem.label = title;
+            }
+        }
+        
+        // Handle category with link but no label (either link.id or direct id)
+        if (item.type === 'category' && (!item.label || item.label.trim() === '')) {
+            const linkId = item.link?.id || item.id;
+            if (linkId) {
+                const title = docTitles.get(linkId);
+                if (title) {
+                    newItem.label = title;
+                }
+            }
+        }
+        
+        // Generate href, using custom slug if available
+        if (item.type === 'doc' && item.id) {
+             if (!item.href) {
+                 // Check if there's a custom slug for this document
+                 const customSlug = docSlugs.get(item.id);
+                 newItem.href = `${import.meta.env.BASE_URL}${customSlug || `/${item.id}`}`.replace(/\/+/g, '/'); 
+             }
+        }
+        
+        // Handle explicit links: /api-adapty -> /docs/api-adapty
+        if (item.type === 'link' && item.href && item.href.startsWith('/')) {
+            const baseUrl = import.meta.env.BASE_URL; // e.g. "/docs/"
+            const normalizedBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+            
+            if (!item.href.startsWith(normalizedBase) && item.href !== baseUrl && item.href !== normalizedBase.slice(0, -1)) {
+                newItem.href = `${normalizedBase}${item.href.startsWith('/') ? item.href.slice(1) : item.href}`;
+            }
+            newItem.href = newItem.href.replace(/\/+/g, '/');
+        }
+        
+        // Handle category with link (either link.id or direct id)
+        if (item.type === 'category' && !item.href) {
+            const linkId = item.link?.id || item.id;
+            if (linkId) {
+                const customSlug = docSlugs.get(linkId);
+                newItem.href = `${import.meta.env.BASE_URL}${customSlug || `/${linkId}`}`.replace(/\/+/g, '/');
+            }
+        }
+        if (item.items) {
+            newItem.items = transformItems(item.items);
+        }
+        return newItem;
+    });
+}
+
+const processedSidebar = transformItems(sidebarData);
+
+// Helper to find the label of the current active item
+function findActiveLabel(items: any[], activeId: string): string | undefined {
+    for (const item of items) {
+        if (item.id === activeId) {
+            return item.label || docTitles.get(activeId);
+        }
+        if (item.link?.id === activeId) {
+            return item.label || docTitles.get(activeId);
+        }
+        if (item.items) {
+            const found = findActiveLabel(item.items, activeId);
+            if (found) return found;
+        }
+    }
+    return undefined;
+}
+
+const currentLabel = findActiveLabel(processedSidebar, activeId);
+---
+
+<aside 
+    id="main-sidebar"
+    class="sidebar-main"
+    data-platform-id={currentPlatformId}
+    transition:persist={`sidebar-${currentPlatformId}`}
+>
+    <!-- Mobile Close Button -->
+    <button id="sidebar-close-btn" class="lg:hidden absolute top-4 right-4 p-2 transition-colors sidebar-close">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+    </button>
+
+    <div class="px-6 pb-3 mb-2 lg:mt-0 mt-8">
+        {platformsData.sdkPlatforms.some(p => p.id === currentPlatformId) && (
+            <div class="mb-1.5">
+                <PlatformSwitcher 
+                    currentPlatformId={currentPlatformId} 
+                    currentLabel={currentLabel}
+                    currentActiveId={activeId}
+                />
+            </div>
+        )}
+    </div>
+
+    <nav class="px-3" aria-label="Sidebar"> 
+        <ul class="space-y-1">
+          {processedSidebar.map((item) => (
+            <SidebarItem item={item} activeId={activeId} />
+          ))}
+        </ul>
+    </nav>
+    
+    <script>
+      let hasScrolledToActive = false;
+
+      function updateActiveState() {
+        const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+        const links = document.querySelectorAll('[data-sidebar-link]');
+        
+        links.forEach(link => {
+          const href = link.getAttribute('data-href')?.replace(/\/$/, '') || '/';
+          const isActive = href === currentPath;
+          
+          const container = link.closest('[data-sidebar-container]');
+          if (container) {
+            if (isActive) {
+              container.classList.add('sidebar-item-bg-active', 'sidebar-item-active');
+              container.classList.remove('sidebar-item-hover', 'sidebar-item-primary', 'sidebar-item-secondary');
+              container.id = 'active-sidebar-item';
+            } else {
+              container.classList.remove('sidebar-item-bg-active', 'sidebar-item-active');
+              container.classList.add('sidebar-item-hover');
+              if (container.id === 'active-sidebar-item') container.id = '';
+            }
+          }
+        });
+      }
+
+      function scrollToActiveOnce() {
+        if (!hasScrolledToActive) {
+          const activeItem = document.getElementById('active-sidebar-item');
+          if (activeItem) {
+            setTimeout(() => {
+              activeItem.scrollIntoView({ block: 'center', behavior: 'auto' });
+            }, 250);
+            hasScrolledToActive = true;
+          }
+        }
+      }
+
+      // On navigation, just update which item is active
+      // Sidebar persists, so scroll position is maintained automatically
+      document.addEventListener('astro:page-load', () => {
+        updateActiveState();
+        scrollToActiveOnce();
+      });
+
+      // Initial execution
+      updateActiveState();
+      scrollToActiveOnce();
+    </script>
+</aside>
+
+<style>
+  .sidebar-main {
+    position: fixed;
+    inset: 0;
+    left: 0;
+    right: auto;
+    z-index: 60;
+    width: 18rem;
+    background: var(--bg-primary);
+    overflow-y: auto;
+    padding-bottom: 2.5rem;
+    padding-top: 1rem;
+    transition: transform 0.3s, background-color 0.3s ease;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-lg);
+    border-right: none;
+  }
+  
+  @media (min-width: 1024px) {
+    .sidebar-main {
+      z-index: 10;
+      transform: translateX(0);
+      /* Position sidebar below the 64px header */
+      top: 64px;
+      /* Reset padding since the container is now moved down */
+      padding-top: 1.5rem;
+      box-shadow: none;
+    }
+  }
+  
+  .sidebar-close {
+    color: var(--text-tertiary);
+  }
+  
+  .sidebar-close:hover {
+    color: var(--text-secondary);
+  }
+</style>

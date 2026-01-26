@@ -1,0 +1,132 @@
+---
+import Zoom from './Zoom.astro';
+
+interface Props {
+  id: string;
+  width?: string;
+  alt?: string;
+  className?: string;
+}
+
+const { id, width = '700px', alt, className } = Astro.props;
+
+// 1. Load all images in assets and content/docs (including legacy locations)
+const allImages = import.meta.glob<{ default: ImageMetadata }>([
+  '/src/assets/**/*.{png,jpg,jpeg,webp,gif}',
+  '/src/content/docs/**/*.{png,jpg,jpeg,webp,gif}'
+], { eager: true });
+
+// 2. Determine article name from URL
+const currentPath = Astro.url.pathname;
+const pathSegments = currentPath.split('/').filter(Boolean);
+const articleName = pathSegments[pathSegments.length - 1] || 'index';
+
+// Normalize ID: ALWAYS extract just the filename, disregarding any path prefix
+const normalizedId = id.split('/').pop() || id;
+
+// 3. Find matching image with priority system
+let imageSrc: ImageMetadata | undefined;
+let resolvedPath: string | undefined;
+
+/**
+ * Image Resolution Priority:
+ * 1. Article-specific: src/assets/{articleName}/{id}
+ * 2. Shared: src/assets/shared/{id}
+ * 3. Legacy fallback: src/content/docs/version-3.0/{img,FF_img,img_webhook_flows}/{id}
+ * 4. Best match: Any file with matching name, prioritizing closest path to current article
+ */
+
+// Priority 1: Article-specific images
+const articleSpecificPart = `/assets/${articleName}/`;
+for (const [path, module] of Object.entries(allImages)) {
+    if (path.includes(articleSpecificPart) && path.split('/').pop() === normalizedId) {
+        imageSrc = module.default;
+        resolvedPath = path;
+        break;
+    }
+}
+
+// Priority 2: Shared images
+if (!imageSrc) {
+    const sharedPart = `/assets/shared/`;
+    for (const [path, module] of Object.entries(allImages)) {
+        if (path.includes(sharedPart) && path.split('/').pop() === normalizedId) {
+            imageSrc = module.default;
+            resolvedPath = path;
+            break;
+        }
+    }
+}
+
+// Priority 3: Legacy fallback - check old image folders
+if (!imageSrc) {
+    const legacyFolders = ['img', 'FF_img', 'img_webhook_flows'];
+    
+    for (const folder of legacyFolders) {
+        const legacyPart = `/version-3.0/${folder}/`;
+        for (const [path, module] of Object.entries(allImages)) {
+            if (path.includes(legacyPart) && path.split('/').pop() === normalizedId) {
+                imageSrc = module.default;
+                resolvedPath = path;
+                break;
+            }
+        }
+        if (imageSrc) break;
+    }
+}
+
+// Priority 4: Best match fallback - find any file with matching name
+if (!imageSrc) {
+    let bestMatchScore = -1;
+    
+    for (const [path, module] of Object.entries(allImages)) {
+        const filename = path.split('/').pop();
+        
+        if (filename === normalizedId) {
+            // Calculate how many path segments match between image path and current URL
+            const imgParts = path.split('/').filter(Boolean);
+            const urlParts = currentPath.split('/').filter(Boolean);
+            let commonPathLength = 0;
+            
+            const minLength = Math.min(imgParts.length, urlParts.length);
+            for (let i = 0; i < minLength; i++) {
+                if (imgParts[i] === urlParts[i]) {
+                    commonPathLength++;
+                } else {
+                    break;
+                }
+            }
+
+            if (commonPathLength > bestMatchScore) {
+                bestMatchScore = commonPathLength;
+                imageSrc = module.default;
+                resolvedPath = path;
+            }
+        }
+    }
+}
+---
+
+{imageSrc ? (
+  <Zoom>
+    <img 
+      src={imageSrc.src} 
+      alt={alt || id} 
+      width={parseInt(width.replace('px', '')) || 700}
+      class:list={[
+        "zoom-image", 
+        "rounded-lg shadow-sm block mx-auto", // Modern styling classes
+        className
+      ]}
+      style={{
+          width: width,
+          maxWidth: '100%',
+          height: 'auto'
+      }}
+    />
+  </Zoom>
+) : (
+  <div class="p-4 border border-red-200 bg-red-50 text-red-600 rounded-md text-sm">
+    Image not found: <code>{id}</code>
+  </div>
+)}

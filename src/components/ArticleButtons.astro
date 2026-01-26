@@ -1,0 +1,110 @@
+---
+---
+
+<div id="article-buttons" class="flex gap-3 mb-6 hidden">
+  <button id="copy-md-btn" class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-[#6720ff] transition-all">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+    </svg>
+    <span>Copy for LLM</span>
+  </button>
+  
+  <button id="view-md-btn" class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-[#6720ff] transition-all">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+      <polyline points="14 2 14 8 20 8"></polyline>
+      <line x1="16" y1="13" x2="8" y2="13"></line>
+      <line x1="16" y1="17" x2="8" y2="17"></line>
+      <polyline points="10 9 9 9 8 9"></polyline>
+    </svg>
+    <span>View as Markdown</span>
+  </button>
+</div>
+
+<script>
+  function initArticleButtons() {
+    const container = document.getElementById('article-buttons');
+    if (!container) return;
+
+    // Show the buttons (they are hidden by default to avoid flash)
+    container.classList.remove('hidden');
+
+    const copyBtn = document.getElementById('copy-md-btn');
+    const viewBtn = document.getElementById('view-md-btn');
+    
+    // Calculate MD URL
+    let path = window.location.pathname.replace(/\/$/, '');
+    // Special case for root: handle both empty string and base URL
+    if (path === '' || path === '/docs') {
+      path = '/docs/what-is-adapty';
+    }
+    
+    const mdUrl = `${path}.md`;
+
+    // Pre-fetch State
+    let mdContent = '';
+    let isFetching = false;
+
+    // Pre-fetch content immediately for Safari compatibility (sync clipboard write)
+    async function prefetch() {
+        if (isFetching || mdContent) return;
+        isFetching = true;
+        try {
+            const res = await fetch(mdUrl);
+            if (res.ok) {
+                mdContent = await res.text();
+            } else {
+                console.warn('Failed to fetch MD content:', res.status);
+            }
+        } catch (e) {
+            console.error('Error pre-fetching MD:', e);
+        } finally {
+            isFetching = false;
+        }
+    }
+    
+    // Trigger prefetch on load
+    prefetch();
+
+    // Copy Handler
+    copyBtn?.addEventListener('click', async () => {
+        // Fallback: if not pre-fetched yet, try to fetch now (might fail in Safari if async)
+        if (!mdContent) {
+           const btnText = copyBtn.querySelector('span');
+           const originalText = btnText.innerText;
+           btnText.innerText = 'Loading...';
+           await prefetch();
+           btnText.innerText = originalText;
+        }
+
+        if (mdContent) {
+            try {
+                await navigator.clipboard.writeText(mdContent);
+                
+                // Visual Feedback
+                const span = copyBtn.querySelector('span');
+                const originalText = span.innerText;
+                span.innerText = 'Copied!';
+                copyBtn.classList.add('text-green-600', 'border-green-200', 'bg-green-50');
+                
+                setTimeout(() => {
+                    span.innerText = originalText;
+                    copyBtn.classList.remove('text-green-600', 'border-green-200', 'bg-green-50');
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy class', err);
+            }
+        }
+    });
+
+    // View Handler
+    viewBtn?.addEventListener('click', () => {
+        window.open(mdUrl, '_blank');
+    });
+  }
+
+  // Run on load and astro navigation
+  initArticleButtons();
+  document.addEventListener('astro:page-load', initArticleButtons);
+</script>

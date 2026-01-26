@@ -1,4 +1,4 @@
-<!--- RevocationDateIsMoreThanExpirationDate.md --->
+
 
 The request failed because the `revoke_at` you defined in the request is later than the current access level `expires_at` parameter. If you want to prolong the access level, use the [Grant access level](ss-grant-access-level) request.
 

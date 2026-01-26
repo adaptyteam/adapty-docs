@@ -1,0 +1,926 @@
+---
+import DocsLayout from '../layouts/DocsLayout.astro';
+import apiConfig from '../api-reference/config.json';
+
+export async function getStaticPaths() {
+  return apiConfig.map((api) => ({
+    params: { slug: api.slug },
+    props: { api },
+  }));
+}
+
+const { api } = Astro.props;
+const { slug } = Astro.params;
+
+const specUrl = api.specUrl || `${import.meta.env.BASE_URL}/api-specs/${api.specFile}`.replace(/\/+/g, '/');
+
+// Breadcrumbs for API Reference
+const breadcrumbs = [
+  { label: 'Home', href: `${import.meta.env.BASE_URL}/`.replace(/\/+/g, '/') },
+  { label: api.name }
+];
+
+const defaultAuth = api.defaultAuth || {};
+---
+
+<DocsLayout 
+  title={api.name}
+  sidebarData={null} 
+  currentPlatformId="api"
+  currentSlug={slug}
+  breadcrumbs={breadcrumbs}
+  isFullWidth={true}
+>
+    <!-- Shims for Stoplight Elements -->
+    <script is:inline>
+        window.global = window;
+        window.process = { env: {} };
+    </script>
+
+    <!-- Stoplight Elements Scripts -->
+    <script is:inline src="https://unpkg.com/@stoplight/elements@7.7.11/web-components.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@stoplight/elements@7.7.11/styles.min.css" />
+    
+    <script is:inline define:vars={{ defaultAuth, pageSlug: slug }}>
+        // Set default API key in localStorage for Stoplight Elements
+        if (typeof window !== 'undefined') {
+            const storageKey = 'TryIt_securitySchemeValues';
+            const pageKey = 'TryIt_lastPage';
+            const lastPage = localStorage.getItem(pageKey);
+            
+            // Reset auth if we're on a different page or if no auth is stored
+            if (lastPage !== pageSlug || !localStorage.getItem(storageKey)) {
+                localStorage.setItem(storageKey, JSON.stringify(defaultAuth));
+                localStorage.setItem(pageKey, pageSlug);
+            }
+        }
+    </script>
+    
+    <!-- Reinitialize Stoplight Elements -->
+    <script is:inline define:vars={{ specUrl }}>
+        (function() {
+            window.__isApiReferencePage = true;
+            
+            function reinitializeStoplight() {
+                const container = document.querySelector('.api-container');
+                if (!container) return;
+                
+                // Use a more robust check to see if we actually need to re-initialize
+                if (window.__currentStoplightSpec === specUrl && document.getElementById('stoplight-api')) {
+                    console.log('ℹ️ Stoplight already active for', specUrl);
+                    return;
+                }
+
+                console.log('🔄 Initializing Stoplight for', specUrl);
+                window.__currentStoplightSpec = specUrl;
+                
+                // Nuke only if truly necessary (e.g., first load or spec change)
+                container.innerHTML = '';
+                const newElement = document.createElement('elements-api');
+                newElement.id = 'stoplight-api';
+                newElement.setAttribute('apiDescriptionUrl', specUrl);
+                newElement.setAttribute('router', 'hash');
+                newElement.setAttribute('layout', 'sidebar');
+                newElement.setAttribute('hideSchemas', 'true');
+                newElement.setAttribute('hideInternal', 'true');
+                // Ensure Astro doesn't try to be smart with this element
+                newElement.setAttribute('data-astro-reload', '');
+                
+                container.appendChild(newElement);
+            }
+            
+            // Initialization flow
+            reinitializeStoplight();
+            document.addEventListener('astro:page-load', reinitializeStoplight);
+            
+            // Safety: if after page load it's still not there, try once more
+            setTimeout(() => {
+                if (!document.getElementById('stoplight-api')) reinitializeStoplight();
+            }, 300);
+        })();
+    </script>
+
+    <div class="api-container">
+          <elements-api 
+            id="stoplight-api"
+            apiDescriptionUrl={specUrl} 
+            router="hash" 
+            layout="sidebar"
+            hideSchemas="true"
+            hideInternal="true"
+          />
+    </div>
+    
+    <script is:inline>
+        // Set a flag to identify API reference pages
+        (function() {
+            window.__isApiReferencePage = true;
+        })();
+    
+        // Sync Stoplight theme with site theme
+        function updateStoplightTheme() {
+            const isDark = document.documentElement.classList.contains('dark');
+            
+            // Set theme attribute for CSS
+            if (isDark) {
+                document.documentElement.setAttribute('data-stoplight-theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-stoplight-theme', 'light');
+            }
+        }
+        
+        // Fix oversized Stoplight logos
+        function fixStoplightLogos() {
+            // Target all large SVGs in the API container
+            const svgs = document.querySelectorAll('.api-container svg, elements-api svg, .sl-elements-api svg');
+            svgs.forEach(svg => {
+                const bbox = svg.getBoundingClientRect();
+                // If SVG is larger than 50px in height, shrink it
+                if (bbox.height > 50 || bbox.width > 200) {
+                    svg.style.maxHeight = '20px';
+                    svg.style.maxWidth = '80px';
+                    svg.style.height = '20px';
+                    svg.style.width = 'auto';
+                }
+            });
+            
+            // Also shrink any large images
+            const imgs = document.querySelectorAll('.api-container img, elements-api img, .sl-elements-api img');
+            imgs.forEach(img => {
+                const bbox = img.getBoundingClientRect();
+                if (bbox.height > 40) {
+                    img.style.maxHeight = '20px';
+                    img.style.height = 'auto';
+                    img.style.width = 'auto';
+                }
+            });
+        }
+        
+        // Initialize everything after Stoplight Elements are loaded
+        function initializeStoplightFeatures() {
+            // Apply theme
+            updateStoplightTheme();
+            
+            // Fix logos after delays to ensure DOM is ready
+            setTimeout(fixStoplightLogos, 1500);
+            setTimeout(fixStoplightLogos, 4000);
+        }
+        
+        // Run on initial load and after Astro page transitions
+        initializeStoplightFeatures();
+        document.addEventListener('astro:page-load', initializeStoplightFeatures);
+        
+        // Initial run
+        updateStoplightTheme();
+        
+        // Listen for theme changes via custom event
+        window.addEventListener('themechange', updateStoplightTheme);
+    </script>
+</DocsLayout>
+
+<script is:inline>
+    // Ensure body takes full height for fixed layout
+    document.documentElement.style.height = '100%';
+    document.body.style.height = '100%';
+</script>
+
+<style is:global>
+    /* Stoplight Elements customization */
+    .api-container {
+        width: 100%;
+        height: 100%;
+        background-color: var(--bg-primary, white);
+        padding-top: 12px;
+        position: relative;
+        transition: background-color 0.3s;
+    }
+
+    elements-api {
+        display: block;
+        width: 100%;
+        height: 100%;
+        overflow: hidden; /* Let Stoplight handle its own scrolling */
+    }
+    
+    /* Ensure the custom element is visible */
+    elements-api:not(:defined) {
+        display: none;
+    }
+
+    /* PREVENT COLLAPSE: Reset global summary/details styles inside Stoplight */
+    .api-container summary,
+    .api-container details {
+        all: revert !important;
+        box-sizing: border-box !important;
+    }
+    
+    .api-container summary::after {
+        display: none !important;
+        content: none !important;
+    }
+
+    /* Customize Stoplight to match Cassiopeia - Light Mode */
+    .sl-elements-api,
+    elements-api {
+        --color-primary: #6720ff !important;
+        --color-primary-light: rgba(103, 32, 255, 0.1) !important;
+        height: 100% !important;
+        max-width: 100vw !important;
+    }
+    
+    /* Dark Mode for Stoplight Elements */
+    :root.dark .sl-elements-api,
+    html.dark .sl-elements-api,
+    :root.dark elements-api,
+    html.dark elements-api,
+    :root[data-stoplight-theme="dark"] .sl-elements-api,
+    :root[data-stoplight-theme="dark"] elements-api {
+        /* Primary colors */
+        --color-primary: #a78bfa !important;
+        --color-primary-light: rgba(167, 139, 250, 0.15) !important;
+        
+        /* Background colors - comprehensive */
+        --color-canvas-100: #0f172a !important;
+        --color-canvas-200: #1e293b !important;
+        --color-canvas-300: #334155 !important;
+        --color-canvas-dialog: #1e293b !important;
+        --color-canvas-pure: #0f172a !important;
+        
+        /* Text colors - high contrast */
+        --color-text: #f1f5f9 !important;
+        --color-text-light: #cbd5e1 !important;
+        --color-text-lighter: #94a3b8 !important;
+        --color-text-muted: #64748b !important;
+        
+        /* Border colors */
+        --color-border: #334155 !important;
+        --color-border-light: #475569 !important;
+        
+        /* Success/Error colors for dark mode */
+        --color-success: #10b981 !important;
+        --color-error: #ef4444 !important;
+        --color-warning: #f59e0b !important;
+        
+        /* Code blocks and syntax highlighting */
+        --color-code-background: #1e293b !important;
+        --color-code-border: #334155 !important;
+        --color-code: #e2e8f0 !important;
+        
+        /* Input/Textarea backgrounds */
+        --color-input-background: #1e293b !important;
+        --color-input-border: #475569 !important;
+    }
+    
+    /* Dark mode for all Stoplight content areas */
+    :root.dark .sl-elements-api *,
+    html.dark .sl-elements-api *,
+    :root.dark elements-api *,
+    html.dark elements-api * {
+        border-color: #334155 !important;
+    }
+    
+    /* Dark mode for specific Stoplight components */
+    :root.dark .sl-elements-api pre,
+    html.dark .sl-elements-api pre,
+    :root.dark .sl-elements-api code,
+    html.dark .sl-elements-api code {
+        background-color: #1e293b !important;
+        color: #e2e8f0 !important;
+        border-color: #334155 !important;
+    }
+    
+    /* Request/Response panels */
+    :root.dark .sl-elements-api .sl-panel,
+    html.dark .sl-elements-api .sl-panel,
+    :root.dark .sl-elements-api [class*="Panel"],
+    html.dark .sl-elements-api [class*="Panel"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+    }
+    
+    /* Text inputs and textareas in Try It section */
+    :root.dark .sl-elements-api input,
+    html.dark .sl-elements-api input,
+    :root.dark .sl-elements-api textarea,
+    html.dark .sl-elements-api textarea,
+    :root.dark .sl-elements-api select,
+    html.dark .sl-elements-api select {
+        background-color: #1e293b !important;
+        color: #f1f5f9 !important;
+        border-color: #475569 !important;
+    }
+    
+    /* Tables */
+    :root.dark .sl-elements-api table,
+    html.dark .sl-elements-api table,
+    :root.dark .sl-elements-api th,
+    html.dark .sl-elements-api th,
+    :root.dark .sl-elements-api td,
+    html.dark .sl-elements-api td {
+        background-color: #1e293b !important;
+        color: #e2e8f0 !important;
+        border-color: #334155 !important;
+    }
+    
+    /* Cards and containers */
+    :root.dark .sl-elements-api [class*="Card"],
+    html.dark .sl-elements-api [class*="Card"],
+    :root.dark .sl-elements-api [class*="Container"],
+    html.dark .sl-elements-api [class*="Container"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+    }
+    
+    /* All text elements */
+    :root.dark .sl-elements-api p,
+    html.dark .sl-elements-api p,
+    :root.dark .sl-elements-api span,
+    html.dark .sl-elements-api span,
+    :root.dark .sl-elements-api div,
+    html.dark .sl-elements-api div,
+    :root.dark .sl-elements-api label,
+    html.dark .sl-elements-api label {
+        color: inherit !important;
+    }
+    
+    /* Headings in dark mode */
+    :root.dark .sl-elements-api h1,
+    html.dark .sl-elements-api h1,
+    :root.dark .sl-elements-api h2,
+    html.dark .sl-elements-api h2,
+    :root.dark .sl-elements-api h3,
+    html.dark .sl-elements-api h3,
+    :root.dark .sl-elements-api h4,
+    html.dark .sl-elements-api h4 {
+        color: #f1f5f9 !important;
+    }
+    
+    /* Dark mode API container */
+    :root.dark .api-container,
+    html.dark .api-container {
+        background-color: #0f172a !important;
+    }
+    
+    /* NUCLEAR OPTION: Force all backgrounds to be dark */
+    :root.dark .sl-elements-api [class*="bg-"],
+    html.dark .sl-elements-api [class*="bg-"],
+    :root.dark elements-api [class*="bg-"],
+    html.dark elements-api [class*="bg-"] {
+        background-color: #1e293b !important;
+    }
+    
+    /* Force white backgrounds to dark */
+    :root.dark .sl-elements-api [style*="background-color: white"],
+    html.dark .sl-elements-api [style*="background-color: white"],
+    :root.dark .sl-elements-api [style*="background-color: #fff"],
+    html.dark .sl-elements-api [style*="background-color: #fff"],
+    :root.dark .sl-elements-api [style*="background: white"],
+    html.dark .sl-elements-api [style*="background: #fff"] {
+        background-color: #1e293b !important;
+        background: #1e293b !important;
+    }
+    
+    /* All divs, sections, and main content areas */
+    :root.dark .sl-elements-api div,
+    html.dark .sl-elements-api div,
+    :root.dark .sl-elements-api section,
+    html.dark .sl-elements-api section,
+    :root.dark .sl-elements-api main,
+    html.dark .sl-elements-api main,
+    :root.dark .sl-elements-api article,
+    html.dark .sl-elements-api article {
+        background-color: transparent !important;
+    }
+    
+    /* Specific elements that might have white backgrounds */
+    :root.dark .sl-elements-api [role="tabpanel"],
+    html.dark .sl-elements-api [role="tabpanel"],
+    :root.dark .sl-elements-api [role="dialog"],
+    html.dark .sl-elements-api [role="dialog"],
+    :root.dark .sl-elements-api [class*="Content"],
+    html.dark .sl-elements-api [class*="Content"],
+    :root.dark .sl-elements-api [class*="Body"],
+    html.dark .sl-elements-api [class*="Body"] {
+        background-color: #1e293b !important;
+        color: #e2e8f0 !important;
+    }
+    
+    /* Buttons in dark mode */
+    :root.dark .sl-elements-api button,
+    html.dark .sl-elements-api button {
+        background-color: #334155 !important;
+        color: #f1f5f9 !important;
+        border-color: #475569 !important;
+    }
+    
+    :root.dark .sl-elements-api button:hover,
+    html.dark .sl-elements-api button:hover {
+        background-color: #475569 !important;
+    }
+    
+    /* All shadows should be dark */
+    :root.dark .sl-elements-api *,
+    html.dark .sl-elements-api * {
+        box-shadow: none !important;
+    }
+    
+    /* Sidebar/Navigation in dark mode */
+    :root.dark .sl-elements-api nav,
+    html.dark .sl-elements-api nav,
+    :root.dark .sl-elements-api aside,
+    html.dark .sl-elements-api aside {
+        background-color: #0f172a !important;
+        color: #e2e8f0 !important;
+    }
+    
+    /* Links in dark mode */
+    :root.dark .sl-elements-api a,
+    html.dark .sl-elements-api a {
+        color: #a78bfa !important;
+    }
+    
+    :root.dark .sl-elements-api a:hover,
+    html.dark .sl-elements-api a:hover {
+        color: #c4b5fd !important;
+    }
+
+    /* Protect the site header from Stoplight's global style leakage */
+    header.header-main {
+        z-index: 1000 !important;
+        position: sticky !important;
+        top: 0 !important;
+        height: 64px !important;
+    }
+    
+    /* Dark mode header */
+    :root.dark header.header-main,
+    html.dark header.header-main,
+    :root[data-stoplight-theme="dark"] header.header-main {
+        background-color: var(--bg-primary) !important;
+    }
+
+    /* Fix Logo container and image - HEADER */
+    header a[href="/"] {
+        display: flex !important;
+        align-items: center !important;
+        width: auto !important;
+        height: 100% !important;
+    }
+    header img {
+        height: 24px !important;
+        width: auto !important;
+        max-width: none !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+    }
+    
+    /* Fix Stoplight logo - NUCLEAR OPTION for SVG logos */
+    /* Exclude interactive UI elements (buttons, chevrons) from size constraints */
+    .sl-elements-api svg:not(button svg):not([role="button"] svg):not(.sl-icon):not([class*="chevron"]):not([class*="arrow"]):not([class*="icon"]),
+    elements-api svg:not(button svg):not([role="button"] svg):not(.sl-icon):not([class*="chevron"]):not([class*="arrow"]):not([class*="icon"]),
+    .api-container svg:not(button svg):not([role="button"] svg):not(.sl-icon):not([class*="chevron"]):not([class*="arrow"]):not([class*="icon"]) {
+        max-height: 32px !important;
+        max-width: 120px !important;
+        height: auto !important;
+        width: auto !important;
+    }
+    
+    /* Specifically constrain chevron/arrow icons in expandable sections */
+    .sl-elements-api button svg,
+    elements-api button svg,
+    .api-container button svg,
+    .sl-elements-api [role="button"] svg,
+    elements-api [role="button"] svg,
+    .api-container [role="button"] svg,
+    .sl-elements-api .sl-icon,
+    elements-api .sl-icon,
+    .api-container .sl-icon {
+        max-height: 16px !important;
+        max-width: 16px !important;
+        height: 16px !important;
+        width: 16px !important;
+    }
+    
+    /* Target the large arrow/lightning SVG at bottom */
+    .sl-elements-api footer svg,
+    elements-api footer svg,
+    .api-container footer svg,
+    .sl-elements-api aside svg,
+    elements-api aside svg,
+    .api-container aside svg {
+        max-height: 24px !important;
+        max-width: 100px !important;
+        height: 24px !important;
+        width: auto !important;
+    }
+    
+    /* Powered by container - hide or shrink */
+    .sl-elements-api footer,
+    elements-api footer,
+    .api-container footer,
+    .sl-elements-api [class*="PoweredBy"],
+    elements-api [class*="PoweredBy"],
+    .api-container [class*="PoweredBy"] {
+        max-height: 40px !important;
+        overflow: hidden !important;
+        padding: 8px !important;
+    }
+    
+    /* Alternative: just hide the Stoplight branding entirely */
+    .sl-elements-api a[href*="stoplight.io"],
+    elements-api a[href*="stoplight.io"],
+    .api-container a[href*="stoplight.io"] {
+        max-height: 32px !important;
+        overflow: hidden !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+    
+    .sl-elements-api a[href*="stoplight.io"] svg,
+    elements-api a[href*="stoplight.io"] svg,
+    .api-container a[href*="stoplight.io"] svg {
+        max-height: 20px !important;
+        max-width: 80px !important;
+        height: 20px !important;
+        width: auto !important;
+    }
+    
+    /* Fix images */
+    .sl-elements-api img[src*="stoplight"],
+    elements-api img[src*="stoplight"],
+    .sl-elements-api img[src*="logo"],
+    elements-api img[src*="logo"],
+    .api-container img[src*="stoplight"],
+    .api-container img[src*="logo"],
+    .sl-elements-api aside img,
+    elements-api aside img,
+    .sl-elements-api nav img,
+    elements-api nav img,
+    .api-container aside img,
+    .api-container nav img,
+    .sl-elements-api footer img,
+    elements-api footer img,
+    .api-container footer img {
+        max-height: 24px !important;
+        max-width: 100px !important;
+        height: auto !important;
+        width: auto !important;
+        object-fit: contain !important;
+    }
+
+    /* Force search bar visibility and reset basic layout */
+    header div.hidden.lg\:flex {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        flex: 1 !important;
+        max-width: 320px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        align-items: center !important;
+    }
+
+    header #search-container {
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        position: relative !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        z-index: 10000 !important;
+    }
+    
+    header #search-container .relative {
+        position: relative !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    header #search-container .group {
+        position: relative !important;
+        width: 100% !important;
+    }
+    
+    /* Remove any pseudo-elements that might create stripes */
+    header #search-container::before,
+    header #search-container::after,
+    header #search-container .relative::before,
+    header #search-container .relative::after,
+    header #search-container .group::before,
+    header #search-container .group::after,
+    header input#search-input::before,
+    header input#search-input::after {
+        display: none !important;
+        content: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+    }
+
+    /* Surgical Reset for the Search Input to fix "white salami" look */
+    header input#search-input {
+        /* Reset Stoplight defaults */
+        all: unset !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        width: 100% !important;
+        
+        /* Restore site styles precisely */
+        height: 40px !important;
+        min-height: 40px !important;
+        max-height: 40px !important;
+        padding: 0 12px 0 40px !important;
+        margin: 0 !important;
+        background-color: var(--bg-secondary, #f8fafc) !important;
+        background-image: none !important;
+        border: 1px solid var(--border-primary, #e2e8f0) !important;
+        border-style: solid !important;
+        border-width: 1px !important;
+        border-radius: 12px !important;
+        outline: none !important;
+        outline-offset: 0 !important;
+        box-shadow: none !important;
+        
+        /* Font and text */
+        color: var(--text-primary, #0f172a) !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        line-height: 1.5 !important;
+        letter-spacing: normal !important;
+        text-transform: none !important;
+        text-decoration: none !important;
+        
+        /* UI state */
+        cursor: text !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transition: all 0.2s !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+    }
+
+    header input#search-input::placeholder {
+        color: var(--text-tertiary, #94a3b8) !important;
+        opacity: 1 !important;
+    }
+
+    header input#search-input:focus {
+        background-color: var(--bg-primary, white) !important;
+        border-color: var(--accent-primary, #6720ff) !important;
+        box-shadow: 0 0 0 4px rgba(103, 32, 255, 0.1) !important;
+        outline: none !important;
+    }
+    
+    /* Dark mode search input */
+    :root.dark header input#search-input,
+    html.dark header input#search-input {
+        background-color: var(--bg-secondary) !important;
+        border-color: var(--border-primary) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    :root.dark header input#search-input:focus,
+    html.dark header input#search-input:focus {
+        background-color: var(--bg-primary) !important;
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.15) !important;
+    }
+
+    /* Restore Search Icon */
+    header #search-container div.absolute {
+        position: absolute !important;
+        left: 0 !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding-left: 14px !important;
+        pointer-events: none !important;
+        z-index: 10 !important;
+        background: transparent !important;
+        border: none !important;
+        height: auto !important;
+        width: auto !important;
+    }
+
+    header #search-container svg {
+        width: 16px !important;
+        height: 16px !important;
+        min-width: 16px !important;
+        min-height: 16px !important;
+        color: var(--text-tertiary, #94a3b8) !important;
+        display: block !important;
+        stroke-width: 2.5 !important;
+        fill: none !important;
+        stroke: currentColor !important;
+    }
+    
+    /* Protect search results dropdown from Stoplight styles - NUCLEAR OPTION */
+    body header #search-container #search-results,
+    body #search-container #search-results,
+    header #search-results,
+    #search-results {
+        all: revert !important;
+        position: absolute !important;
+        top: calc(100% + 0.5rem) !important;
+        left: 0 !important;
+        right: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        background-color: #ffffff !important;
+        background-image: none !important;
+        background: #ffffff !important;
+        border-radius: 1rem !important;
+        box-shadow: 0 10px 40px -10px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05) !important;
+        border: 1px solid #f1f5f9 !important;
+        border-style: solid !important;
+        overflow: hidden !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        z-index: 99999 !important;
+        max-height: 480px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        box-sizing: border-box !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+    }
+    
+    /* Hidden state for search results */
+    body header #search-container #search-results.hidden,
+    body #search-container #search-results.hidden,
+    header #search-results.hidden,
+    #search-results.hidden {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+    
+    :root.dark #search-results,
+    html.dark #search-results {
+        background-color: #1e293b !important;
+        background: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 10px 40px -10px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.1) !important;
+    }
+    
+    /* Protect search result items structure */
+    #search-results * {
+        box-sizing: border-box !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        letter-spacing: normal !important;
+        text-transform: none !important;
+    }
+    
+    body #search-results .search-result-item,
+    #search-results .search-result-item {
+        display: block !important;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        padding: 0.875rem 1rem !important;
+        margin: 0 !important;
+        background-color: transparent !important;
+        background-image: none !important;
+        background: transparent !important;
+        border: none !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-top: none !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        border-bottom-style: solid !important;
+        color: #0f172a !important;
+        text-align: left !important;
+        cursor: pointer !important;
+        transition: background-color 0.15s !important;
+        text-decoration: none !important;
+        position: relative !important;
+        flex-shrink: 0 !important;
+    }
+    
+    :root.dark #search-results .search-result-item,
+    html.dark #search-results .search-result-item {
+        color: #e2e8f0 !important;
+        border-bottom-color: #334155 !important;
+    }
+    
+    #search-results .search-result-item:last-child {
+        border-bottom: none !important;
+    }
+    
+    #search-results .search-result-item:hover {
+        background-color: #f8fafc !important;
+        background: #f8fafc !important;
+    }
+    
+    :root.dark #search-results .search-result-item:hover,
+    html.dark #search-results .search-result-item:hover {
+        background-color: #334155 !important;
+        background: #334155 !important;
+    }
+    
+    #search-results .search-title {
+        display: block !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        color: #0f172a !important;
+        margin: 0 0 0.25rem 0 !important;
+        line-height: 1.4 !important;
+    }
+    
+    :root.dark #search-results .search-title,
+    html.dark #search-results .search-title {
+        color: #f1f5f9 !important;
+    }
+    
+    #search-results .search-result-item:hover .search-title {
+        color: #6720ff !important;
+    }
+    
+    :root.dark #search-results .search-result-item:hover .search-title,
+    html.dark #search-results .search-result-item:hover .search-title {
+        color: #a78bfa !important;
+    }
+    
+    #search-results .search-desc {
+        display: block !important;
+        font-size: 13px !important;
+        font-weight: 400 !important;
+        color: #64748b !important;
+        margin: 0 !important;
+        line-height: 1.5 !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2 !important;
+        -webkit-box-orient: vertical !important;
+    }
+    
+    :root.dark #search-results .search-desc,
+    html.dark #search-results .search-desc {
+        color: #94a3b8 !important;
+    }
+    
+    #search-results .search-breadcrumbs {
+        display: block !important;
+        font-size: 11px !important;
+        font-weight: 500 !important;
+        color: #94a3b8 !important;
+        margin: 0.25rem 0 0 0 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.025em !important;
+    }
+    
+    :root.dark #search-results .search-breadcrumbs,
+    html.dark #search-results .search-breadcrumbs {
+        color: #64748b !important;
+    }
+
+    /* Reset all other header elements to be alert-free */
+    header * {
+        letter-spacing: normal !important;
+        text-transform: none !important;
+    }
+
+    /* Sign Up button */
+    header a[href*="registration"] {
+        color: white !important;
+        background-color: #6720ff !important;
+        box-shadow: 0 4px 15px -2px rgba(103, 32, 255, 0.3) !important;
+        border-radius: 12px !important;
+    }
+    
+    /* Dark mode Sign Up button */
+    :root.dark header a[href*="registration"],
+    html.dark header a[href*="registration"] {
+        background-color: rgb(147 51 234) !important;
+    }
+    
+    /* Theme toggle protection */
+    header #theme-toggle,
+    header button[aria-label*="theme" i] {
+        all: revert !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0.5rem !important;
+        background: transparent !important;
+        border: none !important;
+        cursor: pointer !important;
+        color: var(--text-secondary) !important;
+    }
+</style>

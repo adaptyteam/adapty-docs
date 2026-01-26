@@ -1,4 +1,4 @@
-<!--- GracePeriodExpiresDate --->
+
 
 A grace period is extra time you can give customers to extend their subscription if they couldn’t renew it on time—for instance, if their credit card didn’t go through. This helps keep their settings intact while they resolve any issues. Offering a grace period is optional.
 

@@ -1,4 +1,4 @@
-<!--- ProfileResponseBadRequest.md --->
+
 
 The request failed due to some error in a field.
 

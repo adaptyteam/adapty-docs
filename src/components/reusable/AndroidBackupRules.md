@@ -1,4 +1,4 @@
-<!--- AndroidBackupRules.md --->
+
 
 Some SDKs (including Adapty) ship their own Android Auto Backup configuration. If you use multiple SDKs that define backup rules, the Android manifest merger can fail with an error mentioning `android:fullBackupContent`, `android:dataExtractionRules`, or `android:allowBackup`.
 
@@ -36,8 +36,8 @@ In the same `AndroidManifest.xml` file, update the `<application>` tag so that y
 <application
 android:name=".App"
 android:allowBackup="true"
-android:fullBackupContent="@xml/sample_backup_rules"           <!-- Android 11 and lower -->
-android:dataExtractionRules="@xml/sample_data_extraction_rules"<!-- Android 12+ -->
+android:fullBackupContent="@xml/sample_backup_rules"           
+android:dataExtractionRules="@xml/sample_data_extraction_rules"
 tools:replace="android:fullBackupContent,android:dataExtractionRules">
 
     ...
@@ -64,16 +64,16 @@ The examples below show AppsFlyer as a sample third-party SDK. Replace or add ru
 <?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
     <cloud-backup>
-        <!-- AppsFlyer backup rules -->
+        
         <exclude domain="sharedpref" path="appsflyer-data"/>
         <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
         <exclude domain="database" path="afpurchases.db"/>
-        <!-- Adapty backup rules -->
+        
         <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
     </cloud-backup>
 
     <device-transfer>
-        <!-- Usually the same rules as cloud-backup -->
+        
         <exclude domain="sharedpref" path="appsflyer-data"/>
         <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
         <exclude domain="database" path="afpurchases.db"/>
@@ -87,22 +87,10 @@ The examples below show AppsFlyer as a sample third-party SDK. Replace or add ru
 ```xml title="sample_backup_rules.xml"
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <!-- AppsFlyer backup rules -->
+    
     <exclude domain="sharedpref" path="appsflyer-data"/>
 
-    <!-- Adapty backup rules -->
+    
     <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
 
-    <!-- Your own app-specific rules (if any) -->
-    <!-- <exclude domain="database" path="your_database_name" /> -->
-</full-backup-content>
-```
-
-With this setup:
-
-- Adapty's backup exclusions (`AdaptySDKPrefs.xml`) are preserved.
-
-- Other SDKs' exclusions (for example, `appsflyer-data`) are also applied.
-
-- The manifest merger uses your app's configuration and no longer fails on conflicting backup attributes.
-
+    

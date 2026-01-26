@@ -1,4 +1,4 @@
-<!--- PaddleApiKeyNotFound.md --->
+
 
 The request failed because the **Paddle API Key** in [App Settings](https://app.adapty.io/settings/paddle) is incorrect. Please verify that it is accurate and associated with the correct app.
 

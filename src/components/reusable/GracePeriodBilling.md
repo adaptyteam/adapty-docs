@@ -1,4 +1,4 @@
-<!--- GracePeriodBilling --->
+
 
 The start of a grace period counts as a billing issue. So, if the grace period has started (indicated by the `grace_period_expires_at` parameter being filled in), its start date should be recorded in the `billing_issue_detected_at` parameter.
 

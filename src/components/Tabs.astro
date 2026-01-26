@@ -1,0 +1,240 @@
+---
+import { nanoid } from 'nanoid';
+
+interface Props {
+  groupId?: string;
+  queryString?: boolean;
+}
+
+const { groupId, queryString } = Astro.props;
+const id = nanoid(); // Unique ID for this tab group instance
+---
+
+<div class="tabs-container my-8" data-group-id={groupId} data-query-string={queryString} id={id}>
+  <div class="tabs-card">
+    <!-- Tabs Header -->
+    <div class="tabs-header" role="tablist">
+      {/* Tab buttons will be injected here by client-side script */}
+    </div>
+    
+    <!-- Tab Content -->
+    <div class="tabs-content px-6 py-5">
+      <slot />
+    </div>
+  </div>
+</div>
+
+<style>
+  .tabs-card {
+    border-radius: 1rem;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: background-color 0.3s, border-color 0.3s;
+  }
+  
+  .tabs-header {
+    position: relative;
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    overflow-x: auto;
+  }
+  
+  .tabs-header::-webkit-scrollbar {
+    height: 0px;
+  }
+  
+  .tabs-header {
+    scrollbar-width: none;
+  }
+  
+  /* Tab Button Styling */
+  :global(.tab-button) {
+    position: relative;
+    padding: 0.5rem 1rem;
+    font-size: 13px;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    white-space: nowrap;
+    outline: none;
+    border: none;
+    cursor: pointer;
+  }
+  
+  :global(.tab-button-active) {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-primary);
+  }
+  
+  :global(.tab-button-inactive) {
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 500;
+    border: 1px solid transparent;
+  }
+  
+  :global(.tab-button-inactive:hover) {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+</style>
+
+<script>
+  function switchTab(container, targetValue, groupId, shouldSync = false) {
+    const items = Array.from(container.querySelectorAll('.tab-item')).filter(item => {
+      return item.closest('.tabs-container') === container;
+    });
+    
+    const tabList = container.querySelector('[role="tablist"]');
+    const buttons = tabList ? Array.from(tabList.querySelectorAll('button')) : [];
+    
+    const availableValues = items.map(i => i.getAttribute('data-value'));
+    
+    let effectiveValue = targetValue;
+    
+    if (!availableValues.includes(effectiveValue)) {
+      if (effectiveValue === 'swift' && availableValues.includes('ios')) effectiveValue = 'ios';
+      else if (effectiveValue === 'ios' && availableValues.includes('swift')) effectiveValue = 'swift';
+      else if (effectiveValue === 'kotlin' && availableValues.includes('android')) effectiveValue = 'android';
+      else if (effectiveValue === 'android' && availableValues.includes('kotlin')) effectiveValue = 'kotlin';
+    }
+
+    if (!availableValues.includes(effectiveValue)) {
+      effectiveValue = availableValues[0];
+    }
+    
+    if (!effectiveValue) return;
+
+    items.forEach(item => {
+      if (item.getAttribute('data-value') === effectiveValue) {
+        item.classList.remove('hidden');
+        item.style.animation = 'fadeIn 0.15s ease-out';
+      } else {
+        item.classList.add('hidden');
+      }
+    });
+    
+    buttons.forEach(btn => {
+      if (btn.dataset.value === effectiveValue) {
+        btn.className = "tab-button tab-button-active";
+      } else {
+        btn.className = "tab-button tab-button-inactive";
+      }
+    });
+
+    if (shouldSync && groupId) {
+      localStorage.setItem(`tab-group-${groupId}`, effectiveValue);
+      
+      // Update query string if enabled
+      if (container.getAttribute('data-query-string') === 'true') {
+        const url = new URL(window.location.href);
+        url.searchParams.set(groupId, effectiveValue);
+        window.history.replaceState({}, '', url);
+      }
+
+      window.dispatchEvent(new CustomEvent('tab-sync', { 
+        detail: { groupId, value: effectiveValue } 
+      }));
+    }
+  }
+
+  function initTabs() {
+    const containers = document.querySelectorAll('.tabs-container:not([data-tabs-initialized])');
+    
+    containers.forEach(container => {
+      container.setAttribute('data-tabs-initialized', 'true');
+
+      const tabItems = Array.from(container.querySelectorAll('.tab-item')).filter(item => {
+        return item.closest('.tabs-container') === container;
+      });
+      
+      const tabList = container.querySelector('[role="tablist"]');
+      const groupId = container.getAttribute('data-group-id');
+      const isQuerySyncEnabled = container.getAttribute('data-query-string') === 'true';
+      
+      // 1. Generate Headers
+      tabItems.forEach((item, index) => {
+        const value = item.getAttribute('data-value');
+        const label = item.getAttribute('data-label') || value;
+        
+        const button = document.createElement('button');
+        button.dataset.value = value;
+        button.dataset.index = index.toString();
+        button.className = "tab-button tab-button-inactive";
+        button.textContent = label;
+        
+        button.onclick = () => {
+          switchTab(container, value, groupId, true);
+        };
+        
+        tabList.appendChild(button);
+      });
+
+      // 2. Set Initial State
+      let initialValue = null;
+
+      // Priority 1: Query String
+      if (isQuerySyncEnabled && groupId) {
+        const params = new URLSearchParams(window.location.search);
+        const fromUrl = params.get(groupId);
+        if (fromUrl) initialValue = fromUrl;
+      }
+
+      // Priority 2: Default Tab
+      if (!initialValue) {
+        const defaultTab = tabItems.find(item => item.hasAttribute('data-default'));
+        if (defaultTab) {
+          initialValue = defaultTab.getAttribute('data-value');
+        }
+      }
+      
+      // Priority 3: Local Storage
+      if (groupId && !initialValue) {
+        const saved = localStorage.getItem(`tab-group-${groupId}`);
+        if (saved) initialValue = saved;
+      }
+      
+      // Priority 4: First Tab
+      if (!initialValue && tabItems.length > 0) {
+        initialValue = tabItems[0].getAttribute('data-value');
+      }
+      
+      if (initialValue) {
+        switchTab(container, initialValue, groupId, false);
+      }
+    });
+  }
+
+  // Handle sync events
+  window.addEventListener('tab-sync', (e) => {
+    const { groupId, value } = e.detail;
+    const containers = document.querySelectorAll(`.tabs-container[data-group-id="${groupId}"]`);
+    containers.forEach(container => {
+      switchTab(container, value, groupId, false);
+    });
+  });
+
+  // Run on initial load
+  initTabs();
+
+  // Run on page loads (for View Transitions)
+  document.addEventListener('astro:page-load', initTabs);
+</script>
+
+<style is:global>
+  @keyframes fadeIn {
+    from {
+      opacity: 0.6;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+</style>

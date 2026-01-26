@@ -1,4 +1,4 @@
-<!--- GetKey--->
+
 
 To get your **Public SDK Key**:
 
