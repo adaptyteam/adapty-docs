@@ -16,6 +16,14 @@ import { remarkTransformLinks } from './src/plugins/remark-transform-links.mjs';
 // https://astro.build/config
 export default defineConfig({
   outDir: './build',
+  image: {
+    service: {
+      entrypoint: 'astro/assets/services/sharp',
+      config: {
+        limitInputPixels: false,
+      },
+    },
+  },
   build: {
     inlineStylesheets: 'never',
   },
