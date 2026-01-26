@@ -20,7 +20,6 @@ export default defineConfig({
   base: '/docs',
   outDir: './build',
   build: {
-    assets: '_astro',
     inlineStylesheets: 'never',
   },
   vite: {

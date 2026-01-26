@@ -1,5 +1,4 @@
 
-
 :::note
 To proceed, ensure that you created a paywall, onboarding, or A/B test you want to run and an audience, you'd like to specify.
 :::
@@ -8,7 +7,7 @@ To proceed, ensure that you created a paywall, onboarding, or A/B test you want 
 2. If you want to use more than one audience in the placement to create personalized paywalls tailored to different user groups, click the **Add audience** button and choose the desired user segment from the list.
 
 <Zoom>
-  <img src="placement-add-audience.webp"
+  <img src="/img/placement-add-audience.webp"
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

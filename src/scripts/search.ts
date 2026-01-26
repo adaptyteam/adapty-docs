@@ -21,7 +21,7 @@ interface SearchHit {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('search-input') as HTMLInputElement;
+    const searchInput = document.getElementById('search-input') as any;
     const searchResults = document.getElementById('search-results');
     const searchContainer = document.getElementById('search-container');
 
@@ -221,8 +221,8 @@ document.addEventListener('DOMContentLoaded', () => {
         searchResults.classList.remove('hidden');
     };
 
-    searchInput.addEventListener('input', (e) => {
-        const query = (e.target as HTMLInputElement).value.trim();
+    searchInput.addEventListener('input', (e: any) => {
+        const query = (e.target as any).value.trim();
 
         if (!query) {
             searchResults.classList.add('hidden');
@@ -235,11 +235,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 150); // Snappy 150ms debounce
     });
 
-    // Close on click outside
     document.addEventListener('click', (e) => {
         // Use composedPath to penetrate Shadow DOM (Stoplight Elements)
         const path = e.composedPath();
-        const isInApiContainer = path.some(el => (el as HTMLElement).classList?.contains('api-container'));
+        const isInApiContainer = path.some(el => (el as any).classList?.contains('api-container'));
 
         // Skip if clicking inside API container to avoid focus issues
         if (isInApiContainer) return;

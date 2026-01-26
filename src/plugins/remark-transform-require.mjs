@@ -21,13 +21,17 @@ export function remarkTransformRequire() {
                             if (requireMatch) {
                                 let path = requireMatch[1];
                                 const filename = path.split('/').pop();
-                                srcAttr.value = filename;
+                                if (filename && filename !== '.md' && filename !== '.mdx') {
+                                    srcAttr.value = filename;
+                                }
                             } else {
                                 // Match Docusaurus-style paths: require('@site/versioned_docs/version-3.0/img/...').default
                                 requireMatch = code.match(/require\(['"]@site\/versioned_docs\/version-[^\/]+\/(img|FF_img|img_webhook_flows)\/([^'"]+)['"]\)(\.default)?/);
                                 if (requireMatch) {
                                     const filename = requireMatch[2];
-                                    srcAttr.value = filename;
+                                    if (filename && filename !== '.md' && filename !== '.mdx') {
+                                        srcAttr.value = filename;
+                                    }
                                 }
                             }
                         }
@@ -35,7 +39,9 @@ export function remarkTransformRequire() {
                         const value = srcAttr.value;
                         if (!value.startsWith('http') && !value.startsWith('/_astro/') && !value.startsWith('/@fs/')) {
                             const filename = value.split('/').pop();
-                            if (filename) srcAttr.value = filename;
+                            if (filename && filename !== '.md' && filename !== '.mdx') {
+                                srcAttr.value = filename;
+                            }
                         }
                     }
 

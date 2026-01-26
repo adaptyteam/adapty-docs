@@ -4,12 +4,12 @@ type Theme = 'light' | 'dark';
 
 export function initTheme() {
     // Get saved preference or detect system preference
-    const savedTheme = localStorage.getItem('theme') as Theme | null;
+    const savedTheme = localStorage.getItem('theme') as any;
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    const initialTheme: Theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+    const initialTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
 
-    applyTheme(initialTheme);
+    applyTheme(initialTheme as any);
 
     // Listen for system theme changes
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
@@ -35,8 +35,8 @@ export function applyTheme(theme: Theme) {
 
 export function toggleTheme() {
     const root = document.documentElement;
-    const currentTheme: Theme = root.classList.contains('dark') ? 'dark' : 'light';
-    const newTheme: Theme = currentTheme === 'dark' ? 'light' : 'dark';
+    const currentTheme = root.classList.contains('dark') ? 'dark' : 'light';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
 
     applyTheme(newTheme);
     localStorage.setItem('theme', newTheme);

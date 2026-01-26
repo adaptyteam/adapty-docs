@@ -32,7 +32,8 @@ export function initZoom() {
     };
 
     lightbox.onclick = (e) => {
-        if (e.target === lightbox || (e.target as HTMLElement).closest('button') || (e.target as HTMLElement).tagName === 'IMG') {
+        const target = e.target as any;
+        if (target === lightbox || target.closest('button') || target.tagName === 'IMG') {
             close();
         }
     };
@@ -49,7 +50,7 @@ export function initZoom() {
         if (img.hasAttribute('data-zoom-attached')) return;
         img.setAttribute('data-zoom-attached', 'true');
 
-        (img as HTMLElement).onclick = (e) => {
+        (img as any).onclick = (e: any) => {
             e.preventDefault();
             e.stopPropagation();
 

@@ -9,7 +9,7 @@ no_index: true
    
 
 <Zoom>
-  <img src="afd5012-bundle_id_apple.webp"
+  <img src="/img/afd5012-bundle_id_apple.webp"
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -27,7 +27,7 @@ no_index: true
    
 
 <Zoom>
-  <img src="2d64163-bundle_id.webp"
+  <img src="/img/2d64163-bundle_id.webp"
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
