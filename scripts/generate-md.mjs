@@ -11,7 +11,10 @@ const targetDirName = process.argv[2] || '../public';
 const OUTPUT_DIR = path.resolve(__dirname, targetDirName);
 
 // Helper to convert kebab-case file name to PascalCase component name
-const toPascalCase = (str) => str.replace(/(^\w|-\w)/g, clear => clear.replace('-', '').toUpperCase());
+const toPascalCase = (str) => {
+    if (/^\d/.test(str)) return `Error${str}`;
+    return str.replace(/(^\w|-\w)/g, clear => clear.replace('-', '').toUpperCase());
+};
 
 async function getReusableComponents() {
     const components = {};

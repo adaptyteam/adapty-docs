@@ -12,7 +12,6 @@ export function remarkStripImports() {
         const filteredLines = lines.filter(line => {
           const isBad = (
             line.includes("@theme/") ||
-            line.includes("@site/src/components/reusable/") ||
             line.includes("@site/src/components/Details") ||
             line.includes("@site/src/components/InlineTooltip") ||
             line.includes("@site/src/components/ZoomImage") ||
