@@ -102,7 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const performSearch = async (query: string) => {
-        if (!query) {
+        // Don't search for empty queries or single characters
+        if (!query || query.trim().length < 2) {
             searchResults.classList.add('hidden');
             return;
         }
