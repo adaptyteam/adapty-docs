@@ -1,6 +1,6 @@
 import ProfileObject from '@site/src/components/reusable/ProfileObject.md';  
 
-<!--- ProfileResponse.md --->
+
 
 <p> </p>
 

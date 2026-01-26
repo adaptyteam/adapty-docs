@@ -1,4 +1,4 @@
-<!--- ProfileResponseNotFound.md --->
+
 
 <p> </p>
 The request failed because the specified profile wasn’t found. Double-check the `customer_user_id` or `profile_id` for any typos.

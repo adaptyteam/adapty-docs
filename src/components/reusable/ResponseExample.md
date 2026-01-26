@@ -1,4 +1,4 @@
-<!--- responseExample.md --->
+
 
 ```json showLineNumbers
 {

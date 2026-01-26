@@ -1,4 +1,4 @@
-<!--- StoreTransactionId ---> 
+ 
 
 In the case of prolonged subscriptions, a chain of subscriptions is generated. The original transaction is the very first transaction in this chain and the chain is linked by it. Other transactions in the chain are prolongations. If the transaction is the very first purchase in the subscription chain, it can be its own original transaction.
 

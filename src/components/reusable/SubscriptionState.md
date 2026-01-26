@@ -1,4 +1,4 @@
-<!--- SubscriptionState --->
+
 
 
 
@@ -13,4 +13,4 @@
 | Trial cancelled        | The user canceled the trial and does not have an active subscription. |
 | Never subscribed       | The user has never subscribed or started a trial and remains a freemium user. |
 
-<!--- Internal KB https://www.notion.so/adapty/Profiles-Segments-1531ca4355c3807ebb51e9149b22e45c#1571ca4355c380e09422ed1d38063317 --->
+

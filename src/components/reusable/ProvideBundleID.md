@@ -11,7 +11,7 @@ import 'react-medium-image-zoom/dist/styles.css';
    
 
 <Zoom>
-  <img src={require('@site/versioned_docs/version-3.0/img/afd5012-bundle_id_apple.webp').default}
+  <img src="/img/afd5012-bundle_id_apple.webp"
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -29,7 +29,7 @@ import 'react-medium-image-zoom/dist/styles.css';
    
 
 <Zoom>
-  <img src={require('@site/versioned_docs/version-3.0/img/2d64163-bundle_id.webp').default}
+  <img src="/img/2d64163-bundle_id.webp"
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */

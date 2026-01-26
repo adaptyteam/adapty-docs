@@ -1,0 +1,552 @@
+---
+interface Props {
+  hasToC?: boolean;
+}
+
+const { hasToC = false } = Astro.props;
+---
+
+<div class="feedback-form-container shrink-0" data-has-toc={hasToC}>
+  <div class="feedback-form">
+    <!-- Question 1: Was this page helpful? -->
+    <div class="feedback-question" id="feedback-question">
+      <p class="question-text">Was this page helpful?</p>
+      <div class="button-group">
+        <button 
+          class="feedback-btn" 
+          data-answer="yes"
+          aria-label="Yes, this page was helpful"
+        >
+          <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+          </svg>
+          Yes
+        </button>
+        <button 
+          class="feedback-btn" 
+          data-answer="no"
+          aria-label="No, this page was not helpful"
+        >
+          <svg class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+          </svg>
+          No
+        </button>
+      </div>
+    </div>
+
+    <!-- Question 2: Follow-up (conditionally shown) -->
+    <div class="feedback-followup hidden" id="feedback-followup">
+      <label for="feedback-text" class="followup-label" id="followup-label">
+        How can we make it even better?
+      </label>
+      <textarea
+        id="feedback-text"
+        class="feedback-textarea"
+        rows="3"
+        placeholder="Share your thoughts..."
+      ></textarea>
+      <button class="submit-btn" id="submit-feedback">
+        Submit
+      </button>
+    </div>
+
+    <!-- Success message -->
+    <div class="feedback-success hidden" id="feedback-success">
+      <svg class="success-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+      <p class="success-text">Thank you for your feedback!</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  function initFeedbackForm() {
+    // Skip on API pages
+    if (window.__isApiReferencePage) return;
+
+    const SURVEY_ID = '94cf96c3e06bbfb0';
+    const form = document.querySelector('.feedback-form');
+    const questionContainer = document.getElementById('feedback-question');
+    const yesBtn = document.querySelector('[data-answer="yes"]');
+    const noBtn = document.querySelector('[data-answer="no"]');
+    const followup = document.getElementById('feedback-followup');
+    const followupLabel = document.getElementById('followup-label');
+    const textarea = document.getElementById('feedback-text') as HTMLTextAreaElement;
+    const submitBtn = document.getElementById('submit-feedback');
+    const successMsg = document.getElementById('feedback-success');
+
+    if (!form || !questionContainer || !yesBtn || !noBtn || !followup || !textarea || !submitBtn || !successMsg || !followupLabel) return;
+
+    // Prevent double initialization
+    if (form.hasAttribute('data-initialized')) return;
+    form.setAttribute('data-initialized', 'true');
+
+    let userAnswer: 'yes' | 'no' | null = null;
+    let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
+    let hasSubmittedQ1 = false;
+    let hasSubmittedQ2 = false;
+    let responseUuid: string | null = null;
+
+    // Check if Survicate is available
+    const isSurvicateAvailable = () => typeof window._sva !== 'undefined';
+
+    // Wait for Survicate to be available
+    function waitForSurvicate() {
+      if (!isSurvicateAvailable()) {
+        setTimeout(waitForSurvicate, 500);
+        return;
+      }
+      console.log('✅ Survicate ready - feedback form initialized');
+    }
+
+    // Survey structure IDs (from Survicate config)
+    // getSurveyPointsMetadata() doesn't return answer text, only IDs
+    // So we hardcode the IDs from the survey configuration
+    const SURVEY_IDS = {
+      mainQuestion: {
+        pointId: 2719819, // "Was this page helpful?"
+        yesAnswerId: 7074478,
+        noAnswerId: 7074479
+      },
+      textQuestion: {
+        yesPointId: 2716067, // Follow-up for "Yes"
+        noPointId: 2716041   // Follow-up for "No"
+      }
+    };
+
+    // Helper to get question/answer IDs
+    function getSurveyIds(answerType: 'yes' | 'no') {
+      console.log('📝 Getting survey IDs for:', answerType);
+      return {
+        pointId: SURVEY_IDS.mainQuestion.pointId,
+        answerId: answerType === 'yes' 
+          ? SURVEY_IDS.mainQuestion.yesAnswerId 
+          : SURVEY_IDS.mainQuestion.noAnswerId
+      };
+    }
+
+    // Helper to get text question ID based on user's answer
+    function getTextQuestionId(userAnswerWasYes: boolean) {
+      const pointId = userAnswerWasYes 
+        ? SURVEY_IDS.textQuestion.yesPointId 
+        : SURVEY_IDS.textQuestion.noPointId;
+      console.log('📝 Text question ID:', pointId, 'for', userAnswerWasYes ? 'Yes' : 'No');
+      return pointId;
+    }
+
+    // Submit Question 1 (Yes/No)
+    async function submitQuestion1(answer: 'yes' | 'no') {
+      if (hasSubmittedQ1) return;
+
+      if (isSurvicateAvailable()) {
+        const ids = getSurveyIds(answer);
+        try {
+          // 1. Force Survicate to allow a new response (clears "already answered" flag)
+          // @ts-ignore
+          if (typeof window._sva.retarget === 'function') {
+            window._sva.retarget(SURVEY_ID);
+          }
+
+          // 2. Record as Visitor Traits (Most reliable backup)
+          const timestamp = Date.now();
+          // @ts-ignore
+          window._sva.setVisitorTraits({
+            last_docs_feedback: answer,
+            last_docs_helpful: answer === 'yes',
+            last_docs_feedback_page: window.location.pathname,
+            last_docs_feedback_url: window.location.href,
+            last_docs_feedback_date: new Date().toISOString(),
+            [`feedback_entry_${timestamp}`]: answer // Unique trait per submission
+          });
+
+          // 3. Submit answer to the survey
+          // Using both camelCase and snake_case for maximum compatibility
+          // @ts-ignore
+          const result = await window._sva.submitAnswer({
+            surveyId: SURVEY_ID,
+            survey_id: SURVEY_ID,
+            pointId: ids.pointId,
+            point_id: ids.pointId,
+            answerId: ids.answerId,
+            answer_id: ids.answerId
+          });
+          
+          console.log('✅ Feedback Q1 submitted:', { answer, result });
+          
+          // 4. Try to get UUID for Q2 linking (wait briefly for session init)
+          setTimeout(() => {
+            // @ts-ignore
+            responseUuid = window._sva.getResponseUuid();
+            if (responseUuid) {
+              console.log('📦 New Response UUID:', responseUuid);
+            }
+          }, 100);
+        } catch (error) {
+          console.error('❌ Error submitting Q1:', error);
+        }
+      } else {
+        console.warn('⚠️ Survicate not ready yet');
+      }
+
+      hasSubmittedQ1 = true;
+    }
+
+    // Submit Question 2 (Text)
+    async function submitQuestion2(feedbackText: string, isAutoSubmit = false) {
+      if (hasSubmittedQ2) return;
+      if (!feedbackText.trim()) return;
+
+      if (isSurvicateAvailable() && userAnswer) {
+        const pointId = getTextQuestionId(userAnswer === 'yes');
+        try {
+          const text = feedbackText.trim();
+          
+          // 1. Record as Visitor Trait (Backup)
+          // @ts-ignore
+          window._sva.setVisitorTraits({
+            last_docs_feedback_text: text
+          });
+
+          const payload: any = {
+            surveyId: SURVEY_ID,
+            survey_id: SURVEY_ID,
+            pointId: pointId,
+            point_id: pointId,
+            answer: text
+          };
+
+          // Link to Q1 response if UUID exists
+          if (responseUuid) {
+            payload.responseUuid = responseUuid;
+            payload.response_uuid = responseUuid;
+            console.log('🔗 Linking Q2 to Q1 response:', responseUuid);
+          }
+
+          console.log('📤 Submitting Q2:', payload);
+
+          // @ts-ignore
+          const result = await window._sva.submitAnswer(payload);
+          console.log('✅ Feedback Q2 submitted:', { result, textLength: text.length, isAutoSubmit });
+        } catch (error) {
+          console.error('❌ Error submitting Q2:', error);
+        }
+      } else {
+        if (!isSurvicateAvailable()) console.warn('⚠️ Survicate not ready yet');
+        if (!userAnswer) console.warn('⚠️ No user answer stored');
+      }
+
+      hasSubmittedQ2 = true;
+      showSuccess();
+    }
+
+    // Show success message
+    function showSuccess() {
+      followup?.classList.add('hidden');
+      successMsg?.classList.remove('hidden');
+      
+      // Reset after 3 seconds
+      setTimeout(() => {
+        resetForm();
+      }, 3000);
+    }
+
+    // Reset form to initial state
+    function resetForm() {
+      userAnswer = null;
+      hasSubmittedQ1 = false;
+      hasSubmittedQ2 = false;
+      responseUuid = null;
+      
+      yesBtn?.classList.remove('selected');
+      noBtn?.classList.remove('selected');
+      followup?.classList.add('hidden');
+      successMsg?.classList.add('hidden');
+      questionContainer?.classList.remove('hidden');
+      
+      if (textarea) textarea.value = '';
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = null;
+      }
+    }
+
+    // Handle Yes/No button clicks
+    function handleAnswerClick(answer: 'yes' | 'no') {
+      if (hasSubmittedQ1) return;
+      
+      userAnswer = answer;
+      
+      if (answer === 'yes') {
+        followupLabel.textContent = 'How can we make it even better?';
+      } else {
+        followupLabel.textContent = 'What was missing?';
+      }
+
+      // Submit Q1 immediately
+      submitQuestion1(answer);
+
+      // Transition UI
+      questionContainer?.classList.add('hidden');
+      followup?.classList.remove('hidden');
+      
+      setTimeout(() => textarea?.focus(), 100);
+    }
+
+    // Handle inactivity timer
+    function resetInactivityTimer() {
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+      }
+
+      if (textarea.value.trim()) {
+        inactivityTimer = setTimeout(() => {
+          submitQuestion2(textarea.value, true);
+        }, 10000); // 10 seconds
+      }
+    }
+
+    // Event listeners
+    yesBtn?.addEventListener('click', () => handleAnswerClick('yes'));
+    noBtn?.addEventListener('click', () => handleAnswerClick('no'));
+
+    textarea?.addEventListener('input', () => {
+      resetInactivityTimer();
+    });
+
+    submitBtn?.addEventListener('click', () => {
+      submitQuestion2(textarea.value, false);
+    });
+
+    // Submit on page leave
+    window.addEventListener('beforeunload', () => {
+      if (textarea.value.trim() && !hasSubmittedQ2) {
+        // Attempt synchronous or beacon send if possible, but submitAnswer is async
+        // We trigger it anyway 
+        submitQuestion2(textarea.value, true);
+      }
+    });
+
+    // Start initialization
+    waitForSurvicate();
+  }
+
+  // Initialize on page load
+  document.addEventListener('astro:page-load', initFeedbackForm);
+</script>
+
+<style>
+  .feedback-form-container {
+    width: 16rem;
+    padding-left: 1.5rem;
+    border-left: 1px solid var(--border-primary);
+    /* Hidden on mobile, visible on xl+ */
+    display: none;
+    flex-shrink: 0;
+  }
+
+  @media (min-width: 1280px) {
+    .feedback-form-container {
+      display: block;
+    }
+  }
+
+  /* When ToC is present, remove border but KEEP padding to align with ToC items */
+  .feedback-form-container[data-has-toc="true"] {
+    margin-top: 2rem;
+    border-left: none;
+    padding-left: 1.5rem;
+  }
+
+  .feedback-form {
+    /* Subtle design - no background, just border */
+    background: transparent;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .feedback-form:hover {
+    border-color: var(--accent-primary);
+  }
+
+  .feedback-question {
+    margin-bottom: 0;
+  }
+
+  .question-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+  }
+
+  .button-group {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .feedback-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.625rem;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1.5px solid var(--accent-primary);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-icon {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2;
+  }
+
+  .feedback-btn:hover {
+    color: white;
+    background: var(--accent-primary);
+    transform: translateY(-1px);
+  }
+
+  .feedback-btn:hover .btn-icon {
+    color: white;
+  }
+
+  .feedback-followup {
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .followup-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .feedback-textarea {
+    width: 100%;
+    padding: 0.625rem;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    border: 1.5px solid var(--border-primary);
+    border-radius: 0.5rem;
+    resize: vertical;
+    min-height: 72px;
+    transition: all 0.2s ease;
+  }
+
+  .feedback-textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(103, 32, 255, 0.1);
+  }
+
+  :root.dark .feedback-textarea:focus {
+    box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+  }
+
+  .feedback-textarea::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .submit-btn {
+    width: 100%;
+    margin-top: 0.625rem;
+    padding: 0.625rem;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    background: var(--accent-primary);
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .submit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(103, 32, 255, 0.3);
+  }
+
+  :root.dark .submit-btn:hover {
+    box-shadow: 0 4px 12px rgba(167, 139, 250, 0.3);
+  }
+
+  .submit-btn:active {
+    transform: translateY(0);
+  }
+
+  .feedback-success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 0;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .success-icon {
+    width: 28px;
+    height: 28px;
+    color: var(--accent-primary);
+    stroke-width: 2.5;
+  }
+
+  .success-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  /* Hide the Survicate widget for our survey (we're using custom UI) */
+  :global(#survicate-box),
+  :global(.survicate-survey),
+  :global(.survicate-widget-container),
+  :global([id^="survicate-"]) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+  }
+</style>

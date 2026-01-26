@@ -1,4 +1,4 @@
-<!--- FreeTrialPrice.md ---> 
+ 
 
 The request failed because the `offer_type` parameter is set to `free_trial`, but the `value` parameter of the [Price](server-side-api-objects#price) object isn’t set to zero.
 

@@ -1,4 +1,4 @@
-<!--- Offer.md --->
+
 
 | Parameter | Type   | Required in request | Nullable in request | Description                                                  |
 | --------- | ------ | ------------------- | ------------------- | ------------------------------------------------------------ |

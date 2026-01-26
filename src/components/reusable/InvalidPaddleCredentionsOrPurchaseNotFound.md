@@ -1,4 +1,4 @@
-<!--- InvalidPaddleCredentionsOrPurchaseNotFound.md ---> 
+ 
 
 The request failed for one of two reasons: either the Paddle credentials in [App Settings](https://app.adapty.io/settings/paddle) are incorrect, or the provided token is invalid. Please check the following:
 

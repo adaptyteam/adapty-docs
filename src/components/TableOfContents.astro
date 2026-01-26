@@ -1,0 +1,233 @@
+---
+interface Heading {
+    depth: number;
+    slug: string;
+    text: string;
+}
+
+interface Props {
+    headings: Heading[];
+}
+
+const { headings } = Astro.props;
+
+// Filter to h2 and h3 only for a clean TOC
+const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
+---
+
+<nav class="toc-nav hidden xl:block shrink-0">
+    <h5 class="toc-title">On this page</h5>
+    <ul class="space-y-3">
+        {tocHeadings.map(h => (
+            <li class:list={[{ 'pl-4': h.depth === 3 }]}>
+                <a 
+                    href={`#${h.slug}`} 
+                    class="toc-link"
+                    data-slug={h.slug}
+                >
+                    {h.text}
+                </a>
+            </li>
+        ))}
+    </ul>
+    
+    <script>
+        function initTOC() {
+            const headings = Array.from(document.querySelectorAll('article h2, article h3'));
+            if (headings.length === 0) return;
+            
+            let currentActiveId = '';
+            let isScrollingFromClick = false; // Flag to prevent updates during programmatic scroll
+            
+            function setActiveLink(id) {
+                if (currentActiveId === id) return;
+                currentActiveId = id;
+                
+                // Remove active from all
+                document.querySelectorAll('.toc-link').forEach(l => {
+                    l.classList.remove('toc-active');
+                });
+                
+                // Add to current
+                const link = document.querySelector(`.toc-link[data-slug="${id}"]`);
+                if (link) {
+                    link.classList.add('toc-active');
+                }
+            }
+            
+            // Find which heading is currently most visible
+            function updateActiveHeading() {
+                // Don't update if we're scrolling from a click
+                if (isScrollingFromClick) return;
+                
+                const headerOffset = 120; // Offset from top to determine "active" point
+                const scrollY = window.scrollY;
+                const windowHeight = window.innerHeight;
+                const documentHeight = document.documentElement.scrollHeight;
+                
+                // Check if we're at the bottom of the page
+                // If the user has scrolled to near the bottom, always highlight the last item
+                // This handles cases where the last section is too short to reach the top offset
+                if (scrollY + windowHeight >= documentHeight - 50) {
+                     const lastHeading = headings[headings.length - 1];
+                     const id = lastHeading?.getAttribute('id');
+                     if (id) {
+                         setActiveLink(id);
+                         return;
+                     }
+                }
+                
+                // Find the last heading that is above or at the headerOffset
+                // This mimics standard "scroll spy" behavior: the section you are reading
+                // is the one whose header you most recently passed.
+                let activeHeading = headings[0];
+                
+                for (const heading of headings) {
+                    const rect = heading.getBoundingClientRect();
+                    
+                    if (rect.top <= headerOffset) {
+                        activeHeading = heading;
+                    } else {
+                        // Since headings are in order, once we find one below the offset,
+                        // we know the previous one (stored in activeHeading) is the correct one.
+                        break;
+                    }
+                }
+                
+                const id = activeHeading?.getAttribute('id');
+                if (id) {
+                    setActiveLink(id);
+                }
+            }
+            
+            // Update on scroll with throttling
+            let ticking = false;
+            let scrollEndTimer;
+            
+            const handleScroll = () => {
+                // If we are in "click mode", we purely want to detect when scrolling STOPS
+                // We don't want to run the expensive/noisy update logic during the smooth scroll
+                if (isScrollingFromClick) {
+                    clearTimeout(scrollEndTimer);
+                    scrollEndTimer = setTimeout(() => {
+                        isScrollingFromClick = false;
+                        updateActiveHeading();
+                    }, 100); // Wait for scroll to settle
+                    return;
+                }
+            
+                if (!ticking) {
+                    window.requestAnimationFrame(() => {
+                        updateActiveHeading();
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            };
+            
+            window.addEventListener('scroll', handleScroll, { passive: true });
+            
+            // Handle direct clicks on TOC links
+            document.querySelectorAll('.toc-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    const slug = link.getAttribute('data-slug');
+                    if (slug) {
+                        // 1. Set Flag
+                        isScrollingFromClick = true;
+                        
+                        // 2. Optimistically update UI
+                        setActiveLink(slug);
+                        
+                        // 3. Clear any pending auto-updates
+                        if (ticking) ticking = false;
+                        
+                        // 4. Start the "scroll end" watchdog immediately 
+                        // (in case the scroll is tiny and doesn't fire many events)
+                        clearTimeout(scrollEndTimer);
+                        scrollEndTimer = setTimeout(() => {
+                            isScrollingFromClick = false;
+                            updateActiveHeading();
+                        }, 100);
+                    }
+                });
+            });
+            
+            // Initial update
+            updateActiveHeading();
+        }
+        
+        // Run on load and astro navigation
+        initTOC();
+        document.addEventListener('astro:page-load', initTOC);
+    </script>
+</nav>
+
+<style>
+  .toc-nav {
+    width: 16rem;
+    padding-left: 1.5rem;
+    border-left: 1px solid var(--border-primary);
+    overflow-y: auto;
+    /* Smooth scrolling within TOC */
+    scroll-behavior: smooth;
+    flex: 1;
+    min-height: 0;
+  }
+  
+  /* Custom scrollbar for TOC */
+  .toc-nav::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .toc-nav::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .toc-nav::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 2px;
+  }
+  
+  .toc-nav::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
+  }
+  
+  .toc-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+    opacity: 0.8;
+    position: sticky;
+    top: 0;
+    background: var(--bg-primary);
+    padding: 0.5rem 0;
+    z-index: 10;
+  }
+  
+  .toc-link {
+    display: block;
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+    line-clamp: 2;
+    font-weight: 500;
+    line-height: 1.375;
+    border-left: 2px solid transparent;
+    padding-left: 0.75rem;
+    margin-left: -0.75rem;
+  }
+  
+  .toc-link:hover {
+    color: var(--text-primary);
+    border-left-color: var(--border-primary);
+  }
+  
+  .toc-link.toc-active {
+    color: var(--accent-primary);
+    font-weight: 600;
+    border-left-color: var(--accent-primary);
+  }
+</style>

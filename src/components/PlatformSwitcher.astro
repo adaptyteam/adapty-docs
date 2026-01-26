@@ -1,0 +1,419 @@
+---
+import platformsData from '../data/platforms.json';
+
+interface Props {
+  currentPlatformId: string;
+  currentLabel?: string;
+  currentActiveId?: string;
+}
+
+const { currentPlatformId, currentLabel, currentActiveId } = Astro.props;
+const { sdkPlatforms } = platformsData;
+
+const currentPlatform = sdkPlatforms.find((p) => p.id === currentPlatformId);
+
+// Load all sidebars to find matching pages
+const sidebarModules = import.meta.glob('../data/sidebars/*.json', { eager: true });
+
+function getTargetLink(platformId: string, targetLabel?: string, activeId?: string): string {
+    const platform = sdkPlatforms.find(p => p.id === platformId);
+    if (!platform) return '#';
+    
+    // Resolve sidebar data
+    const sidebarPath = `../data/sidebars/${platform.sidebar}`;
+    const sidebarModule = sidebarModules[sidebarPath];
+    const sidebarData = sidebarModule ? (sidebarModule as any).default : [];
+
+    // Helper to find item by label
+    const findItemByLabel = (items: any[], label: string): any | undefined => {
+        for (const item of items) {
+            if (item.label === label && item.type === 'doc' && item.id) return item;
+            if (item.items) {
+                const found = findItemByLabel(item.items, label);
+                if (found) return found;
+            }
+        }
+    };
+
+    // Helper to find overview (intro/overview page)
+    const findOverview = (items: any[]): any | undefined => {
+         // Priority 1: Check categories and docs for "overview" or "intro" in ID
+         for (const item of items) {
+            const id = item.id || item.link?.id;
+            if (id && (id.toLowerCase().includes('overview') || id.toLowerCase().includes('intro'))) {
+                return { id }; 
+            }
+            if (item.items) {
+                const found = findOverview(item.items);
+                if (found) return found;
+            }
+         }
+         // Priority 2: Fallback to the first document found
+         const findFirstDoc = (subItems: any[]): any | undefined => {
+             for (const item of subItems) {
+                 if (item.type === 'doc' && item.id) return item;
+                 if (item.items) {
+                     const found = findFirstDoc(item.items);
+                     if (found) return found;
+                 }
+             }
+         }
+         return findFirstDoc(items);
+    };
+
+    const isCurrentOverview = activeId?.toLowerCase().includes('overview') || 
+                             activeId?.toLowerCase().includes('intro') ||
+                             activeId === 'what-is-adapty';
+
+    // 1. If current is overview, always try to land on target's overview
+    if (isCurrentOverview) {
+        const targetOverview = findOverview(sidebarData);
+        if (targetOverview) return `/${targetOverview.id}`;
+    }
+
+    // 2. Otherwise, try to find matching label first (Topic Consistency)
+    if (targetLabel) {
+        const match = findItemByLabel(sidebarData, targetLabel);
+        if (match) return `/${match.id}`;
+    }
+
+    // 3. Last Fallback: Target platform's overview
+    const overview = findOverview(sidebarData);
+    if (overview) return `/${overview.id}`;
+
+    return `/${platformId}-sdk-overview`; // Ultimate hardcoded fallback
+}
+---
+
+<div class="platform-switcher-container">
+  <button 
+    class="platform-switcher-trigger"
+    aria-haspopup="true"
+    aria-expanded="false"
+  >
+    <span class="flex items-center gap-2 truncate">
+      <div class="platform-indicator"></div>
+      {currentPlatform?.label || 'Select Platform'}
+    </span>
+    <svg class="platform-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+    </svg>
+  </button>
+
+  <div class="platform-switcher-menu">
+    <div class="platform-switcher-content">
+        <div class="platform-switcher-label">SDK Platforms</div>
+      {sdkPlatforms.map((platform) => (
+        <button
+          type="button"
+          data-platform-id={platform.id}
+          data-platform-sidebar={platform.sidebar}
+          class:list={[
+            "platform-switcher-item",
+            currentPlatformId === platform.id && "platform-switcher-item-active"
+          ]}
+        >
+          {platform.label}
+          {currentPlatformId === platform.id && (
+             <svg class="ml-auto w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+             </svg>
+          )}
+        </button>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  .platform-switcher-container {
+    position: relative;
+    z-index: 20;
+  }
+  
+  .platform-switcher-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 0.875rem;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s;
+    width: 100%;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+  
+  .platform-switcher-trigger:hover {
+    color: var(--text-primary);
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .platform-indicator {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+    background: var(--accent-primary);
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+  
+  .platform-chevron {
+    width: 1rem;
+    height: 1rem;
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+    transition: transform 0.3s, color 0.3s;
+  }
+  
+  .platform-switcher-container:hover .platform-chevron {
+    color: var(--text-primary);
+    transform: rotate(180deg);
+  }
+  
+  .platform-switcher-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 0.5rem;
+    width: 14rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(0.75rem);
+    transition: all 0.3s;
+    overflow: hidden;
+    z-index: 50;
+  }
+  
+  .platform-switcher-container:hover .platform-switcher-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+  
+  .platform-switcher-content {
+    padding: 0.375rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+  
+  .platform-switcher-label {
+    padding: 0.5rem 0.75rem;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.8;
+  }
+  
+  .platform-switcher-item {
+    display: flex;
+    align-items: center;
+    padding: 0.625rem 0.875rem;
+    font-size: 13.5px;
+    border-radius: 0.75rem;
+    transition: all 0.2s;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+  }
+  
+  .platform-switcher-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  
+  .platform-switcher-item-active {
+    background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+    color: var(--accent-primary);
+    font-weight: 600;
+  }
+  
+  .platform-switcher-item-active svg {
+    color: var(--accent-primary);
+  }
+</style>
+
+<script>
+    import platformsData from '../data/platforms.json';
+    
+    // Load all sidebars at build time for client-side use
+    const sidebarModules = import.meta.glob('../data/sidebars/*.json', { eager: true });
+    const sidebarsMap = new Map();
+    
+    for (const [path, module] of Object.entries(sidebarModules)) {
+        const fileName = path.split('/').pop()?.replace('.json', '') || '';
+        sidebarsMap.set(fileName, (module as any).default);
+    }
+
+    function getCurrentActiveId(): string {
+        const currentPath = window.location.pathname;
+        // Remove leading slash and get the last segment
+        const segments = currentPath.split('/').filter(Boolean);
+        return segments[segments.length - 1] || '';
+    }
+
+    function findItemByActiveId(items: any[], activeId: string): any | undefined {
+        for (const item of items) {
+            // Check if item.id matches exactly
+            if (item.id === activeId) {
+                return item;
+            }
+            // Check if item.id ends with activeId (for nested paths)
+            if (item.id && item.id.endsWith(activeId)) {
+                return item;
+            }
+            // Check category links
+            if (item.link?.id === activeId || (item.link?.id && item.link.id.endsWith(activeId))) {
+                return item;
+            }
+            // Recursively search in nested items
+            if (item.items) {
+                const found = findItemByActiveId(item.items, activeId);
+                if (found) return found;
+            }
+        }
+        return undefined;
+    }
+
+    function findItemByLabel(items: any[], label: string): any | undefined {
+        for (const item of items) {
+            // Match by label for doc items
+            if (item.label === label && item.type === 'doc' && item.id) {
+                return item;
+            }
+            // Also check category links
+            if (item.label === label && item.type === 'category' && item.link?.id) {
+                return { id: item.link.id, label: item.label };
+            }
+            // Recursively search in nested items
+            if (item.items) {
+                const found = findItemByLabel(item.items, label);
+                if (found) return found;
+            }
+        }
+        return undefined;
+    }
+
+    function findOverview(items: any[]): any | undefined {
+        // Priority 1: Check for overview/intro in ID
+        for (const item of items) {
+            const id = item.id || item.link?.id;
+            if (id && (id.toLowerCase().includes('overview') || id.toLowerCase().includes('intro'))) {
+                return { id };
+            }
+            if (item.items) {
+                const found = findOverview(item.items);
+                if (found) return found;
+            }
+        }
+        // Priority 2: First document
+        function findFirstDoc(subItems: any[]): any | undefined {
+            for (const item of subItems) {
+                if (item.type === 'doc' && item.id) return item;
+                if (item.items) {
+                    const found = findFirstDoc(item.items);
+                    if (found) return found;
+                }
+            }
+        }
+        return findFirstDoc(items);
+    }
+
+    function getTargetLink(platformId: string, sidebarName: string): string {
+        // Remove .json extension if present
+        const cleanSidebarName = sidebarName.replace('.json', '');
+        const sidebarData = sidebarsMap.get(cleanSidebarName);
+        if (!sidebarData) {
+            return `/${platformId}-sdk-overview`;
+        }
+
+        // Get current page info dynamically
+        const currentActiveId = getCurrentActiveId();
+        const currentSidebar = document.querySelector('[data-platform-id]')?.getAttribute('data-platform-id');
+        const currentPlatformData = platformsData.sdkPlatforms.find((p: any) => p.id === currentSidebar);
+        const currentSidebarData = currentSidebar && currentPlatformData ? sidebarsMap.get(currentPlatformData.sidebar.replace('.json', '')) : null;
+        
+        // Find current item to get its label
+        let currentLabel: string | undefined;
+        if (currentSidebarData) {
+            const currentItem = findItemByActiveId(currentSidebarData, currentActiveId);
+            currentLabel = currentItem?.label;
+        }
+
+        // Check if current page is overview
+        const isCurrentOverview = currentActiveId?.toLowerCase().includes('overview') ||
+                                currentActiveId?.toLowerCase().includes('intro') ||
+                                currentActiveId === 'what-is-adapty';
+
+        // 1. If current is overview, go to target's overview
+        if (isCurrentOverview) {
+            const targetOverview = findOverview(sidebarData);
+            if (targetOverview) {
+                return `/${targetOverview.id}`;
+            }
+        }
+
+        // 2. Try to find matching label (Topic Consistency)
+        if (currentLabel) {
+            const match = findItemByLabel(sidebarData, currentLabel);
+            if (match) {
+                return `/${match.id}`;
+            }
+        }
+
+        // 3. Fallback to target's overview
+        const overview = findOverview(sidebarData);
+        if (overview) {
+            return `/${overview.id}`;
+        }
+
+        return `/${platformId}-sdk-overview`;
+    }
+
+    function initPlatformSwitcher() {
+        const platformButtons = document.querySelectorAll('.platform-switcher-item[data-platform-id]');
+        
+        platformButtons.forEach((button) => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const platformId = button.getAttribute('data-platform-id');
+                const sidebarName = button.getAttribute('data-platform-sidebar');
+                
+                if (platformId && sidebarName) {
+                    const targetUrl = getTargetLink(platformId, sidebarName);
+                    window.location.href = targetUrl;
+                }
+            });
+        });
+    }
+
+    // Initialize on page load
+    document.addEventListener('astro:page-load', initPlatformSwitcher);
+    initPlatformSwitcher();
+</script>

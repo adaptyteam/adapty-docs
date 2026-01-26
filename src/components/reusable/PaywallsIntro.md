@@ -1,4 +1,4 @@
-<!--- PaywallsIntro --->
+
 
 To enable any kind of in-app purchases, you need to understand how Adapty structures purchases:
 

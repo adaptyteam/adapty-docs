@@ -1,4 +1,4 @@
-<!--- VariationIdNotFound --->
+
 
 The request failed because the `variation_ID` for the requested paywall couldn’t be found. Check that the `placement_id` you’re requesting exists in the app and that there are no typos in it in your request.
 
@@ -6,7 +6,7 @@ The request failed because the `variation_ID` for the requested paywall couldn�
 
 | Parameter   | Type    | Description                                                  |
 | ----------- | ------- | ------------------------------------------------------------ |
-| errors      | Object  | <ul><li> **source**: (string) Always `null`.</li><li> **errors**: A description of the error. </li></ul> |
+| errors      | Object  | <ul><li> **source**: (string) Always `bull`.</li><li> **errors**: A description of the error. </li></ul> |
 | error_code  | String  | Short error name. Possible value: `VARIATION_DOES_NOT_EXIST_ERROR`. |
 | status_code | Integer | HTTP status. Always `404`.                                   |
 

@@ -1,0 +1,283 @@
+---
+interface Props {
+  item: any;
+  activeId: string;
+  depth?: number;
+}
+
+const { item, activeId, depth = 0 } = Astro.props;
+
+const isCategory = item.type === 'category';
+
+// Calculate href automatically if not provided
+const getHref = (item: any) => {
+  if (item.type === 'link') return item.href;
+  if (item.href) return item.href;
+  const id = item.id || item.link?.id;
+  if (id) return `/${id}`;
+  return null;
+};
+
+const itemHref = getHref(item);
+const isActive = (item.id && item.id === activeId) || (item.link?.id && item.link.id === activeId);
+
+function hasActiveChild(node: any, targetId: string): boolean {
+    if (node.id === targetId || node.link?.id === targetId) return true;
+    if (node.items) {
+        return node.items.some((child: any) => hasActiveChild(child, targetId));
+    }
+    return false;
+}
+
+const isChildActive = isCategory && item.items ? hasActiveChild(item, activeId) : false;
+// Default: open if explicitly set to collapsed: false, or if has active child (only on first load)
+// After first load, state is managed by user interactions
+const defaultOpen = (item.collapsed === false) || isChildActive;
+
+// Padding and Indentation
+// We use a fixed left padding for the container and a small offset per depth.
+const paddingLeft = 12;
+const indentSize = depth * 8;
+
+// Depth-based styling
+const getFontSize = (d: number) => {
+  if (d === 0) return 'text-[14px]';
+  return 'text-[13px]';
+};
+
+const getFontWeight = (d: number) => {
+  if (d === 0) return 'font-semibold';
+  return 'font-medium';
+};
+
+const getTextColor = (d: number, active: boolean) => {
+  if (active) return 'sidebar-item-active';
+  if (d === 0) return 'sidebar-item-primary';
+  return 'sidebar-item-secondary';
+};
+
+const fontSize = getFontSize(depth);
+const fontWeight = getFontWeight(depth);
+const textColor = getTextColor(depth, isActive);
+---
+
+<li class="w-full relative group/item">
+  {isCategory ? (
+    <div class="category-wrapper mb-0.5">
+      <div 
+        class:list={[
+          `flex items-center justify-between w-full py-1.5 pr-3 transition-all duration-200 border-l-[3px] border-transparent ${fontSize} ${fontWeight} ${textColor}`,
+           isActive 
+             ? "sidebar-item-bg-active" 
+             : "sidebar-item-hover"
+        ]}
+        style={`padding-left: ${paddingLeft + indentSize}px`}
+        id={isActive ? "active-sidebar-item" : undefined}
+        data-sidebar-container
+      >
+        {itemHref ? (
+          <a 
+            href={itemHref} 
+            class:list={["flex-1 text-left transition-colors category-title-link", fontSize, fontWeight, textColor]}
+            data-category-id={item.id || item.label}
+            data-sidebar-link
+            data-href={itemHref}
+            data-astro-reload={itemHref?.startsWith('/api-') ? "" : undefined}
+          >
+            {item.label}
+          </a>
+        ) : (
+          <button 
+            class:list={["flex-1 text-left category-title-link transition-colors", fontSize, fontWeight, textColor]}
+            data-category-id={item.id || item.label}
+          >
+            {item.label}
+          </button>
+        )}
+        
+        <div class="flex items-center">
+          <button 
+            class="category-toggle p-1 -mr-1 sidebar-toggle-btn rounded-lg transition-all duration-200"
+            data-category-id={item.id || item.label}
+            aria-label="Toggle category"
+          >
+            <svg class="w-3 h-3 sidebar-chevron transition-transform duration-200" style="transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div 
+        class:list={["category-items-container", defaultOpen && "expanded"]}
+        data-category-id={item.id || item.label}
+        data-depth={depth}
+        data-default-open={defaultOpen}
+      >
+        <div class="category-items-content">
+          <ul class="space-y-0.5 sidebar-category-border ml-[14px] mt-0.5 mb-1">
+            {item.items.map((child: any) => (
+              <Astro.self item={child} activeId={activeId} depth={depth + 1} /> 
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <a 
+      href={itemHref || '#'} 
+      class:list={[
+        `flex items-center w-full py-1.5 pr-4 transition-all duration-200 border-l-[3px] border-transparent ${fontSize} ${fontWeight} ${textColor}`,
+         isActive 
+           ? "sidebar-item-bg-active" 
+           : "sidebar-item-hover"
+      ]}
+      style={`padding-left: ${paddingLeft + indentSize}px`} 
+      id={isActive ? "active-sidebar-item" : undefined}
+      data-sidebar-link
+      data-href={itemHref}
+      data-sidebar-container
+      data-astro-reload={itemHref?.startsWith('/api-') ? "" : undefined}
+    >
+      {item.label}
+    </a>
+  )}
+</li>
+
+<style>
+  :global(.sidebar-item-active),
+  :global(.sidebar-item-active:visited) {
+    color: var(--text-primary) !important;
+    /* Removed font-weight change to prevent layout shift/wrapping */
+  }
+  
+  :global(.sidebar-item-primary),
+  :global(.sidebar-item-primary:visited) {
+    color: var(--text-primary) !important;
+  }
+  
+  :global(.sidebar-item-secondary),
+  :global(.sidebar-item-secondary:visited) {
+    color: var(--text-secondary) !important;
+  }
+  
+  :global(.sidebar-item-bg-active) {
+    background: color-mix(in srgb, var(--accent-primary) 6%, transparent);
+    border-color: var(--accent-primary) !important;
+    /* Removed font-weight change */
+  }
+  
+  :global(.sidebar-item-hover:hover) {
+    background: var(--bg-hover);
+    color: var(--text-primary) !important;
+  }
+  
+  /* Removed .sidebar-indicator styles as it's no longer used */
+  
+  :global(.sidebar-toggle-btn:hover) {
+    background: var(--bg-hover);
+  }
+  
+  :global(.sidebar-chevron) {
+    color: var(--text-tertiary);
+  }
+  
+  :global(.sidebar-category-border) {
+    border-left: 1px solid var(--border-primary);
+  }
+
+  .category-title-link {
+    text-decoration: none;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .category-toggle {
+    color: inherit;
+  }
+
+  .category-items-container {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .category-items-container.expanded {
+    grid-template-rows: 1fr;
+  }
+  
+  .category-items-content {
+    overflow: hidden;
+    min-height: 0;
+  }
+</style>
+
+<script>
+  function initSidebar() {
+    const toggleButtons = document.querySelectorAll('.category-toggle');
+    const titleLinks = document.querySelectorAll('.category-title-link');
+    
+    toggleButtons.forEach(button => {
+      const categoryId = button.getAttribute('data-category-id');
+      const itemsList = document.querySelector(`.category-items-container[data-category-id="${categoryId}"]`) as HTMLElement;
+      const svg = button.querySelector('svg') as SVGElement;
+      
+      if (!itemsList || !svg) return;
+      
+      // Sync SVG rotation with current expansion state
+      if (itemsList.classList.contains('expanded')) {
+        svg.style.transform = 'rotate(90deg)';
+      } else {
+        svg.style.transform = 'rotate(0deg)';
+      }
+      
+      // Check if listener already exists
+      if (button.hasAttribute('data-listener-added')) return;
+      button.setAttribute('data-listener-added', 'true');
+      
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Simple toggle
+        const isCurrentlyExpanded = itemsList.classList.contains('expanded');
+        itemsList.classList.toggle('expanded');
+        svg.style.transform = isCurrentlyExpanded ? 'rotate(0deg)' : 'rotate(90deg)';
+      });
+    });
+    
+    titleLinks.forEach(link => {
+      // Check if listener already exists
+      if (link.hasAttribute('data-listener-added')) return;
+      link.setAttribute('data-listener-added', 'true');
+
+      link.addEventListener('click', (e) => {
+        const categoryId = link.getAttribute('data-category-id');
+        const itemsList = document.querySelector(`.category-items-container[data-category-id="${categoryId}"]`) as HTMLElement;
+        const toggleButton = document.querySelector(`.category-toggle[data-category-id="${categoryId}"]`);
+        const svg = toggleButton?.querySelector('svg') as SVGElement;
+        
+        if (!itemsList || !svg) return;
+        
+        const isCurrentlyExpanded = itemsList.classList.contains('expanded');
+        const isNavLink = link.tagName === 'A';
+        
+        // For non-nav links (buttons), toggle the category
+        if (!isNavLink) {
+          itemsList.classList.toggle('expanded');
+          svg.style.transform = isCurrentlyExpanded ? 'rotate(0deg)' : 'rotate(90deg)';
+        } 
+        // For nav links, expand if collapsed (but don't collapse if expanded - let navigation happen)
+        else if (!isCurrentlyExpanded) {
+          itemsList.classList.add('expanded');
+          svg.style.transform = 'rotate(90deg)';
+        }
+      });
+    });
+  }
+
+  // Run on initial load
+  initSidebar();
+
+  // Run on every page navigation (sidebar persists but we need to update listeners for any new content)
+  document.addEventListener('astro:page-load', initSidebar);
+</script>

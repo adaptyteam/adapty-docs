@@ -1,4 +1,4 @@
-<!--- originallyPurchasedDate.md --->
+
 
 For prolonged subscriptions, a chain of transactions is created. The original transaction is the first one in this chain, and it links all the following transactions. Each renewal is simply an extension of this original. If the transaction is the first purchase, it serves as its original transaction.
 

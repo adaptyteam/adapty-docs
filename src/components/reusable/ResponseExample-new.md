@@ -1,4 +1,4 @@
-<!-- ResponseExample -->
+
 
 ```json showLineNumbers title="JSON"
 {

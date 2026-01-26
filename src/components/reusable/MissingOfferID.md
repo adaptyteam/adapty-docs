@@ -1,4 +1,4 @@
-<!--- MissingOfferID.md --->
+
 
 The request failed because the `offer_category` parameter has a value other than `introductory` or `offer_type` but doesn’t include an `offer_id`. In this case, either provide an `offer_id` or remove the `offer_category` or `offer_type` from the request.
 

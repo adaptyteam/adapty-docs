@@ -1,4 +1,4 @@
-<!--- RefundDate.md --->
+
 
 The request failed because the purchase date (`purchased_at`) is earlier than or equal to the refund date (`refunded_at`). A refund always happens after a purchase, as it reverses the transaction.
 
