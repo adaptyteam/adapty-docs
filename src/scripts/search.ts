@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     const transformUrlForEnvironment = (originalUrl: string): string => {
         const currentOrigin = window.location.origin;
-        const currentPathname = window.location.pathname;
+        const baseUrl = import.meta.env.BASE_URL;
 
         // Parse the original URL
         let url = originalUrl;
@@ -93,12 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Extract the path after /docs/
                 const path = url.replace('https://adapty.io/docs/', '');
 
-                // Determine the base path for the current environment
-                // If we're already on a /docs path, use that as base
-                const basePath = currentPathname.startsWith('/docs') ? '' : '';
-
-                // Construct the new URL with current origin
-                url = `${currentOrigin}${basePath}/${path}`;
+                // Construct the new URL with current origin and base URL
+                url = `${currentOrigin}${baseUrl}/${path}`.replace(/\/+/g, '/');
             }
         }
 
