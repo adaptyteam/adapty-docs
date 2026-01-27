@@ -14,6 +14,7 @@ import { remarkTransformDetails } from './src/plugins/remark-transform-details.m
 import { remarkHeadingId } from './src/plugins/remark-heading-id.mjs';
 import { remarkTransformLinks } from './src/plugins/remark-transform-links.mjs';
 import { remarkStripImports } from './src/plugins/remark-strip-imports.mjs';
+import rehypeSlug from 'rehype-slug';
 
 // https://astro.build/config
 export default defineConfig({
@@ -41,6 +42,7 @@ export default defineConfig({
 
   markdown: {
     remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkStripImports, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+    rehypePlugins: [rehypeSlug],
     shikiConfig: {
       theme: 'github-light',
       wrap: true,
@@ -71,6 +73,7 @@ export default defineConfig({
     sitemap(),
     mdx({
       remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkStripImports, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+      rehypePlugins: [rehypeSlug],
       shikiConfig: {
         theme: 'github-light',
         wrap: true,
