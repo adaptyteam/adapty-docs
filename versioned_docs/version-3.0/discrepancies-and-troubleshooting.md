@@ -104,7 +104,7 @@ If you need to clearly distinguish between the two, you can [create a new user s
 
 Adapty doesn't have access to your application's historical data, unless you [manually import](importing-historical-data-to-adapty) it. If the chart's [time range](controls-filters-grouping-compare-proceeds#time-ranges) starts before you integrated Adapty into your application, and you haven't imported historical data, the values displayed will differ from other sources.
 
-If you did import pre-Adapty data, and the revenue values still differ, make sure that your transaction history [includes correct prices](#pricing-discrepancies).
+If you did import pre-Adapty data, and the revenue values still differ, make sure that your transaction history [includes correct prices](#product-pricing).
 
 ## Product editing
 
@@ -135,4 +135,4 @@ If you suspect that your data varies from platform to platform, and the reasons 
 * Even stores can experience issues related to data processing and presentation. Access the stores' **raw transaction data** for the most accurate comparison.
 * When comparing Adapty to another analytics platform, use store transaction reports as the source of truth and point of comparison.
 * It's easier to identify inconsistencies with a limited data set. Compare small volumes of data — focus on a specific product and a single day.
-* Identify whether your discrepancy stems from a difference in **pricing** or **event number**. Pricing issues can be fixed with a [product update](#pricing-discrepancies). Event issues may indicate [server-side problems](#connection-issues).
+* Identify whether your discrepancy stems from a difference in **pricing** or **event number**. Pricing issues can be fixed with a [product update](#product-pricing). Event issues may indicate [server-side problems](#connection-issues).
