@@ -86,6 +86,9 @@ const keywordsString = Array.isArray(keywords) ? keywords.join(', ') : keywords;
       height="0" width="0" style="display:none;visibility:hidden"></iframe>
     </noscript>
     
+    <!-- Persistent container for LiveChat widget to survive Astro transitions -->
+    <div id="livechat-persist-container" data-astro-transition-persist="livechat-container"></div>
+    
     <Header />
     
     <!-- Mobile Search Overlay -->
@@ -181,6 +184,43 @@ const keywordsString = Array.isArray(keywords) ? keywords.join(', ') : keywords;
     <script>
       import { initTheme } from '../scripts/theme';
       initTheme();
+    </script>
+    
+    <!-- Prevent horizontal jump during view transitions -->
+    <script>
+      // Lock viewport width during Astro view transitions to prevent scrollbar flicker
+      let lockedWidth = null;
+      
+      function lockWidth() {
+        // Capture current width including scrollbar
+        if (!lockedWidth) {
+          lockedWidth = document.documentElement.clientWidth + 'px';
+        }
+        // Lock the width
+        document.documentElement.style.setProperty('min-width', lockedWidth, 'important');
+        document.documentElement.style.setProperty('max-width', lockedWidth, 'important');
+        document.documentElement.style.setProperty('overflow-y', 'scroll', 'important');
+        document.body.style.setProperty('overflow-x', 'hidden', 'important');
+      }
+      
+      function unlockWidth() {
+        // Remove width locks after transition completes
+        setTimeout(() => {
+          document.documentElement.style.removeProperty('min-width');
+          document.documentElement.style.removeProperty('max-width');
+          lockedWidth = null;
+        }, 50);
+      }
+      
+      document.addEventListener('astro:before-preparation', lockWidth);
+      document.addEventListener('astro:before-swap', lockWidth);
+      document.addEventListener('astro:after-swap', () => {
+        lockWidth();
+        unlockWidth();
+      });
+      
+      // Initial lock
+      lockWidth();
     </script>
     
     
@@ -519,77 +559,172 @@ const keywordsString = Array.isArray(keywords) ? keywords.join(', ') : keywords;
     <!-- LiveChat Widget - Cloud Controlled -->
     <script is:inline>
       (function() {
+        // Prevent duplicate script loading
+        if (window.__livechatScriptLoaded) return;
+        window.__livechatScriptLoaded = true;
+        
         var s = document.createElement('script');
         s.src = 'https://back.sirius.ws/api/public/livechat/widget/b326501f-0bc9-467d-89fd-c5f9ef1eb573/script.js';
         s.async = true;
+        s.id = 'livechat-widget-script';
         document.body.appendChild(s);
       })();
 
-      // Inject "Ask AI" label next to the widget
+      // Inject "Ask AI" label next to the widget and persist across navigation
       (function() {
-        // Skip for API pages to avoid noise and interference
-        if (window.__isApiReferencePage) return;
+        function initLivechatLabel() {
+          // Skip for API pages to avoid noise and interference
+          if (window.__isApiReferencePage) return;
 
-        function injectLabel() {
-          if (document.getElementById('ask-ai-label')) return;
-          const widget = document.getElementById('livechat-widget-button');
-          if (!widget) return;
+          const persistContainer = document.getElementById('livechat-persist-container');
+          if (!persistContainer) return;
 
-          const label = document.createElement('div');
-          label.id = 'ask-ai-label';
-          label.innerText = 'Ask AI';
-          label.className = 'ask-ai-widget-label';
+          function moveWidgetToPersistentContainer() {
+            const widget = document.getElementById('livechat-widget-button');
+            if (!widget) return;
+            
+            // Move widget to persistent container if not already there
+            if (widget.parentElement !== persistContainer) {
+              persistContainer.appendChild(widget);
+            }
+          }
+
+          function injectLabel() {
+            if (document.getElementById('ask-ai-label')) return;
+            const widget = document.getElementById('livechat-widget-button');
+            if (!widget) return;
+
+            const label = document.createElement('div');
+            label.id = 'ask-ai-label';
+            label.innerText = 'Ask AI';
+            label.className = 'ask-ai-widget-label';
+            
+            // Add to persistent container
+            persistContainer.appendChild(label);
+          }
+
+          // Move any livechat-related elements to persistent container
+          function persistWidgetElements() {
+            // Look for all livechat widget elements
+            const widgetSelectors = [
+              '#livechat-widget-button',
+              '#livechat-widget-container',
+              '[id^="livechat"]',
+              '[class*="livechat"]'
+            ];
+            
+            widgetSelectors.forEach(selector => {
+              try {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(el => {
+                  // Move to persistent container if it's a direct child of body
+                  if (el.parentElement === document.body && el !== persistContainer) {
+                    persistContainer.appendChild(el);
+                  }
+                });
+              } catch (e) {
+                // Ignore invalid selectors
+              }
+            });
+          }
+
+          // Only inject style once
+          if (!document.getElementById('ask-ai-label-style')) {
+            const style = document.createElement('style');
+            style.id = 'ask-ai-label-style';
+            style.textContent = `
+              .ask-ai-widget-label {
+                position: fixed;
+                bottom: 20px;
+                right: 88px;
+                height: 60px; /* Match widget height for perfect centering */
+                display: flex;
+                align-items: center;
+                color: var(--accent-primary);
+                font-weight: 700;
+                font-size: 18px;
+                cursor: default;
+                z-index: 9998;
+                transition: all 0.2s ease;
+                font-family: 'Inter', system-ui, sans-serif;
+                opacity: 0;
+                transform: translateX(5px);
+                animation: askAiLabelFadeIn 0.6s ease forwards;
+                white-space: nowrap;
+                user-select: none;
+                letter-spacing: -0.01em;
+              }
+
+              @keyframes askAiLabelFadeIn {
+                to {
+                  opacity: 1;
+                  transform: translateX(0);
+                }
+              }
+
+              @media (max-width: 1024px) {
+                .ask-ai-widget-label {
+                  display: none;
+                }
+              }
+            `;
+            document.head.appendChild(style);
+          }
+
+          // Clean up old observer if exists
+          if (window.__livechatObserver) {
+            window.__livechatObserver.disconnect();
+          }
+
+          // Create new observer to watch for widget creation
+          window.__livechatObserver = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+              if (mutation.addedNodes.length > 0) {
+                // Check if any added nodes are livechat related
+                mutation.addedNodes.forEach(node => {
+                  if (node.nodeType === 1) { // Element node
+                    const el = node;
+                    if (el.id && (el.id.includes('livechat') || el.id === 'ask-ai-label')) {
+                      // Skip if it's already in the persistent container
+                      if (el.parentElement === persistContainer) return;
+                      
+                      // Move to persistent container
+                      if (el.parentElement === document.body) {
+                        persistContainer.appendChild(el);
+                      }
+                    }
+                  }
+                });
+                
+                // Run our functions
+                moveWidgetToPersistentContainer();
+                injectLabel();
+                persistWidgetElements();
+              }
+            }
+          });
+
+          window.__livechatObserver.observe(document.body, { 
+            childList: true, 
+            subtree: false // Only watch direct children of body
+          });
           
-          document.body.appendChild(label);
+          // Run immediately in case widget already exists
+          moveWidgetToPersistentContainer();
+          injectLabel();
+          persistWidgetElements();
         }
-
-        const style = document.createElement('style');
-        style.textContent = `
-          .ask-ai-widget-label {
-            position: fixed;
-            bottom: 20px;
-            right: 88px;
-            height: 60px; /* Match widget height for perfect centering */
-            display: flex;
-            align-items: center;
-            color: var(--accent-primary);
-            font-weight: 700;
-            font-size: 18px;
-            cursor: default;
-            z-index: 9998;
-            transition: all 0.2s ease;
-            font-family: 'Inter', system-ui, sans-serif;
-            opacity: 0;
-            transform: translateX(5px);
-            animation: askAiLabelFadeIn 0.6s ease forwards;
-            white-space: nowrap;
-            user-select: none;
-            letter-spacing: -0.01em;
-          }
-
-          @keyframes askAiLabelFadeIn {
-            to {
-              opacity: 1;
-              transform: translateX(0);
-            }
-          }
-
-          @media (max-width: 1024px) {
-            .ask-ai-widget-label {
-              display: none;
-            }
-          }
-        `;
-        document.head.appendChild(style);
-
-        const observer = new MutationObserver(() => {
-          if (document.getElementById('livechat-widget-button')) {
-            injectLabel();
-          }
-        });
-
-        observer.observe(document.body, { childList: true, subtree: true });
-        injectLabel();
+        
+        // Initialize on load
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initLivechatLabel);
+        } else {
+          initLivechatLabel();
+        }
+        
+        // Re-initialize on page transitions (Astro View Transitions)
+        document.addEventListener('astro:page-load', initLivechatLabel);
+        document.addEventListener('astro:after-swap', initLivechatLabel);
       })();
     </script>
     <!-- End LiveChat Widget -->
@@ -1106,30 +1241,62 @@ const keywordsString = Array.isArray(keywords) ? keywords.join(', ') : keywords;
     margin-top: 0 !important;
   }
   
-  /* Smooth view transitions - prevent white flash on redirects */
+  /* Instant view transitions - prevent horizontal shift */
   ::view-transition-old(root),
   ::view-transition-new(root) {
-    animation-duration: 0.2s;
+    animation-duration: 0ms;
+    animation: none;
   }
   
   ::view-transition-old(root) {
-    opacity: 1;
+    opacity: 0;
   }
   
   ::view-transition-new(root) {
-    opacity: 0;
-    animation: fadeIn 0.2s ease-in forwards;
+    opacity: 1;
   }
   
-  @keyframes fadeIn {
-    to {
-      opacity: 1;
-    }
+  ::view-transition-group(root) {
+    animation-duration: 0ms;
   }
   
   /* Ensure body maintains background color during transitions */
   html {
     background-color: var(--bg-primary);
+    /* Prevent horizontal jump from scrollbar appearance/disappearance */
+    overflow-y: scroll;
+    /* Modern approach - reserve space for scrollbar */
+    scrollbar-gutter: stable;
+  }
+  
+  /* Lock body width during view transitions to prevent horizontal shift */
+  html::view-transition-group(*),
+  html::view-transition-old(*),
+  html::view-transition-new(*) {
+    overflow: clip;
+  }
+  
+  /* Prevent layout shift during view transitions */
+  html::view-transition-group(root) {
+    animation-duration: 0.2s;
+  }
+  
+  html::view-transition-old(root),
+  html::view-transition-new(root) {
+    /* Prevent scrollbar from affecting width during transition */
+    overflow-y: scroll;
+    mix-blend-mode: normal;
+  }
+  
+  /* Force body to maintain scrollbar space during transition */
+  html.astro-transitioning,
+  html[data-astro-transition] {
+    overflow-y: scroll !important;
+  }
+  
+  body {
+    /* Ensure body doesn't change width during transitions */
+    min-width: 100%;
   }
 </style>
 

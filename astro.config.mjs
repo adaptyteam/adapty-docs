@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import sitemap from '@astrojs/sitemap';
 import path from 'node:path';
 
 import tailwindcss from '@tailwindcss/vite';
@@ -67,6 +68,7 @@ export default defineConfig({
 
   integrations: [
     react(),
+    sitemap(),
     mdx({
       remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkStripImports, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
       shikiConfig: {

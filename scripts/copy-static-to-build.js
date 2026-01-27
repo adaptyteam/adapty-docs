@@ -62,7 +62,7 @@ async function copyStaticMarkdownAndLlms() {
     }
     
     // Copy platform-specific LLM files
-    const platforms = ['ios', 'android', 'react-native', 'flutter', 'unity'];
+    const platforms = ['ios', 'android', 'react-native', 'flutter', 'unity', 'kmp', 'capacitor', 'api', 'tutorial'];
     for (const platform of platforms) {
       // Copy regular platform LLM file
       const platformLlmsPath = path.join(staticDir, `${platform}-llms.txt`);
