@@ -9,116 +9,118 @@ import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
 
-We’re thrilled you’ve decided to use Adapty! We want you to get the best results from the very first build. This guide will walk you through how to get started with Adapty
+We’re thrilled you’ve decided to use Adapty! We hope the implementation went well. This guide will walk you through the steps to ensure your app is ready for publishing in stores, and you can rest assured that the monetization flow works.
 
-### Installing Adapty SDK
+## Pre-flight essentials
 
-Install Adapty SDK in your app and be sure you have replaced the **"PUBLIC_SDK_KEY"** placeholder with your actual **[Public SDK key](https://app.adapty.io/settings/general)**.
+What you need before starting validation:
 
-Bear in mind, that SDK calls must be made after calling** `.activate()`** method. Otherwise, we won't be able to authenticate requests and they will be canceled.
+- A real device with a sandbox account
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="swift" label="iOS" default>
-```swift showLineNumbers
-Adapty.activate("PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
-```
+- Access to the Adapty Dashboard
+
+- Access to App Store Connect / Google Play Console
+
+:::note
+While sandbox purchases can run on simulators, real devices are needed to fully test all flows, including payment dialogs and biometric prompts.
+:::
+
+<Button id="test-purchases-in-sandbox">
+    Testing guide for App Store
+</Button>
+
+<Button id="testing-on-android">
+    Testing guide for Google Play
+</Button>
+
+## Universal validations
+
+- [ ] **Store connection**: Ensure you have connected Adapty to App Store and/or Google Play:
+    - [ ] [App Store](initial_ios)
+    - [ ] [Google Play](initial-android)
+- [ ] **Subscription event delivery**: Confirm server notifications are set up:
+    - [ ] [App Store server notifications](enable-app-store-server-notifications)
+    - [ ] [Real-time developer notifications (RTDN)](enable-real-time-developer-notifications-rtdn)
+- [ ] **Profile identification**: Validate user identification logic and ensure purchases map to the correct profile:
+    - [ ] [Check that the identification logic in your app code matches your use case](ios-quickstart-identify)
+    - [ ] [Ensure you understand the parent/inheritor logic for sharing paid access between user profiles](sharing-paid-access-between-user-accounts)
+- [ ] **Offers**: If you have App Store promotional offers in the app, ensure that you have [added your In-app purchase key](app-store-connection-configuration#step-4-for-trials-and-special-offers--set-up-promotional-offers) both to the main field and to the **App Store promotional offers** section.
+- [ ] **Data collection**: Ensure privacy compliance:
+    - [ ] If you need to comply with privacy regulations like GDPR or CCPA or your app is intended for kids, control whether you [enable IDFA and IP collection and sharing](sdk-installation-ios#data-policies).
+    - [ ] If your app uses AppTrackingTransparency, ensure you're [sending the authorization status to Adapty](ios-deal-with-att).
+- [ ] **Privacy labels**: [Learn more](apple-app-privacy) about the data Adapty collects and which flags you'd need to set for a review.
+
+## Purchase validations
+
+Before going live, ensure that purchases in your app work correctly, and your paywall is ready for the store review.
+
+The way you validate in-app purchases depends on the way you implement them:
+
+- You display a paywall created in the Adapty Paywall Builder
+- You have implemented your own paywall and use the `makePurchase` method inside it to handle purchases
+- You use Adapty in the observer mode (either with the Adapty Paywall Builder or your custom paywall)
+
+<Tabs groupId="paywall" queryString>
+<TabItem value="builder" label="Adapty Paywall Builder" default>
+
+**Goal**: Adapty renders paywall, users can purchase products, access unlocks, and restoration flow works.
+
+- [ ] Your app [displays the paywall](ios-present-paywalls) from the same placement you will ship.
+    - [ ] Paywall displays on the screen. If loading takes too much time (e.g., if you or your users deal with unstable internet), consider [adjusting your fetch policy](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder).
+    - [ ] Paywall matches expected variant (audience/locale if applicable). You can [change the audience priority](change-audience-priority) if needed.
+- [ ] Products and prices appear on the paywall. Note that Apple's API can occasionally provide inaccurate prices during testing (especially with different region configurations), so prioritize testing the purchase flow functionality over price accuracy since Adapty doesn't affect Store prices.
+- [ ] Sandbox purchase completes successfully. Successful purchase callback is received.
+- [ ] Access unlocks and persists. Confirm that [paid access is granted based on the current Adapty profile](ios-check-subscription-status#connect-profile-with-paywall-logic).
+    - [ ] After purchase, the Adapty profile has an active access level.
+    - [ ] Paid features unlock when the profile contains that access level (not just on the purchase callback).
+- [ ] Restoring purchases works. When you reinstall the app or install it on a new device, the automated purchase restoration works according to the [Sharing paid access](sharing-paid-access-between-user-accounts) setting. If you don't have any backend authentication, purchases are restored automatically regardless of the setting. On other cases, ensure that users can restore their purchases after reinstalling the app.
+- [ ] Store review requirements:
+    - [ ] The **Restore purchases** button is on the paywall. You can add it in the paywall builder, and it will process purchase restorations automatically when tapped.
+    - [ ] Terms of Use + Privacy Policy are accessible from the paywall screen, and clicking these links opens them in a browser.
+
 </TabItem>
-<TabItem value="kotlin" label="Android" default>
-```kotlin showLineNumbers
-override fun onCreate() {
-    super.onCreate()
-    Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", customerUserId: "YOUR_USER_ID")
-}
-```
+<TabItem value="makepurchase" label="Custom paywall (makePurchase)" default>
+
+**Goal**: You render UI; Adapty handles purchases, profile updates, and restorations.
+
+- [ ] Products IDs are not hardcoded in your app code. You only hardcode [placement](placement) IDs.
+- [ ] Your app [fetches products](fetch-paywalls-and-products) from the same placement you will ship.
+    - [ ] Product list loads successfully. If loading takes too much time (e.g., if you or your users deal with unstable internet), consider [adjusting your fetch policy](fetch-paywalls-and-products#fetch-paywall-information).
+    - [ ] The fetched products match the expected variant (audience/locale if applicable). You can [change the audience priority](change-audience-priority) if needed.
+- [ ] Products and prices appear on the paywall. Note that Apple's API can occasionally provide inaccurate prices during testing (especially with different region configurations), so prioritize testing the purchase flow functionality over price accuracy since Adapty doesn't affect Store prices.
+- [ ] Sandbox purchase with [makePurchase](making-purchases) completes successfully:
+    - [ ] Successful purchase result is handled.
+    - [ ] Pending/failed/cancelled outcomes are handled gracefully.
+- [ ] If you [use a remote config](present-remote-config-paywalls), its values are pulled correctly to your paywall.
+- [ ] When a paywall is presented, the [`logShowPaywall` method](present-remote-config-paywalls#track-paywall-view-events) is called.
+- [ ] Sandbox purchase completes successfully. Successful purchase callback is received.
+- [ ] Access unlocks and persists. Confirm that [paid access is granted based on the current Adapty profile](ios-check-subscription-status#connect-profile-with-paywall-logic).
+    - [ ] After purchase, the Adapty profile has an active access level.
+    - [ ] Paid features unlock when the profile contains that access level (not just on the purchase callback).
+- [ ] Restoring purchases works. When you reinstall the app or install it on a new device, the automated purchase restoration works according to the [Sharing paid access](sharing-paid-access-between-user-accounts) setting. If you don't have any backend authentication, purchases are restored automatically regardless of the setting. On other cases, ensure that users can restore their purchases after reinstalling the app.
+- [ ] Store review requirements:
+    - [ ] The **Restore purchases** button is accessible and [handles restorations](restore-purchase).
+    - [ ] Terms of Use + Privacy Policy are accessible from the paywall screen, and clicking these links opens them in a browser.
+
 </TabItem>
-<TabItem value="flutter" label="Flutter - info.plist" default>
-```xml showLineNumbers
-<dict>
-    ...
-    <key>AdaptyPublicSdkKey</key>
-    <string>PUBLIC_SDK_KEY</string>
-</dict>
-```
-</TabItem>
-<TabItem value="flutter2" label="Flutter - AndroidManifest.xml" default>
+<TabItem value="observer" label="Observer mode">
 
-```xml showLineNumbers
-<application ...>
-       ...
-       <meta-data
-              android:name="AdaptyPublicSdkKey"
-              android:value="PUBLIC_SDK_KEY" />
-</application>
-```
-</TabItem>
-<TabItem value="rn" label="React Native (TS)" default>
-```typescript showLineNumbers title="React Native - /src/App.tsx"
-import { activateAdapty } from 'react-native-adapty';
+**Goal**: You handle purchases, profile updates, and restorations yourself; Adapty receives transaction reporting.
 
-const App: React.FC = () => {
-  // ...
-  useEffect(() => {
-    activateAdapty({ sdkKey: 'PUBLIC_SDK_KEY' });
-  }, []);
-  // ...
-}
-```
-</TabItem>
-
-<TabItem value="kmp" label="Kotlin Multiplatform" default>
-
-```kotlin showLineNumbers
-// In your Application subclass
-class MyApp : Application() {
-    override fun onCreate() {
-        super.onCreate()
-
-        val config = AdaptyConfig
-            .Builder("PUBLIC_SDK_KEY")
-            .build()
-
-        Adapty.activate(configuration = config) { error ->
-            if (error == null) {
-                Log.d("Adapty", "SDK initialised")
-            } else {
-                Log.e("Adapty", "Adapty init error: ${'$'}{error.message}")
-            }
-        }
-    }
-}
-```
-
+- [ ] **Your app completes purchases using your own purchase flow** (StoreKit / BillingClient / backend):
+    - [ ] Sandbox purchase succeeds in the store UI.
+    - [ ] Pending/failed/cancelled outcomes are handled gracefully in your app.
+- [ ] **Transactions are reported to Adapty**.
+    - [ ] The observer mode is [enabled in your app code](implement-observer-mode).
+    - [ ] The purchase appears in the Adapty Event Feed.
+    - [ ] Renewals, cancellations, and refunds are reflected over time (as applicable).
+- [ ] **Paywall views are tracked**. The [`logShowPaywall` method](present-remote-config-paywalls#track-paywall-view-events) is called when a paywall is shown.
+- [ ] **Restore purchases works for your implementation**. Reinstalling the app or switching devices restores access correctly.
+- [ ] **Store review requirements**:
+    - [ ] The **Restore purchases** action is accessible and triggers your restore flow.
+    - [ ] Terms of Use + Privacy Policy are accessible from the paywall or purchase screen and open in a browser.
 </TabItem>
 
 </Tabs>
 
-### Configuring processing of purchases
-
-Adding  **App Store shared secret** for [iOS](app-store-connection-configuration#step-4-enter-app-store-shared-secret) and both **package name** with **service account key file** for [Android](google-play-store-connection-configuration#step-2-upload-the-account-key-file) would be necessary to allow Adapty to successfully process purchasing events.
-
-### Subscription Events
-
-Here is what you can do to set up tracking of subscription events.
-
-|                 |                                                              |
-| :-------------- | :----------------------------------------------------------- |
-| **For iOS**     | Update the App Store Server Notifications with our [link](enable-app-store-server-notifications) |
-| **For Android** | Set up [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn) |
-
-### Promo campaigns and promo offers
-
-If you want to use Adapty along with Apple Promotional Offers, adding a [subscription key](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file) will allow us to sign offers.
-
-### Notes
-
-:::warning
-Don't forget about Privacy Labels
-
-[Learn more](apple-app-privacy) about the data Adapty collects and which flags you'd need to set for a review.
-:::
-
-:::danger
-Make sure to [send paywall views](present-remote-config-paywalls#track-paywall-view-events) to Adapty using **.logShowPaywall()** method. Otherwise, paywall views will not be accounted for in the metrics and conversions will be irrelevant.
-:::
-
-If you have any questions about integrating Adapty SDK, feel free to contact us using [the website](https://adapty.io) (we use Intercom in the bottom right corner) or just email us at [support@adapty.io](mailto:support@adapty.io).
+If you have any questions about integrating Adapty SDK, use the AI chatbot at the bottom right or contact us at [support@adapty.io](mailto:support@adapty.io).

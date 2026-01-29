@@ -231,6 +231,32 @@ import CustomDocCardList from '@site/src/components/CustomDocCardList.astro';
 // Manually specify pages
 <CustomDocCardList ids={['ios-quickstart', 'android-quickstart', 'react-native-quickstart']} />
 ```
+### 6. Button - Action button
+
+A stylized button for primary actions or links to other articles. Matches the Adapty brand design.
+
+**Props (at least one is required):**
+- `id`: The ID of the article to link to (e.g., `ios-sdk-installation`). Links open in the **same tab**.
+- `href`: A full URL for external links (e.g., `https://app.adapty.io`). Links open in a **new tab**.
+
+**Usage:**
+
+```mdx
+// Link to another article
+<Button id="ios-sdk-installation">
+  Install iOS SDK
+</Button>
+
+// External link
+<Button href="https://app.adapty.io/registration">
+  Sign up for Free
+</Button>
+```
+
+**Features:**
+- **Auto-registered**: You don't need to import `Button` manually at the top of your MDX file.
+- **Left-aligned**: The button always starts on a new line and is left-aligned.
+- **Responsive**: Adapts styling for light and dark modes.
 
 ## Markdown features
 
