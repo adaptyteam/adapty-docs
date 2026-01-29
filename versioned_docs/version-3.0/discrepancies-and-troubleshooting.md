@@ -104,8 +104,6 @@ If you need to clearly distinguish between the two, you can [create a new user s
 
 Adapty doesn't have access to your application's historical data, unless you [manually import](importing-historical-data-to-adapty) it. If the chart's [time range](controls-filters-grouping-compare-proceeds#time-ranges) starts before you integrated Adapty into your application, and you haven't imported historical data, the values displayed will differ from other sources.
 
-If you did import pre-Adapty data, and the revenue values still differ, make sure that your transaction history [includes correct prices](#product-pricing).
-
 ## Product editing
 
 Incorrect or inconsistent product data may cause discrepancies in analytics. Do not edit the **access level** or the **store product ID** unless you accidentally make a typo in one or the other. Create a new product instead.
