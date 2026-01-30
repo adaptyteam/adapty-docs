@@ -14,6 +14,9 @@ import { remarkTransformDetails } from './src/plugins/remark-transform-details.m
 import { remarkHeadingId } from './src/plugins/remark-heading-id.mjs';
 import { remarkTransformLinks } from './src/plugins/remark-transform-links.mjs';
 import { remarkStripImports } from './src/plugins/remark-strip-imports.mjs';
+import { remarkStripHighlightComments } from './src/plugins/remark-strip-highlight-comments.mjs';
+import rehypeSlug from 'rehype-slug';
+import { highlightLinesTransformer } from './src/plugins/shiki-highlight-transformer.mjs';
 
 // https://astro.build/config
 export default defineConfig({
@@ -40,7 +43,8 @@ export default defineConfig({
   },
 
   markdown: {
-    remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkStripImports, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+    remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+    rehypePlugins: [rehypeSlug],
     shikiConfig: {
       theme: 'github-light',
       wrap: true,
@@ -61,7 +65,8 @@ export default defineConfig({
               node.properties['data-language'] = lang;
             }
           }
-        }
+        },
+        highlightLinesTransformer()
       ]
     },
   },
@@ -70,7 +75,8 @@ export default defineConfig({
     react(),
     sitemap(),
     mdx({
-      remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkStripImports, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+      remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+      rehypePlugins: [rehypeSlug],
       shikiConfig: {
         theme: 'github-light',
         wrap: true,
@@ -91,7 +97,8 @@ export default defineConfig({
                 node.properties['data-language'] = lang;
               }
             }
-          }
+          },
+          highlightLinesTransformer()
         ]
       }
     })

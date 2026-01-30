@@ -1,0 +1,12 @@
+---
+title: "Migrate Adapty Capacitor SDK to v. 3.16"
+description: "Migrate to Adapty Capacitor SDK v3.16 for better performance and new monetization features."
+metadataTitle: "Migrating to Adapty Capacitor SDK v3.16 | Adapty Docs"
+---
+
+Starting from Adapty SDK v.3.16.0, Capacitor 8 is required. If you need Capacitor 7, use Adapty SDK v.3.15.
+
+To upgrade to Capacitor SDK v.3.16, ensure your project uses Capacitor 8. If you're still using Capacitor 7, you have two options:
+
+1. **Upgrade to Capacitor 8**: Follow the [official Capacitor migration guide](https://capacitorjs.com/docs/updating/8-0) to update your project, then install Adapty SDK v.3.16.
+2. **Stay on Adapty SDK v.3.15**: If upgrading to Capacitor 8 is not feasible, continue using Adapty SDK v.3.15, which supports Capacitor 7.

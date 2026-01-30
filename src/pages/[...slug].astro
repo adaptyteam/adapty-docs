@@ -13,6 +13,7 @@ import Details from '../components/Details.astro';
 import InlineTooltip from '../components/InlineTooltip.astro';
 import ZoomImage from '../components/ZoomImage.astro';
 import ArticleButtons from '../components/ArticleButtons.astro';
+import Button from '../components/Button.astro';
 import MDXImage from '../components/MDXImage.astro';
 import { Calculator } from '../components/Calculator';
 
@@ -250,6 +251,7 @@ const globalComponents = Object.entries(reusableComponents).reduce((acc, [path, 
           ZoomImage,
           MDXImage,
           Calculator,
+          Button,
           img: MDXImage,
           ...globalComponents
         }} />
@@ -361,7 +363,86 @@ const globalComponents = Object.entries(reusableComponents).reduce((acc, [path, 
     });
   }
 
+  function initHeadingAnchors() {
+    // Find all headings with IDs in the content wrapper
+    const contentWrapper = document.querySelector('.content-wrapper');
+    if (!contentWrapper) return;
+
+    const headings = contentWrapper.querySelectorAll('h2[id], h3[id], h4[id], h5[id], h6[id]');
+    
+    headings.forEach(heading => {
+      // Skip if anchor already exists
+      if (heading.querySelector('.heading-anchor')) return;
+      
+      const id = heading.getAttribute('id');
+      if (!id) return;
+
+      // Create anchor button
+      const anchor = document.createElement('button');
+      anchor.className = 'heading-anchor';
+      anchor.setAttribute('aria-label', 'Copy link to this section');
+      anchor.setAttribute('title', 'Copy link');
+      
+      // Add link icon
+      anchor.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+      `;
+
+      // Add click handler
+      anchor.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const url = new URL(window.location.href);
+        url.hash = id;
+        const fullUrl = url.toString();
+        
+        try {
+          await navigator.clipboard.writeText(fullUrl);
+          
+          // Visual feedback
+          anchor.classList.add('copied');
+          const originalTitle = anchor.getAttribute('title');
+          anchor.setAttribute('title', 'Copied!');
+          
+          setTimeout(() => {
+            anchor.classList.remove('copied');
+            anchor.setAttribute('title', originalTitle || 'Copy link');
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to copy anchor link:', err);
+          // Fallback
+          try {
+            const textArea = document.createElement('textarea');
+            textArea.value = fullUrl;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            anchor.classList.add('copied');
+            setTimeout(() => {
+              anchor.classList.remove('copied');
+            }, 2000);
+          } catch (fallbackErr) {
+            console.error('Fallback copy also failed:', fallbackErr);
+          }
+        }
+      });
+
+      // Insert at the beginning of the heading
+      heading.insertBefore(anchor, heading.firstChild);
+    });
+  }
+
   // Run on load and astro navigation
   initCopyLinkButton();
-  document.addEventListener('astro:page-load', initCopyLinkButton);
+  initHeadingAnchors();
+  document.addEventListener('astro:page-load', () => {
+    initCopyLinkButton();
+    initHeadingAnchors();
+  });
 </script>
