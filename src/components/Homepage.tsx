@@ -74,7 +74,7 @@ const Homepage: React.FC = () => {
               </svg>
             </div>
             <div className="action-card-content">
-              <h3 className="action-card-title">Explore revenue & churn analytics</h3>
+              <h3 className="action-card-title">Explore analytics</h3>
               <p className="action-card-description">
                 Review detailed metrics related to your app monetization.
               </p>
