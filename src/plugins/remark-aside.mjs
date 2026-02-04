@@ -6,7 +6,7 @@ export function remarkAside() {
             if (node.type !== 'containerDirective') return;
 
             const type = node.name;
-            if (!['note', 'tip', 'info', 'warning', 'danger'].includes(type)) return;
+            if (!['note', 'tip', 'info', 'warning', 'danger', 'link'].includes(type)) return;
 
             // Transform to MDX JSX Component (<Callout>)
             node.type = 'mdxJsxFlowElement';
