@@ -20,16 +20,16 @@ If you are building paywalls using the Adapty paywall builder, it's crucial to s
 
 This guide shows how to handle custom and pre-existing actions in your code.
 
-## Set up the AdaptyUIObserver
+## Set up the AdaptyUIPaywallsEventsObserver
 
-To handle paywall actions, you need to implement the `AdaptyUIObserver` interface and set it up with `AdaptyUI.setObserver()`. This should be done early in your app's lifecycle, typically in your main activity or app initialization.
+To handle paywall actions, you need to implement the `AdaptyUIPaywallsEventsObserver` interface and set it up with `AdaptyUI.setPaywallsEventsObserver()`. This should be done early in your app's lifecycle, typically in your main activity or app initialization.
 
 ```kotlin
 import com.adapty.kmp.AdaptyUI
-import com.adapty.kmp.AdaptyUIObserver
+import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
 
 // In your app initialization
-AdaptyUI.setObserver(MyAdaptyUIObserver())
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
 ```
 
 ## Close paywalls
@@ -44,12 +44,13 @@ In the Kotlin Multiplatform SDK, the `CloseAction` and `AndroidSystemBackAction`
 :::
 
 ```kotlin
-import com.adapty.kmp.AdaptyUIObserver
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
 import com.adapty.kmp.models.AdaptyUIAction
-import com.adapty.kmp.models.AdaptyUIView
+import com.adapty.kmp.models.AdaptyUIPaywallView
 
-class MyAdaptyUIObserver : AdaptyUIObserver {
-    override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
+class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
         when (action) {
             AdaptyUIAction.CloseAction, AdaptyUIAction.AndroidSystemBackAction -> view.dismiss()
         }
@@ -57,7 +58,7 @@ class MyAdaptyUIObserver : AdaptyUIObserver {
 }
 
 // Set up the observer
-AdaptyUI.setObserver(MyAdaptyUIObserver())
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
 ```
 
 ## Open URLs from paywalls
@@ -76,23 +77,47 @@ In the Kotlin Multiplatform SDK, the `OpenUrlAction` provides the URL that shoul
 :::
 
 ```kotlin
-import com.adapty.kmp.AdaptyUIObserver
+import androidx.compose.ui.platform.UriHandler
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
 import com.adapty.kmp.models.AdaptyUIAction
-import com.adapty.kmp.models.AdaptyUIView
-import kotlinx.coroutines.launch
+import com.adapty.kmp.models.AdaptyUIDialogActionType
+import com.adapty.kmp.models.AdaptyUIPaywallView
+import com.adapty.kmp.models.getOrNull
 
-class MyAdaptyUIObserver : AdaptyUIObserver {
-    override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
-        when (action) {    
+class MyAdaptyUIPaywallsEventsObserver(
+    private val uriHandler: UriHandler
+) : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
             is AdaptyUIAction.OpenUrlAction -> {
-                // Handle URL opening - you can use your preferred method
-                // For example, in Compose Multiplatform:
-                // uriHandler.openUri(action.url)
-                
+                // Show confirmation dialog before opening URL
+                mainUiScope.launch {
+                    val selectedAction = view.showDialog(
+                        title = "Open URL?",
+                        content = action.url,
+                        primaryActionTitle = "Cancel",
+                        secondaryActionTitle = "Open"
+                    ).getOrNull()
+
+                    when (selectedAction) {
+                        AdaptyUIDialogActionType.PRIMARY -> {
+                            // User cancelled
+                        }
+                        AdaptyUIDialogActionType.SECONDARY -> {
+                            // User confirmed - open URL
+                            uriHandler.openUri(action.url)
+                        }
+                        else -> Unit
+                    }
+                }
             }
         }
     }
 }
+
+// Set up the observer with UriHandler
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver(uriHandler))
 ```
 
 ## Log into the app
@@ -133,28 +158,28 @@ To add a button that handles any other actions:
 For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another paywall:
 
 ```kotlin
-import com.adapty.kmp.AdaptyUIObserver
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
 import com.adapty.kmp.models.AdaptyUIAction
-import com.adapty.kmp.models.AdaptyUIView
+import com.adapty.kmp.models.AdaptyUIPaywallView
 
-class MyAdaptyUIObserver : AdaptyUIObserver {
-    override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
+class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
         when (action) {
             is AdaptyUIAction.CustomAction -> {
                 when (action.action) {
-                    "openNewPaywall" -> {
-                        // Display another paywall
-                        // You would typically fetch and present a new paywall here
-                    }
                     "login" -> {
-                        // Handle login action
-                    }
-                    else -> {
-                        // Handle other custom actions
+                        // Handle login action - navigate to login screen
+                        // This depends on your app's navigation system
+                        // For example, in Compose Multiplatform:
+                        // navController.navigate("login")
                     }
                 }
             }
         }
     }
 }
+
+// Set up the observer
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
 ```
