@@ -8,6 +8,8 @@ import tailwindcss from '@tailwindcss/vite';
 import mdx from '@astrojs/mdx';
 import react from '@astrojs/react';
 import remarkDirective from 'remark-directive';
+import rehypeSlug from 'rehype-slug';
+import { highlightLinesTransformer } from './src/plugins/shiki-highlight-transformer.mjs';
 import { remarkAside } from './src/plugins/remark-aside.mjs';
 import { remarkTransformRequire } from './src/plugins/remark-transform-require.mjs';
 import { remarkTransformDetails } from './src/plugins/remark-transform-details.mjs';
@@ -15,8 +17,6 @@ import { remarkHeadingId } from './src/plugins/remark-heading-id.mjs';
 import { remarkTransformLinks } from './src/plugins/remark-transform-links.mjs';
 import { remarkStripImports } from './src/plugins/remark-strip-imports.mjs';
 import { remarkStripHighlightComments } from './src/plugins/remark-strip-highlight-comments.mjs';
-import rehypeSlug from 'rehype-slug';
-import { highlightLinesTransformer } from './src/plugins/shiki-highlight-transformer.mjs';
 
 // https://astro.build/config
 export default defineConfig({
