@@ -4,47 +4,48 @@ description: "Integrate Google Cloud Storage with Adapty for secure data storage
 metadataTitle: "Google Cloud Storage Integration | Adapty Docs"
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+import ZoomImage from '@site/src/components/ZoomImage.astro';
+import Details from '@site/src/components/Details.astro';
 
-Adapty's integration with Google Cloud Storage allows you to store event and paywall visit data securely in one central location.  You will be able to save your [subscription events](events) to your Google Cloud Storage bucket as .csv files.  
-To set up this integration, you will need to follow a few simple steps in the Google Cloud Console and Adapty Dashboard.
+Enable the Google Cloud Storage integration to securely store [subscription events](events) and [paywall visit data](paywall-metrics) in one central location: your Google Cloud Storage bucket.
 
-:::note
-Schedule
+Every day at 4AM UTC, Adapty will upload .csv files with the previous day's data to your buckets. You can choose whether you want to receive **event** data, **paywall visit** data, or **both**. You can also export this data [manually](#manual-data-export) at any time, for any time period.
 
-Adapty sends your data to Google Cloud Storage every 24h at 4:00 UTC.
+To set up the integration, [generate a bucket access key](#create-google-cloud-storage-credentials) in your Google Cloud console, and [add it to your Adapty settings](#set-up-google-cloud-storage-integration).
 
-Each file will contain data for the events created for the entire previous calendar day in UTC. For example, the data exported automatically at 4:00 UTC on March 8th will contain all the events created on March 7th from 00:00:00 to 23:59:59 in UTC.
+## Upload schedule and duration
+
+Adapty uploads data to Google Cloud Storage every 24 hours, at 0400 UTC.
+
+The files contain data for events created during the previous calendar day (UTC). The file uploaded on March 8th will contain all the events created on March 7th, from 000000 to 235959 UTC.
+
+The process may take up to several hours, depending on the total number of files in the queue, as well as the amount of data you personally requested. If Adapty includes historical data with your first upload, it will take longer than the subsequent daily uploads.
+
+## Set up Google Cloud storage integration
+
+You need to have a valid Google Cloud service account key with **write access**. To generate it, follow the steps in the [create credentials](#create-google-cloud-storage-credentials) section.
+
+:::warning
+You can use different buckets with different credentials for events and paywall visits. However, if **either** set of credentials is invalid, [**both uploads will fail**](#troubleshooting).
 :::
 
-## How to set up Google Cloud storage integration
+Go to [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage), and open the necessary tab (**Events** or **Paywall visits**). Enable the integration.
 
-To integrate Google Cloud Storage go to [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage), turn on a toggle from off to on, and fill out fields.
+Upload the file with your **Google Cloud service account key**. Specify the target **bucket** and **folder**. Save your changes.
 
-First of all set credentials to build a connection between Google Cloud Storage and Adapty profiles. 
+<ZoomImage id="google-cloud-storage-setup.webp" width="700px" />
 
-<Zoom>
-  <img src="/assets/shared/img/eea5f4e-CleanShot_2023-03-17_at_14.20.312x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+### Optional settings for event data
 
-In the Adapty Dashboard, the following fields are needed to set up the connection:
+You can specify which events to include in the report, and set custom names for the events. See the [events](events) article for the full list of available events.
 
-| Field                                           | Description                                                                                                                                                                                                                                                                                        |
-| :---------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Google Cloud Client ID**                      | A unique identifier assigned to your Google Cloud project when you create a new client in the Google Cloud Console. Find this ID in the downloaded private [JSON key file](google-cloud-storage#create-google-cloud-storage-credentials)  under the `client_id` field. |
-| **Google Cloud Project ID**                     | A user-assigned identifier for your Google Cloud project. Find this ID in the downloaded private JSON key file under the `project_id` field.                                                                                                                                                       |
-| **Google Cloud Service Account Private Key ID** | A unique identifier assigned to your private key when you create a new service account in the Google Cloud Console.  Find this ID in the downloaded private JSON key file under the `private_key_id` field.                                                                                        |
-| **Google Cloud Bucket Name**                    | The name of the bucket in Google Cloud Storage where you want to store your data. It should be unique within the Google Cloud Storage environment and should not contain any spaces.                                                                                                               |
-| **Email**                                      | The email address associated with your service account in Google Cloud Console. It is used to grant access to resources in your project.                                                                                                                                                           |
-| **Folder inside the bucket**                   | The name of the folder inside the bucket where you want to store your data. It should be unique within the bucket and can be used to organize your data. This field is optional to fill.                                                                                                           |
+<ZoomImage id="event-specific-settings.webp" width="700px" />
+
+| Name                 | Default     | Description |
+| ------------------------------ | ----------------- | ----------- |
+| Exclude historical events      | true    |   Exclude information about events that occurred before you integrated the Adapty SDK into your app. <br /> <br />If your analytics platform received subscription events **before** you started using Adapty, this option ensures that it does not receive any duplicate events. <Details summary="Practical example"><p>A user purchased a monthly subscription on January 10th. The March 1st update of your application was the first to include the Adapty SDK. <br /> <br /> If this setting is **on**, the report won't include the "subscription started" event from January, nor the "susbcription renewed" event from February. It **will** include the "subscription renewed" event from the 10th of March.</p> </Details> |
+| Include events without profile | false | Include transactions that are not linked to a user profile, or cannot be immediately associated with a specific user. These may include purchases made before the Adapty SDK was installed, or transactions received via server notifications. |
+| Send user attributes           | false |    Include [custom user attributes](setting-user-attributes), such as user data and app usage data. Select this option if your OneSignal plan supports more than 10 tags. Note that exceeding tag limits may result in errors.  |
 
 ## Create Google Cloud Storage credentials
 
@@ -56,152 +57,58 @@ In order for Adapty to upload raw data reports to your designated bucket, the se
 Please note that we only support Service Account HMAC key authorization, means it's essential to ensure that your Service Account HMAC key has the "Storage Object Viewer", "Storage Legacy Bucket Writer" and "Storage Object Creator" roles added to it to enable proper access to Google Cloud Storage.
 :::
 
-1. For the first step, you need to go to the [IAM](https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts) section of your Google Cloud account and choose the relevant project or create a new one. 
+1. For the first step, you need to go to the [IAM](https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts) section of your Google Cloud account and choose the relevant project or create a new one.
 
-<Zoom>
-  <img src="/assets/shared/img/30a81ef-CleanShot_2023-03-17_at_15.22.142x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+  <ZoomImage id="30a81ef-CleanShot_2023-03-17_at_15.22.142x.webp" width="700px" />
 
-2. Next, create a new service account for the Adapty by clicking on the "+ CREATE SERVICE ACCOUNT" button.
 
-   
+1. Next, create a new service account for the Adapty by clicking on the "+ CREATE SERVICE ACCOUNT" button.
 
-<Zoom>
-  <img src="/assets/shared/img/98f8ebf-CleanShot_2023-03-17_at_15.40.062x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+    <ZoomImage id="98f8ebf-CleanShot_2023-03-17_at_15.40.062x.webp" width="700px" />
 
-3. Fill out the fields in the first step, as access will be granted at a later stage. In order to read more details about this page read the documentation [here](https://cloud.google.com/iam/docs/service-accounts-create).
+2. Fill out the fields in the first step, as access will be granted at a later stage. In order to read more details about this page read the documentation [here](https://cloud.google.com/iam/docs/service-accounts-create).
 
-   
+    <ZoomImage id="2190c50-CleanShot_2023-03-17_at_15.48.552x.webp" width="700px" />
 
-<Zoom>
-  <img src="/assets/shared/img/2190c50-CleanShot_2023-03-17_at_15.48.552x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+3. To create and download a [private JSON key](https://cloud.google.com/iam/docs/keys-create-delete), navigate to the KEYS section and click on the "ADD KEY" button.
 
-4. To create and download a [private JSON key](https://cloud.google.com/iam/docs/keys-create-delete), navigate to the KEYS section and click on the "ADD KEY" button.
+    <ZoomImage id="8a45468-CleanShot_2023-03-17_at_15.58.092x.webp" width="700px" />
 
-   
+4. In the DETAILS section, locate the Email value linked to the recently created service account and make a copy of it. This information will be necessary for the upcoming steps to authorize the account and allow it to write to the bucket.
 
-<Zoom>
-  <img src="/assets/shared/img/8a45468-CleanShot_2023-03-17_at_15.58.092x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+    <ZoomImage id="6ccd0f0-CleanShot_2023-03-17_at_16.03.162x.webp" width="700px" />
+    
 
-5. In the DETAILS section, locate the Email value linked to the recently created service account and make a copy of it. This information will be necessary for the upcoming steps to authorize the account and allow it to write to the bucket.
+5. To proceed go to the Google Cloud Storage's[Buckets](https://console.cloud.google.com/storage/browser) page and either select an existing bucket or create a new one to store the Event or Visuts Data reports from Adapty.  Then navigate to the PERMISSIONS section and select the option to [GRANT ACCESS](https://support.google.com/cloudidentity/answer/9178892?hl=en).
 
-   
+    <ZoomImage id="3cdd937-CleanShot_2023-03-17_at_16.14.232x.webp" width="700px" />
 
-<Zoom>
-  <img src="/assets/shared/img/6ccd0f0-CleanShot_2023-03-17_at_16.03.162x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+6. In the PERMISSIONS section, input the Email of the service account obtained in the fifth step mentioned earlier, then choose the Storage Object Creator role. Finally, click on SAVE to apply the changes.
 
-6. To proceed go to the Google Cloud Storage's[ Buckets](https://console.cloud.google.com/storage/browser) page and either select an existing bucket or create a new one to store the Event or Visuts Data reports from Adapty.  Then navigate to the PERMISSIONS section and select the option to [GRANT ACCESS](https://support.google.com/cloudidentity/answer/9178892?hl=en).
 
-   
+    <ZoomImage id="62801f4-CleanShot_2023-03-17_at_16.17.312x.webp" width="700px" />
 
-<Zoom>
-  <img src="/assets/shared/img/3cdd937-CleanShot_2023-03-17_at_16.14.232x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-7. In the PERMISSIONS section, input the Email of the service account obtained in the fifth step mentioned earlier, then choose the Storage Object Creator role. Finally, click on SAVE to apply the changes.
-
-   
-
-<Zoom>
-  <img src="/assets/shared/img/62801f4-CleanShot_2023-03-17_at_16.17.312x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-      Remember to keep the name of the bucket for future reference.
-
-8. After passing these steps have successfully completed the necessary setup steps in the Google Cloud Console! The final step involves entering the bucket's name, accessing the JSON file containing the downloaded private key, and extracting the required field values for use in Adapty.
-
-   
-
-<Zoom>
-  <img src="/assets/shared/img/c967e16-CleanShot_2023-03-17_at_16.23.332x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+    Remember to keep the name of the bucket for future reference.
 
 ## Manual data export
 
 In addition to the automatic event data export to Google Cloud Storage, Adapty also provides a manual file export functionality. With this feature, you can select a specific time interval for the event data and export it to your GCS bucket manually. This allows you to have greater control over the data you export and when you export it.
 
-The specified date range will be used to export the events created from Date A 00:00:00 UTC up to Date B 23:59:59 UTC. 
+The specified date range will be used to export the events created from Date A 00:00:00 UTC up to Date B 23:59:59 UTC.
 
-<Zoom>
-  <img src="/assets/shared/img/e347308-CleanShot_2023-03-17_at_17.39.452x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+<ZoomImage id="e347308-CleanShot_2023-03-17_at_17.39.452x.webp" width="700px" />
 
-## Table structure
+## Data structure
 
-In Google Cloud Storage integration, Adapty provides table to store historical data for transaction events and paywall visits. The table contains information about the user profile, revenue and proceeds, and the origin store, among other data points. Essentially, these tables log all transactions generated by an app for a given time period.
+Adapty uses `.csv` files to export data in a tabular format.
 
 :::warning
-Note that this structure may grow over time — with new data being introduced by us or by the 3rd parties we work with. Make sure that your code that processes it is robust enough and relies on the specific fields, but not on the structure as a whole.
+Event content may grow over time — with new data being introduced by us or by the 3rd parties we work with. Make sure that your code that processes it is robust enough and relies on the specific fields, but not on the structure as a whole.
 :::
 
-Here is the table structure for the events:
+### Events
+
+You can [modify](#optional-settings-for-event-data) the list of events that are included in your reports.
 
 | Column | Description |
 |------|-----------|
@@ -221,7 +128,7 @@ Here is the table structure for the events:
 | **net_revenue_local** | Net revenue (income after taxes) in local currency. Can be empty. |
 | **tax_amount_local** | Amount of money deducted for taxes in local currency. Can be empty. |
 | **customer_user_id** | Developer user ID. For example, it can be your user UUID, email, or any other ID. Null if you didn't set it. |
-| **store** | Could be _app_store_ or _play_store_. |
+| **store** | Could be *app_store* or *play_store*. |
 | **product_id** | Product ID in the Apple App Store, Google Play Store, or Stripe. |
 | **base_plan_id** | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973)  in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price)  in Stripe. |
 | **developer_id** | Developer (SDK) ID of the paywall where the transaction originated. |
@@ -235,7 +142,7 @@ Here is the table structure for the events:
 | **idfa** | [advertisingIdentifier](https://developer.apple.com/documentation/adsupport/asidentifiermanager/advertisingidentifier) on iOS devices |
 | **advertising_id** | The Advertising ID is a unique code assigned by the Android Operating System that advertisers might use to uniquely identify a user's device |
 | **ip_address** | Device IP (can be IPv4 or IPv6, with IPv4 preferred when available). It is updated each time IP of the device changes |
-| **cancellation_reason** | <p>A reason why the user canceled a subscription.</p><p></p><p>Can be:</p><p>**iOS & Android**_voluntarily_cancelled_, _billing_error_, _refund_</p><p>**iOS**  _price_increase_, _product_was_not_available_, _unknown_, _upgraded_</p><p> **Android**  _new_subscription_replace_, _cancelled_by_developer_</p> |
+| **cancellation_reason** | <p>The reason why the user canceled a subscription.</p><p></p><p>Possible values:</p><p>**iOS & Android** — *voluntarily_cancelled*, *billing_error*, *refund*</p><p>**iOS only** — *price_increase*, *product_was_not_available*, *unknown*, *upgraded*</p><p> **Android only** — *new_subscription_replace*, *cancelled_by_developer*</p> |
 | **android_app_set_id** | An [AppSetId](https://developer.android.com/design-for-safety/privacy-sandbox/reference/adservices/appsetid/AppSetId) - unique, per-device, per developer-account user-resettable ID for non-monetizing advertising use cases. |
 | **android_id** | On Android 8.0 (API level 26) and higher versions of the platform, a 64-bit number (expressed as a hexadecimal string), unique to each combination of app-signing key, user, and device. For more details, see [Android developer documentation](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID). |
 | **device** | The end-user-visible device model name. |
@@ -252,7 +159,7 @@ Here is the table structure for the events:
 | **attributes** | JSON of [custom user attributes](setting-user-attributes#custom-user-attributes). This will include any custom attributes you’ve set up to send from your mobile app. To send it, enable the **Send User Attributes** option in the [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) page. |
 | **integration_ids**             | All integration IDs associated with a profile. Dictionary. Example: &#123;&#39;mixpanel_user_id&#39;: &#39;mixpanelUserId-test&#39;, &#39;facebook_anonymous_id&#39;: &#39;facebookAnonymousId-test&#39;&#125;                                                                                                                         |
 
-Here is the table structure for the paywall visits:
+### Paywall visits
 
 | Column                | Description                                                                                                  |
 | :-------------------- | :----------------------------------------------------------------------------------------------------------- |
@@ -260,7 +167,7 @@ Here is the table structure for the paywall visits:
 | **customer_user_id**  | Developer user ID. For example, it can be your user UUID, email, or any other ID. Null if you didn't set it. |
 | **profile_country**   | Profile Country determined by Apple/Google store.                                                            |
 | **install_date**      | ISO 8601 date when the installation happened.                                                                |
-| **store**             | Could be _app_store_ or _play_store_.                                                                        |
+| **store**             | Could be *app_store* or *play_store*.                                                                        |
 | **paywall_showed_at** | The date when the paywall has been displayed to the customer.                                                |
 | **developer_id**      | Developer (SDK) ID of the paywall where the transaction originated.                                          |
 | **ab_test_name**      | Name of the A/B test where the transaction originated.                                                       |
@@ -268,37 +175,9 @@ Here is the table structure for the paywall visits:
 | **paywall_name**      | Name of the paywall where the transaction originated.                                                        |
 | **paywall_revision**  | Revision of the paywall where the transaction originated.                                                    |
 
-## Events and tags
 
-You can manage what data is communicated by the integration. The integration offers the following configuration options:
+## Troubleshooting
 
-| Setting                            | Description                                                  |
-| :--------------------------------- | :----------------------------------------------------------- |
-| **Exclude Historical Events**      | Opt to exclude events that occurred before the user installed the app with Adapty SDK. This prevents duplication of events and ensures accurate reporting. For instance, if a user activated a monthly subscription on January 10th and updated the app with Adapty SDK on March 6th, Adapty will omit events before March 6th and retain subsequent events. |
-| **Include events without profile** | Opt to include transactions that are not linked to a user profile in Adapty. These may include purchases made before Adapty SDK was installed or transactions received from store server notifications that cannot be immediately associated with a specific user. |
-| **Send User Attributes**           | If you wish to send user-specific attributes, like language preferences, and your OneSignal plan supports more than 10 tags, select this option. Enabling this allows the inclusion of additional information beyond the default 10 tags. Note that exceeding tag limits may result in errors. |
+Adapty checks the validity of your access keys **before** it begins the upload. Even if only one of your Google Cloud Storage keys is invalid, Adapty **aborts the upload** and throws an error.
 
-<Zoom>
-  <img src="/assets/shared/img/google-cloud-settings.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-Below the integration settings, there are three groups of events you can export, send, and store in Amazon S3 from Adapty. Simply turn on the ones you need. Check the full list of the events offered by Adapty [here](events).
-
-<Zoom>
-  <img src="/assets/shared/img/f0685a4-CleanShot_2023-08-17_at_14.49.282x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
+To ensure uninterrupted uploads, replace your keys before they expire. If you update the key for **events**, don't forget to update the key for **paywall visits**, and vice versa.
