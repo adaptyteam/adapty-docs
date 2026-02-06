@@ -125,10 +125,41 @@ Documentation should highlight value without becoming marketing copy.
 - Concept sections: Use noun phrases (Configuration options, System requirements)
 - Within same section: Maintain consistency
 
+**List punctuation:**
+- Complete sentences in lists end with periods
+- Sentence fragments in lists don't need periods
+- Be consistent within each list
+
+**Examples:**
+
+✅ **Complete sentences - use periods:**
+```
+1. Install the SDK from npm.
+2. Configure your API key in the dashboard.
+3. Activate the SDK in your app.
+```
+
+✅ **Sentence fragments - no periods:**
+```
+Requirements:
+- iOS 15.0+
+- Xcode 13+
+- Swift 5.5+
+```
+
+❌ **Inconsistent:**
+```
+1. Install the SDK from npm
+2. Configure your API key.
+3. Activate the SDK
+```
+
 **Check for:**
 - Inconsistent patterns within sections
 - Vague headings: "Overview", "Information", "Details"
 - Non-parallel structure in lists
+- Missing periods on complete sentences in lists
+- Unnecessary periods on fragments in lists
 
 **Context matters**: If changing heading style impacts product understanding or section coherence, prioritize consistency over strict action-orientation.
 
