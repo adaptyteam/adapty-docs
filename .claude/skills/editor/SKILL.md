@@ -129,6 +129,7 @@ Documentation should highlight value without becoming marketing copy.
 - Complete sentences in lists end with periods
 - Sentence fragments in lists don't need periods
 - Be consistent within each list
+- Bold labels followed by descriptions use colons, not dashes: `**Label**: Description.` not `**Label** - Description.`
 
 **Examples:**
 
@@ -147,6 +148,18 @@ Requirements:
 - Swift 5.5+
 ```
 
+✅ **Bold labels with descriptions - use colons:**
+```
+1. **API Key**: Generate a new key from your account settings.
+2. **Service Account**: Create a service account and download the JSON file.
+```
+
+❌ **Bold labels with dashes:**
+```
+1. **API Key** - Generate a new key from your account settings.
+2. **Service Account** - Create a service account and download the JSON file.
+```
+
 ❌ **Inconsistent:**
 ```
 1. Install the SDK from npm
@@ -160,6 +173,7 @@ Requirements:
 - Non-parallel structure in lists
 - Missing periods on complete sentences in lists
 - Unnecessary periods on fragments in lists
+- Dashes instead of colons after bold labels: `**Label** -` should be `**Label**:`
 
 **Context matters**: If changing heading style impacts product understanding or section coherence, prioritize consistency over strict action-orientation.
 
