@@ -125,10 +125,55 @@ Documentation should highlight value without becoming marketing copy.
 - Concept sections: Use noun phrases (Configuration options, System requirements)
 - Within same section: Maintain consistency
 
+**List punctuation:**
+- Complete sentences in lists end with periods
+- Sentence fragments in lists don't need periods
+- Be consistent within each list
+- Bold labels followed by descriptions use colons, not dashes: `**Label**: Description.` not `**Label** - Description.`
+
+**Examples:**
+
+✅ **Complete sentences - use periods:**
+```
+1. Install the SDK from npm.
+2. Configure your API key in the dashboard.
+3. Activate the SDK in your app.
+```
+
+✅ **Sentence fragments - no periods:**
+```
+Requirements:
+- iOS 15.0+
+- Xcode 13+
+- Swift 5.5+
+```
+
+✅ **Bold labels with descriptions - use colons:**
+```
+1. **API Key**: Generate a new key from your account settings.
+2. **Service Account**: Create a service account and download the JSON file.
+```
+
+❌ **Bold labels with dashes:**
+```
+1. **API Key** - Generate a new key from your account settings.
+2. **Service Account** - Create a service account and download the JSON file.
+```
+
+❌ **Inconsistent:**
+```
+1. Install the SDK from npm
+2. Configure your API key.
+3. Activate the SDK
+```
+
 **Check for:**
 - Inconsistent patterns within sections
 - Vague headings: "Overview", "Information", "Details"
 - Non-parallel structure in lists
+- Missing periods on complete sentences in lists
+- Unnecessary periods on fragments in lists
+- Dashes instead of colons after bold labels: `**Label** -` should be `**Label**:`
 
 **Context matters**: If changing heading style impacts product understanding or section coherence, prioritize consistency over strict action-orientation.
 
