@@ -205,7 +205,10 @@ Some marketing-style words are acceptable when they genuinely describe value:
 - Use placeholder syntax consistently: `<variable>` or `{variable}`
 
 ### UI Element References
-- Bold UI elements: **Save**, **Configure**, **Dashboard**
+- **Bold all UI elements**: buttons, tabs, menu items, page names
+  - Buttons: **Save**, **Configure**, **Cancel**
+  - Tabs: **General**, **Subscription & Billing**, **Members**
+  - Pages/sections: **Dashboard**, **Analytics**, **Placements**
 - Use exact text from interface
 - Describe location if helpful: "Click **Save** in the top-right corner"
 
