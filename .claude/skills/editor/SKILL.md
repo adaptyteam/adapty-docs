@@ -101,6 +101,9 @@ With the approved plan, write the content following every principle in the Key R
 - Bold labels use colons: `**Label**: Description`
 - Complete sentences in lists end with periods; fragments don't
 - Break up text blocks longer than 200-300 words with subheadings, lists, or callouts
+- One idea per callout — don't merge unrelated points into one callout
+- Avoid consecutive callouts — separate them with regular content (text, steps, images) or rearrange
+- Callouts must not break the default reading/execution order — place them where they support the flow, not interrupt it
 
 **Value and precision:**
 - Max one value-oriented word per paragraph (explore, optimize, enhance, enable, streamline)
