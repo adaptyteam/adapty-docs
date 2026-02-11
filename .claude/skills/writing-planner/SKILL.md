@@ -431,6 +431,11 @@ These rules govern how plans should structure documentation. Apply them when pro
 - **Scannable headings**: Headings are the primary navigation. Each heading must clearly signal what the section covers without reading it. "Configure competitor countries" beats "Additional options."
 - **Don't bury critical info**: Warnings, prerequisites, and limitations that affect the whole article go in the intro or "Before you begin" — not hidden inside a later section.
 
+### Callouts
+- **One idea per callout**: Each callout (:::warning, :::note, :::important, :::tip) must contain exactly one idea. Don't merge unrelated points into a single callout.
+- **Avoid consecutive callouts**: Don't place two or more callouts in a row. Separate them with regular content (text, steps, images) or rearrange to break the sequence.
+- **Don't interrupt the reading flow**: Callouts must not break the default execution order. A reader following steps or reading sequentially should not be forced to jump over callouts to continue. Place callouts where they support the flow, not where they interrupt it.
+
 ### Section sizing
 - Avoid micro-subsections: Don't create an H3 for a single paragraph
 - Break up text blocks longer than 200-300 words with subheadings, lists, or callouts
