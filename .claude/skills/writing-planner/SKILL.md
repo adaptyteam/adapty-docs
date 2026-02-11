@@ -101,6 +101,7 @@ After narrowing via sidebar, proceed with content search:
    - **Primary**: The main article where this feature is documented in detail — gets the bulk of the update
    - **Secondary**: Articles that mention or reference this feature — may need a sentence updated, a link added, or a note adjusted
    - **No change needed**: Articles that mention the broader area but aren't affected by this specific change
+5. **Verify content fit per article**: When planning shared content (reusable components, callouts, or identical text) across multiple articles, don't assume that matching a structural pattern means the content applies. Read what each article actually does and verify the shared content is relevant there. For example, a note about user ID timing is irrelevant in an article that only passes device IDs.
 
 **Documentation research** (for each affected article):
 1. **Read the full article**: Understand the current structure, tone, depth, and heading patterns
