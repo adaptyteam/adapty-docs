@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const path = url.replace('https://adapty.io/docs/', '');
 
                 // Construct the new URL with current origin and base URL
-                url = `${currentOrigin}${baseUrl}/${path}`.replace(/\/+/g, '/');
+                url = `${currentOrigin}${baseUrl}/${path}`.replace(/(?<!:)\/+/g, '/');
             }
         }
 
