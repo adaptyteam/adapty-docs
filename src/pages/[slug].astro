@@ -38,8 +38,8 @@ const defaultAuth = api.defaultAuth || {};
     </script>
 
     <!-- Stoplight Elements Scripts -->
-    <script is:inline src="https://unpkg.com/@stoplight/elements@7.7.11/web-components.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/@stoplight/elements@7.7.11/styles.min.css" />
+    <script is:inline src="https://unpkg.com/@stoplight/elements@9.0.13/web-components.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@stoplight/elements@9.0.13/styles.min.css" />
     
     <script is:inline define:vars={{ defaultAuth, pageSlug: slug }}>
         // Set default API key in localStorage for Stoplight Elements
@@ -65,8 +65,10 @@ const defaultAuth = api.defaultAuth || {};
                 const container = document.querySelector('.api-container');
                 if (!container) return;
                 
-                // Use a more robust check to see if we actually need to re-initialize
-                if (window.__currentStoplightSpec === specUrl && document.getElementById('stoplight-api')) {
+                const existingElement = document.getElementById('stoplight-api');
+                
+                // If it already exists and has the correct URL, don't nuke it
+                if (existingElement && existingElement.getAttribute('apiDescriptionUrl') === specUrl) {
                     console.log('ℹ️ Stoplight already active for', specUrl);
                     return;
                 }
@@ -74,7 +76,7 @@ const defaultAuth = api.defaultAuth || {};
                 console.log('🔄 Initializing Stoplight for', specUrl);
                 window.__currentStoplightSpec = specUrl;
                 
-                // Nuke only if truly necessary (e.g., first load or spec change)
+                // Clear and inject
                 container.innerHTML = '';
                 const newElement = document.createElement('elements-api');
                 newElement.id = 'stoplight-api';
@@ -83,20 +85,25 @@ const defaultAuth = api.defaultAuth || {};
                 newElement.setAttribute('layout', 'sidebar');
                 newElement.setAttribute('hideSchemas', 'true');
                 newElement.setAttribute('hideInternal', 'true');
-                // Ensure Astro doesn't try to be smart with this element
                 newElement.setAttribute('data-astro-reload', '');
                 
                 container.appendChild(newElement);
+
+                // Signal to crawlers that we are ready
+                setTimeout(() => {
+                    container.classList.add('is-ready');
+                }, 1000);
             }
             
-            // Initialization flow
-            reinitializeStoplight();
+            // Only run if not already handled by static HTML or after a transition
             document.addEventListener('astro:page-load', reinitializeStoplight);
             
-            // Safety: if after page load it's still not there, try once more
-            setTimeout(() => {
-                if (!document.getElementById('stoplight-api')) reinitializeStoplight();
-            }, 300);
+            // Fallback for initial load if the custom element isn't working as expected
+            if (document.readyState === 'complete') {
+                reinitializeStoplight();
+            } else {
+                window.addEventListener('load', reinitializeStoplight);
+            }
         })();
     </script>
 
