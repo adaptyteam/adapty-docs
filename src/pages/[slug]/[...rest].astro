@@ -6,19 +6,72 @@ import ApiReferencePage from '../../components/ApiReferencePage.astro';
 import apiConfig from '../../api-reference/config.json';
 
 export async function getStaticPaths() {
+  function parseOperations(specContent) {
+    const lines = specContent.split('\n');
+    const operations = [];
+    let currentPath = '';
+
+    for (let i = 0; i < lines.length; i++) {
+      const pathMatch = lines[i].match(/^  (\/\S+):\s*$/);
+      if (pathMatch) {
+        currentPath = pathMatch[1];
+        continue;
+      }
+
+      const methodMatch = lines[i].match(/^\s{4}(get|post|put|patch|delete):\s*$/);
+      if (!methodMatch) continue;
+
+      const method = methodMatch[1].toUpperCase();
+      let operationId = '';
+      let summary = '';
+      let description = '';
+      let tag = '';
+
+      for (let j = i + 1; j < lines.length; j++) {
+        if (/^  \/\S+:\s*$/.test(lines[j]) || /^\s{4}(get|post|put|patch|delete):\s*$/.test(lines[j])) break;
+
+        // Only match fields at indent level 6 (direct children of the method block)
+        const opIdMatch = lines[j].match(/^\s{6}operationId:\s*(\S+)/);
+        if (opIdMatch) { operationId = opIdMatch[1]; continue; }
+
+        const sumMatch = lines[j].match(/^\s{6}summary:\s*(.+)/);
+        if (sumMatch && !summary) { summary = sumMatch[1].trim(); continue; }
+
+        const descMatch = lines[j].match(/^\s{6}description:\s*(.+)/);
+        if (descMatch && !description) { description = descMatch[1].trim(); continue; }
+
+        const tagMatch = lines[j].match(/^\s{8}- ([A-Za-z][\w\s]*)/);
+        if (tagMatch && !tag && lines[j - 1]?.match(/^\s{6}tags:\s*$/)) {
+          tag = tagMatch[1].trim();
+        }
+      }
+
+      if (operationId) {
+        operations.push({ operationId, summary, description, method, path: currentPath, tag });
+      }
+    }
+
+    return operations;
+  }
+
   const paths = [];
 
   for (const api of apiConfig) {
     const specPath = path.join(process.cwd(), 'public', 'api-specs', api.specFile);
     const specContent = fs.readFileSync(specPath, 'utf-8');
+    const operations = parseOperations(specContent);
 
-    // Extract operationId values via regex — no YAML parser needed
-    const operationIdRegex = /operationId:\s*(\S+)/g;
-    let match;
-    while ((match = operationIdRegex.exec(specContent)) !== null) {
+    for (const op of operations) {
       paths.push({
-        params: { slug: api.slug, rest: `operations/${match[1]}` },
-        props: { api },
+        params: { slug: api.slug, rest: `operations/${op.operationId}` },
+        props: {
+          api,
+          operationSummary: op.summary,
+          operationDescription: op.description,
+          operationMethod: op.method,
+          operationPath: op.path,
+          operationTag: op.tag,
+        },
       });
     }
   }
@@ -26,27 +79,39 @@ export async function getStaticPaths() {
   return paths;
 }
 
-const { api } = Astro.props;
+const { api, operationSummary, operationDescription, operationMethod, operationPath, operationTag } = Astro.props;
 const { slug } = Astro.params;
 
 const specUrl = api.specUrl || `${import.meta.env.BASE_URL}/api-specs/${api.specFile}`.replace(/\/+/g, '/');
 const basePath = `${import.meta.env.BASE_URL}/${slug}`.replace(/\/+/g, '/');
 
+const title = operationSummary || api.name;
+const description = operationDescription || '';
+const keywords = operationSummary || '';
+
 // Breadcrumbs for API Reference
 const breadcrumbs = [
   { label: 'Home', href: `${import.meta.env.BASE_URL}/`.replace(/\/+/g, '/') },
   { label: api.name, href: `${import.meta.env.BASE_URL}/${slug}`.replace(/\/+/g, '/') },
-  { label: 'Operation' }
+  { label: operationSummary || 'Operation' }
 ];
 ---
 
 <DocsLayout
-  title={api.name}
+  title={title}
+  description={description}
+  keywords={keywords}
+  rank={70}
   sidebarData={null}
   currentPlatformId="api"
   currentSlug={slug}
   breadcrumbs={breadcrumbs}
   isFullWidth={true}
 >
+  <div class="api-seo-content">
+    {operationSummary && <h1>{operationSummary}</h1>}
+    {operationMethod && operationPath && <p>{operationMethod} {operationPath}</p>}
+    {operationDescription && <p>{operationDescription}</p>}
+  </div>
   <ApiReferencePage api={api} slug={slug} specUrl={specUrl} basePath={basePath} />
 </DocsLayout>
