@@ -38,7 +38,25 @@ export async function getStaticPaths() {
         if (sumMatch && !summary) { summary = sumMatch[1].trim(); continue; }
 
         const descMatch = lines[j].match(/^\s{6}description:\s*(.+)/);
-        if (descMatch && !description) { description = descMatch[1].trim(); continue; }
+        if (descMatch && !description) {
+          const rawValue = descMatch[1].trim();
+          if (/^[|>][+\-\d]*\s*$/.test(rawValue)) {
+            // Multi-line YAML block scalar — collect indented continuation lines
+            const contentLines = [];
+            while (j + 1 < lines.length) {
+              const nextLine = lines[j + 1];
+              if (!/^\s{7,}\S/.test(nextLine) && !/^\s*$/.test(nextLine)) break;
+              if (/^\s{7,}\S/.test(nextLine)) contentLines.push(nextLine.trim());
+              j++;
+            }
+            const fullText = contentLines.join(' ');
+            const sentenceMatch = fullText.match(/^(.+?\.)\s/);
+            description = sentenceMatch ? sentenceMatch[1] : fullText;
+          } else {
+            description = rawValue;
+          }
+          continue;
+        }
 
         const tagMatch = lines[j].match(/^\s{8}- ([A-Za-z][\w\s]*)/);
         if (tagMatch && !tag && lines[j - 1]?.match(/^\s{6}tags:\s*$/)) {
@@ -85,7 +103,7 @@ const { slug } = Astro.params;
 const specUrl = api.specUrl || `${import.meta.env.BASE_URL}/api-specs/${api.specFile}`.replace(/\/+/g, '/');
 const basePath = `${import.meta.env.BASE_URL}/${slug}`.replace(/\/+/g, '/');
 
-const title = operationSummary || api.name;
+const title = operationSummary ? `${operationSummary} (API)` : api.name;
 const description = operationDescription || '';
 const keywords = operationSummary || '';
 
