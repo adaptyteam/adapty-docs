@@ -1,0 +1,52 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import ApiReferencePage from '../../components/ApiReferencePage.astro';
+import apiConfig from '../../api-reference/config.json';
+
+export async function getStaticPaths() {
+  const paths = [];
+
+  for (const api of apiConfig) {
+    const specPath = path.join(process.cwd(), 'public', 'api-specs', api.specFile);
+    const specContent = fs.readFileSync(specPath, 'utf-8');
+
+    // Extract operationId values via regex — no YAML parser needed
+    const operationIdRegex = /operationId:\s*(\S+)/g;
+    let match;
+    while ((match = operationIdRegex.exec(specContent)) !== null) {
+      paths.push({
+        params: { slug: api.slug, rest: `operations/${match[1]}` },
+        props: { api },
+      });
+    }
+  }
+
+  return paths;
+}
+
+const { api } = Astro.props;
+const { slug } = Astro.params;
+
+const specUrl = api.specUrl || `${import.meta.env.BASE_URL}/api-specs/${api.specFile}`.replace(/\/+/g, '/');
+const basePath = `${import.meta.env.BASE_URL}/${slug}`.replace(/\/+/g, '/');
+
+// Breadcrumbs for API Reference
+const breadcrumbs = [
+  { label: 'Home', href: `${import.meta.env.BASE_URL}/`.replace(/\/+/g, '/') },
+  { label: api.name, href: `${import.meta.env.BASE_URL}/${slug}`.replace(/\/+/g, '/') },
+  { label: 'Operation' }
+];
+---
+
+<DocsLayout
+  title={api.name}
+  sidebarData={null}
+  currentPlatformId="api"
+  currentSlug={slug}
+  breadcrumbs={breadcrumbs}
+  isFullWidth={true}
+>
+  <ApiReferencePage api={api} slug={slug} specUrl={specUrl} basePath={basePath} />
+</DocsLayout>
