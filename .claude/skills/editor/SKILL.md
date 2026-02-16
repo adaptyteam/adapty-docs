@@ -207,6 +207,14 @@ Documentation should highlight value without becoming marketing copy.
 - Multiple possible interpretations
 - Missing context or assumptions
 - Unclear cause-and-effect relationships
+- Anthropomorphizing inanimate objects (pages, tabs, sections)
+
+**Don't anthropomorphize entities:**
+- ❌ "The page manages your settings"
+- ✅ "The page lets you manage your settings"
+- ❌ "The Dashboard tracks subscriptions"
+- ✅ "The Dashboard displays subscription data" or "Use the Dashboard to track subscriptions"
+- Pages, tabs, and UI elements can't perform actions autonomously - they enable users to perform actions
 
 **Examples of fixes:**
 
@@ -245,6 +253,13 @@ Documentation should highlight value without becoming marketing copy.
 - Sentence fragments in lists don't need periods
 - Be consistent within each list
 - Bold labels followed by descriptions use colons, not dashes: `**Label**: Description.` not `**Label** - Description.`
+
+**Bullet lists vs. inline lists:**
+- Use bullet lists for 3+ items with links or important names - more scannable
+- ✅ "The page has three tabs:\n- [General](#general)\n- [Subscription & Billing](#billing)\n- [Members](#members)"
+- ❌ "The page has three tabs: [General](#general), [Subscription & Billing](#billing), and [Members](#members)."
+- Inline lists are OK for short, simple items without links (e.g., "Supports iOS, Android, and web")
+- When in doubt, prefer bullet lists - they're easier to scan
 
 **Examples:**
 
@@ -322,6 +337,12 @@ Requirements:
 - User doesn't know where to look
 
 **Why this matters**: Users scan for location keywords first. Stating location before action reduces cognitive load and prevents errors.
+
+**Keep location descriptions concise:**
+- ✅ "Click **Account** at the top right"
+- ❌ "Click the link in the user menu in the top right corner of the Adapty Dashboard"
+- Use minimal words to identify the location - avoid over-describing navigation paths
+- Users can see the interface; they don't need verbose directions
 
 **More examples:**
 
