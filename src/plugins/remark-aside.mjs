@@ -6,7 +6,7 @@ import { visit } from 'unist-util-visit';
  * 2. Transforms unknown directives (like :00 in 04:00) back into plain text to avoid rendering issues.
  */
 export function remarkAside() {
-    const CALLOUT_TYPES = ['note', 'tip', 'info', 'warning', 'danger', 'important'];
+    const CALLOUT_TYPES = ['note', 'tip', 'info', 'warning', 'danger', 'important', 'link'];
 
     return (tree) => {
         visit(tree, (node, index, parent) => {
