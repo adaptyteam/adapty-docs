@@ -2,39 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { nanoid } from 'nanoid';
-
-interface VariableOption {
-    label: string;
-    value: number | string;
-}
-
-function resolveOptionValue(value: number | string): number {
-    if (typeof value === 'number') return value;
-    return new Function(`return (${value})`)() as number;
-}
-
-function optionDisplay(value: number | string): string {
-    return typeof value === 'string' ? value : String(value);
-}
-
-interface Variable {
-    nameInTheFormula: string;
-    variableName: string;
-    variableDescription: string;
-    variableValue?: number;
-    options?: VariableOption[];
-}
-
-interface RowData {
-    id: string;
-    values: Record<string, number | string>;
-}
-
-interface CalculationResult {
-    display: string;
-    value: number | null;
-    error: string | null;
-}
+import {
+    type Variable,
+    type RowData,
+    type CalculationResult,
+    resolveOptionValue,
+    makeDefaultValues,
+    evaluateExpression,
+    buildReadableExpression,
+    sanitizeNumberInput,
+    renderKatexInline,
+    useDarkMode,
+    resolveRawValue,
+    buildOptionDisplayValues,
+} from './calculatorUtils';
 
 interface ExpressionCalculatorProps {
     heading?: string;
@@ -44,55 +25,6 @@ interface ExpressionCalculatorProps {
     isSum?: boolean;
     defaultRowCount?: number;
     defaultRows?: Array<Record<string, number>>;
-}
-
-function makeDefaultValues(variables: Variable[]): Record<string, number> {
-    return Object.fromEntries(
-        variables.map(v => [v.variableName, v.variableValue ?? 1])
-    );
-}
-
-function evaluateExpression(
-    formulaCalculation: string,
-    variableValues: Record<string, number>
-): number {
-    const varNames = Object.keys(variableValues);
-    const varValues = Object.values(variableValues);
-    const fn = new Function(...varNames, `return (${formulaCalculation})`);
-    return fn(...varValues);
-}
-
-function buildReadableExpression(
-    formulaCalculation: string,
-    variableValues: Record<string, number>,
-    displayValues?: Record<string, string>
-): string {
-    // Replace / operators with ÷ before substituting values,
-    // so fraction displays like "1/12" keep their internal /
-    let readable = formulaCalculation.replace(/\//g, '÷');
-    const sortedNames = Object.keys(variableValues)
-        .sort((a, b) => b.length - a.length);
-    for (const name of sortedNames) {
-        const regex = new RegExp(`\\b${name}\\b`, 'g');
-        readable = readable.replace(regex, displayValues?.[name] ?? String(variableValues[name]));
-    }
-    return readable;
-}
-
-function sanitizeNumberInput(value: string): string {
-    let sanitized = value.replace(/,/g, '.');
-    // Allow digits, one decimal point, and leading minus
-    sanitized = sanitized.replace(/[^\d.\-]/g, '');
-    // Only allow minus at the start
-    if (sanitized.indexOf('-') > 0) {
-        sanitized = sanitized.replace(/-/g, '');
-    }
-    // Ensure only one decimal point
-    const parts = sanitized.split('.');
-    if (parts.length > 2) {
-        sanitized = parts[0] + '.' + parts.slice(1).join('');
-    }
-    return sanitized;
 }
 
 export const ExpressionCalculator: React.FC<ExpressionCalculatorProps> = ({
@@ -122,23 +54,9 @@ export const ExpressionCalculator: React.FC<ExpressionCalculatorProps> = ({
         }));
     });
     const [result, setResult] = useState<CalculationResult | null>(null);
-    const [isDark, setIsDark] = useState(false);
+    const isDark = useDarkMode();
 
     const headerFormulaRef = useRef<HTMLDivElement>(null);
-
-    // Dark mode detection
-    useEffect(() => {
-        const checkDarkMode = () => {
-            setIsDark(document.documentElement.classList.contains('dark'));
-        };
-        checkDarkMode();
-        const observer = new MutationObserver(checkDarkMode);
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ['class'],
-        });
-        return () => observer.disconnect();
-    }, []);
 
     // Render header formula
     useEffect(() => {
@@ -149,14 +67,6 @@ export const ExpressionCalculator: React.FC<ExpressionCalculatorProps> = ({
             });
         }
     }, [formuLatex]);
-
-    const renderKatexInline = (latex: string) => {
-        try {
-            return katex.renderToString(latex, { throwOnError: false });
-        } catch {
-            return latex;
-        }
-    };
 
     const updateValue = (rowId: string, variableName: string, value: string) => {
         setRows(prev =>
@@ -185,13 +95,7 @@ export const ExpressionCalculator: React.FC<ExpressionCalculatorProps> = ({
         for (const row of rows) {
             const resolvedValues: Record<string, number> = {};
             for (const v of variables) {
-                const rawVal = row.values[v.variableName];
-                if (rawVal === '' || rawVal === undefined || rawVal === null) {
-                    resolvedValues[v.variableName] = v.variableValue ?? 1;
-                } else {
-                    const parsed = typeof rawVal === 'string' ? parseFloat(rawVal) : rawVal;
-                    resolvedValues[v.variableName] = isNaN(parsed) ? (v.variableValue ?? 1) : parsed;
-                }
+                resolvedValues[v.variableName] = resolveRawValue(row.values[v.variableName], v.variableValue ?? 1);
             }
 
             try {
@@ -202,16 +106,7 @@ export const ExpressionCalculator: React.FC<ExpressionCalculatorProps> = ({
                     return;
                 }
 
-                const displayValues: Record<string, string> = {};
-                for (const v of variables) {
-                    if (v.options) {
-                        const numVal = resolvedValues[v.variableName];
-                        const match = v.options.find(opt => Math.abs(resolveOptionValue(opt.value) - numVal) < 1e-10);
-                        if (match) {
-                            displayValues[v.variableName] = optionDisplay(match.value);
-                        }
-                    }
-                }
+                const displayValues = buildOptionDisplayValues(variables, resolvedValues);
                 const readable = buildReadableExpression(formulaCalculation, resolvedValues, displayValues);
                 rowResults.push({ readable, value });
             } catch {
