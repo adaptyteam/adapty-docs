@@ -3,11 +3,26 @@ import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { nanoid } from 'nanoid';
 
+interface VariableOption {
+    label: string;
+    value: number | string;
+}
+
+function resolveOptionValue(value: number | string): number {
+    if (typeof value === 'number') return value;
+    return new Function(`return (${value})`)() as number;
+}
+
+function optionDisplay(value: number | string): string {
+    return typeof value === 'string' ? value : String(value);
+}
+
 interface Variable {
     nameInTheFormula: string;
     variableName: string;
     variableDescription: string;
     variableValue?: number;
+    options?: VariableOption[];
 }
 
 interface RowData {
@@ -49,14 +64,17 @@ function evaluateExpression(
 
 function buildReadableExpression(
     formulaCalculation: string,
-    variableValues: Record<string, number>
+    variableValues: Record<string, number>,
+    displayValues?: Record<string, string>
 ): string {
-    let readable = formulaCalculation;
+    // Replace / operators with ÷ before substituting values,
+    // so fraction displays like "1/12" keep their internal /
+    let readable = formulaCalculation.replace(/\//g, '÷');
     const sortedNames = Object.keys(variableValues)
         .sort((a, b) => b.length - a.length);
     for (const name of sortedNames) {
         const regex = new RegExp(`\\b${name}\\b`, 'g');
-        readable = readable.replace(regex, String(variableValues[name]));
+        readable = readable.replace(regex, displayValues?.[name] ?? String(variableValues[name]));
     }
     return readable;
 }
@@ -184,7 +202,17 @@ export const ExpressionCalculator: React.FC<ExpressionCalculatorProps> = ({
                     return;
                 }
 
-                const readable = buildReadableExpression(formulaCalculation, resolvedValues);
+                const displayValues: Record<string, string> = {};
+                for (const v of variables) {
+                    if (v.options) {
+                        const numVal = resolvedValues[v.variableName];
+                        const match = v.options.find(opt => Math.abs(resolveOptionValue(opt.value) - numVal) < 1e-10);
+                        if (match) {
+                            displayValues[v.variableName] = optionDisplay(match.value);
+                        }
+                    }
+                }
+                const readable = buildReadableExpression(formulaCalculation, resolvedValues, displayValues);
                 rowResults.push({ readable, value });
             } catch {
                 setResult({ display: '', value: null, error: 'Calculation error' });
@@ -256,19 +284,36 @@ export const ExpressionCalculator: React.FC<ExpressionCalculatorProps> = ({
                     <div className="space-y-3">
                         {variables.map(v => (
                             <div key={v.variableName} className="flex items-center gap-3">
-                                <input
-                                    type="text"
-                                    inputMode="decimal"
-                                    value={rows[0].values[v.variableName]}
-                                    onChange={(e) => updateValue(rows[0].id, v.variableName, e.target.value)}
-                                    onDoubleClick={(e) => e.currentTarget.select()}
-                                    className="w-24 px-2.5 py-1.5 text-sm rounded-md shadow-sm border outline-none transition-all focus:ring-1"
-                                    style={{
-                                        backgroundColor: isDark ? 'rgba(24, 24, 27, 0.7)' : '#ffffff',
-                                        borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#e5e7eb',
-                                        color: isDark ? '#f1f5f9' : '#0a0a0a',
-                                    }}
-                                />
+                                {v.options ? (
+                                    <select
+                                        value={rows[0].values[v.variableName]}
+                                        onChange={(e) => updateValue(rows[0].id, v.variableName, e.target.value)}
+                                        className="w-24 px-2.5 py-1.5 text-sm rounded-md shadow-sm border outline-none transition-all focus:ring-1"
+                                        style={{
+                                            backgroundColor: isDark ? 'rgba(24, 24, 27, 0.7)' : '#ffffff',
+                                            borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#e5e7eb',
+                                            color: isDark ? '#f1f5f9' : '#0a0a0a',
+                                        }}
+                                    >
+                                        {v.options.map(opt => (
+                                            <option key={String(opt.value)} value={resolveOptionValue(opt.value)}>{opt.label}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <input
+                                        type="text"
+                                        inputMode="decimal"
+                                        value={rows[0].values[v.variableName]}
+                                        onChange={(e) => updateValue(rows[0].id, v.variableName, e.target.value)}
+                                        onDoubleClick={(e) => e.currentTarget.select()}
+                                        className="w-24 px-2.5 py-1.5 text-sm rounded-md shadow-sm border outline-none transition-all focus:ring-1"
+                                        style={{
+                                            backgroundColor: isDark ? 'rgba(24, 24, 27, 0.7)' : '#ffffff',
+                                            borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#e5e7eb',
+                                            color: isDark ? '#f1f5f9' : '#0a0a0a',
+                                        }}
+                                    />
+                                )}
                                 <span
                                     className="calculator-formula text-sm font-medium shrink-0"
                                     style={{ color: isDark ? '#e2e8f0' : '#0a0a0a' }}
@@ -301,20 +346,38 @@ export const ExpressionCalculator: React.FC<ExpressionCalculatorProps> = ({
                             <div key={row.id}>
                                 <div className="flex items-center gap-2">
                                     {variables.map(v => (
-                                        <input
-                                            key={v.variableName}
-                                            type="text"
-                                            inputMode="decimal"
-                                            value={row.values[v.variableName]}
-                                            onChange={(e) => updateValue(row.id, v.variableName, e.target.value)}
-                                            onDoubleClick={(e) => e.currentTarget.select()}
-                                            className="w-32 px-2.5 py-1.5 text-sm rounded-md shadow-sm border outline-none transition-all focus:ring-1"
-                                            style={{
-                                                backgroundColor: isDark ? 'rgba(24, 24, 27, 0.7)' : '#ffffff',
-                                                borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#e5e7eb',
-                                                color: isDark ? '#f1f5f9' : '#0a0a0a',
-                                            }}
-                                        />
+                                        v.options ? (
+                                            <select
+                                                key={v.variableName}
+                                                value={row.values[v.variableName]}
+                                                onChange={(e) => updateValue(row.id, v.variableName, e.target.value)}
+                                                className="w-32 px-2.5 py-1.5 text-sm rounded-md shadow-sm border outline-none transition-all focus:ring-1"
+                                                style={{
+                                                    backgroundColor: isDark ? 'rgba(24, 24, 27, 0.7)' : '#ffffff',
+                                                    borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#e5e7eb',
+                                                    color: isDark ? '#f1f5f9' : '#0a0a0a',
+                                                }}
+                                            >
+                                                {v.options.map(opt => (
+                                                    <option key={String(opt.value)} value={resolveOptionValue(opt.value)}>{opt.label}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <input
+                                                key={v.variableName}
+                                                type="text"
+                                                inputMode="decimal"
+                                                value={row.values[v.variableName]}
+                                                onChange={(e) => updateValue(row.id, v.variableName, e.target.value)}
+                                                onDoubleClick={(e) => e.currentTarget.select()}
+                                                className="w-32 px-2.5 py-1.5 text-sm rounded-md shadow-sm border outline-none transition-all focus:ring-1"
+                                                style={{
+                                                    backgroundColor: isDark ? 'rgba(24, 24, 27, 0.7)' : '#ffffff',
+                                                    borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#e5e7eb',
+                                                    color: isDark ? '#f1f5f9' : '#0a0a0a',
+                                                }}
+                                            />
+                                        )
                                     ))}
                                     <div className="w-8 shrink-0 flex items-center justify-center">
                                         {rowIndex > 0 && (
