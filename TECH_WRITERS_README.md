@@ -288,6 +288,12 @@ This is a danger callout with red styling.
 :::important
 This is an important callout (styled as warning).
 :::
+
+:::link
+This callout is designed to contain a link: [Main article](main-article)
+
+It works best with single-line content because it's vertically centered against the book icon on the left.
+:::
 ```
 
 ### Links
