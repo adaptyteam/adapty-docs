@@ -6,15 +6,13 @@ import { visit } from 'unist-util-visit';
  * 2. Transforms unknown directives (like :00 in 04:00) back into plain text to avoid rendering issues.
  */
 export function remarkAside() {
-    const CALLOUT_TYPES = ['note', 'tip', 'info', 'warning', 'danger', 'important'];
+    const CALLOUT_TYPES = ['note', 'tip', 'info', 'warning', 'danger', 'important', 'link'];
 
     return (tree) => {
         visit(tree, (node, index, parent) => {
             if (node.type === 'containerDirective' || node.type === 'leafDirective' || node.type === 'textDirective') {
                 const name = node.name;
 
-            const type = node.name;
-            if (!['note', 'tip', 'info', 'warning', 'danger', 'link'].includes(type)) return;
                 // Handle known directives (Callouts)
                 if (CALLOUT_TYPES.includes(name)) {
                     // Force it to be a block element (Callout component)
