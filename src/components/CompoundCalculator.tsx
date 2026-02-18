@@ -6,7 +6,6 @@ import {
     sanitizeNumberInput,
     makeDefaultValues,
     useDarkMode,
-    renderKatexInline,
     evaluateExpression,
     buildReadableExpression,
     buildOptionDisplayValues,
@@ -17,12 +16,10 @@ import {
     buildSumReadable,
     roundResult,
     useInitialCalculation,
-    VariableInput,
+    LabeledVariableInput,
     RowGrid,
     ResultSection,
     CalculatorWrapper,
-    getLabelColor,
-    getSubtextColor,
 } from './calculatorUtils';
 
 interface CompoundCalculatorProps {
@@ -31,7 +28,7 @@ interface CompoundCalculatorProps {
     variables: Variable[];
     rowFormula: string;
     resultFormula: string;
-    defaultRows?: Array<Record<string, number>>;
+    defaultRows?: Array<Record<string, number | string>>;
 }
 
 export const CompoundCalculator: React.FC<CompoundCalculatorProps> = ({
@@ -126,23 +123,14 @@ export const CompoundCalculator: React.FC<CompoundCalculatorProps> = ({
                     style={{ borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#e5e7eb' }}
                 >
                     {globalVariables.map(v => (
-                        <div key={v.variableName} className="flex items-center justify-center gap-3">
-                            <VariableInput
-                                variable={v}
-                                value={globalValues[v.variableName]}
-                                onChange={(val) => updateGlobalValue(v.variableName, val)}
-                                isDark={isDark}
-                                className="w-24"
-                            />
-                            <span
-                                className="calculator-formula text-sm font-medium shrink-0"
-                                style={{ color: getLabelColor(isDark) }}
-                                dangerouslySetInnerHTML={{ __html: renderKatexInline(v.nameInTheFormula) }}
-                            />
-                            <span className="text-sm" style={{ color: getSubtextColor(isDark) }}>
-                                {v.variableDescription}
-                            </span>
-                        </div>
+                        <LabeledVariableInput
+                            key={v.variableName}
+                            variable={v}
+                            value={globalValues[v.variableName]}
+                            onChange={(val) => updateGlobalValue(v.variableName, val)}
+                            isDark={isDark}
+                            centered
+                        />
                     ))}
                 </div>
             </div>

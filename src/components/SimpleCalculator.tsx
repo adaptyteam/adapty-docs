@@ -5,18 +5,15 @@ import {
     type CalculationResult,
     sanitizeNumberInput,
     useDarkMode,
-    renderKatexInline,
     initializeRows,
     createRow,
     evaluateRows,
     formatSimpleResult,
     useInitialCalculation,
-    VariableInput,
+    LabeledVariableInput,
     RowGrid,
     ResultSection,
     CalculatorWrapper,
-    getLabelColor,
-    getSubtextColor,
 } from './calculatorUtils';
 
 interface SimpleCalculatorProps {
@@ -26,7 +23,7 @@ interface SimpleCalculatorProps {
     formulaCalculation: string;
     isSum?: boolean;
     defaultRowCount?: number;
-    defaultRows?: Array<Record<string, number>>;
+    defaultRows?: Array<Record<string, number | string>>;
 }
 
 export const SimpleCalculator: React.FC<SimpleCalculatorProps> = ({
@@ -76,23 +73,13 @@ export const SimpleCalculator: React.FC<SimpleCalculatorProps> = ({
                     /* Single-row vertical layout */
                     <div className="space-y-3">
                         {variables.map(v => (
-                            <div key={v.variableName} className="flex items-center gap-3">
-                                <VariableInput
-                                    variable={v}
-                                    value={rows[0].values[v.variableName]}
-                                    onChange={(val) => updateValue(rows[0].id, v.variableName, val)}
-                                    isDark={isDark}
-                                    className="w-24"
-                                />
-                                <span
-                                    className="calculator-formula text-sm font-medium shrink-0"
-                                    style={{ color: getLabelColor(isDark) }}
-                                    dangerouslySetInnerHTML={{ __html: renderKatexInline(v.nameInTheFormula) }}
-                                />
-                                <span className="text-sm" style={{ color: getSubtextColor(isDark) }}>
-                                    {v.variableDescription}
-                                </span>
-                            </div>
+                            <LabeledVariableInput
+                                key={v.variableName}
+                                variable={v}
+                                value={rows[0].values[v.variableName]}
+                                onChange={(val) => updateValue(rows[0].id, v.variableName, val)}
+                                isDark={isDark}
+                            />
                         ))}
                     </div>
                 ) : (
