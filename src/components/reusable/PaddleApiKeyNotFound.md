@@ -12,7 +12,7 @@ The request failed because the **Paddle API Key** in [App Settings](https://app.
 
 #### Response example
 
-```JSON showLineNumbers
+```json showLineNumbers
 {
   "errors": [
     {
