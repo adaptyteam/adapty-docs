@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SIDEBARS_DIR = path.resolve(__dirname, '../src/data/sidebars');
-const DOCS_DIR = path.resolve(__dirname, '../src/content/docs/version-3.0');
+const DOCS_BASE = path.resolve(__dirname, '../src/content/docs');
 const REUSABLE_COMPONENTS_DIR = path.resolve(__dirname, '../src/components/reusable');
 
 // Get output dir from args or default to public
@@ -120,22 +120,44 @@ function extractDocIds(items, docIds = []) {
     return docIds;
 }
 
+// Find a doc file by searching all subdirectories under DOCS_BASE (recursively)
+async function findDocFile(docId) {
+    const filename = `${docId}.mdx`;
+
+    async function search(dir) {
+        const entries = await fs.readdir(dir, { withFileTypes: true });
+        for (const entry of entries) {
+            if (entry.isDirectory()) {
+                const result = await search(path.join(dir, entry.name));
+                if (result) return result;
+            } else if (entry.name === filename) {
+                return path.join(dir, entry.name);
+            }
+        }
+        return null;
+    }
+
+    return search(DOCS_BASE);
+}
+
 // Process a single markdown file
 async function processMarkdownFile(docId, reusableComponents) {
-    const filePath = path.join(DOCS_DIR, `${docId}.mdx`);
-    
+    const filePath = await findDocFile(docId);
+
+    if (!filePath) {
+        console.warn(`Warning: Could not find ${docId}.mdx in any content directory`);
+        return null;
+    }
+
     try {
-        // Check if file exists
-        await fs.access(filePath);
-        
         let content = await fs.readFile(filePath, 'utf8');
-        
+
         // Clean frontmatter
         content = cleanFrontmatter(content);
-        
+
         // Strip content
         content = stripContent(content, reusableComponents);
-        
+
         return content;
     } catch (error) {
         console.warn(`Warning: Could not process file ${docId}.mdx:`, error.message);
