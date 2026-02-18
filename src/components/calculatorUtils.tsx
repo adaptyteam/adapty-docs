@@ -80,15 +80,26 @@ export function makeDefaultValues(variables: Variable[]): Record<string, number>
 
 export function initializeRows(
     variables: Variable[],
-    defaultRows?: Array<Record<string, number>>,
+    defaultRows?: Array<Record<string, number | string>>,
     count: number = 1,
 ): RowData[] {
     const defaults = makeDefaultValues(variables);
     if (defaultRows) {
-        return defaultRows.map(overrides => ({
-            id: nanoid(),
-            values: { ...defaults, ...overrides },
-        }));
+        return defaultRows.map(overrides => {
+            const resolved: Record<string, number> = {};
+            for (const [key, val] of Object.entries(overrides)) {
+                if (typeof val === 'string') {
+                    try {
+                        resolved[key] = new Function(`return (${val})`)() as number;
+                    } catch {
+                        resolved[key] = parseFloat(val) || 0;
+                    }
+                } else {
+                    resolved[key] = val;
+                }
+            }
+            return { id: nanoid(), values: { ...defaults, ...resolved } };
+        });
     }
     return Array.from({ length: count }, () => ({
         id: nanoid(),
@@ -271,13 +282,7 @@ export function getFormulaBoxStyle(isDark: boolean): React.CSSProperties {
     };
 }
 
-export function getButtonStyle(isDark: boolean): React.CSSProperties {
-    return {
-        backgroundColor: isDark ? 'rgba(24, 24, 27, 0.7)' : '#ffffff',
-        borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#e5e7eb',
-        color: isDark ? '#f1f5f9' : '#0a0a0a',
-    };
-}
+export const getButtonStyle = getInputStyle;
 
 export function getAddButtonStyle(isDark: boolean): React.CSSProperties {
     return {
@@ -377,6 +382,32 @@ export const VariableInput: React.FC<{
         />
     );
 };
+
+export const LabeledVariableInput: React.FC<{
+    variable: Variable;
+    value: number | string;
+    onChange: (value: string) => void;
+    isDark: boolean;
+    centered?: boolean;
+}> = ({ variable, value, onChange, isDark, centered }) => (
+    <div className={`flex items-center gap-3${centered ? ' justify-center' : ''}`}>
+        <VariableInput
+            variable={variable}
+            value={value}
+            onChange={onChange}
+            isDark={isDark}
+            className="w-24"
+        />
+        <span
+            className="calculator-formula text-sm font-medium shrink-0"
+            style={{ color: getLabelColor(isDark) }}
+            dangerouslySetInnerHTML={{ __html: renderKatexInline(variable.nameInTheFormula) }}
+        />
+        <span className="text-sm" style={{ color: getSubtextColor(isDark) }}>
+            {variable.variableDescription}
+        </span>
+    </div>
+);
 
 export const ColumnHeaders: React.FC<{
     variables: Variable[];
