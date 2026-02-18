@@ -12,7 +12,7 @@ The request failed because the `variation_ID` for the requested paywall couldnâ€
 
 #### Response example
 
-```JSON showLineNumbers
+```json showLineNumbers
 {
     "errors": [
         {
