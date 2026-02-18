@@ -12,7 +12,7 @@ The request failed because the products linked to the provided token were not fo
 
 #### Response example
 
-```JSON showLineNumbers
+```json showLineNumbers
 {
   "errors": [
     {
