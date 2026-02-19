@@ -7,8 +7,6 @@ export function highlightLinesTransformer() {
     preprocess(code, options) {
       // Try multiple ways to access meta
       const meta = options.meta?.__raw || options.meta || '';
-      console.log('[Highlight] Meta:', meta, 'Options:', options);
-      
       // Parse line numbers from meta (format: {1,2,3} or {1-3,5})
       const highlightMatch = meta.match(/\{([0-9,-]+)\}/);
       
@@ -27,7 +25,6 @@ export function highlightLinesTransformer() {
           }
         }
         
-        console.log('[Highlight] Lines to highlight:', Array.from(highlightSet));
         this.highlightLines = highlightSet;
       } else {
         this.highlightLines = new Set();
