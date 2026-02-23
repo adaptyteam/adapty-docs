@@ -215,29 +215,45 @@ async function main() {
     // Read all sidebar files
     const sidebarFiles = await fs.readdir(SIDEBARS_DIR);
     
+    const allPlatformContents = [];
+
     for (const file of sidebarFiles) {
         if (!file.endsWith('.json')) continue;
-        
+
         const platformName = file.replace('.json', '');
         const sidebarPath = path.join(SIDEBARS_DIR, file);
-        
+
         try {
             const sidebarContent = await fs.readFile(sidebarPath, 'utf-8');
             const sidebarData = JSON.parse(sidebarContent);
-            
+
             // Generate full content for this platform
             const fullContent = await generatePlatformFullContent(platformName, sidebarData, reusableComponents);
-            
+
             // Write to file
             const outputPath = path.join(OUTPUT_DIR, `${platformName}-llms-full.txt`);
             await fs.writeFile(outputPath, fullContent);
             console.log(`✓ Successfully generated ${platformName}-llms-full.txt`);
-            
+
+            allPlatformContents.push([platformName, fullContent]);
+
         } catch (error) {
             console.error(`✗ Error processing ${platformName}:`, error.message);
         }
     }
-    
+
+    // Generate combined llms-full.txt
+    let combinedFull = '# Adapty Documentation (Full Content)\n\n';
+    combinedFull += '> Complete documentation content across all platforms.\n\n';
+    combinedFull += `Generated on: ${new Date().toISOString()}\n\n---\n`;
+
+    for (const [platform, content] of allPlatformContents) {
+        combinedFull += content;
+    }
+
+    await fs.writeFile(path.join(OUTPUT_DIR, 'llms-full.txt'), combinedFull);
+    console.log('✓ Successfully generated combined llms-full.txt');
+
     console.log('\nPlatform-specific llms-full.txt generation complete!');
 }
 
