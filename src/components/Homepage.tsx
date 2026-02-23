@@ -11,6 +11,29 @@ const Homepage: React.FC = () => {
         </p>
       </div>
 
+      {/* Discover Section */}
+      <section className="discover-section">
+        <a href="/docs/is-adapty-right-for-me" className="discover-card">
+          <div className="discover-card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" strokeLinecap="round" strokeLinejoin="round"/>
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div className="discover-card-content">
+            <h3>Is Adapty right for me?</h3>
+            <p className="discover-card-description">
+              Find your use case — whether you're launching a new app, optimizing revenue, or migrating from another tool.
+            </p>
+          </div>
+          <div className="discover-card-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+        </a>
+      </section>
+
       {/* Get Started Section */}
         <section className="get-started-section">
           <div className="primary-card">
