@@ -14,6 +14,7 @@ interface Props {
   sidebarData: any[];
   currentPlatformId: string;
   currentSlug: string;
+  currentLocale?: string;
   headings?: { depth: number; slug: string; text: string }[];
   breadcrumbs?: { label: string; href?: string }[];
   description?: string;
@@ -23,7 +24,7 @@ interface Props {
   isFullWidth?: boolean;
 }
 
-const { title, sidebarData, currentPlatformId, currentSlug, headings = [], breadcrumbs = [], description, metadataTitle, keywords, rank, isFullWidth = false } = Astro.props;
+const { title, sidebarData, currentPlatformId, currentSlug, currentLocale, headings = [], breadcrumbs = [], description, metadataTitle, keywords, rank, isFullWidth = false } = Astro.props;
 
 const derivedTitle = metadataTitle || title;
 const keywordsString = Array.isArray(keywords) ? keywords.join(', ') : keywords;
@@ -35,7 +36,7 @@ if (canonicalURL.pathname.length > 1 && canonicalURL.pathname.endsWith('/')) {
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={currentLocale ?? 'en'}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
@@ -71,6 +72,20 @@ if (canonicalURL.pathname.length > 1 && canonicalURL.pathname.endsWith('/')) {
         }
       })();
     </script>
+
+    <!-- Language auto-detection (runs only on English pages) -->
+    <script is:inline>
+      (function() {
+        if (window.location.pathname.match(/\/docs\/[a-z]{2}\//)) return;
+        var saved = localStorage.getItem('preferred-locale');
+        var lang = saved || navigator.language || '';
+        if (lang.startsWith('zh')) {
+          localStorage.setItem('preferred-locale', 'zh');
+          var newPath = window.location.pathname.replace(/^(\/docs\/)/, '$1zh/');
+          if (newPath !== window.location.pathname) window.location.replace(newPath);
+        }
+      })();
+    </script>
     {description && (
       <>
         <meta data-rh="true" name="description" content={description} />
@@ -96,7 +111,7 @@ if (canonicalURL.pathname.length > 1 && canonicalURL.pathname.endsWith('/')) {
     <!-- Persistent container for LiveChat widget to survive Astro transitions -->
     <div id="livechat-persist-container" data-astro-transition-persist="livechat-container"></div>
     
-    <Header />
+    <Header currentLocale={currentLocale} currentSlug={currentSlug} />
     
     <!-- Mobile Search Overlay -->
     <div id="mobile-search-overlay" class="mobile-search-overlay" aria-hidden="true">
@@ -167,7 +182,7 @@ if (canonicalURL.pathname.length > 1 && canonicalURL.pathname.endsWith('/')) {
                         {headings.filter(h => h.depth >= 2 && h.depth <= 3).length > 0 && (
                             <TableOfContents headings={headings} />
                         )}
-                        <FeedbackForm hasToC={headings.filter(h => h.depth >= 2 && h.depth <= 3).length > 0} />
+                        <FeedbackForm hasToC={headings.filter(h => h.depth >= 2 && h.depth <= 3).length > 0} currentLocale={currentLocale} />
                     </div>
                 )}
             </div>
@@ -348,6 +363,27 @@ if (canonicalURL.pathname.length > 1 && canonicalURL.pathname.endsWith('/')) {
       document.addEventListener('astro:page-load', initSidebarState);
     </script>
     
+    <!-- Localize in-article links when on a locale page -->
+    <script>
+      function localizeArticleLinks() {
+        const localeMatch = window.location.pathname.match(/\/docs\/([a-z]{2})(\/|$)/);
+        if (!localeMatch) return; // English page — nothing to do
+        const locale = localeMatch[1];
+        const prefix = `/docs/${locale}/`;
+
+        document.querySelectorAll<HTMLAnchorElement>('article a[href]').forEach(el => {
+          const href = el.getAttribute('href')!;
+          // Only rewrite absolute internal /docs/ links that don't already have the locale prefix
+          if (href.startsWith('/docs/') && !href.startsWith(prefix)) {
+            el.href = href.replace(/^\/docs\//, prefix);
+          }
+        });
+      }
+
+      localizeArticleLinks();
+      document.addEventListener('astro:page-load', localizeArticleLinks);
+    </script>
+
     <!-- Mobile Search Toggle -->
     <script>
       // Handle mobile search overlay

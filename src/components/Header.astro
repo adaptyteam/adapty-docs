@@ -1,14 +1,55 @@
 ---
 import Search from "./Search.astro";
 import ThemeToggle from "./ThemeToggle.astro";
+import { SUPPORTED_LOCALES, LOCALE_NAMES } from '../data/locales';
+import { getUIStrings } from '../locales/ui-strings';
 
-const links = [
-  { label: "Documentation", href: "/", active: true },
-  { label: "Blog", href: "https://adapty.io/blog", active: false },
-  { label: "What's new", href: "https://adapty.io/whats-new", active: false },
-  { label: "Glossary", href: "https://adapty.io/glossary", active: false },
-  { label: "Pricing", href: "https://adapty.io/pricing", active: false },
+interface Props {
+  currentLocale?: string;
+  currentSlug?: string;
+}
+
+const { currentLocale, currentSlug } = Astro.props;
+
+const base = import.meta.env.BASE_URL.replace(/\/+$/, '');
+
+// Compute cross-locale URLs
+function getLocaleUrl(targetLocale: string | null): string {
+  if (!currentSlug) return targetLocale ? `${base}/${targetLocale}/` : `${base}/`;
+  if (targetLocale) {
+    return `${base}/${targetLocale}/${currentSlug}`.replace(/\/+/g, '/');
+  }
+  // English — strip the locale prefix if present
+  return `${base}/${currentSlug}`.replace(/\/+/g, '/');
+}
+
+const ht = getUIStrings(currentLocale).header;
+
+// Prefix an internal /docs/... path with the current locale (for initial server render)
+function localizeHref(path: string): string {
+  if (!currentLocale) return path;
+  return path.replace(/^(\/docs\/)/, `$1${currentLocale}/`);
+}
+
+const docsHomePath = import.meta.env.BASE_URL; // "/docs/"
+const serverApiPath = `${base}/getting-started-with-server-side-api`;
+const sdkItems = [
+  { label: "iOS",                  path: `${base}/ios-sdk-overview` },
+  { label: "Android",              path: `${base}/android-sdk-overview` },
+  { label: "React Native",         path: `${base}/react-native-sdk-overview` },
+  { label: "Flutter",              path: `${base}/flutter-sdk-overview` },
+  { label: "Unity",                path: `${base}/unity-sdk-overview` },
+  { label: "Kotlin Multiplatform", path: `${base}/kmp-sdk-overview` },
+  { label: "Capacitor",            path: `${base}/capacitor-sdk-overview` },
 ];
+
+const englishUrl = getLocaleUrl(null);
+const localeLinks = SUPPORTED_LOCALES.map(locale => ({
+  locale,
+  label: LOCALE_NAMES[locale],
+  href: getLocaleUrl(locale),
+  active: currentLocale === locale,
+}));
 ---
 
 <header class="header-main" transition:persist>
@@ -22,14 +63,12 @@ const links = [
 
         <!-- Desktop Navigation -->
         <nav class="hidden lg:flex items-center gap-1 text-[14px] font-medium">
-          <a href={import.meta.env.BASE_URL} class="nav-link">
-            Documentation
-          </a>
-          
+          <a href={localizeHref(docsHomePath)} data-nav-href={docsHomePath} class="nav-link" data-i18n="documentation">{ht.documentation}</a>
+
           <!-- Mobile SDK Dropdown -->
           <div class="relative dropdown-container">
             <button class="dropdown-trigger nav-link">
-              Mobile SDK
+              <span data-i18n="mobileSdk">{ht.mobileSdk}</span>
               <svg class="dropdown-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
@@ -38,16 +77,12 @@ const links = [
             <!-- Dropdown Menu -->
             <div class="dropdown-menu">
                <div class="dropdown-content">
-                {[
-                  { label: "iOS", href: `${import.meta.env.BASE_URL}/ios-sdk-overview` },
-                  { label: "Android", href: `${import.meta.env.BASE_URL}/android-sdk-overview` },
-                  { label: "React Native", href: `${import.meta.env.BASE_URL}/react-native-sdk-overview` },
-                  { label: "Flutter", href: `${import.meta.env.BASE_URL}/flutter-sdk-overview` },
-                  { label: "Unity", href: `${import.meta.env.BASE_URL}/unity-sdk-overview` },
-                  { label: "Kotlin Multiplatform", href: `${import.meta.env.BASE_URL}/kmp-sdk-overview` },
-                  { label: "Capacitor", href: `${import.meta.env.BASE_URL}/capacitor-sdk-overview` }
-                ].map(item => (
-                  <a href={item.href.replace(/\/+/g, '/')} class="dropdown-item">
+                {sdkItems.map(item => (
+                  <a
+                    href={localizeHref(item.path).replace(/\/+/g, '/')}
+                    data-nav-href={item.path.replace(/\/+/g, '/')}
+                    class="dropdown-item"
+                  >
                     {item.label}
                   </a>
                 ))}
@@ -55,11 +90,9 @@ const links = [
             </div>
           </div>
 
-          <a href={`${import.meta.env.BASE_URL}/getting-started-with-server-side-api`.replace(/\/+/g, '/')} class="nav-link">Server API</a>
-          <a href="https://adapty.io/docs/whats-new" class="nav-link">
-            What's new
-          </a>
-          <a href="https://adapty.featurebase.app" class="nav-link">Support Forum</a>
+          <a href={localizeHref(serverApiPath).replace(/\/+/g, '/')} data-nav-href={serverApiPath.replace(/\/+/g, '/')} class="nav-link" data-i18n="serverApi">{ht.serverApi}</a>
+          <a href="https://adapty.io/docs/whats-new" class="nav-link" data-i18n="whatsNew">{ht.whatsNew}</a>
+          <a href="https://adapty.featurebase.app" class="nav-link" data-i18n="supportForum">{ht.supportForum}</a>
         </nav>
     </div>
 
@@ -71,18 +104,39 @@ const links = [
     <!-- Auth Buttons & Theme Toggle -->
     <div class="hidden lg:flex items-center gap-3">
       <ThemeToggle />
-      <a 
-        href="https://app.adapty.io/login" 
-        class="nav-link"
-      >
-        Sign In
-      </a>
-      <a 
-        href="https://app.adapty.io/registration" 
+
+      <!-- Language Switcher -->
+      <div class="lang-switcher relative dropdown-container">
+        <button class="lang-trigger nav-link" aria-label="Switch language">
+          <span id="lang-label">{currentLocale ? LOCALE_NAMES[currentLocale as keyof typeof LOCALE_NAMES] ?? currentLocale : 'EN'}</span>
+          <svg class="dropdown-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div class="dropdown-menu lang-menu">
+          <div class="dropdown-content">
+            <a
+              href={englishUrl}
+              class:list={["dropdown-item", !currentLocale ? "lang-active" : ""]}
+              data-locale=""
+            >English</a>
+            {localeLinks.map(({ locale, label, href, active }) => (
+              <a
+                href={href}
+                class:list={["dropdown-item", active ? "lang-active" : ""]}
+                data-locale={locale}
+              >{label}</a>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <a href="https://app.adapty.io/login" class="nav-link" data-i18n="signIn">{ht.signIn}</a>
+      <a
+        href="https://app.adapty.io/registration"
         class="px-5 py-2.5 text-sm font-semibold text-white bg-[#6720ff] hover:bg-[#5816e8] dark:bg-purple-600 dark:hover:bg-purple-500 rounded-xl transition-all shadow-[0_4px_15px_-2px_rgba(103,32,255,0.3)] hover:shadow-[0_8px_25px_-5px_rgba(103,32,255,0.4)] active:scale-[0.98]"
-      >
-        Sign Up for Free
-      </a>
+        data-i18n="signUpFree"
+      >{ht.signUpFree}</a>
     </div>
 
     <!-- Mobile Search, Theme & Menu Buttons -->
@@ -292,6 +346,17 @@ const links = [
     background: var(--bg-hover);
     color: var(--text-primary);
   }
+
+  .lang-active {
+    color: var(--accent-primary);
+    font-weight: 600;
+  }
+
+  .lang-trigger {
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    min-width: 2.5rem;
+  }
 </style>
 
 <script>
@@ -315,4 +380,108 @@ const links = [
   
   initMobileThemeToggle();
   document.addEventListener('astro:page-load', initMobileThemeToggle);
+
+  // Locale names map for client-side use
+  const LOCALE_NAMES_CLIENT: Record<string, string> = { zh: '中文' };
+
+  // UI string translations for client-side sync (mirrors src/locales/ui-strings.ts)
+  const UI_STRINGS_CLIENT: Record<string, Record<string, string>> = {
+    zh: {
+      documentation: '文档',
+      mobileSdk: '移动端 SDK',
+      serverApi: '服务端 API',
+      whatsNew: '最新动态',
+      supportForum: '支持论坛',
+      signIn: '登录',
+      signUpFree: '免费注册',
+    },
+    en: {
+      documentation: 'Documentation',
+      mobileSdk: 'Mobile SDK',
+      serverApi: 'Server API',
+      whatsNew: "What's new",
+      supportForum: 'Support Forum',
+      signIn: 'Sign In',
+      signUpFree: 'Sign Up for Free',
+    },
+  };
+
+  // Rewrite internal nav link hrefs to include (or strip) the current locale prefix
+  function syncNavLinks() {
+    const localeMatch = window.location.pathname.match(/\/docs\/([a-z]{2})(\/|$)/);
+    const locale = localeMatch ? localeMatch[1] : null;
+
+    document.querySelectorAll<HTMLAnchorElement>('[data-nav-href]').forEach(el => {
+      const basePath = el.getAttribute('data-nav-href')!;
+      el.href = locale
+        ? basePath.replace(/^(\/docs\/)/, `$1${locale}/`)
+        : basePath;
+    });
+  }
+
+  // Update nav text content based on current locale in URL
+  function syncHeaderI18n() {
+    const localeMatch = window.location.pathname.match(/\/docs\/([a-z]{2})\//);
+    const locale = localeMatch ? localeMatch[1] : 'en';
+    const strings = UI_STRINGS_CLIENT[locale] ?? UI_STRINGS_CLIENT.en;
+
+    document.querySelectorAll<HTMLElement>('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n!;
+      if (strings[key]) el.textContent = strings[key];
+    });
+  }
+
+  // Sync lang switcher label, active state, and hrefs based on current URL.
+  // Needed because the header is transition:persist and doesn't re-render on navigation.
+  function syncLangSwitcher() {
+    const path = window.location.pathname;
+    // Match /docs/zh/ — capture the base prefix and the locale code
+    const localeMatch = path.match(/^(.*\/docs\/)([a-z]{2})\//);
+    const currentLocale = localeMatch ? localeMatch[2] : null;
+    // Path without the locale prefix (the English equivalent)
+    const englishPath = localeMatch
+      ? path.replace(`${localeMatch[1]}${localeMatch[2]}/`, localeMatch[1])
+      : path;
+
+    // Update button label
+    const labelEl = document.getElementById('lang-label');
+    if (labelEl) {
+      labelEl.textContent = currentLocale ? (LOCALE_NAMES_CLIENT[currentLocale] ?? currentLocale) : 'EN';
+    }
+
+    // Update link hrefs and active classes
+    document.querySelectorAll<HTMLAnchorElement>('[data-locale]').forEach(el => {
+      const locale = el.dataset.locale ?? '';
+      const isActive = locale === (currentLocale ?? '');
+      el.classList.toggle('lang-active', isActive);
+
+      // Recompute href to match current page
+      if (locale === '') {
+        el.href = englishPath;
+      } else {
+        el.href = localeMatch
+          ? path.replace(`${localeMatch[1]}${localeMatch[2]}/`, `${localeMatch[1]}${locale}/`)
+          : path.replace(/^(.*\/docs\/)/, `$1${locale}/`);
+      }
+    });
+  }
+
+  // Save preferred locale when user clicks a language switcher link
+  function initLangSwitcher() {
+    syncLangSwitcher();
+    syncHeaderI18n();
+    syncNavLinks();
+    document.querySelectorAll('[data-locale]').forEach(el => {
+      el.addEventListener('click', () => {
+        const locale = (el as HTMLElement).dataset.locale;
+        if (locale) {
+          localStorage.setItem('preferred-locale', locale);
+        } else {
+          localStorage.removeItem('preferred-locale');
+        }
+      });
+    });
+  }
+  initLangSwitcher();
+  document.addEventListener('astro:page-load', initLangSwitcher);
 </script>

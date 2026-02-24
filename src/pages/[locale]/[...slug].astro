@@ -1,0 +1,233 @@
+---
+import { getCollection, render } from 'astro:content';
+import DocsLayout from '/src/layouts/DocsLayout.astro';
+import Tabs from '../../components/Tabs.astro';
+import TabItem from '../../components/TabItem.astro';
+import Callout from '../../components/Callout.astro';
+import Zoom from '../../components/Zoom.astro';
+import CustomDocCardList from '../../components/CustomDocCardList.astro';
+import Details from '../../components/Details.astro';
+import InlineTooltip from '../../components/InlineTooltip.astro';
+import ZoomImage from '../../components/ZoomImage.astro';
+import ArticleButtons from '../../components/ArticleButtons.astro';
+import Button from '../../components/Button.astro';
+import MDXImage from '../../components/MDXImage.astro';
+import { Calculator } from '../../components/Calculator';
+import { SUPPORTED_LOCALES } from '../../data/locales';
+import { buildDocPaths, findDocEntry, buildBreadcrumbs } from '../../utils/docs';
+import Homepage from '../../components/Homepage';
+
+export async function getStaticPaths() {
+  const allDocs = await getCollection('docs');
+  const englishPaths = await buildDocPaths(allDocs);
+
+  const paths = [];
+  for (const locale of SUPPORTED_LOCALES) {
+    for (const entry of englishPaths) {
+      // Skip redirects in localized routes — always serve content directly
+      if (entry.props.redirectTo) continue;
+
+      paths.push({
+        params: { locale, slug: entry.params.slug },
+        props: { ...entry.props, locale }
+      });
+    }
+  }
+  return paths;
+}
+
+const { locale, slug } = Astro.params;
+const { platform, sidebar, docId } = Astro.props;
+
+const allDocs = await getCollection('docs');
+const allLocales = await getCollection('locales');
+
+// Try to find a translated version of this article
+const localeEntryId = `${locale}/${docId?.split('/').pop()?.replace(/\.(md|mdx)$/, '') ?? slug}`;
+const localeEntry = allLocales.find(e =>
+  e.id === localeEntryId ||
+  e.id === `${locale}/${slug}`
+);
+
+// Fall back to the English entry if no translation exists
+const englishEntry = findDocEntry(allDocs, docId ?? slug ?? '');
+
+let Content;
+let headings = [];
+let title = '';
+let description = '';
+let metadataTitle = '';
+let keywords = [];
+let rank = undefined;
+
+if (localeEntry) {
+  const rendered = await render(localeEntry);
+  Content = rendered.Content;
+  headings = rendered.headings;
+  const frontmatter = (rendered as any).remarkPluginFrontmatter || localeEntry.data;
+  title = localeEntry.data.title || englishEntry?.data.title || String(slug);
+  description = frontmatter.description ?? englishEntry?.data.description ?? '';
+  metadataTitle = frontmatter.metadataTitle ?? englishEntry?.data.metadataTitle ?? '';
+  keywords = frontmatter.keywords ?? englishEntry?.data.keywords ?? [];
+  rank = frontmatter.rank ?? englishEntry?.data.rank;
+} else if (englishEntry) {
+  const rendered = await render(englishEntry);
+  Content = rendered.Content;
+  headings = rendered.headings;
+  const frontmatter = (rendered as any).remarkPluginFrontmatter || englishEntry.data;
+  title = englishEntry.data.title || String(slug);
+  description = frontmatter.description ?? '';
+  metadataTitle = frontmatter.metadataTitle ?? '';
+  keywords = frontmatter.keywords ?? [];
+  rank = frontmatter.rank;
+}
+
+// Load sidebar label translations if available
+let sidebarData = sidebar;
+try {
+  const labelsModule = await import(`../../locales/${locale}/_sidebar-labels.json`);
+  const labels: Record<string, { value: string }> = labelsModule.default ?? labelsModule;
+
+  function applyLabels(items: any[]): any[] {
+    return items.map(item => {
+      const id = item.id || item.link?.id;
+      const translated = id ? labels[id] : null;
+      const translatedCategory = item.label ? labels[item.label] : null;
+      return {
+        ...item,
+        label: translated?.value ?? translatedCategory?.value ?? item.label,
+        items: item.items ? applyLabels(item.items) : undefined,
+      };
+    });
+  }
+
+  if (sidebarData && Object.keys(labels).length > 0) {
+    sidebarData = applyLabels(sidebarData);
+  }
+} catch {
+  // No labels file — use sidebar as-is
+}
+
+// Breadcrumbs — use locale-prefixed base so hrefs point to /docs/{locale}/...
+const breadcrumbs = sidebarData
+  ? buildBreadcrumbs(sidebarData, slug || '', allDocs, `${import.meta.env.BASE_URL}${locale}/`)
+  : [];
+
+// Reusable components — English base + locale overrides
+const reusableComponents = import.meta.glob('../../components/reusable/*.{md,mdx}', { eager: true });
+const localeReusableComponents = import.meta.glob('../../locales/**/*.{md,mdx}', { eager: true });
+
+const toPascalCase = (str: string) => {
+  if (/^\d/.test(str)) return `Error${str}`;
+  return str.replace(/(^\w|-\w)/g, (c: string) => c.replace('-', '').toUpperCase());
+};
+
+const globalComponents = Object.entries(reusableComponents).reduce((acc: Record<string, any>, [p, module]: [string, any]) => {
+  const fileName = p.split('/').pop()?.replace(/\.(md|mdx)$/, '');
+  if (fileName) acc[toPascalCase(fileName)] = module.Content;
+  return acc;
+}, {});
+
+// Apply locale-specific reusable overrides from src/locales/{locale}/reusable/
+Object.entries(localeReusableComponents).forEach(([p, module]: [string, any]) => {
+  // Match paths like ../../locales/zh/reusable/SampleApp.mdx
+  const match = p.match(/\/locales\/([^/]+)\/reusable\/(.+)\.(md|mdx)$/);
+  if (match && match[1] === locale) {
+    const fileName = match[2];
+    globalComponents[toPascalCase(fileName)] = (module as any).Content;
+  }
+});
+---
+
+<DocsLayout
+  title={title || `${docId} - ${platform?.label || 'Docs'}`}
+  sidebarData={sidebarData}
+  currentPlatformId={platform?.id || ''}
+  currentSlug={slug || ''}
+  currentLocale={locale}
+  headings={headings}
+  breadcrumbs={breadcrumbs}
+  description={description}
+  metadataTitle={metadataTitle}
+  keywords={keywords}
+  rank={rank}
+>
+  {Content ? (
+    <div class="content-wrapper">
+      <div class="flex items-start gap-3 mb-2">
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900">{title}</h1>
+        <button
+          id="copy-link-btn"
+          class="copy-link-button flex-shrink-0 p-2 rounded-lg transition-all duration-200 mt-1"
+          aria-label="Copy link to this page"
+          title="Copy link"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+          </svg>
+        </button>
+      </div>
+      <ArticleButtons />
+      <Content components={{
+        Tabs,
+        TabItem,
+        Callout,
+        Zoom,
+        CustomDocCardList,
+        Details,
+        InlineTooltip,
+        ZoomImage,
+        MDXImage,
+        Calculator,
+        Button,
+        Homepage,
+        img: MDXImage,
+        ...globalComponents
+      }} />
+    </div>
+  ) : (
+    <div class="py-12">
+      <h1 class="text-2xl font-bold mb-4">Content Not Found</h1>
+      <p class="text-slate-600 mb-6 font-medium">
+        We couldn't find the documentation for: <code>{slug || 'root'}</code>.
+      </p>
+    </div>
+  )}
+</DocsLayout>
+
+<style>
+  .copy-link-button {
+    color: #94a3b8;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .copy-link-button:hover { color: #6720ff; }
+  .copy-link-button.copied { color: #10b981; }
+  :root.dark .copy-link-button, html.dark .copy-link-button { color: #64748b; }
+  :root.dark .copy-link-button:hover, html.dark .copy-link-button:hover { color: #a78bfa; }
+  :root.dark .copy-link-button.copied, html.dark .copy-link-button.copied { color: #10b981; }
+</style>
+
+<script>
+  function initCopyLinkButton() {
+    const btn = document.getElementById('copy-link-btn');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      const url = window.location.href;
+      try {
+        await navigator.clipboard.writeText(url);
+        btn.classList.add('copied');
+        setTimeout(() => btn.classList.remove('copied'), 2000);
+      } catch {
+        // ignore
+      }
+    });
+  }
+  initCopyLinkButton();
+  document.addEventListener('astro:page-load', initCopyLinkButton);
+</script>

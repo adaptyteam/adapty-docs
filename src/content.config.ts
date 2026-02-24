@@ -14,4 +14,14 @@ const docs = defineCollection({
   }),
 });
 
-export const collections = { docs };
+const locales = defineCollection({
+  loader: glob({ pattern: "**/*.mdx", base: "./src/locales" }),
+  schema: z.object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    metadataTitle: z.string().optional(),
+    keywords: z.union([z.string(), z.array(z.string())]).optional(),
+  }),
+});
+
+export const collections = { docs, locales };
