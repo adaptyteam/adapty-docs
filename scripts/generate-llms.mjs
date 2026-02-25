@@ -10,7 +10,7 @@ const DOCS_BASE = path.resolve(__dirname, '../src/content/docs');
 const targetDirName = process.argv[2] || '../public';
 const OUTPUT_DIR = path.resolve(__dirname, targetDirName);
 
-const BASE_URL = 'https://docs.adapty.io'; // Base URL for public links
+const BASE_URL = 'https://adapty.io/docs'; // Base URL for public links
 
 // Helper: Ensure directory exists
 async function ensureDir(dir) {
