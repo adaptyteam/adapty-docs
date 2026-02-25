@@ -38,10 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const appId = searchInput.dataset.appId;
     const apiKey = searchInput.dataset.apiKey;
-    const indexName = searchInput.dataset.indexName;
     const analyticsKey = searchInput.dataset.analyticsKey || apiKey; // Fallback to search key if not provided
 
-    if (!appId || !apiKey || !indexName) {
+    if (!appId || !apiKey || !searchInput.dataset.indexName) {
         console.warn('Algolia search credentials missing. Search will not work.');
         return;
     }
@@ -108,6 +107,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Read indexName fresh each time — it may be updated by syncHeaderI18n when
+        // the user switches locale while the persistent header stays in the DOM.
+        const indexName = searchInput.dataset.indexName || '';
+        if (!indexName) return;
+
         try {
             const { results } = await client.search([
                 {
@@ -126,19 +130,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const hits = searchResponse.hits as SearchHit[];
             const queryID = searchResponse.queryID;
 
-            renderResults(hits, queryID);
+            renderResults(hits, queryID, indexName);
         } catch (error) {
             console.error('Search error:', error);
         }
     };
 
-    const renderResults = (hits: SearchHit[], queryID: string) => {
+    const renderResults = (hits: SearchHit[], queryID: string, indexName: string) => {
         searchResults.innerHTML = '';
 
         if (hits.length === 0) {
             const noResults = document.createElement('div');
             noResults.className = 'p-4 text-secondary text-sm text-center';
-            noResults.textContent = 'No results found.';
+            noResults.textContent = searchResults.dataset.noResults || 'No results found.';
             searchResults.appendChild(noResults);
         } else {
             hits.forEach((hit, index) => {

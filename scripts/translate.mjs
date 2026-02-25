@@ -7,6 +7,8 @@
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --platform ios     # single platform
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --file ios-sdk-overview
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --resume <batchId> # retrieve submitted batch
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --api-specs                    # translate all API specs
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --api-specs --file adapty-api  # single API spec
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --incremental                # all locales, changed files only (build pipeline)
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --incremental      # single locale, changed files only
  */
@@ -574,6 +576,12 @@ async function translateApiSpecsForLang(client, lang, localesDir, hashesDir, tar
     }
   }
 
+  // Error out if --file targeted a spec that doesn't exist
+  if (fileId && !specFiles.some(s => s.basename === fileId)) {
+    console.error(`${tag} No API spec found with id: ${fileId}`);
+    process.exit(1);
+  }
+
   if (toTranslate.length === 0) {
     console.log(`${tag} API specs: all up to date.`);
     return;
@@ -586,7 +594,7 @@ async function translateApiSpecsForLang(client, lang, localesDir, hashesDir, tar
       const content = await fs.readFile(spec.full, 'utf-8');
       const response = await client.messages.create({
         model: 'claude-sonnet-4-6',
-        max_tokens: 16384,
+        max_tokens: 64000,
         system: systemPrompt,
         messages: [{ role: 'user', content }],
       });
