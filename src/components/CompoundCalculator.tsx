@@ -16,7 +16,10 @@ import {
     buildSumReadable,
     roundResult,
     useInitialCalculation,
-    LabeledVariableInput,
+    VariableInput,
+    getLabelColor,
+    getSubtextColor,
+    renderKatexInline,
     RowGrid,
     ResultSection,
     CalculatorWrapper,
@@ -119,19 +122,32 @@ export const CompoundCalculator: React.FC<CompoundCalculatorProps> = ({
 
                 {/* Global variable inputs */}
                 <div
-                    className="mt-4 pt-4 border-t space-y-3"
-                    style={{ borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#e5e7eb' }}
+                    className="mt-4 pt-4 border-t flex flex-col items-center"
+                    style={{
+                        borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#e5e7eb',
+                    }}
                 >
-                    {globalVariables.map(v => (
-                        <LabeledVariableInput
-                            key={v.variableName}
-                            variable={v}
-                            value={globalValues[v.variableName]}
-                            onChange={(val) => updateGlobalValue(v.variableName, val)}
-                            isDark={isDark}
-                            centered
-                        />
-                    ))}
+                    <div className="grid gap-y-3 gap-x-3" style={{ gridTemplateColumns: 'auto auto auto', alignItems: 'center' }}>
+                        {globalVariables.map(v => (
+                            <React.Fragment key={v.variableName}>
+                                <VariableInput
+                                    variable={v}
+                                    value={globalValues[v.variableName]}
+                                    onChange={(val) => updateGlobalValue(v.variableName, val)}
+                                    isDark={isDark}
+                                    className="w-24"
+                                />
+                                <span
+                                    className="calculator-formula text-sm font-medium shrink-0"
+                                    style={{ color: getLabelColor(isDark) }}
+                                    dangerouslySetInnerHTML={{ __html: renderKatexInline(v.nameInTheFormula) }}
+                                />
+                                <span className="text-sm" style={{ color: getSubtextColor(isDark) }}>
+                                    {v.variableDescription}
+                                </span>
+                            </React.Fragment>
+                        ))}
+                    </div>
                 </div>
             </div>
             <ResultSection result={result} isDark={isDark} onCalculate={handleCalculate} />

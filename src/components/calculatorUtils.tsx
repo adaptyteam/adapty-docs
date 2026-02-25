@@ -362,11 +362,18 @@ export const VariableInput: React.FC<{
 
     if (variable.options) {
         return (
-            <select value={value} onChange={(e) => onChange(e.target.value)} className={cls} style={style}>
-                {variable.options.map(opt => (
-                    <option key={String(opt.value)} value={resolveOptionValue(opt.value)}>{opt.label}</option>
-                ))}
-            </select>
+            <div className={`${className} relative`}>
+                <select value={value} onChange={(e) => onChange(e.target.value)} className={`w-full px-2.5 pr-7 py-1.5 text-sm rounded-md shadow-sm border outline-none transition-all appearance-none cursor-pointer focus:ring-1`} style={style}>
+                    {variable.options.map(opt => (
+                        <option key={String(opt.value)} value={resolveOptionValue(opt.value)}>{opt.label}</option>
+                    ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-1.5" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
         );
     }
 
