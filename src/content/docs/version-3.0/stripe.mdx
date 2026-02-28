@@ -13,7 +13,7 @@ import InlineTooltip from '@site/src/components/InlineTooltip';
 
 Adapty supports web2app subscription flows by tracking web payments and subscriptions made through [Stripe](https://stripe.com/). 
 
-This integration covers web-initiated purchases (Stripe Checkout, hosted payment pages, or custom web flows) and synchronizes them with mobile app access and analytics.
+This integration covers web-initiated purchases (Stripe Checkout, hosted payment pages, Payment Links, or custom web flows) and synchronizes them with mobile app access and analytics.
 
 It is useful in the following scenarios:
 
@@ -220,33 +220,47 @@ After you've added all the necessary products, the next step is to let Stripe kn
 
 ### 4\. Enrich purchases made on the web with your user ID
 
-Adapty relies on the webhooks from Stripe to provide and update access levels for users as the only source of information. But you have to provide additional info from your end when working with Stripe for this integration to work properly.
+Adapty uses Stripe webhooks as the source of truth for creating and updating user access. To correctly link purchases to user profiles, you must provide a **stable user ID** that Adapty can recognize in the webhook payload.
 
-For access levels to be consistent across platforms (web or mobile), you have to make sure that there is a single user ID to rely on which Adapty can recognize from the webhooks as well. This could be user's email, phone number or any other ID from the authorization system you're utilizing.
+This ID can be any value that uniquely identifies a user in your system (for example: internal user ID, email, or phone number). Adapty refers to this value as `customer_user_id`.
 
-Figure out which ID you would like to use to identify your users. Then, access the part of your code that's initiatilizing the payment through Stripe — and add this user ID to the `metadata` object of either [Stripe Subscription](https://stripe.com/docs/api/subscriptions/object#subscription_object-metadata) (`sub_...`) or [Checkout Session](https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-metadata) object (`ses_...`) as `customer_user_id` like so:
+Regardless of the flow you use:
+- **User ID is required.** Without it, Adapty can’t match a purchase to a profile and access levels won’t be applied.
+- **Choose one identifier** that is consistent across platforms (web and mobile): internal user ID, email, phone number, etc.
+- **Profile creation behavior (fallbacks).** If you don’t provide `customer_user_id` in metadata, you can configure Adapty to look for the user ID in other places: either `email` from Stripe’s Customer object or `client_reference_id` from the Stripe Checkout Session. See [Profile creation behavior](#profile-creation-behavior).
 
-```json showLineNumbers title="Stripe Metadata contents"
-{'customer_user_id': "YOUR_USER_ID"}
+#### API/backend integration
+
+:::important
+**Stripe Customer is required for Checkout Sessions.** If you use Checkout Sessions, make sure a Customer is created by setting [`customer_creation`](https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-customer_creation) to `always`.
+:::
+
+If you create Subscriptions or Checkout Sessions via the Stripe API, pass the user ID in the `metadata` field as `customer_user_id`.
+
+Add this to either:
+- [Stripe Subscription](https://stripe.com/docs/api/subscriptions/object#subscription_object-metadata) object (`sub_...`), or
+- [Checkout Session](https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-metadata) object (`ses_...`).
+
+Example:
+
+```json
+{
+  "customer_user_id": "YOUR_USER_ID"
+}
 ```
 
-This one simple addition is the only thing that you have to do in your code. After that, Adapty will parse all the webhooks it receives from Stripe, extract this `metadata` and correctly associate subscriptions with your customers.
+After that, Adapty will parse Stripe webhooks, extract `customer_user_id`, and associate the subscription or purchase with the correct profile.
 
-:::warning
-User ID is required
 
-Otherwise, we have no way to match this user and provide him the access level on the mobile.
+#### Payment Links (no-code)
 
-If you don't supply `customer_user_id` to the `metadata`, you will have the option to make Adapty look for `customer_user_id` in other places: either `email` from Stripe's Customer object or `client_reference_id` from Stripe's Session.
+If you use Stripe Payment Links and don’t have a backend to set `metadata`, pass the user ID via `client_reference_id`. This value will be included in the Checkout Session and delivered to Adapty in the `checkout.session.completed` webhook.
 
-Learn more about configuring profile creation behavior [below](stripe#profile-creation-behavior)
-:::
+Append it to the Payment Link URL like that:
 
-:::note
-Customer in Stripe is also required
-
-If you are using Checkout Sessions, [make sure you're creating a Stripe Customer](https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-customer_creation) by setting `customer_creation` to `always`.
-:::
+```
+https://buy.stripe.com/your_link?client_reference_id=YOUR_USER_ID
+```
 
 ### 5\. Provide access to users on the mobile
 
@@ -368,3 +382,4 @@ Adapty supports the following Stripe events:
 - invoice.created
 - invoice.updated
 - payment_intent.succeeded
+- checkout.session.completed
