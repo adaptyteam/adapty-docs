@@ -18,10 +18,21 @@ const LOGIN_PATTERNS = [
   /\/cas\/login/i, /\/saml/i,
   /accounts\.google\.com/i, /login\.microsoftonline\.com/i,
   /appleid\.apple\.com/i, /idmsa\.apple\.com/i,
+  /play\.google\.com\/console\/about/i,
+  /ads\.tiktok\.com\/i18n\/home\?redirect=/i,
+];
+
+const CAPTCHA_PATTERNS = [
+  /\/showcaptcha/i, /\/captcha/i, /\/challenge/i,
+  /recaptcha/i,
 ];
 
 export function isLoginRedirect(redirectUrl) {
   return LOGIN_PATTERNS.some(re => re.test(redirectUrl));
+}
+
+export function isCaptchaRedirect(redirectUrl) {
+  return CAPTCHA_PATTERNS.some(re => re.test(redirectUrl));
 }
 
 /**

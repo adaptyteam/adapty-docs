@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { stripTrackingParams } from './clean-url.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -62,12 +63,15 @@ export async function curlCheck(url, timeoutMs = 10000) {
     const lines = stdout.trim().split('\n');
     const status = parseInt(lines[0], 10);
     const finalUrl = lines[1] || url;
-    const normalise = u => u.replace(/#.*$/, '').replace(/\/$/, '');
+    const normalise = u => stripTrackingParams(u).replace(/#.*$/, '').replace(/\/$/, '').replace(/:(443|80)(?=\/|$)/, '').replace(/\/\/www\./, '//');
+    const normaliseLocale = u => normalise(u).replace(/\?.*$/, '').replace(/\/[a-z]{2}(-[a-zA-Z]{2,4})?(?=\/|$)/g, '');
     const redirected = normalise(finalUrl) !== normalise(url);
+    const localeOnly = redirected && normaliseLocale(finalUrl) === normaliseLocale(url);
     return {
       status,
       ok: status >= 200 && status < 400,
       redirect: redirected ? finalUrl : null,
+      localeRedirect: localeOnly || undefined,
     };
   } catch (err) {
     const exitCode = err.code;
@@ -141,7 +145,7 @@ export async function checkExternalUrl(url, timeoutMs = 10000) {
 
     // If the page is OK and has an anchor, verify the anchor exists in the HTML
     const fragmentMatch = url.match(/#(.+)$/);
-    if (result.ok && fragmentMatch) {
+    if (result.ok && fragmentMatch && !fragmentMatch[1].startsWith(':~:text=')) {
       const anchor = fragmentMatch[1];
       const pageUrl = url.replace(/#.*$/, '');
       const found = await checkAnchorOnPage(pageUrl, anchor, timeoutMs);

@@ -5,7 +5,7 @@ import { statusLabel } from './group.mjs';
  * Emit GitHub Actions annotations for broken/bad links.
  * ::error annotations for broken links, ::warning for warnings.
  */
-export function emitAnnotations({ uniqueErrors, uniqueWarnings, manualCheckList }) {
+export function emitAnnotations({ uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings = [] }) {
   for (const b of uniqueErrors) {
     const msg = `Broken link: ${b.url} — ${statusLabel(b)}`;
     console.log(`::error file=src/content/docs/${b.source},line=${b.line}::${msg}`);
@@ -24,7 +24,7 @@ export function emitAnnotations({ uniqueErrors, uniqueWarnings, manualCheckList 
 /**
  * Write a Markdown summary to $GITHUB_STEP_SUMMARY.
  */
-export async function writeStepSummary({ allLinks, uniqueErrors, uniqueWarnings, manualCheckList, files }) {
+export async function writeStepSummary({ allLinks, uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings = [], files }) {
   const summaryFile = process.env.GITHUB_STEP_SUMMARY;
   if (!summaryFile) return;
 
@@ -38,6 +38,7 @@ export async function writeStepSummary({ allLinks, uniqueErrors, uniqueWarnings,
     `| Broken links | ${uniqueErrors.length} |`,
     `| Stale links (warnings) | ${uniqueWarnings.length} |`,
     `| Manual check required | ${manualCheckList.length} |`,
+    `| Whitelisted (suppressed) | ${whitelistedWarnings.length} |`,
     '',
   ];
 

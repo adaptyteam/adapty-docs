@@ -1,4 +1,5 @@
-import { writeFile } from 'node:fs/promises';
+import { writeFile, mkdir } from 'node:fs/promises';
+import path from 'node:path';
 import {
   esc, statusLabel, statusClass,
   groupBy, sortedGroupBy,
@@ -24,11 +25,14 @@ function renderRow(b) {
     : b.severity === 'anchor'
     ? `<span class="status status-warning">Missing anchor</span><br><span class="redirect-target">${esc(b.anchor)}</span>`
     : `<span class="status ${statusClass(b)}">${statusLabel(b)}</span>`;
-  return `<tr class="row" data-search="${esc((b.type + ' ' + b.source + ' ' + b.url + ' ' + statusLabel(b) + ' ' + (b.redirect || '')).toLowerCase())}">
+  const whitelistBadge = b.whitelisted
+    ? ' <span class="status status-whitelisted">Whitelisted</span>'
+    : '';
+  return `<tr class="row" data-search="${esc((b.type + ' ' + b.source + ' ' + b.url + ' ' + statusLabel(b) + ' ' + (b.redirect || '') + (b.whitelisted ? ' whitelisted' : '')).toLowerCase())}">
       <td class="source">${esc(b.source)}:${b.line}</td>
       <td>${urlCell}</td>
       <td><span class="type-badge type-${b.type}">${b.type}</span></td>
-      <td>${statusCell}</td>
+      <td>${statusCell}${whitelistBadge}</td>
     </tr>`;
 }
 
@@ -103,10 +107,10 @@ function renderByStatusHtml(entries) {
 // ── Main export ───────────────────────────────────────────────────
 
 export async function generateHtmlReport(results, { outputPath, fileCount, totalLinks }) {
-  const { uniqueErrors, uniqueWarnings, manualCheckList } = results;
+  const { uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings = [] } = results;
   const timestamp = new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' });
 
-  const allIssues = [...uniqueErrors, ...uniqueWarnings, ...manualCheckList];
+  const allIssues = [...uniqueErrors, ...uniqueWarnings, ...manualCheckList, ...whitelistedWarnings];
   const externalErrors = uniqueErrors.filter(b => b.type === 'external');
   const internalErrors = uniqueErrors.filter(b => b.type === 'internal');
 
@@ -114,8 +118,11 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
   const internalRedirectList = uniqueWarnings.filter(w => w.severity === 'internal-redirect');
   const redirectWarningsList = uniqueWarnings.filter(w => w.severity === 'redirect');
   const anchorWarningsList = uniqueWarnings.filter(w => w.severity === 'anchor');
+  const anchorInternalList = anchorWarningsList.filter(w => w.type === 'internal');
+  const anchorExternalList = anchorWarningsList.filter(w => w.type === 'external');
   const loginRequiredList = manualCheckList.filter(w => w.severity === 'login');
   const botProtectedList = manualCheckList.filter(w => w.severity === 'bot-protected' || w.severity === 'rate-limited');
+  const localeRedirectList = manualCheckList.filter(w => w.severity === 'locale-redirect');
 
   // ── Groupings ──────────────────────────────────────────────────
   // Total
@@ -202,6 +209,7 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
   .status-login { background: #f0f4ff; color: #6366f1; border: 1px solid #c7d2fe; }
   .status-internal-redirect { background: #fef3c7; color: #b45309; border: 1px solid #fbbf24; }
   .status-bot { background: #f3e8ff; color: #7c3aed; border: 1px solid #d8b4fe; }
+  .status-whitelisted { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; margin-left: 0.25rem; }
   .redirect-target { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.75rem; color: var(--muted); word-break: break-all; }
   .type-badge { display: inline-block; padding: 0.1em 0.5em; border-radius: 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
   .type-external { background: #eff6ff; color: var(--blue); }
@@ -223,6 +231,7 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
   <div class="stat-card"><div class="label">Stale</div><div class="value amber">${uniqueWarnings.length}</div></div>
   <div class="stat-card"><div class="label">External broken</div><div class="value orange">${externalErrors.length}</div></div>
   <div class="stat-card"><div class="label">Internal broken</div><div class="value orange">${internalErrors.length}</div></div>
+  <div class="stat-card"><div class="label">Whitelisted</div><div class="value">${whitelistedWarnings.length}</div></div>
   <div class="stat-card"><div class="label">Files affected</div><div class="value">${allBySource.length}</div></div>
   <div class="stat-card"><div class="label">Health</div><div class="value green">${(100 - (uniqueErrors.length / totalLinks * 100)).toFixed(1)}%</div></div>
 </div>
@@ -306,7 +315,8 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
     <button class="subtab" data-sub="bad-by-file">By file <span class="badge">${warningsBySource.length}</span></button>
     <button class="subtab" data-sub="bad-redirects">Redirects <span class="badge">${redirectWarningsList.length}</span></button>
     <button class="subtab" data-sub="bad-internal-redirects">Internal redirects <span class="badge">${internalRedirectList.length}</span></button>
-    <button class="subtab" data-sub="bad-anchors">Missing anchors <span class="badge">${anchorWarningsList.length}</span></button>
+    <button class="subtab" data-sub="bad-anchors-internal">Anchors (internal) <span class="badge">${anchorInternalList.length}</span></button>
+    <button class="subtab" data-sub="bad-anchors-external">Anchors (external) <span class="badge">${anchorExternalList.length}</span></button>
   </div>
   <div class="filter-bar"><input type="text" class="search" placeholder="Filter by URL, file, or status..." autocomplete="off"></div>
 
@@ -341,13 +351,22 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
     </tr>`).join('')}
   </table>`}
   </div>
-  <div class="subpanel" id="sub-bad-anchors">
-  ${anchorWarningsList.length === 0 ? '<p class="empty">No missing anchors detected.</p>' : `
-  <table><tr><th>Source</th><th>URL</th><th>Type</th><th>Anchor</th></tr>
-    ${anchorWarningsList.map(b => `<tr class="row" data-search="${esc((b.source + ' ' + b.url + ' ' + b.type + ' ' + (b.anchor || '')).toLowerCase())}">
+  <div class="subpanel" id="sub-bad-anchors-internal">
+  ${anchorInternalList.length === 0 ? '<p class="empty">No internal missing anchors detected.</p>' : `
+  <table><tr><th>Source</th><th>URL</th><th>Anchor</th></tr>
+    ${anchorInternalList.map(b => `<tr class="row" data-search="${esc((b.source + ' ' + b.url + ' ' + (b.anchor || '')).toLowerCase())}">
       <td class="source">${esc(b.source)}:${b.line}</td>
-      <td>${b.type === 'external' ? `<a class="url" href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.url)}</a>` : esc(b.url)}</td>
-      <td><span class="type-badge type-${b.type}">${b.type}</span></td>
+      <td>${esc(b.url)}</td>
+      <td><span class="status status-warning">Missing anchor</span><br><span class="redirect-target">${esc(b.anchor || '')}</span></td>
+    </tr>`).join('')}
+  </table>`}
+  </div>
+  <div class="subpanel" id="sub-bad-anchors-external">
+  ${anchorExternalList.length === 0 ? '<p class="empty">No external missing anchors detected.</p>' : `
+  <table><tr><th>Source</th><th>URL</th><th>Anchor</th></tr>
+    ${anchorExternalList.map(b => `<tr class="row" data-search="${esc((b.source + ' ' + b.url + ' ' + (b.anchor || '')).toLowerCase())}">
+      <td class="source">${esc(b.source)}:${b.line}</td>
+      <td><a class="url" href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.url)}</a></td>
       <td><span class="status status-warning">Missing anchor</span><br><span class="redirect-target">${esc(b.anchor || '')}</span></td>
     </tr>`).join('')}
   </table>`}
@@ -359,6 +378,8 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
   <div class="subtabs">
     <button class="subtab active" data-sub="manual-bot">Bot-protected <span class="badge">${botProtectedList.length}</span></button>
     <button class="subtab" data-sub="manual-login">Login required <span class="badge">${loginRequiredList.length}</span></button>
+    <button class="subtab" data-sub="manual-locale">Locale redirects <span class="badge">${localeRedirectList.length}</span></button>
+    <button class="subtab" data-sub="manual-whitelisted">Whitelisted <span class="badge">${whitelistedWarnings.length}</span></button>
   </div>
   <div class="filter-bar"><input type="text" class="search" placeholder="Filter by URL, file, or status..." autocomplete="off"></div>
 
@@ -383,6 +404,21 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
       <td><span class="status status-login">Login required</span><br><span class="redirect-target">${esc(b.redirect || '')}</span></td>
     </tr>`).join('')}
   </table>`}
+  </div>
+  <div class="subpanel" id="sub-manual-locale">
+  ${localeRedirectList.length === 0 ? '<p class="empty">No locale redirects detected.</p>' : `
+  <table><tr><th>Source</th><th>URL</th><th>Type</th><th>Redirects to</th></tr>
+    ${localeRedirectList.map(b => `<tr class="row" data-search="${esc((b.source + ' ' + b.url + ' ' + b.type + ' ' + (b.redirect || '')).toLowerCase())}">
+      <td class="source">${esc(b.source)}:${b.line}</td>
+      <td><a class="url" href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.url)}</a></td>
+      <td><span class="type-badge type-${b.type}">${b.type}</span></td>
+      <td><span class="status status-login">Locale redirect</span><br><span class="redirect-target">${esc(b.redirect || '')}</span></td>
+    </tr>`).join('')}
+  </table>`}
+  </div>
+  <div class="subpanel" id="sub-manual-whitelisted">
+  ${whitelistedWarnings.length === 0 ? '<p class="empty">No whitelisted links.</p>' :
+  renderFlatTable(whitelistedWarnings, ['Source', 'Target', 'Type', 'Status'])}
   </div>
 </div>
 
@@ -417,6 +453,7 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
 </body>
 </html>`;
 
+  await mkdir(path.dirname(outputPath), { recursive: true });
   await writeFile(outputPath, html, 'utf-8');
   console.log(`Report written to: ${outputPath}`);
 }

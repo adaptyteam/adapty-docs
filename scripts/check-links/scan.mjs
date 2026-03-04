@@ -27,11 +27,19 @@ export function extractLinks(content, filePath, docsDir) {
 
   const lineAt = (idx) => content.substring(0, idx).split('\n').length;
 
-  // [text](url) — markdown links
-  const mdLinkRe = /\[(?:[^\]]*)\]\(([^)]+)\)/g;
+  // [text](url) — markdown links (supports balanced parentheses in URLs)
+  const mdLinkRe = /\[(?:[^\]]*)\]\(/g;
   let match;
   while ((match = mdLinkRe.exec(content)) !== null) {
-    let url = match[1].trim();
+    const start = match.index + match[0].length;
+    let depth = 1;
+    let i = start;
+    while (i < content.length && depth > 0) {
+      if (content[i] === '(') depth++;
+      else if (content[i] === ')') depth--;
+      if (depth > 0) i++;
+    }
+    let url = content.substring(start, i).trim();
     url = url.replace(/\s+"[^"]*"$/, '');
     if (url) links.push({ url, source: relPath, line: lineAt(match.index) });
   }

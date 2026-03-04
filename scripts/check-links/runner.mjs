@@ -1,8 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { getAllDocFiles, extractLinks, categorizeLinks } from './scan.mjs';
 import { checkExternalUrl } from './check-external.mjs';
-import { checkInternalLink, isLoginRedirect } from './check-internal.mjs';
+import { checkInternalLink, isLoginRedirect, isCaptchaRedirect } from './check-internal.mjs';
 import { classifyResults } from './classify.mjs';
+import { loadWhitelist } from './whitelist.mjs';
 
 async function runWithConcurrency(tasks, limit) {
   const results = [];
@@ -22,7 +23,7 @@ async function runWithConcurrency(tasks, limit) {
 
 /**
  * Main orchestration pipeline.
- * Returns { files, allLinks, uniqueErrors, uniqueWarnings, manualCheckList }.
+ * Returns { files, allLinks, uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings }.
  */
 export async function orchestrate(config) {
   const { docsDir, liveSiteBase, concurrency, timeoutMs, externalOnly, internalOnly } = config;
@@ -78,7 +79,9 @@ export async function orchestrate(config) {
       } else if (result.anchorMissing) {
         warnings.push({ ...link, type: 'external', severity: 'anchor', anchor: result.anchorMissing });
       } else if (result.redirect) {
-        const severity = isLoginRedirect(result.redirect) ? 'login' : 'redirect';
+        const severity = isCaptchaRedirect(result.redirect) ? 'bot-protected'
+          : isLoginRedirect(result.redirect) ? 'login'
+          : result.localeRedirect ? 'locale-redirect' : 'redirect';
         warnings.push({ ...link, type: 'external', severity, redirect: result.redirect });
       }
     }
@@ -110,7 +113,8 @@ export async function orchestrate(config) {
     console.log('Done.\n');
   }
 
-  const { uniqueErrors, uniqueWarnings, manualCheckList } = classifyResults(errors, warnings);
+  const whitelist = await loadWhitelist();
+  const { uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings } = classifyResults(errors, warnings, whitelist);
 
-  return { files, allLinks, uniqueErrors, uniqueWarnings, manualCheckList };
+  return { files, allLinks, uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings };
 }

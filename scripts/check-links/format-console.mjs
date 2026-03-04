@@ -1,4 +1,4 @@
-export function printConsoleSummary({ uniqueErrors, uniqueWarnings, manualCheckList }) {
+export function printConsoleSummary({ uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings = [] }) {
   const externalErrors = uniqueErrors.filter(b => b.type === 'external');
   const internalErrors = uniqueErrors.filter(b => b.type === 'internal');
 
@@ -11,4 +11,7 @@ export function printConsoleSummary({ uniqueErrors, uniqueWarnings, manualCheckL
   console.log(`Broken: ${uniqueErrors.length} (${externalErrors.length} external, ${internalErrors.length} internal)`);
   console.log(`Stale links: ${uniqueWarnings.length} (${internalRedirects} internal redirects, ${redirects} redirects, ${anchors} missing anchors)`);
   console.log(`Manual check: ${manualCheckList.length} (${logins} login required, ${bots} bot-protected)`);
+  if (whitelistedWarnings.length > 0) {
+    console.log(`Whitelisted: ${whitelistedWarnings.length} (suppressed from warnings)`);
+  }
 }

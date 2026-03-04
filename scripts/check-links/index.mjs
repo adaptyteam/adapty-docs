@@ -13,6 +13,7 @@ import { orchestrate } from './runner.mjs';
 import { printConsoleSummary } from './format-console.mjs';
 import { generateHtmlReport } from './format-html.mjs';
 import { emitAnnotations, writeStepSummary } from './format-ci.mjs';
+import { generateLlmReport } from './format-llm.mjs';
 
 const args = process.argv.slice(2);
 
@@ -44,11 +45,17 @@ async function main() {
       allLinks: results.allLinks,
     });
   } else {
-    const outputPath = path.resolve('_temp/link-report.html');
-    await generateHtmlReport(results, {
-      outputPath,
+    const reportOpts = {
       fileCount: results.files.length,
       totalLinks: results.allLinks.length,
+    };
+    await generateHtmlReport(results, {
+      outputPath: path.resolve('_temp/link-report.html'),
+      ...reportOpts,
+    });
+    await generateLlmReport(results, {
+      outputPath: path.resolve('_temp/link-report.md'),
+      ...reportOpts,
     });
   }
 

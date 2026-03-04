@@ -1,4 +1,6 @@
-export const MANUAL_SEVERITIES = new Set(['login', 'bot-protected', 'rate-limited']);
+import { isWhitelisted } from './whitelist.mjs';
+
+export const MANUAL_SEVERITIES = new Set(['login', 'bot-protected', 'rate-limited', 'locale-redirect']);
 
 /**
  * Deduplicate issues by url+source key.
@@ -15,13 +17,39 @@ function dedup(arr) {
 
 /**
  * Takes raw error/warning arrays and returns classified, deduplicated results.
+ * If a whitelist is provided, matching warnings and manual-check items are
+ * moved to whitelistedWarnings. Errors are never whitelisted.
  */
-export function classifyResults(rawErrors, rawWarnings) {
+export function classifyResults(rawErrors, rawWarnings, whitelist = null) {
   const uniqueErrors = dedup(rawErrors);
   const allWarnings = dedup(rawWarnings);
 
-  const uniqueWarnings = allWarnings.filter(w => !MANUAL_SEVERITIES.has(w.severity));
-  const manualCheckList = allWarnings.filter(w => MANUAL_SEVERITIES.has(w.severity));
+  const nonManual = allWarnings.filter(w => !MANUAL_SEVERITIES.has(w.severity));
+  const manual = allWarnings.filter(w => MANUAL_SEVERITIES.has(w.severity));
 
-  return { uniqueErrors, uniqueWarnings, manualCheckList };
+  if (!whitelist) {
+    return { uniqueErrors, uniqueWarnings: nonManual, manualCheckList: manual, whitelistedWarnings: [] };
+  }
+
+  const uniqueWarnings = [];
+  const whitelistedWarnings = [];
+  const manualCheckList = [];
+
+  for (const w of nonManual) {
+    if (isWhitelisted(w.url, whitelist)) {
+      whitelistedWarnings.push({ ...w, whitelisted: true });
+    } else {
+      uniqueWarnings.push(w);
+    }
+  }
+
+  for (const w of manual) {
+    if (isWhitelisted(w.url, whitelist)) {
+      whitelistedWarnings.push({ ...w, whitelisted: true });
+    } else {
+      manualCheckList.push(w);
+    }
+  }
+
+  return { uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings };
 }

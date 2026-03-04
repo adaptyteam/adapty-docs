@@ -37,6 +37,7 @@ export function statusLabel(b) {
   if (b.severity === 'internal-redirect') return 'Internal redirect';
   if (b.severity === 'redirect') return 'Redirected';
   if (b.severity === 'login') return 'Login required';
+  if (b.severity === 'locale-redirect') return 'Locale redirect';
   if (b.severity === 'anchor') return 'Missing anchor';
   if (b.error) return esc(b.error);
   if (b.type === 'internal') return 'Page not found in docs';
@@ -49,6 +50,7 @@ export function statusClass(b) {
   if (b.severity === 'internal-redirect') return 'status-internal-redirect';
   if (b.severity === 'redirect') return 'status-warning';
   if (b.severity === 'login') return 'status-login';
+  if (b.severity === 'locale-redirect') return 'status-login';
   if (b.severity === 'anchor') return 'status-warning';
   if (b.error) return 'status-error';
   if (b.type === 'internal') return 'status-internal';
