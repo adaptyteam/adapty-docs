@@ -1,0 +1,474 @@
+---
+title: "Respond to actions - Kotlin Multiplatform"
+description: "Handle button actions and process user input from paywall and onboarding flows in your Kotlin Multiplatform app."
+metadataTitle: "Respond to Flow Actions - Kotlin Multiplatform | Adapty Docs"
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import Details from '@site/src/components/Details';
+import ZoomImage from '@site/src/components/ZoomImage';
+
+:::warning
+**Only purchases and restorations are handled automatically.** All the other button actions, such as closing paywalls or opening links, require implementing proper responses in the app code.
+:::
+
+If you are building paywalls using the Adapty paywall builder, it's crucial to set up buttons properly:
+
+1. Add a [button in the paywall builder](paywall-buttons.md) and assign it either a pre-existing action or create a custom action ID.
+2. Write code in your app to handle each action you've assigned.
+
+This guide shows how to handle custom and pre-existing actions in your code.
+
+## Set up the AdaptyUIPaywallsEventsObserver
+
+To handle paywall actions, you need to implement the `AdaptyUIPaywallsEventsObserver` interface and set it up with `AdaptyUI.setPaywallsEventsObserver()`. This should be done early in your app's lifecycle, typically in your main activity or app initialization.
+
+```kotlin
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
+
+// In your app initialization
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
+```
+
+## Close paywalls
+
+To add a button that will close your paywall:
+
+1. In the paywall builder, add a button and assign it the **Close** action.
+2. In your app code, implement a handler for the `close` action that dismisses the paywall.
+
+:::info
+In the Kotlin Multiplatform SDK, the `CloseAction` and `AndroidSystemBackAction` trigger closing the paywall by default. However, you can override this behavior in your code if needed. For example, closing one paywall might trigger opening another.
+:::
+
+```kotlin
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
+import com.adapty.kmp.models.AdaptyUIAction
+import com.adapty.kmp.models.AdaptyUIPaywallView
+
+class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            AdaptyUIAction.CloseAction, AdaptyUIAction.AndroidSystemBackAction -> view.dismiss()
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
+```
+
+## Open URLs from paywalls
+
+:::tip
+If you want to add a group of links (e.g., terms of use and purchase restoration), add a **Link** element in the paywall builder and handle it the same way as buttons with the **Open URL** action.
+:::
+
+To add a button that opens a link from your paywall (e.g., **Terms of use** or **Privacy policy**):
+
+1. In the paywall builder, add a button, assign it the **Open URL** action, and enter the URL you want to open.
+2. In your app code, implement a handler for the `openUrl` action that opens the received URL in a browser.
+
+:::info
+In the Kotlin Multiplatform SDK, the `OpenUrlAction` provides the URL that should be opened. You can implement custom logic to handle URL opening, such as showing a confirmation dialog or using your app's preferred URL handling method.
+:::
+
+```kotlin
+import androidx.compose.ui.platform.UriHandler
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
+import com.adapty.kmp.models.AdaptyUIAction
+import com.adapty.kmp.models.AdaptyUIDialogActionType
+import com.adapty.kmp.models.AdaptyUIPaywallView
+import com.adapty.kmp.models.getOrNull
+
+class MyAdaptyUIPaywallsEventsObserver(
+    private val uriHandler: UriHandler
+) : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.OpenUrlAction -> {
+                // Show confirmation dialog before opening URL
+                mainUiScope.launch {
+                    val selectedAction = view.showDialog(
+                        title = "Open URL?",
+                        content = action.url,
+                        primaryActionTitle = "Cancel",
+                        secondaryActionTitle = "Open"
+                    ).getOrNull()
+
+                    when (selectedAction) {
+                        AdaptyUIDialogActionType.PRIMARY -> {
+                            // User cancelled
+                        }
+                        AdaptyUIDialogActionType.SECONDARY -> {
+                            // User confirmed - open URL
+                            uriHandler.openUri(action.url)
+                        }
+                        else -> Unit
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Set up the observer with UriHandler
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver(uriHandler))
+```
+
+## Log into the app
+
+To add a button that logs users into your app:
+
+1. In the paywall builder, add a button and assign it a **Custom** action with the ID "login".
+2. In your app code, implement a handler for the custom action that identifies your user.
+
+```kotlin
+import com.adapty.kmp.AdaptyUIObserver
+import com.adapty.kmp.models.AdaptyUIAction
+import com.adapty.kmp.models.AdaptyUIView
+
+class MyAdaptyUIObserver : AdaptyUIObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                if (action.action == "login") {
+                    // Handle login action - navigate to login screen
+                    // This depends on your app's navigation system
+                    // For example, in Compose Multiplatform:
+                    // navController.navigate("login")
+                }
+            }
+        }
+    }
+}
+```
+
+## Handle custom actions
+
+To add a button that handles any other actions:
+
+1. In the paywall builder, add a button, assign it the **Custom** action, and assign it an ID.
+2. In your app code, implement a handler for the action ID you've created.
+
+For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another paywall:
+
+```kotlin
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
+import com.adapty.kmp.models.AdaptyUIAction
+import com.adapty.kmp.models.AdaptyUIPaywallView
+
+class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                when (action.action) {
+                    "login" -> {
+                        // Handle login action - navigate to login screen
+                        // This depends on your app's navigation system
+                        // For example, in Compose Multiplatform:
+                        // navController.navigate("login")
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
+```
+
+## Process data from onboardings
+
+When your users respond to a quiz question or input their data into an input field, the `onboardingViewOnStateUpdatedAction` method will be invoked. You can save or process the field type in your code.
+
+For example:
+
+```kotlin
+import com.adapty.exampleapp.AppLogger
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyOnboardingsDatePickerParams
+import com.adapty.kmp.models.AdaptyOnboardingsInputParams
+import com.adapty.kmp.models.AdaptyOnboardingsMultiSelectParams
+import com.adapty.kmp.models.AdaptyOnboardingsSelectParams
+import com.adapty.kmp.models.AdaptyOnboardingsStateUpdatedParams
+import com.adapty.kmp.models.AdaptyOnboardingsTextInput
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnStateUpdatedAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        elementId: String,
+        params: AdaptyOnboardingsStateUpdatedParams
+    ) {
+        // Store user preferences or responses
+        when (params) {
+            is AdaptyOnboardingsSelectParams -> {
+                // Handle single selection
+                val id = params.id
+                val value = params.value
+                val label = params.label
+                AppLogger.d("Selected option: $label (id: $id, value: $value)")
+            }
+            is AdaptyOnboardingsMultiSelectParams -> {
+                // Handle multiple selections
+            }
+            is AdaptyOnboardingsInputParams -> {
+                // Handle text input
+            }
+            is AdaptyOnboardingsDatePickerParams -> {
+                // Handle date selection
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+<Details>
+    <summary>Saved data examples (the format may differ in your implementation)</summary>
+
+    ```javascript
+    // Example of a saved select action
+    {
+        "id": "onboarding_on_state_updated_action",
+        "view": { /* AdaptyUI.OnboardingView object */ },
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "preferences_screen",
+        "screen_index": 1,
+        "total_screens": 3
+    },
+        "action": {
+        "element_id": "preference_selector",
+        "element_type": "select",
+        "value": {
+        "id": "option_1",
+        "value": "premium",
+        "label": "Premium Plan"
+    }
+    }
+    }
+
+    // Example of a saved multi-select action
+    {
+        "id": "onboarding_on_state_updated_action",
+        "view": { /* AdaptyUI.OnboardingView object */ },
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 3
+    },
+        "action": {
+        "element_id": "interests_selector",
+        "element_type": "multi_select",
+        "value": [
+    {
+        "id": "interest_1",
+        "value": "sports",
+        "label": "Sports"
+    },
+    {
+        "id": "interest_2",
+        "value": "music",
+        "label": "Music"
+    }
+        ]
+    }
+    }
+
+    // Example of a saved input action
+    {
+        "id": "onboarding_on_state_updated_action",
+        "view": { /* AdaptyUI.OnboardingView object */ },
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 0,
+        "total_screens": 3
+    },
+        "action": {
+        "element_id": "name_input",
+        "element_type": "input",
+        "value": {
+        "type": "text",
+        "value": "John Doe"
+    }
+    }
+    }
+
+    // Example of a saved date picker action
+    {
+        "id": "onboarding_on_state_updated_action",
+        "view": { /* AdaptyUI.OnboardingView object */ },
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 0,
+        "total_screens": 3
+    },
+        "action": {
+        "element_id": "birthday_picker",
+        "element_type": "date_picker",
+        "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+    }
+    }
+    }
+    ```
+</Details>
+
+## Use cases
+
+### Enrich user profiles with data
+
+If you want to immediately link the input data with the user profile and avoid asking them twice for the same info, you need to [update the user profile](kmp-setting-user-attributes.md) with the input data when handling the action.
+
+For example, you ask users to enter their name in the text field with the `name` ID, and you want to set this field's value as user's first name. Also, you ask them to enter their email in the `email` field. In your app code, it can look like this:
+
+```kotlin
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.AdaptyUI
+import com.adapty.exampleapp.AppLogger
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyOnboardingsEmailInput
+import com.adapty.kmp.models.AdaptyOnboardingsInputParams
+import com.adapty.kmp.models.AdaptyOnboardingsStateUpdatedParams
+import com.adapty.kmp.models.AdaptyOnboardingsTextInput
+import com.adapty.kmp.models.AdaptyProfileParameters
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnStateUpdatedAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        elementId: String,
+        params: AdaptyOnboardingsStateUpdatedParams
+    ) {
+        // Store user preferences or responses
+        when (params) {
+            is AdaptyOnboardingsInputParams -> {
+                // Handle text input
+                val builder = AdaptyProfileParameters.Builder()
+
+                // Map elementId to appropriate profile field
+                when (elementId) {
+                    "name" -> {
+                        when (val input = params.input) {
+                            is AdaptyOnboardingsTextInput -> {
+                                builder.withFirstName(input.value)
+                            }
+                        }
+                    }
+                    "email" -> {
+                        when (val input = params.input) {
+                            is AdaptyOnboardingsEmailInput -> {
+                                builder.withEmail(input.value)
+                            }
+                        }
+                    }
+                }
+
+                // Update profile asynchronously
+                mainUiScope.launch {
+                    val profileParams = builder.build()
+                    val result = Adapty.updateProfile(profileParams)
+                    result.onSuccess { profile ->
+                        // Profile updated successfully
+                        AppLogger.d("Profile updated: ${profile.email}")
+                    }.onError { error ->
+                        // Handle the error
+                        AppLogger.e("Failed to update profile: ${error.message}")
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+### Customize paywalls based on answers
+
+Using quizzes in onboardings, you can also customize paywalls you show users after they complete the onboarding.
+
+For example, you can ask users about their experience with sport and show different CTAs and products to different user groups.
+
+1. [Add a quiz](onboarding-quizzes.md) in the onboarding builder and assign meaningful IDs to its options.
+
+<ZoomImage id="experience.webp" />
+
+2. Handle the quiz responses based on their IDs and [set custom attributes](kmp-setting-user-attributes.md) for users.
+
+```kotlin
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.AdaptyUI
+import com.adapty.exampleapp.AppLogger
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyOnboardingsSelectParams
+import com.adapty.kmp.models.AdaptyOnboardingsStateUpdatedParams
+import com.adapty.kmp.models.AdaptyProfileParameters
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnStateUpdatedAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        elementId: String,
+        params: AdaptyOnboardingsStateUpdatedParams
+    ) {
+        // Handle quiz responses and set custom attributes
+        when (params) {
+            is AdaptyOnboardingsSelectParams -> {
+                // Handle quiz selection
+                val builder = AdaptyProfileParameters.Builder()
+
+                // Map quiz responses to custom attributes
+                when (elementId) {
+                    "experience" -> {
+                        // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+                        builder.withCustomAttribute("experience", params.value)
+                    }
+                }
+
+                // Update profile asynchronously
+                mainUiScope.launch {
+                    val profileParams = builder.build()
+                    val result = Adapty.updateProfile(profileParams)
+                    result.onSuccess { profile ->
+                        // Profile updated successfully
+                        AppLogger.d("Custom attribute 'experience' set to: ${params.value}")
+                    }.onError { error ->
+                        // Handle the error
+                        AppLogger.e("Failed to update profile: ${error.message}")
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+3. [Create segments](segments.md) for each custom attribute value.
+4. Create a [placement](placements.md) and add [audiences](audience.md) for each segment you've created.
+5. [Display a paywall](kmp-paywalls.md) for the placement in your app code. If your onboarding has a button that opens a paywall, implement the paywall code as a [response to this button's action](kmp-handling-onboarding-events.md#opening-a-paywall).
