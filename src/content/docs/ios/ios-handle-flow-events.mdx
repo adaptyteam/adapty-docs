@@ -1,0 +1,758 @@
+---
+title: "Handle flow events - iOS"
+description: "Handle paywall and onboarding flow events in your iOS app."
+metadataTitle: "Handle Flow Events - iOS | Adapty Docs"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
+import Details from '@site/src/components/Details';
+
+## Handle paywall events
+
+<PaywallAction />
+
+Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
+
+This guide is for **new Paywall Builder paywalls** only which require Adapty SDK v3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [iOS - Handle paywall events designed with legacy Paywall Builder](ios-handling-events-legacy).
+
+<SampleApp />
+
+### Handling events in SwiftUI
+
+To control or monitor processes occurring on the paywall screen within your mobile app, use the `.paywall` modifier in SwiftUI:
+
+```swift showLineNumbers title="Swift"
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywall: paywall,
+          viewConfiguration: viewConfig,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  case let .openURL(url):
+                      // handle opening the URL (incl. for terms and privacy)
+                  default:
+                      // handle other actions
+              }
+          },
+          didSelectProduct: { /* Handle the event */  },
+          didStartPurchase: { /* Handle the event */ },
+          didFinishPurchase: { product, info in /* Handle the event */ },
+          didFailPurchase: { product, error in /* Handle the event */ },
+          didStartRestore: { /* Handle the event */ },
+          didFinishRestore: { /* Handle the event */ },
+          didFailRestore: { /* Handle the event */ },
+          didFailRendering: { error in
+              paywallPresented = false
+          },
+          didFailLoadingProducts: { error in
+              return false
+          }
+      )
+}
+```
+
+You can register only the closure parameters you need, and omit those you do not need. In this case, unused closure parameters will not be created.
+
+| Parameter                         | Required | Description                                                                                                                                                                                                                                                                                                                    |
+|:----------------------------------|:---------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented**                   | required | A binding that manages whether the paywall screen is displayed.                                                                                                                                                                                                                                                                |
+| **paywallConfiguration**          | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)` method. Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details. |
+| **didFailPurchase**               | required | Invoked when a purchase fails due to errors (e.g., payment not allowed, network issues, invalid product). Not invoked for user cancellations or pending payments.                                                                                                                                                              |
+| **didFinishRestore**              | required | Invoked when purchase completes successfully.                                                                                                                                                                                                                                                                                  |
+| **didFailRestore**                | required | Invoked when restoring a purchase fails.                                                                                                                                                                                                                                                                                       |
+| **didFailRendering**              | required | Invoked if an error occurs while rendering the interface. In this case, [contact Adapty Support](mailto:support@adapty.io).                                                                                                                                                                                                    |
+| **fullScreen**                    | optional | Determines if the paywall appears in full-screen mode or as a modal. Defaults to `true`.                                                                                                                                                                                                                                       |
+| **didAppear**                     | optional | Invoked when the paywall view appears on screen. Also invoked when a user taps the [web paywall button](web-paywall#step-2a-add-a-web-purchase-button) inside a paywall, and a web paywall opens in an in-app browser.                                                                                                         |
+| **didDisappear**                  | optional | Invoked when the paywall view was dismissed. Also invoked when a [web paywall](web-paywall#step-2a-add-a-web-purchase-button) opened from a paywall in an in-app browser disappears from the screen.                                                                                                                           |
+| **didPerformAction**              | optional | Invoked when a user clicks a button. Different buttons have different action IDs. Two action IDs are pre-defined: `close` and `openURL`, while others are custom and can be set in the builder.                                                                                                                                |
+| **didSelectProduct**              | optional | If the product was selected for purchase (by a user or by the system), this callback will be invoked.                                                                                                                                                                                                                          |
+| **didStartPurchase**              | optional | Invoked when the user begins the purchase process.                                                                                                                                                                                                                                                                             |
+| **didFinishPurchase**             | optional | Invoked when purchase completes successfully.                                                                                                                                                                                                                                                                                  |
+| **didFinishWebPaymentNavigation** | optional | Invoked after attempting to open a [web paywall](web-paywall) for purchase, whether successful or failed.                                                                                                                                                                                                                      |
+| **didStartRestore**               | optional | Invoked when the user starts the restore process.                                                                                                                                                                                                                                                                              |
+| **didFailLoadingProducts**        | optional | Invoked when errors occur during product loading. Return `true` to retry loading.                                                                                                                                                                                                                                              |
+| **didPartiallyLoadProducts**      | optional | Invoked when products are partially loaded.                                                                                                                                                                                                                                                                                    |
+| **showAlertItem**                 | optional | A binding that manages the display of alert items above the paywall.                                                                                                                                                                                                                                                           |
+| **showAlertBuilder**              | optional | A function for rendering the alert view.                                                                                                                                                                                                                                                                                       |
+| **placeholderBuilder**            | optional | A function for rendering the placeholder view while the paywall is loading.                                                                                                                                                                                                                                                    |
+
+### Handling events in UIKit
+
+To control or monitor processes occurring on the paywall screen within your mobile app, implement the `AdaptyPaywallControllerDelegate` methods.
+
+#### User-generated events
+
+##### Product selection
+
+If a user selects a product for purchase, this method will be invoked:
+
+```swift showLineNumbers title="Swift"
+    func paywallController(
+        _ controller: AdaptyPaywallController,
+        didSelectProduct product: AdaptyPaywallProductWithoutDeterminingOffer
+    ) { }
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+##### Started purchase
+
+If a user initiates the purchase process, this method will be invoked:
+
+```swift showLineNumbers title="Swift"
+func paywallController(_ controller: AdaptyPaywallController,
+                       didStartPurchase product: AdaptyPaywallProduct) {
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode) topic for details.
+
+##### Started purchase using a web paywall
+
+If a user initiates the purchase process using a [web paywall](web-paywall.md), this method will be invoked:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        shouldContinueWebPaymentNavigation product: AdaptyPaywallProduct
+    ) {
+    }
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+##### Successful or canceled purchase
+
+If purchase succeeds, this method will be invoked:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFinishPurchase product: AdaptyPaywallProductWithoutDeterminingOffer,
+    purchaseResult: AdaptyPurchaseResult
+) { }
+}
+```
+
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "cancelled"
+  }
+}
+```
+</Details>
+
+We recommend dismissing the paywall screen in that case.
+
+It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode) topic for details.
+
+##### Failed purchase
+
+If a purchase fails due to an error, this method will be invoked. This includes StoreKit errors (payment restrictions, invalid products, network failures), transaction verification failures, and system errors. Note that user cancellations trigger `didFinishPurchase` with a cancelled result instead, and pending payments do not trigger this method.
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailPurchase product: AdaptyPaywallProduct,
+    error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+It will not be invoked in Observer mode. Refer to the [iOS - Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode) topic for details.
+
+##### Failed purchase using a web paywall
+
+If `Adapty.openWebPaywall()` fails, this method will be invoked:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        didFailWebPaymentNavigation product: AdaptyPaywallProduct,
+        error: AdaptyError
+    ) { }
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_payment_failed",
+    "message": "Web payment navigation failed",
+    "details": {
+      "underlyingError": "Network connection error"
+    }
+  }
+}
+```
+</Details>
+
+##### Successful restore
+
+If restoring a purchase succeeds, this method will be invoked:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFinishRestoreWith profile: AdaptyProfile
+) { }
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+We recommend dismissing the screen if a the has the required `accessLevel`. Refer to the [Subscription status](subscription-status) topic to learn how to check it.
+
+##### Failed restore
+
+If restoring a purchase fails, this method will be invoked:
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailRestoreWith error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### Data fetching and rendering
+
+##### Product loading errors
+
+If you don't pass the product array during the initialization, AdaptyUI will retrieve the necessary objects from the server by itself. If this operation fails, AdaptyUI will report the error by calling this method:
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailLoadingProductsWith error: AdaptyError
+) -> Bool {
+    return true
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+If you return `true`, AdaptyUI will repeat the request after 2 seconds.
+
+##### Rendering errors
+
+If an error occurs during the interface rendering, it will be reported by this method:
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailRenderingWith error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+In a normal situation, such errors should not occur, so if you come across one, please let us know.
+
+## Handle onboarding events
+
+Before you start, ensure that:
+
+1. You have installed [Adapty iOS SDK](sdk-installation-ios.md) 3.8.0 or later.
+2. You have [created an onboarding](create-onboarding.md).
+3. You have added the onboarding to a [placement](placements.md).
+
+Onboardings configured with the builder generate events your app can respond to. Learn how to respond to these events below.
+
+To control or monitor processes occurring on the onboarding screen within your mobile app, implement the `AdaptyOnboardingControllerDelegate` methods.
+
+### Custom actions
+
+In the builder, you can add a **custom** action to a button and assign it an ID.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Then, you can use this ID in your code and handle it as a custom action. For example, if a user taps a custom button, like **Login** or **Allow notifications**, the delegate method `onboardingController` will be triggered with the `.custom(id:)` case and the `actionId` parameter is the **Action ID** from the builder. You can create your own IDs, like "allowNotifications".
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onCustomAction action: AdaptyOnboardingsCustomAction) {
+    if action.actionId == "allowNotifications" {
+        // Request notification permissions
+    }
+}
+
+func onboardingController(_ controller: AdaptyOnboardingController, didFailWithError error: AdaptyUIError) {
+    // Handle errors
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+  "actionId": "allowNotifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+### Closing onboarding
+
+Onboarding is considered closed when a user taps a button with the **Close** action assigned.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+Note that you need to manage what happens when a user closes the onboarding. For instance, you need to stop displaying the onboarding itself.
+:::
+For example:
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onCloseAction action: AdaptyOnboardingsCloseAction) {
+    controller.dismiss(animated: true)
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+
+</Details>
+
+### Opening a paywall
+
+:::tip
+Handle this event to open a paywall if you want to open it inside the onboarding. If you want to open a paywall after it is closed, there is a more straightforward way to do it – handle [`AdaptyOnboardingsCloseAction`](#closing-onboarding) and open a paywall without relying on the event data.
+:::
+
+If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID. This way, after the `AdaptyOnboardingsOpenPaywallAction`, you can use the placement ID to get and open the paywall right away.
+
+Note that only one view (paywall or onboarding) can be displayed on screen at a time. If you present a paywall on top of an onboarding, you cannot programmatically control the onboarding in the background. Attempting to dismiss the onboarding will close the paywall instead, leaving the onboarding visible. To avoid this, always dismiss the onboarding view before presenting the paywall.
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onPaywallAction action: AdaptyOnboardingsOpenPaywallAction) {
+    // Dismiss onboarding before presenting paywall
+    controller.dismiss(animated: true) {
+        Task {
+            do {
+                // Get the paywall using the placement ID from the action
+                let paywall = try await Adapty.getPaywall(placementId: action.actionId)
+
+                // Get the paywall configuration
+                let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
+                    forPaywall: paywall
+                )
+
+                // Create and present the paywall controller
+                let paywallController = try AdaptyUI.paywallController(
+                    with: paywallConfig,
+                    delegate: self
+                )
+
+                // Present the paywall from the root view controller
+                if let rootVC = UIApplication.shared.windows.first?.rootViewController {
+                    rootVC.present(paywallController, animated: true)
+                }
+            } catch {
+                // Handle any errors that occur during paywall loading
+                print("Failed to present paywall: \(error)")
+            }
+        }
+    }
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+### Finishing loading onboarding
+
+When an onboarding finishes loading, this method will be invoked:
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, didFinishLoading action: OnboardingsDidFinishLoadingAction) {
+    // Handle loading completion
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+### Tracking navigation
+
+The `onAnalyticsEvent` method is called when various analytics events occur during the onboarding flow.
+
+The `event` object can be one of the following types:
+|Type | Description |
+|------------|-------------|
+| `onboardingStarted` | When the onboarding has been loaded |
+| `screenPresented` | When any screen is shown |
+| `screenCompleted` | When a screen is completed. Includes optional `elementId` (identifier of the completed element) and optional `reply` (response from the user). Triggered when users perform any action to exit the screen. |
+| `secondScreenPresented` | When the second screen is shown |
+| `userEmailCollected` | Triggered when the user's email is collected via the input field |
+| `onboardingCompleted` | Triggered when a user reaches a screen with the `final` ID. If you need this event, [assign the `final` ID to the last screen](design-onboarding.md). |
+| `unknown` | For any unrecognized event type. Includes `name` (the name of the unknown event) and `meta` (additional metadata) |
+
+Each event includes `meta` information containing:
+| Field | Description |
+|------------|-------------|
+| `onboardingId` | Unique identifier of the onboarding flow |
+| `screenClientId` | Identifier of the current screen |
+| `screenIndex` | Current screen's position in the flow |
+| `screensTotal` | Total number of screens in the flow |
+
+Here's an example of how you can use analytics events for tracking:
+
+```swift
+func onboardingController(_ controller: AdaptyOnboardingController, onAnalyticsEvent event: AdaptyOnboardingsAnalyticsEvent) {
+    switch event {
+    case .onboardingStarted(let meta):
+        // Track onboarding start
+        trackEvent("onboarding_started", meta: meta)
+    case .screenPresented(let meta):
+        // Track screen presentation
+        trackEvent("screen_presented", meta: meta)
+    case .screenCompleted(let meta, let elementId, let reply):
+        // Track screen completion with user response
+        trackEvent("screen_completed", meta: meta, elementId: elementId, reply: reply)
+    case .onboardingCompleted(let meta):
+        // Track successful onboarding completion
+        trackEvent("onboarding_completed", meta: meta)
+    case .unknown(let meta, let name):
+        // Handle unknown events
+        trackEvent(name, meta: meta)
+    // Handle other cases as needed
+    }
+}
+```
+
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+
+```
+
+</Details>

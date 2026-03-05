@@ -1,0 +1,360 @@
+---
+title: "Respond to actions - Flutter"
+description: "Handle button actions and process user input from paywall and onboarding flows in your Flutter app."
+metadataTitle: "Respond to Flow Actions - Flutter | Adapty Docs"
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import Details from '@site/src/components/Details';
+import ZoomImage from '@site/src/components/ZoomImage';
+
+If you are building paywalls using the Adapty paywall builder, it's crucial to set up buttons properly:
+
+1. Add a [button in the paywall builder](paywall-buttons.md) and assign it either a pre-existing action or create a custom action ID.
+2. Write code in your app to handle each action you've assigned.
+
+This guide shows how to handle custom and pre-existing actions in your code.
+
+:::warning
+**Only purchases and restorations are handled automatically.** All the other button actions, such as closing paywalls or opening links, require implementing proper responses in the app code.
+:::
+
+## Close paywalls
+
+To add a button that will close your paywall:
+
+1. In the paywall builder, add a button and assign it the **Close** action.
+2. In your app code, implement a handler for the `CloseAction` and `AndroidSystemBackAction` actions.
+
+:::info
+In the Flutter SDK, the `CloseAction` and `AndroidSystemBackAction` actions trigger closing the paywall by default. However, you can override this behavior in your code if needed. For example, closing one paywall might trigger opening another.
+:::
+
+```dart
+void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      default:
+        break;
+    }
+}
+```
+
+## Open URLs from paywalls
+
+:::tip
+If you want to add a group of links (e.g., terms of use and purchase restoration), add a **Link** element in the paywall builder and handle it the same way as buttons with the **Open URL** action.
+:::
+
+To add a button that opens a link from your paywall (e.g., **Terms of use** or **Privacy policy**):
+
+1. In the paywall builder, add a button, assign it the **Open URL** action, and enter the URL you want to open.
+2. In your app code, implement a handler for the `openUrl` action that opens the received URL in a browser.
+
+```dart
+// You have to install url_launcher plugin in order to handle urls:
+// https://pub.dev/packages/url_launcher
+import 'package:url_launcher/url_launcher_string.dart';
+
+void paywallViewDidPerformAction(AdaptyUIView view, AdaptyUIAction action) {
+    switch (action) {
+      case OpenUrlAction(url: final url):
+        final Uri uri = Uri.parse(url);
+        launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+        break;
+      default:
+        break;
+    }
+}
+```
+
+## Log into the app
+
+To add a button that logs users into your app:
+
+1. In the paywall builder, add a button and assign it the **Login** action.
+2. In your app code, implement a handler for the `login` action that identifies your user.
+
+```dart
+void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+    switch (action) {
+      case CustomAction(action: 'login'):
+        // Handle login action
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => LoginScreen()));
+        break;
+      default:
+        break;
+    }
+}
+```
+
+## Handle custom actions
+
+To add a button that handles any other actions:
+
+1. In the paywall builder, add a button, assign it the **Custom** action, and assign it an ID.
+2. In your app code, implement a handler for the action ID you've created.
+
+For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another paywall:
+
+```dart
+void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+   switch (action) {
+     case CustomAction(action: 'openNewPaywall'):
+       // Display another paywall
+       break;
+     default:
+       break;
+   }
+}
+```
+
+## Process data from onboardings
+
+When your users respond to a quiz question or input their data into an input field, the `onStateUpdatedAction` method will be invoked. You can save or process the field type in your code.
+
+For example:
+
+```dart
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Process data
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  // Process data
+}
+```
+
+See the action format [here](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyUIOnboardingPlatformView/onStateUpdatedAction.html).
+
+<Details>
+<summary>Saved data examples (the format may differ in your implementation)</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## Use cases
+
+### Enrich user profiles with data
+
+If you want to immediately link the input data with the user profile and avoid asking them twice for the same info, you need to [update the user profile](flutter-setting-user-attributes.md) with the input data when handling the action.
+
+For example, you ask users to enter their name in the text field with the `name` ID, and you want to set this field's value as user's first name. Also, you ask them to enter their email in the `email` field. In your app code, it can look like this:
+
+```dart showLineNumbers
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Store user preferences or responses
+  if (params is AdaptyOnboardingsInputParams) {
+    final builder = AdaptyProfileParametersBuilder();
+
+    // Map elementId to appropriate profile field
+    switch (elementId) {
+      case 'name':
+        if (params.input is AdaptyOnboardingsTextInput) {
+          builder.setFirstName((params.input as AdaptyOnboardingsTextInput).value);
+        }
+        break;
+      case 'email':
+        if (params.input is AdaptyOnboardingsEmailInput) {
+          builder.setEmail((params.input as AdaptyOnboardingsEmailInput).value);
+        }
+        break;
+    }
+
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  // Store user preferences or responses
+  if (params is AdaptyOnboardingsInputParams) {
+    final builder = AdaptyProfileParametersBuilder();
+
+    // Map elementId to appropriate profile field
+    switch (elementId) {
+      case 'name':
+        if (params.input is AdaptyOnboardingsTextInput) {
+          builder.setFirstName((params.input as AdaptyOnboardingsTextInput).value);
+        }
+        break;
+      case 'email':
+        if (params.input is AdaptyOnboardingsEmailInput) {
+          builder.setEmail((params.input as AdaptyOnboardingsEmailInput).value);
+        }
+        break;
+    }
+
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+```
+
+### Customize paywalls based on answers
+
+Using quizzes in onboardings, you can also customize paywalls you show users after they complete the onboarding.
+
+For example, you can ask users about their experience with sport and show different CTAs and products to different user groups.
+
+1. [Add a quiz](onboarding-quizzes.md) in the onboarding builder and assign meaningful IDs to its options.
+
+<ZoomImage id="experience.webp" />
+
+2. Handle the quiz responses based on their IDs and [set custom attributes](flutter-setting-user-attributes.md) for users.
+
+```dart showLineNumbers
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Handle quiz responses and set custom attributes
+  if (params is AdaptyOnboardingsSelectParams) {
+    final builder = AdaptyProfileParametersBuilder();
+
+    // Map quiz responses to custom attributes
+    switch (elementId) {
+      case 'experience':
+        // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+        builder.setCustomStringAttribute(params.value, 'experience');
+        break;
+    }
+
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  // Handle quiz responses and set custom attributes
+  if (params is AdaptyOnboardingsSelectParams) {
+    final builder = AdaptyProfileParametersBuilder();
+
+    // Map quiz responses to custom attributes
+    switch (elementId) {
+      case 'experience':
+        // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+        builder.setCustomStringAttribute(params.value, 'experience');
+        break;
+    }
+
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+```
+
+3. [Create segments](segments.md) for each custom attribute value.
+4. Create a [placement](placements.md) and add [audiences](audience.md) for each segment you've created.
+5. [Display a paywall](flutter-paywalls.md) for the placement in your app code. If your onboarding has a button that opens a paywall, implement the paywall code as a [response to this button's action](flutter-handling-onboarding-events#opening-a-paywall).

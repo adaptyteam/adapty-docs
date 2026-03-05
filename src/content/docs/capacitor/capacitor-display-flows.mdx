@@ -1,0 +1,147 @@
+---
+title: "Display flows - Capacitor"
+description: "Present paywall and onboarding flows to users in your Capacitor app."
+metadataTitle: "Display Flows - Capacitor | Adapty Docs"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+
+If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
+
+:::warning
+This guide is for **Paywall Builder paywalls** only. The process for presenting paywalls differs for remote config paywalls. For presenting **remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
+:::
+
+## Present paywall
+
+To display a paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance.
+
+:::warning
+
+Reusing the same `view` without recreating it may result in an error.
+:::
+
+```typescript showLineNumbers
+import { adapty, createPaywallView } from '@adapty/capacitor';
+
+const view = await createPaywallView(paywall);
+
+view.setEventHandlers({
+  onUrlPress(url) {
+    window.open(url, '_blank');
+    return false;
+  },
+});
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+## Use developer-defined timer
+
+To use developer-defined timers in your mobile app, use the `timerId`, in this example, `CUSTOM_TIMER_NY`, the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. It ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer's end time, such as New Year's Day, minus the current time).
+
+```typescript showLineNumbers
+const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+
+const view = await createPaywallView(paywall, { customTimers });
+```
+
+In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The timer ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer's end time, such as New Year's Day, minus the current time).
+
+## Show dialog
+
+Use this method instead of native alert dialogs when a paywall view is presented on Android. On Android, regular alerts appear behind the paywall view, which makes them invisible to users. This method ensures proper dialog presentation above the paywall on all platforms.
+
+```typescript showLineNumbers title="Capacitor"
+try {
+  const action = await view.showDialog({
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  });
+
+  if (action === 'secondary') {
+    // User confirmed - close the paywall
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (error) {
+  // handle error
+}
+```
+
+## Configure iOS presentation style
+
+Configure how the paywall is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `'full_screen'` (default) or `'page_sheet'` values.
+
+```typescript showLineNumbers
+await view.present({ iosPresentationStyle: 'page_sheet' });
+```
+
+## Present onboarding
+
+If you've customized an onboarding using the builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such an onboarding contains both what should be shown within the onboarding and how it should be shown.
+
+Before you start, ensure that:
+
+1. You have [created an onboarding](create-onboarding.md).
+2. You have added the onboarding to a [placement](placements.md).
+
+To display an onboarding, use the `view.present()` method on the `view` created by the `createOnboardingView` method. Each `view` can only be used once. If you need to display the onboarding again, call `createOnboardingView` one more time to create a new `view` instance.
+
+:::warning
+Reusing the same `view` without recreating it may result in an error.
+:::
+
+```typescript showLineNumbers
+import { adapty, createOnboardingView } from '@adapty/capacitor';
+
+try {
+  const view = await createOnboardingView(onboarding);
+
+  view.setEventHandlers({
+    onClose: (actionId, meta) => {
+      console.log('Onboarding closed:', actionId);
+      return true; // Allow the onboarding to close
+    },
+    onCustom: (actionId, meta) => {
+      console.log('Custom action:', actionId);
+      return false; // Don't close the onboarding
+    }
+  });
+
+  await view.present();
+  console.log('Onboarding presented successfully');
+} catch (error) {
+  console.error('Failed to present onboarding:', error);
+}
+```
+
+## Configure iOS presentation style for onboardings
+
+Configure how the onboarding is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `'full_screen'` (default) or `'page_sheet'` values.
+
+```typescript showLineNumbers
+await view.present({ iosPresentationStyle: 'page_sheet' });
+```
+
+## Customize how links open in onboardings
+
+:::important
+Customizing how links open in onboardings is supported starting from Adapty SDK v.3.15.
+:::
+
+By default, links in onboardings open in an in-app browser. This provides a seamless user experience by displaying web pages within your application, allowing users to view them without switching apps.
+
+If you prefer to open links in an external browser instead, you can customize this behavior by setting the `openIn` parameter to `browser_out_app`:
+
+```typescript showLineNumbers
+await view.present({ openIn: 'browser_out_app' }); // default — browser_in_app
+```

@@ -1,0 +1,800 @@
+---
+title: "Handle flow events - Android"
+description: "Handle paywall and onboarding flow events in your Android app."
+metadataTitle: "Handle Flow Events - Android | Adapty Docs"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import PaywallAction from '@site/src/components/reusable/PaywallAction.md';
+import Details from '@site/src/components/Details';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+## Handle paywall events
+
+:::important
+This guide covers event handling for purchases, restorations, product selection, and paywall rendering. You must also implement button handling (closing paywall, opening links, etc.). See our [guide on handling button actions](android-handle-paywall-actions.md) for details.
+:::
+
+Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
+
+:::warning
+This guide is for **new Paywall Builder paywalls** only which require Adapty SDK v3.0 or later. For presenting paywalls in Adapty SDK v2 designed with legacy Paywall Builder, see [Handle paywall events designed with legacy Paywall Builder](android-handling-events-legacy).
+:::
+
+<SampleApp />
+
+If you need to control or monitor the processes that take place on the purchase screen, implement the `AdaptyUiEventListener` methods.
+
+If you would like to leave the default behavior in some cases, you can extend `AdaptyUiDefaultEventListener` and override only those methods you want to change.
+
+Below are the defaults from `AdaptyUiDefaultEventListener`.
+
+### User-generated events
+
+#### Product selection
+
+If a product is selected for purchase (by a user or by the system), this method will be invoked:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onProductSelected(
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Started purchase
+
+If a user initiates the purchase process, this method will be invoked:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseStarted(
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+The method will not be invoked in Observer mode. Refer to the [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) topic for details.
+
+#### Successful, canceled, or pending purchase
+
+If purchase succeeds, this method will be invoked:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseFinished(
+    purchaseResult: AdaptyPurchaseResult,
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {
+    if (purchaseResult !is AdaptyPurchaseResult.UserCanceled)
+        context.getActivityOrNull()?.onBackPressed()
+}
+```
+
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Successful purchase
+{
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Cancelled purchase
+{
+  "purchaseResult": {
+    "type": "UserCanceled"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Pending purchase
+{
+  "purchaseResult": {
+    "type": "Pending"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+We recommend dismissing the screen in that case.
+
+The method will not be invoked in Observer mode. Refer to the [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) topic for details.
+
+#### Failed purchase
+
+If a purchase fails due to an error, this method will be invoked. This includes Google Play Billing errors (payment restrictions, invalid products, network failures), transaction verification failures, and system errors. Note that user cancellations trigger `onPurchaseFinished` with a cancelled result instead, and pending payments do not trigger this method.
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseFailure(
+    error: AdaptyError,
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+The method will not be invoked in Observer mode. Refer to the [Android - Present Paywall Builder paywalls in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) topic for details.
+
+#### Finished web payment navigation
+
+This method is invoked after an attempt to open a [web paywall](web-paywall.md) for a specific product. This includes both successful and failed navigation attempts:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onFinishWebPaymentNavigation(
+    product: AdaptyPaywallProduct?,
+    error: AdaptyError?,
+    context: Context,
+) {}
+```
+
+**Parameters:**
+
+| Parameter   | Description                                                                                        |
+|:------------|:---------------------------------------------------------------------------------------------------|
+| **product** | An `AdaptyPaywallProduct` for which the web paywall was opened. Can be `null`.                     |
+| **error**   | An `AdaptyError` object if the web paywall navigation failed; `null` if navigation was successful. |
+
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_navigation_failed",
+    "message": "Failed to open web paywall",
+    "details": {
+      "underlyingError": "Browser unavailable"
+    }
+  }
+}
+```
+</Details>
+
+#### Successful restore
+
+If restoring a purchase succeeds, this method will be invoked:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRestoreSuccess(
+    profile: AdaptyProfile,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](android-listen-subscription-changes.md) topic to learn how to check it.
+
+#### Failed restore
+
+If `Adapty.restorePurchases()` fails, this method will be invoked:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRestoreFailure(
+    error: AdaptyError,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### Upgrade subscription
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="new" label="SDK version 3.10.0 or later" default>
+
+When a user attempts to purchase a new subscription while another subscription is active, you can control how the new purchase should be handled by overriding this method. You have two options:
+
+1. **Replace the current subscription** with the new one:
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingPurchaseParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
+): AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked {
+    onPurchaseParamsReceived(
+        AdaptyPurchaseParameters.Builder()
+            .withSubscriptionUpdateParams(AdaptySubscriptionUpdateParameters(...))
+            .build()
+    )
+    return AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked
+}
+```
+
+2. **Keep both subscriptions** (add the new one separately):
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingPurchaseParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
+): AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked {
+    onPurchaseParamsReceived(AdaptyPurchaseParameters.Empty)
+    return AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked
+}
+```
+
+:::note
+If you don't override this method, the default behavior is to keep both subscriptions active (equivalent to using `AdaptyPurchaseParameters.Empty`).
+:::
+
+You can also set additional purchase parameters if needed:
+```kotlin
+AdaptyPurchaseParameters.Builder()
+    .withSubscriptionUpdateParams(AdaptySubscriptionUpdateParameters(...)) // optional - for replacing current subscription
+    .withOfferPersonalized(true) // optional - if using personalized pricing
+    .build()
+```
+
+</TabItem>
+<TabItem value="old" label="SDK version earlier than 3.10.0" default>
+
+If a new subscription is purchased while another is still active, override this method to replace the current one with the new one. If the active subscription should remain active and the new one is added separately, call `onSubscriptionUpdateParamsReceived(null)`:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingSubscriptionUpdateParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onSubscriptionUpdateParamsReceived: SubscriptionUpdateParamsCallback,
+) {
+    onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
+}
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_yearly",
+    "localizedTitle": "Premium Yearly",
+    "localizedDescription": "Premium subscription for 1 year",
+    "localizedPrice": "$99.99",
+    "price": 99.99,
+    "currencyCode": "USD"
+  },
+  "subscriptionUpdateParams": {
+    "replacementMode": "with_time_proration"
+  }
+}
+```
+</Details>
+
+### Data fetching and rendering
+
+#### Product loading errors
+
+If you don't pass the products during the initialization, AdaptyUI will retrieve the necessary objects from the server by itself. If this operation fails, AdaptyUI will report the error by invoking this method:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onLoadingProductsFailure(
+    error: AdaptyError,
+    context: Context,
+): Boolean = false
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+If you return `true`, AdaptyUI will repeat the request in 2 seconds.
+
+#### Rendering errors
+
+If an error occurs during the interface rendering, it will be reported by calling this method:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRenderingError(
+    error: AdaptyError,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+In a normal situation, such errors should not occur, so if you come across one, please let us know.
+
+## Handle onboarding events
+
+Before you start, ensure that:
+
+1. You have installed [Adapty Android SDK](sdk-installation-android.md) 3.8.0 or later.
+2. You have [created an onboarding](create-onboarding.md).
+3. You have added the onboarding to a [placement](placements.md).
+
+Onboardings configured with the builder generate events your app can respond to. Learn how to respond to these events below.
+
+To control or monitor processes occurring on the onboarding screen within your Android app, implement the `AdaptyOnboardingEventListener` interface.
+
+### Custom actions
+
+In the builder, you can add a **custom** action to a button and assign it an ID. Then, you can use this ID in your code and handle it as a custom action.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+For example, if a user taps a custom button, like **Login** or **Allow notifications**, the delegate method `onCustomAction` will be triggered with the action ID from the builder. You can create your own IDs, like "allowNotifications".
+
+```kotlin showLineNumbers
+class YourActivity : AppCompatActivity() {
+    private val eventListener = object : AdaptyOnboardingEventListener {
+        override fun onCustomAction(action: AdaptyOnboardingCustomAction, context: Context) {
+            when (action.actionId) {
+                "allowNotifications" -> {
+                    // Request notification permissions
+                }
+            }
+        }
+
+        override fun onError(error: AdaptyOnboardingError, context: Context) {
+            // Handle errors
+        }
+
+        // ... other required delegate methods
+    }
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+  "actionId": "allowNotifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+### Closing onboarding
+
+Onboarding is considered closed when a user taps a button with the **Close** action assigned. You need to manage what happens when a user closes the onboarding. For example:
+
+:::important
+You need to manage what happens when a user closes the onboarding. For instance, you need to stop displaying the onboarding itself.
+:::
+
+For example:
+
+```kotlin
+override fun onCloseAction(action: AdaptyOnboardingCloseAction, context: Context) {
+    // Dismiss the onboarding screen
+    (context as? Activity)?.onBackPressed()
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+
+</Details>
+
+### Opening a paywall
+
+:::tip
+Handle this event to open a paywall if you want to open it inside the onboarding. If you want to open a paywall after it is closed, there is a more straightforward way to do it – handle [`AdaptyOnboardingCloseAction`](#closing-onboarding) and open a paywall without relying on the event data.
+:::
+
+If a user clicks a button that opens a paywall, you will get a button action ID that you [set up manually](get-paid-in-onboardings.md). The most seamless way to work with paywalls in onboardings is to make the action ID equal to a paywall placement ID. This way, after the `AdaptyOnboardingOpenPaywallAction`, you can use the placement ID to get and open the paywall right away:
+
+```kotlin
+override fun onOpenPaywallAction(action: AdaptyOnboardingOpenPaywallAction, context: Context) {
+    // Get the paywall using the placement ID from the action
+    Adapty.getPaywall(placementId = action.actionId) { result ->
+        when (result) {
+            is AdaptyResult.Success -> {
+                val paywall = result.value
+                // Get the paywall configuration
+                AdaptyUI.getViewConfiguration(paywall) { result ->
+                    when(result) {
+                        is AdaptyResult.Success -> {
+                            val paywallConfig = result.value
+                            // Create and present the paywall
+                            val paywallView = AdaptyUI.getPaywallView(
+                                activity = this,
+                                viewConfig = paywallConfig,
+                                products,
+                                eventListener = paywallEventListener
+                            )
+                            // Add the paywall view to your layout
+                            binding.container.addView(paywallView)
+                        }
+                        is AdaptyResult.Error -> {
+                            val error = result.error
+                            // handle the error
+                        }
+                    }
+                }
+            is AdaptyResult.Error -> {
+                val error = result.error
+                // handle the error
+            }
+        }
+    }
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+### Finishing loading onboarding
+
+When an onboarding finishes loading, this method will be invoked:
+
+```kotlin
+override fun onFinishLoading(action: AdaptyOnboardingLoadedAction, context: Context) {
+    // Handle loading completion
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+### Navigation events
+
+The `onAnalyticsEvent` method is called when various analytics events occur during the onboarding flow.
+
+The `event` object can be one of the following types:
+|Type | Description |
+|------------|-------------|
+| `OnboardingStarted` | When the onboarding has been loaded |
+| `ScreenPresented` | When any screen is shown |
+| `ScreenCompleted` | When a screen is completed. Includes optional `elementId` (identifier of the completed element) and optional `reply` (response from the user). Triggered when users perform any action to exit the screen. |
+| `SecondScreenPresented` | When the second screen is shown |
+| `UserEmailCollected` | Triggered when the user's email is collected via the input field |
+| `OnboardingCompleted` | Triggered when a user reaches a screen with the `final` ID. If you need this event, assign the `final` ID to the last screen. |
+| `Unknown` | For any unrecognized event type. Includes `name` (the name of the unknown event) and `meta` (additional metadata) |
+
+Each event includes `meta` information containing:
+| Field | Description |
+|------------|-------------|
+| `onboardingId` | Unique identifier of the onboarding flow |
+| `screenClientId` | Identifier of the current screen |
+| `screenIndex` | Current screen's position in the flow |
+| `totalScreens` | Total number of screens in the flow |
+
+Here's an example of how you can use analytics events for tracking:
+
+```kotlin
+override fun onAnalyticsEvent(event: AdaptyOnboardingAnalyticsEvent, context: Context) {
+    when (event) {
+        is AdaptyOnboardingAnalyticsEvent.OnboardingStarted -> {
+            // Track onboarding start
+            trackEvent("onboarding_started", event.meta)
+        }
+        is AdaptyOnboardingAnalyticsEvent.ScreenPresented -> {
+            // Track screen presentation
+            trackEvent("screen_presented", event.meta)
+        }
+        is AdaptyOnboardingAnalyticsEvent.ScreenCompleted -> {
+            // Track screen completion with user response
+            trackEvent("screen_completed", event.meta, event.elementId, event.reply)
+        }
+        is AdaptyOnboardingAnalyticsEvent.OnboardingCompleted -> {
+            // Track successful onboarding completion
+            trackEvent("onboarding_completed", event.meta)
+        }
+        is AdaptyOnboardingAnalyticsEvent.Unknown -> {
+            // Handle unknown events
+            trackEvent(event.name, event.meta)
+        }
+        // Handle other cases as needed
+    }
+}
+```
+
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// OnboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// ScreenPresented
+
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// ScreenCompleted
+
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// SecondScreenPresented
+
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// UserEmailCollected
+
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// OnboardingCompleted
+
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+
+```
+
+</Details>

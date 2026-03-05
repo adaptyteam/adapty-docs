@@ -1,0 +1,268 @@
+---
+title: "Display flows - iOS"
+description: "Present paywall and onboarding flows to users in your iOS app."
+metadataTitle: "Display Flows - iOS | Adapty Docs"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
+
+:::warning
+
+This guide is for **[new Paywall Builder paywalls](adapty-paywall-builder.md)** . The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder, remote config paywalls, and [Observer mode](observer-vs-full-mode).
+
+- For presenting **Legacy Paywall Builder paywalls**, check out [iOS - Present legacy Paywall Builder paywalls](ios-present-paywalls-legacy).
+- For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
+- For presenting **Observer mode paywalls**, see [iOS - Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode)
+
+:::
+
+## Present paywalls in SwiftUI
+
+### Present as a modal view
+
+In order to display the visual paywall on the device screen as a modal view, use the `.paywall` modifier in SwiftUI:
+
+```swift showLineNumbers title="SwiftUI"
+@State var paywallPresented = false // ensure that you manage this variable state and set it to `true` at the moment you want to show the paywall
+
+var body: some View {
+  Text("Hello, AdaptyUI!")
+      .paywall(
+          isPresented: $paywallPresented,
+          paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+          didFinishPurchase: { product, profile in paywallPresented = false },
+          didFailPurchase: { product, error in /* handle the error */ },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false }
+      )
+}
+```
+
+Parameters:
+
+| Parameter                         | Required | Description                                                                                                                                                                                                                                                                                                                    |
+|:----------------------------------|:---------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented**                   | required | A binding that manages whether the paywall screen is displayed.                                                                                                                                                                                                                                                                |
+| **paywallConfiguration**          | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)` method. Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details. |
+| **didFailPurchase**               | required | Invoked when `Adapty.makePurchase()` fails.                                                                                                                                                                                                                                                                                    |
+| **didFinishRestore**              | required | Invoked when `Adapty.restorePurchases()` completes successfully.                                                                                                                                                                                                                                                               |
+| **didFailRestore**                | required | Invoked when `Adapty.restorePurchases()` fails.                                                                                                                                                                                                                                                                                |
+| **didFailRendering**              | required | Invoked if an error occurs while rendering the interface. In this case, [contact Adapty Support](mailto:support@adapty.io).                                                                                                                                                                                                    |
+| **fullScreen**                    | optional | Determines if the paywall appears in full-screen mode or as a modal. Defaults to `true`.                                                                                                                                                                                                                                       |
+| **didAppear**                     | optional | Invoked when the paywall view was presented.                                                                                                                                                                                                                                                                                   |
+| **didDisappear**                  | optional | Invoked when the paywall view was dismissed.                                                                                                                                                                                                                                                                                   |
+| **didPerformAction**              | optional | Invoked when a user clicks a button. Different buttons have different action IDs. Two action IDs are pre-defined: `close` and `openURL`, while others are custom and can be set in the builder.                                                                                                                                |
+| **didSelectProduct**              | optional | If the product was selected for purchase (by a user or by the system), this callback will be invoked.                                                                                                                                                                                                                          |
+| **didStartPurchase**              | optional | Invoked when the user begins the purchase process.                                                                                                                                                                                                                                                                             |
+| **didFinishPurchase**             | optional | Invoked when `Adapty.makePurchase()` completes successfully.                                                                                                                                                                                                                                                                   |
+| **didFinishWebPaymentNavigation** | optional | Invoked when web payment navigation finishes.                                                                                                                                                                                                                                                                                  |
+| **didStartRestore**               | optional | Invoked when the user starts the restore process.                                                                                                                                                                                                                                                                              |
+| **didFailLoadingProducts**        | optional | Invoked when errors occur during product loading. Return `true` to retry loading.                                                                                                                                                                                                                                              |
+| **didPartiallyLoadProducts**      | optional | Invoked when products are partially loaded.                                                                                                                                                                                                                                                                                    |
+| **showAlertItem**                 | optional | A binding that manages the display of alert items above the paywall.                                                                                                                                                                                                                                                           |
+| **showAlertBuilder**              | optional | A function for rendering the alert view.                                                                                                                                                                                                                                                                                       |
+| **placeholderBuilder**            | optional | A function for rendering the placeholder view while the paywall is loading.                                                                                                                                                                                                                                                    |
+
+Refer to the [iOS - Handling events](ios-handling-events) topic for more details on parameters.
+
+### Present as a non-modal view
+
+You can also present paywalls as navigation destinations or inline views within your app's navigation flow. Use `AdaptyPaywallView` directly in your SwiftUI views:
+
+```swift showLineNumbers title="SwiftUI"
+AdaptyPaywallView(
+    paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+    didFailPurchase: { product, error in
+        // Handle purchase failure
+    },
+    didFinishRestore: { profile in
+        // Handle successful restore
+    },
+    didFailRestore: { error in
+        // Handle restore failure
+    },
+    didFailRendering: { error in
+        // Handle rendering error
+    }
+)
+```
+
+## Present paywalls in UIKit
+
+In order to display the visual paywall on the device screen, do the following:
+
+1. Initialize the visual paywall you want to display by using the  `.paywallController(for:products:viewConfiguration:delegate:)` method:
+
+     ```swift showLineNumbers title="Swift"
+     import Adapty
+     import AdaptyUI
+
+     let visualPaywall = AdaptyUI.paywallController(
+         with: <paywall configuration object>,
+         delegate: <AdaptyPaywallControllerDelegate>
+     )
+     ```
+
+    Request parameters:
+
+   | Parameter                | Presence | Description |
+   | :----------------------- | :------- | :---------- |
+   | **paywall configuration**         | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details. |
+   | **delegate**            | required | An `AdaptyPaywallControllerDelegate` to listen to paywall events. Refer to [Handling paywall events](ios-handling-events) topic for more details.
+
+    Returns:
+
+    | Object                  | Description                                          |
+    | :---------------------- | :--------------------------------------------------- |
+    | **AdaptyPaywallController** | An object, representing the requested paywall screen |
+
+2. After the object has been successfully created, you can display it on the screen of the device:
+
+   ```swift showLineNumbers title="Swift"
+   present(visualPaywall, animated: true)
+   ```
+
+<SampleApp />
+
+## Present onboardings in Swift
+
+If you've customized an onboarding using the builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such an onboarding contains both what should be shown within the onboarding and how it should be shown.
+
+Before you start, ensure that:
+
+1. You have installed [Adapty iOS SDK](sdk-installation-ios.md) 3.8.0 or later.
+2. You have [created an onboarding](create-onboarding.md).
+3. You have added the onboarding to a [placement](placements.md).
+
+In order to display the visual onboarding on the device screen, do the following:
+
+1. Get the onboarding view configuration using the `.getOnboardingConfiguration` method.
+2. Initialize the visual onboarding you want to display by using the  `.onboardingController` method:
+
+   Request parameters:
+
+   | Parameter                    | Presence | Description                                                                                                                                                 |
+   |:-----------------------------|:---------|:------------------------------------------------------------------------------------------------------------------------------------------------------------|
+   | **onboarding configuration** | required | An `AdaptyUI.OnboardingConfiguration` object containing all the onboarding properties. Use the `AdaptyUI.getOnboardingConfiguration` method to obtain it. |
+   | **delegate**                 | required | An `AdaptyOnboardingControllerDelegate` to listen to onboarding events.                                                                                     |
+
+   Returns:
+
+   | Object                         | Description                                             |
+   |:-------------------------------|:--------------------------------------------------------|
+   | **AdaptyOnboardingController** | An object, representing the requested onboarding screen |
+
+3. After the object has been successfully created, you can display it on the screen of the device:
+
+   ```swift showLineNumbers title="Swift"
+   import Adapty
+   import AdaptyUI
+
+   // 0. Get an onboarding if you haven't done it yet
+   let onboarding = try await Adapty.getOnboarding(placementId: "YOUR_PLACEMENT_ID")
+
+   // 1. Obtain the onboarding view configuration:
+   let configuration = try AdaptyUI.getOnboardingConfiguration(forOnboarding: onboarding)
+
+   // 2. Create Onboarding View Controller
+   let onboardingController = try AdaptyUI.onboardingController(
+       with: configuration,
+       delegate: <AdaptyOnboardingControllerDelegate>
+   )
+
+   // 3. Present it to the user
+   present(onboardingController, animated: true)
+   ```
+
+## Present onboardings in SwiftUI
+
+To display the visual onboarding on the device screen in SwiftUI:
+
+```swift showLineNumbers title="SwiftUI"
+// 1. Obtain the onboarding view configuration:
+let configuration = try AdaptyUI.getOnboardingConfiguration(forOnboarding: onboarding)
+
+// 2. Display the Onboarding View within your view hierarchy
+AdaptyOnboardingView(
+    configuration: configuration,
+    placeholder: { Text("Your Placeholder View") },
+    onCloseAction: { action in
+        // hide the onboarding view
+    },
+    onError: { error in
+         // handle the error
+    }
+)
+```
+
+## Add smooth transitions between the splash screen and onboarding
+
+By default, between the splash screen and onboarding, you will see the loading screen until the onboarding is fully loaded. However, if you want to make the transition smoother, you can customize it and either extend the splash screen or display something else.
+
+To do this, define a placeholder (what exactly will be shown while the onboarding is being loaded). If you define a placeholder, the onboarding will be loaded in the background and automatically displayed once ready.
+
+<Tabs>
+<TabItem value="swift" label="UIKit">
+```swift showLineNumbers
+import Adapty
+import AdaptyUI
+
+extension YourOnboardingManagerClass: AdaptyOnboardingControllerDelegate {
+   func onboardingsControllerLoadingPlaceholder(
+      _ controller: AdaptyOnboardingController
+      ) -> UIView? {
+         // instantiate and return the UIView which will be presented while onboarding is being loaded
+   }
+}
+```
+</TabItem>
+
+<TabItem value="swiftui" label="SwiftUI">
+```swift showLineNumbers
+AdaptyOnboardingView(
+    configuration: configuration,
+    placeholder: {
+        // define your placeholder view, which will be presented while onboarding is being loaded
+    },
+    // the rest of the implementation
+)
+```
+</TabItem>
+
+</Tabs>
+
+## Customize how links open in onboardings
+
+:::important
+Customizing how links open in onboardings is supported starting from Adapty SDK v.3.15.1.
+:::
+
+By default, links in onboardings open in an in-app browser. This provides a seamless user experience by displaying web pages within your application, allowing users to view them without switching apps.
+
+If you prefer to open links in an external browser instead, you can customize this behavior by setting the `externalUrlsPresentation` parameter to `.externalBrowser`:
+
+```swift showLineNumbers
+import Adapty
+import AdaptyUI
+
+let configuration = try AdaptyUI.getOnboardingConfiguration(
+    forOnboarding: onboarding,
+    externalUrlsPresentation: .externalBrowser // default – .inAppBrowser
+)
+```
