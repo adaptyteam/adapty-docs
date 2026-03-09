@@ -39,17 +39,33 @@ Content here...
 [Jump to section on the current page](#section-heading)
 ```
 
+Anchor slugs are auto-generated: lowercase, hyphenated, special characters stripped.
+Example: "Configure A/B Tests" → `#configure-ab-tests`
+
 ## Validation Checks
 
 ### Image Verification
-Verify images with specified ids and extensions exist
+- Verify the image file exists at the exact path specified in the import
+- Check path alias: `@assets/` not `@asset/` (common typo)
+- Shared images must be in `src/assets/shared/`
+- Article-specific images must be in `src/assets/<article-filename>/`
+- Alt text must be descriptive (not empty, not "image", not filename)
 
 ### Link Verification
-- Internal links should resolve to existing pages
-- Check for broken relative paths
-- Anchor links should match heading slugs (lowercase, hyphenated)
+- Internal links must resolve to existing pages
+- Check relative paths are correct: `../config` not `config/`
+- Anchor links must match heading slugs (lowercase, hyphenated)
+- Use descriptive link text: "See Installation guide" not "click here"
 
 ### Import Statement Issues
 - Verify component imports resolve
-- Check for correct `@` path aliases
+- Check for correct `@` path aliases (`@components/`, `@assets/`)
 - Ensure all imported components/images are used
+
+## Scope by Review Type
+
+### Diff Reviews
+Check **only** links and images that appear in the added/modified lines. Don't validate unchanged content.
+
+### Full Article Reviews
+Validate **all** links and images in the article — not just recently changed ones.

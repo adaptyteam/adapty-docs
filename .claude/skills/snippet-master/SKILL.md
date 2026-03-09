@@ -1,6 +1,6 @@
 ---
 name: snippet-master
-description: Creates, reviews, and fixes code snippets for technical documentation across 7 SDK platforms (iOS, Android, React Native, Flutter, Unity, Kotlin Multiplatform, Capacitor). Ensures consistency, best practices, and minimal yet contextual examples. Use when adding code snippets to docs, reviewing existing snippets, or when the user mentions SDK examples, code samples, or platform-specific implementations.
+description: "Use when adding, reviewing, or fixing code snippets in Adapty technical documentation across any of the 7 SDK platforms: iOS, Android, React Native, Flutter, Unity, Kotlin Multiplatform, or Capacitor."
 ---
 
 # Snippet Master
@@ -95,7 +95,7 @@ Before doing ANYTHING, you MUST collect all required information:
     - **Rule: Match the existing style - consistency on the page is more important than "ideal" style**
 
 3. **Check Platform Guidelines**
-    - Read `references/platform-styles.md` for platform-specific patterns
+    - Read `references/<platform>.md` for platform-specific patterns
     - Identify the idiomatic approach for this platform
 
 ### Phase 3: Find Real SDK Code
@@ -164,7 +164,7 @@ Before doing ANYTHING, you MUST collect all required information:
     - Avoid magic strings - use meaningful placeholders like `"YOUR_ACCESS_LEVEL"`
     - Resource cleanup where relevant (dispose, close, etc.)
 
-### Phase 4.5: Handling Multiple Approaches
+### Handling Multiple Approaches
 
 When the SDK offers multiple ways to accomplish something (e.g., standalone screen vs embedded widget), follow this pattern:
 
@@ -226,7 +226,7 @@ When the SDK offers multiple ways to accomplish something (e.g., standalone scre
     - [ ] If multiple approaches exist, are they all documented with appropriate structure?
 
 2. **Compare to Platform Style Guide**
-    - Review `references/platform-styles.md`
+    - Review `references/<platform>.md`
     - Ensure platform-specific patterns are correct
 
 3. **Validate Against Real SDK**
@@ -281,19 +281,15 @@ When asked to review existing snippets:
     - ❌ Showing entire class implementations
     - ✅ Show only the relevant method call and setup
 
-## Platform-Specific Notes
+## Platform Reference Files
 
-See `references/platform-styles.md` for detailed patterns for each platform.
+Load the relevant file(s) from `references/` when working on a specific platform:
 
-Quick reference:
-- **iOS**: async/await with do-catch, guard clauses, optional chaining
-- **Android**: AdaptyResult sealed class pattern, when expressions
-- **React Native**: Promises with async/await, try/catch
-- **Flutter**: try/on/catch pattern, final variables, await
-- **Unity**: Callback pattern with null checks, early returns
-- **KMP**: Result type with onSuccess/onError
-- **Capacitor**: Promises with async/await, try/catch (similar to RN)
-
-## Examples
-
-For concrete examples of proper snippet style, see `references/snippet-examples.md`.
+- `references/ios.md` — Swift async/await, do-catch, guard clauses
+- `references/android.md` — AdaptyResult sealed class, when expressions
+- `references/react-native.md` — TypeScript try/catch async/await
+- `references/flutter.md` — Dart try/on AdaptyError/catch, pattern matching
+- `references/unity.md` — C# callback pattern, null checks
+- `references/kmp.md` — Kotlin onSuccess/onError chaining
+- `references/capacitor.md` — TypeScript try/catch (like RN, adds console.log)
+- `references/cross-platform.md` — Consistency rules, formatting, translation checklist
