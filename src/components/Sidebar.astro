@@ -8,9 +8,10 @@ interface Props {
   sidebarData: any[];
   currentPlatformId: string;
   currentSlug: string;
+  currentLocale?: string;
 }
 
-const { sidebarData, currentPlatformId, currentSlug } = Astro.props;
+const { sidebarData, currentPlatformId, currentSlug, currentLocale } = Astro.props;
 
 // Logic to determine active ID from slug (simplified: last part of slug matches id)
 const activeId = currentSlug.split('/').pop() || ''; 
@@ -124,7 +125,7 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
     id="main-sidebar"
     class="sidebar-main"
     data-platform-id={currentPlatformId}
-    transition:persist={`sidebar-${currentPlatformId}`}
+    transition:persist={`sidebar-${currentPlatformId}-${currentLocale ?? 'en'}`}
 >
     <!-- Mobile Close Button -->
     <button id="sidebar-close-btn" class="lg:hidden absolute top-4 right-4 p-2 transition-colors sidebar-close">
@@ -156,14 +157,39 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
     <script>
       let hasScrolledToActive = false;
 
+      function getLocaleFromPath(path: string) {
+        const m = path.match(/^(.*\/docs\/)([a-z]{2})\//);
+        return m ? { locale: m[2], base: m[1] } : null;
+      }
+
+      // Rewrite sidebar link hrefs to include (or strip) the current locale prefix
+      function updateSidebarLinks() {
+        const localeInfo = getLocaleFromPath(window.location.pathname);
+        document.querySelectorAll('[data-sidebar-link]').forEach(el => {
+          const baseHref = el.getAttribute('data-href');
+          if (!baseHref) return;
+          el.setAttribute(
+            'href',
+            localeInfo
+              ? baseHref.replace(/^(.*\/docs\/)/, `$1${localeInfo.locale}/`)
+              : baseHref
+          );
+        });
+      }
+
       function updateActiveState() {
-        const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+        // Strip locale prefix so sidebar links always match English data-href values.
+        // Handles both /docs/zh/article and the locale root /docs/zh/ → /docs/
+        const currentPath = window.location.pathname
+          .replace(/\/$/, '')
+          .replace(/^(.*\/docs)\/[a-z]{2}(\/|$)/, '$1$2')
+          .replace(/\/$/, '') || '/';
         const links = document.querySelectorAll('[data-sidebar-link]');
-        
+
         links.forEach(link => {
           const href = link.getAttribute('data-href')?.replace(/\/$/, '') || '/';
           const isActive = href === currentPath;
-          
+
           const container = link.closest('[data-sidebar-container]');
           if (container) {
             if (isActive) {
@@ -191,14 +217,14 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
         }
       }
 
-      // On navigation, just update which item is active
-      // Sidebar persists, so scroll position is maintained automatically
       document.addEventListener('astro:page-load', () => {
+        updateSidebarLinks();
         updateActiveState();
         scrollToActiveOnce();
       });
 
       // Initial execution
+      updateSidebarLinks();
       updateActiveState();
       scrollToActiveOnce();
     </script>
