@@ -1,6 +1,6 @@
 ---
 name: doc-author
-description: End-to-end technical writing orchestrator. Accepts any input — Jira tasks, feature specs, verbal descriptions, or dev task descriptions — and drives the full documentation lifecycle from planning through polished draft. Coordinates writing-planner, editor, product-manager, and snippet-master skills. Use when you need to plan and write documentation, not just review or plan separately. Triggers include write docs for, document this feature, create documentation, doc task, write an article about, document this change.
+description: Use when documentation needs to be planned and written end-to-end — from a Jira task, feature spec, or verbal description through to a polished draft. Not for review-only or planning-only tasks.
 ---
 
 # Doc Author - Technical Writing Orchestrator
@@ -25,9 +25,13 @@ If the input is too vague to determine what changed, who it affects, or where it
 
 ## Workflow
 
-### Phase 1: Plan — Use `writing-planner`
+> **Rule:** Each phase invokes a sub-skill via the Skill tool. Never substitute your own knowledge for an invoked skill — trust the skill's output and build on it.
 
-Invoke the `writing-planner` skill with the user's input. The writing-planner will:
+### Phase 1: Plan — `writing-planner`
+
+**REQUIRED SUB-SKILL:** Use the Skill tool to invoke `writing-planner`.
+
+The writing-planner will:
 1. Parse the input and extract what changed
 2. Research affected articles and existing content
 3. Assess documentation scope (small / medium / large)
@@ -43,9 +47,11 @@ Invoke the `writing-planner` skill with the user's input. The writing-planner wi
 
 After approval, ask the user: "Ready to start drafting, or do you want to adjust anything first?"
 
-### Phase 2: Draft — Use `editor`
+### Phase 2: Draft — `editor`
 
-Invoke the `editor` skill in **write mode** with the approved plan as input. The editor will:
+**REQUIRED SUB-SKILL:** Use the Skill tool to invoke `editor` in **write mode**.
+
+Pass the approved plan as input. The editor will:
 1. Research existing patterns in neighboring articles
 2. Write content following STE rules, Astro/MDX conventions, and the approved plan
 3. Self-review the draft against its checklist
@@ -53,12 +59,14 @@ Invoke the `editor` skill in **write mode** with the approved plan as input. The
 **Your role in this phase:**
 - Pass the approved plan from Phase 1 to the editor
 - Skip the editor's own planning phases (Phases 1-3) since the writing-planner already produced the plan — go straight to writing (Phase 4) and self-review (Phase 5)
-- If the draft requires code snippets, invoke the `snippet-master` skill to create them. See "Code snippets" below.
+- If the draft requires code snippets, use the Skill tool to invoke `snippet-master`. See "Code snippets" below.
 - Present the draft to the user
 
-### Phase 3: Product Review — Use `product-manager`
+### Phase 3: Product Review — `product-manager`
 
-Invoke the `product-manager` skill to review the draft. The product-manager will evaluate:
+**REQUIRED SUB-SKILL:** Use the Skill tool to invoke `product-manager`.
+
+The product-manager will evaluate:
 1. Value clarity and positioning
 2. Persona-based usage (developer, PM, marketer)
 3. Technical accuracy of Adapty concepts
@@ -99,10 +107,11 @@ If user feedback at any phase contradicts a skill's instructions, evaluate wheth
 
 **When updating a skill:**
 1. Tell the user what you're about to change and why
-2. Read the current skill file
+2. Read the current skill file using the Read tool (do NOT use `@` syntax)
 3. Make a targeted edit — don't rewrite the whole skill
 4. Show the user the change
 5. If the change affects a reference file (e.g., `adapty-product-knowledge.md`), update that file instead of the main SKILL.md
+6. For non-trivial skill changes (new sections, structural changes, behavior changes), use the Skill tool to invoke `superpowers:writing-skills` to guide the update properly
 
 ## Orchestration Rules
 
@@ -123,4 +132,4 @@ If the writing-planner assesses a "small update" but the user's feedback keeps e
 For tasks affecting multiple articles, the writing-planner will produce a multi-article plan with execution order. Follow that order. Draft each article separately through Phases 2-4, completing one before starting the next (unless the user prefers parallel drafting).
 
 ### Code snippets
-When the plan or draft calls for code snippets, invoke the `snippet-master` skill to create them. The snippet-master handles SDK code across all 7 platforms (iOS, Android, React Native, Flutter, Unity, Kotlin Multiplatform, Capacitor) — don't write snippets yourself.
+When the plan or draft calls for code snippets, use the Skill tool to invoke `snippet-master`. **REQUIRED SUB-SKILL:** `snippet-master` handles SDK code across all 7 platforms (iOS, Android, React Native, Flutter, Unity, Kotlin Multiplatform, Capacitor) — don't write snippets yourself.
