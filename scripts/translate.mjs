@@ -2,15 +2,17 @@
  * Bulk AI Translation Script — language-agnostic
  *
  * Usage:
- *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh                    # single language, all untranslated
- *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --all              # retranslate everything
- *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --platform ios     # single platform
- *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --file ios-sdk-overview
- *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --resume <batchId> # retrieve submitted batch
- *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --api-specs                    # translate all API specs
- *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --api-specs --file adapty-api  # single API spec
- *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --incremental                # all locales, changed files only (build pipeline)
- *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --incremental      # single locale, changed files only
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh                              # single language, all untranslated
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --all                        # retranslate everything
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --platform ios               # single platform
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --file ios-sdk-overview      # single article
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --ids "ios-sdk-overview,android-sdk-overview,react-native-sdk-overview"  # selected articles
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --sidebar ios               # single sidebar
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --resume <batchId>           # retrieve submitted batch
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --api-specs                  # translate all API specs
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --api-specs --file adapty-api # single API spec
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --incremental                          # all locales, changed files only (build pipeline)
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --incremental                # single locale, changed files only
  */
 
 import fs from 'node:fs/promises';
@@ -57,19 +59,25 @@ const platform = platformIdx !== -1 ? args[platformIdx + 1] : null;
 const fileIdx = args.indexOf('--file');
 const fileId = fileIdx !== -1 ? args[fileIdx + 1] : null;
 
+const idsIdx = args.indexOf('--ids');
+const fileIds = idsIdx !== -1 ? args[idsIdx + 1].split(',').map(s => s.trim()).filter(Boolean) : null;
+
+const sidebarIdx = args.indexOf('--sidebar');
+const sidebarName = sidebarIdx !== -1 ? args[sidebarIdx + 1] : null;
+
 const resumeIdx = args.indexOf('--resume');
 const flagResume = resumeIdx !== -1;
 // Explicit batch ID passed after --resume (may be absent — auto-read from file in main())
 const resumeArgValue = flagResume ? args[resumeIdx + 1] : null;
 
 // Targeted operations require an explicit --lang
-if ((flagResume || fileId || platform) && !lang) {
-  console.error('[translate] --lang <code> is required when using --resume, --file, or --platform');
+if ((flagResume || fileId || fileIds || sidebarName || platform) && !lang) {
+  console.error('[translate] --lang <code> is required when using --resume, --file, --ids, --sidebar, or --platform');
   process.exit(1);
 }
 
-// Single-file or incremental → use sync (immediate) API; otherwise Batch API
-const syncMode = fileId != null || flagIncremental;
+// Single-file, multi-id, or incremental → use sync (immediate) API; otherwise Batch API
+const syncMode = fileId != null || fileIds != null || flagIncremental;
 
 // ---------------------------------------------------------------------------
 // Locale discovery
@@ -96,16 +104,17 @@ PRESERVE exactly (never translate):
 - component tag names and attribute NAMES (only translate attribute VALUES when they are human-readable phrases)
 - URLs in markdown links — translate the display text only, keep the href unchanged
 - platform and product names: iOS, Android, React Native, Flutter, Unity, Kotlin Multiplatform, Capacitor, Adapty
-- heading anchor IDs like {#my-anchor} — keep them exactly as written
+- Adapty dashboard UI element names: the dashboard is English-only, so keep these exactly as written. They typically appear **bold** in text and refer to dashboard navigation — menu items, sidebar sections, page names, tab labels, and button labels (e.g. **Paywalls**, **A/B tests**, **App settings**, **Add product**, **Save**). Do not confuse these with documentation section headings or sidebar titles, which should be translated normally.
+- heading anchor IDs written as \\{#my-anchor\\} — keep them exactly as written including the backslash escapes
 - link hrefs and URL fragments — in [text](url#fragment), translate only the display text; href and fragment stay byte-for-byte identical
 
 HEADING ANCHOR RULE (critical for internal links):
-Every translated heading must end with a {#anchor-id} that matches what the English source would auto-generate.
-- If the heading already has {#anchor-id}: keep it unchanged.
-- If the heading has NO {#anchor-id}: translate the text, then append the slug of the original English text.
+Every translated heading must end with a \\{#anchor-id\\} that matches what the English source would auto-generate.
+- If the heading already has \\{#anchor-id\\}: keep it unchanged, including the backslash escapes. The closing \\} must be the very last character of the heading line — do not add any punctuation or text after it.
+- If the heading has NO \\{#anchor-id\\}: translate the text, then append the slug of the original English text using the \\{#...\\} syntax.
   Slug algorithm: lowercase → replace spaces with hyphens → keep only [a-z0-9-] → collapse consecutive hyphens.
-  Example: \`## Quick Start\` → \`## 快速入门 {#quick-start}\`
-  Example: \`## SDK Installation & Setup\` → \`## SDK 安装与配置 {#sdk-installation--setup}\`
+  Example: \`## Quick Start\` → \`## 快速入门 \\{#quick-start\\}\`
+  Example: \`## SDK Installation & Setup\` → \`## SDK 安装与配置 \\{#sdk-installation--setup\\}\`
 
 TRANSLATE:
 - frontmatter field VALUES: title, description, keywords array items
@@ -218,11 +227,14 @@ async function main() {
 
     // --api-specs targets API specs only; skip article and sidebar translation
     if (!flagApiSpecs) {
-      await translateForLang(client, currentLang, localesDir, hashesDir, systemPrompt, tag);
+      // --sidebar targets a single sidebar only; skip article translation
+      if (!sidebarName) {
+        await translateForLang(client, currentLang, localesDir, hashesDir, systemPrompt, tag);
+      }
 
-      // Sidebars are not file/platform-specific; skip only for --file targeting
-      if (!fileId) {
-        await translateSidebarsForLang(client, currentLang, localesDir, hashesDir, targetLanguage, glossary, tag);
+      // Sidebars are not file/platform-specific; skip only for --file/--ids targeting
+      if (!fileId && !fileIds) {
+        await translateSidebarsForLang(client, currentLang, localesDir, hashesDir, targetLanguage, glossary, tag, sidebarName);
       }
     }
 
@@ -239,12 +251,20 @@ async function main() {
 async function translateForLang(client, lang, localesDir, hashesDir, systemPrompt, tag) {
   const allFiles = await collectMdxFiles(DOCS_DIR);
 
-  // Apply --file / --platform filters
+  // Apply --file / --ids / --platform filters
   let files = allFiles;
   if (fileId) {
     files = allFiles.filter(f => path.basename(f, '.mdx') === fileId);
     if (files.length === 0) {
       console.error(`${tag} No article found with id: ${fileId}`);
+      process.exit(1);
+    }
+  } else if (fileIds) {
+    const fileIdsSet = new Set(fileIds);
+    files = allFiles.filter(f => fileIdsSet.has(path.basename(f, '.mdx')));
+    const notFound = fileIds.filter(id => !files.some(f => path.basename(f, '.mdx') === id));
+    if (notFound.length > 0) {
+      console.error(`${tag} Articles not found: ${notFound.join(', ')}`);
       process.exit(1);
     }
   } else if (platform) {
@@ -267,7 +287,7 @@ async function translateForLang(client, lang, localesDir, hashesDir, systemPromp
       const storedHash  = await getStoredHash(basename, hashesDir);
       if (storedHash === currentHash) continue;
       toTranslate.push(file);
-    } else if (flagAll) {
+    } else if (flagAll || fileId != null || fileIds != null) {
       toTranslate.push(file);
     } else {
       try {
@@ -287,9 +307,9 @@ async function translateForLang(client, lang, localesDir, hashesDir, systemPromp
   console.log(`${tag} ${toTranslate.length} article(s) to translate.`);
 
   if (syncMode) {
-    await translateSync(client, toTranslate, systemPrompt, localesDir, hashesDir, tag);
+    await translateSync(client, toTranslate, systemPrompt, localesDir, hashesDir, tag, lang);
   } else {
-    await translateBatch(client, toTranslate, systemPrompt, localesDir, tag);
+    await translateBatch(client, toTranslate, systemPrompt, localesDir, tag, lang);
   }
 }
 
@@ -299,7 +319,7 @@ async function translateForLang(client, lang, localesDir, hashesDir, systemPromp
 
 const SYNC_CONCURRENCY = 5;
 
-async function translateSync(client, files, systemPrompt, localesDir, hashesDir, tag) {
+async function translateSync(client, files, systemPrompt, localesDir, hashesDir, tag, lang) {
   let translated = 0;
   let errors = 0;
   const queue = [...files];
@@ -311,7 +331,7 @@ async function translateSync(client, files, systemPrompt, localesDir, hashesDir,
       const basename = path.basename(file, '.mdx');
       try {
         if (flagIncremental) {
-          await translateFileWithSections(client, file, systemPrompt, localesDir, hashesDir);
+          await translateFileWithSections(client, file, systemPrompt, localesDir, hashesDir, lang);
         } else {
           const content = await fs.readFile(file, 'utf-8');
           const response = await client.messages.create({
@@ -324,7 +344,7 @@ async function translateSync(client, files, systemPrompt, localesDir, hashesDir,
             throw new Error(`output truncated at max_tokens limit — increase max_tokens or split the file`);
           }
           const translatedContent = response.content[0].text;
-          await writeTranslation(basename, translatedContent, file, localesDir, hashesDir);
+          await writeTranslation(basename, translatedContent, file, localesDir, hashesDir, lang);
           console.log(`  ✓ ${basename}`);
         }
         translated++;
@@ -343,7 +363,7 @@ async function translateSync(client, files, systemPrompt, localesDir, hashesDir,
 // Section-level incremental translation (--incremental only)
 // ---------------------------------------------------------------------------
 
-async function translateFileWithSections(client, file, systemPrompt, localesDir, hashesDir) {
+async function translateFileWithSections(client, file, systemPrompt, localesDir, hashesDir, lang) {
   const basename = path.basename(file, '.mdx');
   const content = await fs.readFile(file, 'utf-8');
 
@@ -401,7 +421,7 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
     translatedParts.push(translation);
   }
 
-  const reconstructed = translatedParts.join('\n');
+  const reconstructed = lang ? postProcessTranslation(translatedParts.join('\n'), lang) : translatedParts.join('\n');
   await fs.mkdir(localesDir, { recursive: true });
   await fs.writeFile(path.join(localesDir, `${basename}.mdx`), reconstructed, 'utf-8');
 
@@ -416,7 +436,7 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
 // Batch translation (default, --all, --platform)
 // ---------------------------------------------------------------------------
 
-async function translateBatch(client, files, systemPrompt, localesDir, tag) {
+async function translateBatch(client, files, systemPrompt, localesDir, tag, lang) {
   console.log(`${tag} Reading source files...`);
   const requests = await Promise.all(
     files.map(async (file) => {
@@ -444,10 +464,10 @@ async function translateBatch(client, files, systemPrompt, localesDir, tag) {
   console.log(`${tag} Use --resume <batchId> to retrieve results if this process is interrupted.`);
 
   const fileMap = Object.fromEntries(files.map(f => [path.basename(f, '.mdx'), f]));
-  await waitAndRetrieve(client, batchId, fileMap, localesDir, tag);
+  await waitAndRetrieve(client, batchId, fileMap, localesDir, tag, lang);
 }
 
-async function waitAndRetrieve(client, batchId, fileMap, localesDir, tag) {
+async function waitAndRetrieve(client, batchId, fileMap, localesDir, tag, lang) {
   console.log(`${tag} Polling batch status every 30 seconds...`);
 
   let batch = await client.messages.batches.retrieve(batchId);
@@ -478,7 +498,7 @@ async function waitAndRetrieve(client, batchId, fileMap, localesDir, tag) {
       const sourceFile = fileMap[basename];
       // hashesDir is derived from localesDir for batch results
       const hashesDir = path.join(localesDir, '.hashes');
-      await writeTranslation(basename, text, sourceFile, localesDir, hashesDir);
+      await writeTranslation(basename, text, sourceFile, localesDir, hashesDir, lang);
       console.log(`  ✓ ${basename}`);
       translated++;
     } else {
@@ -531,11 +551,11 @@ async function resumeBatch(client, batchId, lang, localesDir, hashesDir) {
       const text = result.result.message.content[0].text;
       const sourceFile = fileMap[basename];
       if (sourceFile) {
-        await writeTranslation(basename, text, sourceFile, localesDir, hashesDir);
+        await writeTranslation(basename, text, sourceFile, localesDir, hashesDir, lang);
       } else {
         // Source file not found — write translation without hash
         await fs.mkdir(localesDir, { recursive: true });
-        await fs.writeFile(path.join(localesDir, `${basename}.mdx`), text, 'utf-8');
+        await fs.writeFile(path.join(localesDir, `${basename}.mdx`), postProcessTranslation(text, lang), 'utf-8');
       }
       console.log(`  ✓ ${basename}`);
       translated++;
@@ -594,13 +614,23 @@ async function rebuildSidebarLabels(sidebarFiles, sidebarHashesDir, localesDir) 
   await fs.writeFile(path.join(localesDir, '_sidebar-labels.json'), JSON.stringify(merged, null, 2), 'utf-8');
 }
 
-async function translateSidebarsForLang(client, lang, localesDir, hashesDir, targetLanguage, glossary, tag) {
+async function translateSidebarsForLang(client, lang, localesDir, hashesDir, targetLanguage, glossary, tag, sidebarName = null) {
   const sidebarHashesDir = path.join(hashesDir, 'sidebars');
 
   const entries = await fs.readdir(SIDEBARS_DIR, { withFileTypes: true });
-  const sidebarFiles = entries
+  let sidebarFiles = entries
     .filter(e => e.isFile() && e.name.endsWith('.json'))
     .map(e => path.join(SIDEBARS_DIR, e.name));
+
+  if (sidebarName) {
+    const match = sidebarFiles.find(f => path.basename(f, '.json') === sidebarName);
+    if (!match) {
+      console.error(`${tag} No sidebar found with name: ${sidebarName}`);
+      console.error(`  Available: ${sidebarFiles.map(f => path.basename(f, '.json')).join(', ')}`);
+      process.exit(1);
+    }
+    sidebarFiles = [match];
+  }
 
   const toTranslate = [];
   for (const file of sidebarFiles) {
@@ -926,7 +956,31 @@ async function getStoredHash(basename, hashesDir) {
   }
 }
 
-async function writeTranslation(basename, content, sourceFile, localesDir, hashesDir) {
+/**
+ * Post-process translated MDX content:
+ * 1. Normalize heading anchor IDs to the escaped form \{#id\} required by MDX.
+ *    Handles both unescaped {#id} (which MDX would crash on) and already-correct \{#id\},
+ *    and also strips any trailing characters Claude may have appended after the closing brace.
+ * 2. Rewrite absolute https://adapty.io/docs/<id> links to include the locale prefix.
+ */
+function postProcessTranslation(content, lang) {
+  // Normalize heading anchors: match optional leading backslash, strip trailing chars
+  content = content.replace(
+    /^(#{1,6} .*?)\\?\{#([\w-]+)\}[^\n]*$/gm,
+    '$1\\{#$2\\}'
+  );
+
+  // Localize absolute adapty.io/docs/ links (skip already-localized paths)
+  content = content.replace(
+    /https:\/\/adapty\.io\/docs\/(?![a-z]{2}\/)([^\s"')\]>]+)/g,
+    `https://adapty.io/docs/${lang}/$1`
+  );
+
+  return content;
+}
+
+async function writeTranslation(basename, content, sourceFile, localesDir, hashesDir, lang = null) {
+  if (lang) content = postProcessTranslation(content, lang);
   await fs.mkdir(localesDir, { recursive: true });
   await fs.writeFile(path.join(localesDir, `${basename}.mdx`), content, 'utf-8');
 
