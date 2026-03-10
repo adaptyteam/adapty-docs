@@ -118,7 +118,6 @@ async function processFiles(dir, reusableComponents) {
             const destPath = path.join(OUTPUT_DIR, `${basename}.md`);
 
             await fs.writeFile(destPath, content, 'utf-8');
-            console.log(`Generated: ${basename}.md`);
         }
     }
 }
