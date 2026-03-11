@@ -28,6 +28,21 @@ export default defineConfig({
   },
   vite: {
     plugins: [tailwindcss()],
+    server: {
+      watch: {
+        ignored: [
+          '**/.DS_Store',
+          '**/.Spotlight-V100/**',
+          '**/.DocumentRevisions-V100/**',
+          '**/.astro/settings.json',
+          '**/.astro/data-store.json',
+          '**/.astro/types.d.ts',
+          '**/.astro/content.d.ts',
+          '**/.astro/content-assets.mjs',
+          '**/.astro/collections/**',
+        ],
+      },
+    },
     define: {
       global: 'window',
       'process.env': '{}',

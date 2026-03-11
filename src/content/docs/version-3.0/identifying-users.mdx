@@ -127,6 +127,116 @@ Adapty.logout { error in
 
 You can then login the user using `.identify()` method.
 
+## Common use cases
+
+Pass whatever your auth provider considers a stable, non-reassignable identifier as `customerUserId`. Avoid email addresses and display names — these can change or be reassigned to a different user.
+
+### Sign in with Apple
+
+Apple returns a stable user identifier in the `user` field of `ASAuthorizationAppleIDCredential`. Apple provides this value only during the first authorization — persist it immediately to the Keychain, because it is not returned on subsequent sign-ins.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+import AuthenticationServices
+import Adapty
+
+func authorizationController(
+    controller: ASAuthorizationController,
+    didCompleteWithAuthorization authorization: ASAuthorization
+) {
+    guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else { return }
+
+    let appleUserId = credential.user // Apple returns this only once — persist it
+
+    Task {
+        do {
+            try await Adapty.identify(appleUserId)
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback">
+
+```swift showLineNumbers
+import AuthenticationServices
+import Adapty
+
+func authorizationController(
+    controller: ASAuthorizationController,
+    didCompleteWithAuthorization authorization: ASAuthorization
+) {
+    guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else { return }
+
+    let appleUserId = credential.user // Apple returns this only once — persist it
+
+    Adapty.identify(appleUserId) { error in
+        if let error {
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Firebase Auth
+
+Use `uid` from `FirebaseAuth` — not the email address. Firebase UIDs are permanent and unique per user; email addresses can be changed or transferred between accounts.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+import Adapty
+import FirebaseAuth
+
+Auth.auth().addStateDidChangeListener { _, user in
+    if let uid = user?.uid {
+        Task {
+            do {
+                try await Adapty.identify(uid)
+            } catch {
+                // handle the error
+            }
+        }
+    } else {
+        Task {
+            try? await Adapty.logout()
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback">
+
+```swift showLineNumbers
+import Adapty
+import FirebaseAuth
+
+Auth.auth().addStateDidChangeListener { _, user in
+    if let uid = user?.uid {
+        Adapty.identify(uid) { error in
+            if let error {
+                // handle the error
+            }
+        }
+    } else {
+        Adapty.logout { _ in }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
 ## Set appAccountToken
 
 The [`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) is a UUID that helps Apple's StoreKit 2 identify users across app installations and devices.

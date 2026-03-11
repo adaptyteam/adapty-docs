@@ -92,3 +92,112 @@ Adapty.logout(error -> {
 </Tabs>
 
 You can then login the user using `.identify()` method.
+
+## Common use cases
+
+Pass whatever your auth provider considers a stable, non-reassignable identifier as `customerUserId`. Avoid email addresses and display names — these can change or be reassigned to a different user.
+
+### Google Sign-In
+
+When using Android Credential Manager with Google Sign-In, pass the Firebase `uid` to Adapty — not the user's email. Firebase UIDs map to Google's permanent `sub` identifier; email addresses can change.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+
+// In your Credential Manager result handler:
+val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+val firebaseCredential = GoogleAuthProvider.getCredential(googleIdTokenCredential.idToken, null)
+
+FirebaseAuth.getInstance().signInWithCredential(firebaseCredential)
+    .addOnSuccessListener { result ->
+        val uid = result.user?.uid ?: return@addOnSuccessListener
+        // Use uid, not result.user?.email — emails can change
+        Adapty.identify(uid) { error ->
+            if (error == null) {
+                // successful identify
+            }
+        }
+    }
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.GoogleAuthProvider;
+
+// In your Credential Manager result handler:
+GoogleIdTokenCredential googleIdTokenCredential =
+    GoogleIdTokenCredential.createFrom(credential.getData());
+AuthCredential firebaseCredential =
+    GoogleAuthProvider.getCredential(googleIdTokenCredential.getIdToken(), null);
+
+FirebaseAuth.getInstance().signInWithCredential(firebaseCredential)
+    .addOnSuccessListener(result -> {
+        if (result.getUser() == null) return;
+        String uid = result.getUser().getUid();
+        // Use uid, not result.getUser().getEmail() — emails can change
+        Adapty.identify(uid, error -> {
+            if (error == null) {
+                // successful identify
+            }
+        });
+    });
+```
+
+</TabItem>
+</Tabs>
+
+### Firebase Auth
+
+Use `uid` from `FirebaseAuth.getInstance().currentUser` — not the email address. Firebase UIDs are permanent and unique per user; email addresses can be changed or transferred between accounts.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.google.firebase.auth.FirebaseAuth
+
+FirebaseAuth.getInstance().addAuthStateListener { auth ->
+    val uid = auth.currentUser?.uid
+    if (uid != null) {
+        Adapty.identify(uid) { error ->
+            if (error == null) {
+                // successful identify
+            }
+        }
+    } else {
+        Adapty.logout { }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers
+import com.google.firebase.auth.FirebaseAuth;
+
+FirebaseAuth.getInstance().addAuthStateListener(auth -> {
+    if (auth.getCurrentUser() != null) {
+        String uid = auth.getCurrentUser().getUid();
+        Adapty.identify(uid, error -> {
+            if (error == null) {
+                // successful identify
+            }
+        });
+    } else {
+        Adapty.logout(error -> {});
+    }
+});
+```
+
+</TabItem>
+</Tabs>
