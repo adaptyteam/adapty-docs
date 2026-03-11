@@ -2,13 +2,1482 @@ openapi: 3.1.0
 info:
   title: Developer API
   version: 1.0.0
+  description: |
+    The Adapty Developer API lets you manage your Adapty resources programmatically. Use it to create and configure apps, products, paywalls, and placements — the same resources you manage in the Adapty Dashboard.
 servers:
   - url: https://api.adapty.io
     description: Production server
-paths: {}
+
+tags:
+  - name: Apps
+    description: |
+      An Adapty app represents a single mobile application. One app covers all platforms — iOS, Android, or both. Each app has a public SDK key for client-side SDK initialization and a secret key for server-side API calls.
+
+      All other resources (products, paywalls, placements, access levels) belong to a specific app and require its `id`. Start by creating or retrieving your app.
+
+      **Typical setup order:**
+      [Create app](/operations/createApp) → [Create access level](/operations/createAccessLevel) → [Create product](/operations/createProduct) → [Create paywall](/operations/createPaywall) → [Create placement](/operations/createPlacement)
+  - name: Access Levels
+    description: |
+      Access levels define what premium content a subscriber can access. When a user completes a purchase, Adapty grants them the access level linked to that product. The `sdk_id` is the identifier you reference in your app code and when creating products.
+
+      Most single-tier apps need one access level (e.g., `premium`). Multi-tier apps can have several (e.g., `basic` and `pro`).
+
+      Learn more: [Access levels](https://adapty.io/docs/access-level)
+  - name: Products
+    description: |
+      Products are the in-app purchase items that unlock access levels. Each product maps to a store product ID in App Store Connect or Google Play Console, and is linked to exactly one access level via the access level's `sdk_id`.
+
+      The product's `id` (UUID) is used in `product_ids` when creating paywalls. Retrieve existing product IDs from [List products](/operations/listProducts).
+
+      Learn more: [Products](https://adapty.io/docs/product)
+  - name: Paywalls
+    description: |
+      A paywall is a collection of products offered to a user at a single point in the purchase flow. Reference products by their Adapty `id` (UUID), not by store product ID.
+
+      The paywall's `id` is used as `paywall_id` when creating placements. Retrieve existing paywall IDs from [List paywalls](/operations/listPaywalls).
+
+      Learn more: [Paywalls](https://adapty.io/docs/paywalls)
+  - name: Placements
+    description: |
+      A placement is a named position in your app where a paywall is shown — for example, `onboarding` or `settings`. The Adapty SDK uses the placement's `developer_id` to fetch the active paywall at runtime.
+
+      The `developer_id` must be unique within the app and match exactly what you pass to the SDK. To swap the paywall shown at a placement, use [Update placement](/operations/updatePlacement).
+
+      Learn more: [Placements](https://adapty.io/docs/placements)
+  - name: Account Info
+    description: Returns information about the authenticated user and the Adapty workspaces they belong to.
+
+paths:
+
+  # ─── Apps ─────────────────────────────────────────────────────────────────
+
+  /api/v1/developer/apps/:
+    get:
+      summary: List apps
+      description: |
+        Returns a paginated list of apps in your company workspace.
+
+        Use the `id` from any app as `app_id` in all subsequent resource requests.
+      operationId: listApps
+      tags:
+        - Apps
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Apps retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAppSummaryList'
+              example:
+                data:
+                  - id: "14c3d623-2f3a-455a-aa86-ef83dff6913b"
+                    title: "My App"
+                    sdk_key: "public_live_AbCdEf123456"
+                meta:
+                  pagination:
+                    count: 1
+                    page: 1
+                    pages: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Create app
+      description: |
+        Creates a new app in your company workspace. The returned `id` is used as `app_id` in all subsequent resource requests.
+
+        One app covers all platforms. Provide `apple_bundle_id`, `google_bundle_id`, or both depending on which stores you distribute through.
+      operationId: createApp
+      tags:
+        - Apps
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppCreateRequest'
+            example:
+              title: "My App"
+              apple_bundle_id: "com.example.myapp"
+              google_bundle_id: "com.example.myapp"
+      responses:
+        '201':
+          description: App created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppSummary'
+              example:
+                id: "14c3d623-2f3a-455a-aa86-ef83dff6913b"
+                title: "My App"
+                sdk_key: "public_live_AbCdEf123456"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/developer/apps/{app_id}/:
+    get:
+      summary: Get app
+      description: |
+        Returns the full details of a single app, including its SDK key and secret key.
+
+        The `sdk_key` is used to initialize the Adapty SDK in your app. The `secret_key` is used for [server-side API](https://adapty.io/docs/getting-started-with-server-side-api) calls.
+      operationId: getApp
+      tags:
+        - Apps
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+      responses:
+        '200':
+          description: App retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppDetail'
+              example:
+                id: "14c3d623-2f3a-455a-aa86-ef83dff6913b"
+                title: "My App"
+                sdk_key: "public_live_AbCdEf123456"
+                secret_key: "secret_live_XyZ789mNpQ"
+                platforms:
+                  - "ios"
+                  - "android"
+                apple_bundle_id: "com.example.myapp"
+                google_bundle_id: "com.example.myapp"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update app
+      description: Updates an existing app. All fields are optional; only provided fields are updated.
+      operationId: updateApp
+      tags:
+        - Apps
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppUpdateRequest'
+            example:
+              title: "My App (Production)"
+      responses:
+        '200':
+          description: App updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppDetail'
+              example:
+                id: "14c3d623-2f3a-455a-aa86-ef83dff6913b"
+                title: "My App (Production)"
+                sdk_key: "public_live_AbCdEf123456"
+                secret_key: "secret_live_XyZ789mNpQ"
+                platforms:
+                  - "ios"
+                  - "android"
+                apple_bundle_id: "com.example.myapp"
+                google_bundle_id: "com.example.myapp"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Access Levels ─────────────────────────────────────────────────────────
+
+  /api/v1/developer/apps/{app_id}/access-levels/:
+    get:
+      summary: List access levels
+      description: |
+        Returns a paginated list of access levels configured for the app. Use the `sdk_id` of an access level as `access_level_id` when creating products.
+
+        Learn more: [Access levels](https://adapty.io/docs/access-level)
+      operationId: listAccessLevels
+      tags:
+        - Access Levels
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Access levels retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAccessLevelList'
+              example:
+                data:
+                  - id: "3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d"
+                    sdk_id: "premium"
+                    title: "Premium"
+                meta:
+                  pagination:
+                    count: 1
+                    page: 1
+                    pages: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      summary: Create access level
+      description: |
+        Creates a new access level for the app.
+
+        Learn more: [Access levels](https://adapty.io/docs/access-level)
+      operationId: createAccessLevel
+      tags:
+        - Access Levels
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessLevelCreateRequest'
+            example:
+              sdk_id: "premium"
+              title: "Premium"
+      responses:
+        '201':
+          description: Access level created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessLevel'
+              example:
+                id: "3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d"
+                sdk_id: "premium"
+                title: "Premium"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/developer/apps/{app_id}/access-levels/{access_level_id}/:
+    get:
+      summary: Get access level
+      description: |
+        Returns the details of a single access level.
+
+        Learn more: [Access levels](https://adapty.io/docs/access-level)
+      operationId: getAccessLevel
+      tags:
+        - Access Levels
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - $ref: '#/components/parameters/AccessLevelId'
+      responses:
+        '200':
+          description: Access level retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessLevel'
+              example:
+                id: "3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d"
+                sdk_id: "premium"
+                title: "Premium"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update access level
+      description: |
+        Updates the display title of an access level. The `sdk_id` cannot be changed after creation.
+
+        Learn more: [Access levels](https://adapty.io/docs/access-level)
+      operationId: updateAccessLevel
+      tags:
+        - Access Levels
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - $ref: '#/components/parameters/AccessLevelId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessLevelUpdateRequest'
+            example:
+              title: "Premium Plus"
+      responses:
+        '200':
+          description: Access level updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessLevel'
+              example:
+                id: "3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d"
+                sdk_id: "premium"
+                title: "Premium Plus"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Products ──────────────────────────────────────────────────────────────
+
+  /api/v1/developer/apps/{app_id}/products/:
+    get:
+      summary: List products
+      description: |
+        Returns a paginated list of products configured for the app. Use the `id` of a product as an entry in `product_ids` when creating paywalls.
+
+        Learn more: [Products](https://adapty.io/docs/product)
+      operationId: listProducts
+      tags:
+        - Products
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Products retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductList'
+              example:
+                data:
+                  - id: "f1e2d3c4-b5a6-7890-abcd-ef1234567890"
+                    title: "Premium Monthly"
+                    period: "1m"
+                    access_level_id: "premium"
+                    vendor_products:
+                      app_store:
+                        id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                        product_id: "premium_monthly"
+                        base_plan_id: null
+                      play_store:
+                        id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                        product_id: "premium_monthly"
+                        base_plan_id: "monthly"
+                meta:
+                  pagination:
+                    count: 1
+                    page: 1
+                    pages: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      summary: Create product
+      description: |
+        Creates a new product for the app. The returned `id` is used in `product_ids` when creating paywalls. See [Create paywall](/operations/createPaywall).
+
+        Learn more: [Products](https://adapty.io/docs/product)
+      operationId: createProduct
+      tags:
+        - Products
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreateRequest'
+            examples:
+              ios_only:
+                summary: iOS-only product
+                value:
+                  title: "Premium Monthly"
+                  period: "1m"
+                  access_level_id: "premium"
+                  ios_product_id: "premium_monthly"
+              cross_platform:
+                summary: iOS + Android product
+                value:
+                  title: "Premium Monthly"
+                  period: "1m"
+                  access_level_id: "premium"
+                  ios_product_id: "premium_monthly"
+                  android_product_id: "premium_monthly"
+                  android_base_plan_id: "monthly"
+      responses:
+        '201':
+          description: Product created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+              example:
+                id: "f1e2d3c4-b5a6-7890-abcd-ef1234567890"
+                title: "Premium Monthly"
+                period: "1m"
+                access_level_id: "premium"
+                vendor_products:
+                  app_store:
+                    id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    product_id: "premium_monthly"
+                    base_plan_id: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/developer/apps/{app_id}/products/{product_id}/:
+    get:
+      summary: Get product
+      description: |
+        Returns the details of a single product, including its store product IDs per platform.
+
+        Learn more: [Products](https://adapty.io/docs/product)
+      operationId: getProduct
+      tags:
+        - Products
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: Product retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+              example:
+                id: "f1e2d3c4-b5a6-7890-abcd-ef1234567890"
+                title: "Premium Monthly"
+                period: "1m"
+                access_level_id: "premium"
+                vendor_products:
+                  app_store:
+                    id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    product_id: "premium_monthly"
+                    base_plan_id: null
+                  play_store:
+                    id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                    product_id: "premium_monthly"
+                    base_plan_id: "monthly"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update product
+      description: |
+        Replaces the product's configuration. All required fields must be provided.
+
+        Learn more: [Products](https://adapty.io/docs/product)
+      operationId: updateProduct
+      tags:
+        - Products
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreateRequest'
+            example:
+              title: "Premium Monthly"
+              period: "1m"
+              access_level_id: "premium"
+              ios_product_id: "premium_monthly_v2"
+              android_product_id: "premium_monthly"
+              android_base_plan_id: "monthly"
+      responses:
+        '200':
+          description: Product updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+              example:
+                id: "f1e2d3c4-b5a6-7890-abcd-ef1234567890"
+                title: "Premium Monthly"
+                period: "1m"
+                access_level_id: "premium"
+                vendor_products:
+                  app_store:
+                    id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    product_id: "premium_monthly_v2"
+                    base_plan_id: null
+                  play_store:
+                    id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                    product_id: "premium_monthly"
+                    base_plan_id: "monthly"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Paywalls ──────────────────────────────────────────────────────────────
+
+  /api/v1/developer/apps/{app_id}/paywalls/:
+    get:
+      summary: List paywalls
+      description: |
+        Returns a paginated list of paywalls configured for the app. Use the `id` of a paywall as `paywall_id` when creating or updating placements.
+
+        Learn more: [Paywalls](https://adapty.io/docs/paywalls)
+      operationId: listPaywalls
+      tags:
+        - Paywalls
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Paywalls retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPaywallList'
+              example:
+                data:
+                  - id: "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b"
+                    title: "Main Paywall"
+                    product_ids:
+                      - "f1e2d3c4-b5a6-7890-abcd-ef1234567890"
+                      - "a2b3c4d5-e6f7-8901-bcde-f12345678901"
+                meta:
+                  pagination:
+                    count: 1
+                    page: 1
+                    pages: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      summary: Create paywall
+      description: |
+        Creates a new paywall for the app. The returned `id` is used as `paywall_id` when creating placements. See [Create placement](/operations/createPlacement).
+
+        Learn more: [Paywalls](https://adapty.io/docs/paywalls)
+      operationId: createPaywall
+      tags:
+        - Paywalls
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaywallWriteRequest'
+            example:
+              title: "Main Paywall"
+              product_ids:
+                - "f1e2d3c4-b5a6-7890-abcd-ef1234567890"
+                - "a2b3c4d5-e6f7-8901-bcde-f12345678901"
+      responses:
+        '201':
+          description: Paywall created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Paywall'
+              example:
+                id: "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b"
+                title: "Main Paywall"
+                product_ids:
+                  - "f1e2d3c4-b5a6-7890-abcd-ef1234567890"
+                  - "a2b3c4d5-e6f7-8901-bcde-f12345678901"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/developer/apps/{app_id}/paywalls/{paywall_id}/:
+    get:
+      summary: Get paywall
+      description: |
+        Returns the details of a single paywall, including its product list.
+
+        Learn more: [Paywalls](https://adapty.io/docs/paywalls)
+      operationId: getPaywall
+      tags:
+        - Paywalls
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - $ref: '#/components/parameters/PaywallId'
+      responses:
+        '200':
+          description: Paywall retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Paywall'
+              example:
+                id: "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b"
+                title: "Main Paywall"
+                product_ids:
+                  - "f1e2d3c4-b5a6-7890-abcd-ef1234567890"
+                  - "a2b3c4d5-e6f7-8901-bcde-f12345678901"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update paywall
+      description: |
+        Replaces the paywall's title and product list. All required fields must be provided.
+
+        Learn more: [Paywalls](https://adapty.io/docs/paywalls)
+      operationId: updatePaywall
+      tags:
+        - Paywalls
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - $ref: '#/components/parameters/PaywallId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaywallWriteRequest'
+            example:
+              title: "Main Paywall"
+              product_ids:
+                - "f1e2d3c4-b5a6-7890-abcd-ef1234567890"
+                - "a2b3c4d5-e6f7-8901-bcde-f12345678901"
+                - "c3d4e5f6-a7b8-9012-cdef-123456789012"
+      responses:
+        '200':
+          description: Paywall updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Paywall'
+              example:
+                id: "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b"
+                title: "Main Paywall"
+                product_ids:
+                  - "f1e2d3c4-b5a6-7890-abcd-ef1234567890"
+                  - "a2b3c4d5-e6f7-8901-bcde-f12345678901"
+                  - "c3d4e5f6-a7b8-9012-cdef-123456789012"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Placements ────────────────────────────────────────────────────────────
+
+  /api/v1/developer/apps/{app_id}/placements/:
+    get:
+      summary: List placements
+      description: |
+        Returns a paginated list of placements configured for the app.
+
+        Learn more: [Placements](https://adapty.io/docs/placements)
+      operationId: listPlacements
+      tags:
+        - Placements
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Placements retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPlacementSummaryList'
+              example:
+                data:
+                  - id: "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a"
+                    developer_id: "onboarding"
+                    title: "Onboarding"
+                  - id: "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b"
+                    developer_id: "settings"
+                    title: "Settings"
+                meta:
+                  pagination:
+                    count: 2
+                    page: 1
+                    pages: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      summary: Create placement
+      description: |
+        Creates a new placement for the app and links it to a paywall.
+
+        Learn more: [Placements](https://adapty.io/docs/placements)
+      operationId: createPlacement
+      tags:
+        - Placements
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlacementWriteRequest'
+            example:
+              title: "Onboarding"
+              developer_id: "onboarding"
+              paywall_id: "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b"
+      responses:
+        '201':
+          description: Placement created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlacementDetail'
+              example:
+                id: "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a"
+                developer_id: "onboarding"
+                title: "Onboarding"
+                paywall_id: "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/developer/apps/{app_id}/placements/{placement_id}/:
+    get:
+      summary: Get placement
+      description: |
+        Returns the details of a single placement, including the paywall linked to it.
+
+        Learn more: [Placements](https://adapty.io/docs/placements)
+      operationId: getPlacement
+      tags:
+        - Placements
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - $ref: '#/components/parameters/PlacementId'
+      responses:
+        '200':
+          description: Placement retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlacementDetail'
+              example:
+                id: "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a"
+                developer_id: "onboarding"
+                title: "Onboarding"
+                paywall_id: "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update placement
+      description: |
+        Replaces the placement's configuration. All required fields must be provided. Use this endpoint to swap the paywall shown at this placement.
+
+        Learn more: [Placements](https://adapty.io/docs/placements)
+      operationId: updatePlacement
+      tags:
+        - Placements
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - $ref: '#/components/parameters/PlacementId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlacementWriteRequest'
+            example:
+              title: "Onboarding"
+              developer_id: "onboarding"
+              paywall_id: "b1c2d3e4-f5a6-7890-bcde-f12345678901"
+      responses:
+        '200':
+          description: Placement updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlacementDetail'
+              example:
+                id: "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a"
+                developer_id: "onboarding"
+                title: "Onboarding"
+                paywall_id: "b1c2d3e4-f5a6-7890-bcde-f12345678901"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Account Info ──────────────────────────────────────────────────────────
+
+  /api/v1/developer/me/:
+    get:
+      summary: Get account info
+      description: Returns the authenticated user's profile and the list of Adapty workspaces (companies) they belong to.
+      operationId: getMe
+      tags:
+        - Account Info
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Account info retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountInfo'
+              example:
+                email: "jane.doe@example.com"
+                name: "Jane Doe"
+                companies:
+                  - id: "cbfbff78-d084-45f9-aae2-5fb2120c99a6"
+                    title: "Acme Corp"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
 components:
+
   securitySchemes:
-    apikeyAuth:
-      type: apiKey
-      in: header
-      name: Authorization
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Authenticate using a Developer API token in the `Authorization` header:
+        ```
+        Authorization: Bearer dev_live_...
+        ```
+        To create a token, go to **Settings → Developer API** in the Adapty Dashboard and click **Generate token**. The full token value is shown only once.
+
+  parameters:
+    AppId:
+      name: app_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The unique identifier of the app. Returned by [List apps](/operations/listApps) and [Create app](/operations/createApp).
+    AccessLevelId:
+      name: access_level_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The unique identifier of the access level. Returned by [List access levels](/operations/listAccessLevels) and [Create access level](/operations/createAccessLevel).
+    ProductId:
+      name: product_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The unique identifier of the product. Returned by [List products](/operations/listProducts) and [Create product](/operations/createProduct).
+    PaywallId:
+      name: paywall_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The unique identifier of the paywall. Returned by [List paywalls](/operations/listPaywalls) and [Create paywall](/operations/createPaywall).
+    PlacementId:
+      name: placement_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The unique identifier of the placement. Returned by [List placements](/operations/listPlacements) and [Create placement](/operations/createPlacement).
+    PageNumber:
+      name: page[number]
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number for paginated results.
+    PageSize:
+      name: page[size]
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Number of items per page.
+
+  responses:
+    Unauthorized:
+      description: Authentication credentials are missing or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            errors:
+              - source: "non_field_errors"
+                errors: ["Authentication credentials were not provided."]
+            error_code: "not_authenticated"
+            status_code: 401
+    BadRequest:
+      description: The request body contains invalid or missing fields.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            errors:
+              - source: "title"
+                errors: ["This field is required."]
+            error_code: "validation_error"
+            status_code: 400
+    NotFound:
+      description: The requested resource does not exist or belongs to a different app.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            errors:
+              - source: null
+                errors: ["Not found."]
+            error_code: "not_found"
+            status_code: 404
+
+  schemas:
+
+    # ── Shared ────────────────────────────────────────────────────────────────
+
+    PaginationMeta:
+      type: object
+      properties:
+        pagination:
+          type: object
+          properties:
+            count:
+              type: integer
+              nullable: true
+              description: Total number of items across all pages.
+            page:
+              type: integer
+              nullable: true
+              description: Current page number.
+            pages:
+              type: integer
+              nullable: true
+              description: Total number of pages.
+
+    ErrorDetail:
+      type: object
+      properties:
+        source:
+          type: string
+          nullable: true
+          description: The field or component that produced the error.
+        errors:
+          type: array
+          items:
+            type: string
+          description: One or more error messages for this source.
+
+    ErrorResponse:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+        error_code:
+          type: string
+          description: A machine-readable error code.
+        status_code:
+          type: integer
+          description: The HTTP status code.
+
+    # ── Apps ──────────────────────────────────────────────────────────────────
+
+    AppSummary:
+      type: object
+      description: A summary of an Adapty app, returned in list responses.
+      required:
+        - id
+        - title
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique identifier of the app. Use this as `app_id` in all resource requests.
+        title:
+          type: string
+          description: The display name of the app.
+        sdk_key:
+          type: string
+          nullable: true
+          description: The public SDK key used to initialize the Adapty SDK in your app code.
+
+    AppDetail:
+      type: object
+      description: Full details of an Adapty app, including SDK and secret keys.
+      required:
+        - id
+        - title
+        - platforms
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique identifier of the app. Use this as `app_id` in all resource requests.
+        title:
+          type: string
+          description: The display name of the app.
+        sdk_key:
+          type: string
+          nullable: true
+          description: The public SDK key used to initialize the Adapty SDK in your app code.
+        secret_key:
+          type: string
+          nullable: true
+          description: The secret key used for [server-side API](https://adapty.io/docs/getting-started-with-server-side-api) authentication.
+        platforms:
+          type: array
+          items:
+            type: string
+            enum: [ios, android]
+          description: Platforms detected from the configured bundle IDs.
+        apple_bundle_id:
+          type: string
+          nullable: true
+          description: The iOS app bundle ID (e.g., `com.example.myapp`).
+        google_bundle_id:
+          type: string
+          nullable: true
+          description: The Android app package name (e.g., `com.example.myapp`).
+
+    AppCreateRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          description: The display name of the app.
+        apple_bundle_id:
+          type: string
+          nullable: true
+          description: The iOS app bundle ID. Setting this enables iOS platform support.
+        google_bundle_id:
+          type: string
+          nullable: true
+          description: The Android app package name. Setting this enables Android platform support.
+
+    AppUpdateRequest:
+      type: object
+      description: All fields are optional. Only provided fields are updated.
+      properties:
+        title:
+          type: string
+          nullable: true
+          description: The display name of the app.
+        apple_bundle_id:
+          type: string
+          nullable: true
+          description: The iOS app bundle ID.
+        google_bundle_id:
+          type: string
+          nullable: true
+          description: The Android app package name.
+
+    PaginatedAppSummaryList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppSummary'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ── Access Levels ─────────────────────────────────────────────────────────
+
+    AccessLevel:
+      type: object
+      description: An access level defines a tier of premium content in your app.
+      required:
+        - id
+        - sdk_id
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique identifier of the access level.
+        sdk_id:
+          type: string
+          description: The programmatic identifier used in your app code and as `access_level_id` when creating products. See [Create product](/operations/createProduct).
+        title:
+          type: string
+          nullable: true
+          description: The display name shown in the Adapty Dashboard.
+
+    AccessLevelCreateRequest:
+      type: object
+      required:
+        - sdk_id
+      properties:
+        sdk_id:
+          type: string
+          description: The programmatic identifier for this access level. Must be unique within the app. Cannot be changed after creation.
+        title:
+          type: string
+          nullable: true
+          description: The display name shown in the Adapty Dashboard.
+
+    AccessLevelUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          nullable: true
+          description: The display name shown in the Adapty Dashboard.
+
+    PaginatedAccessLevelList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessLevel'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ── Products ──────────────────────────────────────────────────────────────
+
+    VendorProduct:
+      type: object
+      description: A store-specific product mapping for a single platform.
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: The Adapty internal identifier of this vendor product entry.
+        product_id:
+          type: string
+          nullable: true
+          description: The product ID in the store (App Store product ID or Google Play product ID).
+        base_plan_id:
+          type: string
+          nullable: true
+          description: The Google Play base plan ID. Applicable only for Play Store subscriptions.
+
+    Product:
+      type: object
+      description: A product maps an in-app purchase item to an access level.
+      required:
+        - id
+        - title
+        - period
+        - access_level_id
+        - vendor_products
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique identifier of the product. Use this as an entry in `product_ids` when creating paywalls. See [Create paywall](/operations/createPaywall).
+        title:
+          type: string
+          description: The display name of the product.
+        period:
+          type: string
+          description: "The subscription period. One of: `1d`, `3d`, `1w`, `2w`, `1m`, `2m`, `3m`, `6m`, `1y`, `lifetime`."
+        access_level_id:
+          type: string
+          description: The `sdk_id` of the access level this product grants. Retrieve available access levels from [List access levels](/operations/listAccessLevels).
+        vendor_products:
+          type: object
+          description: Store product mappings keyed by store name. Possible keys are `app_store` and `play_store`.
+          additionalProperties:
+            $ref: '#/components/schemas/VendorProduct'
+
+    ProductCreateRequest:
+      type: object
+      required:
+        - title
+        - period
+        - access_level_id
+      properties:
+        title:
+          type: string
+          description: The display name of the product.
+        period:
+          type: string
+          description: "The subscription period. One of: `1d`, `3d`, `1w`, `2w`, `1m`, `2m`, `3m`, `6m`, `1y`, `lifetime`."
+        access_level_id:
+          type: string
+          description: The `sdk_id` of the access level this product grants. Retrieve available access levels from [List access levels](/operations/listAccessLevels).
+        ios_product_id:
+          type: string
+          nullable: true
+          description: The product ID in App Store Connect.
+        android_product_id:
+          type: string
+          nullable: true
+          description: The product ID in Google Play Console.
+        android_base_plan_id:
+          type: string
+          nullable: true
+          description: The base plan ID in Google Play Console. Required for Android subscriptions.
+        price_usd:
+          type: number
+          nullable: true
+          description: The price in USD. Used for analytics when store pricing data is unavailable.
+
+    PaginatedProductList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ── Paywalls ──────────────────────────────────────────────────────────────
+
+    Paywall:
+      type: object
+      description: A paywall is a collection of products offered at a single purchase point.
+      required:
+        - id
+        - title
+        - product_ids
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique identifier of the paywall. Use this as `paywall_id` when creating or updating placements. See [Create placement](/operations/createPlacement).
+        title:
+          type: string
+          description: The display name of the paywall shown in the Adapty Dashboard.
+        product_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Ordered list of Adapty product `id` values shown on this paywall. Retrieve product IDs from [List products](/operations/listProducts).
+
+    PaywallWriteRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          description: The display name of the paywall.
+        product_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          default: []
+          description: Ordered list of Adapty product `id` values (UUIDs) to include on this paywall. Retrieve available product IDs from [List products](/operations/listProducts).
+
+    PaginatedPaywallList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Paywall'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ── Placements ────────────────────────────────────────────────────────────
+
+    PlacementSummary:
+      type: object
+      description: A summary of a placement, returned in list responses.
+      required:
+        - id
+        - developer_id
+        - title
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique identifier of the placement.
+        developer_id:
+          type: string
+          description: The programmatic identifier passed to the Adapty SDK to fetch this placement's active paywall at runtime.
+        title:
+          type: string
+          description: The display name of the placement shown in the Adapty Dashboard.
+
+    PlacementDetail:
+      type: object
+      description: Full details of a placement, including the linked paywall.
+      required:
+        - id
+        - developer_id
+        - title
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique identifier of the placement.
+        developer_id:
+          type: string
+          description: The programmatic identifier passed to the Adapty SDK to fetch this placement's active paywall at runtime.
+        title:
+          type: string
+          description: The display name of the placement shown in the Adapty Dashboard.
+        paywall_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: The `id` of the paywall currently linked to this placement. Retrieve available paywall IDs from [List paywalls](/operations/listPaywalls).
+
+    PlacementWriteRequest:
+      type: object
+      required:
+        - title
+        - developer_id
+        - paywall_id
+      properties:
+        title:
+          type: string
+          description: The display name of the placement.
+        developer_id:
+          type: string
+          description: The programmatic identifier for this placement. Must be unique within the app. Passed to the Adapty SDK to fetch the active paywall at runtime.
+        paywall_id:
+          type: string
+          format: uuid
+          description: The Adapty `id` of the paywall to link to this placement. Retrieve available paywall IDs from [List paywalls](/operations/listPaywalls).
+
+    PaginatedPlacementSummaryList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlacementSummary'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ── Account Info ──────────────────────────────────────────────────────────
+
+    CompanyInfo:
+      type: object
+      description: An Adapty workspace the user belongs to.
+      required:
+        - id
+        - title
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique identifier of the workspace.
+        title:
+          type: string
+          description: The display name of the workspace.
+
+    AccountInfo:
+      type: object
+      description: The authenticated user's profile and workspace memberships.
+      required:
+        - email
+        - name
+        - companies
+      properties:
+        email:
+          type: string
+          format: email
+          description: The user's email address.
+        name:
+          type: string
+          description: The user's display name.
+        companies:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanyInfo'
+          description: The list of Adapty workspaces the user belongs to.
