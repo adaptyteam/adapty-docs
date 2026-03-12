@@ -1,0 +1,147 @@
+---
+title: "Quickstart guide for the Adapty Developer CLI"
+description: "Set up your Adapty account end-to-end using the Developer CLI — from app creation to a live placement, in a few commands."
+metadataTitle: "Developer CLI Quickstart | Adapty Docs"
+keywords: ['cli', 'developer cli', 'mcp']
+---
+
+import Tabs from '@site/src/components/Tabs.astro';
+import TabItem from '@site/src/components/TabItem.astro';
+
+The Adapty CLI lets you set up your app configuration entirely from the command line. Use it as an alternative to the [dashboard quickstart](integrate-payments) if you prefer terminal tooling or MCP clients.
+
+:::note
+Connecting Adapty to App Store Connect and Google Play still requires a one-time setup in the dashboard — covered in step 3.
+:::
+
+By the end, your app, access level, product, paywall, and placement are all visible in the [Adapty dashboard](https://app.adapty.io).
+
+## 1. Install the CLI
+
+```bash
+npm install -g adapty-cli
+```
+
+Requires Node.js 18 or later.
+
+## 2. Authenticate
+
+Run the login command to connect the CLI to your Adapty account.
+
+```bash
+adapty auth login
+```
+
+The CLI opens a browser tab. Match the code shown in the terminal to the code shown in the browser, then click **Authorize**. The terminal confirms when authentication is complete.
+
+## 3. Create your app
+
+An app in Adapty represents your mobile application. One Adapty app connects to both App Store and Google Play — you only need to create one, regardless of how many stores you publish to.
+
+<Tabs>
+  <TabItem value="ios-android" label="iOS + Android">
+    ```bash
+    adapty apps create --title "My App" --platform ios --platform android --apple-bundle-id com.example.app --google-bundle-id com.example.app
+    ```
+  </TabItem>
+  <TabItem value="ios" label="iOS only">
+    ```bash
+    adapty apps create --title "My App" --platform ios --apple-bundle-id com.example.app
+    ```
+  </TabItem>
+  <TabItem value="android" label="Android only">
+    ```bash
+    adapty apps create --title "My App" --platform android --google-bundle-id com.example.app
+    ```
+  </TabItem>
+</Tabs>
+
+The command returns an `<app-id>`. Use this ID in all subsequent commands.
+
+:::important
+Before continuing, connect your app to App Store Connect and Google Play in the Adapty dashboard. Product IDs from both stores are required in step 5.
+
+- [Connect App Store Connect](app-store-connection-configuration)
+- [Connect Google Play](google-play-store-connection-configuration)
+:::
+
+## 4. Create an access level (optional)
+
+[Access levels](access-level) control what users can access after purchase. Instead of checking whether a user bought a specific product, your app checks whether the user has a given access level. This decouples your app logic from specific product IDs.
+
+A `premium` access level is automatically created with every new app. **For most apps, you can skip this step.** Use `premium` as the access level ID in step 5.
+
+Only run this command if different products unlock different features for different user groups — for example, if a "Basic" subscriber and a "Pro" subscriber get access to different parts of the app.
+
+```bash
+adapty access-levels create --app <app-id> --sdk-id "pro" --title "Pro"
+```
+
+- `--sdk-id` is the identifier you'll use in your app code to check whether a feature should be available to the user (for example, `if user.hasAccessLevel("pro")`). If you skip this step and use the default access level, its `--sdk-id` is `premium`.
+- `--title` is a display label for your own reference in the Adapty dashboard.
+
+The command returns an `<access-level-id>`.
+
+## 5. Create a product
+
+In Adapty, a [product](product) represents anything your app sells — a subscription or a one-time purchase. Items from App Store Connect and Google Play can be grouped into a single Adapty product and managed from one place.
+
+You'll need the product IDs from each store: the Apple product ID from App Store Connect, and the Android product ID and base plan ID from Google Play Console. See [Products](quickstart-products) for details on where to find them.
+
+If you skipped step 4, use the `default_access_level.id` returned by the `apps create` command in step 3 as your `<access-level-id>`.
+
+<Tabs>
+  <TabItem value="ios-android" label="iOS + Android">
+    ```bash
+    adapty products create --app <app-id> --title "My Product" --access-level-id <access-level-id> --period monthly --ios-product-id <your.apple.id> --android-product-id <your.google.id> --android-base-plan-id <your.base-plan.id>
+    ```
+  </TabItem>
+  <TabItem value="ios" label="iOS only">
+    ```bash
+    adapty products create --app <app-id> --title "My Product" --access-level-id <access-level-id> --period monthly --ios-product-id <your.apple.id>
+    ```
+  </TabItem>
+  <TabItem value="android" label="Android only">
+    ```bash
+    adapty products create --app <app-id> --title "My Product" --access-level-id <access-level-id> --period monthly --android-product-id <your.google.id> --android-base-plan-id <your.base-plan.id>
+    ```
+  </TabItem>
+</Tabs>
+
+The command returns a `<product-id>`.
+
+## 6. Create a paywall
+
+A [paywall](paywalls) is the container that holds your products. In Adapty, paywalls are the only way to deliver products to users. Every product must be in a paywall before it can appear in your app.
+
+<Tabs>
+  <TabItem value="single" label="One product">
+    ```bash
+    adapty paywalls create --app <app-id> --title "My Paywall" --product-id <product-id>
+    ```
+  </TabItem>
+  <TabItem value="multiple" label="Multiple products">
+    ```bash
+    adapty paywalls create --app <app-id> --title "My Paywall" --product-id <product-id-1> --product-id <product-id-2>
+    ```
+  </TabItem>
+</Tabs>
+
+The command returns a `<paywall-id>`.
+
+## 7. Create a placement
+
+A [placement](placements) is the point in your app where you show a paywall. The only thing you hardcode in your app code is the placement ID. Everything else — which paywall to show and to which users — is managed in the dashboard without releasing a new app version.
+
+`--developer-id` is the string you'll reference later in your app code when you ask Adapty which paywall to display at this point. Pick something that describes the location, like `"main"`, `"onboarding"`, or `"settings"`.
+
+```bash
+adapty placements create --app <app-id> --title "Main" --developer-id "main" --paywall-id <paywall-id>
+```
+
+## What's next
+
+All entities are now visible in the [Adapty dashboard](https://app.adapty.io). Next:
+
+- [Design your paywall](adapty-paywall-builder) — use the no-code Paywall Builder to add visuals, layout, and copy to the paywall you just created.
+- [Integrate the Adapty SDK](quickstart-sdk) — add the SDK to your app to fetch and display the placement.
