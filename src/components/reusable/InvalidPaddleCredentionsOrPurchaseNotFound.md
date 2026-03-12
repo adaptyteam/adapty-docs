@@ -15,7 +15,7 @@ The request failed for one of two reasons: either the Paddle credentials in [App
 
 #### Response example
 
-```JSON showLineNumbers
+```json showLineNumbers
 {
   "errors": [
     {
