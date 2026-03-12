@@ -1,5 +1,5 @@
 ---
-title: "Authentication"
+title: "Authentication in the Adapty Developer CLI"
 description: "How to authenticate with the Adapty Developer CLI."
 metadataTitle: "Developer CLI Authentication | Adapty Docs"
 keywords: ['cli', 'developer', 'authentication', 'mcp']
@@ -12,7 +12,7 @@ The CLI requires authentication to call the Adapty API. Two authentication metho
 
 ## Log in with device flow
 
-The device flow lets you authenticate interactively without managing tokens manually. The CLI opens the Adapty Dashboard in your browser, where you confirm a short-lived code and authorize access. Your credentials are saved to `~/.adapty/credentials.json` for future commands.
+The device flow lets you authenticate interactively without managing tokens manually. The CLI opens the Adapty Dashboard in your browser, where you confirm a short-lived code and authorize access. Your credentials are saved to `~/.config/adapty/config.json` for future commands.
 
 To log in:
 
@@ -25,9 +25,16 @@ To log in:
 4. Click **Authorize**. The browser shows "CLI authorized! You can close this tab."
 5. Back in the terminal, the CLI confirms you are authenticated.
 
-:::note
-Screenshot needed: browser auth page at /cli-auth showing the code, Authorize button, and Deny button.
-:::
+<Zoom>
+    <img src={require('./img/authorize-cli.webp').default}
+         style={{
+             border: '1px solid #727272', /* border width and color */
+             width: '500px', /* image width */
+             display: 'block', /* for alignment */
+             margin: '0 auto' /* center alignment */
+         }}
+    />
+</Zoom>
 
 If the code expires before you authorize, or if you click **Deny**, run the following command again to restart the flow:
 
@@ -39,31 +46,17 @@ adapty auth login
 
 A manual token is a static credential you create in the Adapty Dashboard. Use it in CI/CD pipelines and scripts where a browser is not available.
 
-To create a token, in **Settings → Developer API**, click **Generate token**. Copy the token — it won't be shown again.
+To create a token, in **Settings → Developer API**, click **Create token**. Copy the token — it won't be shown again.
 
-Pass the token to the CLI in one of two ways:
+Set the `ADAPTY_TOKEN` environment variable before running any command:
 
-- **`--token` flag**: Applies to a single command.
-  ```bash
-  adapty auth status --token your_token_here
-  ```
-- **`ADAPTY_TOKEN` environment variable**: Applies to all commands in the session.
-  ```bash
-  export ADAPTY_TOKEN=your_token_here
-  adapty auth status
-  ```
-
-## Token precedence
-
-When multiple credential sources are present, the CLI uses this order:
-
-| Priority | Source |
-|---|---|
-| 1 (highest) | `--token` flag |
-| 2 | `ADAPTY_TOKEN` environment variable |
-| 3 | `~/.adapty/credentials.json` (set by `adapty auth login`) |
-
-The first matching source is used; the others are ignored.
+```bash
+export ADAPTY_TOKEN=your_token_here
+adapty apps list --app <app-id>
+```
+:::note
+When `ADAPTY_TOKEN` is set, it takes precedence over any token stored by `adapty auth login`.
+:::
 
 ## Manage authentication
 
@@ -75,19 +68,49 @@ To see your current authentication state, run:
 adapty auth status
 ```
 
-:::note
-Screenshot needed: example terminal output of `adapty auth status` when authenticated and when unauthenticated.
-:::
+When authenticated, the output shows your email, a masked token prefix, and the path to the local config file:
+
+```
+Email: you@example.com
+Token: abcd1234****
+Config: ~/.config/adapty/config.json
+```
+
+When not authenticated:
+
+```
+Not authenticated. Run `adapty auth login`.
+```
+
+### Verify your token
+
+To confirm your token is valid and see your account details, run:
+
+```bash
+adapty auth whoami
+```
+
+Unlike `adapty auth status`, this command makes a live request to the server to verify the token.
 
 ### Log out
 
-To remove your stored credentials, run:
+To clear your stored credentials locally, run:
 
 ```bash
 adapty auth logout
 ```
 
-This deletes `~/.adapty/credentials.json`. Tokens passed via `--token` or `ADAPTY_TOKEN` are not affected.
+This clears `~/.config/adapty/config.json`. The token remains valid server-side until it expires — if you need to invalidate it immediately, use `adapty auth revoke` instead.
+
+### Revoke your token
+
+To invalidate the token on the server and clear it locally, run:
+
+```bash
+adapty auth revoke
+```
+
+Use this when you want to fully invalidate a token — for example, if your credentials may have been compromised. After revoking, run `adapty auth login` to authenticate again.
 
 ## Token errors
 
