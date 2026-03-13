@@ -1,0 +1,98 @@
+---
+title: "How profiles work"
+description: "Understand how Adapty creates, tracks, and links user profiles — including anonymous profiles, identified users, and parent/inheritor relationships."
+metadataTitle: "How Adapty Profiles Work | Adapty Docs"
+keywords: ['profile', 'customer_user_id', 'anonymous profile', 'parent profile', 'inheritor profile', 'profile record']
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Sharingaccesslevel from '@site/src/components/reusable/sharingaccesslevel.md';
+
+Every user in your app gets an Adapty profile that tracks their purchases, events, and subscription state. Understanding how profiles are created and linked helps you prevent integration bugs, avoid data fragmentation, and interpret the data in the [Profiles](profiles-crm) section.
+
+## Profile creation
+
+Adapty automatically creates a profile the first time a user opens your app.
+
+**Without a Customer User ID**, the profile is anonymous. A new anonymous profile is created each time:
+- A user reinstalls the app
+- A user logs out of your app (when your app calls `Adapty.logout()`)
+
+Purchases are tied to the app installation, not to a persistent user identity.
+
+**With a Customer User ID**, the profile persists across reinstalls and devices. Using a customer user ID lets you:
+
+1. Track a user across app reinstalls and multiple devices.
+2. Find users by their customer user ID in the [**Profiles**](profiles-crm) section.
+3. Use the customer user ID in the [server-side API](getting-started-with-server-side-api).
+4. Adapty sends the customer user ID to all integrations.
+
+Profile behavior with a customer user ID depends on when you set it:
+
+- **At SDK activation**: Adapty uses the existing profile with that customer user ID (for returning users) or creates a new profile (for first-time users).
+- **After SDK activation**: Adapty creates an anonymous profile on activation. When you later identify the user, Adapty links the customer user ID to the anonymous profile (for first-time users) or switches to the existing profile with that ID (for returning users).
+
+**Which approach to use:**
+
+- **Customer user ID available at app launch** (for example, stored from a previous session) — pass it to `activate()` when initializing the SDK.
+- **Users sign in after the app launches** — call `identify()` after authentication. Adapty links the ID to the current profile (if the ID is new) or switches to the existing profile (if the ID already exists).
+- **Users can purchase before logging in** — call `identify()` after login. If the customer user ID already exists in Adapty, retrieve the profile afterwards to sync the current access level.
+
+For implementation details, see the [identifying users](identifying-users) SDK guide.
+
+:::note
+If a returning user previously used your app without a customer user ID, those anonymous profiles are not automatically merged when you start identifying at SDK activation. To maintain complete history for such users, use `identify()` after login instead.
+:::
+
+## Parent and inheritor profiles
+
+When multiple profiles are connected to the same subscription (through the same Apple/Google ID), Adapty tracks them using a parent-inheritor relationship. This happens when a user reinstalls the app without identifying, or when different identified users restore purchases on the same device.
+
+The **parent profile** is the one that made the purchase—not necessarily the first profile created. For example: you install the app and make no purchase, then reinstall and buy a subscription. The second profile becomes the parent because it made the purchase. The first profile becomes the inheritor and gains access through sharing.
+
+**How events are distributed:**
+
+- **Transactional events** (purchases, renewals, cancellations, billing issues, grace periods, refunds): Only appear on the **parent profile** that made the purchase. All subscription renewals and updates continue appearing on this profile.
+- **access_level_updated events**: Appear on **both parent and inheritor profiles** whenever the access level state changes. This keeps all connected profiles updated about their current access status.
+
+The parent profile shows the complete transaction history. Inheritor profiles show only their access level updates and a link to the parent profile in the **Access level** section.
+
+<Zoom>
+  <img src="/assets/shared/img/98d0dad-non-original_profile.webp"
+  style={{
+    border: '1px solid #727272',
+    width: '700px',
+    display: 'block',
+    margin: '0 auto'
+  }}
+/>
+</Zoom>
+
+## Sharing paid access between user accounts
+
+:::link
+Main article: [Sharing paid access between user accounts](sharing-paid-access-between-user-accounts)
+:::
+
+To set your access level sharing policy, on the [**General**](general) settings page, select a sharing option. You can set a separate policy for the [sandbox environment](test-purchases-in-sandbox).
+
+<Sharingaccesslevel />
+
+## Event timestamps with future dates (Apple/iOS)
+
+This behavior is specific to the Apple App Store. Google Play's notification system does not send events in advance.
+
+Event timestamps in profiles and integrations may show future dates because Apple sends renewal events in advance.
+
+- **Why it happens**: Apple does this to ensure subscriptions renew automatically before expiring, preventing user service interruptions. For more details, check Apple's Developer Forum: [Server Notifications for Subscriptions](https://developer.apple.com/forums/tags/app-store-server-notifications).
+- **Event types affected**: Typically, this applies to subscription renewals and trial-to-paid conversions. These events may have future timestamps because Apple notifies systems about them ahead of time.
+- **Other event types**: Additional in-app purchases and subscription plan changes are recorded with their actual timestamps because these events cannot be predicted in advance.
+- **Impact on Analytics and Event Feed**: These events will only appear in **Analytics** and the **Event Feed** once their timestamps have passed. Events with future timestamps are not shown in either section.
+- **Impact on Integrations**: Adapty sends events to integrations as soon as they are received. If an event has a future timestamp, Adapty sends it to your integration with the future timestamp unchanged.
+
+## Next steps
+
+- To use the Profiles dashboard to find and manage users, see [Profiles](profiles-crm).
+- To set up user identification in your app, see the [identifying users](identifying-users) SDK guide.
+- To configure access sharing policy, see [Sharing paid access between user accounts](sharing-paid-access-between-user-accounts).
