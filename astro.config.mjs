@@ -27,7 +27,20 @@ export default defineConfig({
     inlineStylesheets: 'never',
   },
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [
+      tailwindcss(),
+    ],
+    server: {
+      watch: {
+        ignored: [
+          '**/.DS_Store',
+          '**/.Spotlight-V100/**',
+          '**/.DocumentRevisions-V100/**',
+          '**/.astro/content-modules.mjs',
+          '**/src/assets/**',
+        ],
+      },
+    },
     define: {
       global: 'window',
       'process.env': '{}',
