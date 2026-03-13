@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
-import { getAllDocFiles, extractLinks, categorizeLinks } from './scan.mjs';
+import path from 'node:path';
+import { getAllDocFiles, extractLinks, extractReusableImports, categorizeLinks } from './scan.mjs';
 import { checkExternalUrl } from './check-external.mjs';
 import { checkInternalLink, isLoginRedirect, isCaptchaRedirect } from './check-internal.mjs';
 import { classifyResults } from './classify.mjs';
@@ -28,14 +29,34 @@ async function runWithConcurrency(tasks, limit) {
 export async function orchestrate(config) {
   const { docsDir, liveSiteBase, concurrency, timeoutMs, externalOnly, internalOnly } = config;
 
+  const reusableDir = 'src/components/reusable';
+
   console.log('Scanning docs directory...');
-  const files = await getAllDocFiles(docsDir);
-  console.log(`Found ${files.length} doc files.`);
+  const docFiles = await getAllDocFiles(docsDir);
+  const reusableFiles = await getAllDocFiles(reusableDir);
+  const files = [...docFiles, ...reusableFiles];
+  console.log(`Found ${docFiles.length} doc files + ${reusableFiles.length} reusable snippets.`);
+
+  // Build reverse map: reusable filename → [article slug, ...]
+  const reusableImporters = new Map();
 
   const allLinks = [];
-  for (const file of files) {
+  for (const file of docFiles) {
     const content = await readFile(file, 'utf-8');
     allLinks.push(...extractLinks(content, file, docsDir));
+
+    const imports = extractReusableImports(content);
+    const slug = path.basename(file).replace(/\.(md|mdx)$/, '');
+    for (const reusableFile of imports) {
+      if (!reusableImporters.has(reusableFile)) reusableImporters.set(reusableFile, []);
+      reusableImporters.get(reusableFile).push(slug);
+    }
+  }
+  const reusableFileNames = new Set();
+  for (const file of reusableFiles) {
+    const content = await readFile(file, 'utf-8');
+    allLinks.push(...extractLinks(content, file, reusableDir));
+    reusableFileNames.add(path.basename(file));
   }
   console.log(`Found ${allLinks.length} total links.`);
 
@@ -50,12 +71,24 @@ export async function orchestrate(config) {
   const errors = [];
   const warnings = [];
 
+  // Flag external links to our own docs — these should be internal links
+  // Exclude: llms*.txt, *.md files (used in AI tool instructions), and API reference routes
+  const SELF_DOCS_RE = /^https?:\/\/(www\.)?adapty\.io\/docs(\/|$)/;
+  const SELF_LINK_EXCEPTIONS = /\.(txt|md)$|\/api-adapty\/|\/api-web\/|\/api-export-analytics\//;
+  for (const link of externalLinks) {
+    if (SELF_DOCS_RE.test(link.url) && !SELF_LINK_EXCEPTIONS.test(link.url)) {
+      errors.push({ ...link, type: 'external', status: 'SELF_LINK', error: 'Use an internal link instead of a full URL to adapty.io/docs' });
+    }
+  }
+
   // External checks
   if (!internalOnly) {
-    console.log(`Checking ${uniqueExternalUrls.length} external URLs (concurrency: ${concurrency})...`);
+    const selfLinkUrls = new Set(errors.filter(e => e.status === 'SELF_LINK').map(e => e.url));
+    const externalUrlsToCheck = uniqueExternalUrls.filter(url => !selfLinkUrls.has(url));
+    console.log(`Checking ${externalUrlsToCheck.length} external URLs (concurrency: ${concurrency})...`);
     const externalResults = new Map();
 
-    const tasks = uniqueExternalUrls.map(url => async () => {
+    const tasks = externalUrlsToCheck.map(url => async () => {
       const result = await checkExternalUrl(url, timeoutMs);
       externalResults.set(url, result);
       if (!result.ok) process.stdout.write('x');
@@ -116,5 +149,5 @@ export async function orchestrate(config) {
   const whitelist = await loadWhitelist();
   const { uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings } = classifyResults(errors, warnings, whitelist);
 
-  return { files, allLinks, uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings };
+  return { files, allLinks, uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings, reusableImporters, reusableFileNames, docsDir, reusableDir: path.resolve(reusableDir) };
 }

@@ -1,8 +1,8 @@
 # check-links
 
-Scans all `.md`/`.mdx` files in `src/content/docs`, extracts links, and checks them. External URLs are verified via `curl`; internal links are resolved against the doc file index. Results are classified into three tiers and output as either an HTML report or GitHub Actions annotations.
+Scans all `.md`/`.mdx` files in `src/content/docs` and `src/components/reusable`, extracts links, and checks them. External URLs are verified via `curl`; internal links are resolved against the doc file index. Results are classified into three tiers and output as either an HTML report or GitHub Actions annotations.
 
-No npm dependencies — uses only Node built-ins and `curl`.
+Requires one npm dependency: `github-slugger` (for heading anchor generation matching rehype-slug). Uses `curl` for external checks.
 
 ## Usage
 
@@ -60,7 +60,8 @@ Links that work but point to the wrong place. Reported but don't block CI.
 
 - **Redirects** — URL resolves but redirects to a different destination
 - **Internal redirects** — slug not in source files, but the live site (CloudFront) resolves it to a different page
-- **Missing anchors** — page exists but the `#fragment` target is absent from the HTML
+- **Missing anchors** — page exists but the `#fragment` target is absent from the page headings
+- **Self-links** — external URLs pointing to `adapty.io/docs` that should be internal links instead
 
 ### Manual check required
 
@@ -107,6 +108,9 @@ Written to `_temp/link-report.html`. Features:
 - Four main tabs: **Total**, **Broken links**, **Stale links**, **Manual check**
 - Subtabs within each: All, By link, By file, By status, External by domain, Internal by page
 - Search filtering scoped to the active tab
+- Clickable source links to the live article on adapty.io/docs
+- Clickable target URLs (internal links resolve to the live site)
+- **VS** button next to each source — opens the file at the exact line in VSCode via `vscode://file/` deep link
 
 ### LLM report (local development)
 
@@ -125,19 +129,19 @@ Defined in `.github/workflows/check-links.yml`. Two jobs:
 
 | Job | Runs on | Blocks PR | What it checks |
 |-----|---------|-----------|----------------|
-| `internal-links` | All pushes and PRs to `main`/`develop` | Yes | `--internal-only` — file existence, anchors, internal redirects |
-| `external-links` | Pushes to `main` only | No (`continue-on-error`) | `--external-only` — HTTP status, redirects, bot detection |
+| `internal-links` | Pushes and PRs to `main` | Yes | `--internal-only` — file existence, anchors, internal redirects |
+| `external-links` | Manual dispatch only | No (`continue-on-error`) | `--external-only` — HTTP status, redirects, bot detection |
 
-External checks are advisory because third-party sites can be temporarily down or rate-limit CI runners.
+External checks run only via manual dispatch because third-party sites can be temporarily down or rate-limit CI runners. Use the **Run workflow** button in the Actions tab and select `all` or `external-only` to trigger them.
 
 ## Module structure
 
 ```
 scripts/check-links/
 ├── index.mjs            # CLI entry point — arg parsing, format selection, exit code
-├── scan.mjs             # getAllDocFiles(), extractLinks(), categorizeLinks()
+├── scan.mjs             # getAllDocFiles(), extractLinks(), extractReusableImports(), categorizeLinks()
 ├── check-external.mjs   # curl-based HTTP checks, bot/rate-limit detection, anchor verification
-├── check-internal.mjs   # Doc index, slug resolution, heading ID extraction, live-site fallback
+├── check-internal.mjs   # Doc index, slug resolution, heading ID extraction (incl. reusable imports), live-site fallback
 ├── classify.mjs         # Dedup + three-tier severity split + whitelist filtering
 ├── runner.mjs           # Orchestration pipeline with concurrency pool
 ├── whitelist.mjs        # Whitelist loader and URL matcher
@@ -156,7 +160,7 @@ scripts/check-links/
 ```
 index.mjs
   → runner.orchestrate(config)
-      → scan: find files → extract links → categorize (external/internal)
+      → scan: find doc files + reusable snippets → extract links → categorize (external/internal)
       → check-external: curl each URL (per-domain serialized, concurrent across domains)
       → check-internal: resolve slugs against file index, fall back to live site
       → classify: dedup → split into errors / warnings / manual-check / whitelisted
@@ -185,6 +189,10 @@ The script reads the LLM report (`_temp/link-report.md`), extracts redirect entr
 
 **External URLs**: Each URL is checked via `curl` with browser-like headers to avoid bot detection. Requests to the same domain are serialized; different domains run in parallel. If a URL has a `#fragment`, the page HTML is fetched and searched for a matching `id` attribute. Text fragments (`#:~:text=`) are skipped since they're browser highlight directives, not element anchors. When comparing original and final URLs, tracking parameters are normalized away. Locale-only redirects (where the only difference is a locale path segment like `/pt-BR`) are detected and classified as manual-check items rather than stale links.
 
-**Internal links**: Slugs are resolved against a Map built from all doc filenames (both basename and relative path). If a slug isn't found locally, the tool checks `https://adapty.io/docs/{slug}` as a fallback — if that resolves, it's classified as an internal redirect rather than broken.
+**Internal links**: Slugs are resolved against a Map built from all doc filenames (both basename and relative path). If a slug isn't found locally, the tool checks `https://adapty.io/docs/{slug}` as a fallback — if that resolves, it's classified as an internal redirect rather than broken. Anchor checking uses `github-slugger` to generate heading IDs matching rehype-slug behavior, and also collects headings from imported reusable components.
+
+**Reusable components**: Files in `src/components/reusable/` are scanned for links alongside doc files. The runner builds a reverse map of which articles import each reusable component, used by the HTML report to link reusable sources to live articles.
+
+**Self-link detection**: External URLs pointing to `adapty.io/docs` are flagged as errors — these should be internal links. Exceptions: `.txt`/`.md` files (AI tool instructions) and API reference routes.
 
 **Runtime API routes** (`api-adapty/`, `api-web/`, `api-export-analytics/`): These are generated at build time from OpenAPI specs and don't exist as source files. They're checked against the live site directly.

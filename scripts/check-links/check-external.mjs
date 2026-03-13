@@ -71,6 +71,7 @@ export async function curlCheck(url, timeoutMs = 10000) {
       status,
       ok: status >= 200 && status < 400,
       redirect: redirected ? finalUrl : null,
+      finalUrl,
       localeRedirect: localeOnly || undefined,
     };
   } catch (err) {
@@ -145,7 +146,7 @@ export async function checkExternalUrl(url, timeoutMs = 10000) {
 
     // If the page is OK and has an anchor, verify the anchor exists in the HTML
     const fragmentMatch = url.match(/#(.+)$/);
-    if (result.ok && fragmentMatch && !fragmentMatch[1].startsWith(':~:text=')) {
+    if (result.ok && fragmentMatch && !fragmentMatch[1].startsWith(':~:text=') && !fragmentMatch[1].startsWith('/')) {
       const anchor = fragmentMatch[1];
       const pageUrl = url.replace(/#.*$/, '');
       const found = await checkAnchorOnPage(pageUrl, anchor, timeoutMs);

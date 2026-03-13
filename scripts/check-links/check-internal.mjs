@@ -1,7 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { getAllDocFiles } from './scan.mjs';
+import { getAllDocFiles, extractReusableImports } from './scan.mjs';
 import { curlCheck, checkExternalUrl } from './check-external.mjs';
+import GithubSlugger from 'github-slugger';
 
 // Prefixes for routes generated at runtime (OpenAPI specs, etc.)
 const RUNTIME_ROUTE_PREFIXES = [
@@ -20,6 +21,7 @@ const LOGIN_PATTERNS = [
   /appleid\.apple\.com/i, /idmsa\.apple\.com/i,
   /play\.google\.com\/console\/about/i,
   /ads\.tiktok\.com\/i18n\/home\?redirect=/i,
+  /console\.aws\.amazon\.com\/iamv2\b/i,
 ];
 
 const CAPTCHA_PATTERNS = [
@@ -38,32 +40,44 @@ export function isCaptchaRedirect(redirectUrl) {
 /**
  * Generate a heading ID the same way rehype-slug does.
  */
+// Use github-slugger for heading ID generation
+const slugger = new GithubSlugger();
 function slugify(text) {
-  return text
-    .toLowerCase()
-    .replace(/<[^>]+>/g, '')
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
+  return slugger.slug(text);
 }
 
 const headingIdCache = new Map();
+
+function collectHeadingIds(content, ids) {
+  const headingRe = /^#{1,6}\s+(.+)$/gm;
+  let m;
+  while ((m = headingRe.exec(content)) !== null) {
+    const raw = m[1].trim();
+    const customMatch = raw.match(/\{#([^}]+)\}\s*$/);
+    if (customMatch) {
+      ids.add(customMatch[1]);
+    } else {
+      ids.add(slugify(raw));
+    }
+  }
+}
+
 async function getHeadingIds(filePath) {
   if (headingIdCache.has(filePath)) return headingIdCache.get(filePath);
   const ids = new Set();
+  slugger.reset();
   try {
     const content = await readFile(filePath, 'utf-8');
-    const headingRe = /^#{1,6}\s+(.+)$/gm;
-    let m;
-    while ((m = headingRe.exec(content)) !== null) {
-      const raw = m[1].trim();
-      const customMatch = raw.match(/\{#([^}]+)\}\s*$/);
-      if (customMatch) {
-        ids.add(customMatch[1]);
-      } else {
-        ids.add(slugify(raw));
-      }
+    collectHeadingIds(content, ids);
+
+    // Also collect headings from imported reusable components
+    const reusableImports = extractReusableImports(content);
+    for (const fileName of reusableImports) {
+      try {
+        const reusablePath = path.join('src/components/reusable', fileName);
+        const reusableContent = await readFile(reusablePath, 'utf-8');
+        collectHeadingIds(reusableContent, ids);
+      } catch { /* reusable file not found — skip */ }
     }
   } catch { /* ignore */ }
   headingIdCache.set(filePath, ids);

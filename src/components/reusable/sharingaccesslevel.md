@@ -6,13 +6,13 @@ no_index: true
 
 **Enabled (default)**
 
-Identified users (those with a [Customer User ID](identifying-users#setting-customer-user-id-on-configuration)) can share the same [access level](https://adapty.io/docs/access-level) provided by Adapty if their device is signed in to the same Apple/Google ID. This is useful when a user reinstalls the app and logs in with a different email — they’ll still have access to their previous purchase. With this option, multiple identified users can share the same access level.
+Identified users (those with a [Customer User ID](identifying-users#set-customer-user-id-on-configuration)) can share the same [access level](https://adapty.io/docs/access-level) provided by Adapty if their device is signed in to the same Apple/Google ID. This is useful when a user reinstalls the app and logs in with a different email — they’ll still have access to their previous purchase. With this option, multiple identified users can share the same access level.
 
 Even though the access level is shared, all past and future transactions are logged as events in the original Customer User ID to maintain consistent analytics and keep a complete transaction history — including trial periods, subscription purchases, renewals, and more, linked to the same profile.
 
 **Transfer access to new user**
 
-Identified users can keep accessing the [access level](access-level) provided by Adapty, even if they log in with a different [Customer User ID](identifying-users#setting-customer-user-id-on-configuration) or reinstall the app, as long as the device is signed in to the same Apple/Google ID.
+Identified users can keep accessing the [access level](access-level) provided by Adapty, even if they log in with a different [Customer User ID](identifying-users#set-customer-user-id-on-configuration) or reinstall the app, as long as the device is signed in to the same Apple/Google ID.
 
 Unlike the previous option, Adapty transfers the purchase between identified users. This ensures that the purchased content is available, but only one user can have access at a time. For example, if UserA buys a subscription and UserB logs in on the same device and restores transactions, UserB will gain access to the subscription, and it will be revoked from UserA.
 
