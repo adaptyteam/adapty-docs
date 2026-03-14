@@ -84,7 +84,7 @@ async function getHeadingIds(filePath) {
   return ids;
 }
 
-// Doc index: Map<slug, filePath>
+// Doc index: Map<lowercased-slug, filePath>
 let docIndex = null;
 async function buildDocIndex(docsDir) {
   if (docIndex) return docIndex;
@@ -93,11 +93,26 @@ async function buildDocIndex(docsDir) {
   for (const f of files) {
     const basename = path.basename(f).replace(/\.(md|mdx)$/, '');
     const rel = path.relative(docsDir, f).replace(/\.(md|mdx)$/, '');
-    if (!docIndex.has(basename)) docIndex.set(basename, f);
-    if (!docIndex.has(rel)) docIndex.set(rel, f);
+    const baseKey = basename.toLowerCase();
+    const relKey = rel.toLowerCase();
+    if (!docIndex.has(baseKey)) docIndex.set(baseKey, f);
+    if (!docIndex.has(relKey)) docIndex.set(relKey, f);
+
+    // Also index customSlug from frontmatter
+    try {
+      const content = await readFile(f, 'utf-8');
+      const slugMatch = content.match(/^customSlug:\s*["']?\/?([^"'\n]+)["']?\s*$/m);
+      if (slugMatch) {
+        const customKey = slugMatch[1].trim().toLowerCase();
+        if (!docIndex.has(customKey)) docIndex.set(customKey, f);
+      }
+    } catch { /* ignore */ }
   }
   return docIndex;
 }
+
+/** Expose the doc index for external use (e.g. diff mode). */
+export { buildDocIndex };
 
 /**
  * Check an internal doc link. Resolves slug to file, checks anchors,
@@ -112,11 +127,11 @@ export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs 
     return { ok: false, status: 'MALFORMED_URL', error: `Malformed URL — invalid scheme "${badPrefix}://"` };
   }
 
-  const slug = urlWithoutAnchor.replace(/^\.?\//, '').replace(/\/$/, '').replace(/\.(md|mdx)$/, '');
+  const rawSlug = urlWithoutAnchor.replace(/^\.?\//, '').replace(/\/$/, '').replace(/\.(md|mdx)$/, '');
 
-  // Runtime API routes → check against live site
-  if (RUNTIME_ROUTE_PREFIXES.some(p => slug.startsWith(p))) {
-    const liveUrl = `${liveSiteBase}/${slug}`;
+  // Runtime API routes → check against live site (preserve original case)
+  if (RUNTIME_ROUTE_PREFIXES.some(p => rawSlug.startsWith(p))) {
+    const liveUrl = `${liveSiteBase}/${rawSlug}`;
     const result = await checkExternalUrl(liveUrl, timeoutMs);
     return {
       ok: result.ok,
@@ -126,6 +141,8 @@ export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs 
     };
   }
 
+  // Case-insensitive lookup against the doc index
+  const slug = rawSlug.toLowerCase();
   const index = await buildDocIndex(docsDir);
 
   let filePath = index.get(slug);
@@ -136,7 +153,7 @@ export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs 
 
   if (!filePath) {
     // Slug not found locally — check live site (CloudFront redirect rules, etc.)
-    const liveUrl = `${liveSiteBase}/${slug}`;
+    const liveUrl = `${liveSiteBase}/${rawSlug}`;
     const live = await curlCheck(liveUrl, timeoutMs);
     if (live.ok) {
       return { ok: true, internalRedirect: live.redirect || liveUrl };

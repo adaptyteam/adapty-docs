@@ -48,10 +48,16 @@ async function ensureBrowser() {
 /**
  * Check whether an anchor exists in a JS-rendered page.
  *
+ * Detection strategy (covers multiple JS framework patterns):
+ *   1. Standard id/name attributes
+ *   2. data-testid attributes containing the anchor (Stripe pattern)
+ *   3. Scroll-based detection — navigate WITH the fragment and check if the
+ *      page scrolled, proving the site's JS handled the fragment
+ *
  * Returns true  if the anchor is found (or if the check cannot run).
  * Returns false if the anchor is confirmed missing.
  */
-export async function checkAnchorHeadless(url, anchor, timeoutMs = 15000) {
+export async function checkAnchorHeadless(url, anchor, timeoutMs = 30000) {
   const instance = await ensureBrowser();
   if (!instance) return true;
 
@@ -66,13 +72,25 @@ export async function checkAnchorHeadless(url, anchor, timeoutMs = 15000) {
       else req.continue();
     });
 
-    const pageUrl = url.replace(/#.*$/, '');
-    await page.goto(pageUrl, { waitUntil: 'networkidle2', timeout: timeoutMs });
+    // Navigate WITH the fragment so client-side JS can handle scrolling
+    const fullUrl = url.includes('#') ? url : `${url}#${anchor}`;
+    await page.goto(fullUrl, { waitUntil: 'networkidle2', timeout: timeoutMs });
 
-    return await page.evaluate(
-      (id) => !!document.getElementById(id) || !!document.querySelector(`[name="${id}"]`),
-      anchor,
-    );
+    // Brief wait for JS-based scroll handlers to fire after networkidle2
+    await new Promise(r => setTimeout(r, 1500));
+
+    return await page.evaluate((id) => {
+      const escaped = CSS.escape(id);
+      // Standard: id or name attribute
+      if (document.getElementById(id)) return true;
+      if (document.querySelector(`[name="${escaped}"]`)) return true;
+      // data-testid containing the anchor (e.g. Stripe: "reference-element-content-{id}")
+      if (document.querySelector(`[data-testid$="-${escaped}"]`)) return true;
+      if (document.querySelector(`[data-testid="${escaped}"]`)) return true;
+      // Scroll-based: if the page scrolled, the fragment was handled by JS
+      if (window.scrollY > 50) return true;
+      return false;
+    }, anchor);
   } catch {
     return true; // load failed — don't flag
   } finally {
