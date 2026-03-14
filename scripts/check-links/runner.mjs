@@ -1,10 +1,22 @@
+/**
+ * Main orchestration pipeline for the link checker.
+ *
+ * Pipeline stages:
+ *   1. Scan — collect all files and extract links
+ *   2. Lint  — flag structural issues (self-links, .md extensions)
+ *   3. Check — verify external URLs and internal doc links
+ *   4. Classify — deduplicate, whitelist, and categorize results
+ */
+
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { getAllDocFiles, extractLinks, extractReusableImports, categorizeLinks } from './scan.mjs';
-import { checkExternalUrl } from './check-external.mjs';
+import { checkExternalUrl, closeBrowser } from './check-external.mjs';
 import { checkInternalLink, isLoginRedirect, isCaptchaRedirect } from './check-internal.mjs';
 import { classifyResults } from './classify.mjs';
-import { loadWhitelist } from './whitelist.mjs';
+import { loadConfig } from './config.mjs';
+
+// ── Concurrency helper ───────────────────────────────────────────
 
 async function runWithConcurrency(tasks, limit) {
   const results = [];
@@ -17,30 +29,26 @@ async function runWithConcurrency(tasks, limit) {
     }
   }
 
-  const workers = Array.from({ length: Math.min(limit, tasks.length) }, () => worker());
-  await Promise.all(workers);
+  await Promise.all(
+    Array.from({ length: Math.min(limit, tasks.length) }, () => worker()),
+  );
   return results;
 }
 
-/**
- * Main orchestration pipeline.
- * Returns { files, allLinks, uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings }.
- */
-export async function orchestrate(config) {
-  const { docsDir, liveSiteBase, concurrency, timeoutMs, externalOnly, internalOnly } = config;
+// ── Stage 1: Scan ────────────────────────────────────────────────
 
+async function scanFiles(docsDir) {
   const reusableDir = 'src/components/reusable';
 
   console.log('Scanning docs directory...');
   const docFiles = await getAllDocFiles(docsDir);
   const reusableFiles = await getAllDocFiles(reusableDir);
-  const files = [...docFiles, ...reusableFiles];
   console.log(`Found ${docFiles.length} doc files + ${reusableFiles.length} reusable snippets.`);
 
-  // Build reverse map: reusable filename → [article slug, ...]
   const reusableImporters = new Map();
-
+  const reusableFileNames = new Set();
   const allLinks = [];
+
   for (const file of docFiles) {
     const content = await readFile(file, 'utf-8');
     allLinks.push(...extractLinks(content, file, docsDir));
@@ -52,27 +60,47 @@ export async function orchestrate(config) {
       reusableImporters.get(reusableFile).push(slug);
     }
   }
-  const reusableFileNames = new Set();
+
   for (const file of reusableFiles) {
     const content = await readFile(file, 'utf-8');
     allLinks.push(...extractLinks(content, file, reusableDir));
     reusableFileNames.add(path.basename(file));
   }
-  console.log(`Found ${allLinks.length} total links.`);
 
+  console.log(`Found ${allLinks.length} total links.`);
   const { externalLinks, internalLinks } = categorizeLinks(allLinks);
 
   const uniqueExternalUrls = [...new Set(externalLinks.map(l => l.url))];
   const uniqueInternalUrls = [...new Set(internalLinks.map(l => l.url))];
-
   console.log(`\nExternal URLs: ${uniqueExternalUrls.length} unique (${externalLinks.length} total references)`);
   console.log(`Internal links: ${uniqueInternalUrls.length} unique (${internalLinks.length} total references)\n`);
 
-  const errors = [];
-  const warnings = [];
+  return {
+    files: [...docFiles, ...reusableFiles],
+    allLinks,
+    externalLinks, internalLinks,
+    uniqueExternalUrls, uniqueInternalUrls,
+    reusableImporters, reusableFileNames,
+    docsDir, reusableDir: path.resolve(reusableDir),
+  };
+}
 
-  // Flag external links to our own docs — these should be internal links
-  // Exclude: llms*.txt, *.md files (used in AI tool instructions), and API reference routes
+// ── Stage 2: Lint rules ──────────────────────────────────────────
+
+function lintLinks(externalLinks, internalLinks) {
+  const errors = [];
+
+  // Internal links should not use .md/.mdx extensions
+  const MD_EXT_RE = /\.(md|mdx)(#|$)/;
+  const mdExtUrls = new Set();
+  for (const link of internalLinks) {
+    if (MD_EXT_RE.test(link.url)) {
+      errors.push({ ...link, type: 'internal', status: 'MD_EXTENSION', error: 'Remove .md/.mdx extension from internal link' });
+      mdExtUrls.add(link.url);
+    }
+  }
+
+  // External links to our own docs should be internal links
   const SELF_DOCS_RE = /^https?:\/\/(www\.)?adapty\.io\/docs(\/|$)/;
   const SELF_LINK_EXCEPTIONS = /\.(txt|md)$|\/api-adapty\/|\/api-web\/|\/api-export-analytics\//;
   for (const link of externalLinks) {
@@ -81,73 +109,138 @@ export async function orchestrate(config) {
     }
   }
 
-  // External checks
+  return { errors, mdExtUrls };
+}
+
+// ── Stage 3a: External checks ────────────────────────────────────
+
+async function checkExternal(uniqueUrls, allLinks, existingErrors, { concurrency, timeoutMs, jsRendered }) {
+  const selfLinkUrls = new Set(existingErrors.filter(e => e.status === 'SELF_LINK').map(e => e.url));
+  const urlsToCheck = uniqueUrls.filter(url => !selfLinkUrls.has(url));
+
+  console.log(`Checking ${urlsToCheck.length} external URLs (concurrency: ${concurrency})...`);
+  const resultsByUrl = new Map();
+
+  const tasks = urlsToCheck.map(url => async () => {
+    const result = await checkExternalUrl(url, timeoutMs, jsRendered);
+    resultsByUrl.set(url, result);
+
+    if (!result.ok)                                     process.stdout.write('x');
+    else if (result.botProtected || result.rateLimited) process.stdout.write('!');
+    else if (result.redirect || result.anchorMissing)   process.stdout.write('~');
+    else                                                process.stdout.write('.');
+  });
+
+  await runWithConcurrency(tasks, concurrency);
+  await closeBrowser();
+  console.log('\n');
+
+  const errors = [];
+  const warnings = [];
+
+  for (const link of allLinks) {
+    const result = resultsByUrl.get(link.url);
+    if (!result) continue;
+
+    if (!result.ok) {
+      errors.push({ ...link, type: 'external', status: result.status, error: result.error });
+    } else if (result.botProtected) {
+      warnings.push({ ...link, type: 'external', severity: 'bot-protected', status: result.status });
+    } else if (result.rateLimited) {
+      warnings.push({ ...link, type: 'external', severity: 'rate-limited', status: result.status });
+    } else if (result.anchorMissing) {
+      warnings.push({ ...link, type: 'external', severity: 'anchor', anchor: result.anchorMissing });
+    } else if (result.redirect) {
+      const severity = isCaptchaRedirect(result.redirect) ? 'bot-protected'
+        : isLoginRedirect(result.redirect) ? 'login'
+        : result.localeRedirect ? 'locale-redirect' : 'redirect';
+      warnings.push({ ...link, type: 'external', severity, redirect: result.redirect });
+    }
+  }
+
+  return { errors, warnings };
+}
+
+// ── Stage 3b: Internal checks ────────────────────────────────────
+
+async function checkInternal(uniqueUrls, allLinks, mdExtUrls, { docsDir, liveSiteBase, timeoutMs }) {
+  const urlsToCheck = uniqueUrls.filter(url => !mdExtUrls.has(url));
+
+  console.log(`Checking ${urlsToCheck.length} internal links...`);
+  const resultsByUrl = new Map();
+
+  for (const url of urlsToCheck) {
+    resultsByUrl.set(url, await checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs }));
+  }
+
+  const errors = [];
+  const warnings = [];
+
+  for (const link of allLinks) {
+    const result = resultsByUrl.get(link.url);
+    if (!result) continue;
+
+    if (!result.ok) {
+      errors.push({ ...link, type: 'internal', status: result.status, error: result.error });
+    } else if (result.internalRedirect) {
+      warnings.push({ ...link, type: 'internal', severity: 'internal-redirect', redirect: result.internalRedirect });
+    } else if (result.anchorMissing) {
+      warnings.push({ ...link, type: 'internal', severity: 'anchor', anchor: result.anchorMissing });
+    } else if (result.redirect) {
+      warnings.push({ ...link, type: 'internal', severity: 'redirect', redirect: result.redirect });
+    }
+  }
+
+  console.log('Done.\n');
+  return { errors, warnings };
+}
+
+// ── Orchestrate ──────────────────────────────────────────────────
+
+export async function orchestrate(config) {
+  const { docsDir, liveSiteBase, concurrency, timeoutMs, externalOnly, internalOnly } = config;
+
+  // 1. Scan
+  const scan = await scanFiles(docsDir);
+
+  // 2. Lint
+  const lint = lintLinks(scan.externalLinks, scan.internalLinks);
+  const errors = [...lint.errors];
+  const warnings = [];
+
+  // 3. Load configuration (whitelist + JS-rendered domains)
+  const { whitelist, jsRendered } = await loadConfig();
+
+  // 4. Check external URLs
   if (!internalOnly) {
-    const selfLinkUrls = new Set(errors.filter(e => e.status === 'SELF_LINK').map(e => e.url));
-    const externalUrlsToCheck = uniqueExternalUrls.filter(url => !selfLinkUrls.has(url));
-    console.log(`Checking ${externalUrlsToCheck.length} external URLs (concurrency: ${concurrency})...`);
-    const externalResults = new Map();
-
-    const tasks = externalUrlsToCheck.map(url => async () => {
-      const result = await checkExternalUrl(url, timeoutMs);
-      externalResults.set(url, result);
-      if (!result.ok) process.stdout.write('x');
-      else if (result.botProtected || result.rateLimited) process.stdout.write('!');
-      else if (result.redirect || result.anchorMissing) process.stdout.write('~');
-      else process.stdout.write('.');
-    });
-
-    await runWithConcurrency(tasks, concurrency);
-    console.log('\n');
-
-    for (const link of externalLinks) {
-      const result = externalResults.get(link.url);
-      if (!result) continue;
-      if (!result.ok) {
-        errors.push({ ...link, type: 'external', status: result.status, error: result.error });
-      } else if (result.botProtected) {
-        warnings.push({ ...link, type: 'external', severity: 'bot-protected', status: result.status });
-      } else if (result.rateLimited) {
-        warnings.push({ ...link, type: 'external', severity: 'rate-limited', status: result.status });
-      } else if (result.anchorMissing) {
-        warnings.push({ ...link, type: 'external', severity: 'anchor', anchor: result.anchorMissing });
-      } else if (result.redirect) {
-        const severity = isCaptchaRedirect(result.redirect) ? 'bot-protected'
-          : isLoginRedirect(result.redirect) ? 'login'
-          : result.localeRedirect ? 'locale-redirect' : 'redirect';
-        warnings.push({ ...link, type: 'external', severity, redirect: result.redirect });
-      }
-    }
+    const ext = await checkExternal(
+      scan.uniqueExternalUrls, scan.externalLinks, errors,
+      { concurrency, timeoutMs, jsRendered },
+    );
+    errors.push(...ext.errors);
+    warnings.push(...ext.warnings);
   }
 
-  // Internal checks
+  // 5. Check internal links
   if (!externalOnly) {
-    console.log(`Checking ${uniqueInternalUrls.length} internal links...`);
-    const internalResults = new Map();
-
-    for (const url of uniqueInternalUrls) {
-      const result = await checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs });
-      internalResults.set(url, result);
-    }
-
-    for (const link of internalLinks) {
-      const result = internalResults.get(link.url);
-      if (!result) continue;
-      if (!result.ok) {
-        errors.push({ ...link, type: 'internal', status: result.status, error: result.error });
-      } else if (result.internalRedirect) {
-        warnings.push({ ...link, type: 'internal', severity: 'internal-redirect', redirect: result.internalRedirect });
-      } else if (result.anchorMissing) {
-        warnings.push({ ...link, type: 'internal', severity: 'anchor', anchor: result.anchorMissing });
-      } else if (result.redirect) {
-        warnings.push({ ...link, type: 'internal', severity: 'redirect', redirect: result.redirect });
-      }
-    }
-    console.log('Done.\n');
+    const int = await checkInternal(
+      scan.uniqueInternalUrls, scan.internalLinks, lint.mdExtUrls,
+      { docsDir, liveSiteBase, timeoutMs },
+    );
+    errors.push(...int.errors);
+    warnings.push(...int.warnings);
   }
 
-  const whitelist = await loadWhitelist();
-  const { uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings } = classifyResults(errors, warnings, whitelist);
+  // 6. Classify and deduplicate
+  const classified = classifyResults(errors, warnings, whitelist);
 
-  return { files, allLinks, uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings, reusableImporters, reusableFileNames, docsDir, reusableDir: path.resolve(reusableDir) };
+  return {
+    ...classified,
+    files: scan.files,
+    allLinks: scan.allLinks,
+    reusableImporters: scan.reusableImporters,
+    reusableFileNames: scan.reusableFileNames,
+    docsDir,
+    reusableDir: scan.reusableDir,
+  };
 }

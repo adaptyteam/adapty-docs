@@ -6,7 +6,7 @@ no_index: true
 
 **Enabled (default)**
 
-Identified users (those with a [Customer User ID](identifying-users#set-customer-user-id-on-configuration)) can share the same [access level](https://adapty.io/docs/access-level) provided by Adapty if their device is signed in to the same Apple/Google ID. This is useful when a user reinstalls the app and logs in with a different email — they’ll still have access to their previous purchase. With this option, multiple identified users can share the same access level.
+Identified users (those with a [Customer User ID](identifying-users#set-customer-user-id-on-configuration)) can share the same [access level](access-level) provided by Adapty if their device is signed in to the same Apple/Google ID. This is useful when a user reinstalls the app and logs in with a different email — they’ll still have access to their previous purchase. With this option, multiple identified users can share the same access level.
 
 Even though the access level is shared, all past and future transactions are logged as events in the original Customer User ID to maintain consistent analytics and keep a complete transaction history — including trial periods, subscription purchases, renewals, and more, linked to the same profile.
 

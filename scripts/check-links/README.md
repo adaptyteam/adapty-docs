@@ -53,6 +53,8 @@ Links that don't resolve at all. These block CI.
 - DNS failures, connection refused, timeouts
 - Internal slugs not found in docs or on the live site
 - Malformed URL schemes (`khttps://`, `uhttps://`)
+- **`.md`/`.mdx` extension in internal links** — write `[text](article)` not `[text](article.md)`. The remark plugin strips extensions at build time, but source files should use the clean form. Links flagged this way are skipped during the regular internal check to avoid duplicate errors.
+- **Self-links** — external URLs pointing to `adapty.io/docs` that should be internal links instead (exceptions: `.txt`/`.md` files used in AI tool instructions, and API reference routes)
 
 ### Stale links (warnings)
 
@@ -61,7 +63,6 @@ Links that work but point to the wrong place. Reported but don't block CI.
 - **Redirects** — URL resolves but redirects to a different destination
 - **Internal redirects** — slug not in source files, but the live site (CloudFront) resolves it to a different page
 - **Missing anchors** — page exists but the `#fragment` target is absent from the page headings
-- **Self-links** — external URLs pointing to `adapty.io/docs` that should be internal links instead
 
 ### Manual check required
 
