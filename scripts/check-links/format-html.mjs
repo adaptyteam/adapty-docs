@@ -6,12 +6,65 @@ import {
   groupByDomain, groupBySource, groupByUrl, groupByStatusLabel, groupByInternalPage,
 } from './group.mjs';
 
+const LIVE_BASE = 'https://adapty.io/docs';
+
+// Module-level refs set at report generation time
+let _reusableImporters = null;
+let _reusableFileNames = null;
+let _docsDir = null;
+let _reusableDir = null;
+
+/**
+ * Convert a source path to a live docs URL.
+ * For reusable components, links to the first article that imports them.
+ */
+function sourceLiveUrl(source) {
+  const fileName = source.replace(/^.*\//, ''); // basename
+  const importers = _reusableImporters?.get(fileName);
+  const slug = (importers && importers.length > 0)
+    ? importers[0]
+    : fileName.replace(/\.(md|mdx)$/, '');
+  return `${LIVE_BASE}/${slug}`;
+}
+
+/** Build a vscode://file deep link for a source path + line. */
+function sourceVscodeUrl(source, line) {
+  const fileName = source.replace(/^.*\//, '');
+  const isReusable = _reusableFileNames?.has(fileName);
+  const baseDir = isReusable ? _reusableDir : _docsDir;
+  const absPath = baseDir ? path.join(baseDir, source) : source;
+  return `vscode://file/${absPath}` + (line ? `:${line}` : '');
+}
+
+/** Render source:line as a clickable link to the live article + VSCode button. */
+function renderSourceCell(source, line) {
+  const liveUrl = sourceLiveUrl(source);
+  const vscUrl = sourceVscodeUrl(source, line);
+  return `<a class="source" href="${esc(liveUrl)}" target="_blank" rel="noopener">${esc(source)}:${line}</a>`
+    + `<a class="vsc-btn" href="${esc(vscUrl)}" title="Open in VSCode">VS</a>`;
+}
+
+/** Render source (no line) as a clickable link + VSCode button. */
+function renderSourceOnly(source) {
+  const liveUrl = sourceLiveUrl(source);
+  const vscUrl = sourceVscodeUrl(source);
+  return `<a class="source" href="${esc(liveUrl)}" target="_blank" rel="noopener">${esc(source)}</a>`
+    + `<a class="vsc-btn" href="${esc(vscUrl)}" title="Open in VSCode">VS</a>`;
+}
+
+/** Render a URL cell — external links go directly, internal links go to the live site. */
+function renderUrlCell(b) {
+  if (b.type === 'external') {
+    return `<a class="url" href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.url)}</a>`;
+  }
+  const slug = b.url.replace(/^\.?\//, '').replace(/\.(md|mdx)$/, '');
+  return `<a class="url" href="${esc(LIVE_BASE + '/' + slug)}" target="_blank" rel="noopener">${esc(b.url)}</a>`;
+}
+
 // ── Render helpers (local to this module) ─────────────────────────
 
 function renderRow(b) {
-  const urlCell = b.type === 'external'
-    ? `<a class="url" href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.url)}</a>`
-    : esc(b.url);
+  const urlCell = renderUrlCell(b);
   const statusCell = b.severity === 'bot-protected'
     ? `<span class="status status-bot">Bot-protected</span>`
     : b.severity === 'rate-limited'
@@ -29,7 +82,7 @@ function renderRow(b) {
     ? ' <span class="status status-whitelisted">Whitelisted</span>'
     : '';
   return `<tr class="row" data-search="${esc((b.type + ' ' + b.source + ' ' + b.url + ' ' + statusLabel(b) + ' ' + (b.redirect || '') + (b.whitelisted ? ' whitelisted' : '')).toLowerCase())}">
-      <td class="source">${esc(b.source)}:${b.line}</td>
+      <td>${renderSourceCell(b.source, b.line)}</td>
       <td>${urlCell}</td>
       <td><span class="type-badge type-${b.type}">${b.type}</span></td>
       <td>${statusCell}${whitelistBadge}</td>
@@ -39,12 +92,12 @@ function renderRow(b) {
 function renderByFile(sortedEntries) {
   return sortedEntries.map(([source, items]) => `
     <details>
-      <summary><span class="count">${items.length}</span> ${esc(source)}</summary>
+      <summary><span class="count">${items.length}</span> ${renderSourceOnly(source)}</summary>
       <table>
         <tr><th>Line</th><th>Target</th><th>Type</th><th>Status</th></tr>
         ${items.map(b => `<tr class="row" data-search="${esc((b.source + ' ' + b.url + ' ' + b.type + ' ' + statusLabel(b) + ' ' + (b.redirect || '')).toLowerCase())}">
           <td class="source">${b.line}</td>
-          <td>${b.type === 'external' ? `<a class="url" href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.url)}</a>` : esc(b.url)}</td>
+          <td>${renderUrlCell(b)}</td>
           <td><span class="type-badge type-${b.type}">${b.type}</span></td>
           <td><span class="status ${statusClass(b)}">${statusLabel(b)}</span>${
             b.redirect ? `<br><span class="redirect-target">${esc(b.redirect)}</span>` : ''
@@ -57,19 +110,25 @@ function renderByFile(sortedEntries) {
 }
 
 function renderByLink(sortedEntries) {
-  return sortedEntries.map(([url, items]) => `
+  return sortedEntries.map(([url, items]) => {
+    const sample = items[0];
+    const summaryUrl = sample.type === 'external'
+      ? `<a class="url" href="${esc(url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(url)}</a>`
+      : `<a class="url" href="${esc(LIVE_BASE + '/' + url.replace(/^\.?\//, '').replace(/\.(md|mdx)$/, ''))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(url)}</a>`;
+    return `
     <details>
-      <summary><span class="count">${items.length}</span> ${items[0].type === 'external' ? `<a class="url" href="${esc(url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(url)}</a>` : `<span class="domain">${esc(url)}</span>`}
-        <span class="status ${statusClass(items[0])}" style="margin-left:0.5rem">${statusLabel(items[0])}</span></summary>
+      <summary><span class="count">${items.length}</span> ${summaryUrl}
+        <span class="status ${statusClass(sample)}" style="margin-left:0.5rem">${statusLabel(sample)}</span></summary>
       <table>
         <tr><th>Source</th><th>Line</th><th>Type</th></tr>
         ${items.map(b => `<tr class="row" data-search="${esc((b.source + ' ' + b.url + ' ' + b.type + ' ' + statusLabel(b)).toLowerCase())}">
-          <td class="source">${esc(b.source)}</td>
+          <td>${renderSourceOnly(b.source)}</td>
           <td class="source">${b.line}</td>
           <td><span class="type-badge type-${b.type}">${b.type}</span></td>
         </tr>`).join('')}
       </table>
-    </details>`).join('');
+    </details>`;
+  }).join('');
 }
 
 function renderFlatTable(items, headers) {
@@ -107,7 +166,11 @@ function renderByStatusHtml(entries) {
 // ── Main export ───────────────────────────────────────────────────
 
 export async function generateHtmlReport(results, { outputPath, fileCount, totalLinks }) {
-  const { uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings = [] } = results;
+  const { uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings = [], reusableImporters, reusableFileNames, docsDir, reusableDir } = results;
+  _reusableImporters = reusableImporters || null;
+  _reusableFileNames = reusableFileNames || null;
+  _docsDir = docsDir || null;
+  _reusableDir = reusableDir || null;
   const timestamp = new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' });
 
   const allIssues = [...uniqueErrors, ...uniqueWarnings, ...manualCheckList, ...whitelistedWarnings];
@@ -215,6 +278,8 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
   .type-external { background: #eff6ff; color: var(--blue); }
   .type-internal { background: #f5f3ff; color: var(--purple); }
   .source { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+  .vsc-btn { display: inline-block; margin-left: 0.4rem; padding: 0 0.3em; font-size: 0.65rem; font-weight: 700; color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 3px; text-decoration: none; vertical-align: middle; line-height: 1.5; }
+  .vsc-btn:hover { background: #dbeafe; border-color: #93c5fd; }
   .filter-bar { margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
   .filter-bar input { padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem; width: 300px; }
   .filter-bar input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px #dbeafe; }
@@ -333,8 +398,8 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
   ${redirectWarningsList.length === 0 ? '<p class="empty">No redirects detected.</p>' : `
   <table><tr><th>Source</th><th>URL</th><th>Type</th><th>Redirects to</th></tr>
     ${redirectWarningsList.map(b => `<tr class="row" data-search="${esc((b.source + ' ' + b.url + ' ' + b.type + ' ' + (b.redirect || '')).toLowerCase())}">
-      <td class="source">${esc(b.source)}:${b.line}</td>
-      <td>${b.type === 'external' ? `<a class="url" href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.url)}</a>` : esc(b.url)}</td>
+      <td>${renderSourceCell(b.source, b.line)}</td>
+      <td>${renderUrlCell(b)}</td>
       <td><span class="type-badge type-${b.type}">${b.type}</span></td>
       <td><span class="status status-warning">Redirect</span><br><span class="redirect-target">${esc(b.redirect || '')}</span></td>
     </tr>`).join('')}
@@ -344,8 +409,8 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
   ${internalRedirectList.length === 0 ? '<p class="empty">No internal redirects found.</p>' : `
   <table><tr><th>Source</th><th>URL</th><th>Type</th><th>Status</th></tr>
     ${internalRedirectList.map(b => `<tr class="row" data-search="${esc((b.source + ' ' + b.url + ' ' + b.type + ' ' + (b.redirect || '')).toLowerCase())}">
-      <td class="source">${esc(b.source)}:${b.line}</td>
-      <td>${esc(b.url)}</td>
+      <td>${renderSourceCell(b.source, b.line)}</td>
+      <td>${renderUrlCell(b)}</td>
       <td><span class="type-badge type-${b.type}">${b.type}</span></td>
       <td><span class="status status-internal-redirect">Internal redirect</span><br><span class="redirect-target">Live: ${esc(b.redirect || '')}</span></td>
     </tr>`).join('')}
@@ -355,8 +420,8 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
   ${anchorInternalList.length === 0 ? '<p class="empty">No internal missing anchors detected.</p>' : `
   <table><tr><th>Source</th><th>URL</th><th>Anchor</th></tr>
     ${anchorInternalList.map(b => `<tr class="row" data-search="${esc((b.source + ' ' + b.url + ' ' + (b.anchor || '')).toLowerCase())}">
-      <td class="source">${esc(b.source)}:${b.line}</td>
-      <td>${esc(b.url)}</td>
+      <td>${renderSourceCell(b.source, b.line)}</td>
+      <td>${renderUrlCell(b)}</td>
       <td><span class="status status-warning">Missing anchor</span><br><span class="redirect-target">${esc(b.anchor || '')}</span></td>
     </tr>`).join('')}
   </table>`}
@@ -365,7 +430,7 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
   ${anchorExternalList.length === 0 ? '<p class="empty">No external missing anchors detected.</p>' : `
   <table><tr><th>Source</th><th>URL</th><th>Anchor</th></tr>
     ${anchorExternalList.map(b => `<tr class="row" data-search="${esc((b.source + ' ' + b.url + ' ' + (b.anchor || '')).toLowerCase())}">
-      <td class="source">${esc(b.source)}:${b.line}</td>
+      <td>${renderSourceCell(b.source, b.line)}</td>
       <td><a class="url" href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.url)}</a></td>
       <td><span class="status status-warning">Missing anchor</span><br><span class="redirect-target">${esc(b.anchor || '')}</span></td>
     </tr>`).join('')}
@@ -387,7 +452,7 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
   ${botProtectedList.length === 0 ? '<p class="empty">No bot-protected links detected.</p>' : `
   <table><tr><th>Source</th><th>URL</th><th>Type</th><th>Status</th></tr>
     ${botProtectedList.map(b => `<tr class="row" data-search="${esc((b.source + ' ' + b.url + ' ' + b.type).toLowerCase())}">
-      <td class="source">${esc(b.source)}:${b.line}</td>
+      <td>${renderSourceCell(b.source, b.line)}</td>
       <td><a class="url" href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.url)}</a></td>
       <td><span class="type-badge type-${b.type}">${b.type}</span></td>
       <td><span class="status status-bot">${statusLabel(b)}</span></td>
@@ -398,7 +463,7 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
   ${loginRequiredList.length === 0 ? '<p class="empty">No login-required links detected.</p>' : `
   <table><tr><th>Source</th><th>URL</th><th>Type</th><th>Redirects to</th></tr>
     ${loginRequiredList.map(b => `<tr class="row" data-search="${esc((b.source + ' ' + b.url + ' ' + b.type + ' ' + (b.redirect || '')).toLowerCase())}">
-      <td class="source">${esc(b.source)}:${b.line}</td>
+      <td>${renderSourceCell(b.source, b.line)}</td>
       <td><a class="url" href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.url)}</a></td>
       <td><span class="type-badge type-${b.type}">${b.type}</span></td>
       <td><span class="status status-login">Login required</span><br><span class="redirect-target">${esc(b.redirect || '')}</span></td>
@@ -409,7 +474,7 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
   ${localeRedirectList.length === 0 ? '<p class="empty">No locale redirects detected.</p>' : `
   <table><tr><th>Source</th><th>URL</th><th>Type</th><th>Redirects to</th></tr>
     ${localeRedirectList.map(b => `<tr class="row" data-search="${esc((b.source + ' ' + b.url + ' ' + b.type + ' ' + (b.redirect || '')).toLowerCase())}">
-      <td class="source">${esc(b.source)}:${b.line}</td>
+      <td>${renderSourceCell(b.source, b.line)}</td>
       <td><a class="url" href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.url)}</a></td>
       <td><span class="type-badge type-${b.type}">${b.type}</span></td>
       <td><span class="status status-login">Locale redirect</span><br><span class="redirect-target">${esc(b.redirect || '')}</span></td>

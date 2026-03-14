@@ -138,9 +138,21 @@ See `references/article-structure.md`
 
 ### 9. Links and Images
 
-**Diff reviews** (check only added items): existing pages, correct relative paths, anchor slugs lowercase-hyphenated, image files exist, `@assets/` not `@asset/`, descriptive alt text.
+Run the link checker in diff mode to validate links automatically:
 
-**Full article reviews**: validate ALL links and images.
+```bash
+npm run check-links-diff
+```
+
+This checks outgoing links from changed files AND incoming links to changed files (catches breakage from renamed files or removed headings). Reports are written to `_temp/link-report.md` and `_temp/link-report.html`.
+
+After the script finishes, read `_temp/link-report.md` and include a summary in your review output. Report only **broken links** (errors) and **stale links** (warnings) — skip the "manual check" category. If issues were found, tell the user they can open the full HTML report:
+
+```
+open _temp/link-report.html
+```
+
+Additionally check images manually: image files exist, `@assets/` not `@asset/`, descriptive alt text.
 
 See `references/astro-patterns.md`
 

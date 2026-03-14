@@ -10,7 +10,7 @@ The object that contains information on a paywall.
 
 | Name          | Type             | Required           | Description                                                  |
 | ------------- | ---------------- | ------------------ | ------------------------------------------------------------ |
-| placement_id  | String           | :heavy_plus_sign:  | The ID of the [Placement](https://adapty.io/docs/placements) where this paywall is shown. This value is set when creating a placement in your Adapty Dashboard. |
+| placement_id  | String           | :heavy_plus_sign:  | The ID of the [Placement](placements) where this paywall is shown. This value is set when creating a placement in your Adapty Dashboard. |
 | variation_id  | String(uuid)     | :heavy_plus_sign:  | The variation ID used to track purchases linked to this specific paywall. |
 | paywall_id    | String(uuid)     | :heavy_plus_sign:  | The unique identifier of the paywall.                        |
 | ab_test_name  | String           | :heavy_minus_sign: | The name of the parent A/B test.                             |
