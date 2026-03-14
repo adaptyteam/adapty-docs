@@ -4,6 +4,7 @@ import {
     type RowData,
     type CalculationResult,
     sanitizeNumberInput,
+    sanitizeIntegerInput,
     useDarkMode,
     initializeRows,
     createRow,
@@ -42,10 +43,12 @@ export const SimpleCalculator: React.FC<SimpleCalculatorProps> = ({
     const isDark = useDarkMode();
 
     const updateValue = (rowId: string, variableName: string, value: string) => {
+        const variable = variables.find(v => v.variableName === variableName);
+        const sanitized = variable?.isInteger ? sanitizeIntegerInput(value) : sanitizeNumberInput(value);
         setRows(prev =>
             prev.map(r =>
                 r.id === rowId
-                    ? { ...r, values: { ...r.values, [variableName]: sanitizeNumberInput(value) } }
+                    ? { ...r, values: { ...r.values, [variableName]: sanitized } }
                     : r
             )
         );

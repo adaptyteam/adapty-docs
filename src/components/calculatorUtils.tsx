@@ -17,6 +17,7 @@ export interface Variable {
     variableValue?: number;
     options?: VariableOption[];
     global?: boolean;
+    isInteger?: boolean;
 }
 
 export interface RowData {
@@ -68,6 +69,10 @@ export function sanitizeNumberInput(value: string): string {
         sanitized = parts[0] + '.' + parts.slice(1).join('');
     }
     return sanitized;
+}
+
+export function sanitizeIntegerInput(value: string): string {
+    return value.replace(/[^\d]/g, '');
 }
 
 // ── Row helpers ──────────────────────────────────────────────────────
@@ -380,7 +385,7 @@ export const VariableInput: React.FC<{
     return (
         <input
             type="text"
-            inputMode="decimal"
+            inputMode={variable.isInteger ? 'numeric' : 'decimal'}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onDoubleClick={(e) => e.currentTarget.select()}

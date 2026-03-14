@@ -4,6 +4,7 @@ import {
     type RowData,
     type CalculationResult,
     sanitizeNumberInput,
+    sanitizeIntegerInput,
     makeDefaultValues,
     useDarkMode,
     evaluateExpression,
@@ -53,17 +54,21 @@ export const CompoundCalculator: React.FC<CompoundCalculatorProps> = ({
     const isDark = useDarkMode();
 
     const updateRowValue = (rowId: string, variableName: string, value: string) => {
+        const variable = variables.find(v => v.variableName === variableName);
+        const sanitized = variable?.isInteger ? sanitizeIntegerInput(value) : sanitizeNumberInput(value);
         setRows(prev =>
             prev.map(r =>
                 r.id === rowId
-                    ? { ...r, values: { ...r.values, [variableName]: sanitizeNumberInput(value) } }
+                    ? { ...r, values: { ...r.values, [variableName]: sanitized } }
                     : r
             )
         );
     };
 
     const updateGlobalValue = (variableName: string, value: string) => {
-        setGlobalValues(prev => ({ ...prev, [variableName]: sanitizeNumberInput(value) }));
+        const variable = globalVariables.find(v => v.variableName === variableName);
+        const sanitized = variable?.isInteger ? sanitizeIntegerInput(value) : sanitizeNumberInput(value);
+        setGlobalValues(prev => ({ ...prev, [variableName]: sanitized }));
     };
 
     const addRow = () => setRows(prev => [...prev, createRow(rowVariables)]);
