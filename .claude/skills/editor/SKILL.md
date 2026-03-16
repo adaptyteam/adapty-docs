@@ -184,6 +184,24 @@ For each issue: quote the text (with line number) → explain why → provide sp
 
 See `references/output-templates.md` for annotated feedback example.
 
+### Interactive Review Flow
+
+After completing all checks, follow this flow:
+
+1. **Number every finding** sequentially across all categories (Critical, Important, Suggestions). Assign a single global number to each, not per-category numbers.
+
+2. **Present the full numbered list** as a concise "whole picture" — one line per finding, format: `**N.** [article if multiple] brief description → proposed fix`
+
+3. **Ask before proceeding**: *"Here are all [N] findings. Would you like to go through them interactively, deciding which to accept?"* — wait for the answer.
+
+4. **If yes — use `AskUserQuestion`**, 4 suggestions at a time:
+   - Question label (header, max 12 chars): `#N Topic`
+   - Question text: `#N — filename line X: [quoted text] → [proposed rewrite]`
+   - Options: **Accept** (describe what changes), **Skip** (leave as-is). "Other" is always available for custom comments.
+   - Handle user comments: if the user types a custom note, incorporate it before applying the fix.
+
+5. **Apply only accepted changes** after all answers are collected. Do not edit anything until the full quiz is complete.
+
 ## Special Considerations
 
 ### Diff Reviews
