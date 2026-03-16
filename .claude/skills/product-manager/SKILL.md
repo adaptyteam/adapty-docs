@@ -146,6 +146,24 @@ Start every review with **Persona Usage Analysis**, then:
 
 See [`feedback-example.md`](references/feedback-example.md) for a complete annotated example.
 
+### Interactive Review Flow
+
+When both editor and product-manager reviews are combined in one session, a single shared numbered list is produced. When used alone, follow the same flow:
+
+1. **Number every actionable finding** sequentially across all categories. Each finding gets one global number.
+
+2. **Present the full numbered list** as a concise "whole picture" — one line per finding, format: `**N.** [article if multiple] brief description → proposed fix`
+
+3. **Ask before proceeding**: *"Here are all [N] findings. Would you like to go through them interactively, deciding which to accept?"* — wait for the answer.
+
+4. **If yes — use `AskUserQuestion`**, 4 suggestions at a time:
+   - Question label (header, max 12 chars): `#N Topic`
+   - Question text: `#N — filename: [quoted text] → [proposed fix or action]`
+   - Options: **Accept** (describe what changes), **Skip** (leave as-is). "Other" is always available for custom comments.
+   - Handle user comments: if the user types a custom note, incorporate it before applying.
+
+5. **Apply only accepted changes** after all answers are collected. Do not edit anything until the full quiz is complete.
+
 ## Feedback Guidelines
 
 - Quote the problematic section
