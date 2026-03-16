@@ -64,6 +64,20 @@ export function extractLinks(content, filePath, docsDir) {
 }
 
 /**
+ * Extract reusable component file paths from import statements.
+ * Matches: import Foo from '@site/src/components/reusable/Bar.md';
+ */
+export function extractReusableImports(content) {
+  const imports = [];
+  const re = /import\s+\w+\s+from\s+['"]@site\/src\/components\/reusable\/([^'"]+)['"]/g;
+  let match;
+  while ((match = re.exec(content)) !== null) {
+    imports.push(match[1]); // e.g. "AccessLevel.md"
+  }
+  return imports;
+}
+
+/**
  * Split links into external vs internal, discarding mailto/tel/anchor-only/javascript.
  */
 export function categorizeLinks(allLinks) {

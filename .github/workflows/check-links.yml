@@ -1,30 +1,48 @@
 name: Check documentation links
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      check-type:
+        description: 'Which links to check'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - internal-only
+          - external-only
 
 jobs:
   internal-links:
     name: Check internal links
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.check-type == 'all' ||
+      github.event.inputs.check-type == 'internal-only'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: npm install github-slugger
       - run: node scripts/check-links/index.mjs --internal-only
 
   external-links:
     name: Check external links
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      (github.event.inputs.check-type == 'all' ||
+       github.event.inputs.check-type == 'external-only')
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: npm install github-slugger
       - run: node scripts/check-links/index.mjs --external-only

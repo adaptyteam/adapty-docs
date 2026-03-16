@@ -116,6 +116,7 @@ Display images with click-to-zoom functionality. Automatically resolves images f
 - `width` (optional): Image width, default: "700px"
 - `alt` (optional): Alt text, defaults to filename
 - `className` (optional): Additional CSS classes
+- `href` (optional): URL to link the image to. Disables zoom — the image becomes a clickable link instead.
 
 **Usage:**
 
@@ -123,6 +124,9 @@ Display images with click-to-zoom functionality. Automatically resolves images f
 import ZoomImage from '@site/src/components/ZoomImage.astro';
 
 <ZoomImage id="screenshot.png" width="700px" alt="Dashboard screenshot" />
+
+{/* Image as a link (no zoom) */}
+<ZoomImage id="banner.webp" href="https://example.com" alt="Click to visit" />
 ```
 
 **Image resolution:**

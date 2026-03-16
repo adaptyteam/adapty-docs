@@ -115,6 +115,8 @@ See `references/simplified-technical-english.md` → Voice Guidelines + Verb Ten
 
 Check for: non-parallel heading structure at same level, inconsistent list punctuation, dashes instead of colons after bold labels (`**Label**:` not `**Label** -`), inline lists where bullet lists would be clearer.
 
+**Exception — UI/product names**: If a heading uses the exact name of a product feature or UI element, do not flag it for breaking parallelism. Feature names take precedence over grammatical consistency. Example: `## Sharing paid access between user accounts` is the name of the feature in the UI — do not rewrite it to fix parallel structure.
+
 See `references/article-structure.md` → Parallel Heading Structure + List Formatting
 
 ### 7. Instruction Pattern (Location → Action)
@@ -123,6 +125,8 @@ Instructions must follow: Goal → Location → Action
 
 ✅ "To create a paywall, in the Paywalls section, click **Create paywall**"
 ❌ "Click **Create paywall** to create a paywall in the Paywalls section"
+
+**Do not over-granularize**: A short inline instruction (2–3 steps expressible in one clear sentence) should stay inline. Breaking it into a numbered list introduces unnecessary friction. Use numbered steps only when: (a) the sequence has 4+ distinct actions, (b) each step requires separate verification, or (c) the sentence becomes unreadably long. Conciseness takes priority — do not flag a clear one-sentence instruction as a problem.
 
 See `references/simplified-technical-english.md` → Instruction Pattern
 
@@ -134,9 +138,21 @@ See `references/article-structure.md`
 
 ### 9. Links and Images
 
-**Diff reviews** (check only added items): existing pages, correct relative paths, anchor slugs lowercase-hyphenated, image files exist, `@assets/` not `@asset/`, descriptive alt text.
+Run the link checker in diff mode to validate links automatically:
 
-**Full article reviews**: validate ALL links and images.
+```bash
+npm run check-links-diff
+```
+
+This checks outgoing links from changed files AND incoming links to changed files (catches breakage from renamed files or removed headings). Reports are written to `_temp/link-report.md` and `_temp/link-report.html`.
+
+After the script finishes, read `_temp/link-report.md` and include a summary in your review output. Report only **broken links** (errors) and **stale links** (warnings) — skip the "manual check" category. If issues were found, tell the user they can open the full HTML report:
+
+```
+open _temp/link-report.html
+```
+
+Additionally check images manually: image files exist, `@assets/` not `@asset/`, descriptive alt text.
 
 See `references/astro-patterns.md`
 

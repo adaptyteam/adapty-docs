@@ -1,4 +1,4 @@
-import { isWhitelisted } from './whitelist.mjs';
+import { isWhitelisted } from './config.mjs';
 
 export const MANUAL_SEVERITIES = new Set(['login', 'bot-protected', 'rate-limited', 'locale-redirect']);
 
