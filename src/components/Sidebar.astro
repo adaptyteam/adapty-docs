@@ -100,6 +100,36 @@ function transformItems(items: any[]): any[] {
 
 const processedSidebar = transformItems(sidebarData);
 
+// Load all sidebar JSONs for the mobile section switcher
+const allSidebarModules = import.meta.glob('../data/sidebars/*.json', { eager: true });
+
+// Build fully-processed sidebars for all 7 SDK platforms.
+// Must use transformItems() here (not raw JSON) so that custom slugs and
+// frontmatter-derived labels are correctly resolved in the JSON data island.
+const allSdkSidebars: Record<string, any[]> = {};
+for (const platform of platformsData.sdkPlatforms) {
+    const sidebarPath = `../data/sidebars/${platform.sidebar}`;
+    const mod = allSidebarModules[sidebarPath] as { default: any[] } | undefined;
+    if (mod?.default) {
+        allSdkSidebars[platform.id] = transformItems(mod.default);
+    }
+}
+
+// Load tutorial and api sidebars
+const tutorialMod = allSidebarModules['../data/sidebars/tutorial.json'] as { default: any[] } | undefined;
+const apiMod = allSidebarModules['../data/sidebars/api.json'] as { default: any[] } | undefined;
+const tutorialSidebar = tutorialMod?.default ? transformItems(tutorialMod.default) : [];
+const apiSidebar = apiMod?.default ? transformItems(apiMod.default) : [];
+
+// Determine which top-level section the current page belongs to
+const sdkIds = new Set(platformsData.sdkPlatforms.map((p: any) => p.id));
+const currentSectionId: 'tutorial' | 'sdk' | 'api' =
+    currentPlatformId === 'tutorial' ? 'tutorial'
+    : currentPlatformId === 'api' ? 'api'
+    : 'sdk';
+const effectivePlatformId = sdkIds.has(currentPlatformId) ? currentPlatformId : 'ios';
+const initialSdkSidebar = allSdkSidebars[effectivePlatformId] ?? [];
+
 // Helper to find the label of the current active item
 function findActiveLabel(items: any[], activeId: string): string | undefined {
     for (const item of items) {
