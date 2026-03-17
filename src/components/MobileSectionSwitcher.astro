@@ -1,0 +1,246 @@
+---
+import SidebarItem from './SidebarItem.astro';
+
+interface Props {
+    currentSectionId: 'tutorial' | 'sdk' | 'api';
+    currentPlatformId: string;
+    currentSlug: string;
+    tutorialSidebar: any[];
+    apiSidebar: any[];
+    initialSdkSidebar: any[];
+    allSdkSidebars: Record<string, any[]>;
+    sdkPlatforms: { id: string; label: string; sidebar: string }[];
+}
+
+const {
+    currentSectionId,
+    currentPlatformId,
+    currentSlug,
+    tutorialSidebar,
+    apiSidebar,
+    initialSdkSidebar,
+    allSdkSidebars,
+    sdkPlatforms,
+} = Astro.props;
+
+const activeId = currentSlug.split('/').pop() || '';
+---
+
+<!--
+  No transition:persist here — relies on parent <aside>'s platform-keyed persist.
+  data-current-* attributes are always correct SSR values:
+    - within-platform nav: <aside> persists with unchanged attrs (same platform = correct)
+    - cross-platform nav: <aside> is replaced with fresh SSR HTML
+-->
+<div
+    class="msw-root lg:hidden px-3 pt-2 pb-1"
+    data-current-section={currentSectionId}
+    data-current-platform={currentPlatformId}
+>
+    <!-- Tab bar -->
+    <nav class="msw-tabs" aria-label="Documentation sections">
+        <button
+            class="msw-tab"
+            data-section="tutorial"
+            data-active={currentSectionId === 'tutorial' ? '' : undefined}
+        >Tutorial</button>
+        <button
+            class="msw-tab"
+            data-section="sdk"
+            data-active={currentSectionId === 'sdk' ? '' : undefined}
+        >SDK</button>
+        <button
+            class="msw-tab"
+            data-section="api"
+            data-active={currentSectionId === 'api' ? '' : undefined}
+        >CLI &amp; APIs</button>
+    </nav>
+
+    <!-- Tutorial panel -->
+    <section data-panel="tutorial" hidden={currentSectionId !== 'tutorial'}>
+        <ul class="space-y-1 mt-2">
+            {tutorialSidebar.map((item) => (
+                <SidebarItem item={item} activeId={activeId} />
+            ))}
+        </ul>
+    </section>
+
+    <!-- SDK panel -->
+    <section data-panel="sdk" hidden={currentSectionId !== 'sdk'}>
+        <!-- Platform picker -->
+        <div class="msw-section-label mt-2">Platform</div>
+        <ul class="msw-platform-list">
+            {sdkPlatforms.map((platform) => (
+                <li>
+                    <button
+                        class="msw-platform-btn"
+                        data-platform-id={platform.id}
+                        data-is-current={platform.id === currentPlatformId ? '' : undefined}
+                        data-is-selected={platform.id === currentPlatformId ? '' : undefined}
+                    >
+                        {platform.label}
+                        {platform.id === currentPlatformId && (
+                            <span class="msw-current-badge">current</span>
+                        )}
+                    </button>
+                </li>
+            ))}
+        </ul>
+        <!-- Purple separator -->
+        <div class="msw-separator"></div>
+        <!-- SDK links container — pre-rendered from initialSdkSidebar; re-rendered by JS on platform swap -->
+        <div id="msw-sdk-links" data-rendered-platform={currentPlatformId}>
+            <ul class="space-y-1">
+                {initialSdkSidebar.map((item) => (
+                    <SidebarItem item={item} activeId={activeId} />
+                ))}
+            </ul>
+        </div>
+    </section>
+
+    <!-- API panel -->
+    <section data-panel="api" hidden={currentSectionId !== 'api'}>
+        <ul class="space-y-1 mt-2">
+            {apiSidebar.map((item) => (
+                <SidebarItem item={item} activeId={activeId} />
+            ))}
+        </ul>
+    </section>
+
+    <!-- JSON data island: all 7 SDK platforms fully resolved via transformItems() at build time -->
+    <script type="application/json" id="sdk-sidebars-data" set:html={JSON.stringify(allSdkSidebars)}></script>
+</div>
+
+<style>
+    /* Tab bar container */
+    .msw-tabs {
+        display: flex;
+        background: var(--bg-tertiary);
+        border-radius: 8px;
+        padding: 3px;
+        gap: 2px;
+        margin-bottom: 4px;
+    }
+
+    /* Individual tab button */
+    .msw-tab {
+        flex: 1;
+        text-align: center;
+        padding: 5px 4px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        background: transparent;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+        white-space: nowrap;
+    }
+
+    .msw-tab:hover {
+        color: var(--text-primary);
+    }
+
+    /* Active tab */
+    .msw-tab[data-active] {
+        background: var(--accent-primary);
+        color: #fff;
+        font-weight: 600;
+    }
+
+    /* Platform section label */
+    .msw-section-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 2px 8px 5px;
+    }
+
+    /* Platform list */
+    .msw-platform-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+
+    /* Platform button */
+    .msw-platform-btn {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 13.5px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        text-align: left;
+        transition: background 0.15s, color 0.15s;
+    }
+
+    .msw-platform-btn:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+    }
+
+    /* Current platform — fixed to the loaded page's platform, never moves */
+    .msw-platform-btn[data-is-current] {
+        background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+        color: var(--accent-primary);
+        font-weight: 600;
+    }
+
+    /* Selected-but-not-current — tracks user's picker selection */
+    .msw-platform-btn[data-is-selected]:not([data-is-current]) {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+    }
+
+    /* "current" badge */
+    .msw-current-badge {
+        font-size: 9px;
+        font-weight: 700;
+        background: var(--accent-primary);
+        color: #fff;
+        padding: 1px 6px;
+        border-radius: 10px;
+        flex-shrink: 0;
+    }
+
+    /* Purple separator line */
+    .msw-separator {
+        height: 2px;
+        background: var(--accent-primary);
+        border-radius: 2px;
+        margin: 8px 0;
+    }
+
+    /*
+      Category expand/collapse animation for JS-injected SDK links.
+      Mirrors SidebarItem.astro lines 200–213. Required because renderItem()
+      produces raw HTML strings — Astro component styles don't apply to them.
+    */
+    :global(#msw-sdk-links .category-items-container) {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    :global(#msw-sdk-links .category-items-container.expanded) {
+        grid-template-rows: 1fr;
+    }
+
+    :global(#msw-sdk-links .category-items-content) {
+        overflow: hidden;
+        min-height: 0;
+    }
+</style>
