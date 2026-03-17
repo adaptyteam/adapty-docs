@@ -79,9 +79,6 @@ const activeId = currentSlug.split('/').pop() || '';
                         data-is-selected={platform.id === currentPlatformId ? '' : undefined}
                     >
                         {platform.label}
-                        {platform.id === currentPlatformId && (
-                            <span class="msw-current-badge">current</span>
-                        )}
                     </button>
                 </li>
             ))}
@@ -367,21 +364,14 @@ const activeId = currentSlug.split('/').pop() || '';
         switchTab(root, section);
 
         if (section === 'sdk') {
-            // Reset current badge to match the loaded page's platform
+            // Sync data-is-current to the newly loaded page's platform
             root.querySelectorAll<HTMLElement>('.msw-platform-btn').forEach((btn) => {
                 if (btn.dataset.platformId === platform) {
                     btn.setAttribute('data-is-current', '');
                     btn.setAttribute('data-is-selected', '');
-                    if (!btn.querySelector('.msw-current-badge')) {
-                        const badge = document.createElement('span');
-                        badge.className = 'msw-current-badge';
-                        badge.textContent = 'current';
-                        btn.appendChild(badge);
-                    }
                 } else {
                     btn.removeAttribute('data-is-current');
                     btn.removeAttribute('data-is-selected');
-                    btn.querySelector('.msw-current-badge')?.remove();
                 }
             });
 
@@ -398,6 +388,35 @@ const activeId = currentSlug.split('/').pop() || '';
                 // SSR items (data-sidebar-link) are handled by Sidebar.astro's updateActiveState().
                 updateMswActiveState(root);
             }
+        }
+    }
+
+    // ─── Platform selection reset on sidebar open ─────────────────────────────────
+
+    /**
+     * Reset section tab, platform selection, and SDK links to the current page's state.
+     * Called whenever the sidebar transitions from closed → open.
+     */
+    function resetToCurrentPage(root: HTMLElement) {
+        const section = root.dataset.currentSection as string;
+        const platform = root.dataset.currentPlatform as string;
+
+        // Reset section tab
+        switchTab(root, section);
+
+        // Reset platform selection visual
+        root.querySelectorAll<HTMLElement>('.msw-platform-btn').forEach((btn) => {
+            if (btn.hasAttribute('data-is-current')) {
+                btn.setAttribute('data-is-selected', '');
+            } else {
+                btn.removeAttribute('data-is-selected');
+            }
+        });
+
+        // Re-render SDK links if the user had browsed to a different platform
+        const linksContainer = root.querySelector<HTMLElement>('#msw-sdk-links');
+        if (linksContainer && linksContainer.dataset.renderedPlatform !== platform) {
+            switchPlatform(root, platform);
         }
     }
 
@@ -426,6 +445,20 @@ const activeId = currentSlug.split('/').pop() || '';
                 if (platformId) switchPlatform(root, platformId);
             });
         });
+
+        // Watch for sidebar open → reset platform selection to current page's platform
+        const sidebar = document.getElementById('main-sidebar');
+        if (sidebar && !sidebar.hasAttribute('data-msw-observer-added')) {
+            sidebar.setAttribute('data-msw-observer-added', 'true');
+            new MutationObserver((mutations) => {
+                for (const m of mutations) {
+                    if (m.attributeName === 'data-open' && sidebar.getAttribute('data-open') === 'true') {
+                        resetToCurrentPage(root);
+                        break;
+                    }
+                }
+            }).observe(sidebar, { attributes: true, attributeFilter: ['data-open'] });
+        }
 
         // Init category toggles for the pre-rendered initial SDK links.
         // Note: SSR-rendered SDK links use data-sidebar-link (SidebarItem), not data-msw-link.
@@ -529,27 +562,11 @@ const activeId = currentSlug.split('/').pop() || '';
     }
 
     /* Current platform — fixed to the loaded page's platform, never moves */
-    .msw-platform-btn[data-is-current] {
-        background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+    /* Selected platform (resets to current on sidebar open) */
+    .msw-platform-btn[data-is-selected] {
+        background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
         color: var(--accent-primary);
         font-weight: 600;
-    }
-
-    /* Selected-but-not-current — tracks user's picker selection */
-    .msw-platform-btn[data-is-selected]:not([data-is-current]) {
-        background: var(--bg-hover);
-        color: var(--text-primary);
-    }
-
-    /* "current" badge */
-    .msw-current-badge {
-        font-size: 9px;
-        font-weight: 700;
-        background: var(--accent-primary);
-        color: #fff;
-        padding: 1px 6px;
-        border-radius: 10px;
-        flex-shrink: 0;
     }
 
     /* Purple separator line */
