@@ -6,16 +6,25 @@ metadataTitle: "Presenting onboardings | Adapty Docs"
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 If you've customized an onboarding using the builder, you don't need to worry about rendering it in your Kotlin Multiplatform app code to display it to the user. Such an onboarding contains both what should be shown within the onboarding and how it should be shown.
 
 Before you start, ensure that:
 
-1. You have installed [Adapty Kotlin Multiplatform SDK](sdk-installation-kotlin-multiplatform) 3.15.0 or later.
+1. You have installed [Adapty Kotlin Multiplatform SDK](sdk-installation-kotlin-multiplatform) 3.16.1 or later.
 2. You have [created an onboarding](create-onboarding).
 3. You have added the onboarding to a [placement](placements).
 
-To display an onboarding, use the `view.present()` method on the `view` created by the `createOnboardingView` method. Each `view` can only be used once. If you need to display the onboarding again, call `createPaywallView` one more to create a new `view` instance.
+Adapty Kotlin Multiplatform SDK provides two ways to present onboardings:
+
+- **Standalone screen**: Adapty presents the onboarding as a full-screen view on top of your existing UI.
+- **Native view**: You receive a platform-native view object and embed it anywhere in your layout.
+
+## Present as a standalone screen
+
+To display an onboarding, use the `view.present()` method on the `view` created by the `createOnboardingView` method. Each `view` can only be used once. If you need to display the onboarding again, call `createOnboardingView` one more time to create a new `view` instance.
 
 :::warning
 Reusing the same `view` without recreating it may result in an error.
@@ -34,7 +43,7 @@ viewModelScope.launch {
 }
 ```
 
-## Configure iOS presentation style
+### Configure iOS presentation style
 
 Configure how the onboarding is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `AdaptyUIIOSPresentationStyle.FULLSCREEN` (default) or `AdaptyUIIOSPresentationStyle.PAGESHEET` values.
 
@@ -49,7 +58,7 @@ viewModelScope.launch {
 }
 ```
 
-## Customize how links open in onboardings
+### Customize how links open in onboardings
 
 By default, links in onboardings open in an in-app browser. This provides a seamless user experience by displaying web pages within your application, allowing users to view them without switching apps.
 
@@ -70,4 +79,55 @@ viewModelScope.launch {
         // handle the error
     }
 }
+```
+
+## Embed in a native view
+
+:::note
+`AdaptyUI` and `createNativeOnboardingView` are part of the core `io.adapty:adapty-kmp` module. The separate `io.adapty:adapty-ui-kmp` Gradle dependency — which provides the Compose Multiplatform rendering layer for `view.present()` — is not needed for native views.
+:::
+
+To embed an onboarding as a native view, call `createNativeOnboardingView`. It returns an `AdaptyNativeOnboardingView` that you add to your layout:
+
+<Tabs>
+<TabItem value="android" label="Android">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+import com.adapty.kmp.AdaptyUI
+
+val nativeView = AdaptyUI.createNativeOnboardingView(
+    context = context,
+    viewModelStoreOwner = activity,
+    onboarding = onboarding,
+    observer = myOnboardingObserver,
+)
+
+// Embed in your Compose layout:
+AndroidView(
+    factory = { nativeView.view },
+    modifier = Modifier.fillMaxSize()
+)
+```
+</TabItem>
+<TabItem value="ios" label="iOS">
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+import com.adapty.kmp.AdaptyUI
+
+val nativeView = AdaptyUI.createNativeOnboardingView(
+    onboarding = onboarding,
+    observer = myOnboardingObserver,
+)
+
+// nativeView.viewController is a UIViewController.
+// Embed it in SwiftUI using UIViewControllerRepresentable,
+// or push/present it in UIKit.
+```
+</TabItem>
+</Tabs>
+
+### Dispose the view
+
+Call `dispose()` when removing the native view from your layout. This unregisters the event listener and releases internal resources.
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+nativeView.dispose()
 ```
