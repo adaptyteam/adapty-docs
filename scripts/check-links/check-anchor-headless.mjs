@@ -6,7 +6,7 @@
  * shell HTML, so anchors appear missing. This module launches a real browser
  * (Puppeteer) to verify anchors on those pages.
  *
- * Puppeteer must be installed (`yarn install`). The script will fail with a
+ * Puppeteer must be installed (`npm install`). The script will fail with a
  * clear error message if it is missing.
  */
 
@@ -26,7 +26,7 @@ async function loadPuppeteer() {
     puppeteer = await import('puppeteer');
   } catch {
     throw new Error(
-      'puppeteer is required but not installed. Run "yarn install" or "npm install" first.',
+      'puppeteer is required but not installed. Run "npm install" first.',
     );
   }
   return puppeteer;
