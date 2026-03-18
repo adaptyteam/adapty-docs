@@ -183,6 +183,7 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
   const anchorWarningsList = uniqueWarnings.filter(w => w.severity === 'anchor');
   const anchorInternalList = anchorWarningsList.filter(w => w.type === 'internal');
   const anchorExternalList = anchorWarningsList.filter(w => w.type === 'external');
+  const mdExtensionList = uniqueWarnings.filter(w => w.severity === 'md-extension');
   const loginRequiredList = manualCheckList.filter(w => w.severity === 'login');
   const botProtectedList = manualCheckList.filter(w => w.severity === 'bot-protected' || w.severity === 'rate-limited');
   const localeRedirectList = manualCheckList.filter(w => w.severity === 'locale-redirect');
@@ -382,6 +383,7 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
     <button class="subtab" data-sub="bad-internal-redirects">Internal redirects <span class="badge">${internalRedirectList.length}</span></button>
     <button class="subtab" data-sub="bad-anchors-internal">Anchors (internal) <span class="badge">${anchorInternalList.length}</span></button>
     <button class="subtab" data-sub="bad-anchors-external">Anchors (external) <span class="badge">${anchorExternalList.length}</span></button>
+    <button class="subtab" data-sub="bad-md-ext">.md extensions <span class="badge">${mdExtensionList.length}</span></button>
   </div>
   <div class="filter-bar"><input type="text" class="search" placeholder="Filter by URL, file, or status..." autocomplete="off"></div>
 
@@ -433,6 +435,17 @@ export async function generateHtmlReport(results, { outputPath, fileCount, total
       <td>${renderSourceCell(b.source, b.line)}</td>
       <td><a class="url" href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.url)}</a></td>
       <td><span class="status status-warning">Missing anchor</span><br><span class="redirect-target">${esc(b.anchor || '')}</span></td>
+    </tr>`).join('')}
+  </table>`}
+  </div>
+  <div class="subpanel" id="sub-bad-md-ext">
+  ${mdExtensionList.length === 0 ? '<p class="empty">No .md extension links.</p>' : `
+  <table><tr><th>Source</th><th>URL</th><th>Type</th><th>Status</th></tr>
+    ${mdExtensionList.map(b => `<tr class="row" data-search="${esc((b.source + ' ' + b.url + ' ' + b.type).toLowerCase())}">
+      <td>${renderSourceCell(b.source, b.line)}</td>
+      <td>${renderUrlCell(b)}</td>
+      <td><span class="type-badge type-${b.type}">${b.type}</span></td>
+      <td><span class="status status-warning">.md extension</span></td>
     </tr>`).join('')}
   </table>`}
   </div>

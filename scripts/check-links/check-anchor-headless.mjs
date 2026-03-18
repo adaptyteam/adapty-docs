@@ -6,8 +6,8 @@
  * shell HTML, so anchors appear missing. This module launches a real browser
  * (Puppeteer) to verify anchors on those pages.
  *
- * If Puppeteer is not installed, every check returns true (anchor assumed OK)
- * so the link checker degrades gracefully instead of producing false positives.
+ * Puppeteer must be installed (`yarn install`). The script will fail with a
+ * clear error message if it is missing.
  */
 
 // Only block truly decorative resources. Stylesheets must be kept because some
@@ -25,8 +25,9 @@ async function loadPuppeteer() {
   try {
     puppeteer = await import('puppeteer');
   } catch {
-    console.log('  [headless] puppeteer not installed — skipping JS-rendered anchor checks');
-    puppeteer = null;
+    throw new Error(
+      'puppeteer is required but not installed. Run "yarn install" or "npm install" first.',
+    );
   }
   return puppeteer;
 }
@@ -35,8 +36,6 @@ async function ensureBrowser() {
   if (browser) return browser;
 
   const pup = await loadPuppeteer();
-  if (!pup) return null;
-
   const launch = pup.default?.launch || pup.launch;
   browser = await launch({
     headless: 'shell',
@@ -59,8 +58,6 @@ async function ensureBrowser() {
  */
 export async function checkAnchorHeadless(url, anchor, timeoutMs = 30000) {
   const instance = await ensureBrowser();
-  if (!instance) return true;
-
   let page;
   try {
     page = await instance.newPage();
