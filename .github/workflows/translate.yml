@@ -17,9 +17,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Need parent commit to compute the diff
+          fetch-depth: 2
 
       # Hashes are gitignored but must persist between runs so --incremental
-      # only re-translates files that actually changed since the last run.
+      # only re-translates sections that actually changed within a file.
       # The key includes the commit SHA so each push creates a new entry;
       # restore-keys fetches the most recent previous entry as a fallback.
       - name: Restore translation hash cache
@@ -37,10 +40,46 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Split the diff into added/modified files (to translate) and deleted files (to clean up).
+      - name: Get changed translatable files
+        id: diff
+        run: |
+          CHANGED=$(git diff --name-only --diff-filter=AMR HEAD^1 HEAD \
+            | grep -E '^(src/content/docs/.+\.mdx|src/data/sidebars/.+\.json|src/api-reference/specs/[^./]+\.yaml)$' \
+            | tr '\n' ',' | sed 's/,$//')
+          DELETED=$(git diff --name-only --diff-filter=D HEAD^1 HEAD \
+            | grep -E '^(src/content/docs/.+\.mdx|src/api-reference/specs/[^./]+\.yaml)$' \
+            | tr '\n' ',' | sed 's/,$//')
+          echo "files=$CHANGED" >> $GITHUB_OUTPUT
+          echo "deleted=$DELETED" >> $GITHUB_OUTPUT
+
       - name: Translate changed files
+        if: steps.diff.outputs.files != ''
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: node scripts/translate.mjs --incremental
+        run: node scripts/translate.mjs --incremental --only-files "${{ steps.diff.outputs.files }}"
+
+      # Remove translated files and hash caches for deleted source content.
+      # Sidebars are intentionally excluded: deleting a sidebar JSON is rare and
+      # rebuildSidebarLabels will naturally omit it on the next sidebar update.
+      - name: Clean up deleted translations
+        if: steps.diff.outputs.deleted != ''
+        run: |
+          for SRC_PATH in $(echo "${{ steps.diff.outputs.deleted }}" | tr ',' '\n'); do
+            BASENAME=$(basename "$SRC_PATH")
+            EXT="${BASENAME##*.}"
+            NAME="${BASENAME%.*}"
+            for LOCALE_DIR in src/locales/*/; do
+              if [ "$EXT" = "mdx" ]; then
+                rm -f "${LOCALE_DIR}${NAME}.mdx"
+                rm -f "${LOCALE_DIR}.hashes/${NAME}.json"
+              elif [ "$EXT" = "yaml" ]; then
+                # Remove all localized variants: adapty-api.zh.yaml, etc.
+                rm -f src/api-reference/specs/${NAME}.*.yaml
+                rm -f "${LOCALE_DIR}.hashes/api-specs/${NAME}.json"
+              fi
+            done
+          done
 
       # Commit any new or updated locale files back to main.
       # This push triggers s3-deploy-production.yml, so the deploy that follows

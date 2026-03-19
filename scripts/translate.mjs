@@ -13,6 +13,8 @@
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --api-specs --file adapty-api # single API spec
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --incremental                          # all locales, changed files only (build pipeline)
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --incremental                # single locale, changed files only
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --incremental --only-files "src/content/docs/foo.mdx,src/data/sidebars/ios.json"
+ *                                                                                               # incremental, but only check these paths (CI git-diff mode)
  */
 
 import fs from 'node:fs/promises';
@@ -69,6 +71,22 @@ const resumeIdx = args.indexOf('--resume');
 const flagResume = resumeIdx !== -1;
 // Explicit batch ID passed after --resume (may be absent — auto-read from file in main())
 const resumeArgValue = flagResume ? args[resumeIdx + 1] : null;
+
+const onlyFilesIdx = args.indexOf('--only-files');
+const onlyFilePaths = onlyFilesIdx !== -1
+  ? args[onlyFilesIdx + 1].split(',').map(s => s.trim()).filter(Boolean)
+  : null;
+
+// Derive per-category ID sets from --only-files (null = no filter)
+const onlyDocIds = onlyFilePaths
+  ? new Set(onlyFilePaths.filter(p => p.startsWith('src/content/docs/') && p.endsWith('.mdx')).map(p => path.basename(p, '.mdx')))
+  : null;
+const onlySidebarNames = onlyFilePaths
+  ? new Set(onlyFilePaths.filter(p => p.startsWith('src/data/sidebars/') && p.endsWith('.json')).map(p => path.basename(p, '.json')))
+  : null;
+const onlySpecIds = onlyFilePaths
+  ? new Set(onlyFilePaths.filter(p => /^src\/api-reference\/specs\/[^./]+\.yaml$/.test(p)).map(p => path.basename(p, '.yaml')))
+  : null;
 
 // Targeted operations require an explicit --lang
 if ((flagResume || fileId || fileIds || sidebarName || platform) && !lang) {
@@ -161,11 +179,7 @@ async function loadGlossary(lang) {
     const dict = JSON.parse(await fs.readFile(dictPath, 'utf-8'));
     const lines = Object.entries(dict)
       .filter(([_, translations]) => lang in translations)
-      .map(([en, translations]) => {
-        const tr   = translations[lang];
-        const note = translations['_note'] ? ` (${translations['_note']})` : '';
-        return `- ${en} → ${tr}${note}`;
-      });
+      .map(([en, translations]) => `- ${en} → ${translations[lang]}`);
     if (lines.length === 0) return '';
     return `\nGLOSSARY — use these exact translations for product-specific terms (do not improvise):\n${lines.join('\n')}`;
   } catch {
@@ -209,6 +223,12 @@ async function main() {
     return;
   }
 
+  // --only-files: fast exit if the diff contains nothing translatable
+  if (onlyFilePaths && onlyDocIds.size === 0 && onlySidebarNames.size === 0 && onlySpecIds.size === 0) {
+    console.log('[translate] --only-files: no translatable files in diff — nothing to do.');
+    return;
+  }
+
   // Determine which languages to process
   const langs = lang ? [lang] : await discoverLocales();
   if (langs.length === 0) {
@@ -229,17 +249,17 @@ async function main() {
     if (!flagApiSpecs) {
       // --sidebar targets a single sidebar only; skip article translation
       if (!sidebarName) {
-        await translateForLang(client, currentLang, localesDir, hashesDir, systemPrompt, tag);
+        await translateForLang(client, currentLang, localesDir, hashesDir, systemPrompt, tag, onlyDocIds);
       }
 
       // Sidebars are not file/platform-specific; skip only for --file/--ids targeting
       if (!fileId && !fileIds) {
-        await translateSidebarsForLang(client, currentLang, localesDir, hashesDir, targetLanguage, glossary, tag, sidebarName);
+        await translateSidebarsForLang(client, currentLang, localesDir, hashesDir, targetLanguage, glossary, tag, sidebarName, onlySidebarNames);
       }
     }
 
     if (flagApiSpecs || flagIncremental) {
-      await translateApiSpecsForLang(client, currentLang, localesDir, hashesDir, targetLanguage, glossary, tag);
+      await translateApiSpecsForLang(client, currentLang, localesDir, hashesDir, targetLanguage, glossary, tag, onlySpecIds);
     }
   }
 }
@@ -248,11 +268,17 @@ async function main() {
 // Per-language translation
 // ---------------------------------------------------------------------------
 
-async function translateForLang(client, lang, localesDir, hashesDir, systemPrompt, tag) {
+async function translateForLang(client, lang, localesDir, hashesDir, systemPrompt, tag, onlyDocIds = null) {
   const allFiles = await collectMdxFiles(DOCS_DIR);
 
+  // Apply --only-files filter (git-diff mode): restrict to specific article IDs
+  let files = onlyDocIds ? allFiles.filter(f => onlyDocIds.has(path.basename(f, '.mdx'))) : allFiles;
+  if (onlyDocIds && files.length === 0) {
+    console.log(`${tag} No matching articles from --only-files — skipping docs.`);
+    return;
+  }
+
   // Apply --file / --ids / --platform filters
-  let files = allFiles;
   if (fileId) {
     files = allFiles.filter(f => path.basename(f, '.mdx') === fileId);
     if (files.length === 0) {
@@ -614,22 +640,31 @@ async function rebuildSidebarLabels(sidebarFiles, sidebarHashesDir, localesDir) 
   await fs.writeFile(path.join(localesDir, '_sidebar-labels.json'), JSON.stringify(merged, null, 2), 'utf-8');
 }
 
-async function translateSidebarsForLang(client, lang, localesDir, hashesDir, targetLanguage, glossary, tag, sidebarName = null) {
+async function translateSidebarsForLang(client, lang, localesDir, hashesDir, targetLanguage, glossary, tag, sidebarName = null, onlySidebarNames = null) {
   const sidebarHashesDir = path.join(hashesDir, 'sidebars');
 
   const entries = await fs.readdir(SIDEBARS_DIR, { withFileTypes: true });
-  let sidebarFiles = entries
+  const allSidebarFiles = entries
     .filter(e => e.isFile() && e.name.endsWith('.json'))
     .map(e => path.join(SIDEBARS_DIR, e.name));
 
+  // sidebarFiles = the subset to translate; allSidebarFiles = always used for the final rebuild
+  let sidebarFiles = allSidebarFiles;
+
   if (sidebarName) {
-    const match = sidebarFiles.find(f => path.basename(f, '.json') === sidebarName);
+    const match = allSidebarFiles.find(f => path.basename(f, '.json') === sidebarName);
     if (!match) {
       console.error(`${tag} No sidebar found with name: ${sidebarName}`);
-      console.error(`  Available: ${sidebarFiles.map(f => path.basename(f, '.json')).join(', ')}`);
+      console.error(`  Available: ${allSidebarFiles.map(f => path.basename(f, '.json')).join(', ')}`);
       process.exit(1);
     }
     sidebarFiles = [match];
+  } else if (onlySidebarNames) {
+    sidebarFiles = allSidebarFiles.filter(f => onlySidebarNames.has(path.basename(f, '.json')));
+    if (sidebarFiles.length === 0) {
+      console.log(`${tag} No matching sidebars from --only-files — skipping sidebars.`);
+      return;
+    }
   }
 
   const toTranslate = [];
@@ -655,7 +690,7 @@ async function translateSidebarsForLang(client, lang, localesDir, hashesDir, tar
   if (toTranslate.length === 0) {
     console.log(`${tag} Sidebars: all up to date.`);
     // Still rebuild _sidebar-labels.json in case it was deleted
-    await rebuildSidebarLabels(sidebarFiles, sidebarHashesDir, localesDir);
+    await rebuildSidebarLabels(allSidebarFiles, sidebarHashesDir, localesDir);
     return;
   }
 
@@ -714,14 +749,14 @@ async function translateSidebarsForLang(client, lang, localesDir, hashesDir, tar
   }
 
   // Rebuild the single _sidebar-labels.json from all cached sidebar translations
-  await rebuildSidebarLabels(sidebarFiles, sidebarHashesDir, localesDir);
+  await rebuildSidebarLabels(allSidebarFiles, sidebarHashesDir, localesDir);
 }
 
 // ---------------------------------------------------------------------------
 // API spec translation
 // ---------------------------------------------------------------------------
 
-async function translateApiSpecsForLang(client, lang, localesDir, hashesDir, targetLanguage, glossary, tag) {
+async function translateApiSpecsForLang(client, lang, localesDir, hashesDir, targetLanguage, glossary, tag, onlySpecIds = null) {
   const apiHashesDir = path.resolve(hashesDir, 'api-specs');
   const systemPrompt = buildApiSpecSystemPrompt(targetLanguage) + glossary;
 
@@ -729,9 +764,18 @@ async function translateApiSpecsForLang(client, lang, localesDir, hashesDir, tar
   // English files have exactly one dot: "adapty-api.yaml" → ["adapty-api","yaml"] (length 2).
   // Localized files have two dots: "adapty-api.zh.yaml" → length 3.
   const entries = await fs.readdir(API_SPECS_DIR, { withFileTypes: true });
-  const specFiles = entries
+  let specFiles = entries
     .filter(e => e.isFile() && e.name.endsWith('.yaml') && e.name.split('.').length === 2)
     .map(e => ({ name: e.name, full: path.join(API_SPECS_DIR, e.name), basename: path.basename(e.name, '.yaml') }));
+
+  // Apply --only-files filter
+  if (onlySpecIds) {
+    specFiles = specFiles.filter(s => onlySpecIds.has(s.basename));
+    if (specFiles.length === 0) {
+      console.log(`${tag} No matching API specs from --only-files — skipping specs.`);
+      return;
+    }
+  }
 
   const toTranslate = [];
   for (const spec of specFiles) {
@@ -805,8 +849,13 @@ function slugify(text) {
     .replace(/^-|-$/g, '');
 }
 
+// Sections larger than this get split further by paragraph blocks.
+const PARAGRAPH_FALLBACK_CHARS = 3000;
+
 /**
- * Split MDX content into H2-based sections.
+ * Split MDX content into H2/H3-based sections.
+ * Falls back to paragraph-level splitting for sections that exceed PARAGRAPH_FALLBACK_CHARS
+ * (covers articles with no headings, or long preambles before the first heading).
  * Returns Array<{id: string, content: string}> where content pieces join('\n') === original.
  */
 function splitIntoSections(content) {
@@ -828,7 +877,7 @@ function splitIntoSections(content) {
         continue;
       } else if (i === 0) {
         frontmatterDone = true;
-        // fall through to H2 detection for line 0
+        // fall through to heading detection for line 0
       } else if (inFrontmatter) {
         if (line.trim() === '---') {
           inFrontmatter = false;
@@ -848,20 +897,85 @@ function splitIntoSections(content) {
       }
     }
 
-    // H2 heading → start a new section
-    if (codeBlockFence === null && /^## /.test(line)) {
+    // H2 or H3 heading → start a new section
+    if (codeBlockFence === null && /^#{2,3} /.test(line)) {
       sections.push({ id: currentId, content: lines.slice(sectionStart, i).join('\n') });
       sectionStart = i;
+      const level = line.startsWith('### ') ? 'h3' : 'h2';
       const headingText = line
-        .replace(/^## /, '')
+        .replace(/^#{2,3} /, '')
         .replace(/\s*\{#[^}]+\}\s*$/, '')
         .trim();
-      currentId = 'h2-' + slugify(headingText);
+      currentId = `${level}-` + slugify(headingText);
     }
   }
 
   sections.push({ id: currentId, content: lines.slice(sectionStart).join('\n') });
-  return sections;
+
+  // Paragraph fallback: split large sections that have no sub-headings into
+  // paragraph-sized chunks so we don't re-translate an entire H2+ block when
+  // only one paragraph changed. Also handles heading-free articles.
+  const result = [];
+  for (const section of sections) {
+    if (section.content.length <= PARAGRAPH_FALLBACK_CHARS) {
+      result.push(section);
+    } else {
+      result.push(...splitByParagraphBlocks(section));
+    }
+  }
+  return result;
+}
+
+/**
+ * Split a section that is too large into paragraph-sized chunks separated by
+ * blank lines (respecting code block boundaries). Each chunk gets a stable
+ * positional ID: `<parentId>-p1`, `<parentId>-p2`, etc.
+ * If the section cannot be split (e.g. one giant code block), returns it as-is.
+ */
+function splitByParagraphBlocks(section) {
+  const lines = section.content.split('\n');
+  const rawBlocks = [];
+  let start = 0;
+  let codeBlockFence = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      if (codeBlockFence === null) codeBlockFence = fenceMatch[1][0];
+      else if (line[0] === codeBlockFence) codeBlockFence = null;
+    }
+
+    // Blank line outside a code block = paragraph boundary
+    if (codeBlockFence === null && line.trim() === '' && i > start) {
+      const block = lines.slice(start, i + 1).join('\n');
+      if (block.trim()) rawBlocks.push(block);
+      start = i + 1;
+    }
+  }
+  const tail = lines.slice(start).join('\n');
+  if (tail.trim()) rawBlocks.push(tail);
+
+  if (rawBlocks.length <= 1) return [section]; // can't split further
+
+  // Merge consecutive paragraph blocks into chunks that stay under the threshold
+  const chunks = [];
+  let current = '';
+  let idx = 1;
+  for (const block of rawBlocks) {
+    const candidate = current ? `${current}\n${block}` : block;
+    if (current && candidate.length > PARAGRAPH_FALLBACK_CHARS) {
+      chunks.push({ id: `${section.id}-p${idx}`, content: current });
+      idx++;
+      current = block;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) chunks.push({ id: `${section.id}-p${idx}`, content: current });
+
+  return chunks.length > 1 ? chunks : [section];
 }
 
 /** Append -2, -3 suffixes for duplicate section ids. */
