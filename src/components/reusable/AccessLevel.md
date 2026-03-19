@@ -5,7 +5,7 @@
 | access_level_id               | String        | Yes      | No       | ID for the Paid Access Level set up in the Adapty Dashboard. |
 | store                         | String        | Yes      | No       | Store where the product was bought. Options: **app_store**, **play_store**, **stripe**, or the name of your [custom store](custom-store). |
 | store_product_id              | String        | Yes      | No       | ID of the product in the app store (like App Store, Google Play, Stripe) that unlocked this access level. |
-| store_base_plan_id            | String        | Yes      | Yes      | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in Google Play or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#what-is-a-price) in Stripe. |
+| store_base_plan_id            | String        | Yes      | Yes      | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in Google Play or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) in Stripe. |
 | store_transaction_id          | String        | Yes      | No       | Transaction ID in the app store (App Store, Google Play, Stripe, etc.). |
 | store_original_transaction_id | String        | Yes      | No       | <p>For subscriptions, this ID links the original transaction in the chain of renewals. Later transactions are linked as renewals.</p><p>If there's no renewal, store_original_transaction_id matches store_transaction_id.</p> |
 | offer                         | Object | Yes      | No       | The [Offer](server-side-api-objects#offer) object. Can be `null` if the customer has no access levels. |

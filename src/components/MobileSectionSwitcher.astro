@@ -1,0 +1,593 @@
+---
+import SidebarItem from './SidebarItem.astro';
+
+interface Props {
+    currentSectionId: 'tutorial' | 'sdk' | 'api';
+    currentPlatformId: string;
+    currentSlug: string;
+    tutorialSidebar: any[];
+    apiSidebar: any[];
+    initialSdkSidebar: any[];
+    allSdkSidebars: Record<string, any[]>;
+    sdkPlatforms: { id: string; label: string; sidebar: string }[];
+}
+
+const {
+    currentSectionId,
+    currentPlatformId,
+    currentSlug,
+    tutorialSidebar,
+    apiSidebar,
+    initialSdkSidebar,
+    allSdkSidebars,
+    sdkPlatforms,
+} = Astro.props;
+
+const activeId = currentSlug.split('/').pop() || '';
+---
+
+<!--
+  No transition:persist here — relies on parent <aside>'s platform-keyed persist.
+  data-current-* attributes are always correct SSR values:
+    - within-platform nav: <aside> persists with unchanged attrs (same platform = correct)
+    - cross-platform nav: <aside> is replaced with fresh SSR HTML
+-->
+<div
+    class="msw-root lg:hidden px-3 pt-2 pb-1"
+    data-current-section={currentSectionId}
+    data-current-platform={currentPlatformId}
+>
+    <!-- Tab bar -->
+    <nav class="msw-tabs" aria-label="Documentation sections">
+        <button
+            class="msw-tab"
+            data-section="tutorial"
+            data-active={currentSectionId === 'tutorial' ? '' : undefined}
+        >Tutorial</button>
+        <button
+            class="msw-tab"
+            data-section="sdk"
+            data-active={currentSectionId === 'sdk' ? '' : undefined}
+        >SDK</button>
+        <button
+            class="msw-tab"
+            data-section="api"
+            data-active={currentSectionId === 'api' ? '' : undefined}
+        >CLI &amp; APIs</button>
+    </nav>
+
+    <!-- Tutorial panel -->
+    <section data-panel="tutorial" hidden={currentSectionId !== 'tutorial'}>
+        <ul class="space-y-1 mt-2">
+            {tutorialSidebar.map((item) => (
+                <SidebarItem item={item} activeId={activeId} />
+            ))}
+        </ul>
+    </section>
+
+    <!-- SDK panel -->
+    <section data-panel="sdk" hidden={currentSectionId !== 'sdk'}>
+        <!-- Platform picker -->
+        <div class="msw-section-label mt-2">Platform</div>
+        <ul class="msw-platform-list">
+            {sdkPlatforms.map((platform) => (
+                <li>
+                    <button
+                        class="msw-platform-btn"
+                        data-platform-id={platform.id}
+                        data-is-current={platform.id === currentPlatformId ? '' : undefined}
+                        data-is-selected={platform.id === currentPlatformId ? '' : undefined}
+                    >
+                        {platform.label}
+                    </button>
+                </li>
+            ))}
+        </ul>
+        <!-- Purple separator -->
+        <div class="msw-separator"></div>
+        <!-- SDK links container — pre-rendered from initialSdkSidebar; re-rendered by JS on platform swap -->
+        <div id="msw-sdk-links" data-rendered-platform={currentPlatformId}>
+            <ul class="space-y-1">
+                {initialSdkSidebar.map((item) => (
+                    <SidebarItem item={item} activeId={activeId} />
+                ))}
+            </ul>
+        </div>
+    </section>
+
+    <!-- API panel -->
+    <section data-panel="api" hidden={currentSectionId !== 'api'}>
+        <ul class="space-y-1 mt-2">
+            {apiSidebar.map((item) => (
+                <SidebarItem item={item} activeId={activeId} />
+            ))}
+        </ul>
+    </section>
+
+    <!-- JSON data island: all 7 SDK platforms fully resolved via transformItems() at build time -->
+    <script type="application/json" id="sdk-sidebars-data" set:html={JSON.stringify(allSdkSidebars)}></script>
+
+<script>
+    // ─── HTML helpers ────────────────────────────────────────────────────────────
+
+    function escHtml(str: string): string {
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function hasActiveDescendant(items: any[], activeId: string): boolean {
+        for (const item of items) {
+            if (item.id === activeId || item.link?.id === activeId) return true;
+            if (item.items && hasActiveDescendant(item.items, activeId)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Render a sidebar item as an HTML string matching SidebarItem.astro structure.
+     * Called when swapping SDK platform links client-side from the JSON island.
+     *
+     * Uses data-msw-link / data-msw-container (NOT data-sidebar-link / data-sidebar-container)
+     * so that Sidebar.astro's updateActiveState() — which does document.querySelectorAll('[data-sidebar-link]')
+     * and strips sidebar-item-primary/secondary from inactive items — does NOT touch these elements.
+     * Active state is managed by updateMswActiveState() instead.
+     */
+    function renderItem(item: any, activeId: string, depth = 0): string {
+        const paddingLeft = 12 + depth * 8;
+        const fontSize = depth === 0 ? 'text-[14px]' : 'text-[13px]';
+        const fontWeight = depth === 0 ? 'font-semibold' : 'font-medium';
+        const isActive =
+            (item.id && item.id === activeId) ||
+            (item.link?.id && item.link.id === activeId);
+        const textColor = isActive
+            ? 'sidebar-item-active'
+            : depth === 0 ? 'sidebar-item-primary' : 'sidebar-item-secondary';
+        const bgClass = isActive ? 'sidebar-item-bg-active' : 'sidebar-item-hover';
+        const href = item.href || '#';
+        const activeAttr = isActive ? 'id="active-sidebar-item"' : '';
+        // Matches SidebarItem.astro lines 81/135: data-astro-reload on /api- paths
+        const reloadAttr = href.startsWith('/api-') ? 'data-astro-reload' : '';
+
+        if (item.type === 'category') {
+            const isOpen =
+                item.collapsed === false ||
+                (item.items && hasActiveDescendant(item.items, activeId));
+            const categoryId = escHtml(String(item.id || item.label || ''));
+            const label = escHtml(item.label || '');
+            const children = (item.items || [])
+                .map((c: any) => renderItem(c, activeId, depth + 1))
+                .join('');
+            const chevronRotate = isOpen ? 'rotate(90deg)' : 'rotate(0deg)';
+
+            // Category link uses data-msw-link (not data-sidebar-link)
+            const headerContent = item.href
+                ? `<a href="${escHtml(href)}" class="flex-1 text-left transition-colors category-title-link ${fontSize} ${fontWeight} ${textColor}" data-category-id="${categoryId}" data-msw-link data-href="${escHtml(href)}" ${reloadAttr}>${label}</a>`
+                : `<button class="flex-1 text-left category-title-link transition-colors ${fontSize} ${fontWeight} ${textColor}" data-category-id="${categoryId}">${label}</button>`;
+
+            return `<li class="w-full relative group/item">
+  <div class="category-wrapper mb-0.5">
+    <div class="flex items-center justify-between w-full py-1.5 pr-3 transition-all duration-200 border-l-[3px] border-transparent ${fontSize} ${fontWeight} ${textColor} ${bgClass}" style="padding-left:${paddingLeft}px" ${activeAttr} data-msw-container data-depth="${depth}">
+      ${headerContent}
+      <div class="flex items-center">
+        <button class="category-toggle p-1 -mr-1 sidebar-toggle-btn rounded-lg transition-all duration-200" data-category-id="${categoryId}" aria-label="Toggle category">
+          <svg class="w-3 h-3 sidebar-chevron transition-transform duration-200" style="transition-timing-function:cubic-bezier(0.4,0,0.2,1);transform:${chevronRotate}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="category-items-container${isOpen ? ' expanded' : ''}" data-category-id="${categoryId}" data-depth="${depth}" data-default-open="${isOpen}">
+      <div class="category-items-content">
+        <ul class="space-y-0.5 sidebar-category-border ml-[14px] mt-0.5 mb-1">${children}</ul>
+      </div>
+    </div>
+  </div>
+</li>`;
+        }
+
+        // doc or link — uses data-msw-link and data-msw-container (not sidebar equivalents)
+        // data-depth is stored directly on the container so updateMswActiveState can read it without closest()
+        return `<li class="w-full relative group/item">
+  <a href="${escHtml(href)}" class="flex items-center w-full py-1.5 pr-4 transition-all duration-200 border-l-[3px] border-transparent ${fontSize} ${fontWeight} ${textColor} ${bgClass}" style="padding-left:${paddingLeft}px" ${activeAttr} data-msw-link data-href="${escHtml(href)}" data-msw-container data-depth="${depth}" ${reloadAttr}>${escHtml(item.label || '')}</a>
+</li>`;
+    }
+
+    /**
+     * Update active state for MSW-rendered (JS-injected) SDK links.
+     * Uses [data-msw-link] / [data-msw-container] — distinct from [data-sidebar-link] —
+     * so Sidebar.astro's updateActiveState() never touches these elements.
+     * Correctly restores sidebar-item-primary/secondary on inactive items
+     * (updateActiveState strips those classes; this function does not).
+     */
+    function updateMswActiveState(root: HTMLElement) {
+        const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+        root.querySelectorAll<HTMLElement>('[data-msw-link]').forEach((link) => {
+            const href = link.getAttribute('data-href')?.replace(/\/$/, '') || '/';
+            const isActive = href === currentPath;
+            const container = link.closest<HTMLElement>('[data-msw-container]');
+            if (!container) return;
+
+            if (isActive) {
+                container.classList.add('sidebar-item-bg-active', 'sidebar-item-active');
+                container.classList.remove('sidebar-item-hover', 'sidebar-item-primary', 'sidebar-item-secondary');
+                container.id = 'active-sidebar-item';
+            } else {
+                container.classList.remove('sidebar-item-bg-active', 'sidebar-item-active');
+                // Restore depth-based color class (do NOT strip it — this is the fix vs updateActiveState)
+                if (!container.classList.contains('sidebar-item-primary') &&
+                    !container.classList.contains('sidebar-item-secondary')) {
+                    // data-depth is set directly on data-msw-container elements by renderItem()
+                    const depth = parseInt(container.getAttribute('data-depth') || '0', 10);
+                    container.classList.add(depth === 0 ? 'sidebar-item-primary' : 'sidebar-item-secondary');
+                }
+                container.classList.add('sidebar-item-hover');
+                if (container.id === 'active-sidebar-item') container.id = '';
+            }
+        });
+    }
+
+    function renderItems(items: any[], activeId: string): string {
+        return items.map((item) => renderItem(item, activeId)).join('');
+    }
+
+    // ─── Category toggle init ─────────────────────────────────────────────────────
+
+    /**
+     * Initialize category expand/collapse toggles within a container.
+     * Uses data-msw-listener-added (not data-listener-added) to avoid collision
+     * with SidebarItem.astro's global initSidebar() which uses the same attribute.
+     */
+    function initToggles(container: HTMLElement) {
+        container.querySelectorAll<HTMLElement>('.category-toggle').forEach((btn) => {
+            if (btn.hasAttribute('data-msw-listener-added')) return;
+            btn.setAttribute('data-msw-listener-added', 'true');
+
+            const wrapper = btn.closest('.category-wrapper');
+            const itemsList = wrapper?.querySelector<HTMLElement>('.category-items-container');
+            const svg = btn.querySelector<SVGElement>('svg');
+            if (!itemsList || !svg) return;
+
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const expanded = itemsList.classList.toggle('expanded');
+                svg.style.transform = expanded ? 'rotate(90deg)' : 'rotate(0deg)';
+            });
+        });
+
+        container.querySelectorAll<HTMLElement>('.category-title-link').forEach((link) => {
+            if (link.hasAttribute('data-msw-listener-added')) return;
+            link.setAttribute('data-msw-listener-added', 'true');
+            const isNavLink = link.tagName === 'A';
+
+            link.addEventListener('click', (e) => {
+                const wrapper = link.closest('.category-wrapper');
+                const itemsList = wrapper?.querySelector<HTMLElement>('.category-items-container');
+                const toggleBtn = wrapper?.querySelector<HTMLElement>('.category-toggle');
+                const svg = toggleBtn?.querySelector<SVGElement>('svg');
+                if (!itemsList || !svg) return;
+
+                const expanded = itemsList.classList.contains('expanded');
+                if (isNavLink) {
+                    if (!expanded) {
+                        itemsList.classList.add('expanded');
+                        svg.style.transform = 'rotate(90deg)';
+                    }
+                } else {
+                    e.preventDefault();
+                    const nowExpanded = itemsList.classList.toggle('expanded');
+                    svg.style.transform = nowExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+                }
+            });
+        });
+    }
+
+    // ─── JSON data island ─────────────────────────────────────────────────────────
+
+    function getSdkSidebars(): Record<string, any[]> {
+        // Only one MobileSectionSwitcher exists per page — id is unique
+        const el = document.getElementById('sdk-sidebars-data');
+        if (!el) return {};
+        try { return JSON.parse(el.textContent || '{}'); } catch { return {}; }
+    }
+
+    // ─── Tab switching ────────────────────────────────────────────────────────────
+
+    function switchTab(root: HTMLElement, section: string) {
+        root.querySelectorAll<HTMLElement>('.msw-tab').forEach((btn) => {
+            btn.dataset.section === section
+                ? btn.setAttribute('data-active', '')
+                : btn.removeAttribute('data-active');
+        });
+        root.querySelectorAll<HTMLElement>('[data-panel]').forEach((panel) => {
+            panel.dataset.panel === section
+                ? panel.removeAttribute('hidden')
+                : panel.setAttribute('hidden', '');
+        });
+    }
+
+    // ─── SDK platform switching ───────────────────────────────────────────────────
+
+    function switchPlatform(root: HTMLElement, platformId: string) {
+        const sidebars = getSdkSidebars();
+        const items = sidebars[platformId];
+        if (!items) return;
+
+        // Update picker: data-is-selected tracks browsing selection (not data-is-current which is fixed)
+        root.querySelectorAll<HTMLElement>('.msw-platform-btn').forEach((btn) => {
+            btn.dataset.platformId === platformId
+                ? btn.setAttribute('data-is-selected', '')
+                : btn.removeAttribute('data-is-selected');
+        });
+
+        // Re-render SDK links
+        const linksContainer = root.querySelector<HTMLElement>('#msw-sdk-links');
+        if (!linksContainer) return;
+
+        const currentPath = window.location.pathname.replace(/\/$/, '');
+        const activeId = currentPath.split('/').filter(Boolean).pop() || '';
+
+        linksContainer.setAttribute('data-rendered-platform', platformId);
+        linksContainer.innerHTML = `<ul class="space-y-1">${renderItems(items, activeId)}</ul>`;
+        initToggles(linksContainer);
+        updateMswActiveState(root);
+    }
+
+    // ─── Navigation re-sync ───────────────────────────────────────────────────────
+
+    /**
+     * Called on astro:page-load. Re-syncs tab and SDK state from SSR data-* attrs.
+     *
+     * SSR attrs are always correct because:
+     * - Within-platform nav: <aside> persists with same attrs (platform unchanged = correct)
+     * - Cross-platform nav: <aside> is replaced with fresh SSR HTML
+     *
+     * Skips SDK link re-render if platform is unchanged to preserve expanded category state.
+     */
+    function syncFromSSR() {
+        const root = document.querySelector<HTMLElement>('.msw-root');
+        if (!root) return;
+
+        const section = root.dataset.currentSection as string;
+        const platform = root.dataset.currentPlatform as string;
+
+        // Sync active tab and visible panel
+        switchTab(root, section);
+
+        if (section === 'sdk') {
+            // Sync data-is-current to the newly loaded page's platform
+            root.querySelectorAll<HTMLElement>('.msw-platform-btn').forEach((btn) => {
+                if (btn.dataset.platformId === platform) {
+                    btn.setAttribute('data-is-current', '');
+                    btn.setAttribute('data-is-selected', '');
+                } else {
+                    btn.removeAttribute('data-is-current');
+                    btn.removeAttribute('data-is-selected');
+                }
+            });
+
+            // Only re-render SDK links if the platform has changed
+            // (avoids collapsing user-expanded categories on within-platform navigation)
+            const linksContainer = root.querySelector<HTMLElement>('#msw-sdk-links');
+            const renderedPlatform = linksContainer?.dataset.renderedPlatform;
+            if (renderedPlatform !== platform) {
+                switchPlatform(root, platform);
+                // switchPlatform already calls updateMswActiveState — no double call needed
+            } else {
+                // Within-platform nav: <aside> persists with DOM intact.
+                // JS-rendered items (data-msw-link) need active state refreshed;
+                // SSR items (data-sidebar-link) are handled by Sidebar.astro's updateActiveState().
+                updateMswActiveState(root);
+            }
+        }
+    }
+
+    // ─── Platform selection reset on sidebar open ─────────────────────────────────
+
+    /**
+     * Reset section tab, platform selection, and SDK links to the current page's state.
+     * Called whenever the sidebar transitions from closed → open.
+     */
+    function resetToCurrentPage(root: HTMLElement) {
+        const section = root.dataset.currentSection as string;
+        const platform = root.dataset.currentPlatform as string;
+
+        // Reset section tab
+        switchTab(root, section);
+
+        // Reset platform selection visual
+        root.querySelectorAll<HTMLElement>('.msw-platform-btn').forEach((btn) => {
+            if (btn.hasAttribute('data-is-current')) {
+                btn.setAttribute('data-is-selected', '');
+            } else {
+                btn.removeAttribute('data-is-selected');
+            }
+        });
+
+        // Re-render SDK links if the user had browsed to a different platform
+        const linksContainer = root.querySelector<HTMLElement>('#msw-sdk-links');
+        if (linksContainer && linksContainer.dataset.renderedPlatform !== platform) {
+            switchPlatform(root, platform);
+        }
+    }
+
+    // ─── Event wiring ─────────────────────────────────────────────────────────────
+
+    function init() {
+        const root = document.querySelector<HTMLElement>('.msw-root');
+        if (!root) return;
+
+        // Tab clicks
+        root.querySelectorAll<HTMLElement>('.msw-tab').forEach((btn) => {
+            if (btn.hasAttribute('data-msw-listener-added')) return;
+            btn.setAttribute('data-msw-listener-added', 'true');
+            btn.addEventListener('click', () => {
+                const section = btn.dataset.section;
+                if (section) switchTab(root, section);
+            });
+        });
+
+        // Platform picker clicks
+        root.querySelectorAll<HTMLElement>('.msw-platform-btn').forEach((btn) => {
+            if (btn.hasAttribute('data-msw-listener-added')) return;
+            btn.setAttribute('data-msw-listener-added', 'true');
+            btn.addEventListener('click', () => {
+                const platformId = btn.dataset.platformId;
+                if (platformId) switchPlatform(root, platformId);
+            });
+        });
+
+        // Watch for sidebar open → reset platform selection to current page's platform
+        const sidebar = document.getElementById('main-sidebar');
+        if (sidebar && !sidebar.hasAttribute('data-msw-observer-added')) {
+            sidebar.setAttribute('data-msw-observer-added', 'true');
+            new MutationObserver((mutations) => {
+                for (const m of mutations) {
+                    if (m.attributeName === 'data-open' && sidebar.getAttribute('data-open') === 'true') {
+                        resetToCurrentPage(root);
+                        break;
+                    }
+                }
+            }).observe(sidebar, { attributes: true, attributeFilter: ['data-open'] });
+        }
+
+        // Init category toggles for the pre-rendered initial SDK links.
+        // Note: SSR-rendered SDK links use data-sidebar-link (SidebarItem), not data-msw-link.
+        // updateMswActiveState only operates on data-msw-link elements (JS-rendered items).
+        // SSR items have correct active state set at build time by Astro's SidebarItem component
+        // and updated by Sidebar.astro's updateActiveState() on navigation — no call needed here.
+        const linksContainer = root.querySelector<HTMLElement>('#msw-sdk-links');
+        if (linksContainer) initToggles(linksContainer);
+    }
+
+    // Bootstrap:
+    // - astro:page-load: re-sync state + re-wire listeners (covers both initial load and navigations)
+    // - astro:after-swap: re-wire listeners only, immediately after <aside> DOM swap, so users
+    //   who tap very fast after a cross-platform navigation don't interact with unwired buttons.
+    //   syncFromSSR is NOT called here — SSR HTML is already correct at after-swap time.
+    init();
+    document.addEventListener('astro:page-load', () => { syncFromSSR(); init(); });
+    document.addEventListener('astro:after-swap', () => { init(); });
+</script>
+</div>
+
+<style>
+    /* Tab bar container */
+    .msw-tabs {
+        display: flex;
+        background: var(--bg-tertiary);
+        border-radius: 8px;
+        padding: 3px;
+        gap: 2px;
+        margin-bottom: 4px;
+    }
+
+    /* Individual tab button */
+    .msw-tab {
+        flex: 1;
+        text-align: center;
+        padding: 5px 4px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        background: transparent;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+        white-space: nowrap;
+    }
+
+    .msw-tab:hover {
+        color: var(--text-primary);
+    }
+
+    /* Active tab */
+    .msw-tab[data-active] {
+        background: var(--accent-primary);
+        color: #fff;
+        font-weight: 600;
+    }
+
+    /* Platform section label */
+    .msw-section-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 2px 8px 5px;
+    }
+
+    /* Platform list */
+    .msw-platform-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+
+    /* Platform button */
+    .msw-platform-btn {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 13.5px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        text-align: left;
+        transition: background 0.15s, color 0.15s;
+    }
+
+    .msw-platform-btn:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+    }
+
+    /* Current platform — fixed to the loaded page's platform, never moves */
+    /* Selected platform (resets to current on sidebar open) */
+    .msw-platform-btn[data-is-selected] {
+        background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+        color: var(--accent-primary);
+        font-weight: 600;
+    }
+
+    /* Purple separator line */
+    .msw-separator {
+        height: 2px;
+        background: var(--accent-primary);
+        border-radius: 2px;
+        margin: 8px 0;
+    }
+
+    /*
+      Category expand/collapse animation for JS-injected SDK links.
+      Mirrors SidebarItem.astro lines 200–213. Required because renderItem()
+      produces raw HTML strings — Astro component styles don't apply to them.
+    */
+    :global(#msw-sdk-links .category-items-container) {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    :global(#msw-sdk-links .category-items-container.expanded) {
+        grid-template-rows: 1fr;
+    }
+
+    :global(#msw-sdk-links .category-items-content) {
+        overflow: hidden;
+        min-height: 0;
+    }
+</style>

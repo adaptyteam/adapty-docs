@@ -5,17 +5,24 @@
  * Checks external URLs (HTTP status), internal doc links (file existence),
  * and runtime API routes (against the live site).
  *
- * Usage: node scripts/check-links/index.mjs [--external-only] [--internal-only] [--concurrency=N] [--format=html|ci]
+ * Usage:
+ *   node scripts/check-links/index.mjs [--external-only] [--internal-only] [--concurrency=N] [--format=html|ci]
+ *   node scripts/check-links/index.mjs --dev   # Check files changed since last push
+ *   node scripts/check-links/index.mjs --diff  # Check files changed in the PR branch vs main
  */
 
 import path from 'node:path';
 import { orchestrate } from './runner.mjs';
+import { orchestrateDiff } from './diff.mjs';
 import { printConsoleSummary } from './format-console.mjs';
 import { generateHtmlReport } from './format-html.mjs';
 import { emitAnnotations, writeStepSummary } from './format-ci.mjs';
 import { generateLlmReport } from './format-llm.mjs';
 
 const args = process.argv.slice(2);
+
+const isDev = args.includes('--dev');
+const isDiff = args.includes('--diff');
 
 const config = {
   docsDir: path.resolve('src/content/docs'),
@@ -31,7 +38,9 @@ const isCI = !!process.env.GITHUB_ACTIONS;
 const format = formatArg || (isCI ? 'ci' : 'html');
 
 async function main() {
-  const results = await orchestrate(config);
+  const results = (isDev || isDiff)
+    ? await orchestrateDiff({ ...config, mode: isDev ? 'dev' : 'diff' })
+    : await orchestrate(config);
 
   // Always print console summary
   printConsoleSummary(results);

@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import SidebarItem from './SidebarItem.astro';
 import PlatformSwitcher from './PlatformSwitcher.astro';
+import MobileSectionSwitcher from './MobileSectionSwitcher.astro';
 import platformsData from '../data/platforms.json';
 
 interface Props {
@@ -101,6 +102,36 @@ function transformItems(items: any[]): any[] {
 
 const processedSidebar = transformItems(sidebarData);
 
+// Load all sidebar JSONs for the mobile section switcher
+const allSidebarModules = import.meta.glob('../data/sidebars/*.json', { eager: true });
+
+// Build fully-processed sidebars for all 7 SDK platforms.
+// Must use transformItems() here (not raw JSON) so that custom slugs and
+// frontmatter-derived labels are correctly resolved in the JSON data island.
+const allSdkSidebars: Record<string, any[]> = {};
+for (const platform of platformsData.sdkPlatforms) {
+    const sidebarPath = `../data/sidebars/${platform.sidebar}`;
+    const mod = allSidebarModules[sidebarPath] as { default: any[] } | undefined;
+    if (mod?.default) {
+        allSdkSidebars[platform.id] = transformItems(mod.default);
+    }
+}
+
+// Load tutorial and api sidebars
+const tutorialMod = allSidebarModules['../data/sidebars/tutorial.json'] as { default: any[] } | undefined;
+const apiMod = allSidebarModules['../data/sidebars/api.json'] as { default: any[] } | undefined;
+const tutorialSidebar = tutorialMod?.default ? transformItems(tutorialMod.default) : [];
+const apiSidebar = apiMod?.default ? transformItems(apiMod.default) : [];
+
+// Determine which top-level section the current page belongs to
+const sdkIds = new Set(platformsData.sdkPlatforms.map((p: any) => p.id));
+const currentSectionId: 'tutorial' | 'sdk' | 'api' =
+    currentPlatformId === 'tutorial' ? 'tutorial'
+    : currentPlatformId === 'api' ? 'api'
+    : 'sdk';
+const effectivePlatformId = sdkIds.has(currentPlatformId) ? currentPlatformId : 'ios';
+const initialSdkSidebar = allSdkSidebars[effectivePlatformId] ?? [];
+
 // Helper to find the label of the current active item
 function findActiveLabel(items: any[], activeId: string): string | undefined {
     for (const item of items) {
@@ -127,18 +158,23 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
     data-platform-id={currentPlatformId}
     transition:persist={`sidebar-${currentPlatformId}-${currentLocale ?? 'en'}`}
 >
-    <!-- Mobile Close Button -->
-    <button id="sidebar-close-btn" class="lg:hidden absolute top-4 right-4 p-2 transition-colors sidebar-close">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-    </button>
+    <MobileSectionSwitcher
+        currentSectionId={currentSectionId}
+        currentPlatformId={effectivePlatformId}
+        currentSlug={currentSlug}
+        tutorialSidebar={tutorialSidebar}
+        apiSidebar={apiSidebar}
+        initialSdkSidebar={initialSdkSidebar}
+        allSdkSidebars={allSdkSidebars}
+        sdkPlatforms={platformsData.sdkPlatforms}
+    />
 
-    <div class="px-6 pb-3 mb-2 lg:mt-0 mt-8">
-        {platformsData.sdkPlatforms.some(p => p.id === currentPlatformId) && (
+    <!-- Desktop-only: PlatformSwitcher dropdown -->
+    <div class="px-6 pb-3 mb-2 lg:mt-0 mt-8 hidden lg:block">
+        {platformsData.sdkPlatforms.some((p: any) => p.id === currentPlatformId) && (
             <div class="mb-1.5">
-                <PlatformSwitcher 
-                    currentPlatformId={currentPlatformId} 
+                <PlatformSwitcher
+                    currentPlatformId={currentPlatformId}
                     currentLabel={currentLabel}
                     currentActiveId={activeId}
                 />
@@ -146,7 +182,8 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
         )}
     </div>
 
-    <nav class="px-3" aria-label="Sidebar"> 
+    <!-- Desktop-only: main nav tree -->
+    <nav class="px-3 hidden lg:block" aria-label="Sidebar">
         <ul class="space-y-1">
           {processedSidebar.map((item) => (
             <SidebarItem item={item} activeId={activeId} />
@@ -234,6 +271,7 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
   .sidebar-main {
     position: fixed;
     inset: 0;
+    top: 64px;
     left: 0;
     right: auto;
     z-index: 60;
@@ -260,11 +298,4 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
     }
   }
   
-  .sidebar-close {
-    color: var(--text-tertiary);
-  }
-  
-  .sidebar-close:hover {
-    color: var(--text-secondary);
-  }
 </style>
