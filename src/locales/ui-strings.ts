@@ -14,7 +14,7 @@ export const UI_STRINGS = {
   header: {
     documentation: { en: 'Documentation',   zh: '文档' },
     mobileSdk:     { en: 'Mobile SDK',       zh: '移动端 SDK' },
-    serverApi:     { en: 'Server API',       zh: '服务端 API' },
+    serverApi:     { en: 'CLI & APIs',       zh: 'CLI 与 API' },
     whatsNew:      { en: "What's new",       zh: '最新动态' },
     supportForum:  { en: 'Support Forum',    zh: '支持论坛' },
     signIn:        { en: 'Sign In',          zh: '登录' },
@@ -32,6 +32,12 @@ export const UI_STRINGS = {
   },
   toc: {
     onThisPage: { en: 'On this page', zh: '本页目录' },
+  },
+  mobileSidebar: {
+    tutorial: { en: 'Tutorial',    zh: '教程' },
+    sdk:      { en: 'SDK',         zh: 'SDK' },
+    cliApis:  { en: 'CLI & APIs',  zh: 'CLI 与 API' },
+    platform: { en: 'Platform',    zh: '平台' },
   },
   footer: {
     sdkSampleApps: { en: 'Adapty SDK Sample Apps', zh: 'Adapty SDK 示例应用' },

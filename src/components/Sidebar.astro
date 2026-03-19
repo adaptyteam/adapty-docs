@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import SidebarItem from './SidebarItem.astro';
 import PlatformSwitcher from './PlatformSwitcher.astro';
+import MobileSectionSwitcher from './MobileSectionSwitcher.astro';
 import platformsData from '../data/platforms.json';
 
 interface Props {
@@ -101,6 +102,66 @@ function transformItems(items: any[]): any[] {
 
 const processedSidebar = transformItems(sidebarData);
 
+// Load all sidebar JSONs for the mobile section switcher
+const allSidebarModules = import.meta.glob('../data/sidebars/*.json', { eager: true });
+
+// Build fully-processed sidebars for all 7 SDK platforms.
+// Must use transformItems() here (not raw JSON) so that custom slugs and
+// frontmatter-derived labels are correctly resolved in the JSON data island.
+const allSdkSidebars: Record<string, any[]> = {};
+for (const platform of platformsData.sdkPlatforms) {
+    const sidebarPath = `../data/sidebars/${platform.sidebar}`;
+    const mod = allSidebarModules[sidebarPath] as { default: any[] } | undefined;
+    if (mod?.default) {
+        allSdkSidebars[platform.id] = transformItems(mod.default);
+    }
+}
+
+// Load tutorial and api sidebars
+const tutorialMod = allSidebarModules['../data/sidebars/tutorial.json'] as { default: any[] } | undefined;
+const apiMod = allSidebarModules['../data/sidebars/api.json'] as { default: any[] } | undefined;
+const tutorialSidebar = tutorialMod?.default ? transformItems(tutorialMod.default) : [];
+const apiSidebar = apiMod?.default ? transformItems(apiMod.default) : [];
+
+// Apply locale label translations to all mobile sidebars
+const allLabelModules = import.meta.glob('../locales/*/_sidebar-labels.json', { eager: true });
+let mobileSidebarLabels: Record<string, { value: string }> = {};
+if (currentLocale && currentLocale !== 'en') {
+    const labelsPath = `../locales/${currentLocale}/_sidebar-labels.json`;
+    const labelsMod = allLabelModules[labelsPath] as { default?: Record<string, { value: string }> } | undefined;
+    if (labelsMod?.default) mobileSidebarLabels = labelsMod.default;
+}
+
+function applyMobileLabels(items: any[]): any[] {
+    if (!Object.keys(mobileSidebarLabels).length) return items;
+    return items.map(item => {
+        const id = item.id || item.link?.id;
+        const translated = id ? mobileSidebarLabels[id] : null;
+        const translatedCategory = item.label ? mobileSidebarLabels[item.label] : null;
+        return {
+            ...item,
+            label: translated?.value ?? translatedCategory?.value ?? item.label,
+            items: item.items ? applyMobileLabels(item.items) : undefined,
+        };
+    });
+}
+
+const labeledSdkSidebars: Record<string, any[]> = {};
+for (const [id, items] of Object.entries(allSdkSidebars)) {
+    labeledSdkSidebars[id] = applyMobileLabels(items);
+}
+const labeledTutorialSidebar = applyMobileLabels(tutorialSidebar);
+const labeledApiSidebar = applyMobileLabels(apiSidebar);
+
+// Determine which top-level section the current page belongs to
+const sdkIds = new Set(platformsData.sdkPlatforms.map((p: any) => p.id));
+const currentSectionId: 'tutorial' | 'sdk' | 'api' =
+    currentPlatformId === 'tutorial' ? 'tutorial'
+    : currentPlatformId === 'api' ? 'api'
+    : 'sdk';
+const effectivePlatformId = sdkIds.has(currentPlatformId) ? currentPlatformId : 'ios';
+const initialSdkSidebar = labeledSdkSidebars[effectivePlatformId] ?? [];
+
 // Helper to find the label of the current active item
 function findActiveLabel(items: any[], activeId: string): string | undefined {
     for (const item of items) {
@@ -127,18 +188,24 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
     data-platform-id={currentPlatformId}
     transition:persist={`sidebar-${currentPlatformId}-${currentLocale ?? 'en'}`}
 >
-    <!-- Mobile Close Button -->
-    <button id="sidebar-close-btn" class="lg:hidden absolute top-4 right-4 p-2 transition-colors sidebar-close">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-    </button>
+    <MobileSectionSwitcher
+        currentSectionId={currentSectionId}
+        currentPlatformId={effectivePlatformId}
+        currentSlug={currentSlug}
+        tutorialSidebar={labeledTutorialSidebar}
+        apiSidebar={labeledApiSidebar}
+        initialSdkSidebar={initialSdkSidebar}
+        allSdkSidebars={labeledSdkSidebars}
+        sdkPlatforms={platformsData.sdkPlatforms}
+        currentLocale={currentLocale}
+    />
 
-    <div class="px-6 pb-3 mb-2 lg:mt-0 mt-8">
-        {platformsData.sdkPlatforms.some(p => p.id === currentPlatformId) && (
+    <!-- Desktop-only: PlatformSwitcher dropdown -->
+    <div class="px-6 pb-3 mb-2 lg:mt-0 mt-8 hidden lg:block">
+        {platformsData.sdkPlatforms.some((p: any) => p.id === currentPlatformId) && (
             <div class="mb-1.5">
-                <PlatformSwitcher 
-                    currentPlatformId={currentPlatformId} 
+                <PlatformSwitcher
+                    currentPlatformId={currentPlatformId}
                     currentLabel={currentLabel}
                     currentActiveId={activeId}
                 />
@@ -146,7 +213,8 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
         )}
     </div>
 
-    <nav class="px-3" aria-label="Sidebar"> 
+    <!-- Desktop-only: main nav tree -->
+    <nav class="px-3 hidden lg:block" aria-label="Sidebar">
         <ul class="space-y-1">
           {processedSidebar.map((item) => (
             <SidebarItem item={item} activeId={activeId} />
@@ -234,6 +302,7 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
   .sidebar-main {
     position: fixed;
     inset: 0;
+    top: 64px;
     left: 0;
     right: auto;
     z-index: 60;
@@ -260,11 +329,4 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
     }
   }
   
-  .sidebar-close {
-    color: var(--text-tertiary);
-  }
-  
-  .sidebar-close:hover {
-    color: var(--text-secondary);
-  }
 </style>

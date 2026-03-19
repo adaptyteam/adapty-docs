@@ -21,12 +21,11 @@
 | missingOfferParams | 13 | <p>This error indicates issues with Adapty integration or with offers.</p><p>Refer to the [Configure App Store integration](app-store-connection-configuration)  and to [Offers](offers)  for details on how to set them up.</p> |
 | invalidOfferPrice | 14 | This error code indicates that the price you specified in the store is no longer valid. Offers must always represent a discounted price. |
 
-
 ## Custom Android codes
 
 | Error | Code | Description |
 |-----|----|-----------|
-| adaptyNotInitialized | 20 | You need to properly configure Adapty SDK by `Adapty.activate` method. Learn how to do it [for React Native]( sdk-installation-reactnative#configure-adapty-sdks). |
+| adaptyNotInitialized | 20 | You need to properly configure Adapty SDK by `Adapty.activate` method. Learn how to do it [for React Native]( sdk-installation-reactnative). |
 | productNotFound | 22 | This error indicates that the product requested for purchase is not available in the store. |
 | invalidJson | 23 | The paywall JSON is not valid. Fix it in the Adapty Dashboard. Refer to the [Customize paywall with remote config](customize-paywall-with-remote-config)  topic for details on how to fix it. |
 | currentSubscriptionToUpdateNotFoundInHistory | 24 | The original subscription that needs to be renewed is not found. |
@@ -60,7 +59,7 @@
 
 | Error                | Code | Description                                                  |
 | :------------------- | :--- | :----------------------------------------------------------- |
-| notActivated         | 2002 | You need to properly configure Adapty SDK by `Adapty.activate` method. Learn how to do it [for React Native](sdk-installation-reactnative#configure-adapty-sdks). |
+| notActivated         | 2002 | You need to properly configure Adapty SDK by `Adapty.activate` method. Learn how to do it [for React Native](sdk-installation-reactnative). |
 | badRequest           | 2003 | Bad request.                                                 |
 | serverError          | 2004 | Server error.                                                |
 | networkFailed        | 2005 | The network request failed.                                  |
