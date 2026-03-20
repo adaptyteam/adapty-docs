@@ -49,6 +49,9 @@ const METADATA_TITLE_SUFFIXES = {
 // CLI argument parsing
 // ---------------------------------------------------------------------------
 
+// Global error counter — set to 1 if any translation fails (used for CI exit code)
+let hadErrors = false;
+
 const args = process.argv.slice(2);
 
 const langIdx = args.indexOf('--lang');
@@ -283,6 +286,10 @@ async function main() {
       await translateApiSpecsForLang(client, currentLang, localesDir, hashesDir, targetLanguage, glossary, tag, onlySpecIds);
     }
   }
+
+  if (hadErrors) {
+    process.exit(1);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -403,6 +410,7 @@ async function translateSync(client, files, systemPrompt, localesDir, hashesDir,
       } catch (err) {
         console.error(`  ✗ ${basename}: ${err.message}`);
         errors++;
+        hadErrors = true;
       }
     }
   }
@@ -475,12 +483,12 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
       // Prose changed (or first translation) — call Claude
       let response;
       try {
-        response = await client.messages.create({
+        response = await withRetry(() => client.messages.create({
           model: 'claude-sonnet-4-6',
           max_tokens: 8192,
           system: systemPrompt,
           messages: [{ role: 'user', content: section.content }],
-        });
+        }));
       } catch (err) {
         // Save partial progress so the next run can resume from this section
         const fHashPartial = await fileHash(file);
@@ -706,13 +714,18 @@ function collectLabelEntries(nodes) {
 }
 
 /**
- * Read all per-sidebar hash-cache files and merge their `labels` objects into
- * a single flat _sidebar-labels.json in the format the page component expects:
- * { "doc-id-or-label": { "value": "translated string" } }
+ * Merge all per-sidebar label caches into _sidebar-labels.json.
+ * Starts from the EXISTING file so that sidebars whose cache has no labels yet
+ * don't get wiped (safe for partial runs like --only-files).
  * Handles both new format { en, translation } and legacy format string values.
  */
 async function rebuildSidebarLabels(sidebarFiles, sidebarHashesDir, localesDir) {
-  const merged = {};
+  // Preserve labels we can't rebuild (sidebars without label caches)
+  let merged = {};
+  try {
+    merged = JSON.parse(await fs.readFile(path.join(localesDir, '_sidebar-labels.json'), 'utf-8'));
+  } catch { /* file doesn't exist yet — start fresh */ }
+
   for (const file of sidebarFiles) {
     const name = path.basename(file, '.json');
     try {
@@ -808,6 +821,7 @@ async function translateReusableForLang(client, lang, localesDir, hashesDir, sys
     } catch (err) {
       console.error(`  ✗ reusable:${file.name}: ${err.message}`);
       errors++;
+      hadErrors = true;
     }
   }
   console.log(`${tag} Reusable: ${translated} translated, ${errors} errors.`);
@@ -860,16 +874,36 @@ async function translateSidebarsForLang(client, lang, localesDir, hashesDir, tar
 
       // Load existing per-label cache and migrate old format if needed
       let cachedLabels = {};
+      let isOldFormat = false;
       try {
         const cachedData = JSON.parse(await fs.readFile(path.join(sidebarHashesDir, `${name}.json`), 'utf-8'));
         if (cachedData.labels) {
-          // Build lookup: key → current English label (for migration)
           const labelMap = Object.fromEntries(labelEntries.map(e => [e.key, e.label]));
-          for (const [key, val] of Object.entries(cachedData.labels)) {
-            if (typeof val === 'string') {
-              // Old format { key: "translated" } — set en to current English label
-              cachedLabels[key] = { en: labelMap[key] ?? '', translation: val };
-            } else {
+          isOldFormat = Object.values(cachedData.labels).some(v => typeof v === 'string');
+
+          if (isOldFormat) {
+            // Old format { key: "translated" } — check file hash to decide how to migrate.
+            // If the sidebar file hasn't changed since last translation, labels are still valid:
+            //   → set en = current label so the diff sees "no change" and skips retranslation.
+            // If the file changed, we can't know which specific labels changed:
+            //   → set en = null to force retranslation of all labels this one time.
+            let fileUnchanged = false;
+            if (cachedData.fileHash) {
+              fileUnchanged = (await fileHash(file)) === cachedData.fileHash;
+            }
+            if (!fileUnchanged) {
+              console.log(`  ↺ sidebar:${name}: first incremental run after format migration — all labels retranslated once`);
+            }
+            for (const [key, val] of Object.entries(cachedData.labels)) {
+              if (typeof val === 'string') {
+                const en = fileUnchanged ? (labelMap[key] ?? '') : null;
+                cachedLabels[key] = { en, translation: val };
+              } else {
+                cachedLabels[key] = val;
+              }
+            }
+          } else {
+            for (const [key, val] of Object.entries(cachedData.labels)) {
               cachedLabels[key] = val;
             }
           }
@@ -892,6 +926,15 @@ async function translateSidebarsForLang(client, lang, localesDir, hashesDir, tar
           });
 
       if (toTranslateEntries.length === 0) {
+        // Silently upgrade old-format cache to new format so future runs are incremental
+        if (isOldFormat) {
+          const currentKeys = new Set(labelEntries.map(e => e.key));
+          for (const key of Object.keys(cachedLabels)) {
+            if (!currentKeys.has(key)) delete cachedLabels[key];
+          }
+          await fs.mkdir(sidebarHashesDir, { recursive: true });
+          await fs.writeFile(path.join(sidebarHashesDir, `${name}.json`), JSON.stringify({ labels: cachedLabels }), 'utf-8');
+        }
         console.log(`  ✓ sidebar:${name} (up to date)`);
         continue;
       }
@@ -939,6 +982,7 @@ async function translateSidebarsForLang(client, lang, localesDir, hashesDir, tar
       anyUpdated = true;
     } catch (err) {
       console.error(`  ✗ sidebar:${name}: ${err.message}`);
+      hadErrors = true;
     }
   }
 
@@ -1092,6 +1136,7 @@ async function translateApiSpecsForLang(client, lang, localesDir, hashesDir, tar
       console.log(`  ✓ api-spec:${spec.basename}`);
     } catch (err) {
       console.error(`  ✗ api-spec:${spec.basename}: ${err.message}`);
+      hadErrors = true;
     }
   }
 }
@@ -1449,6 +1494,28 @@ async function writeTranslation(basename, content, sourceFile, localesDir, hashe
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Retry an async function up to maxRetries times on 529 Overloaded responses.
+ * Uses exponential backoff: 10s, 20s, 40s.
+ */
+async function withRetry(fn, maxRetries = 3) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const isOverloaded = err.status === 529 || err.error?.type === 'overloaded_error' ||
+        (err.message && err.message.includes('overloaded'));
+      if (isOverloaded && attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * 10_000; // 10s, 20s, 40s
+        console.warn(`  ⚠ API overloaded (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay / 1000}s...`);
+        await sleep(delay);
+        continue;
+      }
+      throw err;
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
