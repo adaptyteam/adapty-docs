@@ -429,24 +429,50 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
     storedData = JSON.parse(await fs.readFile(hashFile, 'utf-8'));
   } catch { /* no cache */ }
 
+  // Seed section cache from existing translation when no section-level cache exists.
+  // Covers files translated via batch (which stores only fileHash, no sections),
+  // so the first --incremental run doesn't re-translate all unchanged sections.
+  if (!storedData?.sections) {
+    const translatedPath = path.join(localesDir, `${basename}.mdx`);
+    try {
+      const existingTranslation = await fs.readFile(translatedPath, 'utf-8');
+      const translatedSecs = deduplicateSectionIds(splitIntoSections(existingTranslation));
+      if (translatedSecs.length === sections.length) {
+        const seeded = {};
+        for (let i = 0; i < sections.length; i++) {
+          const s = sections[i];
+          const cH = 'sha256:' + crypto.createHash('sha256').update(s.content).digest('hex');
+          const pH = 'sha256:' + crypto.createHash('sha256').update(stripCodeBlocks(s.content)).digest('hex');
+          seeded[s.id] = { contentHash: cH, proseHash: pH, translation: translatedSecs[i].content };
+        }
+        storedData = { sections: seeded };
+        console.log(`  ↺ ${basename}: seeded section cache from existing translation`);
+      }
+    } catch { /* no existing translation — proceed normally */ }
+  }
+
   const storedSections = storedData?.sections ?? {};
   const newSections = {};
   const translatedParts = [];
   let apiCallCount = 0;
+  let patchCount = 0;
 
   for (const section of sections) {
-    // Hash the full section content (including code blocks) so that snippet-only
-    // changes also invalidate the cache and trigger re-translation.
-    // extractTranslatableText is used only to strip code from what Claude receives,
-    // not from the hash — otherwise snippet changes would silently go untranslated.
     const contentHash = 'sha256:' + crypto.createHash('sha256').update(section.content).digest('hex');
+    const proseHash = 'sha256:' + crypto.createHash('sha256').update(stripCodeBlocks(section.content)).digest('hex');
 
     const cached = storedSections[section.id];
     let translation;
 
     if (cached?.contentHash === contentHash) {
+      // No change at all — use cached translation
       translation = cached.translation;
+    } else if (cached?.proseHash === proseHash && cached?.translation) {
+      // Only code blocks changed — patch existing translation without calling Claude
+      translation = patchCodeBlocks(cached.translation, extractCodeBlocks(section.content));
+      patchCount++;
     } else {
+      // Prose changed (or first translation) — call Claude
       let response;
       try {
         response = await client.messages.create({
@@ -472,7 +498,7 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
       apiCallCount++;
     }
 
-    newSections[section.id] = { contentHash, translation };
+    newSections[section.id] = { contentHash, proseHash, translation };
     translatedParts.push(translation);
   }
 
@@ -484,7 +510,12 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
   await fs.mkdir(hashesDir, { recursive: true });
   await fs.writeFile(hashFile, JSON.stringify({ fileHash: fHash, sections: newSections }), 'utf-8');
 
-  console.log(`  ✓ ${basename} (${apiCallCount}/${sections.length} section(s) translated)`);
+  const cachedCount = sections.length - apiCallCount - patchCount;
+  const parts = [];
+  if (apiCallCount > 0) parts.push(`${apiCallCount} translated`);
+  if (patchCount > 0) parts.push(`${patchCount} code-patched`);
+  if (cachedCount > 0 && (apiCallCount > 0 || patchCount > 0)) parts.push(`${cachedCount} cached`);
+  console.log(`  ✓ ${basename} (${parts.length ? parts.join(', ') : 'all cached'})`);
 }
 
 // ---------------------------------------------------------------------------
@@ -678,6 +709,7 @@ function collectLabelEntries(nodes) {
  * Read all per-sidebar hash-cache files and merge their `labels` objects into
  * a single flat _sidebar-labels.json in the format the page component expects:
  * { "doc-id-or-label": { "value": "translated string" } }
+ * Handles both new format { en, translation } and legacy format string values.
  */
 async function rebuildSidebarLabels(sidebarFiles, sidebarHashesDir, localesDir) {
   const merged = {};
@@ -687,7 +719,9 @@ async function rebuildSidebarLabels(sidebarFiles, sidebarHashesDir, localesDir) 
       const data = JSON.parse(await fs.readFile(path.join(sidebarHashesDir, `${name}.json`), 'utf-8'));
       if (data.labels) {
         for (const [key, value] of Object.entries(data.labels)) {
-          merged[key] = { value };
+          // Handle both new format { en, translation } and legacy format string
+          const translation = typeof value === 'object' ? value.translation : value;
+          if (translation) merged[key] = { value: translation };
         }
       }
     } catch { /* sidebar not yet translated — skip */ }
@@ -791,7 +825,7 @@ async function translateSidebarsForLang(client, lang, localesDir, hashesDir, tar
     .filter(e => e.isFile() && e.name.endsWith('.json'))
     .map(e => path.join(SIDEBARS_DIR, e.name));
 
-  // sidebarFiles = the subset to translate; allSidebarFiles = always used for the final rebuild
+  // sidebarFiles = the subset to process; allSidebarFiles = always used for the final rebuild
   let sidebarFiles = allSidebarFiles;
 
   if (sidebarName) {
@@ -810,60 +844,64 @@ async function translateSidebarsForLang(client, lang, localesDir, hashesDir, tar
     }
   }
 
-  const toTranslate = [];
-  for (const file of sidebarFiles) {
-    const name = path.basename(file, '.json');
-
-    if (flagIncremental || flagAll) {
-      const currentHash = await fileHash(file);
-      const storedHash  = await getStoredHash(name, sidebarHashesDir);
-      if (!flagAll && storedHash === currentHash) continue;
-      toTranslate.push(file);
-    } else {
-      // Needs translation if cache is missing or has no labels (old format)
-      try {
-        const cached = JSON.parse(await fs.readFile(path.join(sidebarHashesDir, `${name}.json`), 'utf-8'));
-        if (!cached.labels) toTranslate.push(file);
-      } catch {
-        toTranslate.push(file);
-      }
-    }
-  }
-
-  if (toTranslate.length === 0) {
-    console.log(`${tag} Sidebars: all up to date.`);
-    // Still rebuild _sidebar-labels.json in case it was deleted
-    await rebuildSidebarLabels(allSidebarFiles, sidebarHashesDir, localesDir);
-    return;
-  }
-
-  console.log(`${tag} ${toTranslate.length} sidebar(s) to translate.`);
-
   const systemPrompt =
     `You translate navigation labels for a technical documentation site from English to ${targetLanguage}. ` +
     `Return ONLY a valid JSON array of translated strings — one per input label, same order, same length. ` +
     `No explanations.${glossary}`;
 
-  for (const file of toTranslate) {
+  let anyUpdated = false;
+
+  for (const file of sidebarFiles) {
     const name = path.basename(file, '.json');
     try {
-      const raw    = await fs.readFile(file, 'utf-8');
+      const raw = await fs.readFile(file, 'utf-8');
       const parsed = JSON.parse(raw);
       const labelEntries = collectLabelEntries(parsed);
 
+      // Load existing per-label cache and migrate old format if needed
+      let cachedLabels = {};
+      try {
+        const cachedData = JSON.parse(await fs.readFile(path.join(sidebarHashesDir, `${name}.json`), 'utf-8'));
+        if (cachedData.labels) {
+          // Build lookup: key → current English label (for migration)
+          const labelMap = Object.fromEntries(labelEntries.map(e => [e.key, e.label]));
+          for (const [key, val] of Object.entries(cachedData.labels)) {
+            if (typeof val === 'string') {
+              // Old format { key: "translated" } — set en to current English label
+              cachedLabels[key] = { en: labelMap[key] ?? '', translation: val };
+            } else {
+              cachedLabels[key] = val;
+            }
+          }
+        }
+      } catch { /* no cache — all labels need translation */ }
+
       if (labelEntries.length === 0) {
-        const hash = await fileHash(file);
         await fs.mkdir(sidebarHashesDir, { recursive: true });
-        await fs.writeFile(path.join(sidebarHashesDir, `${name}.json`), JSON.stringify({ fileHash: hash, labels: {} }), 'utf-8');
+        await fs.writeFile(path.join(sidebarHashesDir, `${name}.json`), JSON.stringify({ labels: {} }), 'utf-8');
         console.log(`  ✓ sidebar:${name} (no labels)`);
         continue;
       }
 
+      // Find labels that need translation: new keys or changed English text
+      const toTranslateEntries = flagAll
+        ? labelEntries
+        : labelEntries.filter(e => {
+            const cached = cachedLabels[e.key];
+            return !cached || cached.en !== e.label;
+          });
+
+      if (toTranslateEntries.length === 0) {
+        console.log(`  ✓ sidebar:${name} (up to date)`);
+        continue;
+      }
+
+      // Translate only the changed/new labels
       const response = await client.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 4096,
         system: systemPrompt,
-        messages: [{ role: 'user', content: JSON.stringify(labelEntries.map(e => e.label)) }],
+        messages: [{ role: 'user', content: JSON.stringify(toTranslateEntries.map(e => e.label)) }],
       });
       if (response.stop_reason === 'max_tokens') {
         throw new Error(`sidebar label output truncated at max_tokens limit`);
@@ -874,24 +912,41 @@ async function translateSidebarsForLang(client, lang, localesDir, hashesDir, tar
       responseText = responseText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
 
       const translated = JSON.parse(responseText);
-      if (!Array.isArray(translated) || translated.length !== labelEntries.length) {
-        throw new Error(`label count mismatch: expected ${labelEntries.length}, got ${translated.length}`);
+      if (!Array.isArray(translated) || translated.length !== toTranslateEntries.length) {
+        throw new Error(`label count mismatch: expected ${toTranslateEntries.length}, got ${translated.length}`);
       }
 
-      // Build flat labels map: key → translated label
-      const labelsObj = Object.fromEntries(labelEntries.map((e, i) => [e.key, translated[i]]));
+      // Merge new translations into cached labels (preserving untouched ones)
+      for (let i = 0; i < toTranslateEntries.length; i++) {
+        const entry = toTranslateEntries[i];
+        cachedLabels[entry.key] = { en: entry.label, translation: translated[i] };
+      }
 
-      const hash = await fileHash(file);
+      // Remove stale keys that no longer exist in the sidebar
+      const currentKeys = new Set(labelEntries.map(e => e.key));
+      for (const key of Object.keys(cachedLabels)) {
+        if (!currentKeys.has(key)) delete cachedLabels[key];
+      }
+
       await fs.mkdir(sidebarHashesDir, { recursive: true });
-      await fs.writeFile(path.join(sidebarHashesDir, `${name}.json`), JSON.stringify({ fileHash: hash, labels: labelsObj }), 'utf-8');
+      await fs.writeFile(
+        path.join(sidebarHashesDir, `${name}.json`),
+        JSON.stringify({ labels: cachedLabels }),
+        'utf-8'
+      );
 
-      console.log(`  ✓ sidebar:${name}`);
+      console.log(`  ✓ sidebar:${name} (${toTranslateEntries.length}/${labelEntries.length} label(s) translated)`);
+      anyUpdated = true;
     } catch (err) {
       console.error(`  ✗ sidebar:${name}: ${err.message}`);
     }
   }
 
-  // Rebuild the single _sidebar-labels.json from all cached sidebar translations
+  if (!anyUpdated) {
+    console.log(`${tag} Sidebars: all up to date.`);
+  }
+
+  // Rebuild _sidebar-labels.json from all cached sidebar translations
   await rebuildSidebarLabels(allSidebarFiles, sidebarHashesDir, localesDir);
 }
 
@@ -1195,9 +1250,87 @@ function deduplicateSectionIds(sections) {
 }
 
 /**
- * Strip fenced code blocks and import lines — used only for hashing,
- * not for sending to the API.
+ * Strip fenced code blocks from content — returns prose-only string.
+ * Used to compute a prose-only hash so that code-only changes can be patched
+ * without re-translating the surrounding text.
  */
+function stripCodeBlocks(content) {
+  const lines = content.split('\n');
+  const result = [];
+  let inBlock = false;
+  let fenceChar = null;
+  for (const line of lines) {
+    const m = line.match(/^(`{3,}|~{3,})/);
+    if (m) {
+      if (!inBlock) { inBlock = true; fenceChar = m[1][0]; }
+      else if (line[0] === fenceChar) { inBlock = false; fenceChar = null; }
+    } else if (!inBlock) {
+      result.push(line);
+    }
+  }
+  return result.join('\n');
+}
+
+/**
+ * Extract all fenced code blocks from content, in traversal order.
+ * Each entry is the full block string from opening fence to closing fence.
+ */
+function extractCodeBlocks(content) {
+  const blocks = [];
+  const lines = content.split('\n');
+  let inBlock = false;
+  let fenceChar = null;
+  let blockLines = [];
+  for (const line of lines) {
+    const m = line.match(/^(`{3,}|~{3,})/);
+    if (m) {
+      if (!inBlock) {
+        inBlock = true; fenceChar = m[1][0]; blockLines = [line];
+      } else if (line[0] === fenceChar) {
+        blockLines.push(line);
+        blocks.push(blockLines.join('\n'));
+        inBlock = false; fenceChar = null; blockLines = [];
+      } else {
+        blockLines.push(line);
+      }
+    } else if (inBlock) {
+      blockLines.push(line);
+    }
+  }
+  return blocks;
+}
+
+/**
+ * Replace fenced code blocks in translationContent with corresponding entries
+ * from newBlocks (matched by position). Used when only code changed in a section.
+ */
+function patchCodeBlocks(translationContent, newBlocks) {
+  if (newBlocks.length === 0) return translationContent;
+  const lines = translationContent.split('\n');
+  const result = [];
+  let inBlock = false;
+  let fenceChar = null;
+  let blockIndex = 0;
+  for (const line of lines) {
+    const m = line.match(/^(`{3,}|~{3,})/);
+    if (!inBlock && m) {
+      // Opening fence — emit replacement block (or original if no replacement left)
+      result.push(blockIndex < newBlocks.length ? newBlocks[blockIndex] : line);
+      blockIndex++;
+      inBlock = true;
+      fenceChar = m[1][0];
+    } else if (inBlock) {
+      if (m && line[0] === fenceChar) {
+        // Closing fence — already consumed inside the replacement; just end tracking
+        inBlock = false; fenceChar = null;
+      }
+      // Skip old block lines (replaced by the newBlocks entry above)
+    } else {
+      result.push(line);
+    }
+  }
+  return result.join('\n');
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
