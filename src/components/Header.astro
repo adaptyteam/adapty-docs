@@ -305,14 +305,16 @@ const localeLinks = SUPPORTED_LOCALES.map(locale => ({
     padding-top: 0.25rem;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+    will-change: opacity, transform;
+    transition: opacity 0.15s, visibility 0.15s, transform 0.15s;
     transform: translateY(-0.5rem);
     min-width: 220px;
     z-index: 50;
     pointer-events: none;
   }
-  
-  .dropdown-container:hover .dropdown-menu {
+
+  .dropdown-container:hover .dropdown-menu,
+  .lang-switcher.open .dropdown-menu {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
@@ -495,22 +497,46 @@ const localeLinks = SUPPORTED_LOCALES.map(locale => ({
     });
   }
 
-  // Save preferred locale when user clicks a language switcher link
   function initLangSwitcher() {
     syncLangSwitcher();
     syncHeaderI18n();
     syncNavLinks();
-    document.querySelectorAll('[data-locale]').forEach(el => {
-      el.addEventListener('click', () => {
-        const locale = (el as HTMLElement).dataset.locale;
-        if (locale) {
-          localStorage.setItem('preferred-locale', locale);
-        } else {
-          localStorage.removeItem('preferred-locale');
-        }
-      });
+  }
+
+  // One-time setup: click-to-open lang switcher and locale preference saving.
+  // These run once because the header is transition:persist and the script only
+  // executes on first load.
+  const langSwitcherEl = document.querySelector<HTMLElement>('.lang-switcher');
+  const langTriggerEl = document.querySelector<HTMLElement>('.lang-trigger');
+
+  if (langTriggerEl && langSwitcherEl) {
+    langTriggerEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      langSwitcherEl.classList.toggle('open');
+    });
+    document.addEventListener('click', () => {
+      langSwitcherEl.classList.remove('open');
     });
   }
+
+  document.querySelectorAll<HTMLElement>('[data-locale]').forEach(el => {
+    el.addEventListener('click', () => {
+      const locale = el.dataset.locale;
+      if (locale) {
+        localStorage.setItem('preferred-locale', locale);
+      } else {
+        localStorage.removeItem('preferred-locale');
+      }
+      langSwitcherEl?.classList.remove('open');
+    });
+  });
+
   initLangSwitcher();
+  // Sync nav links and lang switcher immediately after DOM swap so that
+  // the Documentation link href reflects the new locale before page-load fires.
+  document.addEventListener('astro:after-swap', () => {
+    syncNavLinks();
+    syncLangSwitcher();
+  });
   document.addEventListener('astro:page-load', initLangSwitcher);
 </script>

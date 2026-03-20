@@ -306,6 +306,13 @@ async function translateForLang(client, lang, localesDir, hashesDir, systemPromp
     return;
   }
 
+  // In incremental mode, skip articles that aren't in any sidebar — they are
+  // orphaned pages (API reference stubs, legacy content) that don't need translation.
+  if (flagIncremental && !fileId && !fileIds && !platform) {
+    const sidebarIds = await getAllSidebarIds();
+    files = files.filter(f => sidebarIds.has(path.basename(f, '.mdx')));
+  }
+
   // Apply --file / --ids / --platform filters
   if (fileId) {
     files = allFiles.filter(f => path.basename(f, '.mdx') === fileId);
@@ -340,6 +347,24 @@ async function translateForLang(client, lang, localesDir, hashesDir, systemPromp
       const currentHash = await fileHash(file);
       const storedHash  = await getStoredHash(basename, hashesDir);
       if (storedHash === currentHash) continue;
+
+      if (!storedHash) {
+        // No hash file — check whether a translation already exists.
+        // This happens when .hashes was deleted or the GH Action cache was cold.
+        // Write the current hash and skip so we don't retranslate an already-done file.
+        // The section cache will be seeded lazily on the next real content change.
+        try {
+          await fs.access(translatedPath);
+          await fs.mkdir(hashesDir, { recursive: true });
+          await fs.writeFile(
+            path.join(hashesDir, `${basename}.json`),
+            JSON.stringify({ fileHash: currentHash }),
+            'utf-8'
+          );
+          continue; // already translated — just record the hash
+        } catch { /* no translation exists → fall through and translate */ }
+      }
+
       toTranslate.push(file);
     } else if (flagAll || fileId != null || fileIds != null) {
       toTranslate.push(file);
@@ -1155,7 +1180,10 @@ function slugify(text) {
 }
 
 // Sections larger than this get split further by paragraph blocks.
-const PARAGRAPH_FALLBACK_CHARS = 3000;
+// Maximum characters per cached chunk. Sections larger than this are split at
+// paragraph (blank-line) boundaries so that a single-paragraph edit only retranslates
+// that paragraph, not the entire section. ~600 chars ≈ one typical documentation paragraph.
+const PARAGRAPH_FALLBACK_CHARS = 600;
 
 /**
  * Split MDX content into H2/H3-based sections.
@@ -1393,6 +1421,26 @@ async function collectMdxFiles(dir) {
     }
   }
   return files;
+}
+
+/** Return the union of all article IDs across every sidebar JSON file. */
+async function getAllSidebarIds() {
+  const entries = await fs.readdir(SIDEBARS_DIR, { withFileTypes: true });
+  const ids = new Set();
+  function extract(items) {
+    for (const item of items) {
+      if (item.id) ids.add(item.id);
+      if (item.items) extract(item.items);
+    }
+  }
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
+    try {
+      const sidebar = JSON.parse(await fs.readFile(path.join(SIDEBARS_DIR, entry.name), 'utf-8'));
+      extract(sidebar);
+    } catch { /* skip malformed files */ }
+  }
+  return ids;
 }
 
 async function getSidebarIds(platformName, tag) {
