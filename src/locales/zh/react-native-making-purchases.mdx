@@ -1,0 +1,165 @@
+---
+title: "在 React Native SDK 中进行移动应用内购买"
+description: "使用 Adapty 处理应用内购买和订阅的指南。"
+metadataTitle: "在 Adapty 中处理应用内购买 | Adapty 文档"
+keywords: ['makePurchase', 'offer code']
+rank: 90
+displayed_sidebar: sdkreactnative
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/zh/reusable/OfferCodesInfo.mdx';
+
+在移动应用中展示付费墙是向用户提供高级内容或服务访问权限的重要步骤。但是，如果您使用[付费墙编辑工具](adapty-paywall-builder)来自定义付费墙，仅展示付费墙就足以支持购买流程。
+
+如果您不使用付费墙编辑工具，则必须使用名为 `.makePurchase()` 的独立方法来完成购买并解锁所需内容。此方法是用户与付费墙交互并完成所需交易的入口。
+
+如果您的付费墙对用户尝试购买的产品设有有效的促销活动，Adapty 将在购买时自动应用该优惠。
+
+:::warning
+请注意，新用户优惠仅在您使用付费墙编辑工具设置付费墙时才会自动应用。
+
+在其他情况下，您需要[验证用户在 iOS 上的新用户优惠资格](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios)。跳过此步骤可能导致您的应用在发布审核时被拒绝，还可能对符合新用户优惠资格的用户收取全价。
+:::
+
+请确保您已[完成初始配置](quickstart)，不要跳过任何步骤。否则我们将无法验证购买。
+
+## 进行购买 \{#make-purchase\}
+
+:::note
+**正在使用[付费墙编辑工具](adapty-paywall-builder)？** 购买将自动处理——您可以跳过此步骤。
+
+**需要分步指导？** 请查看[快速入门指南](react-native-implement-paywalls-manually)，获取包含完整上下文的端到端实现说明。
+:::
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+
+请求参数：
+
+| 参数 | 是否必填 | 描述 |
+| :---------- | :------- |:-------------------------------------------------------------------------------------------------------------------------------|
+| **Product** | 必填 | 从付费墙中获取的 [`AdaptyPaywallProduct`](https://react-native.adapty.io/interfaces/adaptypaywallproduct) 对象。 |
+
+响应参数：
+
+| 参数 | 描述 |
+|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>如果请求成功，响应中将包含此对象。[AdaptyProfile](https://react-native.adapty.io/interfaces/adaptyprofile) 对象提供了用户在应用内的访问等级、订阅及非订阅购买的全面信息。</p><p>请检查访问等级状态，以确认用户是否具有所需的应用访问权限。</p> |
+
+:::warning
+**注意：** 如果您仍在使用低于 v2.0 的 Apple StoreKit 版本以及低于 v.2.9.0 的 Adapty SDK 版本，则需要提供 [Apple App Store 共享密钥](app-store-connection-configuration#step-5-enter-app-store-shared-secret)。此方法目前已被 Apple 弃用。
+:::
+
+## 购买时更换订阅 \{#change-subscription-when-making-a-purchase\}
+
+当用户选择新订阅而非续订当前订阅时，其工作方式取决于应用商店：
+
+- 对于 App Store，订阅会在同一订阅组内自动更新。如果用户在已有某个订阅组的订阅的情况下购买另一个组的订阅，两个订阅将同时有效。
+- 对于 Google Play，订阅不会自动更新。您需要按照以下说明在移动应用代码中管理订阅切换。
+
+要在 Android 上将一个订阅替换为另一个订阅，请调用 `.makePurchase()` 方法并传入附加参数：
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product, params);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+
+附加请求参数：
+
+| 参数 | 是否必填 | 描述 |
+| :--------- | :------- | :----------------------------------------------------------- |
+| **params** | 必填 | [`MakePurchaseParamsInput`](https://react-native.adapty.io/types/makepurchaseparamsinput) 类型的对象。 |
+
+:::info
+**版本 3.8.2+**：`MakePurchaseParamsInput` 结构已更新。`oldSubVendorProductId` 和 `prorationMode` 现在嵌套在 `subscriptionUpdateParams` 下，`isOfferPersonalized` 已移至上层。
+
+示例：
+```javascript
+makePurchase(product, {
+    android: {
+        subscriptionUpdateParams: {
+            oldSubVendorProductId: 'old_product_id',
+            prorationMode: 'charge_prorated_price'
+        },
+        isOfferPersonalized: true
+    }
+});
+```
+:::
+
+您可以在 Google 开发者文档中了解更多关于订阅和替换模式的信息：
+
+- [关于替换模式](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Google 关于替换模式的建议](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- 替换模式 [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE())。注意：此方法仅适用于订阅升级，不支持降级。
+- 替换模式 [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED())。注意：实际的订阅变更仅在当前订阅计费周期结束时才会生效。
+
+## 在 iOS 中兑换优惠码 \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+要在应用中显示优惠码兑换页面：
+
+```typescript showLineNumbers
+adapty.presentCodeRedemptionSheet();
+```
+
+:::danger
+根据我们的观察，某些应用中的优惠码兑换页面可能无法稳定运行。我们建议直接将用户重定向至 App Store。
+
+为此，您需要打开以下格式的 URL：
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
+
+## 管理预付费计划（Android） \{#manage-prepaid-plans-android\}
+
+如果您的应用用户可以购买[预付费计划](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans)（例如，购买数月的非续期订阅），您可以为预付费计划启用[待处理交易](https://developer.android.com/google/play/billing/subscriptions#pending)。
+
+```typescript showLineNumbers
+adapty.activate("PUBLIC_SDK_KEY", {
+    android: { pendingPrepaidPlansEnabled: true }
+});
+```

@@ -1,0 +1,183 @@
+---
+title: "Google Cloud Storage"
+description: "将 Google Cloud Storage 与 Adapty 集成，实现安全的数据存储。"
+metadataTitle: "Google Cloud Storage 集成 | Adapty 文档"
+---
+
+import ZoomImage from '@site/src/components/ZoomImage.astro';
+import Details from '@site/src/components/Details.astro';
+
+启用 Google Cloud Storage 集成，将[订阅事件](events)和[付费墙访问数据](paywall-metrics)安全地存储在一个中心位置：您的 Google Cloud Storage 存储桶。
+
+每天 UTC 时间凌晨 4 点，Adapty 会将前一天的数据以 .csv 文件形式上传到您的存储桶。您可以选择接收**事件**数据、**付费墙访问**数据，或**两者均接收**。您也可以随时[手动导出](#manual-data-export)任意时间段的数据。
+
+要设置集成，请在您的 Google Cloud 控制台中[生成存储桶访问密钥](#create-google-cloud-storage-credentials)，并[将其添加到 Adapty 设置中](#set-up-google-cloud-storage-integration)。
+
+## 上传计划与时长 \{#upload-schedule-and-duration\}
+
+Adapty 每 24 小时在 UTC 时间 04:00 向 Google Cloud Storage 上传数据。
+
+文件包含在前一个日历日（UTC）内创建的事件数据。3 月 8 日上传的文件将包含 3 月 7 日 00:00:00 至 23:59:59 UTC 期间创建的所有事件。
+
+该过程可能需要数小时，具体取决于队列中的文件总数以及您个人请求的数据量。如果 Adapty 在首次上传时包含历史数据，所需时间将长于后续的每日上传。
+
+## 设置 Google Cloud Storage 集成 \{#set-up-google-cloud-storage-integration\}
+
+您需要拥有具有**写入权限**的有效 Google Cloud 服务账号密钥。如需生成该密钥，请按照[创建凭证](#create-google-cloud-storage-credentials)部分的步骤操作。
+
+:::warning
+您可以为事件和付费墙访问使用不同的存储桶和不同的凭证。但是，如果**任意一组**凭证无效，[**两者的上传都将失败**](#troubleshooting)。
+:::
+
+前往 [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage)，打开所需的标签页（**Events** 或 **Paywall visits**）。启用集成。
+
+上传包含您的 **Google Cloud 服务账号密钥**的文件。指定目标**存储桶**和**文件夹**。保存更改。
+
+<ZoomImage id="google-cloud-storage-setup.webp" width="700px" />
+
+### 事件数据的可选设置 \{#optional-settings-for-event-data\}
+
+您可以指定报告中包含哪些事件，并为事件设置自定义名称。有关可用事件的完整列表，请参阅[事件](events)文章。
+
+<ZoomImage id="event-specific-settings.webp" width="700px" />
+
+| 名称 | 默认值 | 描述 |
+| ------------------------------ | ----------------- | ----------- |
+| Exclude historical events      | true    | 排除在您将 Adapty SDK 集成到应用之前发生的事件信息。<br /> <br />如果您的分析平台在开始使用 Adapty **之前**已接收订阅事件，此选项可确保其不会接收到任何重复事件。<Details summary="实际示例"><p>某用户于 1 月 10 日购买了月度订阅。3 月 1 日更新的应用程序是第一个包含 Adapty SDK 的版本。<br /> <br /> 如果此设置**开启**，报告将不包含 1 月份的"订阅开始"事件，也不包含 2 月份的"订阅续订"事件。但**会**包含 3 月 10 日的"订阅续订"事件。</p> </Details> |
+| Include events without profile | false | 包含未关联到用户画像或无法立即关联到特定用户的交易。这些可能包括在安装 Adapty SDK 之前进行的购买，或通过服务器通知收到的交易。 |
+| Send user attributes           | false | 包含[自定义用户属性](setting-user-attributes)，例如用户数据和应用使用数据。如果您的 OneSignal 套餐支持超过 10 个标签，请选择此选项。请注意，超出标签限制可能会导致错误。 |
+
+## 创建 Google Cloud Storage 凭证 \{#create-google-cloud-storage-credentials\}
+
+本指南将帮助您在 Google Cloud Platform 控制台中创建必要的凭证。
+
+为了让 Adapty 将原始数据报告上传到您指定的存储桶，需要提供服务账号密钥以及对相应存储桶的写入权限。通过提供服务账号密钥并授予对存储桶的写入权限，您允许 Adapty 安全高效地将原始数据报告从其平台传输到您的存储环境。
+
+:::warning
+请注意，我们仅支持服务账号 HMAC 密钥授权，因此必须确保您的服务账号 HMAC 密钥已添加"Storage Object Viewer"、"Storage Legacy Bucket Writer"和"Storage Object Creator"角色，以启用对 Google Cloud Storage 的适当访问权限。
+:::
+
+1. 第一步，您需要前往 Google Cloud 账号的 [IAM](https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts) 部分，选择相关项目或创建新项目。
+
+  <ZoomImage id="30a81ef-CleanShot_2023-03-17_at_15.22.142x.webp" width="700px" />
+
+
+1. 接下来，点击"+ CREATE SERVICE ACCOUNT"按钮，为 Adapty 创建新的服务账号。
+
+    <ZoomImage id="98f8ebf-CleanShot_2023-03-17_at_15.40.062x.webp" width="700px" />
+
+2. 填写第一步中的字段，访问权限将在后续阶段授予。如需了解此页面的更多详情，请阅读[此处](https://docs.cloud.google.com/iam/docs/service-accounts-create)的文档。
+
+    <ZoomImage id="2190c50-CleanShot_2023-03-17_at_15.48.552x.webp" width="700px" />
+
+3. 要创建并下载[私有 JSON 密钥](https://docs.cloud.google.com/iam/docs/keys-create-delete)，请导航到 KEYS 部分并点击"ADD KEY"按钮。
+
+    <ZoomImage id="8a45468-CleanShot_2023-03-17_at_15.58.092x.webp" width="700px" />
+
+4. 在 DETAILS 部分，找到与最近创建的服务账号关联的 Email 值并复制。后续步骤中授权账号并允许其写入存储桶时将需要此信息。
+
+    <ZoomImage id="6ccd0f0-CleanShot_2023-03-17_at_16.03.162x.webp" width="700px" />
+    
+
+5. 接下来，前往 Google Cloud Storage 的[存储桶](https://console.cloud.google.com/storage/browser)页面，选择现有存储桶或创建新存储桶以存储来自 Adapty 的事件或访问数据报告。然后导航到 PERMISSIONS 部分，选择[GRANT ACCESS](https://docs.cloud.google.com/identity/docs/how-to?hl=en)选项。
+
+    <ZoomImage id="3cdd937-CleanShot_2023-03-17_at_16.14.232x.webp" width="700px" />
+
+6. 在 PERMISSIONS 部分，输入第五步中获取的服务账号 Email，然后选择 Storage Object Creator 角色。最后，点击 SAVE 应用更改。
+
+
+    <ZoomImage id="62801f4-CleanShot_2023-03-17_at_16.17.312x.webp" width="700px" />
+
+    请记住存储桶名称以备后用。
+
+## 手动数据导出 \{#manual-data-export\}
+
+除了自动将事件数据导出到 Google Cloud Storage 之外，Adapty 还提供手动文件导出功能。使用此功能，您可以选择特定时间段的事件数据，并手动将其导出到您的 GCS 存储桶。这使您能够更好地控制导出哪些数据以及何时导出。
+
+指定的日期范围将用于导出从日期 A 00:00:00 UTC 到日期 B 23:59:59 UTC 期间创建的事件。
+
+<ZoomImage id="e347308-CleanShot_2023-03-17_at_17.39.452x.webp" width="700px" />
+
+## 数据结构 \{#data-structure\}
+
+Adapty 使用 `.csv` 文件以表格格式导出数据。
+
+:::warning
+事件内容可能会随时间增长——由我们或我们合作的第三方引入新数据。请确保您处理这些数据的代码足够健壮，依赖于特定字段，而非整体结构。
+:::
+
+### 事件 \{#events\}
+
+您可以[修改](#optional-settings-for-event-data)报告中包含的事件列表。
+
+| 列 | 描述 |
+|------|-----------|
+| **profile_id** | Adapty 用户 ID。 |
+| **event_type** | 小写的事件名称。请参阅[事件](events)部分了解事件类型。 |
+| **event_datetime** | ISO 8601 日期。 |
+| **transaction_id** | 交易的唯一标识符，例如购买或续订。 |
+| **original_transaction_id** | 原始购买的交易标识符。 |
+| **subscription_expires_at** | 订阅到期日期，通常为未来日期。 |
+| **environment** | 可以是 Sandbox 或 Production。 |
+| **revenue_usd** | 以美元计的收入，可能为空。 |
+| **proceeds_usd** | 以美元计的收益，可能为空。 |
+| **net_revenue_usd** | 以美元计的净收入（税后收入），可能为空。 |
+| **tax_amount_usd** | 以美元计的税款金额，可能为空。 |
+| **revenue_local** | 以本地货币计的收入，可能为空。 |
+| **proceeds_local** | 以本地货币计的收益，可能为空。 |
+| **net_revenue_local** | 以本地货币计的净收入（税后收入），可能为空。 |
+| **tax_amount_local** | 以本地货币计的税款金额，可能为空。 |
+| **customer_user_id** | 开发者用户 ID，例如可以是您的用户 UUID、电子邮件或其他任何 ID。如果未设置则为 Null。 |
+| **store** | 可以是 *app_store* 或 *play_store*。 |
+| **product_id** | Apple App Store、Google Play Store 或 Stripe 中的产品 ID。 |
+| **base_plan_id** | Google Play Store 中的[基础方案 ID](https://support.google.com/googleplay/android-developer/answer/12154973) 或 Stripe 中的[价格 ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices)。 |
+| **developer_id** | 交易来源付费墙的开发者（SDK）ID。 |
+| **ab_test_name** | 交易来源 A/B 测试的名称。 |
+| **ab_test_revision** | 交易来源 A/B 测试的版本。 |
+| **paywall_name** | 交易来源付费墙的名称。 |
+| **paywall_revision** | 交易来源付费墙的版本。 |
+| **profile_country** | 由 Adapty 根据 IP 确定的用户画像所在国家/地区。 |
+| **install_date** | 安装发生时的 ISO 8601 日期。 |
+| **idfv** | iOS 设备上的 [identifierForVendor](https://developer.apple.com/documentation/uikit/uidevice/identifierforvendor) |
+| **idfa** | iOS 设备上的 [advertisingIdentifier](https://developer.apple.com/documentation/adsupport/asidentifiermanager/advertisingidentifier) |
+| **advertising_id** | 广告 ID 是 Android 操作系统分配的唯一代码，广告商可能用于唯一标识用户设备。 |
+| **ip_address** | 设备 IP（可以是 IPv4 或 IPv6，优先使用 IPv4）。每次设备 IP 变更时更新。 |
+| **cancellation_reason** | <p>用户取消订阅的原因。</p><p></p><p>可能的值：</p><p>**iOS & Android** — *voluntarily_cancelled*、*billing_error*、*refund*</p><p>**仅 iOS** — *price_increase*、*product_was_not_available*、*unknown*、*upgraded*</p><p>**仅 Android** — *new_subscription_replace*、*cancelled_by_developer*</p> |
+| **android_app_set_id** | [AppSetId](https://developer.android.com/design-for-safety/privacy-sandbox/reference/adservices/appsetid/AppSetId) — 每台设备、每个开发者账号唯一的、用户可重置的 ID，用于非盈利广告用途。 |
+| **android_id** | 在 Android 8.0（API 级别 26）及更高版本平台上，是一个 64 位数字（以十六进制字符串表示），对于每个应用签名密钥、用户和设备的组合唯一。详情请参阅 [Android 开发者文档](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID)。 |
+| **device** | 面向最终用户的设备型号名称。 |
+| **currency** | 交易的 3 字母货币代码（ISO-4217）。 |
+| **store_country** | 由 Apple/Google 商店确定的用户画像所在国家/地区。 |
+| **attribution_source** | 归因来源。 |
+| **attribution_network_user_id** | 归因来源分配给用户的 ID。 |
+| **attribution_status** | 可以是 organic、non_organic 或 unknown。 |
+| **attribution_channel** | 营销渠道名称。 |
+| **attribution_campaign** | 营销活动名称。 |
+| **attribution_ad_group** | 归因广告组。 |
+| **attribution_ad_set** | 归因广告集。 |
+| **attribution_creative** | 归因创意关键词。 |
+| **attributes** | [自定义用户属性](setting-user-attributes#custom-user-attributes)的 JSON。这将包含您设置为从移动应用发送的任何自定义属性。要发送此数据，请在 [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) 页面中启用 **Send User Attributes** 选项。 |
+| **integration_ids** | 与用户画像关联的所有集成 ID。字典格式。示例：&#123;&#39;mixpanel_user_id&#39;: &#39;mixpanelUserId-test&#39;, &#39;facebook_anonymous_id&#39;: &#39;facebookAnonymousId-test&#39;&#125; |
+
+### 付费墙访问 \{#paywall-visits\}
+
+| 列 | 描述 |
+| :-------------------- | :----------------------------------------------------------------------------------------------------------- |
+| **profile_id** | Adapty 用户 ID。 |
+| **customer_user_id** | 开发者用户 ID，例如可以是您的用户 UUID、电子邮件或其他任何 ID。如果未设置则为 Null。 |
+| **profile_country** | 由 Apple/Google 商店确定的用户画像所在国家/地区。 |
+| **install_date** | 安装发生时的 ISO 8601 日期。 |
+| **store** | 可以是 *app_store* 或 *play_store*。 |
+| **paywall_showed_at** | 付费墙向客户展示的日期。 |
+| **developer_id** | 交易来源付费墙的开发者（SDK）ID。 |
+| **ab_test_name** | 交易来源 A/B 测试的名称。 |
+| **ab_test_revision** | 交易来源 A/B 测试的版本。 |
+| **paywall_name** | 交易来源付费墙的名称。 |
+| **paywall_revision** | 交易来源付费墙的版本。 |
+
+
+## 故障排查 \{#troubleshooting\}
+
+Adapty 在开始上传**之前**会检查您的访问密钥的有效性。即使只有一个 Google Cloud Storage 密钥无效，Adapty 也会**中止上传**并抛出错误。
+
+为确保上传不中断，请在密钥过期之前替换它们。如果您更新了**事件**的密钥，请不要忘记同时更新**付费墙访问**的密钥，反之亦然。

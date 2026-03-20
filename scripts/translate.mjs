@@ -4,10 +4,12 @@
  * Usage:
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh                              # single language, all untranslated
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --all                        # retranslate everything
- *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --platform ios               # single platform
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --platform ios               # single platform, untranslated articles only
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --platform ios --incremental # single platform, changed sections only (skips up-to-date)
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --file ios-sdk-overview      # single article
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --ids "ios-sdk-overview,android-sdk-overview,react-native-sdk-overview"  # selected articles
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --sidebar ios               # single sidebar
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --sidebars                  # all untranslated sidebars, no articles
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --resume <batchId>           # retrieve submitted batch
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --api-specs                  # translate all API specs
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --api-specs --file adapty-api # single API spec
@@ -30,6 +32,7 @@ const SIDEBARS_DIR  = path.resolve(__dirname, '../src/data/sidebars');
 const LOCALES_BASE  = path.resolve(__dirname, '../src/locales');
 const BATCH_ID_FILE = path.resolve(__dirname, '../.translate-batch-id');
 const API_SPECS_DIR  = path.resolve(__dirname, '../src/api-reference/specs');
+const REUSABLE_DIR  = path.resolve(__dirname, '../src/components/reusable');
 
 const LANGUAGE_NAMES = {
   zh: 'Simplified Chinese (zh-CN)',
@@ -51,9 +54,11 @@ const args = process.argv.slice(2);
 const langIdx = args.indexOf('--lang');
 const lang = langIdx !== -1 ? args[langIdx + 1] : null;
 
-const flagAll         = args.includes('--all');
-const flagIncremental = args.includes('--incremental');
-const flagApiSpecs    = args.includes('--api-specs');
+const flagAll           = args.includes('--all');
+const flagIncremental   = args.includes('--incremental');
+const flagApiSpecs      = args.includes('--api-specs');
+const flagSidebarsOnly  = args.includes('--sidebars');
+const flagMigrateHashes = args.includes('--migrate-hashes');
 
 const platformIdx = args.indexOf('--platform');
 const platform = platformIdx !== -1 ? args[platformIdx + 1] : null;
@@ -86,6 +91,9 @@ const onlySidebarNames = onlyFilePaths
   : null;
 const onlySpecIds = onlyFilePaths
   ? new Set(onlyFilePaths.filter(p => /^src\/api-reference\/specs\/[^./]+\.yaml$/.test(p)).map(p => path.basename(p, '.yaml')))
+  : null;
+const onlyReusableIds = onlyFilePaths
+  ? new Set(onlyFilePaths.filter(p => p.startsWith('src/components/reusable/') && /\.mdx?$/.test(p)).map(p => path.basename(p).replace(/\.mdx?$/, '')))
   : null;
 
 // Targeted operations require an explicit --lang
@@ -223,8 +231,15 @@ async function main() {
     return;
   }
 
+  if (flagMigrateHashes) {
+    if (!lang) { console.error('[migrate-hashes] --lang is required'); process.exit(1); }
+    const hashesDir = path.resolve(LOCALES_BASE, lang, '.hashes');
+    await migrateHashes(hashesDir);
+    return;
+  }
+
   // --only-files: fast exit if the diff contains nothing translatable
-  if (onlyFilePaths && onlyDocIds.size === 0 && onlySidebarNames.size === 0 && onlySpecIds.size === 0) {
+  if (onlyFilePaths && onlyDocIds.size === 0 && onlySidebarNames.size === 0 && onlySpecIds.size === 0 && onlyReusableIds.size === 0) {
     console.log('[translate] --only-files: no translatable files in diff — nothing to do.');
     return;
   }
@@ -247,8 +262,14 @@ async function main() {
 
     // --api-specs targets API specs only; skip article and sidebar translation
     if (!flagApiSpecs) {
-      // --sidebar targets a single sidebar only; skip article translation
-      if (!sidebarName) {
+      // Translate reusable snippets first so import rewrites in articles resolve correctly.
+      // Skip when --sidebar / --sidebars / --file / --ids target specific content only.
+      if (!sidebarName && !flagSidebarsOnly && !fileId && !fileIds) {
+        await translateReusableForLang(client, currentLang, localesDir, hashesDir, systemPrompt, tag, onlyReusableIds);
+      }
+
+      // --sidebar / --sidebars target sidebar labels only; skip article translation
+      if (!sidebarName && !flagSidebarsOnly) {
         await translateForLang(client, currentLang, localesDir, hashesDir, systemPrompt, tag, onlyDocIds);
       }
 
@@ -360,18 +381,23 @@ async function translateSync(client, files, systemPrompt, localesDir, hashesDir,
           await translateFileWithSections(client, file, systemPrompt, localesDir, hashesDir, lang);
         } else {
           const content = await fs.readFile(file, 'utf-8');
-          const response = await client.messages.create({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 8192,
-            system: systemPrompt,
-            messages: [{ role: 'user', content }],
-          });
-          if (response.stop_reason === 'max_tokens') {
-            throw new Error(`output truncated at max_tokens limit — increase max_tokens or split the file`);
+          // Auto-switch to section mode for large files to avoid max_tokens truncation
+          if (content.length > 20000) {
+            await translateFileWithSections(client, file, systemPrompt, localesDir, hashesDir, lang);
+          } else {
+            const response = await client.messages.create({
+              model: 'claude-sonnet-4-6',
+              max_tokens: 16000,
+              system: systemPrompt,
+              messages: [{ role: 'user', content }],
+            });
+            if (response.stop_reason === 'max_tokens') {
+              throw new Error(`output truncated at max_tokens limit — increase max_tokens or split the file`);
+            }
+            const translatedContent = response.content[0].text;
+            await writeTranslation(basename, translatedContent, file, localesDir, hashesDir, lang);
+            console.log(`  ✓ ${basename}`);
           }
-          const translatedContent = response.content[0].text;
-          await writeTranslation(basename, translatedContent, file, localesDir, hashesDir, lang);
-          console.log(`  ✓ ${basename}`);
         }
         translated++;
       } catch (err) {
@@ -409,8 +435,11 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
   let apiCallCount = 0;
 
   for (const section of sections) {
-    const translatableText = extractTranslatableText(section.content);
-    const contentHash = 'sha256:' + crypto.createHash('sha256').update(translatableText).digest('hex');
+    // Hash the full section content (including code blocks) so that snippet-only
+    // changes also invalidate the cache and trigger re-translation.
+    // extractTranslatableText is used only to strip code from what Claude receives,
+    // not from the hash — otherwise snippet changes would silently go untranslated.
+    const contentHash = 'sha256:' + crypto.createHash('sha256').update(section.content).digest('hex');
 
     const cached = storedSections[section.id];
     let translation;
@@ -463,9 +492,36 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
 // ---------------------------------------------------------------------------
 
 async function translateBatch(client, files, systemPrompt, localesDir, tag, lang) {
+  const hashesDir = path.join(localesDir, '.hashes');
+
+  // Large files can't be translated reliably in a single batch request —
+  // route them to section-based sync translation instead.
+  const largeFiles = [];
+  const batchFiles = [];
+  for (const file of files) {
+    const stat = await fs.stat(file);
+    if (stat.size > 20000) largeFiles.push(file);
+    else batchFiles.push(file);
+  }
+
+  if (largeFiles.length > 0) {
+    console.log(`${tag} ${largeFiles.length} large file(s) will be translated section-by-section (sync):`);
+    for (const file of largeFiles) {
+      const basename = path.basename(file, '.mdx');
+      try {
+        await translateFileWithSections(client, file, systemPrompt, localesDir, hashesDir, lang);
+        console.log(`  ✓ ${basename}`);
+      } catch (err) {
+        console.error(`  ✗ ${basename}: ${err.message}`);
+      }
+    }
+  }
+
+  if (batchFiles.length === 0) return;
+
   console.log(`${tag} Reading source files...`);
   const requests = await Promise.all(
-    files.map(async (file) => {
+    batchFiles.map(async (file) => {
       const basename = path.basename(file, '.mdx');
       const content = await fs.readFile(file, 'utf-8');
       return {
@@ -489,7 +545,7 @@ async function translateBatch(client, files, systemPrompt, localesDir, tag, lang
   console.log(`${tag} Batch ID saved to .translate-batch-id`);
   console.log(`${tag} Use --resume <batchId> to retrieve results if this process is interrupted.`);
 
-  const fileMap = Object.fromEntries(files.map(f => [path.basename(f, '.mdx'), f]));
+  const fileMap = Object.fromEntries(batchFiles.map(f => [path.basename(f, '.mdx'), f]));
   await waitAndRetrieve(client, batchId, fileMap, localesDir, tag, lang);
 }
 
@@ -640,6 +696,93 @@ async function rebuildSidebarLabels(sidebarFiles, sidebarHashesDir, localesDir) 
   await fs.writeFile(path.join(localesDir, '_sidebar-labels.json'), JSON.stringify(merged, null, 2), 'utf-8');
 }
 
+// ---------------------------------------------------------------------------
+// Reusable snippet translation
+// ---------------------------------------------------------------------------
+
+async function translateReusableForLang(client, lang, localesDir, hashesDir, systemPrompt, tag, onlyReusableIds = null) {
+  const reusableLocalesDir = path.join(localesDir, 'reusable');
+  const reusableHashesDir  = path.join(hashesDir, 'reusable');
+
+  let entries;
+  try {
+    entries = await fs.readdir(REUSABLE_DIR, { withFileTypes: true });
+  } catch {
+    return; // reusable dir doesn't exist — nothing to do
+  }
+
+  let files = entries
+    .filter(e => e.isFile() && /\.mdx?$/.test(e.name))
+    .map(e => ({ name: e.name, full: path.join(REUSABLE_DIR, e.name), basename: e.name.replace(/\.mdx?$/, '') }));
+
+  if (onlyReusableIds) {
+    files = files.filter(f => onlyReusableIds.has(f.basename));
+    if (files.length === 0) {
+      console.log(`${tag} No matching reusable snippets from --only-files — skipping.`);
+      return;
+    }
+  }
+
+  const toTranslate = [];
+  for (const file of files) {
+    if (flagIncremental) {
+      const currentHash = await fileHash(file.full);
+      const storedHash  = await getStoredHash(file.basename, reusableHashesDir);
+      if (storedHash === currentHash) continue;
+      toTranslate.push(file);
+    } else if (flagAll) {
+      toTranslate.push(file);
+    } else {
+      try {
+        await fs.access(path.join(reusableLocalesDir, file.name));
+        // exists → skip
+      } catch {
+        toTranslate.push(file);
+      }
+    }
+  }
+
+  if (toTranslate.length === 0) {
+    console.log(`${tag} Reusable snippets: all up to date.`);
+    return;
+  }
+
+  console.log(`${tag} ${toTranslate.length} reusable snippet(s) to translate.`);
+  await fs.mkdir(reusableLocalesDir, { recursive: true });
+  await fs.mkdir(reusableHashesDir, { recursive: true });
+
+  let translated = 0;
+  let errors = 0;
+  for (const file of toTranslate) {
+    try {
+      const content = await fs.readFile(file.full, 'utf-8');
+      const response = await client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: [{ role: 'user', content }],
+      });
+      if (response.stop_reason === 'max_tokens') {
+        throw new Error('output truncated at max_tokens limit');
+      }
+      const translatedContent = postProcessTranslation(response.content[0].text, lang);
+      await fs.writeFile(path.join(reusableLocalesDir, file.name), translatedContent, 'utf-8');
+      const hash = await fileHash(file.full);
+      await fs.writeFile(path.join(reusableHashesDir, `${file.basename}.json`), JSON.stringify({ fileHash: hash }), 'utf-8');
+      console.log(`  ✓ reusable:${file.name}`);
+      translated++;
+    } catch (err) {
+      console.error(`  ✗ reusable:${file.name}: ${err.message}`);
+      errors++;
+    }
+  }
+  console.log(`${tag} Reusable: ${translated} translated, ${errors} errors.`);
+}
+
+// ---------------------------------------------------------------------------
+// Sidebar translation
+// ---------------------------------------------------------------------------
+
 async function translateSidebarsForLang(client, lang, localesDir, hashesDir, targetLanguage, glossary, tag, sidebarName = null, onlySidebarNames = null) {
   const sidebarHashesDir = path.join(hashesDir, 'sidebars');
 
@@ -756,6 +899,62 @@ async function translateSidebarsForLang(client, lang, localesDir, hashesDir, tar
 // API spec translation
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Hash migration (--migrate-hashes)
+// Recomputes stored contentHash values using the current algorithm (full section
+// content) without re-translating anything. Run once after changing the hash algo.
+// ---------------------------------------------------------------------------
+
+async function migrateHashes(hashesDir) {
+  const DOCS_DIR = path.resolve(__dirname, '../src/content/docs');
+  let updated = 0;
+  let skipped = 0;
+
+  const hashFiles = (await fs.readdir(hashesDir).catch(() => [])).filter(f => f.endsWith('.json') && f !== '_sidebar-labels.json');
+
+  for (const hashFileName of hashFiles) {
+    const hashFilePath = path.join(hashesDir, hashFileName);
+    const articleId = hashFileName.replace(/\.json$/, '');
+
+    // Find the source file
+    const sourceFiles = await collectMdxFiles(DOCS_DIR);
+    const sourceFile = sourceFiles.find(f => path.basename(f, '.mdx') === articleId);
+    if (!sourceFile) {
+      skipped++;
+      continue;
+    }
+
+    const storedData = JSON.parse(await fs.readFile(hashFilePath, 'utf-8'));
+    if (!storedData.sections) { skipped++; continue; }
+
+    const content = await fs.readFile(sourceFile, 'utf-8');
+    const rawSections = splitIntoSections(content);
+    const sections = deduplicateSectionIds(rawSections);
+    const sectionMap = Object.fromEntries(sections.map(s => [s.id, s]));
+
+    let changed = false;
+    for (const [sectionId, cached] of Object.entries(storedData.sections)) {
+      const section = sectionMap[sectionId];
+      if (!section) continue;
+      const newHash = 'sha256:' + crypto.createHash('sha256').update(section.content).digest('hex');
+      if (cached.contentHash !== newHash) {
+        cached.contentHash = newHash;
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      await fs.writeFile(hashFilePath, JSON.stringify(storedData), 'utf-8');
+      console.log(`  ✓ migrated: ${articleId}`);
+      updated++;
+    } else {
+      skipped++;
+    }
+  }
+
+  console.log(`\n[migrate-hashes] Done: ${updated} updated, ${skipped} already up-to-date or skipped.`);
+}
+
 async function translateApiSpecsForLang(client, lang, localesDir, hashesDir, targetLanguage, glossary, tag, onlySpecIds = null) {
   const apiHashesDir = path.resolve(hashesDir, 'api-specs');
   const systemPrompt = buildApiSpecSystemPrompt(targetLanguage) + glossary;
@@ -809,16 +1008,22 @@ async function translateApiSpecsForLang(client, lang, localesDir, hashesDir, tar
   for (const spec of toTranslate) {
     try {
       const content = await fs.readFile(spec.full, 'utf-8');
-      const response = await client.messages.create({
+      let translated = '';
+      const stream = await client.messages.stream({
         model: 'claude-sonnet-4-6',
         max_tokens: 64000,
         system: systemPrompt,
         messages: [{ role: 'user', content }],
       });
-      if (response.stop_reason === 'max_tokens') {
+      for await (const chunk of stream) {
+        if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+          translated += chunk.delta.text;
+        }
+      }
+      const finalMessage = await stream.finalMessage();
+      if (finalMessage.stop_reason === 'max_tokens') {
         throw new Error(`API spec output truncated at max_tokens limit — spec may be too large`);
       }
-      const translated = response.content[0].text;
       const outputPath = path.join(API_SPECS_DIR, `${spec.basename}.${lang}.yaml`);
       await fs.writeFile(outputPath, translated, 'utf-8');
 
@@ -993,26 +1198,6 @@ function deduplicateSectionIds(sections) {
  * Strip fenced code blocks and import lines — used only for hashing,
  * not for sending to the API.
  */
-function extractTranslatableText(content) {
-  const lines = content.split('\n');
-  const result = [];
-  let codeBlockFence = null;
-  for (const line of lines) {
-    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
-    if (fenceMatch) {
-      if (codeBlockFence === null) {
-        codeBlockFence = fenceMatch[1][0];
-      } else if (line[0] === codeBlockFence) {
-        codeBlockFence = null;
-      }
-      continue;
-    }
-    if (codeBlockFence !== null) continue;
-    if (/^import /.test(line)) continue;
-    result.push(line);
-  }
-  return result.join('\n');
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -1047,7 +1232,7 @@ async function getSidebarIds(platformName, tag) {
   const ids = new Set();
   function extract(items) {
     for (const item of items) {
-      if (item.type === 'doc' && item.id) ids.add(item.id);
+      if (item.id) ids.add(item.id);
       if (item.items) extract(item.items);
     }
   }
@@ -1089,6 +1274,26 @@ function postProcessTranslation(content, lang) {
     /https:\/\/adapty\.io\/docs\/(?![a-z]{2}\/)([^\s"')\]>]+)/g,
     `https://adapty.io/docs/${lang}/$1`
   );
+
+  // Rewrite reusable snippet import paths to point to the localized versions.
+  // @site/src/components/reusable/Foo.mdx → @site/src/locales/<lang>/reusable/Foo.mdx
+  content = content.replace(
+    /@site\/src\/components\/reusable\//g,
+    `@site/src/locales/${lang}/reusable/`
+  );
+
+  // Rewrite relative imports in reusable files that used '../Foo.astro' (relative to
+  // src/components/reusable/) — those paths break when the file is placed under
+  // src/locales/<lang>/reusable/. Use the correct relative path 3 levels up.
+  content = content.replace(
+    /from '\.\.\/([^']+\.astro)'/g,
+    `from '../../../components/$1'`
+  );
+
+  // Ensure a blank line between import statements and headings.
+  // The model sometimes strips the trailing blank line from the preamble section,
+  // which causes MDX/acorn parse errors when an import is directly followed by ##.
+  content = content.replace(/^(import [^\n]+)\n(#{1,6} )/gm, '$1\n\n$2');
 
   return content;
 }

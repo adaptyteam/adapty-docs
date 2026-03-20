@@ -1,0 +1,82 @@
+---
+title: "在 Unity SDK 中实现网页付费墙"
+description: "设置网页付费墙，无需支付 App Store 费用和审核即可收款。"
+metadataTitle: "在美国 Unity 应用中接受网页支付 | Adapty 文档"
+displayed_sidebar: sdkunity
+---
+
+:::important
+开始之前，请确保您已[在看板中配置了网页付费墙](web-paywall)，并已安装 Adapty SDK 3.14 或更高版本。
+:::
+
+## 打开网页付费墙 \{#open-web-paywalls\}
+
+如果您使用的是自行开发的付费墙，则需要通过 SDK 方法处理网页付费墙。`Adapty.OpenWebPaywall` 方法：
+1. 生成唯一 URL，使 Adapty 能够将展示给特定用户的付费墙与其被重定向到的网页关联起来。
+2. 在您的用户返回应用时进行追踪，并以短时间间隔请求 `Adapty.GetProfile`，以确认用户画像的访问权限是否已更新。
+
+这样，如果支付成功且访问权限已更新，订阅将几乎立即在应用中激活。
+
+```csharp showLineNumbers title="Unity"
+Adapty.OpenWebPaywall(
+    product,
+    (error) =>
+    {
+        if (error != null)
+        {
+            Debug.LogError($"Failed to open web paywall: {error.Message}");
+        }
+        else
+        {
+            Debug.Log("Web paywall opened successfully");
+        }
+    }
+);
+```
+
+:::note
+`OpenWebPaywall` 方法有两个版本：
+1. `OpenWebPaywall(product)`：通过付费墙生成 URL，并将产品数据也添加到 URL 中。
+2. `OpenWebPaywall(paywall)`：通过付费墙生成 URL，但不将产品数据添加到 URL 中。当您在 Adapty 付费墙中的产品与网页付费墙中的产品不同时，请使用此版本。
+:::
+
+#### 处理错误 \{#handle-errors\}
+
+| 错误代码 | 描述 | 建议操作 |
+|-----------|--------------------------------------------------------|---------------------------------------------------------------------------|
+| `AdaptyErrorCode.WrongParam` | 付费墙或产品未配置网页购买 URL，或未能在浏览器中打开该 URL | 查看错误信息以了解详情。在 Adapty 看板中验证付费墙/产品配置，或检查设备设置。 |
+| `AdaptyErrorCode.DecodingFailed` | 无法正确编码 URL 中的参数 | 验证 URL 参数是否有效且格式正确 |
+
+:::note
+请查看错误的 `Message` 属性以获取具体的错误详情，因为 `WrongParam` 可能表示多种问题（缺少购买 URL、无法打开浏览器等）。
+:::
+
+## 在应用内浏览器中打开网页付费墙 \{#open-web-paywalls-in-an-in-app-browser\}
+
+:::important
+从 Adapty SDK v. 3.15 开始支持在应用内浏览器中打开网页付费墙。
+:::
+
+默认情况下，网页付费墙会在外部浏览器中打开，这会将用户引导至应用外部。
+
+为了提供流畅的用户体验，您可以改为在应用内浏览器中打开网页付费墙。这样可以在您的应用内显示网页购买页面，让用户无需切换应用即可完成交易。
+
+要启用此功能，请将 `AdaptyWebPresentation.InAppBrowser` 传入 `OpenWebPaywall` 方法：
+
+```csharp showLineNumbers title="Unity"
+Adapty.OpenWebPaywall(
+    product,
+    AdaptyWebPresentation.InAppBrowser, // default — ExternalBrowser
+    (error) =>
+    {
+        if (error != null)
+        {
+            Debug.LogError($"Failed to open web paywall: {error.Message}");
+        }
+        else
+        {
+            Debug.Log("Web paywall opened successfully");
+        }
+    }
+);
+```

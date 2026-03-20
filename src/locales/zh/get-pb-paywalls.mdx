@@ -1,0 +1,243 @@
+---
+title: "在 iOS SDK 中获取付费墙编辑工具付费墙及其配置"
+description: "了解如何在 Adapty 中检索付费墙编辑工具付费墙，以更好地控制 iOS 应用中的订阅。"
+metadataTitle: "在 Adapty 中检索付费墙编辑工具付费墙 | Adapty 文档"
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience', 'cache']
+rank: 100
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+在 Adapty 控制台中[使用新版付费墙编辑工具设计好付费墙的视觉部分](adapty-paywall-builder)后，您可以在移动应用中展示它。此流程的第一步是获取与版位关联的付费墙及其视图配置，具体如下所述。
+
+:::warning
+新版付费墙编辑工具需要 iOS SDK 3.0 或更高版本。如需在 Adapty SDK v2 中展示使用旧版付费墙编辑工具设计的付费墙，请参阅[展示使用旧版付费墙编辑工具设计的付费墙](adapty-paywall-builder)。
+:::
+
+请注意，本主题涉及使用付费墙编辑工具自定义的付费墙。如果您是手动实现付费墙，请参阅[在移动应用中获取远程配置付费墙的付费墙和产品](fetch-paywalls-and-products)主题。
+
+<SampleApp />
+
+<details>
+   <summary>在移动应用中展示付费墙之前（点击展开）</summary>
+
+1. 在 Adapty 控制台中[创建产品](create-product)。
+2. 在 Adapty 控制台中[创建付费墙并将产品添加到其中](create-paywall)。
+3. 在 Adapty 控制台中[创建版位并将付费墙添加到其中](create-placement)。
+4. 在移动应用中安装 [Adapty SDK](sdk-installation-ios)。
+</details>
+
+## 获取使用付费墙编辑工具设计的付费墙 \{#fetch-paywall-designed-with-paywall-builder\}
+
+如果您已[使用付费墙编辑工具设计了付费墙](adapty-paywall-builder)，则无需在移动应用代码中手动处理渲染逻辑来向用户展示它。此类付费墙同时包含应展示的内容及展示方式。尽管如此，您仍需通过版位获取其 ID、获取视图配置，然后在移动应用中进行展示。
+
+为确保最佳性能，务必尽早获取付费墙及其[视图配置](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)，以便在向用户展示之前有足够的时间下载图片。
+
+使用 `getPaywall` 方法获取付费墙：
+
+<Tabs>
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    // the requested paywall
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+参数：
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | 目标[版位](placements)的标识符。这是您在 Adapty 控制台中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-paywall-locale-in-adapty-paywall-builder)的标识符。该参数应为由一个或两个子标签通过减号（**-**）分隔的语言代码。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p>有关语言代码及推荐使用方式的更多信息，请参阅[本地化与语言代码](localizations-and-locale-codes)。</p> |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若加载失败则返回缓存数据。我们推荐此方式，因为它能确保用户始终获得最新数据。</p><p></p><p>但是，如果您认为用户的网络连接不稳定，可以考虑使用 `.returnCacheDataElseLoad`，在缓存存在时返回缓存数据。这样用户可能无法获得最新数据，但无论网络状况如何，都能享受更快的加载速度。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍然有效，仅在应用卸载重装或手动清除时才会被清空。</p><p></p><p>Adapty SDK 通过两层方式在本地存储付费墙：上述定期更新的缓存和[备用付费墙](fallback-paywalls)。我们还使用 CDN 加速付费墙获取，并在 CDN 不可用时提供独立的备用服务器。该系统旨在确保您始终获取最新版本的付费墙，同时在网络条件较差时也能保证可靠性。</p> |
+| **loadTimeout** | 默认值：5 秒 | <p>此值限制该方法的超时时间。超时后将返回缓存数据或本地备用数据。</p><p>请注意，在极少数情况下，此方法的实际超时时间可能略长于 `loadTimeout` 中指定的时间，因为该操作在底层可能包含多个不同请求。</p> |
+
+响应参数：
+
+| 参数 | 描述 |
+| :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | 一个 [`AdaptyPaywall`](https://swift.adapty.io/documentation/adapty/adaptypaywall) 对象，包含产品 ID 列表、付费墙标识符、远程配置及其他若干属性。 |
+
+## 获取使用付费墙编辑工具设计的付费墙视图配置 \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+请确保在付费墙编辑工具中启用了 **Show on device** 开关。如果未开启此选项，将无法获取视图配置。
+:::
+
+获取付费墙后，检查其是否包含视图配置——这表明它是使用付费墙编辑工具创建的。这将指导您如何展示该付费墙。如果存在视图配置，将其作为付费墙编辑工具付费墙处理；否则，[将其作为远程配置付费墙处理](present-remote-config-paywalls)。
+
+使用 `getPaywallConfiguration` 方法加载视图配置。
+
+```swift showLineNumbers
+import Adapty
+import AdaptyUI
+
+guard paywall.hasViewConfiguration else {
+    //  use your custom logic
+    return
+}
+
+do {
+    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
+            forPaywall: paywall,
+            products: products
+    )
+    // use loaded configuration
+} catch {
+    // handle the error
+}
+```
+
+参数：
+
+| 参数 | 是否必填 | 描述 |
+| :----------------------- | :------------- | :----------------------------------------------------------- |
+| **paywall** | 必填 | 用于获取目标付费墙控制器的 `AdaptyPaywall` 对象。 |
+| **loadTimeout** | 默认值：5 秒 | 此值限制该方法的超时时间。超时后将返回缓存数据或本地备用数据。请注意，在极少数情况下，此方法的实际超时时间可能略长于 `loadTimeout` 中指定的时间，因为该操作在底层可能包含多个不同请求。 |
+| **products** | 可选 | 提供 `AdaptyPaywallProducts` 数组以优化产品在屏幕上的显示时机。如果传入 `nil`，AdaptyUI 将自动获取所需产品。 |
+
+:::note
+如果您使用多种语言，请了解如何添加[付费墙编辑工具本地化](add-paywall-locale-in-adapty-paywall-builder)以及如何正确使用语言代码，详见[此处](localizations-and-locale-codes)。
+:::
+
+加载完成后，[展示付费墙](ios-present-paywalls)。
+
+## 获取默认目标受众的付费墙以加速获取 \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+通常情况下，付费墙几乎可以立即获取，因此无需担心加速此过程。但是，当您拥有大量目标受众和付费墙，且用户网络连接较弱时，获取付费墙可能需要较长时间。在这种情况下，您可能希望展示默认付费墙以确保流畅的用户体验，而不是不显示任何付费墙。
+
+为解决此问题，您可以使用 `getPaywallForDefaultAudience` 方法，该方法获取指定版位针对 **All Users** 目标受众的付费墙。但请务必理解，推荐的方式是使用 `getPaywall` 方法获取付费墙，详见上方的[获取付费墙信息](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder)部分。
+
+:::warning
+为什么我们推荐使用 `getPaywall`
+
+`getPaywallForDefaultAudience` 方法存在以下几个重要缺点：
+
+- **潜在的向后兼容性问题**：如果您需要为不同版本的应用（当前版本和未来版本）展示不同的付费墙，可能会面临挑战。您要么必须设计支持当前（旧版）版本的付费墙，要么接受使用当前（旧版）版本的用户可能遇到付费墙无法渲染的问题。
+- **失去精准定向**：所有用户都将看到为 **All Users** 目标受众设计的同一付费墙，这意味着您将失去个性化定向能力（包括基于国家、营销归因或自定义属性的定向）。
+
+如果您愿意接受这些缺点以换取更快的付费墙获取速度，请按如下方式使用 `getPaywallForDefaultAudience` 方法。否则，请坚持使用[上文](#get-pb-paywalls#fetch-paywall-designed-with-paywall-builder)描述的 `getPaywall`。
+:::
+
+```swift showLineNumbers
+Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+
+:::note
+`getPaywallForDefaultAudience` 方法从 iOS SDK 2.11.2 版本起可用。
+:::
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 控制台中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为由一个或多个子标签通过减号（**-**）分隔的语言代码。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言代码及推荐使用方式的更多信息，请参阅[本地化与语言代码](localizations-and-locale-codes)。</p> |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若加载失败则返回缓存数据。我们推荐此方式，因为它能确保用户始终获得最新数据。</p><p></p><p>但是，如果您认为用户的网络连接不稳定，可以考虑使用 `.returnCacheDataElseLoad`，在缓存存在时返回缓存数据。这样用户可能无法获得最新数据，但无论网络状况如何，都能享受更快的加载速度。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍然有效，仅在应用卸载重装或手动清除时才会被清空。</p> |
+
+## 自定义资源 \{#customize-assets\}
+
+要在付费墙中自定义图片和视频，请实现自定义资源。
+
+主图和视频有预定义的 ID：`hero_image` 和 `hero_video`。在自定义资源包中，您通过这些 ID 定位目标元素并自定义其行为。
+
+对于其他图片和视频，您需要在 Adapty 控制台中[设置自定义 ID](custom-media)。
+
+例如，您可以：
+
+- 向部分用户展示不同的图片或视频。
+- 在远程主图加载时显示本地预览图。
+- 在播放视频前显示预览图。
+
+:::important
+要使用此功能，请将 Adapty iOS SDK 更新至 3.7.0 或更高版本。
+:::
+
+以下是通过简单字典提供自定义资源的示例：
+
+```swift showLineNumbers
+let customAssets: [String: AdaptyCustomAsset] = [
+    // Show a local image using a custom ID
+    "custom_image": .image(
+        .uiImage(value: UIImage(named: "image_name")!)
+    ),
+
+    // Show a local preview image while a remote main image is loading
+    "hero_image": .image(
+        .remote(
+            url: URL(string: "https://example.com/image.jpg")!,
+            preview: UIImage(named: "preview_image")
+        )
+    ),
+
+    // Show a local video with a preview image
+    "hero_video": .video(
+        .file(
+            url: Bundle.main.url(forResource: "custom_video", withExtension: "mp4")!,
+            preview: .uiImage(value: UIImage(named: "video_preview")!)
+        )
+    ),
+]
+
+let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
+    forPaywall: paywall,
+    assetsResolver: customAssets
+)
+```
+
+:::note
+如果找不到某个资源，付费墙将回退到其默认外观。
+:::
+
+## 设置开发者定义的计时器 \{#set-up-developer-defined-timers\}
+
+要在移动应用中使用自定义计时器，请创建一个遵循 `AdaptyTimerResolver` 协议的对象。该对象定义每个自定义计时器的渲染方式。如果您愿意，也可以直接使用 `[String: Date]` 字典，因为它已经符合该协议。以下是一个示例：
+
+```swift showLineNumbers
+@MainActor
+struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
+    func timerEndAtDate(for timerId: String) -> Date {
+        switch timerId {
+        case "CUSTOM_TIMER_6H":
+            Date(timeIntervalSinceNow: 3600.0 * 6.0) // 6 hours
+        case "CUSTOM_TIMER_NY":
+            Calendar.current.date(from: DateComponents(year: 2025, month: 1, day: 1)) ?? Date(timeIntervalSinceNow: 3600.0)
+        default:
+            Date(timeIntervalSinceNow: 3600.0) // 1 hour
+        }
+    }
+}
+```
+
+在此示例中，`CUSTOM_TIMER_NY` 和 `CUSTOM_TIMER_6H` 是您在 Adapty 控制台中设置的开发者定义计时器的 **Timer ID**。`timerResolver` 确保您的应用使用正确的值动态更新每个计时器。例如：
+
+- `CUSTOM_TIMER_NY`：距计时器结束时间（例如元旦）的剩余时间。
+- `CUSTOM_TIMER_6H`：用户打开付费墙后开始的 6 小时倒计时的剩余时间。
