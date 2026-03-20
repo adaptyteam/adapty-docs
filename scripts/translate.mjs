@@ -466,14 +466,104 @@ async function translateSync(client, files, systemPrompt, localesDir, hashesDir,
 }
 
 // ---------------------------------------------------------------------------
-// Section cache seeding (no Claude — heading sections only)
+// Section cache seeding (no Claude — heading + para chunk sections)
 // ---------------------------------------------------------------------------
 
-// Seeds the section-level cache for a file that already has a zh translation but no section
-// cache. Only heading-level sections are seeded (para chunks are intentionally skipped — they
-// will be translated by Claude on the first incremental run that touches the file, and cached
-// correctly from that point onward). Running this eagerly means the NEXT snippet-only change
-// triggers patchCodeBlocks for heading sections rather than a full Claude retranslation.
+/**
+ * Given an en heading-section content and its zh translation, split both into
+ * paragraph-chunk pairs using the same raw-block split + greedy 600-char grouping
+ * that splitByParagraphBlocks uses.
+ *
+ * En and zh share the same blank-line paragraph structure (same number of raw
+ * blocks), so we can match blocks by index and group zh blocks according to en
+ * chunk boundaries — producing one zh chunk per en para chunk.
+ *
+ * Returns an array of { en, zh } content pairs, or null if:
+ *   - fewer than 2 chunks (no para split needed), OR
+ *   - en and zh have different raw-block counts (structure diverged in translation)
+ */
+function mapParaChunksToZh(enContent, zhContent) {
+  // Collect raw blocks (blank-line-separated, code fences kept intact) — same
+  // logic as splitByParagraphBlocks so the resulting chunks are identical.
+  function getRawBlocks(text) {
+    const lines = text.split('\n');
+    const blocks = [];
+    let start = 0;
+    let codeBlockFence = null;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+      if (fenceMatch) {
+        if (codeBlockFence === null) codeBlockFence = fenceMatch[1][0];
+        else if (line[0] === codeBlockFence) codeBlockFence = null;
+      }
+      if (codeBlockFence === null && line.trim() === '' && i > start) {
+        const block = lines.slice(start, i + 1).join('\n');
+        if (block.trim()) blocks.push(block);
+        start = i + 1;
+      }
+    }
+    const tail = lines.slice(start).join('\n');
+    if (tail.trim()) blocks.push(tail);
+    return blocks;
+  }
+
+  const enRaw = getRawBlocks(enContent);
+  const zhRaw = getRawBlocks(zhContent);
+  if (enRaw.length !== zhRaw.length) return null; // structure diverged — skip
+
+  // Greedy grouping: accumulate raw blocks until adding the next would exceed
+  // PARAGRAPH_FALLBACK_CHARS (based on en length). Apply identical index grouping
+  // to zh so each zh chunk corresponds to the same blocks as the en chunk.
+  const pairs = [];
+  let enCur = '', zhCur = '';
+  for (let i = 0; i < enRaw.length; i++) {
+    const enCand = enCur ? `${enCur}\n${enRaw[i]}` : enRaw[i];
+    const zhCand = zhCur ? `${zhCur}\n${zhRaw[i]}` : zhRaw[i];
+    if (enCur && enCand.length > PARAGRAPH_FALLBACK_CHARS) {
+      pairs.push({ en: enCur, zh: zhCur });
+      enCur = enRaw[i]; zhCur = zhRaw[i];
+    } else {
+      enCur = enCand; zhCur = zhCand;
+    }
+  }
+  if (enCur) pairs.push({ en: enCur, zh: zhCur });
+
+  return pairs.length > 1 ? pairs : null;
+}
+
+/**
+ * Build a single section cache entry from an en content + its existing zh translation.
+ * If en and zh have the same code blocks, stores the current en hash (cache hit on next
+ * unchanged run). If code differs (snippet changed since last translation), stores the
+ * zh content hash as a sentinel so the next run triggers patchCodeBlocks instead of Claude.
+ */
+function makeSeedEntry(enContent, zhContent) {
+  const cH = 'sha256:' + crypto.createHash('sha256').update(enContent).digest('hex');
+  const pH = 'sha256:' + crypto.createHash('sha256').update(stripCodeBlocks(enContent)).digest('hex');
+  const enCode = extractCodeBlocks(enContent);
+  const zhCode = extractCodeBlocks(zhContent);
+  const codeUnchanged = enCode.length === zhCode.length && enCode.every((b, j) => b === zhCode[j]);
+  return {
+    contentHash: codeUnchanged ? cH : 'sha256:' + crypto.createHash('sha256').update(zhContent).digest('hex'),
+    proseHash: pH,
+    translation: zhContent,
+  };
+}
+
+/**
+ * Builds a section-level hash cache for a file that already has a zh translation
+ * but no section cache, without calling Claude.
+ *
+ * Heading sections: matched by position between en and zh heading splits.
+ * Para chunks: matched by applying the same raw-block index grouping to the zh
+ *   heading section content. If en and zh have different block counts (rare —
+ *   translator restructured paragraphs), that heading section's para chunks are
+ *   skipped safely (they'll be translated by Claude on first change).
+ *
+ * After this runs, both heading sections AND para chunks are cached. Subsequent
+ * snippet-only changes trigger patchCodeBlocks with zero Claude calls.
+ */
 async function seedSectionCache(file, localesDir, hashesDir, lang) {
   const basename = path.basename(file, '.mdx');
   const content = await fs.readFile(file, 'utf-8');
@@ -486,44 +576,57 @@ async function seedSectionCache(file, localesDir, hashesDir, lang) {
     return; // no zh file to seed from
   }
 
-  const rawSections = splitIntoSections(content);
-  const sections    = deduplicateSectionIds(rawSections);
+  const sections = deduplicateSectionIds(splitIntoSections(content));
 
   const engHeadSecs = splitIntoSections(content, { paragraphFallback: false });
   const zhHeadSecs  = splitIntoSections(existingTranslation, { paragraphFallback: false });
-  if (engHeadSecs.length !== zhHeadSecs.length) return; // mismatch — can't seed safely
+  if (engHeadSecs.length !== zhHeadSecs.length) return; // heading count mismatch
 
-  const zhByHeadId = new Map(engHeadSecs.map((s, i) => [s.id, zhHeadSecs[i].content]));
+  // Map: (deduplicated) heading section ID → zh heading section content.
+  // deduplicateSectionIds is applied to engHeadSecs so the IDs match what
+  // translateFileWithSections stores in the cache.
+  const dedupEngHead = deduplicateSectionIds(engHeadSecs);
+  const dedupZhHead  = deduplicateSectionIds(zhHeadSecs);
+  const zhByHeadId   = new Map(dedupEngHead.map((s, i) => [s.id, dedupZhHead[i].content]));
+
+  // Build: (deduplicated) heading ID → zh para-chunk array (or null if no split needed)
+  const paraChunksByHeadId = new Map();
+  for (const s of dedupEngHead) {
+    const zhHead = zhByHeadId.get(s.id);
+    if (!zhHead) continue;
+    const pairs = mapParaChunksToZh(s.content, zhHead);
+    if (pairs) paraChunksByHeadId.set(s.id, pairs);
+  }
 
   const seeded = {};
+
   for (const s of sections) {
-    if (/-p[0-9a-f]{8}$/.test(s.id)) continue; // skip para chunks
+    const isParaChunk = /-p[0-9a-f]{8}$/.test(s.id);
 
-    const zhContent = zhByHeadId.get(s.id);
-    if (!zhContent) continue;
-
-    const cH = 'sha256:' + crypto.createHash('sha256').update(s.content).digest('hex');
-    const pH = 'sha256:' + crypto.createHash('sha256').update(stripCodeBlocks(s.content)).digest('hex');
-
-    const enBlocks = extractCodeBlocks(s.content);
-    const zhBlocks = extractCodeBlocks(zhContent);
-    const codeUnchanged = enBlocks.length === zhBlocks.length && enBlocks.every((b, j) => b === zhBlocks[j]);
-
-    if (codeUnchanged) {
-      seeded[s.id] = { contentHash: cH, proseHash: pH, translation: zhContent };
-    } else {
-      const oldHash = 'sha256:' + crypto.createHash('sha256').update(zhContent).digest('hex');
-      seeded[s.id] = { contentHash: oldHash, proseHash: pH, translation: zhContent };
+    if (!isParaChunk) {
+      const zhContent = zhByHeadId.get(s.id);
+      if (zhContent) seeded[s.id] = makeSeedEntry(s.content, zhContent);
+      continue;
     }
+
+    const headId = s.id.replace(/-p[0-9a-f]{8}$/, '');
+    const pairs = paraChunksByHeadId.get(headId);
+    if (!pairs) continue;
+
+    const pair = pairs.find(p => p.en === s.content);
+    if (pair) seeded[s.id] = makeSeedEntry(pair.en, pair.zh);
   }
 
   if (Object.keys(seeded).length === 0) return;
+
+  const headingCount = Object.keys(seeded).filter(id => !/-p[0-9a-f]{8}$/.test(id)).length;
+  const paraCount    = Object.keys(seeded).length - headingCount;
 
   const currentHash = await fileHash(file);
   const hashFile = path.join(hashesDir, `${basename}.json`);
   await fs.mkdir(hashesDir, { recursive: true });
   await fs.writeFile(hashFile, JSON.stringify({ fileHash: currentHash, sections: seeded }), 'utf-8');
-  console.log(`  ⟳ ${basename}: seeded section cache (${Object.keys(seeded).length} heading sections)`);
+  console.log(`  ⟳ ${basename}: seeded ${headingCount} heading + ${paraCount} para-chunk sections`);
 }
 
 // ---------------------------------------------------------------------------
@@ -561,61 +664,41 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
   // Covers files translated via batch (which stores only fileHash, no sections),
   // and the post-migration run where the cache was discarded due to stale IDs.
   //
-  // Strategy: match at heading-section level (immune to paragraph-chunk count
-  // differences caused by Chinese text being shorter than English). Then for each
-  // English paragraph chunk find the corresponding zh chunk by position within
-  // its parent heading section — skip it (will retranslate once) if zh split
-  // differently.
+  // Uses the same raw-block matching as seedSectionCache: heading sections are matched
+  // by position; para chunks are seeded by matching raw blocks between en and zh heading
+  // sections (same structure → same block count in 94%+ of articles). This means the
+  // FIRST incremental run on a changed file also seeds the section cache fully, so
+  // unchanged para chunks get cache hits and changed ones get patchCodeBlocks.
   if (!storedData?.sections) {
     const translatedPath = path.join(localesDir, `${basename}.mdx`);
     try {
       const existingTranslation = await fs.readFile(translatedPath, 'utf-8');
 
-      // Heading-only splits for reliable count matching (no paragraph fallback)
-      const engHeadSecs = splitIntoSections(content, { paragraphFallback: false });
-      const zhHeadSecs  = splitIntoSections(existingTranslation, { paragraphFallback: false });
+      const engHeadSecs = deduplicateSectionIds(splitIntoSections(content, { paragraphFallback: false }));
+      const zhHeadSecs  = deduplicateSectionIds(splitIntoSections(existingTranslation, { paragraphFallback: false }));
 
       if (engHeadSecs.length === zhHeadSecs.length) {
-        // Map: English heading section ID → zh heading section content (matched by position)
-        const zhByHeadId = new Map(engHeadSecs.map((s, i) => [s.id, zhHeadSecs[i].content]));
+        const zhByHeadId       = new Map(engHeadSecs.map((s, i) => [s.id, zhHeadSecs[i].content]));
+        const paraChunksByHead = new Map();
+        for (const s of engHeadSecs) {
+          const zhHead = zhByHeadId.get(s.id);
+          if (!zhHead) continue;
+          const pairs = mapParaChunksToZh(s.content, zhHead);
+          if (pairs) paraChunksByHead.set(s.id, pairs);
+        }
 
         const seeded = {};
         for (const s of sections) {
-          // Para chunks (IDs ending in -p{8hexchars}) are skipped during seeding.
-          //
-          // Why: Chinese text is ~30-50% shorter than English. When zh heading sections are
-          // split into paragraph chunks using the same 600-char threshold, they produce
-          // FEWER chunks than the English. Position-based matching then assigns wrong zh
-          // content to English chunks, and unmatched English chunks get retranslated by Claude
-          // — producing content that already exists in an earlier chunk. This creates
-          // duplicate paragraphs in the output (root cause of the 168-line diff for a
-          // 1-line change).
-          //
-          // Para chunks are translated once by Claude on the first incremental run, then
-          // correctly cached with prose-hash IDs. Subsequent code-only changes trigger
-          // patchCodeBlocks; prose changes trigger targeted retranslation.
-          if (/-p[0-9a-f]{8}$/.test(s.id)) continue;
-
-          // Heading-level section (not split): seed directly from the zh heading section.
-          const zhContent = zhByHeadId.get(s.id);
-          if (!zhContent) continue;
-
-          const cH = 'sha256:' + crypto.createHash('sha256').update(s.content).digest('hex');
-          const pH = 'sha256:' + crypto.createHash('sha256').update(stripCodeBlocks(s.content)).digest('hex');
-
-          // Code blocks are never translated — a mismatch means the English source changed
-          // since the zh translation was produced. Seed as "code stale" so patchCodeBlocks
-          // runs instead of Claude.
-          const enBlocks = extractCodeBlocks(s.content);
-          const zhBlocks = extractCodeBlocks(zhContent);
-          const codeUnchanged = enBlocks.length === zhBlocks.length &&
-            enBlocks.every((b, j) => b === zhBlocks[j]);
-
-          if (codeUnchanged) {
-            seeded[s.id] = { contentHash: cH, proseHash: pH, translation: zhContent };
+          const isParaChunk = /-p[0-9a-f]{8}$/.test(s.id);
+          if (!isParaChunk) {
+            const zhContent = zhByHeadId.get(s.id);
+            if (zhContent) seeded[s.id] = makeSeedEntry(s.content, zhContent);
           } else {
-            const oldHash = 'sha256:' + crypto.createHash('sha256').update(zhContent).digest('hex');
-            seeded[s.id] = { contentHash: oldHash, proseHash: pH, translation: zhContent };
+            const headId = s.id.replace(/-p[0-9a-f]{8}$/, '');
+            const pairs  = paraChunksByHead.get(headId);
+            if (!pairs) continue;
+            const pair = pairs.find(p => p.en === s.content);
+            if (pair) seeded[s.id] = makeSeedEntry(pair.en, pair.zh);
           }
         }
 
