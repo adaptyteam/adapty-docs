@@ -1363,25 +1363,47 @@ function splitByParagraphBlocks(section) {
   if (rawBlocks.length <= 1) return [section]; // can't split further
 
   // Merge consecutive paragraph blocks into chunks that stay under the threshold.
-  // IDs are based on the PROSE hash (code blocks stripped) so that a code-only
-  // change does not alter the chunk ID — the same cache entry is found and the
-  // patchCodeBlocks path can fire instead of calling Claude.
-  const chunks = [];
+  //
+  // ID strategy — two goals in tension:
+  //   (A) Stable across code-only changes → use prose hash → patchCodeBlocks can fire
+  //   (B) Unique when prose is identical → use content hash → switching chunks is detected
+  //
+  // Resolution: use prose hash when it is unique within this section; fall back to
+  // content hash for chunks whose prose hash collides with another chunk's.
+  // Colliding chunks are rare (e.g. two code-only blocks) and sacrifice patchCodeBlocks,
+  // but gain correct switch detection without positional dedup suffixes.
+
+  // First pass: collect raw chunk contents
+  const rawChunks = [];
   let current = '';
   for (const block of rawBlocks) {
     const candidate = current ? `${current}\n${block}` : block;
     if (current && candidate.length > PARAGRAPH_FALLBACK_CHARS) {
-      const h = crypto.createHash('sha256').update(stripCodeBlocks(current)).digest('hex').slice(0, 8);
-      chunks.push({ id: `${section.id}-p${h}`, content: current });
+      rawChunks.push(current);
       current = block;
     } else {
       current = candidate;
     }
   }
-  if (current) {
-    const h = crypto.createHash('sha256').update(stripCodeBlocks(current)).digest('hex').slice(0, 8);
-    chunks.push({ id: `${section.id}-p${h}`, content: current });
+  if (current) rawChunks.push(current);
+
+  if (rawChunks.length <= 1) return [section];
+
+  // Count prose-hash occurrences to detect collisions within this section
+  const proseHashCount = new Map();
+  for (const c of rawChunks) {
+    const ph = crypto.createHash('sha256').update(stripCodeBlocks(c)).digest('hex').slice(0, 8);
+    proseHashCount.set(ph, (proseHashCount.get(ph) ?? 0) + 1);
   }
+
+  // Second pass: assign stable IDs
+  const chunks = rawChunks.map(c => {
+    const ph = crypto.createHash('sha256').update(stripCodeBlocks(c)).digest('hex').slice(0, 8);
+    const h = proseHashCount.get(ph) === 1
+      ? ph  // unique prose → stable ID, enables patchCodeBlocks
+      : crypto.createHash('sha256').update(c).digest('hex').slice(0, 8); // collision → content hash
+    return { id: `${section.id}-p${h}`, content: c };
+  });
 
   return chunks.length > 1 ? chunks : [section];
 }
