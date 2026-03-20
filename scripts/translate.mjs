@@ -460,6 +460,13 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
   let storedData = null;
   try {
     storedData = JSON.parse(await fs.readFile(hashFile, 'utf-8'));
+    // Detect old-format positional paragraph IDs (e.g. "h2-foo-p1", "preamble-p3").
+    // Paragraph IDs now use 8-char content hashes (e.g. "h2-foo-pa3f7c1b2") so any
+    // cache entry ending in -p<digits> is stale — discard it to trigger re-seeding.
+    if (storedData?.sections) {
+      const hasOldIds = Object.keys(storedData.sections).some(id => /-p\d+$/.test(id));
+      if (hasOldIds) storedData = { fileHash: storedData.fileHash };
+    }
   } catch { /* no cache */ }
 
   // Seed section cache from existing translation when no section-level cache exists.
@@ -1539,10 +1546,11 @@ function postProcessTranslation(content, lang) {
     `from '../../../components/$1'`
   );
 
-  // Ensure a blank line between import statements and headings.
+  // Ensure a blank line after the last import statement.
   // The model sometimes strips the trailing blank line from the preamble section,
-  // which causes MDX/acorn parse errors when an import is directly followed by ##.
-  content = content.replace(/^(import [^\n]+)\n(#{1,6} )/gm, '$1\n\n$2');
+  // causing MDX/acorn parse errors when an import is directly followed by content
+  // (a heading, a paragraph, a callout, a component, etc.).
+  content = content.replace(/^(import [^\n]+)\n([^\n])/gm, '$1\n\n$2');
 
   return content;
 }
