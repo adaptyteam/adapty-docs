@@ -1362,13 +1362,16 @@ function splitByParagraphBlocks(section) {
 
   if (rawBlocks.length <= 1) return [section]; // can't split further
 
-  // Merge consecutive paragraph blocks into chunks that stay under the threshold
+  // Merge consecutive paragraph blocks into chunks that stay under the threshold.
+  // IDs are based on the PROSE hash (code blocks stripped) so that a code-only
+  // change does not alter the chunk ID — the same cache entry is found and the
+  // patchCodeBlocks path can fire instead of calling Claude.
   const chunks = [];
   let current = '';
   for (const block of rawBlocks) {
     const candidate = current ? `${current}\n${block}` : block;
     if (current && candidate.length > PARAGRAPH_FALLBACK_CHARS) {
-      const h = crypto.createHash('sha256').update(current).digest('hex').slice(0, 8);
+      const h = crypto.createHash('sha256').update(stripCodeBlocks(current)).digest('hex').slice(0, 8);
       chunks.push({ id: `${section.id}-p${h}`, content: current });
       current = block;
     } else {
@@ -1376,7 +1379,7 @@ function splitByParagraphBlocks(section) {
     }
   }
   if (current) {
-    const h = crypto.createHash('sha256').update(current).digest('hex').slice(0, 8);
+    const h = crypto.createHash('sha256').update(stripCodeBlocks(current)).digest('hex').slice(0, 8);
     chunks.push({ id: `${section.id}-p${h}`, content: current });
   }
 
