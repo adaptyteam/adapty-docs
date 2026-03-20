@@ -476,7 +476,25 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
           const s = sections[i];
           const cH = 'sha256:' + crypto.createHash('sha256').update(s.content).digest('hex');
           const pH = 'sha256:' + crypto.createHash('sha256').update(stripCodeBlocks(s.content)).digest('hex');
-          seeded[s.id] = { contentHash: cH, proseHash: pH, translation: translatedSecs[i].content };
+
+          // Check whether code blocks in the English source match those in the zh translation.
+          // Code blocks are never translated, so a mismatch means the English source changed
+          // since the zh translation was produced. In that case we must NOT mark the section
+          // as up-to-date — instead we seed it as "prose cached, code stale" so that the
+          // patchCodeBlocks path runs on the next iteration, updating code without Claude.
+          const enBlocks = extractCodeBlocks(s.content);
+          const zhBlocks = extractCodeBlocks(translatedSecs[i].content);
+          const codeUnchanged = enBlocks.length === zhBlocks.length &&
+            enBlocks.every((b, j) => b === zhBlocks[j]);
+
+          if (codeUnchanged) {
+            seeded[s.id] = { contentHash: cH, proseHash: pH, translation: translatedSecs[i].content };
+          } else {
+            // Fake the "old" contentHash so that cH won't match on the next pass,
+            // while proseHash stays current so patchCodeBlocks triggers (not Claude).
+            const oldHash = 'sha256:' + crypto.createHash('sha256').update(translatedSecs[i].content).digest('hex');
+            seeded[s.id] = { contentHash: oldHash, proseHash: pH, translation: translatedSecs[i].content };
+          }
         }
         storedData = { sections: seeded };
         console.log(`  ↺ ${basename}: seeded section cache from existing translation`);
@@ -1262,7 +1280,10 @@ function splitIntoSections(content) {
 /**
  * Split a section that is too large into paragraph-sized chunks separated by
  * blank lines (respecting code block boundaries). Each chunk gets a stable
- * positional ID: `<parentId>-p1`, `<parentId>-p2`, etc.
+ * content-hash-based ID: `<parentId>-p<8-char-hash>`.
+ * Using content hashes rather than positional counters means inserting or
+ * deleting a paragraph does not shift the IDs of surrounding chunks, so
+ * unchanged paragraphs always hit the translation cache.
  * If the section cannot be split (e.g. one giant code block), returns it as-is.
  */
 function splitByParagraphBlocks(section) {
@@ -1295,18 +1316,20 @@ function splitByParagraphBlocks(section) {
   // Merge consecutive paragraph blocks into chunks that stay under the threshold
   const chunks = [];
   let current = '';
-  let idx = 1;
   for (const block of rawBlocks) {
     const candidate = current ? `${current}\n${block}` : block;
     if (current && candidate.length > PARAGRAPH_FALLBACK_CHARS) {
-      chunks.push({ id: `${section.id}-p${idx}`, content: current });
-      idx++;
+      const h = crypto.createHash('sha256').update(current).digest('hex').slice(0, 8);
+      chunks.push({ id: `${section.id}-p${h}`, content: current });
       current = block;
     } else {
       current = candidate;
     }
   }
-  if (current) chunks.push({ id: `${section.id}-p${idx}`, content: current });
+  if (current) {
+    const h = crypto.createHash('sha256').update(current).digest('hex').slice(0, 8);
+    chunks.push({ id: `${section.id}-p${h}`, content: current });
+  }
 
   return chunks.length > 1 ? chunks : [section];
 }
