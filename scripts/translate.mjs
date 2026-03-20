@@ -1778,11 +1778,23 @@ function postProcessTranslation(content, lang) {
     `from '../../../components/$1'`
   );
 
-  // Ensure a blank line after the last import statement.
-  // The model sometimes strips the trailing blank line from the preamble section,
-  // causing MDX/acorn parse errors when an import is directly followed by content
-  // (a heading, a paragraph, a callout, a component, etc.).
-  content = content.replace(/^(import [^\n]+)\n([^\n])/gm, '$1\n\n$2');
+  // Normalize the MDX preamble import block (top-level imports right after
+  // frontmatter). Collapses spurious blank lines between consecutive imports and
+  // ensures exactly one blank line after the block before content.
+  // Anchored after frontmatter so it never touches imports inside code blocks.
+  {
+    const fmClose = content.indexOf('\n---\n');
+    const bodyStart = fmClose >= 0 ? fmClose + 5 : 0;
+    const body = content.slice(bodyStart);
+    const normalizedBody = body
+      // Collapse blank lines within the leading import block (non-greedy, first block only)
+      .replace(/^((?:import [^\n]+\n)(?:\n*import [^\n]+\n)*)/, block =>
+        block.replace(/\n{2,}/g, '\n')
+      )
+      // Ensure exactly one blank line between the import block and the first content line
+      .replace(/^(import [^\n]+)\n(?!import )(?!\n)([^\n])/m, '$1\n\n$2');
+    content = content.slice(0, bodyStart) + normalizedBody;
+  }
 
   return content;
 }
