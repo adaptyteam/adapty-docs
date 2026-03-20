@@ -339,6 +339,7 @@ async function translateForLang(client, lang, localesDir, hashesDir, systemPromp
 
   // Determine which files actually need translation
   const toTranslate = [];
+  const toSeed      = [];   // unchanged files that have no section cache yet
   for (const file of files) {
     const basename = path.basename(file, '.mdx');
     const translatedPath = path.join(localesDir, `${basename}.mdx`);
@@ -346,13 +347,21 @@ async function translateForLang(client, lang, localesDir, hashesDir, systemPromp
     if (flagIncremental) {
       const currentHash = await fileHash(file);
       const storedHash  = await getStoredHash(basename, hashesDir);
-      if (storedHash === currentHash) continue;
+      if (storedHash === currentHash) {
+        // File unchanged — but check if section cache is missing (so we can seed it now
+        // without Claude rather than waiting for the next real change to trigger 20+ Claude calls).
+        const hashFilePath = path.join(hashesDir, `${basename}.json`);
+        let cachedData = null;
+        try { cachedData = JSON.parse(await fs.readFile(hashFilePath, 'utf-8')); } catch { /* ok */ }
+        if (!cachedData?.sections) toSeed.push(file);
+        continue;
+      }
 
       if (!storedHash) {
         // No hash file — check whether a translation already exists.
         // This happens when .hashes was deleted or the GH Action cache was cold.
-        // Write the current hash and skip so we don't retranslate an already-done file.
-        // The section cache will be seeded lazily on the next real content change.
+        // Write the current hash and queue for section seeding so the next snippet
+        // change doesn't trigger a full retranslation.
         try {
           await fs.access(translatedPath);
           await fs.mkdir(hashesDir, { recursive: true });
@@ -361,7 +370,8 @@ async function translateForLang(client, lang, localesDir, hashesDir, systemPromp
             JSON.stringify({ fileHash: currentHash }),
             'utf-8'
           );
-          continue; // already translated — just record the hash
+          toSeed.push(file);
+          continue; // already translated — record hash + queue section seeding
         } catch { /* no translation exists → fall through and translate */ }
       }
 
@@ -375,6 +385,17 @@ async function translateForLang(client, lang, localesDir, hashesDir, systemPromp
       } catch {
         toTranslate.push(file);
       }
+    }
+  }
+
+  // Seed section caches for up-to-date files that have no section-level cache.
+  // This runs synchronously before translation so that subsequent incremental runs
+  // on any of these files can use patchCodeBlocks instead of retranslating everything.
+  if (toSeed.length > 0 && flagIncremental && syncMode) {
+    for (const file of toSeed) {
+      try {
+        await seedSectionCache(file, localesDir, hashesDir, lang);
+      } catch { /* seeding is best-effort — don't abort the run */ }
     }
   }
 
@@ -445,6 +466,67 @@ async function translateSync(client, files, systemPrompt, localesDir, hashesDir,
 }
 
 // ---------------------------------------------------------------------------
+// Section cache seeding (no Claude — heading sections only)
+// ---------------------------------------------------------------------------
+
+// Seeds the section-level cache for a file that already has a zh translation but no section
+// cache. Only heading-level sections are seeded (para chunks are intentionally skipped — they
+// will be translated by Claude on the first incremental run that touches the file, and cached
+// correctly from that point onward). Running this eagerly means the NEXT snippet-only change
+// triggers patchCodeBlocks for heading sections rather than a full Claude retranslation.
+async function seedSectionCache(file, localesDir, hashesDir, lang) {
+  const basename = path.basename(file, '.mdx');
+  const content = await fs.readFile(file, 'utf-8');
+  const translatedPath = path.join(localesDir, `${basename}.mdx`);
+
+  let existingTranslation;
+  try {
+    existingTranslation = await fs.readFile(translatedPath, 'utf-8');
+  } catch {
+    return; // no zh file to seed from
+  }
+
+  const rawSections = splitIntoSections(content);
+  const sections    = deduplicateSectionIds(rawSections);
+
+  const engHeadSecs = splitIntoSections(content, { paragraphFallback: false });
+  const zhHeadSecs  = splitIntoSections(existingTranslation, { paragraphFallback: false });
+  if (engHeadSecs.length !== zhHeadSecs.length) return; // mismatch — can't seed safely
+
+  const zhByHeadId = new Map(engHeadSecs.map((s, i) => [s.id, zhHeadSecs[i].content]));
+
+  const seeded = {};
+  for (const s of sections) {
+    if (/-p[0-9a-f]{8}$/.test(s.id)) continue; // skip para chunks
+
+    const zhContent = zhByHeadId.get(s.id);
+    if (!zhContent) continue;
+
+    const cH = 'sha256:' + crypto.createHash('sha256').update(s.content).digest('hex');
+    const pH = 'sha256:' + crypto.createHash('sha256').update(stripCodeBlocks(s.content)).digest('hex');
+
+    const enBlocks = extractCodeBlocks(s.content);
+    const zhBlocks = extractCodeBlocks(zhContent);
+    const codeUnchanged = enBlocks.length === zhBlocks.length && enBlocks.every((b, j) => b === zhBlocks[j]);
+
+    if (codeUnchanged) {
+      seeded[s.id] = { contentHash: cH, proseHash: pH, translation: zhContent };
+    } else {
+      const oldHash = 'sha256:' + crypto.createHash('sha256').update(zhContent).digest('hex');
+      seeded[s.id] = { contentHash: oldHash, proseHash: pH, translation: zhContent };
+    }
+  }
+
+  if (Object.keys(seeded).length === 0) return;
+
+  const currentHash = await fileHash(file);
+  const hashFile = path.join(hashesDir, `${basename}.json`);
+  await fs.mkdir(hashesDir, { recursive: true });
+  await fs.writeFile(hashFile, JSON.stringify({ fileHash: currentHash, sections: seeded }), 'utf-8');
+  console.log(`  ⟳ ${basename}: seeded section cache (${Object.keys(seeded).length} heading sections)`);
+}
+
+// ---------------------------------------------------------------------------
 // Section-level incremental translation (--incremental only)
 // ---------------------------------------------------------------------------
 
@@ -461,15 +543,15 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
   try {
     storedData = JSON.parse(await fs.readFile(hashFile, 'utf-8'));
     // Detect stale section caches that need re-seeding:
-    // 1. Old positional paragraph IDs ("h2-foo-p1") — replaced by content-hash IDs ("h2-foo-pa3f7c1b2")
-    // 2. Heading-only cache that no longer covers paragraph chunks (e.g. article grew, or
-    //    paragraph splitting was added after the cache was built)
+    // Only clear when old positional paragraph IDs are present ("h2-foo-p1" → replaced by
+    // content-hash IDs "h2-foo-pa3f7c1b2"). Heading-only caches (no para chunk IDs) are
+    // intentionally preserved: seeding populates heading sections, para chunks get their cache
+    // entries on the first Claude run, and the lookup naturally misses for uncached para chunks
+    // without needing an explicit stale invalidation.
     if (storedData?.sections) {
       const cacheIds = Object.keys(storedData.sections);
       const hasOldPositionalIds = cacheIds.some(id => /-p\d+$/.test(id));
-      const cacheHasParaChunks  = cacheIds.some(id => /-p[0-9a-f]{8}$/.test(id));
-      const sectionsNeedParaChunks = sections.some(s => /-p[0-9a-f]{8}$/.test(s.id));
-      if (hasOldPositionalIds || (sectionsNeedParaChunks && !cacheHasParaChunks)) {
+      if (hasOldPositionalIds) {
         storedData = { fileHash: storedData.fileHash };
       }
     }
@@ -560,13 +642,17 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
 
     if (cached?.contentHash === contentHash) {
       // No change at all — use cached translation
+      console.log(`    · ${section.id} → cache hit`);
       translation = cached.translation;
     } else if (cached?.proseHash === proseHash && cached?.translation) {
       // Only code blocks changed — patch existing translation without calling Claude
+      console.log(`    · ${section.id} → patch (code changed)`);
       translation = patchCodeBlocks(cached.translation, extractCodeBlocks(section.content));
       patchCount++;
     } else {
       // Prose changed (or first translation) — call Claude
+      const reason = !cached ? 'no cache' : `prose changed (cached=${cached.proseHash?.slice(0,12)}, current=${proseHash.slice(0,12)})`;
+      console.log(`    · ${section.id} → claude (${reason})`);
       let response;
       try {
         response = await withRetry(() => client.messages.create({
