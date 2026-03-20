@@ -460,51 +460,91 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
   let storedData = null;
   try {
     storedData = JSON.parse(await fs.readFile(hashFile, 'utf-8'));
-    // Detect old-format positional paragraph IDs (e.g. "h2-foo-p1", "preamble-p3").
-    // Paragraph IDs now use 8-char content hashes (e.g. "h2-foo-pa3f7c1b2") so any
-    // cache entry ending in -p<digits> is stale — discard it to trigger re-seeding.
+    // Detect stale section caches that need re-seeding:
+    // 1. Old positional paragraph IDs ("h2-foo-p1") — replaced by content-hash IDs ("h2-foo-pa3f7c1b2")
+    // 2. Heading-only cache that no longer covers paragraph chunks (e.g. article grew, or
+    //    paragraph splitting was added after the cache was built)
     if (storedData?.sections) {
-      const hasOldIds = Object.keys(storedData.sections).some(id => /-p\d+$/.test(id));
-      if (hasOldIds) storedData = { fileHash: storedData.fileHash };
+      const cacheIds = Object.keys(storedData.sections);
+      const hasOldPositionalIds = cacheIds.some(id => /-p\d+$/.test(id));
+      const cacheHasParaChunks  = cacheIds.some(id => /-p[0-9a-f]{8}$/.test(id));
+      const sectionsNeedParaChunks = sections.some(s => /-p[0-9a-f]{8}$/.test(s.id));
+      if (hasOldPositionalIds || (sectionsNeedParaChunks && !cacheHasParaChunks)) {
+        storedData = { fileHash: storedData.fileHash };
+      }
     }
   } catch { /* no cache */ }
 
   // Seed section cache from existing translation when no section-level cache exists.
   // Covers files translated via batch (which stores only fileHash, no sections),
-  // so the first --incremental run doesn't re-translate all unchanged sections.
+  // and the post-migration run where the cache was discarded due to stale IDs.
+  //
+  // Strategy: match at heading-section level (immune to paragraph-chunk count
+  // differences caused by Chinese text being shorter than English). Then for each
+  // English paragraph chunk find the corresponding zh chunk by position within
+  // its parent heading section — skip it (will retranslate once) if zh split
+  // differently.
   if (!storedData?.sections) {
     const translatedPath = path.join(localesDir, `${basename}.mdx`);
     try {
       const existingTranslation = await fs.readFile(translatedPath, 'utf-8');
-      const translatedSecs = deduplicateSectionIds(splitIntoSections(existingTranslation));
-      if (translatedSecs.length === sections.length) {
+
+      // Heading-only splits for reliable count matching (no paragraph fallback)
+      const engHeadSecs = splitIntoSections(content, { paragraphFallback: false });
+      const zhHeadSecs  = splitIntoSections(existingTranslation, { paragraphFallback: false });
+
+      if (engHeadSecs.length === zhHeadSecs.length) {
+        // Map: English heading section ID → zh heading section content (matched by position)
+        const zhByHeadId = new Map(engHeadSecs.map((s, i) => [s.id, zhHeadSecs[i].content]));
+
         const seeded = {};
-        for (let i = 0; i < sections.length; i++) {
-          const s = sections[i];
+        for (const s of sections) {
+          // Para chunks have IDs like `h2-foo-p{8hexchars}`; strip suffix to get parent heading ID
+          const parentId = s.id.replace(/-p[0-9a-f]{8}$/, '');
+          const zhHeadContent = zhByHeadId.get(parentId) ?? zhByHeadId.get(s.id);
+          if (!zhHeadContent) continue;
+
+          // Determine which zh content fragment corresponds to this paragraph chunk
+          let zhContent;
+          const siblings = sections.filter(
+            sec => sec.id.replace(/-p[0-9a-f]{8}$/, '') === parentId
+          );
+          if (siblings.length <= 1) {
+            // Section wasn't split into paragraph chunks — use the full zh heading content
+            zhContent = zhHeadContent;
+          } else {
+            // Para chunk — split zh heading content the same way and match by position
+            const zhChunks = splitByParagraphBlocks({ id: parentId, content: zhHeadContent });
+            const pos = siblings.indexOf(s);
+            if (pos >= zhChunks.length) continue; // zh split differently — skip (will retranslate)
+            zhContent = zhChunks[pos].content;
+          }
+
           const cH = 'sha256:' + crypto.createHash('sha256').update(s.content).digest('hex');
           const pH = 'sha256:' + crypto.createHash('sha256').update(stripCodeBlocks(s.content)).digest('hex');
 
-          // Check whether code blocks in the English source match those in the zh translation.
-          // Code blocks are never translated, so a mismatch means the English source changed
-          // since the zh translation was produced. In that case we must NOT mark the section
-          // as up-to-date — instead we seed it as "prose cached, code stale" so that the
-          // patchCodeBlocks path runs on the next iteration, updating code without Claude.
+          // Code blocks are never translated — if they differ the English source changed
+          // since the zh translation was produced. Seed as "code stale" so patchCodeBlocks
+          // runs instead of Claude.
           const enBlocks = extractCodeBlocks(s.content);
-          const zhBlocks = extractCodeBlocks(translatedSecs[i].content);
+          const zhBlocks = extractCodeBlocks(zhContent);
           const codeUnchanged = enBlocks.length === zhBlocks.length &&
             enBlocks.every((b, j) => b === zhBlocks[j]);
 
           if (codeUnchanged) {
-            seeded[s.id] = { contentHash: cH, proseHash: pH, translation: translatedSecs[i].content };
+            seeded[s.id] = { contentHash: cH, proseHash: pH, translation: zhContent };
           } else {
-            // Fake the "old" contentHash so that cH won't match on the next pass,
-            // while proseHash stays current so patchCodeBlocks triggers (not Claude).
-            const oldHash = 'sha256:' + crypto.createHash('sha256').update(translatedSecs[i].content).digest('hex');
-            seeded[s.id] = { contentHash: oldHash, proseHash: pH, translation: translatedSecs[i].content };
+            // Fake the "old" contentHash so the main loop doesn't treat this as a cache hit,
+            // while proseHash stays current — this triggers patchCodeBlocks, not Claude.
+            const oldHash = 'sha256:' + crypto.createHash('sha256').update(zhContent).digest('hex');
+            seeded[s.id] = { contentHash: oldHash, proseHash: pH, translation: zhContent };
           }
         }
-        storedData = { sections: seeded };
-        console.log(`  ↺ ${basename}: seeded section cache from existing translation`);
+
+        if (Object.keys(seeded).length > 0) {
+          storedData = { sections: seeded };
+          console.log(`  ↺ ${basename}: seeded section cache from existing translation`);
+        }
       }
     } catch { /* no existing translation — proceed normally */ }
   }
@@ -1216,7 +1256,7 @@ const PARAGRAPH_FALLBACK_CHARS = 600;
  * (covers articles with no headings, or long preambles before the first heading).
  * Returns Array<{id: string, content: string}> where content pieces join('\n') === original.
  */
-function splitIntoSections(content) {
+function splitIntoSections(content, { paragraphFallback = true } = {}) {
   const lines = content.split('\n');
   const sections = [];
   let sectionStart = 0;
@@ -1269,6 +1309,8 @@ function splitIntoSections(content) {
   }
 
   sections.push({ id: currentId, content: lines.slice(sectionStart).join('\n') });
+
+  if (!paragraphFallback) return sections;
 
   // Paragraph fallback: split large sections that have no sub-headings into
   // paragraph-sized chunks so we don't re-translate an entire H2+ block when
