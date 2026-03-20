@@ -499,31 +499,29 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
 
         const seeded = {};
         for (const s of sections) {
-          // Para chunks have IDs like `h2-foo-p{8hexchars}`; strip suffix to get parent heading ID
-          const parentId = s.id.replace(/-p[0-9a-f]{8}$/, '');
-          const zhHeadContent = zhByHeadId.get(parentId) ?? zhByHeadId.get(s.id);
-          if (!zhHeadContent) continue;
+          // Para chunks (IDs ending in -p{8hexchars}) are skipped during seeding.
+          //
+          // Why: Chinese text is ~30-50% shorter than English. When zh heading sections are
+          // split into paragraph chunks using the same 600-char threshold, they produce
+          // FEWER chunks than the English. Position-based matching then assigns wrong zh
+          // content to English chunks, and unmatched English chunks get retranslated by Claude
+          // — producing content that already exists in an earlier chunk. This creates
+          // duplicate paragraphs in the output (root cause of the 168-line diff for a
+          // 1-line change).
+          //
+          // Para chunks are translated once by Claude on the first incremental run, then
+          // correctly cached with prose-hash IDs. Subsequent code-only changes trigger
+          // patchCodeBlocks; prose changes trigger targeted retranslation.
+          if (/-p[0-9a-f]{8}$/.test(s.id)) continue;
 
-          // Determine which zh content fragment corresponds to this paragraph chunk
-          let zhContent;
-          const siblings = sections.filter(
-            sec => sec.id.replace(/-p[0-9a-f]{8}$/, '') === parentId
-          );
-          if (siblings.length <= 1) {
-            // Section wasn't split into paragraph chunks — use the full zh heading content
-            zhContent = zhHeadContent;
-          } else {
-            // Para chunk — split zh heading content the same way and match by position
-            const zhChunks = splitByParagraphBlocks({ id: parentId, content: zhHeadContent });
-            const pos = siblings.indexOf(s);
-            if (pos >= zhChunks.length) continue; // zh split differently — skip (will retranslate)
-            zhContent = zhChunks[pos].content;
-          }
+          // Heading-level section (not split): seed directly from the zh heading section.
+          const zhContent = zhByHeadId.get(s.id);
+          if (!zhContent) continue;
 
           const cH = 'sha256:' + crypto.createHash('sha256').update(s.content).digest('hex');
           const pH = 'sha256:' + crypto.createHash('sha256').update(stripCodeBlocks(s.content)).digest('hex');
 
-          // Code blocks are never translated — if they differ the English source changed
+          // Code blocks are never translated — a mismatch means the English source changed
           // since the zh translation was produced. Seed as "code stale" so patchCodeBlocks
           // runs instead of Claude.
           const enBlocks = extractCodeBlocks(s.content);
@@ -534,8 +532,6 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
           if (codeUnchanged) {
             seeded[s.id] = { contentHash: cH, proseHash: pH, translation: zhContent };
           } else {
-            // Fake the "old" contentHash so the main loop doesn't treat this as a cache hit,
-            // while proseHash stays current — this triggers patchCodeBlocks, not Claude.
             const oldHash = 'sha256:' + crypto.createHash('sha256').update(zhContent).digest('hex');
             seeded[s.id] = { contentHash: oldHash, proseHash: pH, translation: zhContent };
           }
