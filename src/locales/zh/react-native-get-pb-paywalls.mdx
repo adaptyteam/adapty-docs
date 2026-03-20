@@ -1,0 +1,187 @@
+---
+title: "在 React Native SDK 中获取付费墙编辑工具的付费墙及其配置"
+description: "了解如何在 Adapty 中检索付费墙编辑工具的付费墙，以便在 React Native 应用中更好地控制订阅。"
+metadataTitle: "在 Adapty 中检索付费墙编辑工具的付费墙 | Adapty 文档"
+displayed_sidebar: sdkreactnative
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+rank: 90
+---
+
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+
+在 Adapty 看板中[使用新版付费墙编辑工具完成付费墙视觉设计](adapty-paywall-builder)后，您可以在移动应用中展示它。此过程的第一步是获取与版位关联的付费墙及其视图配置，具体如下所述。
+
+:::warning
+新版付费墙编辑工具需要 React Native SDK 3.0 或更高版本。如需在 Adapty SDK v2 中展示使用旧版付费墙编辑工具设计的付费墙，请参阅[展示使用旧版付费墙编辑工具设计的付费墙](react-native-legacy)。
+:::
+
+请注意，本文主要介绍通过付费墙编辑工具自定义的付费墙。如果您是手动实现付费墙，请参阅[在移动应用中获取远程配置付费墙的付费墙和产品](fetch-paywalls-and-products-react-native)。
+
+<SampleApp />
+
+<details>
+   <summary>在移动应用中展示付费墙之前（点击展开）</summary>
+
+1. 在 Adapty 看板中[创建产品](create-product)。
+2. 在 Adapty 看板中[创建付费墙并将产品添加到其中](create-paywall)。
+3. 在 Adapty 看板中[创建版位并将付费墙添加到其中](create-placement)。
+4. 在移动应用中安装 [Adapty SDK](sdk-installation-reactnative)。
+</details>
+
+## 获取使用付费墙编辑工具设计的付费墙 \{#fetch-paywall-designed-with-paywall-builder\}
+
+如果您已[使用付费墙编辑工具设计了付费墙](adapty-paywall-builder)，则无需在移动应用代码中自行渲染即可向用户展示它。此类付费墙同时包含展示内容和展示方式。尽管如此，您仍需通过版位获取其 ID、视图配置，然后在移动应用中呈现它。
+
+为确保最佳性能，请务必尽早获取付费墙及其[视图配置](react-native-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)，以便在向用户展示之前有足够的时间下载图片。
+
+使用 `getPaywall` 方法获取付费墙：
+
+```typescript showLineNumbers
+try {
+    const placementId = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
+
+    const paywall = await adapty.getPaywall(placementId, locale);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
+```
+
+参数：
+
+| 参数              | 是否必需 | 描述 |
+|-------------------|--------|-----------|
+| **placementId**   | 必需 | 所需[版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale**        | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-paywall-locale-in-adapty-paywall-builder)的标识符。该参数应为语言代码，由一个或两个以减号（**-**）分隔的子标签组成。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p>有关语言区域代码及推荐用法，请参阅[本地化与语言区域代码](localizations-and-locale-codes)。</p> |
+| **fetchPolicy**   | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，如果失败则返回缓存数据。我们推荐使用此方式，因为它可确保用户始终获得最新数据。</p><p></p><p>但是，如果您认为用户的网络连接不稳定，可以考虑使用 `.returnCacheDataElseLoad`，以便在缓存数据存在时直接返回。这种方式下，用户可能无法获取最新数据，但无论网络状况如何，都能享受更快的加载速度。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍然保留，只有在卸载应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 通过两层机制在本地存储付费墙：上述定期更新的缓存和[备用付费墙](fallback-paywalls)。我们还使用 CDN 加速付费墙获取，并在 CDN 不可用时使用独立的备用服务器。该系统旨在确保您始终获得最新版本的付费墙，同时在网络条件较差时保证可靠性。</p> |
+| **loadTimeoutMs** | 默认值：5 秒 | <p>该值限制此方法的超时时间。如果超时，将返回缓存数据或本地备用数据。</p><p>请注意，在极少数情况下，此方法的超时可能比 `loadTimeout` 中指定的时间稍晚，因为该操作在底层可能由多个请求组成。</p><p>对于 Android：您可以使用扩展函数（如 `5.seconds`，其中 `.seconds` 来自 `import com.adapty.utils.seconds`）或 `TimeInterval.seconds(5)` 创建 `TimeInterval`。如需不设限制，使用 `TimeInterval.INFINITE`。</p> |
+
+响应参数：
+
+| 参数 | 描述 |
+| :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | 一个 [`AdaptyPaywall`](https://react-native.adapty.io/interfaces/adaptypaywall) 对象，包含产品 ID 列表、付费墙标识符、远程配置及其他若干属性。 |
+
+## 获取使用付费墙编辑工具设计的付费墙的视图配置 \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+请确保在付费墙编辑工具中启用了 **Show on device** 开关。如果未开启此选项，将无法获取视图配置。
+:::
+
+获取付费墙后，检查它是否包含 `ViewConfiguration`，这表明它是使用付费墙编辑工具创建的。这将指导您如何展示该付费墙。如果存在 `ViewConfiguration`，将其作为付费墙编辑工具付费墙处理；否则，[将其作为远程配置付费墙处理](present-remote-config-paywalls-react-native)。
+
+在 React Native SDK 中，直接调用 `createPaywallView` 方法，无需手动预先获取视图配置。
+
+:::warning
+`createPaywallView` 方法的返回结果只能使用一次。如果需要再次使用，请重新调用 `createPaywallView` 方法。不重新创建而重复调用可能导致 `AdaptyUIError.viewAlreadyPresented` 错误。
+:::
+
+```typescript showLineNumbers
+import {createPaywallView} from 'react-native-adapty';
+// for the Adapty SDK < 3.14 – import {createPaywallView} from 'react-native-adapty/dist/ui';
+
+if (paywall.hasViewConfiguration) {
+  try {
+    const view = await createPaywallView(paywall);
+  } catch (error) {
+    // handle the error
+  }
+} else {
+    //use your custom logic
+}
+```
+
+参数：
+
+| 参数                 | 是否必需 | 描述 |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **paywall**          | 必需 | 用于获取所需付费墙控制器的 `AdaptyPaywall` 对象。 |
+| **customTags**       | 可选 | 定义自定义标签及其解析值的字典。自定义标签在付费墙内容中充当占位符，会被特定字符串动态替换，以实现付费墙内的个性化内容。详情请参阅[付费墙编辑工具中的自定义标签](custom-tags-in-paywall-builder)。 |
+| **prefetchProducts** | 可选 | 启用后可优化产品在屏幕上的显示时机。设为 `true` 时，AdaptyUI 将自动获取所需产品。默认值：`false`。 |
+
+:::note
+如果您使用多种语言，请了解如何添加[付费墙编辑工具本地化](add-paywall-locale-in-adapty-paywall-builder)以及如何正确使用语言区域代码，详见[此处](react-native-localizations-and-locale-codes)。
+:::
+
+获取视图后，[展示付费墙](react-native-present-paywalls)。
+
+## 为默认目标受众获取付费墙以加快获取速度 \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+通常情况下，付费墙几乎可以立即获取，因此您无需担心加快此过程。但是，当您拥有大量目标受众和付费墙，且用户网络连接较弱时，获取付费墙可能需要比预期更长的时间。在这种情况下，您可能希望展示默认付费墙，以确保流畅的用户体验，而非不展示任何付费墙。
+
+为解决这一问题，您可以使用 `getPaywallForDefaultAudience` 方法，该方法获取指定版位针对**所有用户**目标受众的付费墙。但请务必了解，推荐的方式是通过 `getPaywall` 方法获取付费墙，详见上方[获取付费墙信息](#fetch-paywall-designed-with-paywall-builder)部分。
+
+:::warning
+为什么我们推荐使用 `getPaywall`
+
+`getPaywallForDefaultAudience` 方法存在一些显著缺点：
+
+- **潜在的向后兼容性问题**：如果您需要为不同的应用版本（当前版本和未来版本）展示不同的付费墙，可能会面临挑战。您要么必须设计支持当前（旧版）版本的付费墙，要么接受使用当前（旧版）版本的用户可能遇到付费墙无法渲染的问题。
+- **失去定向能力**：所有用户都将看到针对**所有用户**目标受众设计的同一付费墙，这意味着您将失去个性化定向（包括基于国家/地区、营销归因或自定义属性的定向）。
+
+如果您愿意接受这些缺点以换取更快的付费墙获取速度，请按如下方式使用 `getPaywallForDefaultAudience` 方法。否则，请使用[上述](#fetch-paywall-designed-with-paywall-builder) `getPaywall` 方法。
+:::
+
+```typescript showLineNumbers
+try {
+    const id = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
+
+    const paywall = await adapty.getPaywallForDefaultAudience(id, locale);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
+```
+
+:::note
+`getPaywallForDefaultAudience` 方法从 React Native SDK 2.11.2 版本开始可用。
+:::
+
+| 参数 | 是否必需 | 描述 |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | 必需 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为语言代码，由一个或多个以减号（**-**）分隔的子标签组成。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言区域代码及推荐用法，请参阅[本地化与语言区域代码](react-native-localizations-and-locale-codes)。</p> |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，如果失败则返回缓存数据。我们推荐使用此方式，因为它可确保用户始终获得最新数据。</p><p></p><p>但是，如果您认为用户的网络连接不稳定，可以考虑使用 `.returnCacheDataElseLoad`，以便在缓存数据存在时直接返回。这种方式下，用户可能无法获取最新数据，但无论网络状况如何，都能享受更快的加载速度。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍然保留，只有在卸载应用或手动清理时才会被清除。</p> |
+
+## 自定义素材资源 \{#customize-assets\}
+
+要自定义付费墙中的图片和视频，请实现自定义素材资源。
+
+主图和视频具有预定义的 ID：`hero_image` 和 `hero_video`。在自定义素材资源包中，您通过这些 ID 定位对应元素并自定义其行为。
+
+对于其他图片和视频，您需要在 Adapty 看板中[设置自定义 ID](custom-media)。
+
+例如，您可以：
+
+- 向部分用户展示不同的图片或视频。
+- 在远程主图加载期间展示本地预览图。
+- 在播放视频前展示预览图。
+
+:::important
+要使用此功能，请将 Adapty React Native SDK 更新至 3.8.0 或更高版本。
+:::
+
+以下是通过简单字典提供自定义素材资源的示例：
+
+```javascript
+const customAssets: Record<string, AdaptyCustomAsset> = {
+  'custom_image': { type: 'image', relativeAssetPath: 'custom_image.png' },
+  'hero_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'custom_video.mp4' },
+      android: { relativeAssetPath: 'videos/custom_video.mp4' }
+    }
+  }
+};
+
+view = await createPaywallView(paywall, { customAssets })
+
+```
+
+:::note
+如果找不到某个素材资源，付费墙将回退到其默认外观。
+:::

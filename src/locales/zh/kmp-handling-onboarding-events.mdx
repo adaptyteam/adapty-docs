@@ -1,0 +1,404 @@
+---
+title: "在 Kotlin Multiplatform SDK 中处理用户引导事件"
+description: "使用 Adapty 在 Kotlin Multiplatform 中处理用户引导相关事件。"
+metadataTitle: "在 Kotlin Multiplatform 中处理用户引导事件 | Adapty 文档"
+toc_max_heading_level: 4
+keywords: ['onboardingViewOnCustomAction', 'onboardingViewOnCloseAction', 'onboardingViewOnStateUpdatedAction', 'onboardingViewOnPaywallAction', 'onboardingViewDidFinishLoading', 'onboardingViewOnAnalyticsEvent']
+---
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Details from '@site/src/components/Details';
+
+开始之前，请确保：
+
+1. 已安装 [Adapty Kotlin Multiplatform SDK](sdk-installation-kotlin-multiplatform) 3.15.0 或更高版本。
+2. 已[创建用户引导](create-onboarding)。
+3. 已将用户引导添加到[版位](placements)。
+
+通过编辑工具配置的用户引导会生成应用可以响应的事件。请参阅以下内容了解如何响应这些事件。
+
+## 设置用户引导事件观察者 \{#set-up-the-onboarding-event-observer\}
+
+要处理用户引导事件，您需要实现 `AdaptyUIOnboardingsEventsObserver` 接口，并通过 `AdaptyUI.setOnboardingsEventsObserver()` 进行设置。这应在应用生命周期的早期完成，通常在主 Activity 或应用初始化时进行。
+
+```kotlin
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+
+// In your app initialization
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+## 自定义操作 \{#custom-actions\}
+
+在编辑工具中，您可以为按钮添加**自定义**操作并为其分配一个 ID。然后，您可以在代码中使用此 ID 将其作为自定义操作进行处理。
+
+<Zoom>
+    <img src={require('./img/ios-events-1.webp').default}
+         style={{
+             border: '1px solid #727272', /* border width and color */
+             width: '700px', /* image width */
+             display: 'block', /* for alignment */
+             margin: '0 auto' /* center alignment */
+         }}
+    />
+</Zoom>
+
+例如，当用户点击自定义按钮（如**登录**或**允许通知**）时，委托方法 `onCustomAction` 将被触发，并携带编辑工具中设置的操作 ID。您可以创建自己的 ID，例如 "allowNotifications"。
+
+```kotlin
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnCustomAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        actionId: String
+    ) {
+        when (actionId) {
+            "openPaywall" -> {
+                // Display paywall from onboarding
+                // You would typically fetch and present a new paywall here
+                mainUiScope.launch {
+                    // Example: Get paywall by placement ID
+                    // val paywallResult = Adapty.getPaywall("your_placement_id")
+                    // paywallResult.onSuccess { paywall ->
+                    //     val paywallViewResult = AdaptyUI.createPaywallView(paywall)
+                    //     paywallViewResult.onSuccess { paywallView ->
+                    //         paywallView.present()
+                    //     }
+                    // }
+                }
+            }
+            "allowNotifications" -> {
+                // Handle notification permissions
+            }
+            else -> {
+                // Handle other custom actions
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+<Details>
+    <summary>事件示例（点击展开）</summary>
+
+    ```json
+    {
+        "actionId": "allowNotifications",
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    }
+    }
+    ```
+</Details>
+
+## 关闭用户引导 \{#closing-onboarding\}
+
+当用户点击分配了**关闭**操作的按钮时，用户引导被视为已关闭。您需要管理用户关闭用户引导时的处理逻辑。例如：
+
+:::important
+您需要管理用户关闭用户引导时的处理逻辑。例如，您需要停止显示用户引导本身。
+:::
+
+```kotlin
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnCloseAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        actionId: String
+    ) {
+        // Dismiss the onboarding screen
+        mainUiScope.launch {
+            view.dismiss()
+        }
+
+        // Additional cleanup or navigation logic can be added here
+        // For example, navigate back or show main app content
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+<Details>
+    <summary>事件示例（点击展开）</summary>
+
+    ```json
+    {
+        "action_id": "close_button",
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+    }
+    ```
+
+</Details>
+
+## 打开付费墙 \{#opening-a-paywall\}
+
+:::tip
+如果您希望在用户引导内部打开付费墙，请处理此事件。如果您希望在用户引导关闭后再打开付费墙，有一种更直接的方式——处理 [`onboardingViewOnCloseAction`](#closing-onboarding) 并直接打开付费墙，而无需依赖事件数据。
+:::
+
+如果用户点击了打开付费墙的按钮，您将获得一个您[手动设置](get-paid-in-onboardings)的按钮操作 ID。在用户引导中处理付费墙的最佳方式是将操作 ID 设置为与付费墙版位 ID 相同。这样，您可以直接使用版位 ID 来获取并打开付费墙：
+
+```kotlin
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnPaywallAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        actionId: String
+    ) {
+        // Get the paywall using the placement ID from the action
+        mainUiScope.launch {
+            val paywallResult = Adapty.getPaywall(placementId = actionId)
+            paywallResult.onSuccess { paywall ->
+                val paywallViewResult = AdaptyUI.createPaywallView(paywall)
+                paywallViewResult.onSuccess { paywallView ->
+                    paywallView.present()
+                }.onError { error ->
+                    // handle the error
+                }
+            }.onError { error ->
+                // handle the error
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+<Details>
+    <summary>事件示例（点击展开）</summary>
+
+    ```json
+    {
+        "action_id": "premium_offer_1",
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+    }
+    ```
+
+</Details>
+
+## 用户引导加载完成 \{#finishing-loading-onboarding\}
+
+当用户引导加载完成时，将调用此方法：
+
+```kotlin
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewDidFinishLoading(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta
+    ) {
+        // Handle loading completion
+        // You can add any initialization logic here
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+
+<Details>
+    <summary>事件示例（点击展开）</summary>
+
+    ```json
+    {
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+    }
+    ```
+
+</Details>
+
+## 导航事件 \{#navigation-events\}
+
+`onboardingViewOnAnalyticsEvent` 方法在用户引导流程中发生各种分析事件时被调用。
+
+`event` 对象可以是以下类型之一：
+| 类型 | 描述 |
+|------------|-------------|
+| `AdaptyOnboardingsAnalyticsEventOnboardingStarted` | 当用户引导加载完成时 |
+| `AdaptyOnboardingsAnalyticsEventScreenPresented` | 当任意屏幕显示时 |
+| `AdaptyOnboardingsAnalyticsEventScreenCompleted` | 当屏幕完成时。包含可选的 `elementId`（已完成元素的标识符）和可选的 `reply`（用户的响应）。当用户执行任何操作退出屏幕时触发。 |
+| `AdaptyOnboardingsAnalyticsEventSecondScreenPresented` | 当第二个屏幕显示时 |
+| `AdaptyOnboardingsAnalyticsEventUserEmailCollected` | 当通过输入框收集到用户邮箱时触发 |
+| `AdaptyOnboardingsAnalyticsEventOnboardingCompleted` | 当用户到达 ID 为 `final` 的屏幕时触发。如果您需要此事件，请将 `final` ID 分配给最后一个屏幕。 |
+| `AdaptyOnboardingsAnalyticsEventUnknown` | 用于任何无法识别的事件类型。包含 `name`（未知事件的名称）和 `meta`（附加元数据） |
+
+每个事件都包含 `meta` 信息，其中含有以下字段：
+| 字段 | 描述 |
+|------------|-------------|
+| `onboardingId` | 用户引导流程的唯一标识符 |
+| `screenClientId` | 当前屏幕的标识符 |
+| `screenIndex` | 当前屏幕在流程中的位置 |
+| `screensTotal` | 流程中的屏幕总数 |
+
+以下是如何将分析事件用于追踪的示例：
+
+```kotlin
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyOnboardingsAnalyticsEvent
+import com.adapty.kmp.models.AdaptyOnboardingsAnalyticsEventOnboardingCompleted
+import com.adapty.kmp.models.AdaptyOnboardingsAnalyticsEventOnboardingStarted
+import com.adapty.kmp.models.AdaptyOnboardingsAnalyticsEventScreenCompleted
+import com.adapty.kmp.models.AdaptyOnboardingsAnalyticsEventScreenPresented
+import com.adapty.kmp.models.AdaptyOnboardingsAnalyticsEventUnknown
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnAnalyticsEvent(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        event: AdaptyOnboardingsAnalyticsEvent
+    ) {
+        when (event) {
+            is AdaptyOnboardingsAnalyticsEventOnboardingStarted -> {
+                // Track onboarding start
+                trackEvent("onboarding_started", event.meta)
+            }
+            is AdaptyOnboardingsAnalyticsEventScreenPresented -> {
+                // Track screen presentation
+                trackEvent("screen_presented", event.meta)
+            }
+            is AdaptyOnboardingsAnalyticsEventScreenCompleted -> {
+                // Track screen completion with user response
+                trackEvent("screen_completed", event.meta, event.elementId, event.reply)
+            }
+            is AdaptyOnboardingsAnalyticsEventOnboardingCompleted -> {
+                // Track successful onboarding completion
+                trackEvent("onboarding_completed", event.meta)
+            }
+            is AdaptyOnboardingsAnalyticsEventUnknown -> {
+                // Handle unknown events
+                trackEvent(event.name, event.meta)
+            }
+            // Handle other cases as needed
+        }
+    }
+
+    private fun trackEvent(eventName: String, meta: AdaptyUIOnboardingMeta, elementId: String? = null, reply: String? = null) {
+        // Implement your analytics tracking here
+        // For example, send to your analytics service
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+<Details>
+    <summary>事件示例（点击展开）</summary>
+
+    ```javascript
+    // OnboardingStarted
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "welcome_screen",
+        "screenIndex": 0,
+        "screensTotal": 4
+    }
+    }
+
+    // ScreenPresented
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 4
+    }
+    }
+
+    // ScreenCompleted
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 1,
+        "screensTotal": 4
+    },
+        "elementId": "profile_form",
+        "reply": "success"
+    }
+
+    // SecondScreenPresented
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 1,
+        "screensTotal": 4
+    }
+    }
+
+    // UserEmailCollected
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 1,
+        "screensTotal": 4
+    }
+    }
+
+    // OnboardingCompleted
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "final_screen",
+        "screenIndex": 3,
+        "screensTotal": 4
+    }
+    }
+
+    ```
+
+</Details>

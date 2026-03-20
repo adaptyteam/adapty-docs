@@ -1,0 +1,152 @@
+---
+title: "Kotlin Multiplatform - 展示新版付费墙编辑工具付费墙"
+description: "了解如何在 Kotlin Multiplatform 上展示付费墙以实现有效的商业变现。"
+metadataTitle: "在 Kotlin Multiplatform 上展示付费墙 | Adapty 文档"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
+如果您已使用付费墙编辑工具自定义了付费墙，则无需在移动端应用代码中手动渲染并将其展示给用户。此类付费墙已包含展示内容及展示方式的全部配置。
+
+:::warning
+
+本指南仅适用于**新版付费墙编辑工具付费墙**。使用远程配置付费墙和 [Observer 模式](observer-vs-full-mode) 设计的付费墙，其展示流程有所不同。
+
+如需展示**远程配置付费墙**，请参阅[渲染由远程配置设计的付费墙](present-remote-config-paywalls-kmp)。
+
+:::
+
+要展示付费墙，请对由 [`createPaywallView`](kmp-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) 方法创建的 `view` 调用 `view.present()` 方法。每个 `view` 只能使用一次。如需再次展示付费墙，请再次调用 `createPaywallView` 以创建新的 `view` 实例。
+
+:::warning
+在未重新创建的情况下复用同一个 `view` 可能会导致错误。
+:::
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.models.AdaptyPaywall
+import kotlinx.coroutines.launch
+
+viewModelScope.launch {
+    AdaptyUI.createPaywallView(paywall = paywall).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+## 自定义标签 \{#custom-tags\}
+
+自定义标签让您无需为不同场景创建单独的付费墙。想象一个能根据用户数据动态适配的付费墙——例如，您可以用"你好，John！"或"你好，Ann！"来个性化问候用户，而不是千篇一律的"你好！"
+
+以下是自定义标签的一些使用场景：
+
+- 在付费墙上显示用户的姓名或邮箱。
+- 显示当前星期以促进销售（例如"愉快的周四"）。
+- 添加关于所售产品的个性化详情（例如健身计划的名称或 VoIP 应用中的电话号码）。
+
+自定义标签帮助您创建灵活的付费墙，使其能够适应各种情况，从而让应用界面更具个性化和吸引力。
+
+:::warning
+请确保为每一行包含自定义标签的内容添加备用文本。
+
+请记得为每一行包含自定义标签的内容都添加备用文本。
+
+在某些情况下，您的应用可能不知道该用什么内容替换自定义标签——尤其是当用户使用的是较旧版本的 AdaptyUI SDK 时。为防止此类问题，请始终添加备用文本，以替换包含未知自定义标签的行。若不添加，用户可能会看到标签以代码形式显示（`<USERNAME/>`）。
+:::
+
+要在付费墙中使用自定义标签，请在创建付费墙视图时传入这些标签：
+
+```kotlin showLineNumbers
+import kotlinx.coroutines.launch
+import com.adapty.kmp.AdaptyUI
+
+viewModelScope.launch {
+    val customTags = mapOf(
+        "USERNAME" to "John",
+        "DAY_OF_WEEK" to "Thursday"
+    )
+    
+    AdaptyUI.createPaywallView(
+        paywall = paywall,
+        customTags = customTags
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+## 自定义计时器 \{#custom-timers\}
+
+付费墙计时器是推广限时特惠和季节性优惠的绝佳工具。但需要注意的是，该计时器与优惠的有效期或活动时长无关。它只是一个独立的倒计时，从您设定的值开始递减至零。当计时器归零后，不会触发任何操作——它只会停留在零。
+
+您可以自定义计时器前后的文本以呈现所需的信息，例如："优惠倒计时：10:00 秒。"
+
+要在付费墙中使用自定义计时器，请在创建付费墙视图时传入这些计时器：
+
+```kotlin showLineNumbers
+import kotlinx.coroutines.launch
+import com.adapty.kmp.AdaptyUI
+import kotlinx.datetime.LocalDateTime
+
+viewModelScope.launch {
+    val customTimers = mapOf(
+        "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+        "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+    )
+    
+    AdaptyUI.createPaywallView(
+        paywall = paywall,
+        customTimers = customTimers
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+## 显示对话框 \{#show-dialog\}
+
+在 Android 上展示付费墙视图时，请使用此方法代替原生警告对话框。在 Android 上，常规警告会出现在付费墙视图的后方，导致用户无法看到。此方法可确保对话框在所有平台上都能正确显示在付费墙上方。
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+import com.adapty.kmp.models.AdaptyUIDialogActionType
+import kotlinx.coroutines.launch
+
+viewModelScope.launch {
+    view.showDialog(
+        title = "Close paywall?",
+        content = "You will lose access to exclusive offers.",
+        primaryActionTitle = "Stay",
+        secondaryActionTitle = "Close"
+    ).onSuccess { action ->
+        if (action == AdaptyUIDialogActionType.SECONDARY) {
+            // User confirmed - close the paywall
+            view.dismiss()
+        }
+        // If primary - do nothing, user stays
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+## 配置 iOS 展示样式 \{#configure-ios-presentation-style\}
+
+通过向 `present()` 方法传入 `iosPresentationStyle` 参数，可配置付费墙在 iOS 上的展示方式。该参数接受 `AdaptyUIIOSPresentationStyle.FULLSCREEN`（默认值）或 `AdaptyUIIOSPresentationStyle.PAGESHEET` 两个值。
+
+```kotlin showLineNumbers
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.models.AdaptyUIIOSPresentationStyle
+import kotlinx.coroutines.launch
+
+viewModelScope.launch {
+    val view = AdaptyUI.createPaywallView(paywall = paywall).getOrNull()
+    view?.present(iosPresentationStyle = AdaptyUIIOSPresentationStyle.PAGESHEET)
+}
+```

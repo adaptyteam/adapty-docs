@@ -1,0 +1,213 @@
+---
+title: "在 Flutter SDK 中展示用户引导"
+description: "了解如何有效展示用户引导以提升转化率。"
+metadataTitle: "展示用户引导 | Adapty 文档"
+displayed_sidebar: sdkflutter
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+如果您已使用编辑工具自定义了用户引导，则无需在 Flutter 应用代码中手动处理其渲染逻辑即可向用户展示。此类用户引导已包含应显示的内容及其展示方式。
+
+开始之前，请确保：
+
+1. 您已安装 [Adapty Flutter SDK](sdk-installation-flutter) 3.8.0 或更高版本。
+2. 您已[创建用户引导](create-onboarding)。
+3. 您已将用户引导添加到[版位](placements)。
+
+Adapty Flutter SDK 提供两种展示用户引导的方式：
+
+- **独立页面**
+
+- **嵌入式 Widget**
+
+## 以独立页面展示 \{#present-as-standalone-screen\}
+
+要将用户引导显示为独立页面，请对由 `createOnboardingView` 方法创建的 `onboardingView` 调用 `onboardingView.present()` 方法。每个 `view` 只能使用一次。如需再次显示用户引导，请重新调用 `createOnboardingView` 创建新的 `onboardingView` 实例。
+
+:::warning
+在未重新创建的情况下复用同一个 `onboardingView` 可能会导致 `AdaptyUIError.viewAlreadyPresented` 错误。
+:::
+
+```javascript showLineNumbers title="Flutter"
+try {
+  await onboardingView.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+### 关闭用户引导 \{#dismiss-the-onboarding\}
+
+当需要以编程方式关闭用户引导时，请使用 `dismiss()` 方法：
+
+```dart showLineNumbers title="Flutter"
+try {
+  await onboardingView.dismiss();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+### 配置 iOS 展示样式 \{#configure-ios-presentation-style\}
+
+通过向 `present()` 方法传入 `iosPresentationStyle` 参数，可配置用户引导在 iOS 上的展示方式。该参数接受 `AdaptyUIIOSPresentationStyle.fullScreen`（默认值）或 `AdaptyUIIOSPresentationStyle.pageSheet` 值。
+
+```dart showLineNumbers
+try {
+  await onboardingView.present(iosPresentationStyle: AdaptyUIIOSPresentationStyle.pageSheet);
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+## 嵌入 Widget 层级 \{#embed-in-widget-hierarchy\}
+
+要将用户引导嵌入现有 Widget 树中，请直接在 Flutter Widget 层级中使用 `AdaptyUIOnboardingPlatformView` Widget。
+
+```javascript showLineNumbers title="Flutter"
+AdaptyUIOnboardingPlatformView(
+  onboarding: onboarding, // The onboarding object you fetched
+  onDidFinishLoading: (meta) {
+  },
+  onDidFailWithError: (error) {
+  },
+  onCloseAction: (meta, actionId) {
+  },
+  onPaywallAction: (meta, actionId) {
+  },
+  onCustomAction: (meta, actionId) {
+  },
+  onStateUpdatedAction: (meta, elementId, params) {
+  },
+  onAnalyticsEvent: (meta, event) {
+  },
+)
+```
+
+:::note
+要使 Android 平台视图正常工作，请确保您的 `MainActivity` 继承自 `FlutterFragmentActivity`：
+
+```kotlin showLineNumbers title="Kotlin"
+class MainActivity : FlutterFragmentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
+}
+```
+:::
+
+## 用户引导加载期间的加载界面 \{#loader-during-onboarding\}
+
+展示用户引导时，您可能会注意到在启动画面与用户引导之间存在短暂的加载页面，此时底层视图正在初始化。您可以根据需求以不同方式处理这一情况。
+
+#### 使用 onDidFinishLoading 控制启动画面 \{#control-splash-screen-using-ondidfinishloading\}
+
+:::note
+此方式仅在将用户引导作为 Widget 嵌入时可用，不适用于独立页面展示方式。
+:::
+
+推荐的跨平台方式是保持启动画面或自定义遮罩可见，直至用户引导完全加载完成，然后手动隐藏它。
+
+使用嵌入式 Widget 时，可在其上方叠加自定义 Widget，并在 `onDidFinishLoading` 触发时隐藏遮罩：
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIOnboardingPlatformView(
+  onboarding: onboarding,
+  onDidFinishLoading: (meta) {
+    // Hide your custom splash screen or overlay here
+  },
+  // ... other callbacks
+)
+```
+
+### 自定义原生加载界面 \{#customize-native-loader\}
+
+:::important
+此方式与平台相关，需要维护原生 UI 代码。除非您的应用已维护独立的原生层，否则不建议使用。
+:::
+
+如果需要自定义默认加载界面本身，可以使用平台专属布局进行替换。此方式需要分别针对 Android 和 iOS 进行实现：
+
+- **iOS**：将 `AdaptyOnboardingPlaceholderView.xib` 添加到您的 Xcode 项目中
+- **Android**：在 `res/layout` 中创建 `adapty_onboarding_placeholder_view.xml` 并在其中定义占位视图
+
+## 自定义用户引导中链接的打开方式 \{#customize-how-links-open-in-onboardings\}
+
+:::important
+自定义用户引导中链接的打开方式需要 Adapty SDK v.3.15.1 或更高版本。
+:::
+
+默认情况下，用户引导中的链接会在应用内浏览器中打开。这通过在应用内显示网页，提供无缝的用户体验，使用户无需切换应用即可浏览。
+
+如果您希望在外部浏览器中打开链接，可以通过将 `externalUrlsPresentation` 参数设置为 `AdaptyWebPresentation.externalBrowser` 来自定义此行为：
+
+<Tabs>
+<TabItem value="standalone" label="独立页面" default>
+
+```dart showLineNumbers title="Flutter"
+final onboardingView = await AdaptyUI().createOnboardingView(
+  onboarding: onboarding,
+  externalUrlsPresentation: AdaptyWebPresentation.externalBrowser, // default – AdaptyWebPresentation.inAppBrowser
+);
+
+try {
+  await onboardingView.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="embedded" label="嵌入式 Widget">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIOnboardingPlatformView(
+  onboarding: onboarding,
+  externalUrlsPresentation: AdaptyWebPresentation.externalBrowser, // default – AdaptyWebPresentation.inAppBrowser
+  onDidFinishLoading: (meta) {
+  },
+  onDidFailWithError: (error) {
+  },
+  onCloseAction: (meta, actionId) {
+  },
+  onPaywallAction: (meta, actionId) {
+  },
+  onCustomAction: (meta, actionId) {
+  },
+  onStateUpdatedAction: (meta, elementId, params) {
+  },
+  onAnalyticsEvent: (meta, event) {
+  },
+)
+```
+
+</TabItem>
+</Tabs>
+
+## 禁用安全区域内边距（Android） \{#disable-safe-area-paddings-android\}
+
+默认情况下，在 Android 设备上，用户引导视图会自动应用安全区域内边距，以避开状态栏和导航栏等系统 UI 元素。但如果您希望禁用此行为并完全控制布局，可以通过向应用添加布尔资源来实现：
+
+1. 进入 `android/app/src/main/res/values`。如果没有 `bools.xml` 文件，请创建该文件。
+
+2. 添加以下资源：
+
+```xml
+<resources>
+    <bool name="adapty_onboarding_enable_safe_area_paddings">false</bool>
+</resources>
+```
+
+请注意，此更改将全局应用于您应用中的所有用户引导。

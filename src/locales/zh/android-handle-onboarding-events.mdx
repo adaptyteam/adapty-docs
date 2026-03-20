@@ -1,0 +1,331 @@
+---
+title: "在 Android SDK 中处理用户引导事件"
+description: "使用 Adapty 在 Android 中处理用户引导相关事件。"
+metadataTitle: "在 Android 中处理用户引导事件 | Adapty 文档"
+toc_max_heading_level: 4
+keywords: ['onCustomAction', 'onCloseAction', 'onStateUpdatedAction', 'onOpenPaywallAction', 'onFinishLoading', 'onAnalyticsEvent', 'AdaptyOnboardingCustomAction']
+---
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Details from '@site/src/components/Details';
+
+开始之前，请确认：
+
+1. 您已安装 [Adapty Android SDK](sdk-installation-android) 3.8.0 或更高版本。
+2. 您已[创建用户引导](create-onboarding)。
+3. 您已将用户引导添加到某个[版位](placements)。
+
+使用编辑工具配置的用户引导会生成您的应用可以响应的事件。请参阅以下内容了解如何响应这些事件。
+
+要在 Android 应用中控制或监控用户引导屏幕上发生的流程，请实现 `AdaptyOnboardingEventListener` 接口。
+
+## 自定义操作 \{#custom-actions\}
+
+在编辑工具中，您可以为按钮添加**自定义**操作并为其分配 ID。然后，您可以在代码中使用此 ID 并将其作为自定义操作处理。
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+例如，当用户点击自定义按钮（如 **Login** 或 **Allow notifications**）时，委托方法 `onCustomAction` 将使用编辑工具中的操作 ID 触发。您可以创建自己的 ID，例如 "allowNotifications"。
+
+```kotlin showLineNumbers
+class YourActivity : AppCompatActivity() {
+    private val eventListener = object : AdaptyOnboardingEventListener {
+        override fun onCustomAction(action: AdaptyOnboardingCustomAction, context: Context) {
+            when (action.actionId) {
+                "allowNotifications" -> {
+                    // Request notification permissions
+                }
+            }
+        }
+        
+        override fun onError(error: AdaptyOnboardingError, context: Context) {
+            // Handle errors
+        }
+        
+        // ... other required delegate methods
+    }
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+  "actionId": "allowNotifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+## 关闭用户引导 \{#closing-onboarding\}
+
+当用户点击分配了**关闭**操作的按钮时，用户引导即被视为已关闭。您需要管理用户关闭用户引导时所发生的事情。例如：
+
+:::important
+您需要管理用户关闭用户引导时所发生的事情。例如，您需要停止显示用户引导本身。
+:::
+
+例如：
+
+```kotlin
+override fun onCloseAction(action: AdaptyOnboardingCloseAction, context: Context) {
+    // Dismiss the onboarding screen
+    (context as? Activity)?.onBackPressed()
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+
+</Details>
+
+## 打开付费墙 \{#opening-a-paywall\}
+
+:::tip
+如果您希望在用户引导内部打开付费墙，请处理此事件。如果您希望在用户引导关闭后再打开付费墙，有一种更直接的方式——处理 [`AdaptyOnboardingCloseAction`](#closing-onboarding) 并在不依赖事件数据的情况下打开付费墙。
+:::
+
+如果用户点击了打开付费墙的按钮，您将获得一个[手动设置](get-paid-in-onboardings)的按钮操作 ID。在用户引导中使用付费墙最无缝的方式是将操作 ID 设置为付费墙版位 ID。这样，在触发 `AdaptyOnboardingOpenPaywallAction` 后，您可以立即使用版位 ID 获取并打开付费墙：
+
+```kotlin
+override fun onOpenPaywallAction(action: AdaptyOnboardingOpenPaywallAction, context: Context) {
+    // Get the paywall using the placement ID from the action
+    Adapty.getPaywall(placementId = action.actionId) { result ->
+        when (result) {
+            is AdaptyResult.Success -> {
+                val paywall = result.value
+                // Get the paywall configuration
+                AdaptyUI.getViewConfiguration(paywall) { result ->
+                    when(result) {
+                        is AdaptyResult.Success -> {
+                            val paywallConfig = result.value
+                            // Create and present the paywall
+                            val paywallView = AdaptyUI.getPaywallView(
+                                activity = this,
+                                viewConfig = paywallConfig,
+                                products,
+                                eventListener = paywallEventListener
+                            )
+                            // Add the paywall view to your layout
+                            binding.container.addView(paywallView)
+                        }
+                        is AdaptyResult.Error -> {
+                            val error = result.error
+                            // handle the error
+                        }
+                    }
+                }
+            is AdaptyResult.Error -> {
+                val error = result.error
+                // handle the error
+            }        
+        }
+    }
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## 完成用户引导加载 \{#finishing-loading-onboarding\}
+
+当用户引导完成加载时，将调用此方法：
+
+```kotlin
+override fun onFinishLoading(action: AdaptyOnboardingLoadedAction, context: Context) {
+    // Handle loading completion
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## 导航事件 \{#navigation-events\}
+
+`onAnalyticsEvent` 方法在用户引导流程中发生各种分析事件时被调用。
+
+`event` 对象可以是以下类型之一：
+| 类型 | 描述 |
+|------------|-------------|
+| `OnboardingStarted` | 用户引导已加载时 |
+| `ScreenPresented` | 任意屏幕显示时 |
+| `ScreenCompleted` | 屏幕完成时。包含可选的 `elementId`（已完成元素的标识符）和可选的 `reply`（用户的响应）。当用户执行任意操作退出屏幕时触发。 |
+| `SecondScreenPresented` | 第二个屏幕显示时 |
+| `UserEmailCollected` | 通过输入框收集到用户邮箱时触发 |
+| `OnboardingCompleted` | 当用户到达具有 `final` ID 的屏幕时触发。如果需要此事件，请将 `final` ID 分配给最后一个屏幕。 |
+| `Unknown` | 针对任何无法识别的事件类型。包含 `name`（未知事件的名称）和 `meta`（附加元数据） |
+
+每个事件都包含 `meta` 信息，其中含有：
+| 字段 | 描述 |
+|------------|-------------|
+| `onboardingId` | 用户引导流程的唯一标识符 |
+| `screenClientId` | 当前屏幕的标识符 |
+| `screenIndex` | 当前屏幕在流程中的位置 |
+| `totalScreens` | 流程中的屏幕总数 |
+
+以下是如何将分析事件用于追踪的示例：
+
+```kotlin
+override fun onAnalyticsEvent(event: AdaptyOnboardingAnalyticsEvent, context: Context) {
+    when (event) {
+        is AdaptyOnboardingAnalyticsEvent.OnboardingStarted -> {
+            // Track onboarding start
+            trackEvent("onboarding_started", event.meta)
+        }
+        is AdaptyOnboardingAnalyticsEvent.ScreenPresented -> {
+            // Track screen presentation
+            trackEvent("screen_presented", event.meta)
+        }
+        is AdaptyOnboardingAnalyticsEvent.ScreenCompleted -> {
+            // Track screen completion with user response
+            trackEvent("screen_completed", event.meta, event.elementId, event.reply)
+        }
+        is AdaptyOnboardingAnalyticsEvent.OnboardingCompleted -> {
+            // Track successful onboarding completion
+            trackEvent("onboarding_completed", event.meta)
+        }
+        is AdaptyOnboardingAnalyticsEvent.Unknown -> {
+            // Handle unknown events
+            trackEvent(event.name, event.meta)
+        }
+        // Handle other cases as needed
+    }
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+// OnboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// ScreenPresented
+
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// ScreenCompleted
+
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// SecondScreenPresented
+
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// UserEmailCollected
+
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// OnboardingCompleted
+
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+
+```
+
+</Details>

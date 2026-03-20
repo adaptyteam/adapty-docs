@@ -1,0 +1,234 @@
+---
+title: "将 Adapty Unity SDK 迁移到 v. 3.14"
+description: "迁移到 Adapty Unity SDK v3.14 以获得更好的性能和新的变现功能。"
+metadataTitle: "迁移到 Adapty Unity SDK v3.14 | Adapty 文档"
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+
+Adapty SDK 3.14.0 是一个重大版本更新，带来了一些改进，但可能需要您执行以下迁移步骤：
+
+1. 为付费墙事件单独设置事件监听器。
+2. 将 `AdaptyUI.CreateView` 重命名为 `AdaptyUI.CreatePaywallView` 及相关方法。
+3. 更新 `MakePurchase` 方法，使用 `AdaptyPurchaseParameters` 替代单独的参数。
+4. 将 `SetFallbackPaywalls` 替换为 `SetFallback` 方法。
+5. 更新付费墙属性访问方式，使用 `AdaptyPlacement`。
+6. 更新远程配置访问方式，使用 `AdaptyRemoteConfig` 对象。
+7. 在 `AdaptyPaywall` 模型中，将 `VendorProductIds` 替换为 `ProductIdentifiers`。
+8. 更新 `GetPaywall` 获取策略，使用 `AdaptyFetchPolicy`。
+
+## 为付费墙事件单独设置事件监听器 \{#separate-event-listener-for-paywall-events\}
+
+如果您展示使用[付费墙编辑工具](adapty-paywall-builder)设计的付费墙，付费墙视图事件现在使用专用的 `AdaptyPaywallsEventsListener` 接口和 `SetPaywallsEventsListener` 方法。核心的 `AdaptyEventListener` 接口仍用于用户画像更新和安装详情。
+
+```diff showLineNumbers
+using UnityEngine;
+using AdaptySDK;
+
+public class AdaptyListener : MonoBehaviour, 
+-    AdaptyEventListener {
++    AdaptyEventListener,
++    AdaptyPaywallsEventsListener {
+    
+    void Start() {
+        Adapty.SetEventListener(this);
++       Adapty.SetPaywallsEventsListener(this);
+    }
+    
+    // AdaptyEventListener methods
+    public void OnLoadLatestProfile(AdaptyProfile profile) { }
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+    
++   // AdaptyPaywallsEventsListener methods
++   // Implement paywall event handlers here
+}
+```
+
+[了解更多关于处理付费墙事件的内容](unity-handling-events)。
+
+## 重命名视图创建和展示方法 \{#rename-view-creation-and-presentation-methods\}
+
+视图创建和展示方法已被重命名：
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- AdaptyUI.CreateView(paywall, parameters, (view, error) => {
++ AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+    if (error != null) {
+      // handle the error
+      return;
+    }
+
+-   AdaptyUI.PresentView(view, (error) => {
++   AdaptyUI.PresentPaywallView(view, (error) => {
+      // handle the error
+    });
+  });
+}
+```
+
+类似地，关闭方法也已被重命名：
+
+```diff showLineNumbers
+- AdaptyUI.DismissView(view, (error) => {
++ AdaptyUI.DismissPaywallView(view, (error) => {
+    // handle the error
+  });
+```
+
+## 更新 MakePurchase 方法 \{#update-makepurchase-method\}
+
+`MakePurchase` 方法现在使用 `AdaptyPurchaseParameters` 替代单独的 `subscriptionUpdateParams` 和 `isOfferPersonalized` 参数。这提供了更好的类型安全性，并允许未来扩展购买参数。
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void MakePurchase(
+  AdaptyPaywallProduct product,
+  AdaptySubscriptionUpdateParameters subscriptionUpdate,
+  bool? isOfferPersonalized
+) {
+-  Adapty.MakePurchase(product, subscriptionUpdate, isOfferPersonalized, (result, error) => {
++  var parameters = new AdaptyPurchaseParametersBuilder()
++    .SetSubscriptionUpdateParams(subscriptionUpdate)
++    .SetIsOfferPersonalized(isOfferPersonalized)
++    .Build();
++
++  Adapty.MakePurchase(product, parameters, (result, error) => {
+    switch (result.Type) {
+      case AdaptyPurchaseResultType.Pending:
+        // handle pending purchase
+        break;
+      case AdaptyPurchaseResultType.UserCancelled:
+        // handle purchase cancellation
+        break;
+      case AdaptyPurchaseResultType.Success:
+        var profile = result.Profile;
+        // handle successful purchase
+        break;
+      default:
+        break;
+    }
+  });
+}
+```
+
+如果不需要额外参数，可以直接使用：
+
+```csharp showLineNumbers
+using AdaptySDK;
+
+void MakePurchase(AdaptyPaywallProduct product) {
+  Adapty.MakePurchase(product, (result, error) => {
+    // handle purchase result
+  });
+}
+```
+
+## 更新备用付费墙方法 \{#update-fallback-method\}
+
+:::important
+升级到 Unity SDK 3.14 时，您需要从 Adapty 看板下载新的备用文件，并替换项目中的现有文件。
+:::
+
+设置备用付费墙的方法已更新。`SetFallbackPaywalls` 方法已重命名为 `SetFallback`：
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void SetFallBackPaywalls() {
+  #if UNITY_IOS
+    var assetId = "adapty_fallback_ios.json";
+  #elif UNITY_ANDROID
+    var assetId = "adapty_fallback_android.json";
+  #else
+    var assetId = "";
+  #endif
+
+-  Adapty.SetFallbackPaywalls(assetId, (error) => {
++  Adapty.SetFallback(assetId, (error) => {
+    // handle the error
+  });
+}
+```
+
+请查看[在 Unity 中使用备用付费墙](unity-use-fallback-paywalls)页面中的完整代码示例。
+
+## 更新付费墙属性访问方式 \{#update-paywall-property-access\}
+
+以下属性已从 `AdaptyPaywall` 移至 `AdaptyPlacement`：
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void ProcessPaywall(AdaptyPaywall paywall) {
+-  var abTestName = paywall.ABTestName;
+-  var audienceName = paywall.AudienceName;
+-  var revision = paywall.Revision;
+-  var placementId = paywall.PlacementId;
+
++  var abTestName = paywall.Placement.ABTestName;
++  var audienceName = paywall.Placement.AudienceName;
++  var revision = paywall.Placement.Revision;
++  var placementId = paywall.Placement.Id;
+}
+```
+
+## 更新远程配置访问方式 \{#update-remote-config-access\}
+
+远程配置属性已被重构为 `AdaptyRemoteConfig` 对象，以提供更好的组织结构：
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void ProcessRemoteConfig(AdaptyPaywall paywall) {
+-  var remoteConfigString = paywall.RemoteConfigString;
+-  var locale = paywall.Locale;
+-  var remoteConfigDict = paywall.RemoteConfig;
+
++  var remoteConfigString = paywall.RemoteConfig.Data;
++  var locale = paywall.RemoteConfig.Locale;
++  var remoteConfigDict = paywall.RemoteConfig.Dictionary;
+}
+```
+
+## 更新 AdaptyPaywall 模型用法 \{#update-adaptyPaywall-model-usage\}
+
+`VendorProductIds` 属性已被弃用，推荐使用 `ProductIdentifiers`。新属性返回 `AdaptyProductIdentifier` 对象而非简单字符串，提供了更结构化的产品信息。
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void ProcessPaywallProducts(AdaptyPaywall paywall) {
+-  var productIds = paywall.VendorProductIds;
+-  foreach (var vendorId in productIds) {
+-    // use vendorId
+-  }
+
++  var productIdentifiers = paywall.ProductIdentifiers;
++  foreach (var productId in productIdentifiers) {
++    var vendorId = productId.VendorProductId;
++    // use vendorId
++  }
+}
+```
+
+`AdaptyProductIdentifier` 对象通过 `VendorProductId` 属性提供对供应商产品 ID 的访问，在保持相同功能的同时，为未来的增强提供了更好的结构。
+
+## 更新 GetPaywall 获取策略 \{#update-getpaywall-fetch-policy\}
+
+`GetPaywall` 方法中的 `fetchPolicy` 参数类型已从 `AdaptyPaywallFetchPolicy` 更改为 `AdaptyPlacementFetchPolicy`。此更改统一了 SDK 中获取策略的使用方式。
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void GetPaywall(string placementId) {
+-  Adapty.GetPaywall(placementId, AdaptyPaywallFetchPolicy.ReloadRevalidatingCacheData, null, (paywall, error) => {
++  Adapty.GetPaywall(placementId, AdaptyPlacementFetchPolicy.ReloadRevalidatingCacheData, null, (paywall, error) => {
+    // handle the result
+  });
+}
+```
