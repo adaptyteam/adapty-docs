@@ -1,0 +1,646 @@
+---
+title: "将 Adapty Android SDK 迁移到 v. 3.3"
+description: "迁移到 Adapty Android SDK v3.3，以获得更好的性能和新的变现功能。"
+metadataTitle: "迁移到 Adapty Android SDK v3.3 | Adapty 文档"
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+
+Adapty SDK 3.3.0 是一个主要版本，带来了一些改进，但这些改进可能需要您执行一些迁移步骤。
+
+1. 更新在非付费墙编辑工具创建的付费墙中处理购买的方式。停止处理 `USER_CANCELED` 和 `PENDING_PURCHASE` 错误码。取消购买不再被视为错误，现在将出现在非错误的购买结果中。
+2. 对于使用付费墙编辑工具创建的付费墙，将 `onPurchaseCanceled` 和 `onPurchaseSuccess` 事件替换为新的 `onPurchaseFinished` 事件。此更改的原因相同：取消购买不再被视为错误，将被包含在非错误的购买结果中。
+3. 更改付费墙编辑工具付费墙的 `onAwaitingSubscriptionUpdateParams` 方法签名。
+4. 如果您直接传递文件 URI，请更新提供备用付费墙的方法。
+5. 更新 Adjust、AirBridge、Amplitude、AppMetrica、Appsflyer、Branch、Facebook Ads、Firebase 和 Google Analytics、Mixpanel、OneSignal、Pushwoosh 的集成配置。
+
+## 更新购买流程 \{#update-making-purchase\}
+
+以前，取消和待处理的购买被视为错误，并分别返回 `USER_CANCELED` 和 `PENDING_PURCHASE` 代码。
+
+现在，使用新的 `AdaptyPurchaseResult` 类来表示已取消、成功和待处理的购买。按如下方式更新购买代码：
+
+~~~diff
+Adapty.makePurchase(activity, product) { result ->
+     when (result) {
+         is AdaptyResult.Success -> {
+-            val info = result.value
+-            val profile = info?.profile
+-        
+-            if (profile?.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true) {
+-                // Grant access to the paid features
+-            }
++            when (val purchaseResult = result.value) {
++                is AdaptyPurchaseResult.Success -> {
++                    val profile = purchaseResult.profile
++                    if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
++                        // Grant access to the paid features
++                    }
++                }
++
++                is AdaptyPurchaseResult.UserCanceled -> {
++                    // Handle the case where the user canceled the purchase
++                }
++
++                is AdaptyPurchaseResult.Pending -> {
++                    // Handle deferred purchases (e.g., the user will pay offline with cash
++                }
++            }
+         }
+         is AdaptyResult.Error -> {
+             val error = result.error
+             // Handle the error
+         }
+     }
+ }
+~~~
+
+完整代码示例，请查看[在移动应用中进行购买](android-making-purchases#make-purchase)页面。
+
+## 修改付费墙编辑工具购买事件 \{#modify-paywall-builder-purchase-events\}
+
+1. 添加 `onPurchaseFinished` 事件：
+
+   ```diff showLineNumbers
+   + public override fun onPurchaseFinished(
+   +     purchaseResult: AdaptyPurchaseResult,
+   +     product: AdaptyPaywallProduct,
+   +     context: Context,
+   + ) {
+   +    when (purchaseResult) {
+   +        is AdaptyPurchaseResult.Success -> {
+   +            // Grant access to the paid features
+   +        }
+   +        is AdaptyPurchaseResult.UserCanceled -> {
+   +            // Handle the case where the user canceled the purchase
+   +        }
+   +        is AdaptyPurchaseResult.Pending -> {
+   +            // Handle deferred purchases (e.g., the user will pay offline with cash)
+   +        }
+   +    }
+   + }
+   ```
+
+   完整代码示例，请查看[成功、取消或待处理购买](android-handling-events#successful-canceled-or-pending-purchase)及事件说明。
+
+2. 移除 `onPurchaseCancelled` 事件的处理：
+
+   ```diff showLineNumbers
+   - public override fun onPurchaseCanceled(
+   -     product: AdaptyPaywallProduct,
+   -     context: Context,
+   - ) {}
+   ```
+
+3. 移除 `onPurchaseSuccess`：
+
+   ```diff showLineNumbers
+   
+   - public override fun onPurchaseSuccess(
+   -     profile: AdaptyProfile?,
+   -     product: AdaptyPaywallProduct,
+   -   context: Context,
+   - ) {
+   -     // Your logic on successful purchase
+   - }
+   ```
+
+## 更改 onAwaitingSubscriptionUpdateParams 方法的签名 \{#change-the-signature-of-onawaitingsubscriptionupdateparams-method\}
+
+现在，如果在另一个订阅仍处于活跃状态时购买了新订阅，若新订阅应替换当前活跃订阅，请调用 `onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters...))`；若活跃订阅应继续保持活跃且新订阅应单独添加，则调用 `onSubscriptionUpdateParamsReceived(null)`：
+
+ ```diff showLineNumbers
+- public override fun onAwaitingSubscriptionUpdateParams(
+-     product: AdaptyPaywallProduct,
+-     context: Context,
+- ): AdaptySubscriptionUpdateParameters? {
+-     return AdaptySubscriptionUpdateParameters(...)
+- }
++ public override fun onAwaitingSubscriptionUpdateParams(
++     product: AdaptyPaywallProduct,
++     context: Context,
++     onSubscriptionUpdateParamsReceived: SubscriptionUpdateParamsCallback,
++ ) {
++     onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
++ }
+ ```
+
+请参阅[升级订阅](android-handling-events#upgrade-subscription)文档部分获取最终代码示例。
+
+## 更新提供备用付费墙的方式 \{#update-providing-fallback-paywalls\}
+
+如果您通过传递文件 URI 来提供备用付费墙，请按以下方式更新：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff showLineNumbers
+val fileUri: Uri = // Get the URI for the file with fallback paywalls
+- Adapty.setFallbackPaywalls(fileUri, callback)
++ Adapty.setFallbackPaywalls(FileLocation.fromFileUri(fileUri), callback)
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```diff showLineNumbers
+Uri fileUri = // Get the URI for the file with fallback paywalls
+- Adapty.setFallbackPaywalls(fileUri, callback);
++ Adapty.setFallbackPaywalls(FileLocation.fromFileUri(fileUri), callback);
+```
+
+</TabItem>
+</Tabs>
+
+## 更新第三方集成 SDK 配置 \{#update-third-party-integration-sdk-configuration\}
+
+为确保集成能与 Adapty Android SDK 3.3.0 及更高版本正常工作，请按照以下各节所述更新以下集成的 SDK 配置。
+
+### Adjust \{#adjust\}
+
+按如下所示更新您的移动应用代码。完整代码示例，请查看 [Adjust 集成的 SDK 配置](adjust#connect-your-app-to-adjust)。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="v5" label="Adjust 5.x+" default>
+
+```diff showLineNumbers
+- Adjust.getAttribution { attribution ->
+-     if (attribution == null) return@getAttribution
+-
+-     Adjust.getAdid { adid ->
+-         if (adid == null) return@getAdid
+-
+-         Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST, adid) { error ->
+-             // Handle the error
+-         }
+-     }
+- }
+
++ Adjust.getAdid { adid ->
++     if (adid == null) return@getAdid
++
++     Adapty.setIntegrationIdentifier("adjust_device_id", adid) { error ->
++         if (error != null) {
++             // Handle the error
++         }
++     }
++ }
++
++ Adjust.getAttribution { attribution ->
++     if (attribution == null) return@getAttribution
++
++     Adapty.updateAttribution(attribution, "adjust") { error ->
++         if (error != null) {
++             // Handle the error
++         }
++     }
++ }
+```
+
+</TabItem>
+
+<TabItem value="v4" label="Adjust 4.x" default>
+
+```diff showLineNumbers
+ val config = AdjustConfig(context, adjustAppToken, environment)
+ config.setOnAttributionChangedListener { attribution ->
+     attribution?.let { attribution ->
+-         Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error ->
++         Adapty.updateAttribution(attribution, "adjust") { error ->
+             if (error != null) {
+                 // Handle the error
+             }
+         }
+     }
+ }
+ Adjust.onCreate(config)
+```
+
+</TabItem>
+</Tabs>
+
+### AirBridge \{#airbridge\}
+
+按如下所示更新您的移动应用代码。完整代码示例，请查看 [AirBridge 集成的 SDK 配置](airbridge#connect-your-app-to-airbridge)。
+
+```diff showLineNumbers
+ Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<String>() {
+     override fun onSuccess(result: String) {
+-         val params = AdaptyProfileParameters.Builder()
+-             .withAirbridgeDeviceId(result)
+-             .build()
+-         Adapty.updateProfile(params) { error ->
+-             if (error != null) {
+-                 // Handle the error
+-             }
+-         }
++         Adapty.setIntegrationIdentifier("airbridge_device_id", result) { error ->
++             if (error != null) {
++                 // Handle the error
++             }
++         }
+     }
+     override fun onFailure(throwable: Throwable) {
+     }
+ })
+```
+
+### Amplitude \{#amplitude\}
+
+按如下所示更新您的移动应用代码。完整代码示例，请查看 [Amplitude 集成的 SDK 配置](amplitude#sdk-configuration)。
+
+```diff showLineNumbers
+ // For Amplitude maintenance SDK (obsolete)
+ val amplitude = Amplitude.getInstance()
+ val amplitudeDeviceId = amplitude.getDeviceId()
+ val amplitudeUserId = amplitude.getUserId()
+
+ //for actual Amplitude Kotlin SDK
+ val amplitude = Amplitude(
+     Configuration(
+         apiKey = AMPLITUDE_API_KEY,
+         context = applicationContext
+     )
+ )
+ val amplitudeDeviceId = amplitude.store.deviceId
+ val amplitudeUserId = amplitude.store.userId
+
+ //
+
+- val params = AdaptyProfileParameters.Builder()
+-     .withAmplitudeDeviceId(amplitudeDeviceId)
+-     .withAmplitudeUserId(amplitudeUserId)
+-     .build()
+- Adapty.updateProfile(params) { error ->
+-     if (error != null) {
+-         // Handle the error
+-     }
+- }
+
++ Adapty.setIntegrationIdentifier("amplitude_user_id", amplitudeUserId) { error ->
++     if (error != null) {
++         // Handle the error
++     }
++ }
+
++ Adapty.setIntegrationIdentifier("amplitude_device_id", amplitudeDeviceId) { error ->
++     if (error != null) {
++         // Handle the error
++     }
++ }
+```
+
+### AppMetrica \{#appmetrica\}
+
+按如下所示更新您的移动应用代码。完整代码示例，请查看 [AppMetrica 集成的 SDK 配置](appmetrica#sdk-configuration)。
+
+```diff showLineNumbers
+ val startupParamsCallback = object: StartupParamsCallback {
+     override fun onReceive(result: StartupParamsCallback.Result?) {
+         val deviceId = result?.deviceId ?: return
+
+-        val params = AdaptyProfileParameters.Builder()
+-            .withAppmetricaDeviceId(deviceId)
+-            .withAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID")
+-            .build()
+-        Adapty.updateProfile(params) { error ->
+-            if (error != null) {
+-                // Handle the error
+-            }
+-        }
+
++        Adapty.setIntegrationIdentifier("appmetrica_device_id", deviceId) { error ->
++            if (error != null) {
++                // Handle the error
++            }
++        }
++        
++        Adapty.setIntegrationIdentifier("appmetrica_profile_id", "YOUR_ADAPTY_CUSTOMER_USER_ID") { error ->
++            if (error != null) {
++                // Handle the error
++            }
++        }
+     }
+
+     override fun onRequestError(
+         reason: StartupParamsCallback.Reason,
+         result: StartupParamsCallback.Result?
+     ) {
+         // Handle the error
+     }
+ }
+
+ AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID))
+```
+
+### AppsFlyer \{#appsflyer\}
+
+按如下所示更新您的移动应用代码。完整代码示例，请查看 [AppsFlyer 集成的 SDK 配置](appsflyer#connect-your-app-to-appsflyer)。
+
+```diff showLineNumbers
+ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
+     override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
+-        Adapty.updateAttribution(
+-            conversionData,
+-            AdaptyAttributionSource.APPSFLYER,
+-            AppsFlyerLib.getInstance().getAppsFlyerUID(context)
+-        ) { error ->
+-            if (error != null) {
+-                // Handle the error
+-            }
+-        }
+
++        val uid = AppsFlyerLib.getInstance().getAppsFlyerUID(context)
++        Adapty.setIntegrationIdentifier("appsflyer_id", uid) { error ->
++            if (error != null) {
++                // Handle the error
++            }
++        }
++        Adapty.updateAttribution(conversionData, "appsflyer") { error ->
++            if (error != null) {
++                // Handle the error
++            }
++        }
+     }
+ }
+```
+
+### Branch \{#branch\}
+
+按如下所示更新您的移动应用代码。完整代码示例，请查看 [Branch 集成的 SDK 配置](branch#connect-your-app-to-branch)。
+
+```diff showLineNumbers
+// Login and update attribution
+ Branch.getAutoInstance(this)
+   .setIdentity("YOUR_USER_ID") { referringParams, error ->
+       referringParams?.let { data ->
+-            Adapty.updateAttribution(data, AdaptyAttributionSource.BRANCH) { error ->
+-                if (error != null) {
+-                    // Handle the error
+-                }
+-            }
++            Adapty.updateAttribution(data, "branch") { error ->
++                if (error != null) {
++                    // Handle the error
++                }
++            }
+       }
+   }
+
+ // Logout
+ Branch.getAutoInstance(context).logout()
+```
+
+### Facebook Ads \{#facebook-ads\}
+
+按如下所示更新您的移动应用代码。完整代码示例，请查看 [Facebook Ads 集成的 SDK 配置](facebook-ads#connect-your-app-to-facebook-ads)。
+
+```diff showLineNumbers
+- val builder = AdaptyProfileParameters.Builder()
+-     .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context))
+-   
+- Adapty.updateProfile(builder.build()) { error ->
+-     if (error != null) {
+-        // Handle the error
+-     }
+- }
+
++ Adapty.setIntegrationIdentifier(
++     "facebook_anonymous_id",
++     AppEventsLogger.getAnonymousAppDeviceGUID(context)
++ ) { error ->
++     if (error != null) {
++        // Handle the error
++     }
++ }
+```
+
+### Firebase 和 Google Analytics \{#firebase-and-google-analytics\}
+
+按如下所示更新您的移动应用代码。完整代码示例，请查看 [Firebase 和 Google Analytics 集成的 SDK 配置](firebase-and-google-analytics)。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff showLineNumbers
+ // After Adapty.activate()
+
+ FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appInstanceId ->
+-    Adapty.updateProfile(
+-        AdaptyProfileParameters.Builder()
+-            .withFirebaseAppInstanceId(appInstanceId)
+-            .build()
+-    ) { error ->
+-        if (error != null) {
+-            // Handle the error
+-        }
+-    }
++    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId) { error ->
++        if (error != null) {
++            // Handle the error
++        }
++    }
+ }
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```diff showLineNumbers
+// After Adapty.activate()
+
+- FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
+-     AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
+-         .withFirebaseAppInstanceId(appInstanceId)
+-         .build();
+-     
+-     Adapty.updateProfile(params, error -> {
+-         if (error != null) {
+-             // Handle the error
+-         }
+-     });
+- });
+
++ FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
++     Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId, error -> {
++        if (error != null) {
++            // Handle the error
++         }
++     });
++ });
+```
+
+</TabItem>
+</Tabs>
+
+### Mixpanel \{#mixpanel\}
+
+按如下所示更新您的移动应用代码。完整代码示例，请查看 [Mixpanel 集成的 SDK 配置](mixpanel#sdk-configuration)。
+
+```diff showLineNumbers
+- val params = AdaptyProfileParameters.Builder()
+-     .withMixpanelUserId(mixpanelAPI.distinctId)
+-     .build()
+-
+- Adapty.updateProfile(params) { error ->
+-     if (error != null) {
+-         // Handle the error
+-     }
+- }
+
++ Adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelAPI.distinctId) { error ->
++     if (error != null) {
++         // Handle the error
++     }
++ }
+```
+
+### OneSignal \{#onesignal\}
+
+按如下所示更新您的移动应用代码。完整代码示例，请查看 [OneSignal 集成的 SDK 配置](onesignal#sdk-configuration)。
+
+<Tabs groupId="current-os" queryString> 
+
+<TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
+
+<Tabs groupId="current-os" queryString> 
+
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+
+```diff showLineNumbers
+ // SubscriptionID 
+ val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
+     override fun onPushSubscriptionChange(state: PushSubscriptionChangedState) {
+-        val params = AdaptyProfileParameters.Builder()
+-            .withOneSignalSubscriptionId(state.current.id)
+-            .build()
+-        
+-        Adapty.updateProfile(params) { error ->
++        Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.current.id) { error ->
+             if (error != null) {
+                 // Handle the error
+             }
+        }
+     }
+ }
+```
+
+</TabItem>
+<TabItem value="java" label="(Android) Java" default>
+
+```diff showLineNumbers
+ // SubscriptionID 
+ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
+-    AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
+-            .withOneSignalSubscriptionId(state.getCurrent().getId())
+-            .build();
+-    Adapty.updateProfile(params, error -> {
++    Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.getCurrent().getId(), error -> {
+         if (error != null) {
+             // Handle the error
+         }
+     });
+ };
+```
+
+</TabItem>  
+</Tabs>
+
+</TabItem> 
+
+<TabItem value="pre-v5" label="OneSignal SDK v. up to 4.x (legacy)" default> 
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+
+```diff showLineNumbers
+ // PlayerID 
+ val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
+     stateChanges?.to?.userId?.let { playerId ->
+-        val params = AdaptyProfileParameters.Builder()
+-            .withOneSignalPlayerId(playerId)
+-            .build()
+-      
+-        Adapty.updateProfile(params) { error ->
++        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId) { error ->
+             if (error != null) {
+                 // Handle the error
+             }
+-        }
+     }
+ }
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```diff showLineNumbers
+ // PlayerID 
+ OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
+     OSSubscriptionState to = stateChanges != null ? stateChanges.getTo() : null;
+     String playerId = to != null ? to.getUserId() : null;
+     
+     if (playerId != null) {
+-        AdaptyProfileParameters params1 = new AdaptyProfileParameters.Builder()
+-                .withOneSignalPlayerId(playerId)
+-                .build();
+-        
+-        Adapty.updateProfile(params1, error -> {
++        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId, error -> {
+             if (error != null) {
+                 // Handle the error
+             }
+-        });
+     }
+ };
+```
+
+</TabItem> 
+
+</Tabs>
+
+ </TabItem> 
+
+</Tabs> 
+
+### Pushwoosh \{#pushwoosh\}
+
+按如下所示更新您的移动应用代码。完整代码示例，请查看 [Pushwoosh 集成的 SDK 配置](pushwoosh#sdk-configuration)。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff showLineNumbers
+- val params = AdaptyProfileParameters.Builder()
+-     .withPushwooshHwid(Pushwoosh.getInstance().hwid)
+-     .build()
+  
+- Adapty.updateProfile(params) { error ->
++ Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().hwid) { error ->
+     if (error != null) {
+         // Handle the error
+     }
+  }
+```
+
+</TabItem> <TabItem value="java" label="Java" default>
+
+```diff showLineNumbers
+- AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
+-     .withPushwooshHwid(Pushwoosh.getInstance().getHwid())
+-     .build();
+-
+- Adapty.updateProfile(params, error -> {
++ Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().getHwid(), error -> {
+     if (error != null) {
+         // Handle the error
+     }
+  });
+```
+
+</TabItem> 
+
+</Tabs>

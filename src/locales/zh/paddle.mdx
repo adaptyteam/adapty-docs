@@ -1,0 +1,311 @@
+---
+title: "与 Paddle 的初始集成"
+description: "将 Paddle 与 Adapty 集成，实现无缝的订阅支付处理。"
+metadataTitle: "Paddle 集成指南 | Adapty 文档"
+keywords: ['paddle']
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
+Adapty 通过跟踪通过 [Paddle](https://www.paddle.com/) 进行的网页支付和订阅，支持 web2app 订阅流程。
+
+此集成涵盖网页端发起的购买，并将其与移动应用访问权限、分析数据以及来自应用商店的应用内购买进行同步。
+
+适用于以下场景：
+
+- 在单一系统中收集来自应用内购买和网站购买的订阅数据
+- 为在您网站上购买的用户授予移动应用中付费功能的访问权限
+- 在一个看板中查看所有销售渠道的分析和订阅数据
+
+:::note
+Apple 现在允许美国 App Store 的应用包含指向外部支付系统的链接，但应用可能仍需在外部选项之外提供应用内购买。请查阅适用于您所在地区和应用类别的最新 App Store 指南。
+:::
+
+:::note
+此集成专注于跟踪和同步 Paddle 网页购买。如果您需要将用户从应用引导至网页结账页面，请使用 Adapty [网页付费墙](web-paywall)。
+:::
+
+要设置 Paddle 集成，请按照以下步骤操作：
+
+## 1\. 将 Paddle 连接到 Adapty \{#1-connect-paddle-to-adapty\}
+
+此集成使用 Webhook 将订阅数据从 Paddle 发送到 Adapty。要连接您的 Adapty 和 Paddle 账户，您需要：
+
+1. 提供您的 Paddle API 密钥。
+2. 将 Adapty 的 Webhook URL 添加到 Paddle。
+
+:::note
+以下步骤同时适用于生产环境和测试环境。您可以同时配置两者。所提供的链接适用于生产环境——要获取测试环境链接，只需在每个 URL 的开头添加 `sandbox-`。例如，使用 `https://sandbox-vendors.paddle.com/authentication-v2` 代替 `https://vendors.paddle.com/authentication-v2`。
+:::
+
+### 1.1. 获取并添加 Paddle API 密钥 \{#11-get-and-add-paddle-api-keys\}
+
+1. 在 Paddle 中，前往 [Developer Tools → Authentication](https://vendors.paddle.com/authentication-v2) 并点击 **New API key**。
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-new-key.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. 为密钥命名并设置过期日期。要使 API 密钥与 Adapty 配合使用，您需要为所有实体授予 **Read** 权限。点击 **Save**。
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-key.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '300px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. 点击 **Copy key**。
+
+<Zoom>
+  <img src="/assets/shared/img/copy-paddle-key.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. 在 Adapty 中，前往 [App Settings → Paddle](https://app.adapty.io/settings/paddle)，将密钥粘贴到 **Paddle API key** 部分。
+
+:::warning
+如果您为 Paddle API 密钥设置了过期日期，您必须在过期前手动生成新密钥并在 Adapty 中更新。密钥过期后，集成将无警告地停止工作，用户将无法进行购买。
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-api-keys-adapty.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 1.2. 添加将发送到 Adapty 的事件 \{#12-add-events-that-will-be-sent-to-adapty\}
+
+1. 从 Adapty 的 **Paddle** 页面复制 **Webhook URL**。
+2. 在 Paddle 中，前往 [**Developer Tools → Notifications**](https://vendors.paddle.com/notifications-v2) 并点击 **New destination** 添加 Webhook。
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-webhook.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. 为 Webhook 输入一个描述性名称。我们建议在名称中包含"Adapty"，以便您在需要时能够轻松找到它。
+
+4. 将 Adapty 中的 **Webhook URL** 粘贴到 **URL** 字段中。请确保您使用的是正确环境的 Webhook。
+
+5. 将 **Notification type** 设置为 **Webhook**。
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-create-webhook.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+6. 选择以下事件：
+
+   - `subscription.created`
+
+   - `subscription.updated`
+
+   - `transaction.created`
+
+   - `transaction.updated`
+
+   - `adjustment.created`
+
+   - `adjustment.updated`
+
+<Zoom>
+  <img src="/assets/shared/img/paddle_events.png"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+7. 点击 **Save destination** 完成 Webhook 设置。
+
+### 1.3. 获取并添加 Webhook 密钥 \{#13-retrieve-and-add-the-webhook-secret-key\}
+
+1. 在 **Notifications** 窗口中，点击您刚创建的 Webhook 旁边的三个点，选择 **Edit destination**。
+2. **Edit destination** 面板中将出现一个名为 **Secret key** 的新字段。复制该密钥。
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-webhook-secret-key-copy.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. 在 Adapty 中，前往 [App Settings → Paddle](https://app.adapty.io/settings/paddle)，将密钥粘贴到 **Notification secret key** 字段中。该密钥用于在 Adapty 中验证 Webhook 数据。
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-webhook-secret-key.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 1.4. 将 Paddle 客户与 Adapty 用户画像匹配 \{#14-match-paddle-customers-with-adapty-profiles\}
+
+Adapty 需要将每笔购买与[客户用户画像](profiles-crm)关联，以便在您的应用中使用。默认情况下，当 Adapty 收到来自 Paddle 的 Webhook 时，会自动创建用户画像。您可以选择在 Adapty 中将哪个值用作 `customer_user_id`：
+
+1. **默认且推荐：** 您在 `custom_data` 字段中传入的 `customer_user_id`（参见 [Paddle 文档](https://developer.paddle.com/build/transactions/custom-data)）
+2. Paddle Customer 对象中的 `email`（参见 [Paddle 文档](https://developer.paddle.com/paddlejs/methods/paddle-checkout-open#params)）
+3. `ctm-...` 格式的 Paddle Customer ID（参见 [Paddle 文档](https://developer.paddle.com/paddlejs/methods/paddle-checkout-open#params)）
+4. 不创建用户画像。如果您希望更好地控制客户用户画像并自行处理，请选择此选项。
+
+您可以在 [App Settings → Paddle](https://app.adapty.io/settings/paddle) 的 **Profile creation behavior** 字段中配置使用哪个值。
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-users.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## 2. 将 Paddle 产品添加到 Adapty \{#2-add-paddle-products-to-adapty\}
+
+:::warning
+
+请务必将您的 Paddle 产品添加到 Adapty 看板，或将 Paddle 产品 ID 添加到您现有的产品中。Adapty 仅跟踪与这些产品关联的交易事件。如果跳过此步骤，将不会创建交易事件。
+
+:::
+
+Paddle 在 Adapty 中的工作方式与 App Store 和 Google Play 相同——它是您销售数字产品的另一个平台。要进行配置，请在 Adapty 的[产品](https://app.adapty.io/products)部分添加来自 Paddle 的相关 `product_id` 和 `price_id` 值。
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-create-product.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+在 Paddle 中，产品 ID 格式为 `pro_...`，价格 ID 格式为 `pri_...`。打开特定产品后，您可以在 [Paddle 产品目录](https://vendors.paddle.com/products-v2)中找到它们：
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-product-price.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+添加产品后，下一步是确保 Adapty 能够将购买关联到正确的用户。
+
+## 3\. 为移动端用户提供访问权限 \{#3-provide-access-to-users-on-the-mobile\}
+
+为确保在网页购买的用户能够在移动端获得访问权限，请使用购买时传入的相同 `customer_user_id` 调用 `Adapty.activate()` 或 `Adapty.identify()`。详情请参见[用户识别](identifying-users)。
+
+## 4\. 测试您的集成 \{#4-test-your-integration\}
+
+完成所有设置后，您可以测试您的集成。在 Paddle 测试环境中进行的交易将在 Adapty 中显示为 **Test**。来自生产环境的交易将显示为 **Production**。
+
+您的集成现已完成。用户可以在您的网站上购买订阅，并自动在您的移动应用中获得高级功能访问权限，同时您可以在统一的 Adapty 看板中跟踪所有订阅分析数据。
+
+## 重要注意事项 \{#important-considerations\}
+
+- 在 Adapty 的分析中，交易金额包含税费和 Paddle 手续费，这与 Paddle 看板中扣除税费和手续费后显示的金额不同。这意味着您在 Adapty 中看到的数字将高于您 Paddle 看板中的数字。
+- 与其他商店不同，Paddle 中的退款仅影响被退款的特定交易，不会自动取消订阅。除非明确取消，否则订阅将继续有效。
+- 您还可以在 `custom_data` 字段中包含 `variation_id`，以将购买归因到特定的付费墙实例。Adapty 将从 Webhook 中处理此数据并将其纳入分析。
+
+### 付费试用 \{#paid-trials\}
+
+在 Paddle 中使用付费试用时，您需要在 Adapty 中创建两个产品：
+
+1. 创建一个非订阅产品，并将其链接到负责试用期收费的 Paddle 价格。
+2. 然后创建一个订阅产品（月度/周度等），并将其链接到包含免费试用组件的 Paddle 价格。
+
+从 Paddle 的角度来看，这是一个在单笔交易中包含两个价格的产品——一个价格用于试用期收费（例如 $0.99），另一个价格用于免费试用（$0.00）。
+
+从 Adapty 的角度来看，这会创建两个独立事件：一个是试用付款的非订阅购买，另一个是订阅产品的试用开始事件。
+
+例如，当用户以 $0.99 开始一个 $9.99/月订阅的付费试用时，Paddle 会创建一笔包含两个价格的交易，而 Adapty 将其处理为 $0.99 的非订阅购买（即时付款）和 $0.00 的试用开始事件（未来将以 $9.99/月的价格订阅）。
+
+:::note
+当用户取消付费试用时，您将收到 **Trial expired** 和 **Trial renewal canceled** 事件。
+:::
+
+## 充分利用您的 Paddle 数据 \{#get-more-from-your-paddle-data\}
+
+:::important
+要使您的 Paddle 事件与集成配合使用，您的用户必须至少使用其 App Store/Google Play 账户登录应用一次。
+:::
+
+完成与 Paddle 的集成后，Adapty 即可立即提供洞察数据。为充分利用您的 Paddle 数据，您可以设置额外的 Adapty 集成来转发 Paddle 事件——将您所有的订阅分析数据汇聚到一个 Adapty 看板中。
+
+可用于转发和分析 Paddle 事件的集成：
+- [AppsFlyer](appsflyer)
+- [Webhook](webhook)
+- [Posthog](posthog)
+
+## 当前限制 \{#current-limitations\}
+
+- **取消订阅**：Paddle 有两种订阅取消选项：
+
+  1. 立即取消：订阅立即终止。
+
+  2. 在当前周期结束时取消：订阅在当前计费周期结束时取消（类似于应用商店中的应用内订阅）。
+
+- **退款**：Adapty 跟踪全额退款和部分退款。
+
+- **宽限期**：默认情况下，Paddle 对计费问题应用固定 30 天的宽限期，在此期间订阅保持有效。您可以[自定义宽限期时长及其结束后的操作（暂停或取消订阅）](https://developer.paddle.com/build/retain/configure-payment-recovery-dunning#prerequisites)。
+  
+  **试用期**：如果试用结束后付款收取失败，订阅状态将变为 `past_due`。在生产环境中，Paddle 的 Retain 会应用催款窗口，在取消或暂停订阅之前尝试恢复付款。在沙盒环境中，Retain 不可用，因此不会尝试重新付款，订阅将无限期保持 `past_due` 状态。
+
+---
+
+**另请参阅：**
+
+- [在 Paddle 中验证购买、获取访问等级，并使用服务端 API 从 Paddle 导入交易历史](api-adapty/operations/validatePaddlePurchase)

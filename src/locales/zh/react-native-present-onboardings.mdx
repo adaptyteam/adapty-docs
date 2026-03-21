@@ -1,0 +1,348 @@
+---
+title: "在 React Native SDK 中展示用户引导"
+description: "了解如何在 React Native 中展示用户引导，以提升转化率和收入。"
+metadataTitle: "在 React Native 中展示用户引导 | Adapty 文档"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+如果您已使用编辑工具自定义了用户引导，则无需在移动应用代码中手动渲染以向用户展示。这类用户引导已包含应展示的内容及展示方式。
+
+开始之前，请确保：
+
+1. 已安装 [Adapty React Native SDK](sdk-installation-reactnative) 3.8.0 或更高版本。
+2. 已[创建用户引导](create-onboarding)。
+3. 已将用户引导添加到[版位](placements)。
+
+Adapty React Native SDK 提供两种展示用户引导的方式：
+
+- **React 组件**：嵌入式组件，可集成到您应用的架构和导航系统中。
+
+- **模态展示**
+
+## React 组件 \{#react-component\}
+
+要在现有组件树中嵌入用户引导，请在您的 React Native 组件层级中直接使用 `AdaptyOnboardingView` 组件。嵌入式组件允许您将其集成到应用的架构和导航系统中。
+
+:::note
+在 Android 上，我们建议为 `AdaptyOnboardingView` 进行额外配置，以避免出现视觉渲染瑕疵。请参阅[系统 UI 与用户引导内容重叠（Android）](#system-ui-overlaps-onboarding-content-on-android)。
+:::
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
+  const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+      onClose={onClose}
+      onCustom={onCustom}
+      onPaywall={onPaywall}
+      onStateUpdated={onStateUpdated}
+      onFinishedLoading={onFinishedLoading}
+      onError={onError}
+    />
+  );
+}
+```
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+
+function MyOnboarding({ onboarding }) {
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={{ flex: 1 }}
+      eventHandlers={{
+        onAnalytics(event, meta) { 
+          // Handle analytics events
+        },
+        onClose(actionId, meta) { 
+          // Handle close actions
+        },
+        onCustom(actionId, meta) { 
+          // Handle custom actions
+        },
+        onPaywall(actionId, meta) { 
+          // Handle paywall actions
+        },
+        onStateUpdated(action, meta) { 
+          // Handle state updates
+        },
+        onFinishedLoading(meta) { 
+          // Handle when onboarding finishes loading
+        },
+        onError(error) { 
+          // Handle errors
+        },
+      }}
+    />
+  );
+}
+```
+</TabItem>
+</Tabs>
+
+## 模态展示 \{#modal-presentation\}
+
+要将用户引导作为独立屏幕展示（用户可关闭），请对由 `createOnboardingView` 方法创建的 `view` 调用 `view.present()` 方法。每个 `view` 只能使用一次。如需再次展示用户引导，请再次调用 `createOnboardingView` 以创建新的 `view` 实例。
+
+:::warning
+禁止在未重新创建的情况下复用同一个 `view`，否则将导致 `AdaptyUIError.viewAlreadyPresented` 错误。
+:::
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+```typescript showLineNumbers title="React Native (TSX)"
+import { createOnboardingView } from 'react-native-adapty';
+
+const view = await createOnboardingView(onboarding);
+
+// Optional: handle onboarding events (close, custom actions, etc)
+// view.setEventHandlers({ ... });
+
+try {
+    await view.present();
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+```typescript showLineNumbers title="React Native (TSX)"
+import { createOnboardingView } from 'react-native-adapty/dist/ui';
+
+const view = await createOnboardingView(onboarding);
+
+view.registerEventHandlers(); // handle close press, etc
+
+try {
+    await view.present();
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+</Tabs>
+
+### 配置 iOS 展示样式 \{#configure-ios-presentation-style\}
+
+通过向 `present()` 方法传递 `iosPresentationStyle` 参数，配置付费墙在 iOS 上的展示方式。该参数接受 `'full_screen'`（默认）或 `'page_sheet'` 值。
+
+```typescript showLineNumbers
+try {
+  await view.present(iosPresentationStyle: 'page_sheet');
+} catch (error) {
+  // handle the error
+}
+```
+
+## 用户引导加载中的加载器 \{#loader-during-onboarding\}
+
+在 React Native 中展示用户引导时，您可能会注意到在用户引导出现之前有短暂的白屏或加载画面。这是因为底层原生视图正在初始化。您可以根据需求和工作流程，以不同方式处理此问题。
+
+#### 使用 onFinishedLoading 控制启动屏幕 \{#control-splash-screen-using-onfinishedloading\}
+
+:::note
+此方式仅适用于 React 组件，不适用于模态展示。
+:::
+
+React Native 推荐的做法是：在用户引导完全加载前，保持启动屏幕或自定义遮罩层可见，然后手动隐藏它。
+
+使用 React 组件（`AdaptyOnboardingView`）时，请等待 `onFinishedLoading` 事件后再隐藏启动屏幕或遮罩层：
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback, useState } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
+
+function MyOnboarding({ onboarding }) {
+  const [isLoading, setIsLoading] = useState(true);
+
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
+    // Hide your splash screen or custom overlay here
+    setIsLoading(false);
+  }, []);
+
+  return (
+    <>
+      <AdaptyOnboardingView
+        onboarding={onboarding}
+        onFinishedLoading={onFinishedLoading}
+        // ... other callbacks
+      />
+      {isLoading && <YourCustomLoadingOverlay />}
+    </>
+  );
+}
+```
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useState } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+
+function MyOnboarding({ onboarding }) {
+  const [isLoading, setIsLoading] = useState(true);
+
+  return (
+    <>
+      <AdaptyOnboardingView
+        onboarding={onboarding}
+        eventHandlers={{
+          onFinishedLoading(meta) {
+            // Hide your splash screen or custom overlay here
+            setIsLoading(false);
+          },
+          // ... other handlers
+        }}
+      />
+      {isLoading && <YourCustomLoadingOverlay />}
+    </>
+  );
+}
+```
+
+</TabItem>
+</Tabs>
+
+#### 自定义原生加载器 \{#customize-native-loader\}
+
+:::important
+Expo 托管工作流不支持放置自定义原生布局（例如 Android 上的 `res/layout`）。对于 Expo 应用，控制启动屏幕或使用 React Native 遮罩层是唯一可行的方案。
+:::
+
+您可以在 Android 和 iOS 上使用平台特定布局替换原生加载器。如果您使用模态展示，这是您唯一的选择。
+
+但是，此方式对于 React Native 应用通常不够便捷：
+
+- 需要分别实现 Android 和 iOS 版本
+- 与 Expo 托管工作流不兼容
+
+为每个平台定义占位符：
+
+- **iOS**：将 `AdaptyOnboardingPlaceholderView.xib` 添加到您的 Xcode 项目中。[了解更多](ios-present-onboardings#add-smooth-transitions-between-the-splash-screen-and-onboarding)。
+- **Android**：在 `res/layout` 中创建 `adapty_onboarding_placeholder_view.xml`，并在其中定义占位符。[了解更多](android-present-onboardings#add-smooth-transitions-between-the-splash-screen-and-onboarding)。
+
+## 自定义用户引导中链接的打开方式 \{#customize-how-links-open-in-onboardings\}
+
+:::important
+自定义用户引导中链接的打开方式从 Adapty SDK v. 3.15.1 开始支持。
+:::
+
+默认情况下，用户引导中的链接会在应用内浏览器中打开。这通过在应用内显示网页，提供无缝的用户体验，让用户无需切换应用即可查看。
+
+如果您希望在外部浏览器中打开链接，可以将 `externalUrlsPresentation` 参数设置为 `WebPresentation.BrowserOutApp` 来自定义此行为：
+
+<Tabs groupId="rn-onboarding-views" queryString>
+<TabItem value="component" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView, WebPresentation } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
+  const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      externalUrlsPresentation={WebPresentation.BrowserOutApp} // default – BrowserInApp
+      onAnalytics={onAnalytics}
+      onClose={onClose}
+      onCustom={onCustom}
+      onPaywall={onPaywall}
+      onStateUpdated={onStateUpdated}
+      onFinishedLoading={onFinishedLoading}
+      onError={onError}
+    />
+  );
+}
+```
+</TabItem>
+
+<TabItem value="modal" label="Modal presentation">
+
+```typescript showLineNumbers title="React Native (TSX)"
+import { createOnboardingView, WebPresentation } from 'react-native-adapty';
+
+const view = await createOnboardingView(
+  onboarding, 
+  { externalUrlsPresentation: WebPresentation.BrowserOutApp } // default – BrowserInApp
+);
+
+try {
+    await view.present();
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+</Tabs>
+
+## 故障排查 \{#troubleshooting\}
+
+### 系统 UI 与 Android 上的用户引导内容重叠 \{#system-ui-overlaps-onboarding-content-on-android\}
+
+:::note
+此设置仅在裸 React Native 项目中支持。
+
+如果您使用 Expo 托管工作流，则无法直接添加此 Android 资源。要应用此设置，您必须创建一个自定义 Expo 配置插件，添加对应的 Android 资源并在 app.config.js 中注册。这是必要的，因为 Expo 会为您管理原生 Android 项目。
+:::
+
+在 Android 上使用 `AdaptyOnboardingView` 时，状态栏和导航栏等系统 UI 元素可能会覆盖在付费墙内容之上。要防止这种情况，请在您的应用中添加以下布尔资源：
+
+1. 前往 `android/app/src/main/res/values`。如果没有 `bools.xml` 文件，请创建一个。
+
+2. 添加以下资源：
+
+```xml
+<resources>
+    <bool name="adapty_onboarding_enable_safe_area_paddings">false</bool>
+</resources>
+```
+
+请注意，该更改将全局应用于您应用中的所有用户引导。
+
+## 后续步骤 \{#next-steps\}
+
+展示用户引导后，您需要[处理用户交互和事件](react-native-handling-onboarding-events)。了解如何处理用户引导事件，以响应用户操作并跟踪分析数据。

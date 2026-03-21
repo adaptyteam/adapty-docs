@@ -1,0 +1,565 @@
+---
+title: "将 Adapty iOS SDK 迁移至 v. 3.3"
+description: "迁移至 Adapty iOS SDK v3.3，获得更好的性能和新的变现功能。"
+metadataTitle: "迁移至 Adapty iOS SDK v3.3 | Adapty 文档"
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+
+Adapty SDK 3.3.0 是一个主要版本，带来了一些改进，但可能需要您执行一些迁移步骤。
+
+1. 将 `Adapty.Configuration` 重命名为 `AdaptyConfiguration`。
+2. 将 `getViewConfiguration` 方法重命名为 `getPaywallConfiguration`。
+3. 从 SwiftUI 中移除 `didCancelPurchase` 和 `paywall` 参数，并将 `viewConfiguration` 参数重命名为 `paywallConfiguration`。
+4. 通过从 `AdaptyDelegate` 方法中移除 `defermentCompletion` 参数，更新您处理来自 App Store 的促销应用内购买的方式。
+5. 移除 `getProductsIntroductoryOfferEligibility` 方法。
+6. 更新 Adjust、AirBridge、Amplitude、AppMetrica、Appsflyer、Branch、Facebook Ads、Firebase 和 Google Analytics、Mixpanel、OneSignal、Pushwoosh 的集成配置。
+7. 更新 Observer 模式的实现方式。
+
+<div style={{ textAlign: 'center' }}>
+  <iframe 
+    width="560" 
+    height="315" 
+    src="https://www.youtube.com/embed/9Xs8d0lt_RY?si=xvWhUO2tlG1tKP5f" 
+    title="YouTube video player" 
+    frameborder="0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerpolicy="strict-origin-when-cross-origin" 
+    allowfullscreen>
+  </iframe>
+</div>
+
+## 将 Adapty.Configuration 重命名为 AdaptyConfiguration \{#rename-adaptyconfiguration-to-adaptyconfiguration\}
+
+按以下方式更新 Adapty iOS SDK 激活代码：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```diff showLineNumbers
+// In your AppDelegate class:
+import Adapty
+
+let configurationBuilder =
+-        Adapty.Configuration
++        AdaptyConfiguration
+          .builder(withAPIKey: "PUBLIC_SDK_KEY")
+          .with(observerMode: false)
+          .with(customerUserId: "YOUR_USER_ID")
+          .with(idfaCollectionDisabled: false)
+          .with(ipAddressCollectionDisabled: false)
+
+Adapty.activate(with: configurationBuilder) { error in
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+```diff showLineNumbers
+import Adapty
+
+@main
+struct SampleApp: App {
+    init() 
+      let configurationBuilder =
+-        Adapty.Configuration
++        AdaptyConfiguration
+          .builder(withAPIKey: "PUBLIC_SDK_KEY")
+          .with(observerMode: false) // optional
+          .with(customerUserId: "YOUR_USER_ID") // optional
+          .with(idfaCollectionDisabled: false) // optional
+          .with(ipAddressCollectionDisabled: false) // optional
+
+        Task {
+            try await Adapty.activate(with: configurationBuilder)
+        }
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+## 将 getViewConfiguration 方法重命名为 getPaywallConfiguration \{#rename-getviewconfiguration-method-to-getpaywallconfiguration\}
+
+更新获取付费墙 `viewConfiguration` 的方法名称：
+
+```diff showLineNumbers
+import Adapty
+import AdaptyUI
+
+guard paywall.hasViewConfiguration else {
+    //  use your custom logic
+    return
+}
+
+do {
+-    let paywallConfiguration = try await AdaptyUI.getViewConfiguration(
++    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
+            forPaywall: paywall
+    )
+    // use loaded configuration
+} catch {
+    // handle the error
+}
+```
+
+有关该方法的更多详情，请查看[获取使用付费墙编辑工具设计的付费墙的视图配置](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)。
+
+## 修改 SwiftUI 中的参数 \{#change-parameters-in-swiftui\}
+
+以下是对 SwiftUI 所做的更新：
+
+1. 已移除 `didCancelPurchase` 参数，请改用 `didFinishPurchase`。
+2. `.paywall()` 方法不再接受付费墙对象。
+3. `paywallConfiguration` 参数已替换 `viewConfiguration` 参数。
+
+按以下方式更新您的代码：
+
+```diff showLineNumbers
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+-         paywall: <paywall object>,
+-         viewConfiguration: <LocalizedViewConfiguration>,
++         paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+-         didFinishPurchase: { product, profile in paywallPresented = false },
++         didFinishPurchase: { product, purchaseResult in /* handle the result*/ },
+          didFailPurchase: { product, error in /* handle the error */ },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false }
+-         didCancelPurchase: { product in /* handle the result*/}
+
+      )
+}
+```
+
+## 更新来自 App Store 的促销应用内购买处理方式 \{#update-handling-of-promotional-in-app-purchases-from-app-store\}
+
+通过从 `AdaptyDelegate` 方法中移除 `defermentCompletion` 参数，更新您处理来自 App Store 的促销应用内购买的方式，如下例所示：
+
+```swift showLineNumbers title="Swift"
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
+        // 1a.
+        // Return `true` to continue the transaction in your app.
+
+        // 1b.
+        // Store the product object and return `false` to defer or cancel the transaction.
+        false
+    }
+    
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase`
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyDeferredProduct = // get the product object from the 1b.
+        do {
+            try await Adapty.makePurchase(product: storedProduct)
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+## 移除 getProductsIntroductoryOfferEligibility 方法 \{#remove-getproductsintroductoryoffereligibility-method\}
+
+在 Adapty iOS SDK 3.3.0 之前，产品对象始终包含优惠信息，无论用户是否符合资格。您需要在使用优惠前手动检查资格。
+
+现在，产品对象仅在用户符合资格时才包含优惠信息。这意味着您不再需要检查资格——如果存在优惠，则用户具有资格。
+
+如果您仍然希望查看不符合资格用户的优惠，请参考 `sk1Product` 和 `sk2Product`。
+
+## 更新第三方集成 SDK 配置 \{#update-third-party-integration-sdk-configuration\}
+
+从 Adapty iOS SDK 3.3.0 开始，我们更新了 `updateAttribution` 方法的公共 API。以前，它接受 `[AnyHashable: Any]` 字典，允许您直接从各种服务传递归因对象。现在，它需要 `[String: any Sendable]`，因此您需要在传递归因对象之前进行转换。
+
+为确保集成能与 Adapty iOS SDK 3.3.0 及更高版本正常工作，请按以下各节所述更新以下集成的 SDK 配置。
+
+### Adjust
+
+按以下方式更新您的移动应用代码。完整代码示例请查看 [Adjust 集成的 SDK 配置](adjust#connect-your-app-to-adjust)。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="v5" label="Adjust 5.x+" default>
+
+```diff showLineNumbers
+class AdjustModuleImplementation {
+-    func updateAdjustAttribution() {
+-        Adjust.attribution { attribution in
+-            guard let attributionDictionary = attribution?.dictionary()?.toSendableDict() else { return }
+-
+-            Adjust.adid { adid in
+-                guard let adid else { return }
+-
+-                Adapty.updateAttribution(attributionDictionary, source: .adjust, networkUserId: adid) { error in
+-                    // handle the error
+-                }
+-            }
+-        }
+-    }
+
++    func updateAdjustAdid() {
++        Adjust.adid { adid in
++            guard let adid else { return }
++
++            Adapty.setIntegrationIdentifier(key: "adjust_device_id", value: adid)
++        }
++    }
++
++    func updateAdjustAttribution() {
++        Adjust.attribution { attribution in
++            guard let attribution = attribution?.dictionary() else { 
++                return
++            }
++            
++            Adapty.updateAttribution(attribution, source: "adjust")
++        }
++    }
+}
+```
+
+</TabItem>
+
+<TabItem value="v4" label="Adjust 4.x" default>
+
+```diff showLineNumbers
+class YourAdjustDelegateImplementation {
+    // Find your implementation of AdjustDelegate 
+    // and update adjustAttributionChanged method:
+    func adjustAttributionChanged(_ attribution: ADJAttribution?) {
+-       if let attribution = attribution?.dictionary()?.toSendableDict() {
+-           Adapty.updateAttribution(attribution, source: .adjust)
++       if let attribution = attribution?.dictionary() {
++           Adapty.updateAttribution(attribution, source: "adjust")
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+### AirBridge
+
+按以下方式更新您的移动应用代码。完整代码示例请查看 [AirBridge 集成的 SDK 配置](airbridge#connect-your-app-to-airbridge)。
+
+```diff showLineNumbers
+ import AirBridge
+
+- let builder = AdaptyProfileParameters.Builder()
+-             .with(airbridgeDeviceId: AirBridge.deviceUUID())
+-
+- Adapty.updateProfile(params: builder.build())
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "airbridge_device_id", 
++         value: AirBridge.deviceUUID()
++     )
++ } catch {
++     // handle the error
++ }
+```
+
+### Amplitude
+
+按以下方式更新您的移动应用代码。完整代码示例请查看 [Amplitude 集成的 SDK 配置](amplitude#sdk-configuration)。
+
+```diff showLineNumbers
+ import Amplitude 
+
+- let builder = AdaptyProfileParameters.Builder()
+-             .with(amplitudeUserId: Amplitude.instance().userId)
+-             .with(amplitudeDeviceId: Amplitude.instance().deviceId)
+-
+- Adapty.updateProfile(params: builder.build())
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "amplitude_user_id", 
++         value: Amplitude.instance().userId
++     )
++     try await Adapty.setIntegrationIdentifier(
++         key: "amplitude_device_id", 
++         value: Amplitude.instance().deviceId
++     )
++ } catch {
++     // handle the error
++ }
+
+```
+
+### AppMetrica
+
+按以下方式更新您的移动应用代码。完整代码示例请查看 [AppMetrica 集成的 SDK 配置](appmetrica#sdk-configuration)。
+
+```diff showLineNumbers
+ import AppMetricaCore
+        
+- if let deviceID = AppMetrica.deviceID {
+-   let builder = AdaptyProfileParameters.Builder()
+-     .with(appmetricaDeviceId: deviceID)
+-     .with(appmetricaProfileId: "YOUR_ADAPTY_CUSTOMER_USER_ID")
+-
+-   Adapty.updateProfile(params: builder.build())
+- }
+
++ if let deviceID = AppMetrica.deviceID {
++     do {
++         try await Adapty.setIntegrationIdentifier(
++             key: "appmetrica_device_id", 
++             value: deviceID
++         )
++         try await Adapty.setIntegrationIdentifier(
++             key: "appmetrica_profile_id", 
++             value: "YOUR_ADAPTY_CUSTOMER_USER_ID"
++         )
++     } catch {
++         // handle the error
++     }
++ }
+
+```
+
+### AppsFlyer
+
+按以下方式更新您的移动应用代码。完整代码示例请查看 [AppsFlyer 集成的 SDK 配置](appsflyer#connect-your-app-to-appsflyer)。
+
+```diff showLineNumbers
+class YourAppsFlyerLibDelegateImplementation {
+    // Find your implementation of AppsFlyerLibDelegate 
+    // and update onConversionDataSuccess method:
+     func onConversionDataSuccess(_ conversionInfo: [AnyHashable : Any]) {
+         let uid = AppsFlyerLib.shared().getAppsFlyerUID()
+
+-        Adapty.updateAttribution(
+-           conversionInfo.toSendableDict(),
+-            source: .appsflyer,
+-            networkUserId: uid
+-        )
++        Adapty.setIntegrationIdentifier(key: "appsflyer_id", value: uid)
++        Adapty.updateAttribution(conversionInfo, source: "appsflyer")
+    }
+}
+```
+
+### Branch
+
+按以下方式更新您的移动应用代码。完整代码示例请查看 [Branch 集成的 SDK 配置](branch#connect-your-app-to-branch)。
+
+```diff showLineNumbers
+class YourBranchImplementation {
+    func initializeBranch() {
+        // Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
+        Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+-           if let data = data?.toSendableDict() {
+-                Adapty.updateAttribution(data, source: .branch)
+-           }
++           if let data {
++               Adapty.updateAttribution(data, source: "branch")
++           }
+        }
+    }
+}
+```
+
+### Facebook Ads
+
+按以下方式更新您的移动应用代码。完整代码示例请查看 [Facebook Ads 集成的 SDK 配置](facebook-ads#connect-your-app-to-facebook-ads)。
+
+```diff showLineNumbers
+ import FacebookCore
+
+- let builder = AdaptyProfileParameters.Builder()
+-     .with(facebookAnonymousId: AppEvents.shared.anonymousID)
+-
+- do {
+-     try Adapty.updateProfile(params: builder.build())
+- } catch {
+-     // handle the error
+- }
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "facebook_anonymous_id", 
++         value: AppEvents.shared.anonymousID
++     )
++ } catch {
++     // handle the error
++ }
+
+```
+
+### Firebase 和 Google Analytics
+
+按以下方式更新您的移动应用代码。完整代码示例请查看 [Firebase 和 Google Analytics 集成的 SDK 配置](firebase-and-google-analytics)。
+
+```diff showLineNumbers
+ import FirebaseCore
+ import FirebaseAnalytics
+
+ FirebaseApp.configure()
+        
+- if let appInstanceId = Analytics.appInstanceID() {            
+-     let builder = AdaptyProfileParameters.Builder()
+-         .with(firebaseAppInstanceId: appInstanceId)
+            
+-     Adapty.updateProfile(params: builder.build()) { error in
+-         // handle error
+-     }
+- }
+
++ if let appInstanceId = Analytics.appInstanceID() {            
++     do {
++         try await Adapty.setIntegrationIdentifier(
++             key: "firebase_app_instance_id", 
++             value: appInstanceId
++         )
++     } catch {
++         // handle the error
++     }
++ }
+```
+
+### Mixpanel
+
+按以下方式更新您的移动应用代码。完整代码示例请查看 [Mixpanel 集成的 SDK 配置](mixpanel#sdk-configuration)。
+
+```diff showLineNumbers
+ import Mixpanel
+
+- let builder = AdaptyProfileParameters.Builder()
+-             .with(mixpanelUserId: Mixpanel.mainInstance().distinctId)
+-
+- do {
+-     try await Adapty.updateProfile(params: builder.build())
+- } catch {
+-     // handle the error
+- }
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "mixpanel_user_id", 
++         value: Mixpanel.mainInstance().distinctId
++     )
++ } catch {
++     // handle the error
++ }
+
+```
+
+### OneSignal
+
+按以下方式更新您的移动应用代码。完整代码示例请查看 [OneSignal 集成的 SDK 配置](onesignal#sdk-configuration)。
+
+```diff showLineNumbers
+ // PlayerID (pre-v5 OneSignal SDK)
+ // in your OSSubscriptionObserver implementation
+ func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
+     if let playerId = stateChanges.to.userId {
+-         let params = AdaptyProfileParameters.Builder()
+-             .with(oneSignalPlayerId: playerId)
+-             .build()
+-
+-         Adapty.updateProfile(params:params) { error in
+-             // check error
+-         }
++         Task {
++             try await Adapty.setIntegrationIdentifier(
++                 key: "one_signal_player_id", 
++                 value: playerId
++             )
++         }
+     }
+ }
+
+ // SubscriptionID (v5+ OneSignal SDK)
+ OneSignal.Notifications.requestPermission({ accepted in
+-     let id = OneSignal.User.pushSubscription.id
+-
+-     let builder = AdaptyProfileParameters.Builder()
+-         .with(oneSignalSubscriptionId: id)
+-
+-     Adapty.updateProfile(params: builder.build())
++     Task {
++         try await Adapty.setIntegrationIdentifier(
++             key: "one_signal_subscription_id", 
++             value: OneSignal.User.pushSubscription.id
++         )
++     }
+ }, fallbackToSettings: true)
+```
+
+### Pushwoosh
+
+按以下方式更新您的移动应用代码。完整代码示例请查看 [Pushwoosh 集成的 SDK 配置](pushwoosh#sdk-configuration)。
+
+```diff showLineNumbers
+- let params = AdaptyProfileParameters.Builder()
+-     .with(pushwooshHWID: Pushwoosh.sharedInstance().getHWID())
+-     .build()
+-
+- Adapty.updateProfile(params: params) { error in
+-     // handle the error
+- }
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "pushwoosh_hwid", 
++         value: Pushwoosh.sharedInstance().getHWID()
++     )
++ } catch {
++     // handle the error
++ }
+```
+
+## 更新 Observer 模式实现 \{#update-observer-mode-implementation\}
+
+更新您将付费墙与交易关联的方式。以前，您使用 `setVariationId` 方法来分配 `variationId`。现在，您可以在使用新的 `reportTransaction` 方法记录交易时直接包含 `variationId`。请查看[在 Observer 模式下将付费墙与购买交易关联](report-transactions-observer-mode)中的最终代码示例。
+
+:::warning
+
+请务必使用 `reportTransaction` 方法记录交易。跳过此步骤意味着 Adapty 将无法识别该交易、授予访问等级、将其纳入分析或发送至集成服务。此步骤至关重要！
+
+:::
+
+```diff showLineNumbers
+- let variationId = paywall.variationId
+-
+- // There are two overloads: for StoreKit 1 and StoreKit 2
+- Adapty.setVariationId(variationId, forPurchasedTransaction: transaction) { error in
+-     if error == nil {
+-         // successful binding
+-     }
+- }
+
++ do {
++     // every time when calling transaction.finish()
++     try await Adapty.reportTransaction(transaction, withVariationId: <YOUR_PAYWALL_VARIATION_ID>)
++ } catch {
++     // handle the error
++ }
+```

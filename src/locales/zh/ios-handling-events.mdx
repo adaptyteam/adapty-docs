@@ -1,0 +1,441 @@
+---
+title: "在 iOS SDK 中处理付费墙事件"
+description: "使用 Adapty 在 iOS 中处理与订阅相关的事件，以提升应用变现效果。"
+metadataTitle: "在 iOS 中处理事件 | Adapty 文档"
+toc_max_heading_level: 4
+keywords: ['event', 'AdaptyPaywallControllerDelegate', 'didSelectProduct', 'didStartPurchase', 'shouldContinueWebPaymentNavigation', 'didFinishPurchase', 'didFailPurchase', 'didFailWebPaymentNavigation', 'didFinishRestoreWith', 'didFailRestoreWith', 'didFailLoadingProductsWith',  'didFailRenderingWith']
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+import PaywallAction from '@site/src/locales/zh/reusable/PaywallAction.md';
+import Details from '@site/src/components/Details';
+
+<PaywallAction />
+
+使用[付费墙编辑工具](adapty-paywall-builder)配置的付费墙无需额外代码即可完成购买和恢复购买操作。但这些付费墙会生成一些事件，您的应用可以对其做出响应。这些事件包括按钮点击（关闭按钮、URL、产品选择等）以及付费墙上购买相关操作的通知。请参阅以下内容了解如何响应这些事件。
+
+本指南仅适用于**新版付费墙编辑工具付费墙**，需要 Adapty SDK v3.0 或更高版本。如需了解如何在 Adapty SDK v2 中展示使用旧版付费墙编辑工具设计的付费墙，请参阅 [iOS - 处理使用旧版付费墙编辑工具设计的付费墙事件](ios-handling-events-legacy)。
+
+<SampleApp />
+
+## 在 SwiftUI 中处理事件 \{#handling-events-in-swiftui\}
+
+如需在移动应用的付费墙页面中控制或监控相关流程，请在 SwiftUI 中使用 `.paywall` 修饰符：
+
+```swift showLineNumbers title="Swift"
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywall: paywall,
+          viewConfiguration: viewConfig,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  case let .openURL(url):
+                      // handle opening the URL (incl. for terms and privacy)
+                  default:
+                      // handle other actions
+              }
+          },
+          didSelectProduct: { /* Handle the event */  },
+          didStartPurchase: { /* Handle the event */ },
+          didFinishPurchase: { product, info in /* Handle the event */ },
+          didFailPurchase: { product, error in /* Handle the event */ },
+          didStartRestore: { /* Handle the event */ },
+          didFinishRestore: { /* Handle the event */ },
+          didFailRestore: { /* Handle the event */ },
+          didFailRendering: { error in
+              paywallPresented = false
+          },
+          didFailLoadingProducts: { error in
+              return false
+          }
+      )
+}
+```
+
+您只需注册所需的闭包参数，可省略不需要的参数。在这种情况下，未使用的闭包参数将不会被创建。
+
+| 参数                              | 是否必填 | 描述                                                                                                                                                                                                                                                                                                                             |
+|:----------------------------------|:---------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented**                   | 必填     | 用于管理付费墙页面是否显示的绑定值。                                                                                                                                                                                                                                                                                             |
+| **paywallConfiguration**          | 必填     | 包含付费墙视觉详情的 `AdaptyUI.PaywallConfiguration` 对象。使用 `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)` 方法。详情请参阅[获取付费墙编辑工具付费墙及其配置](get-pb-paywalls)主题。 |
+| **didFailPurchase**               | 必填     | 当购买因错误失败时触发（例如，不允许付款、网络问题、产品无效）。用户取消或待处理付款不会触发此回调。                                                                                                                                                                                                                              |
+| **didFinishRestore**              | 必填     | 当购买成功完成时触发。                                                                                                                                                                                                                                                                                                           |
+| **didFailRestore**                | 必填     | 当恢复购买失败时触发。                                                                                                                                                                                                                                                                                                           |
+| **didFailRendering**              | 必填     | 当渲染界面时发生错误时触发。在这种情况下，请[联系 Adapty 支持](mailto:support@adapty.io)。                                                                                                                                                                                                                                       |
+| **fullScreen**                    | 可选     | 确定付费墙是全屏显示还是以模态方式显示。默认为 `true`。                                                                                                                                                                                                                                                                          |
+| **didAppear**                     | 可选     | 当付费墙视图出现在屏幕上时触发。当用户点击付费墙内的 [web 付费墙按钮](web-paywall#step-2a-add-a-web-purchase-button) 并在应用内浏览器中打开 web 付费墙时也会触发。                                                                                                                                                              |
+| **didDisappear**                  | 可选     | 当付费墙视图被关闭时触发。当从付费墙在应用内浏览器中打开的 [web 付费墙](web-paywall#step-2a-add-a-web-purchase-button) 从屏幕上消失时也会触发。                                                                                                                                                                                |
+| **didPerformAction**              | 可选     | 当用户点击按钮时触发。不同的按钮具有不同的操作 ID。预定义了两个操作 ID：`close` 和 `openURL`，其他操作 ID 可在编辑工具中自定义设置。                                                                                                                                                                                             |
+| **didSelectProduct**              | 可选     | 如果某个产品被选中购买（由用户或系统选择），将触发此回调。                                                                                                                                                                                                                                                                       |
+| **didStartPurchase**              | 可选     | 当用户开始购买流程时触发。                                                                                                                                                                                                                                                                                                       |
+| **didFinishPurchase**             | 可选     | 当购买成功完成时触发。                                                                                                                                                                                                                                                                                                           |
+| **didFinishWebPaymentNavigation** | 可选     | 在尝试打开 [web 付费墙](web-paywall)进行购买后触发，无论成功还是失败。                                                                                                                                                                                                                                                           |
+| **didStartRestore**               | 可选     | 当用户开始恢复流程时触发。                                                                                                                                                                                                                                                                                                       |
+| **didFailLoadingProducts**        | 可选     | 当产品加载过程中发生错误时触发。返回 `true` 可重试加载。                                                                                                                                                                                                                                                                         |
+| **didPartiallyLoadProducts**      | 可选     | 当产品部分加载时触发。                                                                                                                                                                                                                                                                                                           |
+| **showAlertItem**                 | 可选     | 用于管理付费墙上方警告项显示的绑定值。                                                                                                                                                                                                                                                                                           |
+| **showAlertBuilder**              | 可选     | 用于渲染警告视图的函数。                                                                                                                                                                                                                                                                                                         |
+| **placeholderBuilder**            | 可选     | 用于在付费墙加载时渲染占位视图的函数。                                                                                                                                                                                                                                                                                           |
+
+## 在 UIKit 中处理事件 \{#handling-events-in-uikit\}
+
+如需在移动应用的付费墙页面中控制或监控相关流程，请实现 `AdaptyPaywallControllerDelegate` 方法。
+
+### 用户生成的事件 \{#user-generated-events\}
+
+#### 产品选择 \{#product-selection\}
+
+如果用户选择了一个产品进行购买，将触发以下方法：
+
+```swift showLineNumbers title="Swift"
+    func paywallController(
+        _ controller: AdaptyPaywallController,
+        didSelectProduct product: AdaptyPaywallProductWithoutDeterminingOffer
+    ) { }
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### 开始购买 \{#started-purchase\}
+
+如果用户发起购买流程，将触发以下方法：
+
+```swift showLineNumbers title="Swift"
+func paywallController(_ controller: AdaptyPaywallController,
+                       didStartPurchase product: AdaptyPaywallProduct) {
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+在观察者模式下不会触发此方法。详情请参阅 [iOS - 在观察者模式下展示付费墙编辑工具付费墙](ios-present-paywall-builder-paywalls-in-observer-mode) 主题。
+
+#### 使用 web 付费墙开始购买 \{#started-purchase-using-a-web-paywall\}
+
+如果用户使用 [web 付费墙](web-paywall)发起购买流程，将触发以下方法：
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        shouldContinueWebPaymentNavigation product: AdaptyPaywallProduct
+    ) {
+    }
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### 购买成功或取消 \{#successful-or-canceled-purchase\}
+
+如果购买成功，将触发以下方法：
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFinishPurchase product: AdaptyPaywallProductWithoutDeterminingOffer,
+    purchaseResult: AdaptyPurchaseResult
+) { }
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "cancelled"
+  }
+}
+```
+</Details>
+
+我们建议在这种情况下关闭付费墙页面。
+
+在观察者模式下不会触发此方法。详情请参阅 [iOS - 在观察者模式下展示付费墙编辑工具付费墙](ios-present-paywall-builder-paywalls-in-observer-mode) 主题。
+
+#### 购买失败 \{#failed-purchase\}
+
+如果购买因错误而失败，将触发以下方法。这包括 StoreKit 错误（付款限制、产品无效、网络故障）、交易验证失败和系统错误。请注意，用户取消会触发 `didFinishPurchase` 并返回已取消结果，待处理付款不会触发此方法。
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailPurchase product: AdaptyPaywallProduct,
+    error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+在观察者模式下不会触发此方法。详情请参阅 [iOS - 在观察者模式下展示付费墙编辑工具付费墙](ios-present-paywall-builder-paywalls-in-observer-mode) 主题。
+
+#### 使用 web 付费墙购买失败 \{#failed-purchase-using-a-web-paywall\}
+
+如果 `Adapty.openWebPaywall()` 失败，将触发以下方法：
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        didFailWebPaymentNavigation product: AdaptyPaywallProduct,
+        error: AdaptyError
+    ) { }
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_payment_failed",
+    "message": "Web payment navigation failed",
+    "details": {
+      "underlyingError": "Network connection error"
+    }
+  }
+}
+```
+</Details>
+
+#### 恢复购买成功 \{#successful-restore\}
+
+如果恢复购买成功，将触发以下方法：
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController, 
+    didFinishRestoreWith profile: AdaptyProfile
+) { }
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+如果用户拥有所需的 `accessLevel`，我们建议关闭该页面。请参阅[订阅状态](subscription-status)主题了解如何检查。
+
+#### 恢复购买失败 \{#failed-restore\}
+
+如果恢复购买失败，将触发以下方法：
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController, 
+    didFailRestoreWith error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+### 数据获取与渲染 \{#data-fetching-and-rendering\}
+
+#### 产品加载错误 \{#product-loading-errors\}
+
+如果在初始化时未传入产品数组，AdaptyUI 将自行从服务器获取所需对象。如果该操作失败，AdaptyUI 将通过调用以下方法报告错误：
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailLoadingProductsWith error: AdaptyError
+) -> Bool {
+    return true
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+如果返回 `true`，AdaptyUI 将在 2 秒后重试请求。
+
+#### 渲染错误 \{#rendering-errors\}
+
+如果在界面渲染过程中发生错误，将通过以下方法进行报告：
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailRenderingWith error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+在正常情况下，此类错误不应出现，因此如果您遇到此类错误，请告知我们。

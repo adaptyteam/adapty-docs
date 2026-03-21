@@ -1,0 +1,160 @@
+---
+title: "在 Unity SDK 中识别用户"
+description: "在 Unity 中为应用内订阅管理设置 Adapty 的快速入门指南。"
+metadataTitle: "Adapty 快速入门指南 | Adapty 文档"
+keywords: ['识别', '识别用户', 'customeruserid']
+rank: 70
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
+:::important
+如果您有自己的身份验证系统，本指南适合您。在这里，您将了解如何在 Adapty 中管理用户画像，以确保其与您现有的身份验证系统保持一致。
+:::
+
+您如何管理用户的购买行为取决于您的应用程序身份验证模型：
+- 如果您的应用不使用后端身份验证且不存储用户数据，请参阅[匿名用户部分](#anonymous-users)。
+- 如果您的应用有（或将有）后端身份验证，请参阅[已识别用户部分](#identified-users)。
+
+**关键概念**：
+- **用户画像** 是 SDK 运行所需的实体。Adapty 会自动创建它们。
+- 它们可以是匿名的**（不含 customer user ID）** 或已识别的**（含 customer user ID）**。
+- 您提供 **customer user ID** 是为了将 Adapty 中的用户画像与您的内部身份验证系统进行交叉引用。
+
+以下是匿名用户和已识别用户的区别：
+
+|                         | 匿名用户                                   | 已识别用户                                                        |
+|-------------------------|---------------------------------------------------|-------------------------------------------------------------------------|
+| **购买管理** | 商店级购买恢复                  | 通过 customer user ID 跨设备维护购买历史 |
+| **用户画像管理**  | 每次重新安装时创建新用户画像                    | 跨会话和设备使用同一用户画像                            |
+| **数据持久性**    | 匿名用户的数据与应用安装绑定 | 已识别用户的数据在应用安装之间持久保存                |
+
+## 匿名用户 \{#anonymous-users\}
+
+如果您没有后端身份验证，**您无需在应用代码中处理身份验证**：
+
+1. 当 SDK 在应用首次启动时激活，Adapty **会为用户创建一个新用户画像**。
+2. 当用户在应用中购买任何内容时，此购买将**与其 Adapty 用户画像和商店账户关联**。
+3. 当用户**重新安装**应用或在**新设备**上安装时，Adapty **会在激活时创建一个新的匿名用户画像**。
+4. 如果用户之前在您的应用中进行过购买，默认情况下，其购买记录会在 SDK 激活时自动从 App Store 同步。
+
+因此，对于匿名用户，每次安装都会创建新的用户画像，但这不是问题，因为在 Adapty 分析中，您可以[配置什么将被视为新安装](general#4-installs-definition-for-analytics)。
+
+对于匿名用户，您需要按**设备 ID** 计算安装次数。在这种情况下，设备上每次应用安装都算作一次安装，包括重新安装。
+
+## 已识别用户 \{#identified-users\}
+
+您有两种方式在应用中识别用户：
+
+- [**在登录/注册期间：**](#during-loginsignup) 如果用户在应用启动后登录，请在用户验证时使用 customer user ID 调用 `identify()`。
+
+- [**在 SDK 激活期间：**](#during-the-sdk-activation) 如果应用启动时您已存储了 customer user ID，请在调用 `activate()` 时发送它。
+
+:::important
+默认情况下，当 Adapty 收到来自当前与另一个 Customer User ID 关联的 Customer User ID 的购买时，访问等级是共享的，因此两个用户画像都拥有付费访问权限。您可以配置此设置，将付费访问权限从一个用户画像转移到另一个用户画像，或完全禁用共享。请参阅[文章](general#6-sharing-paid-access-between-user-accounts)了解更多详情。
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/identify-diagram.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 在登录/注册期间 \{#during-loginsignup\}
+
+如果您在应用启动后识别用户（例如，在用户登录应用或注册后），请使用 `identify` 方法设置其 customer user ID。
+
+- 如果您**以前从未使用过此 customer user ID**，Adapty 将自动将其链接到当前用户画像。
+- 如果您**以前曾使用此 customer user ID 识别过该用户**，Adapty 将切换到与此 customer user ID 关联的用户画像。
+
+:::important
+Customer user ID 对每个用户必须是唯一的。如果您硬编码参数值，所有用户将被视为同一个人。
+:::
+
+```csharp showLineNumbers
+Adapty.Identify("YOUR_USER_ID", (error) => { // Unique for each user
+  if(error == null) {
+    // successful identify
+  }
+});
+```
+
+### 在 SDK 激活期间 \{#during-the-sdk-activation\}
+
+如果您在激活 SDK 时已知道 customer user ID，可以在 `activate` 方法中发送它，而无需单独调用 `identify`。
+
+如果您知道 customer user ID 但仅在激活后才设置它，这意味着在激活时，Adapty 将创建一个新的匿名用户画像，并仅在您调用 `identify` 后切换到现有用户画像。
+
+您可以传入现有的 customer user ID（您之前使用过的）或新的 customer user ID。如果您传入新的，激活时创建的新用户画像将自动与该 customer user ID 关联。
+
+:::note
+默认情况下，创建匿名用户画像不会影响分析看板，因为安装次数是根据设备 ID 计算的。
+
+设备 ID 代表从商店在设备上进行的一次应用安装，仅在应用重新安装后重新生成。
+它不取决于这是首次安装还是重复安装，也不取决于是否使用了现有的 customer user ID。
+
+创建用户画像（在 SDK 激活或退出登录时）、登录或升级应用（不重新安装）不会产生额外的安装事件。
+
+如果您想根据唯一用户而非设备计算安装次数，请前往 **App settings** 并配置 [**Installs definition for analytics**](general#4-installs-definition-for-analytics)。
+:::
+
+```csharp showLineNumbers
+using UnityEngine;
+using AdaptySDK;
+
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID"); // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+```
+
+### 用户退出登录 \{#log-users-out\}
+
+如果您有供用户退出登录的按钮，请使用 `logout` 方法。
+
+:::important
+用户退出登录会为用户创建一个新的匿名用户画像。
+:::
+
+```csharp showLineNumbers
+Adapty.Logout((error) => {
+  if(error == null) {
+    // successful logout
+  }
+});
+```
+
+:::info
+要让用户重新登录应用，请使用 `identify` 方法。
+:::
+
+### 允许未登录购买 \{#allow-purchases-without-login\}
+
+如果您的用户可以在登录应用之前和之后进行购买，您需要确保他们在登录后仍能保留访问权限：
+
+1. 当未登录用户进行购买时，Adapty 将其与匿名用户画像 ID 绑定。
+2. 当用户登录其账户时，Adapty 切换到其已识别的用户画像。
+    - 如果这是一个新的 customer user ID（例如，购买是在注册之前完成的），Adapty 会将 customer user ID 分配给当前用户画像，从而保留所有购买历史记录。
+    - 如果这是一个已有的 customer user ID（该 customer user ID 已与某个用户画像关联），您需要在用户画像切换后获取实际的访问等级。您可以在识别后立即调用 [`getProfile`](unity-check-subscription-status)，或[监听用户画像更新](unity-check-subscription-status)以使数据自动同步。
+
+## 后续步骤 \{#next-steps\}
+
+恭喜！您已在应用中实现了应用内支付逻辑！祝您的应用变现一切顺利！
+
+为了从 Adapty 获得更多价值，您可以探索以下主题：
+- [**测试**](troubleshooting-test-purchases)：确保一切按预期运行
+- [**用户引导**](onboardings)：通过用户引导吸引用户并提高留存率
+- [**集成**](configuration)：只需一行代码即可与营销归因和分析服务集成
+- [**设置自定义用户画像属性**](unity-setting-user-attributes)：为用户画像添加自定义属性并创建市场细分，以便启动 A/B 测试或向不同用户展示不同的付费墙
