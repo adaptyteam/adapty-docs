@@ -1,0 +1,132 @@
+---
+title: "在 Unity SDK 中获取远程配置付费墙的付费墙和产品"
+description: "在 Adapty Unity SDK 中获取付费墙和产品，以提升用户变现效果。"
+metadataTitle: "获取付费墙与产品 | Unity SDK | Adapty 文档"
+keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'Unity']
+displayed_sidebar: sdkunity
+rank: 70
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md'; 
+
+在展示远程配置和自定义付费墙之前，您需要先获取相关信息。请注意，本主题涉及远程配置和自定义付费墙。如需获取付费墙编辑工具自定义付费墙的指导，请参阅[获取付费墙编辑工具付费墙及其配置](unity-get-pb-paywalls)。
+
+<SampleApp />
+
+<details>
+   <summary>在移动应用中开始获取付费墙和产品之前（点击展开）</summary>
+
+   1. 在 Adapty 看板中[创建您的产品](create-product)。
+
+2. 在 Adapty 看板中[创建付费墙并将产品添加到付费墙中](create-paywall)。
+
+3. 在 Adapty 看板中[创建版位并将付费墙添加到版位中](create-placement)。
+
+4. 在您的移动应用中[安装 Adapty SDK](sdk-installation-unity)。
+</details>
+
+## 获取付费墙信息 \{#fetch-paywall-information\}
+
+在 Adapty 中，[产品](product)是 App Store 和 Google Play 产品的组合。这些跨平台产品被集成到付费墙中，使您能够在特定的移动应用版位中展示它们。
+
+要展示产品，您需要使用 `getPaywall` 方法从某个[版位](placements)中获取[付费墙](paywalls)。
+
+:::important
+**不要硬编码产品 ID。** 您唯一应该硬编码的是版位 ID。付费墙是远程配置的，因此产品数量和可用优惠随时可能发生变化。您的应用必须动态处理这些变化——如果今天付费墙返回两个产品，明天返回三个，则应显示所有产品而无需修改代码。
+:::
+
+```csharp showLineNumbers
+Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
+  if(error != null) {
+    // handle the error
+    return;
+  }
+  
+  // paywall - the resulting object
+});
+```
+
+| 参数 | 是否必需 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必需 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为由一个或多个子标签组成的语言代码，子标签之间用减号（**-**）分隔。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言环境代码及推荐使用方式的更多信息，请参阅[本地化与语言环境代码](unity-localizations-and-locale-codes)。</p> |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 将尝试从服务器加载数据，若失败则返回缓存数据。我们推荐此方式，因为它可确保用户始终获取最新数据。</p><p></p><p>但是，如果您认为用户的网络连接不稳定，可以考虑使用 `.returnCacheDataElseLoad`，在缓存数据存在时返回缓存数据。在这种情况下，用户可能无法获取绝对最新的数据，但无论网络状况如何，他们都会获得更快的加载速度。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍然有效，只有在应用卸载重装或手动清理时才会被清除。</p><p></p><p>Adapty SDK 将付费墙存储在两个层级中：上述定期更新的缓存和[备用付费墙](unity-use-fallback-paywalls)。我们还使用 CDN 加速付费墙的获取，并在 CDN 不可用时使用独立的备用服务器。该系统旨在确保您始终获得最新版本的付费墙，同时即使在网络连接稀缺的情况下也能保证可靠性。</p> |
+| **loadTimeout** | 默认值：5 秒 | <p>该值限制此方法的超时时间。若达到超时时间，将返回缓存数据或本地备用数据。</p><p></p><p>请注意，在极少数情况下，此方法的超时时间可能略晚于 `loadTimeout` 中指定的时间，因为该操作在底层可能包含多个不同的请求。</p> |
+
+不要硬编码产品 ID！由于付费墙是远程配置的，可用产品、产品数量以及特殊优惠（如免费试用）可能随时发生变化。请确保您的代码能够处理这些情况。  
+例如，如果您最初获取到 2 个产品，您的应用应显示这 2 个产品。但如果您后来获取到 3 个产品，您的应用应显示所有 3 个产品，而无需修改任何代码。唯一需要硬编码的是版位 ID。
+
+响应参数：
+
+| 参数 | 描述 |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | 一个 [`AdaptyPaywall`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall.html) 对象，包含：产品 ID 列表、付费墙标识符、远程配置及其他多个属性。 |
+
+## 获取产品 \{#fetch-products\}
+
+获取付费墙后，您可以查询与之对应的产品数组：
+
+```csharp showLineNumbers
+Adapty.GetPaywallProducts(paywall, (products, error) => {
+  if(error != null) {
+    // handle the error
+    return;
+  }
+  
+  // products - the requested products array
+});
+```
+
+响应参数：
+
+| 参数 | 描述 |
+| :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Products  | [`AdaptyPaywallProduct`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall_product.html) 对象列表，包含：产品标识符、产品名称、价格、货币、订阅时长及其他多个属性。 |
+
+在实现自定义付费墙设计时，您可能需要访问 [`AdaptyPaywallProduct`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall_product.html) 对象中的这些属性。以下列出了最常用的属性，但请参阅链接文档以获取所有可用属性的完整详情。
+
+| 属性 | 描述 |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Title** | 要显示产品标题，请使用 `product.LocalizedTitle`。请注意，本地化基于用户在商店所选的国家/地区，而非设备本身的语言环境。 |
+| **Price** | 要显示本地化的价格，请使用 `product.Price.LocalizedString`。此本地化基于设备的语言环境信息。您也可以通过 `product.Price.Amount` 以数字形式访问价格，该值将以本地货币提供。要获取对应的货币符号，请使用 `product.Price.CurrencySymbol`。 |
+| **Subscription Period** | 要显示订阅周期（如周、月、年等），请使用 `product.Subscription?.LocalizedPeriod`。此本地化基于设备语言环境。要以编程方式获取订阅周期，请使用 `product.Subscription?.Period`。从中您可以访问 `Unit` 枚举以获取时长（即 `AdaptySubscriptionPeriodUnit.Day`、`AdaptySubscriptionPeriodUnit.Week`、`AdaptySubscriptionPeriodUnit.Month`、`AdaptySubscriptionPeriodUnit.Year` 或 `AdaptySubscriptionPeriodUnit.Unknown`）。`NumberOfUnits` 值将为您提供周期单位的数量。例如，对于季度订阅，Unit 属性中显示 `AdaptySubscriptionPeriodUnit.Month`，NumberOfUnits 属性中显示 `3`。 |
+| **Introductory Offer** | 要显示徽章或其他指示符以表明订阅包含新用户优惠，请查看 `product.Subscription?.Offer?.Phases` 属性。这是一个最多包含两个折扣阶段的列表：免费试用阶段和新用户优惠价格阶段。每个阶段对象包含以下有用属性：<br/>• `PaymentMode`：枚举值，包括 `AdaptyPaymentMode.FreeTrial`、`AdaptyPaymentMode.PayAsYouGo`、`AdaptyPaymentMode.PayUpFront` 和 `AdaptyPaymentMode.Unknown`。免费试用为 `AdaptyPaymentMode.FreeTrial` 类型。<br/>• `Price`：折扣价格（数字形式）。对于免费试用，此处值为 `0`。<br/>• `LocalizedNumberOfPeriods`：使用设备语言环境本地化的字符串，描述优惠的时长。例如，三天试用优惠在此字段显示为 `"3 days"`。<br/>• `SubscriptionPeriod`：或者，您可以通过此属性获取优惠周期的具体详情，其使用方式与前一节描述的相同。<br/>• `LocalizedSubscriptionPeriod`：针对用户语言环境格式化的折扣订阅周期。 |
+
+## 使用默认目标受众付费墙加速付费墙获取 \{#speed-up-paywall-fetching-with-default-audience-paywall\}
+
+通常情况下，付费墙几乎可以即时获取，因此您无需担心加速此过程。但是，如果您拥有大量目标受众和付费墙，且用户的网络连接较弱，获取付费墙可能需要比预期更长的时间。在这种情况下，您可能希望显示默认付费墙，以确保流畅的用户体验，而不是完全不显示付费墙。
+
+为解决这一问题，您可以使用 `GetPaywallForDefaultAudience` 方法，该方法为**所有用户**目标受众获取指定版位的付费墙。但是，请务必了解，推荐的方式是通过 `getPaywall` 方法获取付费墙，详见上方[获取付费墙](#fetch-paywall)部分。
+
+:::warning
+请考虑使用 `GetPaywall` 而非 `GetPaywallForDefaultAudience`，因为后者有以下重要限制：
+
+- **兼容性问题**：在支持多个应用版本时可能产生问题，需要向后兼容的设计，或接受旧版本可能显示不正确的情况。
+- **无个性化**：仅显示"所有用户"目标受众的内容，无法根据国家/地区、归因或自定义属性进行定向。
+
+如果对于您的使用场景，更快的获取速度超过了这些缺点，请按以下方式使用 `GetPaywallForDefaultAudience`。否则，请按[上述](#fetch-paywall)描述使用 `GetPaywall`。
+:::
+
+```csharp showLineNumbers
+Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
+  if(error != null) {
+    // handle the error
+    return;
+  }
+  
+  // paywall - the resulting object
+});
+```
+
+参数：
+
+| 参数 | 是否必需 | 描述 |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | 必需 | 所需[版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>付费墙本地化的标识符。该参数应为由一个或两个子标签组成的语言代码，子标签之间用减号（**-**）分隔。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p> |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 将尝试从服务器加载数据，若失败则返回缓存数据。我们推荐此选项，因为它可确保用户始终获取最新数据。</p><p></p><p>但是，如果您认为用户的网络连接不稳定，可以考虑使用 `.returnCacheDataElseLoad`，在缓存数据存在时返回缓存数据。在这种情况下，用户可能无法获取绝对最新的数据，但无论网络状况如何，他们都会获得更快的加载速度。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍然有效，只有在应用卸载重装或手动清理时才会被清除。</p><p></p><p>Adapty SDK 在本地将付费墙存储在两个层级中：上述定期更新的缓存和备用付费墙。我们还使用 CDN 加速付费墙的获取，并在 CDN 不可用时使用独立的备用服务器。该系统旨在确保您始终获得最新版本的付费墙，同时即使在网络连接稀缺的情况下也能保证可靠性。</p> |
