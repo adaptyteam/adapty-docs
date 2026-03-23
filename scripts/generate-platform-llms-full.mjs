@@ -53,7 +53,10 @@ function stripContent(content, reusableComponents) {
     // 1. Remove imports
     processed = processed.replace(/^import\s+.*?;?\s*$/gm, '');
 
-    // 2. Remove Zoom and ZoomImage tags
+    // 2. Remove inline icon directives (description is in surrounding text)
+    processed = processed.replace(/ ?:icon\[[^\]]+\]/g, '');
+
+    // 3. Remove Zoom and ZoomImage tags
     processed = processed.replace(/<ZoomImage\s+[^>]*\/>/g, '');
     processed = processed.replace(/<Zoom>(.*?)<\/Zoom>/gs, '$1');
 
