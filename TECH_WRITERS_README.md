@@ -156,14 +156,27 @@ bullet lists, and other content here.
 * Setting two
 * Setting three
 
-## Next heading (clears the float automatically)
+### This subsection heading does NOT clear the float
+
+More text still flows beside the image.
+
+## Next same-level heading (clears the float automatically)
 ```
+
+**Float clearing rules:**
+
+The float is automatically cleared (text stops flowing beside the image) before:
+
+1. **A heading at the same or higher level** as the heading that precedes the float. For example, if the float follows an `##` heading, only the next `##` or `#` heading clears it. Any `###` subheadings within the section continue to flow beside the image.
+2. **A subsection that contains an image or a table.** If a `###` subsection after the float contains a `ZoomImage` (floating or not) or a markdown table, the float clears before that subsection heading, because these elements need full width.
+3. **A standalone image or table** that appears directly after the float (not inside a subsection).
 
 **Guidelines:**
 - Use for narrow images (300-400px) with enough adjacent text (at least 4-6 lines) to fill the space beside the image
 - Avoid for wide screenshots
 - Avoid when there is very little text before the next heading, as it creates awkward whitespace
 - On mobile (<768px), the image automatically stacks vertically at full width
+- Callouts (`:::note`, `:::tip`, etc.) inside a float section shrink to fit the available space beside the image instead of wrapping around it
 
 ### 2. Tabs - Tabbed content
 

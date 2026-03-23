@@ -18,6 +18,7 @@ import { remarkTransformLinks } from './src/plugins/remark-transform-links.mjs';
 import { remarkStripImports } from './src/plugins/remark-strip-imports.mjs';
 import { remarkStripHighlightComments } from './src/plugins/remark-strip-highlight-comments.mjs';
 import { remarkInlineIcon } from './src/plugins/remark-inline-icon.mjs';
+import { remarkFloatClear } from './src/plugins/remark-float-clear.mjs';
 
 // https://astro.build/config
 export default defineConfig({
@@ -56,7 +57,7 @@ export default defineConfig({
   },
 
   markdown: {
-    remarkPlugins: [remarkHeadingId, remarkDirective, remarkInlineIcon, remarkAside, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+    remarkPlugins: [remarkHeadingId, remarkDirective, remarkInlineIcon, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
     rehypePlugins: [rehypeSlug],
     shikiConfig: {
       theme: 'github-light',
@@ -88,7 +89,7 @@ export default defineConfig({
     react(),
     sitemap(),
     mdx({
-      remarkPlugins: [remarkHeadingId, remarkDirective, remarkInlineIcon, remarkAside, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+      remarkPlugins: [remarkHeadingId, remarkDirective, remarkInlineIcon, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
       rehypePlugins: [rehypeSlug],
       shikiConfig: {
         theme: 'github-light',
