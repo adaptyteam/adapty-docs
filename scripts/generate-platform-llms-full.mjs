@@ -57,6 +57,10 @@ function stripContent(content, reusableComponents) {
     processed = processed.replace(/<ZoomImage\s+[^>]*\/>/g, '');
     processed = processed.replace(/<Zoom>(.*?)<\/Zoom>/gs, '$1');
 
+    // Replace Inline icon component with its alt text: <Inline id="..." alt="Edit" ... /> → Edit
+    processed = processed.replace(/<Inline\s+[^>]*alt="([^"]*)"[^>]*\/>/g, '$1');
+    processed = processed.replace(/<Inline\s+[^>]*\/>/g, '');
+
     // 3. Inline Reusable Components
     for (const [name, componentContent] of Object.entries(reusableComponents)) {
         const regex = new RegExp(`<${name}\\s*\\/>`, 'g');
