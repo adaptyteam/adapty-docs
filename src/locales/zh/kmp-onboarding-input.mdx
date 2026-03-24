@@ -1,0 +1,295 @@
+---
+title: "在 Kotlin Multiplatform SDK 中处理来自用户引导的数据"
+description: "使用 Adapty SDK 在您的 Kotlin Multiplatform 应用中保存并使用来自用户引导的数据。"
+metadataTitle: "用户引导 | Kotlin Multiplatform SDK | Adapty 文档"
+---
+import Details from '@site/src/components/Details';
+import ZoomImage from '@site/src/components/ZoomImage';
+
+当您的用户回答测验问题或在输入框中输入数据时，`onboardingViewOnStateUpdatedAction` 方法将被调用。您可以在代码中保存或处理字段类型。
+
+例如：
+
+```kotlin
+import com.adapty.exampleapp.AppLogger
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyOnboardingsDatePickerParams
+import com.adapty.kmp.models.AdaptyOnboardingsInputParams
+import com.adapty.kmp.models.AdaptyOnboardingsMultiSelectParams
+import com.adapty.kmp.models.AdaptyOnboardingsSelectParams
+import com.adapty.kmp.models.AdaptyOnboardingsStateUpdatedParams
+import com.adapty.kmp.models.AdaptyOnboardingsTextInput
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnStateUpdatedAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        elementId: String,
+        params: AdaptyOnboardingsStateUpdatedParams
+    ) {
+        // Store user preferences or responses
+        when (params) {
+            is AdaptyOnboardingsSelectParams -> {
+                // Handle single selection
+                val id = params.id
+                val value = params.value
+                val label = params.label
+                AppLogger.d("Selected option: $label (id: $id, value: $value)")
+            }
+            is AdaptyOnboardingsMultiSelectParams -> {
+                // Handle multiple selections
+            }
+            is AdaptyOnboardingsInputParams -> {
+                // Handle text input
+            }
+            is AdaptyOnboardingsDatePickerParams -> {
+                // Handle date selection
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+<Details>
+    <summary>已保存数据示例（实际实现中格式可能有所不同）</summary>
+
+    ```javascript
+    // Example of a saved select action
+    {
+        "id": "onboarding_on_state_updated_action",
+        "view": { /* AdaptyUI.OnboardingView object */ },
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "preferences_screen",
+        "screen_index": 1,
+        "total_screens": 3
+    },
+        "action": {
+        "element_id": "preference_selector",
+        "element_type": "select",
+        "value": {
+        "id": "option_1",
+        "value": "premium",
+        "label": "Premium Plan"
+    }
+    }
+    }
+
+    // Example of a saved multi-select action
+    {
+        "id": "onboarding_on_state_updated_action",
+        "view": { /* AdaptyUI.OnboardingView object */ },
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 3
+    },
+        "action": {
+        "element_id": "interests_selector",
+        "element_type": "multi_select",
+        "value": [
+    {
+        "id": "interest_1",
+        "value": "sports",
+        "label": "Sports"
+    },
+    {
+        "id": "interest_2",
+        "value": "music",
+        "label": "Music"
+    }
+        ]
+    }
+    }
+
+    // Example of a saved input action
+    {
+        "id": "onboarding_on_state_updated_action",
+        "view": { /* AdaptyUI.OnboardingView object */ },
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 0,
+        "total_screens": 3
+    },
+        "action": {
+        "element_id": "name_input",
+        "element_type": "input",
+        "value": {
+        "type": "text",
+        "value": "John Doe"
+    }
+    }
+    }
+
+    // Example of a saved date picker action
+    {
+        "id": "onboarding_on_state_updated_action",
+        "view": { /* AdaptyUI.OnboardingView object */ },
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 0,
+        "total_screens": 3
+    },
+        "action": {
+        "element_id": "birthday_picker",
+        "element_type": "date_picker",
+        "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+    }
+    }
+    }
+    ```
+</Details>
+
+## 使用场景 \{#use-cases\}
+
+### 用数据丰富用户画像 \{#enrich-user-profiles-with-data\}
+
+如果您希望立即将输入数据与用户画像关联，避免重复询问用户相同的信息，您需要在处理操作时将输入数据[更新到用户画像](kmp-setting-user-attributes)中。
+
+例如，您让用户在 ID 为 `name` 的文本框中输入姓名，并希望将该字段的值设置为用户的名字；同时，您让用户在 `email` 字段中输入电子邮件。在您的应用代码中，实现如下：
+
+```kotlin
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.AdaptyUI
+import com.adapty.exampleapp.AppLogger
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyOnboardingsEmailInput
+import com.adapty.kmp.models.AdaptyOnboardingsInputParams
+import com.adapty.kmp.models.AdaptyOnboardingsStateUpdatedParams
+import com.adapty.kmp.models.AdaptyOnboardingsTextInput
+import com.adapty.kmp.models.AdaptyProfileParameters
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnStateUpdatedAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        elementId: String,
+        params: AdaptyOnboardingsStateUpdatedParams
+    ) {
+        // Store user preferences or responses
+        when (params) {
+            is AdaptyOnboardingsInputParams -> {
+                // Handle text input
+                val builder = AdaptyProfileParameters.Builder()
+
+                // Map elementId to appropriate profile field
+                when (elementId) {
+                    "name" -> {
+                        when (val input = params.input) {
+                            is AdaptyOnboardingsTextInput -> {
+                                builder.withFirstName(input.value)
+                            }
+                        }
+                    }
+                    "email" -> {
+                        when (val input = params.input) {
+                            is AdaptyOnboardingsEmailInput -> {
+                                builder.withEmail(input.value)
+                            }
+                        }
+                    }
+                }
+
+                // Update profile asynchronously
+                mainUiScope.launch {
+                    val profileParams = builder.build()
+                    val result = Adapty.updateProfile(profileParams)
+                    result.onSuccess { profile ->
+                        // Profile updated successfully
+                        AppLogger.d("Profile updated: ${profile.email}")
+                    }.onError { error ->
+                        // Handle the error
+                        AppLogger.e("Failed to update profile: ${error.message}")
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+### 根据答案自定义付费墙 \{#customize-paywalls-based-on-answers\}
+
+通过在用户引导中使用测验，您还可以自定义在用户完成引导后向其展示的付费墙。
+
+例如，您可以询问用户的运动经验，并向不同的用户群体展示不同的 CTA 和产品。
+
+1. 在用户引导编辑工具中[添加测验](onboarding-quizzes)，并为其选项分配有意义的 ID。
+
+<ZoomImage id="experience.webp" />
+
+2. 根据 ID 处理测验响应，并为用户[设置自定义属性](kmp-setting-user-attributes)。
+
+```kotlin
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.AdaptyUI
+import com.adapty.exampleapp.AppLogger
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyOnboardingsSelectParams
+import com.adapty.kmp.models.AdaptyOnboardingsStateUpdatedParams
+import com.adapty.kmp.models.AdaptyProfileParameters
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnStateUpdatedAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        elementId: String,
+        params: AdaptyOnboardingsStateUpdatedParams
+    ) {
+        // Handle quiz responses and set custom attributes
+        when (params) {
+            is AdaptyOnboardingsSelectParams -> {
+                // Handle quiz selection
+                val builder = AdaptyProfileParameters.Builder()
+
+                // Map quiz responses to custom attributes
+                when (elementId) {
+                    "experience" -> {
+                        // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+                        builder.withCustomAttribute("experience", params.value)
+                    }
+                }
+
+                // Update profile asynchronously
+                mainUiScope.launch {
+                    val profileParams = builder.build()
+                    val result = Adapty.updateProfile(profileParams)
+                    result.onSuccess { profile ->
+                        // Profile updated successfully
+                        AppLogger.d("Custom attribute 'experience' set to: ${params.value}")
+                    }.onError { error ->
+                        // Handle the error
+                        AppLogger.e("Failed to update profile: ${error.message}")
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+3. 为每个自定义属性值[创建市场细分](segments)。
+4. 创建一个[版位](placements)，并为您创建的每个市场细分添加[目标受众](audience)。
+5. 在您的应用代码中为该版位[展示付费墙](kmp-paywalls)。如果您的用户引导中有一个按钮用于打开付费墙，请将付费墙代码实现为[对该按钮操作的响应](kmp-handling-onboarding-events#opening-a-paywall)。

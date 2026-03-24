@@ -1,0 +1,551 @@
+---
+title: "将 Adapty React Native SDK 迁移至 v. 3.3"
+description: "迁移至 Adapty React Native SDK v3.3，以获得更好的性能和新的变现功能。"
+metadataTitle: "迁移至 Adapty React Native SDK v3.3 | Adapty 文档"
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+
+Adapty SDK 3.3.1 是一个主要版本，带来了一些改进，可能需要您执行一些迁移步骤。
+
+1. 升级至 Adapty SDK v3.3.x。
+2. 更新模型。
+3. 移除 `getProductsIntroductoryOfferEligibility` 方法。
+4. 更新购买流程。
+5. 更新付费墙编辑工具付费墙的展示方式。
+6. 修改开发者自定义计时器的实现方式。
+7. 更新付费墙编辑工具购买事件的处理方式。
+8. 更新付费墙编辑工具自定义操作事件的处理方式。
+9. 修改 `onProductSelected` 回调。
+10. 从 `updateProfile` 方法中移除第三方集成参数。
+11. 更新 Adjust、AirBridge、Amplitude、AppMetrica、Appsflyer、Branch、Facebook Ads、Firebase 和 Google Analytics、Mixpanel、OneSignal 以及 Pushwoosh 的集成配置。
+12. 更新 Observer 模式的实现方式。
+
+## 将 Adapty React Native SDK 升级至 3.3.x \{#upgrade-adapty-react-native-sdk-to-33x\}
+
+在 3.3.1 版本之前，`react-native-adapty` SDK 是 Adapty 在您的应用中正常运行所必需的核心 SDK。`@adapty/react-native-ui` SDK 是可选的，仅在您使用 Adapty 付费墙编辑工具时才需要。
+
+从 3.3.1 版本起，`@adapty/react-native-ui` SDK 已被弃用，其功能已合并至 `react-native-adapty` SDK。要升级至 3.3.1 版本，请按以下步骤操作：
+
+1. 将 `react-native-adapty` 包更新至 3.3.1 版本。
+2. 从项目依赖中移除 `@adapty/react-native-ui` 包。
+3. 同步项目依赖以应用更改。
+
+## 模型变更 \{#changes-in-models\}
+
+### 新增模型 \{#new-models\}
+
+1. [AdaptySubscriptionOffer](https://react-native.adapty.io/interfaces/adaptysubscriptionoffer)：
+
+    ```typescript showLineNumbers
+    export interface AdaptySubscriptionOffer {
+      readonly identifier: AdaptySubscriptionOfferId;
+
+      phases: AdaptyDiscountPhase[];
+
+      android?: {
+        offerTags?: string[];
+      };
+    }
+    ```
+
+2. [AdaptySubscriptionOfferId](https://react-native.adapty.io/types/adaptysubscriptionofferid)：
+
+    ```typescript showLineNumbers
+    export type AdaptySubscriptionOfferId =
+      | { id?: string; type: 'introductory'; }
+      | { id: string; type: 'promotional' | 'win_back'; };
+    ```
+
+### 已变更的模型 \{#changed-models\}
+
+1. [AdaptyPaywallProduct](https://react-native.adapty.io/interfaces/adaptypaywallproduct)：
+   
+    - 将 `subscriptionDetails` 属性重命名为 `subscription`。
+      
+      <p> </p>
+      
+     ```diff showLineNumbers
+     -  subscriptionDetails?: AdaptySubscriptionDetails; 
+     +  subscription?: AdaptySubscriptionDetails;
+     ```
+    
+2. [AdaptySubscriptionDetails](https://react-native.adapty.io/interfaces/adaptysubscriptiondetails)：
+
+    - `promotionalOffer` 已被移除。现在促销活动仅在可用时通过 `offer` 属性提供。此时 `offer?.identifier?.type` 的值为 `'promotional'`。
+
+    - `introductoryOfferEligibility` 已被移除（仅当用户符合资格时才返回优惠）。
+
+    - `offerId` 已被移除。优惠 ID 现在存储在 `AdaptySubscriptionOffer.identifier` 中。
+
+    - `offerTags` 已移至 `AdaptySubscriptionOffer.android`。
+      
+      <p> </p>
+
+    ```diff showLineNumbers
+    -  introductoryOffers?: AdaptyDiscountPhase[];
+    +  offer?: AdaptySubscriptionOffer;
+    
+       ios?: {
+    -    promotionalOffer?: AdaptyDiscountPhase;
+         subscriptionGroupIdentifier?: string;
+       };
+    
+       android?: {
+    -    offerId?: string;
+         basePlanId: string;
+    -    introductoryOfferEligibility: OfferEligibility;
+    -    offerTags?: string[];
+         renewalType?: 'prepaid' | 'autorenewable';
+       };
+     }
+    ```
+3. [AdaptyDiscountPhase](https://react-native.adapty.io/interfaces/adaptydiscountphase)：
+   
+    - `identifier` 字段已从 `AdaptyDiscountPhase` 模型中移除。优惠标识符现在存储在 `AdaptySubscriptionOffer.identifier` 中。
+      
+      <p> </p>
+      
+     ```diff showLineNumbers
+     -  ios?: {
+     -    readonly identifier?: string;
+     -  };
+     ```
+
+### 已移除的模型 \{#remove-models\}
+
+1. `AttributionSource`：
+   - 在之前使用 `AttributionSource` 的地方，现在直接使用字符串。
+2. `OfferEligibility`：
+   - 该模型已被移除，因为它不再需要。现在，仅当用户符合资格时才返回优惠。
+
+## 移除 `getProductsIntroductoryOfferEligibility` 方法 \{#remove-getproductsintroductoryoffereligibility-method\}
+
+在 Adapty SDK 3.3.1 之前，产品对象始终包含优惠，即使用户不符合资格也是如此。这需要您在使用优惠之前手动检查资格。
+
+从 3.3.1 版本起，产品对象仅在用户符合资格时才包含优惠。这简化了流程，因为只要存在优惠，即可认为用户符合资格。
+
+## 更新购买流程 \{#update-making-purchase\}
+
+在早期版本中，已取消和待处理的购买被视为错误，并分别返回错误码 `2: 'paymentCancelled'` 和 `25: 'pendingPurchase'`。
+
+从 3.3.1 版本起，已取消和待处理的购买现在被视为成功结果，应相应处理：
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+
+## 更新付费墙编辑工具付费墙的展示方式 \{#update-paywall-builder-paywall-presentation\}
+
+有关更新后的示例，请参阅[在 React Native 中展示新版付费墙编辑工具付费墙](react-native-present-paywalls)文档。
+
+```diff showLineNumbers
+- import { createPaywallView } from '@adapty/react-native-ui';
++ import { createPaywallView } from 'react-native-adapty/dist/ui';
+
+const view = await createPaywallView(paywall);
+
+view.registerEventHandlers(); // handle close press, etc
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+## 更新开发者自定义计时器的实现方式 \{#update-developer-defined-timer-implementation\}
+
+将 `timerInfo` 参数重命名为 `customTimers`：
+
+```diff showLineNumbers
+- let timerInfo = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
++ let customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+ //and then you can pass it to createPaywallView as follows:
+- view = await createPaywallView(paywall, { timerInfo })
++ view = await createPaywallView(paywall, { customTimers })
+```
+
+## 修改付费墙编辑工具购买事件 \{#modify-paywall-builder-purchase-events\}
+
+之前的行为：
+
+- 取消购买会触发 `onPurchaseCancelled` 回调。
+- 待处理购买返回错误码 `25: 'pendingPurchase'`。
+
+现在：
+
+- 两者均由 `onPurchaseCompleted` 回调处理。
+
+#### 迁移步骤： \{#steps-to-migrate\}
+
+1. 移除 `onPurchaseCancelled` 回调。
+2. 移除错误码 `25: 'pendingPurchase'` 的处理逻辑。
+3. 更新 `onPurchaseCompleted` 回调：
+
+```typescript showLineNumbers
+import {createPaywallView} from 'react-native-adapty/dist/ui';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.registerEventHandlers({
+  // ... other optional callbacks
+  onPurchaseCompleted(purchaseResult, product) {
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+// highlight-start
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+// highlight-end
+    }
+// highlight-start
+    return purchaseResult.type !== 'user_cancelled';
+// highlight-end
+  },
+});
+```
+
+## 修改付费墙编辑工具自定义操作事件 \{#modify-paywall-builder-custom-action-events\}
+
+已移除的回调：
+
+-  `onAction`
+-  `onCustomEvent`
+
+新增的回调：
+
+- 新增 `onCustomAction(actionId)` 回调，用于处理自定义操作。
+
+## 修改 `onProductSelected` 回调 \{#modify-onproductselected-callback\}
+
+之前，`onProductSelected` 需要传入 `product` 对象。现在改为接受字符串类型的 `productId`。
+
+## 从 `updateProfile` 方法中移除第三方集成参数 \{#remove-third-party-integration-parameters-from-updateprofile-method\}
+
+第三方集成标识符现在通过 `setIntegrationIdentifier` 方法进行设置。`updateProfile` 方法不再接受这些参数。
+
+## 更新第三方集成 SDK 配置 \{#update-third-party-integration-sdk-configuration\}
+
+为确保集成能够与 Adapty React Native SDK 3.3.1 及更高版本正常工作，请按照以下各节的说明更新您的 SDK 配置。
+
+此外，如果您之前使用 `AttributionSource` 获取归因标识符，请将代码修改为以字符串形式提供所需标识符。
+
+### Adjust \{#adjust\}
+
+按如下方式更新您的移动应用代码。完整代码示例请参阅 [Adjust 集成的 SDK 配置](adjust#connect-your-app-to-adjust)。
+
+```diff showLineNumbers
+ import { Adjust, AdjustConfig } from "react-native-adjust";
+ import { adapty } from "react-native-adapty";
+
+ var adjustConfig = new AdjustConfig(appToken, environment);
+
+ // Before submiting Adjust config...
+ adjustConfig.setAttributionCallbackListener(attribution => {
+   // Make sure Adapty SDK is activated at this point
+   // You may want to lock this thread awaiting of `activate`
+   adapty.updateAttribution(attribution, "adjust");
+ });
+
+ // ...
+ Adjust.create(adjustConfig);
+
++ Adjust.getAdid((adid) => {
++   if (adid)
++     adapty.setIntegrationIdentifier("adjust_device_id", adid);
++ });
+```
+
+### AirBridge \{#airbridge\}
+
+按如下方式更新您的移动应用代码。完整代码示例请参阅 [AirBridge 集成的 SDK 配置](airbridge#connect-your-app-to-airbridge)。
+
+```diff showLineNumbers
+ import Airbridge from 'airbridge-react-native-sdk';
+ import { adapty } from 'react-native-adapty';
+
+ try {
+   const deviceId = await Airbridge.state.deviceUUID();
+
+-  await adapty.updateProfile({
+-    airbridgeDeviceId: deviceId,
+-  });
++  await adapty.setIntegrationIdentifier("airbridge_device_id", deviceId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### Amplitude \{#amplitude\}
+
+按如下方式更新您的移动应用代码。完整代码示例请参阅 [Amplitude 集成的 SDK 配置](amplitude#sdk-configuration)。
+
+```diff showLineNumbers
+  import { adapty } from 'react-native-adapty';
+
+ try {
+-   await adapty.updateProfile({
+-     amplitudeDeviceId: deviceId,
+-     amplitudeUserId: userId,
+-   });
++   await adapty.setIntegrationIdentifier("amplitude_device_id", deviceId);
++   await adapty.setIntegrationIdentifier("amplitude_user_id", userId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### AppMetrica \{#appmetrica\}
+
+按如下方式更新您的移动应用代码。完整代码示例请参阅 [AppMetrica 集成的 SDK 配置](appmetrica#sdk-configuration)。
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import AppMetrica, { DEVICE_ID_KEY, StartupParams, StartupParamsReason } from '@appmetrica/react-native-analytics';
+
+ // ...
+ const startupParamsCallback = async (
+   params?: StartupParams,
+   reason?: StartupParamsReason
+ ) => {
+   const deviceId = params?.deviceId
+   if (deviceId) {
+     try {
+-       await adapty.updateProfile({
+-         appmetricaProfileId: 'YOUR_ADAPTY_CUSTOMER_USER_ID',
+-         appmetricaDeviceId: deviceId,
+-       });
++       await adapty.setIntegrationIdentifier("appmetrica_profile_id", 'YOUR_ADAPTY_CUSTOMER_USER_ID');
++       await adapty.setIntegrationIdentifier("appmetrica_device_id", deviceId);
+     } catch (error) {
+       // handle `AdaptyError`
+     }
+   }
+ }
+
+ AppMetrica.requestStartupParams(startupParamsCallback, [DEVICE_ID_KEY])
+```
+
+### AppsFlyer \{#appsflyer\}
+
+按如下方式更新您的移动应用代码。完整代码示例请参阅 [AppsFlyer 集成的 SDK 配置](appsflyer#connect-your-app-to-appsflyer)。
+
+```diff showLineNumbers
+ import { adapty, AttributionSource } from 'react-native-adapty';
+ import appsFlyer from 'react-native-appsflyer';
+
+ appsFlyer.onInstallConversionData(installData => {
+     try {
+-        const networkUserId = appsFlyer.getAppsFlyerUID();
+-        adapty.updateAttribution(installData, AttributionSource.AppsFlyer, networkUserId);
++        const uid = appsFlyer.getAppsFlyerUID();
++        adapty.setIntegrationIdentifier("appsflyer_id", uid);
++        adapty.updateAttribution(installData, "appsflyer");
+     } catch (error) {
+         // handle the error
+     }
+ });
+
+ // ...
+ appsFlyer.initSdk(/*...*/);
+```
+
+### Branch \{#branch\}
+
+按如下方式更新您的移动应用代码。完整代码示例请参阅 [Branch 集成的 SDK 配置](branch#connect-your-app-to-branch)。
+
+```diff showLineNumbers
+ import { adapty, AttributionSource } from 'react-native-adapty';
+ import branch from 'react-native-branch';
+
+ branch.subscribe({
+   enComplete: ({
+     params,
+   }) => {
+-    adapty.updateAttribution(params, AttributionSource.Branch);
++    adapty.updateAttribution(params, "branch");
+   },
+ });
+```
+
+### Facebook Ads \{#facebook-ads\}
+
+按如下方式更新您的移动应用代码。完整代码示例请参阅 [Facebook Ads 集成的 SDK 配置](facebook-ads#connect-your-app-to-facebook-ads)。
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import { AppEventsLogger } from 'react-native-fbsdk-next';
+
+ try {
+   const anonymousId = await AppEventsLogger.getAnonymousID();
+
+-  await adapty.updateProfile({
+-    facebookAnonymousId: anonymousId,
+-  });
++  await adapty.setIntegrationIdentifier("facebook_anonymous_id", anonymousId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### Firebase 和 Google Analytics \{#firebase-and-google-analytics\}
+
+按如下方式更新您的移动应用代码。完整代码示例请参阅 [Firebase 和 Google Analytics 集成的 SDK 配置](firebase-and-google-analytics)。
+
+```diff showLineNumbers
+ import analytics from '@react-native-firebase/analytics';
+ import { adapty } from 'react-native-adapty';
+
+ try {
+   const appInstanceId = await analytics().getAppInstanceId();
+
+-   await adapty.updateProfile({
+-     firebaseAppInstanceId: appInstanceId,
+-   });
++   await adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### Mixpanel \{#mixpanel\}
+
+按如下方式更新您的移动应用代码。完整代码示例请参阅 [Mixpanel 集成的 SDK 配置](mixpanel#sdk-configuration)。
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import { Mixpanel } from 'mixpanel-react-native';
+
+ // ...
+ try {
+-   await adapty.updateProfile({
+-     mixpanelUserId: mixpanelUserId,
+-   });
++   await adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelUserId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### OneSignal \{#onesignal\}
+
+按如下方式更新您的移动应用代码。完整代码示例请参阅 [OneSignal 集成的 SDK 配置](onesignal#sdk-configuration)。
+
+<Tabs groupId="current-os" queryString> 
+
+<TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import OneSignal from 'react-native-onesignal';
+
+ OneSignal.User.pushSubscription.addEventListener('change', (subscription) => {
+   const subscriptionId = subscription.current.id;
+
+   if (subscriptionId) {
+-    adapty.updateProfile({
+-      oneSignalSubscriptionId: subscriptionId,
+-    });
++    adapty.setIntegrationIdentifier("one_signal_subscription_id", subscriptionId);
+   }
+ });
+```
+
+ </TabItem> 
+
+<TabItem value="pre-v5" label="OneSignal SDK v. up to 4.x (legacy)" default> 
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import OneSignal from 'react-native-onesignal';
+
+ OneSignal.addSubscriptionObserver(event => {
+   const playerId = event.to.userId;
+   
+-  adapty.updateProfile({
+-    oneSignalPlayerId: playerId,
+-  });
++  adapty.setIntegrationIdentifier("one_signal_player_id", playerId);
+ });
+```
+
+ </TabItem> 
+
+</Tabs>
+
+### Pushwoosh \{#pushwoosh\}
+
+按如下方式更新您的移动应用代码。完整代码示例请参阅 [Pushwoosh 集成的 SDK 配置](pushwoosh#sdk-configuration)。
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import Pushwoosh from 'pushwoosh-react-native-plugin';
+
+ // ...
+ try {
+-  await adapty.updateProfile({
+-    pushwooshHWID: hwid,
+-  });
++  await adapty.setIntegrationIdentifier("pushwoosh_hwid", hwid);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+## 更新 Observer 模式的实现方式 \{#update-observer-mode-implementation\}
+
+更新付费墙与交易的关联方式。之前，您使用 `setVariationId` 方法来分配 `variationId`。现在，您可以在使用新的 `reportTransaction` 方法记录交易时直接包含 `variationId`。请查看[在 Observer 模式下将付费墙与购买交易关联](report-transactions-observer-mode-react-native)中的完整代码示例。
+
+:::warning
+
+请务必使用 `reportTransaction` 方法记录交易。跳过此步骤意味着 Adapty 将无法识别该交易，不会授予访问等级，不会将其纳入分析统计，也不会将其发送至集成渠道。此步骤至关重要！
+
+:::
+
+:::note
+
+请注意，`reportTransaction` 方法的参数顺序与 `setVariationId` 方法的参数顺序不同。
+
+:::
+
+```diff showLineNumbers
+  const variationId = paywall.variationId;
+
+ try {
+-    await adapty.setVariationId(variationId, transactionId);
++    await adapty.reportTransaction(transactionId, variationId);
+ } catch (error) {
+     // handle the `AdaptyError`
+ }
+
+```

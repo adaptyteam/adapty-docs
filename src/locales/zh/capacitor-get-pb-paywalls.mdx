@@ -1,0 +1,179 @@
+---
+title: "在 Capacitor SDK 中获取付费墙编辑工具付费墙及其配置"
+description: "了解如何在 Adapty 中为您的 Capacitor 应用检索付费墙编辑工具付费墙，以更好地控制订阅。"
+metadataTitle: "在 Adapty 中检索付费墙编辑工具付费墙 | Adapty 文档"
+displayed_sidebar: sdkcapacitor
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+---
+
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+
+在 Adapty 看板中[使用新版付费墙编辑工具设计好付费墙的视觉部分](adapty-paywall-builder)之后，您可以在移动应用中展示它。此过程的第一步是获取与版位关联的付费墙及其视图配置，具体如下所述。
+
+请注意，本主题涉及通过付费墙编辑工具自定义的付费墙。有关获取远程配置付费墙的指南，请参阅[在移动应用中获取远程配置付费墙的付费墙和产品](fetch-paywalls-and-products-capacitor)主题。
+
+<details>
+   <summary>在移动应用中展示付费墙之前（点击展开）</summary>
+
+1. 在 Adapty 看板中[创建产品](create-product)。
+2. 在 Adapty 看板中[创建付费墙并将产品添加到其中](create-paywall)。
+3. 在 Adapty 看板中[创建版位并将付费墙添加到其中](create-placement)。
+4. 在移动应用中安装 [Adapty SDK](sdk-installation-capacitor)。
+</details>
+
+## 获取使用付费墙编辑工具设计的付费墙 \{#fetch-paywall-designed-with-paywall-builder\}
+
+如果您[使用付费墙编辑工具设计了付费墙](adapty-paywall-builder)，则无需在移动应用代码中手动渲染即可向用户展示。此类付费墙包含应展示的内容及其展示方式。不过，您仍需通过版位获取其 ID、视图配置，然后在移动应用中呈现。
+
+为确保最佳性能，务必尽早检索付费墙及其[视图配置](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)，以便在向用户展示之前有足够的时间下载图片。
+
+使用 `getPaywall` 方法获取付费墙：
+
+```typescript showLineNumbers
+try {
+  const paywall = await adapty.getPaywall({
+    placementId: 'YOUR_PLACEMENT_ID',
+    locale: 'en',
+  });
+  // the requested paywall
+} catch (error) {
+  // handle the error
+}
+```
+
+参数：
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | 目标[版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-paywall-locale-in-adapty-paywall-builder)的标识符。此参数应为语言代码，由一个或两个用减号（**-**）分隔的子标签组成。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p>有关区域设置代码及推荐使用方式的更多信息，请参阅[本地化与区域设置代码](localizations-and-locale-codes)。</p> |
+| **params** | 可选 | 获取付费墙的附加参数。 |
+
+**不要硬编码产品 ID。** 唯一需要硬编码的 ID 是版位 ID。付费墙是远程配置的，因此产品数量和可用优惠随时可能变化。您的应用必须动态处理这些变化——如果付费墙今天返回两个产品，明天返回三个，则应全部显示，无需修改代码。
+
+响应参数：
+
+| 参数 | 描述 |
+| :-------- |:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | 一个 [`AdaptyPaywall`](https://capacitor.adapty.io/interfaces/adaptypaywall) 对象，包含产品 ID 列表、付费墙标识符、远程配置及其他若干属性。 |
+
+## 获取使用付费墙编辑工具设计的付费墙视图配置 \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+请确保在付费墙编辑工具中启用了 **Show on device** 开关。如果未开启此选项，将无法检索到视图配置。
+:::
+
+获取付费墙后，检查其是否包含 `ViewConfiguration`，这表明该付费墙是使用付费墙编辑工具创建的。这将指导您如何展示付费墙。如果存在 `ViewConfiguration`，则将其视为付费墙编辑工具付费墙；否则，[将其作为远程配置付费墙处理](present-remote-config-paywalls-capacitor)。
+
+在 Capacitor SDK 中，可直接调用 `createPaywallView` 方法，无需提前手动获取视图配置。
+
+:::warning
+`createPaywallView` 方法的返回结果只能使用一次。如需再次使用，请重新调用 `createPaywallView` 方法。
+:::
+
+```typescript showLineNumbers
+import { adapty, createPaywallView } from '@adapty/capacitor';
+
+if (paywall.hasViewConfiguration) {
+  try {
+    const view = await createPaywallView(paywall);
+  } catch (error) {
+    // handle the error
+  }
+} else {
+  // use your custom logic
+}
+```
+
+参数：
+
+| 参数 | 是否必填 | 描述 |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **paywall** | 必填 | 用于获取目标付费墙控制器的 `AdaptyPaywall` 对象。 |
+| **customTags** | 可选 | 定义自定义标签及其解析值的字典。自定义标签作为付费墙内容中的占位符，动态替换为特定字符串，以实现付费墙内的个性化内容。详情请参阅[付费墙编辑工具中的自定义标签](custom-tags-in-paywall-builder)主题。 |
+| **prefetchProducts** | 可选 | 启用后可优化产品在屏幕上的显示时机。设为 `true` 时，AdaptyUI 将自动获取所需产品。默认值：`false`。 |
+
+:::note
+如果您使用多种语言，请了解如何添加[付费墙编辑工具本地化](add-paywall-locale-in-adapty-paywall-builder)以及如何正确使用区域设置代码（[点击查看](capacitor-localizations-and-locale-codes)）。
+:::
+
+获取视图后，[展示付费墙](capacitor-present-paywalls)。
+
+## 为默认目标受众获取付费墙以加快获取速度 \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+通常情况下，付费墙几乎可以立即获取，无需担心加速问题。但是，如果您拥有大量目标受众和付费墙，且用户网络连接较弱，付费墙的获取时间可能比预期更长。在这种情况下，您可能希望显示默认付费墙，以确保流畅的用户体验，而非不显示任何付费墙。
+
+为解决此问题，您可以使用 `getPaywallForDefaultAudience` 方法，该方法为 **All Users** 目标受众获取指定版位的付费墙。但请务必了解，推荐的方式是使用 `getPaywall` 方法获取付费墙，详见上方[获取付费墙信息](#fetch-paywall-designed-with-paywall-builder)部分。
+
+:::warning
+为何推荐使用 `getPaywall`
+
+`getPaywallForDefaultAudience` 方法存在几个明显缺点：
+
+- **潜在的向后兼容性问题**：如果您需要为不同应用版本（当前版本和未来版本）显示不同的付费墙，您要么必须设计支持当前（旧版）的付费墙，要么接受使用当前（旧版）的用户可能遇到付费墙无法渲染的问题。
+- **失去精准定向**：所有用户将看到为 **All Users** 目标受众设计的相同付费墙，这意味着您将失去个性化定向能力（包括基于国家、营销归因或您自定义属性的定向）。
+
+如果您愿意接受这些缺点以换取更快的付费墙获取速度，请按如下方式使用 `getPaywallForDefaultAudience` 方法。否则，请坚持使用[上文](#fetch-paywall-designed-with-paywall-builder)描述的 `getPaywall`。
+:::
+
+```typescript showLineNumbers
+try {
+  const paywall = await adapty.getPaywallForDefaultAudience({
+    placementId: 'YOUR_PLACEMENT_ID',
+    locale: 'en',
+  });
+  // the requested paywall
+} catch (error) {
+  // handle the error
+}
+```
+
+:::note
+`getPaywallForDefaultAudience` 方法从 Capacitor SDK 2.11.2 版本开始可用。
+:::
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。此参数应为语言代码，由一个或多个用减号（**-**）分隔的子标签组成。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关区域设置代码及推荐使用方式的更多信息，请参阅[本地化与区域设置代码](capacitor-localizations-and-locale-codes)。</p> |
+| **params** | 可选 | 获取付费墙的附加参数。 |
+
+## 自定义素材 \{#customize-assets\}
+
+要在付费墙中自定义图片和视频，请实现自定义素材。
+
+主图和视频具有预定义 ID：`hero_image` 和 `hero_video`。在自定义素材包中，您可通过这些 ID 定向对应元素并自定义其行为。
+
+对于其他图片和视频，您需要在 Adapty 看板中[设置自定义 ID](custom-media)。
+
+例如，您可以：
+
+- 向部分用户展示不同的图片或视频。
+- 在远程主图加载时显示本地预览图。
+- 在播放视频前显示预览图。
+
+:::important
+要使用此功能，请将 Adapty Capacitor SDK 更新至 3.8.0 或更高版本。
+:::
+
+以下是通过简单字典提供自定义素材的示例：
+
+```typescript showLineNumbers
+const customAssets: Record<string, AdaptyCustomAsset> = {
+  'custom_image': { type: 'image', relativeAssetPath: 'custom_image.png' },
+  'hero_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'custom_video.mp4' },
+      android: { relativeAssetPath: 'videos/custom_video.mp4' }
+    }
+  }
+};
+
+view = await createPaywallView(paywall, { customAssets });
+```
+
+:::note
+如果未找到某个素材，付费墙将回退到其默认外观。
+:::

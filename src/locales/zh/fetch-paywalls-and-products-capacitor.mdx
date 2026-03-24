@@ -1,0 +1,143 @@
+---
+title: "在 Capacitor SDK 中为远程配置付费墙获取付费墙和产品"
+description: "在 Adapty Capacitor SDK 中获取付费墙和产品，以提升用户变现效果。"
+metadataTitle: "获取付费墙与产品 | Capacitor SDK | Adapty 文档"
+keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallForDefaultAudience', 'remote config', 'Capacitor']
+displayed_sidebar: sdkcapacitor
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md'; 
+
+在展示远程配置和自定义付费墙之前，您需要先获取相关信息。请注意，本主题涉及远程配置和自定义付费墙。有关获取付费墙编辑工具自定义付费墙的指导，请参阅[获取付费墙编辑工具付费墙及其配置](capacitor-get-pb-paywalls)。
+
+<SampleApp />
+
+<details>
+   <summary>在您的移动应用中开始获取付费墙和产品之前（点击展开）</summary>
+
+   1. 在 Adapty 看板中[创建产品](create-product)。
+
+2. 在 Adapty 看板中[创建付费墙并将产品添加到付费墙](create-paywall)。
+
+3. 在 Adapty 看板中[创建版位并将付费墙添加到版位](create-placement)。
+
+4. 在您的移动应用中[安装 Adapty SDK](sdk-installation-capacitor)。
+</details>
+
+## 获取付费墙信息 \{#fetch-paywall-information\}
+
+在 Adapty 中，[产品](product)是 App Store 和 Google Play 产品的组合。这些跨平台产品被集成到付费墙中，使您能够在特定的移动应用版位中展示它们。
+
+要显示产品，您需要使用 `getPaywall` 方法从某个[版位](placements)获取[付费墙](paywalls)。
+
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
+try {
+  const paywall = await adapty.getPaywall({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data', // Load from server, fallback to cache
+      loadTimeoutMs: 5000 // 5 second timeout
+    }
+  });
+  // the requested paywall
+} catch (error) {
+  console.error('Failed to fetch paywall:', error);
+}
+```
+
+| 参数 | 是否必填 | 说明 |
+|---------|--------|-----------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。此参数应为由一个或多个子标签组成的语言代码，子标签之间用减号（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言区域代码及我们建议使用方式的更多信息，请参阅[本地化与语言区域代码](capacitor-localizations-and-locale-codes)。</p> |
+| **params.fetchPolicy** | <p>可选</p><p>默认值：`'reload_revalidating_cache_data'`</p> | <p>默认情况下，SDK 会尝试从服务器加载数据，若失败则返回缓存数据。我们推荐此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但是，如果您认为用户的网络连接不稳定，可以考虑使用 `'return_cache_data_else_load'`，在缓存存在时直接返回缓存数据。在这种情况下，用户可能无法获取最新数据，但无论网络连接质量如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍会保留，只有在重新安装应用或手动清理时才会被清除。</p> |
+| **params.loadTimeoutMs** | <p>可选</p><p>默认值：5000 ms</p> | <p>此值限制该方法的超时时间（毫秒）。如果达到超时时间，将返回缓存数据或本地备用数据。</p><p></p><p>请注意，在极少数情况下，此方法的超时时间可能略晚于 `loadTimeoutMs` 中指定的值，因为该操作在底层可能包含多个请求。</p> |
+
+**不要硬编码产品 ID。** 您唯一应该硬编码的 ID 是版位 ID。付费墙是远程配置的，因此产品数量和可用优惠随时可能发生变化。您的应用必须动态处理这些变化——如果付费墙今天返回两个产品，明天返回三个，则应在不修改代码的情况下全部显示。
+
+响应参数：
+
+| 参数 | 说明 |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall | 一个 [`AdaptyPaywall`](https://capacitor.adapty.io/interfaces/adaptypaywall) 对象，包含：产品 ID 列表、付费墙标识符、远程配置及其他若干属性。 |
+
+## 获取产品 \{#fetch-products\}
+
+获得付费墙后，您可以查询与其对应的产品数组：
+
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
+try {
+  const products = await adapty.getPaywallProducts({ paywall });
+  // the requested products list
+} catch (error) {
+  console.error('Failed to fetch products:', error);
+}
+```
+
+响应参数：
+
+| 参数 | 说明 |
+| :-------- |:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Products | [`AdaptyPaywallProduct`](https://capacitor.adapty.io/interfaces/adaptypaywallproduct) 对象列表，包含：产品标识符、产品名称、价格、货币、订阅时长及其他若干属性。 |
+
+在实现自定义付费墙设计时，您可能需要访问 [`AdaptyPaywallProduct`](https://capacitor.adapty.io/interfaces/adaptypaywallproduct) 对象中的这些属性。以下列出了最常用的属性，完整属性详情请参阅链接文档。
+
+| 属性 | 说明 |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **标题** | 要显示产品标题，请使用 `product.localizedTitle`。请注意，本地化基于用户在商店中选择的国家/地区，而非设备本身的语言区域设置。 |
+| **价格** | 要显示本地化版本的价格，请使用 `product.price?.localizedString`。此本地化基于设备的语言区域信息。您也可以使用 `product.price?.amount` 以数字形式访问价格，该值以本地货币提供。要获取对应的货币符号，请使用 `product.price?.currencySymbol`。 |
+| **订阅周期** | 要显示订阅周期（例如周、月、年等），请使用 `product.subscription?.localizedSubscriptionPeriod`。此本地化基于设备的语言区域。要以编程方式获取订阅周期，请使用 `product.subscription?.subscriptionPeriod`。您可以通过访问 `unit` 属性获取时长（即 'day'、'week'、'month'、'year' 或 'unknown'）。`numberOfUnits` 值表示周期单位的数量。例如，对于季度订阅，`unit` 属性为 `'month'`，`numberOfUnits` 为 `3`。 |
+| **新用户优惠** | 要显示徽章或其他指示器以表明订阅包含新用户优惠，请查看 `product.subscription?.offer?.phases` 属性。这是一个最多包含两个折扣阶段的列表：免费试用阶段和优惠价格阶段。每个阶段对象包含以下有用属性：<br/>• `paymentMode`：字符串，值为 `'free_trial'`、`'pay_as_you_go'`、`'pay_up_front'` 或 `'unknown'`。免费试用为 `'free_trial'` 类型。<br/>• `price`：折扣价格（数字）。免费试用时该值为 `0`。<br/>• `localizedNumberOfPeriods`：使用设备语言区域本地化的字符串，描述优惠时长。例如，三天试用优惠在此字段显示为 `'3 days'`。<br/>• `subscriptionPeriod`：或者，您可以使用此属性获取优惠周期的各项详情，其使用方式与上一节针对订阅的描述相同。<br/>• `localizedSubscriptionPeriod`：针对用户语言区域格式化的折扣订阅周期。 |
+
+## 使用默认目标受众付费墙加速付费墙获取 \{#speed-up-paywall-fetching-with-default-audience-paywall\}
+
+通常情况下，付费墙几乎可以即时获取，因此您无需担心加速此过程。但是，如果您拥有大量目标受众和付费墙，且用户的网络连接较弱，获取付费墙可能比预期耗时更长。在这种情况下，您可能希望显示默认付费墙，以确保流畅的用户体验，而不是完全不显示付费墙。
+
+为此，您可以使用 `getPaywallForDefaultAudience` 方法，该方法为 **All Users** 目标受众获取指定版位的付费墙。但请务必了解，推荐的方式仍是使用 `getPaywall` 方法获取付费墙，详见上方的[获取付费墙信息](fetch-paywalls-and-products-capacitor#fetch-paywall-information)部分。
+
+:::warning
+为什么我们推荐使用 `getPaywall`
+
+`getPaywallForDefaultAudience` 方法存在一些显著缺点：
+
+- **潜在的向后兼容性问题**：如果您需要为不同版本的应用（当前版本和未来版本）显示不同的付费墙，可能会面临挑战。您要么必须设计支持当前（旧版）应用版本的付费墙，要么接受使用当前（旧版）应用版本的用户可能遇到付费墙无法渲染的问题。
+- **定向能力丧失**：所有用户都将看到为 **All Users** 目标受众设计的同一付费墙，这意味着您将失去个性化定向能力（包括基于国家/地区、营销归因或您自定义属性的定向）。
+
+如果您愿意接受这些缺点以换取更快的付费墙获取速度，请按如下方式使用 `getPaywallForDefaultAudience` 方法。否则，请坚持使用[上述](fetch-paywalls-and-products-capacitor#fetch-paywall-information) `getPaywall` 方法。
+:::
+
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
+try {
+  const paywall = await adapty.getPaywallForDefaultAudience({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data' // Load from server, fallback to cache
+    }
+  });
+  // the requested paywall
+} catch (error) {
+  console.error('Failed to fetch default audience paywall:', error);
+}
+```
+
+:::note
+`getPaywallForDefaultAudience` 方法从 Capacitor SDK 版本 2.11.2 开始可用。
+:::
+
+| 参数 | 是否必填 | 说明 |
+|---------|--------|-----------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。此参数应为由一个或多个子标签组成的语言代码，子标签之间用减号（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言区域代码及我们建议使用方式的更多信息，请参阅[本地化与语言区域代码](capacitor-localizations-and-locale-codes)。</p> |
+| **params.fetchPolicy** | <p>可选</p><p>默认值：`'reload_revalidating_cache_data'`</p> | <p>默认情况下，SDK 会尝试从服务器加载数据，若失败则返回缓存数据。我们推荐此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但是，如果您认为用户的网络连接不稳定，可以考虑使用 `'return_cache_data_else_load'`，在缓存存在时直接返回缓存数据。在这种情况下，用户可能无法获取最新数据，但无论网络连接质量如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍会保留，只有在重新安装应用或手动清理时才会被清除。</p> |

@@ -1,0 +1,101 @@
+name: Translate docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/content/docs/**'
+      - 'src/components/reusable/**'
+      - 'src/data/sidebars/**'
+      - 'src/api-reference/specs/*.yaml'
+      - 'src/locales/dictionary.json'
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need parent commit to compute the diff
+          fetch-depth: 2
+
+      # Hashes are gitignored but must persist between runs so --incremental
+      # only re-translates sections that actually changed within a file.
+      # The key includes the commit SHA so each push creates a new entry;
+      # restore-keys fetches the most recent previous entry as a fallback.
+      - name: Restore translation hash cache
+        uses: actions/cache@v4
+        with:
+          path: src/locales/*/.hashes
+          key: translation-hashes-${{ github.sha }}
+          restore-keys: translation-hashes-
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Split the diff into added/modified files (to translate) and deleted files (to clean up).
+      - name: Get changed translatable files
+        id: diff
+        run: |
+          CHANGED=$(git diff --name-only --diff-filter=AMR HEAD^1 HEAD \
+            | grep -E '^(src/content/docs/.+\.mdx|src/components/reusable/.+\.mdx?|src/data/sidebars/.+\.json|src/api-reference/specs/[^./]+\.yaml)$' \
+            | tr '\n' ',' | sed 's/,$//')
+          DELETED=$(git diff --name-only --diff-filter=D HEAD^1 HEAD \
+            | grep -E '^(src/content/docs/.+\.mdx|src/components/reusable/.+\.mdx?|src/api-reference/specs/[^./]+\.yaml)$' \
+            | tr '\n' ',' | sed 's/,$//')
+          echo "files=$CHANGED" >> $GITHUB_OUTPUT
+          echo "deleted=$DELETED" >> $GITHUB_OUTPUT
+
+      - name: Translate changed files
+        if: steps.diff.outputs.files != ''
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/translate.mjs --incremental --only-files "${{ steps.diff.outputs.files }}"
+
+      # Remove translated files and hash caches for deleted source content.
+      # Sidebars are intentionally excluded: deleting a sidebar JSON is rare and
+      # rebuildSidebarLabels will naturally omit it on the next sidebar update.
+      - name: Clean up deleted translations
+        if: steps.diff.outputs.deleted != ''
+        run: |
+          for SRC_PATH in $(echo "${{ steps.diff.outputs.deleted }}" | tr ',' '\n'); do
+            BASENAME=$(basename "$SRC_PATH")
+            EXT="${BASENAME##*.}"
+            NAME="${BASENAME%.*}"
+            for LOCALE_DIR in src/locales/*/; do
+              if [[ "$SRC_PATH" == src/components/reusable/* ]]; then
+                rm -f "${LOCALE_DIR}reusable/${BASENAME}"
+                rm -f "${LOCALE_DIR}.hashes/reusable/${NAME}.json"
+              elif [ "$EXT" = "mdx" ]; then
+                rm -f "${LOCALE_DIR}${NAME}.mdx"
+                rm -f "${LOCALE_DIR}.hashes/${NAME}.json"
+              elif [ "$EXT" = "yaml" ]; then
+                # Remove all localized variants: adapty-api.zh.yaml, etc.
+                rm -f src/api-reference/specs/${NAME}.*.yaml
+                rm -f "${LOCALE_DIR}.hashes/api-specs/${NAME}.json"
+              fi
+            done
+          done
+
+      # Commit any new or updated locale files back to main.
+      # This push triggers s3-deploy-production.yml, so the deploy that follows
+      # will include the freshly translated content.
+      - name: Commit updated translations
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/locales/
+          if git diff --staged --quiet; then
+            echo "No translation changes to commit."
+          else
+            git commit -m "chore: update translations"
+            git push
+          fi

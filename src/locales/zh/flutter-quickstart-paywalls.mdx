@@ -1,0 +1,263 @@
+---
+title: "在 Flutter SDK 中通过付费墙启用内购"
+description: "设置 Adapty 进行应用内订阅管理的快速入门指南。"
+metadataTitle: "Adapty 快速入门指南 | Adapty 文档"
+keywords: [ '付费墙', '付费墙编辑工具', 'getPaywall']
+rank: 70
+displayed_sidebar: sdkflutter
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import PaywallsIntro from '@site/src/locales/zh/reusable/PaywallsIntro.md';
+
+要启用应用内购买，您需要了解三个关键概念：
+
+- [**产品**](product) – 用户可以购买的任何内容（订阅、消耗型商品、永久授权）
+- [**付费墙**](paywalls) 是定义要提供哪些产品的配置。在 Adapty 中，付费墙是检索产品的唯一方式，但这种设计让您无需修改应用代码即可调整产品组合、定价和产品搭配。
+- [**版位**](placements) – 在应用中展示付费墙的位置和时机（如 `main`、`onboarding`、`settings`）。您在看板中为版位配置付费墙，然后在代码中通过版位 ID 请求它们。这使得运行 A/B 测试和向不同用户展示不同付费墙变得非常简单。
+
+Adapty 为您提供三种在应用中启用内购的方式。请根据您的应用需求选择其中一种：
+
+| 实现方式               | 复杂度 | 使用场景                                                                                                                                                                                                                                     |
+|------------------------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty 付费墙编辑工具  | ✅ 简单 | 您[在无代码编辑工具中创建一个完整的、可立即购买的付费墙](quickstart-paywalls)。Adapty 自动渲染并在后台处理所有复杂的购买流程、收据验证和订阅管理。                                                                                          |
+| 手动创建的付费墙       | 🟡 中等 | 您在应用代码中实现付费墙 UI，但仍从 Adapty 获取付费墙对象以保持产品组合的灵活性。请参阅[指南](flutter-quickstart-manual)。                                                                                                                   |
+| 观察者模式             | 🔴 困难 | 您已有自己的购买处理基础设施并希望继续使用。请注意，观察者模式在 Adapty 中存在一定限制。请参阅[文章](observer-vs-full-mode)。                                                                                                                 |
+
+:::important
+**以下步骤演示如何实现在 Adapty 付费墙编辑工具中创建的付费墙。**
+
+如果您不想使用付费墙编辑工具，请参阅[手动创建付费墙中处理购买的指南](flutter-making-purchases)。
+:::
+
+要显示在 Adapty 付费墙编辑工具中创建的付费墙，在您的应用代码中只需：
+
+1. **获取付费墙**：从 Adapty 获取付费墙。
+2. **显示付费墙，Adapty 将为您处理购买**：在应用中展示您获取到的付费墙容器。
+3. **处理按钮操作**：将用户与付费墙的交互与应用的响应关联起来。例如，在用户点击按钮时打开链接或关闭付费墙。
+
+## 开始之前 \{#before-you-start\}
+
+在开始之前，请完成以下步骤：
+
+1. 在 Adapty 看板中将您的应用连接到 [App Store](initial_ios) 和/或 [Google Play](initial-android)。
+2. 在 Adapty 中[创建您的产品](create-product)。
+3. [创建付费墙并向其添加产品](create-paywall)。
+4. [创建版位并将您的付费墙添加到其中](create-placement)。
+5. 在您的应用代码中[安装并激活 Adapty SDK](sdk-installation-flutter)。
+
+:::tip
+完成这些步骤最快的方式是遵循[快速入门指南](quickstart)，或使用 [Developer CLI](developer-cli-quickstart) 创建付费墙和版位。
+:::
+
+## 1. 获取付费墙 \{#1-get-the-paywall\}
+
+您的付费墙与在看板中配置的版位关联。版位允许您为不同的目标受众运行不同的付费墙或运行 [A/B 测试](ab-tests)。
+
+要获取在 Adapty 付费墙编辑工具中创建的付费墙，您需要：
+
+1. 使用 `getPaywall` 方法通过[版位](placements) ID 获取 `paywall` 对象，并通过 `hasViewConfiguration` 属性检查它是否是在编辑工具中创建的付费墙。
+
+2. 使用 `createPaywallView` 方法创建付费墙视图。该视图包含显示付费墙所需的 UI 元素和样式。
+
+:::important
+要获取视图配置，您必须在付费墙编辑工具中打开 **Show on device** 开关。否则，您将获得空的视图配置，付费墙将无法显示。
+:::
+
+```dart showLineNumbers
+import 'package:adapty_flutter/adapty_flutter.dart';
+
+try {
+  final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en");
+  // the requested paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+
+try {
+  final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+      );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+## 2. 显示付费墙 \{#2-display-the-paywall\}
+
+现在，当您拥有付费墙配置后，只需添加几行代码即可显示您的付费墙。
+
+要显示付费墙，请在由 `createPaywallView` 方法创建的 `view` 上使用 `view.present()` 方法。每个 `view` 只能使用一次。如果需要再次显示付费墙，请再次调用 `createPaywallView` 来创建新的 `view` 实例。
+
+```dart showLineNumbers title="Flutter"
+try {
+  await view.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+:::tip
+有关如何显示付费墙的更多详情，请参阅我们的[指南](flutter-present-paywalls)。
+:::
+
+## 3. 处理按钮操作 \{#3-handle-button-actions\}
+
+当用户点击付费墙中的按钮时，Flutter SDK 会自动处理购买和恢复操作。但是，其他按钮有自定义或预定义的 ID，需要在您的代码中处理相应操作。
+
+要控制或监控付费墙屏幕上的流程，请实现 `AdaptyUIPaywallsEventsObserver` 方法，并在展示任何屏幕之前设置观察者。如果用户执行了某个操作，`paywallViewDidPerformAction` 将被调用，您的应用需要根据操作 ID 做出响应。
+
+例如，您的付费墙可能有一个关闭按钮和需要打开的 URL（如使用条款和隐私政策）。因此，您需要响应 ID 为 `Close` 和 `OpenUrl` 的操作。
+
+:::tip
+阅读我们关于如何处理按钮[操作](flutter-handle-paywall-actions)和[事件](flutter-handling-events)的指南。
+:::
+
+```dart showLineNumbers title="Flutter"
+class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywallsEventsObserver {
+  @override
+  void initState() {
+    super.initState();
+    // Register this class as the paywalls event observer
+    AdaptyUI().setPaywallsEventsObserver(this);
+  }
+
+  // This method is called when user performs an action on the paywall UI
+  @override
+  void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL using url_launcher package
+        _launchUrl(url);
+        break;
+    }
+  }
+
+  // Helper method to launch URLs
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Handle case where URL cannot be launched
+        print('Could not launch $url');
+      }
+    } catch (e) {
+      // Handle any errors
+      print('Error launching URL: $e');
+    }
+  }
+}
+
+```
+
+## 后续步骤 \{#next-steps\}
+
+<SupportForum />
+
+您的付费墙已准备好在应用中显示。在 [App Store 沙盒](test-purchases-in-sandbox)或 [Google Play Store](testing-on-android) 中测试您的购买，确保可以从付费墙完成测试购买。
+
+现在，您需要[检查用户的访问等级](flutter-check-subscription-status)，以确保您向正确的用户展示付费墙或授予付费功能的访问权限。
+
+## 完整示例 \{#full-example\}
+
+以下是如何将所有步骤整合到您的应用中的示例。
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:adapty_flutter/adapty_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+void main() async {
+  runApp(MaterialApp(home: PaywallScreen()));
+}
+
+class PaywallScreen extends StatefulWidget {
+  @override
+  State<PaywallScreen> createState() => _PaywallScreenState();
+}
+
+class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywallsEventsObserver {
+  @override
+  void initState() {
+    super.initState();
+    // Register this class as the paywalls event observer
+    AdaptyUI().setPaywallsEventsObserver(this);
+    _showPaywallIfNeeded();
+  }
+
+  Future<void> _showPaywallIfNeeded() async {
+    try {
+
+      final paywall = await Adapty().getPaywall(
+        placementId: 'YOUR_PLACEMENT_ID',
+      );
+
+      if (!paywall.hasViewConfiguration) return;
+
+      final view = await AdaptyUI().createPaywallView(paywall: paywall);
+
+      await view.present();
+    } catch (_) {
+      // Handle any errors (network, SDK issues, etc.)
+    }
+  }
+
+  // This method is called when user performs an action on the paywall UI
+  @override
+  void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL using url_launcher package
+        _launchUrl(url);
+        break;
+    }
+  }
+
+  // Helper method to launch URLs
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Handle case where URL cannot be launched
+        print('Could not launch $url');
+      }
+    } catch (e) {
+      // Handle any errors
+      print('Error launching URL: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Adapty Paywall Example')),
+      body: Center(
+        // Add a button to re-trigger the paywall for testing purposes
+        child: ElevatedButton(
+          onPressed: _showPaywallIfNeeded,
+          child: Text('Show Paywall'),
+        ),
+      ),
+    );
+  }
+}
+
+```

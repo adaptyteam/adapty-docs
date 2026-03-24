@@ -1,0 +1,353 @@
+---
+title: "Amazon S3"
+description: "将订阅数据导出至 S3，用于高级分析和报告。"
+metadataTitle: "S3 数据导出与数据管理 | Adapty 文档"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
+Adapty 与 Amazon S3 的集成允许您将事件和付费墙访问数据安全地存储在一个中心位置。您可以将[订阅事件](events)以 .csv 文件的形式保存到 Amazon S3 存储桶中。  
+要设置此集成，您需要在 AWS 控制台和 Adapty 看板中按照几个简单步骤进行操作。
+
+:::note
+计划
+
+Adapty 每 **24h** 在 UTC 时间 4:00 发送您的数据。
+
+每个文件将包含前一个完整日历日（UTC）内创建的事件数据。例如，3 月 8 日 UTC 时间 4:00 自动导出的数据将包含 3 月 7 日 00:00:00 至 23:59:59（UTC）内创建的所有事件。
+:::
+
+## 如何设置 Amazon S3 集成 \{#how-to-set-up-amazon-s3-integration\}
+
+要开始接收数据，您需要以下凭证：
+
+1. Access key ID
+2. Secret access key
+3. S3 存储桶名称
+4. S3 存储桶内的文件夹名称
+
+:::note
+嵌套目录
+
+您可以在 Amazon S3 存储桶名称字段中指定嵌套目录，例如 adapty-events/com.sample-app
+:::
+
+要集成 Amazon S3，请前往 [**Integrations** -> **Amazon S3**](https://app.adapty.io/integrations/s3)，将开关从关闭切换到开启，并填写相关字段。
+
+首先设置凭证，以在 Amazon S3 和 Adapty 用户画像之间建立连接。
+
+<Zoom>
+  <img src="/assets/shared/img/2b1a6e3-CleanShot_2023-03-24_at_14.51.272x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+在 Adapty 看板中，需要填写以下字段以建立连接：
+
+| 字段                         | 描述                                                         |
+| :--------------------------- | :----------------------------------------------------------- |
+| **Access Key ID**            | 用于验证用户或应用程序访问 AWS 服务的唯一标识符。可在已下载的 [csv 文件](s3-exports#how-to-create-amazon-s3-credentials)中找到此 ID。 |
+| **Secret Access Key**        | 与 Access Key ID 配合使用，用于验证用户或应用程序访问 AWS 服务的私钥。可在已下载的 [csv 文件](s3-exports#how-to-create-amazon-s3-credentials)中找到此密钥。 |
+| **S3 Bucket Name**           | 在 AWS 云中唯一标识特定 S3 存储桶的全局唯一名称。S3 存储桶是一种简单存储服务，允许用户在云中存储和检索数据对象（如文件和图片）。 |
+| **Folder Inside the Bucker** | 您希望在所选 S3 存储桶内创建的文件夹名称。请注意，S3 使用对象键前缀来模拟文件夹，本质上就是文件夹名称。 |
+
+## 如何创建 Amazon S3 凭证 \{#how-to-create-amazon-s3-credentials\}
+
+本指南将帮助您在 AWS 控制台中创建必要的凭证。
+
+### 1\. 创建访问策略 \{#1-create-access-policy\}
+
+首先，在您的 AWS 控制台中导航到 [IAM 策略看板](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/policies)，并选择 **Create Policy** 选项。
+
+<Zoom>
+  <img src="/assets/shared/img/7af075c-CleanShot_2023-03-21_at_10.52.002x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+在策略编辑器中，粘贴以下 JSON 并将 `adapty-s3-integration-test` 替换为您的存储桶名称：
+
+```json showLineNumbers title="Json"
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowListObjectsInBucket",
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        },
+        {
+            "Sid": "AllowAllObjectActions",
+            "Effect": "Allow",
+            "Action": "s3:*Object",
+            "Resource": [
+                "arn:aws:s3:::adapty-s3-integration-test/*",
+                "arn:aws:s3:::adapty-s3-integration-test"
+            ]
+        },
+        {
+            "Sid": "AllowBucketLocation",
+            "Effect": "Allow",
+            "Action": "s3:GetBucketLocation",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        }
+    ]
+}
+```
+
+<Zoom>
+  <img src="/assets/shared/img/d4e474a-CleanShot_2023-03-21_at_10.56.212x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+完成策略配置后，您可以选择添加标签（可选），然后点击 **Next** 进入最后一步。在此步骤中，您将为策略命名，然后点击 **Create policy** 按钮完成创建流程。
+
+<Zoom>
+  <img src="/assets/shared/img/7dcb02f-CleanShot_2023-03-21_at_11.03.372x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 2\. 创建 IAM 用户 \{#2-create-iam-user\}
+
+要使 Adapty 能够将原始数据报告上传至您的存储桶，您需要为具有该存储桶写入权限的用户提供 Access Key ID 和 Secret Access Key。
+
+为此，请导航到 IAM 控制台，选择 [Users 部分](https://console.aws.amazon.com/iamv2/home#/users)，然后点击 **Add users** 按钮。
+
+<Zoom>
+  <img src="/assets/shared/img/bb612c8-CleanShot_2023-03-21_at_11.12.392x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+为用户命名，选择 **Access key – Programmatic access**，然后继续设置权限。
+
+<Zoom>
+  <img src="/assets/shared/img/467ee4d-j6aoX.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+在下一步中，请选择 **Add user to group** 选项，然后点击 **Create group** 按钮。
+
+<Zoom>
+  <img src="/assets/shared/img/bfd0e80-CleanShot_2023-03-21_at_11.24.592x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+接下来，您需要为用户组命名，并选择之前创建的策略。选择策略后，点击 **Create group** 按钮完成流程。
+
+<Zoom>
+  <img src="/assets/shared/img/df29c12-CleanShot_2023-03-21_at_11.28.052x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+成功创建组后，请**选择它**并继续下一步。
+
+<Zoom>
+  <img src="/assets/shared/img/1f3722e-CleanShot_2023-03-21_at_11.36.192x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+这是本节的最后一步，直接点击 **Create User** 按钮即可。
+
+<Zoom>
+  <img src="/assets/shared/img/ea43722-CleanShot_2023-03-21_at_11.40.462x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+最后，您可以选择**以 .csv 格式下载凭证**，或者直接从看板复制并粘贴凭证。
+
+<Zoom>
+  <img src="/assets/shared/img/bcf35e1-S3created.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## 手动数据导出 \{#manual-data-export\}
+
+除了自动将事件数据导出到 Amazon S3 之外，Adapty 还提供手动文件导出功能。借助此功能，您可以选择特定时间段的事件数据，并手动将其导出到 S3 存储桶。这让您能够更好地控制导出的数据内容和导出时机。
+
+指定的日期范围将用于导出从日期 A 00:00:00 UTC 至日期 B 23:59:59 UTC 内创建的事件。
+
+<Zoom>
+  <img src="/assets/shared/img/466bd29-CleanShot_2023-03-21_at_12.35.252x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## 表结构 \{#table-structure\}
+
+在 AWS S3 集成中，Adapty 提供了一个表格用于存储交易事件和付费墙访问的历史数据。该表包含用户画像、收入和收益、来源商店等数据点。本质上，这些表记录了应用在特定时间段内产生的所有交易。
+
+:::warning
+请注意，随着我们或合作的第三方引入新数据，此结构可能会随时间增长。请确保您处理该数据的代码足够健壮，依赖特定字段而非整体结构。
+:::
+
+以下是事件的表结构：
+
+| 列                              | 描述                                                                                                                                                                                                                                                                                                                                   |
+|---------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **profile_id**                  | Adapty 用户 ID。                                                                                                                                                                                                                                                                                                                       |
+| **event_type**                  | 小写事件名称。请参阅[事件](events)部分了解事件类型。                                                                                                                                                                                                                                                                                   |
+| **event_datetime**              | ISO 8601 日期。                                                                                                                                                                                                                                                                                                                        |
+| **transaction_id**              | 交易（如购买或续订）的唯一标识符。                                                                                                                                                                                                                                                                                                     |
+| **original_transaction_id**     | 原始购买的交易标识符。                                                                                                                                                                                                                                                                                                                 |
+| **subscription_expires_at**     | 订阅的到期日期，通常为未来时间。                                                                                                                                                                                                                                                                                                       |
+| **environment**                 | 可以是 Sandbox 或 Production。                                                                                                                                                                                                                                                                                                         |
+| **revenue_usd**                 | 以美元计的收入，可能为空。                                                                                                                                                                                                                                                                                                             |
+| **proceeds_usd**                | 以美元计的收益，可能为空。                                                                                                                                                                                                                                                                                                             |
+| **net_revenue_usd**             | 以美元计的净收入（税后收入），可能为空。                                                                                                                                                                                                                                                                                               |
+| **tax_amount_usd**              | 以美元计的税款扣除金额，可能为空。                                                                                                                                                                                                                                                                                                     |
+| **revenue_local**               | 以本地货币计的收入，可能为空。                                                                                                                                                                                                                                                                                                         |
+| **proceeds_local**              | 以本地货币计的收益，可能为空。                                                                                                                                                                                                                                                                                                         |
+| **net_revenue_local**           | 以本地货币计的净收入（税后收入），可能为空。                                                                                                                                                                                                                                                                                           |
+| **tax_amount_local**            | 以本地货币计的税款扣除金额，可能为空。                                                                                                                                                                                                                                                                                                 |
+| **customer_user_id**            | 开发者用户 ID。例如，可以是您的用户 UUID、邮箱或任何其他 ID。如果未设置则为 Null。                                                                                                                                                                                                                                                    |
+| **store**                       | 可以是 _app_store_ 或 _play_store_。                                                                                                                                                                                                                                                                                                   |
+| **product_id**                  | Apple App Store、Google Play Store 或 Stripe 中的产品 ID。                                                                                                                                                                                                                                                                             |
+| **base_plan_id**                | Google Play Store 中的[基础方案 ID](https://support.google.com/googleplay/android-developer/answer/12154973) 或 Stripe 中的[价格 ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices)。                                                                                                     |
+| **developer_id**                | 交易来源付费墙的开发者（SDK）ID。                                                                                                                                                                                                                                                                                                      |
+| **ab_test_name**                | 交易来源 A/B 测试的名称。                                                                                                                                                                                                                                                                                                              |
+| **ab_test_revision**            | 交易来源 A/B 测试的版本号。                                                                                                                                                                                                                                                                                                            |
+| **paywall_name**                | 交易来源付费墙的名称。                                                                                                                                                                                                                                                                                                                 |
+| **paywall_revision**            | 交易来源付费墙的版本号。                                                                                                                                                                                                                                                                                                               |
+| **profile_county**              | Adapty 根据 IP 地址确定的用户画像国家。                                                                                                                                                                                                                                                                                                |
+| **install_date**                | 安装发生时的 ISO 8601 日期。                                                                                                                                                                                                                                                                                                           |
+| **idfv**                        | iOS 设备上的 [identifierForVendor](https://developer.apple.com/documentation/uikit/uidevice/identifierforvendor)                                                                                                                                                                                                                       |
+| **idfa**                        | iOS 设备上的 [advertisingIdentifier](https://developer.apple.com/documentation/adsupport/asidentifiermanager/advertisingidentifier)                                                                                                                                                                                                     |
+| **advertising_id**              | 广告 ID 是由 Android 操作系统分配的唯一代码，广告商可以用来唯一标识用户设备。                                                                                                                                                                                                                                                         |
+| **ip_address**                  | 设备 IP（可以是 IPv4 或 IPv6，优先使用 IPv4）。每次设备 IP 变化时更新。                                                                                                                                                                                                                                                               |
+| **cancellation_reason**         | <p>用户取消订阅的原因。</p><p></p><p>可以是：</p><p>**iOS & Android**  _voluntarily_cancelled_、_billing_error_、_refund_</p><p>**iOS**  _price_increase_、_product_was_not_available_、_unknown_、_upgraded_</p><p>**Android** _new_subscription_replace_、_cancelled_by_developer_</p>                                               |
+| **android_app_set_id**          | [AppSetId](https://developer.android.com/design-for-safety/privacy-sandbox/reference/adservices/appsetid/AppSetId) — 每台设备、每个开发者账号唯一的、用户可重置的 ID，用于非盈利性广告场景。                                                                                                                                           |
+| **android_id**                  | 在 Android 8.0（API 级别 26）及更高版本上，一个 64 位数字（以十六进制字符串表示），对每个应用签名密钥、用户和设备的组合唯一。详情请参阅 [Android 开发者文档](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID)。                                                                                   |
+| **device**                      | 终端用户可见的设备型号名称。                                                                                                                                                                                                                                                                                                           |
+| **currency**                    | 交易的 3 字母货币代码（ISO-4217）。                                                                                                                                                                                                                                                                                                    |
+| **store_country**               | 由 Apple/Google 商店确定的用户画像国家。                                                                                                                                                                                                                                                                                               |
+| **attribution_source**          | 归因来源。                                                                                                                                                                                                                                                                                                                             |
+| **attribution_network_user_id** | 归因来源为用户分配的 ID。                                                                                                                                                                                                                                                                                                              |
+| **attribution_status**          | 可以是 organic、non_organic 或 unknown。                                                                                                                                                                                                                                                                                               |
+| **attribution_channel**         | 营销渠道名称。                                                                                                                                                                                                                                                                                                                         |
+| **attribution_campaign**        | 营销活动名称。                                                                                                                                                                                                                                                                                                                         |
+| **attribution_ad_group**        | 归因广告组。                                                                                                                                                                                                                                                                                                                           |
+| **attribution_ad_set**          | 归因广告集。                                                                                                                                                                                                                                                                                                                           |
+| **attribution_creative**        | 归因创意关键词。                                                                                                                                                                                                                                                                                                                       |
+| **attributes**                  | [自定义用户属性](setting-user-attributes#custom-user-attributes)的 JSON。包含您在移动应用中设置发送的所有自定义属性。要发送此数据，请在 [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) 页面启用 **Send User Attributes** 选项。                                                                          |
+| **integration_ids**             | 与用户画像关联的所有集成 ID。字典格式。示例：&#123;&#39;mixpanel_user_id&#39;: &#39;mixpanelUserId-test&#39;, &#39;facebook_anonymous_id&#39;: &#39;facebookAnonymousId-test&#39;&#125;                                                                                                                                                  |
+
+以下是付费墙访问的表结构：
+
+| 列                    | 描述                                                                                                         |
+| :-------------------- | :----------------------------------------------------------------------------------------------------------- |
+| **profile_id**        | Adapty 用户 ID。                                                                                             |
+| **customer_user_id**  | 开发者用户 ID。例如，可以是您的用户 UUID、邮箱或任何其他 ID。如果未设置则为 Null。                          |
+| **profile_country**   | 由 Apple/Google 商店确定的用户画像国家。                                                                     |
+| **install_date**      | 安装发生时的 ISO 8601 日期。                                                                                 |
+| **store**             | 可以是 _app_store_ 或 _play_store_。                                                                         |
+| **paywall_showed_at** | 付费墙向用户展示的日期。                                                                                     |
+| **developer_id**      | 交易来源付费墙的开发者（SDK）ID。                                                                            |
+| **ab_test_name**      | 交易来源 A/B 测试的名称。                                                                                    |
+| **ab_test_revision**  | 交易来源 A/B 测试的版本号。                                                                                  |
+| **paywall_name**      | 交易来源付费墙的名称。                                                                                       |
+| **paywall_revision**  | 交易来源付费墙的版本号。                                                                                     |
+
+## 事件与标签 \{#events-and-tags\}
+
+您可以管理集成传输的数据内容。该集成提供以下配置选项：
+
+| 设置                               | 描述                                                         |
+| :--------------------------------- | :----------------------------------------------------------- |
+| **Exclude Historical Events**      | 选择排除用户在安装带有 Adapty SDK 的应用之前发生的事件。这可以防止事件重复并确保报告准确。例如，如果用户在 1 月 10 日激活了月度订阅，并在 3 月 6 日更新了带有 Adapty SDK 的应用，Adapty 将忽略 3 月 6 日之前的事件并保留后续事件。 |
+| **Include events without profile** | 选择包含未关联到 Adapty 用户画像的交易。这些可能包括在安装 Adapty SDK 之前进行的购买，或从商店服务器通知收到但无法立即关联到特定用户的交易。 |
+| **Send User Attributes**           | 如果您希望发送用户特定属性（如语言偏好），且您的 OneSignal 方案支持超过 10 个标签，请选择此选项。启用此选项可在默认 10 个标签之外包含更多信息。请注意，超出标签限制可能会导致错误。 |
+
+<Zoom>
+  <img src="/assets/shared/img/s3-settings.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+在集成设置下方，有三组事件可供您从 Adapty 导出、发送并存储到 Amazon S3 中。只需开启您需要的事件即可。查看 Adapty 提供的完整事件列表，请点击[此处](events)。
+
+<Zoom>
+  <img src="/assets/shared/img/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>

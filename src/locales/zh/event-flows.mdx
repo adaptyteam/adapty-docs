@@ -1,0 +1,433 @@
+---
+title: "事件流"
+description: "了解 Adapty 中订阅事件流的详细示意图。学习订阅事件的生成方式及其发送至集成的机制，帮助您追踪客户旅程中的关键时刻。"
+metadataTitle: "了解 Adapty 中的事件流：示意图与场景 | Adapty 文档"
+keywords: ['退款', '试用', '恢复', '事件', 'event']
+rank: 70
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import InlineTooltip from '@site/src/components/InlineTooltip';
+
+在 Adapty 中，您将在客户使用应用的整个旅程中收到各种订阅事件。这些订阅流程描述了常见场景，帮助您了解用户订阅、取消或重新激活订阅时 Adapty 生成的事件。
+
+请注意，Apple 会在实际开始/续订时间前数小时处理订阅付款。在以下流程图中，为保持示意图清晰，我们将订阅开始/续订与扣费显示为同时发生。
+
+此外，与同一操作相关的事件会同时发生，可能以任意顺序出现在您的 **Event Feed** 中，顺序可能与我们示意图中显示的不同。
+
+## 订阅生命周期 \{#subscription-lifecycle\}
+
+### 初次购买流程 \{#initial-purchase-flow\}
+
+当客户首次购买订阅（不含试用期）时，将触发以下事件：
+
+- **Subscription started**
+- **Access level updated**（授予用户访问权限）
+
+当订阅续订日期到来时，订阅将自动续订，并触发以下事件：
+
+- **Subscription renewal**（开始新一个订阅周期）
+- **Access level updated**（更新订阅到期日期，将访问权限延长一个周期）
+
+付款失败或用户取消续订的情况，分别在[账单问题结果流程](event-flows#billing-issue-outcome-flow)和[订阅取消流程](event-flows#subscription-cancellation-flow)中说明。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Initial_Purchase_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 订阅取消流程 \{#subscription-cancellation-flow\}
+
+当用户取消订阅时，将触发以下事件：
+
+- **Subscription renewal canceled**（表示订阅在当前周期结束前仍然有效，之后用户将失去访问权限）
+- **Access level updated**（为该访问等级禁用自动续订）
+
+订阅结束后，将触发 **Subscription expired (churned)** 事件，标志订阅终止。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Cancellation_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+如果退款获批，以下事件将替代 **Subscription expired (churned)**：
+
+- **Subscription refunded**（结束订阅并提供退款详情）
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Cancellation_Flow_with_a_Refund.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+对于 Stripe，订阅可以立即取消，跳过剩余周期。在这种情况下，以下事件同时触发：
+
+- **Subscription renewal cancelled**
+- **Subscription expired (churned)**
+- **Access Level updated**（移除用户的访问权限）
+
+如果退款获批，退款批准时还会触发 **Subscription refunded** 事件。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Immediate_Cancellation_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 订阅重新激活流程 \{#subscription-reactivation-flow\}
+
+如果用户取消订阅后到期，之后又重新购买同一订阅，将触发 **Subscription renewed** 事件。即使访问权限存在间隔，Adapty 也会通过 `vendor_original_transaction_id` 将这些交易视为同一交易链，因此重新购买被视为续订。
+
+**Access level updated** 事件将被触发两次：
+
+- 订阅结束时，撤销用户的访问权限
+- 用户重新购买时，授予访问权限
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Rejoin_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 订阅暂停流程（仅 Android）\{#subscription-pause-flow-android-only\}
+
+此流程适用于用户在 Android 上暂停订阅后再恢复的情况。
+
+暂停订阅有延迟效果。如果用户在订阅即将续订前暂停，订阅将保持活跃状态，用户在当前计费周期的剩余时间内仍可使用付费内容。
+
+1. 用户暂停订阅时，触发 **Subscription paused (Android only)** 事件。
+2. 订阅周期结束时，Adapty 触发 **Access level updated** 事件，撤销用户的访问权限。
+3. 用户恢复订阅时，触发以下事件：
+
+    - **Subscription renewed**
+    - **Access level updated**（恢复用户的访问权限）
+
+这些订阅将属于同一交易链，通过相同的 **vendor_original_transaction_id** 关联。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Paused_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## 试用流程 \{#trial-flows\}
+
+如果您在应用中使用试用期，您将收到额外的试用相关事件。
+
+### 成功转化的试用流程 \{#trial-with-successful-conversion-flow\}
+
+最常见的流程是：用户开始试用、提供信用卡信息，并在试用期结束时成功转化为标准订阅。在试用开始时，将触发以下事件：
+
+- **Trial started**（标记试用开始）
+- **Access level updated**（授予访问权限）
+
+标准订阅开始时，触发 **Trial converted** 事件。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Trial_Flow_with_Successful_Conversion.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 未成功转化的试用流程 \{#trial-without-successful-conversion-flow\}
+
+如果用户在试用转化为订阅前取消，将在取消时触发以下事件：
+
+- **Trial renewal cancelled**（禁止试用自动转化为订阅）
+- **Access level updated**（禁用访问续订）
+
+用户将保留访问权限直到试用期结束，届时触发 **Trial expired** 事件，标记试用结束。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Trial_Flow_without_Successful_Conversion.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 试用期到期后的订阅重新激活流程 \{#subscription-reactivation-after-expired-trial-flow\}
+
+如果试用期到期（因账单问题或取消）且用户之后购买了订阅，将触发以下事件：
+
+- **Access level updated**（授予用户访问权限）
+- **Trial converted**
+
+即使试用和订阅之间存在间隔，Adapty 也会通过 `vendor_original_transaction_id` 将两者关联。此次转化被视为连续交易链的一部分（从零价格试用开始），因此触发 **Trial converted** 事件而非 **Subscription started**。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Reactivation_Flow_after_Expired_Trial.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## 产品变更 \{#product-changes\}
+
+本节涵盖对有效订阅所做的各类调整，例如升级、降级或购买其他组的产品。
+
+### 立即生效的产品变更流程 \{#immediate-product-change-flow\}
+
+用户更改产品后，可能会在订阅结束前立即在系统中生效（主要发生在升级或替换产品的情况下）。在这种情况下，产品变更时：
+
+- 访问等级随之变更，同时触发两个 **Access level updated** 事件：
+  1. 移除第一个产品的访问权限。
+  2. 授予第二个产品的访问权限。
+- 旧订阅结束并支付退款（触发 **Subscription refunded** 事件，`cancellation_reason` = `upgraded`）。请注意，不会触发 **Subscription expired (churned)** 事件；**Subscription refunded** 事件将替代它。
+- 新订阅开始（为新产品触发 **Subscription started** 事件）。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Immediate_Product_Change_Flow_Upgrade.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+如果用户降级订阅，第一个订阅将持续到付费周期结束，届时被新的低级别订阅替代。在这种情况下，立即触发的仅有 **Access level updated** 事件（禁用访问自动续订）。其他所有事件将在订阅实际切换时触发：
+
+- 另一个 **Access level updated** 事件（授予第二个产品的访问权限）。
+- **Subscription expired (churned)** 事件（结束第一个产品的订阅）。
+- **Subscription started** 事件（为新产品开始新订阅）。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Delayed_Product_Change_Downgrade.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 延迟生效的产品变更流程 \{#delayed-product-change-flow\}
+
+还有一种情况是用户在订阅续订时更改产品。此情况与前一种非常相似：立即触发一个 **Access level updated** 事件，禁用旧产品的访问自动续订。其他所有事件将在用户更改订阅且系统完成切换时触发：
+
+- 另一个 **Access level updated** 事件（授予第二个产品的访问权限）。
+- **Subscription expired (churned)** 事件（结束第一个产品的订阅）。
+- **Subscription started** 事件（为新产品开始新订阅）。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Product_Change_on_Renewal_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## 账单问题结果流程 \{#billing-issue-outcome-flow\}
+
+如果因账单问题导致试用转化或订阅续订失败，后续处理取决于是否启用了宽限期。
+
+启用宽限期时，若付款成功，试用将转化或订阅将续订；若付款失败，应用商店将继续尝试向用户收费，若仍然失败，应用商店将自行终止试用或订阅。
+
+因此，在发生账单问题时，Adapty 将触发以下事件：
+
+- **Billing issue detected**
+- **Entered grace period**（如果启用了宽限期）
+- **Access level updated**（提供至宽限期结束的访问权限）
+
+如果之后付款成功，Adapty 会记录 **Trial converted** 或 **Subscription renewed** 事件，用户不会失去访问权限。
+
+如果付款最终失败且应用商店取消订阅，Adapty 将触发以下事件：
+
+- **Trial expired** 或 **Subscription expired (churned)**（`cancellation_reason: billing_error`）
+- **Access level updated**（撤销用户的访问权限）
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Billing_Issue_Outcome_Flow_with_Grace_Period.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+未启用宽限期时，账单重试期（应用商店持续尝试向用户收费的时间段）将立即开始。
+
+如果在宽限期结束前付款始终未成功，流程相同：当应用商店自动终止订阅时，触发以下相同事件：
+
+- **Trial expired** 或 **Subscription expired (churned)** 事件（`cancellation_reason` 为 `billing_error`）
+
+- **Access level updated**（撤销用户的访问权限）
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Billing_Issue_Outcome_Flow_without_Grace_Period.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## 跨用户账户共享购买的流程 \{#sharing-purchases-across-user-accounts-flows\}
+
+当一个 <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration)、[Android](android-identifying-users#setting-customer-user-id-on-configuration)、[React Native](react-native-identifying-users#setting-customer-user-id-on-configuration)、[Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration) 和 [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> 尝试恢复或延长已绑定到不同 <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration)、[Android](android-identifying-users#setting-customer-user-id-on-configuration)、[React Native](react-native-identifying-users#setting-customer-user-id-on-configuration)、[Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration) 和 [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> 的订阅时，Adapty 的 **Sharing paid access between user accounts** 设置将控制访问权限的管理方式。具体流程将因所选选项而异。
+
+### 将访问权限转移给新用户的流程 \{#transfer-access-to-new-user-flow\}
+
+推荐选项是将访问等级转移给新用户。这可保留原用户的交易历史，确保分析数据的一致性。仅触发 2 个 **Access level updated** 事件：
+
+1. 移除第一个用户的访问权限
+2. 授予第二个用户访问权限
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Transfer_Access_to_New_User_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+以下是此场景中生成的事件中与访问等级分配和转移相关字段的详细说明：
+
+- **用户 A：Access level updated（在用户 A 于应用内购买订阅时发送）**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **用户 A：Access level updated（在应用重新安装且用户 B 登录、撤销用户 A 访问权限时发送）**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": false,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **用户 B：Access level updated（在用户 B 登录并获得访问权限时发送）**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000001",
+    "customer_user_id": UserB,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+### 用户间共享访问权限的流程 \{#shared-access-between-users-flow\}
+
+此选项允许多个用户在其设备使用同一 Apple/Google ID 登录时共享同一访问等级。当用户重新安装应用并使用不同邮箱登录时，他们仍可访问之前的购买内容，非常实用。启用此选项后，多个已识别的用户可以共享同一访问等级。在共享访问期间，所有交易均记录在原始 <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration)、[Android](android-identifying-users#setting-customer-user-id-on-configuration)、[React Native](react-native-identifying-users#setting-customer-user-id-on-configuration)、[Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration) 和 [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> 下，以保持完整的交易历史和分析数据。
+
+因此，仅触发 1 个事件：**Access level updated**（授予第二个用户访问权限）。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Share_Access_Between_Users_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+以下是此场景中生成的事件中与访问等级分配和共享相关字段的详细说明：
+
+**用户 B：Access level updated（在用户 B 登录并获得访问权限时发送）**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": [
+      {
+        "profile_id": "00000000-0000-0000-0000-000000000001,
+        "customer_user_id": UserB
+      }
+    ]
+  }
+  ```
+
+### 用户间不共享访问权限的流程 \{#access-not-shared-between-users-flow\}
+
+启用此选项后，第一个获得访问等级的用户画像将永久保留该权限。如果需要将购买内容绑定到单一 <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration)、[Android](android-identifying-users#setting-customer-user-id-on-configuration)、[React Native](react-native-identifying-users#setting-customer-user-id-on-configuration)、[Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration) 和 [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip>，此选项非常理想。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Share_Access_Between_Users_Disabled_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>

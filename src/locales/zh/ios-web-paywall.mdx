@@ -1,0 +1,106 @@
+---
+title: "在 iOS SDK 中实现 Web 付费墙"
+description: "设置 Web 付费墙，无需支付 App Store 费用和审核即可收款。"
+metadataTitle: "在美国 iOS 应用中接受 Web 支付 | Adapty 文档"
+keywords: ['web paywalls']
+sidebar_label: "实现 Web 付费墙"
+---
+import Zoom from 'react-medium-image-zoom';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+:::important
+在开始之前，请确保您已[在控制台中配置了 Web 付费墙](web-paywall)，并安装了 Adapty SDK 3.6.1 或更高版本。
+:::
+
+## 打开 Web 付费墙 \{#open-web-paywalls\}
+
+如果您使用的是自行开发的付费墙，则需要使用 SDK 方法来处理 Web 付费墙。`.openWebPaywall` 方法会：
+1. 生成一个唯一的 URL，使 Adapty 能够将向特定用户展示的付费墙与其被重定向到的网页关联起来。
+2. 追踪用户返回应用的时机，然后以短暂的间隔请求 `.getProfile`，以判断用户画像的访问权限是否已更新。
+
+这样，如果付款成功且访问权限已更新，订阅将几乎立即在应用中激活。
+
+```swift showLineNumbers title="Swift"
+do {
+    try await Adapty.openWebPaywall(for: product)
+} catch {
+    print("Failed to open web paywall: \(error)")
+}
+```
+
+:::note
+`openWebPaywall` 方法有两个版本：
+1. `openWebPaywall(product)`：按付费墙生成 URL，并将产品数据添加到 URL 中。
+2. `openWebPaywall(paywall)`：按付费墙生成 URL，但不将产品数据添加到 URL 中。当您在 Adapty 付费墙中的产品与 Web 付费墙中的产品不同时使用此版本。
+:::
+
+## 处理错误 \{#handle-errors\}
+
+| 错误                                    | 描述                                   | 建议操作                                        |
+|-----------------------------------------|----------------------------------------|------------------------------------------------|
+| AdaptyError.paywallWithoutPurchaseUrl   | 付费墙未配置 Web 购买 URL               | 检查付费墙是否已在 Adapty 控制台中正确配置      |
+| AdaptyError.productWithoutPurchaseUrl   | 产品没有 Web 购买 URL                  | 在 Adapty 控制台中验证产品配置                  |
+| AdaptyError.failedOpeningWebPaywallUrl  | 无法在浏览器中打开 URL                  | 检查设备设置或提供其他购买方式                  |
+| AdaptyError.failedDecodingWebPaywallUrl | 无法正确对 URL 中的参数进行编码         | 验证 URL 参数是否有效且格式正确                 |
+
+## 实现示例 \{#implementation-example\}
+
+```swift showLineNumbers title="Swift"
+class SubscriptionViewController: UIViewController {
+    var paywall: AdaptyPaywall?
+    
+    @IBAction func purchaseButtonTapped(_ sender: UIButton) {
+        guard let paywall = paywall, let product = paywall.products.first else { return }
+         Task {
+            await offerWebPurchase(for: product)
+         }
+    }
+    
+    func offerWebPurchase(for paywallProduct: AdaptyPaywallProduct) async {
+        do {
+            // Attempt to open web paywall
+            try await Adapty.openWebPaywall(for: paywallProduct)
+        } catch let error as AdaptyError {
+            
+            switch error {
+            case .paywallWithoutPurchaseUrl, .productWithoutPurchaseUrl:
+                showAlert(message: "Web purchase is not available for this product.")
+            case .failedOpeningWebPaywallUrl:
+                showAlert(message: "Could not open web browser. Please try again.")
+            default:
+                showAlert(message: "An error occurred: \(error.localizedDescription)")
+            }
+        } catch {
+            showAlert(message: "An unexpected error occurred.")
+        }
+    }
+    
+    // Helper methods
+    private func showAlert(message: String) { /* ... */ }
+}
+```
+
+:::note
+用户返回应用后，请刷新 UI 以反映用户画像的更新。`AdaptyDelegate` 将接收并处理用户画像更新事件。
+:::
+
+## 在应用内浏览器中打开 Web 付费墙 \{#open-web-paywalls-in-an-in-app-browser\}
+
+:::important
+从 Adapty SDK v. 3.15 开始支持在应用内浏览器中打开 Web 付费墙。
+:::
+
+默认情况下，Web 付费墙在外部浏览器中打开。
+
+为了提供无缝的用户体验，您可以在应用内浏览器中打开 Web 付费墙。这会在您的应用内显示 Web 购买页面，让用户无需切换应用即可完成交易。
+
+要启用此功能，请将 `in` 参数设置为 `.inAppBrowser`：
+
+```swift showLineNumbers title="Swift"
+do {
+    try await Adapty.openWebPaywall(for: product, in: .inAppBrowser) // default – .externalBrowser
+} catch {
+    print("Failed to open web paywall: \(error)")
+}
+```

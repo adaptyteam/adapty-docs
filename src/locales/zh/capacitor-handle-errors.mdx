@@ -1,0 +1,213 @@
+---
+title: "在 Capacitor SDK 中处理错误"
+description: "在 Capacitor SDK 中处理错误。"
+metadataTitle: "Capacitor 中的错误处理 | Adapty 文档"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CrossPlatformErrors from '@site/src/locales/zh/reusable/CrossPlatformErrors.md';
+
+SDK 返回的每个错误都是 `AdaptyError` 实例。以下是一个示例：
+
+```typescript showLineNumbers
+import { adapty, AdaptyError, ErrorCodeName } from '@adapty/capacitor';
+
+try {
+  const result = await adapty.makePurchase({ product });
+  
+  // Handle purchase result
+  if (result.type === 'success') {
+    console.log('Purchase successful:', result.profile);
+  } else if (result.type === 'user_cancelled') {
+    console.log('User cancelled the purchase');
+  } else if (result.type === 'pending') {
+    console.log('Purchase is pending');
+  }
+} catch (error) {
+  if (error instanceof AdaptyError) {
+    console.error('Adapty error:', error.adaptyCode, error.localizedDescription);
+    
+    // Handle specific error codes
+    switch (error.adaptyCode) {
+      case ErrorCodeName.cantMakePayments:
+        console.log('In-app purchases are not allowed on this device');
+        break;
+      case ErrorCodeName.notActivated:
+        console.log('Adapty SDK is not activated');
+        break;
+      case ErrorCodeName.productPurchaseFailed:
+        console.log('Purchase failed:', error.detail);
+        break;
+      default:
+        console.log('Other error occurred:', error.detail);
+    }
+  } else {
+    console.error('Non-Adapty error:', error);
+  }
+}
+```
+
+## 错误属性 \{#error-properties\}
+
+`AdaptyError` 类提供以下属性：
+
+| 属性 | 类型 | 描述 |
+|----------|------|-------------|
+| `adaptyCode` | `number` | 数字错误代码（例如，`1003` 对应 cantMakePayments） |
+| `localizedDescription` | `string` | 用户友好的错误消息 |
+| `detail` | `string \| undefined` | 附加错误详情（可选） |
+| `message` | `string` | 包含代码和描述的完整错误消息 |
+
+## 错误代码 \{#error-codes\}
+
+SDK 导出用于处理错误代码的常量和工具：
+
+### ErrorCodeName 常量 \{#errorcodename-constant\}
+
+将字符串标识符映射到数字代码：
+
+```typescript
+import { ErrorCodeName } from '@adapty/capacitor';
+
+ErrorCodeName.cantMakePayments // 1003
+ErrorCodeName.notActivated // 2002
+ErrorCodeName.networkFailed // 2005
+```
+
+### ErrorCode 常量 \{#errorcode-constant\}
+
+将数字代码映射到字符串标识符：
+
+```typescript
+import { ErrorCode } from '@adapty/capacitor';
+
+ErrorCode[1003] // 'cantMakePayments'
+ErrorCode[2002] // 'notActivated'
+ErrorCode[2005] // 'networkFailed'
+```
+
+### 辅助函数 \{#helper-functions\}
+
+```typescript
+import { getErrorCode, getErrorPrompt } from '@adapty/capacitor';
+
+// Get numeric code from string name:
+getErrorCode('cantMakePayments') // 1003
+
+// Get string name from numeric code:
+getErrorPrompt(1003) // 'cantMakePayments'
+```
+
+### 比较错误代码 \{#comparing-error-codes\}
+
+**重要提示：** `error.adaptyCode` 是一个 **数字**，因此应直接与数字代码进行比较：
+
+```typescript
+// Option 1: Use ErrorCodeName constant (recommended) ✅
+if (error.adaptyCode === ErrorCodeName.cantMakePayments) {
+  console.log('Cannot make payments');
+}
+
+// Option 2: Compare with numeric literal ✅
+if (error.adaptyCode === 1003) {
+  console.log('Cannot make payments');
+}
+
+// NOT like this ❌ - compares number to string and will never match
+if (error.adaptyCode === ErrorCode[1003]) {
+}
+```
+
+## 全局错误处理器 \{#global-error-handler\}
+
+您可以设置全局错误处理器来捕获所有 Adapty 错误：
+
+```typescript showLineNumbers
+import { AdaptyError, ErrorCodeName } from '@adapty/capacitor';
+
+// Set up global error handler
+AdaptyError.onError = (error: AdaptyError) => {
+  console.error('Global Adapty error:', {
+    code: error.adaptyCode,
+    message: error.localizedDescription,
+    detail: error.detail
+  });
+  
+  // Handle specific error types globally
+  if (error.adaptyCode === ErrorCodeName.notActivated) {
+    // SDK not activated - maybe retry activation
+    console.log('SDK not activated, attempting to reactivate...');
+  }
+};
+```
+
+## 常见错误处理模式 \{#common-error-handling-patterns\}
+
+### 处理购买错误 \{#handle-purchase-errors\}
+
+```typescript showLineNumbers
+import { adapty, AdaptyError, ErrorCodeName } from '@adapty/capacitor';
+
+async function handlePurchase(product: AdaptyPaywallProduct) {
+  try {
+    const result = await adapty.makePurchase({ product });
+    
+    if (result.type === 'success') {
+      console.log('Purchase successful:', result.profile);
+    } else if (result.type === 'user_cancelled') {
+      console.log('User cancelled the purchase');
+    } else if (result.type === 'pending') {
+      console.log('Purchase is pending');
+    }
+  } catch (error) {
+    if (error instanceof AdaptyError) {
+      switch (error.adaptyCode) {
+        case ErrorCodeName.cantMakePayments:
+          console.log('In-app purchases not allowed');
+          break;
+        case ErrorCodeName.productPurchaseFailed:
+          console.log('Purchase failed:', error.detail);
+          break;
+        default:
+          console.error('Purchase error:', error.localizedDescription);
+      }
+    }
+  }
+}
+```
+
+### 处理网络错误 \{#handle-network-errors\}
+
+```typescript showLineNumbers
+import { adapty, AdaptyError, ErrorCodeName } from '@adapty/capacitor';
+
+async function fetchPaywall(placementId: string) {
+  try {
+    const paywall = await adapty.getPaywall({ placementId });
+    return paywall;
+  } catch (error) {
+    if (error instanceof AdaptyError) {
+      switch (error.adaptyCode) {
+        case ErrorCodeName.networkFailed:
+          console.log('Network error, retrying...');
+          // Implement retry logic
+          break;
+        case ErrorCodeName.serverError:
+          console.log('Server error:', error.detail);
+          break;
+        case ErrorCodeName.notActivated:
+          console.log('SDK not activated');
+          break;
+        default:
+          console.error('Paywall fetch error:', error.localizedDescription);
+      }
+    }
+    throw error;
+  }
+}
+```
+
+<CrossPlatformErrors />

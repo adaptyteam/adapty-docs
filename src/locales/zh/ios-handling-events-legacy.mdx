@@ -1,0 +1,219 @@
+---
+title: "在旧版 iOS SDK 中处理付费墙事件"
+description: "使用 Adapty 的事件跟踪系统处理 iOS（旧版）应用中的事件。"
+metadataTitle: "在 iOS（旧版）中处理事件 | Adapty 文档"
+toc_max_heading_level: 4
+---
+
+使用[付费墙编辑工具](adapty-paywall-builder-legacy)配置的付费墙无需额外代码即可完成购买和恢复购买操作。但是，它们会生成一些您的应用可以响应的事件。这些事件包括按钮点击（关闭按钮、URL、产品选择等）以及付费墙上购买相关操作的通知。请参阅以下内容了解如何响应这些事件。
+
+:::warning
+本指南仅适用于**旧版付费墙编辑工具付费墙**，需要使用 Adapty SDK v2.x 及以下版本。如需在 Adapty SDK v3.0 或更高版本中展示使用新版付费墙编辑工具设计的付费墙，请参阅 [iOS - 处理使用新版付费墙编辑工具设计的付费墙事件](ios-handling-events)。
+:::
+
+## 在 Swift 中处理事件 \{#handling-events-in-swift\}
+
+要控制或监控移动应用中付费墙屏幕上发生的过程，请实现 `AdaptyPaywallControllerDelegate` 方法。
+
+### 用户生成的事件 \{#user-generated-events\}
+
+#### 操作 \{#actions\}
+
+如果用户执行某个操作（`close`、`openURL(url:)` 或 `custom(id:)`），将调用以下方法。请注意，这只是一个示例，您可以以不同的方式实现对操作的响应：
+
+```swift showLineNumbers title="Swift"
+func paywallController(_ controller: AdaptyPaywallController,
+                       didPerform action: AdaptyUI.Action) {
+
+    switch action {
+        case .close:
+            controller.dismiss(animated: true)
+        case let .openURL(url):
+      			// handle URL opens (incl. terms and privacy links)
+            UIApplication.shared.open(url, options: [:])
+        case let .custom(id):
+            if id == "login" {
+               // implement login flow 
+            }
+            break
+    }
+}
+```
+
+例如，如果用户点击关闭按钮，将触发 `close` 操作，您应该关闭付费墙。请注意，您至少需要实现对 `close` 和 `openURL` 两者的响应。
+
+> 💡 登录操作
+>
+> 如果您在看板中配置了登录操作，还应该实现对 id 为 `"login"` 的自定义操作的响应。
+
+#### 产品选择 \{#product-selection\}
+
+如果用户选择了要购买的产品，将调用此方法：
+
+```swift showLineNumbers title="Swift"
+    func paywallController(_ controller: AdaptyPaywallController,
+                           didSelectProduct product: AdaptyPaywallProduct) {
+    }
+```
+
+#### 开始购买 \{#started-purchase\}
+
+如果用户发起购买流程，将调用此方法：
+
+```swift showLineNumbers title="Swift"
+func paywallController(_ controller: AdaptyPaywallController,
+                       didStartPurchase product: AdaptyPaywallProduct) {
+}
+```
+
+在观察者模式下不会调用此方法。详情请参阅 [iOS - 在观察者模式下展示付费墙编辑工具付费墙](ios-present-paywall-builder-paywalls-in-observer-mode) 主题。
+
+#### 取消购买 \{#canceled-purchase\}
+
+如果用户发起购买流程但手动中断，将调用以下方法。当 `Adapty.makePurchase()` 函数以 `.paymentCancelled` 错误结束时，会发生此事件：
+
+```swift showLineNumbers title="Swift"
+func paywallController(_ controller: AdaptyPaywallController,
+                       didCancelPurchase product: AdaptyPaywallProduct) {
+}
+```
+
+在观察者模式下不会调用此方法。详情请参阅 [iOS - 在观察者模式下展示付费墙编辑工具付费墙](ios-present-paywall-builder-paywalls-in-observer-mode) 主题。
+
+#### 购买成功 \{#successful-purchase\}
+
+如果 `Adapty.makePurchase()` 成功，将调用此方法：
+
+```swift showLineNumbers title="Swift"
+func paywallController(_ controller: AdaptyPaywallController,
+                       didFinishPurchase product: AdaptyPaywallProduct,
+                       purchasedInfo: AdaptyPurchasedInfo) {      
+    controller.dismiss(animated: true)
+}
+```
+
+在这种情况下，我们建议关闭付费墙屏幕。
+
+在观察者模式下不会调用此方法。详情请参阅 [iOS - 在观察者模式下展示付费墙编辑工具付费墙](ios-present-paywall-builder-paywalls-in-observer-mode) 主题。
+
+#### 购买失败 \{#failed-purchase\}
+
+如果 `Adapty.makePurchase()` 失败，将调用此方法：
+
+```swift showLineNumbers title="Swift"
+func paywallController(_ controller: AdaptyPaywallController,
+                       didFailPurchase product: AdaptyPaywallProduct,
+                       error: AdaptyError) {
+}
+```
+
+在观察者模式下不会调用此方法。详情请参阅 [iOS - 在观察者模式下展示付费墙编辑工具付费墙](ios-present-paywall-builder-paywalls-in-observer-mode) 主题。
+
+#### 恢复购买成功 \{#successful-restore\}
+
+如果 `Adapty.restorePurchases()` 成功，将调用此方法：
+
+```swift showLineNumbers title="Swift"
+func paywallController(_ controller: AdaptyPaywallController, 
+                       didFinishRestoreWith profile: AdaptyProfile) {
+}
+```
+
+如果用户拥有所需的 `accessLevel`，我们建议关闭屏幕。请参阅[订阅状态](subscription-status)主题了解如何检查。
+
+#### 恢复购买失败 \{#failed-restore\}
+
+如果 `Adapty.restorePurchases()` 失败，将调用此方法：
+
+```swift showLineNumbers title="Swift"
+public func paywallController(_ controller: AdaptyPaywallController, 
+                              didFailRestoreWith error: AdaptyError) {
+}
+```
+
+### 数据获取与渲染 \{#data-fetching-and-rendering\}
+
+#### 产品加载错误 \{#product-loading-errors\}
+
+如果您在初始化期间未传入产品数组，AdaptyUI 将自动从服务器检索所需对象。如果此操作失败，AdaptyUI 将通过调用此方法报告错误：
+
+```swift showLineNumbers title="Swift"
+public func paywallController(_ controller: AdaptyPaywallController,
+                              didFailLoadingProductsWith error: AdaptyError) -> Bool {
+    return true
+}
+```
+
+如果您返回 `true`，AdaptyUI 将在 2 秒后重试请求。
+
+#### 渲染错误 \{#rendering-errors\}
+
+如果界面渲染过程中出现错误，将通过此方法报告：
+
+```swift showLineNumbers title="Swift"
+public func paywallController(_ controller: AdaptyPaywallController,
+                              didFailRenderingWith error: AdaptyError) {
+}
+```
+
+正常情况下不应出现此类错误，如果您遇到，请告知我们。
+
+## 在 SwiftUI 中处理事件 \{#handling-events-in-swiftui\}
+
+要控制或监控移动应用中付费墙屏幕上发生的过程，请在 SwiftUI 中使用 `.paywall` 修饰符：
+
+```swift showLineNumbers title="Swift"
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywall: paywall,
+          configuration: viewConfig,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                	case .openURL(url):
+                			// handle opening the URL (incl. for terms and privacy)
+                	case 
+                  default:
+                      // handle other actions
+                      break
+              }
+          },
+          didSelectProduct: { /* Handle the event */  },
+          didStartPurchase: { /* Handle the event */ },
+          didFinishPurchase: { product, info in /* Handle the event */ },
+          didFailPurchase: { product, error in /* Handle the event */ },
+          didCancelPurchase: { /* Handle the event */ },
+          didStartRestore: { /* Handle the event */ },
+          didFinishRestore: { /* Handle the event */ },
+          didFailRestore: { /* Handle the event */ },
+          didFailRendering: { error in
+              paywallPresented = false
+          },
+          didFailLoadingProducts: { error in
+              return false
+          }
+      )
+}
+```
+
+您只需注册所需的闭包参数，可以省略不需要的参数。在这种情况下，未使用的闭包参数将不会被创建。
+
+| 闭包参数                       | 描述                                                                                                           |
+| :--------------------------- | :------------------------------------------------------------------------------------------------------------- |
+| **didSelectProduct**         | 如果用户选择了要购买的产品，将调用此参数。                                                                       |
+| **didStartPurchase**         | 如果用户发起购买流程，将调用此参数。                                                                             |
+| **didFinishPurchase**        | 如果 Adapty.makePurchase() 成功，将调用此参数。                                                                 |
+| **didFailPurchase**          | 如果 Adapty.makePurchase() 失败，将调用此参数。                                                                 |
+| **didCancelPurchase**        | 如果用户发起购买流程但手动中断，将调用此参数。                                                                   |
+| **didStartRestore**          | 如果用户发起购买恢复，将调用此参数。                                                                             |
+| **didFinishRestore**         | 如果 `Adapty.restorePurchases()` 成功，将调用此参数。                                                           |
+| **didFailRestore**           | 如果 `Adapty.restorePurchases()` 失败，将调用此参数。                                                           |
+| **didFailRendering**         | 如果界面渲染过程中出现错误，将调用此参数。                                                                       |
+| **didFailLoadingProducts**   | 如果您在初始化期间未传入产品数组，AdaptyUI 将自动从服务器检索所需对象。如果此操作失败，AdaptyUI 将调用此参数。   |
+
+请注意，您至少需要实现对 `close` 和 `openURL` 两者的响应。

@@ -86,7 +86,10 @@ export default defineConfig({
 
   integrations: [
     react(),
-    sitemap(),
+    sitemap({
+      // Exclude localized pages — they are covered by locale-specific sitemaps (e.g. sitemap-zh-index.xml)
+      filter: (page) => !page.includes('/docs/zh/'),
+    }),
     mdx({
       remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
       rehypePlugins: [rehypeSlug],

@@ -1,0 +1,86 @@
+---
+title: "将 Adapty Android SDK 迁移至 v3.4"
+description: "迁移至 Adapty Android SDK v3.4，以获得更好的性能和新的变现功能。"
+metadataTitle: "迁移至 Adapty Android SDK v3.4 | Adapty 文档"
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+
+Adapty SDK 3.4.0 是一个主要版本，引入了需要您进行迁移操作的改进。
+
+## 更新备用付费墙文件 \{#update-fallback-paywall-files\}
+
+更新您的备用付费墙文件以确保与新 SDK 版本的兼容性：
+
+1. 从 Adapty 看板[下载更新后的备用付费墙文件](fallback-paywalls)。
+2. 用新文件[替换移动应用中现有的备用付费墙](android-use-fallback-paywalls)。
+
+## 更新观察者模式的实现 \{#update-implementation-of-observer-mode\}
+
+如果您正在使用观察者模式，请确保更新其实现。
+
+在以前的版本中，您需要恢复购买，以便 Adapty 能够识别通过您自己基础设施进行的交易，因为在观察者模式下 Adapty 无法直接访问这些交易。如果您使用了付费墙，还需要手动将每笔交易与发起该交易的付费墙关联起来。
+
+在新版本中，您必须明确上报每笔交易，Adapty 才能识别它。如果您使用付费墙，还需要传递 variation ID 以将交易与所使用的付费墙关联起来。
+
+:::warning
+
+**不要跳过交易上报！**
+如果您不调用 `reportTransaction`，Adapty 将无法识别该交易，它不会出现在分析数据中，也不会被发送到集成服务。
+
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff showLineNumbers
+- Adapty.restorePurchases { result ->
+-     if (result is AdaptyResult.Success) {
+-         // success
+-     }
+- }
+- 
+- Adapty.setVariationId(transactionId, variationId) { error ->
+-     if (error == null) {
+-         // success
+-     }
+- }
+
++ val transactionInfo = TransactionInfo.fromPurchase(purchase)
++ 
++ Adapty.reportTransaction(transactionInfo, variationId) { result ->
++     if (result is AdaptyResult.Success) {
++         // success
++     }
++ }
+```
+
+</TabItem>
+
+<TabItem value="java" label="Java" default>
+
+```diff showLineNumbers
+- Adapty.restorePurchases(result -> {
+-     if (result instanceof AdaptyResult.Success) {
+-         // success
+-     }
+- });
+- 
+- Adapty.setVariationId(transactionId, variationId, error -> {
+-     if (error == null) {
+-         // success
+-     }
+- });
+
++ TransactionInfo transactionInfo = TransactionInfo.fromPurchase(purchase);
++ 
++ Adapty.reportTransaction(transactionInfo, variationId, result -> {
++     if (result instanceof AdaptyResult.Success) {
++         // success
++     }
++ });
+```
+
+</TabItem>
+</Tabs>

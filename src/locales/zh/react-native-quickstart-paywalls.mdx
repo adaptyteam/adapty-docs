@@ -1,0 +1,315 @@
+---
+title: "使用付费墙在 React Native SDK 中启用购买功能"
+description: "了解如何使用 Adapty SDK 在 React Native 应用中展示付费墙。"
+metadataTitle: "展示付费墙 | React Native SDK | Adapty 文档"
+customSlug: /react-native-quickstart-paywalls
+displayed_sidebar: sdkreactnative
+keywords: [ 'paywall', 'paywall builder', 'getPaywall']
+rank: 70
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import PaywallsIntro from '@site/src/locales/zh/reusable/PaywallsIntro.md';
+
+要启用应用内购买，您需要理解三个核心概念：
+
+- [**产品**](product) – 用户可以购买的任何内容（订阅、消耗型商品、永久授权）
+- [**付费墙**](paywalls) 是定义要提供哪些产品的配置。在 Adapty 中，付费墙是获取产品的唯一方式，但这种设计让您无需修改应用代码即可更改产品组合、定价和套餐内容。
+- [**版位**](placements) – 您在应用中展示付费墙的位置和时机（例如 `main`、`onboarding`、`settings`）。您在看板中为版位配置付费墙，然后在代码中通过版位 ID 请求它们。这使得运行 A/B 测试和向不同用户展示不同付费墙变得非常简单。
+
+Adapty 为您提供三种在应用中启用购买的方式。请根据您的应用需求选择其中一种：
+
+| 实现方式 | 复杂度 | 适用场景 |
+|---|---|---|
+| 付费墙编辑工具 | ✅ 简单 | 您[在无代码编辑工具中创建完整的、可立即使用的付费墙](quickstart-paywalls)。Adapty 自动渲染它并在后台处理所有复杂的购买流程、收据验证和订阅管理。|
+| 手动创建的付费墙 | 🟡 中等 | 您在应用代码中实现付费墙 UI，但仍从 Adapty 获取付费墙对象以保持产品组合的灵活性。请参阅[指南](react-native-quickstart-manual)。|
+| 观察者模式 | 🔴 复杂 | 您已有自己的购买处理基础设施并希望继续使用它。请注意，观察者模式在 Adapty 中有一定限制。请参阅[文章](observer-vs-full-mode)。|
+
+:::important
+**以下步骤展示如何实现通过 Adapty 付费墙编辑工具创建的付费墙。**
+
+如果您不想使用付费墙编辑工具，请参阅[手动创建付费墙的购买处理指南](react-native-making-purchases)。
+:::
+
+要展示通过 Adapty 付费墙编辑工具创建的付费墙，在您的应用代码中只需：
+
+1. **获取付费墙**：从 Adapty 获取付费墙。
+2. **展示付费墙，Adapty 将为您处理购买**：在您的应用中显示已获取的付费墙容器。
+3. **处理按钮操作**：将用户与付费墙的交互与您应用的响应关联起来。例如，当用户点击按钮时打开链接或关闭付费墙。
+
+## 开始之前 \{#before-you-start\}
+
+开始之前，请完成以下步骤：
+
+1. 在 Adapty 看板中将您的应用连接到 [App Store](initial_ios) 和/或 [Google Play](initial-android)。
+2. 在 Adapty 中[创建产品](create-product)。
+3. [创建付费墙并向其添加产品](create-paywall)。
+4. [创建版位并将付费墙添加到其中](create-placement)。
+5. 在您的应用代码中[安装并激活 Adapty SDK](sdk-installation-reactnative)。
+
+:::tip
+完成这些步骤最快的方式是遵循[快速入门指南](quickstart)或使用 [Developer CLI](developer-cli-quickstart) 创建付费墙和版位。
+:::
+
+## 1. 获取付费墙 \{#1-get-the-paywall\}
+
+您的付费墙与在看板中配置的版位相关联。版位允许您为不同目标受众运行不同的付费墙或运行 [A/B 测试](ab-tests)。
+
+要获取通过 Adapty 付费墙编辑工具创建的付费墙，您需要：
+
+1. 使用 `getPaywall` 方法通过[版位](placements) ID 获取 `paywall` 对象，并使用 `hasViewConfiguration` 属性检查它是否是通过编辑工具创建的付费墙。
+
+2. 使用 `createPaywallView` 方法创建付费墙视图。该视图包含展示付费墙所需的 UI 元素和样式。
+
+:::important
+要获取视图配置，您必须在付费墙编辑工具中打开 **Show on device** 开关。否则，您将获得空的视图配置，付费墙将无法显示。
+:::
+
+```typescript showLineNumbers title="React Native"
+import {createPaywallView} from 'react-native-adapty';
+
+try {
+    const placementId = 'YOUR_PLACEMENT_ID';
+
+    const paywall = await adapty.getPaywall(placementId);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
+
+if (paywall.hasViewConfiguration) {
+    try {
+        const view = await createPaywallView(paywall);
+    } catch (error) {
+        // handle the error
+    }
+} else {
+    //use your custom logic
+}
+```
+
+## 2. 展示付费墙 \{#2-display-the-paywall\}
+
+现在，当您拥有付费墙配置后，只需添加几行代码即可展示您的付费墙。
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React 组件" default>
+
+要在现有组件树中嵌入付费墙，请直接在您的 React Native 组件层次结构中使用 `AdaptyPaywallView` 组件：
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback } from 'react';
+import { Linking } from 'react-native';
+import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
+
+function MyPaywall({ paywall }) {
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+      onUrlPress={onUrlPress}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="模态框展示">
+
+要将付费墙作为独立屏幕展示，请对由 `createPaywallView` 方法创建的 `view` 使用 `view.present()` 方法。每个 `view` 只能使用一次。如果需要再次展示付费墙，请再次调用 `createPaywallView` 以创建新的 `view` 实例。
+
+```typescript showLineNumbers title="React Native"
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::tip
+有关如何展示付费墙的更多详情，请参阅我们的[指南](react-native-present-paywalls)。
+:::
+
+## 3. 处理按钮操作 \{#3-handle-button-actions\}
+
+当用户点击付费墙中的按钮时，React Native SDK 会自动处理购买、恢复购买、关闭付费墙和打开 URL 等操作。
+
+但是，其他按钮具有自定义或预定义的 ID，需要在您的代码中处理操作。或者，您可能希望覆盖其默认行为。
+
+例如，以下是关闭按钮的默认行为。您无需在代码中添加它，但在这里您可以看到在需要时如何实现。
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React 组件" default>
+
+对于 React 组件，直接在 `AdaptyPaywallView` 组件中处理操作：
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback } from 'react';
+import { Linking } from 'react-native';
+import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
+
+function MyPaywall({ paywall }) {
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {}, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onUrlPress={onUrlPress}
+      onCloseButtonPress={onCloseButtonPress}
+      onCustomAction={onCustomAction}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="模态框展示">
+
+对于模态框展示，使用 `setEventHandlers` 实现事件处理器：
+
+```typescript showLineNumbers title="React Native"
+const unsubscribe = view.setEventHandlers({
+    onCloseButtonPress() {
+        return true; // allow paywall closing
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+:::tip
+阅读我们关于如何处理按钮[操作](react-native-handle-paywall-actions)和[事件](react-native-handling-events-1)的指南。
+:::
+
+## 下一步 \{#next-steps\}
+
+<SupportForum />
+
+您的付费墙已准备好在应用中展示。在 [App Store 沙盒](test-purchases-in-sandbox)或 [Google Play Store](testing-on-android) 中测试您的购买，确保您可以从付费墙完成测试购买。
+
+现在，您需要[检查用户的访问等级](react-native-check-subscription-status)，以确保向正确的用户展示付费墙或授予付费功能的访问权限。
+
+## 完整示例 \{#full-example\}
+
+以下是如何将所有这些步骤整合到您的应用中。
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React 组件" default>
+
+```javascript showLineNumbers title="React Native (TSX)"
+import React, { useState, useEffect, useCallback } from 'react';
+import { Button, View, Linking } from 'react-native';
+import { adapty, AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
+
+export default function PaywallScreen() {
+  const [paywall, setPaywall] = useState(null);
+
+  const loadPaywall = async () => {
+    try {
+      const paywallData = await adapty.getPaywall('YOUR_PLACEMENT_ID');
+
+      if (paywallData.hasViewConfiguration) {
+        setPaywall(paywallData);
+      }
+    } catch (error) {
+      console.warn('Error loading paywall:', error);
+    }
+  };
+
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
+    // Handle close button press
+  }, []);
+
+  useEffect(() => {
+    loadPaywall();
+  }, []);
+
+  return (
+    <View style={{ flex: 1 }}>
+      {paywall ? (
+        <AdaptyPaywallView
+          paywall={paywall}
+          style={{ flex: 1 }}
+          onUrlPress={onUrlPress}
+          onCloseButtonPress={onCloseButtonPress}
+        />
+      ) : (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Button title="Load Paywall" onPress={loadPaywall} />
+        </View>
+      )}
+    </View>
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="模态框展示">
+
+```javascript showLineNumbers title="React Native"
+import React from 'react';
+import { Button, View } from 'react-native';
+import { adapty } from 'react-native-adapty';
+import { createPaywallView } from 'react-native-adapty';
+
+export default function PaywallScreen() {
+  const showPaywall = async () => {
+    try {
+      const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID');
+
+      if (!paywall.hasViewConfiguration) {
+        // use your custom logic
+        return;
+      }
+
+      const view = await createPaywallView(paywall);
+
+      view.setEventHandlers({
+          onCloseButtonPress() {
+              return true;
+        },
+      });
+
+      await view.present();
+    } catch (error) {
+      // handle any error that may occur during the process
+      console.warn('Error showing paywall:', error);
+    }
+  };
+
+  // you can add a button to manually trigger the paywall for testing purposes
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Button title="Show Paywall" onPress={showPaywall} />
+    </View>
+  );
+}
+```
+
+</TabItem>
+</Tabs>

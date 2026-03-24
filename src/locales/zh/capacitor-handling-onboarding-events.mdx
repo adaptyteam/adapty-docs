@@ -1,0 +1,336 @@
+---
+title: "在 Capacitor SDK 中处理用户引导事件"
+description: "使用 Adapty 在 Capacitor 中处理用户引导相关事件。"
+metadataTitle: "在 Capacitor 中处理用户引导事件 | Adapty 文档"
+toc_max_heading_level: 4
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Details from '@site/src/components/Details';
+
+通过编辑工具配置的用户引导会生成应用可以响应的事件。使用 `setEventHandlers` 方法来处理独立屏幕展示时的这些事件。
+
+在开始之前，请确保：
+
+1. 您已[创建用户引导](create-onboarding)。
+2. 您已将用户引导添加到[版位](placements)。
+
+## 设置事件处理器 \{#set-up-event-handlers\}
+
+要处理用户引导的事件，请使用 `view.setEventHandlers` 方法：
+
+```typescript showLineNumbers
+import { adapty, createOnboardingView } from '@adapty/capacitor';
+
+try {
+  const view = await createOnboardingView(onboarding);
+  
+  view.setEventHandlers({
+    onAnalytics(event, meta) {
+      console.log('Analytics event:', event);
+    },
+    onClose(actionId, meta) {
+      console.log('Onboarding closed:', actionId);
+      return true; // Allow the onboarding to close
+    },
+    onCustom(actionId, meta) {
+      console.log('Custom action:', actionId);
+      return false; // Don't close the onboarding
+    },
+    onPaywall(actionId, meta) {
+      console.log('Paywall action:', actionId);
+      view.dismiss().then(() => {
+        openPaywall(actionId);
+      });
+    },
+    onStateUpdated(action, meta) {
+      console.log('State updated:', action);
+    },
+    onFinishedLoading(meta) {
+      console.log('Onboarding finished loading');
+    },
+    onError(error) {
+      console.error('Onboarding error:', error);
+    },
+  });
+  
+  await view.present();
+} catch (error) {
+  console.error('Failed to present onboarding:', error);
+}
+```
+
+## 事件类型 \{#event-types\}
+
+以下部分描述了您可以处理的不同类型的事件。
+
+### 处理自定义操作 \{#handle-custom-actions\}
+
+在编辑工具中，您可以为按钮添加**自定义**操作并为其分配一个 ID。
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+然后，您可以在代码中使用此 ID，并将其作为自定义操作进行处理。例如，如果用户点击了自定义按钮（如**登录**或**允许通知**），事件处理器将以 `actionId` 参数触发，该参数与编辑工具中的 **Action ID** 相匹配。您可以创建自己的 ID，例如"allowNotifications"。
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onCustom(actionId, meta) {
+    switch (actionId) {
+      case 'login':
+        console.log('Login action triggered');
+        break;
+      case 'allow_notifications':
+        console.log('Allow notifications action triggered');
+        break;
+    }
+    return false; // Don't close the onboarding
+  },
+});
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+  "actionId": "allow_notifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+### 完成用户引导加载 \{#finishing-loading-onboarding\}
+
+当用户引导完成加载时，将触发以下事件：
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onFinishedLoading(meta) {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  },
+});
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+
+### 关闭用户引导 \{#closing-onboarding\}
+
+当用户点击分配了**关闭**操作的按钮时，用户引导被视为已关闭。
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+请注意，您需要管理用户关闭用户引导时发生的情况。例如，您需要停止显示用户引导本身。
+:::
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onClose(actionId, meta) {
+    console.log('Onboarding closed:', actionId);
+    return true; // Allow the onboarding to close
+  },
+});
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+</Details>
+
+### 打开付费墙 \{#opening-a-paywall\}
+
+:::tip
+如果您想在用户引导内部打开付费墙，请处理此事件。如果您想在用户引导关闭后打开付费墙，有一种更直接的方式——处理关闭操作并打开付费墙，无需依赖事件数据。
+:::
+
+如果用户点击了打开付费墙的按钮，您将获得您[手动设置](get-paid-in-onboardings)的按钮操作 ID。在用户引导中使用付费墙最无缝的方式是将操作 ID 设置为等于付费墙版位 ID。
+
+请注意，对于 iOS，一次只能在屏幕上显示一个视图（付费墙或用户引导）。如果您在用户引导上方展示付费墙，则无法以编程方式控制后台的用户引导。尝试关闭用户引导将关闭付费墙，而用户引导仍然可见。为避免这种情况，请始终在展示付费墙之前先关闭用户引导视图。
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onPaywall(actionId, meta) {
+    // Dismiss onboarding before presenting paywall
+    view.dismiss().then(() => {
+      openPaywall(actionId);
+    });
+  },
+});
+
+async function openPaywall(placementId: string) {
+  // Implement your paywall opening logic here
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+
+### 跟踪导航 \{#tracking-navigation\}
+
+在用户引导流程中发生各种与导航相关的事件时，您会收到分析事件：
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onAnalytics(event, meta) {
+    console.log('Analytics event:', event.type, meta.onboardingId);
+  },
+});
+```
+
+`event` 对象可以是以下类型之一：
+
+| 类型 | 描述 |
+|------------|-------------|
+| `onboardingStarted` | 当用户引导已加载时 |
+| `screenPresented` | 当任何屏幕显示时 |
+| `screenCompleted` | 当屏幕完成时。包含可选的 `elementId`（已完成元素的标识符）和可选的 `reply`（用户的响应）。当用户执行任何操作退出屏幕时触发。 |
+| `secondScreenPresented` | 当第二个屏幕显示时 |
+| `userEmailCollected` | 当通过输入字段收集用户电子邮件时触发 |
+| `onboardingCompleted` | 当用户到达具有 `final` ID 的屏幕时触发。如果您需要此事件，请[将 `final` ID 分配给最后一个屏幕](design-onboarding)。 |
+| `unknown` | 用于任何无法识别的事件类型。包含 `name`（未知事件的名称）和 `meta`（附加元数据） |
+
+每个事件包含 `meta` 信息，内容如下：
+
+| 字段 | 描述 |
+|------------|-------------|
+| `onboardingId` | 用户引导流程的唯一标识符 |
+| `screenClientId` | 当前屏幕的标识符 |
+| `screenIndex` | 当前屏幕在流程中的位置 |
+| `screensTotal` | 流程中的屏幕总数 |
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+```
+</Details>
