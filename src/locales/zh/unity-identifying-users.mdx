@@ -1,0 +1,139 @@
+---
+title: "在 Unity SDK 中识别用户"
+description: "了解如何在 Unity 应用中通过 Adapty SDK 识别用户。"
+metadataTitle: "识别用户 | Unity SDK | Adapty 文档"
+customSlug: /unity-identifying-users
+displayed_sidebar: sdkunity
+---
+
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+
+Adapty 会为每位用户创建一个内部用户画像 ID。但如果您有自己的身份验证系统，则应设置您自己的 Customer User ID。您可以在 [Profiles](profiles-crm) 部分通过 Customer User ID 查找用户，并在[服务端 API](getting-started-with-server-side-api) 中使用该 ID，它将被发送至所有集成渠道。
+
+### 在配置时设置 Customer User ID \{#setting-customer-user-id-on-configuration\}
+
+如果您在配置时已有用户 ID，只需将其作为 `customerUserId` 参数传递给 `.activate()` 方法：
+
+```csharp showLineNumbers
+using UnityEngine;
+using AdaptySDK;
+
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID");
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+```
+
+<SampleApp />
+
+### 在配置后设置 Customer User ID \{#setting-customer-user-id-after-configuration\}
+
+如果您在 SDK 配置时没有用户 ID，可以在之后的任意时刻通过 `.identify()` 方法进行设置。最常见的使用场景是在注册或授权之后，即用户从匿名用户切换为已认证用户时。
+
+```csharp showLineNumbers
+Adapty.Identify("YOUR_USER_ID", (error) => {
+  if(error == null) {
+    // successful identify
+  }
+});
+```
+
+请求参数：
+
+- **Customer User ID**（必填）：字符串类型的用户标识符。
+
+:::warning
+重新提交重要用户数据
+
+在某些情况下，例如用户再次登录账户时，Adapty 的服务器可能已经拥有该用户的信息。在这些场景下，Adapty SDK 将自动切换至新用户。如果您之前向匿名用户传递了任何数据（如自定义属性或来自第三方网络的归因数据），则需要为已识别用户重新提交这些数据。
+
+同样重要的是，识别用户后应重新请求所有付费墙和产品，因为新用户的数据可能有所不同。
+:::
+
+### 登出与登录 \{#logging-out-and-logging-in\}
+
+您可以随时调用 `.logout()` 方法使用户登出：
+
+```csharp showLineNumbers
+Adapty.Logout((error) => {
+  if(error == null) {
+    // successful logout
+  }
+});
+```
+
+之后可以使用 `.identify()` 方法使用户重新登录。
+
+## 设置 `appAccountToken`（iOS） \{#assign-appaccounttoken-ios\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) 是一个 **UUID**，用于将 App Store 交易与您的内部用户身份关联。  
+StoreKit 会将此 token 与每笔交易关联，以便您的后端能够将 App Store 数据与您的用户进行匹配。
+
+请为每位用户生成一个稳定的 UUID，并在同一账户的不同设备上复用该 UUID。
+这样可以确保购买记录和 App Store 通知始终正确关联。
+
+您可以通过两种方式设置该 token——在 SDK 激活时或在识别用户时。
+
+:::important
+您必须始终将 `appAccountToken` 与 `customerUserId` 一起传递。
+如果仅传递 token，它将不会被包含在交易中。
+:::
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+using System;
+
+// During configuration:
+var appAccountToken = new Guid("YOUR_APP_ACCOUNT_TOKEN");
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID", appAccountToken);
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+
+// Or when identifying users
+Adapty.Identify("YOUR_USER_ID", appAccountToken, (error) => {
+    if (error == null) {
+        // successful identify
+    }
+});
+```
+
+## 设置混淆账户 ID（Android） \{#set-obfuscated-account-ids-android\}
+
+Google Play 在某些使用场景中要求提供混淆账户 ID，以增强用户隐私和安全性。这些 ID 帮助 Google Play 识别购买记录，同时保持用户信息的匿名性，这对于防欺诈和数据分析尤为重要。
+
+如果您的应用处理敏感用户数据，或需要遵守特定隐私法规，则可能需要设置这些 ID。混淆 ID 使 Google Play 能够在不暴露实际用户标识符的情况下追踪购买记录。
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+// During configuration:
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID", null, "YOUR_OBFUSCATED_ACCOUNT_ID");
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+});
+
+// Or when identifying users
+Adapty.Identify("YOUR_USER_ID", null, "YOUR_OBFUSCATED_ACCOUNT_ID", (error) => {
+    if (error == null) {
+        // successful identify
+    }
+});
+```

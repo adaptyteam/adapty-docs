@@ -1,0 +1,130 @@
+---
+title: "归因集成"
+description: "将 Adapty 与归因工具集成，以跟踪用户获取和 LTV。"
+metadataTitle: "归因集成指南 | Adapty 文档"
+keywords: ['归因', 'updateAttribution']
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import Contentid from '@site/src/components/InlineTooltip';
+import InlineTooltip from '@site/src/components/InlineTooltip';
+
+Adapty 可与第三方服务交换信息，将订阅事件归因到特定的营销活动。通过此交换，您可以：
+
+* 了解哪些营销策略带来最多收入
+* 按归因筛选 Adapty [订阅数据图表](charts)
+* 使用第三方服务的功能分析 Adapty 订阅数据
+
+您可以通过以下两种方式进行设置：
+
+* [集成归因](#integrated-attribution) 只需极少的配置，即可让 Adapty 与 9 个主流平台交换数据。
+* [手动归因](#manual-attribution) 需要您自行从第三方服务 API 获取归因数据，然后再发送给 Adapty。
+
+:::tip
+启用[用户获取分析](user-acquisition)，全面了解您应用的整体经济状况。
+
+Adapty UA 是一个易于配置的 Web 看板，可整合来自不同来源的数据，帮助您发现高效的用户获取策略。
+:::
+
+:::warning
+保持数据整洁：避免事件重复和归因冲突。请遵循 **[防止数据问题](#prevent-data-issues)** 部分中的建议，确保新数据源不会污染您的分析数据。
+:::
+
+## 集成归因 \{#integrated-attribution\}
+
+Adapty 提供与 9 个主流服务的开箱即用归因集成。这些平台可自动从 Adapty 接收[订阅数据](events)，处理每笔购买，并返回相应的归因信息。
+
+每个平台的工作流程不同，但步骤同样简单：
+
+1. **设置自动数据共享。** 授权 Adapty 与您选择的平台进行通信。
+2. **集成 Adapty SDK。** 某些平台需要额外的代码来设置归因数据。
+3. **禁用其他事件共享服务和归因来源**，以避免[事件重复](#avoid-event-duplication)和[数据冲突](#select-a-single-attribution-source)。
+
+请阅读各平台的专属指南，了解详细的集成说明：
+
+- [Adjust](adjust)
+- [Airbridge](airbridge)
+- [Apple Search Ads](apple-search-ads)
+- [AppsFlyer](appsflyer)
+- [Asapty](asapty)
+- [Branch](branch)
+- [Facebook Ads](facebook-ads)
+- [Singular](singular)
+- [Tenjin](tenjin)
+
+:::note
+如果您希望 Adapty 扩展支持列表，请[提交功能请求](https://adapty.featurebase.app/en?b=6979f233ebd3cffd4f425ba0)，并表达您对特定服务的需求。
+:::
+
+## 手动归因 \{#manual-attribution\}
+
+如果 Adapty 未提供与您所选服务的[集成归因](#integrated-attribution)，您需要自行编写代码与归因来源交换数据。
+
+1. **从归因服务获取数据。** 使用该服务的 API 请求归因数据。
+2. **使用收到的归因数据创建字典。**
+
+    该字典可包含以下键：
+
+    - `status`（`organic`、`non-organic` 或 `unknown`）
+    - `channel`
+    - `campaign`
+    - `ad_group`
+    - `ad_set`
+    - `creative`
+
+    :::important
+    * 所有键均为可选。
+    * Adapty 会忽略不在列表中的键。
+    * 每个键的值最长为 50 个字符。
+    :::
+
+    **示例**：
+
+    ```swift showLineNumbers title="Swift"
+    let attribution = [
+        "status": "non_organic",
+        "channel": "Google Ads",
+        "campaign": "Christmas Sale",
+        "ad_group": "ad group 1",
+        "ad_set": "ad set 1",
+        "creative": "creative id 1"
+    ]
+    ```
+
+3. **设置归因数据**：
+
+    将归因字典传递给 `updateAttribution` 方法。一旦设置归因值，将无法覆盖：
+
+    ```swift showLineNumbers title="Swift"
+    Adapty.updateAttribution(attribution, source: "custom") { error in
+        if error == nil {
+            // successful attribution update
+        }
+    }
+    ```
+
+    **参数：**
+
+    - `attribution`（必填）：包含归因数据的字典。
+    - `source`（必填）：归因来源。如果您的归因提供商不支持[集成归因](#integrated-attribution)，请设置为 `.custom`。
+
+4. **禁用其他事件共享服务和归因来源**，以避免[事件重复](#avoid-event-duplication)和[数据冲突](#select-a-single-attribution-source)。
+
+## 防止数据问题 \{#prevent-data-issues\}
+
+### 选择单一归因来源 \{#select-a-single-attribution-source\}
+
+不要同时启用多个平台的归因集成。Adapty 每次只能接受一个归因来源，一旦保存归因值，便无法覆盖。
+
+如果您启用了多个归因来源，Adapty 将选择数据最多的来源——而不一定是最优质的数据。
+
+例如，非自然流量的 [Apple Search Ads 归因](apple-search-ads) 在 iOS 上始终具有最高优先级。要关闭 Apple Search Ads 归因，请打开 [**App Settings** -> **Apple Search Ads** 标签页](https://app.adapty.io/settings/apple-search-ads)，并关闭 **Receive Apple Search Ads attribution** 开关。
+
+### 避免事件重复 \{#avoid-event-duplication\}
+
+如果您使用 Adapty 将实时订阅数据共享给归因服务，**您需要禁用**其他具有相同用途的服务。如果您将 Facebook 账号连接到了 AppsFlyer、Adjust 或 Branch，除非您主动退出，否则这些事件将自动转发到这些服务。
+
+重复事件会干扰您的分析，使数据难以解读。配置好 Adapty 事件共享后，请将第三方事件转发功能**关闭**。

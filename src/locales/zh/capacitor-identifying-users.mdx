@@ -1,0 +1,135 @@
+---
+title: "在 Capacitor SDK 中识别用户"
+description: "了解如何在 Capacitor 应用中使用 Adapty SDK 识别用户。"
+metadataTitle: "识别用户 | Capacitor SDK | Adapty 文档"
+customSlug: /capacitor-identifying-users
+displayed_sidebar: sdkcapacitor
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+
+Adapty 会为每位用户创建一个内部用户画像 ID。但如果您有自己的身份验证系统，则应设置您自己的 Customer User ID。您可以在[用户画像](profiles-crm)部分通过 Customer User ID 查找用户，并在[服务端 API](getting-started-with-server-side-api) 中使用该 ID，它将被发送至所有集成。
+
+### 在配置时设置 Customer User ID \{#setting-customer-user-id-on-configuration\}
+
+如果您在配置时已有用户 ID，只需将其作为 `customerUserId` 参数传递给 `.activate()` 方法：
+
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
+try {
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+      customerUserId: 'YOUR_USER_ID'
+    }
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty:', error);
+}
+```
+
+### 在配置后设置 Customer User ID \{#setting-customer-user-id-after-configuration\}
+
+如果您在 SDK 配置时没有用户 ID，可以随时通过 `.identify()` 方法在之后设置。使用该方法最常见的场景是在注册或授权之后，即用户从匿名用户切换为已认证用户时。
+
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
+try {
+  await adapty.identify({ customerUserId: 'YOUR_USER_ID' });
+  console.log('User identified successfully');
+} catch (error) {
+  console.error('Failed to identify user:', error);
+}
+```
+
+请求参数：
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **customerUserId** | 必填 | 字符串类型的用户标识符。 |
+
+:::warning
+重新提交重要用户数据
+
+在某些情况下，例如用户再次登录其账户时，Adapty 服务器可能已有该用户的信息。在这种情况下，Adapty SDK 将自动切换到新用户。如果您曾向匿名用户传递过任何数据（例如自定义属性或来自第三方网络的归因信息），您需要为已识别的用户重新提交这些数据。
+
+同样需要注意的是，识别用户后应重新请求所有付费墙和产品，因为新用户的数据可能有所不同。
+:::
+
+### 登出与登录 \{#logging-out-and-logging-in\}
+
+您可以随时调用 `.logout()` 方法登出用户：
+
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
+try {
+  await adapty.logout();
+  console.log('User logged out successfully');
+} catch (error) {
+  console.error('Failed to logout user:', error);
+}
+```
+
+之后您可以使用 `.identify()` 方法重新登录用户。
+
+## 分配 `appAccountToken`（iOS） \{#assign-appaccounttoken-ios\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) 是一个 **UUID**，用于将 App Store 交易与您的内部用户身份关联。  
+StoreKit 会将此 token 与每笔交易关联，从而使您的后端能够将 App Store 数据与您的用户进行匹配。
+
+请为每位用户生成一个稳定的 UUID，并在同一账户的不同设备上复用它。
+这可确保购买记录和 App Store 通知被正确关联。
+
+您可以通过两种方式设置 token——在 SDK 激活时或在识别用户时。
+
+:::important
+您必须始终将 `appAccountToken` 与 `customerUserId` 一同传递。
+如果仅传递 token 而不传递 `customerUserId`，token 将不会被包含在交易中。
+:::
+
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+// During configuration:
+await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+        customerUserId: 'YOUR_USER_ID',
+        ios: { appAccountToken: "YOUR_APP_ACCOUNT_TOKEN" },
+    }
+});
+// Or when identifying users
+await adapty.identify({
+    customerUserId: 'YOUR_USER_ID',
+    params: {
+        ios: { appAccountToken: 'YOUR_APP_ACCOUNT_TOKEN' },
+    }
+});
+```
+
+### 设置混淆账户 ID（Android） \{#set-obfuscated-account-ids-android\}
+
+Google Play 在某些使用场景下需要混淆账户 ID，以增强用户隐私和安全性。这些 ID 帮助 Google Play 识别购买行为，同时保持用户信息匿名，这对于防欺诈和数据分析尤为重要。
+
+如果您的应用处理敏感用户数据，或需要遵守特定的隐私法规，您可能需要设置这些 ID。混淆 ID 允许 Google Play 在不暴露实际用户标识符的情况下追踪购买记录。
+
+```typescript showLineNumbers
+// During configuration:
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    android: { obfuscatedAccountId: 'YOUR_OBFUSCATED_ACCOUNT_ID' },
+  }
+});
+// Or when identifying users
+await adapty.identify({
+    customerUserId: 'YOUR_USER_ID',
+    params: {
+        android: { obfuscatedAccountId: 'YOUR_OBFUSCATED_ACCOUNT_ID' },
+    }
+});
+```

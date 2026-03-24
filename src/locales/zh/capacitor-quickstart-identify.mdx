@@ -1,0 +1,135 @@
+---
+title: "在 Capacitor SDK 中识别用户"
+description: "在 Capacitor 中设置 Adapty 进行应用内订阅管理的快速入门指南。"
+metadataTitle: "Adapty 快速入门指南 | Adapty 文档"
+rank: 70
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
+如何管理用户购买取决于您的应用程序的身份验证模型：
+- 如果您的应用不使用后端身份验证且不存储用户数据，请参阅[匿名用户部分](#anonymous-users)。
+- 如果您的应用有（或将有）后端身份验证，请参阅[已识别用户部分](#identified-users)。
+
+:::tip
+**核心概念**：
+- **用户画像**是 SDK 运行所需的实体。Adapty 会自动创建它们。它们可以是匿名的（没有客户用户 ID）或已识别的（有客户用户 ID）。
+- **客户用户 ID** 是可选的标识符，由**您创建**，用于将您的用户与其 Adapty 用户画像关联。
+:::
+
+以下是匿名用户和已识别用户的区别：
+
+|                         | 匿名用户                                      | 已识别用户                                                        |
+|-------------------------|------------------------------------------------------|-------------------------------------------------------------------------|
+| **购买管理** | 商店级别的购买恢复                     | 通过客户用户 ID 跨设备维护购买历史 |
+| **用户画像管理**  | 每次重新安装时创建新用户画像                       | 跨会话和设备使用同一用户画像                            |
+| **数据持久性**    | 匿名用户的数据与设备/安装绑定 | 已识别用户的数据跨设备和会话持久保存             |
+
+## 匿名用户 \{#anonymous-users\}
+
+如果您没有后端身份验证，**您无需在应用代码中处理身份验证**：
+
+1. 当 SDK 在应用首次启动时激活，Adapty 会**为用户创建一个新用户画像**。
+2. 当用户在应用中购买任何内容时，该购买会**与其 Adapty 用户画像和商店账户关联**。
+3. 当用户**重新安装**应用或从**新设备**安装时，Adapty 会**在激活时创建一个新的空用户画像**。
+4. 如果用户之前在您的应用中进行过购买，默认情况下，其购买记录会在 SDK 激活时自动从 App Store 同步。
+
+:::note
+备份恢复与重新安装的行为不同。默认情况下，当用户从备份恢复时，SDK 会保留缓存数据，不会创建新用户画像。您可以使用 `clearDataOnBackup` 设置来配置此行为。[了解更多](sdk-installation-capacitor#clear-data-on-backup-restore)。
+:::
+
+## 已识别用户 \{#identified-users\}
+
+- 如果用户画像尚未关联客户用户 ID（即**用户未登录**），当您发送客户用户 ID 时，它将与该用户画像关联。
+- 如果是**重新安装、登录或从新设备安装**，且您之前已发送过其客户用户 ID，则不会创建新用户画像，而是切换到与该客户用户 ID 关联的现有用户画像。
+
+您有两种方式在应用中识别用户：
+
+- [**在登录/注册时：**](#during-loginsignup) 如果用户在应用启动后登录，请在其通过身份验证时使用客户用户 ID 调用 `identify()`。
+
+- [**在 SDK 激活时：**](#during-the-sdk-activation) 如果应用启动时您已有存储的客户用户 ID，请在调用 `activate()` 时发送它。
+
+:::important
+默认情况下，当 Adapty 收到来自某个客户用户 ID 的购买，而该 ID 当前与另一个客户用户 ID 关联时，访问等级会被共享，因此两个用户画像都具有付费访问权限。您可以配置此设置，将付费访问从一个用户画像转移到另一个，或完全禁用共享。有关更多详情，请参阅[文章](general#6-sharing-paid-access-between-user-accounts)。
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/identify-diagram.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 在登录/注册时 \{#during-loginsignup\}
+
+如果您在应用启动后识别用户（例如，在他们登录应用或注册之后），请使用 `identify` 方法设置其客户用户 ID。
+
+- 如果您**以前未使用过此客户用户 ID**，Adapty 会自动将其与当前用户画像关联。
+- 如果您**以前已使用此客户用户 ID 识别过该用户**，Adapty 将切换到与此客户用户 ID 关联的用户画像。
+
+:::tip
+创建客户用户 ID 时，请将其与用户数据一同保存，这样当他们从新设备登录或重新安装应用时，您可以发送相同的 ID。
+:::
+
+```typescript showLineNumbers
+try {
+  await adapty.identify({ customerUserId: "YOUR_USER_ID" });
+  // successfully identified
+} catch (error) {
+  // handle the error
+}
+```
+
+### 在 SDK 激活时 \{#during-the-sdk-activation\}
+
+如果您在激活 SDK 时已知道客户用户 ID，可以在 `activate` 方法中发送它，而无需单独调用 `identify`。
+
+如果您知道客户用户 ID 但仅在激活后才设置它，则意味着在激活时，Adapty 会创建一个新的空用户画像，只有在您调用 `identify` 后才会切换到现有用户画像。
+
+您可以传递现有的客户用户 ID（您以前使用过的）或新的客户用户 ID。如果您传递新的客户用户 ID，激活时创建的新用户画像将自动与该客户用户 ID 关联。
+
+:::tip
+要从看板[数据图表](analytics-charts)中排除已创建的空用户画像，请前往 **App settings** 并设置 [**Installs definition for analytics**](general#4-installs-definition-for-analytics)。
+:::
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: "YOUR_PUBLIC_SDK_KEY",
+  params: {
+    customerUserId: "YOUR_USER_ID"
+  }
+});
+```
+
+### 退出登录用户 \{#log-users-out\}
+
+如果您有供用户退出登录的按钮，请使用 `logout` 方法。这将为用户创建一个新的匿名用户画像 ID。
+
+```typescript showLineNumbers
+try {
+  await adapty.logout();
+  // successful logout
+} catch (error) {
+  // handle the error
+}
+```
+
+:::info
+要让用户重新登录应用，请使用 `identify` 方法。
+:::
+
+### 允许未登录时购买 \{#allow-purchases-without-login\}
+
+如果您的用户可以在登录前后都进行购买，则无需进行额外设置：
+
+以下是其工作原理：
+1. 当未登录用户进行购买时，Adapty 会将其与其匿名用户画像 ID 绑定。
+2. 当用户登录其账户时，Adapty 会切换到使用其已识别的用户画像。
+    - 如果是现有客户用户 ID（该客户用户 ID 已与用户画像关联），Adapty 会自动同步其交易记录。
+    - 如果是新的客户用户 ID（例如，购买发生在注册之前），Adapty 会将客户用户 ID 分配给当前用户画像，从而保留所有购买历史。

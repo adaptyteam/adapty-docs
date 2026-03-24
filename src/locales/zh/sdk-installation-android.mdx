@@ -1,0 +1,591 @@
+---
+title: "安装与配置 Android SDK"
+description: "关于在 Android 上为基于订阅的应用安装 Adapty SDK 的分步指南。"
+metadataTitle: "在 Android 上安装 Adapty SDK | Adapty 文档"
+keywords: ['安装 sdk', 'sdk 安装', 'android 安装 sdk', 'google play billing library', 'gpbl', 'billing library', 'adaptyui']
+rank: 70
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+import GetKey from '@site/src/locales/zh/reusable/GetKey.md';
+import InstallationPrereqs from '@site/src/locales/zh/reusable/InstallationPrereqs.mdx';
+
+Adapty SDK 包含两个关键模块，用于无缝集成到您的移动应用中：
+
+- **Core Adapty**：这是 Adapty 在您的应用中正常运行所必需的核心 SDK。
+- **AdaptyUI**：如果您使用 [Adapty 付费墙编辑工具](adapty-paywall-builder)（一款用户友好的无代码工具，可轻松创建跨平台付费墙），则需要此模块。AdaptyUI 会与核心模块一同自动激活。
+
+:::tip
+想查看 Adapty SDK 集成到移动应用的真实示例？请查看我们的[示例应用](https://github.com/adaptyteam/AdaptySDK-Android/tree/master/app)，该示例展示了完整的设置流程，包括显示付费墙、进行购买以及其他基本功能。
+:::
+
+## 系统要求 \{#requirements\}
+
+最低 SDK 要求：`minSdkVersion 21`
+
+:::info
+Adapty 兼容 Google Play Billing Library 8.x 及以下版本。默认情况下，Adapty 使用 Google Play Billing Library v.7.0.0，但如果您希望强制使用更新版本，可以手动[添加依赖项](https://developer.android.com/google/play/billing/integrate#dependency)。
+:::
+
+<InstallationPrereqs />
+
+## 安装 Adapty SDK \{#install-adapty-sdk\}
+
+选择您的依赖项配置方式：
+- 标准 Gradle：将依赖项添加到**模块级** `build.gradle`
+- 如果您的项目使用 `.gradle.kts` 文件，请将依赖项添加到模块级 `build.gradle.kts`
+- 如果您使用版本目录，请将依赖项添加到 `libs.versions.toml` 文件中，然后在 `build.gradle.kts` 中引用它
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Android.svg?style=flat&logo=android)](https://github.com/adaptyteam/AdaptySDK-Android/releases)
+
+<Tabs>
+<TabItem value="module-level build.gradle" label="module-level build.gradle" default>
+
+```groovy showLineNumbers
+dependencies {
+    ...
+    implementation platform('io.adapty:adapty-bom:<the latest SDK version>')
+    implementation 'io.adapty:android-sdk'
+    
+    // Only add this line if you plan to use Paywall Builder
+    implementation 'io.adapty:android-ui'
+}
+```
+
+</TabItem>
+<TabItem value="module-level build.gradle.kts" label="module-level build.gradle.kts" default>
+
+```kotlin showLineNumbers
+dependencies {
+    ...
+    implementation(platform("io.adapty:adapty-bom:<the latest SDK version>"))
+    implementation("io.adapty:android-sdk")
+    
+    // Only add this line if you plan to use Paywall Builder:
+    implementation("io.adapty:android-ui")
+}
+```
+
+</TabItem>
+<TabItem value="version catalog" label="version catalog" default>
+
+```toml showLineNumbers
+//libs.versions.toml
+
+[versions]
+..
+adaptyBom = "<the latest SDK version>"
+
+[libraries]
+..
+adapty-bom = { module = "io.adapty:adapty-bom", version.ref = "adaptyBom" }
+adapty = { module = "io.adapty:android-sdk" }
+
+// Only add this line if you plan to use Paywall Builder:
+adapty-ui = { module = "io.adapty:android-ui" }
+
+//module-level build.gradle.kts
+
+dependencies {
+    ...
+    implementation(platform(libs.adapty.bom))
+    implementation(libs.adapty)
+    
+    // Only add this line if you plan to use Paywall Builder:
+    implementation(libs.adapty.ui)
+}
+```
+
+</TabItem>
+</Tabs>
+
+如果依赖项无法解析，请确认您的 Gradle 脚本中包含 `mavenCentral()`。
+
+<details>
+   <summary>添加方法说明</summary>
+
+   如果您的项目的 `settings.gradle` 中没有 `dependencyResolutionManagement`，请在顶层 `build.gradle` 的 repositories 末尾添加以下内容：
+
+```groovy showLineNumbers title="top-level build.gradle"
+allprojects {
+    repositories {
+        ...
+        mavenCentral()
+    }
+}
+```
+
+否则，请在 `settings.gradle` 的 `dependencyResolutionManagement` 部分的 `repositories` 中添加以下内容：
+
+```groovy showLineNumbers title="settings.gradle"
+dependencyResolutionManagement {
+    ...
+    repositories {
+        ...
+        mavenCentral()
+    }
+}
+```
+
+</details>
+
+## 激活 Adapty SDK 的 Adapty 模块 \{#activate-adapty-module-of-adapty-sdk\}
+
+### 基础设置 \{#basic-setup\}
+
+在您的应用代码中激活 Adapty SDK。
+
+:::note
+Adapty SDK 在您的应用中只需激活一次。
+:::
+
+<GetKey />
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+// In your Application class
+import android.app.Application
+import com.adapty.Adapty
+import com.adapty.models.AdaptyConfig
+
+class MyApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        Adapty.activate(
+            applicationContext,
+            AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+                .build()
+        )
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+// In your Application class
+import android.app.Application;
+import com.adapty.Adapty;
+import com.adapty.models.AdaptyConfig;
+
+public class MyApplication extends Application {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Adapty.activate(
+            getApplicationContext(),
+            new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+                .build()
+        );
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+现在在您的应用中设置付费墙：
+
+- 如果您使用 [Adapty 付费墙编辑工具](adapty-paywall-builder)，请参阅[付费墙编辑工具快速入门](android-quickstart-paywalls)。
+- 如果您自行构建付费墙 UI，请参阅[自定义付费墙快速入门](android-quickstart-manual)。
+
+## 激活 Adapty SDK 的 AdaptyUI 模块 \{#activate-adaptyui-module-of-adapty-sdk\}
+
+如果您计划使用[付费墙编辑工具](adapty-paywall-builder)，则需要 AdaptyUI 模块。当您激活核心模块时，它会自动激活，无需执行任何其他操作。
+
+## 配置 Proguard \{#configure-proguard\}
+
+在将应用发布到生产环境之前，请将 `-keep class com.adapty.** { *; }` 添加到您的 Proguard 配置中。
+
+## 可选配置 \{#optional-setup\}
+
+### 日志 \{#logging\}
+
+#### 设置日志系统 \{#set-up-the-logging-system\}
+
+Adapty 会记录错误和其他重要信息，帮助您了解系统运行状态。以下日志级别可供选择：
+
+| 级别                     | 描述                                                                                                                         |
+| :----------------------- | :--------------------------------------------------------------------------------------------------------------------------- |
+| `AdaptyLogLevel.NONE`    | 不记录任何内容。默认值                                                                                                       |
+| `AdaptyLogLevel.ERROR`   | 仅记录错误                                                                                                                   |
+| `AdaptyLogLevel.WARN`    | 记录错误以及 SDK 中不会导致严重错误但值得关注的消息                                                                          |
+| `AdaptyLogLevel.INFO`    | 记录错误、警告以及各种信息消息                                                                                               |
+| `AdaptyLogLevel.VERBOSE` | 记录调试过程中可能有用的任何附加信息，例如函数调用、API 请求等                                                               |
+
+您可以在配置 Adapty 之前在应用中设置日志级别。
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+import com.adapty.Adapty
+import com.adapty.utils.AdaptyLogLevel
+
+Adapty.logLevel = AdaptyLogLevel.VERBOSE 
+//recommended for development and the first production release
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+import com.adapty.Adapty;
+import com.adapty.utils.AdaptyLogLevel;
+
+Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
+//recommended for development and the first production release
+```
+</TabItem>
+</Tabs>
+
+#### 重定向日志系统消息 \{#redirect-the-logging-system-messages\}
+
+如果您出于某种原因需要将 Adapty 的消息发送到您的系统或保存到文件中，可以覆盖默认行为：
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+import com.adapty.Adapty
+import com.adapty.utils.AdaptyLogLevel
+
+Adapty.setLogHandler { level, message ->
+    //handle the log
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+import com.adapty.Adapty;
+import com.adapty.utils.AdaptyLogLevel;
+
+Adapty.setLogHandler((level, message) -> {
+    //handle the log
+});
+```
+</TabItem>
+</Tabs>
+
+### 数据策略 \{#data-policies\}
+
+Adapty 不会存储您用户的个人数据，除非您明确发送这些数据，但您可以实施额外的数据安全策略以符合应用商店或国家/地区法规要求。
+
+#### 禁用 IP 地址收集与共享 \{#disable-ip-address-collection-and-sharing\}
+
+在激活 Adapty 模块时，将 `ipAddressCollectionDisabled` 设置为 `true` 可禁用用户 IP 地址的收集与共享。默认值为 `false`。
+
+使用此参数可增强用户隐私保护、遵守地区数据保护法规（如 GDPR 或 CCPA），或在您的应用不需要基于 IP 的功能时减少不必要的数据收集。
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.adapty.models.AdaptyConfig
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withIpAddressCollectionDisabled(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+import com.adapty.models.AdaptyConfig;
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withIpAddressCollectionDisabled(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
+#### 禁用广告 ID（Ad ID）收集与共享 \{#disable-advertising-id-ad-id-collection-and-sharing\}
+
+在激活 Adapty 模块时，将 `adIdCollectionDisabled` 设置为 `true` 可禁用用户[广告 ID](https://support.google.com/googleplay/android-developer/answer/6048248) 的收集。默认值为 `false`。
+
+使用此参数可遵守 Play Store 政策、避免触发广告 ID 权限提示，或当您的应用不需要基于 Ad ID 的广告归因或数据分析时使用。
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.adapty.models.AdaptyConfig
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withAdIdCollectionDisabled(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+import com.adapty.models.AdaptyConfig;
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withAdIdCollectionDisabled(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
+#### 为 AdaptyUI 设置媒体缓存配置 \{#set-up-media-cache-configuration-for-adaptyui\}
+
+默认情况下，AdaptyUI 会缓存媒体（如图片和视频）以提升性能并减少网络使用。您可以通过提供自定义配置来定制缓存设置。
+
+使用 `AdaptyUI.configureMediaCache` 可覆盖默认缓存大小和有效期。此配置为可选项——如果您不调用此方法，将使用默认值（磁盘大小 100MB，有效期 7 天）。
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.adapty.ui.AdaptyUI
+import com.adapty.ui.AdaptyUI.MediaCacheConfiguration
+import com.adapty.utils.days
+
+val cacheConfig = MediaCacheConfiguration.Builder()
+    .overrideDiskStorageSizeLimit(200L * 1024 * 1024) // 200 MB
+    .overrideDiskCacheValidityTime(3.days)
+    .build()
+
+AdaptyUI.configureMediaCache(cacheConfig)
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+import com.adapty.ui.AdaptyUI;
+import com.adapty.ui.AdaptyUI.MediaCacheConfiguration;
+import com.adapty.utils.TimeInterval;
+
+MediaCacheConfiguration cacheConfig = new MediaCacheConfiguration.Builder()
+    .overrideDiskStorageSizeLimit(200L * 1024 * 1024) // 200 MB
+    .overrideDiskCacheValidityTime(TimeInterval.days(3))
+    .build();
+
+AdaptyUI.configureMediaCache(cacheConfig);
+```
+</TabItem>
+</Tabs>
+
+**参数：**
+
+| 参数                     | 是否必填 | 描述                                                                        |
+|-------------------------|----------|-----------------------------------------------------------------------------|
+| diskStorageSizeLimit    | 可选     | 磁盘上的总缓存大小（字节）。默认值为 100 MB。                               |
+| diskCacheValidityTime   | 可选     | 缓存文件的有效期。默认值为 7 天。                                           |
+
+:::tip
+您可以在运行时使用 `AdaptyUI.clearMediaCache(strategy)` 清除媒体缓存，其中 `strategy` 可以是 `CLEAR_ALL` 或 `CLEAR_EXPIRED_ONLY`。
+:::
+
+### 设置混淆账户 ID \{#set-obfuscated-account-ids\}
+
+Google Play 在某些使用场景下需要混淆账户 ID，以增强用户隐私和安全性。这些 ID 可帮助 Google Play 识别购买行为，同时保持用户信息匿名，对于防欺诈和数据分析尤为重要。
+
+如果您的应用处理敏感用户数据，或需要遵守特定隐私法规，则可能需要设置这些 ID。混淆 ID 使 Google Play 能够在不暴露实际用户标识符的情况下追踪购买行为。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.adapty.models.AdaptyConfig
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+    .build()
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+import com.adapty.models.AdaptyConfig;
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+    .build();
+```
+
+</TabItem>
+</Tabs>
+
+### 在自定义进程中运行 Adapty \{#run-adapty-in-a-custom-process\}
+
+默认情况下，Adapty 只能在您应用的主进程中运行。
+如果您的应用使用多个进程，请只初始化 Adapty 一次，否则可能会出现意外行为。
+
+如果您需要在不同进程中运行 Adapty，请在配置中指定：
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.adapty.models.AdaptyConfig
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withProcessName(":custom")
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+import com.adapty.models.AdaptyConfig;
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withProcessName(":custom")
+    .build();
+```
+</TabItem>
+</Tabs>
+
+如果您尝试在未设置此值的情况下在其他进程中激活 Adapty，SDK 将记录一条警告并跳过激活。
+
+### 启用本地访问等级 \{#enable-local-access-levels\}
+
+默认情况下，Android 上的[本地访问等级](local-access-levels)是禁用的。要启用它们，请将 `withLocalAccessLevelAllowed` 设置为 `true`：
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.adapty.models.AdaptyConfig
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withLocalAccessLevelAllowed(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+import com.adapty.models.AdaptyConfig;
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withLocalAccessLevelAllowed(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
+## 故障排查 \{#troubleshooting\}
+
+#### Android 备份规则（自动备份配置）\{#android-backup-rules-auto-backup-configuration\}
+
+某些 SDK（包括 Adapty）会附带自己的 Android 自动备份配置。如果您同时使用多个定义了备份规则的 SDK，Android 清单合并器可能会失败，并出现涉及 `android:fullBackupContent`、`android:dataExtractionRules` 或 `android:allowBackup` 的错误。
+
+典型错误症状：`Manifest merger failed: Attribute application@dataExtractionRules value=(@xml/sample_data_extraction_rules)
+is also present at [com.other.sdk:library:1.0.0] value=(@xml/other_sdk_data_extraction_rules)`
+
+要解决此问题，您需要：
+
+- 告知清单合并器使用您应用的备份相关属性值。
+
+- 将 Adapty 和其他 SDK 的备份规则合并到单个 XML 文件中（Android 12+ 需要一对文件）。
+
+#### 1. 在清单中添加 `tools` 命名空间 \{#1-add-the-tools-namespace-to-your-manifest\}
+
+如果尚未添加，请在根 `<manifest>` 标签中添加 `tools` 命名空间：
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:tools="http://schemas.android.com/tools"
+package="com.example.app">
+
+    ...
+</manifest>
+```
+
+#### 2. 在 `<application>` 中覆盖备份属性 \{#2-override-backup-attributes-in-application\}
+
+在您应用的 `AndroidManifest.xml` 中，更新 `<application>` 标签，使您的应用提供最终值，并告知清单合并器替换库中的值：
+
+```xml
+<application
+android:name=".App"
+android:allowBackup="true"
+android:fullBackupContent="@xml/sample_backup_rules"           
+android:dataExtractionRules="@xml/sample_data_extraction_rules"
+tools:replace="android:fullBackupContent,android:dataExtractionRules">
+
+    ...
+</application>
+```
+
+如果某个 SDK 也设置了 `android:allowBackup`，请同时将其添加到 `tools:replace` 中：
+
+```xml
+tools:replace="android:allowBackup,android:fullBackupContent,android:dataExtractionRules"
+```
+
+#### 3. 创建合并后的备份规则文件 \{#3-create-merged-backup-rules-files\}
+
+在 `app/src/main/res/xml/` 目录下创建 XML 文件，将 Adapty 的规则与其他 SDK 的规则合并。由于 Android 根据操作系统版本使用不同的备份规则格式，创建这两个文件可确保与您应用所支持的所有 Android 版本兼容。
+
+:::note
+以下示例以 AppsFlyer 作为第三方 SDK 示例。请根据您在应用中使用的其他 SDK 替换或添加相应规则。
+:::
+
+**适用于 Android 12 及更高版本**（使用新的数据提取规则格式）：
+
+```xml title="sample_data_extraction_rules.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        
+        <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
+        <exclude domain="database" path="afpurchases.db"/>
+        
+        <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+    </cloud-backup>
+
+    <device-transfer>
+        
+        <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
+        <exclude domain="database" path="afpurchases.db"/>
+        <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+    </device-transfer>
+</data-extraction-rules>
+```
+
+**适用于 Android 11 及更低版本**（使用旧版完整备份内容格式）：
+
+```xml title="sample_backup_rules.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    
+    <exclude domain="sharedpref" path="appsflyer-data"/>
+
+    
+    <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+
+    
+    
+</full-backup-content>
+```
+
+完成此设置后：
+
+- Adapty 的备份排除项（`AdaptySDKPrefs.xml`）得到保留。
+
+- 其他 SDK 的排除项（例如 `appsflyer-data`）也会生效。
+
+- 清单合并器使用您应用的配置，不再因备份属性冲突而失败。
+
+#### 从其他应用返回后购买失败 \{#purchases-fail-after-returning-from-another-app\}
+
+如果启动购买流程的 Activity 使用了非默认的 `launchMode`，当用户从 Google Play、银行应用或浏览器返回时，Android 可能会错误地重建或复用该 Activity。这可能导致购买结果丢失或被视为已取消。
+
+为确保购买正常进行，启动购买流程的 Activity 只能使用 `standard` 或 `singleTop` 启动模式，避免使用其他任何模式。
+
+在您的 `AndroidManifest.xml` 中，确保启动购买流程的 Activity 设置为 `standard` 或 `singleTop`：
+
+```xml
+<activity
+    android:name=".MainActivity"
+    android:launchMode="standard" />
+```

@@ -1,0 +1,205 @@
+---
+title: "在 Flutter SDK 中获取付费墙编辑工具付费墙及其配置"
+description: "了解如何在 Adapty 中为 Flutter 检索付费墙编辑工具付费墙，以更好地控制订阅。"
+metadataTitle: "在 Adapty 中检索付费墙编辑工具付费墙 | Adapty 文档"
+displayed_sidebar: sdkflutter
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+rank: 85
+---
+
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+在 Adapty 看板中[使用新付费墙编辑工具设计付费墙的视觉部分](adapty-paywall-builder)之后，您可以在移动应用中展示它。此过程的第一步是获取与版位关联的付费墙及其视图配置，如下所述。
+
+:::warning
+新版付费墙编辑工具需要 Flutter SDK 3.3.0 或更高版本。如需在 Adapty SDK v2 中展示使用旧版付费墙编辑工具设计的付费墙，请参阅[展示使用旧版付费墙编辑工具设计的付费墙](flutter-legacy)。
+:::
+
+请注意，本主题涉及通过付费墙编辑工具自定义的付费墙。如果您是手动实现付费墙，请参阅[在移动应用中获取远程配置付费墙的付费墙和产品](fetch-paywalls-and-products-flutter)主题。
+
+<SampleApp />
+
+<details>
+   <summary>在您的移动应用中开始展示付费墙之前（点击展开）</summary>
+
+   1. 在 Adapty 看板中[创建您的产品](create-product)。
+2. 在 Adapty 看板中[创建付费墙并将产品添加到其中](create-paywall)。
+3. 在 Adapty 看板中[创建版位并将付费墙添加到其中](create-placement)。
+4. 在您的移动应用中安装 [Adapty SDK](sdk-installation-flutter)。
+</details>
+
+## 获取使用付费墙编辑工具设计的付费墙 \{#fetch-paywall-designed-with-paywall-builder\}
+
+如果您已[使用付费墙编辑工具设计付费墙](adapty-paywall-builder)，则无需在移动应用代码中自行渲染，即可向用户展示。此类付费墙包含了展示内容及展示方式。不过，您仍需通过版位获取其 ID、视图配置，然后在移动应用中展示它。
+
+为确保最佳性能，务必尽早获取付费墙及其[视图配置](flutter-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)，以便在向用户展示之前有足够的时间下载图片。
+
+使用 `getPaywall` 方法获取付费墙：
+
+```dart showLineNumbers
+try {
+  final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en");
+  // the requested paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+参数：
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | 所需[版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-paywall-locale-in-adapty-paywall-builder)的标识符。此参数应为由一个或两个子标签组成的语言代码，子标签之间用减号（**-**）分隔。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p>有关语言代码及推荐使用方式的更多信息，请参阅[本地化与语言代码](flutter-localizations-and-locale-codes)。</p> |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，失败时返回缓存数据。我们推荐此方式，因为它确保用户始终获得最新数据。</p><p></p><p>但是，如果您认为用户的网络不稳定，可以考虑使用 `.returnCacheDataElseLoad`，以便在缓存存在时返回缓存数据。这样用户可能无法获取最新数据，但加载速度更快，不受网络质量影响。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后保持不变，仅在重新安装应用或手动清除时才会被清空。</p><p></p><p>Adapty SDK 在两个层面本地存储付费墙：上述定期更新的缓存和[备用付费墙](fallback-paywalls)。我们还使用 CDN 加速付费墙获取，并在 CDN 不可达时使用独立的备用服务器。该系统旨在确保您始终获得最新版本的付费墙，同时在网络稀缺的情况下也能保证可靠性。</p> |
+| **loadTimeout** | 默认值：5 秒 | <p>此值限制该方法的超时时间。如果超时，将返回缓存数据或本地备用数据。</p><p>请注意，在极少数情况下，此方法的超时可能比 `loadTimeout` 中指定的时间稍晚，因为该操作在底层可能包含不同的请求。</p><p>对于 Android：您可以使用扩展函数（如 `5.seconds`，其中 `.seconds` 来自 `import com.adapty.utils.seconds`）或 `TimeInterval.seconds(5)` 创建 `TimeInterval`。如需不设限制，请使用 `TimeInterval.INFINITE`。</p> |
+
+响应参数：
+
+| 参数 | 描述 |
+| :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | 一个 [`AdaptyPaywall`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywall-class.html) 对象，包含产品 ID 列表、付费墙标识符、远程配置及其他若干属性。 |
+
+## 获取使用付费墙编辑工具设计的付费墙的视图配置 \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+请确保在付费墙编辑工具中启用 **Show on device** 开关。如果未开启此选项，将无法获取视图配置。
+:::
+
+获取付费墙后，检查其是否包含 `ViewConfiguration`，这表明它是使用付费墙编辑工具创建的。这将指导您如何展示付费墙。如果存在 `ViewConfiguration`，将其视为付费墙编辑工具付费墙处理；否则，[将其作为远程配置付费墙处理](present-remote-config-paywalls-flutter)。
+
+```dart showLineNumbers
+import 'package:adapty_flutter/adapty_flutter.dart';
+
+try {
+  final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+      );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+获取视图后，[展示付费墙](flutter-present-paywalls)。
+
+## 获取默认目标受众的付费墙以加快获取速度 \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+通常，付费墙的获取几乎是即时的，因此您无需担心加快此过程。但是，当您拥有大量目标受众和付费墙，且用户网络连接较弱时，获取付费墙可能比预期更慢。在这种情况下，您可能希望展示默认付费墙，以确保流畅的用户体验，而不是不展示任何付费墙。
+
+为解决此问题，您可以使用 `getPaywallForDefaultAudience` 方法，该方法为 **All Users** 目标受众获取指定版位的付费墙。但是，请务必了解，推荐的方式是使用 `getPaywall` 方法获取付费墙，详见上方[获取付费墙信息](flutter-get-pb-paywalls#fetch-paywall-designed-with-paywall-builder)部分。
+
+:::warning
+我们为何推荐使用 `getPaywall`
+
+`getPaywallForDefaultAudience` 方法存在一些重要缺点：
+
+- **潜在的向后兼容性问题**：如果您需要为不同的应用版本（当前版本和未来版本）展示不同的付费墙，可能会遇到挑战。您要么必须设计支持当前（旧版）版本的付费墙，要么接受当前（旧版）版本的用户可能遇到付费墙无法渲染的问题。
+- **失去精准定向**：所有用户将看到为 **All Users** 目标受众设计的同一付费墙，这意味着您将失去个性化定向（包括基于国家/地区、营销归因或您自定义属性的定向）。
+
+如果您愿意接受这些缺点以从更快的付费墙获取中受益，请按如下方式使用 `getPaywallForDefaultAudience` 方法。否则，请坚持使用[上述](#fetch-paywall-designed-with-paywall-builder) `getPaywall`。
+:::
+
+```dart showLineNumbers
+try {
+    final paywall = await Adapty().getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
+} on AdaptyError catch (adaptyError) {
+    // handle error
+} catch (e) {
+    // handle unknown error
+}
+```
+
+:::note
+`getPaywallForDefaultAudience` 方法从 Flutter SDK 3.2.0 版本开始可用。
+:::
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。此参数应为由一个或多个子标签组成的语言代码，子标签之间用减号（**-**）分隔。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言代码及推荐使用方式的更多信息，请参阅[本地化与语言代码](localizations-and-locale-codes)。</p> |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，失败时返回缓存数据。我们推荐此方式，因为它确保用户始终获得最新数据。</p><p></p><p>但是，如果您认为用户的网络不稳定，可以考虑使用 `.returnCacheDataElseLoad`，以便在缓存存在时返回缓存数据。这样用户可能无法获取最新数据，但加载速度更快，不受网络质量影响。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后保持不变，仅在重新安装应用或手动清除时才会被清空。</p> |
+
+## 自定义资源 \{#customize-assets\}
+
+要在付费墙中自定义图片和视频，请实现自定义资源。
+
+主图和视频具有预定义的 ID：`hero_image` 和 `hero_video`。在自定义资源包中，您可以通过这些 ID 定位相应元素并自定义其行为。
+
+对于其他图片和视频，您需要在 Adapty 看板中[设置自定义 ID](custom-media)。
+
+例如，您可以：
+
+- 向部分用户展示不同的图片或视频。
+- 在远程主图加载时展示本地预览图。
+- 在播放视频前展示预览图。
+
+:::important
+要使用此功能，请将 Adapty Flutter SDK 更新至 3.8.0 或更高版本。
+:::
+
+以下是通过简单字典提供自定义资源的示例：
+
+```dart
+import 'package:adapty_flutter/adapty_flutter.dart';
+
+final customAssets = {
+    // Show a local image using a custom ID
+    'custom_image': AdaptyCustomAsset.localImageAsset(
+        assetId: 'assets/images/image_name.png',
+    ),
+
+    // Show a local video with a preview image
+    'hero_video': AdaptyCustomAsset.localVideoAsset(
+        assetId: 'assets/videos/custom_video.mp4',
+    ),
+};
+
+try {
+    final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+        customAssets: <CUSTOM_ASSETS>,
+        preloadProducts: preloadProducts,
+        );
+    } on AdaptyError catch (e) {
+        // handle the error
+    } catch (e) {
+// handle the error
+}
+```
+
+:::note
+如果未找到某资源，付费墙将回退到其默认外观。
+:::
+
+## 设置开发者自定义计时器 \{#set-up-developer-defined-timers\}
+
+要在移动应用中使用自定义计时器，请创建一个遵循 `AdaptyTimerResolver` 协议的对象。该对象定义了每个自定义计时器的渲染方式。如果您愿意，也可以直接使用 `[String: Date]` 字典，因为它已经符合该协议。以下是示例：
+
+```dart showLineNumbers
+import 'package:adapty_flutter/adapty_flutter.dart';
+
+try {
+  final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+        customTimers: {
+          'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
+          'CUSTOM_TIMER_NY': DateTime(2025, 1, 1), // New Year 2025
+        },
+      );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+在此示例中，`CUSTOM_TIMER_NY` 和 `CUSTOM_TIMER_6H` 是您在 Adapty 看板中设置的开发者自定义计时器的 **Timer ID**。`timerResolver` 确保您的应用动态地为每个计时器更新正确的值。例如：
+
+- `CUSTOM_TIMER_NY`：计时器结束前的剩余时间，例如新年元旦。
+- `CUSTOM_TIMER_6H`：用户打开付费墙时开始的 6 小时倒计时的剩余时间。
