@@ -1,0 +1,734 @@
+---
+title: "在 React Native SDK 中处理用户引导事件"
+description: "使用 Adapty 在 React Native 中处理用户引导相关事件。"
+metadataTitle: "在 React Native 中处理用户引导事件 | Adapty 文档"
+toc_max_heading_level: 4
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Details from '@site/src/components/Details';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+使用编辑工具配置的用户引导会生成您的应用可以响应的事件。处理这些事件的方式取决于您使用的展示方式：
+
+- **模态展示**：需要设置事件处理程序，以处理所有用户引导视图的事件
+- **React 组件**：通过 widget 中的内联回调参数直接处理事件
+
+开始之前，请确保：
+
+1. 您已安装 [Adapty React Native SDK](sdk-installation-reactnative) 3.8.0 或更高版本。
+2. 您已[创建用户引导](create-onboarding)。
+3. 您已将用户引导添加到[版位](placements)。
+
+要控制或监控移动应用中用户引导屏幕上发生的过程，请实现事件处理程序：
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+对于 React 组件，您可以通过 `AdaptyOnboardingView` 组件中的各个事件处理程序 props 来处理事件：
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
+  const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+      onClose={onClose}
+      onCustom={onCustom}
+      onPaywall={onPaywall}
+      onStateUpdated={onStateUpdated}
+      onFinishedLoading={onFinishedLoading}
+      onError={onError}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+对于模态展示，请实现事件处理程序方法。
+
+:::important
+多次调用 `setEventHandlers` 将覆盖您提供的处理程序，替换这些特定事件的默认处理程序和之前设置的处理程序。
+:::
+
+```javascript showLineNumbers title="React Native"
+import { createOnboardingView } from 'react-native-adapty';
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(event, meta) {
+    // Track analytics events
+  },
+  onClose(actionId, meta) {
+    // Handle close action
+    view.dismiss();
+    return true;
+  },
+  onCustom(actionId, meta) {
+    // Handle custom actions
+  },
+  onPaywall(actionId, meta) {
+    // Handle paywall actions
+  },
+  onStateUpdated(action, meta) {
+    // Handle user input updates
+  },
+  onFinishedLoading(meta) {
+    // Onboarding finished loading
+  },
+  onError(error) {
+    // Handle loading errors
+  },
+});
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+对于 SDK 版本 < 3.14，仅支持模态展示：
+
+```javascript showLineNumbers title="React Native"
+import { createOnboardingView } from 'react-native-adapty/dist/ui';
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onAnalytics(event, meta) {
+    // Track analytics events
+  },
+  onClose(actionId, meta) {
+    // Handle close action
+    view.dismiss();
+    return true;
+  },
+  onCustom(actionId, meta) {
+    // Handle custom actions
+  },
+  onPaywall(actionId, meta) {
+    // Handle paywall actions
+  },
+  onStateUpdated(action, meta) {
+    // Handle user input updates
+  },
+  onFinishedLoading(meta) {
+    // Onboarding finished loading
+  },
+  onError(error) {
+    // Handle loading errors
+  },
+});
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+## 事件类型 \{#event-types\}
+
+以下各节介绍了您可以处理的不同类型的事件，无论您使用哪种展示方式。
+
+### 处理自定义操作 \{#handle-custom-actions\}
+
+在编辑工具中，您可以为按钮添加**自定义**操作并为其分配 ID。
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+然后，您可以在代码中使用此 ID，并将其作为自定义操作处理。例如，如果用户点击自定义按钮（如**登录**或**允许通知**），事件处理程序将被触发，并带有与编辑工具中**操作 ID** 匹配的 `actionId` 参数。您可以创建自己的 ID，如 "allowNotifications"。
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
+
+function MyOnboarding({ onboarding }) {
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onCustom={onCustom}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+import { createOnboardingView } from 'react-native-adapty';
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onCustom(actionId, meta) {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+```javascript showLineNumbers title="React Native"
+import { createOnboardingView } from 'react-native-adapty/dist/ui';
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onCustom(actionId, meta) {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+  "actionId": "allow_notifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+### 用户引导加载完成 \{#finishing-loading-onboarding\}
+
+当用户引导加载完成时，将触发此事件：
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
+
+function MyOnboarding({ onboarding }) {
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onFinishedLoading={onFinishedLoading}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+import { createOnboardingView } from 'react-native-adapty';
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onFinishedLoading(meta) {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+```javascript showLineNumbers title="React Native"
+import { createOnboardingView } from 'react-native-adapty/dist/ui';
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onFinishedLoading(meta) {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+
+### 关闭用户引导 \{#closing-onboarding\}
+
+当用户点击分配了**关闭**操作的按钮时，用户引导被视为已关闭。
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+请注意，您需要管理用户关闭用户引导时发生的情况。例如，您需要停止显示用户引导本身。
+:::
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
+
+function MyOnboarding({ onboarding, navigation }) {
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
+    navigation.goBack();  
+  }, [navigation]);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onClose={onClose}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+import { createOnboardingView } from 'react-native-adapty';
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onClose(actionId, meta) {
+    await view.dismiss();
+    return true;
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+```javascript showLineNumbers title="React Native"
+import { createOnboardingView } from 'react-native-adapty/dist/ui';
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onClose(actionId, meta) {
+    await view.dismiss();
+    return true;
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+</Details>
+
+### 打开付费墙 \{#opening-a-paywall\}
+
+:::tip
+如果您想在用户引导内部打开付费墙，请处理此事件。如果您想在用户引导关闭后打开付费墙，有一种更直接的方式——处理关闭操作并打开付费墙，无需依赖事件数据。
+:::
+
+如果用户点击打开付费墙的按钮，您将获得您[手动设置](get-paid-in-onboardings)的按钮操作 ID。在用户引导中使用付费墙最无缝的方式是将操作 ID 设置为等于付费墙版位 ID。
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
+
+function MyOnboarding({ onboarding }) {
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
+    openPaywall(actionId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onPaywall={onPaywall}
+    />
+  );
+}
+
+const openPaywall = async (placementId) => {
+  // Implement your paywall opening logic here
+};
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+请注意，对于 iOS，一次只能在屏幕上显示一个视图（付费墙或用户引导）。如果您在用户引导上方展示付费墙，则无法以编程方式控制后台的用户引导。尝试关闭用户引导将关闭付费墙，使用户引导仍然可见。为避免这种情况，请始终在展示付费墙之前先关闭用户引导视图。
+
+```javascript showLineNumbers title="React Native"
+import { createOnboardingView } from 'react-native-adapty';
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onPaywall(actionId, meta) {
+    view.dismiss().then(() => {
+      openPaywall(actionId);
+    });
+  },
+});
+
+const openPaywall = async (placementId) => {
+  // Implement your paywall opening logic here
+};
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+请注意，对于 iOS，一次只能在屏幕上显示一个视图（付费墙或用户引导）。如果您在用户引导上方展示付费墙，则无法以编程方式控制后台的用户引导。尝试关闭用户引导将关闭付费墙，使用户引导仍然可见。为避免这种情况，请始终在展示付费墙之前先关闭用户引导视图。
+
+```javascript showLineNumbers title="React Native"
+import { createOnboardingView } from 'react-native-adapty/dist/ui';
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onPaywall(actionId, meta) {
+    view.dismiss().then(() => {
+      openPaywall(actionId);
+    });
+  },
+});
+
+const openPaywall = async (placementId) => {
+  // Implement your paywall opening logic here
+};
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+
+### 追踪导航 \{#tracking-navigation\}
+
+当用户引导流程中发生各种导航相关事件时，您将收到分析事件：
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback } from 'react';
+import { AdaptyOnboardingView } from 'react-native-adapty';
+import type { OnboardingEventHandlers } from 'react-native-adapty';
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
+    trackEvent(event.name, meta.onboardingId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+import { createOnboardingView } from 'react-native-adapty';
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(event, meta) {
+    trackEvent(event.name, meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+```javascript showLineNumbers title="React Native"
+import { createOnboardingView } from 'react-native-adapty/dist/ui';
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onAnalytics(event, meta) {
+    trackEvent(event.name, meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+`event` 对象可以是以下类型之一：
+
+| 类型 | 描述 |
+|------------|-------------|
+| `onboardingStarted` | 用户引导已加载时 |
+| `screenPresented` | 任何屏幕显示时 |
+| `screenCompleted` | 屏幕完成时。包含可选的 `elementId`（已完成元素的标识符）和可选的 `reply`（用户的响应）。当用户执行任何操作退出屏幕时触发。 |
+| `secondScreenPresented` | 第二个屏幕显示时 |
+| `userEmailCollected` | 当通过输入字段收集用户电子邮件时触发 |
+| `onboardingCompleted` | 当用户到达 ID 为 `final` 的屏幕时触发。如果您需要此事件，请[将 `final` ID 分配给最后一个屏幕](design-onboarding)。 |
+| `unknown` | 对于任何无法识别的事件类型。包含 `name`（未知事件的名称）和 `meta`（附加元数据） |
+
+每个事件都包含 `meta` 信息，内容如下：
+
+| 字段 | 描述 |
+|------------|-------------|
+| `onboardingId` | 用户引导流程的唯一标识符 |
+| `screenClientId` | 当前屏幕的标识符 |
+| `screenIndex` | 当前屏幕在流程中的位置 |
+| `screensTotal` | 流程中的屏幕总数 |
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+```
+</Details>

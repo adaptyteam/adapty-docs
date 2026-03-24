@@ -1,0 +1,153 @@
+---
+title: "排查数据差异"
+description: "查找不同数据来源之间差异的原因"
+metadataTitle: "排查数据差异 | Adapty 文档"
+keywords: ['差异', '数据', '分析', '故障排查']
+---
+
+import ZoomImage from '@site/src/components/ZoomImage';
+
+Adapty 用户在比较来自不同来源的相似数据集时，可能会遇到**数据差异**。这种情况尤其容易在以下比较中出现：
+
+    * Adapty 数据图表与应用商店报告之间的比较
+    * Adapty 数据图表与第三方数据图表之间的比较
+    * Adapty 内部不同数据图表之间的比较
+
+## 故障排查算法 \{#troubleshooting-algorithm\}
+
+Adapty 与其他平台之间的大多数差异是预期且正常的。这是因为**不同来源对相同数据的处理方式不同**。
+
+但有时，这些差异也可能表明您的 **Adapty 配置存在问题**。
+
+如果您怀疑数据在不同平台之间存在差异，最佳做法是[导出原始数据](export-analytics-api-requests)并**对文件进行比较**。
+
+* 即使是应用商店本身也可能遇到数据处理和展示方面的问题。请访问商店的**原始交易数据**以获得最准确的比较基础。
+* 在将 Adapty 与其他分析平台进行比较时，请以商店交易报告作为数据真实性的来源和比较基准。
+* 使用有限的数据集更容易识别不一致之处。请比较少量数据——专注于某个特定产品和单一日期。
+* 确定您的差异是源于**定价**还是**事件数量**的不同。定价问题可以通过[更新产品](#product-pricing)来解决。事件数量问题可能表明存在[服务器端问题](#issues-with-server-notifications-and-rtdn)。
+* 查看[事件流](event-feed)以监控传入的事件——您可能会注意到异常行为。
+
+确定数据差异的位置后，您可以排查以下常见原因：
+
+## 服务器通知与 RTDN 问题 \{#issues-with-server-notifications-and-rtdn\}
+
+如果您未正确配置商店连接，Adapty 将无法接收必要的事件数据。这尤其会影响在没有用户直接参与的情况下发生的事件——例如订阅续费、账单问题等。
+
+请尽快完成服务器到服务器的配置（[App Store](enable-app-store-server-notifications) | [Play Store](enable-real-time-developer-notifications-rtdn)），并[等待](#data-delays)商店建立连接。
+
+您可以将缺失的 App Store Connect 数据[手动上传](importing-historical-data-to-adapty)至 Adapty。
+
+## 数据缺失 \{#missing-data\}
+
+### 使用旧版应用的用户 \{#users-with-out-of-date-app-versions\}
+
+如果部分用户运行的是不含 Adapty SDK 的旧版应用，Adapty 将无法接收其数据。因此，Adapty 与其他来源的数据数量将出现差异。
+
+### 集成问题 \{#integration-issues\}
+
+某些 Adapty 集成（例如 Adjust 或 AppsFlyer）需要额外的应用代码才能正常工作。如果您配置了 Adapty 看板，但未更新应用程序，则必要的数据将不会显示在 Adapty 中。
+
+### 历史数据缺失 \{#missing-historical-data\}
+
+除非您[手动导入](importing-historical-data-to-adapty)，否则 Adapty 无法访问您应用程序的历史数据。如果数据图表的[时间范围](controls-filters-grouping-compare-proceeds#time-ranges)早于您集成 Adapty 的时间，且您未导入历史数据，则其数值将与其他来源存在差异。
+
+## 数据延迟 \{#data-delays\}
+
+Adapty 致力于为您的应用经济提供近实时的分析。以下限制和例外情况适用：
+
+* 首次集成 Adapty 时，数据可能不会立即显示。
+* 启用与第三方平台的集成时，数据可能需要一段时间才能完全同步。
+* Adapty 接收到商店数据后，还需要额外 **15-30 分钟**进行处理，然后才会显示在分析页面上。
+* 由于涉及变量众多，Adapty 与第三方之间的数据交换**并非总是即时的**。
+* 某些高级数据图表（例如[同期群趋势预测](predicted-ltv-and-revenue)）的计算需要一定量的数据。Adapty 只有在收集到足够的数据后才会执行这些计算。
+
+## 时间与日历 \{#time-and-calendar\}
+
+#### 日期与时区 \{#dates-and-timezones\}
+
+数据差异最常见的原因之一是时区设置的不同。
+
+Adapty 按照 `UTC` 时区计算天数。如果其他平台使用不同的时区，计算结果将会有所不同。随着时间范围的扩大，差异会逐渐减小。
+
+您可以为每个应用[更改时区设置](general#3-reporting-timezone)。
+
+<ZoomImage id="timezone-setting.webp" width="700px" />
+
+#### Apple 财政日历 \{#the-apple-fiscal-calendar\}
+
+Apple 使用其自有的[会计日历](https://adapty.io/apple-fiscal-calendar/)来确定销售周期和付款日期。
+
+日历中的每个"月份"由 **4 或 5 周**组成，**可能包含相邻日历月份的天数**。付款通常在销售周期结束后 30-45 天内发放。
+
+例如，"2026 年 1 月"的销售周期从 2025 年 12 月 28 日开始——比日历月的开始早 4 天。该周期的预计付款日期为 3 月 5 日。
+
+请勿将 Apple 付款报告中的数据与日历月进行比较。请改为选择与相应销售周期对应的[自定义日期范围](controls-filters-grouping-compare-proceeds#time-ranges)。
+
+#### 交易日期 \{#transaction-dates\}
+
+某些服务（例如 AppsFlyer）在显示交易时可能会应用[同期群](analytics-cohorts)规则，将交易归因于应用的安装日期，而非交易本身发生的日期。
+
+## 收入计算 \{#revenue-calculation\}
+
+### 手续费与税费 \{#fees-and-taxes\}
+
+根据[设置](controls-filters-grouping-compare-proceeds#store-commission-and-taxes)，Adapty 数据图表可以显示您的**总收入**、**扣除商店佣金后的收入**或**扣除商店佣金和税费后的收入**。
+
+<ZoomImage id="revenue-types.webp" width="500px" />
+
+某些商店和第三方平台可能不具备显示总收入的功能，或会自动扣除税费。如果您发现两个不同收入数据图表之间存在差异，请确认比较的有效性。
+
+### 取消与退款 \{#cancellations-and-refunds\}
+
+不同平台对退款数据的显示方式不同。Adapty 将退款视为负收入。如果用户订阅后次日申请退款，这两个事件都会反映在 Adapty 数据图表中——各自对应其发生的日期。其他平台可能会从原始交易中直接扣除退款金额。
+
+## 沙盒购买 \{#sandbox-purchases\}
+
+[事件流](event-feed)会显示沙盒账户的购买记录，而分析数据图表则不会显示。但是，如果您的历史导入数据包含沙盒购买记录，Adapty 将无法区分，其数据图表将会反映历史沙盒购买记录。
+
+## 安装与下载 \{#installs-and-downloads\}
+
+应用商店（尤其是 Apple App Store）可以直接追踪用户下载数据。其统计数据可能包括已安装但从未启动应用的情况。
+
+无论您的[安装定义](general#4-installs-definition-for-analytics)如何设置，Adapty 只能在用户启动应用时才能注册一次安装。
+
+<ZoomImage id="install-definitions.webp" width="700px" />
+
+## 国家与商店 \{#country-and-store\}
+
+为确保报告准确，Adapty [可能会](controls-filters-grouping-compare-proceeds#filtering-and-grouping)根据用户的 IP 地址推断其所在国家。商店始终将下载和购买归因于特定的应用商店。
+
+如果您需要明确区分这两者，可以使用 `Country by store account` 属性[创建新的用户市场细分](segments)，并[按市场细分筛选分析数据](controls-filters-grouping-compare-proceeds#filtering-and-grouping)。
+
+## 产品定价 \{#product-pricing\}
+
+如果产品定价错误导致收入差异，更改价格并不会对历史数据产生追溯效果。要更改现有交易的价格，您需要通过导入正确数据来强制覆盖。
+
+用户在价格变更后恢复旧购买时，Apple 可能会错误报告购买金额。您需要导入历史数据，以便 Adapty 反映正确的金额。
+
+## 归因冲突 \{#attribution-conflicts\}
+
+Adapty 对每笔交易只能使用[单一归因来源](attribution-integration#prevent-data-issues)，且无法在事后覆盖此数据。
+
+如果您的配置包含多个相互不一致的归因提供商，则同一笔交易在两个不同平台上可能显示为两个不同的流量来源。
+
+## 术语差异 \{#differences-in-terminology\}
+
+不同平台对同一概念可能使用不同的名称。与[收入](#fees-and-taxes)相关的数据图表在各平台之间的名称各有不同：
+
+| Adapty | App Store Connect | Google Play Console |
+|--------|-------------------|----------------------|
+| **总收入（Gross revenue）** | Sales | Gross Revenue |
+| **扣除商店佣金后的收入（Proceeds after store commission）** | N/A | N/A |
+| **扣除商店佣金和税费后的收入（Proceeds after store commission and taxes）** | Proceeds | Earnings |
+| **ARPPU** | Proceeds per paying user | ARPPU |
+
+其他数据图表在定义上也可能有所不同：
+
+- **订阅**：
+        - Adapty 不将新试用计为订阅。[新订阅](reactivated-subscriptions)始终以一笔财务交易为起点。
+        - 其他平台（例如 Google Play Console）可能**将每次试用计为一次新订阅**，即使在首次付款之前也是如此。
+- **留存率**：
+        - Adapty 根据订阅续费次数来衡量留存率。
+        - App Store Connect 如果用户在指定日期打开应用，则将其视为留存用户。没有订阅的用户也会被计入，但在该日期未打开应用的订阅用户则不会被计入。
+        - Google Play Console 的"Retained Installers"数据图表根据应用在用户设备上保持安装的天数来衡量留存率。未打开应用的用户也会计入此数据图表。

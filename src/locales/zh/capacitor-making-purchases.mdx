@@ -1,0 +1,174 @@
+---
+title: "在 Capacitor SDK 中完成移动应用内购"
+description: "使用 Adapty 处理应用内购和订阅的指南。"
+metadataTitle: "在 Adapty 中处理应用内购 | Adapty 文档"
+keywords: ['makePurchase', 'offer code']
+rank: 100
+displayed_sidebar: sdkcapacitor
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/zh/reusable/OfferCodesInfo.mdx';
+
+在移动应用中展示付费墙是向用户提供高级内容或服务访问权限的重要步骤。然而，仅仅展示付费墙只有在您使用[付费墙编辑工具](adapty-paywall-builder)自定义付费墙时，才足以支持购买流程。
+
+如果您未使用付费墙编辑工具，则必须使用名为 `.makePurchase()` 的单独方法来完成购买并解锁所需内容。该方法是用户与付费墙交互并完成交易的入口。
+
+如果您的付费墙对用户尝试购买的产品设有有效的促销活动，Adapty 将在购买时自动应用该优惠。
+
+请确保您已完成[初始配置](quickstart)，且没有跳过任何步骤。否则，我们将无法验证购买。
+
+## 完成购买 \{#make-purchase\}
+
+:::note
+**正在使用[付费墙编辑工具](adapty-paywall-builder)？** 购买流程将自动处理——您可以跳过此步骤。
+
+**需要逐步指引？** 请查看[快速入门指南](capacitor-implement-paywalls-manually)，获取包含完整上下文的端到端实现说明。
+:::
+
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
+try {
+  const result = await adapty.makePurchase({ product });
+  
+  if (result.type === 'success') {
+    const isSubscribed = result.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+    
+    if (isSubscribed) {
+      // Grant access to the paid features
+      console.log('User is now subscribed!');
+    }
+  } else if (result.type === 'user_cancelled') {
+    console.log('Purchase cancelled by user');
+  } else if (result.type === 'pending') {
+    console.log('Purchase is pending');
+  }
+} catch (error) {
+  console.error('Purchase failed:', error);
+}
+```
+
+请求参数：
+
+| 参数        | 是否必填 | 描述                                                                                                                        |
+| :---------- | :------- |:----------------------------------------------------------------------------------------------------------------------------|
+| **product** | 必填     | 从付费墙获取的 [`AdaptyPaywallProduct`](https://capacitor.adapty.io/interfaces/adaptypaywallproduct) 对象。 |
+
+响应参数：
+
+| 参数       | 描述                                                                                                                                                                                                                                                                                                                                               |
+|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **result** | [`AdaptyPurchaseResult`](https://capacitor.adapty.io/types/adaptypurchaseresult) 对象，包含 `type` 字段（表示购买结果：`'success'`、`'user_cancelled'` 或 `'pending'`）以及 `profile` 字段（在购买成功时包含更新后的 [`AdaptyProfile`](https://capacitor.adapty.io/interfaces/adaptyprofile)）。 |
+
+## 购买时更换订阅 \{#change-subscription-when-making-a-purchase\}
+
+当用户选择购买新订阅而非续订当前订阅时，其工作方式取决于应用商店：
+
+- 对于 App Store，订阅将在订阅组内自动更新。如果用户在已拥有某个订阅组的订阅时购买另一个组的订阅，两个订阅将同时有效。
+- 对于 Google Play，订阅不会自动更新。您需要按照以下说明在移动应用代码中管理切换逻辑。
+
+要在 Android 中将订阅替换为另一个订阅，请在调用 `.makePurchase()` 方法时传入额外参数：
+
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
+try {
+  const result = await adapty.makePurchase({ 
+    product,
+    params: {
+      android: {
+        subscriptionUpdateParams: {
+          oldSubVendorProductId: 'old_product_id',
+          prorationMode: 'charge_prorated_price'
+        },
+        isOfferPersonalized: true
+      }
+    }
+  });
+  
+  if (result.type === 'success') {
+    const isSubscribed = result.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+    
+    if (isSubscribed) {
+      // Grant access to the paid features
+      console.log('Subscription updated successfully!');
+    }
+  } else if (result.type === 'user_cancelled') {
+    console.log('Purchase cancelled by user');
+  } else if (result.type === 'pending') {
+    console.log('Purchase is pending');
+  }
+} catch (error) {
+  console.error('Purchase failed:', error);
+}
+```
+
+额外请求参数：
+
+| 参数       | 是否必填 | 描述                                                                                                  |
+| :--------- | :------- | :---------------------------------------------------------------------------------------------------- |
+| **params** | 可选     | [`MakePurchaseParamsInput`](https://capacitor.adapty.io/types/makepurchaseparamsinput) 类型的对象，包含特定平台的购买参数。 |
+
+`MakePurchaseParamsInput` 结构如下：
+
+```typescript
+{
+  android: {
+    subscriptionUpdateParams: {
+      oldSubVendorProductId: 'old_product_id',
+      prorationMode: 'charge_prorated_price'
+    },
+    isOfferPersonalized: true
+  }
+}
+```
+
+您可以在 Google 开发者文档中了解更多关于订阅和替换模式的信息：
+
+- [关于替换模式](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Google 对替换模式的建议](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- 替换模式 [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE())。注意：此方法仅适用于订阅升级，不支持降级。
+- 替换模式 [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED())。注意：实际的订阅变更仅在当前订阅计费周期结束后才会生效。
+
+### 管理预付费方案（Android） \{#manage-prepaid-plans-android\}
+
+如果您的应用用户可以购买[预付费方案](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans)（例如，购买数月有效的非续期订阅），您可以为预付费方案启用[待处理交易](https://developer.android.com/google/play/billing/subscriptions#pending)。
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    android: {
+        enablePendingPrepaidPlans: true,      
+    },
+  }
+});
+```
+
+## 在 iOS 中兑换优惠码 \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+要在您的应用中显示优惠码兑换页面：
+
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
+try {
+  await adapty.presentCodeRedemptionSheet();
+} catch (error) {
+  console.error('Failed to present code redemption sheet:', error);
+}
+```
+
+:::danger
+根据我们的观察，部分应用中的优惠码兑换页面可能无法可靠运行。我们建议将用户直接重定向至 App Store。
+
+为此，您需要打开以下格式的 URL：
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::

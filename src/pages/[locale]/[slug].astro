@@ -1,0 +1,53 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import ApiReferencePage from '../../components/ApiReferencePage.astro';
+import apiConfig from '../../api-reference/config.json';
+import { SUPPORTED_LOCALES } from '../../data/locales';
+
+export async function getStaticPaths() {
+  const paths = [];
+  for (const locale of SUPPORTED_LOCALES) {
+    for (const api of apiConfig) {
+      // Resolve localized spec file, fall back to English
+      const specBasename = api.specFile.replace(/\.yaml$/, '');
+      const localizedSpecFile = `${specBasename}.${locale}.yaml`;
+      const localizedSpecPath = path.join(process.cwd(), 'public', 'api-specs', localizedSpecFile);
+      const specFile = fs.existsSync(localizedSpecPath) ? localizedSpecFile : api.specFile;
+
+      paths.push({
+        params: { locale, slug: api.slug },
+        props: { api, locale, specFile },
+      });
+    }
+  }
+  return paths;
+}
+
+const { api, locale, specFile } = Astro.props;
+const { slug } = Astro.params;
+
+const specUrl = api.specUrl || `${import.meta.env.BASE_URL}/api-specs/${specFile}`.replace(/\/+/g, '/');
+const basePath = `${import.meta.env.BASE_URL}/${locale}/${slug}`.replace(/\/+/g, '/');
+
+const breadcrumbs = [
+  { label: 'Home', href: `${import.meta.env.BASE_URL}/`.replace(/\/+/g, '/') },
+  { label: api.name }
+];
+---
+
+<DocsLayout
+  title={api.name}
+  description={`${api.name} reference documentation`}
+  keywords={api.name}
+  rank={70}
+  sidebarData={null}
+  currentPlatformId="api"
+  currentSlug={slug}
+  currentLocale={locale}
+  breadcrumbs={breadcrumbs}
+  isFullWidth={true}
+>
+  <ApiReferencePage api={api} slug={`${locale}/${slug}`} specUrl={specUrl} basePath={basePath} />
+</DocsLayout>

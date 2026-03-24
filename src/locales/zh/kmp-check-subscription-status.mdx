@@ -1,0 +1,116 @@
+---
+title: "在 Kotlin Multiplatform SDK 中检查订阅状态"
+description: "了解如何使用 Adapty 在 Kotlin Multiplatform 应用中检查订阅状态。"
+metadataTitle: "检查订阅状态 | Adapty 文档"
+keywords: ['getProfile', '订阅状态']
+rank: 95
+displayed_sidebar: sdkkmp
+---
+
+要决定用户是否可以访问付费内容或查看付费墙，您需要检查用户画像中的[访问等级](access-level)。
+
+本文介绍如何访问用户画像状态，以决定向用户显示什么内容——是展示付费墙还是授予付费功能的访问权限。
+
+## 获取订阅状态 \{#get-subscription-status\}
+
+当您决定是否向用户显示付费墙或付费内容时，需要检查用户画像中的[访问等级](access-level)。您有两种选择：
+
+- 如果需要立即获取最新的用户画像数据（例如应用启动时）或希望强制更新，请调用 `getProfile`。
+- 设置**自动用户画像更新**，以保留一份本地副本，该副本会在订阅状态发生变化时自动刷新。
+
+### 获取用户画像 \{#get-profile\}
+
+获取订阅状态最简单的方式是使用 `getProfile` 方法来访问用户画像：
+
+```kotlin showLineNumbers
+Adapty.getProfile()
+    .onSuccess { profile ->
+        // check the access
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+### 监听订阅更新 \{#listen-to-subscription-updates\}
+
+要在应用中自动接收用户画像更新：
+
+1. 使用 `Adapty.setOnProfileUpdatedListener()` 监听用户画像变化——每当用户订阅状态发生变化时，Adapty 会自动调用此方法。
+2. 在此方法被调用时存储更新后的用户画像数据，以便在整个应用中使用，而无需发起额外的网络请求。
+
+```kotlin showLineNumbers
+class SubscriptionManager {
+    private var currentProfile: AdaptyProfile? = null
+    
+    init {
+        // Listen for profile updates
+        Adapty.setOnProfileUpdatedListener { profile ->
+            currentProfile = profile
+            // Update UI, unlock content, etc.
+        }
+    }
+    
+    // Use stored profile instead of calling getProfile()
+    fun hasAccess(): Boolean {
+        return currentProfile?.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true
+    }
+}
+```
+
+:::note
+Adapty 会在应用启动时自动调用用户画像更新监听器，即使设备处于离线状态，也能提供缓存的订阅数据。
+:::
+
+## 将用户画像与付费墙逻辑关联 \{#connect-profile-with-paywall-logic\}
+
+当您需要立即决定是否显示付费墙或授予付费功能访问权限时，可以直接检查用户的用户画像。此方式适用于应用启动、进入付费专区或显示特定内容前等场景。
+
+```kotlin showLineNumbers
+private fun checkAccessAndShowPaywall() {
+    // First, check if user has access
+    Adapty.getProfile()
+        .onSuccess { profile ->
+            val hasAccess = profile.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true
+            
+            if (!hasAccess) {
+                // User doesn't have access, show paywall
+                showPaywall()
+            } else {
+                // User has access, show premium content
+                showPremiumContent()
+            }
+        }
+        .onError { error ->
+            // If we can't check access, show paywall as fallback
+            showPaywall()
+        }
+}
+
+private fun showPaywall() {
+    // Get and display paywall using the KMP SDK
+    Adapty.getPaywall("YOUR_PLACEMENT_ID")
+        .onSuccess { paywall ->
+            if (paywall.hasViewConfiguration) {
+                val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
+                paywallView?.present()
+            } else {
+                // Handle remote config paywall or show custom UI
+                handleRemoteConfigPaywall(paywall)
+            }
+        }
+        .onError { error ->
+            // Handle paywall loading error
+            showError("Unable to load paywall")
+        }
+}
+
+private fun showPremiumContent() {
+    // Show your premium content here
+    // This is where you unlock paid features
+}
+```
+
+## 后续步骤 \{#next-steps\}
+
+现在，当您了解如何追踪订阅状态后，请学习如何[使用用户画像](kmp-quickstart-identify)，以确保用户能够访问其已付费的内容。

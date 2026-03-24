@@ -1,0 +1,120 @@
+---
+title: "在 Unity SDK 的自定义付费墙中启用购买功能"
+description: "将 Adapty SDK 集成到您的自定义 Unity 付费墙中，以启用应用内购买。"
+metadataTitle: "Adapty 快速入门指南 | Adapty 文档"
+keywords: ['paywalls Unity', 'sdk Unity', 'paywall', 'getPaywall']
+---
+
+本指南介绍如何将 Adapty 集成到您的自定义付费墙中。您可以完全掌控付费墙的实现，同时由 Adapty SDK 负责获取产品、处理新购买以及恢复历史购买。
+
+:::important
+**本指南面向正在实现自定义付费墙的开发者。** 如果您希望以最简便的方式启用购买功能，请使用 [付费墙编辑工具](unity-quickstart-paywalls)。使用付费墙编辑工具，您可以在无代码可视化编辑器中创建付费墙，Adapty 会自动处理所有购买逻辑，您无需重新发布应用即可测试不同的设计方案。
+:::
+
+## 开始之前 \{#before-you-start\}
+
+### 设置产品 \{#set-up-products\}
+
+要启用应用内购买，您需要了解三个核心概念：
+
+- [**产品**](product) – 用户可以购买的任何内容（订阅、消耗型商品、永久授权）
+- [**付费墙**](paywalls) – 定义要展示哪些产品的配置。在 Adapty 中，付费墙是获取产品的唯一途径，但这种设计使您无需修改应用代码即可调整产品、价格和优惠。
+- [**版位**](placements) – 在应用中展示付费墙的位置和时机（例如 `main`、`onboarding`、`settings`）。您在看板中为版位设置付费墙，然后在代码中通过版位 ID 请求它们。这使得运行 A/B 测试以及向不同用户展示不同付费墙变得轻而易举。
+
+即使您使用自定义付费墙，也请确保理解这些概念。它们本质上只是您管理应用内销售产品的方式。
+
+要实现自定义付费墙，您需要创建一个**付费墙**并将其添加到**版位**中。此设置使您能够获取产品。如需了解在看板中需要执行哪些操作，请参阅[此处](quickstart)的快速入门指南。
+
+### 管理用户 \{#manage-users\}
+
+您可以选择使用或不使用后端身份验证。
+
+但请注意，Adapty SDK 对匿名用户和已识别用户的处理方式有所不同。请阅读[用户识别快速入门指南](unity-quickstart-identify)，了解具体差异并确保您正确地管理用户。
+
+## 第一步：获取产品 \{#step-1-get-products\}
+
+要获取自定义付费墙的产品，您需要：
+
+1. 通过将[版位](placements) ID 传递给 `getPaywall` 方法来获取 `paywall` 对象。
+2. 使用 `getPaywallProducts` 方法获取该付费墙的产品数组。
+
+```csharp showLineNumbers
+using AdaptySDK;
+
+void LoadPaywall() {
+    Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
+        if (error != null) {
+            // Handle the error
+            return;
+        }
+
+        Adapty.GetPaywallProducts(paywall, (products, productsError) => {
+            if (productsError != null) {
+                // Handle the error
+                return;
+            }
+
+            // Use products to build your custom paywall UI
+        });
+    });
+}
+```
+
+## 第二步：接受购买 \{#step-2-accept-purchases\}
+
+当用户在自定义付费墙中点击某个产品时，调用 `makePurchase` 方法并传入所选产品。该方法将处理购买流程并返回更新后的用户画像。
+
+```csharp showLineNumbers
+using AdaptySDK;
+
+void PurchaseProduct(AdaptyPaywallProduct product) {
+    Adapty.MakePurchase(product, (result, error) => {
+        if (error != null) {
+            // Handle the error
+            return;
+        }
+
+        switch (result.Type) {
+            case AdaptyPurchaseResultType.Success:
+                var profile = result.Profile;
+                // Purchase successful, profile updated
+                break;
+            case AdaptyPurchaseResultType.UserCancelled:
+                // User canceled the purchase
+                break;
+            case AdaptyPurchaseResultType.Pending:
+                // Purchase is pending (e.g., user will pay offline with cash)
+                break;
+        }
+    });
+}
+```
+
+## 第三步：恢复购买 \{#step-3-restore-purchases\}
+
+应用商店要求所有包含订阅的应用为用户提供恢复购买的途径。
+
+当用户点击恢复按钮时，调用 `restorePurchases` 方法。该方法将把用户的购买历史与 Adapty 同步，并返回更新后的用户画像。
+
+```csharp showLineNumbers
+using AdaptySDK;
+
+void RestorePurchases() {
+    Adapty.RestorePurchases((profile, error) => {
+        if (error != null) {
+            // Handle the error
+            return;
+        }
+
+        // Restore successful, profile updated
+    });
+}
+```
+
+## 后续步骤 \{#next-steps\}
+
+<SupportForum />
+
+您的付费墙已准备好在应用中展示。请在 [App Store 沙盒](test-purchases-in-sandbox)或 [Google Play Store](testing-on-android) 中测试您的购买流程，以确保能够从付费墙完成测试购买。
+
+接下来，[检查用户是否已完成购买](unity-check-subscription-status)，以决定是否展示付费墙或授予付费功能的访问权限。

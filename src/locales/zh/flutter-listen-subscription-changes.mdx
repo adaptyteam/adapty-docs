@@ -1,0 +1,82 @@
+---
+title: "在 Flutter SDK 中检查订阅状态"
+description: "在 Adapty 中跟踪和管理用户订阅状态，以提升 Flutter 应用的用户留存率。"
+metadataTitle: "了解订阅状态 | Adapty 文档"
+keywords: ['getProfile']
+---
+
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+
+借助 Adapty，订阅状态的追踪变得轻而易举。您无需在代码中手动插入产品 ID，只需检查是否存在有效的[访问等级](access-level)，即可轻松确认用户的订阅状态。
+
+<details>
+   <summary>开始检查订阅状态之前（点击展开）</summary>
+
+- 对于 iOS，请设置 [App Store 服务器通知](enable-app-store-server-notifications)
+- 对于 Android，请设置[实时开发者通知 (RTDN)](enable-real-time-developer-notifications-rtdn)
+</details>
+
+## 访问等级与 AdaptyProfile 对象 \{#access-level-and-the-adaptyprofile-object\}
+
+访问等级是 [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html) 对象的属性。我们建议在应用启动时获取用户画像（例如在[识别用户](flutter-identifying-users#setting-customer-user-id-on-configuration)时），然后在发生变更时及时更新。这样您就可以直接使用用户画像对象，而无需反复请求。
+
+要在用户画像更新时收到通知，请按照下方[监听用户画像更新（包括访问等级）](flutter-listen-subscription-changes)部分的说明监听用户画像变化。
+
+<SampleApp />
+
+## 从服务器获取访问等级 \{#retrieving-the-access-level-from-the-server\}
+
+要从服务器获取访问等级，请使用 `.getProfile()` 方法：
+
+```javascript showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  // check the access
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+响应参数：
+
+| 参数    | 描述                                                         |
+| ------- | ------------------------------------------------------------ |
+| Profile | <p>[AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html) 对象。通常，您只需检查用户画像的访问等级状态，即可判断用户是否拥有应用的高级访问权限。</p><p></p><p>`.getProfile` 方法始终尝试查询 API，因此可提供最新的结果。如果由于某些原因（例如无网络连接）Adapty SDK 无法从服务器获取信息，则会返回缓存中的数据。值得注意的是，Adapty SDK 会定期更新 `AdaptyProfile` 缓存，以尽可能保持信息的时效性。</p> |
+
+`.getProfile()` 方法会返回用户画像，您可以从中获取访问等级状态。每个应用可以设置多个访问等级。例如，如果您有一个新闻应用并单独销售不同主题的订阅，可以创建"sports"和"science"等访问等级。但大多数情况下，您只需要一个访问等级，此时直接使用默认的"premium"访问等级即可。
+
+以下是检查默认"premium"访问等级的示例：
+
+```javascript showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  if (profile?.accessLevels['premium']?.isActive ?? false) {
+        // grant access to premium features
+    }
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+### 监听订阅状态更新 \{#listening-for-subscription-status-updates\}
+
+每当用户的订阅发生变化时，Adapty 都会触发一个事件。
+
+要接收来自 Adapty 的消息，您需要进行一些额外配置：
+
+```javascript showLineNumbers
+Adapty().didUpdateProfileStream.listen((profile) {
+  // handle any changes to subscription state
+});
+```
+
+Adapty 也会在应用启动时触发一个事件，此时将传递缓存中的订阅状态。
+
+### 订阅状态缓存 \{#subscription-status-cache\}
+
+Adapty SDK 中实现的缓存存储了用户画像的订阅状态。这意味着即使服务器不可用，也可以访问缓存数据以获取用户画像的订阅状态信息。
+
+但需要注意的是，无法直接从缓存中请求数据。SDK 会每分钟定期向服务器查询，检查用户画像是否有任何更新或变化。如果存在任何修改（例如新交易或其他更新），这些变更将被同步到缓存数据中，以保持与服务器的一致性。

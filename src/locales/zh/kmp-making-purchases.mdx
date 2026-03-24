@@ -1,0 +1,176 @@
+---
+title: "在 Kotlin Multiplatform SDK 的移动应用中进行购买"
+description: "使用 Adapty 处理应用内购买和订阅的指南。"
+metadataTitle: "在 Adapty 中处理应用内购买 | Adapty 文档"
+keywords: ['makePurchase', 'pending', 'offer code']
+rank: 95
+displayed_sidebar: sdkkmp
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/zh/reusable/OfferCodesInfo.mdx';
+
+在移动应用中展示付费墙是向用户提供高级内容或服务访问权限的重要步骤。但是，仅仅展示付费墙本身，只有在您使用[付费墙编辑工具](adapty-paywall-builder)自定义付费墙时，才足以支持购买流程。
+
+如果您未使用付费墙编辑工具，则必须使用名为 `.makePurchase()` 的独立方法来完成购买并解锁所需内容。该方法是用户与付费墙互动并完成所需交易的入口。
+
+如果您的付费墙针对用户尝试购买的产品设置了有效的促销活动，Adapty 将在购买时自动应用该促销活动。
+
+:::warning
+请注意，新用户优惠仅在您使用付费墙编辑工具设置付费墙时才会自动应用。
+
+在其他情况下，您需要[在 iOS 上验证用户是否具备新用户优惠资格](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios)。跳过此步骤可能导致您的应用在发布时被拒绝，并可能对有资格享受新用户优惠的用户收取全价。
+:::
+
+请确保您已[完成初始配置](quickstart)，不要跳过任何步骤。否则我们将无法验证购买。
+
+## 进行购买 \{#make-purchase\}
+
+:::note
+**正在使用[付费墙编辑工具](adapty-paywall-builder)?** 购买将自动处理——您可以跳过此步骤。
+
+**需要分步指导？** 请查看[快速入门指南](kmp-implement-paywalls-manually)，获取包含完整背景的端到端实现说明。
+:::
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPurchaseResult
+
+Adapty.makePurchase(product = product).onSuccess { purchaseResult ->
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            val profile = purchaseResult.profile
+            if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
+                // Grant access to the paid features
+            }
+        }
+        is AdaptyPurchaseResult.UserCanceled -> {
+            // Handle the case where the user canceled the purchase
+        }
+        is AdaptyPurchaseResult.Pending -> {
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
+        }
+    }
+}.onError { error ->
+    // Handle the error
+}
+```
+
+请求参数：
+
+| 参数          | 是否必填 | 描述                                                                                                                                              |
+| :------------ | :------- |:-------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Product** | 必填     | 从付费墙中获取的 [`AdaptyPaywallProduct`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall-product/) 对象。|
+
+响应参数：
+
+| 参数        | 描述                                                                                                                                                                                                                                                                                           |
+|------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>请求成功后，响应中包含此对象。[AdaptyProfile](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-profile/) 对象提供了用户在应用内的访问等级、订阅及非订阅购买的完整信息。</p><p>请检查访问等级状态，以确认用户是否具有所需的应用访问权限。</p> |
+
+:::warning
+**注意：** 如果您仍在使用低于 v2.0 的 Apple StoreKit 版本以及低于 v.2.9.0 的 Adapty SDK 版本，则需要改为提供 [Apple App Store 共享密钥](app-store-connection-configuration#step-5-enter-app-store-shared-secret)。该方法目前已被 Apple 弃用。
+:::
+
+## 购买时更换订阅 \{#change-subscription-when-making-a-purchase\}
+
+当用户选择新订阅而非续订当前订阅时，其工作方式取决于所使用的应用商店。对于 Google Play，订阅不会自动更新，您需要按照以下说明在移动应用代码中管理切换操作。
+
+要在 Android 上将订阅替换为另一个订阅，请使用附加参数调用 `.makePurchase()` 方法：
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyAndroidSubscriptionUpdateParameters
+import com.adapty.kmp.models.AdaptyAndroidSubscriptionUpdateReplacementMode
+import com.adapty.kmp.models.AdaptyPurchaseParameters
+import com.adapty.kmp.models.AdaptyPurchaseResult
+
+val subscriptionUpdateParams = AdaptyAndroidSubscriptionUpdateParameters(
+    oldSubVendorProductId = "old_subscription_product_id",
+    replacementMode = AdaptyAndroidSubscriptionUpdateReplacementMode.CHARGE_FULL_PRICE
+)
+
+val purchaseParams = AdaptyPurchaseParameters.Builder()
+    .setSubscriptionUpdateParams(subscriptionUpdateParams)
+    .build()
+
+Adapty.makePurchase(
+    product = product,
+    parameters = purchaseParams
+).onSuccess { purchaseResult ->
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            val profile = purchaseResult.profile
+            // successful cross-grade
+        }
+        is AdaptyPurchaseResult.UserCanceled -> {
+            // user canceled the purchase flow
+        }
+        is AdaptyPurchaseResult.Pending -> {
+            // the purchase has not been finished yet, e.g. user will pay offline by cash
+        }
+    }
+}.onError { error ->
+    // Handle the error
+}
+
+```
+
+附加请求参数：
+
+| 参数             | 是否必填 | 描述                                                                                                                                                                                                                                                                                                |
+|:----------------|:--------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **parameters** | 可选     | 通过 [`AdaptyPurchaseParameters`](https://kmp.adapty.io/adapty/com.adapty.kmp.models/-adapty-purchase-parameters/) 传递的 [`AdaptyAndroidSubscriptionUpdateParameters`](https://kmp.adapty.io/////adapty/com.adapty.kmp.models/-adapty-android-subscription-update-parameters/) 对象。|
+
+您可以在 Google 开发者文档中进一步了解订阅和替换模式：
+
+- [关于替换模式](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Google 对替换模式的建议](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- 替换模式 [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE())。注意：此方法仅适用于订阅升级，不支持降级。
+- 替换模式 [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED())。注意：实际的订阅变更仅在当前订阅计费周期结束时才会发生。
+
+## 在 iOS 中兑换优惠码 \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+在您的应用中显示代码兑换界面：
+
+```kotlin showLineNumbers
+Adapty.presentCodeRedemptionSheet()
+    .onSuccess {
+        // code redemption sheet presented successfully
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+:::danger
+根据我们的观察，部分应用中的优惠码兑换界面可能无法可靠运行。我们建议将用户直接重定向至 App Store。
+
+为此，您需要打开以下格式的 URL：
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
+
+## 管理预付方案 (Android) \{#manage-prepaid-plans-android\}
+
+如果您的应用用户可以购买[预付方案](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans)（例如，购买数月的非续订订阅），您可以为预付方案启用[待处理交易](https://developer.android.com/google/play/billing/subscriptions#pending)。
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyConfig
+
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withGoogleEnablePendingPrepaidPlans(true)
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+}
+```
