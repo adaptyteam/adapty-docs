@@ -53,12 +53,13 @@ function stripContent(content, reusableComponents) {
     // 1. Remove imports
     processed = processed.replace(/^import\s+.*?;?\s*$/gm, '');
 
-    // 2. Remove inline icon directives (description is in surrounding text)
-    processed = processed.replace(/ ?:icon\[[^\]]+\]/g, '');
-
-    // 3. Remove Zoom and ZoomImage tags
+    // 2. Remove Zoom and ZoomImage tags
     processed = processed.replace(/<ZoomImage\s+[^>]*\/>/g, '');
     processed = processed.replace(/<Zoom>(.*?)<\/Zoom>/gs, '$1');
+
+    // Replace Inline icon component with its alt text: <Inline id="..." alt="Edit" ... /> → Edit
+    processed = processed.replace(/<Inline\s+[^>]*alt="([^"]*)"[^>]*\/>/g, '$1');
+    processed = processed.replace(/<Inline\s+[^>]*\/>/g, '');
 
     // 3. Inline Reusable Components
     for (const [name, componentContent] of Object.entries(reusableComponents)) {
@@ -73,6 +74,13 @@ function stripContent(content, reusableComponents) {
     processed = processed.replace(/\n{3,}/g, '\n\n');
 
     return processed.trim();
+}
+
+// Check if a document is marked as draft
+function isDraft(content) {
+    const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
+    if (!match) return false;
+    return /^draft:\s*true\s*$/m.test(match[1]);
 }
 
 // Clean frontmatter (keep only title and description)
@@ -154,6 +162,9 @@ async function processMarkdownFile(docId, reusableComponents) {
 
     try {
         let content = await fs.readFile(filePath, 'utf8');
+
+        // Skip draft documents
+        if (isDraft(content)) return null;
 
         // Clean frontmatter
         content = cleanFrontmatter(content);

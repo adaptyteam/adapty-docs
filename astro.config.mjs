@@ -17,7 +17,7 @@ import { remarkHeadingId } from './src/plugins/remark-heading-id.mjs';
 import { remarkTransformLinks } from './src/plugins/remark-transform-links.mjs';
 import { remarkStripImports } from './src/plugins/remark-strip-imports.mjs';
 import { remarkStripHighlightComments } from './src/plugins/remark-strip-highlight-comments.mjs';
-import { remarkInlineIcon } from './src/plugins/remark-inline-icon.mjs';
+
 import { remarkFloatClear } from './src/plugins/remark-float-clear.mjs';
 
 // https://astro.build/config
@@ -57,7 +57,7 @@ export default defineConfig({
   },
 
   markdown: {
-    remarkPlugins: [remarkHeadingId, remarkDirective, remarkInlineIcon, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+    remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
     rehypePlugins: [rehypeSlug],
     shikiConfig: {
       theme: 'github-light',
@@ -87,9 +87,12 @@ export default defineConfig({
 
   integrations: [
     react(),
-    sitemap(),
+    sitemap({
+      // Exclude localized pages — they are covered by locale-specific sitemaps (e.g. sitemap-zh-index.xml)
+      filter: (page) => !page.includes('/docs/zh/'),
+    }),
     mdx({
-      remarkPlugins: [remarkHeadingId, remarkDirective, remarkInlineIcon, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+      remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
       rehypePlugins: [rehypeSlug],
       shikiConfig: {
         theme: 'github-light',

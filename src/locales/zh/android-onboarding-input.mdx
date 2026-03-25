@@ -1,0 +1,207 @@
+---
+title: "在 Android SDK 中处理用户引导数据"
+description: "使用 Adapty SDK 在 Android 应用中保存和使用用户引导数据。"
+metadataTitle: "用户引导 | Android SDK | Adapty 文档"
+---
+import Details from '@site/src/components/Details';
+import ZoomImage from '@site/src/components/ZoomImage';
+
+当用户回答测验问题或在输入框中输入数据时，`onStateUpdatedAction` 方法将被调用。您可以在代码中保存或处理字段类型。
+
+例如：
+
+```kotlin
+override fun onStateUpdatedAction(action: AdaptyOnboardingStateUpdatedAction, context: Context) {
+    // Store user preferences or responses
+    when (val params = action.params) {
+        is AdaptyOnboardingStateUpdatedParams.Select -> {
+            // Handle single selection
+        }
+        is AdaptyOnboardingStateUpdatedParams.MultiSelect -> {
+            // Handle multiple selections
+        }
+        is AdaptyOnboardingStateUpdatedParams.Input -> {
+            // Handle text input
+        }
+        is AdaptyOnboardingStateUpdatedParams.DatePicker -> {
+            // Handle date selection
+        }
+    }
+}
+```
+
+请参阅[此处](https://android.adapty.io/adapty-ui/com.adapty.ui.onboardings.actions/-adapty-onboarding-state-updated-action/)的 action 格式说明。
+
+<Details>
+<summary>已保存数据示例（格式可能因实现方式而异）</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## 使用场景 \{#use-cases\}
+
+### 用数据丰富用户画像 \{#enrich-user-profiles-with-data\}
+
+如果您希望立即将输入数据与用户画像关联，并避免重复询问相同信息，则需要在处理 action 时使用输入数据[更新用户画像](android-setting-user-attributes)。
+
+例如，您要求用户在 ID 为 `name` 的文本框中输入姓名，并希望将该字段的值设置为用户的名字。同时，您要求用户在 `email` 字段中输入电子邮件地址。在应用代码中，实现方式如下：
+
+```kotlin showLineNumbers
+override fun onStateUpdatedAction(action: AdaptyOnboardingStateUpdatedAction, context: Context) {
+    // Store user preferences or responses
+    when (val params = action.params) {
+        is AdaptyOnboardingStateUpdatedParams.Input -> {
+            // Handle text input
+            val builder = AdaptyProfileParameters.Builder()
+            
+            // Map elementId to appropriate profile field
+            when (action.elementId) {
+                "name" -> {
+                    when (val inputParams = params.params) {
+                        is AdaptyOnboardingInputParams.Text -> {
+                            builder.withFirstName(inputParams.value)
+                        }
+                    }
+                }
+                "email" -> {
+                    when (val inputParams = params.params) {
+                        is AdaptyOnboardingInputParams.Email -> {
+                            builder.withEmail(inputParams.value)
+                        }
+                    }
+                }
+            }
+            
+            Adapty.updateProfile(builder.build()) { error ->
+                if (error != null) {
+                    // handle the error
+                }
+            }
+        }
+    }
+}
+```
+
+### 根据答案自定义付费墙 \{#customize-paywalls-based-on-answers\}
+
+通过在用户引导中使用测验，您还可以根据用户完成用户引导后的答案来自定义向其展示的付费墙。
+
+例如，您可以询问用户的运动经验，并向不同用户群体展示不同的 CTA 和产品。
+
+1. 在用户引导编辑工具中[添加测验](onboarding-quizzes)，并为选项分配有意义的 ID。
+
+<ZoomImage id="experience.webp" />
+
+2. 根据 ID 处理测验响应，并为用户[设置自定义属性](android-setting-user-attributes)。
+
+```kotlin showLineNumbers
+override fun onStateUpdatedAction(action: AdaptyOnboardingStateUpdatedAction, context: Context) {
+    // Handle quiz responses and set custom attributes
+    when (val params = action.params) {
+        is AdaptyOnboardingStateUpdatedParams.Select -> {
+            // Handle quiz selection
+            val builder = AdaptyProfileParameters.Builder()
+            
+            // Map quiz responses to custom attributes
+            when (action.elementId) {
+                "experience" -> {
+                    // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+                    builder.withCustomAttribute("experience", params.params.value)
+                }
+            }
+            
+            Adapty.updateProfile(builder.build()) { error ->
+                if (error != null) {
+                    // handle the error
+                }
+            }
+        }
+    }
+}
+```
+
+3. 为每个自定义属性值[创建市场细分](segments)。
+4. 创建一个[版位](placements)，并为您创建的每个市场细分添加[目标受众](audience)。
+5. 在应用代码中为该版位[展示付费墙](android-paywalls)。如果您的用户引导中有一个按钮用于打开付费墙，请将付费墙代码实现为[该按钮 action 的响应](android-handle-onboarding-events#opening-a-paywall)。

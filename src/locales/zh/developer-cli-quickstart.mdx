@@ -1,0 +1,167 @@
+---
+title: "Adapty 开发者 CLI 快速入门指南"
+description: "使用开发者 CLI 从头到尾设置您的 Adapty 账户——从创建应用到上线版位，只需几条命令。"
+metadataTitle: "开发者 CLI 快速入门 | Adapty 文档"
+keywords: ['cli', 'developer cli', 'mcp']
+---
+
+import Tabs from '@site/src/components/Tabs.astro';
+import TabItem from '@site/src/components/TabItem.astro';
+
+:::link
+正在使用 AI 助手？可以使用 [Adapty CLI 技能](https://github.com/adaptyteam/adapty-cli/tree/main/skills/adapty-cli) 帮助大语言模型使用 CLI。
+:::
+
+Adapty CLI 让您完全通过命令行设置应用配置。如果您偏好终端工具或 [MCP 客户端](https://github.com/adaptyteam/adapty-cli/tree/main/skills/adapty-cli)，可将其作为[看板快速入门](integrate-payments)的替代方案。
+
+:::note
+将 Adapty 连接至 App Store Connect 和 Google Play 仍需要在看板中进行一次性设置——请参见第 3 步。
+:::
+
+完成所有步骤后，您的应用、访问等级、产品、付费墙和版位将全部显示在 [Adapty 看板](https://app.adapty.io) 中。
+
+## 1. 安装 CLI \{#1-install-the-cli\}
+
+需要 [Node.js](https://nodejs.org/en/download) 18 或更高版本。
+
+运行以下命令安装 CLI：
+
+```bash
+npm install -g adapty
+```
+
+或者，直接运行：
+
+```bash
+npx adapty auth login
+```
+
+## 2. 身份验证 \{#2-authenticate\}
+
+运行登录命令，将 CLI 连接到您的 Adapty 账户。
+
+```bash
+adapty auth login
+```
+
+CLI 将打开一个浏览器标签页。将终端中显示的代码与浏览器中显示的代码进行匹配，然后点击 **Authorize**。身份验证完成后，终端将显示确认信息。
+
+## 3. 创建您的应用 \{#3-create-your-app\}
+
+Adapty 中的应用代表您的移动应用程序。一个 Adapty 应用可同时连接 App Store 和 Google Play——无论您在多少个应用商店发布，只需创建一个即可。
+
+<Tabs>
+  <TabItem value="ios-android" label="iOS + Android">
+    ```bash
+    adapty apps create --title "My App" --platform ios --platform android --apple-bundle-id com.example.app --google-bundle-id com.example.app
+    ```
+  </TabItem>
+  <TabItem value="ios" label="iOS only">
+    ```bash
+    adapty apps create --title "My App" --platform ios --apple-bundle-id com.example.app
+    ```
+  </TabItem>
+  <TabItem value="android" label="Android only">
+    ```bash
+    adapty apps create --title "My App" --platform android --google-bundle-id com.example.app
+    ```
+  </TabItem>
+</Tabs>
+
+该命令将返回一个 `<app-id>`。在所有后续命令中使用此 ID。
+
+:::important
+在继续之前，请在 Adapty 看板中将您的应用连接至 App Store Connect 和 Google Play。第 5 步需要用到两个应用商店的产品 ID。
+
+- [连接 App Store Connect](app-store-connection-configuration)
+- [连接 Google Play](google-play-store-connection-configuration)
+:::
+
+## 4. 创建访问等级（可选）\{#4-create-an-access-level-optional\}
+
+[访问等级](access-level)控制用户购买后可以访问的内容。您的应用无需检查用户是否购买了特定产品，而是检查用户是否具有给定的访问等级。这将您的应用逻辑与特定产品 ID 解耦。
+
+每个新应用都会自动创建一个 `premium` 访问等级。**对于大多数应用，您可以跳过此步骤。** 在第 5 步中使用 `premium` 作为访问等级 ID。
+
+仅当不同产品为不同用户群体解锁不同功能时才需要运行此命令——例如，"Basic" 订阅用户和 "Pro" 订阅用户可访问应用的不同部分。
+
+```bash
+adapty access-levels create --app <app-id> --sdk-id "pro" --title "Pro"
+```
+
+- `--sdk-id` 是您在应用代码中用于检查某项功能是否对用户可用的标识符（例如，`if user.hasAccessLevel("pro")`）。如果您跳过此步骤并使用默认访问等级，其 `--sdk-id` 为 `premium`。
+- `--title` 是在 Adapty 看板中供您自己参考的显示标签。
+
+该命令将返回一个 `<access-level-id>`。
+
+## 5. 创建产品 \{#5-create-a-product\}
+
+在 Adapty 中，[产品](product)代表您的应用出售的任何内容——订阅或一次性购买。来自 App Store Connect 和 Google Play 的商品可以分组为单个 Adapty 产品，并在一处统一管理。
+
+您需要每个应用商店的产品 ID：来自 App Store Connect 的 Apple 产品 ID，以及来自 Google Play Console 的 Android 产品 ID 和基础计划 ID。有关在哪里找到它们的详细信息，请参见[产品](quickstart-products)。
+
+如果您跳过了第 4 步，请使用第 3 步 `apps create` 命令返回的 `default_access_level.id` 作为您的 `<access-level-id>`。
+
+:::important
+您在此处关联的应用商店产品 ID（`--ios-product-id`、`--android-product-id`）创建后不可更改。如需使用不同的应用商店产品 ID，请创建新产品。
+:::
+
+<Tabs>
+  <TabItem value="ios-android" label="iOS + Android">
+    ```bash
+    adapty products create --app <app-id> --title "My Product" --access-level-id <access-level-id> --period monthly --ios-product-id <your.apple.id> --android-product-id <your.google.id> --android-base-plan-id <your.base-plan.id>
+    ```
+  </TabItem>
+  <TabItem value="ios" label="iOS only">
+    ```bash
+    adapty products create --app <app-id> --title "My Product" --access-level-id <access-level-id> --period monthly --ios-product-id <your.apple.id>
+    ```
+  </TabItem>
+  <TabItem value="android" label="Android only">
+    ```bash
+    adapty products create --app <app-id> --title "My Product" --access-level-id <access-level-id> --period monthly --android-product-id <your.google.id> --android-base-plan-id <your.base-plan.id>
+    ```
+  </TabItem>
+</Tabs>
+
+该命令将返回一个 `<product-id>`。
+
+## 6. 创建付费墙 \{#6-create-a-paywall\}
+
+[付费墙](paywalls)是承载产品的容器。在 Adapty 中，付费墙是向用户交付产品的唯一方式。每个产品必须先放入付费墙，才能在您的应用中显示。
+
+:::important
+一旦付费墙与版位关联，其产品就无法更改。如需使用不同的产品，请创建新付费墙并更新版位以指向它。
+:::
+
+<Tabs>
+  <TabItem value="single" label="一个产品">
+    ```bash
+    adapty paywalls create --app <app-id> --title "My Paywall" --product-id <product-id>
+    ```
+  </TabItem>
+  <TabItem value="multiple" label="多个产品">
+    ```bash
+    adapty paywalls create --app <app-id> --title "My Paywall" --product-id <product-id-1> --product-id <product-id-2>
+    ```
+  </TabItem>
+</Tabs>
+
+该命令将返回一个 `<paywall-id>`。
+
+## 7. 创建版位 \{#7-create-a-placement\}
+
+[版位](placements)是您在应用中展示付费墙的位置。您在应用代码中唯一需要硬编码的就是版位 ID。其他所有内容——向哪些用户展示哪个付费墙——都可以在看板中管理，无需发布新的应用版本。
+
+`--developer-id` 是您稍后在应用代码中向 Adapty 查询该位置应显示哪个付费墙时所引用的字符串。请选择能描述该位置的名称，例如 `"main"`、`"onboarding"` 或 `"settings"`。
+
+```bash
+adapty placements create --app <app-id> --title "Main" --developer-id "main" --paywall-id <paywall-id>
+```
+
+## 下一步 \{#whats-next\}
+
+所有实体现在都可以在 [Adapty 看板](https://app.adapty.io) 中查看。接下来：
+
+- [设计您的付费墙](adapty-paywall-builder)——使用无代码的付费墙编辑工具，为您刚创建的付费墙添加视觉效果、布局和文案。
+- [集成 Adapty SDK](quickstart-sdk)——将 SDK 添加到您的应用中，以获取并展示版位。

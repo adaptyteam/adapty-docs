@@ -1,0 +1,143 @@
+---
+title: "将 Adapty React Native SDK 迁移至 v. 3.14"
+description: "迁移到 Adapty React Native SDK v3.14，以获得更好的性能和新的变现功能。"
+metadataTitle: "迁移至 Adapty React Native SDK v3.14 | Adapty 文档"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+
+Adapty React Native SDK 3.14.0 是一个主要版本，引入了需要您进行迁移操作的改进：
+
+- `registerEventHandlers` 方法已被 `setEventHandlers` 方法替代。
+- 在 `AdaptyOnboardingView` 中，事件处理程序现在作为独立的 props 传递，而不是通过 `eventHandlers` 对象传递。
+- 为 UI 组件引入了新的简化导入风格。
+- `logShowOnboarding` 方法已被删除。
+- React Native 的最低版本已更新至 0.73.0。
+- 付费墙和用户引导的默认 iOS 呈现样式已从页面表单更改为全屏。
+
+## 将 `registerEventHandlers` 替换为 `setEventHandlers` \{#replace-registereventhandlers-with-seteventhandlers\}
+
+用于与 Adapty 付费墙和用户引导编辑工具配合使用的 `registerEventHandlers` 方法已被 `setEventHandlers` 方法替代。
+如果您使用 Adapty 付费墙编辑工具和/或 Adapty 用户引导编辑工具，请在您的应用代码中找到 `registerEventHandlers` 并将其替换为 `setEventHandlers`。
+
+此更改是为了使方法行为更加清晰：处理程序现在以单次工作方式运行，因为每个处理程序都返回 `true`/`false`，而为同一事件设置多个处理程序会导致最终行为不明确。
+
+请注意，当使用 `AdaptyOnboardingView` 或 `AdaptyPaywallView` 等 React 组件时，您无需从事件处理程序中返回 `true`/`false`，因为您可以通过自己的状态管理来控制组件的可见性。返回值仅在 SDK 管理视图生命周期的模态屏幕呈现中才需要。
+
+:::important
+多次调用 `setEventHandlers` 将覆盖您提供的处理程序，替换这些特定事件的默认处理程序和之前设置的处理程序。
+:::
+
+```diff showLineNumbers 
+- const unsubscribe = view.registerEventHandlers({
+-    // your event handlers
+- })
+
+ const unsubscribe = view.setEventHandlers({
+    // your event handlers
+ })
+``` 
+
+## 更新 UI 组件的导入路径 \{#update-import-paths-for-ui-components\}
+
+Adapty SDK 3.14.0 为 UI 组件引入了简化的导入风格。您现在可以直接从 `react-native-adapty` 导入，而无需从 `react-native-adapty/dist/ui` 导入。
+
+新的导入风格与标准 React Native 实践更加一致，并使导入语句更加简洁。如果您正在使用 `AdaptyPaywallView` 或 `AdaptyOnboardingView` 等 UI 组件，请按如下所示更新您的导入：
+
+```diff showLineNumbers
+- import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
++ import { AdaptyPaywallView } from 'react-native-adapty';
+
+- import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
++ import { AdaptyOnboardingView } from 'react-native-adapty';
+
+- import { createPaywallView } from 'react-native-adapty/dist/ui';
++ import { createPaywallView } from 'react-native-adapty';
+
+- import { createOnboardingView } from 'react-native-adapty/dist/ui';
++ import { createOnboardingView } from 'react-native-adapty';
+```
+
+:::note
+为了向后兼容，旧的导入风格（`react-native-adapty/dist/ui`）仍然受支持。但是，我们建议使用新的导入风格，以保持一致性和清晰度。
+:::
+
+## 更新 React 组件中的用户引导事件处理程序 \{#update-onboarding-event-handlers-in-the-react-component\}
+
+用户引导的事件处理程序已从 `AdaptyOnboardingView` 中的 `eventHandlers` 对象移至外部。如果您正在使用 `AdaptyOnboardingView` 显示用户引导，请更新事件处理结构。
+
+:::important
+请注意我们推荐实现事件处理程序的方式。为避免在每次渲染时重新创建对象，请对处理事件的函数使用 `useCallback`。
+:::
+
+```diff showLineNumbers
+ import React, { useCallback } from 'react';
+- import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
++ import { AdaptyOnboardingView } from 'react-native-adapty';
++ import type { OnboardingEventHandlers } from 'react-native-adapty';
++
++ function MyOnboarding({ onboarding }) {
++   const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
++   const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
++   const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
++   const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
++   const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
++   const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
++   const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
++
+   return (
+     <AdaptyOnboardingView
+       onboarding={onboarding}
+       style={styles.container}
+-       eventHandlers={{
+-         onAnalytics(event, meta) { /* ... */ },
+-         onClose(actionId, meta) { /* ... */ },
+-         onCustom(actionId, meta) { /* ... */ },
+-         onPaywall(actionId, meta) { /* ... */ },
+-         onStateUpdated(action, meta) { /* ... */ },
+-         onFinishedLoading(meta) { /* ... */ },
+-         onError(error) { /* ... */ },
+-       }}
++       onAnalytics={onAnalytics}
++       onClose={onClose}
++       onCustom={onCustom}
++       onPaywall={onPaywall}
++       onStateUpdated={onStateUpdated}
++       onFinishedLoading={onFinishedLoading}
++       onError={onError}
+     />
+   );
++ }
+```
+
+:::note
+为了向后兼容，`eventHandlers` prop 仍然受支持，但已被弃用。我们建议按照上面所示迁移到独立的事件处理程序 props。
+:::
+
+## 删除 `logShowOnboarding` \{#delete-logshowonboarding\}
+
+在 Adapty SDK 3.14.0 中，我们已从 SDK 中删除了 `logShowOnboarding` 方法。
+如果您一直在使用此方法，将 SDK 升级到 3.14 或更高版本后，该方法将不再可用。
+
+作为替代，您可以[在 Adapty 无代码用户引导编辑工具中创建用户引导](onboardings)。这些用户引导的分析数据会自动追踪，并且您有大量的自定义选项。
+
+## 更新 React Native \{#update-react-native\}
+
+从 Adapty SDK 3.14.0 开始，React Native 的最低支持版本为 0.73.0。如果您使用的是较早版本，请将 React Native 更新至 0.73.0 或更高版本，以确保您使用 Adapty SDK 的体验保持一致和可靠。
+
+## 更新模态付费墙和用户引导的 iOS 呈现样式 \{#update-ios-presentation-style-for-modal-paywalls-and-onboardings\}
+
+在 Adapty SDK 3.14.0 中，使用 `view.present()` 方法显示的付费墙和用户引导的默认 iOS 呈现样式已从页面表单更改为全屏。
+
+如果您想保留之前的页面表单呈现样式，请将 `iosPresentationStyle` 参数传递给 `present()` 方法：
+
+```typescript showLineNumbers title="React Native (TSX)"
+try {
+  await view.present({ iosPresentationStyle: 'page_sheet' });
+} catch (error) {
+  // handle the error
+}
+```

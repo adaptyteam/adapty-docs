@@ -89,12 +89,16 @@ export function remarkFloatClear() {
                         precedingLevel = 1;
                     }
 
-                    // Walk forward to find the first element that should clear
+                    // Walk forward to find the clear point and mark
+                    // any lists before it with .beside-float so CSS can
+                    // move their markers inside (avoids float overlap)
+                    let clearIdx = children.length;
                     for (let k = i + 1; k < children.length; k++) {
                         const sibling = children[k];
 
                         // Same-or-higher-level heading always clears
                         if (sibling.type === 'heading' && sibling.depth <= precedingLevel) {
+                            clearIdx = k;
                             children.splice(k, 0, makeClearNode());
                             break;
                         }
@@ -102,6 +106,7 @@ export function remarkFloatClear() {
                         // Subsection heading clears if its section has wide content
                         if (sibling.type === 'heading' && sibling.depth > precedingLevel) {
                             if (sectionContainsWideElement(children, k)) {
+                                clearIdx = k;
                                 children.splice(k, 0, makeClearNode());
                                 break;
                             }
@@ -109,8 +114,20 @@ export function remarkFloatClear() {
 
                         // Wide element directly after float (no heading in between)
                         if (isWideElement(sibling)) {
+                            clearIdx = k;
                             children.splice(k, 0, makeClearNode());
                             break;
+                        }
+                    }
+
+                    // Mark all lists between the float and the clear point
+                    for (let k = i + 1; k < clearIdx; k++) {
+                        const sibling = children[k];
+                        if (sibling.type === 'list') {
+                            sibling.data = sibling.data || {};
+                            sibling.data.hProperties = sibling.data.hProperties || {};
+                            const existing = sibling.data.hProperties.className || [];
+                            sibling.data.hProperties.className = [...existing, 'beside-float'];
                         }
                     }
                 }

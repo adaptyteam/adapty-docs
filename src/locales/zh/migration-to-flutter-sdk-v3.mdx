@@ -1,0 +1,112 @@
+---
+title: "将 Adapty Flutter SDK 迁移至 v3.0"
+description: "迁移至 Adapty Flutter SDK v3.0，获得更好的性能和新的货币化功能。"
+metadataTitle: "迁移至 Adapty Flutter SDK v3.0 | Adapty 文档"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+
+Adapty SDK v3.0 新增了对全新 [Adapty 付费墙编辑工具](adapty-paywall-builder) 的支持——这是一款无需编写代码、界面友好的付费墙创建工具的全新版本。凭借极高的灵活性和丰富的设计能力，您的付费墙将变得更加高效且盈利能力更强。
+
+:::info
+
+请注意，AdaptyUI 库已被废弃，现已作为 AdaptySDK 的一部分集成其中。
+
+:::
+
+## 移除 AdaptyUI SDK \{#remove-adaptyu-sdk\}
+
+1. AdaptyUI 已成为 Adapty SDK 的一个模块，请从您的 `pubspec.yaml` 文件中移除 `adapty_ui_flutter`：
+
+   ```diff showLineNumbers
+   dependencies:
+   + adapty_flutter: ^3.2.1
+   - adapty_flutter: ^2.10.3
+   - adapty_ui_flutter: ^2.1.3
+   ```
+
+2. 运行：
+
+   ```bash showLineNumbers title="Bash"
+   flutter pub get
+   ```
+
+## 配置 Adapty SDK \{#configure-adapty-sdks\}
+
+此前，您需要使用 `Adapty-Info.plist` 和 `AndroidManifest.xml` 文件来配置 Adapty SDK。
+
+现在无需使用额外的配置文件，您可以在激活时直接提供所有必要参数。
+
+您只需配置一次 Adapty SDK，通常在应用程序生命周期开始时进行。
+
+### 激活 Adapty SDK 的 Adapty 模块 \{#activate-adapty-module-of-adapty-sdk\}
+
+1. 从您的应用中移除 AdaptyUI SDK 的导入，如下所示：
+
+   ```diff showLineNumbers
+   import 'package:adapty_flutter/adapty_flutter.dart';
+   - import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
+   ```
+
+2. 按如下方式更新 Adapty SDK 的激活代码：
+
+   ```diff showLineNumbers
+   try {
+   -	Adapty().activate();  
+   +    await Adapty().activate(
+   +        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+   +         ..withLogLevel(AdaptyLogLevel.debug)
+   +         ..withObserverMode(false)
+   +         ..withCustomerUserId(null)
+   +         ..withIpAddressCollectionDisabled(false)
+   +         ..withIdfaCollectionDisabled(false),
+   +   );
+   } catch (e) {
+       // handle the error
+   }
+   ```
+
+参数说明：
+
+| 参数                                | 是否必填 | 描述                                                         |
+| ----------------------------------- | -------- | ------------------------------------------------------------ |
+| **PUBLIC_SDK_KEY**                  | 必填     | 您可以在 Adapty 应用设置的 **Public SDK key** 字段中找到该密钥：[**App settings** -> **General** 标签页 -> **API keys** 子项](https://app.adapty.io/settings/general) |
+| **withLogLevel**                    | 可选     | Adapty 会记录错误和其他关键信息，以帮助您了解应用的运行状态。可用日志级别如下：<ul><li>error：仅记录错误。</li><li>warn：记录错误和 SDK 中不会导致严重错误但值得关注的消息。</li><li>info：记录错误、警告以及重要信息（如各模块生命周期日志）。</li><li>verbose：记录所有可能在调试时有用的额外信息，如函数调用、API 请求等。</li></ul> |
+| **withObserverMode**                | 可选     | <p>一个布尔值，用于控制[观察者模式](observer-vs-full-mode)。如果您自行处理购买和订阅状态，并使用 Adapty 发送订阅事件和分析数据，请开启此模式。</p><p>默认值为 `false`。</p><p></p><p>🚧 在观察者模式下运行时，Adapty SDK 不会关闭任何交易，请确保您自行处理。</p> |
+| **withCustomerUserId**              | 可选     | 您系统中用户的标识符。我们会在订阅和分析事件中发送该标识符，以便将事件归因到正确的用户画像。您也可以在 [**Profiles and Segments**](https://app.adapty.io/profiles/users) 菜单中通过 `customerUserId` 查找用户。 |
+| **withIdfaCollectionDisabled**      | 可选     | <p>设置为 `true` 可禁用 IDFA 的收集和共享。</p><p>以及用户 IP 地址的共享。</p><p>默认值为 `false`。</p><p>有关 IDFA 收集的更多详情，请参阅[分析集成](analytics-integration#disable-collection-of-advertising-identifiers)章节。</p> |
+| **withIpAddressCollectionDisabled** | 可选     | <p>设置为 `true` 可禁用用户 IP 地址的收集和共享。</p><p>默认值为 `false`。</p> |
+
+### 激活 Adapty SDK 的 AdaptyUI 模块 \{#activate-adaptyu-module-of-adapty-sdk\}
+
+仅当您计划使用[付费墙编辑工具](adapty-paywall-builder)时，才需要配置 AdaptyUI 模块：
+
+```dart showLineNumbers title="Dart"
+try {
+    final mediaCache = AdaptyUIMediaCacheConfiguration(
+        memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
+        memoryStorageCountLimit: 2147483647, // 2^31 - 1, max int value in Dart
+        diskStorageSizeLimit: 100 * 1024 * 1024, // 100MB
+    );
+
+    await AdaptyUI().activate(
+        configuration: AdaptyUIConfiguration(mediaCache: mediaCache),
+        observer: <AdaptyUIObserver Implementation>,
+    );
+} catch (e) {
+    // handle the error
+}
+```
+
+请注意，AdaptyUI 的配置是可选的，您可以在不提供配置的情况下激活 AdaptyUI 模块。但如果您使用了配置，则其中的所有参数均为必填项。
+
+参数说明：
+
+| 参数                            | 是否必填 | 描述                                                         |
+| :------------------------------ | :------- | :----------------------------------------------------------- |
+| **memoryStorageTotalCostLimit** | 必填     | 存储空间的总容量限制，单位为字节。                           |
+| **memoryStorageCountLimit**     | 必填     | 内存存储的最大条目数限制。                                   |
+| **diskStorageSizeLimit**        | 必填     | 磁盘存储的文件大小限制，单位为字节。0 表示无限制。           |

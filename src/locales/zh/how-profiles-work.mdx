@@ -1,0 +1,98 @@
+---
+title: "用户画像的工作原理"
+description: "了解 Adapty 如何创建、追踪和关联用户画像——包括匿名用户画像、已识别用户以及父/继承用户画像关系。"
+metadataTitle: "Adapty 用户画像的工作原理 | Adapty 文档"
+keywords: ['profile', 'customer_user_id', '匿名用户画像', '父用户画像', '继承用户画像', '用户画像记录']
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Sharingaccesslevel from '@site/src/locales/zh/reusable/sharingaccesslevel.md';
+
+您应用中的每位用户都会在 Adapty 中获得一个用户画像，用于追踪其购买记录、事件和订阅状态。了解用户画像的创建和关联方式，有助于您防止集成错误、避免数据碎片化，并正确解读 [用户画像](profiles-crm) 部分中的数据。
+
+## 用户画像的创建 \{#profile-creation\}
+
+Adapty 会在用户首次打开您的应用时自动创建用户画像。
+
+**未设置 Customer User ID 时**，用户画像为匿名状态。每当发生以下情况时，都会创建一个新的匿名用户画像：
+- 用户重新安装应用
+- 用户退出您的应用（当您的应用调用 `Adapty.logout()` 时）
+
+购买记录与应用安装绑定，而非与持久的用户身份绑定。
+
+**设置了 Customer User ID 时**，用户画像可在重装应用和更换设备后持续保留。使用 Customer User ID 可以：
+
+1. 跨应用重装和多台设备追踪同一用户。
+2. 在 [**Profiles**](profiles-crm) 部分通过 Customer User ID 查找用户。
+3. 在[服务端 API](getting-started-with-server-side-api) 中使用 Customer User ID。
+4. Adapty 将 Customer User ID 发送至所有集成渠道。
+
+设置 Customer User ID 的时机不同，用户画像的行为也会有所差异：
+
+- **在 SDK 激活时设置**：Adapty 将使用具有该 Customer User ID 的现有用户画像（对于老用户），或创建新的用户画像（对于新用户）。
+- **在 SDK 激活后设置**：Adapty 在激活时创建匿名用户画像。当您随后识别用户身份时，Adapty 会将 Customer User ID 关联至该匿名用户画像（对于新用户），或切换至具有该 ID 的现有用户画像（对于老用户）。
+
+**如何选择合适的方式：**
+
+- **应用启动时即可获取 Customer User ID**（例如，从上一个会话中存储）——在初始化 SDK 时将其传递给 `activate()`。
+- **用户在应用启动后才登录**——在身份验证后调用 `identify()`。若该 ID 为新 ID，Adapty 会将其关联至当前用户画像；若该 ID 已存在，则切换至现有用户画像。
+- **用户可在登录前进行购买**——在登录后调用 `identify()`。如果该 Customer User ID 已存在于 Adapty 中，请在之后获取用户画像以同步当前访问等级。
+
+有关实现细节，请参阅 [识别用户](identifying-users) SDK 指南。
+
+:::note
+如果老用户之前在没有 Customer User ID 的情况下使用过您的应用，当您开始在 SDK 激活时进行身份识别，这些匿名用户画像不会自动合并。若要为此类用户保留完整的历史记录，请改为在登录后使用 `identify()`。
+:::
+
+## 父用户画像与继承用户画像 \{#parent-and-inheritor-profiles\}
+
+当多个用户画像通过相同的 Apple/Google ID 关联至同一订阅时，Adapty 会使用父-继承关系来追踪它们。这种情况发生在用户未经身份识别就重新安装应用，或不同的已识别用户在同一设备上恢复购买时。
+
+**父用户画像**是发起购买的那个用户画像——不一定是最先创建的用户画像。例如：您安装应用后未进行任何购买，随后重装应用并购买了订阅。第二个用户画像因发起了购买而成为父用户画像，第一个用户画像则成为继承用户画像，并通过共享获得访问权限。
+
+**事件的分配方式：**
+
+- **交易性事件**（购买、续费、取消、账单问题、宽限期、退款）：仅出现在发起购买的**父用户画像**上。所有订阅续费和更新事件也将继续出现在该用户画像上。
+- **access_level_updated 事件**：每当访问等级状态发生变化时，**父用户画像和继承用户画像**均会收到该事件。这可确保所有关联的用户画像都能获得其当前访问状态的更新。
+
+父用户画像显示完整的交易历史记录。继承用户画像仅显示其访问等级更新，以及 **Access level** 部分中指向父用户画像的链接。
+
+<Zoom>
+  <img src="/assets/shared/img/98d0dad-non-original_profile.webp"
+  style={{
+    border: '1px solid #727272',
+    width: '700px',
+    display: 'block',
+    margin: '0 auto'
+  }}
+/>
+</Zoom>
+
+## 在用户账户之间共享付费访问权限 \{#sharing-paid-access-between-user-accounts\}
+
+:::link
+主要文章：[在用户账户之间共享付费访问权限](sharing-paid-access-between-user-accounts)
+:::
+
+要设置您的访问等级共享策略，请在 [**General**](general) 设置页面上选择一个共享选项。您可以为[沙盒环境](test-purchases-in-sandbox)单独设置策略。
+
+<Sharingaccesslevel />
+
+## 带有未来日期的事件时间戳（Apple/iOS）\{#event-timestamps-with-future-dates-appleios\}
+
+此行为仅适用于 Apple App Store。Google Play 的通知系统不会提前发送事件。
+
+用户画像和集成中的事件时间戳可能显示未来日期，这是因为 Apple 会提前发送续费事件。
+
+- **原因**：Apple 这样做是为了确保订阅在到期前自动续费，从而防止用户的服务中断。更多详情，请查阅 Apple 开发者论坛：[Server Notifications for Subscriptions](https://developer.apple.com/forums/tags/app-store-server-notifications)。
+- **受影响的事件类型**：通常，这适用于订阅续费和试用转付费转化。由于 Apple 会提前通知系统，这些事件的时间戳可能为未来日期。
+- **其他事件类型**：额外的应用内购买和订阅计划变更会以实际时间戳记录，因为这些事件无法提前预测。
+- **对分析和事件流的影响**：这些事件只有在其时间戳过后，才会出现在 **Analytics** 和 **Event Feed** 中。带有未来时间戳的事件不会显示在这两个部分中。
+- **对集成的影响**：Adapty 在收到事件后立即将其发送至集成渠道。如果事件带有未来时间戳，Adapty 会将该未来时间戳原样发送至您的集成渠道。
+
+## 后续步骤 \{#next-steps\}
+
+- 若要使用用户画像看板查找和管理用户，请参阅 [用户画像](profiles-crm)。
+- 若要在您的应用中设置用户身份识别，请参阅 [识别用户](identifying-users) SDK 指南。
+- 若要配置访问共享策略，请参阅 [在用户账户之间共享付费访问权限](sharing-paid-access-between-user-accounts)。

@@ -1,0 +1,62 @@
+---
+title: "在旧版 React Native SDK 中处理付费墙事件"
+description: "使用 Adapty 的事件追踪系统在 React Native（旧版）中处理订阅相关事件。"
+metadataTitle: "在 React Native（旧版）中处理事件 | Adapty 文档"
+toc_max_heading_level: 4
+---
+
+使用[付费墙编辑工具](adapty-paywall-builder-legacy)配置的付费墙无需额外代码即可完成购买和恢复购买操作。但是，它们会生成一些您的应用可以响应的事件。这些事件包括按钮点击（关闭按钮、URL、产品选择等）以及付费墙上购买相关操作的通知。请参阅下文了解如何响应这些事件。
+
+:::warning
+本指南仅适用于**旧版付费墙编辑工具付费墙**，需要使用 Adapty SDK v2.x 及以下版本。如需了解在 Adapty SDK v3.0 或更高版本中展示使用新版付费墙编辑工具设计的付费墙，请参阅 [React Native - 处理使用新版付费墙编辑工具设计的付费墙事件](react-native-handling-events-1)。
+:::
+
+要控制或监控移动应用中付费墙界面上发生的流程，请实现 `view.registerEventHandlers` 方法：
+
+```typescript showLineNumbers title="React Native (TSX)"
+import {createPaywallView} from '@adapty/react-native-ui';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.registerEventHandlers({
+  onCloseButtonPress() {
+    return true;
+  },
+  onPurchaseCompleted(profile) {
+    return true;
+  },
+  onPurchaseStarted(product) { /***/},
+  onPurchaseCancelled(product) { /***/ },
+  onPurchaseFailed(error) { /***/ },
+  onRestoreCompleted(profile) { /***/ },
+  onRestoreFailed(error) { /***/ },
+  onProductSelected() { /***/},
+  onRenderingFailed(error) { /***/ },
+  onLoadingProductsFailed(error) { /***/ },
+  onUrlPress(url) { /* handle url */ },
+});
+
+```
+
+您可以只注册需要的事件处理程序，忽略不需要的。这样，未使用的事件监听器将不会被创建。
+
+请注意，您至少需要实现对 `onCloseButtonPress` 和 `onUrlPress` 这两个事件的响应。
+
+事件处理程序返回一个布尔值。如果返回 `true`，则认为展示流程已完成，付费墙界面将关闭，并移除该视图的所有事件监听器。
+
+请注意，上述示例中的 `onCloseButtonPress`、`onPurchaseCompleted` 和 `onRestoreCompleted` 均返回 `true`——这是它们的默认行为，您可以进行覆盖。
+
+### 事件处理程序 \{#event-handlers\}
+
+| 事件处理程序 | 描述 |
+| :-------------------------- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onCloseButtonPress**      | 如果关闭按钮可见且用户点击了它，此方法将被调用。建议在此处理程序中关闭付费墙界面。 |
+| **onPurchaseCompleted**     | 如果用户购买成功，此方法将被调用，并提供更新后的 `AdaptyProfile`。建议在此处理程序中关闭付费墙视图。 |
+| **onPurchaseStarted**       | 如果用户点击"购买"操作按钮开始购买流程，此方法将被调用，并提供 `AdaptyPaywallProduct`。 |
+| **onPurchaseCancelled**     | 如果用户发起购买流程后手动中断，此方法将被调用，并提供 `AdaptyPaywallProduct`。 |
+| **onPurchaseFailed**        | 如果购买流程失败，此方法将被调用，并提供 `AdaptyError`。 |
+| **onRestoreCompleted**      | 如果用户的购买恢复成功，此方法将被调用，并提供更新后的 `AdaptyProfile`。如果用户拥有所需的 `accessLevel`，建议关闭该界面。请参阅[订阅状态](react-native-listen-subscription-changes)主题了解如何检查。 |
+| **onRestoreFailed**         | 如果恢复流程失败，此方法将被调用，并提供 `AdaptyError`。 |
+| **onProductSelected**       | 当付费墙视图中任意产品被选中时，此方法将被调用，以便您监控用户在购买前的选择。 |
+| **onRenderingFailed**       | 如果视图渲染过程中出现错误，此方法将被调用，并提供 `AdaptyError`。此类错误通常不应发生，如果遇到，请联系我们。 |
+| **onLoadingProductsFailed** | 如果您在创建视图时未设置 `prefetchProducts: true`，AdaptyUI 将自行从服务器获取必要的对象。如果此操作失败，此方法将被调用，并提供 `AdaptyError`。 |
