@@ -362,17 +362,24 @@ async function translateForLang(client, lang, localesDir, hashesDir, systemPromp
         // This happens when .hashes was deleted or the GH Action cache was cold.
         // Write the current hash and queue for section seeding so the next snippet
         // change doesn't trigger a full retranslation.
-        try {
-          await fs.access(translatedPath);
-          await fs.mkdir(hashesDir, { recursive: true });
-          await fs.writeFile(
-            path.join(hashesDir, `${basename}.json`),
-            JSON.stringify({ fileHash: currentHash }),
-            'utf-8'
-          );
-          toSeed.push(file);
-          continue; // already translated — record hash + queue section seeding
-        } catch { /* no translation exists → fall through and translate */ }
+        //
+        // Exception: if the file is explicitly in --only-files (git-diff mode), it
+        // changed in this commit, so trust that signal and translate it even without
+        // a stored hash to compare against.
+        const explicitlyChanged = onlyDocIds?.has(basename);
+        if (!explicitlyChanged) {
+          try {
+            await fs.access(translatedPath);
+            await fs.mkdir(hashesDir, { recursive: true });
+            await fs.writeFile(
+              path.join(hashesDir, `${basename}.json`),
+              JSON.stringify({ fileHash: currentHash }),
+              'utf-8'
+            );
+            toSeed.push(file);
+            continue; // already translated — record hash + queue section seeding
+          } catch { /* no translation exists → fall through and translate */ }
+        }
       }
 
       toTranslate.push(file);
