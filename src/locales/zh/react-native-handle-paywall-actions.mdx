@@ -1,0 +1,349 @@
+---
+title: "在 React Native SDK 中响应按钮操作"
+description: "使用 Adapty 在 React Native 中处理付费墙按钮操作，以优化应用变现。"
+metadataTitle: "处理付费墙按钮操作 | Adapty 文档"
+toc_max_heading_level: 4
+keywords: ['付费墙按钮', '按钮', '付费墙按钮操作', '处理操作']
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+如果您使用 Adapty 付费墙编辑工具构建付费墙，正确配置按钮至关重要：
+
+1. 在[付费墙编辑工具中添加按钮](paywall-buttons)，并为其分配预设操作或创建自定义操作 ID。
+2. 在应用代码中编写代码来处理您分配的每个操作。
+
+本指南介绍如何在代码中处理自定义操作和预设操作。
+
+:::warning
+**仅购买、恢复购买、关闭付费墙和打开 URL 会被自动处理。** 所有其他按钮操作都需要在应用代码中正确实现响应逻辑。
+:::
+
+## 关闭付费墙 \{#close-paywalls\}
+
+要添加一个可以关闭付费墙的按钮：
+
+1. 在付费墙编辑工具中，添加一个按钮并为其分配 **Close** 操作。
+2. 在应用代码中，实现一个处理 `close` 操作的处理器，用于关闭付费墙。
+
+:::info
+在 React Native SDK 中，`close` 操作默认会触发关闭付费墙。但如果需要，您可以在代码中覆盖此行为。例如，关闭一个付费墙可能会触发打开另一个付费墙。
+:::
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+对于 React 组件，通过各自的事件处理器 props 来处理关闭操作：
+
+```javascript
+import React, { useCallback } from 'react';
+import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
+
+function MyPaywall({ paywall }) {
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
+    // Handle close button press - navigate away or hide component
+    navigation.goBack();
+  }, [navigation]);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+对于模态展示，实现关闭处理器：
+
+```javascript
+import {createPaywallView} from 'react-native-adapty';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+    onCloseButtonPress() {
+        return true; // allow paywall closing
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+对于 SDK 版本 < 3.14，仅支持模态展示：
+
+```javascript
+import {createPaywallView} from 'react-native-adapty/dist/ui';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.registerEventHandlers({
+    onCloseButtonPress() {
+        return true; // allow paywall closing
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+## 从付费墙打开 URL \{#open-urls-from-paywalls\}
+
+:::tip
+如果您想添加一组链接（例如使用条款和购买恢复），可以在付费墙编辑工具中添加一个 **Link** 元素，其处理方式与具有 **Open URL** 操作的按钮相同。
+:::
+
+要添加一个可以从付费墙打开链接的按钮（例如**使用条款**或**隐私政策**）：
+
+1. 在付费墙编辑工具中，添加一个按钮，为其分配 **Open URL** 操作，并输入您想要打开的 URL。
+2. 在应用代码中，实现一个处理 `openUrl` 操作的处理器，用于在浏览器中打开接收到的 URL。
+
+:::info
+在 React Native SDK 中，`openUrl` 操作默认会触发打开 URL。但如果需要，您可以在代码中覆盖此行为。
+:::
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+对于 React 组件，通过事件处理器 prop 来处理 URL 打开：
+
+```javascript
+import React, { useCallback } from 'react';
+import { Linking } from 'react-native';
+import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
+
+function MyPaywall({ paywall }) {
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onUrlPress={onUrlPress}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+对于模态展示，实现 URL 处理器：
+
+```javascript
+import {createPaywallView} from 'react-native-adapty';
+import {Linking} from 'react-native';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+    onUrlPress(url) {
+        Linking.openURL(url);
+        return false; // Keep paywall open
+    },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+对于 SDK 版本 < 3.14，仅支持模态展示：
+
+```javascript
+import {createPaywallView} from 'react-native-adapty/dist/ui';
+import {Linking} from 'react-native';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.registerEventHandlers({
+    onUrlPress(url) {
+        Linking.openURL(url);
+        return false; // Keep paywall open
+    },
+});
+```
+
+</TabItem>
+</Tabs>
+
+## 登录应用 \{#log-into-the-app\}
+
+要添加一个让用户登录应用的按钮：
+
+1. 在付费墙编辑工具中，添加一个按钮并为其分配 **Login** 操作。
+2. 在应用代码中，实现一个处理 `login` 操作的处理器，用于识别您的用户。
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+对于 React 组件，通过事件处理器 prop 来处理登录：
+
+```javascript
+import React, { useCallback } from 'react';
+import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
+
+function MyPaywall({ paywall }) {
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
+    if (actionId === 'login') {
+      navigation.navigate('Login');
+    }
+  }, [navigation]);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCustomAction={onCustomAction}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+对于模态展示，实现登录处理器：
+
+```javascript
+import {createPaywallView} from 'react-native-adapty';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'login') {
+            navigation.navigate('Login');
+        }
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+对于 SDK 版本 < 3.14，仅支持模态展示：
+
+```javascript
+import {createPaywallView} from 'react-native-adapty';
+import {createPaywallView} from 'react-native-adapty';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.registerEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'login') {
+            navigation.navigate('Login');
+        }
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+## 处理自定义操作 \{#handle-custom-actions\}
+
+要添加一个处理其他任意操作的按钮：
+
+1. 在付费墙编辑工具中，添加一个按钮，为其分配 **Custom** 操作，并指定一个 ID。
+2. 在应用代码中，实现一个处理您创建的操作 ID 的处理器。
+
+例如，如果您有另一组订阅套餐或一次性购买，可以添加一个按钮来显示另一个付费墙：
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+对于 React 组件，通过事件处理器 prop 来处理自定义操作：
+
+```javascript
+import React, { useCallback } from 'react';
+import { AdaptyPaywallView } from 'react-native-adapty';
+import type { EventHandlers } from 'react-native-adapty';
+
+function MyPaywall({ paywall }) {
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
+    if (actionId === 'openNewPaywall') {
+      // Display another paywall
+    }
+  }, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCustomAction={onCustomAction}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+对于模态展示，实现自定义操作处理器：
+
+```javascript
+const unsubscribe = view.setEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'openNewPaywall') {
+            // Display another paywall
+        }
+    },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+对于 SDK 版本 < 3.14，仅支持模态展示：
+
+```javascript
+const unsubscribe = view.registerEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'openNewPaywall') {
+            // Display another paywall
+        }
+    },
+});
+```
+
+</TabItem>
+</Tabs>

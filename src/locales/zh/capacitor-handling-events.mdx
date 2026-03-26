@@ -1,0 +1,280 @@
+---
+title: "Capacitor - 处理付费墙事件"
+description: "使用 Adapty SDK 在 Capacitor 中处理订阅事件。"
+metadataTitle: "在 Capacitor 中处理事件 | Adapty 文档"
+toc_max_heading_level: 4
+keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed', 'onAppeared', 'onDisappeared']
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import PaywallAction from '@site/src/locales/zh/reusable/PaywallAction.md';
+import Details from '@site/src/components/Details';
+
+:::important
+本指南涵盖购买、恢复、产品选择及付费墙渲染的事件处理。您还必须实现按钮处理（关闭付费墙、打开链接等）。详情请参阅我们的[按钮操作处理指南](capacitor-handle-paywall-actions)。
+:::
+
+使用[付费墙编辑工具](adapty-paywall-builder)配置的付费墙无需额外代码即可完成购买和恢复操作。但它们会生成一些您的应用可以响应的事件。这些事件包括按钮点击（关闭按钮、URL、产品选择等）以及付费墙上购买相关操作的通知。请参阅以下内容了解如何响应这些事件。
+
+要在移动应用中控制或监控付费墙屏幕上发生的流程，请实现 `view.setEventHandlers` 方法：
+
+```typescript showLineNumbers
+import { adapty, createPaywallView } from '@adapty/capacitor';
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+  onCloseButtonPress() {
+    console.log('User closed paywall');
+    return true; // Allow the paywall to close
+  },
+  onAndroidSystemBack() {
+    console.log('User pressed back button');
+    return true; // Allow the paywall to close
+  }, 
+  onAppeared() {
+    console.log('Paywall appeared');
+    return false; // Don't close the paywall
+  }, 
+  onDisappeared() {
+    console.log('Paywall disappeared');
+  },
+  onPurchaseCompleted(purchaseResult, product) {
+    console.log('Purchase completed:', purchaseResult);
+    return purchaseResult.type !== 'user_cancelled'; // Close if not cancelled
+  },
+  onPurchaseStarted(product) {
+    console.log('Purchase started:', product);
+    return false; // Don't close the paywall
+  },
+  onPurchaseFailed(error, product) {
+    console.error('Purchase failed:', error);
+    return false; // Don't close the paywall
+  },
+  onRestoreCompleted(profile) {
+    console.log('Restore completed:', profile);
+    return true; // Close the paywall after successful restore
+  },
+  onRestoreFailed(error) {
+    console.error('Restore failed:', error);
+    return false; // Don't close the paywall
+  },
+  onProductSelected(productId) {
+    console.log('Product selected:', productId);
+    return false; // Don't close the paywall
+  },
+  onRenderingFailed(error) {
+    console.error('Rendering failed:', error);
+    return false; // Don't close the paywall
+  },
+  onLoadingProductsFailed(error) {
+    console.error('Loading products failed:', error);
+    return false; // Don't close the paywall
+  },
+  onUrlPress(url) {
+    window.open(url, '_blank');
+    return false; // Don't close the paywall
+  },
+});
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```typescript
+// onCloseButtonPress
+{
+  "event": "close_button_press"
+}
+
+// onAndroidSystemBack
+{
+  "event": "android_system_back"
+}
+
+// onAppeared
+{
+  "event": "paywall_shown"
+}
+
+// onDisappeared
+{
+  "event": "paywall_closed"
+}
+
+// onUrlPress
+{
+  "event": "url_press",
+  "url": "https://example.com/terms"
+}
+
+// onCustomAction
+{
+  "event": "custom_action",
+  "actionId": "login"
+}
+
+// onProductSelected
+{
+  "event": "product_selected",
+  "productId": "premium_monthly"
+}
+
+// onPurchaseStarted
+{
+  "event": "purchase_started",
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// onPurchaseCompleted - Success
+{
+  "event": "purchase_completed",
+  "purchaseResult": {
+    "type": "success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// onPurchaseCompleted - Cancelled
+{
+  "event": "purchase_completed",
+  "purchaseResult": {
+    "type": "user_cancelled"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// onPurchaseFailed
+{
+  "event": "purchase_failed",
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+
+// onRestoreCompleted
+{
+  "event": "restore_completed",
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+
+// onRestoreFailed
+{
+  "event": "restore_failed",
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+
+// onRenderingFailed
+{
+  "event": "rendering_failed",
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+
+// onLoadingProductsFailed
+{
+  "event": "loading_products_failed",
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+您可以注册所需的事件处理程序，忽略不需要的部分。未使用的事件监听器不会被创建。所有事件处理程序均为可选。
+
+事件处理程序返回一个布尔值。若返回 `true`，则认为显示流程已完成，付费墙屏幕将关闭，并移除该视图的所有事件监听器。
+
+部分事件处理程序具有默认行为，您可以根据需要进行覆盖：
+- `onCloseButtonPress`：按下关闭按钮时关闭付费墙。
+- `onAndroidSystemBack`：按下 **Back** 按钮时关闭付费墙。
+- `onRestoreCompleted`：恢复成功后关闭付费墙。
+- `onPurchaseCompleted`：除非用户取消，否则关闭付费墙。
+- `onRenderingFailed`：渲染失败时关闭付费墙。
+- `onUrlPress`：在系统浏览器中打开 URL 并保持付费墙开启。
+
+### 事件处理程序 \{#event-handlers\}
+
+| 事件处理程序                | 描述                                                                                                                                                                                                                                                                                                    |
+|:----------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onCustomAction**          | 当用户执行自定义操作时触发，例如点击[自定义按钮](paywall-buttons)。                                                                                                                                                                                                                                     |
+| **onUrlPress**              | 当用户点击付费墙中的 URL 时触发。                                                                                                                                                                                                                                                                       |
+| **onAndroidSystemBack**     | 当用户点击 Android 系统 **Back** 按钮时触发。                                                                                                                                                                                                                                                           |
+| **onCloseButtonPress**      | 当关闭按钮可见且用户点击时触发。建议在此处理程序中关闭付费墙屏幕。                                                                                                                                                                                                                                      |
+| **onPurchaseCompleted**     | 购买完成时触发，无论成功、用户取消还是等待审批。购买成功时提供更新后的 `AdaptyProfile`。用户取消和待处理支付（如需要家长批准）会触发此事件，而非 `onPurchaseFailed`。                                                                                                                                   |
+| **onPurchaseStarted**       | 当用户点击"购买"操作按钮开始购买流程时触发。                                                                                                                                                                                                                                                            |
+| **onPurchaseCancelled**     | 当用户发起购买流程后手动中断（取消支付对话框）时触发。                                                                                                                                                                                                                                                  |
+| **onPurchaseFailed**        | 购买因错误失败时触发（如支付限制、无效产品、网络故障、交易验证失败）。用户取消或待处理支付不会触发此事件，这些情况会触发 `onPurchaseCompleted`。                                                                                                                                                        |
+| **onRestoreStarted**        | 当用户开始购买恢复流程时触发。                                                                                                                                                                                                                                                                          |
+| **onRestoreCompleted**      | 购买恢复成功时触发，并提供更新后的 `AdaptyProfile`。如果用户拥有所需的 `accessLevel`，建议关闭屏幕。请参阅[订阅状态](capacitor-listen-subscription-changes)主题了解如何进行检查。                                                                                                                       |
+| **onRestoreFailed**         | 恢复流程失败时触发，并提供 `AdaptyError`。                                                                                                                                                                                                                                                              |
+| **onProductSelected**       | 付费墙视图中任意产品被选择时触发，允许您监控用户在购买前的选择。                                                                                                                                                                                                                                        |
+| **onAppeared**              | 付费墙视图出现在屏幕上时触发。在 iOS 上，当用户点击付费墙内的[网页付费墙按钮](web-paywall#step-2a-add-a-web-purchase-button)且网页付费墙在应用内浏览器中打开时，也会触发此事件。                                                                                                                        |
+| **onDisappeared**           | 付费墙视图从屏幕消失时触发。在 iOS 上，当从付费墙在应用内浏览器中打开的[网页付费墙](web-paywall#step-2a-add-a-web-purchase-button)从屏幕消失时，也会触发此事件。                                                                                                                                        |
+| **onRenderingFailed**       | 视图渲染期间发生错误时触发，并提供 `AdaptyError`。此类错误不应出现，如遇到请告知我们。                                                                                                                                                                                                                  |
+| **onLoadingProductsFailed** | 产品加载失败时触发，并提供 `AdaptyError`。如果您在创建视图时未设置 `prefetchProducts: true`，AdaptyUI 将自行从服务器获取所需对象。                                                                                                                                                                       |

@@ -1,0 +1,68 @@
+---
+title: "迁移指南：Flutter Adapty SDK 3.10.0"
+description: ""
+metadataTitle: ""
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+Adapty SDK 3.10.0 是一个重大版本发布，带来了一些改进，但可能需要您执行以下迁移步骤：
+
+1. 更新 `makePurchase` 方法，使用 `AdaptyPurchaseParameters` 替代单独的参数。
+2. 在 `AdaptyPaywall` 模型中，将 `vendorProductIds` 替换为 `productIdentifiers`。
+
+## 更新 makePurchase 方法 \{#update-makepurchase-method\}
+
+`makePurchase` 方法现在使用 `AdaptyPurchaseParameters` 替代原有的 `subscriptionUpdateParams` 和 `isOfferPersonalized` 参数。这提供了更好的类型安全性，并为未来扩展购买参数提供了便利。
+
+```diff showLineNumbers
+- final purchaseResult = await adapty.makePurchase(
+-   product: product,
+-   subscriptionUpdateParams: subscriptionUpdateParams,
+-   isOfferPersonalized: true,
+- );
+
++ final parameters = AdaptyPurchaseParametersBuilder()
++   ..setSubscriptionUpdateParams(subscriptionUpdateParams)
++   ..setIsOfferPersonalized(true)
++   ..setObfuscatedAccountId('your-account-id')
++   ..setObfuscatedProfileId('your-profile-id');
+
++ final purchaseResult = await adapty.makePurchase(
++   product: product,
++   parameters: parameters.build(),
++ );
+```
+
+如果不需要额外参数，可以直接使用：
+
+```dart showLineNumbers
+final purchaseResult = await adapty.makePurchase(
+  product: product,
+);
+```
+
+## 更新 AdaptyPaywall 模型的用法 \{#update-adaptypaywall-model-usage\}
+
+`vendorProductIds` 属性已被弃用，推荐使用 `productIdentifiers`。新属性返回 `AdaptyProductIdentifier` 对象而非简单字符串，提供了更结构化的产品信息。
+
+```diff showLineNumbers
+- paywall.vendorProductIds.map((vendorId) => 
+-   ListTextTile(title: vendorId)
+- ).toList()
+
++ paywall.productIdentifiers.map((productId) => 
++   ListTextTile(title: productId.vendorProductId)
++ ).toList()
+```
+
+`AdaptyProductIdentifier` 对象通过 `vendorProductId` 属性提供对供应商产品 ID 的访问，在保持原有功能的同时，为未来的功能增强提供了更好的结构支持。
+
+## 向后兼容性 \{#backward-compatibility\}
+
+两项更改均保持向后兼容：
+- `makePurchase` 中的旧参数已被弃用，但仍然可以正常使用
+- `vendorProductIds` 属性已被弃用，但仍然可以访问
+- 现有代码将继续正常运行，但您会看到弃用警告
+
+我们建议更新您的代码以使用新的 API，以确保未来的兼容性，并充分利用改进后的类型安全性和可扩展性。

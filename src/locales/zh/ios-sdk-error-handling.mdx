@@ -1,0 +1,93 @@
+---
+title: "处理 iOS SDK 中的错误"
+description: "使用 Adapty 的故障排除指南高效处理 iOS SDK 错误。"
+metadataTitle: "iOS SDK 错误处理指南 | Adapty 文档"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
+Adapty SDK 为各类错误提供了统一的包装器，称为 `AdaptyError`。基本上，SDK 返回的每个错误都是 `AdaptyError`。它有两个实用属性：`originalError` 和 `adaptyErrorCode`，详述如下。
+
+**originalError** 包含原始错误，以便您在需要时直接使用。可以是 [SKError](https://developer.apple.com/documentation/storekit/skerror)、[NSError](https://developer.apple.com/documentation/foundation/nserror) 或普通的 Swift [Error](https://developer.apple.com/documentation/swift/error)。该属性是可选的，因为某些错误可能直接由 SDK 生成（例如数据不一致或缺失），此时不存在用于构建包装器的原始错误。
+
+**adaptyErrorCode** 可用于处理常见问题，例如：
+
+- 无效凭据
+- 网络错误
+- 取消付款
+- 结算问题
+- 无效收据
+- 以及更多情况
+
+检查错误的特定代码并作出相应响应非常简单。
+
+```swift showLineNumbers title="Swift"
+do {
+    let info = try await Adapty.makePurchase(product: product)
+} catch {
+    if error.adaptyErrorCode == .paymentCancelled {
+        // purchase was cancelled
+        // you can offer discount to your user or remind them later
+    }
+}
+```
+
+:::important
+如果上述解决方案未能解决您的问题，请参阅[其他问题](#other-issues)，了解联系支持前需要采取的步骤，以帮助我们更高效地为您提供协助。
+:::
+## StoreKit 错误 \{#storekit-errors\}
+| 错误 | 代码 | 解决方案 |
+|--------------------------------------------------------------------------------------------------------------------------------------------|------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [unknown](https://developer.apple.com/documentation/storekit/skerror/code/unknown) | 0 | 错误代码表示发生了未知或意外错误。<br/> 请重试或参阅 [其他问题](#other-issues) 部分。 |
+| [clientInvalid](https://developer.apple.com/documentation/storekit/skerror/code/clientinvalid) | 1 | 此错误代码表示客户端不被允许执行所尝试的操作。 |
+| [paymentCancelled](https://developer.apple.com/documentation/storekit/skerror/code/paymentcancelled) | 2 | <p>此错误代码表示用户取消了付款请求。</p><p>无需任何操作，但从业务逻辑角度，您可以向用户提供折扣或稍后提醒他们。</p> |
+| [paymentInvalid](https://developer.apple.com/documentation/storekit/skerror/code/paymentinvalid) | 3 | 此错误表示 App Store 无法识别某个付款参数。 |
+| [paymentNotAllowed](https://developer.apple.com/documentation/storekit/skerror/code/paymentnotallowed) | 4 | 此错误代码表示用户不被允许授权付款。 |
+| [storeProductNotAvailable](https://developer.apple.com/documentation/storekit/skerror/code/storeproductnotavailable) | 5 | 此错误代码表示所请求的产品在商店中不可用。<br/> 请尝试重新安装应用。 |
+| [cloudServicePermissionDenied](https://developer.apple.com/documentation/storekit/skerror/code/cloudservicepermissiondenied) | 6 | 此错误代码表示用户未允许访问云服务信息。 |
+| [cloudServiceNetworkConnectionFailed](https://developer.apple.com/documentation/storekit/skerror/code/cloudservicenetworkconnectionfailed) | 7 | 此错误代码表示设备无法连接到网络。 |
+| [cloudServiceRevoked](https://developer.apple.com/documentation/storekit/skerror/code/cloudservicerevoked/) | 8 | 此错误代码表示用户已撤销使用此云服务的权限。 |
+| [privacyAcknowledgementRequired](https://developer.apple.com/documentation/storekit/skerror/code/privacyacknowledgementrequired) | 9 | 此错误代码表示用户尚未确认 Apple 的隐私政策。 |
+| [unauthorizedRequestData](https://developer.apple.com/documentation/storekit/skerror/code/unauthorizedrequestdata) | 10 | 此错误代码表示应用正在尝试使用某个属性，但缺少所需的权限授权。 |
+| [invalidOfferIdentifier](https://developer.apple.com/documentation/storekit/skerror/code/invalidofferidentifier) | 11 | <p>优惠 [`identifier`](https://developer.apple.com/documentation/storekit/skpaymentdiscount/identifier) 无效。例如，您未在 App Store 中设置具有该标识符的优惠，或者您已撤销该优惠。</p><p>请确保在 AppStore Connect 中设置了所需的优惠，并传入有效的优惠标识符。</p> |
+| [invalidSignature](https://developer.apple.com/documentation/storekit/skerror/code/invalidsignature) | 12 | 此错误代码表示付款折扣中的签名无效。 |
+| [missingOfferParams](https://developer.apple.com/documentation/storekit/skerror/code/missingofferparams) | 13 | 此错误代码表示付款折扣中缺少参数。 |
+| [invalidOfferPrice](https://developer.apple.com/documentation/storekit/skerror/code/invalidofferprice/) | 14 | 此错误代码表示您在 App Store Connect 中指定的价格已不再有效。优惠必须始终代表折扣价格。 |
+| noProductIDsFound | 1000 | <p>此错误表示您在付费墙上请求的产品虽然已在 App Store 中列出，但均无法购买。此错误有时会伴随 `InvalidProductIdentifiers` 警告出现。如果仅出现警告而没有错误，请忽略该警告。</p><p>如果您遇到此错误，请按照 [修复 Code-1000 `noProductIDsFound` 错误](InvalidProductIdentifiers) 部分中的步骤操作。</p> |
+| productRequestFailed | 1002 | 当前无法获取可用产品。 |
+| cantMakePayments | 1003 | 此设备不允许应用内购买。请参阅故障排查[指南](cantMakePayments)。 |
+| [cantReadReceipt](https://developer.apple.com/documentation/storekit/skerror/code/paymentcancelled) | 1005 | <p>设备上没有有效的收据。这可能是沙盒测试期间的问题。</p><p>在沙盒环境中，在实际完成一次购买之前，您不会有有效的收据文件，因此请确保在访问收据之前先完成一次购买。沙盒测试期间，还请确保您在设备上登录了有效的 Apple 沙盒账户。</p> |
+| productPurchaseFailed | 1006 | 产品购买失败。这是与 Adapty 无关的 StoreKit 错误。请尝试使用新的[沙盒用户画像](test-purchases-in-sandbox)。如果问题仍未解决，请联系 Apple 支持。 |
+| refreshReceiptFailed | 1010 | 收据刷新操作失败。 |
+| fetchSubscriptionStatusFailed | 1020 | 从 App Store 获取订阅状态失败。 |
+| unknownTransactionId | 1030 | 交易标识符未知。 |
+| paymentPendingError | 1050 | 付款当前处于待处理状态。 |
+## 网络错误 \{#network-errors\}
+
+| 错误             | 代码   | 解决方案                                                                                                                                                                                                         |
+| :------------- | :--- |:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| notActivated   | 2002 | Adapty SDK 未激活。您需要使用 `Adapty.activate` 方法正确[配置 Adapty SDK](sdk-installation-ios#activate-adapty-module-of-adapty-sdk)。                                                                                       |
+| badRequest     | 2003 | 请求无效。<br/> 请确保您已完成[与 App Store 集成](app-store-connection-configuration)所需的所有步骤。                                                                                                                              |
+| serverError    | 2004 | 服务器错误。<br/> 请稍后重试。如果问题未解决，请联系 Adapty 支持团队。                                                                                                                                                                 |
+| networkFailed  | 2005 | 该错误表示用户设备的网络连接存在问题。<br/> 请尝试禁用 VPN，或从蜂窝网络切换到 WiFi，反之亦然。                                                                                                                                                   |
+| decodingFailed | 2006 | 该错误表示响应解码失败。<br/> 请检查您的代码，确保您发送的参数有效。例如，此错误可能表明您使用了无效的 API 密钥。 |
+| encodingFailed | 2009 | 该错误表示请求编码失败。                                                                                                                                                                                                 |
+## 常规错误 \{#general-errors\}
+| 错误 | 代码 | 解决方案 |
+| :------------------- | :--- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| analyticsDisabled    | 3000 | 由于您已[选择退出](analytics-integration#disabling-external-analytics-for-a-specific-customer)，我们无法处理分析事件。 |
+| wrongParam           | 3001 | 此错误表示您的某些参数不正确。<br/> 如果您正在使用 Adapty 付费墙编辑工具，但因此错误无法显示付费墙，请在付费墙编辑工具中开启 **Show on device**。<br/> 另一个可能的原因是本地[备用付费墙](fallback-paywalls)文件版本与 SDK 版本不匹配。请在看板中下载新文件。 |
+| activateOnceError    | 3005 | 无法多次调用 `.activate` 方法。 |
+| profileWasChanged    | 3006 | 操作过程中用户画像已更改。<br/> 当您调用 `identify` 后，在 `identify` 成功之前又调用了其他方法时，可能会出现此错误。为避免此问题，请等待 `identify` 成功后再调用其他方法。 |
+| unsupportedData      | 3007 | 此错误表示 SDK 不支持该数据格式。 |
+| unidentifiedUserLogout | 3020 | 无法对未识别用户调用 `logout` 方法。 |
+| fetchTimeoutError    | 3101 | 此错误表示获取操作已超时。 |
+| operationInterrupted | 9000 | 此操作被系统中断。 |
+## 其他问题 \{#other-issues\}
+
+如果您尚未找到解决方案，可以尝试以下步骤：
+
+- **将 SDK 升级到最新版本**：我们始终建议升级到最新的 SDK 版本，因为它们更加稳定，并包含已知问题的修复。
+- **联系支持团队或在[支持论坛](https://adapty.featurebase.app/)中获取开发者社区的帮助**。
+- **通过 [support@adapty.io](mailto:support@adapty.io) 或在线聊天联系支持团队**：如果您暂时不打算升级 SDK，或升级后问题仍未解决，请联系我们的支持团队。请注意，如果您[启用详细日志记录](sdk-installation-ios#logging)并将日志分享给团队，您的问题将得到更快解决。您也可以附上相关的代码片段。

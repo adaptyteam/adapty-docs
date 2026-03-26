@@ -35,6 +35,7 @@ description: "Brief description for SEO"
 metadataTitle: "SEO Title | Adapty Docs"
 keywords: ['keyword1', 'keyword2']
 rank: 100 (default — 50)
+draft: true (optional — excludes article from build, navigation, and LLM exports)
 ---
 
 import ZoomImage from '@site/src/components/ZoomImage.astro';
@@ -305,34 +306,32 @@ A stylized button for primary actions or links to other articles. Matches the Ad
 - **Left-aligned**: The button always starts on a new line and is left-aligned.
 - **Responsive**: Adapts styling for light and dark modes.
 
-### 7. Inline icons - Icons next to UI elements
+### 7. Inline - Inline icon image
 
-Display small inline icons next to button or control descriptions. Use them to help readers identify which UI element the text refers to. Write the icon description as part of the sentence, then place the `:icon[name]` directive after it as a visual reinforcement.
+Display a small icon image inline within text — useful for referencing UI icons like buttons, menu items, or controls directly inside a sentence.
 
-**Syntax:**
+**Props:**
+- `id` (required): Image filename from `src/assets/Inline/`
+- `alt` (required): Alt text describing the icon. Also used as the fallback in plain-text/Markdown exports.
+- `width` (optional): Icon width, default: `"20px"`
 
-```mdx
-Click the pencil icon :icon[pencil] to rename the flow.
-```
-
-No import is needed. The `:icon[name]` directive is processed automatically during build.
-
-**Usage examples:**
+**Usage:**
 
 ```mdx
-Click the arrow icons to undo :icon[undo] or redo :icon[redo] your changes.
+Click <Inline id="edit-icon.webp" alt="Edit" /> to open the editor.
 
-Click the download icon :icon[download] to save a screenshot.
+Tap <Inline id="plus.webp" alt="Add" width="16px" /> to create a new item.
 ```
 
-**Adding a new icon:**
+**Image storage:**
 
-1. Save an SVG file to `src/assets/icons/`. The SVG must have a `viewBox` attribute and use `currentColor` for all `stroke` and `fill` values so the icon adapts to light and dark themes. The icon always displays at text size (1em) regardless of the SVG's original dimensions.
-2. Use it immediately with `:icon[filename]` (without the `.svg` extension).
+All inline icon files go in `src/assets/Inline/`. This folder is dedicated to icons used inline within text — do not use it for article screenshots.
 
-Subfolders are supported. For example, save an icon to `src/assets/icons/flow-builder/pencil.svg` and reference it as `:icon[flow-builder/pencil]`.
-
-**LLM-safe:** The build pipeline strips `:icon[name]` directives from all markdown exports. LLMs that read the exported documentation receive clean text with no icon markup. Because the icon description is part of the sentence itself, the exported text reads naturally without any loss of meaning.
+- **Auto-registered**: You don't need to import `Inline` manually at the top of your MDX file.
+- **Inline rendering**: The icon flows naturally within the surrounding text, aligned to the text baseline.
+- **Markdown export**: In generated plain-text and LLM markdown files, the component is replaced seamlessly with its `alt` value (e.g., `<Inline id="edit.webp" alt="Edit" />` → `Edit`).
+- **Fallback**: If the image file is not found, the `alt` text is rendered as `<code>` so the meaning is never lost.
+- **Works in lists**: Can be used inside list items, callouts, and other block contexts without breaking layout.
 
 ## Markdown features
 

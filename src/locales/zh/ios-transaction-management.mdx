@@ -1,0 +1,142 @@
+---
+title: "iOS SDK 中的高级事务管理"
+description: "使用 Adapty SDK 在 iOS 应用中手动完成事务。"
+metadataTitle: "高级事务管理 | iOS SDK | Adapty 文档"
+displayed_sidebar: sdkios
+---
+import ZoomImage from '@site/src/components/ZoomImage';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+:::note
+高级事务管理在 Adapty iOS SDK 3.12 版本起开始支持。
+:::
+
+Adapty 中的高级事务管理让您能够更精细地控制事务的处理、验证和完成方式。
+
+高级事务管理引入了三个可选功能，它们协同工作：
+
+| 功能                                                        | 用途 |
+|-------------------------------------------------------------|------|
+| [`appAccountToken`](#assign-appaccounttoken)                | 将 Apple 事务与您的内部用户 ID 关联 |
+| [`jwsTransaction`](#access-the-jws-representation)          | 提供 Apple 的已签名事务载荷以供验证 |
+| [手动完成](#control-transaction-finishing-behavior)          | 允许您仅在后端确认成功后才完成事务 |
+
+这些工具结合使用，可让您在 Adapty 继续与其后端同步事务的同时，构建稳健的自定义验证流程。
+
+:::important
+大多数应用不需要此功能。
+默认情况下，Adapty 会自动验证并完成 StoreKit 事务。
+仅当您运行自己的后端验证或希望完全控制购买生命周期时，才需参考本指南。
+:::
+
+## 分配 `appAccountToken` \{#assign-appaccounttoken\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) 是一个 **UUID**，可让您将 App Store 事务与您的内部用户身份关联。
+StoreKit 会将此令牌与每笔事务关联，以便您的后端能够将 App Store 数据与您的用户匹配。
+
+请为每位用户生成稳定的 UUID，并在同一账户的不同设备上复用它。
+这样可确保购买记录和 App Store 通知始终正确关联。
+
+您可以通过两种方式设置令牌——在 SDK 激活时或在识别用户时。
+
+:::important
+您必须始终将 `appAccountToken` 与 `customerUserId` 一起传递。
+如果仅传递令牌，则该令牌不会包含在事务中。
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: UUID())
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
+  // handle the error
+}
+
+// Or when identifying a user:
+do {
+    try await Adapty.identify("YOUR_USER_ID", withAppAccountToken: UUID())
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: <APP_ACCOUNT_TOKEN>)
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+
+// Or when identifying a user:
+Adapty.identify("YOUR_USER_ID", withAppAccountToken: <APP_ACCOUNT_TOKEN>) { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## 访问 JWS 表示形式 \{#access-the-jws-representation\}
+
+当您进行购买时，结果中会包含 Apple 以 [JWS 紧凑序列化格式](https://developer.apple.com/documentation/storekit/verificationresult/jwsrepresentation-21vgo)返回的事务。
+您可以将此值转发给您的后端进行独立验证或日志记录。
+
+```swift
+let result = try await Adapty.makePurchase(product: paywallProduct)
+let jwsRepresentation = result.jwsTransaction
+```
+
+## 控制事务完成行为 \{#control-transaction-finishing-behavior\}
+
+<ZoomImage id="transaction-management.png" width="700px" />
+
+默认情况下，Adapty 在验证后会自动完成 StoreKit 事务。
+如果您需要延迟完成直到后端确认成功，请将完成行为设置为手动模式。
+
+在此模式下：
+- Adapty 仍会验证购买并将其同步到其后端。
+- 事务将保持未完成状态，直到您显式调用 `finish()`。
+
+```swift
+var configBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_API_KEY")
+    .with(transactionFinishBehavior: .manual)
+
+try await Adapty.activate(with: configBuilder.build())   
+```
+
+使用手动事务完成时，您需要实现 `onUnfinishedTransaction` 代理方法来处理未完成的事务：
+
+```swift showLineNumbers title="Swift"
+extension YourApp: AdaptyDelegate {
+    func onUnfinishedTransaction(_ transaction: AdaptyUnfinishedTransaction) async {
+        // Perform your custom validation logic here
+        
+        // When ready, finish the transaction
+        await transaction.finish()
+    }
+}
+```
+
+要获取所有当前未完成的事务，请使用 `getUnfinishedTransactions()` 方法：
+
+```swift
+let unfinishedTransactions = try await Adapty.getUnfinishedTransactions()
+```

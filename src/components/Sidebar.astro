@@ -9,9 +9,10 @@ interface Props {
   sidebarData: any[];
   currentPlatformId: string;
   currentSlug: string;
+  currentLocale?: string;
 }
 
-const { sidebarData, currentPlatformId, currentSlug } = Astro.props;
+const { sidebarData, currentPlatformId, currentSlug, currentLocale } = Astro.props;
 
 // Logic to determine active ID from slug (simplified: last part of slug matches id)
 const activeId = currentSlug.split('/').pop() || ''; 
@@ -122,6 +123,36 @@ const apiMod = allSidebarModules['../data/sidebars/api.json'] as { default: any[
 const tutorialSidebar = tutorialMod?.default ? transformItems(tutorialMod.default) : [];
 const apiSidebar = apiMod?.default ? transformItems(apiMod.default) : [];
 
+// Apply locale label translations to all mobile sidebars
+const allLabelModules = import.meta.glob('../locales/*/_sidebar-labels.json', { eager: true });
+let mobileSidebarLabels: Record<string, { value: string }> = {};
+if (currentLocale && currentLocale !== 'en') {
+    const labelsPath = `../locales/${currentLocale}/_sidebar-labels.json`;
+    const labelsMod = allLabelModules[labelsPath] as { default?: Record<string, { value: string }> } | undefined;
+    if (labelsMod?.default) mobileSidebarLabels = labelsMod.default;
+}
+
+function applyMobileLabels(items: any[]): any[] {
+    if (!Object.keys(mobileSidebarLabels).length) return items;
+    return items.map(item => {
+        const id = item.id || item.link?.id;
+        const translated = id ? mobileSidebarLabels[id] : null;
+        const translatedCategory = item.label ? mobileSidebarLabels[item.label] : null;
+        return {
+            ...item,
+            label: translated?.value ?? translatedCategory?.value ?? item.label,
+            items: item.items ? applyMobileLabels(item.items) : undefined,
+        };
+    });
+}
+
+const labeledSdkSidebars: Record<string, any[]> = {};
+for (const [id, items] of Object.entries(allSdkSidebars)) {
+    labeledSdkSidebars[id] = applyMobileLabels(items);
+}
+const labeledTutorialSidebar = applyMobileLabels(tutorialSidebar);
+const labeledApiSidebar = applyMobileLabels(apiSidebar);
+
 // Determine which top-level section the current page belongs to
 const sdkIds = new Set(platformsData.sdkPlatforms.map((p: any) => p.id));
 const currentSectionId: 'tutorial' | 'sdk' | 'api' =
@@ -129,7 +160,7 @@ const currentSectionId: 'tutorial' | 'sdk' | 'api' =
     : currentPlatformId === 'api' ? 'api'
     : 'sdk';
 const effectivePlatformId = sdkIds.has(currentPlatformId) ? currentPlatformId : 'ios';
-const initialSdkSidebar = allSdkSidebars[effectivePlatformId] ?? [];
+const initialSdkSidebar = labeledSdkSidebars[effectivePlatformId] ?? [];
 
 // Helper to find the label of the current active item
 function findActiveLabel(items: any[], activeId: string): string | undefined {
@@ -155,17 +186,18 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
     id="main-sidebar"
     class="sidebar-main"
     data-platform-id={currentPlatformId}
-    transition:persist={`sidebar-${currentPlatformId}`}
+    transition:persist={`sidebar-${currentPlatformId}-${currentLocale ?? 'en'}`}
 >
     <MobileSectionSwitcher
         currentSectionId={currentSectionId}
         currentPlatformId={effectivePlatformId}
         currentSlug={currentSlug}
-        tutorialSidebar={tutorialSidebar}
-        apiSidebar={apiSidebar}
+        tutorialSidebar={labeledTutorialSidebar}
+        apiSidebar={labeledApiSidebar}
         initialSdkSidebar={initialSdkSidebar}
-        allSdkSidebars={allSdkSidebars}
+        allSdkSidebars={labeledSdkSidebars}
         sdkPlatforms={platformsData.sdkPlatforms}
+        currentLocale={currentLocale}
     />
 
     <!-- Desktop-only: PlatformSwitcher dropdown -->
@@ -193,14 +225,39 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
     <script>
       let hasScrolledToActive = false;
 
+      function getLocaleFromPath(path: string) {
+        const m = path.match(/^(.*\/docs\/)([a-z]{2})\//);
+        return m ? { locale: m[2], base: m[1] } : null;
+      }
+
+      // Rewrite sidebar link hrefs to include (or strip) the current locale prefix
+      function updateSidebarLinks() {
+        const localeInfo = getLocaleFromPath(window.location.pathname);
+        document.querySelectorAll('[data-sidebar-link]').forEach(el => {
+          const baseHref = el.getAttribute('data-href');
+          if (!baseHref) return;
+          el.setAttribute(
+            'href',
+            localeInfo
+              ? baseHref.replace(/^(.*\/docs\/)/, `$1${localeInfo.locale}/`)
+              : baseHref
+          );
+        });
+      }
+
       function updateActiveState() {
-        const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+        // Strip locale prefix so sidebar links always match English data-href values.
+        // Handles both /docs/zh/article and the locale root /docs/zh/ → /docs/
+        const currentPath = window.location.pathname
+          .replace(/\/$/, '')
+          .replace(/^(.*\/docs)\/[a-z]{2}(\/|$)/, '$1$2')
+          .replace(/\/$/, '') || '/';
         const links = document.querySelectorAll('[data-sidebar-link]');
-        
+
         links.forEach(link => {
           const href = link.getAttribute('data-href')?.replace(/\/$/, '') || '/';
           const isActive = href === currentPath;
-          
+
           const container = link.closest('[data-sidebar-container]');
           if (container) {
             if (isActive) {
@@ -228,14 +285,14 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
         }
       }
 
-      // On navigation, just update which item is active
-      // Sidebar persists, so scroll position is maintained automatically
       document.addEventListener('astro:page-load', () => {
+        updateSidebarLinks();
         updateActiveState();
         scrollToActiveOnce();
       });
 
       // Initial execution
+      updateSidebarLinks();
       updateActiveState();
       scrollToActiveOnce();
     </script>
