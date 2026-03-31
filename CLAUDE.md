@@ -39,8 +39,10 @@ Sidebars are defined per platform in `src/data/sidebars/*.json` (ios, android, r
 
 ### Images
 
-- Article-specific: `src/assets/{article-name}/image.png`
-- Shared: `src/assets/shared/image.png`
+**In practice, almost all screenshots live in `src/assets/shared/img/`** (including subdirectories like `flow-builder/`). When looking for new screenshots, check here first.
+
+- Article-specific: `src/assets/{article-name}/image.png` (rarely used)
+- Shared: `src/assets/shared/img/image.png`
 - Use `<ZoomImage id="image.png" width="700px" alt="desc" />` (preferred)
 - Legacy `<Zoom><img src={require(...)}/></Zoom>` still works
 
