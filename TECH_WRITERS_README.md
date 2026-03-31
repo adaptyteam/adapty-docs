@@ -35,6 +35,7 @@ description: "Brief description for SEO"
 metadataTitle: "SEO Title | Adapty Docs"
 keywords: ['keyword1', 'keyword2']
 rank: 100 (default — 50)
+draft: true (optional — excludes article from build, navigation, and LLM exports)
 ---
 
 import ZoomImage from '@site/src/components/ZoomImage.astro';
@@ -99,6 +100,8 @@ src/
       image1.png
     shared/               # Shared images
       common-image.png
+    icons/                # Inline SVG icons
+      pencil.svg
   components/             # Reusable components
     reusable/             # Reusable content snippets
 ```
@@ -134,6 +137,47 @@ The component automatically finds images in this order:
 1. `src/assets/{article-name}/image.png` (article-specific)
 2. `src/assets/shared/image.png` (shared folder)
 3. Legacy locations (for backward compatibility)
+
+### 1a. ZoomImage float mode - Image that floats beside text
+
+Add the `float` prop to ZoomImage to display a narrow image to one side with body text flowing beside it. The image retains zoom functionality.
+
+**Additional prop:**
+- `float` (optional): `"left"`, `"right"`, or `"none"` (default: `"none"`)
+
+**Usage:**
+
+```mdx
+<ZoomImage id="settings-panel.webp" width="300px" float="right" alt="Settings panel" />
+
+This text flows beside the image. You can use paragraphs,
+bullet lists, and other content here.
+
+* Setting one
+* Setting two
+* Setting three
+
+### This subsection heading does NOT clear the float
+
+More text still flows beside the image.
+
+## Next same-level heading (clears the float automatically)
+```
+
+**Float clearing rules:**
+
+The float is automatically cleared (text stops flowing beside the image) before:
+
+1. **A heading at the same or higher level** as the heading that precedes the float. For example, if the float follows an `##` heading, only the next `##` or `#` heading clears it. Any `###` subheadings within the section continue to flow beside the image.
+2. **A subsection that contains an image or a table.** If a `###` subsection after the float contains a `ZoomImage` (floating or not) or a markdown table, the float clears before that subsection heading, because these elements need full width.
+3. **A standalone image or table** that appears directly after the float (not inside a subsection).
+
+**Guidelines:**
+- Use for narrow images (300-400px) with enough adjacent text (at least 4-6 lines) to fill the space beside the image
+- Avoid for wide screenshots
+- Avoid when there is very little text before the next heading, as it creates awkward whitespace
+- On mobile (<768px), the image automatically stacks vertically at full width
+- Callouts (`:::note`, `:::tip`, etc.) inside a float section shrink to fit the available space beside the image instead of wrapping around it
 
 ### 2. Tabs - Tabbed content
 
