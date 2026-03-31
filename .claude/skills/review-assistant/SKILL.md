@@ -25,35 +25,46 @@ Execute the following MANDATORY steps before offering a suggestion, either one y
 
 ## Step 1: Fetch comments
 
-### 1a. Check for rtk
+### 1a. Gather repo info (run all three in parallel)
+
+Run these three commands in a single parallel batch:
 
 ```bash
+# 1. Get owner/repo slug
+git remote get-url origin | sed -E 's|.*github\.com[:/]||; s|\.git$||'
+```
+
+```bash
+# 2. Get current branch
+git branch --show-current
+```
+
+```bash
+# 3. Check for rtk
 which rtk 2>/dev/null && echo "rtk:yes" || echo "rtk:no"
 ```
 
-If `rtk` is installed, preface all `gh` commands with `rtk proxy` to bypass output compression. This applies to every `gh` call in the entire workflow.
+If `rtk` is present, preface every subsequent `gh` command with `rtk proxy` to bypass output compression.
 
 ### 1b. Determine the PR
 
-- If `$ARGUMENTS` is provided, use it as the PR number or URL.
-- Otherwise, detect the PR for the current branch.
-
-To get the PR number and repo info, run these commands:
+- If `$ARGUMENTS` is provided, use it directly as the PR number (skip this step).
+- Otherwise, use the owner/repo slug and branch from 1a to find the open PR:
 
 ```bash
-# Get owner/repo from the git remote
-REPO=$(git remote get-url origin | sed -E 's|.*github\.com[:/]||; s|\.git$||')
-
-# Get PR number for current branch (always use the API — gh pr view --json is unreliable)
-BRANCH=$(git branch --show-current)
-gh api "repos/${REPO}/pulls?head=$(echo $REPO | cut -d/ -f1):${BRANCH}&state=open" --jq '.[0] | {number, title}'
+# Replace {owner}, {repo}, {owner_prefix}, {branch} with values from 1a
+gh api "repos/{owner}/{repo}/pulls?head={owner_prefix}:{branch}&state=open" \
+  --jq '.[0] | {number, title}'
 ```
 
-### 1c. Fetch review comments (inline, unresolved only)
+The `{owner_prefix}` is the part before `/` in the slug (e.g. `adaptyteam` from `adaptyteam/adapty-docs`).
 
-Use GraphQL to fetch review threads so you can filter by resolution status. Only include comments from **unresolved** threads.
+### 1c. Fetch comments (run both in parallel)
+
+Run these two in a single parallel batch once you have owner, repo, and PR number:
 
 ```bash
+# Inline review threads (unresolved only)
 gh api graphql -f query='
 {
   repository(owner: "{owner}", name: "{repo}") {
@@ -78,18 +89,13 @@ gh api graphql -f query='
 }' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | .comments.nodes[] | {path, line, author: .author.login, date: .createdAt, body, id: .databaseId}'
 ```
 
-### 1d. Fetch top-level PR comments (issue comments)
-
 ```bash
+# Top-level PR (issue) comments
 gh api "repos/{owner}/{repo}/issues/{number}/comments?per_page=100" \
   --jq '.[] | {author: .user.login, date: .created_at, body: .body, id: .id}'
 ```
 
-### 1e. Get the PR title
-
-```bash
-gh api "repos/{owner}/{repo}/pulls/{number}" --jq .title
-```
+The PR title comes from step 1b — no extra API call needed.
 
 ## Step 2: Create tracking file
 
