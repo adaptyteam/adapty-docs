@@ -210,7 +210,7 @@ async function runWithConcurrency(tasks, limit) {
  * @param {number} config.timeoutMs    Per-request timeout
  */
 export async function orchestrateDiff(config) {
-  const { mode, docsDir, liveSiteBase, concurrency, timeoutMs } = config;
+  const { mode, docsDir, liveSiteBase, concurrency, timeoutMs, externalOnly, internalOnly } = config;
   const reusableDir = 'src/components/reusable';
 
   // 1. Get changed files
@@ -309,37 +309,41 @@ export async function orchestrateDiff(config) {
       mdExtUrls.add(link.url);
     }
   }
-  for (const link of externalLinks) {
-    if (SELF_DOCS_RE.test(link.url) && !SELF_LINK_EXCEPTIONS.test(link.url)) {
-      errors.push({ ...link, type: 'external', status: 'SELF_LINK', error: 'Use an internal link instead of a full URL to adapty.io/docs' });
+  if (!internalOnly) {
+    for (const link of externalLinks) {
+      if (SELF_DOCS_RE.test(link.url) && !SELF_LINK_EXCEPTIONS.test(link.url)) {
+        errors.push({ ...link, type: 'external', status: 'SELF_LINK', error: 'Use an internal link instead of a full URL to adapty.io/docs' });
+      }
     }
   }
 
   // 7. Check internal links
-  console.log(`Checking ${uniqueInternalUrls.length} internal links...`);
-  const internalResultsByUrl = new Map();
-  for (const url of uniqueInternalUrls) {
-    if (mdExtUrls.has(url)) continue;
-    internalResultsByUrl.set(url, await checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs }));
-  }
-
-  for (const link of allInternal) {
-    const result = internalResultsByUrl.get(link.url);
-    if (!result) continue;
-    if (!result.ok) {
-      errors.push({ ...link, type: 'internal', status: result.status, error: result.error });
-    } else if (result.internalRedirect) {
-      warnings.push({ ...link, type: 'internal', severity: 'internal-redirect', redirect: result.internalRedirect });
-    } else if (result.anchorMissing) {
-      warnings.push({ ...link, type: 'internal', severity: 'anchor', anchor: result.anchorMissing });
-    } else if (result.redirect) {
-      warnings.push({ ...link, type: 'internal', severity: 'redirect', redirect: result.redirect });
+  if (!externalOnly) {
+    console.log(`Checking ${uniqueInternalUrls.length} internal links...`);
+    const internalResultsByUrl = new Map();
+    for (const url of uniqueInternalUrls) {
+      if (mdExtUrls.has(url)) continue;
+      internalResultsByUrl.set(url, await checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs }));
     }
+
+    for (const link of allInternal) {
+      const result = internalResultsByUrl.get(link.url);
+      if (!result) continue;
+      if (!result.ok) {
+        errors.push({ ...link, type: 'internal', status: result.status, error: result.error });
+      } else if (result.internalRedirect) {
+        warnings.push({ ...link, type: 'internal', severity: 'internal-redirect', redirect: result.internalRedirect });
+      } else if (result.anchorMissing) {
+        warnings.push({ ...link, type: 'internal', severity: 'anchor', anchor: result.anchorMissing });
+      } else if (result.redirect) {
+        warnings.push({ ...link, type: 'internal', severity: 'redirect', redirect: result.redirect });
+      }
+    }
+    console.log('Done.\n');
   }
-  console.log('Done.\n');
 
   // 8. Check external links
-  if (uniqueExternalUrls.length > 0) {
+  if (!internalOnly && uniqueExternalUrls.length > 0) {
     const selfLinkUrls = new Set(errors.filter(e => e.status === 'SELF_LINK').map(e => e.url));
     const urlsToCheck = uniqueExternalUrls.filter(url => !selfLinkUrls.has(url));
 
