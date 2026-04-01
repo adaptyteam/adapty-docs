@@ -671,11 +671,12 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
   // Covers files translated via batch (which stores only fileHash, no sections),
   // and the post-migration run where the cache was discarded due to stale IDs.
   //
-  // Uses the same raw-block matching as seedSectionCache: heading sections are matched
-  // by position; para chunks are seeded by matching raw blocks between en and zh heading
-  // sections (same structure → same block count in 94%+ of articles). This means the
-  // FIRST incremental run on a changed file also seeds the section cache fully, so
-  // unchanged para chunks get cache hits and changed ones get patchCodeBlocks.
+  // Para chunks are only seeded when the file hash is unchanged (cold cache recovery).
+  // When the file has changed (we are in toTranslate), para chunks are intentionally
+  // NOT seeded: seeding stores the current English hash as contentHash, which would
+  // make prose-changed paragraphs look like cache hits, causing the zh to go stale.
+  // Heading sections are always safe to seed (they are structural, never sent to Claude).
+  const fileHashChanged = storedData?.fileHash && storedData.fileHash !== (await fileHash(file));
   if (!storedData?.sections) {
     const translatedPath = path.join(localesDir, `${basename}.mdx`);
     try {
@@ -700,7 +701,8 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
           if (!isParaChunk) {
             const zhContent = zhByHeadId.get(s.id);
             if (zhContent) seeded[s.id] = makeSeedEntry(s.content, zhContent);
-          } else {
+          } else if (!fileHashChanged) {
+            // Skip para chunk seeding when file changed — prose-changed chunks must go to Claude.
             const headId = s.id.replace(/-p[0-9a-f]{8}$/, '');
             const pairs  = paraChunksByHead.get(headId);
             if (!pairs) continue;
