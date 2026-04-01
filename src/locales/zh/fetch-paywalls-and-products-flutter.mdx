@@ -1,0 +1,123 @@
+---
+title: "在 Flutter SDK 中获取远程配置付费墙的付费墙和产品"
+description: "在 Adapty Flutter SDK 中获取付费墙和产品，以增强用户变现能力。"
+metadataTitle: "获取付费墙与产品 | Flutter SDK | Adapty 文档"
+keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'Flutter']
+displayed_sidebar: sdkflutter
+rank: 85
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md'; 
+
+在展示远程配置和自定义付费墙之前，您需要先获取相关信息。请注意，本主题涉及远程配置和自定义付费墙。有关获取付费墙编辑工具自定义付费墙的指导，请参阅[获取付费墙编辑工具付费墙及其配置](flutter-get-pb-paywalls)。
+
+<SampleApp />
+
+<details>
+   <summary>在您开始在移动应用中获取付费墙和产品之前（点击展开）</summary>
+
+   1. 在 Adapty 看板中[创建您的产品](create-product)。
+
+2. 在 Adapty 看板中[创建付费墙并将产品添加到付费墙](create-paywall)。
+
+3. 在 Adapty 看板中[创建版位并将付费墙添加到版位](create-placement)。
+
+4. 在您的移动应用中[安装 Adapty SDK](sdk-installation-flutter)。
+</details>
+
+## 获取付费墙信息 \{#fetch-paywall-information\}
+
+在 Adapty 中，[产品](product)是来自 App Store 和 Google Play 的产品组合。这些跨平台产品被整合到付费墙中，使您能够在特定的移动应用版位中展示它们。
+
+要显示产品，您需要使用 `getPaywall` 方法从某个[版位](placements)获取[付费墙](paywalls)。
+
+:::important
+**不要硬编码产品 ID。** 您唯一需要硬编码的 ID 是版位 ID。付费墙是远程配置的，因此产品数量和可用优惠随时可能发生变化。您的应用必须动态处理这些变化——如果付费墙今天返回两个产品，明天返回三个，则无需修改代码即可显示所有产品。
+:::
+
+```dart showLineNumbers
+try {
+  final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
+  // the requested paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为由一个或多个以减号（**-**）分隔的子标签组成的语言代码。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言代码及其推荐用法的更多信息，请参阅[本地化与语言代码](flutter-localizations-and-locale-codes)。</p> |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 将尝试从服务器加载数据，如果失败则返回缓存数据。我们推荐此方式，因为它确保用户始终获得最新数据。</p><p></p><p>但是，如果您认为用户网络不稳定，可以考虑使用 `.returnCacheDataElseLoad`，在缓存存在时返回缓存数据。在这种情况下，用户可能无法获取最新数据，但无论网络状况多差，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，重启应用后缓存保持不变，只有在卸载应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 在两层中存储付费墙：上述定期更新的缓存和[备用付费墙](flutter-use-fallback-paywalls)。我们还使用 CDN 加快付费墙获取速度，并在 CDN 不可达时使用独立的备用服务器。该系统旨在确保您始终获得最新版本的付费墙，同时在网络连接不佳的情况下也能保证可靠性。</p> |
+| **loadTimeout** | 默认值：5 秒 | <p>该值限制此方法的超时时间。如果达到超时，将返回缓存数据或本地备用数据。</p><p></p><p>请注意，在极少数情况下，此方法的超时时间可能略晚于 `loadTimeout` 中指定的时间，因为该操作可能在内部由不同请求组成。</p> |
+
+不要硬编码产品 ID！由于付费墙是远程配置的，可用产品、产品数量以及特殊优惠（如免费试用）可能随时变化。请确保您的代码能够动态处理这些情况。  
+例如，如果您最初获取了 2 个产品，您的应用应显示这 2 个产品。但是，如果您后来获取了 3 个产品，您的应用应显示全部 3 个，而无需修改任何代码。唯一需要硬编码的是版位 ID。
+
+响应参数：
+
+| 参数 | 描述 |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | 一个 [`AdaptyPaywall`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywall-class.html) 对象，包含：产品 ID 列表、付费墙标识符、远程配置及其他几个属性。 |
+
+## 获取产品 \{#fetch-products\}
+
+获取付费墙后，您可以查询与之对应的产品数组：
+
+```dart showLineNumbers
+try {
+  final products = await Adapty().getPaywallProducts(paywall: paywall);
+  // the requested products array
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+响应参数：
+
+| 参数 | 描述 |
+| :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Products  | [`AdaptyPaywallProduct`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywallProduct-class.html) 对象列表，包含：产品标识符、产品名称、价格、货币、订阅时长及其他几个属性。 |
+
+在实现自定义付费墙设计时，您可能需要访问 [`AdaptyPaywallProduct`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywallProduct-class.html) 对象中的这些属性。下面列出了最常用的属性，有关所有可用属性的完整详情，请参阅链接文档。
+
+| 属性 | 描述 |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Title（标题）** | 要显示产品标题，请使用 `product.localizedTitle`。请注意，本地化基于用户选择的商店国家/地区，而非设备本身的语言区域设置。 |
+| **Price（价格）** | 要显示本地化版本的价格，请使用 `product.price.localizedString`。该本地化基于设备的语言区域信息。您也可以使用 `product.price.amount` 以数字形式访问价格，该值以本地货币提供。要获取关联的货币符号，请使用 `product.price.currencySymbol`。 |
+| **Subscription Period（订阅周期）** | 要显示订阅周期（例如周、月、年等），请使用 `product.subscription?.localizedPeriod`。该本地化基于设备的语言区域设置。要以编程方式获取订阅周期，请使用 `product.subscription?.period`。从中可以访问 `unit` 枚举以获取时长（即天、周、月、年或未知）。`numberOfUnits` 值将获取周期单位的数量。例如，对于季度订阅，`unit` 属性中将显示 `AdaptyPeriodUnit.month`，`numberOfUnits` 属性中将显示 `3`。 |
+| **Introductory Offer（新用户优惠）** | 要显示标记或其他指示符以表明订阅包含新用户优惠，请查看 `product.subscription?.offer?.phases` 属性。这是一个最多可包含两个折扣阶段的列表：免费试用阶段和优惠价格阶段。每个阶段对象包含以下有用属性：<br/>• `paymentMode`：枚举值为 `AdaptyPaymentMode.freeTrial`、`AdaptyPaymentMode.payAsYouGo`、`AdaptyPaymentMode.payUpFront` 和 `AdaptyPaymentMode.unknown`。免费试用为 `AdaptyPaymentMode.freeTrial` 类型。<br/>• `price`：折扣价格（数字形式）。免费试用时此处为 `0`。<br/>• `localizedNumberOfPeriods`：使用设备语言区域本地化的字符串，描述优惠时长。例如，三天试用优惠在此字段中显示为 `3 days`。<br/>• `subscriptionPeriod`：或者，您可以使用此属性获取优惠周期的各项详情。其工作方式与上一节描述的订阅周期相同。<br/>• `localizedSubscriptionPeriod`：针对用户语言区域格式化的折扣订阅周期。 |
+
+## 使用默认目标受众付费墙加速付费墙获取 \{#speed-up-paywall-fetching-with-default-audience-paywall\}
+
+通常情况下，付费墙几乎可以立即获取，因此您无需担心加速此过程。但是，在您拥有大量目标受众和付费墙，且用户网络连接较弱的情况下，获取付费墙可能需要比预期更长的时间。在这种情况下，您可能希望显示默认付费墙，以确保流畅的用户体验，而不是完全不显示付费墙。
+
+为解决此问题，您可以使用 `getPaywallForDefaultAudience` 方法，该方法为 **All Users** 目标受众获取指定版位的付费墙。但是，请务必了解，推荐的方式是通过 `getPaywall` 方法获取付费墙，详见上方的[获取付费墙信息](fetch-paywalls-and-products-flutter#fetch-paywall-information)部分。
+
+:::warning
+为什么我们推荐使用 `getPaywall`
+
+`getPaywallForDefaultAudience` 方法存在一些重要缺点：
+
+- **潜在的向后兼容性问题**：如果您需要为不同的应用版本（当前版本和未来版本）显示不同的付费墙，可能会面临挑战。您要么必须设计支持当前（旧版）版本的付费墙，要么接受使用当前（旧版）版本的用户可能遇到付费墙无法渲染的问题。
+- **失去精准定向**：所有用户都将看到为 **All Users** 目标受众设计的同一付费墙，这意味着您将失去个性化定向能力（包括基于国家/地区、营销归因或您自定义属性的定向）。
+
+如果您愿意接受这些缺点以换取更快的付费墙获取速度，请按以下方式使用 `getPaywallForDefaultAudience` 方法。否则，请继续使用[上述](#fetch-paywall-information)的 `getPaywall`。
+:::
+
+:::note
+Flutter SDK 暂不支持 `getPaywallForDefaultAudience` 方法，但即将添加支持。
+:::
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为由一个或多个以减号（**-**）分隔的子标签组成的语言代码。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言代码及其推荐用法的更多信息，请参阅[本地化与语言代码](flutter-localizations-and-locale-codes)。</p> |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 将尝试从服务器加载数据，如果失败则返回缓存数据。我们推荐此方式，因为它确保用户始终获得最新数据。</p><p></p><p>但是，如果您认为用户网络不稳定，可以考虑使用 `.returnCacheDataElseLoad`，在缓存存在时返回缓存数据。在这种情况下，用户可能无法获取最新数据，但无论网络状况多差，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，重启应用后缓存保持不变，只有在卸载应用或手动清理时才会被清除。</p> |

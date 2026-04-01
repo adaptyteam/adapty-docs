@@ -1,0 +1,456 @@
+---
+title: "在 Flutter SDK 中处理用户引导事件"
+description: "使用 Adapty 在 Flutter 中处理用户引导相关事件。"
+metadataTitle: "在 Flutter 中处理用户引导事件 | Adapty 文档"
+toc_max_heading_level: 4
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Details from '@site/src/components/Details';
+
+通过编辑工具配置的用户引导会生成事件，供您的应用响应。处理这些事件的方式取决于您使用的展示方式：
+
+- **全屏展示**：需要设置全局事件观察者，用于处理所有用户引导视图的事件
+- **嵌入式组件**：直接通过组件内联回调参数处理事件
+
+开始前，请确保：
+
+1. 已安装 [Adapty Flutter SDK](sdk-installation-flutter) 3.8.0 或更高版本。
+2. 已[创建用户引导](create-onboarding)。
+3. 已将用户引导添加至[版位](placements)。
+
+## 全屏展示事件 \{#full-screen-presentation-events\}
+
+### 设置事件观察者 \{#set-up-event-observer\}
+
+要处理全屏用户引导的事件，请实现 `AdaptyUIOnboardingsEventsObserver` 并在展示前进行设置：
+
+```javascript showLineNumbers title="Flutter"
+AdaptyUI().setOnboardingsEventsObserver(this);
+
+try {
+  await onboardingView.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+### 处理事件 \{#handle-events\}
+
+在您的观察者中实现以下方法：
+
+```javascript showLineNumbers title="Flutter"
+void onboardingViewDidFinishLoading(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+) {
+  // Onboarding finished loading
+}
+
+void onboardingViewDidFailWithError(
+  AdaptyUIOnboardingView view,
+  AdaptyError error,
+) {
+  // Handle loading errors
+}
+
+void onboardingViewOnCloseAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  // Handle close action
+  view.dismiss();
+}
+
+void onboardingViewOnPaywallAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  // Dismiss onboarding before presenting paywall
+  view.dismiss().then((_) {
+    _openPaywall(actionId);
+  });
+}
+
+void onboardingViewOnCustomAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  // Handle custom actions
+}
+
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Handle user input updates
+}
+
+void onboardingViewOnAnalyticsEvent(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  AdaptyOnboardingsAnalyticsEvent event,
+) {
+  // Track analytics events
+}
+```
+
+## 嵌入式组件事件 \{#embedded-widget-events\}
+
+使用 `AdaptyUIOnboardingPlatformView` 时，您可以直接通过组件内联回调参数处理事件。请注意，事件将同时发送至组件回调和全局观察者（如已设置），但全局观察者是可选的：
+
+```javascript showLineNumbers title="Flutter"
+AdaptyUIOnboardingPlatformView(
+  onboarding: onboarding,
+  onDidFinishLoading: (meta) {
+    // Onboarding finished loading
+  },
+  onDidFailWithError: (error) {
+    // Handle loading errors
+  },
+  onCloseAction: (meta, actionId) {
+    // Handle close action
+  },
+  onPaywallAction: (meta, actionId) {
+    _openPaywall(actionId);
+  },
+  onCustomAction: (meta, actionId) {
+    // Handle custom actions
+  },
+  onStateUpdatedAction: (meta, elementId, params) {
+    // Handle user input updates
+  },
+  onAnalyticsEvent: (meta, event) {
+    // Track analytics events
+  },
+)
+```
+
+## 事件类型 \{#event-types\}
+
+以下章节介绍了您可以处理的各类事件，无论您使用哪种展示方式。
+
+### 处理自定义动作 \{#handle-custom-actions\}
+
+在编辑工具中，您可以为按钮添加 **custom** 动作并为其分配 ID。
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+然后，您可以在代码中使用此 ID 并将其作为自定义动作处理。例如，当用户点击 **Login** 或 **Allow notifications** 等自定义按钮时，委托方法 `onboardingController` 将被触发，携带 `.custom(id:)` 情况，且 `actionId` 参数即为编辑工具中的 **Action ID**。您可以自定义 ID，例如 "allowNotifications"。
+
+```javascript
+// Full-screen presentation
+void onboardingViewOnCustomAction(
+    AdaptyUIOnboardingView view,
+    AdaptyUIOnboardingMeta meta,
+    String actionId,
+) {
+    switch (actionId) {
+        case 'login':
+            _login();
+            break;
+        case 'allow_notifications':
+            _allowNotifications();
+            break;
+    }
+}
+
+// Embedded widget
+onCustomAction: (meta, actionId) {
+    _handleCustomAction(actionId);
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+  "actionId": "allowNotifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+### 用户引导加载完成 \{#finishing-loading-onboarding\}
+
+当用户引导加载完成时，将触发此事件：
+
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewDidFinishLoading(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+) {
+  print('Onboarding loaded: ${meta.onboardingId}');
+}
+
+// Embedded widget
+onDidFinishLoading: (meta) {
+  print('Onboarding loaded: ${meta.onboardingId}');
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+### 关闭用户引导 \{#closing-onboarding\}
+
+当用户点击分配了 **Close** 动作的按钮时，用户引导被视为已关闭。
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+请注意，您需要自行管理用户关闭用户引导时的行为。例如，您需要停止显示用户引导本身。
+:::
+
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewOnCloseAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  await view.dismiss();
+}
+
+// Embedded widget
+onCloseAction: (meta, actionId) {
+  Navigator.of(context).pop();
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+
+</Details>
+
+### 打开付费墙 \{#opening-a-paywall\}
+
+:::tip
+如果您希望在用户引导内部打开付费墙，请处理此事件。如果您希望在用户引导关闭后打开付费墙，有一种更直接的方式——处理关闭动作并直接打开付费墙，无需依赖事件数据。
+:::
+
+当用户点击用于打开付费墙的按钮时，您将获得[手动设置](get-paid-in-onboardings)的按钮动作 ID。在用户引导中使用付费墙最无缝的方式是将动作 ID 设置为付费墙版位 ID：
+
+请注意，在 iOS 上，同一时间只能显示一个视图（付费墙或用户引导）。如果您在用户引导上方展示付费墙，将无法以编程方式控制后台的用户引导。尝试关闭用户引导将导致付费墙被关闭，而用户引导仍然可见。为避免这种情况，请始终在展示付费墙之前先关闭用户引导视图。
+
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewOnPaywallAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  // Dismiss onboarding before presenting paywall
+  view.dismiss().then((_) {
+    _openPaywall(actionId);
+  });
+}
+
+Future<void> _openPaywall(String actionId) async {
+  // Implement your paywall opening logic here
+}
+
+// Embedded widget
+onPaywallAction: (meta, actionId) {
+  _openPaywall(actionId);
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+### 跟踪导航 \{#tracking-navigation\}
+
+在用户引导流程中发生各种导航相关事件时，您将收到分析事件：
+
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewOnAnalyticsEvent(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  AdaptyOnboardingsAnalyticsEvent event,
+) {
+  trackEvent(event.type, meta.onboardingId);
+}
+
+// Embedded widget
+onAnalyticsEvent: (meta, event) {
+  trackEvent(event.type, meta.onboardingId);
+}
+```
+
+`event` 对象可以是以下类型之一：
+
+| 类型 | 描述 |
+|------------|-------------|
+| `onboardingStarted` | 当用户引导已加载时 |
+| `screenPresented` | 当任意屏幕显示时 |
+| `screenCompleted` | 当屏幕完成时。包含可选的 `elementId`（已完成元素的标识符）和可选的 `reply`（用户的响应）。当用户执行任意操作离开当前屏幕时触发。 |
+| `secondScreenPresented` | 当第二个屏幕显示时 |
+| `userEmailCollected` | 当通过输入字段收集到用户邮箱时触发 |
+| `onboardingCompleted` | 当用户到达 ID 为 `final` 的屏幕时触发。如需此事件，请[将 `final` ID 分配给最后一个屏幕](design-onboarding)。 |
+| `unknown` | 用于任何无法识别的事件类型。包含 `name`（未知事件的名称）和 `meta`（附加元数据） |
+
+每个事件均包含以下 `meta` 信息：
+
+| 字段 | 描述 |
+|------------|-------------|
+| `onboardingId` | 用户引导流程的唯一标识符 |
+| `screenClientId` | 当前屏幕的标识符 |
+| `screenIndex` | 当前屏幕在流程中的位置 |
+| `screensTotal` | 流程中的屏幕总数 |
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+
+```
+
+</Details>

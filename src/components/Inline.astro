@@ -1,0 +1,58 @@
+---
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+interface Props {
+  id: string;
+  alt: string;
+  width?: string;
+}
+
+const { id, alt, width = '20px' } = Astro.props;
+
+const isSvg = id.endsWith('.svg');
+let svgContent: string | undefined;
+
+if (isSvg) {
+  const assetsDir = fileURLToPath(new URL('../assets/Inline', import.meta.url));
+  const normalizedId = id.split('/').pop() || id;
+  const svgPath = `${assetsDir}/${normalizedId}`;
+  try {
+    svgContent = fs.readFileSync(svgPath, 'utf-8');
+  } catch {
+    // fall through to code fallback
+  }
+}
+
+const allImages = isSvg ? {} : import.meta.glob<{ default: ImageMetadata }>(
+  '/src/assets/Inline/**/*.{png,jpg,jpeg,webp,gif}',
+  { eager: true }
+);
+
+const normalizedId = id.split('/').pop() || id;
+let imageSrc: ImageMetadata | undefined;
+
+if (!isSvg) {
+  for (const [path, module] of Object.entries(allImages)) {
+    if (path.split('/').pop() === normalizedId) {
+      imageSrc = module.default;
+      break;
+    }
+  }
+}
+---
+
+{svgContent ? (
+  <span class="inline-icon" role="presentation" aria-hidden="true" set:html={svgContent} />
+) : imageSrc ? (
+  <img
+    src={imageSrc.src}
+    alt={alt}
+    width={parseInt(width.replace('px', '')) || 20}
+    class="inline-icon"
+    style={`width: ${width}; height: auto;`}
+  />
+) : (
+  <code>{alt}</code>
+)}
+

@@ -8,12 +8,15 @@ interface Props {
 }
 
 const { ids } = Astro.props;
-const { slug: currentSlug } = Astro.params;
+const { slug: currentSlug, locale } = Astro.params;
 
-// 1. Fetch all docs for descriptions
+// 1. Fetch all docs for descriptions (English fallback)
 const allDocs = await getCollection('docs');
 
-// 2. Fetch all sidebars to resolve labels
+// 2. Fetch localized entries if we're on a locale page
+const allLocales = locale ? await getCollection('locales') : [];
+
+// 3. Fetch all sidebars to resolve labels
 const sidebarDir = path.resolve('./src/data/sidebars');
 const sidebarFiles = (await fs.readdir(sidebarDir)).filter(f => f.endsWith('.json'));
 
@@ -23,6 +26,18 @@ const allSidebars = await Promise.all(
     return JSON.parse(content);
   })
 );
+
+// 4. Load localized sidebar labels if available
+let localizedLabels: Record<string, { value: string }> = {};
+if (locale) {
+  try {
+    const labelsPath = path.resolve(`./src/locales/${locale}/_sidebar-labels.json`);
+    const raw = await fs.readFile(labelsPath, 'utf-8');
+    localizedLabels = JSON.parse(raw);
+  } catch {
+    // No labels file for this locale — use English labels
+  }
+}
 
 // Helper to find items in sidebar
 function findInSidebar(items, targetId) {
@@ -40,7 +55,7 @@ function findInSidebar(items, targetId) {
 // Helper to get labels for a list of items/ids
 function resolveCardData(targetIds) {
   return targetIds.map(targetId => {
-    // Find label in any sidebar
+    // Find English label in any sidebar
     let label = targetId;
     for (const sidebar of allSidebars) {
       const found = findInSidebar(sidebar, targetId);
@@ -50,19 +65,44 @@ function resolveCardData(targetIds) {
       }
     }
 
-    // Find description in content collection
-    const doc = allDocs.find(d => {
+    // Apply localized label if available (by article id or by English label)
+    if (locale) {
+      const byId = localizedLabels[targetId];
+      const byLabel = localizedLabels[label];
+      if (byId?.value) label = byId.value;
+      else if (byLabel?.value) label = byLabel.value;
+    }
+
+    // Find localized description first, then fall back to English
+    let description = '';
+    if (locale) {
+      const localeEntry = allLocales.find(e => {
+        if (!e.id || typeof e.id !== 'string') return false;
+        // IDs in the locales collection are like "zh/article-name"
+        const basename = e.id.split('/').pop()?.replace(/\.(md|mdx)$/, '');
+        return e.id === `${locale}/${targetId}` || basename === targetId && e.id.startsWith(`${locale}/`);
+      });
+      description = localeEntry?.data.description || '';
+    }
+    if (!description) {
+      const doc = allDocs.find(d => {
         if (!d.id || typeof d.id !== 'string') return false;
         const idWithoutExt = d.id.replace(/\.(md|mdx)$/, '');
         const basename = idWithoutExt.split('/').pop();
         return idWithoutExt === targetId || basename === targetId || d.id === targetId;
-    });
+      });
+      description = doc?.data.description || '';
+    }
+
+    const base = locale
+      ? `${import.meta.env.BASE_URL}/${locale}/${targetId}`
+      : `${import.meta.env.BASE_URL}/${targetId}`;
 
     return {
       id: targetId,
       label,
-      description: doc?.data.description || 'Learn more about this topic in our documentation.',
-      href: `${import.meta.env.BASE_URL}/${targetId}`.replace(/\/+/g, '/')
+      description,
+      href: base.replace(/\/+/g, '/')
     };
   });
 }

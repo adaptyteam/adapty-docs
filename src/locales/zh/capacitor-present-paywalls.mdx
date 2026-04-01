@@ -1,0 +1,84 @@
+---
+title: "在 Capacitor SDK 中展示付费墙编辑工具付费墙"
+description: "在 Capacitor 应用中使用 Adapty 展示付费墙。"
+metadataTitle: "在 Capacitor 中展示付费墙 | Adapty 文档"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md'; 
+
+如果您已使用付费墙编辑工具自定义了付费墙，则无需在移动应用代码中手动处理其渲染逻辑来向用户展示它。此类付费墙已同时包含展示内容和展示方式。
+
+:::warning
+本指南仅适用于**付费墙编辑工具付费墙**。远程配置付费墙的展示流程有所不同。如需展示**远程配置付费墙**，请参阅[渲染由远程配置设计的付费墙](present-remote-config-paywalls)。
+:::
+
+要展示付费墙，请对由 [`createPaywallView`](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) 方法创建的 `view` 调用 `view.present()` 方法。每个 `view` 只能使用一次。如果需要再次展示付费墙，请重新调用 `createPaywallView` 以创建新的 `view` 实例。
+
+:::warning
+
+在未重新创建 `view` 的情况下复用同一个 `view` 可能会导致错误。
+:::
+
+```typescript showLineNumbers
+import { adapty, createPaywallView } from '@adapty/capacitor';
+
+const view = await createPaywallView(paywall);
+
+view.setEventHandlers({
+  onUrlPress(url) {
+    window.open(url, '_blank');
+    return false; 
+  },
+});
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+## 使用开发者自定义计时器 \{#use-developer-defined-timer\}
+
+要在移动应用中使用开发者自定义计时器，请使用 `timerId`，本示例中为 `CUSTOM_TIMER_NY`，即您在 Adapty 看板中设置的开发者自定义计时器的 **Timer ID**。这可确保您的应用动态更新计时器并显示正确的值，例如 `13d 09h 03m 34s`（由计时器结束时间（如元旦）减去当前时间计算得出）。
+
+```typescript showLineNumbers
+const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+
+const view = await createPaywallView(paywall, { customTimers });
+```
+
+在本示例中，`CUSTOM_TIMER_NY` 是您在 Adapty 看板中设置的开发者自定义计时器的 **Timer ID**。该计时器可确保您的应用动态更新计时器并显示正确的值，例如 `13d 09h 03m 34s`（由计时器结束时间（如元旦）减去当前时间计算得出）。
+
+## 显示对话框 \{#show-dialog\}
+
+当付费墙视图在 Android 上展示时，请使用此方法代替原生警告对话框。在 Android 上，常规警告会显示在付费墙视图后方，导致用户无法看到。此方法可确保在所有平台上对话框正确显示于付费墙上方。
+
+```typescript showLineNumbers title="Capacitor"
+try {
+  const action = await view.showDialog({
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  });
+  
+  if (action === 'secondary') {
+    // User confirmed - close the paywall
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (error) {
+  // handle error
+}
+```
+
+## 配置 iOS 展示样式 \{#configure-ios-presentation-style\}
+
+通过向 `present()` 方法传递 `iosPresentationStyle` 参数，可配置付费墙在 iOS 上的展示方式。该参数接受 `'full_screen'`（默认值）或 `'page_sheet'` 值。
+
+```typescript showLineNumbers
+await view.present({ iosPresentationStyle: 'page_sheet' });
+```

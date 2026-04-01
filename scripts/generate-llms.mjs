@@ -39,6 +39,13 @@ async function findDocFile(docId) {
     return search(DOCS_BASE);
 }
 
+// Check if a document is marked as draft
+function isDraft(content) {
+    const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
+    if (!match) return false;
+    return /^draft:\s*true\s*$/m.test(match[1]);
+}
+
 // Extract description from MDX frontmatter
 function extractDescription(content) {
     const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
@@ -77,6 +84,8 @@ async function buildDescriptionMap(sidebarFiles) {
         if (filePath) {
             try {
                 const content = await fs.readFile(filePath, 'utf-8');
+                // Skip draft documents
+                if (isDraft(content)) continue;
                 const desc = extractDescription(content);
                 if (desc) descriptions.set(docId, desc);
             } catch { /* skip */ }

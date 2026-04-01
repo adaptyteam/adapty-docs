@@ -1,0 +1,69 @@
+---
+title: "在 iOS SDK 中使用本地化和区域代码"
+description: "管理应用本地化和区域代码，让您的 iOS 应用触达全球用户。"
+metadataTitle: "管理本地化与区域代码 | Adapty 文档"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+
+## 为什么这很重要 \{#why-this-is-important\}
+
+区域代码会在几种场景中发挥作用——例如，当您尝试为应用当前的本地化版本获取正确的付费墙时。
+
+由于区域代码较为复杂，且在不同平台之间可能存在差异，我们为所有支持的平台统一采用内部标准。然而，正因为这些代码较为复杂，了解您究竟向我们的服务器发送了什么内容以获取正确的本地化版本，以及后续会发生什么，对您来说非常重要——这样您才能始终收到预期的结果。
+
+## Adapty 的区域代码标准 \{#locale-code-standard-at-adapty\}
+
+对于区域代码，Adapty 使用略经修改的 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：每个代码由小写子标签组成，以连字符分隔。示例：`en`（英语）、`pt-br`（葡萄牙语（巴西））、`zh`（简体中文）、`zh-hant`（繁体中文）。
+
+## 区域代码匹配 \{#locale-code-matching\}
+
+当 Adapty 收到客户端 SDK 发来的带有区域代码的请求，并开始查找对应的付费墙本地化版本时，将执行以下步骤：
+
+1. 传入的区域字符串转换为小写，并将所有下划线（`_`）替换为连字符（`-`）
+2. 随后查找与该区域代码完全匹配的本地化版本
+3. 若未找到匹配项，则截取第一个连字符前的子字符串（例如 `pt-br` 对应 `pt`），并查找与之匹配的本地化版本
+4. 若仍未找到匹配项，则返回默认的 `en` 本地化版本
+
+这样一来，发送了 `'pt_BR'` 的 iOS 设备、发送了 `pt-BR` 的 Android 设备以及发送了 `pt-br` 的其他设备，都将获得相同的结果。
+
+## 实现本地化：推荐方式 \{#implementing-localizations-recommended-way\}
+
+如果您正在考虑本地化问题，很可能您已经在项目中使用了本地化字符串文件。如果是这种情况，我们建议在每个对应本地化的文件中添加一个键值对，用于存储预期的 Adapty 区域代码。然后在调用我们的 SDK 时提取该键对应的值，如下所示：
+
+```swift showLineNumbers
+// 1. Modify your Localizable.strings files
+
+/*
+Localizable.strings - Spanish
+*/
+adapty_paywalls_locale = "es";
+/*
+Localizable.strings - Portuguese (Brazil)
+*/
+adapty_paywalls_locale = "pt-br";
+// 2. Extract and use the locale code
+let locale = NSLocalizedString("adapty_paywalls_locale", comment: "")
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+通过这种方式，您可以完全掌控每位用户将获取哪个本地化版本。
+
+## 实现本地化：其他方式 \{#implementing-localizations-the-other-way\}
+
+您也可以在不为每个本地化版本显式定义区域代码的情况下获得类似（但不完全相同）的结果。这意味着从您平台提供的其他对象中提取区域代码，如下所示：
+
+```swift showLineNumbers
+let locale = Locale.current.identifier
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+请注意，我们不推荐这种方式，原因如下：
+
+1. 在 iOS 上，首选语言与当前区域设置并不相同。如果您希望正确选取本地化版本，要么依赖 Apple 的逻辑（如果您使用的是基于本地化字符串文件的推荐方式，该逻辑可开箱即用），要么自行重现该逻辑。
+2. 很难预测 Adapty 服务器实际会收到什么内容。例如，在 iOS 上，设备可能会生成类似 `ar_OM@numbers='latn'` 的区域标识并发送给我们的服务器。对于此类请求，您得到的将不是您期望的 `ar-om` 本地化版本，而是 `ar`，这可能出乎意料。
+
+如果您仍决定使用这种方式，请确保已覆盖所有相关的使用场景。

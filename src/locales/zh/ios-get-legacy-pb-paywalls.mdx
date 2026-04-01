@@ -1,0 +1,83 @@
+---
+title: "在 iOS SDK 中获取旧版付费墙编辑工具付费墙"
+description: "使用 Adapty SDK 在 iOS 应用中获取旧版 PB 付费墙。"
+metadataTitle: "获取旧版 PB 付费墙 | iOS SDK | Adapty 文档"
+displayed_sidebar: sdkios
+---
+
+在 [使用付费墙编辑工具在 Adapty 控制台中设计好付费墙的视觉部分](adapty-paywall-builder-legacy) 之后，您可以在 iOS 应用中展示它。此过程的第一步是获取与版位关联的付费墙及其视图配置，具体如下所述。
+
+:::warning
+
+本指南仅适用于**旧版付费墙编辑工具付费墙**，需要 SDK v2.x 或更早版本。对于使用不同版本的付费墙编辑工具设计的付费墙以及远程配置付费墙，获取付费墙的流程有所不同。
+
+- 若要获取**新版付费墙编辑工具付费墙**，请参阅 [获取新版付费墙编辑工具付费墙及其配置](get-pb-paywalls)。
+- 若要获取**远程配置付费墙**，请参阅 [获取远程配置付费墙的付费墙和产品](fetch-paywalls-and-products)。
+
+:::
+
+<details>
+   <summary>在您开始在 iOS 应用中展示付费墙之前（点击展开）</summary>
+
+   1. 在 Adapty 控制台中[创建产品](create-product)。
+2. 在 Adapty 控制台中[创建付费墙并将产品添加到其中](create-paywall)。
+3. 在 Adapty 控制台中[创建版位并将付费墙添加到其中](create-placement)。
+4. 在您的 iOS 应用中[安装 Adapty SDK 和 AdaptyUI SDK](sdk-installation-ios)。
+</details>
+
+## 获取使用付费墙编辑工具设计的付费墙 \{#fetch-paywall-designed-with-paywall-builder\}
+
+如果您[使用付费墙编辑工具设计了付费墙](adapty-paywall-builder-legacy)，则无需在 iOS 应用代码中关心如何渲染并向用户展示它。此类付费墙同时包含展示内容和展示方式。尽管如此，您仍需通过版位获取其 ID、视图配置，然后在 iOS 应用中呈现它。
+
+为确保最佳性能，尽早获取付费墙及其[视图配置](#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)至关重要，这样可以在向用户呈现之前留出足够的时间下载图片。
+
+使用 `getPaywall` 方法获取付费墙：
+
+```swift showLineNumbers
+Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | 所需[版位](placements)的标识符。这是您在 Adapty 控制台中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-paywall-locale-in-adapty-paywall-builder)的标识符。该参数应为由一个或两个子标签组成的语言代码，子标签之间以减号（**-**）分隔。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言区域代码及推荐使用方式的更多信息，请参阅[本地化与语言区域代码](localizations-and-locale-codes)。</p> |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若失败则返回缓存数据。我们推荐此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但是，如果您认为用户的网络连接不稳定，可以考虑使用 `.returnCacheDataElseLoad`，在缓存存在时返回缓存数据。在这种情况下，用户可能无法获取最新数据，但无论网络状况如何，都能体验到更快的加载速度。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍会保留，仅在卸载应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 以两层方式在本地存储付费墙：上述定期更新的缓存和[备用付费墙](fallback-paywalls)。我们还使用 CDN 加速付费墙的获取，并配备独立的备用服务器以应对 CDN 不可达的情况。该系统旨在确保您始终获得最新版本的付费墙，同时在网络连接不稳定的情况下也能保持可靠性。</p> |
+
+**请勿硬编码产品 ID。** 您唯一应该硬编码的 ID 是版位 ID。付费墙是远程配置的，因此产品数量和可用优惠随时可能发生变化。您的应用必须动态处理这些变化——如果今天付费墙返回两个产品，明天返回三个，则应无需修改代码即可全部展示。
+
+响应参数：
+
+| 参数 | 描述 |
+| :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall | 一个 [`AdaptyPaywall`](https://swift.adapty.io/documentation/adapty/adaptypaywall) 对象，包含产品 ID 列表、付费墙标识符、远程配置及其他几个属性。 |
+
+## 获取使用付费墙编辑工具设计的付费墙的视图配置 \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+获取付费墙后，检查其是否包含 `viewConfiguration`，这表明该付费墙是使用付费墙编辑工具创建的。这将指导您如何展示该付费墙。如果存在 `viewConfiguration`，则将其作为付费墙编辑工具付费墙处理；如果不存在，则[将其作为远程配置付费墙处理](present-remote-config-paywalls)。
+
+使用 `getViewConfiguration` 方法加载视图配置。
+
+```swift showLineNumbers
+import Adapty
+import AdaptyUI
+
+do {
+    guard paywall.hasViewConfiguration else {
+        //  use your custom logic
+        return
+    }
+
+    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
+    
+    // use loaded configuration
+} catch {
+    // handle the error
+}
+```
