@@ -102,8 +102,12 @@ See `references/simplified-technical-english.md` → Value-Oriented Language
 
 Check for:
 - Ambiguous pronouns: "this", "it", "that" without clear antecedents
+- **Pronoun at the start of a callout**: "It should always be..." — the visual break makes the antecedent unresolvable. Replace with the explicit noun: "**Navigate to screen** should always be..."
 - Anthropomorphizing UI elements: ❌ "The page manages your settings" → ✅ "The page lets you manage your settings"
 - Multiple possible interpretations; missing cause-and-effect context
+- **Inaccurate metaphors**: a metaphor that contradicts the described behavior. ❌ "Works like a checklist" when evaluation stops at the first match (if/else-if/else) → remove or replace with an accurate analogy
+- **Self-contradicting callouts**: e.g., saying an action "overrides" a setting and then saying they're "interchangeable" in the same callout — both can't be true. Flag and rewrite to resolve
+- **Inconsistent naming for the same UI element**: "Design tab" in one section and "Design panel" in another for the same control. Pick one term and apply throughout
 
 ### 5. Voice and Verb Forms
 
@@ -146,6 +150,9 @@ See `references/simplified-technical-english.md` → Instruction Pattern
 
 Check for: missing intro before first heading, H4 overuse, non-parallel headings at same level, text blocks over 300 words without structure, consecutive callouts, callouts that interrupt flow.
 
+- **Title/description scope mismatch**: the frontmatter `title` or `description` claims coverage the article doesn't provide. ❌ `description: "Show or hide elements and screens"` when only elements are covered → fix to match actual scope
+- **Product/feature name capitalization**: "Flow Builder" not "Flow builder". Check that multi-word product names are consistently capitalized as proper nouns throughout
+
 See `references/article-structure.md`
 
 ### 9. Links and Images
@@ -166,6 +173,10 @@ open _temp/link-report.html
 
 Additionally check images manually: image files exist, `@assets/` not `@asset/`, descriptive alt text.
 
+**Alt text checks:**
+- Missing alt entirely: `<ZoomImage id="x.webp" width="500px" />` — flag, always required
+- Generic alt text copied from a nearby image: e.g., two consecutive images both with `alt="Static navigation"` — the second was copy-pasted and describes the wrong image. Each alt must describe its specific screenshot
+
 **Screenshot placeholders**: In UI workflow articles, every distinct UI state — screen selection, dialog, results view, confirmation — should have a `:::note` placeholder callout. Check that sections describing a UI step are not missing one. See Screenshot Placeholders section below.
 
 See `references/astro-patterns.md`
@@ -173,6 +184,9 @@ See `references/astro-patterns.md`
 ### 10. Conciseness
 
 Check for: redundant phrases ("in order to" → "to"), wordy constructions ("make use of" → "use", "is able to" → "can"), repeated information.
+
+- **Filler adverbs**: "Simply" (implies the task is trivial), "Instantly" (adds no information). Remove both — they're invisible to the reader when accurate and condescending when not.
+- **Redundant section preambles**: a sentence that just restates the section heading. ❌ `## Add lists` followed by "You can add lists to screens:" → remove the sentence, go straight to steps.
 
 Don't remove value-oriented language — only flag true redundancy.
 
