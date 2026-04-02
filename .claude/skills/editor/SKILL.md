@@ -70,7 +70,7 @@ After writing:
 4. Check sentence lengths on any sentence that looks long
 5. Verify introduction answers what, why, and when
 6. For new articles: add entry to sidebar in `src/data/sidebars/`
-7. **Scan every bullet list with bold labels** — confirm every item is `- **Label**: Capitalized explanation.` Fix any `—`, `-`, or `.**` patterns.
+7. **Scan every bullet list with bold labels** — confirm every item is `- **Label**: Capitalized explanation.` Fix any `—`, `-`, `.**`, or lowercase-after-colon patterns. ❌ `- **Label**: connects to...` → ✅ `- **Label**: Connects to...`
 8. **For UI workflow articles**: Output a screenshot capture table after the writing summary — one row per `:::note` placeholder, with filename and what the screenshot should show. This lets the user capture everything in one pass.
 
 Present final content with a brief writing summary. See `references/output-templates.md` for format.
