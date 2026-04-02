@@ -95,10 +95,22 @@ Requirements:
 
 ### Bold Label Formatting
 
-Use colons after bold labels, not dashes.
+The only accepted format for a bold-label list item is:
 
-✅ `**Label**: Description.`
-❌ `**Label** - Description.`
+```
+- **Label**: Capitalized explanation.
+```
+
+The word immediately after the colon must be capitalized. All other separators are wrong:
+
+❌ `**Label** - description` (hyphen dash)
+❌ `**Label** — description` (em-dash)
+❌ `**Label.** Description` (period inside bold, then sentence)
+❌ `**Label**: lowercase explanation` (lowercase after colon)
+
+✅ `**Label**: Capitalized explanation.`
+
+This applies to every bullet list where items have bold labels — in feature lists, action descriptions, best practices, option lists, and settings tables.
 
 ### Bullet vs. Inline Lists
 
