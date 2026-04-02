@@ -18,6 +18,8 @@ import { remarkTransformLinks } from './src/plugins/remark-transform-links.mjs';
 import { remarkStripImports } from './src/plugins/remark-strip-imports.mjs';
 import { remarkStripHighlightComments } from './src/plugins/remark-strip-highlight-comments.mjs';
 
+import { remarkFloatClear } from './src/plugins/remark-float-clear.mjs';
+
 // https://astro.build/config
 export default defineConfig({
   site: 'https://adapty.io',
@@ -37,7 +39,6 @@ export default defineConfig({
           '**/.Spotlight-V100/**',
           '**/.DocumentRevisions-V100/**',
           '**/.astro/content-modules.mjs',
-          '**/src/assets/**',
         ],
       },
     },
@@ -56,7 +57,7 @@ export default defineConfig({
   },
 
   markdown: {
-    remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+    remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
     rehypePlugins: [rehypeSlug],
     shikiConfig: {
       theme: 'github-light',
@@ -91,7 +92,7 @@ export default defineConfig({
       filter: (page) => !page.includes('/docs/zh/'),
     }),
     mdx({
-      remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+      remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
       rehypePlugins: [rehypeSlug],
       shikiConfig: {
         theme: 'github-light',
