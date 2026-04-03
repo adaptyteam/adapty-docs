@@ -36,7 +36,7 @@ export default defineConfig({
           '**/.DS_Store',
           '**/.Spotlight-V100/**',
           '**/.DocumentRevisions-V100/**',
-          '**/.astro/content-modules.mjs',
+          '**/.astro/**',
         ],
       },
     },
