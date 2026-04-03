@@ -262,6 +262,33 @@ A stylized button for primary actions or links to other articles. Matches the Ad
 - **Left-aligned**: The button always starts on a new line and is left-aligned.
 - **Responsive**: Adapts styling for light and dark modes.
 
+### 7. Inline - Inline icon image
+
+Display a small icon image inline within text — useful for referencing UI icons like buttons, menu items, or controls directly inside a sentence.
+
+**Props:**
+- `id` (required): Image filename from `src/assets/Inline/`
+- `alt` (required): Alt text describing the icon. Also used as the fallback in plain-text/Markdown exports.
+- `width` (optional): Icon width, default: `"20px"`
+
+**Usage:**
+
+```mdx
+Click <Inline id="edit-icon.webp" alt="Edit" /> to open the editor.
+
+Tap <Inline id="plus.webp" alt="Add" width="16px" /> to create a new item.
+```
+
+**Image storage:**
+
+All inline icon files go in `src/assets/Inline/`. This folder is dedicated to icons used inline within text — do not use it for article screenshots.
+
+- **Auto-registered**: You don't need to import `Inline` manually at the top of your MDX file.
+- **Inline rendering**: The icon flows naturally within the surrounding text, aligned to the text baseline.
+- **Markdown export**: In generated plain-text and LLM markdown files, the component is replaced seamlessly with its `alt` value (e.g., `<Inline id="edit.webp" alt="Edit" />` → `Edit`).
+- **Fallback**: If the image file is not found, the `alt` text is rendered as `<code>` so the meaning is never lost.
+- **Works in lists**: Can be used inside list items, callouts, and other block contexts without breaking layout.
+
 ## Markdown features
 
 ### Callout boxes

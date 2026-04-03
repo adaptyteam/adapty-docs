@@ -89,13 +89,14 @@ async function scanFiles(docsDir) {
 
 function lintLinks(externalLinks, internalLinks) {
   const errors = [];
+  const warnings = [];
 
   // Internal links should not use .md/.mdx extensions
   const MD_EXT_RE = /\.(md|mdx)(#|$)/;
   const mdExtUrls = new Set();
   for (const link of internalLinks) {
     if (MD_EXT_RE.test(link.url)) {
-      errors.push({ ...link, type: 'internal', status: 'MD_EXTENSION', error: 'Remove .md/.mdx extension from internal link' });
+      warnings.push({ ...link, type: 'internal', severity: 'md-extension', error: 'Remove .md/.mdx extension from internal link' });
       mdExtUrls.add(link.url);
     }
   }
@@ -109,7 +110,7 @@ function lintLinks(externalLinks, internalLinks) {
     }
   }
 
-  return { errors, mdExtUrls };
+  return { errors, warnings, mdExtUrls };
 }
 
 // ── Stage 3a: External checks ────────────────────────────────────
@@ -206,7 +207,7 @@ export async function orchestrate(config) {
   // 2. Lint
   const lint = lintLinks(scan.externalLinks, scan.internalLinks);
   const errors = [...lint.errors];
-  const warnings = [];
+  const warnings = [...lint.warnings];
 
   // 3. Load configuration (whitelist + JS-rendered domains)
   const { whitelist, jsRendered } = await loadConfig();

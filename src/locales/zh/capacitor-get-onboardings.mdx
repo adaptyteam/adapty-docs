@@ -1,0 +1,120 @@
+---
+title: "在 Capacitor SDK 中获取用户引导"
+description: "了解如何在 Adapty 的 Capacitor 中检索用户引导。"
+metadataTitle: "在 Adapty 中检索用户引导 | Adapty 文档"
+customSlug: /capacitor-get-onboardings
+displayed_sidebar: sdkcapacitor
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
+在 Adapty 看板中[使用编辑工具设计好用户引导的视觉部分](design-onboarding)之后，您可以在 Capacitor 应用中展示它。这一过程的第一步是获取与版位关联的用户引导及其视图配置，具体如下所述。
+
+在开始之前，请确保：
+
+1. 您已[创建了用户引导](create-onboarding)。
+2. 您已将用户引导添加到[版位](placements)中。
+
+## 获取用户引导 \{#fetch-onboarding\}
+
+当您使用我们的无代码编辑工具创建[用户引导](onboardings)时，它会以容器形式存储，其中包含您的应用需要获取并展示的配置。该容器管理整个体验——显示哪些内容、如何呈现，以及如何处理用户交互（如答题或表单输入）。容器还会自动追踪分析事件，因此您无需单独实现视图追踪。
+
+为了获得最佳性能，请尽早获取用户引导配置，以便在向用户展示之前有充足的时间下载图片。
+
+要获取用户引导，请使用 `getOnboarding` 方法：
+
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
+try {
+  const onboarding = await adapty.getOnboarding({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data', // Load from server, fallback to cache
+      loadTimeoutMs: 5000 // 5 second timeout
+    }
+  });
+  console.log('Onboarding fetched successfully');
+} catch (error) {
+  console.error('Failed to fetch onboarding:', error);
+}
+```
+
+然后，调用 `createOnboardingView` 方法来创建视图实例。
+
+:::warning
+`createOnboardingView` 方法的返回结果只能使用一次。如果需要再次使用，请重新调用 `createOnboardingView` 方法。
+:::
+
+```typescript showLineNumbers
+import { adapty, createOnboardingView } from '@adapty/capacitor';
+
+if (onboarding.hasViewConfiguration) {
+  try {
+    const view = await createOnboardingView(onboarding);
+    console.log('Onboarding view created successfully');
+  } catch (error) {
+    console.error('Failed to create onboarding view:', error);
+  }
+} else {
+  // Use your custom logic
+  console.log('Onboarding does not have view configuration');
+}
+```
+
+参数：
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | 目标[版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>用户引导本地化的标识符。该参数应为由一个或两个子标签组成的语言代码，子标签之间用减号（**-**）分隔。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p>有关语言代码及推荐用法的更多信息，请参阅[本地化与语言代码](localizations-and-locale-codes)。</p> |
+| **params.fetchPolicy** | <p>可选</p><p>默认值：`'reload_revalidating_cache_data'`</p> | <p>默认情况下，SDK 会尝试从服务器加载数据，失败时返回缓存数据。我们推荐此选项，因为它可确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户网络不稳定，可以考虑使用 `'return_cache_data_else_load'`，在缓存存在时优先返回缓存数据。这样用户获得的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍然保留，只有在重新安装应用或手动清除时才会被清空。</p> |
+| **params.loadTimeoutMs** | <p>可选</p><p>默认值：5000 毫秒</p> | <p>该值限制此方法的超时时间（以毫秒为单位）。如果达到超时，将返回缓存数据或本地备用数据。</p><p>请注意，在极少数情况下，此方法的实际超时时间可能略长于 `loadTimeoutMs` 中指定的值，因为该操作在底层可能包含多个请求。</p> |
+
+响应参数：
+
+| 参数 | 描述 |
+|:----------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onboarding** | 一个 [`AdaptyOnboarding`](https://capacitor.adapty.io/interfaces/adaptyonboarding) 对象，包含：用户引导标识符和配置、远程配置以及其他若干属性。 |
+
+## 通过默认目标受众用户引导加速获取 \{#speed-up-onboarding-fetching-with-default-audience-onboarding\}
+
+通常情况下，用户引导几乎可以即时获取，因此您无需担心加速此过程。但是，如果您有大量目标受众和用户引导，且用户网络较差，获取用户引导可能需要比预期更长的时间。在这种情况下，您可能希望显示一个默认用户引导，以确保流畅的用户体验，而不是不显示任何内容。
+
+为解决此问题，您可以使用 `getOnboardingForDefaultAudience` 方法，该方法会获取指定版位中**所有用户**目标受众的用户引导。但请务必了解，推荐的做法是使用 `getOnboarding` 方法获取用户引导，详见上方[获取用户引导](#fetch-onboarding)章节。
+
+:::warning
+建议使用 `getOnboarding` 而非 `getOnboardingForDefaultAudience`，因为后者有以下重要限制：
+
+- **兼容性问题**：在支持多个应用版本时可能产生问题，需要设计向后兼容的界面，否则旧版本可能显示不正常。
+- **无个性化**：仅显示"所有用户"目标受众的内容，无法基于国家、归因或自定义属性进行定向投放。
+
+如果更快的获取速度对您的使用场景而言优于上述缺点，请按下方示例使用 `getOnboardingForDefaultAudience`。否则，请按[上方](#fetch-onboarding)描述使用 `getOnboarding`。
+:::
+
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
+try {
+  const onboarding = await adapty.getOnboardingForDefaultAudience({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data' // Load from server, fallback to cache
+    }
+  });
+  console.log('Default audience onboarding fetched successfully');
+} catch (error) {
+  console.error('Failed to fetch default audience onboarding:', error);
+}
+```
+
+参数：
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | 目标[版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>用户引导本地化的标识符。该参数应为由一个或两个子标签组成的语言代码，子标签之间用减号（**-**）分隔。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p>有关语言代码及推荐用法的更多信息，请参阅[本地化与语言代码](localizations-and-locale-codes)。</p> |
+| **params.fetchPolicy** | <p>可选</p><p>默认值：`'reload_revalidating_cache_data'`</p> | <p>默认情况下，SDK 会尝试从服务器加载数据，失败时返回缓存数据。我们推荐此选项，因为它可确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户网络不稳定，可以考虑使用 `'return_cache_data_else_load'`，在缓存存在时优先返回缓存数据。这样用户获得的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍然保留，只有在重新安装应用或手动清除时才会被清空。</p> |

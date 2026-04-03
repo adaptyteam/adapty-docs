@@ -32,13 +32,19 @@ Focused checks that only look at changed files instead of the entire docs:
 # Dev mode: check files changed since last push (local work in progress)
 npm run check-links-dev
 
-# Diff mode: check files changed in the current PR branch vs main
+# Diff mode: check files changed vs origin/main (default)
 npm run check-links-diff
+
+# Diff mode with explicit base ref (tag, branch, commit)
+npm run check-links-diff -- --base=last-production-deploy
+npm run check-links-diff -- --base=origin/develop
 ```
 
 Both modes check:
 1. **Outgoing links** from changed files (internal existence + external HTTP)
 2. **Incoming links** to changed files from all other articles (detects breakage from renamed files or removed headings)
+
+If the base ref doesn't exist (e.g. a deploy tag on first run), the script falls back to a full scan with a warning.
 
 ### Flags
 
@@ -47,7 +53,8 @@ Both modes check:
 | `--internal-only` | Skip external URL checks |
 | `--external-only` | Skip internal link checks |
 | `--dev` | Dev mode — check files changed since last push |
-| `--diff` | Diff mode — check files changed in PR branch vs main |
+| `--diff` | Diff mode — check files changed vs a base ref (default: `origin/main`) |
+| `--base=<ref>` | Override the diff base ref (use with `--diff`). Accepts any git ref: branch, tag, commit SHA |
 | `--concurrency=N` | Max parallel external requests (default: 25) |
 | `--format=html\|ci` | Output format override. Auto-detected: `ci` when `GITHUB_ACTIONS` env is set, `html` otherwise |
 
@@ -147,16 +154,31 @@ When `GITHUB_ACTIONS` is set:
 - `::warning` annotations for stale links and manual-check items
 - Markdown summary table written to `$GITHUB_STEP_SUMMARY`
 
-## GitHub Actions workflow
+## GitHub Actions workflows
 
-Defined in `.github/workflows/check-links.yml`. Two jobs:
+### PR checks (`.github/workflows/check-links.yml`)
 
 | Job | Runs on | Blocks PR | What it checks |
 |-----|---------|-----------|----------------|
-| `internal-links` | Pushes and PRs to `main` | Yes | `--internal-only` — file existence, anchors, internal redirects |
+| `internal-links` | PRs and manual dispatch | Yes | `--internal-only` — file existence, anchors, internal redirects |
 | `external-links` | Manual dispatch only | No (`continue-on-error`) | `--external-only` — HTTP status, redirects, bot detection |
 
+For pull requests, the diff base is set to `origin/<base-branch>` automatically — the script checks only files changed in the PR relative to its target branch.
+
+For manual dispatch, the diff base is `last-production-deploy` — the script checks everything that changed since the last production deployment. If the tag doesn't exist yet, it falls back to a full scan.
+
 External checks run only via manual dispatch because third-party sites can be temporarily down or rate-limit CI runners. Use the **Run workflow** button in the Actions tab and select `all` or `external-only` to trigger them.
+
+### Deploy checks
+
+The production and development deploy workflows (`.github/workflows/s3-deploy-production.yml`, `s3-deploy-development.yml`) run internal link checks before deploying, using deployment tags as the diff base:
+
+| Workflow | Diff base tag | Updated after |
+|----------|--------------|---------------|
+| Production deploy | `last-production-deploy` | Successful deploy to production |
+| Development deploy | `last-development-deploy` | Successful deploy to development |
+
+On first deploy (before the tag exists), the link check falls back to a full internal scan. After that, each deploy updates the tag so subsequent runs only check what changed since the last deployment.
 
 ## Module structure
 
@@ -201,8 +223,10 @@ index.mjs
 Dev/diff mode:
 
 ```
-index.mjs --dev or --diff
+index.mjs --dev or --diff [--base=<ref>]
   → diff.orchestrateDiff(config)
+      → resolve diff base (dev: upstream branch, diff: --base or origin/main)
+      → if base ref missing → fall back to full scan via runner.orchestrate()
       → git diff: get changed .md/.mdx files
       → extract outgoing links from changed files
       → find incoming links to changed files from all other articles

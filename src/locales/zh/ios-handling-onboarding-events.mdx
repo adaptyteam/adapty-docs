@@ -1,0 +1,326 @@
+---
+title: "在 iOS SDK 中处理用户引导事件"
+description: "在 iOS 中使用 Adapty 处理用户引导相关事件。"
+metadataTitle: "在 iOS 中处理用户引导事件 | Adapty 文档"
+toc_max_heading_level: 4
+keywords: ['onCloseAction', 'AdaptyOnboardingsCloseAction', 'onStateUpdatedAction', 'onPaywallAction', 'didFinishLoading', 'onAnalyticsEvent']
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Details from '@site/src/components/Details';
+
+在开始之前，请确保：
+
+1. 您已安装 [Adapty iOS SDK](sdk-installation-ios) 3.8.0 或更高版本。
+2. 您已[创建用户引导](create-onboarding)。
+3. 您已将用户引导添加到[版位](placements)中。
+
+通过编辑工具配置的用户引导会生成您的应用可以响应的事件。请参阅以下内容了解如何响应这些事件。
+
+要控制或监听移动应用中用户引导屏幕上发生的过程，请实现 `AdaptyOnboardingControllerDelegate` 方法。
+
+## 自定义操作 \{#custom-actions\}
+
+在编辑工具中，您可以为按钮添加**自定义**操作并为其分配一个 ID。
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+然后，您可以在代码中使用此 ID 并将其作为自定义操作进行处理。例如，当用户点击自定义按钮（如**登录**或**允许通知**）时，代理方法 `onboardingController` 将以 `.custom(id:)` 的形式触发，其中 `actionId` 参数对应编辑工具中的 **Action ID**。您可以创建自定义 ID，例如 "allowNotifications"。
+
+```swift showLineNumbers    
+func onboardingController(_ controller: AdaptyOnboardingController, onCustomAction action: AdaptyOnboardingsCustomAction) {
+    if action.actionId == "allowNotifications" {
+        // Request notification permissions
+    }
+}
+    
+func onboardingController(_ controller: AdaptyOnboardingController, didFailWithError error: AdaptyUIError) {
+    // Handle errors
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+  "actionId": "allowNotifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+## 关闭用户引导 \{#closing-onboarding\}
+
+当用户点击分配了**关闭**操作的按钮时，用户引导被视为已关闭。
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+请注意，您需要管理用户关闭用户引导后发生的操作。例如，您需要停止显示用户引导本身。
+:::
+例如：
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onCloseAction action: AdaptyOnboardingsCloseAction) {
+    controller.dismiss(animated: true)
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+
+</Details>
+
+## 打开付费墙 \{#opening-a-paywall\}
+
+:::tip
+如果您希望在用户引导内部打开付费墙，请处理此事件。如果您希望在用户引导关闭后打开付费墙，有一种更直接的方法——处理 [`AdaptyOnboardingsCloseAction`](#closing-onboarding) 并在不依赖事件数据的情况下打开付费墙。
+:::
+
+如果用户点击了打开付费墙的按钮，您将获得[手动设置](get-paid-in-onboardings)的按钮操作 ID。在用户引导中使用付费墙最无缝的方式是将操作 ID 设置为付费墙版位 ID。这样，在收到 `AdaptyOnboardingsOpenPaywallAction` 后，您可以直接使用版位 ID 获取并打开付费墙。
+
+请注意，同一时间屏幕上只能显示一个视图（付费墙或用户引导）。如果您在用户引导上方呈现付费墙，则无法以编程方式控制后台的用户引导。尝试关闭用户引导将会关闭付费墙，而用户引导仍然可见。为避免此问题，请始终在呈现付费墙之前先关闭用户引导视图。
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onPaywallAction action: AdaptyOnboardingsOpenPaywallAction) {
+    // Dismiss onboarding before presenting paywall
+    controller.dismiss(animated: true) {
+        Task {
+            do {
+                // Get the paywall using the placement ID from the action
+                let paywall = try await Adapty.getPaywall(placementId: action.actionId)
+                
+                // Get the paywall configuration
+                let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
+                    forPaywall: paywall
+                )
+                
+                // Create and present the paywall controller
+                let paywallController = try AdaptyUI.paywallController(
+                    with: paywallConfig,
+                    delegate: self
+                )
+                
+                // Present the paywall from the root view controller
+                if let rootVC = UIApplication.shared.windows.first?.rootViewController {
+                    rootVC.present(paywallController, animated: true)
+                }
+            } catch {
+                // Handle any errors that occur during paywall loading
+                print("Failed to present paywall: \(error)")
+            }
+        }
+    }
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## 用户引导加载完成 \{#finishing-loading-onboarding\}
+
+当用户引导加载完成时，将调用此方法：
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, didFinishLoading action: OnboardingsDidFinishLoadingAction) {
+    // Handle loading completion
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## 追踪导航 \{#tracking-navigation\}
+
+在用户引导流程中，当各种分析事件发生时，将调用 `onAnalyticsEvent` 方法。
+
+`event` 对象可以是以下类型之一：
+| 类型 | 描述 |
+|------------|-------------|
+| `onboardingStarted` | 用户引导已加载时触发 |
+| `screenPresented` | 任意屏幕显示时触发 |
+| `screenCompleted` | 屏幕完成时触发。包含可选的 `elementId`（已完成元素的标识符）和可选的 `reply`（用户的响应）。当用户执行任何退出屏幕的操作时触发。 |
+| `secondScreenPresented` | 第二个屏幕显示时触发 |
+| `userEmailCollected` | 通过输入字段收集用户电子邮件时触发 |
+| `onboardingCompleted` | 当用户到达 ID 为 `final` 的屏幕时触发。如果需要此事件，请[将 `final` ID 分配给最后一个屏幕](design-onboarding)。 |
+| `unknown` | 用于任何无法识别的事件类型。包含 `name`（未知事件的名称）和 `meta`（附加元数据）。 |
+
+每个事件都包含 `meta` 信息，其中含有：
+| 字段 | 描述 |
+|------------|-------------|
+| `onboardingId` | 用户引导流程的唯一标识符 |
+| `screenClientId` | 当前屏幕的标识符 |
+| `screenIndex` | 当前屏幕在流程中的位置 |
+| `screensTotal` | 流程中的屏幕总数 |
+
+以下是如何使用分析事件进行追踪的示例：
+
+```swift
+func onboardingController(_ controller: AdaptyOnboardingController, onAnalyticsEvent event: AdaptyOnboardingsAnalyticsEvent) {
+    switch event {
+    case .onboardingStarted(let meta):
+        // Track onboarding start
+        trackEvent("onboarding_started", meta: meta)
+    case .screenPresented(let meta):
+        // Track screen presentation
+        trackEvent("screen_presented", meta: meta)
+    case .screenCompleted(let meta, let elementId, let reply):
+        // Track screen completion with user response
+        trackEvent("screen_completed", meta: meta, elementId: elementId, reply: reply)
+    case .onboardingCompleted(let meta):
+        // Track successful onboarding completion
+        trackEvent("onboarding_completed", meta: meta)
+    case .unknown(let meta, let name):
+        // Handle unknown events
+        trackEvent(name, meta: meta)
+    // Handle other cases as needed
+    }
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+
+```
+
+</Details>
