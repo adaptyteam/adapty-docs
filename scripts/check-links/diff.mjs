@@ -256,7 +256,12 @@ export async function orchestrateDiff(config) {
   const reusableFileNames = new Set();
 
   for (const file of changedFiles) {
-    const content = await readFile(file, 'utf-8');
+    let content;
+    try {
+      content = await readFile(file, 'utf-8');
+    } catch {
+      continue; // file was deleted — no outgoing links to check; incoming links handled below
+    }
     const dir = file.startsWith(reusableDir) ? reusableDir : docsDir;
     outgoingLinks.push(...extractLinks(content, file, dir));
 
@@ -293,12 +298,15 @@ export async function orchestrateDiff(config) {
     }
   }
 
+  // Only scan incoming links for deleted/renamed slugs (broken page links) and
+  // files with removed headings (broken anchor links). Merely modified files
+  // whose slug and headings haven't changed can't break any incoming links.
+  const slugsWithRemovedHeadings = new Set(
+    [...removedAnchors.keys()].map(key => key.split('#')[0]),
+  );
   const targetSlugs = new Set([
     ...deletedSlugs,
-    // Also include changed files' slugs to catch anchor issues
-    ...changedFiles
-      .filter(f => f.startsWith('src/content/docs/'))
-      .map(f => path.basename(f).replace(/\.(md|mdx)$/, '').toLowerCase()),
+    ...slugsWithRemovedHeadings,
   ]);
 
   console.log(`Checking incoming links to ${targetSlugs.size} slugs (${deletedSlugs.size} deleted, ${removedAnchors.size} removed anchors)...`);
