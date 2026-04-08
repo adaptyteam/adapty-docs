@@ -129,10 +129,20 @@ export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs 
 
   const rawSlug = urlWithoutAnchor.replace(/^\.?\//, '').replace(/\/$/, '').replace(/\.(md|mdx)$/, '');
 
-  // Runtime API routes → check against live site (preserve original case)
+  // Runtime API routes → check against live site (preserve original case).
+  // Retries with backoff because these HTTP checks are sensitive to transient
+  // network issues on CI runners (DNS blips, CDN edge cache misses, etc.).
   if (RUNTIME_ROUTE_PREFIXES.some(p => rawSlug.startsWith(p))) {
     const liveUrl = `${liveSiteBase}/${rawSlug}`;
-    const result = await checkExternalUrl(liveUrl, timeoutMs);
+    const RETRY_BACKOFF = [2000, 5000];
+    let result;
+    for (let attempt = 0; attempt <= RETRY_BACKOFF.length; attempt++) {
+      result = await checkExternalUrl(liveUrl, timeoutMs);
+      if (result.ok || result.status === 404) break;
+      if (attempt < RETRY_BACKOFF.length) {
+        await new Promise(r => setTimeout(r, RETRY_BACKOFF[attempt]));
+      }
+    }
     return {
       ok: result.ok,
       status: result.ok ? 'live-ok' : 'LIVE_404',

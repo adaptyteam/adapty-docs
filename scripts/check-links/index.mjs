@@ -7,8 +7,9 @@
  *
  * Usage:
  *   node scripts/check-links/index.mjs [--external-only] [--internal-only] [--concurrency=N] [--format=html|ci]
- *   node scripts/check-links/index.mjs --dev   # Check files changed since last push
- *   node scripts/check-links/index.mjs --diff  # Check files changed in the PR branch vs main
+ *   node scripts/check-links/index.mjs --dev                    # Check files changed since last push
+ *   node scripts/check-links/index.mjs --diff                   # Check files changed vs origin/main
+ *   node scripts/check-links/index.mjs --diff --base=<ref>      # Check files changed vs explicit ref (tag, branch)
  */
 
 import path from 'node:path';
@@ -23,6 +24,7 @@ const args = process.argv.slice(2);
 
 const isDev = args.includes('--dev');
 const isDiff = args.includes('--diff');
+const diffBase = args.find(a => a.startsWith('--base='))?.split('=')[1];
 
 const config = {
   docsDir: path.resolve('src/content/docs'),
@@ -39,7 +41,7 @@ const format = formatArg || (isCI ? 'ci' : 'html');
 
 async function main() {
   const results = (isDev || isDiff)
-    ? await orchestrateDiff({ ...config, mode: isDev ? 'dev' : 'diff' })
+    ? await orchestrateDiff({ ...config, mode: isDev ? 'dev' : 'diff', diffBase })
     : await orchestrate(config);
 
   // Always print console summary

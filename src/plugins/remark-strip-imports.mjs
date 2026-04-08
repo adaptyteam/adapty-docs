@@ -16,6 +16,7 @@ export function remarkStripImports() {
             line.includes("@site/src/components/Details") ||
             line.includes("@site/src/components/InlineTooltip") ||
             line.includes("@site/src/components/ZoomImage") ||
+            line.includes("@site/src/components/Inline") ||
             line.includes("react-medium-image-zoom") ||
             (line.includes("import ") && line.includes("'@") && !line.includes("src/components/reusable/"))
           );
