@@ -37,12 +37,14 @@ const REUSABLE_DIR  = path.resolve(__dirname, '../src/components/reusable');
 const LANGUAGE_NAMES = {
   zh: 'Simplified Chinese (zh-CN)',
   ja: 'Japanese (ja-JP)',
+  tr: 'Turkish (tr-TR)',
 };
 
 // Locale-specific suffix for metadataTitle values (the part after the page title)
 const METADATA_TITLE_SUFFIXES = {
   zh: '| Adapty 文档',
   ja: '| Adapty ドキュメント',
+  tr: '| Adapty Dokümanları',
 };
 
 // ---------------------------------------------------------------------------
@@ -1787,22 +1789,22 @@ function postProcessTranslation(content, lang) {
     `from '../../../components/$1'`
   );
 
-  // Normalize the MDX preamble import block (top-level imports right after
-  // frontmatter). Collapses spurious blank lines between consecutive imports and
-  // ensures exactly one blank line after the block before content.
-  // Anchored after frontmatter so it never touches imports inside code blocks.
+  // Strip non-reusable imports from locale files. The locale page renderer
+  // injects all standard components (Tabs, Zoom, Details, etc.) via the
+  // `components` prop, so these imports are unnecessary and break because
+  // the relative paths assume the original src/content/docs/ depth.
+  // Only keep imports that reference the locales/ reusable directory.
   {
     const fmClose = content.indexOf('\n---\n');
     const bodyStart = fmClose >= 0 ? fmClose + 5 : 0;
     const body = content.slice(bodyStart);
-    const normalizedBody = body
-      // Collapse blank lines within the leading import block (non-greedy, first block only)
-      .replace(/^((?:import [^\n]+\n)(?:\n*import [^\n]+\n)*)/, block =>
-        block.replace(/\n{2,}/g, '\n')
-      )
-      // Ensure exactly one blank line between the import block and the first content line
-      .replace(/^(import [^\n]+)\n(?!import )(?!\n)([^\n])/m, '$1\n\n$2');
-    content = content.slice(0, bodyStart) + normalizedBody;
+    const strippedBody = body.replace(/^import [^\n]+\n/gm, (line) => {
+      // Keep reusable snippet imports (already rewritten to locales/<lang>/reusable/)
+      if (line.includes('/locales/') && line.includes('/reusable/')) return line;
+      return '';
+    });
+    // Clean up leading blank lines left by stripped imports
+    content = content.slice(0, bodyStart) + strippedBody.replace(/^\n+/, '\n');
   }
 
   return content;

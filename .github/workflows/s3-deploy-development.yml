@@ -17,8 +17,82 @@ jobs:
       - run: npm install github-slugger
       - run: node scripts/check-links/index.mjs --diff --base=last-development-deploy --internal-only
 
-  deploy:
+  build-en:
     needs: check-internal-links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: npm-${{ hashFiles('package-lock.json') }}
+
+      - name: Cache Astro build
+        uses: actions/cache@v4
+        with:
+          path: .astro
+          key: astro-dev-en-${{ github.sha }}
+          restore-keys: astro-dev-en-
+
+      - run: npm ci
+
+      - name: Build English only
+        run: ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=none astro build
+
+      - name: Generate markdown exports
+        run: npm run build:md:prod
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-en
+          path: build/
+          retention-days: 1
+
+  build-locale:
+    needs: check-internal-links
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        locale: [zh, tr]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: npm-${{ hashFiles('package-lock.json') }}
+
+      - name: Cache Astro build
+        uses: actions/cache@v4
+        with:
+          path: .astro
+          key: astro-dev-${{ matrix.locale }}-${{ github.sha }}
+          restore-keys: astro-dev-${{ matrix.locale }}-
+
+      - run: npm ci
+
+      - name: Build locale ${{ matrix.locale }}
+        run: ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} astro build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.locale }}
+          path: build/${{ matrix.locale }}/
+          retention-days: 1
+
+  deploy:
+    needs: [build-en, build-locale]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -27,13 +101,22 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-en
+          path: build/
 
-      - name: Build
-        run: ASTRO_TELEMETRY_DISABLED=1 npm run build
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-zh
+          path: build/zh/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-tr
+          path: build/tr/
 
       - name: Deploy
         uses: reggionick/s3-deploy@v4
@@ -44,9 +127,7 @@ jobs:
           dist-id: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
           invalidation: /*
           delete-removed: true
-          # no-cache: true
           private: true
-          # files-to-include: '{.*/**,**}'
 
       - name: Update deployment tag
         run: |
