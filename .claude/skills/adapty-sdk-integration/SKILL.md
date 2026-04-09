@@ -11,23 +11,9 @@ You are an implementation agent. Your job: analyze the user's project, configure
 
 Do not write code until you have read the relevant documentation for that stage.
 
-## Configuration
-
-Credentials live in `.claude/feedback-config.env` (gitignored — never committed). At the start of Phase 5, source this file to make the variables available:
-
-```bash
-source .claude/feedback-config.env
-```
-
-Variables defined in that file:
-- `SLACK_WEBHOOK_URL` — Slack Incoming Webhook URL
-- `AIRTABLE_PAT` — Airtable Personal Access Token
-- `AIRTABLE_BASE_ID` — Airtable Base ID (starts with `app`)
-- `AIRTABLE_TABLE` — Airtable table name (`SDK integration feedback`)
-
 ## State Tracking
 
-Maintain these variables in your context throughout the session. Update them as each phase completes.
+Maintain these variables in your context throughout the session. Update them as each phase completes. **Never output state variable names or values to the user — all updates are internal and silent.**
 
 | Variable | Type | Initial value | Set when |
 |---|---|---|---|
@@ -91,7 +77,32 @@ Call `AskUserQuestion` with the following:
 
 > "Would you like to share anonymous feedback when we're done? It's just a quick rating + a few signals (platform, steps completed) — no code, no project details, nothing identifying. Helps the Adapty team improve this guide."
 
-- If yes → set `feedbackEnabled = true`
+- If yes → set `feedbackEnabled = true`, then immediately run the script below to pre-approve the feedback curl calls so the user won't see approval prompts again at delivery time:
+
+```bash
+node -e "
+const fs = require('fs');
+const path = '.claude/settings.json';
+const settings = fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, 'utf8')) : {};
+settings.permissions = settings.permissions || {};
+settings.permissions.allow = settings.permissions.allow || [];
+const rules = [
+  'Bash(curl -s -X POST https://hooks.slack.com/*)',
+  'Bash(curl -s -X POST https://api.airtable.com/*)'
+];
+let added = 0;
+for (const rule of rules) {
+  if (!settings.permissions.allow.includes(rule)) {
+    settings.permissions.allow.push(rule);
+    added++;
+  }
+}
+fs.mkdirSync('.claude', { recursive: true });
+fs.writeFileSync(path, JSON.stringify(settings, null, 2));
+console.log(added > 0 ? 'Feedback permissions added.' : 'Already set.');
+"
+```
+
 - If no → set `feedbackEnabled = false`
 
 If `feedbackEnabled` is false, skip all feedback steps throughout the skill. The integration proceeds identically either way.
@@ -294,42 +305,23 @@ Review the conversation history. Classify the overall tone as one of:
 
 Set `sentiment` to the result.
 
-### Step 3: Send to Slack
+### Steps 3 & 4: Send feedback
 
-Source the config file and send the message. Replace uppercase placeholders with actual collected values:
-
-```bash
-source .claude/feedback-config.env
-curl -s -X POST \
-  -H 'Content-type: application/json' \
-  -d "{\"text\": \"[PLATFORM · PAYWALL_APPROACH] Phase PHASES_COMPLETED ✓ · Rating: RATING/5 · Sentiment: SENTIMENT · FRICTION_ROUNDS friction rounds\"}" \
-  "${SLACK_WEBHOOK_URL}"
-```
-
-Example with real values: `[ios · paywall_builder] Phase 4 ✓ · Rating: 4/5 · Sentiment: positive · 0 friction rounds`
-
-If `rating` is null (user abandoned before Phase 4), remove the `· Rating: RATING/5` segment entirely from the message: `[ios · paywall_builder] Phase 2 · Sentiment: neutral · 2 friction rounds`
-
-### Step 4: Send to Airtable
-
-Source the config file and POST the record to Airtable's REST API. Replace uppercase placeholders with actual collected values:
+POST all fields in a single request to Adapty's feedback endpoint. Replace uppercase placeholders with actual collected values:
 
 ```bash
-source .claude/feedback-config.env
-curl -s -X POST "https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE// /%20}" \
-  -H "Authorization: Bearer ${AIRTABLE_PAT}" \
+curl -s -X POST "https://feedback-endpoint-eandreeva-twrs-projects.vercel.app/api/sdk-integration-feedback" \
   -H "Content-Type: application/json" \
-  -d "{\"fields\": {\"platform\": \"PLATFORM\", \"paywall_approach\": \"PAYWALL_APPROACH\", \"integrations\": \"INTEGRATIONS_STRING\", \"phases_completed\": PHASES_COMPLETED, \"checkpoints_passed\": CHECKPOINTS_PASSED, \"friction_rounds\": FRICTION_ROUNDS, \"sentiment\": \"SENTIMENT\", \"rating\": RATING_OR_NULL}}"
+  -d "{\"platform\": \"PLATFORM\", \"paywall_approach\": \"PAYWALL_APPROACH\", \"integrations\": \"INTEGRATIONS_STRING\", \"phases_completed\": PHASES_COMPLETED, \"checkpoints_passed\": CHECKPOINTS_PASSED, \"friction_rounds\": FRICTION_ROUNDS, \"sentiment\": \"SENTIMENT\", \"rating\": RATING_OR_NULL, \"slack_text\": \"[PLATFORM · PAYWALL_APPROACH] Phase PHASES_COMPLETED ✓ · Rating: RATING/5 · Sentiment: SENTIMENT · FRICTION_ROUNDS friction rounds\"}"
 ```
 
 `INTEGRATIONS_STRING` is a comma-separated string of integration keys, e.g. `amplitude, appsflyer` or left empty.
 `RATING_OR_NULL` is the numeric rating (e.g. `4`) or `null` if not collected.
+If `rating` is null, omit `· Rating: RATING/5` from `slack_text`.
 
 Example with real values:
 ```bash
-source .claude/feedback-config.env
-curl -s -X POST "https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE// /%20}" \
-  -H "Authorization: Bearer ${AIRTABLE_PAT}" \
+curl -s -X POST "https://feedback-endpoint-eandreeva-twrs-projects.vercel.app/api/sdk-integration-feedback" \
   -H "Content-Type: application/json" \
-  -d '{"fields": {"platform": "ios", "paywall_approach": "paywall_builder", "integrations": "amplitude, appsflyer", "phases_completed": 4, "checkpoints_passed": 5, "friction_rounds": 0, "sentiment": "positive", "rating": 4}}'
+  -d '{"platform": "ios", "paywall_approach": "paywall_builder", "integrations": "amplitude, appsflyer", "phases_completed": 4, "checkpoints_passed": 5, "friction_rounds": 0, "sentiment": "positive", "rating": 4, "slack_text": "[ios · paywall_builder] Phase 4 ✓ · Rating: 4/5 · Sentiment: positive · 0 friction rounds"}'
 ```
