@@ -11,6 +11,36 @@ You are an implementation agent. Your job: analyze the user's project, configure
 
 Do not write code until you have read the relevant documentation for that stage.
 
+## Configuration
+
+Credentials live in `.claude/feedback-config.env` (gitignored — never committed). At the start of Phase 5, source this file to make the variables available:
+
+```bash
+source .claude/feedback-config.env
+```
+
+Variables defined in that file:
+- `SLACK_WEBHOOK_URL` — Slack Incoming Webhook URL
+- `AIRTABLE_PAT` — Airtable Personal Access Token
+- `AIRTABLE_BASE_ID` — Airtable Base ID (starts with `app`)
+- `AIRTABLE_TABLE` — Airtable table name (`SDK integration feedback`)
+
+## State Tracking
+
+Maintain these variables in your context throughout the session. Update them as each phase completes.
+
+| Variable | Type | Initial value | Set when |
+|---|---|---|---|
+| `feedbackEnabled` | boolean | `false` | Phase 0 consent ask |
+| `platform` | string | `""` | Phase 1 project analysis |
+| `paywallApproach` | string | `""` | Phase 2 questions |
+| `integrations` | array | `[]` | Phase 2 questions |
+| `phasesCompleted` | number | `0` | End of each phase |
+| `checkpointsPassed` | number | `0` | Each passing Phase 4 checkpoint |
+| `frictionRounds` | number | `0` | Each time Troubleshooting section is invoked |
+| `rating` | number or null | `null` | End-of-Phase-4 rating ask |
+| `sentiment` | string | `""` | Inferred at delivery time |
+
 ## Phase 0: Setup
 
 ### Allow curl to Adapty docs (silent, no prompts)
@@ -55,6 +85,17 @@ Use the adaptyteam/adapty-docs library to look up [topic]
 curl -s https://adapty.io/docs/<slug>.md
 ```
 
+### Feedback consent
+
+Call `AskUserQuestion` with the following:
+
+> "Would you like to share anonymous feedback when we're done? It's just a quick rating + a few signals (platform, steps completed) — no code, no project details, nothing identifying. Helps the Adapty team improve this guide."
+
+- If yes → set `feedbackEnabled = true`
+- If no → set `feedbackEnabled = false`
+
+If `feedbackEnabled` is false, skip all feedback steps throughout the skill. The integration proceeds identically either way.
+
 ## Phase 1: Analyze the project
 
 Read the project structure to identify platform and existing code patterns:
@@ -74,6 +115,8 @@ Also check for:
 - Existing purchase code (may indicate Observer mode is better)
 - Target iOS/Android version (affects SDK compatibility)
 
+**State update:** Set `platform` to the detected platform (`ios`, `android`, `flutter`, `react-native`, `unity`, `kmp`, or `capacitor`). Set `phasesCompleted = 1`.
+
 Load the platform-specific reference file from the `references/` subdirectory (`references/ios.md`, `references/android.md`, etc.).
 
 ## Phase 2: Ask three questions
@@ -92,6 +135,8 @@ Use `AskUserQuestion` for both together in one call:
    - Other: Webhook (custom backend), S3/Google Cloud Storage export, Slack notifications
 
 Save the answer — it determines whether Stage 3.5 (integrations) runs during implementation.
+
+**State update:** Set `paywallApproach` to `paywall_builder`, `custom`, or `observer`. Set `integrations` to the array of selected integration keys (e.g. `["amplitude", "appsflyer"]`), or `[]` if none. Set `phasesCompleted = 2`.
 
 Use `AskUserQuestion` for any other quick clarifications throughout the integration (e.g., "Did the build succeed?", "What's your App Store product ID?"). Never ask for values that can be retrieved via CLI.
 
@@ -190,6 +235,8 @@ If the user says they'd rather do it manually, walk them through these five step
 
 Full dashboard walkthrough: `https://adapty.io/docs/quickstart.md`
 
+**State update:** Set `phasesCompleted = 3`.
+
 Proceed to Phase 4 with the values you collected from the CLI output above.
 
 ## Phase 4: Implement — stage by stage
@@ -201,11 +248,14 @@ Follow the platform-specific file for the exact doc URLs and implementation orde
 3. **Verify the checkpoint:**
    - **Build checks** — run yourself via the build tool (xcodebuild, etc.); do not ask the user to build
    - **Visual/functional checks** (e.g. "paywall appears on screen", "purchase dialog triggers") — ask the user to confirm via `AskUserQuestion`
+   - **State update:** If the checkpoint passes, increment `checkpointsPassed` by 1. When all stages in Phase 4 are complete, set `phasesCompleted = 4`.
 4. Only then move to the next stage
 
 Never skip a checkpoint. A failed checkpoint means something is wrong that will cascade.
 
 ## Troubleshooting
+
+**State update:** Each time this section is entered, increment `frictionRounds` by 1.
 
 When a checkpoint fails:
 1. Check the stage's **Gotcha** first — covers the most common cause
@@ -221,3 +271,65 @@ When a checkpoint fails:
 - **`identify()` called too late** — must be called after `activate()` but before `getPaywall()`; otherwise purchases are attributed to an anonymous profile
 - **Server notifications not configured** — events won't appear in the dashboard; required before going to production
 - **Wrong SDK key** — using secret key instead of public key in `activate()`
+
+## Phase 5: Feedback Delivery
+
+**Only run this phase if `feedbackEnabled` is true.** Skip entirely otherwise.
+
+### Step 1: Ask for rating (only if Phase 4 completed)
+
+If `phasesCompleted` equals 4, call `AskUserQuestion`:
+
+> "How was the integration experience overall?
+> 1 — Painful · 2 — Bumpy · 3 — Okay · 4 — Smooth · 5 — Excellent"
+
+Store the numeric response as `rating`. If `phasesCompleted` is less than 4 (user abandoned early), leave `rating` as `null` and skip this question.
+
+### Step 2: Infer sentiment
+
+Review the conversation history. Classify the overall tone as one of:
+- `positive` — user was cooperative, things went smoothly, no signs of frustration
+- `neutral` — mixed signals, some friction but no strong negative tone
+- `frustrated` — repeated failures, expressions of frustration, many back-and-forth rounds
+
+Set `sentiment` to the result.
+
+### Step 3: Send to Slack
+
+Source the config file and send the message. Replace uppercase placeholders with actual collected values:
+
+```bash
+source .claude/feedback-config.env
+curl -s -X POST \
+  -H 'Content-type: application/json' \
+  -d "{\"text\": \"[PLATFORM · PAYWALL_APPROACH] Phase PHASES_COMPLETED ✓ · Rating: RATING/5 · Sentiment: SENTIMENT · FRICTION_ROUNDS friction rounds\"}" \
+  "${SLACK_WEBHOOK_URL}"
+```
+
+Example with real values: `[ios · paywall_builder] Phase 4 ✓ · Rating: 4/5 · Sentiment: positive · 0 friction rounds`
+
+If `rating` is null (user abandoned before Phase 4), remove the `· Rating: RATING/5` segment entirely from the message: `[ios · paywall_builder] Phase 2 · Sentiment: neutral · 2 friction rounds`
+
+### Step 4: Send to Airtable
+
+Source the config file and POST the record to Airtable's REST API. Replace uppercase placeholders with actual collected values:
+
+```bash
+source .claude/feedback-config.env
+curl -s -X POST "https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE// /%20}" \
+  -H "Authorization: Bearer ${AIRTABLE_PAT}" \
+  -H "Content-Type: application/json" \
+  -d "{\"fields\": {\"platform\": \"PLATFORM\", \"paywall_approach\": \"PAYWALL_APPROACH\", \"integrations\": \"INTEGRATIONS_STRING\", \"phases_completed\": PHASES_COMPLETED, \"checkpoints_passed\": CHECKPOINTS_PASSED, \"friction_rounds\": FRICTION_ROUNDS, \"sentiment\": \"SENTIMENT\", \"rating\": RATING_OR_NULL}}"
+```
+
+`INTEGRATIONS_STRING` is a comma-separated string of integration keys, e.g. `amplitude, appsflyer` or left empty.
+`RATING_OR_NULL` is the numeric rating (e.g. `4`) or `null` if not collected.
+
+Example with real values:
+```bash
+source .claude/feedback-config.env
+curl -s -X POST "https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE// /%20}" \
+  -H "Authorization: Bearer ${AIRTABLE_PAT}" \
+  -H "Content-Type: application/json" \
+  -d '{"fields": {"platform": "ios", "paywall_approach": "paywall_builder", "integrations": "amplitude, appsflyer", "phases_completed": 4, "checkpoints_passed": 5, "friction_rounds": 0, "sentiment": "positive", "rating": 4}}'
+```
