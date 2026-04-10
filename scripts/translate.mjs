@@ -156,6 +156,13 @@ TRANSLATE:
   - summary= in <Details> components
   - label= in <TabItem> when it is a phrase, not a platform name (keep "iOS", "Android", "React Native", "Flutter", "Unity", "Kotlin Multiplatform", "Capacitor" as-is)
 
+TRANSLATION STYLE — write natural, idiomatic ${targetLanguage}:
+- Prefer colloquial, conversational word choices over literal or formal ones where both are correct.
+- Prefer concise phrasing. Drop qualifiers that are obvious from context.
+- Prefer direct, demonstrative constructions over indirect ones when introducing content.
+- Prefer everyday vocabulary over technical loan words when a natural equivalent exists.
+- Do not translate mechanically word-for-word. Read the full sentence for meaning, then write it as a native speaker would naturally say it.
+
 Output valid MDX only. No explanation, no commentary, no markdown fences wrapping the output. For section fragments that do not include frontmatter, do not add import statements, frontmatter blocks, or document-level wrapper structure.`;
 }
 
