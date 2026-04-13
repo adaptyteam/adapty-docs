@@ -1,0 +1,227 @@
+---
+title: "Android SDK'da mobil uygulamada satın alma yapma"
+description: "Adapty kullanarak uygulama içi satın alma ve abonelikleri yönetme rehberi."
+metadataTitle: "Adapty'de Uygulama İçi Satın Almaları Yönetme | Adapty Dokümanları"
+keywords: ['makePurchase', 'pending']
+rank: 95
+displayed_sidebar: sdkandroid
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+
+Mobil uygulamanızda paywall'ları göstermek, kullanıcılara premium içerik veya hizmetlere erişim sunmanın temel adımlarından biridir. Ancak paywall'ları yalnızca göstermek, satın almaları desteklemek için yeterlidir; bu yalnızca paywall'larınızı özelleştirmek için [Paywall Builder](adapty-paywall-builder) kullandığınızda geçerlidir.
+
+Paywall Builder kullanmıyorsanız satın almayı tamamlamak ve istenen içeriğin kilidini açmak için `.makePurchase()` adlı ayrı bir metot kullanmanız gerekir. Bu metot, kullanıcıların paywall'larla etkileşime geçmesini ve istedikleri işlemleri gerçekleştirmesini sağlayan ana yoldur.
+
+Paywall'ınızda kullanıcının satın almaya çalıştığı ürün için aktif bir promosyon teklifi varsa, Adapty bunu satın alma sırasında otomatik olarak uygular.
+
+:::warning
+Başlangıç teklifinin otomatik olarak uygulanabilmesi için paywall'larınızın Paywall Builder ile oluşturulmuş olması gerektiğini unutmayın.
+
+Diğer durumlarda [kullanıcının iOS'ta başlangıç teklifine uygunluğunu doğrulamanız](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios) gerekir. Bu adımı atlamak uygulamanızın yayın sırasında reddedilmesine yol açabilir. Ayrıca başlangıç teklifine hak kazanmış kullanıcıların tam fiyat üzerinden ücretlendirilmesine neden olabilir.
+:::
+
+Tek bir adımı bile atlamadan [başlangıç yapılandırmasını](quickstart) tamamladığınızdan emin olun. Bu olmadan satın almaları doğrulayamayız.
+
+## Satın alma yapma \{#make-purchase\}
+
+:::note
+**[Paywall Builder](adapty-paywall-builder) kullanıyor musunuz?** Satın almalar otomatik olarak işlenir—bu adımı atlayabilirsiniz.
+
+**Adım adım rehber mi arıyorsunuz?** Tam bağlamıyla uçtan uca uygulama talimatları için [hızlı başlangıç kılavuzuna](android-implement-paywalls-manually) göz atın.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.makePurchase(activity, product, null) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            when (val purchaseResult = result.value) {
+                is AdaptyPurchaseResult.Success -> {
+                    val profile = purchaseResult.profile
+                    if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
+                        // Grant access to the paid features
+                    }
+                }
+
+                is AdaptyPurchaseResult.UserCanceled -> {
+                    // Handle the case where the user canceled the purchase
+                }
+
+                is AdaptyPurchaseResult.Pending -> {
+                    // Handle deferred purchases (e.g., the user will pay offline with cash)
+                }
+            }
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.makePurchase(activity, product, null, result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
+
+        if (purchaseResult instanceof AdaptyPurchaseResult.Success) {
+            AdaptyProfile profile = ((AdaptyPurchaseResult.Success) purchaseResult).getProfile();
+            AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
+
+            if (premium != null && premium.isActive()) {
+                // Grant access to the paid features
+            }
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.UserCanceled) {
+            // Handle the case where the user canceled the purchase
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.Pending) {
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
+        }
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // Handle the error
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+İstek parametreleri:
+
+| Parametre   | Zorunluluk | Açıklama                                                                                         |
+| :---------- | :--------- | :----------------------------------------------------------------------------------------------- |
+| **Product** | zorunlu    | Paywall'dan alınan bir [`AdaptyPaywallProduct`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall-product/) nesnesi. |
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama                                                                                                                                                                                                                                                                                                                                                                      |
+|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>İstek başarılı olursa yanıt bu nesneyi içerir. Bir [AdaptyProfile](https://android.adapty.io/adapty/com.adapty.models/-adapty-profile/) nesnesi, kullanıcının uygulama içindeki access level'ları, abonelikleri ve abonelik dışı satın almaları hakkında kapsamlı bilgi sağlar.</p><p>Kullanıcının uygulamaya erişimi olup olmadığını belirlemek için access level durumunu kontrol edin.</p> |
+
+:::warning
+**Not:** Apple'ın StoreKit sürümü 2.0'ın altında ve Adapty SDK sürümü v2.9.0'ın altında kalıyorsanız bunun yerine [Apple App Store paylaşılan sırrını](app-store-connection-configuration#step-5-enter-app-store-shared-secret) sağlamanız gerekir. Bu yöntem Apple tarafından kullanımdan kaldırılmıştır.
+:::
+
+## Satın alma sırasında aboneliği değiştirme \{#change-subscription-when-making-a-purchase\}
+
+Bir kullanıcı mevcut aboneliğini yenilemek yerine yeni bir abonelik seçtiğinde, bu işlemin nasıl çalışacağı uygulama mağazasına göre değişir. Google Play'de abonelik otomatik olarak güncellenmez. Geçişi aşağıda açıklandığı şekilde mobil uygulama kodunuzda yönetmeniz gerekir.
+
+Android'de aboneliği başka bir abonelikle değiştirmek için `.makePurchase()` metodunu ek parametre ile çağırın:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.makePurchase(
+    activity, 
+    product, 
+    AdaptyPurchaseParameters.Builder()
+        .withSubscriptionUpdateParams(subscriptionUpdateParams)
+        .build()
+) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            when (val purchaseResult = result.value) {
+                is AdaptyPurchaseResult.Success -> {
+                    val profile = purchaseResult.profile
+
+                    // successful cross-grade
+                }
+
+                is AdaptyPurchaseResult.UserCanceled -> {
+                    // user canceled the purchase flow
+                }
+
+                is AdaptyPurchaseResult.Pending -> {
+                    // the purchase has not been finished yet, e.g. user will pay offline by cash
+                }
+            }
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // Handle the error
+        }
+    }
+}
+```
+Ek istek parametresi:
+
+| Parametre                    | Zorunluluk | Açıklama                                                     |
+| :--------------------------- | :--------- | :----------------------------------------------------------- |
+| **subscriptionUpdateParams** | zorunlu    | Bir [`AdaptySubscriptionUpdateParameters`](https://android.adapty.io/adapty/com.adapty.models/-adapty-subscription-update-parameters/) nesnesi. |
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.makePurchase(
+    activity, 
+    product, 
+    new AdaptyPurchaseParameters.Builder()
+        .withSubscriptionUpdateParams(subscriptionUpdateParams)
+        .build(),
+    result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
+
+        if (purchaseResult instanceof AdaptyPurchaseResult.Success) {
+            AdaptyProfile profile = ((AdaptyPurchaseResult.Success) purchaseResult).getProfile();
+
+            // successful cross-grade
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.UserCanceled) {
+            // user canceled the purchase flow
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.Pending) {
+            // the purchase has not been finished yet, e.g. user will pay offline by cash
+        }
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // Handle the error
+    }
+});
+```
+Ek istek parametresi:
+
+| Parametre                    | Zorunluluk | Açıklama                                                     |
+| :--------------------------- | :--------- | :----------------------------------------------------------- |
+| **subscriptionUpdateParams** | zorunlu    | Bir [`AdaptySubscriptionUpdateParameters`](https://android.adapty.io/adapty/com.adapty.models/-adapty-subscription-update-parameters/) nesnesi. |
+
+</TabItem>
+
+</Tabs>
+
+Abonelikler ve değiştirme modları hakkında daha fazla bilgiyi Google Geliştirici belgelerinde okuyabilirsiniz:
+
+- [Değiştirme modları hakkında](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Değiştirme modları için Google önerileri](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Değiştirme modu [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Not: Bu yöntem yalnızca abonelik yükseltmeleri için kullanılabilir. Düşürme işlemleri desteklenmez.
+- Değiştirme modu [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Not: Gerçek abonelik değişikliği yalnızca mevcut abonelik faturalama dönemi sona erdiğinde gerçekleşir.
+
+### Ön ödemeli planları yönetme \{#manage-prepaid-plans\}
+
+Uygulama kullanıcılarınız [ön ödemeli planlar](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) satın alabiliyorsa (örneğin birkaç aylık yenilenmez abonelik satın alma), ön ödemeli planlar için [bekleyen işlemleri](https://developer.android.com/google/play/billing/subscriptions#pending) etkinleştirebilirsiniz.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withEnablePendingPrepaidPlans(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withEnablePendingPrepaidPlans(true)
+    .build();
+```
+</TabItem>
+</Tabs>

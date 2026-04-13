@@ -1,0 +1,124 @@
+---
+title: "Kotlin Multiplatform SDK'da özel paywall'unuzda satın almaları etkinleştirme"
+description: "Uygulama içi satın almaları etkinleştirmek için Adapty SDK'yı özel Kotlin Multiplatform paywall'larınıza entegre edin."
+metadataTitle: "Adapty Hızlı Başlangıç Kılavuzu | Adapty Dokümanları"
+keywords: ['paywalls kmp', 'sdk kmp', 'paywall', 'getPaywall']
+---
+
+Bu kılavuz, Adapty'yi özel paywall'larınıza nasıl entegre edeceğinizi açıklar. Paywall implementasyonu üzerinde tam kontrolü elinizde tutarken Adapty SDK ürünleri çeker, yeni satın almaları yönetir ve önceki satın almaları geri yükler.
+
+:::important
+**Bu kılavuz, özel paywall uygulayan geliştiriciler içindir.** Satın almaları etkinleştirmenin en kolay yolunu arıyorsanız [Adapty Paywall Builder](kmp-quickstart-paywalls)'ı kullanın. Paywall Builder ile paywallları kodsuz bir görsel editörde oluşturursunuz, Adapty tüm satın alma mantığını otomatik olarak yönetir ve uygulamanızı yeniden yayınlamadan farklı tasarımları test edebilirsiniz.
+:::
+
+## Başlamadan önce \{#before-you-start\}
+
+### Ürünleri ayarlama \{#set-up-products\}
+
+Uygulama içi satın almaları etkinleştirmek için üç temel kavramı anlamanız gerekir:
+
+- [**Ürünler**](product) – kullanıcıların satın alabileceği her şey (abonelikler, consumable'lar, süresiz erişim)
+- [**Paywalllar**](paywalls) – hangi ürünlerin sunulacağını tanımlayan yapılandırmalar. Adapty'de ürünleri almanın tek yolu paywalllar aracılığıyladır; bu tasarım sayesinde uygulama kodunuza dokunmadan ürünleri, fiyatları ve teklifleri değiştirebilirsiniz.
+- [**Placement'lar**](placements) – uygulamanızda paywallların nerede ve ne zaman gösterileceği (`main`, `onboarding`, `settings` gibi). Kontrol panelinde placement'lar için paywallları ayarlarsınız, ardından kodunuzda placement ID'siyle talep edersiniz. Bu yapı, A/B testleri yürütmeyi ve farklı kullanıcılara farklı paywalllar göstermeyi kolaylaştırır.
+
+Özel paywall kullanıyor olsanız bile bu kavramları anladığınızdan emin olun. Temel olarak, bunlar uygulamanızda sattığınız ürünleri yönetmenin yoludur.
+
+Özel paywall'unuzu uygulamak için bir **paywall** oluşturmanız ve bunu bir **placement**'a eklemeniz gerekir. Bu kurulum, ürünlerinizi almanızı sağlar. Kontrol panelinde yapmanız gerekenleri anlamak için [buradaki](quickstart) hızlı başlangıç kılavuzunu takip edin.
+
+### Kullanıcıları yönetme \{#manage-users\}
+
+Backend kimlik doğrulaması ile veya olmadan çalışabilirsiniz.
+
+Ancak Adapty SDK, anonim ve tanımlı kullanıcıları farklı şekilde ele alır. Ayrıntıları anlamak ve kullanıcılarla doğru şekilde çalıştığınızdan emin olmak için [kimlik belirleme hızlı başlangıç kılavuzunu](kmp-quickstart-identify) okuyun.
+
+## Adım 1. Ürünleri alın \{#step-1-get-products\}
+
+Özel paywall'unuz için ürünleri almak üzere şunları yapmanız gerekir:
+
+1. `getPaywall` metoduna [placement](placements) ID'sini geçirerek `paywall` nesnesini alın.
+2. `getPaywallProducts` metoduyla bu paywall için ürünler dizisini alın.
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.onSuccess
+import com.adapty.kmp.models.onError
+
+fun loadPaywall() {
+    Adapty.getPaywall(placementId = "YOUR_PLACEMENT_ID")
+        .onSuccess { paywall ->
+            Adapty.getPaywallProducts(paywall = paywall)
+                .onSuccess { products ->
+                    // Use products to build your custom paywall UI
+                }
+                .onError { error ->
+                    // Handle the error
+                }
+        }
+        .onError { error ->
+            // Handle the error
+        }
+}
+```
+
+## Adım 2. Satın almaları kabul edin \{#step-2-accept-purchases\}
+
+Kullanıcı özel paywall'unuzda bir ürüne dokunduğunda, seçilen ürünle `makePurchase` metodunu çağırın. Bu işlem satın alma akışını yönetir ve güncellenmiş profili döndürür.
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywallProduct
+import com.adapty.kmp.models.AdaptyPurchaseResult
+import com.adapty.kmp.models.onSuccess
+import com.adapty.kmp.models.onError
+
+fun purchaseProduct(product: AdaptyPaywallProduct) {
+    Adapty.makePurchase(product = product)
+        .onSuccess { purchaseResult ->
+            when (purchaseResult) {
+                is AdaptyPurchaseResult.Success -> {
+                    val profile = purchaseResult.profile
+                    // Purchase successful, profile updated
+                }
+                is AdaptyPurchaseResult.UserCanceled -> {
+                    // User canceled the purchase
+                }
+                is AdaptyPurchaseResult.Pending -> {
+                    // Purchase is pending (e.g., user will pay offline with cash)
+                }
+            }
+        }
+        .onError { error ->
+            // Handle the error
+        }
+}
+```
+
+## Adım 3. Satın almaları geri yükleyin \{#step-3-restore-purchases\}
+
+Uygulama mağazaları, abonelik içeren tüm uygulamaların kullanıcılara satın almalarını geri yükleme imkânı sunmasını zorunlu kılar.
+
+Kullanıcı geri yükleme düğmesine dokunduğunda `restorePurchases` metodunu çağırın. Bu işlem, satın alma geçmişini Adapty ile senkronize eder ve güncellenmiş profili döndürür.
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.onSuccess
+import com.adapty.kmp.models.onError
+
+fun restorePurchases() {
+    Adapty.restorePurchases()
+        .onSuccess { profile ->
+            // Restore successful, profile updated
+        }
+        .onError { error ->
+            // Handle the error
+        }
+}
+```
+
+## Sonraki adımlar \{#next-steps\}
+
+<SupportForum />
+
+Paywall'unuz uygulamada gösterilmeye hazır. Paywall üzerinden bir test satın alması tamamlayabildiğinizi doğrulamak için satın almalarınızı [App Store sandbox](test-purchases-in-sandbox)'ta veya [Google Play Store](testing-on-android)'da test edin. Bunun üretim ortamında nasıl çalıştığını görmek için uygun hata yönetimi ve durum yönetimiyle satın alma işlemini gösteren örnek uygulamamızdaki [AppViewModel.kt](https://github.com/adaptyteam/AdaptySDK-KMP/blob/main/example/composeMultiplatformApp/composeApp/src/commonMain/kotlin/com/adapty/exampleapp/AppViewModel.kt) dosyasına bakabilirsiniz.
+
+Ardından paywall'u gösterip göstermeyeceğinizi veya ücretli özelliklere erişim sağlayıp sağlamayacağınızı belirlemek için [kullanıcıların satın alma işlemini tamamlayıp tamamlamadığını kontrol edin](kmp-check-subscription-status).

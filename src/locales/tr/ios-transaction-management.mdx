@@ -1,0 +1,139 @@
+---
+title: "iOS SDK'da gelişmiş işlem yönetimi"
+description: "Adapty SDK ile iOS uygulamanızda işlemleri manuel olarak tamamlayın."
+metadataTitle: "Gelişmiş işlem yönetimi | iOS SDK | Adapty Dokümanları"
+displayed_sidebar: sdkios
+---
+
+:::note
+Gelişmiş işlem yönetimi, Adapty iOS SDK'nın 3.12 sürümünden itibaren desteklenmektedir.
+:::
+
+Adapty'deki gelişmiş işlem yönetimi, işlemlerin nasıl ele alındığı, doğrulandığı ve tamamlandığı üzerinde size daha fazla kontrol sağlar.
+
+Gelişmiş işlem yönetimi, birlikte çalışan üç isteğe bağlı özellik sunar:
+
+| Özellik                                                     | Amaç |
+|-------------------------------------------------------------|----------|
+| [`appAccountToken`](#assign-appaccounttoken)                | Apple işlemlerini dahili kullanıcı kimliğinize bağlar |
+| [`jwsTransaction`](#access-the-jws-representation)          | Doğrulama için Apple'ın imzalanmış işlem yükünü sağlar |
+| [Manuel tamamlama](#control-transaction-finishing-behavior) | İşlemleri yalnızca backend'iniz başarıyı onayladıktan sonra tamamlamanıza olanak tanır |
+
+Bu araçlar birlikte, Adapty işlemleri kendi backend'iyle senkronize etmeye devam ederken sağlam özel doğrulama akışları oluşturmanıza imkân verir.
+
+:::important
+Çoğu uygulamanın buna ihtiyacı yoktur.
+Varsayılan olarak Adapty, StoreKit işlemlerini otomatik olarak doğrular ve tamamlar.
+Bu kılavuzu yalnızca kendi backend doğrulamanızı çalıştırıyorsanız veya satın alma yaşam döngüsünü tamamen kontrol etmek istiyorsanız kullanın.
+:::
+
+## `appAccountToken` atama \{#assign-appaccounttoken\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)), App Store işlemlerini dahili kullanıcı kimliğinize bağlamanızı sağlayan bir **UUID**'dir.
+StoreKit bu token'ı her işlemle ilişkilendirir; böylece backend'iniz App Store verilerini kullanıcılarınızla eşleştirebilir.
+
+Kullanıcı başına oluşturulan kararlı bir UUID kullanın ve aynı hesap için farklı cihazlarda da bu UUID'yi yeniden kullanın.
+Bu, satın almaların ve App Store bildirimlerinin doğru şekilde eşleştirilmesini sağlar.
+
+Token'ı iki farklı şekilde ayarlayabilirsiniz: SDK etkinleştirmesi sırasında veya kullanıcıyı tanımlarken.
+
+:::important
+`appAccountToken`'ı her zaman `customerUserId` ile birlikte geçirmeniz gerekir.
+Yalnızca token'ı geçerseniz işleme dahil edilmez.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: UUID())
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
+  // handle the error
+}
+
+// Or when identifying a user:
+do {
+    try await Adapty.identify("YOUR_USER_ID", withAppAccountToken: UUID())
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: <APP_ACCOUNT_TOKEN>)
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+
+// Or when identifying a user:
+Adapty.identify("YOUR_USER_ID", withAppAccountToken: <APP_ACCOUNT_TOKEN>) { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## JWS gösterimine erişme \{#access-the-jws-representation\}
+
+Bir satın alma yaptığınızda, sonuç Apple'ın işlemini [JWS Compact Serialization formatında](https://developer.apple.com/documentation/storekit/verificationresult/jwsrepresentation-21vgo) içerir.
+Bu değeri bağımsız doğrulama veya kayıt amacıyla backend'inize iletebilirsiniz.
+
+```swift
+let result = try await Adapty.makePurchase(product: paywallProduct)
+let jwsRepresentation = result.jwsTransaction
+```
+
+## İşlem tamamlama davranışını kontrol etme \{#control-transaction-finishing-behavior\}
+
+<ZoomImage id="transaction-management.png" width="700px" />
+
+Varsayılan olarak Adapty, StoreKit işlemlerini doğrulamanın ardından otomatik olarak tamamlar.
+Backend'inizin başarıyı onaylamasına kadar tamamlamayı ertelemek istiyorsanız tamamlama davranışını manuel olarak ayarlayın.
+
+Bu modda:
+- Adapty yine de satın almaları doğrular ve kendi backend'iyle senkronize eder.
+- `finish()` metodunu açıkça çağırana kadar işlemler tamamlanmamış olarak kalır.
+
+```swift
+var configBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_API_KEY")
+    .with(transactionFinishBehavior: .manual)
+
+try await Adapty.activate(with: configBuilder.build())   
+```
+
+Manuel işlem tamamlamayı kullanırken, tamamlanmamış işlemleri yönetmek için `onUnfinishedTransaction` delegate metodunu uygulamanız gerekir:
+
+```swift showLineNumbers title="Swift"
+extension YourApp: AdaptyDelegate {
+    func onUnfinishedTransaction(_ transaction: AdaptyUnfinishedTransaction) async {
+        // Perform your custom validation logic here
+        
+        // When ready, finish the transaction
+        await transaction.finish()
+    }
+}
+```
+
+Mevcut tüm tamamlanmamış işlemleri almak için `getUnfinishedTransactions()` metodunu kullanın:
+
+```swift
+let unfinishedTransactions = try await Adapty.getUnfinishedTransactions()
+```

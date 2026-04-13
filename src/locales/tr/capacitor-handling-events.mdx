@@ -1,0 +1,276 @@
+---
+title: "Capacitor - Paywall Olaylarını Yönetme"
+description: "Adapty'nin SDK'sı ile Capacitor'da abonelik olaylarını yönetin."
+metadataTitle: "Capacitor'da Olayları Yönetme | Adapty Dokümanları"
+toc_max_heading_level: 4
+keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed', 'onAppeared', 'onDisappeared']
+---
+
+import PaywallAction from '@site/src/locales/tr/reusable/PaywallAction.md';
+
+:::important
+Bu kılavuz, satın alma, geri yükleme, ürün seçimi ve paywall oluşturma işlemlerine ilişkin olay yönetimini kapsamaktadır. Ayrıca düğme yönetimini de (paywall'ı kapatma, bağlantı açma vb.) uygulamanız gerekir. Ayrıntılar için [düğme eylemlerini yönetme kılavuzumuza](capacitor-handle-paywall-actions) bakın.
+:::
+
+[Paywall Builder](adapty-paywall-builder) ile yapılandırılan paywall'lar, satın alma ve geri yükleme işlemleri için ek kod gerektirmez. Ancak uygulamanızın yanıt verebileceği bazı olaylar üretirler. Bu olaylar arasında düğme tıklamaları (kapat düğmeleri, URL'ler, ürün seçimleri vb.) ve paywall üzerinde gerçekleştirilen satın almayla ilgili eylem bildirimleri yer alır. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenebilirsiniz.
+
+Mobil uygulamanızdaki paywall ekranında gerçekleşen süreçleri kontrol etmek veya izlemek için `view.setEventHandlers` metodunu uygulayın:
+
+```typescript showLineNumbers
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+  onCloseButtonPress() {
+    console.log('User closed paywall');
+    return true; // Allow the paywall to close
+  },
+  onAndroidSystemBack() {
+    console.log('User pressed back button');
+    return true; // Allow the paywall to close
+  }, 
+  onAppeared() {
+    console.log('Paywall appeared');
+    return false; // Don't close the paywall
+  }, 
+  onDisappeared() {
+    console.log('Paywall disappeared');
+  },
+  onPurchaseCompleted(purchaseResult, product) {
+    console.log('Purchase completed:', purchaseResult);
+    return purchaseResult.type !== 'user_cancelled'; // Close if not cancelled
+  },
+  onPurchaseStarted(product) {
+    console.log('Purchase started:', product);
+    return false; // Don't close the paywall
+  },
+  onPurchaseFailed(error, product) {
+    console.error('Purchase failed:', error);
+    return false; // Don't close the paywall
+  },
+  onRestoreCompleted(profile) {
+    console.log('Restore completed:', profile);
+    return true; // Close the paywall after successful restore
+  },
+  onRestoreFailed(error) {
+    console.error('Restore failed:', error);
+    return false; // Don't close the paywall
+  },
+  onProductSelected(productId) {
+    console.log('Product selected:', productId);
+    return false; // Don't close the paywall
+  },
+  onRenderingFailed(error) {
+    console.error('Rendering failed:', error);
+    return false; // Don't close the paywall
+  },
+  onLoadingProductsFailed(error) {
+    console.error('Loading products failed:', error);
+    return false; // Don't close the paywall
+  },
+  onUrlPress(url) {
+    window.open(url, '_blank');
+    return false; // Don't close the paywall
+  },
+});
+```
+
+<Details>
+<summary>Olay örnekleri (Genişletmek için tıklayın)</summary>
+
+```typescript
+// onCloseButtonPress
+{
+  "event": "close_button_press"
+}
+
+// onAndroidSystemBack
+{
+  "event": "android_system_back"
+}
+
+// onAppeared
+{
+  "event": "paywall_shown"
+}
+
+// onDisappeared
+{
+  "event": "paywall_closed"
+}
+
+// onUrlPress
+{
+  "event": "url_press",
+  "url": "https://example.com/terms"
+}
+
+// onCustomAction
+{
+  "event": "custom_action",
+  "actionId": "login"
+}
+
+// onProductSelected
+{
+  "event": "product_selected",
+  "productId": "premium_monthly"
+}
+
+// onPurchaseStarted
+{
+  "event": "purchase_started",
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// onPurchaseCompleted - Success
+{
+  "event": "purchase_completed",
+  "purchaseResult": {
+    "type": "success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// onPurchaseCompleted - Cancelled
+{
+  "event": "purchase_completed",
+  "purchaseResult": {
+    "type": "user_cancelled"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// onPurchaseFailed
+{
+  "event": "purchase_failed",
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+
+// onRestoreCompleted
+{
+  "event": "restore_completed",
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+
+// onRestoreFailed
+{
+  "event": "restore_failed",
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+
+// onRenderingFailed
+{
+  "event": "rendering_failed",
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+
+// onLoadingProductsFailed
+{
+  "event": "loading_products_failed",
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+İhtiyacınız olan olay yöneticilerini kaydedebilir, ihtiyacınız olmayanları atlayabilirsiniz. Bu durumda kullanılmayan olay dinleyicileri oluşturulmaz. Zorunlu olay yöneticisi yoktur.
+
+Olay yöneticileri bir boolean değer döndürür. `true` döndürülürse görüntüleme işlemi tamamlanmış sayılır; böylece paywall ekranı kapanır ve bu görünüme ait olay dinleyicileri kaldırılır.
+
+Bazı olay yöneticilerinin, gerektiğinde geçersiz kılabileceğiniz varsayılan davranışları vardır:
+- `onCloseButtonPress`: kapat düğmesine basıldığında paywall'ı kapatır.
+- `onAndroidSystemBack`: **Geri** düğmesine basıldığında paywall'ı kapatır.
+- `onRestoreCompleted`: başarılı geri yüklemenin ardından paywall'ı kapatır.
+- `onPurchaseCompleted`: kullanıcı iptal etmedikçe paywall'ı kapatır.
+- `onRenderingFailed`: oluşturma başarısız olursa paywall'ı kapatır.
+- `onUrlPress`: URL'leri sistem tarayıcısında açar ve paywall'ı açık tutar.
+
+### Olay yöneticileri \{#event-handlers\}
+
+| Olay yöneticisi             | Açıklama                                                                                                                                                                                                                                                                                                              |
+|:----------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onCustomAction**          | Kullanıcı özel bir eylem gerçekleştirdiğinde, örneğin bir [özel düğmeye](paywall-buttons) tıkladığında çağrılır.                                                                                                                                                                                                      |
+| **onUrlPress**              | Kullanıcı paywall'ınızdaki bir URL'ye tıkladığında çağrılır.                                                                                                                                                                                                                                                          |
+| **onAndroidSystemBack**     | Kullanıcı Android sistem **Geri** düğmesine dokunduğunda çağrılır.                                                                                                                                                                                                                                                    |
+| **onCloseButtonPress**      | Kapat düğmesi görünür durumdayken kullanıcı ona dokunduğunda çağrılır. Bu yöneticide paywall ekranını kapatmanız önerilir.                                                                                                                                                                                            |
+| **onPurchaseCompleted**     | Satın alma tamamlandığında, ister başarılı olsun ister kullanıcı tarafından iptal edilmiş ya da onay bekleniyor olsun çağrılır. Başarılı satın almalarda güncellenmiş bir `AdaptyProfile` sağlar. Kullanıcı iptalleri ve bekleyen ödemeler (örneğin ebeveyn onayı gerekli) `onPurchaseFailed` değil bu olayı tetikler. |
+| **onPurchaseStarted**       | Kullanıcı satın alma işlemini başlatmak için "Satın Al" eylem düğmesine dokunduğunda çağrılır.                                                                                                                                                                                                                        |
+| **onPurchaseCancelled**     | Kullanıcı satın alma işlemini başlatıp manuel olarak kesintiye uğrattığında (ödeme diyaloğunu iptal ettiğinde) çağrılır.                                                                                                                                                                                              |
+| **onPurchaseFailed**        | Satın alma hatalar nedeniyle başarısız olduğunda (örneğin ödeme kısıtlamaları, geçersiz ürünler, ağ hataları, işlem doğrulama hataları) çağrılır. Kullanıcı iptalleri veya bekleyen ödemeler için çağrılmaz; bunlar `onPurchaseCompleted`'ı tetikler.                                                                 |
+| **onRestoreStarted**        | Kullanıcı satın alma geri yükleme işlemini başlattığında çağrılır.                                                                                                                                                                                                                                                    |
+| **onRestoreCompleted**      | Satın alma geri yükleme başarılı olduğunda çağrılır ve güncellenmiş bir `AdaptyProfile` sağlar. Kullanıcının gerekli `accessLevel`'a sahip olması durumunda ekranı kapatmanız önerilir. Bunu nasıl kontrol edeceğinizi öğrenmek için [Abonelik durumu](capacitor-listen-subscription-changes) konusuna bakın.         |
+| **onRestoreFailed**         | Geri yükleme işlemi başarısız olduğunda çağrılır ve `AdaptyError` sağlar.                                                                                                                                                                                                                                             |
+| **onProductSelected**       | Paywall görünümündeki herhangi bir ürün seçildiğinde çağrılır; satın alma öncesinde kullanıcının ne seçtiğini izlemenizi sağlar.                                                                                                                                                                                       |
+| **onAppeared**              | Paywall görünümü ekranda belirdiğinde çağrılır. iOS'ta, kullanıcı paywall içindeki [web paywall düğmesine](web-paywall#step-2a-add-a-web-purchase-button) dokunduğunda ve uygulama içi tarayıcıda bir web paywall açıldığında da çağrılır.                                                                            |
+| **onDisappeared**           | Paywall görünümü ekrandan kaybolduğunda çağrılır. iOS'ta, uygulama içi tarayıcıda bir paywall'dan açılan [web paywall](web-paywall#step-2a-add-a-web-purchase-button) ekrandan kaybolduğunda da çağrılır.                                                                                                             |
+| **onRenderingFailed**       | Görünüm oluşturma sırasında hata oluştuğunda çağrılır ve `AdaptyError` sağlar. Bu tür hatalar yaşanmamalıdır; yaşanırsa lütfen bize bildirin.                                                                                                                                                                         |
+| **onLoadingProductsFailed** | Ürün yükleme başarısız olduğunda çağrılır ve `AdaptyError` sağlar. Görünüm oluşturma sırasında `prefetchProducts: true` ayarlamadıysanız AdaptyUI gerekli nesneleri sunucudan kendisi alacaktır.                                                                                                                      |

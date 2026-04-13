@@ -37,12 +37,14 @@ const REUSABLE_DIR  = path.resolve(__dirname, '../src/components/reusable');
 const LANGUAGE_NAMES = {
   zh: 'Simplified Chinese (zh-CN)',
   ja: 'Japanese (ja-JP)',
+  tr: 'Turkish (tr-TR)',
 };
 
 // Locale-specific suffix for metadataTitle values (the part after the page title)
 const METADATA_TITLE_SUFFIXES = {
   zh: '| Adapty 文档',
   ja: '| Adapty ドキュメント',
+  tr: '| Adapty Dokümanları',
 };
 
 // ---------------------------------------------------------------------------
@@ -59,6 +61,7 @@ const lang = langIdx !== -1 ? args[langIdx + 1] : null;
 
 const flagAll           = args.includes('--all');
 const flagIncremental   = args.includes('--incremental');
+const flagSync          = args.includes('--sync');
 const flagApiSpecs      = args.includes('--api-specs');
 const flagSidebarsOnly  = args.includes('--sidebars');
 const flagMigrateHashes = args.includes('--migrate-hashes');
@@ -105,8 +108,8 @@ if ((flagResume || fileId || fileIds || sidebarName || platform) && !lang) {
   process.exit(1);
 }
 
-// Single-file, multi-id, or incremental → use sync (immediate) API; otherwise Batch API
-const syncMode = fileId != null || fileIds != null || flagIncremental;
+// Single-file, multi-id, incremental, or --sync → use sync (immediate) API; otherwise Batch API
+const syncMode = fileId != null || fileIds != null || flagIncremental || flagSync;
 
 // ---------------------------------------------------------------------------
 // Locale discovery
@@ -153,6 +156,13 @@ TRANSLATE:
 - human-readable component prop values:
   - summary= in <Details> components
   - label= in <TabItem> when it is a phrase, not a platform name (keep "iOS", "Android", "React Native", "Flutter", "Unity", "Kotlin Multiplatform", "Capacitor" as-is)
+
+TRANSLATION STYLE — write natural, idiomatic ${targetLanguage}:
+- Prefer colloquial, conversational word choices over literal or formal ones where both are correct.
+- Prefer concise phrasing. Drop qualifiers that are obvious from context.
+- Prefer direct, demonstrative constructions over indirect ones when introducing content.
+- Prefer everyday vocabulary over technical loan words when a natural equivalent exists.
+- Do not translate mechanically word-for-word. Read the full sentence for meaning, then write it as a native speaker would naturally say it.
 
 Output valid MDX only. No explanation, no commentary, no markdown fences wrapping the output. For section fragments that do not include frontmatter, do not add import statements, frontmatter blocks, or document-level wrapper structure.`;
 }
@@ -794,6 +804,9 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
 // Batch translation (default, --all, --platform)
 // ---------------------------------------------------------------------------
 
+// Max files per batch chunk — smaller chunks complete faster and give intermediate progress.
+const BATCH_CHUNK_SIZE = 40;
+
 async function translateBatch(client, files, systemPrompt, localesDir, tag, lang) {
   const hashesDir = path.join(localesDir, '.hashes');
 
@@ -822,45 +835,65 @@ async function translateBatch(client, files, systemPrompt, localesDir, tag, lang
 
   if (batchFiles.length === 0) return;
 
-  console.log(`${tag} Reading source files...`);
-  const requests = await Promise.all(
-    batchFiles.map(async (file) => {
-      const basename = path.basename(file, '.mdx');
-      const content = await fs.readFile(file, 'utf-8');
-      return {
-        custom_id: basename,
-        params: {
-          model: 'claude-sonnet-4-6',
-          max_tokens: 8192,
-          system: systemPrompt,
-          messages: [{ role: 'user', content }],
-        },
-      };
-    })
-  );
+  // Split into chunks so large platforms don't sit in one huge queue entry.
+  const chunks = [];
+  for (let i = 0; i < batchFiles.length; i += BATCH_CHUNK_SIZE) {
+    chunks.push(batchFiles.slice(i, i + BATCH_CHUNK_SIZE));
+  }
 
-  console.log(`${tag} Submitting batch of ${requests.length} requests...`);
-  const batch = await client.messages.batches.create({ requests });
-  const batchId = batch.id;
+  for (let c = 0; c < chunks.length; c++) {
+    const chunk = chunks[c];
+    const chunkLabel = chunks.length > 1 ? ` (chunk ${c + 1}/${chunks.length})` : '';
 
-  await fs.writeFile(BATCH_ID_FILE, batchId, 'utf-8');
-  console.log(`${tag} Batch submitted: ${batchId}`);
-  console.log(`${tag} Batch ID saved to .translate-batch-id`);
-  console.log(`${tag} Use --resume <batchId> to retrieve results if this process is interrupted.`);
+    console.log(`${tag} Reading source files${chunkLabel}...`);
+    const requests = await Promise.all(
+      chunk.map(async (file) => {
+        const basename = path.basename(file, '.mdx');
+        const content = await fs.readFile(file, 'utf-8');
+        return {
+          custom_id: basename,
+          params: {
+            model: 'claude-sonnet-4-6',
+            max_tokens: 8192,
+            system: systemPrompt,
+            messages: [{ role: 'user', content }],
+          },
+        };
+      })
+    );
 
-  const fileMap = Object.fromEntries(batchFiles.map(f => [path.basename(f, '.mdx'), f]));
-  await waitAndRetrieve(client, batchId, fileMap, localesDir, tag, lang);
+    console.log(`${tag} Submitting batch of ${requests.length} requests${chunkLabel}...`);
+    const batch = await client.messages.batches.create({ requests });
+    const batchId = batch.id;
+
+    await fs.writeFile(BATCH_ID_FILE, batchId, 'utf-8');
+    console.log(`${tag} Batch submitted: ${batchId}`);
+    console.log(`${tag} Batch ID saved to .translate-batch-id`);
+    console.log(`${tag} Use --resume <batchId> to retrieve results if this process is interrupted.`);
+
+    const fileMap = Object.fromEntries(chunk.map(f => [path.basename(f, '.mdx'), f]));
+    await waitAndRetrieve(client, batchId, fileMap, localesDir, tag, lang);
+  }
 }
 
 async function waitAndRetrieve(client, batchId, fileMap, localesDir, tag, lang) {
   console.log(`${tag} Polling batch status every 30 seconds...`);
 
+  const startedAt = Date.now();
   let batch = await client.messages.batches.retrieve(batchId);
+  // Warn threshold: 15 min base + 30s per request, capped at 60 min.
+  const requestCount = Object.keys(fileMap).length;
+  const warnAfterMin = Math.min(60, 15 + Math.ceil(requestCount * 0.5));
   while (batch.processing_status !== 'ended') {
     const counts = batch.request_counts ?? {};
+    const elapsedMin = Math.floor((Date.now() - startedAt) / 60000);
+    const elapsed = elapsedMin >= 1 ? ` (${elapsedMin}m elapsed)` : '';
+    const warning = elapsedMin >= warnAfterMin && (counts.succeeded ?? 0) === 0
+      ? ` ⚠️  no progress in ${warnAfterMin}m — API may be slow or use --sync to bypass batch`
+      : '';
     console.log(
       `  Status: ${batch.processing_status} — processing: ${counts.processing ?? '?'}, ` +
-      `succeeded: ${counts.succeeded ?? '?'}, errored: ${counts.errored ?? '?'}`
+      `succeeded: ${counts.succeeded ?? '?'}, errored: ${counts.errored ?? '?'}${elapsed}${warning}`
     );
     await sleep(30_000);
     batch = await client.messages.batches.retrieve(batchId);
@@ -1787,22 +1820,22 @@ function postProcessTranslation(content, lang) {
     `from '../../../components/$1'`
   );
 
-  // Normalize the MDX preamble import block (top-level imports right after
-  // frontmatter). Collapses spurious blank lines between consecutive imports and
-  // ensures exactly one blank line after the block before content.
-  // Anchored after frontmatter so it never touches imports inside code blocks.
+  // Strip non-reusable imports from locale files. The locale page renderer
+  // injects all standard components (Tabs, Zoom, Details, etc.) via the
+  // `components` prop, so these imports are unnecessary and break because
+  // the relative paths assume the original src/content/docs/ depth.
+  // Only keep imports that reference the locales/ reusable directory.
   {
     const fmClose = content.indexOf('\n---\n');
     const bodyStart = fmClose >= 0 ? fmClose + 5 : 0;
     const body = content.slice(bodyStart);
-    const normalizedBody = body
-      // Collapse blank lines within the leading import block (non-greedy, first block only)
-      .replace(/^((?:import [^\n]+\n)(?:\n*import [^\n]+\n)*)/, block =>
-        block.replace(/\n{2,}/g, '\n')
-      )
-      // Ensure exactly one blank line between the import block and the first content line
-      .replace(/^(import [^\n]+)\n(?!import )(?!\n)([^\n])/m, '$1\n\n$2');
-    content = content.slice(0, bodyStart) + normalizedBody;
+    const strippedBody = body.replace(/^import [^\n]+\n/gm, (line) => {
+      // Keep reusable snippet imports (already rewritten to locales/<lang>/reusable/)
+      if (line.includes('/locales/') && line.includes('/reusable/')) return line;
+      return '';
+    });
+    // Clean up leading blank lines left by stripped imports
+    content = content.slice(0, bodyStart) + strippedBody.replace(/^\n+/, '\n');
   }
 
   return content;

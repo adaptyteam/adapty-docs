@@ -1,0 +1,88 @@
+---
+title: "Unity SDK'da abonelik durumunu kontrol etme"
+description: "Unity uygulamanızda müşteri tutundurmasını artırmak için Adapty'de kullanıcı abonelik durumunu takip edin ve yönetin."
+metadataTitle: "Abonelik Durumunu Anlama | Adapty Dokümanları"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+
+Adapty ile abonelik durumunu takip etmek çok kolay. Ürün ID'lerini kodunuza manuel olarak eklemenize gerek yok. Bunun yerine, aktif bir [access level](access-level) olup olmadığını kontrol ederek kullanıcının abonelik durumunu zahmetsizce doğrulayabilirsiniz.
+
+<details>
+   <summary>Abonelik durumunu kontrol etmeye başlamadan önce (Genişletmek için tıklayın)</summary>
+
+- iOS için [App Store Server Notifications](enable-app-store-server-notifications) kurulumunu yapın
+- Android için [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn) kurulumunu yapın
+</details>
+
+## Access level ve AdaptyProfile nesnesi \{#access-level-and-the-adaptyprofile-object\}
+
+Access level'lar, [AdaptyProfile](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_profile.html) nesnesinin özellikleridir. Profili, uygulamanız başladığında (örneğin [bir kullanıcıyı tanımladığınızda](unity-identifying-users#setting-customer-user-id-on-configuration)) alıp ardından değişiklik olduğunda güncellemenizi öneririz. Bu sayede profil nesnesini tekrar tekrar istek göndermeden kullanabilirsiniz.
+
+Profil güncellemelerinden haberdar olmak için aşağıdaki [Abonelik durumu güncellemelerini dinleme](#listening-for-subscription-status-updates) bölümünde anlatıldığı şekilde profil değişikliklerini dinleyin.
+
+<SampleApp />
+
+## Access level'ı sunucudan alma \{#retrieving-the-access-level-from-the-server\}
+
+Access level'ı sunucudan almak için `.GetProfile()` metodunu kullanın:
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+// check the access
+});
+```
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------- |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Profile   | <p>Bir [AdaptyProfile](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_profile.html) nesnesi. Genellikle, kullanıcının uygulamaya premium erişimi olup olmadığını belirlemek için yalnızca profilin access level durumunu kontrol etmeniz yeterlidir.</p><p></p><p>`.getProfile` metodu her zaman API'yi sorgulamaya çalıştığından en güncel sonucu döndürür. Herhangi bir nedenle (örneğin internet bağlantısı yokluğu) Adapty SDK sunucudan bilgi alamazsa önbellekteki veriler döndürülür. Ayrıca Adapty SDK'nın bu bilgileri mümkün olduğunca güncel tutmak için `AdaptyProfile` önbelleğini düzenli aralıklarla güncellediğini de belirtmek gerekir.</p> |
+
+`.getProfile()` metodu, access level durumunu alabileceğiniz kullanıcı profilini sağlar. Uygulama başına birden fazla access level tanımlayabilirsiniz. Örneğin bir gazete uygulamanız varsa ve farklı konulara bağımsız abonelikler satıyorsanız, "sports" ve "science" adında access level'lar oluşturabilirsiniz. Ancak çoğu zaman yalnızca bir access level'a ihtiyaç duyulur; bu durumda varsayılan "premium" access level'ı kullanabilirsiniz.
+
+Varsayılan "premium" access level'ını kontrol etmek için bir örnek:
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+// "premium" is an identifier of default access level
+var accessLevel = profile.AccessLevels["premium"];
+if (accessLevel != null && accessLevel.IsActive) {
+// grant access to premium features
+}
+});
+```
+
+### Abonelik durumu güncellemelerini dinleme \{#listening-for-subscription-status-updates\}
+
+Kullanıcının aboneliği her değiştiğinde Adapty bir olay tetikler.
+
+Adapty'den mesaj alabilmek için bazı ek yapılandırmalar yapmanız gerekir:
+
+```csharp showLineNumbers
+// Extend `AdaptyEventListener ` with `OnLoadLatestProfile ` method:
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+  public void OnLoadLatestProfile(AdaptyProfile profile) {
+    // handle any changes to subscription state
+  }
+}
+```
+
+Adapty, uygulama başlangıcında da bir olay tetikler. Bu durumda önbellekteki abonelik durumu iletilir.
+
+### Abonelik durumu önbelleği \{#subscription-status-cache\}
+
+Adapty SDK'daki önbellek, profilin abonelik durumunu saklar. Bu sayede sunucu kullanılamaz olsa bile profil abonelik durumu hakkında bilgi sağlamak için önbellekteki verilere erişilebilir.
+
+Ancak önbellekten doğrudan veri isteği yapılamadığını belirtmek gerekir. SDK, profille ilgili güncelleme veya değişiklikleri kontrol etmek için sunucuyu her dakika periyodik olarak sorgular. Yeni işlemler ya da diğer güncellemeler gibi değişiklikler varsa, sunucuyla senkronizasyonu korumak amacıyla önbellekteki verilere yansıtılır.

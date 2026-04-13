@@ -1,0 +1,113 @@
+---
+title: "iOS SDK'da abonelik durumunu kontrol etme"
+description: "Müşteri tutunumunu artırmak için Adapty'de kullanıcı abonelik durumunu takip edin ve yönetin."
+metadataTitle: "Abonelik Durumunu Anlama | Adapty Dokümanları"
+keywords: ['getProfile', 'cache']
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md'; 
+
+Adapty ile abonelik durumunu takip etmek çok kolaydır. Ürün kimliklerini kodunuza elle girmenize gerek yoktur. Bunun yerine, aktif bir [access level](access-level) olup olmadığını kontrol ederek kullanıcının abonelik durumunu zahmetsizce doğrulayabilirsiniz.
+
+Abonelik durumunu kontrol etmeye başlamadan önce [App Store Server Notifications](enable-app-store-server-notifications) ayarlarını yapın.
+
+## Access level ve AdaptyProfile nesnesi \{#access-level-and-the-adaptyprofile-object\}
+
+Access level'lar, [AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile) nesnesinin özelliklerdir. Profili; uygulamanız başladığında, örneğin [bir kullanıcıyı tanımladığınızda](identifying-users#set-customer-user-id-on-configuration), alıp değişiklik olduğunda güncellemenizi öneririz. Bu sayede profil nesnesini defalarca istek atmadan kullanabilirsiniz.
+
+Profil güncellemelerinden haberdar olmak için, aşağıdaki [Abonelik durumu güncellemelerini dinleme](subscription-status#listening-for-subscription-status-updates) bölümünde açıklandığı gibi profil değişikliklerini dinleyin.
+
+<SampleApp />
+
+## Access level'ı sunucudan alma \{#retrieving-the-access-level-from-the-server\}
+
+Access level'ı sunucudan almak için `.getProfile()` metodunu kullanın:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get() {
+        // check the access
+        profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // grant access to premium features
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Profile   | <p>Bir [AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile) nesnesi. Genel olarak, kullanıcının uygulamaya premium erişimi olup olmadığını belirlemek için yalnızca profilin access level durumunu kontrol etmeniz yeterlidir.</p><p></p><p>`.getProfile` metodu her zaman API'yi sorgulamaya çalıştığından en güncel sonucu döndürür. Herhangi bir nedenle (ör. internet bağlantısı yoksa) Adapty SDK sunucudan bilgi alamazsa, önbelleğe alınmış veriler döndürülür. Ayrıca Adapty SDK, `AdaptyProfile` önbelleğini düzenli aralıklarla güncelleyerek bu bilgilerin mümkün olduğunca güncel kalmasını sağlar.</p> |
+
+`.getProfile()` metodu size kullanıcı profilini döndürür; bu profil üzerinden access level durumunu öğrenebilirsiniz. Bir uygulamada birden fazla access level tanımlayabilirsiniz. Örneğin, bir gazete uygulamanız varsa ve farklı konulara bağımsız abonelikler satıyorsanız "sports" ve "science" adında access level'lar oluşturabilirsiniz. Ancak çoğu zaman yalnızca bir access level'a ihtiyaç duyarsınız; böyle durumlarda varsayılan "premium" access level'ı kullanabilirsiniz.
+
+Varsayılan "premium" access level'ını kontrol etmek için bir örnek:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    let isPremium = profile.accessLevels["premium"]?.isActive ?? false
+    // grant access to premium features
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get(), 
+       profile.accessLevels["premium"]?.isActive ?? false {
+        // grant access to premium features
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+### Abonelik durumu güncellemelerini dinleme \{#listening-for-subscription-status-updates\}
+
+Kullanıcının aboneliği her değiştiğinde Adapty bir olay tetikler.
+
+Adapty'den mesaj alabilmek için bazı ek yapılandırmalar yapmanız gerekir:
+
+```swift showLineNumbers
+Adapty.delegate = self
+
+// To receive subscription updates, extend `AdaptyDelegate` with this method:
+nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
+    // handle any changes to subscription state
+}
+```
+
+Adapty, uygulama başlangıcında da bir olay tetikler. Bu durumda önbelleğe alınmış abonelik durumu iletilir.
+
+### Abonelik durumu önbelleği \{#subscription-status-cache\}
+
+Adapty SDK'daki önbellek, profilin abonelik durumunu saklar. Bu sayede sunucuya erişilemese bile önbelleğe alınan veriler kullanılarak profil abonelik durumu hakkında bilgi edinilebilir.
+
+Ancak önbellekten doğrudan veri isteği yapılamayacağını belirtmek gerekir. SDK, profilde herhangi bir güncelleme veya değişiklik olup olmadığını kontrol etmek için sunucuyu her dakika periyodik olarak sorgular. Yeni işlemler veya başka güncellemeler gibi değişiklikler varsa, bunlar sunucuyla senkronize kalması için önbelleğe alınan verilere yansıtılır.

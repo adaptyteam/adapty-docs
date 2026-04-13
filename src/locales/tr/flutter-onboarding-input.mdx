@@ -1,0 +1,250 @@
+---
+title: "Flutter SDK'da onboarding verilerini işleme"
+description: "Adapty SDK ile Flutter uygulamanızdaki onboarding verilerini kaydedin ve kullanın."
+metadataTitle: "Onboarding'ler | Flutter SDK | Adapty Dokümanları"
+---
+
+Kullanıcılarınız bir quiz sorusunu yanıtladığında veya bir giriş alanına veri girdiğinde, `onStateUpdatedAction` metodu çağrılır. Alan türünü kodunuzda kaydedebilir veya işleyebilirsiniz.
+
+Örneğin:
+
+```dart
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Process data 
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  // Process data 
+}
+```
+
+Aksiyon formatını [buradan](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyUIOnboardingPlatformView/onStateUpdatedAction.html) inceleyebilirsiniz.
+
+<Details>
+<summary>Kaydedilen veri örnekleri (format uygulamanıza göre farklılık gösterebilir)</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## Kullanım senaryoları \{#use-cases\}
+
+### Kullanıcı profillerini verilerle zenginleştirme \{#enrich-user-profiles-with-data\}
+
+Girilen verileri kullanıcı profiliyle anında ilişkilendirmek ve aynı bilgiyi iki kez sormaktan kaçınmak istiyorsanız, aksiyonu işlerken [kullanıcı profilini](flutter-setting-user-attributes) girilen verilerle güncellemeniz gerekir.
+
+Örneğin, kullanıcılardan `name` ID'sine sahip metin alanına adlarını girmelerini istiyorsunuz ve bu alanın değerini kullanıcının adı olarak kaydetmek istiyorsunuz. Ayrıca `email` alanına e-posta girmelerini istiyorsunuz. Uygulama kodunuzda bu şöyle görünebilir:
+
+```dart showLineNumbers
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Store user preferences or responses
+  if (params is AdaptyOnboardingsInputParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map elementId to appropriate profile field
+    switch (elementId) {
+      case 'name':
+        if (params.input is AdaptyOnboardingsTextInput) {
+          builder.setFirstName((params.input as AdaptyOnboardingsTextInput).value);
+        }
+        break;
+      case 'email':
+        if (params.input is AdaptyOnboardingsEmailInput) {
+          builder.setEmail((params.input as AdaptyOnboardingsEmailInput).value);
+        }
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  // Store user preferences or responses
+  if (params is AdaptyOnboardingsInputParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map elementId to appropriate profile field
+    switch (elementId) {
+      case 'name':
+        if (params.input is AdaptyOnboardingsTextInput) {
+          builder.setFirstName((params.input as AdaptyOnboardingsTextInput).value);
+        }
+        break;
+      case 'email':
+        if (params.input is AdaptyOnboardingsEmailInput) {
+          builder.setEmail((params.input as AdaptyOnboardingsEmailInput).value);
+        }
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+```
+
+### Yanıtlara göre paywall'ları özelleştirme \{#customize-paywalls-based-on-answers\}
+
+Onboarding'lerde quiz kullanarak, kullanıcılara onboarding'i tamamladıktan sonra gösterdiğiniz paywall'ları da özelleştirebilirsiniz.
+
+Örneğin, kullanıcılara spor deneyimleri hakkında sorular sorabilir ve farklı kullanıcı gruplarına farklı CTA'lar ve ürünler gösterebilirsiniz.
+
+1. Onboarding oluşturucusuna [bir quiz ekleyin](onboarding-quizzes) ve seçeneklere anlamlı ID'ler atayın.
+
+<ZoomImage id="experience.webp" />
+
+2. Quiz yanıtlarını ID'lerine göre işleyin ve kullanıcılar için [özel nitelikler ayarlayın](flutter-setting-user-attributes).
+
+```dart showLineNumbers
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Handle quiz responses and set custom attributes
+  if (params is AdaptyOnboardingsSelectParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map quiz responses to custom attributes
+    switch (elementId) {
+      case 'experience':
+        // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+        builder.setCustomStringAttribute(params.value, 'experience');
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  // Handle quiz responses and set custom attributes
+  if (params is AdaptyOnboardingsSelectParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map quiz responses to custom attributes
+    switch (elementId) {
+      case 'experience':
+        // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+        builder.setCustomStringAttribute(params.value, 'experience');
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+```
+
+3. Her özel nitelik değeri için [segment oluşturun](segments).
+4. Bir [placement](placements) oluşturun ve oluşturduğunuz her segment için [kitle](audience) ekleyin.
+5. Uygulama kodunuzda placement için bir [paywall görüntüleyin](flutter-paywalls). Onboarding'inizde bir paywall açan bir buton varsa, paywall kodunu [bu butonun aksiyonuna verilen yanıt](flutter-handling-onboarding-events#opening-a-paywall) olarak uygulayın.

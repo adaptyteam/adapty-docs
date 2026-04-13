@@ -1,0 +1,177 @@
+---
+title: "Capacitor SDK'da Paywall Builder paywall'larını ve yapılandırmalarını getirme"
+description: "Capacitor uygulamanızda abonelik kontrolünü iyileştirmek için Adapty'de PB paywall'larını nasıl alacağınızı öğrenin."
+metadataTitle: "Adapty'de PB Paywall'larını Getirme | Adapty Dokümanları"
+displayed_sidebar: sdkcapacitor
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+
+Adapty Kontrol Paneli'ndeki yeni Paywall Builder ile [paywall'ınızın görsel bölümünü tasarladıktan](adapty-paywall-builder) sonra bunu mobil uygulamanızda gösterebilirsiniz. Bu süreçteki ilk adım, aşağıda açıklandığı gibi placement ile ilişkili paywall'ı ve görünüm yapılandırmasını almaktır.
+
+Bu konunun Paywall Builder ile özelleştirilmiş paywall'lara atıfta bulunduğunu unutmayın. Remote config paywall'larını getirme hakkında bilgi için [Mobil uygulamanızda remote config paywall'ları için paywall ve ürünleri getirme](fetch-paywalls-and-products-capacitor) konusuna bakın.
+
+<details>
+   <summary>Mobil uygulamanızda paywall'ları görüntülemeye başlamadan önce (genişletmek için tıklayın)</summary>
+
+1. Adapty Kontrol Paneli'nde [ürünlerinizi oluşturun](create-product).
+2. Adapty Kontrol Paneli'nde [bir paywall oluşturun ve ürünleri bu paywall'a ekleyin](create-paywall).
+3. Adapty Kontrol Paneli'nde [placement'lar oluşturun ve paywall'ınızı bunlara ekleyin](create-placement).
+4. Mobil uygulamanıza [Adapty SDK](sdk-installation-capacitor)'yı yükleyin.
+</details>
+
+## Paywall Builder ile tasarlanan paywall'ı getirme \{#fetch-paywall-designed-with-paywall-builder\}
+
+[Paywall Builder kullanarak bir paywall tasarladıysanız](adapty-paywall-builder), bunu kullanıcıya göstermek için mobil uygulama kodunuzda render etmeniz gerekmez. Bu tür bir paywall, paywall içinde neyin gösterileceğini ve nasıl gösterileceğini içerir. Bununla birlikte, placement üzerinden ID'sini, görünüm yapılandırmasını almanız ve ardından mobil uygulamanızda sunmanız gerekir.
+
+En iyi performansı sağlamak için, kullanıcıya sunmadan önce görsellerin indirilmesine yeterli süre tanımak amacıyla paywall'ı ve [görünüm yapılandırmasını](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) mümkün olan en erken aşamada almanız kritik önem taşır.
+
+Bir paywall almak için `getPaywall` metodunu kullanın:
+
+```typescript showLineNumbers
+try {
+  const paywall = await adapty.getPaywall({
+    placementId: 'YOUR_PLACEMENT_ID',
+    locale: 'en',
+  });
+  // the requested paywall
+} catch (error) {
+  // handle the error
+}
+```
+
+Parametreler:
+
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|-----------|
+| **placementId** | zorunlu | İstenen [Placement](placements)'ın tanımlayıcısı. Adapty Kontrol Paneli'nde bir placement oluştururken belirttiğiniz değerdir. |
+| **locale** | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | <p>[Paywall yerelleştirmesinin](add-paywall-locale-in-adapty-paywall-builder) tanımlayıcısı. Bu parametrenin, eksi (**-**) karakteriyle ayrılmış bir veya iki alt etiketten oluşan bir dil kodu olması beklenir. İlk alt etiket dil, ikincisi ise bölge içindir.</p><p></p><p>Örnek: `en` İngilizce anlamına gelir, `pt-br` Brezilya Portekizcesini temsil eder.</p><p>Yerel ayar kodları ve bunların nasıl kullanılması önerildiği hakkında daha fazla bilgi için [Yerelleştirmeler ve yerel ayar kodları](localizations-and-locale-codes) bölümüne bakın.</p> |
+| **params** | isteğe bağlı | Paywall'ı getirmek için ek parametreler. |
+
+**Ürün ID'lerini doğrudan koda yazmayın.** Doğrudan koda yazmanız gereken tek ID, placement ID'sidir. Paywall'lar uzaktan yapılandırıldığından, ürün sayısı ve mevcut teklifler herhangi bir anda değişebilir. Uygulamanız bu değişiklikleri dinamik olarak ele almalıdır; bir paywall bugün iki ürün, yarın üç ürün döndürüyorsa, kod değişikliği yapmadan hepsini görüntüleyin.
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama                                                                                                                                                                         |
+| :-------- |:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | Ürün ID'leri listesi, paywall tanımlayıcısı, remote config ve diğer birkaç özelliği içeren bir [`AdaptyPaywall`](https://capacitor.adapty.io/interfaces/adaptypaywall) nesnesi. |
+
+## Paywall Builder ile tasarlanan paywall'ın görünüm yapılandırmasını getirme \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+Paywall builder'da **Show on device** düğmesinin etkin olduğundan emin olun. Bu seçenek açık değilse görünüm yapılandırması alınamaz.
+:::
+
+Paywall'ı aldıktan sonra, Paywall Builder kullanılarak oluşturulduğunu gösteren bir `ViewConfiguration` içerip içermediğini kontrol edin. Bu durum, paywall'ı nasıl görüntüleyeceğiniz konusunda size yol gösterir. `ViewConfiguration` mevcutsa Paywall Builder paywall'ı olarak değerlendirin; değilse [remote config paywall'ı olarak işleyin](present-remote-config-paywalls-capacitor).
+
+Capacitor SDK'da, görünüm yapılandırmasını önce manuel olarak getirmeden doğrudan `createPaywallView` metodunu çağırın.
+
+:::warning
+`createPaywallView` metodunun sonucu yalnızca bir kez kullanılabilir. Tekrar kullanmanız gerekiyorsa `createPaywallView` metodunu yeniden çağırın.
+:::
+
+```typescript showLineNumbers
+
+if (paywall.hasViewConfiguration) {
+  try {
+    const view = await createPaywallView(paywall);
+  } catch (error) {
+    // handle the error
+  }
+} else {
+  // use your custom logic
+}
+```
+
+Parametreler:
+
+| Parametre            | Zorunluluk | Açıklama                                                  |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **paywall**          | zorunlu | İstenen paywall için controller elde etmek amacıyla kullanılan `AdaptyPaywall` nesnesi. |
+| **customTags**       | isteğe bağlı | Özel etiketlerin ve çözümlenmiş değerlerinin bir sözlüğünü tanımlayın. Özel etiketler, paywall içeriğinde yer tutucu işlevi görür ve paywall içinde kişiselleştirilmiş içerik için belirli dizelerle dinamik olarak değiştirilir. Daha fazla ayrıntı için [Paywall builder'da özel etiketler](custom-tags-in-paywall-builder) konusuna bakın. |
+| **prefetchProducts** | isteğe bağlı | Ekrandaki ürünlerin görüntülenme zamanlamasını optimize etmek için etkinleştirin. `true` olduğunda AdaptyUI gerekli ürünleri otomatik olarak getirir. Varsayılan: `false`. |
+
+:::note
+Birden fazla dil kullanıyorsanız, [Paywall Builder yerelleştirmesi](add-paywall-locale-in-adapty-paywall-builder) eklemeyi ve yerel ayar kodlarını doğru kullanmayı [buradan](capacitor-localizations-and-locale-codes) öğrenin.
+:::
+
+Görünümü aldıktan sonra [paywall'ı sunun](capacitor-present-paywalls).
+
+## Daha hızlı getirmek için varsayılan kitle paywall'ını alma \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Genellikle paywall'lar neredeyse anında getirilir, bu nedenle bu süreci hızlandırma konusunda endişelenmenize gerek yoktur. Ancak çok sayıda kitle ve paywall'ınız olduğu ve kullanıcılarınızın zayıf bir internet bağlantısına sahip olduğu durumlarda, bir paywall'ı getirmek istediğinizden daha uzun sürebilir. Bu gibi durumlarda, hiç paywall göstermemek yerine sorunsuz bir kullanıcı deneyimi sağlamak için varsayılan bir paywall görüntülemek isteyebilirsiniz.
+
+Bunu ele almak için, belirtilen placement'ın paywall'ını **All Users** kitlesi için getiren `getPaywallForDefaultAudience` metodunu kullanabilirsiniz. Ancak, önerilen yaklaşımın yukarıdaki [Paywall Bilgilerini Getirme](#fetch-paywall-designed-with-paywall-builder) bölümünde ayrıntılı olarak açıklandığı gibi `getPaywall` metoduyla paywall'ı getirmek olduğunu anlamak önemlidir.
+
+:::warning
+`getPaywall` kullanmanızı neden öneriyoruz
+
+`getPaywallForDefaultAudience` metodunun birkaç önemli dezavantajı vardır:
+
+- **Olası geriye dönük uyumluluk sorunları**: Farklı uygulama sürümleri için (mevcut ve gelecekteki) farklı paywall'lar göstermeniz gerekiyorsa, mevcut (eski) sürümü destekleyen paywall'lar tasarlamanız ya da mevcut (eski) sürüme sahip kullanıcıların render edilemeyen paywall'larla karşılaşabileceğini kabul etmeniz gerekir.
+- **Hedefleme kaybı**: Tüm kullanıcılar **All Users** kitlesi için tasarlanmış aynı paywall'ı görür; bu da kişiselleştirilmiş hedeflemeyi (ülkelere, marketing attribution'a veya kendi özel özelliklerinize göre hedefleme dahil) kaybetmeniz anlamına gelir.
+
+Daha hızlı paywall getirmenin avantajından yararlanmak için bu dezavantajları kabul etmeye razıysanız, aşağıdaki gibi `getPaywallForDefaultAudience` metodunu kullanın. Aksi takdirde [yukarıda](#fetch-paywall-designed-with-paywall-builder) açıklanan `getPaywall` metodunu kullanmaya devam edin.
+:::
+
+```typescript showLineNumbers
+try {
+  const paywall = await adapty.getPaywallForDefaultAudience({
+    placementId: 'YOUR_PLACEMENT_ID',
+    locale: 'en',
+  });
+  // the requested paywall
+} catch (error) {
+  // handle the error
+}
+```
+
+:::note
+`getPaywallForDefaultAudience` metodu, Capacitor SDK 2.11.2 sürümünden itibaren kullanılabilir.
+:::
+
+| Parametre | Zorunluluk | Açıklama                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | zorunlu | [Placement](placements)'ın tanımlayıcısı. Adapty Kontrol Paneli'nde bir placement oluştururken belirttiğiniz değerdir.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **locale** | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | <p>[Paywall yerelleştirmesinin](add-remote-config-locale) tanımlayıcısı. Bu parametrenin, eksi (**-**) karakteriyle ayrılmış bir veya daha fazla alt etiketten oluşan bir dil kodu olması beklenir. İlk alt etiket dil, ikincisi ise bölge içindir.</p><p></p><p>Örnek: `en` İngilizce anlamına gelir, `pt-br` Brezilya Portekizcesini temsil eder.</p><p></p><p>Yerel ayar kodları ve bunların nasıl kullanılması önerildiği hakkında daha fazla bilgi için [Yerelleştirmeler ve yerel ayar kodları](capacitor-localizations-and-locale-codes) bölümüne bakın.</p>                                                                                                                                                                                                                                       |
+| **params** | isteğe bağlı | Paywall'ı getirmek için ek parametreler. |
+
+## Varlıkları özelleştirme \{#customize-assets\}
+
+Paywall'ınızdaki görselleri ve videoları özelleştirmek için özel varlıkları uygulayın.
+
+Hero görsellerin ve videoların önceden tanımlanmış ID'leri vardır: `hero_image` ve `hero_video`. Özel bir varlık paketinde, bu öğeleri ID'leriyle hedefler ve davranışlarını özelleştirirsiniz.
+
+Diğer görseller ve videolar için Adapty kontrol panelinde [özel bir ID ayarlamanız](custom-media) gerekir.
+
+Örneğin şunları yapabilirsiniz:
+
+- Bazı kullanıcılara farklı bir görsel veya video gösterme.
+- Uzaktaki ana görsel yüklenirken yerel bir önizleme görseli gösterme.
+- Video oynatılmadan önce bir önizleme görseli gösterme.
+
+:::important
+Bu özelliği kullanmak için Adapty Capacitor SDK'yı 3.8.0 veya daha yüksek bir sürüme güncelleyin.
+:::
+
+Basit bir sözlük aracılığıyla özel varlıkları nasıl sağlayabileceğinize dair bir örnek:
+
+```typescript showLineNumbers
+const customAssets: Record<string, AdaptyCustomAsset> = {
+  'custom_image': { type: 'image', relativeAssetPath: 'custom_image.png' },
+  'hero_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'custom_video.mp4' },
+      android: { relativeAssetPath: 'videos/custom_video.mp4' }
+    }
+  }
+};
+
+view = await createPaywallView(paywall, { customAssets });
+```
+
+:::note
+Bir varlık bulunamazsa paywall varsayılan görünümüne geri döner.
+:::

@@ -1,0 +1,138 @@
+---
+title: "Adapty React Native SDK'yı v. 3.14'e Taşıma"
+description: "Daha iyi performans ve yeni monetizasyon özellikleri için Adapty React Native SDK v3.14'e geçin."
+metadataTitle: "Adapty React Native SDK v3.14'e Geçiş | Adapty Dokümanları"
+---
+
+Adapty React Native SDK 3.14.0, sizin tarafınızdan geçiş adımları gerektiren iyileştirmeler sunan büyük bir sürümdür:
+
+- `registerEventHandlers` metodu, `setEventHandlers` metoduyla değiştirildi.
+- `AdaptyOnboardingView`'da event handler'lar artık `eventHandlers` nesnesi yerine ayrı prop'lar olarak geçiliyor.
+- UI bileşenleri için yeni, basitleştirilmiş bir import stili eklendi.
+- `logShowOnboarding` metodu kaldırıldı.
+- Minimum React Native sürümü 0.73.0 olarak güncellendi.
+- Paywall'lar ve onboarding'ler için varsayılan iOS sunum stili, sayfa sayfasından tam ekrana değiştirildi.
+
+## `registerEventHandlers`'ı `setEventHandlers` ile Değiştirin \{#replace-registereventhandlers-with-seteventhandlers\}
+
+Adapty Paywall ve Onboarding Builder ile çalışmak için kullanılan `registerEventHandlers` metodu, `setEventHandlers` metoduyla değiştirildi.
+Adapty Paywall Builder ve/veya Adapty Onboarding Builder kullanıyorsanız, uygulama kodunuzda `registerEventHandlers` ifadesini bulun ve `setEventHandlers` ile değiştirin.
+
+Bu değişiklik, metodun davranışını daha anlaşılır hale getirmek amacıyla yapıldı: Handler'lar artık tek tek çalışıyor çünkü her biri `true`/`false` döndürüyor; tek bir event için birden fazla handler tanımlamak sonuçtaki davranışı belirsiz hale getiriyordu.
+
+`AdaptyOnboardingView` veya `AdaptyPaywallView` gibi React bileşenleri kullanırken event handler'lardan `true`/`false` döndürmeniz gerekmez; bileşenin görünürlüğünü kendi state yönetiminiz aracılığıyla kontrol edersiniz. Dönüş değerleri yalnızca SDK'nın view yaşam döngüsünü yönettiği modal ekran sunumlarında gereklidir.
+
+:::important
+`setEventHandlers`'ı birden fazla kez çağırmak, sağladığınız handler'ların üzerine yazar; bu, ilgili event'ler için hem varsayılan hem de önceden ayarlanan handler'ların yerini alır.
+:::
+
+```diff showLineNumbers 
+- const unsubscribe = view.registerEventHandlers({
+-    // your event handlers
+- })
+
+ const unsubscribe = view.setEventHandlers({
+    // your event handlers
+ })
+``` 
+
+## UI Bileşenleri için Import Yollarını Güncelleyin \{#update-import-paths-for-ui-components\}
+
+Adapty SDK 3.14.0, UI bileşenleri için basitleştirilmiş bir import stili sunuyor. Artık `react-native-adapty/dist/ui` yerine doğrudan `react-native-adapty`'den import edebilirsiniz.
+
+Yeni import stili, standart React Native pratikleriyle daha tutarlı ve import ifadelerini daha sade hale getiriyor. `AdaptyPaywallView` veya `AdaptyOnboardingView` gibi UI bileşenleri kullanıyorsanız, import'larınızı aşağıda gösterildiği gibi güncelleyin:
+
+```diff showLineNumbers
+- import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
++ import { AdaptyPaywallView } from 'react-native-adapty';
+
+- import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
++ import { AdaptyOnboardingView } from 'react-native-adapty';
+
+- import { createPaywallView } from 'react-native-adapty/dist/ui';
++ import { createPaywallView } from 'react-native-adapty';
+
+- import { createOnboardingView } from 'react-native-adapty/dist/ui';
++ import { createOnboardingView } from 'react-native-adapty';
+```
+
+:::note
+Geriye dönük uyumluluk için eski import stili (`react-native-adapty/dist/ui`) hâlâ desteklenmektedir. Ancak tutarlılık ve netlik açısından yeni import stilini kullanmanızı öneririz.
+:::
+
+## React Bileşeninde Onboarding Event Handler'larını Güncelleyin \{#update-onboarding-event-handlers-in-the-react-component\}
+
+Onboarding'lere ait event handler'lar, `AdaptyOnboardingView`'daki `eventHandlers` nesnesinin dışına taşındı. Onboarding'leri `AdaptyOnboardingView` kullanarak gösteriyorsanız, event handling yapısını güncelleyin.
+
+:::important
+Event handler'ları uygularken önerilen yönteme dikkat edin. Her render'da nesnelerin yeniden oluşturulmasını önlemek için event handler fonksiyonlarında `useCallback` kullanın.
+:::
+
+```diff showLineNumbers
+ import React, { useCallback } from 'react';
+- import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
++ import { AdaptyOnboardingView } from 'react-native-adapty';
++ import type { OnboardingEventHandlers } from 'react-native-adapty';
++
++ function MyOnboarding({ onboarding }) {
++   const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
++   const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
++   const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
++   const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
++   const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
++   const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
++   const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
++
+   return (
+     <AdaptyOnboardingView
+       onboarding={onboarding}
+       style={styles.container}
+-       eventHandlers={{
+-         onAnalytics(event, meta) { /* ... */ },
+-         onClose(actionId, meta) { /* ... */ },
+-         onCustom(actionId, meta) { /* ... */ },
+-         onPaywall(actionId, meta) { /* ... */ },
+-         onStateUpdated(action, meta) { /* ... */ },
+-         onFinishedLoading(meta) { /* ... */ },
+-         onError(error) { /* ... */ },
+-       }}
++       onAnalytics={onAnalytics}
++       onClose={onClose}
++       onCustom={onCustom}
++       onPaywall={onPaywall}
++       onStateUpdated={onStateUpdated}
++       onFinishedLoading={onFinishedLoading}
++       onError={onError}
+     />
+   );
++ }
+```
+
+:::note
+Geriye dönük uyumluluk için `eventHandlers` prop'u hâlâ desteklenmektedir ancak kullanımdan kaldırılmıştır. Yukarıda gösterildiği gibi ayrı event handler prop'larına geçmenizi öneririz.
+:::
+
+## `logShowOnboarding`'i Kaldırın \{#delete-logshowonboarding\}
+
+Adapty SDK 3.14.0'da `logShowOnboarding` metodu SDK'dan kaldırıldı.
+Bu metodu kullanıyorsanız, SDK'yı 3.14 veya sonraki bir sürüme yükselttiğinizde artık kullanılamaz.
+
+Bunun yerine [Adapty kodsuz onboarding builder'da onboarding'ler oluşturabilirsiniz](onboardings). Bu onboarding'lere ait analizler otomatik olarak takip edilir ve pek çok özelleştirme seçeneğine sahip olursunuz.
+
+## React Native'i Güncelleyin \{#update-react-native\}
+
+Adapty SDK 3.14.0'dan itibaren React Native'in desteklenen minimum sürümü 0.73.0'dır. Daha eski bir sürüm kullanıyorsanız, Adapty SDK ile tutarlı ve güvenilir bir deneyim için React Native'i 0.73.0 veya sonraki bir sürüme güncelleyin.
+
+## Modal Paywall'lar ve Onboarding'ler için iOS Sunum Stilini Güncelleyin \{#update-ios-presentation-style-for-modal-paywalls-and-onboardings\}
+
+Adapty SDK 3.14.0'da, `view.present()` metodu kullanılarak görüntülenen paywall'lar ve onboarding'ler için varsayılan iOS sunum stili, sayfa sayfasından tam ekrana değiştirildi.
+
+Önceki sayfa sayfası sunum stilini korumak istiyorsanız, `present()` metoduna `iosPresentationStyle` parametresini geçin:
+
+```typescript showLineNumbers title="React Native (TSX)"
+try {
+  await view.present({ iosPresentationStyle: 'page_sheet' });
+} catch (error) {
+  // handle the error
+}
+```

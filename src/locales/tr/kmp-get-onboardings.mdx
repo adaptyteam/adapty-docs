@@ -1,0 +1,95 @@
+---
+title: "Kotlin Multiplatform SDK'da onboarding'leri alma"
+description: "Adapty'de Kotlin Multiplatform için onboarding'lerin nasıl alınacağını öğrenin."
+metadataTitle: "Adapty'de onboarding'leri alma | Adapty Dokümanları"
+keywords: ['getOnboarding', 'getOnboardingForDefaultAudience']
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
+Adapty Kontrol Paneli'ndeki oluşturucuyla [onboarding'inizin görsel bölümünü tasarladıktan](design-onboarding) sonra, bunu Kotlin Multiplatform uygulamanızda gösterebilirsiniz. Bu sürecin ilk adımı, placement ile ilişkili onboarding'i ve görünüm yapılandırmasını aşağıda açıklandığı gibi almaktır.
+
+Başlamadan önce aşağıdakileri sağladığınızdan emin olun:
+
+1. [Adapty Kotlin Multiplatform SDK](sdk-installation-kotlin-multiplatform) sürüm 3.15.0 veya daha yüksek bir sürümü yüklediniz.
+2. [Bir onboarding oluşturdunuz](create-onboarding).
+3. Onboarding'i bir [placement](placements)'a eklediniz.
+
+## Onboarding'i getirme \{#fetch-onboarding}
+
+Kodsuz oluşturucumuzla bir [onboarding](onboardings) oluşturduğunuzda, bu onboarding uygulamanızın getirip göstermesi gereken bir yapılandırma içeren konteyner olarak depolanır. Bu konteyner; hangi içeriğin gösterileceğini, nasıl sunulacağını ve kullanıcı etkileşimlerinin (quiz yanıtları veya form girişleri gibi) nasıl işleneceğini yöneterek tüm deneyimi yönetir. Konteyner ayrıca analiz etkinliklerini otomatik olarak izler; bu nedenle ayrı bir görünüm takibi uygulamanız gerekmez.
+
+En iyi performans için, görüntüleri kullanıcılara göstermeden önce indirmek için yeterli zaman tanımak amacıyla onboarding yapılandırmasını erken getirin.
+
+Bir onboarding almak için `getOnboarding` metodunu kullanın:
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
+
+Adapty.getOnboarding(
+    placementId = "YOUR_PLACEMENT_ID",
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+    loadTimeout = 5.seconds
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
+    // handle the error
+}
+```
+
+Parametreler:
+
+| Parametre | Zorunluluk | Açıklama                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+|---------|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | zorunlu | İstenen [Placement](placements)'ın tanımlayıcısı. Bu, Adapty Kontrol Paneli'nde bir placement oluştururken belirttiğiniz değerdir.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **locale** | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | Onboarding yerelleştirmesinin tanımlayıcısı. Bu parametrenin, eksi (**-**) karakteriyle ayrılan bir veya iki alt etiket içeren bir dil kodu olması beklenir. İlk alt etiket dil, ikincisi bölge içindir.<p>Örnek: `en` İngilizce anlamına gelir, `pt-br` Brezilya Portekizcesini temsil eder.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **fetchPolicy** | varsayılan: `.reloadRevalidatingCacheData` | <p>Varsayılan olarak SDK, sunucudan veri yüklemeye çalışır ve başarısız olması durumunda önbelleğe alınmış veriyi döndürür. Kullanıcılarınızın her zaman en güncel verilere ulaşmasını sağladığı için bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internet bağlantısıyla karşılaştığını düşünüyorsanız, mevcut olması durumunda önbelleğe alınmış veriyi döndürmek için `.returnCacheDataElseLoad` kullanmayı düşünün. Bu senaryoda kullanıcılar en son verileri alamayabilir; ancak internet bağlantıları ne kadar kesintili olursa olsun daha hızlı yükleme süreleri yaşarlar. Önbellek düzenli olarak güncellenir, bu nedenle ağ isteklerinden kaçınmak amacıyla oturum sırasında kullanmak güvenlidir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında bozulmadan kaldığını ve yalnızca uygulama yeniden yüklendiğinde veya manuel temizleme yapıldığında temizlendiğini unutmayın.</p><p></p><p>Adapty SDK, onboarding'leri yerel olarak iki katmanda depolar: yukarıda açıklanan düzenli olarak güncellenen önbellek ve yedek onboarding'ler. Onboarding'leri daha hızlı getirmek için CDN, CDN'e ulaşılamadığı durumlarda ise bağımsız bir yedek sunucu kullanırız. Bu sistem, internet bağlantısının yetersiz olduğu durumlarda bile güvenilirliği sağlarken onboarding'lerinizin her zaman en son sürümünü almanızı garantilemek için tasarlanmıştır.</p> |
+| **loadTimeout** | varsayılan: 5 sn | <p>Bu değer, metodun zaman aşımını sınırlar. Zaman aşımına ulaşıldığında, önbelleğe alınmış veri veya yerel yedek döndürülür.</p><p>İşlem, arka planda farklı isteklerden oluşabileceğinden, nadir durumlarda bu metodun `loadTimeout`'ta belirtilenden biraz daha geç zaman aşımına uğrayabileceğini unutmayın.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama                                                                                                                                                                              |
+|:----------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Onboarding      | Onboarding tanımlayıcısı ve yapılandırması, remote config ve diğer çeşitli özellikleri içeren bir [`AdaptyOnboarding`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-onboarding/) nesnesi. |
+
+## Varsayılan kitle onboarding'iyle onboarding getirmeyi hızlandırma \{#speed-up-onboarding-fetching-with-default-audience-onboarding}
+
+Genellikle onboarding'ler neredeyse anında getirilir; bu nedenle bu süreci hızlandırma konusunda endişelenmenize gerek yoktur. Ancak çok sayıda kitleniz ve onboarding'iniz olduğu ve kullanıcılarınızın zayıf bir internet bağlantısına sahip olduğu durumlarda, onboarding getirmek istediğinizden daha uzun sürebilir. Bu tür durumlarda, hiç onboarding göstermemek yerine sorunsuz bir kullanıcı deneyimi sağlamak amacıyla varsayılan bir onboarding göstermek isteyebilirsiniz.
+
+Bu sorunu çözmek için, belirtilen placement'ın **Tüm Kullanıcılar** kitlesi için onboarding'i getiren `getOnboardingForDefaultAudience` metodunu kullanabilirsiniz. Ancak önerilen yaklaşımın, yukarıdaki [Onboarding'i Getirme](#fetch-onboarding) bölümünde ayrıntılı olarak açıklandığı şekilde `getOnboarding` metodu kullanmak olduğunu anlamak kritik önem taşır.
+
+:::warning
+`getOnboardingForDefaultAudience` yerine `getOnboarding` kullanmayı düşünün; çünkü ikincisinin önemli sınırlamaları vardır:
+
+- **Uyumluluk sorunları**: Birden fazla uygulama sürümünü desteklerken sorunlara yol açabilir; geriye dönük uyumlu tasarımlar gerektirir ya da eski sürümlerin yanlış görüntülenebileceği kabul edilmelidir.
+- **Kişiselleştirme yok**: Yalnızca "Tüm Kullanıcılar" kitlesi için içerik gösterir; ülke, attribution veya özel niteliklere dayalı hedefleme kaldırılır.
+
+Kullanım durumunuz için daha hızlı getirme bu dezavantajlardan daha ağır basıyorsa, aşağıda gösterildiği gibi `getOnboardingForDefaultAudience` kullanın. Aksi takdirde [yukarıda](#fetch-onboarding) açıklandığı gibi `getOnboarding` kullanın.
+:::
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywall
+import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
+
+Adapty.getOnboardingForDefaultAudience(
+    placementId = "YOUR_PLACEMENT_ID",
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
+    // handle the error
+}
+```
+
+Parametreler:
+
+| Parametre | Zorunluluk | Açıklama                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+|---------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | zorunlu | İstenen [Placement](placements)'ın tanımlayıcısı. Bu, Adapty Kontrol Paneli'nde bir placement oluştururken belirttiğiniz değerdir.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **locale** | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | Onboarding yerelleştirmesinin tanımlayıcısı. Bu parametrenin, eksi (**-**) karakteriyle ayrılan bir veya iki alt etiket içeren bir dil kodu olması beklenir. İlk alt etiket dil, ikincisi bölge içindir.<br/>Örnek: `en` İngilizce anlamına gelir, `pt-br` Brezilya Portekizcesini temsil eder.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **fetchPolicy** | varsayılan: `.reloadRevalidatingCacheData` | <p>Varsayılan olarak SDK, sunucudan veri yüklemeye çalışır ve başarısız olması durumunda önbelleğe alınmış veriyi döndürür. Kullanıcılarınızın her zaman en güncel verilere ulaşmasını sağladığı için bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internet bağlantısıyla karşılaştığını düşünüyorsanız, mevcut olması durumunda önbelleğe alınmış veriyi döndürmek için `.returnCacheDataElseLoad` kullanmayı düşünün. Bu senaryoda kullanıcılar en son verileri alamayabilir; ancak internet bağlantıları ne kadar kesintili olursa olsun daha hızlı yükleme süreleri yaşarlar. Önbellek düzenli olarak güncellenir, bu nedenle ağ isteklerinden kaçınmak amacıyla oturum sırasında kullanmak güvenlidir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında bozulmadan kaldığını ve yalnızca uygulama yeniden yüklendiğinde veya manuel temizleme yapıldığında temizlendiğini unutmayın.</p><p></p><p>Adapty SDK, onboarding'leri yerel olarak iki katmanda depolar: yukarıda açıklanan düzenli olarak güncellenen önbellek ve yedek onboarding'ler. Onboarding'leri daha hızlı getirmek için CDN, CDN'e ulaşılamadığı durumlarda ise bağımsız bir yedek sunucu kullanırız. Bu sistem, internet bağlantısının yetersiz olduğu durumlarda bile güvenilirliği sağlarken onboarding'lerinizin her zaman en son sürümünü almanızı garantilemek için tasarlanmıştır.</p> |

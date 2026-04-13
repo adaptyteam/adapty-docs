@@ -1,0 +1,161 @@
+---
+title: "Kotlin Multiplatform SDK'da kullanıcıları tanımlama"
+description: "Kişiselleştirilmiş abonelik deneyimlerini iyileştirmek için Adapty'de kullanıcıları tanımlayın."
+metadataTitle: "Adapty'de Kullanıcı Tanımlama | Adapty Dokümanları"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+Adapty, her kullanıcı için dahili bir profil ID'si oluşturur. Ancak kendi kimlik doğrulama sisteminiz varsa, kendi Customer User ID'nizi ayarlamanız gerekir. Kullanıcıları Customer User ID'lerine göre [Profiller](profiles-crm) bölümünde bulabilir ve tüm entegrasyonlara gönderilecek olan [sunucu taraflı API](getting-started-with-server-side-api)'de kullanabilirsiniz.
+
+### Yapılandırma sırasında customer user ID ayarlama \{#setting-customer-user-id-on-configuration\}
+
+Yapılandırma sırasında bir kullanıcı ID'niz varsa, `.activate()` metoduna `customerUserId` parametresi olarak geçirin:
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyConfig
+
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withCustomerUserId("YOUR_USER_ID")
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+    }
+}
+```
+
+<SampleApp />
+
+### Yapılandırma sonrasında customer user ID ayarlama \{#setting-customer-user-id-after-configuration\}
+
+SDK yapılandırması sırasında kullanıcı ID'niz yoksa, `.identify()` metoduyla istediğiniz zaman sonradan ayarlayabilirsiniz. Bu metodun en yaygın kullanım senaryoları; kayıt veya giriş işleminin ardından, yani kullanıcının anonim kullanıcıdan kimliği doğrulanmış kullanıcıya geçişi sırasındadır.
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+
+Adapty.identify("YOUR_USER_ID").onSuccess {
+    // successful identify
+}.onError { error ->
+    // handle the error
+}
+```
+
+İstek parametreleri:
+
+- **Customer User ID** (zorunlu): kullanıcının string kimliği.
+
+:::warning
+Önemli kullanıcı verilerini yeniden gönderme
+
+Kullanıcının hesabına tekrar giriş yapması gibi bazı durumlarda, Adapty sunucularında o kullanıcıya ait bilgiler zaten bulunuyor olabilir. Bu senaryolarda Adapty SDK, yeni kullanıcıyla çalışmak için otomatik olarak geçiş yapar. Anonim kullanıcıya özel nitelikler veya üçüncü taraf ağlardan attribution gibi veriler iletmişseniz, bu verileri tanımlanmış kullanıcı için yeniden göndermeniz gerekir.
+
+Ayrıca, kullanıcıyı tanımladıktan sonra tüm paywall'ları ve ürünleri yeniden istemeniz önemlidir; yeni kullanıcının verileri farklı olabilir.
+:::
+
+### Çıkış ve giriş yapma \{#logging-out-and-logging-in\}
+
+`.logout()` metodunu çağırarak istediğiniz zaman kullanıcının oturumunu kapatabilirsiniz:
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+
+Adapty.logout().onSuccess {
+    // successful logout
+}.onError { error ->
+    // handle the error
+}
+```
+
+Ardından `.identify()` metoduyla kullanıcıyı tekrar giriş yaptırabilirsiniz.
+
+## `appAccountToken` atama (iOS) \{#assign-appaccounttoken-ios\}
+
+[`iosAppAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)), App Store işlemlerini kendi kullanıcı kimliğinizle ilişkilendirmenizi sağlayan bir **UUID**'dir.
+StoreKit bu token'ı her işlemle ilişkilendirir, böylece backend'iniz App Store verilerini kullanıcılarınızla eşleştirebilir.
+
+Kullanıcı başına oluşturulan sabit bir UUID kullanın ve aynı hesap için farklı cihazlarda aynı değeri tekrar kullanın.
+Bu sayede satın almalar ve App Store bildirimleri doğru şekilde ilişkilendirilmiş olur.
+
+Token'ı iki şekilde ayarlayabilirsiniz: SDK aktivasyonu sırasında veya kullanıcıyı tanımlarken.
+
+:::important
+`iosAppAccountToken`'ı her zaman `customerUserId` ile birlikte geçirmelisiniz.
+Yalnızca token'ı geçerseniz, işleme dahil edilmez.
+:::
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyConfig
+
+// During configuration:
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withCustomerUserId(
+            id = "YOUR_USER_ID",
+            iosAppAccountToken = "YOUR_IOS_APP_ACCOUNT_TOKEN"
+        )
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+}
+
+// Or when identifying users
+Adapty.identify(
+    customerUserId = "YOUR_USER_ID",
+    iosAppAccountToken = "YOUR_IOS_APP_ACCOUNT_TOKEN"
+).onSuccess {
+    // successful identify
+}.onError { error ->
+    // handle the error
+}
+```
+
+## Gizlenmiş hesap ID'leri ayarlama (Android) \{#set-obfuscated-account-ids-android\}
+
+Google Play, kullanıcı gizliliğini ve güvenliğini artırmak için belirli kullanım senaryolarında gizlenmiş hesap ID'leri gerektirir. Bu ID'ler, Google Play'in kullanıcı bilgilerini anonim tutarken satın almaları tanımlamasına yardımcı olur; özellikle sahtekarlık önleme ve analitik açısından önemlidir.
+
+Uygulamanız hassas kullanıcı verileri işliyorsa veya belirli gizlilik düzenlemelerine uymak zorundaysanız bu ID'leri ayarlamanız gerekebilir. Gizlenmiş ID'ler, Google Play'in gerçek kullanıcı tanımlayıcılarını açığa çıkarmadan satın almaları takip etmesine olanak tanır.
+
+:::important
+`androidObfuscatedAccountId`'yi her zaman `customerUserId` ile birlikte geçirmelisiniz.
+Yalnızca gizlenmiş hesap ID'sini geçerseniz, işleme dahil edilmez.
+:::
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyConfig
+
+// During configuration:
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withCustomerUserId(
+            id = "YOUR_USER_ID",
+            androidObfuscatedAccountId = "YOUR_OBFUSCATED_ACCOUNT_ID"
+        )
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+}
+
+// Or when identifying users
+Adapty.identify(
+    customerUserId = "YOUR_USER_ID",
+    androidObfuscatedAccountId = "YOUR_OBFUSCATED_ACCOUNT_ID"
+).onSuccess {
+    // successful identify
+}.onError { error ->
+    // handle the error
+}
+```

@@ -1,0 +1,167 @@
+---
+title: "Capacitor SDK ile mobil uygulamada satın alma yapma"
+description: "Adapty kullanarak uygulama içi satın alma ve abonelikleri yönetme rehberi."
+metadataTitle: "Adapty'de Uygulama İçi Satın Alma İşlemleri | Adapty Dokümanları"
+keywords: ['makePurchase', 'offer code']
+rank: 100
+displayed_sidebar: sdkcapacitor
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/tr/reusable/OfferCodesInfo.mdx';
+
+Mobil uygulamanızda paywall göstermek, kullanıcılara premium içerik veya hizmetlere erişim sunmanın temel adımlarından biridir. Ancak yalnızca paywall göstermek, satın almaları desteklemek için yeterlidir; yani paywalllerinizi özelleştirmek için [Paywall Builder](adapty-paywall-builder) kullanıyorsanız ek bir adıma gerek yoktur.
+
+Paywall Builder kullanmıyorsanız, satın alma işlemini tamamlamak ve istenen içeriğin kilidini açmak için `.makePurchase()` adlı ayrı bir metot kullanmanız gerekir. Bu metot, kullanıcıların paywalllerle etkileşime geçmesini ve istedikleri işlemleri gerçekleştirmesini sağlar.
+
+Paywallinizde kullanıcının satın almaya çalıştığı ürün için aktif bir promosyon teklifi varsa Adapty, satın alma sırasında bunu otomatik olarak uygular.
+
+Tek bir adımı bile atlamadan [ilk yapılandırmayı](quickstart) tamamladığınızdan emin olun. Bu adım olmadan satın almaları doğrulayamayız.
+
+## Satın alma yapma \{#make-purchase\}
+
+:::note
+**[Paywall Builder](adapty-paywall-builder) kullanıyor musunuz?** Satın almalar otomatik olarak işlenir; bu adımı atlayabilirsiniz.
+
+**Adım adım yönlendirme mi arıyorsunuz?** Tam bağlamıyla uçtan uca uygulama talimatları için [hızlı başlangıç kılavuzuna](capacitor-implement-paywalls-manually) göz atın.
+:::
+
+```typescript showLineNumbers
+
+try {
+  const result = await adapty.makePurchase({ product });
+  
+  if (result.type === 'success') {
+    const isSubscribed = result.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+    
+    if (isSubscribed) {
+      // Grant access to the paid features
+      console.log('User is now subscribed!');
+    }
+  } else if (result.type === 'user_cancelled') {
+    console.log('Purchase cancelled by user');
+  } else if (result.type === 'pending') {
+    console.log('Purchase is pending');
+  }
+} catch (error) {
+  console.error('Purchase failed:', error);
+}
+```
+
+İstek parametreleri:
+
+| Parametre   | Zorunluluk | Açıklama                                                                                                                    |
+| :---------- | :--------- |:----------------------------------------------------------------------------------------------------------------------------|
+| **product** | zorunlu    | Paywallden alınan bir [`AdaptyPaywallProduct`](https://capacitor.adapty.io/interfaces/adaptypaywallproduct) nesnesi.        |
+
+Yanıt parametreleri:
+
+| Parametre  | Açıklama                                                                                                                                                                                                                                                                                                                                                       |
+|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **result** | Satın alma sonucunu belirten `type` alanı (`'success'`, `'user_cancelled'` veya `'pending'`) ve başarılı satın almalarda güncellenmiş [`AdaptyProfile`](https://capacitor.adapty.io/interfaces/adaptyprofile) nesnesini içeren `profile` alanından oluşan bir [`AdaptyPurchaseResult`](https://capacitor.adapty.io/types/adaptypurchaseresult) nesnesi. |
+
+## Satın alma sırasında abonelik değiştirme \{#change-subscription-when-making-a-purchase\}
+
+Kullanıcı mevcut aboneliğini yenilemek yerine yeni bir abonelik seçtiğinde bu işlem uygulama mağazasına göre farklı şekilde çalışır:
+
+- App Store'da abonelik, abonelik grubu içinde otomatik olarak güncellenir. Kullanıcı bir gruptan abonelik satın alırken başka bir gruba ait aboneliği de varsa her iki abonelik aynı anda aktif olabilir.
+- Google Play'de abonelik otomatik olarak güncellenmez. Geçişi aşağıda açıklandığı şekilde mobil uygulama kodunuzla yönetmeniz gerekir.
+
+Android'de aboneliği başka biriyle değiştirmek için `.makePurchase()` metodunu ek parametre ile çağırın:
+
+```typescript showLineNumbers
+
+try {
+  const result = await adapty.makePurchase({ 
+    product,
+    params: {
+      android: {
+        subscriptionUpdateParams: {
+          oldSubVendorProductId: 'old_product_id',
+          prorationMode: 'charge_prorated_price'
+        },
+        isOfferPersonalized: true
+      }
+    }
+  });
+  
+  if (result.type === 'success') {
+    const isSubscribed = result.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+    
+    if (isSubscribed) {
+      // Grant access to the paid features
+      console.log('Subscription updated successfully!');
+    }
+  } else if (result.type === 'user_cancelled') {
+    console.log('Purchase cancelled by user');
+  } else if (result.type === 'pending') {
+    console.log('Purchase is pending');
+  }
+} catch (error) {
+  console.error('Purchase failed:', error);
+}
+```
+
+Ek istek parametresi:
+
+| Parametre  | Zorunluluk | Açıklama                                                                 |
+| :--------- | :--------- | :----------------------------------------------------------------------- |
+| **params** | isteğe bağlı | Platform'a özgü satın alma parametrelerini içeren [`MakePurchaseParamsInput`](https://capacitor.adapty.io/types/makepurchaseparamsinput) türünde bir nesne. |
+
+`MakePurchaseParamsInput` yapısı şu şekildedir:
+
+```typescript
+{
+  android: {
+    subscriptionUpdateParams: {
+      oldSubVendorProductId: 'old_product_id',
+      prorationMode: 'charge_prorated_price'
+    },
+    isOfferPersonalized: true
+  }
+}
+```
+
+Abonelikler ve değiştirme modları hakkında daha fazla bilgi için Google Geliştirici belgelerine bakabilirsiniz:
+
+- [Değiştirme modları hakkında](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Google'ın değiştirme modları için önerileri](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Değiştirme modu [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Not: Bu yöntem yalnızca abonelik yükseltmeleri için kullanılabilir; düşürme işlemleri desteklenmez.
+- Değiştirme modu [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Not: Gerçek abonelik değişikliği yalnızca mevcut abonelik faturalandırma dönemi sona erdiğinde gerçekleşir.
+
+### Ön ödemeli planları yönetme (Android) \{#manage-prepaid-plans-android\}
+
+Uygulama kullanıcılarınız [ön ödemeli planlar](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) satın alabiliyorsa (örneğin birkaç aylık yenilenmez abonelik), ön ödemeli planlar için [bekleyen işlemleri](https://developer.android.com/google/play/billing/subscriptions#pending) etkinleştirebilirsiniz.
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    android: {
+        enablePendingPrepaidPlans: true,      
+    },
+  }
+});
+```
+
+## iOS'ta teklif kodlarını kullanma \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+Uygulamanızda kod kullanma sayfasını göstermek için:
+
+```typescript showLineNumbers
+
+try {
+  await adapty.presentCodeRedemptionSheet();
+} catch (error) {
+  console.error('Failed to present code redemption sheet:', error);
+}
+```
+
+:::danger
+Gözlemlerimize göre bazı uygulamalarda Teklif Kodu Kullanma sayfası güvenilir şekilde çalışmayabilir. Kullanıcıyı doğrudan App Store'a yönlendirmenizi öneririz.
+
+Bunun için aşağıdaki formatta bir URL açmanız gerekir:
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
