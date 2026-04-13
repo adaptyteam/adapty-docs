@@ -1,0 +1,632 @@
+---
+title: "将 Adapty Unity SDK 迁移至 v. 3.3"
+description: "迁移至 Adapty Unity SDK v3.3，以获得更好的性能和新的变现功能。"
+metadataTitle: "迁移至 Adapty Unity SDK v3.3 | Adapty 文档"
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+
+Adapty SDK 3.3.0 是一个主要版本，带来了一些改进，但可能需要您执行一些迁移步骤。
+
+1. 升级至 Adapty SDK v3.3.x。
+2. 重命名 Adapty SDK 的 Adapty 和 AdaptyUI 模块中的多个类、属性和方法。
+3. 从现在起，`SetLogLevel` 方法接受回调作为参数。
+4. 从现在起，`PresentCodeRedemptionSheet` 方法接受回调作为参数。
+5. 更改付费墙视图的创建方式。
+6. 移除 `GetProductsIntroductoryOfferEligibility` 方法。
+7. 将备用付费墙保存到 `Assets/StreamingAssets/` 中的单独文件（每个平台一个），并将文件名传递给 `SetFallbackPaywalls` 方法。
+8. 更新购买流程。
+9. 更新付费墙编辑工具事件的处理方式。
+10. 更新付费墙编辑工具付费墙错误的处理方式。
+11. 更新 Adjust、Amplitude、AppMetrica、Appsflyer、Branch、Firebase 和 Google Analytics、Mixpanel、OneSignal、Pushwoosh 的集成配置。
+13. 更新 Observer 模式实现。
+14. 使用显式 `Activate` 调用更新 Unity 插件初始化。
+
+## 将 Adapty Unity SDK 升级至 3.3.x \{#upgrade-adapty-unity-sdk-to-33x\}
+
+在此版本之前，Adapty SDK 是核心且必须的 SDK，是 Adapty 在您应用中正常运行所必需的，而 AdaptyUI SDK 是可选的 SDK，仅在您使用 Adapty 付费墙编辑工具时才需要。
+
+从版本 3.3.0 开始，AdaptyUI SDK 已被弃用，AdaptyUI 作为模块合并到 Adapty SDK 中。由于这些变更，您需要移除 AdaptyUISDK 并重新安装 AdaptySDK。
+
+1. 从您的项目中移除 **AdaptySDK** 和 **AdaptyUISDK** 包依赖项。
+2. 删除 **AdaptySDK** 和 **AdaptyUISDK** 文件夹。
+3. 按照 [适用于 Unity 的 Adapty SDK 安装与配置](sdk-installation-unity) 页面的说明重新导入 AdaptySDK 包。
+
+## 重命名 \{#renamings\}
+
+1. 在 Adapty 模块中重命名：
+
+   | 旧版本                    | 新版本                   |
+   | ------------------------- | ------------------------ |
+   | Adapty.sdkVersion         | Adapty.SDKVersion        |
+   | Adapty.LogLevel           | AdaptyLogLevel           |
+   | Adapty.Paywall            | AdaptyPaywall            |
+   | Adapty.PaywallFetchPolicy | AdaptyPaywallFetchPolicy |
+   | PaywallProduct            | AdaptyPaywallProduct     |
+   | Adapty.Profile            | AdaptyProfile            |
+   | Adapty.ProfileParameters  | AdaptyProfileParameters  |
+   | ProfileGender             | AdaptyProfileGender      |
+   | Error                     | AdaptyError              |
+
+2. 在 AdaptyUI 模块中重命名：
+
+   | 旧版本             | 新版本             |
+   | ------------------ | ------------------ |
+   | CreatePaywallView  | CreateView         |
+   | PresentPaywallView | PresentView        |
+   | DismissPaywallView | DismissView        |
+   | AdaptyUI.View      | AdaptyUIView       |
+   | AdaptyUI.Action    | AdaptyUIUserAction |
+
+## 更改 SetLogLevel 方法 \{#change-the-setloglevel-method\}
+
+从现在起，`SetLogLevel` 方法接受回调作为参数。
+
+```diff showLineNumbers
+- Adapty.SetLogLevel(Adapty.LogLevel.Verbose);
++ Adapty.SetLogLevel(Adapty.LogLevel.Verbose, null); // or you can pass the callback to handle the possible error
+```
+
+## 更改 PresentCodeRedemptionSheet 方法 \{#change-the-presentcoderedemptionsheet-method\}
+
+从现在起，`PresentCodeRedemptionSheet` 方法接受回调作为参数。
+
+```diff showLineNumbers
+- Adapty.PresentCodeRedemptionSheet();
++ Adapty.PresentCodeRedemptionSheet(null); // or you can pass the callback to handle the possible error
+```
+
+## 更改付费墙视图的创建方式 \{#change-how-the-paywall-view-is-created\}
+
+完整代码示例请参阅[获取使用付费墙编辑工具设计的付费墙视图配置](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)。
+
+```diff showLineNumbers
++ var parameters = new AdaptyUICreateViewParameters()
++   .SetPreloadProducts(true);
+
+- AdaptyUI.CreatePaywallView(
++ AdaptyUI.CreateView(
+   paywall, 
+-  preloadProducts: true,
++  parameters,
+  (view, error) => {
+  // use the view
+});
+```
+
+## 移除 GetProductsIntroductoryOfferEligibility 方法 \{#remove-the-getproductsintroductoryoffereligibility-method\}
+
+在 Adapty iOS SDK 3.3.0 之前，无论用户是否符合资格，产品对象始终包含优惠信息。您必须在使用优惠之前手动检查资格。
+
+现在，产品对象仅在用户符合资格时才包含优惠信息。这意味着您不再需要检查资格——如果存在优惠，则用户符合资格。
+
+## 更新提供备用付费墙的方法 \{#update-method-for-providing-fallback-paywalls\}
+
+在此版本之前，备用付费墙以序列化 JSON 的形式传递。从 v 3.3.0 开始，机制已更改：
+
+1. 将备用付费墙保存到 `/Assets/StreamingAssets/` 中的文件，Android 一个文件，iOS 一个文件。
+2. 将文件名传递给 `SetFallbackPaywalls` 方法。
+
+您的代码将按以下方式更改：
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void SetFallBackPaywalls() {
+
++ #if UNITY_IOS
++   var assetId = "adapty_fallback_ios.json";
++ #elif UNITY_ANDROID
++   var assetId = "adapty_fallback_android.json";
++ #else
++   var assetId = "";
++ #endif
+
+-   Adapty.SetFallbackPaywalls("FALLBACK_PAYWALLS_JSON_STRING", (error) => {
++   Adapty.SetFallbackPaywalls(assetId, (error) => {
+    // handle the error
+  });
+}
+```
+
+完整代码示例请参阅[在 Unity 中使用备用付费墙](unity-use-fallback-paywalls)页面。
+
+## 更新购买流程 \{#update-making-purchase\}
+
+此前，已取消和待处理的购买被视为错误，分别返回 `PaymentCancelled` 和 `PendingPurchase` 代码。
+
+现在使用新的 `AdaptyPurchaseResultType` 类来处理已取消、成功和待处理的购买。请按以下方式更新购买代码：
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void MakePurchase(AdaptyPaywallProduct product) {
+- Adapty.MakePurchase(product, (profile, error) => {
+-   // handle successfull purchase
++ Adapty.MakePurchase(product, (result, error) => {
++   switch (result.Type) {
++     case AdaptyPurchaseResultType.Pending:
++       // handle pending purchase
++       break;
++     case AdaptyPurchaseResultType.UserCancelled:
++       // handle purchase cancellation
++       break;
++     case AdaptyPurchaseResultType.Success:
++       var profile = result.Profile;
++       // handle successful purchase
++       break;
++     default:
++       break;
+    }
+  });
+}
+```
+
+完整代码示例请参阅[在移动应用中进行购买](unity-making-purchases)页面。
+
+## 更新付费墙编辑工具事件的处理方式 \{#update-handling-of-paywall-builder-events\}
+
+已取消和待处理的购买不再被视为错误，所有这些情况均通过 `PaywallViewDidFinishPurchase` 方法处理。
+
+1. 删除对[已取消购买](unity-handling-events-legacy#canceled-purchase)事件的处理。
+
+2. 按以下方式更新成功购买事件的处理：
+
+   ```diff showLineNumbers
+   - public void OnFinishPurchase(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product, 
+   -   Adapty.Profile profile
+   - ) { }
+   
+   + public void PaywallViewDidFinishPurchase(
+   +   AdaptyUIView view, 
+   +   AdaptyPaywallProduct product, 
+   +   AdaptyPurchaseResult purchasedResult
+   + ) { }
+   ```
+
+3. 更新动作的处理方式：
+
+   ```diff showLineNumbers
+   - public void OnPerformAction(
+   -   AdaptyUI.View view, 
+   -   AdaptyUI.Action action
+   - ) {
+   + public void PaywallViewDidPerformAction(
+   +   AdaptyUIView view, 
+   +   AdaptyUIUserAction action
+   + ) {
+       switch (action.Type) {
+   -     case AdaptyUI.ActionType.Close:
+   +     case AdaptyUIUserActionType.Close:
+           view.Dismiss(null);
+           break;
+   -     case AdaptyUI.ActionType.OpenUrl:
+   +     case AdaptyUIUserActionType.OpenUrl:
+           var urlString = action.Value;
+           if (urlString != null {
+           	Application.OpenURL(urlString); 
+           }
+         default:
+           // handle other events
+           break;
+       }
+   }
+   ```
+
+4. 更新已开始购买的处理方式：
+
+   ```diff showLineNumbers
+   - public void OnSelectProduct(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product
+   - ) { }
+   
+   + public void PaywallViewDidSelectProduct(
+   +   AdaptyUIView view, 
+   +   string productId
+   + ) { }
+   ```
+
+5. 更新购买失败的处理方式：
+
+   ```diff showLineNumbers
+   - public void OnFailPurchase(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailPurchase(
+   +   AdaptyUIView view, 
+   +   AdaptyPaywallProduct product, 
+   +   AdaptyError error
+   + ) { }
+   
+   ```
+
+6. 更新成功恢复事件的处理方式：
+
+   ```diff showLineNumbers
+   - public void OnFailRestore(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailRestore(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   
+   ```
+
+完整代码示例请参阅[处理付费墙事件](unity-handling-events)页面。
+
+## 更新付费墙编辑工具付费墙错误的处理方式 \{#update-handling-of-paywall-builder-paywall-errors\}
+
+错误的处理方式也已更改，请根据以下指导更新您的代码。
+
+1. 更新产品加载错误的处理方式：
+
+   ```diff showLineNumbers
+   - public void OnFailLoadingProducts(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailLoadingProducts(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   ```
+
+2. 更新渲染错误的处理方式：
+
+   ```diff showLineNumbers
+   - public void OnFailRendering(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailRendering(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   ```
+
+## 更新第三方集成 SDK 配置 \{#update-third-party-integration-sdk-configuration\}
+
+从 Adapty Unity SDK 3.3.0 开始，我们更新了 `updateAttribution` 方法的公共 API。之前，它接受 `[AnyHashable: Any]` 字典，允许您直接从各种服务传递归因对象。现在，它需要 `[String: any Sendable]`，因此您需要在传递之前转换归因对象。
+
+为确保集成在 Adapty Unity SDK 3.3.0 及更高版本中正常运行，请按以下各节所述更新以下集成的 SDK 配置。
+
+### Adjust
+
+按如下所示更新您的移动应用代码。完整代码示例请参阅 [Adjust 集成的 SDK 配置](adjust#connect-your-app-to-adjust)。
+
+```diff showLineNumbers
+- using static AdaptySDK.Adapty;
+ using AdaptySDK;
+
+ Adjust.GetAdid((adid) => {
+-   Adjust.GetAttribution((attribution) => {
+-     Dictionary<String, object> data = new Dictionary<String, object>();
+-
+-     data["network"] = attribution.Network;
+-     data["campaign"] = attribution.Campaign;
+-     data["adgroup"] = attribution.Adgroup;
+-     data["creative"] = attribution.Creative;
+-
+-     String attributionString = JsonUtility.ToJson(data);
+-     Adapty.UpdateAttribution(attributionString, AttributionSource.Adjust, adid, (error) => {
+-       // handle the error
+-     });
++   if (adid != null) {
++     Adapty.SetIntegrationIdentifier(
++       "adjust_device_id", 
++       adid, 
++       (error) => {
++         // handle the error
++     });
+    }
+ });
+
+ Adjust.GetAttribution((attribution) => {
+   Dictionary<String, object> data = new Dictionary<String, object>();
+
+   data["network"] = attribution.Network;
+   data["campaign"] = attribution.Campaign;
+   data["adgroup"] = attribution.Adgroup;
+   data["creative"] = attribution.Creative;
+
+   String attributionString = JsonUtility.ToJson(data);
+    
+-   Adapty.UpdateAttribution(attributionString, AttributionSource.Adjust, adid, (error) => {
++   Adapty.UpdateAttribution(attributionString, "adjust", (error) => {
+       // handle the error
+   });
+ });
+```
+
+### Amplitude
+
+按如下所示更新您的移动应用代码。完整代码示例请参阅 [Amplitude 集成的 SDK 配置](amplitude#sdk-configuration)。
+
+```diff showLineNumbers
+using AdaptySDK;
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetAmplitudeUserId("YOUR_AMPLITUDE_USER_ID");
+- builder.SetAmplitudeDeviceId(amplitude.getDeviceId());
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ Adapty.SetIntegrationIdentifier(
++   "amplitude_user_id", 
++   "YOUR_AMPLITUDE_USER_ID", 
++   (error) => {
++   // handle the error
++ });
+
++ Adapty.SetIntegrationIdentifier(
++   "amplitude_device_id", 
++   amplitude.getDeviceId(), 
++   (error) => {
++   // handle the error
++ });
+```
+
+### AppMetrica
+
+按如下所示更新您的移动应用代码。完整代码示例请参阅 [AppMetrica 集成的 SDK 配置](appmetrica#sdk-configuration)。
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- var deviceId = AppMetrica.GetDeviceId();
+
+- if (deviceId != null {
+-   var builder = new Adapty.ProfileParameters.Builder();
+
+-   builder.SetAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
+-   builder.SetAppmetricaDeviceId(deviceId);
+
+-   Adapty.UpdateProfile(builder.Build(), (error) => {
+-       // handle error
+-   });
+- }
+
++ var deviceId = AppMetrica.GetDeviceId();
+
++ if (deviceId != null {
++   Adapty.SetIntegrationIdentifier(
++     "appmetrica_device_id", 
++     deviceId, 
++     (error) => {
++     // handle the error
++   });
++   
++   Adapty.SetIntegrationIdentifier(
++     "appmetrica_profile_id", 
++     "YOUR_ADAPTY_CUSTOMER_USER_ID", 
++     (error) => {
++     // handle the error
++   });
++ }
+```
+
+### AppsFlyer
+
+按如下所示更新您的移动应用代码。完整代码示例请参阅 [AppsFlyer 集成的 SDK 配置](appsflyer#connect-your-app-to-appsflyer)。
+
+```diff showLineNumbers
+ using AppsFlyerSDK;
+ using AdaptySDK;
+
+ // before SDK initialization
+ AppsFlyer.getConversionData(this.name);
+
+ // in your IAppsFlyerConversionData
+ void onConversionDataSuccess(string conversionData) {
+     // It's important to include the network user ID
+-    string appsFlyerId = AppsFlyer.getAppsFlyerId();
+-    Adapty.UpdateAttribution(conversionData, AttributionSource.Appsflyer, appsFlyerId, (error) => {
++    string appsFlyerId = AppsFlyer.getAppsFlyerId();
++    
++    Adapty.SetIntegrationIdentifier(
++      "appsflyer_id", 
++      appsFlyerId, 
++      (error) => {
+         // handle the error
+     });
++    
++    Adapty.UpdateAttribution(
++      conversionData, 
++      "appsflyer",
++      (error) => {
++        // handle the error
++      });
+ }
+
+```
+
+### Branch
+
+按如下所示更新您的移动应用代码。完整代码示例请参阅 [Branch 集成的 SDK 配置](branch#connect-your-app-to-branch)。
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- class YourBranchImplementation {
+-     func initializeBranch() {
+-         Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+-             if let data {
+-                 Adapty.updateAttribution(data, source: .branch)
+-             }
+-         }
+-     }
+- }
+
++ Branch.initSession(delegate(Dictionary<string, object> parameters, string error) {
++     string attributionString = JsonUtility.ToJson(parameters);
++     
++     Adapty.UpdateAttribution(
++       attributionString, 
++       "branch", 
++       (error) => {
++         // handle the error
++       });
++ });
+```
+
+### Firebase 和 Google Analytics
+
+按如下所示更新您的移动应用代码。完整代码示例请参阅 [Firebase 和 Google Analytics 集成的 SDK 配置](firebase-and-google-analytics)。
+
+```diff showLineNumbers
+ // We suppose FirebaseAnalytics Unity Plugin is already installed
+
+ using AdaptySDK;
+
+ Firebase.Analytics
+   .FirebaseAnalytics
+   .GetAnalyticsInstanceIdAsync()
+   .ContinueWithOnMainThread((task) => {
+     if (!task.IsCompletedSuccessfully) {
+       // handle error
+       return;
+     }
+
+     var firebaseId = task.Result
+     var builder = new Adapty.ProfileParameters.Builder();
+     
+-    builder.SetFirebaseAppInstanceId(firebaseId);
+-
+-    Adapty.UpdateProfile(builder.Build(), (error) => {
+-        // handle error
+   
++     Adapty.SetIntegrationIdentifier(
++       "firebase_app_instance_id", 
++       firebaseId, 
++       (error) => {
++         // handle the error
+     });
+   });
+```
+
+### Mixpanel
+
+按如下所示更新您的移动应用代码。完整代码示例请参阅 [Mixpanel 集成的 SDK 配置](mixpanel#sdk-configuration)。
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetMixpanelUserId(Mixpanel.DistinctId);
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ var distinctId = Mixpanel.DistinctId;
+
++ if (distinctId != null) {
++   Adapty.SetIntegrationIdentifier(
++     "mixpanel_user_id", 
++     distinctId, 
++     (error) => {
++       // handle the error
++   });
++ }
+```
+
+### OneSignal
+
+按如下所示更新您的移动应用代码。完整代码示例请参阅 [OneSignal 集成的 SDK 配置](onesignal#sdk-configuration)。
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- using OneSignalSDK;
+
+- var pushUserId = OneSignal.Default.PushSubscriptionState.userId;
+
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetOneSignalPlayerId(pushUserId);
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ var distinctId = Mixpanel.DistinctId;
+
++ if (distinctId != null) {
++   Adapty.SetIntegrationIdentifier(
++     "mixpanel_user_id", 
++     distinctId, 
++     (error) => {
++       // handle the error
++   });
++ }
+```
+
+### Pushwoosh
+
+按如下所示更新您的移动应用代码。完整代码示例请参阅 [Pushwoosh 集成的 SDK 配置](pushwoosh#sdk-configuration)。
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetPushwooshHWID(Pushwoosh.Instance.HWID);
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ Adapty.SetIntegrationIdentifier(
++   "pushwoosh_hwid", 
++   Pushwoosh.Instance.HWID, 
++   (error) => {
++   // handle the error
++ });
+```
+
+## 更新 Observer 模式实现 \{#update-observer-mode-implementation\}
+
+更新您将付费墙与交易关联的方式。之前，您使用 `setVariationId` 方法来分配 `variationId`。现在，您可以在使用新的 `reportTransaction` 方法记录交易时直接包含 `variationId`。完整代码示例请参阅[在 Observer 模式中将付费墙与购买交易关联](report-transactions-observer-mode-unity)。
+
+```diff showLineNumbers
+ // every time when calling transaction.finish()
+- Adapty.SetVariationForTransaction("<variationId>", "<transactionId>", (error) => { 
+-     if(error != null) {
+-         // handle the error
+-         return;
+-     }
+-
+-     // successful binding
+- });
+
++ Adapty.ReportTransaction(
++   "YOUR_TRANSACTION_ID", 
++   "PAYWALL_VARIATION_ID", // optional
++   (error) => {
++   // handle the error
++ });
+```
+
+## 更新 Unity 插件初始化 \{#update-the-unity-plugin-initialization\}
+
+从 Adapty Unity SDK 3.3.0 开始，在插件初始化期间需要显式调用 `Activate` 方法：
+
+```csharp showLineNumbers
+Adapty.Activate(builder.Build(), (error) => {
+   if (error != null) {
+       // handle the error
+       return;
+   }
+});
+```

@@ -1,0 +1,547 @@
+---
+title: "Adapty React Native SDK'yı v. 3.3'e Taşıma"
+description: "Daha iyi performans ve yeni monetizasyon özellikleri için Adapty React Native SDK v3.3'e geçiş yapın."
+metadataTitle: "Adapty React Native SDK v3.3'e Geçiş | Adapty Dokümanları"
+---
+
+Adapty SDK 3.3.1, bazı iyileştirmeler getiren önemli bir sürümdür ve sizden birkaç geçiş adımı gerektirebilir.
+
+1. Adapty SDK v3.3.x'e yükseltin.
+2. Modelleri güncelleyin.
+3. `getProductsIntroductoryOfferEligibility` metodunu kaldırın.
+4. Satın alma işlemini güncelleyin.
+5. Paywall Builder paywall sunumunu güncelleyin.
+6. Geliştirici tanımlı zamanlayıcı uygulamasını gözden geçirin.
+7. Paywall Builder satın alma olaylarının işlenmesini güncelleyin.
+8. Paywall Builder özel eylem olaylarının işlenmesini güncelleyin.
+9. `onProductSelected` callback'ini değiştirin.
+10. `updateProfile` metodundan üçüncü taraf entegrasyon parametrelerini kaldırın.
+11. Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase ve Google Analytics, Mixpanel, OneSignal ve Pushwoosh için entegrasyon yapılandırmalarını güncelleyin.
+12. Observer mode uygulamasını güncelleyin.
+
+## Adapty React Native SDK'yı 3.3.x'e yükseltme \{#upgrade-adapty-react-native-sdk-to-33x\}
+
+3.3.1 sürümünden önce, `react-native-adapty` SDK'sı, Adapty'nin uygulamanızda düzgün çalışması için temel ve zorunlu SDK olarak hizmet ediyordu. `@adapty/react-native-ui` SDK'sı ise isteğe bağlıydı ve yalnızca Adapty Paywall Builder kullanıyorsanız gerekiyordu.
+
+3.3.1 sürümünden itibaren `@adapty/react-native-ui` SDK'sı kullanımdan kaldırılmış olup işlevselliği `react-native-adapty` SDK'sına eklenmiştir. 3.3.1 sürümüne yükseltmek için şu adımları izleyin:
+
+1. `react-native-adapty` paketini 3.3.1 sürümüne güncelleyin.
+2. `@adapty/react-native-ui` paketini proje bağımlılıklarınızdan kaldırın.
+3. Değişiklikleri uygulamak için proje bağımlılıklarınızı senkronize edin.
+
+## Modellerdeki değişiklikler \{#changes-in-models\}
+
+### Yeni modeller \{#new-models\}
+
+1. [AdaptySubscriptionOffer](https://react-native.adapty.io/interfaces/adaptysubscriptionoffer):
+
+    ```typescript showLineNumbers
+    export interface AdaptySubscriptionOffer {
+      readonly identifier: AdaptySubscriptionOfferId;
+
+      phases: AdaptyDiscountPhase[];
+
+      android?: {
+        offerTags?: string[];
+      };
+    }
+    ```
+
+2. [AdaptySubscriptionOfferId](https://react-native.adapty.io/types/adaptysubscriptionofferid):
+
+    ```typescript showLineNumbers
+    export type AdaptySubscriptionOfferId =
+      | { id?: string; type: 'introductory'; }
+      | { id: string; type: 'promotional' | 'win_back'; };
+    ```
+
+### Değiştirilen modeller \{#changed-models\}
+
+1. [AdaptyPaywallProduct](https://react-native.adapty.io/interfaces/adaptypaywallproduct):
+   
+    - `subscriptionDetails` özelliği `subscription` olarak yeniden adlandırıldı.
+      
+      <p> </p>
+      
+     ```diff showLineNumbers
+     -  subscriptionDetails?: AdaptySubscriptionDetails; 
+     +  subscription?: AdaptySubscriptionDetails;
+     ```
+    
+2. [AdaptySubscriptionDetails](https://react-native.adapty.io/interfaces/adaptysubscriptiondetails):
+
+    - `promotionalOffer` kaldırıldı. Artık promosyon teklifi yalnızca mevcutsa `offer` özelliği aracılığıyla iletilmektedir. Bu durumda `offer?.identifier?.type` değeri `'promotional'` olacaktır.
+
+    - `introductoryOfferEligibility` kaldırıldı (teklifler yalnızca kullanıcı uygunsa döndürülür).
+
+    - `offerId` kaldırıldı. Teklif kimliği artık `AdaptySubscriptionOffer.identifier` içinde saklanmaktadır.
+
+    - `offerTags`, `AdaptySubscriptionOffer.android` içine taşındı.
+      
+      <p> </p>
+
+    ```diff showLineNumbers
+    -  introductoryOffers?: AdaptyDiscountPhase[];
+    +  offer?: AdaptySubscriptionOffer;
+    
+       ios?: {
+    -    promotionalOffer?: AdaptyDiscountPhase;
+         subscriptionGroupIdentifier?: string;
+       };
+    
+       android?: {
+    -    offerId?: string;
+         basePlanId: string;
+    -    introductoryOfferEligibility: OfferEligibility;
+    -    offerTags?: string[];
+         renewalType?: 'prepaid' | 'autorenewable';
+       };
+     }
+    ```
+3. [AdaptyDiscountPhase](https://react-native.adapty.io/interfaces/adaptydiscountphase):
+   
+    - `identifier` alanı `AdaptyDiscountPhase` modelinden kaldırıldı. Teklif tanımlayıcısı artık `AdaptySubscriptionOffer.identifier` içinde saklanmaktadır.
+      
+      <p> </p>
+      
+     ```diff showLineNumbers
+     -  ios?: {
+     -    readonly identifier?: string;
+     -  };
+     ```
+
+### Kaldırılan modeller \{#remove-models\}
+
+1. `AttributionSource`:
+   - Daha önce `AttributionSource`'un kullanıldığı yerlerde artık doğrudan string kullanılmaktadır.
+2. `OfferEligibility`:
+   - Bu model artık gerekli olmadığından kaldırılmıştır. Artık bir teklif yalnızca kullanıcı uygunsa döndürülmektedir.
+
+## `getProductsIntroductoryOfferEligibility` metodunu kaldırma \{#remove-getproductsintroductoryoffereligibility-method\}
+
+Adapty SDK 3.3.1 öncesinde, ürün nesneleri kullanıcının uygun olup olmadığından bağımsız olarak her zaman teklifleri içeriyordu. Bu durum, teklifi kullanmadan önce uygunluğu manuel olarak kontrol etmenizi gerektiriyordu.
+
+3.3.1 sürümünden itibaren ürün nesnesi, teklifleri yalnızca kullanıcı uygunsa içermektedir. Bu sayede bir teklif mevcutsa kullanıcının uygun olduğunu varsayabilirsiniz; bu da süreci basitleştirir.
+
+## Satın alma işlemini güncelleme \{#update-making-purchase\}
+
+Önceki sürümlerde iptal edilen ve bekleyen satın almalar hata olarak değerlendirilir ve sırasıyla `2: 'paymentCancelled'` ile `25: 'pendingPurchase'` kodları döndürülürdü.
+
+3.3.1 sürümünden itibaren iptal edilen ve bekleyen satın almalar artık başarılı sonuçlar olarak kabul edilmekte ve buna göre işlenmesi gerekmektedir:
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+
+## Paywall Builder paywall sunumunu güncelleme \{#update-paywall-builder-paywall-presentation\}
+
+Güncellenmiş örnekler için [React Native'de yeni Paywall Builder paywalllerini sunma](react-native-present-paywalls) belgelerine bakın.
+
+```diff showLineNumbers
+- import { createPaywallView } from '@adapty/react-native-ui';
++ import { createPaywallView } from 'react-native-adapty/dist/ui';
+
+const view = await createPaywallView(paywall);
+
+view.registerEventHandlers(); // handle close press, etc
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+## Geliştirici tanımlı zamanlayıcı uygulamasını güncelleme \{#update-developer-defined-timer-implementation\}
+
+`timerInfo` parametresini `customTimers` olarak yeniden adlandırın:
+
+```diff showLineNumbers
+- let timerInfo = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
++ let customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+ //and then you can pass it to createPaywallView as follows:
+- view = await createPaywallView(paywall, { timerInfo })
++ view = await createPaywallView(paywall, { customTimers })
+```
+
+## Paywall Builder satın alma olaylarını değiştirme \{#modify-paywall-builder-purchase-events\}
+
+Önceki davranış:
+
+- İptal edilen satın almalar `onPurchaseCancelled` callback'ini tetikliyordu.
+- Bekleyen satın almalar `25: 'pendingPurchase'` hata kodunu döndürüyordu.
+
+Şimdiki davranış:
+
+- Her ikisi de `onPurchaseCompleted` callback'i tarafından işlenmektedir.
+
+#### Geçiş adımları: \{#steps-to-migrate\}
+
+1. `onPurchaseCancelled` callback'ini kaldırın.
+2. `25: 'pendingPurchase'` için hata kodu işlemesini kaldırın.
+3. `onPurchaseCompleted` callback'ini güncelleyin:
+
+```typescript showLineNumbers
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.registerEventHandlers({
+  // ... other optional callbacks
+  onPurchaseCompleted(purchaseResult, product) {
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+// highlight-start
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+// highlight-end
+    }
+// highlight-start
+    return purchaseResult.type !== 'user_cancelled';
+// highlight-end
+  },
+});
+```
+
+## Paywall Builder özel eylem olaylarını değiştirme \{#modify-paywall-builder-custom-action-events\}
+
+Kaldırılan callback'ler:
+
+-  `onAction`
+-  `onCustomEvent`
+
+Eklenen callback:
+
+- Yeni `onCustomAction(actionId)` callback'i. Özel eylemler için bunu kullanın.
+
+## `onProductSelected` callback'ini değiştirme \{#modify-onproductselected-callback\}
+
+Önceden `onProductSelected`, `product` nesnesini gerektiriyordu. Artık string olarak `productId` gerektirmektedir.
+
+## `updateProfile` metodundan üçüncü taraf entegrasyon parametrelerini kaldırma \{#remove-third-party-integration-parameters-from-updateprofile-method\}
+
+Üçüncü taraf entegrasyon tanımlayıcıları artık `setIntegrationIdentifier` metodu kullanılarak ayarlanmaktadır. `updateProfile` metodu artık bunları kabul etmemektedir.
+
+## Üçüncü taraf entegrasyon SDK yapılandırmasını güncelleme \{#update-third-party-integration-sdk-configuration\}
+
+Adapty React Native SDK 3.3.1 ve sonraki sürümlerle entegrasyonların düzgün çalışmasını sağlamak için aşağıdaki bölümlerde açıklandığı gibi SDK yapılandırmalarınızı güncelleyin.
+
+Ayrıca attribution tanımlayıcısını almak için `AttributionSource` kullandıysanız, gerekli tanımlayıcıyı string olarak sağlayacak şekilde kodunuzu değiştirin.
+
+### Adjust \{#adjust\}
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için [Adjust entegrasyonu için SDK yapılandırması](adjust#connect-your-app-to-adjust) bölümüne bakın.
+
+```diff showLineNumbers
+ import { Adjust, AdjustConfig } from "react-native-adjust";
+ import { adapty } from "react-native-adapty";
+
+ var adjustConfig = new AdjustConfig(appToken, environment);
+
+ // Before submiting Adjust config...
+ adjustConfig.setAttributionCallbackListener(attribution => {
+   // Make sure Adapty SDK is activated at this point
+   // You may want to lock this thread awaiting of `activate`
+   adapty.updateAttribution(attribution, "adjust");
+ });
+
+ // ...
+ Adjust.create(adjustConfig);
+
++ Adjust.getAdid((adid) => {
++   if (adid)
++     adapty.setIntegrationIdentifier("adjust_device_id", adid);
++ });
+```
+
+### AirBridge \{#airbridge\}
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için [AirBridge entegrasyonu için SDK yapılandırması](airbridge#connect-your-app-to-airbridge) bölümüne bakın.
+
+```diff showLineNumbers
+ import Airbridge from 'airbridge-react-native-sdk';
+ import { adapty } from 'react-native-adapty';
+
+ try {
+   const deviceId = await Airbridge.state.deviceUUID();
+
+-  await adapty.updateProfile({
+-    airbridgeDeviceId: deviceId,
+-  });
++  await adapty.setIntegrationIdentifier("airbridge_device_id", deviceId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### Amplitude \{#amplitude\}
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için [Amplitude entegrasyonu için SDK yapılandırması](amplitude#sdk-configuration) bölümüne bakın.
+
+```diff showLineNumbers
+  import { adapty } from 'react-native-adapty';
+
+ try {
+-   await adapty.updateProfile({
+-     amplitudeDeviceId: deviceId,
+-     amplitudeUserId: userId,
+-   });
++   await adapty.setIntegrationIdentifier("amplitude_device_id", deviceId);
++   await adapty.setIntegrationIdentifier("amplitude_user_id", userId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### AppMetrica \{#appmetrica\}
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için [AppMetrica entegrasyonu için SDK yapılandırması](appmetrica#sdk-configuration) bölümüne bakın.
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import AppMetrica, { DEVICE_ID_KEY, StartupParams, StartupParamsReason } from '@appmetrica/react-native-analytics';
+
+ // ...
+ const startupParamsCallback = async (
+   params?: StartupParams,
+   reason?: StartupParamsReason
+ ) => {
+   const deviceId = params?.deviceId
+   if (deviceId) {
+     try {
+-       await adapty.updateProfile({
+-         appmetricaProfileId: 'YOUR_ADAPTY_CUSTOMER_USER_ID',
+-         appmetricaDeviceId: deviceId,
+-       });
++       await adapty.setIntegrationIdentifier("appmetrica_profile_id", 'YOUR_ADAPTY_CUSTOMER_USER_ID');
++       await adapty.setIntegrationIdentifier("appmetrica_device_id", deviceId);
+     } catch (error) {
+       // handle `AdaptyError`
+     }
+   }
+ }
+
+ AppMetrica.requestStartupParams(startupParamsCallback, [DEVICE_ID_KEY])
+```
+
+### AppsFlyer \{#appsflyer\}
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için [AppsFlyer entegrasyonu için SDK yapılandırması](appsflyer#connect-your-app-to-appsflyer) bölümüne bakın.
+
+```diff showLineNumbers
+ import { adapty, AttributionSource } from 'react-native-adapty';
+ import appsFlyer from 'react-native-appsflyer';
+
+ appsFlyer.onInstallConversionData(installData => {
+     try {
+-        const networkUserId = appsFlyer.getAppsFlyerUID();
+-        adapty.updateAttribution(installData, AttributionSource.AppsFlyer, networkUserId);
++        const uid = appsFlyer.getAppsFlyerUID();
++        adapty.setIntegrationIdentifier("appsflyer_id", uid);
++        adapty.updateAttribution(installData, "appsflyer");
+     } catch (error) {
+         // handle the error
+     }
+ });
+
+ // ...
+ appsFlyer.initSdk(/*...*/);
+```
+
+### Branch \{#branch\}
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için [Branch entegrasyonu için SDK yapılandırması](branch#connect-your-app-to-branch) bölümüne bakın.
+
+```diff showLineNumbers
+ import { adapty, AttributionSource } from 'react-native-adapty';
+ import branch from 'react-native-branch';
+
+ branch.subscribe({
+   enComplete: ({
+     params,
+   }) => {
+-    adapty.updateAttribution(params, AttributionSource.Branch);
++    adapty.updateAttribution(params, "branch");
+   },
+ });
+```
+
+### Facebook Ads \{#facebook-ads\}
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için [Facebook Ads entegrasyonu için SDK yapılandırması](facebook-ads#connect-your-app-to-facebook-ads) bölümüne bakın.
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import { AppEventsLogger } from 'react-native-fbsdk-next';
+
+ try {
+   const anonymousId = await AppEventsLogger.getAnonymousID();
+
+-  await adapty.updateProfile({
+-    facebookAnonymousId: anonymousId,
+-  });
++  await adapty.setIntegrationIdentifier("facebook_anonymous_id", anonymousId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### Firebase ve Google Analytics \{#firebase-and-google-analytics\}
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için [Firebase ve Google Analytics entegrasyonu için SDK yapılandırması](firebase-and-google-analytics) bölümüne bakın.
+
+```diff showLineNumbers
+ import analytics from '@react-native-firebase/analytics';
+ import { adapty } from 'react-native-adapty';
+
+ try {
+   const appInstanceId = await analytics().getAppInstanceId();
+
+-   await adapty.updateProfile({
+-     firebaseAppInstanceId: appInstanceId,
+-   });
++   await adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### Mixpanel \{#mixpanel\}
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için [Mixpanel entegrasyonu için SDK yapılandırması](mixpanel#sdk-configuration) bölümüne bakın.
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import { Mixpanel } from 'mixpanel-react-native';
+
+ // ...
+ try {
+-   await adapty.updateProfile({
+-     mixpanelUserId: mixpanelUserId,
+-   });
++   await adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelUserId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### OneSignal \{#onesignal\}
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için [OneSignal entegrasyonu için SDK yapılandırması](onesignal#sdk-configuration) bölümüne bakın.
+
+<Tabs groupId="current-os" queryString> 
+
+<TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import OneSignal from 'react-native-onesignal';
+
+ OneSignal.User.pushSubscription.addEventListener('change', (subscription) => {
+   const subscriptionId = subscription.current.id;
+
+   if (subscriptionId) {
+-    adapty.updateProfile({
+-      oneSignalSubscriptionId: subscriptionId,
+-    });
++    adapty.setIntegrationIdentifier("one_signal_subscription_id", subscriptionId);
+   }
+ });
+```
+
+ </TabItem> 
+
+<TabItem value="pre-v5" label="OneSignal SDK v. up to 4.x (legacy)" default> 
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import OneSignal from 'react-native-onesignal';
+
+ OneSignal.addSubscriptionObserver(event => {
+   const playerId = event.to.userId;
+   
+-  adapty.updateProfile({
+-    oneSignalPlayerId: playerId,
+-  });
++  adapty.setIntegrationIdentifier("one_signal_player_id", playerId);
+ });
+```
+
+ </TabItem> 
+
+</Tabs>
+
+### Pushwoosh \{#pushwoosh\}
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için [Pushwoosh entegrasyonu için SDK yapılandırması](pushwoosh#sdk-configuration) bölümüne bakın.
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import Pushwoosh from 'pushwoosh-react-native-plugin';
+
+ // ...
+ try {
+-  await adapty.updateProfile({
+-    pushwooshHWID: hwid,
+-  });
++  await adapty.setIntegrationIdentifier("pushwoosh_hwid", hwid);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+## Observer mode uygulamasını güncelleme \{#update-observer-mode-implementation\}
+
+Paywalleri işlemlerle ilişkilendirme yönteminizi güncelleyin. Önceden `variationId` atamak için `setVariationId` metodunu kullanıyordunuz. Artık `variationId`'yi, yeni `reportTransaction` metodunu kullanarak işlemi kaydederken doğrudan ekleyebilirsiniz. [Observer mode'da satın alma işlemlerini paywalllerle ilişkilendirme](report-transactions-observer-mode-react-native) bölümündeki son kod örneğine bakın.
+
+:::warning
+
+İşlemi `reportTransaction` metoduyla kaydetmeyi unutmayın. Bu adımı atlarsanız Adapty işlemi tanımaz, access level vermez, analitiklere dahil etmez ve entegrasyonlara göndermez. Bu adım zorunludur!
+
+:::
+
+:::note
+
+`reportTransaction` metodundaki parametre sırası `setVariationId` metodundakinden farklıdır.
+
+:::
+
+```diff showLineNumbers
+  const variationId = paywall.variationId;
+
+ try {
+-    await adapty.setVariationId(variationId, transactionId);
++    await adapty.reportTransaction(transactionId, variationId);
+ } catch (error) {
+     // handle the `AdaptyError`
+ }
+
+```

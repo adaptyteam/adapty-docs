@@ -1,0 +1,395 @@
+---
+title: "AppMetrica"
+description: "将 AppMetrica 与 Adapty 集成，深入分析订阅数据。"
+metadataTitle: "AppMetrica 集成 | Adapty 文档"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+
+[AppMetrica](https://appmetrica.yandex.com/about) 是一款免费的分析工具，可帮助您实时追踪用户行为并分析移动应用的表现。通过将 AppMetrica 与 Adapty 集成，您可以更深入地了解订阅数据指标和用户参与情况。
+
+## 如何设置 AppMetrica 集成 \{#how-to-set-up-appmetrica-integration\}
+
+设置 AppMetrica 集成主要分为两个步骤：
+
+1. 在 Adapty 看板中配置集成
+2. 在应用代码中设置集成
+
+### 看板配置 \{#dashboard-configuration\}
+
+要设置 AppMetrica 集成：
+
+1. 打开 [AppMetrica 应用列表](https://appmetrica.yandex.ru/application/list)
+2. 选择您要追踪的应用
+3. 前往 **Settings > Main**，复制 **Application ID** 和 **Post API key**
+<Zoom>
+  <img src="/assets/shared/img/appmetrica.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+4. 在 Adapty 看板中前往 [Integrations > AppMetrica](https://app.adapty.io/integrations/appmetrica)
+5. 粘贴您的 AppMetrica 凭据。
+
+<Zoom>
+  <img src="/assets/shared/img/appmetrica_creds.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 事件与标签 \{#events-and-tags\}
+
+Adapty 允许您向 AppMetrica 发送三组事件。您可以启用需要追踪的事件来监控应用表现。有关可用事件的完整列表，请参阅我们的[事件文档](events)。
+
+:::note
+AppMetrica 每 4 小时同步一次事件，因此事件出现在您的看板中可能会有延迟。
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/6ed2d88-CleanShot_2023-08-18_at_14.59.042x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::tip
+我们建议使用 Adapty 的默认事件名称以保持一致性，但您也可以自定义事件名称以匹配您现有的分析设置。
+:::
+
+### 收入设置 \{#revenue-settings\}
+
+默认情况下，Adapty 将收入数据作为事件属性发送，这些数据会显示在 AppMetrica 的 Events 报告中。您可以配置收入数据的计算和显示方式：
+
+- **Revenue calculation**（收入计算）：选择收入值的计算方式，以符合您的财务报告需求：
+  - **Gross revenue**（总收入）：显示扣除任何费用前的总收入，便于追踪客户支付的全额金额
+  - **Proceeds after store commission**（扣除应用商店佣金后的收入）：显示扣除 App Store/Play Store 费用后的收入，帮助您追踪实际收益
+  - **Proceeds after store commission and taxes**（扣除应用商店佣金和税费后的收入）：显示同时扣除商店费用和适用税费后的净收入，提供最准确的收益情况
+
+- **Report user's currency**（报告用户货币）：启用后，销售额将以用户本地货币报告，便于按地区分析收入。禁用后，所有销售额将转换为美元，以便在不同市场间进行一致的报告。
+
+- **Send revenue events**（发送收入事件）：启用此选项后，收入数据不仅会出现在 Events 报告中，还会出现在 AppMetrica 的[应用内及广告收入](https://appmetrica.yandex.com/docs/en/mobile-reports/revenue-report)报告中。请确保您没有从其他地方发送收入数据，否则可能导致数据重复。
+
+- **Exclude historical events**（排除历史事件）：启用后，Adapty 不会发送用户在安装带有 Adapty SDK 的应用之前发生的事件。如果您在集成 Adapty 之前已向分析工具发送事件，此选项有助于避免数据重复。
+
+<Zoom>
+  <img src="/assets/shared/img/appmetrica_revenue.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### SDK 配置 \{#sdk-configuration\}
+
+要在应用中启用 AppMetrica 集成，您需要设置两个标识符：
+
+1. `appmetrica_device_id`：基础集成所必需
+2. `appmetrica_profile_id`：可选，但如果您的应用有用户注册功能则推荐设置
+
+使用 `setIntegrationIdentifier()` 方法来设置这些值。以下是各平台的实现方式：
+
+<SdkIntegrationNote />
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="Swift" label="iOS (Swift)" default>
+
+**设置 appmetrica_device_id**
+
+```swift showLineNumbers
+AppMetrica.requestStartupIdentifiers(on: nil) { ids, error in
+  if let error {
+    // handle AppMetrica error    
+    return
+  }
+
+  guard let deviceIDHash = ids?[.deviceIDHashKey] as? String else {
+    // handle AppMetrica error
+    return
+  }
+
+  Task {
+    do {
+      try await Adapty.setIntegrationIdentifier(
+        key: "appmetrica_device_id",
+        value: deviceIDHash
+      )
+    } catch {
+      // handle the error
+    }
+  }
+}
+```
+
+**设置 appmetrica_profile_id**
+
+```swift showLineNumbers
+do {
+  try await Adapty.setIntegrationIdentifier(
+    key: "appmetrica_profile_id",
+    value: "YOUR_APPMETRICA_PROFILE_ID"
+  )
+} catch {
+  // handle the error
+}
+```
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+
+**设置 appmetrica_device_id**
+
+```kotlin showLineNumbers 
+val startupParamsCallback = object: StartupParamsCallback {
+    override fun onReceive(result: StartupParamsCallback.Result?) {
+        val deviceIdHash = result?.deviceIdHash ?: return
+
+        Adapty.setIntegrationIdentifier("appmetrica_device_id", deviceIdHash) { error ->
+            if (error != null) {
+                // handle the error
+            }
+        }
+    }
+
+    override fun onRequestError(
+        reason: StartupParamsCallback.Reason,
+        result: StartupParamsCallback.Result?
+    ) {
+        //handle the error
+    }
+}
+
+AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID_HASH))
+```
+
+**设置 appmetrica_profile_id**
+
+```kotlin showLineNumbers
+val startupParamsCallback = object: StartupParamsCallback {
+    override fun onReceive(result: StartupParamsCallback.Result?) {
+        val deviceIdHash = result?.deviceIdHash ?: return
+
+        Adapty.setIntegrationIdentifier("appmetrica_device_id", deviceIdHash) { error ->
+            if (error != null) {
+                // handle the error
+            }
+        }
+        
+        Adapty.setIntegrationIdentifier("appmetrica_profile_id", "YOUR_ADAPTY_CUSTOMER_USER_ID") { error ->
+            if (error != null) {
+                // handle the error
+            }
+        }
+    }
+
+    override fun onRequestError(
+        reason: StartupParamsCallback.Reason,
+        result: StartupParamsCallback.Result?
+    ) {
+        //handle the error
+    }
+}
+
+AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID_HASH))
+```
+</TabItem>
+<TabItem value="Flutter" label="Flutter (Dart)" default>
+
+**设置 appmetrica_device_id**
+
+```javascript showLineNumbers
+import 'package:appmetrica_plugin/appmetrica_plugin.dart';
+
+final startupParams = await AppMetrica.requestStartupParams([AppMetricaStartupParams.deviceIdHashKey]);
+final deviceIdHash = startupParams.result?.deviceIdHash;
+
+if (deviceIdHash != null) {
+  try {
+    await Adapty().setIntegrationIdentifier(
+        key: "appmetrica_device_id", 
+        value: deviceIdHash,
+    );
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+}
+```
+
+**设置 appmetrica_profile_id**
+
+```javascript showLineNumbers
+import 'package:appmetrica_plugin/appmetrica_plugin.dart';
+
+try {
+    await Adapty().setIntegrationIdentifier(
+        key: "appmetrica_profile_id", 
+        value: "YOUR_APPMETRICA_PROFILE_ID",
+    );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="Unity" label="Unity (C#)" default>
+
+**设置 appmetrica_device_id**
+
+```csharp showLineNumbers
+using AdaptySDK;
+using Io.AppMetrica;
+
+AppMetrica.RequestStartupParams(
+    (result, errorReason) => {
+        string deviceIdHash = result.DeviceIdHash;
+
+        if (deviceIdHash != null) {
+            Adapty.SetIntegrationIdentifier(
+                "appmetrica_device_id",
+                deviceIdHash,
+                (error) => {
+                    // handle the error
+                });
+          }
+      },
+      new List<string>() { StartupParamsKey.AppMetricaDeviceIDHash }
+);
+```
+
+**设置 appmetrica_profile_id**
+
+```csharp showLineNumbers
+Adapty.SetIntegrationIdentifier(
+  "appmetrica_profile_id",
+  "YOUR_APPMETRICA_PROFILE_ID",
+  (error) => {
+    // handle the error
+});
+```
+</TabItem>
+<TabItem value="RN" label="React Native (TS)" default>
+
+**设置 appmetrica_device_id**
+
+```typescript showLineNumbers
+import { adapty } from 'react-native-adapty';
+import AppMetrica, { DEVICE_ID_HASH_KEY, StartupParams, StartupParamsReason } from '@appmetrica/react-native-analytics';
+
+// ...
+const startupParamsCallback = async (
+  params?: StartupParams,
+  reason?: StartupParamsReason
+) => {
+  const deviceIdHash = params?.deviceIdHash
+  if (deviceIdHash) {
+    try {
+      await adapty.setIntegrationIdentifier("appmetrica_device_id", deviceIdHash);
+    } catch (error) {
+      // handle `AdaptyError`
+    }
+  }
+}
+
+AppMetrica.requestStartupParams(startupParamsCallback, [DEVICE_ID_HASH_KEY])
+```
+
+**设置 appmetrica_profile_id**
+
+```typescript showLineNumbers
+import { adapty } from 'react-native-adapty';
+
+try {
+  await adapty.setIntegrationIdentifier("appmetrica_profile_id", 'YOUR_ADAPTY_CUSTOMER_USER_ID');
+} catch (error) {
+  // handle `AdaptyError`
+}
+```
+</TabItem>
+</Tabs>
+
+## AppMetrica 事件结构 \{#appmetrica-event-structure\}
+
+Adapty 通过 POST 请求将事件发送到 AppMetrica，参数以查询参数的形式传递。对于每个 Adapty 事件，AppMetrica 最多会收到**两个独立的请求**：
+
+1. **用户画像事件**（始终发送）：包含事件元数据
+2. **收入事件**（可选）：如果在 Adapty 看板中启用了"Send revenue events"选项，则包含收入数据
+
+### 用户画像事件请求 \{#profile-event-request\}
+
+发送至：`https://api.appmetrica.yandex.ru/logs/v1/import/events`
+
+带查询参数的示例 URL：
+
+```
+POST https://api.appmetrica.yandex.ru/logs/v1/import/events?post_api_key=your_key&application_id=your_app_id&event_name=subscription_renewed&event_timestamp=1709294400&event_json=%7B%22vendor_product_id%22%3A%22yearly.premium%22...%7D&os_name=ios&ios_ifa=00000000-0000-0000-0000-000000000000&ios_ifv=12345678-1234-1234-1234-123456789012&profile_id=user_12345&session_type=foreground
+```
+
+查询参数：
+
+| 参数 | 类型 | 描述 |
+|:-----------------------|:-------|:-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| `post_api_key` | String | 您的 AppMetrica Post API Key。 |
+| `application_id` | String | 您的 AppMetrica Application ID。 |
+| `event_name` | String | 事件名称（从 Adapty 事件映射而来）。 |
+| `event_timestamp` | Long | 事件的 UNIX 时间戳（秒）。如果超过 7 天则截断为最近 7 天。 |
+| `event_json` | String | URL 编码的 JSON 字符串，包含所有可用的[事件字段](webhook-event-types-and-fields#for-most-event-types)。仅包含非空字段。 |
+| `os_name` | String | "ios" 或 "android"。 |
+| `profile_id` | String | AppMetrica 用户画像 ID（如已设置），否则为 Customer User ID（如可用）。 |
+| `appmetrica_device_id` | String | AppMetrica 设备 ID 哈希值。仅在 `profile_id` 不可用时发送。 |
+| `session_type` | String | 始终为 "foreground"。 |
+| `ios_ifa` | String | **仅 iOS**。广告商标识符。 |
+| `ios_ifv` | String | **仅 iOS**。供应商标识符。 |
+| `google_aid` | String | **仅 Android**。Google 广告 ID。 |
+
+### 收入事件请求（可选） \{#revenue-event-request-optional\}
+
+发送至：`https://api.appmetrica.yandex.ru/logs/v1/import/revenue`
+
+仅当在 Adapty 看板集成设置中启用了"Send revenue events"选项时，才会发送此请求。
+
+带查询参数的示例 URL：
+
+```
+POST https://api.appmetrica.yandex.ru/logs/v1/import/revenue?post_api_key=your_key&application_id=your_app_id&revenue_event_type=subscription_renewed&price=9.99&currency=USD&product_id=yearly.premium&quantity=1&transaction_id=GPA.3383...&payload=%7B%22vendor_product_id%22%3A%22yearly.premium%22...%7D&os_name=ios&ios_ifa=00000000-0000-0000-0000-000000000000&profile_id=user_12345&session_type=foreground
+```
+
+查询参数：
+
+| 参数 | 类型 | 描述 |
+|:---------------------|:--------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `post_api_key` | String | 您的 AppMetrica Post API Key。 |
+| `application_id` | String | 您的 AppMetrica Application ID。 |
+| `revenue_event_type` | String | 收入事件类型（例如 "subscription_renewed"、"refund"、"intro_started"）。请参阅 [AppMetrica 事件映射](#revenue-event-type-mapping)。 |
+| `price` | Float | 收入金额（基于您的收入计算设置）。 |
+| `currency` | String | 货币代码（例如 "USD"）。 |
+| `product_id` | String | 商店中的产品 ID。 |
+| `quantity` | Integer | 始终为 1。 |
+| `transaction_id` | String | 商店交易 ID。 |
+| `payload` | String | URL 编码的 JSON 字符串，包含事件详情。如果超过 30KB，将按重要性顺序移除可选字段以保留最关键数据。 |
+| `os_name` | String | "ios" 或 "android"。 |
+| `profile_id` | String | AppMetrica 用户画像 ID（如已设置），否则为 Customer User ID（如可用）。 |
+| `appmetrica_device_id` | String | AppMetrica 设备 ID 哈希值。仅在 `profile_id` 不可用时发送。 |
+| `session_type` | String | 始终为 "foreground"。 |
+| `ios_ifa` | String | **仅 iOS**。广告商标识符。 |
+| `ios_ifv` | String | **仅 iOS**。供应商标识符。 |
+| `google_aid` | String | **仅 Android**。Google 广告 ID。 |

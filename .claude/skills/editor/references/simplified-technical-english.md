@@ -78,7 +78,7 @@ These patterns are effective in many forms of writing but reduce clarity and pre
 
 Some marketing-style words are acceptable when they genuinely describe value:
 
-✅ **Acceptable (in moderation)**:
+✅ **Acceptable (in moderation — max one per paragraph)**:
 - "explore" - OK for concept sections: "Explore A/B test configuration options"
 - "streamline" - OK if specific: "Streamlines paywall deployment from 10 steps to 3"
 - "enhance" - OK with specifics: "Enhances analytics by tracking 50+ events"
@@ -90,7 +90,7 @@ Some marketing-style words are acceptable when they genuinely describe value:
 - "effortless", "seamless", "magical", "amazing", "incredible"
 - "best", "perfect", "ultimate", "maximum", "total"
 
-**Rule of thumb**: One value-oriented word per paragraph maximum. If you use "explore" in the intro, don't use "streamline" or "enhance" in the same section.
+**Rule of thumb**: One value-oriented word per paragraph maximum.
 
 ### Filler Words (Always Remove)
 - "actually", "basically", "essentially", "simply", "just"
@@ -197,12 +197,10 @@ Some marketing-style words are acceptable when they genuinely describe value:
 ❌ "Click the trash icon in the product row to delete a product"
 
 **Exception**: When location is already established in previous context, you can omit it:
-"1. Open the App Settings.
-2. Click **Enable Sandbox**." (location established in step 1)
-- Format all code consistently
-- Provide context before code blocks
-- Explain what code does, not how (unless teaching)
-- Use placeholder syntax consistently: `<variable>` or `{variable}`
+```
+1. Open the App Settings.
+2. Click **Enable Sandbox**. (location established in step 1)
+```
 
 ### UI Element References
 - **Bold all UI elements**: buttons, tabs, menu items, page names
@@ -280,231 +278,6 @@ Some marketing-style words are acceptable when they genuinely describe value:
 1. Request admin access
 2. Open the settings panel
 3. Configure the API key to enable webhooks
-
-## Article Structure Best Practices
-
-### Introduction Paragraphs
-
-Every article must begin with an introduction before the first heading that provides:
-
-1. **What it is**: Brief explanation of the feature/concept
-2. **Why it matters**: Value or benefit to the reader
-3. **When to use it**: Context for application
-
-**Examples:**
-
-✅ **Good introduction**:
-```markdown
-Placements determine which paywall users see based on their location in your app. Use placements to show different paywalls on your home screen, settings page, or after specific user actions. Each placement can have multiple audiences with different paywalls or A/B tests.
-
-# Configure Placements
-
-## Create a placement
-```
-
-❌ **No introduction**:
-```markdown
-# Configure Placements
-
-## Create a placement
-To create a placement...
-```
-
-### Heading Hierarchy Guidelines
-
-**H1 (#)**: Reserved for page title (one per article)
-
-**H2 (##)**: Main sections - appears in TOC
-- Use for major topics
-- User can navigate directly to these
-
-**H3 (###)**: Subsections - appears in TOC
-- Use for subtopics within H2 sections
-- Keeps structure navigable
-
-**H4 (####)**: Minor subsections - hidden from TOC
-- Use sparingly
-- Only when you need to structure content but don't want TOC clutter
-- If you have 3+ consecutive H4s, consider restructuring
-
-**H5+ (#####+)**: Avoid completely
-- Indicates over-nesting
-- Restructure the content instead
-
-### Parallel Structure in Headings
-
-Maintain consistent grammatical patterns for headings at the same level.
-
-**Within procedural sections - use imperative verbs:**
-```markdown
-## Set Up SDK
-## Configure Products
-## Test Integration
-```
-
-**Within conceptual sections - use noun phrases:**
-```markdown
-## SDK Architecture
-## Product Configuration
-## Integration Testing
-```
-
-**Mixed example (avoid):**
-```markdown
-## SDK Architecture (noun phrase)
-## Configure Products (verb phrase)
-## How Testing Works (question phrase)
-```
-
-### Breaking Up Long Text Blocks
-
-**When a paragraph or section exceeds 200-300 words without structure:**
-
-**Option 1: Add subheadings**
-```markdown
-## Configure Webhook Integration
-
-[150 words about webhooks...]
-
-### Create Endpoint
-
-[100 words...]
-
-### Validate Signatures
-
-[100 words...]
-```
-
-**Option 2: Use lists**
-```markdown
-## Required Configuration
-
-Configure these settings:
-- API key from Adapty Dashboard
-- Webhook URL on your server
-- Event types to receive
-```
-
-**Option 3: Add callouts**
-```markdown
-## Security Configuration
-
-Configure SSL certificates for secure communication.
-
-:::warning
-Always validate webhook signatures to prevent unauthorized requests.
-:::
-
-The signature validation process...
-```
-
-**Option 4: Split into separate sections**
-If a single H2 section grows beyond 500 words, consider splitting into multiple H2 sections.
-
-### Table of Contents Considerations
-
-**Include in TOC (H2-H3):**
-- Steps users need to navigate to
-- Major configuration options
-- Key concepts
-
-**Hide from TOC (H4 or formatting):**
-- Minor variations
-- Optional details
-- Sub-steps within a procedure
-
-### Structure Anti-Patterns
-
-❌ **Too many H4 headings**
-```markdown
-## Configure SDK
-
-#### iOS Setup
-#### Android Setup  
-#### React Native Setup
-#### Flutter Setup
-#### Unity Setup
-```
-
-✅ **Better structure**
-```markdown
-## Configure SDK
-
-### iOS Setup
-### Android Setup
-### React Native Setup
-### Flutter Setup
-### Unity Setup
-```
-
-❌ **Over-nesting**
-```markdown
-## Products
-### Product Types
-#### Subscriptions
-##### Monthly Subscriptions
-###### Trial Configuration
-```
-
-✅ **Flatter structure**
-```markdown
-## Products
-
-### Subscription Products
-Configure monthly and annual subscription products.
-
-### Trial Configuration
-Set trial periods for subscription products.
-```
-
-❌ **Missing introduction**
-```markdown
-# A/B Testing
-
-## Create test
-```
-
-✅ **Has introduction**
-```markdown
-A/B tests compare different paywall variations to identify which converts better. Use A/B tests to optimize pricing, trial offers, and UI design.
-
-# A/B Testing
-
-## Create test
-```
-
-### API Documentation
-- Use present tense: "Returns" not "Will return"
-- Document all parameters
-- Show example requests and responses
-- List possible error codes
-- Specify data types explicitly
-
-### Installation Guides
-- List system requirements first
-- Number all steps
-- One action per step
-- Include verification steps
-- Provide rollback instructions for failures
-
-### Troubleshooting Guides
-- Organize by symptom, not cause
-- Use clear symptom descriptions as headings
-- Provide diagnostic steps before solutions
-- Include only relevant information in each section
-
-### Conceptual Documentation
-- Define terms on first use
-- Use examples to illustrate abstract concepts
-- Build from simple to complex
-- Link to related concepts
-- Use diagrams when helpful (but describe them in text too)
-
-### Release Notes
-- Group by category: New features, Improvements, Bug fixes, Breaking changes
-- Start with impact: "Removed support for..." not "Support removed for..."
-- Link to relevant documentation
-- Specify version numbers clearly
 
 ### Detecting Complex Sentences
 

@@ -1,0 +1,115 @@
+---
+title: "在 iOS SDK 中查看订阅状态"
+description: "在 Adapty 中追踪和管理用户订阅状态，提升用户留存率。"
+metadataTitle: "了解订阅状态 | Adapty 文档"
+keywords: ['getProfile', 'cache']
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md'; 
+
+借助 Adapty，追踪订阅状态变得轻而易举。您无需在代码中手动插入产品 ID，只需检查用户是否拥有有效的[访问等级](access-level)，即可轻松确认其订阅状态。
+
+在开始检查订阅状态之前，请先配置 [App Store 服务器通知](enable-app-store-server-notifications)。
+
+## 访问等级与 AdaptyProfile 对象 \{#access-level-and-the-adaptyprofile-object\}
+
+访问等级是 [AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile) 对象的属性。建议在应用启动时（例如[识别用户](identifying-users#set-customer-user-id-on-configuration)时）获取用户画像，并在发生变更时及时更新。这样，您便可以直接使用用户画像对象，而无需反复请求。
+
+如需在用户画像更新时收到通知，请按照下方[监听订阅状态更新](subscription-status#listening-for-subscription-status-updates)章节所述，监听用户画像变更事件。
+
+<SampleApp />
+
+## 从服务器获取访问等级 \{#retrieving-the-access-level-from-the-server\}
+
+使用 `.getProfile()` 方法从服务器获取访问等级：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get() {
+        // check the access
+        profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // grant access to premium features
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+响应参数：
+
+| 参数 | 描述 |
+| --------- |------|
+| Profile   | <p>[AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile) 对象。通常情况下，您只需检查用户画像的访问等级状态，即可判断用户是否拥有应用的高级访问权限。</p><p></p><p>`.getProfile` 方法始终尝试查询 API，因此可提供最新的结果。如果由于某种原因（例如无网络连接）Adapty SDK 无法从服务器获取信息，则会返回缓存中的数据。值得注意的是，Adapty SDK 会定期更新 `AdaptyProfile` 缓存，以尽可能保持信息的最新状态。</p> |
+
+`.getProfile()` 方法返回用户画像，您可以从中获取访问等级状态。每个应用可以设置多个访问等级。例如，如果您有一款新闻应用，并对不同主题单独销售订阅，您可以创建"sports"和"science"两个访问等级。但在大多数情况下，您只需要一个访问等级，此时直接使用默认的"premium"访问等级即可。
+
+以下是检查默认"premium"访问等级的示例：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    let isPremium = profile.accessLevels["premium"]?.isActive ?? false
+    // grant access to premium features
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get(), 
+       profile.accessLevels["premium"]?.isActive ?? false {
+        // grant access to premium features
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+### 监听订阅状态更新 \{#listening-for-subscription-status-updates\}
+
+每当用户的订阅发生变化时，Adapty 都会触发一个事件。
+
+要接收来自 Adapty 的消息，您需要进行一些额外配置：
+
+```swift showLineNumbers
+Adapty.delegate = self
+
+// To receive subscription updates, extend `AdaptyDelegate` with this method:
+nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
+    // handle any changes to subscription state
+}
+```
+
+Adapty 也会在应用启动时触发一个事件，此时将传递缓存的订阅状态。
+
+### 订阅状态缓存 \{#subscription-status-cache\}
+
+Adapty SDK 实现的缓存存储了用户画像的订阅状态。这意味着即使服务器不可用，也可以访问缓存数据以获取用户画像的订阅状态信息。
+
+但需要注意的是，无法直接从缓存请求数据。SDK 每分钟会定期向服务器查询，以检查用户画像是否有任何更新或变更。如有任何修改（例如新的交易或其他更新），这些变更将同步到缓存数据，以保持其与服务器的一致性。

@@ -1,0 +1,158 @@
+---
+title: "Kotlin Multiplatform SDK'da kullanıcıları tanımlama"
+description: "KMP'de uygulama içi abonelik yönetimi için Adapty kurulum hızlı başlangıç kılavuzu."
+metadataTitle: "Adapty Hızlı Başlangıç Kılavuzu | Adapty Dokümanları"
+keywords: ['tanımlama', 'kullanıcıları tanımlama', 'customeruserid']
+rank: 50
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
+:::important
+Bu kılavuz, kendi kimlik doğrulama sisteminiz varsa sizin içindir. Burada, Adapty'deki kullanıcı profillerini mevcut kimlik doğrulama sisteminizle uyumlu hâle getirmek için nasıl çalışacağınızı öğreneceksiniz.
+:::
+
+Kullanıcıların satın alımlarını nasıl yöneteceğiniz, uygulamanızın kimlik doğrulama modeline bağlıdır:
+- Uygulamanız backend kimlik doğrulaması kullanmıyor ve kullanıcı verisi depolamıyorsa [anonim kullanıcılar bölümüne](#anonymous-users) bakın.
+- Uygulamanızda backend kimlik doğrulaması varsa (veya olacaksa) [tanımlanmış kullanıcılar bölümüne](#identified-users) bakın.
+
+**Temel kavramlar**:
+- **Profiller**, SDK'nın çalışması için gereken varlıklardır. Adapty bunları otomatik olarak oluşturur.
+- Anonim **(customer user ID olmaksızın)** veya tanımlanmış **(customer user ID ile)** olabilirler.
+- Adapty'deki profilleri kendi kimlik doğrulama sisteminizle çapraz referanslamak için **customer user ID** sağlarsınız.
+
+Anonim ve tanımlanmış kullanıcılar arasındaki farklar:
+
+|                         | Anonim kullanıcılar                                   | Tanımlanmış kullanıcılar                                                        |
+|-------------------------|-------------------------------------------------------|-------------------------------------------------------------------------|
+| **Satın alma yönetimi** | Mağaza düzeyinde satın alma geri yükleme              | Customer user ID aracılığıyla cihazlar arasında satın alma geçmişini koruma |
+| **Profil yönetimi**     | Her yeniden yüklemede yeni profil                     | Oturumlar ve cihazlar arasında aynı profil                              |
+| **Veri kalıcılığı**     | Anonim kullanıcı verisi uygulama yüklemesine bağlıdır | Tanımlanmış kullanıcı verisi uygulama yüklemeleri arasında korunur      |
+
+## Anonim kullanıcılar \{#anonymous-users\}
+
+Backend kimlik doğrulamanız yoksa **uygulama kodunda kimlik doğrulamayla ilgilenmenize gerek yoktur**:
+
+1. SDK uygulamanın ilk başlatılmasında etkinleştirildiğinde Adapty **kullanıcı için yeni bir profil oluşturur**.
+2. Kullanıcı uygulamada herhangi bir şey satın aldığında bu satın alma **Adapty profiliyle ve mağaza hesabıyla ilişkilendirilir**.
+3. Kullanıcı uygulamayı **yeniden yüklediğinde** veya **yeni bir cihazdan** yüklediğinde Adapty, etkinleştirmede **yeni bir anonim profil oluşturur**.
+4. Kullanıcı uygulamanızda daha önce satın alım yapmışsa, varsayılan olarak bu satın alımlar SDK etkinleştirildiğinde App Store'dan otomatik olarak senkronize edilir.
+
+Anonim kullanıcılarda her yüklemede yeni profil oluşturulur; ancak bu bir sorun değildir çünkü Adapty analitiğinde [yeni yükleme olarak neyin sayılacağını yapılandırabilirsiniz](general#4-installs-definition-for-analytics).
+
+Anonim kullanıcılar için yüklemeleri **cihaz ID'lerine göre** saymanız gerekir. Bu durumda, yeniden yüklemeler dahil bir cihazdaki her uygulama yüklemesi bir yükleme olarak sayılır.
+
+:::note
+Yedekten geri yüklemeler yeniden yüklemelerden farklı davranır. Varsayılan olarak, kullanıcı yedekten geri yükleme yaptığında SDK önbelleğe alınan verileri korur ve yeni profil oluşturmaz. Bu davranışı `withAppleClearDataOnBackup` ayarıyla yapılandırabilirsiniz. [Daha fazla bilgi](sdk-installation-kotlin-multiplatform#clear-data-on-backup-restore).
+:::
+
+## Tanımlanmış kullanıcılar \{#identified-users\}
+
+Uygulamada kullanıcıları tanımlamak için iki seçeneğiniz vardır:
+
+- [**Giriş/kayıt sırasında:**](#during-loginsignup) Kullanıcılar uygulamanız başladıktan sonra giriş yapıyorsa, kimlik doğruladıklarında bir customer user ID ile `identify()` çağırın.
+
+- [**SDK etkinleştirmesi sırasında:**](#during-the-sdk-activation) Uygulama başlarken zaten bir customer user ID'niz varsa, `activate()` çağırırken onu gönderin.
+
+:::important
+Varsayılan olarak Adapty, şu anda başka bir Customer User ID ile ilişkilendirilmiş bir Customer User ID'den satın alma aldığında access level paylaşılır; yani her iki profil de ücretli erişime sahip olur. Bu ayarı, ücretli erişimi bir profilden diğerine aktaracak veya paylaşımı tamamen devre dışı bırakacak şekilde yapılandırabilirsiniz. Daha fazla ayrıntı için [makaleye](general#6-sharing-paid-access-between-user-accounts) bakın.
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/identify-diagram.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Giriş/kayıt sırasında \{#during-loginsignup\}
+
+Kullanıcıları uygulama başlatıldıktan sonra tanımlıyorsanız (örneğin, uygulamanıza giriş yaptıktan veya kayıt olduktan sonra), customer user ID'lerini ayarlamak için `identify` metodunu kullanın.
+
+- Bu customer user ID'yi **daha önce kullanmadıysanız**, Adapty onu otomatik olarak mevcut profille ilişkilendirir.
+- Bu customer user ID'yi **daha önce kullanıcıyı tanımlamak için kullandıysanız**, Adapty bu customer user ID ile ilişkili profille çalışmaya geçer.
+
+:::important
+Customer user ID'ler her kullanıcı için benzersiz olmalıdır. Parametre değerini sabit kodlarsanız tüm kullanıcılar tek bir kullanıcı olarak değerlendirilir.
+:::
+
+```kotlin showLineNumbers
+Adapty.identify("YOUR_USER_ID") // Unique for each user
+    .onSuccess {
+        // successful identify
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+### SDK etkinleştirmesi sırasında \{#during-the-sdk-activation\}
+
+SDK'yı etkinleştirdiğinizde zaten bir customer user ID biliyorsanız, `identify` çağrısını ayrıca yapmak yerine `activate` metodunda gönderebilirsiniz.
+
+Customer user ID'yi bilmenize rağmen onu yalnızca etkinleştirmeden sonra ayarlıyorsanız, bu, etkinleştirme sırasında Adapty'nin yeni bir anonim profil oluşturacağı ve `identify` çağrısından sonra mevcut profile geçeceği anlamına gelir.
+
+Mevcut bir customer user ID (daha önce kullandığınız) veya yeni bir tane iletebilirsiniz. Yeni bir tane iletirseniz, etkinleştirme sırasında oluşturulan yeni profil otomatik olarak customer user ID ile ilişkilendirilir.
+
+:::note
+Varsayılan olarak, anonim profil oluşturmak analitik panolarını etkilemez çünkü yüklemeler cihaz ID'lerine göre sayılır.
+
+Cihaz ID'si, uygulamanın mağazadan bir cihaza tek bir yüklemesini temsil eder ve yalnızca uygulama yeniden yüklendikten sonra yeniden oluşturulur.  
+Bunun ilk mi yoksa tekrarlanan bir yükleme mi olduğuna ya da mevcut bir customer user ID kullanılıp kullanılmadığına bağlı değildir.
+
+Profil oluşturma (SDK etkinleştirildiğinde veya çıkış yapıldığında), giriş yapma veya uygulamayı yeniden yüklemeden güncelleme ek yükleme olayları oluşturmaz.
+
+Yüklemeleri cihazlar yerine benzersiz kullanıcılara göre saymak istiyorsanız **App settings** bölümüne gidin ve [**Installs definition for analytics**](general#4-installs-definition-for-analytics) ayarını yapılandırın.
+:::
+
+```kotlin showLineNumbers
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withCustomerUserId("user123") // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+    .build()
+```
+
+### Kullanıcıları çıkış yaptırma \{#log-users-out\}
+
+Kullanıcıları çıkış yaptırmak için bir butonunuz varsa `logout` metodunu kullanın.
+
+:::important
+Kullanıcıları çıkış yaptırmak, kullanıcı için yeni bir anonim profil oluşturur.
+:::
+
+```kotlin showLineNumbers
+Adapty.logout()
+    .onSuccess {
+        // successful logout
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+:::info
+Kullanıcıları uygulamaya tekrar giriş yaptırmak için `identify` metodunu kullanın.
+:::
+
+### Giriş yapmadan satın almaya izin verme \{#allow-purchases-without-login\}
+
+Kullanıcılarınız uygulamanıza giriş yapmadan önce ve sonra satın alım yapabiliyorsa, giriş yaptıktan sonra erişimlerini koruyacaklarından emin olmanız gerekir:
+
+1. Çıkış yapmış bir kullanıcı satın alım yaptığında Adapty bunu anonim profil ID'siyle ilişkilendirir.
+2. Kullanıcı hesabına giriş yaptığında Adapty, tanımlanmış profiliyle çalışmaya geçer.
+    - Yeni bir customer user ID ise (örneğin satın alım kayıt öncesinde yapılmışsa), Adapty customer user ID'yi mevcut profille ilişkilendirir; böylece tüm satın alma geçmişi korunur.
+    - Mevcut bir customer user ID ise (customer user ID zaten bir profille bağlantılıysa), profil değişiminden sonra gerçek access level'ı almanız gerekir. Tanımlama işleminden hemen sonra [`getProfile`](kmp-check-subscription-status) çağırabilir ya da veriler otomatik senkronize olsun diye [profil güncellemelerini dinleyebilirsiniz](kmp-check-subscription-status).
+
+## Sonraki adımlar \{#next-steps\}
+
+Tebrikler! Uygulamanıza uygulama içi ödeme mantığını eklediniz! Uygulama monetizasyonunuzda başarılar diliyoruz!
+
+Adapty'den daha fazla yararlanmak için şu konuları inceleyebilirsiniz:
+- [**Test etme**](troubleshooting-test-purchases): Her şeyin beklendiği gibi çalıştığından emin olun
+- [**Entegrasyonlar**](configuration): Tek satır kodla pazarlama attribution ve analitik servisleriyle entegre olun
+- [**Özel profil özellikleri ayarlama**](kmp-setting-user-attributes): Kullanıcı profillerine özel özellikler ekleyin ve segment'ler oluşturun; böylece A/B testi başlatabilir veya farklı kullanıcılara farklı paywall'lar gösterebilirsiniz

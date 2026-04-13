@@ -1,0 +1,136 @@
+---
+title: "在 React Native SDK 的 Observer Mode 中上报交易"
+description: "在 React Native SDK 中通过 Adapty Observer Mode 上报购买交易，用于用户洞察和收入追踪。"
+metadataTitle: "在 React Native SDK 的 Observer Mode 中上报交易 | Adapty 文档"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+
+<Tabs groupId="sdk-version" queryString> 
+
+<TabItem value="current" label="Adapty SDK v3.4+（当前版本）" default> 
+在 Observer 模式下，Adapty SDK 无法自动追踪通过您现有购买系统完成的购买。您需要从应用商店主动上报交易。为避免分析数据出现错误，务必在发布应用**之前**完成此配置。
+
+使用 `reportTransaction` 显式上报每笔交易，以便 Adapty 识别。
+
+:::warning
+
+**请勿跳过交易上报！**
+如果您不调用 `reportTransaction`，Adapty 将无法识别该交易，它不会出现在分析数据中，也不会发送至集成渠道。
+
+:::
+
+如果您使用 Adapty 付费墙，请在上报交易时附带 `variationId`。这会将购买与触发它的付费墙关联起来，从而确保付费墙分析数据的准确性。
+
+```typescript showLineNumbers
+const variationId = paywall.variationId;
+
+try {
+    await adapty.reportTransaction(transactionId, variationId);
+} catch (error) {
+    // handle the `AdaptyError`
+}
+```
+
+参数说明：
+
+| 参数          | 是否必填 | 描述                                                         |
+| ------------- | -------- | ------------------------------------------------------------ |
+| transactionId | 必填     | <ul><li>iOS：交易的标识符。</li><li>Android：购买的字符串标识符（`purchase.getOrderId`），其中 purchase 是账单库 [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) 类的实例。</li></ul> |
+| variationId   | 可选     | 实验变体的字符串标识符。您可以通过 [AdaptyPaywall](https://react-native.adapty.io/interfaces/adaptypaywall) 对象的 `variationId` 属性获取。 |
+
+</TabItem>
+<TabItem value="old" label="Adapty SDK 3.3.x（旧版）" default> 
+
+在 Observer 模式下，Adapty SDK 无法自动追踪通过您现有购买系统完成的购买。您需要从应用商店上报或恢复交易。为避免分析数据出现错误，务必在发布应用**之前**完成此配置。
+
+在两个平台上均使用 `reportTransaction` 显式上报每笔交易，并在 Android 上额外使用 `restorePurchases`，以确保 Adapty 能够识别该交易。
+
+:::warning
+
+**请勿跳过交易上报！**
+如果您不调用这些方法，Adapty 将无法识别该交易，它不会出现在分析数据中，也不会发送至集成渠道。
+
+:::
+
+如果您使用 Adapty 付费墙，请在上报交易时附带 `variationId`。这会将购买与触发它的付费墙关联起来，从而确保付费墙分析数据的准确性。
+
+```typescript showLineNumbers
+if (Platform.OS === 'android') {
+    try {
+        await adapty.restorePurchases();
+    } catch (error) {
+        // handle the error
+    }
+}
+
+...
+
+const variationId = paywall.variationId;
+
+try {
+    await adapty.reportTransaction(transactionId, variationId);
+} catch (error) {
+    // handle the `AdaptyError`
+}
+```
+
+参数说明：
+
+| 参数          | 是否必填 | 描述                                                         |
+| ------------- | -------- | ------------------------------------------------------------ |
+| transactionId | 必填     | <ul><li>iOS，StoreKit 1：[SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction) 对象。</li><li>iOS，StoreKit 2：[Transaction](https://developer.apple.com/documentation/storekit/transaction) 对象。</li><li>Android：购买的字符串标识符（`purchase.getOrderId`），其中 purchase 是账单库 [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) 类的实例。</li></ul> |
+| variationId   | 可选     | 实验变体的字符串标识符。您可以通过 [AdaptyPaywall](https://react-native.adapty.io/interfaces/adaptypaywall) 对象的 `variationId` 属性获取。 |
+
+</TabItem>
+<TabItem value="old2" label="Adapty SDK 3.2.x 及以下（旧版）" default> 
+
+<Tabs groupId="current-os" queryString> 
+<TabItem value="swift" label="iOS" default> 
+
+**上报交易**
+
+- 3.1.x 及以下版本会自动监听 App Store 中的交易，无需手动上报。
+- 3.2 版本不支持 Observer 模式。
+
+</TabItem> 
+<TabItem value="kotlin" label="Android 及基于 Android 的跨平台" default> 
+
+**上报交易**
+
+在 Observer 模式下，使用 `restorePurchases` 向 Adapty 上报交易，具体说明请参阅[在移动端代码中恢复购买](react-native-restore-purchase)页面。
+
+:::warning
+**请勿跳过交易上报！**
+如果您不调用 `restorePurchases`，Adapty 将无法识别该交易，它不会出现在分析数据中，也不会发送至集成渠道。
+::: 
+
+</TabItem>
+</Tabs>
+
+**将付费墙与交易关联**
+
+由于购买由您自行处理，Adapty SDK 无法确定购买来源。因此，如果您计划在 Observer 模式下使用付费墙和/或 A/B 测试，需要在移动端代码中将来自应用商店的交易与对应的付费墙关联起来。在发布应用之前务必正确配置此项，否则将导致分析数据出现错误。
+
+```typescript 
+const variationId = paywall.variationId;
+
+try {
+    await adapty.setVariationId('transactionId', variationId);
+} catch (error) {
+    // handle the `AdaptyError`
+}
+```
+
+请求参数：
+
+| 参数          | 是否必填 | 描述                                                         |
+| ------------- | -------- | ------------------------------------------------------------ |
+| transactionId | 必填     | <p>iOS，StoreKit 1：[SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction) 对象。</p><p>iOS，StoreKit 2：[Transaction](https://developer.apple.com/documentation/storekit/transaction) 对象。</p><p>Android：购买的字符串标识符（purchase.getOrderId），其中 purchase 是账单库 [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) 类的实例。</p> |
+| variationId   | 必填     | 实验变体的字符串标识符。您可以通过 [AdaptyPaywall](https://react-native.adapty.io/interfaces/adaptypaywall) 对象的 `variationId` 属性获取。 |
+
+</TabItem> 
+</Tabs>

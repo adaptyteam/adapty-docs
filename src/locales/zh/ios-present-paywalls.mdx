@@ -1,0 +1,142 @@
+---
+title: "在 iOS SDK 中展示新版付费墙编辑工具付费墙"
+description: "了解如何在 iOS 上展示付费墙以提升转化率和收益。"
+metadataTitle: "在 iOS 上展示付费墙 | Adapty 文档"
+keywords: ['paywallController']
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md'; 
+
+如果您已使用付费墙编辑工具自定义了付费墙，则无需在移动应用代码中手动渲染即可向用户展示。此类付费墙已包含展示内容及展示方式的完整配置。
+
+:::warning
+
+本指南适用于**[新版付费墙编辑工具付费墙](adapty-paywall-builder)**。不同版本的付费墙编辑工具所设计的付费墙、远程配置付费墙以及[观察者模式](observer-vs-full-mode)的展示流程各有不同。
+
+- 如需展示**旧版付费墙编辑工具付费墙**，请参阅 [iOS - 展示旧版付费墙编辑工具付费墙](ios-present-paywalls-legacy)。
+- 如需展示**远程配置付费墙**，请参阅[渲染由远程配置设计的付费墙](present-remote-config-paywalls)。
+- 如需展示**观察者模式付费墙**，请参阅 [iOS - 在观察者模式下展示付费墙编辑工具付费墙](ios-present-paywall-builder-paywalls-in-observer-mode)。
+
+:::
+
+如需获取下文使用的 `AdaptyUI.PaywallConfiguration` 对象，请参阅[获取付费墙编辑工具付费墙及其配置](get-pb-paywalls)。
+
+## 在 SwiftUI 中展示付费墙 \{#present-paywalls-in-swiftui\}
+
+### 以模态视图展示 \{#present-as-a-modal-view\}
+
+如需在设备屏幕上以模态视图形式展示可视化付费墙，请在 SwiftUI 中使用 `.paywall` 修饰符：
+
+```swift showLineNumbers title="SwiftUI"
+@State var paywallPresented = false // ensure that you manage this variable state and set it to `true` at the moment you want to show the paywall
+
+var body: some View {
+  Text("Hello, AdaptyUI!")
+      .paywall(
+          isPresented: $paywallPresented,
+          paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+          didFinishPurchase: { product, profile in paywallPresented = false },
+          didFailPurchase: { product, error in /* handle the error */ },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false }
+      )
+}
+```
+
+参数：
+
+| 参数 | 是否必填 | 描述 |
+|:----------------------------------|:---------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented** | 必填 | 用于控制付费墙屏幕是否显示的绑定值。 |
+| **paywallConfiguration** | 必填 | 包含付费墙视觉详情的 `AdaptyUI.PaywallConfiguration` 对象。使用 `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)` 方法。详情请参阅[获取付费墙编辑工具付费墙及其配置](get-pb-paywalls)。 |
+| **didFailPurchase** | 必填 | 当 `Adapty.makePurchase()` 失败时调用。 |
+| **didFinishRestore** | 必填 | 当 `Adapty.restorePurchases()` 成功完成时调用。 |
+| **didFailRestore** | 必填 | 当 `Adapty.restorePurchases()` 失败时调用。 |
+| **didFailRendering** | 必填 | 当界面渲染发生错误时调用。如遇此情况，请[联系 Adapty 支持团队](mailto:support@adapty.io)。 |
+| **fullScreen** | 可选 | 确定付费墙是以全屏模式还是模态方式显示。默认为 `true`。 |
+| **didAppear** | 可选 | 当付费墙视图呈现时调用。 |
+| **didDisappear** | 可选 | 当付费墙视图消失时调用。 |
+| **didPerformAction** | 可选 | 当用户点击按钮时调用。不同按钮对应不同的动作 ID。其中 `close` 和 `openURL` 为预定义动作 ID，其他动作 ID 可在编辑工具中自定义。 |
+| **didSelectProduct** | 可选 | 当产品被用户或系统选中购买时调用。 |
+| **didStartPurchase** | 可选 | 当用户开始购买流程时调用。 |
+| **didFinishPurchase** | 可选 | 当 `Adapty.makePurchase()` 成功完成时调用。 |
+| **didFinishWebPaymentNavigation** | 可选 | 当 Web 支付导航完成时调用。 |
+| **didStartRestore** | 可选 | 当用户开始恢复购买流程时调用。 |
+| **didFailLoadingProducts** | 可选 | 当产品加载发生错误时调用。返回 `true` 可重试加载。 |
+| **didPartiallyLoadProducts** | 可选 | 当产品部分加载完成时调用。 |
+| **showAlertItem** | 可选 | 用于管理付费墙上方警告项显示的绑定值。 |
+| **showAlertBuilder** | 可选 | 用于渲染警告视图的函数。 |
+| **placeholderBuilder** | 可选 | 用于在付费墙加载时渲染占位视图的函数。 |
+
+有关参数的更多详情，请参阅 [iOS - 处理事件](ios-handling-events)。
+
+### 以非模态视图展示 \{#present-as-a-non-modal-view\}
+
+您也可以将付费墙作为导航目标或内联视图嵌入到应用的导航流程中。在 SwiftUI 视图中直接使用 `AdaptyPaywallView`：
+
+```swift showLineNumbers title="SwiftUI"
+AdaptyPaywallView(
+    paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+    didFailPurchase: { product, error in
+        // Handle purchase failure
+    },
+    didFinishRestore: { profile in
+        // Handle successful restore
+    },
+    didFailRestore: { error in
+        // Handle restore failure
+    },
+    didFailRendering: { error in
+        // Handle rendering error
+    }
+)
+```
+
+## 在 UIKit 中展示付费墙 \{#present-paywalls-in-uikit\}
+
+如需在设备屏幕上展示可视化付费墙，请执行以下步骤：
+
+1. 使用 `.paywallController(for:products:viewConfiguration:delegate:)` 方法初始化要展示的可视化付费墙：
+
+     ```swift showLineNumbers title="Swift"
+     import Adapty
+     import AdaptyUI
+        
+     let visualPaywall = AdaptyUI.paywallController(
+         with: <paywall configuration object>,
+         delegate: <AdaptyPaywallControllerDelegate>
+     )
+     ```
+
+    请求参数：
+
+   | 参数 | 是否必填 | 描述 |
+   | :----------------------- | :------- | :---------- |
+   | **paywall configuration** | 必填 | 包含付费墙视觉详情的 `AdaptyUI.PaywallConfiguration` 对象。使用 `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` 方法。详情请参阅[获取付费墙编辑工具付费墙及其配置](get-pb-paywalls)。 |
+   | **delegate** | 必填 | 用于监听付费墙事件的 `AdaptyPaywallControllerDelegate`。详情请参阅[处理付费墙事件](ios-handling-events)。 |
+
+    返回值：
+
+    | 对象 | 描述 |
+    | :---------------------- | :--------------------------------------------------- |
+    | **AdaptyPaywallController** | 表示所请求付费墙屏幕的对象 |
+
+2. 成功创建对象后，即可在设备屏幕上展示：
+
+   ```swift showLineNumbers title="Swift"
+   present(visualPaywall, animated: true)
+   ```
+
+<SampleApp />

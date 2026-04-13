@@ -1,0 +1,148 @@
+---
+title: "Unity SDK ile mobil uygulamada satın alma yapma"
+description: "Adapty kullanarak uygulama içi satın almalar ve abonelikler için kılavuz."
+metadataTitle: "Adapty'de Uygulama İçi Satın Almaları Yönetme | Adapty Dokümanları"
+keywords: ['makePurchase', 'pending', 'offer code']
+rank: 60
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/tr/reusable/OfferCodesInfo.mdx';
+
+Mobil uygulamanızda paywall'ları göstermek, kullanıcılara premium içerik veya hizmetlere erişim sunmanın önemli bir adımıdır. Ancak paywall'larınızı özelleştirmek için [Paywall Builder](adapty-paywall-builder) kullanıyorsanız, yalnızca bu paywall'ları göstermek satın almaları desteklemek için yeterlidir.
+
+Paywall Builder kullanmıyorsanız, satın almayı tamamlamak ve istenen içeriğin kilidini açmak için `.makePurchase()` adlı ayrı bir metot kullanmanız gerekir. Bu metot, kullanıcıların paywall'larla etkileşime geçmesini ve istedikleri işlemleri gerçekleştirmesini sağlar.
+
+Paywall'ınızda kullanıcının satın almaya çalıştığı ürün için aktif bir promosyon teklifi varsa, Adapty bunu satın alma sırasında otomatik olarak uygular.
+
+:::warning
+Başlangıç teklifinin otomatik olarak uygulanabilmesi için paywall'larınızın Paywall Builder kullanılarak oluşturulmuş olması gerektiğini unutmayın.
+
+Diğer durumlarda, [iOS'ta kullanıcının başlangıç teklifine uygunluğunu doğrulamanız](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios) gerekir. Bu adımı atlamak, uygulamanızın yayın sürecinde reddedilmesine yol açabilir. Ayrıca başlangıç teklifine hak kazanan kullanıcılardan tam fiyat tahsil edilebilir.
+:::
+
+[Başlangıç yapılandırmasını](quickstart) hiçbir adımı atlamadan tamamladığınızdan emin olun. Bu olmadan satın almaları doğrulayamayız.
+
+## Satın alma yapma \{#make-purchase\}
+
+:::note
+**[Paywall Builder](adapty-paywall-builder) kullanıyor musunuz?** Satın almalar otomatik olarak işlenir; bu adımı atlayabilirsiniz.
+
+**Adım adım rehber mi arıyorsunuz?** Tam bağlamla uçtan uca uygulama talimatları için [hızlı başlangıç kılavuzuna](unity-implement-paywalls-manually) göz atın.
+:::
+
+```csharp showLineNumbers
+using AdaptySDK;
+
+void MakePurchase(AdaptyPaywallProduct product) {
+  Adapty.MakePurchase(product, (result, error) => {
+    switch (result.Type) {
+      case AdaptyPurchaseResultType.Pending:
+        // handle pending purchase
+        break;
+      case AdaptyPurchaseResultType.UserCancelled:
+        // handle purchase cancellation
+        break;
+      case AdaptyPurchaseResultType.Success:
+        var profile = result.Profile;
+        // handle successfull purchase
+        break;
+      default:
+        break;
+    }
+  });
+}
+```
+
+İstek parametreleri:
+
+| Parametre   | Zorunluluk | Açıklama                                                                                              |
+| :---------- | :--------- |:------------------------------------------------------------------------------------------------------|
+| **Product** | zorunlu    | Paywall'dan alınan bir [`AdaptyPaywallProduct`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall_product.html) nesnesi. |
+
+Yanıt parametreleri:
+
+| Parametre   | Açıklama                                                                                                                                                                                                                                                                                                                                                                     |
+|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>İstek başarılı olursa yanıt bu nesneyi içerir. Bir [AdaptyProfile](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_profile.html) nesnesi, kullanıcının uygulama içindeki access level'ları, abonelikleri ve abonelik dışı satın almaları hakkında kapsamlı bilgi sunar.</p><p>Kullanıcının uygulamaya gerekli erişime sahip olup olmadığını belirlemek için access level durumunu kontrol edin.</p> |
+
+:::warning
+**Not:** Apple'ın StoreKit v2.0 altındaki bir sürümünü ve Adapty SDK v2.9.0 altındaki bir sürümünü kullanıyorsanız, bunun yerine [Apple App Store paylaşılan gizli anahtarını](app-store-connection-configuration#step-5-enter-app-store-shared-secret) sağlamanız gerekir. Bu yöntem Apple tarafından artık kullanımdan kaldırılmıştır.
+:::
+
+## Satın alma sırasında aboneliği değiştirme \{#change-subscription-when-making-a-purchase\}
+
+Kullanıcı mevcut aboneliğini yenilemek yerine yeni bir abonelik seçtiğinde, süreç uygulama mağazasına göre farklı işler:
+
+- App Store'da abonelik, abonelik grubu içinde otomatik olarak güncellenir. Kullanıcı bir gruptan abonelik satın alırken başka bir gruptan zaten aktif bir aboneliği varsa, her iki abonelik de aynı anda aktif olur.
+- Google Play'de abonelik otomatik olarak güncellenmez. Geçişi aşağıda açıklandığı gibi mobil uygulama kodunuzda yönetmeniz gerekir.
+
+Android'de aboneliği başka biriyle değiştirmek için `.makePurchase()` metodunu ek parametreyle çağırın:
+
+```csharp showLineNumbers
+// Create subscription update parameters
+var subscriptionUpdateParams = new AdaptySubscriptionUpdateParameters(
+    "old_product_id", // Product ID of the current subscription
+    AdaptySubscriptionUpdateReplacementMode.WithTimeProration
+);
+
+Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
+  if(error != null) {
+      // Handle the error
+      return;
+  }
+
+  // successful cross-grade
+});
+```
+
+Ek istek parametresi:
+
+| Parametre                    | Zorunluluk | Açıklama                                                                                               |
+| :--------------------------- | :--------- |:-------------------------------------------------------------------------------------------------------|
+| **subscriptionUpdateParams** | zorunlu    | Bir [`AdaptySubscriptionUpdateParameters`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_subscription_update_parameters.html) nesnesi. |
+
+Abonelikler ve değiştirme modları hakkında daha fazla bilgiyi Google Geliştirici belgelerinde bulabilirsiniz:
+
+- [Değiştirme modları hakkında](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Google'ın değiştirme modları için tavsiyeleri](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Değiştirme modu [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Not: Bu yöntem yalnızca abonelik yükseltmeleri için kullanılabilir. Düşürmeler desteklenmez.
+- Değiştirme modu [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Not: Gerçek abonelik değişikliği yalnızca mevcut abonelik faturalama dönemi sona erdiğinde gerçekleşir.
+
+## iOS'ta teklif kodlarını kullanma \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+Uygulamanızda kod kullanma sayfasını göstermek için:
+
+```csharp showLineNumbers
+Adapty.PresentCodeRedemptionSheet((error) => {
+  // handle the error
+});
+```
+
+:::danger
+Gözlemlerimize göre, bazı uygulamalarda Teklif Kodu Kullanma sayfası güvenilir biçimde çalışmayabilir. Kullanıcıyı doğrudan App Store'a yönlendirmenizi öneririz.
+
+Bunu yapmak için aşağıdaki formattaki URL'yi açmanız gerekir:
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
+
+## Ön ödemeli planları yönetme (Android) \{#manage-prepaid-plans-android\}
+
+Uygulama kullanıcılarınız [ön ödemeli planlar](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) satın alabiliyorsa (örneğin birkaç aylık yenilenmez abonelik), ön ödemeli planlar için [bekleyen işlemleri](https://developer.android.com/google/play/billing/subscriptions#pending) etkinleştirebilirsiniz.
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetGoogleEnablePendingPrepaidPlans(true);
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+```

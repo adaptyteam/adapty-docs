@@ -1,0 +1,269 @@
+---
+title: "Adapty'yi AI yardımıyla Unity uygulamanıza entegre edin"
+description: "Cursor, Context7, ChatGPT, Claude veya diğer AI araçlarını kullanarak Adapty'yi Unity uygulamanıza entegre etmek için adım adım bir kılavuz."
+metadataTitle: "Unity için AI Yardımıyla Adapty Entegrasyonu | Adapty Dokümanları"
+customSlug: /adapty-cursor-unity
+displayed_sidebar: sdkunity
+---
+
+Bu kılavuz, bir LLM yardımıyla Adapty'yi Unity uygulamanıza entegre etmenize yardımcı olur. Adapty kontrol panelini hazırlamakla başlayıp her uygulama aşamasında LLM'inize odaklı doküman bağlantıları göndererek ilerleyeceksiniz. Sonunda, AI araçlarınızı Adapty dokümantasyonuyla kurmanın en iyi uygulamalarını bulacaksınız.
+
+:::tip
+Başlamak için bu sayfanın tamamını Markdown olarak kopyalayıp LLM'inize yapıştırın — sayfanın üst kısmındaki **Copy for LLM** düğmesine tıklayın ya da [.md sürümünü](https://adapty.io/docs/tr/adapty-cursor-unity.md) açın. LLM, her aşamada sizi yönlendirmek için kılavuz bağlantılarını ve kontrol noktalarını kullanacaktır.
+:::
+
+## Başlamadan önce: kontrol paneli kurulumu \{#before-you-start-dashboard-setup\}
+
+Adapty, herhangi bir SDK kodu yazmadan önce kontrol panelinde bazı yapılandırmalar gerektir. Bunu etkileşimli bir LLM skill'i ile ya da Kontrol Paneli üzerinden manuel olarak yapabilirsiniz.
+
+### Skill yaklaşımı (önerilen) \{#skill-approach-recommended\}
+
+Adapty CLI skill'i, LLM'inizin uygulamanızı, ürünlerinizi, access level'larınızı, paywall'larınızı ve placement'larınızı doğrudan ayarlamasını sağlar — her adım için Kontrol Paneli'ni açmanıza gerek kalmaz. Yalnızca Kontrol Paneli'nde [mağazalarınızı bağlamanız](integrate-payments) gerekir.
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+Skill eklendikten sonra agent'ınızda `/adapty-cli` komutunu çalıştırın. Mağazalarınızı bağlamak için Kontrol Paneli'ni ne zaman açmanız gerektiği de dahil olmak üzere her adımda sizi yönlendirecektir.
+
+### Kontrol paneli yaklaşımı \{#dashboard-approach\}
+
+Her şeyi manuel olarak yapılandırmayı tercih ediyorsanız, kod yazmadan önce şunlara ihtiyacınız var. LLM'iniz kontrol paneli değerlerini sizin için arayamaz — bunları kendiniz sağlamanız gerekecektir.
+
+1. **Uygulama mağazalarınızı bağlayın**: Adapty Kontrol Paneli'nde **App settings → General** bölümüne gidin. Unity uygulamanız her iki platformu da hedefliyorsa hem App Store hem de Google Play'i bağlayın. Bu, satın almaların çalışması için zorunludur.
+   [Uygulama mağazalarını bağlayın](integrate-payments)
+
+2. **Public SDK anahtarınızı kopyalayın**: Adapty Kontrol Paneli'nde **App settings → General** bölümüne gidin, ardından **API keys** bölümünü bulun. Kodda, bu Adapty yapılandırma builder'ına geçirdiğiniz dizedir.
+
+3. **En az bir ürün oluşturun**: Adapty Kontrol Paneli'nde **Products** sayfasına gidin. Kodda ürünlere doğrudan başvurmazsınız — Adapty bunları paywall'lar aracılığıyla iletir.
+   [Ürün ekleyin](quickstart-products)
+
+4. **Bir paywall ve placement oluşturun**: Adapty Kontrol Paneli'nde **Paywalls** sayfasında bir paywall oluşturun, ardından bunu **Placements** sayfasında bir placement'a atayın. Kodda, placement ID'si `Adapty.GetPaywall("YOUR_PLACEMENT_ID")` fonksiyonuna geçirdiğiniz dizedir.
+   [Paywall oluşturun](quickstart-paywalls)
+
+5. **Access level'ları ayarlayın**: Adapty Kontrol Paneli'nde **Products** sayfasında ürün bazında yapılandırın. Kodda `profile.AccessLevels["premium"]?.IsActive` içinde kontrol edilen dizedir. Varsayılan `premium` access level çoğu uygulama için işe yarar. Ödeme yapan kullanıcılar ürüne bağlı olarak farklı özelliklere erişiyorsa (örneğin `basic` plan ile `pro` plan), kod yazmaya başlamadan önce [ek access level'lar oluşturun](assigning-access-level-to-a-product).
+
+:::tip
+Bu beşine sahip olduğunuzda kod yazmaya hazırsınız. LLM'inize şunu söyleyin: "Public SDK anahtarım X, placement ID'm Y" — böylece doğru başlatma ve paywall çekme kodu oluşturabilir.
+:::
+
+### Hazır olduğunuzda kurun \{#set-up-when-ready\}
+
+Bunlar kod yazmaya başlamak için zorunlu değildir, ancak entegrasyonunuz olgunlaştıkça ihtiyaç duyacaksınız:
+
+- **A/B testleri**: **Placements** sayfasında yapılandırın. Kod değişikliği gerekmez.
+  [A/B testleri](ab-tests)
+- **Ek paywall'lar ve placement'lar**: Farklı placement ID'leriyle daha fazla `GetPaywall` çağrısı ekleyin.
+- **Analitik entegrasyonları**: **Integrations** sayfasında yapılandırın. Kurulum entegrasyona göre değişir. Bkz. [analitik entegrasyonları](analytics-integration) ve [attribution entegrasyonları](attribution-integration).
+
+## Adapty dokümanlarını LLM'inize aktarın \{#feed-adapty-docs-to-your-llm\}
+
+### Context7 kullanın (önerilen) \{#use-context7-recommended\}
+
+[Context7](https://context7.com), LLM'inizin güncel Adapty dokümantasyonuna doğrudan erişmesini sağlayan bir MCP sunucusudur. LLM'iniz ne sorduğunuza göre doğru dokümanları otomatik olarak getirir — manuel URL yapıştırmanıza gerek kalmaz.
+
+Context7; **Cursor**, **Claude Code**, **Windsurf** ve diğer MCP uyumlu araçlarla çalışır. Kurmak için şunu çalıştırın:
+
+```
+npx ctx7 setup
+```
+
+Bu, editörünüzü algılar ve Context7 sunucusunu yapılandırır. Manuel kurulum için [Context7 GitHub deposuna](https://github.com/upstash/context7) bakın.
+
+Yapılandırıldıktan sonra, prompt'larınızda Adapty kütüphanesine başvurun:
+
+```
+Unity SDK'sının nasıl kurulacağını öğrenmek için adaptyteam/adapty-docs kütüphanesini kullan
+```
+
+:::warning
+Context7, doküman bağlantılarını manuel olarak yapıştırma ihtiyacını ortadan kaldırsa da uygulama sırası önemlidir. Her şeyin düzgün çalıştığından emin olmak için aşağıdaki [uygulama adım adım kılavuzunu](#implementation-walkthrough) sırayla takip edin.
+:::
+
+### Düz metin dokümanları kullanın \{#use-plain-text-docs\}
+
+Herhangi bir Adapty dokümanına düz metin Markdown olarak erişebilirsiniz. URL'sinin sonuna `.md` ekleyin ya da makale başlığının altındaki **Copy for LLM** düğmesine tıklayın. Örneğin: [adapty-cursor-unity.md](https://adapty.io/docs/tr/adapty-cursor-unity.md).
+
+Aşağıdaki [uygulama adım adım kılavuzundaki](#implementation-walkthrough) her aşama, yapıştırmanız için `.md` bağlantıları içeren bir "Bunu LLM'inize gönderin" bloğu içermektedir.
+
+Daha fazla dokümana aynı anda erişmek için aşağıdaki [indeks dosyaları ve platforma özel alt kümeler](#plain-text-doc-index-files) bölümüne bakın.
+
+## Uygulama adım adım kılavuzu \{#implementation-walkthrough\}
+
+Bu kılavuzun geri kalanı, Adapty entegrasyonunu uygulama sırasına göre anlatır. Her aşama, LLM'inize gönderilecek dokümanları, tamamlandığında görmeniz gerekenleri ve yaygın sorunları içerir.
+
+### Entegrasyonunuzu planlayın \{#plan-your-integration\}
+
+Koda dalmadan önce, LLM'inizden projenizi analiz etmesini ve bir uygulama planı oluşturmasını isteyin. AI aracınız bir planlama modunu destekliyorsa (Cursor'ın veya Claude Code'un plan modu gibi), LLM'nin herhangi bir kod yazmadan önce hem proje yapınızı hem de Adapty dokümanlarını okuyabilmesi için bunu kullanın.
+
+LLM'inize satın almalar için hangi yaklaşımı kullandığınızı söyleyin — bu, takip etmesi gereken kılavuzları etkiler:
+
+- [**Adapty Paywall Builder**](adapty-paywall-builder): Adapty'nin kodsuz builder'ında paywall'lar oluşturursunuz ve SDK bunları otomatik olarak render eder.
+- [**Manuel olarak oluşturulan paywall'lar**](unity-making-purchases): Kendi paywall UI'ınızı kodda oluşturursunuz, ancak ürünleri çekmek ve satın almaları işlemek için yine de Adapty'yi kullanırsınız.
+- [**Observer mode**](observer-vs-full-mode): Mevcut satın alma altyapınızı korur ve Adapty'yi yalnızca analitik ve entegrasyonlar için kullanırsınız.
+
+Hangisini seçeceğinizden emin değil misiniz? [Hızlı başlangıçtaki karşılaştırma tablosunu](unity-quickstart-paywalls) okuyun.
+
+### SDK'yı kurun ve yapılandırın \{#install-and-configure-the-sdk\}
+
+Adapty SDK paketini Unity Package Manager aracılığıyla ekleyin ve Public SDK anahtarınızla etkinleştirin. Bu temeldir — bunun olmadan hiçbir şey çalışmaz.
+
+**Kılavuz:** [Adapty SDK'yı kurun ve yapılandırın](sdk-installation-unity)
+
+Bunu LLM'inize gönderin:
+```
+Kod yazmadan önce şu Adapty dokümanlarını oku:
+- https://adapty.io/docs/tr/sdk-installation-unity.md
+```
+
+:::tip[Kontrol Noktası]
+- **Beklenen:** Proje derlenir ve çalışır. Unity Console, Adapty aktivasyon günlüğünü gösterir.
+- **Dikkat:** "Public API key is missing" → anahtarı App settings'ten aldığınız gerçek anahtarla değiştirdiğinizi kontrol edin.
+:::
+
+### Paywall'ları gösterin ve satın almaları yönetin \{#show-paywalls-and-handle-purchases\}
+
+Placement ID'sine göre bir paywall çekin, görüntüleyin ve satın alma olaylarını yönetin. İhtiyacınız olan kılavuzlar, satın almaları nasıl yönettiğinize bağlıdır.
+
+Her satın almayı ilerledikçe sandbox'ta test edin — sona kadar beklemeyin. Kurulum talimatları için [Sandbox'ta satın almaları test edin](test-purchases-in-sandbox) bölümüne bakın.
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**Kılavuzlar:**
+- [Paywall'ları kullanarak satın almaları etkinleştirin (hızlı başlangıç)](unity-quickstart-paywalls)
+- [Paywall Builder paywall'larını ve yapılandırmalarını çekin](unity-get-pb-paywalls)
+- [Paywall'ları görüntüleyin](unity-present-paywalls)
+- [Paywall olaylarını yönetin](unity-handling-events)
+- [Düğme eylemlerine yanıt verin](unity-handle-paywall-actions)
+
+Bunu LLM'inize gönderin:
+```
+Kod yazmadan önce şu Adapty dokümanlarını oku:
+- https://adapty.io/docs/tr/unity-quickstart-paywalls.md
+- https://adapty.io/docs/tr/unity-get-pb-paywalls.md
+- https://adapty.io/docs/tr/unity-present-paywalls.md
+- https://adapty.io/docs/tr/unity-handling-events.md
+- https://adapty.io/docs/tr/unity-handle-paywall-actions.md
+```
+
+:::tip[Kontrol Noktası]
+- **Beklenen:** Paywall, yapılandırdığınız ürünlerle birlikte görünür. Bir ürüne dokunmak sandbox satın alma iletişim kutusunu tetikler.
+- **Dikkat:** Boş paywall veya `GetPaywall` hatası → placement ID'sinin kontrol paneliyle tam olarak eşleştiğini ve placement'a bir kitle atandığını doğrulayın.
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Manuel paywall'lar">
+
+**Kılavuzlar:**
+- [Özel paywall'ınızda satın almaları etkinleştirin (hızlı başlangıç)](unity-quickstart-manual)
+- [Paywall'ları ve ürünleri çekin](fetch-paywalls-and-products-unity)
+- [Remote config ile tasarlanmış paywall'ı render edin](present-remote-config-paywalls-unity)
+- [Satın alma yapın](unity-making-purchases)
+- [Satın almaları geri yükleyin](unity-restore-purchase)
+
+Bunu LLM'inize gönderin:
+```
+Kod yazmadan önce şu Adapty dokümanlarını oku:
+- https://adapty.io/docs/tr/unity-quickstart-manual.md
+- https://adapty.io/docs/tr/fetch-paywalls-and-products-unity.md
+- https://adapty.io/docs/tr/present-remote-config-paywalls-unity.md
+- https://adapty.io/docs/tr/unity-making-purchases.md
+- https://adapty.io/docs/tr/unity-restore-purchase.md
+```
+
+:::tip[Kontrol Noktası]
+- **Beklenen:** Özel paywall'ınız Adapty'den çekilen ürünleri görüntüler. Bir ürüne dokunmak sandbox satın alma iletişim kutusunu tetikler.
+- **Dikkat:** Boş ürünler dizisi → paywall'a kontrol panelinde ürün atandığını ve placement'ın bir kitleye sahip olduğunu doğrulayın.
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**Kılavuzlar:**
+- [Observer mode genel bakış](observer-vs-full-mode)
+- [Observer mode'u uygulayın](implement-observer-mode-unity)
+- [Observer mode'da işlemleri raporlayın](report-transactions-observer-mode-unity)
+
+Bunu LLM'inize gönderin:
+```
+Kod yazmadan önce şu Adapty dokümanlarını oku:
+- https://adapty.io/docs/tr/observer-vs-full-mode.md
+- https://adapty.io/docs/tr/implement-observer-mode-unity.md
+- https://adapty.io/docs/tr/report-transactions-observer-mode-unity.md
+```
+
+:::tip[Kontrol Noktası]
+- **Beklenen:** Mevcut satın alma akışınızı kullanarak sandbox satın alması yaptıktan sonra işlem, Adapty kontrol panelindeki **Event Feed** kısmında görünür.
+- **Dikkat:** Olay yok → işlemleri Adapty'ye raporladığınızı ve her iki mağaza için sunucu bildirimlerinin yapılandırıldığını doğrulayın.
+:::
+
+</TabItem>
+
+</Tabs>
+
+### Abonelik durumunu kontrol edin \{#check-subscription-status\}
+
+Satın alma işleminden sonra, premium içeriği kısıtlamak için kullanıcı profilinde aktif bir access level olup olmadığını kontrol edin.
+
+**Kılavuz:** [Abonelik durumunu kontrol edin](unity-check-subscription-status)
+
+Bunu LLM'inize gönderin:
+```
+Kod yazmadan önce şu Adapty dokümanlarını oku:
+- https://adapty.io/docs/tr/unity-check-subscription-status.md
+```
+
+:::tip[Kontrol Noktası]
+- **Beklenen:** Sandbox satın almasının ardından `profile.AccessLevels["premium"]?.IsActive` değeri `true` döner.
+- **Dikkat:** Satın alma sonrasında boş `AccessLevels` → ürüne kontrol panelinde bir access level atandığını kontrol edin.
+:::
+
+### Kullanıcıları tanımlayın \{#identify-users\}
+
+Satın almaların cihazlar arasında kalıcı olması için uygulama kullanıcı hesaplarınızı Adapty profilleriyle ilişkilendirin.
+
+:::important
+Uygulamanızın kimlik doğrulaması yoksa bu adımı atlayın.
+:::
+
+**Kılavuz:** [Kullanıcıları tanımlayın](unity-quickstart-identify)
+
+Bunu LLM'inize gönderin:
+```
+Kod yazmadan önce şu Adapty dokümanlarını oku:
+- https://adapty.io/docs/tr/unity-quickstart-identify.md
+```
+
+:::tip[Kontrol Noktası]
+- **Beklenen:** `Adapty.Identify("your-user-id")` çağrısının ardından kontrol panelindeki **Profiles** bölümü özel kullanıcı ID'nizi gösterir.
+- **Dikkat:** Anonim profil attribution sorunlarından kaçınmak için `Identify` çağrısını aktivasyondan sonra, paywall'ları çekmeden önce yapın.
+:::
+
+### Yayına hazırlanın \{#prepare-for-release\}
+
+Entegrasyonunuz sandbox'ta çalışmaya başladıktan sonra, her şeyin prodüksiyona hazır olduğundan emin olmak için yayın kontrol listesini inceleyin.
+
+**Kılavuz:** [Yayın kontrol listesi](release-checklist)
+
+Bunu LLM'inize gönderin:
+```
+Yayına geçmeden önce şu Adapty dokümanlarını oku:
+- https://adapty.io/docs/tr/release-checklist.md
+```
+
+:::tip[Kontrol Noktası]
+- **Beklenen:** Tüm kontrol listesi maddeleri onaylandı: mağaza bağlantıları, sunucu bildirimleri, satın alma akışı, access level kontrolleri ve gizlilik gereksinimleri.
+- **Dikkat:** Eksik sunucu bildirimleri → App Store Server Notifications'ı **App settings → iOS SDK** içinde, Google Play Real-Time Developer Notifications'ı **App settings → Android SDK** içinde yapılandırın.
+:::
+
+## Düz metin doküman indeks dosyaları \{#plain-text-doc-index-files\}
+
+LLM'inize bireysel sayfaların ötesinde daha geniş bir bağlam sağlamanız gerekiyorsa, tüm Adapty dokümantasyonunu listeleyen veya birleştiren indeks dosyaları sunuyoruz:
+
+- [`llms.txt`](https://adapty.io/docs/tr/llms.txt): Tüm sayfaları `.md` bağlantılarıyla listeler. Web sitelerini LLM'lere erişilebilir kılmak için [gelişmekte olan bir standart](https://llmstxt.org/). Bazı AI agent'larında (örn. ChatGPT) `llms.txt` dosyasını indirip sohbete dosya olarak yüklemeniz gerekebilir.
+- [`llms-full.txt`](https://adapty.io/docs/tr/llms-full.txt): Adapty dokümantasyon sitesinin tamamı tek bir dosyada birleştirilmiştir. Çok büyük — yalnızca tüm resme ihtiyaç duyduğunuzda kullanın.
+- Unity'ye özel [`unity-llms.txt`](https://adapty.io/docs/tr/unity-llms.txt) ve [`unity-llms-full.txt`](https://adapty.io/docs/tr/unity-llms-full.txt): Tam siteye kıyasla token tasarrufu sağlayan platforma özel alt kümeler.

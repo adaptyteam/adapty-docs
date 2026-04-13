@@ -1,0 +1,233 @@
+---
+title: "Unity SDK'da onboarding verilerini işleme"
+description: "Adapty SDK ile Unity uygulamanızdaki onboarding verilerini kaydedin ve kullanın."
+metadataTitle: "Onboardings | Unity SDK | Adapty Dokümanları"
+displayed_sidebar: sdkunity
+---
+
+Kullanıcılarınız bir quiz sorusunu yanıtladığında veya bir giriş alanına veri girdiğinde `OnboardingViewOnStateUpdatedAction` metodu çağrılır. Alan türünü kodunuzda kaydedebilir veya işleyebilirsiniz.
+
+Sınıfınızda `OnboardingViewOnStateUpdatedAction` metodunu uygulayın:
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnStateUpdatedAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string elementId,
+        AdaptyOnboardingsStateUpdatedParams @params
+    )
+    {
+        switch (@params) {
+            case AdaptyOnboardingsSelectParams selectParams:
+                // handle single selection
+                break;
+            case AdaptyOnboardingsMultiSelectParams multiSelectParams:
+                // handle multiple selections
+                break;
+            case AdaptyOnboardingsInputParams inputParams:
+                // handle text input
+                break;
+            case AdaptyOnboardingsDatePickerParams datePickerParams:
+                // handle date selection
+                break;
+        }
+    }
+    
+    // ... other interface methods
+}
+```
+
+Parametreler şunlardır:
+
+| Parametre      | Açıklama                                                                                                                                                                                                                                                                                     |
+|----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `elementId`    | Giriş öğesi için benzersiz bir tanımlayıcı. Soruları yanıtlarla ilişkilendirmek için kullanabilirsiniz.                                                                                                                                                                                       |
+| `@params`       | Kullanıcının girdi veri nesnesi. Aşağıdaki türlerden biri olabilir.                                                                                                                                                                                                                          |
+| `AdaptyOnboardingsSelectParams`  | Seçeneklerden tek seçim. `Id`, `Value`, `Label` içerir.                                                                           |
+| `AdaptyOnboardingsMultiSelectParams` | Seçeneklerden çoklu seçim. `Params` listesi içerir (her biri `Id`, `Value`, `Label` ile)<br/>• `input`: `type`, `value` içeren nesne<br/>• `datePicker`: `day`, `month`, `year` içeren nesne |
+| `AdaptyOnboardingsInputParams` | Metin giriş alanı. `AdaptyOnboardingsTextInput`, `AdaptyOnboardingsEmailInput` veya `AdaptyOnboardingsNumberInput` olabilen `Input` içerir. |
+| `AdaptyOnboardingsDatePickerParams` | Tarih seçimi. Null olabilen `Day`, `Month`, `Year` içerir. |
+
+<Details>
+<summary>Kaydedilen veri örnekleri (uygulamanızda farklılık gösterebilir)</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## Kullanım senaryoları \{#use-cases\}
+
+### Kullanıcı profillerini verilerle zenginleştirme \{#enrich-user-profiles-with-data\}
+
+Giriş verilerini kullanıcı profiliyle hemen ilişkilendirmek ve aynı bilgiyi iki kez sormaktan kaçınmak istiyorsanız, eylemi işlerken giriş verisiyle [kullanıcı profilini güncellemeniz](unity-setting-user-attributes) gerekir.
+
+Örneğin, kullanıcılara `name` ID'li metin alanına adlarını girmelerini istiyorsunuz ve bu alanın değerini kullanıcının adı olarak ayarlamak istiyorsunuz. Ayrıca `email` alanına e-posta adreslerini girmelerini de istiyorsunuz. Uygulama kodunuzda bu şöyle görünebilir:
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnStateUpdatedAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string elementId,
+        AdaptyOnboardingsStateUpdatedParams @params
+    )
+    {
+        if (@params is AdaptyOnboardingsInputParams inputParams) {
+            var builder = new AdaptyProfileParameters.Builder();
+            
+            switch (elementId) {
+                case "name":
+                    if (inputParams.Input is AdaptyOnboardingsTextInput textInput) {
+                        builder.SetFirstName(textInput.Value);
+                    }
+                    break;
+                case "email":
+                    if (inputParams.Input is AdaptyOnboardingsEmailInput emailInput) {
+                        builder.SetEmail(emailInput.Value);
+                    }
+                    break;
+            }
+            
+            Adapty.UpdateProfile(builder.Build(), (error) => {
+                if (error != null) {
+                    // handle the error
+                }
+            });
+        }
+    }
+    
+    // ... other interface methods
+}
+```
+
+### Yanıtlara göre paywallları özelleştirme \{#customize-paywalls-based-on-answers\}
+
+Onboarding'lerdeki quizleri kullanarak, kullanıcılara onboarding'i tamamladıktan sonra gösterdiğiniz paywallları da özelleştirebilirsiniz.
+
+Örneğin, kullanıcılara spor deneyimleri hakkında soru sorarak farklı kullanıcı gruplarına farklı CTA'lar ve ürünler gösterebilirsiniz.
+
+1. Onboarding builder'da bir [quiz ekleyin](onboarding-quizzes) ve seçeneklerine anlamlı ID'ler atayın.
+
+<ZoomImage id="experience.webp" />
+
+2. Quiz yanıtlarını ID'lerine göre işleyin ve kullanıcılar için [özel attribute'lar ayarlayın](unity-setting-user-attributes).
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnStateUpdatedAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string elementId,
+        AdaptyOnboardingsStateUpdatedParams @params
+    )
+    {
+        if (@params is AdaptyOnboardingsSelectParams selectParams) {
+            var builder = new AdaptyProfileParameters.Builder();
+            
+            switch (elementId) {
+                case "experience":
+                    // set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+                    builder.SetCustomStringAttribute("experience", selectParams.Value);
+                    break;
+            }
+            
+            Adapty.UpdateProfile(builder.Build(), (error) => {
+                if (error != null) {
+                    // handle the error
+                }
+            });
+        }
+    }
+    
+    // ... other interface methods
+}
+```
+
+3. Her özel attribute değeri için [segment oluşturun](segments).
+4. Bir [placement](placements) oluşturun ve oluşturduğunuz her segment için [kitle](audience) ekleyin.
+5. Uygulama kodunuzda placement için bir [paywall görüntüleyin](unity-paywalls). Onboarding'inizde bir paywall açan buton varsa, paywall kodunu [bu butonun eylemine yanıt olarak](unity-handling-onboarding-events#opening-a-paywall) uygulayın.

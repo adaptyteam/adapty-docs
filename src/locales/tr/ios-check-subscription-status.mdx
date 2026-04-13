@@ -1,0 +1,131 @@
+---
+title: "iOS SDK'da abonelik durumunu kontrol etme"
+description: "Adapty ile iOS uygulamanızda abonelik durumunu nasıl kontrol edeceğinizi öğrenin."
+metadataTitle: "Abonelik Durumunu Kontrol Etme | Adapty Dokümanları"
+displayed_sidebar: sdkios
+keywords: ['getProfile', 'abonelik durumu']
+rank: 100
+---
+
+Kullanıcıların ücretli içeriğe erişip erişemeyeceğine ya da bir paywall görüp görmeyeceğine karar vermek için profildeki [access level](access-level) değerini kontrol etmeniz gerekir.
+
+Bu makale, kullanıcılara paywall gösterip göstermeyeceğinizi veya ücretli özelliklere erişim verip vermeyeceğinizi belirlemek amacıyla profil durumuna nasıl erişeceğinizi gösteriyor.
+
+## Abonelik durumunu alma \{#get-subscription-status\}
+
+Kullanıcıya paywall mı yoksa ücretli içerik mi göstereceğinize karar verirken, profillerindeki [access level](access-level) değerini kontrol edersiniz. İki seçeneğiniz var:
+
+- Anlık olarak en güncel profil verisine ihtiyaç duyduğunuzda (örneğin uygulama açılışında) ya da zorla güncelleme yapmak istediğinizde `getProfile` çağırın.
+- Abonelik durumu her değiştiğinde otomatik olarak yenilenen yerel bir kopya tutmak için **otomatik profil güncellemelerini** etkinleştirin.
+
+:::important
+Adapty'de varsayılan olarak `premium` access level zaten mevcuttur. Birden fazla access level ayarlamanıza gerek yoksa `premium` değerini doğrudan kullanabilirsiniz.
+:::
+
+### Profil alma \{#get-profile\}
+
+Abonelik durumunu almanın en kolay yolu, profile erişmek için `getProfile` metodunu kullanmaktır:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get() {
+        // check the access
+        profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // grant access to premium features
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+### Abonelik güncellemelerini dinleme \{#listen-to-subscription-updates\}
+
+Uygulamanızda profil güncellemelerini otomatik olarak almak istiyorsanız:
+
+1. İstediğiniz bir türde `AdaptyDelegate` protokolünü uygulayın ve `didLoadLatestProfile` metodunu implemente edin; Adapty, kullanıcının abonelik durumu her değiştiğinde bu metodu otomatik olarak çağırır. Aşağıdaki örnekte abonelik iş akışlarını ve kullanıcı profilini yönetmek için bir `SubscriptionManager` türü kullanıyoruz. Bu tür bir bağımlılık olarak enjekte edilebilir, UIKit uygulamasında singleton olarak kurulabilir ya da uygulamanın ana struct'ından SwiftUI ortamına eklenebilir.
+2. Bu metot çağrıldığında güncellenen profil verisini saklayın; böylece ek ağ isteği yapmadan uygulama genelinde kullanabilirsiniz.
+
+```swift
+class SubscriptionManager: AdaptyDelegate {
+
+    nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
+        let hasAccess = profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false
+        // Update UI, unlock content, etc.
+    }
+}
+
+// Set delegate after Adapty activation
+Adapty.delegate = subscriptionManager
+```
+
+:::note
+Adapty, uygulamanız başladığında `didLoadLatestProfile` metodunu otomatik olarak çağırır ve cihaz çevrimdışı olsa bile önbelleğe alınmış abonelik verisini sağlar.
+:::
+
+## Profili paywall mantığıyla bağlama \{#connect-profile-with-paywall-logic\}
+
+Paywall gösterme veya ücretli özelliklere erişim verme konusunda anlık kararlar almanız gerektiğinde, kullanıcının profilini doğrudan kontrol edebilirsiniz. Bu yaklaşım; uygulama açılışı, premium bölümlere girerken veya belirli içerikleri görüntülemeden önce gibi senaryolarda kullanışlıdır.
+
+<Tabs>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+```swift
+private func checkAccessLevel() async -> Bool {
+    do {
+        let profile = try await Adapty.getProfile()
+        return profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false
+    } catch {
+        print("Error checking access level: \(error)")
+        return false
+    }
+}
+
+// In your initialization logic:
+let hasAccess = await checkAccessLevel()
+if !hasAccess {
+    paywallPresented = true // Show paywall if no access
+}
+```
+
+</TabItem>
+<TabItem value="uikit" label="UIKit">
+
+```swift
+private func checkAccessLevel() async throws -> Bool {
+    let profile = try await Adapty.getProfile()
+    return profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false
+}
+
+// In your initialization logic:
+let hasAccess = try await checkAccessLevel()
+if !hasAccess {
+    presentPaywall(with: paywallConfiguration)
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Sonraki adımlar \{#next-steps\}
+
+Abonelik durumunu nasıl takip edeceğinizi öğrendiğinize göre, mevcut kimlik doğrulama sisteminizle ve ücretli erişim paylaşım izinleriyle uyumlu olduğundan emin olmak için [kullanıcı profilleriyle nasıl çalışacağınızı](ios-quickstart-identify) öğrenin.
+
+Kendi kimlik doğrulama sisteminiz yoksa bu hiç sorun değil; Adapty kullanıcıları sizin yerinize yönetir. Yine de Adapty'nin anonim kullanıcılarla nasıl çalıştığını öğrenmek için [kılavuzu](ios-quickstart-identify) okuyabilirsiniz.

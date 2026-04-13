@@ -85,6 +85,14 @@ Import path pattern: `import Component from '@site/src/components/Component.astr
 ```
 ````
 
+## Learning and Memory Management
+
+- YOU MUST use the journal tool frequently to capture technical insights, failed approaches, and user preferences
+- Before starting complex tasks, search the journal for relevant past experiences and lessons learned
+- Document architectural decisions and their outcomes for future reference
+- Track patterns in user feedback to improve collaboration over time
+- When you notice something that should be fixed but is unrelated to your current task, document it in your journal rather than fixing it immediately
+
 ## Styling architecture
 
 ### CSS files
@@ -147,6 +155,8 @@ These are layout/interactive components in `src/components/`, not imported by ar
 - `Calculator.tsx` — interactive React calculator widget
 - `ApiReferencePage.astro` — Stoplight Elements API docs wrapper
 
+For CSS/layout bugs, inspect the DOM structure and existing styles before proposing a fix. Do not guess at specificity or inheritance.
+
 ## Build pipeline details
 
 - `prebuild` copies shared assets (images, API specs) to `public/`
@@ -156,3 +166,27 @@ These are layout/interactive components in `src/components/`, not imported by ar
 ## Reference
 
 Comprehensive component examples and writing guidelines: `TECH_WRITERS_README.md`
+
+## Design Context
+
+### Users
+Mobile developers (iOS, Android, React Native, Flutter, Unity, KMP, Capacitor) integrating Adapty's in-app purchase and subscription SDK. Technical, time-conscious, task-focused — they arrive to find an answer and get unblocked.
+
+### Brand Personality
+**Reliable, clean, developer-first.** Direct and precise. No marketing fluff. Trust is earned by making the right answer obvious and getting out of the developer's way.
+
+### Emotional Goals
+Developers should feel **confident** (know exactly what to do), **fast** (find things without hunting), and **welcomed** (smooth onboarding, low barrier to entry).
+
+### Reference
+**Stripe Docs** — authoritative, information-dense but scannable, strong typographic hierarchy, no decoration for decoration's sake.
+
+### Anti-References
+No heavy animations, neon gradients, or glassmorphism. No generic corporate feel. No cluttered sidebars or competing CTAs. No playful/toy-like UI — this is a technical reference.
+
+### Design Principles
+1. **Clarity over cleverness** — every decision serves comprehension, nothing else
+2. **Scannability first** — headers, code blocks, callouts, and step numbers are navigation anchors
+3. **Trust through restraint** — one brand color (`#6720ff`), subtle shadows, consistent spacing
+4. **Code is first-class** — code blocks, syntax highlighting, copy buttons must be beautiful in both themes
+5. **Dark mode is equal, not secondary** — full design target, no contrast or legibility compromises

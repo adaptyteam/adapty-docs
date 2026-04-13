@@ -1,0 +1,274 @@
+---
+title: "Adapty'yi AI yardımıyla React Native uygulamanıza entegre edin"
+description: "Cursor, Context7, ChatGPT, Claude veya diğer AI araçlarını kullanarak Adapty'yi React Native uygulamanıza entegre etmek için adım adım rehber."
+metadataTitle: "React Native için AI Yardımıyla Adapty Entegrasyonu | Adapty Dokümanları"
+customSlug: /adapty-cursor-react-native
+displayed_sidebar: sdkreactnative
+---
+
+Bu rehber, bir LLM yardımıyla Adapty'yi React Native uygulamanıza entegre etmenizi sağlar. Önce Adapty kontrol panelinizi hazırlayacak, ardından her uygulama aşamasında LLM'inize odaklı belge bağlantıları göndererek ilerleyeceksiniz. Sonunda AI araçlarınızı Adapty dokümantasyonuyla kullanmak için en iyi pratikleri bulacaksınız.
+
+:::tip
+Başlamak için bu sayfanın tamamını Markdown olarak kopyalayıp LLM'inize yapıştırın — sayfanın üstündeki **Copy for LLM** seçeneğine tıklayın veya [.md sürümünü](https://adapty.io/docs/tr/adapty-cursor-react-native.md) açın. LLM, rehber bağlantılarını ve kontrol noktalarını kullanarak her aşamada sizi yönlendirecektir.
+:::
+
+## Başlamadan önce: kontrol paneli kurulumu \{#before-you-start-dashboard-setup\}
+
+Adapty, herhangi bir SDK kodu yazmadan önce bazı kontrol paneli yapılandırmaları gerektirir. Bunu etkileşimli bir LLM becerisini kullanarak veya Dashboard üzerinden manuel olarak yapabilirsiniz.
+
+### Beceri yaklaşımı (önerilen) \{#skill-approach-recommended\}
+
+Adapty CLI becerisi, LLM'inizin uygulamanızı, ürünlerinizi, access level'larınızı, paywall'larınızı ve placement'larınızı doğrudan kurmasını sağlar — her adım için Dashboard'u açmanıza gerek kalmaz. Yalnızca Dashboard'da [mağazalarınızı bağlamanız](integrate-payments) yeterlidir.
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+Beceri eklendikten sonra agent'ınızda `/adapty-cli` komutunu çalıştırın. Mağazalarınızı bağlamak için Dashboard'u ne zaman açmanız gerektiği dahil her adımda sizi yönlendirecektir.
+
+### Dashboard yaklaşımı \{#dashboard-approach\}
+
+Her şeyi manuel olarak yapılandırmayı tercih ediyorsanız, herhangi bir kod yazmadan önce ihtiyacınız olanlar şunlardır. LLM'iniz sizin için kontrol paneli değerlerini arayamaz — bunları kendiniz sağlamanız gerekir.
+
+1. **Uygulama mağazalarınızı bağlayın**: Adapty Kontrol Paneli'nde **App settings → General** bölümüne gidin. Uygulamanız her iki platformu da hedefliyorsa hem App Store hem de Google Play'i bağlayın. Bu, satın almaların çalışması için zorunludur.
+   [Uygulama mağazalarını bağlayın](integrate-payments)
+
+2. **Public SDK anahtarınızı kopyalayın**: Adapty Kontrol Paneli'nde **App settings → General** bölümüne gidin, ardından **API keys** bölümünü bulun. Kodda bu, `adapty.activate("YOUR_PUBLIC_SDK_KEY")` fonksiyonuna ilettiğiniz dizedir.
+
+3. **En az bir ürün oluşturun**: Adapty Kontrol Paneli'nde **Products** sayfasına gidin. Ürünlere kodda doğrudan başvurmazsınız — Adapty bunları paywall'lar aracılığıyla iletir.
+   [Ürün ekleyin](quickstart-products)
+
+4. **Bir paywall ve placement oluşturun**: Adapty Kontrol Paneli'nde **Paywalls** sayfasında bir paywall oluşturun, ardından bunu **Placements** sayfasında bir placement'a atayın. Kodda placement ID, `adapty.getPaywall("YOUR_PLACEMENT_ID")` fonksiyonuna ilettiğiniz dizedir.
+   [Paywall oluşturun](quickstart-paywalls)
+
+5. **Access level'ları ayarlayın**: Adapty Kontrol Paneli'nde **Products** sayfasında ürün bazında yapılandırın. Kodda `profile.accessLevels['premium']?.isActive` içinde kontrol edilen dizedir. Varsayılan `premium` access level çoğu uygulama için yeterlidir. Ödeme yapan kullanıcılar ürüne göre farklı özelliklere erişiyorsa (örneğin `basic` plan ile `pro` plan), kodlamaya başlamadan önce [ek access level'lar oluşturun](assigning-access-level-to-a-product).
+
+:::tip
+Bu beşine sahip olduğunuzda, kod yazmaya hazırsınız. LLM'inize şunu söyleyin: "Public SDK anahtarım X, placement ID'm Y" — böylece doğru başlatma ve paywall çekme kodu üretebilir.
+:::
+
+### Hazır olduğunuzda kurun \{#set-up-when-ready\}
+
+Bunlar kodlamaya başlamak için zorunlu değildir ancak entegrasyonunuz olgunlaştıkça bunlara ihtiyaç duyacaksınız:
+
+- **A/B testleri**: **Placements** sayfasında yapılandırın. Kod değişikliği gerekmez.
+  [A/B testleri](ab-tests)
+- **Ek paywall'lar ve placement'lar**: Farklı placement ID'leriyle daha fazla `getPaywall` çağrısı ekleyin.
+- **Analytics entegrasyonları**: **Integrations** sayfasında yapılandırın. Kurulum entegrasyona göre değişir. Bkz. [analytics entegrasyonları](analytics-integration) ve [attribution entegrasyonları](attribution-integration).
+
+## Adapty dokümantasyonunu LLM'inize besleyin \{#feed-adapty-docs-to-your-llm\}
+
+### Context7 kullanın (önerilen) \{#use-context7-recommended\}
+
+[Context7](https://context7.com), LLM'inize güncel Adapty dokümantasyonuna doğrudan erişim sağlayan bir MCP sunucusudur. LLM'iniz ne sorduğunuza göre doğru belgeleri otomatik olarak çeker — manuel URL yapıştırmanıza gerek yoktur.
+
+Context7; **Cursor**, **Claude Code**, **Windsurf** ve diğer MCP uyumlu araçlarla çalışır. Kurmak için şunu çalıştırın:
+
+```
+npx ctx7 setup
+```
+
+Bu komut editörünüzü algılar ve Context7 sunucusunu yapılandırır. Manuel kurulum için [Context7 GitHub deposuna](https://github.com/upstash/context7) bakın.
+
+Yapılandırıldıktan sonra prompt'larınızda Adapty kütüphanesine başvurun:
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the React Native SDK
+```
+
+:::warning
+Context7, belge bağlantılarını manuel olarak yapıştırma ihtiyacını ortadan kaldırsa da uygulama sırası önemlidir. Her şeyin düzgün çalıştığından emin olmak için aşağıdaki [uygulama adımlarını](#implementation-walkthrough) adım adım takip edin.
+:::
+
+### Düz metin belgeler kullanın \{#use-plain-text-docs\}
+
+Herhangi bir Adapty belgesine düz metin Markdown olarak erişebilirsiniz. URL'nin sonuna `.md` ekleyin veya makale başlığının altındaki **Copy for LLM** seçeneğine tıklayın. Örneğin: [adapty-cursor-react-native.md](https://adapty.io/docs/tr/adapty-cursor-react-native.md).
+
+Aşağıdaki [uygulama adımlarındaki](#implementation-walkthrough) her aşama, yapıştırmak için `.md` bağlantıları içeren bir "LLM'inize gönderin" bloğu içerir.
+
+Aynı anda daha fazla belge için aşağıdaki [dizin dosyaları ve platforma özgü alt kümeler](#plain-text-doc-index-files) bölümüne bakın.
+
+## Uygulama adımları \{#implementation-walkthrough\}
+
+Bu rehberin geri kalanı, Adapty entegrasyonunu uygulama sırasına göre ele alır. Her aşama LLM'inize gönderilecek belgeleri, tamamlandığında görmeniz gerekenleri ve yaygın sorunları içerir.
+
+### Entegrasyonunuzu planlayın \{#plan-your-integration\}
+
+Koda atlamadan önce, LLM'inizden projenizi analiz etmesini ve bir uygulama planı oluşturmasını isteyin. AI aracınız bir planlama modunu destekliyorsa (Cursor'ın veya Claude Code'un plan modu gibi), LLM'in herhangi bir kod yazmadan önce hem proje yapınızı hem de Adapty belgelerini okuyabilmesi için bunu kullanın.
+
+LLM'inize hangi satın alma yaklaşımını kullandığınızı söyleyin — bu, hangi rehberleri takip etmesi gerektiğini etkiler:
+
+- [**Adapty Paywall Builder**](adapty-paywall-builder): Adapty'nin kodsuz oluşturucusunda paywall'lar oluşturursunuz ve SDK bunları otomatik olarak render eder.
+- [**Manuel olarak oluşturulan paywall'lar**](react-native-making-purchases): Kodda kendi paywall UI'nızı oluşturursunuz ancak ürünleri çekmek ve satın almaları yönetmek için yine Adapty'yi kullanırsınız.
+- [**Observer mode**](observer-vs-full-mode): Mevcut satın alma altyapınızı korur ve Adapty'yi yalnızca analitik ve entegrasyonlar için kullanırsınız.
+
+Hangisini seçeceğinizden emin değil misiniz? [Hızlı başlangıçtaki karşılaştırma tablosunu](react-native-quickstart-paywalls) okuyun.
+
+### SDK'yı yükleyin ve yapılandırın \{#install-and-configure-the-sdk\}
+
+npm (veya yarn) kullanarak Adapty SDK bağımlılığını ekleyin ve Public SDK anahtarınızla etkinleştirin. Bu temeldir — diğer hiçbir şey bunun olmadan çalışmaz.
+
+Expo ve bare React Native projeleri için ayrı kurulum rehberlerimiz var — kurulumunuzla eşleşeni seçin.
+
+**Rehberler:**
+- [Expo ile yükleyin](sdk-installation-react-native-expo)
+- [Bare React Native ile yükleyin](sdk-installation-react-native-pure)
+
+LLM'inize gönderin (kurulumunuzla eşleşeni seçin veya ikisini de gönderin):
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/tr/sdk-installation-react-native-expo.md
+- https://adapty.io/docs/tr/sdk-installation-react-native-pure.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Uygulama hem iOS hem Android'de derlenir ve çalışır. Metro bundler loglarında Adapty aktivasyon logu görünür.
+- **Dikkat:** "Public API key is missing" → yer tutucuyu App settings'teki gerçek anahtarınızla değiştirdiğinizi kontrol edin.
+:::
+
+### Paywall'ları gösterin ve satın almaları yönetin \{#show-paywalls-and-handle-purchases\}
+
+Placement ID'siyle bir paywall çekin, gösterin ve satın alma olaylarını yönetin. İhtiyaç duyduğunuz rehberler satın almaları nasıl yönettiğinize bağlıdır.
+
+Her satın almayı ilerledikçe sandbox'ta test edin — sona kadar beklemeyin. Kurulum talimatları için [Test purchases in sandbox](test-purchases-in-sandbox) sayfasına bakın.
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**Rehberler:**
+- [Paywall'ları kullanarak satın almaları etkinleştirin (hızlı başlangıç)](react-native-quickstart-paywalls)
+- [Paywall Builder paywall'larını ve yapılandırmalarını çekin](react-native-get-pb-paywalls)
+- [Paywall'ları gösterin](react-native-present-paywalls)
+- [Paywall olaylarını yönetin](react-native-handling-events-1)
+- [Buton eylemlerine yanıt verin](react-native-handle-paywall-actions)
+
+LLM'inize gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/tr/react-native-quickstart-paywalls.md
+- https://adapty.io/docs/tr/react-native-get-pb-paywalls.md
+- https://adapty.io/docs/tr/react-native-present-paywalls.md
+- https://adapty.io/docs/tr/react-native-handling-events-1.md
+- https://adapty.io/docs/tr/react-native-handle-paywall-actions.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Paywall, yapılandırdığınız ürünlerle görünür. Bir ürüne dokunmak sandbox satın alma iletişim kutusunu tetikler.
+- **Dikkat:** Boş paywall veya `getPaywall` hatası → placement ID'nin kontrol panelindekiyle tam olarak eşleştiğini ve placement'a bir kitle atandığını doğrulayın.
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Manuel paywall'lar">
+
+**Rehberler:**
+- [Özel paywall'ınızda satın almaları etkinleştirin (hızlı başlangıç)](react-native-quickstart-manual)
+- [Paywall'ları ve ürünleri çekin](fetch-paywalls-and-products-react-native)
+- [Remote config ile tasarlanmış paywall'ı render edin](present-remote-config-paywalls-react-native)
+- [Satın alma yapın](react-native-making-purchases)
+- [Satın almaları geri yükleyin](react-native-restore-purchase)
+
+LLM'inize gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/tr/react-native-quickstart-manual.md
+- https://adapty.io/docs/tr/fetch-paywalls-and-products-react-native.md
+- https://adapty.io/docs/tr/present-remote-config-paywalls-react-native.md
+- https://adapty.io/docs/tr/react-native-making-purchases.md
+- https://adapty.io/docs/tr/react-native-restore-purchase.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Özel paywall'ınız Adapty'den çekilen ürünleri gösterir. Bir ürüne dokunmak sandbox satın alma iletişim kutusunu tetikler.
+- **Dikkat:** Boş ürün dizisi → paywall'a kontrol panelinde ürün atandığını ve placement'ın bir kitleye sahip olduğunu doğrulayın.
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**Rehberler:**
+- [Observer mode'a genel bakış](observer-vs-full-mode)
+- [Observer mode'u uygulayın](implement-observer-mode-react-native)
+- [Observer mode'da işlemleri raporlayın](report-transactions-observer-mode-react-native)
+
+LLM'inize gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/tr/observer-vs-full-mode.md
+- https://adapty.io/docs/tr/implement-observer-mode-react-native.md
+- https://adapty.io/docs/tr/report-transactions-observer-mode-react-native.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Mevcut satın alma akışınızı kullanarak yapılan bir sandbox satın almasının ardından işlem Adapty kontrol paneli **Event Feed**'inde görünür.
+- **Dikkat:** Olay yok → işlemleri Adapty'ye raporladığınızı ve her iki mağaza için sunucu bildirimlerinin yapılandırıldığını doğrulayın.
+:::
+
+</TabItem>
+
+</Tabs>
+
+### Abonelik durumunu kontrol edin \{#check-subscription-status\}
+
+Satın alma işleminin ardından, premium içeriği kısıtlamak için kullanıcı profilinde etkin bir access level olup olmadığını kontrol edin.
+
+**Rehber:** [Abonelik durumunu kontrol edin](react-native-check-subscription-status)
+
+LLM'inize gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/tr/react-native-check-subscription-status.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Bir sandbox satın almasının ardından `profile.accessLevels['premium']?.isActive` `true` döner.
+- **Dikkat:** Satın alma sonrası boş `accessLevels` → ürüne kontrol panelinde bir access level atandığını kontrol edin.
+:::
+
+### Kullanıcıları tanımlayın \{#identify-users\}
+
+Satın almaların cihazlar arasında devam etmesi için uygulama kullanıcı hesaplarınızı Adapty profillerine bağlayın.
+
+:::important
+Uygulamanızda kimlik doğrulama yoksa bu adımı atlayın.
+:::
+
+**Rehber:** [Kullanıcıları tanımlayın](react-native-quickstart-identify)
+
+LLM'inize gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/tr/react-native-quickstart-identify.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** `adapty.identify("your-user-id")` çağrısının ardından kontrol paneli **Profiles** bölümünde özel kullanıcı ID'niz görünür.
+- **Dikkat:** Anonim profil attribution sorununu önlemek için `identify`'ı aktivasyondan sonra, paywall'ları çekmeden önce çağırın.
+:::
+
+### Yayına hazırlanın \{#prepare-for-release\}
+
+Entegrasyonunuz sandbox'ta çalışır hale geldiğinde, her şeyin üretime hazır olduğundan emin olmak için yayın kontrol listesini adım adım inceleyin.
+
+**Rehber:** [Yayın kontrol listesi](release-checklist)
+
+LLM'inize gönderin:
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/tr/release-checklist.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Tüm kontrol listesi maddeleri onaylandı: mağaza bağlantıları, sunucu bildirimleri, satın alma akışı, access level kontrolleri ve gizlilik gereksinimleri.
+- **Dikkat:** Eksik sunucu bildirimleri → **App settings → iOS SDK**'da App Store Sunucu Bildirimlerini ve **App settings → Android SDK**'da Google Play Gerçek Zamanlı Geliştirici Bildirimlerini yapılandırın.
+:::
+
+## Düz metin belge dizin dosyaları \{#plain-text-doc-index-files\}
+
+LLM'inize bireysel sayfaların ötesinde daha geniş bir bağlam sağlamanız gerekiyorsa, tüm Adapty dokümantasyonunu listeleyen veya birleştiren dizin dosyaları sunuyoruz:
+
+- [`llms.txt`](https://adapty.io/docs/tr/llms.txt): Tüm sayfaları `.md` bağlantılarıyla listeler. Web sitelerini LLM'lere erişilebilir kılmak için [gelişmekte olan bir standart](https://llmstxt.org/). Bazı AI agent'larında (ör. ChatGPT) `llms.txt`'yi indirip sohbete dosya olarak yüklemeniz gerekebilir.
+- [`llms-full.txt`](https://adapty.io/docs/tr/llms-full.txt): Tüm Adapty dokümantasyon sitesi tek bir dosyada birleştirilmiş halde. Çok büyük — yalnızca tam resme ihtiyaç duyduğunuzda kullanın.
+- React Native'e özgü [`react-native-llms.txt`](https://adapty.io/docs/tr/react-native-llms.txt) ve [`react-native-llms-full.txt`](https://adapty.io/docs/tr/react-native-llms-full.txt): Tam siteye kıyasla token tasarrufu sağlayan platforma özgü alt kümeler.

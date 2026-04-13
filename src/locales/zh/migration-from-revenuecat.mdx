@@ -1,0 +1,170 @@
+---
+title: "从 RevenueCat 迁移"
+description: "通过我们的分步指南，从 RevenueCat 迁移到 Adapty。"
+metadataTitle: "从 RevenueCat 迁移到 Adapty | Adapty 文档"
+keywords: ['迁移', 'revenuecat']
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
+您的迁移计划将包含 5 个逻辑步骤，平均耗时约 2 小时。90% 的迁移工作可在不到一个工作日内完成。
+1. 了解核心差异；创建并准备一个 Adapty 账户 _(5 分钟)_；
+2. 为您的平台安装 Adapty SDK（[iOS](sdk-installation-ios)、[Android](sdk-installation-android)、[React Native](sdk-installation-reactnative)、[Flutter](sdk-installation-flutter)、[Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)、[Unity](sdk-installation-unity)），替代 RevenueCat SDK _(1 小时)_；
+3. 向 Adapty 设置 [Apple App Store 服务器通知](enable-app-store-server-notifications)，以及（可选）[原始事件转发](enable-app-store-server-notifications#raw-events-forwarding) _(5 分钟)_；
+4. 测试并发布应用更新 _(30 分钟)_；
+5. （可选）向 RevenueCat 支持团队申请 CSV 格式的历史数据 _(5 分钟)_；
+6. （可选）通过 Adapty 支持团队导入历史数据 _(30 分钟)_。
+:::info
+您的订阅用户将自动迁移
+
+所有曾经激活过订阅的用户，只要打开集成了 Adapty SDK 的新版本应用，就会立即迁移至 Adapty。订阅状态验证和高级访问权限将自动恢复。
+:::
+
+在发布集成了 Adapty SDK 的新版本应用之前，请务必查阅我们的[发布检查清单](release-checklist)。
+## 了解核心差异；创建并准备 Adapty 账户 \{#learn-the-core-differences-create-and-prepare-an-adapty-account\}
+
+Adapty 与 RevenueCat 的 SDK 设计理念相似。最大的区别在于网络使用方式和响应速度：Adapty SDK 旨在您请求时尽可能快速地按需提供信息。例如，在请求付费墙时，您会首先获取[远程配置](customize-paywall-with-remote-config)以预先构建您的用户引导或付费墙，然后再通过专用请求获取产品信息。
+
+命名方式略有不同：
+| RevenueCat  | Adapty          |
+|:------------|:----------------|
+| Package     | 产品              |
+| Offering    | 付费墙             |
+| Paywall     | 付费墙编辑工具         |
+| Entitlement | 访问等级            |
+
+Adapty 有一个[版位](placements)的概念。它是应用内用户可以进行购买的逻辑位置。在大多数情况下，你会有一到两个版位：
+
+- 用户引导（因为 80% 的购买都发生在这里）；
+- 通用（在用户引导完成后，在设置页面或应用内部展示）。
+<Zoom>
+  <img src="/assets/shared/img/2406d97-image.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '300px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+## 安装 Adapty SDK 并替换 RevenueCat SDK \{#install-adapty-sdk-and-replace-revenuecat-sdk\}
+
+为您的平台安装 Adapty SDK（[iOS](sdk-installation-ios)、[Android](sdk-installation-android)、[React Native](sdk-installation-reactnative)、[Flutter](sdk-installation-flutter)、[Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)、[Unity](sdk-installation-unity)）。
+
+您需要在应用端替换几个 SDK 方法。下面介绍最常见的函数及其对应的 Adapty SDK 替换方式。
+### SDK 激活 \{#sdk-activation\}
+
+将 `Purchases.configure` 替换为 `Adapty.activate`。
+### 获取付费墙（产品系列） \{#getting-paywalls-offerings\}
+
+将 `Purchases.shared.getOfferings` 替换为 [`Adapty.getPaywall`](fetch-paywalls-and-products#fetch-paywall-information)。
+
+在 Adapty 中，您始终通过 [版位 id](placements) 来请求付费墙。实际上，您最多只需获取 1-2 个付费墙，我们这样设计是为了加快 SDK 速度并减少网络流量使用。
+### 获取用户（客户用户画像）\{#getting-a-user-customer-profile\}
+
+将 `Purchases.shared.getCustomerInfo` 替换为 `Adapty.getProfile`。
+### 获取产品 \{#getting-products\}
+
+在 RevenueCat 中，您使用以下结构：`Purchases.shared.getOfferings`，然后使用 `self.offering?.availablePackages`。
+
+在 Adapty 中，您首先请求一个付费墙（见上文）以立即访问 Adapty 的[远程配置](customize-paywall-with-remote-config)，然后通过 [`Adapty.getPaywallProducts`](fetch-paywalls-and-products#fetch-products) 获取产品。
+### 进行购买 \{#making-a-purchase\}
+
+将 `Purchases.shared.purchase` 替换为 [`Adapty.makePurchase`](making-purchases#make-purchase)。
+### 检查访问等级（权益）\{#checking-access-level-entitlement\}
+
+获取用户画像（请先阅读上文），然后将
+
+`customerInfo?.entitlements["premium"]?.isActive == true`
+
+替换为
+
+[`profile.accessLevels["premium"]?.isActive == true`](subscription-status#retrieving-the-access-level-from-the-server)。
+### 恢复购买 \{#restore-purchase\}
+
+将 `Purchases.shared.restorePurchases` 替换为 [`Adapty.restorePurchases`](restore-purchase)。
+### 检查用户是否已登录 \{#check-if-the-user-is-logged-in\}
+
+将 `Purchases.shared.isAnonymous` 替换为 `if profile.customerUserId == nil`。
+### 登录用户 \{#log-in-user\}
+
+将 `Purchases.shared.logIn` 替换为 [`Adapty.identify`](identifying-users#set-customer-user-id-after-configuration)。
+### 退出用户登录 \{#log-out-user\}
+
+将 `Purchases.shared.logOut` 替换为 [`Adapty.logout`](identifying-users#logging-out-and-logging-in)。
+## 将 App Store 服务器端通知切换至 Adapty \{#switch-app-store-server-side-notifications-to-adapty\}
+
+阅读如何操作，请参阅[此处](migrate-to-adapty-from-another-solutions#changing-apple-server-notifications)。
+## 测试并发布新版本应用 \{#test-and-release-a-new-version-of-your-app\}
+
+如果您正在阅读本文，说明您已经完成了：
+
+- [x] 配置 Adapty 看板
+- [x] 安装 Adapty SDK
+- [x] 将 SDK 逻辑替换为 Adapty 函数
+- [x] 将 App Store 服务端通知切换至 Adapty，并可选择开启原始事件转发至 RevenueCat
+- [ ] 进行沙盒购买
+- [ ] 发布新版应用
+
+如果您已完成以上步骤，请在沙盒中进行测试购买，然后发布应用。
+
+:::info
+请查阅[发布检查清单](release-checklist)。
+:::
+使用我们的清单进行最终检查，以验证现有集成或添加其他功能，例如[归因](attribution-integration)或[分析](analytics-integration)集成。
+:::
+## （可选）以 CSV 格式导出您的 RevenueCat 历史数据 \{#optional-export-your-revenuecat-historical-data--in-csv-format\}
+
+:::warning
+请勿急于导入历史数据
+
+在集成 SDK 发版后，您应至少等待一周再进行历史数据导入。在此期间，我们将通过 SDK 获取所有购买价格信息，从而使您导入的数据更加准确。
+:::
+
+请按照 [RevenueCat 官方文档](https://www.revenuecat.com/docs/integrations/scheduled-data-exports) 中的说明，以 CSV 格式从 RevenueCat 导出您的历史数据。
+## （可选）向 RevenueCat 支持团队申请 Google 购买令牌 \{#optional-ask-revenuecat-support-for-google-purchase-tokens\}
+
+如果您需要导入 Google Play 交易记录，请通过 RevenueCat 的[支持页面](https://app.revenuecat.com/settings/support)联系其支持团队，申请包含 Google 购买令牌的 CSV 文件。Google 购买令牌是 Google Play 为每笔交易提供的唯一标识符，对于在 Adapty 中准确追踪和验证购买记录至关重要。此信息不包含在标准导出文件中。该文件包含以下三列：
+
+- `user_id`
+- `google_purchase_token`
+- `google_product_id`
+## 联系我们以导入您的历史数据 \{#write-us-to-import-your-historical-data\}
+
+请通过网站聊天工具联系我们，或发送电子邮件至 [support@adapty.io](mailto:support@adapty.io)，并附上您的 CSV 文件。
+
+1. 将您从 RevenueCat 导出的 CSV 文件直接发送给我们的支持团队。
+2. 如果需要导入 Google Play 交易记录，请附上从 RevenueCat 支持团队获取的包含 Google Purchase Tokens 的 CSV 文件。
+3. 请告知我们应使用哪个用户 ID 作为 Customer User ID（Adapty 的主要用户标识符）：`rc_original_app_user_id` 或 `rc_last_seen_app_user_id_alias`。
+我们的支持团队将把您的交易数据导入 Adapty。以下数据将针对每笔交易导入 Adapty：
+| 参数 | 描述 |
+| ----------------------------- | ------------------------------------------------------------ |
+| user_id | 客户用户 ID，即您的用户在 Adapty 及您的系统中的主要标识符。 |
+| apple_original_transaction_id | 对于订阅链，这是原始交易的购买日期，通过 `store_original_transaction_id` 关联。 |
+| google_product_id | Google Play 商店中的产品 ID。 |
+| google_purchase_token | Google Play 为每笔交易提供的唯一标识符，用于验证时必须提供。 |
+| country | 用户所在国家/地区。 |
+| created_at | 用户创建的日期和时间。 |
+| subscription_expiration_date | 订阅到期的日期和时间。 |
+| email | 终端用户的电子邮件地址。 |
+| phone_number | 终端用户的电话号码。 |
+| idfa | 广告主标识符（IDFA），由 Apple 分配给用户设备。 |
+| idfv | 供应商标识符（IDFV），由同一开发者分配给其所有应用程序，并在该设备上的这些应用之间共享的代码。 |
+| advertising_id | Android 操作系统提供的唯一标识符，广告主可用于追踪目的。 |
+| attribution_channel | 营销渠道名称。 |
+| attribution_campaign | 营销活动名称。 |
+| attribution_ad_group | 归因广告组。 |
+| attribution_ad_set | 归因广告集。 |
+| attribution_creative | 归因素材关键词。 |
+此外，以下集成的集成标识符也将被导入：Amplitude、Mixpanel、AppsFlyer、Adjust 和 FacebookAds。
+## 常见问题 \{#faq\}
+### 我已成功安装 Adapty SDK 并发布了集成该 SDK 的新版本应用。那些没有更新到含有 Adapty SDK 版本的老订阅用户会怎样？\{#i-successfully-installed-adapty-sdk-and-released-a-new-app-version-with-it-what-will-happen-to-my-legacy-subscribers-who-did-not-update-to-a-version-with-adapty-sdk\}
+
+大多数用户会在夜间给手机充电，而 App Store 通常会在此时自动更新所有应用，因此这不会是什么大问题。可能仍有少数付费订阅用户没有升级，但他们依然可以访问高级内容。您无需为此担心，也不必强制他们更新。
+### 我是否需要尽快从 RevenueCat 导出历史数据，否则会丢失吗？\{#do-i-need-to-export-my-historical-data-from-revenuecat-as-quickly-as-possible-or-will-i-lose-it\}
+
+您不必急于完成此操作；请先发布集成了 Adapty SDK 的版本，然后再向我们提供历史数据。我们将还原您用户的付款历史记录，并填充[用户画像](profiles-crm)和[数据图表](charts)。
+### 我使用 MMP（AppsFlyer、Adjust 等）和分析工具（Mixpanel、Amplitude 等）。我该如何确保一切正常运作？\{#i-use-mmp-appsflyer-adjust-etc-and-analytics-mixpanel-amplitude-etc-how-do-i-make-sure-that-everything-will-work\}
+
+您首先需要通过我们的 SDK 将您希望我们发送数据的第三方服务 ID 传递给我们。请阅读[归因集成](attribution-integration)和[分析工具集成](analytics-integration)的指南。对于历史数据和老用户，**请确保您将从 RevenueCat 导出的数据中获取的那些 ID 传递给我们。**

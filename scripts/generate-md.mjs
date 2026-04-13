@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SRC_DOCS_DIR = path.resolve(__dirname, '../src/content/docs');
 const REUSABLE_COMPONENTS_DIR = path.resolve(__dirname, '../src/components/reusable');
+const LOCALES_BASE_DIR = path.resolve(__dirname, '../src/locales');
 
 // Get output dir from args or default to public
 const targetDirName = process.argv[2] || '../public';
@@ -46,6 +47,10 @@ function stripContent(content, reusableComponents) {
     processed = processed.replace(/<ZoomImage\s+[^>]*\/>/g, '');
     // Remove wrapping Zoom: <Zoom>...</Zoom> (keep content)
     processed = processed.replace(/<Zoom>(.*?)<\/Zoom>/gs, '$1');
+
+    // Replace Inline icon component with its alt text: <Inline id="..." alt="Edit" ... /> → Edit
+    processed = processed.replace(/<Inline\s+[^>]*alt="([^"]*)"[^>]*\/>/g, '$1');
+    processed = processed.replace(/<Inline\s+[^>]*\/>/g, '');
 
     // 3. Inline Reusable Components
     // Replace <ComponentName /> with the actual content
@@ -90,14 +95,14 @@ function cleanFrontmatter(content) {
     return content.replace(frontmatterRegex, `---\n${keptLines.join('\n')}\n---\n\n`);
 }
 
-async function processFiles(dir, reusableComponents) {
+async function processFiles(dir, reusableComponents, englishFiles) {
     const entries = await fs.readdir(dir, { withFileTypes: true });
 
     for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
 
         if (entry.isDirectory()) {
-            await processFiles(fullPath, reusableComponents);
+            await processFiles(fullPath, reusableComponents, englishFiles);
         } else if (entry.isFile() && (entry.name.endsWith('.md') || entry.name.endsWith('.mdx'))) {
             const rawContent = await fs.readFile(fullPath, 'utf-8');
 
@@ -110,14 +115,53 @@ async function processFiles(dir, reusableComponents) {
             // Determine output filename (flattened basename logic)
             let basename = entry.name.replace(/\.(md|mdx)$/, '');
 
-            // Special Case: what-is-adapty -> what-is-adapty.md (root)
-            // But usually root is accessible via '/', so we might want both or just the file. 
-            // The request says "available at [base url]/[slug].md". 
-            // So for 'what-is-adapty', it should be at '/what-is-adapty.md'.
-
             const destPath = path.join(OUTPUT_DIR, `${basename}.md`);
 
             await fs.writeFile(destPath, content, 'utf-8');
+            englishFiles.set(basename, content);
+        }
+    }
+}
+
+async function processLocaleFiles(locale, baseComponents, englishFiles) {
+    const localeDir = path.join(LOCALES_BASE_DIR, locale);
+    const localeOutputDir = path.join(OUTPUT_DIR, locale);
+    await fs.mkdir(localeOutputDir, { recursive: true });
+
+    // Load locale-specific reusable component overrides
+    const components = { ...baseComponents };
+    const localeReusableDir = path.join(localeDir, 'reusable');
+    try {
+        const files = await fs.readdir(localeReusableDir);
+        for (const file of files) {
+            if (file.endsWith('.md') || file.endsWith('.mdx')) {
+                const content = await fs.readFile(path.join(localeReusableDir, file), 'utf-8');
+                const cleanedContent = content.replace(/<!---.*?--->\s*\n?/gs, '').trim();
+                const componentName = toPascalCase(file.replace(/\.(md|mdx)$/, ''));
+                components[componentName] = cleanedContent;
+            }
+        }
+    } catch { /* no locale-specific reusable overrides */ }
+
+    // Collect translated file basenames
+    const translatedBasenames = new Set();
+    const entries = await fs.readdir(localeDir, { withFileTypes: true });
+    for (const entry of entries) {
+        if (!entry.isFile() || (!entry.name.endsWith('.md') && !entry.name.endsWith('.mdx'))) continue;
+
+        const rawContent = await fs.readFile(path.join(localeDir, entry.name), 'utf-8');
+        let content = cleanFrontmatter(rawContent);
+        content = stripContent(content, components);
+
+        const basename = entry.name.replace(/\.(md|mdx)$/, '');
+        translatedBasenames.add(basename);
+        await fs.writeFile(path.join(localeOutputDir, `${basename}.md`), content, 'utf-8');
+    }
+
+    // Fall back to English .md files for untranslated articles
+    for (const [basename, content] of englishFiles) {
+        if (!translatedBasenames.has(basename)) {
+            await fs.writeFile(path.join(localeOutputDir, `${basename}.md`), content, 'utf-8');
         }
     }
 }
@@ -125,15 +169,21 @@ async function processFiles(dir, reusableComponents) {
 async function main() {
     console.log('Starting Markdown generation...');
 
-    // Ensure output dir exists
-    try {
-        await fs.access(OUTPUT_DIR);
-    } catch {
-        await fs.mkdir(OUTPUT_DIR, { recursive: true });
-    }
+    await fs.mkdir(OUTPUT_DIR, { recursive: true });
 
     const reusableComponents = await getReusableComponents();
-    await processFiles(SRC_DOCS_DIR, reusableComponents);
+    const englishFiles = new Map();
+    await processFiles(SRC_DOCS_DIR, reusableComponents, englishFiles);
+
+    // Generate .md files for each locale (falls back to English for untranslated articles)
+    try {
+        const localeEntries = await fs.readdir(LOCALES_BASE_DIR, { withFileTypes: true });
+        const locales = localeEntries.filter(e => e.isDirectory() && !e.name.startsWith('.')).map(e => e.name);
+        for (const locale of locales) {
+            await processLocaleFiles(locale, reusableComponents, englishFiles);
+            console.log(`Locale markdown generated: ${locale}`);
+        }
+    } catch { /* no locales directory */ }
 
     console.log('Markdown generation complete.');
 }

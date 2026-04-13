@@ -1,0 +1,222 @@
+---
+title: "Android SDK'da özel paywallınızda satın alımları etkinleştirme"
+description: "Uygulama içi satın alımları etkinleştirmek için Adapty SDK'yı özel Android paywalllarınıza entegre edin."
+metadataTitle: "Adapty Hızlı Başlangıç Kılavuzu | Adapty Dokümanları"
+keywords: ['paywalls Android', 'sdk Android', 'paywall', 'getPaywall']
+---
+
+Bu kılavuz, Adapty'yi özel paywalllarınıza nasıl entegre edeceğinizi açıklar. Paywall uygulaması üzerinde tam kontrolü elinizde tutarken Adapty SDK ürünleri çeker, yeni satın alımları işler ve önceki satın alımları geri yükler.
+
+:::important
+**Bu kılavuz, özel paywall uygulayan geliştiriciler içindir.** Satın alımları etkinleştirmenin en kolay yolunu arıyorsanız [Adapty Paywall Builder](android-quickstart-paywalls)'ı kullanın. Paywall Builder ile kodsuz görsel düzenleyicide paywall oluşturursunuz, Adapty tüm satın alma mantığını otomatik olarak yönetir ve uygulamanızı yeniden yayınlamadan farklı tasarımları test edebilirsiniz.
+:::
+
+## Başlamadan önce \{#before-you-start\}
+
+### Ürünleri ayarlama \{#set-up-products\}
+
+Uygulama içi satın alımları etkinleştirmek için üç temel kavramı anlamanız gerekir:
+
+- [**Ürünler**](product) – kullanıcıların satın alabileceği her şey (abonelikler, consumable'lar, süresiz erişim)
+- [**Paywalllar**](paywalls) – hangi ürünlerin sunulacağını tanımlayan yapılandırmalar. Adapty'de ürünlere erişmenin tek yolu paywalllardır; bu tasarım sayesinde uygulama kodunuza dokunmadan ürünleri, fiyatları ve teklifleri değiştirebilirsiniz.
+- [**Placementlar**](placements) – uygulamanızda paywallları nerede ve ne zaman göstereceğiniz (örneğin `main`, `onboarding`, `settings`). Kontrol panelinde placementlar için paywall ayarlarsınız, ardından kodunuzda placement ID'siyle bunları talep edersiniz. Bu yapı A/B testleri çalıştırmayı ve farklı kullanıcılara farklı paywalllar göstermeyi kolaylaştırır.
+
+Özel paywall kullanıyor olsanız bile bu kavramları anladığınızdan emin olun. Bunlar, uygulamanızda sattığınız ürünleri yönetmenin temel yoludur.
+
+Özel paywallınızı uygulamak için bir **paywall** oluşturmanız ve bunu bir **placement**'a eklemeniz gerekir. Bu kurulum ürünlerinizi almanızı sağlar. Kontrol panelinde ne yapmanız gerektiğini anlamak için [buradaki](quickstart) hızlı başlangıç kılavuzunu takip edin.
+
+### Kullanıcıları yönetme \{#manage-users\}
+
+Kendi tarafınızda backend kimlik doğrulamasıyla veya olmadan çalışabilirsiniz.
+
+Ancak Adapty SDK, anonim ve kimliği doğrulanmış kullanıcıları farklı şekilde yönetir. Ayrıntıları anlamak ve kullanıcılarla doğru şekilde çalıştığınızdan emin olmak için [kimlik doğrulama hızlı başlangıç kılavuzunu](android-quickstart-identify) okuyun.
+
+## Adım 1. Ürünleri alın \{#step-1-get-products\}
+
+Özel paywallınız için ürünleri almak amacıyla şunları yapmanız gerekir:
+
+1. `getPaywall` metoduna [placement](placements) ID'sini geçerek `paywall` nesnesini alın.
+2. `getPaywallProducts` metodunu kullanarak bu paywall için ürünler dizisini alın.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+fun loadPaywall() {
+    Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
+        when (result) {
+            is AdaptyResult.Success -> {
+                val paywall = result.value
+                Adapty.getPaywallProducts(paywall) { productResult ->
+                    when (productResult) {
+                        is AdaptyResult.Success -> {
+                            val products = productResult.value
+                            // Use products to build your custom paywall UI
+                        }
+                        is AdaptyResult.Error -> {
+                            val error = productResult.error
+                            // Handle the error
+                        }
+                    }
+                }
+            }
+            is AdaptyResult.Error -> {
+                val error = result.error
+                // Handle the error
+            }
+        }
+    }
+}
+```
+</TabItem>
+
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+
+public void loadPaywall() {
+    Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {
+        if (result instanceof AdaptyResult.Success) {
+            AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+            
+            Adapty.getPaywallProducts(paywall, productResult -> {
+                if (productResult instanceof AdaptyResult.Success) {
+                    List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) productResult).getValue();
+                    // Use products to build your custom paywall UI
+                } else if (productResult instanceof AdaptyResult.Error) {
+                    AdaptyError error = ((AdaptyResult.Error) productResult).getError();
+                    // Handle the error
+                }
+            });
+        } else if (result instanceof AdaptyResult.Error) {
+            AdaptyError error = ((AdaptyResult.Error) result).getError();
+            // Handle the error
+        }
+    });
+}
+```
+</TabItem>
+</Tabs>
+
+## Adım 2. Satın alımları kabul edin \{#step-2-accept-purchases\}
+
+Kullanıcı özel paywallınızda bir ürüne dokunduğunda, seçilen ürünle birlikte `makePurchase` metodunu çağırın. Bu işlem satın alma akışını yönetecek ve güncellenmiş profili döndürecektir.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+fun purchaseProduct(activity: Activity, product: AdaptyPaywallProduct) {
+    Adapty.makePurchase(activity, product) { result ->
+        when (result) {
+            is AdaptyResult.Success -> {
+                when (val purchaseResult = result.value) {
+                    is AdaptyPurchaseResult.Success -> {
+                        val profile = purchaseResult.profile
+                        // Purchase successful, profile updated
+                    }
+                    is AdaptyPurchaseResult.UserCanceled -> {
+                        // User canceled the purchase
+                    }
+                    is AdaptyPurchaseResult.Pending -> {
+                        // Purchase is pending (e.g., user will pay offline with cash)
+                    }
+                }
+            }
+            is AdaptyResult.Error -> {
+                val error = result.error
+                // Handle the error
+            }
+        }
+    }
+}
+```
+</TabItem>
+
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+public void purchaseProduct(Activity activity, AdaptyPaywallProduct product) {
+    Adapty.makePurchase(activity, product, null, result -> {
+        if (result instanceof AdaptyResult.Success) {
+            AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
+            
+            if (purchaseResult instanceof AdaptyPurchaseResult.Success) {
+                AdaptyProfile profile = ((AdaptyPurchaseResult.Success) purchaseResult).getProfile();
+                // Purchase successful, profile updated
+            } else if (purchaseResult instanceof AdaptyPurchaseResult.UserCanceled) {
+                // User canceled the purchase
+            } else if (purchaseResult instanceof AdaptyPurchaseResult.Pending) {
+                // Purchase is pending (e.g., user will pay offline with cash)
+            }
+        } else if (result instanceof AdaptyResult.Error) {
+            AdaptyError error = ((AdaptyResult.Error) result).getError();
+            // Handle the error
+        }
+    });
+}
+```
+</TabItem>
+</Tabs>
+
+## Adım 3. Satın alımları geri yükleyin \{#step-3-restore-purchases\}
+
+Google Play ve diğer uygulama mağazaları, abonelik içeren tüm uygulamaların kullanıcılara satın alımlarını geri yükleyebilecekleri bir yol sunmasını zorunlu kılar.
+
+Kullanıcı geri yükleme düğmesine dokunduğunda `restorePurchases` metodunu çağırın. Bu işlem satın alma geçmişini Adapty ile senkronize edecek ve güncellenmiş profili döndürecektir.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+fun restorePurchases() {
+    Adapty.restorePurchases { result ->
+        when (result) {
+            is AdaptyResult.Success -> {
+                val profile = result.value
+                // Restore successful, profile updated
+            }
+            is AdaptyResult.Error -> {
+                val error = result.error
+                // Handle the error
+            }
+        }
+    }
+}
+```
+</TabItem>
+
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+public void restorePurchases() {
+    Adapty.restorePurchases(result -> {
+        if (result instanceof AdaptyResult.Success) {
+            AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+            // Restore successful, profile updated
+        } else if (result instanceof AdaptyResult.Error) {
+            AdaptyError error = ((AdaptyResult.Error) result).getError();
+            // Handle the error
+        }
+    });
+}
+```
+</TabItem>
+</Tabs>
+
+## Sonraki adımlar \{#next-steps\}
+
+<SupportForum />
+
+Paywallınız uygulamada gösterilmeye hazır. Paywalldan test satın alımını tamamlayabildiğinizden emin olmak için [Google Play Store'da satın alımlarınızı test edin](testing-on-android). Bunun üretime hazır bir uygulamada nasıl çalıştığını görmek için örnek uygulamamızdaki [ProductListFragment.kt](https://github.com/adaptyteam/AdaptySDK-Android/blob/master/app/src/main/java/com/adapty/example/ProductListFragment.kt) dosyasına göz atın; bu dosya hata yönetimi, kullanıcı arayüzü geri bildirimi ve abonelik yönetimiyle birlikte satın alma işlemlerini göstermektedir.
+
+Ardından, paywallı gösterip göstermeyeceğinizi veya ücretli özelliklere erişim izni verip vermeyeceğinizi belirlemek için [kullanıcıların satın alma işlemini tamamlayıp tamamlamadığını kontrol edin](android-check-subscription-status).

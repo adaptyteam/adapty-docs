@@ -1,0 +1,142 @@
+---
+title: "Flutter SDK ile mobil uygulamada satın alma yapma"
+description: "Adapty kullanarak uygulama içi satın almalar ve abonelikleri yönetme kılavuzu."
+metadataTitle: "Adapty ile Uygulama İçi Satın Almaları Yönetme | Adapty Dokümanları"
+keywords: ['makePurchase', 'offer code']
+rank: 85
+displayed_sidebar: sdkflutter
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/tr/reusable/OfferCodesInfo.mdx';
+
+Mobil uygulamanızda paywall'ları göstermek, kullanıcılara premium içerik veya hizmetlere erişim sunmanın temel adımlarından biridir. Ancak paywall'larınızı özelleştirmek için [Paywall Builder](adapty-paywall-builder) kullanıyorsanız, yalnızca bu paywall'ları göstermek satın alma işlemlerini desteklemek için yeterlidir.
+
+Paywall Builder kullanmıyorsanız, satın alma işlemini tamamlamak ve ilgili içeriğin kilidini açmak için `.makePurchase()` adlı ayrı bir metot kullanmanız gerekir. Bu metot, kullanıcıların paywall'larla etkileşime geçmesini ve istedikleri işlemleri gerçekleştirmesini sağlayan kapıdır.
+
+Paywall'ınızda kullanıcının satın almaya çalıştığı ürün için aktif bir promosyon teklifi varsa, Adapty bunu satın alma sırasında otomatik olarak uygular.
+
+:::warning
+Başlangıç teklifinin yalnızca Paywall Builder ile oluşturulan paywall'larda otomatik uygulandığını unutmayın.
+
+Diğer durumlarda, [iOS'ta kullanıcının başlangıç teklifi için uygunluğunu doğrulamanız](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios) gerekir. Bu adımı atlamak, uygulamanızın yayın sırasında reddedilmesine yol açabilir. Ayrıca başlangıç teklifine hak kazanan kullanıcılardan tam fiyat tahsil edilmesine neden olabilir.
+:::
+
+[Başlangıç yapılandırmasını](quickstart) hiçbir adımı atlamadan tamamladığınızdan emin olun. Bu olmadan satın almaları doğrulayamayız.
+
+## Satın alma yapma \{#make-purchase\}
+
+:::note
+**[Paywall Builder](adapty-paywall-builder) mi kullanıyorsunuz?** Satın almalar otomatik olarak işlenir; bu adımı atlayabilirsiniz.
+
+**Adım adım rehber mi arıyorsunuz?** Tam bağlamıyla uçtan uca uygulama talimatları için [hızlı başlangıç kılavuzuna](flutter-implement-paywalls-manually) göz atın.
+:::
+
+```dart showLineNumbers
+try {
+  final purchaseResult = await Adapty().makePurchase(product: product);
+    switch (purchaseResult) {
+      case AdaptyPurchaseResultSuccess(profile: final profile):
+        if (profile.accessLevels['premium']?.isActive ?? false) {
+          // Grant access to the paid features
+        }
+        break;
+      case AdaptyPurchaseResultPending():
+        break;
+      case AdaptyPurchaseResultUserCancelled():
+        break;
+      default:
+        break;
+    }
+} on AdaptyError catch (adaptyError) {
+    // Handle the error
+} catch (e) {
+    // Handle the error
+}
+```
+
+İstek parametreleri:
+
+| Parametre   | Zorunluluk | Açıklama                                                                                         |
+| :---------- | :--------- | :------------------------------------------------------------------------------------------------ |
+| **Product** | zorunlu    | Paywall'dan alınan bir [`AdaptyPaywallProduct`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywallProduct-class.html) nesnesi. |
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama                                                                                                                                                                                                                                                                                                                                                               |
+|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>İstek başarılı olursa yanıt bu nesneyi içerir. Bir [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html) nesnesi, kullanıcının uygulama içindeki access level'ları, abonelikleri ve abonelik dışı satın almaları hakkında kapsamlı bilgi sağlar.</p><p>Kullanıcının uygulamaya gerekli erişime sahip olup olmadığını belirlemek için access level durumunu kontrol edin.</p> |
+
+:::warning
+**Not:** Apple'ın StoreKit sürümünün v2.0'ın altında ve Adapty SDK sürümünün v.2.9.0'ın altında olduğu durumlarda [Apple App Store paylaşılan gizli anahtarını](app-store-connection-configuration#step-5-enter-app-store-shared-secret) sağlamanız gerekir. Bu yöntem şu anda Apple tarafından kullanımdan kaldırılmıştır.
+:::
+
+## Satın alma yaparken aboneliği değiştirme \{#change-subscription-when-making-a-purchase\}
+
+Bir kullanıcı mevcut aboneliğini yenilemek yerine yeni bir abonelik seçtiğinde, nasıl çalıştığı uygulama mağazasına göre değişir:
+
+- App Store'da abonelik, abonelik grubu içinde otomatik olarak güncellenir. Kullanıcı bir gruptan abonelik satın alırken başka bir gruptaki aboneliği devam ediyorsa her iki abonelik de aynı anda aktif olur.
+- Google Play'de abonelik otomatik olarak güncellenmez. Geçişi aşağıda açıklandığı gibi mobil uygulama kodunuzda yönetmeniz gerekir.
+
+Android'de aboneliği başka bir abonelikle değiştirmek için `.makePurchase()` metodunu ek parametre ile çağırın:
+
+```dart showLineNumbers
+try {
+  final result = await adapty.makePurchase(
+    product: product,
+    subscriptionUpdateParams: subscriptionUpdateParams,
+  );
+  
+  // successful cross-grade
+} on AdaptyError catch (adaptyError) {
+  // Handle the error
+} catch (e) {
+  // Handle the error
+}
+```
+Ek istek parametresi:
+
+| Parametre                    | Zorunluluk | Açıklama                                                                                             |
+| :--------------------------- | :--------- |:-----------------------------------------------------------------------------------------------------|
+| **subscriptionUpdateParams** | zorunlu    | Bir [`AdaptyAndroidSubscriptionUpdateParameters`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyAndroidSubscriptionUpdateParameters-class.html) nesnesi. |
+
+Abonelikler ve değiştirme modları hakkında daha fazla bilgiyi Google Geliştirici belgelerinde bulabilirsiniz:
+
+- [Değiştirme modları hakkında](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Google'ın değiştirme modları için önerileri](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Değiştirme modu [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Not: Bu yöntem yalnızca abonelik yükseltmeleri için kullanılabilir. Düşürme işlemleri desteklenmez.
+- Değiştirme modu [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Not: Gerçek abonelik değişikliği yalnızca mevcut abonelik faturalandırma dönemi sona erdiğinde gerçekleşir.
+
+## iOS'ta teklif kodlarını kullanma \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+Uygulamanızda kod kullanma sayfasını görüntülemek için:
+
+```dart showLineNumbers
+try {
+  await Adapty().presentCodeRedemptionSheet();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+:::danger
+Gözlemlerimize göre bazı uygulamalarda Teklif Kodu Kullanma sayfası güvenilir çalışmayabilir. Kullanıcıyı doğrudan App Store'a yönlendirmenizi öneririz.
+
+Bunun için aşağıdaki formattaki URL'yi açmanız yeterlidir:
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
+
+### Ön ödemeli planları yönetme (Android) \{#manage-prepaid-plans-android\}
+
+Uygulama kullanıcılarınız [ön ödemeli plan](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) satın alabiliyorsa (örneğin, birkaç aylık yenilenemez bir abonelik), ön ödemeli planlar için [beklemedeki işlemleri](https://developer.android.com/google/play/billing/subscriptions#pending) etkinleştirebilirsiniz.
+
+```dart showLineNumbers title="main.dart"
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+    ..withGoogleEnablePendingPrepaidPlans(true),
+);
+```

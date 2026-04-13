@@ -1,0 +1,136 @@
+---
+title: "Adapty Kullanıcı Ediniminde ertelenmiş deeplink'ler"
+description: "Adapty Kullanıcı Ediniminde deeplink kurulumu"
+metadataTitle: "Adapty Kullanıcı Ediniminde ertelenmiş deeplink'ler | Adapty Dokümanları"
+keywords: ['adapty ua', 'user acquisition', 'deeplink', 'deferred deeplink']
+---
+
+Ertelenmiş deeplink'ler, kullanıcılar reklamlarınıza tıkladıktan sonra uygulamanızı yüklediğinde onlara özel veri aktarmanızı sağlar. Örneğin, uygulamayı yükleyip ilk kez açtıklarında doğrudan belirli bir ekrana yönlendirebilirsiniz.
+
+Şöyle çalışır:
+
+1. Kullanıcı reklamınıza tıkladığında Adapty tıklama verilerini kaydeder.
+2. Adapty yükleme olayını tespit ettiğinde, tıklamaya ait ertelenmiş verileri alır.
+3. Kullanıcı uygulamayı yükleyip ilk kez başlattığında Adapty saklanan verileri geri getirir; uygulamanız özel parametreleri alır ve siz bu değerlere göre uygulama kodunda ilgili işlemleri yapabilirsiniz.
+
+Adapty şu ertelenmiş veri parametrelerini destekler:
+
+- `ios_deferred_data`
+- `android_deferred_data`
+- `deferred_data_sub[1-10]`
+
+Ertelenmiş veri parametreleri eklemek için bunları kampanya ayarlarınızdaki tıklama bağlantısına ekleyin:
+
+1. Kampanyanızdaki tıklama bağlantısını kopyalayın.
+
+<ZoomImage id="ua-lnk.webp" width="900px" />
+
+2. Parametreleri bağlantıya ekleyin. Örneğin, iOS kullanıcılarınızın 'Welcome' ekranına yönlendirilmesini istiyorsanız bağlantınız şu şekilde görünebilir:
+
+```
+https://api-ua.adapty.io/api/v1/attribution/click?adpt_cid=__ADAPTY__ID__&ios_deferred_data=welcome&campaign_id=__CAMPAIGN_ID__&adset_id=__AID__&ad_id=__CID__&campaign_name=__CAMPAIGN_NAME__&adset_name=__AID_NAME__&ad_name=__CID_NAME__&redirect_url=__APP_LINK__
+```
+
+3. Uygulama kodunuzda parametrelere yanıt verin. Ertelenmiş veri parametrelerinin `payload` parametresi içinde olduğunu ve `payload` parametresinin escaped JSON formatında geldiğini unutmayın; bu nedenle uygulama kodunuzda bunu ayrıştırmanız gerekir.
+
+Örneğin, `ios_deferred_data` değeri `welcome` olan yüklemeleri şu şekilde ele alabilirsiniz:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+Adapty.delegate = self
+
+nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetails) {
+    guard
+        let payloadStr = details.payload,
+        let data = payloadStr.data(using: .utf8),
+        let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+        let deeplink = payload["ios_deferred_data"] as? String,
+        deeplink == "welcome"
+    else { return }
+
+    DispatchQueue.main.async {
+        print("Navigate to welcome screen")
+        // navigate to your screen here
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="android" label="Kotlin">
+
+```kotlin showLineNumbers
+Adapty.setOnInstallationDetailsListener(object : OnInstallationDetailsListener {
+    override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
+        details.payload?.let {
+            runCatching {
+                val json = JSONObject(it)
+                if (json.optString("android_deferred_data") == "welcome") {
+                    println("Navigate to welcome screen")
+                    // navigate here
+                }
+            }.onFailure(Throwable::printStackTrace)
+        }
+    }
+})
+
+```
+
+</TabItem>
+
+<TabItem value="rn" label="React Native" default>
+
+```typescript showLineNumbers
+adapty.addEventListener('onInstallationDetailsSuccess', details => {
+    // Parse the payload JSON and navigate to welcome screen if needed
+    try {
+        if (details.payload) {
+            const payload = JSON.parse(details.payload);
+            if (payload.ios_deferred_data === 'welcome') {
+                // Navigate to welcome screen
+                // Replace with your app's navigation logic
+                // For example, using React Navigation:
+                // navigation.navigate('Welcome');
+                console.log('Navigate to welcome screen');
+            }
+        }
+    } catch (error) {
+        console.error('Error parsing installation details payload:', error);
+    }
+});
+```
+
+</TabItem>
+
+<TabItem value="flutter" label="Flutter">
+
+```dart showLineNumbers
+Adapty().onUpdateInstallationDetailsSuccessStream.listen((details) {
+  final payloadStr = details.payload;
+  if (payloadStr == null) return;
+
+  final payload = json.decode(payloadStr) as Map<String, dynamic>;
+  if (payload['ios_deferred_data'] == 'welcome') {
+    print('Navigate to welcome screen');
+  }
+});
+
+```
+
+</TabItem>
+
+</Tabs>
+
+#### Yedek ertelenmiş veri parametrelerini ayarlama \{#set-up-fallback-deferred-data-parameters\}
+
+[Meta Ads](ua-facebook) ve [TikTok for Business](ua-tiktok) entegrasyonlarında, ertelenmiş veri parametreleri için yedek değerler tanımlayabilirsiniz. Tıklama bağlantısından ertelenmiş veri alınamazsa bunun yerine bu yedek değerler kullanılır.
+
+Ertelenmiş veri için yedek değerleri ayarlamak üzere:
+
+1. Adapty UA kontrol panelindeki kampanya yapılandırmanızda **Deferred Deeplinks** sekmesine gidin.
+2. Her platform için **Deferred deeplink data** alanına iOS ve Android ertelenmiş parametre değerlerini girin.
+3. Yapılandırmanızı uygulamak için **Save** düğmesine tıklayın.
+
+<ZoomImage id="ua-deeplink.webp" width="900px" />

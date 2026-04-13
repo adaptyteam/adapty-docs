@@ -1,0 +1,233 @@
+---
+title: "在 Android SDK 中进行应用内购买"
+description: "使用 Adapty 处理应用内购买和订阅的指南。"
+metadataTitle: "在 Adapty 中处理应用内购买 | Adapty 文档"
+keywords: ['makePurchase', 'pending']
+rank: 95
+displayed_sidebar: sdkandroid
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+
+在移动应用中展示付费墙是向用户提供高级内容或服务访问权限的重要步骤。然而，仅仅展示付费墙只有在您使用[付费墙编辑工具](adapty-paywall-builder)来自定义付费墙时，才足以支持购买流程。
+
+如果您不使用付费墙编辑工具，则必须使用名为 `.makePurchase()` 的独立方法来完成购买并解锁所需内容。该方法是用户与付费墙交互并完成所需交易的入口。
+
+如果您的付费墙对用户尝试购买的产品设有有效的促销活动，Adapty 将在购买时自动应用该优惠。
+
+:::warning
+请注意，新用户优惠只有在您使用付费墙编辑工具设置付费墙时才会自动应用。
+
+在其他情况下，您需要[验证用户是否符合 iOS 上新用户优惠的资格](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios)。跳过此步骤可能导致您的应用在发布审核时被拒绝，还可能对符合新用户优惠资格的用户收取全价。
+:::
+
+请确保您已[完成初始配置](quickstart)，不要跳过任何步骤。没有完成配置，我们将无法验证购买。
+
+## 进行购买 \{#make-purchase\}
+
+:::note
+**正在使用[付费墙编辑工具](adapty-paywall-builder)？** 购买将自动处理——您可以跳过此步骤。
+
+**需要分步指导？** 请查阅[快速入门指南](android-implement-paywalls-manually)，获取包含完整上下文的端到端实现说明。
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.makePurchase(activity, product, null) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            when (val purchaseResult = result.value) {
+                is AdaptyPurchaseResult.Success -> {
+                    val profile = purchaseResult.profile
+                    if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
+                        // Grant access to the paid features
+                    }
+                }
+
+                is AdaptyPurchaseResult.UserCanceled -> {
+                    // Handle the case where the user canceled the purchase
+                }
+
+                is AdaptyPurchaseResult.Pending -> {
+                    // Handle deferred purchases (e.g., the user will pay offline with cash)
+                }
+            }
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.makePurchase(activity, product, null, result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
+
+        if (purchaseResult instanceof AdaptyPurchaseResult.Success) {
+            AdaptyProfile profile = ((AdaptyPurchaseResult.Success) purchaseResult).getProfile();
+            AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
+
+            if (premium != null && premium.isActive()) {
+                // Grant access to the paid features
+            }
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.UserCanceled) {
+            // Handle the case where the user canceled the purchase
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.Pending) {
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
+        }
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // Handle the error
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+请求参数：
+
+| 参数          | 必要性   | 描述                                                                                                |
+| :------------ | :------- | :-------------------------------------------------------------------------------------------------- |
+| **Product** | 必填 | 从付费墙中获取的 [`AdaptyPaywallProduct`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall-product/) 对象。 |
+
+响应参数：
+
+| 参数        | 描述                                                                                                                                                                                                                                                                                                                                                                   |
+|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>如果请求成功，响应将包含此对象。[AdaptyProfile](https://android.adapty.io/adapty/com.adapty.models/-adapty-profile/) 对象提供了关于用户访问等级、订阅及应用内非订阅购买的全面信息。</p><p>请检查访问等级状态，以确认用户是否拥有访问应用所需的权限。</p> |
+
+:::warning
+**注意：** 如果您仍在使用低于 v2.0 的 Apple StoreKit 版本以及低于 v.2.9.0 的 Adapty SDK 版本，则需要改为提供 [Apple App Store 共享密钥](app-store-connection-configuration#step-5-enter-app-store-shared-secret)。该方法目前已被 Apple 弃用。
+:::
+
+## 购买时更改订阅 \{#change-subscription-when-making-a-purchase\}
+
+当用户选择新订阅而不是续订当前订阅时，具体行为取决于应用商店。对于 Google Play，订阅不会自动更新。您需要按照以下说明在移动应用代码中管理切换操作。
+
+要在 Android 中将订阅替换为另一个订阅，请使用附加参数调用 `.makePurchase()` 方法：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.makePurchase(
+    activity, 
+    product, 
+    AdaptyPurchaseParameters.Builder()
+        .withSubscriptionUpdateParams(subscriptionUpdateParams)
+        .build()
+) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            when (val purchaseResult = result.value) {
+                is AdaptyPurchaseResult.Success -> {
+                    val profile = purchaseResult.profile
+
+                    // successful cross-grade
+                }
+
+                is AdaptyPurchaseResult.UserCanceled -> {
+                    // user canceled the purchase flow
+                }
+
+                is AdaptyPurchaseResult.Pending -> {
+                    // the purchase has not been finished yet, e.g. user will pay offline by cash
+                }
+            }
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // Handle the error
+        }
+    }
+}
+```
+附加请求参数：
+
+| 参数                           | 必要性   | 描述                                                         |
+| :----------------------------- | :------- | :----------------------------------------------------------- |
+| **subscriptionUpdateParams** | 必填 | 一个 [`AdaptySubscriptionUpdateParameters`](https://android.adapty.io/adapty/com.adapty.models/-adapty-subscription-update-parameters/) 对象。 |
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.makePurchase(
+    activity, 
+    product, 
+    new AdaptyPurchaseParameters.Builder()
+        .withSubscriptionUpdateParams(subscriptionUpdateParams)
+        .build(),
+    result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
+
+        if (purchaseResult instanceof AdaptyPurchaseResult.Success) {
+            AdaptyProfile profile = ((AdaptyPurchaseResult.Success) purchaseResult).getProfile();
+
+            // successful cross-grade
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.UserCanceled) {
+            // user canceled the purchase flow
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.Pending) {
+            // the purchase has not been finished yet, e.g. user will pay offline by cash
+        }
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // Handle the error
+    }
+});
+```
+附加请求参数：
+
+| 参数                           | 必要性   | 描述                                                         |
+| :----------------------------- | :------- | :----------------------------------------------------------- |
+| **subscriptionUpdateParams** | 必填 | 一个 [`AdaptySubscriptionUpdateParameters`](https://android.adapty.io/adapty/com.adapty.models/-adapty-subscription-update-parameters/) 对象。 |
+
+</TabItem>
+
+</Tabs>
+
+您可以在 Google 开发者文档中了解更多关于订阅和替换模式的内容：
+
+- [关于替换模式](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Google 对替换模式的建议](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- 替换模式 [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE())。注意：此方法仅适用于订阅升级，不支持降级。
+- 替换模式 [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED())。注意：实际的订阅变更将在当前订阅计费周期结束时才会发生。
+
+### 管理预付费套餐 \{#manage-prepaid-plans\}
+
+如果您的应用用户可以购买[预付费套餐](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans)（例如，购买数月的非续订订阅），您可以为预付费套餐启用[待处理交易](https://developer.android.com/google/play/billing/subscriptions#pending)。
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+import com.adapty.models.AdaptyConfig
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withEnablePendingPrepaidPlans(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+import com.adapty.models.AdaptyConfig;
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withEnablePendingPrepaidPlans(true)
+    .build();
+```
+</TabItem>
+</Tabs>

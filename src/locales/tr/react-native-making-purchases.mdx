@@ -1,0 +1,161 @@
+---
+title: "React Native SDK ile mobil uygulamada satın alma yapma"
+description: "Adapty kullanarak uygulama içi satın almaları ve abonelikleri yönetme rehberi."
+metadataTitle: "Adapty ile Uygulama İçi Satın Almaları Yönetme | Adapty Dokümanları"
+keywords: ['makePurchase', 'offer code']
+rank: 90
+displayed_sidebar: sdkreactnative
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/tr/reusable/OfferCodesInfo.mdx';
+
+Mobil uygulamanızda paywall göstermek, kullanıcılara premium içerik veya hizmetlere erişim sunmanın temel adımlarından biridir. Ancak paywall'larınızı özelleştirmek için [Paywall Builder](adapty-paywall-builder) kullanıyorsanız, yalnızca bu paywall'ları göstermek satın almaları desteklemek için yeterlidir.
+
+Paywall Builder kullanmıyorsanız, satın almayı tamamlamak ve istenen içeriğin kilidini açmak için `.makePurchase()` adlı ayrı bir metot kullanmanız gerekir. Bu metot, kullanıcıların paywall'larla etkileşime geçmesini ve istedikleri işlemleri gerçekleştirmesini sağlayan kapıdır.
+
+Paywall'ınızda, kullanıcının satın almaya çalıştığı ürün için aktif bir promosyon teklifi varsa Adapty bunu satın alma sırasında otomatik olarak uygular.
+
+:::warning
+Başlangıç teklifinin otomatik uygulanabilmesi için paywall'larınızın Paywall Builder ile oluşturulmuş olması gerektiğini unutmayın.
+
+Aksi hâllerde [iOS'ta kullanıcının başlangıç teklifine uygunluğunu doğrulamanız](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios) gerekir. Bu adımı atlamak uygulamanızın yayın sürecinde reddedilmesine yol açabilir. Üstelik başlangıç teklifine hak kazanan kullanıcılardan tam ücret alınmasına neden olabilir.
+:::
+
+Satın almaları doğrulayabilmemiz için [ilk yapılandırmayı](quickstart) hiçbir adımı atlamadan tamamladığınızdan emin olun.
+
+## Satın alma yapma \{#make-purchase\}
+
+:::note
+**[Paywall Builder](adapty-paywall-builder) kullanıyor musunuz?** Satın almalar otomatik olarak işlenir; bu adımı atlayabilirsiniz.
+
+**Adım adım rehber mi arıyorsunuz?** Uçtan uca uygulama talimatları için [hızlı başlangıç kılavuzuna](react-native-implement-paywalls-manually) göz atın.
+:::
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+
+İstek parametreleri:
+
+| Parametre   | Zorunluluk | Açıklama                                                                                                                       |
+| :---------- | :--------- |:-------------------------------------------------------------------------------------------------------------------------------|
+| **Product** | zorunlu    | Paywall'dan alınan bir [`AdaptyPaywallProduct`](https://react-native.adapty.io/interfaces/adaptypaywallproduct) nesnesi. |
+
+Yanıt parametreleri:
+
+| Parametre   | Açıklama                                                                                                                                                                                                                                                                                                                                                                       |
+|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>İstek başarılıysa yanıt bu nesneyi içerir. Bir [AdaptyProfile](https://react-native.adapty.io/interfaces/adaptyprofile) nesnesi; kullanıcının uygulama içindeki access level'ları, abonelikleri ve abonelik dışı satın almaları hakkında kapsamlı bilgi sağlar.</p><p>Kullanıcının uygulamaya gerekli erişime sahip olup olmadığını belirlemek için access level durumunu kontrol edin.</p> |
+
+:::warning
+**Not:** Apple'ın StoreKit v2.0'dan düşük bir sürümünü ve Adapty SDK v2.9.0'dan düşük bir sürümünü kullanıyorsanız bunun yerine [Apple App Store paylaşılan sırrını](app-store-connection-configuration#step-5-enter-app-store-shared-secret) sağlamanız gerekir. Bu yöntem Apple tarafından kullanımdan kaldırılmıştır.
+:::
+
+## Satın alma yaparken aboneliği değiştirme \{#change-subscription-when-making-a-purchase\}
+
+Kullanıcı mevcut aboneliğini yenilemek yerine yeni bir abonelik seçtiğinde, işleyiş uygulama mağazasına göre farklılık gösterir:
+
+- App Store'da abonelik, abonelik grubu içinde otomatik olarak güncellenir. Kullanıcı bir gruptan abonelik satın alırken başka bir gruptan zaten aktif bir aboneliği varsa her iki abonelik de aynı anda aktif olur.
+- Google Play'de abonelik otomatik olarak güncellenmez. Geçişi aşağıda açıklandığı şekilde mobil uygulama kodunuzda yönetmeniz gerekir.
+
+Android'de aboneliği başka biriyle değiştirmek için `.makePurchase()` metodunu ek parametreyle çağırın:
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product, params);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+
+Ek istek parametresi:
+
+| Parametre  | Zorunluluk | Açıklama                                                                       |
+| :--------- | :--------- | :----------------------------------------------------------------------------- |
+| **params** | zorunlu    | [`MakePurchaseParamsInput`](https://react-native.adapty.io/types/makepurchaseparamsinput) türünde bir nesne. |
+
+:::info
+**Sürüm 3.8.2+**: `MakePurchaseParamsInput` yapısı güncellendi. `oldSubVendorProductId` ve `prorationMode` artık `subscriptionUpdateParams` altında yer almaktadır; `isOfferPersonalized` ise üst seviyeye taşınmıştır.
+
+Örnek:
+```javascript
+makePurchase(product, {
+    android: {
+        subscriptionUpdateParams: {
+            oldSubVendorProductId: 'old_product_id',
+            prorationMode: 'charge_prorated_price'
+        },
+        isOfferPersonalized: true
+    }
+});
+```
+:::
+
+Abonelikler ve değiştirme modları hakkında daha fazla bilgiyi Google Geliştirici belgelerinde bulabilirsiniz:
+
+- [Değiştirme modları hakkında](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Google'ın değiştirme modları için önerileri](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()) değiştirme modu. Not: Bu yöntem yalnızca abonelik yükseltmeleri için kullanılabilir. Düşürme işlemleri desteklenmez.
+- [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()) değiştirme modu. Not: Gerçek abonelik değişikliği yalnızca mevcut abonelik faturalandırma dönemi sona erdiğinde gerçekleşir.
+
+## iOS'ta teklif kodlarını kullanma \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+Uygulamanızda kod kullanım sayfasını görüntülemek için:
+
+```typescript showLineNumbers
+adapty.presentCodeRedemptionSheet();
+```
+
+:::danger
+Gözlemlerimize göre bazı uygulamalarda Teklif Kodu Kullanım sayfası güvenilir çalışmayabilir. Kullanıcıyı doğrudan App Store'a yönlendirmenizi öneririz.
+
+Bunun için şu formattaki URL'yi açmanız gerekir:
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
+
+## Ön ödemeli planları yönetme (Android) \{#manage-prepaid-plans-android\}
+
+Uygulama kullanıcılarınız [ön ödemeli planlar](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) satın alabiliyorsa (örneğin birkaç aylık yenilenmez abonelik), ön ödemeli planlar için [bekleyen işlemleri](https://developer.android.com/google/play/billing/subscriptions#pending) etkinleştirebilirsiniz.
+
+```typescript showLineNumbers
+adapty.activate("PUBLIC_SDK_KEY", {
+    android: { pendingPrepaidPlansEnabled: true }
+});
+```

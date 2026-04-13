@@ -1,0 +1,239 @@
+---
+title: "Kotlin Multiplatform SDK'da Paywall Builder paywalllarını ve yapılandırmalarını getirme"
+description: "Kotlin Multiplatform uygulamanızda abonelik kontrolünü iyileştirmek için Adapty'de PB paywalllarını nasıl alacağınızı öğrenin."
+metadataTitle: "Adapty'de PB Paywalllarını Alma | Adapty Dokümanları"
+displayed_sidebar: sdkkmp
+keywords: ['getPaywall', 'hasViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+rank: 70
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import Details from '@site/src/components/Details';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+
+Adapty Kontrol Paneli'ndeki yeni Paywall Builder ile [paywallınızın görsel tasarımını tamamladıktan](adapty-paywall-builder) sonra, bunu mobil uygulamanızda gösterebilirsiniz. Bu sürecin ilk adımı, placement ile ilişkilendirilmiş paywall'ı ve görünüm yapılandırmasını aşağıda anlatıldığı şekilde almaktır.
+
+Bu konunun Paywall Builder ile özelleştirilmiş paywalllar için geçerli olduğunu unutmayın. Paywalllarınızı manuel olarak uyguluyorsanız, [Mobil uygulamanızda remote config paywalllar için paywallları ve ürünleri getirme](fetch-paywalls-and-products-kmp) konusuna bakın.
+
+<SampleApp />
+
+<details>
+   <summary>Mobil uygulamanızda paywall göstermeye başlamadan önce (genişletmek için tıklayın)</summary>
+
+1. Adapty Kontrol Paneli'nde [ürünlerinizi oluşturun](create-product).
+2. Adapty Kontrol Paneli'nde [bir paywall oluşturun ve ürünleri bu paywall'a ekleyin](create-paywall).
+3. Adapty Kontrol Paneli'nde [placementlar oluşturun ve paywallınızı bu placementa ekleyin](create-placement).
+4. Mobil uygulamanıza [Adapty SDK](sdk-installation-kotlin-multiplatform)'yı kurun.
+</details>
+
+## Paywall Builder ile tasarlanan paywall'ı getirme \{#fetch-paywall-designed-with-paywall-builder\}
+
+[Paywall Builder ile bir paywall tasarladıysanız](adapty-paywall-builder), bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmenize gerek yoktur. Böyle bir paywall; paywall içinde ne gösterileceğini ve bunların nasıl gösterileceğini zaten içerir. Yine de placement üzerinden paywall ID'sini, görünüm yapılandırmasını almanız ve ardından bunu mobil uygulamanızda sunmanız gerekir.
+
+En iyi performansı sağlamak için, görsellerin kullanıcıya sunulmadan önce indirilmesine yeterli zaman tanımak amacıyla paywall'ı ve [görünüm yapılandırmasını](kmp-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) mümkün olduğunca erken almanız kritik önem taşır.
+
+Paywall almak için `getPaywall` metodunu kullanın:
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
+
+Adapty.getPaywall(
+    placementId = "YOUR_PLACEMENT_ID",
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+    loadTimeout = 5.seconds
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
+    // handle the error
+}
+```
+
+Parametreler:
+
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|-----------|
+| **placementId** | zorunlu | İstenen [Placement](placements)'ın tanımlayıcısı. Bu, Adapty Kontrol Paneli'nde placement oluştururken belirttiğiniz değerdir. |
+| **locale** | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | <p>[Paywall yerelleştirmesinin](add-paywall-locale-in-adapty-paywall-builder) tanımlayıcısı. Bu parametre, eksi (**-**) karakteriyle ayrılmış bir veya iki alt etiketten oluşan bir dil kodu olmalıdır. İlk alt etiket dil, ikincisi bölge içindir.</p><p></p><p>Örnek: `en` İngilizce, `pt-br` ise Brezilya Portekizcesini temsil eder.</p><p>Yerel ayar kodları ve önerilen kullanım biçimleri hakkında daha fazla bilgi için [Yerelleştirmeler ve yerel ayar kodları](localizations-and-locale-codes) sayfasına bakın.</p> |
+| **fetchPolicy** | varsayılan: `AdaptyPaywallFetchPolicy.Default` | <p>SDK varsayılan olarak sunucudan veri yüklemeye çalışır; başarısız olursa önbellekteki veriyi döndürür. Kullanıcılarınızın her zaman en güncel verilere erişmesini sağladığından bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın internet bağlantısının kararsız olduğunu düşünüyorsanız, mevcut önbellek verisini döndürmek için `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` kullanmayı değerlendirin. Bu senaryoda kullanıcılar en son verileri göremeyebilir; ancak bağlantı ne kadar kesintili olursa olsun daha hızlı yükleme süreleri yaşar. Önbellek düzenli olarak güncellenir, dolayısıyla oturum boyunca ağ isteklerinden kaçınmak için güvenle kullanılabilir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında korunduğunu; yalnızca uygulama yeniden yüklendiğinde veya manuel temizlik yapıldığında silindiğini unutmayın.</p><p></p><p>Adapty SDK, paywallları yerel olarak iki katmanda saklar: yukarıda açıklanan düzenli olarak güncellenen önbellek ve [yedek paywalllar](fallback-paywalls). Paywallları daha hızlı getirmek için CDN, CDN'e erişilemediğinde ise bağımsız bir yedek sunucu kullanıyoruz. Bu sistem, internet bağlantısı yetersiz olduğunda dahi her zaman paywalllarınızın en güncel sürümüne erişeceğinizi garanti edecek şekilde tasarlanmıştır.</p> |
+| **loadTimeout** | varsayılan: 5 sn | <p>Bu değer, metodun zaman aşımı süresini sınırlar. Zaman aşımına ulaşılırsa önbellekteki veri veya yerel yedek döndürülür.</p><p>Nadir durumlarda bu metodun zaman aşımı, `loadTimeout` içinde belirtilenden biraz daha geç gerçekleşebilir; çünkü işlem arka planda farklı isteklerden oluşabilir.</p><p>Kotlin Multiplatform için: `TimeInterval`'ı uzantı fonksiyonlarıyla oluşturabilirsiniz (örneğin `5.seconds`; burada `.seconds`, `import com.adapty.utils.seconds`'tan gelir) ya da `TimeInterval.seconds(5)` kullanabilirsiniz. Sınır koymamak için `TimeInterval.INFINITE` kullanın.</p> |
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama |
+| :-------- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | Ürün ID'lerinin listesini, paywall tanımlayıcısını, remote config'i ve diğer çeşitli özellikleri içeren bir [`AdaptyPaywall`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall/) nesnesi. |
+
+## Paywall Builder ile tasarlanan paywallın görünüm yapılandırmasını getirme \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+Paywall Builder'da **Show on device** geçişinin etkin olduğundan emin olun. Bu seçenek açık değilse görünüm yapılandırması alınamaz.
+:::
+
+Paywall'ı aldıktan sonra, Paywall Builder kullanılarak oluşturulduğunu gösteren `ViewConfiguration` öğesini içerip içermediğini kontrol edin. Bu, paywall'ı nasıl göstereceğiniz konusunda size rehberlik eder. `ViewConfiguration` mevcutsa Paywall Builder paywall'ı olarak değerlendirin; yoksa [remote config paywall olarak ele alın](present-remote-config-paywalls-kmp).
+
+Görünüm yapılandırmasını yüklemek için `createPaywallView` metodunu kullanın.
+
+```kotlin showLineNumbers
+import com.adapty.kmp.AdaptyUI
+import kotlin.time.Duration.Companion.seconds
+
+if (paywall.hasViewConfiguration) {
+    AdaptyUI.createPaywallView(
+        paywall = paywall,
+        loadTimeout = 5.seconds,
+        preloadProducts = true
+    ).onSuccess { paywallView ->
+        // use paywallView
+    }.onError { error ->
+        // handle the error
+    }
+} else {
+    // use your custom logic
+}
+```
+
+| Parametre | Zorunluluk | Açıklama |
+| :--------------------------- | :------------- | :----------------------------------------------------------- |
+| **paywall** | zorunlu | İstenen paywall için bir controller almak üzere kullanılan `AdaptyPaywall` nesnesi. |
+| **loadTimeout** | isteğe bağlı | Bu değer, metodun zaman aşımı süresini sınırlar. Zaman aşımına ulaşılırsa önbellekteki veri veya yerel yedek döndürülür. Nadir durumlarda bu metodun zaman aşımı, `loadTimeout` içinde belirtilenden biraz daha geç gerçekleşebilir; çünkü işlem arka planda farklı isteklerden oluşabilir. `kotlin.time.Duration.Companion` kaynaklı `5.seconds` gibi uzantı fonksiyonlarını kullanabilirsiniz. |
+| **preloadProducts** | isteğe bağlı | Daha iyi performans için ürünleri önceden yüklemek üzere `true` olarak ayarlayın. Etkinleştirildiğinde ürünler önceden yüklenir ve paywall'ın gösterilmesi için gereken süre azalır. |
+| **productPurchaseParams** | isteğe bağlı | [`AdaptyProductIdentifier`](https://kmp.adapty.io/adapty/com.adapty.kmp.models/-adapty-product-identifier/) ile [`AdaptyPurchaseParameters`](https://kmp.adapty.io/adapty/com.adapty.kmp.models/-adapty-purchase-parameters/) arasındaki bir eşleme. Paywalldaki her bir ürün için kişiselleştirilmiş teklifler veya abonelik güncelleme parametreleri gibi satın alma'ya özgü parametreleri yapılandırmak için kullanın. |
+
+:::note
+Birden fazla dil kullanıyorsanız, [Paywall Builder yerelleştirmesinin](add-paywall-locale-in-adapty-paywall-builder) nasıl ekleneceğini öğrenin.
+:::
+
+Yüklendikten sonra [paywall'ı sunun](kmp-present-paywalls).
+
+## Daha hızlı getirmek için varsayılan kitle paywallını alma \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Paywalllar genellikle neredeyse anında getirilir, bu yüzden bu süreci hızlandırmak için endişelenmenize gerek yoktur. Ancak çok sayıda kitle ve paywalla sahip olduğunuzda ve kullanıcılarınızın internet bağlantısı zayıf olduğunda, paywall getirme işlemi istediğinizden daha uzun sürebilir. Bu gibi durumlarda, hiç paywall göstermemek yerine sorunsuz bir kullanıcı deneyimi sağlamak amacıyla varsayılan bir paywall görüntülemek isteyebilirsiniz.
+
+Bu sorunu çözmek için, belirtilen placement'ın **All Users** kitlesine ait paywallını getiren `getPaywallForDefaultAudience` metodunu kullanabilirsiniz. Ancak önerilen yaklaşımın, yukarıdaki [Paywall Bilgilerini Getirme](#fetch-paywall-designed-with-paywall-builder) bölümünde ayrıntılı olarak açıklanan `getPaywall` metodu olduğunu unutmayın.
+
+:::warning
+Neden `getPaywall` kullanmanızı öneriyoruz
+
+`getPaywallForDefaultAudience` metodunun bazı önemli dezavantajları vardır:
+
+- **Olası geriye dönük uyumluluk sorunları**: Farklı uygulama sürümleri (mevcut ve gelecekteki) için farklı paywalllar göstermeniz gerekiyorsa zorluklarla karşılaşabilirsiniz. Ya mevcut (eski) sürümü destekleyen paywalllar tasarlamak zorunda kalacaksınız ya da mevcut (eski) sürümdeki kullanıcıların render edilemeyen paywalllarla karşılaşmasını kabul edeceksiniz.
+- **Hedefleme kaybı**: Tüm kullanıcılar **All Users** kitlesi için tasarlanmış aynı paywall'ı görür; bu da kişiselleştirilmiş hedeflemeyi (ülkelere, pazarlama attribution'ına veya kendi özel niteliklerinize göre) ortadan kaldırır.
+
+Daha hızlı paywall getirme avantajından yararlanmak için bu dezavantajları kabul etmeye hazırsanız, `getPaywallForDefaultAudience` metodunu aşağıdaki gibi kullanın. Aksi takdirde [yukarıda](#fetch-paywall-designed-with-paywall-builder) açıklanan `getPaywall` metodunu kullanmaya devam edin.
+:::
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywall
+import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
+
+Adapty.getPaywallForDefaultAudience(
+    placementId = "YOUR_PLACEMENT_ID",
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
+    // handle the error
+}
+```
+
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|-----------|
+| **placementId** | zorunlu | [Placement](placements)'ın tanımlayıcısı. Bu, Adapty Kontrol Paneli'nde placement oluştururken belirttiğiniz değerdir. |
+| **locale** | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | <p>[Paywall yerelleştirmesinin](add-remote-config-locale) tanımlayıcısı. Bu parametre, eksi (**-**) karakteriyle ayrılmış bir veya daha fazla alt etiketten oluşan bir dil kodu olmalıdır. İlk alt etiket dil, ikincisi bölge içindir.</p><p></p><p>Örnek: `en` İngilizce, `pt-br` ise Brezilya Portekizcesini temsil eder.</p><p></p><p>Yerel ayar kodları ve önerilen kullanım biçimleri hakkında daha fazla bilgi için [Yerelleştirmeler ve yerel ayar kodları](localizations-and-locale-codes) sayfasına bakın.</p> |
+| **fetchPolicy** | varsayılan: `AdaptyPaywallFetchPolicy.Default` | <p>SDK varsayılan olarak sunucudan veri yüklemeye çalışır; başarısız olursa önbellekteki veriyi döndürür. Kullanıcılarınızın her zaman en güncel verilere erişmesini sağladığından bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın internet bağlantısının kararsız olduğunu düşünüyorsanız, mevcut önbellek verisini döndürmek için `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` kullanmayı değerlendirin. Bu senaryoda kullanıcılar en son verileri göremeyebilir; ancak bağlantı ne kadar kesintili olursa olsun daha hızlı yükleme süreleri yaşar. Önbellek düzenli olarak güncellenir, dolayısıyla oturum boyunca ağ isteklerinden kaçınmak için güvenle kullanılabilir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında korunduğunu; yalnızca uygulama yeniden yüklendiğinde veya manuel temizlik yapıldığında silindiğini unutmayın.</p> |
+
+## Varlıkları özelleştirme \{#customize-assets\}
+
+Paywallinızdaki görselleri ve videoları özelleştirmek için özel varlıkları uygulayın.
+
+Kahraman görselleri ve videoları önceden tanımlanmış ID'lere sahiptir: `hero_image` ve `hero_video`. Özel bir varlık paketinde bu öğeleri ID'leri aracılığıyla hedefler ve davranışlarını özelleştirirsiniz.
+
+Diğer görseller ve videolar için Adapty kontrol panelinde [özel bir ID belirlemeniz](custom-media) gerekir.
+
+Örneğin şunları yapabilirsiniz:
+
+- Bazı kullanıcılara farklı bir görsel veya video gösterin.
+- Uzak ana görsel yüklenirken yerel bir önizleme görseli gösterin.
+- Video çalışmadan önce bir önizleme görseli gösterin.
+
+:::important
+Bu özelliği kullanmak için Adapty SDK'yı 3.7.0 veya üzeri sürüme güncelleyin.
+:::
+
+Özel varlıkları bir map aracılığıyla nasıl sağlayabileceğinize dair bir örnek:
+
+:::info
+Kotlin Multiplatform SDK yalnızca yerel varlıkları destekler. Uzak içerikler için, özel varlıklarda kullanmadan önce varlıkları indirip yerel olarak önbelleğe almanız gerekir.
+:::
+
+```kotlin showLineNumbers
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.models.AdaptyCustomAsset
+import kotlinx.coroutines.launch
+// Import generated Res class for accessing resources
+import myapp.composeapp.generated.resources.Res
+
+viewModelScope.launch {
+    // Get URIs for bundled resources using Res.getUri()
+    val heroImagePath = Res.getUri("files/images/hero_image.png")
+    val demoVideoPath = Res.getUri("files/videos/demo_video.mp4")
+
+    // Or read image as byte data
+    val imageByteData = Res.readBytes("files/images/avatar.png")
+
+    // Create custom assets map
+    val customAssets: Map<String, AdaptyCustomAsset> = mapOf(
+        // Load image from app resources (bundled with the app)
+        // Files should be placed in commonMain/composeResources/files/
+        "hero_image" to AdaptyCustomAsset.localImageResource(
+            path = heroImagePath
+        ),
+
+        // Or use image byte data
+        "avatar" to AdaptyCustomAsset.localImageData(
+            data = imageByteData
+        ),
+
+        // Load video from app resources
+        "demo_video" to AdaptyCustomAsset.localVideoResource(
+            path = demoVideoPath
+        ),
+
+        // Or use a video file from device storage
+        "intro_video" to AdaptyCustomAsset.localVideoFile(
+            path = "/path/to/local/video.mp4"
+        ),
+
+        // Apply custom brand colors
+        "brand_primary" to AdaptyCustomAsset.color(
+            colorHex = "#FF6B35"
+        ),
+
+        // Create gradient background
+        "card_gradient" to AdaptyCustomAsset.linearGradient(
+            colors = listOf("#1E3A8A", "#3B82F6", "#60A5FA"),
+            stops = listOf(0.0f, 0.5f, 1.0f)
+        )
+    )
+
+    // Use custom assets when creating paywall view
+    AdaptyUI.createPaywallView(
+        paywall = paywall,
+        customAssets = customAssets
+    ).onSuccess { paywallView ->
+        // Present the paywall with custom assets
+        paywallView.present()
+    }.onError { error ->
+        // Handle the error - paywall will fall back to default appearance
+    }
+}
+```
+
+:::note
+Bir varlık bulunamazsa veya yüklenemezse, paywall Paywall Builder'da yapılandırılmış varsayılan görünümüne geri döner.
+:::

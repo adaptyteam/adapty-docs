@@ -1,0 +1,206 @@
+---
+title: "Google Cloud Storage"
+description: "Güvenli kullanıcı edinimi verisi depolamak için Google Cloud Storage'ı Adapty UA ile entegre edin."
+metadataTitle: "Google Cloud Storage Entegrasyonu | Adapty Dokümanları"
+keywords: ['adapty ua', 'kullanıcı edinimi', 'google cloud', 'gcs']
+---
+
+Adapty UA'nın Google Cloud Storage entegrasyonu, kullanıcı edinimi kampanya verilerinizi tek bir merkezi konumda güvenle saklamanızı sağlar. Kampanya performans verilerinizi, attribution verilerinizi ve kullanıcı edinimi etkinliklerini Google Cloud Storage bucket'ınıza .csv dosyaları olarak kaydedebilirsiniz.  
+Bu entegrasyonu kurmak için Google Cloud Console ve Adapty UA Kontrol Paneli'nde birkaç basit adımı takip etmeniz gerekecek.
+
+:::note
+Zamanlama
+
+Adapty UA, verilerinizi her gün UTC 04:00'te Google Cloud Storage'a gönderir.
+
+Her dosya, UTC saatine göre bir önceki tam takvim günü boyunca oluşturulan etkinliklere ait verileri içerir. Örneğin, 8 Mart UTC 04:00'te otomatik olarak dışa aktarılan dosya, 7 Mart'ta UTC 00:00:00 ile 23:59:59 arasında oluşturulan tüm etkinlikleri kapsar.
+:::
+
+## Google Cloud Storage entegrasyonu nasıl kurulur \{#how-to-set-up-google-cloud-storage-integration\}
+
+### Adım 1. Google Cloud Storage kimlik bilgilerini oluşturun \{#step-1-create-google-cloud-storage-credentials\}
+
+Bu kılavuz, Google Cloud Platform Console'da gerekli kimlik bilgilerini oluşturmanıza yardımcı olacak.
+
+Adapty UA'nın ham veri raporlarını belirlediğiniz bucket'a yükleyebilmesi için servis hesabının anahtarına ve ilgili bucket'a yazma erişimine ihtiyaç vardır. Servis hesabı anahtarını sağlayarak ve bucket'a yazma erişimi vererek, Adapty UA'nın ham veri raporlarını kendi platformundan depolama ortamınıza güvenli ve verimli biçimde aktarmasına izin vermiş olursunuz.
+
+:::warning
+Yalnızca Service Account HMAC anahtarı ile kimlik doğrulamayı desteklediğimizi unutmayın; bu nedenle Google Cloud Storage'a düzgün erişim sağlamak için Service Account HMAC anahtarınıza "Storage Object Viewer", "Storage Legacy Bucket Writer" ve "Storage Object Creator" rollerinin eklendiğinden emin olmanız gereklidir.
+:::
+
+#### 2.1. Servis Hesabı Oluşturun \{#21-create-service-account\}
+
+1. Google Cloud hesabınızın [IAM](https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts) bölümüne gidin ve ilgili projeyi seçin ya da yeni bir tane oluşturun
+
+<Zoom>
+  <img src="/assets/shared/img/30a81ef-CleanShot_2023-03-17_at_15.22.142x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. Ardından "+ CREATE SERVICE ACCOUNT" düğmesine tıklayarak Adapty UA için yeni bir servis hesabı oluşturun
+
+<Zoom>
+  <img src="/assets/shared/img/98f8ebf-CleanShot_2023-03-17_at_15.40.062x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Erişim daha sonraki aşamada verileceğinden ilk adımdaki alanları doldurun. Bu sayfa hakkında daha fazla bilgi için [belgeleri](https://docs.cloud.google.com/iam/docs/service-accounts-create) inceleyin
+
+<Zoom>
+  <img src="/assets/shared/img/2190c50-CleanShot_2023-03-17_at_15.48.552x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. [Özel JSON anahtarını](https://docs.cloud.google.com/iam/docs/keys-create-delete) oluşturup indirmek için KEYS bölümüne gidin ve "ADD KEY" düğmesine tıklayın
+
+<Zoom>
+  <img src="/assets/shared/img/8a45468-CleanShot_2023-03-17_at_15.58.092x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+5. DETAILS bölümünde, az önce oluşturulan servis hesabıyla ilişkili E-posta değerini bulun ve kopyalayın. Bu bilgi, hesabı yetkilendirmek ve bucket'a yazmasına izin vermek için sonraki adımlarda gerekecek
+
+<Zoom>
+  <img src="/assets/shared/img/6ccd0f0-CleanShot_2023-03-17_at_16.03.162x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+#### 2.2. Bucket İzinlerini Yapılandırın \{#22-configure-bucket-permissions\}
+
+6. Google Cloud Storage'ın [Buckets](https://console.cloud.google.com/storage/browser) sayfasına gidin; Adapty UA'dan gelen Kullanıcı Edinimi Veri raporlarını depolamak için mevcut bir bucket'ı seçin ya da yeni bir tane oluşturun
+7. PERMISSIONS bölümüne gidin ve [GRANT ACCESS](https://docs.cloud.google.com/identity/docs/how-to?hl=en) seçeneğini belirleyin
+
+<Zoom>
+  <img src="/assets/shared/img/3cdd937-CleanShot_2023-03-17_at_16.14.232x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+8. PERMISSIONS bölümünde, beşinci adımda elde edilen servis hesabının E-posta adresini girin ve ardından Storage Object Creator rolünü seçin
+9. Son olarak, değişiklikleri kaydetmek için SAVE'e tıklayın
+
+<Zoom>
+  <img src="/assets/shared/img/62801f4-CleanShot_2023-03-17_at_16.17.312x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+10. Bucket adını ileride kullanmak üzere not edin
+
+11. Bu adımları tamamladıktan sonra Google Cloud Console'daki gerekli kurulum adımlarını başarıyla bitirdiniz! Son adım, Adapty UA'da kullanmak için bucket adını girmek ve JSON dosyasını indirmektir
+
+<Zoom>
+  <img src="/assets/shared/img/c967e16-CleanShot_2023-03-17_at_16.23.332x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Adım 2. Adapty UA'da entegrasyonu yapılandırın \{#step-2-configure-integration-in-adapty-ua\}
+
+1. [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/ua/integrations/google-cloud-storage) bölümüne gidin
+2. **Export install events to Google Cloud Storage** geçiş düğmesini etkinleştirin
+3. Google Cloud Storage ile Adapty UA arasında bağlantı kurmak için gerekli alanları doldurun:
+
+| Alan | Açıklama |
+|:-----|:---------|
+| **Google Cloud service account key file** | İndirilen özel [JSON anahtar dosyası](ua-google-cloud-storage#step-1-create-google-cloud-storage-credentials). |
+| **Google Cloud bucket name** | Verilerinizi depolamak istediğiniz Google Cloud Storage bucket'ının adı. Google Cloud Storage ortamında benzersiz olmalı ve boşluk içermemelidir. |
+| **Folder inside the bucket** | Verilerinizi depolamak istediğiniz bucket içindeki klasörün adı. Bucket içinde benzersiz olmalı ve verilerinizi düzenlemek için kullanılabilir. Bu alan isteğe bağlıdır. |
+
+<ZoomImage id="ua-google-cloud.webp" width="700px" />
+
+## Manuel veri dışa aktarma \{#manual-data-export\}
+
+Google Cloud Storage'a otomatik etkinlik verisi dışa aktarmanın yanı sıra Adapty UA, manuel dosya dışa aktarma özelliği de sunar. Bu özellik sayesinde belirli bir tarih için kullanıcı edinimi verilerini seçip GCS bucket'ınıza manuel olarak aktarabilirsiniz. Bu, hangi verileri ne zaman dışa aktaracağınız konusunda daha fazla kontrol sahibi olmanızı sağlar.
+
+## Tablo yapısı \{#table-structure\}
+
+Google Cloud Storage entegrasyonunda Adapty UA, yükleme etkinliklerinin geçmiş verilerini depolamak için bir tablo sağlar. Tablo; kullanıcı profili, gelir ve kazanç ile kaynak mağaza gibi çeşitli veri noktalarına ilişkin bilgiler içerir.
+
+:::warning
+Bu yapının zaman içinde büyüyebileceğini unutmayın; bizim tarafımızdan veya çalıştığımız üçüncü taraflarca yeni veriler eklenebilir. Bunu işleyen kodunuzun yeterince sağlam olduğundan ve yapının tamamına değil, belirli alanlara dayandığından emin olun.
+:::
+
+Etkinlikler için tablo yapısı aşağıdaki gibidir:
+
+| Sütun | Açıklama |
+|-------|----------|
+| `adapty_profile_id` | Benzersiz Adapty profil tanımlayıcısı |
+| `install_id` | Benzersiz yükleme tanımlayıcısı |
+| `created_at` | Kayıt oluşturma zaman damgası (ISO 8601) |
+| `installed_at` | Uygulama yükleme zaman damgası (ISO 8601) |
+| `store` | Uygulama mağazası (`ios`, `android`) |
+| `country` | Kullanıcının ülke kodu (ISO 3166-1 alpha-2) |
+| `ip_address` | İstemci IP adresi |
+| `idfa` | iOS Reklam Verenler için Tanımlayıcı |
+| `idfv` | iOS Satıcılar için Tanımlayıcı |
+| `gaid` | Google Advertising ID (Android) |
+| `android_id` | Android cihaz ID'si |
+| `app_set_id` | Android App Set ID'si |
+| `channel` | Attribution kanalı |
+| `campaign_id` | Kampanya tanımlayıcısı |
+| `campaign_name` | Kampanya adı |
+| `adset_id` | Reklam seti tanımlayıcısı |
+| `adset_name` | Reklam seti adı |
+| `ad_id` | Reklam tanımlayıcısı |
+| `ad_name` | Reklam adı |
+| `keyword_id` | Anahtar kelime tanımlayıcısı |
+| `keyword_name` | Anahtar kelime adı |
+| `asa_org_id` | Apple Search Ads organizasyon ID'si |
+| `asa_keyword_match_type` | ASA anahtar kelime eşleme türü (`Exact`, `Broad`) |
+| `asa_attribution` | ASA attribution verisi (JSON dizesi) |
+| `asa_conversion_type` | ASA dönüşüm türü |
+| `asa_country_or_region` | ASA ülke veya bölge |
+| `asa_creative_set_name` | ASA kreatif set adı |
+| `fbclid` | Facebook Click ID |
+| `ttclid` | TikTok Click ID |
+| `utm_source` | UTM kaynak parametresi |
+| `utm_medium` | UTM medium parametresi |
+| `utm_campaign` | UTM kampanya parametresi |
+| `utm_term` | UTM terim parametresi |
+| `utm_content` | UTM içerik parametresi |

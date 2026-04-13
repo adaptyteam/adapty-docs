@@ -29,35 +29,64 @@ const { tooltip } = Astro.props;
 </span>
 
 <script>
+  function closeAllTooltips() {
+    document.querySelectorAll('[data-tooltip-wrapper][data-open]').forEach(w => {
+      w.removeAttribute('data-open');
+    });
+  }
+
   function initTooltips() {
+    closeAllTooltips();
     const wrappers = document.querySelectorAll('[data-tooltip-wrapper]');
-    
+
     wrappers.forEach(wrapper => {
       // Avoid double initialization
       if (wrapper.getAttribute('data-tooltip-initialized')) return;
       wrapper.setAttribute('data-tooltip-initialized', 'true');
 
       const closeBtn = wrapper.querySelector('.tooltip-close');
+      const trigger = wrapper.querySelector('.tooltip-trigger');
+      const popup = wrapper.querySelector('.tooltip-popup');
 
-      if (!closeBtn) return;
+      if (!closeBtn || !trigger || !popup) return;
 
       // Handle Close Button (Force Close)
       closeBtn.addEventListener('click', (e) => {
-        e.preventDefault();
         e.stopPropagation();
+        wrapper.removeAttribute('data-open');
+        // data-open is removed first — the two states never coexist
         wrapper.classList.add('force-closed');
       });
 
-      // Reset state when mouse actually leaves the wrapper
+      // Reset force-closed state when mouse leaves the wrapper
       wrapper.addEventListener('mouseleave', () => {
         wrapper.classList.remove('force-closed');
+      });
+
+      // Tap/click trigger to toggle tooltip (mobile + desktop)
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = wrapper.hasAttribute('data-open');
+        closeAllTooltips();
+        if (!isOpen) {
+          wrapper.setAttribute('data-open', '');
+          wrapper.classList.remove('force-closed');
+        }
+      });
+
+      // Clicks inside the popup don't bubble to document (so links work)
+      popup.addEventListener('click', (e) => {
+        e.stopPropagation();
       });
     });
   }
 
-  // Initialize on page load and navigation
+  if (!window.__tooltipDocListenerAttached) {
+    window.__tooltipDocListenerAttached = true;
+    document.addEventListener('click', () => closeAllTooltips());
+    document.addEventListener('astro:page-load', initTooltips);
+  }
   initTooltips();
-  document.addEventListener('astro:page-load', initTooltips);
 </script>
 
 <style>
@@ -71,12 +100,21 @@ const { tooltip } = Astro.props;
     display: inline;
     line-height: 1.6;
     vertical-align: baseline;
+    touch-action: manipulation;
   }
   
   .tooltip-popup {
     line-height: 1.6;
   }
-  
+
+  /* Show tooltip via JS (mobile tap) */
+  [data-tooltip-wrapper][data-open] .tooltip-popup {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+  }
+
   /* Custom typography for tooltip content */
   .tooltip-inner :global(strong) {
     color: var(--text-primary);

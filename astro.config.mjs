@@ -27,7 +27,19 @@ export default defineConfig({
     inlineStylesheets: 'never',
   },
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [
+      tailwindcss(),
+    ],
+    server: {
+      watch: {
+        ignored: [
+          '**/.DS_Store',
+          '**/.Spotlight-V100/**',
+          '**/.DocumentRevisions-V100/**',
+          '**/.astro/**',
+        ],
+      },
+    },
     define: {
       global: 'window',
       'process.env': '{}',
@@ -73,7 +85,10 @@ export default defineConfig({
 
   integrations: [
     react(),
-    sitemap(),
+    sitemap({
+      // Exclude localized pages — they are covered by locale-specific sitemaps (e.g. sitemap-zh-index.xml)
+      filter: (page) => !page.includes('/docs/zh/') && !page.includes('/docs/tr/'),
+    }),
     mdx({
       remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
       rehypePlugins: [rehypeSlug],

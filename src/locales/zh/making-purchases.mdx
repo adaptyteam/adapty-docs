@@ -1,0 +1,150 @@
+---
+title: "在 iOS SDK 中进行应用内购买"
+description: "使用 Adapty 处理应用内购买和订阅的指南。"
+metadataTitle: "在 Adapty 中处理应用内购买 | Adapty 文档"
+keywords: ['makePurchase', 'pending', 'purchase', 'presentCodeRedemptionSheet', 'offer code']
+rank: 100
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem'; 
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/zh/reusable/OfferCodesInfo.mdx';
+
+在您的移动应用中展示付费墙是为用户提供访问高级内容或服务的重要步骤。然而，仅仅展示付费墙本身只有在您使用 [付费墙编辑工具](adapty-paywall-builder) 自定义付费墙时才足以支持购买。
+
+如果您不使用付费墙编辑工具，则必须使用名为 `.makePurchase()` 的独立方法来完成购买并解锁所需内容。此方法是用户与付费墙交互并完成所需交易的入口。
+
+如果您的付费墙对用户尝试购买的产品设置了有效的促销活动，Adapty 将在购买时自动应用该优惠。
+
+:::warning
+请注意，新用户优惠仅在您使用付费墙编辑工具设置付费墙时才会自动应用。
+
+在其他情况下，您需要[在 iOS 上验证用户是否符合新用户优惠资格](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios)。跳过此步骤可能导致您的应用在发布审核时被拒绝，还可能向符合新用户优惠资格的用户收取全价。
+:::
+
+请确保您已完成[初始配置](quickstart)，不要跳过任何步骤。没有初始配置，我们将无法验证购买。
+
+## 进行购买 \{#make-purchase\}
+
+:::note
+**正在使用 [付费墙编辑工具](adapty-paywall-builder)？** 购买会自动处理——您可以跳过此步骤。
+
+**需要分步骤指导？** 请查看[快速入门指南](ios-implement-paywalls-manually)，获取包含完整上下文的端到端实现说明。
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let purchaseResult = try await Adapty.makePurchase(product: product)
+
+    switch purchaseResult {
+        case .userCancelled:
+            // Handle the case where the user canceled the purchase
+        case .pending:
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
+        case let .success(profile, transaction):
+            if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // Grant access to the paid features
+            }
+    }
+} catch {
+    // Handle the error
+}
+```
+
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.makePurchase(product: product) { result in
+    switch result {
+    case let .success(purchaseResult):
+        switch purchaseResult {
+            case .userCancelled:
+                // Handle the case where the user canceled the purchase
+            case .pending:
+                // Handle deferred purchases (e.g., the user will pay offline with cash)
+            case let .success(profile, transaction):
+                if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+                    // Grant access to the paid features
+                }
+        }
+    case let .failure(error):
+        // Handle the error
+    }
+}
+```
+
+</TabItem>
+
+</Tabs>
+
+请求参数：
+
+| 参数          | 必填性   | 描述                                                                                                  |
+| :------------ | :------- | :---------------------------------------------------------------------------------------------------- |
+| **Product**   | 必填     | 从付费墙中获取的 [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) 对象。|
+
+响应参数：
+
+| 参数        | 描述                                                                                                                                                                                                                                                                                                                                                                   |
+|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>如果请求成功，响应中将包含此对象。[AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile) 对象提供了有关用户访问等级、订阅以及应用内非订阅购买的全面信息。</p><p>请检查访问等级状态，以确认用户是否具有访问应用所需的权限。</p> |
+
+:::warning
+**注意：** 如果您仍在使用低于 v2.0 的 Apple StoreKit 版本以及低于 v2.9.0 的 Adapty SDK 版本，则需要提供 [Apple App Store 共享密钥](app-store-connection-configuration#step-5-enter-app-store-shared-secret)。此方法目前已被 Apple 弃用。
+:::
+
+## 来自 App Store 的应用内购买 \{#in-app-purchases-from-the-app-store\}
+
+当用户在 App Store 中发起购买并将交易带入您的应用时，您有两种处理方式：
+
+- **立即处理交易：** 在 `shouldAddStorePayment` 中返回 `true`。这将立即触发 Apple 购买系统界面。
+- **存储产品对象以供后续处理：** 在 `shouldAddStorePayment` 中返回 `false`，稍后再调用 `makePurchase` 并传入已存储的产品。如果您需要在触发购买前向用户展示自定义内容，此方式会很有用。
+
+以下是完整代码片段：
+
+```swift showLineNumbers title="Swift"
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
+        // 1a.
+        // Return `true` to continue the transaction in your app. The Apple purchase system screen will show automatically.
+
+        // 1b.
+        // Store the product object and return `false` to defer or cancel the transaction.
+        false
+    }
+    
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase` when the timing is appropriate
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyDeferredProduct = // get the product object from 1b.
+        do {
+            try await Adapty.makePurchase(product: storedProduct)
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+## 在 iOS 中兑换优惠码 \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+要在您的应用中显示优惠码兑换界面：
+
+```swift showLineNumbers
+Adapty.presentCodeRedemptionSheet()
+```
+
+:::danger
+根据我们的观察，部分应用中的优惠码兑换界面可能无法稳定运行。我们建议直接将用户重定向至 App Store。
+
+为此，您需要打开以下格式的 URL：
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::

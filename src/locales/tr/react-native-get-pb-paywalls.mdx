@@ -1,0 +1,184 @@
+---
+title: "React Native SDK'da Paywall Builder paywalllerini ve yapılandırmalarını çekme"
+description: "React Native uygulamanızda abonelik kontrolünü iyileştirmek için Adapty'de PB paywalllerini nasıl alacağınızı öğrenin."
+metadataTitle: "Adapty'de PB Paywalllerini Alma | Adapty Dokümanları"
+displayed_sidebar: sdkreactnative
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+rank: 90
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+
+Adapty Kontrol Paneli'ndeki yeni Paywall Builder ile [paywallınızın görsel kısmını tasarladıktan](adapty-paywall-builder) sonra, bunu mobil uygulamanızda gösterebilirsiniz. Bu sürecin ilk adımı, aşağıda açıklandığı gibi placement ile ilişkili paywall'u ve görünüm yapılandırmasını almaktır.
+
+:::warning
+Yeni Paywall Builder, React Native SDK 3.0 veya daha yüksek sürümüyle çalışır.
+:::
+
+Bu konunun Paywall Builder ile özelleştirilmiş paywalllere atıfta bulunduğunu unutmayın. Paywalllerinizi manuel olarak uyguluyorsanız, lütfen [Mobil uygulamanızda remote config paywalleri için paywallları ve ürünleri çekme](fetch-paywalls-and-products-react-native) konusuna bakın.
+
+<SampleApp />
+
+<details>
+   <summary>Mobil uygulamanızda paywallları görüntülemeye başlamadan önce (genişletmek için tıklayın)</summary>
+
+1. Adapty Kontrol Paneli'nde [ürünlerinizi oluşturun](create-product).
+2. Adapty Kontrol Paneli'nde [bir paywall oluşturun ve ürünleri buna ekleyin](create-paywall).
+3. Adapty Kontrol Paneli'nde [placement oluşturun ve paywallınızı buna ekleyin](create-placement).
+4. Mobil uygulamanıza [Adapty SDK](sdk-installation-reactnative)'yı kurun.
+</details>
+
+## Paywall Builder ile tasarlanan paywallı çekme \{#fetch-paywall-designed-with-paywall-builder\}
+
+[Paywall Builder kullanarak bir paywall tasarladıysanız](adapty-paywall-builder), bunu kullanıcıya göstermek için mobil uygulama kodunuzda render etme konusunda endişelenmenize gerek yoktur. Bu tür bir paywall, paywall içinde neyin gösterileceğini ve nasıl gösterileceğini içerir. Yine de placement aracılığıyla ID'sini, görünüm yapılandırmasını alıp ardından mobil uygulamanızda sunmanız gerekir.
+
+En iyi performansı sağlamak için, kullanıcılara sunmadan önce görsellerin indirilmesine yeterli zaman tanımak amacıyla paywall ve [görünüm yapılandırmasını](react-native-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) mümkün olduğunca erken almanız önemlidir.
+
+Bir paywall almak için `getPaywall` metodunu kullanın:
+
+```typescript showLineNumbers
+try {
+    const placementId = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
+
+    const paywall = await adapty.getPaywall(placementId, locale);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
+```
+Parametreler:
+
+| Parametre         | Zorunluluk | Açıklama |
+|-------------------|--------|-----------|
+| **placementId**   | zorunlu | İstenen [Placement](placements)'ın tanımlayıcısı. Bu, Adapty Kontrol Paneli'nde bir placement oluştururken belirttiğiniz değerdir. |
+| **locale**        | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | <p>[Paywall yerelleştirmesinin](add-paywall-locale-in-adapty-paywall-builder) tanımlayıcısı. Bu parametrenin, eksi (**-**) karakteriyle ayrılmış bir veya iki alt etiketten oluşan bir dil kodu olması beklenir. İlk alt etiket dil içindir, ikincisi bölge içindir.</p><p></p><p>Örnek: `en` İngilizce anlamına gelir, `pt-br` Brezilya Portekizcesini temsil eder.</p><p>Yerel ayar kodları ve bunların nasıl kullanılmasını önerdiğimiz hakkında daha fazla bilgi için [Yerelleştirmeler ve yerel ayar kodları](localizations-and-locale-codes) konusuna bakın.</p> |
+| **fetchPolicy**   | varsayılan: `.reloadRevalidatingCacheData` | <p>Varsayılan olarak SDK, sunucudan veri yüklemeye çalışır ve başarısızlık durumunda önbelleğe alınmış verileri döndürür. Kullanıcılarınızın her zaman en güncel verilere sahip olmasını sağladığı için bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internetle karşılaştığını düşünüyorsanız, önbellekte veri varsa önbelleğe alınmış verileri döndürmek için `.returnCacheDataElseLoad` kullanmayı düşünün. Bu senaryoda kullanıcılar en güncel verileri alamayabilir, ancak internet bağlantıları ne kadar kesintili olursa olsun daha hızlı yükleme süresi yaşarlar. Önbellek düzenli olarak güncellenir, bu nedenle ağ isteklerini önlemek için oturum sırasında kullanmak güvenlidir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında bozulmadan kaldığını ve yalnızca uygulama yeniden yüklendiğinde veya manuel temizleme yoluyla silindiğini unutmayın.</p><p></p><p>Adapty SDK, paywallları yerel olarak iki katmanda depolar: yukarıda açıklanan düzenli olarak güncellenen önbellek ve [yedek paywalllar](fallback-paywalls). Paywallları daha hızlı almak için CDN ve CDN'e ulaşılamadığı durumlarda bağımsız bir yedek sunucu da kullanıyoruz. Bu sistem, internet bağlantısının yetersiz olduğu durumlarda bile güvenilirliği sağlarken paywalllarınızın her zaman en son sürümünü almanızı sağlamak için tasarlanmıştır.</p> |
+| **loadTimeoutMs** | varsayılan: 5 sn | <p>Bu değer, bu metodun zaman aşımını sınırlar. Zaman aşımına ulaşılırsa, önbelleğe alınmış veriler veya yerel yedek döndürülür.</p><p>Nadir durumlarda bu metodun `loadTimeout` içinde belirtilenden biraz daha geç zaman aşımına uğrayabileceğini unutmayın; çünkü işlem perde arkasında farklı isteklerden oluşabilir.</p><p>Android için: `TimeInterval`'ı uzantı fonksiyonlarıyla oluşturabilirsiniz (örneğin `5.seconds`, `.seconds` burada `import com.adapty.utils.seconds` içindendir) veya `TimeInterval.seconds(5)`. Sınırlama olmadan ayarlamak için `TimeInterval.INFINITE` kullanın.</p> |
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama                                                                                                                                                                            |
+| :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | Ürün ID'lerinin listesini, paywall tanımlayıcısını, remote config'i ve diğer çeşitli özellikleri içeren bir [`AdaptyPaywall`](https://react-native.adapty.io/interfaces/adaptypaywall) nesnesi. |
+
+## Paywall Builder kullanılarak tasarlanan paywallın görünüm yapılandırmasını çekme \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+Paywall builder'da **Show on device** geçişinin etkin olduğundan emin olun. Bu seçenek açık değilse, görünüm yapılandırması alınamaz.
+:::
+
+Paywall'u çektikten sonra, Paywall Builder kullanılarak oluşturulduğunu gösteren bir `ViewConfiguration` içerip içermediğini kontrol edin. Bu, paywallı nasıl görüntüleyeceğiniz konusunda size rehberlik edecektir. `ViewConfiguration` mevcutsa, bunu bir Paywall Builder paywall'u olarak ele alın; değilse, [bunu bir remote config paywall'u olarak işleyin](present-remote-config-paywalls-react-native).
+
+React Native SDK'da, görünüm yapılandırmasını manuel olarak önceden çekmeden doğrudan `createPaywallView` metodunu çağırın.
+
+:::warning
+`createPaywallView` metodunun sonucu yalnızca bir kez kullanılabilir. Tekrar kullanmanız gerekiyorsa, `createPaywallView` metodunu yeniden çağırın. Yeniden oluşturmadan iki kez çağırmak `AdaptyUIError.viewAlreadyPresented` hatasına neden olabilir.
+:::
+
+```typescript showLineNumbers
+// for the Adapty SDK < 3.14 – import {createPaywallView} from 'react-native-adapty/dist/ui';
+
+if (paywall.hasViewConfiguration) {
+  try {
+    const view = await createPaywallView(paywall);
+  } catch (error) {
+    // handle the error
+  }
+} else {
+    //use your custom logic
+}
+```
+
+Parametreler:
+
+| Parametre            | Zorunluluk | Açıklama                                                  |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **paywall**          | zorunlu | İstenen paywall için bir denetleyici elde etmek amacıyla kullanılan `AdaptyPaywall` nesnesi. |
+| **customTags**       | isteğe bağlı | Özel etiketlerin ve çözümlenmiş değerlerinin bir sözlüğünü tanımlayın. Özel etiketler, paywall içeriğinde yer tutucular olarak hizmet eder ve paywall içinde kişiselleştirilmiş içerik için belirli dizelerle dinamik olarak değiştirilir. Daha fazla ayrıntı için [Paywall builder'da özel etiketler](custom-tags-in-paywall-builder) konusuna bakın. |
+| **prefetchProducts** | isteğe bağlı | Ekranda ürünlerin görüntülenme zamanlamasını optimize etmek için etkinleştirin. `true` olduğunda AdaptyUI gerekli ürünleri otomatik olarak çeker. Varsayılan: `false`. |
+
+:::note
+Birden fazla dil kullanıyorsanız, [Paywall Builder yerelleştirmesi](add-paywall-locale-in-adapty-paywall-builder) eklemeyi ve yerel ayar kodlarını doğru şekilde nasıl kullanacağınızı [buradan](react-native-localizations-and-locale-codes) öğrenin.
+:::
+
+Görünümü aldıktan sonra, [paywall'u sunun](react-native-present-paywalls).
+
+## Daha hızlı çekmek için varsayılan kitle için paywall alma \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Genellikle paywalllar neredeyse anında çekilir, dolayısıyla bu süreci hızlandırma konusunda endişelenmenize gerek yoktur. Ancak çok sayıda kitle ve paywallınız olduğu ve kullanıcılarınızın zayıf bir internet bağlantısına sahip olduğu durumlarda, bir paywall çekmek istediğinizden daha uzun sürebilir. Bu gibi durumlarda, hiç paywall göstermemek yerine sorunsuz bir kullanıcı deneyimi sağlamak için varsayılan bir paywall görüntülemek isteyebilirsiniz.
+
+Bunu çözmek için, belirtilen placement'ın paywallını **Tüm Kullanıcılar** kitlesi için çeken `getPaywallForDefaultAudience` metodunu kullanabilirsiniz. Ancak önerilen yaklaşımın, yukarıdaki [Paywall Bilgilerini Çekme](#fetch-paywall-designed-with-paywall-builder) bölümünde ayrıntılandırıldığı gibi `getPaywall` metoduyla paywall çekmek olduğunu anlamak önemlidir.
+
+:::warning
+`getPaywall` kullanmanızı neden öneriyoruz
+
+`getPaywallForDefaultAudience` metodu birkaç önemli dezavantajla birlikte gelir:
+
+- **Olası geriye dönük uyumluluk sorunları**: Farklı uygulama sürümleri için (mevcut ve gelecekteki) farklı paywalllar göstermeniz gerekiyorsa, zorluklarla karşılaşabilirsiniz. Ya mevcut (eski) sürümü destekleyen paywalllar tasarlamak zorunda kalacaksınız ya da mevcut (eski) sürüme sahip kullanıcıların render edilmemiş paywalllarla sorun yaşayabileceğini kabul edeceksiniz.
+- **Hedefleme kaybı**: Tüm kullanıcılar **Tüm Kullanıcılar** kitlesi için tasarlanmış aynı paywall'u görecek; bu da kişiselleştirilmiş hedeflemeyi (ülkeler, pazarlama attribution veya kendi özel özelliklerinize dayalı hedefleme dahil) kaybetmeniz anlamına gelir.
+
+Daha hızlı paywall çekme avantajından yararlanmak için bu dezavantajları kabul etmeye hazırsanız, `getPaywallForDefaultAudience` metodunu aşağıdaki gibi kullanın. Aksi takdirde [yukarıda](#fetch-paywall-designed-with-paywall-builder) açıklanan `getPaywall` metoduna bağlı kalın.
+:::
+
+```typescript showLineNumbers
+try {
+    const id = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
+
+    const paywall = await adapty.getPaywallForDefaultAudience(id, locale);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
+```
+
+:::note
+`getPaywallForDefaultAudience` metodu, React Native SDK 2.11.2 sürümünden itibaren kullanılabilir.
+:::
+
+| Parametre | Zorunluluk | Açıklama                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | zorunlu | [Placement](placements)'ın tanımlayıcısı. Bu, Adapty Kontrol Paneli'nde bir placement oluştururken belirttiğiniz değerdir.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **locale** | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | <p>[Paywall yerelleştirmesinin](add-remote-config-locale) tanımlayıcısı. Bu parametrenin, eksi (**-**) karakteriyle ayrılmış bir veya daha fazla alt etiketten oluşan bir dil kodu olması beklenir. İlk alt etiket dil içindir, ikincisi bölge içindir.</p><p></p><p>Örnek: `en` İngilizce anlamına gelir, `pt-br` Brezilya Portekizcesini temsil eder.</p><p></p><p>Yerel ayar kodları ve bunların nasıl kullanılmasını önerdiğimiz hakkında daha fazla bilgi için [Yerelleştirmeler ve yerel ayar kodları](react-native-localizations-and-locale-codes) konusuna bakın.</p>                                                                                                                                                                                                                                       |
+| **fetchPolicy** | varsayılan: `.reloadRevalidatingCacheData` | <p>Varsayılan olarak SDK, sunucudan veri yüklemeye çalışır ve başarısızlık durumunda önbelleğe alınmış verileri döndürür. Kullanıcılarınızın her zaman en güncel verilere sahip olmasını sağladığı için bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internetle karşılaştığını düşünüyorsanız, önbellekte veri varsa önbelleğe alınmış verileri döndürmek için `.returnCacheDataElseLoad` kullanmayı düşünün. Bu senaryoda kullanıcılar en güncel verileri alamayabilir, ancak internet bağlantıları ne kadar kesintili olursa olsun daha hızlı yükleme süresi yaşarlar. Önbellek düzenli olarak güncellenir, bu nedenle ağ isteklerini önlemek için oturum sırasında kullanmak güvenlidir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında bozulmadan kaldığını ve yalnızca uygulama yeniden yüklendiğinde veya manuel temizleme yoluyla silindiğini unutmayın.</p> |
+
+## Varlıkları özelleştirme \{#customize-assets\}
+
+Paywallınızdaki görselleri ve videoları özelleştirmek için özel varlıkları uygulayın.
+
+Hero görselleri ve videolarının önceden tanımlanmış ID'leri vardır: `hero_image` ve `hero_video`. Özel bir varlık paketinde, bu öğeleri ID'leri aracılığıyla hedefler ve davranışlarını özelleştirirsiniz.
+
+Diğer görseller ve videolar için Adapty kontrol panelinde [özel bir ID ayarlamanız](custom-media) gerekir.
+
+Örneğin şunları yapabilirsiniz:
+
+- Bazı kullanıcılara farklı bir görsel veya video gösterme.
+- Uzak ana görsel yüklenirken yerel bir önizleme görseli gösterme.
+- Bir video çalıştırmadan önce önizleme görseli gösterme.
+
+:::important
+Bu özelliği kullanmak için Adapty React Native SDK'yı 3.8.0 veya daha yüksek bir sürüme güncelleyin.
+:::
+
+Basit bir sözlük aracılığıyla özel varlıkları nasıl sağlayabileceğinize dair bir örnek:
+
+```javascript
+const customAssets: Record<string, AdaptyCustomAsset> = {
+  'custom_image': { type: 'image', relativeAssetPath: 'custom_image.png' },
+  'hero_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'custom_video.mp4' },
+      android: { relativeAssetPath: 'videos/custom_video.mp4' }
+    }
+  }
+};
+
+view = await createPaywallView(paywall, { customAssets })
+
+```
+
+:::note
+Bir varlık bulunamazsa, paywall varsayılan görünümüne geri döner.
+:::
