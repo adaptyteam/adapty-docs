@@ -88,11 +88,11 @@ npm run build 2>&1 | grep -i error
 src/
   content/
     docs/ # All documentation articles
-      version-3.0/        
+      version-3.0/
         your-article.mdx
-        ios/              
+        ios/
           ios-guide.mdx
-        android/          
+        android/
           android-guide.mdx
   assets/
     your-article/         # Article-specific images
@@ -187,7 +187,7 @@ import Details from '@site/src/components/Details.astro';
 
 <Details summary="Click to see more details">
   Additional information that can be hidden by default.
-  
+
   - You can use any markdown here
   - Including lists
   - Code blocks
@@ -288,6 +288,177 @@ All inline icon files go in `src/assets/Inline/`. This folder is dedicated to ic
 - **Markdown export**: In generated plain-text and LLM markdown files, the component is replaced seamlessly with its `alt` value (e.g., `<Inline id="edit.webp" alt="Edit" />` → `Edit`).
 - **Fallback**: If the image file is not found, the `alt` text is rendered as `<code>` so the meaning is never lost.
 - **Works in lists**: Can be used inside list items, callouts, and other block contexts without breaking layout.
+
+### 8. Calculators - Interactive formula calculators
+
+Interactive calculators that render a LaTeX formula, accept user input, and display a step-by-step result. Two variants are available: **SimpleCalculator** for straightforward formulas and **CompoundCalculator** for two-stage formulas with global variables.
+
+Both are React components — **always add `client:load`** to the component tag.
+
+#### Variable format
+
+Each entry in the `variables` array supports these fields:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `nameInTheFormula` | string | Yes | LaTeX symbol displayed in the header, e.g. `"P_s"` |
+| `variableName` | string | Yes | JavaScript identifier used in formula expressions |
+| `variableDescription` | string | Yes | Human-readable label shown next to the input |
+| `variableValue` | number | No | Default value. Defaults to 1 |
+| `options` | array | No | Dropdown options instead of a text input. Each option: `{ label: "Monthly", value: 1 }`. The value can be a string expression like `"1/12"` |
+| `isInteger` | boolean | No | Restricts input to whole numbers |
+| `global` | boolean | No | **CompoundCalculator only.** Marks the variable as global — displayed below the row grid and available in `resultFormula` |
+
+#### SimpleCalculator
+
+For straightforward formulas. Supports single-row input (one set of variables) or multi-row summation mode (add/remove rows that are summed together).
+
+**Import:**
+
+```mdx
+import { SimpleCalculator } from '../../../components/SimpleCalculator';
+```
+
+**Props:**
+
+- `heading` (optional): Title displayed above the formula
+- `formuLatex` (required): LaTeX string for the displayed formula
+- `variables` (required): Array of variable definitions (see Variable format above)
+- `formulaCalculation` (required): JavaScript expression using variable names, e.g. `"(price * qty) / duration"`
+- `isSum` (optional): Set to `true` to enable multi-row mode where rows are summed. Default: single-row mode
+- `defaultRowCount` (optional): Initial number of rows in sum mode. Default: 1
+- `defaultRows` (optional): Array of objects with pre-filled values, e.g. `[{ price: 240, subs: 2 }]`
+
+**Usage — single row (no summation):**
+
+```mdx
+<SimpleCalculator client:load
+    heading="Revenue per user"
+    formuLatex="\frac{R}{U}"
+    variables={[
+        {
+            nameInTheFormula: "R",
+            variableName: "revenue",
+            variableDescription: "Total revenue",
+            variableValue: 1000
+        },
+        {
+            nameInTheFormula: "U",
+            variableName: "users",
+            variableDescription: "Total users",
+            variableValue: 100,
+            isInteger: true
+        }
+    ]}
+    formulaCalculation="revenue / users"
+/>
+```
+
+**Usage — multi-row summation with dropdown options:**
+
+```mdx
+<SimpleCalculator client:load
+    heading="ARR"
+    formuLatex="\sum \frac{P_s \times U_s}{D_y}"
+    variables={[
+        {
+            nameInTheFormula: "P_s",
+            variableName: "price",
+            variableDescription: "Subscription price",
+            variableValue: 240
+        },
+        {
+            nameInTheFormula: "U_s",
+            variableName: "subs",
+            variableDescription: "Active paid subs",
+            variableValue: 2,
+            isInteger: true
+        },
+        {
+            nameInTheFormula: "D_y",
+            variableName: "periods",
+            variableDescription: "Subscription period",
+            variableValue: 1,
+            options: [
+                { label: "Weekly", value: "1/52" },
+                { label: "Monthly", value: "1/12" },
+                { label: "Annual", value: 1 }
+            ]
+        }
+    ]}
+    formulaCalculation="(price * subs) / periods"
+    isSum={true}
+    defaultRows={[
+        { price: 240, subs: 2, periods: "1" },
+        { price: 30, subs: 10, periods: "1/12" }
+    ]}
+/>
+```
+
+#### CompoundCalculator
+
+For two-stage formulas that combine per-row calculations with global variables. Rows are computed and summed first, then the sum is combined with global variables in a second formula. Use this when the formula has both a repeating part (e.g., per-product revenue) and a fixed part (e.g., refunds, total users).
+
+**Import:**
+
+```mdx
+import { CompoundCalculator } from '../../../components/CompoundCalculator';
+```
+
+**Props:**
+
+- `heading` (optional): Title displayed above the formula
+- `formuLatex` (required): LaTeX string for the displayed formula
+- `variables` (required): Array of variable definitions. Variables with `global: true` appear below the row grid and are used in the outer formula
+- `rowFormula` (required): JavaScript expression computed per row, e.g. `"price * qty"`
+- `resultFormula` (required): JavaScript expression that combines the row sum (referenced as `_sum`) with global variables, e.g. `"(_sum - refunds) / users"`
+- `defaultRows` (optional): Array of objects with pre-filled row values
+
+**Usage:**
+
+```mdx
+<CompoundCalculator client:load
+    heading="ARPPU"
+    formuLatex="\frac{\sum P_i \times Q_i - D}{U_p}"
+    variables={[
+        {
+            nameInTheFormula: "P",
+            variableName: "price",
+            variableDescription: "Product price",
+            variableValue: 10
+        },
+        {
+            nameInTheFormula: "Q",
+            variableName: "qty",
+            variableDescription: "Products purchased",
+            variableValue: 1,
+            isInteger: true
+        },
+        {
+            nameInTheFormula: "D",
+            variableName: "refunds",
+            variableDescription: "Amount refunded",
+            variableValue: 35,
+            global: true
+        },
+        {
+            nameInTheFormula: "Up",
+            variableName: "users",
+            variableDescription: "Paying users",
+            variableValue: 16,
+            global: true,
+            isInteger: true
+        }
+    ]}
+    rowFormula="price * qty"
+    resultFormula="(_sum - refunds) / users"
+    defaultRows={[
+        { price: 10, qty: 5 },
+        { price: 50, qty: 10 },
+        { price: 100, qty: 1 }
+    ]}
+/>
+```
 
 ## Markdown features
 
