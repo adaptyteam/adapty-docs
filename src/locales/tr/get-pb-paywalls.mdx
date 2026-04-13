@@ -1,0 +1,236 @@
+---
+title: "iOS SDK'da Paywall Builder paywalllarını ve yapılandırmalarını getirme"
+description: "iOS uygulamanızda daha iyi abonelik kontrolü için Adapty'de PB paywalllarını nasıl alacağınızı öğrenin."
+metadataTitle: "Adapty'de PB Paywalllarını Getirme | Adapty Dokümanları"
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience', 'cache']
+rank: 100
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+
+Adapty Kontrol Paneli'ndeki yeni Paywall Builder ile [paywallınızın görsel kısmını tasarladıktan](adapty-paywall-builder) sonra onu mobil uygulamanızda gösterebilirsiniz. Bu sürecin ilk adımı, aşağıda açıklandığı gibi placement ile ilişkili paywallı ve görünüm yapılandırmasını almaktır.
+
+:::warning
+Yeni Paywall Builder, iOS SDK 3.0 veya daha yüksek sürümlerle çalışır. Eski Paywall Builder ile tasarlanmış paywallları Adapty SDK v2'de görüntülemek için bkz. [Eski Paywall Builder ile tasarlanmış paywallları görüntüleme](adapty-paywall-builder).
+:::
+
+Bu konunun Paywall Builder ile özelleştirilmiş paywalllar için geçerli olduğunu unutmayın. Paywalllarınızı manuel olarak uyguluyorsanız, lütfen [Mobil uygulamanızda remote config paywallları için paywallları ve ürünleri getirme](fetch-paywalls-and-products) konusuna bakın.
+
+<SampleApp />
+
+<details>
+   <summary>Mobil uygulamanızda paywallları görüntülemeye başlamadan önce (genişletmek için tıklayın)</summary>
+
+1. Adapty Kontrol Paneli'nde [ürünlerinizi oluşturun](create-product).
+2. Adapty Kontrol Paneli'nde [bir paywall oluşturun ve ürünleri bu paywalla ekleyin](create-paywall).
+3. Adapty Kontrol Paneli'nde [placement oluşturun ve paywallınızı buna ekleyin](create-placement).
+4. Mobil uygulamanıza [Adapty SDK](sdk-installation-ios) yükleyin.
+</details>
+
+## Paywall Builder ile tasarlanan paywallı getirme \{#fetch-paywall-designed-with-paywall-builder\}
+
+[Paywall Builder kullanarak bir paywall tasarladıysanız](adapty-paywall-builder), onu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmenize gerek yoktur. Böyle bir paywall, hem paywallda neyin gösterileceğini hem de nasıl gösterileceğini içerir. Bununla birlikte, ID'sini placement aracılığıyla, görünüm yapılandırmasını ise ayrıca almanız ve ardından uygulamanızda sunmanız gerekir.
+
+En iyi performansı sağlamak için, kullanıcıya sunmadan önce görsellerin indirilmesine yeterince zaman tanımak amacıyla paywallı ve [görünüm yapılandırmasını](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) mümkün olduğunca erken almanız önemlidir.
+
+Paywall almak için `getPaywall` metodunu kullanın:
+
+<Tabs>
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    // the requested paywall
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+Parametreler:
+
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|-----------|
+| **placementId** | zorunlu | İstenen [Placement](placements) kimliği. Bu, Adapty Kontrol Paneli'nde placement oluştururken belirttiğiniz değerdir. |
+| **locale** | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | <p>[Paywall yerelleştirmesinin](add-paywall-locale-in-adapty-paywall-builder) kimliği. Bu parametrenin, eksi (**-**) karakteriyle ayrılmış bir veya iki alt etiketten oluşan bir dil kodu olması beklenir. İlk alt etiket dil, ikincisi ise bölge içindir.</p><p></p><p>Örnek: `en` İngilizce, `pt-br` ise Brezilya Portekizcesini temsil eder.</p><p>Yerel ayar kodları ve bunların nasıl kullanılması gerektiği hakkında daha fazla bilgi için bkz. [Yerelleştirmeler ve yerel ayar kodları](localizations-and-locale-codes).</p> |
+| **fetchPolicy** | varsayılan: `.reloadRevalidatingCacheData` | <p>SDK varsayılan olarak sunucudan veri yüklemeye çalışır ve başarısız olması durumunda önbellekteki veriyi döndürür. Kullanıcılarınızın her zaman en güncel veriyi almasını sağladığından bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internet bağlantısıyla uğraştığını düşünüyorsanız, önbellekte veri varsa döndürmek için `.returnCacheDataElseLoad` kullanmayı değerlendirin. Bu senaryoda kullanıcılar en güncel veriyi almayabilir, ancak internet bağlantısı ne kadar kötü olursa olsun daha hızlı yükleme süreleri yaşarlar. Önbellek düzenli olarak güncellenir, bu nedenle ağ isteklerini azaltmak için oturum sırasında kullanmak güvenlidir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında silinmediğini; yalnızca uygulama kaldırılıp yeniden yüklendiğinde veya manuel temizlik yapıldığında temizlendiğini unutmayın.</p><p></p><p>Adapty SDK, paywallları yerel olarak iki katmanda saklar: yukarıda açıklanan düzenli güncellenen önbellek ve [yedek paywalllar](fallback-paywalls). Paywallları daha hızlı getirmek için CDN, CDN'e ulaşılamadığı durumlarda ise bağımsız bir yedek sunucu kullanırız. Bu sistem, internet bağlantısının kısıtlı olduğu durumlarda bile güvenilirliği sağlarken her zaman en güncel paywall sürümünü almanızı garanti etmek için tasarlanmıştır.</p> |
+| **loadTimeout** | varsayılan: 5 sn | <p>Bu değer, metodun zaman aşımını sınırlar. Zaman aşımına ulaşılırsa önbelleğe alınmış veri veya yerel yedek döndürülür.</p><p>İşlemin arka planda farklı isteklerden oluşabileceği nadir durumlarda bu metodun `loadTimeout`'ta belirtilenden biraz daha geç zaman aşımına uğrayabileceğini unutmayın.</p> |
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama |
+| :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | Ürün ID'leri listesi, paywall kimliği, remote config ve diğer çeşitli özellikleri içeren bir [`AdaptyPaywall`](https://swift.adapty.io/documentation/adapty/adaptypaywall) nesnesi. |
+
+## Paywall Builder ile tasarlanan paywallın görünüm yapılandırmasını getirme \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+Paywall builder'da **Show on device** geçişinin etkin olduğundan emin olun. Bu seçenek açık değilse görünüm yapılandırması alınamaz.
+:::
+
+Paywallı aldıktan sonra, Paywall Builder kullanılarak oluşturulduğunu gösteren bir görünüm yapılandırması içerip içermediğini kontrol edin. Bu, paywallın nasıl görüntüleneceği konusunda size rehberlik edecektir. Görünüm yapılandırması mevcutsa bunu bir Paywall Builder paywallı olarak değerlendirin; değilse [remote config paywallı olarak ele alın](present-remote-config-paywalls).
+
+Görünüm yapılandırmasını yüklemek için `getPaywallConfiguration` metodunu kullanın.
+
+```swift showLineNumbers
+
+guard paywall.hasViewConfiguration else {
+    //  use your custom logic
+    return
+}
+
+do {
+    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
+            forPaywall: paywall,
+            products: products
+    )
+    // use loaded configuration
+} catch {
+    // handle the error
+}
+```
+
+Parametreler:
+
+| Parametre | Zorunluluk | Açıklama |
+| :----------------------- | :------------- | :----------------------------------------------------------- |
+| **paywall** | zorunlu | İstenen paywall için bir controller elde etmek amacıyla kullanılan `AdaptyPaywall` nesnesi. |
+| **loadTimeout** | varsayılan: 5 sn | Bu değer, metodun zaman aşımını sınırlar. Zaman aşımına ulaşılırsa önbelleğe alınmış veri veya yerel yedek döndürülür. İşlemin arka planda farklı isteklerden oluşabileceği nadir durumlarda bu metodun `loadTimeout`'ta belirtilenden biraz daha geç zaman aşımına uğrayabileceğini unutmayın. |
+| **products** | isteğe bağlı | Ekranda ürünlerin görüntülenme zamanlamasını optimize etmek için bir `AdaptyPaywallProducts` dizisi sağlayın. `nil` geçilirse AdaptyUI gerekli ürünleri otomatik olarak getirir. |
+
+:::note
+Birden fazla dil kullanıyorsanız, [Paywall Builder yerelleştirmesi](add-paywall-locale-in-adapty-paywall-builder) eklemeyi ve yerel ayar kodlarını doğru kullanmayı [burada](localizations-and-locale-codes) öğrenin.
+:::
+
+Yüklendikten sonra [paywallı sunun](ios-present-paywalls).
+
+## Daha hızlı getirmek için varsayılan kitle paywallını alma \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Paywalllar genellikle neredeyse anında getirilir, bu nedenle bu süreci hızlandırmak konusunda endişelenmenize gerek yoktur. Ancak çok sayıda kitle ve paywalliniz varsa ve kullanıcılarınızın internet bağlantısı zayıfsa, paywall getirme işlemi istediğinizden daha uzun sürebilir. Bu gibi durumlarda, hiç paywall göstermemek yerine sorunsuz bir kullanıcı deneyimi sağlamak için varsayılan bir paywall görüntülemek isteyebilirsiniz.
+
+Bunu çözmek için, belirtilen placement'ın **Tüm Kullanıcılar** kitlesi için paywallını getiren `getPaywallForDefaultAudience` metodunu kullanabilirsiniz. Ancak önerilen yaklaşımın, yukarıdaki [Paywall Bilgisini Getirme](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder) bölümünde açıklandığı gibi `getPaywall` metoduyla paywallı getirmek olduğunu bilmeniz önemlidir.
+
+:::warning
+`getPaywall` kullanmanızı neden öneriyoruz
+
+`getPaywallForDefaultAudience` metodunun birkaç önemli dezavantajı vardır:
+
+- **Olası geriye dönük uyumluluk sorunları**: Farklı uygulama sürümleri (mevcut ve gelecekteki) için farklı paywalllar göstermeniz gerekiyorsa zorluklarla karşılaşabilirsiniz. Ya mevcut (eski) sürümü destekleyen paywalllar tasarlamak zorunda kalırsınız ya da mevcut (eski) sürüme sahip kullanıcıların render edilmemiş paywalllarla sorun yaşamasını kabul etmek durumunda kalırsınız.
+- **Hedefleme kaybı**: Tüm kullanıcılar **Tüm Kullanıcılar** kitlesi için tasarlanmış aynı paywallı görür; bu da kişiselleştirilmiş hedeflemeyi (ülkelere, pazarlama attribution'ına veya kendi özel niteliklerinize göre) kaybetmeniz anlamına gelir.
+
+Daha hızlı paywall getirme avantajından yararlanmak için bu dezavantajları kabul etmeye hazırsanız, aşağıdaki gibi `getPaywallForDefaultAudience` metodunu kullanın. Aksi takdirde [yukarıda](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder) açıklanan `getPaywall` metodunu tercih edin.
+:::
+
+```swift showLineNumbers
+Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+
+:::note
+`getPaywallForDefaultAudience` metodu iOS SDK 2.11.2 sürümünden itibaren kullanılabilir.
+:::
+
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|-----------|
+| **placementId** | zorunlu | [Placement](placements) kimliği. Bu, Adapty Kontrol Paneli'nde placement oluştururken belirttiğiniz değerdir. |
+| **locale** | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | <p>[Paywall yerelleştirmesinin](add-remote-config-locale) kimliği. Bu parametrenin, eksi (**-**) karakteriyle ayrılmış bir veya daha fazla alt etiketten oluşan bir dil kodu olması beklenir. İlk alt etiket dil, ikincisi ise bölge içindir.</p><p></p><p>Örnek: `en` İngilizce, `pt-br` ise Brezilya Portekizcesini temsil eder.</p><p></p><p>Yerel ayar kodları ve bunların nasıl kullanılması gerektiği hakkında daha fazla bilgi için bkz. [Yerelleştirmeler ve yerel ayar kodları](localizations-and-locale-codes).</p> |
+| **fetchPolicy** | varsayılan: `.reloadRevalidatingCacheData` | <p>SDK varsayılan olarak sunucudan veri yüklemeye çalışır ve başarısız olması durumunda önbellekteki veriyi döndürür. Kullanıcılarınızın her zaman en güncel veriyi almasını sağladığından bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internet bağlantısıyla uğraştığını düşünüyorsanız, önbellekte veri varsa döndürmek için `.returnCacheDataElseLoad` kullanmayı değerlendirin. Bu senaryoda kullanıcılar en güncel veriyi almayabilir, ancak internet bağlantısı ne kadar kötü olursa olsun daha hızlı yükleme süreleri yaşarlar. Önbellek düzenli olarak güncellenir, bu nedenle ağ isteklerini azaltmak için oturum sırasında kullanmak güvenlidir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında silinmediğini; yalnızca uygulama kaldırılıp yeniden yüklendiğinde veya manuel temizlik yapıldığında temizlendiğini unutmayın.</p> |
+
+## Varlıkları özelleştirme \{#customize-assets\}
+
+Paywallınızdaki görsel ve videoları özelleştirmek için özel varlıkları uygulayın.
+
+Hero görsel ve videoların önceden tanımlanmış ID'leri vardır: `hero_image` ve `hero_video`. Özel bir varlık paketinde, bu öğeleri ID'leriyle hedefler ve davranışlarını özelleştirirsiniz.
+
+Diğer görsel ve videolar için Adapty kontrol panelinde [özel bir ID ayarlamanız](custom-media) gerekir.
+
+Örneğin şunları yapabilirsiniz:
+
+- Bazı kullanıcılara farklı bir görsel veya video gösterme.
+- Uzak ana görsel yüklenirken yerel bir önizleme görseli gösterme.
+- Video çalışmadan önce bir önizleme görseli gösterme.
+
+:::important
+Bu özelliği kullanmak için Adapty iOS SDK'yı 3.7.0 veya daha yüksek bir sürüme güncelleyin.
+:::
+
+Özel varlıkları basit bir sözlük aracılığıyla nasıl sağlayabileceğinize dair bir örnek:
+
+```swift showLineNumbers
+let customAssets: [String: AdaptyCustomAsset] = [
+    // Show a local image using a custom ID
+    "custom_image": .image(
+        .uiImage(value: UIImage(named: "image_name")!)
+    ),
+
+    // Show a local preview image while a remote main image is loading
+    "hero_image": .image(
+        .remote(
+            url: URL(string: "https://example.com/image.jpg")!,
+            preview: UIImage(named: "preview_image")
+        )
+    ),
+
+    // Show a local video with a preview image
+    "hero_video": .video(
+        .file(
+            url: Bundle.main.url(forResource: "custom_video", withExtension: "mp4")!,
+            preview: .uiImage(value: UIImage(named: "video_preview")!)
+        )
+    ),
+]
+
+let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
+    forPaywall: paywall,
+    assetsResolver: customAssets
+)
+```
+
+:::note
+Bir varlık bulunamazsa paywall varsayılan görünümüne geri döner.
+:::
+
+## Geliştirici tanımlı zamanlayıcıları ayarlama \{#set-up-developer-defined-timers\}
+
+Mobil uygulamanızda özel zamanlayıcılar kullanmak için `AdaptyTimerResolver` protokolünü uygulayan bir nesne oluşturun. Bu nesne, her özel zamanlayıcının nasıl render edileceğini tanımlar. İsterseniz bu protokole zaten uyan bir `[String: Date]` sözlüğünü doğrudan kullanabilirsiniz. İşte bir örnek:
+
+```swift showLineNumbers
+@MainActor
+struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
+    func timerEndAtDate(for timerId: String) -> Date {
+        switch timerId {
+        case "CUSTOM_TIMER_6H":
+            Date(timeIntervalSinceNow: 3600.0 * 6.0) // 6 hours
+        case "CUSTOM_TIMER_NY":
+            Calendar.current.date(from: DateComponents(year: 2025, month: 1, day: 1)) ?? Date(timeIntervalSinceNow: 3600.0)
+        default:
+            Date(timeIntervalSinceNow: 3600.0) // 1 hour
+        }
+    }
+}
+```
+
+Bu örnekte `CUSTOM_TIMER_NY` ve `CUSTOM_TIMER_6H`, Adapty Kontrol Paneli'nde ayarladığınız geliştirici tanımlı zamanlayıcıların **Timer ID**'leridir. `timerResolver`, uygulamanızın her zamanlayıcıyı doğru değerle dinamik olarak güncellemesini sağlar. Örneğin:
+
+- `CUSTOM_TIMER_NY`: Yeni Yıl gibi zamanlayıcının bitiş anına kadar kalan süre.
+- `CUSTOM_TIMER_6H`: Kullanıcının paywallı açmasıyla başlayan 6 saatlik sürede kalan zaman.

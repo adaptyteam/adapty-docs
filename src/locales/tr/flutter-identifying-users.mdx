@@ -1,0 +1,127 @@
+---
+title: "Flutter SDK'da kullanıcıları tanımlama"
+description: "Kişiselleştirilmiş abonelik deneyimlerini iyileştirmek için Adapty'de kullanıcıları tanımlayın."
+metadataTitle: "Adapty'de Kullanıcıları Tanımlama | Adapty Dokümanları"
+displayed_sidebar: sdkflutter
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md'; 
+
+Adapty, her kullanıcı için dahili bir profil ID'si oluşturur. Ancak kendi kimlik doğrulama sisteminiz varsa, kendi Customer User ID'nizi belirlemeniz gerekir. Kullanıcıları Customer User ID'leriyle [Profiles](profiles-crm) bölümünde bulabilir ve tüm entegrasyonlara gönderilecek olan [sunucu taraflı API](getting-started-with-server-side-api)'de kullanabilirsiniz.
+
+### Yapılandırma sırasında Customer User ID belirleme \{#setting-customer-user-id-on-configuration\}
+
+Yapılandırma sırasında bir kullanıcı ID'niz varsa, `.activate()` metoduna `customerUserId` parametresi olarak doğrudan geçirebilirsiniz:
+
+```dart showLineNumbers title="Dart"
+   try {
+       await Adapty().activate(
+           configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+             ..withCustomerUserId(YOUR_CUSTOMER_USER_ID)
+       );
+   } catch (e) {
+       // handle the error
+   }
+```
+
+<SampleApp />
+
+### Yapılandırma sonrasında Customer User ID belirleme \{#setting-customer-user-id-after-configuration\}
+
+SDK yapılandırması sırasında kullanıcı ID'niz yoksa, daha sonra istediğiniz zaman `.identify()` metoduyla ayarlayabilirsiniz. Bu metodun en yaygın kullanım senaryoları; kayıt veya oturum açma sonrasında kullanıcı anonim kullanıcıdan kimliği doğrulanmış kullanıcıya geçtiğinde ortaya çıkar.
+
+```dart showLineNumbers
+try {
+  await Adapty().identify(customerUserId);
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+İstek parametreleri:
+
+- **Customer User ID** (zorunlu): string formatında kullanıcı tanımlayıcısı.
+
+:::warning
+Önemli kullanıcı verilerini yeniden gönderme
+
+Kullanıcının hesabına tekrar giriş yapması gibi bazı durumlarda, Adapty'nin sunucuları o kullanıcı hakkında zaten bilgiye sahip olabilir. Bu senaryolarda Adapty SDK, yeni kullanıcıyla çalışmak için otomatik olarak geçiş yapar. Anonim kullanıcıya özel nitelikler veya üçüncü taraf ağlarından attribution verileri gibi herhangi bir veri iletmişseniz, bu verileri tanımlanan kullanıcı için yeniden göndermeniz gerekir.
+
+Ayrıca, yeni kullanıcının verileri farklı olabileceğinden, kullanıcıyı tanımladıktan sonra tüm paywall'ları ve ürünleri yeniden talep etmeniz önemlidir.
+:::
+
+### Oturum kapatma ve açma \{#logging-out-and-logging-in\}
+
+`.logout()` metodunu çağırarak istediğiniz zaman kullanıcının oturumunu kapatabilirsiniz:
+
+```dart showLineNumbers
+try {
+  await Adapty().logout();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle unknown error
+}
+```
+
+Ardından `.identify()` metoduyla kullanıcıyı tekrar oturum açtırabilirsiniz.
+
+## `appAccountToken` atama (iOS) \{#assign-appaccounttoken-ios\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)), App Store işlemlerini dahili kullanıcı kimliğinizle ilişkilendirmenizi sağlayan bir **UUID**'dir.  
+StoreKit bu token'ı her işlemle birlikte kaydeder, böylece backend'iniz App Store verilerini kullanıcılarınızla eşleştirebilir.
+
+Kullanıcı başına oluşturulmuş, kararlı bir UUID kullanın ve aynı hesap için cihazlar arasında aynı UUID'yi tekrar kullanın.
+Bu sayede satın almalar ve App Store bildirimleri doğru şekilde ilişkilendirilmiş olur.
+
+Token'ı iki şekilde belirleyebilirsiniz: SDK aktivasyonu sırasında veya kullanıcıyı tanımlarken.
+
+:::important
+`appAccountToken`'ı her zaman `customerUserId` ile birlikte geçirmeniz gerekir.
+Yalnızca token'ı geçerseniz, işleme dahil edilmez.
+:::
+
+```dart showLineNumbers
+// During configuration:
+try {
+   await Adapty().activate(
+       configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+         ..withCustomerUserId(YOUR_CUSTOMER_USER_ID, iosAppAccountToken: "YOUR_APP_ACCOUNT_TOKEN")
+   );
+} catch (e) {
+   // handle the error
+}
+// Or when identifying users
+try {
+    await Adapty().identify(customerUserId, iosAppAccountToken: "YOUR_APP_ACCOUNT_TOKEN");
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+}
+```
+
+### Gizlenmiş hesap ID'lerini belirleme (Android) \{#set-obfuscated-account-ids-android\}
+
+Google Play, kullanıcı gizliliğini ve güvenliğini artırmak amacıyla belirli kullanım senaryolarında gizlenmiş hesap ID'leri gerektirir. Bu ID'ler, Google Play'in satın almaları tanımlamasına yardımcı olurken kullanıcı bilgilerini anonim tutar; bu özellikle dolandırıcılığı önleme ve analitik açısından önemlidir.
+
+Uygulamanız hassas kullanıcı verileri işliyorsa veya belirli gizlilik düzenlemelerine uymak zorundaysanız bu ID'leri belirlemeniz gerekebilir. Gizlenmiş ID'ler, Google Play'in gerçek kullanıcı tanımlayıcılarını açığa çıkarmadan satın almaları takip etmesini sağlar.
+
+```dart showLineNumbers
+// During configuration:
+try {
+   await Adapty().activate(
+       configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+         ..withCustomerUserId(YOUR_CUSTOMER_USER_ID, androidObfuscatedAccountId: "OBFUSCATED_ACCOUNT_ID")
+   );
+} catch (e) {
+   // handle the error
+}
+// Or when identifying users
+try {
+    await Adapty().identify(customerUserId, androidObfuscatedAccountId: "OBFUSCATED_ACCOUNT_ID");
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+}
+```

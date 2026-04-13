@@ -1,0 +1,411 @@
+---
+title: "Paywall olaylarını yönet"
+description: "Adapty SDK ile Unity uygulamanızda paywall olaylarını nasıl yöneteceğinizi öğrenin."
+metadataTitle: "Paywall Olaylarını Yönet | Unity SDK | Adapty Dokümanları"
+customSlug: /unity-handling-events
+displayed_sidebar: sdkunity
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+import PaywallAction from '@site/src/locales/tr/reusable/PaywallAction.md';
+
+:::important
+Bu rehber; satın alma, geri yükleme, ürün seçimi ve paywall render işlemlerine ait olay yönetimini kapsar. Ayrıca buton işlemlerini de (paywallı kapatma, bağlantı açma vb.) uygulamanız gerekir. Ayrıntılar için [buton aksiyonlarını yönetme rehberimize](unity-handle-paywall-actions) bakın.
+:::
+
+[Paywall Builder](adapty-paywall-builder) ile yapılandırılan paywall'lar, satın alma ve geri yükleme işlemleri için ek kod gerektirmez. Ancak uygulamanızın yanıt verebileceği bazı olaylar üretirler. Bu olaylar; buton tıklamaları (kapat butonları, URL'ler, ürün seçimleri vb.) ve paywall üzerinde gerçekleştirilen satın alma ile ilgili aksiyonlara dair bildirimleri kapsar. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenebilirsiniz.
+
+:::warning
+Bu rehber yalnızca Adapty SDK v3.3.0 veya üzerini gerektiren **yeni Paywall Builder paywall'ları** içindir.
+:::
+
+<SampleApp />
+
+## Olayları yönetme \{#handling-events\}
+
+Mobil uygulamanızdaki paywall ekranında gerçekleşen süreçleri kontrol etmek veya izlemek için `AdaptyPaywallsEventsListener` arayüzünü uygulayın:
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+public class PaywallEventsHandler : MonoBehaviour, AdaptyPaywallsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetPaywallsEventsListener(this);
+    }
+
+    // Implement all required interface methods below
+}
+```
+
+### Kullanıcı kaynaklı olaylar \{#user-generated-events\}
+
+#### Paywall göründü \{#paywall-appeared\}
+
+Paywall görünümü ekranda gösterildiğinde tetiklenir.
+
+:::note
+iOS'ta, kullanıcı bir paywall içindeki [web paywall butonuna](web-paywall#step-2a-add-a-web-purchase-button) dokunduğunda ve uygulama içi tarayıcıda bir web paywall açıldığında da tetiklenir.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidAppear(AdaptyUIPaywallView view) { }
+```
+
+#### Paywall kayboldu \{#paywall-disappeared\}
+
+Paywall görünümü ekrandan kapatıldığında tetiklenir.
+
+:::note
+iOS'ta, bir paywalldan uygulama içi tarayıcıda açılan [web paywall](web-paywall#step-2a-add-a-web-purchase-button) ekrandan kaybolduğunda da tetiklenir.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidDisappear(AdaptyUIPaywallView view) { }
+```
+
+#### Ürün seçimi \{#product-selection\}
+
+Kullanıcı ya da sistem tarafından satın alma için bir ürün seçildiğinde tetiklenir.
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidSelectProduct(
+    AdaptyUIPaywallView view, 
+    string productId
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+#### Satın alma başladı \{#started-purchase\}
+
+Kullanıcı satın alma sürecini başlattığında tetiklenir.
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidStartPurchase(
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Başarılı, iptal edilmiş veya beklemedeki satın alma \{#successful-canceled-or-pending-purchase\}
+
+Satın alma başarılı olursa, kullanıcı iptal ederse veya satın alma beklemede kalırsa bu metod tetiklenir. Kullanıcı iptalleri ve beklemedeki ödemeler (örn. ebeveyn onayı gerekli) `PaywallViewDidFailPurchase` yerine bu metodu tetikler.
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFinishPurchase(
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product, 
+    AdaptyPurchaseResult purchasedResult
+) { }
+```
+
+<Details>
+<summary>Olay örnekleri (Genişletmek için tıklayın)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCancelled"
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+```
+</Details>
+
+Bu durumda ekranı kapatmanızı öneririz.
+
+#### Başarısız satın alma \{#failed-purchase\}
+
+Bir hata nedeniyle satın alma başarısız olursa bu metod tetiklenir. StoreKit/Google Play Billing hataları (ödeme kısıtlamaları, geçersiz ürünler, ağ hataları), işlem doğrulama hataları ve sistem hataları buna dahildir. Kullanıcı iptallerinin iptal sonucuyla `PaywallViewDidFinishPurchase`'i, beklemedeki ödemelerin ise bu metodu tetiklemediğini unutmayın.
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFailPurchase(
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product, 
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+#### Geri yükleme başladı \{#started-restore\}
+
+Kullanıcı geri yükleme sürecini başlattığında tetiklenir:
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidStartRestore(AdaptyUIPaywallView view) { }
+```
+
+#### Başarılı geri yükleme \{#successful-restore\}
+
+Satın alma geri yüklemesi başarılı olduğunda tetiklenir:
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFinishRestore(
+    AdaptyUIPaywallView view, 
+    AdaptyProfile profile
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Kullanıcının gerekli `accessLevel`'a sahip olması durumunda ekranı kapatmanızı öneririz. Bunu nasıl kontrol edeceğinizi öğrenmek için [Abonelik durumu](unity-listen-subscription-changes) konusuna bakın.
+
+#### Başarısız geri yükleme \{#failed-restore\}
+
+Satın alma geri yüklemesi başarısız olduğunda tetiklenir:
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFailRestore(
+    AdaptyUIPaywallView view, 
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### Web ödeme navigasyonu tamamlandı \{#finished-web-payment-navigation\}
+
+Satın alma için bir [web paywall](web-paywall) açılmaya çalışıldıktan sonra (başarılı ya da başarısız), bu metod tetiklenir:
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFinishWebPaymentNavigation(
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product, 
+    AdaptyError error
+) { }
+```
+
+**Parametreler:**
+- `product`: Web paywallın açıldığı (veya açılmaya çalışıldığı) ürün
+- `error`: Web paywall başarıyla açıldıysa `null`, başarısız olduysa bir `AdaptyError`
+
+<Details>
+<summary>Olay örnekleri (Genişletmek için tıklayın)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "wrong_param",
+    "message": "Current method is not available for this product",
+    "details": {
+      "underlyingError": "Product not configured for web purchases"
+    }
+  }
+}
+```
+</Details>
+
+### Veri çekme ve render işlemleri \{#data-fetching-and-rendering\}
+
+#### Ürün yükleme hataları \{#product-loading-errors\}
+
+Ürün yükleme başarısız olduğunda tetiklenir ve `AdaptyError` döndürür. Başlatma sırasında ürün dizisini geçmediyseniz AdaptyUI gerekli nesneleri sunucudan kendi alır. Bu işlem başarısız olabilir; AdaptyUI hatayı bu metodu çağırarak bildirir:
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFailLoadingProducts(
+    AdaptyUIPaywallView view, 
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+#### Render hataları \{#rendering-errors\}
+
+Arayüz render sırasında bir hata oluştuğunda tetiklenir ve `AdaptyError` döndürür:
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFailRendering(
+    AdaptyUIPaywallView view, 
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+Normal koşullarda bu tür hatalar yaşanmamalıdır; böyle bir hatayla karşılaşırsanız lütfen bize bildirin.

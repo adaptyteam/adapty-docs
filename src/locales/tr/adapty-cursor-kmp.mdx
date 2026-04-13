@@ -1,0 +1,273 @@
+---
+title: "Yapay zeka desteğiyle Kotlin Multiplatform uygulamanıza Adapty entegrasyonu"
+description: "Cursor, Context7, ChatGPT, Claude veya diğer yapay zeka araçlarını kullanarak Kotlin Multiplatform uygulamanıza Adapty entegre etmek için adım adım rehber."
+metadataTitle: "Kotlin Multiplatform için Yapay Zeka Desteğiyle Adapty Entegrasyonu | Adapty Dokümanları"
+displayed_sidebar: sdkkmp
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+Bu rehber, bir LLM yardımıyla Kotlin Multiplatform uygulamanıza Adapty entegre etmenizi sağlar. Adapty kontrol panelini hazırlamakla başlayıp her uygulama aşamasında LLM'inize ilgili doküman bağlantılarını göndererek ilerleyeceksiniz. Sonunda, yapay zeka araçlarınızı Adapty dokümantasyonuyla kullanmak için en iyi uygulamaları bulacaksınız.
+
+:::tip
+Başlamak için bu sayfanın tamamını Markdown olarak kopyalayıp LLM'inize yapıştırın — sayfanın üstündeki **Copy for LLM** butonuna tıklayın veya [.md sürümünü](https://adapty.io/docs/adapty-cursor-kmp.md) açın. LLM, her aşamada sizi yönlendirmek için rehberdeki bağlantıları ve kontrol noktalarını kullanacak.
+:::
+
+## Başlamadan önce: kontrol paneli kurulumu \{#before-you-start-dashboard-setup\}
+
+Adapty, herhangi bir SDK kodu yazmadan önce kontrol panelinde bazı ayarların yapılmasını gerektirir. Bunu bir LLM becerisiyle etkileşimli olarak ya da Kontrol Paneli üzerinden manuel olarak yapabilirsiniz.
+
+### Beceri yaklaşımı (önerilen) \{#skill-approach-recommended\}
+
+Adapty CLI becerisi, LLM'inizin uygulamanızı, ürünlerinizi, access level'larınızı, paywalllerinizi ve placementlarınızı doğrudan ayarlamasına olanak tanır — her adım için Kontrol Panelini açmanız gerekmez. Yalnızca Kontrol Panelinde [mağazalarınızı bağlamanız](integrate-payments) yeterli.
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+Beceri eklendikten sonra ajanınızda `/adapty-cli` komutunu çalıştırın. Her adımda sizi yönlendirecek ve mağazalarınızı bağlamak için Kontrol Panelini ne zaman açmanız gerektiğini de belirtecek.
+
+### Kontrol paneli yaklaşımı \{#dashboard-approach\}
+
+Her şeyi manuel olarak yapılandırmayı tercih ediyorsanız, kod yazmadan önce bunlara ihtiyacınız var. LLM'iniz kontrol paneli değerlerini sizin için arayamaz — bunları kendiniz sağlamanız gerekir.
+
+1. **Uygulama mağazalarınızı bağlayın**: Adapty Kontrol Panelinde **App settings → General** bölümüne gidin. KMP uygulamanız her iki platformu da hedefliyorsa hem App Store hem de Google Play'i bağlayın. Bu, satın almaların çalışması için zorunludur.
+   [Uygulama mağazalarını bağlayın](integrate-payments)
+
+2. **Public SDK anahtarınızı kopyalayın**: Adapty Kontrol Panelinde **App settings → General** bölümüne gidin, ardından **API keys** bölümünü bulun. Kodda bu, Adapty yapılandırma oluşturucusuna geçirdiğiniz dizedir.
+
+3. **En az bir ürün oluşturun**: Adapty Kontrol Panelinde **Products** sayfasına gidin. Ürünlere kodda doğrudan başvurmazsınız — Adapty bunları paywalllar aracılığıyla sunar.
+   [Ürün ekleyin](quickstart-products)
+
+4. **Bir paywall ve placement oluşturun**: Adapty Kontrol Panelinde **Paywalls** sayfasında bir paywall oluşturun, ardından **Placements** sayfasında bir placement'a atayın. Kodda, placement ID, `Adapty.getPaywall("YOUR_PLACEMENT_ID")` çağrısına geçirdiğiniz dizedir.
+   [Paywall oluşturun](quickstart-paywalls)
+
+5. **Access level'ları ayarlayın**: Adapty Kontrol Panelinde **Products** sayfasında her ürün için yapılandırın. Kodda `profile.accessLevels["premium"]?.isActive` içinde kontrol edilen dizedir. Varsayılan `premium` access level çoğu uygulama için yeterlidir. Ücretli kullanıcılar ürüne göre farklı özelliklere erişiyorsa (örneğin `basic` plan ve `pro` plan), kodlamaya başlamadan önce [ek access level'lar oluşturun](assigning-access-level-to-a-product).
+
+:::tip
+Bu beşine sahip olunca kod yazmaya hazırsınız. LLM'inize şunu söyleyin: "Public SDK anahtarım X, placement ID'm Y" — böylece doğru başlatma ve paywall çekme kodu üretebilir.
+:::
+
+### Hazır olduğunuzda yapın \{#set-up-when-ready\}
+
+Bunlar kod yazmaya başlamak için zorunlu değil, ancak entegrasyon olgunlaştıkça ihtiyaç duyacaksınız:
+
+- **A/B testleri**: **Placements** sayfasında yapılandırın. Kod değişikliği gerekmez.
+  [A/B testleri](ab-tests)
+- **Ek paywalllar ve placementlar**: Farklı placement ID'leriyle daha fazla `getPaywall` çağrısı ekleyin.
+- **Analitik entegrasyonları**: **Integrations** sayfasında yapılandırın. Kurulum entegrasyona göre değişir. Bkz. [analitik entegrasyonlar](analytics-integration) ve [attribution entegrasyonları](attribution-integration).
+
+## LLM'inize Adapty dokümanları gönderin \{#feed-adapty-docs-to-your-llm\}
+
+### Context7 kullanın (önerilen) \{#use-context7-recommended\}
+
+[Context7](https://context7.com), LLM'inize güncel Adapty dokümantasyonuna doğrudan erişim sağlayan bir MCP sunucusudur. LLM'iniz, sorduğunuz şeye göre doğru dokümanları otomatik olarak çeker — manuel URL yapıştırmaya gerek yoktur.
+
+Context7, **Cursor**, **Claude Code**, **Windsurf** ve diğer MCP uyumlu araçlarla çalışır. Kurmak için şunu çalıştırın:
+
+```
+npx ctx7 setup
+```
+
+Bu, düzenleyicinizi algılar ve Context7 sunucusunu yapılandırır. Manuel kurulum için [Context7 GitHub deposuna](https://github.com/upstash/context7) bakın.
+
+Yapılandırıldıktan sonra, promptlarınızda Adapty kitaplığına başvurun:
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the Kotlin Multiplatform SDK
+```
+
+:::warning
+Context7, doküman bağlantılarını manuel olarak yapıştırma ihtiyacını ortadan kaldırsa da uygulama sırası önemlidir. Her şeyin doğru çalıştığından emin olmak için aşağıdaki [uygulama adım adım rehberini](#implementation-walkthrough) sırayla takip edin.
+:::
+
+### Düz metin dokümanları kullanın \{#use-plain-text-docs\}
+
+Herhangi bir Adapty dokümanına düz metin Markdown olarak erişebilirsiniz. URL'nin sonuna `.md` ekleyin ya da makale başlığının altındaki **Copy for LLM** butonuna tıklayın. Örneğin: [adapty-cursor-kmp.md](https://adapty.io/docs/adapty-cursor-kmp.md).
+
+Aşağıdaki [uygulama adım adım rehberindeki](#implementation-walkthrough) her aşama, yapıştırmak için `.md` bağlantıları içeren bir "LLM'inize gönderin" bloğu içerir.
+
+Daha fazla dokümana aynı anda erişmek için aşağıdaki [dizin dosyaları ve platforma özel alt kümeler](#plain-text-doc-index-files) bölümüne bakın.
+
+## Uygulama adım adım rehberi \{#implementation-walkthrough\}
+
+Bu rehberin geri kalanı, Adapty entegrasyonunu uygulama sırasıyla ele alır. Her aşamada LLM'inize gönderilecek dokümanlar, tamamlandığında görmeniz gerekenler ve yaygın sorunlar yer alır.
+
+### Entegrasyonunuzu planlayın \{#plan-your-integration\}
+
+Koda geçmeden önce LLM'inizden projenizi analiz etmesini ve bir uygulama planı oluşturmasını isteyin. Yapay zeka aracınız bir planlama modunu destekliyorsa (Cursor veya Claude Code'un plan modu gibi), LLM'in herhangi bir kod yazmadan önce hem proje yapınızı hem de Adapty dokümanlarını okuyabilmesi için bunu kullanın.
+
+LLM'inize satın almalar için hangi yaklaşımı kullandığınızı söyleyin — bu, takip etmesi gereken rehberleri etkiler:
+
+- [**Adapty Paywall Builder**](adapty-paywall-builder): Paywallları Adapty'nin kodsuz oluşturucusunda oluşturursunuz ve SDK bunları otomatik olarak işler.
+- [**Manuel oluşturulan paywalllar**](kmp-making-purchases): Kendi paywall arayüzünüzü kodda oluşturursunuz ancak ürünleri almak ve satın almaları işlemek için yine de Adapty kullanırsınız.
+- [**Gözlemci modu**](observer-vs-full-mode): Mevcut satın alma altyapınızı korur ve Adapty'yi yalnızca analitik ve entegrasyonlar için kullanırsınız.
+
+Hangisini seçeceğinizden emin değil misiniz? [Hızlı başlangıçtaki karşılaştırma tablosuna](kmp-quickstart-paywalls) bakın.
+
+### SDK'yı yükleyin ve yapılandırın \{#install-and-configure-the-sdk\}
+
+Adapty SDK bağımlılığını Gradle aracılığıyla ekleyin ve Public SDK anahtarınızla etkinleştirin. Bu temeldir — geri kalan hiçbir şey bunu olmadan çalışmaz.
+
+**Rehber:** [Adapty SDK'yı yükle ve yapılandır](sdk-installation-kotlin-multiplatform)
+
+LLM'inize gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/sdk-installation-kotlin-multiplatform.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Uygulama derlenir ve çalışır. Logcat (Android) veya Xcode konsolu (iOS) Adapty etkinleştirme günlüğünü gösterir.
+- **Dikkat:** "Public API key is missing" → yer tutucuyu App settings'ten aldığınız gerçek anahtarla değiştirdiğinizi kontrol edin.
+:::
+
+### Paywallları gösterin ve satın almaları yönetin \{#show-paywalls-and-handle-purchases\}
+
+Placement ID ile bir paywall çekin, görüntüleyin ve satın alma olaylarını yönetin. İhtiyacınız olan rehberler, satın almaları nasıl yönettiğinize bağlıdır.
+
+Her satın almayı ilerlerken sandbox'ta test edin — sona bırakmayın. Kurulum talimatları için [Sandbox'ta satın almaları test edin](test-purchases-in-sandbox) bölümüne bakın.
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**Rehberler:**
+- [Paywallları kullanarak satın almaları etkinleştirin (hızlı başlangıç)](kmp-quickstart-paywalls)
+- [Paywall Builder paywalllarını ve yapılandırmalarını çekin](kmp-get-pb-paywalls)
+- [Paywallları görüntüleyin](kmp-present-paywalls)
+- [Paywall olaylarını yönetin](kmp-handling-events)
+- [Buton eylemlerine yanıt verin](kmp-handle-paywall-actions)
+
+LLM'inize gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/kmp-quickstart-paywalls.md
+- https://adapty.io/docs/kmp-get-pb-paywalls.md
+- https://adapty.io/docs/kmp-present-paywalls.md
+- https://adapty.io/docs/kmp-handling-events.md
+- https://adapty.io/docs/kmp-handle-paywall-actions.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Paywall, yapılandırdığınız ürünlerle görünür. Bir ürüne dokunmak sandbox satın alma diyalogunu tetikler.
+- **Dikkat:** Boş paywall veya `getPaywall` hatası → placement ID'nin kontrol paneliyle tam olarak eşleştiğini ve placement'a bir kitle atandığını doğrulayın.
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Manuel paywalllar">
+
+**Rehberler:**
+- [Özel paywallınızda satın almaları etkinleştirin (hızlı başlangıç)](kmp-quickstart-manual)
+- [Paywallları ve ürünleri çekin](fetch-paywalls-and-products-kmp)
+- [Remote config ile tasarlanan paywallı işleyin](present-remote-config-paywalls-kmp)
+- [Satın alma yapın](kmp-making-purchases)
+- [Satın almaları geri yükleyin](kmp-restore-purchase)
+
+LLM'inize gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/kmp-quickstart-manual.md
+- https://adapty.io/docs/fetch-paywalls-and-products-kmp.md
+- https://adapty.io/docs/present-remote-config-paywalls-kmp.md
+- https://adapty.io/docs/kmp-making-purchases.md
+- https://adapty.io/docs/kmp-restore-purchase.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Özel paywallınız Adapty'den çekilen ürünleri gösterir. Bir ürüne dokunmak sandbox satın alma diyalogunu tetikler.
+- **Dikkat:** Boş ürünler dizisi → paywalla kontrol panelinde ürün atandığını ve placement'ın bir kitleye sahip olduğunu doğrulayın.
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Gözlemci modu">
+
+**Rehberler:**
+- [Gözlemci moduna genel bakış](observer-vs-full-mode)
+- [Gözlemci modunu uygulayın](implement-observer-mode-kmp)
+- [Gözlemci modunda işlemleri bildirin](report-transactions-observer-mode-kmp)
+
+LLM'inize gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/observer-vs-full-mode.md
+- https://adapty.io/docs/implement-observer-mode-kmp.md
+- https://adapty.io/docs/report-transactions-observer-mode-kmp.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Mevcut satın alma akışınızı kullanarak sandbox'ta satın alma yaptıktan sonra işlem Adapty kontrol panelinin **Event Feed** bölümünde görünür.
+- **Dikkat:** Hiç olay yok → işlemleri Adapty'ye bildirdiğinizi ve her iki mağaza için sunucu bildirimlerinin yapılandırıldığını doğrulayın.
+:::
+
+</TabItem>
+
+</Tabs>
+
+### Abonelik durumunu kontrol edin \{#check-subscription-status\}
+
+Satın alma sonrasında premium içeriği kısıtlamak için kullanıcı profilinde aktif bir access level kontrol edin.
+
+**Rehber:** [Abonelik durumunu kontrol et](kmp-check-subscription-status)
+
+LLM'inize gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/kmp-check-subscription-status.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Sandbox satın almasının ardından `profile.accessLevels["premium"]?.isActive` `true` döndürür.
+- **Dikkat:** Satın alma sonrası `accessLevels` boş → ürünün kontrol panelinde bir access level atandığını kontrol edin.
+:::
+
+### Kullanıcıları tanımlayın \{#identify-users\}
+
+Satın almaların cihazlar arasında kalıcı olması için uygulama kullanıcı hesaplarınızı Adapty profillerine bağlayın.
+
+:::important
+Uygulamanızın kimlik doğrulaması yoksa bu adımı atlayın.
+:::
+
+**Rehber:** [Kullanıcıları tanımla](kmp-quickstart-identify)
+
+LLM'inize gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/kmp-quickstart-identify.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** `Adapty.identify("your-user-id")` çağrıldıktan sonra kontrol panelinin **Profiles** bölümü özel kullanıcı ID'nizi gösterir.
+- **Dikkat:** Anonim profil attribution'ını önlemek için `identify`'ı etkinleştirmeden sonra ancak paywall çekmeden önce çağırın.
+:::
+
+### Yayına hazırlanın \{#prepare-for-release\}
+
+Entegrasyon sandbox'ta çalışır hale gelince, her şeyin üretime hazır olduğundan emin olmak için yayın kontrol listesini gözden geçirin.
+
+**Rehber:** [Yayın kontrol listesi](release-checklist)
+
+LLM'inize gönderin:
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/release-checklist.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Tüm kontrol listesi maddeleri onaylandı: mağaza bağlantıları, sunucu bildirimleri, satın alma akışı, access level kontrolleri ve gizlilik gereksinimleri.
+- **Dikkat:** Eksik sunucu bildirimleri → **App settings → iOS SDK** bölümünde App Store Server Notifications'ı ve **App settings → Android SDK** bölümünde Google Play Real-Time Developer Notifications'ı yapılandırın.
+:::
+
+## Düz metin doküman dizin dosyaları \{#plain-text-doc-index-files\}
+
+LLM'inize tek tek sayfaların ötesinde daha geniş bir bağlam sağlamanız gerekiyorsa, tüm Adapty dokümantasyonunu listeleyen veya birleştiren dizin dosyaları sunuyoruz:
+
+- [`llms.txt`](https://adapty.io/docs/llms.txt): Tüm sayfaları `.md` bağlantılarıyla listeler. Web sitelerini LLM'lere erişilebilir kılmak için [gelişmekte olan bir standart](https://llmstxt.org/). Bazı yapay zeka ajanlarında (ör. ChatGPT) `llms.txt`'i indirip sohbete dosya olarak yüklemeniz gerekebilir.
+- [`llms-full.txt`](https://adapty.io/docs/llms-full.txt): Tüm Adapty dokümantasyon sitesi tek bir dosyada birleştirilmiş hali. Çok büyük — yalnızca tam resme ihtiyaç duyduğunuzda kullanın.
+- Kotlin Multiplatform'a özel [`kmp-llms.txt`](https://adapty.io/docs/kmp-llms.txt) ve [`kmp-llms-full.txt`](https://adapty.io/docs/kmp-llms-full.txt): Tam siteye kıyasla daha az token harcayan platforma özel alt kümeler.

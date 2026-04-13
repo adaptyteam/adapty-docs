@@ -1,0 +1,372 @@
+---
+title: "iOS SDK'da paywall kullanarak satın alımları etkinleştirme"
+description: "Uygulama içi abonelik yönetimi için Adapty'yi kurmanın hızlı başlangıç rehberi."
+metadataTitle: "Adapty Hızlı Başlangıç Rehberi | Adapty Dokümanları"
+keywords: ['paywalls ios', 'sdk ios', 'paywall', 'paywall builder', 'getPaywall']
+rank: 90
+---
+
+import PaywallsIntro from '@site/src/locales/tr/reusable/PaywallsIntro.md';
+
+Uygulama içi satın alımları etkinleştirmek için üç temel kavramı anlamanız gerekir:
+
+- [**Ürünler**](product) – kullanıcıların satın alabildiği her şey (abonelikler, consumable'lar, süresiz erişim)
+- [**Paywalllar**](paywalls), hangi ürünlerin sunulacağını tanımlayan yapılandırmalardır. Adapty'de ürünleri yalnızca paywalllar aracılığıyla alabilirsiniz; ancak bu tasarım, uygulama kodunuza dokunmadan teklifleri, fiyatlandırmayı ve ürün kombinasyonlarını değiştirmenize olanak tanır.
+- [**Placementlar**](placements) – uygulamanızda paywallları nerede ve ne zaman gösterdiğiniz (`main`, `onboarding`, `settings` gibi). Kontrol panelinde placementlar için paywalllar ayarlarsınız, ardından kodunuzda placement ID'sine göre bunları talep edersiniz. Bu sayede A/B testleri çalıştırmak ve farklı kullanıcılara farklı paywalllar göstermek kolaylaşır.
+
+Adapty, uygulamanızda satın alımları etkinleştirmeniz için üç yol sunar. Uygulama gereksinimlerinize göre birini seçin:
+
+| Uygulama               | Karmaşıklık | Ne zaman kullanılır                                                                                                                                                                                                                        |
+|------------------------|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty Paywall Builder | ✅ Kolay     | [No-code builder'da eksiksiz, satın almaya hazır bir paywall oluşturursunuz](quickstart-paywalls). Adapty bunu otomatik olarak render eder ve tüm karmaşık satın alma akışını, makbuz doğrulamasını ve abonelik yönetimini arka planda halleder. |
+| Manuel oluşturulan paywalllar | 🟡 Orta  | Paywall arayüzünüzü uygulama kodunuzda kendiniz oluşturursunuz, ancak ürün tekliflerinde esnekliği korumak için Adapty'den paywall nesnesini alırsınız. [Rehbere](ios-quickstart-manual) bakın.                                             |
+| Gözlemci modu              | 🔴 Zor    | Kendi satın alma altyapınız zaten vardır ve kullanmaya devam etmek istiyorsunuzdur. Gözlemci modunun Adapty'deki sınırlamalarına dikkat edin. [Makaleye](observer-vs-full-mode) bakın.                                                     |
+
+:::important
+**Aşağıdaki adımlar, Adapty paywall builder'ında oluşturulan bir paywall'un nasıl uygulanacağını göstermektedir.**
+
+Paywall builder'ı kullanmak istemiyorsanız, [manuel oluşturulan paywallarda satın alımları yönetme rehberine](making-purchases) bakın.
+:::
+
+Adapty paywall builder'ında oluşturulan bir paywall'u görüntülemek için uygulama kodunuzda yalnızca şunları yapmanız gerekir:
+
+1. **Paywall'u alın**: Paywall'u Adapty'den alın.
+2. **Paywall'u gösterin, satın alımları Adapty halleder**: Aldığınız paywall container'ını uygulamanızda gösterin.
+3. **Buton eylemlerini yönetin**: Kullanıcıların paywall ile etkileşimlerini uygulamanızın yanıtlarıyla ilişkilendirin. Örneğin, kullanıcılar butonlara tıkladığında bağlantılar açın veya paywall'u kapatın.
+
+## Başlamadan önce \{#before-you-start\}
+
+Başlamadan önce şu adımları tamamlayın:
+
+1. Adapty Kontrol Paneli'nde [uygulamanızı App Store'a bağlayın](initial_ios).
+2. Adapty'de [ürünlerinizi oluşturun](create-product).
+3. [Bir paywall oluşturun ve ürünler ekleyin](create-paywall).
+4. [Bir placement oluşturun ve paywall'unuzu ekleyin](create-placement).
+5. Uygulama kodunuza [Adapty SDK'yı yükleyin ve etkinleştirin](sdk-installation-ios).
+
+:::tip
+Bu adımları tamamlamanın en hızlı yolu [hızlı başlangıç rehberini](quickstart) takip etmek ya da [Developer CLI](developer-cli-quickstart) kullanarak paywalllar ve placementlar oluşturmaktır.
+:::
+
+## 1. Paywall builder'da oluşturulan paywall'u alın \{#1-get-the-paywall-created-in-the-paywall-builder\}
+
+Paywalllarınız, kontrol panelinde yapılandırılan placementlarla ilişkilendirilir. Placementlar, farklı kitleler için farklı paywalllar çalıştırmanıza veya [A/B testleri](ab-tests) yapmanıza olanak tanır.
+
+Adapty paywall builder'ında oluşturulan bir paywall'u almak için şunları yapmanız gerekir:
+
+1. `getPaywall` metodunu kullanarak [placement](placements) ID'sine göre `paywall` nesnesini alın ve bunun builder'da oluşturulmuş bir paywall olup olmadığını kontrol edin.
+
+2. `getPaywallConfiguration` metodunu kullanarak paywall görünüm yapılandırmasını alın. Görünüm yapılandırması, paywall'u görüntülemek için gereken arayüz öğelerini ve stil bilgilerini içerir.
+
+:::important
+Görünüm yapılandırmasını alabilmek için Paywall Builder'daki **Show on device** geçişini açık konuma getirmeniz gerekir. Aksi takdirde boş bir görünüm yapılandırması alırsınız ve paywall gösterilmez.
+:::
+
+
+```swift
+
+func loadPaywall() async {
+let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+
+    guard paywall.hasViewConfiguration else {
+        print("Paywall doesn't have view configuration")
+        return
+    }
+    
+    paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
+}
+```
+
+## 2. Paywall'u görüntüleyin \{#2-display-the-paywall\}
+
+Artık paywall yapılandırmasına sahip olduğunuzda, paywall'unuzu görüntülemek için birkaç satır kod eklemeniz yeterlidir.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+
+SwiftUI'da paywall görüntülenirken olayları da yönetmeniz gerekir. Bazıları isteğe bağlıdır; ancak `didFailPurchase`, `didFinishRestore`, `didFailRestore` ve `didFailRendering` zorunludur. Test sırasında bu hataları kaydetmek için aşağıdaki kod parçasını olduğu gibi kopyalayabilirsiniz.
+
+:::tip
+`didFinishPurchase`'i yönetmek zorunlu değildir; ancak başarılı bir satın alımdan sonra işlem yapmak istediğinizde kullanışlıdır. Bu callback'i uygulamazsanız paywall otomatik olarak kapanır.
+:::
+
+```swift
+.paywall(
+    isPresented: $paywallPresented,
+    paywallConfiguration: paywallConfiguration,
+    didFailPurchase: { product, error in
+        print("Purchase failed: \(error)")
+    },
+    didFinishRestore: { profile in
+        print("Restore finished successfully")
+    },
+    didFailRestore: { error in
+        print("Restore failed: \(error)")
+    },
+    didFailRendering: { error in
+        paywallPresented = false
+        print("Rendering failed: \(error)")
+    },
+    showAlertItem: $alertItem
+)
+```
+</TabItem>
+
+<TabItem value="uikit" label="UIKit" default>
+
+```swift
+
+func presentPaywall(with config: AdaptyUI.PaywallConfiguration) {
+    let paywallController = AdaptyUI.paywallController(
+        with: config,
+        delegate: self
+    )
+    
+    present(paywallController, animated: true)
+}
+
+```
+</TabItem>
+</Tabs>
+
+:::info
+Paywall'un nasıl görüntüleneceğine dair daha fazla ayrıntı için [rehberimize](ios-present-paywalls) bakın.
+:::
+
+## 3. Buton eylemlerini yönetin \{#3-handle-button-actions\}
+
+Kullanıcılar paywall'daki butonlara tıkladığında iOS SDK; satın alımları, geri yüklemeyi, paywall'u kapatmayı ve bağlantı açmayı otomatik olarak yönetir.
+
+Ancak diğer butonların özel veya önceden tanımlanmış ID'leri vardır ve kodunuzda eylemlerin yönetilmesini gerektirir. Ya da varsayılan davranışlarını geçersiz kılmak isteyebilirsiniz.
+
+Örneğin, kapat butonunun varsayılan davranışı şu şekildedir. Bunu koda eklemeniz gerekmez; ancak burada, gerektiğinde nasıl yapıldığını görebilirsiniz.
+
+:::tip
+Buton [eylemlerini](handle-paywall-actions) ve [olaylarını](ios-handling-events) nasıl yöneteceğinize dair rehberlerimizi okuyun.
+:::
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+
+```swift
+
+didPerformAction: { action in
+    switch action {
+        case let .close:
+            paywallPresented = false // default behavior
+        default:
+            break
+    }
+}
+```
+</TabItem>
+
+<TabItem value="uikit" label="UIKit" default>
+
+```swift
+func paywallController(_ controller: AdaptyPaywallController,
+                       didPerform action: AdaptyUI.Action) {
+    switch action {
+        case let .close:
+            controller.dismiss(animated: true) // default behavior
+        break
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## Sonraki adımlar \{#next-steps\}
+
+<SupportForum />
+
+Paywall'unuz uygulamada görüntülenmeye hazır. Paywall üzerinden test satın alımı tamamlayabildiğinizden emin olmak için [satın alımlarınızı sandbox modunda test edin](test-purchases-in-sandbox).
+
+Şimdi, doğru kullanıcılara paywall gösterdiğinizden veya ücretli özelliklere erişim verdiğinizden emin olmak için [kullanıcıların access level'larını kontrol etmeniz](ios-check-subscription-status) gerekir.
+
+## Tam örnek \{#full-example\}
+
+Bu rehberdeki tüm adımların uygulamanıza birlikte nasıl entegre edileceği aşağıda gösterilmektedir.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+
+```swift
+
+struct ContentView: View {
+  @State private var paywallPresented = false
+  @State private var alertItem: AlertItem?
+  @State private var paywallConfiguration: AdaptyUI.PaywallConfiguration?
+  @State private var isLoading = false
+  @State private var hasInitialized = false
+  
+  var body: some View {
+    VStack {
+      if isLoading {
+        ProgressView("Loading...")
+      } else {
+        Text("Your App Content")
+      }
+    }
+    .task {
+      guard !hasInitialized else { return }
+      await initializePaywall()
+      hasInitialized = true
+    }
+    .paywall(
+      isPresented: $paywallPresented,
+      configuration: paywallConfiguration,
+      didPerformAction: { action in
+        switch action.type {
+          case let .close:
+              paywallPresented = false
+          default:
+              break
+        }
+      },
+      didFailPurchase: { product, error in
+        print("Purchase failed: \(error)")
+      },
+      didFinishRestore: { profile in
+        print("Restore finished successfully")
+      },
+      didFailRestore: { error in
+        print("Restore failed: \(error)")
+      },
+      didFailRendering: { error in
+        print("Rendering failed: \(error)")
+      },
+      showAlertItem: $alertItem
+    )
+  }
+  
+  private func initializePaywall() async {
+    isLoading = true
+    defer { isLoading = false }
+    
+    await loadPaywall()
+    paywallPresented = true
+    }
+  }
+  
+  private func loadPaywall() async {
+    do {
+      let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+      guard paywall.hasViewConfiguration else {
+        print("Paywall doesn't have view configuration")
+        return
+      }
+      paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
+    } catch {
+      print("Failed to load paywall: \(error)")
+    }
+  }
+}
+
+```
+</TabItem>
+
+<TabItem value="uikit" label="UIKit" default>
+
+```swift
+
+class ViewController: UIViewController {
+  private var paywallConfiguration: AdaptyUI.PaywallConfiguration?
+  
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    
+    Task {
+      await initializePaywall()
+    }
+  }
+  
+  private func initializePaywall() async {
+    do {
+      paywallConfiguration = try await loadPaywall()
+            
+      if let paywallConfiguration {
+        await MainActor.run {
+          presentPaywall(with: paywallConfiguration)
+        }
+      }
+    } catch {
+      print("Error initializing paywall: \(error)")
+    }
+  }
+  
+  private func loadPaywall() async throws -> AdaptyUI.PaywallConfiguration? {
+    let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    
+    guard paywall.hasViewConfiguration else {
+      print("Paywall doesn't have view configuration")
+      return nil
+    }
+    
+    return try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
+  }
+  
+  private func presentPaywall(with config: AdaptyUI.PaywallConfiguration) {
+    let paywallController = AdaptyUI.paywallController(with: config, delegate: self)
+    present(paywallController, animated: true)
+  }
+}
+
+// MARK: - AdaptyPaywallControllerDelegate
+
+extension ViewController: AdaptyPaywallControllerDelegate {
+  func paywallController(_ controller: AdaptyPaywallController,
+                       didPerform action: AdaptyUI.Action) {
+    switch action {
+        case let .close:
+            controller.dismiss(animated: true)
+        break
+    }
+ }
+  
+  func paywallController(_ controller: AdaptyUI.PaywallController,
+                         didFailPurchase product: AdaptyPaywallProduct,
+                         error: AdaptyError) {
+    print("Purchase failed for \(product.vendorProductId): \(error)")
+    
+    guard error.adaptyErrorCode != .paymentCancelled else {
+      return // Don't show alert for user cancellation
+    }
+    
+    let message = switch error.adaptyErrorCode {
+      case .paymentNotAllowed:
+        "Purchases are not allowed on this device."
+      default:
+        "Purchase failed. Please try again."
+    }
+    
+    let alert = UIAlertController(title: "Purchase Error", message: message, preferredStyle: .alert)
+    let okAction = UIAlertAction(title: "OK", style: .default) { _ in }
+    alert.addAction(okAction)
+    present(alert, animated: true)
+  }
+  
+  func paywallController(_ controller: AdaptyUI.PaywallController,
+                         didFinishRestore profile: AdaptyProfile) {
+    print("Restore finished successfully")
+    controller.dismiss(animated: true)
+  }
+  
+  func paywallController(_ controller: AdaptyUI.PaywallController,
+                         didFailRestore error: AdaptyError) {
+    print("Restore failed: \(error)")
+  }
+  
+  func paywallController(_ controller: AdaptyUI.PaywallController,
+                         didFailRendering error: AdaptyError) {
+    print("Rendering failed: \(error)")
+    controller.dismiss(animated: true)
+  }
+}
+
+```
+</TabItem>
+</Tabs>

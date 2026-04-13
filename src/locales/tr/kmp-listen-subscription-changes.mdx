@@ -1,0 +1,81 @@
+---
+title: "Kotlin Multiplatform SDK'da abonelik durumunu kontrol etme"
+description: "Kotlin Multiplatform uygulamanızda müşteri tutundurma oranını artırmak için Adapty'de kullanıcı abonelik durumunu takip edin ve yönetin."
+metadataTitle: "Abonelik Durumunu Anlama | Adapty Dokümanları"
+keywords: ['getProfile']
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+
+Adapty ile abonelik durumunu takip etmek oldukça kolaydır. Ürün ID'lerini kodunuza elle eklemenize gerek yok; bunun yerine aktif bir [access level](access-level) kontrol ederek kullanıcının abonelik durumunu zahmetsizce doğrulayabilirsiniz.
+
+Abonelik durumunu kontrol etmeye başlamadan önce [Gerçek Zamanlı Geliştirici Bildirimlerini (RTDN)](enable-real-time-developer-notifications-rtdn) ayarlayın.
+
+## Access level ve AdaptyProfile nesnesi \{#access-level-and-the-adaptyprofile-object\}
+
+Access level'lar, [AdaptyProfile](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-profile/) nesnesinin özellikleridir. Profili uygulamanız başladığında, örneğin [bir kullanıcıyı tanımladığınızda](android-identifying-users#setting-customer-user-id-on-configuration), almanızı ve değişiklik olduğunda güncellemenizi öneririz. Böylece profil nesnesini defalarca istek göndermeden kullanabilirsiniz.
+
+Profil güncellemelerinden haberdar olmak için aşağıdaki [Abonelik durumu güncellemelerini dinleme](android-listen-subscription-changes) bölümünde anlatıldığı şekilde profil değişikliklerini dinleyin.
+
+<SampleApp />
+
+## Sunucudan access level alma \{#retrieving-the-access-level-from-the-server\}
+
+Sunucudan access level almak için `.getProfile()` metodunu kullanın:
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+
+Adapty.getProfile().onSuccess { profile ->
+    // check the access
+}.onError { error ->
+    // handle the error
+}
+```
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama |
+| --------- |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Profil   | <p>Bir [AdaptyProfile](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-profile/) nesnesi. Genellikle kullanıcının uygulamaya premium erişimi olup olmadığını belirlemek için yalnızca profilin access level durumunu kontrol etmeniz yeterlidir.</p><p></p><p>`.getProfile` metodu, her zaman API'yi sorgulamaya çalıştığından en güncel sonucu döndürür. Herhangi bir nedenle (örneğin internet bağlantısı olmaması) Adapty SDK sunucudan bilgi alamazsa, önbellekteki veriler döndürülür. Adapty SDK'nın `AdaptyProfile` önbelleğini düzenli aralıklarla güncelleyerek bilgileri mümkün olduğunca güncel tuttuğunu da belirtmek gerekir.</p> |
+
+`.getProfile()` metodu, access level durumunu alabileceğiniz kullanıcı profilini sağlar. Uygulama başına birden fazla access level tanımlayabilirsiniz. Örneğin bir gazete uygulamanız varsa ve farklı konulara abonelik satıyorsanız "sports" ve "science" gibi access level'lar oluşturabilirsiniz. Ancak çoğu durumda yalnızca bir access level'a ihtiyaç duyarsınız; bu durumda varsayılan "premium" access level'ı kullanabilirsiniz.
+
+Varsayılan "premium" access level'ını kontrol etmeye yönelik bir örnek:
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+
+Adapty.getProfile().onSuccess { profile ->
+    if (profile.accessLevels["premium"]?.isActive == true) {
+        // grant access to premium features
+    }
+}.onError { error ->
+    // handle the error
+}
+```
+
+### Abonelik durumu güncellemelerini dinleme \{#listening-for-subscription-status-updates\}
+
+Kullanıcının aboneliği her değiştiğinde Adapty bir event tetikler.
+
+Adapty'den mesaj almak için birkaç ek yapılandırma yapmanız gerekir:
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.OnProfileUpdatedListener
+
+Adapty.setOnProfileUpdatedListener { profile ->
+    // handle any changes to subscription state
+}
+```
+
+Adapty, uygulama başlangıcında da bir event tetikler. Bu durumda önbellekteki abonelik durumu iletilir.
+
+### Abonelik durumu önbelleği \{#subscription-status-cache\}
+
+Adapty SDK'daki önbellek, profilin abonelik durumunu saklar. Bu sayede sunucu kullanılamaz olsa bile önbellekteki veriler, profilin abonelik durumu hakkında bilgi vermek için kullanılabilir.
+
+Ancak önbellekten doğrudan veri isteği yapılamadığını belirtmek gerekir. SDK, profilin herhangi bir güncellemesini veya değişikliğini kontrol etmek için her dakika periyodik olarak sunucuyu sorgular. Yeni işlemler veya başka güncellemeler gibi değişiklikler varsa, sunucuyla senkronize tutmak amacıyla önbellekteki verilere aktarılır.

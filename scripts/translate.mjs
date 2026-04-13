@@ -61,6 +61,7 @@ const lang = langIdx !== -1 ? args[langIdx + 1] : null;
 
 const flagAll           = args.includes('--all');
 const flagIncremental   = args.includes('--incremental');
+const flagSync          = args.includes('--sync');
 const flagApiSpecs      = args.includes('--api-specs');
 const flagSidebarsOnly  = args.includes('--sidebars');
 const flagMigrateHashes = args.includes('--migrate-hashes');
@@ -107,8 +108,8 @@ if ((flagResume || fileId || fileIds || sidebarName || platform) && !lang) {
   process.exit(1);
 }
 
-// Single-file, multi-id, or incremental → use sync (immediate) API; otherwise Batch API
-const syncMode = fileId != null || fileIds != null || flagIncremental;
+// Single-file, multi-id, incremental, or --sync → use sync (immediate) API; otherwise Batch API
+const syncMode = fileId != null || fileIds != null || flagIncremental || flagSync;
 
 // ---------------------------------------------------------------------------
 // Locale discovery
@@ -803,6 +804,9 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
 // Batch translation (default, --all, --platform)
 // ---------------------------------------------------------------------------
 
+// Max files per batch chunk — smaller chunks complete faster and give intermediate progress.
+const BATCH_CHUNK_SIZE = 40;
+
 async function translateBatch(client, files, systemPrompt, localesDir, tag, lang) {
   const hashesDir = path.join(localesDir, '.hashes');
 
@@ -831,45 +835,65 @@ async function translateBatch(client, files, systemPrompt, localesDir, tag, lang
 
   if (batchFiles.length === 0) return;
 
-  console.log(`${tag} Reading source files...`);
-  const requests = await Promise.all(
-    batchFiles.map(async (file) => {
-      const basename = path.basename(file, '.mdx');
-      const content = await fs.readFile(file, 'utf-8');
-      return {
-        custom_id: basename,
-        params: {
-          model: 'claude-sonnet-4-6',
-          max_tokens: 8192,
-          system: systemPrompt,
-          messages: [{ role: 'user', content }],
-        },
-      };
-    })
-  );
+  // Split into chunks so large platforms don't sit in one huge queue entry.
+  const chunks = [];
+  for (let i = 0; i < batchFiles.length; i += BATCH_CHUNK_SIZE) {
+    chunks.push(batchFiles.slice(i, i + BATCH_CHUNK_SIZE));
+  }
 
-  console.log(`${tag} Submitting batch of ${requests.length} requests...`);
-  const batch = await client.messages.batches.create({ requests });
-  const batchId = batch.id;
+  for (let c = 0; c < chunks.length; c++) {
+    const chunk = chunks[c];
+    const chunkLabel = chunks.length > 1 ? ` (chunk ${c + 1}/${chunks.length})` : '';
 
-  await fs.writeFile(BATCH_ID_FILE, batchId, 'utf-8');
-  console.log(`${tag} Batch submitted: ${batchId}`);
-  console.log(`${tag} Batch ID saved to .translate-batch-id`);
-  console.log(`${tag} Use --resume <batchId> to retrieve results if this process is interrupted.`);
+    console.log(`${tag} Reading source files${chunkLabel}...`);
+    const requests = await Promise.all(
+      chunk.map(async (file) => {
+        const basename = path.basename(file, '.mdx');
+        const content = await fs.readFile(file, 'utf-8');
+        return {
+          custom_id: basename,
+          params: {
+            model: 'claude-sonnet-4-6',
+            max_tokens: 8192,
+            system: systemPrompt,
+            messages: [{ role: 'user', content }],
+          },
+        };
+      })
+    );
 
-  const fileMap = Object.fromEntries(batchFiles.map(f => [path.basename(f, '.mdx'), f]));
-  await waitAndRetrieve(client, batchId, fileMap, localesDir, tag, lang);
+    console.log(`${tag} Submitting batch of ${requests.length} requests${chunkLabel}...`);
+    const batch = await client.messages.batches.create({ requests });
+    const batchId = batch.id;
+
+    await fs.writeFile(BATCH_ID_FILE, batchId, 'utf-8');
+    console.log(`${tag} Batch submitted: ${batchId}`);
+    console.log(`${tag} Batch ID saved to .translate-batch-id`);
+    console.log(`${tag} Use --resume <batchId> to retrieve results if this process is interrupted.`);
+
+    const fileMap = Object.fromEntries(chunk.map(f => [path.basename(f, '.mdx'), f]));
+    await waitAndRetrieve(client, batchId, fileMap, localesDir, tag, lang);
+  }
 }
 
 async function waitAndRetrieve(client, batchId, fileMap, localesDir, tag, lang) {
   console.log(`${tag} Polling batch status every 30 seconds...`);
 
+  const startedAt = Date.now();
   let batch = await client.messages.batches.retrieve(batchId);
+  // Warn threshold: 15 min base + 30s per request, capped at 60 min.
+  const requestCount = Object.keys(fileMap).length;
+  const warnAfterMin = Math.min(60, 15 + Math.ceil(requestCount * 0.5));
   while (batch.processing_status !== 'ended') {
     const counts = batch.request_counts ?? {};
+    const elapsedMin = Math.floor((Date.now() - startedAt) / 60000);
+    const elapsed = elapsedMin >= 1 ? ` (${elapsedMin}m elapsed)` : '';
+    const warning = elapsedMin >= warnAfterMin && (counts.succeeded ?? 0) === 0
+      ? ` ⚠️  no progress in ${warnAfterMin}m — API may be slow or use --sync to bypass batch`
+      : '';
     console.log(
       `  Status: ${batch.processing_status} — processing: ${counts.processing ?? '?'}, ` +
-      `succeeded: ${counts.succeeded ?? '?'}, errored: ${counts.errored ?? '?'}`
+      `succeeded: ${counts.succeeded ?? '?'}, errored: ${counts.errored ?? '?'}${elapsed}${warning}`
     );
     await sleep(30_000);
     batch = await client.messages.batches.retrieve(batchId);

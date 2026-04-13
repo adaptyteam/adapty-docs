@@ -1,0 +1,95 @@
+---
+title: "Capacitor SDK'da abonelik durumunu kontrol etme"
+description: "Capacitor uygulamanızda müşteri tutundurmasını artırmak için Adapty'de kullanıcı abonelik durumunu takip edin ve yönetin."
+metadataTitle: "Abonelik Durumunu Anlama | Adapty Dokümanları"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+
+Adapty ile abonelik durumunu takip etmek oldukça kolaydır. Ürün ID'lerini kodunuza elle girmenize gerek yok. Bunun yerine, aktif bir [access level](access-level) olup olmadığını kontrol ederek kullanıcının abonelik durumunu zahmetsizce doğrulayabilirsiniz.
+
+<details>
+   <summary>Abonelik durumunu kontrol etmeye başlamadan önce (Genişletmek için tıklayın)</summary>
+
+- iOS için [App Store Server Notifications](enable-app-store-server-notifications) kurulumunu yapın
+- Android için [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn) kurulumunu yapın
+</details>
+
+## Access level ve AdaptyProfile nesnesi \{#access-level-and-the-adaptyprofile-object\}
+
+Access level'lar, [AdaptyProfile](https://capacitor.adapty.io/interfaces/adaptyprofile) nesnesinin özellikleridir. Profili uygulamanız başladığında, örneğin [bir kullanıcı tanımladığınızda](capacitor-identifying-users#setting-customer-user-id-on-configuration) alıp değişiklik olduğunda güncellemenizi öneririz. Bu sayede profil nesnesini tekrar tekrar istemeden kullanabilirsiniz.
+
+Profil güncellemelerinden haberdar olmak için, aşağıdaki [Abonelik durumu güncellemelerini dinleme](capacitor-listen-subscription-changes) bölümünde anlatıldığı gibi profil değişikliklerini dinleyin.
+
+<SampleApp />
+
+## Sunucudan access level'ı alma \{#retrieving-the-access-level-from-the-server\}
+
+Access level'ı sunucudan almak için `.getProfile()` metodunu kullanın:
+
+```typescript showLineNumbers
+
+try {
+  const profile = await adapty.getProfile();
+  console.log('Profile retrieved successfully');
+} catch (error) {
+  console.error('Failed to get profile:', error);
+}
+```
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| --------- |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **profile**   | Bir [AdaptyProfile](https://capacitor.adapty.io/interfaces/adaptyprofile) nesnesi. Genel olarak, kullanıcının uygulamada premium erişime sahip olup olmadığını belirlemek için yalnızca profilin access level durumunu kontrol etmeniz gerekir. `.getProfile` metodu her zaman API'yi sorgulamaya çalıştığından en güncel sonucu döndürür. Herhangi bir nedenle (örneğin internet bağlantısı yoksa) Adapty SDK'sı sunucudan bilgi alamazsa, önbellekteki veriler döndürülür. Ayrıca Adapty SDK'sının `AdaptyProfile` önbelleğini bu bilgileri olabildiğince güncel tutmak için düzenli aralıklarla güncellediğini belirtmek gerekir. |
+
+`.getProfile()` metodu, access level durumunu öğrenebileceğiniz kullanıcı profilini döndürür. Uygulama başına birden fazla access level tanımlayabilirsiniz. Örneğin, bir gazete uygulamanız varsa ve farklı konulara ayrı ayrı abonelik satıyorsanız, "sports" ve "science" gibi access level'lar oluşturabilirsiniz. Ancak çoğu zaman tek bir access level yeterli olur; bu durumda varsayılan "premium" access level'ı kullanabilirsiniz.
+
+Varsayılan "premium" access level'ını kontrol etmek için bir örnek:
+
+```typescript showLineNumbers
+
+try {
+  const profile = await adapty.getProfile();
+  
+  const isActive = profile.accessLevels['premium']?.isActive;
+  if (isActive) {
+    // Grant access to premium features
+    console.log('User has premium access');
+  } else {
+    console.log('User does not have premium access');
+  }
+} catch (error) {
+  console.error('Failed to check subscription status:', error);
+}
+```
+
+### Abonelik durumu güncellemelerini dinleme \{#listening-for-subscription-status-updates\}
+
+Kullanıcının aboneliği her değiştiğinde Adapty bir olay tetikler.
+
+Adapty'den mesaj almak için ek bir yapılandırma yapmanız gerekir:
+
+```typescript showLineNumbers
+
+// Create an "onLatestProfileLoad" event listener
+adapty.addListener('onLatestProfileLoad', (data) => {
+  const profile = data.profile;
+  const isActive = profile.accessLevels['premium']?.isActive;
+  
+  if (isActive) {
+    console.log('Subscription status updated: User has premium access');
+  } else {
+    console.log('Subscription status updated: User does not have premium access');
+  }
+});
+```
+
+Adapty aynı zamanda uygulama başlangıcında da bir olay tetikler. Bu durumda önbelleğe alınmış abonelik durumu iletilir.
+
+### Abonelik durumu önbelleği \{#subscription-status-cache\}
+
+Adapty SDK'sında uygulanan önbellek, profilin abonelik durumunu saklar. Bu sayede sunucu erişilemez olsa bile önbellekteki veriler, profilin abonelik durumuna ilişkin bilgi sunmak için kullanılabilir.
+
+Ancak önbellekten doğrudan veri talep etmenin mümkün olmadığını belirtmek gerekir. SDK, profille ilgili güncellemeleri veya değişiklikleri kontrol etmek için sunucuyu her dakika periyodik olarak sorgular. Yeni işlemler veya başka güncellemeler gibi değişiklikler varsa, sunucuyla senkronizasyonu sağlamak amacıyla bu veriler önbelleğe gönderilir.

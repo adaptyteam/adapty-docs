@@ -1,0 +1,257 @@
+---
+title: "Flutter SDK'da paywall kullanarak satın almaları etkinleştirme"
+description: "Uygulama içi abonelik yönetimi için Adapty kurulumuna hızlı başlangıç kılavuzu."
+metadataTitle: "Adapty Hızlı Başlangıç Kılavuzu | Adapty Dokümanları"
+keywords: [ 'paywall', 'paywall builder', 'getPaywall']
+rank: 70
+displayed_sidebar: sdkflutter
+---
+
+import PaywallsIntro from '@site/src/locales/tr/reusable/PaywallsIntro.md';
+
+Uygulama içi satın almaları etkinleştirmek için üç temel kavramı anlamanız gerekir:
+
+- [**Ürünler**](product) – kullanıcıların satın alabileceği her şey (abonelikler, consumable'lar, süresiz erişim)
+- [**Paywall'lar**](paywalls), hangi ürünlerin sunulacağını tanımlayan yapılandırmalardır. Adapty'de ürünleri almanın tek yolu paywall'lardır; ancak bu tasarım sayesinde uygulama kodunuza dokunmadan teklifleri, fiyatlandırmayı ve ürün kombinasyonlarını değiştirebilirsiniz.
+- [**Placement'lar**](placements) – uygulamanızda paywall'ların nerede ve ne zaman gösterileceği (`main`, `onboarding`, `settings` gibi). Kontrol panelinde placement'lar için paywall'lar ayarlarsınız, ardından kodunuzda placement ID'si ile bunları talep edersiniz. Bu yapı, A/B testleri yürütmeyi ve farklı kullanıcılara farklı paywall'lar göstermeyi kolaylaştırır.
+
+Adapty, uygulamanızda satın almaları etkinleştirmek için üç farklı yöntem sunar. Uygulama gereksinimlerinize göre birini seçin:
+
+| Uygulama               | Karmaşıklık | Ne zaman kullanılır                                                                                                                                                                                                                          |
+|------------------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty Paywall Builder | ✅ Kolay     | [No-code builder'da eksiksiz, satın almaya hazır bir paywall oluşturursunuz](quickstart-paywalls). Adapty bunu otomatik olarak render eder; karmaşık satın alma akışını, makbuz doğrulamasını ve abonelik yönetimini arka planda halleder. |
+| Elle oluşturulan paywall'lar | 🟡 Orta  | Paywall arayüzünü uygulama kodunuzda siz oluşturursunuz; ancak ürün tekliflerinde esnekliği korumak için paywall nesnesini yine Adapty'den alırsınız. [Kılavuza](flutter-quickstart-manual) bakın.                                          |
+| Observer modu              | 🔴 Zor    | Mevcut satın alma altyapınız var ve bunu kullanmaya devam etmek istiyorsunuz. Observer modunun Adapty'de bazı kısıtlamaları olduğunu unutmayın. [Makaleye](observer-vs-full-mode) bakın.                                                     |
+
+:::important
+**Aşağıdaki adımlar, Adapty paywall builder'da oluşturulan bir paywall'ın nasıl uygulanacağını göstermektedir.**
+
+Paywall builder kullanmak istemiyorsanız [elle oluşturulan paywall'larda satın alma işlemlerini yönetme kılavuzuna](flutter-making-purchases) bakın.
+:::
+
+Adapty paywall builder'da oluşturulan bir paywall'ı görüntülemek için uygulama kodunuzda yalnızca şunları yapmanız gerekir:
+
+1. **Paywall'ı alın**: Paywall'ı Adapty'den alın.
+2. **Paywall'ı görüntüleyin, satın almaları Adapty yönetsin**: Aldığınız paywall container'ını uygulamanızda gösterin.
+3. **Buton eylemlerini yönetin**: Kullanıcıların paywall'daki etkileşimlerini uygulamanızın yanıtlarıyla ilişkilendirin. Örneğin, kullanıcılar butona tıkladığında bağlantıları açın veya paywall'ı kapatın.
+
+## Başlamadan önce \{#before-you-start\}
+
+Başlamadan önce şu adımları tamamlayın:
+
+1. Adapty Kontrol Paneli'nde uygulamanızı [App Store](initial_ios) ve/veya [Google Play](initial-android)'e bağlayın.
+2. Adapty'de [ürünlerinizi oluşturun](create-product).
+3. [Bir paywall oluşturun ve ürünleri ekleyin](create-paywall).
+4. [Bir placement oluşturun ve paywall'ınızı ekleyin](create-placement).
+5. Uygulama kodunuzda [Adapty SDK'yı yükleyin ve etkinleştirin](sdk-installation-flutter).
+
+:::tip
+Bu adımları tamamlamanın en hızlı yolu [hızlı başlangıç kılavuzunu](quickstart) takip etmek veya [Developer CLI](developer-cli-quickstart) kullanarak paywall ve placement oluşturmaktır.
+:::
+
+## 1. Paywall'ı alın \{#1-get-the-paywall\}
+
+Paywall'larınız, kontrol panelinde yapılandırılmış placement'larla ilişkilendirilir. Placement'lar, farklı kitleler için farklı paywall'lar göstermenizi veya [A/B testleri](ab-tests) çalıştırmanızı sağlar.
+
+Adapty paywall builder'da oluşturulan bir paywall'ı almak için şunları yapmanız gerekir:
+
+1. `getPaywall` metodunu kullanarak [placement](placements) ID'sine göre `paywall` nesnesini alın ve `hasViewConfiguration` özelliğini kullanarak bunun builder'da oluşturulmuş bir paywall olup olmadığını kontrol edin.
+
+2. `createPaywallView` metodunu kullanarak paywall görünümünü oluşturun. Görünüm, paywall'ı görüntülemek için gereken arayüz öğelerini ve stil bilgilerini içerir.
+
+:::important
+Görünüm yapılandırmasını alabilmek için Paywall Builder'da **Show on device** geçişini açık konuma getirmeniz gerekir. Aksi takdirde boş bir görünüm yapılandırması alırsınız ve paywall görüntülenmez.
+:::
+
+```dart showLineNumbers
+
+try {
+  final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en");
+  // the requested paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+
+try {
+  final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+      );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+## 2. Paywall'ı görüntüleyin \{#2-display-the-paywall\}
+
+Paywall yapılandırmasını aldıktan sonra paywall'ınızı görüntülemek için birkaç satır kod eklemeniz yeterlidir.
+
+Paywall'ı görüntülemek için `createPaywallView` metoduyla oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir. Paywall'ı tekrar görüntülemeniz gerekiyorsa yeni bir `view` örneği oluşturmak için `createPaywallView`'i bir kez daha çağırın.
+
+```dart showLineNumbers title="Flutter"
+try {
+  await view.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+:::tip
+Paywall görüntüleme hakkında daha fazla ayrıntı için [kılavuzumuza](flutter-present-paywalls) bakın.
+:::
+
+## 3. Buton eylemlerini yönetin \{#3-handle-button-actions\}
+
+Kullanıcılar paywall'daki butona tıkladığında Flutter SDK, satın alma ve geri yükleme işlemlerini otomatik olarak yönetir. Ancak diğer butonların özel veya önceden tanımlı ID'leri vardır ve bu eylemler kodunuzda ele alınmalıdır.
+
+Paywall ekranındaki süreçleri kontrol etmek veya izlemek için `AdaptyUIPaywallsEventsObserver` metodlarını uygulayın ve herhangi bir ekran sunulmadan önce observer'ı ayarlayın. Bir kullanıcı bir eylem gerçekleştirdiğinde `paywallViewDidPerformAction` çağrılır ve uygulamanızın eylem ID'sine göre yanıt vermesi gerekir.
+
+Örneğin, paywall'ınızda büyük olasılıkla bir kapat butonu ve açılacak URL'ler (kullanım koşulları ve gizlilik politikası gibi) bulunur. Dolayısıyla `Close` ve `OpenUrl` ID'lerine sahip eylemlere yanıt vermeniz gerekir.
+
+:::tip
+Buton [eylemlerini](flutter-handle-paywall-actions) ve [olayları](flutter-handling-events) yönetme konusundaki kılavuzlarımızı okuyun.
+:::
+
+```dart showLineNumbers title="Flutter"
+class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywallsEventsObserver {
+  @override
+  void initState() {
+    super.initState();
+    // Register this class as the paywalls event observer
+    AdaptyUI().setPaywallsEventsObserver(this);
+  }
+
+  // This method is called when user performs an action on the paywall UI
+  @override
+  void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL using url_launcher package
+        _launchUrl(url);
+        break;
+    }
+  }
+
+  // Helper method to launch URLs
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Handle case where URL cannot be launched
+        print('Could not launch $url');
+      }
+    } catch (e) {
+      // Handle any errors
+      print('Error launching URL: $e');
+    }
+  }
+}
+
+```
+
+## Sonraki adımlar \{#next-steps\}
+
+<SupportForum />
+
+Paywall'ınız uygulamada görüntülenmeye hazır. Paywall üzerinden test satın alma işlemini tamamlayabildiğinizden emin olmak için satın almalarınızı [App Store sandbox](test-purchases-in-sandbox) ortamında veya [Google Play Store](testing-on-android)'da test edin.
+
+Şimdi, doğru kullanıcılara paywall gösterdiğinizden veya ücretli özelliklere erişim verdiğinizden emin olmak için [kullanıcıların access level'ını kontrol etmeniz](flutter-check-subscription-status) gerekiyor.
+
+## Tam örnek \{#full-example\}
+
+Tüm bu adımların uygulamanızda nasıl bir arada kullanılabileceği aşağıda gösterilmiştir.
+
+```dart
+
+void main() async {
+  runApp(MaterialApp(home: PaywallScreen()));
+}
+
+class PaywallScreen extends StatefulWidget {
+  @override
+  State<PaywallScreen> createState() => _PaywallScreenState();
+}
+
+class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywallsEventsObserver {
+  @override
+  void initState() {
+    super.initState();
+    // Register this class as the paywalls event observer
+    AdaptyUI().setPaywallsEventsObserver(this);
+    _showPaywallIfNeeded();
+  }
+
+  Future<void> _showPaywallIfNeeded() async {
+    try {
+
+      final paywall = await Adapty().getPaywall(
+        placementId: 'YOUR_PLACEMENT_ID',
+      );
+
+      if (!paywall.hasViewConfiguration) return;
+
+      final view = await AdaptyUI().createPaywallView(paywall: paywall);
+
+      await view.present();
+    } catch (_) {
+      // Handle any errors (network, SDK issues, etc.)
+    }
+  }
+
+  // This method is called when user performs an action on the paywall UI
+  @override
+  void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL using url_launcher package
+        _launchUrl(url);
+        break;
+    }
+  }
+
+  // Helper method to launch URLs
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Handle case where URL cannot be launched
+        print('Could not launch $url');
+      }
+    } catch (e) {
+      // Handle any errors
+      print('Error launching URL: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Adapty Paywall Example')),
+      body: Center(
+        // Add a button to re-trigger the paywall for testing purposes
+        child: ElevatedButton(
+          onPressed: _showPaywallIfNeeded,
+          child: Text('Show Paywall'),
+        ),
+      ),
+    );
+  }
+}
+
+```

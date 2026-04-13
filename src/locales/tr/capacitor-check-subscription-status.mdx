@@ -1,0 +1,96 @@
+---
+title: "Capacitor SDK'da abonelik durumunu kontrol etme"
+description: "Adapty ile Capacitor uygulamanızda abonelik durumunu nasıl kontrol edeceğinizi öğrenin."
+metadataTitle: "Abonelik Durumunu Kontrol Etme | Adapty Dokümanları"
+displayed_sidebar: sdkcapacitor
+---
+
+Kullanıcıların ücretli içeriğe erişip erişemeyeceğine ya da bir paywall görüp görmeyeceğine karar vermek için profildeki [access level](access-level) bilgisini kontrol etmeniz gerekir.
+
+Bu makale, kullanıcılara paywall gösterip göstermeyeceğinize ya da ücretli özelliklere erişim izni verip vermeyeceğinize karar vermek için profil durumuna nasıl ulaşacağınızı anlatmaktadır.
+
+## Abonelik durumunu alma \{#get-subscription-status\}
+
+Bir kullanıcıya paywall mı yoksa ücretli içerik mi göstereceğinize karar verirken profildeki [access level](access-level) bilgisini kontrol edersiniz. İki seçeneğiniz var:
+
+- Anlık olarak en güncel profil verisine ihtiyaç duyduğunuzda (örneğin uygulama açılışında) ya da güncellemeyi zorla almak istediğinizde `getProfile` çağırın.
+- Abonelik durumu her değiştiğinde otomatik olarak güncellenen yerel bir kopya tutmak için **otomatik profil güncellemelerini** ayarlayın.
+
+### Profili alma \{#get-profile\}
+
+Abonelik durumunu almanın en kolay yolu, profile erişmek için `getProfile` metodunu kullanmaktır:
+
+```typescript showLineNumbers
+try {
+  const profile = await adapty.getProfile();
+} catch (error) {
+  // handle the error
+}
+```
+
+### Abonelik güncellemelerini dinleme \{#listen-to-subscription-updates\}
+
+Uygulamanızda profil güncellemelerini otomatik olarak almak için:
+
+1. Profil değişikliklerini dinlemek amacıyla `adapty.addListener('onLatestProfileLoad')` kullanın. Adapty, kullanıcının abonelik durumu her değiştiğinde bu metodu otomatik olarak çağırır.
+2. Bu metot çağrıldığında güncellenmiş profil verisini saklayın; böylece uygulamanızın her yerinde ek ağ isteği yapmadan bu veriye erişebilirsiniz.
+
+```typescript showLineNumbers
+class SubscriptionManager {
+  private currentProfile: any = null;
+  
+  constructor() {
+    // Listen for profile updates
+    adapty.addListener('onLatestProfileLoad', (data) => {
+      this.currentProfile = data.profile;
+      // Update UI, unlock content, etc.
+    });
+  }
+  
+  // Use stored profile instead of calling getProfile()
+  hasAccess(): boolean {
+    return this.currentProfile?.accessLevels?.['YOUR_ACCESS_LEVEL']?.isActive ?? false;
+  }
+}
+```
+
+:::note
+Adapty, uygulamanız başladığında `onLatestProfileLoad` event listener'ını otomatik olarak çağırır; bu sayede cihaz çevrimdışı olsa bile önbelleğe alınmış abonelik verisi sağlanır.
+:::
+
+## Profili paywall mantığıyla bağlama \{#connect-profile-with-paywall-logic\}
+
+Paywall gösterme veya ücretli özelliklere erişim izni verme konusunda anlık kararlar almanız gerektiğinde, kullanıcı profilini doğrudan kontrol edebilirsiniz. Bu yaklaşım; uygulama açılışı, premium bölümlere giriş veya belirli içerikler gösterilmeden önce gibi senaryolarda oldukça kullanışlıdır.
+
+```typescript showLineNumbers
+const checkAccessLevel = async () => {
+  try {
+    const profile = await adapty.getProfile();
+    return profile?.accessLevels?.['YOUR_ACCESS_LEVEL']?.isActive === true;
+  } catch (error) {
+    console.warn('Error checking access level:', error);
+    return false; // Show paywall if access check fails
+  }
+};
+
+const getAccessLevel = () => {
+  return profile?.accessLevels?.['YOUR_ACCESS_LEVEL'];
+};
+
+const initializePaywall = async () => {
+  try {
+    await loadPaywall();
+    
+    const hasAccess = await checkAccessLevel();
+    if (!hasAccess) {
+      // Show paywall if no access
+    }
+  } catch (error) {
+    console.warn('Error initializing paywall:', error);
+  }
+};
+```
+
+## Sonraki adımlar \{#next-steps\}
+
+Abonelik durumunu nasıl takip edeceğinizi öğrendiğinize göre, kullanıcıların satın aldıklarına erişebildiğinden emin olmak için [kullanıcı profilleriyle çalışmayı](capacitor-quickstart-identify) incelemeye başlayabilirsiniz.
