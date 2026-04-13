@@ -1,0 +1,202 @@
+---
+title: "Capacitor SDK'da hataları yönetin"
+description: "Capacitor SDK'da hataları yönetin."
+metadataTitle: "Capacitor'da Hata Yönetimi | Adapty Dokümanları"
+---
+
+import CrossPlatformErrors from '@site/src/locales/tr/reusable/CrossPlatformErrors.md';
+
+SDK tarafından döndürülen her hata bir `AdaptyError` örneğidir. İşte bir örnek:
+
+```typescript showLineNumbers
+
+try {
+  const result = await adapty.makePurchase({ product });
+  
+  // Handle purchase result
+  if (result.type === 'success') {
+    console.log('Purchase successful:', result.profile);
+  } else if (result.type === 'user_cancelled') {
+    console.log('User cancelled the purchase');
+  } else if (result.type === 'pending') {
+    console.log('Purchase is pending');
+  }
+} catch (error) {
+  if (error instanceof AdaptyError) {
+    console.error('Adapty error:', error.adaptyCode, error.localizedDescription);
+    
+    // Handle specific error codes
+    switch (error.adaptyCode) {
+      case ErrorCodeName.cantMakePayments:
+        console.log('In-app purchases are not allowed on this device');
+        break;
+      case ErrorCodeName.notActivated:
+        console.log('Adapty SDK is not activated');
+        break;
+      case ErrorCodeName.productPurchaseFailed:
+        console.log('Purchase failed:', error.detail);
+        break;
+      default:
+        console.log('Other error occurred:', error.detail);
+    }
+  } else {
+    console.error('Non-Adapty error:', error);
+  }
+}
+```
+
+## Hata Özellikleri \{#error-properties\}
+
+`AdaptyError` sınıfı aşağıdaki özellikleri sağlar:
+
+| Özellik | Tür | Açıklama |
+|---------|-----|----------|
+| `adaptyCode` | `number` | Sayısal hata kodu (ör. `1003`, cantMakePayments için) |
+| `localizedDescription` | `string` | Kullanıcı dostu hata mesajı |
+| `detail` | `string \| undefined` | Ek hata ayrıntıları (isteğe bağlı) |
+| `message` | `string` | Kod ve açıklamayı içeren tam hata mesajı |
+
+## Hata Kodları \{#error-codes\}
+
+SDK, hata kodlarıyla çalışmak için sabitler ve yardımcı araçlar sunar:
+
+### ErrorCodeName Sabiti \{#errorcodename-constant\}
+
+Dize tanımlayıcılarını sayısal kodlarla eşleştirir:
+
+```typescript
+
+ErrorCodeName.cantMakePayments // 1003
+ErrorCodeName.notActivated // 2002
+ErrorCodeName.networkFailed // 2005
+```
+
+### ErrorCode Sabiti \{#errorcode-constant\}
+
+Sayısal kodları dize tanımlayıcılarıyla eşleştirir:
+
+```typescript
+
+ErrorCode[1003] // 'cantMakePayments'
+ErrorCode[2002] // 'notActivated'
+ErrorCode[2005] // 'networkFailed'
+```
+
+### Yardımcı Fonksiyonlar \{#helper-functions\}
+
+```typescript
+
+// Get numeric code from string name:
+getErrorCode('cantMakePayments') // 1003
+
+// Get string name from numeric code:
+getErrorPrompt(1003) // 'cantMakePayments'
+```
+
+### Hata Kodlarını Karşılaştırma \{#comparing-error-codes\}
+
+**Önemli:** `error.adaptyCode` bir **sayı** olduğundan, doğrudan sayısal kodlarla karşılaştırın:
+
+```typescript
+// Option 1: Use ErrorCodeName constant (recommended) ✅
+if (error.adaptyCode === ErrorCodeName.cantMakePayments) {
+  console.log('Cannot make payments');
+}
+
+// Option 2: Compare with numeric literal ✅
+if (error.adaptyCode === 1003) {
+  console.log('Cannot make payments');
+}
+
+// NOT like this ❌ - compares number to string and will never match
+if (error.adaptyCode === ErrorCode[1003]) {
+}
+```
+
+## Global Hata Yöneticisi \{#global-error-handler\}
+
+Tüm Adapty hatalarını yakalamak için global bir hata yöneticisi kurabilirsiniz:
+
+```typescript showLineNumbers
+
+// Set up global error handler
+AdaptyError.onError = (error: AdaptyError) => {
+  console.error('Global Adapty error:', {
+    code: error.adaptyCode,
+    message: error.localizedDescription,
+    detail: error.detail
+  });
+  
+  // Handle specific error types globally
+  if (error.adaptyCode === ErrorCodeName.notActivated) {
+    // SDK not activated - maybe retry activation
+    console.log('SDK not activated, attempting to reactivate...');
+  }
+};
+```
+
+## Yaygın Hata Yönetimi Kalıpları \{#common-error-handling-patterns\}
+
+### Satın Alma Hatalarını Yönetme \{#handle-purchase-errors\}
+
+```typescript showLineNumbers
+
+async function handlePurchase(product: AdaptyPaywallProduct) {
+  try {
+    const result = await adapty.makePurchase({ product });
+    
+    if (result.type === 'success') {
+      console.log('Purchase successful:', result.profile);
+    } else if (result.type === 'user_cancelled') {
+      console.log('User cancelled the purchase');
+    } else if (result.type === 'pending') {
+      console.log('Purchase is pending');
+    }
+  } catch (error) {
+    if (error instanceof AdaptyError) {
+      switch (error.adaptyCode) {
+        case ErrorCodeName.cantMakePayments:
+          console.log('In-app purchases not allowed');
+          break;
+        case ErrorCodeName.productPurchaseFailed:
+          console.log('Purchase failed:', error.detail);
+          break;
+        default:
+          console.error('Purchase error:', error.localizedDescription);
+      }
+    }
+  }
+}
+```
+
+### Ağ Hatalarını Yönetme \{#handle-network-errors\}
+
+```typescript showLineNumbers
+
+async function fetchPaywall(placementId: string) {
+  try {
+    const paywall = await adapty.getPaywall({ placementId });
+    return paywall;
+  } catch (error) {
+    if (error instanceof AdaptyError) {
+      switch (error.adaptyCode) {
+        case ErrorCodeName.networkFailed:
+          console.log('Network error, retrying...');
+          // Implement retry logic
+          break;
+        case ErrorCodeName.serverError:
+          console.log('Server error:', error.detail);
+          break;
+        case ErrorCodeName.notActivated:
+          console.log('SDK not activated');
+          break;
+        default:
+          console.error('Paywall fetch error:', error.localizedDescription);
+      }
+    }
+    throw error;
+  }
+}
+```
+
+<CrossPlatformErrors />

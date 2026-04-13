@@ -1,0 +1,174 @@
+---
+title: "Capacitor SDK'da paywall kullanarak satın almaları etkinleştirin"
+description: "Adapty SDK ile Capacitor uygulamanızda paywallları nasıl göstereceğinizi öğrenin."
+metadataTitle: "Paywall Gösterme | Capacitor SDK | Adapty Dokümanları"
+customSlug: /capacitor-quickstart-paywalls
+displayed_sidebar: sdkcapacitor
+---
+
+import PaywallsIntro from '@site/src/locales/tr/reusable/PaywallsIntro.md';
+
+Uygulama içi satın almaları etkinleştirmek için üç temel kavramı anlamanız gerekir:
+
+- **Ürünler** – kullanıcıların satın alabileceği her şey (abonelikler, consumable'lar, süresiz erişim)
+- **Paywalllar**, hangi ürünlerin sunulacağını tanımlayan yapılandırmalardır. Adapty'de ürünleri almak için tek yol paywalllar olsa da bu tasarım, uygulama kodunuza dokunmadan teklifleri, fiyatlandırmayı ve ürün kombinasyonlarını değiştirmenize olanak tanır.
+- **Placement'lar** – uygulamanızda paywallları nerede ve ne zaman gösterdiğiniz (örneğin `main`, `onboarding`, `settings`). Paywallları kontrol panelinde placement'larla ilişkilendirirsiniz, ardından kodunuzda placement ID'si ile bunları talep edersiniz. Bu yapı A/B testleri çalıştırmayı ve farklı kullanıcılara farklı paywalllar göstermeyi kolaylaştırır.
+
+Adapty, uygulamanızda satın almaları etkinleştirmek için üç farklı yöntem sunar. Uygulama gereksinimlerinize göre birini seçin:
+
+| Uygulama                   | Karmaşıklık | Ne zaman kullanılır                                                                                                                                                                                                                              |
+|----------------------------|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Adapty Paywall Builder** | ✅ Kolay     | [No-code builder'da eksiksiz, satın almaya hazır bir paywall oluşturursunuz](quickstart-paywalls). Adapty bunu otomatik olarak render eder ve tüm karmaşık satın alma akışını, makbuz doğrulamasını ve abonelik yönetimini arka planda halleder. |
+| `makePurchase`             | 🟡 Orta     | Paywall arayüzünü uygulama kodunuzda kendiniz uygularsınız, ancak ürün tekliflerinde esnekliği korumak için paywall nesnesini yine Adapty'den alırsınız. [Kılavuza bakın](capacitor-quickstart-manual).                                           |
+| Observer mode              | 🔴 Zor      | Satın alma akışını tamamen kendiniz uygularsınız. [Kılavuza bakın](implement-observer-mode-capacitor).                                                                                                                                           |
+
+:::important
+**Aşağıdaki adımlar, Adapty paywall builder'da oluşturulan bir paywallın nasıl uygulanacağını göstermektedir.**
+
+Paywall builder'ı kullanmak istemiyorsanız [manuel olarak oluşturulan paywallarda satın almaları yönetme kılavuzuna](capacitor-making-purchases) bakın.
+:::
+
+Adapty paywall builder'da oluşturulan bir paywallı göstermek için uygulama kodunuzda yalnızca şunları yapmanız gerekir:
+
+1. **Paywallı alın**: Paywallı Adapty'den alın.
+2. **Paywallı gösterin; satın almaları Adapty sizin için yönetir**: Aldığınız paywall container'ını uygulamanızda gösterin.
+3. **Düğme aksiyonlarını yönetin**: Kullanıcıların paywalldaki etkileşimlerini uygulamanızın bu etkileşimlere verdiği yanıtlarla ilişkilendirin. Örneğin, kullanıcılar düğmelere tıkladığında bağlantı açın ya da paywallı kapatın.
+
+## Başlamadan önce \{#before-you-start\}
+
+Başlamadan önce şu adımları tamamlayın:
+
+1. Adapty Kontrol Paneli'nde uygulamanızı [App Store](initial_ios) ve/veya [Google Play](initial-android)'e bağlayın.
+2. Adapty'de [ürünlerinizi oluşturun](create-product).
+3. [Bir paywall oluşturun ve ürünleri ona ekleyin](create-paywall).
+4. [Bir placement oluşturun ve paywallınızı ona ekleyin](create-placement).
+5. Uygulama kodunuza [Adapty SDK'yı yükleyin ve etkinleştirin](sdk-installation-capacitor).
+
+:::tip
+Bu adımları tamamlamanın en hızlı yolu [hızlı başlangıç kılavuzunu](quickstart) takip etmek veya [Developer CLI](developer-cli-quickstart) kullanarak paywall ve placement oluşturmaktır.
+:::
+
+## 1. Paywallı alın \{#1-get-the-paywall\}
+
+Paywalllarınız, kontrol panelinde yapılandırılan placement'larla ilişkilidir. Placement'lar, farklı kitleler için farklı paywalllar çalıştırmanıza veya [A/B testleri](ab-tests) yapmanıza olanak tanır.
+
+Adapty paywall builder'da oluşturulan bir paywallı almak için şunları yapmanız gerekir:
+
+1. `getPaywall` metodunu kullanarak [placement](placements) ID'sine göre `paywall` nesnesini alın ve `hasViewConfiguration` özelliğini kullanarak bunun builder'da oluşturulmuş bir paywall olup olmadığını kontrol edin.
+
+2. `createPaywallView` metodunu kullanarak paywall view'ını oluşturun. View, paywallı göstermek için gereken arayüz öğelerini ve stilini içerir.
+
+:::important
+View yapılandırmasını alabilmek için Paywall Builder'daki **Show on device** geçişini açmanız gerekir. Aksi takdirde boş bir view yapılandırması alırsınız ve paywall gösterilmez.
+:::
+
+```typescript showLineNumbers title="Capacitor"
+
+try {
+  const paywall = await adapty.getPaywall({
+    placementId: 'YOUR_PLACEMENT_ID',
+  });
+  // the requested paywall
+} catch (error) {
+  // handle the error
+}
+
+if (paywall.hasViewConfiguration) {
+  try {
+    const view = await createPaywallView(paywall);
+  } catch (error) {
+    // handle the error
+  }
+} else {
+  // use your custom logic
+}
+```
+
+## 2. Paywallı gösterin \{#2-display-the-paywall\}
+
+Artık paywall yapılandırmasına sahip olduğunuza göre, paywallınızı göstermek için birkaç satır kod eklemeniz yeterlidir.
+
+Paywallı göstermek için `createPaywallView` metoduyla oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir. Paywallı tekrar göstermeniz gerekiyorsa yeni bir `view` örneği oluşturmak için `createPaywallView`'ı bir kez daha çağırın.
+
+```typescript showLineNumbers title="Capacitor"
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+:::tip
+Bir paywallın nasıl gösterileceği hakkında daha fazla ayrıntı için [kılavuzumuza](capacitor-present-paywalls) bakın.
+:::
+
+## 3. Düğme aksiyonlarını yönetin \{#3-handle-button-actions\}
+
+Kullanıcılar paywalldaki düğmelere tıkladığında Capacitor SDK, satın almaları, geri yüklemeleri ve paywallın kapatılmasını otomatik olarak yönetir.
+
+Ancak diğer düğmelerin özel veya önceden tanımlanmış ID'leri vardır ve kodunuzda aksiyonların yönetilmesini gerektirir. Ya da varsayılan davranışlarını geçersiz kılmak isteyebilirsiniz.
+
+Örneğin, uygulama kullanıcılarınız bir web bağlantısı açtıktan sonra paywallı açık tutmak isteyebilirsiniz. Bunu uygulamanızda nasıl yönetebileceğinize bakalım.
+
+:::tip
+Düğme [aksiyonlarını](capacitor-handle-paywall-actions) ve [olaylarını](capacitor-handling-events) nasıl yöneteceğiniz hakkındaki kılavuzlarımızı okuyun.
+:::
+
+```typescript showLineNumbers title="Capacitor"
+const unsubscribe = view.setEventHandlers({
+  onUrlPress(url) {
+    window.open(url, '_blank');
+    return false;
+  },
+});
+```
+
+## Sonraki adımlar \{#next-steps\}
+
+<SupportForum />
+
+Paywallınız uygulamada gösterilmeye hazır. Paywalldan test satın alması tamamlayabildiğinizden emin olmak için satın almalarınızı [App Store sandbox](test-purchases-in-sandbox) ortamında veya [Google Play Store](testing-on-android)'da test edin.
+
+Şimdi, doğru kullanıcılara paywall gösterdiğinizden veya ücretli özelliklere erişim verdiğinizden emin olmak için [kullanıcıların access level'ını kontrol etmeniz](capacitor-check-subscription-status) gerekir.
+
+## Tam örnek \{#full-example\}
+
+Tüm bu adımların uygulamanızda bir arada nasıl entegre edilebileceği aşağıda gösterilmiştir.
+
+```typescript showLineNumbers title="Capacitor"
+
+export default function PaywallScreen() {
+  const showPaywall = async () => {
+    try {
+      const paywall = await adapty.getPaywall({
+        placementId: 'YOUR_PLACEMENT_ID',
+      });
+
+      if (!paywall.hasViewConfiguration) {
+        // use your custom logic
+        return;
+      }
+
+      const view = await createPaywallView(paywall);
+
+      view.setEventHandlers({
+        onUrlPress(url) {
+          window.open(url, '_blank');
+          return false;
+        },
+      });
+
+      await view.present();
+    } catch (error) {
+      // handle any error that may occur during the process
+      console.warn('Error showing paywall:', error);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <button onClick={showPaywall}>Show Paywall</button>
+    </div>
+  );
+}
+```

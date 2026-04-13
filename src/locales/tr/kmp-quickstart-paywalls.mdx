@@ -1,0 +1,154 @@
+---
+title: "Kotlin Multiplatform SDK'da paywall kullanarak satın alımları etkinleştirme"
+description: "Uygulama içi abonelik yönetimi için Adapty kurulum hızlı başlangıç kılavuzu."
+metadataTitle: "Adapty Hızlı Başlangıç Kılavuzu | Adapty Dokümanları"
+keywords: ['kotlin multiplatform paywall', 'kotlin multiplatform sdk', 'paywall', 'paywall builder', 'getPaywall']
+rank: 70
+displayed_sidebar: sdkkmp
+---
+
+import PaywallsIntro from '@site/src/components/reusable/PaywallsIntro.md';
+
+Uygulama içi satın alımları etkinleştirmek için üç temel kavramı anlamanız gerekir:
+
+- [**Ürünler**](product) – kullanıcıların satın alabileceği her şey (abonelikler, consumable'lar, süresiz erişim)
+- [**Paywalls**](paywalls), hangi ürünlerin sunulacağını tanımlayan yapılandırmalardır. Adapty'de ürünlere yalnızca paywall'lar aracılığıyla ulaşılır; bu tasarım sayesinde uygulama koduna dokunmadan teklifleri, fiyatlandırmayı ve ürün kombinasyonlarını değiştirebilirsiniz.
+- [**Placement'lar**](placements) – uygulamanızda paywall'ların nerede ve ne zaman gösterileceğini belirler (`main`, `onboarding`, `settings` gibi). Kontrol panelinde placement'lara paywall atarsınız, ardından kodunuzda placement ID'siyle bunları çağırırsınız. Bu yapı A/B testi çalıştırmayı ve farklı kullanıcılara farklı paywall göstermeyi kolaylaştırır.
+
+Adapty, uygulamanızda satın alımları etkinleştirmek için üç yol sunar. Uygulama gereksinimlerinize göre birini seçin:
+
+| Uygulama                  | Karmaşıklık | Ne zaman kullanılır                                                                                                                                                                                                                                |
+|---------------------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty Paywall Builder    | ✅ Kolay     | [Kodsuz builder'da eksiksiz, satın almaya hazır bir paywall oluşturursunuz](quickstart-paywalls). Adapty onu otomatik olarak render eder; karmaşık satın alma akışını, makbuz doğrulamasını ve abonelik yönetimini arka planda halleder. |
+| Elle oluşturulan paywall'lar | 🟡 Orta  | Paywall arayüzünü uygulama kodunuzda kendiniz uygularsınız, ancak ürün tekliflerinde esnekliği korumak için paywall nesnesini yine Adapty'den alırsınız. [Kılavuza](kmp-quickstart-manual) bakın.                                                         |
+| Observer mode             | 🔴 Zor    | Kendi satın alma altyapınız varsa ve bunu kullanmaya devam etmek istiyorsanız. Observer mode'un Adapty'de bazı kısıtlamaları olduğunu unutmayın. [Makaleye](observer-vs-full-mode) bakın.                                                 |
+
+:::important
+**Aşağıdaki adımlar, Adapty paywall builder'da oluşturulan bir paywall'ın nasıl uygulanacağını göstermektedir.**
+
+Paywall builder'ı kullanmak istemiyorsanız [elle oluşturulan paywall'larda satın alma işlemlerini yönetme kılavuzuna](kmp-making-purchases) bakın.
+:::
+
+Adapty paywall builder'da oluşturulan bir paywall'ı göstermek için uygulama kodunuzda yalnızca şunları yapmanız yeterlidir:
+
+1. **Paywall'ı alın**: Paywall'ı Adapty'den alın.
+2. **Paywall'ı gösterin, satın alımları Adapty halleder**: Aldığınız paywall container'ını uygulamanızda gösterin.
+3. **Buton eylemlerini işleyin**: Kullanıcının paywall'daki etkileşimlerini uygulamanızın bu etkileşimlere verdiği yanıtlarla ilişkilendirin. Örneğin, kullanıcılar butonlara tıkladığında bağlantı açın ya da paywall'ı kapatın.
+
+## Başlamadan önce \{#before-you-start\}
+
+Başlamadan önce şu adımları tamamlayın:
+
+1. Adapty Kontrol Paneli'nde uygulamanızı [App Store](initial_ios) ve/veya [Google Play](initial-android)'e bağlayın.
+2. Adapty'de [ürünlerinizi oluşturun](create-product).
+3. [Bir paywall oluşturun ve içine ürün ekleyin](create-paywall).
+4. [Bir placement oluşturun ve paywall'ınızı buna ekleyin](create-placement).
+5. Uygulama kodunuzda [Adapty SDK'yı yükleyin ve etkinleştirin](sdk-installation-kotlin-multiplatform).
+
+:::tip
+Bu adımları tamamlamanın en hızlı yolu [hızlı başlangıç kılavuzunu](quickstart) takip etmek ya da [Geliştirici CLI](developer-cli-quickstart) ile paywall ve placement oluşturmaktır.
+:::
+
+## 1. Paywall'ı alın \{#1-get-the-paywall\}
+
+Paywall'larınız, kontrol panelinde yapılandırılan placement'larla ilişkilendirilir. Placement'lar, farklı kitleler için farklı paywall'lar çalıştırmanıza veya [A/B testi](ab-tests) yapmanıza olanak tanır.
+
+Adapty paywall builder'da oluşturulan bir paywall'ı almak için şunları yapmanız gerekir:
+
+1. `getPaywall` metodunu kullanarak [placement](placements) ID'sine göre `paywall` nesnesini alın ve bunun builder'da oluşturulmuş bir paywall olup olmadığını kontrol edin.
+
+2. `createPaywallView` metodunu kullanarak paywall görünüm yapılandırmasını alın. Görünüm yapılandırması, paywall'ı göstermek için gereken arayüz öğelerini ve stil bilgilerini içerir.
+
+:::important
+Görünüm yapılandırmasını alabilmek için Paywall Builder'da **Show on device** geçişini açmanız gerekir. Aksi takdirde boş bir görünüm yapılandırması alırsınız ve paywall gösterilmez.
+:::
+
+```kotlin showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    .onSuccess { paywall ->
+        if (!paywall.hasViewConfiguration) {
+            return@onSuccess
+        }
+        
+        val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
+        paywallView?.present()
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+## 2. Paywall'ı gösterin \{#2-display-the-paywall\}
+
+Paywall yapılandırmasını aldıktan sonra, paywall'ınızı görüntülemek için birkaç satır kod eklemeniz yeterlidir.
+
+Görsel paywall'ı cihaz ekranında göstermek için önce yapılandırmanız gerekir. Bunun için `AdaptyUI.createPaywallView()` metodunu çağırın:
+
+```kotlin showLineNumbers
+val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
+paywallView?.present()
+```
+
+Görünüm başarıyla oluşturulduktan sonra cihaz ekranında gösterebilirsiniz.
+
+:::tip
+Paywall'ın nasıl gösterileceğine dair daha fazla ayrıntı için [kılavuzumuza](kmp-present-paywalls) bakın.
+:::
+
+## 3. Buton eylemlerini işleyin \{#3-handle-button-actions\}
+
+Kullanıcılar paywall'daki butonlara tıkladığında Kotlin Multiplatform SDK, satın almaları, geri yüklemeyi, paywall'ı kapatmayı ve bağlantı açmayı otomatik olarak işler.
+
+Ancak diğer butonların özel veya önceden tanımlanmış ID'leri vardır ve eylemlerin kodunuzda işlenmesi gerekir. Ayrıca varsayılan davranışlarını geçersiz kılmak isteyebilirsiniz.
+
+Örneğin, aşağıda kapat butonu için varsayılan davranış gösterilmektedir. Bunu koda eklemenize gerek yoktur, ancak gerekirse nasıl yapıldığını buradan görebilirsiniz.
+
+:::tip
+Buton [eylemlerini](kmp-handle-paywall-actions) ve [olayları](kmp-handling-events) nasıl işleyeceğinize dair kılavuzlarımızı okuyun.
+:::
+
+```kotlin showLineNumbers
+AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            AdaptyUIAction.CloseAction, AdaptyUIAction.AndroidSystemBackAction -> view.dismiss()
+        }
+    }
+})
+```
+
+## Sonraki adımlar \{#next-steps\}
+
+Paywall'ınız uygulamada gösterilmeye hazır. Paywall üzerinden test satın alımı yapabildiğinizden emin olmak için [App Store sandbox](test-purchases-in-sandbox) ortamında veya [Google Play Store](testing-on-android)'da satın alımlarınızı test edin.
+
+Şimdi, doğru kullanıcılara paywall gösterdiğinizden veya ücretli özelliklere erişim verdiğinizden emin olmak için [kullanıcıların access level'ını kontrol etmeniz](kmp-check-subscription-status) gerekiyor.
+
+## Tam örnek \{#full-example\}
+
+Tüm bu adımların uygulamanızda birlikte nasıl entegre edilebileceği aşağıda gösterilmektedir.
+
+```kotlin showLineNumbers
+// Set up the observer for handling paywall actions
+AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CloseAction -> view.dismiss()
+        }
+    }
+})
+
+// Get and display the paywall
+Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    .onSuccess { paywall ->
+        if (!paywall.hasViewConfiguration) {
+            // Use custom logic
+            return@onSuccess
+        }
+
+        val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
+        paywallView?.present()
+    }
+    .onError { error ->
+        // handle the error
+    }
+```

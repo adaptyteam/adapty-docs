@@ -1,0 +1,155 @@
+---
+title: "Flutter SDK'da kullanıcıları tanımlama"
+description: "Flutter'da uygulama içi abonelik yönetimi için Adapty kurulum hızlı başlangıç kılavuzu."
+metadataTitle: "Adapty Hızlı Başlangıç Kılavuzu | Adapty Dokümanları"
+keywords: ['tanımla', 'kullanıcıları tanımlama', 'customeruserid']
+rank: 80
+---
+
+:::important
+Bu kılavuz, kendi kimlik doğrulama sisteminiz varsa sizin içindir. Burada, Adapty'deki kullanıcı profilleriyle nasıl çalışacağınızı ve bunları mevcut kimlik doğrulama sisteminizle nasıl uyumlu hale getireceğinizi öğreneceksiniz.
+:::
+
+Kullanıcıların satın almalarını nasıl yöneteceğiniz, uygulamanızın kimlik doğrulama modeline bağlıdır:
+- Uygulamanız arka uç kimlik doğrulaması kullanmıyor ve kullanıcı verilerini depolamıyorsa, [anonim kullanıcılar bölümüne](#anonymous-users) bakın.
+- Uygulamanızda arka uç kimlik doğrulaması varsa (veya olacaksa), [tanımlanmış kullanıcılar bölümüne](#identified-users) bakın.
+
+**Temel kavramlar**:
+- **Profiller**, SDK'nın çalışması için gereken varlıklardır. Adapty bunları otomatik olarak oluşturur.
+- Anonim **(customer user ID olmadan)** veya tanımlanmış **(customer user ID ile)** olabilirler.
+- Adapty'deki profilleri kendi iç kimlik doğrulama sisteminizle çapraz referanslamak için **customer user ID** sağlarsınız.
+
+Anonim ve tanımlanmış kullanıcılar arasındaki farklar şöyledir:
+
+|                         | Anonim kullanıcılar                                        | Tanımlanmış kullanıcılar                                                               |
+|-------------------------|------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| **Satın alma yönetimi** | Mağaza düzeyinde satın alma geri yükleme                   | Customer user ID aracılığıyla cihazlar arasında satın alma geçmişini koruma            |
+| **Profil yönetimi**     | Her yeniden yüklemede yeni profiller                       | Oturumlar ve cihazlar arasında aynı profil                                             |
+| **Veri kalıcılığı**     | Anonim kullanıcıların verileri uygulama kurulumuna bağlıdır | Tanımlanmış kullanıcıların verileri uygulama kurulumları arasında kalıcı olarak saklanır |
+
+## Anonim kullanıcılar \{#anonymous-users\}
+
+Arka uç kimlik doğrulamanız yoksa, **uygulama kodunda kimlik doğrulamayı yönetmenize gerek yoktur**:
+
+1. SDK, uygulamanın ilk başlatılmasında etkinleştirildiğinde, Adapty **kullanıcı için yeni bir profil oluşturur**.
+2. Kullanıcı uygulamada bir şey satın aldığında, bu satın alma **Adapty profilleriyle ve mağaza hesaplarıyla ilişkilendirilir**.
+3. Kullanıcı uygulamayı **yeniden yüklediğinde** veya **yeni bir cihaza** yüklediğinde, Adapty **etkinleştirmede yeni bir anonim profil oluşturur**.
+4. Kullanıcı daha önce uygulamanızda satın alma yaptıysa, varsayılan olarak satın almaları SDK etkinleştirildiğinde App Store'dan otomatik olarak senkronize edilir.
+
+Anonim kullanıcılarla her kurulumda yeni profiller oluşturulur; ancak bu bir sorun değildir çünkü Adapty analitiğinde [neyin yeni kurulum sayılacağını yapılandırabilirsiniz](general#4-installs-definition-for-analytics).
+
+Anonim kullanıcılar için kurulumları **cihaz kimliklerine** göre saymanız gerekir. Bu durumda, bir cihazdaki her uygulama kurulumu (yeniden yüklemeler dahil) bir kurulum olarak sayılır.
+
+## Tanımlanmış kullanıcılar \{#identified-users\}
+
+Uygulamadaki kullanıcıları tanımlamak için iki seçeneğiniz var:
+
+- [**Giriş/kayıt sırasında:**](#during-loginsignup) Kullanıcılar uygulamanız başladıktan sonra oturum açıyorsa, kimlik doğrulandıklarında customer user ID ile `identify()` çağrısı yapın.
+
+- [**SDK etkinleştirmesi sırasında:**](#during-the-sdk-activation) Uygulama başlatıldığında zaten bir customer user ID saklıyorsanız, bunu `activate()` çağrısında gönderin.
+
+:::important
+Varsayılan olarak, Adapty başka bir Customer User ID ile ilişkilendirilmiş bir Customer User ID'den satın alma aldığında, access level paylaşılır; böylece her iki profil de ücretli erişime sahip olur. Bu ayarı, ücretli erişimi bir profilden diğerine aktaracak veya paylaşımı tamamen devre dışı bırakacak şekilde yapılandırabilirsiniz. Ayrıntılar için [makaleye](general#6-sharing-paid-access-between-user-accounts) bakın.
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/identify-diagram.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Giriş/kayıt sırasında \{#during-loginsignup\}
+
+Kullanıcıları uygulama başlatıldıktan sonra tanımlıyorsanız (örneğin, uygulamanıza giriş yaptıktan veya kaydolduktan sonra), customer user ID'yi ayarlamak için `identify` metodunu kullanın.
+
+- Bu customer user ID'yi **daha önce kullanmadıysanız**, Adapty bunu otomatik olarak mevcut profille ilişkilendirir.
+- Bu customer user ID'yi **daha önce kullanıcıyı tanımlamak için kullandıysanız**, Adapty bu customer user ID ile ilişkili profille çalışmaya geçer.
+
+:::important
+Customer user ID'ler her kullanıcı için benzersiz olmalıdır. Parametre değerini sabit kodlarsanız, tüm kullanıcılar tek bir kullanıcı olarak değerlendirilir.
+:::
+
+```dart showLineNumbers
+try {
+  await Adapty().identify(customerUserId); // Unique for each user
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+### SDK etkinleştirmesi sırasında \{#during-the-sdk-activation\}
+
+SDK'yı etkinleştirdiğinizde zaten bir customer user ID biliyorsanız, `identify` metodunu ayrıca çağırmak yerine bunu `activate` metodunda gönderebilirsiniz.
+
+Bir customer user ID bilseniz de bunu yalnızca etkinleştirmeden sonra ayarlarsanız, etkinleştirme sırasında Adapty yeni bir anonim profil oluşturacak ve yalnızca `identify` çağrısından sonra mevcut profile geçecektir.
+
+Mevcut bir customer user ID (daha önce kullandığınız) veya yeni bir tane geçirebilirsiniz. Yeni bir tane geçirirseniz, etkinleştirme sırasında oluşturulan yeni profil otomatik olarak customer user ID ile ilişkilendirilir.
+
+:::note
+Varsayılan olarak, anonim profil oluşturmak analitik kontrol panellerini etkilemez çünkü kurulumlar cihaz kimliklerine göre sayılır.
+
+Bir cihaz kimliği, bir cihazdaki mağazadan tek bir uygulama kurulumunu temsil eder ve yalnızca uygulama yeniden yüklendikten sonra yeniden oluşturulur.
+Bu, bunun birinci mi yoksa tekrarlanan bir kurulum mu olduğuna, ya da mevcut bir customer user ID kullanılıp kullanılmadığına bağlı değildir.
+
+Profil oluşturma (SDK etkinleştirmesinde veya oturum kapatmada), giriş yapma veya uygulamayı yeniden yüklemeden yükseltme ek kurulum olayları oluşturmaz.
+
+Kurulumları benzersiz kullanıcılara göre saymak istiyorsanız, **App settings** sayfasına gidin ve [**Installs definition for analytics**](general#4-installs-definition-for-analytics) seçeneğini yapılandırın.
+:::
+
+```dart showLineNumbers"
+   try {
+       await Adapty().activate(
+           configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+             ..withCustomerUserId(YOUR_CUSTOMER_USER_ID) // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+       );
+   } catch (e) {
+       // handle the error
+   }
+```
+
+### Kullanıcıları oturumu kapatma \{#log-users-out\}
+
+Kullanıcıların oturumunu kapatmak için bir düğmeniz varsa, `logout` metodunu kullanın.
+
+:::important
+Kullanıcıların oturumunu kapatmak, kullanıcı için yeni bir anonim profil oluşturur.
+:::
+
+```dart showLineNumbers
+try {
+  await Adapty().logout();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle unknown error
+}
+```
+
+:::info
+Kullanıcıları uygulamaya tekrar giriş yaptırmak için `identify` metodunu kullanın.
+:::
+
+### Giriş yapmadan satın alma yapılmasına izin verme \{#allow-purchases-without-login\}
+
+Kullanıcılarınız uygulamanıza giriş yapmadan önce ve sonra satın alma yapabiliyorsa, giriş yaptıktan sonra erişimlerini korumalarını sağlamanız gerekir:
+
+1. Oturum açmamış bir kullanıcı satın alma yaptığında, Adapty bunu anonim profil kimliğiyle ilişkilendirir.
+2. Kullanıcı hesabına giriş yaptığında, Adapty tanımlanmış profiliyle çalışmaya geçer.
+    - Yeni bir customer user ID ise (örneğin, satın alma kayıt öncesinde yapılmışsa), Adapty customer user ID'yi mevcut profile atar; böylece tüm satın alma geçmişi korunur.
+    - Mevcut bir customer user ID ise (customer user ID zaten bir profille bağlantılıysa), profil geçişinden sonra gerçek access level'ı almanız gerekir. Tanımlamanın hemen ardından [`getProfile`](flutter-check-subscription-status) çağrısı yapabilir veya veriler otomatik olarak senkronize olsun diye [profil güncellemelerini dinleyebilirsiniz](flutter-check-subscription-status).
+
+## Sonraki adımlar \{#next-steps\}
+
+Tebrikler! Uygulamanızda uygulama içi ödeme mantığını başarıyla uyguladınız! Uygulama gelir elde etme sürecinizde başarılar dileriz!
+
+Adapty'den daha fazla yararlanmak için şu konuları inceleyebilirsiniz:
+- [**Test etme**](troubleshooting-test-purchases): Her şeyin beklendiği gibi çalıştığından emin olun
+- [**Onboardinglar**](flutter-onboardings): Onboardinglarla kullanıcıları etkileyin ve elde tutmayı artırın
+- [**Entegrasyonlar**](configuration): Pazarlama attribution ve analitik hizmetleriyle tek satır kodla entegre edin
+- [**Özel profil özellikleri ayarlama**](flutter-setting-user-attributes): Kullanıcı profillerine özel özellikler ekleyin ve segmentler oluşturun; böylece A/B testleri başlatabilir veya farklı kullanıcılara farklı paywalllar gösterebilirsiniz

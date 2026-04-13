@@ -1,0 +1,268 @@
+---
+title: "Flutter uygulamanıza Adapty'yi yapay zeka yardımıyla entegre edin"
+description: "Cursor, Context7, ChatGPT, Claude veya diğer yapay zeka araçlarını kullanarak Flutter uygulamanıza Adapty'yi adım adım entegre etme kılavuzu."
+metadataTitle: "Flutter için Yapay Zeka Yardımıyla Adapty Entegrasyonu | Adapty Dokümanları"
+displayed_sidebar: sdkflutter
+---
+
+Bu kılavuz, bir LLM yardımıyla Flutter uygulamanıza Adapty'yi entegre etmenize yardımcı olur. Adapty kontrol panelinizi hazırlamakla başlayacak, ardından her uygulama aşamasında LLM'inize odaklanmış doküman bağlantıları göndererek ilerleyeceksiniz. Sonunda, Adapty dokümantasyonuyla yapay zeka araçlarınızı kurmanın en iyi yöntemlerini bulacaksınız.
+
+:::tip
+Başlamak için bu sayfanın tamamını Markdown olarak kopyalayıp LLM'inize yapıştırın — sayfanın üstündeki **Copy for LLM** butonuna tıklayın ya da [.md sürümünü](https://adapty.io/docs/tr/adapty-cursor-flutter.md) açın. LLM, kılavuz bağlantılarını ve kontrol noktalarını kullanarak sizi her aşamada yönlendirecektir.
+:::
+
+## Başlamadan önce: kontrol paneli kurulumu \{#before-you-start-dashboard-setup\}
+
+Adapty, herhangi bir SDK kodu yazmadan önce bazı kontrol paneli yapılandırmaları gerektirir. Bunu etkileşimli bir LLM becerisiyle ya da Kontrol Paneli üzerinden manuel olarak yapabilirsiniz.
+
+### Beceri yaklaşımı (önerilen) \{#skill-approach-recommended\}
+
+Adapty CLI becerisi, LLM'inizin uygulamanızı, ürünlerinizi, access level'larınızı, paywall'larınızı ve placement'larınızı doğrudan — Kontrol Paneli'ni her adımda açmadan — kurmasına olanak tanır. Yalnızca Kontrol Paneli'nde [mağazalarınızı bağlamanız](integrate-payments) gerekir.
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+Beceri eklendikten sonra, agent'ınızda `/adapty-cli` komutunu çalıştırın. Mağazalarınızı bağlamak için Kontrol Paneli'ni ne zaman açmanız gerektiği dahil, her adımda sizi yönlendirecektir.
+
+### Kontrol paneli yaklaşımı \{#dashboard-approach\}
+
+Her şeyi manuel olarak yapılandırmayı tercih ediyorsanız, kod yazmadan önce şunlara ihtiyacınız var. LLM'iniz kontrol paneli değerlerini sizin için arayamaz — bunları kendiniz sağlamanız gerekecektir.
+
+1. **Uygulama mağazalarınızı bağlayın**: Adapty Kontrol Paneli'nde **App settings → General** bölümüne gidin. Flutter uygulamanız her iki platformu da hedefliyorsa hem App Store hem de Google Play'i bağlayın. Bu, satın almaların çalışması için zorunludur.
+   [Uygulama mağazalarını bağlayın](integrate-payments)
+
+2. **Public SDK anahtarınızı kopyalayın**: Adapty Kontrol Paneli'nde **App settings → General** bölümüne gidin, ardından **API keys** bölümünü bulun. Kodda bu, Adapty yapılandırmasına geçirdiğiniz dizedir.
+
+3. **En az bir ürün oluşturun**: Adapty Kontrol Paneli'nde **Products** sayfasına gidin. Ürünlere kodda doğrudan başvurmazsınız — Adapty bunları paywall'lar aracılığıyla iletir.
+   [Ürün ekleyin](quickstart-products)
+
+4. **Bir paywall ve placement oluşturun**: Adapty Kontrol Paneli'nde **Paywalls** sayfasında bir paywall oluşturun, ardından **Placements** sayfasında bir placement'a atayın. Kodda, placement ID'si `Adapty().getPaywall()` metoduna geçirdiğiniz dizedir.
+   [Paywall oluşturun](quickstart-paywalls)
+
+5. **Access level'ları ayarlayın**: Adapty Kontrol Paneli'nde **Products** sayfasında ürün bazında yapılandırın. Kodda bu, `profile.accessLevels['premium']?.isActive` içinde kontrol edilen dizedir. Çoğu uygulama için varsayılan `premium` access level yeterlidir. Ödeme yapan kullanıcılar ürüne göre farklı özelliklere erişiyorsa (örneğin `basic` plan ile `pro` plan), kodlamaya başlamadan önce [ek access level'lar oluşturun](assigning-access-level-to-a-product).
+
+:::tip
+Bu beşini hazırladıktan sonra kod yazmaya hazırsınız. LLM'inize "Public SDK anahtarım X, placement ID'm Y" şeklinde bilgi verin; böylece doğru başlatma ve paywall çekme kodu üretebilir.
+:::
+
+### Hazır olduğunuzda kurun \{#set-up-when-ready\}
+
+Bunlar kodlamaya başlamak için zorunlu değil, ancak entegrasyonunuz olgunlaştıkça ihtiyaç duyacaksınız:
+
+- **A/B testleri**: **Placements** sayfasında yapılandırın. Kod değişikliği gerekmez.
+  [A/B testleri](ab-tests)
+- **Ek paywall'lar ve placement'lar**: Farklı placement ID'leriyle daha fazla `getPaywall` çağrısı ekleyin.
+- **Analitik entegrasyonları**: **Integrations** sayfasında yapılandırın. Kurulum entegrasyona göre değişir. Bkz. [analitik entegrasyonlar](analytics-integration) ve [attribution entegrasyonları](attribution-integration).
+
+## Adapty dokümanlarını LLM'inize besleyin \{#feed-adapty-docs-to-your-llm\}
+
+### Context7 kullanın (önerilen) \{#use-context7-recommended\}
+
+[Context7](https://context7.com), LLM'inizin güncel Adapty dokümantasyonuna doğrudan erişmesini sağlayan bir MCP sunucusudur. LLM'iniz sorduğunuz şeye göre doğru dokümanları otomatik olarak çeker — manuel URL yapıştırmanıza gerek yoktur.
+
+Context7, **Cursor**, **Claude Code**, **Windsurf** ve diğer MCP uyumlu araçlarla çalışır. Kurmak için şunu çalıştırın:
+
+```
+npx ctx7 setup
+```
+
+Bu komut editörünüzü algılar ve Context7 sunucusunu yapılandırır. Manuel kurulum için [Context7 GitHub deposuna](https://github.com/upstash/context7) bakın.
+
+Yapılandırıldıktan sonra, komutlarınızda Adapty kütüphanesine başvurun:
+
+```
+Flutter SDK'yı nasıl kuracağımı öğrenmek için adaptyteam/adapty-docs kütüphanesini kullan
+```
+
+:::warning
+Context7, doküman bağlantılarını manuel olarak yapıştırma ihtiyacını ortadan kaldırsa da uygulama sırası önemlidir. Her şeyin düzgün çalışması için aşağıdaki [uygulama adım adım kılavuzunu](#implementation-walkthrough) adım adım takip edin.
+:::
+
+### Düz metin dokümanlar kullanın \{#use-plain-text-docs\}
+
+Herhangi bir Adapty dokümanına düz metin Markdown olarak erişebilirsiniz. URL'nin sonuna `.md` ekleyin ya da makale başlığının altındaki **Copy for LLM** butonuna tıklayın. Örneğin: [adapty-cursor-flutter.md](https://adapty.io/docs/tr/adapty-cursor-flutter.md).
+
+Aşağıdaki [uygulama adım adım kılavuzundaki](#implementation-walkthrough) her aşama, yapıştırabileceğiniz `.md` bağlantılarıyla "LLM'inize bunu gönderin" bloğu içerir.
+
+Daha fazla dokümantasyon için aşağıdaki [indeks dosyaları ve platforma özgü alt kümeler](#plain-text-doc-index-files) bölümüne bakın.
+
+## Uygulama adım adım kılavuzu \{#implementation-walkthrough\}
+
+Bu kılavuzun geri kalanı, Adapty entegrasyonunu uygulama sırasıyla ele alır. Her aşama LLM'inize gönderilecek dokümanları, tamamlandığında görmeniz gerekenleri ve sık karşılaşılan sorunları içerir.
+
+### Entegrasyonunuzu planlayın \{#plan-your-integration\}
+
+Koda atlamadan önce LLM'inizden projenizi analiz etmesini ve bir uygulama planı oluşturmasını isteyin. Yapay zeka aracınız bir planlama modunu destekliyorsa (Cursor'ın veya Claude Code'un plan modu gibi), LLM'in herhangi bir kod yazmadan önce hem proje yapınızı hem de Adapty dokümanlarını okuyabilmesi için bunu kullanın.
+
+LLM'inize satın alımlar için hangi yaklaşımı kullandığınızı söyleyin — bu, takip etmesi gereken kılavuzları etkiler:
+
+- [**Adapty Paywall Builder**](adapty-paywall-builder): Paywallları Adapty'nin kodsuz oluşturucusunda oluşturursunuz; SDK bunları otomatik olarak render eder.
+- [**Manuel olarak oluşturulan paywalllar**](flutter-making-purchases): Kendi paywall UI'nızı kodda oluşturursunuz, ancak ürünleri çekmek ve satın almaları yönetmek için Adapty'yi kullanırsınız.
+- [**Observer modu**](observer-vs-full-mode): Mevcut satın alma altyapınızı korur ve Adapty'yi yalnızca analitik ve entegrasyonlar için kullanırsınız.
+
+Hangisini seçeceğinizden emin değil misiniz? [Hızlı başlangıçtaki karşılaştırma tablosunu](flutter-quickstart-paywalls) okuyun.
+
+### SDK'yı yükleyin ve yapılandırın \{#install-and-configure-the-sdk\}
+
+`flutter pub add` kullanarak Adapty SDK bağımlılığını ekleyin ve Public SDK anahtarınızla etkinleştirin. Bu temeldir — bunun olmadan hiçbir şey çalışmaz.
+
+**Kılavuz:** [Adapty SDK'yı yükleyin ve yapılandırın](sdk-installation-flutter)
+
+LLM'inize bunu gönderin:
+```
+Kod yazmadan önce bu Adapty dokümanlarını okuyun:
+- https://adapty.io/docs/tr/sdk-installation-flutter.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Uygulama hem iOS hem Android'de derlenir ve çalışır. Hata ayıklama konsolu Adapty etkinleştirme logunu gösterir.
+- **Dikkat:** "Public API key is missing" → anahtarı App settings'teki gerçek anahtarınızla değiştirdiğinizi kontrol edin.
+:::
+
+### Paywall gösterin ve satın almaları yönetin \{#show-paywalls-and-handle-purchases\}
+
+Placement ID'siyle bir paywall çekin, gösterin ve satın alma olaylarını yönetin. İhtiyaç duyduğunuz kılavuzlar, satın almaları nasıl yönettiğinize bağlıdır.
+
+Her satın almayı ilerledikçe sandbox'ta test edin — sonuna kadar beklemeyin. Kurulum talimatları için bkz. [Sandbox'ta satın almaları test edin](test-purchases-in-sandbox).
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**Kılavuzlar:**
+- [Paywalllar kullanarak satın almaları etkinleştirin (hızlı başlangıç)](flutter-quickstart-paywalls)
+- [Paywall Builder paywalllarını ve yapılandırmalarını çekin](flutter-get-pb-paywalls)
+- [Paywallları görüntüleyin](flutter-present-paywalls)
+- [Paywall olaylarını yönetin](flutter-handling-events)
+- [Buton eylemlerine yanıt verin](flutter-handle-paywall-actions)
+
+LLM'inize bunu gönderin:
+```
+Kod yazmadan önce bu Adapty dokümanlarını okuyun:
+- https://adapty.io/docs/tr/flutter-quickstart-paywalls.md
+- https://adapty.io/docs/tr/flutter-get-pb-paywalls.md
+- https://adapty.io/docs/tr/flutter-present-paywalls.md
+- https://adapty.io/docs/tr/flutter-handling-events.md
+- https://adapty.io/docs/tr/flutter-handle-paywall-actions.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Paywall, yapılandırılmış ürünlerinizle görünür. Bir ürüne dokunmak sandbox satın alma iletişim kutusunu tetikler.
+- **Dikkat:** Boş paywall veya `getPaywall` hatası → placement ID'sinin kontrol panelindekiyle tam olarak eşleştiğini ve placement'a bir kitle atandığını doğrulayın.
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Manuel paywalllar">
+
+**Kılavuzlar:**
+- [Özel paywallınızda satın almaları etkinleştirin (hızlı başlangıç)](flutter-quickstart-manual)
+- [Paywallları ve ürünleri çekin](fetch-paywalls-and-products-flutter)
+- [Remote config ile tasarlanmış paywallı render edin](present-remote-config-paywalls-flutter)
+- [Satın alma yapın](flutter-making-purchases)
+- [Satın almaları geri yükleyin](flutter-restore-purchase)
+
+LLM'inize bunu gönderin:
+```
+Kod yazmadan önce bu Adapty dokümanlarını okuyun:
+- https://adapty.io/docs/tr/flutter-quickstart-manual.md
+- https://adapty.io/docs/tr/fetch-paywalls-and-products-flutter.md
+- https://adapty.io/docs/tr/present-remote-config-paywalls-flutter.md
+- https://adapty.io/docs/tr/flutter-making-purchases.md
+- https://adapty.io/docs/tr/flutter-restore-purchase.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Özel paywallınız Adapty'den çekilen ürünleri gösterir. Bir ürüne dokunmak sandbox satın alma iletişim kutusunu tetikler.
+- **Dikkat:** Boş ürünler dizisi → paywallın kontrol panelinde ürünler atandığını ve placement'ın bir kitlesi olduğunu doğrulayın.
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer modu">
+
+**Kılavuzlar:**
+- [Observer modu genel bakış](observer-vs-full-mode)
+- [Observer modunu uygulayın](implement-observer-mode-flutter)
+- [Observer modunda işlemleri raporlayın](report-transactions-observer-mode-flutter)
+
+LLM'inize bunu gönderin:
+```
+Kod yazmadan önce bu Adapty dokümanlarını okuyun:
+- https://adapty.io/docs/tr/observer-vs-full-mode.md
+- https://adapty.io/docs/tr/implement-observer-mode-flutter.md
+- https://adapty.io/docs/tr/report-transactions-observer-mode-flutter.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Mevcut satın alma akışınızı kullanarak sandbox'ta bir satın alma yaptıktan sonra işlem, Adapty kontrol panelinin **Event Feed** bölümünde görünür.
+- **Dikkat:** Hiç olay yok → işlemleri Adapty'ye bildirdiğinizi ve her iki mağaza için de sunucu bildirimlerinin yapılandırıldığını doğrulayın.
+:::
+
+</TabItem>
+
+</Tabs>
+
+### Abonelik durumunu kontrol edin \{#check-subscription-status\}
+
+Satın alma işleminin ardından premium içeriği kilitlemek için kullanıcı profilinde aktif bir access level olup olmadığını kontrol edin.
+
+**Kılavuz:** [Abonelik durumunu kontrol edin](flutter-check-subscription-status)
+
+LLM'inize bunu gönderin:
+```
+Kod yazmadan önce bu Adapty dokümanlarını okuyun:
+- https://adapty.io/docs/tr/flutter-check-subscription-status.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Sandbox satın almasının ardından `profile.accessLevels['premium']?.isActive` değeri `true` döner.
+- **Dikkat:** Satın alma sonrası boş `accessLevels` → ürüne kontrol panelinde bir access level atandığını kontrol edin.
+:::
+
+### Kullanıcıları tanımlayın \{#identify-users\}
+
+Satın almaların cihazlar arasında kalıcı olması için uygulama kullanıcı hesaplarınızı Adapty profillerine bağlayın.
+
+:::important
+Uygulamanızda kimlik doğrulama yoksa bu adımı atlayın.
+:::
+
+**Kılavuz:** [Kullanıcıları tanımlayın](flutter-quickstart-identify)
+
+LLM'inize bunu gönderin:
+```
+Kod yazmadan önce bu Adapty dokümanlarını okuyun:
+- https://adapty.io/docs/tr/flutter-quickstart-identify.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** `Adapty().identify()` çağrısından sonra kontrol panelinin **Profiles** bölümü özel kullanıcı ID'nizi gösterir.
+- **Dikkat:** Anonim profil attribution'ını önlemek için `identify`'ı etkinleştirmeden sonra ancak paywallları çekmeden önce çağırın.
+:::
+
+### Yayına almaya hazırlanın \{#prepare-for-release\}
+
+Entegrasyonunuz sandbox'ta çalışır hale gelince, her şeyin production'a hazır olduğundan emin olmak için yayın kontrol listesini inceleyin.
+
+**Kılavuz:** [Yayın kontrol listesi](release-checklist)
+
+LLM'inize bunu gönderin:
+```
+Yayına almadan önce bu Adapty dokümanlarını okuyun:
+- https://adapty.io/docs/tr/release-checklist.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Tüm kontrol listesi maddeleri onaylandı: mağaza bağlantıları, sunucu bildirimleri, satın alma akışı, access level kontrolleri ve gizlilik gereksinimleri.
+- **Dikkat:** Eksik sunucu bildirimleri → **App settings → iOS SDK** bölümünde App Store Sunucu Bildirimlerini ve **App settings → Android SDK** bölümünde Google Play Gerçek Zamanlı Geliştirici Bildirimlerini yapılandırın.
+:::
+
+## Düz metin doküman indeks dosyaları \{#plain-text-doc-index-files\}
+
+LLM'inize tek tek sayfaların ötesinde daha geniş bağlam sağlamanız gerekiyorsa, tüm Adapty dokümantasyonunu listeleyen veya birleştiren indeks dosyaları barındırıyoruz:
+
+- [`llms.txt`](https://adapty.io/docs/tr/llms.txt): Tüm sayfaları `.md` bağlantılarıyla listeler. Web sitelerini LLM'lere erişilebilir kılmak için [gelişmekte olan bir standart](https://llmstxt.org/). Bazı yapay zeka agent'larında (örn. ChatGPT) `llms.txt` dosyasını indirip sohbete dosya olarak yüklemeniz gerekebilir.
+- [`llms-full.txt`](https://adapty.io/docs/tr/llms-full.txt): Tüm Adapty dokümantasyon sitesi tek bir dosyada birleştirilmiş halde. Çok büyük — yalnızca tam resme ihtiyaç duyduğunuzda kullanın.
+- Flutter'a özgü [`flutter-llms.txt`](https://adapty.io/docs/tr/flutter-llms.txt) ve [`flutter-llms-full.txt`](https://adapty.io/docs/tr/flutter-llms-full.txt): Tam siteye kıyasla token tasarrufu sağlayan platforma özgü alt kümeler.

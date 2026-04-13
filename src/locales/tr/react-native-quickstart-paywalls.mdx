@@ -1,0 +1,294 @@
+---
+title: "React Native SDK'da paywall kullanarak satın almaları etkinleştirin"
+description: "Adapty SDK ile React Native uygulamanızda paywallları nasıl göstereceğinizi öğrenin."
+metadataTitle: "Paywall Gösterme | React Native SDK | Adapty Dokümanları"
+customSlug: /react-native-quickstart-paywalls
+displayed_sidebar: sdkreactnative
+keywords: [ 'paywall', 'paywall builder', 'getPaywall']
+rank: 70
+---
+
+import PaywallsIntro from '@site/src/locales/tr/reusable/PaywallsIntro.md';
+
+Uygulama içi satın almaları etkinleştirmek için üç temel kavramı anlamanız gerekir:
+
+- [**Ürünler**](product) – kullanıcıların satın alabileceği her şey (abonelikler, consumable'lar, süresiz erişim)
+- [**Paywalllar**](paywalls), hangi ürünlerin sunulacağını tanımlayan yapılandırmalardır. Adapty'de ürünlere yalnızca paywalllar aracılığıyla ulaşabilirsiniz; bu tasarım sayesinde uygulama kodunuza dokunmadan teklifleri, fiyatlandırmayı ve ürün kombinasyonlarını değiştirebilirsiniz.
+- [**Placementlar**](placements) – uygulamanızda paywallları nerede ve ne zaman gösterdiğiniz (`main`, `onboarding`, `settings` gibi). Kontrol panelinde placementlar için paywalllar ayarlarsınız, ardından kodunuzda placement ID'si ile bunları talep edersiniz. Bu yaklaşım A/B testlerini kolaylaştırır ve farklı kullanıcılara farklı paywalllar göstermenizi sağlar.
+
+Adapty, uygulamanızda satın almaları etkinleştirmek için üç farklı yöntem sunar. Uygulama gereksinimlerinize göre birini seçin:
+
+| Uygulama                  | Karmaşıklık | Ne zaman kullanılır                                                                                                                                                                                                                              |
+|---------------------------|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty Paywall Builder    | ✅ Kolay     | No-code builder'da [eksiksiz, satın almaya hazır bir paywall oluşturursunuz](quickstart-paywalls). Adapty bunu otomatik olarak oluşturur ve tüm karmaşık satın alma akışını, makbuz doğrulamasını ve abonelik yönetimini arka planda halleder. |
+| Manuel oluşturulan paywalllar | 🟡 Orta  | Paywall arayüzünü uygulama kodunuzda kendiniz uygularsınız; ancak ürün tekliflerinde esnekliği korumak için paywall nesnesini yine Adapty'den alırsınız. [Kılavuza](react-native-quickstart-manual) bakın.                                     |
+| Observer modu             | 🔴 Zor      | Kendi satın alma altyapınız zaten varsa ve kullanmaya devam etmek istiyorsanız. Observer modunun Adapty'de bazı kısıtlamaları olduğunu unutmayın. [Makaleye](observer-vs-full-mode) bakın.                                                       |
+
+:::important
+**Aşağıdaki adımlar, Adapty paywall builder'da oluşturulan bir paywallın nasıl uygulanacağını göstermektedir.**
+
+Paywall builder'ı kullanmak istemiyorsanız [manuel oluşturulan paywallarda satın almaları yönetme kılavuzuna](react-native-making-purchases) bakın.
+:::
+
+Adapty paywall builder'da oluşturulan bir paywallı göstermek için uygulama kodunuzda yalnızca şunları yapmanız gerekir:
+
+1. **Paywallı alın**: Adapty'den paywallı alın.
+2. **Paywallı gösterin, satın almaları Adapty halleder**: Aldığınız paywall container'ını uygulamanızda gösterin.
+3. **Buton aksiyonlarını yönetin**: Kullanıcıların paywall ile etkileşimlerini uygulamanızın yanıtlarıyla ilişkilendirin. Örneğin, kullanıcılar butonlara tıkladığında bağlantılar açın veya paywallı kapatın.
+
+## Başlamadan önce \{#before-you-start\}
+
+Başlamadan önce şu adımları tamamlayın:
+
+1. Adapty Kontrol Paneli'nde uygulamanızı [App Store](initial_ios) ve/veya [Google Play](initial-android)'e bağlayın.
+2. Adapty'de [ürünlerinizi oluşturun](create-product).
+3. [Bir paywall oluşturun ve ürünleri ekleyin](create-paywall).
+4. [Bir placement oluşturun ve paywallınızı ekleyin](create-placement).
+5. Uygulama kodunuza [Adapty SDK'yı yükleyin ve etkinleştirin](sdk-installation-reactnative).
+
+:::tip
+Bu adımları tamamlamanın en hızlı yolu [hızlı başlangıç kılavuzunu](quickstart) takip etmek veya [Developer CLI](developer-cli-quickstart) kullanarak paywalllar ve placementlar oluşturmaktır.
+:::
+
+## 1. Paywallı alın \{#1-get-the-paywall\}
+
+Paywalllarınız, kontrol panelinde yapılandırılan placementlarla ilişkilidir. Placementlar, farklı kitleler için farklı paywalllar çalıştırmanıza veya [A/B testleri](ab-tests) yapmanıza olanak tanır.
+
+Adapty paywall builder'da oluşturulan bir paywallı almak için şunları yapmanız gerekir:
+
+1. `getPaywall` metodunu kullanarak [placement](placements) ID'siyle `paywall` nesnesini alın ve `hasViewConfiguration` özelliğini kontrol ederek builder'da oluşturulmuş bir paywall olup olmadığını doğrulayın.
+
+2. `createPaywallView` metodunu kullanarak paywall view'ını oluşturun. View, paywallı görüntülemek için gereken UI öğelerini ve stillendirmeyi içerir.
+
+:::important
+View yapılandırmasını alabilmek için Paywall Builder'daki **Show on device** geçişini açmanız gerekir. Aksi takdirde boş bir view yapılandırması alırsınız ve paywall görüntülenmez.
+:::
+
+```typescript showLineNumbers title="React Native"
+
+try {
+    const placementId = 'YOUR_PLACEMENT_ID';
+
+    const paywall = await adapty.getPaywall(placementId);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
+
+if (paywall.hasViewConfiguration) {
+    try {
+        const view = await createPaywallView(paywall);
+    } catch (error) {
+        // handle the error
+    }
+} else {
+    //use your custom logic
+}
+```
+
+## 2. Paywallı gösterin \{#2-display-the-paywall\}
+
+Artık paywall yapılandırmasına sahip olduğunuzda, birkaç satır kod eklemek paywallınızı görüntülemeye yeterlidir.
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React bileşeni" default>
+
+Paywallı mevcut bileşen ağacınıza gömmek için `AdaptyPaywallView` bileşenini doğrudan React Native bileşen hiyerarşinizde kullanın:
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyPaywall({ paywall }) {
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+      onUrlPress={onUrlPress}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal sunum">
+
+Paywallı bağımsız bir ekran olarak görüntülemek için `createPaywallView` metoduyla oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir. Paywallı tekrar görüntülemeniz gerekiyorsa yeni bir `view` örneği oluşturmak için `createPaywallView`'ı bir kez daha çağırın.
+
+```typescript showLineNumbers title="React Native"
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::tip
+Paywall gösterme hakkında daha fazla bilgi için [kılavuzumuza](react-native-present-paywalls) bakın.
+:::
+
+## 3. Buton aksiyonlarını yönetin \{#3-handle-button-actions\}
+
+Kullanıcılar paywallda butonlara tıkladığında React Native SDK, satın almaları, geri yüklemeyi, paywallı kapatmayı ve URL'leri açmayı otomatik olarak yönetir.
+
+Ancak diğer butonların özel veya önceden tanımlanmış ID'leri vardır ve aksiyonların kodunuzda yönetilmesi gerekir. Ya da varsayılan davranışlarını geçersiz kılmak isteyebilirsiniz.
+
+Örneğin, kapat butonu için varsayılan davranış şöyledir. Bunu koda eklemeniz gerekmez, ancak gerektiğinde nasıl yapılacağını burada görebilirsiniz.
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React bileşeni" default>
+
+React bileşeni için aksiyonları doğrudan `AdaptyPaywallView` bileşeninde yönetin:
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyPaywall({ paywall }) {
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {}, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onUrlPress={onUrlPress}
+      onCloseButtonPress={onCloseButtonPress}
+      onCustomAction={onCustomAction}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal sunum">
+
+Modal sunum için `setEventHandlers` kullanarak olay işleyicilerini uygulayın:
+
+```typescript showLineNumbers title="React Native"
+const unsubscribe = view.setEventHandlers({
+    onCloseButtonPress() {
+        return true; // allow paywall closing
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+:::tip
+Buton [aksiyonlarını](react-native-handle-paywall-actions) ve [olaylarını](react-native-handling-events-1) nasıl yöneteceğinizle ilgili kılavuzlarımızı okuyun.
+:::
+
+## Sonraki adımlar \{#next-steps\}
+
+<SupportForum />
+
+Paywallınız uygulamada görüntülenmeye hazır. Paywalldan test satın almasını tamamlayabildiğinizden emin olmak için satın almalarınızı [App Store sandbox](test-purchases-in-sandbox)'ta veya [Google Play Store](testing-on-android)'da test edin.
+
+Şimdi, doğru kullanıcılara paywall gösterdiğinizden veya ücretli özelliklere erişim verdiğinizden emin olmak için [kullanıcıların access level'ını kontrol etmeniz](react-native-check-subscription-status) gerekiyor.
+
+## Tam örnek \{#full-example\}
+
+Tüm bu adımların uygulamanızda nasıl bir araya getirilebileceği aşağıda gösterilmiştir.
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React bileşeni" default>
+
+```javascript showLineNumbers title="React Native (TSX)"
+
+export default function PaywallScreen() {
+  const [paywall, setPaywall] = useState(null);
+
+  const loadPaywall = async () => {
+    try {
+      const paywallData = await adapty.getPaywall('YOUR_PLACEMENT_ID');
+
+      if (paywallData.hasViewConfiguration) {
+        setPaywall(paywallData);
+      }
+    } catch (error) {
+      console.warn('Error loading paywall:', error);
+    }
+  };
+
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
+    // Handle close button press
+  }, []);
+
+  useEffect(() => {
+    loadPaywall();
+  }, []);
+
+  return (
+    <View style={{ flex: 1 }}>
+      {paywall ? (
+        <AdaptyPaywallView
+          paywall={paywall}
+          style={{ flex: 1 }}
+          onUrlPress={onUrlPress}
+          onCloseButtonPress={onCloseButtonPress}
+        />
+      ) : (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Button title="Load Paywall" onPress={loadPaywall} />
+        </View>
+      )}
+    </View>
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal sunum">
+
+```javascript showLineNumbers title="React Native"
+
+export default function PaywallScreen() {
+  const showPaywall = async () => {
+    try {
+      const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID');
+
+      if (!paywall.hasViewConfiguration) {
+        // use your custom logic
+        return;
+      }
+
+      const view = await createPaywallView(paywall);
+
+      view.setEventHandlers({
+          onCloseButtonPress() {
+              return true;
+        },
+      });
+
+      await view.present();
+    } catch (error) {
+      // handle any error that may occur during the process
+      console.warn('Error showing paywall:', error);
+    }
+  };
+
+  // you can add a button to manually trigger the paywall for testing purposes
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Button title="Show Paywall" onPress={showPaywall} />
+    </View>
+  );
+}
+```
+
+</TabItem>
+</Tabs>

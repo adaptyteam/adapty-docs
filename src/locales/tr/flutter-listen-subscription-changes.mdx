@@ -1,0 +1,81 @@
+---
+title: "Flutter SDK'da abonelik durumunu kontrol etme"
+description: "Flutter uygulamanızda müşteri tutundurma oranını artırmak için Adapty'de kullanıcı abonelik durumunu takip edin ve yönetin."
+metadataTitle: "Abonelik Durumunu Anlama | Adapty Dokümanları"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+
+Adapty ile abonelik durumunu takip etmek oldukça kolaydır. Kodunuza manuel olarak ürün ID'leri eklemenize gerek yoktur. Bunun yerine, aktif bir [access level](access-level) olup olmadığını kontrol ederek kullanıcının abonelik durumunu zahmetsizce doğrulayabilirsiniz.
+
+<details>
+   <summary>Abonelik durumunu kontrol etmeye başlamadan önce (Genişletmek için tıklayın)</summary>
+
+- iOS için [App Store Sunucu Bildirimlerini](enable-app-store-server-notifications) yapılandırın
+- Android için [Gerçek Zamanlı Geliştirici Bildirimlerini (RTDN)](enable-real-time-developer-notifications-rtdn) yapılandırın
+</details>
+
+## Access level ve AdaptyProfile nesnesi \{#access-level-and-the-adaptyprofile-object\}
+
+Access level'lar, [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html) nesnesinin özellikleridir. Uygulamanız başladığında, örneğin [kullanıcıyı tanımlarken](flutter-identifying-users#setting-customer-user-id-on-configuration) profili almanızı ve ardından değişiklik olduğunda güncellemenizi öneririz. Bu sayede profil nesnesini her seferinde yeniden istek atmadan kullanabilirsiniz.
+
+Profil güncellemelerinden haberdar olmak için, aşağıdaki [Abonelik durumu güncellemelerini dinleme](flutter-listen-subscription-changes) bölümünde açıklandığı gibi profil değişikliklerini dinleyebilirsiniz.
+
+<SampleApp />
+
+## Sunucudan access level alma \{#retrieving-the-access-level-from-the-server\}
+
+Sunucudan access level almak için `.getProfile()` metodunu kullanın:
+
+```javascript showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  // check the access
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama                                                  |
+| --------- | ------------------------------------------------------------ |
+| Profile   | <p>Bir [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html) nesnesi. Genellikle, kullanıcının uygulamada premium erişime sahip olup olmadığını belirlemek için yalnızca profilin access level durumunu kontrol etmeniz yeterlidir.</p><p></p><p>`.getProfile` metodu her zaman API'yi sorgulamaya çalıştığından en güncel sonucu döndürür. Herhangi bir nedenle (örneğin internet bağlantısı olmaması), Adapty SDK sunucudan bilgi alamazsa önbellekteki veriler döndürülür. Adapty SDK'nın bilgileri mümkün olduğunca güncel tutmak için `AdaptyProfile` önbelleğini düzenli olarak güncellediğini de belirtmek gerekir.</p> |
+
+`.getProfile()` metodu, access level durumunu öğrenebileceğiniz kullanıcı profilini döndürür. Uygulama başına birden fazla access level tanımlayabilirsiniz. Örneğin bir gazete uygulamanız varsa ve farklı konulara abonelikleri bağımsız olarak satıyorsanız, "sports" ve "science" gibi access level'lar oluşturabilirsiniz. Ancak çoğu durumda tek bir access level yeterlidir; bu durumda varsayılan "premium" access level'ını kullanabilirsiniz.
+
+Varsayılan "premium" access level'ını kontrol etmek için bir örnek:
+
+```javascript showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  if (profile?.accessLevels['premium']?.isActive ?? false) {
+        // grant access to premium features
+    }
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+### Abonelik durumu güncellemelerini dinleme \{#listening-for-subscription-status-updates\}
+
+Kullanıcının aboneliği her değiştiğinde Adapty bir olay tetikler.
+
+Adapty'den mesaj alabilmek için birkaç ek yapılandırma yapmanız gerekmektedir:
+
+```javascript showLineNumbers
+Adapty().didUpdateProfileStream.listen((profile) {
+  // handle any changes to subscription state
+});
+```
+
+Adapty ayrıca uygulama başlangıcında da bir olay tetikler. Bu durumda önbellekteki abonelik durumu iletilir.
+
+### Abonelik durumu önbelleği \{#subscription-status-cache\}
+
+Adapty SDK'daki önbellek, profilin abonelik durumunu saklar. Bu sayede sunucu erişilemez olsa bile profilin abonelik durumuyla ilgili bilgilere önbellekten ulaşılabilir.
+
+Ancak önbellekten doğrudan veri isteği yapılamadığını belirtmek gerekir. SDK, profille ilgili güncellemeleri veya değişiklikleri kontrol etmek için sunucuyu her dakika periyodik olarak sorgular. Yeni işlemler veya başka güncellemeler gibi değişiklikler söz konusu olduğunda, önbellekteki verilerin sunucuyla senkronize kalması için bu değişiklikler önbelleğe gönderilir.

@@ -1,0 +1,558 @@
+---
+title: "Adapty iOS SDK'yı v. 3.3'e Geçirin"
+description: "Daha iyi performans ve yeni monetizasyon özellikleri için Adapty iOS SDK v3.3'e geçin."
+metadataTitle: "Adapty iOS SDK v3.3'e Geçiş | Adapty Dokümanları"
+---
+
+Adapty SDK 3.3.0, bazı geliştirmeler içeren önemli bir sürümdür; ancak bu geliştirmeler sizin tarafınızdan bazı geçiş adımları gerektirebilir.
+
+1. `Adapty.Configuration`'ı `AdaptyConfiguration` olarak yeniden adlandırın.
+2. `getViewConfiguration` metodunu `getPaywallConfiguration` olarak yeniden adlandırın.
+3. SwiftUI'dan `didCancelPurchase` ve `paywall` parametrelerini kaldırın, `viewConfiguration` parametresini `paywallConfiguration` olarak yeniden adlandırın.
+4. `AdaptyDelegate` metodundan `defermentCompletion` parametresini kaldırarak App Store'dan gelen promosyon uygulama içi satın alma işlemlerini nasıl ele aldığınızı güncelleyin.
+5. `getProductsIntroductoryOfferEligibility` metodunu kaldırın.
+6. Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase ve Google Analytics, Mixpanel, OneSignal, Pushwoosh için entegrasyon yapılandırmalarını güncelleyin.
+7. Observer mode uygulamasını güncelleyin.
+
+<div style={{ textAlign: 'center' }}>
+  <iframe 
+    width="560" 
+    height="315" 
+    src="https://www.youtube.com/embed/9Xs8d0lt_RY?si=xvWhUO2tlG1tKP5f" 
+    title="YouTube video player" 
+    frameborder="0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerpolicy="strict-origin-when-cross-origin" 
+    allowfullscreen>
+  </iframe>
+</div>
+
+## Adapty.Configuration'ı AdaptyConfiguration olarak yeniden adlandırın \{#rename-adaptyconfiguration-to-adaptyconfiguration\}
+
+Adapty iOS SDK aktivasyon kodunu aşağıdaki şekilde güncelleyin:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```diff showLineNumbers
+// In your AppDelegate class:
+
+let configurationBuilder =
+-        Adapty.Configuration
++        AdaptyConfiguration
+          .builder(withAPIKey: "PUBLIC_SDK_KEY")
+          .with(observerMode: false)
+          .with(customerUserId: "YOUR_USER_ID")
+          .with(idfaCollectionDisabled: false)
+          .with(ipAddressCollectionDisabled: false)
+
+Adapty.activate(with: configurationBuilder) { error in
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+```diff showLineNumbers
+
+@main
+struct SampleApp: App {
+    init() 
+      let configurationBuilder =
+-        Adapty.Configuration
++        AdaptyConfiguration
+          .builder(withAPIKey: "PUBLIC_SDK_KEY")
+          .with(observerMode: false) // optional
+          .with(customerUserId: "YOUR_USER_ID") // optional
+          .with(idfaCollectionDisabled: false) // optional
+          .with(ipAddressCollectionDisabled: false) // optional
+
+        Task {
+            try await Adapty.activate(with: configurationBuilder)
+        }
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+## getViewConfiguration metodunu getPaywallConfiguration olarak yeniden adlandırın \{#rename-getviewconfiguration-method-to-getpaywallconfiguration\}
+
+Paywallın `viewConfiguration`'ını almak için metod adını güncelleyin:
+
+```diff showLineNumbers
+
+guard paywall.hasViewConfiguration else {
+    //  use your custom logic
+    return
+}
+
+do {
+-    let paywallConfiguration = try await AdaptyUI.getViewConfiguration(
++    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
+            forPaywall: paywall
+    )
+    // use loaded configuration
+} catch {
+    // handle the error
+}
+```
+
+Metod hakkında daha fazla bilgi için bkz. [Paywall Builder ile tasarlanan paywallın view configuration'ını alın](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder).
+
+## SwiftUI'daki parametreleri güncelleyin \{#change-parameters-in-swiftui\}
+
+SwiftUI'da yapılan güncellemeler şunlardır:
+
+1. `didCancelPurchase` parametresi kaldırıldı. Bunun yerine `didFinishPurchase` kullanın.
+2. `.paywall()` metodu artık paywall nesnesi kabul etmiyor.
+3. `paywallConfiguration` parametresi, `viewConfiguration` parametresinin yerini aldı.
+
+Kodunuzu aşağıdaki gibi güncelleyin:
+
+```diff showLineNumbers
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+-         paywall: <paywall object>,
+-         viewConfiguration: <LocalizedViewConfiguration>,
++         paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+-         didFinishPurchase: { product, profile in paywallPresented = false },
++         didFinishPurchase: { product, purchaseResult in /* handle the result*/ },
+          didFailPurchase: { product, error in /* handle the error */ },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false }
+-         didCancelPurchase: { product in /* handle the result*/}
+
+      )
+}
+```
+
+## App Store'dan gelen promosyon uygulama içi satın alma işlemlerinin yönetimini güncelleyin \{#update-handling-of-promotional-in-app-purchases-from-app-store\}
+
+Aşağıdaki örnekte gösterildiği gibi, `AdaptyDelegate` metodundan `defermentCompletion` parametresini kaldırarak App Store'dan gelen promosyon uygulama içi satın alma işlemlerini nasıl ele aldığınızı güncelleyin:
+
+```swift showLineNumbers title="Swift"
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
+        // 1a.
+        // Return `true` to continue the transaction in your app.
+
+        // 1b.
+        // Store the product object and return `false` to defer or cancel the transaction.
+        false
+    }
+    
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase`
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyDeferredProduct = // get the product object from the 1b.
+        do {
+            try await Adapty.makePurchase(product: storedProduct)
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+## getProductsIntroductoryOfferEligibility metodunu kaldırın \{#remove-getproductsintroductoryoffereligibility-method\}
+
+Adapty iOS SDK 3.3.0 öncesinde, ürün nesnesi kullanıcının uygunluğundan bağımsız olarak her zaman teklifleri içeriyordu. Teklifi kullanmadan önce uygunluğu elle kontrol etmeniz gerekiyordu.
+
+Artık ürün nesnesi yalnızca kullanıcı uygunsa teklif içeriyor. Bu, uygunluğu artık kontrol etmeniz gerekmediği anlamına geliyor — bir teklif mevcutsa kullanıcı zaten uygun demektir.
+
+Uygun olmayan kullanıcılar için teklifleri görüntülemek istiyorsanız `sk1Product` ve `sk2Product`'a başvurun.
+
+## Üçüncü taraf entegrasyon SDK yapılandırmasını güncelleyin \{#update-third-party-integration-sdk-configuration\}
+
+Adapty iOS SDK 3.3.0 ile birlikte `updateAttribution` metodunun genel API'sini güncelledik. Önceden `[AnyHashable: Any]` sözlüğü kabul ederek çeşitli servislerden attribution nesnelerini doğrudan iletmenize olanak tanıyordu. Artık `[String: any Sendable]` gerektiriyor; bu nedenle attribution nesnelerini iletmeden önce dönüştürmeniz gerekiyor.
+
+Adapty iOS SDK 3.3.0 ve sonrasında entegrasyonların düzgün çalışmasını sağlamak için aşağıdaki entegrasyonların SDK yapılandırmalarını aşağıdaki bölümlerde açıklandığı gibi güncelleyin.
+
+### Adjust
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için bkz. [Adjust entegrasyonu için SDK yapılandırması](adjust#connect-your-app-to-adjust).
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="v5" label="Adjust 5.x+" default>
+
+```diff showLineNumbers
+class AdjustModuleImplementation {
+-    func updateAdjustAttribution() {
+-        Adjust.attribution { attribution in
+-            guard let attributionDictionary = attribution?.dictionary()?.toSendableDict() else { return }
+-
+-            Adjust.adid { adid in
+-                guard let adid else { return }
+-
+-                Adapty.updateAttribution(attributionDictionary, source: .adjust, networkUserId: adid) { error in
+-                    // handle the error
+-                }
+-            }
+-        }
+-    }
+
++    func updateAdjustAdid() {
++        Adjust.adid { adid in
++            guard let adid else { return }
++
++            Adapty.setIntegrationIdentifier(key: "adjust_device_id", value: adid)
++        }
++    }
++
++    func updateAdjustAttribution() {
++        Adjust.attribution { attribution in
++            guard let attribution = attribution?.dictionary() else { 
++                return
++            }
++            
++            Adapty.updateAttribution(attribution, source: "adjust")
++        }
++    }
+}
+```
+
+</TabItem>
+
+<TabItem value="v4" label="Adjust 4.x" default>
+
+```diff showLineNumbers
+class YourAdjustDelegateImplementation {
+    // Find your implementation of AdjustDelegate 
+    // and update adjustAttributionChanged method:
+    func adjustAttributionChanged(_ attribution: ADJAttribution?) {
+-       if let attribution = attribution?.dictionary()?.toSendableDict() {
+-           Adapty.updateAttribution(attribution, source: .adjust)
++       if let attribution = attribution?.dictionary() {
++           Adapty.updateAttribution(attribution, source: "adjust")
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+### AirBridge
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için bkz. [AirBridge entegrasyonu için SDK yapılandırması](airbridge#connect-your-app-to-airbridge).
+
+```diff showLineNumbers
+ import AirBridge
+
+- let builder = AdaptyProfileParameters.Builder()
+-             .with(airbridgeDeviceId: AirBridge.deviceUUID())
+-
+- Adapty.updateProfile(params: builder.build())
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "airbridge_device_id", 
++         value: AirBridge.deviceUUID()
++     )
++ } catch {
++     // handle the error
++ }
+```
+
+### Amplitude
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için bkz. [Amplitude entegrasyonu için SDK yapılandırması](amplitude#sdk-configuration).
+
+```diff showLineNumbers
+ import Amplitude 
+
+- let builder = AdaptyProfileParameters.Builder()
+-             .with(amplitudeUserId: Amplitude.instance().userId)
+-             .with(amplitudeDeviceId: Amplitude.instance().deviceId)
+-
+- Adapty.updateProfile(params: builder.build())
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "amplitude_user_id", 
++         value: Amplitude.instance().userId
++     )
++     try await Adapty.setIntegrationIdentifier(
++         key: "amplitude_device_id", 
++         value: Amplitude.instance().deviceId
++     )
++ } catch {
++     // handle the error
++ }
+
+```
+
+### AppMetrica
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için bkz. [AppMetrica entegrasyonu için SDK yapılandırması](appmetrica#sdk-configuration).
+
+```diff showLineNumbers
+ import AppMetricaCore
+        
+- if let deviceID = AppMetrica.deviceID {
+-   let builder = AdaptyProfileParameters.Builder()
+-     .with(appmetricaDeviceId: deviceID)
+-     .with(appmetricaProfileId: "YOUR_ADAPTY_CUSTOMER_USER_ID")
+-
+-   Adapty.updateProfile(params: builder.build())
+- }
+
++ if let deviceID = AppMetrica.deviceID {
++     do {
++         try await Adapty.setIntegrationIdentifier(
++             key: "appmetrica_device_id", 
++             value: deviceID
++         )
++         try await Adapty.setIntegrationIdentifier(
++             key: "appmetrica_profile_id", 
++             value: "YOUR_ADAPTY_CUSTOMER_USER_ID"
++         )
++     } catch {
++         // handle the error
++     }
++ }
+
+```
+
+### AppsFlyer
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için bkz. [AppsFlyer entegrasyonu için SDK yapılandırması](appsflyer#connect-your-app-to-appsflyer).
+
+```diff showLineNumbers
+class YourAppsFlyerLibDelegateImplementation {
+    // Find your implementation of AppsFlyerLibDelegate 
+    // and update onConversionDataSuccess method:
+     func onConversionDataSuccess(_ conversionInfo: [AnyHashable : Any]) {
+         let uid = AppsFlyerLib.shared().getAppsFlyerUID()
+
+-        Adapty.updateAttribution(
+-           conversionInfo.toSendableDict(),
+-            source: .appsflyer,
+-            networkUserId: uid
+-        )
++        Adapty.setIntegrationIdentifier(key: "appsflyer_id", value: uid)
++        Adapty.updateAttribution(conversionInfo, source: "appsflyer")
+    }
+}
+```
+
+### Branch
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için bkz. [Branch entegrasyonu için SDK yapılandırması](branch#connect-your-app-to-branch).
+
+```diff showLineNumbers
+class YourBranchImplementation {
+    func initializeBranch() {
+        // Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
+        Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+-           if let data = data?.toSendableDict() {
+-                Adapty.updateAttribution(data, source: .branch)
+-           }
++           if let data {
++               Adapty.updateAttribution(data, source: "branch")
++           }
+        }
+    }
+}
+```
+
+### Facebook Ads
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için bkz. [Facebook Ads entegrasyonu için SDK yapılandırması](facebook-ads#connect-your-app-to-facebook-ads).
+
+```diff showLineNumbers
+ import FacebookCore
+
+- let builder = AdaptyProfileParameters.Builder()
+-     .with(facebookAnonymousId: AppEvents.shared.anonymousID)
+-
+- do {
+-     try Adapty.updateProfile(params: builder.build())
+- } catch {
+-     // handle the error
+- }
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "facebook_anonymous_id", 
++         value: AppEvents.shared.anonymousID
++     )
++ } catch {
++     // handle the error
++ }
+
+```
+
+### Firebase ve Google Analytics
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için bkz. [Firebase ve Google Analytics entegrasyonu için SDK yapılandırması](firebase-and-google-analytics).
+
+```diff showLineNumbers
+ import FirebaseCore
+ import FirebaseAnalytics
+
+ FirebaseApp.configure()
+        
+- if let appInstanceId = Analytics.appInstanceID() {            
+-     let builder = AdaptyProfileParameters.Builder()
+-         .with(firebaseAppInstanceId: appInstanceId)
+            
+-     Adapty.updateProfile(params: builder.build()) { error in
+-         // handle error
+-     }
+- }
+
++ if let appInstanceId = Analytics.appInstanceID() {            
++     do {
++         try await Adapty.setIntegrationIdentifier(
++             key: "firebase_app_instance_id", 
++             value: appInstanceId
++         )
++     } catch {
++         // handle the error
++     }
++ }
+```
+
+### Mixpanel
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için bkz. [Mixpanel entegrasyonu için SDK yapılandırması](mixpanel#sdk-configuration).
+
+```diff showLineNumbers
+ import Mixpanel
+
+- let builder = AdaptyProfileParameters.Builder()
+-             .with(mixpanelUserId: Mixpanel.mainInstance().distinctId)
+-
+- do {
+-     try await Adapty.updateProfile(params: builder.build())
+- } catch {
+-     // handle the error
+- }
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "mixpanel_user_id", 
++         value: Mixpanel.mainInstance().distinctId
++     )
++ } catch {
++     // handle the error
++ }
+
+```
+
+### OneSignal
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için bkz. [OneSignal entegrasyonu için SDK yapılandırması](onesignal#sdk-configuration).
+
+```diff showLineNumbers
+ // PlayerID (pre-v5 OneSignal SDK)
+ // in your OSSubscriptionObserver implementation
+ func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
+     if let playerId = stateChanges.to.userId {
+-         let params = AdaptyProfileParameters.Builder()
+-             .with(oneSignalPlayerId: playerId)
+-             .build()
+-
+-         Adapty.updateProfile(params:params) { error in
+-             // check error
+-         }
++         Task {
++             try await Adapty.setIntegrationIdentifier(
++                 key: "one_signal_player_id", 
++                 value: playerId
++             )
++         }
+     }
+ }
+
+ // SubscriptionID (v5+ OneSignal SDK)
+ OneSignal.Notifications.requestPermission({ accepted in
+-     let id = OneSignal.User.pushSubscription.id
+-
+-     let builder = AdaptyProfileParameters.Builder()
+-         .with(oneSignalSubscriptionId: id)
+-
+-     Adapty.updateProfile(params: builder.build())
++     Task {
++         try await Adapty.setIntegrationIdentifier(
++             key: "one_signal_subscription_id", 
++             value: OneSignal.User.pushSubscription.id
++         )
++     }
+ }, fallbackToSettings: true)
+```
+
+### Pushwoosh
+
+Mobil uygulama kodunuzu aşağıda gösterildiği gibi güncelleyin. Tam kod örneği için bkz. [Pushwoosh entegrasyonu için SDK yapılandırması](pushwoosh#sdk-configuration).
+
+```diff showLineNumbers
+- let params = AdaptyProfileParameters.Builder()
+-     .with(pushwooshHWID: Pushwoosh.sharedInstance().getHWID())
+-     .build()
+-
+- Adapty.updateProfile(params: params) { error in
+-     // handle the error
+- }
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "pushwoosh_hwid", 
++         value: Pushwoosh.sharedInstance().getHWID()
++     )
++ } catch {
++     // handle the error
++ }
+```
+
+## Observer mode uygulamasını güncelleyin \{#update-observer-mode-implementation\}
+
+Paywallları işlemlerle nasıl ilişkilendirdiğinizi güncelleyin. Önceden `variationId`'yi atamak için `setVariationId` metodunu kullanıyordunuz. Artık `variationId`'yi yeni `reportTransaction` metodunu kullanarak işlemi kaydederken doğrudan dahil edebilirsiniz. Nihai kod örneği için bkz. [Observer mode'da satın alma işlemlerini paywalllarla ilişkilendirin](report-transactions-observer-mode).
+
+:::warning
+
+İşlemi `reportTransaction` metodunu kullanarak kaydetmeyi unutmayın. Bu adımı atlamanız durumunda Adapty işlemi tanımaz, access level vermez, analizlere dahil etmez veya entegrasyonlara göndermez. Bu adım zorunludur!
+
+:::
+
+```diff showLineNumbers
+- let variationId = paywall.variationId
+-
+- // There are two overloads: for StoreKit 1 and StoreKit 2
+- Adapty.setVariationId(variationId, forPurchasedTransaction: transaction) { error in
+-     if error == nil {
+-         // successful binding
+-     }
+- }
+
++ do {
++     // every time when calling transaction.finish()
++     try await Adapty.reportTransaction(transaction, withVariationId: <YOUR_PAYWALL_VARIATION_ID>)
++ } catch {
++     // handle the error
++ }
+```

@@ -1,0 +1,368 @@
+---
+title: "React Native - Paywall olaylarını yönetme"
+description: "Adapty SDK ile React Native'de abonelik olaylarını yönetin."
+metadataTitle: "React Native'de Olayları Yönetme | Adapty Dokümanları"
+toc_max_heading_level: 4
+keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed', 'onPaywallClosed', 'onPaywallShown', 'onWebPaymentNavigationFinished']
+---
+
+import PaywallAction from '@site/src/locales/tr/reusable/PaywallAction.md';
+
+:::important
+Bu rehber; satın alma, geri yükleme, ürün seçimi ve paywall render işlemlerine ait olay yönetimini kapsar. Ayrıca buton yönetimini (paywall kapatma, bağlantı açma vb.) de uygulamanız gerekir. Ayrıntılar için [buton eylemlerini yönetme rehberimize](react-native-handle-paywall-actions) bakın.
+:::
+
+[Paywall Builder](adapty-paywall-builder) ile yapılandırılmış paywalllar, satın alma ve geri yükleme işlemleri için ek kod gerektirmez. Ancak uygulamanızın yanıt verebileceği bazı olaylar üretirler. Bu olaylar; buton basımlarını (kapat butonları, URL'ler, ürün seçimleri vb.) ve paywall üzerinde gerçekleştirilen satın alma ile ilgili eylemlere dair bildirimleri kapsar. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenebilirsiniz.
+
+:::warning
+Bu rehber yalnızca Adapty SDK v3.0 veya sonrasını gerektiren **yeni Paywall Builder paywallları** içindir.
+:::
+
+Mobil uygulamanızda paywall ekranında gerçekleşen süreçleri kontrol etmek veya izlemek için olay işleyicilerini uygulayın:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+React component için olayları, `AdaptyPaywallView` bileşenindeki tekil olay işleyici prop'ları aracılığıyla yönetirsiniz:
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyPaywall({ paywall }) {
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {}, []);
+  const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {}, []);
+  const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {}, []);
+  const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {}, []);
+  const onRestoreStarted = useCallback<EventHandlers['onRestoreStarted']>(() => {}, []);
+  const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {}, []);
+  const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {}, []);
+  const onPaywallShown = useCallback<EventHandlers['onPaywallShown']>(() => {}, []);
+  const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {}, []);
+  const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {}, []);
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {}, []);
+  const onWebPaymentNavigationFinished = useCallback<EventHandlers['onWebPaymentNavigationFinished']>(() => {}, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+      onProductSelected={onProductSelected}
+      onPurchaseStarted={onPurchaseStarted}
+      onPurchaseCompleted={onPurchaseCompleted}
+      onPurchaseFailed={onPurchaseFailed}
+      onRestoreStarted={onRestoreStarted}
+      onRestoreCompleted={onRestoreCompleted}
+      onRestoreFailed={onRestoreFailed}
+      onPaywallShown={onPaywallShown}
+      onRenderingFailed={onRenderingFailed}
+      onLoadingProductsFailed={onLoadingProductsFailed}
+      onUrlPress={onUrlPress}
+      onCustomAction={onCustomAction}
+      onWebPaymentNavigationFinished={onWebPaymentNavigationFinished}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Modal sunum için olay işleyicileri metodunu uygulayın.
+
+:::important
+`setEventHandlers`'ı birden fazla kez çağırmak, sağladığınız işleyicileri geçersiz kılar; bu işlemler hem varsayılan hem de daha önce ayarlanmış işleyicilerin yerini alır.
+:::
+
+```javascript showLineNumbers title="React Native (TSX)"
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+  onCloseButtonPress() {
+    return true;
+  },
+  onAndroidSystemBack() {
+    return true;
+  },
+  onPurchaseCompleted(purchaseResult, product) {
+    return purchaseResult.type !== 'user_cancelled';
+  },
+  onPurchaseStarted(product) { /***/},
+  onPurchaseFailed(error) { /***/ },
+  onRestoreCompleted(profile) { /***/ },
+  onRestoreFailed(error, product) { /***/ },
+  onProductSelected(productId) { /***/},
+  onRenderingFailed(error) { /***/ },
+  onLoadingProductsFailed(error) { /***/ },
+  onUrlPress(url) {
+      Linking.openURL(url);
+      return false; // Keep paywall open
+  },
+  onPaywallShown() { /***/ },
+  onPaywallClosed() { /***/ },
+  onWebPaymentNavigationFinished() { /***/ },  
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+SDK version < 3.14 için yalnızca modal sunum desteklenir:
+
+```javascript showLineNumbers title="React Native (TSX)"
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.registerEventHandlers({
+  onCloseButtonPress() {
+    return true;
+  },
+  onAndroidSystemBack() {
+    return true;
+  },
+  onPurchaseCompleted(purchaseResult, product) {
+    return purchaseResult.type !== 'user_cancelled';
+  },
+  onPurchaseStarted(product) { /***/},
+  onPurchaseFailed(error, product) { /***/ },
+  onRestoreCompleted(profile) { /***/ },
+  onRestoreFailed(error) { /***/ },
+  onProductSelected(productId) { /***/},
+  onRenderingFailed(error) { /***/ },
+  onLoadingProductsFailed(error) { /***/ },
+  onUrlPress(url) {
+      Linking.openURL(url);
+      return false; // Keep paywall open
+  },
+  onPaywallShown() { /***/ },
+  onPaywallClosed() { /***/ },
+  onWebPaymentNavigationFinished() { /***/ },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Olay örnekleri (Genişletmek için tıklayın)</summary>
+
+```javascript
+// onCloseButtonPress
+{
+  "event": "close_button_press"
+}
+
+// onAndroidSystemBack
+{
+  "event": "android_system_back"
+}
+
+// onUrlPress
+{
+  "event": "url_press",
+  "url": "https://example.com/terms"
+}
+
+// onCustomAction
+{
+  "event": "custom_action",
+  "actionId": "login"
+}
+
+// onProductSelected
+{
+  "event": "product_selected",
+  "productId": "premium_monthly"
+}
+
+// onPurchaseStarted
+{
+  "event": "purchase_started",
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// onPurchaseCompleted - Success
+{
+  "event": "purchase_completed",
+  "purchaseResult": {
+    "type": "success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// onPurchaseCompleted - Cancelled
+{
+  "event": "purchase_completed",
+  "purchaseResult": {
+    "type": "user_cancelled"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// onPurchaseFailed
+{
+  "event": "purchase_failed",
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    },
+    "product": {
+        "vendorProductId": "premium_monthly",
+            "localizedTitle": "Premium Monthly",
+            "localizedDescription": "Premium subscription for 1 month",
+            "localizedPrice": "$9.99",
+            "price": 9.99,
+            "currencyCode": "USD"
+    }
+  }
+}
+
+// onRestoreCompleted
+{
+  "event": "restore_completed",
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+
+// onRestoreFailed
+{
+  "event": "restore_failed",
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+
+// onRenderingFailed
+{
+  "event": "rendering_failed",
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+
+// onLoadingProductsFailed
+{
+  "event": "loading_products_failed",
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+
+// onPaywallShown
+{
+  "event": "paywall_shown"
+}
+
+// onPaywallClosed
+{
+  "event": "paywall_closed"
+}
+
+// onWebPaymentNavigationFinished
+{
+  "event": "web_payment_navigation_finished"
+}
+```
+</Details>
+
+İhtiyacınız olan olay işleyicilerini kaydedebilir, kullanmadıklarınızı atlayabilirsiniz. Bu durumda kullanılmayan olay dinleyicileri oluşturulmaz. Zorunlu olay işleyici yoktur.
+
+Olay işleyicileri bir boolean döndürür. `true` döndürüldüğünde görüntüleme süreci tamamlanmış sayılır; paywall ekranı kapanır ve bu görünüme ait olay dinleyicileri kaldırılır.
+
+Bazı olay işleyicilerinin gerektiğinde geçersiz kılabileceğiniz varsayılan davranışları vardır:
+- `onCloseButtonPress`: kapat butonuna basıldığında paywall'u kapatır.
+- `onUrlPress`: tıklanan URL'yi açar ve paywall'u açık tutar.
+- `onAndroidSystemBack` (yalnızca modal sunum için): **Geri** butonuna basıldığında paywall'u kapatır.
+- `onRestoreCompleted`: başarılı geri yükleme sonrasında paywall'u kapatır.
+- `onPurchaseCompleted`: kullanıcı iptal etmedikçe paywall'u kapatır.
+- `onRenderingFailed`: render başarısız olursa paywall'u kapatır.
+
+### Olay işleyicileri \{#event-handlers\}
+
+| Olay işleyici                      | Açıklama                                                                                                                                                                                                                                                                                          |
+|:-----------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onCustomAction**                 | Kullanıcı özel bir eylem gerçekleştirdiğinde, örneğin bir [özel butona](paywall-buttons) tıkladığında tetiklenir.                                                                                                                                                                                  |
+| **onUrlPress**                     | Kullanıcı paywall'unuzdaki bir URL'ye tıkladığında tetiklenir.                                                                                                                                                                                                                                    |
+| **onAndroidSystemBack**            | Yalnızca modal sunum: Kullanıcı sistem Android **Geri** butonuna tıkladığında tetiklenir.                                                                                                                                                                                                         |
+| **onCloseButtonPress**             | Kapat butonu görünür durumdayken kullanıcı ona tıkladığında tetiklenir. Bu işleyicide paywall ekranını kapatmanız önerilir.                                                                                                                                                                        |
+| **onPurchaseCompleted**            | Satın alma tamamlandığında tetiklenir; başarılı, kullanıcı tarafından iptal edilmiş veya onay bekliyor olabilir. Başarılı satın almada güncellenmiş bir `AdaptyProfile` sağlar. Kullanıcı iptalleri ve bekleyen ödemeler (örneğin ebeveyn onayı gerekli) bu olayı tetikler, `onPurchaseFailed`'ı değil. |
+| **onPurchaseStarted**              | Kullanıcı satın alma sürecini başlatmak için "Satın Al" eylem butonuna tıkladığında tetiklenir.                                                                                                                                                                                                    |
+| **onPurchaseFailed**               | Satın alma hata nedeniyle başarısız olduğunda tetiklenir (ör. ödeme kısıtlamaları, geçersiz ürünler, ağ hataları, işlem doğrulama hataları). Kullanıcı iptalleri veya bekleyen ödemeler için tetiklenmez; bunlar `onPurchaseCompleted`'ı tetikler.                                                 |
+| **onRestoreStarted**               | Kullanıcı satın alma geri yükleme sürecini başlattığında tetiklenir.                                                                                                                                                                                                                              |
+| **onRestoreCompleted**             | Satın alma geri yüklemesi başarılı olduğunda tetiklenir ve güncellenmiş bir `AdaptyProfile` sağlar. Kullanıcının gerekli `accessLevel`'a sahip olması durumunda ekranı kapatmanız önerilir. Nasıl kontrol edeceğinizi öğrenmek için [Abonelik durumu](react-native-listen-subscription-changes) konusuna bakın. |
+| **onRestoreFailed**                | Geri yükleme işlemi başarısız olduğunda tetiklenir ve `AdaptyError` sağlar.                                                                                                                                                                                                                       |
+| **onProductSelected**              | Paywall görünümündeki herhangi bir ürün seçildiğinde tetiklenir; satın alma öncesinde kullanıcının neyi seçtiğini izlemenizi sağlar.                                                                                                                                                               |
+| **onRenderingFailed**              | Görünüm render edilirken hata oluştuğunda tetiklenir ve `AdaptyError` sağlar. Bu tür hatalar olmamalıdır; karşılaşırsanız lütfen bize bildirin.                                                                                                                                                    |
+| **onLoadingProductsFailed**        | Ürün yükleme başarısız olduğunda tetiklenir ve `AdaptyError` sağlar. Görünüm oluşturma sırasında `prefetchProducts: true` ayarlamadıysanız AdaptyUI gerekli nesneleri sunucudan kendisi alır.                                                                                                      |
+| **onPaywallShown**                 | Paywall kullanıcıya gösterildiğinde tetiklenir. iOS'ta, kullanıcı paywall içindeki [web ödeme butonuna](web-paywall#step-2a-add-a-web-purchase-button) tıkladığında ve uygulama içi tarayıcıda bir web paywall açıldığında da tetiklenir.                                                           |
+| **onPaywallClosed**                | Yalnızca modal sunum: Paywall kullanıcı tarafından kapatıldığında tetiklenir. iOS'ta, uygulama içi tarayıcıda bir paywalldan açılan [web paywall'un](web-paywall#step-2a-add-a-web-purchase-button) ekrandan kaybolması durumunda da tetiklenir.                                                    |
+| **onWebPaymentNavigationFinished** | Satın alma için bir [web paywall](web-paywall) açma girişiminin ardından, başarılı veya başarısız olup olmadığına bakılmaksızın tetiklenir.                                                                                                                                                         |

@@ -1,0 +1,558 @@
+---
+title: "Android SDK'yı Yükle ve Yapılandır"
+description: "Abonelik tabanlı uygulamalar için Android'e Adapty SDK'yı adım adım yükleme kılavuzu."
+metadataTitle: "Android'e Adapty SDK Yükleme | Adapty Dokümanları"
+keywords: ['sdk yükle', 'sdk kurulum', 'android sdk yükle', 'google play billing library', 'gpbl', 'billing library', 'adaptyui']
+rank: 70
+---
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+import GetKey from '@site/src/locales/tr/reusable/GetKey.md';
+import InstallationPrereqs from '@site/src/locales/tr/reusable/InstallationPrereqs.mdx';
+
+Adapty SDK, mobil uygulamanıza sorunsuz entegrasyon için iki temel modül içerir:
+
+- **Core Adapty**: Adapty'nin uygulamanızda düzgün çalışması için gerekli olan temel SDK.
+- **AdaptyUI**: [Adapty Paywall Builder](adapty-paywall-builder)'ı kullanıyorsanız bu modüle ihtiyaç duyarsınız. Paywall Builder, platformlar arası paywall'ları kolayca oluşturmak için kullanılan, kod gerektirmeyen kullanıcı dostu bir araçtır. AdaptyUI, core modülle birlikte otomatik olarak etkinleştirilir.
+
+:::tip
+Adapty SDK'nın bir mobil uygulamaya nasıl entegre edildiğini gerçek bir örnekle görmek ister misiniz? Paywall gösterme, satın alma yapma ve diğer temel işlevleri içeren tam kurulumu gösteren [örnek uygulamamıza](https://github.com/adaptyteam/AdaptySDK-Android/tree/master/app) göz atın.
+:::
+
+## Gereksinimler \{#requirements\}
+
+Minimum SDK gereksinimi: `minSdkVersion 21`
+
+:::info
+Adapty, Google Play Billing Library 8.x sürümüne kadar uyumludur. Varsayılan olarak Adapty, Google Play Billing Library v.7.0.0 ile çalışır; ancak daha yeni bir sürümü zorlamak isterseniz [bağımlılığı manuel olarak ekleyebilirsiniz](https://developer.android.com/google/play/billing/integrate#dependency).
+:::
+
+<InstallationPrereqs />
+
+## Adapty SDK'yı Yükle \{#install-adapty-sdk\}
+
+Bağımlılık kurulum yönteminizi seçin:
+- Standart Gradle: Bağımlılıkları **modül düzeyindeki** `build.gradle` dosyanıza ekleyin
+- Projeniz `.gradle.kts` dosyaları kullanıyorsa bağımlılıkları modül düzeyindeki `build.gradle.kts` dosyanıza ekleyin
+- Sürüm katalogları kullanıyorsanız bağımlılıkları `libs.versions.toml` dosyanıza ekleyin, ardından `build.gradle.kts` içinde referans verin
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Android.svg?style=flat&logo=android)](https://github.com/adaptyteam/AdaptySDK-Android/releases)
+
+<Tabs>
+<TabItem value="module-level build.gradle" label="module-level build.gradle" default>
+
+```groovy showLineNumbers
+dependencies {
+    ...
+    implementation platform('io.adapty:adapty-bom:<the latest SDK version>')
+    implementation 'io.adapty:android-sdk'
+    
+    // Only add this line if you plan to use Paywall Builder
+    implementation 'io.adapty:android-ui'
+}
+```
+
+</TabItem>
+<TabItem value="module-level build.gradle.kts" label="module-level build.gradle.kts" default>
+
+```kotlin showLineNumbers
+dependencies {
+    ...
+    implementation(platform("io.adapty:adapty-bom:<the latest SDK version>"))
+    implementation("io.adapty:android-sdk")
+    
+    // Only add this line if you plan to use Paywall Builder:
+    implementation("io.adapty:android-ui")
+}
+```
+
+</TabItem>
+<TabItem value="version catalog" label="version catalog" default>
+
+```toml showLineNumbers
+//libs.versions.toml
+
+[versions]
+..
+adaptyBom = "<the latest SDK version>"
+
+[libraries]
+..
+adapty-bom = { module = "io.adapty:adapty-bom", version.ref = "adaptyBom" }
+adapty = { module = "io.adapty:android-sdk" }
+
+// Only add this line if you plan to use Paywall Builder:
+adapty-ui = { module = "io.adapty:android-ui" }
+
+//module-level build.gradle.kts
+
+dependencies {
+    ...
+    implementation(platform(libs.adapty.bom))
+    implementation(libs.adapty)
+    
+    // Only add this line if you plan to use Paywall Builder:
+    implementation(libs.adapty.ui)
+}
+```
+
+</TabItem>
+</Tabs>
+
+Bağımlılık çözümlenemiyorsa Gradle betiklerinizde `mavenCentral()` tanımlı olduğundan emin olun.
+
+<details>
+   <summary>Nasıl ekleneceğine dair talimat</summary>
+
+   Projenizin `settings.gradle` dosyasında `dependencyResolutionManagement` yoksa, üst düzey `build.gradle` dosyanızdaki repositories bölümünün sonuna şunu ekleyin:
+
+```groovy showLineNumbers title="top-level build.gradle"
+allprojects {
+    repositories {
+        ...
+        mavenCentral()
+    }
+}
+```
+
+Aksi takdirde, `settings.gradle` dosyanızdaki `dependencyResolutionManagement` bölümünün `repositories` kısmına şunu ekleyin:
+
+```groovy showLineNumbers title="settings.gradle"
+dependencyResolutionManagement {
+    ...
+    repositories {
+        ...
+        mavenCentral()
+    }
+}
+```
+
+</details>
+
+## Adapty SDK'nın Adapty modülünü etkinleştir \{#activate-adapty-module-of-adapty-sdk\}
+
+### Temel kurulum \{#basic-setup\}
+
+Adapty SDK'yı uygulama kodunuzda etkinleştirin.
+
+:::note
+Adapty SDK'nın uygulamanızda yalnızca bir kez etkinleştirilmesi gerekir.
+:::
+
+<GetKey />
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+// In your Application class
+
+class MyApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        Adapty.activate(
+            applicationContext,
+            AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+                .build()
+        )
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+// In your Application class
+
+public class MyApplication extends Application {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Adapty.activate(
+            getApplicationContext(),
+            new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+                .build()
+        );
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Şimdi uygulamanızda paywall'ları ayarlayın:
+
+- [Adapty Paywall Builder](adapty-paywall-builder) kullanıyorsanız [Paywall Builder hızlı başlangıç kılavuzunu](android-quickstart-paywalls) takip edin.
+- Kendi paywall arayüzünüzü oluşturuyorsanız [özel paywall'lar için hızlı başlangıç kılavuzuna](android-quickstart-manual) bakın.
+
+## Adapty SDK'nın AdaptyUI modülünü etkinleştir \{#activate-adaptyui-module-of-adapty-sdk\}
+
+[Paywall Builder](adapty-paywall-builder) kullanmayı planlıyorsanız AdaptyUI modülüne ihtiyacınız var. Core modülü etkinleştirdiğinizde otomatik olarak etkinleştirilir; başka bir şey yapmanıza gerek yoktur.
+
+## Proguard'ı yapılandır \{#configure-proguard\}
+
+Uygulamanızı production ortamına almadan önce Proguard yapılandırmanıza `-keep class com.adapty.** { *; }` satırını ekleyin.
+
+## İsteğe bağlı kurulum \{#optional-setup\}
+
+### Loglama \{#logging\}
+
+#### Loglama sistemini ayarlayın \{#set-up-the-logging-system\}
+
+Adapty, neler olduğunu anlamanıza yardımcı olmak için hataları ve diğer önemli bilgileri loglar. Kullanılabilir log seviyeleri şunlardır:
+
+| Seviye                   | Açıklama                                                                                                                      |
+| :----------------------- | :---------------------------------------------------------------------------------------------------------------------------- |
+| `AdaptyLogLevel.NONE`    | Hiçbir şey loglanmaz. Varsayılan değer                                                                                        |
+| `AdaptyLogLevel.ERROR`   | Yalnızca hatalar loglanır                                                                                                     |
+| `AdaptyLogLevel.WARN`    | Kritik hatalara yol açmayan ancak dikkat edilmesi gereken hatalar ve SDK mesajları loglanır.                                  |
+| `AdaptyLogLevel.INFO`    | Hatalar, uyarılar ve çeşitli bilgi mesajları loglanır.                                                                        |
+| `AdaptyLogLevel.VERBOSE` | Fonksiyon çağrıları, API sorguları gibi hata ayıklama sırasında faydalı olabilecek ek bilgiler loglanır.                      |
+
+Adapty'yi yapılandırmadan önce uygulamanızda log seviyesini ayarlayabilirsiniz.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+Adapty.logLevel = AdaptyLogLevel.VERBOSE 
+//recommended for development and the first production release
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
+//recommended for development and the first production release
+```
+</TabItem>
+</Tabs>
+
+#### Loglama sistemi mesajlarını yönlendirin \{#redirect-the-logging-system-messages\}
+
+Herhangi bir nedenle Adapty'den gelen mesajları kendi sisteminize göndermek veya bir dosyaya kaydetmek istiyorsanız varsayılan davranışı geçersiz kılabilirsiniz:
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+Adapty.setLogHandler { level, message ->
+    //handle the log
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+Adapty.setLogHandler((level, message) -> {
+    //handle the log
+});
+```
+</TabItem>
+</Tabs>
+
+### Veri politikaları \{#data-policies\}
+
+Adapty, siz açıkça göndermediğiniz sürece kullanıcılarınızın kişisel verilerini saklamaz; ancak mağaza veya ülke yönergelerine uymak için ek veri güvenliği politikaları uygulayabilirsiniz.
+
+#### IP adresi toplama ve paylaşımını devre dışı bırakın \{#disable-ip-address-collection-and-sharing\}
+
+Adapty modülünü etkinleştirirken kullanıcı IP adresi toplama ve paylaşımını devre dışı bırakmak için `ipAddressCollectionDisabled` değerini `true` olarak ayarlayın. Varsayılan değer `false`'tur.
+
+Kullanıcı gizliliğini artırmak, bölgesel veri koruma düzenlemelerine (GDPR veya CCPA gibi) uymak ya da IP tabanlı özellikler uygulamanız için gerekli değilse gereksiz veri toplamayı azaltmak amacıyla bu parametreyi kullanın.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withIpAddressCollectionDisabled(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withIpAddressCollectionDisabled(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
+#### Reklam kimliği (Ad ID) toplama ve paylaşımını devre dışı bırakın \{#disable-advertising-id-ad-id-collection-and-sharing\}
+
+Adapty modülünü etkinleştirirken kullanıcı [reklam kimliği](https://support.google.com/googleplay/android-developer/answer/6048248) toplamasını devre dışı bırakmak için `adIdCollectionDisabled` değerini `true` olarak ayarlayın. Varsayılan değer `false`'tur.
+
+Play Store politikalarına uymak, reklam kimliği izin istemini tetiklemekten kaçınmak veya uygulamanız Ad ID tabanlı reklam attribution veya analitik gerektirmiyorsa bu parametreyi kullanın.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withAdIdCollectionDisabled(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withAdIdCollectionDisabled(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
+#### AdaptyUI için medya önbelleği yapılandırmasını ayarlayın \{#set-up-media-cache-configuration-for-adaptyui\}
+
+AdaptyUI varsayılan olarak performansı artırmak ve ağ kullanımını azaltmak amacıyla medyayı (resim ve video gibi) önbelleğe alır. Özel bir yapılandırma sağlayarak önbellek ayarlarını özelleştirebilirsiniz.
+
+Varsayılan önbellek boyutunu ve geçerlilik süresini geçersiz kılmak için `AdaptyUI.configureMediaCache` kullanın. Bu isteğe bağlıdır; bu yöntemi çağırmazsanız varsayılan değerler kullanılır (100 MB disk boyutu, 7 gün geçerlilik).
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+val cacheConfig = MediaCacheConfiguration.Builder()
+    .overrideDiskStorageSizeLimit(200L * 1024 * 1024) // 200 MB
+    .overrideDiskCacheValidityTime(3.days)
+    .build()
+
+AdaptyUI.configureMediaCache(cacheConfig)
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+MediaCacheConfiguration cacheConfig = new MediaCacheConfiguration.Builder()
+    .overrideDiskStorageSizeLimit(200L * 1024 * 1024) // 200 MB
+    .overrideDiskCacheValidityTime(TimeInterval.days(3))
+    .build();
+
+AdaptyUI.configureMediaCache(cacheConfig);
+```
+</TabItem>
+</Tabs>
+
+**Parametreler:**
+
+| Parametre               | Zorunluluk | Açıklama                                                                    |
+|-------------------------|------------|-----------------------------------------------------------------------------|
+| diskStorageSizeLimit    | isteğe bağlı | Diskteki toplam önbellek boyutu (bayt cinsinden). Varsayılan: 100 MB.     |
+| diskCacheValidityTime   | isteğe bağlı | Önbelleğe alınan dosyaların geçerli sayıldığı süre. Varsayılan: 7 gün.    |
+
+:::tip
+Çalışma zamanında `AdaptyUI.clearMediaCache(strategy)` kullanarak medya önbelleğini temizleyebilirsiniz. `strategy` olarak `CLEAR_ALL` veya `CLEAR_EXPIRED_ONLY` belirtilebilir.
+:::
+
+### Gizlenmiş hesap kimliklerini ayarlayın \{#set-obfuscated-account-ids\}
+
+Google Play, kullanıcı gizliliğini ve güvenliğini artırmak için belirli kullanım senaryolarında gizlenmiş hesap kimlikleri gerektirir. Bu kimlikler, Google Play'in kullanıcı bilgilerini anonim tutarak satın almaları tanımlamasına yardımcı olur; bu durum özellikle dolandırıcılık önleme ve analitik açısından önemlidir.
+
+Uygulamanız hassas kullanıcı verileri işliyorsa veya belirli gizlilik düzenlemelerine uymak zorundaysanız bu kimlikleri ayarlamanız gerekebilir. Gizlenmiş kimlikler, Google Play'in gerçek kullanıcı tanımlayıcılarını ifşa etmeden satın almaları takip etmesini sağlar.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+    .build()
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+    .build();
+```
+
+</TabItem>
+</Tabs>
+
+### Adapty'yi özel bir süreçte çalıştırın \{#run-adapty-in-a-custom-process\}
+
+Adapty varsayılan olarak yalnızca uygulamanızın ana sürecinde çalışabilir.
+Uygulamanız birden fazla süreç kullanıyorsa Adapty'yi yalnızca bir kez başlatın; aksi takdirde beklenmedik davranışlar oluşabilir.
+
+Adapty'yi farklı bir süreçte çalıştırmanız gerekiyorsa bunu yapılandırmanızda belirtin:
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withProcessName(":custom")
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withProcessName(":custom")
+    .build();
+```
+</TabItem>
+</Tabs>
+
+Bu değeri ayarlamadan Adapty'yi başka bir süreçte etkinleştirmeye çalışırsanız SDK bir uyarı loglar ve etkinleştirmeyi atlar.
+
+### Yerel access level'ları etkinleştirin \{#enable-local-access-levels\}
+
+Varsayılan olarak Android'de [yerel access level'lar](local-access-levels) devre dışıdır. Etkinleştirmek için `withLocalAccessLevelAllowed` değerini `true` olarak ayarlayın:
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withLocalAccessLevelAllowed(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withLocalAccessLevelAllowed(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
+## Sorun Giderme \{#troubleshooting\}
+
+#### Android yedekleme kuralları (Auto Backup yapılandırması) \{#android-backup-rules-auto-backup-configuration\}
+
+Bazı SDK'lar (Adapty dahil) kendi Android Auto Backup yapılandırmalarıyla gelir. Yedekleme kuralları tanımlayan birden fazla SDK kullanıyorsanız Android manifest birleştirici `android:fullBackupContent`, `android:dataExtractionRules` veya `android:allowBackup` ifadelerini içeren bir hatayla başarısız olabilir.
+
+Tipik hata belirtisi: `Manifest merger failed: Attribute application@dataExtractionRules value=(@xml/sample_data_extraction_rules)
+is also present at [com.other.sdk:library:1.0.0] value=(@xml/other_sdk_data_extraction_rules)`
+
+Bunu çözmek için şunları yapmanız gerekir:
+
+- Manifest birleştiriciye yedeklemeyle ilgili nitelikler için uygulamanızın değerlerini kullanmasını söyleyin.
+
+- Adapty ve diğer SDK'lardan gelen yedekleme kurallarını tek bir XML dosyasında (veya Android 12+ için bir çift dosyada) birleştirin.
+
+#### 1. Manifest'e `tools` ad alanını ekleyin \{#1-add-the-tools-namespace-to-your-manifest\}
+
+Henüz eklenmemişse kök `<manifest>` etiketine `tools` ad alanını ekleyin:
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:tools="http://schemas.android.com/tools"
+package="com.example.app">
+
+    ...
+</manifest>
+```
+
+#### 2. `<application>` içinde yedekleme niteliklerini geçersiz kılın \{#2-override-backup-attributes-in-application\}
+
+Uygulamanızın `AndroidManifest.xml` dosyasında `<application>` etiketini güncelleyerek uygulamanızın son değerleri sağlamasını ve manifest birleştiriciye kütüphane değerlerini değiştirmesini söyleyin:
+
+```xml
+<application
+android:name=".App"
+android:allowBackup="true"
+android:fullBackupContent="@xml/sample_backup_rules"           
+android:dataExtractionRules="@xml/sample_data_extraction_rules"
+tools:replace="android:fullBackupContent,android:dataExtractionRules">
+
+    ...
+</application>
+```
+
+Herhangi bir SDK de `android:allowBackup` ayarlıyorsa bunu da `tools:replace` içine ekleyin:
+
+```xml
+tools:replace="android:allowBackup,android:fullBackupContent,android:dataExtractionRules"
+```
+
+#### 3. Birleştirilmiş yedekleme kuralları dosyaları oluşturun \{#3-create-merged-backup-rules-files\}
+
+`app/src/main/res/xml/` altında Adapty'nin kurallarını diğer SDK'ların kurallarıyla birleştiren XML dosyaları oluşturun. Android, işletim sistemi sürümüne bağlı olarak farklı yedekleme kuralı biçimleri kullandığından her iki dosyayı da oluşturmak, uygulamanızın desteklediği tüm Android sürümlerinde uyumluluğu sağlar.
+
+:::note
+Aşağıdaki örneklerde örnek bir üçüncü taraf SDK olarak AppsFlyer kullanılmıştır. Uygulamanızda kullandığınız diğer SDK'lar için kuralları değiştirin veya ekleyin.
+:::
+
+**Android 12 ve üzeri için** (yeni veri çıkarma kuralları biçimini kullanır):
+
+```xml title="sample_data_extraction_rules.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        
+        <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
+        <exclude domain="database" path="afpurchases.db"/>
+        
+        <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+    </cloud-backup>
+
+    <device-transfer>
+        
+        <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
+        <exclude domain="database" path="afpurchases.db"/>
+        <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+    </device-transfer>
+</data-extraction-rules>
+```
+
+**Android 11 ve altı için** (eski tam yedek içerik biçimini kullanır):
+
+```xml title="sample_backup_rules.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    
+    <exclude domain="sharedpref" path="appsflyer-data"/>
+
+    
+    <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+
+    
+    
+</full-backup-content>
+```
+
+Bu kurulumla:
+
+- Adapty'nin yedekleme dışlamalarını (`AdaptySDKPrefs.xml`) korunur.
+
+- Diğer SDK'ların dışlamaları (örneğin `appsflyer-data`) da uygulanır.
+
+- Manifest birleştirici uygulamanızın yapılandırmasını kullanır ve çakışan yedekleme nitelikleri nedeniyle artık başarısız olmaz.
+
+#### Başka bir uygulamadan döndükten sonra satın almalar başarısız oluyor \{#purchases-fail-after-returning-from-another-app\}
+
+Satın alma akışını başlatan Activity varsayılan olmayan bir `launchMode` kullanıyorsa, kullanıcı Google Play'den, bir bankacılık uygulamasından veya tarayıcıdan döndüğünde Android bu Activity'yi hatalı şekilde yeniden oluşturabilir veya yeniden kullanabilir. Bu durum satın alma sonucunun kaybolmasına veya iptal edilmiş olarak işleme alınmasına yol açabilir.
+
+Satın almaların doğru çalışmasını sağlamak için satın alma akışını başlatan Activity'de yalnızca `standard` veya `singleTop` başlatma modlarını kullanın; diğer modlardan kaçının.
+
+`AndroidManifest.xml` dosyanızda satın alma akışını başlatan Activity'nin `standard` veya `singleTop` olarak ayarlandığından emin olun:
+
+```xml
+<activity
+    android:name=".MainActivity"
+    android:launchMode="standard" />
+```

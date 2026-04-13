@@ -1,0 +1,276 @@
+---
+title: "Capacitor - Adapty SDK kurulumu ve yapılandırması"
+description: "Abonelik tabanlı uygulamalar için Capacitor'a Adapty SDK kurulumuna dair adım adım rehber."
+metadataTitle: "Capacitor'a Adapty SDK Kurulumu | Adapty Dokümanları"
+keywords: ['sdk kur', 'sdk kurulumu', 'capacitor sdk kur', 'capacitor', 'google play billing library', 'gpbl', 'billing library']
+rank: 60
+---
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+import GetKey from '@site/src/locales/tr/reusable/GetKey.md';
+import AndroidBackupRules from '@site/src/locales/tr/reusable/AndroidBackupRules.md';
+import InstallationPrereqs from '@site/src/locales/tr/reusable/InstallationPrereqs.mdx';
+
+Adapty SDK, Capacitor uygulamanıza sorunsuz entegrasyon için iki temel modül içerir:
+
+- **Core Adapty**: Adapty'nin uygulamanızda düzgün çalışması için bu modül gereklidir.
+- **AdaptyUI**: Platformlar arası paywallları kolayca oluşturmak için kullanılan, kod gerektirmeyen araç olan [Adapty Paywall Builder](adapty-paywall-builder)'ı kullanıyorsanız bu modül gereklidir. AdaptyUI, core modülle birlikte otomatik olarak etkinleştirilir.
+
+:::tip
+Adapty SDK'nın gerçek bir mobil uygulamaya nasıl entegre edildiğini görmek ister misiniz? Paywall gösterme, satın alma yapma ve diğer temel işlevleri kapsayan tam kurulumu sergileyen [örnek uygulamalarımıza](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples) göz atın.
+:::
+
+## Gereksinimler \{#requirements\}
+
+[Adapty Capacitor SDK](https://github.com/adaptyteam/AdaptySDK-Capacitor/) için sürüm gereksinimleri şunlardır:
+
+| Adapty SDK Sürümü | Capacitor Sürümü | iOS Sürümü |
+|--------------------|-------------------|-------------|
+| 3.16.0+            | 8                 | 15.0+       |
+| 3.15               | 7                 | 14.0+       |
+
+Capacitor 6 ve altı sürümler desteklenmemektedir.
+
+:::info
+Adapty, Google Play Billing Library 8.x sürümüne kadar uyumludur. Adapty varsayılan olarak Google Play Billing Library v.7.0.0 ile çalışır; ancak daha yeni bir sürümü zorlamak istiyorsanız [bağımlılığı manuel olarak ekleyebilirsiniz](https://developer.android.com/google/play/billing/integrate#dependency).
+:::
+
+<InstallationPrereqs />
+
+## Adapty SDK'yı Kurun \{#install-adapty-sdk\}
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Capacitor.svg?style=flat&logo=capacitor)](https://github.com/adaptyteam/AdaptySDK-Capacitor/releases)
+
+Adapty SDK'yı kurun:
+
+```sh 
+npm install @adapty/capacitor
+npx cap sync   
+```
+
+## Adapty SDK'nın Adapty modülünü etkinleştirin \{#activate-adapty-module-of-adapty-sdk\}
+
+:::note
+Adapty SDK, uygulamanızda yalnızca bir kez etkinleştirilmesi gerekir.
+:::
+
+<GetKey />
+
+Adapty'yi etkinleştirmek için aşağıdaki kodu herhangi bir uygulama dosyasına kopyalayın:
+
+```typescript showLineNumbers
+
+try {
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+      // geliştirme aşaması ve ilk production sürümü için ayrıntılı loglama önerilir
+        logLevel: 'verbose', 
+      // geliştirme ortamında, çoklu aktivasyon hatalarını önlemek için bu değişkeni kullanın. Geliştirme ortamı değişkeninize ayarlayın
+      __ignoreActivationOnFastRefresh: true,
+    }
+  });
+  console.log('Adapty activated successfully!');
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+}
+```
+
+:::tip
+Geliştirme ortamında aktivasyon hatalarını önlemek için [ipuçlarına](#development-environment-tips) göz atın.
+:::
+
+Şimdi uygulamanızda paywallları ayarlayın:
+
+- [Adapty Paywall Builder](adapty-paywall-builder) kullanıyorsanız [Paywall Builder hızlı başlangıç kılavuzunu](capacitor-quickstart-paywalls) takip edin.
+- Kendi paywall arayüzünüzü oluşturuyorsanız [özel paywalllar için hızlı başlangıç kılavuzuna](capacitor-quickstart-manual) bakın.
+
+## Adapty SDK'nın AdaptyUI modülünü etkinleştirin \{#activate-adaptyui-module-of-adapty-sdk\}
+
+[Paywall Builder](adapty-paywall-builder) kullanmayı planlıyorsanız AdaptyUI modülüne ihtiyacınız var. Core modülü etkinleştirdiğinizde bu otomatik olarak yapılır; başka bir şey yapmanıza gerek yoktur.
+
+## İsteğe bağlı kurulum \{#optional-setup\}
+
+### Loglama \{#logging\}
+
+#### Loglama sistemini kurun \{#set-up-the-logging-system\}
+
+Adapty, neler olduğunu anlamanıza yardımcı olmak için hataları ve diğer önemli bilgileri loglar. Aşağıdaki log seviyeleri mevcuttur:
+
+| Seviye     | Açıklama                                                     |
+| ---------- | ------------------------------------------------------------ |
+| `error`    | Yalnızca hatalar loglanır                                    |
+| `warn`     | Kritik hatalara yol açmayan ancak dikkat edilmesi gereken hatalar ve SDK mesajları loglanır |
+| `info`     | Hatalar, uyarılar ve çeşitli bilgi mesajları loglanır |
+| `verbose`  | Fonksiyon çağrıları, API sorguları gibi hata ayıklamada işe yarayabilecek ek bilgiler loglanır |
+
+Log seviyesini Adapty yapılandırmasından önce veya sırasında ayarlayabilirsiniz:
+
+```typescript showLineNumbers
+// Aktivasyondan önce log seviyesini ayarlayın
+adapty.setLogLevel({ logLevel: 'verbose' });
+
+// Veya yapılandırma sırasında ayarlayın
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    logLevel: 'verbose',
+  }
+});
+```
+
+### Veri politikaları \{#data-policies\}
+
+Adapty, açıkça göndermedikçe kullanıcılarınızın kişisel verilerini saklamaz; ancak mağaza veya ülke yönergelerine uymak için ek veri güvenliği politikaları uygulayabilirsiniz.
+
+#### IP adresi toplama ve paylaşmayı devre dışı bırakın \{#disable-ip-address-collection-and-sharing\}
+
+Adapty modülünü etkinleştirirken, kullanıcı IP adresi toplama ve paylaşımını devre dışı bırakmak için `ipAddressCollectionDisabled` değerini `true` olarak ayarlayın. Varsayılan değer `false`'tur.
+
+Bu parametreyi kullanıcı gizliliğini artırmak, bölgesel veri koruma yönetmeliklerine (GDPR veya CCPA gibi) uymak ya da IP tabanlı özellikler uygulamanız için gerekli değilken gereksiz veri toplamayı azaltmak amacıyla kullanabilirsiniz.
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    ipAddressCollectionDisabled: true,
+  }
+});
+```
+
+#### Reklam kimliği toplama ve paylaşmayı devre dışı bırakın \{#disable-advertising-id-collection-and-sharing\}
+
+Adapty modülünü etkinleştirirken, reklam tanımlayıcısı toplamayı devre dışı bırakmak için `ios.idfaCollectionDisabled` (iOS) veya `android.adIdCollectionDisabled` (Android) değerini `true` olarak ayarlayın. Varsayılan değer `false`'tur.
+
+App Store/Play Store politikalarına uymak, Uygulama İzleme Şeffaflığı istemini tetiklemekten kaçınmak veya uygulamanızın reklam kimliklerine dayalı reklam attribution ya da analitik gerektirmediği durumlarda bu parametreyi kullanabilirsiniz.
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    ios: {
+      idfaCollectionDisabled: true,      
+    },
+    android: {
+      adIdCollectionDisabled: true,      
+    },
+  }
+});
+```
+
+#### AdaptyUI için medya önbellek yapılandırmasını kurun \{#set-up-media-cache-configuration-for-adaptyui\}
+
+Varsayılan olarak AdaptyUI, performansı artırmak ve ağ kullanımını azaltmak için medyayı (görüntü ve videolar gibi) önbelleğe alır. Özel bir yapılandırma sağlayarak önbellek ayarlarını özelleştirebilirsiniz.
+
+Varsayılan önbellek ayarlarını geçersiz kılmak için `mediaCache` kullanın:
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    mediaCache: {
+      memoryStorageTotalCostLimit: 200 * 1024 * 1024, // İsteğe bağlı: bayt cinsinden bellek önbellek boyutu
+      memoryStorageCountLimit: 2147483647,            // İsteğe bağlı: bellekteki maksimum öğe sayısı
+      diskStorageSizeLimit: 200 * 1024 * 1024,       // İsteğe bağlı: bayt cinsinden disk önbellek boyutu
+    },
+  }
+});
+```
+
+Parametreler:
+| Parametre | Zorunlu | Açıklama |
+|-----------|----------|-------------|
+| memoryStorageTotalCostLimit | isteğe bağlı | Bellekteki toplam önbellek boyutu (bayt cinsinden). Varsayılan olarak platforma özgü değer kullanılır. |
+| memoryStorageCountLimit | isteğe bağlı | Bellek deposundaki maksimum öğe sayısı. Varsayılan olarak platforma özgü değer kullanılır. |
+| diskStorageSizeLimit | isteğe bağlı | Diskteki maksimum dosya boyutu (bayt cinsinden). Varsayılan olarak platforma özgü değer kullanılır. |
+
+### Yerel access level'ları etkinleştirin (Android) \{#enable-local-access-levels-android\}
+
+Varsayılan olarak [yerel access level'lar](local-access-levels) iOS'ta etkin, Android'de devre dışıdır. Android'de de etkinleştirmek için `localAccessLevelAllowed` değerini `true` olarak ayarlayın:
+
+```typescript showLineNumbers
+await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+        android: {
+            localAccessLevelAllowed: true,
+        },
+    }
+});
+```
+
+### Yedekten geri yükleme sırasında verileri temizleyin \{#clear-data-on-backup-restore\}
+
+`clearDataOnBackup` değeri `true` olarak ayarlandığında SDK, uygulamanın iCloud yedeğinden geri yüklendiğini algılar ve önbelleğe alınmış profil bilgileri, ürün ayrıntıları ve paywalllar dahil olmak üzere yerel olarak depolanan tüm SDK verilerini siler. SDK ardından temiz bir durumla başlar. Varsayılan değer `false`'tur.
+
+:::note
+Yalnızca yerel SDK önbelleği silinir. Apple ile işlem geçmişi ve Adapty sunucularındaki kullanıcı verileri değişmeden kalır.
+:::
+
+```swift showLineNumbers
+await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+        ios: {
+            clearDataOnBackup: true,
+        },
+    }
+});
+```
+
+## Geliştirme ortamı ipuçları \{#development-environment-tips\}
+
+#### Capacitor'ın live-reload özelliğinde SDK aktivasyon hatalarını giderin \{#troubleshoot-sdk-activation-errors-on-capacitors-live-reload\}
+
+Capacitor'da Adapty SDK ile geliştirme yaparken şu hatayla karşılaşabilirsiniz: `Adapty can only be activated once. Ensure that the SDK activation call is not made more than once.`
+
+Bu hata, Capacitor'ın live-reload özelliğinin geliştirme sırasında birden fazla aktivasyon çağrısını tetiklemesinden kaynaklanır. Bunu önlemek için `__ignoreActivationOnFastRefresh` seçeneğini Capacitor'ın geliştirme modu bayrağına ayarlayın — kullandığınız bundle'a göre farklılık gösterecektir.
+
+```typescript showLineNumbers
+try {
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+        // Geliştirme ortamı değişkeninizi ayarlayın
+      __ignoreActivationOnFastRefresh: true, 
+    }
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+  // Uygulamanız için uygun şekilde hatayı işleyin
+}
+```
+
+## Sorun Giderme \{#troubleshooting\}
+
+#### Minimum iOS sürümü hatası \{#minimum-ios-version-error\}
+
+Minimum iOS sürümü hatası alırsanız Podfile'ınızı güncelleyin:
+
+```diff
+-platform :ios, min_ios_version_supported
++platform :ios, '14.0'  # Yalnızca core özellikler için
+# VEYA
++platform :ios, '15.0'  # Paywall builder'da oluşturulan paywalllar kullanılıyorsa
+```
+
+#### Android yedekleme kuralları (Otomatik Yedekleme yapılandırması) \{#android-backup-rules-auto-backup-configuration\}
+
+<AndroidBackupRules />
+
+:::tip
+Yerel Android dosyalarını değiştirdikten sonra, platformu yeniden oluşturursanız Capacitor'ın güncellenmiş kaynakları alması için `npx cap sync android` komutunu çalıştırın.
+:::
+
+#### Android'de başka bir uygulamadan döndükten sonra satın almalar başarısız oluyor \{#purchases-fail-after-returning-from-another-app-in-android\}
+
+Satın alma akışını başlatan Activity varsayılan olmayan bir `launchMode` kullanıyorsa, kullanıcı Google Play'den, bir bankacılık uygulamasından veya tarayıcıdan döndüğünde Android bunu yanlış şekilde yeniden oluşturabilir veya yeniden kullanabilir. Bu durum satın alma sonucunun kaybolmasına veya iptal edilmiş olarak değerlendirilmesine neden olabilir.
+
+Satın almaların doğru çalışmasını sağlamak için satın alma akışını başlatan Activity'de yalnızca `standard` veya `singleTop` başlatma modlarını kullanın ve diğer modlardan kaçının.
+
+`AndroidManifest.xml` dosyanızda, satın alma akışını başlatan Activity'nin `standard` veya `singleTop` olarak ayarlandığından emin olun:
+
+```xml
+<activity
+    android:name=".MainActivity"
+    android:launchMode="standard" />
+```

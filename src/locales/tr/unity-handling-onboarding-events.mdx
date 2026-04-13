@@ -1,0 +1,395 @@
+---
+title: "Unity SDK'da onboarding olaylarını yönetme"
+description: "Adapty kullanarak Unity'de onboarding ile ilgili olayları yönetin."
+metadataTitle: "Unity'de Onboarding Olaylarını Yönetme | Adapty Dokümanları"
+toc_max_heading_level: 4
+keywords: ['onCloseAction', 'AdaptyOnboardingsCloseAction', 'onStateUpdatedAction', 'onPaywallAction', 'didFinishLoading', 'onAnalyticsEvent']
+---
+
+Başlamadan önce şunları kontrol edin:
+
+1. [Adapty Unity SDK](sdk-installation-unity) 3.14.0 veya daha yeni bir sürüm kurulu olmalı.
+2. Bir [onboarding oluşturmuş](create-onboarding) olmalısınız.
+3. Onboarding'i bir [placement](placements)'a eklemiş olmalısınız.
+
+Builder ile yapılandırılan onboarding'ler, uygulamanızın yanıt verebileceği olaylar üretir. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenebilirsiniz.
+
+Unity uygulamanızda onboarding ekranında gerçekleşen süreçleri kontrol etmek veya izlemek için `AdaptyOnboardingsEventsListener` arayüzünü uygulayın.
+
+## Özel eylemler \{#custom-actions\}
+
+Builder'da bir butona **custom** (özel) eylem ekleyip bir ID atayabilirsiniz.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Bu ID'yi kodunuzda kullanarak özel bir eylem olarak işleyebilirsiniz. Örneğin, kullanıcı **Login** veya **Allow notifications** gibi özel bir butona dokunduğunda, `OnboardingViewOnCustomAction` metodu `actionId` parametresiyle tetiklenir; bu parametre builder'daki **Action ID** değerine karşılık gelir. "allowNotifications" gibi kendi ID'lerinizi oluşturabilirsiniz.
+
+Onboarding olaylarını yönetmek için `AdaptyOnboardingsEventsListener` arayüzünü uygulayın:
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetOnboardingsEventsListener(this);
+    }
+
+    public void OnboardingViewOnCustomAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string actionId
+    )
+    {
+        if (actionId == "allowNotifications") {
+            // request notification permissions
+        }
+    }
+    
+    public void OnboardingViewDidFailWithError(
+        AdaptyUIOnboardingView view,
+        AdaptyError error
+    )
+    {
+        // handle errors
+    }
+
+    // Implement other required interface methods (see examples below)
+}
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```json
+{
+  "actionId": "allowNotifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+## Onboarding'i kapatma \{#closing-onboarding\}
+
+Onboarding, kullanıcı **Close** eylemi atanmış bir butona dokunduğunda kapanmış sayılır.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+Kullanıcı onboarding'i kapattığında ne olacağını kendiniz yönetmeniz gerektiğini unutmayın. Örneğin, onboarding'in görüntülenmesini durdurmanız gerekir.
+:::
+
+Sınıfınızda `OnboardingViewOnCloseAction` metodunu uygulayın:
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnCloseAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string actionId
+    )
+    {
+        view.Dismiss((error) => {
+            if (error != null) {
+                // handle the error
+            }
+        });
+    }
+    
+    // ... other interface methods
+}
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+
+</Details>
+
+## Paywall açma \{#opening-a-paywall\}
+
+:::tip
+Onboarding içinde bir paywall açmak istiyorsanız bu olayı işleyin. Onboarding kapandıktan sonra paywall açmak istiyorsanız daha basit bir yol var: [`OnboardingViewOnCloseAction`](#closing-onboarding) olayını işleyip olay verilerine bağlı kalmadan doğrudan paywall açabilirsiniz.
+:::
+
+Kullanıcı bir paywall açan butona tıkladığında, [manuel olarak ayarladığınız](get-paid-in-onboardings) buton eylem ID'sini alırsınız. Onboarding'lerde paywall'larla çalışmanın en sorunsuz yolu, eylem ID'sini paywall placement ID'sine eşit yapmaktır. Bu sayede `OnboardingViewOnPaywallAction` olayının ardından placement ID'yi kullanarak paywall'ı hemen alıp açabilirsiniz.
+
+iOS'ta aynı anda ekranda yalnızca bir görünüm (paywall veya onboarding) gösterilebilir. Onboarding'in üzerine bir paywall sunarsanız, arka plandaki onboarding'i programatik olarak kontrol edemezsiniz. Onboarding'i kapatmaya çalışırsanız bunun yerine paywall kapanır ve onboarding görünür kalır. Bunu önlemek için paywall sunmadan önce her zaman onboarding görünümünü kapatın.
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnPaywallAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string actionId
+    )
+    {
+        // Dismiss onboarding before presenting paywall
+        view.Dismiss((dismissError) => {
+            if (dismissError != null) {
+                // handle the error
+                return;
+            }
+
+            Adapty.GetPaywall(actionId, (paywall, error) => {
+                if (error != null) {
+                    // handle the error
+                    return;
+                }
+
+                AdaptyUI.CreatePaywallView(paywall, (paywallView, createError) => {
+                    if (createError != null) {
+                        // handle the error
+                        return;
+                    }
+
+                    paywallView.Present((presentError) => {
+                        if (presentError != null) {
+                            // handle the error
+                        }
+                    });
+                });
+            });
+        });
+    }
+    
+    // ... other interface methods
+}
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## Onboarding yüklemesinin tamamlanması \{#finishing-loading-onboarding\}
+
+Onboarding yüklemesi tamamlandığında `OnboardingViewDidFinishLoading` metodunu uygulayın:
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewDidFinishLoading(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta
+    )
+    {
+        // handle loading completion
+    }
+    
+    // ... other interface methods
+}
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## Navigasyonu izleme \{#tracking-navigation\}
+
+`OnboardingViewOnAnalyticsEvent` metodu, onboarding akışı sırasında çeşitli analitik olaylar gerçekleştiğinde çağrılır.
+
+`analyticsEvent` nesnesi aşağıdaki türlerden biri olabilir:
+| Tür | Açıklama |
+|------------|-------------|
+| `AdaptyOnboardingsAnalyticsEventOnboardingStarted` | Onboarding yüklendiğinde |
+| `AdaptyOnboardingsAnalyticsEventScreenPresented` | Herhangi bir ekran gösterildiğinde |
+| `AdaptyOnboardingsAnalyticsEventScreenCompleted` | Bir ekran tamamlandığında. İsteğe bağlı `ElementId` (tamamlanan öğenin tanımlayıcısı) ve isteğe bağlı `Reply` (kullanıcının yanıtı) içerir. Kullanıcılar ekrandan çıkmak için herhangi bir eylem gerçekleştirdiğinde tetiklenir. |
+| `AdaptyOnboardingsAnalyticsEventSecondScreenPresented` | İkinci ekran gösterildiğinde |
+| `AdaptyOnboardingsAnalyticsEventUserEmailCollected` | Kullanıcının e-postası giriş alanı aracılığıyla toplandığında tetiklenir |
+| `AdaptyOnboardingsAnalyticsEventOnboardingCompleted` | Kullanıcı `final` ID'li bir ekrana ulaştığında tetiklenir. Bu olaya ihtiyacınız varsa [son ekrana `final` ID'yi atayın](design-onboarding). |
+| `AdaptyOnboardingsAnalyticsEventUnknown` | Tanınmayan olay türleri için. `Name` (bilinmeyen olayın adı) ve `meta` (ek meta veriler) içerir |
+
+Her olay şu alanları içeren `meta` bilgisini barındırır:
+| Alan | Açıklama |
+|------------|-------------|
+| `OnboardingId` | Onboarding akışının benzersiz tanımlayıcısı |
+| `ScreenClientId` | Mevcut ekranın tanımlayıcısı |
+| `ScreenIndex` | Mevcut ekranın akıştaki konumu |
+| `ScreensTotal` | Akıştaki toplam ekran sayısı |
+
+Analitik olaylarını izleme amacıyla nasıl kullanabileceğinize dair bir örnek:
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnAnalyticsEvent(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        AdaptyOnboardingsAnalyticsEvent analyticsEvent
+    )
+    {
+        switch (analyticsEvent) {
+            case AdaptyOnboardingsAnalyticsEventOnboardingStarted:
+                // track onboarding start
+                TrackEvent("onboarding_started", meta);
+                break;
+            case AdaptyOnboardingsAnalyticsEventScreenPresented:
+                // track screen presentation
+                TrackEvent("screen_presented", meta);
+                break;
+            case AdaptyOnboardingsAnalyticsEventScreenCompleted screenCompleted:
+                // track screen completion with user response
+                TrackEvent("screen_completed", meta, screenCompleted.ElementId, screenCompleted.Reply);
+                break;
+            case AdaptyOnboardingsAnalyticsEventOnboardingCompleted:
+                // track successful onboarding completion
+                TrackEvent("onboarding_completed", meta);
+                break;
+            case AdaptyOnboardingsAnalyticsEventUnknown unknownEvent:
+                // handle unknown events
+                TrackEvent(unknownEvent.Name, meta);
+                break;
+            // handle other cases as needed
+        }
+    }
+    
+    // ... other interface methods
+}
+```
+
+:::note
+`TrackEvent` metodu, analitik verilerini tercih ettiğiniz analitik servisine göndermek için kendiniz uygulamanız gereken bir yer tutucudur.
+:::
+
+<Details>
+<summary>Olay örnekleri (Genişletmek için tıklayın)</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+
+```
+
+</Details>

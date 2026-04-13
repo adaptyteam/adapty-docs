@@ -1,0 +1,269 @@
+---
+title: "Capacitor uygulamanıza Adapty'yi AI yardımıyla entegre edin"
+description: "Cursor, Context7, ChatGPT, Claude veya diğer AI araçlarını kullanarak Capacitor uygulamanıza Adapty'yi adım adım entegre etme rehberi."
+metadataTitle: "Capacitor için AI Yardımıyla Adapty Entegrasyonu | Adapty Dokümanları"
+customSlug: /adapty-cursor-capacitor
+displayed_sidebar: sdkcapacitor
+---
+
+Bu rehber, bir LLM yardımıyla Capacitor uygulamanıza Adapty'yi entegre etmenize yardımcı olur. Önce Adapty kontrol panelinizi hazırlayacak, ardından her uygulama aşamasını LLM'inize odaklanmış doküman bağlantıları göndererek tamamlayacaksınız. Sonunda, AI araçlarınızı Adapty dokümantasyonuyla kurmanın en iyi yöntemlerini bulacaksınız.
+
+:::tip
+Başlamak için bu sayfanın tamamını Markdown olarak kopyalayıp LLM'inize yapıştırın — sayfanın üstündeki **Copy for LLM** düğmesine tıklayın ya da [.md sürümünü](https://adapty.io/docs/tr/adapty-cursor-capacitor.md) açın. LLM, rehber bağlantılarını ve kontrol noktalarını kullanarak her aşamada sizi yönlendirecektir.
+:::
+
+## Başlamadan önce: kontrol paneli kurulumu \{#before-you-start-dashboard-setup\}
+
+Adapty, herhangi bir SDK kodu yazmadan önce bazı kontrol paneli yapılandırmaları gerektirir. Bunu etkileşimli bir LLM becerisiyle ya da Dashboard üzerinden manuel olarak yapabilirsiniz.
+
+### Beceri yaklaşımı (önerilen) \{#skill-approach-recommended\}
+
+Adapty CLI becerisi, LLM'inizin uygulamanızı, ürünleri, access level'ları, paywall'ları ve placement'ları doğrudan ayarlamasını sağlar; her adım için Dashboard'u açmanıza gerek kalmaz. Yalnızca Dashboard'da [mağazalarınızı bağlamanız](integrate-payments) gerekir.
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+Beceri eklendikten sonra ajanınızda `/adapty-cli` komutunu çalıştırın. Mağazalarınızı bağlamak için Dashboard'u ne zaman açmanız gerektiği de dahil olmak üzere her adımda sizi yönlendirecektir.
+
+### Dashboard yaklaşımı \{#dashboard-approach\}
+
+Her şeyi manuel olarak yapılandırmayı tercih ederseniz, kod yazmadan önce hazır olması gerekenler şunlardır. LLM'iniz kontrol paneli değerlerini sizin için bulamaz — bunları kendiniz sağlamanız gerekecektir.
+
+1. **Uygulama mağazalarınızı bağlayın**: Adapty Kontrol Paneli'nde **App settings → General** bölümüne gidin. Capacitor uygulamanız her iki platformu da hedefliyorsa hem App Store hem de Google Play'i bağlayın. Satın alımların çalışması için bu adım zorunludur.
+   [Uygulama mağazalarını bağlayın](integrate-payments)
+
+2. **Public SDK anahtarınızı kopyalayın**: Adapty Kontrol Paneli'nde **App settings → General** bölümüne gidin, ardından **API keys** bölümünü bulun. Kodda bu, `adapty.activate()` fonksiyonuna geçirdiğiniz dizedir.
+
+3. **En az bir ürün oluşturun**: Adapty Kontrol Paneli'nde **Products** sayfasına gidin. Ürünlere kodda doğrudan başvurmazsınız — Adapty bunları paywall'lar aracılığıyla iletir.
+   [Ürün ekleyin](quickstart-products)
+
+4. **Bir paywall ve placement oluşturun**: Adapty Kontrol Paneli'nde **Paywalls** sayfasında bir paywall oluşturun, ardından **Placements** sayfasında bir placement'a atayın. Kodda placement ID, `adapty.getPaywall()` fonksiyonuna geçirdiğiniz dizedir.
+   [Paywall oluşturun](quickstart-paywalls)
+
+5. **Access level'ları ayarlayın**: Adapty Kontrol Paneli'nde **Products** sayfasında her ürün için yapılandırın. Kodda `profile.accessLevels['premium']?.isActive` içinde kontrol edilen dizedir. Varsayılan `premium` access level çoğu uygulama için yeterlidir. Ücretli kullanıcılar ürüne göre farklı özelliklere erişiyorsa (örneğin `basic` plan ile `pro` plan), kodlamaya başlamadan önce [ek access level'lar oluşturun](assigning-access-level-to-a-product).
+
+:::tip
+Bu beşine sahip olduğunuzda kod yazmaya hazırsınız. LLM'inize şunu söyleyin: "Public SDK anahtarım X, placement ID'm Y" — böylece doğru başlatma ve paywall çekme kodu üretebilir.
+:::
+
+### Hazır olduğunuzda kurun \{#set-up-when-ready\}
+
+Bunlar kodlamaya başlamak için zorunlu değildir, ancak entegrasyonunuz olgunlaştıkça işinize yarayacaktır:
+
+- **A/B testleri**: **Placements** sayfasında yapılandırın. Kod değişikliği gerekmez.
+  [A/B testleri](ab-tests)
+- **Ek paywall'lar ve placement'lar**: Farklı placement ID'leriyle daha fazla `getPaywall` çağrısı ekleyin.
+- **Analitik entegrasyonları**: **Integrations** sayfasında yapılandırın. Kurulum entegrasyona göre farklılık gösterir. Bkz. [analitik entegrasyonları](analytics-integration) ve [attribution entegrasyonları](attribution-integration).
+
+## Adapty dokümanlarını LLM'inize besleyin \{#feed-adapty-docs-to-your-llm\}
+
+### Context7 kullanın (önerilen) \{#use-context7-recommended\}
+
+[Context7](https://context7.com), LLM'inize güncel Adapty dokümantasyonuna doğrudan erişim sağlayan bir MCP sunucusudur. LLM'iniz, sorduğunuz şeye göre doğru dokümanları otomatik olarak çeker — manuel URL yapıştırmaya gerek yoktur.
+
+Context7; **Cursor**, **Claude Code**, **Windsurf** ve diğer MCP uyumlu araçlarla çalışır. Kurmak için şunu çalıştırın:
+
+```
+npx ctx7 setup
+```
+
+Bu komut, editörünüzü algılar ve Context7 sunucusunu yapılandırır. Manuel kurulum için [Context7 GitHub deposuna](https://github.com/upstash/context7) bakın.
+
+Yapılandırıldıktan sonra, istemlerinizde Adapty kitaplığına başvurun:
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the Capacitor SDK
+```
+
+:::warning
+Context7, doküman bağlantılarını manuel olarak yapıştırma ihtiyacını ortadan kaldırsa da uygulama sırası önemlidir. Her şeyin düzgün çalışması için aşağıdaki [uygulama adım adım kılavuzunu](#implementation-walkthrough) sırayla takip edin.
+:::
+
+### Düz metin dokümanları kullanın \{#use-plain-text-docs\}
+
+Herhangi bir Adapty dokümanına düz metin Markdown olarak erişebilirsiniz. URL'nin sonuna `.md` ekleyin ya da makale başlığının altındaki **Copy for LLM** düğmesine tıklayın. Örneğin: [adapty-cursor-capacitor.md](https://adapty.io/docs/tr/adapty-cursor-capacitor.md).
+
+Aşağıdaki [uygulama adım adım kılavuzundaki](#implementation-walkthrough) her aşama, yapıştırmak için `.md` bağlantılarını içeren "LLM'inize bunu gönderin" bloğunu içermektedir.
+
+Aynı anda daha fazla dokümantasyon için aşağıdaki [indeks dosyaları ve platforma özel alt kümeler](#plain-text-doc-index-files) bölümüne bakın.
+
+## Uygulama adım adım kılavuzu \{#implementation-walkthrough\}
+
+Bu rehberin geri kalanı, Adapty entegrasyonunu uygulama sırasına göre ele alır. Her aşama, LLM'inize gönderilecek dokümanları, tamamlandığında görmeniz gerekenleri ve sık karşılaşılan sorunları içerir.
+
+### Entegrasyonunuzu planlayın \{#plan-your-integration\}
+
+Koda geçmeden önce, LLM'inizden projenizi analiz etmesini ve bir uygulama planı oluşturmasını isteyin. AI aracınız bir planlama modunu destekliyorsa (Cursor veya Claude Code'un plan modu gibi), LLM herhangi bir kod yazmadan önce hem proje yapınızı hem de Adapty dokümanlarını okuyabilmesi için bu modu kullanın.
+
+LLM'inize satın alımlar için hangi yaklaşımı kullandığınızı söyleyin — bu, takip etmesi gereken rehberleri etkiler:
+
+- [**Adapty Paywall Builder**](adapty-paywall-builder): Adapty'nin kodsuz oluşturucusunda paywall'lar oluşturursunuz; SDK bunları otomatik olarak render eder.
+- [**Manuel olarak oluşturulan paywall'lar**](capacitor-making-purchases): Kendi paywall arayüzünüzü kodla oluşturursunuz, ancak ürünleri çekmek ve satın alımları yönetmek için Adapty'yi kullanmaya devam edersiniz.
+- [**Observer modu**](observer-vs-full-mode): Mevcut satın alma altyapınızı korur ve Adapty'yi yalnızca analitik ve entegrasyonlar için kullanırsınız.
+
+Hangisini seçeceğinizden emin değil misiniz? [Hızlı başlangıçtaki karşılaştırma tablosunu](capacitor-quickstart-paywalls) okuyun.
+
+### SDK'yı yükleyin ve yapılandırın \{#install-and-configure-the-sdk\}
+
+Adapty SDK bağımlılığını npm ile ekleyin ve Public SDK anahtarınızla etkinleştirin. Bu, temel adımdır — diğer hiçbir şey bu olmadan çalışmaz.
+
+**Rehber:** [Adapty SDK'yı yükleyin ve yapılandırın](sdk-installation-capacitor)
+
+LLM'inize bunu gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/tr/sdk-installation-capacitor.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Uygulama hem iOS hem de Android'de derlenir ve çalışır. Konsol, Adapty etkinleştirme günlüğünü gösterir.
+- **Dikkat:** "Public API key is missing" → anahtarı, App settings'teki gerçek anahtarınızla değiştirip değiştirmediğinizi kontrol edin.
+:::
+
+### Paywall'ları gösterin ve satın alımları yönetin \{#show-paywalls-and-handle-purchases\}
+
+Bir paywall'ı placement ID'siyle çekin, görüntüleyin ve satın alma olaylarını yönetin. İhtiyacınız olan rehberler, satın alımları nasıl yönettiğinize bağlıdır.
+
+Sona kadar beklemeyin — ilerledikçe her satın alımı sandbox ortamında test edin. Kurulum talimatları için [Sandbox'ta satın alımları test edin](test-purchases-in-sandbox) bölümüne bakın.
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**Rehberler:**
+- [Paywall'ları kullanarak satın alımları etkinleştirin (hızlı başlangıç)](capacitor-quickstart-paywalls)
+- [Paywall Builder paywall'larını ve yapılandırmalarını çekin](capacitor-get-pb-paywalls)
+- [Paywall'ları görüntüleyin](capacitor-present-paywalls)
+- [Paywall olaylarını yönetin](capacitor-handling-events)
+- [Düğme eylemlerine yanıt verin](capacitor-handle-paywall-actions)
+
+LLM'inize bunu gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/tr/capacitor-quickstart-paywalls.md
+- https://adapty.io/docs/tr/capacitor-get-pb-paywalls.md
+- https://adapty.io/docs/tr/capacitor-present-paywalls.md
+- https://adapty.io/docs/tr/capacitor-handling-events.md
+- https://adapty.io/docs/tr/capacitor-handle-paywall-actions.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Paywall, yapılandırdığınız ürünlerle birlikte görünür. Bir ürüne dokunmak sandbox satın alma iletişim kutusunu tetikler.
+- **Dikkat:** Boş paywall veya `getPaywall` hatası → placement ID'sinin kontrol paneliyle tam olarak eşleştiğini ve placement'a bir kitle atandığını doğrulayın.
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Manuel paywall'lar">
+
+**Rehberler:**
+- [Özel paywall'ınızda satın alımları etkinleştirin (hızlı başlangıç)](capacitor-quickstart-manual)
+- [Paywall'ları ve ürünleri çekin](fetch-paywalls-and-products-capacitor)
+- [Remote config ile tasarlanmış paywall'ı render edin](present-remote-config-paywalls-capacitor)
+- [Satın alım yapın](capacitor-making-purchases)
+- [Satın alımları geri yükleyin](capacitor-restore-purchase)
+
+LLM'inize bunu gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/tr/capacitor-quickstart-manual.md
+- https://adapty.io/docs/tr/fetch-paywalls-and-products-capacitor.md
+- https://adapty.io/docs/tr/present-remote-config-paywalls-capacitor.md
+- https://adapty.io/docs/tr/capacitor-making-purchases.md
+- https://adapty.io/docs/tr/capacitor-restore-purchase.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Özel paywall'ınız Adapty'den çekilen ürünleri görüntüler. Bir ürüne dokunmak sandbox satın alma iletişim kutusunu tetikler.
+- **Dikkat:** Boş ürünler dizisi → paywall'a kontrol panelinde ürün atandığını ve placement'ın bir kitleye sahip olduğunu doğrulayın.
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**Rehberler:**
+- [Observer mode'a genel bakış](observer-vs-full-mode)
+- [Observer mode'u uygulayın](implement-observer-mode-capacitor)
+- [Observer mode'da işlemleri bildirin](report-transactions-observer-mode-capacitor)
+
+LLM'inize bunu gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/tr/observer-vs-full-mode.md
+- https://adapty.io/docs/tr/implement-observer-mode-capacitor.md
+- https://adapty.io/docs/tr/report-transactions-observer-mode-capacitor.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Mevcut satın alma akışınızı kullanarak yapılan bir sandbox satın alımının ardından, işlem Adapty kontrol panelinin **Event Feed** bölümünde görünür.
+- **Dikkat:** Olay yok → Adapty'ye işlem bildirdiğinizi ve her iki mağaza için de sunucu bildirimlerinin yapılandırıldığını doğrulayın.
+:::
+
+</TabItem>
+
+</Tabs>
+
+### Abonelik durumunu kontrol edin \{#check-subscription-status\}
+
+Satın alımın ardından, premium içeriği kısıtlamak için kullanıcı profilinde aktif bir access level olup olmadığını kontrol edin.
+
+**Rehber:** [Abonelik durumunu kontrol edin](capacitor-check-subscription-status)
+
+LLM'inize bunu gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/tr/capacitor-check-subscription-status.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Bir sandbox satın alımının ardından `profile.accessLevels['premium']?.isActive` değeri `true` döner.
+- **Dikkat:** Satın alım sonrası boş `accessLevels` → ürüne kontrol panelinde bir access level atandığını kontrol edin.
+:::
+
+### Kullanıcıları tanımlayın \{#identify-users\}
+
+Satın alımların cihazlar arasında kalıcı olması için uygulama kullanıcı hesaplarınızı Adapty profilleriyle ilişkilendirin.
+
+:::important
+Uygulamanızda kimlik doğrulama yoksa bu adımı atlayın.
+:::
+
+**Rehber:** [Kullanıcıları tanımlayın](capacitor-quickstart-identify)
+
+LLM'inize bunu gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/tr/capacitor-quickstart-identify.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** `adapty.identify()` çağrısının ardından kontrol panelinin **Profiles** bölümünde özel kullanıcı ID'niz görünür.
+- **Dikkat:** Anonim profil attribution sorunlarını önlemek için `identify`'ı etkinleştirmeden sonra, paywall'ları çekmeden önce çağırın.
+:::
+
+### Yayına hazırlanın \{#prepare-for-release\}
+
+Entegrasyonunuz sandbox'ta çalışır hale geldiğinde, her şeyin production'a hazır olduğundan emin olmak için yayın kontrol listesini adım adım inceleyin.
+
+**Rehber:** [Yayın kontrol listesi](release-checklist)
+
+LLM'inize bunu gönderin:
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/tr/release-checklist.md
+```
+
+:::tip[Kontrol noktası]
+- **Beklenen:** Tüm kontrol listesi maddeleri onaylandı: mağaza bağlantıları, sunucu bildirimleri, satın alma akışı, access level kontrolleri ve gizlilik gereksinimleri.
+- **Dikkat:** Eksik sunucu bildirimleri → **App settings → iOS SDK** bölümünde App Store Sunucu Bildirimlerini ve **App settings → Android SDK** bölümünde Google Play Gerçek Zamanlı Geliştirici Bildirimlerini yapılandırın.
+:::
+
+## Düz metin doküman indeks dosyaları \{#plain-text-doc-index-files\}
+
+LLM'inize tek tek sayfaların ötesinde daha geniş bir bağlam sağlamanız gerekiyorsa, tüm Adapty dokümantasyonunu listeleyen veya birleştiren indeks dosyaları sunuyoruz:
+
+- [`llms.txt`](https://adapty.io/docs/tr/llms.txt): Tüm sayfaları `.md` bağlantılarıyla listeler. Web sitelerini LLM'lere erişilebilir kılmak için [gelişmekte olan bir standart](https://llmstxt.org/). Bazı AI ajanları (örneğin ChatGPT) için `llms.txt` dosyasını indirip sohbete dosya olarak yüklemeniz gerekebileceğini unutmayın.
+- [`llms-full.txt`](https://adapty.io/docs/tr/llms-full.txt): Tüm Adapty dokümantasyon sitesini tek bir dosyada birleştirir. Çok büyük — yalnızca tam resme ihtiyaç duyduğunuzda kullanın.
+- Capacitor'a özgü [`capacitor-llms.txt`](https://adapty.io/docs/tr/capacitor-llms.txt) ve [`capacitor-llms-full.txt`](https://adapty.io/docs/tr/capacitor-llms-full.txt): Tam siteye kıyasla token tasarrufu sağlayan platforma özel alt kümeler.

@@ -1,0 +1,260 @@
+---
+title: "Unity SDK'da paywall'ları kullanarak satın almaları etkinleştirme"
+description: "Adapty SDK ile Unity uygulamanızda paywall'ları nasıl göstereceğinizi öğrenin."
+metadataTitle: "Paywall Gösterme | Unity SDK | Adapty Dokümanları"
+customSlug: /unity-quickstart-paywalls
+displayed_sidebar: sdkunity
+keywords: ['paywall', 'paywall builder', 'getPaywall']
+rank: 60
+---
+
+import PaywallsIntro from '@site/src/locales/tr/reusable/PaywallsIntro.md';
+
+Uygulama içi satın almaları etkinleştirmek için üç temel kavramı anlamanız gerekir:
+
+- [**Ürünler**](product) – kullanıcıların satın alabileceği her şey (abonelikler, consumable'lar, süresiz erişim)
+- [**Paywall'lar**](paywalls) – hangi ürünlerin sunulacağını tanımlayan yapılandırmalardır. Adapty'de ürünleri almanın tek yolu paywall'lardır; bu tasarım sayesinde uygulama kodunuza dokunmadan teklifleri, fiyatlandırmayı ve ürün kombinasyonlarını değiştirebilirsiniz.
+- [**Placement'lar**](placements) – uygulamanızda paywall'ları nerede ve ne zaman göstereceğiniz (`main`, `onboarding`, `settings` gibi). Kontrol panelinde placement'lar için paywall'lar ayarlarsınız, ardından kodunuzda placement ID'siyle bunları talep edersiniz. Bu yapı, A/B testleri çalıştırmayı ve farklı kullanıcılara farklı paywall'lar göstermeyi kolaylaştırır.
+
+Adapty, uygulamanızda satın almaları etkinleştirmek için üç yöntem sunar. Uygulama gereksinimlerinize göre birini seçin:
+
+| Uygulama                     | Karmaşıklık | Ne zaman kullanılır                                                                                                                                                                                                                                         |
+|------------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty Paywall Builder       | ✅ Kolay    | [No-code builder'da eksiksiz, satın almaya hazır bir paywall oluşturursunuz](quickstart-paywalls). Adapty bunu otomatik olarak render eder ve tüm satın alma akışını, makbuz doğrulamasını ve abonelik yönetimini arka planda halleder.                       |
+| Elle oluşturulan paywall'lar | 🟡 Orta    | Paywall arayüzünüzü uygulama kodunuzda siz uygularsınız; ancak ürün tekliflerinde esnekliği korumak için paywall nesnesini yine de Adapty'den alırsınız. [Kılavuza](unity-quickstart-manual) bakın.                                                          |
+| Observer modu                | 🔴 Zor     | Kendi satın alma altyapınız zaten var ve onu kullanmaya devam etmek istiyorsunuz. Observer modunun Adapty'de bazı sınırlamaları olduğunu unutmayın. [Makaleye](observer-vs-full-mode) bakın.                                                                  |
+
+:::important
+**Aşağıdaki adımlar, Adapty paywall builder'da oluşturulan bir paywall'ın nasıl uygulanacağını göstermektedir.**
+
+Paywall builder'ı kullanmak istemiyorsanız [elle oluşturulan paywall'larda satın almaları yönetme kılavuzuna](unity-making-purchases) bakın.
+:::
+
+Adapty paywall builder'da oluşturulmuş bir paywall'ı göstermek için uygulama kodunuzda yalnızca şunları yapmanız yeterlidir:
+
+1. **Paywall'ı alın**: Paywall'ı Adapty'den alın.
+2. **Paywall'ı gösterin, satın almaları Adapty halleder**: Uygulamanızda aldığınız paywall container'ını gösterin.
+3. **Buton eylemlerini yönetin**: Kullanıcıların paywall ile etkileşimlerini uygulamanızın yanıtlarıyla ilişkilendirin. Örneğin, kullanıcılar butonlara tıkladığında bağlantılar açın veya paywall'ı kapatın.
+
+## Başlamadan önce \{#before-you-start\}
+
+Başlamadan önce şu adımları tamamlayın:
+
+1. Uygulamanızı Adapty Kontrol Paneli'nde [App Store](initial_ios) ve/veya [Google Play](initial-android)'e bağlayın.
+2. Adapty'de [ürünlerinizi oluşturun](create-product).
+3. [Bir paywall oluşturun ve ürünleri ekleyin](create-paywall).
+4. [Bir placement oluşturun ve paywall'ınızı ekleyin](create-placement).
+5. Uygulama kodunuzda [Adapty SDK'yı yükleyin ve etkinleştirin](sdk-installation-unity).
+
+:::tip
+Bu adımları tamamlamanın en hızlı yolu [hızlı başlangıç kılavuzunu](quickstart) takip etmek ya da [Developer CLI](developer-cli-quickstart) kullanarak paywall'lar ve placement'lar oluşturmaktır.
+:::
+
+## 1. Paywall'ı alın \{#1-get-the-paywall\}
+
+Paywall'larınız, kontrol panelinde yapılandırılmış placement'larla ilişkilidir. Placement'lar, farklı kitleler için farklı paywall'lar çalıştırmanıza ya da [A/B testleri](ab-tests) yapmanıza olanak tanır.
+
+Adapty paywall builder'da oluşturulmuş bir paywall almak için şunları yapmanız gerekir:
+
+1. `GetPaywall` metodunu kullanarak [placement](placements) ID'sine göre `paywall` nesnesini alın ve `HasViewConfiguration` özelliğini kontrol ederek builder'da oluşturulmuş bir paywall olup olmadığını doğrulayın.
+
+2. `CreatePaywallView` metodunu kullanarak paywall görünümünü oluşturun. Görünüm, paywall'ı göstermek için gereken UI öğelerini ve stilleri içerir.
+
+:::important
+Görünüm yapılandırmasını alabilmek için Paywall Builder'da **Show on device** geçişini açmanız gerekir. Aksi takdirde boş bir görünüm yapılandırması alırsınız ve paywall gösterilmez.
+:::
+
+```csharp showLineNumbers
+Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
+    if(error != null) {
+        // handle the error
+        return;
+    }
+    
+    // Create paywall view parameters
+    var parameters = new AdaptyUICreatePaywallViewParameters();
+    
+    // Create the paywall view
+    AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+        if(error != null) {
+            // handle the error
+            return;
+        }
+        
+        // view - the paywall view ready to be presented
+    });
+});
+```
+
+:::info
+Bu hızlı başlangıç, bir paywall'ı göstermek için gereken minimum yapılandırmayı sağlar. Gelişmiş yapılandırma ayrıntıları için [paywall alma kılavuzumuza](unity-get-pb-paywalls) bakın.
+:::
+
+## 2. Paywall'ı gösterin \{#2-display-the-paywall\}
+
+Paywall yapılandırmasına sahip olduğunuzda, paywall'ınızı göstermek için birkaç satır kod eklemeniz yeterlidir.
+
+Paywall'ı göstermek için `CreatePaywallView` metoduyla oluşturulan `view` üzerinde `view.Present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir. Paywall'ı tekrar göstermeniz gerekiyorsa yeni bir `view` örneği oluşturmak için `CreatePaywallView`'u tekrar çağırın.
+
+```csharp showLineNumbers title="Unity"
+view.Present((error) => {
+  // handle the error
+});
+```
+
+:::info
+Paywall'ın nasıl gösterileceğine dair daha fazla ayrıntı için [kılavuzumuza](unity-present-paywalls) bakın.
+:::
+
+## 3. Buton eylemlerini yönetin \{#3-handle-button-actions\}
+
+Kullanıcılar paywall'daki butonlara tıkladığında Unity SDK, satın almaları ve geri yüklemeleri otomatik olarak işler. Ancak diğer butonların özel veya önceden tanımlanmış ID'leri vardır ve kodunuzda eylem yönetimi gerektirir.
+
+Örneğin paywall'ınızda büyük olasılıkla bir kapat butonu ve açılacak URL'ler (kullanım koşulları ve gizlilik politikası gibi) bulunur. Bu eylemleri yönetmek için sınıfınızın `AdaptyPaywallsEventsListener` arayüzünü uygulaması ve bir dinleyici olarak kaydedilmesi gerekir.
+
+:::tip
+Buton [eylemlerini](unity-handle-paywall-actions) ve [olayları](unity-handling-events) nasıl yöneteceğinize dair kılavuzlarımızı okuyun.
+:::
+
+```csharp showLineNumbers title="Unity"
+public class YourClass : MonoBehaviour, AdaptyPaywallsEventsListener
+{
+    void Start()
+    {
+        // Register this class as the paywall events listener
+        Adapty.SetPaywallsEventsListener(this);
+    }
+
+    // AdaptyPaywallsEventsListener method - handles button actions
+    public void PaywallViewDidPerformAction(
+        AdaptyUIPaywallView view,
+        AdaptyUIUserAction action
+    ) {
+        switch (action.Type) {
+            case AdaptyUIUserActionType.Close:
+                view.Dismiss(null);
+                break;
+            case AdaptyUIUserActionType.OpenUrl:
+                Application.OpenURL(action.Value);
+                break;
+            default:
+                break;
+        }
+    }
+}
+```
+
+## Sonraki adımlar \{#next-steps\}
+
+<SupportForum />
+
+Paywall'ınız uygulamada gösterilmeye hazır. Paywall üzerinden bir test satın alması tamamlayabildiğinizden emin olmak için [App Store sandbox](test-purchases-in-sandbox) veya [Google Play Store](testing-on-android) üzerinde satın almalarınızı test edin.
+
+Artık doğru kullanıcılara paywall gösterdiğinizden veya ücretli özelliklere erişim verdiğinizden emin olmak için [kullanıcıların access level'ını kontrol etmeniz](unity-check-subscription-status) gerekir.
+
+## Tam örnek \{#full-example\}
+
+Tüm bu adımların uygulamanızda birlikte nasıl entegre edilebileceğini aşağıda görebilirsiniz.
+
+```csharp showLineNumbers
+using System;
+using UnityEngine;
+using AdaptySDK;
+
+public class PaywallManager : MonoBehaviour, AdaptyPaywallsEventsListener
+{
+    [SerializeField] private string placementId = "YOUR_PLACEMENT_ID";
+    
+    private AdaptyUIPaywallView currentPaywallView;
+    
+    void Start()
+    {
+        // Register for paywall events
+        Adapty.SetPaywallsEventsListener(this);
+        GetAndDisplayPaywall();
+    }
+    
+    private void GetAndDisplayPaywall()
+    {
+        Adapty.GetPaywall(placementId, (paywall, error) => {
+            if (error != null) {
+                Debug.LogError("Error getting paywall: " + error.Message);
+                return;
+            }
+            
+            if (paywall.HasViewConfiguration) {
+                CreateAndPresentPaywallView(paywall);
+            } else {
+                Debug.LogWarning("Paywall was not created using the builder");
+            }
+        });
+    }
+    
+    private void CreateAndPresentPaywallView(AdaptyPaywall paywall)
+    {
+        var parameters = new AdaptyUICreatePaywallViewParameters();
+        
+        AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+            if (error != null) {
+                Debug.LogError("Error creating paywall view: " + error.Message);
+                return;
+            }
+            
+            currentPaywallView = view;
+            
+            view.Present((presentError) => {
+                if (presentError != null) {
+                    Debug.LogError("Error presenting paywall: " + presentError.Message);
+                    return;
+                }
+                
+                Debug.Log("Paywall presented successfully");
+            });
+        });
+    }
+    
+    // AdaptyPaywallsEventsListener implementation
+    public void PaywallViewDidPerformAction(
+        AdaptyUIPaywallView view, 
+        AdaptyUIUserAction action
+    ) {
+        switch (action.Type) {
+            case AdaptyUIUserActionType.Close:
+                Debug.Log("Close button pressed");
+                view.Dismiss(null);
+                break;
+            case AdaptyUIUserActionType.OpenUrl:
+                Application.OpenURL(action.Value);
+                break;
+            default:
+                break;
+        }
+    }
+    
+    // Required interface methods (implement as needed)
+    public void PaywallViewDidAppear(AdaptyUIPaywallView view) { }
+    public void PaywallViewDidDisappear(AdaptyUIPaywallView view) { }
+    public void PaywallViewDidSelectProduct(AdaptyUIPaywallView view, string productId) { }
+    public void PaywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) { }
+    public void PaywallViewDidFinishPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product, AdaptyPurchaseResult purchasedResult) { }
+    public void PaywallViewDidFailPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product, AdaptyError error) { }
+    public void PaywallViewDidStartRestore(AdaptyUIPaywallView view) { }
+    public void PaywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) { }
+    public void PaywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) { }
+    public void PaywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) { }
+    public void PaywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) { }
+    public void PaywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view, AdaptyPaywallProduct product, AdaptyError error) { }
+    
+    public void ShowPaywall()
+    {
+        GetAndDisplayPaywall();
+    }
+    
+    void OnDestroy()
+    {
+        if (currentPaywallView != null) {
+            currentPaywallView.Dismiss(null);
+        }
+    }
+}
+```

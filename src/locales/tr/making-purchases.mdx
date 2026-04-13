@@ -1,0 +1,146 @@
+---
+title: "iOS SDK'da mobil uygulamada satın alma yapma"
+description: "Adapty kullanarak uygulama içi satın alma ve abonelikleri yönetme rehberi."
+metadataTitle: "Adapty'de Uygulama İçi Satın Almaları Yönetme | Adapty Dokümanları"
+keywords: ['makePurchase', 'pending', 'purchase', 'presentCodeRedemptionSheet', 'offer code']
+rank: 100
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/tr/reusable/OfferCodesInfo.mdx';
+
+Mobil uygulamanızda paywall'ları göstermek, kullanıcılara premium içerik veya hizmetlere erişim sunmanın temel adımlarından biridir. Ancak paywall'larınızı özelleştirmek için [Paywall Builder](adapty-paywall-builder) kullanıyorsanız, bu paywall'ları görüntülemek satın almaları desteklemek için yeterlidir.
+
+Paywall Builder kullanmıyorsanız, satın alma işlemini tamamlamak ve istenen içeriğin kilidini açmak için `.makePurchase()` adlı ayrı bir metot kullanmanız gerekir. Bu metot, kullanıcıların paywall'larla etkileşime girmesini ve istedikleri işlemleri gerçekleştirmesini sağlar.
+
+Paywall'ınızda kullanıcının satın almaya çalıştığı ürün için aktif bir promosyon teklifi varsa, Adapty bunu satın alma anında otomatik olarak uygular.
+
+:::warning
+Başlangıç teklifinin otomatik uygulanabilmesi için paywall'larınızın Paywall Builder ile oluşturulmuş olması gerektiğini unutmayın.
+
+Diğer durumlarda, [iOS'ta kullanıcının başlangıç teklifine uygunluğunu doğrulamanız](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios) gerekir. Bu adımı atlamak uygulamanızın yayın sırasında reddedilmesine yol açabilir. Üstelik, başlangıç teklifine hak kazanan kullanıcıların tam fiyat ödenmesine neden olabilir.
+:::
+
+Tek bir adımı bile atlamadan [başlangıç yapılandırmasını](quickstart) tamamladığınızdan emin olun. Bu yapılmadan satın almaları doğrulayamayız.
+
+## Satın alma yapma \{#make-purchase\}
+
+:::note
+**[Paywall Builder](adapty-paywall-builder) kullanıyor musunuz?** Satın almalar otomatik olarak işlenir—bu adımı atlayabilirsiniz.
+
+**Adım adım rehber mi arıyorsunuz?** Tam bağlamlı uçtan uca uygulama talimatları için [hızlı başlangıç kılavuzuna](ios-implement-paywalls-manually) bakın.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let purchaseResult = try await Adapty.makePurchase(product: product)
+
+    switch purchaseResult {
+        case .userCancelled:
+            // Handle the case where the user canceled the purchase
+        case .pending:
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
+        case let .success(profile, transaction):
+            if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // Grant access to the paid features
+            }
+    }
+} catch {
+    // Handle the error
+}
+```
+
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.makePurchase(product: product) { result in
+    switch result {
+    case let .success(purchaseResult):
+        switch purchaseResult {
+            case .userCancelled:
+                // Handle the case where the user canceled the purchase
+            case .pending:
+                // Handle deferred purchases (e.g., the user will pay offline with cash)
+            case let .success(profile, transaction):
+                if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+                    // Grant access to the paid features
+                }
+        }
+    case let .failure(error):
+        // Handle the error
+    }
+}
+```
+
+</TabItem>
+
+</Tabs>
+
+İstek parametreleri:
+
+| Parametre   | Zorunluluk | Açıklama                                                                                         |
+| :---------- | :--------- | :----------------------------------------------------------------------------------------------- |
+| **Product** | zorunlu    | Paywall'dan alınan bir [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) nesnesi. |
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama                                                                                                                                                                                                                                                                                                                                                                                   |
+|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>İstek başarılıysa yanıt bu nesneyi içerir. Bir [AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile) nesnesi, kullanıcının uygulamadaki access level'ları, abonelikleri ve abonelik dışı satın almaları hakkında kapsamlı bilgi sağlar.</p><p>Kullanıcının uygulamaya gerekli erişime sahip olup olmadığını belirlemek için access level durumunu kontrol edin.</p> |
+
+:::warning
+**Not:** Hâlâ Apple'ın StoreKit v2.0'dan düşük sürümünü ve Adapty SDK v2.9.0'dan düşük sürümünü kullanıyorsanız, bunun yerine [Apple App Store paylaşılan gizli anahtarını](app-store-connection-configuration#step-5-enter-app-store-shared-secret) sağlamanız gerekir. Bu yöntem Apple tarafından artık kullanımdan kaldırılmıştır.
+:::
+
+## App Store'dan uygulama içi satın almalar \{#in-app-purchases-from-the-app-store\}
+
+Bir kullanıcı App Store'da satın alma başlattığında ve işlem uygulamanıza taşındığında iki seçeneğiniz vardır:
+
+- **İşlemi hemen gerçekleştirin:** `shouldAddStorePayment` içinde `true` döndürün. Bu, Apple satın alma sistem ekranını hemen gösterir.
+- **Ürün nesnesini sonraki işlem için saklayın:** `shouldAddStorePayment` içinde `false` döndürün, ardından saklanan ürünle `makePurchase`'i daha sonra çağırın. Bu, satın almayı tetiklemeden önce kullanıcıya özel bir şey göstermeniz gerektiğinde işe yarar.
+
+Tam kod parçacığı şöyle:
+
+```swift showLineNumbers title="Swift"
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
+        // 1a.
+        // Return `true` to continue the transaction in your app. The Apple purchase system screen will show automatically.
+
+        // 1b.
+        // Store the product object and return `false` to defer or cancel the transaction.
+        false
+    }
+    
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase` when the timing is appropriate
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyDeferredProduct = // get the product object from 1b.
+        do {
+            try await Adapty.makePurchase(product: storedProduct)
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+## iOS'ta teklif kodlarını kullanma \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+Uygulamanızda kod kullanım sayfasını göstermek için:
+
+```swift showLineNumbers
+Adapty.presentCodeRedemptionSheet()
+```
+
+:::danger
+Gözlemlerimize göre bazı uygulamalarda Teklif Kodu Kullanım sayfası güvenilir şekilde çalışmayabilir. Kullanıcıyı doğrudan App Store'a yönlendirmenizi öneririz.
+
+Bunu yapmak için şu formattaki URL'yi açmanız gerekir:
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::

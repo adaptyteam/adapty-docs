@@ -1,0 +1,96 @@
+---
+title: "Profiller nasıl çalışır"
+description: "Adapty'nin kullanıcı profillerini nasıl oluşturduğunu, takip ettiğini ve bağladığını anlayın — anonim profiller, kimliği belirlenmiş kullanıcılar ve ebeveyn/kalıtımcı ilişkileri dahil."
+metadataTitle: "Adapty Profilleri Nasıl Çalışır | Adapty Dokümanları"
+keywords: ['profil', 'customer_user_id', 'anonim profil', 'ebeveyn profil', 'kalıtımcı profil', 'profil kaydı']
+---
+
+import Sharingaccesslevel from '@site/src/locales/tr/reusable/sharingaccesslevel.md';
+
+Uygulamanızdaki her kullanıcı, satın alımlarını, olaylarını ve abonelik durumunu takip eden bir Adapty profiline sahip olur. Profillerin nasıl oluşturulduğunu ve birbirine bağlandığını anlamak; entegrasyon hatalarını önlemenize, veri parçalanmasını engellemenize ve [Profiller](profiles-crm) bölümündeki verileri doğru yorumlamanıza yardımcı olur.
+
+## Profil oluşturma \{#profile-creation\}
+
+Adapty, bir kullanıcı uygulamanızı ilk kez açtığında otomatik olarak bir profil oluşturur.
+
+**Customer User ID olmadan** profil anonimdir. Her şu durumda yeni bir anonim profil oluşturulur:
+- Kullanıcı uygulamayı yeniden yüklediğinde
+- Kullanıcı uygulamanızdan çıkış yaptığında (uygulamanız `Adapty.logout()` çağırdığında)
+
+Satın alımlar, kalıcı bir kullanıcı kimliğine değil, uygulama kurulumuna bağlıdır.
+
+**Customer User ID ile** profil, yeniden yüklemeler ve cihazlar arasında kalıcı olur. Customer user ID kullanmak şunları sağlar:
+
+1. Kullanıcıyı uygulama yeniden yüklemeleri ve birden fazla cihaz üzerinden takip edebilirsiniz.
+2. Kullanıcıları [**Profiles**](profiles-crm) bölümünde customer user ID'lerine göre bulabilirsiniz.
+3. Customer user ID'yi [sunucu tarafı API](getting-started-with-server-side-api)'sinde kullanabilirsiniz.
+4. Adapty, customer user ID'yi tüm entegrasyonlara gönderir.
+
+Customer user ID ile profil davranışı, bunu ne zaman ayarladığınıza bağlıdır:
+
+- **SDK etkinleştirmesinde**: Adapty, o customer user ID'ye sahip mevcut profili kullanır (geri dönen kullanıcılar için) veya yeni bir profil oluşturur (ilk kez gelen kullanıcılar için).
+- **SDK etkinleştirmesinden sonra**: Adapty, etkinleştirmede anonim bir profil oluşturur. Kullanıcıyı daha sonra tanımladığınızda Adapty, customer user ID'yi anonim profile bağlar (ilk kez gelen kullanıcılar için) veya o ID'ye sahip mevcut profile geçer (geri dönen kullanıcılar için).
+
+**Hangi yaklaşımı kullanmalısınız:**
+
+- **Uygulama başlangıcında customer user ID mevcutsa** (örneğin, önceki bir oturumdan kaydedilmişse) — SDK'yı başlatırken `activate()` fonksiyonuna iletin.
+- **Kullanıcılar uygulama başladıktan sonra giriş yapıyorsa** — kimlik doğrulamanın ardından `identify()` fonksiyonunu çağırın. Adapty, ID'yi mevcut profile bağlar (ID yeniyse) veya mevcut profile geçer (ID zaten varsa).
+- **Kullanıcılar giriş yapmadan önce satın alım yapabiliyorsa** — girişin ardından `identify()` fonksiyonunu çağırın. Customer user ID Adapty'de zaten mevcutsa, mevcut access level'ı senkronize etmek için ardından profili alın.
+
+Uygulama ayrıntıları için [kullanıcıları tanımlama](identifying-users) SDK kılavuzuna bakın.
+
+:::note
+Geri dönen bir kullanıcı daha önce uygulamanızı customer user ID olmadan kullandıysa, SDK etkinleştirmesinde tanımlamaya başladığınızda bu anonim profiller otomatik olarak birleştirilmez. Bu tür kullanıcılar için eksiksiz geçmişi korumak amacıyla bunun yerine girişten sonra `identify()` kullanın.
+:::
+
+## Ebeveyn ve kalıtımcı profiller \{#parent-and-inheritor-profiles\}
+
+Birden fazla profil aynı aboneliğe (aynı Apple/Google ID aracılığıyla) bağlandığında Adapty, bunları ebeveyn-kalıtımcı ilişkisi kullanarak takip eder. Bu durum, bir kullanıcı kimlik belirtmeden uygulamayı yeniden yüklediğinde veya farklı kimliği belirlenmiş kullanıcılar aynı cihazda satın alımları geri yüklediğinde ortaya çıkar.
+
+**Ebeveyn profil**, satın alımı yapan profildir — mutlaka oluşturulan ilk profil değildir. Örneğin: uygulamayı yükleyip hiçbir şey satın almıyorsunuz, ardından yeniden yükleyip bir abonelik alıyorsunuz. İkinci profil, satın alımı yaptığı için ebeveyn olur. Birinci profil kalıtımcı olur ve paylaşım yoluyla erişim kazanır.
+
+**Olayların dağılımı:**
+
+- **İşlemsel olaylar** (satın alımlar, yenilemeler, iptaller, faturalama sorunları, ek süreler, iadeler): Yalnızca satın alımı yapan **ebeveyn profilde** görünür. Tüm abonelik yenilemeleri ve güncellemeleri bu profilde görünmeye devam eder.
+- **access_level_updated olayları**: Access level durumu her değiştiğinde **hem ebeveyn hem de kalıtımcı profillerde** görünür. Bu sayede bağlı tüm profiller mevcut erişim durumları hakkında güncel kalır.
+
+Ebeveyn profil, eksiksiz işlem geçmişini gösterir. Kalıtımcı profiller yalnızca kendi access level güncellemelerini ve **Access level** bölümünde ebeveyn profile bir bağlantıyı gösterir.
+
+<Zoom>
+  <img src="/assets/shared/img/98d0dad-non-original_profile.webp"
+  style={{
+    border: '1px solid #727272',
+    width: '700px',
+    display: 'block',
+    margin: '0 auto'
+  }}
+/>
+</Zoom>
+
+## Kullanıcı hesapları arasında ücretli erişimi paylaşma \{#sharing-paid-access-between-user-accounts\}
+
+:::link
+Ana makale: [Kullanıcı hesapları arasında ücretli erişimi paylaşma](sharing-paid-access-between-user-accounts)
+:::
+
+Access level paylaşım politikanızı ayarlamak için [**General**](general) ayarlar sayfasında bir paylaşım seçeneği belirleyin. [Sandbox ortamı](test-purchases-in-sandbox) için ayrı bir politika ayarlayabilirsiniz.
+
+<Sharingaccesslevel />
+
+## Gelecek tarihli olay zaman damgaları (Apple/iOS) \{#event-timestamps-with-future-dates-appleios\}
+
+Bu davranış Apple App Store'a özgüdür. Google Play'in bildirim sistemi olayları önceden göndermez.
+
+Apple, yenileme olaylarını önceden gönderdiği için profillerdeki ve entegrasyonlardaki olay zaman damgaları gelecek tarihleri gösterebilir.
+
+- **Neden olur**: Apple bunu, aboneliklerin sona ermeden önce otomatik olarak yenilenmesini sağlamak ve kullanıcı hizmet kesintilerini önlemek için yapar. Daha fazla ayrıntı için Apple'ın Geliştirici Forumuna bakın: [Server Notifications for Subscriptions](https://developer.apple.com/forums/tags/app-store-server-notifications).
+- **Etkilenen olay türleri**: Genellikle bu durum abonelik yenilemeleri ve deneme sürümünden ücretli dönüşümleri için geçerlidir. Bu olaylar, Apple sistemleri önceden bilgilendirdiği için gelecek zaman damgalarına sahip olabilir.
+- **Diğer olay türleri**: Ek uygulama içi satın alımlar ve abonelik planı değişiklikleri, bu olaylar önceden tahmin edilemeyeceği için gerçek zaman damgalarıyla kaydedilir.
+- **Analitik ve Olay Akışı üzerindeki etkisi**: Bu olaylar yalnızca zaman damgaları geçtikten sonra **Analytics** ve **Event Feed**'de görünür. Gelecek zaman damgalı olaylar her iki bölümde de gösterilmez.
+- **Entegrasyonlar üzerindeki etkisi**: Adapty, olayları alır almaz entegrasyonlara gönderir. Bir olayın gelecek zaman damgası varsa Adapty, bunu entegrasyonunuza gelecek zaman damgası değiştirilmeden gönderir.
+
+## Sonraki adımlar \{#next-steps\}
+
+- Kullanıcıları bulmak ve yönetmek için Profiller kontrol panelini kullanmak istiyorsanız [Profiller](profiles-crm) sayfasına bakın.
+- Uygulamanızda kullanıcı tanımlamayı ayarlamak için [kullanıcıları tanımlama](identifying-users) SDK kılavuzuna bakın.
+- Erişim paylaşım politikasını yapılandırmak için [Kullanıcı hesapları arasında ücretli erişimi paylaşma](sharing-paid-access-between-user-accounts) sayfasına bakın.

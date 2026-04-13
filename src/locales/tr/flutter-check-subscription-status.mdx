@@ -1,0 +1,92 @@
+---
+title: "Flutter SDK'da abonelik durumunu kontrol etme"
+description: "Adapty ile Flutter uygulamanızda abonelik durumunu nasıl kontrol edeceğinizi öğrenin."
+metadataTitle: "Abonelik Durumunu Kontrol Etme | Adapty Dokümanları"
+displayed_sidebar: sdkflutter
+keywords: ['getProfile', 'abonelik durumu']
+rank: 85
+---
+
+Kullanıcıların ücretli içeriğe erişip erişemeyeceğine ya da bir paywall görüp görmeyeceğine karar vermek için profildeki [access level](access-level) değerini kontrol etmeniz gerekir.
+
+Bu makalede, kullanıcılara paywall mı göstermeniz gerektiğini yoksa ücretli özelliklere erişim mi tanımanız gerektiğini belirlemek için profil durumuna nasıl erişeceğinizi öğreneceksiniz.
+
+## Abonelik durumunu alma \{#get-subscription-status\}
+
+Bir kullanıcıya paywall mı yoksa ücretli içerik mi göstereceğinize karar verirken profilindeki [access level](access-level) değerini kontrol edersiniz. İki seçeneğiniz var:
+
+- Anlık olarak en güncel profil verilerine ihtiyaç duyduğunuzda (örneğin uygulama açılışında) veya güncellemeyi zorlamak istediğinizde `getProfile` çağırın.
+- Abonelik durumu her değiştiğinde otomatik olarak güncellenen yerel bir kopya tutmak için **otomatik profil güncellemeleri** ayarlayın.
+
+### Profil alma \{#get-profile\}
+
+Abonelik durumunu almanın en kolay yolu, profile erişmek için `getProfile` metodunu kullanmaktır:
+
+```javascript showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  // check the access
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+### Abonelik güncellemelerini dinleme \{#listen-to-subscription-updates\}
+
+Uygulamanızda profil güncellemelerini otomatik olarak almak için:
+
+1. Profil değişikliklerini dinlemek üzere `Adapty().didUpdateProfileStream.listen()` kullanın — kullanıcının abonelik durumu her değiştiğinde Adapty bu metodu otomatik olarak çağırır.
+2. Bu metot çağrıldığında güncel profil verilerini saklayın; böylece ek ağ isteği yapmadan uygulama genelinde kullanabilirsiniz.
+
+```dart
+class SubscriptionManager {
+  AdaptyProfile? _currentProfile;
+  
+  SubscriptionManager() {
+    // Listen for profile updates
+    Adapty().didUpdateProfileStream.listen((profile) {
+      _currentProfile = profile;
+      // Update UI, unlock content, etc.
+    });
+  }
+  
+  // Use stored profile instead of calling getProfile()
+  bool hasAccess() {
+    return _currentProfile?.accessLevels['premium']?.isActive ?? false;
+  }
+}
+```
+
+:::note
+Adapty, uygulamanız başladığında profil güncelleme akışı dinleyicisini otomatik olarak çağırır ve cihaz çevrimdışı olsa bile önbelleğe alınmış abonelik verilerini sağlar.
+:::
+
+## Profili paywall mantığıyla bağlama \{#connect-profile-with-paywall-logic\}
+
+Paywall gösterme veya ücretli özelliklere erişim tanıma konusunda anlık kararlar almanız gerektiğinde kullanıcının profilini doğrudan kontrol edebilirsiniz. Bu yaklaşım; uygulama açılışı, premium bölümlere girerken veya belirli içerikleri görüntülemeden önce gibi senaryolar için kullanışlıdır.
+
+```dart
+Future<bool> _checkAccessLevel() async {
+  try {
+    final profile = await Adapty().getProfile();
+    return profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false;
+  } catch (e) {
+    print('Error checking access level: $e');
+    return false; // Show paywall if access check fails
+  }
+}
+
+Future<void> _initializePaywall() async {
+  await _loadPaywall();
+  
+  final hasAccess = await _checkAccessLevel();
+  if (!hasAccess) {
+    // Show paywall if no access
+  }
+}
+``` 
+
+## Sonraki adımlar \{#next-steps\}
+
+Abonelik durumunu nasıl takip edeceğinizi öğrendiğinize göre, kullanıcıların satın aldıklarına erişebildiğinden emin olmak için [kullanıcı profilleriyle çalışmayı](flutter-quickstart-identify) öğrenin.

@@ -1,0 +1,270 @@
+---
+title: "Amazon S3"
+description: "Gelişmiş analitik ve raporlama için kullanıcı edinme verilerini S3'e aktarın."
+metadataTitle: "S3 Dışa Aktarma & Veri Yönetimi | Adapty Dokümanları"
+keywords: ['adapty ua', 'kullanıcı edinme', 's3', 'amazon']
+---
+
+Adapty UA'nın Amazon S3 entegrasyonu, kullanıcı edinme kampanya verilerinizi güvenli bir şekilde tek bir merkezi konumda saklamanıza olanak tanır. Kampanya performans verilerinizi, attribution verilerinizi ve kullanıcı edinme olaylarını Amazon S3 bucket'ınıza .csv dosyaları olarak kaydedebilirsiniz.  
+Bu entegrasyonu kurabilmek için AWS Console ve Adapty UA kontrol panelinde birkaç basit adımı takip etmeniz gerekecek.
+
+:::note
+Adapty UA verilerinizi her **24 saatte bir**, 04:00 UTC'de gönderir.
+
+Her dosya, bir önceki takvim gününe ait (UTC) tüm olayların verilerini içerir. Örneğin 8 Mart'ta 04:00 UTC'de otomatik olarak dışa aktarılan dosya, 7 Mart'ta 00:00:00 ile 23:59:59 UTC arasında oluşturulan tüm olayları kapsar.
+:::
+
+## Amazon S3 entegrasyonu nasıl kurulur \{#how-to-set-up-amazon-s3-integration\}
+
+Veri almaya başlamak için aşağıdaki bilgilere ihtiyacınız olacak:
+
+1. Access key ID
+2. Secret access key
+3. S3 bucket adı
+4. S3 bucket içindeki klasör adı
+
+:::note
+İç içe dizinler
+
+Amazon S3 bucket adı alanında iç içe dizinler belirtebilirsiniz; örneğin: adapty-ua-events/com.sample-app
+:::
+
+### Adım 1. Amazon S3 kimlik bilgilerini oluşturun \{#step-1-create-amazon-s3-credentials\}
+
+Bu kılavuz, AWS Console'da gerekli kimlik bilgilerini oluşturmanıza yardımcı olacak.
+
+#### 1.1. Erişim Politikası Oluşturma \{#11-create-access-policy\}
+
+1. AWS Console'unuzda [IAM Policy Dashboard](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/policies) sayfasına gidin
+2. **Create Policy** seçeneğini seçin
+
+<Zoom>
+  <img src="/assets/shared/img/7af075c-CleanShot_2023-03-21_at_10.52.002x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Politika düzenleyicisine aşağıdaki JSON'ı yapıştırın ve `adapty-s3-integration-test` kısmını kendi bucket adınızla değiştirin:
+
+```json showLineNumbers title="Json"
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowListObjectsInBucket",
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        },
+        {
+            "Sid": "AllowAllObjectActions",
+            "Effect": "Allow",
+            "Action": "s3:*Object",
+            "Resource": [
+                "arn:aws:s3:::adapty-s3-integration-test/*",
+                "arn:aws:s3:::adapty-s3-integration-test"
+            ]
+        },
+        {
+            "Sid": "AllowBucketLocation",
+            "Effect": "Allow",
+            "Action": "s3:GetBucketLocation",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        }
+    ]
+}
+```
+
+<Zoom>
+  <img src="/assets/shared/img/d4e474a-CleanShot_2023-03-21_at_10.56.212x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. Politika yapılandırmasını tamamladıktan sonra isteğe bağlı olarak etiket ekleyebilir, ardından son adıma geçmek için **Next** düğmesine tıklayabilirsiniz
+5. Bu adımda politikanıza bir ad verin ve oluşturma işlemini tamamlamak için **Create policy** düğmesine tıklayın
+
+<Zoom>
+  <img src="/assets/shared/img/7dcb02f-CleanShot_2023-03-21_at_11.03.372x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+#### 1.2. IAM kullanıcısı oluşturma \{#12-create-iam-user\}
+
+Adapty UA'nın ham veri raporlarını bucket'ınıza yükleyebilmesi için, ilgili bucket'a yazma erişimi olan bir kullanıcının Access Key ID ve Secret Access Key bilgilerini sağlamanız gerekir.
+
+1. IAM Console'a gidin ve [Users bölümünü](https://console.aws.amazon.com/iamv2/home#/users) seçin
+2. **Add users** düğmesine tıklayın
+
+<Zoom>
+  <img src="/assets/shared/img/bb612c8-CleanShot_2023-03-21_at_11.12.392x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Kullanıcıya bir ad verin, **Access key – Programmatic access** seçeneğini işaretleyin ve izinler adımına geçin
+
+<Zoom>
+  <img src="/assets/shared/img/467ee4d-j6aoX.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. Bir sonraki adımda **Add user to group** seçeneğini belirleyin ve ardından **Create group** düğmesine tıklayın
+
+<Zoom>
+  <img src="/assets/shared/img/bfd0e80-CleanShot_2023-03-21_at_11.24.592x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+5. Kullanıcı Grubuna bir ad verin ve daha önce oluşturduğunuz politikayı seçin
+6. Politikayı seçtikten sonra işlemi tamamlamak için **Create group** düğmesine tıklayın
+
+<Zoom>
+  <img src="/assets/shared/img/df29c12-CleanShot_2023-03-21_at_11.28.052x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+7. Grubu başarıyla oluşturduktan sonra **seçin** ve bir sonraki adıma geçin
+
+<Zoom>
+  <img src="/assets/shared/img/1f3722e-CleanShot_2023-03-21_at_11.36.192x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+8. Bu bölümün son adımı olduğundan, **Create User** düğmesine tıklayarak devam edebilirsiniz
+
+<Zoom>
+  <img src="/assets/shared/img/ea43722-CleanShot_2023-03-21_at_11.40.462x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+9. Son olarak kimlik bilgilerini **.csv formatında indirebilir** ya da doğrudan kontrol panelinden kopyalayıp yapıştırabilirsiniz
+
+<Zoom>
+  <img src="/assets/shared/img/bcf35e1-S3created.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Adım 2. Adapty UA'da entegrasyonu yapılandırın \{#step-2-configure-integration-in-adapty-ua\}
+
+1. [**Integrations** -> **Amazon S3**](https://app.adapty.io/ua/integrations/s3) sayfasına gidin
+2. **Export install events to Amazon S3** geçiş düğmesini açın.
+3. Amazon S3 ile Adapty UA profilleri arasındaki bağlantıyı kurmak için aşağıdaki alanları doldurun:
+
+| Alan | Açıklama |
+|:-----------------------------| :----------------------------------------------------------- |
+| **Access Key ID** | AWS hizmetine erişimi doğrulamak için kullanılan benzersiz bir tanımlayıcı. Bu ID'yi indirilen [csv dosyasında](ua-amazon-s3#step-1-create-amazon-s3-credentials) bulabilirsiniz. |
+| **Secret Access Key** | AWS hizmetine erişimi doğrulamak için Access Key ID ile birlikte kullanılan özel bir anahtar. Bu anahtarı indirilen [csv dosyasında](ua-amazon-s3#step-1-create-amazon-s3-credentials) bulabilirsiniz. |
+| **S3 Bucket Name** | AWS bulutunda belirli bir S3 bucket'ını tanımlayan küresel olarak benzersiz ad. S3 bucket'ları, dosyalar ve resimler gibi veri nesnelerini bulutta depolamanızı ve almanızı sağlayan basit bir depolama hizmetidir. |
+| **Folder Inside the Bucker** | Seçili S3 bucket'ı içinde oluşturmak istediğiniz klasörün adı. S3'ün klasörleri, nesne anahtar ön ekleri kullanarak simüle ettiğini, bunların temelde klasör adları olduğunu unutmayın. |
+| **Region** (İsteğe bağlı) | Region bilginizi AWS Management Console'da IAM kullanıcı hesabınızdan alabilirsiniz. |
+
+<ZoomImage id="ua-amazon-s3.webp" width="700px" />
+
+## Manuel veri dışa aktarma \{#manual-data-export\}
+
+Amazon S3'e otomatik olay verisi dışa aktarmanın yanı sıra, Adapty UA manuel dosya dışa aktarma özelliği de sunar. Bu özellik sayesinde kullanıcı edinme verileri için belirli bir tarih seçip bunları S3 bucket'ınıza manuel olarak aktarabilirsiniz. Bu, hangi verileri ne zaman dışa aktaracağınız konusunda size daha fazla kontrol imkânı tanır.
+
+## Tablo yapısı \{#table-structure\}
+
+AWS S3 entegrasyonunda Adapty UA, kurulum olaylarına ait geçmiş verileri saklamak için bir tablo sunar. Tablo; kullanıcı profili, gelir ve kazançlar ile kaynak mağaza gibi bilgileri içerir.
+
+:::warning
+Bu yapının zaman içinde büyüyebileceğini unutmayın; tarafımızdan veya çalıştığımız üçüncü taraflarca yeni veriler eklenebilir. Bunu işleyen kodunuzun yeterince sağlam olduğundan ve yapının tamamına değil, belirli alanlara dayandığından emin olun.
+:::
+
+Olaylar için tablo yapısı şu şekildedir:
+
+| Sütun | Açıklama |
+|--------------------------|-------------------------------------------|
+| `adapty_profile_id` | Benzersiz Adapty profil tanımlayıcısı |
+| `install_id` | Benzersiz kurulum tanımlayıcısı |
+| `created_at` | Kayıt oluşturma zaman damgası (ISO 8601) |
+| `installed_at` | Uygulama kurulum zaman damgası (ISO 8601) |
+| `store` | Uygulama mağazası (`ios`, `android`) |
+| `country` | Kullanıcının ülke kodu (ISO 3166-1 alpha-2) |
+| `ip_address` | İstemci IP adresi |
+| `idfa` | iOS Reklamverenler için Tanımlayıcı |
+| `idfv` | iOS Satıcılar için Tanımlayıcı |
+| `gaid` | Google Reklam Kimliği (Android) |
+| `android_id` | Android cihaz kimliği |
+| `app_set_id` | Android App Set kimliği |
+| `channel` | Attribution kanalı |
+| `campaign_id` | Kampanya tanımlayıcısı |
+| `campaign_name` | Kampanya adı |
+| `adset_id` | Reklam seti tanımlayıcısı |
+| `adset_name` | Reklam seti adı |
+| `ad_id` | Reklam tanımlayıcısı |
+| `ad_name` | Reklam adı |
+| `keyword_id` | Anahtar kelime tanımlayıcısı |
+| `keyword_name` | Anahtar kelime adı |
+| `asa_org_id` | Apple Search Ads organizasyon kimliği |
+| `asa_keyword_match_type` | ASA anahtar kelime eşleşme türü (`Exact`, `Broad`) |
+| `asa_attribution` | ASA attribution verisi (JSON dizesi) |
+| `asa_conversion_type` | ASA dönüşüm türü |
+| `asa_country_or_region` | ASA ülke veya bölge |
+| `asa_creative_set_name` | ASA yaratıcı set adı |
+| `fbclid` | Facebook Tıklama Kimliği |
+| `ttclid` | TikTok Tıklama Kimliği |
+| `utm_source` | UTM kaynak parametresi |
+| `utm_medium` | UTM medium parametresi |
+| `utm_campaign` | UTM kampanya parametresi |
+| `utm_term` | UTM terim parametresi |
+| `utm_content` | UTM içerik parametresi |

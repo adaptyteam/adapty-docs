@@ -1,0 +1,429 @@
+---
+title: "Kotlin Multiplatform - Paywall olaylarını yönetme"
+description: "Adapty'nin olay takip araçlarıyla Kotlin Multiplatform abonelik olaylarını verimli şekilde yönetin."
+metadataTitle: "Kotlin Multiplatform'da Olayları Yönetme | Adapty Dokümanları"
+toc_max_heading_level: 4
+keywords: ['AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import Details from '@site/src/components/Details';
+
+[Paywall Builder](adapty-paywall-builder) ile yapılandırılmış paywalllar, satın alma yapmak veya geri yüklemek için ekstra kod gerektirmez. Ancak uygulamanızın tepki verebileceği bazı olaylar üretirler. Bu olaylar arasında buton tıklamaları (kapatma butonları, URL'ler, ürün seçimleri vb.) ve paywall üzerinde gerçekleştirilen satın alma işlemlerine ilişkin bildirimler yer alır. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenin.
+
+:::warning
+Bu rehber yalnızca **yeni Paywall Builder paywallları** içindir.
+:::
+
+Mobil uygulamanızdaki paywall ekranında gerçekleşen süreçleri kontrol etmek veya izlemek için `AdaptyUIPaywallsEventsObserver` arayüzü metodlarını uygulayın. Bazı metodların yaygın senaryoları otomatik olarak ele alan varsayılan uygulamaları vardır.
+
+:::note
+Bu metodlar, paywall olaylarına özel mantığınızı eklediğiniz yerlerdir. Paywallı kapatmak için `view.dismiss()` kullanabilir ya da ihtiyacınıza göre başka özel davranışlar uygulayabilirsiniz.
+:::
+
+## Kullanıcı kaynaklı olaylar \{#user-generated-events\}
+
+### Paywallın görünmesi ve kaybolması \{#paywall-appearance-and-disappearance\}
+
+Bir paywall belirdiğinde veya kaybolduğunda bu metodlar çağrılır:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidAppear(view: AdaptyUIPaywallView) {
+    // Handle paywall appearance
+    // You can track analytics or update UI here
+}
+
+override fun paywallViewDidDisappear(view: AdaptyUIPaywallView) {
+    // Handle paywall disappearance
+    // You can track analytics or update UI here
+}
+```
+
+:::note
+- iOS'ta, kullanıcı bir paywall içindeki [web paywall butonuna](web-paywall#step-2a-add-a-web-purchase-button) tıkladığında ve uygulama içi tarayıcıda bir web paywall açıldığında `paywallViewDidAppear` da çağrılır.
+- iOS'ta, bir paywalldan açılan [web paywall](web-paywall#step-2a-add-a-web-purchase-button) uygulama içi tarayıcıdan ekranda kaybolduğunda `paywallViewDidDisappear` da çağrılır.
+:::
+
+<Details>
+<summary>Olay örnekleri (Genişletmek için tıklayın)</summary>
+
+```javascript
+// Paywall appeared
+{
+  // No additional data
+}
+
+// Paywall disappeared
+{
+  // No additional data
+}
+```
+</Details>
+
+### Ürün seçimi \{#product-selection\}
+
+Kullanıcı satın almak üzere bir ürün seçtiğinde bu metod çağrılır:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidSelectProduct(view: AdaptyUIPaywallView, productId: String) {
+    // Handle product selection
+    // You can update UI or track analytics here
+}
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+### Satın alma başlatıldı \{#started-purchase\}
+
+Kullanıcı satın alma sürecini başlattığında bu metod çağrılır:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidStartPurchase(view: AdaptyUIPaywallView, product: AdaptyPaywallProduct) {
+    // Handle purchase start
+    // You can show loading indicators or track analytics here
+}
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+### Başarılı, iptal edilmiş veya bekleyen satın alma \{#successful-canceled-or-pending-purchase\}
+
+Satın alma başarılı olduğunda bu metod çağrılır. Varsayılan olarak, kullanıcı tarafından iptal edilmedikçe paywallı otomatik olarak kapatır:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidFinishPurchase(
+    view: AdaptyUIPaywallView,
+    product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            // Check if user has access to premium features
+            if (purchaseResult.profile.accessLevels["premium"]?.isActive == true) {
+                view.dismiss()
+            }
+        }
+        AdaptyPurchaseResult.Pending -> {
+            // Handle pending purchase (e.g., user will pay offline with cash)
+        }
+        AdaptyPurchaseResult.UserCanceled -> {
+            // Handle user cancellation
+        }
+    }
+}
+```
+
+<Details>
+<summary>Olay örnekleri (Genişletmek için tıklayın)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+
+// User canceled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCanceled"
+  }
+}
+```
+</Details>
+
+Başarılı satın alma durumunda paywall ekranını kapatmanızı öneririz.
+
+### Başarısız satın alma \{#failed-purchase\}
+
+Bir hata nedeniyle satın alma başarısız olduğunda bu metod çağrılır. Bu durum; StoreKit/Google Play Billing hatalarını (ödeme kısıtlamaları, geçersiz ürünler, ağ hataları), işlem doğrulama hatalarını ve sistem hatalarını kapsar. Kullanıcının iptal etmesi durumunda ise bu metod değil, iptal sonucuyla birlikte `paywallViewDidFinishPurchase` tetiklenir; bekleyen ödemeler bu metodu tetiklemez.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidFailPurchase(
+    view: AdaptyUIPaywallView,
+    product: AdaptyPaywallProduct,
+    error: AdaptyError
+) {
+    // Add your purchase failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+### Geri yükleme başlatıldı \{#started-restore\}
+
+Kullanıcı geri yükleme sürecini başlattığında bu metod çağrılır:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidStartRestore(view: AdaptyUIPaywallView) {
+    // Handle restore start
+    // You can show loading indicators or track analytics here
+}
+```
+
+### Başarılı geri yükleme \{#successful-restore\}
+
+Satın alma geri yükleme başarılı olduğunda bu metod çağrılır:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidFinishRestore(view: AdaptyUIPaywallView, profile: AdaptyProfile) {
+    // Add your successful restore handling logic here
+    // For example: show success message, update UI, or dismiss paywall
+    
+    // Check if user has access to premium features
+    if (profile.accessLevels["premium"]?.isActive == true) {
+        view.dismiss()
+    }
+}
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Kullanıcının gerekli `accessLevel`'a sahip olması durumunda ekranı kapatmanızı öneririz. Bunu nasıl kontrol edeceğinizi öğrenmek için [Abonelik durumu](subscription-status) konusuna bakın.
+
+### Başarısız geri yükleme \{#failed-restore\}
+
+`Adapty.restorePurchases()` başarısız olduğunda bu metod çağrılır:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidFailRestore(view: AdaptyUIPaywallView, error: AdaptyError) {
+    // Add your restore failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+### Web ödeme navigasyonu tamamlandı \{#web-payment-navigation-completion\}
+
+Kullanıcı [web paywall](web-paywall) üzerinden satın alma sürecini başlattığında bu metod çağrılır:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidFinishWebPaymentNavigation(
+    view: AdaptyUIPaywallView,
+    product: AdaptyPaywallProduct?,
+    error: AdaptyError?
+) {
+    if (error != null) {
+        // Handle web payment navigation error
+    } else {
+        // Handle successful web payment navigation
+    }
+}
+```
+
+<Details>
+<summary>Olay örnekleri (Genişletmek için tıklayın)</summary>
+
+```javascript
+// Successful web payment navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed web payment navigation
+{
+  "product": null,
+  "error": {
+    "code": "web_payment_failed",
+    "message": "Web payment navigation failed",
+    "details": {
+      "underlyingError": "Network connection error"
+    }
+  }
+}
+```
+</Details>
+
+## Veri çekme ve render etme \{#data-fetching-and-rendering\}
+
+### Ürün yükleme hataları \{#product-loading-errors\}
+
+Başlatma sırasında ürünleri siz geçmezseniz AdaptyUI gerekli nesneleri sunucudan kendi alır. Bu işlem başarısız olursa AdaptyUI hatayı bu metodu çağırarak bildirir:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidFailLoadingProducts(view: AdaptyUIPaywallView, error: AdaptyError) {
+    // Add your product loading failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+### Render hataları \{#rendering-errors\}
+
+Arayüz render edilirken bir hata oluşursa bu metod aracılığıyla bildirilir:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidFailRendering(view: AdaptyUIPaywallView, error: AdaptyError) {
+    // Handle rendering error
+    // In a normal situation, such errors should not occur
+    // If you come across one, please let us know
+}
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+    "error": {
+        "code": "rendering_failed",
+            "message": "Failed to render paywall interface",
+            "details": {
+            "underlyingError": "Invalid paywall configuration"
+        }
+    }
+}
+```
+</Details>
+
+Normal koşullarda bu tür hatalar yaşanmaz; eğer böyle bir hatayla karşılaşırsanız lütfen bize bildirin.
