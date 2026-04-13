@@ -54,7 +54,7 @@ const T = {
   },
   tr: {
     hero: "Adapty, abone tabanınızı büyütmenize yardımcı olan güçlü ve esnek bir uygulama içi satın alma platformudur. İster yeni başlıyor olun ister milyonlarca kullanıcınız olsun, Adapty en iyi abonelik fiyatlarını belirlemenizi, farklı yaklaşımları test etmenizi ve uygulamanızın başarısı için en iyi sonucu vereni bulmanızı kolaylaştırır.",
-    discoverTitle: "Adapty benim için doğru mu?",
+    discoverTitle: "Adapty benim için uygun mu?",
     discoverDesc: "Kullanım senaryonuzu bulun — yeni bir uygulama mı başlatıyorsunuz, geliri mi optimize ediyorsunuz, yoksa başka bir araçtan mı geçiş yapıyorsunuz.",
     quickstartTitle: "Hızlı başlangıç rehberi",
     quickstartDesc: "Adapty'yi mağaza hesaplarınıza bağlayın, ürünlerinizi yapılandırın ve satın alma işlemlerini Adapty'ye bırakın.",
