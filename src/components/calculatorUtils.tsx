@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { nanoid } from 'nanoid';
@@ -206,18 +206,18 @@ export function evaluateRows(
 
 /**
  * Format row results for simple (non-compound) calculators.
- * Single row:    "expression = result"
- * Multiple rows: "(expr1) + (expr2) + ... = total"
+ * Single row:    "expression"
+ * Multiple rows: "(expr1) + (expr2) + ..."
  */
 export function formatSimpleResult(rowResults: RowResult[]): { display: string; rounded: number } {
     const total = rowResults.reduce((sum, r) => sum + r.value, 0);
     const rounded = roundResult(total);
 
     if (rowResults.length === 1) {
-        return { display: `${rowResults[0].readable} = ${rounded}`, rounded };
+        return { display: rowResults[0].readable, rounded };
     }
     const parts = rowResults.map(r => `(${r.readable})`);
-    return { display: `${parts.join(' + ')} = ${rounded}`, rounded };
+    return { display: parts.join(' + '), rounded };
 }
 
 /**
@@ -241,92 +241,6 @@ export function renderKatexInline(latex: string): string {
     } catch {
         return latex;
     }
-}
-
-// ── Dark-mode hook & style helpers ───────────────────────────────────
-
-export function useDarkMode(): boolean {
-    const [isDark, setIsDark] = useState(false);
-
-    useEffect(() => {
-        const checkDarkMode = () => {
-            setIsDark(document.documentElement.classList.contains('dark'));
-        };
-        checkDarkMode();
-        const observer = new MutationObserver(checkDarkMode);
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ['class'],
-        });
-        return () => observer.disconnect();
-    }, []);
-
-    return isDark;
-}
-
-export function getInputStyle(isDark: boolean): React.CSSProperties {
-    return {
-        backgroundColor: isDark ? 'rgba(24, 24, 27, 0.7)' : '#ffffff',
-        borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#e5e7eb',
-        color: isDark ? '#f1f5f9' : '#0a0a0a',
-    };
-}
-
-export function getCardStyle(isDark: boolean): React.CSSProperties {
-    return {
-        backgroundColor: isDark ? 'rgba(39, 39, 42, 0.4)' : '#ffffff',
-        borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#f3f4f6',
-        boxShadow: isDark ? 'none' : undefined,
-    };
-}
-
-export function getFormulaBoxStyle(isDark: boolean): React.CSSProperties {
-    return {
-        backgroundColor: isDark ? 'rgba(24, 24, 27, 0.5)' : 'rgba(249, 250, 251, 0.5)',
-        borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#f3f4f6',
-    };
-}
-
-export const getButtonStyle = getInputStyle;
-
-export function getAddButtonStyle(isDark: boolean): React.CSSProperties {
-    return {
-        backgroundColor: isDark ? 'rgba(24, 24, 27, 0.5)' : '#f9fafb',
-        borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#e5e7eb',
-        color: isDark ? '#d1d5db' : '#4b5563',
-    };
-}
-
-export function getResultStyle(isDark: boolean): React.CSSProperties {
-    return {
-        backgroundColor: isDark ? 'rgba(24, 24, 27, 0.6)' : '#f9fafb',
-        borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#e5e7eb',
-        color: isDark ? '#e2e8f0' : '#1f2937',
-    };
-}
-
-export function getErrorStyle(isDark: boolean): React.CSSProperties {
-    return {
-        backgroundColor: isDark ? 'rgba(127, 29, 29, 0.3)' : '#fef2f2',
-        borderColor: isDark ? 'rgba(153, 27, 27, 0.5)' : '#fecaca',
-        color: isDark ? '#fca5a5' : '#991b1b',
-    };
-}
-
-export function getHeadingColor(isDark: boolean): string {
-    return isDark ? '#f1f5f9' : '#0a0a0a';
-}
-
-export function getLabelColor(isDark: boolean): string {
-    return isDark ? '#e2e8f0' : '#0a0a0a';
-}
-
-export function getSubtextColor(isDark: boolean): string {
-    return isDark ? '#cbd5e1' : '#374151';
-}
-
-export function getColumnHeaderColor(isDark: boolean): string {
-    return isDark ? '#cbd5e1' : '#4b5563';
 }
 
 // ── Hooks ────────────────────────────────────────────────────────────
@@ -359,21 +273,21 @@ export const VariableInput: React.FC<{
     variable: Variable;
     value: number | string;
     onChange: (value: string) => void;
-    isDark: boolean;
     className?: string;
-}> = ({ variable, value, onChange, isDark, className = 'w-32' }) => {
-    const style = getInputStyle(isDark);
-    const cls = `${className} px-2.5 py-1.5 text-sm rounded-md shadow-sm border outline-none transition-all focus:ring-1`;
-
+}> = ({ variable, value, onChange, className = 'w-32' }) => {
     if (variable.options) {
         return (
             <div className={`${className} relative`}>
-                <select value={value} onChange={(e) => onChange(e.target.value)} className={`w-full px-2.5 pr-7 py-1.5 text-sm rounded-md shadow-sm border outline-none transition-all appearance-none cursor-pointer focus:ring-1`} style={style}>
+                <select
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    className="w-full px-2.5 pr-7 py-1.5 text-sm rounded-md shadow-sm border outline-none transition-all appearance-none cursor-pointer focus:ring-1 bg-white dark:bg-zinc-900/70 border-gray-200 dark:border-zinc-700/50 text-zinc-950 dark:text-slate-100"
+                >
                     {variable.options.map(opt => (
                         <option key={String(opt.value)} value={resolveOptionValue(opt.value)}>{opt.label}</option>
                     ))}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-1.5" style={{ color: isDark ? '#6b7280' : '#9ca3af' }}>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-1.5 text-gray-400 dark:text-gray-500">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                     </svg>
@@ -389,8 +303,7 @@ export const VariableInput: React.FC<{
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onDoubleClick={(e) => e.currentTarget.select()}
-            className={cls}
-            style={style}
+            className={`${className} px-2.5 py-1.5 text-sm rounded-md shadow-sm border outline-none transition-all focus:ring-1 bg-white dark:bg-zinc-900/70 border-gray-200 dark:border-zinc-700/50 text-zinc-950 dark:text-slate-100`}
         />
     );
 };
@@ -399,23 +312,20 @@ export const LabeledVariableInput: React.FC<{
     variable: Variable;
     value: number | string;
     onChange: (value: string) => void;
-    isDark: boolean;
     centered?: boolean;
-}> = ({ variable, value, onChange, isDark, centered }) => (
+}> = ({ variable, value, onChange, centered }) => (
     <div className={`flex items-center gap-3${centered ? ' justify-center' : ''}`}>
         <VariableInput
             variable={variable}
             value={value}
             onChange={onChange}
-            isDark={isDark}
             className="w-24"
         />
         <span
-            className="calculator-formula text-sm font-medium shrink-0"
-            style={{ color: getLabelColor(isDark) }}
+            className="calculator-formula text-sm font-medium shrink-0 text-zinc-950 dark:text-slate-200"
             dangerouslySetInnerHTML={{ __html: renderKatexInline(variable.nameInTheFormula) }}
         />
-        <span className="text-sm" style={{ color: getSubtextColor(isDark) }}>
+        <span className="text-sm text-gray-700 dark:text-slate-300">
             {variable.variableDescription}
         </span>
     </div>
@@ -423,17 +333,15 @@ export const LabeledVariableInput: React.FC<{
 
 export const ColumnHeaders: React.FC<{
     variables: Variable[];
-    isDark: boolean;
-}> = ({ variables, isDark }) => (
-    <div className="flex items-end gap-2">
+}> = ({ variables }) => (
+    <div className="flex items-stretch gap-2">
         {variables.map(v => (
-            <div key={v.variableName} className="w-32 text-sm text-center" style={{ color: getColumnHeaderColor(isDark) }}>
+            <div key={v.variableName} className="w-32 text-sm text-center flex flex-col items-center text-gray-600 dark:text-slate-300">
+                <span className="flex-1 flex items-center">{v.variableDescription}</span>
                 <span
-                    className="calculator-formula font-medium"
-                    style={{ color: getLabelColor(isDark) }}
+                    className="calculator-formula font-medium shrink-0 text-zinc-950 dark:text-slate-200"
                     dangerouslySetInnerHTML={{ __html: renderKatexInline(v.nameInTheFormula) }}
                 />
-                <span className="ml-0.5">{v.variableDescription}</span>
             </div>
         ))}
         <div className="w-8 shrink-0" />
@@ -443,13 +351,12 @@ export const ColumnHeaders: React.FC<{
 export const RowGrid: React.FC<{
     rows: RowData[];
     variables: Variable[];
-    isDark: boolean;
     onUpdateValue: (rowId: string, variableName: string, value: string) => void;
     onAddRow: () => void;
     onRemoveRow: (id: string) => void;
-}> = ({ rows, variables, isDark, onUpdateValue, onAddRow, onRemoveRow }) => (
+}> = ({ rows, variables, onUpdateValue, onAddRow, onRemoveRow }) => (
     <div className="space-y-2 flex flex-col items-center">
-        <ColumnHeaders variables={variables} isDark={isDark} />
+        <ColumnHeaders variables={variables} />
 
         {rows.map((row, rowIndex) => (
             <div key={row.id}>
@@ -460,15 +367,13 @@ export const RowGrid: React.FC<{
                             variable={v}
                             value={row.values[v.variableName]}
                             onChange={(val) => onUpdateValue(row.id, v.variableName, val)}
-                            isDark={isDark}
                         />
                     ))}
                     <div className="w-8 shrink-0 flex items-center justify-center">
                         {rowIndex > 0 && (
                             <button
                                 onClick={() => onRemoveRow(row.id)}
-                                className="p-1.5 rounded-md transition-colors cursor-pointer"
-                                style={{ color: isDark ? '#6b7280' : '#9ca3af' }}
+                                className="p-1.5 rounded-md transition-colors cursor-pointer text-gray-400 dark:text-gray-500"
                                 title="Remove row"
                             >
                                 <RemoveRowIcon />
@@ -482,8 +387,7 @@ export const RowGrid: React.FC<{
         <div className="flex justify-center">
             <button
                 onClick={onAddRow}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md font-medium transition-colors border"
-                style={getAddButtonStyle(isDark)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md font-medium transition-colors border bg-gray-50 dark:bg-zinc-900/50 border-gray-200 dark:border-zinc-700/50 text-gray-600 dark:text-gray-300"
             >
                 <AddRowIcon />
                 Add
@@ -494,32 +398,27 @@ export const RowGrid: React.FC<{
 
 export const ResultSection: React.FC<{
     result: CalculationResult | null;
-    isDark: boolean;
     onCalculate: () => void;
-}> = ({ result, isDark, onCalculate }) => (
+}> = ({ result, onCalculate }) => (
     <div className="flex flex-col items-center">
         <button
             onClick={onCalculate}
-            className="w-full py-2.5 px-4 font-medium text-sm rounded-lg border shadow-sm transition-all active:scale-[0.98]"
-            style={getButtonStyle(isDark)}
+            className="calc-button w-full py-2.5 px-4 font-medium text-sm rounded-lg border transition-all active:scale-[0.98]"
         >
             Calculate
         </button>
         {result && (
             <div className="mt-4 w-full">
                 {result.error ? (
-                    <div
-                        className="py-3 px-4 rounded-lg shadow-sm border text-sm font-medium text-center"
-                        style={getErrorStyle(isDark)}
-                    >
+                    <div className="py-3 px-4 rounded-lg shadow-sm border text-sm font-medium text-center bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800/50 text-red-800 dark:text-red-300">
                         {result.error}
                     </div>
                 ) : (
-                    <div
-                        className="py-3 px-4 rounded-lg shadow-sm border font-mono text-sm overflow-x-auto"
-                        style={getResultStyle(isDark)}
-                    >
-                        {result.display}
+                    <div className="py-3 px-4 rounded-lg shadow-sm border font-mono text-sm overflow-x-auto bg-gray-50 dark:bg-zinc-900/60 border-gray-200 dark:border-zinc-700/50 text-gray-800 dark:text-slate-200">
+                        <div>{result.display}</div>
+                        <div className="font-bold text-base mt-1.5 pt-1.5 border-t calc-result-divider">
+                            = {result.value}
+                        </div>
                     </div>
                 )}
             </div>
@@ -530,9 +429,8 @@ export const ResultSection: React.FC<{
 export const CalculatorWrapper: React.FC<{
     heading?: string;
     formuLatex: string;
-    isDark: boolean;
     children: React.ReactNode;
-}> = ({ heading, formuLatex, isDark, children }) => {
+}> = ({ heading, formuLatex, children }) => {
     const headerFormulaRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -545,26 +443,16 @@ export const CalculatorWrapper: React.FC<{
     }, [formuLatex]);
 
     return (
-        <div
-            className="rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 p-5 md:p-6 max-w-xl mx-auto my-6 border"
-            style={getCardStyle(isDark)}
-        >
+        <div className="rounded-xl shadow-sm hover:shadow-md dark:shadow-none dark:hover:shadow-none transition-shadow duration-300 p-5 md:p-6 max-w-xl mx-auto my-6 border bg-white dark:bg-zinc-800/40 border-gray-100 dark:border-zinc-700/50">
             {heading && (
-                <h4
-                    className="text-base font-semibold mb-3 mt-0 text-center"
-                    style={{ color: getHeadingColor(isDark) }}
-                >
+                <h4 className="text-base font-semibold mb-3 mt-0 text-center text-zinc-950 dark:text-slate-100">
                     {heading}
                 </h4>
             )}
-            <div
-                className="rounded-lg p-4 mb-6 flex items-center justify-center border"
-                style={getFormulaBoxStyle(isDark)}
-            >
+            <div className="rounded-lg p-4 mb-6 flex items-center justify-center border bg-gray-50/50 dark:bg-zinc-900/50 border-gray-100 dark:border-zinc-700/50">
                 <div
                     ref={headerFormulaRef}
-                    className="text-base md:text-lg calculator-formula"
-                    style={{ color: getHeadingColor(isDark) }}
+                    className="text-base md:text-lg calculator-formula text-zinc-950 dark:text-slate-100"
                 />
             </div>
             {children}

@@ -6,7 +6,6 @@ import {
     sanitizeNumberInput,
     sanitizeIntegerInput,
     makeDefaultValues,
-    useDarkMode,
     evaluateExpression,
     buildReadableExpression,
     buildOptionDisplayValues,
@@ -18,8 +17,6 @@ import {
     roundResult,
     useInitialCalculation,
     VariableInput,
-    getLabelColor,
-    getSubtextColor,
     renderKatexInline,
     RowGrid,
     ResultSection,
@@ -51,7 +48,6 @@ export const CompoundCalculator: React.FC<CompoundCalculatorProps> = ({
         makeDefaultValues(globalVariables)
     );
     const [result, setResult] = useState<CalculationResult | null>(null);
-    const isDark = useDarkMode();
 
     const updateRowValue = (rowId: string, variableName: string, value: string) => {
         const variable = variables.find(v => v.variableName === variableName);
@@ -103,7 +99,7 @@ export const CompoundCalculator: React.FC<CompoundCalculatorProps> = ({
             const sumReadable = buildSumReadable(evalResult.results);
             const globalDisplayValues = buildOptionDisplayValues(globalVariables, resolvedGlobals);
             const outerDisplayValues: Record<string, string> = { _sum: sumReadable, ...globalDisplayValues };
-            const display = buildReadableExpression(resultFormula, outerValues, outerDisplayValues) + ` = ${rounded}`;
+            const display = buildReadableExpression(resultFormula, outerValues, outerDisplayValues);
 
             setResult({ display, value: rounded, error: null });
         } catch {
@@ -114,40 +110,32 @@ export const CompoundCalculator: React.FC<CompoundCalculatorProps> = ({
     useInitialCalculation(handleCalculate);
 
     return (
-        <CalculatorWrapper heading={heading} formuLatex={formuLatex} isDark={isDark}>
+        <CalculatorWrapper heading={heading} formuLatex={formuLatex}>
             <div className="mb-6">
                 <RowGrid
                     rows={rows}
                     variables={rowVariables}
-                    isDark={isDark}
                     onUpdateValue={updateRowValue}
                     onAddRow={addRow}
                     onRemoveRow={removeRow}
                 />
 
                 {/* Global variable inputs */}
-                <div
-                    className="mt-4 pt-4 border-t flex flex-col items-center"
-                    style={{
-                        borderColor: isDark ? 'rgba(63, 63, 70, 0.5)' : '#e5e7eb',
-                    }}
-                >
-                    <div className="grid gap-y-3 gap-x-3" style={{ gridTemplateColumns: 'auto auto auto', alignItems: 'center' }}>
+                <div className="mt-4 pt-4 border-t flex flex-col items-center border-gray-200 dark:border-zinc-700/50">
+                    <div className="grid gap-y-3 gap-x-3 grid-cols-[auto_auto_auto] items-center">
                         {globalVariables.map(v => (
                             <React.Fragment key={v.variableName}>
                                 <VariableInput
                                     variable={v}
                                     value={globalValues[v.variableName]}
                                     onChange={(val) => updateGlobalValue(v.variableName, val)}
-                                    isDark={isDark}
                                     className="w-24"
                                 />
                                 <span
-                                    className="calculator-formula text-sm font-medium shrink-0"
-                                    style={{ color: getLabelColor(isDark) }}
+                                    className="calculator-formula text-sm font-medium shrink-0 text-zinc-950 dark:text-slate-200"
                                     dangerouslySetInnerHTML={{ __html: renderKatexInline(v.nameInTheFormula) }}
                                 />
-                                <span className="text-sm" style={{ color: getSubtextColor(isDark) }}>
+                                <span className="text-sm text-gray-700 dark:text-slate-300">
                                     {v.variableDescription}
                                 </span>
                             </React.Fragment>
@@ -155,7 +143,7 @@ export const CompoundCalculator: React.FC<CompoundCalculatorProps> = ({
                     </div>
                 </div>
             </div>
-            <ResultSection result={result} isDark={isDark} onCalculate={handleCalculate} />
+            <ResultSection result={result} onCalculate={handleCalculate} />
         </CalculatorWrapper>
     );
 };

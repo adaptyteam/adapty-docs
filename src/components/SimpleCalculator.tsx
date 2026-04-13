@@ -5,7 +5,6 @@ import {
     type CalculationResult,
     sanitizeNumberInput,
     sanitizeIntegerInput,
-    useDarkMode,
     initializeRows,
     createRow,
     evaluateRows,
@@ -40,7 +39,6 @@ export const SimpleCalculator: React.FC<SimpleCalculatorProps> = ({
         initializeRows(variables, defaultRows, isSum ? (defaultRowCount ?? 1) : 1)
     );
     const [result, setResult] = useState<CalculationResult | null>(null);
-    const isDark = useDarkMode();
 
     const updateValue = (rowId: string, variableName: string, value: string) => {
         const variable = variables.find(v => v.variableName === variableName);
@@ -70,7 +68,7 @@ export const SimpleCalculator: React.FC<SimpleCalculatorProps> = ({
     useInitialCalculation(handleCalculate);
 
     return (
-        <CalculatorWrapper heading={heading} formuLatex={formuLatex} isDark={isDark}>
+        <CalculatorWrapper heading={heading} formuLatex={formuLatex}>
             <div className="mb-6">
                 {!isSum ? (
                     /* Single-row vertical layout */
@@ -81,7 +79,6 @@ export const SimpleCalculator: React.FC<SimpleCalculatorProps> = ({
                                 variable={v}
                                 value={rows[0].values[v.variableName]}
                                 onChange={(val) => updateValue(rows[0].id, v.variableName, val)}
-                                isDark={isDark}
                             />
                         ))}
                     </div>
@@ -90,14 +87,13 @@ export const SimpleCalculator: React.FC<SimpleCalculatorProps> = ({
                     <RowGrid
                         rows={rows}
                         variables={variables}
-                        isDark={isDark}
                         onUpdateValue={updateValue}
                         onAddRow={addRow}
                         onRemoveRow={removeRow}
                     />
                 )}
             </div>
-            <ResultSection result={result} isDark={isDark} onCalculate={handleCalculate} />
+            <ResultSection result={result} onCalculate={handleCalculate} />
         </CalculatorWrapper>
     );
 };
