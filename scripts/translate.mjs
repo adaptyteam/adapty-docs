@@ -38,6 +38,7 @@ const LANGUAGE_NAMES = {
   zh: 'Simplified Chinese (zh-CN)',
   ja: 'Japanese (ja-JP)',
   tr: 'Turkish (tr-TR)',
+  ru: 'Russian (ru-RU)',
 };
 
 // Locale-specific suffix for metadataTitle values (the part after the page title)
@@ -45,6 +46,7 @@ const METADATA_TITLE_SUFFIXES = {
   zh: '| Adapty 文档',
   ja: '| Adapty ドキュメント',
   tr: '| Adapty Dokümanları',
+  ru: '| Документация Adapty',
 };
 
 // ---------------------------------------------------------------------------
