@@ -446,7 +446,14 @@ curl -s https://adapty.io/docs/webhook-event-types-and-fields.md
 
 ## Stage 4: Identify users
 
-Skip this stage if the app has no authentication system.
+Use `AskUserQuestion` before deciding to skip:
+
+> "This app has no login system, but you can still identify users with a stable ID tied to the device or installation. This gives each user a consistent Adapty profile across sessions, which helps with analytics accuracy, A/B test consistency, and avoiding duplicate profiles after reinstall. Do you have an ID you'd like to use, or would you like to discuss options?"
+> - **Yes, I have an ID in mind** — tell me what it is and I'll implement identification
+> - **Let's discuss** — I'll ask a few questions to help you decide
+> - **No, skip** — anonymous profiles are fine for this app
+
+If the user says no, skip the rest of this stage.
 
 Read before writing code:
 ```

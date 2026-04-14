@@ -155,7 +155,7 @@ Use `AskUserQuestion` for any other quick clarifications throughout the integrat
 
 Adapty requires dashboard configuration before any SDK code works. Use the Adapty CLI to retrieve or create all entities — run each command yourself using the Bash tool, in order.
 
-**Whether or not the user says the dashboard is already configured, always run the CLI commands below to retrieve existing values.** Never ask the user for SDK key, placement IDs, or access level IDs — the CLI returns them all.
+Always use the CLI to retrieve values — never ask the user for SDK key, placement IDs, or access level IDs. Ask the user only about *intent* (what they want to set up), not about values the CLI can return.
 
 ### Step 1: Authenticate
 
@@ -191,42 +191,79 @@ npx adapty@latest access-levels list --app <APP_ID>
 
 The default `premium` access level is created automatically. Note its **ID** from the output.
 
+### Step 3.5: Check dashboard setup state
+
+Before creating anything, use `AskUserQuestion`:
+
+> "Do you already have products, paywalls, or placements configured in your Adapty dashboard?"
+> - **No, starting fresh** — I'll create everything needed
+> - **Yes, I want to use what's already there** — I'll retrieve your existing IDs and skip creation
+> - **Yes, but I want to create new ones** — I'll show what exists, then create new items alongside them
+
+Then run list commands to see what's already configured regardless of the answer — the output determines what to create:
+
+```bash
+npx adapty@latest products list --app <APP_ID>
+npx adapty@latest paywalls list --app <APP_ID>
+npx adapty@latest placements list --app <APP_ID>
+```
+
+Use this to determine the path through Steps 4 and 5:
+
+| User said | Items found in list | Action |
+|---|---|---|
+| Starting fresh | None | Create all |
+| Starting fresh | Some exist | Note existing IDs, then create new items as requested |
+| Use existing | Some exist | Note existing IDs, skip creation |
+| Create new ones | Some exist | Note existing IDs, then proceed with creation for new items |
+| Any answer | None | Proceed with creation |
+
 ### Step 4: Create products
 
-Products require `--access-level-id` and at least one store product ID. Use `AskUserQuestion` to collect the store product IDs from the user — these must match what's configured in App Store Connect or Google Play Console.
+**If the user wants to use existing products:** note their IDs and access level assignments from the `products list` output. Skip creation.
+
+**If creating new products:** Use `AskUserQuestion` to collect store product IDs — these must match what's configured in App Store Connect or Google Play Console.
+
+- **iOS**: ask for the product ID (e.g. `com.example.app.monthly`)
+- **Android subscriptions**: ask for both the product ID (e.g. `com.example.app.monthly`) **and** the base plan ID (e.g. `monthly-base`) — both are required; the CLI will reject the command without `--android-base-plan-id`
+- **Android one-time purchases**: only the product ID is needed
 
 ```bash
 # --period options: weekly, monthly, two_months, trimonthly, semiannual, annual, lifetime
-# Use --ios-product-id for iOS, --android-product-id for Android (at least one required)
+# iOS
 npx adapty@latest products create \
   --app <APP_ID> \
   --title "Product Name" \
   --period monthly \
   --access-level-id <ACCESS_LEVEL_ID> \
   --ios-product-id "com.example.app.monthly"
+
+# Android subscription (--android-base-plan-id is required for subscriptions)
+npx adapty@latest products create \
+  --app <APP_ID> \
+  --title "Product Name" \
+  --period monthly \
+  --access-level-id <ACCESS_LEVEL_ID> \
+  --android-product-id "com.example.app.monthly" \
+  --android-base-plan-id "monthly-base"
 ```
 
-Repeat for each product.
+Repeat for each product to create.
 
 ### Step 5: Create paywall and placement
 
-First check for existing placements:
+**If the user wants to use existing paywalls/placements:** note their IDs and developer IDs from the list output in Step 3.5. Skip creation.
 
-```bash
-npx adapty@latest placements list --app <APP_ID>
-```
+**If creating new paywalls/placements:**
 
-- If placements are listed — note their **developer IDs**. Do not create duplicates.
-- If none exist — create them:
+Use `AskUserQuestion` to ask what placement locations the app needs (e.g. onboarding, settings) if not already mentioned.
 
 ```bash
 npx adapty@latest paywalls create --app <APP_ID> --title "Main Paywall"
 
-# Repeat for each placement location in the app
+# Repeat for each placement location
 npx adapty@latest placements create --app <APP_ID> --title "Main" --developer-id "main"
 ```
-
-Use `AskUserQuestion` to ask what placement locations the app needs (e.g. onboarding, settings) only if the user hasn't mentioned them and none exist yet.
 
 After all commands succeed, you will have collected from CLI output:
 - **Public SDK key** — from `apps list` or `apps create` output
