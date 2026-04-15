@@ -12,6 +12,7 @@
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --sidebars                  # all untranslated sidebars, no articles
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --resume <batchId>           # retrieve submitted batch
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --api-specs                  # translate all API specs
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --reusables                  # translate reusable snippets only
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --api-specs --file adapty-api # single API spec
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --incremental                          # all locales, changed files only (build pipeline)
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --incremental                # single locale, changed files only
@@ -66,6 +67,7 @@ const flagIncremental   = args.includes('--incremental');
 const flagSync          = args.includes('--sync');
 const flagApiSpecs      = args.includes('--api-specs');
 const flagSidebarsOnly  = args.includes('--sidebars');
+const flagReusables     = args.includes('--reusables');
 const flagMigrateHashes = args.includes('--migrate-hashes');
 
 const platformIdx = args.indexOf('--platform');
@@ -138,7 +140,7 @@ PRESERVE exactly (never translate):
 - component tag names and attribute NAMES (only translate attribute VALUES when they are human-readable phrases)
 - URLs in markdown links — translate the display text only, keep the href unchanged
 - platform and product names: iOS, Android, React Native, Flutter, Unity, Kotlin Multiplatform, Capacitor, Adapty
-- Adapty dashboard UI element names: the dashboard is English-only, so keep these exactly as written. They typically appear **bold** in text and refer to dashboard navigation — menu items, sidebar sections, page names, tab labels, and button labels (e.g. **Paywalls**, **A/B tests**, **App settings**, **Add product**, **Save**). Do not confuse these with documentation section headings or sidebar titles, which should be translated normally.
+- Adapty dashboard UI element names: the dashboard is English-only, so keep these exactly as written. They typically appear **bold** in text and refer to dashboard navigation — menu items, sidebar sections, page names, and button labels (e.g. **Paywalls**, **A/B tests**, **App settings**, **Add product**, **Save**). Do not confuse these with documentation section headings or sidebar titles, which should be translated normally.
 - heading anchor IDs written as \\{#my-anchor\\} — keep them exactly as written including the backslash escapes
 - link hrefs and URL fragments — in [text](url#fragment), translate only the display text; href and fragment stay byte-for-byte identical
 
@@ -157,7 +159,9 @@ TRANSLATE:
 - callout content (:::note, :::tip, :::warning, :::danger, :::info, :::important, :::link blocks)
 - human-readable component prop values:
   - summary= in <Details> components
-  - label= in <TabItem> when it is a phrase, not a platform name (keep "iOS", "Android", "React Native", "Flutter", "Unity", "Kotlin Multiplatform", "Capacitor" as-is)
+  - label= in <TabItem> when it is a human-readable phrase — translate it (e.g. label="Before v.2.x" → label="До v.2.x", label="With fallback" → label="С фолбэком"). Keep platform names unchanged: "iOS", "Android", "React Native", "Flutter", "Unity", "Kotlin Multiplatform", "Capacitor".
+  - tooltip= in <InlineTooltip> — this is the visible trigger term shown inline to the reader; always translate it (e.g. tooltip="placement" → tooltip="плейсмент", tooltip="variant" → tooltip="вариант"). Apply glossary terms where they exist.
+  - children of <InlineTooltip> — the popup explanation text rendered in the slot; translate it as regular prose, including any markdown links inside it (translate link display text, keep hrefs unchanged).
 
 TRANSLATION STYLE — write natural, idiomatic ${targetLanguage}:
 - Prefer colloquial, conversational word choices over literal or formal ones where both are correct.
@@ -277,9 +281,11 @@ async function main() {
 
     // --api-specs targets API specs only; skip article and sidebar translation
     if (!flagApiSpecs) {
-      // Translate reusable snippets first so import rewrites in articles resolve correctly.
-      // Skip when --sidebar / --sidebars / --file / --ids target specific content only.
-      if (!sidebarName && !flagSidebarsOnly && !fileId && !fileIds) {
+      // Translate reusable snippets when doing a full run or an explicit --reusables run.
+      // Skip for targeted runs (--file / --ids / --sidebar / --sidebars) to avoid
+      // translating all 60+ snippets when only one article is requested.
+      // To translate reusables in isolation: --reusables [--lang xx]
+      if (!sidebarName && !flagSidebarsOnly && !fileId && !fileIds && !platform || flagReusables) {
         await translateReusableForLang(client, currentLang, localesDir, hashesDir, systemPrompt, tag, onlyReusableIds);
       }
 
