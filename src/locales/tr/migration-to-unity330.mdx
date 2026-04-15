@@ -1,0 +1,631 @@
+---
+title: "Adapty Unity SDK'yı v. 3.3'e Geçirme"
+description: "Daha iyi performans ve yeni monetizasyon özellikleri için Adapty Unity SDK v3.3'e geçin."
+metadataTitle: "Adapty Unity SDK v3.3'e Geçiş | Adapty Dokümanları"
+---
+
+Adapty SDK 3.3.0, bazı iyileştirmeler getiren büyük bir sürümdür; ancak bu iyileştirmeler sizden birkaç geçiş adımı gerektirebilir.
+
+1. Adapty SDK v3.3.x'e yükseltin.
+2. Adapty SDK'nın Adapty ve AdaptyUI modüllerindeki birden fazla sınıf, özellik ve metot yeniden adlandırıldı.
+3. Artık `SetLogLevel` metodu bir callback kabul etmektedir.
+4. Artık `PresentCodeRedemptionSheet` metodu bir callback kabul etmektedir.
+5. Paywall görünümünün nasıl oluşturulduğunu değiştirin.
+6. `GetProductsIntroductoryOfferEligibility` metodunu kaldırın.
+7. Yedek paywallları `Assets/StreamingAssets/` dizininde ayrı dosyalara (her platform için bir dosya) kaydedin ve dosya adlarını `SetFallbackPaywalls` metoduna geçirin.
+8. Satın alma işlemini güncelleyin.
+9. Paywall Builder olaylarının işlenmesini güncelleyin.
+10. Paywall Builder paywall hatalarının işlenmesini güncelleyin.
+11. Adjust, Amplitude, AppMetrica, Appsflyer, Branch, Firebase ve Google Analytics, Mixpanel, OneSignal, Pushwoosh için entegrasyon yapılandırmalarını güncelleyin.
+13. Observer mode uygulamasını güncelleyin.
+14. Unity eklenti başlatmasını açık bir `Activate` çağrısıyla güncelleyin.
+
+## Adapty Unity SDK'yı 3.3.x'e Yükseltme \{#upgrade-adapty-unity-sdk-to-33x\}
+
+Bu sürüme kadar Adapty SDK, uygulamanızda Adapty'nin düzgün çalışması için gereken temel ve zorunlu SDK'ydi; AdaptyUI SDK ise yalnızca Adapty Paywall Builder kullanıyorsanız gerekli olan isteğe bağlı bir SDK'ydi.
+
+3.3.0 sürümünden itibaren AdaptyUI SDK kullanımdan kaldırılmış olup AdaptyUI, Adapty SDK'ya bir modül olarak entegre edilmiştir. Bu değişiklikler nedeniyle AdaptyUISDK'yı kaldırmanız ve AdaptySDK'yı yeniden yüklemeniz gerekmektedir.
+
+1. Projenizden hem **AdaptySDK** hem de **AdaptyUISDK** paket bağımlılıklarını kaldırın.
+2. **AdaptySDK** ve **AdaptyUISDK** klasörlerini silin.
+3. AdaptySDK paketini [Unity için Adapty SDK kurulumu ve yapılandırması](sdk-installation-unity) sayfasında açıklandığı şekilde yeniden içe aktarın.
+
+## Yeniden Adlandırmalar \{#renamings\}
+
+1. Adapty modülünde yeniden adlandırmalar:
+
+   | Eski sürüm                | Yeni sürüm               |
+   | ------------------------- | ------------------------ |
+   | Adapty.sdkVersion         | Adapty.SDKVersion        |
+   | Adapty.LogLevel           | AdaptyLogLevel           |
+   | Adapty.Paywall            | AdaptyPaywall            |
+   | Adapty.PaywallFetchPolicy | AdaptyPaywallFetchPolicy |
+   | PaywallProduct            | AdaptyPaywallProduct     |
+   | Adapty.Profile            | AdaptyProfile            |
+   | Adapty.ProfileParameters  | AdaptyProfileParameters  |
+   | ProfileGender             | AdaptyProfileGender      |
+   | Error                     | AdaptyError              |
+
+2. AdaptyUI modülünde yeniden adlandırmalar:
+
+   | Eski sürüm         | Yeni sürüm         |
+   | ------------------ | ------------------ |
+   | CreatePaywallView  | CreateView         |
+   | PresentPaywallView | PresentView        |
+   | DismissPaywallView | DismissView        |
+   | AdaptyUI.View      | AdaptyUIView       |
+   | AdaptyUI.Action    | AdaptyUIUserAction |
+
+## SetLogLevel Metodunu Güncelleme \{#change-the-setloglevel-method\}
+
+Artık `SetLogLevel` metodu bir callback kabul etmektedir.
+
+```diff showLineNumbers
+- Adapty.SetLogLevel(Adapty.LogLevel.Verbose);
++ Adapty.SetLogLevel(Adapty.LogLevel.Verbose, null); // ya da olası hatayı işlemek için callback geçebilirsiniz
+```
+
+## PresentCodeRedemptionSheet Metodunu Güncelleme \{#change-the-presentcoderedemptionsheet-method\}
+
+Artık `PresentCodeRedemptionSheet` metodu bir callback kabul etmektedir.
+
+```diff showLineNumbers
+- Adapty.PresentCodeRedemptionSheet();
++ Adapty.PresentCodeRedemptionSheet(null); // ya da olası hatayı işlemek için callback geçebilirsiniz
+```
+
+## Paywall Görünümünün Oluşturulma Şeklini Değiştirme \{#change-how-the-paywall-view-is-created\}
+
+Tam kod örneği için [Paywall Builder ile tasarlanan paywall'ın görünüm yapılandırmasını getirme](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) bölümüne bakın.
+
+```diff showLineNumbers
++ var parameters = new AdaptyUICreateViewParameters()
++   .SetPreloadProducts(true);
+
+- AdaptyUI.CreatePaywallView(
++ AdaptyUI.CreateView(
+   paywall, 
+-  preloadProducts: true,
++  parameters,
+  (view, error) => {
+  // görünümü kullanın
+});
+```
+
+## GetProductsIntroductoryOfferEligibility Metodunu Kaldırma \{#remove-the-getproductsintroductoryoffereligibility-method\}
+
+Adapty iOS SDK 3.3.0 öncesinde, ürün nesnesi kullanıcının uygun olup olmadığından bağımsız olarak her zaman teklifleri içeriyordu. Teklifi kullanmadan önce uygunluğu manuel olarak kontrol etmeniz gerekiyordu.
+
+Artık ürün nesnesi yalnızca kullanıcı uygunsa teklif içermektedir. Bu sayede uygunluğu ayrıca kontrol etmenize gerek kalmaz; bir teklif mevcutsa kullanıcı zaten uygundur.
+
+## Yedek Paywall Sağlama Metodunu Güncelleme \{#update-method-for-providing-fallback-paywalls\}
+
+Bu sürüme kadar yedek paywalllar serileştirilmiş JSON olarak geçiriliyordu. v3.3.0'dan itibaren mekanizma değiştirildi:
+
+1. Yedek paywallları `/Assets/StreamingAssets/` dizinine kaydedin; Android için bir dosya, iOS için başka bir dosya.
+2. Dosya adlarını `SetFallbackPaywalls` metoduna geçirin.
+
+Kodunuz aşağıdaki şekilde değişecektir:
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void SetFallBackPaywalls() {
+
++ #if UNITY_IOS
++   var assetId = "adapty_fallback_ios.json";
++ #elif UNITY_ANDROID
++   var assetId = "adapty_fallback_android.json";
++ #else
++   var assetId = "";
++ #endif
+
+-   Adapty.SetFallbackPaywalls("FALLBACK_PAYWALLS_JSON_STRING", (error) => {
++   Adapty.SetFallbackPaywalls(assetId, (error) => {
+    // hatayı işleyin
+  });
+}
+```
+
+Nihai kod örneği için [Unity'de yedek paywall kullanma](unity-use-fallback-paywalls) sayfasına bakın.
+
+## Satın Alma İşlemini Güncelleme \{#update-making-purchase\}
+
+Daha önce iptal edilen ve beklemedeki satın almalar hata olarak değerlendirilip sırasıyla `PaymentCancelled` ve `PendingPurchase` kodları döndürülüyordu.
+
+Artık iptal edilen, başarılı ve beklemedeki satın almaları işlemek için yeni bir `AdaptyPurchaseResultType` sınıfı kullanılmaktadır. Satın alma kodunu aşağıdaki şekilde güncelleyin:
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void MakePurchase(AdaptyPaywallProduct product) {
+- Adapty.MakePurchase(product, (profile, error) => {
+-   // başarılı satın almayı işle
++ Adapty.MakePurchase(product, (result, error) => {
++   switch (result.Type) {
++     case AdaptyPurchaseResultType.Pending:
++       // beklemedeki satın almayı işle
++       break;
++     case AdaptyPurchaseResultType.UserCancelled:
++       // satın alma iptalini işle
++       break;
++     case AdaptyPurchaseResultType.Success:
++       var profile = result.Profile;
++       // başarılı satın almayı işle
++       break;
++     default:
++       break;
+    }
+  });
+}
+```
+
+Nihai kod örneği için [Mobil uygulamada satın alma yapma](unity-making-purchases) sayfasına bakın.
+
+## Paywall Builder Olaylarının İşlenmesini Güncelleme \{#update-handling-of-paywall-builder-events\}
+
+İptal edilen ve beklemedeki satın almalar artık hata sayılmamakta; tüm bu durumlar `PaywallViewDidFinishPurchase` metoduyla işlenmektedir.
+
+1. İptal edilen satın alma olayının işlenmesini silin.
+
+2. Başarılı satın alma olayının işlenmesini aşağıdaki şekilde güncelleyin:
+
+   ```diff showLineNumbers
+   - public void OnFinishPurchase(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product, 
+   -   Adapty.Profile profile
+   - ) { }
+   
+   + public void PaywallViewDidFinishPurchase(
+   +   AdaptyUIView view, 
+   +   AdaptyPaywallProduct product, 
+   +   AdaptyPurchaseResult purchasedResult
+   + ) { }
+   ```
+
+3. Eylemlerin işlenmesini güncelleyin:
+
+   ```diff showLineNumbers
+   - public void OnPerformAction(
+   -   AdaptyUI.View view, 
+   -   AdaptyUI.Action action
+   - ) {
+   + public void PaywallViewDidPerformAction(
+   +   AdaptyUIView view, 
+   +   AdaptyUIUserAction action
+   + ) {
+       switch (action.Type) {
+   -     case AdaptyUI.ActionType.Close:
+   +     case AdaptyUIUserActionType.Close:
+           view.Dismiss(null);
+           break;
+   -     case AdaptyUI.ActionType.OpenUrl:
+   +     case AdaptyUIUserActionType.OpenUrl:
+           var urlString = action.Value;
+           if (urlString != null {
+           	Application.OpenURL(urlString); 
+           }
+         default:
+           // diğer olayları işle
+           break;
+       }
+   }
+   ```
+
+4. Başlatılan satın almanın işlenmesini güncelleyin:
+
+   ```diff showLineNumbers
+   - public void OnSelectProduct(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product
+   - ) { }
+   
+   + public void PaywallViewDidSelectProduct(
+   +   AdaptyUIView view, 
+   +   string productId
+   + ) { }
+   ```
+
+5. Başarısız satın almanın işlenmesini güncelleyin:
+
+   ```diff showLineNumbers
+   - public void OnFailPurchase(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailPurchase(
+   +   AdaptyUIView view, 
+   +   AdaptyPaywallProduct product, 
+   +   AdaptyError error
+   + ) { }
+   
+   ```
+
+6. Başarılı geri yükleme olayının işlenmesini güncelleyin:
+
+   ```diff showLineNumbers
+   - public void OnFailRestore(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailRestore(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   
+   ```
+
+Nihai kod örneği için [Paywall olaylarını işleme](unity-handling-events) sayfasına bakın.
+
+## Paywall Builder Paywall Hatalarının İşlenmesini Güncelleme \{#update-handling-of-paywall-builder-paywall-errors\}
+
+Hata işleme de değiştirildi; lütfen kodunuzu aşağıdaki rehbere göre güncelleyin.
+
+1. Ürün yükleme hatalarının işlenmesini güncelleyin:
+
+   ```diff showLineNumbers
+   - public void OnFailLoadingProducts(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailLoadingProducts(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   ```
+
+2. Render hatalarının işlenmesini güncelleyin:
+
+   ```diff showLineNumbers
+   - public void OnFailRendering(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailRendering(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   ```
+
+   
+
+## Üçüncü Taraf Entegrasyon SDK Yapılandırmasını Güncelleme \{#update-third-party-integration-sdk-configuration\}
+
+Adapty Unity SDK 3.3.0'dan itibaren `updateAttribution` metodunun genel API'si güncellendi. Daha önce `[AnyHashable: Any]` sözlüğü kabul ediyordu ve attribution nesnelerini çeşitli servislerden doğrudan geçirmenize olanak tanıyordu. Artık `[String: any Sendable]` gerektirmektedir, bu nedenle attribution nesnelerini geçirmeden önce dönüştürmeniz gerekecektir.
+
+Aşağıdaki entegrasyonların Adapty Unity SDK 3.3.0 ve sonrasıyla düzgün çalışmasını sağlamak için SDK yapılandırmalarınızı aşağıdaki bölümlerde açıklandığı şekilde güncelleyin.
+
+### Adjust
+
+Mobil uygulama kodunuzu aşağıdaki şekilde güncelleyin. Tam kod örneği için [Adjust entegrasyonu için SDK yapılandırması](adjust#connect-your-app-to-adjust) sayfasına bakın.
+
+```diff showLineNumbers
+- using static AdaptySDK.Adapty;
+ using AdaptySDK;
+
+ Adjust.GetAdid((adid) => {
+-   Adjust.GetAttribution((attribution) => {
+-     Dictionary<String, object> data = new Dictionary<String, object>();
+-
+-     data["network"] = attribution.Network;
+-     data["campaign"] = attribution.Campaign;
+-     data["adgroup"] = attribution.Adgroup;
+-     data["creative"] = attribution.Creative;
+-
+-     String attributionString = JsonUtility.ToJson(data);
+-     Adapty.UpdateAttribution(attributionString, AttributionSource.Adjust, adid, (error) => {
+-       // handle the error
+-     });
++   if (adid != null) {
++     Adapty.SetIntegrationIdentifier(
++       "adjust_device_id", 
++       adid, 
++       (error) => {
++         // handle the error
++     });
+    }
+ });
+
+ Adjust.GetAttribution((attribution) => {
+   Dictionary<String, object> data = new Dictionary<String, object>();
+
+   data["network"] = attribution.Network;
+   data["campaign"] = attribution.Campaign;
+   data["adgroup"] = attribution.Adgroup;
+   data["creative"] = attribution.Creative;
+
+   String attributionString = JsonUtility.ToJson(data);
+    
+-   Adapty.UpdateAttribution(attributionString, AttributionSource.Adjust, adid, (error) => {
++   Adapty.UpdateAttribution(attributionString, "adjust", (error) => {
+       // handle the error
+   });
+ });
+```
+
+### Amplitude
+
+Mobil uygulama kodunuzu aşağıdaki şekilde güncelleyin. Tam kod örneği için [Amplitude entegrasyonu için SDK yapılandırması](amplitude#sdk-configuration) sayfasına bakın.
+
+```diff showLineNumbers
+using AdaptySDK;
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetAmplitudeUserId("YOUR_AMPLITUDE_USER_ID");
+- builder.SetAmplitudeDeviceId(amplitude.getDeviceId());
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ Adapty.SetIntegrationIdentifier(
++   "amplitude_user_id", 
++   "YOUR_AMPLITUDE_USER_ID", 
++   (error) => {
++   // handle the error
++ });
+
++ Adapty.SetIntegrationIdentifier(
++   "amplitude_device_id", 
++   amplitude.getDeviceId(), 
++   (error) => {
++   // handle the error
++ });
+```
+
+### AppMetrica
+
+Mobil uygulama kodunuzu aşağıdaki şekilde güncelleyin. Tam kod örneği için [AppMetrica entegrasyonu için SDK yapılandırması](appmetrica#sdk-configuration) sayfasına bakın.
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- var deviceId = AppMetrica.GetDeviceId();
+
+- if (deviceId != null {
+-   var builder = new Adapty.ProfileParameters.Builder();
+
+-   builder.SetAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
+-   builder.SetAppmetricaDeviceId(deviceId);
+
+-   Adapty.UpdateProfile(builder.Build(), (error) => {
+-       // handle error
+-   });
+- }
+
++ var deviceId = AppMetrica.GetDeviceId();
+
++ if (deviceId != null {
++   Adapty.SetIntegrationIdentifier(
++     "appmetrica_device_id", 
++     deviceId, 
++     (error) => {
++     // handle the error
++   });
++   
++   Adapty.SetIntegrationIdentifier(
++     "appmetrica_profile_id", 
++     "YOUR_ADAPTY_CUSTOMER_USER_ID", 
++     (error) => {
++     // handle the error
++   });
++ }
+```
+
+### AppsFlyer
+
+Mobil uygulama kodunuzu aşağıdaki şekilde güncelleyin. Tam kod örneği için [AppsFlyer entegrasyonu için SDK yapılandırması](appsflyer#connect-your-app-to-appsflyer) sayfasına bakın.
+
+```diff showLineNumbers
+ using AppsFlyerSDK;
+ using AdaptySDK;
+
+ // before SDK initialization
+ AppsFlyer.getConversionData(this.name);
+
+ // in your IAppsFlyerConversionData
+ void onConversionDataSuccess(string conversionData) {
+     // It's important to include the network user ID
+-    string appsFlyerId = AppsFlyer.getAppsFlyerId();
+-    Adapty.UpdateAttribution(conversionData, AttributionSource.Appsflyer, appsFlyerId, (error) => {
++    string appsFlyerId = AppsFlyer.getAppsFlyerId();
++    
++    Adapty.SetIntegrationIdentifier(
++      "appsflyer_id", 
++      appsFlyerId, 
++      (error) => {
+         // handle the error
+     });
++    
++    Adapty.UpdateAttribution(
++      conversionData, 
++      "appsflyer",
++      (error) => {
++        // handle the error
++      });
+ }
+
+```
+
+### Branch
+
+Mobil uygulama kodunuzu aşağıdaki şekilde güncelleyin. Tam kod örneği için [Branch entegrasyonu için SDK yapılandırması](branch#connect-your-app-to-branch) sayfasına bakın.
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- class YourBranchImplementation {
+-     func initializeBranch() {
+-         Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+-             if let data {
+-                 Adapty.updateAttribution(data, source: .branch)
+-             }
+-         }
+-     }
+- }
+
++ Branch.initSession(delegate(Dictionary<string, object> parameters, string error) {
++     string attributionString = JsonUtility.ToJson(parameters);
++     
++     Adapty.UpdateAttribution(
++       attributionString, 
++       "branch", 
++       (error) => {
++         // handle the error
++       });
++ });
+```
+
+### Firebase ve Google Analytics \{#firebase-and-google-analytics\}
+
+Mobil uygulama kodunuzu aşağıdaki şekilde güncelleyin. Tam kod örneği için [Firebase ve Google Analytics entegrasyonu için SDK yapılandırması](firebase-and-google-analytics) sayfasına bakın.
+
+```diff showLineNumbers
+ // We suppose FirebaseAnalytics Unity Plugin is already installed
+
+ using AdaptySDK;
+
+ Firebase.Analytics
+   .FirebaseAnalytics
+   .GetAnalyticsInstanceIdAsync()
+   .ContinueWithOnMainThread((task) => {
+     if (!task.IsCompletedSuccessfully) {
+       // handle error
+       return;
+     }
+
+     var firebaseId = task.Result
+     var builder = new Adapty.ProfileParameters.Builder();
+     
+-    builder.SetFirebaseAppInstanceId(firebaseId);
+-
+-    Adapty.UpdateProfile(builder.Build(), (error) => {
+-        // handle error
+   
++     Adapty.SetIntegrationIdentifier(
++       "firebase_app_instance_id", 
++       firebaseId, 
++       (error) => {
++         // handle the error
+     });
+   });
+```
+
+### Mixpanel
+
+Mobil uygulama kodunuzu aşağıdaki şekilde güncelleyin. Tam kod örneği için [Mixpanel entegrasyonu için SDK yapılandırması](mixpanel#sdk-configuration) sayfasına bakın.
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetMixpanelUserId(Mixpanel.DistinctId);
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ var distinctId = Mixpanel.DistinctId;
+
++ if (distinctId != null) {
++   Adapty.SetIntegrationIdentifier(
++     "mixpanel_user_id", 
++     distinctId, 
++     (error) => {
++       // handle the error
++   });
++ }
+```
+
+### OneSignal
+
+Mobil uygulama kodunuzu aşağıdaki şekilde güncelleyin. Tam kod örneği için [OneSignal entegrasyonu için SDK yapılandırması](onesignal#sdk-configuration) sayfasına bakın.
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- using OneSignalSDK;
+
+- var pushUserId = OneSignal.Default.PushSubscriptionState.userId;
+
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetOneSignalPlayerId(pushUserId);
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ var distinctId = Mixpanel.DistinctId;
+
++ if (distinctId != null) {
++   Adapty.SetIntegrationIdentifier(
++     "mixpanel_user_id", 
++     distinctId, 
++     (error) => {
++       // handle the error
++   });
++ }
+```
+
+### Pushwoosh
+
+Mobil uygulama kodunuzu aşağıdaki şekilde güncelleyin. Tam kod örneği için [Pushwoosh entegrasyonu için SDK yapılandırması](pushwoosh#sdk-configuration) sayfasına bakın.
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetPushwooshHWID(Pushwoosh.Instance.HWID);
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ Adapty.SetIntegrationIdentifier(
++   "pushwoosh_hwid", 
++   Pushwoosh.Instance.HWID, 
++   (error) => {
++   // handle the error
++ });
+```
+
+## Observer Mode Uygulamasını Güncelleme \{#update-observer-mode-implementation\}
+
+Paywallları işlemlerle ilişkilendirme şeklinizi güncelleyin. Daha önce `variationId` atamak için `setVariationId` metodunu kullanıyordunuz. Artık `variationId`'yi yeni `reportTransaction` metodunu kullanarak işlemi kaydederken doğrudan ekleyebilirsiniz. Nihai kod örneği için [Observer mode'da satın alma işlemleriyle paywall ilişkilendirme](report-transactions-observer-mode-unity) sayfasına bakın.
+
+```diff showLineNumbers
+ // every time when calling transaction.finish()
+- Adapty.SetVariationForTransaction("<variationId>", "<transactionId>", (error) => { 
+-     if(error != null) {
+-         // handle the error
+-         return;
+-     }
+-
+-     // successful binding
+- });
+
++ Adapty.ReportTransaction(
++   "YOUR_TRANSACTION_ID", 
++   "PAYWALL_VARIATION_ID", // optional
++   (error) => {
++   // handle the error
++ });
+```
+
+## Unity Eklenti Başlatmasını Güncelleme \{#update-the-unity-plugin-initialization\}
+
+Adapty Unity SDK 3.3.0'dan itibaren, eklenti başlatılırken `Activate` metodunun açıkça çağrılması zorunludur:
+
+```csharp showLineNumbers
+Adapty.Activate(builder.Build(), (error) => {
+   if (error != null) {
+       // handle the error
+       return;
+   }
+});
+```

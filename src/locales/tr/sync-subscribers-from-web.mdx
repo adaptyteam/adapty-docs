@@ -1,0 +1,345 @@
+---
+title: "Web ve mobil arasında satın almaları senkronize etme"
+description: "Web ve mobilde aboneleri senkronize edin."
+metadataTitle: "Kılavuzlar | API | Adapty Dokümanları"
+displayed_sidebar: APISidebar
+---
+
+Kullanıcılarınız ürünleri **web siteniz** üzerinden satın alabiliyorsa, access level'larını **mobil uygulamanızla** otomatik olarak senkronize edebilirsiniz.
+
+Bu kılavuzda, bunu Adapty API ve SDK kullanarak nasıl yapacağınızı öğreneceksiniz.
+
+#### Örnek kullanım senaryosu
+
+Diyelim ki uygulamanızda kullanıcılar hem mobilde hem de web'de ücretsiz plana kaydolabiliyor. Web sitenizde Stripe veya Chargebee aracılığıyla Premium plana geçişe izin veriyorsunuz.
+Bir kullanıcı web'de abone olduğunda, onlara mobil uygulamada hemen Premium erişim vermek istiyorsunuz — bekleme ya da yeniden giriş yapmadan.
+
+Adapty tam da bunu otomatikleştirmenize yardımcı olur.
+
+## 1. Adım. Kullanıcıları tanımlayın \{#step-1-identify-users\}
+
+Adapty, platformlar arasında kullanıcıları tanımlamak için `customer_user_id` kullanır.
+
+Bu ID'yi bir kez oluşturmanız ve hem mobil SDK'nıza hem de web backend'inize iletmeniz gerekir.
+
+### Web'den kayıt \{#sign-up-from-web\}
+
+Kullanıcılarınız web sitenizde kayıt olduğunda, sunucu taraflı API kullanarak Adapty'de onlar için bir profil oluşturmanız gerekir.
+
+Yöntem referansını [buradan](api-adapty/operations/createProfile) inceleyebilirsiniz.
+
+```curl
+curl --request POST \
+  --url https://api.adapty.io/api/v2/server-side-api/profile/ \
+  --header 'Accept: application/json' \
+  --header 'Authorization: Api-Key YOUR_SECRET_API_KEY' \
+  --header 'Content-Type: application/json' \
+  --header 'adapty-customer-user-id: YOUR_CUSTOMER_USER_ID'
+```
+
+### Uygulamadan kayıt \{#sign-up-from-app\}
+
+Kullanıcılarınız uygulamadan ilk kez kayıt olduğunda, customer user ID'yi SDK aktivasyonu sırasında iletebilir ya da SDK'yı kayıt aşamasından önce aktive ettiyseniz yeni bir profil oluşturup customer user ID atamak için `identify` metodunu kullanabilirsiniz.
+
+:::important
+SDK aktivasyonundan sonra yeni kullanıcıları tanımlıyorsanız, SDK önce anonim bir profil oluşturur; çünkü herhangi bir profil olmadan çalışamaz. Ardından kullanıcıyı tanımlayıp yeni bir customer user ID atadığınızda yeni bir profil oluşturulur.
+
+Bu davranış tamamen normaldir ve analitik doğruluğunu etkilemez. Daha fazla bilgi için [buraya](ios-quickstart-identify) bakın.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS" default>
+```swift showLineNumbers
+do {
+    try await Adapty.identify("YOUR_USER_ID") // Unique for each user
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="iOS (Swift-Callback)" default>
+
+```swift showLineNumbers
+// User IDs must be unique for each user
+Adapty.identify("YOUR_USER_ID") { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)" default>
+```kotlin showLineNumbers
+Adapty.identify("YOUR_USER_ID") { error -> // Unique for each user
+    if (error == null) {
+        // successful identify
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Android (Java)" default>
+```java showLineNumbers
+// User IDs must be unique for each user
+Adapty.identify("YOUR_USER_ID", error -> {
+    if (error == null) {
+        // successful identify
+    }
+});
+```
+</TabItem>
+<TabItem value="react-native" label="React Native" default>
+```typescript showLineNumbers
+try {
+    await adapty.identify("YOUR_USER_ID"); // Unique for each user
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="flutter" label="Flutter" default>
+```dart showLineNumbers
+try {
+  await Adapty().identify(customerUserId); // Unique for each user
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+</TabItem>
+
+<TabItem value="unity" label="Unity" default>
+```csharp showLineNumbers
+Adapty.Identify("YOUR_USER_ID", (error) => { // Unique for each user
+  if(error == null) {
+    // successful identify
+  }
+});
+```
+</TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+```kotlin showLineNumbers
+Adapty.identify("YOUR_USER_ID") // Unique for each user
+    .onSuccess {
+        // successful identify
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+</TabItem>
+
+<TabItem value="capacitor" label="Capacitor" default>
+```typescript showLineNumbers
+try {
+  await adapty.identify({ customerUserId: "YOUR_USER_ID" });
+  // successfully identified
+} catch (error) {
+  // handle the error
+}
+```
+</TabItem>
+</Tabs>
+
+## 2. Adım. API üzerinden abonelik durumunu kontrol edin \{#step-2-check-subscription-status-via-api\}
+
+Kullanıcı web sitenizde oturum açtığında, API ile Adapty profilini çekin.
+
+Kullanıcının aktif bir aboneliği yoksa paywall gösterebilirsiniz.
+
+Yöntem referansını [buradan](api-adapty/operations/getProfile) inceleyebilirsiniz.
+
+```curl
+curl --request GET \
+  --url https://api.adapty.io/api/v2/server-side-api/profile/ \
+  --header 'Accept: application/json' \
+  --header 'Authorization: Api-Key YOUR_SECRET_API_KEY' \
+  --header 'adapty-customer-user-id: YOUR_USER_ID' \
+```
+
+## 3. Adım. Web sitenizde paywall gösterin \{#step-3-display-a-paywall-on-your-website\}
+
+Web sitenizde ücretsiz plan kullanıcılarına paywall gösterin.
+Herhangi bir ödeme sağlayıcısı kullanabilirsiniz (Stripe, Chargebee, LemonSqueezy vb.).
+
+## 4. Adım. Adapty'de abonelik durumunu güncelleyin \{#step-4-update-subscription-status-in-adapty\}
+
+Web sitenizde ödeme tamamlandıktan sonra, Adapty API'ını çağırarak kullanıcının satın aldığı ürüne göre access level'ını güncelleyin.
+
+Yöntem referansını [buradan](api-adapty/operations/grantAccessLevel) inceleyebilirsiniz.
+
+```curl
+curl --request POST \
+  --url https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/ \
+  --header 'Accept: application/json' \
+  --header 'Authorization: Api-Key YOUR_SECRET_API_KEY' \
+  --header 'Content-Type: application/json' \
+  --header 'adapty-customer-user-id: YOUR_USER_ID' \
+  --data '{
+  "access_level_id": "YOUR_ACCESS_LEVEL"
+}'
+```
+
+## 5. Adım. Uygulamada durumu senkronize edin \{#step-5-sync-status-in-the-app\}
+
+Kullanıcı mobil uygulamanızı açtığında, güncel profili çekin ve ücretli özelliklerin kilidini açın.
+
+Profillerini ya manuel olarak almanız ya da otomatik senkronize etmeniz gerekir. Ardından profilden access level'ı alın.
+
+Aşağıda profili nasıl alacağınızı ve durumunu nasıl kontrol edeceğinizi görebilirsiniz. Daha fazla ayrıntı için [buraya](ios-check-subscription-status) gidin.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+// handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="swift-callback" label="iOS (Swift-Callback)" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get() {
+        // check the access
+        if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // grant access to premium features
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="android" label="Android (Kotlin)" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+            // check the access
+            if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
+                // grant access to premium features
+            }
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="java" label="Android (Java)" default>
+
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        // check the access
+        if (profile.getAccessLevels().get("YOUR_ACCESS_LEVEL") != null && profile.getAccessLevels().get("YOUR_ACCESS_LEVEL").getIsActive()) {
+            // grant access to premium features
+        }
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+
+<TabItem value="react-native" label="React Native" default>
+
+```typescript showLineNumbers
+try {
+    const profile = await adapty.getProfile();
+    // check the access
+    if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive) {
+        // grant access to premium features
+    }
+} catch (error) {
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="flutter" label="Flutter" default>
+
+```dart showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  // check the access
+  if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false) {
+      // grant access to premium features
+  }
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+</TabItem>
+
+<TabItem value="unity" label="Unity" default>
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+  // check the access
+  if (profile.AccessLevels["YOUR_ACCESS_LEVEL"]?.IsActive ?? false) {
+      // grant access to premium features
+  }
+});
+```
+</TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile()
+    .onSuccess { profile ->
+        // check the access
+        if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
+            // grant access to premium features
+        }
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+</TabItem>
+
+<TabItem value="capacitor" label="Capacitor" default>
+
+```typescript showLineNumbers
+try {
+  const profile = await adapty.getProfile();
+  // check the access
+  if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive) {
+      // grant access to premium features
+  }
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>

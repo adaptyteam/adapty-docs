@@ -1,0 +1,187 @@
+---
+title: "Kotlin Multiplatform SDK'da düğme aksiyonlarını yönetme"
+description: "Daha iyi uygulama monetizasyonu için Adapty kullanarak Kotlin Multiplatform'da paywall düğme aksiyonlarını yönetin."
+metadataTitle: "Paywall düğme aksiyonlarını yönetme | Adapty Dokümanları"
+displayed_sidebar: sdkkmp
+toc_max_heading_level: 4
+keywords: ['paywall düğmesi', 'düğme', 'paywall düğme aksiyonları', 'aksiyonları yönetme']
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+:::warning
+**Yalnızca satın almalar ve geri yüklemeler otomatik olarak yönetilir.** Paywallları kapatmak veya bağlantı açmak gibi diğer tüm düğme aksiyonları için uygulama kodunuzda uygun yanıtları uygulamanız gerekir.
+:::
+
+Adapty paywall builder kullanarak paywall oluşturuyorsanız düğmeleri doğru şekilde ayarlamak çok önemlidir:
+
+1. [Paywall builder'da bir düğme ekleyin](paywall-buttons) ve buna mevcut bir aksiyon atayın ya da özel bir aksiyon ID'si oluşturun.
+2. Atadığınız her aksiyonu yönetmek için uygulamanıza kod yazın.
+
+Bu kılavuz, kodunuzda özel ve mevcut aksiyonların nasıl yönetileceğini gösterir.
+
+## AdaptyUIPaywallsEventsObserver'ı ayarlayın \{#set-up-the-adaptyuipaywallseventsobserver\}
+
+Paywall aksiyonlarını yönetmek için `AdaptyUIPaywallsEventsObserver` arayüzünü uygulamanız ve `AdaptyUI.setPaywallsEventsObserver()` ile kurmanız gerekir. Bu işlem, genellikle ana activity'nizde veya uygulama başlatma sırasında, uygulama yaşam döngüsünün erken aşamasında yapılmalıdır.
+
+```kotlin
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
+
+// In your app initialization
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
+```
+
+## Paywallları kapatın \{#close-paywalls\}
+
+Paywallınızı kapatacak bir düğme eklemek için:
+
+1. Paywall builder'da bir düğme ekleyin ve **Close** aksiyonunu atayın.
+2. Uygulama kodunuzda, paywallı kapatan `close` aksiyonu için bir işleyici uygulayın.
+
+:::info
+Kotlin Multiplatform SDK'da `CloseAction` ve `AndroidSystemBackAction` varsayılan olarak paywallı kapatır. Ancak gerekirse bu davranışı kodunuzda değiştirebilirsiniz. Örneğin, bir paywallı kapatmak başka bir paywallın açılmasını tetikleyebilir.
+:::
+
+```kotlin
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
+import com.adapty.kmp.models.AdaptyUIAction
+import com.adapty.kmp.models.AdaptyUIPaywallView
+
+class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            AdaptyUIAction.CloseAction, AdaptyUIAction.AndroidSystemBackAction -> view.dismiss()
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
+```
+
+[`createNativePaywallView`](kmp-present-paywalls#without-compose-multiplatform) kullanıyorsanız `view.dismiss()` çağrısının bir etkisi yoktur — görünüm KMP yığını üzerinden değil, doğrudan layout'unuza gömülüdür. Bunun yerine görünümü layout'unuzdan kaldırın ve üzerinde `dispose()` çağrısı yapın.
+
+## Paywall'lardan URL açın \{#open-urls-from-paywalls\}
+
+:::tip
+Bir grup bağlantı (ör. kullanım koşulları ve satın alma geri yükleme) eklemek istiyorsanız paywall builder'a bir **Link** öğesi ekleyin ve bunu **Open URL** aksiyonuyla düğmeleri yönettiğiniz gibi işleyin.
+:::
+
+Paywallınızdan bir bağlantı açan bir düğme eklemek için (ör. **Terms of use** veya **Privacy policy**):
+
+1. Paywall builder'da bir düğme ekleyin, **Open URL** aksiyonunu atayın ve açmak istediğiniz URL'yi girin.
+2. Uygulama kodunuzda, alınan URL'yi tarayıcıda açan `openUrl` aksiyonu için bir işleyici uygulayın.
+
+:::info
+Kotlin Multiplatform SDK'da `OpenUrlAction`, açılması gereken URL'yi sağlar. URL açmayı yönetmek için özel mantık uygulayabilirsiniz; örneğin bir onay iletişim kutusu gösterebilir veya uygulamanızın tercih ettiği URL yönetim yöntemini kullanabilirsiniz.
+:::
+
+```kotlin
+import androidx.compose.ui.platform.UriHandler
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
+import com.adapty.kmp.models.AdaptyUIAction
+import com.adapty.kmp.models.AdaptyUIDialogActionType
+import com.adapty.kmp.models.AdaptyUIPaywallView
+import com.adapty.kmp.models.getOrNull
+
+class MyAdaptyUIPaywallsEventsObserver(
+    private val uriHandler: UriHandler
+) : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.OpenUrlAction -> {
+                // Show confirmation dialog before opening URL
+                mainUiScope.launch {
+                    val selectedAction = view.showDialog(
+                        title = "Open URL?",
+                        content = action.url,
+                        primaryActionTitle = "Cancel",
+                        secondaryActionTitle = "Open"
+                    ).getOrNull()
+
+                    when (selectedAction) {
+                        AdaptyUIDialogActionType.PRIMARY -> {
+                            // User cancelled
+                        }
+                        AdaptyUIDialogActionType.SECONDARY -> {
+                            // User confirmed - open URL
+                            uriHandler.openUri(action.url)
+                        }
+                        else -> Unit
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Set up the observer with UriHandler
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver(uriHandler))
+```
+
+## Uygulamaya giriş yapın \{#log-into-the-app\}
+
+Kullanıcıların uygulamanıza giriş yapmasını sağlayan bir düğme eklemek için:
+
+1. Paywall builder'da bir düğme ekleyin ve buna "login" ID'siyle **Custom** aksiyon atayın.
+2. Uygulama kodunuzda, kullanıcınızı tanımlayan özel aksiyon için bir işleyici uygulayın.
+
+```kotlin
+import com.adapty.kmp.AdaptyUIObserver
+import com.adapty.kmp.models.AdaptyUIAction
+import com.adapty.kmp.models.AdaptyUIView
+
+class MyAdaptyUIObserver : AdaptyUIObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                if (action.action == "login") {
+                    // Handle login action - navigate to login screen
+                    // This depends on your app's navigation system
+                    // For example, in Compose Multiplatform:
+                    // navController.navigate("login")
+                }
+            }
+        }
+    }
+}
+```
+
+## Özel aksiyonları yönetin \{#handle-custom-actions\}
+
+Başka aksiyonları yöneten bir düğme eklemek için:
+
+1. Paywall builder'da bir düğme ekleyin, **Custom** aksiyonunu atayın ve bir ID verin.
+2. Uygulama kodunuzda, oluşturduğunuz aksiyon ID'si için bir işleyici uygulayın.
+
+Örneğin, başka bir abonelik teklifi veya tek seferlik satın alma seçeneğiniz varsa başka bir paywall açan bir düğme ekleyebilirsiniz:
+
+```kotlin
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
+import com.adapty.kmp.models.AdaptyUIAction
+import com.adapty.kmp.models.AdaptyUIPaywallView
+
+class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                when (action.action) {
+                    "login" -> {
+                        // Handle login action - navigate to login screen
+                        // This depends on your app's navigation system
+                        // For example, in Compose Multiplatform:
+                        // navController.navigate("login")
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
+```

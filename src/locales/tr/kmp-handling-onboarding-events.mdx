@@ -1,0 +1,406 @@
+---
+title: "Kotlin Multiplatform SDK'da onboarding olaylarını yönetin"
+description: "Adapty kullanarak Kotlin Multiplatform'da onboarding ile ilgili olayları yönetin."
+metadataTitle: "Kotlin Multiplatform'da Onboarding Olaylarını Yönetme | Adapty Dokümanları"
+toc_max_heading_level: 4
+keywords: ['onboardingViewOnCustomAction', 'onboardingViewOnCloseAction', 'onboardingViewOnStateUpdatedAction', 'onboardingViewOnPaywallAction', 'onboardingViewDidFinishLoading', 'onboardingViewOnAnalyticsEvent']
+---
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Details from '@site/src/components/Details';
+
+Başlamadan önce şunları sağlayın:
+
+1. [Adapty Kotlin Multiplatform SDK](sdk-installation-kotlin-multiplatform) 3.15.0 veya sonraki sürümü yüklü olmalıdır.
+2. Bir [onboarding oluşturmuş](create-onboarding) olmalısınız.
+3. Onboardingyi bir [placement](placements)'a eklemiş olmalısınız.
+
+Oluşturucu ile yapılandırılan onboardingler, uygulamanızın yanıt verebileceği olaylar üretir. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenin.
+
+## Onboarding olay gözlemcisini ayarlayın \{#set-up-the-onboarding-event-observer\}
+
+Onboarding olaylarını yönetmek için `AdaptyUIOnboardingsEventsObserver` arayüzünü uygulamanız ve `AdaptyUI.setOnboardingsEventsObserver()` ile kurmanız gerekir. Bu, genellikle ana aktivitenizde veya uygulama başlatma aşamasında olmak üzere uygulamanızın yaşam döngüsünün erken bir noktasında yapılmalıdır.
+
+```kotlin
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+
+// In your app initialization
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+## Özel eylemler \{#custom-actions\}
+
+Oluşturucuda bir butona **custom** eylem ekleyip bir ID atayabilirsiniz. Ardından bu ID'yi kodunuzda kullanarak özel bir eylem olarak yönetebilirsiniz.
+
+<Zoom>
+    <img src={require('./img/ios-events-1.webp').default}
+         style={{
+             border: '1px solid #727272', /* border width and color */
+             width: '700px', /* image width */
+             display: 'block', /* for alignment */
+             margin: '0 auto' /* center alignment */
+         }}
+    />
+</Zoom>
+
+Örneğin, bir kullanıcı **Login** veya **Allow notifications** gibi özel bir butona dokunduğunda, `onCustomAction` delege metodu oluşturucudaki eylem ID'siyle tetiklenir. "allowNotifications" gibi kendi ID'lerinizi oluşturabilirsiniz.
+
+```kotlin
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnCustomAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        actionId: String
+    ) {
+        when (actionId) {
+            "openPaywall" -> {
+                // Display paywall from onboarding
+                // You would typically fetch and present a new paywall here
+                mainUiScope.launch {
+                    // Example: Get paywall by placement ID
+                    // val paywallResult = Adapty.getPaywall("your_placement_id")
+                    // paywallResult.onSuccess { paywall ->
+                    //     val paywallViewResult = AdaptyUI.createPaywallView(paywall)
+                    //     paywallViewResult.onSuccess { paywallView ->
+                    //         paywallView.present()
+                    //     }
+                    // }
+                }
+            }
+            "allowNotifications" -> {
+                // Handle notification permissions
+            }
+            else -> {
+                // Handle other custom actions
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+<Details>
+    <summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+    ```json
+    {
+        "actionId": "allowNotifications",
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    }
+    }
+    ```
+</Details>
+
+## Onboardingi kapatma \{#closing-onboarding\}
+
+Bir kullanıcı **Close** eylemi atanmış bir butona dokunduğunda onboarding kapalı sayılır. Kullanıcı onboardingi kapattığında ne olacağını yönetmeniz gerekir. Örneğin:
+
+:::important
+Kullanıcı onboardingi kapattığında ne olacağını yönetmeniz gerekir. Örneğin, onboardingin kendisini görüntülemeyi durdurmanız gerekir.
+:::
+
+[`createNativeOnboardingView`](kmp-present-onboardings#without-compose-multiplatform) kullanıyorsanız `view.isStandaloneView` `false` olur — varsayılan uygulama `view.dismiss()` çağırmaz. Bu geri çağırımda görünümü düzeninizden kaldırın ve üzerinde `dispose()` çağırın.
+
+```kotlin
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnCloseAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        actionId: String
+    ) {
+        // Dismiss the onboarding screen
+        mainUiScope.launch {
+            view.dismiss()
+        }
+
+        // Additional cleanup or navigation logic can be added here
+        // For example, navigate back or show main app content
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+<Details>
+    <summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+    ```json
+    {
+        "action_id": "close_button",
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+    }
+    ```
+
+</Details>
+
+## Paywall açma \{#opening-a-paywall\}
+
+:::tip
+Onboarding içinde bir paywall açmak istiyorsanız bu olayı yönetin. Onboarding kapandıktan sonra paywall açmak istiyorsanız bunun daha kolay bir yolu var — [`onboardingViewOnCloseAction`](#closing-onboarding) olayını yönetin ve olay verisine dayanmadan bir paywall açın.
+:::
+
+Bir kullanıcı paywall açan bir butona tıklarsa, [manuel olarak ayarladığınız](get-paid-in-onboardings) bir buton eylem ID'si alırsınız. Onboardinglerde paywalllarla çalışmanın en sorunsuz yolu, eylem ID'sini bir paywall placement ID'siyle eşit yapmaktır. Bu sayede placement ID'yi kullanarak paywallı hemen alıp açabilirsiniz:
+
+```kotlin
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnPaywallAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        actionId: String
+    ) {
+        // Get the paywall using the placement ID from the action
+        mainUiScope.launch {
+            val paywallResult = Adapty.getPaywall(placementId = actionId)
+            paywallResult.onSuccess { paywall ->
+                val paywallViewResult = AdaptyUI.createPaywallView(paywall)
+                paywallViewResult.onSuccess { paywallView ->
+                    paywallView.present()
+                }.onError { error ->
+                    // handle the error
+                }
+            }.onError { error ->
+                // handle the error
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+<Details>
+    <summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+    ```json
+    {
+        "action_id": "premium_offer_1",
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+    }
+    ```
+
+</Details>
+
+## Onboarding yüklemesinin tamamlanması \{#finishing-loading-onboarding\}
+
+Bir onboarding yüklemeyi tamamladığında bu metod çağrılır:
+
+```kotlin
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewDidFinishLoading(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta
+    ) {
+        // Handle loading completion
+        // You can add any initialization logic here
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+
+<Details>
+    <summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+    ```json
+    {
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+    }
+    ```
+
+</Details>
+
+## Gezinme olayları \{#navigation-events\}
+
+`onboardingViewOnAnalyticsEvent` metodu, onboarding akışı sırasında çeşitli analitik olaylar gerçekleştiğinde çağrılır.
+
+`event` nesnesi şu türlerden biri olabilir:
+|Tür | Açıklama |
+|------------|-------------|
+| `AdaptyOnboardingsAnalyticsEventOnboardingStarted` | Onboarding yüklendiğinde |
+| `AdaptyOnboardingsAnalyticsEventScreenPresented` | Herhangi bir ekran gösterildiğinde |
+| `AdaptyOnboardingsAnalyticsEventScreenCompleted` | Bir ekran tamamlandığında. İsteğe bağlı `elementId` (tamamlanan öğenin tanımlayıcısı) ve isteğe bağlı `reply` (kullanıcının yanıtı) içerir. Kullanıcılar ekrandan çıkmak için herhangi bir eylem gerçekleştirdiğinde tetiklenir. |
+| `AdaptyOnboardingsAnalyticsEventSecondScreenPresented` | İkinci ekran gösterildiğinde |
+| `AdaptyOnboardingsAnalyticsEventUserEmailCollected` | Kullanıcının e-posta adresi giriş alanı aracılığıyla toplandığında tetiklenir |
+| `AdaptyOnboardingsAnalyticsEventOnboardingCompleted` | Kullanıcı `final` ID'sine sahip bir ekrana ulaştığında tetiklenir. Bu olaya ihtiyacınız varsa son ekrana `final` ID'sini atayın. |
+| `AdaptyOnboardingsAnalyticsEventUnknown` | Tanınmayan herhangi bir olay türü için. `name` (bilinmeyen olayın adı) ve `meta` (ek meta veriler) içerir |
+
+Her olay şu bilgileri içeren `meta` verisini barındırır:
+| Alan | Açıklama |
+|------------|-------------|
+| `onboardingId` | Onboarding akışının benzersiz tanımlayıcısı |
+| `screenClientId` | Mevcut ekranın tanımlayıcısı |
+| `screenIndex` | Mevcut ekranın akıştaki konumu |
+| `screensTotal` | Akıştaki toplam ekran sayısı |
+
+Analitik olaylarını takip için nasıl kullanabileceğinize dair bir örnek:
+
+```kotlin
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.AdaptyUIOnboardingsEventsObserver
+import com.adapty.kmp.models.AdaptyOnboardingsAnalyticsEvent
+import com.adapty.kmp.models.AdaptyOnboardingsAnalyticsEventOnboardingCompleted
+import com.adapty.kmp.models.AdaptyOnboardingsAnalyticsEventOnboardingStarted
+import com.adapty.kmp.models.AdaptyOnboardingsAnalyticsEventScreenCompleted
+import com.adapty.kmp.models.AdaptyOnboardingsAnalyticsEventScreenPresented
+import com.adapty.kmp.models.AdaptyOnboardingsAnalyticsEventUnknown
+import com.adapty.kmp.models.AdaptyUIOnboardingView
+import com.adapty.kmp.models.AdaptyUIOnboardingMeta
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnAnalyticsEvent(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        event: AdaptyOnboardingsAnalyticsEvent
+    ) {
+        when (event) {
+            is AdaptyOnboardingsAnalyticsEventOnboardingStarted -> {
+                // Track onboarding start
+                trackEvent("onboarding_started", event.meta)
+            }
+            is AdaptyOnboardingsAnalyticsEventScreenPresented -> {
+                // Track screen presentation
+                trackEvent("screen_presented", event.meta)
+            }
+            is AdaptyOnboardingsAnalyticsEventScreenCompleted -> {
+                // Track screen completion with user response
+                trackEvent("screen_completed", event.meta, event.elementId, event.reply)
+            }
+            is AdaptyOnboardingsAnalyticsEventOnboardingCompleted -> {
+                // Track successful onboarding completion
+                trackEvent("onboarding_completed", event.meta)
+            }
+            is AdaptyOnboardingsAnalyticsEventUnknown -> {
+                // Handle unknown events
+                trackEvent(event.name, event.meta)
+            }
+            // Handle other cases as needed
+        }
+    }
+
+    private fun trackEvent(eventName: String, meta: AdaptyUIOnboardingMeta, elementId: String? = null, reply: String? = null) {
+        // Implement your analytics tracking here
+        // For example, send to your analytics service
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+<Details>
+    <summary>Olay örnekleri (Genişletmek için tıklayın)</summary>
+
+    ```javascript
+    // OnboardingStarted
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "welcome_screen",
+        "screenIndex": 0,
+        "screensTotal": 4
+    }
+    }
+
+    // ScreenPresented
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 4
+    }
+    }
+
+    // ScreenCompleted
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 1,
+        "screensTotal": 4
+    },
+        "elementId": "profile_form",
+        "reply": "success"
+    }
+
+    // SecondScreenPresented
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 1,
+        "screensTotal": 4
+    }
+    }
+
+    // UserEmailCollected
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 1,
+        "screensTotal": 4
+    }
+    }
+
+    // OnboardingCompleted
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "final_screen",
+        "screenIndex": 3,
+        "screensTotal": 4
+    }
+    }
+
+    ```
+
+</Details>

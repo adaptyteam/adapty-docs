@@ -1,0 +1,272 @@
+---
+title: "iOS SDK'da Observer modunda Paywall Builder paywalllarını gösterme"
+description: "Daha iyi içgörüler için observer modunda PB paywalllarını nasıl göstereceğinizi öğrenin."
+metadataTitle: "Observer Modunda PB Paywalllarını Gösterme | Adapty Dokümanları"
+---
+
+Paywall Builder kullanarak bir paywall özelleştirdiyseniz, kullanıcıya göstermek için onu mobil uygulama kodunuzda render etmeniz gerekmez. Bu tür bir paywall, hem paywall içinde neyin gösterileceğini hem de nasıl gösterileceğini içerir.
+:::warning
+Bu bölüm yalnızca [Observer mode](observer-vs-full-mode) için geçerlidir. Observer mode kullanmıyorsanız [iOS - Paywall Builder paywalllarını gösterme](ios-present-paywalls) sayfasına bakın.
+:::
+<Tabs groupId="current-os" queryString>
+<TabItem value="sdk3" label="New Paywall Builder (SDK 3.0+)" default>
+<details>
+   <summary>Paywall göstermeye başlamadan önce (Genişletmek için tıklayın)</summary>
+
+1. Adapty'nin [Google Play](initial-android) ve [App Store](initial_ios) ile başlangıç entegrasyonunu kurun.
+2. Adapty SDK'yı yükleyip yapılandırın. `observerMode` parametresini `true` olarak ayarladığınızdan emin olun. Framework'e özgü talimatlarımıza bakın: [iOS](sdk-installation-ios#activate-adapty-module-of-adapty-sdk).
+3. Adapty Kontrol Paneli'nde [ürünler oluşturun](create-product).
+4. Adapty Kontrol Paneli'nde [paywall'ları yapılandırın, ürünleri atayın](create-paywall) ve Paywall Builder ile özelleştirin.
+5. Adapty Kontrol Paneli'nde [placement'lar oluşturun ve paywall'larınızı atayın](create-placement).
+6. Mobil uygulama kodunuzda [Paywall Builder paywall'larını ve yapılandırmalarını alın](get-pb-paywalls).
+
+</details>
+
+<p> </p>
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+1. `AdaptyObserverModeResolver` nesnesini uygulayın:
+
+   ```swift showLineNumbers title="Swift"
+   func observerMode(didInitiatePurchase product: AdaptyPaywallProduct,
+                     onStartPurchase: @escaping () -> Void,
+                     onFinishPurchase: @escaping () -> Void) {
+          // use the product object to handle the purchase
+          // use the onStartPurchase and onFinishPurchase callbacks to notify AdaptyUI about the process of the purchase
+   }
+The `observerMode(didInitiatePurchase:onStartPurchase:onFinishPurchase:)` olayı, kullanıcının bir satın alma başlattığını size bildirir. Bu callback'e yanıt olarak kendi özel satın alma akışınızı tetikleyebilirsiniz.
+`observerModeDidInitiateRestorePurchases(onStartRestore:onFinishRestore:)` olayı, kullanıcının bir geri yükleme başlattığını size bildirir. Bu geri çağırım yanıtında özel geri yükleme akışınızı tetikleyebilirsiniz.
+
+Ayrıca, satın alma veya geri yükleme sürecini AdaptyUI'ya bildirmek için aşağıdaki geri çağırımları çağırmayı unutmayın. Bu, yükleyiciyi göstermek gibi uygun paywall davranışı için gereklidir:
+| Callback           | Açıklama                                                                                          |
+   | :----------------- | :------------------------------------------------------------------------------------------------ |
+   | onStartPurchase()  | Satın alma işleminin başladığını AdaptyUI'a bildirmek için bu callback çağrılmalıdır.  |
+   | onFinishPurchase() | Satın alma işleminin tamamlandığını AdaptyUI'a bildirmek için bu callback çağrılmalıdır. |
+   | onStartRestore()   | Geri yükleme işleminin başladığını AdaptyUI'a bildirmek için bu callback çağrılmalıdır.   |
+   | onFinishRestore()  | Geri yükleme işleminin tamamlandığını AdaptyUI'a bildirmek için bu callback çağrılmalıdır.  |
+2. Bir paywall yapılandırma nesnesi oluşturun:
+
+   ```swift showLineNumbers title="Swift"
+   do {
+       let paywallConfiguration = try AdaptyUI.getPaywallConfiguration(
+        forPaywall: <paywall object>, 
+        observerModeResolver: <AdaptyObserverModeResolver>
+        )
+   } catch {
+       // handle the error
+   }
+   ```
+
+   İstek parametreleri:
+| Parametre | Zorunluluk | Açıklama |
+   | :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | **Paywall**              | zorunlu | İstenen paywall için bir controller edinmek amacıyla kullanılan `AdaptyPaywall` nesnesi.                                                                                                                                                                                                                                             |
+   | **ObserverModeResolver** | zorunlu | Önceki adımda uyguladığınız `AdaptyObserverModeResolver` nesnesi.                                                                                                                                                                                                                                                      |
+3. Görüntülemek istediğiniz görsel paywall'ı `.paywallController(for:products:viewConfiguration:delegate:)` metodunu kullanarak başlatın:
+
+   ```swift showLineNumbers title="Swift"
+   import Adapty
+   import AdaptyUI
+   
+   let visualPaywall = AdaptyUI.paywallController(
+       with: <paywall configuration object>,
+       delegate: <AdaptyPaywallControllerDelegate>
+   )
+   ```
+
+İstek parametreleri:
+| Parametre | Zorunluluk | Açıklama |
+| :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paywall Configuration** | zorunlu | Paywallın görsel ayrıntılarını içeren bir `AdaptyUI.PaywallConfiguration` nesnesi. `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` metodunu kullanın. Daha fazla bilgi için [Paywall Builder paywalllarını ve yapılandırmalarını getirme](get-pb-paywalls) konusuna bakın. |
+| **Delegate** | zorunlu | Paywall olaylarını dinlemek için bir `AdaptyPaywallControllerDelegate`. Daha fazla bilgi için [Paywall olaylarını yönetme](ios-handling-events) konusuna bakın. |
+Döndürür:
+
+| Nesne                   | Açıklama                                             |
+| :---------------------- | :--------------------------------------------------- |
+| AdaptyPaywallController | İstenen paywall ekranını temsil eden bir nesne       |
+
+Nesne başarıyla oluşturulduktan sonra şu şekilde gösterebilirsiniz:
+
+```swift showLineNumbers title="Swift"
+present(visualPaywall, animated: true)
+```
+:::warning
+[Satın alma işlemlerini paywall'larla ilişkilendirmeyi](report-transactions-observer-mode) unutmayın. Aksi takdirde, Adapty satın almanın hangi paywall'dan geldiğini belirleyemez.
+:::
+</TabItem>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+Görsel paywall'ı cihaz ekranında göstermek için SwiftUI'da `.paywall` modifier'ını kullanın:
+```swift showLineNumbers title="SwiftUI"
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywallConfiguration: <paywall configuration object>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+          didFinishRestore: { profile in /* access level'i kontrol et ve kapat */  },
+          didFailRestore: { error in /* hatayı işle */ },
+          didFailRendering: { error in paywallPresented = false }
+      )
+}
+```
+İstek parametreleri:
+
+| Parametre                | Zorunluluk | Açıklama                                                                                                                                                                                                                                                                                                            |
+| :----------------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paywall Configuration**              | zorunlu | Paywallın görsel ayrıntılarını içeren bir `AdaptyUI.PaywallConfiguration` nesnesi. `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` metodunu kullanın. Daha fazla bilgi için [Paywall Builder paywall'larını ve yapılandırmalarını getirme](get-pb-paywalls) konusuna bakın.                                                                                                                                                                                                                                             |
+| **Products**             | isteğe bağlı | Ekranda ürünlerin görüntülenme zamanlamasını optimize etmek için bir `AdaptyPaywallProducts` dizisi sağlayın. `nil` değeri geçilirse AdaptyUI gerekli ürünleri otomatik olarak getirir.                                                                                                                                   |
+| **TagResolver**          | isteğe bağlı | Özel etiketlerin ve çözümlenmiş değerlerinin bir sözlüğünü tanımlayın. Özel etiketler, paywall içeriğinde yer tutucu olarak işlev görür ve paywall içinde kişiselleştirilmiş içerik sunmak amacıyla belirli dizelerle dinamik olarak değiştirilir. Daha fazla bilgi için [Paywall Builder'da özel etiketler](custom-tags-in-paywall-builder) konusuna bakın. |
+| **ObserverModeResolver** | isteğe bağlı | Bir önceki adımda uyguladığınız `AdaptyObserverModeResolver` nesnesi                                                                                                                                                                                                                                                        |
+Closure parametreleri:
+
+| Closure parametresi  | Açıklama                                                                                    |
+| :------------------- | :------------------------------------------------------------------------------------------ |
+| **didFinishRestore** | `Adapty.restorePurchases()` başarılı olursa bu callback çağrılır.                           |
+| **didFailRestore**   | `Adapty.restorePurchases()` başarısız olursa bu callback çağrılır.                          |
+| **didFailRendering** | Arayüz oluşturma sırasında bir hata oluşursa bu callback çağrılır.                          |
+Diğer closure parametreleri için [iOS - Olayları Yönetme](ios-handling-events) konusuna bakın.
+
+:::warning
+[Satın alma işlemlerini paywall'larla ilişkilendirmeyi](report-transactions-observer-mode) unutmayın. Aksi takdirde Adapty, satın alma işleminin hangi paywall'dan geldiğini belirleyemez.
+:::
+
+</TabItem> 
+</Tabs>
+
+</TabItem>
+<TabItem value="sdk2" label="Legacy Paywall Builder (SDK up to 2.x)" default>
+<details>
+   <summary>Paywall'ları sunmaya başlamadan önce (Genişletmek için tıklayın)</summary>
+1. Adapty'nin [Google Play ile](initial-android) ve [App Store ile](initial_ios) ilk entegrasyonunu kurun.
+1. Adapty SDK'yı kurun ve yapılandırın. `observerMode` parametresini `true` olarak ayarladığınızdan emin olun. Framework'e özel talimatlarımıza göz atın: [iOS](sdk-installation-ios#activate-adapty-module-of-adapty-sdk), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk) ve [Unity](sdk-installation-unity#activate-adapty-module-of-adapty-sdk).
+2. Adapty Kontrol Paneli'nde [ürün oluşturun](create-product).
+3. Adapty Kontrol Paneli'nde [paywall'lar oluşturun, ürünleri bunlara atayın](create-paywall) ve Paywall Builder ile özelleştirin.
+4. Adapty Kontrol Paneli'nde [placement'lar oluşturun ve paywall'larınızı bunlara atayın](create-placement).
+5. Mobil uygulama kodunuzda [Paywall Builder paywall'larını ve yapılandırmalarını alın](get-pb-paywalls).
+</details>
+<p> </p>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+1. `AdaptyObserverModeDelegate` nesnesini uygulayın:
+```swift showLineNumbers title="Swift"
+func paywallController(_ controller: AdaptyPaywallController,
+                       didInitiatePurchase product: AdaptyPaywallProduct,
+                       onStartPurchase: @escaping () -> Void,
+                       onFinishPurchase: @escaping () -> Void) {
+       // satın alma işlemini yönetmek için product nesnesini kullanın
+       // satın alma sürecini AdaptyUI'ya bildirmek için onStartPurchase ve onFinishPurchase callback'lerini kullanın
+}
+```
+`paywallController(_:didInitiatePurchase:onStartPurchase:onFinishPurchase:)` eventi, kullanıcının bir satın alma işlemi başlattığını size bildirir. Bu eventi yanıtlayarak kendi özel satın alma akışınızı tetikleyebilirsiniz.
+
+Ayrıca, satın alma sürecini AdaptyUI'a bildirmek için aşağıdaki callback'leri çağırmayı unutmayın. Bu, yükleyiciyi göstermek gibi paywall'un düzgün çalışması için gereklidir:
+| Callback         | Açıklama                                                                                     |
+   | :--------------- | :------------------------------------------------------------------------------------------- |
+   | onStartPurchase  | Satın alma işleminin başladığını AdaptyUI'ya bildirmek için bu callback çağrılmalıdır.       |
+   | onFinishPurchase | Satın alma işleminin tamamlandığını AdaptyUI'ya bildirmek için bu callback çağrılmalıdır.    |
+
+2. Görüntülemek istediğiniz görsel paywall'ı `.paywallController(for:products:viewConfiguration:delegate:observerModeDelegate:)` metodunu kullanarak başlatın:
+```swift showLineNumbers title="Swift"
+   import Adapty
+   import AdaptyUI
+   
+   let visualPaywall = AdaptyUI.paywallController(
+       for: <paywall object>,
+       products: <paywall products array>,
+       viewConfiguration: <LocalizedViewConfiguration>,
+       delegate: <AdaptyPaywallControllerDelegate>
+       observerModeDelegate: <AdaptyObserverModeDelegate>
+   )
+   ```
+
+İstek parametreleri:
+| Parametre                | Zorunluluk | Açıklama                                                  |
+| :----------------------- | :--------- | :--------------------------------------------------------- |
+| **Paywall**              | zorunlu    | İstenen paywall için controller almak amacıyla kullanılan `AdaptyPaywall` nesnesi. |
+| **Products**             | isteğe bağlı | Ürünlerin ekranda görüntülenme zamanlamasını optimize etmek için `AdaptyPaywallProducts` dizisi sağlayın. `nil` geçilirse AdaptyUI gerekli ürünleri otomatik olarak çeker. |
+| **ViewConfiguration**    | zorunlu    | Paywallın görsel ayrıntılarını içeren `AdaptyUI.LocalizedViewConfiguration` nesnesi. `AdaptyUI.getViewConfiguration(paywall:locale:)` metodunu kullanın. Daha fazla bilgi için [Paywall Builder paywalllarını ve yapılandırmalarını getirme](get-pb-paywalls) konusuna bakın. |
+| **Delegate**             | zorunlu    | Paywall olaylarını dinlemek için kullanılan `AdaptyPaywallControllerDelegate`. Daha fazla bilgi için [Paywall olaylarını yönetme](ios-handling-events) konusuna bakın. |
+| **ObserverModeDelegate** | zorunlu    | Önceki adımda uyguladığınız `AdaptyObserverModeDelegate` nesnesi. |
+| **TagResolver**          | isteğe bağlı | Özel etiketlerin ve bunların çözümlenmiş değerlerinin bulunduğu bir sözlük tanımlayın. Özel etiketler, paywall içeriğinde yer tutucu işlevi görerek paywall içinde kişiselleştirilmiş içerik sunmak amacıyla belirli dizelerle dinamik olarak değiştirilir. Daha fazla bilgi için [Paywall Builder'da özel etiketler](custom-tags-in-paywall-builder) konusuna bakın. |
+Döndürdükleri:
+
+| Nesne                   | Açıklama                                             |
+| :---------------------- | :--------------------------------------------------- |
+| AdaptyPaywallController | İstenen paywall ekranını temsil eden bir nesne       |
+
+Nesne başarıyla oluşturulduktan sonra şu şekilde görüntüleyebilirsiniz:
+
+```swift showLineNumbers title="Swift"
+present(visualPaywall, animated: true)
+```
+:::warning
+[Satın alma işlemlerini paywall'larla ilişkilendirmeyi](report-transactions-observer-mode) unutmayın. Aksi takdirde Adapty, satın almanın hangi paywall'dan geldiğini belirleyemez.
+:::
+</TabItem>
+<TabItem value="swiftui" label="SwiftUI" default>
+Görsel paywall'ı cihaz ekranında göstermek için SwiftUI'da `.paywall` modifier'ını kullanın:
+```swift showLineNumbers title="SwiftUI"
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywall: <paywall object>,
+          configuration: <LocalizedViewConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Diğer aksiyonları işle
+                      break
+              }
+          },
+          didFinishRestore: { profile in /* access level'ı kontrol et ve kapat */  },
+          didFailRestore: { error in /* hatayı işle */ },
+          didFailRendering: { error in paywallPresented = false },
+          observerModeDidInitiatePurchase: { product, onStartPurchase, onFinishPurchase in
+              // satın almayı işlemek için ürün nesnesini kullan
+              // satın alma sürecini AdaptyUI'ya bildirmek için onStartPurchase ve onFinishPurchase callback'lerini kullan
+          }, 
+      )
+}
+```
+The input appears to be empty or contains only a heading "Request parameters:" with no actual MDX content to translate. Please provide the full MDX documentation content you'd like translated from English to Turkish.
+| Parametre | Zorunluluk | Açıklama |
+| :---------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paywall** | zorunlu | İstenen paywall için bir controller elde etmek amacıyla kullanılan `AdaptyPaywall` nesnesi. |
+| **Product** | isteğe bağlı | Ekranda ürünlerin görüntülenme zamanlamasını optimize etmek için `AdaptyPaywallProducts` dizisi sağlayın. `nil` geçilirse AdaptyUI gerekli ürünleri otomatik olarak çeker. |
+| **Configuration** | zorunlu | Paywall'ın görsel ayrıntılarını içeren `AdaptyUI.LocalizedViewConfiguration` nesnesi. `AdaptyUI.getViewConfiguration(paywall:locale:)` metodunu kullanın. Daha fazla bilgi için [Paywall Builder paywall'larını ve yapılandırmalarını çekme](get-pb-paywalls) konusuna bakın. |
+| **TagResolver** | isteğe bağlı | Özel etiketler ve bunların çözümlenmiş değerlerinden oluşan bir sözlük tanımlayın. Özel etiketler, paywall içeriğinde yer tutucu görevi görür ve kişiselleştirilmiş içerik sunmak amacıyla belirli dizelerle dinamik olarak değiştirilir. Daha fazla bilgi için [Paywall Builder'da özel etiketler](custom-tags-in-paywall-builder) konusuna bakın. |
+Closure parametreleri:
+| Closure parametresi                 | Açıklama                                                                                         |
+| :---------------------------------- | :----------------------------------------------------------------------------------------------- |
+| **didFinishRestore**                | Adapty.restorePurchases() başarılı olursa bu callback çağrılır.                                  |
+| **didFailRestore**                  | Adapty.restorePurchases() başarısız olursa bu callback çağrılır.                                 |
+| **didFailRendering**                | Arayüz oluşturma sırasında bir hata oluşursa bu callback çağrılır.                               |
+| **observerModeDidInitiatePurchase** | Kullanıcı bir satın alma işlemi başlattığında bu callback çağrılır.                              |
+Diğer closure parametreleri için [iOS - Olayları işleme](ios-handling-events) konusuna bakın.
+
+:::warning
+[Satın alma işlemlerini paywall'larla ilişkilendirmeyi](report-transactions-observer-mode) unutmayın. Aksi takdirde Adapty, satın almanın hangi paywall'dan geldiğini belirleyemez.
+:::
+</TabItem>
+</Tabs>
+
+</TabItem>
+</Tabs>

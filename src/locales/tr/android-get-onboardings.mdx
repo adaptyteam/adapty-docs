@@ -1,0 +1,90 @@
+---
+title: "Android SDK'da onboarding alma"
+description: "Adapty'de Android için onboarding'lerin nasıl alınacağını öğrenin."
+metadataTitle: "Adapty'de Onboarding Alma | Adapty Dokümanları"
+displayed_sidebar: sdkandroid
+---
+
+Adapty Kontrol Paneli'ndeki builder ile [onboarding'inizin görsel kısmını tasarladıktan](design-onboarding) sonra Android uygulamanızda gösterebilirsiniz. Bu sürecin ilk adımı, aşağıda açıklandığı gibi placement ile ilişkili onboarding'i ve görünüm yapılandırmasını almaktır.
+
+Başlamadan önce şunları kontrol edin:
+
+1. [Adapty Android SDK](sdk-installation-android) sürüm 3.8.0 veya üzerini yüklediğinizden emin olun.
+2. Bir [onboarding oluşturduğunuzdan](create-onboarding) emin olun.
+3. Onboarding'i bir [placement](placements)'a eklediğinizden emin olun.
+
+## Onboarding'i çekme \{#fetch-onboarding\}
+
+Kodsuz builder'ımızla bir [onboarding](onboardings) oluşturduğunuzda, bu onboarding uygulamanızın çekip göstermesi gereken bir yapılandırma içeren container olarak saklanır. Bu container tüm deneyimi yönetir — hangi içeriğin görüneceğini, nasıl sunulacağını ve kullanıcı etkileşimlerinin (quiz yanıtları veya form girişleri gibi) nasıl işleneceğini belirler. Container ayrıca analitik olaylarını otomatik olarak takip eder, dolayısıyla ayrıca görüntüleme takibi eklemeniz gerekmez.
+
+En iyi performans için, kullanıcılara göstermeden önce görsellerin yüklenmesine yeterli zaman tanımak amacıyla onboarding yapılandırmasını erken aşamada çekin.
+
+Onboarding almak için `getOnboarding` metodunu kullanın:
+
+```kotlin showLineNumbers
+Adapty.getOnboarding("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val onboarding = result.value
+            // the requested onboarding
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+Parametreler:
+
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | zorunlu | İstenen [Placement](placements)'ın tanımlayıcısı. Bu, Adapty Kontrol Paneli'nde placement oluştururken belirttiğiniz değerdir. |
+| **locale** | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | <p>Onboarding yerelleştirmesinin tanımlayıcısı. Bu parametrenin, eksi (**-**) karakteriyle ayrılmış bir veya iki alt etiketten oluşan bir dil kodu olması beklenir. İlk alt etiket dil için, ikincisi bölge içindir.</p><p></p><p>Örnek: `en` İngilizce anlamına gelir, `pt-br` Brezilya Portekizcesini temsil eder.</p><p>Yerel ayar kodları ve bunların nasıl kullanılmasını önerdiğimiz hakkında daha fazla bilgi için [Yerelleştirmeler ve yerel ayar kodları](localizations-and-locale-codes) sayfasına bakın.</p> |
+| **fetchPolicy** | varsayılan: `.reloadRevalidatingCacheData` | <p>SDK varsayılan olarak sunucudan veri yüklemeye çalışır; başarısız olursa önbelleğe alınmış verileri döndürür. Kullanıcılarınızın her zaman en güncel verilere ulaşmasını sağladığından bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın kararsız internet bağlantısıyla karşılaştığını düşünüyorsanız, önbellekte veri varsa bunu döndürmek için `.returnCacheDataElseLoad` kullanmayı değerlendirin. Bu senaryoda kullanıcılar en güncel veriye her zaman ulaşamayabilir, ama internet bağlantısı ne kadar zayıf olursa olsun daha hızlı yükleme süreleriyle karşılaşırlar. Önbellek düzenli olarak güncellenir, bu nedenle ağ isteklerinden kaçınmak için oturum boyunca kullanmak güvenlidir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında bozulmadığını, yalnızca uygulama yeniden yüklendiğinde veya manuel temizlik yapıldığında silindiğini unutmayın.</p><p></p><p>Adapty SDK onboarding'leri yerel olarak iki katmanda saklar: yukarıda açıklanan düzenli güncellenen önbellek ve yedek onboarding'ler. Onboarding'leri daha hızlı çekmek için CDN, CDN'e erişilemeyen durumlarda ise bağımsız bir yedek sunucu kullanıyoruz. Bu sistem, internet bağlantısının yetersiz olduğu durumlarda bile güvenilirliği sağlarken onboarding'lerinizin her zaman en güncel sürümünü almanızı sağlamak için tasarlanmıştır.</p> |
+| **loadTimeout** | varsayılan: 5 sn | <p>Bu değer, metodun zaman aşımını sınırlar. Zaman aşımına ulaşılırsa önbelleğe alınmış veriler veya yerel yedek döndürülür.</p><p>Nadiren bu metodun `loadTimeout`'ta belirtilenden biraz daha geç zaman aşımına uğrayabileceğini unutmayın; çünkü işlem arka planda farklı isteklerden oluşabilir.</p><p>Android için: `TimeInterval`'ı uzantı fonksiyonlarıyla oluşturabilirsiniz (örneğin `5.seconds`, burada `.seconds` `import com.adapty.utils.seconds`'dan gelir) ya da `TimeInterval.seconds(5)` kullanabilirsiniz. Sınır koymamak için `TimeInterval.INFINITE` kullanın.</p> |
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama |
+|:----------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Onboarding | Onboarding tanımlayıcısı ve yapılandırması, remote config ve diğer çeşitli özellikleri içeren bir [`AdaptyOnboarding`](https://android.adapty.io/adapty/com.adapty.models/-adapty-onboarding/) nesnesi. |
+
+## Varsayılan kitle onboarding'i ile onboarding çekmeyi hızlandırma \{#speed-up-onboarding-fetching-with-default-audience-onboarding\}
+
+Onboarding'ler genellikle neredeyse anında çekilir, dolayısıyla bu süreci hızlandırma konusunda endişelenmenize gerek yoktur. Ancak çok sayıda kitle ve onboarding'iniz olduğunda ve kullanıcılarınızın internet bağlantısı zayıf olduğunda, onboarding'i çekmek istediğinizden daha uzun sürebilir. Bu gibi durumlarda, hiç onboarding göstermemek yerine sorunsuz bir kullanıcı deneyimi sağlamak için varsayılan bir onboarding görüntülemek isteyebilirsiniz.
+
+Bunu çözmek için, belirtilen placement'ın **All Users** kitlesi için onboarding'i çeken `getOnboardingForDefaultAudience` metodunu kullanabilirsiniz. Ancak önerilen yaklaşımın, yukarıdaki [Onboarding'i Çekme](#fetch-onboarding) bölümünde açıklandığı gibi `getOnboarding` metodu ile onboarding çekmek olduğunu unutmamak önemlidir.
+
+:::warning
+`getOnboardingForDefaultAudience` yerine `getOnboarding` kullanmayı değerlendirin; çünkü ikincisinin önemli kısıtlamaları vardır:
+
+- **Uyumluluk sorunları**: Birden fazla uygulama sürümünü desteklerken sorun yaratabilir; geriye dönük uyumlu tasarımlar yapmanızı ya da eski sürümlerin yanlış görüntüleneceğini kabul etmenizi gerektirebilir.
+- **Kişiselleştirme yok**: Yalnızca "All Users" kitlesi için içerik gösterir; ülke, attribution veya özel niteliklere dayalı hedeflemeyi ortadan kaldırır.
+
+Kullanım durumunuzda daha hızlı çekme bu dezavantajlardan ağır basıyorsa aşağıda gösterildiği gibi `getOnboardingForDefaultAudience` kullanın. Aksi takdirde [yukarıda](#fetch-onboarding) açıklandığı gibi `getOnboarding` kullanın.
+:::
+
+```kotlin
+Adapty.getOnboardingForDefaultAudience("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val onboarding = result.value
+            // Handle successful onboarding retrieval
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // Handle error case
+        }
+    }
+}
+```
+
+Parametreler:
+
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | zorunlu | İstenen [Placement](placements)'ın tanımlayıcısı. Bu, Adapty Kontrol Paneli'nde placement oluştururken belirttiğiniz değerdir. |
+| **locale** | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | <p>Onboarding yerelleştirmesinin tanımlayıcısı. Bu parametrenin, eksi (**-**) karakteriyle ayrılmış bir veya iki alt etiketten oluşan bir dil kodu olması beklenir. İlk alt etiket dil için, ikincisi bölge içindir.</p><p></p><p>Örnek: `en` İngilizce anlamına gelir, `pt-br` Brezilya Portekizcesini temsil eder.</p><p>Yerel ayar kodları ve bunların nasıl kullanılmasını önerdiğimiz hakkında daha fazla bilgi için [Yerelleştirmeler ve yerel ayar kodları](localizations-and-locale-codes) sayfasına bakın.</p> |
+| **fetchPolicy** | varsayılan: `.reloadRevalidatingCacheData` | <p>SDK varsayılan olarak sunucudan veri yüklemeye çalışır; başarısız olursa önbelleğe alınmış verileri döndürür. Kullanıcılarınızın her zaman en güncel verilere ulaşmasını sağladığından bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın kararsız internet bağlantısıyla karşılaştığını düşünüyorsanız, önbellekte veri varsa bunu döndürmek için `.returnCacheDataElseLoad` kullanmayı değerlendirin. Bu senaryoda kullanıcılar en güncel veriye her zaman ulaşamayabilir, ama internet bağlantısı ne kadar zayıf olursa olsun daha hızlı yükleme süreleriyle karşılaşırlar. Önbellek düzenli olarak güncellenir, bu nedenle ağ isteklerinden kaçınmak için oturum boyunca kullanmak güvenlidir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında bozulmadığını, yalnızca uygulama yeniden yüklendiğinde veya manuel temizlik yapıldığında silindiğini unutmayın.</p><p></p><p>Adapty SDK onboarding'leri yerel olarak iki katmanda saklar: yukarıda açıklanan düzenli güncellenen önbellek ve yedek onboarding'ler. Onboarding'leri daha hızlı çekmek için CDN, CDN'e erişilemeyen durumlarda ise bağımsız bir yedek sunucu kullanıyoruz. Bu sistem, internet bağlantısının yetersiz olduğu durumlarda bile güvenilirliği sağlarken onboarding'lerinizin her zaman en güncel sürümünü almanızı sağlamak için tasarlanmıştır.</p> |

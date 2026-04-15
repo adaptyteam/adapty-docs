@@ -1,0 +1,120 @@
+---
+title: "Unity SDK'da özel paywallınızda satın alma işlemlerini etkinleştirme"
+description: "Uygulama içi satın almaları etkinleştirmek için Adapty SDK'yı özel Unity paywalllarınıza entegre edin."
+metadataTitle: "Adapty Hızlı Başlangıç Kılavuzu | Adapty Dokümanları"
+keywords: ['paywalls Unity', 'sdk Unity', 'paywall', 'getPaywall']
+---
+
+Bu kılavuz, Adapty'yi özel paywalllarınıza nasıl entegre edeceğinizi açıklar. Paywall uygulaması üzerinde tam kontrolü elinizde tutarken Adapty SDK ürünleri getirir, yeni satın alma işlemlerini yönetir ve önceki satın almaları geri yükler.
+
+:::important
+**Bu kılavuz, özel paywall uygulayan geliştiriciler içindir.** Satın alma işlemlerini etkinleştirmenin en kolay yolunu arıyorsanız [Adapty Paywall Builder](unity-quickstart-paywalls)'ı kullanın. Paywall Builder ile paywallları kodsuz görsel düzenleyicide oluşturursunuz, Adapty tüm satın alma mantığını otomatik olarak yönetir ve uygulamanızı yeniden yayınlamadan farklı tasarımları test edebilirsiniz.
+:::
+
+## Başlamadan önce \{#before-you-start\}
+
+### Ürünleri ayarlama \{#set-up-products\}
+
+Uygulama içi satın almaları etkinleştirmek için üç temel kavramı anlamanız gerekir:
+
+- [**Ürünler**](product) – kullanıcıların satın alabileceği her şey (abonelikler, consumable'lar, süresiz erişim)
+- [**Paywalllar**](paywalls) – hangi ürünlerin sunulacağını tanımlayan yapılandırmalar. Adapty'de ürünleri almanın tek yolu paywalllar üzerindendir; ancak bu yapı sayesinde uygulama kodunuza dokunmadan ürünleri, fiyatları ve teklifleri değiştirebilirsiniz.
+- [**Placement'lar**](placements) – uygulamanızda paywallları nerede ve ne zaman göstereceğiniz (örneğin `main`, `onboarding`, `settings`). Kontrol panelinde placement'lar için paywalllar ayarlarsınız, ardından kodunuzda placement ID'si ile bunları talep edersiniz. Bu yapı, A/B testleri çalıştırmayı ve farklı kullanıcılara farklı paywalllar göstermeyi kolaylaştırır.
+
+Özel paywall kullanıyor olsanız bile bu kavramları anladığınızdan emin olun. Bunlar temelde uygulamanızda sattığınız ürünleri yönetme yönteminizdir.
+
+Özel paywallınızı uygulamak için bir **paywall** oluşturmanız ve bunu bir **placement**'a eklemeniz gerekir. Bu kurulum, ürünlerinizi almanızı sağlar. Kontrol panelinde yapmanız gerekenleri anlamak için [buradaki](quickstart) hızlı başlangıç kılavuzunu takip edin.
+
+### Kullanıcıları yönetme \{#manage-users\}
+
+Kendi tarafınızda backend kimlik doğrulaması ile veya olmadan çalışabilirsiniz.
+
+Ancak Adapty SDK, anonim ve tanımlanmış kullanıcıları farklı şekilde ele alır. Ayrıntıları anlamak ve kullanıcılarla düzgün şekilde çalıştığınızdan emin olmak için [kimlik belirleme hızlı başlangıç kılavuzunu](unity-quickstart-identify) okuyun.
+
+## Adım 1. Ürünleri alın \{#step-1-get-products\}
+
+Özel paywallınız için ürünleri almak üzere şunları yapmanız gerekir:
+
+1. [placement](placements) ID'sini `getPaywall` metoduna geçirerek `paywall` nesnesini alın.
+2. `getPaywallProducts` metodunu kullanarak bu paywall için ürünler dizisini alın.
+
+```csharp showLineNumbers
+using AdaptySDK;
+
+void LoadPaywall() {
+    Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
+        if (error != null) {
+            // Handle the error
+            return;
+        }
+
+        Adapty.GetPaywallProducts(paywall, (products, productsError) => {
+            if (productsError != null) {
+                // Handle the error
+                return;
+            }
+
+            // Use products to build your custom paywall UI
+        });
+    });
+}
+```
+
+## Adım 2. Satın almaları kabul edin \{#step-2-accept-purchases\}
+
+Kullanıcı özel paywallınızda bir ürüne dokunduğunda, seçili ürünle `makePurchase` metodunu çağırın. Bu işlem satın alma akışını yönetir ve güncellenmiş profili döndürür.
+
+```csharp showLineNumbers
+using AdaptySDK;
+
+void PurchaseProduct(AdaptyPaywallProduct product) {
+    Adapty.MakePurchase(product, (result, error) => {
+        if (error != null) {
+            // Handle the error
+            return;
+        }
+
+        switch (result.Type) {
+            case AdaptyPurchaseResultType.Success:
+                var profile = result.Profile;
+                // Purchase successful, profile updated
+                break;
+            case AdaptyPurchaseResultType.UserCancelled:
+                // User canceled the purchase
+                break;
+            case AdaptyPurchaseResultType.Pending:
+                // Purchase is pending (e.g., user will pay offline with cash)
+                break;
+        }
+    });
+}
+```
+
+## Adım 3. Satın almaları geri yükleyin \{#step-3-restore-purchases\}
+
+Uygulama mağazaları, abonelik içeren tüm uygulamaların kullanıcılara satın almalarını geri yükleyebilecekleri bir yol sunmasını zorunlu kılar.
+
+Kullanıcı geri yükleme düğmesine dokunduğunda `restorePurchases` metodunu çağırın. Bu işlem, satın alma geçmişini Adapty ile senkronize eder ve güncellenmiş profili döndürür.
+
+```csharp showLineNumbers
+using AdaptySDK;
+
+void RestorePurchases() {
+    Adapty.RestorePurchases((profile, error) => {
+        if (error != null) {
+            // Handle the error
+            return;
+        }
+
+        // Restore successful, profile updated
+    });
+}
+```
+
+## Sonraki adımlar \{#next-steps\}
+
+<SupportForum />
+
+Paywallınız uygulamada gösterilmeye hazır. Paywalldan bir test satın alması tamamlayabildiğinizden emin olmak için satın almalarınızı [App Store sandbox](test-purchases-in-sandbox) ortamında veya [Google Play Store](testing-on-android)'da test edin.
+
+Ardından, paywallı gösterip göstermeyeceğinizi ya da ücretli özelliklere erişim izni verip vermeyeceğinizi belirlemek için [kullanıcıların satın alma işlemini tamamlayıp tamamlamadığını kontrol edin](unity-check-subscription-status).

@@ -1,0 +1,147 @@
+---
+title: "Kotlin Multiplatform SDK'da onboarding gösterimi"
+description: "Dönüşümleri artırmak için onboarding'leri etkili biçimde nasıl sunacağınızı öğrenin."
+metadataTitle: "Onboarding Gösterimi | Adapty Dokümanları"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+Builder ile bir onboarding özelleştirdiyseniz, onu Kotlin Multiplatform uygulama kodunuzda render etme konusunda endişelenmenize gerek yok. Böyle bir onboarding, içinde neyin gösterileceğini ve nasıl gösterileceğini zaten barındırır.
+
+Başlamadan önce şunları sağlayın:
+
+1. [Adapty Kotlin Multiplatform SDK](sdk-installation-kotlin-multiplatform) 3.16.1 veya daha yeni bir sürümü yüklediniz.
+2. [Bir onboarding oluşturdunuz](create-onboarding).
+3. Onboarding'i bir [placement](placements)'a eklediniz.
+
+Adapty Kotlin Multiplatform SDK, onboarding gösterimi için iki yol sunar:
+
+- **Compose Multiplatform ile**
+- **Compose Multiplatform olmadan**
+
+## Compose Multiplatform ile \{#with-compose-multiplatform\}
+
+Bir onboarding göstermek için `createOnboardingView` metoduyla oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir. Onboarding'i tekrar göstermeniz gerekiyorsa yeni bir `view` örneği oluşturmak için `createOnboardingView`'u tekrar çağırın.
+
+:::warning
+Aynı `view`'u yeniden oluşturmadan tekrar kullanmak hataya yol açabilir.
+:::
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+import com.adapty.kmp.AdaptyUI
+import kotlinx.coroutines.launch
+
+viewModelScope.launch {
+    AdaptyUI.createOnboardingView(onboarding = onboarding).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+### iOS sunum stilini yapılandırın \{#configure-ios-presentation-style\}
+
+`present()` metoduna `iosPresentationStyle` parametresini geçirerek onboarding'in iOS'ta nasıl sunulacağını yapılandırın. Parametre `AdaptyUIIOSPresentationStyle.FULLSCREEN` (varsayılan) veya `AdaptyUIIOSPresentationStyle.PAGESHEET` değerlerini kabul eder.
+
+```kotlin showLineNumbers
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.models.AdaptyUIIOSPresentationStyle
+import kotlinx.coroutines.launch
+
+viewModelScope.launch {
+    val view = AdaptyUI.createOnboardingView(onboarding = onboarding).getOrNull()
+    view?.present(iosPresentationStyle = AdaptyUIIOSPresentationStyle.PAGESHEET)
+}
+```
+
+### Onboarding'lerdeki bağlantıların açılış biçimini özelleştirin \{#customize-how-links-open-in-onboardings\}
+
+Onboarding'lerdeki bağlantılar varsayılan olarak uygulama içi tarayıcıda açılır. Bu, kullanıcıların uygulamadan çıkmadan web sayfalarını görüntülemesine olanak tanıyarak kesintisiz bir deneyim sunar.
+
+Bağlantıların harici tarayıcıda açılmasını tercih ederseniz `externalUrlsPresentation` parametresini `AdaptyWebPresentation.EXTERNAL_BROWSER` olarak ayarlayarak bu davranışı özelleştirebilirsiniz:
+
+```kotlin showLineNumbers
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.models.AdaptyWebPresentation
+import kotlinx.coroutines.launch
+
+viewModelScope.launch {
+    AdaptyUI.createOnboardingView(
+        onboarding = onboarding,
+        externalUrlsPresentation = AdaptyWebPresentation.EXTERNAL_BROWSER // default – IN_APP_BROWSER
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+## Compose Multiplatform olmadan \{#without-compose-multiplatform\}
+
+:::note
+`createNativeOnboardingView`, `io.adapty:adapty-kmp` çekirdek modülünün bir parçasıdır. Projeniz Compose Multiplatform kullanmıyorsa `io.adapty:adapty-kmp-ui` bağımlılığına ihtiyacınız yoktur.
+:::
+
+Compose Multiplatform olmadan onboarding eklemek için `createNativeOnboardingView`'u çağırın. Bu metot, layout'unuza eklediğiniz bir `AdaptyNativeOnboardingView` döndürür:
+
+<Tabs>
+<TabItem value="android" label="Android">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+import com.adapty.kmp.AdaptyUI
+
+val nativeView = AdaptyUI.createNativeOnboardingView(
+    context = context,
+    viewModelStoreOwner = activity,
+    onboarding = onboarding,
+    observer = myOnboardingObserver,
+)
+
+// Embed in your Compose layout:
+AndroidView(
+    factory = { nativeView.view },
+    modifier = Modifier.fillMaxSize()
+)
+```
+</TabItem>
+<TabItem value="ios" label="iOS">
+KMP arayüzünün varsayılan metotları Swift'te `@required` haline geldiğinden `AdaptyUIOnboardingsEventsObserver`'ı doğrudan Swift'ten uygulayamazsınız. Önce `iosMain`'de açık bir temel sınıf tanımlayın:
+
+```kotlin showLineNumbers title="iosMain (Kotlin)"
+open class BaseOnboardingObserver : AdaptyUIOnboardingsEventsObserver
+```
+
+Ardından Swift'te bu sınıfı alt sınıflayarak yalnızca ihtiyacınız olan metotları geçersiz kılın:
+
+```swift showLineNumbers title="Swift"
+class MyOnboardingObserver: BaseOnboardingObserver {
+    override func onboardingViewOnCloseAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        actionId: String
+    ) {
+        // remove nativeView from your view hierarchy
+    }
+}
+
+let nativeView = AdaptyUI.shared.createNativeOnboardingView(
+    onboarding: onboarding,
+    observer: MyOnboardingObserver()
+)
+// nativeView.viewController is a UIViewController.
+// Add it to your SwiftUI view or UIKit hierarchy.
+```
+</TabItem>
+</Tabs>
+
+### View'u imha edin \{#dispose-the-view\}
+
+View'u layout'unuzdan kaldırırken `dispose()`'u çağırın. Bu işlem, olay dinleyicisinin kaydını siler ve dahili kaynakları serbest bırakır.
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+nativeView.dispose()
+```

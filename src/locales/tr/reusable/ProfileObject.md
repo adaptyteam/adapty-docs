@@ -1,0 +1,12 @@
+| Parametre | Tür | Boş olabilir | Açıklama |
+| ----------------- | ---------- | ------------------ | ------------------------------------------------------------ |
+| app_id | String | :heavy_minus_sign: | Uygulamanızın dahili ID'si. Adapty Kontrol Paneli'nde görüntüleyebilirsiniz: [App Settings -> General tab](https://app.adapty.io/settings/general). |
+| profile_id | UUID | :heavy_minus_sign: | Adapty profil ID'si. Adapty Kontrol Paneli -> [Profiles](https://app.adapty.io/profiles/users) -> ilgili profil sayfasındaki **Adapty ID** alanında görüntüleyebilirsiniz. |
+| customer_user_id | String | :heavy_plus_sign: | Kullanıcınızın kendi sisteminizdeki ID'si. Adapty Kontrol Paneli -> [Profiles](https://app.adapty.io/profiles/users) -> ilgili profil sayfasındaki **Customer user ID** alanında görüntüleyebilirsiniz. Bu alan yalnızca Adapty SDK aracılığıyla mobil uygulama kodunuzda [kullanıcıları tanımladığınızda](identifying-users) çalışır. |
+| total_revenue_usd | Float | :heavy_minus_sign: | Profilde elde edilen toplam USD cinsinden geliri temsil eden float değer. |
+| segment_hash | String | :heavy_minus_sign: | Dahili parametre. |
+| timestamp | Integer | :heavy_minus_sign: | Milisaniye cinsinden yanıt süresi; yarış koşulunu çözmek için gereklidir. |
+| custom_attributes | Array | :heavy_minus_sign: | <p>Profile en fazla 30 özel attribute eklenebilir. `custom_attributes` dizisi sağlıyorsanız en az bir attribute anahtarı belirtmeniz gerekir.</p><p>**Anahtar:** Anahtar, en fazla 30 karakterden oluşan bir string olmalıdır. Yalnızca harf, rakam, tire, nokta ve alt çizgiye izin verilir.</p><p>**Değer:** Attribute değeri en fazla 30 karakter olmalıdır. Değer olarak yalnızca string ve float kullanılabilir; boolean değerler float'a dönüştürülür. Attribute'u silmek için boş değer veya null gönderin.</p> |
+| access_levels | Array | :heavy_plus_sign: | [Access level](server-side-api-objects#access-level) nesnelerinden oluşan dizi. Müşterinin hiç access level'ı yoksa null olabilir. |
+| subscriptions | Array | :heavy_plus_sign: | [Subscription](server-side-api-objects#subscription) nesnelerinden oluşan dizi. Müşterinin hiç aboneliği yoksa null olabilir. |
+| non_subscriptions | Array | :heavy_plus_sign: | [Non-Subscription](server-side-api-objects#non-subscription) nesnelerinden oluşan dizi. Müşterinin hiç satın alımı yoksa null olabilir. |

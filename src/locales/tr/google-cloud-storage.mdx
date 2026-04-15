@@ -1,0 +1,180 @@
+---
+title: "Google Cloud Storage"
+description: "Güvenli veri depolama için Google Cloud Storage'ı Adapty ile entegre edin."
+metadataTitle: "Google Cloud Storage Entegrasyonu | Adapty Dokümanları"
+---
+
+Google Cloud Storage entegrasyonunu etkinleştirerek [abonelik etkinliklerini](events) ve [paywall ziyaret verilerini](paywall-metrics) tek bir merkezi konumda güvenli bir şekilde saklayabilirsiniz: Google Cloud Storage bucket'ınız.
+
+Adapty her gün UTC 04:00'de bir önceki günün verilerini içeren .csv dosyalarını bucket'larınıza yükler. **Etkinlik** verilerini, **paywall ziyaret** verilerini veya **her ikisini** almak isteyip istemediğinizi seçebilirsiniz. Bu verileri istediğiniz zaman, istediğiniz zaman aralığı için [manuel olarak](#manual-data-export) da dışa aktarabilirsiniz.
+
+Entegrasyonu kurmak için Google Cloud Console'da [bucket erişim anahtarı oluşturun](#create-google-cloud-storage-credentials) ve ardından [Adapty ayarlarınıza ekleyin](#set-up-google-cloud-storage-integration).
+
+## Yükleme zamanlaması ve süresi \{#upload-schedule-and-duration\}
+
+Adapty, verileri her 24 saatte bir UTC 04:00'de Google Cloud Storage'a yükler.
+
+Dosyalar, bir önceki takvim gününde (UTC) oluşturulan etkinliklerin verilerini içerir. 8 Mart'ta yüklenen dosya, 7 Mart'ta 00:00:00 ile 23:59:59 UTC arasında oluşturulan tüm etkinlikleri içerir.
+
+Kuyruktaki toplam dosya sayısına ve kişisel olarak talep ettiğiniz veri miktarına bağlı olarak işlem birkaç saate kadar sürebilir. Adapty ilk yüklemede geçmiş verileri de ekliyorsa, sonraki günlük yüklemelerden daha uzun sürer.
+
+## Google Cloud Storage entegrasyonunu kurma \{#set-up-google-cloud-storage-integration\}
+
+**Yazma erişimine** sahip geçerli bir Google Cloud hizmet hesabı anahtarına ihtiyacınız var. Oluşturmak için [kimlik bilgileri oluşturma](#create-google-cloud-storage-credentials) bölümündeki adımları izleyin.
+
+:::warning
+Etkinlikler ve paywall ziyaretleri için farklı kimlik bilgileriyle farklı bucket'lar kullanabilirsiniz. Ancak kimlik bilgilerinden **herhangi biri** geçersizse [**her iki yükleme de başarısız olur**](#troubleshooting).
+:::
+
+[**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage) sayfasına gidin ve ilgili sekmeyi açın (**Events** veya **Paywall visits**). Entegrasyonu etkinleştirin.
+
+**Google Cloud hizmet hesabı anahtarınızı** içeren dosyayı yükleyin. Hedef **bucket** ve **klasörü** belirtin. Değişikliklerinizi kaydedin.
+
+<ZoomImage id="google-cloud-storage-setup.webp" width="700px" />
+
+### Etkinlik verileri için isteğe bağlı ayarlar \{#optional-settings-for-event-data\}
+
+Rapora dahil edilecek etkinlikleri belirleyebilir ve etkinlikler için özel isimler ayarlayabilirsiniz. Mevcut etkinliklerin tam listesi için [etkinlikler](events) makalesine bakın.
+
+<ZoomImage id="event-specific-settings.webp" width="700px" />
+
+| Ad | Varsayılan | Açıklama |
+| ------------------------------ | ----------------- | ----------- |
+| Exclude historical events      | true    | Adapty SDK'yı uygulamanıza entegre etmeden önce gerçekleşen etkinliklere ait bilgileri hariç tutar. <br /> <br />Analitik platformunuz Adapty'yi kullanmaya başlamadan **önce** abonelik etkinlikleri aldıysa bu seçenek yinelenen etkinliklerin gönderilmesini engeller. <Details summary="Pratik örnek"><p>Bir kullanıcı 10 Ocak'ta aylık abonelik satın aldı. Uygulamanızın 1 Mart güncellemesi Adapty SDK'yı ilk kez içeriyordu. <br /> <br /> Bu ayar **açıksa** rapor, Ocak'taki "abonelik başladı" etkinliğini veya Şubat'taki "abonelik yenilendi" etkinliğini içermez. Mart'ın 10'undaki "abonelik yenilendi" etkinliğini **içerir**.</p> </Details> |
+| Include events without profile | false | Bir kullanıcı profiliyle ilişkilendirilmemiş veya belirli bir kullanıcıya hemen atanamayan işlemleri dahil eder. Bunlar, Adapty SDK kurulmadan önce yapılan satın almalar veya sunucu bildirimleri aracılığıyla alınan işlemler olabilir. |
+| Send user attributes           | false | [Özel kullanıcı özniteliklerini](setting-user-attributes) (kullanıcı verileri ve uygulama kullanım verileri gibi) dahil eder. OneSignal planınız 10'dan fazla etiketi destekliyorsa bu seçeneği seçin. Etiket limitinin aşılması hatalara yol açabilir. |
+
+## Google Cloud Storage kimlik bilgileri oluşturma \{#create-google-cloud-storage-credentials\}
+
+Bu kılavuz, Google Cloud Platform Console'da gerekli kimlik bilgilerini oluşturmanıza yardımcı olur.
+
+Adapty'nin ham veri raporlarını belirlediğiniz bucket'a yükleyebilmesi için hizmet hesabı anahtarı ve ilgili bucket'a yazma erişimi gereklidir. Hizmet hesabı anahtarını sağlayarak ve bucket'a yazma erişimi vererek Adapty'nin ham veri raporlarını platformunuzdan depolama ortamınıza güvenli ve verimli bir şekilde aktarmasına izin vermiş olursunuz.
+
+:::warning
+Yalnızca Service Account HMAC key yetkilendirmesini desteklediğimizi unutmayın. Google Cloud Storage'a düzgün erişim sağlamak için Service Account HMAC key'inize "Storage Object Viewer", "Storage Legacy Bucket Writer" ve "Storage Object Creator" rollerinin eklenmiş olması zorunludur.
+:::
+
+1. İlk adım olarak Google Cloud hesabınızın [IAM](https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts) bölümüne gidin ve ilgili projeyi seçin ya da yeni bir proje oluşturun.
+
+  <ZoomImage id="30a81ef-CleanShot_2023-03-17_at_15.22.142x.webp" width="700px" />
+
+
+2. Ardından "+ CREATE SERVICE ACCOUNT" düğmesine tıklayarak Adapty için yeni bir hizmet hesabı oluşturun.
+
+    <ZoomImage id="98f8ebf-CleanShot_2023-03-17_at_15.40.062x.webp" width="700px" />
+
+3. İlk adımdaki alanları doldurun; erişim izinleri sonraki aşamada verilecektir. Bu sayfa hakkında daha fazla bilgi için [belgeleri](https://docs.cloud.google.com/iam/docs/service-accounts-create) okuyabilirsiniz.
+
+    <ZoomImage id="2190c50-CleanShot_2023-03-17_at_15.48.552x.webp" width="700px" />
+
+4. [Özel JSON anahtarı](https://docs.cloud.google.com/iam/docs/keys-create-delete) oluşturmak ve indirmek için KEYS bölümüne gidin ve "ADD KEY" düğmesine tıklayın.
+
+    <ZoomImage id="8a45468-CleanShot_2023-03-17_at_15.58.092x.webp" width="700px" />
+
+5. DETAILS bölümünde yeni oluşturulan hizmet hesabıyla ilişkili E-posta değerini bulun ve kopyalayın. Bu bilgi, hesabı yetkilendirmek ve bucket'a yazma izni vermek için sonraki adımlarda gerekli olacaktır.
+
+    <ZoomImage id="6ccd0f0-CleanShot_2023-03-17_at_16.03.162x.webp" width="700px" />
+    
+
+6. Google Cloud Storage'ın [Buckets](https://console.cloud.google.com/storage/browser) sayfasına gidin, mevcut bir bucket'ı seçin veya Adapty'den gelen Etkinlik ya da Ziyaret Verisi raporlarını depolamak için yeni bir bucket oluşturun. Ardından PERMISSIONS bölümüne gidin ve [GRANT ACCESS](https://docs.cloud.google.com/identity/docs/how-to?hl=en) seçeneğini tıklayın.
+
+    <ZoomImage id="3cdd937-CleanShot_2023-03-17_at_16.14.232x.webp" width="700px" />
+
+7. PERMISSIONS bölümüne beşinci adımda aldığınız hizmet hesabının e-posta adresini girin, Storage Object Creator rolünü seçin ve değişiklikleri uygulamak için SAVE'e tıklayın.
+
+
+    <ZoomImage id="62801f4-CleanShot_2023-03-17_at_16.17.312x.webp" width="700px" />
+
+    Bucket adını ileride kullanmak üzere not edin.
+
+## Manuel veri dışa aktarma \{#manual-data-export\}
+
+Adapty, Google Cloud Storage'a otomatik etkinlik verisi dışa aktarmanın yanı sıra manuel dosya dışa aktarma işlevi de sunar. Bu özellikle etkinlik verileri için belirli bir zaman aralığı seçebilir ve GCS bucket'ınıza manuel olarak aktarabilirsiniz. Bu sayede hangi verileri ne zaman dışa aktaracağınız üzerinde daha fazla kontrol sahibi olursunuz.
+
+Belirtilen tarih aralığı, A Tarihi 00:00:00 UTC'den B Tarihi 23:59:59 UTC'ye kadar oluşturulan etkinlikleri dışa aktarmak için kullanılır.
+
+<ZoomImage id="e347308-CleanShot_2023-03-17_at_17.39.452x.webp" width="700px" />
+
+## Veri yapısı \{#data-structure\}
+
+Adapty, verileri tablo formatında dışa aktarmak için `.csv` dosyaları kullanır.
+
+:::warning
+Etkinlik içeriği zaman içinde büyüyebilir; bizim veya birlikte çalıştığımız üçüncü tarafların eklediği yeni verilerle genişleyebilir. İşleyen kodunuzun yeterince esnek olduğundan ve yapının tamamına değil belirli alanlara dayandığından emin olun.
+:::
+
+### Etkinlikler \{#events\}
+
+Raporlarınıza dahil edilecek etkinliklerin listesini [değiştirebilirsiniz](#optional-settings-for-event-data).
+
+| Sütun | Açıklama |
+|------|-----------|
+| **profile_id** | Adapty kullanıcı kimliği. |
+| **event_type** | Küçük harfli etkinlik adı. Etkinlik türlerini öğrenmek için [Etkinlikler](events) bölümüne bakın. |
+| **event_datetime** | ISO 8601 tarih formatı. |
+| **transaction_id** | Satın alma veya yenileme gibi bir işlem için benzersiz tanımlayıcı. |
+| **original_transaction_id** | Orijinal satın almanın işlem tanımlayıcısı. |
+| **subscription_expires_at** | Aboneliğin sona erme tarihi. Genellikle gelecektedir. |
+| **environment** | Sandbox veya Production olabilir. |
+| **revenue_usd** | USD cinsinden gelir. Boş olabilir. |
+| **proceeds_usd** | USD cinsinden net hasılat. Boş olabilir. |
+| **net_revenue_usd** | USD cinsinden net gelir (vergiler sonrası). Boş olabilir. |
+| **tax_amount_usd** | USD cinsinden kesilen vergi tutarı. Boş olabilir. |
+| **revenue_local** | Yerel para biriminde gelir. Boş olabilir. |
+| **proceeds_local** | Yerel para biriminde net hasılat. Boş olabilir. |
+| **net_revenue_local** | Yerel para biriminde net gelir (vergiler sonrası). Boş olabilir. |
+| **tax_amount_local** | Yerel para biriminde kesilen vergi tutarı. Boş olabilir. |
+| **customer_user_id** | Geliştirici kullanıcı kimliği. Örneğin kullanıcı UUID'niz, e-postanız veya başka bir kimlik olabilir. Ayarlanmadıysa null. |
+| **store** | *app_store* veya *play_store* olabilir. |
+| **product_id** | Apple App Store, Google Play Store veya Stripe'taki ürün kimliği. |
+| **base_plan_id** | Google Play Store'daki [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) veya Stripe'taki [fiyat kimliği](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices). |
+| **developer_id** | İşlemin gerçekleştiği paywallın geliştirici (SDK) kimliği. |
+| **ab_test_name** | İşlemin gerçekleştiği A/B testinin adı. |
+| **ab_test_revision** | İşlemin gerçekleştiği A/B testinin revizyonu. |
+| **paywall_name** | İşlemin gerçekleştiği paywallın adı. |
+| **paywall_revision** | İşlemin gerçekleştiği paywallın revizyonu. |
+| **profile_country** | Adapty tarafından IP'ye göre belirlenen profil ülkesi. |
+| **install_date** | Kurulumun gerçekleştiği ISO 8601 tarih formatı. |
+| **idfv** | iOS cihazlarda [identifierForVendor](https://developer.apple.com/documentation/uikit/uidevice/identifierforvendor) |
+| **idfa** | iOS cihazlarda [advertisingIdentifier](https://developer.apple.com/documentation/adsupport/asidentifiermanager/advertisingidentifier) |
+| **advertising_id** | Android İşletim Sistemi tarafından atanan ve reklamcıların bir kullanıcının cihazını benzersiz şekilde tanımlamak için kullanabileceği benzersiz kod |
+| **ip_address** | Cihaz IP'si (IPv4 veya IPv6 olabilir, mevcut olduğunda IPv4 tercih edilir). Cihazın IP'si her değiştiğinde güncellenir. |
+| **cancellation_reason** | <p>Kullanıcının aboneliği iptal etme nedeni.</p><p></p><p>Olası değerler:</p><p>**iOS & Android** — *voluntarily_cancelled*, *billing_error*, *refund*</p><p>**Yalnızca iOS** — *price_increase*, *product_was_not_available*, *unknown*, *upgraded*</p><p>**Yalnızca Android** — *new_subscription_replace*, *cancelled_by_developer*</p> |
+| **android_app_set_id** | Parasal olmayan reklam kullanım durumları için cihaz başına, geliştirici hesabı başına kullanıcı tarafından sıfırlanabilir benzersiz bir kimlik olan [AppSetId](https://developer.android.com/design-for-safety/privacy-sandbox/reference/adservices/appsetid/AppSetId). |
+| **android_id** | Android 8.0 (API seviyesi 26) ve üzeri platformlarda uygulama imzalama anahtarı, kullanıcı ve cihaz kombinasyonuna özgü 64 bitlik bir sayı (onaltılık dize olarak ifade edilir). Daha fazla bilgi için [Android geliştirici belgelerine](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID) bakın. |
+| **device** | Son kullanıcıya görünür cihaz model adı. |
+| **currency** | İşlemin 3 harfli para birimi kodu (ISO-4217). |
+| **store_country** | Apple/Google mağazası tarafından belirlenen profil ülkesi. |
+| **attribution_source** | Attribution kaynağı. |
+| **attribution_network_user_id** | Attribution kaynağı tarafından kullanıcıya atanan kimlik. |
+| **attribution_status** | organic, non_organic veya unknown olabilir. |
+| **attribution_channel** | Pazarlama kanalı adı. |
+| **attribution_campaign** | Pazarlama kampanyası adı. |
+| **attribution_ad_group** | Attribution reklam grubu. |
+| **attribution_ad_set** | Attribution reklam seti. |
+| **attribution_creative** | Attribution kreatif anahtar kelimesi. |
+| **attributes** | [Özel kullanıcı özniteliklerinin](setting-user-attributes#custom-user-attributes) JSON'ı. Mobil uygulamanızdan gönderecek şekilde ayarladığınız tüm özel öznitelikleri içerir. Göndermek için [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) sayfasındaki **Send User Attributes** seçeneğini etkinleştirin. |
+| **integration_ids**             | Bir profille ilişkili tüm entegrasyon kimlikleri. Sözlük. Örnek: &#123;&#39;mixpanel_user_id&#39;: &#39;mixpanelUserId-test&#39;, &#39;facebook_anonymous_id&#39;: &#39;facebookAnonymousId-test&#39;&#125; |
+
+### Paywall ziyaretleri \{#paywall-visits\}
+
+| Sütun                | Açıklama                                                                                                  |
+| :-------------------- | :----------------------------------------------------------------------------------------------------------- |
+| **profile_id**        | Adapty kullanıcı kimliği.                                                                                              |
+| **customer_user_id**  | Geliştirici kullanıcı kimliği. Örneğin kullanıcı UUID'niz, e-postanız veya başka bir kimlik olabilir. Ayarlanmadıysa null. |
+| **profile_country**   | Apple/Google mağazası tarafından belirlenen profil ülkesi.                                                            |
+| **install_date**      | Kurulumun gerçekleştiği ISO 8601 tarih formatı.                                                                |
+| **store**             | *app_store* veya *play_store* olabilir.                                                                        |
+| **paywall_showed_at** | Paywallın müşteriye gösterildiği tarih.                                                |
+| **developer_id**      | İşlemin gerçekleştiği paywallın geliştirici (SDK) kimliği.                                          |
+| **ab_test_name**      | İşlemin gerçekleştiği A/B testinin adı.                                                       |
+| **ab_test_revision**  | İşlemin gerçekleştiği A/B testinin revizyonu.                                                   |
+| **paywall_name**      | İşlemin gerçekleştiği paywallın adı.                                                        |
+| **paywall_revision**  | İşlemin gerçekleştiği paywallın revizyonu.                                                    |
+
+
+## Sorun giderme \{#troubleshooting\}
+
+Adapty, yükleme başlamadan **önce** erişim anahtarlarınızın geçerliliğini kontrol eder. Google Cloud Storage anahtarlarınızdan yalnızca biri geçersizse bile Adapty **yüklemeyi iptal eder** ve hata fırlatır.
+
+Yüklemelerin kesintisiz devam etmesi için anahtarlarınızı süresi dolmadan önce yenileyin. **Etkinlikler** için anahtarı güncellediyseniz **paywall ziyaretleri** için de güncellemeyi unutmayın; ya da tam tersi.

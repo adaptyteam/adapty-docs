@@ -1,0 +1,195 @@
+---
+title: "iOS SDK'da onboarding verilerini işleme"
+description: "Adapty SDK ile iOS uygulamanızda onboarding verilerini kaydedin ve kullanın."
+metadataTitle: "Onboardings | iOS SDK | Adapty Dokümanları"
+displayed_sidebar: sdkios
+---
+
+Kullanıcılarınız bir test sorusunu yanıtladığında veya bir giriş alanına veri girdiğinde, `onStateUpdatedAction` metodu çağrılır. Alan türünü kodunuzda kaydedebilir veya işleyebilirsiniz.
+
+Örneğin:
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
+    // Store user preferences or responses
+    switch action.params {
+    case .select(let params):
+        // Handle single selection
+    case .multiSelect(let params):
+        // Handle multiple selections
+    case .input(let params):
+        // Handle text input
+    case .datePicker(let params):
+        // Handle date selection
+    }
+}
+```
+
+`action` nesnesi şunları içerir:
+
+| Parametre      | Açıklama                                                                                                                                                                                                                                                                                        |
+|----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `elementId`    | Giriş öğesi için benzersiz bir tanımlayıcı. Soruları yanıtlarla ilişkilendirmek için kullanabilirsiniz.                                                                                                                                                                                         |
+| `params`       | Tür ve değer özelliklerini içeren kullanıcının giriş verisi nesnesi.                                                                                                                                                                                                                            |
+| `params.type`  | Giriş öğesinin türü. Şunlardan biri olabilir:<br/>• `"select"` - Seçeneklerden tek seçim<br/>• `"multiSelect"` - Seçeneklerden çoklu seçim<br/>• `"input"` - Metin giriş alanı<br/>• `"datePicker"` - Tarih seçimi                                                                              |
+| `params.value` | Kullanıcının seçtiği veya girdiği değer(ler). Yapısı türe göre değişir:<br/>• `select`: `id`, `value`, `label` içeren nesne<br/>• `multiSelect`: `id`, `value`, `label` içeren nesnelerden oluşan dizi<br/>• `input`: `type`, `value` içeren nesne<br/>• `datePicker`: `day`, `month`, `year` içeren nesne |
+
+<Details>
+<summary>Kaydedilen veri örnekleri (uygulamanızda farklılık gösterebilir)</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## Kullanım senaryoları \{#use-cases\}
+
+### Kullanıcı profillerini verilerle zenginleştirme \{#enrich-user-profiles-with-data\}
+
+Giriş verilerini kullanıcı profiliyle hemen ilişkilendirmek ve aynı bilgiyi iki kez sormaktan kaçınmak istiyorsanız, aksiyonu işlerken [kullanıcı profilini](setting-user-attributes) giriş verileriyle güncellemeniz gerekir.
+
+Örneğin, kullanıcılardan `name` ID'li metin alanına adlarını girmelerini istiyorsunuz ve bu alanın değerini kullanıcının adı olarak kaydetmek istiyorsunuz. Ayrıca `email` alanına e-posta adreslerini girmelerini de istiyorsunuz. Uygulama kodunuzda bu şöyle görünebilir:
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
+    // Store user preferences or responses
+    switch action.params {
+    case .input(let params):
+        // Handle text input
+        let builder = AdaptyProfileParameters.Builder()
+        
+        // Map elementId to appropriate profile field
+        switch action.elementId {
+        case "name":
+            builder.with(firstName: params.value.value)
+        case "email":
+            builder.with(email: params.value.value)
+        }
+        
+        do {
+            try await Adapty.updateProfile(params: builder.build())
+        } catch {
+            // handle the error
+        }
+}
+```
+
+### Yanıtlara göre paywallları özelleştirme \{#customize-paywalls-based-on-answers\}
+
+Onboardinglardaki testleri kullanarak, kullanıcıların onboarding'i tamamlamasının ardından gösterdiğiniz paywallları da özelleştirebilirsiniz.
+
+Örneğin, kullanıcılara spor deneyimlerini sorabilir ve farklı kullanıcı gruplarına farklı CTA'lar ve ürünler gösterebilirsiniz.
+
+1. Onboarding oluşturucuya [bir test ekleyin](onboarding-quizzes) ve seçeneklere anlamlı ID'ler atayın.
+
+<ZoomImage id="experience.webp" />
+
+2. Test yanıtlarını ID'lerine göre işleyin ve kullanıcılar için [özel nitelikler belirleyin](setting-user-attributes).
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
+    // Handle quiz responses and set custom attributes
+    switch action.params {
+    case .select(let params):
+        // Handle quiz selection
+        let builder = AdaptyProfileParameters.Builder()
+        
+        // Map quiz responses to custom attributes
+        switch action.elementId {
+        case "experience":
+            // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+            try? builder.with(customAttribute: params.value.value, forKey: "experience")
+        }
+        
+        do {
+            try await Adapty.updateProfile(params: builder.build())
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+3. Her özel nitelik değeri için [segment oluşturun](segments).
+4. Bir [placement](placements) oluşturun ve oluşturduğunuz her segment için [kitle](audience) ekleyin.
+5. Uygulama kodunuzda placement için [bir paywall görüntüleyin](ios-paywalls). Onboarding'inizde paywall açan bir buton varsa, paywall kodunu [bu butonun aksiyonuna verilen yanıt](ios-handling-onboarding-events#opening-a-paywall) olarak uygulayın.

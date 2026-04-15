@@ -1,0 +1,423 @@
+---
+title: "Android SDK'da Observer modunda Paywall Builder paywalllarını gösterme"
+description: "Adapty'nin Paywall Builder'ını kullanarak observer modunda paywallları nasıl göstereceğinizi öğrenin."
+metadataTitle: "Observer Modunda Paywallları Gösterme | Adapty Dokümanları"
+---
+
+Paywall Builder ile özelleştirilmiş bir paywall oluştturduysanız, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Bu tür bir paywall, hem gösterilecek içeriği hem de nasıl gösterileceğini barındırır.
+
+:::warning
+Bu bölüm yalnızca [Observer mode](observer-vs-full-mode) için geçerlidir. Observer mode'da çalışmıyorsanız bunun yerine [Android - Paywall Builder paywalllarını sunma](android-present-paywalls) konusuna bakın.
+:::
+<Tabs groupId="current-os" queryString>
+<TabItem value="SDK3" label="New Paywall Builder (SDK 3.0+)" default>
+<details>
+   <summary>Paywall'ları sunmaya başlamadan önce (Genişletmek için tıklayın)</summary>
+1. Adapty'nin [Google Play](initial-android) ve [App Store](initial_ios) ile ilk entegrasyonunu ayarlayın.
+   2. Adapty SDK'yı yükleyin ve yapılandırın. `observerMode` parametresini `true` olarak ayarladığınızdan emin olun. Framework'e özgü talimatlar için [Android](sdk-installation-android) dokümanına bakın.
+   3. Adapty Kontrol Paneli'nde [ürünler oluşturun](create-product).
+   4. Adapty Kontrol Paneli'nde [paywall'lar oluşturun, ürünleri bunlara atayın](create-paywall) ve Paywall Builder ile özelleştirin.
+   5. Adapty Kontrol Paneli'nde [placement'lar oluşturun ve paywall'larınızı bunlara atayın](create-placement).
+   6. Mobil uygulama kodunuzda [Paywall Builder paywall'larını ve yapılandırmalarını çekin](android-get-pb-paywalls).
+</details>
+
+<p> </p>
+
+1. `AdaptyUiObserverModeHandler` arayüzünü uygulayın.
+
+`onPurchaseInitiated` olayı, kullanıcının bir satın alma işlemi başlattığını size bildirir. Bu callback'e yanıt olarak kendi özel satın alma akışınızı tetikleyebilirsiniz:
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   val observerModeHandler =
+    AdaptyUiObserverModeHandler { product, paywall, paywallView, onStartPurchase, onFinishPurchase ->
+       onStartPurchase()
+       yourBillingClient.makePurchase(
+           product,
+           onSuccess = { purchase ->
+               onFinishPurchase()
+               //handle success
+           },
+           onError = {
+               onFinishPurchase()
+               //handle error
+           },
+           onCancel = {
+               onFinishPurchase()
+               //handle cancel
+           }
+       )
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   AdaptyUiObserverModeHandler observerModeHandler = (product, paywall, paywallView, onStartPurchase, onFinishPurchase) -> {
+       onStartPurchase.invoke();
+       yourBillingClient.makePurchase(
+           product,
+           purchase -> {
+               onFinishPurchase.invoke();
+               //handle success
+           },
+           error -> {
+               onFinishPurchase.invoke();
+               //handle error
+           },
+           () -> { //cancellation
+               onFinishPurchase.invoke();
+               //handle cancel
+           }
+       );
+   };
+   ```
+</TabItem>
+</Tabs>
+Observer mode'da geri yüklemeleri yönetmek için `getRestoreHandler()` metodunu override edin. Varsayılan olarak `null` döndürür ve bu, Adapty'nin yerleşik `Adapty.restorePurchases()` akışını kullanır. Kendi geri yükleme implementasyonunuzu sağlamak için:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   val observerModeHandler = object : AdaptyUiObserverModeHandler {
+       // onPurchaseInitiated implementation (see above)
+override fun getRestoreHandler() =
+           AdaptyUiObserverModeHandler.RestoreHandler { onStartRestore, onFinishRestore ->
+               onStartRestore()
+               yourBillingClient.restorePurchases(
+                   onSuccess = { restoredPurchases ->
+                       onFinishRestore()
+                       //handle successful restore
+                   },
+                   onError = {
+                       onFinishRestore()
+                       //handle error
+                   }
+               )
+           }
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   AdaptyUiObserverModeHandler observerModeHandler = new AdaptyUiObserverModeHandler() {
+       // onPurchaseInitiated implementation (see above)
+@Override
+       public RestoreHandler getRestoreHandler() {
+           return (onStartRestore, onFinishRestore) -> {
+               onStartRestore.invoke();
+               yourBillingClient.restorePurchases(
+                   restoredPurchases -> {
+                       onFinishRestore.invoke();
+                       //handle successful restore
+                   },
+                   error -> {
+                       onFinishRestore.invoke();
+                       //handle error
+                   }
+               );
+           };
+       }
+   };
+   ```
+</TabItem>
+</Tabs>
+Ödeme veya geri yükleme sürecini AdaptyUI'ya bildirmek için aşağıdaki callback'leri çağırmayı unutmayın. Bu, yükleyiciyi göstermek gibi paywall'un düzgün çalışması için gereklidir:
+| Callback           | Açıklama                                                                                              |
+   | :----------------- |:------------------------------------------------------------------------------------------------------|
+   | onStartPurchase()  | Satın alma işleminin başladığını AdaptyUI'a bildirmek için bu callback çağrılmalıdır.                 |
+   | onFinishPurchase() | Satın alma işleminin tamamlandığını AdaptyUI'a bildirmek için bu callback çağrılmalıdır.              |
+   | onStartRestore()   | İsteğe bağlı. Geri yükleme işleminin başladığını AdaptyUI'a bildirmek için bu callback çağrılabilir. |
+   | onFinishRestore()  | İsteğe bağlı. Geri yükleme işleminin tamamlandığını AdaptyUI'a bildirmek için bu callback çağrılabilir. |
+2. Görsel paywallı cihaz ekranında göstermek için önce yapılandırmanız gerekir.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="views" label="Views" default>
+
+Bunu yapmak için `AdaptyUI.getPaywallView()` metodunu çağırın veya `AdaptyPaywallView`'i doğrudan oluşturun:
+
+<Tabs groupId="current-os" queryString>
+  <TabItem value="kotlin" label="Kotlin (option 1)" default>
+```kotlin showLineNumbers
+   val paywallView = AdaptyUI.getPaywallView(
+       activity,
+       viewConfiguration,
+       products,
+       eventListener,
+       personalizedOfferResolver,
+       tagResolver,
+       timerResolver,
+       observerModeHandler, 
+   )
+```
+
+</TabItem>
+<TabItem value="kotlin2" label="Kotlin (seçenek 2)" default>
+```kotlin showLineNumbers
+   val paywallView =
+        AdaptyPaywallView(activity) // or retrieve it from xml
+   ...
+   with(paywallView) {
+       showPaywall(
+           viewConfiguration,
+           products,
+					 eventListener,
+           personalizedOfferResolver,
+           tagResolver,
+           timerResolver,
+					 observerModeHandler,
+       )
+   }
+```
+
+</TabItem>
+<TabItem value="java" label="Java (seçenek 1)" default>
+```java showLineNumbers
+AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
+        activity,
+        viewConfiguration,
+        products,
+        eventListener,
+        personalizedOfferResolver,
+        tagResolver,
+        timerResolver,
+        observerModeHandler
+);
+```
+
+</TabItem>
+<TabItem value="java2" label="Java (seçenek 2)" default>
+```java showLineNumbers
+AdaptyPaywallView paywallView =
+  new AdaptyPaywallView(activity); //gerekirse görünüm hiyerarşisine ekleyin veya xml'den alın
+...
+paywallView.showPaywall(viewConfiguration, products, eventListener, personalizedOfferResolver, tagResolver, timerResolver, observerModeHandler);
+```
+
+</TabItem>
+<TabItem value="XML" label="XML" default>
+
+```xml showLineNumbers
+<com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />
+```
+
+</TabItem>
+</Tabs>
+Görünüm başarıyla oluşturulduktan sonra, onu görünüm hiyerarşisine ekleyebilir ve gösterebilirsiniz.
+
+</TabItem>
+<TabItem value="compose" label="Jetpack Compose" default>
+
+Bunun için şu composable fonksiyonu kullanın:
+
+```kotlin showLineNumbers
+AdaptyPaywallScreen(
+    viewConfiguration,
+    products,
+    eventListener,
+    personalizedOfferResolver,
+    tagResolver,
+    timerResolver,
+)
+```
+
+</TabItem>
+</Tabs>
+
+   İstek parametreleri:
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|-----------|
+| **Products** | isteğe bağlı | Ekrandaki ürünlerin görüntülenme zamanlamasını optimize etmek için bir `AdaptyPaywallProduct` dizisi sağlayın. `null` geçilirse AdaptyUI gerekli ürünleri otomatik olarak çeker. |
+| **ViewConfiguration** | zorunlu | Paywallın görsel ayrıntılarını içeren bir `AdaptyViewConfiguration` nesnesi sağlayın. Yüklemek için `Adapty.getViewConfiguration(paywall)` metodunu kullanın. Daha fazla bilgi için [Paywallın görsel yapılandırmasını çekme](#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) konusuna bakın. |
+| **EventListener** | isteğe bağlı | Paywall olaylarını izlemek için bir `AdaptyUiEventListener` sağlayın. Kullanım kolaylığı açısından AdaptyUiDefaultEventListener'ı genişletmeniz önerilir. Daha fazla bilgi için [Paywall olaylarını yönetme](android-handling-events) konusuna bakın. |
+| **PersonalizedOfferResolver** | isteğe bağlı | Kişiselleştirilmiş fiyatlandırmayı ([daha fazla bilgi](https://developer.android.com/google/play/billing/integrate#personalized-price)) belirtmek için `AdaptyUiPersonalizedOfferResolver` uygulayın ve `AdaptyPaywallProduct`'ı ürünün fiyatı kişiselleştirilmişse `true`, değilse `false` olarak eşleyen kendi mantığınızı geçirin. |
+| **TagResolver** | isteğe bağlı | Paywall metnindeki özel etiketleri çözümlemek için `AdaptyUiTagResolver` kullanın. Bu çözümleyici bir etiket parametresi alır ve bunu karşılık gelen bir dizeye dönüştürür. Daha fazla bilgi için [Paywall Builder'da özel etiketler](custom-tags-in-paywall-builder) konusuna bakın. |
+| **ObserverModeHandler** | Observer modu için zorunlu | Önceki adımda uyguladığınız `AdaptyUiObserverModeHandler`. |
+| **variationId** | zorunlu | Varyasyonun dize tanımlayıcısı. [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/) nesnesinin `variationId` özelliğini kullanarak alabilirsiniz. |
+| **transaction** | zorunlu | <p>iOS, StoreKit 1 için: bir [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction) nesnesi.</p><p>iOS, StoreKit 2 için: [Transaction](https://developer.apple.com/documentation/storekit/transaction) nesnesi.</p><p>Android için: Satın almanın billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) sınıfının bir örneği olduğu satın almanın dize tanımlayıcısı (`purchase.getOrderId()`).</p> |
+</TabItem>
+<TabItem value="SDK2" label="Legacy Paywall Builder (SDK up to 2.x)" default>
+<details>
+   <summary>Paywallları sunmaya başlamadan önce (Genişletmek için tıklayın)</summary>
+1. Adapty'nin [Google Play ile](initial-android) ve [App Store ile](initial_ios) ilk entegrasyonunu kurun.
+2. Adapty SDK'yı yükleyin ve yapılandırın. `observerMode` parametresini `true` olarak ayarladığınızdan emin olun. Framework'e özel talimatlarımıza başvurun: [Android için](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk) ve [Unity](sdk-installation-unity#activate-adapty-module-of-adapty-sdk).
+3. Adapty Kontrol Paneli'nde [ürünler oluşturun](create-product).
+4. Adapty Kontrol Paneli'nde [paywall'lar oluşturun, ürünleri bunlara atayın](create-paywall) ve Paywall Builder ile özelleştirin.
+5. Adapty Kontrol Paneli'nde [placement'lar oluşturun ve paywall'larınızı bunlara atayın](create-placement).
+6. Mobil uygulama kodunuzda [Paywall Builder paywall'larını ve yapılandırmalarını alın](android-get-pb-paywalls).
+</details>
+1. `AdaptyUiObserverModeHandler` arayüzünü uygulayın. `AdaptyUiObserverModeHandler`'ın callback'i (`onPurchaseInitiated`), kullanıcı bir satın alma işlemi başlattığında sizi bilgilendirir. Bu callback'e yanıt olarak özel satın alma akışınızı şu şekilde tetikleyebilirsiniz:
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   val observerModeHandler =
+   AdaptyUiObserverModeHandler { product, paywall, paywallView, onStartPurchase, onFinishPurchase ->
+       onStartPurchase()
+       yourBillingClient.makePurchase(
+           product,
+           onSuccess = { purchase ->
+               onFinishPurchase()
+               //handle success
+           },
+           onError = {
+               onFinishPurchase()
+               //handle error
+           },
+           onCancel = {
+               onFinishPurchase()
+               //handle cancel
+           }
+       )
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   AdaptyUiObserverModeHandler observerModeHandler = (product, paywall, paywallView, onStartPurchase, onFinishPurchase) -> {
+       onStartPurchase.invoke();
+       yourBillingClient.makePurchase(
+           product,
+           purchase -> {
+               onFinishPurchase.invoke();
+               //handle success
+           },
+           error -> {
+               onFinishPurchase.invoke();
+               //handle error
+           },
+           () -> { //cancellation
+               onFinishPurchase.invoke();
+               //handle cancel
+           }
+       );
+   };
+   ```
+</TabItem>
+</Tabs>
+AdaptyUI'ya bu callback'leri çağırmayı unutmayın. Bu, loader gösterme gibi paywall'ın düzgün çalışması için gereklidir:
+| Kotlin'de Callback | Java'da Callback          | Açıklama                                                                                                                                        |
+   | :----------------- | :------------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------- |
+   | onStartPurchase()  | onStartPurchase.invoke()  | Satın alma işleminin başladığını AdaptyUI'a bildirmek için bu callback çağrılmalıdır.                                                           |
+   | onFinishPurchase() | onFinishPurchase.invoke() | Satın alma işleminin başarıyla tamamlandığını, başarısız olduğunu veya iptal edildiğini AdaptyUI'a bildirmek için bu callback çağrılmalıdır. |
+2. Görsel paywallı göstermek için önce onu başlatmanız gerekir. Bunu yapmak için `AdaptyUI.getPaywallView()` metodunu çağırın ya da `AdaptyPaywallView`'ı doğrudan oluşturun:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   val paywallView = AdaptyUI.getPaywallView(
+       activity,
+       viewConfiguration,
+       products,
+       AdaptyPaywallInsets.of(topInset, bottomInset),
+       eventListener,
+       personalizedOfferResolver,
+       tagResolver,
+       observerModeHandler,
+   )
+
+   //======= OR =======
+```java showLineNumbers
+   AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
+           activity,
+           viewConfiguration,
+           products,
+           AdaptyPaywallInsets.of(topInset, bottomInset),
+           eventListener,
+           personalizedOfferResolver,
+           tagResolver,
+           observerModeHandler
+   );
+//======= VEYA =======
+AdaptyPaywallView paywallView =
+     new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
+   ...
+   paywallView.setEventListener(eventListener);
+   paywallView.setObserverModeHandler(observerModeHandler);
+   paywallView.showPaywall(viewConfiguration, products, AdaptyPaywallInsets.of(topInset, bottomInset), personalizedOfferResolver);
+   ```
+</TabItem>
+<TabItem value="XML" label="XML" default>
+   ```xml showLineNumbers
+   <com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
+       android:layout_width="match_parent"
+       android:layout_height="match_parent" />
+   ```
+</TabItem>
+</Tabs>
+View başarıyla oluşturulduktan sonra, onu görünüm hiyerarşisine ekleyebilir ve görüntüleyebilirsiniz.
+
+İstek parametreleri:
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Products** | isteğe bağlı | Ekranda ürünlerin görüntülenme zamanlamasını optimize etmek için bir `AdaptyPaywallProduct` dizisi sağlayın. `null` geçilirse AdaptyUI gerekli ürünleri otomatik olarak çeker. |
+| **ViewConfiguration** | zorunlu | Paywall'ın görsel ayrıntılarını içeren bir `AdaptyViewConfiguration` nesnesi sağlayın. Yüklemek için `Adapty.getViewConfiguration(paywall)` metodunu kullanın. Daha fazla bilgi için [Paywall Builder ile tasarlanan paywall'ın görsel yapılandırmasını getirme](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) konusuna bakın. |
+| **Insets** | zorunlu | Sistem çubuklarının kapladığı alan hakkında bilgi içeren ve içerik için dikey kenar boşlukları oluşturan bir `AdaptyPaywallInsets` nesnesi tanımlayın. `AdaptyPaywallView` ne durum çubuğu ne de gezinme çubuğuyla çakışıyorsa `AdaptyPaywallInsets.NONE` geçin. Sistem çubuklarının arayüzünüzün bir bölümünü kapladığı tam ekran modunda, insets değerlerini tablonun altında gösterildiği şekilde alın. |
+| **EventListener** | isteğe bağlı | Paywall olaylarını izlemek için bir `AdaptyUiEventListener` sağlayın. Kullanım kolaylığı açısından `AdaptyUiDefaultEventListener` sınıfını genişletmeniz önerilir. Daha fazla bilgi için [Paywall olaylarını yönetme](android-handling-events) konusuna bakın. |
+| **PersonalizedOfferResolver** | isteğe bağlı | Kişiselleştirilmiş fiyatlandırmayı ([daha fazla bilgi](https://developer.android.com/google/play/billing/integrate#personalized-price)) belirtmek için `AdaptyUiPersonalizedOfferResolver` uygulayın ve ürünün fiyatı kişiselleştirilmişse `AdaptyPaywallProduct`'ı `true`'ya, aksi takdirde `false`'a eşleyen kendi mantığınızı geçirin. |
+| **TagResolver** | isteğe bağlı | Paywall metnindeki özel etiketleri çözümlemek için `AdaptyUiTagResolver` kullanın. Bu çözümleyici bir etiket parametresi alır ve bunu karşılık gelen bir dizeye dönüştürür. Daha fazla bilgi için [Paywall Builder'da özel etiketler](custom-tags-in-paywall-builder) konusuna bakın. |
+| **ObserverModeHandler** | Observer mode için zorunlu | Önceki adımda uyguladığınız `AdaptyUiObserverModeHandler`. |
+| **variationId** | zorunlu | Varyasyonun string tanımlayıcısı. [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/) nesnesinin `variationId` özelliği kullanılarak alınabilir. |
+| **transaction** | zorunlu | <p>iOS, StoreKit 1 için: bir [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction) nesnesi.</p><p>iOS, StoreKit 2 için: [Transaction](https://developer.apple.com/documentation/storekit/transaction) nesnesi.</p><p>Android için: Satın alma işleminin billing kütüphanesi [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) sınıfının bir örneği olduğu, satın almanın String tanımlayıcısı (`purchase.getOrderId()`).</p> |
+Sistem çubuklarının kullanıcı arayüzünüzün bir bölümünü kapladığı tam ekran modunda, insets'leri şu şekilde alabilirsiniz:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   import androidx.core.graphics.Insets
+   import androidx.core.view.ViewCompat
+   import androidx.core.view.WindowInsetsCompat
+
+   //create extension function
+   fun View.onReceiveSystemBarsInsets(action: (insets: Insets) -> Unit) {
+       ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
+           val systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+           ViewCompat.setOnApplyWindowInsetsListener(this, null)
+           action(systemBarInsets)
+           insets
+       }
+   }
+   //and then use it with the view
+   paywallView.onReceiveSystemBarsInsets { insets ->
+       val paywallInsets = AdaptyPaywallInsets.of(insets.top, insets.bottom)
+       paywallView.setEventListener(eventListener)
+       paywallView.setObserverModeHandler(observerModeHandler)
+       paywallView.showPaywall(viewConfig, products, paywallInsets, personalizedOfferResolver, tagResolver)
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   import androidx.core.graphics.Insets;
+   import androidx.core.view.ViewCompat;
+   import androidx.core.view.WindowInsetsCompat;
+
+   ...
+
+   ViewCompat.setOnApplyWindowInsetsListener(paywallView, (view, insets) -> {
+       Insets systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+       ViewCompat.setOnApplyWindowInsetsListener(paywallView, null);
+     
+       AdaptyPaywallInsets paywallInsets =
+                    AdaptyPaywallInsets.of(systemBarInsets.top, systemBarInsets.bottom);
+       paywallView.setEventListener(eventListener);
+       paywallView.setObserverModeHandler(observerModeHandler);
+       paywallView.showPaywall(viewConfiguration, products, paywallInsets, personalizedOfferResolver, tagResolver);
+               
+       return insets;
+   });
+   ```
+</TabItem>
+</Tabs>
+
+   Döndürür:
+| Nesne | Açıklama |
+   | :------------------ | :------------------------------------------------- |
+   | `AdaptyPaywallView` | İstenen paywall ekranını temsil eden nesne. |
+
+:::warning
+[Satın alma işlemlerini paywall'larla ilişkilendirmeyi](report-transactions-observer-mode-android) unutmayın. Aksi takdirde Adapty, satın almanın hangi paywall'dan geldiğini belirleyemez.
+:::
+
+</TabItem> 
+</Tabs>

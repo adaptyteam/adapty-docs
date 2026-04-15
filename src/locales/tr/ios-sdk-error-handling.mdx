@@ -1,0 +1,85 @@
+---
+title: "iOS SDK'da hataları ele alma"
+description: "Adapty'nin sorun giderme rehberiyle iOS SDK hatalarını verimli biçimde ele alın."
+metadataTitle: "iOS SDK Hata Yönetimi Rehberi | Adapty Dokümanları"
+---
+
+Adapty SDK, tüm hata türleri için `AdaptyError` adında kendi sarmalayıcısına sahiptir. Temel olarak SDK'dan dönen her hata bir `AdaptyError`'dır. Bu hatanın iki kullanışlı özelliği vardır: `originalError` ve `adaptyErrorCode`. Aşağıda bunlar açıklanmaktadır.
+**originalError**, orijinal hatayla çalışmanız gerektiğinde kullanabileceğiniz orijinal hatayı içerir. [SKError](https://developer.apple.com/documentation/storekit/skerror), [NSError](https://developer.apple.com/documentation/foundation/nserror) veya genel bir Swift [Error](https://developer.apple.com/documentation/swift/error) olabilir. Bu özellik isteğe bağlıdır; çünkü bazı hatalar tutarsız veya eksik veriler gibi durumlarda doğrudan SDK tarafından üretilebilir ve etrafında wrapper oluşturulan orijinal bir hata bulunmayabilir.
+
+**adaptyErrorCode**, aşağıdaki gibi yaygın sorunları ele almak için kullanılabilir:
+- geçersiz kimlik bilgileri
+- ağ hataları
+- iptal edilen ödemeler
+- faturalama sorunları
+- geçersiz makbuz
+- ve çok daha fazlası
+
+Hatayı belirli kodlara göre kontrol etmek ve buna göre tepki vermek oldukça kolaydır.
+
+```swift showLineNumbers title="Swift"
+do {
+    let info = try await Adapty.makePurchase(product: product)
+} catch {
+    if error.adaptyErrorCode == .paymentCancelled {
+        // purchase was cancelled
+        // you can offer discount to your user or remind them later
+    }
+}
+```
+:::important
+Bu çözümler sorununuzu gidermezse, destek ekibiyle iletişime geçmeden önce atmanız gereken adımlar için [Diğer sorunlar](#other-issues) bölümüne bakın.
+:::
+## StoreKit hataları \{#storekit-errors\}
+| Hata | Kod | Çözüm |
+|--------------------------------------------------------------------------------------------------------------------------------------------|------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [unknown](https://developer.apple.com/documentation/storekit/skerror/code/unknown) | 0 | Bilinmeyen veya beklenmeyen bir hata oluştuğunu belirten hata kodu. <br/> Yeniden deneyin veya [Diğer sorunlar](#other-issues) bölümüne bakın. |
+| [clientInvalid](https://developer.apple.com/documentation/storekit/skerror/code/clientinvalid) | 1 | İstemcinin denediği işlemi gerçekleştirmesine izin verilmediğini belirten hata kodu. |
+| [paymentCancelled](https://developer.apple.com/documentation/storekit/skerror/code/paymentcancelled) | 2 | <p>Kullanıcının ödeme isteğini iptal ettiğini belirten hata kodu.</p><p>Herhangi bir işlem yapmanız gerekmez; ancak iş mantığı açısından kullanıcıya indirim teklif edebilir veya daha sonra hatırlatabilirsiniz.</p> |
+| [paymentInvalid](https://developer.apple.com/documentation/storekit/skerror/code/paymentinvalid) | 3 | Ödeme parametrelerinden birinin App Store tarafından tanınmadığını belirten hata kodu. |
+| [paymentNotAllowed](https://developer.apple.com/documentation/storekit/skerror/code/paymentnotallowed) | 4 | Kullanıcının ödeme yetkilendirmesine izin verilmediğini belirten hata kodu. |
+| [storeProductNotAvailable](https://developer.apple.com/documentation/storekit/skerror/code/storeproductnotavailable) | 5 | İstenen ürünün mağazada mevcut olmadığını belirten hata kodu. <br/> Uygulamayı yeniden yüklemeyi deneyin. |
+| [cloudServicePermissionDenied](https://developer.apple.com/documentation/storekit/skerror/code/cloudservicepermissiondenied) | 6 | Kullanıcının Cloud servis bilgilerine erişime izin vermediğini belirten hata kodu. |
+| [cloudServiceNetworkConnectionFailed](https://developer.apple.com/documentation/storekit/skerror/code/cloudservicenetworkconnectionfailed) | 7 | Cihazın ağa bağlanamadığını belirten hata kodu. |
+| [cloudServiceRevoked](https://developer.apple.com/documentation/storekit/skerror/code/cloudservicerevoked/) | 8 | Kullanıcının bu cloud servisini kullanma iznini iptal ettiğini belirten hata kodu. |
+| [privacyAcknowledgementRequired](https://developer.apple.com/documentation/storekit/skerror/code/privacyacknowledgementrequired) | 9 | Kullanıcının henüz Apple'ın gizlilik politikasını onaylamadığını belirten hata kodu. |
+| [unauthorizedRequestData](https://developer.apple.com/documentation/storekit/skerror/code/unauthorizedrequestdata) | 10 | Uygulamanın gerekli yetkiye sahip olmadığı bir özelliği kullanmaya çalıştığını belirten hata kodu. |
+| [invalidOfferIdentifier](https://developer.apple.com/documentation/storekit/skerror/code/invalidofferidentifier) | 11 | <p>[`identifier`](https://developer.apple.com/documentation/storekit/skpaymentdiscount/identifier) teklifi geçerli değil. Örneğin, App Store'da bu tanımlayıcıya sahip bir teklif oluşturmamış veya teklifi iptal etmiş olabilirsiniz.</p><p>İstediğiniz teklifleri AppStore Connect'te oluşturduğunuzdan ve geçerli bir teklif tanımlayıcısı geçirdiğinizden emin olun.</p> |
+| [invalidSignature](https://developer.apple.com/documentation/storekit/skerror/code/invalidsignature) | 12 | Ödeme indirimindeki imzanın geçerli olmadığını belirten hata kodu. |
+| [missingOfferParams](https://developer.apple.com/documentation/storekit/skerror/code/missingofferparams) | 13 | Ödeme indiriminde parametrelerin eksik olduğunu belirten hata kodu. |
+| [invalidOfferPrice](https://developer.apple.com/documentation/storekit/skerror/code/invalidofferprice/) | 14 | App Store Connect'te belirttiğiniz fiyatın artık geçerli olmadığını belirten hata kodu. Teklifler her zaman indirimli bir fiyatı temsil etmelidir. |
+| noProductIDsFound | 1000 | <p>Paywall'da istediğiniz ürünlerin hiçbirinin App Store'da listelenmesine rağmen satın alınabilir durumda olmadığını belirten hata. Bu hata bazen `InvalidProductIdentifiers` uyarısıyla birlikte gelebilir. Uyarı hatasız görünüyorsa görmezden gelin.</p><p>Bu hatayla karşılaşıyorsanız [Kod-1000 `noProductIDsFound` hatası için düzeltme](InvalidProductIdentifiers) bölümündeki adımları izleyin.</p> |
+| productRequestFailed | 1002 | Şu anda mevcut ürünler alınamıyor. |
+| cantMakePayments | 1003 | Bu cihazda uygulama içi satın almalara izin verilmiyor. Sorun giderme [kılavuzuna](cantMakePayments) bakın. |
+| [cantReadReceipt](https://developer.apple.com/documentation/storekit/skerror/code/paymentcancelled) | 1005 | <p>Cihazda geçerli bir makbuz mevcut değil. Bu durum sandbox testleri sırasında sorun yaratabilir.</p><p>Sandbox ortamında, bir satın alma gerçekleştirmeden geçerli bir makbuz dosyanız olmaz; bu nedenle makbuza erişmeden önce mutlaka bir satın alma yapın. Sandbox testleri sırasında cihazda geçerli bir Apple sandbox hesabıyla oturum açtığınızdan da emin olun.</p> |
+| productPurchaseFailed | 1006 | Ürün satın alma işlemi başarısız oldu. Bu, Adapty ile ilgisi olmayan bir StoreKit hatasıdır. Yeni bir [sandbox profili](test-purchases-in-sandbox) kullanmayı deneyin. Sorun devam ederse Apple desteğine başvurun. |
+| refreshReceiptFailed | 1010 | Makbuz yenileme işlemi başarısız oldu. |
+| fetchSubscriptionStatusFailed | 1020 | App Store'dan abonelik durumu alınamadı. |
+| unknownTransactionId | 1030 | İşlem tanımlayıcısı bilinmiyor. |
+| paymentPendingError | 1050 | Ödeme şu anda beklemede. |
+## Ağ hataları \{#network-errors\}
+| Hata | Kod | Çözüm |
+| :------------- | :--- |:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| notActivated   | 2002 | Adapty SDK etkinleştirilmemiş. SDK'yı `Adapty.activate` metodunu kullanarak düzgün şekilde [yapılandırmanız](sdk-installation-ios#activate-adapty-module-of-adapty-sdk) gerekiyor.                                                  |
+| badRequest     | 2003 | Geçersiz istek. <br/> [App Store entegrasyonu](app-store-connection-configuration) için gereken tüm adımları tamamladığınızdan emin olun.                                                                     |
+| serverError    | 2004 | Sunucu hatası. <br/> Bir süre sonra tekrar deneyin. Sorun devam ederse Adapty destek ekibiyle iletişime geçin.                                                                                                |
+| networkFailed  | 2005 | Bu hata, kullanıcının cihazındaki ağ bağlantısıyla ilgili bir soruna işaret ediyor. <br/> VPN'i devre dışı bırakmayı ya da hücresel ağdan WiFi'ye (veya tersine) geçmeyi deneyin.                                             |
+| decodingFailed | 2006 | Bu hata, yanıt çözümlemesinin başarısız olduğunu gösteriyor. <br/> Kodunuzu gözden geçirin ve gönderdiğiniz parametrelerin geçerli olduğundan emin olun. Örneğin bu hata, geçersiz bir API anahtarı kullandığınıza işaret edebilir. |
+| encodingFailed | 2009 | Bu hata, istek kodlamasının başarısız olduğunu gösteriyor.                                                                                                                                                           |
+## Genel hatalar \{#general-errors\}
+| Hata | Kod | Çözüm |
+| :------------------- | :--- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| analyticsDisabled    | 3000 | Analitik olayları işleyemiyoruz; bu özelliği [devre dışı bırakmışsınız](analytics-integration#disabling-external-analytics-for-a-specific-customer). |
+| wrongParam           | 3001 | Bu hata, bazı parametrelerinizin hatalı olduğunu gösterir. <br/> Adapty paywall builder kullanıyorsanız ve bu hata nedeniyle paywall görüntüleyemiyorsanız, paywall builder'da **Show on device** seçeneğini açın.<br/> Bir diğer olası neden, yerel [yedek](fallback-paywalls) dosya sürümünün SDK sürümüyle eşleşmemesidir. Kontrol panelinden yeni bir dosya indirin. |
+| activateOnceError    | 3005 | `.activate` metodu birden fazla kez çağrılamaz. |
+| profileWasChanged    | 3006 | İşlem sırasında kullanıcı profili değiştirildi. <br/> Bu hata, `identify` çağrısının ardından tamamlanmadan başka bir metot çağırdığınızda ortaya çıkabilir. Bunu önlemek için diğer metotları çağırmadan önce `identify` işleminin tamamlanmasını bekleyin. |
+| unsupportedData      | 3007 | Bu hata, veri formatının SDK tarafından desteklenmediğini gösterir. |
+| unidentifiedUserLogout | 3020 | Kimliği doğrulanmamış bir kullanıcı için `logout` metodu çağrılamaz. |
+| fetchTimeoutError    | 3101 | Bu hata, fetch işleminin zaman aşımına uğradığını gösterir. |
+| operationInterrupted | 9000 | Bu işlem sistem tarafından kesintiye uğratıldı. |
+## Diğer sorunlar \{#other-issues\}
+
+Henüz bir çözüm bulamadıysanız, sonraki adımlar şunlar olabilir:
+- **SDK'yı en son sürüme yükseltin**: Daha kararlı olduğu ve bilinen sorunlara yönelik düzeltmeler içerdiği için her zaman en güncel SDK sürümüne geçmenizi öneririz.
+- **Destek ekibiyle iletişime geçin veya diğer geliştiricilerden yardım alın** [destek forumunda](https://adapty.featurebase.app/).
+- **Destek ekibiyle [support@adapty.io](mailto:support@adapty.io) adresinden veya sohbet üzerinden iletişime geçin**: SDK'yı yükseltmeye hazır değilseniz ya da yükseltme sorunu çözmediyse destek ekibimizle iletişime geçin. [Ayrıntılı günlük kaydını etkinleştirip](sdk-installation-ios#logging) günlükleri ekiple paylaşırsanız sorununuz daha hızlı çözülecektir. İlgili kod parçacıklarını da ekleyebilirsiniz.

@@ -1,0 +1,106 @@
+---
+title: "Unity SDK'da abonelik durumunu kontrol etme"
+description: "Adapty ile Unity uygulamanızda abonelik durumunu nasıl kontrol edeceğinizi öğrenin."
+metadataTitle: "Abonelik Durumunu Kontrol Etme | Adapty Dokümanları"
+displayed_sidebar: sdkunity
+keywords: ['getProfile', 'subscription status']
+rank: 75
+---
+
+Kullanıcıların ücretli içeriklere erişip erişemeyeceğine ya da bir paywall görmesi gerekip gerekmediğine karar vermek için profildeki [access level](access-level) değerini kontrol etmeniz gerekir.
+
+Bu makalede, kullanıcılara paywall mı göstereceğinizi yoksa ücretli özelliklere erişim mi vereceğinizi belirlemek amacıyla profil durumuna nasıl erişeceğiniz anlatılmaktadır.
+
+## Abonelik durumunu alma \{#get-subscription-status\}
+
+Bir kullanıcıya paywall mı yoksa ücretli içerik mi göstereceğinize karar verirken, profildeki [access level](access-level) değerini kontrol edersiniz. İki seçeneğiniz var:
+
+- En güncel profil verilerine hemen ihtiyaç duyduğunuzda (örneğin uygulama başlangıcında) veya güncellemeyi zorlamak istediğinizde `GetProfile` çağırın.
+- Abonelik durumu her değiştiğinde otomatik olarak yenilenen yerel bir kopya tutmak için **otomatik profil güncellemelerini** ayarlayın.
+
+### Profili alma \{#get-profile\}
+
+Abonelik durumunu almanın en kolay yolu, profile erişmek için `GetProfile` metodunu kullanmaktır:
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+// check the access
+});
+```
+
+### Abonelik güncellemelerini dinleme \{#listen-to-subscription-updates\}
+
+Uygulamanızda profil güncellemelerini otomatik olarak almak için:
+
+1. `AdaptyEventListener` sınıfını genişletin ve `OnLoadLatestProfile` metodunu uygulayın. Adapty, kullanıcının abonelik durumu her değiştiğinde bu metodu otomatik olarak çağırır.
+2. Bu metot çağrıldığında güncellenen profil verilerini saklayın; böylece ek ağ istekleri yapmadan uygulamanızın her yerinde kullanabilirsiniz.
+
+```csharp
+public class SubscriptionManager : MonoBehaviour, AdaptyEventListener {
+    private AdaptyProfile currentProfile;
+    
+    void Start() {
+        // Register this object as an Adapty event listener
+        Adapty.SetEventListener(this);
+    }
+    
+    // Store the profile when it updates
+    public void OnLoadLatestProfile(AdaptyProfile profile) {
+        currentProfile = profile;
+        // Update UI, unlock content, etc.
+    }
+    
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+    
+    // Use stored profile instead of calling getProfile()
+    public bool HasAccess() {
+        if (currentProfile?.AccessLevels != null && 
+            currentProfile.AccessLevels.ContainsKey("premium")) {
+            return currentProfile.AccessLevels["premium"].IsActive;
+        }
+        return false;
+    }
+}
+```
+
+:::note
+Adapty, uygulamanız başladığında `OnLoadLatestProfile`'ı otomatik olarak çağırır; bu sayede cihaz çevrimdışı olsa bile önbelleğe alınmış abonelik verileri sağlanır.
+:::
+
+## Profili paywall mantığıyla bağlama \{#connect-profile-with-paywall-logic\}
+
+Paywall gösterme veya ücretli özelliklere erişim verme konusunda anlık kararlar almanız gerektiğinde, kullanıcının profilini doğrudan kontrol edebilirsiniz. Bu yaklaşım; uygulama başlangıcı, premium bölümlere girerken veya belirli içerikleri görüntülemeden önce gibi senaryolarda işe yarar.
+
+```csharp
+private void CheckAccessLevel()
+{
+    Adapty.GetProfile((profile, error) => {
+        if (error != null) {
+            Debug.LogError("Error checking access level: " + error.Message);
+            // Show paywall if access check fails
+            return;
+        }
+        
+        var accessLevel = profile.AccessLevels["YOUR_ACCESS_LEVEL"];
+        if (accessLevel == null || !accessLevel.IsActive) {
+            // Show paywall if no access
+        }
+    });
+}
+
+private void InitializePaywall()
+{
+    LoadPaywall();
+    CheckAccessLevel();
+}
+``` 
+
+## Sonraki adımlar \{#next-steps\}
+
+Abonelik durumunu nasıl takip edeceğinizi öğrendiğinize göre, kullanıcıların ödedikleri şeylere erişebildiğinden emin olmak için [kullanıcı profilleriyle çalışmayı](unity-quickstart-identify) öğrenin.

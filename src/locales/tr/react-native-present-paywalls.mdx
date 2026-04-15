@@ -1,0 +1,244 @@
+---
+title: "React Native - Yeni Paywall Builder paywalllarını sunma"
+description: "Adapty kullanarak React Native uygulamalarında paywalllar sunun."
+metadataTitle: "React Native'de Paywallların Sunulması | Adapty Dokümanları"
+
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+
+Paywall Builder ile bir paywall özelleştirdiyseniz, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Bu tür bir paywall, hem paywall içinde ne gösterileceğini hem de nasıl gösterileceğini içerir.
+
+Başlamadan önce şunları yaptığınızdan emin olun:
+
+1. [Bir paywall oluşturdunuz](create-paywall).
+2. Paywallı bir [placement](placements)'a eklediniz.
+3. [Paywallı getirdiniz ve view'ı hazırladınız](react-native-get-pb-paywalls).
+
+:::warning
+
+Bu rehber yalnızca **yeni Paywall Builder paywallları** içindir; SDK v3.0 veya üstünü gerektirir. Paywall sunma süreci, farklı Paywall Builder sürümleriyle tasarlanan paywalllar ve remote config paywalllar için farklılık gösterir.
+
+- **Remote config paywalllarını** sunmak için bkz. [Remote config ile tasarlanan paywallı render etme](present-remote-config-paywalls).
+
+:::
+
+Adapty React Native SDK, paywallları sunmak için iki yöntem sunar:
+
+- **React bileşeni**: Gömülü bileşen, uygulamanızın mimarisine ve navigasyon sistemine entegre etmenize olanak tanır.
+
+- **Modal sunum**
+
+## React bileşeni \{#react-component\}
+
+:::note
+**React bileşeni** yaklaşımı SDK 3.14.0 veya üstünü gerektirir.
+:::
+
+Bir paywallı mevcut bileşen ağacınıza gömmek için `AdaptyPaywallView` bileşenini doğrudan React Native bileşen hiyerarşinizde kullanın. Gömülü bileşen, uygulamanızın mimarisine ve navigasyon sistemine entegre etmenize olanak tanır.
+
+:::note
+Android'de, paywall durum çubuğunun arkasına uzanmıyorsa üst kısmında görsel bir katman belirebiilir. Paywalllarınız için bunu kapatmanızı öneririz. Bkz. [Paywallın üst kısmındaki görsel katman (Android)](#visual-overlay-at-the-top-of-the-paywall-android).
+:::
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyPaywall({ paywall }) {
+  const paywallParams = useMemo(() => ({
+    loadTimeoutMs: 3000,
+  }), []);
+
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {}, []);
+  const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {}, []);
+  const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {}, []);
+  const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {}, []);
+  const onRestoreStarted = useCallback<EventHandlers['onRestoreStarted']>(() => {}, []);
+  const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {}, []);
+  const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {}, []);
+  const onPaywallShown = useCallback<EventHandlers['onPaywallShown']>(() => {}, []);
+  const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {}, []);
+  const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {}, []);
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {}, []);
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {}, []);
+  const onWebPaymentNavigationFinished = useCallback<EventHandlers['onWebPaymentNavigationFinished']>(() => {}, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      params={paywallParams}
+      style={styles.paywall}
+      onCloseButtonPress={onCloseButtonPress}
+      onProductSelected={onProductSelected}
+      onPurchaseStarted={onPurchaseStarted}
+      onPurchaseCompleted={onPurchaseCompleted}
+      onPurchaseFailed={onPurchaseFailed}
+      onRestoreStarted={onRestoreStarted}
+      onRestoreCompleted={onRestoreCompleted}
+      onRestoreFailed={onRestoreFailed}
+      onPaywallShown={onPaywallShown}
+      onRenderingFailed={onRenderingFailed}
+      onLoadingProductsFailed={onLoadingProductsFailed}
+      onCustomAction={onCustomAction}
+      onUrlPress={onUrlPress}
+      onWebPaymentNavigationFinished={onWebPaymentNavigationFinished}
+    />
+  );
+}
+```
+
+## Modal sunum \{#modal-presentation\}
+
+Bir paywallı bağımsız bir ekran olarak göstermek için, [`createPaywallView`](react-native-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) metoduyla oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir. Paywallı tekrar göstermeniz gerekiyorsa yeni bir `view` örneği oluşturmak için `createPaywallView`'i bir kez daha çağırın.
+
+:::warning
+Aynı `view`'ı yeniden oluşturmadan tekrar kullanmak yasaktır. Bu durum `AdaptyUIError.viewAlreadyPresented` hatasına yol açar.
+:::
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createPaywallView(paywall);
+
+// İsteğe bağlı: paywall olaylarını yönetin (kapat, satın alma, geri yükleme vb.)
+// view.setEventHandlers({ ... });
+
+try {
+  await view.present();
+} catch (error) {
+  // hatayı yönetin
+}
+```
+
+:::important
+`setEventHandlers`'ı birden fazla kez çağırmak, sağladığınız handler'ları geçersiz kılar; bu belirli olaylar için hem varsayılan hem de önceden ayarlanmış handler'ların yerini alır.
+:::
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createPaywallView(paywall);
+
+view.registerEventHandlers(); // kapatma tuşuna basma vb. olayları yönetin
+
+try {
+  await view.present();
+} catch (error) {
+  // hatayı yönetin
+}
+```
+
+</TabItem>
+</Tabs>
+
+### iOS sunum stilini yapılandırma \{#configure-ios-presentation-style\}
+
+Paywallın iOS'ta nasıl sunulacağını, `present()` metoduna `iosPresentationStyle` parametresini ileterek yapılandırın. Parametre `'full_screen'` (varsayılan) veya `'page_sheet'` değerlerini kabul eder.
+
+```typescript showLineNumbers
+try {
+  await view.present(iosPresentationStyle: 'page_sheet');
+} catch (error) {
+  // hatayı yönetin
+}
+```
+
+## Geliştirici tanımlı zamanlayıcı kullanımı \{#use-developer-defined-timer\}
+
+Mobil uygulamanızda geliştirici tanımlı zamanlayıcılar kullanmak için, bu örnekte `CUSTOM_TIMER_NY` olan `timerId`'yi kullanın; bu, Adapty kontrol panelinde ayarladığınız geliştirici tanımlı zamanlayıcının **Timer ID**'sidir. Bu sayede uygulamanız zamanlayıcıyı doğru değerle dinamik olarak günceller; örneğin `13g 09s 03d 34s` (zamanlayıcının bitiş zamanı olan Yılbaşı'ndan mevcut zamanın çıkarılmasıyla hesaplanır).
+
+<Tabs>
+<TabItem value="component" label="React bileşeni">
+```typescript showLineNumbers title="React Native (TSX)"
+const paywallParams = {
+  customTimers: { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+};
+
+<AdaptyPaywallView
+  paywall={paywall}
+  params={paywallParams}
+  // ... event handler'larınız
+/>
+```
+</TabItem>
+<TabItem value="modal" label="Modal sunum">
+```typescript showLineNumbers title="React Native (TSX)"
+const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+
+const view = await createPaywallView(paywall, { customTimers });
+```
+</TabItem>
+</Tabs>
+Bu örnekte `CUSTOM_TIMER_NY`, Adapty kontrol panelinde ayarladığınız geliştirici tanımlı zamanlayıcının **Timer ID**'sidir. `timerResolver`, uygulamanızın zamanlayıcıyı doğru değerle dinamik olarak güncellemesini sağlar; örneğin `13g 09s 03d 34s` (zamanlayıcının bitiş zamanı olan Yılbaşı'ndan mevcut zamanın çıkarılmasıyla hesaplanır).
+
+## Dialog gösterme \{#show-dialog\}
+
+Android'de bir paywall view sunulduğunda, yerel uyarı dialogları yerine bu metodu kullanın. Android'de normal RN uyarıları paywall view'ın arkasında kalır ve kullanıcılar tarafından görülemez. Bu metot, tüm platformlarda paywallın üzerinde dialog'un düzgün şekilde sunulmasını sağlar.
+
+```typescript showLineNumbers title="React Native (TSX)"
+try {
+  const action = await view.showDialog({
+    title: 'Paywall kapatılsın mı?',
+    content: 'Özel tekliflere erişiminizi kaybedeceksiniz.',
+    primaryActionTitle: 'Kal',
+    secondaryActionTitle: 'Kapat',
+  });
+  
+  if (action === 'secondary') {
+    // Kullanıcı onayladı - paywallı kapat
+    await view.dismiss();
+  }
+  // Birincil seçenekte - hiçbir şey yapma, kullanıcı kalıyor
+} catch (error) {
+  // hatayı yönetin
+}
+```
+
+## Bir aboneliği diğeriyle değiştirme \{#replace-one-subscription-with-another\}
+
+Bir kullanıcı Android'de başka bir abonelik aktifken yeni bir abonelik satın almaya çalıştığında, paywall view'ı oluştururken abonelik güncelleme parametrelerini ileterek yeni satın almanın nasıl işleneceğini kontrol edebilirsiniz. Mevcut aboneliği yenisiyle değiştirmek için `createPaywallView`'de `oldSubVendorProductId` ve `prorationMode` parametreleriyle birlikte `productPurchaseParams` kullanın.
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+const productPurchaseParams = paywall.productIdentifiers.map((productId) => {
+  let params = {};
+  if (Platform.OS === 'android') {
+    params.android = {
+      subscriptionUpdateParams: {
+        oldSubVendorProductId: 'PRODUCT_ID_OF_THE_CURRENT_ACTIVE_SUBSCRIPTION',
+        prorationMode: 'with_time_proration',
+      },
+    };
+  }
+  return { productId, params };
+});
+
+const view = await createPaywallView(paywall, { productPurchaseParams });
+```
+
+## Sorun giderme \{#troubleshooting\}
+
+### Paywallın üst kısmındaki görsel katman (Android) \{#visual-overlay-at-the-top-of-the-paywall-android\}
+
+:::note
+Bu ayar React Native SDK 3.15.5'ten itibaren desteklenmektedir ve yalnızca bare React Native projelerinde kullanılabilir.
+
+Expo yönetilen iş akışı kullanıyorsanız bu Android kaynağını doğrudan ekleyemezsiniz. Bu ayarı uygulamak için, ilgili Android kaynağını ekleyen özel bir Expo config plugin oluşturmanız ve bunu app.config.js'e kaydetmeniz gerekir. Bunun nedeni Expo'nun yerel Android projesini sizin adınıza yönetmesidir.
+:::
+
+`AdaptyPaywallView` durum çubuğunun arkasına uzanmıyorsa, üst kısmında görsel bir katman görünebilir. Bunu kaldırmak için uygulamanıza şu boolean kaynağını ekleyin:
+
+1. `android/app/src/main/res/values` dizinine gidin. `bools.xml` dosyası yoksa oluşturun.
+
+2. Şu kaynağı ekleyin:
+
+```xml
+<resources>
+    <bool name="adapty_paywall_enable_safe_area_paddings">false</bool>
+</resources>
+```
+
+Bu değişikliklerin uygulamanızdaki tüm paywalllar için genel olarak geçerli olduğunu unutmayın.
