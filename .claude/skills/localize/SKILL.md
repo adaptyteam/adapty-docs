@@ -9,13 +9,13 @@ description: Use when adding support for a new locale/language to the Adapty doc
 
 Adding a locale touches ~8 files plus new content/sitemap files. Miss any one and the locale will partially break (no search, broken auto-redirect, missing from sitemap, etc.). Follow this checklist in order.
 
-**Active locales:** `zh` (Chinese), `tr` (Turkish). All examples use `{LOCALE}` as placeholder — replace with the actual code (e.g. `ja`, `ko`, `de`).
+**Active locales:** `zh` (Chinese), `tr` (Turkish), `ru` (Russian). All examples use `{LOCALE}` as placeholder — replace with the actual code (e.g. `ja`, `ko`, `de`).
 
 ---
 
 ## Step 1 — Register the locale in source code
 
-Edit these 6 files before running any translation:
+Edit these files before running any translation:
 
 ### 1a. `src/data/locales.ts`
 
@@ -158,6 +158,16 @@ Add auto-redirect logic to the inline script (around lines 87-95):
   if (newPath !== window.location.pathname) window.location.replace(newPath);
 }
 ```
+
+### 1i. `src/content.config.ts`
+
+Add the locale to `SUPPORTED_LOCALES` inside the content config. This is what scopes the `locales` collection glob per CI matrix job — omitting this means every locale build loads every locale's MDX, which OOMs the runner as content grows.
+
+```ts
+const SUPPORTED_LOCALES = ['zh', 'tr', 'ru', '{LOCALE}'] as const;
+```
+
+The glob itself is derived from `BUILD_LOCALES` and doesn't need editing — only the tuple of allowed locales does.
 
 ---
 
@@ -374,6 +384,7 @@ strategy:
 | 1f | Add locale key to `T` object (~20 strings) | `src/components/Homepage.tsx` |
 | 1g | Add to `LOCALE_NAMES_CLIENT` + `UI_STRINGS_CLIENT` | `src/components/Header.astro` |
 | 1h | Add auto-redirect block | `src/layouts/DocsLayout.astro` |
+| 1i | Add to `SUPPORTED_LOCALES` (scopes the locales collection glob per CI job) | `src/content.config.ts` |
 | 2 | Add env vars | `.env` + deployment config |
 | 3 | Create sitemap files + update astro.config.mjs | `src/pages/sitemap-{LOCALE}*.xml.ts`, `astro.config.mjs` |
 | 4 | Add npm scripts (optional) | `package.json` |
