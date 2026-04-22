@@ -1,0 +1,105 @@
+---
+title: "在应用中接收归因数据"
+description: "Adapty 将安装匹配到推广活动后，在应用中访问推广活动的归因数据。"
+metadataTitle: "在应用中接收归因数据 | Adapty 文档"
+keywords: ['adapty ua', '用户获取', '归因', '推广活动数据']
+---
+当 Adapty 将安装与某个广告系列匹配后，会通过 `onInstallationDetailsSuccess` 回调将归因数据返回给你的应用。你可以利用这些数据，根据带来安装的渠道或广告系列来个性化用户体验。
+
+归因数据以嵌套的 `attribution` 对象形式包含在 `payload` 字段中，具体字段如下：
+| 字段 | 描述 |
+|---|---|
+| `channel` | 获客渠道（例如 `facebook`、`tiktok`、`google`、`organic`） |
+| `campaign_id` | 广告系列标识符 |
+| `campaign_name` | 广告系列名称 |
+| `adset_id` | 广告组标识符 |
+| `adset_name` | 广告组名称 |
+| `ad_id` | 广告/素材标识符 |
+| `ad_name` | 广告/素材名称 |
+
+所有字段均为可选。对于自然流量安装或无法确定归因的情况，`payload` 字段中不包含 `attribution` 对象。
+
+在应用中读取归因数据的方法：
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+Adapty.delegate = self
+
+nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetails) {
+    guard
+        let payloadDict = details.payload?.dictionary,
+        let attribution = payloadDict["attribution"] as? [String: Any]
+    else { return }
+
+    let channel = attribution["channel"] as? String
+    let campaignName = attribution["campaign_name"] as? String
+    let adName = attribution["ad_name"] as? String
+
+    print("Channel: \(channel ?? "organic")")
+}
+```
+</TabItem>
+
+<TabItem value="android" label="Kotlin">
+```kotlin showLineNumbers
+Adapty.setOnInstallationDetailsListener(object : OnInstallationDetailsListener {
+    override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
+        val payloadStr = details.payload ?: return
+        runCatching {
+            val payload = JSONObject(payloadStr)
+            val attribution = payload.optJSONObject("attribution") ?: return
+
+            val channel = attribution.optString("channel")
+            val campaignName = attribution.optString("campaign_name")
+            val adName = attribution.optString("ad_name")
+
+            println("Channel: $channel")
+        }.onFailure(Throwable::printStackTrace)
+    }
+})
+```
+</TabItem>
+
+<TabItem value="rn" label="React Native">
+```typescript showLineNumbers
+adapty.addEventListener('onInstallationDetailsSuccess', details => {
+    try {
+        if (!details.payload) return;
+        const payload = JSON.parse(details.payload);
+        const attribution = payload.attribution;
+        if (!attribution) return;
+
+        const channel = attribution.channel;
+        const campaignName = attribution.campaign_name;
+        const adName = attribution.ad_name;
+
+        console.log('Channel:', channel ?? 'organic');
+    } catch (error) {
+        console.error('Error parsing payload:', error);
+    }
+});
+```
+
+</TabItem>
+<TabItem value="flutter" label="Flutter">
+```dart showLineNumbers
+Adapty().onUpdateInstallationDetailsSuccessStream.listen((details) {
+  final payloadStr = details.payload;
+  if (payloadStr == null) return;
+
+  final payload = json.decode(payloadStr) as Map<String, dynamic>;
+  final attribution = payload['attribution'] as Map<String, dynamic>?;
+  if (attribution == null) return;
+
+  final channel = attribution['channel'] as String?;
+  final campaignName = attribution['campaign_name'] as String?;
+  final adName = attribution['ad_name'] as String?;
+
+  print('Channel: ${channel ?? 'organic'}');
+});
+```
+
+</TabItem>
+
+</Tabs>

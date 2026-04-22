@@ -241,6 +241,9 @@ After completing all checks, follow this flow:
 - Validate ALL links and images
 - Check intro, heading hierarchy, parallel headings, long blocks
 
+### Localization
+Files in `src/locales/` are automatically translated and updated by a GitHub Actions workflow on push to `main`. Do not edit them as part of normal doc work — edit only the source English file in `src/content/docs/`. The exception is targeted manual corrections explicitly requested (e.g., a native speaker flagging a translation error).
+
 ### Writing a Full Article
 - Complete all 5 phases — no shortcuts
 - Match tone and depth of neighboring articles

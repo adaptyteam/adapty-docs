@@ -1,0 +1,72 @@
+---
+title: "Unsubscribe and suppression in Adapty Mail"
+description: "How Adapty Mail stops sending to users — via unsubscribe, SES bounces, complaints, and the stop-condition mechanism."
+metadataTitle: "Unsubscribe and Suppression | Adapty Mail | Adapty Docs"
+keywords: ['adapty mail', 'suppression', 'bounce', 'complaint', 'stop condition']
+---
+
+Adapty Mail stops sending to a user under two distinct conditions:
+
+- **Suppression**: The user is excluded from all future sends in this project (unsubscribed, bounced, complained, rejected, or throttled).
+- **Stop condition**: The user's current sequence is cancelled because they converted. They're not suppressed and stay eligible for other campaigns.
+
+Both mechanisms are per-project. Suppression in one Adapty project doesn't affect another.
+
+## Unsubscribe
+
+Every email Adapty Mail sends includes an unsubscribe link in the footer.
+
+1. The user clicks the link. Adapty Mail opens a confirmation page.
+2. The user confirms. The backend marks the profile with `suppression_reason = 'unsubscribe'`, cancels the remaining sequence, and excludes the profile from future sends in the project.
+
+The token in the unsubscribe URL encodes the `profile_id` and the `scheduled_email_id`, so no login is required.
+
+:::note
+Adapty Mail also sends the `List-Unsubscribe: <URL>, <mailto:>` header together with `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. Gmail and Yahoo require this for bulk senders (RFC 8058). Clients that support the header offer a one-click unsubscribe button directly in the inbox — no confirmation page involved.
+:::
+
+## Automatic suppression
+
+Adapty Mail listens for AWS SES delivery events via SNS and suppresses the user immediately on any of the following:
+
+| Event     | Reason code | What it means                                                                   |
+| --------- | ----------- | ------------------------------------------------------------------------------- |
+| Bounce    | `bounce`    | The email address is invalid, the mailbox is full, or the domain doesn't exist. |
+| Complaint | `complaint` | The user marked the email as spam.                                              |
+| Reject    | `reject`    | SES rejected the message before sending.                                        |
+| Throttle  | `throttle`  | Sending rate exceeded domain safety limits.                                     |
+
+For every event, the outcome is the same: the user is added to the suppression list, the remaining sequence is cancelled, and they're excluded from future sends in the project.
+
+:::important
+Adapty Mail does **not** distinguish between hard and soft bounces. Any bounce — including temporary conditions like a full mailbox — suppresses the user immediately. There's no retry window.
+:::
+
+## Stop condition
+
+When a user converts mid-sequence, Adapty Mail cancels their remaining emails with the `stop_condition` reason. Conversion means their subscription state reaches **Subscribed**, or their one-time purchase state reaches **Purchased**.
+
+Stop condition is different from suppression:
+
+- **Suppression**: Excludes the user from all future sends in the project.
+- **Stop condition**: Cancels only the current sequence. The user stays eligible for other campaigns — for example, a renewal or win-back flow targeting active subscribers.
+
+Stop-condition cancellations appear alongside suppressions in campaign analytics.
+
+## Managing suppression
+
+Adapty Mail has no dashboard UI to view or remove suppressed users. To unsuppress a profile — for example, someone who accidentally marked a test email as spam — contact Adapty support.
+
+## What Adapty Mail handles for compliance
+
+Adapty Mail ships with:
+
+- **Unsubscribe link**: Included in every email footer, processed immediately on user confirmation.
+- **List-Unsubscribe headers**: Sent with every email for one-click unsubscribe from the inbox (RFC 8058).
+- **Automatic suppression**: Triggered on SES bounce, complaint, reject, and throttle events.
+
+Parts you're responsible for:
+
+- **Physical mailing address**: CAN-SPAM requires one in the email footer. Adapty Mail doesn't inject it — add it in your campaign design.
+- **Explicit opt-in consent**: Collect it before passing a user's email to Adapty. See [Collect user emails](mail-collect-emails).
+- **GDPR erasure requests**: Adapty Mail doesn't expose a "delete my data" endpoint. Coordinate with Adapty support if a user invokes their right to erasure.
