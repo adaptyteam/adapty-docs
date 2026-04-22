@@ -1,0 +1,12 @@
+| Parameter                     | Type          | Required | Nullable | Description                                                  |
+| :---------------------------- | :------------ | -------- | -------- | :----------------------------------------------------------- |
+| purchase_id                   | String        | Yes      | No       | Идентификатор покупки в Adapty. Позволяет убедиться, что покупка уже обработана, например при отслеживании разовых продуктов. |
+| store                         | String        | Yes      | No       | Стор, в котором был куплен продукт. Возможные значения: **app_store**, **play_store**, **stripe**, название вашего [кастомного стора.](custom-store) |
+| store_product_id              | String        | Yes      | No       | Идентификатор продукта в сторе (App Store / Google Play / Stripe и т. д.), который открыл данный уровень доступа. |
+| store_base_plan_id            | String        | Yes      | Yes      | [Идентификатор базового плана](https://support.google.com/googleplay/android-developer/answer/12154973) в Google Play Store или [идентификатор цены](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) в Stripe. |
+| store_transaction_id          | String        | Yes      | No       | Идентификатор транзакции в сторе (App Store / Google Play / Stripe и т. д.). |
+| store_original_transaction_id | String        | Yes      | No       | <p>При продлении подписки формируется цепочка транзакций. Первая транзакция в этой цепочке называется оригинальной, и все остальные транзакции связаны с ней. Остальные транзакции в цепочке являются продлениями.</p><br /><p>Если продления не было, `store_original_transaction_id` совпадает с `store_transaction_id`.</p> |
+| purchased_at                  | ISO 8601 date | Yes      | No       | Дата и время последней покупки уровня доступа. |
+| environment                   | String        | No       | No       | Среда транзакции, предоставившей уровень доступа. Возможные значения: `Sandbox`, `Production.` |
+| is_refund                     | Boolean       | Yes      | No       | Указывает, был ли продукт возвращён (рефанд).                  |
+| is_consumable                 | Boolean       | Yes      | No       | Указывает, является ли продукт расходуемой покупкой.                 |

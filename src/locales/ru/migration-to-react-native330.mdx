@@ -1,0 +1,537 @@
+---
+title: "Миграция Adapty React Native SDK на версию 3.3"
+description: "Переходите на Adapty React Native SDK v3.3 для повышения производительности и новых функций монетизации."
+metadataTitle: "Миграция на Adapty React Native SDK v3.3 | Документация Adapty"
+---
+
+Adapty SDK 3.3.1 — это мажорный релиз, который принёс ряд улучшений, требующих выполнения шагов миграции.
+
+1. Обновите Adapty SDK до версии 3.3.x.
+2. Обновите модели.
+3. Удалите метод `getProductsIntroductoryOfferEligibility`.
+4. Обновите процесс совершения покупки.
+5. Обновите отображение пейволов Paywall Builder.
+6. Пересмотрите реализацию таймеров, определяемых разработчиком.
+7. Обновите обработку событий покупки в Paywall Builder.
+8. Обновите обработку событий кастомных действий в Paywall Builder.
+9. Измените коллбэк `onProductSelected`.
+10. Удалите параметры сторонних интеграций из метода `updateProfile`.
+11. Обновите конфигурации интеграций для Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase и Google Analytics, Mixpanel, OneSignal и Pushwoosh.
+12. Обновите реализацию режима Observer.
+
+## Обновление Adapty React Native SDK до версии 3.3.x \{#upgrade-adapty-react-native-sdk-to-33x\}
+
+До версии 3.3.1 SDK `react-native-adapty` являлся основным и обязательным SDK для работы Adapty в вашем приложении. SDK `@adapty/react-native-ui` был опциональным и требовался только при использовании Adapty Paywall Builder.
+
+Начиная с версии 3.3.1, SDK `@adapty/react-native-ui` признан устаревшим, а его функциональность объединена с SDK `react-native-adapty`. Чтобы перейти на версию 3.3.1, выполните следующие шаги:
+
+1. Обновите пакет `react-native-adapty` до версии 3.3.1.
+2. Удалите пакет `@adapty/react-native-ui` из зависимостей проекта.
+3. Синхронизируйте зависимости проекта, чтобы применить изменения.
+
+## Изменения в моделях \{#changes-in-models\}
+
+### Новые модели \{#new-models\}
+
+1. [AdaptySubscriptionOffer](https://react-native.adapty.io/interfaces/adaptysubscriptionoffer):
+
+    ```typescript showLineNumbers
+    export interface AdaptySubscriptionOffer {
+      readonly identifier: AdaptySubscriptionOfferId;
+
+      phases: AdaptyDiscountPhase[];
+
+      android?: {
+        offerTags?: string[];
+      };
+    }
+    ```
+
+2. [AdaptySubscriptionOfferId](https://react-native.adapty.io/types/adaptysubscriptionofferid):
+
+    ```typescript showLineNumbers
+    export type AdaptySubscriptionOfferId =
+      | { id?: string; type: 'introductory'; }
+      | { id: string; type: 'promotional' | 'win_back'; };
+    ```
+
+### Изменённые модели \{#changed-models\}
+
+1. [AdaptyPaywallProduct](https://react-native.adapty.io/interfaces/adaptypaywallproduct):
+   
+    - Свойство `subscriptionDetails` переименовано в `subscription`.
+      
+      <p> </p>
+      
+     ```diff showLineNumbers
+     -  subscriptionDetails?: AdaptySubscriptionDetails; 
+     +  subscription?: AdaptySubscriptionDetails;
+     ```
+    
+2. [AdaptySubscriptionDetails](https://react-native.adapty.io/interfaces/adaptysubscriptiondetails):
+
+    - Свойство `promotionalOffer` удалено. Теперь promotional offer передаётся через свойство `offer` только если он доступен. В этом случае `offer?.identifier?.type` будет иметь значение `'promotional'`.
+
+    - Свойство `introductoryOfferEligibility` удалено (офферы возвращаются только если пользователь имеет право на их получение).
+
+    - Свойство `offerId` удалено. ID оффера теперь хранится в `AdaptySubscriptionOffer.identifier`.
+
+    - Свойство `offerTags` перемещено в `AdaptySubscriptionOffer.android`.
+      
+      <p> </p>
+
+    ```diff showLineNumbers
+    -  introductoryOffers?: AdaptyDiscountPhase[];
+    +  offer?: AdaptySubscriptionOffer;
+    
+       ios?: {
+    -    promotionalOffer?: AdaptyDiscountPhase;
+         subscriptionGroupIdentifier?: string;
+       };
+    
+       android?: {
+    -    offerId?: string;
+         basePlanId: string;
+    -    introductoryOfferEligibility: OfferEligibility;
+    -    offerTags?: string[];
+         renewalType?: 'prepaid' | 'autorenewable';
+       };
+     }
+    ```
+3. [AdaptyDiscountPhase](https://react-native.adapty.io/interfaces/adaptydiscountphase):
+   
+    - Поле `identifier` удалено из модели `AdaptyDiscountPhase`. Идентификатор оффера теперь хранится в `AdaptySubscriptionOffer.identifier`.
+      
+      <p> </p>
+      
+     ```diff showLineNumbers
+     -  ios?: {
+     -    readonly identifier?: string;
+     -  };
+     ```
+
+### Удалённые модели \{#remove-models\}
+
+1. `AttributionSource`:
+   - Вместо него теперь используется строка там, где ранее применялся `AttributionSource`.
+2. `OfferEligibility`:
+   - Эта модель удалена, так как больше не нужна. Теперь оффер возвращается только если пользователь имеет право на его получение.
+
+## Удаление метода `getProductsIntroductoryOfferEligibility` \{#remove-getproductsintroductoryoffereligibility-method\}
+
+До Adapty SDK 3.3.1 объекты продуктов всегда включали офферы, даже если пользователь не имел права на их получение. Это требовало ручной проверки права на получение оффера перед его использованием.
+
+Начиная с версии 3.3.1, объект продукта включает офферы только если пользователь имеет на них право. Это упрощает процесс: если оффер присутствует, можно считать, что пользователь имеет право на его получение.
+
+## Обновление процесса совершения покупки \{#update-making-purchase\}
+
+В более ранних версиях отменённые и отложенные покупки считались ошибками и возвращали коды `2: 'paymentCancelled'` и `25: 'pendingPurchase'` соответственно.
+
+Начиная с версии 3.3.1, отменённые и отложенные покупки считаются успешными результатами и должны обрабатываться соответствующим образом:
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+
+## Обновление отображения пейволов Paywall Builder \{#update-paywall-builder-paywall-presentation\}
+
+Актуальные примеры смотрите в документации [Отображение новых пейволов Paywall Builder в React Native](react-native-present-paywalls).
+
+```diff showLineNumbers
+- import { createPaywallView } from '@adapty/react-native-ui';
++ import { createPaywallView } from 'react-native-adapty/dist/ui';
+
+const view = await createPaywallView(paywall);
+
+view.registerEventHandlers(); // handle close press, etc
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+## Обновление реализации таймеров, определяемых разработчиком \{#update-developer-defined-timer-implementation\}
+
+Переименуйте параметр `timerInfo` в `customTimers`:
+
+```diff showLineNumbers
+- let timerInfo = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
++ let customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+ //and then you can pass it to createPaywallView as follows:
+- view = await createPaywallView(paywall, { timerInfo })
++ view = await createPaywallView(paywall, { customTimers })
+```
+
+## Обновление событий покупки в Paywall Builder \{#modify-paywall-builder-purchase-events\}
+
+Ранее:
+
+- Отменённые покупки вызывали коллбэк `onPurchaseCancelled`.
+- Отложенные покупки возвращали код ошибки `25: 'pendingPurchase'`.
+
+Теперь:
+
+- Оба случая обрабатываются коллбэком `onPurchaseCompleted`.
+
+#### Шаги миграции: \{#steps-to-migrate\}
+
+1. Удалите коллбэк `onPurchaseCancelled`.
+2. Удалите обработку кода ошибки `25: 'pendingPurchase'`.
+3. Обновите коллбэк `onPurchaseCompleted`:
+
+```typescript showLineNumbers
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.registerEventHandlers({
+  // ... other optional callbacks
+  onPurchaseCompleted(purchaseResult, product) {
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+// highlight-start
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+// highlight-end
+    }
+// highlight-start
+    return purchaseResult.type !== 'user_cancelled';
+// highlight-end
+  },
+});
+```
+
+## Обновление событий кастомных действий в Paywall Builder \{#modify-paywall-builder-custom-action-events\}
+
+Удалённые коллбэки:
+
+-  `onAction`
+-  `onCustomEvent`
+
+Добавленный коллбэк:
+
+- Новый коллбэк `onCustomAction(actionId)`. Используйте его для кастомных действий.
+
+## Изменение коллбэка `onProductSelected` \{#modify-onproductselected-callback\}
+
+Ранее `onProductSelected` принимал объект `product`. Теперь требуется `productId` в виде строки.
+
+## Удаление параметров сторонних интеграций из метода `updateProfile` \{#remove-third-party-integration-parameters-from-updateprofile-method\}
+
+Идентификаторы сторонних интеграций теперь задаются с помощью метода `setIntegrationIdentifier`. Метод `updateProfile` больше не принимает их.
+
+## Обновление конфигурации SDK сторонних интеграций \{#update-third-party-integration-sdk-configuration\}
+
+Чтобы интеграции корректно работали с Adapty React Native SDK 3.3.1 и выше, обновите конфигурации SDK для следующих интеграций согласно разделам ниже.
+
+Кроме того, если вы использовали `AttributionSource` для получения идентификатора атрибуции, измените код так, чтобы передавать нужный идентификатор в виде строки.
+
+### Adjust \{#adjust\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Конфигурация SDK для интеграции Adjust](adjust#connect-your-app-to-adjust).
+
+```diff showLineNumbers
+ import { Adjust, AdjustConfig } from "react-native-adjust";
+ import { adapty } from "react-native-adapty";
+
+ var adjustConfig = new AdjustConfig(appToken, environment);
+
+ // Before submiting Adjust config...
+ adjustConfig.setAttributionCallbackListener(attribution => {
+   // Make sure Adapty SDK is activated at this point
+   // You may want to lock this thread awaiting of `activate`
+   adapty.updateAttribution(attribution, "adjust");
+ });
+
+ // ...
+ Adjust.create(adjustConfig);
+
++ Adjust.getAdid((adid) => {
++   if (adid)
++     adapty.setIntegrationIdentifier("adjust_device_id", adid);
++ });
+```
+
+### AirBridge \{#airbridge\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Конфигурация SDK для интеграции AirBridge](airbridge#connect-your-app-to-airbridge).
+
+```diff showLineNumbers
+ import Airbridge from 'airbridge-react-native-sdk';
+ import { adapty } from 'react-native-adapty';
+
+ try {
+   const deviceId = await Airbridge.state.deviceUUID();
+
+-  await adapty.updateProfile({
+-    airbridgeDeviceId: deviceId,
+-  });
++  await adapty.setIntegrationIdentifier("airbridge_device_id", deviceId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### Amplitude \{#amplitude\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Конфигурация SDK для интеграции Amplitude](amplitude#sdk-configuration).
+
+```diff showLineNumbers
+
+ try {
+-   await adapty.updateProfile({
+-     amplitudeDeviceId: deviceId,
+-     amplitudeUserId: userId,
+-   });
++   await adapty.setIntegrationIdentifier("amplitude_device_id", deviceId);
++   await adapty.setIntegrationIdentifier("amplitude_user_id", userId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### AppMetrica \{#appmetrica\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Конфигурация SDK для интеграции AppMetrica](appmetrica#sdk-configuration).
+
+```diff showLineNumbers
+ import AppMetrica, { DEVICE_ID_KEY, StartupParams, StartupParamsReason } from '@appmetrica/react-native-analytics';
+
+ // ...
+ const startupParamsCallback = async (
+   params?: StartupParams,
+   reason?: StartupParamsReason
+ ) => {
+   const deviceId = params?.deviceId
+   if (deviceId) {
+     try {
+-       await adapty.updateProfile({
+-         appmetricaProfileId: 'YOUR_ADAPTY_CUSTOMER_USER_ID',
+-         appmetricaDeviceId: deviceId,
+-       });
++       await adapty.setIntegrationIdentifier("appmetrica_profile_id", 'YOUR_ADAPTY_CUSTOMER_USER_ID');
++       await adapty.setIntegrationIdentifier("appmetrica_device_id", deviceId);
+     } catch (error) {
+       // handle `AdaptyError`
+     }
+   }
+ }
+
+ AppMetrica.requestStartupParams(startupParamsCallback, [DEVICE_ID_KEY])
+```
+
+### AppsFlyer \{#appsflyer\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Конфигурация SDK для интеграции AppsFlyer](appsflyer#connect-your-app-to-appsflyer).
+
+```diff showLineNumbers
+ import { adapty, AttributionSource } from 'react-native-adapty';
+ import appsFlyer from 'react-native-appsflyer';
+
+ appsFlyer.onInstallConversionData(installData => {
+     try {
+-        const networkUserId = appsFlyer.getAppsFlyerUID();
+-        adapty.updateAttribution(installData, AttributionSource.AppsFlyer, networkUserId);
++        const uid = appsFlyer.getAppsFlyerUID();
++        adapty.setIntegrationIdentifier("appsflyer_id", uid);
++        adapty.updateAttribution(installData, "appsflyer");
+     } catch (error) {
+         // handle the error
+     }
+ });
+
+ // ...
+ appsFlyer.initSdk(/*...*/);
+```
+
+### Branch \{#branch\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Конфигурация SDK для интеграции Branch](branch#connect-your-app-to-branch).
+
+```diff showLineNumbers
+ import branch from 'react-native-branch';
+
+ branch.subscribe({
+   enComplete: ({
+     params,
+   }) => {
+-    adapty.updateAttribution(params, AttributionSource.Branch);
++    adapty.updateAttribution(params, "branch");
+   },
+ });
+```
+
+### Facebook Ads \{#facebook-ads\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Конфигурация SDK для интеграции Facebook Ads](facebook-ads#connect-your-app-to-facebook-ads).
+
+```diff showLineNumbers
+ import { AppEventsLogger } from 'react-native-fbsdk-next';
+
+ try {
+   const anonymousId = await AppEventsLogger.getAnonymousID();
+
+-  await adapty.updateProfile({
+-    facebookAnonymousId: anonymousId,
+-  });
++  await adapty.setIntegrationIdentifier("facebook_anonymous_id", anonymousId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### Firebase и Google Analytics \{#firebase-and-google-analytics\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Конфигурация SDK для интеграции Firebase и Google Analytics](firebase-and-google-analytics).
+
+```diff showLineNumbers
+ import analytics from '@react-native-firebase/analytics';
+
+ try {
+   const appInstanceId = await analytics().getAppInstanceId();
+
+-   await adapty.updateProfile({
+-     firebaseAppInstanceId: appInstanceId,
+-   });
++   await adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### Mixpanel \{#mixpanel\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Конфигурация SDK для интеграции Mixpanel](mixpanel#sdk-configuration).
+
+```diff showLineNumbers
+ import { Mixpanel } from 'mixpanel-react-native';
+
+ // ...
+ try {
+-   await adapty.updateProfile({
+-     mixpanelUserId: mixpanelUserId,
+-   });
++   await adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelUserId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### OneSignal \{#onesignal\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Конфигурация SDK для интеграции OneSignal](onesignal#sdk-configuration).
+
+<Tabs groupId="current-os" queryString> 
+
+<TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
+
+```diff showLineNumbers
+ import OneSignal from 'react-native-onesignal';
+
+ OneSignal.User.pushSubscription.addEventListener('change', (subscription) => {
+   const subscriptionId = subscription.current.id;
+
+   if (subscriptionId) {
+-    adapty.updateProfile({
+-      oneSignalSubscriptionId: subscriptionId,
+-    });
++    adapty.setIntegrationIdentifier("one_signal_subscription_id", subscriptionId);
+   }
+ });
+```
+
+ </TabItem> 
+
+<TabItem value="pre-v5" label="OneSignal SDK v. up to 4.x (legacy)" default> 
+
+```diff showLineNumbers
+
+ OneSignal.addSubscriptionObserver(event => {
+   const playerId = event.to.userId;
+   
+-  adapty.updateProfile({
+-    oneSignalPlayerId: playerId,
+-  });
++  adapty.setIntegrationIdentifier("one_signal_player_id", playerId);
+ });
+```
+
+ </TabItem> 
+
+</Tabs>
+
+### Pushwoosh \{#pushwoosh\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Конфигурация SDK для интеграции Pushwoosh](pushwoosh#sdk-configuration).
+
+```diff showLineNumbers
+ import Pushwoosh from 'pushwoosh-react-native-plugin';
+
+ // ...
+ try {
+-  await adapty.updateProfile({
+-    pushwooshHWID: hwid,
+-  });
++  await adapty.setIntegrationIdentifier("pushwoosh_hwid", hwid);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+## Обновление реализации режима Observer \{#update-observer-mode-implementation\}
+
+Обновите способ привязки пейволов к транзакциям. Раньше для назначения `variationId` использовался метод `setVariationId`. Теперь можно передавать `variationId` напрямую при регистрации транзакции с помощью нового метода `reportTransaction`. Итоговый пример кода смотрите в разделе [Привязка пейволов к транзакциям покупки в режиме Observer](report-transactions-observer-mode-react-native).
+
+:::warning
+
+Не забудьте зарегистрировать транзакцию с помощью метода `reportTransaction`. Если пропустить этот шаг, Adapty не распознает транзакцию, не предоставит уровни доступа, не включит её в аналитику и не отправит в интеграции. Этот шаг обязателен!
+
+:::
+
+:::note
+
+Обратите внимание, что порядок параметров метода `reportTransaction` отличается от порядка параметров метода `setVariationId`.
+
+:::
+
+```diff showLineNumbers
+  const variationId = paywall.variationId;
+
+ try {
+-    await adapty.setVariationId(variationId, transactionId);
++    await adapty.reportTransaction(transactionId, variationId);
+ } catch (error) {
+     // handle the `AdaptyError`
+ }
+
+```

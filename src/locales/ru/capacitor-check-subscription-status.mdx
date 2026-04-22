@@ -1,0 +1,96 @@
+---
+title: "Проверка статуса подписки в Capacitor SDK"
+description: "Узнайте, как проверить статус подписки в приложении на Capacitor с помощью Adapty."
+metadataTitle: "Проверка статуса подписки | Документация Adapty"
+displayed_sidebar: sdkcapacitor
+---
+
+Чтобы решить, может ли пользователь получить доступ к платному контенту или нужно показать ему пейвол, необходимо проверить его [уровень доступа](access-level) в профиле.
+
+В этой статье описано, как читать состояние профиля и решать, что показывать пользователю — пейвол или платный контент.
+
+## Получение статуса подписки \{#get-subscription-status\}
+
+Когда нужно решить, показать пейвол или платный контент, вы проверяете [уровень доступа](access-level) в профиле пользователя. Есть два варианта:
+
+- Вызвать `getProfile`, если нужны актуальные данные прямо сейчас (например, при запуске приложения) или требуется принудительное обновление.
+- Настроить **автоматическое обновление профиля**, чтобы хранить локальную копию, которая автоматически обновляется при изменении статуса подписки.
+
+### Получить профиль \{#get-profile\}
+
+Самый простой способ узнать статус подписки — использовать метод `getProfile` для получения профиля:
+
+```typescript showLineNumbers
+try {
+  const profile = await adapty.getProfile();
+} catch (error) {
+  // handle the error
+}
+```
+
+### Подписаться на обновления подписки \{#listen-to-subscription-updates\}
+
+Чтобы автоматически получать обновления профиля в приложении:
+
+1. Используйте `adapty.addListener('onLatestProfileLoad')` для отслеживания изменений профиля — Adapty автоматически вызовет этот метод при каждом изменении статуса подписки пользователя.
+2. Сохраняйте обновлённые данные профиля при вызове этого метода, чтобы использовать их по всему приложению без лишних сетевых запросов.
+
+```typescript showLineNumbers
+class SubscriptionManager {
+  private currentProfile: any = null;
+  
+  constructor() {
+    // Listen for profile updates
+    adapty.addListener('onLatestProfileLoad', (data) => {
+      this.currentProfile = data.profile;
+      // Update UI, unlock content, etc.
+    });
+  }
+  
+  // Use stored profile instead of calling getProfile()
+  hasAccess(): boolean {
+    return this.currentProfile?.accessLevels?.['YOUR_ACCESS_LEVEL']?.isActive ?? false;
+  }
+}
+```
+
+:::note
+Adapty автоматически вызывает обработчик события `onLatestProfileLoad` при запуске приложения, предоставляя кешированные данные о подписке даже при отсутствии подключения к сети.
+:::
+
+## Связь профиля с логикой пейвола \{#connect-profile-with-paywall-logic\}
+
+Когда нужно быстро решить, показать пейвол или открыть доступ к платному контенту, можно обратиться к профилю пользователя напрямую. Это удобно при запуске приложения, входе в премиум-разделы или перед показом определённого контента.
+
+```typescript showLineNumbers
+const checkAccessLevel = async () => {
+  try {
+    const profile = await adapty.getProfile();
+    return profile?.accessLevels?.['YOUR_ACCESS_LEVEL']?.isActive === true;
+  } catch (error) {
+    console.warn('Error checking access level:', error);
+    return false; // Show paywall if access check fails
+  }
+};
+
+const getAccessLevel = () => {
+  return profile?.accessLevels?.['YOUR_ACCESS_LEVEL'];
+};
+
+const initializePaywall = async () => {
+  try {
+    await loadPaywall();
+    
+    const hasAccess = await checkAccessLevel();
+    if (!hasAccess) {
+      // Show paywall if no access
+    }
+  } catch (error) {
+    console.warn('Error initializing paywall:', error);
+  }
+};
+```
+
+## Дальнейшие шаги \{#next-steps\}
+
+Теперь, когда вы знаете, как отслеживать статус подписки, узнайте, как [работать с профилями пользователей](capacitor-quickstart-identify), чтобы они могли получить доступ к тому, за что заплатили.

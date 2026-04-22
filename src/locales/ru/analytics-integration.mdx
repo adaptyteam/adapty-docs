@@ -1,0 +1,308 @@
+---
+title: "Интеграции с аналитическими сервисами"
+description: "Интегрируйте аналитические инструменты с Adapty для отслеживания и оптимизации подписок пользователей."
+metadataTitle: "Гайд по интеграции аналитики | Документация Adapty"
+---
+
+Adapty отправляет все [события подписок](events) в аналитические сервисы — например, [Amplitude](amplitude), [Mixpanel](mixpanel) и [AppMetrica](appmetrica). Также можно настроить отправку событий на ваш сервер через интеграцию с [webhook](webhook). Главное удобство в том, что вам не нужно отправлять события самостоятельно — мы сделаем это за вас. Просто настройте интеграцию в дашборде Adapty.
+
+Adapty поддерживает интеграцию со следующими сторонними аналитическими сервисами:
+
+- [Amplitude](amplitude)
+- [AppMetrica](appmetrica)
+- [Firebase и Google Analytics](firebase-and-google-analytics)
+- [Mixpanel](mixpanel)
+- [PostHog](posthog)
+- [SplitMetrics Acquire](splitmetrics)
+
+:::note
+Не нашли своего провайдера аналитики?
+
+Сообщите нам! [Создайте запрос на добавление функции](https://adapty.featurebase.app/en?b=6979f233ebd3cffd4f425ba0), и мы рассмотрим его.
+:::
+
+## Свойства событий \{#event-properties\}
+
+События webhook отправляются в формате JSON. Все события имеют одинаковую структуру, но их поля различаются в зависимости от типа события, стора и вашей конфигурации.
+
+| Свойство                      | Тип           | Описание                                                  |
+| ----------------------------- | ------------- | ------------------------------------------------------------ |
+| **profile_id**                | uuid          | ID пользователя Adapty.                                              |
+| **currency**                  | str           | Местная валюта (по умолчанию USD).                            |
+| **price_usd**                 | float         | Цена продукта до вычета комиссии Apple/Google. Выручка.              |
+| **proceeds_usd**              | float         | Цена продукта после вычета комиссии Apple/Google. Чистая выручка.           |
+| **net_revenue_usd**           | float         | Чистый доход (после вычета комиссии Apple/Google и налогов) в USD. Может быть пустым. |
+| **price_local**               | float         | Цена продукта до вычета комиссии Apple/Google в местной валюте. Выручка. |
+| **proceeds_local**            | float         | Цена продукта после вычета комиссии Apple/Google в местной валюте. Чистая выручка. |
+| **transaction_id**            | str           | Уникальный идентификатор транзакции (покупки или продления). |
+| **original_transaction_id**   | str           | Идентификатор транзакции исходной покупки.         |
+| **purchase_date**             | ISO 8601 date | Дата и время покупки продукта.                       |
+| **original_purchase_date**    | ISO 8601 date | Дата и время исходной покупки.                  |
+| **environment**               | str           | Может быть _Sandbox_ или _Production_.                            |
+| **vendor_product_id**         | str           | ID продукта в Apple App Store, Google Play Store или Stripe. |
+| **base_plan_id**              | str           | [ID базового плана](https://support.google.com/googleplay/android-developer/answer/12154973) в Google Play Store или [ID цены](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) в Stripe. |
+| **event_datetime**            | ISO 8601 date | Дата и время события.                              |
+| **store**                     | str           | Может быть _app_store_ или _play_store_.                          |
+| **trial_duration**            | str           | Длительность пробного периода в днях. Формат: «{} days», например «7 days». |
+| **cancellation_reason**       | str           | <p>Причина отмены подписки пользователем.</p><p></p><p>Возможные значения:</p><p>iOS и Android:</p><p>_voluntarily_cancelled_, _billing_error_, _refund_</p><p>iOS:</p><p>_price_increase_, _product_was_not_available_, _unknown_</p><p>Android:</p><p>_new_subscription_replace_, _cancelled_by_developer_</p> |
+| **subscription_expires_at**   | ISO 8601 date | Дата истечения подписки. Как правило, в будущем.  |
+| **consecutive_payments**      | int           | Количество периодов непрерывной подписки пользователя, включая текущий. |
+| **rate_after_first_year**     | bool          | Признак того, что подписка соответствует условиям пониженной комиссии (обычно 15%) после одного года непрерывного продления. Ставки комиссии зависят от участия в программе и страны. Подробнее см. в разделе [Комиссия стора и налоги](controls-filters-grouping-compare-proceeds#store-commission-and-taxes). |
+| **promotional_offer_id**      | str           | ID promotional offer, указанный в разделе Product дашборда Adapty. |
+| **store_offer_category**      | str           | Может быть _introductory_ или _promotional_.                      |
+| **store_offer_discount_type** | str           | Может быть _free_trial_, _pay_as_you_go_ или _pay_up_front_.      |
+| **paywall_name**              | str           | Название пейвола, с которого была совершена транзакция.        |
+| **paywall_revision**          | int           | Ревизия пейвола, с которого была совершена транзакция. Значение равно 1. |
+| **developer_id**              | str           | Developer (SDK) ID плейсмента, с которого была совершена транзакция. |
+| **ab_test_name**              | str           | Название A/B-теста, в рамках которого была совершена транзакция.       |
+| **ab_test_revision**          | int           | Ревизия A/B-теста, в рамках которого была совершена транзакция. Значение равно 1. |
+| **cohort_name**               | str           | Название аудитории, к которой принадлежит профиль.        |
+| **profile_event_id**          | uuid          | Уникальный ID события для дедупликации.          |
+| **store_country**             | str           | Страна, переданная нам стором.                         |
+| **profile_ip_address**        | str           | IP профиля (может быть IPv4 или IPv6; предпочтение отдаётся IPv4). Обновляется при каждом изменении IP устройства. |
+| **profile_country**           | str           | Определяется Adapty на основе IP профиля.                   |
+| **profile_total_revenue_usd** | float         | Общая выручка по профилю с учётом возвратов.             |
+| **variation_id**              | uuid          | Уникальный ID пейвола, на котором была совершена покупка.        |
+| **access_level_id**           | str           | ID платного уровня доступа.                                         |
+| **is_active**                 | bool          | Признак того, что платный уровень доступа активен для профиля. |
+| **will_renew**                | bool          | Признак того, что платный уровень доступа будет продлён. |
+| **is_refund**                 | bool          | Признак того, что транзакция возвращена.          |
+| **is_lifetime**               | bool          | Признак того, что платный уровень доступа является пожизненным.    |
+| **is_in_grace_period**        | bool          | Признак того, что профиль находится в льготном периоде.       |
+| **starts_at**                 | ISO 8601 date | Дата и время начала платного уровня доступа для пользователя.    |
+| **renewed_at**                | ISO 8601 date | Дата и время продления платного доступа.              |
+| **expires_at**                | ISO 8601 date | Дата и время истечения платного доступа.                  |
+| **activated_at**              | ISO 8601 date | Дата и время активации платного доступа.                |
+| **billing_issue_detected_at** | ISO 8601 date | Дата и время обнаружения проблемы с оплатой.                              |
+| **profile_has_access_level**  | Bool          | Признак того, что у профиля есть активный уровень доступа (только для Webhook). |
+
+Каждое событие содержит следующие свойства:
+
+`transaction_id, original_transaction_id, purchase_date, original_purchase_date, environment, vendor_product_id, event_datetime, store`.
+
+Кроме того, некоторые события содержат дополнительные свойства. Для событий `subscription_refunded` и `non_subscription_purchase_refunded` обязательно нужно передавать значения `price_usd` и `proceeds_usd`.
+
+| Название события                    | Свойства                                                   |
+| :---------------------------------- | :----------------------------------------------------------- |
+| **subscription\_initial\_purchase** | price\_usd, proceeds\_usd, subscription\_expires\_at, consecutive\_payments, rate\_after\_first\_year, trial\_duration |
+| **subscription\_renewed**           | price\_usd, proceeds\_usd, subscription\_expires\_at, consecutive\_payments, rate\_after\_first\_year, trial\_duration |
+| **subscription\_cancelled**         | cancellation\_reason, trial\_duration                        |
+| **trial\_started**                  | subscription\_expires\_at, trial\_duration                   |
+| **trial\_converted**                | price\_usd, proceeds\_usd, subscription\_expires\_at, consecutive\_payments, rate\_after\_first\_year, trial\_duration |
+| **trial\_cancelled**                | cancellation\_reason, trial\_duration                        |
+| **non\_subscription\_purchase**     | price\_usd, proceeds\_usd                                    |
+| **billing\_issue\_detected**        | subscription\_expires\_at, trial\_duration                   |
+| **entered\_grace\_period**          | subscription\_expires\_at, trial\_duration                   |
+
+Пример события
+
+```json title="Json"
+{
+    "price_usd": 9.99,
+    "proceeds_usd": 6.99,
+    "transaction_id": "1000000628581600",
+    "original_transaction_id": "1000000628581600",
+    "purchase_date": "2020-02-18T18:40:22.000000+0000",
+    "original_purchase_date": "2020-02-18T18:40:22.000000+0000",
+    "environment": "Sandbox",
+    "vendor_product_id": "premium",
+    "event_datetime": "2020-02-18T18:40:22.000000+0000",
+    "store": "app_store"
+}
+```
+
+Adapty отправляет события на ваш сервер и в сторонние аналитические системы.
+
+Свойство **profile_ip_address** синхронизируется с текущим IP устройства. При каждом обращении SDK к серверам Adapty IP обновляется, если он отличается от сохранённого.
+
+### Настройка идентификатора профиля \{#setting-the-profiles-identifier\}
+
+- Задайте идентификатор профиля для выбранной аналитики с помощью инструкций для <InlineTooltip tooltip="инструкции по установке атрибутов пользователя в вашем приложении">[iOS](setting-user-attributes), [Android](android-setting-user-attributes), [React Native](react-native-setting-user-attributes), [Flutter](flutter-setting-user-attributes) и [Unity](unity-setting-user-attributes)</InlineTooltip>.
+
+:::warning
+Предотвращение дублирования
+
+Не забудьте отключить отправку событий подписок с устройств и вашего сервера, чтобы избежать дублирования.
+:::
+
+### Отключение внешней аналитики для конкретного пользователя \{#disabling-external-analytics-for-a-specific-customer\}
+
+В некоторых случаях может потребоваться прекратить отправку аналитических событий для конкретного пользователя — например, если в вашем приложении есть возможность отказаться от аналитики.
+
+Чтобы отключить внешнюю аналитику для пользователя, используйте метод `updateProfile()`. Создайте объект `AdaptyProfileParameters.Builder` и установите соответствующее значение.  
+Когда внешняя аналитика заблокирована, Adapty не будет отправлять никакие события ни в одну интеграцию для этого пользователя. Если вы хотите отключить интеграцию для всех пользователей приложения, просто выключите её в дашборде Adapty.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+```swift showLineNumbers
+let builder = AdaptyProfileParameters.Builder()
+    .with(analyticsDisabled: true)
+
+Adapty.updateProfile(parameters: builder.build())
+```
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+val parameters = AdaptyProfileParameters(
+    analyticsDisabled = true
+)
+
+Adapty.updateProfile(parameters) { error ->
+    if (error == null) {
+        // successful update
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers ]
+AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()
+    .withExternalAnalyticsDisabled(true);
+
+Adapty.updateProfile(builder.build());
+```
+</TabItem>
+<TabItem value="flutter" label="Flutter" default>
+```javascript showLineNumbers
+final builder = AdaptyProfileParametersBuilder()
+  ..setAnalyticsDisabled(true);
+
+try {
+  await Adapty().updateProfile(builder.build());
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+</TabItem>
+<TabItem value="unity" label="Unity" default>
+```csharp showLineNumbers
+var builder = new AdaptyProfileParameters.Builder()
+    .SetAnalyticsDisabled(true);
+
+Adapty.UpdateProfile(builder.Build(), (error) => {
+    if(error != null) {
+      // handle the error
+    }
+});
+```
+</TabItem>
+<TabItem value="rn" label="React Native (TS)" default>
+```typescript showLineNumbers
+adapty.updateProfile({ analyticsDisabled: true });
+```
+</TabItem>
+</Tabs>
+
+### Отключение сбора рекламных идентификаторов \{#disable-collection-of-advertising-identifiers\}
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS" default>
+Вы можете отключить сбор IDFA с помощью свойства `idfaCollectionDisabled`. Убедитесь, что вызываете его до метода `.activate()`.
+
+```swift showLineNumbers
+// In your AppDelegate class:
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+ // highlight-start
+        .with(idfaCollectionDisabled: true) // set to `true`
+// highlight-end
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+Вы можете отключить сбор AAID/GAID с помощью свойства `withAdIdCollectionDisabled` при активации Adapty SDK:
+
+```swift showLineNumbers
+override fun onCreate() {
+    super.onCreate()
+    Adapty.activate(
+      applicationContext,
+      AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+      // highlight-start
+          .withAdIdCollectionDisabled(true) // set to `true`
+      // highlight-end
+          .build()
+    )  
+}
+```
+
+</TabItem>
+
+<TabItem value="java" label="Android (Java)" default>
+Вы можете отключить сбор AAID/GAID с помощью свойства `withAdIdCollectionDisabled` при активации Adapty SDK:
+
+```swift showLineNumbers 
+@Override
+public void onCreate() {
+    super.onCreate();
+    Adapty.activate(
+      applicationContext,
+      new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+      // highlight-start
+          .withAdIdCollectionDisabled(true) // set to `true`
+      // highlight-end
+          .build()
+    );
+}
+```
+
+</TabItem>
+
+<TabItem value="flutter" label="Flutter" default>
+Вы можете отключить сбор IDFA с помощью свойства `withAppleIdfaCollectionDisabled`, а сбор Google/Android Advertising ID — с помощью свойства `withGoogleAdvertisingIdCollectionDisabled`. Установите их в `true` при активации Adapty SDK:
+
+```dart showLineNumbers
+try {
+    await Adapty().activate(
+        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+ // highlight-start
+          ..withGoogleAdvertisingIdCollectionDisabled(true), // set to `true`
+          ..withAppleIdfaCollectionDisabled(true), // set to `true`
+// highlight-end
+    );
+} catch (e) {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="unity" label="Unity" default>
+Вы можете отключить сбор IDFA с помощью свойства `SetIDFACollectionDisabled` при активации Adapty SDK. Отключить сбор AAID/GAID в данный момент невозможно.
+
+```dart showLineNumbers
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+ // highlight-start
+    .SetIDFACollectionDisabled(true); // set to `true`
+ // highlight-end
+
+Adapty.Activate(builder.Build(), (error) => {
+    // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="rn" label="React Native" default>
+Вы также можете отключить сбор IDFA с помощью свойства `idfaCollectionDisabled` или сбор AAID/GAID с помощью свойства `adIdCollectionDisabled` при активации Adapty SDK.
+
+```typescript showLineNumbers
+adapty.activate('PUBLIC_SDK_KEY', {
+  // highlight-start 
+  ios: {
+      idfaCollectionDisabled: true, // set to `true`
+  }, 
+  android: {
+      adIdCollectionDisabled: true,
+  },
+  // highlight-end
+});
+```
+</TabItem>
+</Tabs>

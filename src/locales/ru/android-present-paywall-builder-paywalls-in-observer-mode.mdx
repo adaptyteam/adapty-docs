@@ -1,0 +1,449 @@
+---
+title: "Показ пейволов Paywall Builder в режиме Observer в Android SDK"
+description: "Узнайте, как показывать пейволы в режиме Observer с помощью Paywall Builder от Adapty."
+metadataTitle: "Показ пейволов в режиме Observer | Документация Adapty"
+---
+
+Если вы создали пейвол с помощью Paywall Builder, вам не нужно беспокоиться об его отображении в коде мобильного приложения — он уже содержит всё необходимое: и что показывать, и как показывать.
+
+:::warning
+Этот раздел относится только к [режиму Observer](observer-vs-full-mode). Если вы не работаете в режиме Observer, обратитесь к разделу [Android — отображение пейволов Paywall Builder](android-present-paywalls).
+:::
+<Tabs groupId="current-os" queryString> 
+<TabItem value="SDK3" label="New Paywall Builder (SDK 3.0+)" default> 
+<details>
+   <summary>Прежде чем показывать пейволы (нажмите, чтобы развернуть)</summary>
+
+1. Настройте начальную интеграцию Adapty [с Google Play](initial-android) и [с App Store](initial_ios).
+2. Установите и настройте Adapty SDK. Убедитесь, что параметр `observerMode` установлен в `true`. Обратитесь к нашим инструкциям для конкретных фреймворков [для Android](sdk-installation-android).
+3. [Создайте продукты](create-product) в дашборде Adapty.
+4. [Настройте пейволы, назначьте им продукты](create-paywall) и кастомизируйте их с помощью Paywall Builder в дашборде Adapty.
+5. [Создайте плейсменты и назначьте им пейволы](create-placement) в дашборде Adapty.
+6. [Получите пейволы Paywall Builder и их конфигурацию](android-get-pb-paywalls) в коде вашего мобильного приложения.
+
+</details>
+
+<p> </p>
+
+1. Реализуйте `AdaptyUiObserverModeHandler`.
+
+Событие `onPurchaseInitiated` уведомит вас о том, что пользователь инициировал покупку. В ответ на этот колбэк вы можете запустить свой кастомный флоу покупки:
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   val observerModeHandler =
+    AdaptyUiObserverModeHandler { product, paywall, paywallView, onStartPurchase, onFinishPurchase ->
+       onStartPurchase()
+       yourBillingClient.makePurchase(
+           product,
+           onSuccess = { purchase ->
+               onFinishPurchase()
+               //handle success
+           },
+           onError = {
+               onFinishPurchase()
+               //handle error
+           },
+           onCancel = {
+               onFinishPurchase()
+               //handle cancel
+           }
+       )
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   AdaptyUiObserverModeHandler observerModeHandler = (product, paywall, paywallView, onStartPurchase, onFinishPurchase) -> {
+       onStartPurchase.invoke();
+       yourBillingClient.makePurchase(
+           product,
+           purchase -> {
+               onFinishPurchase.invoke();
+               //handle success
+           },
+           error -> {
+               onFinishPurchase.invoke();
+               //handle error
+           },
+           () -> { //cancellation
+               onFinishPurchase.invoke();
+               //handle cancel
+           }
+       );
+   };
+   ```
+</TabItem>
+</Tabs>
+Чтобы обрабатывать восстановление покупок в Observer mode, переопределите `getRestoreHandler()`. По умолчанию он возвращает `null`, что использует встроенный в Adapty поток `Adapty.restorePurchases()`. Чтобы предоставить собственную реализацию восстановления:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   val observerModeHandler = object : AdaptyUiObserverModeHandler {
+       // onPurchaseInitiated implementation (see above)
+
+       override fun getRestoreHandler() =
+           AdaptyUiObserverModeHandler.RestoreHandler { onStartRestore, onFinishRestore ->
+               onStartRestore()
+               yourBillingClient.restorePurchases(
+                   onSuccess = { restoredPurchases ->
+                       onFinishRestore()
+                       //handle successful restore
+                   },
+                   onError = {
+                       onFinishRestore()
+                       //handle error
+                   }
+               )
+           }
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   AdaptyUiObserverModeHandler observerModeHandler = new AdaptyUiObserverModeHandler() {
+       // onPurchaseInitiated implementation (see above)
+
+       @Override
+       public RestoreHandler getRestoreHandler() {
+           return (onStartRestore, onFinishRestore) -> {
+               onStartRestore.invoke();
+               yourBillingClient.restorePurchases(
+                   restoredPurchases -> {
+                       onFinishRestore.invoke();
+                       //handle successful restore
+                   },
+                   error -> {
+                       onFinishRestore.invoke();
+                       //handle error
+                   }
+               );
+           };
+       }
+   };
+   ```
+</TabItem>
+</Tabs>
+Не забудьте вызывать следующие колбэки, чтобы уведомлять AdaptyUI о процессе покупки или восстановления. Это необходимо для корректной работы пейвола, например для отображения загрузчика:
+| Callback           | Описание                                                                                              |
+   | :----------------- |:------------------------------------------------------------------------------------------------------|
+   | onStartPurchase()  | Callback следует вызывать, чтобы уведомить AdaptyUI о начале покупки.                                 |
+   | onFinishPurchase() | Callback следует вызывать, чтобы уведомить AdaptyUI о завершении покупки.                             |
+   | onStartRestore()   | Необязательный. Callback можно вызывать, чтобы уведомить AdaptyUI о начале восстановления покупок.    |
+   | onFinishRestore()  | Необязательный. Callback можно вызывать, чтобы уведомить AdaptyUI о завершении восстановления покупок.|
+2. Чтобы отобразить визуальный пейвол на экране устройства, его нужно сначала настроить.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="views" label="Views" default>
+
+Для этого вызовите метод `AdaptyUI.getPaywallView()` или создайте `AdaptyPaywallView` напрямую:
+
+<Tabs groupId="current-os" queryString>
+  <TabItem value="kotlin" label="Kotlin (option 1)" default>
+```kotlin showLineNumbers
+   val paywallView = AdaptyUI.getPaywallView(
+       activity,
+       viewConfiguration,
+       products,
+       eventListener,
+       personalizedOfferResolver,
+       tagResolver,
+       timerResolver,
+       observerModeHandler, 
+   )
+```
+
+</TabItem>
+<TabItem value="kotlin2" label="Kotlin (вариант 2)" default>
+```kotlin showLineNumbers
+   val paywallView =
+        AdaptyPaywallView(activity) // or retrieve it from xml
+   ...
+   with(paywallView) {
+       showPaywall(
+           viewConfiguration,
+           products,
+					 eventListener,
+           personalizedOfferResolver,
+           tagResolver,
+           timerResolver,
+					 observerModeHandler,
+       )
+   }
+```
+
+</TabItem>
+<TabItem value="java" label="Java (вариант 1)" default>
+```java showLineNumbers
+AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
+        activity,
+        viewConfiguration,
+        products,
+        eventListener,
+        personalizedOfferResolver,
+        tagResolver,
+        timerResolver,
+        observerModeHandler
+);
+```
+
+</TabItem>
+<TabItem value="java2" label="Java (вариант 2)" default>
+```java showLineNumbers
+AdaptyPaywallView paywallView =
+  new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
+...
+paywallView.showPaywall(viewConfiguration, products, eventListener, personalizedOfferResolver, tagResolver, timerResolver, observerModeHandler);
+```
+
+</TabItem>
+<TabItem value="XML" label="XML" default>
+
+```xml showLineNumbers
+<com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />
+```
+
+</TabItem>
+</Tabs>
+После успешного создания представления его можно добавить в иерархию представлений и отобразить.
+
+</TabItem>
+<TabItem value="compose" label="Jetpack Compose" default>
+
+Для этого используйте следующую composable-функцию:
+
+```kotlin showLineNumbers
+AdaptyPaywallScreen(
+    viewConfiguration,
+    products,
+    eventListener,
+    personalizedOfferResolver,
+    tagResolver,
+    timerResolver,
+)
+```
+
+</TabItem>
+</Tabs>
+
+   Параметры запроса:
+| Параметр | Наличие | Описание |
+|---------|--------|-----------|
+| **Products** | необязательный | Передайте массив `AdaptyPaywallProduct`, чтобы оптимизировать время отображения продуктов на экране. Если передать `null`, AdaptyUI автоматически загрузит необходимые продукты. |
+| **ViewConfiguration** | обязательный | Передайте объект `AdaptyViewConfiguration`, содержащий визуальные настройки пейвола. Используйте метод `Adapty.getViewConfiguration(paywall)` для его загрузки. Подробнее см. в разделе [Получение визуальной конфигурации пейвола](#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). |
+| **EventListener** | необязательный | Передайте `AdaptyUiEventListener` для отслеживания событий пейвола. Для удобства рекомендуется расширять `AdaptyUiDefaultEventListener`. Подробнее см. в разделе [Обработка событий пейвола](android-handling-events). |
+| **PersonalizedOfferResolver** | необязательный | Чтобы указать персонализированную цену ([подробнее](https://developer.android.com/google/play/billing/integrate#personalized-price)), реализуйте `AdaptyUiPersonalizedOfferResolver` и передайте собственную логику, которая возвращает `true` для `AdaptyPaywallProduct`, если цена продукта персонализирована, и `false` в противном случае. |
+| **TagResolver** | необязательный | Используйте `AdaptyUiTagResolver` для обработки пользовательских тегов в тексте пейвола. Этот резолвер принимает тег в качестве параметра и преобразует его в соответствующую строку. Подробнее см. в разделе [Пользовательские теги в Paywall Builder](custom-tags-in-paywall-builder). |
+| **ObserverModeHandler** | обязательный для режима Observer | `AdaptyUiObserverModeHandler`, реализованный на предыдущем шаге. |
+| **variationId** | обязательный | Строковый идентификатор варианта. Его можно получить через свойство `variationId` объекта [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/). |
+| **transaction** | обязательный | <p>Для iOS, StoreKit 1: объект [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction).</p><p>Для iOS, StoreKit 2: объект [Transaction](https://developer.apple.com/documentation/storekit/transaction).</p><p>Для Android: строковый идентификатор (`purchase.getOrderId()`) покупки, где покупка — экземпляр класса [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) из библиотеки биллинга.</p> |
+</TabItem>
+<TabItem value="SDK2" label="Legacy Paywall Builder (SDK до 2.x)" default>
+<details>
+   <summary>Прежде чем показывать пейволы (нажмите, чтобы развернуть)</summary>
+
+1. Настройте начальную интеграцию Adapty [с Google Play](initial-android) и [с App Store](initial_ios).
+2. Установите и настройте Adapty SDK. Убедитесь, что параметр `observerMode` установлен в `true`. Обратитесь к инструкциям для вашего фреймворка: [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk) и [Unity](sdk-installation-unity#activate-adapty-module-of-adapty-sdk).
+3. [Создайте продукты](create-product) в дашборде Adapty.
+4. [Настройте пейволы, назначьте им продукты](create-paywall) и кастомизируйте их с помощью Paywall Builder в дашборде Adapty.
+5. [Создайте плейсменты и назначьте им пейволы](create-placement) в дашборде Adapty.
+6. [Получите пейволы Paywall Builder и их конфигурацию](android-get-pb-paywalls) в коде вашего мобильного приложения.
+
+</details>
+
+1. Реализуйте `AdaptyUiObserverModeHandler`. Колбэк `AdaptyUiObserverModeHandler` (`onPurchaseInitiated`) срабатывает, когда пользователь инициирует покупку. Вы можете запустить собственный процесс покупки в ответ на этот колбэк:
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   val observerModeHandler =
+   AdaptyUiObserverModeHandler { product, paywall, paywallView, onStartPurchase, onFinishPurchase ->
+       onStartPurchase()
+       yourBillingClient.makePurchase(
+           product,
+           onSuccess = { purchase ->
+               onFinishPurchase()
+               //handle success
+           },
+           onError = {
+               onFinishPurchase()
+               //handle error
+           },
+           onCancel = {
+               onFinishPurchase()
+               //handle cancel
+           }
+       )
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   AdaptyUiObserverModeHandler observerModeHandler = (product, paywall, paywallView, onStartPurchase, onFinishPurchase) -> {
+       onStartPurchase.invoke();
+       yourBillingClient.makePurchase(
+           product,
+           purchase -> {
+               onFinishPurchase.invoke();
+               //handle success
+           },
+           error -> {
+               onFinishPurchase.invoke();
+               //handle error
+           },
+           () -> { //cancellation
+               onFinishPurchase.invoke();
+               //handle cancel
+           }
+       );
+   };
+   ```
+</TabItem>
+</Tabs>
+Также не забудьте вызывать эти коллбэки в AdaptyUI. Это необходимо для правильной работы пейвола, например для отображения загрузчика:
+| Callback в Kotlin | Callback в Java           | Описание                                                                                                                                    |
+   | :---------------- | :------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------ |
+   | onStartPurchase()  | onStartPurchase.invoke()  | Callback нужно вызвать, чтобы уведомить AdaptyUI о том, что покупка начата.                                                                |
+   | onFinishPurchase() | onFinishPurchase.invoke() | Callback нужно вызвать, чтобы уведомить AdaptyUI о том, что покупка завершена успешно, завершена с ошибкой или отменена. |
+2. Чтобы отобразить визуальный пейвол, его необходимо сначала инициализировать. Для этого вызовите метод `AdaptyUI.getPaywallView()` или создайте `AdaptyPaywallView` напрямую:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   val paywallView = AdaptyUI.getPaywallView(
+       activity,
+       viewConfiguration,
+       products,
+       AdaptyPaywallInsets.of(topInset, bottomInset),
+       eventListener,
+       personalizedOfferResolver,
+       tagResolver,
+       observerModeHandler,
+   )
+
+   //======= OR =======
+val paywallView =
+        AdaptyPaywallView(activity) // or retrieve it from xml
+   ...
+   with(paywallView) {
+       setEventListener(eventListener)
+       setObserverModeHandler(observerModeHandler)
+       showPaywall(
+           viewConfiguration,
+           products,
+           AdaptyPaywallInsets.of(topInset, bottomInset),
+           personalizedOfferResolver,
+           tagResolver,
+       )
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
+           activity,
+           viewConfiguration,
+           products,
+           AdaptyPaywallInsets.of(topInset, bottomInset),
+           eventListener,
+           personalizedOfferResolver,
+           tagResolver,
+           observerModeHandler
+   );
+
+   //======= OR =======
+
+   AdaptyPaywallView paywallView =
+     new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
+   ...
+   paywallView.setEventListener(eventListener);
+   paywallView.setObserverModeHandler(observerModeHandler);
+   paywallView.showPaywall(viewConfiguration, products, AdaptyPaywallInsets.of(topInset, bottomInset), personalizedOfferResolver);
+   ```
+</TabItem>
+<TabItem value="XML" label="XML" default>
+   ```xml showLineNumbers
+   <com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
+       android:layout_width="match_parent"
+       android:layout_height="match_parent" />
+   ```
+</TabItem>
+</Tabs>
+После успешного создания представления вы можете добавить его в иерархию представлений и отобразить.
+
+Параметры запроса:
+| Параметр | Наличие | Описание |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Products** | опционально | Передайте массив `AdaptyPaywallProduct`, чтобы оптимизировать время отображения продуктов на экране. Если передать `null`, AdaptyUI автоматически загрузит необходимые продукты. |
+| **ViewConfiguration** | обязательно | Передайте объект `AdaptyViewConfiguration`, содержащий визуальные настройки пейвола. Используйте метод `Adapty.getViewConfiguration(paywall)` для его загрузки. Подробнее см. в разделе [Получение визуальной конфигурации пейвола](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). |
+| **Insets** | обязательно | Определите объект `AdaptyPaywallInsets`, содержащий информацию об области, перекрытой системными панелями, — это создаёт вертикальные отступы для контента. Если строка состояния и панель навигации не перекрывают `AdaptyPaywallView`, передайте `AdaptyPaywallInsets.NONE`. В полноэкранном режиме, когда системные панели перекрывают часть интерфейса, получите отступы так, как показано под таблицей. |
+| **EventListener** | опционально | Передайте `AdaptyUiEventListener` для отслеживания событий пейвола. Для удобства рекомендуется расширить `AdaptyUiDefaultEventListener`. Подробнее см. в разделе [Обработка событий пейвола](android-handling-events). |
+| **PersonalizedOfferResolver** | опционально | Чтобы указать персонализированную цену ([подробнее](https://developer.android.com/google/play/billing/integrate#personalized-price)), реализуйте `AdaptyUiPersonalizedOfferResolver` и передайте собственную логику, которая возвращает `true` для `AdaptyPaywallProduct` с персонализированной ценой и `false` в остальных случаях. |
+| **TagResolver** | опционально | Используйте `AdaptyUiTagResolver` для обработки пользовательских тегов в тексте пейвола. Этот резолвер принимает тег и возвращает соответствующую строку. Подробнее см. в разделе [Пользовательские теги в Paywall Builder](custom-tags-in-paywall-builder). |
+| **ObserverModeHandler** | обязательно для режима Observer | `AdaptyUiObserverModeHandler`, реализованный на предыдущем шаге. |
+| **variationId** | обязательно | Строковый идентификатор варианта. Его можно получить через свойство `variationId` объекта [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/). |
+| **transaction** | обязательно | <p>Для iOS, StoreKit 1: объект [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction).</p><p>Для iOS, StoreKit 2: объект [Transaction](https://developer.apple.com/documentation/storekit/transaction).</p><p>Для Android: строковый идентификатор (`purchase.getOrderId()`) покупки, где покупка — это экземпляр класса [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) из библиотеки биллинга.</p> |
+Для полноэкранного режима, где системные панели перекрывают часть вашего UI, получите инсеты следующим образом:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   import androidx.core.graphics.Insets
+   import androidx.core.view.ViewCompat
+   import androidx.core.view.WindowInsetsCompat
+
+   //create extension function
+   fun View.onReceiveSystemBarsInsets(action: (insets: Insets) -> Unit) {
+       ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
+           val systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+           ViewCompat.setOnApplyWindowInsetsListener(this, null)
+           action(systemBarInsets)
+           insets
+       }
+   }
+   //and then use it with the view
+   paywallView.onReceiveSystemBarsInsets { insets ->
+       val paywallInsets = AdaptyPaywallInsets.of(insets.top, insets.bottom)
+       paywallView.setEventListener(eventListener)
+       paywallView.setObserverModeHandler(observerModeHandler)
+       paywallView.showPaywall(viewConfig, products, paywallInsets, personalizedOfferResolver, tagResolver)
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   import androidx.core.graphics.Insets;
+   import androidx.core.view.ViewCompat;
+   import androidx.core.view.WindowInsetsCompat;
+
+   ...
+
+   ViewCompat.setOnApplyWindowInsetsListener(paywallView, (view, insets) -> {
+       Insets systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+       ViewCompat.setOnApplyWindowInsetsListener(paywallView, null);
+     
+       AdaptyPaywallInsets paywallInsets =
+                    AdaptyPaywallInsets.of(systemBarInsets.top, systemBarInsets.bottom);
+       paywallView.setEventListener(eventListener);
+       paywallView.setObserverModeHandler(observerModeHandler);
+       paywallView.showPaywall(viewConfiguration, products, paywallInsets, personalizedOfferResolver, tagResolver);
+               
+       return insets;
+   });
+   ```
+</TabItem>
+</Tabs>
+
+   Возвращает:
+| Объект | Описание |
+   | :------------------ | :------------------------------------------------- |
+   | `AdaptyPaywallView` | объект, представляющий запрошенный экран пейвола. |
+
+:::warning
+Не забудьте [связать пейволы с транзакциями покупок](report-transactions-observer-mode-android). В противном случае Adapty не сможет определить, с какого пейвола была совершена покупка.
+:::
+
+</TabItem> 
+</Tabs>

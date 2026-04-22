@@ -1,0 +1,127 @@
+---
+title: "Идентификация пользователей в Flutter SDK"
+description: "Идентифицируйте пользователей в Adapty для улучшения персонализированного опыта работы с подписками."
+metadataTitle: "Идентификация пользователей в Adapty | Документация Adapty"
+displayed_sidebar: sdkflutter
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md'; 
+
+Adapty создаёт внутренний идентификатор профиля для каждого пользователя. Однако если у вас есть собственная система аутентификации, вы можете задать свой Customer User ID. Найти пользователей по Customer User ID можно в разделе [Профили](profiles-crm), а также использовать его в [server-side API](getting-started-with-server-side-api) — он будет передаваться во все интеграции.
+
+### Установка Customer User ID при конфигурации \{#setting-customer-user-id-on-configuration\}
+
+Если идентификатор пользователя доступен на этапе конфигурации, передайте его как параметр `customerUserId` в метод `.activate()`:
+
+```dart showLineNumbers title="Dart"
+   try {
+       await Adapty().activate(
+           configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+             ..withCustomerUserId(YOUR_CUSTOMER_USER_ID)
+       );
+   } catch (e) {
+       // handle the error
+   }
+```
+
+<SampleApp />
+
+### Установка Customer User ID после конфигурации \{#setting-customer-user-id-after-configuration\}
+
+Если идентификатор пользователя недоступен при конфигурации SDK, его можно задать позже в любой момент с помощью метода `.identify()`. Чаще всего этот метод используется после регистрации или авторизации, когда пользователь переходит из анонимного состояния в аутентифицированное.
+
+```dart showLineNumbers
+try {
+  await Adapty().identify(customerUserId);
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+Параметры запроса:
+
+- **Customer User ID** (обязательный): строковый идентификатор пользователя.
+
+:::warning
+Повторная отправка важных данных пользователя
+
+В некоторых случаях, например когда пользователь повторно входит в аккаунт, серверы Adapty уже располагают информацией об этом пользователе. В таких сценариях Adapty SDK автоматически переключится на работу с новым пользователем. Если вы передавали какие-либо данные анонимному пользователю — например, пользовательские атрибуты или атрибуцию из сторонних сетей — их необходимо повторно отправить для идентифицированного пользователя.
+
+Также важно учитывать, что после идентификации пользователя нужно заново запросить все пейволы и продукты, поскольку данные нового пользователя могут отличаться.
+:::
+
+### Выход и вход в аккаунт \{#logging-out-and-logging-in\}
+
+Вы можете выйти из аккаунта пользователя в любой момент, вызвав метод `.logout()`:
+
+```dart showLineNumbers
+try {
+  await Adapty().logout();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle unknown error
+}
+```
+
+После этого можно выполнить вход с помощью метода `.identify()`.
+
+## Назначение `appAccountToken` (iOS) \{#assign-appaccounttoken-ios\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) — это **UUID**, который позволяет связать транзакции App Store с внутренним идентификатором пользователя в вашей системе.  
+StoreKit привязывает этот токен к каждой транзакции, чтобы ваш бэкенд мог сопоставить данные App Store с вашими пользователями.
+
+Используйте стабильный UUID, сгенерированный для каждого пользователя, и применяйте его для одного и того же аккаунта на всех устройствах.
+Это гарантирует корректную привязку покупок и уведомлений App Store.
+
+Токен можно задать двумя способами — при активации SDK или при идентификации пользователя.
+
+:::important
+Вы всегда должны передавать `appAccountToken` вместе с `customerUserId`.
+Если передать только токен, он не будет включён в транзакцию.
+:::
+
+```dart showLineNumbers
+// During configuration:
+try {
+   await Adapty().activate(
+       configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+         ..withCustomerUserId(YOUR_CUSTOMER_USER_ID, iosAppAccountToken: "YOUR_APP_ACCOUNT_TOKEN")
+   );
+} catch (e) {
+   // handle the error
+}
+// Or when identifying users
+try {
+    await Adapty().identify(customerUserId, iosAppAccountToken: "YOUR_APP_ACCOUNT_TOKEN");
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+}
+```
+
+### Установка обфусцированных идентификаторов аккаунта (Android) \{#set-obfuscated-account-ids-android\}
+
+Google Play требует обфусцированные идентификаторы аккаунта в определённых сценариях для защиты конфиденциальности и безопасности пользователей. Эти идентификаторы позволяют Google Play отслеживать покупки, сохраняя анонимность пользовательских данных, что особенно важно для предотвращения мошенничества и аналитики.
+
+Задавать эти идентификаторы может потребоваться, если ваше приложение работает с чувствительными пользовательскими данными или если вы обязаны соответствовать определённым требованиям конфиденциальности. Обфусцированные идентификаторы позволяют Google Play отслеживать покупки, не раскрывая реальные идентификаторы пользователей.
+
+```dart showLineNumbers
+// During configuration:
+try {
+   await Adapty().activate(
+       configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+         ..withCustomerUserId(YOUR_CUSTOMER_USER_ID, androidObfuscatedAccountId: "OBFUSCATED_ACCOUNT_ID")
+   );
+} catch (e) {
+   // handle the error
+}
+// Or when identifying users
+try {
+    await Adapty().identify(customerUserId, androidObfuscatedAccountId: "OBFUSCATED_ACCOUNT_ID");
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+}
+```

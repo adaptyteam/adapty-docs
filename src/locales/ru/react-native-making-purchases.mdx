@@ -1,0 +1,161 @@
+---
+title: "Покупки в мобильном приложении в React Native SDK"
+description: "Гайд по обработке встроенных покупок и подписок с помощью Adapty."
+metadataTitle: "Обработка встроенных покупок в Adapty | Документация Adapty"
+keywords: ['makePurchase', 'offer code']
+rank: 90
+displayed_sidebar: sdkreactnative
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/ru/reusable/OfferCodesInfo.mdx';
+
+Отображение пейволов в мобильном приложении — важный шаг для предоставления пользователям доступа к премиум-контенту или сервисам. Однако просто показать пейвол достаточно для проведения покупок только в том случае, если вы используете [Paywall Builder](adapty-paywall-builder) для его настройки.
+
+Если вы не используете Paywall Builder, для завершения покупки и разблокировки нужного контента необходимо вызвать отдельный метод `.makePurchase()`. Этот метод является точкой входа, через которую пользователь взаимодействует с пейволом и совершает транзакцию.
+
+Если для продукта, который пользователь хочет купить, настроен активный promotional offer, Adapty применит его автоматически в момент покупки.
+
+:::warning
+Обратите внимание: introductory offer применяется автоматически только при использовании пейволов, созданных в Paywall Builder.
+
+В остальных случаях необходимо [проверить право пользователя на introductory offer в iOS](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios). Если пропустить этот шаг, приложение может быть отклонено при публикации. Кроме того, пользователи, имеющие право на introductory offer, могут быть списана полная стоимость.
+:::
+
+Убедитесь, что вы выполнили [начальную настройку](quickstart), не пропустив ни одного шага. Без неё мы не сможем валидировать покупки.
+
+## Совершить покупку \{#make-purchase\}
+
+:::note
+**Используете [Paywall Builder](adapty-paywall-builder)?** Покупки обрабатываются автоматически — этот шаг можно пропустить.
+
+**Нужна пошаговая инструкция?** Ознакомьтесь с [quickstart-гайдом](react-native-implement-paywalls-manually) — там описана полная реализация с учётом всего контекста.
+:::
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+
+Параметры запроса:
+
+| Параметр    | Обязательность | Описание                                                                                                                       |
+| :---------- | :------------- |:-------------------------------------------------------------------------------------------------------------------------------|
+| **Product** | обязательный   | Объект [`AdaptyPaywallProduct`](https://react-native.adapty.io/interfaces/adaptypaywallproduct), полученный из пейвола. |
+
+Параметры ответа:
+
+| Параметр    | Описание                                                                                                                                                                                                                                                                                                                                                                    |
+|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>При успешном запросе ответ содержит этот объект. Объект [AdaptyProfile](https://react-native.adapty.io/interfaces/adaptyprofile) содержит подробную информацию об уровнях доступа пользователя, его подписках и разовых покупках внутри приложения.</p><p>Проверьте статус уровня доступа, чтобы убедиться, что пользователь имеет необходимый доступ к приложению.</p> |
+
+:::warning
+**Примечание:** если вы всё ещё используете StoreKit версии ниже 2.0 и Adapty SDK версии ниже 2.9.0, вместо этого нужно указать [общий секрет Apple App Store](app-store-connection-configuration#step-5-enter-app-store-shared-secret). Этот метод в настоящее время устарел по решению Apple.
+:::
+
+## Смена подписки при покупке \{#change-subscription-when-making-a-purchase\}
+
+Когда пользователь выбирает новую подписку вместо продления текущей, поведение зависит от стора:
+
+- В App Store подписка обновляется автоматически внутри группы подписок. Если пользователь покупает подписку из одной группы, уже имея подписку из другой, обе будут активны одновременно.
+- В Google Play подписка не обновляется автоматически. Переключение нужно реализовать в коде мобильного приложения, как описано ниже.
+
+Чтобы заменить подписку на другую в Android, вызовите метод `.makePurchase()` с дополнительным параметром:
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product, params);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+
+Дополнительный параметр запроса:
+
+| Параметр   | Обязательность | Описание                                                                 |
+| :--------- | :------------- | :----------------------------------------------------------------------- |
+| **params** | обязательный   | объект типа [`MakePurchaseParamsInput`](https://react-native.adapty.io/types/makepurchaseparamsinput). |
+
+:::info
+**Версия 3.8.2+**: структура `MakePurchaseParamsInput` обновлена. `oldSubVendorProductId` и `prorationMode` теперь вложены в `subscriptionUpdateParams`, а `isOfferPersonalized` перемещён на верхний уровень.
+
+Пример:
+```javascript
+makePurchase(product, {
+    android: {
+        subscriptionUpdateParams: {
+            oldSubVendorProductId: 'old_product_id',
+            prorationMode: 'charge_prorated_price'
+        },
+        isOfferPersonalized: true
+    }
+});
+```
+:::
+
+Подробнее о подписках и режимах замены можно прочитать в документации Google для разработчиков:
+
+- [О режимах замены](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Рекомендации Google по режимам замены](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Режим замены [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Примечание: этот метод доступен только при повышении уровня подписки. Понижение не поддерживается.
+- Режим замены [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Примечание: фактическая смена подписки произойдёт только по окончании текущего расчётного периода.
+
+## Активация промокодов в iOS \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+Чтобы отобразить в приложении форму активации промокода:
+
+```typescript showLineNumbers
+adapty.presentCodeRedemptionSheet();
+```
+
+:::danger
+По нашим наблюдениям, форма активации промокода в некоторых приложениях работает нестабильно. Мы рекомендуем перенаправлять пользователя напрямую в App Store.
+
+Для этого откройте URL следующего формата:
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
+
+## Управление предоплаченными планами (Android) \{#manage-prepaid-plans-android\}
+
+Если пользователи вашего приложения могут приобретать [предоплаченные планы](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (например, купить невозобновляемую подписку на несколько месяцев), вы можете включить [отложенные транзакции](https://developer.android.com/google/play/billing/subscriptions#pending) для таких планов.
+
+```typescript showLineNumbers
+adapty.activate("PUBLIC_SDK_KEY", {
+    android: { pendingPrepaidPlansEnabled: true }
+});
+```

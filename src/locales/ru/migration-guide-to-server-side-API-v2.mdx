@@ -1,0 +1,227 @@
+---
+title: "Руководство по миграции на серверный API v2"
+description: ""
+metadataTitle: ""
+toc_max_heading_level: 5
+---
+
+Серверный API v2 Adapty предоставляет новые возможности и улучшения для более эффективного управления уровнями доступа, транзакциями и профилями пользователей.
+## Зачем переходить на новую версию? \{#why-migrate\}
+
+Вторая версия Server-Side API даёт больше гибкости и возможностей при работе с Adapty:
+- **Раздельное управление уровнями доступа**: назначайте уровни доступа пользователям без привязки к деталям транзакции — удобно для компенсаций, бонусов и других нетранзакционных сценариев.
+- **Запись разовых покупок**: логируйте транзакции для расходуемых покупок, передавая поля, специфичные для таких продуктов.
+- **Расширенные детали транзакции**: добавляйте к транзакциям больше данных — возвраты, проблемы с оплатой, причины отмены, продления и многое другое.
+- **Обновление профиля**: вместо простого добавления атрибутов можно обновлять профиль пользователя целиком. Например, добавить метаданные об установке или отключить внешнюю аналитику при необходимости.
+Хотя v1 всё ещё поддерживается, мы рекомендуем перейти на v2 — там больше возможностей и актуальные обновления.
+## Обзор изменений \{#changes-overview\}
+| Изменение | Необходимое действие |
+| ----------------------------------- | ------------------------------------------------------------ |
+| **Базовый URL и эндпоинт** | Базовый URL и все эндпоинты изменились. Обновите конфигурацию, как описано в разделе о конечных точках запросов |
+| **Заголовки запроса** | <ol><li> Добавьте `adapty-profile-id` или `adapty-customer-user-id` в качестве заголовка.</li><li> Добавьте новый заголовок `adapty-platform`.</li></ol> |
+| **Структура запросов и ответов** | Измените параметры согласно описанию для каждого запроса и обновите интеграцию для обработки [новых форматов ответов](api-responses). |
+| **Изменённое управление уровнями доступа** | Старый запрос [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user) теперь разделён на три: <ul><li> [Set Transaction](api-adapty/operations/setTransaction): добавление деталей транзакции с предоставлением доступа.</li><li> [Grant Access Level](api-adapty/operations/grantAccessLevel): добавление или продление доступа без транзакции.</li><li> [Revoke Access Level](api-adapty/operations/revokeAccessLevel): сокращение или отзыв доступа без транзакции.</li></ul> |
+## Шаги миграции \{#migration-steps\}
+
+:::note
+
+Чтобы упростить работу с нашим серверным API, мы подготовили коллекцию Postman и файл окружения, которые можно скачать и импортировать в Postman.
+
+[Скачать коллекцию и файл окружения](https://raw.githubusercontent.com/adaptyteam/adapty-docs/refs/heads/main/Downloads/Adapty_server_side_API_postman_collection.zip)
+
+:::
+### Шаг 1. Настройте заголовки запроса \{#step-1-configure-request-headers\}
+
+Добавьте новые заголовки запроса следующим образом:
+| **Заголовок**               | **Описание**                                                 |
+| --------------------------- | ------------------------------------------------------------ |
+| **adapty-profile-id**       | (Обязательный, выберите один) Adapty profile ID пользователя. Отображается в поле **Adapty ID** на странице [дашборд Adapty -> **Profiles**](https://app.adapty.io/profiles/users) -> конкретный профиль. Взаимозаменяем с **adapty-customer-user-id**, используйте любой из них. |
+| **adapty-customer-user-id** | <p>(Обязательный, выберите один) ID пользователя в вашей системе. Отображается в поле **Customer user ID** на странице [дашборд Adapty -> **Profiles**](https://app.adapty.io/profiles/users) -> конкретный профиль. Взаимозаменяем с **adapty-profile-id**, используйте любой из них.</p><p>⚠️ Работает только если вы [идентифицируете пользователей](identifying-users) в коде приложения с помощью Adapty SDK.</p> |
+| **adapty-platform**         | Укажите платформу приложения. Возможные значения: `iOS`, `macOS`, `iPadOS`, `visionOS`, `Android`. |
+It looks like you sent an empty document (only the frontmatter delimiter `---` with no content). Please paste the full MDX content you'd like translated, and I'll get it done right away.
+### Шаг 2. Изменение запросов на управление транзакциями и уровнями доступа \{#step-2-change-transaction-and-access-management-requests\}
+
+В версии 1 вы использовали:
+
+- Запрос [Продление/предоставление подписки пользователю](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user): для записи транзакции и предоставления или сокращения уровня доступа.
+- Запрос [Отзыв уровня доступа](server-side-api-specs-legacy#revoke-subscription-from-a-user): для немедленного отзыва доступа.
+
+Теперь они заменены тремя отдельными запросами, чтобы разграничить добавление транзакций и управление уровнями доступа:
+1. **[Предоставить уровень доступа](api-adapty/operations/grantAccessLevel):** Используйте этот запрос, чтобы продлить уровень доступа без привязки к транзакции.
+2. **[Отозвать уровень доступа](api-adapty/operations/revokeAccessLevel):** Чтобы немедленно отозвать или сократить доступ.
+3. **[Установить транзакцию](api-adapty/operations/setTransaction):** Используйте этот запрос, чтобы добавить детали транзакции в Adapty с уровнями доступа.
+
+---
+
+#### Шаг 2.1. Как предоставить уровень доступа \{#step-21-how-to-grant-access-level\}
+
+:::info
+
+Подробное описание см. в запросе [Предоставить уровень доступа](api-adapty/operations/grantAccessLevel).
+
+:::
+В версии 1 для предоставления доступа использовался запрос [Prolong/grant a subscription for a user](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user). Теперь вы можете предоставить доступ с помощью запроса [Grant access level](api-adapty/operations/grantAccessLevel), не указывая детали транзакции.
+
+- **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/grant/access-level/`
+- Параметры, которые сохранились:
+  - **access_level_id**: Ранее передавался в endpoint. Обязательный.
+  - **starts_at**: Теперь может быть null.
+  - **expires_at**: Необязательный для пожизненного доступа и может быть null.
+
+---
+#### Шаг 2.2. Как отозвать или сократить уровень доступа \{#step-22-how-to-revoke-or-shorten-access-level\}
+
+:::info
+
+Подробное описание см. в запросе [Revoke access level](api-adapty/operations/revokeAccessLevel).
+
+:::
+
+В версии 1 для немедленного отзыва доступа использовался запрос [Revoke access level](server-side-api-specs-legacy#revoke-subscription-from-a-user), а для сокращения — запрос [Prolong/Grant a Subscription for a User](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user). Теперь для обоих действий можно использовать запрос [Revoke access level](api-adapty/operations/revokeAccessLevel).
+- **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/purchase/profile/revoke/access-level/`
+- Параметры:
+  - **access_level_id**: Обязательный.
+  - **expires_at**: Nullable, если только доступ не отзывается немедленно.
+
+---
+
+#### Шаг 2.3. Как записать транзакцию подписки \{#step-23-how-to-record-a-subscription-transaction\}
+
+:::info
+
+Подробное описание см. в запросе [Set transaction](api-adapty/operations/setTransaction).
+
+:::
+В версии 1 транзакции записывались с помощью запроса [Prolong/Grant a Subscription for a User](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user), который поддерживал только транзакции подписок.
+
+В версии 2 эта функциональность заменена запросом [Set Transaction](api-adapty/operations/setTransaction). Он поддерживает как транзакции подписок, так и разовые покупки.
+- **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/`
+- **Детали:** Набор обязательных параметров зависит от того, является ли транзакция подпиской или разовой покупкой. Ниже приведены инструкции по записи транзакций подписки.
+
+**Новые поля**
+| **Параметр**                | **Изменение** | **Тип**       | **Обязательный**   | **Nullable**       | **Описание**                                                 |
+| --------------------------- | ------------- | ------------- | ------------------ | ------------------ | ------------------------------------------------------------ |
+| `billing_issue_detected_at` | Добавлен      | ISO 8601 date | :heavy_plus_sign:  | :heavy_plus_sign:  | Дата и время обнаружения проблемы с оплатой (например, неудачное списание с карты). Подписка при этом может оставаться активной. Сбрасывается при успешной оплате. |
+| `cancellation_reason`       | Добавлен      | String        | :heavy_plus_sign:  | :heavy_plus_sign:  | Возможные причины отмены: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `upgraded` или `unknown`. |
+| `environment`               | Добавлен      | String        | :heavy_minus_sign: | :heavy_minus_sign: | <p>Среда, в которой была выполнена транзакция. Возможные значения: `Sandbox` или `Production.`</p><p>Заменяет параметр `is_sandbox`.</p> |
+| `grace_period_expires_at`   | Добавлен      | ISO 8601 date | :heavy_minus_sign: | :heavy_minus_sign: | Дата и время окончания [льготного периода](https://developer.apple.com/news/?id=09122019c), если подписка в данный момент в нём находится. |
+| `is_family_shared`          | Добавлен      | Boolean       | :heavy_minus_sign: | :heavy_minus_sign: | Булево значение, указывающее, поддерживает ли продукт семейный доступ в App Store Connect. Только для iOS. Всегда `false` для iOS ниже 14.0 и macOS ниже 11.0. |
+| `offer`                     | Добавлен      | Object        | :heavy_plus_sign:  | :heavy_minus_sign: | Представляет офер покупки в виде объекта. См. объект [Offer](server-side-api-objects#offer). |
+| `originally_purchased_at`   | Добавлен      | ISO 8601 date | :heavy_plus_sign:  | :heavy_minus_sign: | Для цепочек подписок — дата покупки исходной транзакции, связанной через `store_original_transaction_id`. |
+| `purchase_type`             | Добавлен      | String        | :heavy_plus_sign:  | :heavy_minus_sign: | Определяет тип продукта; здесь установлено значение `subscription`. |
+| `purchased_at`              | Добавлен      | ISO 8601 date | :heavy_plus_sign:  | :heavy_minus_sign: | Дата последней покупки.                                      |
+| `refunded_at`               | Добавлен      | ISO 8601 date | :heavy_minus_sign: | :heavy_minus_sign: | Дата и время возврата средств по подписке, если применимо.   |
+| `renew_status`              | Добавлен      | Boolean       | :heavy_plus_sign:  | :heavy_minus_sign: | Указывает, включено ли автопродление подписки.               |
+| `renew_status_changed_at`   | Добавлен      | ISO 8601 date | :heavy_minus_sign: | :heavy_minus_sign: | Указывает, когда изменился статус автопродления.             |
+| `variation_id`              | Добавлен      | String        | :heavy_minus_sign: | :heavy_minus_sign: | Идентификатор варианта, используемый для отслеживания покупок до конкретного пейвола, с которого они были совершены. |
+**Удалённые поля**
+| **Параметр**              | **Изменение** | **Описание**                                                 |
+| ------------------------- | ------------- | ------------------------------------------------------------ |
+| `base_plan_id`            | Удалён        | Удалён. Добавьте ID базового плана в поле `store_product_id` в формате `product_id:base_plan_id`. |
+| `duration_days`           | Удалён        | Удалён как ненужный. Продолжительность рассчитывается автоматически. |
+| `introductory_offer_type` | Удалён        | Типы офферов теперь находятся в объекте `offer`.             |
+| `is_lifetime`             | Удалён        | Удалён, так как заменён параметром `purchase_type`.          |
+| `is_sandbox`              | Удалён        | Заменён параметром `environment`.                            |
+| `price_locale`            | Удалён        | Перемещён в объект `price`.                                  |
+| `proceeds`                | Удалён        |                                                              |
+| `starts_at`               | Удалён        | Удалён, так как будет автоматически взят из уровня доступа, привязанного к выбранному продукту. |
+**Изменённые поля**
+| **Параметр**                                                | **Изменение**       | **Тип**        | **Обязательный**                            | **Nullable**       | Описание изменения                                           |
+| ------------------------------------------------------------ | ---------------- | --------------- | --------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| `price`                                                      | Изменён          | Float -> Object | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | Теперь представлен как объект [Price](server-side-api-objects#price) и включает поля `price_locale`, `country` и `value`. |
+| `store`                                                      | Изменён          | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li>Поле стало обязательным.</li><li>Помимо стандартных сторов, теперь можно использовать кастомные.</li></ol> |
+| `vendor_original_transaction_id` -> `store_original_transaction_id` | Переименован, изменён | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li>Поле переименовано.</li><li>Поле стало обязательным.</li></ol> |
+| `vendor_product_id` -> `store_product_id`                    | Переименован, изменён | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li>Поле переименовано.</li><li>Поле стало обязательным.</li></ol> |
+| `vendor_transaction_id` -> `store_transaction_id`            | Переименован, изменён | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li>Поле переименовано.</li><li>Поле стало обязательным.</li></ol> |
+#### Шаг 2.4. Как записать транзакцию разовой покупки \{#step-24-how-to-record-a-one-time-purchase-transaction\}
+
+:::info
+
+Подробное описание см. в запросе [Set transaction](api-adapty/operations/setTransaction).
+
+:::
+
+В версии 1 транзакции записывались с помощью запроса [Prolong/Grant a Subscription for a User](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user), который поддерживал только транзакции подписок.
+В версии 2 эта функциональность заменена запросом [Set Transaction](api-adapty/operations/setTransaction). Этот запрос обрабатывает как транзакции по подписке, так и разовые покупки.
+
+- **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/`
+- **Подробности:** Набор обязательных параметров зависит от типа транзакции — подписка или разовая покупка. Ниже приведены рекомендации по записи транзакций разовых покупок.
+
+**Новые поля**
+| **Параметр**                     | **Изменение** | **Тип**         | **Обязательный**                        | **Nullable**       | **Описание**                                                 |
+| -------------------------------- | ------------- | --------------- | --------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| `cancellation_reason`            | Добавлен      | String          | :heavy_minus_sign:                      | :heavy_minus_sign: | Возможные причины отмены: voluntarily_cancelled, billing_error, price_increase, product_was_not_available, refund, cancelled_by_developer, new_subscription_replace, upgraded, unknown, adapty_revoked. |
+| `environment`                    | Добавлен      | String          | :heavy_minus_sign:                      | :heavy_minus_sign: | <p>Среда, в которой была выполнена транзакция. Возможные значения: `Sandbox` или `Production.`</p><p>Заменяет параметр `is_sandbox`.</p> |
+| `is_family_shared`               | Добавлен      | Boolean         | :heavy_minus_sign:                      | :heavy_minus_sign: | Указывает, поддерживает ли продукт семейный доступ в App Store Connect. Только для iOS. Всегда false для iOS ниже 14.0 и macOS ниже 11.0. |
+| `offer`                          | Добавлен      | Object          | :heavy_minus_sign:                      | :heavy_minus_sign: | Представляет оффер покупки в виде объекта. См. объект [Offer](server-side-api-objects#offer). |
+| `purchase_type`                  | Добавлен      | String          | :heavy_plus_sign:                       | :heavy_minus_sign: | Определяет тип приобретённого продукта. Здесь указывается `one_time_purchase`. |
+| `purchased_at`                   | Добавлен      | ISO 8601 date   | :heavy_plus_sign:                       | :heavy_minus_sign: | Дата и время последней покупки уровня доступа.               |
+| `refunded_at`                    | Добавлен      | ISO 8601 date   | :heavy_minus_sign:                      | :heavy_minus_sign: | Если был выполнен возврат средств, отображает дату и время возврата. |
+| `variation_id`                   | Добавлен      | String          | :heavy_minus_sign:                      | :heavy_minus_sign: | Идентификатор варианта, используемый для отслеживания покупок до конкретного пейвола, с которого они были совершены. |
+**Удалённые поля**
+| **Параметр**              | **Изменение** | **Описание изменения**                                       |
+| ------------------------- | ------------- | ------------------------------------------------------------ |
+| `base_plan_id`            | Удалён    | Удалён. Добавьте идентификатор базового плана в поле `store_product_id` в формате `product_id:base_plan_id`. |
+| `duration_days`           | Удалён    | Удалён как ненужный. Продолжительность рассчитывается автоматически. |
+| `expires_at`              | Удалён    | Удалён как неприменимый к разовой покупке.              |
+| `introductory_offer_type` | Удалён    | Типы офферов теперь находятся в объекте `offer`.                   |
+| `is_lifetime`             | Удалён    | Удалён, так как заменён параметром `purchase_type`. |
+| `is_sandbox`              | Удалён    | Заменён параметром `environment`.                    |
+| `price_locale`            | Удалён    | Перемещён в объект `price`.                                 |
+| `proceeds`                | Удалён    |                                                              |
+| `starts_at`               | Удалён    | Удалён как неприменимый к разовой покупке.              |
+**Изменённые поля**
+| **Параметр**                                                | **Изменение**       | **Тип**        | **Обязательный**                            | **Nullable**       | **Описание изменения**                                       |
+| ------------------------------------------------------------ | ---------------- | --------------- | --------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| `price`                                                      | Изменён          | Float -> Object | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | Теперь представлен как объект [Price](server-side-api-objects#price) и включает поля `price_locale`, `country` и `value`. |
+| `store`                                                      | Изменён          | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li>Поле стало обязательным.</li><li>Помимо стандартных сторов, теперь можно использовать кастомные сторы.</li></ol> |
+| `vendor_original_transaction_id` -> `store_original_transaction_id` | Переименован, изменён | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li>Поле переименовано.</li><li>Поле стало обязательным.</li></ol> |
+| `vendor_product_id` -> `store_product_id`                    | Переименован, изменён | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li>Поле переименовано.</li><li>Поле стало обязательным.</li></ol> |
+| `vendor_transaction_id` -> `store_transaction_id`            | Переименован, изменён | String          | :heavy_minus_sign: -> :heavy_plus_sign: | :heavy_minus_sign: | <ol><li>Поле переименовано.</li><li>Поле стало обязательным.</li></ol> |
+It looks like the content you want me to translate is empty — there's just a `---` frontmatter delimiter with nothing inside (and no closing delimiter or body text).
+
+Could you please paste the full MDX document you'd like translated? I'll get started as soon as you share it!
+### Шаг 3. Измените запрос `Get info about a user` \{#step-3-change-get-info-about-a-user-request\}
+
+:::info
+
+Подробное описание см. в запросе [Get profile](api-adapty/operations/getProfile).
+
+:::
+
+Измените запрос следующим образом:
+
+- **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/profile/`
+- **Изменение:** User Profile ID или Customer User ID теперь передаются через заголовки, дополнительные параметры не нужны. Параметр **extended** больше не нужен — полные данные профиля возвращаются всегда.
+
+---
+### Шаг 4. Измените запрос `Set the user's attribute` \{#step-4-change-set-the-users-attribute-request\}
+
+:::info
+
+Подробное описание см. в запросе [Update profile](api-adapty/operations/updateProfile).
+
+:::
+
+В версии 1 можно было обновлять только атрибуты пользователя. В версии 2 доступно редактирование более широкого набора полей профиля, например метаданных установки или настроек аналитики.
+
+- **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/profile/`.
+| **Параметр**         | **Изменение** | **Тип**               | **Обязательный**   | **Nullable**                            | **Описание изменения**                                       |
+| -------------------- | ------------- | --------------------- | ------------------ | --------------------------------------- | ------------------------------------------------------------ |
+| `analytics_disabled` | Добавлен      | Boolean               | :heavy_minus_sign: | :heavy_minus_sign:                      | Опция для отказа от внешней аналитики. При отключении события не будут отправляться в интеграции, а `idfa`, `idfv` и `advertising_id` становятся nullable. |
+| `installation_meta`  | Добавлен      | Dictionary            | :heavy_minus_sign: | :heavy_minus_sign:                      | Содержит специфические для приложения сведения об устройстве в виде словаря объектов [Installation Meta](server-side-api-objects#installation-meta). |
+| `store`              | Добавлен      | String                | :heavy_minus_sign: | :heavy_plus_sign:                       | Стор, в котором был куплен продукт. Возможные значения: **app_store**, **play_store**, **stripe** или название вашего [кастомного стора](custom-store). |
+| `store_country`      | Добавлен      | String                | :heavy_minus_sign: | :heavy_plus_sign:                       | Страна стора конечного пользователя.                         |
+| `birthday`           | Изменён       | Date -> ISO 8601 date | :heavy_minus_sign: | :heavy_plus_sign: -> :heavy_minus_sign: | Дата рождения конечного пользователя.                        |
+| `ip_country`         | Изменён       | String                | :heavy_minus_sign: | :heavy_plus_sign: -> :heavy_minus_sign: | Страна конечного пользователя в формате ISO 3166-2. Должна передаваться, если запрос выполняется с сервера. В противном случае определяется по IP-адресу запроса. |
+It seems like the MDX content is missing from your message. Could you please share the MDX documentation you'd like me to translate from English to Russian?
+### Шаг 5. Измените запрос `Delete user's data` \{#step-5-change-delete-users-data-request\}
+
+:::info
+
+Подробное описание см. в запросе [Delete profile](api-adapty/operations/deleteProfile).
+
+:::
+
+- **Endpoint:** `https://api.adapty.io/api/v2/server-side-api/profile/`
+- **Изменение:** `adapty-profile-id` или `adapty-customer-user-id` теперь передаются через заголовки, дополнительные параметры не нужны.

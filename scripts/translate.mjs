@@ -961,32 +961,62 @@ async function resumeBatch(client, batchId, lang, localesDir, hashesDir) {
   const allSourceFiles = await collectMdxFiles(DOCS_DIR);
   const fileMap = Object.fromEntries(allSourceFiles.map(f => [path.basename(f, '.mdx'), f]));
 
+  // Also load reusable sources for batches that contain "reusable:*" custom IDs.
+  const reusableLocalesDir = path.join(localesDir, 'reusable');
+  const reusableHashesDir  = path.join(hashesDir, 'reusable');
+  const reusableMap = {};
+  try {
+    const entries = await fs.readdir(REUSABLE_DIR, { withFileTypes: true });
+    for (const e of entries) {
+      if (!e.isFile() || !/\.mdx?$/.test(e.name)) continue;
+      const basename = e.name.replace(/\.mdx?$/, '');
+      reusableMap[basename] = { name: e.name, full: path.join(REUSABLE_DIR, e.name), basename };
+    }
+  } catch { /* no reusable dir */ }
+
   console.log(`${tag} Retrieving results...`);
   let translated = 0;
   let errors = 0;
 
   const results = await client.messages.batches.results(batchId);
   for await (const result of results) {
-    const basename = result.custom_id;
+    const customId = result.custom_id;
+    const isReusable = customId.startsWith('reusable:');
+    const label = customId;
+
     if (result.result.type === 'succeeded') {
       if (result.result.message.stop_reason === 'max_tokens') {
-        console.error(`  ✗ ${basename}: output truncated at max_tokens limit — increase max_tokens or split the file`);
+        console.error(`  ✗ ${label}: output truncated at max_tokens limit — increase max_tokens or split the file`);
         errors++;
         continue;
       }
       const text = result.result.message.content[0].text;
-      const sourceFile = fileMap[basename];
-      if (sourceFile) {
-        await writeTranslation(basename, text, sourceFile, localesDir, hashesDir, lang);
+
+      if (isReusable) {
+        const basename = customId.slice('reusable:'.length);
+        const file = reusableMap[basename];
+        await fs.mkdir(reusableLocalesDir, { recursive: true });
+        if (file) {
+          await fs.mkdir(reusableHashesDir, { recursive: true });
+          await writeReusableResult(file, text, lang, reusableLocalesDir, reusableHashesDir);
+        } else {
+          // Source file gone — write as .md without hash (best-effort)
+          await fs.writeFile(path.join(reusableLocalesDir, `${basename}.md`), postProcessTranslation(text, lang), 'utf-8');
+        }
       } else {
-        // Source file not found — write translation without hash
-        await fs.mkdir(localesDir, { recursive: true });
-        await fs.writeFile(path.join(localesDir, `${basename}.mdx`), postProcessTranslation(text, lang), 'utf-8');
+        const sourceFile = fileMap[customId];
+        if (sourceFile) {
+          await writeTranslation(customId, text, sourceFile, localesDir, hashesDir, lang);
+        } else {
+          // Source file not found — write translation without hash
+          await fs.mkdir(localesDir, { recursive: true });
+          await fs.writeFile(path.join(localesDir, `${customId}.mdx`), postProcessTranslation(text, lang), 'utf-8');
+        }
       }
-      console.log(`  ✓ ${basename}`);
+      console.log(`  ✓ ${label}`);
       translated++;
     } else {
-      console.error(`  ✗ ${basename}: ${JSON.stringify(result.result)}`);
+      console.error(`  ✗ ${label}: ${JSON.stringify(result.result)}`);
       errors++;
     }
   }
@@ -1052,6 +1082,17 @@ async function rebuildSidebarLabels(sidebarFiles, sidebarHashesDir, localesDir) 
 // Reusable snippet translation
 // ---------------------------------------------------------------------------
 
+async function writeReusableResult(file, text, lang, reusableLocalesDir, reusableHashesDir) {
+  const translatedContent = postProcessTranslation(text, lang);
+  await fs.writeFile(path.join(reusableLocalesDir, file.name), translatedContent, 'utf-8');
+  const hash = await fileHash(file.full);
+  await fs.writeFile(
+    path.join(reusableHashesDir, `${file.basename}.json`),
+    JSON.stringify({ fileHash: hash }),
+    'utf-8',
+  );
+}
+
 async function translateReusableForLang(client, lang, localesDir, hashesDir, systemPrompt, tag, onlyReusableIds = null) {
   const reusableLocalesDir = path.join(localesDir, 'reusable');
   const reusableHashesDir  = path.join(hashesDir, 'reusable');
@@ -1103,9 +1144,20 @@ async function translateReusableForLang(client, lang, localesDir, hashesDir, sys
   await fs.mkdir(reusableLocalesDir, { recursive: true });
   await fs.mkdir(reusableHashesDir, { recursive: true });
 
+  // Route to sync: explicit --sync, or files too large for a single batch request.
+  const syncFiles = [];
+  const batchList = [];
+  for (const file of toTranslate) {
+    if (flagSync) { syncFiles.push(file); continue; }
+    const stat = await fs.stat(file.full);
+    if (stat.size > 20000) syncFiles.push(file);
+    else batchList.push(file);
+  }
+
   let translated = 0;
   let errors = 0;
-  for (const file of toTranslate) {
+
+  for (const file of syncFiles) {
     try {
       const content = await fs.readFile(file.full, 'utf-8');
       const response = await client.messages.create({
@@ -1117,10 +1169,7 @@ async function translateReusableForLang(client, lang, localesDir, hashesDir, sys
       if (response.stop_reason === 'max_tokens') {
         throw new Error('output truncated at max_tokens limit');
       }
-      const translatedContent = postProcessTranslation(response.content[0].text, lang);
-      await fs.writeFile(path.join(reusableLocalesDir, file.name), translatedContent, 'utf-8');
-      const hash = await fileHash(file.full);
-      await fs.writeFile(path.join(reusableHashesDir, `${file.basename}.json`), JSON.stringify({ fileHash: hash }), 'utf-8');
+      await writeReusableResult(file, response.content[0].text, lang, reusableLocalesDir, reusableHashesDir);
       console.log(`  ✓ reusable:${file.name}`);
       translated++;
     } catch (err) {
@@ -1129,6 +1178,95 @@ async function translateReusableForLang(client, lang, localesDir, hashesDir, sys
       hadErrors = true;
     }
   }
+
+  if (batchList.length === 0) {
+    console.log(`${tag} Reusable: ${translated} translated, ${errors} errors.`);
+    return;
+  }
+
+  const chunks = [];
+  for (let i = 0; i < batchList.length; i += BATCH_CHUNK_SIZE) {
+    chunks.push(batchList.slice(i, i + BATCH_CHUNK_SIZE));
+  }
+
+  for (let c = 0; c < chunks.length; c++) {
+    const chunk = chunks[c];
+    const chunkLabel = chunks.length > 1 ? ` (chunk ${c + 1}/${chunks.length})` : '';
+
+    console.log(`${tag} Reading reusable sources${chunkLabel}...`);
+    const requests = await Promise.all(
+      chunk.map(async (file) => {
+        const content = await fs.readFile(file.full, 'utf-8');
+        return {
+          custom_id: `reusable:${file.basename}`,
+          params: {
+            model: 'claude-sonnet-4-6',
+            max_tokens: 4096,
+            system: systemPrompt,
+            messages: [{ role: 'user', content }],
+          },
+        };
+      })
+    );
+
+    console.log(`${tag} Submitting reusable batch of ${requests.length} requests${chunkLabel}...`);
+    const batch = await client.messages.batches.create({ requests });
+    const batchId = batch.id;
+
+    await fs.writeFile(BATCH_ID_FILE, batchId, 'utf-8');
+    console.log(`${tag} Batch submitted: ${batchId}`);
+    console.log(`${tag} Batch ID saved to .translate-batch-id`);
+    console.log(`${tag} Use --resume <batchId> to retrieve results if this process is interrupted.`);
+
+    const fileMap = Object.fromEntries(chunk.map(f => [`reusable:${f.basename}`, f]));
+
+    console.log(`${tag} Polling batch status every 30 seconds...`);
+    const startedAt = Date.now();
+    let b = await client.messages.batches.retrieve(batchId);
+    const warnAfterMin = Math.min(60, 15 + Math.ceil(requests.length * 0.5));
+    while (b.processing_status !== 'ended') {
+      const counts = b.request_counts ?? {};
+      const elapsedMin = Math.floor((Date.now() - startedAt) / 60000);
+      const elapsed = elapsedMin >= 1 ? ` (${elapsedMin}m elapsed)` : '';
+      const warning = elapsedMin >= warnAfterMin && (counts.succeeded ?? 0) === 0
+        ? ` ⚠️  no progress in ${warnAfterMin}m — API may be slow or use --sync to bypass batch`
+        : '';
+      console.log(
+        `  Status: ${b.processing_status} — processing: ${counts.processing ?? '?'}, ` +
+        `succeeded: ${counts.succeeded ?? '?'}, errored: ${counts.errored ?? '?'}${elapsed}${warning}`
+      );
+      await sleep(30_000);
+      b = await client.messages.batches.retrieve(batchId);
+    }
+
+    console.log(`${tag} Batch complete. Retrieving results...`);
+    const results = await client.messages.batches.results(batchId);
+    for await (const result of results) {
+      const file = fileMap[result.custom_id];
+      if (!file) {
+        console.error(`  ✗ ${result.custom_id}: unknown custom_id`);
+        errors++;
+        hadErrors = true;
+        continue;
+      }
+      if (result.result.type === 'succeeded') {
+        if (result.result.message.stop_reason === 'max_tokens') {
+          console.error(`  ✗ reusable:${file.name}: output truncated at max_tokens limit`);
+          errors++;
+          hadErrors = true;
+          continue;
+        }
+        await writeReusableResult(file, result.result.message.content[0].text, lang, reusableLocalesDir, reusableHashesDir);
+        console.log(`  ✓ reusable:${file.name}`);
+        translated++;
+      } else {
+        console.error(`  ✗ reusable:${file.name}: ${JSON.stringify(result.result)}`);
+        errors++;
+        hadErrors = true;
+      }
+    }
+  }
+
   console.log(`${tag} Reusable: ${translated} translated, ${errors} errors.`);
 }
 

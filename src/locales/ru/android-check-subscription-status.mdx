@@ -1,0 +1,206 @@
+---
+title: "Проверка статуса подписки в Android SDK"
+description: "Узнайте, как проверить статус подписки в приложении Android с помощью Adapty."
+metadataTitle: "Проверка статуса подписки | Документация Adapty"
+keywords: ['getProfile', 'subscription status']
+rank: 95
+---
+
+Чтобы решить, предоставить ли пользователю доступ к платному контенту или показать пейвол, нужно проверить его [уровень доступа](access-level) в профиле.
+
+В этой статье рассказывается, как обращаться к состоянию профиля, чтобы решить, что показывать пользователю — пейвол или платные функции.
+
+## Получение статуса подписки \{#get-subscription-status\}
+
+Когда нужно решить, показать пользователю пейвол или платный контент, вы проверяете его [уровень доступа](access-level) в профиле. Для этого есть два варианта:
+
+- Вызовите `getProfile`, если нужны актуальные данные прямо сейчас (например, при запуске приложения) или хотите принудительно обновить профиль.
+- Настройте **автоматические обновления профиля**, чтобы хранить локальную копию, которая обновляется автоматически при изменении статуса подписки.
+
+### Получение профиля \{#get-profile\}
+
+Самый простой способ узнать статус подписки — вызвать метод `getProfile`:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+            // check the access
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        // check the access
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+### Отслеживание обновлений подписки \{#listen-to-subscription-updates\}
+
+Чтобы автоматически получать обновления профиля в приложении:
+
+1. Используйте `Adapty.setOnProfileUpdatedListener()` для отслеживания изменений профиля — Adapty будет автоматически вызывать этот метод при каждом изменении статуса подписки пользователя.
+2. Сохраняйте обновлённые данные профиля при вызове этого метода, чтобы использовать их в приложении без лишних сетевых запросов.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin
+class SubscriptionManager {
+    private var currentProfile: AdaptyProfile? = null
+    
+    init {
+        // Listen for profile updates
+        Adapty.setOnProfileUpdatedListener { profile ->
+            currentProfile = profile
+            // Update UI, unlock content, etc.
+        }
+    }
+    
+    // Use stored profile instead of calling getProfile()
+    fun hasAccess(): Boolean {
+        return currentProfile?.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="java" label="Java">
+
+```java
+public class SubscriptionManager {
+    private AdaptyProfile currentProfile;
+
+    public SubscriptionManager() {
+        // Listen for profile updates
+        Adapty.setOnProfileUpdatedListener(profile -> {
+            this.currentProfile = profile;
+            // Update UI, unlock content, etc.
+        });
+    }
+    
+    // Use stored profile instead of calling getProfile()
+    public boolean hasAccess() {
+        if (currentProfile == null) {
+            return false;
+        }
+        
+        AdaptyAccessLevel premiumAccess = currentProfile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
+        return premiumAccess != null && premiumAccess.isActive();
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::note
+Adapty автоматически вызывает слушатель обновлений профиля при запуске приложения, предоставляя кешированные данные о подписке даже при отсутствии интернета.
+:::
+
+## Связь профиля с логикой пейвола \{#connect-profile-with-paywall-logic\}
+
+Когда нужно сразу принять решение о показе пейвола или предоставлении доступа к платным функциям, можно напрямую проверить профиль пользователя. Это удобно при запуске приложения, входе в премиум-разделы или перед показом определённого контента.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin
+private fun initializePaywall() {
+    loadPaywall { paywallView ->
+        checkAccessLevel { result ->
+            when (result) {
+                is AdaptyResult.Success -> {
+                    if (!result.value && paywallView != null) {
+                        setContentView(paywallView) // Show paywall if no access
+                    }
+                }
+                is AdaptyResult.Error -> {
+                    if (paywallView != null) {
+                        setContentView(paywallView) // Show paywall if access check fails
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun checkAccessLevel(callback: ResultCallback<Boolean>) {
+    Adapty.getProfile { result ->
+        when (result) {
+            is AdaptyResult.Success -> {
+                val hasAccess = result.value.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true
+                callback.onResult(AdaptyResult.Success(hasAccess))
+            }
+            is AdaptyResult.Error -> {
+                callback.onResult(AdaptyResult.Error(result.error))
+            }
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="java" label="Java">
+
+```java
+private void initializePaywall() {
+    loadPaywall(paywallView -> {
+        checkAccessLevel(result -> {
+            if (result instanceof AdaptyResult.Success) {
+                boolean hasAccess = ((AdaptyResult.Success<Boolean>) result).getValue();
+                if (!hasAccess && paywallView != null) {
+                    setContentView(paywallView); // Show paywall if no access
+                }
+            } else if (result instanceof AdaptyResult.Error) {
+                if (paywallView != null) {
+                    setContentView(paywallView); // Show paywall if access check fails
+                }
+            }
+        });
+    });
+}
+
+private void checkAccessLevel(ResultCallback<Boolean> callback) {
+    Adapty.getProfile(result -> {
+        if (result instanceof AdaptyResult.Success) {
+            AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+            AdaptyAccessLevel premiumAccess = profile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
+            boolean hasAccess = premiumAccess != null && premiumAccess.isActive();
+            callback.onResult(AdaptyResult.success(hasAccess));
+        } else if (result instanceof AdaptyResult.Error) {
+            callback.onResult(AdaptyResult.error(((AdaptyResult.Error) result).getError()));
+        }
+    });
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Дальнейшие шаги \{#next-steps\}
+
+Теперь, когда вы знаете, как отслеживать статус подписки, узнайте, как [работать с профилями пользователей](android-quickstart-identify), чтобы они получали доступ к тому, за что заплатили.

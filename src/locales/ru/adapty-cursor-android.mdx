@@ -1,0 +1,268 @@
+---
+title: "Интеграция Adapty в Android-приложение с помощью ИИ"
+description: "Пошаговый гайд по интеграции Adapty в Android-приложение с использованием Cursor, Context7, ChatGPT, Claude и других ИИ-инструментов."
+metadataTitle: "Интеграция Adapty с помощью ИИ для Android | Документация Adapty"
+displayed_sidebar: sdkandroid
+---
+
+Этот гайд поможет вам интегрировать Adapty в Android-приложение с помощью LLM. Сначала вы настроите дашборд Adapty, затем пройдёте каждый этап реализации, отправляя нужные ссылки на документацию своему LLM. В конце вы найдёте лучшие практики по настройке ИИ-инструментов для работы с документацией Adapty.
+
+:::tip
+Скопируйте всю эту страницу в формате Markdown и вставьте в LLM, чтобы начать работу — нажмите **Copy for LLM** вверху страницы или откройте [версию .md](https://adapty.io/docs/ru/adapty-cursor-android.md). LLM будет использовать ссылки из гайда и контрольные точки для пошагового прохождения каждого этапа.
+:::
+
+## Прежде чем начать: настройка дашборда \{#before-you-start-dashboard-setup\}
+
+Перед написанием кода Adapty требует определённой настройки дашборда. Это можно сделать с помощью интерактивного скилла для LLM или вручную через дашборд.
+
+### Подход через скилл (рекомендуется) \{#skill-approach-recommended\}
+
+Скилл Adapty CLI позволяет LLM настраивать приложение, продукты, уровни доступа, пейволы и плейсменты напрямую — без необходимости открывать дашборд на каждом шаге. Вам нужно только [подключить стор](integrate-payments) в дашборде.
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+После добавления скилла запустите `/adapty-cli` в вашем агенте. Он проведёт вас по каждому шагу, включая момент, когда нужно открыть дашборд для подключения стора.
+
+### Подход через дашборд \{#dashboard-approach\}
+
+Если вы предпочитаете настраивать всё вручную, вот что нужно сделать перед написанием кода. LLM не может найти значения дашборда за вас — их нужно предоставить самостоятельно.
+
+1. **Подключите стор**: В дашборде Adapty перейдите в **App settings → General**. Это обязательное условие для работы покупок.
+   [Подключить Google Play](integrate-payments)
+
+2. **Скопируйте публичный SDK-ключ**: В дашборде Adapty перейдите в **App settings → General**, затем найдите раздел **API keys**. В коде это строка, которую вы передаёте в конфигурационный билдер Adapty.
+
+3. **Создайте хотя бы один продукт**: В дашборде Adapty перейдите на страницу **Products**. В коде вы не ссылаетесь на продукты напрямую — Adapty доставляет их через пейволы.
+   [Добавить продукты](quickstart-products)
+
+4. **Создайте пейвол и плейсмент**: В дашборде Adapty создайте пейвол на странице **Paywalls**, затем назначьте его плейсменту на странице **Placements**. В коде идентификатор плейсмента — это строка, которую вы передаёте в `Adapty.getPaywall("YOUR_PLACEMENT_ID")`.
+   [Создать пейвол](quickstart-paywalls)
+
+5. **Настройте уровни доступа**: В дашборде Adapty настройте их для каждого продукта на странице **Products**. В коде проверяется строка `profile.accessLevels["premium"]?.isActive`. Стандартный уровень доступа `premium` подходит для большинства приложений. Если платящие пользователи получают доступ к разным функциям в зависимости от продукта (например, тарифы `basic` и `pro`), [создайте дополнительные уровни доступа](assigning-access-level-to-a-product) до начала разработки.
+
+:::tip
+Как только все пять пунктов выполнены, можно переходить к написанию кода. Скажите LLM: «Мой публичный SDK-ключ — X, мой идентификатор плейсмента — Y», чтобы он сгенерировал корректный код инициализации и получения пейвола.
+:::
+
+### Настройте позже \{#set-up-when-ready\}
+
+Это не обязательно для начала разработки, но пригодится по мере развития интеграции:
+
+- **A/B-тесты**: Настраиваются на странице **Placements**. Изменения в коде не нужны.
+  [A/B-тесты](ab-tests)
+- **Дополнительные пейволы и плейсменты**: Добавьте вызовы `getPaywall` с разными идентификаторами плейсментов.
+- **Интеграции с аналитикой**: Настраиваются на странице **Integrations**. Процесс настройки зависит от интеграции. См. [интеграции с аналитикой](analytics-integration) и [интеграции с атрибуцией](attribution-integration).
+
+## Передайте документацию Adapty в LLM \{#feed-adapty-docs-to-your-llm\}
+
+### Используйте Context7 (рекомендуется) \{#use-context7-recommended\}
+
+[Context7](https://context7.com) — MCP-сервер, который даёт LLM прямой доступ к актуальной документации Adapty. LLM автоматически находит нужные документы на основе вашего запроса — вручную вставлять URL не нужно.
+
+Context7 работает с **Cursor**, **Claude Code**, **Windsurf** и другими MCP-совместимыми инструментами. Для настройки запустите:
+
+```
+npx ctx7 setup
+```
+
+Команда определит ваш редактор и настроит сервер Context7. Для ручной настройки см. [репозиторий Context7 на GitHub](https://github.com/upstash/context7).
+
+После настройки указывайте библиотеку Adapty в промптах:
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the Android SDK
+```
+
+:::warning
+Даже если Context7 избавляет от необходимости вручную вставлять ссылки на документы, порядок реализации имеет значение. Следуйте [пошаговому руководству по реализации](#implementation-walkthrough) ниже, чтобы всё работало корректно.
+:::
+
+### Используйте документацию в текстовом формате \{#use-plain-text-docs\}
+
+Любой документ Adapty доступен как обычный текст в формате Markdown. Добавьте `.md` в конец URL или нажмите **Copy for LLM** под заголовком статьи. Например: [adapty-cursor-android.md](https://adapty.io/docs/ru/adapty-cursor-android.md).
+
+Каждый этап в [пошаговом руководстве по реализации](#implementation-walkthrough) ниже содержит блок «Отправьте это LLM» со ссылками `.md` для вставки.
+
+Чтобы получить больше документации сразу, см. [индексные файлы и платформозависимые подборки](#plain-text-doc-index-files) ниже.
+
+## Пошаговое руководство по реализации \{#implementation-walkthrough\}
+
+Далее в этом гайде описана интеграция Adapty в порядке реализации. Каждый этап включает документы для отправки LLM, ожидаемый результат и типичные проблемы.
+
+### Планирование интеграции \{#plan-your-integration\}
+
+Прежде чем приступать к коду, попросите LLM проанализировать ваш проект и составить план реализации. Если ваш ИИ-инструмент поддерживает режим планирования (как в Cursor или Claude Code), используйте его — это позволит LLM изучить структуру проекта и документацию Adapty до написания кода.
+
+Укажите LLM, какой подход вы используете для покупок — это влияет на то, какими гайдами он должен руководствоваться:
+
+- [**Adapty Paywall Builder**](adapty-paywall-builder): Вы создаёте пейволы в визуальном конструкторе Adapty, и SDK отображает их автоматически.
+- [**Пейволы, созданные вручную**](android-making-purchases): Вы строите собственный UI пейвола в коде, но по-прежнему используете Adapty для получения продуктов и обработки покупок.
+- [**Observer mode**](observer-vs-full-mode): Вы сохраняете существующую инфраструктуру покупок и используете Adapty только для аналитики и интеграций.
+
+Не знаете, что выбрать? Прочитайте [сравнительную таблицу в быстром старте](android-quickstart-paywalls).
+
+### Установка и настройка SDK \{#install-and-configure-the-sdk\}
+
+Добавьте зависимость Adapty SDK через Gradle в Android Studio и активируйте его с помощью публичного SDK-ключа. Это основа — без неё ничто остальное не работает.
+
+**Гайд:** [Установка и настройка Adapty SDK](sdk-installation-android)
+
+Отправьте это LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ru/sdk-installation-android.md
+```
+
+:::tip[Контрольная точка]
+- **Ожидаемый результат:** Приложение собирается и запускается. В Logcat появляется лог активации Adapty.
+- **Частая проблема:** «Public API key is missing» → убедитесь, что вы заменили плейсхолдер реальным ключом из App settings.
+:::
+
+### Отображение пейволов и обработка покупок \{#show-paywalls-and-handle-purchases\}
+
+Получите пейвол по идентификатору плейсмента, отобразите его и обработайте события покупок. Нужные гайды зависят от способа обработки покупок.
+
+Тестируйте каждую покупку в песочнице по ходу работы — не откладывайте до конца. Инструкции по настройке см. в [Тестирование покупок в песочнице](test-purchases-in-sandbox).
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**Гайды:**
+- [Подключение покупок через пейволы (быстрый старт)](android-quickstart-paywalls)
+- [Получение пейволов Paywall Builder и их конфигурации](android-get-pb-paywalls)
+- [Отображение пейволов](android-present-paywalls)
+- [Обработка событий пейвола](android-handling-events)
+- [Реакция на действия с кнопками](android-handle-paywall-actions)
+
+Отправьте это LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ru/android-quickstart-paywalls.md
+- https://adapty.io/docs/ru/android-get-pb-paywalls.md
+- https://adapty.io/docs/ru/android-present-paywalls.md
+- https://adapty.io/docs/ru/android-handling-events.md
+- https://adapty.io/docs/ru/android-handle-paywall-actions.md
+```
+
+:::tip[Контрольная точка]
+- **Ожидаемый результат:** Пейвол отображается с вашими настроенными продуктами. Нажатие на продукт вызывает диалог покупки в песочнице.
+- **Частая проблема:** Пустой пейвол или ошибка `getPaywall` → проверьте, что идентификатор плейсмента точно совпадает с указанным в дашборде и плейсменту назначена аудитория.
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Manual paywalls">
+
+**Гайды:**
+- [Подключение покупок в кастомном пейволе (быстрый старт)](android-quickstart-manual)
+- [Получение пейволов и продуктов](fetch-paywalls-and-products-android)
+- [Отображение пейвола, созданного через Remote Config](present-remote-config-paywalls-android)
+- [Совершение покупок](android-making-purchases)
+- [Восстановление покупок](android-restore-purchase)
+
+Отправьте это LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ru/android-quickstart-manual.md
+- https://adapty.io/docs/ru/fetch-paywalls-and-products-android.md
+- https://adapty.io/docs/ru/present-remote-config-paywalls-android.md
+- https://adapty.io/docs/ru/android-making-purchases.md
+- https://adapty.io/docs/ru/android-restore-purchase.md
+```
+
+:::tip[Контрольная точка]
+- **Ожидаемый результат:** Ваш кастомный пейвол отображает продукты, полученные из Adapty. Нажатие на продукт вызывает диалог покупки в песочнице.
+- **Частая проблема:** Пустой массив продуктов → проверьте, что пейволу назначены продукты в дашборде и плейсменту назначена аудитория.
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**Гайды:**
+- [Обзор Observer mode](observer-vs-full-mode)
+- [Реализация Observer mode](implement-observer-mode-android)
+- [Передача транзакций в Observer mode](report-transactions-observer-mode-android)
+
+Отправьте это LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ru/observer-vs-full-mode.md
+- https://adapty.io/docs/ru/implement-observer-mode-android.md
+- https://adapty.io/docs/ru/report-transactions-observer-mode-android.md
+```
+
+:::tip[Контрольная точка]
+- **Ожидаемый результат:** После покупки в песочнице через существующий флоу покупок транзакция появляется в **Event Feed** дашборда Adapty.
+- **Частая проблема:** Нет событий → убедитесь, что вы передаёте транзакции в Adapty и настроены Google Play Real-Time Developer Notifications.
+:::
+
+</TabItem>
+
+</Tabs>
+
+### Проверка статуса подписки \{#check-subscription-status\}
+
+После покупки проверьте профиль пользователя на наличие активного уровня доступа, чтобы закрыть доступ к премиум-контенту.
+
+**Гайд:** [Проверка статуса подписки](android-check-subscription-status)
+
+Отправьте это LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ru/android-check-subscription-status.md
+```
+
+:::tip[Контрольная точка]
+- **Ожидаемый результат:** После покупки в песочнице `profile.accessLevels["premium"]?.isActive` возвращает `true`.
+- **Частая проблема:** Пустые `accessLevels` после покупки → проверьте, что продукту назначен уровень доступа в дашборде.
+:::
+
+### Идентификация пользователей \{#identify-users\}
+
+Свяжите аккаунты пользователей вашего приложения с профилями Adapty, чтобы покупки сохранялись между устройствами.
+
+:::important
+Пропустите этот шаг, если в вашем приложении нет авторизации.
+:::
+
+**Гайд:** [Идентификация пользователей](android-quickstart-identify)
+
+Отправьте это LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ru/android-quickstart-identify.md
+```
+
+:::tip[Контрольная точка]
+- **Ожидаемый результат:** После вызова `Adapty.identify("your-user-id")` в разделе **Profiles** дашборда отображается ваш пользовательский ID.
+- **Частая проблема:** Вызывайте `identify` после активации, но до получения пейволов, чтобы избежать атрибуции к анонимному профилю.
+:::
+
+### Подготовка к релизу \{#prepare-for-release\}
+
+Когда интеграция работает в песочнице, пройдите чеклист для релиза, чтобы убедиться в готовности к продакшену.
+
+**Гайд:** [Чеклист для релиза](release-checklist)
+
+Отправьте это LLM:
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/ru/release-checklist.md
+```
+
+:::tip[Контрольная точка]
+- **Ожидаемый результат:** Все пункты чеклиста подтверждены: подключение стора, серверные уведомления, флоу покупок, проверки уровней доступа и требования к конфиденциальности.
+- **Частая проблема:** Не настроены Google Play Real-Time Developer Notifications → настройте их в **App settings → Android SDK**, иначе события не будут появляться в дашборде.
+:::
+
+## Индексные файлы с документацией в текстовом формате \{#plain-text-doc-index-files\}
+
+Если нужно дать LLM более широкий контекст, выходящий за рамки отдельных страниц, мы предоставляем индексные файлы, которые перечисляют или объединяют всю документацию Adapty:
+
+- [`llms.txt`](https://adapty.io/docs/ru/llms.txt): Список всех страниц со ссылками `.md`. [Набирающий популярность стандарт](https://llmstxt.org/) для обеспечения доступа LLM к сайтам. Обратите внимание: для некоторых ИИ-агентов (например, ChatGPT) нужно скачать `llms.txt` и загрузить файл в чат.
+- [`llms-full.txt`](https://adapty.io/docs/ru/llms-full.txt): Вся документация сайта Adapty в одном файле. Очень большой — используйте только когда нужна полная картина.
+- Android-специфичные [`android-llms.txt`](https://adapty.io/docs/ru/android-llms.txt) и [`android-llms-full.txt`](https://adapty.io/docs/ru/android-llms-full.txt): Платформозависимые подборки, которые экономят токены по сравнению с полным сайтом.

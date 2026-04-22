@@ -1,0 +1,269 @@
+---
+title: "Отображение пейволов Paywall Builder в режиме Observer в iOS SDK"
+description: "Узнайте, как отображать пейволы PB в режиме Observer для получения более подробной информации."
+metadataTitle: "Отображение пейволов PB в режиме Observer | Документация Adapty"
+---
+
+Если вы настроили пейвол с помощью Paywall Builder, вам не нужно беспокоиться о его отображении в коде мобильного приложения. Такой пейвол содержит как то, что должно отображаться, так и то, как именно это должно выглядеть.
+:::warning
+Этот раздел относится только к [режиму Observer](observer-vs-full-mode). Если вы не работаете в режиме Observer, обратитесь к разделу [iOS — показ пейволов в Paywall Builder](ios-present-paywalls).
+:::
+<Tabs groupId="current-os" queryString>
+<TabItem value="sdk3" label="New Paywall Builder (SDK 3.0+)" default>
+<details>
+   <summary>Перед тем как показывать пейволы (нажмите, чтобы развернуть)</summary>
+1. Настройте начальную интеграцию Adapty [с Google Play](initial-android) и [с App Store](initial_ios).
+   2. Установите и настройте Adapty SDK. Убедитесь, что параметр `observerMode` установлен в `true`. Обратитесь к нашим инструкциям для конкретных фреймворков: [iOS](sdk-installation-ios#activate-adapty-module-of-adapty-sdk).
+   3. [Создайте продукты](create-product) в дашборде Adapty.
+   4. [Настройте пейволы, назначьте на них продукты](create-paywall) и кастомизируйте их с помощью Paywall Builder в дашборде Adapty.
+   5. [Создайте плейсменты и назначьте на них пейволы](create-placement) в дашборде Adapty.
+   6. [Получите пейволы Paywall Builder и их конфигурацию](get-pb-paywalls) в коде мобильного приложения.
+</details>
+
+<p> </p>
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swift" label="Swift" default>
+
+1. Реализуйте объект `AdaptyObserverModeResolver`:
+
+   ```swift showLineNumbers title="Swift"
+   func observerMode(didInitiatePurchase product: AdaptyPaywallProduct,
+                     onStartPurchase: @escaping () -> Void,
+                     onFinishPurchase: @escaping () -> Void) {
+          // use the product object to handle the purchase
+          // use the onStartPurchase and onFinishPurchase callbacks to notify AdaptyUI about the process of the purchase
+   }
+The `observerMode(didInitiatePurchase:onStartPurchase:onFinishPurchase:)` event will inform you that the user has initiated a purchase. You can trigger your custom purchase flow in response to this callback.
+`observerModeDidInitiateRestorePurchases(onStartRestore:onFinishRestore:)` уведомит вас о том, что пользователь инициировал восстановление покупок. В ответ на этот колбэк вы можете запустить собственный процесс восстановления.
+
+Также не забудьте вызвать следующие колбэки, чтобы уведомить AdaptyUI о ходе покупки или восстановления. Это необходимо для корректного поведения пейвола — например, для отображения загрузчика:
+| Callback           | Описание                                                                                      |
+   | :----------------- | :-------------------------------------------------------------------------------------------- |
+   | onStartPurchase()  | Колбэк следует вызывать, чтобы уведомить AdaptyUI о начале покупки.  |
+   | onFinishPurchase() | Колбэк следует вызывать, чтобы уведомить AdaptyUI о завершении покупки. |
+   | onStartRestore()   | Колбэк следует вызывать, чтобы уведомить AdaptyUI о начале восстановления покупок.   |
+   | onFinishRestore()  | Колбэк следует вызывать, чтобы уведомить AdaptyUI о завершении восстановления покупок.  |
+2. Создайте объект конфигурации пейвола:
+
+   ```swift showLineNumbers title="Swift"
+   do {
+       let paywallConfiguration = try AdaptyUI.getPaywallConfiguration(
+        forPaywall: <paywall object>,
+        observerModeResolver: <AdaptyObserverModeResolver>
+        )
+   } catch {
+       // handle the error
+   }
+   ```
+
+   Параметры запроса:
+| Параметр                 | Наличие  | Описание                                                                                                                                                                                                                                                                                                              |
+   | :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | **Paywall**              | обязательный | Объект `AdaptyPaywall` для получения контроллера нужного пейвола.                                                                                                                                                                                                                                                     |
+   | **ObserverModeResolver** | обязательный | Объект `AdaptyObserverModeResolver`, реализованный на предыдущем шаге.                                                                                                                                                                                                                                                |
+3. Инициализируйте визуальный пейвол, который хотите отобразить, с помощью метода `.paywallController(for:products:viewConfiguration:delegate:)`:
+
+   ```swift showLineNumbers title="Swift"
+   import Adapty
+   import AdaptyUI
+
+   let visualPaywall = AdaptyUI.paywallController(
+       with: <paywall configuration object>,
+       delegate: <AdaptyPaywallControllerDelegate>
+   )
+   ```
+
+Параметры запроса:
+| Параметр                | Обязательность | Описание                                                                                                                                                                                                                                                                                                           |
+| :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paywall Configuration**              | обязательный | Объект `AdaptyUI.PaywallConfiguration`, содержащий визуальные детали пейвола. Используйте метод `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)`. Подробнее см. в разделе [Получение пейволов Paywall Builder и их конфигурации](get-pb-paywalls).                                                                                                                                                                                                                                                             |
+| **Delegate**             | обязательный | `AdaptyPaywallControllerDelegate` для прослушивания событий пейвола. Подробнее см. в разделе [Обработка событий пейвола](ios-handling-events).                                                                                                                                                                 |
+Возвращает:
+
+| Объект                  | Описание                                             |
+| :---------------------- | :--------------------------------------------------- |
+| AdaptyPaywallController | Объект, представляющий запрошенный экран пейвола     |
+
+После успешного создания объекта его можно отобразить следующим образом:
+
+```swift showLineNumbers title="Swift"
+present(visualPaywall, animated: true)
+```
+:::warning
+Не забудьте [связать пейволы с транзакциями покупок](report-transactions-observer-mode). Иначе Adapty не сможет определить, из какого пейвола была совершена покупка.
+:::
+</TabItem>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+Чтобы отобразить визуальный пейвол на экране устройства, используйте модификатор `.paywall` в SwiftUI:
+```swift showLineNumbers title="SwiftUI"
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywallConfiguration: <paywall configuration object>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false }
+      )
+}
+```
+
+| Параметр                 | Наличие  | Описание                                                                                                                                                                                                                                                                                                                         |
+| :----------------------- | :------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paywall Configuration**              | обязательный | Объект `AdaptyUI.PaywallConfiguration`, содержащий визуальные детали пейвола. Используйте метод `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)`. Подробнее см. в разделе [Получение пейволов Paywall Builder и их конфигурации](get-pb-paywalls).                                                                                                                                                                                                                                             |
+| **Products**             | опциональный | Передайте массив `AdaptyPaywallProducts`, чтобы оптимизировать время отображения продуктов на экране. Если передать `nil`, AdaptyUI автоматически загрузит необходимые продукты.                                                                                                                                   |
+| **TagResolver**          | опциональный | Задайте словарь пользовательских тегов и их значений. Пользовательские теги служат плейсхолдерами в содержимом пейвола и динамически заменяются конкретными строками для персонализации контента. Подробнее см. в разделе [Пользовательские теги в Paywall Builder](custom-tags-in-paywall-builder). |
+| **ObserverModeResolver** | опциональный | Объект `AdaptyObserverModeResolver`, реализованный на предыдущем шаге.                                                                                                                                                                                                                                                        |
+Параметры замыкания:
+
+| Параметр замыкания   | Описание                                                                                        |
+| :------------------- | :---------------------------------------------------------------------------------------------- |
+| **didFinishRestore** | Вызывается, если `Adapty.restorePurchases()` выполнился успешно.                               |
+| **didFailRestore**   | Вызывается, если `Adapty.restorePurchases()` завершился с ошибкой.                             |
+| **didFailRendering** | Вызывается, если в процессе отрисовки интерфейса произошла ошибка.                             |
+Обратитесь к разделу [iOS — Обработка событий](ios-handling-events) для ознакомления с другими параметрами замыканий.
+
+:::warning
+Не забудьте [привязать пейволы к транзакциям покупок](report-transactions-observer-mode). Иначе Adapty не сможет определить, с какого пейвола была совершена покупка.
+:::
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+<TabItem value="sdk2" label="Legacy Paywall Builder (SDK up to 2.x)" default>
+<details>
+   <summary>Перед тем как начать показывать пейволы (нажмите, чтобы развернуть)</summary>
+1. Настройте начальную интеграцию Adapty [с Google Play](initial-android) и [с App Store](initial_ios).
+1. Установите и настройте Adapty SDK. Убедитесь, что параметр `observerMode` установлен в `true`. Обратитесь к нашим инструкциям для [iOS](sdk-installation-ios#activate-adapty-module-of-adapty-sdk), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk) и [Unity](sdk-installation-unity#activate-adapty-module-of-adapty-sdk).
+2. [Создайте продукты](create-product) в дашборде Adapty.
+3. [Настройте пейволы, назначьте на них продукты](create-paywall) и кастомизируйте их с помощью Paywall Builder в дашборде Adapty.
+4. [Создайте плейсменты и назначьте пейволы на них](create-placement) в дашборде Adapty.
+5. [Получите пейволы Paywall Builder и их конфигурацию](get-pb-paywalls) в коде вашего мобильного приложения.
+</details>
+<p> </p>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+1. Реализуйте объект `AdaptyObserverModeDelegate`:
+```swift showLineNumbers title="Swift"
+   func paywallController(_ controller: AdaptyPaywallController,
+                          didInitiatePurchase product: AdaptyPaywallProduct,
+                          onStartPurchase: @escaping () -> Void,
+                          onFinishPurchase: @escaping () -> Void) {
+          // use the product object to handle the purchase
+          // use the onStartPurchase and onFinishPurchase callbacks to notify AdaptyUI about the process of the purchase
+   }
+   ```
+`paywallController(_:didInitiatePurchase:onStartPurchase:onFinishPurchase:)` уведомит вас о том, что пользователь инициировал покупку. В ответ на это событие вы можете запустить свой кастомный флоу покупки.
+
+Также не забудьте вызвать следующие колбэки, чтобы уведомить AdaptyUI о процессе покупки. Это необходимо для корректного поведения пейвола — например, для отображения лоадера:
+| Колбэк            | Описание                                                                                       |
+   | :---------------- | :--------------------------------------------------------------------------------------------- |
+   | onStartPurchase   | Колбэк вызывается, чтобы уведомить AdaptyUI о начале покупки.  |
+   | onFinishPurchase  | Колбэк вызывается, чтобы уведомить AdaptyUI о завершении покупки. |
+
+2. Инициализируйте визуальный пейвол, который хотите отобразить, с помощью метода `.paywallController(for:products:viewConfiguration:delegate:observerModeDelegate:)`:
+```swift showLineNumbers title="Swift"
+
+   let visualPaywall = AdaptyUI.paywallController(
+       for: <paywall object>,
+       products: <paywall products array>,
+       viewConfiguration: <LocalizedViewConfiguration>,
+       delegate: <AdaptyPaywallControllerDelegate>
+       observerModeDelegate: <AdaptyObserverModeDelegate>
+   )
+   ```
+
+Параметры запроса:
+| Параметр                 | Обязательность | Описание                                                  |
+| :----------------------- | :------- | :----------------------------------------------------------- |
+| **Paywall**              | обязательный | Объект `AdaptyPaywall` для получения контроллера нужного пейвола. |
+| **Products**             | необязательный | Передайте массив `AdaptyPaywallProducts`, чтобы оптимизировать время отображения продуктов на экране. Если передать `nil`, AdaptyUI автоматически загрузит необходимые продукты. |
+| **ViewConfiguration**    | обязательный | Объект `AdaptyUI.LocalizedViewConfiguration`, содержащий визуальные настройки пейвола. Используйте метод `AdaptyUI.getViewConfiguration(paywall:locale:)`. Подробнее см. в разделе [Получение пейволов Paywall Builder и их конфигурации](get-pb-paywalls). |
+| **Delegate**             | обязательный | Объект `AdaptyPaywallControllerDelegate` для обработки событий пейвола. Подробнее см. в разделе [Обработка событий пейвола](ios-handling-events). |
+| **ObserverModeDelegate** | обязательный | Объект `AdaptyObserverModeDelegate`, реализованный на предыдущем шаге. |
+| **TagResolver**          | необязательный | Задайте словарь пользовательских тегов и их значений. Пользовательские теги служат плейсхолдерами в контенте пейвола и динамически заменяются конкретными строками для персонализации. Подробнее см. в разделе [Пользовательские теги в Paywall Builder](custom-tags-in-paywall-builder). |
+Возвращает:
+
+| Объект                  | Описание                                             |
+| :---------------------- | :--------------------------------------------------- |
+| AdaptyPaywallController | Объект, представляющий запрошенный экран пейвола     |
+
+После успешного создания объекта его можно отобразить следующим образом:
+
+```swift showLineNumbers title="Swift"
+present(visualPaywall, animated: true)
+```
+:::warning
+Не забудьте [связать пейволы с транзакциями покупок](report-transactions-observer-mode). Иначе Adapty не сможет определить, из какого пейвола была совершена покупка.
+:::
+</TabItem>
+<TabItem value="swiftui" label="SwiftUI" default>
+Чтобы отобразить визуальный пейвол на экране устройства, используйте модификатор `.paywall` в SwiftUI:
+```swift showLineNumbers title="SwiftUI"
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywall: <paywall object>,
+          configuration: <LocalizedViewConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false },
+          observerModeDidInitiatePurchase: { product, onStartPurchase, onFinishPurchase in
+              // use the product object to handle the purchase
+              // use the onStartPurchase and onFinishPurchase callbacks to notify AdaptyUI about the process of the purchase
+          },
+      )
+}
+```
+
+Параметры запроса:
+| Параметр          | Обязательность | Описание                                                                                                                                                                                                                                                                                                                              |
+| :---------------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Paywall**       | обязательный   | Объект `AdaptyPaywall` для получения контроллера нужного пейвола.                                                                                                                                                                                                                                                                     |
+| **Product**       | необязательный | Передайте массив `AdaptyPaywallProducts`, чтобы оптимизировать время отображения продуктов на экране. Если передан `nil`, AdaptyUI автоматически загрузит необходимые продукты.                                                                                                                                                        |
+| **Configuration** | обязательный   | Объект `AdaptyUI.LocalizedViewConfiguration`, содержащий визуальные параметры пейвола. Используйте метод `AdaptyUI.getViewConfiguration(paywall:locale:)`. Подробнее см. в разделе [Получение пейволов Paywall Builder и их конфигурации](get-pb-paywalls).                                                                            |
+| **TagResolver**   | необязательный | Задайте словарь пользовательских тегов и их значений. Пользовательские теги служат плейсхолдерами в содержимом пейвола и динамически заменяются конкретными строками для персонализации контента. Подробнее см. в разделе [Пользовательские теги в Paywall Builder](custom-tags-in-paywall-builder). |
+Closure parameters:
+| Параметр closure                    | Описание                                                                                          |
+| :---------------------------------- | :------------------------------------------------------------------------------------------------ |
+| **didFinishRestore**                | Вызывается, если Adapty.restorePurchases() завершился успешно.                                    |
+| **didFailRestore**                  | Вызывается, если Adapty.restorePurchases() завершился с ошибкой.                                  |
+| **didFailRendering**                | Вызывается, если в процессе отрисовки интерфейса произошла ошибка.                                |
+| **observerModeDidInitiatePurchase** | Вызывается, когда пользователь инициирует покупку.                                                |
+Обратитесь к разделу [iOS — Обработка событий](ios-handling-events) для получения информации о других параметрах замыкания.
+
+:::warning
+Не забудьте [связать пейволы с транзакциями покупок](report-transactions-observer-mode). В противном случае Adapty не сможет определить источник пейвола для покупки.
+:::
+</TabItem>
+</Tabs>
+
+</TabItem>
+</Tabs>
