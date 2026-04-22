@@ -1,0 +1,15 @@
+| Параметр                      | Тип           | Обязательный | Nullable | Описание                                                     |
+| :---------------------------- | :------------ | ------------ | -------- | :----------------------------------------------------------- |
+| purchase_type                 | String        | Да           | Нет      | Тип приобретённого продукта. Возможное значение: `one_time_purchase`. |
+| store                         | String        | Да           | Нет      | Стор, в котором был куплен продукт. Возможные значения: `app_store`, `play_store`, `stripe` или Store ID вашего [кастомного стора](custom-store). |
+| environment                   | String        | Нет          | Нет      | Окружение транзакции, предоставившей уровень доступа. Варианты: `Sandbox`, `Production`. По умолчанию используется `Production`. |
+| store_product_id              | String        | Да           | Нет      | ID продукта в сторе (App Store, Google Play, Stripe и т.д.), который открыл этот уровень доступа. |
+| store_transaction_id          | String        | Да           | Нет      | ID транзакции в сторе (App Store, Google Play, Stripe и т.д.). |
+| store_original_transaction_id | String        | Да           | Нет      | <p>Для повторяющихся подписок — это исходный ID транзакции, связывающий цепочку продлений. Исходная транзакция является первой в цепочке; последующие транзакции — это продления.</p><p>Если продлений нет, `store_original_transaction_id` совпадает с `store_transaction_id`.</p> |
+| offer                         | Object        | Нет          | Да       | Оффер, использованный при покупке, в виде объекта [Offer](server-side-api-objects#offer). |
+| is_family_shared              | Boolean       | Нет          | Нет      | Булево значение, указывающее, поддерживает ли продукт семейный доступ в App Store Connect. Только для iOS. Всегда `false` для iOS ниже 14.0 и macOS ниже 11.0. По умолчанию используется `false`. |
+| price                         | Object        | Да           | Нет      | Цена разовой покупки в виде объекта [Price](server-side-api-objects#price). Первоначальная покупка подписки с нулевой стоимостью является бесплатным пробным периодом; продление с нулевой стоимостью — бесплатным продлением. |
+| purchased_at                  | ISO 8601 date | Да           | Нет      | Дата и время последней покупки уровня доступа.               |
+| refunded_at                   | ISO 8601 date | Нет          | Нет      | Если был выполнен возврат средств, отображает дату и время возврата. |
+| cancellation_reason           | String        | Нет          | Нет      | Возможные причины отмены: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription`, `unknown`. |
+| variation_id                  | String        | Нет          | Нет      | ID варианта, используемый для отслеживания покупок до конкретного пейвола, с которого они были совершены. |

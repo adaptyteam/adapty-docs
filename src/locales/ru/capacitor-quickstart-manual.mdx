@@ -1,0 +1,107 @@
+---
+title: "Включение покупок в вашем кастомном пейволе в Capacitor SDK"
+description: "Интегрируйте Adapty SDK в ваши кастомные пейволы Capacitor для включения встроенных покупок."
+metadataTitle: "Быстрый старт с Adapty | Документация Adapty"
+keywords: ['paywalls capacitor', 'sdk capacitor', 'paywall', 'getPaywall']
+---
+
+В этом гайде описано, как интегрировать Adapty в ваши кастомные пейволы. Сохраните полный контроль над реализацией пейвола, пока Adapty SDK получает продукты, обрабатывает новые покупки и восстанавливает предыдущие.
+
+:::important
+**Этот гайд предназначен для разработчиков, реализующих кастомные пейволы.** Если вы хотите наиболее простой способ включить покупки, используйте [Adapty Paywall Builder](capacitor-quickstart-paywalls). С Paywall Builder вы создаёте пейволы в визуальном редакторе без кода, Adapty автоматически обрабатывает всю логику покупок, и вы можете тестировать разные дизайны без повторной публикации приложения.
+:::
+
+## Перед началом работы \{#before-you-start\}
+
+### Настройка продуктов \{#set-up-products\}
+
+Чтобы включить встроенные покупки, нужно понять три ключевых концепции:
+
+- [**Продукты**](product) — всё, что пользователи могут купить (подписки, расходуемые покупки, пожизненный доступ)
+- [**Пейволы**](paywalls) — конфигурации, определяющие, какие продукты предлагать. В Adapty пейволы — единственный способ получить продукты, но такой подход позволяет изменять продукты, цены и офферы без изменения кода приложения.
+- [**Плейсменты**](placements) — где и когда показывать пейволы в вашем приложении (например, `main`, `onboarding`, `settings`). Вы настраиваете пейволы для плейсментов в дашборде, а затем запрашиваете их по ID плейсмента в коде. Это упрощает проведение A/B-тестов и показ разных пейволов разным пользователям.
+
+Убедитесь, что вы понимаете эти концепции, даже если работаете с кастомным пейволом. По сути, это просто ваш способ управлять продуктами, которые вы продаёте в приложении.
+
+Для реализации кастомного пейвола вам нужно создать **пейвол** и добавить его в **плейсмент**. Эта настройка позволяет получать ваши продукты. Чтобы понять, что нужно сделать в дашборде, следуйте [этому](quickstart) гайду по быстрому старту.
+
+### Управление пользователями \{#manage-users\}
+
+Вы можете работать как с аутентификацией на бэкенде, так и без неё.
+
+При этом Adapty SDK по-разному обрабатывает анонимных и идентифицированных пользователей. Прочитайте [гайд по быстрому старту с идентификацией](capacitor-quickstart-identify), чтобы понять особенности и убедиться, что вы правильно работаете с пользователями.
+
+## Шаг 1. Получите продукты \{#step-1-get-products\}
+
+Чтобы получить продукты для вашего кастомного пейвола, нужно:
+
+1. Получить объект `paywall`, передав ID [плейсмента](placements) в метод `getPaywall`.
+2. Получить массив продуктов для этого пейвола с помощью метода `getPaywallProducts`.
+
+```typescript showLineNumbers
+
+async function loadPaywall() {
+  try {
+    const paywall: AdaptyPaywall = await adapty.getPaywall({
+      placementId: 'YOUR_PLACEMENT_ID'
+    });
+
+    const products: AdaptyPaywallProduct[] = await adapty.getPaywallProducts({
+      paywall
+    });
+
+    // Use products to build your custom paywall UI
+  } catch (error) {
+    // Handle the error
+  }
+}
+```
+
+## Шаг 2. Принимайте покупки \{#step-2-accept-purchases\}
+
+Когда пользователь нажимает на продукт в вашем кастомном пейволе, вызовите метод `makePurchase` с выбранным продуктом. Это запустит процесс покупки и вернёт обновлённый профиль.
+
+```typescript showLineNumbers
+
+async function purchaseProduct(product: AdaptyPaywallProduct) {
+  try {
+    const result: AdaptyPurchaseResult = await adapty.makePurchase({ product });
+
+    if (result.type === 'success') {
+      // Purchase successful, profile updated
+    } else if (result.type === 'user_cancelled') {
+      // User canceled the purchase
+    } else if (result.type === 'pending') {
+      // Purchase is pending (e.g., user will pay offline with cash)
+    }
+  } catch (error) {
+    // Handle the error
+  }
+}
+```
+
+## Шаг 3. Восстановите покупки \{#step-3-restore-purchases\}
+
+Сторы требуют, чтобы все приложения с подписками предоставляли пользователям возможность восстановить покупки.
+
+Вызовите метод `restorePurchases`, когда пользователь нажмёт кнопку восстановления. Это синхронизирует историю покупок с Adapty и вернёт обновлённый профиль.
+
+```typescript showLineNumbers
+
+async function restorePurchases() {
+  try {
+    const profile: AdaptyProfile = await adapty.restorePurchases();
+    // Restore successful, profile updated
+  } catch (error) {
+    // Handle the error
+  }
+}
+```
+
+## Следующие шаги \{#next-steps\}
+
+<SupportForum />
+
+Ваш пейвол готов к отображению в приложении. Протестируйте покупки в [песочнице App Store](test-purchases-in-sandbox) или в [Google Play Store](testing-on-android), чтобы убедиться, что вы можете выполнить тестовую покупку через пейвол. Чтобы увидеть, как это работает в готовой к продакшену реализации, ознакомьтесь с [App.tsx](https://github.com/adaptyteam/AdaptySDK-Capacitor/blob/master/examples/adapty-devtools/src/screens/app/App.tsx) в нашем примере приложения, который демонстрирует обработку покупок с правильной обработкой ошибок, состояниями загрузки и полной интеграцией SDK.
+
+Далее [проверьте, завершил ли пользователь покупку](capacitor-check-subscription-status), чтобы решить, показывать ли пейвол или открыть доступ к платным функциям.

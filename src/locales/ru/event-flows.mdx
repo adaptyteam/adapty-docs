@@ -1,0 +1,429 @@
+---
+title: "Потоки событий"
+description: "Изучите подробные схемы потоков событий подписок в Adapty. Узнайте, как генерируются и отправляются события подписок в интеграции, чтобы отслеживать ключевые моменты в пути ваших пользователей."
+metadataTitle: "Потоки событий в Adapty: схемы и сценарии | Документация Adapty"
+keywords: ['возврат', 'пробный период', 'восстановление', 'события', 'событие']
+rank: 70
+---
+
+В Adapty вы будете получать различные события подписок на протяжении всего пути пользователя в вашем приложении. Эти потоки описывают типичные сценарии и помогают понять, какие события Adapty генерирует, когда пользователи оформляют, отменяют или возобновляют подписки.
+
+Обратите внимание: Apple обрабатывает платежи за подписку за несколько часов до фактического начала или продления. На схемах ниже начало/продление подписки и списание средств показаны одновременно — для наглядности.
+
+Кроме того, события, связанные с одним действием, происходят одновременно и могут появляться в вашем **Event Feed** в любом порядке, который может отличаться от последовательности на наших схемах.
+
+## Жизненный цикл подписки \{#subscription-lifecycle\}
+
+### Поток первоначальной покупки \{#initial-purchase-flow\}
+
+Этот поток возникает, когда пользователь впервые покупает подписку без пробного периода. В этом случае создаются следующие события:
+
+- **Subscription started**
+- **Access level updated** — для предоставления доступа пользователю
+
+Когда наступает дата продления подписки, подписка возобновляется. При этом создаются следующие события:
+
+- **Subscription renewal** — для начала нового периода подписки
+- **Access level updated** — для обновления даты истечения подписки и продления доступа ещё на один период
+
+Ситуации, когда платёж не проходит или пользователь отменяет продление, описаны в разделах [Поток исхода проблемы с оплатой](event-flows#billing-issue-outcome-flow) и [Поток отмены подписки](event-flows#subscription-cancellation-flow) соответственно.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Initial_Purchase_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Поток отмены подписки \{#subscription-cancellation-flow\}
+
+Когда пользователь отменяет подписку, создаются следующие события:
+
+- **Subscription renewal canceled** — указывает, что подписка остаётся активной до конца текущего периода, после чего пользователь потеряет доступ
+- **Access level updated** — для отключения автопродления доступа
+
+Когда подписка заканчивается, срабатывает событие **Subscription expired (churned)**, отмечающее окончание подписки.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Cancellation_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Если возврат средств одобрен, вместо **Subscription expired (churned)** создаётся следующее событие:
+
+- **Subscription refunded** — для завершения подписки с указанием деталей возврата
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Cancellation_Flow_with_a_Refund.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Для Stripe подписка может быть отменена немедленно, без ожидания оставшегося периода. В этом случае все события создаются одновременно:
+
+- **Subscription renewal cancelled**
+- **Subscription expired (churned)**
+- **Access Level updated** — для лишения пользователя доступа
+
+Если возврат средств одобрен, при его одобрении также срабатывает событие **Subscription refunded**.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Immediate_Cancellation_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Поток повторной активации подписки \{#subscription-reactivation-flow\}
+
+Если пользователь отменил подписку, подписка истекла, а затем он повторно купил ту же подписку, будет создано событие **Subscription renewed**. Даже при наличии перерыва в доступе Adapty считает это единой цепочкой транзакций, связанной через `vendor_original_transaction_id`. Поэтому повторная покупка рассматривается как продление.
+
+События **Access level updated** создаются дважды:
+
+- при окончании подписки — для отзыва доступа пользователя
+- при повторной покупке подписки — для предоставления доступа
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Rejoin_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Поток приостановки подписки (только Android) \{#subscription-pause-flow-android-only\}
+
+Этот поток применяется, когда пользователь приостанавливает и затем возобновляет подписку на Android.
+
+Приостановка подписки имеет отложенный эффект. Если пользователь приостанавливает подписку до момента её продления, подписка остаётся активной, и пользователь сохраняет оплаченный доступ до конца расчётного периода.
+
+1. Когда пользователь приостанавливает подписку, срабатывает событие **Subscription paused (Android only)**.
+2. По окончании периода подписки Adapty создаёт событие **Access level updated** для отзыва доступа пользователя.
+3. Когда пользователь возобновляет подписку, срабатывают следующие события:
+
+    - **Subscription renewed**
+    - **Access level updated** — для восстановления доступа пользователя
+
+Эти подписки будут принадлежать одной цепочке транзакций, связанной одним **vendor_original_transaction_id**.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Paused_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Потоки пробного периода \{#trial-flows\}
+
+Если в вашем приложении используются пробные периоды, вы будете получать дополнительные события, связанные с пробным периодом.
+
+### Поток пробного периода с успешной конвертацией \{#trial-with-successful-conversion-flow\}
+
+Наиболее распространённый поток: пользователь начинает пробный период, привязывает карту и успешно конвертируется в обычную подписку по окончании пробного периода. В этом случае в момент начала пробного периода создаются следующие события:
+
+- **Trial started** — для отметки начала пробного периода
+- **Access level updated** — для предоставления доступа
+
+Событие **Trial converted** создаётся в момент начала обычной подписки.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Trial_Flow_with_Successful_Conversion.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Поток пробного периода без успешной конвертации \{#trial-without-successful-conversion-flow\}
+
+Если пользователь отменяет пробный период до его конвертации в подписку, в момент отмены создаются следующие события:
+
+- **Trial renewal cancelled** — для отключения автоматической конвертации пробного периода в подписку
+- **Access level updated** — для отключения автопродления доступа
+
+Пользователь сохранит доступ до окончания пробного периода, после чего будет создано событие **Trial expired**, отмечающее его завершение.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Trial_Flow_without_Successful_Conversion.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Поток повторной активации подписки после истёкшего пробного периода \{#subscription-reactivation-after-expired-trial-flow\}
+
+Если пробный период истёк (из-за проблемы с оплатой или отмены) и пользователь впоследствии покупает подписку, создаются следующие события:
+
+- **Access level updated** — для предоставления доступа пользователю
+- **Trial converted**
+
+Даже при наличии перерыва между пробным периодом и подпиской Adapty связывает их через `vendor_original_transaction_id`. Эта конвертация рассматривается как часть непрерывной цепочки транзакций, начавшейся с бесплатного пробного периода. Именно поэтому создаётся событие **Trial converted**, а не **Subscription started**.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Reactivation_Flow_after_Expired_Trial.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Изменения продукта \{#product-changes\}
+
+В этом разделе описаны любые изменения активных подписок: обновления до более дорогого тарифа, переход на более дешёвый или покупка продукта из другой группы.
+
+### Поток немедленного изменения продукта \{#immediate-product-change-flow\}
+
+После того как пользователь меняет продукт, изменение может быть применено немедленно, до окончания текущей подписки (в основном при обновлении до более дорогого тарифа или замене продукта). В этом случае в момент смены продукта:
+
+- Уровень доступа меняется, и создаются два события **Access level updated**:
+  1. для отзыва доступа к первому продукту.
+  2. для предоставления доступа ко второму продукту.
+- Старая подписка завершается и производится возврат средств (создаётся событие **Subscription refunded** с `cancellation_reason` = `upgraded`). Обратите внимание: событие **Subscription expired (churned)** не создаётся — его заменяет **Subscription refunded**.
+- Начинается новая подписка (создаётся событие **Subscription started** для нового продукта).
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Immediate_Product_Change_Flow_Upgrade.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+При переходе на более дешёвый тариф первая подписка будет действовать до конца оплаченного периода, а по его окончании будет заменена новой подпиской более низкого уровня. В этом случае сразу создаётся только событие **Access level updated** для отключения автопродления доступа. Все остальные события создаются в момент фактической замены подписки:
+
+- Ещё одно событие **Access level updated** — для предоставления доступа ко второму продукту.
+- Событие **Subscription expired (churned)** — для завершения подписки на первый продукт.
+- Событие **Subscription started** — для начала новой подписки на новый продукт.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Delayed_Product_Change_Downgrade.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Поток отложенного изменения продукта \{#delayed-product-change-flow\}
+
+Также существует вариант, когда пользователь меняет продукт в момент продления подписки. Этот вариант очень похож на предыдущий: сразу создаётся одно событие **Access level updated** для отключения автопродления доступа к старому продукту. Все остальные события создаются в момент, когда пользователь меняет подписку и изменение применяется в системе:
+
+- Ещё одно событие **Access level updated** — для предоставления доступа ко второму продукту.
+- Событие **Subscription expired (churned)** — для завершения подписки на первый продукт.
+- Событие **Subscription started** — для начала новой подписки на новый продукт.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Product_Change_on_Renewal_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Поток исхода проблемы с оплатой \{#billing-issue-outcome-flow\}
+
+Если попытки конвертировать пробный период или продлить подписку завершаются неудачей из-за проблем с оплатой, дальнейший ход событий зависит от того, включён ли льготный период.
+
+При наличии льготного периода: если платёж проходит успешно, пробный период конвертируется или подписка продлевается. Если платёж не проходит, магазин продолжает пытаться списать средства, и если это так и не удаётся, магазин самостоятельно завершает пробный период или подписку.
+
+Таким образом, в момент проблемы с оплатой в Adapty создаются следующие события:
+
+- **Billing issue detected**
+- **Entered grace period** (если льготный период включён)
+- **Access level updated** — для предоставления доступа до конца льготного периода
+
+Если платёж впоследствии проходит успешно, Adapty фиксирует событие **Trial converted** или **Subscription renewed**, и пользователь не теряет доступ.
+
+Если платёж так и не проходит и магазин отменяет подписку, Adapty генерирует следующие события:
+
+- **Trial expired** или **Subscription expired (churned)** с `cancellation_reason: billing_error`
+- **Access level updated** — для отзыва доступа пользователя
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Billing_Issue_Outcome_Flow_with_Grace_Period.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Без льготного периода период повторных попыток оплаты (Billing Retry Period — период, в течение которого магазин продолжает пытаться списать средства) начинается немедленно.
+
+Если платёж так и не проходит до конца этого периода, поток тот же: при автоматическом завершении подписки магазином создаются те же события:
+
+- **Trial expired** или **Subscription expired (churned)** с `cancellation_reason` равным `billing_error`
+
+- **Access level updated** — для отзыва доступа пользователя
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Billing_Issue_Outcome_Flow_without_Grace_Period.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Потоки совместного использования покупок между аккаунтами пользователей \{#sharing-purchases-across-user-accounts-flows\}
+
+Когда <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration) и [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> пытается восстановить или расширить подписку, уже привязанную к другому <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration) и [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip>, настройка **Sharing paid access between user accounts** в Adapty определяет, как управляется доступ. Поток будет варьироваться в зависимости от выбранного варианта.
+
+### Поток передачи доступа новому пользователю \{#transfer-access-to-new-user-flow\}
+
+Рекомендуемый вариант — передача уровня доступа новому пользователю. Это сохраняет историю транзакций исходного пользователя для корректной аналитики. Создаются только 2 события **Access level updated**:
+
+1. для отзыва доступа первого пользователя
+2. для предоставления доступа второму пользователю
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Transfer_Access_to_New_User_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Ниже приведена расшифровка полей, связанных с назначением и передачей уровня доступа в событиях, генерируемых в этом сценарии:
+
+- **User A: Access level updated (отправляется, когда User A покупает подписку в приложении)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **User A: Access level updated (отправляется, когда приложение переустанавливается и входит User B, лишая User A доступа)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": false,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **User B: Access level updated (отправляется, когда User B входит в систему и получает доступ)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000001",
+    "customer_user_id": UserB,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+### Поток совместного доступа между пользователями \{#shared-access-between-users-flow\}
+
+Этот вариант позволяет нескольким пользователям совместно использовать один и тот же уровень доступа, если их устройство авторизовано под одним Apple/Google ID. Это удобно, когда пользователь переустанавливает приложение и входит с другим адресом электронной почты — он всё равно сохранит доступ к предыдущей покупке. При этом варианте несколько идентифицированных пользователей могут совместно использовать один уровень доступа. Пока доступ является общим, все транзакции записываются под исходным <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration) и [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> для сохранения полной истории транзакций и аналитики.
+
+Поэтому будет создано только 1 событие: **Access level updated** для предоставления доступа второму пользователю.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Share_Access_Between_Users_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Ниже приведена расшифровка полей, связанных с назначением и совместным использованием уровня доступа в событиях, генерируемых в этом сценарии:
+
+**User B: Access level updated (отправляется, когда User B входит в систему и получает доступ)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": [
+      {
+        "profile_id": "00000000-0000-0000-0000-000000000001,
+        "customer_user_id": UserB
+      }
+    ]
+  }
+  ```
+
+### Поток без совместного доступа между пользователями \{#access-not-shared-between-users-flow\}
+
+При этом варианте только первый профиль пользователя, получивший уровень доступа, сохраняет его без ограничений по времени. Это идеальный вариант, если покупки должны быть привязаны к единственному <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration) и [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip>.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Share_Access_Between_Users_Disabled_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>

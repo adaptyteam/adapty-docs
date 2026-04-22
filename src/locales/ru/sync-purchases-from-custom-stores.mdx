@@ -1,0 +1,351 @@
+---
+title: "Синхронизация транзакций из кастомных сторов"
+description: "Синхронизируйте транзакции из кастомных сторов с Adapty для управления доступом и отслеживания дохода."
+metadataTitle: "Гайды | API | Документация Adapty"
+displayed_sidebar: APISidebar
+---
+
+Если вы продаёте подписки или встроенные покупки через **кастомные сторы** — например, Amazon Appstore, Microsoft Store или собственную платёжную платформу — вы можете синхронизировать эти транзакции с Adapty, чтобы автоматически управлять уровнями доступа и отслеживать доход в аналитике.
+
+В этом гайде вы узнаете, как связать покупки из кастомных сторов с Adapty через SDK и API.
+
+#### Пример использования
+
+Допустим, вы распространяете приложение через Amazon Appstore или создали собственный веб-стор для прямых продаж. Когда пользователь завершает покупку на таких платформах, вы хотите:
+- Автоматически открыть ему доступ к премиум-функциям в мобильном приложении
+- Отразить транзакцию в аналитике Adapty вместе с доходом из App Store и Google Play
+- Запустить интеграции и вебхуки так же, как для любой другой подписки
+
+Именно для этого и нужна данная интеграция.
+
+## Шаг 1. Идентифицируйте пользователей \{#step-1-identify-users\}
+
+Adapty использует `customer_user_id` для идентификации пользователей на разных платформах.
+
+Этот идентификатор нужно создать один раз и передать и в мобильный SDK, и в бэкенд. Если пользователи регистрируются через приложение, вы можете передать их `customer_user_id` при активации SDK. Если SDK уже был активирован до этапа регистрации, используйте метод `identify`, чтобы создать новый профиль и назначить ему `customer_user_id`.
+
+:::important
+Если вы идентифицируете новых пользователей после активации SDK, SDK сначала создаст анонимный профиль (без него работа невозможна). Когда вы вызовете `identify` с `customer_user_id`, будет создан новый профиль.
+
+Это нормальное поведение, которое не влияет на точность аналитики. Подробнее [здесь](ios-quickstart-identify).
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS" default>
+```swift showLineNumbers
+do {
+    try await Adapty.identify("YOUR_USER_ID") // Unique for each user
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="iOS (Swift-Callback)" default>
+
+```swift showLineNumbers
+// User IDs must be unique for each user
+Adapty.identify("YOUR_USER_ID") { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)" default>
+```kotlin showLineNumbers
+Adapty.identify("YOUR_USER_ID") { error -> // Unique for each user
+    if (error == null) {
+        // successful identify
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Android (Java)" default>
+```java showLineNumbers
+// User IDs must be unique for each user
+Adapty.identify("YOUR_USER_ID", error -> {
+    if (error == null) {
+        // successful identify
+    }
+});
+```
+</TabItem>
+<TabItem value="react-native" label="React Native" default>
+```typescript showLineNumbers
+try {
+    await adapty.identify("YOUR_USER_ID"); // Unique for each user
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="flutter" label="Flutter" default>
+```dart showLineNumbers
+try {
+  await Adapty().identify(customerUserId); // Unique for each user
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+</TabItem>
+
+<TabItem value="unity" label="Unity" default>
+```csharp showLineNumbers
+Adapty.Identify("YOUR_USER_ID", (error) => { // Unique for each user
+  if(error == null) {
+    // successful identify
+  }
+});
+```
+</TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+```kotlin showLineNumbers
+Adapty.identify("YOUR_USER_ID") // Unique for each user
+    .onSuccess {
+        // successful identify
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+</TabItem>
+
+<TabItem value="capacitor" label="Capacitor" default>
+```typescript showLineNumbers
+try {
+  await adapty.identify({ customerUserId: "YOUR_USER_ID" });
+  // successfully identified
+} catch (error) {
+  // handle the error
+}
+```
+</TabItem>
+</Tabs>
+
+## Шаг 2. Создайте продукты для кастомного стора в дашборде Adapty \{#step-2-create-products-in-a-custom-store-in-adapty-dashboard\}
+
+Чтобы Adapty мог сопоставить транзакции из кастомного стора с вашими продуктами, нужно добавить продукты и настроить для них параметры кастомного стора.
+
+1. Перейдите в раздел [**Products**](https://app.adapty.io/settings/general) через левое меню дашборда Adapty и нажмите **Create product**. Или нажмите на существующий продукт, чтобы отредактировать его.
+2. Убедитесь, что выбран [уровень доступа](access-level), который нужно предоставить пользователям при покупке продукта.
+3. Нажмите **+** и выберите **Add a custom store**.
+4. Нажмите **Create new custom store**.
+
+<ZoomImage id="add-custom-store.webp" width="500px" />
+
+5. Введите название стора (например, «Amazon Appstore», «Microsoft Store» или «Web Store») и его ID. Нажмите **Create custom store**.
+
+<ZoomImage id="new-store.webp" width="500px" />
+
+6. Нажмите **Save changes**, чтобы привязать продукт к кастомному стору.
+7. Введите **Store product ID** для продукта, чтобы сопоставить его с продуктом в этом сторе. Затем нажмите **Save**.
+
+<ZoomImage id="store-product-id.webp" width="500px" />
+
+## Шаг 3. Синхронизируйте транзакции через API \{#step-3-sync-transactions-via-api\}
+
+После завершения покупки в кастомном сторе нужно синхронизировать её с Adapty через серверный API.
+
+Этот вызов API:
+- Запишет транзакцию в Adapty
+- Предоставит пользователю соответствующий уровень доступа
+- Запустит настроенные вами интеграции и вебхуки
+- Отобразит транзакцию в вашей аналитике
+
+Полный справочник метода — [здесь](api-adapty/operations/setTransaction).
+
+```curl
+curl --request POST \
+  --url https://api.adapty.io/api/v2/server-side-api/purchase/set/transaction/ \
+  --header 'Accept: application/json' \
+  --header 'Authorization: Api-Key YOUR_SECRET_API_KEY' \
+  --header 'Content-Type: application/json' \
+  --header 'adapty-customer-user-id: YOUR_CUSTOMER_USER_ID' \
+  --data '{
+  "purchase_type": "PRODUCT_PERIOD",
+  "store": "YOUR_CUSTOM_STORE",
+  "environment": "production",
+  "store_product_id": "YOUR_STORE_PRODUCT_ID",
+  "store_transaction_id": "STORE_TRANSACTION_ID",
+  "store_original_transaction_id": "ORIGINAL_TRANSACTION_ID",
+  "price": {
+    "country": "COUNTRY_CODE",
+    "currency": "CURRENCY_CODE",
+    "value": "YOUR_PRICE"
+  },
+  "purchased_at": "2024-01-15T10:30:00Z"
+}'
+```
+
+:::important 
+Важные параметры:
+- **store**: ID вашего кастомного стора из шага 2
+- **store_product_id**: Store product ID из шага 2
+- **store_transaction_id**: уникальный идентификатор транзакции
+- **purchased_at**: временная метка в формате ISO 8601, когда была совершена покупка
+- **price**: сумма, уплаченная пользователем
+:::
+
+## Шаг 4. Проверьте доступ в приложении \{#step-4-verify-access-in-the-app\}
+
+После синхронизации транзакции профиль пользователя автоматически обновится с новым уровнем доступа.
+
+Когда пользователь откроет мобильное приложение, загрузите его профиль, чтобы проверить статус подписки и открыть доступ к премиум-функциям.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+// handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="swift-callback" label="iOS (Swift-Callback)" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get() {
+        // check the access
+        if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // grant access to premium features
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="android" label="Android (Kotlin)" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+            // check the access
+            if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
+                // grant access to premium features
+            }
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="java" label="Android (Java)" default>
+
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        // check the access
+        if (profile.getAccessLevels().get("YOUR_ACCESS_LEVEL") != null && profile.getAccessLevels().get("YOUR_ACCESS_LEVEL").getIsActive()) {
+            // grant access to premium features
+        }
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+
+<TabItem value="react-native" label="React Native" default>
+
+```typescript showLineNumbers
+try {
+    const profile = await adapty.getProfile();
+    // check the access
+    if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive) {
+        // grant access to premium features
+    }
+} catch (error) {
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="flutter" label="Flutter" default>
+
+```dart showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  // check the access
+  if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false) {
+      // grant access to premium features
+  }
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+</TabItem>
+
+<TabItem value="unity" label="Unity" default>
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+  // check the access
+  if (profile.AccessLevels["YOUR_ACCESS_LEVEL"]?.IsActive ?? false) {
+      // grant access to premium features
+  }
+});
+```
+</TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile()
+    .onSuccess { profile ->
+        // check the access
+        if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
+            // grant access to premium features
+        }
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+</TabItem>
+
+<TabItem value="capacitor" label="Capacitor" default>
+
+```typescript showLineNumbers
+try {
+  const profile = await adapty.getProfile();
+  // check the access
+  if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive) {
+      // grant access to premium features
+  }
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>

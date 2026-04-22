@@ -80,9 +80,13 @@ jobs:
       - run: npm ci
 
       - name: Build English only
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=none npx astro build
 
       - name: Generate markdown exports
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run build:md:prod
 
       - uses: actions/upload-artifact@v4
@@ -96,7 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr]
+        locale: [zh, tr, ru]
     steps:
       - uses: actions/checkout@v4
 
@@ -120,6 +124,8 @@ jobs:
       - run: npm ci
 
       - name: Build locale ${{ matrix.locale }}
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} npx astro build
 
       - uses: actions/upload-artifact@v4
@@ -155,6 +161,11 @@ jobs:
           name: build-tr
           path: build/tr/
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-ru
+          path: build/ru/
+
       - name: Deploy
         uses: reggionick/s3-deploy@v4
         with:
@@ -180,7 +191,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr]
+        locale: [zh, tr, ru]
     steps:
       - uses: actions/checkout@v4
 
@@ -204,6 +215,8 @@ jobs:
       - run: npm ci
 
       - name: Build locale ${{ matrix.locale }}
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} npx astro build
 
       - uses: actions/upload-artifact@v4
@@ -234,18 +247,24 @@ jobs:
           name: build-tr-only-tr
           path: build/tr/
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-tr-only-ru
+          path: build/ru/
+
       # Sync locale directories to S3 using AWS CLI —
-      # only overwrites zh/ and tr/ prefixes, leaves English untouched.
+      # only overwrites zh/, tr/, and ru/ prefixes, leaves English untouched.
       - name: Deploy translations to S3
         run: |
           aws s3 sync build/zh/ s3://${{ secrets.S3_BUCKET }}/zh/ --delete
           aws s3 sync build/tr/ s3://${{ secrets.S3_BUCKET }}/tr/ --delete
+          aws s3 sync build/ru/ s3://${{ secrets.S3_BUCKET }}/ru/ --delete
 
       - name: Invalidate locale paths
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/zh/*" "/tr/*"
+            --paths "/zh/*" "/tr/*" "/ru/*"
 
       - name: Update deployment tag
         run: |

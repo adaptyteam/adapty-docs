@@ -1,0 +1,18 @@
+| Параметр                      | Тип           | Обязательный | Nullable | Описание                                                     |
+| :---------------------------- | :------------ | ------------ | -------- | :----------------------------------------------------------- |
+| access_level_id               | String        | Да           | Нет      | ID уровня доступа, настроенного в дашборде Adapty.           |
+| store                         | String        | Да           | Нет      | Стор, в котором был куплен продукт. Варианты: **app_store**, **play_store**, **stripe** или название вашего [кастомного стора](custom-store). |
+| store_product_id              | String        | Да           | Нет      | ID продукта в сторе (App Store, Google Play, Stripe), который открыл этот уровень доступа. |
+| store_base_plan_id            | String        | Да           | Да       | [ID базового плана](https://support.google.com/googleplay/android-developer/answer/12154973) в Google Play или [ID цены](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) в Stripe. |
+| store_transaction_id          | String        | Да           | Нет      | ID транзакции в сторе (App Store, Google Play, Stripe и др.). |
+| store_original_transaction_id | String        | Да           | Нет      | <p>Для подписок этот ID связывает исходную транзакцию в цепочке продлений. Последующие транзакции привязываются как продления.</p><p>Если продлений нет, store_original_transaction_id совпадает с store_transaction_id.</p> |
+| offer                         | Object        | Да           | Нет      | Объект [Offer](server-side-api-objects#offer). Может быть `null`, если у пользователя нет уровней доступа. |
+| environment                   | String        | Нет          | Нет      | Среда транзакции, предоставившей доступ. Варианты: `Sandbox`, `Production`. |
+| starts_at                     | ISO 8601 date | Да           | Да       | Дата и время, когда уровень доступа становится активным. Может быть в будущем. |
+| purchased_at                  | ISO 8601 date | Да           | Нет      | Дата и время последней покупки для данного уровня доступа.   |
+| originally_purchased_at       | ISO 8601 date | Да           | Нет      | Для подписок — дата и время самой первой (исходной) покупки в цепочке, привязанной к `store_original_transaction_id`. |
+| expires_at                    | ISO 8601 date | Да           | Да       | Дата и время истечения уровня доступа. Может быть в прошлом или `null` для пожизненного доступа. |
+| renewal_cancelled_at          | ISO 8601 date | Да           | Да       | Дата и время, когда для подписки было отключено автопродление. Подписка при этом может оставаться активной — она просто не будет продлеваться. Устанавливается в `null`, если пользователь повторно активирует подписку. |
+| billing_issue_detected_at     | ISO 8601 date | Да           | Да       | Дата и время обнаружения проблемы с оплатой (например, неудачного списания с карты). Подписка при этом может оставаться активной. Сбрасывается, если платёж впоследствии проходит успешно. |
+| is_in_grace_period            | Boolean       | Да           | Нет      | Показывает, находится ли подписка в [льготном периоде](https://developer.apple.com/news/?id=09122019c) (только для автовозобновляемых подписок). |
+| cancellation_reason           | String        | Да           | Да       | Причина отмены. Возможные значения: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `upgraded`, `unknown`. |

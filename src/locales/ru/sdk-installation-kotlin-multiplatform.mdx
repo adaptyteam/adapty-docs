@@ -1,0 +1,337 @@
+---
+title: "Установка и настройка Adapty Kotlin Multiplatform SDK"
+description: "Установка и настройка Adapty SDK для приложений на Kotlin Multiplatform."
+metadataTitle: "Установка Adapty SDK на Kotlin Multiplatform | Документация Adapty"
+keywords: ['установка sdk', 'установить sdk', 'установка sdk kotlin multiplatform']
+rank: 50
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
+import AndroidBackupRules from '@site/src/locales/ru/reusable/AndroidBackupRules.md';
+import InstallationPrereqs from '@site/src/locales/ru/reusable/InstallationPrereqs.mdx';
+
+Adapty SDK включает два ключевых модуля для бесшовной интеграции в ваше мобильное приложение:
+
+- **Core Adapty**: основной SDK, необходимый для работы Adapty в приложении.
+- **AdaptyUI** (`io.adapty:adapty-kmp-ui`): этот модуль нужен, если вы используете [Adapty Paywall Builder](adapty-paywall-builder) со слоем отрисовки Compose Multiplatform (`view.present()`). Если ваш проект не использует Compose Multiplatform, вместо него можно использовать [`createNativePaywallView`](kmp-present-paywalls#without-compose-multiplatform) и [`createNativeOnboardingView`](kmp-present-onboardings#without-compose-multiplatform) из основного модуля.
+
+:::tip
+Хотите увидеть реальный пример интеграции Adapty SDK в мобильное приложение? Посмотрите наше [тестовое приложение](https://github.com/adaptyteam/AdaptySDK-KMP/tree/main/example) — оно демонстрирует полную настройку: отображение пейволов, совершение покупок и другие базовые функции.
+:::
+
+Полное пошаговое руководство по реализации также можно посмотреть на видео:
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/JfwJvwnloNw?si=HskPxRk4WGkF_u9s" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+## Требования \{#requirements\}
+
+Adapty Kotlin Multiplatform SDK совместим с Xcode 16.2 и более поздними версиями.
+
+:::info
+Adapty совместим с Google Play Billing Library до версии 8.x включительно. По умолчанию Adapty работает с Google Play Billing Library v.7.0.0, но если вы хотите принудительно использовать более позднюю версию, можно вручную [добавить зависимость](https://developer.android.com/google/play/billing/integrate#dependency).
+:::
+
+<InstallationPrereqs />
+
+## Установка Adapty SDK через Gradle \{#install-adapty-sdk-via-gradle\}
+
+Установка Adapty SDK с помощью Gradle необходима как для Android, так и для iOS-приложений.
+
+Выберите способ настройки зависимостей:
+- Стандартный Gradle: добавьте зависимости в `build.gradle` **уровня модуля**
+- Если в вашем проекте используются файлы `.gradle.kts`, добавьте зависимости в `build.gradle.kts` **уровня модуля**
+- Если вы используете каталоги версий, добавьте зависимости в файл `libs.versions.toml`, а затем сошлитесь на них в `build.gradle.kts`
+
+<Tabs>
+<TabItem value="module-level build.gradle" label="module-level build.gradle" default>
+
+```kotlin showLineNumbers
+kotlin {
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation libs.adapty.kmp
+            }
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="module-level build.gradle.kts" label="module-level build.gradle.kts" default>
+
+```kotlin showLineNumbers
+kotlin {
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation(libs.adapty.kmp)
+            }
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="version-catalog" label="Versions library" default>
+
+```toml showLineNumbers
+// libs.versions.toml
+[versions]
+..
+adapty-kmp    = "<the latest SDK version>"
+
+[libraries]
+..
+adapty-kmp = { module = "io.adapty:adapty-kmp", version.ref = "adapty-kmp" }
+
+// build.gradle.kts
+
+kotlin {
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation(libs.adapty.kmp)
+            }
+        }
+    }
+}
+
+```
+
+</TabItem>
+</Tabs>
+
+:::note
+Если вы получаете ошибку, связанную с Maven, убедитесь, что в ваших Gradle-скриптах есть `mavenCentral()`.
+
+<details>
+   <summary>Инструкция по добавлению</summary>
+
+Если в вашем проекте нет `dependencyResolutionManagement` в `settings.gradle`, добавьте следующее в корневой `build.gradle` в конце секции repositories:
+
+```groovy showLineNumbers title="top-level build.gradle"
+allprojects {
+    repositories {
+        ...
+        mavenCentral()
+    }
+}
+```
+
+В противном случае добавьте следующее в `settings.gradle` в секцию `repositories` блока `dependencyResolutionManagement`:
+
+```groovy showLineNumbers title="settings.gradle"
+dependencyResolutionManagement {
+    ...
+    repositories {
+        ...
+        google()
+        mavenCentral()
+    }
+}
+```
+
+</details>
+:::
+
+## Активация Adapty SDK \{#activate-adapty-sdk\}
+
+### Базовая настройка \{#basic-setup\}
+
+Добавьте инициализацию как можно раньше — как правило, в общем Kotlin-коде для обеих платформ.
+
+:::note
+Adapty SDK нужно активировать только один раз в приложении.
+:::
+
+```kotlin title="Kotlin" showLineNumbers
+
+val config = AdaptyConfig
+    .Builder("PUBLIC_SDK_KEY")
+    .build()
+
+Adapty.activate(configuration = config)
+    .onSuccess {
+        Log.d("Adapty", "SDK initialised")
+    }
+    .onError { error ->
+        Log.e("Adapty", "Adapty init error: ${error.message}")
+    }
+```
+
+Чтобы получить **Public SDK Key**:
+
+1. Откройте дашборд Adapty и перейдите в [App settings → General](https://app.adapty.io/settings/general).
+2. В разделе **Api keys** скопируйте **Public SDK Key** (не Secret Key).
+3. Замените `"YOUR_PUBLIC_SDK_KEY"` в коде на скопированный ключ.
+
+:::info
+- Для инициализации Adapty используйте Public SDK Key — Secret Key предназначен только для [серверного API](getting-started-with-server-side-api).
+- SDK-ключи уникальны для каждого приложения, поэтому если у вас несколько приложений, убедитесь, что выбрали правильный ключ.
+  :::
+
+Теперь настройте пейволы в приложении:
+
+- Если вы используете [Adapty Paywall Builder](adapty-paywall-builder), сначала [активируйте модуль AdaptyUI](#activate-adaptyui-module-of-adapty-sdk) ниже, затем следуйте [быстрому старту Paywall Builder](kmp-quickstart-paywalls).
+- Если вы создаёте собственный интерфейс пейвола, см. [быстрый старт для кастомных пейволов](kmp-quickstart-manual).
+
+## Активация модуля AdaptyUI в Adapty SDK \{#activate-adaptyui-module-of-adapty-sdk\}
+
+Если вы планируете активировать модуль **AdaptyUI** для работы с [Adapty Paywall Builder](kmp-present-paywalls), добавьте `.withActivateUI(true)` в конфигурацию.
+
+:::info
+important
+В коде необходимо активировать основной модуль Adapty до активации AdaptyUI.
+:::
+
+```kotlin title="Kotlin" showLineNumbers
+
+val config = AdaptyConfig
+    .Builder("PUBLIC_SDK_KEY")
+    .withActivateUI(true)           // true для активации модуля AdaptyUI
+    .build()  
+
+Adapty.activate(configuration = config)
+    .onSuccess {
+        Log.d("Adapty", "SDK initialised")
+    }
+    .onError { error ->
+        Log.e("Adapty", "Adapty init error: ${error.message}")
+    }    
+```
+
+## Настройка Proguard (Android) \{#configure-proguard-android\}
+
+Перед выпуском приложения в продакшн вам может потребоваться добавить `-keep class com.adapty.** { *; }` в конфигурацию Proguard.
+
+## Дополнительная настройка \{#optional-setup\}
+
+### Логирование \{#logging\}
+
+#### Настройка системы логирования \{#set-up-the-logging-system\}
+
+Adapty записывает ошибки и другую важную информацию, чтобы помочь вам разобраться в происходящем. Доступны следующие уровни логирования:
+
+| Уровень                  | Описание                                                                                                                                    |
+| :----------------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AdaptyLogLevel.NONE`    | Логирование отключено. Значение по умолчанию                                                                                                |
+| `AdaptyLogLevel.ERROR`   | Записываются только ошибки                                                                                                                  |
+| `AdaptyLogLevel.WARN`    | Записываются ошибки и сообщения SDK, которые не вызывают критических ошибок, но заслуживают внимания                                        |
+| `AdaptyLogLevel.INFO`    | Записываются ошибки, предупреждения и различные информационные сообщения                                                                    |
+| `AdaptyLogLevel.VERBOSE` | Записывается любая дополнительная информация, которая может быть полезна при отладке: вызовы функций, API-запросы и т. д. |
+
+Уровень логирования можно задать в приложении до настройки Adapty:
+
+```kotlin title="Kotlin" showLineNumbers
+
+val config = AdaptyConfig
+     .Builder("PUBLIC_SDK_KEY")
+     .withLogLevel(AdaptyLogLevel.VERBOSE) // рекомендуется при разработке
+     .build()   
+```
+
+### Политики данных \{#data-policies\}
+
+#### Отключение сбора и передачи IP-адресов \{#disable-ip-address-collection-and-sharing\}
+
+При активации модуля Adapty установите `ipAddressCollectionDisabled` в `true`, чтобы отключить сбор и передачу IP-адресов пользователей. Значение по умолчанию — `false`.
+
+Используйте этот параметр для повышения конфиденциальности пользователей, соблюдения региональных требований по защите данных (например, GDPR или CCPA), или чтобы избежать лишнего сбора данных, если функции на основе IP не нужны вашему приложению.
+
+```kotlin title="Kotlin" showLineNumbers
+
+val config = AdaptyConfig
+     .Builder("PUBLIC_SDK_KEY")
+     .withIpAddressCollectionDisabled(true)  
+     .build()  
+```
+#### Отключение сбора и передачи рекламных идентификаторов \{#disable-advertising-id-collection-and-sharing\}
+
+При активации модуля Adapty установите `appleIdfaCollectionDisabled` (iOS) или `googleAdvertisingIdCollectionDisabled` (Android) в `true`, чтобы отключить сбор рекламных идентификаторов. Значение по умолчанию — `false`.
+
+Используйте этот параметр для соблюдения политик App Store/Play Store, чтобы не вызывать запрос App Tracking Transparency, или если ваше приложение не требует рекламной атрибуции или аналитики на основе рекламных идентификаторов.
+
+```kotlin title="Kotlin" showLineNumbers
+
+val config = AdaptyConfig
+     .Builder("PUBLIC_SDK_KEY")
+     .withGoogleAdvertisingIdCollectionDisabled(true)        // только Android
+     .withAppleIdfaCollectionDisabled(true)                  // только iOS
+     .build()  
+```
+
+#### Настройка конфигурации медиакэша для AdaptyUI \{#set-up-media-cache-configuration-for-adaptyui\}
+
+По умолчанию AdaptyUI кэширует медиафайлы (изображения и видео) для повышения производительности и снижения нагрузки на сеть. Вы можете настроить параметры кэша, указав собственную конфигурацию.
+
+Используйте `mediaCache` для переопределения настроек кэша по умолчанию:
+
+```kotlin
+
+val config = AdaptyConfig
+    .Builder("PUBLIC_SDK_KEY")
+    .withMediaCacheConfiguration(
+        AdaptyConfig.MediaCacheConfiguration(
+            memoryStorageTotalCostLimit = 200 * 1024 * 1024, // 200 MB
+            memoryStorageCountLimit = Int.MAX_VALUE,          
+            diskStorageSizeLimit = 200 * 1024 * 1024 // 200 MB
+        )
+    )
+    .build()
+```
+
+### Включение локальных уровней доступа (Android) \{#enable-local-access-levels-android\}
+
+По умолчанию [локальные уровни доступа](local-access-levels) на Android отключены. Чтобы включить их, установите `withLocalAccessLevelAllowed` в `true`:
+
+```kotlin title="Kotlin" showLineNumbers
+
+val config = AdaptyConfig
+    .Builder("PUBLIC_SDK_KEY")
+    .withGoogleLocalAccessLevelAllowed(true)
+    .build()
+```
+
+### Очистка данных при восстановлении из резервной копии \{#clear-data-on-backup-restore\}
+
+Когда `withAppleClearDataOnBackup` установлен в `true`, SDK обнаруживает восстановление приложения из резервной копии iCloud и удаляет все локально сохранённые данные SDK: кэшированную информацию профиля, данные продуктов и пейволов. После этого SDK инициализируется с чистого состояния. Значение по умолчанию — `false`.
+
+:::note
+Удаляется только локальный кэш SDK. История транзакций с Apple и данные пользователя на серверах Adapty остаются неизменными.
+:::
+
+```swift showLineNumbers
+
+val config = AdaptyConfig
+    .Builder("PUBLIC_SDK_KEY")
+    .withAppleClearDataOnBackup(true)
+    .build()
+```
+
+## Устранение неполадок \{#troubleshooting\}
+
+#### Правила резервного копирования Android (настройка Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
+
+<AndroidBackupRules />
+
+:::important
+В проекте на Kotlin Multiplatform применяйте эти изменения в Android-модуле приложения (том, который собирает APK/AAB), например `androidApp` или `app`:
+- Манифест: `androidApp/src/main/AndroidManifest.xml`
+- XML-файл правил резервного копирования: `androidApp/src/main/res/xml/`
+:::
+
+#### Покупки прерываются после возврата из другого приложения на Android \{#purchases-fail-after-returning-from-another-app-in-android\}
+
+Если Activity, которая инициирует процесс покупки, использует нестандартный `launchMode`, Android может некорректно пересоздать или повторно использовать её при возврате пользователя из Google Play, банковского приложения или браузера. Это может привести к тому, что результат покупки будет потерян или воспринят как отмена.
+
+Чтобы покупки работали корректно, используйте только режимы запуска `standard` или `singleTop` для Activity, которая инициирует процесс покупки, и избегайте других режимов.
+
+В `AndroidManifest.xml` убедитесь, что для Activity, которая запускает процесс покупки, задан режим `standard` или `singleTop`:
+
+```xml
+<activity
+    android:name=".MainActivity"
+    android:launchMode="standard" />
+```

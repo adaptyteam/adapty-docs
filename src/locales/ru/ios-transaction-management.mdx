@@ -1,0 +1,139 @@
+---
+title: "Расширенное управление транзакциями в iOS SDK"
+description: "Завершайте транзакции вручную в iOS-приложении с помощью Adapty SDK."
+metadataTitle: "Расширенное управление транзакциями | iOS SDK | Документация Adapty"
+displayed_sidebar: sdkios
+---
+
+:::note
+Расширенное управление транзакциями поддерживается в Adapty iOS SDK начиная с версии 3.12.
+:::
+
+Расширенное управление транзакциями в Adapty даёт вам больше контроля над тем, как транзакции обрабатываются, верифицируются и завершаются.
+
+Эта функциональность включает три опциональных возможности, которые работают вместе:
+
+| Возможность                                                     | Назначение |
+|-------------------------------------------------------------|----------|
+| [`appAccountToken`](#assign-appaccounttoken)                | Связывает транзакции Apple с вашим внутренним идентификатором пользователя |
+| [`jwsTransaction`](#access-the-jws-representation)          | Предоставляет подписанный Apple пейлоад транзакции для валидации |
+| [Ручное завершение](#control-transaction-finishing-behavior) | Позволяет завершать транзакции только после подтверждения успеха от вашего бэкенда |
+
+В совокупности эти инструменты позволяют выстроить надёжные кастомные процессы валидации, пока Adapty продолжает синхронизировать транзакции со своим бэкендом.
+
+:::important
+Большинству приложений это не нужно.
+По умолчанию Adapty автоматически валидирует и завершает транзакции StoreKit.  
+Используйте этот гайд только если вы проводите собственную валидацию на бэкенде или хотите полностью управлять жизненным циклом покупок.
+:::
+
+## Назначение `appAccountToken` \{#assign-appaccounttoken\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) — это **UUID**, который позволяет связать транзакции App Store с внутренней идентичностью пользователя в вашей системе.  
+StoreKit привязывает этот токен к каждой транзакции, чтобы ваш бэкенд мог сопоставить данные App Store с вашими пользователями.
+
+Используйте стабильный UUID, генерируемый для каждого пользователя, и повторно применяйте его для одного аккаунта на разных устройствах.
+Это гарантирует корректную привязку покупок и уведомлений App Store.
+
+Токен можно задать двумя способами — при активации SDK или при идентификации пользователя.
+
+:::important
+Вы всегда должны передавать `appAccountToken` вместе с `customerUserId`.
+Если передать только токен, он не будет включён в транзакцию.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: UUID())
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
+  // handle the error
+}
+
+// Or when identifying a user:
+do {
+    try await Adapty.identify("YOUR_USER_ID", withAppAccountToken: UUID())
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: <APP_ACCOUNT_TOKEN>)
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+
+// Or when identifying a user:
+Adapty.identify("YOUR_USER_ID", withAppAccountToken: <APP_ACCOUNT_TOKEN>) { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## Доступ к JWS-представлению \{#access-the-jws-representation\}
+
+При совершении покупки результат содержит транзакцию Apple в [формате JWS Compact Serialization](https://developer.apple.com/documentation/storekit/verificationresult/jwsrepresentation-21vgo).
+Это значение можно передать на ваш бэкенд для независимой валидации или логирования.
+
+```swift
+let result = try await Adapty.makePurchase(product: paywallProduct)
+let jwsRepresentation = result.jwsTransaction
+```
+
+## Управление завершением транзакций \{#control-transaction-finishing-behavior\}
+
+<ZoomImage id="transaction-management.png" width="700px" />
+
+По умолчанию Adapty автоматически завершает транзакции StoreKit после валидации.
+Если нужно отложить завершение до получения подтверждения от вашего бэкенда, установите режим ручного завершения транзакций.
+
+В этом режиме:
+- Adapty по-прежнему валидирует покупки и синхронизирует их со своим бэкендом.
+- Транзакции остаются незавершёнными, пока вы явно не вызовете `finish()`.
+
+```swift
+var configBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_API_KEY")
+    .with(transactionFinishBehavior: .manual)
+
+try await Adapty.activate(with: configBuilder.build())   
+```
+
+При использовании ручного завершения транзакций необходимо реализовать метод делегата `onUnfinishedTransaction` для обработки незавершённых транзакций:
+
+```swift showLineNumbers title="Swift"
+extension YourApp: AdaptyDelegate {
+    func onUnfinishedTransaction(_ transaction: AdaptyUnfinishedTransaction) async {
+        // Perform your custom validation logic here
+        
+        // When ready, finish the transaction
+        await transaction.finish()
+    }
+}
+```
+
+Чтобы получить все текущие незавершённые транзакции, используйте метод `getUnfinishedTransactions()`:
+
+```swift
+let unfinishedTransactions = try await Adapty.getUnfinishedTransactions()
+```

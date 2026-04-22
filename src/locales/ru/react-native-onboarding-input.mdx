@@ -1,0 +1,268 @@
+---
+title: "Обработка данных из онбордингов в React Native SDK"
+description: "Сохраняйте и используйте данные из онбордингов в вашем приложении на React Native с помощью Adapty SDK."
+metadataTitle: "Онбординги | React Native SDK | Документация Adapty"
+---
+
+Когда пользователь отвечает на вопрос викторины или вводит данные в поле ввода, вызывается метод `onStateUpdatedAction`. Вы можете сохранить или обработать тип поля в своём коде.
+
+Например:
+
+```javascript
+// Полноэкранное представление
+const unsubscribe = view.registerEventHandlers({
+  onStateUpdated(action, meta) {
+    // Обработка данных 
+  },
+});
+
+// Встроенный виджет
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onStateUpdated(action, meta) {
+      // Обработка данных 
+    },
+  }}
+/>
+```
+
+Формат действия описан [здесь](https://react-native.adapty.io/types/onboardingstateupdatedaction).
+
+<Details>
+<summary>Примеры сохранённых данных (формат может отличаться в вашей реализации)</summary>
+
+```javascript
+// Пример сохранённого действия select
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Пример сохранённого действия multi-select
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Пример сохранённого действия input
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Пример сохранённого действия date picker
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## Сценарии использования \{#use-cases\}
+
+### Обогащение профилей пользователей данными \{#enrich-user-profiles-with-data\}
+
+Если вы хотите сразу связать введённые данные с профилем пользователя и не спрашивать его одно и то же дважды, нужно [обновить профиль пользователя](react-native-setting-user-attributes) с этими данными при обработке действия.
+
+Например, вы просите пользователей ввести имя в текстовое поле с ID `name` и хотите сохранить это значение как имя пользователя. Также вы просите указать email в поле `email`. В коде приложения это может выглядеть так:
+
+```javascript showLineNumbers
+// Полноэкранное представление
+const unsubscribe = view.registerEventHandlers({
+  onStateUpdated(action, meta) {
+    // Сохранение предпочтений или ответов пользователя
+    if (action.elementType === 'input') {
+      const profileParams = {};
+      
+      // Сопоставление elementId с соответствующим полем профиля
+      switch (action.elementId) {
+        case 'name':
+          if (action.value.type === 'text') {
+            profileParams.firstName = action.value.value;
+          }
+          break;
+        case 'email':
+          if (action.value.type === 'email') {
+            profileParams.email = action.value.value;
+          }
+          break;
+      }
+      
+      // Обновление профиля, если есть данные для обновления
+      if (Object.keys(profileParams).length > 0) {
+        adapty.updateProfile(profileParams).catch(error => {
+          // обработка ошибки
+        });
+      }
+    }
+  },
+});
+
+// Встроенный виджет
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onStateUpdated(action, meta) {
+      // Сохранение предпочтений или ответов пользователя
+      if (action.elementType === 'input') {
+        const profileParams = {};
+        
+        // Сопоставление elementId с соответствующим полем профиля
+        switch (action.elementId) {
+          case 'name':
+            if (action.value.type === 'text') {
+              profileParams.firstName = action.value.value;
+            }
+            break;
+          case 'email':
+            if (action.value.type === 'email') {
+              profileParams.email = action.value.value;
+            }
+            break;
+        }
+        
+        // Обновление профиля, если есть данные для обновления
+        if (Object.keys(profileParams).length > 0) {
+          adapty.updateProfile(profileParams).catch(error => {
+            // обработка ошибки
+          });
+        }
+      }
+    },
+  }}
+/>
+```
+
+### Настройка пейволов на основе ответов \{#customize-paywalls-based-on-answers\}
+
+С помощью викторин в онбордингах можно также настраивать пейволы, которые показываются пользователям после завершения онбординга.
+
+Например, можно спросить пользователей об их опыте занятий спортом и показывать разные призывы к действию и продукты разным группам пользователей.
+
+1. [Добавьте викторину](onboarding-quizzes) в конструкторе онбординга и назначьте понятные ID её вариантам ответов.
+
+<ZoomImage id="experience.webp" />
+
+2. Обработайте ответы викторины по их ID и [задайте пользовательские атрибуты](react-native-setting-user-attributes) для пользователей.
+
+```javascript showLineNumbers
+// Полноэкранное представление
+const unsubscribe = view.registerEventHandlers({
+  onStateUpdated(action, meta) {
+    // Обработка ответов викторины и установка пользовательских атрибутов
+    if (action.elementType === 'select') {
+      const profileParams = {};
+      
+      // Сопоставление ответов викторины с пользовательскими атрибутами
+      switch (action.elementId) {
+        case 'experience':
+          // Установка пользовательского атрибута 'experience' с выбранным значением (beginner, amateur, pro)
+          profileParams.codableCustomAttributes = {
+            experience: action.value.value
+          };
+          break;
+      }
+      
+      // Обновление профиля, если есть данные для обновления
+      if (Object.keys(profileParams).length > 0) {
+        adapty.updateProfile(profileParams).catch(error => {
+          // обработка ошибки
+        });
+      }
+    }
+  },
+});
+
+// Встроенный виджет
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onStateUpdated(action, meta) {
+      // Обработка ответов викторины и установка пользовательских атрибутов
+      if (action.elementType === 'select') {
+        const profileParams = {};
+        
+        // Сопоставление ответов викторины с пользовательскими атрибутами
+        switch (action.elementId) {
+          case 'experience':
+            // Установка пользовательского атрибута 'experience' с выбранным значением (beginner, amateur, pro)
+            profileParams.codableCustomAttributes = {
+              experience: action.value.value
+            };
+            break;
+        }
+        
+        // Обновление профиля, если есть данные для обновления
+        if (Object.keys(profileParams).length > 0) {
+          adapty.updateProfile(profileParams).catch(error => {
+            // обработка ошибки
+          });
+        }
+      }
+    },
+  }}
+/>
+```
+
+3. [Создайте сегменты](segments) для каждого значения пользовательского атрибута.
+4. Создайте [плейсмент](placements) и добавьте [аудитории](audience) для каждого созданного сегмента.
+5. [Отобразите пейвол](react-native-paywalls) для плейсмента в коде вашего приложения. Если в онбординге есть кнопка, открывающая пейвол, реализуйте код пейвола как [реакцию на действие этой кнопки](react-native-handling-onboarding-events#opening-a-paywall).

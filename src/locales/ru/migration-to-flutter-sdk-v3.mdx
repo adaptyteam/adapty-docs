@@ -1,0 +1,107 @@
+---
+title: "Миграция Adapty Flutter SDK на версию 3.0"
+description: "Перейдите на Adapty Flutter SDK v3.0 для повышения производительности и доступа к новым функциям монетизации."
+metadataTitle: "Миграция на Adapty Flutter SDK v3.0 | Документация Adapty"
+---
+
+Adapty SDK v.3.0 добавляет поддержку нового [Adapty Paywall Builder](adapty-paywall-builder) — обновлённого инструмента для создания пейволов без написания кода. Благодаря гибким настройкам и богатым возможностям дизайна ваши пейволы станут максимально эффективными и прибыльными.
+
+:::info
+
+Обратите внимание: библиотека AdaptyUI устарела и теперь входит в состав AdaptySDK.
+
+:::
+
+## Удаление AdaptyUI SDK \{#remove-adaptyi-sdk\}
+
+1. AdaptyUI теперь является модулем Adapty SDK, поэтому удалите `adapty_ui_flutter` из файла `pubspec.yaml`:
+
+   ```diff showLineNumbers
+   dependencies:
+   + adapty_flutter: ^3.2.1
+   - adapty_flutter: ^2.10.3
+   - adapty_ui_flutter: ^2.1.3
+   ```
+
+2. Выполните команду:
+
+   ```bash showLineNumbers title="Bash"
+   flutter pub get
+   ```
+
+## Настройка Adapty SDK \{#configure-adapty-sdks\}
+
+Ранее для настройки Adapty SDK требовалось использовать файлы `Adapty-Info.plist` и `AndroidManifest.xml`.
+
+Теперь дополнительные файлы не нужны — все необходимые параметры передаются при активации.
+
+Настройку Adapty SDK достаточно выполнить один раз, как правило, при запуске приложения.
+
+### Активация модуля Adapty в Adapty SDK \{#activate-adapty-module-of-adapty-sdk\}
+
+1. Удалите импорт AdaptyUI SDK из вашего приложения:
+
+   ```diff showLineNumbers
+   import 'package:adapty_flutter/adapty_flutter.dart';
+   - import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
+   ```
+
+2. Обновите активацию Adapty SDK следующим образом:
+
+   ```diff showLineNumbers
+   try {
+   -	Adapty().activate();  
+   +    await Adapty().activate(
+   +        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+   +         ..withLogLevel(AdaptyLogLevel.debug)
+   +         ..withObserverMode(false)
+   +         ..withCustomerUserId(null)
+   +         ..withIpAddressCollectionDisabled(false)
+   +         ..withIdfaCollectionDisabled(false),
+   +   );
+   } catch (e) {
+       // handle the error
+   }
+   ```
+
+Параметры:
+
+| Параметр                            | Обязательность | Описание                                                     |
+| ----------------------------------- | -------------- | ------------------------------------------------------------ |
+| **PUBLIC_SDK_KEY**                  | обязательный   | Ключ из поля **Public SDK key** в настройках приложения в Adapty: [**App settings** -> вкладка **General** -> раздел **API keys**](https://app.adapty.io/settings/general) |
+| **withLogLevel**                    | опциональный   | Adapty записывает ошибки и другую важную информацию для отслеживания работы приложения. Доступны следующие уровни:<ul><li>error: записываются только ошибки.</li><li>warn: записываются ошибки и сообщения SDK, которые не являются критическими, но заслуживают внимания.</li><li>info: записываются ошибки, предупреждения и важные информационные сообщения, например о жизненном цикле различных модулей.</li><li>verbose: записывается вся дополнительная информация, полезная при отладке: вызовы функций, API-запросы и т. д.</li></ul> |
+| **withObserverMode**                | опциональный   | <p>Булево значение, управляющее [режимом Observer](observer-vs-full-mode). Включите его, если вы самостоятельно обрабатываете покупки и статус подписки, а Adapty используете только для отправки событий подписки и аналитики.</p><p>Значение по умолчанию: `false`.</p><p></p><p>🚧 В режиме Observer Adapty SDK не закрывает транзакции, поэтому убедитесь, что вы обрабатываете их самостоятельно.</p> |
+| **withCustomerUserId**              | опциональный   | Идентификатор пользователя в вашей системе. Он передаётся в событиях подписки и аналитики для привязки событий к нужному профилю. Также вы можете находить пользователей по `customerUserId` в разделе [**Profiles and Segments**](https://app.adapty.io/profiles/users). |
+| **withIdfaCollectionDisabled**      | опциональный   | <p>Установите `true`, чтобы отключить сбор и передачу IDFA.</p><p>Значение по умолчанию: `false`.</p><p>Подробнее о сборе IDFA — в разделе [Интеграция аналитики](analytics-integration#disable-collection-of-advertising-identifiers).</p> |
+| **withIpAddressCollectionDisabled** | опциональный   | <p>Установите `true`, чтобы отключить сбор и передачу IP-адреса пользователя.</p><p>Значение по умолчанию: `false`.</p> |
+
+### Активация модуля AdaptyUI в Adapty SDK \{#activate-adaptyi-module-of-adapty-sdk\}
+
+Настройка модуля AdaptyUI нужна только в том случае, если вы планируете использовать [Paywall Builder](adapty-paywall-builder):
+
+```dart showLineNumbers title="Dart"
+try {
+    final mediaCache = AdaptyUIMediaCacheConfiguration(
+        memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
+        memoryStorageCountLimit: 2147483647, // 2^31 - 1, max int value in Dart
+        diskStorageSizeLimit: 100 * 1024 * 1024, // 100MB
+    );
+
+    await AdaptyUI().activate(
+        configuration: AdaptyUIConfiguration(mediaCache: mediaCache),
+        observer: <AdaptyUIObserver Implementation>,
+    );
+} catch (e) {
+    // handle the error
+}
+```
+
+Обратите внимание: конфигурация AdaptyUI не является обязательной — модуль можно активировать без неё. Однако если вы используете конфигурацию, все её параметры обязательны.
+
+Параметры:
+
+| Параметр                        | Обязательность | Описание                                                     |
+| :------------------------------ | :------------- | :----------------------------------------------------------- |
+| **memoryStorageTotalCostLimit** | обязательный   | Максимальный объём хранилища в байтах.                       |
+| **memoryStorageCountLimit**     | обязательный   | Максимальное количество элементов в памяти.                  |
+| **diskStorageSizeLimit**        | обязательный   | Максимальный размер файлов на диске в байтах. Значение 0 означает отсутствие ограничений. |

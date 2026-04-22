@@ -1,0 +1,81 @@
+---
+title: "Проверка статуса подписки в React Native SDK"
+description: "Отслеживайте и управляйте статусом подписки пользователей в Adapty для повышения удержания клиентов в вашем React Native приложении."
+metadataTitle: "Проверка статуса подписки | Документация Adapty"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
+
+С Adapty отслеживать статус подписки очень просто. Вам не нужно вручную прописывать идентификаторы продуктов в коде — достаточно проверить наличие активного [уровня доступа](access-level).
+
+<details>
+   <summary>Перед проверкой статуса подписки (нажмите, чтобы развернуть)</summary>
+
+- Для iOS настройте [App Store Server Notifications](enable-app-store-server-notifications)
+- Для Android настройте [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn)
+</details>
+
+## Уровень доступа и объект AdaptyProfile \{#access-level-and-the-adaptyprofile-object\}
+
+Уровни доступа — это свойства объекта [AdaptyProfile](https://react-native.adapty.io/interfaces/adaptyprofile). Рекомендуем получать профиль при запуске приложения, например когда вы [идентифицируете пользователя](react-native-identifying-users#setting-customer-user-id-on-configuration), и обновлять его при любых изменениях. Так вы сможете использовать объект профиля без повторных запросов к серверу.
+
+Чтобы получать уведомления об обновлениях профиля, подпишитесь на изменения, как описано в разделе [Прослушивание обновлений профиля, включая уровни доступа](react-native-listen-subscription-changes) ниже.
+
+<SampleApp />
+
+## Получение уровня доступа с сервера \{#retrieving-the-access-level-from-the-server\}
+
+Чтобы получить уровень доступа с сервера, используйте метод `.getProfile()`:
+
+```typescript showLineNumbers
+try {
+    const profile = await adapty.getProfile();
+} catch (error) {
+  // handle the error
+}
+```
+
+Параметры ответа:
+
+| Параметр | Описание                                                  |
+| --------- | ------------------------------------------------------------ |
+| Profile   | <p>Объект [AdaptyProfile](https://react-native.adapty.io/interfaces/adaptyprofile). Как правило, для определения наличия у пользователя премиум-доступа к приложению достаточно проверить статус уровня доступа в профиле.</p><p></p><p>Метод `.getProfile` возвращает наиболее актуальный результат, поскольку всегда пытается обратиться к API. Если по какой-то причине (например, при отсутствии интернет-соединения) Adapty SDK не может получить данные с сервера, возвращаются данные из кэша. Важно учитывать, что Adapty SDK регулярно обновляет кэш `AdaptyProfile`, чтобы поддерживать информацию в актуальном состоянии.</p> |
+
+Метод `.getProfile()` возвращает профиль пользователя, из которого можно получить статус уровня доступа. В приложении может быть несколько уровней доступа. Например, в новостном приложении с независимыми подписками на разные разделы можно создать уровни доступа «sports» и «science». Однако в большинстве случаев достаточно одного уровня доступа — стандартного «premium».
+
+Пример проверки стандартного уровня доступа «premium»:
+
+```typescript showLineNumbers
+try {
+    const profile = await adapty.getProfile();
+    
+  const isActive = profile.accessLevels?.["premium"]?.isActive;
+    if (isActive) {
+        // grant access to premium features
+    }
+} catch (error) {
+    // handle the error
+}
+```
+
+### Прослушивание обновлений статуса подписки \{#listening-for-subscription-status-updates\}
+
+При каждом изменении подписки пользователя Adapty генерирует событие.
+
+Чтобы получать сообщения от Adapty, выполните дополнительную настройку:
+
+```typescript showLineNumbers
+// Create an "onLatestProfileLoad" event listener
+adapty.addEventListener('onLatestProfileLoad', profile => {
+    // handle any changes to subscription state
+});
+```
+
+Adapty также генерирует событие при запуске приложения — в этом случае передаётся кэшированный статус подписки.
+
+### Кэш статуса подписки \{#subscription-status-cache\}
+
+Кэш, реализованный в Adapty SDK, хранит статус подписки профиля. Это означает, что даже при недоступности сервера кэшированные данные позволяют получить информацию о статусе подписки профиля.
+
+Вместе с тем прямые запросы данных из кэша невозможны. SDK периодически опрашивает сервер каждую минуту для проверки обновлений профиля. При наличии изменений — новых транзакций или других обновлений — они передаются в кэшированные данные для синхронизации с сервером.
