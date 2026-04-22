@@ -1,0 +1,95 @@
+---
+title: "Проверка статуса подписки в Capacitor SDK"
+description: "Отслеживайте и управляйте статусом подписки пользователей в Adapty для повышения удержания клиентов в вашем приложении на Capacitor."
+metadataTitle: "Работа со статусом подписки | Документация Adapty"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
+
+С Adapty отслеживать статус подписки очень просто. Вам не нужно вручную прописывать идентификаторы продуктов в коде — достаточно проверить наличие активного [уровня доступа](access-level), чтобы убедиться, что у пользователя есть подписка.
+
+<details>
+   <summary>Перед проверкой статуса подписки (нажмите, чтобы развернуть)</summary>
+
+- Для iOS настройте [уведомления App Store Server Notifications](enable-app-store-server-notifications)
+- Для Android настройте [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn)
+</details>
+
+## Уровень доступа и объект AdaptyProfile \{#access-level-and-the-adaptyprofile-object\}
+
+Уровни доступа — это свойства объекта [AdaptyProfile](https://capacitor.adapty.io/interfaces/adaptyprofile). Рекомендуем запрашивать профиль при запуске приложения, например когда вы [идентифицируете пользователя](capacitor-identifying-users#setting-customer-user-id-on-configuration), и обновлять его при каждом изменении. Так вы сможете использовать объект профиля без повторных запросов к серверу.
+
+Чтобы получать уведомления об обновлениях профиля, подпишитесь на изменения профиля, как описано в разделе [Прослушивание обновлений профиля, включая уровни доступа](capacitor-listen-subscription-changes) ниже.
+
+<SampleApp />
+
+## Получение уровня доступа с сервера \{#retrieving-the-access-level-from-the-server\}
+
+Чтобы получить уровень доступа с сервера, используйте метод `.getProfile()`:
+
+```typescript showLineNumbers
+
+try {
+  const profile = await adapty.getProfile();
+  console.log('Profile retrieved successfully');
+} catch (error) {
+  console.error('Failed to get profile:', error);
+}
+```
+
+Параметры ответа:
+
+| Параметр | Описание                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| --------- |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **profile**   | Объект [AdaptyProfile](https://capacitor.adapty.io/interfaces/adaptyprofile). Как правило, для определения наличия у пользователя премиум-доступа достаточно проверить статус уровня доступа в профиле. Метод `.getProfile` всегда обращается к API и возвращает самые актуальные данные. Если по какой-то причине (например, нет интернета) Adapty SDK не может получить информацию с сервера, возвращаются данные из кэша. Важно также учитывать, что Adapty SDK регулярно обновляет кэш `AdaptyProfile`, стараясь поддерживать данные в актуальном состоянии. |
+
+Метод `.getProfile()` возвращает профиль пользователя, из которого можно получить статус уровня доступа. В одном приложении может быть несколько уровней доступа. Например, если у вас новостное приложение с подписками на разные тематики, вы можете создать уровни доступа "sports" и "science". Однако в большинстве случаев достаточно одного уровня доступа — тогда можно использовать стандартный уровень "premium".
+
+Пример проверки стандартного уровня доступа "premium":
+
+```typescript showLineNumbers
+
+try {
+  const profile = await adapty.getProfile();
+  
+  const isActive = profile.accessLevels['premium']?.isActive;
+  if (isActive) {
+    // Grant access to premium features
+    console.log('User has premium access');
+  } else {
+    console.log('User does not have premium access');
+  }
+} catch (error) {
+  console.error('Failed to check subscription status:', error);
+}
+```
+
+### Прослушивание обновлений статуса подписки \{#listening-for-subscription-status-updates\}
+
+При каждом изменении подписки пользователя Adapty генерирует событие.
+
+Чтобы получать сообщения от Adapty, нужно выполнить дополнительную настройку:
+
+```typescript showLineNumbers
+
+// Create an "onLatestProfileLoad" event listener
+adapty.addListener('onLatestProfileLoad', (data) => {
+  const profile = data.profile;
+  const isActive = profile.accessLevels['premium']?.isActive;
+  
+  if (isActive) {
+    console.log('Subscription status updated: User has premium access');
+  } else {
+    console.log('Subscription status updated: User does not have premium access');
+  }
+});
+```
+
+Adapty также генерирует событие при запуске приложения — в этом случае передаётся кэшированный статус подписки.
+
+### Кэш статуса подписки \{#subscription-status-cache\}
+
+Кэш, реализованный в Adapty SDK, хранит статус подписки профиля. Это означает, что даже при недоступности сервера кэшированные данные позволяют получить информацию о статусе подписки профиля.
+
+Важно учитывать, что напрямую запросить данные из кэша нельзя. SDK периодически обращается к серверу каждую минуту, чтобы проверить наличие обновлений профиля. При обнаружении изменений — новых транзакций или других обновлений — они записываются в кэш, синхронизируя его с сервером.

@@ -1,0 +1,472 @@
+---
+title: "Android - Обработка событий пейвола"
+description: "Эффективно обрабатывайте события подписок на Android с помощью инструментов отслеживания событий Adapty."
+metadataTitle: "Обработка событий на Android | Документация Adapty"
+toc_max_heading_level: 4
+keywords: ['AdaptyUiEventListener', 'onActionPerformed', 'onProductSelected', 'onPurchaseStarted', 'onPurchaseFinished', 'onPurchaseFailure', 'onRestoreSuccess', 'onRestoreFailure', 'onAwaitingSubscriptionUpdateParams', 'onLoadingProductsFailure', 'onRenderingError']
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
+import PaywallAction from '@site/src/locales/ru/reusable/PaywallAction.md';
+
+:::important
+Этот гайд посвящён обработке событий покупок, восстановлений, выбора продуктов и отрисовки пейвола. Вам также нужно реализовать обработку кнопок (закрытие пейвола, открытие ссылок и т. д.). Подробнее см. в [гайде по обработке действий с кнопками](android-handle-paywall-actions).
+:::
+
+Пейволы, созданные в [Paywall Builder](adapty-paywall-builder), не требуют дополнительного кода для совершения и восстановления покупок. Однако они генерируют события, на которые ваше приложение может реагировать. Среди них — нажатия кнопок (кнопки закрытия, URL, выбор продуктов и т. п.), а также уведомления о действиях, связанных с покупками. Ниже описано, как реагировать на эти события.
+
+:::warning
+Этот гайд предназначен **только для пейволов нового Paywall Builder**, которые требуют Adapty SDK v3.0 или новее.
+:::
+
+<SampleApp />
+
+Если вам нужно контролировать или отслеживать процессы на экране покупки, реализуйте методы `AdaptyUiEventListener`.
+
+Если в некоторых случаях вас устраивает поведение по умолчанию, вы можете унаследоваться от `AdaptyUiDefaultEventListener` и переопределить только те методы, которые хотите изменить.
+
+Ниже приведены значения по умолчанию из `AdaptyUiDefaultEventListener`.
+
+### События, инициированные пользователем \{#user-generated-events\}
+
+#### Выбор продукта \{#product-selection\}
+
+Этот метод вызывается, когда продукт выбран для покупки — пользователем или системой:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onProductSelected(
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы раскрыть)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Начало покупки \{#started-purchase\}
+
+Этот метод вызывается, когда пользователь инициирует процесс покупки:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseStarted(
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы раскрыть)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+Метод не вызывается в режиме Observer. Подробнее см. в разделе [Android — отображение пейволов Paywall Builder в режиме Observer](android-present-paywall-builder-paywalls-in-observer-mode).
+
+#### Успешная, отменённая или ожидающая покупка \{#successful-canceled-or-pending-purchase\}
+
+Этот метод вызывается при успешном завершении покупки:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseFinished(
+    purchaseResult: AdaptyPurchaseResult,
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {
+    if (purchaseResult !is AdaptyPurchaseResult.UserCanceled)
+        context.getActivityOrNull()?.onBackPressed()
+}
+```
+
+<Details>
+<summary>Примеры событий (нажмите, чтобы раскрыть)</summary>
+
+```javascript
+// Successful purchase
+{
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Cancelled purchase
+{
+  "purchaseResult": {
+    "type": "UserCanceled"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Pending purchase
+{
+  "purchaseResult": {
+    "type": "Pending"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+В этом случае рекомендуем закрыть экран.
+
+Метод не вызывается в режиме Observer. Подробнее см. в разделе [Android — отображение пейволов Paywall Builder в режиме Observer](android-present-paywall-builder-paywalls-in-observer-mode).
+
+#### Неуспешная покупка \{#failed-purchase\}
+
+Этот метод вызывается, если покупка завершилась ошибкой. Это включает ошибки Google Play Billing (ограничения оплаты, недействительные продукты, сбои сети), ошибки верификации транзакции и системные ошибки. Обратите внимание: отмена пользователем вызывает `onPurchaseFinished` с результатом отмены, а ожидающие платежи этот метод не вызывают.
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseFailure(
+    error: AdaptyError,
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы раскрыть)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+Метод не вызывается в режиме Observer. Подробнее см. в разделе [Android — отображение пейволов Paywall Builder в режиме Observer](android-present-paywall-builder-paywalls-in-observer-mode).
+
+#### Завершение навигации к веб-оплате \{#finished-web-payment-navigation\}
+
+Этот метод вызывается после попытки открыть [веб-пейвол](web-paywall) для определённого продукта. Вызывается как при успешной, так и при неудачной навигации:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onFinishWebPaymentNavigation(
+    product: AdaptyPaywallProduct?,
+    error: AdaptyError?,
+    context: Context,
+) {}
+```
+
+**Параметры:**
+
+| Параметр    | Описание                                                                                                          |
+|:------------|:------------------------------------------------------------------------------------------------------------------|
+| **product** | `AdaptyPaywallProduct`, для которого был открыт веб-пейвол. Может быть `null`.                                    |
+| **error**   | Объект `AdaptyError`, если навигация к веб-пейволу завершилась ошибкой; `null`, если навигация прошла успешно.    |
+
+<Details>
+<summary>Примеры событий (нажмите, чтобы раскрыть)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_navigation_failed",
+    "message": "Failed to open web paywall",
+    "details": {
+      "underlyingError": "Browser unavailable"
+    }
+  }
+}
+```
+</Details>
+
+#### Успешное восстановление \{#successful-restore\}
+
+Этот метод вызывается при успешном восстановлении покупки:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRestoreSuccess(
+    profile: AdaptyProfile,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы раскрыть)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Рекомендуем закрывать экран, если у пользователя есть нужный `accessLevel`. Как это проверить, описано в разделе [Статус подписки](android-listen-subscription-changes).
+
+#### Неуспешное восстановление \{#failed-restore\}
+
+Этот метод вызывается, если `Adapty.restorePurchases()` завершается ошибкой:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRestoreFailure(
+    error: AdaptyError,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы раскрыть)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### Обновление подписки \{#upgrade-subscription\}
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="new" label="SDK версии 3.10.0 и новее" default>
+
+Когда пользователь пытается купить новую подписку, пока активна другая, вы можете управлять обработкой новой покупки, переопределив этот метод. Доступны два варианта:
+
+1. **Заменить текущую подписку** новой:
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingPurchaseParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
+): AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked {
+    onPurchaseParamsReceived(
+        AdaptyPurchaseParameters.Builder()
+            .withSubscriptionUpdateParams(AdaptySubscriptionUpdateParameters(...))
+            .build()
+    )
+    return AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked
+}
+```
+
+2. **Оставить обе подписки** активными (добавить новую отдельно):
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingPurchaseParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
+): AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked {
+    onPurchaseParamsReceived(AdaptyPurchaseParameters.Empty)
+    return AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked
+}
+```
+
+:::note
+Если вы не переопределяете этот метод, поведение по умолчанию — оставить обе подписки активными (эквивалентно использованию `AdaptyPurchaseParameters.Empty`).
+:::
+
+При необходимости можно задать дополнительные параметры покупки:
+```kotlin
+AdaptyPurchaseParameters.Builder()
+    .withSubscriptionUpdateParams(AdaptySubscriptionUpdateParameters(...)) // опционально — для замены текущей подписки
+    .withOfferPersonalized(true) // опционально — если используется персонализированное ценообразование
+    .build()
+```
+
+</TabItem>
+<TabItem value="old" label="SDK версии ранее 3.10.0" default>
+
+Если новая подписка покупается, пока другая ещё активна, переопределите этот метод, чтобы заменить текущую подписку новой. Если активная подписка должна остаться активной, а новая добавляется отдельно, вызовите `onSubscriptionUpdateParamsReceived(null)`:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingSubscriptionUpdateParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onSubscriptionUpdateParamsReceived: SubscriptionUpdateParamsCallback,
+) {
+    onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
+}
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Пример события (нажмите, чтобы раскрыть)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_yearly",
+    "localizedTitle": "Premium Yearly",
+    "localizedDescription": "Premium subscription for 1 year",
+    "localizedPrice": "$99.99",
+    "price": 99.99,
+    "currencyCode": "USD"
+  },
+  "subscriptionUpdateParams": {
+    "replacementMode": "with_time_proration"
+  }
+}
+```
+</Details>
+
+### Загрузка данных и отрисовка \{#data-fetching-and-rendering\}
+
+#### Ошибки загрузки продуктов \{#product-loading-errors\}
+
+Если вы не передаёте продукты при инициализации, AdaptyUI самостоятельно запрашивает нужные объекты с сервера. Если эта операция завершается ошибкой, AdaptyUI сообщает о ней, вызывая этот метод:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onLoadingProductsFailure(
+    error: AdaptyError,
+    context: Context,
+): Boolean = false
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы раскрыть)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+Если вернуть `true`, AdaptyUI повторит запрос через 2 секунды.
+
+#### Ошибки отрисовки \{#rendering-errors\}
+
+Если в процессе отрисовки интерфейса возникает ошибка, она передаётся через этот метод:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRenderingError(
+    error: AdaptyError,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы раскрыть)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+В штатной ситуации такие ошибки возникать не должны — если вы всё же столкнулись с подобным, пожалуйста, сообщите нам.

@@ -1,0 +1,221 @@
+---
+title: "Включение покупок в пользовательском пейволе в Android SDK"
+description: "Интегрируйте Adapty SDK в свои пользовательские пейволы Android для поддержки встроенных покупок."
+metadataTitle: "Быстрый старт с Adapty | Документация Adapty"
+keywords: ['paywalls Android', 'sdk Android', 'paywall', 'getPaywall']
+---
+
+Этот гайд описывает, как интегрировать Adapty в пользовательские пейволы. Вы полностью контролируете реализацию пейвола, а Adapty SDK берёт на себя получение продуктов, обработку новых покупок и восстановление предыдущих.
+
+:::important
+**Этот гайд предназначен для разработчиков, реализующих пользовательские пейволы.** Если вы хотите включить покупки с минимальными усилиями, используйте [Adapty Paywall Builder](android-quickstart-paywalls). С Paywall Builder вы создаёте пейволы в визуальном редакторе без кода, Adapty автоматически обрабатывает всю логику покупок, а тестировать разные дизайны можно без переиздания приложения.
+:::
+
+## Перед началом работы \{#before-you-start\}
+
+### Настройка продуктов \{#set-up-products\}
+
+Чтобы включить встроенные покупки, важно понять три ключевых концепции:
+
+- [**Продукты**](product) — всё, что пользователи могут купить (подписки, расходуемые покупки, пожизненный доступ)
+- [**Пейволы**](paywalls) — конфигурации, определяющие, какие продукты предлагать. В Adapty пейволы — единственный способ получить продукты, но такой подход позволяет менять продукты, цены и офферы без изменений в коде приложения.
+- [**Плейсменты**](placements) — места и моменты показа пейволов в приложении (например, `main`, `onboarding`, `settings`). Вы настраиваете пейволы для плейсментов в дашборде, а затем запрашиваете их по ID плейсмента в коде. Это упрощает проведение A/B-тестов и показ разных пейволов разным пользователям.
+
+Разберитесь в этих концепциях, даже если используете пользовательский пейвол: по сути, это просто способ управлять продуктами, которые вы продаёте в приложении.
+
+Чтобы реализовать пользовательский пейвол, нужно создать **пейвол** и добавить его в **плейсмент**. Эта настройка позволит получить ваши продукты. Что именно нужно сделать в дашборде, описано в [быстром старте](quickstart).
+
+### Управление пользователями \{#manage-users\}
+
+Вы можете работать как с серверной аутентификацией, так и без неё.
+
+Adapty SDK по-разному обрабатывает анонимных и идентифицированных пользователей. Прочитайте [гайд по идентификации](android-quickstart-identify), чтобы разобраться в деталях и корректно работать с пользователями.
+
+## Шаг 1. Получите продукты \{#step-1-get-products\}
+
+Чтобы получить продукты для пользовательского пейвола:
+
+1. Получите объект `paywall`, передав ID [плейсмента](placements) в метод `getPaywall`.
+2. Получите массив продуктов для этого пейвола с помощью метода `getPaywallProducts`.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+fun loadPaywall() {
+    Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
+        when (result) {
+            is AdaptyResult.Success -> {
+                val paywall = result.value
+                Adapty.getPaywallProducts(paywall) { productResult ->
+                    when (productResult) {
+                        is AdaptyResult.Success -> {
+                            val products = productResult.value
+                            // Use products to build your custom paywall UI
+                        }
+                        is AdaptyResult.Error -> {
+                            val error = productResult.error
+                            // Handle the error
+                        }
+                    }
+                }
+            }
+            is AdaptyResult.Error -> {
+                val error = result.error
+                // Handle the error
+            }
+        }
+    }
+}
+```
+</TabItem>
+
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+public void loadPaywall() {
+    Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {
+        if (result instanceof AdaptyResult.Success) {
+            AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+            
+            Adapty.getPaywallProducts(paywall, productResult -> {
+                if (productResult instanceof AdaptyResult.Success) {
+                    List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) productResult).getValue();
+                    // Use products to build your custom paywall UI
+                } else if (productResult instanceof AdaptyResult.Error) {
+                    AdaptyError error = ((AdaptyResult.Error) productResult).getError();
+                    // Handle the error
+                }
+            });
+        } else if (result instanceof AdaptyResult.Error) {
+            AdaptyError error = ((AdaptyResult.Error) result).getError();
+            // Handle the error
+        }
+    });
+}
+```
+</TabItem>
+</Tabs>
+
+## Шаг 2. Принимайте покупки \{#step-2-accept-purchases\}
+
+Когда пользователь нажимает на продукт в вашем пейволе, вызовите метод `makePurchase` с выбранным продуктом. Он обработает процесс покупки и вернёт обновлённый профиль.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+fun purchaseProduct(activity: Activity, product: AdaptyPaywallProduct) {
+    Adapty.makePurchase(activity, product) { result ->
+        when (result) {
+            is AdaptyResult.Success -> {
+                when (val purchaseResult = result.value) {
+                    is AdaptyPurchaseResult.Success -> {
+                        val profile = purchaseResult.profile
+                        // Purchase successful, profile updated
+                    }
+                    is AdaptyPurchaseResult.UserCanceled -> {
+                        // User canceled the purchase
+                    }
+                    is AdaptyPurchaseResult.Pending -> {
+                        // Purchase is pending (e.g., user will pay offline with cash)
+                    }
+                }
+            }
+            is AdaptyResult.Error -> {
+                val error = result.error
+                // Handle the error
+            }
+        }
+    }
+}
+```
+</TabItem>
+
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+public void purchaseProduct(Activity activity, AdaptyPaywallProduct product) {
+    Adapty.makePurchase(activity, product, null, result -> {
+        if (result instanceof AdaptyResult.Success) {
+            AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
+            
+            if (purchaseResult instanceof AdaptyPurchaseResult.Success) {
+                AdaptyProfile profile = ((AdaptyPurchaseResult.Success) purchaseResult).getProfile();
+                // Purchase successful, profile updated
+            } else if (purchaseResult instanceof AdaptyPurchaseResult.UserCanceled) {
+                // User canceled the purchase
+            } else if (purchaseResult instanceof AdaptyPurchaseResult.Pending) {
+                // Purchase is pending (e.g., user will pay offline with cash)
+            }
+        } else if (result instanceof AdaptyResult.Error) {
+            AdaptyError error = ((AdaptyResult.Error) result).getError();
+            // Handle the error
+        }
+    });
+}
+```
+</TabItem>
+</Tabs>
+
+## Шаг 3. Восстанавливайте покупки \{#step-3-restore-purchases\}
+
+Google Play и другие сторы требуют, чтобы все приложения с подписками предоставляли пользователям возможность восстановить покупки.
+
+Вызовите метод `restorePurchases`, когда пользователь нажимает кнопку восстановления. Это синхронизирует историю покупок с Adapty и вернёт обновлённый профиль.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+fun restorePurchases() {
+    Adapty.restorePurchases { result ->
+        when (result) {
+            is AdaptyResult.Success -> {
+                val profile = result.value
+                // Restore successful, profile updated
+            }
+            is AdaptyResult.Error -> {
+                val error = result.error
+                // Handle the error
+            }
+        }
+    }
+}
+```
+</TabItem>
+
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+public void restorePurchases() {
+    Adapty.restorePurchases(result -> {
+        if (result instanceof AdaptyResult.Success) {
+            AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+            // Restore successful, profile updated
+        } else if (result instanceof AdaptyResult.Error) {
+            AdaptyError error = ((AdaptyResult.Error) result).getError();
+            // Handle the error
+        }
+    });
+}
+```
+</TabItem>
+</Tabs>
+
+## Следующие шаги \{#next-steps\}
+
+<SupportForum />
+
+Ваш пейвол готов к отображению в приложении. [Протестируйте покупки в Google Play Store](testing-on-android), чтобы убедиться, что тестовая покупка через пейвол проходит успешно. Чтобы увидеть, как это работает в готовой к продакшену реализации, ознакомьтесь с [ProductListFragment.kt](https://github.com/adaptyteam/AdaptySDK-Android/blob/master/app/src/main/java/com/adapty/example/ProductListFragment.kt) в нашем примере приложения — там показана обработка покупок с корректной обработкой ошибок, обратной связью в UI и управлением подписками.
+
+Затем [проверьте, завершил ли пользователь покупку](android-check-subscription-status), чтобы решить — показывать пейвол или открыть доступ к платным функциям.

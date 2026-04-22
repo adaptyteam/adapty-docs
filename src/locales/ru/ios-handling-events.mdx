@@ -1,0 +1,438 @@
+---
+title: "Обработка событий пейвола в iOS SDK"
+description: "Обрабатывайте события, связанные с подписками, в iOS с помощью Adapty для улучшения монетизации приложения."
+metadataTitle: "Обработка событий в iOS | Документация Adapty"
+toc_max_heading_level: 4
+keywords: ['event', 'AdaptyPaywallControllerDelegate', 'didSelectProduct', 'didStartPurchase', 'shouldContinueWebPaymentNavigation', 'didFinishPurchase', 'didFailPurchase', 'didFailWebPaymentNavigation', 'didFinishRestoreWith', 'didFailRestoreWith', 'didFailLoadingProductsWith',  'didFailRenderingWith']
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
+import PaywallAction from '@site/src/locales/ru/reusable/PaywallAction.md';
+
+<PaywallAction />
+
+Пейволы, настроенные с помощью [Paywall Builder](adapty-paywall-builder), не требуют дополнительного кода для совершения и восстановления покупок. Тем не менее они генерируют события, на которые ваше приложение может реагировать. К таким событиям относятся нажатия кнопок (кнопки закрытия, ссылки, выбор продуктов и т. д.), а также уведомления о действиях, связанных с покупками на пейволе. Ниже описано, как обрабатывать эти события.
+
+Это руководство предназначено **только для новых пейволов Paywall Builder**, которые требуют Adapty SDK версии 3.0 или выше.
+
+<SampleApp />
+
+## Обработка событий в SwiftUI \{#handling-events-in-swiftui\}
+
+Чтобы управлять процессами на экране пейвола или отслеживать их, используйте модификатор `.paywall` в SwiftUI:
+
+```swift showLineNumbers title="Swift"
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywall: paywall,
+          viewConfiguration: viewConfig,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  case let .openURL(url):
+                      // handle opening the URL (incl. for terms and privacy)
+                  default:
+                      // handle other actions
+              }
+          },
+          didSelectProduct: { /* Handle the event */  },
+          didStartPurchase: { /* Handle the event */ },
+          didFinishPurchase: { product, info in /* Handle the event */ },
+          didFailPurchase: { product, error in /* Handle the event */ },
+          didStartRestore: { /* Handle the event */ },
+          didFinishRestore: { /* Handle the event */ },
+          didFailRestore: { /* Handle the event */ },
+          didFailRendering: { error in
+              paywallPresented = false
+          },
+          didFailLoadingProducts: { error in
+              return false
+          }
+      )
+}
+```
+
+Можно регистрировать только те параметры замыканий, которые нужны вашему приложению — неиспользуемые параметры создаваться не будут.
+
+| Параметр                          | Обязательный | Описание                                                                                                                                                                                                                                                                                                                              |
+|:----------------------------------|:-------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented**                   | обязательный | Привязка, управляющая отображением экрана пейвола.                                                                                                                                                                                                                                                                                    |
+| **paywallConfiguration**          | обязательный | Объект `AdaptyUI.PaywallConfiguration`, содержащий визуальные параметры пейвола. Используйте метод `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)`. Подробнее см. в разделе [Получение пейволов Paywall Builder и их конфигурации](get-pb-paywalls). |
+| **didFailPurchase**               | обязательный | Вызывается при ошибке покупки (например, платёж не разрешён, проблемы с сетью, недействительный продукт). Не вызывается при отмене пользователем или ожидающих платежах.                                                                                                                                                             |
+| **didFinishRestore**              | обязательный | Вызывается при успешном восстановлении покупки.                                                                                                                                                                                                                                                                                       |
+| **didFailRestore**                | обязательный | Вызывается при ошибке восстановления покупки.                                                                                                                                                                                                                                                                                         |
+| **didFailRendering**              | обязательный | Вызывается при ошибке рендеринга интерфейса. В этом случае [обратитесь в поддержку Adapty](mailto:support@adapty.io).                                                                                                                                                                                                                |
+| **fullScreen**                    | необязательный | Определяет, отображается ли пейвол в полноэкранном режиме или как модальное окно. По умолчанию `true`.                                                                                                                                                                                                                               |
+| **didAppear**                     | необязательный | Вызывается, когда экран пейвола появляется на экране. Также вызывается, когда пользователь нажимает [кнопку web-пейвола](web-paywall#step-2a-add-a-web-purchase-button) внутри пейвола и web-пейвол открывается во встроенном браузере.                                                                                               |
+| **didDisappear**                  | необязательный | Вызывается, когда экран пейвола закрывается. Также вызывается, когда [web-пейвол](web-paywall#step-2a-add-a-web-purchase-button), открытый из пейвола во встроенном браузере, исчезает с экрана.                                                                                                                                     |
+| **didPerformAction**              | необязательный | Вызывается при нажатии пользователем кнопки. У разных кнопок разные идентификаторы действий. Два идентификатора предопределены: `close` и `openURL`, остальные задаются в конструкторе.                                                                                                                                              |
+| **didSelectProduct**              | необязательный | Вызывается, если продукт был выбран для покупки — пользователем или системой.                                                                                                                                                                                                                                                         |
+| **didStartPurchase**              | необязательный | Вызывается, когда пользователь начинает процесс покупки.                                                                                                                                                                                                                                                                              |
+| **didFinishPurchase**             | необязательный | Вызывается при успешном завершении покупки.                                                                                                                                                                                                                                                                                           |
+| **didFinishWebPaymentNavigation** | необязательный | Вызывается после попытки открыть [web-пейвол](web-paywall) для покупки — успешной или нет.                                                                                                                                                                                                                                           |
+| **didStartRestore**               | необязательный | Вызывается, когда пользователь начинает процесс восстановления покупок.                                                                                                                                                                                                                                                              |
+| **didFailLoadingProducts**        | необязательный | Вызывается при ошибках загрузки продуктов. Верните `true`, чтобы повторить загрузку.                                                                                                                                                                                                                                                 |
+| **didPartiallyLoadProducts**      | необязательный | Вызывается, когда продукты загружены частично.                                                                                                                                                                                                                                                                                        |
+| **showAlertItem**                 | необязательный | Привязка, управляющая отображением элементов оповещения поверх пейвола.                                                                                                                                                                                                                                                              |
+| **showAlertBuilder**              | необязательный | Функция для рендеринга представления оповещения.                                                                                                                                                                                                                                                                                      |
+| **placeholderBuilder**            | необязательный | Функция для рендеринга представления-заглушки, пока пейвол загружается.                                                                                                                                                                                                                                                              |
+
+## Обработка событий в UIKit \{#handling-events-in-uikit\}
+
+Чтобы управлять процессами на экране пейвола или отслеживать их, реализуйте методы `AdaptyPaywallControllerDelegate`.
+
+### События, инициированные пользователем \{#user-generated-events\}
+
+#### Выбор продукта \{#product-selection\}
+
+Если пользователь выбирает продукт для покупки, вызывается этот метод:
+
+```swift showLineNumbers title="Swift"
+    func paywallController(
+        _ controller: AdaptyPaywallController,
+        didSelectProduct product: AdaptyPaywallProductWithoutDeterminingOffer
+    ) { }
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Начало покупки \{#started-purchase\}
+
+Если пользователь инициирует процесс покупки, вызывается этот метод:
+
+```swift showLineNumbers title="Swift"
+func paywallController(_ controller: AdaptyPaywallController,
+                       didStartPurchase product: AdaptyPaywallProduct) {
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+Метод не вызывается в режиме Observer mode. Подробнее см. в разделе [iOS — Отображение пейволов Paywall Builder в режиме Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode).
+
+#### Начало покупки через web-пейвол \{#started-purchase-using-a-web-paywall\}
+
+Если пользователь инициирует покупку через [web-пейвол](web-paywall), вызывается этот метод:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        shouldContinueWebPaymentNavigation product: AdaptyPaywallProduct
+    ) {
+    }
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Успешная или отменённая покупка \{#successful-or-canceled-purchase\}
+
+Если покупка выполнена успешно, вызывается этот метод:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFinishPurchase product: AdaptyPaywallProductWithoutDeterminingOffer,
+    purchaseResult: AdaptyPurchaseResult
+) { }
+}
+```
+
+<Details>
+<summary>Примеры событий (нажмите, чтобы развернуть)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "cancelled"
+  }
+}
+```
+</Details>
+
+В этом случае рекомендуем закрыть экран пейвола.
+
+Метод не вызывается в режиме Observer mode. Подробнее см. в разделе [iOS — Отображение пейволов Paywall Builder в режиме Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode).
+
+#### Ошибка покупки \{#failed-purchase\}
+
+Если покупка завершается с ошибкой, вызывается этот метод. Это включает ошибки StoreKit (ограничения платежей, недействительные продукты, сбои сети), ошибки верификации транзакций и системные ошибки. Обратите внимание: отмена пользователем вызывает `didFinishPurchase` с результатом `cancelled`, а ожидающие платежи этот метод не вызывают.
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailPurchase product: AdaptyPaywallProduct,
+    error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+Метод не вызывается в режиме Observer mode. Подробнее см. в разделе [iOS — Отображение пейволов Paywall Builder в режиме Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode).
+
+#### Ошибка покупки через web-пейвол \{#failed-purchase-using-a-web-paywall\}
+
+Если `Adapty.openWebPaywall()` завершается с ошибкой, вызывается этот метод:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        didFailWebPaymentNavigation product: AdaptyPaywallProduct,
+        error: AdaptyError
+    ) { }
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_payment_failed",
+    "message": "Web payment navigation failed",
+    "details": {
+      "underlyingError": "Network connection error"
+    }
+  }
+}
+```
+</Details>
+
+#### Успешное восстановление покупок \{#successful-restore\}
+
+Если восстановление покупки выполнено успешно, вызывается этот метод:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController, 
+    didFinishRestoreWith profile: AdaptyProfile
+) { }
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Рекомендуем закрыть экран, если у пользователя есть необходимый `accessLevel`. Как это проверить — читайте в разделе [Статус подписки](subscription-status).
+
+#### Ошибка восстановления покупок \{#failed-restore\}
+
+Если восстановление покупки завершается с ошибкой, вызывается этот метод:
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController, 
+    didFailRestoreWith error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+### Загрузка данных и рендеринг \{#data-fetching-and-rendering\}
+
+#### Ошибки загрузки продуктов \{#product-loading-errors\}
+
+Если массив продуктов не передан при инициализации, AdaptyUI самостоятельно запросит необходимые объекты с сервера. В случае ошибки AdaptyUI сообщит о ней через этот метод:
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailLoadingProductsWith error: AdaptyError
+) -> Bool {
+    return true
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+Если вернуть `true`, AdaptyUI повторит запрос через 2 секунды.
+
+#### Ошибки рендеринга \{#rendering-errors\}
+
+Если при рендеринге интерфейса возникает ошибка, она будет сообщена через этот метод:
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailRenderingWith error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+В штатной ситуации такие ошибки возникать не должны — если всё же столкнётесь с одной из них, пожалуйста, сообщите нам.

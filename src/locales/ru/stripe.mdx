@@ -1,0 +1,365 @@
+---
+title: "Начальная интеграция со Stripe"
+description: "Интегрируйте Stripe с Adapty для бесперебойной обработки платежей по подпискам."
+metadataTitle: "Гайд по интеграции Stripe | Документация Adapty"
+keywords: ['stripe', 'интеграция stripe']
+rank: 50
+---
+
+Adapty поддерживает сценарии web2app, отслеживая веб-платежи и подписки, оформленные через [Stripe](https://stripe.com/).
+
+Интеграция охватывает покупки, инициированные в вебе (Stripe Checkout, hosted-страницы оплаты или кастомные веб-флоу), и синхронизирует их с доступом в мобильном приложении и аналитикой.
+
+Это полезно в следующих сценариях:
+
+- Автоматическое предоставление доступа к платным функциям пользователям, которые совершили покупку в вебе, а затем установили приложение и вошли в свой аккаунт
+- Хранение всей аналитики по подпискам в одном дашборде Adapty (включая когорты, прогнозы и остальной аналитический инструментарий)
+
+Хотя веб-покупки становятся всё популярнее для приложений, Apple App Store разрешает альтернативные системы встроенных покупок для цифровых товаров только в США. Убедитесь, что вы не продвигаете веб-подписки внутри приложения для других стран, иначе приложение может быть отклонено или заблокировано.
+
+Ниже описаны шаги по настройке интеграции со Stripe.
+
+:::important
+Эта интеграция посвящена отслеживанию и синхронизации веб-покупок через Stripe. Если вам нужно направлять пользователей из приложения на веб-чекаут, см. [Веб-пейволы](web-paywall).
+:::
+
+## 1\. Подключите Stripe к Adapty \{#1-connect-stripe-to-adapty\}
+
+Интеграция в основном работает за счёт того, что Adapty получает данные о подписках из Stripe через вебхук. Поэтому нужно связать аккаунт Adapty с аккаунтом Stripe, предоставив API-ключи и указав URL вебхука Adapty в Stripe. Чтобы автоматизировать настройку вебхука, установите приложение Adapty в Stripe:
+
+:::note
+Шаги ниже одинаковы для Production и Test режимов Stripe, но для каждого из них потребуются разные API-ключи.
+:::
+
+0. Определите, подключаете ли вы Stripe в тестовом или рабочем режиме. Если вы начинаете с тестового режима, шаги ниже нужно будет повторить для рабочего режима.
+
+1. Перейдите на [Stripe App Marketplace](https://marketplace.stripe.com/apps/adapty) и установите приложение Adapty. Обратите внимание, что sandbox-режим не поддерживает установку приложений — это можно сделать только в production или test режиме.
+
+<Zoom>
+      <img src="/assets/shared/img/stripe1.png"/>
+</Zoom>
+
+2. Предоставьте приложению необходимые разрешения. Это позволит Adapty получать доступ к данным о подписках и их истории. Затем нажмите **Continue to app settings**, чтобы продолжить.
+
+В нижней части pop-up с разрешениями можно выбрать, устанавливать ли приложение в live или test режиме.
+
+<Zoom>
+      <img src="/assets/shared/img/stripe2.png"/>
+</Zoom>
+
+3. В pop-up сгенерируйте новый ограниченный ключ. Для этого потребуется подтвердить личность через email, Touch ID или ключ безопасности. После генерации ключ больше нельзя будет просмотреть, поэтому сохраните его в надёжном менеджере паролей или хранилище секретов.
+
+<Zoom>
+      <img src="/assets/shared/img/stripe4.png"/>
+</Zoom>
+
+4. Скопируйте сгенерированный ключ из pop-up и перейдите в Adapty на страницу [App Settings → Stripe](https://app.adapty.io/settings/stripe). Вставьте ключ в раздел **Stripe App Restricted API Key** в соответствии с вашим режимом. Обратите внимание, что для test и live режимов нужно генерировать разные ключи.
+
+<Zoom>
+      <img src="/assets/shared/img/Stripe3.png"/>
+</Zoom>
+
+Готово! Теперь создайте продукты в Stripe и добавьте их в Adapty.
+
+<Details>
+
+<summary>Устаревший способ установки</summary>
+
+1. Перейдите в раздел [Developers → API Keys](https://dashboard.stripe.com/apikeys) в Stripe:
+
+<Zoom>
+  <img src="/assets/shared/img/6549602-CleanShot_2023-12-06_at_17.29.122x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. Нажмите кнопку **Reveal live (test) key button** рядом с заголовком **Secret key**, скопируйте ключ и перейдите в Adapty на страницу [App Settings → Stripe](https://app.adapty.io/settings/stripe). Вставьте ключ сюда:
+
+<Zoom>
+  <img src="/assets/shared/img/2989508-CleanShot_2023-12-07_at_14.59.122x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Затем скопируйте URL вебхука в нижней части той же страницы в Adapty. Перейдите в [**Developers** → **Webhooks**](https://dashboard.stripe.com/webhooks) в Stripe и нажмите кнопку **Add endpoint**:
+
+<Zoom>
+  <img src="/assets/shared/img/e7149f5-CleanShot_2023-12-07_at_17.31.392x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. Вставьте URL вебхука из Adapty в поле **Endpoint URL**. Затем выберите **Latest API version** в поле **Version** вебхука. Далее выберите следующие события:
+
+   - charge.refunded
+   - customer.subscription.created
+   - customer.subscription.deleted
+   - customer.subscription.paused
+   - customer.subscription.resumed
+   - customer.subscription.updated
+   - invoice.created
+   - invoice.updated
+   - payment_intent.succeeded
+
+<Zoom>
+  <img src="/assets/shared/img/cbc5404-CleanShot_2023-12-07_at_17.36.232x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+5. Нажмите «Add endpoint», а затем нажмите «Reveal» под «Signing secret». Это ключ, который используется для декодирования данных вебхука на стороне Adapty — скопируйте его после отображения:
+
+<Zoom>
+  <img src="/assets/shared/img/0460cbb-CleanShot_2023-12-07_at_17.52.582x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+6. Наконец, вставьте этот ключ в Adapty: App Settings → Stripe, поле «Stripe Webhook Secret»:
+
+<Zoom>
+  <img src="/assets/shared/img/055db20-CleanShot_2023-12-07_at_14.56.212x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+</Details>
+
+## 2\. Создайте продукты в Stripe \{#2-create-products-on-stripe\}
+
+:::note
+Если вы настраиваете это в тестовом режиме, убедитесь, что Stripe также переключён в Test mode, прежде чем продолжать этот шаг.
+:::
+
+Перейдите в [Product catalog](https://dashboard.stripe.com/products?active=true) Stripe и создайте продукты, которые хотите продавать, а также их тарифные планы. Обратите внимание, что Stripe позволяет иметь несколько тарифных планов для одного продукта — это удобно для гибкой настройки предложения без создания дополнительных продуктов.
+
+<Zoom>
+  <img src="/assets/shared/img/b202e2e-CleanShot_2023-12-06_at_15.06.262x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::warning
+На данный момент Adapty поддерживает только **Flat rate** ($9.99/месяц) или **Package pricing** ($9.99/10 единиц), так как они ведут себя аналогично магазинам приложений. Опции **Tiered pricing**, **Usage-based fee** и **Customer chooses price** не поддерживаются.
+:::
+
+## 3\. Добавьте продукты Stripe в Adapty \{#3-add-stripe-products-to-adapty\}
+
+:::warning
+
+Продукты обязательны! Обязательно создайте продукты Stripe в дашборде Adapty. Adapty отслеживает события только для транзакций, привязанных к этим продуктам, поэтому не пропускайте этот шаг — иначе события транзакций не будут создаваться.
+
+:::
+
+Мы относимся к Stripe так же, как к App Store и Google Play: это просто ещё один стор, где вы продаёте цифровые продукты. Настройка аналогична: просто добавьте продукты Stripe (а именно их `product_id` и `price_id`) в раздел Products в Adapty:
+
+<Zoom>
+  <img src="/assets/shared/img/457d1a0-CleanShot_2023-12-08_at_17.52.292x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+ID продуктов в Stripe выглядят как `prod_...`, а ID цен — как `price_...`. Их легко найти для каждого продукта в [Product Catalog](https://dashboard.stripe.com/products?active=true) Stripe, открыв любой продукт:
+
+<Zoom>
+  <img src="/assets/shared/img/14a72d7-CleanShot_2023-12-06_at_17.32.512x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+После того как вы добавили все необходимые продукты, следующий шаг — сообщить Stripe, какой пользователь совершает покупку, чтобы Adapty мог её подхватить.
+
+## 4\. Обогатите веб-покупки идентификатором пользователя \{#4-enrich-purchases-made-on-the-web-with-your-user-id\}
+
+Adapty использует вебхуки от Stripe как единственный источник информации для предоставления и обновления уровней доступа для пользователей. Но чтобы интеграция работала корректно, вы должны передавать дополнительные данные со своей стороны при работе со Stripe.
+
+Чтобы уровни доступа были согласованы на всех платформах (веб и мобильное приложение), необходимо использовать единый идентификатор пользователя, который Adapty сможет распознать из вебхуков. Это может быть email пользователя, номер телефона или любой другой ID из используемой вами системы авторизации.
+
+Определите, какой ID вы хотите использовать для идентификации пользователей. Затем перейдите в ту часть кода, которая инициирует платёж через Stripe, и добавьте этот ID в объект `metadata` объекта [Stripe Subscription](https://docs.stripe.com/api/subscriptions/object#subscription_object-metadata) (`sub_...`) или [Checkout Session](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-metadata) (`ses_...`) под ключом `customer_user_id`:
+
+```json showLineNumbers title="Stripe Metadata contents"
+{'customer_user_id': "YOUR_USER_ID"}
+```
+
+Это единственное изменение в коде, которое от вас требуется. После этого Adapty будет разбирать все вебхуки от Stripe, извлекать этот `metadata` и корректно связывать подписки с вашими пользователями.
+
+:::warning
+User ID обязателен
+
+Без него у нас нет возможности идентифицировать пользователя и предоставить ему уровень доступа в мобильном приложении.
+
+Если вы не передаёте `customer_user_id` в `metadata`, можно настроить Adapty так, чтобы он искал `customer_user_id` в других местах: либо в поле `email` объекта Customer в Stripe, либо в поле `client_reference_id` объекта Session в Stripe.
+
+Подробнее о настройке поведения при создании профиля читайте [ниже](stripe#profile-creation-behavior).
+:::
+
+:::note
+Customer в Stripe тоже обязателен
+
+Если вы используете Checkout Sessions, [убедитесь, что создаёте Stripe Customer](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-customer_creation), установив `customer_creation` в значение `always`.
+:::
+
+## 5\. Предоставьте доступ пользователям в мобильном приложении \{#5-provide-access-to-users-on-the-mobile\}
+
+Чтобы пользователи мобильного приложения, пришедшие с веба, могли получить доступ к платным функциям, просто вызовите `Adapty.activate()` или `Adapty.identify()` с тем же `customer_user_id`, который вы передали на предыдущем шаге (подробнее см. <InlineTooltip tooltip="Идентификация пользователей">[iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users) и [Unity](unity-identifying-users)</InlineTooltip>).
+
+## 6\. Протестируйте интеграцию \{#6-test-your-integration\}
+
+Убедитесь, что вы выполнили шаги выше как для Sandbox, так и для Production. Транзакции, совершённые в Test mode Stripe, будут считаться Sandbox в Adapty.
+
+:::info
+Готово!
+
+Теперь пользователи могут совершать покупки в вебе и получать доступ к платным функциям в приложении. А вся аналитика по подпискам будет собрана в одном месте.
+:::
+
+## Поведение при создании профиля \{#profile-creation-behavior\}
+
+Adapty должен привязать покупку к [профилю пользователя](profiles-crm), чтобы она была доступна в мобильном приложении — поэтому по умолчанию профили создаются при получении вебхуков от Stripe. Вы можете выбрать, что использовать в качестве идентификатора пользователя в Adapty:
+
+1. **По умолчанию и рекомендуется:** `customer_user_id`, переданный в metadata на [шаге 4 выше](stripe#4-enrich-purchases-made-on-the-web-with-your-user-id)
+2. `email` в объекте Customer в Stripe (см. [документацию Stripe](https://docs.stripe.com/api/customers/object#customer_object-email))
+3. `client_reference_id` в объекте Session в Stripe (см. [документацию Stripe](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-client_reference_id))
+
+Настроить, какой ID использовать, можно в [App Settings → Stripe](https://app.adapty.io/settings/stripe).
+
+:::warning
+**Важно:** если конкретная транзакция из Stripe не содержит указанного ID, профиль создан не будет. Такая транзакция останется анонимной, пока не будет привязана к какому-либо профилю (например, если вы впоследствии воспользуетесь [S2S validate](api-adapty/operations/validateStripePurchase) и сообщите нам об этой транзакции вручную).
+
+Она появится в аналитике, но не в разделах, которые считают профили (LTV, когорты, конверсии и т.д.), и вы не сможете увидеть её в ленте событий.
+:::
+
+Также есть четвёртый вариант — вообще не создавать профили, но это не рекомендуется из-за указанных выше ограничений в аналитике.
+
+## Текущие ограничения \{#current-limitations\}
+
+### Апгрейд, даунгрейд и пропорциональное распределение \{#upgrading-downgrading-and-proration\}
+
+Изменения подписки — апгрейд или даунгрейд — могут приводить к пропорциональным списаниям. Adapty не учитывает эти списания в расчёте выручки. Лучше отключить эти опции вручную через дашборд Stripe. Также это можно сделать, установив атрибут `proration_behaviour` в значение `none` через Stripe API.
+
+### Отмены \{#cancellations\}
+
+В Stripe есть два варианта отмены подписки:
+
+1. Немедленная отмена: подписка отменяется сразу с опцией пропорционального распределения или без неё
+2. Отмена в конце периода: подписка отменяется по истечении текущего расчётного периода (аналогично встроенным подпискам в магазинах приложений)
+
+Adapty поддерживает оба варианта, однако при расчёте выручки для немедленной отмены опция пропорционального распределения игнорируется.
+
+### Проблемы с оплатой и льготный период \{#billing-issues-and-grace-period\}
+
+Когда у пользователя возникают проблемы с оплатой, Adapty генерирует событие billing issue и отзывает доступ. Льготный период Stripe пока не поддерживается — это будет реализовано в будущих релизах.
+
+### Возвраты \{#refunds\}
+
+Adapty отслеживает только полные возвраты. Частичные возвраты и возвраты с пропорциональным распределением в настоящее время не поддерживаются.
+
+### Уникальность идентификаторов транзакций \{#transaction-id-uniqueness\}
+
+Adapty сопоставляет профили и транзакции, используя `store_transaction_id` и `store_original_transaction_id`. Они **должны быть уникальны** в рамках Test и Production окружений.
+
+#### Почему это важно \{#why-this-matters\}
+
+Если один и тот же ID транзакции существует в обоих окружениях, Adapty считает их одной транзакцией, что приводит к следующему:
+- Production-покупки наследуют уровни доступа и ID продуктов из Test-окружения
+- Неверные ID продуктов и окружений в ответах API
+- Нарушение привязки профилей и событий подписок
+
+#### Как обеспечить уникальность \{#how-to-ensure-uniqueness\}
+
+ID инвойсов в Stripe могут совпадать между Test и Live окружениями. Чтобы избежать коллизий между окружениями, выберите один из подходов.
+
+#### Вариант 1: Нумерация на уровне аккаунта с префиксами для окружений \{#option-1-account-level-numbering-with-environment-prefixes\}
+
+Настройте префиксы отдельно для каждого окружения:
+
+1. В Stripe Dashboard переключитесь в Test mode.
+2. Перейдите в [Settings → Billing → Invoices](https://dashboard.stripe.com/settings/account/?support_details=true).
+3. Установите **Invoice numbering** в **Sequentially across your account**.
+4. Установите **Invoice prefix** в TEST- (или любой другой префикс, специфичный для тестового окружения).
+5. Переключитесь в Live mode и повторите шаги 2–4, используя LIVE- (или любой другой префикс, специфичный для рабочего окружения) в качестве префикса.
+
+#### Вариант 2: Нумерация на уровне пользователя \{#option-2-customer-level-numbering\}
+
+Установите **Invoice numbering** в [**Stripe settings** -> **Billing** -> **Invoices** tab](https://dashboard.stripe.com/settings/account/?support_details=true) в значение **Sequentially for each customer (customer-level)**.
+
+Даже при такой конфигурации, если вы удалите инвойс, Stripe может повторно использовать этот ID для новых инвойсов того же пользователя. По возможности избегайте удаления инвойсов.
+
+## Максимум от данных Stripe \{#get-more-from-your-stripe-data\}
+После интеграции со Stripe Adapty сразу готов предоставлять аналитику. Чтобы получить от данных Stripe максимум, можно настроить дополнительные интеграции Adapty для пересылки событий Stripe — так вся аналитика по подпискам окажется в одном дашборде Adapty.
+
+:::tip
+Для расширенной аналитики можно добавить `variation_id` в metadata Stripe, чтобы привязать покупки к конкретным экземплярам пейвола. Это особенно полезно при использовании собственных веб-пейволов, когда нужно отслеживать, какой именно показанный пейвол привёл к конверсии.
+
+Обратите внимание, что `variation_id` читается только из metadata объектов Stripe Subscription (`sub_...`) и Checkout Session (`ses_...`):
+
+```json showLineNumbers title="Stripe Metadata with variation_id"
+{
+  'customer_user_id': "YOUR_USER_ID",
+  'variation_id': "YOUR_VARIATION_ID"
+}
+```
+:::
+
+Интеграции для пересылки и анализа событий Stripe:
+- [Amplitude](amplitude/)
+- [Webhook](webhook)
+- [Firebase](firebase-and-google-analytics)
+- [Mixpanel](mixpanel)
+- [Posthog](posthog)
+
+### Поддерживаемые события Stripe \{#supported-stripe-events\}
+Adapty поддерживает следующие события Stripe:
+- charge.refunded
+- customer.subscription.created
+- customer.subscription.deleted
+- customer.subscription.paused
+- customer.subscription.resumed
+- customer.subscription.updated
+- invoice.created
+- invoice.updated
+- payment_intent.succeeded

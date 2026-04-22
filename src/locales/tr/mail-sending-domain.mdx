@@ -1,0 +1,125 @@
+---
+title: "Adapty Mail için gönderim etki alanınızı ayarlayın"
+description: "DNS kayıtlarını ekleyin, etki alanınızı doğrulayın ve Adapty Mail'in sizin adınıza e-posta gönderebilmesi için ısınma sürecini anlayın."
+metadataTitle: "Gönderim Etki Alanı Kurulumu | Adapty Mail | Adapty Dokümanları"
+keywords: ['adapty mail', 'gönderim etki alanı', 'DNS', 'DKIM', 'SPF', 'DMARC', 'teslim edilebilirlik', 'ısınma']
+---
+Adapty Mail, kampanyaları paylaşımlı bir adresten değil kendi alan adınızdan gönderir; böylece gönderici itibarı tamamen sizin kontrolünüzde kalır. Bunu bir kez kurarsınız ve her kampanya aynı doğrulanmış alan adını kullanır. Minimum adımlar için [Adapty Mail'e başlarken](mail-get-started#3-set-up-your-sending-domain) sayfasındaki alan adı bölümüne bakın. Bu makale ise tam kurulumu, doğrulamanın nasıl çalıştığını ve otomatik ısınma davranışını ele alır.
+## Gereksinimler \{#requirements\}
+
+- **Apex domain**: Kök domaininizi girin (örneğin, `yourapp.com`), alt domain değil. `app.yourapp.com` gibi girişler doğrulama aşamasında reddedilir.
+- **Aktif NS kayıtları**: Domainin çözümlenebilir olması gerekir. Adapty Mail, kurulum sırasında bir DNS sorgusu yapar ve geçerli NS kayıtları olmayan domainleri reddeder.
+- **Adapty projesi başına bir domain**: Bir domain, projeler arasında paylaşılamaz. Domain zaten herhangi bir projeye — sizin veya başkasının — kayıtlıysa kurulum başarısız olur.
+## Gönderme alan adınızı ayarlayın \{#set-up-your-sending-domain\}
+
+Kurulum sihirbazı üç ekrandan oluşur: alan adını girin, oluşturulan alt alan adlarını onaylayın ve DNS kayıtlarını ekleyin. Üçü de **Settings → Email Domains** bölümünde yer alır.
+
+1. **Alan adınızı girin.** Apex alan adınızı **Domain** alanına yazın ve **Preview**'e tıklayın. Adapty Mail, formatı doğrular (ASCII, iki etiket, başında veya sonunda tire olmaması, 2+ karakter TLD) ve DNS'in çözümlendiğini kontrol eder.
+
+   <ZoomImage id="mail-email-domains.webp" width="500px" />
+2. **Alt alanları onaylayın.** Adapty Mail, sabit öneklerle iki gönderme alt alanı oluşturur — `mail.yourapp.com` ve `email.yourapp.com` — her birinin kendi SES kimliği vardır. Ayrıca her birinin altında bir Mail-From alt alanı oluşturur (`hello.mail.yourapp.com` ve `hello.email.yourapp.com`). Bunları inceleyin ve **Confirm**'e tıklayın.
+
+   <ZoomImage id="confirm-subdomains.webp" width="500px" />
+3. **DNS kayıtlarını ekleyin.** Son ekranda eklenecek tüm kayıtlar listelenir — her gönderme alt alanı için 5 olmak üzere toplam 10 kayıt, ayrıca kök alanda isteğe bağlı bir DMARC kaydı. Tam listeyi dışa aktarmak için **Download CSV** seçeneğini kullanın ya da kayıtları tek tek kayıt şirketinize kopyalayın. Kayıtlar yerleştirildikten sonra **Done** düğmesine tıklayın.
+
+   <ZoomImage id="email-domains.webp" width="500px" />
+
+<Details>
+<summary>DNS kayıt referansı</summary>
+
+Her gönderme alt alanı için (`mail.yourapp.com` ve `email.yourapp.com`) şunları ekleyin:
+
+**DKIM — 3 CNAME kaydı.** E-postanın iletim sırasında değiştirilmediğini kanıtlayan kriptografik imzalar.
+| Alan | Biçim                               |
+| ---- | ----------------------------------- |
+| Tür  | CNAME                               |
+| Ad   | `{token}._domainkey.{subdomain}`    |
+| Değer | `{token}.dkim.amazonses.com`       |
+
+**Mail-From — 1 MX kaydı.** Geri dönen e-postaları yönetir.
+| Alan | Format |
+| -------- | -------------------------------------------------------- |
+| Type | MX |
+| Name | `hello.{subdomain}` (örneğin, `hello.mail.yourapp.com`) |
+| Priority | `10` |
+| Value | `feedback-smtp.{region}.amazonses.com` |
+
+**SPF — 1 TXT kaydı.** Adapty'nin sizin adınıza e-posta göndermesine izin verir.
+| Alan | Biçim                                  |
+| ---- | -------------------------------------- |
+| Tür  | TXT                                    |
+| Ad   | `hello.{subdomain}`                    |
+| Değer | `"v=spf1 include:amazonses.com ~all"` |
+
+Kök etki alanınıza isteğe bağlı DMARC kaydını ekleyin:
+
+| Alan | Biçim                 |
+| ---- | --------------------- |
+| Tür  | TXT                   |
+| Ad   | `_dmarc.{domain}`     |
+| Değer | `v=DMARC1; p=reject` |
+Token'lar, bölge ve diğer tüm değerler kurulum sırasında AWS SES'ten gelir. Bunları her zaman bu referanstan değil, Adapty Mail'deki DNS kayıtları ekranından kopyalayın.
+
+</Details>
+## Doğrulama nasıl çalışır \{#how-verification-works\}
+
+DNS kayıtları eklendikten sonra Adapty Mail, DNS'i otomatik olarak kontrol eder; ayrıca kontrolleri manuel olarak da tetikleyebilirsiniz.
+- **Otomatik yoklama**: Gönderimden 5 dakika sonra başlar, ardından her turda iki katına çıkar — 10 dk, 20 dk, 40 dk — ve 60 dakikada sabitlenir. Kayıt bulunana ya da 7 günlük süre dolana kadar devam eder.
+- **Manuel kontrol**: Anlık kontrol başlatmak için **Check Verification** düğmesine tıklayın. Manuel kontroller arasında 60 saniyelik bekleme süresi vardır; çok hızlı tetiklenirse *"Verification check is on cooldown."* hatası döner.
+- **Durum göstergeleri**: Her alt alan adının DKIM ve Mail-From kayıtları bağımsız olarak **Pending**, **Success** veya **Failed** şeklinde takip edilir. Bir alan adı yalnızca dört durumun tamamı **Success** olduğunda tam doğrulanmış sayılır.
+- **7 günlük süre sınırı**: Doğrulama 7 gün içinde tamamlanmazsa kimlik **Failed** olarak işaretlenir. DNS kayıtlarınız registrar'ınızda kalmaya devam eder; yeni bir süre başlatmak için **Settings → Email Domains** bölümünde alan adını yeniden girin.
+- **Doğrulama sonrası**: DNS kayıtlarını daha sonra kaldırır veya değiştirirseniz AWS SES kimliği bir süre sonra düşürür. Gönderim yapmayı planladığınız sürece kayıtları yerinde bırakın.
+- **DNS yayılımı**: Genellikle birkaç dakika sürer; nadir durumlarda 48 saate kadar uzayabilir.
+## Alan adı ısınma süreci \{#domain-warm-up\}
+
+Gmail veya Yahoo gibi e-posta sağlayıcıları nezdinde yeni alan adlarının henüz bir itibarı olmadığından, taze bir alan adından yüksek hacimli e-posta göndermek iletilerin spam klasörüne düşmesine yol açabilir. Adapty Mail, günlük gönderim limitinizi 14 kademede kademeli olarak artırarak ısınma sürecini otomatik olarak yönetir. Herhangi bir yapılandırma gerekmez.
+### Katmanlar nasıl çalışır \{#how-tiers-work\}
+
+Alan adınız **Katman 1** (günlük 200 gönderim) ile başlar ve teslim edilebilirlik metrikleri sağlıklı kaldığı sürece otomatik olarak ilerler. Geri dönme oranları yükselirse veya şikayet oranları artarsa, ilerleme durur ve itibar toparlanana kadar geri dönebilir.
+| Kademe | Günlük limit |
+| ------ | ------------ |
+| 1      | 200          |
+| 2      | 400          |
+| 3      | 800          |
+| 4      | 1.500        |
+| 5      | 2.500        |
+| 6      | 4.000        |
+| 7      | 6.000        |
+| 8      | 8.000        |
+| 9      | 10.000       |
+| 10     | 13.000       |
+| 11     | 16.000       |
+| 12     | 20.000       |
+| 13     | 25.000       |
+| 14     | 30.000       |
+
+Mevcut kademêniz ve günlük limitiniz **Settings → Email Domains** bölümünde gösterilmektedir.
+### Kitle büyüklüğünün lansmana etkisi \{#impact-on-launch-by-audience-size\}
+
+| Kitle büyüklüğü  | Lansман günündeki etki                  |
+| ---------------- | --------------------------------------- |
+| 200 kullanıcı altı | İlk gün tüm kitleye ulaşılır          |
+| 200–2.000 kullanıcı | Teslimat birkaç güne yayılır        |
+| 2.000+ kullanıcı | Teslimat 1–2 haftaya yayılır            |
+
+:::tip
+DNS doğrulaması tamamlanır tamamlanmaz ilk kampanyanızı başlatın. Ne kadar erken göndermeye başlarsanız, alan adınız kademeleri o kadar hızlı geçer ve günlük tam kapasiteye o kadar çabuk ulaşır.
+:::
+## Kısıtlamalar \{#limitations\}
+- **Proje başına bir domain**: Her Adapty projesinde yalnızca bir gönderici domain kullanılabilir. Farklı bir domaine geçmek için destek ekibiyle iletişime geçin — kontrol panelinde "domain değiştir" seçeneği bulunmamaktadır.
+- **Projeler arası benzersizlik**: Başka bir projeye kayıtlı bir domain tekrar kullanılamaz. *"Domain is already registered to another project"* hatası görürseniz farklı bir domain seçin ya da destek ekibiyle iletişime geçin.
+- **Doğrulanmış domainler silinemez**: Herhangi bir subdomain **Success** durumuna ulaştığında kontrol paneli silme işlemini engeller. Beklemedeki domainler silinebilir; ancak DNS kayıtlarını kayıt şirketinizden manuel olarak kaldırmanız gerekir.
+- **Sabit subdomain önekleri**: `mail.`, `email.` ve `hello.` Mail-From öneki sabit olarak tanımlıdır — özelleştirilemez. Bu subdomainler DNS'inizde zaten kullanımdaysa kurulum sırasında çakışma yaşanır.
+- **Yalnızca apex domainler**: Subdomain girişleri, sondaki noktalar ve tek etiketli ana makine adları kabul edilmez.
+- **Uluslararasılaştırılmış domain desteği yok**: Punycode ve IDN desteklenmemektedir. Domain yalnızca ASCII karakterlerden oluşmalıdır.
+## Sorun Giderme \{#troubleshooting\}
+| Sorun | Çözüm |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| "Enter a valid domain (e.g. example.com)" | Girişi kontrol edin: yalnızca apex domain, yalnızca ASCII, en az 2 karakterli TLD, başta veya sonda kısa çizgi olmamalı. |
+| "Domain does not have valid DNS records" | Apex domain'in kendisi çözümlenebilir olmalıdır. Yeniden denemeden önce NS kayıtlarınızın aktif olduğunu doğrulayın. |
+| "Domain is already registered to another project" | Farklı bir domain seçin ya da kaydın hatalı olduğunu düşünüyorsanız destek ekibiyle iletişime geçin. |
+| "Verification check is on cooldown" | Manuel kontroller arasında 60 saniye bekleyin. Otomatik yoklama arka planda devam eder. |
+| Doğrulama Beklemede'de takılı kalıyor | DNS kayıtlarının tam olarak eşleştiğini kontrol edin — sonda nokta olmamalı, CNAME hedefleri doğru olmalı. DNS yayılması 48 saate kadar sürebilir. |
+| "Cannot delete domain: one or more identities have been successfully verified" | Doğrulanmış bir domain kontrol panelinden kaldırılamaz. Yardım için destek ekibiyle iletişime geçin. |
+| E-postalar spam'e düşüyor | DMARC kaydınızın yayınlandığını doğrulayın. Yeni domainlerin ısınma süresine ihtiyacı vardır — [Domain ısınma](#domain-warm-up) bölümünü inceleyin. |
+| Yüksek hemen çıkma oranı | Kitle listenizin yalnızca geçerli ve onay vermiş adresleri içerdiğini doğrulayın. Yüksek hemen çıkma oranı, kademe ilerlemesini yavaşlatır veya durdurur. |

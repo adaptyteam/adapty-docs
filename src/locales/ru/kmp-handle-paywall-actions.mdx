@@ -1,0 +1,165 @@
+---
+title: "Реакция на действия кнопок в Kotlin Multiplatform SDK"
+description: "Обработка действий кнопок пейвола в Kotlin Multiplatform с помощью Adapty для лучшей монетизации приложения."
+metadataTitle: "Обработка действий кнопок пейвола | Документация Adapty"
+displayed_sidebar: sdkkmp
+toc_max_heading_level: 4
+keywords: ['кнопка пейвола', 'кнопка', 'действия кнопок пейвола', 'обработка действий']
+---
+
+:::warning
+**Только покупки и восстановления обрабатываются автоматически.** Все остальные действия кнопок, такие как закрытие пейволов или открытие ссылок, требуют реализации соответствующих обработчиков в коде приложения.
+:::
+
+Если вы создаёте пейволы с помощью Paywall Builder, важно правильно настроить кнопки:
+
+1. Добавьте [кнопку в Paywall Builder](paywall-buttons) и назначьте ей либо уже существующее действие, либо создайте пользовательский идентификатор действия.
+2. Напишите код в приложении для обработки каждого назначенного вами действия.
+
+В этом гайде показано, как обрабатывать пользовательские и предустановленные действия в коде.
+
+## Настройка AdaptyUIPaywallsEventsObserver \{#set-up-the-adaptyuipaywallseventsobserver\}
+
+Для обработки действий пейвола необходимо реализовать интерфейс `AdaptyUIPaywallsEventsObserver` и подключить его через `AdaptyUI.setPaywallsEventsObserver()`. Это следует делать на раннем этапе жизненного цикла приложения — как правило, в основном activity или при инициализации приложения.
+
+```kotlin
+
+// In your app initialization
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
+```
+
+## Закрытие пейволов \{#close-paywalls\}
+
+Чтобы добавить кнопку закрытия пейвола:
+
+1. В Paywall Builder добавьте кнопку и назначьте ей действие **Close**.
+2. В коде приложения реализуйте обработчик действия `close`, который закрывает пейвол.
+
+:::info
+В Kotlin Multiplatform SDK `CloseAction` и `AndroidSystemBackAction` по умолчанию вызывают закрытие пейвола. Однако при необходимости вы можете переопределить это поведение в своём коде. Например, закрытие одного пейвола может инициировать открытие другого.
+:::
+
+```kotlin
+
+class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            AdaptyUIAction.CloseAction, AdaptyUIAction.AndroidSystemBackAction -> view.dismiss()
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
+```
+
+Если вы используете [`createNativePaywallView`](kmp-present-paywalls#without-compose-multiplatform), вызов `view.dismiss()` не возымеет никакого эффекта — представление встроено в ваш макет, а не отображается через стек KMP. Удалите его из макета и вызовите на нём `dispose()`.
+
+## Открытие URL из пейволов \{#open-urls-from-paywalls\}
+
+:::tip
+Если вы хотите добавить группу ссылок (например, условия использования и восстановление покупок), добавьте элемент **Link** в Paywall Builder и обработайте его так же, как кнопки с действием **Open URL**.
+:::
+
+Чтобы добавить кнопку, открывающую ссылку из пейвола (например, **Terms of use** или **Privacy policy**):
+
+1. В Paywall Builder добавьте кнопку, назначьте ей действие **Open URL** и укажите URL, который нужно открыть.
+2. В коде приложения реализуйте обработчик действия `openUrl`, который открывает полученный URL в браузере.
+
+:::info
+В Kotlin Multiplatform SDK `OpenUrlAction` предоставляет URL, который необходимо открыть. Вы можете реализовать собственную логику обработки URL, например показ диалога подтверждения или использование предпочтительного для вашего приложения метода открытия URL.
+:::
+
+```kotlin
+
+class MyAdaptyUIPaywallsEventsObserver(
+    private val uriHandler: UriHandler
+) : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.OpenUrlAction -> {
+                // Show confirmation dialog before opening URL
+                mainUiScope.launch {
+                    val selectedAction = view.showDialog(
+                        title = "Open URL?",
+                        content = action.url,
+                        primaryActionTitle = "Cancel",
+                        secondaryActionTitle = "Open"
+                    ).getOrNull()
+
+                    when (selectedAction) {
+                        AdaptyUIDialogActionType.PRIMARY -> {
+                            // User cancelled
+                        }
+                        AdaptyUIDialogActionType.SECONDARY -> {
+                            // User confirmed - open URL
+                            uriHandler.openUri(action.url)
+                        }
+                        else -> Unit
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Set up the observer with UriHandler
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver(uriHandler))
+```
+
+## Вход в приложение \{#log-into-the-app\}
+
+Чтобы добавить кнопку входа в приложение:
+
+1. В Paywall Builder добавьте кнопку и назначьте ей действие **Custom** с идентификатором "login".
+2. В коде приложения реализуйте обработчик этого пользовательского действия, который идентифицирует пользователя.
+
+```kotlin
+
+class MyAdaptyUIObserver : AdaptyUIObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                if (action.action == "login") {
+                    // Handle login action - navigate to login screen
+                    // This depends on your app's navigation system
+                    // For example, in Compose Multiplatform:
+                    // navController.navigate("login")
+                }
+            }
+        }
+    }
+}
+```
+
+## Обработка пользовательских действий \{#handle-custom-actions\}
+
+Чтобы добавить кнопку для обработки любых других действий:
+
+1. В Paywall Builder добавьте кнопку, назначьте ей действие **Custom** и задайте идентификатор.
+2. В коде приложения реализуйте обработчик для созданного вами идентификатора действия.
+
+Например, если у вас есть другой набор предложений по подпискам или разовых покупок, вы можете добавить кнопку, которая будет открывать другой пейвол:
+
+```kotlin
+
+class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                when (action.action) {
+                    "login" -> {
+                        // Handle login action - navigate to login screen
+                        // This depends on your app's navigation system
+                        // For example, in Compose Multiplatform:
+                        // navController.navigate("login")
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
+```

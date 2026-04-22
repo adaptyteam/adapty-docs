@@ -1,0 +1,5 @@
+| Parameter | Type   | Required in request | Nullable in request | Description                                                  |
+| --------- | ------ | ------------------- | ------------------- | ------------------------------------------------------------ |
+| category  | String | :heavy_plus_sign:   | :heavy_minus_sign:  | Категория применённого предложения. Возможные значения: **introductory**, **promotional**, **offer_code**, **win_back**. |
+| type      | String | :heavy_plus_sign:   | :heavy_minus_sign:  | Тип активного предложения. Возможные значения: **free_trial**, **pay_as_you_go**, **pay_up_front** и **unknown**. Если значение не равно null, предложение было применено в текущем расчётном периоде подписки. |
+| id        | String | :heavy_minus_sign:  | :heavy_plus_sign:   | ID применённого предложения.                                 |

@@ -1,0 +1,407 @@
+---
+title: "Flutter - Обработка событий пейвола"
+description: "Узнайте, как обрабатывать события, связанные с подписками, во Flutter с помощью Adapty для эффективного отслеживания действий пользователей."
+metadataTitle: "Обработка событий во Flutter | Документация Adapty"
+keywords: ['event', 'paywallViewDidAppear', 'paywallViewDidDisappear', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
+import PaywallAction from '@site/src/locales/ru/reusable/PaywallAction.md';
+
+:::important
+Этот гайд охватывает обработку событий для покупок, восстановлений, выбора продуктов и рендеринга пейвола. Вам также необходимо реализовать обработку кнопок (закрытие пейвола, открытие ссылок и т.д.). Подробнее см. в нашем [гайде по обработке действий с кнопками](flutter-handle-paywall-actions).
+:::
+
+Пейволы, настроенные с помощью [Paywall Builder](adapty-paywall-builder-legacy), не требуют дополнительного кода для совершения и восстановления покупок. Однако они генерируют ряд событий, на которые ваше приложение может реагировать. Среди них — нажатия кнопок (кнопки закрытия, URL, выбор продуктов и т.д.), а также уведомления о действиях, связанных с покупками, выполненных на пейволе. Ниже описано, как реагировать на эти события.
+
+:::warning
+
+Этот гайд предназначен **только для пейволов нового Paywall Builder**, которые требуют Adapty SDK v3.0 или выше.
+
+:::
+
+Чтобы управлять процессами на экране пейвола в вашем мобильном приложении или отслеживать их, реализуйте методы `AdaptyUIPaywallsEventsObserver` и установите наблюдатель перед отображением любого экрана:
+
+```javascript showLineNumbers title="Flutter"
+AdaptyUI().setPaywallsEventsObserver(this);
+```
+
+<SampleApp />
+
+### События, инициированные пользователем \{#user-generated-events\}
+
+#### Пейвол появился \{#paywall-appeared\}
+
+Этот метод вызывается, когда экран пейвола отображается на экране.
+
+:::note
+На iOS также вызывается, когда пользователь нажимает [кнопку веб-пейвола](web-paywall#step-2a-add-a-web-purchase-button) внутри пейвола, и веб-пейвол открывается во встроенном браузере.
+:::
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidAppear(AdaptyUIPaywallView view) {
+}
+```
+
+#### Пейвол исчез \{#paywall-disappeared\}
+
+Этот метод вызывается, когда экран пейвола закрывается.
+
+:::note
+На iOS также вызывается, когда [веб-пейвол](web-paywall#step-2a-add-a-web-purchase-button), открытый из пейвола во встроенном браузере, исчезает с экрана.
+:::
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidDisappear(AdaptyUIPaywallView view) {
+}
+```
+
+#### Выбор продукта \{#product-selection\}
+
+Если продукт выбран для покупки (пользователем или системой), будет вызван этот метод:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidSelectProduct(AdaptyUIPaywallView view, String productId) {
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+#### Покупка начата \{#started-purchase\}
+
+Если пользователь инициирует процесс покупки, будет вызван этот метод:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) {
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Покупка завершена \{#finished-purchase\}
+
+Этот метод вызывается, когда покупка успешно завершена, пользователь отменил покупку или покупка находится в ожидании:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidFinishPurchase(AdaptyUIPaywallView view, 
+                                  AdaptyPaywallProduct product, 
+                                  AdaptyPurchaseResult purchaseResult) {
+    switch (purchaseResult) {
+      case AdaptyPurchaseResultSuccess(profile: final profile):
+        // successful purchase
+        break;
+      case AdaptyPurchaseResultPending():
+        // purchase is pending
+        break;
+      case AdaptyPurchaseResultUserCancelled():
+        // user cancelled the purchase
+        break;
+      default:
+        break;
+    }
+}
+```
+
+<Details>
+<summary>Примеры событий (нажмите, чтобы развернуть)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "AdaptyPurchaseResultSuccess",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "AdaptyPurchaseResultPending"
+  }
+}
+
+// User cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "AdaptyPurchaseResultUserCancelled"
+  }
+}
+```
+</Details>
+
+В этом случае рекомендуем закрыть экран. Подробнее о закрытии экрана пейвола см. в разделе [Реакция на действия с кнопками](flutter-handle-paywall-actions).
+
+#### Навигация по веб-оплате завершена \{#finished-web-payment-navigation\}
+
+Этот метод вызывается после попытки открыть [веб-пейвол](web-paywall) для конкретного продукта. Это включает как успешные, так и неудачные попытки навигации:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view, 
+                                               AdaptyPaywallProduct? product, 
+                                               AdaptyError? error) {
+}
+```
+
+**Параметры:**
+
+| Параметр    | Описание                                                                                                      |
+|:------------|:--------------------------------------------------------------------------------------------------------------|
+| **product** | `AdaptyPaywallProduct`, для которого был открыт веб-пейвол. Может быть `null`.                                |
+| **error**   | Объект `AdaptyError`, если навигация по веб-пейволу не удалась; `null`, если навигация прошла успешно.        |
+
+<Details>
+<summary>Примеры событий (нажмите, чтобы развернуть)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_navigation_failed",
+    "message": "Failed to open web paywall",
+    "details": {
+      "underlyingError": "Browser unavailable"
+    }
+  }
+}
+```
+</Details>
+
+#### Ошибка покупки \{#failed-purchase\}
+
+Этот метод вызывается, когда покупка завершается неудачей (например, из-за проблем с оплатой или сетевых ошибок). Он **не** срабатывает при отменах покупки пользователем или ожидающих транзакциях — они обрабатываются в `paywallViewDidFinishPurchase`:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidFailPurchase(AdaptyUIPaywallView view, 
+                                AdaptyPaywallProduct product, 
+                                AdaptyError error) {
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+#### Восстановление начато \{#started-restore\}
+
+Если пользователь инициирует процесс восстановления покупок, будет вызван этот метод:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidStartRestore(AdaptyUIPaywallView view) {
+}
+```
+
+#### Восстановление выполнено успешно \{#successful-restore\}
+
+Если восстановление покупки прошло успешно, будет вызван этот метод:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Рекомендуем закрывать экран, если у пользователя есть требуемый `accessLevel`. Как его проверить — см. в разделе [Статус подписки](flutter-listen-subscription-changes), как закрыть экран пейвола — в разделе [Реакция на действия с кнопками](flutter-handle-paywall-actions).
+
+#### Ошибка восстановления \{#failed-restore\}
+
+Если восстановление покупки завершилось неудачей, будет вызван этот метод:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+### Загрузка данных и рендеринг \{#data-fetching-and-rendering\}
+
+#### Ошибки загрузки продуктов \{#product-loading-errors\}
+
+Если вы не передаёте массив продуктов при инициализации, AdaptyUI самостоятельно получит необходимые объекты с сервера. Если эта операция завершится неудачей, AdaptyUI сообщит об ошибке, вызвав этот метод:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) {
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+#### Ошибки рендеринга \{#rendering-errors\}
+
+Если во время рендеринга интерфейса возникает ошибка, она будет сообщена через этот метод. По умолчанию (начиная с v3.15.2) пейвол автоматически закрывается при ошибке рендеринга, однако при необходимости это поведение можно переопределить.
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
+  // Default behavior: view.dismiss()
+  // Override with custom logic if needed, for example:
+  // - Log the error
+  // - Show an error message to the user
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+В нормальной ситуации такие ошибки не должны возникать, поэтому если вы с ними столкнулись — пожалуйста, сообщите нам.

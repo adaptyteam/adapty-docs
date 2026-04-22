@@ -1,0 +1,51 @@
+---
+title: "Гайд по миграции на Android Adapty SDK 3.10.0"
+description: ""
+metadataTitle: ""
+---
+
+Adapty SDK 3.10.0 — это мажорный релиз, который принёс ряд улучшений, однако может потребовать нескольких шагов миграции с вашей стороны:
+
+1. `AdaptyUiPersonalizedOfferResolver` был удалён. Если вы его используете, передайте его в коллбэке `onAwaitingPurchaseParams`.
+2. Обновите сигнатуру метода `onAwaitingSubscriptionUpdateParams` для пейволов Paywall Builder.
+
+## Обновление коллбэка параметров покупки \{#update-purchase-parameters-callback\}
+
+Метод `onAwaitingSubscriptionUpdateParams` был переименован в `onAwaitingPurchaseParams` и теперь использует `AdaptyPurchaseParameters` вместо `AdaptySubscriptionUpdateParameters`. Это позволяет указывать параметры замены подписки (crossgrade) и отмечать, является ли цена персонализированной ([подробнее](https://developer.android.com/google/play/billing/integrate#personalized-price)), а также задавать другие параметры покупки.
+
+```diff showLineNumbers
+- override fun onAwaitingSubscriptionUpdateParams(
+-     product: AdaptyPaywallProduct,
+-     context: Context,
+-     onSubscriptionUpdateParamsReceived: SubscriptionUpdateParamsCallback,
+- ) {
+-     onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
+- }
+
++ override fun onAwaitingPurchaseParams(
++     product: AdaptyPaywallProduct,
++     context: Context,
++     onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
++ ): AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked {
++     onPurchaseParamsReceived(
++         AdaptyPurchaseParameters.Builder()
++             .withSubscriptionUpdateParams(AdaptySubscriptionUpdateParameters(...)) 
++             .withOfferPersonalized(true) 
++             .build()
++     )
++     return AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked
++ }
+```
+
+Если дополнительные параметры не нужны, можно воспользоваться упрощённым вариантом:
+
+```kotlin showLineNumbers
++ override fun onAwaitingPurchaseParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
+): AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked {
+    onPurchaseParamsReceived(AdaptyPurchaseParameters.Empty)
+    return AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked
+}
+```

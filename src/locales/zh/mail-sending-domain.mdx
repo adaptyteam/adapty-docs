@@ -1,0 +1,125 @@
+---
+title: "为 Adapty Mail 配置发件域名"
+description: "添加 DNS 记录、验证您的域名，并了解预热机制，让 Adapty Mail 代您发送邮件。"
+metadataTitle: "发件域名配置 | Adapty Mail | Adapty 文档"
+keywords: ['adapty mail', '发件域名', 'DNS', 'DKIM', 'SPF', 'DMARC', '送达率', '预热']
+---
+Adapty Mail 使用您自己的域名发送活动邮件，而非共享地址，因此发件人声誉始终由您掌控。只需配置一次，之后每次活动都会使用同一个已验证的域名。如需了解最简步骤，请参阅[开始使用 Adapty Mail](mail-get-started#3-set-up-your-sending-domain) 中的域名设置部分。本文将详细介绍完整的配置流程、验证机制以及自动预热行为。
+## 前提条件 \{#requirements\}
+
+- **顶级域名**：请提交根域名（例如 `yourapp.com`），而非子域名。输入 `app.yourapp.com` 等形式会在验证时被拒绝。
+- **有效的 NS 记录**：域名必须能正常解析。Adapty Mail 在设置过程中会执行 DNS 查询，无效 NS 记录的域名将被拒绝。
+- **每个 Adapty 项目只能绑定一个域名**：域名不能在多个项目间共享。如果该域名已被任何项目注册（无论是您自己的还是他人的），设置将会失败。
+## 设置您的发送域名 \{#set-up-your-sending-domain\}
+
+设置向导共有三个步骤：输入域名、确认生成的子域名、添加 DNS 记录。这三个步骤均在 **Settings → Email Domains** 中完成。
+
+1. **输入您的域名。** 在 **Domain** 字段中输入您的顶级域名，然后点击 **Preview**。Adapty Mail 会验证格式（ASCII、两段标签、不能以连字符开头或结尾、顶级域名至少 2 个字符），并检查 DNS 是否可正常解析。
+
+   <ZoomImage id="mail-email-domains.webp" width="500px" />
+2. **确认子域名。** Adapty Mail 会生成两个带有固定前缀的发送子域名——`mail.yourapp.com` 和 `email.yourapp.com`——每个都有独立的 SES 身份。同时还会在每个子域名下创建一个 Mail-From 子域名（`hello.mail.yourapp.com` 和 `hello.email.yourapp.com`）。确认无误后，点击 **Confirm**。
+
+   <ZoomImage id="confirm-subdomains.webp" width="500px" />
+3. **添加 DNS 记录。** 最后一屏列出所有需要添加的记录——共 10 条，每个发送子域名各 5 条，另有一条可选的根域名 DMARC 记录。点击 **Download CSV** 导出完整列表，或逐条复制到您的域名注册商后台。记录添加完成后，点击 **Done**。
+
+   <ZoomImage id="email-domains.webp" width="500px" />
+
+<Details>
+<summary>DNS 记录参考</summary>
+
+为每个发送子域名（`mail.yourapp.com` 和 `email.yourapp.com`）添加以下记录：
+
+**DKIM — 3 条 CNAME 记录。** 加密签名，用于证明邮件在传输过程中未被篡改。
+| 字段 | 格式 |
+| ----- | ----------------------------------- |
+| 类型 | CNAME |
+| 名称 | `{token}._domainkey.{subdomain}` |
+| 值 | `{token}.dkim.amazonses.com` |
+
+**Mail-From — 1 条 MX 记录。** 用于处理退信。
+| 字段 | 格式 |
+| -------- | -------------------------------------------------------- |
+| Type     | MX                                                       |
+| Name     | `hello.{subdomain}`（例如 `hello.mail.yourapp.com`） |
+| Priority | `10`                                                     |
+| Value    | `feedback-smtp.{region}.amazonses.com`                   |
+
+**SPF — 1 条 TXT 记录。** 授权 Adapty 代表您发送邮件。
+| 字段 | 格式                                   |
+| ---- | -------------------------------------- |
+| Type | TXT                                    |
+| Name | `hello.{subdomain}`                    |
+| Value | `"v=spf1 include:amazonses.com ~all"` |
+
+在根域名上，添加可选的 DMARC 记录：
+
+| 字段 | 格式                  |
+| ---- | --------------------- |
+| Type | TXT                   |
+| Name | `_dmarc.{domain}`     |
+| Value | `v=DMARC1; p=reject` |
+令牌、区域及其他所有值均在设置时由 AWS SES 提供。请始终从 Adapty Mail 的 DNS 记录页面复制这些内容，而非参考本文档。
+
+</Details>
+## 验证机制说明 \{#how-verification-works\}
+
+DNS 记录配置完成后，Adapty Mail 会自动轮询 DNS，你也可以手动触发检查。
+- **自动轮询**：提交后 5 分钟开始轮询，之后每轮间隔翻倍——10 分钟、20 分钟、40 分钟——最长不超过 60 分钟。轮询持续进行，直到验证记录被找到或 7 天窗口关闭。
+- **手动检查**：点击 **Check Verification** 可立即触发一次检查。两次手动检查之间有 60 秒冷却时间——触发过快会返回 *"Verification check is on cooldown."*
+- **状态说明**：每个子域名的 DKIM 和 Mail-From 状态独立追踪，分别显示为 **Pending**、**Success** 或 **Failed**。只有全部四项状态均为 **Success**，该域名才视为完全验证通过。
+- **7 天截止期限**：若 7 天内未完成验证，身份将被标记为 **Failed**。您的 DNS 记录仍保留在域名注册商处——在 **Settings → Email Domains** 中重新输入域名即可开启新的验证窗口。
+- **验证通过后**：若您后续删除或修改 DNS 记录，AWS SES 最终会降级该身份验证。请在计划发送邮件期间保持 DNS 记录不变。
+- **DNS 传播**：通常只需几分钟，极少数情况下可能长达 48 小时。
+## 域名预热 \{#domain-warm-up\}
+
+新域名在 Gmail、Yahoo 等邮件服务商眼中没有任何信誉记录，因此从全新域名大量发送邮件很容易被归入垃圾邮件。Adapty Mail 会自动处理预热流程，通过 14 个阶段逐步提升每日发送上限，无需任何手动配置。
+### 等级机制说明 \{#how-tiers-work\}
+
+您的域名从 **Tier 1**（每天 200 封）起步，当送达率指标保持健康时会自动晋级。如果退信率上升或投诉率攀升，晋级将暂停，并可能在声誉恢复之前回退。
+| 档位 | 每日限额 |
+| ---- | ----------- |
+| 1    | 200         |
+| 2    | 400         |
+| 3    | 800         |
+| 4    | 1,500       |
+| 5    | 2,500       |
+| 6    | 4,000       |
+| 7    | 6,000       |
+| 8    | 8,000       |
+| 9    | 10,000      |
+| 10   | 13,000      |
+| 11   | 16,000      |
+| 12   | 20,000      |
+| 13   | 25,000      |
+| 14   | 30,000      |
+
+您当前的档位和每日限额显示在 **Settings → Email Domains** 中。
+### 目标受众规模对发送的影响 \{#impact-on-launch-by-audience-size\}
+
+| 目标受众规模 | 发送效果 |
+| ------------ | -------- |
+| 200 人以下 | 第一天即可触达全部受众 |
+| 200–2,000 人 | 分多天逐步发送 |
+| 2,000 人以上 | 分 1–2 周逐步发送 |
+
+:::tip
+DNS 验证完成后请立即启动首个活动。越早开始发送，域名越快晋升至更高层级，从而达到更高的每日发送上限。
+:::
+## 限制 \{#limitations\}
+- **每个项目只能有一个域名**：每个 Adapty 项目只能配置一个发送域名。如需切换域名，请联系支持团队——看板中没有"更改域名"的操作入口。
+- **跨项目唯一性**：已注册到其他项目的域名无法重复使用。如果看到 *"Domain is already registered to another project"*，请换一个域名或联系支持团队。
+- **已验证的域名无法删除**：一旦某个子域名状态变为 **Success**，看板将禁止删除操作。待验证的域名可以删除，但仍需手动前往域名注册商处删除对应的 DNS 记录。
+- **子域名前缀固定**：`mail.`、`email.` 以及 `hello.` 这个 Mail-From 前缀均为硬编码，无法自定义。如果这些子域名在你的 DNS 中已被占用，配置时会产生冲突。
+- **仅支持顶级域名**：不接受子域名输入、末尾带点的格式以及单标签主机名。
+- **不支持国际化域名**：不支持 Punycode 和 IDN，域名必须为纯 ASCII 字符。
+## 故障排除 \{#troubleshooting\}
+| 问题 | 解决方案 |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| "Enter a valid domain (e.g. example.com)" | 检查输入内容：仅限顶级域名、仅限 ASCII 字符、顶级域名至少 2 个字符、首尾不得有连字符。 |
+| "Domain does not have valid DNS records" | 顶级域名本身必须能正常解析。请在重试前确认 NS 记录已生效。 |
+| "Domain is already registered to another project" | 请选择其他域名，或者如果您认为该注册有误，请联系技术支持。 |
+| "Verification check is on cooldown" | 手动检查之间请等待 60 秒。后台自动轮询将持续进行。 |
+| 验证卡在待处理状态 | 检查 DNS 记录是否完全匹配——末尾不得有点号，CNAME 目标需正确。DNS 传播最长可能需要 48 小时。 |
+| "Cannot delete domain: one or more identities have been successfully verified" | 已验证的域名无法从看板中删除。请联系技术支持寻求帮助。 |
+| 邮件进入垃圾箱 | 确认您的 DMARC 记录已发布。新域名需要预热时间——请参阅[域名预热](#domain-warm-up)。 |
+| 退信率过高 | 确认您的目标受众列表中包含有效且已授权的地址。退信过多会减缓甚至暂停等级晋升进程。 |

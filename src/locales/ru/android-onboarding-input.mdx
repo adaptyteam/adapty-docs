@@ -1,0 +1,205 @@
+---
+title: "Обработка данных из онбординга в Android SDK"
+description: "Сохраняйте и используйте данные из онбординга в Android-приложении с помощью Adapty SDK."
+metadataTitle: "Онбординги | Android SDK | Документация Adapty"
+---
+
+Когда пользователь отвечает на вопрос в квизе или вводит данные в поле ввода, вызывается метод `onStateUpdatedAction`. В коде вы можете сохранить или обработать тип поля.
+
+Например:
+
+```kotlin
+override fun onStateUpdatedAction(action: AdaptyOnboardingStateUpdatedAction, context: Context) {
+    // Store user preferences or responses
+    when (val params = action.params) {
+        is AdaptyOnboardingStateUpdatedParams.Select -> {
+            // Handle single selection
+        }
+        is AdaptyOnboardingStateUpdatedParams.MultiSelect -> {
+            // Handle multiple selections
+        }
+        is AdaptyOnboardingStateUpdatedParams.Input -> {
+            // Handle text input
+        }
+        is AdaptyOnboardingStateUpdatedParams.DatePicker -> {
+            // Handle date selection
+        }
+    }
+}
+```
+
+Формат действия описан [здесь](https://android.adapty.io/adapty-ui/com.adapty.ui.onboardings.actions/-adapty-onboarding-state-updated-action/).
+
+<Details>
+<summary>Примеры сохранённых данных (формат может отличаться в вашей реализации)</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## Примеры использования \{#use-cases\}
+
+### Обогащение профилей пользователей данными \{#enrich-user-profiles-with-data\}
+
+Если вы хотите сразу привязать введённые данные к профилю пользователя и не спрашивать одно и то же дважды, [обновите профиль пользователя](android-setting-user-attributes) с введёнными данными при обработке действия.
+
+Например, вы просите пользователей ввести имя в текстовое поле с ID `name` и хотите сохранить его как имя пользователя. Также вы просите ввести email в поле `email`. В коде приложения это может выглядеть так:
+
+```kotlin showLineNumbers
+override fun onStateUpdatedAction(action: AdaptyOnboardingStateUpdatedAction, context: Context) {
+    // Store user preferences or responses
+    when (val params = action.params) {
+        is AdaptyOnboardingStateUpdatedParams.Input -> {
+            // Handle text input
+            val builder = AdaptyProfileParameters.Builder()
+            
+            // Map elementId to appropriate profile field
+            when (action.elementId) {
+                "name" -> {
+                    when (val inputParams = params.params) {
+                        is AdaptyOnboardingInputParams.Text -> {
+                            builder.withFirstName(inputParams.value)
+                        }
+                    }
+                }
+                "email" -> {
+                    when (val inputParams = params.params) {
+                        is AdaptyOnboardingInputParams.Email -> {
+                            builder.withEmail(inputParams.value)
+                        }
+                    }
+                }
+            }
+            
+            Adapty.updateProfile(builder.build()) { error ->
+                if (error != null) {
+                    // handle the error
+                }
+            }
+        }
+    }
+}
+```
+
+### Кастомизация пейволов на основе ответов \{#customize-paywalls-based-on-answers\}
+
+С помощью квизов в онбординге вы также можете кастомизировать пейволы, которые показываете пользователям после его завершения.
+
+Например, можно спросить пользователей об их опыте в спорте и показывать разные призывы к действию и продукты разным группам пользователей.
+
+1. [Добавьте квиз](onboarding-quizzes) в конструкторе онбордингов и назначьте осмысленные ID вариантам ответов.
+
+<ZoomImage id="experience.webp" />
+
+2. Обрабатывайте ответы квиза по их ID и [задавайте пользовательские атрибуты](android-setting-user-attributes) для пользователей.
+
+```kotlin showLineNumbers
+override fun onStateUpdatedAction(action: AdaptyOnboardingStateUpdatedAction, context: Context) {
+    // Handle quiz responses and set custom attributes
+    when (val params = action.params) {
+        is AdaptyOnboardingStateUpdatedParams.Select -> {
+            // Handle quiz selection
+            val builder = AdaptyProfileParameters.Builder()
+            
+            // Map quiz responses to custom attributes
+            when (action.elementId) {
+                "experience" -> {
+                    // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+                    builder.withCustomAttribute("experience", params.params.value)
+                }
+            }
+            
+            Adapty.updateProfile(builder.build()) { error ->
+                if (error != null) {
+                    // handle the error
+                }
+            }
+        }
+    }
+}
+```
+
+3. [Создайте сегменты](segments) для каждого значения пользовательского атрибута.
+4. Создайте [плейсмент](placements) и добавьте [аудитории](audience) для каждого созданного сегмента.
+5. [Отобразите пейвол](android-paywalls) для плейсмента в коде приложения. Если в онбординге есть кнопка, открывающая пейвол, реализуйте код пейвола как [реакцию на действие этой кнопки](android-handle-onboarding-events#opening-a-paywall).

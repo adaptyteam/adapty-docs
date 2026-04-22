@@ -1,0 +1,61 @@
+---
+title: "Adapty Mail 中的退订与抑制"
+description: "Adapty Mail 停止向用户发送邮件的方式——通过退订、SES 退信、投诉以及停止条件机制。"
+metadataTitle: "退订与抑制 | Adapty Mail | Adapty 文档"
+keywords: ['adapty mail', '抑制', '退信', '投诉', '停止条件']
+---
+
+Adapty Mail 在以下两种不同情况下会停止向用户发送邮件：
+- **抑制**：用户将被排除在该项目所有后续推送之外（包括取消订阅、退信、投诉、拒绝或限流）。
+- **停止条件**：用户当前的序列因已转化而取消。用户不会被抑制，仍可参与其他营销活动。
+
+两种机制均按项目生效。在一个 Adapty 项目中设置的抑制不会影响其他项目。
+## 取消订阅 \{#unsubscribe\}
+
+Adapty Mail 发出的每封邮件页脚都包含一个取消订阅链接。
+
+1. 用户点击该链接，Adapty Mail 会打开一个确认页面。
+2. 用户确认后，后端将该用户画像标记为 `suppression_reason = 'unsubscribe'`，取消剩余的邮件序列，并将该用户画像从项目后续的邮件发送中排除。
+
+取消订阅 URL 中的令牌包含 `profile_id` 和 `scheduled_email_id`，因此无需登录即可完成操作。
+:::note
+Adapty Mail 在发送邮件时，会同时附带 `List-Unsubscribe: <URL>, <mailto:>` 请求头以及 `List-Unsubscribe-Post: List-Unsubscribe=One-Click`。Gmail 和 Yahoo 要求批量发件人遵循此规范（RFC 8058）。支持该请求头的邮件客户端会在收件箱中直接显示一键退订按钮，无需跳转确认页面。
+:::
+## 自动抑制 \{#automatic-suppression\}
+
+Adapty Mail 通过 SNS 监听 AWS SES 的投递事件，并在发生以下任意情况时立即抑制该用户：
+| 事件 | 原因代码 | 含义 |
+| --------- | ----------- | ------------------------------------------------------------------------------- |
+| Bounce | `bounce` | 电子邮件地址无效、邮箱已满或域名不存在。 |
+| Complaint | `complaint` | 用户将该邮件标记为垃圾邮件。 |
+| Reject | `reject` | SES 在发送前拒绝了该邮件。 |
+| Throttle | `throttle` | 发送速率超出了域名安全限制。 |
+对于每个事件，结果都相同：用户被加入抑制名单，剩余序列被取消，并在该项目中排除在未来发送之外。
+
+:::important
+Adapty Mail **不区分**硬退信和软退信。任何退信——包括邮箱已满等临时情况——都会立即抑制该用户，不存在重试窗口。
+:::
+## 停止条件 \{#stop-condition\}
+
+当用户在序列进行中完成转化时，Adapty Mail 会以 `stop_condition` 为原因取消其剩余的待发邮件。转化是指用户的订阅状态变为 **Subscribed**，或一次性购买状态变为 **Purchased**。
+
+停止条件与抑制不同：
+
+- **抑制**：将用户从该项目的所有后续发送中排除。
+- **停止条件**：仅取消当前序列。用户仍可参与其他营销活动——例如，面向活跃订阅者的续订流程或赢回优惠流程。
+停止条件取消与抑制一同显示在营销活动分析中。
+## 管理抑制名单 \{#managing-suppression\}
+
+Adapty Mail 目前没有用于查看或移除被抑制用户的看板界面。如需解除对某个用户画像的抑制——例如某人误将测试邮件标记为垃圾邮件——请联系 Adapty 客服支持。
+## Adapty Mail 负责的合规事项 \{#what-adapty-mail-handles-for-compliance\}
+
+Adapty Mail 内置以下合规功能：
+
+- **退订链接**：每封邮件页脚均包含退订链接，用户确认后立即生效。
+- **List-Unsubscribe 标头**：每封邮件均附带该标头，支持在收件箱一键退订（RFC 8058）。
+- **自动屏蔽**：在 SES 退回、投诉、拒绝和限流事件触发时自动生效。
+
+以下部分由您负责：
+- **实际邮寄地址**：CAN-SPAM 法规要求在邮件页脚注明。Adapty Mail 不会自动插入，请在设计活动时手动添加。
+- **明确的订阅同意**：在将用户邮箱传入 Adapty 之前，请先收集用户的明确授权。详见[收集用户邮箱](mail-collect-emails)。
+- **GDPR 数据删除请求**：Adapty Mail 未提供"删除我的数据"接口。如有用户行使数据删除权，请联系 Adapty 支持团队协助处理。

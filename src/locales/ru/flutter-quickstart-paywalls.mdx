@@ -1,0 +1,257 @@
+---
+title: "Включение покупок с помощью пейволов в Flutter SDK"
+description: "Быстрый старт по настройке Adapty для управления встроенными подписками."
+metadataTitle: "Быстрый старт Adapty | Документация Adapty"
+keywords: [ 'paywall', 'paywall builder', 'getPaywall']
+rank: 70
+displayed_sidebar: sdkflutter
+---
+
+import PaywallsIntro from '@site/src/locales/ru/reusable/PaywallsIntro.md';
+
+Чтобы включить встроенные покупки, нужно понять три ключевых понятия:
+
+- [**Продукты**](product) — всё, что пользователи могут купить (подписки, расходуемые покупки, пожизненный доступ).
+- [**Пейволы**](paywalls) — конфигурации, определяющие, какие продукты предлагать. В Adapty пейволы — единственный способ получить продукты, но такой подход позволяет менять предложения, цены и наборы продуктов без изменений в коде приложения.
+- [**Плейсменты**](placements) — где и когда вы показываете пейволы в приложении (например, `main`, `onboarding`, `settings`). Вы настраиваете пейволы для плейсментов в дашборде, а затем запрашиваете их по ID плейсмента в коде. Это упрощает запуск A/B-тестов и показ разных пейволов разным пользователям.
+
+Adapty предлагает три способа включить покупки в приложении. Выберите подходящий в зависимости от требований вашего приложения:
+
+| Реализация             | Сложность  | Когда использовать                                                                                                                                                                                                                         |
+|------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty Paywall Builder | ✅ Просто  | Вы [создаёте готовый пейвол в no-code конструкторе](quickstart-paywalls). Adapty автоматически отрисовывает его и берёт на себя весь процесс покупки, валидацию чеков и управление подписками. |
+| Пейволы, созданные вручную | 🟡 Средне | Вы реализуете UI пейвола в коде приложения, но всё равно получаете объект пейвола из Adapty для гибкости в управлении продуктами. См. [гайд](flutter-quickstart-manual). |
+| Observer mode          | 🔴 Сложно  | У вас уже есть собственная инфраструктура обработки покупок, и вы хотите продолжать её использовать. Учтите, что observer mode имеет ограничения в Adapty. См. [статью](observer-vs-full-mode). |
+
+:::important
+**Шаги ниже показывают, как реализовать пейвол, созданный в Paywall Builder.**
+
+Если вы не хотите использовать Paywall Builder, см. [гайд по обработке покупок в пейволах, созданных вручную](flutter-making-purchases).
+:::
+
+Чтобы отобразить пейвол, созданный в Paywall Builder, в коде приложения нужно всего лишь:
+
+1. **Получить пейвол**: запросить пейвол из Adapty.
+2. **Показать пейвол — Adapty сам обработает покупки**: отобразить контейнер пейвола в приложении.
+3. **Обработать действия кнопок**: связать действия пользователя на пейволе с реакцией приложения на них — например, открыть ссылку или закрыть пейвол при нажатии кнопок.
+
+## Перед началом работы \{#before-you-start\}
+
+Выполните следующие шаги:
+
+1. Подключите приложение к [App Store](initial_ios) и/или [Google Play](initial-android) в дашборде Adapty.
+2. [Создайте продукты](create-product) в Adapty.
+3. [Создайте пейвол и добавьте в него продукты](create-paywall).
+4. [Создайте плейсмент и добавьте пейвол в него](create-placement).
+5. [Установите и активируйте Adapty SDK](sdk-installation-flutter) в коде приложения.
+
+:::tip
+Самый быстрый способ выполнить эти шаги — следовать [быстрому старту](quickstart) или создать пейволы и плейсменты с помощью [Developer CLI](developer-cli-quickstart).
+:::
+
+## 1. Получите пейвол \{#1-get-the-paywall\}
+
+Ваши пейволы связаны с плейсментами, настроенными в дашборде. Плейсменты позволяют показывать разные пейволы разным аудиториям или запускать [A/B-тесты](ab-tests).
+
+Чтобы получить пейвол, созданный в Paywall Builder, нужно:
+
+1. Получить объект `paywall` по ID [плейсмента](placements) с помощью метода `getPaywall` и проверить, является ли он пейволом, созданным в конструкторе, с помощью свойства `hasViewConfiguration`.
+
+2. Создать представление пейвола с помощью метода `createPaywallView`. Представление содержит элементы UI и стили, необходимые для отображения пейвола.
+
+:::important
+Чтобы получить конфигурацию представления, необходимо включить переключатель **Show on device** в Paywall Builder. В противном случае вы получите пустую конфигурацию представления, и пейвол не будет отображён.
+:::
+
+```dart showLineNumbers
+
+try {
+  final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en");
+  // the requested paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+
+try {
+  final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+      );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+## 2. Отобразите пейвол \{#2-display-the-paywall\}
+
+Теперь, когда у вас есть конфигурация пейвола, достаточно добавить несколько строк для его отображения.
+
+Чтобы отобразить пейвол, вызовите метод `view.present()` на объекте `view`, созданном методом `createPaywallView`. Каждый объект `view` можно использовать только один раз. Если нужно снова показать пейвол, вызовите `createPaywallView` ещё раз, чтобы создать новый экземпляр `view`.
+
+```dart showLineNumbers title="Flutter"
+try {
+  await view.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+:::tip
+Подробнее о том, как отобразить пейвол, см. наш [гайд](flutter-present-paywalls).
+:::
+
+## 3. Обработайте действия кнопок \{#3-handle-button-actions\}
+
+Когда пользователи нажимают кнопки на пейволе, Flutter SDK автоматически обрабатывает покупки и восстановление. Однако у других кнопок есть пользовательские или предопределённые ID, и действия по ним нужно обрабатывать в коде.
+
+Чтобы контролировать или отслеживать процессы на экране пейвола, реализуйте методы `AdaptyUIPaywallsEventsObserver` и установите наблюдатель перед показом любого экрана. Если пользователь выполнил какое-либо действие, будет вызван `paywallViewDidPerformAction`, и приложение должно отреагировать в зависимости от ID действия.
+
+Например, на вашем пейволе, скорее всего, есть кнопка закрытия и ссылки для открытия (например, условия использования и политика конфиденциальности). Поэтому нужно обрабатывать действия с ID `Close` и `OpenUrl`.
+
+:::tip
+Читайте наши гайды по обработке [действий](flutter-handle-paywall-actions) и [событий](flutter-handling-events) кнопок.
+:::
+
+```dart showLineNumbers title="Flutter"
+class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywallsEventsObserver {
+  @override
+  void initState() {
+    super.initState();
+    // Register this class as the paywalls event observer
+    AdaptyUI().setPaywallsEventsObserver(this);
+  }
+
+  // This method is called when user performs an action on the paywall UI
+  @override
+  void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL using url_launcher package
+        _launchUrl(url);
+        break;
+    }
+  }
+
+  // Helper method to launch URLs
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Handle case where URL cannot be launched
+        print('Could not launch $url');
+      }
+    } catch (e) {
+      // Handle any errors
+      print('Error launching URL: $e');
+    }
+  }
+}
+
+```
+
+## Следующие шаги \{#next-steps\}
+
+<SupportForum />
+
+Ваш пейвол готов к отображению в приложении. Протестируйте покупки в [песочнице App Store](test-purchases-in-sandbox) или [Google Play Store](testing-on-android), чтобы убедиться, что тестовая покупка через пейвол проходит успешно.
+
+Теперь нужно [проверить уровень доступа пользователей](flutter-check-subscription-status), чтобы показывать пейвол или открывать доступ к платным функциям только нужным пользователям.
+
+## Полный пример \{#full-example\}
+
+Вот как все эти шаги можно объединить в приложении.
+
+```dart
+
+void main() async {
+  runApp(MaterialApp(home: PaywallScreen()));
+}
+
+class PaywallScreen extends StatefulWidget {
+  @override
+  State<PaywallScreen> createState() => _PaywallScreenState();
+}
+
+class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywallsEventsObserver {
+  @override
+  void initState() {
+    super.initState();
+    // Register this class as the paywalls event observer
+    AdaptyUI().setPaywallsEventsObserver(this);
+    _showPaywallIfNeeded();
+  }
+
+  Future<void> _showPaywallIfNeeded() async {
+    try {
+
+      final paywall = await Adapty().getPaywall(
+        placementId: 'YOUR_PLACEMENT_ID',
+      );
+
+      if (!paywall.hasViewConfiguration) return;
+
+      final view = await AdaptyUI().createPaywallView(paywall: paywall);
+
+      await view.present();
+    } catch (_) {
+      // Handle any errors (network, SDK issues, etc.)
+    }
+  }
+
+  // This method is called when user performs an action on the paywall UI
+  @override
+  void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL using url_launcher package
+        _launchUrl(url);
+        break;
+    }
+  }
+
+  // Helper method to launch URLs
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Handle case where URL cannot be launched
+        print('Could not launch $url');
+      }
+    } catch (e) {
+      // Handle any errors
+      print('Error launching URL: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Adapty Paywall Example')),
+      body: Center(
+        // Add a button to re-trigger the paywall for testing purposes
+        child: ElevatedButton(
+          onPressed: _showPaywallIfNeeded,
+          child: Text('Show Paywall'),
+        ),
+      ),
+    );
+  }
+}
+
+```

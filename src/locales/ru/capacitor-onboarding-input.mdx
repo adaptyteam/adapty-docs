@@ -1,0 +1,191 @@
+---
+title: "Обработка данных из онбордингов в Capacitor SDK"
+description: "Сохраняйте и используйте данные из онбордингов в приложении на Capacitor с помощью Adapty SDK."
+metadataTitle: "Онбординги | Capacitor SDK | Документация Adapty"
+---
+
+Когда пользователь отвечает на вопрос викторины или вводит данные в поле ввода, вызывается метод `onStateUpdatedAction`. Вы можете сохранить или обработать тип поля в своём коде.
+
+Например:
+
+```typescript
+view.setEventHandlers({
+  onStateUpdated(action, meta) {
+    // Process data
+  },
+});
+```
+
+Формат action описан [здесь](https://capacitor.adapty.io/types/onboardingstateupdatedaction).
+
+<Details>
+<summary>Примеры сохранённых данных (формат может отличаться в вашей реализации)</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## Сценарии использования \{#use-cases\}
+
+### Обогащение профилей пользователей данными \{#enrich-user-profiles-with-data\}
+
+Если вы хотите сразу связать введённые данные с профилем пользователя и не спрашивать одно и то же дважды, нужно [обновить профиль пользователя](capacitor-setting-user-attributes) с введёнными данными при обработке action.
+
+Например, вы просите пользователей ввести имя в текстовое поле с ID `name` и хотите записать это значение в поле имени профиля. Также вы просите ввести email в поле `email`. В коде приложения это может выглядеть так:
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onStateUpdated(action, meta) {
+    // Store user preferences or responses
+    if (action.elementType === 'input') {
+      const profileParams: any = {};
+      
+      // Map elementId to appropriate profile field
+      switch (action.elementId) {
+        case 'name':
+          if (action.value.type === 'text') {
+            profileParams.firstName = action.value.value;
+          }
+          break;
+        case 'email':
+          if (action.value.type === 'email') {
+            profileParams.email = action.value.value;
+          }
+          break;
+      }
+      
+      // Update profile if we have data to update
+      if (Object.keys(profileParams).length > 0) {
+        adapty.updateProfile({ params: profileParams }).catch((error) => {
+          // handle the error
+        });
+      }
+    }
+  },
+});
+```
+
+### Персонализация пейволов на основе ответов \{#customize-paywalls-based-on-answers\}
+
+С помощью викторин в онбордингах вы также можете персонализировать пейволы, которые показываете пользователям после завершения онбординга.
+
+Например, можно спросить пользователей об их опыте в спорте и показывать разные CTA и продукты разным группам.
+
+1. [Добавьте викторину](onboarding-quizzes) в конструкторе онбординга и назначьте осмысленные ID её вариантам ответов.
+
+<ZoomImage id="experience.webp" />
+
+2. Обрабатывайте ответы на викторину по их ID и [задавайте пользовательские атрибуты](capacitor-setting-user-attributes) для пользователей.
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onStateUpdated(action, meta) {
+    // Handle quiz responses and set custom attributes
+    if (action.elementType === 'select') {
+      const profileParams: any = {};
+      
+      // Map quiz responses to custom attributes
+      switch (action.elementId) {
+        case 'experience':
+          // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+          profileParams.codableCustomAttributes = {
+            experience: action.value.value
+          };
+          break;
+      }
+      
+      // Update profile if we have data to update
+      if (Object.keys(profileParams).length > 0) {
+        adapty.updateProfile({ params: profileParams }).catch((error) => {
+          // handle the error
+        });
+      }
+    }
+  },
+});
+```
+
+3. [Создайте сегменты](segments) для каждого значения пользовательского атрибута.
+4. Создайте [плейсмент](placements) и добавьте [аудитории](audience) для каждого созданного сегмента.
+5. [Отобразите пейвол](capacitor-paywalls) для плейсмента в коде приложения. Если в онбординге есть кнопка, открывающая пейвол, реализуйте код пейвола как [реакцию на действие этой кнопки](capacitor-handling-onboarding-events#opening-a-paywall).

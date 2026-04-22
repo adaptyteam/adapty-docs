@@ -1,0 +1,139 @@
+---
+title: "Отображение пейволов, созданных в новом Paywall Builder, в iOS SDK"
+description: "Узнайте, как отображать пейволы на iOS для повышения конверсии и дохода."
+metadataTitle: "Отображение пейволов на iOS | Документация Adapty"
+keywords: ['paywallController']
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md'; 
+
+Если вы настроили пейвол с помощью Paywall Builder, вам не нужно беспокоиться о его рендеринге в коде мобильного приложения для показа пользователю. Такой пейвол содержит как то, что должно отображаться, так и то, как именно это должно отображаться.
+
+:::warning
+
+Этот гайд предназначен для **[пейволов, созданных в новом Paywall Builder](adapty-paywall-builder)**. Процесс отображения пейволов различается в зависимости от версии Paywall Builder, Remote Config пейволов и [режима Observer](observer-vs-full-mode).
+
+- Для отображения **пейволов на основе Remote Config** см. [Рендеринг пейвола, созданного через Remote Config](present-remote-config-paywalls).
+- Для отображения **пейволов в режиме Observer** см. [iOS — Отображение пейволов Paywall Builder в режиме Observer](ios-present-paywall-builder-paywalls-in-observer-mode)
+
+:::
+
+Чтобы получить объект `AdaptyUI.PaywallConfiguration`, используемый ниже, см. [Получение пейволов Paywall Builder и их конфигурации](get-pb-paywalls).
+
+## Отображение пейволов в SwiftUI \{#present-paywalls-in-swiftui\}
+
+### Отображение как модального окна \{#present-as-a-modal-view\}
+
+Чтобы показать визуальный пейвол на экране устройства как модальное окно, используйте модификатор `.paywall` в SwiftUI:
+
+```swift showLineNumbers title="SwiftUI"
+@State var paywallPresented = false // ensure that you manage this variable state and set it to `true` at the moment you want to show the paywall
+
+var body: some View {
+  Text("Hello, AdaptyUI!")
+      .paywall(
+          isPresented: $paywallPresented,
+          paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+          didFinishPurchase: { product, profile in paywallPresented = false },
+          didFailPurchase: { product, error in /* handle the error */ },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false }
+      )
+}
+```
+
+Параметры:
+
+| Параметр                          | Обязателен | Описание                                                                                                                                                                                                                                                                                                                                     |
+|:----------------------------------|:-----------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented**                   | обязателен | Привязка, управляющая отображением экрана пейвола.                                                                                                                                                                                                                                                                                           |
+| **paywallConfiguration**          | обязателен | Объект `AdaptyUI.PaywallConfiguration`, содержащий визуальные детали пейвола. Используйте метод `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)`. Подробнее см. в разделе [Получение пейволов Paywall Builder и их конфигурации](get-pb-paywalls). |
+| **didFailPurchase**               | обязателен | Вызывается при ошибке `Adapty.makePurchase()`.                                                                                                                                                                                                                                                                                               |
+| **didFinishRestore**              | обязателен | Вызывается при успешном завершении `Adapty.restorePurchases()`.                                                                                                                                                                                                                                                                              |
+| **didFailRestore**                | обязателен | Вызывается при ошибке `Adapty.restorePurchases()`.                                                                                                                                                                                                                                                                                           |
+| **didFailRendering**              | обязателен | Вызывается при ошибке рендеринга интерфейса. В этом случае [обратитесь в поддержку Adapty](mailto:support@adapty.io).                                                                                                                                                                                                                        |
+| **fullScreen**                    | опционален | Определяет, отображается ли пейвол в полноэкранном режиме или как модальное окно. По умолчанию `true`.                                                                                                                                                                                                                                       |
+| **didAppear**                     | опционален | Вызывается, когда экран пейвола был показан.                                                                                                                                                                                                                                                                                                 |
+| **didDisappear**                  | опционален | Вызывается, когда экран пейвола был закрыт.                                                                                                                                                                                                                                                                                                  |
+| **didPerformAction**              | опционален | Вызывается при нажатии пользователем кнопки. У разных кнопок разные идентификаторы действий. Два идентификатора предопределены: `close` и `openURL`, остальные задаются в конструкторе.                                                                                                                                                       |
+| **didSelectProduct**              | опционален | Вызывается, когда продукт выбран для покупки (пользователем или системой).                                                                                                                                                                                                                                                                   |
+| **didStartPurchase**              | опционален | Вызывается, когда пользователь начинает процесс покупки.                                                                                                                                                                                                                                                                                     |
+| **didFinishPurchase**             | опционален | Вызывается при успешном завершении `Adapty.makePurchase()`.                                                                                                                                                                                                                                                                                  |
+| **didFinishWebPaymentNavigation** | опционален | Вызывается по завершении навигации веб-оплаты.                                                                                                                                                                                                                                                                                               |
+| **didStartRestore**               | опционален | Вызывается, когда пользователь запускает процесс восстановления покупок.                                                                                                                                                                                                                                                                     |
+| **didFailLoadingProducts**        | опционален | Вызывается при ошибках загрузки продуктов. Верните `true`, чтобы повторить загрузку.                                                                                                                                                                                                                                                        |
+| **didPartiallyLoadProducts**      | опционален | Вызывается при частичной загрузке продуктов.                                                                                                                                                                                                                                                                                                 |
+| **showAlertItem**                 | опционален | Привязка, управляющая отображением элементов оповещения поверх пейвола.                                                                                                                                                                                                                                                                      |
+| **showAlertBuilder**              | опционален | Функция для рендеринга представления оповещения.                                                                                                                                                                                                                                                                                             |
+| **placeholderBuilder**            | опционален | Функция для рендеринга представления-заглушки во время загрузки пейвола.                                                                                                                                                                                                                                                                     |
+
+Подробнее о параметрах см. в разделе [iOS — Обработка событий](ios-handling-events).
+
+### Отображение как немодального представления \{#present-as-a-non-modal-view\}
+
+Вы также можете отображать пейволы как назначения навигации или встроенные представления в навигационном потоке приложения. Используйте `AdaptyPaywallView` непосредственно в ваших SwiftUI-представлениях:
+
+```swift showLineNumbers title="SwiftUI"
+AdaptyPaywallView(
+    paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+    didFailPurchase: { product, error in
+        // Handle purchase failure
+    },
+    didFinishRestore: { profile in
+        // Handle successful restore
+    },
+    didFailRestore: { error in
+        // Handle restore failure
+    },
+    didFailRendering: { error in
+        // Handle rendering error
+    }
+)
+```
+
+## Отображение пейволов в UIKit \{#present-paywalls-in-uikit\}
+
+Чтобы показать визуальный пейвол на экране устройства, выполните следующие шаги:
+
+1. Инициализируйте визуальный пейвол с помощью метода `.paywallController(for:products:viewConfiguration:delegate:)`:
+
+     ```swift showLineNumbers title="Swift"
+     import Adapty
+     import AdaptyUI
+        
+     let visualPaywall = AdaptyUI.paywallController(
+         with: <paywall configuration object>,
+         delegate: <AdaptyPaywallControllerDelegate>
+     )
+     ```
+
+    Параметры запроса:
+
+   | Параметр                  | Обязателен | Описание |
+   | :------------------------ | :--------- | :------- |
+   | **paywall configuration** | обязателен | Объект `AdaptyUI.PaywallConfiguration`, содержащий визуальные детали пейвола. Используйте метод `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)`. Подробнее см. в разделе [Получение пейволов Paywall Builder и их конфигурации](get-pb-paywalls). |
+   | **delegate**              | обязателен | Объект `AdaptyPaywallControllerDelegate` для обработки событий пейвола. Подробнее см. в разделе [Обработка событий пейвола](ios-handling-events). |
+
+    Возвращает:
+
+    | Объект                      | Описание                                               |
+    | :-------------------------- | :----------------------------------------------------- |
+    | **AdaptyPaywallController** | Объект, представляющий запрошенный экран пейвола       |
+
+2. После успешного создания объекта отобразите его на экране устройства: 
+
+   ```swift showLineNumbers title="Swift"
+   present(visualPaywall, animated: true)
+   ```
+
+<SampleApp />

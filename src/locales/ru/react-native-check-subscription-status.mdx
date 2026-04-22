@@ -1,0 +1,94 @@
+---
+title: "Проверка статуса подписки в React Native SDK"
+description: "Узнайте, как проверить статус подписки в вашем React Native приложении с помощью Adapty."
+metadataTitle: "Проверка статуса подписки | Документация Adapty"
+displayed_sidebar: sdkreactnative
+keywords: ['getProfile', 'subscription status']
+rank: 90
+---
+
+Чтобы решить, может ли пользователь получить доступ к платному контенту или должен увидеть пейвол, нужно проверить его [уровень доступа](access-level) в профиле.
+
+В этой статье показано, как обращаться к состоянию профиля, чтобы понять, что показать пользователю — пейвол или платный контент.
+
+## Получение статуса подписки \{#get-subscription-status\}
+
+Когда вы решаете, показать пользователю пейвол или платный контент, вы проверяете его [уровень доступа](access-level) в профиле. Есть два варианта:
+
+- Вызовите `getProfile`, если нужны актуальные данные профиля прямо сейчас (например, при запуске приложения) или если хотите принудительно обновить их.
+- Настройте **автоматические обновления профиля**, чтобы хранить локальную копию, которая автоматически обновляется при изменении статуса подписки.
+
+### Получить профиль \{#get-profile\}
+
+Самый простой способ узнать статус подписки — использовать метод `getProfile` для обращения к профилю:
+
+```typescript showLineNumbers
+try {
+    const profile = await adapty.getProfile();
+} catch (error) {
+  // handle the error
+}
+```
+
+### Подписка на обновления подписки \{#listen-to-subscription-updates\}
+
+Чтобы автоматически получать обновления профиля в приложении:
+
+1. Используйте `adapty.addEventListener('onLatestProfileLoad')` для отслеживания изменений профиля — Adapty будет автоматически вызывать этот метод при каждом изменении статуса подписки пользователя.
+2. Сохраняйте обновлённые данные профиля при вызове этого метода, чтобы использовать их в любом месте приложения без дополнительных сетевых запросов.
+
+```javascript
+class SubscriptionManager {
+    private currentProfile: any = null;
+    
+    constructor() {
+        // Listen for profile updates
+        adapty.addEventListener('onLatestProfileLoad', (profile) => {
+            this.currentProfile = profile;
+            // Update UI, unlock content, etc.
+        });
+    }
+    
+    // Use stored profile instead of calling getProfile()
+    hasAccess(): boolean {
+        return this.currentProfile?.accessLevels?.['premium']?.isActive ?? false;
+    }
+}
+```
+
+:::note
+Adapty автоматически вызывает обработчик события `onLatestProfileLoad` при запуске приложения, предоставляя кешированные данные подписки даже при отсутствии интернета.
+:::
+
+## Связь профиля с логикой пейвола \{#connect-profile-with-paywall-logic\}
+
+Когда нужно принять немедленное решение о показе пейвола или предоставлении доступа к платным функциям, можно проверить профиль пользователя напрямую. Этот подход удобен при запуске приложения, при переходе в премиум-разделы или перед отображением определённого контента.
+
+```javascript
+const checkAccessLevel = async () => {
+  try {
+    const profile = await adapty.getProfile();
+    return profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive === true;
+  } catch (error) {
+    console.warn('Error checking access level:', error);
+    return false; // Show paywall if access check fails
+  }
+};
+
+const initializePaywall = async () => {
+  try {
+    await loadPaywall();
+    
+    const hasAccess = await checkAccessLevel();
+    if (!hasAccess) {
+      // Show paywall if no access
+    }
+  } catch (error) {
+    console.warn('Error initializing paywall:', error);
+  }
+};
+``` 
+
+## Дальнейшие шаги \{#next-steps\}
+
+Теперь, когда вы знаете, как отслеживать статус подписки, узнайте, как [работать с профилями пользователей](react-native-quickstart-identify), чтобы они могли получить доступ к тому, за что заплатили.

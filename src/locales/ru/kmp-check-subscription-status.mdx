@@ -1,0 +1,116 @@
+---
+title: "Проверка статуса подписки в Kotlin Multiplatform SDK"
+description: "Узнайте, как проверить статус подписки в приложении на Kotlin Multiplatform с помощью Adapty."
+metadataTitle: "Проверка статуса подписки | Документация Adapty"
+keywords: ['getProfile', 'subscription status']
+rank: 95
+displayed_sidebar: sdkkmp
+---
+
+Чтобы решить, может ли пользователь получить доступ к платному контенту или должен ли он увидеть пейвол, нужно проверить его [уровень доступа](access-level) в профиле.
+
+В этой статье показано, как обращаться к состоянию профиля для принятия решений: показывать пейвол или открывать платные возможности.
+
+## Получение статуса подписки \{#get-subscription-status\}
+
+Когда вы решаете, показывать ли пользователю пейвол или платный контент, вы проверяете его [уровень доступа](access-level) в профиле. Есть два варианта:
+
+- Вызовите `getProfile`, если нужны актуальные данные прямо сейчас (например, при запуске приложения) или хотите принудительно обновить профиль.
+- Настройте **автоматические обновления профиля**, чтобы хранить локальную копию, которая обновляется автоматически при изменении статуса подписки.
+
+### Получить профиль \{#get-profile\}
+
+Самый простой способ получить статус подписки — использовать метод `getProfile`:
+
+```kotlin showLineNumbers
+Adapty.getProfile()
+    .onSuccess { profile ->
+        // check the access
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+### Подписаться на обновления подписки \{#listen-to-subscription-updates\}
+
+Чтобы автоматически получать обновления профиля в приложении:
+
+1. Используйте `Adapty.setOnProfileUpdatedListener()` для отслеживания изменений профиля — Adapty будет вызывать этот метод автоматически при каждом изменении статуса подписки пользователя.
+2. Сохраняйте обновлённые данные профиля при каждом вызове метода, чтобы использовать их в приложении без лишних сетевых запросов.
+
+```kotlin showLineNumbers
+class SubscriptionManager {
+    private var currentProfile: AdaptyProfile? = null
+    
+    init {
+        // Listen for profile updates
+        Adapty.setOnProfileUpdatedListener { profile ->
+            currentProfile = profile
+            // Update UI, unlock content, etc.
+        }
+    }
+    
+    // Use stored profile instead of calling getProfile()
+    fun hasAccess(): Boolean {
+        return currentProfile?.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true
+    }
+}
+```
+
+:::note
+Adapty автоматически вызывает слушатель обновлений профиля при запуске приложения, предоставляя кэшированные данные о подписке даже при отсутствии интернета.
+:::
+
+## Связь профиля с логикой пейвола \{#connect-profile-with-paywall-logic\}
+
+Когда нужно оперативно решить, показывать ли пейвол или открывать доступ к платным функциям, можно проверить профиль пользователя напрямую. Это удобно при запуске приложения, входе в разделы с премиум-контентом или перед отображением определённого контента.
+
+```kotlin showLineNumbers
+private fun checkAccessAndShowPaywall() {
+    // First, check if user has access
+    Adapty.getProfile()
+        .onSuccess { profile ->
+            val hasAccess = profile.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true
+            
+            if (!hasAccess) {
+                // User doesn't have access, show paywall
+                showPaywall()
+            } else {
+                // User has access, show premium content
+                showPremiumContent()
+            }
+        }
+        .onError { error ->
+            // If we can't check access, show paywall as fallback
+            showPaywall()
+        }
+}
+
+private fun showPaywall() {
+    // Get and display paywall using the KMP SDK
+    Adapty.getPaywall("YOUR_PLACEMENT_ID")
+        .onSuccess { paywall ->
+            if (paywall.hasViewConfiguration) {
+                val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
+                paywallView?.present()
+            } else {
+                // Handle remote config paywall or show custom UI
+                handleRemoteConfigPaywall(paywall)
+            }
+        }
+        .onError { error ->
+            // Handle paywall loading error
+            showError("Unable to load paywall")
+        }
+}
+
+private fun showPremiumContent() {
+    // Show your premium content here
+    // This is where you unlock paid features
+}
+```
+
+## Дальнейшие шаги \{#next-steps\}
+
+Теперь, когда вы знаете, как отслеживать статус подписки, узнайте, как [работать с профилями пользователей](kmp-quickstart-identify), чтобы они могли получить доступ к тому, за что заплатили.
