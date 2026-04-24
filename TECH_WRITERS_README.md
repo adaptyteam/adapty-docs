@@ -333,6 +333,97 @@ All inline icon files go in `src/assets/Inline/`. This folder is dedicated to ic
 - **Fallback**: If the image file is not found, the `alt` text is rendered as `<code>` so the meaning is never lost.
 - **Works in lists**: Can be used inside list items, callouts, and other block contexts without breaking layout.
 
+### 8. SDKv4 / SDKv3 — SDK version tabs
+
+Use these wrappers to show different content to SDK v4+ and SDK v3 users on the same page. When both are present, a tab bar is automatically injected below the article title — no extra setup needed.
+
+**Auto-registered**: no import required.
+
+**Usage:**
+
+```mdx
+<SDKv4>
+
+Everything in here is shown when the reader selects the **SDK v4+** tab.
+Intro text, code samples, callouts — all content goes inside.
+
+</SDKv4>
+
+<SDKv3>
+
+Everything in here is shown when the reader selects the **SDK v3** tab.
+Duplicate the content and adjust for the legacy API.
+
+</SDKv3>
+```
+
+**Features:**
+- The tab bar appears automatically whenever both `<SDKv4>` and `<SDKv3>` blocks exist on a page. Pages without them are unaffected.
+- The **SDK v3** tab always shows a **Legacy** badge — no extra markup needed.
+- The reader's tab choice is persisted in `localStorage` across pages.
+- **Markdown & LLM export**: `<SDKv4>` content is kept (wrapper stripped). `<SDKv3>` content is replaced with an explicit LLM instruction block that tells AI assistants to use the legacy API only for migration or troubleshooting — never for new integrations.
+
+---
+
+### 9. MethodPromo — Method feature highlight
+
+A visual card that highlights a unified SDK method and what it covers. Designed for use at the top of SDK v4+ sections to help readers immediately understand scope before they dive into code.
+
+**Auto-registered**: no import required.
+
+**Basic usage (all defaults):**
+
+```mdx
+<MethodPromo method="getFlow" />
+```
+
+This renders a card titled **"What `getFlow` retrieves"** with three default columns (Flows, Paywall Builder paywalls, Onboardings) and a footer link to the manual integration guide for the current platform. The footer link resolves automatically — no props needed.
+
+**Custom label:**
+
+```mdx
+<MethodPromo method="presentPaywall" label="How presentPaywall renders your paywall" />
+```
+
+The method name is always highlighted as code inside the label, wherever it appears in the string.
+
+**Custom columns:**
+
+```mdx
+<MethodPromo
+  method="getFlow"
+  items={[
+    { title: 'Flows', desc: 'Built in Flow builder — renders natively' },
+    { title: 'Paywall Builder paywalls', desc: 'All existing Paywall Builder content' },
+    { title: 'Onboardings', desc: 'All existing onboarding builder content' },
+  ]}
+/>
+```
+
+**Custom footer:**
+
+```mdx
+<MethodPromo
+  method="getFlow"
+  note="Not using the Flow builder?"
+  noteHref="fetch-paywalls-and-products"
+  noteLinkText="See the remote config guide instead."
+/>
+```
+
+Pass `note=""` to hide the footer entirely.
+
+**All props:**
+
+| Prop | Required | Default | Description |
+|------|----------|---------|-------------|
+| `method` | yes | — | The method name. Appears as `<code>` in the label. |
+| `label` | no | `What {method} retrieves` | Header label. Include the method name as plain text to get code styling. |
+| `items` | no | Flows / PB paywalls / Onboardings | Array of `{ title, desc }` objects for the three-column grid. |
+| `note` | no | `Building a custom paywall?` | Footer note text. |
+| `noteHref` | no | `{platform}-quickstart-manual` | Footer link target. Resolved automatically from the current platform sidebar. |
+| `noteLinkText` | no | `See the manual integration guide.` | Footer link label. |
+
 ## Markdown features
 
 ### Callout boxes
