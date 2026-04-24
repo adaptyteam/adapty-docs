@@ -1,0 +1,219 @@
+---
+import platformsData from '../data/platforms.json';
+
+interface Item {
+  title: string;
+  desc: string;
+}
+
+interface Props {
+  method: string;
+  label?: string;
+  items?: Item[];
+  note?: string;
+  noteHref?: string;
+  noteLinkText?: string;
+}
+
+// Resolve which platform sidebar this page belongs to
+const sidebars = import.meta.glob('../data/sidebars/*.json', { eager: true });
+const currentSlug = Astro.url.pathname.split('/').filter(Boolean).pop() ?? '';
+
+function containsSlug(items: any[], target: string): boolean {
+  for (const item of items) {
+    const id = item.id ?? item.link?.id;
+    if (id === target) return true;
+    if (item.items && containsSlug(item.items, target)) return true;
+  }
+  return false;
+}
+
+let platformId: string | null = null;
+for (const [filepath, mod] of Object.entries(sidebars)) {
+  const filename = filepath.split('/').pop()!;
+  const pid = filename.replace('.json', '');
+  if (!platformsData.sdkPlatforms.some(p => p.id === pid)) continue;
+  if (containsSlug((mod as any).default, currentSlug)) {
+    platformId = pid;
+    break;
+  }
+}
+
+const manualSlug = platformId ? `${platformId}-quickstart-manual` : null;
+
+const { method, label: rawLabel, items, note, noteHref: rawNoteHref, noteLinkText } = Astro.props;
+
+// Split label around the method name so it renders as <code>
+const labelText = rawLabel ?? `What ${method} retrieves`;
+const [labelBefore, labelAfter] = labelText.split(method);
+
+const resolvedItems = items ?? [
+  { title: 'Flows', desc: 'Built in Flow builder — renders natively on device, no WebView' },
+  { title: 'Paywall Builder paywalls', desc: 'All existing Paywall Builder content' },
+];
+const resolvedNote = note ?? 'Building a custom paywall?';
+const resolvedNoteHref = rawNoteHref ?? manualSlug ?? undefined;
+const resolvedNoteLinkText = noteLinkText ?? 'See the manual integration guide.';
+---
+
+<div class="method-promo">
+  <div class="method-promo-label">
+    {labelBefore}<code class="method-promo-method">{method}</code>{labelAfter}
+  </div>
+  <div class="method-promo-grid" style={`grid-template-columns: repeat(${resolvedItems.length}, 1fr);`}>
+    {resolvedItems.map(item => (
+      <div class="method-promo-item">
+        <span class="method-promo-accent">✦</span>
+        <div class="method-promo-item-body">
+          <span class="method-promo-item-title">{item.title}</span>
+          <span class="method-promo-item-desc">{item.desc}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+  {resolvedNote && resolvedNoteHref && (
+    <div class="method-promo-footer">
+      {resolvedNote}{' '}<a href={resolvedNoteHref} class="method-promo-link">{resolvedNoteLinkText}</a>
+    </div>
+  )}
+</div>
+
+<style>
+  .method-promo {
+    margin: 1.75rem 0;
+    padding: 1.125rem 1.375rem 1.125rem;
+    border-radius: 0.625rem;
+    border: 1px solid color-mix(in srgb, #6720ff 18%, transparent);
+    background: color-mix(in srgb, #6720ff 3.5%, white);
+  }
+
+  .dark .method-promo {
+    background: color-mix(in srgb, #a78bfa 5%, #0f0f10);
+    border-color: color-mix(in srgb, #a78bfa 22%, transparent);
+  }
+
+  .method-promo-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #7c3aed;
+    margin-bottom: 0.875rem;
+    line-height: 1;
+  }
+
+  .dark .method-promo-label {
+    color: #a78bfa;
+  }
+
+  /* Tailwind typography adds backtick pseudo-elements to code — reset them here */
+  .method-promo code::before,
+  .method-promo code::after {
+    content: '';
+  }
+
+  .method-promo-method {
+    font-family: var(--font-mono, 'Fira Code', monospace);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+    padding: 0.075rem 0.3rem;
+    border-radius: 0.25rem;
+    background: color-mix(in srgb, #6720ff 12%, transparent);
+    color: inherit;
+    vertical-align: baseline;
+  }
+
+  .dark .method-promo-method {
+    background: color-mix(in srgb, #a78bfa 14%, transparent);
+  }
+
+  .method-promo-grid {
+    display: grid;
+    gap: 0.75rem 1.25rem;
+  }
+
+  @media (max-width: 580px) {
+    .method-promo-grid {
+      grid-template-columns: 1fr !important;
+    }
+  }
+
+  .method-promo-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+
+  .method-promo-accent {
+    flex-shrink: 0;
+    font-size: 0.625rem;
+    line-height: 1;
+    margin-top: 0.2rem;
+    color: #7c3aed;
+    user-select: none;
+  }
+
+  .dark .method-promo-accent {
+    color: #a78bfa;
+  }
+
+  .method-promo-item-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  .method-promo-item-title {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.3;
+  }
+
+  .dark .method-promo-item-title {
+    color: #f1f5f9;
+  }
+
+  .method-promo-item-desc {
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: #6b7280;
+  }
+
+  .dark .method-promo-item-desc {
+    color: #94a3b8;
+  }
+
+  .method-promo-footer {
+    margin-top: 0.875rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid color-mix(in srgb, #6720ff 12%, transparent);
+    font-size: 0.78125rem;
+    line-height: 1.5;
+    color: #7c3aed;
+  }
+
+  .dark .method-promo-footer {
+    border-top-color: color-mix(in srgb, #a78bfa 18%, transparent);
+    color: #a78bfa;
+  }
+
+  .method-promo-link {
+    font-weight: 600;
+    color: #6720ff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+  }
+
+  .dark .method-promo-link {
+    color: #a78bfa;
+  }
+
+  .method-promo-link:hover {
+    opacity: 0.75;
+  }
+</style>
