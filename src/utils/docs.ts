@@ -91,6 +91,7 @@ export async function buildDocPaths(allDocs: DocEntry[]): Promise<any[]> {
 
   // Orphaned pages — all docs reachable via their basename
   for (const doc of allDocs) {
+    if (typeof doc.id !== 'string') continue;
     const docBasename = doc.id.split('/').pop()?.replace(/\.(md|mdx)$/, '');
     if (docBasename && !addedSlugs.has(docBasename)) {
       paths.push({
