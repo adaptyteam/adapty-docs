@@ -605,7 +605,10 @@ async function seedSectionCache(file, localesDir, hashesDir, lang) {
 
   const engHeadSecs = splitIntoSections(content, { paragraphFallback: false });
   const zhHeadSecs  = splitIntoSections(existingTranslation, { paragraphFallback: false });
-  if (engHeadSecs.length !== zhHeadSecs.length) return; // heading count mismatch
+  if (engHeadSecs.length !== zhHeadSecs.length) {
+    console.warn(`  ⚠ ${basename}: seed skipped — heading count mismatch (en=${engHeadSecs.length}, locale=${zhHeadSecs.length}); next edit will retranslate the whole file`);
+    return;
+  }
 
   // Map: (deduplicated) heading section ID → zh heading section content.
   // deduplicateSectionIds is applied to engHeadSecs so the IDs match what
@@ -616,11 +619,21 @@ async function seedSectionCache(file, localesDir, hashesDir, lang) {
 
   // Build: (deduplicated) heading ID → zh para-chunk array (or null if no split needed)
   const paraChunksByHeadId = new Map();
+  const paraSkipReasons = [];
   for (const s of dedupEngHead) {
     const zhHead = zhByHeadId.get(s.id);
     if (!zhHead) continue;
     const pairs = mapParaChunksToZh(s.content, zhHead);
-    if (pairs) paraChunksByHeadId.set(s.id, pairs);
+    if (pairs) {
+      paraChunksByHeadId.set(s.id, pairs);
+    } else if (s.content.length > PARAGRAPH_FALLBACK_CHARS) {
+      // Only report sections that would actually be split into para chunks — short
+      // sections never have para chunks, so "no pairs" is expected and not a problem.
+      paraSkipReasons.push(s.id);
+    }
+  }
+  if (paraSkipReasons.length > 0) {
+    console.warn(`  ⚠ ${basename}: seed skipped para-chunks for ${paraSkipReasons.length} heading section(s) [${paraSkipReasons.slice(0, 3).join(', ')}${paraSkipReasons.length > 3 ? ', …' : ''}] — en/locale block-count mismatch; next prose edit in those sections will retranslate them whole`);
   }
 
   const seeded = {};
@@ -703,14 +716,26 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
       const engHeadSecs = deduplicateSectionIds(splitIntoSections(content, { paragraphFallback: false }));
       const zhHeadSecs  = deduplicateSectionIds(splitIntoSections(existingTranslation, { paragraphFallback: false }));
 
-      if (engHeadSecs.length === zhHeadSecs.length) {
+      if (engHeadSecs.length !== zhHeadSecs.length) {
+        console.warn(`  ⚠ ${basename}: inline seed skipped — heading count mismatch (en=${engHeadSecs.length}, locale=${zhHeadSecs.length}); all uncached sections will be retranslated`);
+      } else {
         const zhByHeadId       = new Map(engHeadSecs.map((s, i) => [s.id, zhHeadSecs[i].content]));
         const paraChunksByHead = new Map();
+        const paraSkipReasons  = [];
         for (const s of engHeadSecs) {
           const zhHead = zhByHeadId.get(s.id);
           if (!zhHead) continue;
           const pairs = mapParaChunksToZh(s.content, zhHead);
-          if (pairs) paraChunksByHead.set(s.id, pairs);
+          if (pairs) {
+            paraChunksByHead.set(s.id, pairs);
+          } else if (s.content.length > PARAGRAPH_FALLBACK_CHARS) {
+            // Only report sections that would actually be split — short sections
+            // have no para chunks, so returning null is expected and not a problem.
+            paraSkipReasons.push(s.id);
+          }
+        }
+        if (paraSkipReasons.length > 0 && !fileHashChanged) {
+          console.warn(`  ⚠ ${basename}: inline seed skipped para-chunks for ${paraSkipReasons.length} heading section(s) [${paraSkipReasons.slice(0, 3).join(', ')}${paraSkipReasons.length > 3 ? ', …' : ''}] — en/locale block-count mismatch; any prose edit in those sections retranslates them whole`);
         }
 
         const seeded = {};
