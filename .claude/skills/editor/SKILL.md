@@ -70,6 +70,8 @@ After writing:
 4. Check sentence lengths on any sentence that looks long
 5. Verify introduction answers what, why, and when
 6. For new articles: add entry to sidebar in `src/data/sidebars/`
+7. **Scan every bullet list with bold labels** — confirm every item is `- **Label**: Capitalized explanation.` Fix any `—`, `-`, or `.**` patterns.
+8. **For UI workflow articles**: Output a screenshot capture table after the writing summary — one row per `:::note` placeholder, with filename and what the screenshot should show. This lets the user capture everything in one pass.
 
 Present final content with a brief writing summary. See `references/output-templates.md` for format.
 
@@ -100,8 +102,12 @@ See `references/simplified-technical-english.md` → Value-Oriented Language
 
 Check for:
 - Ambiguous pronouns: "this", "it", "that" without clear antecedents
+- **Pronoun at the start of a callout**: "It should always be..." — the visual break makes the antecedent unresolvable. Replace with the explicit noun: "**Navigate to screen** should always be..."
 - Anthropomorphizing UI elements: ❌ "The page manages your settings" → ✅ "The page lets you manage your settings"
 - Multiple possible interpretations; missing cause-and-effect context
+- **Inaccurate metaphors**: a metaphor that contradicts the described behavior. ❌ "Works like a checklist" when evaluation stops at the first match (if/else-if/else) → remove or replace with an accurate analogy
+- **Self-contradicting callouts**: e.g., saying an action "overrides" a setting and then saying they're "interchangeable" in the same callout — both can't be true. Flag and rewrite to resolve
+- **Inconsistent naming for the same UI element**: "Design tab" in one section and "Design panel" in another for the same control. Pick one term and apply throughout
 
 ### 5. Voice and Verb Forms
 
@@ -113,7 +119,17 @@ See `references/simplified-technical-english.md` → Voice Guidelines + Verb Ten
 
 ### 6. Headings and Lists
 
-Check for: non-parallel heading structure at same level, inconsistent list punctuation, dashes instead of colons after bold labels (`**Label**:` not `**Label** -`), inline lists where bullet lists would be clearer.
+Check for: non-parallel heading structure at same level, inconsistent list punctuation, inline lists where bullet lists would be clearer.
+
+**Bold-label list items — one correct format only:** `- **Label**: Capitalized explanation.`
+
+All of these are wrong and must be fixed:
+- `**Label** - description` → hyphen dash
+- `**Label** — description` → em-dash
+- `**Label.** Description` → period inside bold, sentence follows
+- `**Label**: lowercase` → lowercase after colon
+
+Every list where items have bold labels must follow this format: feature lists, action descriptions, best practices, option lists, settings.
 
 **Exception — UI/product names**: If a heading uses the exact name of a product feature or UI element, do not flag it for breaking parallelism. Feature names take precedence over grammatical consistency. Example: `## Sharing paid access between user accounts` is the name of the feature in the UI — do not rewrite it to fix parallel structure.
 
@@ -133,6 +149,9 @@ See `references/simplified-technical-english.md` → Instruction Pattern
 ### 8. Article Structure
 
 Check for: missing intro before first heading, H4 overuse, non-parallel headings at same level, text blocks over 300 words without structure, consecutive callouts, callouts that interrupt flow.
+
+- **Title/description scope mismatch**: the frontmatter `title` or `description` claims coverage the article doesn't provide. ❌ `description: "Show or hide elements and screens"` when only elements are covered → fix to match actual scope
+- **Product/feature name capitalization**: "Flow Builder" not "Flow builder". Check that multi-word product names are consistently capitalized as proper nouns throughout
 
 See `references/article-structure.md`
 
@@ -154,11 +173,20 @@ open _temp/link-report.html
 
 Additionally check images manually: image files exist, `@assets/` not `@asset/`, descriptive alt text.
 
+**Alt text checks:**
+- Missing alt entirely: `<ZoomImage id="x.webp" width="500px" />` — flag, always required
+- Generic alt text copied from a nearby image: e.g., two consecutive images both with `alt="Static navigation"` — the second was copy-pasted and describes the wrong image. Each alt must describe its specific screenshot
+
+**Screenshot placeholders**: In UI workflow articles, every distinct UI state — screen selection, dialog, results view, confirmation — should have a `:::note` placeholder callout. Check that sections describing a UI step are not missing one. See Screenshot Placeholders section below.
+
 See `references/astro-patterns.md`
 
 ### 10. Conciseness
 
 Check for: redundant phrases ("in order to" → "to"), wordy constructions ("make use of" → "use", "is able to" → "can"), repeated information.
+
+- **Filler adverbs**: "Simply" (implies the task is trivial), "Instantly" (adds no information). Remove both — they're invisible to the reader when accurate and condescending when not.
+- **Redundant section preambles**: a sentence that just restates the section heading. ❌ `## Add lists` followed by "You can add lists to screens:" → remove the sentence, go straight to steps.
 
 Don't remove value-oriented language — only flag true redundancy.
 
@@ -232,6 +260,32 @@ After completing all checks, follow this flow:
 - Preserve all factual content unless user says otherwise
 - Use Edit — do not rewrite the entire file
 - Show before/after comparison in summary
+
+### Screenshot Placeholders (UI Workflow Articles)
+
+When writing an article that describes a step-by-step UI workflow, add `:::note` callouts as screenshot placeholders at every distinct UI state — screen selections, modal dialogs, results views, confirmation states, and any step that produces a visible change.
+
+**Format** — the callout contains only the intended filename, nothing else:
+
+```
+:::note
+feature-name-screen.webp
+:::
+```
+
+**Naming convention**: `[feature]-[screen].webp`, e.g., `market-intelligence-select-app.webp`.
+
+**Where to place them**: After the prose that describes the UI state, not before it. The reader reads the description, then sees the screenshot that confirms it.
+
+**How many**: Aim for one per distinct UI state. Err on the side of more — it's easier to remove a placeholder than to remember later what needed capturing.
+
+After drafting, output a capture table as part of the writing summary:
+
+| File | What to capture |
+|---|---|
+| `feature-name-screen.webp` | What is visible on screen at this point |
+
+This lets the user take all screenshots in one pass and replace placeholders with `<ZoomImage>` elements.
 
 ### False Positives
 Don't flag: technical terms, industry-standard terminology, code/API names, clear sentences slightly over length, passive voice when appropriate, single value word per paragraph with specific context, descriptive adjectives like "real-time", "built-in", "automatic".

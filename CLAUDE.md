@@ -161,6 +161,8 @@ These are layout/interactive components in `src/components/`, not imported by ar
 - `Calculator.tsx` — interactive React calculator widget
 - `ApiReferencePage.astro` — Stoplight Elements API docs wrapper
 
+For CSS/layout bugs, inspect the DOM structure and existing styles before proposing a fix. Do not guess at specificity or inheritance.
+
 ## Build pipeline details
 
 - `prebuild` copies shared assets (images, API specs) to `public/`
