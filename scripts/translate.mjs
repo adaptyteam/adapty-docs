@@ -40,6 +40,7 @@ const LANGUAGE_NAMES = {
   ja: 'Japanese (ja-JP)',
   tr: 'Turkish (tr-TR)',
   ru: 'Russian (ru-RU)',
+  fr: 'French (fr-FR)',
 };
 
 // Locale-specific suffix for metadataTitle values (the part after the page title)
@@ -48,6 +49,7 @@ const METADATA_TITLE_SUFFIXES = {
   ja: '| Adapty ドキュメント',
   tr: '| Adapty Dokümanları',
   ru: '| Документация Adapty',
+  fr: '| Documentation Adapty',
 };
 
 // ---------------------------------------------------------------------------

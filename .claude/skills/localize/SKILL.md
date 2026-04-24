@@ -218,66 +218,132 @@ The translation script creates `.mdx` files and `.hashes/` automatically. You on
 
 ---
 
-## Step 6 — Translate content (run in this order)
+## Step 6 — Translate content (phased, gated by native-speaker reviews)
 
-> **Note on `CustomDocCardList`:** This component is already locale-aware — it reads titles from `_sidebar-labels.json` and descriptions from the translated article frontmatter automatically. No extra step is needed; it works correctly once sidebar labels (Step 6c `--sidebars`) and article translations are done.
+> **Flow overview:** (1) research dictionary terminology → (2) native speaker reviews word-pair list → (3) translate tutorial 7 articles → (4) deploy to develop → (5) native speaker reviews rendered pages → (6) translate the rest.
+>
+> **Note on `CustomDocCardList`:** This component is already locale-aware — it reads titles from `_sidebar-labels.json` and descriptions from the translated article frontmatter automatically. No extra step is needed; it works correctly once sidebar labels (Step 6g `--sidebars`) and article translations are done.
 
-All commands require `ANTHROPIC_API_KEY` to be set.
+All `translate.mjs` commands require `ANTHROPIC_API_KEY` to be set.
 
-### 6a. Translate the dictionary first
+### Phase 1 — Dictionary research and native-speaker word-list review
 
-The dictionary (`src/locales/dictionary.json`) should already have translations added manually in Step 1d. Review it before running article translations — the script uses it as a glossary.
+#### 6a. Deeply research target-language mobile dev community terminology
+
+Do not guess dictionary entries from training knowledge. **Run web searches** to verify how the target-language mobile dev community actually refers to each concept. This materially affects the quality of every translated article downstream.
+
+**Sources to consult (in priority order):**
+
+1. **Platform-official docs in the target locale** — authoritative terminology developers will expect:
+   - App Store Connect help pages (`developer.apple.com/help/app-store-connect/` — often has locale routes)
+   - Google Play Console help (`support.google.com/googleplay/android-developer?hl={LOCALE}`)
+   - Firebase docs (`firebase.google.com/docs?hl={LOCALE}`)
+2. **Competitor docs in the target locale**, if available — RevenueCat, Superwall, Stripe.
+3. **Native-language mobile dev press** — e.g. iPhoneSoft, iGeneration, Citronnoir (FR); equivalents exist for most major locales. Search `"<term>" site:<locale-press-domain>` to see real usage.
+4. **Glossaries on affiliate-marketing / MMP sites** — AppsFlyer, Adjust, and similar publish locale-specific glossaries.
+5. **Professional translators' references** — Linguee and Reverso Context show real-world parallel translations across tech content.
+
+**For each dictionary term, verify:**
+
+- Which form does platform-official (Apple / Google) documentation use in the target locale?
+- Is there divergence between Apple FR/DE/etc. and Google Play FR/DE/etc.? (Yes — frequently. Flag these.)
+- What term does the target-locale mobile dev press actually use in practice?
+- Is the term commonly kept in English as a loanword? (`paywall`, `sandbox`, `onboarding`, `SDK`, `store`, `remote config`, `dashboard` are often kept; `subscription`, `access level`, `grace period`, `consumable` usually translate.)
+- Does the candidate translation conflict with another common meaning in the target locale? (e.g. "placement" = "investment" in French — check context fit.)
+
+**Rules of thumb:**
+
+- **Product names stay in English** — `Paywall Builder`, `Remote Config`, `Adapty Dashboard`.
+- **Apple's in-app terms have official locale translations** — look up `introductory offer`, `promotional offer`, `win-back offer`, `grace period` in Apple FR/DE/etc. help before guessing.
+- **When mobile dev press keeps a term in English, follow them.** Formal dictionaries often propose alternatives (e.g. "bac à sable" for sandbox) that no French iOS developer actually uses.
+- **Match the feel of existing locales** — look at how `zh`, `tr`, `ru` handle each term; they already made similar loanword-vs-translation calls. If all three kept a term in English, the new locale probably should too.
+
+#### 6b. Generate a word-pair list and send it for native-speaker review (BLOCKING)
+
+After updating `src/locales/dictionary.json` with researched translations, **stop and generate a plain text list** of `English → {LOCALE}` pairs — one line per term, alphabetical by English source — and tell the user to copy it and send it to a native-speaking reviewer.
+
+**Format to output:**
 
 ```
-# Check dictionary for any missing {LOCALE} entries, then continue.
+A/B test → <target translation>
+access level → <target translation>
+...
 ```
 
-### 6b. Translate tutorial sidebar first 7 articles
+No sources, no rationale — just the pairs. The user will paste this into Slack/email verbatim.
 
-These are the entry-point articles every user sees first. Translate them as a batch:
+**After outputting the list, STOP.** Do not proceed to article translation. Wait for the user to either:
+
+- Confirm "we're good to go" (dictionary stands as-is), or
+- Apply native-speaker corrections to `dictionary.json` and then confirm.
+
+### Phase 2 — Translate tutorial and deploy for rendered review
+
+#### 6c. Generate the two translation commands (BLOCKING)
+
+Once the user confirms the dictionary is approved, **output the following two commands** in a single message for the user to run in their own terminal. Do not execute them — `ANTHROPIC_API_KEY` is a secret and translation is long-running and potentially costly; the user runs it themselves.
 
 ```bash
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --ids "what-is-adapty,is-adapty-right-for-me,integrate-payments,quickstart-products,quickstart-paywalls,quickstart-sdk,quickstart-test"
+export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-### 6c. Translate sidebar labels and step-by-step docs per sidebar
-
-Translate one sidebar at a time — each command is independent and can be run, reviewed, and committed separately.
-
-**Step-by-step sidebar labels only (all sidebars at once):**
 ```bash
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --sidebars
+node scripts/translate.mjs --lang {LOCALE} --ids "what-is-adapty,is-adapty-right-for-me,integrate-payments,quickstart-products,quickstart-paywalls,quickstart-sdk,quickstart-test"
 ```
 
-**Or one sidebar's labels at a time:**
+These are the 7 tutorial entry-point articles every first-time user sees. After outputting, **wait for the user to say the translation finished.**
+
+#### 6d. Deploy the tutorial translations to `develop` for rendered review
+
+Once the user confirms translation is done, invoke the `sync-branch-to-develop` skill to commit the generated MDX files, push the feature branch, and merge into `develop` so the native-speaker reviewer can see them rendered on the staging URL.
+
+#### 6e. Wait for the native speaker to review the rendered pages
+
+Tell the user to share the staging URL with their reviewer. **Stop** until the user returns with approval or revision requests. If revisions are needed, iterate on the dictionary or specific article frontmatter/body; do not start Phase 3 until the tutorial 7 are approved.
+
+### Phase 3 — Full content translation
+
+Only start this phase after the tutorial 7 are approved by the native-speaker reviewer. Same pattern as Phase 2: **output commands, do not execute** — the user runs them in their terminal with `ANTHROPIC_API_KEY` already exported from Phase 2.
+
+#### 6f. Translate sidebar labels
+
+All sidebars at once:
+
 ```bash
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --sidebar tutorial
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --sidebar ios
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --sidebar android
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --sidebar react-native
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --sidebar flutter
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --sidebar unity
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --sidebar kmp
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --sidebar capacitor
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --sidebar api
+node scripts/translate.mjs --lang {LOCALE} --sidebars
 ```
 
-**Article docs, one platform/sidebar at a time:**
+Or one sidebar's labels at a time, if you want to review incrementally:
+
 ```bash
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --platform tutorial
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --platform ios
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --platform android
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --platform react-native
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --platform flutter
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --platform unity
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --platform kmp
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --platform capacitor
+node scripts/translate.mjs --lang {LOCALE} --sidebar tutorial
+node scripts/translate.mjs --lang {LOCALE} --sidebar ios
+node scripts/translate.mjs --lang {LOCALE} --sidebar android
+node scripts/translate.mjs --lang {LOCALE} --sidebar react-native
+node scripts/translate.mjs --lang {LOCALE} --sidebar flutter
+node scripts/translate.mjs --lang {LOCALE} --sidebar unity
+node scripts/translate.mjs --lang {LOCALE} --sidebar kmp
+node scripts/translate.mjs --lang {LOCALE} --sidebar capacitor
+node scripts/translate.mjs --lang {LOCALE} --sidebar api
 ```
 
-### 6d. Translate API docs
+#### 6g. Translate platform article docs, one platform at a time
 
 ```bash
-ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang {LOCALE} --api-specs
+node scripts/translate.mjs --lang {LOCALE} --platform tutorial
+node scripts/translate.mjs --lang {LOCALE} --platform ios
+node scripts/translate.mjs --lang {LOCALE} --platform android
+node scripts/translate.mjs --lang {LOCALE} --platform react-native
+node scripts/translate.mjs --lang {LOCALE} --platform flutter
+node scripts/translate.mjs --lang {LOCALE} --platform unity
+node scripts/translate.mjs --lang {LOCALE} --platform kmp
+node scripts/translate.mjs --lang {LOCALE} --platform capacitor
+```
+
+#### 6h. Translate API docs
+
+```bash
+node scripts/translate.mjs --lang {LOCALE} --api-specs
 ```
 
 ---
@@ -389,10 +455,14 @@ strategy:
 | 3 | Create sitemap files + update astro.config.mjs | `src/pages/sitemap-{LOCALE}*.xml.ts`, `astro.config.mjs` |
 | 4 | Add npm scripts (optional) | `package.json` |
 | 5 | Create content directory | `src/locales/{LOCALE}/` |
-| 6a | Review/complete dictionary | `src/locales/dictionary.json` |
-| 6b | Translate first 7 tutorial articles | `--ids` command |
-| 6c | Translate sidebar labels + platform docs | `--sidebars` + `--platform` commands |
-| 6d | Translate API specs | `--api-specs` command |
+| 6a | Deeply research target-language mobile dev terminology (web searches) | `src/locales/dictionary.json` |
+| 6b | **BLOCKING:** Generate word-pair list; wait for native-speaker review | conversation |
+| 6c | **BLOCKING:** Output two commands (export key + translate tutorial 7); wait for user to run them | conversation |
+| 6d | Deploy tutorial translations to develop via `sync-branch-to-develop` skill | `sync-branch-to-develop` |
+| 6e | **BLOCKING:** Wait for native speaker to review rendered tutorial pages on staging | — |
+| 6f | Output command to translate sidebar labels | `--sidebars` |
+| 6g | Output commands to translate platform article docs | `--platform` per sidebar |
+| 6h | Output command to translate API specs | `--api-specs` |
 | 7a | Update English crawler exclusion | Algolia dashboard |
 | 7b | Create new locale crawler | Algolia dashboard |
 | 7c | Create new Algolia index | Algolia dashboard |

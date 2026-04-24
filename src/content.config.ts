@@ -17,7 +17,7 @@ const docs = defineCollection({
 // Scope the `locales` collection to the locales actually being built.
 // Without this, every matrix job (e.g. BUILD_LOCALES=zh) parses every
 // locale's MDX and OOMs as total locale content grows.
-const SUPPORTED_LOCALES = ['zh', 'tr', 'ru'] as const;
+const SUPPORTED_LOCALES = ['zh', 'tr', 'ru', 'fr'] as const;
 const buildLocalesEnv = (process.env.BUILD_LOCALES ?? '').trim();
 const selectedLocales = !buildLocalesEnv
   ? [...SUPPORTED_LOCALES]
