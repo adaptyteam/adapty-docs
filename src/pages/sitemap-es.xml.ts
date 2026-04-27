@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 import { buildDocPaths } from '../utils/docs';
 
 /**
- * Sitemap for all French-localized pages (/docs/fr/...).
+ * Sitemap for all Spanish-localized pages (/docs/es/...).
  * Mirrors the locale route generation in [locale]/[...slug].astro —
  * skips redirect entries, includes only canonical pages.
  */
@@ -19,8 +19,8 @@ export const GET: APIRoute = async () => {
 
     const slug: string | undefined = entry.params.slug;
     const loc = slug
-      ? `https://adapty.io/docs/fr/${slug}`
-      : `https://adapty.io/docs/fr/`;
+      ? `https://adapty.io/docs/es/${slug}`
+      : `https://adapty.io/docs/es/`;
 
     urls.push(loc);
   }
