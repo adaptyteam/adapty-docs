@@ -1,0 +1,110 @@
+---
+title: "Миграция с Superwall"
+description: "Перейдите с Superwall на Adapty с помощью пошагового гайда, который сопоставляет каждый вызов SDK и концепцию."
+metadataTitle: "Миграция с Superwall на Adapty | Документация Adapty"
+keywords: ['миграция', 'superwall']
+---
+
+Большинство миграций с Superwall на Adapty занимают около двух часов. Вы заменяете SDK, направляете серверные уведомления стора на Adapty и выпускаете новую версию приложения. Ваши платные подписчики сохраняют доступ — Adapty восстановит его из чеков App Store и Google Play при первом запуске.
+
+:::info
+Ваши подписчики перейдут автоматически
+Все пользователи, когда-либо активировавшие подписку, переходят в Adapty, как только открывают новую версию вашего приложения с SDK Adapty. Статус подписки и доступ к премиуму восстанавливаются автоматически.
+:::
+## Структура этого гайда \{#how-this-guide-is-organized\}
+
+Миграция состоит из шести шагов:
+
+1. [Сопоставьте концепции Superwall с концепциями Adapty](#map-your-superwall-concepts-to-adapty) _(5 минут)_
+2. [Установите Adapty SDK](#install-the-adapty-sdk) _(15 минут)_
+3. [Замените вызовы SDK](#replace-sdk-calls) _(1 час)_
+4. [Переключите серверные уведомления App Store и Google Play](#switch-app-store-and-google-play-server-notifications) _(5 минут)_
+5. [Протестируйте и выпустите релиз](#test-and-release) _(30 минут)_
+6. [(Опционально) Импортируйте исторические данные](#optional-import-historical-data)
+## Соответствие концепций Superwall в Adapty \{#map-your-superwall-concepts-to-adapty\}
+
+Большинство концепций Superwall имеют прямые аналоги в Adapty:
+| Superwall            | Adapty                                            | Что меняется                                                                 |
+| :------------------- | :------------------------------------------------ | :--------------------------------------------------------------------------- |
+| Campaign             | [Плейсмент](placements) + [Аудитория](audience)    | Логика кампании делится на плейсмент (место) и аудиторию (правило). |
+| Placement            | [Плейсмент](placements)                           | Та же концепция, то же название.                                                     |
+| Audience filter      | [Аудитория](audience)                              | Наборы правил находятся внутри плейсмента.                                           |
+| Entitlement          | [Уровень доступа](access-level)                      | Именованный идентификатор (например, `premium`).                                   |
+| WebView paywall      | [Пейвол на Paywall Builder](adapty-paywall-builder) | Рендерится SDK Adapty нативно вместо `WKWebView`.                         |
+| `PurchaseController` | Встроенный                                          | Реализовывать протокол не нужно — покупками управляет Adapty.                         |
+| Feature gating       | Проверка [уровня доступа](access-level)                | Проверьте `profile.accessLevels["premium"]?.isActive`.                           |
+Перед тем как приступить к коду, стоит отметить два важных изменения в подходе:
+- **Получение и показ пейвола — отдельные шаги**: У Superwall метод `register` получает пейвол, оценивает кампанию и показывает UI за один вызов. Adapty разделяет эти шаги — вы отдельно получаете пейвол, его конфигурацию, а затем показываете его. Это добавляет несколько строк, зато позволяет предзагружать конфигурации, показывать кастомный индикатор загрузки или отменять показ на основе собственной логики.
+- **Статус подписки привязан к уровню доступа**: Superwall предоставляет единственное published-свойство `subscriptionStatus`. Adapty возвращает [`AdaptyProfile`](https://swift.adapty.io/documentation/adapty/adaptyprofile) с именованными уровнями доступа, так что один пользователь может одновременно иметь уровни доступа `sports` и `science`. Для синхронного чтения кешируйте профиль из `AdaptyDelegate`, а не вызывайте `getProfile()` при каждой загрузке экрана.
+## Установите SDK \{#install-the-adapty-sdk\}
+
+Установите SDK для вашей платформы — [iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity) или [Capacitor](sdk-installation-capacitor) — и одновременно удалите SuperwallKit из своего проекта.
+## Замените вызовы SDK \{#replace-sdk-calls\}
+
+Пройдитесь по каждой части вашей интеграции и замените вызовы Superwall на эквиваленты Adapty. Ссылки в конце каждого подраздела охватывают все семь платформенных SDK — переходите по той, которая соответствует вашему приложению.
+### Инициализация SDK \{#initialize-the-sdk\}
+
+Замените `Superwall.configure` на `Adapty.activate`.
+
+Ознакомьтесь с гайдом по установке для вашей платформы — [iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity) или [Capacitor](sdk-installation-capacitor).
+### Идентификация и выход пользователей \{#identify-and-log-out-users\}
+
+Замените `Superwall.shared.identify` на `Adapty.identify`, а `Superwall.shared.reset` — на `Adapty.logout`. Оба SDK создают анонимный профиль при первом запуске, поэтому эти вызовы нужны только при входе или выходе пользователя. После идентификации повторно запрашивайте пейволы — новый пользователь может попасть в другую аудиторию.
+Смотрите гайд по идентификации для вашей платформы — [iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), [Kotlin Multiplatform](kmp-identifying-users), [Unity](unity-identifying-users) или [Capacitor](capacitor-identifying-users).
+### Получение и отображение пейвола
+
+Замените `Superwall.shared.register` двухшаговым процессом: получите пейвол с помощью `Adapty.getPaywall`, загрузите конфигурацию его представления через `AdaptyUI.getPaywallConfiguration`, а затем отобразите его.
+
+Два важных отличия:
+- **Закрытие доступа к функциям заменяет замыкание `feature:`**: после закрытия пейвола проверьте активный уровень доступа в возвращённом профиле (или через `Adapty.getProfile`) и разветвляйте логику оттуда.
+- **Пейволы рендерит SDK**: Superwall рендерит пейволы внутри `WKWebView`. Adapty рендерит пейволы Paywall Builder нативно — шрифты, информация о продуктах и кнопки отрисовываются средствами SDK.
+Ознакомьтесь с гайдом по быстрому старту пейволов для вашей платформы — [iOS](ios-quickstart-paywalls), [Android](android-quickstart-paywalls), [React Native](react-native-quickstart-paywalls), [Flutter](flutter-quickstart-paywalls), [Kotlin Multiplatform](kmp-quickstart-paywalls), [Unity](unity-quickstart-paywalls) или [Capacitor](capacitor-quickstart-paywalls).
+### Проверка статуса подписки \{#check-subscription-status\}
+
+Замените `Superwall.shared.subscriptionStatus` на проверку именованного уровня доступа в профиле: `profile.accessLevels["premium"]?.isActive`. Отслеживайте изменения через `AdaptyDelegate.didLoadLatestProfile(_:)` вместо паттерна `@Published`, а профиль кешируйте на своей стороне для синхронного чтения.
+См. гайд по статусу подписки для вашей платформы — [iOS](ios-check-subscription-status), [Android](android-check-subscription-status), [React Native](react-native-check-subscription-status), [Flutter](flutter-check-subscription-status), [Kotlin Multiplatform](kmp-check-subscription-status), [Unity](unity-check-subscription-status) или [Capacitor](capacitor-check-subscription-status).
+### Обработка покупок и восстановлений \{#handle-purchases-and-restores\}
+
+С Paywall Builder оба SDK обрабатывают покупки автоматически внутри UI пейвола — **этот шаг можно пропустить**.
+
+Для кастомных пейволов Superwall требует реализации `PurchaseController`. Adapty — нет: замените `PurchaseController.purchase` на `Adapty.makePurchase`, а `PurchaseController.restorePurchases` — на `Adapty.restorePurchases`. SDK самостоятельно выполняет валидацию.
+Смотрите гайд по custom paywall для вашей платформы — [iOS](ios-quickstart-manual), [Android](android-quickstart-manual), [React Native](react-native-quickstart-manual), [Flutter](flutter-quickstart-manual), [Kotlin Multiplatform](kmp-quickstart-manual), [Unity](unity-quickstart-manual) или [Capacitor](capacitor-quickstart-manual).
+### Установка атрибутов пользователя \{#set-user-attributes\}
+
+Замените `Superwall.shared.setUserAttributes` на `Adapty.updateProfile`.
+
+Ознакомьтесь с гайдом по атрибутам пользователя для вашей платформы — [iOS](setting-user-attributes), [Android](android-setting-user-attributes), [React Native](react-native-setting-user-attributes), [Flutter](flutter-setting-user-attributes), [Kotlin Multiplatform](kmp-setting-user-attributes), [Unity](unity-setting-user-attributes) или [Capacitor](capacitor-setting-user-attributes).
+## Настройка серверных уведомлений App Store и Google Play \{#switch-app-store-and-google-play-server-notifications\}
+
+Направьте серверные уведомления стора в Adapty. Без них Adapty работает, но аналитика, сторонние интеграции и метрики A/B-тестов от них зависят:
+
+- **App Store**: следуйте инструкции [Включение серверных уведомлений App Store](enable-app-store-server-notifications).
+- **Google Play**: следуйте инструкции [Включение уведомлений реального времени для разработчиков](enable-real-time-developer-notifications-rtdn).
+Если вы хотите запускать Superwall и Adapty параллельно во время перехода, воспользуйтесь [переадресацией необработанных событий](enable-app-store-server-notifications#raw-events-forwarding) — Adapty будет проксировать события стора обратно в Superwall, пока вы проверяете новую интеграцию.
+## Тестирование и релиз \{#test-and-release\}
+
+Перед релизом проверьте каждый пункт:
+
+- [x] Настроен дашборд Adapty (продукты, пейволы, плейсменты, уровни доступа)
+- [x] Установлен SDK Adapty
+- [x] Вызовы Superwall SDK заменены на эквиваленты Adapty
+- [x] Серверные уведомления App Store и Google Play направлены на Adapty
+- [ ] Выполнена покупка в песочнице
+- [ ] Отправлен новый релиз приложения
+
+Пройдите [чеклист релиза](release-checklist) для финальной проверки.
+## (Опционально) Импорт исторических данных \{#optional-import-historical-data\}
+
+Superwall не владеет состоянием вашей подписки — это делают App Store и Google Play. Adapty проверяет чеки при первом запуске, поэтому платные пользователи сохраняют доступ без какого-либо импорта.
+
+Если вы хотите, чтобы исторические транзакции попали в аналитику Adapty, следуйте гайду [Импорт исторических данных в Adapty](importing-historical-data-to-adapty). Подождите не менее недели после релиза SDK, чтобы у него было время собрать актуальные данные о ценах покупок.
+## Часто задаваемые вопросы \{#faq\}
+### Что происходит с подписчиками, которые не обновляют приложение? \{#what-happens-to-subscribers-who-dont-update-the-app\}
+
+Большинство пользователей обновляют приложения автоматически — как правило, ночью, поэтому доля пользователей на старой версии быстро сокращается. Подписчики на старой версии сохраняют доступ через App Store или Google Play напрямую — принудительное обновление не требуется.
+### Переносятся ли аудитории моих кампаний из Superwall? \{#do-my-superwall-campaign-audiences-carry-over\}
+
+Нет. Фильтры аудитории в Superwall и аудитории в Adapty настраиваются в разных дашбордах и используют разные идентификаторы. Воссоздайте таргетинг как [аудитории](audience) внутри [плейсментов](placements) Adapty. Большинство приложений работают с одним-двумя плейсментами (онбординг и общий внутриприложенческий триггер), поэтому перенастройка обычно занимает немного времени.
+### Есть ли в Adapty аналог `getPresentationResult`?
+
+Нет единого вызова для этого. Чтобы проверить, будет ли плейсмент показывать пейвол, вызовите `Adapty.getPaywall(placementId:)` и обработайте результат. Если вызов успешен — пейвол назначен для аудитории этого пользователя. Если он завершился ошибкой из-за того, что пейвол не настроен — пропустите показ и выполните резервную логику.
