@@ -27,6 +27,7 @@ export default defineConfig({
     inlineStylesheets: 'never',
   },
   vite: {
+    cacheDir: '.vite',
     plugins: [
       tailwindcss(),
     ],
