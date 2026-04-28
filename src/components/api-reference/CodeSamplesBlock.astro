@@ -1,0 +1,260 @@
+---
+// src/components/api-reference/CodeSamplesBlock.astro
+import { codeToHtml } from 'shiki';
+import type { ApiOperation, ApiSpec } from '../../api-reference/lib/model';
+import { renderCurl, renderFetch, renderPython } from '../../api-reference/lib/code-samples';
+import LanguageSwitcher from './LanguageSwitcher.tsx';
+
+interface Props { operation: ApiOperation; spec: ApiSpec; }
+const { operation, spec } = Astro.props;
+
+// Match the rest of the site's code blocks (astro.config.mjs uses 'github-light').
+// The DocsLayout dark-mode brightening script is opted out for our pres, so we
+// rely on CSS to provide a dark-mode-friendly background and let Shiki's
+// inline token colors render the same in both themes (for now).
+const SHIKI_THEME = 'github-light' as const;
+
+const sources = {
+  curl: renderCurl({ operation, spec }),
+  fetch: renderFetch({ operation, spec }),
+  python: renderPython({ operation, spec }),
+};
+
+const samples = {
+  curl: await codeToHtml(sources.curl, { lang: 'bash', theme: SHIKI_THEME }),
+  fetch: await codeToHtml(sources.fetch, { lang: 'javascript', theme: SHIKI_THEME }),
+  python: await codeToHtml(sources.python, { lang: 'python', theme: SHIKI_THEME }),
+};
+
+const harRequest = {
+  method: operation.method,
+  url: operation.serverUrl + operation.path,
+  headers: Object.entries({
+    ...(operation.requestBody ? { 'Content-Type': operation.requestBody.contentType } : {}),
+  }).map(([name, value]) => ({ name, value })),
+  postData: operation.requestBody?.examples[0]
+    ? { mimeType: operation.requestBody.contentType,
+        text: JSON.stringify(operation.requestBody.examples[0].value, null, 2) }
+    : undefined,
+};
+---
+
+<aside class="api-code-samples not-prose" data-op-id={operation.operationId}>
+  <div class="api-code-samples-header">
+    <LanguageSwitcher
+      client:visible
+      operationId={operation.operationId}
+      harRequest={harRequest}
+    />
+    <button
+      type="button"
+      class="api-code-copy"
+      data-copy-target={operation.operationId}
+      aria-label="Copy code"
+      title="Copy"
+    >
+      <svg class="api-code-copy-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <rect x="3.5" y="3.5" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M5.5 3.5V2.5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-1" stroke="currentColor" stroke-width="1.4" fill="none"/>
+      </svg>
+      <span class="api-code-copy-label">Copy</span>
+    </button>
+  </div>
+  <div class="api-code-sample" data-lang="curl" set:html={samples.curl} />
+  <div class="api-code-sample" data-lang="fetch" hidden set:html={samples.fetch} />
+  <div class="api-code-sample" data-lang="python" hidden set:html={samples.python} />
+  <div class="api-code-sample api-code-sample-dynamic" data-lang="dynamic" hidden><pre><code></code></pre></div>
+</aside>
+
+<style>
+.api-code-samples {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 0.625rem;
+  padding: 0.5rem;
+  font-family: var(--font-mono);
+  /* Critical: prevent the flex-column parent (.api-op-rail) from sizing this
+     to its content's intrinsic width. Without min-width: 0, white-space:pre
+     inside the <pre> would push the whole block wider than the rail. */
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.api-code-samples-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.125rem 0.375rem 0.5rem;
+  min-height: 28px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+/* Inner code area: rounded card nested inside the outer wrapper, scrollable. */
+.api-code-sample {
+  background: transparent;
+  min-width: 0;
+  max-width: 100%;
+}
+.api-code-sample :global(pre) {
+  margin: 0;
+  padding: 0.75rem 0.875rem;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  border-radius: 0.5rem;
+  box-shadow: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-primary) transparent;
+  /* Allow long URLs / tokens to scroll horizontally rather than wrap awkwardly. */
+  white-space: pre;
+  word-break: normal;
+}
+.api-code-sample :global(pre code) {
+  background: transparent;
+  padding: 0;
+  border: 0;
+  font-size: inherit;
+  color: inherit;
+  white-space: pre;
+}
+
+/* Custom scrollbar — prominent enough to be discoverable */
+.api-code-sample :global(pre)::-webkit-scrollbar { height: 8px; width: 8px; }
+.api-code-sample :global(pre)::-webkit-scrollbar-track { background: transparent; }
+.api-code-sample :global(pre)::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 4px;
+}
+.api-code-sample :global(pre)::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+/* Dynamic (non-shiki) fallback for httpsnippet conversions */
+.api-code-sample-dynamic pre {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+/* Copy button: ghost style, icon-only on narrow widths */
+.api-code-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+.api-code-copy:hover {
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border-color: var(--border-primary);
+}
+.api-code-copy:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+.api-code-copy.copied {
+  color: #16a34a;
+  border-color: rgba(22, 163, 74, 0.3);
+}
+:root.dark .api-code-copy.copied { color: #4ade80; border-color: rgba(74, 222, 128, 0.3); }
+.api-code-copy-icon { flex-shrink: 0; }
+.api-code-copy-label { font-weight: 500; }
+
+/* Dark mode: Shiki's github-light background is white; override to a dark surface
+   for parity with the rest of the site's dark code blocks. */
+:root.dark .api-code-sample :global(pre) {
+  background: #1a1f2e !important;
+  color: #e2e8f0;
+}
+:root.dark .api-code-sample :global(pre code) { color: #e2e8f0; }
+/* Brighten Shiki's dark inline token colors slightly in dark mode without
+   mutating the markup (mirrors the global enhancer's intent for non-API blocks). */
+:root.dark .api-code-sample :global(pre code span[style*="color:#24292"]),
+:root.dark .api-code-sample :global(pre code span[style*="color:#1F2328"]),
+:root.dark .api-code-sample :global(pre code span[style*="color:#000"]) {
+  color: #e2e8f0 !important;
+}
+</style>
+
+<script>
+  import {
+    renderCurlSnippet,
+    renderFetchSnippet,
+    renderPythonSnippet,
+    type SnippetInput,
+  } from '../../api-reference/lib/code-samples';
+
+  // Wire up the per-block Copy button. Copies text from the currently-visible
+  // language sample inside the same .api-code-samples container.
+  function setupApiCodeCopy() {
+    document.querySelectorAll<HTMLButtonElement>('.api-code-copy').forEach((btn) => {
+      if ((btn as any).__apiCopyBound) return;
+      (btn as any).__apiCopyBound = true;
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-copy-target');
+        if (!target) return;
+        const root = document.querySelector(`[data-op-id="${target}"]`);
+        const visible = root?.querySelector<HTMLElement>('.api-code-sample:not([hidden])');
+        const pre = visible?.querySelector('pre');
+        const text = pre?.textContent ?? '';
+        if (!text) return;
+        navigator.clipboard?.writeText(text);
+        btn.classList.add('copied');
+        const label = btn.querySelector<HTMLElement>('.api-code-copy-label');
+        const original = label?.textContent ?? '';
+        if (label) label.textContent = 'Copied';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          if (label) label.textContent = original || 'Copy';
+        }, 1200);
+      });
+    });
+  }
+
+  // Live snippet sync: when the Try-It panel emits new request data, re-render
+  // each prebuilt language sample to reflect the user's auth/params/body.
+  // We compare against the current text content first so the SSR-rendered
+  // (Shiki-highlighted) initial state is preserved when nothing has changed.
+  function setupApiCodeSync() {
+    if ((document as any).__apiCodeSyncBound) return;
+    (document as any).__apiCodeSyncBound = true;
+    document.addEventListener('try-it:change', ((ev: CustomEvent<{
+      operationId: string;
+      input: SnippetInput;
+    }>) => {
+      const { operationId, input } = ev.detail;
+      const root = document.querySelector(`[data-op-id="${operationId}"]`);
+      if (!root) return;
+      const samples: Record<string, string> = {
+        curl: renderCurlSnippet(input),
+        fetch: renderFetchSnippet(input),
+        python: renderPythonSnippet(input),
+      };
+      for (const [lang, text] of Object.entries(samples)) {
+        const codeEl = root.querySelector<HTMLElement>(
+          `.api-code-sample[data-lang="${lang}"] code`
+        );
+        if (!codeEl) continue;
+        // Skip if SSR-rendered text already matches — preserves Shiki colors.
+        if ((codeEl.textContent ?? '').trimEnd() === text.trimEnd()) continue;
+        codeEl.textContent = text;
+      }
+    }) as EventListener);
+  }
+
+  setupApiCodeCopy();
+  setupApiCodeSync();
+  document.addEventListener('astro:page-load', () => {
+    setupApiCodeCopy();
+    setupApiCodeSync();
+  });
+</script>

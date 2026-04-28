@@ -41,6 +41,9 @@ jobs:
     needs: classify
     if: needs.classify.outputs.translation_only == 'false'
     runs-on: ubuntu-latest
+    concurrency:
+      group: check-internal-links-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,6 +51,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
       - run: npm install github-slugger
       - run: node scripts/check-links/index.mjs --diff --base=last-production-deploy --internal-only
 
@@ -57,18 +61,16 @@ jobs:
   build-en:
     needs: check-internal-links
     runs-on: ubuntu-latest
+    concurrency:
+      group: build-en-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: npm-${{ hashFiles('package-lock.json') }}
+          cache: 'npm'
 
       - name: Cache Astro build
         uses: actions/cache@v4
@@ -78,6 +80,8 @@ jobs:
           restore-keys: astro-en-
 
       - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
 
       - name: Build English only
         env:
@@ -101,18 +105,16 @@ jobs:
     strategy:
       matrix:
         locale: [zh, tr, ru]
+    concurrency:
+      group: build-locale-full-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: npm-${{ hashFiles('package-lock.json') }}
+          cache: 'npm'
 
       - name: Cache Astro build
         uses: actions/cache@v4
@@ -122,6 +124,8 @@ jobs:
           restore-keys: astro-${{ matrix.locale }}-
 
       - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
 
       - name: Build locale ${{ matrix.locale }}
         env:
@@ -137,6 +141,9 @@ jobs:
   deploy-full:
     needs: [build-en, build-locale-full]
     runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-full-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
     permissions:
       contents: write
     environment: production
@@ -192,18 +199,16 @@ jobs:
     strategy:
       matrix:
         locale: [zh, tr, ru]
+    concurrency:
+      group: build-locale-only-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: npm-${{ hashFiles('package-lock.json') }}
+          cache: 'npm'
 
       - name: Cache Astro build
         uses: actions/cache@v4
@@ -213,6 +218,8 @@ jobs:
           restore-keys: astro-${{ matrix.locale }}-
 
       - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
 
       - name: Build locale ${{ matrix.locale }}
         env:
@@ -228,6 +235,9 @@ jobs:
   deploy-translations:
     needs: build-locale-only
     runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-translations-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
     permissions:
       contents: write
     environment: production
