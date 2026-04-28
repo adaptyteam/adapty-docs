@@ -1,0 +1,209 @@
+---
+// src/components/api-reference/OperationPage.astro
+import type { ApiOperation, ApiSpec } from '../../api-reference/lib/model';
+import OperationParameters from './OperationParameters.astro';
+import SchemaTree from './SchemaTree.astro';
+import ResponseTabs from './ResponseTabs.astro';
+import CodeSamplesBlock from './CodeSamplesBlock.astro';
+import TryItPanel from './TryItPanel.tsx';
+import type { SerializedOperation } from './try-it/types';
+
+interface Props { spec: ApiSpec; operation: ApiOperation; }
+const { spec, operation } = Astro.props;
+
+const baseUrl = (import.meta.env.BASE_URL ?? '/').replace(/\/+$/, '');
+const mdHref = `${baseUrl}/${spec.slug}/operations/${operation.operationId}.md`.replace(/\/+/g, '/');
+
+const serialized: SerializedOperation = {
+  operationId: operation.operationId,
+  method: operation.method,
+  path: operation.path,
+  serverUrl: operation.serverUrl,
+  contentType: operation.requestBody?.contentType,
+  parameters: operation.parameters.map(p => ({
+    name: p.name, in: p.in, required: p.required, example: p.example,
+  })),
+  bodyExample: operation.requestBody?.examples[0]
+    ? JSON.stringify(operation.requestBody.examples[0].value, null, 2)
+    : undefined,
+  security: operation.security,
+};
+---
+
+<div class="api-op-grid">
+  <article class="docs-prose api-op-main">
+    <div class="api-op-pill">
+      <span class={`op-method op-method-${operation.method.toLowerCase()}`}>{operation.method}</span>
+      <code class="op-path">{operation.path}</code>
+    </div>
+    <h1>{operation.summary}</h1>
+    <div class="api-op-actions">
+      <a
+        class="copy-md-btn"
+        href={mdHref}
+        data-copy-md
+        title="Copy this page as Markdown — right-click to open the .md"
+      >
+        <svg class="copy-md-icon copy-md-icon-default" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+        <svg class="copy-md-icon copy-md-icon-done" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+        <span class="copy-md-label">Copy as Markdown</span>
+      </a>
+    </div>
+    {operation.deprecated && <p class="api-op-deprecated">⚠ Deprecated</p>}
+    {operation.descriptionHtml && <section set:html={operation.descriptionHtml} />}
+
+    {operation.parameters.length > 0 && <OperationParameters parameters={operation.parameters} />}
+
+    {operation.requestBody && (
+      <section class="api-op-body">
+        <h3>Request body</h3>
+        {operation.requestBody.descriptionHtml && (
+          <div set:html={operation.requestBody.descriptionHtml} />
+        )}
+        <SchemaTree schema={operation.requestBody.schema} />
+      </section>
+    )}
+
+    {operation.responses.length > 0 && (
+      <ResponseTabs responses={operation.responses} opId={operation.operationId} />
+    )}
+  </article>
+
+  <aside class="api-op-rail">
+    <TryItPanel
+      client:visible
+      slug={spec.slug}
+      operation={serialized}
+      defaultAuth={spec.defaultAuth}
+      securitySchemes={spec.securitySchemes}
+    />
+    <CodeSamplesBlock operation={operation} spec={spec} />
+  </aside>
+</div>
+
+<style>
+.api-op-grid { display: grid; grid-template-columns: minmax(0, 1fr) 26rem; gap: 2rem; align-items: start; }
+@media (max-width: 1100px) { .api-op-grid { grid-template-columns: 1fr; } }
+.api-op-main { min-width: 0; }
+.api-op-pill { display: flex; gap: 0.625rem; align-items: center; margin-bottom: 0.5rem;
+  flex-wrap: wrap; }
+.api-op-pill .op-method { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;
+  padding: 0.125rem 0.5rem; border-radius: 0.25rem; }
+.api-op-pill .op-path { font-size: 0.875rem; color: var(--text-secondary); }
+
+/* Standalone row beneath the title — always its own line so the title row
+   never wraps awkwardly on long paths or narrow viewports. */
+.api-op-actions {
+  display: flex;
+  margin: -0.25rem 0 1rem;
+}
+
+.copy-md-btn {
+  display: inline-flex; align-items: center; gap: 0.375rem;
+  font-size: 0.75rem; font-weight: 500;
+  color: var(--text-secondary);
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border-primary);
+  border-radius: 0.375rem;
+  background: var(--bg-primary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.copy-md-btn:hover { background: var(--bg-secondary); color: var(--text-primary);
+  border-color: var(--text-secondary); }
+.copy-md-icon { display: inline-block; }
+.copy-md-icon-done { display: none; }
+.copy-md-btn.copied { color: #166534; border-color: #86efac; background: #f0fdf4; }
+.copy-md-btn.copied .copy-md-icon-default { display: none; }
+.copy-md-btn.copied .copy-md-icon-done { display: inline-block; }
+:root.dark .copy-md-btn.copied { color: #4ade80; border-color: #166534; background: #052e16; }
+.api-op-deprecated { color: #92400e; background: #fef3c7; padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem; font-size: 0.875rem; }
+.api-op-rail { position: sticky; top: 5rem; display: flex; flex-direction: column; gap: 1rem; }
+@media (max-width: 1100px) { .api-op-rail { position: static; } }
+.op-method-get { background: #dcfce7; color: #166534; }
+.op-method-post { background: #dbeafe; color: #1e40af; }
+.op-method-put, .op-method-patch { background: #fef3c7; color: #92400e; }
+.op-method-delete { background: #fee2e2; color: #991b1b; }
+:root.dark .op-method-get { background: #052e16; color: #4ade80; }
+:root.dark .op-method-post { background: #172554; color: #60a5fa; }
+:root.dark .op-method-put, :root.dark .op-method-patch { background: #422006; color: #fbbf24; }
+:root.dark .op-method-delete { background: #450a0a; color: #fca5a5; }
+:root.dark .api-op-deprecated { background: #422006; color: #fbbf24; }
+</style>
+
+<script>
+  // Pre-fetch the .md so the click handler can write to the clipboard in the
+  // same user-gesture tick. If we fetch *inside* the click handler, the browser
+  // expires the gesture by the time the network roundtrip resolves, and
+  // navigator.clipboard.writeText rejects with "Document is not focused" /
+  // NotAllowedError. Pre-fetching makes the click->writeText path synchronous.
+  function initCopyMd() {
+    document.querySelectorAll<HTMLAnchorElement>('a[data-copy-md]').forEach(a => {
+      if (a.dataset.copyBound === '1') return;
+      a.dataset.copyBound = '1';
+
+      const label = a.querySelector<HTMLSpanElement>('.copy-md-label');
+      const original = label?.textContent ?? 'Copy as Markdown';
+
+      let cached: string | null = null;
+      let inflight: Promise<string | null> | null = null;
+
+      const fetchMd = (): Promise<string | null> => {
+        if (cached !== null) return Promise.resolve(cached);
+        if (inflight) return inflight;
+        inflight = fetch(a.href, { credentials: 'same-origin' })
+          .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.text();
+          })
+          .then(text => { cached = text; return text; })
+          .catch(err => {
+            console.warn('[copy-md] prefetch failed:', err);
+            return null;
+          })
+          .finally(() => { inflight = null; });
+        return inflight;
+      };
+
+      // Warm the cache on page load and on hover/focus, so by click time the
+      // text is already in memory.
+      fetchMd();
+      a.addEventListener('mouseenter', fetchMd, { passive: true });
+      a.addEventListener('focus', fetchMd);
+
+      a.addEventListener('click', async (e) => {
+        // Let the user open the .md page directly via cmd/ctrl/middle-click
+        // or right-click → "Open in new tab" — preserve those native behaviors.
+        const m = e as MouseEvent;
+        if (m.metaKey || m.ctrlKey || m.shiftKey || m.button !== 0) return;
+
+        e.preventDefault();
+        try {
+          const text = cached ?? await fetchMd();
+          if (text === null) throw new Error('fetch failed');
+          await navigator.clipboard.writeText(text);
+          a.classList.add('copied');
+          if (label) label.textContent = 'Copied';
+          setTimeout(() => {
+            a.classList.remove('copied');
+            if (label) label.textContent = original;
+          }, 1800);
+        } catch (err) {
+          console.error('[copy-md] failed:', err);
+          if (label) label.textContent = 'Copy failed';
+          setTimeout(() => { if (label) label.textContent = original; }, 1800);
+        }
+      });
+    });
+  }
+
+  initCopyMd();
+  document.addEventListener('astro:page-load', initCopyMd);
+</script>
