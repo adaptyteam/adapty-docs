@@ -1,5 +1,5 @@
 // src/api-reference/lib/model.ts
-import { renderMarkdown } from './render-markdown.ts';
+import { renderMarkdown, renderMarkdownInline } from './render-markdown.ts';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -18,7 +18,7 @@ export interface ApiSpec {
 
 export interface ApiServer {
   url: string;
-  description?: string;
+  descriptionHtml?: string;
 }
 
 export interface ApiSecurityScheme {
@@ -26,12 +26,12 @@ export interface ApiSecurityScheme {
   in?: 'header' | 'query' | 'cookie';
   name?: string;
   scheme?: string;
-  description?: string;
+  descriptionHtml?: string;
 }
 
 export interface ApiTag {
   name: string;
-  description?: string;
+  descriptionHtml?: string;
   operationIds: string[];
 }
 
@@ -84,7 +84,7 @@ export interface ApiExample {
 export interface ApiSchema {
   type?: 'object' | 'array' | 'string' | 'number' | 'integer' | 'boolean' | 'null';
   format?: string;
-  description?: string;
+  descriptionHtml?: string;
   required?: string[];
   properties?: Record<string, ApiSchema>;
   items?: ApiSchema;
@@ -103,8 +103,6 @@ export interface ApiConfigEntry {
   specFile: string;
   specUrl?: string;
   defaultAuth?: Record<string, string>;
-  backTo?: string;       // path users go back to (e.g. '/server-side-api-specs')
-  backToLabel?: string;  // text on the back button (e.g. 'Server-side API docs')
 }
 
 const HTTP_METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
@@ -151,7 +149,7 @@ function toSchema(s: any, seen: WeakMap<object, ApiSchema> = new WeakMap()): Api
 
   out.type = s.type;
   out.format = s.format;
-  out.description = s.description;
+  out.descriptionHtml = renderMarkdownInline(s.description);
   out.required = s.required;
   out.enum = s.enum;
   out.example = s.example;
@@ -270,15 +268,28 @@ export function buildApiSpec(deref: any, config: ApiConfigEntry, baseUrl: string
 
   const tags: ApiTag[] = tagOrder.map(name => {
     const meta = (deref.tags ?? []).find((t: any) => t.name === name);
-    return { name, description: meta?.description, operationIds: tagOps.get(name)! };
+    return {
+      name,
+      descriptionHtml: renderMarkdown(meta?.description),
+      operationIds: tagOps.get(name)!,
+    };
   });
 
   const securitySchemes: Record<string, ApiSecurityScheme> = {};
   for (const [k, v] of Object.entries<any>(deref.components?.securitySchemes ?? {})) {
     securitySchemes[k] = {
-      type: v.type, in: v.in, name: v.name, scheme: v.scheme, description: v.description,
+      type: v.type,
+      in: v.in,
+      name: v.name,
+      scheme: v.scheme,
+      descriptionHtml: renderMarkdown(v.description),
     };
   }
+
+  const servers: ApiServer[] = (deref.servers ?? []).map((s: any) => ({
+    url: s.url,
+    descriptionHtml: renderMarkdownInline(s.description),
+  }));
 
   const cleanBase = baseUrl.replace(/\/+$/, '');
   return {
@@ -286,7 +297,7 @@ export function buildApiSpec(deref: any, config: ApiConfigEntry, baseUrl: string
     name: config.name,
     version: deref.info?.version ?? '',
     descriptionHtml: renderMarkdown(deref.info?.description),
-    servers: deref.servers ?? [],
+    servers,
     securitySchemes,
     operations,
     tags,

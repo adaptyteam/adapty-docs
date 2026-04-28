@@ -18,36 +18,76 @@ const tooDeep = depth > MAX_DEPTH;
 const nextSeen = new Set(seen);
 nextSeen.add(schema);
 
+function isPrimitive(s: ApiSchema): boolean {
+  if (s.oneOf || s.anyOf || s.allOf) return false;
+  return s.type !== 'object' && s.type !== 'array';
+}
+
 function summarizeType(s: ApiSchema): string {
+  const branches = s.oneOf ?? s.anyOf;
+  // When all branches are primitives, render as a union type label (e.g. "string | number")
+  // instead of the opaque "oneOf" / "anyOf" — much clearer at a glance.
+  if (branches && branches.length > 0 && branches.every(isPrimitive)) {
+    const labels = branches.map(b => b.type ?? 'any');
+    return Array.from(new Set(labels)).join(' | ');
+  }
   if (s.oneOf) return 'oneOf';
   if (s.anyOf) return 'anyOf';
   if (s.allOf) return 'allOf';
-  if (s.type === 'array') return `array<${s.items?.type ?? 'any'}>`;
+  if (s.type === 'array') return `array of ${s.items?.type ?? 'any'}`;
   return s.type ?? 'any';
 }
+
+const unionBranches = schema.oneOf ?? schema.anyOf;
+const allPrimitiveUnion =
+  unionBranches !== undefined && unionBranches.length > 0 && unionBranches.every(isPrimitive);
+
+const hasChildren =
+  (schema.type === 'object' && !!schema.properties) ||
+  (schema.type === 'array' && schema.items?.type === 'object' && !!schema.items.properties) ||
+  !!schema.allOf ||
+  (!!unionBranches && !allPrimitiveUnion);
+
+// Skip the synthetic row for unnamed containers — otherwise an orphaned "object"
+// label would appear above the property list.
+const skipRow = !name && hasChildren;
+
+// For arrays of objects, render the object's properties directly under the array entry
+// without an intermediate "items: object" row.
+const arrayObjectItems =
+  schema.type === 'array' && schema.items?.type === 'object' && schema.items.properties
+    ? schema.items
+    : null;
 ---
 
-<div class="schema-row" data-depth={depth}>
-  {name && (
-    <span class="schema-name">
-      <code>{name}</code>{required && <span class="required">*</span>}
-    </span>
-  )}
-  <span class="schema-type">{summarizeType(schema)}</span>
-  {schema.description && <span class="schema-desc">{schema.description}</span>}
-  {schema.enum && <span class="schema-enum">enum: {schema.enum.map(v => JSON.stringify(v)).join(', ')}</span>}
-</div>
+{skipRow && schema.descriptionHtml && (
+  <p class="schema-root-desc" set:html={schema.descriptionHtml} />
+)}
 
-{cycle && <div class="schema-note">(recursive)</div>}
+{!skipRow && (
+  <div class="schema-row" data-depth={depth}>
+    <div class="schema-row-header">
+      {name && <span class="schema-name">{name}</span>}
+      <span class="schema-type">{summarizeType(schema)}</span>
+      {required && <span class="schema-required">required</span>}
+    </div>
+    {schema.descriptionHtml && <p class="schema-desc" set:html={schema.descriptionHtml} />}
+    {schema.enum && (
+      <p class="schema-enum">One of: {schema.enum.map(v => JSON.stringify(v)).join(', ')}</p>
+    )}
+  </div>
+)}
+
+{cycle && <p class="schema-note">recursive</p>}
 {tooDeep && (
   <details class="schema-deep">
     <summary>show more</summary>
-    (further nesting elided — depth {depth})
+    further nesting elided (depth {depth})
   </details>
 )}
 
 {!cycle && !tooDeep && schema.type === 'object' && schema.properties && (
-  <div class="schema-children">
+  <div class:list={['schema-children', { 'schema-children-root': skipRow }]}>
     {Object.entries(schema.properties).map(([propName, propSchema]) => (
       <Astro.self
         schema={propSchema}
@@ -60,14 +100,22 @@ function summarizeType(s: ApiSchema): string {
   </div>
 )}
 
-{!cycle && !tooDeep && schema.type === 'array' && schema.items && (
+{!cycle && !tooDeep && arrayObjectItems && (
   <div class="schema-children">
-    <Astro.self schema={schema.items} depth={depth + 1} seen={nextSeen} name="(items)" />
+    {Object.entries(arrayObjectItems.properties!).map(([propName, propSchema]) => (
+      <Astro.self
+        schema={propSchema}
+        depth={depth + 1}
+        seen={nextSeen}
+        name={propName}
+        required={arrayObjectItems.required?.includes(propName) ?? false}
+      />
+    ))}
   </div>
 )}
 
 {!cycle && !tooDeep && schema.allOf && (
-  <div class="schema-children">
+  <div class:list={['schema-children', { 'schema-children-root': skipRow }]}>
     {schema.allOf.flatMap(s => s.properties ? Object.entries(s.properties) : [])
       .map(([propName, propSchema]: [string, any]) => (
         <Astro.self schema={propSchema} depth={depth + 1} seen={nextSeen} name={propName} />
@@ -75,25 +123,44 @@ function summarizeType(s: ApiSchema): string {
   </div>
 )}
 
-{!cycle && !tooDeep && (schema.oneOf || schema.anyOf) && (
-  <div class="schema-children schema-union">
-    {(schema.oneOf ?? schema.anyOf!).map((branch, i) => (
-      <details class="schema-branch" open={i === 0}>
-        <summary>Option {i + 1}: {summarizeType(branch)}</summary>
-        <Astro.self schema={branch} depth={depth + 1} seen={nextSeen} />
-      </details>
+{!cycle && !tooDeep && unionBranches && !allPrimitiveUnion && (
+  <div class="schema-children">
+    {unionBranches.map((branch, i) => (
+      <div class="schema-option">
+        <p class="schema-option-label">Option {i + 1} — {summarizeType(branch)}</p>
+        {branch.descriptionHtml && <p class="schema-desc" set:html={branch.descriptionHtml} />}
+        {branch.type === 'object' && branch.properties && (
+          Object.entries(branch.properties).map(([propName, propSchema]) => (
+            <Astro.self
+              schema={propSchema}
+              depth={depth + 1}
+              seen={nextSeen}
+              name={propName}
+              required={branch.required?.includes(propName) ?? false}
+            />
+          ))
+        )}
+        {branch.type === 'array' && branch.items?.type === 'object' && branch.items.properties && (
+          Object.entries(branch.items.properties).map(([propName, propSchema]) => (
+            <Astro.self
+              schema={propSchema}
+              depth={depth + 1}
+              seen={nextSeen}
+              name={propName}
+              required={branch.items!.required?.includes(propName) ?? false}
+            />
+          ))
+        )}
+      </div>
     ))}
   </div>
 )}
 
 <style>
-.schema-row { display: flex; gap: 0.5rem; align-items: baseline; padding: 0.25rem 0; flex-wrap: wrap; }
-.schema-name code { font-weight: 600; color: var(--text-primary); }
-.schema-name .required { color: #dc2626; margin-left: 0.125rem; }
-.schema-type { color: var(--accent-primary); font-family: var(--font-mono); font-size: 0.8125rem; }
-.schema-desc { color: var(--text-secondary); font-size: 0.875rem; }
-.schema-enum { color: var(--text-secondary); font-size: 0.8125rem; font-style: italic; }
-.schema-children { margin-left: 1rem; padding-left: 0.75rem; border-left: 1px solid var(--border-primary); }
-.schema-note, .schema-deep { color: var(--text-secondary); font-size: 0.8125rem; margin-left: 1rem; }
-.schema-branch summary { cursor: pointer; padding: 0.25rem 0; font-weight: 500; }
+  .schema-note,
+  .schema-deep {
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    margin: 0.25rem 0 0 1rem;
+  }
 </style>

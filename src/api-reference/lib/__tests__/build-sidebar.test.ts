@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { buildSidebar } from '../build-sidebar.ts';
 import type { ApiSpec } from '../model.ts';
 
-const fakeSpec: ApiSpec = {
+const taggedSpec: ApiSpec = {
   slug: 'api-x', name: 'X API', version: '1.0', descriptionHtml: '',
   servers: [], securitySchemes: {},
   operations: [
@@ -14,77 +14,68 @@ const fakeSpec: ApiSpec = {
     { operationId: 'op2', method: 'POST', path: '/b', summary: 'Op Two',
       descriptionHtml: '', tag: 'A', deprecated: false, parameters: [],
       responses: [], security: [], serverUrl: '' },
-    { operationId: 'op3', method: 'DELETE', path: '/c', summary: 'Op Three',
-      descriptionHtml: '', deprecated: false, parameters: [],
-      responses: [], security: [], serverUrl: '' },  // untagged
   ],
   tags: [{ name: 'A', operationIds: ['op1', 'op2'] }],
   defaultAuth: {}, specFileUrl: '/x',
 };
 
-test('builds spec-header + Overview + tag groups + Other', () => {
-  const sb = buildSidebar(fakeSpec, '/docs');
+const untaggedSpec: ApiSpec = {
+  slug: 'api-y', name: 'Y API', version: '1.0', descriptionHtml: '',
+  servers: [], securitySchemes: {},
+  operations: [
+    { operationId: 'op1', method: 'GET', path: '/a', summary: 'Op One',
+      descriptionHtml: '', deprecated: false, parameters: [],
+      responses: [], security: [], serverUrl: '' },
+    { operationId: 'op2', method: 'DELETE', path: '/b', summary: 'Op Two',
+      descriptionHtml: '', deprecated: false, parameters: [],
+      responses: [], security: [], serverUrl: '' },
+  ],
+  tags: [],
+  defaultAuth: {}, specFileUrl: '/y',
+};
+
+test('tagged spec: spec name is a top-level overview link, tag groups follow as non-collapsible sections', () => {
+  const sb = buildSidebar(taggedSpec, '/docs');
+  assert.equal(sb.length, 2);
+
+  // Spec name → top-level link to overview, no nested Overview child
+  assert.equal(sb[0].type, 'link');
   assert.equal(sb[0].label, 'X API');
-  assert.equal(sb[0].items![0].label, 'Overview');
-  assert.equal(sb[0].items![0].href, '/docs/api-x');
+  assert.equal(sb[0].href, '/docs/api-x');
+
+  // Tag group is a non-collapsible category
+  assert.equal(sb[1].type, 'category');
   assert.equal(sb[1].label, 'A');  // upper-cased
+  assert.equal(sb[1].noToggle, true);
   assert.equal(sb[1].items!.length, 2);
   assert.equal(sb[1].items![0].href, '/docs/api-x/operations/op1');
   assert.equal(sb[1].items![0].meta!.method, 'GET');
-  // Untagged op should land in OTHER
-  const other = sb.find(s => s.label === 'OTHER');
-  assert.ok(other, 'OTHER group should exist');
-  assert.equal(other!.items!.length, 1);
-  assert.equal(other!.items![0].label, 'Op Three');
 });
 
 test('strips trailing slash from basePath', () => {
-  const sb = buildSidebar(fakeSpec, '/docs/');
-  assert.equal(sb[0].items![0].href, '/docs/api-x');
+  const sb = buildSidebar(taggedSpec, '/docs/');
+  assert.equal(sb[0].href, '/docs/api-x');
 });
 
-test('omits OTHER when all ops are tagged', () => {
-  const allTagged: ApiSpec = {
-    ...fakeSpec,
-    operations: fakeSpec.operations.slice(0, 2),  // only ops 1+2 (both tagged)
-  };
-  const sb = buildSidebar(allTagged, '/docs');
-  assert.ok(!sb.find(s => s.label === 'OTHER'));
-});
+test('untagged spec: spec name is the overview link, ops listed beneath as a non-collapsible group', () => {
+  const sb = buildSidebar(untaggedSpec, '/docs');
+  assert.equal(sb.length, 1, 'no extra group when there are no tags');
 
-test('prepends a back link when backTo and backToLabel are provided', () => {
-  const sb = buildSidebar(fakeSpec, '/docs', {
-    backTo: '/server-side-api-specs',
-    backToLabel: 'Server-side API docs',
-  });
-  assert.equal(sb[0].type, 'link');
-  assert.equal(sb[0].label, 'Server-side API docs');
-  assert.equal(sb[0].href, '/docs/server-side-api-specs');
-  assert.equal(sb[0].meta!.kind, 'back');
-  // Spec-name category must follow the back link
-  assert.equal(sb[1].type, 'category');
-  assert.equal(sb[1].label, 'X API');
-});
+  const root = sb[0];
+  assert.equal(root.type, 'category');
+  assert.equal(root.label, 'Y API');
+  assert.equal(root.href, '/docs/api-y', 'spec title links to the overview');
+  assert.equal(root.noToggle, true);
 
-test('omits the back link when options are not provided', () => {
-  const sb = buildSidebar(fakeSpec, '/docs');
-  // First section should be the spec-name category, not a back link
-  assert.equal(sb[0].type, 'category');
-  assert.equal(sb[0].label, 'X API');
-  assert.ok(!sb.find(s => s.meta?.kind === 'back'));
-});
+  // Ops live directly under the spec section — no separate Overview child
+  assert.equal(root.items!.length, 2);
+  assert.equal(root.items![0].label, 'Op One');
+  assert.equal(root.items![0].meta!.method, 'GET');
+  assert.equal(root.items![1].label, 'Op Two');
+  assert.equal(root.items![1].meta!.method, 'DELETE');
 
-test('omits the back link when only one of backTo/backToLabel is set', () => {
-  const sbOnlyTo = buildSidebar(fakeSpec, '/docs', { backTo: '/x' });
-  assert.equal(sbOnlyTo[0].type, 'category');
-  const sbOnlyLabel = buildSidebar(fakeSpec, '/docs', { backToLabel: 'Y' });
-  assert.equal(sbOnlyLabel[0].type, 'category');
-});
-
-test('back link href uses cleaned base path (no double slash)', () => {
-  const sb = buildSidebar(fakeSpec, '/docs/', {
-    backTo: '/server-side-api-specs',
-    backToLabel: 'Server-side API docs',
-  });
-  assert.equal(sb[0].href, '/docs/server-side-api-specs');
+  // 'Other' label must not appear anywhere when there are no tags
+  for (const s of sb) {
+    assert.notEqual((s.label ?? '').toLowerCase(), 'other');
+  }
 });

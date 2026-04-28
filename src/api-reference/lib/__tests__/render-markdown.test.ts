@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderMarkdown } from '../render-markdown.ts';
+import { renderMarkdown, renderMarkdownInline } from '../render-markdown.ts';
 
 test('empty input returns empty string', () => {
   assert.equal(renderMarkdown(''), '');
@@ -22,4 +22,20 @@ test('renders a fenced code block', () => {
 test('malformed input does not throw', () => {
   assert.doesNotThrow(() => renderMarkdown('```\nunclosed'));
   assert.doesNotThrow(() => renderMarkdown('<<< not real markdown >>>'));
+});
+
+test('renderMarkdownInline: empty input returns empty string', () => {
+  assert.equal(renderMarkdownInline(''), '');
+  assert.equal(renderMarkdownInline(undefined), '');
+});
+
+test('renderMarkdownInline: renders bold and code without wrapping <p>', () => {
+  const html = renderMarkdownInline('Pass `Api-Key` as the **Authorization** header.');
+  assert.doesNotMatch(html, /<p>/, 'inline output must not be wrapped in <p>');
+  assert.match(html, /<code>Api-Key<\/code>/);
+  assert.match(html, /<strong>Authorization<\/strong>/);
+});
+
+test('renderMarkdownInline: malformed input does not throw', () => {
+  assert.doesNotThrow(() => renderMarkdownInline('`unclosed'));
 });

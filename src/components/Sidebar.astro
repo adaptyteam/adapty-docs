@@ -7,12 +7,13 @@ import platformsData from '../data/platforms.json';
 
 interface Props {
   sidebarData: any[];
+  apiSidebarData?: any[];
   currentPlatformId: string;
   currentSlug: string;
   currentLocale?: string;
 }
 
-const { sidebarData, currentPlatformId, currentSlug, currentLocale } = Astro.props;
+const { sidebarData, apiSidebarData, currentPlatformId, currentSlug, currentLocale } = Astro.props;
 
 // Logic to determine active ID from slug (simplified: last part of slug matches id)
 const activeId = currentSlug.split('/').pop() || ''; 
@@ -101,6 +102,7 @@ function transformItems(items: any[]): any[] {
 }
 
 const processedSidebar = transformItems(sidebarData);
+const processedApiSidebar = apiSidebarData ? transformItems(apiSidebarData) : null;
 
 // Load all sidebar JSONs for the mobile section switcher
 const allSidebarModules = import.meta.glob('../data/sidebars/*.json', { eager: true });
@@ -121,7 +123,12 @@ for (const platform of platformsData.sdkPlatforms) {
 const tutorialMod = allSidebarModules['../data/sidebars/tutorial.json'] as { default: any[] } | undefined;
 const apiMod = allSidebarModules['../data/sidebars/api.json'] as { default: any[] } | undefined;
 const tutorialSidebar = tutorialMod?.default ? transformItems(tutorialMod.default) : [];
-const apiSidebar = apiMod?.default ? transformItems(apiMod.default) : [];
+// On API ref pages, force-collapse the platform sidebar's top-level categories so the
+// API sub-sidebar below it takes focus. Off-API pages keep the original collapsed state.
+const apiSidebarRaw = apiMod?.default ? transformItems(apiMod.default) : [];
+const apiSidebar = currentPlatformId === 'api'
+    ? apiSidebarRaw.map((it: any) => it.type === 'category' ? { ...it, collapsible: true, collapsed: true } : it)
+    : apiSidebarRaw;
 
 // Apply locale label translations to all mobile sidebars
 const allLabelModules = import.meta.glob('../locales/*/_sidebar-labels.json', { eager: true });
@@ -180,13 +187,21 @@ function findActiveLabel(items: any[], activeId: string): string | undefined {
 }
 
 const currentLabel = findActiveLabel(processedSidebar, activeId);
+
+// On API ref pages, scope the persist key per-spec so cross-spec navigation
+// re-renders the sidebar instead of holding the stale operations list. Within
+// a single spec (e.g. between operation pages), the key matches and persist
+// keeps the same DOM — no flicker, no re-render.
+const persistKey = currentPlatformId === 'api'
+    ? `sidebar-api-${currentSlug.split('/')[0]}-${currentLocale ?? 'en'}`
+    : `sidebar-${currentPlatformId}-${currentLocale ?? 'en'}`;
 ---
 
 <aside
     id="main-sidebar"
     class="sidebar-main"
     data-platform-id={currentPlatformId}
-    transition:persist={`sidebar-${currentPlatformId}-${currentLocale ?? 'en'}`}
+    transition:persist={persistKey}
     transition:name="docs-sidebar"
 >
     <MobileSectionSwitcher
@@ -221,6 +236,16 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
             <SidebarItem item={item} activeId={activeId} />
           ))}
         </ul>
+
+        {processedApiSidebar && processedApiSidebar.length > 0 && (
+            <div class="api-sub-sidebar" aria-label="API reference navigation">
+                <ul class="space-y-1">
+                  {processedApiSidebar.map((item) => (
+                    <SidebarItem item={item} activeId={activeId} />
+                  ))}
+                </ul>
+            </div>
+        )}
     </nav>
     
     <script>
@@ -258,6 +283,20 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
         links.forEach(link => {
           const href = link.getAttribute('data-href')?.replace(/\/$/, '') || '/';
           const isActive = href === currentPath;
+
+          // Overview links (spec landing pages) opt out of the standard
+          // sidebar-item-bg-active treatment in favor of their own neutral
+          // card style, so we toggle a different class on the link itself.
+          if (link.hasAttribute('data-sidebar-overview-link')) {
+            if (isActive) {
+              link.classList.add('sidebar-overview-active');
+              link.id = 'active-sidebar-item';
+            } else {
+              link.classList.remove('sidebar-overview-active');
+              if (link.id === 'active-sidebar-item') link.id = '';
+            }
+            return;
+          }
 
           const container = link.closest('[data-sidebar-container]');
           if (container) {
@@ -317,7 +356,7 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
     box-shadow: var(--shadow-lg);
     border-right: none;
   }
-  
+
   @media (min-width: 1024px) {
     .sidebar-main {
       z-index: 10;
@@ -329,5 +368,19 @@ const currentLabel = findActiveLabel(processedSidebar, activeId);
       box-shadow: none;
     }
   }
-  
+
+  /* API sub-sidebar: stacked below the platform sidebar on API reference pages.
+     Reads as a distinct module while the platform sidebar above it provides
+     collapsed background context. */
+  .api-sub-sidebar {
+    margin-top: 1rem;
+    padding: 0.625rem 0.5rem 0.5rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.625rem;
+  }
+
+  .api-sub-sidebar > * {
+    margin-top: 0;
+  }
 </style>

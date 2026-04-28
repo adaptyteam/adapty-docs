@@ -61,3 +61,38 @@ test('python boolean/null conversion is word-bounded', () => {
   assert.match(out, /False\b/);
   assert.match(out, /None\b/);
 });
+
+test('curl JSON body continuation lines are indented to match flag indent', () => {
+  const out = renderCurl({ operation: op, spec });
+  // The first JSON line is inline with --data '{
+  // Subsequent lines must start with 2 spaces (matching the --flag indent).
+  const lines = out.split('\n');
+  const dataLineIdx = lines.findIndex(l => l.includes("--data '{"));
+  assert.ok(dataLineIdx >= 0, 'expected a --data line');
+  // The next JSON line (a property) must be indented with at least 2 leading spaces.
+  const next = lines[dataLineIdx + 1];
+  assert.ok(next.startsWith('  '), `expected JSON continuation indented (got: ${JSON.stringify(next)})`);
+  // The closing brace should also be indented.
+  const closingIdx = lines.findIndex(l => l.match(/^  }'?$/));
+  assert.ok(closingIdx > dataLineIdx, `expected indented closing brace, got lines: ${JSON.stringify(lines)}`);
+});
+
+test('fetch JSON body continuation lines are indented to match fetch options indent', () => {
+  const out = renderFetch({ operation: op, spec });
+  const lines = out.split('\n');
+  const bodyLineIdx = lines.findIndex(l => l.includes('body: JSON.stringify({'));
+  assert.ok(bodyLineIdx >= 0, 'expected a body: JSON.stringify line');
+  // Next line must be indented with at least 2 spaces (the fetch object indent).
+  const next = lines[bodyLineIdx + 1];
+  assert.ok(next.startsWith('  '), `expected fetch JSON continuation indented (got: ${JSON.stringify(next)})`);
+});
+
+test('python json arg continuation lines are indented to match call indent', () => {
+  const out = renderPython({ operation: op, spec });
+  const lines = out.split('\n');
+  const jsonLineIdx = lines.findIndex(l => l.includes('json={'));
+  assert.ok(jsonLineIdx >= 0, 'expected a json= line');
+  // Next line must be indented with at least 4 spaces (the requests.<method>( call indent).
+  const next = lines[jsonLineIdx + 1];
+  assert.ok(next.startsWith('    '), `expected python json continuation indented 4+ spaces (got: ${JSON.stringify(next)})`);
+});
