@@ -1,0 +1,99 @@
+---
+// src/components/api-reference/SchemaTree.astro
+import type { ApiSchema } from '../../api-reference/lib/model';
+
+interface Props {
+  schema: ApiSchema;
+  depth?: number;
+  seen?: Set<ApiSchema>;
+  name?: string;
+  required?: boolean;
+}
+
+const { schema, depth = 0, seen = new Set<ApiSchema>(), name, required = false } = Astro.props;
+
+const MAX_DEPTH = 5;
+const cycle = seen.has(schema);
+const tooDeep = depth > MAX_DEPTH;
+const nextSeen = new Set(seen);
+nextSeen.add(schema);
+
+function summarizeType(s: ApiSchema): string {
+  if (s.oneOf) return 'oneOf';
+  if (s.anyOf) return 'anyOf';
+  if (s.allOf) return 'allOf';
+  if (s.type === 'array') return `array<${s.items?.type ?? 'any'}>`;
+  return s.type ?? 'any';
+}
+---
+
+<div class="schema-row" data-depth={depth}>
+  {name && (
+    <span class="schema-name">
+      <code>{name}</code>{required && <span class="required">*</span>}
+    </span>
+  )}
+  <span class="schema-type">{summarizeType(schema)}</span>
+  {schema.description && <span class="schema-desc">{schema.description}</span>}
+  {schema.enum && <span class="schema-enum">enum: {schema.enum.map(v => JSON.stringify(v)).join(', ')}</span>}
+</div>
+
+{cycle && <div class="schema-note">(recursive)</div>}
+{tooDeep && (
+  <details class="schema-deep">
+    <summary>show more</summary>
+    (further nesting elided — depth {depth})
+  </details>
+)}
+
+{!cycle && !tooDeep && schema.type === 'object' && schema.properties && (
+  <div class="schema-children">
+    {Object.entries(schema.properties).map(([propName, propSchema]) => (
+      <Astro.self
+        schema={propSchema}
+        depth={depth + 1}
+        seen={nextSeen}
+        name={propName}
+        required={schema.required?.includes(propName) ?? false}
+      />
+    ))}
+  </div>
+)}
+
+{!cycle && !tooDeep && schema.type === 'array' && schema.items && (
+  <div class="schema-children">
+    <Astro.self schema={schema.items} depth={depth + 1} seen={nextSeen} name="(items)" />
+  </div>
+)}
+
+{!cycle && !tooDeep && schema.allOf && (
+  <div class="schema-children">
+    {schema.allOf.flatMap(s => s.properties ? Object.entries(s.properties) : [])
+      .map(([propName, propSchema]: [string, any]) => (
+        <Astro.self schema={propSchema} depth={depth + 1} seen={nextSeen} name={propName} />
+      ))}
+  </div>
+)}
+
+{!cycle && !tooDeep && (schema.oneOf || schema.anyOf) && (
+  <div class="schema-children schema-union">
+    {(schema.oneOf ?? schema.anyOf!).map((branch, i) => (
+      <details class="schema-branch" open={i === 0}>
+        <summary>Option {i + 1}: {summarizeType(branch)}</summary>
+        <Astro.self schema={branch} depth={depth + 1} seen={nextSeen} />
+      </details>
+    ))}
+  </div>
+)}
+
+<style>
+.schema-row { display: flex; gap: 0.5rem; align-items: baseline; padding: 0.25rem 0; flex-wrap: wrap; }
+.schema-name code { font-weight: 600; color: var(--text-primary); }
+.schema-name .required { color: #dc2626; margin-left: 0.125rem; }
+.schema-type { color: var(--accent-primary); font-family: var(--font-mono); font-size: 0.8125rem; }
+.schema-desc { color: var(--text-secondary); font-size: 0.875rem; }
+.schema-enum { color: var(--text-secondary); font-size: 0.8125rem; font-style: italic; }
+.schema-children { margin-left: 1rem; padding-left: 0.75rem; border-left: 1px solid var(--border-primary); }
+.schema-note, .schema-deep { color: var(--text-secondary); font-size: 0.8125rem; margin-left: 1rem; }
+.schema-branch summary { cursor: pointer; padding: 0.25rem 0; font-weight: 500; }
+</style>

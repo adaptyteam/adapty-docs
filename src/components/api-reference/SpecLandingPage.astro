@@ -1,0 +1,98 @@
+---
+// src/components/api-reference/SpecLandingPage.astro
+import type { ApiSpec } from '../../api-reference/lib/model';
+import SpecHeader from './SpecHeader.astro';
+
+interface Props { spec: ApiSpec; }
+const { spec } = Astro.props;
+---
+
+<article class="docs-prose api-spec-landing">
+  <SpecHeader spec={spec} />
+
+  {spec.descriptionHtml && (
+    <section id="description" set:html={spec.descriptionHtml} />
+  )}
+
+  {spec.servers.length > 0 && (
+    <section id="servers">
+      <h2>Servers</h2>
+      <ul>
+        {spec.servers.map(s => (
+          <li><code>{s.url}</code>{s.description && <> — {s.description}</>}</li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  {Object.keys(spec.securitySchemes).length > 0 && (
+    <section id="authentication">
+      <h2>Authentication</h2>
+      {Object.entries(spec.securitySchemes).map(([name, scheme]) => (
+        <div class="security-scheme">
+          <h3>{scheme.name ?? name}</h3>
+          <p>
+            <strong>Type:</strong> {scheme.type}
+            {scheme.in && <> · <strong>In:</strong> {scheme.in}</>}
+            {scheme.scheme && <> · <strong>Scheme:</strong> {scheme.scheme}</>}
+          </p>
+          {scheme.description && <p>{scheme.description}</p>}
+          {scheme.type === 'apiKey' && scheme.in === 'header' && scheme.name && (
+            <pre><code>{`curl --request GET \\
+  --url '${spec.servers[0]?.url ?? ''}/...' \\
+  --header '${scheme.name}: ${spec.defaultAuth[name] ?? 'YOUR_KEY'}'`}</code></pre>
+          )}
+        </div>
+      ))}
+    </section>
+  )}
+
+  <section id="operations">
+    <h2>Operations</h2>
+    {spec.tags.map(tag => {
+      const ops = spec.operations.filter(o => o.tag === tag.name);
+      return (
+        <div class="op-group">
+          <h3>{tag.name}</h3>
+          {tag.description && <p>{tag.description}</p>}
+          <ul class="op-cards">
+            {ops.map(op => (
+              <li class="op-card">
+                <a href={`${import.meta.env.BASE_URL}/${spec.slug}/operations/${op.operationId}`.replace(/\/+/g, '/')}>
+                  <span class={`op-method op-method-${op.method.toLowerCase()}`}>{op.method}</span>
+                  <span class="op-summary">{op.summary}</span>
+                  <code class="op-path">{op.path}</code>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    })}
+  </section>
+</article>
+
+<style>
+.api-spec-landing { max-width: 56rem; }
+.security-scheme { margin: 1rem 0; padding: 1rem; background: var(--bg-secondary); border-radius: 0.75rem; }
+.security-scheme pre { background: var(--bg-primary); padding: 0.75rem; border-radius: 0.5rem;
+  overflow-x: auto; font-size: 0.8125rem; }
+.op-group { margin: 1.5rem 0; }
+.op-cards { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem; }
+.op-card a { display: grid; grid-template-columns: 4rem 1fr auto; gap: 0.75rem; align-items: center;
+  padding: 0.75rem 1rem; border: 1px solid var(--border-primary); border-radius: 0.625rem;
+  text-decoration: none; color: var(--text-primary); transition: background 0.15s; }
+.op-card a:hover { background: var(--bg-secondary); }
+.op-method { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;
+  padding: 0.125rem 0.375rem; border-radius: 0.25rem; text-align: center; }
+.op-method-get { background: #dcfce7; color: #166534; }
+.op-method-post { background: #dbeafe; color: #1e40af; }
+.op-method-put { background: #fef3c7; color: #92400e; }
+.op-method-patch { background: #fef3c7; color: #92400e; }
+.op-method-delete { background: #fee2e2; color: #991b1b; }
+.op-path { font-size: 0.8125rem; color: var(--text-secondary); }
+:root.dark .op-method-get { background: #052e16; color: #4ade80; }
+:root.dark .op-method-post { background: #172554; color: #60a5fa; }
+:root.dark .op-method-put, :root.dark .op-method-patch { background: #422006; color: #fbbf24; }
+:root.dark .op-method-delete { background: #450a0a; color: #fca5a5; }
+</style>

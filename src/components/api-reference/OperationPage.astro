@@ -1,0 +1,90 @@
+---
+// src/components/api-reference/OperationPage.astro
+import type { ApiOperation, ApiSpec } from '../../api-reference/lib/model';
+import OperationParameters from './OperationParameters.astro';
+import SchemaTree from './SchemaTree.astro';
+import ResponseTabs from './ResponseTabs.astro';
+import CodeSamplesBlock from './CodeSamplesBlock.astro';
+import TryItPanel from './TryItPanel.tsx';
+import type { SerializedOperation } from './try-it/types';
+
+interface Props { spec: ApiSpec; operation: ApiOperation; }
+const { spec, operation } = Astro.props;
+
+const serialized: SerializedOperation = {
+  operationId: operation.operationId,
+  method: operation.method,
+  path: operation.path,
+  serverUrl: operation.serverUrl,
+  contentType: operation.requestBody?.contentType,
+  parameters: operation.parameters.map(p => ({
+    name: p.name, in: p.in, required: p.required, example: p.example,
+  })),
+  bodyExample: operation.requestBody?.examples[0]
+    ? JSON.stringify(operation.requestBody.examples[0].value, null, 2)
+    : undefined,
+  security: operation.security,
+};
+---
+
+<div class="api-op-grid">
+  <article class="docs-prose api-op-main">
+    <div class="api-op-pill">
+      <span class={`op-method op-method-${operation.method.toLowerCase()}`}>{operation.method}</span>
+      <code class="op-path">{operation.path}</code>
+    </div>
+    <h1>{operation.summary}</h1>
+    {operation.deprecated && <p class="api-op-deprecated">⚠ Deprecated</p>}
+    {operation.descriptionHtml && <section set:html={operation.descriptionHtml} />}
+
+    {operation.parameters.length > 0 && <OperationParameters parameters={operation.parameters} />}
+
+    {operation.requestBody && (
+      <section class="api-op-body">
+        <h3>Request body</h3>
+        {operation.requestBody.descriptionHtml && (
+          <div set:html={operation.requestBody.descriptionHtml} />
+        )}
+        <SchemaTree schema={operation.requestBody.schema} />
+      </section>
+    )}
+
+    {operation.responses.length > 0 && (
+      <ResponseTabs responses={operation.responses} opId={operation.operationId} />
+    )}
+  </article>
+
+  <aside class="api-op-rail">
+    <CodeSamplesBlock operation={operation} spec={spec} />
+    <TryItPanel
+      client:visible
+      slug={spec.slug}
+      operation={serialized}
+      defaultAuth={spec.defaultAuth}
+      securitySchemes={spec.securitySchemes}
+    />
+  </aside>
+</div>
+
+<style>
+.api-op-grid { display: grid; grid-template-columns: minmax(0, 1fr) 26rem; gap: 2rem; align-items: start; }
+@media (max-width: 1100px) { .api-op-grid { grid-template-columns: 1fr; } }
+.api-op-main { min-width: 0; }
+.api-op-pill { display: flex; gap: 0.625rem; align-items: center; margin-bottom: 0.5rem; }
+.api-op-pill .op-method { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;
+  padding: 0.125rem 0.5rem; border-radius: 0.25rem; }
+.api-op-pill .op-path { font-size: 0.875rem; color: var(--text-secondary); }
+.api-op-deprecated { color: #92400e; background: #fef3c7; padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem; font-size: 0.875rem; }
+.api-op-rail { position: sticky; top: 5rem; display: flex; flex-direction: column; gap: 1rem; }
+@media (max-width: 1100px) { .api-op-rail { position: static; } }
+.op-method-get { background: #dcfce7; color: #166534; }
+.op-method-post { background: #dbeafe; color: #1e40af; }
+.op-method-put, .op-method-patch { background: #fef3c7; color: #92400e; }
+.op-method-delete { background: #fee2e2; color: #991b1b; }
+:root.dark .op-method-get { background: #052e16; color: #4ade80; }
+:root.dark .op-method-post { background: #172554; color: #60a5fa; }
+:root.dark .op-method-put, :root.dark .op-method-patch { background: #422006; color: #fbbf24; }
+:root.dark .op-method-delete { background: #450a0a; color: #fca5a5; }
+:root.dark .api-op-deprecated { background: #422006; color: #fbbf24; }
+</style>
