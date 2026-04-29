@@ -154,6 +154,7 @@ struct YourApp: App {
 // If you use a SceneDelegate, place the following code in the
 // scene(_:willConnectTo:options:) method.
 
+
 Task {
   do {
     let configurationBuilder = AdaptyConfiguration
@@ -219,6 +220,7 @@ struct YourApp: App {
 
 // If you use a SceneDelegate, place the following code in the
 // scene(_:willConnectTo:options:) method.
+
 
 Task {
    do {
@@ -361,16 +363,14 @@ let configurationBuilder = AdaptyConfiguration
 
 ## Устранение неполадок \{#troubleshooting\}
 
-#### Ошибка параллелизма Swift 6 с Tuist \{#swift-6-concurrency-error-with-tuist\}
+#### Ошибка конкурентности Swift 6 при использовании Tuist \{#swift-6-concurrency-error-with-tuist\}
 
-При сборке с [Tuist](https://tuist.dev/) могут возникать ошибки компиляции строгого параллелизма Swift 6. Типичные симптомы включают несовпадения атрибута `@Sendable` в `AdaptyUIBuilderLogic` или аналогичные ошибки Sendability между модулями.
+При сборке с помощью [Tuist](https://tuist.dev/) могут возникать ошибки строгой проверки конкурентности Swift 6. Типичные симптомы — несовпадение атрибутов `@Sendable` в `AdaptyUIBuilderLogic` или аналогичные ошибки Sendability при кросс-модульном взаимодействии.
+Это происходит потому, что Tuist генерирует проекты Xcode из пакетов SPM, но не сохраняет настройку `swift-tools-version: 6.0`. В результате одни таргеты Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`) компилируются по правилам Swift 5, а другие — Swift 6, что вызывает несоответствия `@Sendable` между модулями.
 
-Это происходит потому, что Tuist генерирует проекты Xcode из пакетов SPM, но не сохраняет настройку `swift-tools-version: 6.0`. В результате некоторые таргеты Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`) компилируются с правилами Swift 5, а другие — с Swift 6, что создаёт несовпадения `@Sendable` между модулями.
-
-**Решение**: обновитесь до Adapty SDK версии **3.15.5** или новее — это устраняет проблему вне зависимости от смешанных версий Swift.
+**Решение**: обновитесь до Adapty SDK **3.15.5** или более поздней версии — это устраняет проблему независимо от смешанных версий Swift.
 
 **Обходной путь**: если обновление невозможно, явно укажите Swift 6 для всех трёх таргетов Adapty в конфигурации Tuist:
-
 ```swift showLineNumbers
 targetSettings: [
   "Adapty": .init().swiftVersion("6"),
@@ -378,3 +378,36 @@ targetSettings: [
   "AdaptyUIBuilder": .init().swiftVersion("6"),
 ]
 ```
+
+#### Ошибки сборки Swift 6 из-за переопределения SWIFT_VERSION в Podfile \{#swift-6-build-errors-caused-by-podfile-swift_version-override\}
+
+При сборке для iOS с использованием [CocoaPods](sdk-installation-ios#install-adapty-sdk) могут возникать ошибки компиляции Swift 6 в pod-таргетах Adapty. Типичные симптомы: несоответствия `@Sendable` в `AdaptyUIBuilderLogic`, отсутствие соответствия `Sendable` у типов Adapty или ошибки изоляции акторов.
+В подах Adapty объявлено `s.swift_version = '6.0'`, и для их сборки требуется Swift 6. Код вашего приложения может оставаться на Swift 5 — Swift 6 нужен только для целей подов Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`).
+
+Самая распространённая причина проблемы — хук `post_install` в `Podfile`, который перезаписывает `SWIFT_VERSION` для всех целей подов:
+
+```ruby showLineNumbers title="Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+**Исправление**: исключите pod-таргеты Adapty из переопределения:
+
+```ruby showLineNumbers title="Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger].include?(target.name)
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+Затем выполните `pod install` и пересоберите проект.
+
+Для проверки откройте `Pods.xcodeproj`, выберите pod-таргет `Adapty` → **Build Settings** → **Swift Language Version**. Должно быть указано **Swift 6**.

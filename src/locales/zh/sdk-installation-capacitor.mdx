@@ -5,9 +5,6 @@ metadataTitle: "在 Capacitor 上安装 Adapty SDK | Adapty 文档"
 keywords: ['安装sdk', 'sdk安装', 'capacitor安装sdk', 'capacitor', 'google play billing library', 'gpbl', 'billing library']
 rank: 60
 ---
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
 import GetKey from '@site/src/locales/zh/reusable/GetKey.md';
 import AndroidBackupRules from '@site/src/locales/zh/reusable/AndroidBackupRules.md';
@@ -61,7 +58,6 @@ Adapty SDK 在您的应用中只需激活一次。
 将以下代码复制到任意应用文件中以激活 Adapty：
 
 ```typescript showLineNumbers
-import { adapty } from '@adapty/capacitor';
 
 try {
   await adapty.activate({
@@ -244,11 +240,11 @@ try {
 }
 ```
 
-## 问题排查 \{#troubleshooting\}
+## 故障排查 \{#troubleshooting\}
 
 #### iOS 最低版本错误 \{#minimum-ios-version-error\}
 
-如果遇到 iOS 最低版本错误，请更新您的 Podfile：
+如果遇到 iOS 最低版本错误，请更新 Podfile：
 
 ```diff
 -platform :ios, min_ios_version_supported
@@ -257,24 +253,54 @@ try {
 +platform :ios, '15.0'  # If using paywalls created in the paywall builder
 ```
 
-#### Android 备份规则（自动备份配置） \{#android-backup-rules-auto-backup-configuration\}
+#### Android 备份规则（Auto Backup 配置） \{#android-backup-rules-auto-backup-configuration\}
 
 <AndroidBackupRules />
 
 :::tip
-修改原生 Android 文件后，如果您重新生成平台，请运行 `npx cap sync android` 以使 Capacitor 获取更新后的资源。
+修改 Android 原生文件后，运行 `npx cap sync android`，这样在重新生成平台时 Capacitor 才能获取更新后的资源。
 :::
 
 #### 在 Android 上从其他应用返回后购买失败 \{#purchases-fail-after-returning-from-another-app-in-android\}
+如果启动购买流程的 Activity 使用了非默认的 `launchMode`，当用户从 Google Play、银行应用或浏览器返回时，Android 可能会以错误的方式重建或复用该 Activity，导致购买结果丢失或被视为已取消。
 
-如果启动购买流程的 Activity 使用了非默认的 `launchMode`，当用户从 Google Play、银行应用或浏览器返回时，Android 可能会错误地重建或复用该 Activity。这可能导致购买结果丢失或被视为已取消。
+为确保购买流程正常运行，启动购买流程的 Activity 只能使用 `standard` 或 `singleTop` 启动模式，避免使用其他模式。
 
-为确保购买正常运行，启动购买流程的 Activity 只能使用 `standard` 或 `singleTop` 启动模式，避免使用其他任何模式。
-
-在您的 `AndroidManifest.xml` 中，确保启动购买流程的 Activity 设置为 `standard` 或 `singleTop`：
-
+在 `AndroidManifest.xml` 中，确保启动购买流程的 Activity 设置为 `standard` 或 `singleTop`：
 ```xml
 <activity
     android:name=".MainActivity"
     android:launchMode="standard" />
 ```
+
+#### Podfile 中 SWIFT_VERSION 覆盖导致的 Swift 6 构建错误 \{#swift-6-build-errors-caused-by-podfile-swift_version-override\}
+
+在为 iOS 构建 Capacitor 应用时，你可能会在 Adapty pod 目标上看到 Swift 6 编译错误。常见症状包括：`AdaptyUIBuilderLogic` 中的 `@Sendable` 不匹配、Adapty 类型缺少 `Sendable` 一致性，或 actor 隔离错误。
+Adapty 的 pods 声明了 `s.swift_version = '6.0'`，需要使用 Swift 6 进行编译。你自己的应用代码可以继续使用 Swift 5——只有 Adapty 相关的 pod 目标（`Adapty`、`AdaptyUI`、`AdaptyUIBuilder`、`AdaptyLogger`、`AdaptyPlugin`）需要用 Swift 6 编译。
+
+最常见的原因是 `ios/App/Podfile` 中有一个 `post_install` 钩子，它会覆盖所有 pod 目标的 `SWIFT_VERSION`：
+```ruby showLineNumbers title="ios/App/Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+**修复方案**：将 Adapty pod 目标从覆盖范围中排除：
+```ruby showLineNumbers title="ios/App/Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin].include?(target.name)
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+然后运行 `npx cap sync ios` 并重新构建。
+
+要验证配置，请打开 `ios/App/Pods/Pods.xcodeproj`，选择 `Adapty` pod 目标 → **Build Settings** → **Swift Language Version**，确认显示为 **Swift 6**。

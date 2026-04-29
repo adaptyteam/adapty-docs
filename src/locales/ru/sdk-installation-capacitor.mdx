@@ -244,7 +244,7 @@ try {
 
 #### Ошибка минимальной версии iOS \{#minimum-ios-version-error\}
 
-Если вы получаете ошибку минимальной версии iOS, обновите Podfile:
+Если возникает ошибка минимальной версии iOS, обновите Podfile:
 
 ```diff
 -platform :ios, min_ios_version_supported
@@ -253,7 +253,7 @@ try {
 +platform :ios, '15.0'  # If using paywalls created in the paywall builder
 ```
 
-#### Правила резервного копирования Android (конфигурация Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
+#### Правила резервного копирования Android (настройка Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
 
 <AndroidBackupRules />
 
@@ -261,16 +261,46 @@ try {
 После изменения нативных файлов Android выполните `npx cap sync android`, чтобы Capacitor подхватил обновлённые ресурсы при повторной генерации платформы.
 :::
 
-#### Покупки не завершаются после возврата из другого приложения на Android \{#purchases-fail-after-returning-from-another-app-in-android\}
+#### Покупки не проходят после возврата из другого приложения на Android \{#purchases-fail-after-returning-from-another-app-in-android\}
+Если Activity, из которой запускается процесс покупки, использует нестандартный `launchMode`, Android может некорректно пересоздать или переиспользовать её при возврате пользователя из Google Play, банковского приложения или браузера. Это может привести к потере результата покупки или к тому, что он будет расценён как отмена.
 
-Если Activity, запускающий процесс покупки, использует нестандартный `launchMode`, Android может некорректно пересоздать или повторно использовать его при возврате пользователя из Google Play, банковского приложения или браузера. Это может привести к потере результата покупки или его обработке как отменённого.
+Чтобы покупки работали корректно, используйте только режимы `standard` или `singleTop` для Activity, из которой запускается процесс покупки, и избегайте любых других режимов.
 
-Чтобы покупки работали корректно, используйте только режимы запуска `standard` или `singleTop` для Activity, запускающего процесс покупки, и избегайте других режимов.
-
-В файле `AndroidManifest.xml` убедитесь, что для Activity, запускающего процесс покупки, установлен режим `standard` или `singleTop`:
-
+В файле `AndroidManifest.xml` убедитесь, что для Activity, из которой запускается процесс покупки, установлен режим `standard` или `singleTop`:
 ```xml
 <activity
     android:name=".MainActivity"
     android:launchMode="standard" />
 ```
+
+#### Ошибки сборки Swift 6, вызванные переопределением SWIFT_VERSION в Podfile \{#swift-6-build-errors-caused-by-podfile-swift_version-override\}
+
+При сборке приложения на Capacitor для iOS могут появляться ошибки компиляции Swift 6 в pod-таргетах Adapty. Типичные симптомы: несоответствия `@Sendable` в `AdaptyUIBuilderLogic`, отсутствие соответствия `Sendable` у типов Adapty или ошибки изоляции акторов.
+Поды Adapty объявляют `s.swift_version = '6.0'` и требуют Swift 6 для сборки. Код вашего приложения может оставаться на Swift 5 — только таргеты подов Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`) должны собираться с Swift 6.
+
+Самая распространённая причина — хук `post_install` в `ios/App/Podfile`, который перезаписывает `SWIFT_VERSION` для каждого таргета пода:
+```ruby showLineNumbers title="ios/App/Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+**Исправление**: Исключите pod-таргеты Adapty из переопределения:
+```ruby showLineNumbers title="ios/App/Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin].include?(target.name)
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+Затем выполните `npx cap sync ios` и пересоберите проект.
+
+Для проверки откройте `ios/App/Pods/Pods.xcodeproj`, выберите цель пода `Adapty` → **Build Settings** → **Swift Language Version**. Там должно быть указано **Swift 6**.
