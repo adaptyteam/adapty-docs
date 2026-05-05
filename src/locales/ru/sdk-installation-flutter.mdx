@@ -105,14 +105,14 @@ class _MyAppState extends State<MyApp> {
 
 ## Активация модуля AdaptyUI в Adapty SDK \{#activate-adaptyui-module-of-adapty-sdk\}
 
-Если вы планируете использовать [Paywall Builder](adapty-paywall-builder) и уже [установили модуль AdaptyUI](sdk-installation-flutter#install-adapty-sdk), необходимо также активировать AdaptyUI:
+Если вы планируете использовать [Paywall Builder](adapty-paywall-builder) и уже [установили модуль AdaptyUI](sdk-installation-flutter#install-adapty-sdk), вам также нужно активировать AdaptyUI:
 
 :::note
-Зависимости, связанные с AdaptyUI, подключаются к вашему приложению независимо от того, активирован ли AdaptyUI.
+Зависимости AdaptyUI подключаются к вашему приложению независимо от того, активирован AdaptyUI или нет.
 :::
 
 :::important
-В коде необходимо активировать основной модуль Adapty до активации AdaptyUI.
+В коде необходимо активировать основной модуль Adapty раньше, чем AdaptyUI.
 :::
 ```dart showLineNumbers title="main.dart"
 await Adapty().activate(
@@ -239,20 +239,51 @@ await Adapty().activate(
 
 ## Устранение неполадок \{#troubleshooting\}
 
-#### Правила резервного копирования Android (конфигурация Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
+#### Правила резервного копирования Android (настройка Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
 
 <AndroidBackupRules />
 
-#### Покупки не завершаются после возврата из другого приложения на Android \{#purchases-fail-after-returning-from-another-app-in-android\}
+#### Покупки прерываются после возврата из другого приложения на Android \{#purchases-fail-after-returning-from-another-app-in-android\}
 
-Если Activity, запускающий процесс покупки, использует нестандартный `launchMode`, Android может пересоздать или повторно использовать его некорректно при возврате пользователя из Google Play, банковского приложения или браузера. Это может привести к потере результата покупки или к тому, что она будет расценена как отменённая.
+Если Activity, запускающий процесс покупки, использует нестандартный `launchMode`, Android может некорректно пересоздать или повторно использовать его при возврате пользователя из Google Play, банковского приложения или браузера. Это может привести к тому, что результат покупки будет утерян или расценён как отменённый.
 
-Чтобы покупки работали корректно, используйте только режимы запуска `standard` или `singleTop` для Activity, который запускает процесс покупки, и избегайте других режимов.
-
-В файле `AndroidManifest.xml` убедитесь, что для Activity, запускающего процесс покупки, установлен режим `standard` или `singleTop`:
+Чтобы покупки работали корректно, используйте только режимы запуска `standard` или `singleTop` для Activity, запускающего процесс покупки, и избегайте любых других режимов.
+В файле `AndroidManifest.xml` убедитесь, что Activity, которая запускает процесс покупки, имеет режим `standard` или `singleTop`:
 
 ```xml
 <activity
     android:name=".MainActivity"
     android:launchMode="standard" />
 ```
+
+#### Ошибки сборки Swift 6, вызванные переопределением SWIFT_VERSION в Podfile \{#swift-6-build-errors-caused-by-podfile-swift-version-override\}
+
+При сборке Flutter-приложения для iOS вы можете столкнуться с ошибками компиляции Swift 6 в pod-таргетах Adapty. Типичные симптомы: несоответствие `@Sendable` в `AdaptyUIBuilderLogic`, отсутствие соответствия `Sendable` для типов Adapty или ошибки изоляции акторов.
+Поды Adapty объявляют `s.swift_version = '6.0'` и требуют Swift 6 для сборки. Код вашего собственного приложения может оставаться на Swift 5 — только поды Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`) должны собираться с Swift 6.
+
+Наиболее распространённая причина — хук `post_install` в `ios/Podfile`, который перезаписывает `SWIFT_VERSION` для каждого пода:
+```ruby showLineNumbers title="ios/Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+**Исправление**: Исключите pod-таргеты Adapty из переопределения:
+```ruby showLineNumbers title="ios/Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin].include?(target.name)
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+Затем выполните `pod install` из директории `ios/` и пересоберите проект.
+
+Чтобы проверить результат, откройте `ios/Pods/Pods.xcodeproj`, выберите таргет пода `Adapty` → **Build Settings** → **Swift Language Version**. Должно быть указано **Swift 6**.

@@ -35,6 +35,7 @@ description: "Brief description for SEO"
 metadataTitle: "SEO Title | Adapty Docs"
 keywords: ['keyword1', 'keyword2']
 rank: 100 (default — 50)
+draft: true (optional — excludes article from build, navigation, and LLM exports)
 ---
 
 import ZoomImage from '@site/src/components/ZoomImage.astro';
@@ -99,6 +100,8 @@ src/
       image1.png
     shared/               # Shared images
       common-image.png
+    icons/                # Inline SVG icons
+      pencil.svg
   components/             # Reusable components
     reusable/             # Reusable content snippets
 ```
@@ -134,6 +137,47 @@ The component automatically finds images in this order:
 1. `src/assets/{article-name}/image.png` (article-specific)
 2. `src/assets/shared/image.png` (shared folder)
 3. Legacy locations (for backward compatibility)
+
+### 1a. ZoomImage float mode - Image that floats beside text
+
+Add the `float` prop to ZoomImage to display a narrow image to one side with body text flowing beside it. The image retains zoom functionality.
+
+**Additional prop:**
+- `float` (optional): `"left"`, `"right"`, or `"none"` (default: `"none"`)
+
+**Usage:**
+
+```mdx
+<ZoomImage id="settings-panel.webp" width="300px" float="right" alt="Settings panel" />
+
+This text flows beside the image. You can use paragraphs,
+bullet lists, and other content here.
+
+* Setting one
+* Setting two
+* Setting three
+
+### This subsection heading does NOT clear the float
+
+More text still flows beside the image.
+
+## Next same-level heading (clears the float automatically)
+```
+
+**Float clearing rules:**
+
+The float is automatically cleared (text stops flowing beside the image) before:
+
+1. **A heading at the same or higher level** as the heading that precedes the float. For example, if the float follows an `##` heading, only the next `##` or `#` heading clears it. Any `###` subheadings within the section continue to flow beside the image.
+2. **A subsection that contains an image or a table.** If a `###` subsection after the float contains a `ZoomImage` (floating or not) or a markdown table, the float clears before that subsection heading, because these elements need full width.
+3. **A standalone image or table** that appears directly after the float (not inside a subsection).
+
+**Guidelines:**
+- Use for narrow images (300-400px) with enough adjacent text (at least 4-6 lines) to fill the space beside the image
+- Avoid for wide screenshots
+- Avoid when there is very little text before the next heading, as it creates awkward whitespace
+- On mobile (<768px), the image automatically stacks vertically at full width
+- Callouts (`:::note`, `:::tip`, etc.) inside a float section shrink to fit the available space beside the image instead of wrapping around it
 
 ### 2. Tabs - Tabbed content
 
@@ -459,6 +503,97 @@ import { CompoundCalculator } from '../../../components/CompoundCalculator';
     ]}
 />
 ```
+
+### 9. SDKv4 / SDKv3 — SDK version tabs
+
+Use these wrappers to show different content to SDK v4+ and SDK v3 users on the same page. When both are present, a tab bar is automatically injected below the article title — no extra setup needed.
+
+**Auto-registered**: no import required.
+
+**Usage:**
+
+```mdx
+<SDKv4>
+
+Everything in here is shown when the reader selects the **SDK v4+** tab.
+Intro text, code samples, callouts — all content goes inside.
+
+</SDKv4>
+
+<SDKv3>
+
+Everything in here is shown when the reader selects the **SDK v3** tab.
+Duplicate the content and adjust for the legacy API.
+
+</SDKv3>
+```
+
+**Features:**
+- The tab bar appears automatically whenever both `<SDKv4>` and `<SDKv3>` blocks exist on a page. Pages without them are unaffected.
+- The **SDK v3** tab always shows a **Legacy** badge — no extra markup needed.
+- The reader's tab choice is persisted in `localStorage` across pages.
+- **Markdown & LLM export**: `<SDKv4>` content is kept (wrapper stripped). `<SDKv3>` content is replaced with an explicit LLM instruction block that tells AI assistants to use the legacy API only for migration or troubleshooting — never for new integrations.
+
+---
+
+### 9. MethodPromo — Method feature highlight
+
+A visual card that highlights a unified SDK method and what it covers. Designed for use at the top of SDK v4+ sections to help readers immediately understand scope before they dive into code.
+
+**Auto-registered**: no import required.
+
+**Basic usage (all defaults):**
+
+```mdx
+<MethodPromo method="getFlow" />
+```
+
+This renders a card titled **"What `getFlow` retrieves"** with three default columns (Flows, Paywall Builder paywalls, Onboardings) and a footer link to the manual integration guide for the current platform. The footer link resolves automatically — no props needed.
+
+**Custom label:**
+
+```mdx
+<MethodPromo method="presentPaywall" label="How presentPaywall renders your paywall" />
+```
+
+The method name is always highlighted as code inside the label, wherever it appears in the string.
+
+**Custom columns:**
+
+```mdx
+<MethodPromo
+  method="getFlow"
+  items={[
+    { title: 'Flows', desc: 'Built in Flow builder — renders natively' },
+    { title: 'Paywall Builder paywalls', desc: 'All existing Paywall Builder content' },
+    { title: 'Onboardings', desc: 'All existing onboarding builder content' },
+  ]}
+/>
+```
+
+**Custom footer:**
+
+```mdx
+<MethodPromo
+  method="getFlow"
+  note="Not using the Flow builder?"
+  noteHref="fetch-paywalls-and-products"
+  noteLinkText="See the remote config guide instead."
+/>
+```
+
+Pass `note=""` to hide the footer entirely.
+
+**All props:**
+
+| Prop | Required | Default | Description |
+|------|----------|---------|-------------|
+| `method` | yes | — | The method name. Appears as `<code>` in the label. |
+| `label` | no | `What {method} retrieves` | Header label. Include the method name as plain text to get code styling. |
+| `items` | no | Flows / PB paywalls / Onboardings | Array of `{ title, desc }` objects for the three-column grid. |
+| `note` | no | `Building a custom paywall?` | Footer note text. |
+| `noteHref` | no | `{platform}-quickstart-manual` | Footer link target. Resolved automatically from the current platform sidebar. |
+| `noteLinkText` | no | `See the manual integration guide.` | Footer link label. |
 
 ## Markdown features
 

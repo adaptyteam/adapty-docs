@@ -1,24 +1,157 @@
 ---
-title: "Present new Paywall Builder paywalls in iOS SDK"
-description: "Discover how to present paywalls on iOS to boost conversions and revenue."
-metadataTitle: "Presenting Paywalls on iOS | Adapty Docs"
-keywords: ['paywallController']
+title: "Display flows & paywalls - iOS"
+description: "Present paywall and onboarding flows to users in your iOS app."
+metadataTitle: "Display Flows - iOS | Adapty Docs"
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
-import SampleApp from '@site/src/components/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/components/reusable/SampleApp.md';
+
+<SDKv4>
+
+<MethodPromo method="getFlow" label="Display paywalls and flows" />
+
+If you've created a paywall or flow, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall or flow contains both what should be shown within it and how it should be shown.
+
+To get the `AdaptyUI.FlowConfiguration` object used below, see [Get paywalls and flows](get-pb-paywalls).
+
+## Present paywalls and flows in SwiftUI
+
+### Present as a modal view
+
+In order to display a paywall or flow on the device screen as a modal view, use the `.flow` modifier in SwiftUI:
+
+```swift showLineNumbers title="SwiftUI"
+@State var flowPresented = false // ensure that you manage this variable state and set it to `true` at the moment you want to show the paywall or flow
+
+var body: some View {
+  Text("Hello, AdaptyUI!")
+      .flow(
+          isPresented: $flowPresented,
+          flowConfiguration: <AdaptyUI.FlowConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      flowPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+          didFailPurchase: { product, error in /* handle the error */ },
+          didFinishRestore: { profile in /* check access level and dismiss */ },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in flowPresented = false }
+      )
+}
+```
+
+Parameters:
+
+| Parameter              | Required | Description                                                                                                                                                                                                                                                                |
+|:-----------------------|:---------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented**        | required | A binding that manages whether the paywall or flow screen is displayed.                                                                                                                                                                                                    |
+| **flowConfiguration**  | required | An `AdaptyUI.FlowConfiguration` object containing visual details of the paywall or flow. Use the `AdaptyUI.getFlowConfiguration(forFlow:)` method. Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) for more details.                   |
+| **didFailPurchase**    | required | Invoked when `Adapty.makePurchase()` fails.                                                                                                                                                                                                                                |
+| **didFinishRestore**   | required | Invoked when `Adapty.restorePurchases()` completes successfully.                                                                                                                                                                                                           |
+| **didFailRestore**     | required | Invoked when `Adapty.restorePurchases()` fails.                                                                                                                                                                                                                            |
+| **didFailRendering**   | required | Invoked if an error occurs while rendering the interface. In this case, [contact Adapty Support](mailto:support@adapty.io).                                                                                                                                                |
+| **fullScreen**         | optional | Determines if the paywall or flow appears in full-screen mode or as a sheet. Defaults to `true`.                                                                                                                                                                           |
+| **didAppear**          | optional | Invoked when the paywall or flow view was presented.                                                                                                                                                                                                                       |
+| **didDisappear**       | optional | Invoked when the paywall or flow view was dismissed.                                                                                                                                                                                                                       |
+| **didPerformAction**   | optional | Invoked when a user clicks a button. Two action IDs are pre-defined: `close` and `openURL`; others are custom and can be set in the builder.                                                                                                                               |
+| **didSelectProduct**   | optional | Invoked when a product is selected for purchase by the user or by the system.                                                                                                                                                                                              |
+| **didStartPurchase**   | optional | Invoked when the user begins the purchase process.                                                                                                                                                                                                                         |
+| **didFinishPurchase**  | optional | Invoked when `Adapty.makePurchase()` completes successfully.                                                                                                                                                                                                               |
+| **didFinishWebPaymentNavigation** | optional | Invoked when web payment navigation finishes.                                                                                                                                                                                                                    |
+| **didStartRestore**    | optional | Invoked when the user starts the restore process.                                                                                                                                                                                                                          |
+| **didFailLoadingProducts** | optional | Invoked when errors occur during product loading. Return `true` to retry loading.                                                                                                                                                                                      |
+| **didPartiallyLoadProducts** | optional | Invoked when products are partially loaded.                                                                                                                                                                                                                          |
+| **showAlertItem**      | optional | A binding that manages the display of alert items above the paywall or flow.                                                                                                                                                                                               |
+| **showAlertBuilder**   | optional | A function for rendering the alert view.                                                                                                                                                                                                                                   |
+| **placeholderBuilder** | optional | A function for rendering the placeholder view while the paywall or flow is loading. Defaults to a `ProgressView`.                                                                                                                                                          |
+
+Refer to the [iOS - Handling events](ios-handling-events) topic for more details on parameters.
+
+### Present as a non-modal view
+
+You can also present paywalls and flows as navigation destinations or inline views within your app's navigation flow. Use `AdaptyFlowView` directly in your SwiftUI views:
+
+```swift showLineNumbers title="SwiftUI"
+AdaptyFlowView(
+    flowConfiguration: <AdaptyUI.FlowConfiguration>,
+    didFailPurchase: { product, error in
+        // Handle purchase failure
+    },
+    didFinishRestore: { profile in
+        // Handle successful restore
+    },
+    didFailRestore: { error in
+        // Handle restore failure
+    },
+    didFailRendering: { error in
+        // Handle rendering error
+    }
+)
+```
+
+## Present paywalls and flows in UIKit
+
+For UIKit, use `AdaptyUI.flowController(with:delegate:)` to get an `AdaptyFlowController`, then present it like any view controller:
+
+```swift showLineNumbers title="Swift"
+import Adapty
+import AdaptyUI
+import UIKit
+
+let flowController = try AdaptyUI.flowController(
+    with: <AdaptyUI.FlowConfiguration>,
+    delegate: <AdaptyFlowControllerDelegate>
+)
+present(flowController, animated: true)
+```
+
+Implement `AdaptyFlowControllerDelegate` to respond to events:
+
+```swift showLineNumbers title="Swift"
+extension YourViewController: AdaptyFlowControllerDelegate {
+    func flowController(_ controller: AdaptyFlowController,
+                        didFailPurchase product: AdaptyPaywallProduct,
+                        error: AdaptyError) {
+        // Handle purchase failure
+    }
+
+    func flowController(_ controller: AdaptyFlowController,
+                        didFinishRestoreWith profile: AdaptyProfile) {
+        // Handle successful restore
+    }
+
+    func flowController(_ controller: AdaptyFlowController,
+                        didFailRestoreWith error: AdaptyError) {
+        // Handle restore failure
+    }
+
+    func flowController(_ controller: AdaptyFlowController,
+                        didFailRenderingWith error: AdaptyUIError) {
+        controller.dismiss(animated: true)
+    }
+
+    // Optional — forward custom analytic events fired by the flow's script
+    // (e.g. to Amplitude or Mixpanel). Has a default no-op implementation.
+    func flowController(_ controller: AdaptyFlowController,
+                        didReceiveAnalyticEvent name: String,
+                        params: [String: any Sendable]) {
+        // Forward `name` and `params` to your analytics provider
+    }
+}
+```
+
+<SampleApp />
+
+</SDKv4>
+
+<SDKv3>
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
-
-:::warning
-
-This guide is for **[new Paywall Builder paywalls](adapty-paywall-builder)** . The process for presenting paywalls differs for paywalls designed with different versions of Paywall Builder, remote config paywalls, and [Observer mode](observer-vs-full-mode).
-
-- For presenting **Remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
-- For presenting **Observer mode paywalls**, see [iOS - Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode)
-
-:::
 
 To get the `AdaptyUI.PaywallConfiguration` object used below, see [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls).
 
@@ -62,7 +195,7 @@ Parameters:
 | **paywallConfiguration**          | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)` method. Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details. |
 | **didFailPurchase**               | required | Invoked when `Adapty.makePurchase()` fails.                                                                                                                                                                                                                                                                                    |
 | **didFinishRestore**              | required | Invoked when `Adapty.restorePurchases()` completes successfully.                                                                                                                                                                                                                                                               |
-| **didFailRestore**                | required | Invoked when `Adapty.restorePurchases()` fails.                                                                                                                                                                                                                                                                                |
+| **didFailRestore**                | required | Invoked when `Adapty.restorePurchases()` fails.                                                                                                                                                                                                                                                                               |
 | **didFailRendering**              | required | Invoked if an error occurs while rendering the interface. In this case, [contact Adapty Support](mailto:support@adapty.io).                                                                                                                                                                                                    |
 | **fullScreen**                    | optional | Determines if the paywall appears in full-screen mode or as a modal. Defaults to `true`.                                                                                                                                                                                                                                       |
 | **didAppear**                     | optional | Invoked when the paywall view was presented.                                                                                                                                                                                                                                                                                   |
@@ -140,3 +273,4 @@ In order to display the visual paywall on the device screen, do the following:
 
 <SampleApp />
 
+</SDKv3>

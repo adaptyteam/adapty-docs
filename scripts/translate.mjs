@@ -18,6 +18,9 @@
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --lang zh --incremental                # single locale, changed files only
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --incremental --only-files "src/content/docs/foo.mdx,src/data/sidebars/ios.json"
  *                                                                                               # incremental, but only check these paths (CI git-diff mode)
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --incremental --batch --only-files "src/content/docs/foo.mdx"
+ *                                                                                              # incremental + Batch API (50% off), CI default
+ *   node scripts/translate.mjs --incremental --batch --dry-run --only-files "..."             # show batch plan without submitting (no API key needed)
  */
 
 import fs from 'node:fs/promises';
@@ -25,6 +28,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
+import yaml from 'js-yaml';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -67,6 +71,8 @@ const lang = langIdx !== -1 ? args[langIdx + 1] : null;
 const flagAll           = args.includes('--all');
 const flagIncremental   = args.includes('--incremental');
 const flagSync          = args.includes('--sync');
+const flagBatch         = args.includes('--batch');
+const flagDryRun        = args.includes('--dry-run');
 const flagApiSpecs      = args.includes('--api-specs');
 const flagSidebarsOnly  = args.includes('--sidebars');
 const flagReusables     = args.includes('--reusables');
@@ -114,8 +120,10 @@ if ((flagResume || fileId || fileIds || sidebarName || platform) && !lang) {
   process.exit(1);
 }
 
-// Single-file, multi-id, incremental, or --sync → use sync (immediate) API; otherwise Batch API
-const syncMode = fileId != null || fileIds != null || flagIncremental || flagSync;
+// --batch overrides the default sync routing for incremental/file/ids modes.
+// Without --batch: existing behavior (sync for incremental, batch for --all/--platform).
+// With --batch: route incremental through the new per-section batch path.
+const syncMode = !flagBatch && (fileId != null || fileIds != null || flagIncremental || flagSync);
 
 // ---------------------------------------------------------------------------
 // Locale discovery
@@ -223,7 +231,7 @@ async function loadGlossary(lang) {
 async function main() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
-  if (!apiKey) {
+  if (!apiKey && !flagDryRun) {
     if (flagIncremental) {
       console.error('[translate] No ANTHROPIC_API_KEY set — cannot run incremental translation.');
       process.exit(1);
@@ -232,7 +240,7 @@ async function main() {
     process.exit(1);
   }
 
-  const client = new Anthropic({ apiKey });
+  const client = apiKey ? new Anthropic({ apiKey }) : null;
 
   // Resolve --resume batch ID: use explicit arg or auto-read from saved file
   if (flagResume) {
@@ -435,6 +443,8 @@ async function translateForLang(client, lang, localesDir, hashesDir, systemPromp
 
   if (syncMode) {
     await translateSync(client, toTranslate, systemPrompt, localesDir, hashesDir, tag, lang);
+  } else if (flagBatch && flagIncremental) {
+    await translateBatchSections(client, toTranslate, systemPrompt, localesDir, hashesDir, tag, lang);
   } else {
     await translateBatch(client, toTranslate, systemPrompt, localesDir, tag, lang);
   }
@@ -607,7 +617,10 @@ async function seedSectionCache(file, localesDir, hashesDir, lang) {
 
   const engHeadSecs = splitIntoSections(content, { paragraphFallback: false });
   const zhHeadSecs  = splitIntoSections(existingTranslation, { paragraphFallback: false });
-  if (engHeadSecs.length !== zhHeadSecs.length) return; // heading count mismatch
+  if (engHeadSecs.length !== zhHeadSecs.length) {
+    console.warn(`  ⚠ ${basename}: seed skipped — heading count mismatch (en=${engHeadSecs.length}, locale=${zhHeadSecs.length}); next edit will retranslate the whole file`);
+    return;
+  }
 
   // Map: (deduplicated) heading section ID → zh heading section content.
   // deduplicateSectionIds is applied to engHeadSecs so the IDs match what
@@ -618,11 +631,21 @@ async function seedSectionCache(file, localesDir, hashesDir, lang) {
 
   // Build: (deduplicated) heading ID → zh para-chunk array (or null if no split needed)
   const paraChunksByHeadId = new Map();
+  const paraSkipReasons = [];
   for (const s of dedupEngHead) {
     const zhHead = zhByHeadId.get(s.id);
     if (!zhHead) continue;
     const pairs = mapParaChunksToZh(s.content, zhHead);
-    if (pairs) paraChunksByHeadId.set(s.id, pairs);
+    if (pairs) {
+      paraChunksByHeadId.set(s.id, pairs);
+    } else if (s.content.length > PARAGRAPH_FALLBACK_CHARS) {
+      // Only report sections that would actually be split into para chunks — short
+      // sections never have para chunks, so "no pairs" is expected and not a problem.
+      paraSkipReasons.push(s.id);
+    }
+  }
+  if (paraSkipReasons.length > 0) {
+    console.warn(`  ⚠ ${basename}: seed skipped para-chunks for ${paraSkipReasons.length} heading section(s) [${paraSkipReasons.slice(0, 3).join(', ')}${paraSkipReasons.length > 3 ? ', …' : ''}] — en/locale block-count mismatch; next prose edit in those sections will retranslate them whole`);
   }
 
   const seeded = {};
@@ -705,14 +728,26 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
       const engHeadSecs = deduplicateSectionIds(splitIntoSections(content, { paragraphFallback: false }));
       const zhHeadSecs  = deduplicateSectionIds(splitIntoSections(existingTranslation, { paragraphFallback: false }));
 
-      if (engHeadSecs.length === zhHeadSecs.length) {
+      if (engHeadSecs.length !== zhHeadSecs.length) {
+        console.warn(`  ⚠ ${basename}: inline seed skipped — heading count mismatch (en=${engHeadSecs.length}, locale=${zhHeadSecs.length}); all uncached sections will be retranslated`);
+      } else {
         const zhByHeadId       = new Map(engHeadSecs.map((s, i) => [s.id, zhHeadSecs[i].content]));
         const paraChunksByHead = new Map();
+        const paraSkipReasons  = [];
         for (const s of engHeadSecs) {
           const zhHead = zhByHeadId.get(s.id);
           if (!zhHead) continue;
           const pairs = mapParaChunksToZh(s.content, zhHead);
-          if (pairs) paraChunksByHead.set(s.id, pairs);
+          if (pairs) {
+            paraChunksByHead.set(s.id, pairs);
+          } else if (s.content.length > PARAGRAPH_FALLBACK_CHARS) {
+            // Only report sections that would actually be split — short sections
+            // have no para chunks, so returning null is expected and not a problem.
+            paraSkipReasons.push(s.id);
+          }
+        }
+        if (paraSkipReasons.length > 0 && !fileHashChanged) {
+          console.warn(`  ⚠ ${basename}: inline seed skipped para-chunks for ${paraSkipReasons.length} heading section(s) [${paraSkipReasons.slice(0, 3).join(', ')}${paraSkipReasons.length > 3 ? ', …' : ''}] — en/locale block-count mismatch; any prose edit in those sections retranslates them whole`);
         }
 
         const seeded = {};
@@ -808,6 +843,269 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
   if (patchCount > 0) parts.push(`${patchCount} code-patched`);
   if (cachedCount > 0 && (apiCallCount > 0 || patchCount > 0)) parts.push(`${cachedCount} cached`);
   console.log(`  ✓ ${basename} (${parts.length ? parts.join(', ') : 'all cached'})`);
+}
+
+// ---------------------------------------------------------------------------
+// Per-section batch path (translateBatchSections)
+// ---------------------------------------------------------------------------
+
+/**
+ * Build an Anthropic Batch API-safe custom_id from a basename + section id.
+ * The API constraint is ^[a-zA-Z0-9_-]{1,64}$; section IDs can be longer than
+ * 64 chars and can contain / { } (esp. OpenAPI path keys), so we sanitize the
+ * basename (truncate, replace unsafe chars) and append a stable 16-char SHA-256
+ * prefix of the section id. Callers must keep their own custom_id → section
+ * lookup map (from buildBatchRequest); the suffix isn't reversible.
+ */
+function customIdFor(basename, sectionId) {
+  const safeBase = basename.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
+  const idHash = crypto.createHash('sha256').update(sectionId).digest('hex').slice(0, 16);
+  return `${safeBase}_${idHash}`;
+}
+
+/**
+ * Decide what to do with each section of a file:
+ *   'hit'   — cached translation usable as-is
+ *   'patch' — only code blocks differ; patchCodeBlocks locally
+ *   'send'  — needs Claude (prose changed or no cache)
+ *
+ * Returns: { basename, sections, decisions, storedSections, fileHashCurrent }
+ */
+async function buildSectionPlan(file, lang, localesDir, hashesDir) {
+  const basename = path.basename(file, '.mdx');
+  const content = await fs.readFile(file, 'utf-8');
+  const sections = deduplicateSectionIds(splitIntoSections(content));
+
+  const hashFile = path.join(hashesDir, `${basename}.json`);
+  let storedData = null;
+  try {
+    storedData = JSON.parse(await fs.readFile(hashFile, 'utf-8'));
+    if (storedData?.sections) {
+      const cacheIds = Object.keys(storedData.sections);
+      if (cacheIds.some(id => /-p\d+$/.test(id))) {
+        storedData = { fileHash: storedData.fileHash };
+      }
+    }
+  } catch { /* no cache */ }
+
+  const fileHashCurrent = await fileHash(file);
+  const fileHashChanged = storedData?.fileHash && storedData.fileHash !== fileHashCurrent;
+
+  // Seed from existing translation when no section cache exists.
+  // Mirrors translateFileWithSections:711-762.
+  if (!storedData?.sections) {
+    const translatedPath = path.join(localesDir, `${basename}.mdx`);
+    try {
+      const existingTranslation = await fs.readFile(translatedPath, 'utf-8');
+      const engHeadSecs = deduplicateSectionIds(splitIntoSections(content, { paragraphFallback: false }));
+      const zhHeadSecs  = deduplicateSectionIds(splitIntoSections(existingTranslation, { paragraphFallback: false }));
+
+      if (engHeadSecs.length === zhHeadSecs.length) {
+        const zhByHeadId = new Map(engHeadSecs.map((s, i) => [s.id, zhHeadSecs[i].content]));
+        const paraChunksByHead = new Map();
+        for (const s of engHeadSecs) {
+          const zhHead = zhByHeadId.get(s.id);
+          if (!zhHead) continue;
+          const pairs = mapParaChunksToZh(s.content, zhHead);
+          if (pairs) paraChunksByHead.set(s.id, pairs);
+        }
+        const seeded = {};
+        for (const s of sections) {
+          const isParaChunk = /-p[0-9a-f]{8}$/.test(s.id);
+          if (!isParaChunk) {
+            const zhContent = zhByHeadId.get(s.id);
+            if (zhContent) seeded[s.id] = makeSeedEntry(s.content, zhContent);
+          } else if (!fileHashChanged) {
+            const headId = s.id.replace(/-p[0-9a-f]{8}$/, '');
+            const pairs  = paraChunksByHead.get(headId);
+            if (!pairs) continue;
+            const pair = pairs.find(p => p.en === s.content);
+            if (pair) seeded[s.id] = makeSeedEntry(pair.en, pair.zh);
+          }
+        }
+        if (Object.keys(seeded).length > 0) {
+          storedData = { sections: seeded };
+        }
+      } else {
+        console.warn(`  ⚠ ${basename}: inline seed skipped — heading count mismatch (en=${engHeadSecs.length}, locale=${zhHeadSecs.length}); all uncached sections will be retranslated`);
+      }
+    } catch { /* no existing translation — falls through */ }
+  }
+
+  const storedSections = storedData?.sections ?? {};
+  const decisions = [];
+
+  for (const section of sections) {
+    const contentHash = 'sha256:' + crypto.createHash('sha256').update(section.content).digest('hex');
+    const proseHash   = 'sha256:' + crypto.createHash('sha256').update(stripCodeBlocks(section.content)).digest('hex');
+    const cached = storedSections[section.id];
+
+    if (cached?.contentHash === contentHash) {
+      decisions.push({ section, kind: 'hit', contentHash, proseHash, cachedTranslation: cached.translation });
+    } else if (cached?.proseHash === proseHash && cached?.translation) {
+      const patched = patchCodeBlocks(cached.translation, extractCodeBlocks(section.content));
+      decisions.push({ section, kind: 'patch', contentHash, proseHash, cachedTranslation: patched });
+    } else {
+      decisions.push({ section, kind: 'send', contentHash, proseHash });
+    }
+  }
+
+  return { basename, sections, decisions, storedSections, fileHashCurrent };
+}
+
+/**
+ * Per-section batch translation.
+ * custom_id format: "<basename>::<sectionId>"
+ *
+ * On any errored entry, the affected file is left unwritten and its
+ * .hashes/<basename>.json untouched — so the next push retries that file.
+ * Other files in the same run still complete normally.
+ */
+async function translateBatchSections(client, files, systemPrompt, localesDir, hashesDir, tag, lang) {
+  // Phase 1: build plans (no API calls)
+  console.log(`${tag} Building section plans for ${files.length} file(s)...`);
+  const plans = [];
+  for (const file of files) {
+    try {
+      plans.push(await buildSectionPlan(file, lang, localesDir, hashesDir));
+    } catch (err) {
+      console.error(`  ✗ ${path.basename(file, '.mdx')}: plan failed: ${err.message}`);
+      hadErrors = true;
+    }
+  }
+
+  // Phase 2: collect batch entries
+  const allEntries = [];
+  const customIdLookup = {}; // custom_id → { basename, sectionId }
+  for (const plan of plans) {
+    for (const decision of plan.decisions) {
+      if (decision.kind !== 'send') continue;
+      const customId = customIdFor(plan.basename, decision.section.id);
+      customIdLookup[customId] = { basename: plan.basename, sectionId: decision.section.id };
+      allEntries.push({
+        custom_id: customId,
+        params: {
+          model: 'claude-sonnet-4-6',
+          max_tokens: 8192,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: decision.section.content }],
+        },
+      });
+    }
+  }
+
+  const stats = plans.reduce((acc, p) => {
+    for (const d of p.decisions) acc[d.kind]++;
+    return acc;
+  }, { hit: 0, patch: 0, send: 0 });
+  console.log(`${tag} Sections: ${stats.hit} cached, ${stats.patch} code-patch, ${stats.send} to translate.`);
+
+  if (flagDryRun) {
+    console.log(`${tag} Dry run — not submitting. Batch entries that would be sent:`);
+    for (const e of allEntries) {
+      const meta = customIdLookup[e.custom_id];
+      console.log(`  ${meta.basename}::${meta.sectionId}  (custom_id: ${e.custom_id})`);
+    }
+    return;
+  }
+
+  // Phase 3: submit and wait
+  let translationsByCustomId = {};
+  if (allEntries.length > 0) {
+    console.log(`${tag} Submitting batch of ${allEntries.length} section(s)...`);
+    const batch = await client.messages.batches.create({
+      requests: allEntries.map(e => ({ custom_id: e.custom_id, params: e.params })),
+    });
+    console.log(`${tag} Batch submitted: ${batch.id}`);
+
+    const startedAt = Date.now();
+    let current = await client.messages.batches.retrieve(batch.id);
+    const warnAfterMin = Math.min(60, 15 + Math.ceil(allEntries.length * 0.1));
+    while (current.processing_status !== 'ended') {
+      const counts = current.request_counts ?? {};
+      const elapsedMin = Math.floor((Date.now() - startedAt) / 60000);
+      const elapsed = elapsedMin >= 1 ? ` (${elapsedMin}m elapsed)` : '';
+      const warning = elapsedMin >= warnAfterMin && (counts.succeeded ?? 0) === 0
+        ? ` ⚠️  no progress in ${warnAfterMin}m`
+        : '';
+      console.log(
+        `  Status: ${current.processing_status} — succeeded: ${counts.succeeded ?? '?'}, ` +
+        `errored: ${counts.errored ?? '?'}${elapsed}${warning}`
+      );
+      await sleep(30_000);
+      current = await client.messages.batches.retrieve(batch.id);
+    }
+
+    console.log(`${tag} Batch complete. Retrieving results...`);
+    const results = await client.messages.batches.results(batch.id);
+    for await (const r of results) {
+      if (r.result.type === 'succeeded') {
+        if (r.result.message.stop_reason === 'max_tokens') {
+          const meta = customIdLookup[r.custom_id];
+          console.error(`  ✗ ${meta?.basename}::${meta?.sectionId} (${r.custom_id}): output truncated at max_tokens`);
+          hadErrors = true;
+          continue;
+        }
+        translationsByCustomId[r.custom_id] = r.result.message.content[0].text;
+      } else {
+        console.error(`  ✗ ${customIdLookup[r.custom_id]?.basename}::${customIdLookup[r.custom_id]?.sectionId} (${r.custom_id}): ${JSON.stringify(r.result)}`);
+        hadErrors = true;
+      }
+    }
+  }
+
+  // Phase 4: reconstruct files
+  let written = 0;
+  for (const plan of plans) {
+    const newSections = {};
+    const parts = [];
+    let allOk = true;
+    const allHits = plan.decisions.every(d => d.kind === 'hit');
+
+    for (const decision of plan.decisions) {
+      let translation;
+      if (decision.kind === 'hit' || decision.kind === 'patch') {
+        translation = decision.cachedTranslation;
+      } else {
+        const customId = customIdFor(plan.basename, decision.section.id);
+        translation = translationsByCustomId[customId];
+        if (!translation) { allOk = false; break; }
+      }
+      newSections[decision.section.id] = {
+        contentHash: decision.contentHash,
+        proseHash: decision.proseHash,
+        translation,
+      };
+      parts.push(translation);
+    }
+
+    if (!allOk) {
+      console.error(`  ✗ ${plan.basename}: some sections failed — file left unwritten`);
+      continue;
+    }
+
+    const reconstructed = lang ? postProcessTranslation(parts.join('\n'), lang) : parts.join('\n');
+    await fs.mkdir(localesDir, { recursive: true });
+    // Invariant: .hashes/<basename>.json and locales/.../<basename>.mdx must never
+    // disagree on which sections are translated. Skip both writes when every section
+    // was a cache hit — the on-disk state is already correct.
+    if (!allHits) {
+      await fs.writeFile(path.join(localesDir, `${plan.basename}.mdx`), reconstructed, 'utf-8');
+
+      await fs.mkdir(hashesDir, { recursive: true });
+      await fs.writeFile(
+        path.join(hashesDir, `${plan.basename}.json`),
+        JSON.stringify({ fileHash: plan.fileHashCurrent, sections: newSections }),
+        'utf-8'
+      );
+      written++;
+      console.log(`  ✓ ${plan.basename}`);
+    } else {
+      console.log(`  · ${plan.basename} (all cached, no write)`);
+    }
+  }
+
+  console.log(`${tag} Done: ${written} file(s) written.`);
 }
 
 // ---------------------------------------------------------------------------
@@ -1499,6 +1797,115 @@ async function migrateHashes(hashesDir) {
   console.log(`\n[migrate-hashes] Done: ${updated} updated, ${skipped} already up-to-date or skipped.`);
 }
 
+/**
+ * Per-section batch translation for one OpenAPI YAML spec.
+ * Caches at section granularity (per-path, per-schema, etc).
+ */
+async function translateApiSpecBatchSections(client, spec, systemPrompt, apiHashesDir, tag, lang) {
+  const sourceContent = await fs.readFile(spec.full, 'utf-8');
+  const sourceDoc = yaml.load(sourceContent);
+  const sections = splitYamlIntoSections(sourceContent);
+
+  const localePath = path.join(API_SPECS_DIR, `${spec.basename}.${lang}.yaml`);
+  let localeDoc = null;
+  try { localeDoc = yaml.load(await fs.readFile(localePath, 'utf-8')); } catch { /* first run */ }
+
+  const hashFile = path.join(apiHashesDir, `${spec.basename}.json`);
+  let storedData = null;
+  try { storedData = JSON.parse(await fs.readFile(hashFile, 'utf-8')); } catch { /* cold cache */ }
+  const storedSections = storedData?.sections ?? {};
+
+  const decisions = [];
+  for (const section of sections) {
+    const contentHash = 'sha256:' + crypto.createHash('sha256').update(section.content).digest('hex');
+    const cached = storedSections[section.id];
+    if (cached?.contentHash === contentHash) {
+      decisions.push({ section, kind: 'hit', contentHash, cachedTranslation: cached.translation });
+    } else {
+      decisions.push({ section, kind: 'send', contentHash });
+    }
+  }
+
+  const stats = {
+    hit: decisions.filter(d => d.kind === 'hit').length,
+    send: decisions.filter(d => d.kind === 'send').length,
+  };
+  console.log(`${tag} api-spec:${spec.basename}: ${stats.hit} cached, ${stats.send} to translate.`);
+
+  if (flagDryRun) {
+    console.log(`  Would send: ${decisions.filter(d => d.kind === 'send').map(d => d.section.id).join(', ') || '(none)'}`);
+    return;
+  }
+
+  let newTranslations = {};
+  if (stats.send > 0) {
+    const customIdLookup = {};
+    const requests = decisions
+      .filter(d => d.kind === 'send')
+      .map(d => {
+        const customId = customIdFor(spec.basename, d.section.id);
+        customIdLookup[customId] = d.section.id;
+        return {
+          custom_id: customId,
+          params: {
+            model: 'claude-sonnet-4-6',
+            max_tokens: 16000,
+            system: systemPrompt,
+            messages: [{ role: 'user', content: d.section.content }],
+          },
+        };
+      });
+
+    const batch = await client.messages.batches.create({ requests });
+    console.log(`${tag}   Batch submitted: ${batch.id}`);
+    let current = await client.messages.batches.retrieve(batch.id);
+    while (current.processing_status !== 'ended') {
+      const counts = current.request_counts ?? {};
+      console.log(`    Status: ${current.processing_status} — succeeded: ${counts.succeeded ?? '?'}, errored: ${counts.errored ?? '?'}`);
+      await sleep(30_000);
+      current = await client.messages.batches.retrieve(batch.id);
+    }
+
+    const results = await client.messages.batches.results(batch.id);
+    for await (const r of results) {
+      const sectionId = customIdLookup[r.custom_id];
+      if (r.result.type === 'succeeded') {
+        if (r.result.message.stop_reason === 'max_tokens') {
+          console.error(`  ✗ api-spec:${spec.basename} ${sectionId} (${r.custom_id}): truncated at max_tokens`);
+          hadErrors = true;
+          continue;
+        }
+        newTranslations[sectionId] = r.result.message.content[0].text;
+      } else {
+        console.error(`  ✗ api-spec:${spec.basename} ${sectionId} (${r.custom_id}): ${JSON.stringify(r.result)}`);
+        hadErrors = true;
+      }
+    }
+  }
+
+  // Reconstruct: prefer fresh translations, then existing locale subtree, then source.
+  const newSectionContents = {};
+  const newSectionsCache = {};
+  for (const decision of decisions) {
+    if (decision.kind === 'hit') {
+      newSectionContents[decision.section.id] = decision.cachedTranslation;
+      newSectionsCache[decision.section.id] = { contentHash: decision.contentHash, translation: decision.cachedTranslation };
+    } else if (newTranslations[decision.section.id]) {
+      newSectionContents[decision.section.id] = newTranslations[decision.section.id];
+      newSectionsCache[decision.section.id] = { contentHash: decision.contentHash, translation: newTranslations[decision.section.id] };
+    }
+    // errored → fall through; mergeYamlSections uses existingLocaleDoc or source
+  }
+
+  const merged = mergeYamlSections(sourceDoc, localeDoc, newSectionContents);
+  await fs.writeFile(localePath, merged, 'utf-8');
+
+  const fHash = await fileHash(spec.full);
+  await fs.mkdir(apiHashesDir, { recursive: true });
+  await fs.writeFile(hashFile, JSON.stringify({ fileHash: fHash, sections: newSectionsCache }), 'utf-8');
+  console.log(`  ✓ api-spec:${spec.basename}`);
+}
+
 async function translateApiSpecsForLang(client, lang, localesDir, hashesDir, targetLanguage, glossary, tag, onlySpecIds = null) {
   const apiHashesDir = path.resolve(hashesDir, 'api-specs');
   const systemPrompt = buildApiSpecSystemPrompt(targetLanguage) + glossary;
@@ -1551,34 +1958,39 @@ async function translateApiSpecsForLang(client, lang, localesDir, hashesDir, tar
 
   for (const spec of toTranslate) {
     try {
-      const content = await fs.readFile(spec.full, 'utf-8');
-      let translated = '';
-      const stream = await client.messages.stream({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 64000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content }],
-      });
-      for await (const chunk of stream) {
-        if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-          translated += chunk.delta.text;
+      if (flagBatch && flagIncremental) {
+        await translateApiSpecBatchSections(client, spec, systemPrompt, apiHashesDir, tag, lang);
+      } else {
+        // Existing whole-file streaming path, used by --all / --api-specs without --batch
+        const content = await fs.readFile(spec.full, 'utf-8');
+        let translated = '';
+        const stream = await client.messages.stream({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 64000,
+          system: systemPrompt,
+          messages: [{ role: 'user', content }],
+        });
+        for await (const chunk of stream) {
+          if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+            translated += chunk.delta.text;
+          }
         }
-      }
-      const finalMessage = await stream.finalMessage();
-      if (finalMessage.stop_reason === 'max_tokens') {
-        throw new Error(`API spec output truncated at max_tokens limit — spec may be too large`);
-      }
-      const outputPath = path.join(API_SPECS_DIR, `${spec.basename}.${lang}.yaml`);
-      await fs.writeFile(outputPath, translated, 'utf-8');
+        const finalMessage = await stream.finalMessage();
+        if (finalMessage.stop_reason === 'max_tokens') {
+          throw new Error(`API spec output truncated at max_tokens limit — spec may be too large`);
+        }
+        const outputPath = path.join(API_SPECS_DIR, `${spec.basename}.${lang}.yaml`);
+        await fs.writeFile(outputPath, translated, 'utf-8');
 
-      const hash = await fileHash(spec.full);
-      await fs.mkdir(apiHashesDir, { recursive: true });
-      await fs.writeFile(
-        path.join(apiHashesDir, `${spec.basename}.json`),
-        JSON.stringify({ fileHash: hash }),
-        'utf-8'
-      );
-      console.log(`  ✓ api-spec:${spec.basename}`);
+        const hash = await fileHash(spec.full);
+        await fs.mkdir(apiHashesDir, { recursive: true });
+        await fs.writeFile(
+          path.join(apiHashesDir, `${spec.basename}.json`),
+          JSON.stringify({ fileHash: hash }),
+          'utf-8'
+        );
+        console.log(`  ✓ api-spec:${spec.basename}`);
+      }
     } catch (err) {
       console.error(`  ✗ api-spec:${spec.basename}: ${err.message}`);
       hadErrors = true;
@@ -1761,6 +2173,130 @@ function splitByParagraphBlocks(section) {
   });
 
   return chunks.length > 1 ? chunks : [section];
+}
+
+/**
+ * Split an OpenAPI/AsyncAPI YAML doc into translation-sized subtrees.
+ *
+ * Sections returned (each as { id, content }):
+ *   - "info"                                  — single subtree
+ *   - "servers"                               — single subtree
+ *   - "tags"                                  — single subtree
+ *   - "paths::<path>"                         — one per path
+ *   - "components.<bucket>::<name>"           — one per schema/response/etc
+ *   - "<other-top-level-key>"                 — anything we don't recognize
+ *
+ * `content` is the YAML serialization of that subtree under its top-level key.
+ */
+function splitYamlIntoSections(yamlContent) {
+  const doc = yaml.load(yamlContent);
+  if (!doc || typeof doc !== 'object') {
+    return [{ id: 'whole', content: yamlContent }];
+  }
+
+  const sections = [];
+
+  for (const [topKey, topVal] of Object.entries(doc)) {
+    if (topKey === 'paths' && topVal && typeof topVal === 'object') {
+      for (const [pathKey, pathVal] of Object.entries(topVal)) {
+        sections.push({
+          id: `paths::${pathKey}`,
+          content: yaml.dump({ paths: { [pathKey]: pathVal } }, { lineWidth: -1, noRefs: true }),
+        });
+      }
+    } else if (topKey === 'components' && topVal && typeof topVal === 'object') {
+      for (const [bucket, bucketVal] of Object.entries(topVal)) {
+        if (bucketVal && typeof bucketVal === 'object' && !Array.isArray(bucketVal)) {
+          for (const [name, val] of Object.entries(bucketVal)) {
+            sections.push({
+              id: `components.${bucket}::${name}`,
+              content: yaml.dump({ components: { [bucket]: { [name]: val } } }, { lineWidth: -1, noRefs: true }),
+            });
+          }
+        } else {
+          sections.push({
+            id: `components.${bucket}`,
+            content: yaml.dump({ components: { [bucket]: bucketVal } }, { lineWidth: -1, noRefs: true }),
+          });
+        }
+      }
+    } else {
+      sections.push({
+        id: topKey,
+        content: yaml.dump({ [topKey]: topVal }, { lineWidth: -1, noRefs: true }),
+      });
+    }
+  }
+
+  return sections;
+}
+
+/**
+ * Merge translated YAML subtrees back into a complete document.
+ *
+ * For each section: prefer fresh translation, then existing-locale subtree,
+ * then source. Returns the merged YAML string.
+ */
+function mergeYamlSections(originalDoc, existingLocaleDoc, newSectionContents) {
+  const merged = {};
+
+  for (const topKey of Object.keys(originalDoc)) {
+    if (topKey === 'paths' && originalDoc.paths && typeof originalDoc.paths === 'object') {
+      merged.paths = {};
+      for (const pathKey of Object.keys(originalDoc.paths)) {
+        const sectionId = `paths::${pathKey}`;
+        if (newSectionContents[sectionId]) {
+          const parsed = yaml.load(newSectionContents[sectionId]);
+          merged.paths[pathKey] = parsed.paths[pathKey];
+        } else if (existingLocaleDoc?.paths?.[pathKey] !== undefined) {
+          merged.paths[pathKey] = existingLocaleDoc.paths[pathKey];
+        } else {
+          merged.paths[pathKey] = originalDoc.paths[pathKey];
+        }
+      }
+    } else if (topKey === 'components' && originalDoc.components && typeof originalDoc.components === 'object') {
+      merged.components = {};
+      for (const bucket of Object.keys(originalDoc.components)) {
+        const bucketVal = originalDoc.components[bucket];
+        if (bucketVal && typeof bucketVal === 'object' && !Array.isArray(bucketVal)) {
+          merged.components[bucket] = {};
+          for (const name of Object.keys(bucketVal)) {
+            const sectionId = `components.${bucket}::${name}`;
+            if (newSectionContents[sectionId]) {
+              const parsed = yaml.load(newSectionContents[sectionId]);
+              merged.components[bucket][name] = parsed.components[bucket][name];
+            } else if (existingLocaleDoc?.components?.[bucket]?.[name] !== undefined) {
+              merged.components[bucket][name] = existingLocaleDoc.components[bucket][name];
+            } else {
+              merged.components[bucket][name] = bucketVal[name];
+            }
+          }
+        } else {
+          const sectionId = `components.${bucket}`;
+          if (newSectionContents[sectionId]) {
+            const parsed = yaml.load(newSectionContents[sectionId]);
+            merged.components[bucket] = parsed.components[bucket];
+          } else if (existingLocaleDoc?.components?.[bucket] !== undefined) {
+            merged.components[bucket] = existingLocaleDoc.components[bucket];
+          } else {
+            merged.components[bucket] = bucketVal;
+          }
+        }
+      }
+    } else {
+      const sectionId = topKey;
+      if (newSectionContents[sectionId]) {
+        const parsed = yaml.load(newSectionContents[sectionId]);
+        merged[topKey] = parsed[topKey];
+      } else if (existingLocaleDoc?.[topKey] !== undefined) {
+        merged[topKey] = existingLocaleDoc[topKey];
+      } else {
+        merged[topKey] = originalDoc[topKey];
+      }
+    }
+  }
+
+  return yaml.dump(merged, { lineWidth: -1, noRefs: true });
 }
 
 /** Append -2, -3 suffixes for duplicate section ids. */
