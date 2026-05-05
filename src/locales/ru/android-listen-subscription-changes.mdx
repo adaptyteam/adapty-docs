@@ -1,0 +1,145 @@
+---
+title: "Проверка статуса подписки в Android SDK"
+description: "Отслеживайте и управляйте статусом подписки пользователей в Adapty для повышения удержания клиентов в вашем Android-приложении."
+metadataTitle: "Статус подписки | Документация Adapty"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
+
+С Adapty отслеживать статус подписки очень просто. Вам не нужно вручную прописывать идентификаторы продуктов в коде — достаточно проверить наличие активного [уровня доступа](access-level), чтобы убедиться, что у пользователя есть подписка.
+
+Прежде чем начать проверку статуса подписки, настройте [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn).
+
+## Уровень доступа и объект AdaptyProfile \{#access-level-and-the-adaptyprofile-object\}
+
+Уровни доступа — это свойства объекта [AdaptyProfile](https://android.adapty.io/adapty/com.adapty.models/-adapty-profile/). Рекомендуем получать профиль при запуске приложения — например, когда вы [идентифицируете пользователя](android-identifying-users#setting-customer-user-id-on-configuration) — и обновлять его при каждом изменении. Так вы сможете использовать объект профиля без повторных запросов к серверу.
+
+Чтобы получать уведомления об обновлениях профиля, подпишитесь на изменения профиля, как описано в разделе [Прослушивание обновлений профиля, включая уровни доступа](android-listen-subscription-changes) ниже.
+
+<SampleApp />
+
+## Получение уровня доступа с сервера \{#retrieving-the-access-level-from-the-server\}
+
+Чтобы получить уровень доступа с сервера, используйте метод `.getProfile()`:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+            // check the access
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        // check the access
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+Параметры ответа:
+
+| Параметр | Описание                                                  |
+| --------- | ------------------------------------------------------------ |
+| Profile   | <p>Объект [AdaptyProfile](https://android.adapty.io/adapty/com.adapty.models/-adapty-profile/). Как правило, для определения наличия у пользователя премиум-доступа достаточно проверить только статус уровня доступа профиля.</p><p></p><p>Метод `.getProfile` возвращает наиболее актуальные данные, поскольку всегда пытается обратиться к API. Если по какой-либо причине (например, из-за отсутствия интернета) SDK Adapty не может получить данные с сервера, возвращаются данные из кэша. Важно также отметить, что SDK Adapty регулярно обновляет кэш `AdaptyProfile`, чтобы поддерживать информацию в актуальном состоянии.</p> |
+
+Метод `.getProfile()` возвращает профиль пользователя, из которого можно получить статус уровня доступа. В приложении может быть несколько уровней доступа. Например, в новостном приложении с независимыми подписками на разные тематики можно создать уровни доступа «sports» и «science». Однако в большинстве случаев достаточно одного уровня доступа — тогда можно просто использовать уровень доступа «premium» по умолчанию.
+
+Вот пример проверки уровня доступа «premium» по умолчанию:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+
+            if (profile.accessLevels["premium"]?.isActive == true) {
+                // grant access to premium features
+            }
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        
+        AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("premium");
+        
+        if (premium != null && premium.isActive()) {
+            // grant access to premium features
+        }
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+### Прослушивание обновлений статуса подписки \{#listening-for-subscription-status-updates\}
+
+При каждом изменении подписки пользователя Adapty генерирует событие.
+
+Чтобы получать сообщения от Adapty, необходимо выполнить дополнительную настройку:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.setOnProfileUpdatedListener { profile ->
+    // handle any changes to subscription state
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers t
+Adapty.setOnProfileUpdatedListener(profile -> {
+    // handle any changes to subscription state
+});
+```
+</TabItem>
+
+</Tabs>
+
+Adapty также генерирует событие при запуске приложения. В этом случае передаётся кэшированный статус подписки.
+
+### Кэш статуса подписки \{#subscription-status-cache\}
+
+Кэш, реализованный в SDK Adapty, хранит статус подписки профиля. Это означает, что даже при недоступности сервера кэшированные данные позволяют получить информацию о статусе подписки профиля.
+
+Однако важно учитывать, что напрямую запросить данные из кэша невозможно. SDK периодически обращается к серверу каждую минуту для проверки обновлений и изменений профиля. При наличии каких-либо изменений — новых транзакций или других обновлений — они отправляются в кэшированные данные, чтобы поддерживать их синхронизацию с сервером.

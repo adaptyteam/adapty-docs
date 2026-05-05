@@ -1,0 +1,120 @@
+---
+title: "Идентификация пользователей в React Native SDK"
+description: "Узнайте, как идентифицировать пользователей в React Native-приложении с помощью Adapty SDK."
+metadataTitle: "Идентификация пользователей | React Native SDK | Документация Adapty"
+customSlug: /react-native-identifying-users
+displayed_sidebar: sdkreactnative
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
+
+Adapty создаёт внутренний ID профиля для каждого пользователя. Однако если у вас есть собственная система аутентификации, вы можете задать свой Customer User ID. Пользователей можно находить по Customer User ID в разделе [Profiles](profiles-crm), а также использовать его в [серверном API](getting-started-with-server-side-api) — он будет передаваться во все интеграции.
+
+### Установка Customer User ID при конфигурации \{#setting-customer-user-id-on-configuration\}
+
+Если ID пользователя уже известен на этапе конфигурации, просто передайте его в параметре `customerUserId` метода `.activate()`:
+
+```typescript showLineNumbers
+adapty.activate("PUBLIC_SDK_KEY", {
+    customerUserId: "YOUR_USER_ID"
+});
+```
+
+<SampleApp />
+
+### Установка Customer User ID после конфигурации \{#setting-customer-user-id-after-configuration\}
+
+Если ID пользователя недоступен при конфигурации SDK, его можно задать позже в любой момент с помощью метода `.identify()`. Чаще всего этот метод вызывают после регистрации или авторизации — когда анонимный пользователь становится аутентифицированным.
+
+```typescript showLineNumbers
+try {
+    await adapty.identify("YOUR_USER_ID");
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```
+
+Параметры запроса:
+
+- **Customer User ID** (обязательный): строковый идентификатор пользователя.
+
+:::warning
+Повторная передача важных данных пользователя
+
+В некоторых случаях — например, когда пользователь снова входит в аккаунт — серверы Adapty уже располагают информацией о нём. В таких ситуациях Adapty SDK автоматически переключится на работу с новым пользователем. Если вы передавали какие-либо данные анонимному пользователю — например, пользовательские атрибуты или атрибуцию из сторонних сетей — необходимо повторно отправить эти данные для идентифицированного пользователя.
+
+Также важно учитывать, что после идентификации пользователя следует повторно запросить все пейволы и продукты, поскольку данные нового пользователя могут отличаться.
+:::
+
+### Выход и вход \{#logging-out-and-logging-in\}
+
+Вы можете выйти из аккаунта в любой момент, вызвав метод `.logout()`:
+
+```typescript showLineNumbers
+try {
+    await adapty.logout();
+    // successful logout
+} catch (error) {
+    // handle the error
+}
+```
+
+После этого можно войти снова, используя метод `.identify()`.
+
+## Назначение `appAccountToken` (iOS) \{#assign-appaccounttoken-ios\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) — это **UUID**, позволяющий связывать транзакции App Store с внутренними идентификаторами пользователей.  
+StoreKit прикрепляет этот токен к каждой транзакции, поэтому ваш бэкенд может сопоставлять данные App Store с вашими пользователями.
+
+Используйте стабильный UUID, сгенерированный для каждого пользователя, и применяйте его для одного и того же аккаунта на всех устройствах.
+Это гарантирует, что покупки и уведомления App Store будут корректно привязаны.
+
+Токен можно задать двумя способами: при активации SDK или при идентификации пользователя.
+
+:::important
+Всегда передавайте `appAccountToken` вместе с `customerUserId`.
+Если передать только токен, он не будет включён в транзакцию.
+:::
+
+```typescript showLineNumbers
+// During configuration:
+adapty.activate("PUBLIC_SDK_KEY", {
+    customerUserId: "YOUR_USER_ID",
+    ios: { appAccountToken: "YOUR_APP_ACCOUNT_TOKEN" },
+});
+
+// Or when identifying users
+try {
+    await adapty.identify("YOUR_USER_ID", {
+        ios: {appAccountToken: 'YOUR_APP_ACCOUNT_TOKEN'}
+    });
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```
+
+### Установка обфусцированных идентификаторов аккаунта (Android) \{#set-obfuscated-account-ids-android\}
+
+Google Play требует использования обфусцированных идентификаторов аккаунта в ряде сценариев для защиты конфиденциальности и безопасности пользователей. Эти идентификаторы помогают Google Play отслеживать покупки, сохраняя анонимность пользователей, что особенно важно для предотвращения мошенничества и аналитики.
+
+Задавать такие идентификаторы может потребоваться, если ваше приложение работает с чувствительными пользовательскими данными или должно соответствовать определённым требованиям конфиденциальности. Обфусцированные идентификаторы позволяют Google Play отслеживать покупки без раскрытия реальных пользовательских данных.
+
+```typescript showLineNumbers
+// During configuration:
+adapty.activate("PUBLIC_SDK_KEY", {
+    customerUserId: "YOUR_USER_ID",
+    android: { obfuscatedAccountId: 'YOUR_OBFUSCATED_ACCOUNT_ID' }
+});
+
+// Or when identifying users
+try {
+    await adapty.identify("YOUR_USER_ID", {
+        android: { obfuscatedAccountId: 'YOUR_OBFUSCATED_ACCOUNT_ID' }
+    });
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```

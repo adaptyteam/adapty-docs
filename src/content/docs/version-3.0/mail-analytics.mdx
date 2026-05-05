@@ -1,0 +1,68 @@
+---
+title: "Campaign analytics in Adapty Mail"
+description: "Per-variation delivery, engagement, and revenue metrics shown in the Flows editor and on the A/B Tests page."
+metadataTitle: "Campaign Analytics | Adapty Mail | Adapty Docs"
+keywords: ['adapty mail']
+---
+
+Adapty Mail tracks every SES delivery event and every revenue event attributed to an email click. Metrics are exposed **per variation row** in two places:
+
+- **Flows page**: Inline with each segment row in a trigger view, regardless of whether the row's content is a campaign or an A/B test.
+- **A/B Tests page**: For A/B tests only — this is where you compare variations side by side.
+
+The metric set is identical in both views. There's no standalone Analytics dashboard; analytics live next to the rows being measured.
+
+## What's tracked per variation
+
+Each variation row exposes the following raw counts:
+
+- **Sends**: Emails dispatched to SES.
+- **Deliveries**: SES-confirmed inbox deliveries.
+- **Bounces**: SES-reported bounces. Hard and soft bounces aren't distinguished — both count as one **Bounce**.
+- **Opens**: Pixel loads. Apple Mail Privacy Protection pre-fetches images on iOS 15+ and inflates this count — rely on clicks and revenue for stronger signals.
+- **Clicks**: Link clicks in the email body.
+- **Unsubs**: Unsubscribes from the footer link or the `List-Unsubscribe` header.
+- **Purchases**: Attributed purchase events, counted uniquely per scheduled email. A recipient who makes multiple purchases from the same scheduled email counts once.
+- **Revenue**: Sum of attributed revenue (USD) across subscription starts, renewals, and one-time purchases.
+
+## Derived rates
+
+Each rate is computed from the raw counts. Denominators vary — pick the one that matches the funnel step you're measuring.
+
+| Rate          | Formula                |
+| ------------- | ---------------------- |
+| Del Rate      | Deliveries / Sends     |
+| Bounce Rate   | Bounces / Sends        |
+| Open/Send     | Opens / Sends          |
+| Open/Del      | Opens / Deliveries     |
+| Click/Send    | Clicks / Sends         |
+| Click/Del     | Clicks / Deliveries    |
+| Click/Open    | Clicks / Opens         |
+| Purch/Send    | Purchases / Sends      |
+| Purch/Del     | Purchases / Deliveries |
+| Purch/Open    | Purchases / Opens      |
+| Purch/Click   | Purchases / Clicks     |
+| Unsub/Send    | Unsubs / Sends         |
+| Unsub/Del     | Unsubs / Deliveries    |
+| Unsub/Open    | Unsubs / Opens         |
+| Rev/Send      | Revenue / Sends        |
+
+## Revenue attribution
+
+Revenue is attributed via **last-click** on a tracked link:
+
+1. When a recipient clicks any link in an email, Adapty Mail stores the `scheduled_email_id` against that profile in a short-term store.
+2. If a purchase event arrives afterward with no existing attribution, Adapty Mail back-fills the stored `scheduled_email_id` onto the transaction — provided the purchase timestamp is after the click.
+3. Purchases without a preceding tracked click stay unattributed.
+
+The tracked parameter is `scheduled_email_id`. The checkout URL also carries the recipient's identity via the `{email}` and `{external_profile_id}` placeholders so the web paywall can personalize the flow — that's a separate mechanism from attribution. See [Set up checkout](mail-checkout).
+
+## Limitations
+
+- **No consolidated dashboard**: Metrics are surfaced inline in the Flows editor and on the A/B Tests page — there's no cross-project or cross-campaign rollup view.
+- **A/B Tests page hides campaign rows**: Single-campaign flow rows are stored as internal A/B-test wrappers, but the A/B Tests page filters them out. To see their metrics, open the flow they're attached to.
+- **No date filter**: The counts are cumulative from the first SES event on the variation — you can't narrow to "last 7 days" in the UI.
+- **No per-recipient drill-down**: The analytics view doesn't expose individual user email histories.
+- **No soft vs hard bounce distinction**: Every bounce, temporary or permanent, collapses into a single Bounce count.
+- **Purchases count unique scheduled emails, not recipients**: A recipient who matches multiple emails in the sequence can contribute more than once in aggregate across the variation.
+- **Eventual consistency, not real-time**: Data is aggregated from ClickHouse event tables. Fresh events usually appear within minutes, but there's no streaming guarantee.

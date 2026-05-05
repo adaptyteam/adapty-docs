@@ -1,0 +1,110 @@
+---
+title: "从 Superwall 迁移"
+description: "通过逐步指南将 Superwall 迁移到 Adapty，涵盖每个 SDK 调用和概念的对应关系。"
+metadataTitle: "从 Superwall 迁移至 Adapty | Adapty 文档"
+keywords: ['迁移', 'superwall']
+---
+
+从 Superwall 迁移到 Adapty 通常只需约两小时。你只需替换 SDK、将应用商店服务器通知指向 Adapty，然后发布新版本即可。付费订阅用户的权益会自动保留——Adapty 在用户首次启动时即可从 App Store 和 Google Play 收据中恢复。
+
+:::info
+你的订阅用户将自动完成迁移
+所有曾经激活过订阅的用户，只要打开集成了 Adapty SDK 的新版应用，就会自动迁移到 Adapty。订阅状态验证和高级访问权限会自动恢复。
+:::
+## 本指南的结构 \{#how-this-guide-is-organized\}
+
+迁移共分六个步骤：
+
+1. [将 Superwall 概念映射到 Adapty](#map-your-superwall-concepts-to-adapty) _(5 分钟)_
+2. [安装 Adapty SDK](#install-the-adapty-sdk) _(15 分钟)_
+3. [替换 SDK 调用](#replace-sdk-calls) _(1 小时)_
+4. [切换 App Store 和 Google Play 服务器通知](#switch-app-store-and-google-play-server-notifications) _(5 分钟)_
+5. [测试与发布](#test-and-release) _(30 分钟)_
+6. [（可选）导入历史数据](#optional-import-historical-data)
+## 将 Superwall 概念映射到 Adapty \{#map-your-superwall-concepts-to-adapty\}
+
+大多数 Superwall 概念在 Adapty 中都有对应的概念：
+| Superwall            | Adapty                                            | 变更说明                                                                 |
+| :------------------- | :------------------------------------------------ | :--------------------------------------------------------------------------- |
+| Campaign             | [版位](placements) + [目标受众](audience)    | Campaign 逻辑拆分为版位（位置）和目标受众（规则）。 |
+| Placement            | [版位](placements)                           | 概念相同，名称相同。                                                     |
+| Audience filter      | [目标受众](audience)                              | 规则集位于版位内部。                                           |
+| Entitlement          | [访问等级](access-level)                      | 命名标识符（例如 `premium`）。                                   |
+| WebView paywall      | [付费墙编辑工具付费墙](adapty-paywall-builder) | 由 Adapty SDK 原生渲染，而非使用 `WKWebView`。                         |
+| `PurchaseController` | 内置                                          | 无需实现协议 —— Adapty 自动处理购买流程。                         |
+| Feature gating       | [访问等级](access-level)检查                | 检查 `profile.accessLevels["premium"]?.isActive`。                           |
+在接触代码之前，有两个思维转变值得注意：
+- **获取与展示是两个独立步骤**：Superwall 的 `register` 方法在一次调用中完成付费墙获取、营销活动评估和 UI 展示。Adapty 将这些步骤拆分开来——你需要先获取付费墙，拿到其配置，再进行展示。虽然多了几行代码，但这让你可以预加载配置、显示自定义加载状态，或根据自己的逻辑取消展示。
+- **订阅状态按访问等级区分**：Superwall 暴露单一的 `subscriptionStatus` 发布属性。Adapty 返回一个包含命名访问等级的 [`AdaptyProfile`](https://swift.adapty.io/documentation/adapty/adaptyprofile)，因此同一用户可以同时持有 `sports` 和 `science` 两个独立的访问等级。如需同步读取，建议从 `AdaptyDelegate` 缓存用户画像，而不是每次视图加载时都调用 `getProfile()`。
+## 安装 Adapty SDK \{#install-the-adapty-sdk\}
+
+为你的平台安装 Adapty SDK —— [iOS](sdk-installation-ios)、[Android](sdk-installation-android)、[React Native](sdk-installation-reactnative)、[Flutter](sdk-installation-flutter)、[Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)、[Unity](sdk-installation-unity) 或 [Capacitor](sdk-installation-capacitor) —— 同时从项目中移除 SuperwallKit。
+## 替换 SDK 调用 \{#replace-sdk-calls\}
+
+逐一检查集成的各个部分，将 Superwall 调用替换为对应的 Adapty 调用。每个小节末尾都附有链接，涵盖全部七个平台的 SDK——请根据你的应用选择对应链接。
+### 初始化 SDK \{#initialize-the-sdk\}
+
+将 `Superwall.configure` 替换为 `Adapty.activate`。
+
+请查阅适用于你所在平台的安装指南 —— [iOS](sdk-installation-ios)、[Android](sdk-installation-android)、[React Native](sdk-installation-reactnative)、[Flutter](sdk-installation-flutter)、[Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)、[Unity](sdk-installation-unity) 或 [Capacitor](sdk-installation-capacitor)。
+### 识别和登出用户 \{#identify-and-log-out-users\}
+
+将 `Superwall.shared.identify` 替换为 `Adapty.identify`，将 `Superwall.shared.reset` 替换为 `Adapty.logout`。两个 SDK 都会在首次启动时生成匿名用户画像，因此只有在用户登录或登出时才需要调用这些方法。识别用户后需重新获取付费墙——新用户可能会匹配到不同的目标受众。
+请参阅适用于您平台的识别指南 — [iOS](identifying-users)、[Android](android-identifying-users)、[React Native](react-native-identifying-users)、[Flutter](flutter-identifying-users)、[Kotlin Multiplatform](kmp-identifying-users)、[Unity](unity-identifying-users) 或 [Capacitor](capacitor-identifying-users)。
+### 获取并展示付费墙 \{#fetch-and-present-a-paywall\}
+
+将 `Superwall.shared.register` 替换为两步流程：先用 `Adapty.getPaywall` 获取付费墙，再用 `AdaptyUI.getPaywallConfiguration` 加载其视图配置，最后进行展示。
+
+需要注意两点区别：
+- **功能门控取代了 `feature:` 闭包**：付费墙关闭后，检查返回的用户画像（或通过 `Adapty.getProfile` 获取）上的有效访问等级，再据此进行分支处理。
+- **付费墙由 SDK 渲染**：Superwall 在 `WKWebView` 中渲染付费墙。Adapty 则通过付费墙编辑工具以原生方式渲染付费墙——字体、产品信息和按钮均由 SDK 直接绘制。
+请参阅适用于您平台的付费墙快速入门 — [iOS](ios-quickstart-paywalls)、[Android](android-quickstart-paywalls)、[React Native](react-native-quickstart-paywalls)、[Flutter](flutter-quickstart-paywalls)、[Kotlin Multiplatform](kmp-quickstart-paywalls)、[Unity](unity-quickstart-paywalls) 或 [Capacitor](capacitor-quickstart-paywalls)。
+### 检查订阅状态 \{#check-subscription-status\}
+
+将 `Superwall.shared.subscriptionStatus` 替换为对用户画像中指定访问等级的检查：`profile.accessLevels["premium"]?.isActive`。通过 `AdaptyDelegate.didLoadLatestProfile(_:)` 监听变更，而非使用 `@Published` 属性模式，并在本地缓存用户画像以便同步读取。
+请参阅适用于您平台的订阅状态指南 — [iOS](ios-check-subscription-status)、[Android](android-check-subscription-status)、[React Native](react-native-check-subscription-status)、[Flutter](flutter-check-subscription-status)、[Kotlin Multiplatform](kmp-check-subscription-status)、[Unity](unity-check-subscription-status) 或 [Capacitor](capacitor-check-subscription-status)。
+### 处理购买与恢复 \{#handle-purchases-and-restores\}
+
+使用付费墙编辑工具时，两个 SDK 都会在付费墙界面内自动处理购买流程——**此步骤可跳过**。
+
+对于自定义付费墙，Superwall 需要实现 `PurchaseController`，而 Adapty 不需要：将 `PurchaseController.purchase` 替换为 `Adapty.makePurchase`，将 `PurchaseController.restorePurchases` 替换为 `Adapty.restorePurchases`。SDK 会自行处理验证逻辑。
+请参阅适用于您平台的自定义付费墙快速入门指南 — [iOS](ios-quickstart-manual)、[Android](android-quickstart-manual)、[React Native](react-native-quickstart-manual)、[Flutter](flutter-quickstart-manual)、[Kotlin Multiplatform](kmp-quickstart-manual)、[Unity](unity-quickstart-manual) 或 [Capacitor](capacitor-quickstart-manual)。
+### 设置用户属性 \{#set-user-attributes\}
+
+将 `Superwall.shared.setUserAttributes` 替换为 `Adapty.updateProfile`。
+
+请参阅适用于您平台的用户属性指南 — [iOS](setting-user-attributes)、[Android](android-setting-user-attributes)、[React Native](react-native-setting-user-attributes)、[Flutter](flutter-setting-user-attributes)、[Kotlin Multiplatform](kmp-setting-user-attributes)、[Unity](unity-setting-user-attributes) 或 [Capacitor](capacitor-setting-user-attributes)。
+## 切换 App Store 和 Google Play 服务器通知 \{#switch-app-store-and-google-play-server-notifications\}
+
+将应用商店的服务器通知指向 Adapty。Adapty 不依赖这些通知也能正常运行，但分析数据、第三方集成以及 A/B 测试数据图表都需要它们：
+
+- **App Store**：请参阅[启用 App Store 服务器通知](enable-app-store-server-notifications)。
+- **Google Play**：请参阅[启用实时开发者通知](enable-real-time-developer-notifications-rtdn)。
+如果您想在推出过程中并行运行 Superwall 和 Adapty，请使用[原始事件转发](enable-app-store-server-notifications#raw-events-forwarding) —— Adapty 会将商店事件代理回 Superwall，同时您可以验证新的集成。
+## 测试与发布 \{#test-and-release\}
+
+发布前，请逐一确认以下各项：
+
+- [x] 已配置 Adapty 看板（产品、付费墙、版位、访问等级）
+- [x] 已安装 Adapty SDK
+- [x] 已将 Superwall SDK 调用替换为 Adapty 等效调用
+- [x] 已将 App Store 和 Google Play 服务器通知指向 Adapty
+- [ ] 已完成沙盒购买
+- [ ] 已提交新版本应用
+
+请参阅[发布检查清单](release-checklist)进行最终验证。
+## （可选）导入历史数据 \{#optional-import-historical-data\}
+
+Superwall 并不拥有您的订阅状态——App Store 和 Google Play 才是。Adapty 在首次启动时会验证收据，因此付费用户无需任何导入即可保留其访问权限。
+
+如果您希望将历史交易数据回填到 Adapty 分析中，请参考[向 Adapty 导入历史数据](importing-historical-data-to-adapty)。建议在 SDK 发布后至少等待一周，以便 SDK 有足够时间收集最新的购买价格。
+## 常见问题 \{#faq\}
+### 不更新应用的订阅者会怎样？\{#what-happens-to-subscribers-who-dont-update-the-app\}
+
+大多数用户会在夜间自动更新应用，因此使用旧版本的用户比例会迅速下降。留在旧版本的订阅者可以直接通过 App Store 或 Google Play 继续使用其权益，无需强制更新。
+### 我的 Superwall 活动目标受众会自动迁移吗？\{#do-my-superwall-campaign-audiences-carry-over\}
+
+不会。Superwall 的受众过滤器和 Adapty 的目标受众分别在不同的看板中配置，且使用不同的标识符。请在 Adapty 的[版位](placements)中重新创建你的定向规则，作为[目标受众](audience)进行设置。大多数应用只有一两个版位（用户引导和通用应用内触发），因此重建工作通常很快就能完成。
+### Adapty 是否有与 `getPresentationResult` 等效的方法？\{#does-adapty-have-an-equivalent-to-getpresentationresult\}
+
+没有单独的调用方法。如需判断某个版位是否会显示付费墙，请调用 `Adapty.getPaywall(placementId:)` 并根据结果进行分支处理。若调用成功，说明该用户的目标受众已分配付费墙；若调用失败（原因是未配置付费墙），则跳过展示并执行备用逻辑。

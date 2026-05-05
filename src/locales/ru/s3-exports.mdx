@@ -1,0 +1,288 @@
+---
+title: "Amazon S3"
+description: "Экспортируйте данные о подписках в S3 для углублённой аналитики и отчётности."
+metadataTitle: "Экспорт в S3 и управление данными | Документация Adapty"
+---
+
+Интеграция Adapty с Amazon S3 позволяет хранить данные о событиях и посещениях пейволов в одном централизованном месте. Вы сможете сохранять [события подписок](events) в виде .csv-файлов в вашем бакете Amazon S3.  
+Для настройки интеграции потребуется выполнить несколько простых шагов в AWS Console и дашборде Adapty.
+:::note
+Расписание
+
+Adapty отправляет данные каждые **24 часа** в 4:00 UTC.
+
+Каждый файл содержит данные о событиях за весь предыдущий календарный день по UTC. Например, данные, экспортированные автоматически в 4:00 UTC 8 марта, будут содержать все события, созданные 7 марта с 00:00:00 до 23:59:59 по UTC.
+:::
+## Как настроить интеграцию с Amazon S3 \{#how-to-set-up-amazon-s3-integration\}
+
+Для получения данных вам понадобятся следующие учётные данные:
+
+1. Access key ID
+2. Secret access key
+3. S3 bucket name
+4. Folder name inside the S3 bucket
+
+:::note
+Вложенные директории
+
+В поле имени бакета Amazon S3 можно указывать вложенные директории, например: adapty-events/com.sample-app
+:::
+
+Чтобы подключить Amazon S3, перейдите в [**Integrations** -> **Amazon S3**](https://app.adapty.io/integrations/s3), включите переключатель и заполните поля.
+
+Сначала укажите учётные данные для установки соединения между Amazon S3 и профилями Adapty.
+В дашборде Adapty для настройки подключения нужны следующие поля:
+| Поле                         | Описание                                                     |
+| :--------------------------- | :----------------------------------------------------------- |
+| **Access Key ID**            | Уникальный идентификатор для аутентификации пользователя или приложения при доступе к сервису AWS. Найдите этот идентификатор в загруженном [csv-файле](s3-exports#how-to-create-amazon-s3-credentials). |
+| **Secret Access Key**        | Приватный ключ, используемый совместно с Access Key ID для аутентификации при доступе к сервису AWS. Найдите этот ключ в загруженном [csv-файле](s3-exports#how-to-create-amazon-s3-credentials). |
+| **S3 Bucket Name**           | Глобально уникальное имя, идентифицирующее конкретный S3-бакет в облаке AWS. S3-бакеты — это простой сервис хранения, позволяющий хранить и получать объекты данных (файлы, изображения и т. д.) в облаке. |
+| **Folder Inside the Bucker** | Название папки, которую вы хотите создать внутри выбранного S3-бакета. Обратите внимание: S3 имитирует папки с помощью префиксов ключей объектов, которые по сути и являются именами папок. |
+## Как создать учётные данные Amazon S3 \{#how-to-create-amazon-s3-credentials\}
+
+Этот гайд поможет вам создать необходимые учётные данные в консоли AWS.
+### 1\. Создайте политику доступа \{#create-access-policy\}
+
+Сначала перейдите на [страницу управления политиками IAM](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/policies) в консоли AWS и выберите **Create Policy**.
+
+<Zoom>
+  <img src="/assets/shared/img/7af075c-CleanShot_2023-03-21_at_10.52.002x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+В редакторе политики вставьте следующий JSON и замените `adapty-s3-integration-test` на название вашего бакета:
+```json showLineNumbers title="Json"
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowListObjectsInBucket",
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        },
+        {
+            "Sid": "AllowAllObjectActions",
+            "Effect": "Allow",
+            "Action": "s3:*Object",
+            "Resource": [
+                "arn:aws:s3:::adapty-s3-integration-test/*",
+                "arn:aws:s3:::adapty-s3-integration-test"
+            ]
+        },
+        {
+            "Sid": "AllowBucketLocation",
+            "Effect": "Allow",
+            "Action": "s3:GetBucketLocation",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        }
+    ]
+}
+```
+<Zoom>
+  <img src="/assets/shared/img/d4e474a-CleanShot_2023-03-21_at_10.56.212x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+После завершения настройки политики вы можете добавить теги (необязательно), а затем нажать **Next**, чтобы перейти к последнему шагу. На этом шаге нужно указать название политики и нажать кнопку **Create policy**, чтобы завершить создание.
+<Zoom>
+  <img src="/assets/shared/img/7dcb02f-CleanShot_2023-03-21_at_11.03.372x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+### 2\. Создайте пользователя IAM \{#2-create-iam-user\}
+
+Чтобы Adapty мог загружать отчёты с сырыми данными в ваш бакет, необходимо предоставить Access Key ID и Secret Access Key пользователя с правом записи в этот бакет.
+
+Для этого перейдите в IAM Console и откройте раздел [Users](https://console.aws.amazon.com/iamv2/home#/users). Затем нажмите кнопку **Add users**.
+Дайте пользователю имя, выберите **Access key – Programmatic access** и перейдите к настройке прав доступа.
+<Zoom>
+  <img src="/assets/shared/img/467ee4d-j6aoX.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+На следующем шаге выберите опцию **Add user to group**, затем нажмите кнопку **Create group**.
+<Zoom>
+  <img src="/assets/shared/img/bfd0e80-CleanShot_2023-03-21_at_11.24.592x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Далее укажите имя для вашей группы пользователей и выберите политику, созданную ранее. После выбора политики нажмите кнопку **Create group**, чтобы завершить процесс.
+<Zoom>
+  <img src="/assets/shared/img/df29c12-CleanShot_2023-03-21_at_11.28.052x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+После успешного создания группы **выберите её** и перейдите к следующему шагу.
+<Zoom>
+  <img src="/assets/shared/img/1f3722e-CleanShot_2023-03-21_at_11.36.192x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Это последний шаг данного раздела — просто нажмите кнопку **Create User**.
+Наконец, вы можете **скачать учётные данные в формате .csv** или скопировать и вставить их прямо с дашборда.
+<Zoom>
+  <img src="/assets/shared/img/bcf35e1-S3created.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+## Экспорт данных вручную \{#manual-data-export\}
+
+Помимо автоматического экспорта событий в Amazon S3, Adapty также поддерживает ручной экспорт файлов. С помощью этой функции вы можете выбрать конкретный временной интервал и экспортировать данные о событиях в свой S3-бакет вручную. Это даёт вам больше контроля над тем, какие данные и когда экспортировать.
+
+Указанный диапазон дат используется для экспорта событий, созданных с Date A 00:00:00 UTC по Date B 23:59:59 UTC.
+<Zoom>
+  <img src="/assets/shared/img/466bd29-CleanShot_2023-03-21_at_12.35.252x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+## Структура таблицы \{#table-structure\}
+
+В интеграции с AWS S3 Adapty предоставляет таблицу для хранения исторических данных о транзакционных событиях и посещениях пейвола. Таблица содержит информацию о профиле пользователя, выручке и чистом доходе, источнике стора и других параметрах. По сути, эти таблицы фиксируют все транзакции, сгенерированные приложением за определённый период времени.
+:::warning
+Обратите внимание, что эта структура может расширяться со временем — по мере добавления новых данных нами или сторонними сервисами, с которыми мы работаем. Убедитесь, что ваш код, обрабатывающий эти данные, достаточно устойчив и опирается на конкретные поля, а не на структуру целиком.
+:::
+
+Ниже приведена структура таблицы для событий:
+| Столбец | Описание |
+|---------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **profile_id** | ID пользователя Adapty. |
+| **event_type** | Название события в нижнем регистре. Типы событий описаны в разделе [События](events). |
+| **event_datetime** | Дата в формате ISO 8601. |
+| **transaction_id** | Уникальный идентификатор транзакции — покупки или продления. |
+| **original_transaction_id** | Идентификатор транзакции первоначальной покупки. |
+| **subscription_expires_at** | Дата истечения подписки. Как правило, в будущем. |
+| **environment** | Sandbox или Production. |
+| **revenue_usd** | Выручка в USD. Может быть пустым. |
+| **proceeds_usd** | Поступления в USD. Может быть пустым. |
+| **net_revenue_usd** | Чистая выручка (доход после уплаты налогов) в USD. Может быть пустым. |
+| **tax_amount_usd** | Сумма налоговых отчислений в USD. Может быть пустым. |
+| **revenue_local** | Выручка в местной валюте. Может быть пустым. |
+| **proceeds_local** | Поступления в местной валюте. Может быть пустым. |
+| **net_revenue_local** | Чистая выручка (доход после уплаты налогов) в местной валюте. Может быть пустым. |
+| **tax_amount_local** | Сумма налоговых отчислений в местной валюте. Может быть пустым. |
+| **customer_user_id** | ID пользователя на стороне разработчика. Например, UUID, email или любой другой идентификатор. Null, если не задан. |
+| **store** | Может быть _app_store_ или _play_store_. |
+| **product_id** | ID продукта в Apple App Store, Google Play Store или Stripe. |
+| **base_plan_id** | [ID базового плана](https://support.google.com/googleplay/android-developer/answer/12154973) в Google Play Store или [ID цены](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) в Stripe. |
+| **developer_id** | ID пейвола (SDK) разработчика, с которого была совершена транзакция. |
+| **ab_test_name** | Название A/B-теста, в рамках которого была совершена транзакция. |
+| **ab_test_revision** | Ревизия A/B-теста, в рамках которого была совершена транзакция. |
+| **paywall_name** | Название пейвола, с которого была совершена транзакция. |
+| **paywall_revision** | Ревизия пейвола, с которого была совершена транзакция. |
+| **profile_county** | Страна профиля, определённая Adapty по IP-адресу. |
+| **install_date** | Дата установки в формате ISO 8601. |
+| **idfv** | [identifierForVendor](https://developer.apple.com/documentation/uikit/uidevice/identifierforvendor) на устройствах iOS. |
+| **idfa** | [advertisingIdentifier](https://developer.apple.com/documentation/adsupport/asidentifiermanager/advertisingidentifier) на устройствах iOS. |
+| **advertising_id** | Advertising ID — уникальный код, присваиваемый операционной системой Android, который рекламодатели могут использовать для идентификации устройства пользователя. |
+| **ip_address** | IP-адрес устройства (IPv4 или IPv6; при наличии предпочтение отдаётся IPv4). Обновляется при каждой смене IP-адреса устройства. |
+| **cancellation_reason** | <p>Причина отмены подписки пользователем.</p><p></p><p>Возможные значения:</p><p>**iOS & Android** _voluntarily_cancelled_, _billing_error_, _refund_</p><p>**iOS** _price_increase_, _product_was_not_available_, _unknown_, _upgraded_</p><p>**Android** _new_subscription_replace_, _cancelled_by_developer_</p> |
+| **android_app_set_id** | [AppSetId](https://developer.android.com/design-for-safety/privacy-sandbox/reference/adservices/appsetid/AppSetId) — уникальный, сбрасываемый пользователем идентификатор на уровне устройства и аккаунта разработчика для рекламных сценариев без монетизации. |
+| **android_id** | На Android 8.0 (API level 26) и выше — 64-битное число (в шестнадцатеричном формате), уникальное для каждой комбинации ключа подписи приложения, пользователя и устройства. Подробнее см. [документацию для разработчиков Android](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID). |
+| **device** | Название модели устройства, отображаемое конечному пользователю. |
+| **currency** | Трёхбуквенный код валюты транзакции (ISO-4217). |
+| **store_country** | Страна профиля, определённая Apple/Google store. |
+| **attribution_source** | Источник атрибуции. |
+| **attribution_network_user_id** | ID пользователя, присвоенный источником атрибуции. |
+| **attribution_status** | Может быть organic, non_organic или unknown. |
+| **attribution_channel** | Название маркетингового канала. |
+| **attribution_campaign** | Название маркетинговой кампании. |
+| **attribution_ad_group** | Группа объявлений атрибуции. |
+| **attribution_ad_set** | Набор объявлений атрибуции. |
+| **attribution_creative** | Ключевое слово креатива атрибуции. |
+| **attributes** | JSON с [пользовательскими атрибутами](setting-user-attributes#custom-user-attributes). Включает все пользовательские атрибуты, настроенные для отправки из мобильного приложения. Чтобы их отправлять, включите опцию **Send User Attributes** на странице [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook). |
+| **integration_ids** | Все интеграционные ID, связанные с профилем. Словарь. Пример: &#123;&#39;mixpanel_user_id&#39;: &#39;mixpanelUserId-test&#39;, &#39;facebook_anonymous_id&#39;: &#39;facebookAnonymousId-test&#39;&#125; |
+Here is the table structure for the paywall visits:
+| Столбец               | Описание                                                                                                              |
+| :-------------------- | :-------------------------------------------------------------------------------------------------------------------- |
+| **profile_id**        | Идентификатор пользователя Adapty.                                                                                    |
+| **customer_user_id**  | Идентификатор пользователя, заданный разработчиком. Например, это может быть UUID, email или любой другой ID. Null, если не задан. |
+| **profile_country**   | Страна профиля, определённая стором Apple/Google.                                                                     |
+| **install_date**      | Дата установки в формате ISO 8601.                                                                                    |
+| **store**             | Может быть _app_store_ или _play_store_.                                                                              |
+| **paywall_showed_at** | Дата, когда пейвол был показан пользователю.                                                                          |
+| **developer_id**      | Developer (SDK) ID пейвола, из которого совершена транзакция.                                                         |
+| **ab_test_name**      | Название A/B-теста, из которого совершена транзакция.                                                                 |
+| **ab_test_revision**  | Ревизия A/B-теста, из которого совершена транзакция.                                                                  |
+| **paywall_name**      | Название пейвола, из которого совершена транзакция.                                                                   |
+| **paywall_revision**  | Ревизия пейвола, из которого совершена транзакция.                                                                    |
+## События и теги \{#events-and-tags\}
+
+Вы можете управлять тем, какие данные передаются в рамках интеграции. Доступны следующие параметры настройки:
+| Настройка | Описание |
+| :--------------------------------- | :----------------------------------------------------------- |
+| **Exclude Historical Events** | Исключить события, произошедшие до установки приложения с Adapty SDK. Это предотвращает дублирование событий и обеспечивает точность отчётов. Например, если пользователь активировал ежемесячную подписку 10 января, а обновил приложение с Adapty SDK 6 марта, Adapty пропустит события до 6 марта и сохранит последующие. |
+| **Include events without profile** | Включить транзакции, не связанные с профилем пользователя в Adapty. Сюда могут входить покупки, совершённые до установки Adapty SDK, или транзакции, полученные из серверных уведомлений стора, которые невозможно сразу сопоставить с конкретным пользователем. |
+| **Send User Attributes** | Если вы хотите передавать атрибуты пользователей, например языковые настройки, и ваш тарифный план OneSignal поддерживает более 10 тегов, выберите эту опцию. При включении можно передавать дополнительную информацию сверх стандартных 10 тегов. Учтите, что превышение лимита тегов может приводить к ошибкам. |
+<Zoom>
+  <img src="/assets/shared/img/s3-settings.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Ниже настроек интеграции находятся три группы событий, которые можно экспортировать, отправлять и хранить в Amazon S3 из Adapty. Просто включите нужные. Полный список событий, предоставляемых Adapty, доступен [здесь](events).
+<Zoom>
+  <img src="/assets/shared/img/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.webp"
+  style={{
+    border: '1px solid #727272', /* ширина и цвет границы */
+    width: '700px', /* ширина изображения */
+    display: 'block', /* для выравнивания */
+    margin: '0 auto' /* выравнивание по центру */
+  }}
+/>
+</Zoom>

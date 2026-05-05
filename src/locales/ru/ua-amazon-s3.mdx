@@ -1,0 +1,270 @@
+---
+title: "Amazon S3"
+description: "Экспортируйте данные по привлечению пользователей в S3 для расширенной аналитики и отчётности."
+metadataTitle: "Экспорт в S3 и управление данными | Документация Adapty"
+keywords: ['adapty ua', 'user acquisition', 's3', 'amazon']
+---
+
+Интеграция Adapty UA с Amazon S3 позволяет централизованно и безопасно хранить данные кампаний по привлечению пользователей. Вы сможете сохранять данные об эффективности кампаний, данные атрибуции и события привлечения пользователей в ваш бакет Amazon S3 в виде .csv-файлов.  
+Для настройки интеграции потребуется выполнить несколько простых шагов в AWS Console и дашборде Adapty UA.
+
+:::note
+Adapty UA отправляет данные каждые **24 часа** в 4:00 UTC.
+
+Каждый файл содержит данные о событиях, созданных за весь предыдущий календарный день по UTC. Например, данные, автоматически экспортированные в 4:00 UTC 8 марта, будут содержать все события, созданные 7 марта с 00:00:00 до 23:59:59 UTC.
+:::
+
+## Как настроить интеграцию с Amazon S3 \{#how-to-set-up-amazon-s3-integration\}
+
+Для получения данных вам потребуются следующие учётные данные:
+
+1. Access key ID
+2. Secret access key
+3. Название бакета S3
+4. Название папки внутри бакета S3
+
+:::note
+Вложенные директории
+
+В поле названия бакета Amazon S3 можно указывать вложенные директории, например: adapty-ua-events/com.sample-app
+:::
+
+### Шаг 1. Создание учётных данных Amazon S3 \{#step-1-create-amazon-s3-credentials\}
+
+Этот гайд поможет вам создать необходимые учётные данные в AWS Console.
+
+#### 1.1. Создание политики доступа \{#11-create-access-policy\}
+
+1. Перейдите в [IAM Policy Dashboard](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/policies) в вашей AWS Console
+2. Выберите **Create Policy**
+
+<Zoom>
+  <img src="/assets/shared/img/7af075c-CleanShot_2023-03-21_at_10.52.002x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. В редакторе политики вставьте следующий JSON и замените `adapty-s3-integration-test` на название вашего бакета:
+
+```json showLineNumbers title="Json"
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowListObjectsInBucket",
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        },
+        {
+            "Sid": "AllowAllObjectActions",
+            "Effect": "Allow",
+            "Action": "s3:*Object",
+            "Resource": [
+                "arn:aws:s3:::adapty-s3-integration-test/*",
+                "arn:aws:s3:::adapty-s3-integration-test"
+            ]
+        },
+        {
+            "Sid": "AllowBucketLocation",
+            "Effect": "Allow",
+            "Action": "s3:GetBucketLocation",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        }
+    ]
+}
+```
+
+<Zoom>
+  <img src="/assets/shared/img/d4e474a-CleanShot_2023-03-21_at_10.56.212x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. Завершив настройку политики, при желании добавьте теги (необязательно), затем нажмите **Next**, чтобы перейти к финальному шагу
+5. На этом шаге задайте название политики и нажмите **Create policy**, чтобы завершить создание
+
+<Zoom>
+  <img src="/assets/shared/img/7dcb02f-CleanShot_2023-03-21_at_11.03.372x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+#### 1.2. Создание IAM-пользователя \{#12-create-iam-user\}
+
+Чтобы Adapty UA мог загружать необработанные отчёты в ваш бакет, необходимо предоставить Access Key ID и Secret Access Key пользователя с правами на запись в этот бакет.
+
+1. Перейдите в IAM Console и откройте раздел [Users](https://console.aws.amazon.com/iamv2/home#/users)
+2. Нажмите **Add users**
+
+<Zoom>
+  <img src="/assets/shared/img/bb612c8-CleanShot_2023-03-21_at_11.12.392x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Задайте имя пользователя, выберите **Access key – Programmatic access** и перейдите к настройкам прав доступа
+
+<Zoom>
+  <img src="/assets/shared/img/467ee4d-j6aoX.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. На следующем шаге выберите **Add user to group**, затем нажмите **Create group**
+
+<Zoom>
+  <img src="/assets/shared/img/bfd0e80-CleanShot_2023-03-21_at_11.24.592x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+5. Задайте название группы пользователей и выберите политику, созданную ранее
+6. После выбора политики нажмите **Create group**, чтобы завершить создание группы
+
+<Zoom>
+  <img src="/assets/shared/img/df29c12-CleanShot_2023-03-21_at_11.28.052x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+7. После успешного создания группы **выберите её** и перейдите к следующему шагу
+
+<Zoom>
+  <img src="/assets/shared/img/1f3722e-CleanShot_2023-03-21_at_11.36.192x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+8. Это финальный шаг данного раздела — просто нажмите **Create User**
+
+<Zoom>
+  <img src="/assets/shared/img/ea43722-CleanShot_2023-03-21_at_11.40.462x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+9. Наконец, вы можете либо **скачать учётные данные в формате .csv**, либо скопировать их непосредственно с дашборда
+
+<Zoom>
+  <img src="/assets/shared/img/bcf35e1-S3created.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Шаг 2. Настройка интеграции в Adapty UA \{#step-2-configure-integration-in-adapty-ua\}
+
+1. Перейдите в [**Integrations** -> **Amazon S3**](https://app.adapty.io/ua/integrations/s3)
+2. Включите переключатель **Export install events to Amazon S3**.
+3. Заполните следующие поля для подключения Amazon S3 к профилям Adapty UA:
+
+| Поле | Описание |
+|:-----------------------------| :----------------------------------------------------------- |
+| **Access Key ID** | Уникальный идентификатор для аутентификации пользователя или приложения при доступе к сервису AWS. Найдите его в скачанном [csv-файле](ua-amazon-s3#step-1-create-amazon-s3-credentials). |
+| **Secret Access Key** | Закрытый ключ, используемый совместно с Access Key ID для аутентификации при доступе к сервису AWS. Найдите его в скачанном [csv-файле](ua-amazon-s3#step-1-create-amazon-s3-credentials). |
+| **S3 Bucket Name** | Глобально уникальное имя, идентифицирующее конкретный бакет S3 в облаке AWS. Бакеты S3 — это простой сервис хранения, позволяющий хранить и извлекать объекты данных (файлы, изображения и т.д.) в облаке. |
+| **Folder Inside the Bucket** | Название папки внутри выбранного бакета S3. Обратите внимание, что S3 имитирует папки с помощью префиксов ключей объектов, которые фактически и являются названиями папок. |
+| **Region** (необязательно) | Получите регион в AWS Management Console в разделе вашего IAM-пользователя. |
+
+<ZoomImage id="ua-amazon-s3.webp" width="700px" />
+
+## Ручной экспорт данных \{#manual-data-export\}
+
+Помимо автоматического экспорта данных о событиях в Amazon S3, Adapty UA поддерживает и ручной экспорт файлов. С его помощью вы можете выбрать конкретную дату для данных по привлечению пользователей и экспортировать их в свой бакет S3 вручную. Это даёт больше контроля над тем, какие данные и когда экспортировать.
+
+## Структура таблицы \{#table-structure\}
+
+В интеграции с AWS S3 Adapty UA предоставляет таблицу для хранения исторических данных о событиях установки. Таблица содержит информацию о профиле пользователя, выручке и доходе, источнике стора и другие данные.
+
+:::warning
+Эта структура может расширяться со временем — за счёт новых данных, добавляемых нами или сторонними сервисами, с которыми мы работаем. Убедитесь, что ваш код, обрабатывающий эти данные, достаточно устойчив и опирается на конкретные поля, а не на структуру в целом.
+:::
+
+Структура таблицы событий:
+
+| Столбец | Описание |
+|--------------------------|-------------------------------------------|
+| `adapty_profile_id` | Уникальный идентификатор профиля Adapty |
+| `install_id` | Уникальный идентификатор установки |
+| `created_at` | Временная метка создания записи (ISO 8601) |
+| `installed_at` | Временная метка установки приложения (ISO 8601) |
+| `store` | Стор (`ios`, `android`) |
+| `country` | Код страны пользователя (ISO 3166-1 alpha-2) |
+| `ip_address` | IP-адрес клиента |
+| `idfa` | iOS Identifier for Advertisers |
+| `idfv` | iOS Identifier for Vendors |
+| `gaid` | Google Advertising ID (Android) |
+| `android_id` | Идентификатор Android-устройства |
+| `app_set_id` | Android App Set ID |
+| `channel` | Канал атрибуции |
+| `campaign_id` | Идентификатор кампании |
+| `campaign_name` | Название кампании |
+| `adset_id` | Идентификатор группы объявлений |
+| `adset_name` | Название группы объявлений |
+| `ad_id` | Идентификатор объявления |
+| `ad_name` | Название объявления |
+| `keyword_id` | Идентификатор ключевого слова |
+| `keyword_name` | Ключевое слово |
+| `asa_org_id` | ID организации Apple Search Ads |
+| `asa_keyword_match_type` | Тип соответствия ключевого слова ASA (`Exact`, `Broad`) |
+| `asa_attribution` | Данные атрибуции ASA (JSON-строка) |
+| `asa_conversion_type` | Тип конверсии ASA |
+| `asa_country_or_region` | Страна или регион ASA |
+| `asa_creative_set_name` | Название набора креативов ASA |
+| `fbclid` | Facebook Click ID |
+| `ttclid` | TikTok Click ID |
+| `utm_source` | Параметр UTM source |
+| `utm_medium` | Параметр UTM medium |
+| `utm_campaign` | Параметр UTM campaign |
+| `utm_term` | Параметр UTM term |
+| `utm_content` | Параметр UTM content |

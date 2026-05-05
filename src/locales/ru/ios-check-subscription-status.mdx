@@ -1,0 +1,131 @@
+---
+title: "Проверка статуса подписки в iOS SDK"
+description: "Узнайте, как проверять статус подписки в iOS-приложении с помощью Adapty."
+metadataTitle: "Проверка статуса подписки | Документация Adapty"
+displayed_sidebar: sdkios
+keywords: ['getProfile', 'subscription status']
+rank: 100
+---
+
+Чтобы решить, открыть ли пользователям доступ к платному контенту или показать пейвол, нужно проверить их [уровень доступа](access-level) в профиле.
+
+В этой статье показано, как читать состояние профиля и принимать решение: показывать пейвол или давать доступ к платным функциям.
+
+## Получение статуса подписки \{#get-subscription-status\}
+
+Когда нужно решить, показать пейвол или платный контент, проверяется [уровень доступа](access-level) в профиле пользователя. Есть два варианта:
+
+- Вызвать `getProfile`, если нужны актуальные данные прямо сейчас (например, при запуске приложения) или принудительно обновить профиль.
+- Настроить **автоматические обновления профиля**, чтобы хранить локальную копию, которая автоматически обновляется при изменении статуса подписки.
+
+:::important
+По умолчанию в Adapty уже существует уровень доступа `premium`. Если вам не нужно больше одного уровня доступа, можно просто использовать `premium`.
+:::
+
+### Получить профиль \{#get-profile\}
+
+Самый простой способ получить статус подписки — вызвать метод `getProfile`:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get() {
+        // check the access
+        profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // grant access to premium features
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+### Отслеживание обновлений подписки \{#listen-to-subscription-updates\}
+
+Чтобы автоматически получать обновления профиля в приложении:
+
+1. Реализуйте протокол `AdaptyDelegate` в удобном для вас типе и добавьте метод `didLoadLatestProfile` — Adapty будет автоматически вызывать его при каждом изменении статуса подписки пользователя. В примере ниже используется тип `SubscriptionManager`, который берёт на себя работу с подписками и профилем пользователя. Его можно внедрить как зависимость, создать как синглтон в UIKit-приложении или добавить в окружение SwiftUI из главной структуры приложения.
+2. Сохраняйте обновлённые данные профиля при каждом вызове этого метода, чтобы использовать их в приложении без лишних сетевых запросов.
+
+```swift
+class SubscriptionManager: AdaptyDelegate {
+
+    nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
+        let hasAccess = profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false
+        // Update UI, unlock content, etc.
+    }
+}
+
+// Set delegate after Adapty activation
+Adapty.delegate = subscriptionManager
+```
+
+:::note
+Adapty автоматически вызывает `didLoadLatestProfile` при запуске приложения, предоставляя кешированные данные о подписке даже при отсутствии интернета.
+:::
+
+## Связь профиля с логикой пейвола \{#connect-profile-with-paywall-logic\}
+
+Когда нужно сразу принять решение — показать пейвол или открыть доступ к платным функциям, — можно напрямую проверить профиль пользователя. Этот подход удобен при запуске приложения, входе в разделы с премиум-контентом или перед отображением определённого контента.
+
+<Tabs>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+```swift
+private func checkAccessLevel() async -> Bool {
+    do {
+        let profile = try await Adapty.getProfile()
+        return profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false
+    } catch {
+        print("Error checking access level: \(error)")
+        return false
+    }
+}
+
+// In your initialization logic:
+let hasAccess = await checkAccessLevel()
+if !hasAccess {
+    paywallPresented = true // Show paywall if no access
+}
+```
+
+</TabItem>
+<TabItem value="uikit" label="UIKit">
+
+```swift
+private func checkAccessLevel() async throws -> Bool {
+    let profile = try await Adapty.getProfile()
+    return profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false
+}
+
+// In your initialization logic:
+let hasAccess = try await checkAccessLevel()
+if !hasAccess {
+    presentPaywall(with: paywallConfiguration)
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Следующие шаги \{#next-steps\}
+
+Теперь, когда вы знаете, как отслеживать статус подписки, [изучите работу с профилями пользователей](ios-quickstart-identify), чтобы правильно связать их с вашей системой аутентификации и настройками совместного доступа к платным функциям.
+
+Если у вас нет собственной системы аутентификации — ничего страшного, Adapty сам управляет пользователями. Но вы всё равно можете прочитать [гайд](ios-quickstart-identify), чтобы узнать, как Adapty работает с анонимными пользователями.

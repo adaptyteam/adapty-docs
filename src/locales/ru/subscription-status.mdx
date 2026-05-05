@@ -1,0 +1,113 @@
+---
+title: "Проверка статуса подписки в iOS SDK"
+description: "Отслеживайте и управляйте статусом подписки пользователя в Adapty для улучшения удержания клиентов."
+metadataTitle: "Статус подписки | Документация Adapty"
+keywords: ['getProfile', 'cache']
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md'; 
+
+С Adapty отслеживать статус подписки очень просто. Вам не нужно вручную прописывать идентификаторы продуктов в коде — достаточно проверить наличие активного [уровня доступа](access-level), чтобы убедиться, что у пользователя есть подписка.
+
+Перед тем как приступить к проверке статуса подписки, настройте [App Store Server Notifications](enable-app-store-server-notifications).
+
+## Уровень доступа и объект AdaptyProfile \{#access-level-and-the-adaptyprofile-object\}
+
+Уровни доступа — это свойства объекта [AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile). Рекомендуем получать профиль при запуске приложения, например, когда вы [идентифицируете пользователя](identifying-users#set-customer-user-id-on-configuration), и обновлять его при каждом изменении. Так вы сможете использовать объект профиля, не запрашивая его повторно.
+
+Чтобы получать уведомления об обновлениях профиля, подпишитесь на изменения профиля, как описано в разделе [Подписка на обновления статуса подписки](subscription-status#listening-for-subscription-status-updates) ниже.
+
+<SampleApp />
+
+## Получение уровня доступа с сервера \{#retrieving-the-access-level-from-the-server\}
+
+Чтобы получить уровень доступа с сервера, используйте метод `.getProfile()`:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get() {
+        // check the access
+        profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // grant access to premium features
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+Параметры ответа:
+
+| Параметр | Описание                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Profile   | <p>Объект [AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile). Как правило, для определения наличия у пользователя премиум-доступа достаточно проверить статус уровня доступа профиля.</p><p></p><p>Метод `.getProfile` возвращает максимально актуальные данные, поскольку всегда пытается обратиться к API. Если по какой-либо причине (например, из-за отсутствия подключения к интернету) Adapty SDK не может получить данные с сервера, возвращаются данные из кэша. Важно отметить, что Adapty SDK регулярно обновляет кэш `AdaptyProfile`, чтобы данные оставались как можно более актуальными.</p> |
+
+Метод `.getProfile()` возвращает профиль пользователя, из которого можно получить статус уровня доступа. В одном приложении может быть несколько уровней доступа. Например, если у вас новостное приложение с независимыми подписками на разные темы, вы можете создать уровни доступа «sports» и «science». Однако в большинстве случаев достаточно одного уровня доступа — тогда можно просто использовать уровень «premium» по умолчанию.
+
+Пример проверки уровня доступа «premium» по умолчанию:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    let isPremium = profile.accessLevels["premium"]?.isActive ?? false
+    // grant access to premium features
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get(), 
+       profile.accessLevels["premium"]?.isActive ?? false {
+        // grant access to premium features
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+### Подписка на обновления статуса подписки \{#listening-for-subscription-status-updates\}
+
+Adapty генерирует событие каждый раз, когда подписка пользователя изменяется.
+
+Чтобы получать сообщения от Adapty, необходимо выполнить дополнительную настройку:
+
+```swift showLineNumbers
+Adapty.delegate = self
+
+// To receive subscription updates, extend `AdaptyDelegate` with this method:
+nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
+    // handle any changes to subscription state
+}
+```
+
+Adapty также генерирует событие при запуске приложения. В этом случае передаётся кэшированный статус подписки.
+
+### Кэш статуса подписки \{#subscription-status-cache\}
+
+Кэш, реализованный в Adapty SDK, хранит статус подписки профиля. Это означает, что даже при недоступности сервера можно обратиться к кэшированным данным для получения информации о статусе подписки профиля.
+
+При этом важно учитывать, что напрямую запрашивать данные из кэша невозможно. SDK периодически обращается к серверу каждую минуту, чтобы проверить наличие обновлений, связанных с профилем. При наличии изменений — например, новых транзакций или других обновлений — они передаются в кэш, чтобы синхронизировать его с сервером.

@@ -1,0 +1,659 @@
+---
+title: "Обработка событий онбординга в React Native SDK"
+description: "Обработка событий, связанных с онбордингом, в React Native с использованием Adapty."
+metadataTitle: "Обработка событий онбординга в React Native | Документация Adapty"
+toc_max_heading_level: 4
+---
+
+Перед началом убедитесь, что:
+
+Онбординги, настроенные с помощью билдера, генерируют события, на которые может реагировать ваше приложение. Способ обработки этих событий зависит от выбранного подхода к отображению:
+
+- **Модальное представление**: требует настройки обработчиков событий, которые обрабатывают события для всех представлений онбординга
+- **React-компонент**: обрабатывает события через встроенные параметры колбэков непосредственно в виджете
+1. Вы установили [Adapty React Native SDK](sdk-installation-reactnative) версии 3.8.0 или выше.
+2. Вы [создали онбординг](create-onboarding).
+3. Вы добавили онбординг в [плейсмент](placements).
+
+Чтобы управлять процессами на экране онбординга в вашем мобильном приложении и отслеживать их, реализуйте обработчики событий:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK версии 3.14 или выше" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+Для React-компонента события обрабатываются через отдельные пропы-обработчики событий в компоненте `AdaptyOnboardingView`:
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
+  const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+      onClose={onClose}
+      onCustom={onCustom}
+      onPaywall={onPaywall}
+      onStateUpdated={onStateUpdated}
+      onFinishedLoading={onFinishedLoading}
+      onError={onError}
+    />
+  );
+}
+```
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Для модального представления реализуйте метод обработчиков событий.
+
+:::important
+Повторный вызов `setEventHandlers` переопределит ранее установленные обработчики, заменив как стандартные, так и пользовательские обработчики для указанных событий.
+:::
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(event, meta) {
+    // Отслеживание аналитических событий
+  },
+  onClose(actionId, meta) {
+    // Обработка действия закрытия
+    view.dismiss();
+    return true;
+  },
+  onCustom(actionId, meta) {
+    // Обработка пользовательских действий
+  },
+  onPaywall(actionId, meta) {
+    // Обработка действий пейвола
+  },
+  onStateUpdated(action, meta) {
+    // Обработка обновлений пользовательского ввода
+  },
+  onFinishedLoading(meta) {
+    // Онбординг завершил загрузку
+  },
+  onError(error) {
+    // Обработка ошибок загрузки
+  },
+});
+
+try {
+  await view.present();
+} catch (error) {
+  // обработка ошибки
+}
+```
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK версия < 3.14">
+
+Для SDK версии < 3.14 поддерживается только модальное представление:
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onAnalytics(event, meta) {
+    // Отслеживание аналитических событий
+  },
+  onClose(actionId, meta) {
+    // Обработка действия закрытия
+    view.dismiss();
+    return true;
+  },
+  onCustom(actionId, meta) {
+    // Обработка пользовательских действий
+  },
+  onPaywall(actionId, meta) {
+    // Обработка действий с пейволом
+  },
+  onStateUpdated(action, meta) {
+    // Обработка обновлений пользовательского ввода
+  },
+  onFinishedLoading(meta) {
+    // Онбординг завершил загрузку
+  },
+  onError(error) {
+    // Обработка ошибок загрузки
+  },
+});
+
+try {
+  await view.present();
+} catch (error) {
+  // обработка ошибки
+}
+```
+</TabItem>
+</Tabs>
+## Типы событий \{#event-types\}
+
+В следующих разделах описаны различные типы событий, которые можно обрабатывать вне зависимости от используемого подхода к отображению.
+### Обработка пользовательских действий \{#handle-custom-actions\}
+
+В конструкторе можно добавить действие **custom** к кнопке и задать ему идентификатор.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+Затем этот ID можно использовать в коде и обрабатывать его как пользовательское действие. Например, если пользователь нажимает кастомную кнопку — **Login** или **Allow notifications** — обработчик события сработает с параметром `actionId`, соответствующим **Action ID** из билдера. Вы можете задавать собственные ID, например `"allowNotifications"`.
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK версии 3.14 и выше" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onCustom={onCustom}
+    />
+  );
+}
+```
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onCustom(actionId, meta) {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="Версия SDK < 3.14">
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onCustom(actionId, meta) {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+```json
+{
+  "actionId": "allow_notifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+### Завершение загрузки онбординга \{#finishing-loading-onboarding\}
+
+Когда онбординг завершает загрузку, срабатывает следующее событие:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK версии 3.14 или выше" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onFinishedLoading={onFinishedLoading}
+    />
+  );
+}
+```
+</TabItem>
+<TabItem value="standalone" label="Модальное представление">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onFinishedLoading(meta) {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK версия < 3.14">
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onFinishedLoading(meta) {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+### Закрытие онбординга \{#closing-onboarding\}
+
+Онбординг считается закрытым, когда пользователь нажимает кнопку с назначенным действием **Close**.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+Обратите внимание, что вам нужно самостоятельно обработать ситуацию, когда пользователь закрывает онбординг. Например, необходимо прекратить его отображение.
+:::
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK версии 3.14 и выше" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React-компонент" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding, navigation }) {
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
+    navigation.goBack();  
+  }, [navigation]);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onClose={onClose}
+    />
+  );
+}
+```
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onClose(actionId, meta) {
+    await view.dismiss();
+    return true;
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onClose(actionId, meta) {
+    await view.dismiss();
+    return true;
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+</Details>
+### Открытие пейвола \{#opening-a-paywall\}
+
+:::tip
+Обрабатывайте это событие, если хотите открыть пейвол внутри онбординга. Если нужно открыть пейвол после его закрытия, есть более простой способ — обработайте действие закрытия и откройте пейвол, не опираясь на данные события.
+:::
+
+Когда пользователь нажимает кнопку, открывающую пейвол, вы получите ID действия кнопки, который вы [задали вручную](get-paid-in-onboardings). Наиболее удобный подход — сделать ID действия равным ID плейсмента пейвола.
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK версия 3.14 или новее" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
+    openPaywall(actionId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onPaywall={onPaywall}
+    />
+  );
+}
+
+const openPaywall = async (placementId) => {
+  // Implement your paywall opening logic here
+};
+```
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Обратите внимание, что в iOS одновременно на экране может отображаться только одно представление (пейвол или онбординг). Если вы показываете пейвол поверх онбординга, вы не можете программно управлять онбордингом в фоне. Попытка закрыть онбординг закроет пейвол вместо него, оставив онбординг видимым. Чтобы избежать этого, всегда закрывайте представление онбординга перед показом пейвола.
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onPaywall(actionId, meta) {
+    view.dismiss().then(() => {
+      openPaywall(actionId);
+    });
+  },
+});
+
+const openPaywall = async (placementId) => {
+  // Implement your paywall opening logic here
+};
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK версия < 3.14">
+Обратите внимание: в iOS одновременно на экране может отображаться только одно представление — пейвол или онбординг. Если вы показываете пейвол поверх онбординга, программно управлять онбордингом в фоне не получится. Попытка закрыть онбординг закроет пейвол, и онбординг останется видимым. Чтобы избежать этого, всегда закрывайте онбординг перед показом пейвола.
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onPaywall(actionId, meta) {
+    view.dismiss().then(() => {
+      openPaywall(actionId);
+    });
+  },
+});
+
+const openPaywall = async (placementId) => {
+  // Реализуйте здесь логику открытия пейвола
+};
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+### Отслеживание навигации \{#tracking-navigation\}
+
+Вы получаете аналитическое событие при различных событиях, связанных с навигацией во время онбординга:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK версии 3.14 или новее" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React компонент" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
+    trackEvent(event.name, meta.onboardingId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+    />
+  );
+}
+```
+</TabItem>
+<TabItem value="standalone" label="Модальное представление">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(event, meta) {
+    trackEvent(event.name, meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK версия < 3.14">
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onAnalytics(event, meta) {
+    trackEvent(event.name, meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+Объект `event` может быть одного из следующих типов:
+| Тип | Описание |
+|------------|-------------|
+| `onboardingStarted` | Когда онбординг загружен |
+| `screenPresented` | Когда отображается любой экран |
+| `screenCompleted` | Когда экран завершён. Включает необязательный `elementId` (идентификатор завершённого элемента) и необязательный `reply` (ответ пользователя). Срабатывает, когда пользователь выполняет любое действие для выхода с экрана. |
+| `secondScreenPresented` | Когда отображается второй экран |
+| `userEmailCollected` | Срабатывает, когда email пользователя собирается через поле ввода |
+| `onboardingCompleted` | Срабатывает, когда пользователь достигает экрана с идентификатором `final`. Если вам нужно это событие, [присвойте идентификатор `final` последнему экрану](design-onboarding). |
+| `unknown` | Для любого нераспознанного типа события. Включает `name` (название неизвестного события) и `meta` (дополнительные метаданные) |
+Каждое событие содержит информацию `meta` со следующими полями:
+
+| Поле | Описание |
+|------------|-------------|
+| `onboardingId` | Уникальный идентификатор онбординга |
+| `screenClientId` | Идентификатор текущего экрана |
+| `screenIndex` | Позиция текущего экрана в потоке |
+| `screensTotal` | Общее количество экранов в потоке |
+
+<Details>
+<summary>Примеры событий (нажмите, чтобы развернуть)</summary>
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+```
+</Details>

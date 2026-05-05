@@ -1,0 +1,83 @@
+---
+title: "Миграция Android SDK Adapty на версию 3.4"
+description: "Мигрируйте на Android SDK Adapty v3.4 для улучшения производительности и новых функций монетизации."
+metadataTitle: "Миграция на Android SDK Adapty v3.4 | Документация Adapty"
+---
+
+Adapty SDK 3.4.0 — это мажорный релиз, который содержит улучшения, требующие шагов по миграции с вашей стороны.
+
+## Обновите файлы резервных пейволов \{#update-fallback-paywall-files\}
+
+Обновите файлы резервных пейволов, чтобы обеспечить совместимость с новой версией SDK:
+
+1. [Скачайте обновлённые файлы резервных пейволов](fallback-paywalls) из дашборда Adapty.
+2. [Замените существующие резервные пейволы в своём мобильном приложении](android-use-fallback-paywalls) на новые файлы.
+
+## Обновите реализацию Observer Mode \{#update-implementation-of-observer-mode\}
+
+Если вы используете Observer Mode, убедитесь, что его реализация обновлена.
+
+В предыдущих версиях нужно было восстанавливать покупки, чтобы Adapty мог распознавать транзакции, совершённые через вашу собственную инфраструктуру, поскольку в Observer Mode у Adapty не было к ним прямого доступа. Если вы использовали пейволы, также требовалось вручную связывать каждую транзакцию с пейволом, инициировавшим её.
+
+В новой версии вы должны явно сообщать Adapty о каждой транзакции, чтобы он мог её распознать. Если вы используете пейволы, также нужно передавать variation ID для привязки транзакции к используемому пейволу.
+
+:::warning
+
+**Не пропускайте отчёт о транзакциях!**
+Если вы не вызываете `reportTransaction`, Adapty не распознает транзакцию — она не появится в аналитике и не будет отправлена в интеграции.
+
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff showLineNumbers
+- Adapty.restorePurchases { result ->
+-     if (result is AdaptyResult.Success) {
+-         // success
+-     }
+- }
+- 
+- Adapty.setVariationId(transactionId, variationId) { error ->
+-     if (error == null) {
+-         // success
+-     }
+- }
+
++ val transactionInfo = TransactionInfo.fromPurchase(purchase)
++ 
++ Adapty.reportTransaction(transactionInfo, variationId) { result ->
++     if (result is AdaptyResult.Success) {
++         // success
++     }
++ }
+```
+
+</TabItem>
+
+<TabItem value="java" label="Java" default>
+
+```diff showLineNumbers
+- Adapty.restorePurchases(result -> {
+-     if (result instanceof AdaptyResult.Success) {
+-         // success
+-     }
+- });
+- 
+- Adapty.setVariationId(transactionId, variationId, error -> {
+-     if (error == null) {
+-         // success
+-     }
+- });
+
++ TransactionInfo transactionInfo = TransactionInfo.fromPurchase(purchase);
++ 
++ Adapty.reportTransaction(transactionInfo, variationId, result -> {
++     if (result instanceof AdaptyResult.Success) {
++         // success
++     }
++ });
+```
+
+</TabItem>
+</Tabs>

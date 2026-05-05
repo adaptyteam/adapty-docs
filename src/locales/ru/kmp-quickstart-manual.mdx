@@ -1,0 +1,113 @@
+---
+title: "Включение покупок в пользовательском пейволе в Kotlin Multiplatform SDK"
+description: "Интегрируйте Adapty SDK в пользовательские пейволы Kotlin Multiplatform для поддержки встроенных покупок."
+metadataTitle: "Быстрый старт с Adapty | Документация Adapty"
+keywords: ['paywalls kmp', 'sdk kmp', 'paywall', 'getPaywall']
+---
+
+Этот гайд описывает, как интегрировать Adapty в пользовательские пейволы. Вы сохраняете полный контроль над реализацией пейвола, а Adapty SDK получает продукты, обрабатывает новые покупки и восстанавливает предыдущие.
+
+:::important
+**Этот гайд предназначен для разработчиков, реализующих пользовательские пейволы.** Если вы хотите наиболее простой способ подключить покупки, используйте [Adapty Paywall Builder](kmp-quickstart-paywalls). С Paywall Builder вы создаёте пейволы в визуальном редакторе без кода, Adapty автоматически обрабатывает всю логику покупок, и вы можете тестировать разные дизайны без повторной публикации приложения.
+:::
+
+## Перед началом работы \{#before-you-start\}
+
+### Настройка продуктов \{#set-up-products\}
+
+Чтобы включить встроенные покупки, нужно понять три ключевых понятия:
+
+- [**Продукты**](product) — всё, что пользователи могут купить (подписки, расходуемые покупки, пожизненный доступ)
+- [**Пейволы**](paywalls) — конфигурации, определяющие, какие продукты предлагать. В Adapty пейволы — единственный способ получить продукты, но такой подход позволяет изменять продукты, цены и предложения без изменения кода приложения.
+- [**Плейсменты**](placements) — где и когда в приложении показываются пейволы (например, `main`, `onboarding`, `settings`). Вы настраиваете пейволы для плейсментов в дашборде, а затем запрашиваете их по ID плейсмента в коде. Это упрощает проведение A/B-тестов и показ разных пейволов разным пользователям.
+
+Убедитесь, что вы понимаете эти понятия, даже если работаете с пользовательским пейволом. По сути, это просто способ управлять продуктами, которые вы продаёте в приложении.
+
+Чтобы реализовать пользовательский пейвол, вам нужно создать **пейвол** и добавить его в **плейсмент**. Эта настройка позволяет получать ваши продукты. Чтобы понять, что нужно сделать в дашборде, следуйте гайду по быстрому старту [здесь](quickstart).
+
+### Управление пользователями \{#manage-users\}
+
+Вы можете работать как с аутентификацией на вашем бэкенде, так и без неё.
+
+При этом Adapty SDK по-разному обрабатывает анонимных и идентифицированных пользователей. Прочитайте [гайд по идентификации](kmp-quickstart-identify), чтобы понять особенности и убедиться, что вы правильно работаете с пользователями.
+
+## Шаг 1. Получите продукты \{#step-1-get-products\}
+
+Чтобы получить продукты для пользовательского пейвола, нужно:
+
+1. Получить объект `paywall`, передав ID [плейсмента](placements) в метод `getPaywall`.
+2. Получить массив продуктов для этого пейвола с помощью метода `getPaywallProducts`.
+
+```kotlin showLineNumbers
+
+fun loadPaywall() {
+    Adapty.getPaywall(placementId = "YOUR_PLACEMENT_ID")
+        .onSuccess { paywall ->
+            Adapty.getPaywallProducts(paywall = paywall)
+                .onSuccess { products ->
+                    // Use products to build your custom paywall UI
+                }
+                .onError { error ->
+                    // Handle the error
+                }
+        }
+        .onError { error ->
+            // Handle the error
+        }
+}
+```
+
+## Шаг 2. Принимайте покупки \{#step-2-accept-purchases\}
+
+Когда пользователь нажимает на продукт в вашем пользовательском пейволе, вызовите метод `makePurchase` с выбранным продуктом. Это запустит процесс покупки и вернёт обновлённый профиль.
+
+```kotlin showLineNumbers
+
+fun purchaseProduct(product: AdaptyPaywallProduct) {
+    Adapty.makePurchase(product = product)
+        .onSuccess { purchaseResult ->
+            when (purchaseResult) {
+                is AdaptyPurchaseResult.Success -> {
+                    val profile = purchaseResult.profile
+                    // Purchase successful, profile updated
+                }
+                is AdaptyPurchaseResult.UserCanceled -> {
+                    // User canceled the purchase
+                }
+                is AdaptyPurchaseResult.Pending -> {
+                    // Purchase is pending (e.g., user will pay offline with cash)
+                }
+            }
+        }
+        .onError { error ->
+            // Handle the error
+        }
+}
+```
+
+## Шаг 3. Восстанавливайте покупки \{#step-3-restore-purchases\}
+
+Сторы требуют, чтобы все приложения с подписками предоставляли пользователям возможность восстановить покупки.
+
+Вызывайте метод `restorePurchases`, когда пользователь нажимает кнопку восстановления. Это синхронизирует историю покупок с Adapty и вернёт обновлённый профиль.
+
+```kotlin showLineNumbers
+
+fun restorePurchases() {
+    Adapty.restorePurchases()
+        .onSuccess { profile ->
+            // Restore successful, profile updated
+        }
+        .onError { error ->
+            // Handle the error
+        }
+}
+```
+
+## Дальнейшие шаги \{#next-steps\}
+
+<SupportForum />
+
+Ваш пейвол готов к отображению в приложении. Протестируйте покупки в [песочнице App Store](test-purchases-in-sandbox) или в [Google Play Store](testing-on-android), чтобы убедиться, что тестовая покупка из пейвола проходит успешно. Чтобы увидеть, как это работает в готовой к продакшену реализации, посмотрите [AppViewModel.kt](https://github.com/adaptyteam/AdaptySDK-KMP/blob/main/example/composeMultiplatformApp/composeApp/src/commonMain/kotlin/com/adapty/exampleapp/AppViewModel.kt) в нашем примере приложения — там показана обработка покупок с правильной обработкой ошибок и управлением состоянием.
+
+Далее [проверьте, завершили ли пользователи покупку](kmp-check-subscription-status), чтобы решить — показывать пейвол или открыть доступ к платным функциям.

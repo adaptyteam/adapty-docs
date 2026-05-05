@@ -1,0 +1,148 @@
+---
+title: "Совершение покупок в мобильном приложении в Unity SDK"
+description: "Гайд по обработке встроенных покупок и подписок с помощью Adapty."
+metadataTitle: "Обработка встроенных покупок в Adapty | Документация Adapty"
+keywords: ['makePurchase', 'pending', 'offer code']
+rank: 60
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/ru/reusable/OfferCodesInfo.mdx';
+
+Отображение пейволов в мобильном приложении — важный шаг для предоставления пользователям доступа к премиум-контенту или сервисам. Однако просто показать пейвол достаточно для поддержки покупок только в том случае, если вы используете [Paywall Builder](adapty-paywall-builder) для его настройки.
+
+Если вы не используете Paywall Builder, для завершения покупки и открытия нужного контента необходимо вызвать отдельный метод `.makePurchase()`. Именно он позволяет пользователям взаимодействовать с пейволами и совершать нужные транзакции.
+
+Если для продукта, который пользователь пытается купить, на пейволе активен promotional offer, Adapty автоматически применит его в момент покупки.
+
+:::warning
+Обратите внимание: introductory offer применяется автоматически только при использовании пейволов, настроенных через Paywall Builder.
+
+В остальных случаях вам нужно самостоятельно [проверить право пользователя на introductory offer в iOS](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios). Пропуск этого шага может привести к отклонению приложения при публикации, а также к списанию полной стоимости с пользователей, которым положен introductory offer.
+:::
+
+Убедитесь, что вы выполнили [начальную настройку](quickstart), не пропустив ни одного шага. Без неё мы не сможем валидировать покупки.
+
+## Совершение покупки \{#make-purchase\}
+
+:::note
+**Используете [Paywall Builder](adapty-paywall-builder)?** Покупки обрабатываются автоматически — этот шаг можно пропустить.
+
+**Нужны пошаговые инструкции?** Смотрите [quickstart guide](unity-implement-paywalls-manually) с подробным описанием всей реализации.
+:::
+
+```csharp showLineNumbers
+using AdaptySDK;
+
+void MakePurchase(AdaptyPaywallProduct product) {
+  Adapty.MakePurchase(product, (result, error) => {
+    switch (result.Type) {
+      case AdaptyPurchaseResultType.Pending:
+        // handle pending purchase
+        break;
+      case AdaptyPurchaseResultType.UserCancelled:
+        // handle purchase cancellation
+        break;
+      case AdaptyPurchaseResultType.Success:
+        var profile = result.Profile;
+        // handle successfull purchase
+        break;
+      default:
+        break;
+    }
+  });
+}
+```
+
+Параметры запроса:
+
+| Параметр    | Обязательность | Описание                                                                                              |
+| :---------- | :------------- |:------------------------------------------------------------------------------------------------------|
+| **Product** | обязательный   | Объект [`AdaptyPaywallProduct`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall_product.html), полученный из пейвола. |
+
+Параметры ответа:
+
+| Параметр    | Описание                                                                                                                                                                                                                                                                                                                                                                     |
+|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>Содержится в ответе при успешном запросе. Объект [AdaptyProfile](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_profile.html) содержит исчерпывающую информацию об уровнях доступа пользователя, подписках и разовых покупках в приложении.</p><p>Проверьте статус уровня доступа, чтобы убедиться, что пользователь имеет необходимый доступ к приложению.</p> |
+
+:::warning
+**Важно:** если вы всё ещё используете StoreKit версии ниже v2.0 и Adapty SDK версии ниже v.2.9.0, вместо этого необходимо указать [общий секрет Apple App Store](app-store-connection-configuration#step-5-enter-app-store-shared-secret). Этот метод в настоящее время устарел согласно политике Apple.
+:::
+
+## Смена подписки при совершении покупки \{#change-subscription-when-making-a-purchase\}
+
+Когда пользователь выбирает новую подписку вместо продления текущей, поведение зависит от стора:
+
+- В App Store подписка обновляется автоматически внутри группы подписок. Если пользователь покупает подписку из одной группы, уже имея подписку из другой, обе подписки будут активны одновременно.
+- В Google Play подписка не обновляется автоматически. Переключение нужно реализовать в коде мобильного приложения, как описано ниже.
+
+Чтобы заменить подписку на другую в Android, вызовите метод `.makePurchase()` с дополнительным параметром:
+
+```csharp showLineNumbers
+// Create subscription update parameters
+var subscriptionUpdateParams = new AdaptySubscriptionUpdateParameters(
+    "old_product_id", // Product ID of the current subscription
+    AdaptySubscriptionUpdateReplacementMode.WithTimeProration
+);
+
+Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
+  if(error != null) {
+      // Handle the error
+      return;
+  }
+
+  // successful cross-grade
+});
+```
+
+Дополнительный параметр запроса:
+
+| Параметр                     | Обязательность | Описание                                                                                               |
+| :--------------------------- | :------------- |:-------------------------------------------------------------------------------------------------------|
+| **subscriptionUpdateParams** | обязательный   | Объект [`AdaptySubscriptionUpdateParameters`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_subscription_update_parameters.html). |
+
+Подробнее о подписках и режимах замены можно прочитать в документации Google Developer:
+
+- [О режимах замены](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Рекомендации Google по режимам замены](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Режим замены [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Примечание: этот метод доступен только при повышении уровня подписки. Понижение уровня не поддерживается.
+- Режим замены [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Примечание: реальное изменение подписки произойдёт только по окончании текущего расчётного периода.
+
+## Активация промокодов в iOS \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+Чтобы отобразить экран активации кода в приложении:
+
+```csharp showLineNumbers
+Adapty.PresentCodeRedemptionSheet((error) => {
+  // handle the error
+});
+```
+
+:::danger
+По нашим наблюдениям, экран активации промокода (Offer Code Redemption sheet) в некоторых приложениях работает нестабильно. Мы рекомендуем перенаправлять пользователя напрямую в App Store.
+
+Для этого нужно открыть URL следующего формата:
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
+
+## Управление предоплаченными планами (Android) \{#manage-prepaid-plans-android\}
+
+Если пользователи вашего приложения могут приобретать [предоплаченные планы](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (например, покупать неавтопродлеваемую подписку на несколько месяцев), вы можете включить [отложенные транзакции](https://developer.android.com/google/play/billing/subscriptions#pending) для таких планов.
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetGoogleEnablePendingPrepaidPlans(true);
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+```

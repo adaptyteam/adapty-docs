@@ -1,0 +1,92 @@
+---
+title: "Проверка статуса подписки во Flutter SDK"
+description: "Узнайте, как проверить статус подписки в приложении на Flutter с помощью Adapty."
+metadataTitle: "Проверка статуса подписки | Документация Adapty"
+displayed_sidebar: sdkflutter
+keywords: ['getProfile', 'subscription status']
+rank: 85
+---
+
+Чтобы решить, может ли пользователь получить доступ к платному контенту или нужно показать ему пейвол, необходимо проверить его [уровень доступа](access-level) в профиле.
+
+В этой статье показано, как получить данные профиля и решить, что показать пользователю — пейвол или платный контент.
+
+## Получение статуса подписки \{#get-subscription-status\}
+
+Когда нужно решить, показать пользователю пейвол или платный контент, вы проверяете его [уровень доступа](access-level) в профиле. Есть два варианта:
+
+- Вызвать `getProfile`, если нужны актуальные данные прямо сейчас (например, при запуске приложения) или требуется принудительное обновление.
+- Настроить **автоматическое обновление профиля**, чтобы хранить локальную копию, которая автоматически обновляется при изменении статуса подписки.
+
+### Получение профиля \{#get-profile\}
+
+Самый простой способ узнать статус подписки — вызвать метод `getProfile`:
+
+```javascript showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  // check the access
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+### Подписка на обновления подписки \{#listen-to-subscription-updates\}
+
+Чтобы автоматически получать обновления профиля в приложении:
+
+1. Используйте `Adapty().didUpdateProfileStream.listen()` для отслеживания изменений профиля — Adapty будет автоматически вызывать этот метод при каждом изменении статуса подписки пользователя.
+2. Сохраняйте обновлённые данные профиля при каждом вызове этого метода, чтобы использовать их в приложении без лишних сетевых запросов.
+
+```dart
+class SubscriptionManager {
+  AdaptyProfile? _currentProfile;
+  
+  SubscriptionManager() {
+    // Listen for profile updates
+    Adapty().didUpdateProfileStream.listen((profile) {
+      _currentProfile = profile;
+      // Update UI, unlock content, etc.
+    });
+  }
+  
+  // Use stored profile instead of calling getProfile()
+  bool hasAccess() {
+    return _currentProfile?.accessLevels['premium']?.isActive ?? false;
+  }
+}
+```
+
+:::note
+Adapty автоматически вызывает слушатель потока обновлений профиля при запуске приложения, предоставляя кешированные данные о подписке даже при отсутствии интернета.
+:::
+
+## Связь профиля с логикой пейвола \{#connect-profile-with-paywall-logic\}
+
+Когда нужно быстро решить, показывать пейвол или открывать доступ к платному контенту, можно напрямую проверить профиль пользователя. Это удобно при запуске приложения, входе в премиум-разделы или перед показом определённого контента.
+
+```dart
+Future<bool> _checkAccessLevel() async {
+  try {
+    final profile = await Adapty().getProfile();
+    return profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false;
+  } catch (e) {
+    print('Error checking access level: $e');
+    return false; // Show paywall if access check fails
+  }
+}
+
+Future<void> _initializePaywall() async {
+  await _loadPaywall();
+  
+  final hasAccess = await _checkAccessLevel();
+  if (!hasAccess) {
+    // Show paywall if no access
+  }
+}
+``` 
+
+## Следующие шаги \{#next-steps\}
+
+Теперь, когда вы знаете, как отслеживать статус подписки, узнайте, как [работать с профилями пользователей](flutter-quickstart-identify), чтобы они всегда имели доступ к тому, за что заплатили.

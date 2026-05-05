@@ -1,0 +1,371 @@
+---
+title: "Включение покупок через пейволы в iOS SDK"
+description: "Быстрый старт по настройке Adapty для управления встроенными подписками."
+metadataTitle: "Быстрый старт с Adapty | Документация Adapty"
+keywords: ['paywalls ios', 'sdk ios', 'paywall', 'paywall builder', 'getPaywall']
+rank: 90
+---
+
+import PaywallsIntro from '@site/src/locales/ru/reusable/PaywallsIntro.md';
+
+Чтобы включить встроенные покупки, нужно понять три ключевых понятия:
+
+- [**Продукты**](product) – всё, что пользователи могут купить (подписки, расходуемые покупки, пожизненный доступ)
+- [**Пейволы**](paywalls) – конфигурации, определяющие, какие продукты предлагать. В Adapty пейволы — единственный способ получить продукты, но такой подход позволяет менять предложения, цены и наборы продуктов без изменения кода приложения.
+- [**Плейсменты**](placements) – где и когда вы показываете пейволы в приложении (например, `main`, `onboarding`, `settings`). Вы назначаете пейволы для плейсментов в дашборде, а затем запрашиваете их по ID плейсмента в коде. Это упрощает проведение A/B-тестов и показ разных пейволов разным пользователям.
+
+Adapty предлагает три способа включить покупки в приложении. Выберите подходящий в зависимости от требований:
+
+| Реализация             | Сложность | Когда использовать                                                                                                                                                                                                                                 |
+|------------------------|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty Paywall Builder | ✅ Легко   | Вы [создаёте готовый к продажам пейвол в no-code конструкторе](quickstart-paywalls). Adapty автоматически его отображает и берёт на себя весь процесс покупки, валидацию чеков и управление подписками. |
+| Пейволы, созданные вручную | 🟡 Средне | Вы реализуете UI пейвола в коде приложения, но получаете объект пейвола из Adapty, сохраняя гибкость в управлении продуктами. См. [гайд](ios-quickstart-manual).                                                                                     |
+| Observer mode              | 🔴 Сложно | У вас уже есть собственная инфраструктура обработки покупок и вы хотите продолжать её использовать. Обратите внимание, что observer mode имеет ограничения в Adapty. См. [статью](observer-vs-full-mode).                                           |
+
+:::important
+**Шаги ниже показывают, как реализовать пейвол, созданный в Adapty Paywall Builder.**
+
+Если вы не хотите использовать Paywall Builder, см. [гайд по обработке покупок в пейволах, созданных вручную](making-purchases).
+:::
+
+Чтобы отобразить пейвол, созданный в Adapty Paywall Builder, в коде приложения нужно сделать всего три вещи:
+
+1. **Получить пейвол**: получить пейвол из Adapty.
+2. **Отобразить пейвол — Adapty сам обработает покупки**: показать полученный контейнер пейвола в приложении.
+3. **Обработать действия кнопок**: связать взаимодействия пользователя с пейволом с реакцией приложения на них. Например, открыть ссылки или закрыть пейвол при нажатии кнопок.
+
+## Перед началом работы \{#before-you-start\}
+
+Выполните следующие подготовительные шаги:
+
+1. [Подключите приложение к App Store](initial_ios) в дашборде Adapty.
+2. [Создайте продукты](create-product) в Adapty.
+3. [Создайте пейвол и добавьте продукты в него](create-paywall).
+4. [Создайте плейсмент и добавьте в него пейвол](create-placement).
+5. [Установите и активируйте Adapty SDK](sdk-installation-ios) в коде приложения.
+
+:::tip
+Самый быстрый способ выполнить эти шаги — следовать [quickstart-гайду](quickstart) или создать пейволы и плейсменты с помощью [Developer CLI](developer-cli-quickstart).
+:::
+
+## 1. Получите пейвол, созданный в Paywall Builder \{#1-get-the-paywall-created-in-the-paywall-builder\}
+
+Пейволы привязаны к плейсментам, настроенным в дашборде. Плейсменты позволяют показывать разные пейволы разным аудиториям или проводить [A/B-тесты](ab-tests).
+
+Чтобы получить пейвол, созданный в Adapty Paywall Builder, нужно:
+
+1. Получить объект `paywall` по ID [плейсмента](placements) с помощью метода `getPaywall` и проверить, что это пейвол, созданный в конструкторе.
+
+2. Получить конфигурацию представления пейвола с помощью метода `getPaywallConfiguration`. Конфигурация содержит элементы UI и стили, необходимые для отображения пейвола.
+
+:::important
+Чтобы получить конфигурацию представления, необходимо включить переключатель **Show on device** в Paywall Builder. Иначе вы получите пустую конфигурацию, и пейвол не отобразится.
+:::
+
+```swift
+
+func loadPaywall() async {
+let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+
+    guard paywall.hasViewConfiguration else {
+        print("Paywall doesn't have view configuration")
+        return
+    }
+    
+    paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
+}
+```
+
+## 2. Отобразите пейвол \{#2-display-the-paywall\}
+
+Получив конфигурацию пейвола, достаточно добавить несколько строк кода, чтобы показать его.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+
+В SwiftUI при отображении пейвола нужно также обработать события. Часть из них опциональна, но `didFailPurchase`, `didFinishRestore`, `didFailRestore` и `didFailRendering` обязательны. При тестировании можно просто скопировать код из фрагмента ниже — он будет логировать эти ошибки.
+
+:::tip
+Обработка `didFinishPurchase` не обязательна, но полезна, если вы хотите выполнять действия после успешной покупки. Если вы не реализуете этот коллбэк, пейвол закроется автоматически.
+:::
+
+```swift
+.paywall(
+    isPresented: $paywallPresented,
+    paywallConfiguration: paywallConfiguration,
+    didFailPurchase: { product, error in
+        print("Purchase failed: \(error)")
+    },
+    didFinishRestore: { profile in
+        print("Restore finished successfully")
+    },
+    didFailRestore: { error in
+        print("Restore failed: \(error)")
+    },
+    didFailRendering: { error in
+        paywallPresented = false
+        print("Rendering failed: \(error)")
+    },
+    showAlertItem: $alertItem
+)
+```
+</TabItem>
+
+<TabItem value="uikit" label="UIKit" default>
+
+```swift
+
+func presentPaywall(with config: AdaptyUI.PaywallConfiguration) {
+    let paywallController = AdaptyUI.paywallController(
+        with: config,
+        delegate: self
+    )
+    
+    present(paywallController, animated: true)
+}
+
+```
+</TabItem>
+</Tabs>
+
+:::info
+Подробнее об отображении пейвола см. в нашем [гайде](ios-present-paywalls).
+:::
+
+## 3. Обработайте действия кнопок \{#3-handle-button-actions\}
+
+Когда пользователи нажимают кнопки в пейволе, iOS SDK автоматически обрабатывает покупки, восстановление, закрытие пейвола и открытие ссылок.
+
+Однако другие кнопки имеют пользовательские или предустановленные ID и требуют обработки действий в коде. Также вы можете переопределить их поведение по умолчанию.
+
+Например, ниже показано поведение кнопки закрытия по умолчанию. Добавлять это в код не нужно, но здесь видно, как это делается при необходимости.
+
+:::tip
+Читайте наши гайды о том, как обрабатывать [действия](handle-paywall-actions) и [события](ios-handling-events) кнопок.
+:::
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+
+```swift
+
+didPerformAction: { action in
+    switch action {
+        case let .close:
+            paywallPresented = false // default behavior
+        default:
+            break
+    }
+}
+```
+</TabItem>
+
+<TabItem value="uikit" label="UIKit" default>
+
+```swift
+func paywallController(_ controller: AdaptyPaywallController,
+                       didPerform action: AdaptyUI.Action) {
+    switch action {
+        case let .close:
+            controller.dismiss(animated: true) // default behavior
+        break
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## Следующие шаги \{#next-steps\}
+
+<SupportForum />
+
+Ваш пейвол готов к отображению в приложении. [Протестируйте покупки в режиме песочницы](test-purchases-in-sandbox), чтобы убедиться, что тестовая покупка через пейвол проходит успешно.
+
+Теперь нужно [проверить уровень доступа пользователей](ios-check-subscription-status), чтобы показывать пейвол или предоставлять доступ к платным функциям только нужным пользователям.
+
+## Полный пример \{#full-example\}
+
+Ниже показано, как все шаги из этого гайда можно объединить в приложении.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+
+```swift
+
+struct ContentView: View {
+  @State private var paywallPresented = false
+  @State private var alertItem: AlertItem?
+  @State private var paywallConfiguration: AdaptyUI.PaywallConfiguration?
+  @State private var isLoading = false
+  @State private var hasInitialized = false
+  
+  var body: some View {
+    VStack {
+      if isLoading {
+        ProgressView("Loading...")
+      } else {
+        Text("Your App Content")
+      }
+    }
+    .task {
+      guard !hasInitialized else { return }
+      await initializePaywall()
+      hasInitialized = true
+    }
+    .paywall(
+      isPresented: $paywallPresented,
+      configuration: paywallConfiguration,
+      didPerformAction: { action in
+        switch action.type {
+          case let .close:
+              paywallPresented = false
+          default:
+              break
+        }
+      },
+      didFailPurchase: { product, error in
+        print("Purchase failed: \(error)")
+      },
+      didFinishRestore: { profile in
+        print("Restore finished successfully")
+      },
+      didFailRestore: { error in
+        print("Restore failed: \(error)")
+      },
+      didFailRendering: { error in
+        print("Rendering failed: \(error)")
+      },
+      showAlertItem: $alertItem
+    )
+  }
+  
+  private func initializePaywall() async {
+    isLoading = true
+    defer { isLoading = false }
+    
+    await loadPaywall()
+    paywallPresented = true
+    }
+  }
+  
+  private func loadPaywall() async {
+    do {
+      let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+      guard paywall.hasViewConfiguration else {
+        print("Paywall doesn't have view configuration")
+        return
+      }
+      paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
+    } catch {
+      print("Failed to load paywall: \(error)")
+    }
+  }
+}
+
+```
+</TabItem>
+
+<TabItem value="uikit" label="UIKit" default>
+
+```swift
+
+class ViewController: UIViewController {
+  private var paywallConfiguration: AdaptyUI.PaywallConfiguration?
+  
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    
+    Task {
+      await initializePaywall()
+    }
+  }
+  
+  private func initializePaywall() async {
+    do {
+      paywallConfiguration = try await loadPaywall()
+            
+      if let paywallConfiguration {
+        await MainActor.run {
+          presentPaywall(with: paywallConfiguration)
+        }
+      }
+    } catch {
+      print("Error initializing paywall: \(error)")
+    }
+  }
+  
+  private func loadPaywall() async throws -> AdaptyUI.PaywallConfiguration? {
+    let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    
+    guard paywall.hasViewConfiguration else {
+      print("Paywall doesn't have view configuration")
+      return nil
+    }
+    
+    return try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
+  }
+  
+  private func presentPaywall(with config: AdaptyUI.PaywallConfiguration) {
+    let paywallController = AdaptyUI.paywallController(with: config, delegate: self)
+    present(paywallController, animated: true)
+  }
+}
+
+// MARK: - AdaptyPaywallControllerDelegate
+
+extension ViewController: AdaptyPaywallControllerDelegate {
+  func paywallController(_ controller: AdaptyPaywallController,
+                       didPerform action: AdaptyUI.Action) {
+    switch action {
+        case let .close:
+            controller.dismiss(animated: true)
+        break
+    }
+ }
+  
+  func paywallController(_ controller: AdaptyUI.PaywallController,
+                         didFailPurchase product: AdaptyPaywallProduct,
+                         error: AdaptyError) {
+    print("Purchase failed for \(product.vendorProductId): \(error)")
+    
+    guard error.adaptyErrorCode != .paymentCancelled else {
+      return // Don't show alert for user cancellation
+    }
+    
+    let message = switch error.adaptyErrorCode {
+      case .paymentNotAllowed:
+        "Purchases are not allowed on this device."
+      default:
+        "Purchase failed. Please try again."
+    }
+    
+    let alert = UIAlertController(title: "Purchase Error", message: message, preferredStyle: .alert)
+    let okAction = UIAlertAction(title: "OK", style: .default) { _ in }
+    alert.addAction(okAction)
+    present(alert, animated: true)
+  }
+  
+  func paywallController(_ controller: AdaptyUI.PaywallController,
+                         didFinishRestore profile: AdaptyProfile) {
+    print("Restore finished successfully")
+    controller.dismiss(animated: true)
+  }
+  
+  func paywallController(_ controller: AdaptyUI.PaywallController,
+                         didFailRestore error: AdaptyError) {
+    print("Restore failed: \(error)")
+  }
+  
+  func paywallController(_ controller: AdaptyUI.PaywallController,
+                         didFailRendering error: AdaptyError) {
+    print("Rendering failed: \(error)")
+    controller.dismiss(animated: true)
+  }
+}
+
+```
+</TabItem>
+</Tabs>

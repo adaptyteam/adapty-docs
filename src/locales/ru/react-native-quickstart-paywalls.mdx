@@ -1,0 +1,294 @@
+---
+title: "Включение покупок с помощью пейволов в React Native SDK"
+description: "Узнайте, как отображать пейволы в вашем приложении на React Native с помощью Adapty SDK."
+metadataTitle: "Отображение пейвола | React Native SDK | Документация Adapty"
+customSlug: /react-native-quickstart-paywalls
+displayed_sidebar: sdkreactnative
+keywords: [ 'paywall', 'paywall builder', 'getPaywall']
+rank: 70
+---
+
+import PaywallsIntro from '@site/src/locales/ru/reusable/PaywallsIntro.md';
+
+Чтобы включить встроенные покупки, нужно понять три ключевых понятия:
+
+- [**Продукты**](product) — всё, что пользователи могут купить (подписки, расходуемые покупки, пожизненный доступ)
+- [**Пейволы**](paywalls) — конфигурации, определяющие, какие продукты предлагать. В Adapty пейволы — единственный способ получить продукты, и такой подход позволяет менять предложения, цены и наборы продуктов без изменения кода приложения.
+- [**Плейсменты**](placements) — где и когда показывать пейволы в приложении (например, `main`, `onboarding`, `settings`). Вы настраиваете пейволы для плейсментов в дашборде, а затем запрашиваете их по ID плейсмента в коде. Это упрощает проведение A/B-тестов и показ разных пейволов разным пользователям.
+
+Adapty предлагает три способа включить покупки в приложении. Выберите подходящий в зависимости от требований:
+
+| Реализация                | Сложность | Когда использовать                                                                                                                                                                                                                                  |
+|---------------------------|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty Paywall Builder    | ✅ Просто  | Вы [создаёте полноценный пейвол в no-code конструкторе](quickstart-paywalls). Adapty автоматически отрисовывает его и берёт на себя весь сложный процесс покупки, валидацию чеков и управление подписками.                                         |
+| Пейволы, созданные вручную | 🟡 Средне | Вы реализуете UI пейвола в коде приложения, но всё равно получаете объект пейвола из Adapty для гибкого управления предложениями. См. [гайд](react-native-quickstart-manual).                                                                        |
+| Observer mode             | 🔴 Сложно | У вас уже есть собственная инфраструктура для обработки покупок, и вы хотите продолжать её использовать. Учтите, что observer mode имеет ограничения в Adapty. См. [статью](observer-vs-full-mode).                                                  |
+
+:::important
+**Шаги ниже показывают, как реализовать пейвол, созданный в Adapty Paywall Builder.**
+
+Если вы не хотите использовать Paywall Builder, см. [гайд по обработке покупок в пейволах, созданных вручную](react-native-making-purchases).
+:::
+
+Чтобы отобразить пейвол, созданный в Adapty Paywall Builder, в коде приложения нужно лишь:
+
+1. **Получить пейвол**: запросить пейвол из Adapty.
+2. **Отобразить пейвол — Adapty сам обработает покупки**: показать контейнер пейвола в приложении.
+3. **Обработать действия кнопок**: связать взаимодействия пользователя с пейволом с реакцией приложения на них. Например, открывать ссылки или закрывать пейвол при нажатии кнопок.
+
+## Перед началом работы \{#before-you-start\}
+
+Выполните следующие шаги:
+
+1. Подключите приложение к [App Store](initial_ios) и/или [Google Play](initial-android) в дашборде Adapty.
+2. [Создайте продукты](create-product) в Adapty.
+3. [Создайте пейвол и добавьте в него продукты](create-paywall).
+4. [Создайте плейсмент и добавьте пейвол в него](create-placement).
+5. [Установите и активируйте Adapty SDK](sdk-installation-reactnative) в коде приложения.
+
+:::tip
+Быстрее всего выполнить эти шаги можно с помощью [quickstart-гайда](quickstart) или создав пейволы и плейсменты через [Developer CLI](developer-cli-quickstart).
+:::
+
+## 1. Получите пейвол \{#1-get-the-paywall\}
+
+Ваши пейволы привязаны к плейсментам, настроенным в дашборде. Плейсменты позволяют показывать разные пейволы разным аудиториям или проводить [A/B-тесты](ab-tests).
+
+Чтобы получить пейвол, созданный в Adapty Paywall Builder, нужно:
+
+1. Получить объект `paywall` по ID [плейсмента](placements) с помощью метода `getPaywall` и проверить, является ли он пейволом, созданным в конструкторе, с помощью свойства `hasViewConfiguration`.
+
+2. Создать представление пейвола с помощью метода `createPaywallView`. Представление содержит элементы UI и стили, необходимые для отображения пейвола.
+
+:::important
+Чтобы получить конфигурацию представления, необходимо включить переключатель **Show on device** в Paywall Builder. Иначе вы получите пустую конфигурацию, и пейвол не отобразится.
+:::
+
+```typescript showLineNumbers title="React Native"
+
+try {
+    const placementId = 'YOUR_PLACEMENT_ID';
+
+    const paywall = await adapty.getPaywall(placementId);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
+
+if (paywall.hasViewConfiguration) {
+    try {
+        const view = await createPaywallView(paywall);
+    } catch (error) {
+        // handle the error
+    }
+} else {
+    //use your custom logic
+}
+```
+
+## 2. Отобразите пейвол \{#2-display-the-paywall\}
+
+Когда конфигурация пейвола получена, достаточно добавить несколько строк, чтобы отобразить его.
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React-компонент" default>
+
+Чтобы встроить пейвол в существующее дерево компонентов, используйте компонент `AdaptyPaywallView` прямо в иерархии компонентов React Native:
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyPaywall({ paywall }) {
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+      onUrlPress={onUrlPress}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Модальное представление">
+
+Чтобы отобразить пейвол как отдельный экран, используйте метод `view.present()` на объекте `view`, созданном методом `createPaywallView`. Каждый объект `view` можно использовать только один раз. Если нужно показать пейвол снова, вызовите `createPaywallView` ещё раз, чтобы создать новый экземпляр `view`.
+
+```typescript showLineNumbers title="React Native"
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::tip
+Подробнее об отображении пейвола — в нашем [гайде](react-native-present-paywalls).
+:::
+
+## 3. Обработайте действия кнопок \{#3-handle-button-actions\}
+
+Когда пользователи нажимают кнопки в пейволе, React Native SDK автоматически обрабатывает покупки, восстановление, закрытие пейвола и открытие URL.
+
+Однако у других кнопок есть пользовательские или предопределённые ID, и их действия нужно обрабатывать в коде. Или вы можете захотеть переопределить их поведение по умолчанию.
+
+Например, ниже показано поведение кнопки закрытия по умолчанию. Добавлять это в код не нужно, но здесь видно, как это делается при необходимости.
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React-компонент" default>
+
+Для React-компонента обрабатывайте действия прямо в компоненте `AdaptyPaywallView`:
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyPaywall({ paywall }) {
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {}, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onUrlPress={onUrlPress}
+      onCloseButtonPress={onCloseButtonPress}
+      onCustomAction={onCustomAction}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Модальное представление">
+
+Для модального представления реализуйте обработчики событий с помощью `setEventHandlers`:
+
+```typescript showLineNumbers title="React Native"
+const unsubscribe = view.setEventHandlers({
+    onCloseButtonPress() {
+        return true; // allow paywall closing
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+:::tip
+Читайте наши гайды по обработке [действий](react-native-handle-paywall-actions) и [событий](react-native-handling-events-1) кнопок.
+:::
+
+## Следующие шаги \{#next-steps\}
+
+<SupportForum />
+
+Пейвол готов к отображению в приложении. Протестируйте покупки в [песочнице App Store](test-purchases-in-sandbox) или в [Google Play Store](testing-on-android), чтобы убедиться, что тестовая покупка через пейвол проходит успешно.
+
+Теперь нужно [проверить уровень доступа пользователей](react-native-check-subscription-status), чтобы показывать пейвол или предоставлять доступ к платным функциям только нужным пользователям.
+
+## Полный пример \{#full-example\}
+
+Вот как все эти шаги можно объединить в приложении.
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React-компонент" default>
+
+```javascript showLineNumbers title="React Native (TSX)"
+
+export default function PaywallScreen() {
+  const [paywall, setPaywall] = useState(null);
+
+  const loadPaywall = async () => {
+    try {
+      const paywallData = await adapty.getPaywall('YOUR_PLACEMENT_ID');
+
+      if (paywallData.hasViewConfiguration) {
+        setPaywall(paywallData);
+      }
+    } catch (error) {
+      console.warn('Error loading paywall:', error);
+    }
+  };
+
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
+    // Handle close button press
+  }, []);
+
+  useEffect(() => {
+    loadPaywall();
+  }, []);
+
+  return (
+    <View style={{ flex: 1 }}>
+      {paywall ? (
+        <AdaptyPaywallView
+          paywall={paywall}
+          style={{ flex: 1 }}
+          onUrlPress={onUrlPress}
+          onCloseButtonPress={onCloseButtonPress}
+        />
+      ) : (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Button title="Load Paywall" onPress={loadPaywall} />
+        </View>
+      )}
+    </View>
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Модальное представление">
+
+```javascript showLineNumbers title="React Native"
+
+export default function PaywallScreen() {
+  const showPaywall = async () => {
+    try {
+      const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID');
+
+      if (!paywall.hasViewConfiguration) {
+        // use your custom logic
+        return;
+      }
+
+      const view = await createPaywallView(paywall);
+
+      view.setEventHandlers({
+          onCloseButtonPress() {
+              return true;
+        },
+      });
+
+      await view.present();
+    } catch (error) {
+      // handle any error that may occur during the process
+      console.warn('Error showing paywall:', error);
+    }
+  };
+
+  // you can add a button to manually trigger the paywall for testing purposes
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Button title="Show Paywall" onPress={showPaywall} />
+    </View>
+  );
+}
+```
+
+</TabItem>
+</Tabs>

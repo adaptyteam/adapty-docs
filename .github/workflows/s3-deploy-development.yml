@@ -6,18 +6,16 @@ on:
 jobs:
   build-en:
     runs-on: ubuntu-latest
+    concurrency:
+      group: build-en-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: npm-${{ hashFiles('package-lock.json') }}
+          cache: 'npm'
 
       - name: Cache Astro build
         uses: actions/cache@v4
@@ -27,11 +25,17 @@ jobs:
           restore-keys: astro-dev-en-
 
       - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
 
       - name: Build English only
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=none npx astro build
 
       - name: Generate markdown exports
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run build:md:prod
 
       - uses: actions/upload-artifact@v4
@@ -44,19 +48,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr]
+        locale: [zh, tr, ru]
+    concurrency:
+      group: build-locale-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: npm-${{ hashFiles('package-lock.json') }}
+          cache: 'npm'
 
       - name: Cache Astro build
         uses: actions/cache@v4
@@ -66,8 +68,12 @@ jobs:
           restore-keys: astro-dev-${{ matrix.locale }}-
 
       - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
 
       - name: Build locale ${{ matrix.locale }}
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} npx astro build
 
       - uses: actions/upload-artifact@v4
@@ -79,6 +85,9 @@ jobs:
   deploy:
     needs: [build-en, build-locale]
     runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
     permissions:
       contents: write
     environment: development
@@ -102,6 +111,11 @@ jobs:
         with:
           name: build-tr
           path: build/tr/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-ru
+          path: build/ru/
 
       - name: Deploy
         uses: reggionick/s3-deploy@v4

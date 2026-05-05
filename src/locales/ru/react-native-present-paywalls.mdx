@@ -1,0 +1,244 @@
+---
+title: "React Native - Отображение пейволов, созданных в новом Paywall Builder"
+description: "Отображайте пейволы в приложениях на React Native с помощью Adapty."
+metadataTitle: "Отображение пейволов в React Native | Документация Adapty"
+
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
+
+Если вы настроили пейвол с помощью Paywall Builder, вам не нужно беспокоиться о его отрисовке в коде мобильного приложения. Такой пейвол содержит как содержимое экрана, так и способ его отображения.
+
+Перед началом убедитесь, что:
+
+1. Вы [создали пейвол](create-paywall).
+2. Вы добавили пейвол в [плейсмент](placements).
+3. Вы [получили пейвол и подготовили представление](react-native-get-pb-paywalls).
+
+:::warning
+
+Это руководство предназначено **только для пейволов нового Paywall Builder**, которые требуют SDK v3.0 или новее. Процесс отображения пейволов отличается для пейволов, созданных в разных версиях Paywall Builder, и для пейволов на основе Remote Config.
+
+- Для отображения **пейволов на основе Remote Config** см. [Отрисовка пейвола на основе remote config](present-remote-config-paywalls).
+
+:::
+
+Adapty React Native SDK предоставляет два способа отображения пейволов:
+
+- **React-компонент**: встраиваемый компонент, который можно интегрировать в архитектуру и навигационную систему вашего приложения.
+
+- **Модальное отображение**
+
+## React-компонент \{#react-component\}
+
+:::note
+Подход с использованием **React-компонента** требует SDK 3.14.0 или новее.
+:::
+
+Чтобы встроить пейвол в существующее дерево компонентов, используйте компонент `AdaptyPaywallView` непосредственно в иерархии React Native компонентов. Встраиваемый компонент позволяет интегрировать его в архитектуру и навигационную систему вашего приложения.
+
+:::note
+На Android, если пейвол не распространяется за пределы строки состояния, в его верхней части может появиться визуальный оверлей. Рекомендуем отключить его для ваших пейволов. См. [Визуальный оверлей в верхней части пейвола (Android)](#visual-overlay-at-the-top-of-the-paywall-android).
+:::
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyPaywall({ paywall }) {
+  const paywallParams = useMemo(() => ({
+    loadTimeoutMs: 3000,
+  }), []);
+
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {}, []);
+  const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {}, []);
+  const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {}, []);
+  const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {}, []);
+  const onRestoreStarted = useCallback<EventHandlers['onRestoreStarted']>(() => {}, []);
+  const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {}, []);
+  const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {}, []);
+  const onPaywallShown = useCallback<EventHandlers['onPaywallShown']>(() => {}, []);
+  const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {}, []);
+  const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {}, []);
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {}, []);
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {}, []);
+  const onWebPaymentNavigationFinished = useCallback<EventHandlers['onWebPaymentNavigationFinished']>(() => {}, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      params={paywallParams}
+      style={styles.paywall}
+      onCloseButtonPress={onCloseButtonPress}
+      onProductSelected={onProductSelected}
+      onPurchaseStarted={onPurchaseStarted}
+      onPurchaseCompleted={onPurchaseCompleted}
+      onPurchaseFailed={onPurchaseFailed}
+      onRestoreStarted={onRestoreStarted}
+      onRestoreCompleted={onRestoreCompleted}
+      onRestoreFailed={onRestoreFailed}
+      onPaywallShown={onPaywallShown}
+      onRenderingFailed={onRenderingFailed}
+      onLoadingProductsFailed={onLoadingProductsFailed}
+      onCustomAction={onCustomAction}
+      onUrlPress={onUrlPress}
+      onWebPaymentNavigationFinished={onWebPaymentNavigationFinished}
+    />
+  );
+}
+```
+
+## Модальное отображение \{#modal-presentation\}
+
+Чтобы показать пейвол как отдельный экран, используйте метод `view.present()` на объекте `view`, созданном методом [`createPaywallView`](react-native-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Каждый `view` можно использовать только один раз. Если нужно показать пейвол снова, вызовите `createPaywallView` ещё раз, чтобы создать новый экземпляр `view`.
+
+:::warning
+Повторное использование одного и того же `view` без его пересоздания запрещено. Это приведёт к ошибке `AdaptyUIError.viewAlreadyPresented`.
+:::
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK версии 3.14 или новее" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createPaywallView(paywall);
+
+// Optional: handle paywall events (close, purchase, restore, etc)
+// view.setEventHandlers({ ... });
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+:::important
+Повторный вызов `setEventHandlers` переопределит ранее установленные обработчики, заменив как стандартные, так и ранее заданные обработчики для указанных событий.
+:::
+
+</TabItem>
+
+<TabItem value="old" label="SDK версии < 3.14" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createPaywallView(paywall);
+
+view.registerEventHandlers(); // handle close press, etc
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Настройка стиля отображения на iOS \{#configure-ios-presentation-style\}
+
+Настройте способ отображения пейвола на iOS, передав параметр `iosPresentationStyle` в метод `present()`. Параметр принимает значения `'full_screen'` (по умолчанию) или `'page_sheet'`.
+
+```typescript showLineNumbers
+try {
+  await view.present(iosPresentationStyle: 'page_sheet');
+} catch (error) {
+  // handle the error
+}
+```
+
+## Использование таймеров, заданных разработчиком \{#use-developer-defined-timer\}
+
+Чтобы использовать таймеры, заданные разработчиком, в вашем мобильном приложении, укажите `timerId` — например, `CUSTOM_TIMER_NY` — **Timer ID** таймера, заданного разработчиком в дашборде Adapty. Это позволяет приложению динамически обновлять таймер с нужным значением, например `13d 09h 03m 34s` (рассчитывается как время окончания таймера, например Новый год, минус текущее время).
+
+<Tabs>
+<TabItem value="component" label="React-компонент">
+```typescript showLineNumbers title="React Native (TSX)"
+const paywallParams = {
+  customTimers: { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+};
+
+<AdaptyPaywallView
+  paywall={paywall}
+  params={paywallParams}
+  // ... your event handlers
+/>
+```
+</TabItem>
+<TabItem value="modal" label="Модальное отображение">
+```typescript showLineNumbers title="React Native (TSX)"
+const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+
+const view = await createPaywallView(paywall, { customTimers });
+```
+</TabItem>
+</Tabs>
+В этом примере `CUSTOM_TIMER_NY` — это **Timer ID** таймера, заданного разработчиком в дашборде Adapty. `timerResolver` обеспечивает динамическое обновление таймера с нужным значением, например `13d 09h 03m 34s` (рассчитывается как время окончания таймера, например Новый год, минус текущее время).
+
+## Отображение диалога \{#show-dialog\}
+
+Используйте этот метод вместо стандартных диалоговых окон на Android в тех случаях, когда на экране отображается пейвол. На Android обычные RN-алерты появляются позади пейвола и становятся невидимыми для пользователей. Этот метод обеспечивает корректное отображение диалога поверх пейвола на всех платформах.
+
+```typescript showLineNumbers title="React Native (TSX)"
+try {
+  const action = await view.showDialog({
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  });
+  
+  if (action === 'secondary') {
+    // User confirmed - close the paywall
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (error) {
+  // handle error
+}
+```
+
+## Замена одной подписки на другую \{#replace-one-subscription-with-another\}
+
+Когда пользователь пытается приобрести новую подписку при наличии активной подписки на Android, вы можете управлять обработкой новой покупки, передав параметры обновления подписки при создании представления пейвола. Чтобы заменить текущую подписку новой, используйте `productPurchaseParams` в `createPaywallView` с параметрами `oldSubVendorProductId` и `prorationMode`.
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+const productPurchaseParams = paywall.productIdentifiers.map((productId) => {
+  let params = {};
+  if (Platform.OS === 'android') {
+    params.android = {
+      subscriptionUpdateParams: {
+        oldSubVendorProductId: 'PRODUCT_ID_OF_THE_CURRENT_ACTIVE_SUBSCRIPTION',
+        prorationMode: 'with_time_proration',
+      },
+    };
+  }
+  return { productId, params };
+});
+
+const view = await createPaywallView(paywall, { productPurchaseParams });
+```
+
+## Устранение проблем \{#troubleshooting\}
+
+### Визуальный оверлей в верхней части пейвола (Android) \{#visual-overlay-at-the-top-of-the-paywall-android\}
+
+:::note
+Этот параметр поддерживается начиная с React Native SDK 3.15.5 и доступен только в bare React Native проектах.
+
+Если вы используете управляемый воркфлоу Expo, вы не можете добавить этот Android-ресурс напрямую. Чтобы применить эту настройку, необходимо создать кастомный Expo config plugin, который добавляет соответствующий Android-ресурс, и зарегистрировать его в `app.config.js`. Это обязательно, поскольку Expo управляет нативным Android-проектом за вас.
+:::
+
+Если `AdaptyPaywallView` не распространяется за пределы строки состояния, в верхней части пейвола всё равно может появиться визуальный оверлей. Чтобы убрать его, добавьте в приложение следующий булевый ресурс:
+
+1. Перейдите в `android/app/src/main/res/values`. Если файл `bools.xml` отсутствует, создайте его.
+
+2. Добавьте следующий ресурс:
+
+```xml
+<resources>
+    <bool name="adapty_paywall_enable_safe_area_paddings">false</bool>
+</resources>
+```
+
+Обратите внимание, что изменения применяются глобально для всех пейволов в вашем приложении.

@@ -41,6 +41,9 @@ jobs:
     needs: classify
     if: needs.classify.outputs.translation_only == 'false'
     runs-on: ubuntu-latest
+    concurrency:
+      group: check-internal-links-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,6 +51,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
       - run: npm install github-slugger
       - run: node scripts/check-links/index.mjs --diff --base=last-production-deploy --internal-only
 
@@ -57,18 +61,16 @@ jobs:
   build-en:
     needs: check-internal-links
     runs-on: ubuntu-latest
+    concurrency:
+      group: build-en-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: npm-${{ hashFiles('package-lock.json') }}
+          cache: 'npm'
 
       - name: Cache Astro build
         uses: actions/cache@v4
@@ -78,11 +80,17 @@ jobs:
           restore-keys: astro-en-
 
       - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
 
       - name: Build English only
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=none npx astro build
 
       - name: Generate markdown exports
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run build:md:prod
 
       - uses: actions/upload-artifact@v4
@@ -96,19 +104,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr]
+        locale: [zh, tr, ru]
+    concurrency:
+      group: build-locale-full-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: npm-${{ hashFiles('package-lock.json') }}
+          cache: 'npm'
 
       - name: Cache Astro build
         uses: actions/cache@v4
@@ -118,8 +124,12 @@ jobs:
           restore-keys: astro-${{ matrix.locale }}-
 
       - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
 
       - name: Build locale ${{ matrix.locale }}
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} npx astro build
 
       - uses: actions/upload-artifact@v4
@@ -131,6 +141,9 @@ jobs:
   deploy-full:
     needs: [build-en, build-locale-full]
     runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-full-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
     permissions:
       contents: write
     environment: production
@@ -154,6 +167,11 @@ jobs:
         with:
           name: build-tr
           path: build/tr/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-ru
+          path: build/ru/
 
       - name: Deploy
         uses: reggionick/s3-deploy@v4
@@ -180,19 +198,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr]
+        locale: [zh, tr, ru]
+    concurrency:
+      group: build-locale-only-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: npm-${{ hashFiles('package-lock.json') }}
+          cache: 'npm'
 
       - name: Cache Astro build
         uses: actions/cache@v4
@@ -202,8 +218,12 @@ jobs:
           restore-keys: astro-${{ matrix.locale }}-
 
       - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
 
       - name: Build locale ${{ matrix.locale }}
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} npx astro build
 
       - uses: actions/upload-artifact@v4
@@ -215,6 +235,9 @@ jobs:
   deploy-translations:
     needs: build-locale-only
     runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-translations-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
     permissions:
       contents: write
     environment: production
@@ -234,18 +257,24 @@ jobs:
           name: build-tr-only-tr
           path: build/tr/
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-tr-only-ru
+          path: build/ru/
+
       # Sync locale directories to S3 using AWS CLI —
-      # only overwrites zh/ and tr/ prefixes, leaves English untouched.
+      # only overwrites zh/, tr/, and ru/ prefixes, leaves English untouched.
       - name: Deploy translations to S3
         run: |
           aws s3 sync build/zh/ s3://${{ secrets.S3_BUCKET }}/zh/ --delete
           aws s3 sync build/tr/ s3://${{ secrets.S3_BUCKET }}/tr/ --delete
+          aws s3 sync build/ru/ s3://${{ secrets.S3_BUCKET }}/ru/ --delete
 
       - name: Invalidate locale paths
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/zh/*" "/tr/*"
+            --paths "/zh/*" "/tr/*" "/ru/*"
 
       - name: Update deployment tag
         run: |

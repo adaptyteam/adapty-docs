@@ -1,0 +1,373 @@
+---
+title: "Миграция Adapty Flutter SDK на v. 3.3"
+description: "Мигрируйте на Adapty Flutter SDK v3.3 для повышения производительности и новых функций монетизации."
+metadataTitle: "Миграция на Adapty Flutter SDK v3.3 | Документация Adapty"
+---
+
+Adapty SDK 3.3.0 — это мажорный релиз, который принёс ряд улучшений, требующих от вас шагов по миграции.
+
+1. Обновите метод предоставления резервных пейволов.
+2. Удалите метод `getProductsIntroductoryOfferEligibility`.
+3. Обновите конфигурации интеграций для Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase и Google Analytics, Mixpanel, OneSignal, Pushwoosh.
+4. Обновите реализацию режима Observer.
+
+## Обновление метода предоставления резервных пейволов \{#update-method-for-providing-fallback-paywalls\}
+
+Раньше метод принимал резервный пейвол в виде JSON-строки (`jsonString`), теперь вместо неё передаётся путь к локальному файлу пейвола (`assetId`).
+
+```diff showLineNumbers
+ import 'dart:async' show Future;
+ import 'dart:io' show Platform;
+-import 'package:flutter/services.dart' show rootBundle;
+
+-final filePath = Platform.isIOS ? 'assets/ios_fallback.json' : 'assets/android_fallback.json';
+-final jsonString = await rootBundle.loadString(filePath);
++final assetId = Platform.isIOS ? 'assets/ios_fallback.json' : 'assets/android_fallback.json';
+
+ try {
+-  await adapty.setFallbackPaywalls(jsonString);
++  await adapty.setFallbackPaywalls(assetId);
+ } on AdaptyError catch (adaptyError) {
+   // handle the error
+ } catch (e) {
+ }
+
+```
+
+Полный пример кода — на странице [Использование резервных пейволов](flutter-use-fallback-paywalls).
+
+## Удаление метода `getProductsIntroductoryOfferEligibility` \{#remove-getproductsintroductoryoffereligibility-method\}
+
+До Adapty iOS SDK 3.3.0 объект продукта всегда включал офферы вне зависимости от того, подходит ли для них пользователь. Вам нужно было проверять eligibility вручную перед использованием оффера.
+
+Теперь объект продукта включает оффер только в том случае, если пользователь на него подходит. Это значит, что проверять eligibility больше не нужно — если оффер присутствует, пользователь подходит для него.
+
+## Обновление конфигурации SDK сторонних интеграций \{#update-third-party-integration-sdk-configuration\}
+
+Чтобы интеграции корректно работали с Adapty Flutter SDK 3.3.0 и новее, обновите конфигурации SDK для следующих интеграций согласно инструкциям ниже.
+
+### Adjust \{#adjust\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода — на странице [Конфигурация SDK для интеграции с Adjust](adjust#connect-your-app-to-adjust).
+
+```diff showLineNumbers
+ import 'package:adjust_sdk/adjust.dart';
+ import 'package:adjust_sdk/adjust_config.dart';
+
+ try {
+   final adid = await Adjust.getAdid();
+
+   if (adid == null) {
+     // handle the error
+   }
+
++   await Adapty().setIntegrationIdentifier(
++     key: "adjust_device_id", 
++     value: adid,
++   );
+
+   final attributionData = await Adjust.getAttribution();
+
+   var attribution = Map<String, String>();
+
+   if (attributionData.trackerToken != null) attribution['trackerToken'] = attributionData.trackerToken!;
+   if (attributionData.trackerName != null) attribution['trackerName'] = attributionData.trackerName!;
+   if (attributionData.network != null) attribution['network'] = attributionData.network!;
+   if (attributionData.adgroup != null) attribution['adgroup'] = attributionData.adgroup!;
+   if (attributionData.creative != null) attribution['creative'] = attributionData.creative!;
+   if (attributionData.clickLabel != null) attribution['clickLabel'] = attributionData.clickLabel!;
+   if (attributionData.costType != null) attribution['costType'] = attributionData.costType!;
+   if (attributionData.costAmount != null) attribution['costAmount'] = attributionData.costAmount!.toString();
+   if (attributionData.costCurrency != null) attribution['costCurrency'] = attributionData.costCurrency!;
+   if (attributionData.fbInstallReferrer != null) attribution['fbInstallReferrer'] = attributionData.fbInstallReferrer!;
+
+-   Adapty().updateAttribution(
+-     attribution,
+-     source: AdaptyAttributionSource.adjust,
+-     networkUserId: adid,
+-   );
++   await Adapty().updateAttribution(attribution, source: "adjust");
+ } catch (e) {
+   // handle the error
+   } on AdaptyError catch (adaptyError) {
+   // handle the error
+ }
+```
+
+### AirBridge \{#airbridge\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода — на странице [Конфигурация SDK для интеграции с AirBridge](airbridge#connect-your-app-to-airbridge).
+
+```diff showLineNumbers
+ import 'package:airbridge_flutter_sdk/airbridge_flutter_sdk.dart';
+
+  final deviceUUID = await Airbridge.state.deviceUUID;
+  
+  try {
+-     final builder = AdaptyProfileParametersBuilder()
+-         ..setAirbridgeDeviceId(deviceUUID);  
+-     await Adapty().updateProfile(builder.build());
+
++     await Adapty().setIntegrationIdentifier(
++         key: "airbridge_device_id", 
++         value: deviceUUID,
++     );
+  } on AdaptyError catch (adaptyError) {
+     // handle the error
+  } catch (e) {
+     // handle the error
+  }
+```
+
+### Amplitude \{#amplitude\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода — на странице [Конфигурация SDK для интеграции с Amplitude](amplitude#sdk-configuration).
+
+```diff showLineNumbers
+ import 'package:amplitude_flutter/amplitude.dart';
+
+ final Amplitude amplitude = Amplitude.getInstance(instanceName: "YOUR_INSTANCE_NAME");
+
+ final deviceId = await amplitude.getDeviceId();
+ final userId = await amplitude.getUserId();
+
+ try {
+-  final builder = AdaptyProfileParametersBuilder()
+-     ..setAmplitudeDeviceId(deviceId)
+-     ..setAmplitudeUserId(userId);
+-     await adapty.updateProfile(builder.build());
+
++     await Adapty().setIntegrationIdentifier(
++         key: "amplitude_user_id", 
++         value: userId,
++     );
++     await Adapty().setIntegrationIdentifier(
++         key: "amplitude_device_id", 
++         value: deviceId,
++     );
+  } on AdaptyError catch (adaptyError) {
+      // handle the error
+  } catch (e) {
+      // handle the error
+  }
+```
+
+### AppMetrica \{#appmetrica\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода — на странице [Конфигурация SDK для интеграции с AppMetrica](appmetrica#sdk-configuration).
+
+```diff showLineNumbers
+ import 'package:appmetrica_plugin/appmetrica_plugin.dart';
+
+ final deviceId = await AppMetrica.deviceId;
+
+ if (deviceId != null) {
+   try {
+-   final builder = AdaptyProfileParametersBuilder()
+-     ..setAppmetricaDeviceId(deviceId)
+-     ..setAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
+-
+-     await adapty.updateProfile(builder.build());
+   
++     await Adapty().setIntegrationIdentifier(
++         key: "appmetrica_device_id", 
++         value: deviceId,
++     );
++     await Adapty().setIntegrationIdentifier(
++         key: "appmetrica_profile_id", 
++         value: "YOUR_ADAPTY_CUSTOMER_USER_ID",
++     );
+    } on AdaptyError catch (adaptyError) {
+      // handle the error
+    } catch (e) {
+      // handle the error
+    }
+ }
+```
+
+### AppsFlyer \{#appsflyer\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода — на странице [Конфигурация SDK для интеграции с AppsFlyer](appsflyer#connect-your-app-to-appsflyer).
+
+```diff showLineNumbers
+ import 'package:appsflyer_sdk/appsflyer_sdk.dart';
+
+ AppsflyerSdk appsflyerSdk = AppsflyerSdk(<YOUR_OPTIONS>);
+ 
+ appsflyerSdk.onInstallConversionData((data) async {
+     try {
+         final appsFlyerUID = await appsFlyerSdk.getAppsFlyerUID();
+-         await Adapty().updateAttribution(
+-           data,
+-           source: AdaptyAttributionSource.appsflyer,
+-           networkUserId: appsFlyerUID,
+-         );
++         await Adapty().setIntegrationIdentifier(
++           key: "appsflyer_id", 
++           value: appsFlyerUID,
++         );
++         
++         await Adapty().updateAttribution(data, source: "appsflyer");
+     } on AdaptyError catch (adaptyError) {
+         // handle the error
+
+      } catch (e) {
+          // handle the error
+      }
+ });
+
+ appsflyerSdk.initSdk(
+     registerConversionDataCallback: true,
+     registerOnAppOpenAttributionCallback: true,
+     registerOnDeepLinkingCallback: true,
+ );
+```
+
+### Branch \{#branch\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода — на странице [Конфигурация SDK для интеграции с Branch](branch#connect-your-app-to-branch).
+
+```diff showLineNumbers
+
+FlutterBranchSdk.initSession().listen((data) async {
+  try {
++     await Adapty().setIntegrationIdentifier(
++         key: "branch_id", 
++         value: <BRANCH_IDENTITY_ID>,
++     );
+-    await Adapty().updateAttribution(data, source: AdaptyAttributionSource.branch);
++    await Adapty().updateAttribution(data, source: "branch");
+  } on AdaptyError catch (adaptyError) {
+      // handle the error
+  } catch (e) {
+      // handle the error
+  }
+);
+```
+
+### Firebase и Google Analytics \{#firebase-and-google-analytics\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода — на странице [Конфигурация SDK для интеграции с Firebase и Google Analytics](firebase-and-google-analytics).
+
+```diff showLineNumbers
+
+final appInstanceId = await FirebaseAnalytics.instance.appInstanceId;
+
+try {
+-  final builder = AdaptyProfileParametersBuilder()
+-         ..setFirebaseAppInstanceId(appInstanceId);
+-  await adapty.updateProfile(builder.build());
+
++  await Adapty().setIntegrationIdentifier(
++         key: "firebase_app_instance_id", 
++         value: appInstanceId,
++  );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
+
+### Mixpanel \{#mixpanel\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода — на странице [Конфигурация SDK для интеграции с Mixpanel](mixpanel#sdk-configuration).
+
+```diff showLineNumbers
+
+final mixpanel = await Mixpanel.init("Your Token", trackAutomaticEvents: true);
+final distinctId = await mixpanel.getDistinctId();
+
+try {
+-   final builder = AdaptyProfileParametersBuilder()
+-      ..setMixpanelUserId(distinctId);
+-     await Adapty().updateProfile(builder.build());
+
++     await Adapty().setIntegrationIdentifier(
++         key: "mixpanel_user_id", 
++         value: distinctId,
++     );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
+
+### OneSignal \{#onesignal\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода — на странице [Конфигурация SDK для интеграции с OneSignal](onesignal#sdk-configuration).
+
+```diff showLineNumbers
+ OneSignal.shared.setSubscriptionObserver((changes) {
+     final playerId = changes.to.userId;
+     if (playerId != null) {
+-         final builder = 
+-             AdaptyProfileParametersBuilder()
+-                 ..setOneSignalPlayerId(playerId);
+-                 // ..setOneSignalSubscriptionId(playerId);
+          try {
+-             Adapty().updateProfile(builder.build());
+
++             await Adapty().setIntegrationIdentifier(
++                 key: "one_signal_player_id", 
++                 value: playerId,
++             );
+          } on AdaptyError catch (adaptyError) {
+              // handle error
+          } catch (e) {
+              // handle error
+          }
+     }
+ });
+```
+
+### Pushwoosh \{#pushwoosh\}
+
+Обновите код мобильного приложения, как показано ниже. Полный пример кода — на странице [Конфигурация SDK для интеграции с Pushwoosh](pushwoosh#sdk-configuration).
+
+```diff showLineNumbers
+
+final hwid = await Pushwoosh.getInstance.getHWID;
+
+- final builder = AdaptyProfileParametersBuilder()
+-         ..setPushwooshHWID(hwid);
+  try {
+-     await adapty.updateProfile(builder.build());
+
++     await Adapty().setIntegrationIdentifier(
++         key: "pushwoosh_hwid", 
++         value: hwid,
++     );
+  } on AdaptyError catch (adaptyError) {
+      // handle the error
+  } catch (e) {
+      // handle the error
+  }
+```
+
+## Обновление реализации режима Observer \{#update-observer-mode-implementation\}
+
+Обновите способ привязки пейволов к транзакциям. Раньше для назначения `variationId` использовался метод `setVariationId`. Теперь можно передавать `variationId` напрямую при записи транзакции с помощью нового метода `reportTransaction`. Полный пример кода — на странице [Привязка пейволов к транзакциям покупок в режиме Observer](report-transactions-observer-mode-flutter).
+
+:::warning
+
+Не забудьте записать транзакцию с помощью метода `reportTransaction`. Если пропустить этот шаг, Adapty не распознает транзакцию, не предоставит уровни доступа, не включит её в аналитику и не отправит в интеграции. Этот шаг обязателен!
+
+:::
+
+```diff showLineNumbers
+ try {
+-     await Adapty().setVariationId("YOUR_TRANSACTION_ID", "PAYWALL_VARIATION_ID");
+
++     // every time when calling transaction.finish()
++     await Adapty().reportTransaction(
++         "YOUR_TRANSACTION_ID", 
++         variationId: "PAYWALL_VARIATION_ID", // optional
++     );
+  } on AdaptyError catch (adaptyError) {
+      // handle the error
+  } catch (e) {
+      // handle the error
+  }
+```

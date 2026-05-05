@@ -1,0 +1,138 @@
+---
+title: "Использование локализаций и кодов языков в Unity SDK"
+description: "Узнайте, как локализовать пейволы в вашем Unity-приложении с помощью Adapty SDK."
+metadataTitle: "Локализация пейволов | Unity SDK | Документация Adapty"
+---
+
+## Почему это важно \{#why-this-is-important\}
+
+Коды языков (locale codes) задействованы в нескольких сценариях — например, когда вам нужно получить правильный пейвол для текущей локализации приложения.
+
+Коды языков могут быть сложными и различаться от платформы к платформе, поэтому мы используем внутренний стандарт для всех поддерживаемых платформ. Однако из-за этой сложности важно понимать, что именно вы отправляете на наш сервер для получения нужной локализации и что происходит дальше — чтобы всегда получать ожидаемый результат.
+
+## Стандарт кодов языков в Adapty \{#locale-code-standard-at-adapty\}
+
+Adapty использует немного модифицированный стандарт [BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): каждый код состоит из подтегов в нижнем регистре, разделённых дефисами. Например: `en` (английский), `pt-br` (португальский (Бразилия)), `zh` (упрощённый китайский), `zh-hant` (традиционный китайский).
+
+## Сопоставление кодов языков \{#locale-code-matching\}
+
+Когда Adapty получает запрос от клиентского SDK с кодом языка и начинает поиск соответствующей локализации пейвола, происходит следующее:
+
+1. Входящая строка с кодом языка приводится к нижнему регистру, а все символы подчёркивания (`_`) заменяются дефисами (`-`).
+2. Выполняется поиск локализации с полным совпадением кода языка.
+3. Если совпадение не найдено, берётся подстрока до первого дефиса (`pt` для `pt-br`) и снова выполняется поиск.
+4. Если совпадение снова не найдено, возвращается локализация по умолчанию — `en`.
+
+Таким образом, устройство на iOS, отправившее `'pt_BR'`, устройство на Android, отправившее `pt-BR`, и другое устройство, отправившее `pt-br`, получат одинаковый результат.
+
+## Реализация локализаций: рекомендуемый способ \{#implementing-localizations-recommended-way\}
+
+Если вы занимаетесь локализациями, скорее всего, вы уже работаете с файлами локализованных строк в своём проекте. В этом случае мы рекомендуем добавить в каждый такой файл пару ключ-значение с нужным кодом языка для Adapty. Затем извлекайте значение этого ключа при обращении к нашему SDK вот так:
+
+```csharp showLineNumbers
+// 1. Modify your localization files (e.g., using Unity's Localization package)
+
+/*
+en.json
+*/
+{
+  "adapty_paywalls_locale": "en"
+}
+
+/*
+es.json
+*/
+{
+  "adapty_paywalls_locale": "es"
+}
+
+/*
+pt-BR.json
+*/
+{
+  "adapty_paywalls_locale": "pt-br"
+}
+
+// 2. Extract and use the locale code
+using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
+using AdaptySDK;
+
+public class PaywallManager : MonoBehaviour
+{
+    public async void FetchPaywall()
+    {
+        // Get the current locale from Unity's Localization system
+        var locale = LocalizationSettings.SelectedLocale;
+        var localeCode = GetAdaptyLocaleCode(locale);
+        
+        // Pass locale code to Adapty.GetPaywall or Adapty.GetPaywallForDefaultAudience method
+        Adapty.GetPaywall("placement_id", localeCode, (paywall, error) => {
+            if (error != null) {
+                // handle the error
+                return;
+            }
+            // Use the paywall
+        });
+    }
+    
+    private string GetAdaptyLocaleCode(Locale locale)
+    {
+        // Convert Unity locale to Adapty format
+        var localeIdentifier = locale.Identifier.Code;
+        return localeIdentifier.ToLower().Replace('_', '-');
+    }
+}
+```
+
+Такой подход даёт вам полный контроль над тем, какая локализация будет загружена для каждого пользователя вашего приложения.
+
+## Реализация локализаций: альтернативный способ \{#implementing-localizations-the-other-way\}
+
+Похожего (но не идентичного) результата можно достичь без явного задания кодов языков для каждой локализации. Для этого нужно извлекать код языка из других объектов, которые предоставляет ваша платформа, например вот так:
+
+```csharp showLineNumbers
+using UnityEngine;
+using System.Globalization;
+using AdaptySDK;
+
+public class PaywallManager : MonoBehaviour
+{
+    public void FetchPaywall()
+    {
+        var localeCode = GetSystemLocaleCode();
+        
+        // Pass locale code to Adapty.GetPaywall or Adapty.GetPaywallForDefaultAudience method
+        Adapty.GetPaywall("placement_id", localeCode, (paywall, error) => {
+            if (error != null) {
+                // handle the error
+                return;
+            }
+            // Use the paywall
+        });
+    }
+    
+    private string GetSystemLocaleCode()
+    {
+        // Get the system's current culture
+        var culture = CultureInfo.CurrentCulture;
+        var languageCode = culture.TwoLetterISOLanguageName;
+        var regionCode = culture.Name.Contains('-') ? culture.Name.Split('-')[1] : null;
+        
+        if (!string.IsNullOrEmpty(regionCode))
+        {
+            return $"{languageCode}-{regionCode.ToLower()}";
+        }
+        
+        return languageCode;
+    }
+}
+```
+
+Мы не рекомендуем этот подход по нескольким причинам:
+
+1. На iOS предпочтительные языки и текущая локаль — это не одно и то же. Чтобы локализация определялась корректно, придётся либо положиться на логику Apple (которая работает автоматически при использовании рекомендованного подхода с файлами локализованных строк), либо воспроизвести её самостоятельно.
+2. Сложно предсказать, что именно получит сервер Adapty. Например, на iOS устройство может вернуть локаль вида `ar_OM@numbers='latn'`, которая будет отправлена на сервер. В ответ вы получите не локализацию `ar-om`, которую ожидали, а `ar` — что, скорее всего, не то, что нужно.
+
+Если вы всё же решите использовать этот подход — убедитесь, что учли все актуальные сценарии использования.
