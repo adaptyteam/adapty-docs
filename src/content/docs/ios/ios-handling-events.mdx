@@ -3,7 +3,7 @@ title: "Handle paywall & flow events - iOS"
 description: "Handle paywall and onboarding flow events in your iOS app."
 metadataTitle: "Handle Flow Events - iOS | Adapty Docs"
 toc_max_heading_level: 4
-keywords: ['event', 'AdaptyPaywallControllerDelegate', 'didSelectProduct', 'didStartPurchase', 'shouldContinueWebPaymentNavigation', 'didFinishPurchase', 'didFailPurchase', 'didFailWebPaymentNavigation', 'didFinishRestoreWith', 'didFailRestoreWith', 'didFailLoadingProductsWith',  'didFailRenderingWith']
+keywords: ['event', 'AdaptyFlowControllerDelegate', 'AdaptyPaywallControllerDelegate', 'flowController', 'didSelectProduct', 'didStartPurchase', 'didFinishPurchase', 'didFailPurchase', 'didFinishRestoreWith', 'didFailRestoreWith', 'didFailLoadingProductsWith', 'didFailRenderingWith', 'didReceiveAnalyticEvent', 'didFinishWebPaymentNavigation']
 ---
 
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
@@ -47,6 +47,10 @@ var body: some View {
             didFailRestore: { error in /* handle the error */ },
             didFailRendering: { error in
                 flowPresented = false
+            },
+            didFailLoadingProducts: { error in
+                // Return `true` to retry loading
+                return false
             }
         )
 }
@@ -72,6 +76,7 @@ You can register only the closure parameters you need and omit those you do not 
 | **didFinishPurchase**  | optional | Invoked when `Adapty.makePurchase()` completes successfully.                                                                                                                                                                                        |
 | **didFinishWebPaymentNavigation** | optional | Invoked when web payment navigation finishes.                                                                                                                                                                                          |
 | **didStartRestore**    | optional | Invoked when the user starts the restore process.                                                                                                                                                                                                   |
+| **didFailLoadingProducts** | optional | Invoked when errors occur during product loading. Return `true` to retry loading.                                                                                                                                                              |
 | **didPartiallyLoadProducts** | optional | Invoked when products are partially loaded.                                                                                                                                                                                               |
 | **showAlertItem**      | optional | A binding that manages the display of alert items above the paywall or flow.                                                                                                                                                                        |
 | **showAlertBuilder**   | optional | A function for rendering the alert view.                                                                                                                                                                                                            |
@@ -79,6 +84,134 @@ You can register only the closure parameters you need and omit those you do not 
 ## Handling events in UIKit
 
 For UIKit apps, events are handled through the `AdaptyFlowControllerDelegate` protocol. See [Display flows & paywalls - iOS](ios-present-paywalls) for how to set up `AdaptyFlowController` with `AdaptyFlowControllerDelegate`.
+
+The protocol declares 14 methods. Three of them have no default implementation and must be implemented when conforming: `didFailPurchase`, `didFinishRestoreWith`, and `didFailRestoreWith`. The rest provide default no-op implementations and can be overridden when you want custom behavior. Methods are grouped below by purpose.
+
+### Lifecycle
+
+```swift showLineNumbers title="Swift"
+func flowControllerDidAppear(_ controller: AdaptyFlowController) { }
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) { }
+```
+
+These fire when the paywall or flow view is presented and dismissed.
+
+### User actions
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didPerform action: AdaptyUI.Action
+) { }
+```
+
+`AdaptyUI.Action` cases:
+- `.close` — default behavior dismisses the controller. Override to keep the controller on screen or perform extra cleanup.
+- `.openURL(url:)` — default behavior opens the URL with `UIApplication.shared.open(...)`.
+- `.custom(id:)` — fired for buttons with a custom action ID set in the builder.
+
+### Product selection
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didSelectProduct product: AdaptyPaywallProduct
+) { }
+```
+
+Invoked when a product is selected for purchase by the user or by the system. The product carries full offer information (eligibility is determined automatically in v4 — there is no separate `AdaptyPaywallProductWithoutDeterminingOffer` type).
+
+### Purchase events
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didStartPurchase product: AdaptyPaywallProduct
+) { }
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishPurchase product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    // Default: dismiss the controller unless the purchase was cancelled.
+}
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFailPurchase product: AdaptyPaywallProduct,
+    error: AdaptyError
+) { }
+```
+
+`didFailPurchase` is the only purchase event without a default implementation. `didFinishPurchase` defaults to dismissing the controller on success; override only if you need custom post-purchase logic.
+
+### Restore events
+
+```swift showLineNumbers title="Swift"
+func flowControllerDidStartRestore(_ controller: AdaptyFlowController) { }
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishRestoreWith profile: AdaptyProfile
+) { }
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFailRestoreWith error: AdaptyError
+) { }
+```
+
+`didFinishRestoreWith` and `didFailRestoreWith` have no default implementations. Check whether the returned `AdaptyProfile` contains your desired access level before dismissing the controller.
+
+### Rendering and product-loading errors
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFailRenderingWith error: AdaptyUIError
+) { }
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFailLoadingProductsWith error: AdaptyError
+) -> Bool {
+    // Return `true` to retry product loading; default returns `false`.
+    return false
+}
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didPartiallyLoadProducts failedIds: [String]
+) { }
+```
+
+If `didFailRenderingWith` fires, [contact Adapty Support](mailto:support@adapty.io). For loading errors, return `true` from `didFailLoadingProductsWith` to retry — useful for transient network failures.
+
+### Web payment navigation
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishWebPaymentNavigation product: AdaptyPaywallProduct?,
+    error: AdaptyError?
+) { }
+```
+
+Invoked after a web payment navigation finishes, whether successful or failed.
+
+### Analytic events
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) { }
+```
+
+Forward custom analytic events fired by the flow's script (e.g. `paywall_opened`, `cta_tapped`) to your analytics provider (Amplitude, Mixpanel, etc.). Only events explicitly marked as customer-facing in the flow configuration are delivered here.
 
 </SDKv4>
 

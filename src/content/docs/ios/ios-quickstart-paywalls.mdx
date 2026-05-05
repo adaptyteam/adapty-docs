@@ -67,7 +67,7 @@ import Adapty
 import AdaptyUI
 
 func loadFlow() async {
-    let flow = try await Adapty.getFlow("YOUR_PLACEMENT_ID")
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
 
     guard flow.hasViewConfiguration else {
         print("Flow doesn't have a view configuration")
@@ -128,7 +128,7 @@ func presentFlow(with config: AdaptyUI.FlowConfiguration) {
 }
 ```
 
-Implement `AdaptyFlowControllerDelegate` to handle events. At minimum, implement the required error handlers:
+Implement `AdaptyFlowControllerDelegate` to handle events. At minimum, implement the required error handlers (the three methods that have no default implementation):
 
 ```swift
 extension YourViewController: AdaptyFlowControllerDelegate {
@@ -147,12 +147,6 @@ extension YourViewController: AdaptyFlowControllerDelegate {
                         didFailRestoreWith error: AdaptyError) {
         print("Restore failed: \(error)")
     }
-
-    func flowController(_ controller: AdaptyFlowController,
-                        didFailRenderingWith error: AdaptyUIError) {
-        controller.dismiss(animated: true)
-        print("Rendering failed: \(error)")
-    }
 }
 ```
 </TabItem>
@@ -168,7 +162,7 @@ When users click buttons, the iOS SDK automatically handles purchases, restorati
 
 However, other buttons have custom or pre-defined IDs and require handling actions in your code. Or, you may want to override their default behavior.
 
-For example, here is the default behavior for the close button. You don't need to add it in the code, but here, you can see how it is done if needed.
+For example, here is how to handle the close button. In UIKit, the SDK dismisses the controller automatically when `.close` fires — override only if you want custom behavior. In SwiftUI, you must set your `isPresented` binding to `false` yourself.
 
 :::tip
 Read our guides on how to handle button [actions](handle-paywall-actions) and [events](ios-handling-events).
@@ -179,17 +173,22 @@ Read our guides on how to handle button [actions](handle-paywall-actions) and [e
 <TabItem value="swiftui" label="SwiftUI" default>
 
 ```swift
-import SwiftUI
-import AdaptyUI
-
-didPerformAction: { action in
-    switch action {
-        case .close:
-            flowPresented = false // default behavior
-        default:
-            break
-    }
-}
+.flow(
+    isPresented: $flowPresented,
+    flowConfiguration: flowConfiguration,
+    didPerformAction: { action in
+        switch action {
+            case .close:
+                flowPresented = false // dismiss the flow when the user taps close
+            default:
+                break
+        }
+    },
+    didFailPurchase: { product, error in /* handle the error */ },
+    didFinishRestore: { profile in /* check access level and dismiss */ },
+    didFailRestore: { error in /* handle the error */ },
+    didFailRendering: { error in flowPresented = false }
+)
 ```
 </TabItem>
 
@@ -201,7 +200,7 @@ extension YourViewController: AdaptyFlowControllerDelegate {
                         didPerform action: AdaptyUI.Action) {
         switch action {
             case .close:
-                controller.dismiss(animated: true) // default behavior
+                controller.dismiss(animated: true) // default behavior — override only if needed
             default:
                 break
         }
@@ -288,7 +287,7 @@ struct ContentView: View {
 
     private func loadFlow() async {
         do {
-            let flow = try await Adapty.getFlow("YOUR_PLACEMENT_ID")
+            let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
             guard flow.hasViewConfiguration else {
                 print("Flow doesn't have a view configuration")
                 return
@@ -335,7 +334,7 @@ class ViewController: UIViewController {
     }
 
     private func loadFlow() async throws -> AdaptyUI.FlowConfiguration? {
-        let flow = try await Adapty.getFlow("YOUR_PLACEMENT_ID")
+        let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
 
         guard flow.hasViewConfiguration else {
             print("Flow doesn't have a view configuration")

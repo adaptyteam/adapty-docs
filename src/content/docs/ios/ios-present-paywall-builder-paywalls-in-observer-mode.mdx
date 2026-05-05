@@ -15,8 +15,151 @@ If you've customized a paywall using the Paywall Builder, you don't need to worr
 :::warning
 This section refers to [Observer mode](observer-vs-full-mode) only. If you do not work in the Observer mode, refer to the [iOS - Present Paywall Builder paywalls](ios-present-paywalls).
 :::
+
+<SDKv4>
+
+<details>
+   <summary>Before you start presenting flows (Click to Expand)</summary>
+
+   1. Set up initial integration of Adapty [with the App Store](initial_ios).
+   2. Install and configure Adapty SDK. Make sure to set the `observerMode` parameter to `true`. Refer to the [iOS SDK installation guide](sdk-installation-ios#activate-adapty-module-of-adapty-sdk).
+   3. [Create products](create-product) in the Adapty Dashboard.
+   4. [Configure paywalls or flows in the builders](create-paywall) and assign products to them.
+   5. [Create placements and assign your paywalls or flows to them](create-placement).
+   6. [Fetch flows and their configuration](get-pb-paywalls) in your mobile app code.
+
+</details>
+
+<p> </p>
+
 <Tabs groupId="current-os" queryString>
-<TabItem value="sdk3" label="New Paywall Builder (SDK 3.0+)" default>
+
+<TabItem value="swift" label="Swift" default>
+
+1. Implement the `AdaptyObserverModeResolver` object. The protocol is the same as in SDK v3 — observer mode itself does not change between paywall and flow rendering:
+
+   ```swift showLineNumbers title="Swift"
+   func observerMode(didInitiatePurchase product: AdaptyPaywallProduct,
+                     onStartPurchase: @escaping () -> Void,
+                     onFinishPurchase: @escaping () -> Void) {
+          // use the product object to handle the purchase
+          // call onStartPurchase / onFinishPurchase to notify AdaptyUI about the purchase progress
+   }
+
+   func observerModeDidInitiateRestorePurchases(onStartRestore: @escaping () -> Void,
+                                                onFinishRestore: @escaping () -> Void) {
+          // call onStartRestore / onFinishRestore to notify AdaptyUI about the restore progress
+   }
+   ```
+
+2. Create a flow configuration object, passing your resolver as the `observerModeResolver:` parameter:
+
+   ```swift showLineNumbers title="Swift"
+   do {
+       let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+           forFlow: flow,
+           observerModeResolver: <AdaptyObserverModeResolver>
+       )
+   } catch {
+       // handle the error
+   }
+   ```
+
+   Request parameters:
+
+   | Parameter                | Presence | Description                                                                                                              |
+   | :----------------------- | :------- | :----------------------------------------------------------------------------------------------------------------------- |
+   | **forFlow**              | required | An `AdaptyFlow` object obtained via `Adapty.getFlow(placementId:)`. See [Get paywalls and flows](get-pb-paywalls). |
+   | **observerModeResolver** | required | The `AdaptyObserverModeResolver` you implemented above.                                                                  |
+
+3. Initialize the flow controller using `AdaptyUI.flowController(with:delegate:)`:
+
+   ```swift showLineNumbers title="Swift"
+   import Adapty
+   import AdaptyUI
+
+   let visualFlow = try AdaptyUI.flowController(
+       with: flowConfiguration,
+       delegate: <AdaptyFlowControllerDelegate>
+   )
+   ```
+
+   Request parameters:
+
+   | Parameter                  | Presence | Description                                                                                                                                      |
+   | :------------------------- | :------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
+   | **flowConfiguration**      | required | An `AdaptyUI.FlowConfiguration` object containing visual details of the flow. See [Get paywalls and flows](get-pb-paywalls).                     |
+   | **delegate**               | required | An `AdaptyFlowControllerDelegate` to listen to flow events. See [Handle paywall & flow events](ios-handling-events).                             |
+
+   Returns:
+
+   | Object               | Description                                            |
+   | :------------------- | :----------------------------------------------------- |
+   | AdaptyFlowController | An object representing the requested flow screen.      |
+
+4. Present the controller:
+
+   ```swift showLineNumbers title="Swift"
+   present(visualFlow, animated: true)
+   ```
+
+:::warning
+Don't forget to [associate paywalls to purchase transactions](report-transactions-observer-mode). Otherwise, Adapty will not determine the source paywall of the purchase.
+:::
+
+</TabItem>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+
+In SwiftUI, fetch the flow configuration with the resolver and pass it to the `.flow` modifier:
+
+```swift showLineNumbers title="SwiftUI"
+@State var flowPresented = false
+@State var flowConfiguration: AdaptyUI.FlowConfiguration?
+
+var body: some View {
+    Text("Hello, AdaptyUI!")
+        .flow(
+            isPresented: $flowPresented,
+            flowConfiguration: flowConfiguration,
+            didPerformAction: { action in
+                switch action {
+                    case .close:
+                        flowPresented = false
+                    default:
+                        break
+                }
+            },
+            didFailPurchase: { product, error in /* handle the error */ },
+            didFinishRestore: { profile in /* check access level and dismiss */ },
+            didFailRestore: { error in /* handle the error */ },
+            didFailRendering: { error in flowPresented = false }
+        )
+        .task {
+            flowConfiguration = try? await AdaptyUI.getFlowConfiguration(
+                forFlow: flow,
+                observerModeResolver: <AdaptyObserverModeResolver>
+            )
+        }
+}
+```
+
+The `observerModeResolver:` parameter on `getFlowConfiguration` is what makes the rendered flow respect your custom purchase logic — the modifier itself uses the same callbacks as full mode.
+
+:::warning
+Don't forget to [associate paywalls to purchase transactions](report-transactions-observer-mode). Otherwise, Adapty will not determine the source paywall of the purchase.
+:::
+
+</TabItem>
+
+</Tabs>
+
+</SDKv4>
+
+<SDKv3>
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="sdk3" label="Paywall Builder (SDK 3.x)" default>
 <details>
    <summary>Before you start presenting paywalls (Click to Expand)</summary>
 
@@ -152,7 +295,7 @@ Request parameters:
 | Parameter                | Presence | Description                                                                                                                                                                                                                                                                                                            |
 | :----------------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Paywall Configuration**              | required | An `AdaptyUI.PaywallConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                                                                                                                                                                                                                             |
-| **Products**             | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                   |
+| **Products**             | optional | Provide an array of `AdaptyPaywallProduct` objects to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                   |
 | **TagResolver**          | optional | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in Paywall Builder](custom-tags-in-paywall-builder)  topic for more details. |
 | **ObserverModeResolver** | optional | The `AdaptyObserverModeResolver` object you've implemented in the previous step                                                                                                                                                                                                                                        |
 
@@ -230,7 +373,7 @@ Request parameters:
 | Parameter                | Presence | Description                                                  |
 | :----------------------- | :------- | :----------------------------------------------------------- |
 | **Paywall**              | required | An `AdaptyPaywall` object to obtain a controller for the desired paywall. |
-| **Products**             | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
+| **Products**             | optional | Provide an array of `AdaptyPaywallProduct` objects to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products. |
 | **ViewConfiguration**    | required | An `AdaptyUI.LocalizedViewConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getViewConfiguration(paywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details. |
 | **Delegate**             | required | An `AdaptyPaywallControllerDelegate` to listen to paywall events. Refer to [Handling paywall events](ios-handling-events) topic for more details. |
 | **ObserverModeDelegate** | required | The  `AdaptyObserverModeDelegate` object you've implemented in the previous step |
@@ -289,7 +432,7 @@ Request parameters:
 | Parameter         | Presence | Description                                                                                                                                                                                                                                                                                                            |
 | :---------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Paywall**       | required | An `AdaptyPaywall` object to obtain a controller for the desired paywall.                                                                                                                                                                                                                                              |
-| **Product**       | optional | Provide an array of `AdaptyPaywallProducts` to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                    |
+| **Product**       | optional | Provide an array of `AdaptyPaywallProduct` objects to optimize the display timing of products on the screen. If `nil` is passed, AdaptyUI will automatically fetch the necessary products.                                                                                                                                    |
 | **Configuration** | required | An `AdaptyUI.LocalizedViewConfiguration` object containing visual details of the paywall. Use the `AdaptyUI.getViewConfiguration(paywall:locale:)` method.  Refer to [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) topic for more details.                                             |
 | **TagResolver**   | optional | Define a dictionary of custom tags and their resolved values. Custom tags serve as placeholders in the paywall content, dynamically replaced with specific strings for personalized content within the paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder)  topic for more details. |
 
@@ -312,4 +455,6 @@ Don't forget to [Associate paywalls to purchase transactions](report-transaction
 
 </TabItem>
 </Tabs>
+
+</SDKv3>
 

@@ -1,10 +1,14 @@
 ---
 title: "Migrate Adapty iOS SDK to v. 4.0"
-description: "Migrate to Adapty iOS SDK v4.0 by replacing paywall builder methods with flow methods, compatible with both Paywall Builder and Flow Builder."
-metadataTitle: "Migrating to Adapty iOS SDK v4.0 | Adapty Docs"
+description: "Migrate to Adapty iOS SDK v4.0 (beta) by replacing paywall builder methods with flow methods, compatible with both Paywall Builder and Flow Builder."
+metadataTitle: "Migrating to Adapty iOS SDK v4.0 (beta) | Adapty Docs"
 ---
 
-Adapty iOS SDK 4.0 replaces all paywall builder methods with flow methods. The new flow methods work with both the Paywall Builder and the new Flow Builder — no paywall builder setup changes are required on the Adapty Dashboard side. The core change is a rename: `AdaptyPaywall` becomes `AdaptyFlow`, and all related types and methods follow the same pattern.
+Adapty iOS SDK 4.0 (beta) introduces a new flow methods alongside the existing paywall methods. The new flow methods work with both the Paywall Builder and the new Flow Builder — no setup changes are required on the Adapty Dashboard side. There are three things to know about the type changes:
+
+- **`AdaptyFlow` is a new type.** It is a placement that wraps one or more paywalls — the value returned by the new `Adapty.getFlow(placementId:)` method.
+- **`AdaptyPaywall` has been renamed to `AdaptyFlowPaywall`.** Code that previously held a single paywall now holds an `AdaptyFlowPaywall` (the type the SDK returns inside an `AdaptyFlow.paywalls` collection or via flow-builder APIs).
+- **`AdaptyPaywallProduct` is unchanged.** Methods that returned `[AdaptyPaywallProduct]` still do — there is no `AdaptyFlowProduct`.
 
 1. Replace `Adapty.getPaywall()` with `Adapty.getFlow()`.
 2. Replace `AdaptyUI.getPaywallConfiguration(forPaywall:)` with `AdaptyUI.getFlowConfiguration(forFlow:)`.
@@ -54,7 +58,7 @@ Replace `AdaptyPaywallController` with `AdaptyFlowController` and update the fac
 
 ## Replace AdaptyPaywallControllerDelegate with AdaptyFlowControllerDelegate (UIKit)
 
-Rename the delegate protocol and update all method signatures. Note that `didSelectProduct` now receives `AdaptyPaywallProduct` instead of `AdaptyPaywallProductWithoutDeterminingOffer` — products always include offer information in SDK 4.0.
+Rename the delegate protocol and update all method signatures. Note that `didSelectProduct` now receives `AdaptyPaywallProduct` instead of `AdaptyPaywallProductWithoutDeterminingOffer` — products always include offer information in SDK 4.0 (beta).
 
 ```diff showLineNumbers
 - class YourClass: AdaptyPaywallControllerDelegate {
@@ -129,6 +133,13 @@ Rename the delegate protocol and update all method signatures. Note that `didSel
 +     func flowController(_ controller: AdaptyFlowController,
 +                         didFinishWebPaymentNavigation product: AdaptyPaywallProduct?,
 +                         error: AdaptyError?) { }
++
++     // New in v4: forward custom analytic events fired by the flow's script
++     // (e.g. to Amplitude or Mixpanel). The method has a default no-op
++     // implementation, so override only when you need it.
++     func flowController(_ controller: AdaptyFlowController,
++                         didReceiveAnalyticEvent name: String,
++                         params: [String: any Sendable]) { }
  }
 ```
 
@@ -172,13 +183,22 @@ If you use `AdaptyPaywallView` directly in your SwiftUI code, rename it to `Adap
  )
 ```
 
-## Replace getPaywallProducts(paywall:) with getPaywallProducts(flow:)
+## Update getPaywallProducts call sites
 
-If you call `getPaywallProducts` directly, update the parameter label from `paywall:` to `flow:` and pass the `AdaptyFlow` object:
+In v4, `getPaywallProducts` has two overloads — a new `flow:` overload, and the existing `paywall:` overload (which now takes `AdaptyFlowPaywall` instead of `AdaptyPaywall`). Pick the form that matches what your code holds:
+
+If your code holds an `AdaptyFlow` (the new placement type returned by `Adapty.getFlow`):
 
 ```diff showLineNumbers
 - let products = try await Adapty.getPaywallProducts(paywall: paywall)
 + let products = try await Adapty.getPaywallProducts(flow: flow)
+```
+
+If your code still works with a single paywall (now `AdaptyFlowPaywall`), keep the `paywall:` label — only the type changes:
+
+```diff showLineNumbers
+- let products = try await Adapty.getPaywallProducts(paywall: paywall) // paywall: AdaptyPaywall
++ let products = try await Adapty.getPaywallProducts(paywall: paywall) // paywall: AdaptyFlowPaywall
 ```
 
 The `getPaywallProductsWithoutDeterminingOffer` method has been removed. All products now include offer information directly, so a separate eligibility-checking pass is no longer needed.
