@@ -1,28 +1,40 @@
 ---
 title: "Migrate Adapty iOS SDK to v. 4.0"
-description: "Migrate to Adapty iOS SDK v4.0 (beta) by replacing paywall builder methods with flow methods, compatible with both Paywall Builder and Flow Builder."
+description: "Migrate to Adapty iOS SDK v4.0 (beta) by replacing paywall APIs with flow APIs, compatible with both Paywall Builder and Flow Builder."
 metadataTitle: "Migrating to Adapty iOS SDK v4.0 (beta) | Adapty Docs"
 ---
 
-Adapty iOS SDK 4.0 (beta) introduces new flow methods to replace the v3 paywall methods. The new flow methods work with both the Paywall Builder and the new Flow Builder — no setup changes are required on the Adapty Dashboard side. There are three things to know about the type changes:
+Adapty iOS SDK 4.0 (beta) introduces flows and renames the paywall APIs accordingly. The new APIs work with both the Paywall Builder and the new Flow Builder — no setup changes are required on the Adapty Dashboard side.
 
-- **`AdaptyFlow` is a new type.** It is a placement that wraps one or more paywalls — the value returned by the new `Adapty.getFlow(placementId:)` method.
-- **`AdaptyPaywall` has been renamed to `AdaptyFlowPaywall`.** Code that previously held a single paywall now holds an `AdaptyFlowPaywall` (the type the SDK returns inside an `AdaptyFlow.paywalls` collection or via flow-builder APIs).
+There are three things to know about the type changes:
+
+- **`AdaptyFlow` is a new type.** It is a placement that wraps one or more paywalls — the value returned by the new `Adapty.getFlow(placementId:)` method. Code that previously held an `AdaptyPaywall` now holds an `AdaptyFlow`.
+- **`AdaptyPaywall` has been renamed to `AdaptyFlowPaywall`.** It exists as an item inside `AdaptyFlow.paywalls`. Typical v3 migration paths don't interact with it directly — you'll encounter it only if you build flow-aware UI by walking `flow.paywalls`.
 - **`AdaptyPaywallProduct` is unchanged.** Methods that returned `[AdaptyPaywallProduct]` still do — there is no `AdaptyFlowProduct`.
 
-1. Replace `Adapty.getPaywall()` with `Adapty.getFlow()`.
-2. Replace `AdaptyUI.getPaywallConfiguration(forPaywall:)` with `AdaptyUI.getFlowConfiguration(forFlow:)`.
-3. Replace `AdaptyPaywallController` with `AdaptyFlowController` (UIKit).
-4. Replace `AdaptyPaywallControllerDelegate` with `AdaptyFlowControllerDelegate` (UIKit).
-5. Replace the SwiftUI `.paywall()` modifier with `.flow()`.
-6. Replace `AdaptyPaywallView` with `AdaptyFlowView` (SwiftUI).
-7. Replace `getPaywallProducts(paywall:)` with `getPaywallProducts(flow:)`.
-8. Update `AdaptyUICustomVideoAsset.player` to use `AVPlayer` instead of `AVQueuePlayer`.
-9. Update `AdaptyUIResolvedFontAsset` usage if you access font properties directly.
+## Quick reference
 
-## Replace getPaywall with getFlow
+| v3 | v4 |
+|---|---|
+| `Adapty.getPaywall(placementId:locale:)` | `Adapty.getFlow(placementId:)` |
+| `AdaptyUI.getPaywallConfiguration(forPaywall:)` | `AdaptyUI.getFlowConfiguration(forFlow:locale:)` |
+| `Adapty.getPaywallProducts(paywall:)` | `Adapty.getPaywallProducts(flow:)` |
+| `AdaptyPaywallController` | `AdaptyFlowController` |
+| `AdaptyPaywallControllerDelegate` | `AdaptyFlowControllerDelegate` |
+| `AdaptyUI.paywallController(with:delegate:)` | `AdaptyUI.flowController(with:delegate:)` |
+| `.paywall()` (SwiftUI modifier) | `.flow()` |
+| `AdaptyPaywallView` | `AdaptyFlowView` |
 
-Replace `Adapty.getPaywall()` with `Adapty.getFlow()`. The returned type changes from `AdaptyPaywall` to `AdaptyFlow`. The `locale` parameter has moved from the fetch call to `AdaptyUI.getFlowConfiguration(forFlow:locale:)` — see the next section.
+## Removed APIs
+
+- **`Adapty.getPaywallProductsWithoutDeterminingOffer(paywall:)`** — removed. All products now include offer information, so the separate eligibility pass is no longer needed.
+- **`AdaptyPaywallProductWithoutDeterminingOffer`** — removed. Callbacks that previously passed this type (such as `didSelectProduct`) now pass `AdaptyPaywallProduct`.
+
+## Fetching paywalls
+
+### Adapty.getPaywall → Adapty.getFlow
+
+The returned type changes from `AdaptyPaywall` to `AdaptyFlow`. The `locale` parameter has moved out of the fetch call — see the next section.
 
 ```diff showLineNumbers
 - let paywall = try await Adapty.getPaywall(
@@ -32,16 +44,16 @@ Replace `Adapty.getPaywall()` with `Adapty.getFlow()`. The returned type changes
 + let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
 ```
 
-## Replace getPaywallConfiguration with getFlowConfiguration
+### AdaptyUI.getPaywallConfiguration → AdaptyUI.getFlowConfiguration
 
-Replace `AdaptyUI.getPaywallConfiguration(forPaywall:)` with `AdaptyUI.getFlowConfiguration(forFlow:)`. The method now takes an `AdaptyFlow` object instead of `AdaptyPaywall`. Locale handling now lives here — pass it via the `locale:` parameter:
+The method now takes an `AdaptyFlow` and accepts the `locale:` parameter:
 
 ```diff showLineNumbers
 - let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
 + let flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow)
 ```
 
-If you previously passed `locale:` to `getPaywall`, pass it to `getFlowConfiguration` instead:
+If you previously passed `locale:` to `getPaywall`, pass it here instead:
 
 ```diff showLineNumbers
 - let paywall = try await Adapty.getPaywall(placementId: "main", locale: "fr")
@@ -50,9 +62,20 @@ If you previously passed `locale:` to `getPaywall`, pass it to `getFlowConfigura
 + let flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow, locale: "fr")
 ```
 
-## Replace AdaptyPaywallController with AdaptyFlowController (UIKit)
+### getPaywallProducts(paywall:) → getPaywallProducts(flow:)
 
-Replace `AdaptyPaywallController` with `AdaptyFlowController` and update the factory method name:
+`getPaywallProducts` now takes an `AdaptyFlow` returned by `Adapty.getFlow`:
+
+```diff showLineNumbers
+- let products = try await Adapty.getPaywallProducts(paywall: paywall)
++ let products = try await Adapty.getPaywallProducts(flow: flow)
+```
+
+## UIKit
+
+### AdaptyPaywallController → AdaptyFlowController
+
+Rename the controller type and the factory method:
 
 ```diff showLineNumbers
 - let controller = try AdaptyUI.paywallController(
@@ -65,9 +88,9 @@ Replace `AdaptyPaywallController` with `AdaptyFlowController` and update the fac
 + )
 ```
 
-## Replace AdaptyPaywallControllerDelegate with AdaptyFlowControllerDelegate (UIKit)
+### AdaptyPaywallControllerDelegate → AdaptyFlowControllerDelegate
 
-Rename the delegate protocol and update all method signatures. Note that `didSelectProduct` now receives `AdaptyPaywallProduct` instead of `AdaptyPaywallProductWithoutDeterminingOffer` — products always include offer information in SDK 4.0 (beta).
+Rename the protocol and update every method signature. Note that `didSelectProduct` now receives `AdaptyPaywallProduct` instead of the removed `AdaptyPaywallProductWithoutDeterminingOffer`.
 
 ```diff showLineNumbers
 - class YourClass: AdaptyPaywallControllerDelegate {
@@ -145,9 +168,11 @@ Rename the delegate protocol and update all method signatures. Note that `didSel
  }
 ```
 
-## Replace SwiftUI .paywall() with .flow()
+## SwiftUI
 
-Rename the modifier from `.paywall()` to `.flow()` and update the configuration parameter name from `paywallConfiguration` to `flowConfiguration`:
+### .paywall() modifier → .flow()
+
+Rename the modifier and update the configuration parameter name:
 
 ```diff showLineNumbers
  @State var flowPresented = false // rename freely — the variable name is your choice
@@ -167,9 +192,9 @@ Rename the modifier from `.paywall()` to `.flow()` and update the configuration 
  }
 ```
 
-## Replace AdaptyPaywallView with AdaptyFlowView (SwiftUI)
+### AdaptyPaywallView → AdaptyFlowView
 
-If you use `AdaptyPaywallView` directly in your SwiftUI code, rename it to `AdaptyFlowView`, update the configuration parameter, and update any `didSelectProduct` closure — it now receives `AdaptyPaywallProduct` instead of `AdaptyPaywallProductWithoutDeterminingOffer`:
+Rename the view, update the configuration parameter, and update any `didSelectProduct` closure — it now receives `AdaptyPaywallProduct` instead of the removed `AdaptyPaywallProductWithoutDeterminingOffer`:
 
 ```diff showLineNumbers
 - AdaptyPaywallView(
@@ -185,36 +210,18 @@ If you use `AdaptyPaywallView` directly in your SwiftUI code, rename it to `Adap
  )
 ```
 
-## Update getPaywallProducts call sites
+## AdaptyUI custom assets
 
-In v4, `getPaywallProducts` has two overloads — a new `flow:` overload, and the existing `paywall:` overload (which now takes `AdaptyFlowPaywall` instead of `AdaptyPaywall`). Pick the form that matches what your code holds:
+### AdaptyUICustomVideoAsset.player
 
-If your code holds an `AdaptyFlow` (the new placement type returned by `Adapty.getFlow`):
-
-```diff showLineNumbers
-- let products = try await Adapty.getPaywallProducts(paywall: paywall)
-+ let products = try await Adapty.getPaywallProducts(flow: flow)
-```
-
-If your code still works with a single paywall (now `AdaptyFlowPaywall`), keep the `paywall:` label — only the type changes:
-
-```diff showLineNumbers
-- let products = try await Adapty.getPaywallProducts(paywall: paywall) // paywall: AdaptyPaywall
-+ let products = try await Adapty.getPaywallProducts(paywall: paywall) // paywall: AdaptyFlowPaywall
-```
-
-The `getPaywallProductsWithoutDeterminingOffer` method has been removed. All products now include offer information directly, so a separate eligibility-checking pass is no longer needed.
-
-## Update AdaptyUICustomVideoAsset.player
-
-If you use custom video assets, replace `AVQueuePlayer` with `AVPlayer` when constructing the `.player(...)` case:
+If you use custom video assets, replace `AVQueuePlayer` with `AVPlayer`:
 
 ```diff showLineNumbers
 - case player(item: AVPlayerItem, player: AVQueuePlayer, preview: AdaptyUICustomImageAsset?)
 + case player(item: AVPlayerItem, player: AVPlayer, preview: AdaptyUICustomImageAsset?)
 ```
 
-## Update AdaptyUIResolvedFontAsset
+### AdaptyUIResolvedFontAsset
 
 `AdaptyUIResolvedFontAsset` is no longer a typealias for `UIFont`. It is now a struct. If you access the underlying font directly, use the `.font` property:
 
@@ -222,5 +229,3 @@ If you use custom video assets, replace `AVQueuePlayer` with `AVPlayer` when con
 - let uiFont: UIFont = fontAsset
 + let uiFont: UIFont = fontAsset.font
 ```
-
-The struct also exposes `defaultColor`, `defaultLetterSpacing`, and `defaultLineHeight` for advanced typography control.
