@@ -4,7 +4,7 @@ description: "Migrate to Adapty iOS SDK v4.0 (beta) by replacing paywall builder
 metadataTitle: "Migrating to Adapty iOS SDK v4.0 (beta) | Adapty Docs"
 ---
 
-Adapty iOS SDK 4.0 (beta) introduces a new flow methods alongside the existing paywall methods. The new flow methods work with both the Paywall Builder and the new Flow Builder — no setup changes are required on the Adapty Dashboard side. There are three things to know about the type changes:
+Adapty iOS SDK 4.0 (beta) introduces new flow methods to replace the v3 paywall methods. The new flow methods work with both the Paywall Builder and the new Flow Builder — no setup changes are required on the Adapty Dashboard side. There are three things to know about the type changes:
 
 - **`AdaptyFlow` is a new type.** It is a placement that wraps one or more paywalls — the value returned by the new `Adapty.getFlow(placementId:)` method.
 - **`AdaptyPaywall` has been renamed to `AdaptyFlowPaywall`.** Code that previously held a single paywall now holds an `AdaptyFlowPaywall` (the type the SDK returns inside an `AdaptyFlow.paywalls` collection or via flow-builder APIs).
@@ -22,7 +22,7 @@ Adapty iOS SDK 4.0 (beta) introduces a new flow methods alongside the existing p
 
 ## Replace getPaywall with getFlow
 
-Replace `Adapty.getPaywall()` with `Adapty.getFlow()`. The returned type changes from `AdaptyPaywall` to `AdaptyFlow`. The `locale` parameter has been removed.
+Replace `Adapty.getPaywall()` with `Adapty.getFlow()`. The returned type changes from `AdaptyPaywall` to `AdaptyFlow`. The `locale` parameter has moved from the fetch call to `AdaptyUI.getFlowConfiguration(forFlow:locale:)` — see the next section.
 
 ```diff showLineNumbers
 - let paywall = try await Adapty.getPaywall(
@@ -34,11 +34,20 @@ Replace `Adapty.getPaywall()` with `Adapty.getFlow()`. The returned type changes
 
 ## Replace getPaywallConfiguration with getFlowConfiguration
 
-Replace `AdaptyUI.getPaywallConfiguration(forPaywall:)` with `AdaptyUI.getFlowConfiguration(forFlow:)`. The method now takes an `AdaptyFlow` object instead of `AdaptyPaywall`.
+Replace `AdaptyUI.getPaywallConfiguration(forPaywall:)` with `AdaptyUI.getFlowConfiguration(forFlow:)`. The method now takes an `AdaptyFlow` object instead of `AdaptyPaywall`. Locale handling now lives here — pass it via the `locale:` parameter:
 
 ```diff showLineNumbers
 - let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
 + let flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow)
+```
+
+If you previously passed `locale:` to `getPaywall`, pass it to `getFlowConfiguration` instead:
+
+```diff showLineNumbers
+- let paywall = try await Adapty.getPaywall(placementId: "main", locale: "fr")
+- let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
++ let flow = try await Adapty.getFlow(placementId: "main")
++ let flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow, locale: "fr")
 ```
 
 ## Replace AdaptyPaywallController with AdaptyFlowController (UIKit)
@@ -133,13 +142,6 @@ Rename the delegate protocol and update all method signatures. Note that `didSel
 +     func flowController(_ controller: AdaptyFlowController,
 +                         didFinishWebPaymentNavigation product: AdaptyPaywallProduct?,
 +                         error: AdaptyError?) { }
-+
-+     // New in v4: forward custom analytic events fired by the flow's script
-+     // (e.g. to Amplitude or Mixpanel). The method has a default no-op
-+     // implementation, so override only when you need it.
-+     func flowController(_ controller: AdaptyFlowController,
-+                         didReceiveAnalyticEvent name: String,
-+                         params: [String: any Sendable]) { }
  }
 ```
 
@@ -148,7 +150,7 @@ Rename the delegate protocol and update all method signatures. Note that `didSel
 Rename the modifier from `.paywall()` to `.flow()` and update the configuration parameter name from `paywallConfiguration` to `flowConfiguration`:
 
 ```diff showLineNumbers
- @State var flowPresented = false
+ @State var flowPresented = false // rename freely — the variable name is your choice
 
  var body: some View {
      Text("Hello, AdaptyUI!")
