@@ -83,27 +83,30 @@ const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
                 const scrollY = window.scrollY;
                 const windowHeight = window.innerHeight;
                 const documentHeight = document.documentElement.scrollHeight;
-                
+
+                const currentHeadings = visibleHeadings();
+                if (currentHeadings.length === 0) return;
+
                 // Check if we're at the bottom of the page
                 // If the user has scrolled to near the bottom, always highlight the last item
                 // This handles cases where the last section is too short to reach the top offset
                 if (scrollY + windowHeight >= documentHeight - 50) {
-                     const lastHeading = headings[headings.length - 1];
+                     const lastHeading = currentHeadings[currentHeadings.length - 1];
                      const id = lastHeading?.getAttribute('id');
                      if (id) {
                          setActiveLink(id);
                          return;
                      }
                 }
-                
+
                 // Find the last heading that is above or at the headerOffset
                 // This mimics standard "scroll spy" behavior: the section you are reading
                 // is the one whose header you most recently passed.
-                let activeHeading = headings[0];
-                
-                for (const heading of headings) {
+                let activeHeading = currentHeadings[0];
+
+                for (const heading of currentHeadings) {
                     const rect = heading.getBoundingClientRect();
-                    
+
                     if (rect.top <= headerOffset) {
                         activeHeading = heading;
                     } else {
@@ -122,7 +125,13 @@ const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
             // Update on scroll with throttling
             let ticking = false;
             let scrollEndTimer;
-            
+
+            // SDK-version blocks hide their content via `display: none` on the
+            // wrapping `[data-sdk-version]` div. Headings inside a hidden block
+            // have offsetParent === null — skip them so scrollspy never lands on
+            // a heading the user can't see.
+            const visibleHeadings = () => headings.filter(h => h.offsetParent !== null);
+
             const handleScroll = () => {
                 // If we are in "click mode", we purely want to detect when scrolling STOPS
                 // We don't want to run the expensive/noisy update logic during the smooth scroll
