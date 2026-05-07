@@ -214,12 +214,28 @@ async function loadGlossary(lang) {
     const dict = JSON.parse(await fs.readFile(dictPath, 'utf-8'));
     const lines = Object.entries(dict)
       .filter(([_, translations]) => lang in translations)
-      .map(([en, translations]) => `- ${en} → ${translations[lang]}`);
+      .map(([en, t]) => {
+        const note = t._note ? `\n  Context: ${t._note}` : '';
+        return `- ${en} → ${t[lang]}${note}`;
+      });
     if (lines.length === 0) return '';
-    return `\nGLOSSARY — use these exact translations for product-specific terms (do not improvise):\n${lines.join('\n')}`;
+    return `\nGLOSSARY — use these exact translations for product-specific terms (do not improvise). The "Context" note describes how the term is used at Adapty; treat it as background, not as text to translate:\n${lines.join('\n')}`;
   } catch {
     return ''; // dictionary not found → proceed without glossary
   }
+}
+
+// ---------------------------------------------------------------------------
+// Prompt caching helper
+// ---------------------------------------------------------------------------
+
+// Wrap a system prompt string in the structured form Anthropic expects for
+// prompt caching. The system prompt + glossary is identical across every
+// section/file within a single language run, so caching it as ephemeral
+// turns ~600 redundant copies per locale into 1 cache write + N reads
+// (read = 10% of base input price, write = 125%, 5-min TTL refreshed on hit).
+function cachedSystem(text) {
+  return [{ type: 'text', text, cache_control: { type: 'ephemeral' } }];
 }
 
 // ---------------------------------------------------------------------------
@@ -476,7 +492,7 @@ async function translateSync(client, files, systemPrompt, localesDir, hashesDir,
             const response = await client.messages.create({
               model: 'claude-sonnet-4-6',
               max_tokens: 16000,
-              system: systemPrompt,
+              system: cachedSystem(systemPrompt),
               messages: [{ role: 'user', content }],
             });
             if (response.stop_reason === 'max_tokens') {
@@ -803,7 +819,7 @@ async function translateFileWithSections(client, file, systemPrompt, localesDir,
         response = await withRetry(() => client.messages.create({
           model: 'claude-sonnet-4-6',
           max_tokens: 8192,
-          system: systemPrompt,
+          system: cachedSystem(systemPrompt),
           messages: [{ role: 'user', content: section.content }],
         }));
       } catch (err) {
@@ -985,7 +1001,7 @@ async function translateBatchSections(client, files, systemPrompt, localesDir, h
         params: {
           model: 'claude-sonnet-4-6',
           max_tokens: 8192,
-          system: systemPrompt,
+          system: cachedSystem(systemPrompt),
           messages: [{ role: 'user', content: decision.section.content }],
         },
       });
@@ -1161,7 +1177,7 @@ async function translateBatch(client, files, systemPrompt, localesDir, tag, lang
           params: {
             model: 'claude-sonnet-4-6',
             max_tokens: 8192,
-            system: systemPrompt,
+            system: cachedSystem(systemPrompt),
             messages: [{ role: 'user', content }],
           },
         };
@@ -1461,7 +1477,7 @@ async function translateReusableForLang(client, lang, localesDir, hashesDir, sys
       const response = await client.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 4096,
-        system: systemPrompt,
+        system: cachedSystem(systemPrompt),
         messages: [{ role: 'user', content }],
       });
       if (response.stop_reason === 'max_tokens') {
@@ -1500,7 +1516,7 @@ async function translateReusableForLang(client, lang, localesDir, hashesDir, sys
           params: {
             model: 'claude-sonnet-4-6',
             max_tokens: 4096,
-            system: systemPrompt,
+            system: cachedSystem(systemPrompt),
             messages: [{ role: 'user', content }],
           },
         };
@@ -1684,7 +1700,7 @@ async function translateSidebarsForLang(client, lang, localesDir, hashesDir, tar
       const response = await client.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 4096,
-        system: systemPrompt,
+        system: cachedSystem(systemPrompt),
         messages: [{ role: 'user', content: JSON.stringify(toTranslateEntries.map(e => e.label)) }],
       });
       if (response.stop_reason === 'max_tokens') {
@@ -1848,7 +1864,7 @@ async function translateApiSpecBatchSections(client, spec, systemPrompt, apiHash
           params: {
             model: 'claude-sonnet-4-6',
             max_tokens: 16000,
-            system: systemPrompt,
+            system: cachedSystem(systemPrompt),
             messages: [{ role: 'user', content: d.section.content }],
           },
         };
@@ -1965,7 +1981,7 @@ async function translateApiSpecsForLang(client, lang, localesDir, hashesDir, tar
         const stream = await client.messages.stream({
           model: 'claude-sonnet-4-6',
           max_tokens: 64000,
-          system: systemPrompt,
+          system: cachedSystem(systemPrompt),
           messages: [{ role: 'user', content }],
         });
         for await (const chunk of stream) {

@@ -449,7 +449,7 @@ Initialize the SDK in your app delegate:
 
 ```swift
 // AppDelegate.swift
-func application(_ application: UIApplication, 
+func application(_ application: UIApplication,
                 didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
     Adapty.activate("YOUR_API_KEY")
     return true
