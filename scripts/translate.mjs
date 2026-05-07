@@ -141,8 +141,10 @@ async function discoverLocales() {
 function buildSystemPrompt(targetLanguage, metadataTitleSuffix = '| Adapty Docs') {
   return `You are a technical documentation translator. Translate the MDX documentation below from English to ${targetLanguage}.
 
+CRITICAL — ESM imports/exports:
+Reproduce every \`import\` and \`export\` line byte-for-byte: same count, same order, same paths, no modifications. Do not drop imports that look unused or auto-registered — the build needs them. Preserve the blank line separating the import block from the prose; MDX requires it.
+
 PRESERVE exactly (never translate):
-- import statements
 - code blocks (fenced \`\`\` blocks) — content, language tag, and title attribute
 - inline code (\`...\`)
 - component tag names and attribute NAMES (only translate attribute VALUES when they are human-readable phrases)
@@ -151,6 +153,7 @@ PRESERVE exactly (never translate):
 - Adapty dashboard UI element names: the dashboard is English-only, so keep these exactly as written. They typically appear **bold** in text and refer to dashboard navigation — menu items, sidebar sections, page names, and button labels (e.g. **Paywalls**, **A/B tests**, **App settings**, **Add product**, **Save**). Do not confuse these with documentation section headings or sidebar titles, which should be translated normally.
 - heading anchor IDs written as \\{#my-anchor\\} — keep them exactly as written including the backslash escapes
 - link hrefs and URL fragments — in [text](url#fragment), translate only the display text; href and fragment stay byte-for-byte identical
+- JSX tag balance: every \`<Tag>\` opening must have exactly one matching \`</Tag>\` closing in the input — output the same number of opens and closes. Do not invent extra closing tags to "fix" what looks unbalanced; the input is balanced when read whole.
 
 HEADING ANCHOR RULE (critical for internal links):
 Every translated heading must end with a \\{#anchor-id\\} that matches what the English source would auto-generate.
