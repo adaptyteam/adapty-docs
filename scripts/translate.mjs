@@ -1275,7 +1275,7 @@ async function resumeBatch(client, batchId, lang, localesDir, hashesDir) {
   const allSourceFiles = await collectMdxFiles(DOCS_DIR);
   const fileMap = Object.fromEntries(allSourceFiles.map(f => [path.basename(f, '.mdx'), f]));
 
-  // Also load reusable sources for batches that contain "reusable:*" custom IDs.
+  // Also load reusable sources for batches that contain "reusable_*" custom IDs.
   const reusableLocalesDir = path.join(localesDir, 'reusable');
   const reusableHashesDir  = path.join(hashesDir, 'reusable');
   const reusableMap = {};
@@ -1295,7 +1295,7 @@ async function resumeBatch(client, batchId, lang, localesDir, hashesDir) {
   const results = await client.messages.batches.results(batchId);
   for await (const result of results) {
     const customId = result.custom_id;
-    const isReusable = customId.startsWith('reusable:');
+    const isReusable = customId.startsWith('reusable_');
     const label = customId;
 
     if (result.result.type === 'succeeded') {
@@ -1307,7 +1307,7 @@ async function resumeBatch(client, batchId, lang, localesDir, hashesDir) {
       const text = result.result.message.content[0].text;
 
       if (isReusable) {
-        const basename = customId.slice('reusable:'.length);
+        const basename = customId.slice('reusable_'.length);
         const file = reusableMap[basename];
         await fs.mkdir(reusableLocalesDir, { recursive: true });
         if (file) {
@@ -1512,7 +1512,7 @@ async function translateReusableForLang(client, lang, localesDir, hashesDir, sys
       chunk.map(async (file) => {
         const content = await fs.readFile(file.full, 'utf-8');
         return {
-          custom_id: `reusable:${file.basename}`,
+          custom_id: `reusable_${file.basename}`,
           params: {
             model: 'claude-sonnet-4-6',
             max_tokens: 4096,
@@ -1532,7 +1532,7 @@ async function translateReusableForLang(client, lang, localesDir, hashesDir, sys
     console.log(`${tag} Batch ID saved to .translate-batch-id`);
     console.log(`${tag} Use --resume <batchId> to retrieve results if this process is interrupted.`);
 
-    const fileMap = Object.fromEntries(chunk.map(f => [`reusable:${f.basename}`, f]));
+    const fileMap = Object.fromEntries(chunk.map(f => [`reusable_${f.basename}`, f]));
 
     console.log(`${tag} Polling batch status every 30 seconds...`);
     const startedAt = Date.now();
