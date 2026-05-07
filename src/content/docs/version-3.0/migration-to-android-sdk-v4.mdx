@@ -1,0 +1,143 @@
+---
+title: "Migrate Adapty Android SDK to v. 4.0"
+description: "Migrate to Adapty Android SDK v4.0 (beta) by replacing paywall APIs with flow APIs, compatible with both Paywall Builder and Flow Builder."
+metadataTitle: "Migrating to Adapty Android SDK v4.0 (beta) | Adapty Docs"
+---
+
+Adapty Android SDK 4.0 (beta) introduces flows and renames the paywall APIs accordingly. The new APIs work with both the Paywall Builder and the new Flow Builder — no setup changes are required on the Adapty Dashboard side.
+
+## Quick reference
+
+| v3 | v4 |
+|---|---|
+| `Adapty.getPaywall(placementId, locale)` | `Adapty.getFlow(placementId)` |
+| `AdaptyUI.getPaywallConfiguration(paywall)` | `AdaptyUI.getFlowConfiguration(flow, locale)` |
+| `Adapty.getPaywallProducts(paywall)` | `Adapty.getPaywallProducts(flow)` |
+| `AdaptyPaywallActivity` | `AdaptyFlowActivity` |
+| `AdaptyUiEventListener` | `AdaptyUiFlowEventListener` |
+| `AdaptyUiDefaultEventListener` | `AdaptyUiDefaultFlowEventListener` |
+| `AdaptyUI.getPaywallView` / `addPaywallFragment` | `AdaptyUI.getFlowView` / `addFlowFragment` |
+| `AdaptyPaywallView` (Compose / View) | `AdaptyFlowView` |
+
+## Removed APIs
+
+- **`Adapty.getPaywallProductsWithoutDeterminingOffer(paywall)`** — removed. All products now include offer information, so the separate eligibility pass is no longer needed.
+- **`AdaptyPaywallProductWithoutDeterminingOffer`** — removed. Callbacks that previously passed this type (such as `onProductSelected`) now pass `AdaptyPaywallProduct`.
+
+## Fetching paywalls
+
+### Adapty.getPaywall → Adapty.getFlow
+
+The returned type changes from `AdaptyPaywall` to `AdaptyFlow`. The `locale` parameter has moved out of the fetch call — see the next section.
+
+```diff showLineNumbers
+- Adapty.getPaywall(placementId = "YOUR_PLACEMENT_ID", locale = "en") { result ->
+-     // handle the AdaptyPaywall
+- }
++ Adapty.getFlow(placementId = "YOUR_PLACEMENT_ID") { result ->
++     // handle the AdaptyFlow
++ }
+```
+
+### AdaptyUI.getPaywallConfiguration → AdaptyUI.getFlowConfiguration
+
+The method now takes an `AdaptyFlow` and accepts the `locale` parameter:
+
+```diff showLineNumbers
+- val paywallConfiguration = AdaptyUI.getPaywallConfiguration(paywall = paywall)
++ val flowConfiguration = AdaptyUI.getFlowConfiguration(flow = flow)
+```
+
+If you previously passed `locale` to `getPaywall`, pass it here instead:
+
+```diff showLineNumbers
+- Adapty.getPaywall(placementId = "main", locale = "fr") { result -> /* ... */ }
+- val paywallConfiguration = AdaptyUI.getPaywallConfiguration(paywall = paywall)
++ Adapty.getFlow(placementId = "main") { result -> /* ... */ }
++ val flowConfiguration = AdaptyUI.getFlowConfiguration(flow = flow, locale = "fr")
+```
+
+### getPaywallProducts(paywall) → getPaywallProducts(flow)
+
+`getPaywallProducts` now takes an `AdaptyFlow` returned by `Adapty.getFlow`:
+
+```diff showLineNumbers
+- Adapty.getPaywallProducts(paywall) { result -> /* ... */ }
++ Adapty.getPaywallProducts(flow) { result -> /* ... */ }
+```
+
+## UI
+
+### AdaptyUI.getPaywallView → AdaptyUI.getFlowView
+
+Rename the view-creation method and pass an `AdaptyUI.FlowConfiguration`:
+
+```diff showLineNumbers
+- val view = AdaptyUI.getPaywallView(
+-     activity = this,
+-     paywallConfiguration = paywallConfiguration,
+-     eventListener = listener,
+- )
++ val view = AdaptyUI.getFlowView(
++     activity = this,
++     flowConfiguration = flowConfiguration,
++     eventListener = listener,
++ )
+```
+
+### AdaptyUiEventListener → AdaptyUiFlowEventListener
+
+Rename the listener and the default base class. Note that `onProductSelected` now receives `AdaptyPaywallProduct` instead of the removed `AdaptyPaywallProductWithoutDeterminingOffer`.
+
+```diff showLineNumbers
+- class YourListener : AdaptyUiDefaultEventListener() {
++ class YourListener : AdaptyUiDefaultFlowEventListener() {
+
+-     override fun onProductSelected(
+-         product: AdaptyPaywallProductWithoutDeterminingOffer,
+-         context: Context,
+-     ) { }
++     override fun onProductSelected(
++         product: AdaptyPaywallProduct,
++         context: Context,
++     ) { }
+
+      // Other overrides keep the same names; AdaptyPaywallView arguments
+      // are replaced with AdaptyFlowView in callbacks where applicable.
+  }
+```
+
+### Compose / View binding
+
+Replace `AdaptyPaywallView` with `AdaptyFlowView` and update the configuration parameter:
+
+```diff showLineNumbers
+- AdaptyPaywallView(
+-     paywallConfiguration = paywallConfiguration,
+-     eventListener = listener,
+- )
++ AdaptyFlowView(
++     flowConfiguration = flowConfiguration,
++     eventListener = listener,
++ )
+```
+
+## AdaptyUI custom assets
+
+### AdaptyUICustomVideoAsset
+
+If you use custom video assets, the player parameter is no longer typed against an `ExoPlayer` queue — pass a single `Player` instance instead:
+
+```diff showLineNumbers
+- AdaptyCustomAsset.Video(player = exoPlayerQueue, preview = previewImage)
++ AdaptyCustomAsset.Video(player = exoPlayer, preview = previewImage)
+```
+
+### AdaptyUIResolvedFontAsset
+
+`AdaptyUIResolvedFontAsset` is no longer a typealias for `Typeface`. It is now a data class. If you access the underlying typeface directly, use the `.typeface` property:
+
+```diff showLineNumbers
+- val typeface: Typeface = fontAsset
++ val typeface: Typeface = fontAsset.typeface
+```

@@ -1,9 +1,8 @@
 ---
-title: "Fetch Paywall Builder paywalls and their configuration in Android SDK"
-description: "Learn how to retrieve PB paywalls in Adapty for better subscription control in your Android app."
-metadataTitle: "Retrieving PB Paywalls in Adapty | Adapty Docs"
-displayed_sidebar: sdkandroid
-keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+title: "Get paywalls & flows - Android"
+description: "Fetch paywall and onboarding flows from Adapty in your Android app."
+metadataTitle: "Get Paywalls & Flows - Android | Adapty Docs"
+keywords: ['getPaywall', 'getFlow', 'getPaywallConfiguration', 'getFlowConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience', 'cache']
 rank: 95
 ---
 
@@ -11,6 +10,227 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
+
+<SDKv4>
+
+<MethodPromo method="getFlow" />
+
+After [you designed your Paywall Builder paywall](adapty-paywall-builder) or flow, you can display it in your mobile app. The first step is to get the paywall or flow associated with the placement and its view configuration as described below.
+
+<SampleApp />
+
+<details>
+<summary>Before you start</summary>
+
+1. [Create your products](create-product) in the Adapty Dashboard.
+2. [Create a paywall/flow and incorporate products into it](create-paywall) in the Adapty Dashboard.
+3. [Create placements and incorporate your paywall/flow into it](create-placement) in the Adapty Dashboard.
+4. Install [Adapty SDK](sdk-installation-android) in your mobile app.
+</details>
+
+## Fetch paywall/flow
+
+If you've designed a flow or paywall using the Flow Builder or Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown. Nevertheless, you need to get its ID via the placement, its view configuration, and then present it in your mobile app.
+
+To ensure optimal performance, it's crucial to retrieve the paywall and its view configuration as early as possible, allowing sufficient time for images to download before presenting them to the user.
+
+To get a paywall or flow, use the `getFlow` method:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val flow = result.value
+            // the requested flow/paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.getFlow("YOUR_PLACEMENT_ID", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) result).getValue();
+        // the requested flow/paywall
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+Parameters:
+
+| Parameter | Presence | Description |
+|---------|--------|-----------|
+| **placementId** | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard. |
+| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | By default, SDK will try to load data from the server and will return cached data in case of failure. |
+| **loadTimeout** | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned. |
+
+Response parameters:
+
+| Parameter | Description |
+| :-------- | :---------- |
+| Flow      | An `AdaptyFlow` object containing the placement, identifiers (`id`, `variationId`), name, remote configs, and a `hasViewConfiguration` flag indicating whether the flow includes a view configuration. To fetch the actual products for pre-loading, custom UI, or programmatic checks, call `getPaywallProducts(flow)`. |
+
+## Fetch the view configuration
+
+After fetching the paywall or flow, check whether it includes a view configuration via `flow.hasViewConfiguration`. The flag distinguishes how the placement was designed in the Adapty Dashboard:
+
+- **`true`** — the placement was designed in the **Paywall Builder** (a paywall) or the **Flow Builder** (a flow). Adapty renders the UI for you. Continue with the steps below to fetch the view configuration and [present the paywall or flow](android-present-paywalls).
+- **`false`** — the placement is a custom paywall with no Builder UI.
+
+Use the `getFlowConfiguration` method to load the view configuration.
+
+```kotlin showLineNumbers
+if (!flow.hasViewConfiguration) {
+    // handle as remote config paywall
+    return
+}
+
+AdaptyUI.getFlowConfiguration(flow) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val flowConfiguration = result.value
+            // use loaded configuration
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+Parameters:
+
+| Parameter                | Presence       | Description |
+| :----------------------- | :------------- | :---------- |
+| **flow**                 | required       | An `AdaptyFlow` object obtained via `Adapty.getFlow`. |
+| **locale**               | <p>optional</p><p>default: `null`</p> | The identifier of the [paywall localization](add-paywall-locale-in-adapty-paywall-builder). Expected as a language code with one or two subtags separated by `-` (e.g., `en`, `pt-br`). See [Localizations and locale codes](android-localizations-and-locale-codes). |
+| **loadTimeout**          | default: 5 sec | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned. |
+| **products**             | optional       | Provide an array of `AdaptyPaywallProduct` objects to optimize the display timing of products on the screen. If `null` is passed, AdaptyUI will automatically fetch the necessary products. |
+| **systemRequestsHandler** | optional      | An object implementing `AdaptySystemRequestsHandler` that handles system permission and review requests triggered by flow actions. Required only if your flow includes such actions. See [Handle permission requests](android-handle-permissions). |
+| **assetsResolver**       | optional       | An `AdaptyCustomAssets` instance that overrides images and videos in the paywall/flow. See [Customize assets](#customize-assets). |
+| **timerResolver**        | optional       | An object implementing `AdaptyUiTimerResolver` that supplies end dates for developer-defined timers. See [Set up developer-defined timers](#set-up-developer-defined-timers). |
+
+Once loaded, [present the paywall/flow](android-present-paywalls).
+
+## Get a paywall or flow for a default audience to fetch it faster
+
+Typically, paywalls and flows are fetched almost instantly, so you don't need to worry about speeding up this process. However, in cases where you have numerous audiences and paywalls, and your users have a weak internet connection, fetching a paywall or flow may take longer than you'd like. In such situations, you might want to display a default paywall or flow to ensure a smooth user experience rather than showing nothing at all.
+
+To address this, you can use the `getFlowForDefaultAudience` method, which fetches the paywall or flow of the specified placement for the **All Users** audience.
+
+:::warning
+Why we recommend using `getFlow`
+
+The `getFlowForDefaultAudience` method comes with a few significant drawbacks:
+
+- **Potential backward compatibility issues**: If you need to show different paywalls for different app versions (current and future), you may face challenges.
+- **Loss of targeting**: All users will see the same paywall designed for the **All Users** audience, which means you lose personalized targeting (including based on countries, marketing attribution or your own custom attributes).
+
+If you're willing to accept these drawbacks to benefit from faster paywall or flow fetching, use the `getFlowForDefaultAudience` method as follows. Otherwise stick to `getFlow` described above.
+:::
+
+```kotlin showLineNumbers
+Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val flow = result.value
+            // the requested flow
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+| Parameter | Presence | Description |
+|---------|--------|-----------|
+| **placementId** | required | The identifier of the [Placement](placements). |
+| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | By default, SDK will try to load data from the server and will return cached data in case of failure. |
+
+## Customize assets
+
+To customize images and videos in your paywall/flow, implement the custom assets.
+
+Hero images and videos have predefined IDs: `hero_image` and `hero_video`. In a custom asset bundle, you target these elements by their IDs and customize their behavior.
+
+For other images and videos, you need to [set a custom ID](custom-media) in the Adapty dashboard.
+
+For example, you can:
+
+- Show a different image or video to some users.
+- Show a local preview image while a remote main image is loading.
+- Show a preview image before running a video.
+
+```kotlin showLineNumbers
+val customAssets = AdaptyCustomAssets.of(
+    "hero_image" to
+            AdaptyCustomImageAsset.remote(
+                url = "https://example.com/image.jpg",
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromAsset("images/hero_image_preview.png"),
+                )
+            ),
+    "hero_video" to
+            AdaptyCustomVideoAsset.file(
+                FileLocation.fromResId(requireContext(), R.raw.custom_video),
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromResId(requireContext(), R.drawable.video_preview),
+                ),
+            ),
+)
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products,
+    eventListener,
+    insets,
+    customAssets,
+)
+```
+
+:::note
+If an asset is not found, the paywall/flow will fall back to its default appearance.
+:::
+
+## Set up developer-defined timers
+
+To use custom timers in your mobile app, create an object that implements the `AdaptyUiTimerResolver` interface. This object defines how each custom timer should be rendered. Here is an example:
+
+```kotlin showLineNumbers
+val customTimers = mapOf(
+    "CUSTOM_TIMER_NY" to Calendar.getInstance(TimeZone.getDefault()).apply { set(2025, 0, 1) }.time,
+    "CUSTOM_TIMER_6H" to Date(System.currentTimeMillis() + 6 * 3600 * 1000L),
+)
+val timerResolver = AdaptyUiTimerResolver { timerId ->
+    customTimers.getOrElse(timerId) { Date(System.currentTimeMillis() + 3600 * 1000L) }
+}
+```
+
+In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value.
+
+</SDKv4>
+
+<SDKv3>
 
 After [you designed the visual part for your paywall](adapty-paywall-builder) with the new Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
 
@@ -289,4 +509,6 @@ val paywallView = AdaptyUI.getPaywallView(
 :::note
 If an asset is not found, the paywall will fall back to its default appearance.
 :::
+
+</SDKv3>
 
