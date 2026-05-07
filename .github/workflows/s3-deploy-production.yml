@@ -55,11 +55,24 @@ jobs:
       - run: npm install github-slugger
       - run: node scripts/check-links/index.mjs --diff --base=last-production-deploy --internal-only
 
+  # Fast-fail static checks for translator-introduced regressions
+  # (missing blank line after imports, missing client:load imports).
+  # Gates both content and translation-only deploy paths.
+  lint-mdx:
+    name: Lint MDX
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/lint-mdx.mjs
+
   # ──────────────────────────────────────────────────────────────
   # Full deploy: English + all locales (on content pushes)
   # ──────────────────────────────────────────────────────────────
   build-en:
-    needs: check-internal-links
+    needs: [check-internal-links, lint-mdx]
     runs-on: ubuntu-latest
     concurrency:
       group: build-en-${{ github.workflow }}-${{ github.ref }}
@@ -100,7 +113,7 @@ jobs:
           retention-days: 1
 
   build-locale-full:
-    needs: check-internal-links
+    needs: [check-internal-links, lint-mdx]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -193,7 +206,7 @@ jobs:
   # Translation-only deploy: build + upload only locale dirs
   # ──────────────────────────────────────────────────────────────
   build-locale-only:
-    needs: classify
+    needs: [classify, lint-mdx]
     if: needs.classify.outputs.translation_only == 'true'
     runs-on: ubuntu-latest
     strategy:
