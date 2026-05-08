@@ -1,0 +1,178 @@
+---
+title: "Добавление вариантов A/B-теста без пейвола"
+description: "Запустите A/B-тест, в котором один из вариантов пропускает показ пейвола, используя флаг Remote Config для управления отображением."
+metadataTitle: "Варианты A/B-теста без пейвола | Документация Adapty"
+---
+
+Вы можете оценить влияние пейвола, запустив A/B-тест с пустым вариантом. Один вариант показывает пейвол, другой — не показывает ничего. Приложение считывает флаг из Remote Config пейвола и на его основе решает, нужно ли отображать экран.
+## Как это работает \{#how-it-works\}
+
+Настройка использует два пейвола в одном плейсменте:
+
+- **Пейвол A**: пейвол, который вы хотите протестировать, со значением `show_paywall` равным `true` в его Remote Config.
+- **Пейвол B**: пустой пейвол со значением `show_paywall` равным `false` в его Remote Config.
+
+Когда `getPaywall` возвращает пейвол, приложение считывает флаг `show_paywall`. Если флаг равен `true`, приложение отображает пейвол. Если флаг равен `false`, приложение пропускает отображение и пользователь продолжает работу без пейвола.
+## 1. Добавьте флаг show_paywall в Remote Config \{#1-add-the-show_paywall-flag-in-remote-config\}
+
+Вам понадобятся два пейвола в одном плейсменте: Paywall A (тот, который вы хотите протестировать) и Paywall B (пустой пейвол). Добавьте поле `show_paywall` в каждый из них, чтобы приложение могло ветвиться по одному и тому же ключу для обоих вариантов.
+
+Чтобы добавить флаг в Paywall A:
+1. Откройте раздел [**Paywalls**](https://app.adapty.io/paywalls) в главном меню Adapty и выберите Paywall A.
+2. Перейдите на вкладку **Remote config**.
+3. В режиме **Table** нажмите **Add row** и создайте поле с именем `show_paywall` и значением `true`. В режиме **JSON** это выглядит так:
+
+   ```json showLineNumbers
+   {
+     "show_paywall": true
+   }
+   ```
+
+4. Сохраните изменения.
+
+Повторите те же шаги для Paywall B, но установите `show_paywall` в значение `false`.
+
+Подробнее о Remote Config читайте в разделе [Дизайн пейвола с Remote Config](customize-paywall-with-remote-config).
+:::tip
+Установка `show_paywall` для обоих вариантов сохраняет одинаковый путь выполнения кода для обеих групп и упрощает добавление новых вариантов в будущем.
+:::
+## 2. Настройте A/B-тест \{#set-up-the-ab-test\}
+
+1. [Создайте A/B-тест](run_stop_ab_tests) на плейсменте и добавьте оба пейвола как варианты.
+2. Задайте веса вариантов, чтобы распределить трафик между пользователями, которые видят пейвол, и теми, кто его не видит.
+## 3. Проверьте флаг в приложении \{#check-the-flag-in-your-app\}
+
+Считайте `show_paywall` из Remote Config пейвола, возвращённого методом `getPaywall`. Если флаг равен `false`, пропустите рендеринг и позвольте пользователю продолжить.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS" default>
+
+```swift showLineNumbers
+do {
+    let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID")
+    let showPaywall = paywall.remoteConfig?.dictionary?["show_paywall"] as? Bool ?? true
+
+    if showPaywall {
+        // Render the paywall
+    }
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="kotlin" label="Android">
+
+```kotlin showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            val showPaywall = paywall.remoteConfig?.dataMap?.get("show_paywall") as? Boolean ?: true
+
+            if (showPaywall) {
+                // Render the paywall
+            }
+        }
+        is AdaptyResult.Error -> {
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="react-native" label="React Native">
+```typescript showLineNumbers
+try {
+  const paywall = await adapty.getPaywall({ placementId: "YOUR_PLACEMENT_ID" });
+  const showPaywall = paywall.remoteConfig?.data?.["show_paywall"] ?? true;
+
+  if (showPaywall) {
+    // Render the paywall
+  }
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="flutter" label="Flutter">
+```dart showLineNumbers
+try {
+  final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID");
+  final bool showPaywall = paywall.remoteConfig?.dictionary?['show_paywall'] as bool? ?? true;
+
+  if (showPaywall) {
+    // Render the paywall
+  }
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="unity" label="Unity">
+```csharp showLineNumbers
+Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    var showPaywall = paywall.RemoteConfig?.Dictionary?["show_paywall"] as bool? ?? true;
+
+    if (showPaywall) {
+        // Render the paywall
+    }
+});
+```
+
+</TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform">
+```kotlin showLineNumbers
+Adapty.getPaywall(
+    placementId = "YOUR_PLACEMENT_ID"
+).onSuccess { paywall ->
+    val showPaywall = paywall.remoteConfig?.dataMap?.get("show_paywall") as? Boolean ?: true
+
+    if (showPaywall) {
+        // Render the paywall
+    }
+}.onError { error ->
+    // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="capacitor" label="Capacitor">
+```typescript showLineNumbers
+
+try {
+  const paywall = await adapty.getPaywall({ placementId: 'YOUR_PLACEMENT_ID' });
+  const showPaywall = paywall.remoteConfig?.data?.['show_paywall'] ?? true;
+
+  if (showPaywall) {
+    // Render the paywall
+  }
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+Резервное значение `true` сохраняет видимость пейвола, если флаг отсутствует, поэтому существующие пейволы без этого флага не затрагиваются.
+:::important
+Если вы отображаете пейвол самостоятельно (без [Paywall Builder](adapty-paywall-builder)), вызовите [`logShowPaywall`](present-remote-config-paywalls#track-paywall-view-events) при показе Пейвола A. Без этого Adapty не сможет подсчитать просмотры пейвола в тесте. Не логируйте просмотр для Пейвола B, поскольку он никогда не отображается.
+:::
+## Дальнейшие шаги \{#next-steps\}
+
+- [Создание, запуск и остановка A/B-теста](run_stop_ab_tests) — Настройте тест, включающий оба варианта
+- [Результаты и метрики A/B-теста](results-and-metrics) — Сравните вариант без пейвола с вашим пейволом
