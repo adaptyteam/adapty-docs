@@ -22,7 +22,10 @@
  * Run: `node scripts/lint-mdx.mjs` to check.
  *      `node scripts/lint-mdx.mjs --fix` also auto-corrects rules that are
  *      mechanically safe to repair (currently: blank-line). Issues that
- *      remain after the fix pass still cause a non-zero exit.
+ *      remain after the fix pass still cause a non-zero exit. On CI
+ *      failure, translate.yml uploads the runner's src/locales/ as an
+ *      artifact so the translations can be recovered and repaired by hand
+ *      without re-running the translator.
  */
 
 import fs from 'node:fs/promises';

@@ -105,9 +105,11 @@ jobs:
           done
 
       # Static-check the freshly written translations before committing them.
-      # If lint fails, the workflow stops here without committing — operator
-      # investigates the diff in the workspace and decides whether to repair
-      # by hand and push, or rerun the translate workflow.
+      # --fix auto-repairs rules that are mechanically safe (blank-line).
+      # If lint exits non-zero, unfixable issues remain — the workflow stops
+      # here without committing. The Upload step below preserves the runner's
+      # locale state as an artifact so the operator can recover the
+      # translations without paying for another Claude batch.
       - name: Lint translated MDX
         run: node scripts/lint-mdx.mjs --fix
 
@@ -125,3 +127,16 @@ jobs:
             git commit -m "chore: update translations"
             git push
           fi
+
+      # If anything after translation failed (typically: lint can't auto-fix
+      # something, or the commit/push step errored), preserve the runner's
+      # locale state so the translations aren't lost when the runner is
+      # destroyed. Download from the run's Artifacts section, repair locally,
+      # commit + push.
+      - name: Upload translated files on failure
+        if: failure() && steps.diff.outputs.files != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-translations-${{ github.run_id }}
+          path: src/locales/
+          retention-days: 30
