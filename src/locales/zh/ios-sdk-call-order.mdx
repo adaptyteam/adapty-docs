@@ -1,0 +1,36 @@
+---
+title: "iOS SDK 调用顺序"
+description: "通过按正确顺序调用 Adapty SDK 方法，避免丢失高级访问权限、缺失归因数据以及间歇性 #2002 错误。"
+metadataTitle: "iOS SDK 调用顺序 | Adapty 文档"
+---
+
+`Adapty.activate()` 必须完成后，才能调用任何其他 Adapty SDK 方法。在其完成之前，SDK 没有任何状态。在 `activate()` 之前或与其并行发出的任何调用都会失败，并返回 [`#2002 notActivated`](ios-sdk-error-handling#network-errors) 错误。
+如果您的应用需要用户登录，并在启动后才能获取到 customer user ID，请在获取到时调用 `Adapty.identify()`。在 `identify` 完成之前，不要调用任何需要用户操作的方法。与其并发的调用要么以 [`#3006 profileWasChanged`](ios-sdk-error-handling#general-errors) 错误告终，要么落在激活时创建的匿名用户画像上。一旦发生这种情况，归因数据、`appsflyer_id` 等 MMP ID 以及安装归属不一定会同步到已识别的用户画像。如果您的应用无需用户登录，跳过 `identify`，直接使用匿名用户画像即可。
+MMP 和分析 SDK（AppsFlyer、Adjust、Branch、PostHog）遵循相同的规则。请先初始化它们，并等待其 UID 回调完成后，再调用 `Adapty.activate`。否则，MMP ID 会被绑定到一个短暂的匿名用户画像上，而不一定会转移到已识别的用户画像中。有关 AppsFlyer 的详细信息，请参阅 [AppsFlyer](appsflyer)。
+## 正确的操作顺序 \{#the-correct-order\}
+
+您的路径取决于两件事：何时获取客户用户 ID，以及是否使用 MMP 或分析 SDK。
+
+- **步骤 2 和 5**：每个应用都必须执行。先激活 SDK，再调用 SDK 方法。
+- **步骤 1 和 3**：仅在集成 MMP 或分析 SDK（AppsFlyer、Adjust、Branch、PostHog）时需要。
+- **步骤 4**：仅在应用需要用户认证、且在启动后才能获取客户用户 ID 时需要。
+如果在应用启动时已知客户用户 ID，可直接将其传入 `activate()`（步骤 2a）。这种方式不会创建匿名用户画像，因此步骤 4 无需执行。
+| 步骤 | 调用 | 时机 | 备注 |
+|------|---------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| 1    | 初始化您的 MMP 或分析 SDK（AppsFlyer、Adjust、PostHog、Branch）                                     | 应用启动时，最先执行                                                                      | 等待 MMP 的 UID 回调，例如 `getAppsFlyerUID`。                                |
+| 2a   | `Adapty.activate(with: config)`，并在 config 中设置 `customerUserId`                                       | 应用启动时，在步骤 1 之后执行，前提是已获取到 customer user ID                             | 推荐方式。不会创建任何匿名用户画像。                                             |
+| 2b   | `Adapty.activate(with: config)`，不设置 `customerUserId`                                                      | 应用启动时，在步骤 1 之后执行，前提是尚未获取到 customer user ID（或从不收集） | Adapty 会创建一个匿名用户画像。                                                           |
+| 3    | 为每个 MMP 调用 `Adapty.setIntegrationIdentifier(key:value:)`                                                                    | 在步骤 2 之后、任何用户操作调用之前                                              | 必须执行，以确保 MMP ID 关联到正确的用户画像。                                               |
+| 4    | `try await Adapty.identify("YOUR_USER_ID")`                                                                   | 在步骤 3 之后（若无 MMP 则在步骤 2 之后），在步骤 5 之前——仅适用于走路径 2b 且需要身份验证的情况 | 务必使用 `await`。在 `identify` 执行期间并发调用会产生 `#3006 profileWasChanged` 错误。          |
+| 5    | `getPaywall`、`getPaywallProducts`、`restorePurchases`、`makePurchase`、`updateAttribution`、`updateProfile`  | 若调用了 `identify`，则在步骤 4 之后执行；否则在步骤 3 之后（若无 MMP 则在步骤 2 之后）      | 这些调用需要一个稳定的用户画像。                                                                                             |
+:::important
+跳过这些步骤会导致回访用户丢失高级访问权限、用户画像缺少 `appsflyer_id`，以及付费墙匹配到错误的目标受众。
+:::
+## Web2app 与 Web 漏斗安装 \{#web2app-and-web-funnel-installs\}
+
+如果用户在 Web 结账页面（Stripe、Paddle、FunnelFox）完成购买后再安装原生应用，设备首次调用 `activate()` 时会创建一个新的匿名用户画像，该画像不会与 Web 用户画像关联。如果你能在应用启动前（通过认证流程或安装引荐来源）获取到 customer user ID，请直接将其传入 `activate()`。否则，在你调用 `identify("YOUR_USER_ID")` 并执行 `restorePurchases` 之前，设备端将无法看到 Web 端的购买记录。
+
+关于每次 Web 结账时需要传递的元数据，请参阅：
+
+- [Stripe](stripe)
+- [Paddle](paddle)
