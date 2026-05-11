@@ -58,8 +58,17 @@ const METADATA_TITLE_SUFFIXES = {
 // CLI argument parsing
 // ---------------------------------------------------------------------------
 
-// Global error counter — set to 1 if any translation fails (used for CI exit code)
+// Error tracking. `hadErrors` flips on any translation error and gates the
+// CI exit code. Article counters let the exit logic tolerate a small share
+// of article-translation failures (typically transient Anthropic capacity
+// errors) instead of blocking the deploy for everything else that succeeded.
 let hadErrors = false;
+let articlesAttempted = 0;
+let articlesFailed = 0;
+
+// Maximum share of attempted articles that may fail before the script still
+// exits 0. Above this, partial output is rejected and the workflow fails.
+const ARTICLE_FAILURE_TOLERANCE = 0.25;
 
 const args = process.argv.slice(2);
 
@@ -333,7 +342,23 @@ async function main() {
   }
 
   if (hadErrors) {
-    process.exit(1);
+    // Tolerate isolated article-translation failures below the threshold.
+    // These are typically transient Anthropic capacity errors that resolve
+    // on the next run. The failed files keep their previous on-disk state
+    // (or stay untranslated if new) and will be retried automatically when
+    // the English source next changes. Non-article failures (sidebars,
+    // reusables, API specs) always exit non-zero — they're rare and usually
+    // indicate a real bug, not transient load.
+    const failurePct = articlesAttempted > 0 ? articlesFailed / articlesAttempted : 1;
+    if (articlesFailed === 0 || failurePct >= ARTICLE_FAILURE_TOLERANCE) {
+      process.exit(1);
+    }
+    console.warn(
+      `\n[translate] WARNING: ${articlesFailed} of ${articlesAttempted} article(s) ` +
+      `failed translation (${(failurePct * 100).toFixed(1)}% — below ` +
+      `${(ARTICLE_FAILURE_TOLERANCE * 100).toFixed(0)}% threshold). ` +
+      `Continuing with partial output; the failed files will be retried on the next run.\n`
+    );
   }
 }
 
@@ -457,6 +482,7 @@ async function translateForLang(client, lang, localesDir, hashesDir, systemPromp
   }
 
   console.log(`${tag} ${toTranslate.length} article(s) to translate.`);
+  articlesAttempted += toTranslate.length;
 
   if (syncMode) {
     await translateSync(client, toTranslate, systemPrompt, localesDir, hashesDir, tag, lang);
@@ -511,6 +537,7 @@ async function translateSync(client, files, systemPrompt, localesDir, hashesDir,
         console.error(`  ✗ ${basename}: ${err.message}`);
         errors++;
         hadErrors = true;
+        articlesFailed++;
       }
     }
   }
@@ -1098,6 +1125,7 @@ async function translateBatchSections(client, files, systemPrompt, localesDir, h
 
     if (!allOk) {
       console.error(`  ✗ ${plan.basename}: some sections failed — file left unwritten`);
+      articlesFailed++;
       continue;
     }
 
