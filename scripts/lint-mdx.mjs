@@ -19,8 +19,10 @@
  * literals inside code blocks. The translator-prompt change covers the
  * regression class we hit with stray </details>; revisit if it recurs.
  *
- * Run: `node scripts/lint-mdx.mjs`
- * Exits non-zero on any error.
+ * Run: `node scripts/lint-mdx.mjs` to check.
+ *      `node scripts/lint-mdx.mjs --fix` also auto-corrects rules that are
+ *      mechanically safe to repair (currently: blank-line). Issues that
+ *      remain after the fix pass still cause a non-zero exit.
  */
 
 import fs from 'node:fs/promises';
@@ -32,6 +34,12 @@ const ROOT = process.cwd();
 // in the locale route — `client:load` requires a build-time module reference
 // for the hydration bundle.
 const CLIENT_LOAD_NEEDS_IMPORT = ['CompoundCalculator', 'SimpleCalculator'];
+
+const FIX = process.argv.includes('--fix');
+
+// Rules that --fix knows how to repair. Keep conservative — only add a rule
+// here if the repair is deterministic and cannot alter valid content.
+const FIXABLE_RULES = new Set(['blank-line']);
 
 async function* walkMdx(dir) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -121,10 +129,14 @@ function checkClientLoadImports(file, content, lines) {
 
 const allIssues = [];
 
+// Map relative path → absolute path so --fix can write repaired content back.
+const absByRel = new Map();
+
 for await (const file of walkMdx(path.join(ROOT, 'src'))) {
   const rel = path.relative(ROOT, file);
   // Skip generated/build dirs and our own scripts
   if (rel.startsWith('build/') || rel.includes('/.hashes/')) continue;
+  absByRel.set(rel, file);
 
   const content = await fs.readFile(file, 'utf-8');
   const lines = content.split('\n');
@@ -133,13 +145,45 @@ for await (const file of walkMdx(path.join(ROOT, 'src'))) {
   allIssues.push(...checkClientLoadImports(rel, content, lines));
 }
 
-if (allIssues.length === 0) {
+let fixedCount = 0;
+if (FIX) {
+  // Group fixable issues by file so we do a single read/write per file.
+  // Apply repairs in descending line order so earlier inserts don't
+  // invalidate later line numbers.
+  const fixableByFile = new Map();
+  for (const issue of allIssues) {
+    if (!FIXABLE_RULES.has(issue.rule)) continue;
+    if (!fixableByFile.has(issue.file)) fixableByFile.set(issue.file, []);
+    fixableByFile.get(issue.file).push(issue);
+  }
+  for (const [rel, issues] of fixableByFile) {
+    const abs = absByRel.get(rel);
+    if (!abs) continue;
+    const lines = (await fs.readFile(abs, 'utf-8')).split('\n');
+    for (const issue of issues.sort((a, b) => b.line - a.line)) {
+      if (issue.rule === 'blank-line') {
+        // issue.line is 1-indexed and points at the first non-blank line
+        // after the imports block. Insert an empty line just before it.
+        lines.splice(issue.line - 1, 0, '');
+      }
+    }
+    await fs.writeFile(abs, lines.join('\n'), 'utf-8');
+    fixedCount += issues.length;
+  }
+  if (fixedCount > 0) console.log(`lint-mdx: auto-fixed ${fixedCount} issue(s).`);
+}
+
+const remainingIssues = FIX
+  ? allIssues.filter(i => !FIXABLE_RULES.has(i.rule))
+  : allIssues;
+
+if (remainingIssues.length === 0) {
   console.log('lint-mdx: all files OK');
   process.exit(0);
 }
 
-console.error(`lint-mdx: found ${allIssues.length} issue(s):`);
-for (const i of allIssues) {
+console.error(`lint-mdx: found ${remainingIssues.length} ${FIX ? 'unfixable ' : ''}issue(s):`);
+for (const i of remainingIssues) {
   const loc = i.line > 0 ? `${i.file}:${i.line}` : i.file;
   console.error(`  [${i.rule}] ${loc} — ${i.message}`);
 }
