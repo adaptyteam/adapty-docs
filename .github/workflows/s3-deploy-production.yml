@@ -68,11 +68,29 @@ jobs:
           node-version: 20
       - run: node scripts/lint-mdx.mjs
 
+  # MDX parse sweep: compiles every .mdx file with the same remark plugins
+  # Astro uses, surfaces every parse error in one pass. Astro's locale
+  # builds halt at the first error, so without this gate broken files
+  # stay hidden behind whichever one CI happens to hit first.
+  check-mdx-parse:
+    name: Check MDX parse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+      - run: node scripts/check-mdx-parse.mjs
+
   # ──────────────────────────────────────────────────────────────
   # Full deploy: English + all locales (on content pushes)
   # ──────────────────────────────────────────────────────────────
   build-en:
-    needs: [check-internal-links, lint-mdx]
+    needs: [check-internal-links, lint-mdx, check-mdx-parse]
     runs-on: ubuntu-latest
     concurrency:
       group: build-en-${{ github.workflow }}-${{ github.ref }}
@@ -113,7 +131,7 @@ jobs:
           retention-days: 1
 
   build-locale-full:
-    needs: [check-internal-links, lint-mdx]
+    needs: [check-internal-links, lint-mdx, check-mdx-parse]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -216,7 +234,7 @@ jobs:
   # Translation-only deploy: build + upload only locale dirs
   # ──────────────────────────────────────────────────────────────
   build-locale-only:
-    needs: [classify, lint-mdx]
+    needs: [classify, lint-mdx, check-mdx-parse]
     if: needs.classify.outputs.translation_only == 'true'
     runs-on: ubuntu-latest
     strategy:
