@@ -115,15 +115,30 @@ function checkBlankAfterImports(file, lines) {
 function checkClientLoadImports(file, content, lines) {
   const issues = [];
   const stripped = stripCodeBlocks(content);
-  const imports = importedNames(findImportLines(lines));
+  const importLines = findImportLines(lines);
+  const imports = importedNames(importLines);
   for (const comp of CLIENT_LOAD_NEEDS_IMPORT) {
     const usesClientLoad = new RegExp(`<${comp}\\b[^>]*\\bclient:load\\b`).test(stripped);
-    if (usesClientLoad && !imports.has(comp)) {
+    if (!usesClientLoad) continue;
+    if (!imports.has(comp)) {
       issues.push({
         file,
         line: 0,
         rule: 'missing-import',
         message: `<${comp} client:load> used but not imported; client-hydrated components need a static import`,
+      });
+      continue;
+    }
+    // Path-aware check: remark-strip-imports drops any import line that
+    // contains "'@" (other than src/components/reusable/). A "present"
+    // import for a client:load component is useless if it gets stripped.
+    const line = importLines.find(({ text }) => text.includes(comp))?.text ?? '';
+    if (line.includes("'@") && !line.includes('src/components/reusable/')) {
+      issues.push({
+        file,
+        line: 0,
+        rule: 'stripped-import',
+        message: `import for ${comp} uses an '@'-aliased path; remark-strip-imports will delete it at build time. Use a relative path (e.g. '../../components/${comp}').`,
       });
     }
   }
