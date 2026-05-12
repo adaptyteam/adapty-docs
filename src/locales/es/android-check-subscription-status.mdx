@@ -1,0 +1,206 @@
+---
+title: "Comprobar el estado de la suscripción en el SDK de Android"
+description: "Aprende cómo comprobar el estado de la suscripción en tu app de Android con Adapty."
+metadataTitle: "Comprobar el Estado de la Suscripción | Documentación de Adapty"
+keywords: ['getProfile', 'subscription status']
+rank: 95
+---
+
+Para decidir si los usuarios pueden acceder al contenido de pago o ver un paywall, necesitas comprobar su [nivel de acceso](access-level) en el perfil.
+
+Este artículo muestra cómo acceder al estado del perfil para decidir qué deben ver los usuarios: si mostrarles un paywall o darles acceso a las funciones de pago.
+
+## Obtener el estado de la suscripción \{#get-subscription-status\}
+
+Cuando decides si mostrar un paywall o contenido de pago a un usuario, compruebas su [nivel de acceso](access-level) en su perfil. Tienes dos opciones:
+
+- Llama a `getProfile` si necesitas los datos más recientes del perfil de inmediato (por ejemplo, al iniciar la app) o quieres forzar una actualización.
+- Configura **actualizaciones automáticas del perfil** para mantener una copia local que se refresca automáticamente cada vez que cambia el estado de la suscripción.
+
+### Obtener el perfil \{#get-profile\}
+
+La forma más sencilla de obtener el estado de la suscripción es usar el método `getProfile` para acceder al perfil:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+            // check the access
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        // check the access
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+### Escuchar actualizaciones de la suscripción \{#listen-to-subscription-updates\}
+
+Para recibir automáticamente actualizaciones del perfil en tu app:
+
+1. Usa `Adapty.setOnProfileUpdatedListener()` para escuchar los cambios en el perfil: Adapty llamará automáticamente a este método cada vez que cambie el estado de la suscripción del usuario.
+2. Guarda los datos del perfil actualizado cuando se llame a este método, para poder usarlos en toda tu app sin realizar peticiones de red adicionales.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin
+class SubscriptionManager {
+    private var currentProfile: AdaptyProfile? = null
+    
+    init {
+        // Listen for profile updates
+        Adapty.setOnProfileUpdatedListener { profile ->
+            currentProfile = profile
+            // Update UI, unlock content, etc.
+        }
+    }
+    
+    // Use stored profile instead of calling getProfile()
+    fun hasAccess(): Boolean {
+        return currentProfile?.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="java" label="Java">
+
+```java
+public class SubscriptionManager {
+    private AdaptyProfile currentProfile;
+
+    public SubscriptionManager() {
+        // Listen for profile updates
+        Adapty.setOnProfileUpdatedListener(profile -> {
+            this.currentProfile = profile;
+            // Update UI, unlock content, etc.
+        });
+    }
+    
+    // Use stored profile instead of calling getProfile()
+    public boolean hasAccess() {
+        if (currentProfile == null) {
+            return false;
+        }
+        
+        AdaptyAccessLevel premiumAccess = currentProfile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
+        return premiumAccess != null && premiumAccess.isActive();
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::note
+Adapty llama automáticamente al listener de actualización del perfil cuando tu app arranca, proporcionando datos de suscripción en caché incluso si el dispositivo está sin conexión.
+:::
+
+## Conectar el perfil con la lógica del paywall \{#connect-profile-with-paywall-logic\}
+
+Cuando necesitas tomar decisiones inmediatas sobre mostrar paywalls o conceder acceso a funciones de pago, puedes comprobar el perfil del usuario directamente. Este enfoque es útil en situaciones como el inicio de la app, al entrar en secciones premium o antes de mostrar contenido específico.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin
+private fun initializePaywall() {
+    loadPaywall { paywallView ->
+        checkAccessLevel { result ->
+            when (result) {
+                is AdaptyResult.Success -> {
+                    if (!result.value && paywallView != null) {
+                        setContentView(paywallView) // Show paywall if no access
+                    }
+                }
+                is AdaptyResult.Error -> {
+                    if (paywallView != null) {
+                        setContentView(paywallView) // Show paywall if access check fails
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun checkAccessLevel(callback: ResultCallback<Boolean>) {
+    Adapty.getProfile { result ->
+        when (result) {
+            is AdaptyResult.Success -> {
+                val hasAccess = result.value.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true
+                callback.onResult(AdaptyResult.Success(hasAccess))
+            }
+            is AdaptyResult.Error -> {
+                callback.onResult(AdaptyResult.Error(result.error))
+            }
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="java" label="Java">
+
+```java
+private void initializePaywall() {
+    loadPaywall(paywallView -> {
+        checkAccessLevel(result -> {
+            if (result instanceof AdaptyResult.Success) {
+                boolean hasAccess = ((AdaptyResult.Success<Boolean>) result).getValue();
+                if (!hasAccess && paywallView != null) {
+                    setContentView(paywallView); // Show paywall if no access
+                }
+            } else if (result instanceof AdaptyResult.Error) {
+                if (paywallView != null) {
+                    setContentView(paywallView); // Show paywall if access check fails
+                }
+            }
+        });
+    });
+}
+
+private void checkAccessLevel(ResultCallback<Boolean> callback) {
+    Adapty.getProfile(result -> {
+        if (result instanceof AdaptyResult.Success) {
+            AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+            AdaptyAccessLevel premiumAccess = profile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
+            boolean hasAccess = premiumAccess != null && premiumAccess.isActive();
+            callback.onResult(AdaptyResult.success(hasAccess));
+        } else if (result instanceof AdaptyResult.Error) {
+            callback.onResult(AdaptyResult.error(((AdaptyResult.Error) result).getError()));
+        }
+    });
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Pasos siguientes \{#next-steps\}
+
+Ahora que sabes cómo hacer seguimiento del estado de la suscripción, aprende a [trabajar con perfiles de usuario](android-quickstart-identify) para asegurarte de que los usuarios pueden acceder a lo que han pagado.

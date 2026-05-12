@@ -1,0 +1,201 @@
+---
+title: "Obtener paywalls del Paywall Builder y su configuración en el SDK de Unity"
+description: "Aprende a recuperar paywalls de PB en Adapty para un mejor control de suscripciones en tu app de Unity."
+metadataTitle: "Recuperar paywalls de PB en Adapty | Documentación de Adapty"
+displayed_sidebar: sdkunity
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+rank: 80
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+
+Después de [diseñar la parte visual de tu paywall](adapty-paywall-builder) con el nuevo Paywall Builder en el Adapty Dashboard, puedes mostrarlo en tu app móvil. El primer paso es obtener el paywall asociado al placement y su configuración de vista, tal como se describe a continuación.
+
+:::warning
+El nuevo Paywall Builder funciona con el SDK de Unity versión 3.3.0 o superior.
+:::
+
+Ten en cuenta que este tema hace referencia a paywalls personalizados con Paywall Builder. Si estás implementando tus paywalls manualmente, consulta el tema [Obtener paywalls y productos para paywalls de Remote Config en tu app móvil](fetch-paywalls-and-products-unity).
+
+<SampleApp />
+
+<details>
+   <summary>Antes de empezar a mostrar paywalls en tu app móvil (haz clic para expandir)</summary>
+
+1. [Crea tus productos](create-product) en el Adapty Dashboard.
+2. [Crea un paywall e incorpora los productos en él](create-paywall) en el Adapty Dashboard.
+3. [Crea placements e incorpora tu paywall en ellos](create-placement) en el Adapty Dashboard.
+4. Instala el [SDK de Adapty](sdk-installation-unity) en tu app móvil.
+</details>
+
+## Obtener el paywall diseñado con Paywall Builder \{#fetch-paywall-designed-with-paywall-builder\}
+
+Si has [diseñado un paywall con el Paywall Builder](adapty-paywall-builder), no necesitas preocuparte por renderizarlo en el código de tu app móvil para mostrárselo al usuario. Este tipo de paywall contiene tanto lo que debe mostrarse como la forma en que debe mostrarse. Aun así, necesitas obtener su ID a través del placement, su configuración de vista, y luego presentarlo en tu app móvil.
+
+Para garantizar un rendimiento óptimo, es fundamental recuperar el paywall y su [configuración de vista](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) lo antes posible, dejando tiempo suficiente para que las imágenes se descarguen antes de presentarlas al usuario.
+
+Para obtener un paywall, usa el método `GetPaywall`:
+
+```csharp showLineNumbers
+Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
+  if(error != null) {
+    // handle the error
+    return;
+  }
+  
+  // paywall - the resulting object
+});
+```
+
+Parámetros:
+
+| Parámetro | Presencia | Descripción |
+|---------|--------|-----------|
+| **placementId** | requerido | El identificador del [Placement](placements) deseado. Es el valor que especificaste al crear un placement en el Adapty Dashboard. |
+| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la [localización del paywall](add-paywall-locale-in-adapty-paywall-builder). Se espera que este parámetro sea un código de idioma compuesto por uno o dos subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta es para el idioma, la segunda para la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p>Consulta [Localizaciones y códigos de idioma](localizations-and-locale-codes) para más información sobre códigos de idioma y cómo recomendamos usarlos.</p> |
+| **fetchPolicy** | por defecto: `.reloadRevalidatingCacheData` | <p>Por defecto, el SDK intentará cargar datos desde el servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre reciban los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `.returnCacheDataElseLoad` para devolver los datos en caché si existen. En este caso, los usuarios podrían no obtener los datos más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de la calidad de su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Ten en cuenta que la caché permanece intacta al reiniciar la app y solo se borra cuando se desinstala la app o mediante limpieza manual.</p><p></p><p>El SDK de Adapty almacena los paywalls localmente en dos capas: la caché de actualización regular descrita arriba y los [paywalls de respaldo](fallback-paywalls). También usamos CDN para obtener paywalls más rápido y un servidor de respaldo independiente en caso de que el CDN no sea accesible. Este sistema está diseñado para que siempre obtengas la versión más reciente de tus paywalls, garantizando fiabilidad incluso cuando la conexión a internet es escasa.</p> |
+| **loadTimeout** | por defecto: 5 seg | <p>Este valor limita el tiempo de espera para este método. Si se alcanza el tiempo límite, se devolverán los datos en caché o el respaldo local.</p><p>Ten en cuenta que en casos excepcionales este método puede agotar el tiempo ligeramente después de lo especificado en `loadTimeout`, ya que la operación puede consistir en diferentes solicitudes internamente.</p> |
+
+Parámetros de respuesta:
+
+| Parámetro | Descripción                                                                                                                                                 |
+| :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | Un objeto [`AdaptyPaywall`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall.html) con una lista de IDs de productos, el identificador del paywall, Remote Config y varias otras propiedades. |
+
+## Obtener la configuración de vista del paywall diseñado con Paywall Builder \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+Asegúrate de activar el toggle **Show on device** en el Paywall Builder. Si esta opción no está activada, la configuración de vista no estará disponible para recuperar.
+:::
+
+Después de obtener el paywall, comprueba si incluye una `ViewConfiguration`, lo que indica que fue creado con Paywall Builder. Esto te orientará sobre cómo mostrar el paywall. Si la `ViewConfiguration` está presente, trátalo como un paywall de Paywall Builder; si no, [trátalo como un paywall de Remote Config](present-remote-config-paywalls-unity).
+
+En el SDK de Unity, llama directamente al método `CreatePaywallView` sin necesidad de obtener primero la configuración de vista manualmente.
+
+:::warning
+El resultado del método `CreatePaywallView` solo puede usarse una vez. Si necesitas usarlo de nuevo, vuelve a llamar al método `CreatePaywallView`. Llamarlo dos veces sin recrearlo puede resultar en el error `AdaptyUIError.viewAlreadyPresented`.
+:::
+
+```csharp showLineNumbers
+var parameters = new AdaptyUICreatePaywallViewParameters()
+  .SetPreloadProducts(preloadProducts)
+  .SetLoadTimeout(new TimeSpan(0, 0, 3));
+
+AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+  // handle the result
+});
+```
+
+Parámetros:
+
+| Parámetro           | Presencia       | Descripción                                                  |
+| :------------------ | :------------- | :----------------------------------------------------------- |
+| **paywall**         | requerido       | Un objeto `AdaptyPaywall` para obtener un controlador para el paywall deseado. |
+| **loadTimeout**     | por defecto: 5 seg | Este valor limita el tiempo de espera para este método. Si se alcanza el tiempo límite, se devolverán los datos en caché o el respaldo local. Ten en cuenta que en casos excepcionales este método puede agotar el tiempo ligeramente después de lo especificado en `loadTimeout`, ya que la operación puede consistir en diferentes solicitudes internamente. |
+| **PreloadProducts** | opcional       | Proporciona un array de `AdaptyPaywallProducts` para optimizar el tiempo de visualización de los productos en pantalla. Si se pasa `nil`, AdaptyUI obtendrá automáticamente los productos necesarios. |
+| **CustomTags**      | opcional       | Define un diccionario de etiquetas personalizadas y sus valores resueltos. Las etiquetas personalizadas actúan como marcadores de posición en el contenido del paywall, reemplazados dinámicamente por cadenas específicas para contenido personalizado. Consulta el tema [Etiquetas personalizadas en el Paywall Builder](custom-tags-in-paywall-builder) para más detalles. |
+| **CustomTimers**    | opcional       | Define un diccionario de temporizadores personalizados y sus fechas de finalización. Los temporizadores personalizados te permiten mostrar cuentas regresivas en tu paywall. |
+
+:::note
+Si usas varios idiomas, aprende cómo añadir una [localización del Paywall Builder](add-paywall-locale-in-adapty-paywall-builder) y cómo usar los códigos de idioma correctamente [aquí](localizations-and-locale-codes).
+:::
+
+Una vez que tengas la vista, [presenta el paywall](unity-present-paywalls).
+
+## Personalizar recursos \{#customize-assets\}
+
+Para personalizar imágenes y vídeos en tu paywall, implementa los recursos personalizados.
+
+Las imágenes y vídeos hero tienen IDs predefinidos: `hero_image` y `hero_video`. En un bundle de recursos personalizado, apuntas a estos elementos por sus IDs y personalizas su comportamiento.
+
+Para otras imágenes y vídeos, necesitas [establecer un ID personalizado](custom-media) en el dashboard de Adapty.
+
+Por ejemplo, puedes:
+
+- Mostrar una imagen o vídeo diferente a algunos usuarios.
+- Mostrar una imagen de vista previa local mientras se carga la imagen principal remota.
+- Mostrar una imagen de vista previa antes de reproducir un vídeo.
+
+:::important
+Para usar esta función, actualiza el SDK de Adapty para Unity a la versión 3.8.0 o superior.
+:::
+
+A continuación se muestra un ejemplo de cómo proporcionar recursos personalizados mediante un diccionario simple:
+
+```csharp showLineNumbers
+var customAssets = new Dictionary<string, AdaptyCustomAsset>
+{
+    { "custom_image", AdaptyCustomAsset.LocalImageFile("custom_assets/images/custom_image.png") },
+    { "hero_video", AdaptyCustomAsset.LocalVideoFile("custom_assets/videos/custom_video.mp4") }
+};
+
+var parameters = new AdaptyUICreatePaywallViewParameters()
+    .SetCustomAssets(customAssets)
+    .SetLoadTimeout(new TimeSpan(0, 0, 3));
+
+AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+    // handle the result
+});
+```
+
+:::note
+Si no se encuentra un recurso, el paywall usará su apariencia predeterminada.
+:::
+
+## Configurar temporizadores definidos por el desarrollador \{#set-up-developer-defined-timers\}
+
+Para usar temporizadores personalizados en tu app de Unity, puedes pasar un diccionario de IDs de temporizadores y sus fechas de finalización directamente al método `SetCustomTimers`. Aquí tienes un ejemplo:
+
+```csharp showLineNumbers
+var customTimers = new Dictionary<string, DateTime> {
+    { "CUSTOM_TIMER_6H", DateTime.Now.AddHours(6) },
+    { "CUSTOM_TIMER_NY", new DateTime(2025, 1, 1) }
+};
+
+var parameters = new AdaptyUICreatePaywallViewParameters()
+    .SetCustomTimers(customTimers)
+    .SetLoadTimeout(new TimeSpan(0, 0, 3));
+
+AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+    // handle the result
+});
+```
+
+En este ejemplo, `CUSTOM_TIMER_NY` y `CUSTOM_TIMER_6H` son los **Timer ID** de los temporizadores definidos por el desarrollador que configuraste en el Adapty Dashboard. El resolvedor de temporizadores garantiza que tu app actualice dinámicamente cada temporizador con el valor correcto. Por ejemplo:
+
+- `CUSTOM_TIMER_NY`: El tiempo restante hasta el final del temporizador, como el Año Nuevo.
+- `CUSTOM_TIMER_6H`: El tiempo restante en un período de 6 horas que comenzó cuando el usuario abrió el paywall.
+
+## Acelerar la obtención del paywall con el paywall de audiencia predeterminada \{#speed-up-paywall-fetching-with-default-audience-paywall\}
+
+Normalmente, los paywalls se obtienen casi al instante, por lo que no necesitas preocuparte por acelerar este proceso. Sin embargo, en casos en los que tengas numerosas audiencias y paywalls, y tus usuarios tengan una conexión a internet débil, obtener un paywall puede tardar más de lo deseable. En esas situaciones, puede que quieras mostrar un paywall predeterminado para garantizar una experiencia de usuario fluida en lugar de no mostrar ningún paywall.
+
+Para abordar esto, puedes usar el método `GetPaywallForDefaultAudience`, que obtiene el paywall del placement especificado para la audiencia **All Users**. Sin embargo, es fundamental entender que el enfoque recomendado es obtener el paywall con el método `getPaywall`, como se detalla en la sección [Obtener paywall](#fetch-paywall) anterior.
+
+:::warning
+Considera usar `GetPaywall` en lugar de `GetPaywallForDefaultAudience`, ya que este último tiene limitaciones importantes:
+
+- **Problemas de compatibilidad**: Puede crear problemas al dar soporte a varias versiones de la app, requiriendo diseños compatibles con versiones anteriores o aceptando que las versiones más antiguas puedan mostrarse incorrectamente.
+- **Sin personalización**: Solo muestra contenido para la audiencia "All Users", eliminando la segmentación por país, atribución o atributos personalizados.
+
+Si la obtención más rápida supera estos inconvenientes para tu caso de uso, usa `GetPaywallForDefaultAudience` como se muestra a continuación. De lo contrario, usa `GetPaywall` como se describe [arriba](#fetch-paywall).
+:::
+
+```csharp showLineNumbers
+Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
+  if(error != null) {
+    // handle the error
+    return;
+  }
+  
+  // paywall - the resulting object
+});
+```
+
+Parámetros:
+
+| Parámetro | Presencia | Descripción                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | requerido | El identificador del [Placement](placements) deseado. Es el valor que especificaste al crear un placement en el Adapty Dashboard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la localización del paywall. Se espera que este parámetro sea un código de idioma compuesto por uno o dos subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta es para el idioma, la segunda para la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **fetchPolicy** | por defecto: `.reloadRevalidatingCacheData` | <p>Por defecto, el SDK intentará cargar datos desde el servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre reciban los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `.returnCacheDataElseLoad` para devolver los datos en caché si existen. En este caso, los usuarios podrían no obtener los datos más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de la calidad de su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Ten en cuenta que la caché permanece intacta al reiniciar la app y solo se borra cuando se desinstala la app o mediante limpieza manual.</p><p></p><p>El SDK de Adapty almacena los paywalls localmente en dos capas: la caché de actualización regular descrita arriba y los paywalls de respaldo. También usamos CDN para obtener paywalls más rápido y un servidor de respaldo independiente en caso de que el CDN no sea accesible. Este sistema está diseñado para que siempre obtengas la versión más reciente de tus paywalls, garantizando fiabilidad incluso cuando la conexión a internet es escasa.</p> |

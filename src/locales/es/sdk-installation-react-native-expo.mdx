@@ -1,0 +1,388 @@
+---
+title: "Instalar y configurar el SDK de Adapty para React Native en un proyecto Expo"
+description: "Guía paso a paso para instalar el SDK de Adapty para React Native en un proyecto Expo para apps con suscripciones."
+metadataTitle: "Instalación del SDK de Adapty en un proyecto Expo React Native | Documentación de Adapty"
+keywords: ['instalar sdk', 'sdk install', 'instalar sdk expo', 'expo dev client', 'expo react native', 'google play billing library', 'gpbl', 'billing library']
+rank: 60
+---
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+import GetKey from '@site/src/locales/es/reusable/GetKey.md';
+import AndroidBackupRules from '@site/src/locales/es/reusable/AndroidBackupRules.md';
+import InstallationPrereqs from '@site/src/locales/es/reusable/InstallationPrereqs.mdx';
+
+:::important
+Esta guía cubre la instalación y configuración del SDK de Adapty para React Native **en un proyecto Expo**.
+
+Si usas **React Native puro (sin Expo)**, sigue la [guía de instalación para React Native](sdk-installation-react-native-pure).
+:::
+
+El SDK de Adapty incluye dos módulos clave para una integración fluida en tu app de React Native:
+
+- **Core Adapty**: Este módulo es necesario para que Adapty funcione correctamente en tu app.
+- **AdaptyUI**: Este módulo es necesario si usas el [Adapty Paywall Builder](adapty-paywall-builder), una herramienta visual sin código para crear paywalls multiplataforma fácilmente. AdaptyUI se activa automáticamente junto con el módulo principal.
+
+Si quieres un tutorial completo sobre cómo implementar compras in-app en tu app de React Native, consulta [este artículo](https://adapty.io/blog/react-native-in-app-purchases-tutorial/).
+
+:::tip
+¿Quieres ver un ejemplo real de cómo se integra el SDK de Adapty en una app Expo? Echa un vistazo a nuestras apps de ejemplo:
+- [Ejemplo con Expo dev build](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo) para funcionalidad completa con compras reales y Paywall Builder
+- [Ejemplo con Expo Go y Web](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/ExpoGoWebMock) para pruebas con modo mock
+:::
+
+Para un recorrido completo de la implementación, también puedes ver el vídeo:
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/TtCJswpt2ms?si=FlFJGvpj-U33yoNK" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+## Requisitos \{#requirements\}
+
+El SDK de Adapty para React Native es compatible con iOS 13.0+, pero el uso de paywalls creados en el [Adapty Paywall Builder](adapty-paywall-builder) requiere iOS 15.0+.
+
+:::info
+Adapty es compatible con Google Play Billing Library hasta la versión 8.x. Por defecto, Adapty trabaja con Google Play Billing Library v.7.0.0, pero si quieres forzar una versión posterior, puedes [añadir la dependencia manualmente](https://developer.android.com/google/play/billing/integrate#dependency). En Expo, esto se puede hacer durante el prebuild o mediante un config plugin.
+:::
+
+<InstallationPrereqs />
+
+## Instalar el SDK de Adapty \{#install-adapty-sdk\}
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-React-Native.svg?style=flat&logo=react)](https://github.com/adaptyteam/AdaptySDK-React-Native/releases)
+
+:::important
+Se requiere [Expo Dev Client](https://docs.expo.dev/versions/latest/sdk/dev-client/) (una build de desarrollo personalizada) para usar Adapty en un proyecto Expo.
+
+Expo Go no admite módulos nativos personalizados, por lo que solo puedes usarlo con el [**modo mock**](#set-up-mock-mode-for-expo-go--expo-web) para el desarrollo de UI/lógica (sin compras reales ni renderizado de AdaptyUI/Paywall Builder).
+:::
+
+1. Instala el SDK de Adapty (esto también instala `@adapty/core` automáticamente):
+   ```sh
+   npx expo install react-native-adapty
+   npx expo prebuild
+   ```
+2. Compila tu app para desarrollo usando EAS o una build local:
+
+   <Tabs>
+   <TabItem value="eas" label="EAS build" default>
+      ```sh 
+      # Para iOS
+      eas build --profile development --platform ios
+
+   # Para Android
+   eas build --profile development --platform android
+      ```
+   </TabItem>
+   
+   <TabItem value="local" label="Local build">
+      ```sh 
+      # Para iOS
+      npx expo run:ios
+      
+      # Para Android
+      npx expo run:android
+      ```
+   </TabItem>
+   </Tabs>
+3. Inicia el servidor de desarrollo:
+   ```sh 
+   npx expo start --dev-client
+   ```
+
+## Activar el módulo Adapty del SDK de Adapty \{#activate-adapty-module-of-adapty-sdk\}
+
+<GetKey />
+
+Copia el siguiente código en `App.tsx` para activar Adapty:
+
+```typescript showLineNumbers title="App.tsx"
+
+adapty.activate('YOUR_PUBLIC_SDK_KEY');
+```
+
+:::important
+Espera a que `activate` se resuelva antes de llamar a cualquier otro método del SDK de Adapty. Consulta [Orden de llamadas en el SDK de React Native](react-native-sdk-call-order) para ver la secuencia completa.
+:::
+
+Ahora configura los paywalls en tu app:
+
+- Si usas [Adapty Paywall Builder](adapty-paywall-builder), sigue el [inicio rápido de Paywall Builder](react-native-quickstart-paywalls).
+- Si construyes tu propia UI de paywall, consulta el [inicio rápido para paywalls personalizados](react-native-quickstart-manual).
+
+:::tip
+Para evitar errores de activación en el entorno de desarrollo, usa los [consejos](#development-environment-tips).
+:::
+
+## Activar el módulo AdaptyUI del SDK de Adapty \{#activate-adaptyui-module-of-adapty-sdk\}
+
+Si planeas usar el [Paywall Builder](adapty-paywall-builder), necesitas el módulo AdaptyUI. Se activa automáticamente cuando activas el módulo principal; no necesitas hacer nada más.
+
+## Configuración opcional \{#optional-setup\}
+
+### Registro de actividad \{#logging\}
+
+#### Configurar el sistema de registro \{#set-up-the-logging-system\}
+
+Adapty registra errores e información importante para ayudarte a entender qué está ocurriendo. Los siguientes niveles están disponibles:
+
+| Nivel      | Descripción                                                  |
+| ---------- | ------------------------------------------------------------ |
+| `error`    | Solo se registran los errores                                    |
+| `warn`     | Se registran errores y mensajes del SDK que no causan errores críticos, pero que conviene atender |
+| `info`     | Se registran errores, advertencias y varios mensajes informativos |
+| `verbose`  | Se registra cualquier información adicional que pueda ser útil durante la depuración, como llamadas a funciones, consultas a la API, etc. |
+
+Puedes establecer el nivel de registro en tu app antes o durante la configuración de Adapty:
+
+```typescript showLineNumbers title="App.tsx"
+// Establece el nivel de registro antes de la activación
+// Se recomienda 'verbose' para el desarrollo y la primera versión en producción
+adapty.setLogLevel('verbose');
+
+// O establécelo durante la configuración
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  logLevel: 'verbose',
+});
+```
+
+### Políticas de datos \{#data-policies\}
+
+Adapty no almacena datos personales de tus usuarios a menos que los envíes explícitamente, pero puedes implementar políticas adicionales de seguridad de datos para cumplir con las directrices de la store o del país.
+
+#### Deshabilitar la recopilación y compartición de la dirección IP \{#disable-ip-address-collection-and-sharing\}
+
+Al activar el módulo Adapty, establece `ipAddressCollectionDisabled` en `true` para deshabilitar la recopilación y compartición de la dirección IP del usuario. El valor predeterminado es `false`.
+
+Usa este parámetro para mejorar la privacidad del usuario, cumplir con las normativas regionales de protección de datos (como el RGPD o la CCPA), o reducir la recopilación de datos innecesaria cuando las funciones basadas en IP no son necesarias para tu app.
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  ipAddressCollectionDisabled: true,
+});
+```
+
+#### Deshabilitar la recopilación y compartición del ID de publicidad \{#disable-advertising-id-collection-and-sharing\}
+
+Al activar el módulo Adapty, establece `ios.idfaCollectionDisabled` (iOS) o `android.adIdCollectionDisabled` (Android) en `true` para deshabilitar la recopilación de identificadores publicitarios. El valor predeterminado es `false`.
+
+Usa este parámetro para cumplir con las políticas de App Store/Play Store, evitar que se active el aviso de App Tracking Transparency, o si tu app no requiere atribución publicitaria ni analíticas basadas en IDs publicitarios.
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  ios: {
+    idfaCollectionDisabled: true,      
+  },
+  android: {
+    adIdCollectionDisabled: true,      
+  },
+});
+```
+
+#### Configurar la caché de medios para AdaptyUI \{#set-up-media-cache-configuration-for-adaptyui\}
+
+De forma predeterminada, AdaptyUI almacena en caché los medios (como imágenes y vídeos) para mejorar el rendimiento y reducir el uso de la red. Puedes personalizar la configuración de la caché proporcionando una configuración personalizada.
+
+Usa `mediaCache` para sobreescribir la configuración predeterminada de la caché:
+
+```typescript
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  mediaCache: {
+    memoryStorageTotalCostLimit: 200 * 1024 * 1024, // Opcional: tamaño de la caché en memoria en bytes
+    memoryStorageCountLimit: 2147483647,            // Opcional: número máximo de elementos en memoria
+    diskStorageSizeLimit: 200 * 1024 * 1024,       // Opcional: tamaño de la caché en disco en bytes
+  },
+});
+```
+
+Parámetros:
+| Parámetro | Requerido | Descripción |
+|-----------|----------|-------------|
+| memoryStorageTotalCostLimit | opcional | Tamaño total de la caché en memoria en bytes. El valor predeterminado es específico de la plataforma. |
+| memoryStorageCountLimit | opcional | Límite de elementos en la memoria. El valor predeterminado es específico de la plataforma. |
+| diskStorageSizeLimit | opcional | Límite de tamaño de archivo en disco en bytes. El valor predeterminado es específico de la plataforma. |
+
+### Habilitar niveles de acceso locales (Android) \{#enable-local-access-levels-android\}
+
+De forma predeterminada, los [niveles de acceso locales](local-access-levels) están habilitados en iOS y deshabilitados en Android. Para habilitarlos también en Android, establece `localAccessLevelAllowed` en `true`:
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  android: {
+     localAccessLevelAllowed: true,      
+  },
+});
+```
+
+### Limpiar datos al restaurar desde copia de seguridad \{#clear-data-on-backup-restore\}
+
+Cuando `clearDataOnBackup` se establece en `true`, el SDK detecta cuándo la app se restaura desde una copia de seguridad de iCloud y elimina todos los datos del SDK almacenados localmente, incluida la información del perfil en caché, los detalles de los productos y los paywalls. El SDK se inicializa entonces con un estado limpio. El valor predeterminado es `false`.
+
+:::note
+Solo se elimina la caché local del SDK. El historial de transacciones con Apple y los datos del usuario en los servidores de Adapty permanecen sin cambios.
+:::
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+   ios: {
+       clearDataOnBackup: true
+   },
+});
+```
+
+## Consejos para el entorno de desarrollo \{#development-environment-tips\}
+
+#### Configurar el modo mock para Expo Go / Expo Web \{#set-up-mock-mode-for-expo-go--expo-web\}
+
+Los entornos Expo Go y Expo Web no tienen acceso a los módulos nativos de Adapty. Para evitar errores en tiempo de ejecución mientras puedes seguir compilando y probando la UI y la lógica de paywalls de tu app, Adapty ofrece el **modo mock**.
+
+::::important
+El modo mock **no** es una herramienta para probar compras reales:
+
+- **No abre** los flujos de compra de App Store / Google Play y **no crea** transacciones reales.
+- **No renderiza** paywalls/onboardings creados con el **Adapty Paywall Builder (AdaptyUI)**.
+- Los módulos nativos de Adapty son **completamente ignorados**: ni siquiera los archivos del SDK nativo que falten en la build de Xcode/Android o una clave de API no válida generarán errores.
+
+Para probar compras reales y paywalls del Paywall Builder, usa un Expo Dev Client / build de producción donde el modo mock se deshabilita automáticamente.
+::::
+
+**Por defecto**, el SDK detecta automáticamente los entornos Expo Go y web, y habilita el modo mock. No necesitas configurar nada a menos que quieras personalizar los datos mock.
+
+Cuando el modo mock está activo:
+- Todos los métodos de Adapty devuelven datos mock sin hacer solicitudes de red a los servidores de Adapty.
+- Por defecto, el perfil mock inicial no tiene suscripciones activas.
+- Por defecto, `makePurchase(...)` simula una compra exitosa y concede acceso premium.
+
+Puedes personalizar los datos mock usando `mockConfig` durante la activación. Consulta el formato de configuración y los parámetros admitidos [aquí](https://react-native.adapty.io/interfaces/adaptymockconfig).
+
+```typescript showLineNumbers title="App.tsx"
+
+try {
+  await adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+    mockConfig: {
+      // Personaliza el perfil mock inicial (opcional)
+    },
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+}
+```
+
+Si necesitas llamar a métodos del SDK antes de la activación (como `isActivated()` o `setLogLevel()`), usa `enableMock()` antes de `activate()`. Si el bridge ya está inicializado, este método no hace nada.
+
+```typescript showLineNumbers title="App.tsx"
+
+adapty.enableMock(); // Opcional: pasa mockConfig para personalizar los datos mock
+
+// Ahora puedes llamar a métodos antes de la activación
+
+await adapty.activate('YOUR_PUBLIC_SDK_KEY');
+```
+
+#### Retrasar la activación del SDK para fines de desarrollo \{#delay-sdk-activation-for-development-purposes\}
+
+Adapty obtiene de forma anticipada todos los datos de usuario necesarios al activar el SDK, lo que permite un acceso más rápido a datos actualizados.
+
+Sin embargo, esto puede ser un problema en el simulador de iOS, que con frecuencia solicita autenticación durante el desarrollo. Aunque Adapty no puede controlar el flujo de autenticación de StoreKit, sí puede aplazar las solicitudes realizadas por el SDK para obtener datos de usuario actualizados.
+
+Al habilitar la propiedad `__debugDeferActivation`, la llamada a activate se retiene hasta que se realiza la siguiente llamada al SDK de Adapty. Esto evita solicitudes innecesarias de datos de autenticación si no son necesarias.
+
+Es importante tener en cuenta que **esta funcionalidad está pensada solo para uso en desarrollo**, ya que no cubre todos los escenarios posibles del usuario. En producción, la activación no debe retrasarse, ya que los dispositivos reales suelen recordar los datos de autenticación y no solicitan credenciales repetidamente.
+
+Este es el enfoque recomendado para usarlo:
+
+```typescript showLineNumbers title="Typescript"
+try {
+  adapty.activate('PUBLIC_SDK_KEY', {
+    __debugDeferActivation: isSimulator(), // 'isSimulator' de cualquier librería de terceros
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+  // Maneja el error de forma adecuada para tu app
+}
+```
+
+#### Solucionar errores de activación del SDK con el Fast Refresh de React Native \{#troubleshoot-sdk-activation-errors-on-react-natives-fast-refresh\}
+
+Al desarrollar con el SDK de Adapty en React Native, puede que te encuentres con el error: `Adapty can only be activated once. Ensure that the SDK activation call is not made more than once.`
+
+Esto ocurre porque la función de recarga rápida de React Native provoca múltiples llamadas de activación durante el desarrollo. Para evitarlo, usa la opción `__ignoreActivationOnFastRefresh` establecida en `__DEV__` (la bandera del modo de desarrollo de React Native).
+```typescript showLineNumbers title="Typescript"
+try {
+  adapty.activate('PUBLIC_SDK_KEY', {
+    __ignoreActivationOnFastRefresh: __DEV__, 
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+  // Maneja el error de forma adecuada para tu app
+}
+```
+
+## Solución de problemas \{#troubleshooting\}
+
+#### Error de versión mínima de iOS \{#minimum-ios-version-error\}
+
+Al compilar para iOS, puede que veas un error sobre la **versión mínima de iOS** o el deployment target, especialmente si usas paywalls creados en el [Adapty Paywall Builder](adapty-paywall-builder), que requieren **iOS 15.0+**.
+
+Como Expo genera el proyecto iOS (incluido el `Podfile`) durante `expo prebuild`, **no debes editar el `Podfile` directamente**. En su lugar, configura el deployment target mediante el config plugin `expo-build-properties`.
+
+1. Instala el plugin:
+
+   ```sh
+   npx expo install expo-build-properties
+   ```
+2. Actualiza tu configuración de Expo (`app.json` o `app.config.js`) para establecer el deployment target de iOS:
+
+```
+{
+    "expo": {
+        // ...otras configuraciones de Expo...
+        "plugins": [
+            [
+                "expo-build-properties",
+                {
+                    "ios": {
+                        // Usa "13.0" solo para funciones principales de Adapty,
+                        // o "15.0" si usas paywalls creados en el paywall builder.
+                        "deploymentTarget": "15.0"
+                    }
+                }
+            ],
+        ]
+    }
+}
+```
+
+3. Regenera el proyecto nativo de iOS y vuelve a compilar:
+
+```
+npx expo prebuild --clean
+npx expo run:ios      # o `eas build -p ios` en tu CI
+```
+
+#### Conflicto de manifiesto con Android Auto Backup \{#android-auto-backup-manifest-conflict\}
+
+Al usar Expo con varios SDKs que configuran Android Auto Backup (como Adapty, AppsFlyer o expo-secure-store), puede que te encuentres con un conflicto de fusión de manifiestos.
+
+Un error típico tiene este aspecto: `Manifest merger failed : Attribute application@fullBackupContent value=(@xml/secure_store_backup_rules) from AndroidManifest.xml:24:248-306
+is also present at [io.adapty:android-sdk:3.12.0] AndroidManifest.xml:9:18-70 value=(@xml/adapty_backup_rules).`
+
+Para resolver este conflicto, necesitas que el plugin de Adapty gestione la configuración de Android backup.
+Si tu proyecto también usa `expo-secure-store`, deshabilita su propia configuración de backup para evitar solapamientos.
+
+Así es como se configura en tu `app.json`:
+
+```json title="app.json"
+{
+  "expo": {
+    "plugins": [
+      ["react-native-adapty", { "replaceAndroidBackupConfig": true }],
+      ["expo-secure-store", { "configureAndroidBackup": false }]
+    ]
+  }
+}
+```
+La opción `replaceAndroidBackupConfig` está en `false` por defecto. Cuando se habilita, permite que el plugin de Adapty controle las reglas de backup de Android.
+Incluye `"configureAndroidBackup": false` si usas `expo-secure-store` para evitar advertencias, ya que la configuración de backup de SecureStore será gestionada por Adapty.
+
+:::important
+Esta configuración solo respeta los requisitos de backup para Adapty, AppsFlyer y expo-secure-store.
+Si otras librerías de tu proyecto definen reglas de backup personalizadas, tendrás que configurarlas manualmente.
+:::

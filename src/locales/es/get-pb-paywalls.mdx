@@ -1,0 +1,236 @@
+---
+title: "Obtener paywalls del Paywall Builder y su configuración en el SDK de iOS"
+description: "Aprende cómo recuperar paywalls de PB en Adapty para un mejor control de suscripciones en tu app de iOS."
+metadataTitle: "Recuperar paywalls de PB en Adapty | Documentación de Adapty"
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience', 'cache']
+rank: 100
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+
+Después de [diseñar la parte visual de tu paywall](adapty-paywall-builder) con el nuevo Paywall Builder en el Adapty Dashboard, puedes mostrarlo en tu app móvil. El primer paso es obtener el paywall asociado al placement y su configuración de vista, tal como se describe a continuación.
+
+:::warning
+El nuevo Paywall Builder funciona con la versión 3.0 o superior del SDK de iOS. Para mostrar paywalls en Adapty SDK v2 diseñados con el Paywall Builder heredado, consulta [Mostrar paywalls diseñados con el Paywall Builder heredado](adapty-paywall-builder).
+:::
+
+Ten en cuenta que este tema hace referencia a los paywalls personalizados con Paywall Builder. Si estás implementando tus paywalls de forma manual, consulta el tema [Obtener paywalls y productos para paywalls con Remote Config en tu app móvil](fetch-paywalls-and-products).
+
+<SampleApp />
+
+<details>
+   <summary>Antes de empezar a mostrar paywalls en tu app móvil (haz clic para expandir)</summary>
+
+1. [Crea tus productos](create-product) en el Adapty Dashboard.
+2. [Crea un paywall e incorpora los productos en él](create-paywall) en el Adapty Dashboard.
+3. [Crea placements e incorpora tu paywall en ellos](create-placement) en el Adapty Dashboard.
+4. Instala el [SDK de Adapty](sdk-installation-ios) en tu app móvil.
+</details>
+
+## Obtener un paywall diseñado con Paywall Builder \{#fetch-paywall-designed-with-paywall-builder\}
+
+Si has [diseñado un paywall con Paywall Builder](adapty-paywall-builder), no necesitas preocuparte por renderizarlo en el código de tu app para mostrárselo al usuario. Ese tipo de paywall contiene tanto qué se debe mostrar dentro del paywall como cómo debe mostrarse. Aun así, necesitas obtener su ID a través del placement, su configuración de vista y luego presentarlo en tu app móvil.
+
+Para garantizar un rendimiento óptimo, es fundamental obtener el paywall y su [configuración de vista](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) lo antes posible, dejando tiempo suficiente para que las imágenes se descarguen antes de mostrárselas al usuario.
+
+Para obtener un paywall, usa el método `getPaywall`:
+
+<Tabs>
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    // the requested paywall
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+Parámetros:
+
+| Parámetro | Presencia | Descripción |
+|---------|--------|-----------|
+| **placementId** | obligatorio | El identificador del [Placement](placements) deseado. Es el valor que especificaste al crear un placement en el Adapty Dashboard. |
+| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la [localización del paywall](add-paywall-locale-in-adapty-paywall-builder). Se espera que este parámetro sea un código de idioma compuesto por una o dos subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta corresponde al idioma y la segunda a la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués brasileño.</p><p>Consulta [Localizaciones y códigos de idioma](localizations-and-locale-codes) para más información sobre los códigos de idioma y cómo recomendamos utilizarlos.</p> |
+| **fetchPolicy** | por defecto: `.reloadRevalidatingCacheData` | <p>Por defecto, el SDK intentará cargar datos desde el servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre obtengan los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `.returnCacheDataElseLoad` para devolver datos en caché si existen. En ese caso, los usuarios podrían no obtener los datos más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de lo inestable que sea su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Ten en cuenta que la caché permanece intacta al reiniciar la app y solo se borra cuando se desinstala la app o mediante una limpieza manual.</p><p></p><p>El SDK de Adapty almacena los paywalls localmente en dos capas: la caché actualizada regularmente descrita anteriormente y los [paywalls de respaldo](fallback-paywalls). También usamos CDN para obtener los paywalls más rápido y un servidor de respaldo independiente en caso de que la CDN no sea accesible. Este sistema está diseñado para garantizar que siempre obtengas la versión más reciente de tus paywalls, asegurando la fiabilidad incluso cuando la conexión a internet es escasa.</p> |
+| **loadTimeout** | por defecto: 5 seg | <p>Este valor limita el tiempo de espera para este método. Si se alcanza el tiempo de espera, se devolverán los datos en caché o el respaldo local.</p><p>Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo especificado en `loadTimeout`, ya que la operación puede estar compuesta por diferentes solicitudes internamente.</p> |
+
+Parámetros de respuesta:
+
+| Parámetro | Descripción                                                                                                                                                 |
+| :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | Un objeto [`AdaptyPaywall`](https://swift.adapty.io/documentation/adapty/adaptypaywall) con una lista de IDs de producto, el identificador del paywall, Remote Config y otras propiedades. |
+
+## Obtener la configuración de vista de un paywall diseñado con Paywall Builder \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+Asegúrate de activar el toggle **Show on device** en el paywall builder. Si esta opción no está activada, la configuración de vista no estará disponible para recuperarse.
+:::
+
+Después de obtener el paywall, comprueba si incluye una configuración de vista, lo que indica que fue creado con Paywall Builder. Esto te guiará sobre cómo mostrar el paywall. Si la configuración de vista está presente, trátalo como un paywall de Paywall Builder; si no, [trátalo como un paywall con Remote Config](present-remote-config-paywalls).
+
+Usa el método `getPaywallConfiguration` para cargar la configuración de vista.
+
+```swift showLineNumbers
+
+guard paywall.hasViewConfiguration else {
+    //  use your custom logic
+    return
+}
+
+do {
+    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
+            forPaywall: paywall,
+            products: products
+    )
+    // use loaded configuration
+} catch {
+    // handle the error
+}
+```
+
+Parámetros:
+
+| Parámetro                | Presencia       | Descripción                                                  |
+| :----------------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**              | obligatorio       | Un objeto `AdaptyPaywall` para obtener un controlador para el paywall deseado. |
+| **loadTimeout**          | por defecto: 5 seg | Este valor limita el tiempo de espera para este método. Si se alcanza el tiempo de espera, se devolverán los datos en caché o el respaldo local. Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo especificado en `loadTimeout`, ya que la operación puede estar compuesta por diferentes solicitudes internamente. |
+| **products**             | opcional       | Proporciona un array de `AdaptyPaywallProducts` para optimizar el tiempo de visualización de los productos en pantalla. Si se pasa `nil`, AdaptyUI obtendrá automáticamente los productos necesarios. |
+
+:::note
+Si usas varios idiomas, aprende cómo añadir una [localización de Paywall Builder](add-paywall-locale-in-adapty-paywall-builder) y cómo usar los códigos de idioma correctamente [aquí](localizations-and-locale-codes).
+:::
+
+Una vez cargado, [presenta el paywall](ios-present-paywalls).
+
+## Obtener un paywall para la audiencia predeterminada para cargarlo más rápido \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Normalmente, los paywalls se obtienen casi al instante, así que no necesitas preocuparte por acelerar este proceso. Sin embargo, si tienes muchas audiencias y paywalls y tus usuarios tienen una conexión a internet débil, obtener un paywall puede tardar más de lo deseable. En esos casos, puede que quieras mostrar un paywall predeterminado para garantizar una experiencia de usuario fluida en lugar de no mostrar ningún paywall.
+
+Para solucionar esto, puedes usar el método `getPaywallForDefaultAudience`, que obtiene el paywall del placement especificado para la audiencia **All Users**. Sin embargo, es fundamental entender que el enfoque recomendado es obtener el paywall con el método `getPaywall`, como se detalla en la sección [Obtener información del paywall](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder) anterior.
+
+:::warning
+Por qué recomendamos usar `getPaywall`
+
+El método `getPaywallForDefaultAudience` tiene algunos inconvenientes importantes:
+
+- **Posibles problemas de compatibilidad con versiones anteriores**: Si necesitas mostrar paywalls diferentes para distintas versiones de la app (actual y futuras), puedes encontrarte con dificultades. Tendrás que diseñar paywalls compatibles con la versión actual (heredada) o aceptar que los usuarios con la versión actual (heredada) puedan tener problemas con paywalls que no se renderizan.
+- **Pérdida de targeting**: Todos los usuarios verán el mismo paywall diseñado para la audiencia **All Users**, lo que significa que perderás el targeting personalizado (incluyendo por países, atribución de marketing o tus propios atributos personalizados).
+
+Si estás dispuesto a aceptar estos inconvenientes para beneficiarte de una obtención más rápida del paywall, usa el método `getPaywallForDefaultAudience` como se indica a continuación. De lo contrario, usa `getPaywall` descrito [anteriormente](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder).
+:::
+
+```swift showLineNumbers
+Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+
+:::note
+El método `getPaywallForDefaultAudience` está disponible a partir de la versión 2.11.2 del SDK de iOS.
+:::
+
+| Parámetro | Presencia | Descripción |
+|---------|--------|-----------|
+| **placementId** | obligatorio | El identificador del [Placement](placements). Es el valor que especificaste al crear un placement en tu Adapty Dashboard. |
+| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la [localización del paywall](add-remote-config-locale). Se espera que este parámetro sea un código de idioma compuesto por una o más subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta corresponde al idioma y la segunda a la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués brasileño.</p><p></p><p>Consulta [Localizaciones y códigos de idioma](localizations-and-locale-codes) para más información sobre los códigos de idioma y cómo recomendamos utilizarlos.</p> |
+| **fetchPolicy** | por defecto: `.reloadRevalidatingCacheData` | <p>Por defecto, el SDK intentará cargar datos desde el servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre obtengan los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `.returnCacheDataElseLoad` para devolver datos en caché si existen. En ese caso, los usuarios podrían no obtener los datos más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de lo inestable que sea su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Ten en cuenta que la caché permanece intacta al reiniciar la app y solo se borra cuando se desinstala la app o mediante una limpieza manual.</p> |
+
+## Personalizar recursos \{#customize-assets\}
+
+Para personalizar imágenes y vídeos en tu paywall, implementa los recursos personalizados.
+
+Las imágenes y vídeos principales tienen IDs predefinidos: `hero_image` y `hero_video`. En un bundle de recursos personalizados, puedes apuntar a estos elementos por sus IDs y personalizar su comportamiento.
+
+Para otras imágenes y vídeos, necesitas [establecer un ID personalizado](custom-media) en el dashboard de Adapty.
+
+Por ejemplo, puedes:
+
+- Mostrar una imagen o vídeo diferente a algunos usuarios.
+- Mostrar una imagen de vista previa local mientras se carga la imagen principal remota.
+- Mostrar una imagen de vista previa antes de reproducir un vídeo.
+
+:::important
+Para usar esta función, actualiza el SDK de Adapty para iOS a la versión 3.7.0 o superior.
+:::
+
+Aquí tienes un ejemplo de cómo proporcionar recursos personalizados mediante un diccionario simple:
+
+```swift showLineNumbers
+let customAssets: [String: AdaptyCustomAsset] = [
+    // Show a local image using a custom ID
+    "custom_image": .image(
+        .uiImage(value: UIImage(named: "image_name")!)
+    ),
+
+    // Show a local preview image while a remote main image is loading
+    "hero_image": .image(
+        .remote(
+            url: URL(string: "https://example.com/image.jpg")!,
+            preview: UIImage(named: "preview_image")
+        )
+    ),
+
+    // Show a local video with a preview image
+    "hero_video": .video(
+        .file(
+            url: Bundle.main.url(forResource: "custom_video", withExtension: "mp4")!,
+            preview: .uiImage(value: UIImage(named: "video_preview")!)
+        )
+    ),
+]
+
+let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
+    forPaywall: paywall,
+    assetsResolver: customAssets
+)
+```
+
+:::note
+Si no se encuentra un recurso, el paywall usará su apariencia predeterminada.
+:::
+
+## Configurar temporizadores definidos por el desarrollador \{#set-up-developer-defined-timers\}
+
+Para usar temporizadores personalizados en tu app móvil, crea un objeto que siga el protocolo `AdaptyTimerResolver`. Este objeto define cómo debe renderizarse cada temporizador personalizado. Si lo prefieres, puedes usar directamente un diccionario `[String: Date]`, ya que ya cumple con este protocolo. Aquí tienes un ejemplo:
+
+```swift showLineNumbers
+@MainActor
+struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
+    func timerEndAtDate(for timerId: String) -> Date {
+        switch timerId {
+        case "CUSTOM_TIMER_6H":
+            Date(timeIntervalSinceNow: 3600.0 * 6.0) // 6 hours
+        case "CUSTOM_TIMER_NY":
+            Calendar.current.date(from: DateComponents(year: 2025, month: 1, day: 1)) ?? Date(timeIntervalSinceNow: 3600.0)
+        default:
+            Date(timeIntervalSinceNow: 3600.0) // 1 hour
+        }
+    }
+}
+```
+
+En este ejemplo, `CUSTOM_TIMER_NY` y `CUSTOM_TIMER_6H` son los **Timer ID** de los temporizadores definidos por el desarrollador que configuraste en el Adapty Dashboard. El `timerResolver` garantiza que tu app actualice dinámicamente cada temporizador con el valor correcto. Por ejemplo:
+
+- `CUSTOM_TIMER_NY`: El tiempo restante hasta el final del temporizador, como el día de Año Nuevo.
+- `CUSTOM_TIMER_6H`: El tiempo restante en un período de 6 horas que comenzó cuando el usuario abrió el paywall.

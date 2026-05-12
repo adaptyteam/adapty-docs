@@ -1,0 +1,371 @@
+---
+title: "Instalar y configurar Adapty SDK en un proyecto React Native puro"
+metadataTitle: "Instalar Adapty SDK en un proyecto React Native puro | Documentación de Adapty"
+keywords: ['instalar sdk', 'sdk install', 'instalar sdk react native', 'react native', 'google play billing library', 'gpbl', 'billing library']
+description: "Guía paso a paso para instalar Adapty SDK en React Native para apps basadas en suscripciones."
+rank: 60
+---
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+import GetKey from '@site/src/locales/es/reusable/GetKey.md';
+import AndroidBackupRules from '@site/src/locales/es/reusable/AndroidBackupRules.md';
+import InstallationPrereqs from '@site/src/locales/es/reusable/InstallationPrereqs.mdx';
+
+:::important
+Esta guía aplica únicamente a **proyectos React Native puros (sin Expo)**.  
+Si usas **Expo**, sigue la [guía de instalación para Expo](sdk-installation-react-native-expo).
+:::
+
+El SDK de Adapty incluye dos módulos clave para integrarse sin problemas en tu app de React Native:
+
+- **Core Adapty**: Este módulo es obligatorio para que Adapty funcione correctamente en tu app.
+- **AdaptyUI**: Este módulo es necesario si usas el [Adapty Paywall Builder](adapty-paywall-builder), una herramienta visual sin código para crear paywalls multiplataforma fácilmente. AdaptyUI se activa automáticamente junto con el módulo principal.
+
+:::tip
+¿Quieres ver un ejemplo real de cómo se integra el SDK de Adapty en una app móvil? Echa un vistazo a nuestras [apps de ejemplo](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples), que muestran la configuración completa, incluyendo la visualización de paywalls, la realización de compras y otras funcionalidades básicas.
+:::
+
+## Requisitos \{#requirements\}
+
+El SDK de Adapty para React Native es compatible con iOS 13.0+, pero para usar paywalls creados en el [Adapty Paywall Builder](adapty-paywall-builder) se requiere iOS 15.0+.
+
+:::info
+Adapty es compatible con Google Play Billing Library hasta la versión 8.x. Por defecto, Adapty trabaja con Google Play Billing Library v.7.0.0, pero si quieres forzar una versión posterior, puedes [añadir la dependencia](https://developer.android.com/google/play/billing/integrate#dependency) manualmente.
+:::
+
+<InstallationPrereqs />
+
+## Instalar Adapty SDK \{#install-adapty-sdk\}
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-React-Native.svg?style=flat&logo=react)](https://github.com/adaptyteam/AdaptySDK-React-Native/releases)
+
+1. Instala el SDK de Adapty (esto también instala `@adapty/core` automáticamente):
+   ```sh showLineNumbers title="Shell"
+   # using npm
+   npm install react-native-adapty
+   
+   # or using yarn
+   yarn add react-native-adapty  
+   ```
+2. Para iOS, instala los pods:
+   ```sh showLineNumbers title="Shell"
+   cd ios && pod install
+   ```
+
+<details>
+   <summary>Para Android, si tu versión de React Native es anterior a 0.73.0 (haz clic para expandir)</summary>
+
+Actualiza el archivo `/android/build.gradle`. Asegúrate de que exista la dependencia `kotlin-gradle-plugin:1.8.0` o una versión más reciente:
+
+   ```groovy showLineNumbers title="/android/build.gradle"
+   ...
+   buildscript {
+     ...
+     dependencies {
+       ...
+       classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0"
+     }
+   }
+   ...
+   ```
+
+</details>
+
+## Activar el módulo Core de Adapty SDK \{#activate-adapty-module-of-adapty-sdk\}
+
+<GetKey />
+
+Copia el siguiente código en `App.tsx` para activar Adapty:
+
+```typescript showLineNumbers title="App.tsx"
+
+adapty.activate('YOUR_PUBLIC_SDK_KEY');
+```
+
+:::important
+Espera a que `activate` se resuelva antes de llamar a cualquier otro método del SDK de Adapty. Consulta el [orden de llamadas en el SDK de React Native](react-native-sdk-call-order) para ver la secuencia completa.
+:::
+
+Ahora configura los paywalls en tu app:
+
+- Si usas el [Adapty Paywall Builder](adapty-paywall-builder), sigue el [inicio rápido con Paywall Builder](react-native-quickstart-paywalls).
+- Si construyes tu propia UI de paywall, consulta el [inicio rápido para paywalls personalizados](react-native-quickstart-manual).
+
+:::tip
+Para evitar errores de activación en el entorno de desarrollo, usa los [consejos](#development-environment-tips).
+:::
+
+## Activar el módulo AdaptyUI de Adapty SDK \{#activate-adaptyui-module-of-adapty-sdk\}
+
+Si planeas usar el [Paywall Builder](adapty-paywall-builder), necesitas el módulo AdaptyUI. Se activa automáticamente cuando activas el módulo principal; no tienes que hacer nada más.
+
+## Configuración opcional \{#optional-setup\}
+
+### Logging \{#logging\}
+
+#### Configurar el sistema de logging \{#set-up-the-logging-system\}
+
+Adapty registra errores e información importante para ayudarte a entender qué está ocurriendo. Los niveles disponibles son los siguientes:
+
+| Nivel      | Descripción                                                  |
+| ---------- | ------------------------------------------------------------ |
+| `error`    | Solo se registrarán los errores                              |
+| `warn`     | Se registrarán los errores y los mensajes del SDK que no causan errores críticos pero merecen atención |
+| `info`     | Se registrarán los errores, las advertencias y varios mensajes informativos |
+| `verbose`  | Se registrará cualquier información adicional que pueda ser útil durante la depuración, como llamadas a funciones, consultas a la API, etc. |
+
+Puedes establecer el nivel de log en tu app antes o durante la configuración de Adapty:
+
+```typescript showLineNumbers title="App.tsx"
+// Set log level before activation
+// 'verbose' is recommended for development and the first production release
+adapty.setLogLevel('verbose');
+
+// Or set it during configuration
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  logLevel: 'verbose',
+});
+```
+
+### Políticas de datos \{#data-policies\}
+
+Adapty no almacena datos personales de tus usuarios a menos que los envíes explícitamente, pero puedes implementar políticas adicionales de seguridad de datos para cumplir con las directrices de la store o del país.
+
+#### Deshabilitar la recopilación y el uso compartido de la dirección IP \{#disable-ip-address-collection-and-sharing\}
+
+Al activar el módulo de Adapty, establece `ipAddressCollectionDisabled` en `true` para deshabilitar la recopilación y el uso compartido de la dirección IP del usuario. El valor predeterminado es `false`.
+
+Usa este parámetro para reforzar la privacidad del usuario, cumplir con las normativas regionales de protección de datos (como RGPD o CCPA), o reducir la recopilación de datos innecesaria cuando las funciones basadas en IP no son necesarias para tu app.
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  ipAddressCollectionDisabled: true,
+});
+```
+
+#### Deshabilitar la recopilación y el uso compartido del ID de publicidad \{#disable-advertising-id-collection-and-sharing\}
+
+Al activar el módulo de Adapty, establece `ios.idfaCollectionDisabled` (iOS) o `android.adIdCollectionDisabled` (Android) en `true` para deshabilitar la recopilación de identificadores publicitarios. El valor predeterminado es `false`.
+
+Usa este parámetro para cumplir con las políticas de App Store/Play Store, evitar que se active el aviso de App Tracking Transparency, o si tu app no requiere atribución publicitaria ni analíticas basadas en IDs de publicidad.
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  ios: {
+    idfaCollectionDisabled: true,      
+  },
+  android: {
+    adIdCollectionDisabled: true,      
+  },
+});
+```
+
+#### Configurar la caché de medios para AdaptyUI \{#set-up-media-cache-configuration-for-adaptyui\}
+
+Por defecto, AdaptyUI almacena en caché los medios (como imágenes y vídeos) para mejorar el rendimiento y reducir el uso de la red. Puedes personalizar la configuración de la caché proporcionando una configuración personalizada.
+
+Usa `mediaCache` para sobreescribir la configuración de caché predeterminada:
+
+```typescript
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  mediaCache: {
+    memoryStorageTotalCostLimit: 200 * 1024 * 1024, // Optional: memory cache size in bytes
+    memoryStorageCountLimit: 2147483647,            // Optional: max number of items in memory
+    diskStorageSizeLimit: 200 * 1024 * 1024,       // Optional: disk cache size in bytes
+  },
+});
+```
+
+Parámetros:
+| Parámetro | Obligatorio | Descripción |
+|-----------|----------|-------------|
+| memoryStorageTotalCostLimit | opcional | Tamaño total de la caché en memoria en bytes. El valor predeterminado depende de la plataforma. |
+| memoryStorageCountLimit | opcional | El límite de elementos en el almacenamiento en memoria. El valor predeterminado depende de la plataforma. |
+| diskStorageSizeLimit | opcional | El límite de tamaño de archivo en disco en bytes. El valor predeterminado depende de la plataforma. |
+
+### Habilitar niveles de acceso locales (Android) \{#enable-local-access-levels-android\}
+
+Por defecto, los [niveles de acceso locales](local-access-levels) están habilitados en iOS y deshabilitados en Android. Para habilitarlos también en Android, establece `localAccessLevelAllowed` en `true`:
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  android: {
+     localAccessLevelAllowed: true,      
+  },
+});
+```
+
+### Borrar datos al restaurar desde copia de seguridad \{#clear-data-on-backup-restore\}
+
+Cuando `clearDataOnBackup` está establecido en `true`, el SDK detecta cuando la app se restaura desde una copia de seguridad de iCloud y elimina todos los datos del SDK almacenados localmente, incluida la información del perfil en caché, los detalles de los productos y los paywalls. El SDK se inicializa entonces con un estado limpio. El valor predeterminado es `false`.
+
+:::note
+Solo se elimina la caché local del SDK. El historial de transacciones con Apple y los datos del usuario en los servidores de Adapty permanecen sin cambios.
+:::
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+   ios: {
+      clearDataOnBackup: true
+   },
+});
+```
+
+## Consejos para el entorno de desarrollo \{#development-environment-tips\}
+
+#### Retrasar la activación del SDK para desarrollo \{#delay-sdk-activation-for-development-purposes\}
+
+Adapty realiza una precarga de todos los datos necesarios del usuario al activarse el SDK, lo que permite un acceso más rápido a datos actualizados.
+
+Sin embargo, esto puede ser un problema en el simulador de iOS, que frecuentemente solicita autenticación durante el desarrollo. Aunque Adapty no puede controlar el flujo de autenticación de StoreKit, sí puede aplazar las solicitudes que hace el SDK para obtener datos actualizados del usuario.
+
+Al habilitar la propiedad `__debugDeferActivation`, la llamada de activación queda en espera hasta que realizas la siguiente llamada al SDK de Adapty. Esto evita avisos de autenticación innecesarios si no son necesarios.
+
+Es importante tener en cuenta que **esta funcionalidad está pensada únicamente para el desarrollo**, ya que no cubre todos los escenarios de usuario posibles. En producción, la activación no debería retrasarse, ya que los dispositivos reales normalmente recuerdan los datos de autenticación y no solicitan credenciales repetidamente.
+
+Este es el enfoque recomendado:
+
+```typescript showLineNumbers title="Typescript"
+try {
+  adapty.activate('PUBLIC_SDK_KEY', {
+    __debugDeferActivation: isSimulator(), // 'isSimulator' from any 3rd party library
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+  // Handle the error appropriately for your app
+}
+```
+
+#### Solucionar errores de activación del SDK con Fast Refresh de React Native \{#troubleshoot-sdk-activation-errors-on-react-natives-fast-refresh\}
+
+Al desarrollar con el SDK de Adapty en React Native, es posible que encuentres el error: `Adapty can only be activated once. Ensure that the SDK activation call is not made more than once.`
+
+Esto ocurre porque la función de recarga rápida de React Native activa múltiples llamadas de activación durante el desarrollo. Para evitarlo, usa la opción `__ignoreActivationOnFastRefresh` establecida en `__DEV__` (el indicador del modo desarrollo de React Native).
+```typescript showLineNumbers title="Typescript"
+try {
+  adapty.activate('PUBLIC_SDK_KEY', {
+    __ignoreActivationOnFastRefresh: __DEV__, 
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+  // Handle the error appropriately for your app
+}
+```
+
+#### Configurar el modo mock para pruebas locales \{#set-up-mock-mode-for-local-testing\}
+
+Para el desarrollo y las pruebas locales, puedes habilitar el modo mock para evitar necesitar cuentas sandbox de App Store/Google Play y agilizar las iteraciones. El modo mock omite por completo los módulos nativos de Adapty y devuelve datos simulados.
+
+:::important
+El modo mock **no** es una herramienta para probar compras reales:
+
+- **No abre** los flujos de compra de App Store / Google Play ni **crea** transacciones reales.
+- **No renderiza** paywalls/onboardings creados con **Adapty Paywall Builder (AdaptyUI)**.
+- Los módulos nativos de Adapty se **omiten por completo**; incluso la ausencia de archivos nativos del SDK en la compilación de Xcode/Android o una clave de API inválida no generarán errores.
+- No se envían datos a los servidores de Adapty.
+
+Para probar compras reales y paywalls del Paywall Builder, deshabilita el modo mock y usa cuentas sandbox.
+:::
+
+Para habilitar el modo mock, establece `enableMock` en `true`:
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  enableMock: true,
+});
+```
+
+Cuando el modo mock está activo:
+- Todos los métodos de Adapty devuelven datos mock sin realizar solicitudes de red a los servidores de Adapty.
+- Por defecto, el perfil mock inicial no tiene suscripciones activas.
+- Por defecto, `makePurchase(...)` simula una compra exitosa y otorga acceso premium.
+
+Puedes personalizar los datos mock usando `mockConfig` durante la activación. Consulta el formato de configuración y los parámetros soportados [aquí](https://react-native.adapty.io/interfaces/adaptymockconfig).
+
+```typescript showLineNumbers title="App.tsx"
+
+try {
+   await adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+      mockConfig: {
+         // Customize the initial mock profile (optional)
+      },
+   });
+} catch (error) {
+   console.error('Failed to activate Adapty SDK:', error);
+}
+```
+
+Si necesitas llamar a métodos del SDK antes de la activación (como `isActivated()` o `setLogLevel()`), usa `enableMock()` antes de `activate()`. Si el bridge ya está inicializado, este método no hace nada.
+
+```typescript showLineNumbers title="App.tsx"
+adapty.enableMock(); // Optional: pass mockConfig to customize mock data
+
+// Now you can call methods before activation
+
+await adapty.activate('YOUR_PUBLIC_SDK_KEY');
+```
+
+## Solución de problemas \{#troubleshooting\}
+
+#### Error de versión mínima de iOS \{#minimum-ios-version-error\}
+
+Si obtienes un error de versión mínima de iOS, actualiza tu Podfile:
+
+```diff
+-platform :ios, min_ios_version_supported
++platform :ios, '13.0'  # For core features only
+# OR
++platform :ios, '15.0'  # If using paywalls created in the paywall builder
+```
+
+#### Conflicto de manifiesto de Android Auto Backup \{#android-auto-backup-manifest-conflict\}
+
+<AndroidBackupRules />
+
+#### Las compras fallan al volver desde otra app en Android \{#purchases-fail-after-returning-from-another-app-in-android\}
+
+Si la Activity que inicia el flujo de compra usa un `launchMode` no predeterminado, Android puede recrearla o reutilizarla incorrectamente cuando el usuario regresa desde Google Play, una app bancaria o un navegador. Esto puede provocar que el resultado de la compra se pierda o se trate como cancelado.
+
+Para asegurarte de que las compras funcionen correctamente, usa únicamente los modos de lanzamiento `standard` o `singleTop` para la Activity que inicia el flujo de compra, y evita cualquier otro modo.
+
+En tu `AndroidManifest.xml`, asegúrate de que la Activity que inicia el flujo de compra esté configurada como `standard` o `singleTop`:
+
+```xml
+<activity
+    android:name=".MainActivity"
+    android:launchMode="standard" />
+```
+
+#### Errores de compilación de Swift 6 causados por la sobreescritura de SWIFT_VERSION en el Podfile \{#swift-6-build-errors-caused-by-podfile-swift_version-override\}
+
+Al compilar tu app de React Native para iOS, es posible que veas errores de compilación de Swift 6 en los targets de pods de Adapty. Los síntomas típicos incluyen incompatibilidades de `@Sendable` en `AdaptyUIBuilderLogic`, conformidad `Sendable` faltante en los tipos de Adapty, o errores de aislamiento de actores.
+
+Los pods de Adapty declaran `s.swift_version = '6.0'` y requieren Swift 6 para compilarse. Tu propio código de app puede seguir en Swift 5; solo los targets de los pods de Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`) necesitan compilarse con Swift 6.
+
+La causa más común es un hook `post_install` en `ios/Podfile` que sobreescribe `SWIFT_VERSION` para todos los targets de pods:
+
+```ruby showLineNumbers title="ios/Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+**Solución**: Excluye los targets de los pods de Adapty de la sobreescritura:
+
+```ruby showLineNumbers title="ios/Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin].include?(target.name)
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+Luego ejecuta `pod install` desde el directorio `ios/` y vuelve a compilar.
+
+Para verificarlo, abre `ios/Pods/Pods.xcodeproj`, selecciona el target del pod `Adapty` → **Build Settings** → **Swift Language Version**. Debería indicar **Swift 6**.

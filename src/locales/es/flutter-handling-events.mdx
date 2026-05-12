@@ -1,0 +1,407 @@
+---
+title: "Flutter - Gestionar eventos del paywall"
+description: "Descubre cómo gestionar eventos relacionados con suscripciones en Flutter usando Adapty para rastrear las interacciones de los usuarios de manera efectiva."
+metadataTitle: "Gestión de eventos en Flutter | Documentación de Adapty"
+keywords: ['event', 'paywallViewDidAppear', 'paywallViewDidDisappear', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+import PaywallAction from '@site/src/locales/es/reusable/PaywallAction.md';
+
+:::important
+Esta guía cubre el manejo de eventos para compras, restauraciones, selección de productos y renderizado de paywalls. También debes implementar el manejo de botones (cerrar paywall, abrir enlaces, etc.). Consulta nuestra [guía sobre el manejo de acciones de botones](flutter-handle-paywall-actions) para más detalles.
+:::
+
+Los paywalls configurados con el [Paywall Builder](adapty-paywall-builder-legacy) no necesitan código adicional para realizar ni restaurar compras. Sin embargo, generan ciertos eventos a los que tu app puede responder. Esos eventos incluyen pulsaciones de botones (botones de cierre, URLs, selecciones de productos, etc.), así como notificaciones sobre acciones relacionadas con compras realizadas en el paywall. A continuación aprenderás cómo responder a estos eventos.
+
+:::warning
+
+Esta guía es exclusivamente para **paywalls del nuevo Paywall Builder**, que requieren el SDK de Adapty v3.0 o posterior.
+
+:::
+
+Para controlar o monitorizar los procesos que ocurren en la pantalla del paywall dentro de tu app, implementa los métodos de `AdaptyUIPaywallsEventsObserver` y establece el observer antes de presentar cualquier pantalla:
+
+```javascript showLineNumbers title="Flutter"
+AdaptyUI().setPaywallsEventsObserver(this);
+```
+
+<SampleApp />
+
+### Eventos generados por el usuario \{#user-generated-events\}
+
+#### Paywall mostrado \{#paywall-appeared\}
+
+Este método se invoca cuando la vista del paywall aparece en pantalla.
+
+:::note
+En iOS, también se invoca cuando el usuario pulsa el [botón de web paywall](web-paywall#step-2a-add-a-web-purchase-button) dentro de un paywall y se abre un web paywall en un navegador integrado.
+:::
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidAppear(AdaptyUIPaywallView view) {
+}
+```
+
+#### Paywall ocultado \{#paywall-disappeared\}
+
+Este método se invoca cuando la vista del paywall desaparece de la pantalla.
+
+:::note
+En iOS, también se invoca cuando un [web paywall](web-paywall#step-2a-add-a-web-purchase-button) abierto desde un paywall en un navegador integrado desaparece de la pantalla.
+:::
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidDisappear(AdaptyUIPaywallView view) {
+}
+```
+
+#### Selección de producto \{#product-selection\}
+
+Si se selecciona un producto para comprar (por el usuario o por el sistema), se invocará este método:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidSelectProduct(AdaptyUIPaywallView view, String productId) {
+}
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+#### Compra iniciada \{#started-purchase\}
+
+Si el usuario inicia el proceso de compra, se invocará este método:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) {
+}
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Compra finalizada \{#finished-purchase\}
+
+Este método se invoca cuando una compra tiene éxito, el usuario cancela su compra o la compra queda pendiente:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidFinishPurchase(AdaptyUIPaywallView view, 
+                                  AdaptyPaywallProduct product, 
+                                  AdaptyPurchaseResult purchaseResult) {
+    switch (purchaseResult) {
+      case AdaptyPurchaseResultSuccess(profile: final profile):
+        // successful purchase
+        break;
+      case AdaptyPurchaseResultPending():
+        // purchase is pending
+        break;
+      case AdaptyPurchaseResultUserCancelled():
+        // user cancelled the purchase
+        break;
+      default:
+        break;
+    }
+}
+```
+
+<Details>
+<summary>Ejemplos de eventos (haz clic para expandir)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "AdaptyPurchaseResultSuccess",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "AdaptyPurchaseResultPending"
+  }
+}
+
+// User cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "AdaptyPurchaseResultUserCancelled"
+  }
+}
+```
+</Details>
+
+Recomendamos cerrar la pantalla en ese caso. Consulta [Responder a acciones de botones](flutter-handle-paywall-actions) para más detalles sobre cómo cerrar una pantalla de paywall.
+
+#### Navegación de pago web finalizada \{#finished-web-payment-navigation\}
+
+Este método se invoca después de un intento de abrir un [web paywall](web-paywall) para un producto específico. Esto incluye tanto los intentos de navegación exitosos como los fallidos:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view, 
+                                               AdaptyPaywallProduct? product, 
+                                               AdaptyError? error) {
+}
+```
+
+**Parámetros:**
+
+| Parámetro   | Descripción                                                                                                          |
+|:------------|:---------------------------------------------------------------------------------------------------------------------|
+| **product** | Un `AdaptyPaywallProduct` para el que se abrió el web paywall. Puede ser `null`.                                     |
+| **error**   | Un objeto `AdaptyError` si la navegación al web paywall falló; `null` si la navegación fue exitosa.                  |
+
+<Details>
+<summary>Ejemplos de eventos (haz clic para expandir)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_navigation_failed",
+    "message": "Failed to open web paywall",
+    "details": {
+      "underlyingError": "Browser unavailable"
+    }
+  }
+}
+```
+</Details>
+
+#### Compra fallida \{#failed-purchase\}
+
+Este método se invoca cuando una compra falla (por ejemplo, debido a problemas de pago o errores de red). **No** se activa para cancelaciones iniciadas por el usuario ni para transacciones pendientes — esos casos los gestiona `paywallViewDidFinishPurchase`:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidFailPurchase(AdaptyUIPaywallView view, 
+                                AdaptyPaywallProduct product, 
+                                AdaptyError error) {
+}
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+#### Restauración iniciada \{#started-restore\}
+
+Si el usuario inicia el proceso de restauración, se invocará este método:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidStartRestore(AdaptyUIPaywallView view) {
+}
+```
+
+#### Restauración exitosa \{#successful-restore\}
+
+Si la restauración de una compra tiene éxito, se invocará este método:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
+}
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Recomendamos cerrar la pantalla si el usuario tiene el `accessLevel` requerido. Consulta el tema [Estado de suscripción](flutter-listen-subscription-changes) para aprender cómo verificarlo y el tema [Responder a acciones de botones](flutter-handle-paywall-actions) para aprender cómo cerrar una pantalla de paywall.
+
+#### Restauración fallida \{#failed-restore\}
+
+Si la restauración de una compra falla, se invocará este método:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
+}
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+### Carga de datos y renderizado \{#data-fetching-and-rendering\}
+
+#### Errores al cargar productos \{#product-loading-errors\}
+
+Si no pasas el array de productos durante la inicialización, AdaptyUI recuperará los objetos necesarios del servidor por sí mismo. Si esta operación falla, AdaptyUI reportará el error invocando este método:
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) {
+}
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+#### Errores de renderizado \{#rendering-errors\}
+
+Si se produce un error durante el renderizado de la interfaz, se reportará llamando a este método. Por defecto (desde v3.15.2), el paywall se cierra automáticamente cuando ocurre un error de renderizado, pero puedes cambiar este comportamiento si lo necesitas.
+
+```javascript showLineNumbers title="Flutter"
+void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
+  // Default behavior: view.dismiss()
+  // Override with custom logic if needed, for example:
+  // - Log the error
+  // - Show an error message to the user
+}
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+En condiciones normales, estos errores no deberían ocurrir, así que si te encuentras con alguno, por favor comunícanoslo.

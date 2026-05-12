@@ -1,0 +1,30 @@
+---
+title: "Optimizar la obtención de paywalls en el SDK de Kotlin Multiplatform"
+description: "Obtén paywalls de Adapty de forma fiable: tiempos, caché y patrones de respaldo para Kotlin Multiplatform."
+metadataTitle: "Optimizar la obtención de paywalls | SDK de Kotlin Multiplatform | Documentación de Adapty"
+---
+
+Una obtención fiable de paywalls en Kotlin Multiplatform hace tres cosas: renderiza rápido, devuelve el paywall dirigido a la audiencia correcta y recurre al respaldo de forma elegante cuando la red es lenta. Las reglas que se presentan a continuación cubren los patrones de tiempos, caché y respaldo para lograrlo.
+
+:::tip
+Las reglas asumen que `Adapty.activate()` y `Adapty.identify()` ya se han resuelto. Consulta [Orden de llamadas en el SDK de Kotlin Multiplatform](kmp-sdk-call-order).
+:::
+
+## Reglas y errores comunes \{#rules-and-pitfalls\}
+
+| Haz esto | No hagas esto | Por qué |
+|---|---|---|
+| Obtén el placement que estás a punto de mostrar.                                                                                                                | No precargues todos los placements de forma simultánea al arrancar.        | La precarga masiva bloquea el hilo principal y produce una pantalla en negro durante el pico de carga.                                  |
+| Llama a `getPaywall` después de que la atribución haya tenido oportunidad de resolverse — por ejemplo, 1–2 segundos después de `activate` o cuando se dispare `setOnProfileUpdatedListener`. | No llames a `getPaywall` al arrancar la app.                       | La atribución aún no ha llegado. El paywall se resuelve contra la audiencia predeterminada y omite silenciosamente los segmentos y la personalización de ASA. |
+| Establece un `loadTimeout` y configura un [paywall de respaldo](fallback-paywalls) para cada placement.                                                           | No esperes `getPaywall` indefinidamente.                     | Sin timeout, los usuarios con mala conectividad ven una pantalla en blanco hasta que la red se resuelva, o cierran la app.     |
+
+Consulta [Obtener paywalls y productos](fetch-paywalls-and-products-kmp) para la referencia de los parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
+
+## Ajustar para conectividad deficiente \{#tune-for-poor-connectivity\}
+
+Para mercados con conectividad consistentemente deficiente (zonas rurales, transporte público, regiones afectadas por enrutamiento):
+
+- Establece `fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` en cada obtención excepto la primera.
+- Configura un [paywall de respaldo](fallback-paywalls) para cada placement en el Adapty Dashboard.
+- Establece `loadTimeout` entre 3 y 5 segundos y acepta el respaldo cuando se agote el tiempo.
+- No condicionales la visualización del paywall a `Adapty.getProfile()`. Llama a `getPaywall` de forma independiente para que un perfil lento no bloquee la interfaz.

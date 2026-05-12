@@ -1,0 +1,257 @@
+---
+title: "Habilitar compras usando paywalls en Flutter SDK"
+description: "Guía de inicio rápido para configurar Adapty en la gestión de suscripciones in-app."
+metadataTitle: "Guía de inicio rápido de Adapty | Documentación de Adapty"
+keywords: [ 'paywall', 'paywall builder', 'getPaywall']
+rank: 70
+displayed_sidebar: sdkflutter
+---
+
+import PaywallsIntro from '@site/src/locales/es/reusable/PaywallsIntro.md';
+
+Para habilitar las compras in-app, necesitas entender tres conceptos clave:
+
+- [**Productos**](product) – cualquier cosa que los usuarios pueden comprar (suscripciones, consumibles, acceso de por vida)
+- [**Paywalls**](paywalls) son configuraciones que definen qué productos ofrecer. En Adapty, los paywalls son la única forma de recuperar productos, pero este diseño te permite modificar ofertas, precios y combinaciones de productos sin tocar el código de tu app.
+- [**Placements**](placements) – dónde y cuándo muestras los paywalls en tu app (como `main`, `onboarding`, `settings`). Configuras los paywalls para los placements en el dashboard y luego los solicitas por ID de placement en tu código. Esto facilita ejecutar pruebas A/B y mostrar diferentes paywalls a distintos usuarios.
+
+Adapty te ofrece tres formas de habilitar compras en tu app. Elige la que mejor se adapte a los requisitos de tu app:
+
+| Implementación         | Complejidad | Cuándo usarla                                                                                                                                                                                                                                |
+|------------------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty Paywall Builder | ✅ Fácil     | [Creas un paywall completo y listo para compras en el editor sin código](quickstart-paywalls). Adapty lo renderiza automáticamente y gestiona todo el flujo de compra complejo, la validación de recibos y la administración de suscripciones en segundo plano. |
+| Paywalls creados manualmente | 🟡 Medio  | Implementas la UI de tu paywall en el código de tu app, pero sigues obteniendo el objeto paywall de Adapty para mantener flexibilidad en las ofertas de productos. Consulta la [guía](flutter-quickstart-manual).                              |
+| Modo observador              | 🔴 Difícil    | Ya tienes tu propia infraestructura de gestión de compras y quieres seguir usándola. Ten en cuenta que el modo observador tiene sus limitaciones en Adapty. Consulta el [artículo](observer-vs-full-mode).                                   |
+
+:::important
+**Los pasos a continuación muestran cómo implementar un paywall creado en el Adapty Paywall Builder.**
+
+Si no quieres usar el Paywall Builder, consulta la [guía para gestionar compras en paywalls creados manualmente](flutter-making-purchases).
+:::
+
+Para mostrar un paywall creado en el Adapty Paywall Builder, en el código de tu app solo necesitas:
+
+1. **Obtener el paywall**: Obtén el paywall desde Adapty.
+2. **Mostrar el paywall y Adapty gestionará las compras por ti**: Muestra el contenedor del paywall que obtuviste en tu app.
+3. **Gestionar las acciones de los botones**: Asocia las interacciones del usuario con el paywall con la respuesta de tu app. Por ejemplo, abrir enlaces o cerrar el paywall cuando los usuarios pulsen botones.
+
+## Antes de comenzar \{#before-you-start\}
+
+Antes de comenzar, completa estos pasos:
+
+1. Conecta tu app al [App Store](initial_ios) y/o [Google Play](initial-android) en el Adapty Dashboard.
+2. [Crea tus productos](create-product) en Adapty.
+3. [Crea un paywall y añade productos](create-paywall).
+4. [Crea un placement y añade tu paywall](create-placement).
+5. [Instala y activa el SDK de Adapty](sdk-installation-flutter) en el código de tu app.
+
+:::tip
+La forma más rápida de completar estos pasos es seguir la [guía de inicio rápido](quickstart) o crear paywalls y placements usando el [CLI para desarrolladores](developer-cli-quickstart).
+:::
+
+## 1. Obtener el paywall \{#1-get-the-paywall\}
+
+Tus paywalls están asociados a los placements configurados en el dashboard. Los placements te permiten mostrar diferentes paywalls para distintas audiencias o ejecutar [pruebas A/B](ab-tests).
+
+Para obtener un paywall creado en el Adapty Paywall Builder, necesitas:
+
+1. Obtener el objeto `paywall` por el ID del [placement](placements) usando el método `getPaywall` y verificar si es un paywall creado en el builder usando la propiedad `hasViewConfiguration`.
+
+2. Crear la vista del paywall usando el método `createPaywallView`. La vista contiene los elementos de UI y el estilo necesarios para mostrar el paywall.
+
+:::important
+Para obtener la configuración de la vista, debes activar el toggle **Show on device** en el Paywall Builder. De lo contrario, obtendrás una configuración de vista vacía y el paywall no se mostrará.
+:::
+
+```dart showLineNumbers
+
+try {
+  final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en");
+  // the requested paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+
+try {
+  final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+      );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+## 2. Mostrar el paywall \{#2-display-the-paywall\}
+
+Ahora que tienes la configuración del paywall, basta con añadir unas pocas líneas para mostrarlo.
+
+Para mostrar el paywall, usa el método `view.present()` sobre el `view` creado por el método `createPaywallView`. Cada `view` solo puede usarse una vez. Si necesitas mostrar el paywall de nuevo, llama a `createPaywallView` otra vez para crear una nueva instancia de `view`.
+
+```dart showLineNumbers title="Flutter"
+try {
+  await view.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+:::tip
+Para más detalles sobre cómo mostrar un paywall, consulta nuestra [guía](flutter-present-paywalls).
+:::
+
+## 3. Gestionar las acciones de los botones \{#3-handle-button-actions\}
+
+Cuando los usuarios pulsan botones en el paywall, el SDK de Flutter gestiona automáticamente las compras y la restauración. Sin embargo, otros botones tienen IDs personalizados o predefinidos y requieren gestionar las acciones en tu código.
+
+Para controlar o monitorizar los procesos en la pantalla del paywall, implementa los métodos de `AdaptyUIPaywallsEventsObserver` y establece el observer antes de presentar cualquier pantalla. Si un usuario ha realizado alguna acción, se invocará `paywallViewDidPerformAction` y tu app deberá responder según el ID de la acción.
+
+Por ejemplo, tu paywall probablemente tenga un botón de cerrar y URLs que abrir (como los términos de uso y la política de privacidad). Por lo tanto, debes responder a las acciones con los IDs `Close` y `OpenUrl`.
+
+:::tip
+Lee nuestras guías sobre cómo gestionar [acciones](flutter-handle-paywall-actions) y [eventos](flutter-handling-events) de botones.
+:::
+
+```dart showLineNumbers title="Flutter"
+class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywallsEventsObserver {
+  @override
+  void initState() {
+    super.initState();
+    // Register this class as the paywalls event observer
+    AdaptyUI().setPaywallsEventsObserver(this);
+  }
+
+  // This method is called when user performs an action on the paywall UI
+  @override
+  void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL using url_launcher package
+        _launchUrl(url);
+        break;
+    }
+  }
+
+  // Helper method to launch URLs
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Handle case where URL cannot be launched
+        print('Could not launch $url');
+      }
+    } catch (e) {
+      // Handle any errors
+      print('Error launching URL: $e');
+    }
+  }
+}
+
+```
+
+## Próximos pasos \{#next-steps\}
+
+<SupportForum />
+
+Tu paywall está listo para mostrarse en la app. Prueba tus compras en el [sandbox de App Store](test-purchases-in-sandbox) o en [Google Play Store](testing-on-android) para asegurarte de que puedes completar una compra de prueba desde el paywall.
+
+Ahora necesitas [comprobar el nivel de acceso de los usuarios](flutter-check-subscription-status) para asegurarte de que muestras un paywall o concedes acceso a las funciones de pago a los usuarios correctos.
+
+## Ejemplo completo \{#full-example\}
+
+Así es como se pueden integrar todos estos pasos en tu app.
+
+```dart
+
+void main() async {
+  runApp(MaterialApp(home: PaywallScreen()));
+}
+
+class PaywallScreen extends StatefulWidget {
+  @override
+  State<PaywallScreen> createState() => _PaywallScreenState();
+}
+
+class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywallsEventsObserver {
+  @override
+  void initState() {
+    super.initState();
+    // Register this class as the paywalls event observer
+    AdaptyUI().setPaywallsEventsObserver(this);
+    _showPaywallIfNeeded();
+  }
+
+  Future<void> _showPaywallIfNeeded() async {
+    try {
+
+      final paywall = await Adapty().getPaywall(
+        placementId: 'YOUR_PLACEMENT_ID',
+      );
+
+      if (!paywall.hasViewConfiguration) return;
+
+      final view = await AdaptyUI().createPaywallView(paywall: paywall);
+
+      await view.present();
+    } catch (_) {
+      // Handle any errors (network, SDK issues, etc.)
+    }
+  }
+
+  // This method is called when user performs an action on the paywall UI
+  @override
+  void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL using url_launcher package
+        _launchUrl(url);
+        break;
+    }
+  }
+
+  // Helper method to launch URLs
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Handle case where URL cannot be launched
+        print('Could not launch $url');
+      }
+    } catch (e) {
+      // Handle any errors
+      print('Error launching URL: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Adapty Paywall Example')),
+      body: Center(
+        // Add a button to re-trigger the paywall for testing purposes
+        child: ElevatedButton(
+          onPressed: _showPaywallIfNeeded,
+          child: Text('Show Paywall'),
+        ),
+      ),
+    );
+  }
+}
+
+```

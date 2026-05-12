@@ -1,0 +1,64 @@
+---
+title: "Usar localizaciones y códigos de idioma en el SDK de iOS"
+description: "Gestiona las localizaciones de la app y los códigos de idioma para llegar a una audiencia global en tu app de iOS."
+metadataTitle: "Gestión de localizaciones y códigos de idioma | Documentación de Adapty"
+---
+
+## Por qué esto es importante \{#why-this-is-important\}
+
+Hay algunos escenarios en los que los códigos de idioma entran en juego, por ejemplo, cuando intentas obtener el paywall correcto para la localización actual de tu app.
+
+Como los códigos de idioma son complejos y pueden variar de una plataforma a otra, nos basamos en un estándar interno para todas las plataformas que soportamos. Sin embargo, precisamente por esa complejidad, es muy importante que entiendas exactamente qué estás enviando a nuestro servidor para obtener la localización correcta y qué ocurre a continuación, de modo que siempre recibas lo que esperas.
+
+## Estándar de códigos de idioma en Adapty \{#locale-code-standard-at-adapty\}
+
+Para los códigos de idioma, Adapty utiliza una versión ligeramente modificada del [estándar BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): cada código está formado por subetiquetas en minúsculas separadas por guiones. Algunos ejemplos: `en` (inglés), `pt-br` (portugués de Brasil), `zh` (chino simplificado), `zh-hant` (chino tradicional).
+
+## Coincidencia de códigos de idioma \{#locale-code-matching\}
+
+Cuando Adapty recibe una llamada del SDK con el código de idioma y busca la localización correspondiente de un paywall, ocurre lo siguiente:
+
+1. La cadena de idioma entrante se convierte a minúsculas y todos los guiones bajos (`_`) se reemplazan con guiones (`-`).
+2. Buscamos la localización con el código de idioma que coincida exactamente.
+3. Si no se encuentra ninguna coincidencia, tomamos la subcadena antes del primer guion (`pt` para `pt-br`) y buscamos la localización correspondiente.
+4. Si tampoco se encuentra coincidencia, devolvemos la localización por defecto `en`.
+
+De este modo, un dispositivo iOS que envíe `'pt_BR'`, un dispositivo Android que envíe `pt-BR` y otro dispositivo que envíe `pt-br` obtendrán el mismo resultado.
+
+## Implementar localizaciones: la forma recomendada \{#implementing-localizations-recommended-way\}
+
+Si te estás preguntando por las localizaciones, lo más probable es que ya estés trabajando con archivos de cadenas localizadas en tu proyecto. En ese caso, te recomendamos añadir un par clave-valor con el código de idioma de Adapty correspondiente en cada uno de tus archivos para las localizaciones respectivas, y luego extraer el valor de esa clave al llamar a nuestro SDK, como se muestra aquí:
+
+```swift showLineNumbers
+// 1. Modify your Localizable.strings files
+
+/*
+Localizable.strings - Spanish
+*/
+adapty_paywalls_locale = "es";
+/*
+Localizable.strings - Portuguese (Brazil)
+*/
+adapty_paywalls_locale = "pt-br";
+// 2. Extract and use the locale code
+let locale = NSLocalizedString("adapty_paywalls_locale", comment: "")
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+Así tienes el control total sobre qué localización se obtendrá para cada usuario de tu app.
+
+## Implementar localizaciones: la otra forma \{#implementing-localizations-the-other-way\}
+
+Puedes obtener resultados similares (aunque no idénticos) sin definir explícitamente los códigos de idioma para cada localización. Esto implica extraer un código de idioma de otros objetos que proporciona tu plataforma, como en este ejemplo:
+
+```swift showLineNumbers
+let locale = Locale.current.identifier
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+No recomendamos este enfoque por varios motivos:
+
+1. En iOS, los idiomas preferidos y el idioma actual no son idénticos. Si quieres que la localización se seleccione correctamente, tendrás que apoyarte en la lógica de Apple, que funciona de manera automática si usas el enfoque recomendado con archivos de cadenas localizadas, o bien recrearla tú mismo.
+2. Es difícil predecir exactamente qué recibirá el servidor de Adapty. Por ejemplo, en iOS es posible obtener un código como `ar_OM@numbers='latn'` en un dispositivo y enviarlo a nuestro servidor. Para esa llamada no obtendrás la localización `ar-om` que buscabas, sino `ar`, lo cual probablemente no es lo que esperabas.
+
+Si aun así decides utilizar este enfoque, asegúrate de haber cubierto todos los casos de uso relevantes.

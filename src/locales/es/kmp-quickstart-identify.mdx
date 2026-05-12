@@ -1,0 +1,156 @@
+---
+title: "Identificar usuarios en el SDK de Kotlin Multiplatform"
+description: "Guía de inicio rápido para configurar Adapty para la gestión de suscripciones in-app en KMP."
+metadataTitle: "Guía de inicio rápido de Adapty | Documentación de Adapty"
+keywords: ['identify', 'identifying users', 'customeruserid']
+rank: 50
+---
+
+:::important
+Esta guía es para ti si tienes tu propio sistema de autenticación. Aquí aprenderás a trabajar con perfiles de usuario en Adapty para que se alineen con tu sistema de autenticación existente.
+:::
+
+La forma en que gestionas las compras de los usuarios depende del modelo de autenticación de tu app:
+- Si tu app no usa autenticación de backend ni almacena datos de usuario, consulta la [sección sobre usuarios anónimos](#anonymous-users).
+- Si tu app tiene (o tendrá) autenticación de backend, consulta la [sección sobre usuarios identificados](#identified-users).
+
+**Conceptos clave**:
+- Los **perfiles** son las entidades necesarias para que el SDK funcione. Adapty los crea automáticamente.
+- Pueden ser anónimos **(sin customer user ID)** o identificados **(con customer user ID)**.
+- Proporcionas el **customer user ID** para cruzar los perfiles de Adapty con tu sistema de autenticación interno.
+
+Esto es lo que difiere entre usuarios anónimos e identificados:
+
+|                         | Usuarios anónimos                                     | Usuarios identificados                                                              |
+|-------------------------|-------------------------------------------------------|-------------------------------------------------------------------------------------|
+| **Gestión de compras**  | Restauración de compras a nivel de store              | Mantienen el historial de compras entre dispositivos mediante su customer user ID   |
+| **Gestión de perfiles** | Nuevos perfiles en cada reinstalación                 | El mismo perfil entre sesiones y dispositivos                                       |
+| **Persistencia de datos** | Los datos de usuarios anónimos están ligados a la instalación de la app | Los datos de usuarios identificados persisten entre instalaciones |
+
+## Usuarios anónimos \{#anonymous-users\}
+
+Si no tienes autenticación de backend, **no necesitas gestionar la autenticación en el código de la app**:
+
+1. Cuando el SDK se activa en el primer inicio de la app, Adapty **crea un nuevo perfil para el usuario**.
+2. Cuando el usuario compra algo en la app, esa compra se **asocia a su perfil de Adapty y a su cuenta en el store**.
+3. Cuando el usuario **reinstala** la app o la instala desde un **nuevo dispositivo**, Adapty **crea un nuevo perfil anónimo al activarse**.
+4. Si el usuario ya había realizado compras en tu app, por defecto sus compras se sincronizan automáticamente desde el App Store al activar el SDK.
+
+Con usuarios anónimos, se crearán nuevos perfiles en cada instalación, pero eso no es un problema porque en los análisis de Adapty puedes [configurar qué se considerará una nueva instalación](general#4-installs-definition-for-analytics).
+
+Para los usuarios anónimos, debes contar las instalaciones por **ID de dispositivo**. En este caso, cada instalación de la app en un dispositivo se cuenta como una instalación, incluidas las reinstalaciones.
+
+:::note
+Las restauraciones de copia de seguridad se comportan de forma diferente a las reinstalaciones. Por defecto, cuando un usuario restaura desde una copia de seguridad, el SDK conserva los datos en caché y no crea un nuevo perfil. Puedes configurar este comportamiento con el parámetro `withAppleClearDataOnBackup`. [Más información](sdk-installation-kotlin-multiplatform#clear-data-on-backup-restore).
+:::
+
+## Usuarios identificados \{#identified-users\}
+
+Tienes dos opciones para identificar usuarios en la app:
+
+- [**Durante el login/registro:**](#during-loginsignup) Si los usuarios inician sesión después de que tu app arranque, llama a `identify()` con un customer user ID cuando se autentiquen.
+
+- [**Durante la activación del SDK:**](#during-the-sdk-activation) Si ya tienes un customer user ID almacenado cuando la app se inicia, envíalo al llamar a `activate()`.
+
+:::important
+Por defecto, cuando Adapty recibe una compra de un Customer User ID que ya está asociado a otro Customer User ID, el nivel de acceso se comparte, por lo que ambos perfiles tienen acceso de pago. Puedes configurar este ajuste para transferir el acceso de pago de un perfil a otro o deshabilitar el uso compartido completamente. Consulta el [artículo](general#6-sharing-paid-access-between-user-accounts) para más detalles.
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/identify-diagram.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Durante el login/registro \{#during-loginsignup\}
+
+Si identificas a los usuarios después de que arranque la app (por ejemplo, tras iniciar sesión o registrarse), usa el método `identify` para establecer su customer user ID.
+
+- Si **no has usado este customer user ID antes**, Adapty lo vinculará automáticamente al perfil actual.
+- Si **ya has usado este customer user ID para identificar al usuario antes**, Adapty cambiará a trabajar con el perfil asociado a ese customer user ID.
+
+:::important
+Los customer user IDs deben ser únicos para cada usuario. Si hardcodeas el valor del parámetro, todos los usuarios se considerarán como uno solo.
+:::
+
+Espera a que `identify` se complete (en su callback `onSuccess`) antes de llamar a otros métodos del SDK. Las llamadas concurrentes pueden acabar en el perfil anónimo. Consulta [Orden de llamadas en el SDK de Kotlin Multiplatform](kmp-sdk-call-order).
+
+```kotlin showLineNumbers
+Adapty.identify("YOUR_USER_ID") // Único para cada usuario
+    .onSuccess {
+        // identify exitoso
+    }
+    .onError { error ->
+        // gestionar el error
+    }
+```
+
+### Durante la activación del SDK \{#during-the-sdk-activation\}
+
+Si ya conoces el customer user ID cuando activas el SDK, puedes enviarlo en el método `activate` en lugar de llamar a `identify` por separado.
+
+Si conoces un customer user ID pero solo lo estableces después de la activación, eso significa que, al activarse, Adapty creará un nuevo perfil anónimo y cambiará al existente solo cuando llames a `identify`.
+
+Puedes pasar un customer user ID existente (uno que hayas usado antes) o uno nuevo. Si pasas uno nuevo, el nuevo perfil creado en la activación se vinculará automáticamente al customer user ID.
+
+:::note
+Por defecto, la creación de perfiles anónimos no afecta a los dashboards de análisis, porque las instalaciones se cuentan en función de los ID de dispositivo.
+
+Un ID de dispositivo representa una única instalación de la app desde el store en un dispositivo y solo se regenera tras reinstalar la app.  
+No depende de si es una primera instalación o una repetida, ni de si se usa un customer user ID existente.
+
+Crear un perfil (al activar el SDK o al cerrar sesión), iniciar sesión o actualizar la app sin reinstalarla no genera eventos de instalación adicionales.
+
+Si quieres contar las instalaciones en función de usuarios únicos en lugar de dispositivos, ve a **App settings** y configura [**Installs definition for analytics**](general#4-installs-definition-for-analytics).
+:::
+
+```kotlin showLineNumbers
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withCustomerUserId("user123") // Los customer user IDs deben ser únicos para cada usuario. Si hardcodeas el valor del parámetro, todos los usuarios se considerarán como uno solo.
+    .build()
+```
+
+### Cerrar sesión de usuarios \{#log-users-out\}
+
+Si tienes un botón para cerrar la sesión de los usuarios, usa el método `logout`.
+
+:::important
+Cerrar la sesión de los usuarios crea un nuevo perfil anónimo para el usuario.
+:::
+
+```kotlin showLineNumbers
+Adapty.logout()
+    .onSuccess {
+        // cierre de sesión exitoso
+    }
+    .onError { error ->
+        // gestionar el error
+    }
+```
+
+:::info
+Para volver a iniciar sesión en la app, usa el método `identify`.
+:::
+
+### Permitir compras sin inicio de sesión \{#allow-purchases-without-login\}
+
+Si tus usuarios pueden realizar compras tanto antes como después de iniciar sesión en tu app, debes asegurarte de que mantendrán el acceso una vez que inicien sesión:
+
+1. Cuando un usuario sin sesión iniciada realiza una compra, Adapty la vincula a su ID de perfil anónimo.
+2. Cuando el usuario inicia sesión en su cuenta, Adapty pasa a trabajar con su perfil identificado.
+    - Si es un nuevo customer user ID (por ejemplo, la compra se realizó antes del registro), Adapty asigna el customer user ID al perfil actual, por lo que todo el historial de compras se mantiene.
+    - Si es un customer user ID existente (el customer user ID ya está vinculado a un perfil), debes obtener el nivel de acceso real tras el cambio de perfil. Puedes llamar a [`getProfile`](kmp-check-subscription-status) justo después de la identificación, o [escuchar las actualizaciones del perfil](kmp-check-subscription-status) para que los datos se sincronicen automáticamente.
+
+## Próximos pasos \{#next-steps\}
+
+¡Enhorabuena! Has implementado la lógica de pago in-app en tu app. ¡Te deseamos lo mejor con la monetización de tu app!
+
+Para sacar aún más partido a Adapty, puedes explorar estos temas:
+- [**Pruebas**](troubleshooting-test-purchases): Asegúrate de que todo funciona correctamente
+- [**Integraciones**](configuration): Integra con servicios de atribución de marketing y análisis en una sola línea de código
+- [**Establecer atributos de perfil personalizados**](kmp-setting-user-attributes): Añade atributos personalizados a los perfiles de usuario y crea segmentos para lanzar pruebas A/B o mostrar diferentes paywalls a distintos usuarios

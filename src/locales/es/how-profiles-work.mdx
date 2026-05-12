@@ -1,0 +1,96 @@
+---
+title: "Cómo funcionan los perfiles"
+description: "Entiende cómo Adapty crea, rastrea y vincula los perfiles de usuario, incluyendo perfiles anónimos, usuarios identificados y relaciones padre/heredero."
+metadataTitle: "Cómo funcionan los perfiles de Adapty | Documentación de Adapty"
+keywords: ['perfil', 'customer_user_id', 'perfil anónimo', 'perfil padre', 'perfil heredero', 'registro de perfil']
+---
+
+import Sharingaccesslevel from '@site/src/locales/es/reusable/sharingaccesslevel.md';
+
+Cada usuario de tu app tiene un perfil de Adapty que registra sus compras, eventos y estado de suscripción. Entender cómo se crean y vinculan los perfiles te ayuda a prevenir errores de integración, evitar la fragmentación de datos e interpretar la información en la sección [Profiles](profiles-crm).
+
+## Creación de perfiles \{#profile-creation\}
+
+Adapty crea automáticamente un perfil la primera vez que un usuario abre tu app.
+
+**Sin un Customer User ID**, el perfil es anónimo. Se crea un nuevo perfil anónimo cada vez que:
+- Un usuario reinstala la app
+- Un usuario cierra sesión en tu app (cuando tu app llama a `Adapty.logout()`)
+
+Las compras están vinculadas a la instalación de la app, no a una identidad de usuario persistente.
+
+**Con un Customer User ID**, el perfil persiste entre reinstalaciones y dispositivos. Usar un customer user ID te permite:
+
+1. Rastrear a un usuario a través de reinstalaciones y múltiples dispositivos.
+2. Encontrar usuarios por su customer user ID en la sección [**Profiles**](profiles-crm).
+3. Usar el customer user ID en la [API del lado del servidor](getting-started-with-server-side-api).
+4. Adapty envía el customer user ID a todas las integraciones.
+
+El comportamiento del perfil con un customer user ID depende de cuándo lo configures:
+
+- **Al activar el SDK**: Adapty usa el perfil existente con ese customer user ID (para usuarios que regresan) o crea un nuevo perfil (para usuarios nuevos).
+- **Después de la activación del SDK**: Adapty crea un perfil anónimo al activarse. Cuando después identificas al usuario, Adapty vincula el customer user ID al perfil anónimo (para usuarios nuevos) o cambia al perfil existente con ese ID (para usuarios que regresan).
+
+**Qué enfoque usar:**
+
+- **Customer user ID disponible al iniciar la app** (por ejemplo, guardado de una sesión anterior): pásalo a `activate()` al inicializar el SDK.
+- **Los usuarios inician sesión después de abrir la app**: llama a `identify()` tras la autenticación. Adapty vincula el ID al perfil actual (si el ID es nuevo) o cambia al perfil existente (si el ID ya existe).
+- **Los usuarios pueden comprar antes de iniciar sesión**: llama a `identify()` después del login. Si el customer user ID ya existe en Adapty, recupera el perfil a continuación para sincronizar el nivel de acceso actual.
+
+Para detalles de implementación, consulta la guía de SDK para [identificar usuarios](identifying-users).
+
+:::note
+Si un usuario que regresa usó anteriormente tu app sin un customer user ID, esos perfiles anónimos no se fusionan automáticamente cuando empiezas a identificar en la activación del SDK. Para mantener el historial completo de esos usuarios, usa `identify()` después del login.
+:::
+
+## Perfiles padre y heredero \{#parent-and-inheritor-profiles\}
+
+Cuando varios perfiles están conectados a la misma suscripción (a través del mismo Apple/Google ID), Adapty los rastrea usando una relación padre-heredero. Esto ocurre cuando un usuario reinstala la app sin identificarse, o cuando distintos usuarios identificados restauran compras en el mismo dispositivo.
+
+El **perfil padre** es el que realizó la compra, no necesariamente el primer perfil creado. Por ejemplo: instalas la app y no haces ninguna compra, luego reinstalás y compras una suscripción. El segundo perfil se convierte en el padre porque hizo la compra. El primer perfil se convierte en heredero y obtiene acceso a través del sharing.
+
+**Cómo se distribuyen los eventos:**
+
+- **Eventos transaccionales** (compras, renovaciones, cancelaciones, problemas de facturación, períodos de gracia, reembolsos): Solo aparecen en el **perfil padre** que realizó la compra. Todas las renovaciones y actualizaciones de suscripción siguen apareciendo en ese perfil.
+- **Eventos access_level_updated**: Aparecen en **ambos perfiles, padre y heredero**, cada vez que cambia el estado del nivel de acceso. Esto mantiene actualizados a todos los perfiles conectados sobre su estado de acceso actual.
+
+El perfil padre muestra el historial completo de transacciones. Los perfiles herederos muestran solo sus actualizaciones de nivel de acceso y un enlace al perfil padre en la sección **Access level**.
+
+<Zoom>
+  <img src="/assets/shared/img/98d0dad-non-original_profile.webp"
+  style={{
+    border: '1px solid #727272',
+    width: '700px',
+    display: 'block',
+    margin: '0 auto'
+  }}
+/>
+</Zoom>
+
+## Compartir acceso de pago entre cuentas de usuario \{#sharing-paid-access-between-user-accounts\}
+
+:::link
+Artículo principal: [Compartir acceso de pago entre cuentas de usuario](sharing-paid-access-between-user-accounts)
+:::
+
+Para configurar tu política de compartición de nivel de acceso, en la página de configuración [**General**](general), selecciona una opción de sharing. Puedes establecer una política separada para el [entorno sandbox](test-purchases-in-sandbox).
+
+<Sharingaccesslevel />
+
+## Marcas de tiempo de eventos con fechas futuras (Apple/iOS) \{#event-timestamps-with-future-dates-appleios\}
+
+Este comportamiento es específico de Apple App Store. El sistema de notificaciones de Google Play no envía eventos con antelación.
+
+Las marcas de tiempo de los eventos en los perfiles e integraciones pueden mostrar fechas futuras porque Apple envía eventos de renovación con anticipación.
+
+- **Por qué ocurre**: Apple hace esto para garantizar que las suscripciones se renueven automáticamente antes de vencer, evitando interrupciones del servicio al usuario. Para más detalles, consulta el Foro de Desarrolladores de Apple: [Server Notifications for Subscriptions](https://developer.apple.com/forums/tags/app-store-server-notifications).
+- **Tipos de eventos afectados**: Generalmente, esto aplica a las renovaciones de suscripción y las conversiones de prueba a pago. Estos eventos pueden tener marcas de tiempo futuras porque Apple notifica a los sistemas sobre ellos con anticipación.
+- **Otros tipos de eventos**: Las compras in-app adicionales y los cambios de plan de suscripción se registran con sus marcas de tiempo reales, ya que estos eventos no pueden predecirse de antemano.
+- **Impacto en Analytics y el Event Feed**: Estos eventos solo aparecerán en **Analytics** y en el **Event Feed** una vez que sus marcas de tiempo hayan pasado. Los eventos con marcas de tiempo futuras no se muestran en ninguna de las dos secciones.
+- **Impacto en las integraciones**: Adapty envía eventos a las integraciones en cuanto los recibe. Si un evento tiene una marca de tiempo futura, Adapty lo envía a tu integración con esa marca de tiempo futura sin cambios.
+
+## Pasos siguientes \{#next-steps\}
+
+- Para usar el dashboard de Profiles para encontrar y gestionar usuarios, consulta [Profiles](profiles-crm).
+- Para configurar la identificación de usuarios en tu app, consulta la guía de SDK para [identificar usuarios](identifying-users).
+- Para configurar la política de compartición de acceso, consulta [Compartir acceso de pago entre cuentas de usuario](sharing-paid-access-between-user-accounts).

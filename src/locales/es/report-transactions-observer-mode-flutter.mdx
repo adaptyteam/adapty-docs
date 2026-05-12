@@ -1,0 +1,134 @@
+---
+title: "Reportar transacciones en Observer Mode en Flutter SDK"
+description: "Reporta transacciones de compra en el Observer Mode de Adapty para obtener información sobre usuarios y seguimiento de ingresos en Flutter SDK."
+metadataTitle: "Reportar transacciones en Observer Mode en Flutter SDK | Documentación de Adapty"
+---
+
+<Tabs groupId="sdk-version" queryString> 
+
+<TabItem value="current" label="Adapty SDK v3.4+ (current)" default> 
+En el modo Observer, el SDK de Adapty no puede rastrear por sí solo las compras realizadas a través de tu sistema de compras existente. Necesitas reportar las transacciones desde tu app store. Es fundamental configurar esto **antes** de publicar tu app para evitar errores en los análisis.
+
+Usa `reportTransaction` para reportar explícitamente cada transacción y que Adapty pueda reconocerla.
+
+:::warning
+
+**¡No omitas el reporte de transacciones!**
+Si no llamas a `reportTransaction`, Adapty no reconocerá la transacción, no aparecerá en los análisis y no se enviará a las integraciones.
+
+:::
+
+Si usas paywalls de Adapty, incluye el `variationId` al reportar una transacción. Esto vincula la compra con el paywall que la originó, garantizando análisis precisos del paywall.
+
+```javascript showLineNumbers
+try {
+    // every time when calling transaction.finish()
+    await Adapty().reportTransaction(
+        "YOUR_TRANSACTION_ID", 
+        variationId: "PAYWALL_VARIATION_ID", // optional
+    );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
+
+Parámetros:
+
+| Parámetro     | Presencia | Descripción                                                  |
+| ------------- | --------- | ------------------------------------------------------------ |
+| transactionId | requerido | <ul><li> Para iOS: Identificador de la transacción.</li><li> Para Android: Identificador de cadena `purchase.getOrderId` de la compra, donde la compra es una instancia de la clase [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) de la biblioteca de facturación.</li></ul> |
+| variationId   | opcional  | El identificador de cadena de la variante. Puedes obtenerlo usando la propiedad `variationId` del objeto [AdaptyPaywall](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywall-class.html). |
+
+</TabItem>
+<TabItem value="old" label="Adapty SDK 3.3.x (legacy)" default> 
+
+En el modo Observer, el SDK de Adapty no puede rastrear por sí solo las compras realizadas a través de tu sistema de compras existente. Necesitas reportar las transacciones desde tu app store o restaurarlas. Es fundamental configurar esto **antes** de publicar tu app para evitar errores en los análisis.
+
+Usa `reportTransaction` en ambas plataformas para reportar explícitamente cada transacción, y usa `restorePurchases` en Android como paso adicional para asegurarte de que Adapty la reconozca.
+
+:::warning
+
+**¡No omitas el reporte de transacciones ni la restauración de compras!**
+Si no llamas a estos métodos, Adapty no reconocerá la transacción, no aparecerá en los análisis y no se enviará a las integraciones.
+
+:::
+
+Si usas paywalls de Adapty, incluye el `variationId` al reportar una transacción. Esto vincula la compra con el paywall que la originó, garantizando análisis precisos del paywall.
+
+```javascript showLineNumbers
+// every time when calling transaction.finish()
+if (Platform.isAndroid) {
+    try {
+        await Adapty().restorePurchases();
+    } on AdaptyError catch (adaptyError) {
+        // handle the error
+    } catch (e) {
+    }
+}
+
+try {
+    // every time when calling transaction.finish()
+    await Adapty().reportTransaction(
+        "YOUR_TRANSACTION_ID", 
+        variationId: "PAYWALL_VARIATION_ID", // optional
+    );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
+
+Parámetros:
+
+| Parámetro     | Presencia | Descripción                                                  |
+| ------------- | --------- | ------------------------------------------------------------ |
+| transactionId | requerido | <ul><li> Para iOS, StoreKit 1: un objeto [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction).</li><li> Para iOS, StoreKit 2: objeto [Transaction](https://developer.apple.com/documentation/storekit/transaction).</li><li> Para Android: Identificador de cadena (purchase.getOrderId de la compra, donde la compra es una instancia de la clase [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) de la biblioteca de facturación).</li></ul> |
+| variationId   | opcional  | El identificador de cadena de la variante. Puedes obtenerlo usando la propiedad `variationId` del objeto [AdaptyPaywall](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywall-class.html). |
+
+</TabItem>
+<TabItem value="old2" label="Adapty SDK up to 3.2.x (legacy)" default> 
+
+<Tabs groupId="current-os" queryString> 
+<TabItem value="swift" label="iOS" default> 
+
+**Reporte de transacciones**
+
+- Las versiones hasta 3.1.x escuchan automáticamente las transacciones en el App Store, por lo que no se requiere reporte manual.
+- La versión 3.2 no admite el Observer Mode.
+
+</TabItem> 
+<TabItem value="kotlin" label="Android and Android-based cross-platforms" default> 
+
+**Reporte de transacciones**
+
+Usa `restorePurchases` para reportar una transacción a Adapty en el Observer Mode, tal como se explica en la página [Restaurar compras en código móvil](flutter-restore-purchase).
+
+:::warning
+**¡No omitas el reporte de transacciones!**
+Si no llamas a `restorePurchases`, Adapty no reconocerá la transacción, no aparecerá en los análisis y no se enviará a las integraciones.
+::: 
+
+</TabItem>
+</Tabs>
+
+**Asociar paywalls a transacciones**
+
+El SDK de Adapty no puede determinar el origen de las compras, ya que eres tú quien las procesa. Por lo tanto, si tienes intención de usar paywalls y/o pruebas A/B en el modo Observer, necesitas asociar la transacción proveniente de tu app store con el paywall correspondiente en el código de tu app móvil. Es importante hacerlo correctamente antes de publicar tu app; de lo contrario, generará errores en los análisis.
+
+```javascript
+final transactionId = transaction.transactionIdentifier
+final variationId = paywall.variationId
+
+try {
+  await Adapty().setVariationId('transactionId', variationId);
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+</TabItem> 
+</Tabs>

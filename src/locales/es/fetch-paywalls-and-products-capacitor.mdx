@@ -1,0 +1,135 @@
+---
+title: "Obtener paywalls y productos para paywalls con Remote Config en Capacitor SDK"
+description: "Obtén paywalls y productos en Adapty Capacitor SDK para mejorar la monetización de los usuarios."
+metadataTitle: "Obtener Paywalls y Productos | Capacitor SDK | Documentación de Adapty"
+keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallForDefaultAudience', 'remote config', 'Capacitor']
+displayed_sidebar: sdkcapacitor
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md'; 
+
+Antes de mostrar paywalls con Remote Config o paywalls personalizados, necesitas obtener la información sobre ellos. Ten en cuenta que este tema se refiere a paywalls con Remote Config y paywalls personalizados. Para obtener información sobre cómo obtener paywalls creados con Paywall Builder, consulta [Obtener paywalls del Paywall Builder y su configuración](capacitor-get-pb-paywalls).
+
+<SampleApp />
+
+<details>
+   <summary>Antes de empezar a obtener paywalls y productos en tu app (haz clic para expandir)</summary>
+
+   1. [Crea tus productos](create-product) en el Adapty Dashboard.
+
+2. [Crea un paywall e incorpora los productos en él](create-paywall) en el Adapty Dashboard.
+
+3. [Crea placements e incorpora tu paywall en el placement](create-placement) en el Adapty Dashboard.
+
+4. [Instala el SDK de Adapty](sdk-installation-capacitor) en tu app.
+</details>
+
+## Obtener información del paywall \{#fetch-paywall-information\}
+
+En Adapty, un [producto](product) es una combinación de productos tanto de App Store como de Google Play. Estos productos multiplataforma se integran en paywalls, lo que te permite mostrarlos en placements específicos de tu app.
+
+Para mostrar los productos, necesitas obtener un [Paywall](paywalls) de uno de tus [placements](placements) con el método `getPaywall`.
+
+```typescript showLineNumbers
+
+try {
+  const paywall = await adapty.getPaywall({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data', // Load from server, fallback to cache
+      loadTimeoutMs: 5000 // 5 second timeout
+    }
+  });
+  // the requested paywall
+} catch (error) {
+  console.error('Failed to fetch paywall:', error);
+}
+```
+
+| Parámetro | Presencia | Descripción |
+|---------|--------|-----------|
+| **placementId** | obligatorio | El identificador del [Placement](placements). Es el valor que especificaste al crear un placement en tu Adapty Dashboard. |
+| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la [localización del paywall](add-remote-config-locale). Se espera que este parámetro sea un código de idioma compuesto por una o más subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta corresponde al idioma y la segunda a la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p></p><p>Consulta [Localizaciones y códigos de idioma](capacitor-localizations-and-locale-codes) para más información sobre los códigos de idioma y cómo recomendamos usarlos.</p> |
+| **params.fetchPolicy** | <p>opcional</p><p>por defecto: `'reload_revalidating_cache_data'`</p> | <p>Por defecto, el SDK intentará cargar datos desde el servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre obtengan los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `'return_cache_data_else_load'` para devolver los datos en caché si existen. En este caso, los usuarios podrían no obtener los datos más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de la calidad de su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Ten en cuenta que la caché se mantiene al reiniciar la app y solo se borra al desinstalarla o mediante limpieza manual.</p> |
+| **params.loadTimeoutMs** | <p>opcional</p><p>por defecto: 5000 ms</p> | <p>Este valor limita el tiempo de espera (en milisegundos) para este método. Si se alcanza el tiempo límite, se devolverán los datos en caché o el fallback local.</p><p></p><p>Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo especificado en `loadTimeoutMs`, ya que la operación puede consistir en diferentes solicitudes internamente.</p> |
+
+**No escribas los IDs de productos directamente en el código.** El único ID que debes incluir en el código es el del placement. Los paywalls se configuran de forma remota, por lo que el número de productos y las ofertas disponibles pueden cambiar en cualquier momento. Tu app debe gestionar estos cambios de forma dinámica: si hoy un paywall devuelve dos productos y mañana tres, muéstralos todos sin modificar el código.
+
+Parámetros de respuesta:
+
+| Parámetro | Descripción                                                                                                                                                  |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | Un objeto [`AdaptyPaywall`](https://capacitor.adapty.io/interfaces/adaptypaywall) con: una lista de IDs de productos, el identificador del paywall, Remote Config y otras propiedades. |
+
+## Obtener productos \{#fetch-products\}
+
+Una vez que tienes el paywall, puedes consultar el array de productos que le corresponde:
+
+```typescript showLineNumbers
+
+try {
+  const products = await adapty.getPaywallProducts({ paywall });
+  // the requested products list
+} catch (error) {
+  console.error('Failed to fetch products:', error);
+}
+```
+
+Parámetros de respuesta:
+
+| Parámetro | Descripción                                                                                                                                                                                                         |
+| :-------- |:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Products  | Lista de objetos [`AdaptyPaywallProduct`](https://capacitor.adapty.io/interfaces/adaptypaywallproduct) con: identificador del producto, nombre, precio, moneda, duración de la suscripción y otras propiedades. |
+
+Al implementar tu propio diseño de paywall, probablemente necesitarás acceder a estas propiedades del objeto [`AdaptyPaywallProduct`](https://capacitor.adapty.io/interfaces/adaptypaywallproduct). A continuación se muestran las propiedades más utilizadas, pero consulta el documento enlazado para ver todos los detalles disponibles.
+
+| Propiedad                | Descripción                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Título**               | Para mostrar el título del producto, usa `product.localizedTitle`. Ten en cuenta que la localización se basa en el país de la store seleccionado por el usuario, no en el idioma del dispositivo.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Precio**               | Para mostrar el precio localizado, usa `product.price?.localizedString`. Esta localización se basa en la configuración regional del dispositivo. También puedes acceder al precio como número con `product.price?.amount`. El valor se proporcionará en la moneda local. Para obtener el símbolo de moneda correspondiente, usa `product.price?.currencySymbol`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Período de suscripción** | Para mostrar el período (p. ej., semana, mes, año, etc.), usa `product.subscription?.localizedSubscriptionPeriod`. Esta localización se basa en el idioma del dispositivo. Para obtener el período de suscripción de forma programática, usa `product.subscription?.subscriptionPeriod`. Desde ahí puedes acceder a la propiedad `unit` para obtener la duración (es decir, `'day'`, `'week'`, `'month'`, `'year'` o `'unknown'`). El valor `numberOfUnits` te dará el número de unidades del período. Por ejemplo, para una suscripción trimestral verías `'month'` en la propiedad unit y `3` en numberOfUnits.                                                                                                                                                                                                                                                                                                       |
+| **Oferta introductoria**  | Para mostrar una insignia u otro indicador de que una suscripción incluye una oferta introductoria, revisa la propiedad `product.subscription?.offer?.phases`. Esta es una lista que puede contener hasta dos fases de descuento: la fase de prueba gratuita y la fase de precio introductorio. Dentro de cada objeto de fase están las siguientes propiedades útiles:<br/>• `paymentMode`: una cadena con los valores `'free_trial'`, `'pay_as_you_go'`, `'pay_up_front'` y `'unknown'`. Las pruebas gratuitas son del tipo `'free_trial'`.<br/>• `price`: El precio con descuento como número. Para pruebas gratuitas, busca `0` aquí.<br/>• `localizedNumberOfPeriods`: una cadena localizada según el idioma del dispositivo que describe la duración de la oferta. Por ejemplo, una oferta de prueba de tres días muestra `'3 days'` en este campo.<br/>• `subscriptionPeriod`: Alternativamente, puedes obtener los detalles individuales del período de la oferta con esta propiedad. Funciona de la misma manera para las ofertas que lo descrito en la sección anterior.<br/>• `localizedSubscriptionPeriod`: Un período de suscripción formateado del descuento para el idioma del usuario. |
+
+## Acelera la obtención de paywalls con el paywall de audiencia predeterminada \{#speed-up-paywall-fetching-with-default-audience-paywall\}
+
+Normalmente, los paywalls se obtienen casi de inmediato, por lo que no necesitas preocuparte por acelerar este proceso. Sin embargo, si tienes muchas audiencias y paywalls y tus usuarios tienen una conexión a internet débil, obtener un paywall puede tardar más de lo deseado. En esas situaciones, puede que quieras mostrar un paywall predeterminado para garantizar una experiencia fluida en lugar de no mostrar ninguno.
+
+Para resolver esto, puedes usar el método `getPaywallForDefaultAudience`, que obtiene el paywall del placement especificado para la audiencia **All Users**. Sin embargo, es importante entender que el enfoque recomendado es obtener el paywall con el método `getPaywall`, como se detalla en la sección [Obtener información del paywall](fetch-paywalls-and-products-capacitor#fetch-paywall-information) anterior.
+
+:::warning
+Por qué recomendamos usar `getPaywall`
+
+El método `getPaywallForDefaultAudience` tiene algunos inconvenientes importantes:
+
+- **Posibles problemas de compatibilidad con versiones anteriores**: Si necesitas mostrar paywalls diferentes para distintas versiones de la app (actual y futuras), puede que tengas dificultades. Tendrás que diseñar paywalls que soporten la versión actual (legacy) o aceptar que los usuarios con la versión actual puedan encontrar problemas con paywalls que no se renderizan.
+- **Pérdida de segmentación**: Todos los usuarios verán el mismo paywall diseñado para la audiencia **All Users**, lo que significa que pierdes la segmentación personalizada (incluyendo la basada en países, atribución de marketing o tus propios atributos personalizados).
+
+Si estás dispuesto a aceptar estos inconvenientes para beneficiarte de una obtención más rápida de paywalls, usa el método `getPaywallForDefaultAudience` como se indica a continuación. De lo contrario, usa `getPaywall` como se describe [más arriba](fetch-paywalls-and-products-capacitor#fetch-paywall-information).
+:::
+
+```typescript showLineNumbers
+
+try {
+  const paywall = await adapty.getPaywallForDefaultAudience({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data' // Load from server, fallback to cache
+    }
+  });
+  // the requested paywall
+} catch (error) {
+  console.error('Failed to fetch default audience paywall:', error);
+}
+```
+
+:::note
+El método `getPaywallForDefaultAudience` está disponible a partir de la versión 2.11.2 del Capacitor SDK.
+:::
+
+| Parámetro | Presencia | Descripción |
+|---------|--------|-----------|
+| **placementId** | obligatorio | El identificador del [Placement](placements). Es el valor que especificaste al crear un placement en tu Adapty Dashboard. |
+| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la [localización del paywall](add-remote-config-locale). Se espera que este parámetro sea un código de idioma compuesto por una o más subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta corresponde al idioma y la segunda a la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p></p><p>Consulta [Localizaciones y códigos de idioma](capacitor-localizations-and-locale-codes) para más información sobre los códigos de idioma y cómo recomendamos usarlos.</p> |
+| **params.fetchPolicy** | <p>opcional</p><p>por defecto: `'reload_revalidating_cache_data'`</p> | <p>Por defecto, el SDK intentará cargar datos desde el servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre obtengan los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `'return_cache_data_else_load'` para devolver los datos en caché si existen. En este caso, los usuarios podrían no obtener los datos más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de la calidad de su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Ten en cuenta que la caché se mantiene al reiniciar la app y solo se borra al desinstalarla o mediante limpieza manual.</p> |

@@ -1,0 +1,139 @@
+---
+title: "Identificar usuarios en Unity SDK"
+description: "Aprende a identificar usuarios en tu app de Unity con el SDK de Adapty."
+metadataTitle: "Identificar Usuarios | Unity SDK | Documentación de Adapty"
+customSlug: /unity-identifying-users
+displayed_sidebar: sdkunity
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+
+Adapty crea un ID de perfil interno para cada usuario. Sin embargo, si tienes tu propio sistema de autenticación, debes establecer tu propio Customer User ID. Puedes encontrar usuarios por su Customer User ID en la sección [Profiles](profiles-crm) y usarlo en la [API del lado del servidor](getting-started-with-server-side-api), que se enviará a todas las integraciones.
+
+### Configurar el Customer User ID durante la configuración \{#setting-customer-user-id-on-configuration\}
+
+Si tienes un ID de usuario durante la configuración, simplemente pásalo como parámetro `customerUserId` al método `.activate()`:
+
+```csharp showLineNumbers
+using UnityEngine;
+using AdaptySDK;
+
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID");
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+```
+
+<SampleApp />
+
+### Configurar el Customer User ID después de la configuración \{#setting-customer-user-id-after-configuration\}
+
+Si no tienes un ID de usuario en la configuración del SDK, puedes establecerlo más adelante en cualquier momento con el método `.identify()`. Los casos más habituales para usar este método son después del registro o la autenticación, cuando el usuario pasa de ser anónimo a estar autenticado.
+
+```csharp showLineNumbers
+Adapty.Identify("YOUR_USER_ID", (error) => {
+  if(error == null) {
+    // successful identify
+  }
+});
+```
+
+Parámetros de la solicitud:
+
+- **Customer User ID** (obligatorio): un identificador de usuario en formato cadena de texto.
+
+:::warning
+Reenvío de datos significativos del usuario
+
+En algunos casos, como cuando un usuario vuelve a iniciar sesión en su cuenta, los servidores de Adapty ya tienen información sobre ese usuario. En estos escenarios, el SDK de Adapty cambiará automáticamente para trabajar con el nuevo usuario. Si pasaste algún dato al usuario anónimo, como atributos personalizados o atribuciones de redes de terceros, debes reenviar esos datos para el usuario identificado.
+
+También es importante tener en cuenta que debes volver a solicitar todos los paywalls y productos después de identificar al usuario, ya que los datos del nuevo usuario pueden ser diferentes.
+:::
+
+### Cerrar sesión e iniciar sesión \{#logging-out-and-logging-in\}
+
+Puedes cerrar la sesión del usuario en cualquier momento llamando al método `.logout()`:
+
+```csharp showLineNumbers
+Adapty.Logout((error) => {
+  if(error == null) {
+    // successful logout
+  }
+});
+```
+
+Luego puedes iniciar sesión del usuario usando el método `.identify()`.
+
+## Asignar `appAccountToken` (iOS) \{#assign-appaccounttoken-ios\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) es un **UUID** que te permite vincular las transacciones de App Store con la identidad interna de tu usuario.  
+StoreKit asocia este token con cada transacción, para que tu backend pueda relacionar los datos de App Store con tus usuarios.
+
+Usa un UUID estable generado por usuario y reutilízalo para la misma cuenta en todos los dispositivos.
+Esto garantiza que las compras y las notificaciones de App Store estén correctamente vinculadas.
+
+Puedes establecer el token de dos formas: durante la activación del SDK o al identificar al usuario.
+
+:::important
+Siempre debes pasar `appAccountToken` junto con `customerUserId`.
+Si solo pasas el token, no se incluirá en la transacción.
+:::
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+using System;
+
+// During configuration:
+var appAccountToken = new Guid("YOUR_APP_ACCOUNT_TOKEN");
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID", appAccountToken);
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+
+// Or when identifying users
+Adapty.Identify("YOUR_USER_ID", appAccountToken, (error) => {
+    if (error == null) {
+        // successful identify
+    }
+});
+```
+
+## Establecer IDs de cuenta ofuscados (Android) \{#set-obfuscated-account-ids-android\}
+
+Google Play requiere IDs de cuenta ofuscados para ciertos casos de uso con el fin de mejorar la privacidad y seguridad de los usuarios. Estos IDs ayudan a Google Play a identificar compras manteniendo el anonimato de la información del usuario, lo cual es especialmente importante para la prevención del fraude y el análisis.
+
+Es posible que necesites establecer estos IDs si tu app gestiona datos sensibles de usuarios o si debes cumplir con normativas de privacidad específicas. Los IDs ofuscados permiten a Google Play rastrear compras sin exponer los identificadores reales de los usuarios.
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+// During configuration:
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID", null, "YOUR_OBFUSCATED_ACCOUNT_ID");
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+});
+
+// Or when identifying users
+Adapty.Identify("YOUR_USER_ID", null, "YOUR_OBFUSCATED_ACCOUNT_ID", (error) => {
+    if (error == null) {
+        // successful identify
+    }
+});
+```
