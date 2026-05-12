@@ -1,28 +1,31 @@
 ---
 import DocsLayout from '../layouts/DocsLayout.astro';
-import ApiReferencePage from '../components/ApiReferencePage.astro';
+import SpecLandingPage from '../components/api-reference/SpecLandingPage.astro';
 import apiConfig from '../api-reference/config.json';
+import apiPlatformSidebar from '../data/sidebars/api.json';
+import { loadSpec } from '../api-reference/lib/load-spec';
+import { buildApiSpec } from '../api-reference/lib/model';
+import { buildSidebar } from '../api-reference/lib/build-sidebar';
+import { forceCollapseTopLevel } from '../api-reference/lib/force-collapse';
 
 export async function getStaticPaths() {
   const { isLocaleOnlyBuild } = await import('../data/locales');
   if (isLocaleOnlyBuild) return [];
-
-  return apiConfig.map((api) => ({
-    params: { slug: api.slug },
-    props: { api },
-  }));
+  return apiConfig.map(api => ({ params: { slug: api.slug }, props: { api } }));
 }
 
 const { api } = Astro.props;
 const { slug } = Astro.params;
+const baseUrl = (import.meta.env.BASE_URL ?? '/').replace(/\/+$/, '');
 
-const specUrl = api.specUrl || `${import.meta.env.BASE_URL}/api-specs/${api.specFile}`.replace(/\/+/g, '/');
-const basePath = `${import.meta.env.BASE_URL}/${slug}`.replace(/\/+/g, '/');
+const deref = await loadSpec(api.specFile);
+const spec = buildApiSpec(deref, api, baseUrl);
+const sidebarData = forceCollapseTopLevel(apiPlatformSidebar);
+const apiSidebarData = buildSidebar(spec, baseUrl);
 
-// Breadcrumbs for API Reference
 const breadcrumbs = [
-  { label: 'Home', href: `${import.meta.env.BASE_URL}/`.replace(/\/+/g, '/') },
-  { label: api.name }
+  { label: 'Home', href: `${baseUrl}/` },
+  { label: api.name },
 ];
 ---
 
@@ -31,11 +34,12 @@ const breadcrumbs = [
   description={`${api.name} reference documentation`}
   keywords={api.name}
   rank={70}
-  sidebarData={null}
+  sidebarData={sidebarData}
+  apiSidebarData={apiSidebarData}
   currentPlatformId="api"
   currentSlug={slug}
   breadcrumbs={breadcrumbs}
-  isFullWidth={true}
+  hideRightColumn={true}
 >
-  <ApiReferencePage api={api} slug={slug} specUrl={specUrl} basePath={basePath} />
+  <SpecLandingPage spec={spec} />
 </DocsLayout>

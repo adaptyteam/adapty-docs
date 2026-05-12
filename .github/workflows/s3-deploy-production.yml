@@ -41,6 +41,9 @@ jobs:
     needs: classify
     if: needs.classify.outputs.translation_only == 'false'
     runs-on: ubuntu-latest
+    concurrency:
+      group: check-internal-links-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,27 +51,57 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
       - run: npm install github-slugger
       - run: node scripts/check-links/index.mjs --diff --base=last-production-deploy --internal-only
+
+  # Fast-fail static checks for translator-introduced regressions
+  # (missing blank line after imports, missing client:load imports).
+  # Gates both content and translation-only deploy paths.
+  lint-mdx:
+    name: Lint MDX
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/lint-mdx.mjs
+
+  # MDX parse sweep: compiles every .mdx file with the same remark plugins
+  # Astro uses, surfaces every parse error in one pass. Astro's locale
+  # builds halt at the first error, so without this gate broken files
+  # stay hidden behind whichever one CI happens to hit first.
+  check-mdx-parse:
+    name: Check MDX parse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+      - run: node scripts/check-mdx-parse.mjs
 
   # ──────────────────────────────────────────────────────────────
   # Full deploy: English + all locales (on content pushes)
   # ──────────────────────────────────────────────────────────────
   build-en:
-    needs: check-internal-links
+    needs: [check-internal-links, lint-mdx, check-mdx-parse]
     runs-on: ubuntu-latest
+    concurrency:
+      group: build-en-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: npm-${{ hashFiles('package-lock.json') }}
+          cache: 'npm'
 
       - name: Cache Astro build
         uses: actions/cache@v4
@@ -78,6 +111,8 @@ jobs:
           restore-keys: astro-en-
 
       - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
 
       - name: Build English only
         env:
@@ -96,23 +131,21 @@ jobs:
           retention-days: 1
 
   build-locale-full:
-    needs: check-internal-links
+    needs: [check-internal-links, lint-mdx, check-mdx-parse]
     runs-on: ubuntu-latest
     strategy:
       matrix:
         locale: [zh, tr, ru, es]
+    concurrency:
+      group: build-locale-full-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: npm-${{ hashFiles('package-lock.json') }}
+          cache: 'npm'
 
       - name: Cache Astro build
         uses: actions/cache@v4
@@ -122,11 +155,23 @@ jobs:
           restore-keys: astro-${{ matrix.locale }}-
 
       - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
 
       - name: Build locale ${{ matrix.locale }}
         env:
           NODE_OPTIONS: --max-old-space-size=6144
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} npx astro build
+
+      # Generate locale .md / llms.txt / llms-full.txt exports into
+      # build/${{ matrix.locale }}/ so they're included in the artifact.
+      # Without this, the translation-only deploy (aws s3 sync --delete)
+      # wipes them from S3 on every translator commit.
+      - name: Generate locale markdown exports
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+          BUILD_LOCALES: ${{ matrix.locale }}
+        run: npm run build:md:prod
 
       - uses: actions/upload-artifact@v4
         with:
@@ -137,6 +182,9 @@ jobs:
   deploy-full:
     needs: [build-en, build-locale-full]
     runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-full-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
     permissions:
       contents: write
     environment: production
@@ -191,24 +239,22 @@ jobs:
   # Translation-only deploy: build + upload only locale dirs
   # ──────────────────────────────────────────────────────────────
   build-locale-only:
-    needs: classify
+    needs: [classify, lint-mdx, check-mdx-parse]
     if: needs.classify.outputs.translation_only == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
         locale: [zh, tr, ru, es]
+    concurrency:
+      group: build-locale-only-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: npm-${{ hashFiles('package-lock.json') }}
+          cache: 'npm'
 
       - name: Cache Astro build
         uses: actions/cache@v4
@@ -218,11 +264,24 @@ jobs:
           restore-keys: astro-${{ matrix.locale }}-
 
       - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
 
       - name: Build locale ${{ matrix.locale }}
         env:
           NODE_OPTIONS: --max-old-space-size=6144
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} npx astro build
+
+      # Generate locale .md / llms.txt / llms-full.txt exports into
+      # build/${{ matrix.locale }}/ so they land in the artifact. Required
+      # because the deploy uses `aws s3 sync --delete`, which would
+      # otherwise remove these files from S3 on every translation-only
+      # update.
+      - name: Generate locale markdown exports
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+          BUILD_LOCALES: ${{ matrix.locale }}
+        run: npm run build:md:prod
 
       - uses: actions/upload-artifact@v4
         with:
@@ -233,6 +292,9 @@ jobs:
   deploy-translations:
     needs: build-locale-only
     runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-translations-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
     permissions:
       contents: write
     environment: production

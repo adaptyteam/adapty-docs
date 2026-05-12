@@ -1,0 +1,199 @@
+---
+title: "Obtener paywalls de Paywall Builder y su configuración en Flutter SDK"
+description: "Aprende cómo recuperar paywalls de PB en Adapty para un mejor control de suscripciones en Flutter."
+metadataTitle: "Recuperar paywalls de PB en Adapty | Documentación de Adapty"
+displayed_sidebar: sdkflutter
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+rank: 85
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+
+Después de [diseñar la parte visual de tu paywall](adapty-paywall-builder) con el nuevo Paywall Builder en el Adapty Dashboard, puedes mostrarlo en tu app móvil. El primer paso es obtener el paywall asociado al placement y su configuración de vista, tal como se describe a continuación.
+
+:::warning
+El nuevo Paywall Builder requiere Flutter SDK versión 3.3.0 o superior.
+:::
+
+Ten en cuenta que este tema hace referencia a paywalls personalizados con Paywall Builder. Si implementas tus paywalls de forma manual, consulta el tema [Obtener paywalls y productos para paywalls con Remote Config en tu app móvil](fetch-paywalls-and-products-flutter).
+
+<SampleApp />
+
+<details>
+   <summary>Antes de empezar a mostrar paywalls en tu app móvil (haz clic para expandir)</summary>
+
+   1. [Crea tus productos](create-product) en el Adapty Dashboard.
+2. [Crea un paywall e incorpora los productos en él](create-paywall) en el Adapty Dashboard.
+3. [Crea placements e incorpora tu paywall en ellos](create-placement) en el Adapty Dashboard.
+4. Instala el [SDK de Adapty](sdk-installation-flutter) en tu app móvil.
+</details>
+
+## Obtener el paywall diseñado con Paywall Builder \{#fetch-paywall-designed-with-paywall-builder\}
+
+Si has [diseñado un paywall con el Paywall Builder](adapty-paywall-builder), no necesitas preocuparte por renderizarlo en el código de tu app para mostrárselo al usuario. Ese paywall contiene tanto qué mostrar como cómo mostrarlo. Aun así, necesitas obtener su ID a través del placement, su configuración de vista y luego presentarlo en tu app móvil.
+
+Para garantizar un rendimiento óptimo, es fundamental obtener el paywall y su [configuración de vista](flutter-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) lo antes posible, dejando tiempo suficiente para que las imágenes se descarguen antes de mostrárselas al usuario.
+
+Para obtener un paywall, usa el método `getPaywall`:
+
+```dart showLineNumbers
+try {
+  final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en");
+  // the requested paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+Parámetros:
+
+| Parámetro | Presencia | Descripción |
+|---------|--------|-----------|
+| **placementId** | requerido | El identificador del [Placement](placements) deseado. Es el valor que especificaste al crear un placement en el Adapty Dashboard. |
+| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la [localización del paywall](add-paywall-locale-in-adapty-paywall-builder). Se espera que este parámetro sea un código de idioma compuesto por una o dos subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta corresponde al idioma y la segunda a la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p>Consulta [Localizaciones y códigos de idioma](flutter-localizations-and-locale-codes) para más información sobre los códigos de idioma y cómo recomendamos usarlos.</p> |
+| **fetchPolicy** | por defecto: `.reloadRevalidatingCacheData` | <p>Por defecto, el SDK intentará cargar datos desde el servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre reciban los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `.returnCacheDataElseLoad` para devolver los datos en caché si existen. En este caso, los usuarios podrían no obtener los datos más recientes, pero experimentarán tiempos de carga más rápidos, sin importar la calidad de su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar peticiones de red.</p><p></p><p>Ten en cuenta que la caché se mantiene al reiniciar la app y solo se borra al desinstalarla o mediante una limpieza manual.</p><p></p><p>El SDK de Adapty almacena los paywalls localmente en dos capas: la caché actualizada regularmente descrita anteriormente y los [paywalls de respaldo](fallback-paywalls). También usamos CDN para obtener los paywalls más rápido y un servidor de respaldo independiente en caso de que la CDN no esté disponible. Este sistema está diseñado para garantizar que siempre obtengas la versión más reciente de tus paywalls, asegurando la fiabilidad incluso cuando la conexión a internet es escasa.</p> |
+| **loadTimeout** | por defecto: 5 seg | <p>Este valor limita el tiempo de espera para este método. Si se alcanza el tiempo límite, se devolverán los datos en caché o el fallback local.</p><p>Ten en cuenta que en casos excepcionales este método puede exceder ligeramente el tiempo especificado en `loadTimeout`, ya que la operación puede estar compuesta por distintas peticiones internamente.</p><p>Para Android: puedes crear `TimeInterval` con funciones de extensión (como `5.seconds`, donde `.seconds` es de `import com.adapty.utils.seconds`), o `TimeInterval.seconds(5)`. Para no establecer límite, usa `TimeInterval.INFINITE`.</p> |
+
+Parámetros de respuesta:
+
+| Parámetro | Descripción |
+| :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | Un objeto [`AdaptyPaywall`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywall-class.html) con una lista de IDs de productos, el identificador del paywall, el Remote Config y varias otras propiedades. |
+
+## Obtener la configuración de vista del paywall diseñado con Paywall Builder \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+Asegúrate de activar el toggle **Show on device** en el Paywall Builder. Si esta opción no está activada, la configuración de vista no estará disponible para recuperar.
+:::
+
+Después de obtener el paywall, comprueba si incluye una `ViewConfiguration`, lo que indica que fue creado con el Paywall Builder. Esto te indicará cómo mostrar el paywall. Si la `ViewConfiguration` está presente, trátalo como un paywall de Paywall Builder; si no, [manéjalo como un paywall de Remote Config](present-remote-config-paywalls-flutter).
+
+```dart showLineNumbers
+
+try {
+  final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+      );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+Una vez que tengas la vista, [presenta el paywall](flutter-present-paywalls).
+
+## Obtener un paywall para la audiencia por defecto y cargarlo más rápido \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Normalmente, los paywalls se obtienen casi de inmediato, por lo que no necesitas preocuparte por acelerar este proceso. Sin embargo, si tienes muchas audiencias y paywalls, y tus usuarios tienen una conexión a internet débil, obtener un paywall puede tardar más de lo deseado. En esos casos, puede que quieras mostrar un paywall por defecto para garantizar una experiencia de usuario fluida en lugar de no mostrar ninguno.
+
+Para resolver esto, puedes usar el método `getPaywallForDefaultAudience`, que obtiene el paywall del placement especificado para la audiencia **All Users**. Sin embargo, es fundamental entender que el enfoque recomendado es obtener el paywall con el método `getPaywall`, como se detalla en la sección [Obtener el paywall diseñado con Paywall Builder](flutter-get-pb-paywalls#fetch-paywall-designed-with-paywall-builder) anterior.
+
+:::warning
+Por qué recomendamos usar `getPaywall`
+
+El método `getPaywallForDefaultAudience` tiene algunos inconvenientes importantes:
+
+- **Posibles problemas de compatibilidad con versiones anteriores**: Si necesitas mostrar paywalls distintos para diferentes versiones de la app (actual y futuras), puedes encontrar dificultades. Tendrás que diseñar paywalls que soporten la versión actual (legacy) o asumir que los usuarios con esa versión podrían encontrar problemas con paywalls que no se renderizan.
+- **Pérdida de targeting**: Todos los usuarios verán el mismo paywall diseñado para la audiencia **All Users**, lo que significa que pierdes el targeting personalizado (incluido el basado en países, atribución de marketing o tus propios atributos personalizados).
+
+Si estás dispuesto a asumir estos inconvenientes para beneficiarte de una carga más rápida del paywall, usa el método `getPaywallForDefaultAudience` como se indica a continuación. De lo contrario, usa `getPaywall` descrito [arriba](#fetch-paywall-designed-with-paywall-builder).
+:::
+
+```dart showLineNumbers
+try {
+    final paywall = await Adapty().getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
+} on AdaptyError catch (adaptyError) {
+    // handle error
+} catch (e) {
+    // handle unknown error
+}
+```
+
+:::note
+El método `getPaywallForDefaultAudience` está disponible a partir de la versión 3.2.0 del Flutter SDK.
+:::
+
+| Parámetro | Presencia | Descripción |
+|---------|--------|-----------|
+| **placementId** | requerido | El identificador del [Placement](placements). Es el valor que especificaste al crear un placement en tu Adapty Dashboard. |
+| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la [localización del paywall](add-remote-config-locale). Se espera que este parámetro sea un código de idioma compuesto por una o más subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta corresponde al idioma y la segunda a la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p></p><p>Consulta [Localizaciones y códigos de idioma](localizations-and-locale-codes) para más información sobre los códigos de idioma y cómo recomendamos usarlos.</p> |
+| **fetchPolicy** | por defecto: `.reloadRevalidatingCacheData` | <p>Por defecto, el SDK intentará cargar datos desde el servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre reciban los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `.returnCacheDataElseLoad` para devolver los datos en caché si existen. En este caso, los usuarios podrían no obtener los datos más recientes, pero experimentarán tiempos de carga más rápidos, sin importar la calidad de su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar peticiones de red.</p><p></p><p>Ten en cuenta que la caché se mantiene al reiniciar la app y solo se borra al desinstalarla o mediante una limpieza manual.</p> |
+
+## Personalizar recursos \{#customize-assets\}
+
+Para personalizar imágenes y vídeos en tu paywall, implementa los recursos personalizados.
+
+Las imágenes y vídeos principales tienen IDs predefinidos: `hero_image` y `hero_video`. En un bundle de recursos personalizados, apuntas a estos elementos por sus IDs y personalizas su comportamiento.
+
+Para otras imágenes y vídeos, necesitas [establecer un ID personalizado](custom-media) en el dashboard de Adapty.
+
+Por ejemplo, puedes:
+
+- Mostrar una imagen o vídeo diferente a algunos usuarios.
+- Mostrar una imagen de vista previa local mientras se carga la imagen principal remota.
+- Mostrar una imagen de vista previa antes de reproducir un vídeo.
+
+:::important
+Para usar esta funcionalidad, actualiza el Flutter SDK de Adapty a la versión 3.8.0 o superior.
+:::
+
+Aquí tienes un ejemplo de cómo proporcionar recursos personalizados mediante un diccionario simple:
+
+```dart
+
+final customAssets = {
+    // Show a local image using a custom ID
+    'custom_image': AdaptyCustomAsset.localImageAsset(
+        assetId: 'assets/images/image_name.png',
+    ),
+
+    // Show a local video with a preview image
+    'hero_video': AdaptyCustomAsset.localVideoAsset(
+        assetId: 'assets/videos/custom_video.mp4',
+    ),
+};
+
+try {
+    final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+        customAssets: <CUSTOM_ASSETS>,
+        preloadProducts: preloadProducts,
+        );
+    } on AdaptyError catch (e) {
+        // handle the error
+    } catch (e) {
+// handle the error
+}
+```
+
+:::note
+Si no se encuentra un recurso, el paywall usará su apariencia por defecto.
+:::
+
+## Configurar temporizadores definidos por el desarrollador \{#set-up-developer-defined-timers\}
+
+Para usar temporizadores personalizados en tu app móvil, crea un objeto que siga el protocolo `AdaptyTimerResolver`. Este objeto define cómo debe renderizarse cada temporizador personalizado. Si lo prefieres, puedes usar directamente un diccionario `[String: Date]`, ya que ya cumple con este protocolo. Aquí tienes un ejemplo:
+
+```dart showLineNumbers
+
+try {
+  final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+        customTimers: {
+          'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
+          'CUSTOM_TIMER_NY': DateTime(2025, 1, 1), // New Year 2025
+        },
+      );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+En este ejemplo, `CUSTOM_TIMER_NY` y `CUSTOM_TIMER_6H` son los **Timer ID** de los temporizadores definidos por el desarrollador que configuraste en el Adapty Dashboard. El `timerResolver` garantiza que tu app actualice dinámicamente cada temporizador con el valor correcto. Por ejemplo:
+
+- `CUSTOM_TIMER_NY`: El tiempo restante hasta el fin del temporizador, como el día de Año Nuevo.
+- `CUSTOM_TIMER_6H`: El tiempo restante en un período de 6 horas que comenzó cuando el usuario abrió el paywall.

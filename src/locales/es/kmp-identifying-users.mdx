@@ -1,0 +1,149 @@
+---
+title: "Identificar usuarios en el SDK de Kotlin Multiplatform"
+description: "Identifica usuarios en Adapty para mejorar las experiencias de suscripción personalizadas."
+metadataTitle: "Identificar usuarios en Adapty | Documentación de Adapty"
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+
+Adapty crea un ID de perfil interno para cada usuario. Sin embargo, si tienes tu propio sistema de autenticación, debes establecer tu propio Customer User ID. Puedes encontrar usuarios por su Customer User ID en la sección [Profiles](profiles-crm) y usarlo en la [API de servidor](getting-started-with-server-side-api), que se enviará a todas las integraciones.
+
+### Establecer el Customer User ID durante la configuración \{#setting-customer-user-id-on-configuration\}
+
+Si tienes un ID de usuario durante la configuración, simplemente pásalo como parámetro `customerUserId` al método `.activate()`:
+
+```kotlin showLineNumbers
+
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withCustomerUserId("YOUR_USER_ID")
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+    }
+}
+```
+
+<SampleApp />
+
+### Establecer el Customer User ID después de la configuración \{#setting-customer-user-id-after-configuration\}
+
+Si no tienes un ID de usuario en la configuración del SDK, puedes establecerlo más tarde en cualquier momento con el método `.identify()`. Los casos más comunes para usar este método son después del registro o la autenticación, cuando el usuario pasa de ser un usuario anónimo a un usuario autenticado.
+
+```kotlin showLineNumbers
+
+Adapty.identify("YOUR_USER_ID").onSuccess {
+    // successful identify
+}.onError { error ->
+    // handle the error
+}
+```
+
+Parámetros de la solicitud:
+
+- **Customer User ID** (obligatorio): un identificador de usuario de tipo string.
+
+:::warning
+Reenvío de datos significativos del usuario
+
+En algunos casos, como cuando un usuario inicia sesión en su cuenta de nuevo, los servidores de Adapty ya tienen información sobre ese usuario. En estos escenarios, el SDK de Adapty cambiará automáticamente para trabajar con el nuevo usuario. Si pasaste algún dato al usuario anónimo, como atributos personalizados o atribuciones de redes de terceros, debes reenviar esos datos para el usuario identificado.
+
+También es importante tener en cuenta que debes volver a solicitar todos los paywalls y productos después de identificar al usuario, ya que los datos del nuevo usuario pueden ser diferentes.
+:::
+
+### Cerrar sesión e iniciar sesión \{#logging-out-and-logging-in\}
+
+Puedes cerrar la sesión del usuario en cualquier momento llamando al método `.logout()`:
+
+```kotlin showLineNumbers
+
+Adapty.logout().onSuccess {
+    // successful logout
+}.onError { error ->
+    // handle the error
+}
+```
+
+Después puedes iniciar sesión con el usuario usando el método `.identify()`.
+
+## Asignar `appAccountToken` (iOS) \{#assign-appaccounttoken-ios\}
+
+[`iosAppAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) es un **UUID** que te permite vincular las transacciones del App Store con tu identidad de usuario interna.
+StoreKit asocia este token con cada transacción, de modo que tu backend puede relacionar los datos del App Store con tus usuarios.
+
+Utiliza un UUID estable generado por usuario y reutilízalo para la misma cuenta en todos los dispositivos.
+Esto garantiza que las compras y las notificaciones del App Store queden correctamente vinculadas.
+
+Puedes establecer el token de dos maneras: durante la activación del SDK o al identificar al usuario.
+
+:::important
+Siempre debes pasar `iosAppAccountToken` junto con `customerUserId`.
+Si solo pasas el token, no se incluirá en la transacción.
+:::
+
+```kotlin showLineNumbers
+
+// During configuration:
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withCustomerUserId(
+            id = "YOUR_USER_ID",
+            iosAppAccountToken = "YOUR_IOS_APP_ACCOUNT_TOKEN"
+        )
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+}
+
+// Or when identifying users
+Adapty.identify(
+    customerUserId = "YOUR_USER_ID",
+    iosAppAccountToken = "YOUR_IOS_APP_ACCOUNT_TOKEN"
+).onSuccess {
+    // successful identify
+}.onError { error ->
+    // handle the error
+}
+```
+
+## Establecer IDs de cuenta ofuscados (Android) \{#set-obfuscated-account-ids-android\}
+
+Google Play requiere IDs de cuenta ofuscados para ciertos casos de uso con el fin de mejorar la privacidad y seguridad del usuario. Estos IDs ayudan a Google Play a identificar las compras manteniendo la información del usuario en el anonimato, lo que resulta especialmente importante para la prevención del fraude y el análisis.
+
+Es posible que necesites establecer estos IDs si tu app maneja datos sensibles de usuarios o si debes cumplir con normativas de privacidad específicas. Los IDs ofuscados permiten a Google Play hacer seguimiento de las compras sin exponer los identificadores reales de los usuarios.
+
+:::important
+Siempre debes pasar `androidObfuscatedAccountId` junto con `customerUserId`.
+Si solo pasas el ID de cuenta ofuscado, no se incluirá en la transacción.
+:::
+
+```kotlin showLineNumbers
+
+// During configuration:
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withCustomerUserId(
+            id = "YOUR_USER_ID",
+            androidObfuscatedAccountId = "YOUR_OBFUSCATED_ACCOUNT_ID"
+        )
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+}
+
+// Or when identifying users
+Adapty.identify(
+    customerUserId = "YOUR_USER_ID",
+    androidObfuscatedAccountId = "YOUR_OBFUSCATED_ACCOUNT_ID"
+).onSuccess {
+    // successful identify
+}.onError { error ->
+    // handle the error
+}
+```

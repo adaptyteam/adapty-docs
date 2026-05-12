@@ -1,0 +1,293 @@
+---
+title: "Integra Adapty en tu app de React Native con ayuda de IA"
+description: "Una guía paso a paso para integrar Adapty en tu app de React Native usando Cursor, Context7, ChatGPT, Claude u otras herramientas de IA."
+metadataTitle: "Integra Adapty con ayuda de IA para React Native | Documentación de Adapty"
+customSlug: /adapty-cursor-react-native
+displayed_sidebar: sdkreactnative
+---
+
+Esta página explica dos formas de integrar Adapty en tu app de React Native. Usa la skill de integración del SDK que encontrarás a continuación para un flujo automatizado de extremo a extremo, o sigue el tutorial manual más abajo.
+
+## Usa la skill de integración del SDK (beta) \{#use-the-sdk-integration-skill-beta\}
+
+La [skill adapty-sdk-integration](https://github.com/adaptyteam/adapty-sdk-integration-skill) automatiza la integración de principio a fin: configuración del dashboard, instalación del SDK, paywall y verificación por etapas. El tutorial manual que aparece más abajo es la alternativa si tu herramienta no es compatible con el formato Claude Skills.
+
+**Herramientas compatibles**: Claude Code, GitHub Copilot CLI, OpenAI Codex, Gemini CLI.
+
+### Instalación \{#install\}
+
+Elige el formato según tu herramienta. La lista completa está en el [README de la skill](https://github.com/adaptyteam/adapty-sdk-integration-skill).
+
+- **Claude Code**: Ejecuta `claude plugin marketplace add adaptyteam/adapty-sdk-integration-skill` y luego `claude plugin install adapty-sdk-integration@adapty` desde tu terminal.
+- **GitHub Copilot CLI**: Ejecuta `gh skill install adaptyteam/adapty-sdk-integration-skill`.
+- **Gemini CLI**: Ejecuta `gemini skills install https://github.com/adaptyteam/adapty-sdk-integration-skill`.
+- **OpenAI Codex u otra herramienta**: Clona el repositorio y copia `plugins/adapty-sdk-integration/skills/adapty-sdk-integration/` en el directorio de skills de tu herramienta.
+
+### Ejecución \{#run\}
+
+En tu proyecto, ejecuta `/adapty-sdk-integration`. La skill detecta tu plataforma y hace algunas preguntas de configuración. Luego guía paso a paso por la configuración del dashboard, la instalación del SDK, el paywall y la verificación — obteniendo la documentación de Adapty relevante en cada etapa.
+
+:::note
+La skill está en beta. Si se bloquea o se comporta de forma inesperada, el tutorial manual que aparece a continuación cubre cada etapa paso a paso.
+:::
+
+## Antes de empezar: configuración del dashboard \{#before-you-start-dashboard-setup\}
+
+Adapty requiere cierta configuración en el dashboard antes de escribir código con el SDK. Puedes hacerlo con una skill interactiva de LLM o manualmente a través del Dashboard.
+
+### Enfoque con skill (recomendado) \{#skill-approach-recommended\}
+
+La skill Adapty CLI permite que tu LLM configure tu app, productos, niveles de acceso, paywalls y placements directamente, sin necesidad de abrir el Dashboard en cada paso. Solo tienes que [conectar tus stores](integrate-payments) en el Dashboard.
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+Una vez añadida la skill, ejecuta `/adapty-cli` en tu agente. Te guiará por cada paso, incluyendo cuándo abrir el Dashboard para conectar tus stores.
+
+### Enfoque manual por el Dashboard \{#dashboard-approach\}
+
+Si prefieres configurarlo todo manualmente, esto es lo que necesitas antes de escribir código. Tu LLM no puede consultar los valores del dashboard por ti — tendrás que proporcionarlos tú.
+
+1. **Conecta tus stores**: En el Adapty Dashboard, ve a **App settings → General**. Conecta tanto App Store como Google Play si tu app está disponible en ambas plataformas. Esto es necesario para que las compras funcionen.
+   [Conectar stores](integrate-payments)
+
+2. **Copia tu clave SDK pública**: En el Adapty Dashboard, ve a **App settings → General** y busca la sección **API keys**. En el código, esta es la cadena que pasas a `adapty.activate("YOUR_PUBLIC_SDK_KEY")`.
+
+3. **Crea al menos un producto**: En el Adapty Dashboard, ve a la página **Products**. No haces referencia a los productos directamente en el código — Adapty los entrega a través de paywalls.
+   [Añadir productos](quickstart-products)
+
+4. **Crea un paywall y un placement**: En el Adapty Dashboard, crea un paywall en la página **Paywalls** y asígnalo a un placement en la página **Placements**. En el código, el ID del placement es la cadena que pasas a `adapty.getPaywall("YOUR_PLACEMENT_ID")`.
+   [Crear paywall](quickstart-paywalls)
+
+5. **Configura los niveles de acceso**: En el Adapty Dashboard, configúralos por producto en la página **Products**. En el código, la cadena que se comprueba en `profile.accessLevels['premium']?.isActive`. El nivel de acceso `premium` predeterminado funciona para la mayoría de las apps. Si los usuarios de pago tienen acceso a funciones distintas según el producto (por ejemplo, un plan `basic` frente a un plan `pro`), [crea niveles de acceso adicionales](assigning-access-level-to-a-product) antes de empezar a programar.
+
+:::tip
+Una vez que tengas los cinco, estás listo para escribir código. Dile a tu LLM: "Mi clave SDK pública es X, mi ID de placement es Y" para que pueda generar el código de inicialización y de obtención de paywalls correcto.
+:::
+
+### Configurar cuando estés listo \{#set-up-when-ready\}
+
+Esto no es necesario para empezar a programar, pero lo querrás a medida que tu integración madure:
+
+- **Pruebas A/B**: Configúralas en la página **Placements**. No se necesita ningún cambio de código.
+  [Pruebas A/B](ab-tests)
+- **Paywalls y placements adicionales**: Añade más llamadas a `getPaywall` con distintos IDs de placement.
+- **Integraciones de analítica**: Configúralas en la página **Integrations**. La configuración varía según la integración. Consulta [integraciones de analítica](analytics-integration) e [integraciones de atribución](attribution-integration).
+
+## Dale documentación de Adapty a tu LLM \{#feed-adapty-docs-to-your-llm\}
+
+### Usa Context7 (recomendado) \{#use-context7-recommended\}
+
+[Context7](https://context7.com) es un servidor MCP que da a tu LLM acceso directo a la documentación actualizada de Adapty. Tu LLM obtiene la documentación correcta automáticamente según lo que preguntes — sin necesidad de pegar URLs manualmente.
+
+Context7 funciona con **Cursor**, **Claude Code**, **Windsurf** y otras herramientas compatibles con MCP. Para configurarlo, ejecuta:
+
+```
+npx ctx7 setup
+```
+
+Esto detecta tu editor y configura el servidor Context7. Para la configuración manual, consulta el [repositorio de Context7 en GitHub](https://github.com/upstash/context7).
+
+Una vez configurado, haz referencia a la biblioteca de Adapty en tus prompts:
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the React Native SDK
+```
+
+:::warning
+Aunque Context7 elimina la necesidad de pegar enlaces a la documentación manualmente, el orden de implementación es importante. Sigue el [tutorial de implementación](#implementation-walkthrough) que aparece a continuación paso a paso para asegurarte de que todo funciona.
+:::
+
+### Usa documentación en texto plano \{#use-plain-text-docs\}
+
+Puedes acceder a cualquier documento de Adapty como Markdown en texto plano. Añade `.md` al final de su URL o haz clic en **Copy for LLM** debajo del título del artículo. Por ejemplo: [adapty-cursor-react-native.md](https://adapty.io/docs/es/adapty-cursor-react-native.md).
+
+Cada etapa del [tutorial de implementación](#implementation-walkthrough) que aparece a continuación incluye un bloque "Envía esto a tu LLM" con enlaces `.md` para pegar.
+
+Para obtener más documentación a la vez, consulta los [archivos de índice y subconjuntos específicos por plataforma](#plain-text-doc-index-files) que aparecen más abajo.
+
+## Tutorial de implementación \{#implementation-walkthrough\}
+
+El resto de esta guía recorre la integración de Adapty en el orden de implementación. Cada etapa incluye la documentación que debes enviar a tu LLM, lo que deberías ver al terminar y los problemas más frecuentes.
+
+### Planifica tu integración \{#plan-your-integration\}
+
+Antes de escribir código, pide a tu LLM que analice tu proyecto y cree un plan de implementación. Si tu herramienta de IA dispone de un modo de planificación (como el de Cursor o Claude Code), úsalo para que el LLM pueda leer tanto la estructura de tu proyecto como la documentación de Adapty antes de escribir código.
+
+Dile a tu LLM qué enfoque usas para las compras — esto afecta a las guías que debe seguir:
+
+- [**Adapty Paywall Builder**](adapty-paywall-builder): Creas los paywalls en el editor no-code de Adapty y el SDK los renderiza automáticamente.
+- [**Paywalls creados manualmente**](react-native-making-purchases): Construyes tu propia interfaz de paywall en código, pero sigues usando Adapty para obtener productos y gestionar compras.
+- [**Modo Observer**](observer-vs-full-mode): Mantienes tu infraestructura de compras existente y usas Adapty solo para analítica e integraciones.
+
+¿No sabes cuál elegir? Lee la [tabla de comparación en la guía de inicio rápido](react-native-quickstart-paywalls).
+
+### Instala y configura el SDK \{#install-and-configure-the-sdk\}
+
+Añade la dependencia del SDK de Adapty usando npm (o yarn) y actívalo con tu clave SDK pública. Esta es la base — nada más funciona sin esto.
+
+Tenemos guías de instalación separadas para proyectos Expo y React Native puro — elige la que corresponda a tu configuración.
+
+**Guías:**
+- [Instalar con Expo](sdk-installation-react-native-expo)
+- [Instalar con React Native puro](sdk-installation-react-native-pure)
+
+Envía esto a tu LLM (elige la que corresponda a tu configuración, o envía ambas):
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/sdk-installation-react-native-expo.md
+- https://adapty.io/docs/es/sdk-installation-react-native-pure.md
+```
+
+:::tip[Punto de verificación]
+- **Resultado esperado:** La app compila y se ejecuta en iOS y Android. Los logs del bundler Metro muestran el log de activación de Adapty.
+- **Problema frecuente:** "Public API key is missing" → comprueba que reemplazaste el marcador de posición con tu clave real de App settings.
+:::
+
+### Muestra paywalls y gestiona compras \{#show-paywalls-and-handle-purchases\}
+
+Obtén un paywall por ID de placement, muéstralo y gestiona los eventos de compra. Las guías que necesitas dependen de cómo gestionas las compras.
+
+Prueba cada compra en el sandbox a medida que avanzas — no esperes hasta el final. Consulta [Probar compras en sandbox](test-purchases-in-sandbox) para las instrucciones de configuración.
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**Guías:**
+- [Habilitar compras usando paywalls (inicio rápido)](react-native-quickstart-paywalls)
+- [Obtener paywalls del Paywall Builder y su configuración](react-native-get-pb-paywalls)
+- [Mostrar paywalls](react-native-present-paywalls)
+- [Gestionar eventos de paywall](react-native-handling-events-1)
+- [Responder a las acciones de los botones](react-native-handle-paywall-actions)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/react-native-quickstart-paywalls.md
+- https://adapty.io/docs/es/react-native-get-pb-paywalls.md
+- https://adapty.io/docs/es/react-native-present-paywalls.md
+- https://adapty.io/docs/es/react-native-handling-events-1.md
+- https://adapty.io/docs/es/react-native-handle-paywall-actions.md
+```
+
+:::tip[Punto de verificación]
+- **Resultado esperado:** El paywall aparece con los productos configurados. Al pulsar un producto se abre el diálogo de compra en sandbox.
+- **Problema frecuente:** Paywall vacío o error en `getPaywall` → verifica que el ID de placement coincide exactamente con el del dashboard y que el placement tiene una audiencia asignada.
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Paywalls manuales">
+
+**Guías:**
+- [Habilitar compras en tu paywall personalizado (inicio rápido)](react-native-quickstart-manual)
+- [Obtener paywalls y productos](fetch-paywalls-and-products-react-native)
+- [Renderizar un paywall diseñado con Remote Config](present-remote-config-paywalls-react-native)
+- [Realizar compras](react-native-making-purchases)
+- [Restaurar compras](react-native-restore-purchase)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/react-native-quickstart-manual.md
+- https://adapty.io/docs/es/fetch-paywalls-and-products-react-native.md
+- https://adapty.io/docs/es/present-remote-config-paywalls-react-native.md
+- https://adapty.io/docs/es/react-native-making-purchases.md
+- https://adapty.io/docs/es/react-native-restore-purchase.md
+```
+
+:::tip[Punto de verificación]
+- **Resultado esperado:** Tu paywall personalizado muestra los productos obtenidos de Adapty. Al pulsar un producto se abre el diálogo de compra en sandbox.
+- **Problema frecuente:** Array de productos vacío → verifica que el paywall tiene productos asignados en el dashboard y que el placement tiene una audiencia.
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Modo Observer">
+
+**Guías:**
+- [Descripción general del modo Observer](observer-vs-full-mode)
+- [Implementar el modo Observer](implement-observer-mode-react-native)
+- [Reportar transacciones en modo Observer](report-transactions-observer-mode-react-native)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/observer-vs-full-mode.md
+- https://adapty.io/docs/es/implement-observer-mode-react-native.md
+- https://adapty.io/docs/es/report-transactions-observer-mode-react-native.md
+```
+
+:::tip[Punto de verificación]
+- **Resultado esperado:** Tras una compra en sandbox con tu flujo de compra existente, la transacción aparece en el **Event Feed** del dashboard de Adapty.
+- **Problema frecuente:** Sin eventos → verifica que estás reportando transacciones a Adapty y que las notificaciones del servidor están configuradas para ambos stores.
+:::
+
+</TabItem>
+
+</Tabs>
+
+### Comprueba el estado de la suscripción \{#check-subscription-status\}
+
+Tras una compra, comprueba el perfil de usuario para ver si hay un nivel de acceso activo que dé acceso al contenido premium.
+
+**Guía:** [Comprobar el estado de la suscripción](react-native-check-subscription-status)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/react-native-check-subscription-status.md
+```
+
+:::tip[Punto de verificación]
+- **Resultado esperado:** Tras una compra en sandbox, `profile.accessLevels['premium']?.isActive` devuelve `true`.
+- **Problema frecuente:** `accessLevels` vacío tras la compra → comprueba que el producto tiene un nivel de acceso asignado en el dashboard.
+:::
+
+### Identifica a los usuarios \{#identify-users\}
+
+Vincula las cuentas de usuario de tu app con los perfiles de Adapty para que las compras persistan entre dispositivos.
+
+:::important
+Omite este paso si tu app no tiene autenticación.
+:::
+
+**Guía:** [Identificar usuarios](react-native-quickstart-identify)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/react-native-quickstart-identify.md
+```
+
+:::tip[Punto de verificación]
+- **Resultado esperado:** Tras llamar a `adapty.identify("your-user-id")`, la sección **Profiles** del dashboard muestra tu ID de usuario personalizado.
+- **Problema frecuente:** Llama a `identify` después de la activación pero antes de obtener paywalls para evitar la atribución a un perfil anónimo.
+:::
+
+### Prepárate para el lanzamiento \{#prepare-for-release\}
+
+Una vez que tu integración funcione en el sandbox, repasa la lista de verificación de lanzamiento para asegurarte de que todo está listo para producción.
+
+**Guía:** [Lista de verificación de lanzamiento](release-checklist)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/es/release-checklist.md
+```
+
+:::tip[Punto de verificación]
+- **Resultado esperado:** Todos los elementos de la lista confirmados: conexiones de stores, notificaciones del servidor, flujo de compra, comprobaciones de nivel de acceso y requisitos de privacidad.
+- **Problema frecuente:** Faltan notificaciones del servidor → configura las App Store Server Notifications en **App settings → iOS SDK** y las Google Play Real-Time Developer Notifications en **App settings → Android SDK**.
+:::
+
+## Archivos de índice de documentación en texto plano \{#plain-text-doc-index-files\}
+
+Si necesitas dar a tu LLM un contexto más amplio más allá de páginas individuales, alojamos archivos de índice que listan o combinan toda la documentación de Adapty:
+
+- [`llms.txt`](https://adapty.io/docs/es/llms.txt): Lista todas las páginas con enlaces `.md`. Es un [estándar emergente](https://llmstxt.org/) para hacer que los sitios web sean accesibles para los LLMs. Ten en cuenta que para algunos agentes de IA (por ejemplo, ChatGPT) tendrás que descargar `llms.txt` y subirlo al chat como archivo.
+- [`llms-full.txt`](https://adapty.io/docs/es/llms-full.txt): Toda la documentación del sitio de Adapty combinada en un único archivo. Es muy grande — úsalo solo cuando necesites el panorama completo.
+- Subconjuntos específicos de React Native: [`react-native-llms.txt`](https://adapty.io/docs/es/react-native-llms.txt) y [`react-native-llms-full.txt`](https://adapty.io/docs/es/react-native-llms-full.txt): Subconjuntos específicos de la plataforma que ahorran tokens en comparación con el sitio completo.

@@ -1,0 +1,166 @@
+---
+// src/components/api-reference/SchemaTree.astro
+import type { ApiSchema } from '../../api-reference/lib/model';
+
+interface Props {
+  schema: ApiSchema;
+  depth?: number;
+  seen?: Set<ApiSchema>;
+  name?: string;
+  required?: boolean;
+}
+
+const { schema, depth = 0, seen = new Set<ApiSchema>(), name, required = false } = Astro.props;
+
+const MAX_DEPTH = 5;
+const cycle = seen.has(schema);
+const tooDeep = depth > MAX_DEPTH;
+const nextSeen = new Set(seen);
+nextSeen.add(schema);
+
+function isPrimitive(s: ApiSchema): boolean {
+  if (s.oneOf || s.anyOf || s.allOf) return false;
+  return s.type !== 'object' && s.type !== 'array';
+}
+
+function summarizeType(s: ApiSchema): string {
+  const branches = s.oneOf ?? s.anyOf;
+  // When all branches are primitives, render as a union type label (e.g. "string | number")
+  // instead of the opaque "oneOf" / "anyOf" — much clearer at a glance.
+  if (branches && branches.length > 0 && branches.every(isPrimitive)) {
+    const labels = branches.map(b => b.type ?? 'any');
+    return Array.from(new Set(labels)).join(' | ');
+  }
+  if (s.oneOf) return 'oneOf';
+  if (s.anyOf) return 'anyOf';
+  if (s.allOf) return 'allOf';
+  if (s.type === 'array') return `array of ${s.items?.type ?? 'any'}`;
+  return s.type ?? 'any';
+}
+
+const unionBranches = schema.oneOf ?? schema.anyOf;
+const allPrimitiveUnion =
+  unionBranches !== undefined && unionBranches.length > 0 && unionBranches.every(isPrimitive);
+
+const hasChildren =
+  (schema.type === 'object' && !!schema.properties) ||
+  (schema.type === 'array' && schema.items?.type === 'object' && !!schema.items.properties) ||
+  !!schema.allOf ||
+  (!!unionBranches && !allPrimitiveUnion);
+
+// Skip the synthetic row for unnamed containers — otherwise an orphaned "object"
+// label would appear above the property list.
+const skipRow = !name && hasChildren;
+
+// For arrays of objects, render the object's properties directly under the array entry
+// without an intermediate "items: object" row.
+const arrayObjectItems =
+  schema.type === 'array' && schema.items?.type === 'object' && schema.items.properties
+    ? schema.items
+    : null;
+---
+
+{skipRow && schema.descriptionHtml && (
+  <p class="schema-root-desc" set:html={schema.descriptionHtml} />
+)}
+
+{!skipRow && (
+  <div class="schema-row" data-depth={depth}>
+    <div class="schema-row-header">
+      {name && <span class="schema-name">{name}</span>}
+      <span class="schema-type">{summarizeType(schema)}</span>
+      {required && <span class="schema-required">required</span>}
+    </div>
+    {schema.descriptionHtml && <p class="schema-desc" set:html={schema.descriptionHtml} />}
+    {schema.enum && (
+      <p class="schema-enum">One of: {schema.enum.map(v => JSON.stringify(v)).join(', ')}</p>
+    )}
+  </div>
+)}
+
+{cycle && <p class="schema-note">recursive</p>}
+{tooDeep && (
+  <details class="schema-deep">
+    <summary>show more</summary>
+    further nesting elided (depth {depth})
+  </details>
+)}
+
+{!cycle && !tooDeep && schema.type === 'object' && schema.properties && (
+  <div class:list={['schema-children', { 'schema-children-root': skipRow }]}>
+    {Object.entries(schema.properties).map(([propName, propSchema]) => (
+      <Astro.self
+        schema={propSchema}
+        depth={depth + 1}
+        seen={nextSeen}
+        name={propName}
+        required={schema.required?.includes(propName) ?? false}
+      />
+    ))}
+  </div>
+)}
+
+{!cycle && !tooDeep && arrayObjectItems && (
+  <div class="schema-children">
+    {Object.entries(arrayObjectItems.properties!).map(([propName, propSchema]) => (
+      <Astro.self
+        schema={propSchema}
+        depth={depth + 1}
+        seen={nextSeen}
+        name={propName}
+        required={arrayObjectItems.required?.includes(propName) ?? false}
+      />
+    ))}
+  </div>
+)}
+
+{!cycle && !tooDeep && schema.allOf && (
+  <div class:list={['schema-children', { 'schema-children-root': skipRow }]}>
+    {schema.allOf.flatMap(s => s.properties ? Object.entries(s.properties) : [])
+      .map(([propName, propSchema]: [string, any]) => (
+        <Astro.self schema={propSchema} depth={depth + 1} seen={nextSeen} name={propName} />
+      ))}
+  </div>
+)}
+
+{!cycle && !tooDeep && unionBranches && !allPrimitiveUnion && (
+  <div class="schema-children">
+    {unionBranches.map((branch, i) => (
+      <div class="schema-option">
+        <p class="schema-option-label">Option {i + 1} — {summarizeType(branch)}</p>
+        {branch.descriptionHtml && <p class="schema-desc" set:html={branch.descriptionHtml} />}
+        {branch.type === 'object' && branch.properties && (
+          Object.entries(branch.properties).map(([propName, propSchema]) => (
+            <Astro.self
+              schema={propSchema}
+              depth={depth + 1}
+              seen={nextSeen}
+              name={propName}
+              required={branch.required?.includes(propName) ?? false}
+            />
+          ))
+        )}
+        {branch.type === 'array' && branch.items?.type === 'object' && branch.items.properties && (
+          Object.entries(branch.items.properties).map(([propName, propSchema]) => (
+            <Astro.self
+              schema={propSchema}
+              depth={depth + 1}
+              seen={nextSeen}
+              name={propName}
+              required={branch.items!.required?.includes(propName) ?? false}
+            />
+          ))
+        )}
+      </div>
+    ))}
+  </div>
+)}
+
+<style>
+  .schema-note,
+  .schema-deep {
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    margin: 0.25rem 0 0 1rem;
+  }
+</style>

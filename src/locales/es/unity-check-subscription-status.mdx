@@ -1,0 +1,106 @@
+---
+title: "Comprobar el estado de la suscripción en el SDK de Unity"
+description: "Aprende cómo comprobar el estado de la suscripción en tu app de Unity con Adapty."
+metadataTitle: "Comprobar el Estado de la Suscripción | Documentación de Adapty"
+displayed_sidebar: sdkunity
+keywords: ['getProfile', 'subscription status']
+rank: 75
+---
+
+Para decidir si los usuarios pueden acceder al contenido de pago o ver un paywall, necesitas comprobar su [nivel de acceso](access-level) en el perfil.
+
+Este artículo te muestra cómo acceder al estado del perfil para decidir qué necesitan ver los usuarios: si mostrarles un paywall o darles acceso a las funciones de pago.
+
+## Obtener el estado de la suscripción \{#get-subscription-status\}
+
+Cuando decides si mostrar un paywall o contenido de pago a un usuario, compruebas su [nivel de acceso](access-level) en su perfil. Tienes dos opciones:
+
+- Llama a `GetProfile` si necesitas los datos más recientes del perfil de inmediato (como al iniciar la app) o quieres forzar una actualización.
+- Configura **actualizaciones automáticas del perfil** para mantener una copia local que se actualiza automáticamente cada vez que cambia el estado de la suscripción.
+
+### Obtener el perfil \{#get-profile\}
+
+La forma más sencilla de obtener el estado de la suscripción es usar el método `GetProfile` para acceder al perfil:
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+// check the access
+});
+```
+
+### Escuchar actualizaciones de la suscripción \{#listen-to-subscription-updates\}
+
+Para recibir actualizaciones del perfil automáticamente en tu app:
+
+1. Extiende `AdaptyEventListener` e implementa el método `OnLoadLatestProfile`: Adapty llamará a este método automáticamente cada vez que cambie el estado de la suscripción del usuario.
+2. Almacena los datos del perfil actualizado cuando se llame a este método, para poder usarlos en toda la app sin realizar peticiones de red adicionales.
+
+```csharp
+public class SubscriptionManager : MonoBehaviour, AdaptyEventListener {
+    private AdaptyProfile currentProfile;
+    
+    void Start() {
+        // Register this object as an Adapty event listener
+        Adapty.SetEventListener(this);
+    }
+    
+    // Store the profile when it updates
+    public void OnLoadLatestProfile(AdaptyProfile profile) {
+        currentProfile = profile;
+        // Update UI, unlock content, etc.
+    }
+    
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+    
+    // Use stored profile instead of calling getProfile()
+    public bool HasAccess() {
+        if (currentProfile?.AccessLevels != null && 
+            currentProfile.AccessLevels.ContainsKey("premium")) {
+            return currentProfile.AccessLevels["premium"].IsActive;
+        }
+        return false;
+    }
+}
+```
+
+:::note
+Adapty llama automáticamente a `OnLoadLatestProfile` cuando se inicia tu app, proporcionando datos de suscripción en caché incluso si el dispositivo está sin conexión.
+:::
+
+## Conectar el perfil con la lógica del paywall \{#connect-profile-with-paywall-logic\}
+
+Cuando necesitas tomar decisiones inmediatas sobre mostrar paywalls o dar acceso a funciones de pago, puedes comprobar el perfil del usuario directamente. Este enfoque es útil en situaciones como el inicio de la app, al entrar en secciones premium o antes de mostrar contenido específico.
+
+```csharp
+private void CheckAccessLevel()
+{
+    Adapty.GetProfile((profile, error) => {
+        if (error != null) {
+            Debug.LogError("Error checking access level: " + error.Message);
+            // Show paywall if access check fails
+            return;
+        }
+        
+        var accessLevel = profile.AccessLevels["YOUR_ACCESS_LEVEL"];
+        if (accessLevel == null || !accessLevel.IsActive) {
+            // Show paywall if no access
+        }
+    });
+}
+
+private void InitializePaywall()
+{
+    LoadPaywall();
+    CheckAccessLevel();
+}
+``` 
+
+## Próximos pasos \{#next-steps\}
+
+Ahora que sabes cómo rastrear el estado de la suscripción, aprende a [trabajar con perfiles de usuario](unity-quickstart-identify) para asegurarte de que pueden acceder a lo que han pagado.

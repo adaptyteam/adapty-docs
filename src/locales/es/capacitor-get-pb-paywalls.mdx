@@ -1,0 +1,177 @@
+---
+title: "Obtener paywalls de Paywall Builder y su configuración en el SDK de Capacitor"
+description: "Aprende a recuperar paywalls de PB en Adapty para un mejor control de las suscripciones en tu app de Capacitor."
+metadataTitle: "Recuperar paywalls de PB en Adapty | Documentación de Adapty"
+displayed_sidebar: sdkcapacitor
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+
+Después de [diseñar la parte visual de tu paywall](adapty-paywall-builder) con el nuevo Paywall Builder en el Adapty Dashboard, puedes mostrarlo en tu app móvil. El primer paso es obtener el paywall asociado al placement y su configuración de vista, tal como se describe a continuación.
+
+Ten en cuenta que este tema hace referencia a paywalls personalizados con Paywall Builder. Para obtener información sobre cómo recuperar paywalls con Remote Config, consulta el tema [Obtener paywalls y productos para paywalls con Remote Config en tu app móvil](fetch-paywalls-and-products-capacitor).
+
+<details>
+   <summary>Antes de empezar a mostrar paywalls en tu app móvil (haz clic para expandir)</summary>
+
+1. [Crea tus productos](create-product) en el Adapty Dashboard.
+2. [Crea un paywall e incorpora los productos en él](create-paywall) en el Adapty Dashboard.
+3. [Crea placements e incorpora tu paywall en ellos](create-placement) en el Adapty Dashboard.
+4. Instala el [SDK de Adapty](sdk-installation-capacitor) en tu app móvil.
+</details>
+
+## Obtener un paywall diseñado con Paywall Builder \{#fetch-paywall-designed-with-paywall-builder\}
+
+Si has [diseñado un paywall con Paywall Builder](adapty-paywall-builder), no necesitas preocuparte por renderizarlo en el código de tu app móvil para mostrárselo al usuario. Ese tipo de paywall contiene tanto lo que debe mostrarse como la forma en que debe mostrarse. Sin embargo, necesitas obtener su ID a través del placement, su configuración de vista, y luego presentarlo en tu app móvil.
+
+Para garantizar un rendimiento óptimo, es fundamental recuperar el paywall y su [configuración de vista](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) lo antes posible, dejando tiempo suficiente para que las imágenes se descarguen antes de presentarlas al usuario.
+
+Para obtener un paywall, usa el método `getPaywall`:
+
+```typescript showLineNumbers
+try {
+  const paywall = await adapty.getPaywall({
+    placementId: 'YOUR_PLACEMENT_ID',
+    locale: 'en',
+  });
+  // the requested paywall
+} catch (error) {
+  // handle the error
+}
+```
+
+Parámetros:
+
+| Parámetro | Presencia | Descripción |
+|---------|--------|-----------|
+| **placementId** | obligatorio | El identificador del [Placement](placements) deseado. Es el valor que especificaste al crear un placement en el Adapty Dashboard. |
+| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la [localización del paywall](add-paywall-locale-in-adapty-paywall-builder). Se espera que este parámetro sea un código de idioma compuesto de uno o dos subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta es para el idioma, la segunda para la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p>Consulta [Localizaciones y códigos de idioma](localizations-and-locale-codes) para más información sobre los códigos de idioma y cómo recomendamos usarlos.</p> |
+| **params** | opcional | Parámetros adicionales para obtener el paywall. |
+
+**No escribas IDs de productos en el código.** El único ID que debes escribir directamente en el código es el ID del placement. Los paywalls se configuran de forma remota, por lo que el número de productos y las ofertas disponibles pueden cambiar en cualquier momento. Tu app debe gestionar estos cambios de forma dinámica: si hoy un paywall devuelve dos productos y mañana tres, muéstralos todos sin necesidad de modificar el código.
+
+Parámetros de respuesta:
+
+| Parámetro | Descripción                                                                                                                                                                         |
+| :-------- |:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | Un objeto [`AdaptyPaywall`](https://capacitor.adapty.io/interfaces/adaptypaywall) con una lista de IDs de productos, el identificador del paywall, el Remote Config y otras propiedades. |
+
+## Obtener la configuración de vista del paywall diseñado con Paywall Builder \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+Asegúrate de activar el botón **Show on device** en el Paywall Builder. Si esta opción no está activada, la configuración de vista no estará disponible para recuperar.
+:::
+
+Después de obtener el paywall, comprueba si incluye un `ViewConfiguration`, lo que indica que fue creado con Paywall Builder. Esto te orientará sobre cómo mostrar el paywall. Si el `ViewConfiguration` está presente, trátalo como un paywall de Paywall Builder; si no lo está, [trátalo como un paywall de Remote Config](present-remote-config-paywalls-capacitor).
+
+En el SDK de Capacitor, llama directamente al método `createPaywallView` sin necesidad de obtener primero la configuración de vista manualmente.
+
+:::warning
+El resultado del método `createPaywallView` solo puede usarse una vez. Si necesitas usarlo de nuevo, vuelve a llamar al método `createPaywallView`.
+:::
+
+```typescript showLineNumbers
+
+if (paywall.hasViewConfiguration) {
+  try {
+    const view = await createPaywallView(paywall);
+  } catch (error) {
+    // handle the error
+  }
+} else {
+  // use your custom logic
+}
+```
+
+Parámetros:
+
+| Parámetro            | Presencia | Descripción                                                  |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **paywall**          | obligatorio | Un objeto `AdaptyPaywall` para obtener un controlador del paywall deseado. |
+| **customTags**       | opcional | Define un diccionario de etiquetas personalizadas y sus valores resueltos. Las etiquetas personalizadas actúan como marcadores de posición en el contenido del paywall y se sustituyen dinámicamente por cadenas específicas para personalizar el contenido. Consulta el tema [Etiquetas personalizadas en el Paywall Builder](custom-tags-in-paywall-builder) para más detalles. |
+| **prefetchProducts** | opcional | Actívalo para optimizar el momento de visualización de los productos en pantalla. Cuando es `true`, AdaptyUI obtiene automáticamente los productos necesarios. Por defecto: `false`. |
+
+:::note
+Si usas varios idiomas, aprende a añadir una [localización en Paywall Builder](add-paywall-locale-in-adapty-paywall-builder) y cómo usar correctamente los códigos de idioma [aquí](capacitor-localizations-and-locale-codes).
+:::
+
+Una vez que tengas la vista, [presenta el paywall](capacitor-present-paywalls).
+
+## Obtener un paywall para la audiencia predeterminada y recuperarlo más rápido \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Por lo general, los paywalls se obtienen casi de forma instantánea, por lo que no necesitas preocuparte por agilizar este proceso. Sin embargo, si tienes muchas audiencias y paywalls, y tus usuarios tienen una conexión a internet débil, obtener un paywall puede tardar más de lo deseado. En esas situaciones, puede que quieras mostrar un paywall predeterminado para garantizar una experiencia fluida al usuario en lugar de no mostrar ningún paywall.
+
+Para resolver esto, puedes usar el método `getPaywallForDefaultAudience`, que obtiene el paywall del placement especificado para la audiencia **All Users**. Sin embargo, es fundamental entender que el enfoque recomendado es obtener el paywall con el método `getPaywall`, tal como se detalla en la sección [Obtener el paywall](#fetch-paywall-designed-with-paywall-builder) anterior.
+
+:::warning
+Por qué recomendamos usar `getPaywall`
+
+El método `getPaywallForDefaultAudience` tiene algunos inconvenientes importantes:
+
+- **Posibles problemas de compatibilidad con versiones anteriores**: Si necesitas mostrar paywalls diferentes para distintas versiones de la app (actual y futuras), tendrás que diseñar paywalls que sean compatibles con la versión actual (heredada) o asumir que los usuarios con esa versión podrían encontrarse con paywalls que no se renderizan correctamente.
+- **Pérdida de segmentación**: Todos los usuarios verán el mismo paywall diseñado para la audiencia **All Users**, lo que significa que pierdes la segmentación personalizada (incluida la basada en países, atribución de marketing o tus propios atributos personalizados).
+
+Si estás dispuesto a aceptar estos inconvenientes para beneficiarte de una obtención más rápida del paywall, usa el método `getPaywallForDefaultAudience` como se indica a continuación. De lo contrario, usa `getPaywall` como se describe [arriba](#fetch-paywall-designed-with-paywall-builder).
+:::
+
+```typescript showLineNumbers
+try {
+  const paywall = await adapty.getPaywallForDefaultAudience({
+    placementId: 'YOUR_PLACEMENT_ID',
+    locale: 'en',
+  });
+  // the requested paywall
+} catch (error) {
+  // handle the error
+}
+```
+
+:::note
+El método `getPaywallForDefaultAudience` está disponible a partir de la versión 2.11.2 del SDK de Capacitor.
+:::
+
+| Parámetro | Presencia | Descripción                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | obligatorio | El identificador del [Placement](placements). Es el valor que especificaste al crear un placement en tu Adapty Dashboard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la [localización del paywall](add-remote-config-locale). Se espera que este parámetro sea un código de idioma compuesto de una o más subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta es para el idioma, la segunda para la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p></p><p>Consulta [Localizaciones y códigos de idioma](capacitor-localizations-and-locale-codes) para más información sobre los códigos de idioma y cómo recomendamos usarlos.</p>                                                                                                                                                                                                                                       |
+| **params** | opcional | Parámetros adicionales para obtener el paywall. |
+
+## Personalizar recursos \{#customize-assets\}
+
+Para personalizar imágenes y vídeos en tu paywall, implementa los recursos personalizados.
+
+Las imágenes y vídeos principales tienen IDs predefinidos: `hero_image` y `hero_video`. En un bundle de recursos personalizados, seleccionas estos elementos por sus IDs y personalizas su comportamiento.
+
+Para otras imágenes y vídeos, debes [establecer un ID personalizado](custom-media) en el dashboard de Adapty.
+
+Por ejemplo, puedes:
+
+- Mostrar una imagen o vídeo diferente a algunos usuarios.
+- Mostrar una imagen de vista previa local mientras se carga la imagen principal remota.
+- Mostrar una imagen de vista previa antes de reproducir un vídeo.
+
+:::important
+Para usar esta función, actualiza el SDK de Capacitor de Adapty a la versión 3.8.0 o superior.
+:::
+
+Aquí tienes un ejemplo de cómo puedes proporcionar recursos personalizados mediante un diccionario sencillo:
+
+```typescript showLineNumbers
+const customAssets: Record<string, AdaptyCustomAsset> = {
+  'custom_image': { type: 'image', relativeAssetPath: 'custom_image.png' },
+  'hero_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'custom_video.mp4' },
+      android: { relativeAssetPath: 'videos/custom_video.mp4' }
+    }
+  }
+};
+
+view = await createPaywallView(paywall, { customAssets });
+```
+
+:::note
+Si no se encuentra un recurso, el paywall mostrará su apariencia predeterminada.
+:::

@@ -1,0 +1,107 @@
+---
+title: "Migrar el SDK de Adapty Flutter a la v. 3.0"
+description: "Migra al SDK de Adapty Flutter v3.0 para mejorar el rendimiento y acceder a nuevas funciones de monetización."
+metadataTitle: "Migración al SDK de Adapty Flutter v3.0 | Documentación de Adapty"
+---
+
+El SDK de Adapty v.3.0 incorpora soporte para el nuevo e innovador [Adapty Paywall Builder](adapty-paywall-builder), la nueva versión de la herramienta sin código y fácil de usar para crear paywalls. Con su máxima flexibilidad y ricas capacidades de diseño, tus paywalls serán más efectivos y rentables.
+
+:::info
+
+Ten en cuenta que la librería AdaptyUI ha quedado obsoleta y ahora está incluida como parte del SDK de Adapty.
+
+:::
+
+## Eliminar el SDK de AdaptyUI \{#remove-adaptyui-sdk\}
+
+1. AdaptyUI pasa a ser un módulo dentro del SDK de Adapty, así que elimina `adapty_ui_flutter` de tu archivo `pubspec.yaml`:
+
+   ```diff showLineNumbers
+   dependencies:
+   + adapty_flutter: ^3.2.1
+   - adapty_flutter: ^2.10.3
+   - adapty_ui_flutter: ^2.1.3
+   ```
+
+2. Ejecuta:
+
+   ```bash showLineNumbers title="Bash"
+   flutter pub get
+   ```
+
+## Configurar los SDK de Adapty \{#configure-adapty-sdks\}
+
+Antes era necesario usar los archivos `Adapty-Info.plist` y `AndroidManifest.xml` para configurar el SDK de Adapty.
+
+Ahora ya no es necesario usar archivos adicionales. En su lugar, puedes proporcionar todos los parámetros requeridos durante la activación.
+
+Solo tienes que configurar el SDK de Adapty una vez, normalmente al inicio del ciclo de vida de tu app.
+
+### Activar el módulo Adapty del SDK de Adapty \{#activate-adapty-module-of-adapty-sdk\}
+
+1. Elimina la importación del SDK de AdaptyUI de tu aplicación de la siguiente manera:
+
+   ```diff showLineNumbers
+   import 'package:adapty_flutter/adapty_flutter.dart';
+   - import 'package:adapty_ui_flutter/adapty_ui_flutter.dart';
+   ```
+
+2. Actualiza la activación del SDK de Adapty así:
+
+   ```diff showLineNumbers
+   try {
+   -	Adapty().activate();  
+   +    await Adapty().activate(
+   +        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+   +         ..withLogLevel(AdaptyLogLevel.debug)
+   +         ..withObserverMode(false)
+   +         ..withCustomerUserId(null)
+   +         ..withIdfaCollectionDisabled(false)
+   +         ..withIpAddressCollectionDisabled(false),
+   +   );
+   } catch (e) {
+       // handle the error
+   }
+   ```
+
+Parámetros:
+
+| Parámetro                           | Presencia | Descripción                                                  |
+| ----------------------------------- | --------- | ------------------------------------------------------------ |
+| **PUBLIC_SDK_KEY**                  | requerido | La clave que puedes encontrar en el campo **Public SDK key** de la configuración de tu app en Adapty: [**App settings**-> pestaña **General** -> subsección **API keys**](https://app.adapty.io/settings/general) |
+| **withLogLevel**                    | opcional  | Adapty registra errores y otra información relevante para dar visibilidad sobre el funcionamiento de tu app. Los niveles disponibles son:<ul><li> error: Solo se registran errores.</li><li> warn: Se registran errores y mensajes del SDK que no causan errores críticos pero merecen atención.</li><li> info: Se registran errores, advertencias y mensajes informativos importantes, como los del ciclo de vida de los distintos módulos.</li><li> verbose: Se registra cualquier información adicional que pueda ser útil durante la depuración, como llamadas a funciones, consultas a la API, etc.</li></ul> |
+| **withObserverMode**                | opcional  | <p>Un valor booleano que controla el [modo Observer](observer-vs-full-mode). Actívalo si gestionas las compras y el estado de las suscripciones tú mismo y usas Adapty solo para enviar eventos de suscripción y analíticas.</p><p>El valor predeterminado es `false`.</p><p></p><p>🚧 Al ejecutarse en modo Observer, el SDK de Adapty no cerrará ninguna transacción, así que asegúrate de gestionarlas tú.</p> |
+| **withCustomerUserId**              | opcional  | Un identificador del usuario en tu sistema. Lo enviamos en eventos de suscripción y analíticos para atribuir los eventos al perfil correcto. También puedes buscar clientes por `customerUserId` en el menú [**Profiles and Segments**](https://app.adapty.io/profiles/users). |
+| **withIdfaCollectionDisabled**      | opcional  | <p>Ponlo en `true` para deshabilitar la recopilación y el uso compartido del IDFA.</p><p>la dirección IP del usuario.</p><p>El valor predeterminado es `false`.</p><p>Para más detalles sobre la recopilación del IDFA, consulta la sección [Integración de analíticas](analytics-integration#disable-collection-of-advertising-identifiers).</p> |
+| **withIpAddressCollectionDisabled** | opcional  | <p>Ponlo en `true` para deshabilitar la recopilación y el uso compartido de la dirección IP del usuario.</p><p>El valor predeterminado es `false`.</p> |
+
+### Activar el módulo AdaptyUI del SDK de Adapty \{#activate-adaptyui-module-of-adapty-sdk\}
+
+Solo necesitas configurar el módulo AdaptyUI si planeas usar el [Paywall Builder](adapty-paywall-builder):
+
+```dart showLineNumbers title="Dart"
+try {
+    final mediaCache = AdaptyUIMediaCacheConfiguration(
+        memoryStorageTotalCostLimit: 100 * 1024 * 1024, // 100MB
+        memoryStorageCountLimit: 2147483647, // 2^31 - 1, max int value in Dart
+        diskStorageSizeLimit: 100 * 1024 * 1024, // 100MB
+    );
+
+    await AdaptyUI().activate(
+        configuration: AdaptyUIConfiguration(mediaCache: mediaCache),
+        observer: <AdaptyUIObserver Implementation>,
+    );
+} catch (e) {
+    // handle the error
+}
+```
+
+Ten en cuenta que la configuración de AdaptyUI es opcional; puedes activar el módulo AdaptyUI sin su configuración. Sin embargo, si usas la configuración, todos los parámetros son obligatorios.
+
+Parámetros:
+
+| Parámetro                       | Presencia | Descripción                                                  |
+| :------------------------------ | :-------- | :----------------------------------------------------------- |
+| **memoryStorageTotalCostLimit** | requerido | Límite de coste total del almacenamiento en bytes.           |
+| **memoryStorageCountLimit**     | requerido | Límite de número de elementos del almacenamiento en memoria. |
+| **diskStorageSizeLimit**        | requerido | Límite de tamaño de archivo en disco del almacenamiento en bytes. 0 significa sin límite. |

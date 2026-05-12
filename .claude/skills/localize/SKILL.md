@@ -220,9 +220,9 @@ The translation script creates `.mdx` files and `.hashes/` automatically. You on
 
 ## Step 6 — Translate content (phased, gated by native-speaker reviews)
 
-> **Flow overview:** (1) research dictionary terminology → (2) native speaker reviews word-pair list → (3) translate tutorial 7 articles → (4) deploy to develop → (5) native speaker reviews rendered pages → (6) translate the rest.
+> **Flow overview:** (1) research dictionary terminology → (2) native speaker reviews word-pair list → (3) translate tutorial 7 articles → (4) deploy to develop → (5) native speaker reviews rendered pages → (6) translate the rest → (7) on "we are done", run MDX lint + parse checks locally and auto-fix.
 >
-> **Note on `CustomDocCardList`:** This component is already locale-aware — it reads titles from `_sidebar-labels.json` and descriptions from the translated article frontmatter automatically. No extra step is needed; it works correctly once sidebar labels (Step 6g `--sidebars`) and article translations are done.
+> **Note on `CustomDocCardList`:** This component is already locale-aware — it reads titles from `_sidebar-labels.json` and descriptions from the translated article frontmatter automatically. No extra step is needed; it works correctly once sidebar labels (Step 6f `--sidebars`) and article translations are done.
 
 All `translate.mjs` commands require `ANTHROPIC_API_KEY` to be set.
 
@@ -327,7 +327,17 @@ node scripts/translate.mjs --lang {LOCALE} --sidebar capacitor
 node scripts/translate.mjs --lang {LOCALE} --sidebar api
 ```
 
-#### 6g. Translate platform article docs, one platform at a time
+#### 6g. Translate reusable snippets
+
+Reusable MDX snippets in `src/components/reusable/` are skipped by `--platform`, `--ids`, `--sidebar`, and `--sidebars` runs (to avoid re-translating them on every targeted run). They must be translated in their own pass:
+
+```bash
+node scripts/translate.mjs --lang {LOCALE} --reusables
+```
+
+Run this before the platform translations — platform articles import reusables, so the staging build will render mixed-language content until the snippets are translated.
+
+#### 6h. Translate platform article docs, one platform at a time
 
 ```bash
 node scripts/translate.mjs --lang {LOCALE} --platform tutorial
@@ -338,13 +348,52 @@ node scripts/translate.mjs --lang {LOCALE} --platform flutter
 node scripts/translate.mjs --lang {LOCALE} --platform unity
 node scripts/translate.mjs --lang {LOCALE} --platform kmp
 node scripts/translate.mjs --lang {LOCALE} --platform capacitor
+node scripts/translate.mjs --lang {LOCALE} --platform api
 ```
 
-#### 6h. Translate API docs
+`--platform api` translates the MDX articles referenced from `src/data/sidebars/api.json` (e.g. developer CLI guides, server-side API intro/auth pages). This is separate from the OpenAPI YAML specs themselves — those are translated by `--api-specs` below.
+
+#### 6i. Translate API OpenAPI specs
 
 ```bash
 node scripts/translate.mjs --lang {LOCALE} --api-specs
 ```
+
+This translates the YAML specs in `src/api-reference/specs/` (e.g. `adapty-api.yaml` → `adapty-api.{LOCALE}.yaml`) — the source for the rendered API reference pages. Distinct from `--platform api`, which translates the surrounding MDX articles.
+
+#### 6j. Validate MDX parses cleanly before deploy (BLOCKING — triggers on "we are done")
+
+**Trigger:** the user says "we're done", "that's it", "everything is translated", or otherwise signals end of translation work. Do not run this earlier — broken intermediate state is normal during translation.
+
+Two CI checks must pass before merging to `main` (and they're enforced in `s3-deploy-production.yml` via `lint-mdx` and `check-mdx-parse` jobs). Run them locally and resolve issues before the user pushes:
+
+**1. Run the lint check with auto-fix:**
+
+```bash
+node scripts/lint-mdx.mjs --fix
+```
+
+This auto-corrects the `blank-line` rule (missing blank line after the last `import` — Acorn's most common crash). Other rules (e.g. `missing-import` for `client:load` components like `CompoundCalculator`, `SimpleCalculator`) are reported but not auto-fixed; you must add the missing import line at the top of each flagged file.
+
+**2. Run the parse check:**
+
+```bash
+node scripts/check-mdx-parse.mjs
+```
+
+This compiles every `.mdx` under `src/content/docs/`, `src/locales/`, and `src/components/reusable/` using the same MDX plugins Astro uses. It reports every parse error at once (Astro's locale build halts at the first, so this surfaces hidden failures stacked behind it).
+
+**3. Auto-fix the remainder:**
+
+For every remaining issue from either script, read the file at the reported line, identify the cause, and edit it directly. Common causes after translation:
+
+- **JSX comments** (`{/* ... */}`) inside MDX — crash the content collection. Replace with `:::note` callouts.
+- **Inline callout syntax** — `:::note text :::` on one line. Split into three lines: `:::note`, content, `:::`.
+- **Mismatched JSX tags** — usually a `</Tag>` introduced or dropped by the translator. Compare the locale file to the English source and restore the original tag balance.
+- **Smart-quote contamination** in attribute values (e.g. `title=" "`) — replace with straight ASCII quotes.
+- **Stray backslashes** in heading anchors — `\{#id\}` must keep its backslash escapes exactly.
+
+After each edit pass, re-run both scripts. Loop until both exit clean. Only then tell the user the locale is ready to deploy.
 
 ---
 
@@ -461,8 +510,10 @@ strategy:
 | 6d | Deploy tutorial translations to develop via `sync-branch-to-develop` skill | `sync-branch-to-develop` |
 | 6e | **BLOCKING:** Wait for native speaker to review rendered tutorial pages on staging | — |
 | 6f | Output command to translate sidebar labels | `--sidebars` |
-| 6g | Output commands to translate platform article docs | `--platform` per sidebar |
-| 6h | Output command to translate API specs | `--api-specs` |
+| 6g | Output command to translate reusable snippets (skipped by targeted runs) | `--reusables` |
+| 6h | Output commands to translate platform article docs | `--platform` per sidebar |
+| 6i | Output command to translate API specs | `--api-specs` |
+| 6j | **BLOCKING on "we are done":** Run lint-mdx --fix + check-mdx-parse; auto-fix remaining issues | `scripts/lint-mdx.mjs`, `scripts/check-mdx-parse.mjs` |
 | 7a | Update English crawler exclusion | Algolia dashboard |
 | 7b | Create new locale crawler | Algolia dashboard |
 | 7c | Create new Algolia index | Algolia dashboard |

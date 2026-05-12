@@ -1,0 +1,25 @@
+---
+title: "在 Unity SDK 中优化付费墙获取"
+description: "可靠地获取 Adapty 付费墙：适用于 Unity 的时机、缓存与备用方案。"
+metadataTitle: "优化付费墙获取 | Unity SDK | Adapty 文档"
+---
+
+在 Unity 中可靠地获取付费墙需要做到三点：快速渲染、返回面向目标受众的付费墙，以及在网络较慢时优雅降级。以下规则涵盖了实现这一目标所需的时机、缓存与备用方案。
+:::tip
+以下规则假设 `Adapty.Activate()` 和 `Adapty.Identify()` 已经执行完成。详见 [Unity SDK 调用顺序](unity-sdk-call-order)。
+:::
+## 规则与注意事项 \{#rules-and-pitfalls\}
+| 应该这样做 | 不应该这样做 | 原因 |
+|---|---|---|
+| 仅在即将展示付费墙时才获取对应版位。 | 在启动时并发预取所有版位。 | 批量预取会阻塞主线程，导致启动期间出现黑屏。 |
+| 在归因数据有机会解析后再调用 `GetPaywall`——例如在 `Activate` 之后等待 1–2 秒，或等 `OnLoadLatestProfile` 触发后再调用。 | 在 `Awake()` 中调用 `GetPaywall`。 | 此时归因数据尚未到达。付费墙会按默认目标受众解析，悄悄绕过市场细分和 ASA 个性化逻辑。 |
+| 设置 `loadTimeout`，并为每个版位配置[备用付费墙](fallback-paywalls)。 | 无限等待 `GetPaywall` 返回。 | 没有超时限制时，网络较差的用户会看到空白屏幕，直到网络恢复——或者直接关掉应用。 |
+有关 `fetchPolicy` 和 `loadTimeout` 参数的说明，请参阅[获取付费墙和产品](fetch-paywalls-and-products-unity)；有关如何选择合适版位的信息，请参阅[版位](placements)。
+## 针对弱网环境进行优化 \{#tune-for-poor-connectivity\}
+
+对于网络连接持续较差的市场（农村地区、交通途中、受路由影响的地区）：
+
+- 除首次请求外，每次获取时将 `fetchPolicy` 设置为 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`。
+- 在 Adapty 看板中为每个版位配置[备用付费墙](fallback-paywalls)。
+- 将 `loadTimeout` 设置为 3–5 秒，超时后接受备用付费墙。
+- 不要将付费墙的展示逻辑阻塞在 `GetProfile` 上。独立调用 `GetPaywall`，避免因用户画像加载缓慢而影响界面显示。

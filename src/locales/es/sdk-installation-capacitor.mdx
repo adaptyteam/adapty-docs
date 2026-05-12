@@ -1,0 +1,315 @@
+---
+title: "Capacitor - Instalación y configuración del SDK de Adapty"
+description: "Guía paso a paso para instalar el SDK de Adapty en Capacitor para apps con suscripciones."
+metadataTitle: "Instalación del SDK de Adapty en Capacitor | Documentación de Adapty"
+keywords: ['instalar sdk', 'instalación sdk', 'instalar sdk capacitor', 'capacitor', 'google play billing library', 'gpbl', 'billing library']
+rank: 60
+---
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+import GetKey from '@site/src/locales/es/reusable/GetKey.md';
+import AndroidBackupRules from '@site/src/locales/es/reusable/AndroidBackupRules.md';
+import InstallationPrereqs from '@site/src/locales/es/reusable/InstallationPrereqs.mdx';
+
+El SDK de Adapty incluye dos módulos clave para una integración fluida en tu app de Capacitor:
+
+- **Core Adapty**: Este módulo es necesario para que Adapty funcione correctamente en tu app.
+- **AdaptyUI**: Este módulo es necesario si usas el [Adapty Paywall Builder](adapty-paywall-builder), una herramienta sin código y fácil de usar para crear paywalls multiplataforma. AdaptyUI se activa automáticamente junto con el módulo principal.
+
+:::tip
+¿Quieres ver un ejemplo real de cómo se integra el SDK de Adapty en una app móvil? Echa un vistazo a nuestras [apps de ejemplo](https://github.com/adaptyteam/AdaptySDK-Capacitor/tree/master/examples), que muestran la configuración completa, incluyendo la visualización de paywalls, la realización de compras y otras funcionalidades básicas.
+:::
+
+## Requisitos \{#requirements\}
+
+El [SDK de Adapty para Capacitor](https://github.com/adaptyteam/AdaptySDK-Capacitor/) tiene los siguientes requisitos de versión:
+
+| Versión del SDK de Adapty | Versión de Capacitor | Versión de iOS |
+|---------------------------|----------------------|----------------|
+| 3.16.0+                   | 8                    | 15.0+          |
+| 3.15                      | 7                    | 14.0+          |
+
+Las versiones 6 e inferiores de Capacitor no están soportadas.
+
+:::info
+Adapty es compatible con Google Play Billing Library hasta la versión 8.x. Por defecto, Adapty trabaja con Google Play Billing Library v.7.0.0, pero si quieres forzar una versión posterior, puedes [añadir la dependencia](https://developer.android.com/google/play/billing/integrate#dependency) manualmente.
+:::
+
+<InstallationPrereqs />
+
+## Instalar el SDK de Adapty \{#install-adapty-sdk\}
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Capacitor.svg?style=flat&logo=capacitor)](https://github.com/adaptyteam/AdaptySDK-Capacitor/releases)
+
+Instala el SDK de Adapty:
+
+```sh 
+npm install @adapty/capacitor
+npx cap sync   
+```
+
+## Activar el módulo Adapty del SDK de Adapty \{#activate-adapty-module-of-adapty-sdk\}
+
+:::note
+El SDK de Adapty solo necesita activarse una vez en tu app.
+:::
+
+<GetKey />
+
+Copia el siguiente código en cualquier archivo de tu app para activar Adapty:
+
+```typescript showLineNumbers
+
+try {
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+      // verbose logging is recommended for the development purposes and for the first production release
+        logLevel: 'verbose', 
+      // in the development environment, use this variable to avoid multiple activation errors. Set it to your development environment variable
+      __ignoreActivationOnFastRefresh: true,
+    }
+  });
+  console.log('Adapty activated successfully!');
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+}
+```
+
+:::important
+Espera a que `activate` se resuelva antes de llamar a cualquier otro método del SDK de Adapty. Consulta [Orden de llamadas en el SDK de Capacitor](capacitor-sdk-call-order) para ver la secuencia completa.
+:::
+
+:::tip
+Para evitar errores de activación en el entorno de desarrollo, usa los [consejos](#development-environment-tips).
+:::
+
+Ahora configura los paywalls en tu app:
+
+- Si usas el [Adapty Paywall Builder](adapty-paywall-builder), sigue el [inicio rápido con Paywall Builder](capacitor-quickstart-paywalls).
+- Si construyes tu propia UI de paywall, consulta el [inicio rápido para paywalls personalizados](capacitor-quickstart-manual).
+
+## Activar el módulo AdaptyUI del SDK de Adapty \{#activate-adaptyui-module-of-adapty-sdk\}
+
+Si planeas usar el [Paywall Builder](adapty-paywall-builder), necesitas el módulo AdaptyUI. Se activa automáticamente cuando activas el módulo principal; no necesitas hacer nada más.
+
+## Configuración opcional \{#optional-setup\}
+
+### Logging \{#logging\}
+
+#### Configurar el sistema de logging \{#set-up-the-logging-system\}
+
+Adapty registra errores y otra información importante para ayudarte a entender qué está pasando. Los niveles disponibles son los siguientes:
+
+| Nivel      | Descripción                                                  |
+| ---------- | ------------------------------------------------------------ |
+| `error`    | Solo se registrarán errores                                   |
+| `warn`     | Se registrarán errores y mensajes del SDK que no causan errores críticos, pero que vale la pena tener en cuenta |
+| `info`     | Se registrarán errores, advertencias y varios mensajes informativos |
+| `verbose`  | Se registrará cualquier información adicional que pueda ser útil durante la depuración, como llamadas a funciones, consultas a la API, etc. |
+
+Puedes establecer el nivel de log en tu app antes o durante la configuración de Adapty:
+
+```typescript showLineNumbers
+// Set log level before activation
+adapty.setLogLevel({ logLevel: 'verbose' });
+
+// Or set it during configuration
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    logLevel: 'verbose',
+  }
+});
+```
+
+### Políticas de datos \{#data-policies\}
+
+Adapty no almacena datos personales de tus usuarios a menos que los envíes explícitamente, pero puedes implementar políticas adicionales de seguridad de datos para cumplir con las directrices del store o del país.
+
+#### Deshabilitar la recopilación y el uso compartido de la dirección IP \{#disable-ip-address-collection-and-sharing\}
+
+Al activar el módulo Adapty, establece `ipAddressCollectionDisabled` en `true` para deshabilitar la recopilación y el uso compartido de la dirección IP del usuario. El valor predeterminado es `false`.
+
+Usa este parámetro para mejorar la privacidad del usuario, cumplir con las normativas regionales de protección de datos (como GDPR o CCPA), o reducir la recopilación de datos innecesaria cuando las funciones basadas en IP no son necesarias para tu app.
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    ipAddressCollectionDisabled: true,
+  }
+});
+```
+
+#### Deshabilitar la recopilación y el uso compartido del ID publicitario \{#disable-advertising-id-collection-and-sharing\}
+
+Al activar el módulo Adapty, establece `ios.idfaCollectionDisabled` (iOS) o `android.adIdCollectionDisabled` (Android) en `true` para deshabilitar la recopilación de identificadores publicitarios. El valor predeterminado es `false`.
+
+Usa este parámetro para cumplir con las políticas de App Store/Play Store, evitar que se active la solicitud de App Tracking Transparency, o si tu app no requiere atribución publicitaria ni analíticas basadas en IDs publicitarios.
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    ios: {
+      idfaCollectionDisabled: true,      
+    },
+    android: {
+      adIdCollectionDisabled: true,      
+    },
+  }
+});
+```
+
+#### Configurar la caché de medios para AdaptyUI \{#set-up-media-cache-configuration-for-adaptyui\}
+
+Por defecto, AdaptyUI almacena en caché los medios (como imágenes y vídeos) para mejorar el rendimiento y reducir el uso de red. Puedes personalizar la configuración de caché proporcionando una configuración personalizada.
+
+Usa `mediaCache` para sobreescribir la configuración de caché predeterminada:
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    mediaCache: {
+      memoryStorageTotalCostLimit: 200 * 1024 * 1024, // Optional: memory cache size in bytes
+      memoryStorageCountLimit: 2147483647,            // Optional: max number of items in memory
+      diskStorageSizeLimit: 200 * 1024 * 1024,       // Optional: disk cache size in bytes
+    },
+  }
+});
+```
+
+Parámetros:
+| Parámetro | Requerido | Descripción |
+|-----------|-----------|-------------|
+| memoryStorageTotalCostLimit | opcional | Tamaño total de la caché en memoria en bytes. El valor predeterminado es específico de la plataforma. |
+| memoryStorageCountLimit | opcional | El límite de elementos en el almacenamiento en memoria. El valor predeterminado es específico de la plataforma. |
+| diskStorageSizeLimit | opcional | El límite de tamaño de archivo en disco en bytes. El valor predeterminado es específico de la plataforma. |
+
+### Habilitar niveles de acceso locales (Android) \{#enable-local-access-levels-android\}
+
+Por defecto, los [niveles de acceso locales](local-access-levels) están habilitados en iOS y deshabilitados en Android. Para habilitarlos también en Android, establece `localAccessLevelAllowed` en `true`:
+
+```typescript showLineNumbers
+await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+        android: {
+            localAccessLevelAllowed: true,
+        },
+    }
+});
+```
+
+### Borrar datos al restaurar desde copia de seguridad \{#clear-data-on-backup-restore\}
+
+Cuando `clearDataOnBackup` se establece en `true`, el SDK detecta cuándo la app se restaura desde una copia de seguridad de iCloud y elimina todos los datos del SDK almacenados localmente, incluyendo la información del perfil en caché, los detalles de los productos y los paywalls. El SDK se inicializa entonces con un estado limpio. El valor predeterminado es `false`.
+
+:::note
+Solo se elimina la caché local del SDK. El historial de transacciones con Apple y los datos del usuario en los servidores de Adapty no se ven afectados.
+:::
+
+```swift showLineNumbers
+await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+        ios: {
+            clearDataOnBackup: true,
+        },
+    }
+});
+```
+
+## Consejos para el entorno de desarrollo \{#development-environment-tips\}
+
+#### Solucionar errores de activación del SDK en la recarga en vivo de Capacitor \{#troubleshoot-sdk-activation-errors-on-capacitors-live-reload\}
+
+Al desarrollar con el SDK de Adapty en Capacitor, puede que encuentres el error: `Adapty can only be activated once. Ensure that the SDK activation call is not made more than once.`
+
+Esto ocurre porque la función de recarga en vivo de Capacitor activa múltiples llamadas de activación durante el desarrollo. Para evitarlo, usa la opción `__ignoreActivationOnFastRefresh` con el indicador del modo de desarrollo de Capacitor — diferirá según el bundle que estés usando.
+
+```typescript showLineNumbers
+try {
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+        // Set your development environment variable
+      __ignoreActivationOnFastRefresh: true, 
+    }
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+  // Handle the error appropriately for your app
+}
+```
+
+## Solución de problemas \{#troubleshooting\}
+
+#### Error de versión mínima de iOS \{#minimum-ios-version-error\}
+
+Si obtienes un error de versión mínima de iOS, actualiza tu Podfile:
+
+```diff
+-platform :ios, min_ios_version_supported
++platform :ios, '14.0'  # For core features only
+# OR
++platform :ios, '15.0'  # If using paywalls created in the paywall builder
+```
+
+#### Reglas de copia de seguridad de Android (configuración de Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
+
+<AndroidBackupRules />
+
+:::tip
+Tras modificar archivos nativos de Android, ejecuta `npx cap sync android` para que Capacitor recoja los recursos actualizados si regeneras la plataforma.
+:::
+
+#### Las compras fallan al volver desde otra app en Android \{#purchases-fail-after-returning-from-another-app-in-android\}
+
+Si la Activity que inicia el flujo de compra usa un `launchMode` no predeterminado, Android puede recrearla o reutilizarla incorrectamente cuando el usuario regresa desde Google Play, una app bancaria o un navegador. Esto puede provocar que el resultado de la compra se pierda o se trate como cancelado.
+
+Para garantizar que las compras funcionen correctamente, usa solo los modos de lanzamiento `standard` o `singleTop` para la Activity que inicia el flujo de compra, y evita cualquier otro modo.
+
+En tu `AndroidManifest.xml`, asegúrate de que la Activity que inicia el flujo de compra esté configurada como `standard` o `singleTop`:
+
+```xml
+<activity
+    android:name=".MainActivity"
+    android:launchMode="standard" />
+```
+
+#### Errores de compilación de Swift 6 causados por la sobreescritura de SWIFT_VERSION en el Podfile \{#swift-6-build-errors-caused-by-podfile-swift_version-override\}
+
+Al compilar tu app de Capacitor para iOS, puede que veas errores de compilación de Swift 6 en los targets de pods de Adapty. Los síntomas típicos incluyen incompatibilidades de `@Sendable` en `AdaptyUIBuilderLogic`, conformidad faltante de `Sendable` en tipos de Adapty, o errores de aislamiento de actores.
+
+Los pods de Adapty declaran `s.swift_version = '6.0'` y requieren Swift 6 para compilar. El código de tu propia app puede permanecer en Swift 5 — solo los targets de pods de Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`) necesitan compilarse con Swift 6.
+
+La causa más común es un hook `post_install` en `ios/App/Podfile` que reescribe `SWIFT_VERSION` para cada target de pod:
+
+```ruby showLineNumbers title="ios/App/Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+**Solución**: Excluye los targets de pods de Adapty de la sobreescritura:
+
+```ruby showLineNumbers title="ios/App/Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin].include?(target.name)
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+Luego ejecuta `npx cap sync ios` y vuelve a compilar.
+
+Para verificarlo, abre `ios/App/Pods/Pods.xcodeproj`, selecciona el target del pod `Adapty` → **Build Settings** → **Swift Language Version**. Debería ser **Swift 6**.

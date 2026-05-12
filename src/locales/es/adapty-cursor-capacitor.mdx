@@ -1,0 +1,288 @@
+---
+title: "Integra Adapty en tu app de Capacitor con ayuda de IA"
+description: "Una guía paso a paso para integrar Adapty en tu app de Capacitor usando Cursor, Context7, ChatGPT, Claude u otras herramientas de IA."
+metadataTitle: "Integra Adapty con ayuda de IA para Capacitor | Documentación de Adapty"
+customSlug: /adapty-cursor-capacitor
+displayed_sidebar: sdkcapacitor
+---
+
+Esta página cubre dos formas de integrar Adapty en tu app de Capacitor. Usa la skill de integración del SDK para un flujo automatizado de principio a fin, o sigue el recorrido manual más abajo.
+
+## Usa la skill de integración del SDK (beta) \{#use-the-sdk-integration-skill-beta\}
+
+La [skill adapty-sdk-integration](https://github.com/adaptyteam/adapty-sdk-integration-skill) automatiza toda la integración: configuración del dashboard, instalación del SDK, paywall y verificación en cada etapa. El recorrido manual más abajo es la alternativa si tu herramienta no admite el formato Claude Skills.
+
+**Herramientas compatibles**: Claude Code, GitHub Copilot CLI, OpenAI Codex, Gemini CLI.
+
+### Instalar \{#install\}
+
+Elige el formato para tu herramienta. La lista completa está en el [README de la skill](https://github.com/adaptyteam/adapty-sdk-integration-skill).
+
+- **Claude Code**: Ejecuta `claude plugin marketplace add adaptyteam/adapty-sdk-integration-skill` y luego `claude plugin install adapty-sdk-integration@adapty` desde tu terminal.
+- **GitHub Copilot CLI**: Ejecuta `gh skill install adaptyteam/adapty-sdk-integration-skill`.
+- **Gemini CLI**: Ejecuta `gemini skills install https://github.com/adaptyteam/adapty-sdk-integration-skill`.
+- **OpenAI Codex u otra herramienta**: Clona el repositorio y copia `plugins/adapty-sdk-integration/skills/adapty-sdk-integration/` en el directorio de skills de tu herramienta.
+
+### Ejecutar \{#run\}
+
+En tu proyecto, ejecuta `/adapty-sdk-integration`. La skill detecta tu plataforma y hace algunas preguntas de configuración. Después recorre la configuración del dashboard, la instalación del SDK, el paywall y la verificación, obteniendo la documentación relevante de Adapty en cada etapa.
+
+:::note
+La skill está en beta. Si se detiene o se comporta de forma inesperada, el recorrido manual a continuación cubre cada etapa paso a paso.
+:::
+
+## Antes de empezar: configuración del dashboard \{#before-you-start-dashboard-setup\}
+
+Adapty requiere cierta configuración en el dashboard antes de escribir cualquier código del SDK. Puedes hacerlo con una skill interactiva de LLM o manualmente desde el Dashboard.
+
+### Enfoque con skill (recomendado) \{#skill-approach-recommended\}
+
+La skill de Adapty CLI permite que tu LLM configure tu app, productos, niveles de acceso, paywalls y placements directamente, sin tener que abrir el Dashboard en cada paso. Solo necesitas [conectar tus stores](integrate-payments) en el Dashboard.
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+Una vez añadida la skill, ejecuta `/adapty-cli` en tu agente. Te guiará por cada paso, incluyendo cuándo abrir el Dashboard para conectar tus stores.
+
+### Enfoque manual con el Dashboard \{#dashboard-approach\}
+
+Si prefieres configurarlo todo manualmente, esto es lo que necesitas antes de escribir código. Tu LLM no puede buscar los valores del dashboard por ti — tendrás que proporcionárselos.
+
+1. **Conecta tus stores**: En el Adapty Dashboard, ve a **App settings → General**. Conecta tanto App Store como Google Play si tu app de Capacitor apunta a ambas plataformas. Esto es obligatorio para que funcionen las compras.
+   [Conectar stores](integrate-payments)
+
+2. **Copia tu Public SDK key**: En el Adapty Dashboard, ve a **App settings → General** y busca la sección **API keys**. En el código, es la cadena que pasas a `adapty.activate()`.
+
+3. **Crea al menos un producto**: En el Adapty Dashboard, ve a la página **Products**. No referenciarás los productos directamente en el código — Adapty los entrega a través de paywalls.
+   [Añadir productos](quickstart-products)
+
+4. **Crea un paywall y un placement**: En el Adapty Dashboard, crea un paywall en la página **Paywalls** y asígnalo a un placement en la página **Placements**. En el código, el ID del placement es la cadena que pasas a `adapty.getPaywall()`.
+   [Crear paywall](quickstart-paywalls)
+
+5. **Configura los niveles de acceso**: En el Adapty Dashboard, configúralos por producto en la página **Products**. En el código, la cadena que se verifica es `profile.accessLevels['premium']?.isActive`. El nivel de acceso `premium` predeterminado funciona para la mayoría de las apps. Si los usuarios de pago acceden a funciones distintas según el producto (por ejemplo, un plan `basic` vs. un plan `pro`), [crea niveles de acceso adicionales](assigning-access-level-to-a-product) antes de empezar a programar.
+
+:::tip
+Una vez que tengas los cinco, estás listo para escribir código. Dile a tu LLM: "Mi Public SDK key es X, mi placement ID es Y" para que pueda generar el código correcto de inicialización y obtención de paywalls.
+:::
+
+### Configura cuando estés listo \{#set-up-when-ready\}
+
+Estos pasos no son necesarios para empezar a programar, pero los necesitarás a medida que tu integración madure:
+
+- **Pruebas A/B**: Configúralas en la página **Placements**. No se necesita ningún cambio en el código.
+  [Pruebas A/B](ab-tests)
+- **Paywalls y placements adicionales**: Añade más llamadas a `getPaywall` con diferentes IDs de placement.
+- **Integraciones de analíticas**: Configúralas en la página **Integrations**. La configuración varía según la integración. Consulta [integraciones de analíticas](analytics-integration) e [integraciones de atribución](attribution-integration).
+
+## Proporciona la documentación de Adapty a tu LLM \{#feed-adapty-docs-to-your-llm\}
+
+### Usa Context7 (recomendado) \{#use-context7-recommended\}
+
+[Context7](https://context7.com) es un servidor MCP que da a tu LLM acceso directo a la documentación actualizada de Adapty. Tu LLM obtiene los documentos adecuados automáticamente según lo que le preguntes — sin necesidad de pegar URLs manualmente.
+
+Context7 funciona con **Cursor**, **Claude Code**, **Windsurf** y otras herramientas compatibles con MCP. Para configurarlo, ejecuta:
+
+```
+npx ctx7 setup
+```
+
+Esto detecta tu editor y configura el servidor de Context7. Para la configuración manual, consulta el [repositorio de Context7 en GitHub](https://github.com/upstash/context7).
+
+Una vez configurado, referencia la librería de Adapty en tus prompts:
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the Capacitor SDK
+```
+
+:::warning
+Aunque Context7 elimina la necesidad de pegar links de documentación manualmente, el orden de implementación es importante. Sigue el [recorrido de implementación](#implementation-walkthrough) paso a paso para asegurarte de que todo funcione.
+:::
+
+### Usa documentación en texto plano \{#use-plain-text-docs\}
+
+Puedes acceder a cualquier documento de Adapty como Markdown en texto plano. Añade `.md` al final de su URL, o haz clic en **Copy for LLM** bajo el título del artículo. Por ejemplo: [adapty-cursor-capacitor.md](https://adapty.io/docs/es/adapty-cursor-capacitor.md).
+
+Cada etapa del [recorrido de implementación](#implementation-walkthrough) incluye un bloque "Envía esto a tu LLM" con links `.md` para pegar.
+
+Para acceder a más documentación a la vez, consulta los [archivos de índice y subconjuntos por plataforma](#plain-text-doc-index-files) más abajo.
+
+## Recorrido de implementación \{#implementation-walkthrough\}
+
+El resto de esta guía recorre la integración de Adapty en orden de implementación. Cada etapa incluye los documentos que debes enviar a tu LLM, lo que deberías ver cuando esté listo y los problemas más comunes.
+
+### Planifica tu integración \{#plan-your-integration\}
+
+Antes de ponerte a escribir código, pide a tu LLM que analice tu proyecto y cree un plan de implementación. Si tu herramienta de IA admite un modo de planificación (como el de Cursor o el de Claude Code), úsalo para que el LLM pueda leer tanto la estructura de tu proyecto como la documentación de Adapty antes de escribir cualquier código.
+
+Dile a tu LLM qué enfoque usas para las compras — esto afecta a las guías que debe seguir:
+
+- [**Adapty Paywall Builder**](adapty-paywall-builder): Creas paywalls en el editor sin código de Adapty y el SDK los renderiza automáticamente.
+- [**Paywalls creados manualmente**](capacitor-making-purchases): Construyes tu propia UI de paywall en código, pero sigues usando Adapty para obtener productos y gestionar compras.
+- [**Modo Observer**](observer-vs-full-mode): Mantienes tu infraestructura de compras existente y usas Adapty solo para analíticas e integraciones.
+
+¿No sabes cuál elegir? Lee la [tabla comparativa en el quickstart](capacitor-quickstart-paywalls).
+
+### Instala y configura el SDK \{#install-and-configure-the-sdk\}
+
+Añade la dependencia del SDK de Adapty usando npm y actívalo con tu Public SDK key. Esto es la base — sin ello nada más funciona.
+
+**Guía:** [Instalar y configurar el SDK de Adapty](sdk-installation-capacitor)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/sdk-installation-capacitor.md
+```
+
+:::tip[Punto de control]
+- **Esperado:** La app se compila y ejecuta tanto en iOS como en Android. La consola muestra el log de activación de Adapty.
+- **Truco:** "Public API key is missing" → comprueba que hayas reemplazado el placeholder con tu clave real de App settings.
+:::
+
+### Muestra paywalls y gestiona compras \{#show-paywalls-and-handle-purchases\}
+
+Obtén un paywall por ID de placement, muéstralo y gestiona los eventos de compra. Las guías que necesitas dependen de cómo gestionas las compras.
+
+Prueba cada compra en el sandbox mientras avanzas — no esperes al final. Consulta [Probar compras en sandbox](test-purchases-in-sandbox) para las instrucciones de configuración.
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**Guías:**
+- [Habilitar compras usando paywalls (quickstart)](capacitor-quickstart-paywalls)
+- [Obtener paywalls del Paywall Builder y su configuración](capacitor-get-pb-paywalls)
+- [Mostrar paywalls](capacitor-present-paywalls)
+- [Gestionar eventos del paywall](capacitor-handling-events)
+- [Responder a las acciones de los botones](capacitor-handle-paywall-actions)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/capacitor-quickstart-paywalls.md
+- https://adapty.io/docs/es/capacitor-get-pb-paywalls.md
+- https://adapty.io/docs/es/capacitor-present-paywalls.md
+- https://adapty.io/docs/es/capacitor-handling-events.md
+- https://adapty.io/docs/es/capacitor-handle-paywall-actions.md
+```
+
+:::tip[Punto de control]
+- **Esperado:** El paywall aparece con tus productos configurados. Al tocar un producto se activa el diálogo de compra en sandbox.
+- **Truco:** Paywall vacío o error en `getPaywall` → verifica que el ID del placement coincida exactamente con el del dashboard y que el placement tenga una audiencia asignada.
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Manual paywalls">
+
+**Guías:**
+- [Habilitar compras en tu paywall personalizado (quickstart)](capacitor-quickstart-manual)
+- [Obtener paywalls y productos](fetch-paywalls-and-products-capacitor)
+- [Renderizar paywall diseñado con Remote Config](present-remote-config-paywalls-capacitor)
+- [Realizar compras](capacitor-making-purchases)
+- [Restaurar compras](capacitor-restore-purchase)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/capacitor-quickstart-manual.md
+- https://adapty.io/docs/es/fetch-paywalls-and-products-capacitor.md
+- https://adapty.io/docs/es/present-remote-config-paywalls-capacitor.md
+- https://adapty.io/docs/es/capacitor-making-purchases.md
+- https://adapty.io/docs/es/capacitor-restore-purchase.md
+```
+
+:::tip[Punto de control]
+- **Esperado:** Tu paywall personalizado muestra los productos obtenidos desde Adapty. Al tocar un producto se activa el diálogo de compra en sandbox.
+- **Truco:** Array de productos vacío → verifica que el paywall tenga productos asignados en el dashboard y que el placement tenga una audiencia.
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**Guías:**
+- [Descripción general del modo Observer](observer-vs-full-mode)
+- [Implementar el modo Observer](implement-observer-mode-capacitor)
+- [Reportar transacciones en el modo Observer](report-transactions-observer-mode-capacitor)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/observer-vs-full-mode.md
+- https://adapty.io/docs/es/implement-observer-mode-capacitor.md
+- https://adapty.io/docs/es/report-transactions-observer-mode-capacitor.md
+```
+
+:::tip[Punto de control]
+- **Esperado:** Tras una compra en sandbox usando tu flujo de compra existente, la transacción aparece en el **Event Feed** del dashboard de Adapty.
+- **Truco:** Sin eventos → verifica que estás reportando las transacciones a Adapty y que las notificaciones del servidor están configuradas para ambos stores.
+:::
+
+</TabItem>
+
+</Tabs>
+
+### Comprueba el estado de la suscripción \{#check-subscription-status\}
+
+Tras una compra, verifica el perfil de usuario para detectar un nivel de acceso activo y proteger el contenido premium.
+
+**Guía:** [Comprobar el estado de la suscripción](capacitor-check-subscription-status)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/capacitor-check-subscription-status.md
+```
+
+:::tip[Punto de control]
+- **Esperado:** Tras una compra en sandbox, `profile.accessLevels['premium']?.isActive` devuelve `true`.
+- **Truco:** `accessLevels` vacío tras la compra → comprueba que el producto tenga un nivel de acceso asignado en el dashboard.
+:::
+
+### Identifica a los usuarios \{#identify-users\}
+
+Vincula las cuentas de usuario de tu app con los perfiles de Adapty para que las compras persistan entre dispositivos.
+
+:::important
+Omite este paso si tu app no tiene autenticación.
+:::
+
+**Guía:** [Identificar usuarios](capacitor-quickstart-identify)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/capacitor-quickstart-identify.md
+```
+
+:::tip[Punto de control]
+- **Esperado:** Tras llamar a `adapty.identify()`, la sección **Profiles** del dashboard muestra tu ID de usuario personalizado.
+- **Truco:** Llama a `identify` después de la activación pero antes de obtener los paywalls para evitar problemas de atribución del perfil anónimo.
+:::
+
+### Prepárate para el lanzamiento \{#prepare-for-release\}
+
+Una vez que tu integración funcione en el sandbox, repasa la lista de verificación de lanzamiento para asegurarte de que todo está listo para producción.
+
+**Guía:** [Lista de verificación de lanzamiento](release-checklist)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/es/release-checklist.md
+```
+
+:::tip[Punto de control]
+- **Esperado:** Todos los elementos de la lista confirmados: conexiones de store, notificaciones del servidor, flujo de compra, comprobaciones de nivel de acceso y requisitos de privacidad.
+- **Truco:** Notificaciones del servidor ausentes → configura las App Store Server Notifications en **App settings → iOS SDK** y las Google Play Real-Time Developer Notifications en **App settings → Android SDK**.
+:::
+
+## Archivos de índice de documentación en texto plano \{#plain-text-doc-index-files\}
+
+Si necesitas dar a tu LLM un contexto más amplio más allá de páginas individuales, disponemos de archivos de índice que listan o combinan toda la documentación de Adapty:
+
+- [`llms.txt`](https://adapty.io/docs/es/llms.txt): Lista todas las páginas con links `.md`. Un [estándar emergente](https://llmstxt.org/) para hacer los sitios web accesibles a los LLMs. Ten en cuenta que para algunos agentes de IA (p. ej., ChatGPT) tendrás que descargar `llms.txt` y subirlo al chat como archivo.
+- [`llms-full.txt`](https://adapty.io/docs/es/llms-full.txt): Toda la documentación del sitio de Adapty combinada en un único archivo. Muy grande — úsalo solo cuando necesites el panorama completo.
+- Subconjuntos específicos de Capacitor: [`capacitor-llms.txt`](https://adapty.io/docs/es/capacitor-llms.txt) y [`capacitor-llms-full.txt`](https://adapty.io/docs/es/capacitor-llms-full.txt): Subconjuntos por plataforma que ahorran tokens en comparación con el sitio completo.

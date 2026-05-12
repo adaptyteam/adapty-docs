@@ -1,0 +1,270 @@
+---
+title: "Presentar paywalls del Paywall Builder en modo Observer en el SDK de iOS"
+description: "Aprende a presentar paywalls de PB en modo observer para obtener mejores insights."
+metadataTitle: "Presentar paywalls de PB en modo Observer | Documentación de Adapty"
+---
+
+Si has personalizado un paywall con el Paywall Builder, no tienes que preocuparte por renderizarlo en el código de tu app para mostrárselo al usuario. Este tipo de paywall incluye tanto lo que se muestra como la forma en que se muestra.
+:::warning
+Esta sección se refiere únicamente al [modo Observer](observer-vs-full-mode). Si no trabajas en el modo Observer, consulta [iOS - Mostrar paywalls con Paywall Builder](ios-present-paywalls).
+:::
+<Tabs groupId="current-os" queryString>
+<TabItem value="sdk3" label="New Paywall Builder (SDK 3.0+)" default>
+<details>
+   <summary>Antes de comenzar a mostrar paywalls (haz clic para expandir)</summary>
+1. Configura la integración inicial de Adapty [con Google Play](initial-android) y [con App Store](initial_ios).
+   2. Instala y configura el SDK. Asegúrate de establecer el parámetro `observerMode` en `true`. Consulta las instrucciones específicas para cada framework: [iOS](sdk-installation-ios#activate-adapty-module-of-adapty-sdk).
+   3. [Crea productos](create-product) en el Adapty Dashboard.
+   4. [Configura los paywalls, asígnales productos](create-paywall) y personalízalos con Paywall Builder en el Adapty Dashboard.
+   5. [Crea placements y asígnales tus paywalls](create-placement) en el Adapty Dashboard.
+   6. [Obtén los paywalls de Paywall Builder y su configuración](get-pb-paywalls) en el código de tu aplicación.
+</details>
+
+<p> </p>
+
+<Tabs groupId="current-os" queryString> 
+
+<TabItem value="swift" label="Swift" default> 
+
+1. Implementa el objeto `AdaptyObserverModeResolver`:
+
+   ```swift showLineNumbers title="Swift"
+   func observerMode(didInitiatePurchase product: AdaptyPaywallProduct,
+                     onStartPurchase: @escaping () -> Void,
+                     onFinishPurchase: @escaping () -> Void) {
+          // use the product object to handle the purchase
+          // use the onStartPurchase and onFinishPurchase callbacks to notify AdaptyUI about the process of the purchase
+   }
+El evento `observerMode(didInitiatePurchase:onStartPurchase:onFinishPurchase:)` te informará de que el usuario ha iniciado una compra. Puedes activar tu flujo de compra personalizado en respuesta a este callback.
+El evento `observerModeDidInitiateRestorePurchases(onStartRestore:onFinishRestore:)` te informará de que el usuario ha iniciado una restauración. Puedes activar tu flujo de restauración personalizado en respuesta a este callback.
+
+Además, recuerda invocar los siguientes callbacks para notificar a AdaptyUI sobre el proceso de compra o restauración. Esto es necesario para que el paywall funcione correctamente, por ejemplo, para mostrar el loader, entre otras cosas:
+| Callback           | Descripción                                                                                          |
+   | :----------------- | :--------------------------------------------------------------------------------------------------- |
+   | onStartPurchase()  | Este callback debe invocarse para notificar a AdaptyUI que la compra ha comenzado.  |
+   | onFinishPurchase() | Este callback debe invocarse para notificar a AdaptyUI que la compra ha finalizado. |
+   | onStartRestore()   | Este callback debe invocarse para notificar a AdaptyUI que la restauración ha comenzado.   |
+   | onFinishRestore()  | Este callback debe invocarse para notificar a AdaptyUI que la restauración ha finalizado.  |
+2. Crea un objeto de configuración de paywall:
+
+   ```swift showLineNumbers title="Swift"
+   do {
+       let paywallConfiguration = try AdaptyUI.getPaywallConfiguration(
+        forPaywall: <paywall object>, 
+        observerModeResolver: <AdaptyObserverModeResolver>
+        )
+   } catch {
+       // handle the error
+   }
+   ```
+
+   Parámetros de la solicitud:
+| Parámetro                | Presencia | Descripción                                                                                                                                                                                                                                                                                                           |
+   | :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | **Paywall**              | obligatorio | Un objeto `AdaptyPaywall` para obtener un controlador para el paywall deseado.                                                                                                                                                                                                                                             |
+   | **ObserverModeResolver** | obligatorio | El objeto `AdaptyObserverModeResolver` que implementaste en el paso anterior.                                                                                                                                                                                                                                      |
+3. Inicializa el paywall visual que quieres mostrar usando el método `.paywallController(for:products:viewConfiguration:delegate:)`:
+
+   ```swift showLineNumbers title="Swift"
+   import Adapty
+   import AdaptyUI
+   
+   let visualPaywall = AdaptyUI.paywallController(
+       with: <paywall configuration object>,
+       delegate: <AdaptyPaywallControllerDelegate>
+   )
+   ```
+
+Parámetros de la solicitud:
+| Parámetro                | Presencia | Descripción                                                                                                                                                                                                                                                                                                           |
+| :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paywall Configuration**              | requerido | Un objeto `AdaptyUI.PaywallConfiguration` que contiene los detalles visuales del paywall. Usa el método `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)`. Consulta el tema [Obtener paywalls del Paywall Builder y su configuración](get-pb-paywalls) para más detalles.                                                                                                                                                                                                                                             |
+| **Delegate**             | requerido | Un `AdaptyPaywallControllerDelegate` para escuchar los eventos del paywall. Consulta el tema [Gestión de eventos del paywall](ios-handling-events) para más detalles.                                                                                                                                                                                 |
+Retorna:
+
+| Objeto                  | Descripción                                          |
+| :---------------------- | :--------------------------------------------------- |
+| AdaptyPaywallController | Un objeto que representa la pantalla del paywall solicitado |
+
+Una vez creado el objeto correctamente, puedes mostrarlo así:
+
+```swift showLineNumbers title="Swift"
+present(visualPaywall, animated: true)
+```
+:::warning
+No olvides [asociar los paywalls a las transacciones de compra](report-transactions-observer-mode). De lo contrario, Adapty no podrá determinar el paywall de origen de la compra.
+:::
+</TabItem> 
+<TabItem value="swiftui" label="SwiftUI" default> 
+
+Para mostrar el paywall visual en la pantalla del dispositivo, usa el modificador `.paywall` en SwiftUI:
+```swift showLineNumbers title="SwiftUI"
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywallConfiguration: <paywall configuration object>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false }
+      )
+}
+```
+The input appears to be empty or contains only a heading without any actual content to translate. Please provide the full MDX documentation you'd like translated from English to Spanish (es-ES).
+| Parámetro                | Presencia | Descripción                                                                                                                                                                                                                                                                                                            |
+| :----------------------- | :-------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paywall Configuration**              | obligatorio | Un objeto `AdaptyUI.PaywallConfiguration` que contiene los detalles visuales del paywall. Usa el método `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)`. Consulta el tema [Obtener paywalls del Paywall Builder y su configuración](get-pb-paywalls) para más detalles.                                                                                                                                                                                                                                             |
+| **Products**             | opcional | Proporciona un array de `AdaptyPaywallProducts` para optimizar el momento de visualización de los productos en pantalla. Si se pasa `nil`, AdaptyUI obtendrá automáticamente los productos necesarios.                                                                                                                                   |
+| **TagResolver**          | opcional | Define un diccionario de etiquetas personalizadas y sus valores resueltos. Las etiquetas personalizadas actúan como marcadores de posición en el contenido del paywall y se reemplazan dinámicamente con cadenas específicas para ofrecer contenido personalizado. Consulta el tema [Etiquetas personalizadas en Paywall Builder](custom-tags-in-paywall-builder) para más detalles. |
+| **ObserverModeResolver** | opcional | El objeto `AdaptyObserverModeResolver` que implementaste en el paso anterior                                                                                                                                                                                                                                        |
+Parámetros de closure:
+
+| Parámetro de closure | Descripción                                                                                          |
+| :------------------- | :--------------------------------------------------------------------------------------------------- |
+| **didFinishRestore** | Si Adapty.restorePurchases() tiene éxito, se invocará este callback.             |
+| **didFailRestore**   | Si Adapty.restorePurchases() falla, se invocará este callback.                |
+| **didFailRendering** | Si ocurre un error durante el renderizado de la interfaz, se invocará este callback. |
+Consulta el tema [iOS - Manejo de eventos](ios-handling-events) para ver otros parámetros de closure.
+
+:::warning
+No olvides [asociar los paywalls a las transacciones de compra](report-transactions-observer-mode). De lo contrario, Adapty no podrá determinar el paywall de origen de la compra.
+:::
+
+</TabItem> 
+</Tabs>
+
+</TabItem>
+<TabItem value="sdk2" label="Legacy Paywall Builder (SDK up to 2.x)" default>
+<details>
+   <summary>Antes de empezar a mostrar paywalls (haz clic para expandir)</summary>
+1. Configura la integración inicial de Adapty [con Google Play](initial-android) y [con App Store](initial_ios).
+1. Instala y configura el SDK de Adapty. Asegúrate de establecer el parámetro `observerMode` en `true`. Consulta las instrucciones específicas para cada framework: [iOS](sdk-installation-ios#activate-adapty-module-of-adapty-sdk), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk) y [Unity](sdk-installation-unity#activate-adapty-module-of-adapty-sdk).
+2. [Crea productos](create-product) en el Adapty Dashboard.
+3. [Configura paywalls, asígnales productos](create-paywall) y personalízalos con Paywall Builder en el Adapty Dashboard.
+4. [Crea placements y asígnales tus paywalls](create-placement) en el Adapty Dashboard.
+5. [Obtén los paywalls de Paywall Builder y su configuración](get-pb-paywalls) en el código de tu app.
+</details>
+<p> </p>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+1. Implementa el objeto `AdaptyObserverModeDelegate`:
+```swift showLineNumbers title="Swift"
+   func paywallController(_ controller: AdaptyPaywallController,
+                          didInitiatePurchase product: AdaptyPaywallProduct,
+                          onStartPurchase: @escaping () -> Void,
+                          onFinishPurchase: @escaping () -> Void) {
+          // use the product object to handle the purchase
+          // use the onStartPurchase and onFinishPurchase callbacks to notify AdaptyUI about the process of the purchase
+   }
+   ```
+El evento `paywallController(_:didInitiatePurchase:onStartPurchase:onFinishPurchase:)` te informará de que el usuario ha iniciado una compra. Puedes activar tu flujo de compra personalizado en respuesta a este evento.
+
+Además, recuerda invocar los siguientes callbacks para notificar a AdaptyUI sobre el proceso de compra. Esto es necesario para el comportamiento correcto del paywall, como mostrar el loader, entre otras cosas:
+| Callback         | Descripción                                                                                         |
+   | :--------------- | :-------------------------------------------------------------------------------------------------- |
+   | onStartPurchase  | Este callback debe invocarse para notificar a AdaptyUI que la compra ha comenzado.  |
+   | onFinishPurchase | Este callback debe invocarse para notificar a AdaptyUI que la compra ha finalizado. |
+
+2. Inicializa el paywall visual que quieres mostrar usando el método `.paywallController(for:products:viewConfiguration:delegate:observerModeDelegate:)`:
+```swift showLineNumbers title="Swift"
+   import Adapty
+   import AdaptyUI
+   
+   let visualPaywall = AdaptyUI.paywallController(
+       for: <paywall object>,
+       products: <paywall products array>,
+       viewConfiguration: <LocalizedViewConfiguration>,
+       delegate: <AdaptyPaywallControllerDelegate>
+       observerModeDelegate: <AdaptyObserverModeDelegate>
+   )
+   ```
+
+Parámetros de la solicitud:
+| Parámetro                | Presencia | Descripción                                                  |
+| :----------------------- | :-------- | :----------------------------------------------------------- |
+| **Paywall**              | requerido | Un objeto `AdaptyPaywall` para obtener un controlador para el paywall deseado. |
+| **Products**             | opcional  | Proporciona un array de `AdaptyPaywallProducts` para optimizar el tiempo de visualización de los productos en pantalla. Si se pasa `nil`, AdaptyUI obtendrá automáticamente los productos necesarios. |
+| **ViewConfiguration**    | requerido | Un objeto `AdaptyUI.LocalizedViewConfiguration` que contiene los detalles visuales del paywall. Usa el método `AdaptyUI.getViewConfiguration(paywall:locale:)`. Consulta el tema [Obtener paywalls del Paywall Builder y su configuración](get-pb-paywalls) para más detalles. |
+| **Delegate**             | requerido | Un `AdaptyPaywallControllerDelegate` para escuchar los eventos del paywall. Consulta el tema [Gestión de eventos del paywall](ios-handling-events) para más detalles. |
+| **ObserverModeDelegate** | requerido | El objeto `AdaptyObserverModeDelegate` que implementaste en el paso anterior. |
+| **TagResolver**          | opcional  | Define un diccionario de etiquetas personalizadas y sus valores resueltos. Las etiquetas personalizadas actúan como marcadores de posición en el contenido del paywall y se reemplazan dinámicamente con cadenas específicas para ofrecer contenido personalizado. Consulta el tema [Etiquetas personalizadas en el Paywall Builder](custom-tags-in-paywall-builder) para más detalles. |
+Devuelve:
+
+| Objeto                  | Descripción                                          |
+| :---------------------- | :--------------------------------------------------- |
+| AdaptyPaywallController | Un objeto que representa la pantalla del paywall solicitado |
+
+Una vez que el objeto se haya creado correctamente, puedes mostrarlo así:
+
+```swift showLineNumbers title="Swift"
+present(visualPaywall, animated: true)
+```
+:::warning
+No olvides [asociar los paywalls a las transacciones de compra](report-transactions-observer-mode). De lo contrario, Adapty no podrá determinar el paywall de origen de la compra.
+:::
+</TabItem>
+<TabItem value="swiftui" label="SwiftUI" default>
+Para mostrar el paywall visual en la pantalla del dispositivo, utiliza el modificador `.paywall` en SwiftUI:
+```swift showLineNumbers title="SwiftUI"
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywall: <paywall object>,
+          configuration: <LocalizedViewConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false },
+          observerModeDidInitiatePurchase: { product, onStartPurchase, onFinishPurchase in
+              // use the product object to handle the purchase
+              // use the onStartPurchase and onFinishPurchase callbacks to notify AdaptyUI about the process of the purchase
+          }, 
+      )
+}
+```
+The input is empty — there is no MDX content to translate. Please provide the MDX documentation you'd like translated from English to Spanish (es-ES).
+| Parámetro         | Presencia | Descripción                                                                                                                                                                                                                                                                                                                              |
+| :---------------- | :-------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paywall**       | obligatorio | Un objeto `AdaptyPaywall` para obtener un controlador del paywall deseado.                                                                                                                                                                                                                                                              |
+| **Product**       | opcional | Proporciona un array de `AdaptyPaywallProducts` para optimizar el momento en que se muestran los productos en pantalla. Si se pasa `nil`, AdaptyUI obtendrá automáticamente los productos necesarios.                                                                                                                                    |
+| **Configuration** | obligatorio | Un objeto `AdaptyUI.LocalizedViewConfiguration` que contiene los detalles visuales del paywall. Usa el método `AdaptyUI.getViewConfiguration(paywall:locale:)`. Consulta el artículo [Obtener paywalls del Paywall Builder y su configuración](get-pb-paywalls) para más detalles.                                                   |
+| **TagResolver**   | opcional | Define un diccionario de etiquetas personalizadas y sus valores resueltos. Las etiquetas personalizadas funcionan como marcadores de posición en el contenido del paywall y se reemplazan dinámicamente con cadenas específicas para personalizar el contenido. Consulta el artículo [Etiquetas personalizadas en el Paywall Builder](custom-tags-in-paywall-builder) para más detalles. |
+The input appears to be just the text "Closure parameters:" with no actual MDX documentation content to translate. Please provide the full MDX documentation you'd like translated from English to Spanish (es-ES).
+| Parámetro de closure                | Descripción                                                                                        |
+| :---------------------------------- | :------------------------------------------------------------------------------------------------- |
+| **didFinishRestore**                | Si Adapty.restorePurchases() tiene éxito, se invocará este callback.                               |
+| **didFailRestore**                  | Si Adapty.restorePurchases() falla, se invocará este callback.                                     |
+| **didFailRendering**                | Si ocurre un error durante el renderizado de la interfaz, se invocará este callback.               |
+| **observerModeDidInitiatePurchase** | Este callback se invoca cuando un usuario inicia una compra.                                       |
+Consulta el tema [iOS - Manejo de eventos](ios-handling-events) para conocer otros parámetros de closure.
+
+:::warning
+No olvides [asociar paywalls a las transacciones de compra](report-transactions-observer-mode). De lo contrario, Adapty no podrá determinar el paywall de origen de la compra.
+:::
+</TabItem>
+</Tabs>
+
+</TabItem>
+</Tabs>

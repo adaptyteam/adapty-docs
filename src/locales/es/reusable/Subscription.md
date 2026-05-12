@@ -1,0 +1,21 @@
+| Parámetro                     | Tipo          | Obligatorio | Nullable | Descripción                                                  |
+| :---------------------------- | :------------ | ----------- | -------- | :----------------------------------------------------------- |
+| purchase_type                 | String        | Sí          | No       | El tipo de producto comprado. Valor posible: `subscription`. |
+| store                         | String        | Sí          | No       | Store donde se adquirió el producto. Las opciones son `app_store`, `play_store`, `stripe` o el Store ID de tu [store personalizada](custom-store). |
+| environment                   | String        | No          | No       | Entorno donde se realizó la transacción. Las opciones son `Sandbox` o `Production`. Se usa `Production` por defecto. |
+| store_product_id              | String        | Sí          | No       | ID del producto en el store (App Store, Google Play, Stripe, etc.) que desbloqueó este nivel de acceso. |
+| store_transaction_id          | String        | Sí          | No       | ID de la transacción en el store (App Store, Google Play, Stripe, etc.). |
+| store_original_transaction_id | String        | Sí          | No       | <p>En las suscripciones, este ID está vinculado a la primera transacción de una cadena de renovaciones. Cada renovación está conectada a esta transacción original.</p><p>Si no hay renovación, `store_original_transaction_id` coincide con `store_transaction_id`.</p> |
+| offer                         | Object        | No          | Sí       | La oferta utilizada en la compra, representada como un objeto [Offer](server-side-api-objects#offer). |
+| is_family_shared              | Boolean       | No          | No       | Valor booleano que indica si el producto admite compartir en familia en App Store Connect. Solo iOS. Siempre `false` en iOS por debajo de la versión 14.0 y macOS por debajo de la 11.0. El valor por defecto es `false`. |
+| price                         | Object        | Sí          | No       | Precio de la suscripción o compra como objeto [Price](server-side-api-objects#price). Una compra inicial de suscripción con coste cero es una prueba gratuita; una renovación con coste cero es una renovación gratuita. |
+| purchased_at                  | ISO 8601 date | Sí          | No       | La fecha y hora de la compra más reciente del nivel de acceso. |
+| refunded_at                   | ISO 8601 date | No          | No       | La fecha y hora en que se reembolsó la suscripción, si aplica. |
+| cancellation_reason           | String        | No          | No       | Los posibles motivos de cancelación son: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `upgraded` o `unknown`. |
+| variation_id                  | String        | No          | No       | El ID de variante utilizado para rastrear las compras hasta el paywall específico desde el que se realizaron. |
+| originally_purchased_at       | ISO 8601 date | Sí          | No       | En cadenas de suscripciones, esta es la fecha de compra de la transacción original, vinculada mediante `store_original_transaction_id`. |
+| expires_at                    | ISO 8601 date | Sí          | No       | La fecha y hora en que expira el nivel de acceso. Puede ser en el pasado y `null` para el acceso de por vida. |
+| renew_status                  | Boolean       | Sí          | No       | Indica si la renovación automática está habilitada para la suscripción. |
+| renew_status_changed_at       | ISO 8601 date | No          | No       | La fecha y hora en que se habilitó o deshabilitó la renovación automática. |
+| billing_issue_detected_at     | ISO 8601 date | No          | No       | La fecha y hora en que se detectó un problema de facturación (p. ej., un cargo fallido en la tarjeta). La suscripción puede seguir activa. Se borra si el pago se procesa correctamente. |
+| grace_period_expires_at       | ISO 8601 date | No          | No       | La fecha y hora en que finalizará el [período de gracia](https://developer.apple.com/news/?id=09122019c) si la suscripción se encuentra actualmente en uno. |

@@ -1,0 +1,15 @@
+| Parámetro                     | Tipo          | Obligatorio | Nullable | Descripción                                                  |
+| :---------------------------- | :------------ | ----------- | -------- | :----------------------------------------------------------- |
+| purchase_type                 | String        | Sí          | No       | El tipo de producto comprado. Valor posible: `one_time_purchase`. |
+| store                         | String        | Sí          | No       | Store donde se compró el producto. Valores posibles: `app_store`, `play_store`, `stripe` o el Store ID de tu [store personalizada](custom-store). |
+| environment                   | String        | No          | No       | Entorno de transacción que proporcionó el nivel de acceso. Opciones: `Sandbox`, `Production`. Se usa `Production` por defecto. |
+| store_product_id              | String        | Sí          | No       | El ID del producto en la store (App Store, Google Play, Stripe, etc.) que desbloqueó este nivel de acceso. |
+| store_transaction_id          | String        | Sí          | No       | ID de transacción en la store (App Store, Google Play, Stripe, etc.). |
+| store_original_transaction_id | String        | Sí          | No       | <p>En suscripciones recurrentes, es el ID de transacción original que vincula la cadena de renovaciones. La transacción original es la primera de la cadena; las posteriores son renovaciones.</p><p>Si no hay renovación, `store_original_transaction_id` coincide con `store_transaction_id`.</p> |
+| offer                         | Object        | No          | Sí       | La oferta utilizada para la compra como objeto [Offer](server-side-api-objects#offer). |
+| is_family_shared              | Boolean       | No          | No       | Valor booleano que indica si el producto admite compartir en familia en App Store Connect. Solo iOS. Siempre `false` en iOS inferior a 14.0 y macOS inferior a 11.0. Se usa `false` por defecto. |
+| price                         | Object        | Sí          | No       | Precio de la compra única como objeto [Price](server-side-api-objects#price). Una compra inicial de suscripción con coste cero es una prueba gratuita; una renovación con coste cero es una renovación gratuita. |
+| purchased_at                  | ISO 8601 date | Sí          | No       | La fecha y hora en que se realizó la última compra del nivel de acceso. |
+| refunded_at                   | ISO 8601 date | No          | No       | Si se reembolsó, muestra la fecha y hora del reembolso.      |
+| cancellation_reason           | String        | No          | No       | Posibles motivos de cancelación: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription`, `unknown`. |
+| variation_id                  | String        | No          | No       | El ID de variante utilizado para rastrear las compras hasta el paywall específico desde el que se realizaron. |

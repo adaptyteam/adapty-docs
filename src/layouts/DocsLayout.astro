@@ -13,6 +13,7 @@ import { getUIStrings } from '../locales/ui-strings';
 interface Props {
   title: string;
   sidebarData: any[];
+  apiSidebarData?: any[];
   currentPlatformId: string;
   currentSlug: string;
   currentLocale?: string;
@@ -23,9 +24,10 @@ interface Props {
   keywords?: string | string[];
   rank?: number;
   isFullWidth?: boolean;
+  hideRightColumn?: boolean;
 }
 
-const { title, sidebarData, currentPlatformId, currentSlug, currentLocale, headings = [], breadcrumbs = [], description, metadataTitle, keywords, rank, isFullWidth = false } = Astro.props;
+const { title, sidebarData, apiSidebarData, currentPlatformId, currentSlug, currentLocale, headings = [], breadcrumbs = [], description, metadataTitle, keywords, rank, isFullWidth = false, hideRightColumn = false } = Astro.props;
 
 const tSearch = getUIStrings(currentLocale).search;
 const derivedTitle = metadataTitle || title;
@@ -190,7 +192,8 @@ if (canonicalURL.pathname.length > 1 && canonicalURL.pathname.endsWith('/')) {
                 isFullWidth ? "w-full px-0 h-full items-start" : "px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16 py-8 lg:py-12 gap-8 xl:gap-12 2xl:gap-16 items-start"
             ]}>
                 <article class:list={[
-                    isFullWidth ? "w-full h-full" : "flex-1 min-w-0 max-w-4xl prose prose-slate dark:prose-invert docs-prose",
+                    isFullWidth ? "w-full h-full" : "flex-1 min-w-0 prose prose-slate dark:prose-invert docs-prose",
+                    !isFullWidth && !hideRightColumn && "max-w-4xl",
                     !isFullWidth && "prose-headings:font-bold prose-headings:tracking-tight prose-headings:scroll-mt-24",
                     !isFullWidth && "prose-h1:text-3xl lg:prose-h1:text-4xl prose-h1:mb-6 lg:prose-h1:mb-8",
                     !isFullWidth && "prose-a:font-medium prose-a:no-underline prose-a:hover:underline",
@@ -198,7 +201,7 @@ if (canonicalURL.pathname.length > 1 && canonicalURL.pathname.endsWith('/')) {
                     !isFullWidth && "prose-pre:rounded-2xl prose-pre:shadow-2xl",
                     !isFullWidth && "prose-blockquote:border-l-4 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-2xl prose-blockquote:not-italic",
                     !isFullWidth && "prose-strong:font-semibold",
-                    !isFullWidth && "max-w-[75ch]",
+                    !isFullWidth && !hideRightColumn && "max-w-[75ch]",
                     !isFullWidth ? "xl:max-w-none" : ""
                 ]}>
                     {!isFullWidth && (
@@ -209,7 +212,7 @@ if (canonicalURL.pathname.length > 1 && canonicalURL.pathname.endsWith('/')) {
                     <slot />
                 </article>
 
-                {!isFullWidth && (
+                {!isFullWidth && !hideRightColumn && (
                     <div class="right-column-wrapper" data-nosnippet>
                         {headings.filter(h => h.depth >= 2 && h.depth <= 3).length > 0 && (
                             <TableOfContents headings={headings} currentLocale={currentLocale} />
@@ -229,6 +232,7 @@ if (canonicalURL.pathname.length > 1 && canonicalURL.pathname.endsWith('/')) {
             <div data-nosnippet>
                 <Sidebar
                     sidebarData={sidebarData}
+                    apiSidebarData={apiSidebarData}
                     currentPlatformId={currentPlatformId}
                     currentSlug={currentSlug}
                     currentLocale={currentLocale}
@@ -636,9 +640,6 @@ if (canonicalURL.pathname.length > 1 && canonicalURL.pathname.endsWith('/')) {
       // Inject "Ask AI" label next to the widget and persist across navigation
       (function() {
         function initLivechatLabel() {
-          // Skip for API pages to avoid noise and interference
-          if (window.__isApiReferencePage) return;
-
           const persistContainer = document.getElementById('livechat-persist-container');
           if (!persistContainer) return;
 
@@ -824,13 +825,16 @@ if (canonicalURL.pathname.length > 1 && canonicalURL.pathname.endsWith('/')) {
 
     <script>
       function enhanceCodeBlocks() {
-        // Skip for API pages to avoid interfering with Stoplight Elements
-        if (window.__isApiReferencePage) return;
-
         const preElements = document.querySelectorAll('article pre:not(.processed)');
         const isDark = document.documentElement.classList.contains('dark');
-        
+
         preElements.forEach((pre, index) => {
+          // Skip pres inside the API reference code-samples block — that component
+          // owns its own header, copy button, and Shiki syntax highlighting.
+          if (pre.closest('.api-code-samples')) {
+            pre.classList.add('processed'); // mark so theme-change pass also ignores
+            return;
+          }
           pre.classList.add('processed');
           
           // Mark that JS has processed this element (for CSS to remove filter)
@@ -1128,9 +1132,13 @@ if (canonicalURL.pathname.length > 1 && canonicalURL.pathname.endsWith('/')) {
       // Re-run enhancement when theme changes
       window.addEventListener('themechange', () => {
         const isDark = document.documentElement.classList.contains('dark');
-        
+
         // Update existing code blocks without recreating wrappers
         document.querySelectorAll('article pre').forEach(pre => {
+          // Skip pres inside the API reference code-samples block — they are
+          // self-styled by Shiki and the component, not by the global enhancer.
+          if (pre.closest('.api-code-samples')) return;
+
           // Update background colors
           if (isDark) {
             pre.style.setProperty('background-color', '#1a1f2e', 'important');
@@ -1194,9 +1202,6 @@ if (canonicalURL.pathname.length > 1 && canonicalURL.pathname.endsWith('/')) {
 
     <script>
       function addTableBreakOpportunities() {
-        // Skip for API pages to avoid interfering with Stoplight Elements
-        if (window.__isApiReferencePage) return;
-
         const tableCodeElements = document.querySelectorAll('article table code:not(.break-processed), .docs-prose table code:not(.break-processed)');
         
         tableCodeElements.forEach(code => {

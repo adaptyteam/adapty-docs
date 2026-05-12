@@ -1,0 +1,429 @@
+---
+title: "Flujos de eventos"
+description: "Descubre esquemas detallados de los flujos de eventos de suscripción en Adapty. Aprende cómo se generan y envían los eventos de suscripción a las integraciones, para rastrear los momentos clave en el recorrido de tus clientes."
+metadataTitle: "Flujos de eventos en Adapty: esquemas y escenarios | Documentación de Adapty"
+keywords: ['reembolso', 'prueba', 'restaurar', 'eventos', 'evento']
+rank: 70
+---
+
+En Adapty recibirás distintos eventos de suscripción a lo largo del recorrido de cada cliente en tu app. Estos flujos de suscripción describen los escenarios más habituales para que entiendas qué eventos genera Adapty cuando los usuarios se suscriben, cancelan o reactivan suscripciones.
+
+Ten en cuenta que Apple procesa los pagos de suscripción varias horas antes de la fecha real de inicio o renovación. En los flujos que se muestran a continuación, representamos el inicio/renovación de la suscripción y el cargo como si ocurrieran al mismo tiempo para simplificar los diagramas.
+
+Además, los eventos relacionados con la misma acción ocurren simultáneamente y pueden aparecer en tu **Event Feed** en cualquier orden, que puede diferir de la secuencia mostrada en nuestros diagramas.
+
+## Ciclo de vida de la suscripción \{#subscription-lifecycle\}
+
+### Flujo de compra inicial \{#initial-purchase-flow\}
+
+Este flujo ocurre cuando un cliente compra una suscripción por primera vez sin período de prueba. En este caso, se crean los siguientes eventos:
+
+- **Subscription started**
+- **Access level updated** para conceder acceso al usuario
+
+Cuando llega la fecha de renovación, la suscripción se renueva. En ese momento se crean los siguientes eventos:
+
+- **Subscription renewal** para iniciar un nuevo período de suscripción
+- **Access level updated** para actualizar la fecha de vencimiento de la suscripción, extendiendo el acceso por otro período
+
+Los casos en que el pago no se procesa correctamente o en que el usuario cancela la renovación se describen en [Flujo de resultado por problema de facturación](event-flows#billing-issue-outcome-flow) y [Flujo de cancelación de suscripción](event-flows#subscription-cancellation-flow), respectivamente.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Initial_Purchase_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Flujo de cancelación de suscripción \{#subscription-cancellation-flow\}
+
+Cuando un usuario cancela su suscripción, se crean los siguientes eventos:
+
+- **Subscription renewal canceled** para indicar que la suscripción permanece activa hasta el final del período actual, tras el cual el usuario perderá el acceso
+- El evento **Access level updated** se crea para desactivar la renovación automática del acceso
+
+Una vez que finaliza la suscripción, se activa el evento **Subscription expired (churned)** para marcar el fin de la suscripción.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Cancellation_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Si se aprueba un reembolso, el siguiente evento reemplaza a **Subscription expired (churned)**:
+
+- **Subscription refunded** para finalizar la suscripción y proporcionar los detalles del reembolso
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Cancellation_Flow_with_a_Refund.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+En Stripe, una suscripción puede cancelarse de forma inmediata, omitiendo el período restante. En ese caso, todos los eventos se crean simultáneamente:
+
+- **Subscription renewal cancelled**
+- **Subscription expired (churned)**
+- **Access Level updated** para retirar el acceso del usuario
+
+Si se aprueba un reembolso, también se activa un evento **Subscription refunded** en el momento de la aprobación.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Immediate_Cancellation_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Flujo de reactivación de suscripción \{#subscription-reactivation-flow\}
+
+Si un usuario cancela una suscripción, esta vence y luego el usuario vuelve a comprar la misma suscripción, se creará un evento **Subscription renewed**. Aunque haya un período sin acceso, Adapty trata esto como una única cadena de transacciones vinculada por el `vendor_original_transaction_id`. Por tanto, la recompra se considera una renovación.
+
+Los eventos **Access level updated** se crearán en dos momentos:
+
+- al finalizar la suscripción, para revocar el acceso del usuario
+- al recomprar la suscripción, para conceder el acceso
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Rejoin_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Flujo de pausa de suscripción (solo Android) \{#subscription-pause-flow-android-only\}
+
+Este flujo aplica cuando un usuario pausa y luego reanuda una suscripción en Android.
+
+Pausar una suscripción tiene efectos diferidos. Si el usuario pausa la suscripción antes de su renovación, la suscripción permanece activa y el usuario conserva el acceso de pago durante el resto del período de facturación.
+
+1. Cuando el usuario pausa la suscripción, se activa el evento **Subscription paused (Android only)**.
+2. Al finalizar el período de suscripción, Adapty activa el evento **Access level updated** para revocar el acceso del usuario.
+3. Cuando el usuario reanuda la suscripción, se activan los siguientes eventos:
+
+    - **Subscription renewed**
+    - **Access level updated** para restaurar el acceso del usuario
+
+Estas suscripciones pertenecerán a la misma cadena de transacciones, vinculadas con el mismo **vendor_original_transaction_id**.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Paused_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Flujos de prueba \{#trial-flows\}
+
+Si usas períodos de prueba en tu app, recibirás eventos adicionales relacionados con las pruebas.
+
+### Flujo de prueba con conversión exitosa \{#trial-with-successful-conversion-flow\}
+
+El flujo más habitual ocurre cuando un usuario inicia una prueba, proporciona una tarjeta de crédito y convierte exitosamente a una suscripción estándar al final del período de prueba. En este caso, se crean los siguientes eventos en el momento del inicio de la prueba:
+
+- **Trial started** para marcar el inicio de la prueba
+- **Access level updated** para conceder el acceso
+
+El evento **Trial converted** se crea cuando comienza la suscripción estándar.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Trial_Flow_with_Successful_Conversion.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Flujo de prueba sin conversión exitosa \{#trial-without-successful-conversion-flow\}
+
+Si un usuario cancela la prueba antes de que se convierta en suscripción, se crean los siguientes eventos en el momento de la cancelación:
+
+- **Trial renewal cancelled** para desactivar la conversión automática de la prueba a suscripción
+- **Access level updated** para desactivar la renovación del acceso
+
+El usuario tendrá acceso hasta el final de la prueba, cuando se crea el evento **Trial expired** para marcar su fin.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Trial_Flow_without_Successful_Conversion.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Flujo de reactivación de suscripción tras prueba vencida \{#subscription-reactivation-after-expired-trial-flow\}
+
+Si una prueba vence (por un problema de facturación o cancelación) y el usuario compra una suscripción posteriormente, se crean los siguientes eventos:
+
+- **Access level updated** para conceder acceso al usuario
+- **Trial converted**
+
+Aunque haya una brecha entre la prueba y la suscripción, Adapty las vincula usando el `vendor_original_transaction_id`. Esta conversión se trata como parte de una cadena de transacciones continua que comienza con una prueba de precio cero. Por eso se crea el evento **Trial converted** en lugar de **Subscription started**.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Reactivation_Flow_after_Expired_Trial.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Cambios de producto \{#product-changes\}
+
+Esta sección cubre los ajustes realizados en suscripciones activas, como actualizaciones, degradaciones o compras de un producto de otro grupo.
+
+### Flujo de cambio de producto inmediato \{#immediate-product-change-flow\}
+
+Tras cambiar un producto, el cambio puede aplicarse en el sistema de forma inmediata antes de que finalice la suscripción (principalmente en caso de una actualización o sustitución de producto). En este caso, en el momento del cambio de producto:
+
+- El nivel de acceso cambia y se crean dos eventos **Access level updated**:
+  1. para retirar el acceso al primer producto.
+  2. para dar acceso al segundo producto.
+- La suscripción antigua finaliza y se emite un reembolso (se crea el evento **Subscription refunded** con `cancellation_reason` = `upgraded`). Ten en cuenta que no se crea ningún evento **Subscription expired (churned)**; el evento **Subscription refunded** lo reemplaza.
+- Comienza la nueva suscripción (se crea el evento **Subscription started** para el nuevo producto).
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Immediate_Product_Change_Flow_Upgrade.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Si un usuario degrada la suscripción, la primera suscripción se mantendrá hasta el final del período pagado y, cuando finalice, será reemplazada por una nueva suscripción de nivel inferior. En este caso, solo se crea el evento **Access level updated** de forma inmediata para desactivar la renovación automática del acceso. Los demás eventos se crean en el momento del reemplazo efectivo de la suscripción:
+
+- Se crea otro evento **Access level updated** para dar acceso al segundo producto.
+- Se crea el evento **Subscription expired (churned)** para finalizar la suscripción del primer producto.
+- Se crea el evento **Subscription started** para iniciar una nueva suscripción con el nuevo producto.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Delayed_Product_Change_Downgrade.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Flujo de cambio de producto diferido \{#delayed-product-change-flow\}
+
+También existe la variante en la que el usuario cambia el producto en el momento de la renovación de la suscripción. Esta variante es muy similar a la anterior: se crea un evento **Access level updated** de forma inmediata para desactivar la renovación automática del acceso al producto anterior. Los demás eventos se crean en el momento en que el usuario cambia la suscripción y el cambio se aplica en el sistema:
+
+- Se crea otro evento **Access level updated** para dar acceso al segundo producto.
+- Se crea el evento **Subscription expired (churned)** para finalizar la suscripción del primer producto.
+- Se crea el evento **Subscription started** para iniciar una nueva suscripción con el nuevo producto.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Product_Change_on_Renewal_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Flujo de resultado por problema de facturación \{#billing-issue-outcome-flow\}
+
+Si los intentos de convertir una prueba o renovar una suscripción fallan por un problema de facturación, lo que ocurra a continuación depende de si el período de gracia está activado.
+
+Con período de gracia, si el pago se procesa correctamente, la prueba se convierte o la suscripción se renueva. Si falla, el store seguirá intentando cobrar al usuario y, si sigue fallando, el propio store finalizará la prueba o la suscripción.
+
+Por tanto, en el momento del problema de facturación, se crean los siguientes eventos en Adapty:
+
+- **Billing issue detected**
+- **Entered grace period** (si el período de gracia está activado)
+- **Access level updated** para mantener el acceso hasta el final del período de gracia
+
+Si el pago se realiza correctamente más tarde, Adapty registra un evento **Trial converted** o **Subscription renewed** y el usuario no pierde el acceso.
+
+Si el pago falla definitivamente y el store cancela la suscripción, Adapty genera los siguientes eventos:
+
+- **Trial expired** o **Subscription expired (churned)** con `cancellation_reason: billing_error`
+- **Access level updated** para revocar el acceso del usuario
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Billing_Issue_Outcome_Flow_with_Grace_Period.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Sin período de gracia, el Período de Reintento de Facturación (el período en que el store sigue intentando cobrar al usuario) comienza de inmediato.
+
+Si el pago nunca se procesa antes de que finalice el período de gracia, el flujo es el mismo: se crean los mismos eventos cuando el store finaliza la suscripción automáticamente:
+
+- Evento **Trial expired** o **Subscription expired (churned)** con `cancellation_reason` igual a `billing_error`
+
+- **Access level updated** para revocar el acceso del usuario
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Billing_Issue_Outcome_Flow_without_Grace_Period.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Flujos de compartición de compras entre cuentas de usuario \{#sharing-purchases-across-user-accounts-flows\}
+
+Cuando un <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), y [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> intenta restaurar o ampliar una suscripción ya vinculada a un <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), y [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> diferente, la configuración **Sharing paid access between user accounts** de Adapty controla cómo se gestiona el acceso. El flujo variará según la opción seleccionada.
+
+### Flujo de transferencia de acceso al nuevo usuario \{#transfer-access-to-new-user-flow\}
+
+La opción recomendada es transferir el nivel de acceso al nuevo usuario. Esto preserva el historial de transacciones del usuario original para mantener análisis coherentes. Solo se crearán 2 eventos **Access level updated**:
+
+1. para retirar el acceso al primer usuario
+2. para dar acceso al segundo usuario
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Transfer_Access_to_New_User_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+A continuación se describen los campos relacionados con la asignación y transferencia del nivel de acceso en los eventos generados en este escenario:
+
+- **Usuario A: Access level updated (enviado cuando el Usuario A compra una suscripción en la app)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **Usuario A: Access level updated (enviado cuando se reinstala la app y el Usuario B inicia sesión, revocando el acceso del Usuario A)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": false,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **Usuario B: Access level updated (enviado cuando el Usuario B inicia sesión y se le concede acceso)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000001",
+    "customer_user_id": UserB,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+### Flujo de acceso compartido entre usuarios \{#shared-access-between-users-flow\}
+
+Esta opción permite que varios usuarios compartan el mismo nivel de acceso si su dispositivo está registrado con el mismo Apple/Google ID. Es útil cuando un usuario reinstala la app e inicia sesión con un correo electrónico diferente: seguirá teniendo acceso a su compra anterior. Con esta opción, varios usuarios identificados pueden compartir el mismo nivel de acceso. Mientras el acceso está compartido, todas las transacciones se registran bajo el <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), y [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> original para mantener el historial completo de transacciones y análisis.
+
+Por tanto, solo se creará 1 evento: **Access level updated** para conceder acceso al segundo usuario.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Share_Access_Between_Users_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+A continuación se describen los campos relacionados con la asignación y compartición del nivel de acceso en los eventos generados en este escenario:
+
+**Usuario B: Access level updated (enviado cuando el Usuario B inicia sesión y se le concede acceso)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": [
+      {
+        "profile_id": "00000000-0000-0000-0000-000000000001,
+        "customer_user_id": UserB
+      }
+    ]
+  }
+  ```
+
+### Flujo sin acceso compartido entre usuarios \{#access-not-shared-between-users-flow\}
+
+Con esta opción, solo el primer perfil de usuario que recibe el nivel de acceso lo conserva de forma permanente. Es ideal cuando las compras deben estar vinculadas a un único <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), y [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip>.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Share_Access_Between_Users_Disabled_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>

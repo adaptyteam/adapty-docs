@@ -1,0 +1,5 @@
+| Parámetro | Tipo   | Obligatorio en la solicitud | Nullable en la solicitud | Descripción                                                  |
+| --------- | ------ | --------------------------- | ------------------------- | ------------------------------------------------------------ |
+| category  | String | :heavy_plus_sign:   | :heavy_minus_sign:  | La categoría de la oferta aplicada. Las opciones son: **introductory**, **promotional**, **offer_code**, **win_back**. |
+| type      | String | :heavy_plus_sign:   | :heavy_minus_sign:  | El tipo de oferta activa. Las opciones son: **free_trial**, **pay_as_you_go**, **pay_up_front** y **unknown**. Si no es null, significa que la oferta se aplicó en el período de suscripción actual. |
+| id        | String | :heavy_minus_sign:  | :heavy_plus_sign:   | El ID de la oferta aplicada.                                 |

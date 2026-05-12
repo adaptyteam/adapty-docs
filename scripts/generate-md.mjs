@@ -11,6 +11,21 @@ const LOCALES_BASE_DIR = path.resolve(__dirname, '../src/locales');
 const targetDirName = process.argv[2] || '../public';
 const OUTPUT_DIR = path.resolve(__dirname, targetDirName);
 
+// Mirrors the BUILD_LOCALES convention from src/data/locales.ts:
+//   unset      → build all locales
+//   "none"     → English only (skip locale .md generation)
+//   "zh"       → only the listed locales (comma-separated)
+// Returning the filtered list lets locale-only CI matrix builds emit the
+// .md files for their locale into build/<locale>/ so translation-only
+// deploys (aws s3 sync --delete) don't wipe them from S3.
+const BUILD_LOCALES_ENV = (process.env.BUILD_LOCALES ?? '').trim();
+function filterLocales(allAvailableLocales) {
+    if (!BUILD_LOCALES_ENV) return allAvailableLocales;
+    if (BUILD_LOCALES_ENV === 'none') return [];
+    const requested = new Set(BUILD_LOCALES_ENV.split(',').map(s => s.trim()).filter(Boolean));
+    return allAvailableLocales.filter(l => requested.has(l));
+}
+
 // Helper to convert kebab-case file name to PascalCase component name
 const toPascalCase = (str) => {
     if (/^\d/.test(str)) return `Error${str}`;
@@ -178,7 +193,11 @@ async function main() {
     // Generate .md files for each locale (falls back to English for untranslated articles)
     try {
         const localeEntries = await fs.readdir(LOCALES_BASE_DIR, { withFileTypes: true });
-        const locales = localeEntries.filter(e => e.isDirectory() && !e.name.startsWith('.')).map(e => e.name);
+        const allLocales = localeEntries.filter(e => e.isDirectory() && !e.name.startsWith('.')).map(e => e.name);
+        const locales = filterLocales(allLocales);
+        if (BUILD_LOCALES_ENV && locales.length === 0) {
+            console.log(`Skipping locale markdown generation (BUILD_LOCALES=${BUILD_LOCALES_ENV})`);
+        }
         for (const locale of locales) {
             await processLocaleFiles(locale, reusableComponents, englishFiles);
             console.log(`Locale markdown generated: ${locale}`);

@@ -1,0 +1,70 @@
+---
+title: "Usar localizaciones y códigos de idioma en el SDK de Android"
+description: "Gestiona las localizaciones de tu app y los códigos de idioma para llegar a una audiencia global (Android)."
+metadataTitle: "Gestión de Localizaciones y Códigos de Idioma | Documentación de Adapty"
+displayed_sidebar: sdkandroid
+---
+
+## Por qué es importante \{#why-this-is-important\}
+
+Hay varios escenarios en los que los códigos de idioma entran en juego; por ejemplo, cuando intentas obtener el paywall correcto para la localización actual de tu app.
+
+Como los códigos de idioma son complejos y pueden variar de una plataforma a otra, nos basamos en un estándar interno para todas las plataformas que admitimos. Sin embargo, precisamente por esa complejidad, es muy importante que entiendas exactamente qué le estás enviando a nuestro servidor para obtener la localización correcta y qué ocurre después, de modo que siempre recibas lo que esperas.
+
+## Estándar de códigos de idioma en Adapty \{#locale-code-standard-at-adapty\}
+
+Para los códigos de idioma, Adapty utiliza una versión ligeramente modificada del [estándar BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): cada código se compone de subetiquetas en minúsculas separadas por guiones. Algunos ejemplos: `en` (inglés), `pt-br` (portugués de Brasil), `zh` (chino simplificado), `zh-hant` (chino tradicional).
+
+## Coincidencia de códigos de idioma \{#locale-code-matching\}
+
+Cuando Adapty recibe una llamada del SDK con el código de idioma y empieza a buscar la localización correspondiente de un paywall, ocurre lo siguiente:
+
+1. La cadena de idioma entrante se convierte a minúsculas y todos los guiones bajos (`_`) se reemplazan por guiones (`-`).
+2. A continuación, buscamos la localización cuyo código de idioma coincida exactamente.
+3. Si no se encuentra ninguna coincidencia, tomamos la subcadena antes del primer guion (`pt` para `pt-br`) y buscamos la localización que coincida.
+4. Si tampoco se encuentra ninguna coincidencia, devolvemos la localización predeterminada `en`.
+
+De este modo, un dispositivo iOS que envíe `'pt_BR'`, un dispositivo Android que envíe `pt-BR` y otro dispositivo que envíe `pt-br` obtendrán el mismo resultado.
+
+## Implementar localizaciones: la forma recomendada \{#implementing-localizations-recommended-way\}
+
+Si te estás preguntando sobre las localizaciones, probablemente ya estés trabajando con los archivos de cadenas localizadas de tu proyecto. En ese caso, te recomendamos añadir un par clave-valor con el código de idioma de Adapty correspondiente en cada uno de esos archivos. Luego, extrae el valor de esa clave al llamar a nuestro SDK, así:
+
+```kotlin showLineNumbers
+// 1. Modify your strings.xml files
+
+/*
+strings.xml - Spanish
+*/
+<string name="adapty_paywalls_locale">es</string>
+
+/*
+strings.xml - Portuguese (Brazil)
+*/
+<string name="adapty_paywalls_locale">pt-br</string>
+
+// 2. Extract and use the locale code
+
+val localeCode = context.getString(R.string.adapty_paywalls_locale)
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+Así te aseguras de tener un control total sobre qué localización se recuperará para cada usuario de tu app.
+
+## Implementar localizaciones: la otra forma \{#implementing-localizations-the-other-way\}
+
+Puedes obtener resultados similares (aunque no idénticos) sin definir explícitamente códigos de idioma para cada localización. Esto implica extraer el código de idioma de otros objetos que proporciona tu plataforma, así:
+
+```kotlin showLineNumbers
+val locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+    context.resources.configuration.locales[0]
+else
+    context.resources.configuration.locale
+
+val localeCode = locale.toLanguageTag()
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+Ten en cuenta que no recomendamos este enfoque, ya que es difícil predecir exactamente qué recibirá el servidor de Adapty.
+
+Si aun así decides usarlo, asegúrate de haber cubierto todos los casos de uso relevantes.
