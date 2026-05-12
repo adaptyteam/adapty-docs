@@ -42,7 +42,7 @@ const FIX = process.argv.includes('--fix');
 
 // Rules that --fix knows how to repair. Keep conservative — only add a rule
 // here if the repair is deterministic and cannot alter valid content.
-const FIXABLE_RULES = new Set(['blank-line']);
+const FIXABLE_RULES = new Set(['blank-line', 'locale-import-drift']);
 
 async function* walkMdx(dir) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -145,10 +145,70 @@ function checkClientLoadImports(file, content, lines) {
   return issues;
 }
 
+// Cross-locale check: when a locale reusable uses a JSX component that ≥2 other
+// locales of the same file import statically, but this locale doesn't, flag it.
+// Translators sometimes drop the import line, and the local parse check can't
+// catch it (the component is referenced as JSX and parses cleanly; the failure
+// only shows up at Astro/rollup build time as "Expected component X to be defined").
+//
+// Comparing across locales (not against the English source) is intentional:
+// the English file uses a different relative-path convention than locales.
+// Other locales share the same path convention, so they're a reliable oracle.
+function checkLocaleReusableImportDrift(localeReusables) {
+  const issues = [];
+  for (const [basename, byLocale] of localeReusables) {
+    if (byLocale.size < 3) continue; // need ≥2 "others" to vote
+    // Per-locale: imported component name -> import line
+    const perLocaleImports = new Map();
+    for (const [locale, { content }] of byLocale) {
+      const lines = content.split('\n');
+      const map = new Map();
+      for (const { text } of findImportLines(lines)) {
+        const m1 = text.match(/^\s*import\s+([A-Z][A-Za-z0-9_]*)\s+from/);
+        if (m1) map.set(m1[1], text.trim());
+        const m2 = text.match(/^\s*import\s+\{([^}]+)\}\s+from/);
+        if (m2) for (const n of m2[1].split(',')) {
+          const cleaned = n.trim().replace(/.+\s+as\s+/, '');
+          if (/^[A-Z]/.test(cleaned)) map.set(cleaned, text.trim());
+        }
+      }
+      perLocaleImports.set(locale, map);
+    }
+    for (const [locale, { rel, content }] of byLocale) {
+      const myNames = new Set(perLocaleImports.get(locale).keys());
+      const tally = new Map();
+      for (const [other, imports] of perLocaleImports) {
+        if (other === locale) continue;
+        for (const [name, line] of imports) {
+          if (!tally.has(name)) tally.set(name, { count: 0, sampleLine: line });
+          tally.get(name).count++;
+        }
+      }
+      const stripped = stripCodeBlocks(content);
+      for (const [name, { count, sampleLine }] of tally) {
+        if (count < 2 || myNames.has(name)) continue;
+        if (!new RegExp(`<${name}\\b`).test(stripped)) continue;
+        issues.push({
+          file: rel,
+          line: 0,
+          rule: 'locale-import-drift',
+          message: `<${name}> used but not imported; ${count} other locale(s) import it. Suggested: ${sampleLine}`,
+          _autofixLine: sampleLine,
+        });
+      }
+    }
+  }
+  return issues;
+}
+
 const allIssues = [];
 
 // Map relative path → absolute path so --fix can write repaired content back.
 const absByRel = new Map();
+
+// Locale reusables, grouped by basename for cross-locale import drift check.
+// shape: basename -> Map<locale, { rel, content }>
+const localeReusables = new Map();
 
 for await (const file of walkMdx(path.join(ROOT, 'src'))) {
   const rel = path.relative(ROOT, file);
@@ -161,7 +221,17 @@ for await (const file of walkMdx(path.join(ROOT, 'src'))) {
 
   allIssues.push(...checkBlankAfterImports(rel, lines));
   allIssues.push(...checkClientLoadImports(rel, content, lines));
+
+  // Stash locale reusables for the cross-locale drift pass below.
+  const reusableMatch = rel.match(/^src\/locales\/([^/]+)\/reusable\/(.+)\.(mdx?)$/);
+  if (reusableMatch) {
+    const [, locale, basename] = reusableMatch;
+    if (!localeReusables.has(basename)) localeReusables.set(basename, new Map());
+    localeReusables.get(basename).set(locale, { rel, content });
+  }
 }
+
+allIssues.push(...checkLocaleReusableImportDrift(localeReusables));
 
 let fixedCount = 0;
 if (FIX) {
@@ -178,12 +248,28 @@ if (FIX) {
     const abs = absByRel.get(rel);
     if (!abs) continue;
     const lines = (await fs.readFile(abs, 'utf-8')).split('\n');
-    for (const issue of issues.sort((a, b) => b.line - a.line)) {
-      if (issue.rule === 'blank-line') {
-        // issue.line is 1-indexed and points at the first non-blank line
-        // after the imports block. Insert an empty line just before it.
-        lines.splice(issue.line - 1, 0, '');
+    // locale-import-drift inserts at top-of-body; do those first so existing
+    // line-numbered blank-line fixes (later in the file) stay valid.
+    const driftIssues = issues.filter(i => i.rule === 'locale-import-drift');
+    if (driftIssues.length > 0) {
+      // Find frontmatter end: second line that is exactly "---".
+      let fmEnd = -1;
+      if (lines[0]?.trim() === '---') {
+        for (let i = 1; i < lines.length; i++) {
+          if (lines[i].trim() === '---') { fmEnd = i; break; }
+        }
       }
+      // Insert each missing import right after the frontmatter close (or at top
+      // if no frontmatter). Order doesn't matter — all inserts go at the same
+      // index, building up a contiguous block.
+      const insertAt = fmEnd >= 0 ? fmEnd + 1 : 0;
+      const toInsert = driftIssues.map(i => i._autofixLine);
+      lines.splice(insertAt, 0, ...toInsert);
+    }
+    for (const issue of issues.filter(i => i.rule === 'blank-line').sort((a, b) => b.line - a.line)) {
+      // issue.line is 1-indexed and points at the first non-blank line
+      // after the imports block. Insert an empty line just before it.
+      lines.splice(issue.line - 1, 0, '');
     }
     await fs.writeFile(abs, lines.join('\n'), 'utf-8');
     fixedCount += issues.length;
