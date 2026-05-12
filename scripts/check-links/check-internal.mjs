@@ -22,6 +22,7 @@ const LOGIN_PATTERNS = [
   /play\.google\.com\/console\/about/i,
   /ads\.tiktok\.com\/i18n\/home\?redirect=/i,
   /console\.aws\.amazon\.com\/iamv2\b/i,
+  /appmetrica\.yandex\.ru\/application/i,
 ];
 
 const CAPTCHA_PATTERNS = [
@@ -29,12 +30,12 @@ const CAPTCHA_PATTERNS = [
   /recaptcha/i,
 ];
 
-export function isLoginRedirect(redirectUrl) {
-  return LOGIN_PATTERNS.some(re => re.test(redirectUrl));
+export function isLoginRedirect(redirectUrl, sourceUrl) {
+  return LOGIN_PATTERNS.some(re => re.test(redirectUrl) || (sourceUrl && re.test(sourceUrl)));
 }
 
-export function isCaptchaRedirect(redirectUrl) {
-  return CAPTCHA_PATTERNS.some(re => re.test(redirectUrl));
+export function isCaptchaRedirect(redirectUrl, sourceUrl) {
+  return CAPTCHA_PATTERNS.some(re => re.test(redirectUrl) || (sourceUrl && re.test(sourceUrl)));
 }
 
 /**
