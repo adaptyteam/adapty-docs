@@ -17,7 +17,7 @@ import InstallationPrereqs from '@site/src/components/reusable/InstallationPrere
 Adapty SDK includes two key modules for seamless integration into your Flutter app:
 
 - **Core Adapty**: This essential SDK is required for Adapty to function properly in your app.
-- **AdaptyUI**: This optional module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
+- **AdaptyUI**: This module is needed if you use the [Adapty Paywall Builder](adapty-paywall-builder), a user-friendly, no-code tool for easily creating cross-platform paywalls.
 
 :::tip
 Want to see a real-world example of how Adapty SDK is integrated into a mobile app? Check out our [sample app](https://github.com/adaptyteam/AdaptySDK-Flutter/tree/master/example), which demonstrates the full setup, including displaying paywalls, making purchases, and other basic functionality.
@@ -102,6 +102,10 @@ class _MyAppState extends State<MyApp> {
 }
 ```
 
+:::important
+Wait for `activate` to resolve before calling any other Adapty SDK method. See [Call order in Flutter SDK](flutter-sdk-call-order) for the full sequence.
+:::
+
 Now set up paywalls in your app:
 
 - If you use [Adapty Paywall Builder](adapty-paywall-builder), first [activate the AdaptyUI module](#activate-adaptyui-module-of-adapty-sdk) below, then follow the [Paywall Builder quickstart](flutter-quickstart-paywalls).
@@ -110,6 +114,10 @@ Now set up paywalls in your app:
 ## Activate AdaptyUI module of Adapty SDK
 
 If you plan to use [Paywall Builder](adapty-paywall-builder) and have [installed AdaptyUI module](sdk-installation-flutter#install-adapty-sdk), you also need to activate AdaptyUI:
+
+:::note
+AdaptyUI-related dependencies are linked to your app regardless of whether AdaptyUI is activated.
+:::
 
 :::important
 In your code, you must activate the core Adapty module before activating AdaptyUI.
@@ -121,68 +129,6 @@ await Adapty().activate(
     ..withActivateUI(true), // This automatically activates AdaptyUI
 );
 ```
-
-## Platform-specific configuration
-
-<Tabs>
-<TabItem value="ios" label="iOS" default>
-
-Create `Adapty-Info.plist` and add it to your iOS project. Add the following configuration:
-
-```xml showLineNumbers title="ios/Runner/Adapty-Info.plist"
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>AdaptyPublicSdkKey</key>
-    <string>YOUR_PUBLIC_SDK_KEY</string>
-    <key>AdaptyObserverMode</key>
-    <false/>
-    <key>AdaptyAppleIdfaCollectionDisabled</key>
-    <false/>
-</dict>
-</plist>
-```
-
-Parameters:
-
-| Parameter | Presence | Description |
-|---------|--------|-----------|
-| **AdaptyPublicSdkKey** | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general) |
-| **AdaptyObserverMode** | optional | A boolean value controlling [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`. 🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it. |
-| **AdaptyAppleIdfaCollectionDisabled** | optional | A boolean parameter that allows you to disable Apple IDFA collection for your iOS app. The default value is `false`. For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers) section. |
-
-</TabItem>
-
-<TabItem value="android" label="Android">
-Add the following configuration to your `AndroidManifest.xml`:
-
-```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
-<application ...>
-    
-    
-    <meta-data
-        android:name="AdaptyPublicSdkKey"
-        android:value="YOUR_PUBLIC_SDK_KEY" />
-    <meta-data
-        android:name="AdaptyObserverMode"
-        android:value="false" />
-    <meta-data
-        android:name="AdaptyGoogleAdvertisingIdCollectionDisabled"
-        android:value="false" />
-</application>
-```
-
-Parameters:
-
-| Parameter | Presence | Description |
-|---------|--------|-----------|
-| **AdaptyPublicSdkKey** | required | The key you can find in the **Public SDK key** field of your app settings in Adapty: [**App settings**-> **General** tab -> **API keys** subsection](https://app.adapty.io/settings/general). Make sure you use the **Public SDK key** for Adapty initialization, the **Secret key** should be used for [server-side API](getting-started-with-server-side-api) only. |
-| **AdaptyObserverMode** | optional | A boolean value that controls [Observer mode](observer-vs-full-mode). Turn it on if you handle purchases and subscription status yourself and use Adapty for sending subscription events and analytics. The default value is `false`. 🚧 When running in Observer mode, Adapty SDK won't close any transactions, so make sure you're handling it. |
-| **AdaptyGoogleAdvertisingIdCollectionDisabled** | optional | A boolean parameter that allows you to disable Google Advertising ID collection for your app. The default value is `false`. For more details, refer to the [Analytics integration](analytics-integration#disable-collection-of-advertising-identifiers) section. |
-
-</TabItem>
-</Tabs>
 
 ## Optional setup
 
@@ -321,3 +267,38 @@ In your `AndroidManifest.xml`, ensure the Activity that starts the purchase flow
     android:name=".MainActivity"
     android:launchMode="standard" />
 ```
+
+#### Swift 6 build errors caused by Podfile SWIFT_VERSION override
+
+When building your Flutter app for iOS, you may see Swift 6 compilation errors on Adapty pod targets. Typical symptoms include `@Sendable` mismatches in `AdaptyUIBuilderLogic`, missing `Sendable` conformance on Adapty types, or actor isolation errors.
+
+The Adapty pods declare `s.swift_version = '6.0'` and require Swift 6 to build. Your own app code can stay on Swift 5 — only the Adapty pod targets (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`) need to build with Swift 6.
+
+The most common cause is a `post_install` hook in `ios/Podfile` that rewrites `SWIFT_VERSION` for every pod target:
+
+```ruby showLineNumbers title="ios/Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+**Fix**: Exclude the Adapty pod targets from the override:
+
+```ruby showLineNumbers title="ios/Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin].include?(target.name)
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+Then run `pod install` from the `ios/` directory and rebuild.
+
+To verify, open `ios/Pods/Pods.xcodeproj`, select the `Adapty` pod target → **Build Settings** → **Swift Language Version**. It should be **Swift 6**.
