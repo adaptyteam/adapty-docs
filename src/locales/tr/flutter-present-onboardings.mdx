@@ -1,0 +1,208 @@
+---
+title: "Flutter SDK'da onboarding sunma"
+description: "Daha fazla dönüşüm elde etmek için onboarding'leri etkili şekilde nasıl sunacağınızı öğrenin."
+metadataTitle: "Onboarding sunma | Adapty Dokümanları"
+displayed_sidebar: sdkflutter
+---
+
+Bir onboarding'i builder ile özelleştirdiyseniz, Flutter uygulama kodunuzda bunu kullanıcıya göstermek için ayrıca render etmenize gerek yok. Bu tür bir onboarding, hem gösterilecek içeriği hem de nasıl gösterileceğini kapsar.
+
+Başlamadan önce şunların hazır olduğundan emin olun:
+
+1. [Adapty Flutter SDK](sdk-installation-flutter) 3.8.0 veya daha yeni bir sürümünü yüklediniz.
+2. Bir [onboarding oluşturdunuz](create-onboarding).
+3. Onboarding'i bir [placement](placements)'a eklediniz.
+
+Adapty Flutter SDK, onboarding'leri sunmak için iki yöntem sunar:
+
+- **Bağımsız ekran**
+
+- **Gömülü widget**
+
+## Bağımsız ekran olarak sunma \{#present-as-standalone-screen\}
+
+Bir onboarding'i bağımsız ekran olarak göstermek için `createOnboardingView` metoduyla oluşturulan `onboardingView` üzerinde `onboardingView.present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir. Onboarding'i tekrar göstermeniz gerekiyorsa yeni bir `onboardingView` örneği oluşturmak için `createOnboardingView`'ı bir kez daha çağırın.
+
+:::warning
+Aynı `onboardingView`'ı yeniden oluşturmadan tekrar kullanmak `AdaptyUIError.viewAlreadyPresented` hatasına yol açabilir.
+:::
+
+```javascript showLineNumbers title="Flutter"
+try {
+  await onboardingView.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+### Onboarding'i kapatma \{#dismiss-the-onboarding\}
+
+Onboarding'i programatik olarak kapatmanız gerektiğinde `dismiss()` metodunu kullanın:
+
+```dart showLineNumbers title="Flutter"
+try {
+  await onboardingView.dismiss();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+### iOS sunum stilini yapılandırma \{#configure-ios-presentation-style\}
+
+`present()` metoduna `iosPresentationStyle` parametresini geçirerek onboarding'in iOS'ta nasıl sunulacağını yapılandırın. Parametre `AdaptyUIIOSPresentationStyle.fullScreen` (varsayılan) veya `AdaptyUIIOSPresentationStyle.pageSheet` değerlerini kabul eder.
+
+```dart showLineNumbers
+try {
+  await onboardingView.present(iosPresentationStyle: AdaptyUIIOSPresentationStyle.pageSheet);
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+## Widget hiyerarşisine gömme \{#embed-in-widget-hierarchy\}
+
+Bir onboarding'i mevcut widget ağacınıza gömmek için `AdaptyUIOnboardingPlatformView` widget'ını doğrudan Flutter widget hiyerarşinizde kullanın.
+
+```javascript showLineNumbers title="Flutter"
+AdaptyUIOnboardingPlatformView(
+  onboarding: onboarding, // The onboarding object you fetched
+  onDidFinishLoading: (meta) {
+  },
+  onDidFailWithError: (error) {
+  },
+  onCloseAction: (meta, actionId) {
+  },
+  onPaywallAction: (meta, actionId) {
+  },
+  onCustomAction: (meta, actionId) {
+  },
+  onStateUpdatedAction: (meta, elementId, params) {
+  },
+  onAnalyticsEvent: (meta, event) {
+  },
+)
+```
+
+:::note 
+Android platform view'ın çalışması için `MainActivity`'nizin `FlutterFragmentActivity`'yi genişlettiğinden emin olun:
+
+```kotlin showLineNumbers title="Kotlin"
+class MainActivity : FlutterFragmentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
+}
+```
+:::
+
+## Onboarding sırasında yükleme ekranı \{#loader-during-onboarding\}
+
+Bir onboarding sunarken, alttaki view başlatılırken açılış ekranınız ile onboarding arasında kısa bir yükleme ekranı görebilirsiniz. Bunu ihtiyacınıza göre farklı şekillerde yönetebilirsiniz.
+
+#### onDidFinishLoading ile açılış ekranını kontrol etme \{#control-splash-screen-using-onDidFinishLoading\}
+
+:::note
+Bu yaklaşım yalnızca onboarding'i widget olarak gömerken kullanılabilir. Bağımsız ekran sunumu için mevcut değildir.
+:::
+
+Önerilen platformlar arası yaklaşım, onboarding tam olarak yüklenene kadar açılış ekranınızı veya özel overlay'inizi görünür tutmak, ardından manuel olarak gizlemektir.
+
+Gömülü widget kullanırken, kendi widget'ınızı onun üzerine yerleştirin ve `onDidFinishLoading` tetiklendiğinde overlay'i gizleyin:
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIOnboardingPlatformView(
+  onboarding: onboarding,
+  onDidFinishLoading: (meta) {
+    // Hide your custom splash screen or overlay here
+  },
+  // ... other callbacks
+)
+```
+
+### Yerel yükleyiciyi özelleştirme \{#customize-native-loader\}
+
+:::important
+Bu yaklaşım platforma özgüdür ve yerel UI kodunun bakımını gerektirir. Uygulamanızda zaten ayrı yerel katmanlar kullanmıyorsanız önerilmez.
+:::
+
+Varsayılan yükleyiciyi özelleştirmeniz gerekiyorsa platforma özgü layout'larla değiştirebilirsiniz. Bu yaklaşım Android ve iOS için ayrı uygulamalar gerektirir:
+
+- **iOS**: Xcode projenize `AdaptyOnboardingPlaceholderView.xib` ekleyin
+- **Android**: `res/layout` klasöründe `adapty_onboarding_placeholder_view.xml` oluşturun ve burada bir yer tutucu tanımlayın
+
+## Onboarding'lerde bağlantıların nasıl açılacağını özelleştirme \{#customize-how-links-open-in-onboardings\}
+
+:::important
+Onboarding'lerde bağlantıların nasıl açılacağını özelleştirme, Adapty SDK v.3.15.1 sürümünden itibaren desteklenmektedir.
+:::
+
+Varsayılan olarak onboarding'lerdeki bağlantılar uygulama içi tarayıcıda açılır. Bu, kullanıcıların uygulama değiştirmeden web sayfalarını görüntüleyebildiği sorunsuz bir deneyim sunar.
+
+Bağlantıların bunun yerine harici tarayıcıda açılmasını tercih ediyorsanız `externalUrlsPresentation` parametresini `AdaptyWebPresentation.externalBrowser` olarak ayarlayarak bu davranışı özelleştirebilirsiniz:
+
+<Tabs>
+<TabItem value="standalone" label="Bağımsız ekran" default>
+
+```dart showLineNumbers title="Flutter"
+final onboardingView = await AdaptyUI().createOnboardingView(
+  onboarding: onboarding,
+  externalUrlsPresentation: AdaptyWebPresentation.externalBrowser, // default – AdaptyWebPresentation.inAppBrowser
+);
+
+try {
+  await onboardingView.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="embedded" label="Gömülü widget">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIOnboardingPlatformView(
+  onboarding: onboarding,
+  externalUrlsPresentation: AdaptyWebPresentation.externalBrowser, // default – AdaptyWebPresentation.inAppBrowser
+  onDidFinishLoading: (meta) {
+  },
+  onDidFailWithError: (error) {
+  },
+  onCloseAction: (meta, actionId) {
+  },
+  onPaywallAction: (meta, actionId) {
+  },
+  onCustomAction: (meta, actionId) {
+  },
+  onStateUpdatedAction: (meta, elementId, params) {
+  },
+  onAnalyticsEvent: (meta, event) {
+  },
+)
+```
+
+</TabItem>
+</Tabs>
+
+## Güvenli alan dolguları devre dışı bırakma (Android) \{#disable-safe-area-paddings-android\}
+
+Android cihazlarda onboarding view, durum çubuğu ve gezinme çubuğu gibi sistem UI öğelerinden kaçınmak için varsayılan olarak güvenli alan dolgularını otomatik uygular. Ancak bu davranışı devre dışı bırakmak ve layout üzerinde tam kontrol sahibi olmak istiyorsanız bunu uygulamanıza bir boolean kaynağı ekleyerek yapabilirsiniz:
+
+1. `android/app/src/main/res/values` dizinine gidin. `bools.xml` dosyası yoksa oluşturun.
+
+2. Aşağıdaki kaynağı ekleyin:
+
+```xml
+<resources>
+    <bool name="adapty_onboarding_enable_safe_area_paddings">false</bool>
+</resources>
+```
+
+Bu değişikliklerin uygulamanızdaki tüm onboarding'ler için genel olarak geçerli olduğunu unutmayın.

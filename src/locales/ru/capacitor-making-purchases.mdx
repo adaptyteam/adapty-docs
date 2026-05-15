@@ -1,0 +1,167 @@
+---
+title: "Совершение покупок в мобильном приложении с Capacitor SDK"
+description: "Гайд по обработке встроенных покупок и подписок с помощью Adapty."
+metadataTitle: "Обработка встроенных покупок в Adapty | Документация Adapty"
+keywords: ['makePurchase', 'offer code']
+rank: 100
+displayed_sidebar: sdkcapacitor
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/ru/reusable/OfferCodesInfo.mdx';
+
+Отображение пейволов в мобильном приложении — необходимый шаг для предоставления пользователям доступа к премиум-контенту или сервисам. Однако простого отображения пейволов достаточно для поддержки покупок только в том случае, если вы используете [Paywall Builder](adapty-paywall-builder) для их настройки.
+
+Если вы не используете Paywall Builder, необходимо вызывать отдельный метод `.makePurchase()` для завершения покупки и открытия доступа к нужному контенту. Именно через него пользователи взаимодействуют с пейволами и совершают нужные транзакции.
+
+Если для продукта, который пользователь пытается купить, на пейволе действует активный promotional offer, Adapty автоматически применит его в момент покупки.
+
+Убедитесь, что вы выполнили [начальную настройку](quickstart), не пропустив ни одного шага — без неё мы не сможем валидировать покупки.
+
+## Совершение покупки \{#make-purchase\}
+
+:::note
+**Используете [Paywall Builder](adapty-paywall-builder)?** Покупки обрабатываются автоматически — этот шаг можно пропустить.
+
+**Нужна пошаговая инструкция?** Обратитесь к [гайду по быстрому старту](capacitor-implement-paywalls-manually) — там есть полные инструкции по реализации с нужным контекстом.
+:::
+
+```typescript showLineNumbers
+
+try {
+  const result = await adapty.makePurchase({ product });
+  
+  if (result.type === 'success') {
+    const isSubscribed = result.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+    
+    if (isSubscribed) {
+      // Grant access to the paid features
+      console.log('User is now subscribed!');
+    }
+  } else if (result.type === 'user_cancelled') {
+    console.log('Purchase cancelled by user');
+  } else if (result.type === 'pending') {
+    console.log('Purchase is pending');
+  }
+} catch (error) {
+  console.error('Purchase failed:', error);
+}
+```
+
+Параметры запроса:
+
+| Параметр    | Обязательность | Описание                                                                                                                    |
+| :---------- | :------------- |:----------------------------------------------------------------------------------------------------------------------------|
+| **product** | обязательный   | Объект [`AdaptyPaywallProduct`](https://capacitor.adapty.io/interfaces/adaptypaywallproduct), полученный с пейвола. |
+
+Параметры ответа:
+
+| Параметр   | Описание                                                                                                                                                                                                                                                                                                                                                |
+|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **result** | Объект [`AdaptyPurchaseResult`](https://capacitor.adapty.io/types/adaptypurchaseresult) с полем `type`, указывающим результат покупки (`'success'`, `'user_cancelled'` или `'pending'`), и полем `profile`, содержащим обновлённый [`AdaptyProfile`](https://capacitor.adapty.io/interfaces/adaptyprofile) в случае успешной покупки. |
+
+## Смена подписки при совершении покупки \{#change-subscription-when-making-a-purchase\}
+
+Когда пользователь выбирает новую подписку вместо продления текущей, поведение зависит от стора:
+
+- В App Store подписка обновляется автоматически в рамках группы подписок. Если пользователь покупает подписку из одной группы, уже имея подписку из другой, обе подписки будут активны одновременно.
+- В Google Play подписка не обновляется автоматически. Вам нужно самостоятельно управлять переключением в коде мобильного приложения, как описано ниже.
+
+Чтобы заменить подписку на другую в Android, вызовите метод `.makePurchase()` с дополнительным параметром:
+
+```typescript showLineNumbers
+
+try {
+  const result = await adapty.makePurchase({ 
+    product,
+    params: {
+      android: {
+        subscriptionUpdateParams: {
+          oldSubVendorProductId: 'old_product_id',
+          prorationMode: 'charge_prorated_price'
+        },
+        isOfferPersonalized: true
+      }
+    }
+  });
+  
+  if (result.type === 'success') {
+    const isSubscribed = result.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+    
+    if (isSubscribed) {
+      // Grant access to the paid features
+      console.log('Subscription updated successfully!');
+    }
+  } else if (result.type === 'user_cancelled') {
+    console.log('Purchase cancelled by user');
+  } else if (result.type === 'pending') {
+    console.log('Purchase is pending');
+  }
+} catch (error) {
+  console.error('Purchase failed:', error);
+}
+```
+
+Дополнительный параметр запроса:
+
+| Параметр   | Обязательность | Описание                                                     |
+| :--------- | :------------- | :----------------------------------------------------------- |
+| **params** | опциональный   | Объект типа [`MakePurchaseParamsInput`](https://capacitor.adapty.io/types/makepurchaseparamsinput), содержащий платформо-зависимые параметры покупки. |
+
+Структура `MakePurchaseParamsInput`:
+
+```typescript
+{
+  android: {
+    subscriptionUpdateParams: {
+      oldSubVendorProductId: 'old_product_id',
+      prorationMode: 'charge_prorated_price'
+    },
+    isOfferPersonalized: true
+  }
+}
+```
+
+Подробнее о подписках и режимах замены можно прочитать в документации Google Developer:
+
+- [О режимах замены](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Рекомендации Google по режимам замены](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Режим замены [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Примечание: этот метод доступен только для повышения уровня подписки. Понижение уровня не поддерживается.
+- Режим замены [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Примечание: реальное изменение подписки произойдёт только по окончании текущего расчётного периода.
+
+### Управление предоплаченными планами (Android) \{#manage-prepaid-plans-android\}
+
+Если пользователи вашего приложения могут приобретать [предоплаченные планы](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (например, покупать неавтоматически возобновляемую подписку на несколько месяцев), вы можете включить [ожидающие транзакции](https://developer.android.com/google/play/billing/subscriptions#pending) для таких планов.
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    android: {
+        enablePendingPrepaidPlans: true,      
+    },
+  }
+});
+```
+
+## Активация промокодов в iOS \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+Чтобы показать экран активации кода в вашем приложении:
+
+```typescript showLineNumbers
+
+try {
+  await adapty.presentCodeRedemptionSheet();
+} catch (error) {
+  console.error('Failed to present code redemption sheet:', error);
+}
+```
+
+:::danger
+По нашим наблюдениям, экран активации промокода в некоторых приложениях может работать нестабильно. Мы рекомендуем перенаправлять пользователя напрямую в App Store.
+
+Для этого нужно открыть URL следующего формата:
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::

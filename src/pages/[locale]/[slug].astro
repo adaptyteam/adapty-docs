@@ -1,39 +1,37 @@
 ---
-import fs from 'node:fs';
-import path from 'node:path';
 import DocsLayout from '../../layouts/DocsLayout.astro';
-import ApiReferencePage from '../../components/ApiReferencePage.astro';
+import SpecLandingPage from '../../components/api-reference/SpecLandingPage.astro';
 import apiConfig from '../../api-reference/config.json';
-import { SUPPORTED_LOCALES } from '../../data/locales';
+import apiPlatformSidebar from '../../data/sidebars/api.json';
+import { loadSpec } from '../../api-reference/lib/load-spec';
+import { buildApiSpec } from '../../api-reference/lib/model';
+import { buildSidebar } from '../../api-reference/lib/build-sidebar';
+import { forceCollapseTopLevel } from '../../api-reference/lib/force-collapse';
+import { getBuildLocales } from '../../data/locales';
 
 export async function getStaticPaths() {
-  const paths = [];
-  for (const locale of SUPPORTED_LOCALES) {
+  const paths: Array<{ params: any; props: any }> = [];
+  for (const locale of getBuildLocales()) {
     for (const api of apiConfig) {
-      // Resolve localized spec file, fall back to English
-      const specBasename = api.specFile.replace(/\.yaml$/, '');
-      const localizedSpecFile = `${specBasename}.${locale}.yaml`;
-      const localizedSpecPath = path.join(process.cwd(), 'public', 'api-specs', localizedSpecFile);
-      const specFile = fs.existsSync(localizedSpecPath) ? localizedSpecFile : api.specFile;
-
-      paths.push({
-        params: { locale, slug: api.slug },
-        props: { api, locale, specFile },
-      });
+      paths.push({ params: { locale, slug: api.slug }, props: { api, locale } });
     }
   }
   return paths;
 }
 
-const { api, locale, specFile } = Astro.props;
+const { api, locale } = Astro.props;
 const { slug } = Astro.params;
+const baseUrl = (import.meta.env.BASE_URL ?? '/').replace(/\/+$/, '');
+const localeBase = `${baseUrl}/${locale}`;
 
-const specUrl = api.specUrl || `${import.meta.env.BASE_URL}/api-specs/${specFile}`.replace(/\/+/g, '/');
-const basePath = `${import.meta.env.BASE_URL}/${locale}/${slug}`.replace(/\/+/g, '/');
+const deref = await loadSpec(api.specFile, locale);
+const spec = buildApiSpec(deref, api, localeBase);
+const sidebarData = forceCollapseTopLevel(apiPlatformSidebar);
+const apiSidebarData = buildSidebar(spec, localeBase);
 
 const breadcrumbs = [
-  { label: 'Home', href: `${import.meta.env.BASE_URL}/`.replace(/\/+/g, '/') },
-  { label: api.name }
+  { label: 'Home', href: `${baseUrl}/` },
+  { label: api.name },
 ];
 ---
 
@@ -42,12 +40,13 @@ const breadcrumbs = [
   description={`${api.name} reference documentation`}
   keywords={api.name}
   rank={70}
-  sidebarData={null}
+  sidebarData={sidebarData}
+  apiSidebarData={apiSidebarData}
   currentPlatformId="api"
   currentSlug={slug}
   currentLocale={locale}
   breadcrumbs={breadcrumbs}
-  isFullWidth={true}
+  hideRightColumn={true}
 >
-  <ApiReferencePage api={api} slug={`${locale}/${slug}`} specUrl={specUrl} basePath={basePath} />
+  <SpecLandingPage spec={spec} />
 </DocsLayout>

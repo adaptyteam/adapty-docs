@@ -1,0 +1,438 @@
+---
+title: "iOS SDK'da paywall olaylarını yönetme"
+description: "Daha iyi uygulama gelirleştirmesi için iOS'ta Adapty kullanarak abonelikle ilgili olayları yönetin."
+metadataTitle: "iOS'ta Olayları Yönetme | Adapty Dokümanları"
+toc_max_heading_level: 4
+keywords: ['event', 'AdaptyPaywallControllerDelegate', 'didSelectProduct', 'didStartPurchase', 'shouldContinueWebPaymentNavigation', 'didFinishPurchase', 'didFailPurchase', 'didFailWebPaymentNavigation', 'didFinishRestoreWith', 'didFailRestoreWith', 'didFailLoadingProductsWith',  'didFailRenderingWith']
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+import PaywallAction from '@site/src/locales/tr/reusable/PaywallAction.md';
+
+<PaywallAction />
+
+[Paywall Builder](adapty-paywall-builder) ile yapılandırılmış paywalllar, satın alma yapmak veya geri yüklemek için ekstra kod gerektirmez. Ancak uygulamanızın tepki verebileceği bazı olaylar üretirler. Bu olaylar arasında buton tıklamaları (kapatma butonları, URL'ler, ürün seçimleri vb.) ve paywall üzerinde gerçekleştirilen satın alma işlemlerine ilişkin bildirimler yer alır. Bu olaylara nasıl tepki vereceğinizi aşağıda öğrenebilirsiniz.
+
+Bu kılavuz yalnızca Adapty SDK v3.0 veya üzerini gerektiren **yeni Paywall Builder paywallları** içindir.
+
+<SampleApp />
+
+## SwiftUI'da olayları yönetme \{#handling-events-in-swiftui\}
+
+Mobil uygulamanızdaki paywall ekranında gerçekleşen süreçleri kontrol etmek veya izlemek için SwiftUI'da `.paywall` modifierını kullanın:
+
+```swift showLineNumbers title="Swift"
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywall: paywall,
+          viewConfiguration: viewConfig,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  case let .openURL(url):
+                      // handle opening the URL (incl. for terms and privacy)
+                  default:
+                      // handle other actions
+              }
+          },
+          didSelectProduct: { /* Handle the event */  },
+          didStartPurchase: { /* Handle the event */ },
+          didFinishPurchase: { product, info in /* Handle the event */ },
+          didFailPurchase: { product, error in /* Handle the event */ },
+          didStartRestore: { /* Handle the event */ },
+          didFinishRestore: { /* Handle the event */ },
+          didFailRestore: { /* Handle the event */ },
+          didFailRendering: { error in
+              paywallPresented = false
+          },
+          didFailLoadingProducts: { error in
+              return false
+          }
+      )
+}
+```
+
+Yalnızca ihtiyacınız olan closure parametrelerini kaydedebilir, ihtiyaç duymadıklarınızı atlayabilirsiniz. Bu durumda kullanılmayan closure parametreleri oluşturulmaz.
+
+| Parametre                         | Zorunlu  | Açıklama                                                                                                                                                                                                                                                                                                                              |
+|:----------------------------------|:---------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented**                   | zorunlu  | Paywall ekranının görüntülenip görüntülenmeyeceğini yöneten bir binding.                                                                                                                                                                                                                                                              |
+| **paywallConfiguration**          | zorunlu  | Paywallın görsel ayrıntılarını içeren bir `AdaptyUI.PaywallConfiguration` nesnesi. `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)` metodunu kullanın. Daha fazla ayrıntı için [Paywall Builder paywalllarını ve yapılandırmalarını getirme](get-pb-paywalls) konusuna bakın. |
+| **didFailPurchase**               | zorunlu  | Satın alma bir hata nedeniyle başarısız olduğunda çağrılır (örn. ödemeye izin verilmemesi, ağ sorunları, geçersiz ürün). Kullanıcı iptalleri veya bekleyen ödemeler için çağrılmaz.                                                                                                                                                    |
+| **didFinishRestore**              | zorunlu  | Satın alma başarıyla tamamlandığında çağrılır.                                                                                                                                                                                                                                                                                        |
+| **didFailRestore**                | zorunlu  | Satın alma geri yükleme başarısız olduğunda çağrılır.                                                                                                                                                                                                                                                                                 |
+| **didFailRendering**              | zorunlu  | Arayüz oluşturulurken bir hata oluşursa çağrılır. Bu durumda [Adapty Destek](mailto:support@adapty.io) ile iletişime geçin.                                                                                                                                                                                                           |
+| **fullScreen**                    | isteğe bağlı | Paywallın tam ekran modunda mı yoksa modal olarak mı göründüğünü belirler. Varsayılan değer `true`.                                                                                                                                                                                                                                   |
+| **didAppear**                     | isteğe bağlı | Paywall görünümü ekranda göründüğünde çağrılır. Ayrıca kullanıcı bir paywall içindeki [web paywall butonuna](web-paywall#step-2a-add-a-web-purchase-button) dokunduğunda ve uygulama içi tarayıcıda bir web paywall açıldığında da çağrılır.                                                                                           |
+| **didDisappear**                  | isteğe bağlı | Paywall görünümü kapatıldığında çağrılır. Ayrıca uygulama içi tarayıcıda açılan bir [web paywall](web-paywall#step-2a-add-a-web-purchase-button) ekrandan kaybolduğunda da çağrılır.                                                                                                                                                  |
+| **didPerformAction**              | isteğe bağlı | Kullanıcı bir butona tıkladığında çağrılır. Farklı butonların farklı action ID'leri vardır. İki action ID önceden tanımlıdır: `close` ve `openURL`; diğerleri ise özeldir ve builder'da ayarlanabilir.                                                                                                                                |
+| **didSelectProduct**              | isteğe bağlı | Satın alma için bir ürün seçildiğinde (kullanıcı veya sistem tarafından) bu callback çağrılır.                                                                                                                                                                                                                                        |
+| **didStartPurchase**              | isteğe bağlı | Kullanıcı satın alma sürecini başlattığında çağrılır.                                                                                                                                                                                                                                                                                 |
+| **didFinishPurchase**             | isteğe bağlı | Satın alma başarıyla tamamlandığında çağrılır.                                                                                                                                                                                                                                                                                        |
+| **didFinishWebPaymentNavigation** | isteğe bağlı | Satın alma için [web paywall](web-paywall) açma girişiminin ardından, başarılı veya başarısız olsun, çağrılır.                                                                                                                                                                                                                        |
+| **didStartRestore**               | isteğe bağlı | Kullanıcı geri yükleme sürecini başlattığında çağrılır.                                                                                                                                                                                                                                                                               |
+| **didFailLoadingProducts**        | isteğe bağlı | Ürün yükleme sırasında hata oluştuğunda çağrılır. Yüklemeyi yeniden denemek için `true` döndürün.                                                                                                                                                                                                                                    |
+| **didPartiallyLoadProducts**      | isteğe bağlı | Ürünler kısmen yüklendiğinde çağrılır.                                                                                                                                                                                                                                                                                                |
+| **showAlertItem**                 | isteğe bağlı | Paywall üzerinde uyarı öğelerinin görüntülenmesini yöneten bir binding.                                                                                                                                                                                                                                                               |
+| **showAlertBuilder**              | isteğe bağlı | Uyarı görünümünü oluşturmak için kullanılan bir fonksiyon.                                                                                                                                                                                                                                                                            |
+| **placeholderBuilder**            | isteğe bağlı | Paywall yüklenirken yer tutucu görünümü oluşturmak için kullanılan bir fonksiyon.                                                                                                                                                                                                                                                     |
+
+## UIKit'te olayları yönetme \{#handling-events-in-uikit\}
+
+Mobil uygulamanızdaki paywall ekranında gerçekleşen süreçleri kontrol etmek veya izlemek için `AdaptyPaywallControllerDelegate` metodlarını uygulayın.
+
+### Kullanıcı kaynaklı olaylar \{#user-generated-events\}
+
+#### Ürün seçimi \{#product-selection\}
+
+Bir kullanıcı satın alma için bir ürün seçerse bu metod çağrılır:
+
+```swift showLineNumbers title="Swift"
+    func paywallController(
+        _ controller: AdaptyPaywallController,
+        didSelectProduct product: AdaptyPaywallProductWithoutDeterminingOffer
+    ) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Satın alma başlatıldı \{#started-purchase\}
+
+Bir kullanıcı satın alma sürecini başlatırsa bu metod çağrılır:
+
+```swift showLineNumbers title="Swift"
+func paywallController(_ controller: AdaptyPaywallController,
+                       didStartPurchase product: AdaptyPaywallProduct) {
+}
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+Observer modunda çağrılmaz. Ayrıntılar için [iOS - Observer modunda Paywall Builder paywalllarını gösterme](ios-present-paywall-builder-paywalls-in-observer-mode) konusuna bakın.
+
+#### Web paywall kullanarak satın alma başlatıldı \{#started-purchase-using-a-web-paywall\}
+
+Bir kullanıcı [web paywall](web-paywall) kullanarak satın alma sürecini başlatırsa bu metod çağrılır:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        shouldContinueWebPaymentNavigation product: AdaptyPaywallProduct
+    ) {
+    }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Başarılı veya iptal edilen satın alma \{#successful-or-canceled-purchase\}
+
+Satın alma başarılı olursa bu metod çağrılır:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFinishPurchase product: AdaptyPaywallProductWithoutDeterminingOffer,
+    purchaseResult: AdaptyPurchaseResult
+) { }
+}
+```
+
+<Details>
+<summary>Olay örnekleri (Genişletmek için tıklayın)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "cancelled"
+  }
+}
+```
+</Details>
+
+Bu durumda paywall ekranını kapatmanızı öneririz.
+
+Observer modunda çağrılmaz. Ayrıntılar için [iOS - Observer modunda Paywall Builder paywalllarını gösterme](ios-present-paywall-builder-paywalls-in-observer-mode) konusuna bakın.
+
+#### Başarısız satın alma \{#failed-purchase\}
+
+Bir satın alma hata nedeniyle başarısız olursa bu metod çağrılır. Bu; StoreKit hatalarını (ödeme kısıtlamaları, geçersiz ürünler, ağ hataları), işlem doğrulama hatalarını ve sistem hatalarını kapsar. Kullanıcı iptalleri, iptal edilmiş sonuçla birlikte `didFinishPurchase` metodunu tetikler; bekleyen ödemeler ise bu metodu tetiklemez.
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailPurchase product: AdaptyPaywallProduct,
+    error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+Observer modunda çağrılmaz. Ayrıntılar için [iOS - Observer modunda Paywall Builder paywalllarını gösterme](ios-present-paywall-builder-paywalls-in-observer-mode) konusuna bakın.
+
+#### Web paywall kullanarak başarısız satın alma \{#failed-purchase-using-a-web-paywall\}
+
+`Adapty.openWebPaywall()` başarısız olursa bu metod çağrılır:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        didFailWebPaymentNavigation product: AdaptyPaywallProduct,
+        error: AdaptyError
+    ) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_payment_failed",
+    "message": "Web payment navigation failed",
+    "details": {
+      "underlyingError": "Network connection error"
+    }
+  }
+}
+```
+</Details>
+
+#### Başarılı geri yükleme \{#successful-restore\}
+
+Satın alma geri yükleme başarılı olursa bu metod çağrılır:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController, 
+    didFinishRestoreWith profile: AdaptyProfile
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Kullanıcının gerekli `accessLevel`'a sahip olması durumunda ekranı kapatmanızı öneririz. Nasıl kontrol edileceğini öğrenmek için [Abonelik durumu](subscription-status) konusuna bakın.
+
+#### Başarısız geri yükleme \{#failed-restore\}
+
+Satın alma geri yükleme başarısız olursa bu metod çağrılır:
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController, 
+    didFailRestoreWith error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+### Veri getirme ve oluşturma \{#data-fetching-and-rendering\}
+
+#### Ürün yükleme hataları \{#product-loading-errors\}
+
+Başlatma sırasında ürün dizisini geçmezseniz AdaptyUI gerekli nesneleri sunucudan kendisi alır. Bu işlem başarısız olursa AdaptyUI hatayı bu metodu çağırarak bildirir:
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailLoadingProductsWith error: AdaptyError
+) -> Bool {
+    return true
+}
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+`true` döndürürseniz AdaptyUI isteği 2 saniye sonra tekrarlar.
+
+#### Oluşturma hataları \{#rendering-errors\}
+
+Arayüz oluşturulurken bir hata meydana gelirse bu metod tarafından bildirilir:
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailRenderingWith error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+Normal koşullarda bu tür hatalar oluşmamalıdır; böyle bir hatayla karşılaşırsanız lütfen bize bildirin.

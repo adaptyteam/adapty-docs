@@ -1,0 +1,426 @@
+---
+title: "Kotlin Multiplatform - Обработка событий пейвола"
+description: "Эффективно обрабатывайте события подписок в Kotlin Multiplatform с помощью инструментов отслеживания событий Adapty."
+metadataTitle: "Обработка событий в Kotlin Multiplatform | Документация Adapty"
+toc_max_heading_level: 4
+keywords: ['AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+---
+
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
+
+Пейволы, созданные с помощью [Paywall Builder](adapty-paywall-builder), не требуют дополнительного кода для совершения и восстановления покупок. Однако они генерируют ряд событий, на которые ваше приложение может реагировать. Среди них — нажатия кнопок (закрытие, переходы по URL, выбор продуктов и т. д.), а также уведомления о действиях, связанных с покупками на пейволе. Как реагировать на эти события — читайте ниже.
+
+:::warning
+Это руководство предназначено **только для новых пейволов Paywall Builder**.
+:::
+
+Чтобы управлять или отслеживать процессы на экране пейвола в мобильном приложении, реализуйте методы интерфейса `AdaptyUIPaywallsEventsObserver`. Некоторые методы имеют реализации по умолчанию, которые автоматически обрабатывают стандартные сценарии.
+
+:::note
+В этих методах вы добавляете собственную логику реагирования на события пейвола. Можно использовать `view.dismiss()` для закрытия пейвола или реализовать любое другое нужное поведение.
+:::
+
+## События, инициированные пользователем \{#user-generated-events\}
+
+### Появление и исчезновение пейвола \{#paywall-appearance-and-disappearance\}
+
+При появлении или исчезновении пейвола вызываются следующие методы:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidAppear(view: AdaptyUIPaywallView) {
+    // Handle paywall appearance
+    // You can track analytics or update UI here
+}
+
+override fun paywallViewDidDisappear(view: AdaptyUIPaywallView) {
+    // Handle paywall disappearance
+    // You can track analytics or update UI here
+}
+```
+
+:::note
+- На iOS `paywallViewDidAppear` также вызывается, когда пользователь нажимает на [кнопку веб-пейвола](web-paywall#step-2a-add-a-web-purchase-button) внутри пейвола и веб-пейвол открывается во встроенном браузере.
+- На iOS `paywallViewDidDisappear` также вызывается, когда [веб-пейвол](web-paywall#step-2a-add-a-web-purchase-button), открытый из пейвола во встроенном браузере, исчезает с экрана.
+:::
+
+<Details>
+<summary>Примеры событий (нажмите, чтобы развернуть)</summary>
+
+```javascript
+// Paywall appeared
+{
+  // No additional data
+}
+
+// Paywall disappeared
+{
+  // No additional data
+}
+```
+</Details>
+
+### Выбор продукта \{#product-selection\}
+
+Если пользователь выбирает продукт для покупки, вызывается этот метод:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidSelectProduct(view: AdaptyUIPaywallView, productId: String) {
+    // Handle product selection
+    // You can update UI or track analytics here
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+### Начало покупки \{#started-purchase\}
+
+Если пользователь инициирует процесс покупки, вызывается этот метод:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidStartPurchase(view: AdaptyUIPaywallView, product: AdaptyPaywallProduct) {
+    // Handle purchase start
+    // You can show loading indicators or track analytics here
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+### Успешная, отменённая или отложенная покупка \{#successful-canceled-or-pending-purchase\}
+
+Если покупка выполнена успешно, вызывается этот метод. По умолчанию он автоматически закрывает пейвол, если только покупка не была отменена пользователем:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidFinishPurchase(
+    view: AdaptyUIPaywallView,
+    product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            // Check if user has access to premium features
+            if (purchaseResult.profile.accessLevels["premium"]?.isActive == true) {
+                view.dismiss()
+            }
+        }
+        AdaptyPurchaseResult.Pending -> {
+            // Handle pending purchase (e.g., user will pay offline with cash)
+        }
+        AdaptyPurchaseResult.UserCanceled -> {
+            // Handle user cancellation
+        }
+    }
+}
+```
+
+<Details>
+<summary>Примеры событий (нажмите, чтобы развернуть)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+
+// User canceled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCanceled"
+  }
+}
+```
+</Details>
+
+Рекомендуем закрывать экран пейвола при успешной покупке.
+
+### Ошибка покупки \{#failed-purchase\}
+
+Если покупка завершается ошибкой, вызывается этот метод. Сюда относятся ошибки StoreKit/Google Play Billing (ограничения платежей, недействительные продукты, сбои сети), ошибки верификации транзакций и системные ошибки. Обратите внимание: отмена покупки пользователем вызывает `paywallViewDidFinishPurchase` с результатом отмены, а отложенные платежи этот метод не вызывают.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidFailPurchase(
+    view: AdaptyUIPaywallView,
+    product: AdaptyPaywallProduct,
+    error: AdaptyError
+) {
+    // Add your purchase failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+### Начало восстановления \{#started-restore\}
+
+Если пользователь инициирует процесс восстановления покупок, вызывается этот метод:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidStartRestore(view: AdaptyUIPaywallView) {
+    // Handle restore start
+    // You can show loading indicators or track analytics here
+}
+```
+
+### Успешное восстановление \{#successful-restore\}
+
+Если восстановление покупки выполнено успешно, вызывается этот метод:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidFinishRestore(view: AdaptyUIPaywallView, profile: AdaptyProfile) {
+    // Add your successful restore handling logic here
+    // For example: show success message, update UI, or dismiss paywall
+    
+    // Check if user has access to premium features
+    if (profile.accessLevels["premium"]?.isActive == true) {
+        view.dismiss()
+    }
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Рекомендуем закрывать экран, если у пользователя есть требуемый `accessLevel`. Подробнее о том, как его проверить, читайте в разделе [Статус подписки](subscription-status).
+
+### Ошибка восстановления \{#failed-restore\}
+
+Если `Adapty.restorePurchases()` завершается с ошибкой, вызывается этот метод:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidFailRestore(view: AdaptyUIPaywallView, error: AdaptyError) {
+    // Add your restore failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+### Завершение навигации веб-платежа \{#web-payment-navigation-completion\}
+
+Если пользователь инициирует процесс покупки через [веб-пейвол](web-paywall), вызывается этот метод:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidFinishWebPaymentNavigation(
+    view: AdaptyUIPaywallView,
+    product: AdaptyPaywallProduct?,
+    error: AdaptyError?
+) {
+    if (error != null) {
+        // Handle web payment navigation error
+    } else {
+        // Handle successful web payment navigation
+    }
+}
+```
+
+<Details>
+<summary>Примеры событий (нажмите, чтобы развернуть)</summary>
+
+```javascript
+// Successful web payment navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed web payment navigation
+{
+  "product": null,
+  "error": {
+    "code": "web_payment_failed",
+    "message": "Web payment navigation failed",
+    "details": {
+      "underlyingError": "Network connection error"
+    }
+  }
+}
+```
+</Details>
+
+## Загрузка данных и рендеринг \{#data-fetching-and-rendering\}
+
+### Ошибки загрузки продуктов \{#product-loading-errors\}
+
+Если вы не передаёте продукты при инициализации, AdaptyUI самостоятельно получает необходимые объекты с сервера. Если эта операция завершается ошибкой, AdaptyUI сообщит об этом, вызвав данный метод:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidFailLoadingProducts(view: AdaptyUIPaywallView, error: AdaptyError) {
+    // Add your product loading failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+### Ошибки рендеринга \{#rendering-errors\}
+
+Если в процессе рендеринга интерфейса возникает ошибка, она будет передана через этот метод:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun paywallViewDidFailRendering(view: AdaptyUIPaywallView, error: AdaptyError) {
+    // Handle rendering error
+    // In a normal situation, such errors should not occur
+    // If you come across one, please let us know
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+    "error": {
+        "code": "rendering_failed",
+            "message": "Failed to render paywall interface",
+            "details": {
+            "underlyingError": "Invalid paywall configuration"
+        }
+    }
+}
+```
+</Details>
+
+В штатной ситуации такие ошибки возникать не должны — если вы с ними столкнулись, пожалуйста, сообщите нам.

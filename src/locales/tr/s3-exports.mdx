@@ -1,0 +1,277 @@
+---
+title: "Amazon S3"
+description: "Gelişmiş analitik ve raporlama için abonelik verilerini S3'e aktarın."
+metadataTitle: "S3 Dışa Aktarma ve Veri Yönetimi | Adapty Dokümanları"
+---
+
+Adapty'nin Amazon S3 entegrasyonu, etkinlik ve paywall ziyaret verilerinizi tek bir merkezi konumda güvenli şekilde saklamanızı sağlar. [Abonelik etkinliklerinizi](events) Amazon S3 bucket'ınıza .csv dosyaları olarak kaydedebilirsiniz.  
+Bu entegrasyonu kurmak için AWS Console ve Adapty kontrol panelinde birkaç basit adımı izlemeniz gerekecek.
+:::note
+Zamanlama
+
+Adapty verilerinizi her **24 saatte bir** 04:00 UTC'de gönderir.
+
+Her dosya, bir önceki tam takvim gününe ait UTC zaman dilimiyle oluşturulmuş olayların verilerini içerir. Örneğin, 8 Mart'ta 04:00 UTC'de otomatik olarak dışa aktarılan veriler, 7 Mart'ta 00:00:00 ile 23:59:59 UTC arasında oluşturulan tüm olayları kapsar.
+:::
+## Amazon S3 entegrasyonunu nasıl kurarsınız \{#how-to-set-up-amazon-s3-integration\}
+
+Veri almaya başlamak için aşağıdaki bilgilere ihtiyacınız olacak:
+
+1. Access key ID
+2. Secret access key
+3. S3 bucket adı
+4. S3 bucket içindeki klasör adı
+
+:::note
+İç içe dizinler
+
+Amazon S3 bucket adı alanında iç içe dizinler belirtebilirsiniz; örneğin: adapty-events/com.sample-app
+:::
+
+Amazon S3 entegrasyonu için [**Integrations** -> **Amazon S3**](https://app.adapty.io/integrations/s3) sayfasına gidin, toggle'ı açık konuma getirin ve alanları doldurun.
+
+Her şeyden önce, Amazon S3 ile Adapty profilleri arasında bağlantı kurmak için kimlik bilgilerini girin.
+Adapty Kontrol Paneli'nde bağlantıyı kurmak için aşağıdaki alanlar gereklidir:
+| Alan | Açıklama |
+| :--------------------------- | :----------------------------------------------------------- |
+| **Access Key ID** | AWS hizmetine erişimi doğrulamak için kullanılan benzersiz tanımlayıcı. Bu kimliği indirilen [csv dosyasında](s3-exports#how-to-create-amazon-s3-credentials) bulabilirsiniz. |
+| **Secret Access Key** | AWS hizmetine erişimi doğrulamak için Access Key ID ile birlikte kullanılan özel anahtar. Bu anahtarı indirilen [csv dosyasında](s3-exports#how-to-create-amazon-s3-credentials) bulabilirsiniz. |
+| **S3 Bucket Name** | AWS bulutundaki belirli bir S3 bucket'ını tanımlayan, küresel olarak benzersiz ad. S3 bucket'ları, kullanıcıların bulutta dosya ve görsel gibi veri nesnelerini depolamasına ve almasına olanak tanıyan basit bir depolama hizmetidir. |
+| **Folder Inside the Bucket** | Seçili S3 bucket'ının içinde oluşturmak istediğiniz klasörün adı. S3'ün klasörleri, nesne anahtarı önekleri (yani klasör adları) kullanarak simüle ettiğini unutmayın. |
+## Amazon S3 kimlik bilgileri nasıl oluşturulur \{#how-to-create-amazon-s3-credentials\}
+
+Bu kılavuz, AWS Console'da gerekli kimlik bilgilerini oluşturmanıza yardımcı olacaktır.
+### 1\. Erişim Politikası Oluşturun \{#create-access-policy\}
+
+Önce AWS Console'unuzdaki [IAM Policy Dashboard](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/policies) sayfasına gidin ve **Create Policy** seçeneğini tıklayın.
+
+<Zoom>
+  <img src="/assets/shared/img/7af075c-CleanShot_2023-03-21_at_10.52.002x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+**Policy editor** bölümüne aşağıdaki JSON'ı yapıştırın ve `adapty-s3-integration-test` kısmını kendi bucket adınızla değiştirin:
+```json showLineNumbers title="Json"
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowListObjectsInBucket",
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        },
+        {
+            "Sid": "AllowAllObjectActions",
+            "Effect": "Allow",
+            "Action": "s3:*Object",
+            "Resource": [
+                "arn:aws:s3:::adapty-s3-integration-test/*",
+                "arn:aws:s3:::adapty-s3-integration-test"
+            ]
+        },
+        {
+            "Sid": "AllowBucketLocation",
+            "Effect": "Allow",
+            "Action": "s3:GetBucketLocation",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        }
+    ]
+}
+```
+<Zoom>
+  <img src="/assets/shared/img/d4e474a-CleanShot_2023-03-21_at_10.56.212x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Politika yapılandırmasını tamamladıktan sonra etiket eklemeyi seçebilirsiniz (isteğe bağlı) ve ardından son adıma geçmek için **Next** düğmesine tıklayın. Bu adımda politikanıza bir ad verip **Create policy** düğmesine tıklayarak oluşturma işlemini tamamlayın.
+<Zoom>
+  <img src="/assets/shared/img/7dcb02f-CleanShot_2023-03-21_at_11.03.372x.webp"
+  style={{
+    border: '1px solid #727272', /* kenarlık genişliği ve rengi */
+    width: '700px', /* resim genişliği */
+    display: 'block', /* hizalama için */
+    margin: '0 auto' /* ortalama hizalama */
+  }}
+/>
+</Zoom>
+### 2\. IAM kullanıcısı oluşturun \{#create-iam-user\}
+
+Adapty'nin ham veri raporlarını bucket'ınıza yükleyebilmesi için, ilgili bucket'a yazma erişimi olan bir kullanıcıya ait Access Key ID ve Secret Access Key bilgilerini sağlamanız gerekir.
+
+Devam etmek için IAM Console'a gidin ve [Users bölümünü](https://console.aws.amazon.com/iamv2/home#/users) seçin. Ardından **Add users** butonuna tıklayın.
+Kullanıcıya bir isim verin, **Access key – Programmatic access** seçeneğini seçin ve izinlere geçin.
+
+<Zoom>
+  <img src="/assets/shared/img/bb612c8-CleanShot_2023-03-21_at_11.12.392x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+Bir sonraki adım için **Add user to group** seçeneğini işaretleyin ve ardından **Create group** butonuna tıklayın.
+<Zoom>
+  <img src="/assets/shared/img/bfd0e80-CleanShot_2023-03-21_at_11.24.592x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Ardından, Kullanıcı Grubunuza bir ad vermeniz ve daha önce oluşturduğunuz politikayı seçmeniz gerekir. Politikayı seçtikten sonra işlemi tamamlamak için **Create group** düğmesine tıklayın.
+<Zoom>
+  <img src="/assets/shared/img/df29c12-CleanShot_2023-03-21_at_11.28.052x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Grubu başarıyla oluşturduktan sonra lütfen **seçin** ve bir sonraki adıma geçin.
+<Zoom>
+  <img src="/assets/shared/img/1f3722e-CleanShot_2023-03-21_at_11.36.192x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Bu bölümün son adımı olduğundan, **Create User** düğmesine tıklayarak devam edebilirsiniz.
+Son olarak, kimlik bilgilerini **.csv formatında indirebilir** ya da doğrudan kontrol panelinden kopyalayıp yapıştırabilirsiniz.
+<Zoom>
+  <img src="/assets/shared/img/bcf35e1-S3created.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+## Manuel veri dışa aktarımı \{#manual-data-export\}
+
+Amazon S3'e otomatik etkinlik verisi dışa aktarımına ek olarak, Adapty manuel dosya dışa aktarımı özelliği de sunar. Bu özellik sayesinde etkinlik verileri için belirli bir zaman aralığı seçerek bunları S3 bucket'ınıza manuel olarak aktarabilirsiniz. Bu, hangi verileri ne zaman dışa aktaracağınız konusunda size daha fazla kontrol imkânı tanır.
+
+Belirlenen tarih aralığı, A Tarihi 00:00:00 UTC ile B Tarihi 23:59:59 UTC arasında oluşturulan etkinlikleri dışa aktarmak için kullanılır.
+<Zoom>
+  <img src="/assets/shared/img/466bd29-CleanShot_2023-03-21_at_12.35.252x.webp"
+  style={{
+    border: '1px solid #727272', /* kenarlık genişliği ve rengi */
+    width: '700px', /* görsel genişliği */
+    display: 'block', /* hizalama için */
+    margin: '0 auto' /* ortalama hizalama */
+  }}
+/>
+</Zoom>
+## Tablo yapısı \{#table-structure\}
+
+AWS S3 entegrasyonunda Adapty, işlem olayları ve paywall ziyaretlerine ait geçmiş verileri saklamak için bir tablo sunar. Tablo; kullanıcı profili, gelir ve kazançlar ile kaynak mağaza gibi birçok veri noktasını içerir. Temelde bu tablolar, bir uygulamanın belirli bir zaman diliminde oluşturduğu tüm işlemleri kaydeder.
+:::warning
+Bu yapının zamanla büyüyebileceğini unutmayın — bizim tarafımızdan veya birlikte çalıştığımız üçüncü taraflarca yeni veriler eklenebilir. Bu yapıyı işleyen kodunuzun yeterince sağlam olduğundan ve yapının tamamına değil, belirli alanlara dayandığından emin olun.
+:::
+
+İşte olaylar için tablo yapısı:
+| Sütun | Açıklama |
+|---------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **profile_id** | Adapty kullanıcı ID'si. |
+| **event_type** | Küçük harfli event adı. Event türleri hakkında bilgi almak için [Events](events) bölümüne bakın. |
+| **event_datetime** | ISO 8601 tarihi. |
+| **transaction_id** | Satın alma veya yenileme gibi bir işlem için benzersiz tanımlayıcı. |
+| **original_transaction_id** | Orijinal satın almanın işlem tanımlayıcısı. |
+| **subscription_expires_at** | Aboneliğin sona erme tarihi. Genellikle gelecekte bir tarihtir. |
+| **environment** | Sandbox veya Production olabilir. |
+| **revenue_usd** | USD cinsinden gelir. Boş olabilir. |
+| **proceeds_usd** | USD cinsinden net hasılat. Boş olabilir. |
+| **net_revenue_usd** | USD cinsinden net gelir (vergiler düşüldükten sonraki kazanç). Boş olabilir. |
+| **tax_amount_usd** | USD cinsinden kesilen vergi tutarı. Boş olabilir. |
+| **revenue_local** | Yerel para biriminde gelir. Boş olabilir. |
+| **proceeds_local** | Yerel para biriminde net hasılat. Boş olabilir. |
+| **net_revenue_local** | Yerel para biriminde net gelir (vergiler düşüldükten sonraki kazanç). Boş olabilir. |
+| **tax_amount_local** | Yerel para biriminde kesilen vergi tutarı. Boş olabilir. |
+| **customer_user_id** | Geliştirici kullanıcı ID'si. Örneğin kullanıcı UUID'niz, e-posta adresiniz veya başka bir ID olabilir. Ayarlamadıysanız null döner. |
+| **store** | _app_store_ veya _play_store_ olabilir. |
+| **product_id** | Apple App Store, Google Play Store veya Stripe'taki ürün ID'si. |
+| **base_plan_id** | Google Play Store'daki [temel plan ID'si](https://support.google.com/googleplay/android-developer/answer/12154973) veya Stripe'taki [fiyat ID'si](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices). |
+| **developer_id** | İşlemin gerçekleştiği paywallın geliştirici (SDK) ID'si. |
+| **ab_test_name** | İşlemin gerçekleştiği A/B testinin adı. |
+| **ab_test_revision** | İşlemin gerçekleştiği A/B testinin revizyonu. |
+| **paywall_name** | İşlemin gerçekleştiği paywallın adı. |
+| **paywall_revision** | İşlemin gerçekleştiği paywallın revizyonu. |
+| **profile_county** | Adapty tarafından IP'ye göre belirlenen profil ülkesi. |
+| **install_date** | Kurulumun gerçekleştiği ISO 8601 tarihi. |
+| **idfv** | iOS cihazlarda [identifierForVendor](https://developer.apple.com/documentation/uikit/uidevice/identifierforvendor) |
+| **idfa** | iOS cihazlarda [advertisingIdentifier](https://developer.apple.com/documentation/adsupport/asidentifiermanager/advertisingidentifier) |
+| **advertising_id** | Android İşletim Sistemi tarafından atanan ve reklamverenlerin bir kullanıcının cihazını benzersiz biçimde tanımlamak için kullanabileceği benzersiz kod. |
+| **ip_address** | Cihaz IP'si (IPv4 veya IPv6 olabilir; mevcut olduğunda IPv4 tercih edilir). Cihazın IP'si her değiştiğinde güncellenir. |
+| **cancellation_reason** | <p>Kullanıcının aboneliği iptal etme nedeni.</p><p></p><p>Şunlar olabilir:</p><p>**iOS & Android** _voluntarily_cancelled_, _billing_error_, _refund_</p><p>**iOS** _price_increase_, _product_was_not_available_, _unknown_, _upgraded_</p><p>**Android** _new_subscription_replace_, _cancelled_by_developer_</p> |
+| **android_app_set_id** | Parasal olmayan reklam kullanım senaryoları için cihaz başına, geliştirici hesabı başına ve kullanıcı tarafından sıfırlanabilir benzersiz bir ID olan [AppSetId](https://developer.android.com/design-for-safety/privacy-sandbox/reference/adservices/appsetid/AppSetId). |
+| **android_id** | Android 8.0 (API düzeyi 26) ve üzeri sürümlerde, uygulama imzalama anahtarı, kullanıcı ve cihaz kombinasyonuna özgü 64 bit'lik (onaltılık dize olarak ifade edilen) benzersiz bir sayı. Daha fazla ayrıntı için [Android geliştirici belgelerine](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID) bakın. |
+| **device** | Son kullanıcıya görünen cihaz modeli adı. |
+| **currency** | İşlemin 3 harfli para birimi kodu (ISO-4217). |
+| **store_country** | Apple/Google mağazası tarafından belirlenen profil ülkesi. |
+| **attribution_source** | Attribution kaynağı. |
+| **attribution_network_user_id** | Attribution kaynağı tarafından kullanıcıya atanan ID. |
+| **attribution_status** | organic, non_organic veya unknown olabilir. |
+| **attribution_channel** | Pazarlama kanalı adı. |
+| **attribution_campaign** | Pazarlama kampanyası adı. |
+| **attribution_ad_group** | Attribution reklam grubu. |
+| **attribution_ad_set** | Attribution reklam seti. |
+| **attribution_creative** | Attribution kreatif anahtar kelimesi. |
+| **attributes** | [Özel kullanıcı nitelikleri](setting-user-attributes#custom-user-attributes) içeren JSON. Mobil uygulamanızdan göndermek üzere ayarladığınız özel nitelikleri içerir. Göndermek için [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) sayfasındaki **Send User Attributes** seçeneğini etkinleştirin. |
+| **integration_ids** | Bir profille ilişkili tüm entegrasyon ID'leri. Sözlük. Örnek: &#123;&#39;mixpanel_user_id&#39;: &#39;mixpanelUserId-test&#39;, &#39;facebook_anonymous_id&#39;: &#39;facebookAnonymousId-test&#39;&#125; |
+Here is the table structure for the paywall visits:
+| Sütun                 | Açıklama                                                                                                              |
+| :-------------------- | :-------------------------------------------------------------------------------------------------------------------- |
+| **profile_id**        | Adapty kullanıcı ID'si.                                                                                               |
+| **customer_user_id**  | Geliştirici kullanıcı ID'si. Örneğin kullanıcı UUID'niz, e-postanız veya başka bir ID olabilir. Ayarlamadıysanız null. |
+| **profile_country**   | Apple/Google store tarafından belirlenen profil ülkesi.                                                               |
+| **install_date**      | Kurulumun gerçekleştiği ISO 8601 tarih değeri.                                                                        |
+| **store**             | _app_store_ veya _play_store_ olabilir.                                                                               |
+| **paywall_showed_at** | Paywallın kullanıcıya gösterildiği tarih.                                                                             |
+| **developer_id**      | İşlemin gerçekleştiği paywallın geliştirici (SDK) ID'si.                                                              |
+| **ab_test_name**      | İşlemin gerçekleştiği A/B testinin adı.                                                                               |
+| **ab_test_revision**  | İşlemin gerçekleştiği A/B testinin revizyonu.                                                                         |
+| **paywall_name**      | İşlemin gerçekleştiği paywallın adı.                                                                                  |
+| **paywall_revision**  | İşlemin gerçekleştiği paywallın revizyonu.                                                                            |
+## Etkinlikler ve etiketler \{#events-and-tags\}
+
+İntegrasyon tarafından iletilen verileri yönetebilirsiniz. İntegrasyon aşağıdaki yapılandırma seçeneklerini sunar:
+| Ayar | Açıklama |
+| :--------------------------------- | :----------------------------------------------------------- |
+| **Exclude Historical Events** | Adapty SDK'nın yüklendiği günden önce gerçekleşen etkinlikleri dışarıda bırakmak için bu seçeneği işaretleyin. Bu sayede etkinlik tekrarının önüne geçilir ve raporlama doğruluğu korunur. Örneğin, bir kullanıcı 10 Ocak'ta aylık abonelik başlattıysa ve uygulamayı Adapty SDK ile 6 Mart'ta güncelledi ise Adapty, 6 Mart öncesindeki etkinlikleri atlar ve sonraki etkinlikleri saklar. |
+| **Include events without profile** | Adapty'de bir kullanıcı profiline bağlı olmayan işlemleri dahil etmek için bu seçeneği işaretleyin. Bunlar; Adapty SDK yüklenmeden önce yapılan satın almalar ya da mağaza sunucu bildirimlerinden gelen ve belirli bir kullanıcıyla hemen ilişkilendirilemeyen işlemler olabilir. |
+| **Send User Attributes** | Dil tercihleri gibi kullanıcıya özgü öznitelikleri göndermek istiyorsanız ve OneSignal planınız 10'dan fazla etiketi destekliyorsa bu seçeneği etkinleştirin. Etkinleştirildiğinde varsayılan 10 etiketin ötesinde ek bilgiler gönderilebilir. Etiket sınırının aşılması hatalara yol açabileceğini unutmayın. |
+Entegrasyon ayarlarının altında, Adapty'den Amazon S3'e aktarıp depolayabileceğiniz üç grup etkinlik bulunur. İhtiyacınız olanları açmanız yeterli. Adapty'nin sunduğu etkinliklerin tam listesine [buradan](events) ulaşabilirsiniz.
+<Zoom>
+  <img src="/assets/shared/img/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>

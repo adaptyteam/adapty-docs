@@ -1,0 +1,429 @@
+---
+title: "Etkinlik akışları"
+description: "Adapty'deki abonelik etkinlik akışlarının ayrıntılı şemalarını keşfedin. Abonelik etkinliklerinin nasıl oluşturulduğunu ve integrasyonlara nasıl gönderildiğini öğrenin; böylece müşterilerinizin yolculuğundaki önemli anları takip edebilirsiniz."
+metadataTitle: "Adapty'de Etkinlik Akışlarını Anlama: Şemalar ve Senaryolar | Adapty Dokümanları"
+keywords: ['iade', 'deneme', 'geri yükleme', 'etkinlikler', 'etkinlik']
+rank: 70
+---
+
+Adapty'de, müşterinin uygulamadaki yolculuğu boyunca çeşitli abonelik etkinlikleri alırsınız. Bu abonelik akışları, kullanıcıların abone olma, iptal etme veya aboneliği yeniden etkinleştirme süreçlerinde Adapty'nin ürettiği etkinlikleri anlamanıza yardımcı olan yaygın senaryoları özetlemektedir.
+
+Apple'ın abonelik ödemelerini gerçek başlangıç/yenileme zamanından birkaç saat önce işlediğini unutmayın. Aşağıdaki akışlarda, şemaları sade tutmak adına abonelik başlangıcı/yenilemesi ile ödemenin aynı anda gerçekleştiğini gösteriyoruz.
+
+Ayrıca, aynı işleme ait etkinlikler eş zamanlı olarak gerçekleşir ve **Event Feed**'inizde herhangi bir sırayla görünebilir; bu sıra, şemalarımızdaki dizilimden farklı olabilir.
+
+## Abonelik Yaşam Döngüsü \{#subscription-lifecycle\}
+
+### İlk Satın Alma Akışı \{#initial-purchase-flow\}
+
+Bu akış, bir müşteri deneme süresi olmaksızın ilk kez abonelik satın aldığında gerçekleşir. Bu durumda şu etkinlikler oluşturulur:
+
+- **Subscription started**
+- Kullanıcıya erişim vermek için **Access level updated**
+
+Abonelik yenileme tarihi geldiğinde abonelik yenilenir. Bu durumda şu etkinlikler oluşturulur:
+
+- Yeni bir abonelik dönemini başlatmak için **Subscription renewal**
+- Abonelik bitiş tarihini güncelleyerek erişimi bir dönem daha uzatmak için **Access level updated**
+
+Ödemenin başarısız olduğu veya kullanıcının yenilemeyi iptal ettiği durumlar sırasıyla [Fatura Sorunu Sonuç Akışı](event-flows#billing-issue-outcome-flow) ve [Abonelik İptal Akışı](event-flows#subscription-cancellation-flow) bölümlerinde açıklanmaktadır.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Initial_Purchase_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Abonelik İptal Akışı \{#subscription-cancellation-flow\}
+
+Bir kullanıcı aboneliğini iptal ettiğinde şu etkinlikler oluşturulur:
+
+- Aboneliğin mevcut dönem sonuna kadar aktif kalacağını ve ardından kullanıcının erişimini kaybedeceğini belirtmek için **Subscription renewal canceled**
+- Erişim için otomatik yenilemeyi devre dışı bırakmak üzere **Access level updated** etkinliği oluşturulur
+
+Abonelik sona erdiğinde, aboneliğin bitişini işaretlemek için **Subscription expired (churned)** etkinliği tetiklenir.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Cancellation_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+İade onaylanırsa **Subscription expired (churned)** yerine şu etkinlik oluşturulur:
+
+- Aboneliği sonlandırıp iade ayrıntılarını sağlamak için **Subscription refunded**
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Cancellation_Flow_with_a_Refund.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Stripe'ta abonelik, kalan süre atlanarak anında iptal edilebilir. Bu durumda tüm etkinlikler eş zamanlı olarak oluşturulur:
+
+- **Subscription renewal cancelled**
+- **Subscription expired (churned)**
+- Kullanıcının erişimini kaldırmak için **Access Level updated**
+
+İade onaylanırsa, onaylandığı anda **Subscription refunded** etkinliği de tetiklenir.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Immediate_Cancellation_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Abonelik Yeniden Etkinleştirme Akışı \{#subscription-reactivation-flow\}
+
+Bir kullanıcı aboneliğini iptal edip süresi dolduktan sonra aynı aboneliği yeniden satın alırsa **Subscription renewed** etkinliği oluşturulur. Erişimde bir boşluk olsa bile Adapty, `vendor_original_transaction_id` aracılığıyla bunu tek bir işlem zinciri olarak değerlendirir. Dolayısıyla yeniden satın alma, bir yenileme olarak kabul edilir.
+
+**Access level updated** etkinliği iki kez oluşturulur:
+
+- Abonelik sona erdiğinde kullanıcının erişimini kaldırmak için
+- Abonelik yeniden satın alındığında erişim vermek için
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Rejoin_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Abonelik Duraklatma Akışı (Yalnızca Android) \{#subscription-pause-flow-android-only\}
+
+Bu akış, kullanıcının Android'de bir aboneliği duraklatıp daha sonra devam ettirmesi durumunda geçerlidir.
+
+Aboneliği duraklatmanın etkileri gecikmelidir. Kullanıcı, abonelik yenilenmeden önce duraklatırsa abonelik aktif kalır ve kullanıcı fatura döneminin geri kalanı için ücretli erişimi sürdürür.
+
+1. Kullanıcı aboneliği duraklatırsa **Subscription paused (Android only)** etkinliği tetiklenir.
+2. Abonelik döneminin sonunda Adapty, kullanıcının erişimini kaldırmak için **Access level updated** etkinliğini tetikler.
+3. Kullanıcı aboneliği devam ettirdiğinde şu etkinlikler tetiklenir:
+
+    - **Subscription renewed**
+    - Kullanıcının erişimini yeniden sağlamak için **Access level updated**
+
+Bu abonelikler, aynı **vendor_original_transaction_id** ile bağlantılı tek bir işlem zincirine ait olacaktır.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Paused_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Deneme Akışları \{#trial-flows\}
+
+Uygulamanızda deneme süresi kullanıyorsanız ek deneme ile ilgili etkinlikler alırsınız.
+
+### Başarılı Dönüşümlü Deneme Akışı \{#trial-with-successful-conversion-flow\}
+
+En yaygın akış, kullanıcının deneme süresini başlatıp kredi kartı bilgilerini girerek deneme süresi sonunda standart aboneliğe geçtiği durumdur. Bu durumda deneme başlangıcında şu etkinlikler oluşturulur:
+
+- Deneme başlangıcını işaretlemek için **Trial started**
+- Erişim vermek için **Access level updated**
+
+Standart abonelik başladığında **Trial converted** etkinliği oluşturulur.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Trial_Flow_with_Successful_Conversion.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Başarısız Dönüşümlü Deneme Akışı \{#trial-without-successful-conversion-flow\}
+
+Kullanıcı deneme süresi aboneliğe dönüşmeden önce iptal ederse iptal anında şu etkinlikler oluşturulur:
+
+- Denemenin aboneliğe otomatik dönüşümünü devre dışı bırakmak için **Trial renewal cancelled**
+- Erişim yenilemesini devre dışı bırakmak için **Access level updated**
+
+Kullanıcı, deneme süresi sonuna kadar erişime sahip olur; deneme sona erdiğinde **Trial expired** etkinliği oluşturulur.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Trial_Flow_without_Successful_Conversion.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Süresi Dolmuş Deneme Sonrası Abonelik Yeniden Etkinleştirme Akışı \{#subscription-reactivation-after-expired-trial-flow\}
+
+Deneme süresi (fatura sorunu veya iptal nedeniyle) sona ererse ve kullanıcı daha sonra abonelik satın alırsa şu etkinlikler oluşturulur:
+
+- Kullanıcıya erişim vermek için **Access level updated**
+- **Trial converted**
+
+Deneme ile abonelik arasında bir boşluk olsa bile Adapty, ikisini `vendor_original_transaction_id` aracılığıyla bağlar. Bu dönüşüm, sıfır fiyatlı bir denemeyle başlayan sürekli bir işlem zincirinin parçası olarak değerlendirilir. Bu nedenle **Subscription started** yerine **Trial converted** etkinliği oluşturulur.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Reactivation_Flow_after_Expired_Trial.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Ürün Değişiklikleri \{#product-changes\}
+
+Bu bölüm, yükseltme, düşürme veya başka bir gruptan ürün satın alma gibi aktif aboneliklerde yapılan düzenlemeleri kapsar.
+
+### Anlık Ürün Değişikliği Akışı \{#immediate-product-change-flow\}
+
+Kullanıcı ürünü değiştirdikten sonra, abonelik sona ermeden sistem üzerinde değişiklik hemen uygulanabilir (çoğunlukla yükseltme veya ürün değişikliği durumlarında). Bu durumda, ürün değişikliği anında:
+
+- Access level değiştirilir ve iki **Access level updated** etkinliği oluşturulur:
+  1. Birinci ürüne erişimi kaldırmak için.
+  2. İkinci ürüne erişim vermek için.
+- Eski abonelik sona erer ve iade yapılır (**Subscription refunded** etkinliği `cancellation_reason` = `upgraded` ile oluşturulur). **Subscription expired (churned)** etkinliğinin oluşturulmadığını, **Subscription refunded** etkinliğinin onu yerine geçtiğini unutmayın.
+- Yeni abonelik başlar (yeni ürün için **Subscription started** etkinliği oluşturulur).
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Immediate_Product_Change_Flow_Upgrade.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Kullanıcı aboneliği düşürürse ilk abonelik ücretli dönem sonuna kadar devam eder ve abonelik sona erdiğinde daha düşük kademeli yeni bir abonelikle değiştirilir. Bu durumda, yalnızca erişim otomatik yenilemeyi devre dışı bırakmak için **Access level updated** etkinliği hemen oluşturulur. Diğer tüm etkinlikler aboneliğin fiilen değiştirildiği anda oluşturulur:
+
+- İkinci ürüne erişim vermek için başka bir **Access level updated** etkinliği oluşturulur.
+- Birinci ürünün aboneliğini sonlandırmak için **Subscription expired (churned)** etkinliği oluşturulur.
+- Yeni ürün için yeni aboneliği başlatmak üzere **Subscription started** etkinliği oluşturulur.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Delayed_Product_Change_Downgrade.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Gecikmeli Ürün Değişikliği Akışı \{#delayed-product-change-flow\}
+
+Bir de kullanıcının ürünü abonelik yenileme anında değiştirdiği bir seçenek vardır. Bu seçenek bir öncekine çok benzer: eski ürün için erişim otomatik yenilemeyi devre dışı bırakmak üzere hemen bir **Access level updated** etkinliği oluşturulur. Diğer tüm etkinlikler, kullanıcı aboneliği değiştirdiğinde ve sistem üzerinde uygulandığında oluşturulur:
+
+- İkinci ürüne erişim vermek için başka bir **Access level updated** etkinliği oluşturulur.
+- Birinci ürünün aboneliğini sonlandırmak için **Subscription expired (churned)** etkinliği oluşturulur.
+- Yeni ürün için yeni aboneliği başlatmak üzere **Subscription started** etkinliği oluşturulur.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Product_Change_on_Renewal_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Fatura Sorunu Sonuç Akışı \{#billing-issue-outcome-flow\}
+
+Denemenin dönüştürülmesi veya aboneliğin yenilenmesi fatura sorunu nedeniyle başarısız olursa, sonraki süreç ek sürenin etkin olup olmadığına bağlıdır.
+
+Ek süre etkinken ödeme başarılı olursa deneme dönüşür veya abonelik yenilenir. Başarısız olursa uygulama mağazası kullanıcıyı abonelik için ücretlendirmeye çalışmaya devam eder; hâlâ başarısız olursa mağaza deneme veya aboneliği kendisi sonlandırır.
+
+Bu nedenle, fatura sorunu anında Adapty'de şu etkinlikler oluşturulur:
+
+- **Billing issue detected**
+- **Entered grace period** (ek süre etkinse)
+- Ek süre sonuna kadar erişimi sağlamak için **Access level updated**
+
+Ödeme daha sonra başarılı olursa Adapty bir **Trial converted** veya **Subscription renewed** etkinliği kaydeder ve kullanıcı erişimini kaybetmez.
+
+Ödeme sonuçta başarısız olup uygulama mağazası aboneliği iptal ederse Adapty şu etkinlikleri üretir:
+
+- `cancellation_reason: billing_error` ile **Trial expired** veya **Subscription expired (churned)**
+- Kullanıcının erişimini kaldırmak için **Access level updated**
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Billing_Issue_Outcome_Flow_with_Grace_Period.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Ek süre olmadan, Fatura Yeniden Deneme Süresi (uygulama mağazasının kullanıcıyı ücretlendirmeye çalışmaya devam ettiği süre) hemen başlar.
+
+Ek süre sonuna kadar ödeme hiç başarılı olmazsa akış aynıdır: uygulama mağazası aboneliği otomatik olarak sonlandırdığında aynı etkinlikler oluşturulur:
+
+- `cancellation_reason` değeri `billing_error` olan **Trial expired** veya **Subscription expired (churned)** etkinliği
+
+- Kullanıcının erişimini kaldırmak için **Access level updated**
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Billing_Issue_Outcome_Flow_without_Grace_Period.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Kullanıcı Hesapları Arasında Satın Alma Paylaşımı Akışları \{#sharing-purchases-across-user-accounts-flows\}
+
+Farklı bir <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), ve [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> hesabına bağlı bir aboneliği geri yüklemeye veya uzatmaya çalışan bir <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), ve [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> olduğunda, Adapty'nin **Sharing paid access between user accounts** ayarı erişimin nasıl yönetileceğini belirler. Akış, seçilen seçeneğe göre değişir.
+
+### Yeni Kullanıcıya Erişim Aktarım Akışı \{#transfer-access-to-new-user-flow\}
+
+Önerilen seçenek, access level'i yeni kullanıcıya aktarmaktır. Bu yöntem, tutarlı analitik için orijinal kullanıcının işlem geçmişini korur. Yalnızca 2 **Access level updated** etkinliği oluşturulur:
+
+1. Birinci kullanıcının erişimini kaldırmak için
+2. İkinci kullanıcıya erişim vermek için
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Transfer_Access_to_New_User_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Bu senaryoda oluşturulan etkinliklerdeki access level atama ve aktarımla ilgili alanların dökümü:
+
+- **Kullanıcı A: Access level updated (Kullanıcı A uygulamada abonelik satın aldığında gönderilir)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **Kullanıcı A: Access level updated (Uygulama yeniden yüklendiğinde ve Kullanıcı B giriş yaptığında, Kullanıcı A'nın erişimi kaldırıldığında gönderilir)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": false,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **Kullanıcı B: Access level updated (Kullanıcı B giriş yaptığında ve erişim verildiğinde gönderilir)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000001",
+    "customer_user_id": UserB,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+### Kullanıcılar Arasında Erişim Paylaşımı Akışı \{#shared-access-between-users-flow\}
+
+Bu seçenek, cihazı aynı Apple/Google kimliğiyle oturum açılmış birden fazla kullanıcının aynı access level'i paylaşmasına olanak tanır. Kullanıcı uygulamayı yeniden yükleyip farklı bir e-posta ile giriş yaptığında önceki satın alımına erişmeye devam edebileceğinden bu durum yararlıdır. Bu seçenekle, birden fazla tanımlı kullanıcı aynı access level'i paylaşabilir. Erişim paylaşılırken tüm işlemler, eksiksiz işlem geçmişi ve analitik için orijinal <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), ve [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> altında kaydedilir.
+
+Bu nedenle yalnızca 1 etkinlik oluşturulur: İkinci kullanıcıya erişim vermek için **Access level updated**.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Share_Access_Between_Users_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Bu senaryoda oluşturulan etkinliklerdeki access level atama ve paylaşımla ilgili alanların dökümü:
+
+**Kullanıcı B: Access level updated (Kullanıcı B giriş yaptığında ve erişim verildiğinde gönderilir)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": [
+      {
+        "profile_id": "00000000-0000-0000-0000-000000000001,
+        "customer_user_id": UserB
+      }
+    ]
+  }
+  ```
+
+### Kullanıcılar Arasında Erişim Paylaşılmaması Akışı \{#access-not-shared-between-users-flow\}
+
+Bu seçenekle, access level'i ilk alan kullanıcı profili bunu kalıcı olarak elinde tutar. Satın alımların tek bir <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), ve [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> ile ilişkilendirilmesi gerektiğinde idealdir.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Share_Access_Between_Users_Disabled_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>

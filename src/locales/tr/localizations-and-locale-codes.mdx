@@ -1,0 +1,64 @@
+---
+title: "iOS SDK'da yerelleştirme ve yerel ayar kodlarını kullanma"
+description: "iOS uygulamanızda global bir kitleye ulaşmak için uygulama yerelleştirmelerini ve yerel ayar kodlarını yönetin."
+metadataTitle: "Yerelleştirme ve Yerel Ayar Kodlarını Yönetme | Adapty Dokümanları"
+---
+
+## Neden önemli \{#why-this-is-important\}
+
+Yerel ayar kodlarının devreye girdiği birkaç senaryo vardır; örneğin uygulamanızın mevcut yerelleştirmesi için doğru paywallı getirmeye çalışırken bu durumla karşılaşabilirsiniz.
+
+Yerel ayar kodları karmaşık bir yapıya sahip olduğundan ve platformdan platforma farklılık gösterebildiğinden, desteklediğimiz tüm platformlarda ortak bir iç standart kullanıyoruz. Ancak bu kodların karmaşıklığı nedeniyle, sunucumuza tam olarak ne gönderdiğinizi ve ardından ne olduğunu anlamanız son derece önemlidir; böylece her zaman beklediğiniz sonucu alırsınız.
+
+## Adapty'de yerel ayar kodu standardı \{#locale-code-standard-at-adapty\}
+
+Adapty, yerel ayar kodları için hafifçe değiştirilmiş bir [BCP 47 standardı](https://en.wikipedia.org/wiki/IETF_language_tag) kullanır: her kod, kısa çizgilerle ayrılmış küçük harfli alt etiketlerden oluşur. Bazı örnekler: `en` (İngilizce), `pt-br` (Portekizce (Brezilya)), `zh` (Basitleştirilmiş Çince), `zh-hant` (Geleneksel Çince).
+
+## Yerel ayar kodu eşleştirme \{#locale-code-matching\}
+
+Adapty, istemci taraflı SDK'dan yerel ayar koduyla bir çağrı aldığında ve bir paywallın ilgili yerelleştirmesini aramaya başladığında şu adımlar gerçekleşir:
+
+1. Gelen yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgilerle (`-`) değiştirilir.
+2. Tam eşleşen yerel ayar koduna sahip yerelleştirme aranır.
+3. Eşleşme bulunamazsa, ilk kısa çizgiden önceki alt dize alınır (`pt-br` için `pt`) ve eşleşen yerelleştirme aranır.
+4. Yine eşleşme bulunamazsa, varsayılan `en` yerelleştirmesi döndürülür.
+
+Bu sayede `'pt_BR'` gönderen bir iOS cihazı, `pt-BR` gönderen bir Android cihazı ve `pt-br` gönderen başka bir cihaz aynı sonucu alır.
+
+## Yerelleştirmeleri uygulama: önerilen yöntem \{#implementing-localizations-recommended-way\}
+
+Yerelleştirmeler konusunu araştırıyorsanız, büyük ihtimalle projenizde yerelleştirilmiş string dosyalarıyla zaten çalışıyorsunuzdur. Bu durumda, her yerelleştirme için ilgili dosyalarınızdan birine hedeflenen Adapty yerel ayar kodunu içeren bir anahtar-değer çifti eklemenizi öneririz. Ardından SDK'mızı çağırırken bu anahtarın değerini aşağıdaki gibi çıkarabilirsiniz:
+
+```swift showLineNumbers
+// 1. Modify your Localizable.strings files
+
+/*
+Localizable.strings - Spanish
+*/
+adapty_paywalls_locale = "es";
+/*
+Localizable.strings - Portuguese (Brazil)
+*/
+adapty_paywalls_locale = "pt-br";
+// 2. Extract and use the locale code
+let locale = NSLocalizedString("adapty_paywalls_locale", comment: "")
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+Bu yaklaşım sayesinde, uygulamanızın her kullanıcısı için hangi yerelleştirmenin getirileceği üzerinde tam kontrol sahibi olursunuz.
+
+## Yerelleştirmeleri uygulama: alternatif yöntem \{#implementing-localizations-the-other-way\}
+
+Her yerelleştirme için yerel ayar kodlarını açıkça tanımlamadan da benzer (ancak özdeş olmayan) sonuçlar elde edebilirsiniz. Bu yöntemde, platformunuzun sağladığı başka nesnelerden yerel ayar kodu çıkarırsınız:
+
+```swift showLineNumbers
+let locale = Locale.current.identifier
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+Bu yaklaşımı birkaç nedenden dolayı önermiyoruz:
+
+1. iOS'ta tercih edilen diller ile mevcut yerel ayar aynı şey değildir. Yerelleştirmenin doğru seçilmesini istiyorsanız ya Apple'ın mantığına güvenmeniz gerekir (bu, yerelleştirilmiş string dosyalarıyla önerilen yaklaşımı kullandığınızda zaten otomatik olarak çalışır) ya da bu mantığı kendiniz yeniden oluşturmanız gerekir.
+2. Adapty sunucusunun tam olarak ne alacağını öngörmek güçtür. Örneğin iOS'ta bir cihazdan `ar_OM@numbers='latn'` gibi bir yerel ayar elde edip sunucumuza göndermek mümkündür. Bu durumda aradığınız `ar-om` yerelleştirmesini değil, büyük ihtimalle beklenmedik olan `ar` yerelleştirmesini alırsınız.
+
+Bu yaklaşımı kullanmaya karar verirseniz, ilgili tüm kullanım senaryolarını kapsadığınızdan emin olun.

@@ -1,0 +1,235 @@
+---
+title: "Adapty'yi iOS uygulamanıza AI yardımıyla entegre edin"
+description: "Cursor, Context7, ChatGPT, Claude veya diğer AI araçlarını kullanarak Adapty'yi iOS uygulamanıza adım adım entegre etme rehberi."
+metadataTitle: "iOS için AI Yardımıyla Adapty Entegrasyonu | Adapty Dokümanları"
+---
+
+Bu sayfa, Adapty'yi iOS uygulamanıza entegre etmenin iki yolunu ele almaktadır. Otomatik uçtan uca bir akış için aşağıdaki SDK entegrasyon becerisini kullanın ya da daha aşağıdaki adım adım kılavuzu takip edin.
+## SDK entegrasyon becerisini kullanın (beta) \{#use-the-sdk-integration-skill-beta\}
+
+[adapty-sdk-integration skill](https://github.com/adaptyteam/adapty-sdk-integration-skill), entegrasyonu uçtan uca otomatikleştirir: kontrol paneli kurulumu, SDK kurulumu, paywall ve aşama bazında doğrulama. Araçlarınız Claude Skills formatını desteklemiyorsa, aşağıdaki manuel adımlar yedek olarak kullanılabilir.
+
+**Desteklenen araçlar**: Claude Code, GitHub Copilot CLI, OpenAI Codex, Gemini CLI.
+### Kur \{#install\}
+
+Aracınıza uygun formu seçin. Tam liste [skill README](https://github.com/adaptyteam/adapty-sdk-integration-skill) dosyasında yer alıyor.
+- **Claude Code**: Kabuğunuzdan `claude plugin marketplace add adaptyteam/adapty-sdk-integration-skill` ardından `claude plugin install adapty-sdk-integration@adapty` komutunu çalıştırın.
+- **GitHub Copilot CLI**: `gh skill install adaptyteam/adapty-sdk-integration-skill` komutunu çalıştırın.
+- **Gemini CLI**: `gemini skills install https://github.com/adaptyteam/adapty-sdk-integration-skill` komutunu çalıştırın.
+- **OpenAI Codex veya başka bir araç**: Repoyu klonlayın ve `plugins/adapty-sdk-integration/skills/adapty-sdk-integration/` dizinini aracınızın skills klasörüne kopyalayın.
+### Çalıştırma \{#run\}
+
+Projenizde `/adapty-sdk-integration` komutunu çalıştırın. Skill, platformunuzu algılayarak birkaç kurulum sorusu sorar. Ardından kontrol paneli kurulumu, SDK yükleme, paywall ve doğrulama aşamalarını ilgili Adapty dokümanlarını çekerek adım adım işler.
+
+:::note
+Skill beta aşamasındadır. Takılı kalır veya beklenmedik davranışlar gösterirse, aşağıdaki manuel kılavuz her aşamayı adım adım kapsamaktadır.
+:::
+## Başlamadan önce: kontrol paneli kurulumu \{#before-you-start-dashboard-setup\}
+
+Adapty, herhangi bir SDK kodu yazmadan önce kontrol panelinde bazı yapılandırmalar yapmanızı gerektirir. Bunu etkileşimli bir LLM becerisini kullanarak veya kontrol paneli üzerinden manuel olarak yapabilirsiniz.
+### Skill yaklaşımı (önerilen) \{#skill-approach-recommended\}
+
+Adapty CLI skill'i, LLM'inizin uygulamanızı, ürünlerinizi, access level'larınızı, paywall'larınızı ve placement'larınızı doğrudan kurmasına olanak tanır — her adım için kontrol panelini açmanıza gerek kalmaz. Yalnızca kontrol panelinde [mağazanızı bağlamanız](integrate-payments) yeterlidir.
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+Skill eklendikten sonra, agent'ınızda `/adapty-cli` komutunu çalıştırın. Mağazanızı bağlamak için kontrol panelini ne zaman açmanız gerektiği de dahil olmak üzere her adımda sizi yönlendirecektir.
+### Kontrol paneli yaklaşımı \{#dashboard-approach\}
+
+Her şeyi manuel olarak yapılandırmayı tercih ediyorsanız, kod yazmadan önce bunlara ihtiyacınız var. LLM'iniz kontrol paneli değerlerini sizin için arayamaz — bunları kendiniz sağlamanız gerekir.
+
+1. **Uygulama mağazanızı bağlayın**: Adapty Kontrol Paneli'nde **App settings → General** bölümüne gidin. Bu, satın almaların çalışması için zorunludur.
+   [App Store'u Bağlayın](integrate-payments)
+
+2. **Public SDK anahtarınızı kopyalayın**: Adapty Kontrol Paneli'nde **App settings → General** bölümüne gidin ve **API keys** bölümünü bulun. Kodda bu, `Adapty.activate("YOUR_PUBLIC_SDK_KEY")` çağrısına geçirdiğiniz dizedir.
+3. **En az bir ürün oluşturun**: Adapty Kontrol Paneli'nde **Products** sayfasına gidin. Ürünlere kodda doğrudan başvurmazsınız — Adapty onları paywall'lar aracılığıyla iletir.
+   [Ürün ekle](quickstart-products)
+
+4. **Bir paywall ve placement oluşturun**: Adapty Kontrol Paneli'nde **Paywalls** sayfasında bir paywall oluşturun, ardından **Placements** sayfasında bunu bir placement'a atayın. Kodda placement ID, `Adapty.getPaywall("YOUR_PLACEMENT_ID")` çağrısına geçirdiğiniz string değerdir.
+   [Paywall oluştur](quickstart-paywalls)
+5. **Access level'ları yapılandırın**: Adapty Kontrol Paneli'nde, **Products** sayfasından her ürün için yapılandırın. Kodda, `profile.accessLevels["premium"]` içinde kontrol edilen string. Varsayılan `premium` access level çoğu uygulama için yeterlidir. Ödeme yapan kullanıcılar ürüne göre farklı özelliklere erişiyorsa (örneğin, `basic` plan ile `pro` plan), kodlamaya başlamadan önce [ek access level'lar oluşturun](assigning-access-level-to-a-product).
+:::tip
+Beşine de sahip olduğunuzda kod yazmaya hazırsınız. LLM'inize şunu söyleyin: "Public SDK anahtarım X, placement ID'im Y" — böylece doğru başlatma ve paywall çekme kodunu üretebilir.
+:::
+### Hazır olduğunuzda yapılacaklar \{#set-up-when-ready\}
+
+Kodlamaya başlamak için bunlar zorunlu değil, ancak entegrasyonunuz olgunlaştıkça ihtiyaç duyacaksınız:
+
+- **A/B testleri**: **Placements** sayfasından yapılandırın. Kod değişikliği gerekmez.
+  [A/B testleri](ab-tests)
+- **Ek paywall'lar ve placement'lar**: Farklı placement ID'leriyle daha fazla `getPaywall` çağrısı ekleyin.
+- **Analitik entegrasyonları**: **Integrations** sayfasından yapılandırın. Kurulum entegrasyona göre değişir. Bkz. [analitik entegrasyonları](analytics-integration) ve [attribution entegrasyonları](attribution-integration).
+## Adapty dokümanlarını LLM'inize besleyin \{#feed-adapty-docs-to-your-llm\}
+### Context7'yi Kullanın (önerilen)
+
+[Context7](https://context7.com), LLM'inize güncel Adapty belgelerine doğrudan erişim sağlayan bir MCP sunucusudur. LLM, ne sorduğunuza göre ilgili belgeleri otomatik olarak getirir — URL yapıştırmanıza gerek kalmaz.
+
+Context7; **Cursor**, **Claude Code**, **Windsurf** ve diğer MCP uyumlu araçlarla çalışır. Kurulum için şunu çalıştırın:
+
+```
+npx ctx7 setup
+```
+
+Bu komut, editörünüzü algılayarak Context7 sunucusunu yapılandırır. Manuel kurulum için [Context7 GitHub deposuna](https://github.com/upstash/context7) bakın.
+Yapılandırıldıktan sonra, Adapty kütüphanesine promptlarınızda şu şekilde başvurun:
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the iOS SDK
+```
+
+:::warning
+Context7, belge bağlantılarını elle yapıştırma ihtiyacını ortadan kaldırsa da uygulama sırası önemlidir. Her şeyin düzgün çalıştığından emin olmak için aşağıdaki [uygulama adımlarını](#implementation-walkthrough) sırayla takip edin.
+:::
+### Düz metin dokümanları kullanın \{#use-plain-text-docs\}
+
+Herhangi bir Adapty dokümanına düz metin Markdown olarak erişebilirsiniz. URL'nin sonuna `.md` ekleyin ya da makale başlığının altındaki **Copy for LLM** düğmesine tıklayın. Örneğin: [adapty-cursor.md](https://adapty.io/docs/tr/adapty-cursor.md).
+
+Aşağıdaki [uygulama adım adım kılavuzundaki](#implementation-walkthrough) her aşama, yapıştırabileceğiniz `.md` bağlantılarını içeren bir "Bunu LLM'inize gönderin" bloğu içerir.
+
+Daha fazla dokümanı aynı anda görmek için aşağıdaki [dizin dosyalarına ve platforma özgü alt kümelere](#plain-text-doc-index-files) bakın.
+## Uygulama adım adım rehberi \{#implementation-walkthrough\}
+
+Bu rehberin geri kalanı, Adapty entegrasyonunu uygulama sırasına göre ele alır. Her aşamada LLM'inize göndereceğiniz belgeler, tamamlandığında görmeniz gerekenler ve sık karşılaşılan sorunlar yer almaktadır.
+### Entegrasyonunuzu planlayın \{#plan-your-integration\}
+
+Koda geçmeden önce, LLM'inizden projenizi analiz etmesini ve bir uygulama planı oluşturmasını isteyin. AI aracınız bir planlama modunu destekliyorsa (Cursor veya Claude Code'un plan modu gibi), LLM'nin herhangi bir kod yazmadan önce hem proje yapınızı hem de Adapty dokümanlarını okuyabilmesi için bu modu kullanın.
+
+LLM'inize satın alma işlemleri için hangi yaklaşımı kullandığınızı söyleyin — bu, hangi kılavuzları izlemesi gerektiğini etkiler:
+- [**Adapty Paywall Builder**](adapty-paywall-builder): Paywallları Adapty'nin kodsuz oluşturucusunda tasarlarsınız, SDK onları otomatik olarak render eder.
+- [**Elle oluşturulan paywalllar**](making-purchases): Kendi paywall arayüzünüzü kodla oluşturursunuz, ancak ürünleri almak ve satın almaları yönetmek için yine de Adapty'yi kullanırsınız.
+- [**Observer modu**](observer-vs-full-mode): Mevcut satın alma altyapınızı korursunuz ve Adapty'yi yalnızca analitik ve entegrasyonlar için kullanırsınız.
+
+Hangisini seçeceğinizden emin değil misiniz? [Hızlı başlangıçtaki karşılaştırma tablosuna](ios-quickstart-paywalls) bakın.
+### SDK'yı kurun ve yapılandırın
+
+Adapty SDK paketini Xcode'da Swift Package Manager aracılığıyla yükleyin ve Public SDK anahtarınızla etkinleştirin. Bu, temel adımdır — diğer her şey buna bağlıdır.
+
+**Kılavuz:** [Adapty SDK'yı kurun ve yapılandırın](sdk-installation-ios)
+
+Bunu LLM'inize gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/tr/sdk-installation-ios.md
+```
+:::tip[Checkpoint]
+- **Beklenen:** Uygulama derlenip çalışıyor. Xcode konsolu Adapty aktivasyon logunu gösteriyor.
+- **Dikkat:** "Public API key is missing" → yer tutucuyu **App settings** sayfasındaki gerçek anahtarınızla değiştirdiğinizi kontrol edin.
+:::
+### Paywallları göster ve satın almaları işle \{#show-paywalls-and-handle-purchases\}
+
+Placement ID'ye göre bir paywall getir, görüntüle ve satın alma olaylarını işle. İhtiyacınız olan kılavuzlar, satın almaları nasıl ele aldığınıza bağlıdır.
+
+Her satın almayı ilerledikçe sandbox ortamında test edin — sona bırakmayın. Kurulum talimatları için [Sandbox'ta satın almaları test et](test-purchases-in-sandbox) bölümüne bakın.
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+**Kılavuzlar:**
+- [Paywall'ları kullanarak satın almaları etkinleştirin (hızlı başlangıç)](ios-quickstart-paywalls)
+- [Paywall Builder paywall'larını ve yapılandırmalarını getirin](get-pb-paywalls)
+- [Paywall'ları görüntüleyin](ios-present-paywalls)
+- [Paywall olaylarını yönetin](ios-handling-events)
+- [Buton eylemlerine yanıt verin](handle-paywall-actions)
+Bu mesaj, bir kod yazma görevi için LLM'ye iletilecek talimatları içermektedir. Lütfen kodu yazmadan önce aşağıdaki Adapty dokümanlarını okuyun:
+
+- https://adapty.io/docs/tr/ios-quickstart-paywalls.md
+- https://adapty.io/docs/tr/get-pb-paywalls.md
+- https://adapty.io/docs/tr/ios-present-paywalls.md
+- https://adapty.io/docs/tr/ios-handling-events.md
+- https://adapty.io/docs/tr/handle-paywall-actions.md
+:::tip[Kontrol Noktası]
+- **Beklenen:** Paywall, yapılandırılan ürünlerle birlikte görünür. Bir ürüne dokunulduğunda sandbox satın alma iletişim kutusu tetiklenir.
+- **Dikkat:** Boş paywall veya `getPaywall` hatası → placement ID'nin kontrol panelindekiyle tam olarak eşleştiğini ve placement'a bir kitle atandığını doğrulayın.
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Manuel paywall'lar">
+**Kılavuzlar:**
+- [Özel paywallınızda satın almaları etkinleştirin (hızlı başlangıç)](ios-quickstart-manual)
+- [Paywallları ve ürünleri getir](fetch-paywalls-and-products)
+- [Remote config ile tasarlanmış paywall'ı göster](present-remote-config-paywalls)
+- [Satın alma yap](making-purchases)
+- [Satın almaları geri yükle](restore-purchase)
+Bu bir MDX belgesi değil — bu, bir LLM'ye gönderilmek üzere tasarlanmış düz metin bir komuttur. Çevrilecek MDX içeriği bulunmamaktadır.
+
+Eğer çevrilmesini istediğiniz bir MDX belgesi varsa, lütfen içeriği paylaşın.
+:::tip[Kontrol Noktası]
+- **Beklenen:** Özel paywall'ınız Adapty'den çekilen ürünleri görüntüler. Bir ürüne dokunmak sandbox satın alma iletişim kutusunu tetikler.
+- **Dikkat:** Boş ürün dizisi → paywall'a kontrol panelinde ürün atandığını ve placement'ın bir kitleye sahip olduğunu doğrulayın.
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**Kılavuzlar:**
+- [Observer mode'a genel bakış](observer-vs-full-mode)
+- [Observer mode'u uygulama](implement-observer-mode)
+- [Observer mode'da işlemleri raporlama](report-transactions-observer-mode)
+:::tip[Kontrol Noktası]
+- **Beklenen:** Mevcut satın alma akışınızı kullanarak sandbox ortamında yaptığınız satın alma işlemi, Adapty Kontrol Paneli'ndeki **Event Feed** bölümünde görünür.
+- **Dikkat:** Hiç olay gözükmüyorsa → işlemleri Adapty'ye raporladığınızı ve App Store Server Notifications'ın yapılandırıldığını doğrulayın.
+:::
+
+</TabItem>
+
+</Tabs>
+### Abonelik durumunu kontrol etme \{#check-subscription-status\}
+
+Satın alma işleminin ardından, premium içeriğe erişimi kısıtlamak için kullanıcı profilinde aktif bir access level olup olmadığını kontrol edin.
+
+**Kılavuz:** [Abonelik durumunu kontrol etme](ios-check-subscription-status)
+
+Bunu LLM'inize gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/tr/ios-check-subscription-status.md
+```
+
+:::tip[Kontrol Noktası]
+- **Beklenen:** Sandbox satın alma işleminin ardından `profile.accessLevels["premium"]?.isActive` değeri `true` döner.
+- **Dikkat:** Satın alma sonrası `accessLevels` boş geliyor → ürüne kontrol panelinde bir access level atandığını kontrol edin.
+:::
+### Kullanıcıları tanımlayın \{#identify-users\}
+
+Uygulama kullanıcı hesaplarınızı Adapty profilleriyle ilişkilendirin; böylece satın almalar cihazlar arasında korunur.
+
+:::important
+Uygulamanızda kimlik doğrulama yoksa bu adımı atlayın.
+:::
+
+**Kılavuz:** [Kullanıcıları tanımlayın](ios-quickstart-identify)
+
+Bunu LLM'inize gönderin:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/tr/ios-quickstart-identify.md
+```
+:::tip[Kontrol Noktası]
+- **Beklenen:** `Adapty.identify("your-user-id")` çağrısının ardından, kontrol panelinin **Profiles** bölümünde özel kullanıcı kimliğiniz görünür.
+- **Dikkat:** Anonim profil attribution sorunlarını önlemek için `identify` çağrısını aktivasyondan sonra, paywall'ları getirmeden önce yapın.
+:::
+### Yayın için hazırlanın \{#prepare-for-release\}
+
+Entegrasyonunuz sandbox ortamında düzgün çalışmaya başladıktan sonra, her şeyin üretime hazır olduğundan emin olmak için yayın kontrol listesini gözden geçirin.
+
+**Rehber:** [Yayın kontrol listesi](release-checklist)
+
+Bunu LLM'inize gönderin:
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/tr/release-checklist.md
+```
+:::tip[Checkpoint]
+- **Beklenen:** Tüm kontrol listesi öğeleri onaylandı: mağaza bağlantısı, sunucu bildirimleri, satın alma akışı, access level kontrolleri ve gizlilik gereksinimleri.
+- **Dikkat:** App Store Sunucu Bildirimleri eksik → **App settings → iOS SDK** bölümünden yapılandırın, aksi hâlde olaylar kontrol panelinde görünmez.
+:::
+## Düz metin dok dizin dosyaları \{#plain-text-doc-index-files\}
+
+LLM'inize tek tek sayfaların ötesinde daha geniş bir bağlam sağlamanız gerekiyorsa, tüm Adapty belgelerini listeleyen veya bir araya getiren dizin dosyaları sunuyoruz:
+- [`llms.txt`](https://adapty.io/docs/tr/llms.txt): `.md` bağlantılarıyla tüm sayfaları listeler. LLM'lerin web sitelerine erişimini kolaylaştırmak için [gelişmekte olan bir standart](https://llmstxt.org/). Bazı yapay zeka ajanlarında (örn. ChatGPT) `llms.txt` dosyasını indirip sohbete yüklemeniz gerekebilir.
+- [`llms-full.txt`](https://adapty.io/docs/tr/llms-full.txt): Tüm Adapty dokümantasyon sitesini tek bir dosyada birleştirir. Çok büyük bir dosyadır — yalnızca tüm içeriğe ihtiyaç duyduğunuzda kullanın.
+- iOS'a özgü [`ios-llms.txt`](https://adapty.io/docs/tr/ios-llms.txt) ve [`ios-llms-full.txt`](https://adapty.io/docs/tr/ios-llms-full.txt): Tam siteye kıyasla token tasarrufu sağlayan platforma özel alt kümeler.

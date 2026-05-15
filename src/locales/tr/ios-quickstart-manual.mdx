@@ -1,0 +1,192 @@
+---
+title: "iOS SDK'da özel paywallınızda satın almaları etkinleştirin"
+description: "Uygulama içi satın almaları etkinleştirmek için Adapty SDK'yı özel iOS paywalllarınıza entegre edin."
+metadataTitle: "Adapty Hızlı Başlangıç Kılavuzu | Adapty Dokümanları"
+keywords: ['paywalls ios', 'sdk ios', 'paywall', 'getPaywall']
+---
+
+Bu kılavuz, Adapty'yi özel paywalllarınıza nasıl entegre edeceğinizi anlatır. Adapty SDK ürünleri getirirken, yeni satın almaları ve önceki satın almaların geri yüklemelerini yönetirken siz paywall uygulamanız üzerinde tam kontrolü elinizde tutarsınız.
+
+:::important
+**Bu kılavuz, özel paywall uygulayan geliştiriciler içindir.** Satın almaları etkinleştirmenin en kolay yolunu istiyorsanız [Adapty Paywall Builder](ios-quickstart-paywalls)'ı kullanın. Paywall Builder ile kodsuz görsel bir editörde paywall oluşturursunuz, tüm satın alma mantığını Adapty otomatik olarak yönetir ve uygulamanızı yeniden yayınlamadan farklı tasarımları test edebilirsiniz.
+:::
+
+## Başlamadan önce \{#before-you-start\}
+
+### Ürünleri ayarlayın \{#set-up-products\}
+
+Uygulama içi satın almaları etkinleştirmek için üç temel kavramı anlamanız gerekir:
+
+- [**Ürünler**](product) – kullanıcıların satın alabileceği her şey (abonelikler, consumable'lar, süresiz erişim)
+- [**Paywalllar**](paywalls) – hangi ürünlerin sunulacağını tanımlayan yapılandırmalar. Adapty'de paywalllar, ürünleri almanın tek yoludur; ancak bu tasarım sayesinde uygulama kodunuza dokunmadan ürünleri, fiyatları ve teklifleri değiştirebilirsiniz.
+- [**Placement'lar**](placements) – uygulamanızda paywallları nerede ve ne zaman göstereceğiniz (örneğin `main`, `onboarding`, `settings`). Kontrol panelinde placement'lar için paywalllar ayarlarsınız, ardından kodunuzda placement ID'siyle bunları talep edersiniz. Bu yapı, A/B testleri yürütmeyi ve farklı kullanıcılara farklı paywalllar göstermeyi kolaylaştırır.
+
+Özel bir paywall kullanıyor olsanız bile bu kavramları anladığınızdan emin olun. Temelde bunlar, uygulamanızda sattığınız ürünleri yönetme biçiminizdir.
+
+Özel paywallınızı uygulamak için bir **paywall** oluşturmanız ve bunu bir **placement**'a eklemeniz gerekir. Bu kurulum, ürünlerinizi almanızı sağlar. Kontrol panelinde ne yapmanız gerektiğini anlamak için [buradaki](quickstart) hızlı başlangıç kılavuzunu takip edin.
+
+### Kullanıcıları yönetin \{#manage-users\}
+
+Kendi tarafınızda backend kimlik doğrulaması ile veya olmadan çalışabilirsiniz.
+
+Ancak Adapty SDK, anonim ve tanımlanmış kullanıcıları farklı biçimde ele alır. Ayrıntıları anlamak ve kullanıcılarla doğru şekilde çalıştığınızdan emin olmak için [kimlik belirleme hızlı başlangıç kılavuzunu](ios-quickstart-identify) okuyun.
+
+## Adım 1. Ürünleri alın \{#step-1-get-products\}
+
+Özel paywallınız için ürünleri almak üzere şunları yapmanız gerekir:
+
+1. `getPaywall` metoduna [placement](placements) ID'si göndererek `paywall` nesnesini alın.
+2. `getPaywallProducts` metodunu kullanarak bu paywall için ürün dizisini alın.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swift" label="Swift" default>
+
+```swift
+
+func loadPaywall() async {
+    do {
+        let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+        let products = try await Adapty.getPaywallProducts(paywall: paywall)
+        
+        // Use products to build your custom paywall UI
+    } catch {
+        // Handle the error
+    }
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift
+
+func loadPaywall() {
+    Adapty.getPaywall("YOUR_PLACEMENT_ID") { result in
+        switch result {
+        case let .success(paywall):
+            Adapty.getPaywallProducts(paywall: paywall) { result in
+                switch result {
+                case let .success(products):
+                    // Use products to build your custom paywall UI
+                case let .failure(error):
+                    // Handle the error
+                }
+            }
+        case let .failure(error):
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## Adım 2. Satın almaları kabul edin \{#step-2-accept-purchases\}
+
+Kullanıcı özel paywallınızdaki bir ürüne dokunduğunda, seçilen ürünle birlikte `makePurchase` metodunu çağırın. Bu, satın alma akışını yönetir ve güncellenmiş profili döndürür.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swift" label="Swift" default>
+
+```swift
+
+func purchaseProduct(_ product: AdaptyPaywallProduct) async {
+    do {
+        let purchaseResult = try await Adapty.makePurchase(product: product)
+        
+        switch purchaseResult {
+        case .userCancelled:
+            // User canceled the purchase
+            break
+        case .pending:
+            // Purchase is pending (e.g., awaiting parental approval)
+            break
+        case let .success(profile, transaction):
+            // Purchase successful, profile updated
+            break
+        }
+    } catch {
+        // Handle the error
+    }
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift
+
+func purchaseProduct(_ product: AdaptyPaywallProduct) {
+    Adapty.makePurchase(product: product) { result in
+        switch result {
+        case let .success(purchaseResult):
+            switch purchaseResult {
+            case .userCancelled:
+                // User canceled the purchase
+                break
+            case .pending:
+                // Purchase is pending (e.g., awaiting parental approval)
+                break
+            case let .success(profile, transaction):
+                // Purchase successful, profile updated
+                break
+            }
+        case let .failure(error):
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## Adım 3. Satın almaları geri yükleyin \{#step-3-restore-purchases\}
+
+Apple, abonelik sunan tüm uygulamaların kullanıcıların satın almalarını geri yükleyebileceği bir yol sağlamasını zorunlu kılar. Satın almalar, kullanıcı Apple ID'siyle giriş yaptığında otomatik olarak geri yüklense de uygulamanızda yine de bir geri yükleme butonu eklemeniz gerekir.
+
+Kullanıcı geri yükleme butonuna dokunduğunda `restorePurchases` metodunu çağırın. Bu, satın alma geçmişini Adapty ile senkronize eder ve güncellenmiş profili döndürür.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swift" label="Swift" default>
+
+```swift
+
+func restorePurchases() async {
+    do {
+        let profile = try await Adapty.restorePurchases()
+        // Restore successful, profile updated
+    } catch {
+        // Handle the error
+    }
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift
+
+func restorePurchases() {
+    Adapty.restorePurchases { result in
+        switch result {
+        case let .success(profile):
+            // Restore successful, profile updated
+        case let .failure(error):
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## Sonraki adımlar \{#next-steps\}
+
+<SupportForum />
+
+Paywallınız uygulamada gösterilmeye hazır. Paywalldan bir test satın almasını tamamlayabildiğinizden emin olmak için [satın almalarınızı sandbox modunda test edin](test-purchases-in-sandbox).
+
+Ardından, paywallı gösterip göstermeyeceğinizi veya ücretli özelliklere erişim izni verip vermeyeceğinizi belirlemek için [kullanıcıların satın almayı tamamlayıp tamamlamadığını kontrol edin](ios-check-subscription-status).

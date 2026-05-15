@@ -1,0 +1,332 @@
+---
+title: "Unity SDK'yı yükleyin ve yapılandırın"
+description: "Abonelik tabanlı uygulamalar için Unity'de Adapty SDK kurulumunu adım adım anlatan rehber."
+metadataTitle: "Unity'de Adapty SDK Kurulumu | Adapty Dokümanları"
+keywords: ['sdk yükle', 'sdk kurulum', 'unity sdk yükle', 'google play billing library', 'gpbl', 'billing library']
+rank: 30
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+import GetKey from '@site/src/locales/tr/reusable/GetKey.md';
+import AndroidBackupRules from '@site/src/locales/tr/reusable/AndroidBackupRules.md';
+import InstallationPrereqs from '@site/src/locales/tr/reusable/InstallationPrereqs.mdx';
+
+Adapty SDK, Unity uygulamanıza sorunsuz entegrasyon için iki temel modül içerir:
+
+- **Core Adapty**: Adapty'nin uygulamanızda düzgün çalışması için zorunlu olan SDK.
+- **AdaptyUI**: [Adapty Paywall Builder](adapty-paywall-builder)'ı kullanıyorsanız ihtiyaç duyulan isteğe bağlı modül. Paywall Builder, kolayca platformlar arası paywall oluşturmanızı sağlayan kodsuz bir araçtır.
+
+:::tip
+Adapty SDK'nın bir mobil uygulamaya nasıl entegre edildiğini gerçek bir örnekle görmek ister misiniz? Paywall gösterme, satın alma yapma ve diğer temel işlevleri kapsayan tam kurulumu sergileyen [örnek uygulamamıza](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Assets) göz atın.
+:::
+
+## Gereksinimler \{#requirements\}
+
+Adapty SDK, iOS 13.0 ve üzerini destekler; ancak paywall builder ile oluşturulan paywalllarla çalışmak için iOS 15.0+ gereklidir.
+
+:::info
+Adapty, Google Play Billing Library'nin 8.x sürümüne kadar olan versiyonlarıyla uyumludur. Varsayılan olarak Adapty, Google Play Billing Library v7.0.0 kullanır. Daha yeni bir sürüm kullanmak için Android build'inizdeki [Billing bağımlılığını geçersiz kılın](https://developer.android.com/google/play/billing/integrate#dependency).
+:::
+
+<InstallationPrereqs />
+
+## Adapty SDK'yı yükleyin \{#install-adapty-sdk\}
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Unity.svg?style=flat&logo=unity)](https://github.com/adaptyteam/AdaptySDK-Unity/releases)
+
+1. [`adapty-unity-plugin-*.unitypackage`](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Releases) dosyasını GitHub'dan indirin ve projenize aktarın.
+
+<Zoom>
+  <img src="/assets/shared/img/456bd98-adapty-unity-plugin.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '400px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. [External Dependency Manager eklentisini](https://github.com/googlesamples/unity-jar-resolver) indirin ve aktarın.
+
+3. SDK, iOS Cocoapods bağımlılıklarını ve Android Gradle bağımlılıklarını yönetmek için "External Dependency Manager" eklentisini kullanır. Kurulumun ardından bağımlılık yöneticisini çağırmanız gerekebilir:
+
+   `Assets -> External Dependency Manager -> Android Resolver -> Force Resolve`
+
+   ve
+
+   `Assets -> External Dependency Manager -> iOS Resolver -> Install Cocoapods`
+
+4. Unity projenizi iOS için derlerken `Unity-iPhone.xcworkspace` dosyası oluşturulur. Cocoapods bağımlılıklarının kullanılabilmesi için `Unity-iPhone.xcodeproj` yerine bu dosyayı açmanız gerekir.
+
+## Adapty SDK'nın Adapty modülünü etkinleştirin \{#activate-adapty-module-of-adapty-sdk\}
+
+Adapty SDK'yı uygulama kodunuzda etkinleştirin.
+
+:::note
+Adapty SDK'nın uygulamanızda yalnızca bir kez etkinleştirilmesi yeterlidir.
+:::
+
+<GetKey />
+
+```csharp showLineNumbers title="C#"
+using UnityEngine;
+using AdaptySDK;
+
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+    void Start() {
+        DontDestroyOnLoad(this.gameObject);
+        Adapty.SetEventListener(this);
+
+        var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY");
+
+        Adapty.Activate(builder.Build(), (error) => {
+            if (error != null) {
+                // handle the error
+                return;
+            }
+        });
+    }
+
+    public void OnLoadLatestProfile(AdaptyProfile profile) { }
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+}
+```
+
+## Olay dinlemeyi ayarlayın \{#set-up-event-listening\}
+
+Adapty olaylarını dinleyecek bir script oluşturun ve sahnenizde `AdaptyListener` olarak adlandırın. Uygulamanın tüm ömrü boyunca bu nesnenin varlığını sürdürmesi için `DontDestroyOnLoad` metodunu kullanmanızı öneririz.
+
+<Zoom>
+  <img src="/assets/shared/img/2ccd564-create_adapty_listener.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Adapty, `AdaptySDK` namespace'ini kullanır. Adapty SDK kullanan script dosyalarınızın en üstüne şunu ekleyebilirsiniz:
+
+```csharp showLineNumbers title="C#"
+using AdaptySDK;
+```
+
+Adapty olaylarına abone olun:
+
+```csharp showLineNumbers title="C#"
+using UnityEngine;
+using AdaptySDK;
+
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+    public void OnLoadLatestProfile(AdaptyProfile profile) {
+        // handle updated profile data
+    }
+
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+}
+```
+
+Adapty'nin mümkün olduğunca erken başlatılması için Script Execution Order'ı, AdaptyListener'ı Default Time'dan önce gelecek şekilde ayarlamanızı öneririz.
+
+<Zoom>
+  <img src="/assets/shared/img/activate_unity.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Projenize Kotlin Eklentisini ekleyin \{#add-kotlin-plugin-to-your-project\}
+
+:::warning
+
+Bu adım zorunludur. Atlandığında paywall görüntülenirken mobil uygulamanız çökebilir.
+
+:::
+
+1. **Player Settings** bölümünde **Custom Launcher Gradle Template** ve **Custom Base Gradle Template** seçeneklerinin işaretli olduğundan emin olun.
+   <Zoom>
+   <img src="/assets/shared/img/kotlin-plugin1.webp"
+   style={{
+   border: 'none', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+
+2. `/Assets/Plugins/Android/launcherTemplate.gradle` dosyasına aşağıdaki satırı ekleyin:
+
+   ```groovy showLineNumbers
+   apply plugin: 'com.android.application'
+   // highlight-next-line
+   apply plugin: 'kotlin-android'
+   apply from: 'setupSymbols.gradle'
+   apply from: '../shared/keepUnitySymbols.gradle'
+   ```
+
+3. `/Assets/Plugins/Android/baseProjectTemplate.gradle` dosyasına aşağıdaki satırı ekleyin:
+
+   ```groovy showLineNumbers
+   plugins {
+       // If you are changing the Android Gradle Plugin version, make sure it is compatible with the Gradle version preinstalled with Unity
+       // See which Gradle version is preinstalled with Unity here https://docs.unity3d.com/Manual/android-gradle-overview.html
+       // See official Gradle and Android Gradle Plugin compatibility table here https://developer.android.com/studio/releases/gradle-plugin#updating-gradle
+       // To specify a custom Gradle version in Unity, go do "Preferences > External Tools", uncheck "Gradle Installed with Unity (recommended)" and specify a path to a custom Gradle version
+       id 'com.android.application' version '8.3.0' apply false
+       id 'com.android.library' version '8.3.0' apply false
+   // highlight-next-line
+       id 'org.jetbrains.kotlin.android' version '1.8.0' apply false
+       **BUILD_SCRIPT_DEPS**
+   }
+   ```
+
+Şimdi uygulamanızda paywallları ayarlayın:
+
+- [Adapty Paywall Builder](adapty-paywall-builder) kullanıyorsanız önce aşağıdaki [AdaptyUI modülünü etkinleştirin](#activate-adaptyui-module-of-adapty-sdk), ardından [Paywall Builder hızlı başlangıç](unity-quickstart-paywalls) kılavuzunu izleyin.
+- Kendi paywall arayüzünüzü oluşturuyorsanız [özel paywalllar için hızlı başlangıç](unity-quickstart-manual) kılavuzuna bakın.
+
+## Adapty SDK'nın AdaptyUI modülünü etkinleştirin \{#activate-adaptyui-module-of-adapty-sdk\}
+
+[Paywall Builder](adapty-paywall-builder) kullanmayı planlıyor ve AdaptyUI modülünü yüklediyseniz AdaptyUI'ın etkin olması gerekir. Yapılandırma sırasında etkinleştirebilirsiniz:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetActivateUI(true);
+```
+
+## İsteğe bağlı kurulum \{#optional-setup\}
+
+### Loglama \{#logging\}
+
+#### Loglama sistemini ayarlayın \{#set-up-the-logging-system\}
+
+Adapty, neler olup bittiğini anlamanıza yardımcı olmak için hataları ve diğer önemli bilgileri loglar. Aşağıdaki log seviyeleri mevcuttur:
+
+| Seviye     | Açıklama                                                                                                                         |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `error`    | Yalnızca hatalar loglanır                                                                                                        |
+| `warn`     | Hatalar ve kritik hatalara yol açmayan ancak dikkat edilmesi gereken SDK mesajları loglanır                                      |
+| `info`     | Hatalar, uyarılar ve çeşitli bilgi mesajları loglanır                                                                            |
+| `verbose`  | Hata ayıklama sırasında işe yarayabilecek fonksiyon çağrıları, API sorguları gibi ek bilgiler de dahil olmak üzere her şey loglanır |
+
+Adapty yapılandırması sırasında uygulamanızda log seviyesini ayarlayabilirsiniz:
+
+```csharp showLineNumbers title="C#"
+// 'verbose' is recommended for development and the first production release
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY");
+builder.LogLevel = AdaptyLogLevel.Verbose;
+```
+
+Log seviyesini çalışma zamanında da değiştirebilirsiniz:
+
+```csharp showLineNumbers title="C#"
+Adapty.SetLogLevel(AdaptyLogLevel.Verbose, (error) => {
+    // handle result
+});
+```
+
+### Veri politikaları \{#data-policies\}
+
+Adapty, siz açıkça göndermediğiniz sürece kullanıcılarınızın kişisel verilerini saklamaz; ancak mağaza veya ülke yönergelerine uymak için ek veri güvenliği politikaları uygulayabilirsiniz.
+
+#### IP adresi toplama ve paylaşımını devre dışı bırakın \{#disable-ip-address-collection-and-sharing\}
+
+Adapty modülünü etkinleştirirken kullanıcı IP adresi toplama ve paylaşımını devre dışı bırakmak için `SetIPAddressCollectionDisabled` değerini `true` olarak ayarlayın. Varsayılan değer `false`'tur.
+
+Bu parametreyi kullanıcı gizliliğini güçlendirmek, bölgesel veri koruma düzenlemelerine (GDPR veya CCPA gibi) uymak ya da uygulamanız için IP tabanlı özellikler gerekmediğinde gereksiz veri toplamayı azaltmak amacıyla kullanabilirsiniz.
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetIPAddressCollectionDisabled(true);
+```
+
+#### Reklam kimliği toplama ve paylaşımını devre dışı bırakın \{#disable-advertising-id-collection-and-sharing\}
+
+Adapty modülünü etkinleştirirken reklam kimliklerinin toplanmasını devre dışı bırakmak için `SetAppleIDFACollectionDisabled` ve/veya `SetGoogleAdvertisingIdCollectionDisabled` değerini `true` olarak ayarlayın. Varsayılan değer `false`'tur.
+
+Bu parametreyi App Store/Google Play politikalarına uymak, App Tracking Transparency isteğinin tetiklenmesini önlemek ya da uygulamanız reklam kimliklerine dayalı attribution veya analitik gerektirmiyorsa kullanabilirsiniz.
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAppleIDFACollectionDisabled(true)
+    .SetGoogleAdvertisingIdCollectionDisabled(true);
+```
+
+#### AdaptyUI için medya önbellek yapılandırmasını ayarlayın \{#set-up-media-cache-configuration-for-adaptyui\}
+
+AdaptyUI varsayılan olarak performansı artırmak ve ağ kullanımını azaltmak için medyayı (görseller ve videolar gibi) önbelleğe alır. Özel bir yapılandırma sağlayarak önbellek ayarlarını özelleştirebilirsiniz.
+
+Varsayılan önbellek ayarlarını geçersiz kılmak için `SetAdaptyUIMediaCache` kullanın:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAdaptyUIMediaCache(
+        100 * 1024 * 1024, // MemoryStorageTotalCostLimit 100MB
+        null, // MemoryStorageCountLimit
+        100 * 1024 * 1024 // DiskStorageSizeLimit 100MB
+    );
+```
+
+Parametreler:
+
+| Parametre                   | Zorunlu  | Açıklama                                                                                       |
+|-----------------------------|----------|------------------------------------------------------------------------------------------------|
+| memoryStorageTotalCostLimit | isteğe bağlı | Bellekte toplam önbellek boyutu (bayt cinsinden). Varsayılan değer platforma göre değişir.  |
+| memoryStorageCountLimit     | isteğe bağlı | Bellek depolamasının öğe sayısı sınırı. Varsayılan değer platforma göre değişir.            |
+| diskStorageSizeLimit        | isteğe bağlı | Diskteki dosya boyutu sınırı (bayt cinsinden). Varsayılan değer platforma göre değişir.     |
+
+### Yerel access level'ları etkinleştirin (Android) \{#enable-local-access-levels-android\}
+
+Varsayılan olarak [yerel access level'lar](local-access-levels) iOS'ta etkin, Android'de devre dışıdır. Android'de de etkinleştirmek için `SetGoogleLocalAccessLevelAllowed` değerini `true` olarak ayarlayın:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetGoogleLocalAccessLevelAllowed(true);
+```
+
+### Yedek geri yüklemede verileri temizleyin \{#clear-data-on-backup-restore\}
+
+`SetAppleClearDataOnBackup` değeri `true` olarak ayarlandığında SDK, uygulamanın iCloud yedeğinden geri yüklendiğini algılar ve önbelleğe alınmış profil bilgileri, ürün ayrıntıları ve paywalllar dahil yerel olarak depolanan tüm SDK verilerini siler. SDK ardından temiz bir durumla başlatılır. Varsayılan değer `false`'tur.
+
+:::note
+Yalnızca yerel SDK önbelleği silinir. Apple ile olan işlem geçmişi ve Adapty sunucularındaki kullanıcı verileri değişmeden kalır.
+:::
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAppleClearDataOnBackup(true);
+```
+
+## Sorun Giderme \{#troubleshooting\}
+
+#### Android yedekleme kuralları (Otomatik Yedekleme yapılandırması) \{#android-backup-rules-auto-backup-configuration\}
+
+<AndroidBackupRules />
+
+:::important
+Unity'de bu değişiklikleri `Assets/Plugins/Android/AndroidManifest.xml` dosyasına uygulayın ve yedekleme kural dosyalarını `Assets/Plugins/Android/res/xml/` altında oluşturun.
+:::
+
+#### Android'de başka bir uygulamadan döndükten sonra satın almalar başarısız oluyor \{#purchases-fail-after-returning-from-another-app-in-android\}
+
+Satın alma akışını başlatan Activity, varsayılan dışı bir `launchMode` kullanıyorsa Android; kullanıcı Google Play'den, bir bankacılık uygulamasından veya tarayıcıdan geri döndüğünde bu Activity'yi yanlış şekilde yeniden oluşturabilir veya yeniden kullanabilir. Bu durum satın alma sonucunun kaybolmasına ya da iptal edilmiş gibi görünmesine yol açabilir.
+
+Satın almaların doğru çalışmasını sağlamak için satın alma akışını başlatan Activity'de yalnızca `standard` veya `singleTop` launch mode kullanın; diğer modlardan kaçının.
+
+`AndroidManifest.xml` dosyanızda satın alma akışını başlatan Activity'nin `standard` veya `singleTop` olarak ayarlandığından emin olun:
+
+```xml
+<activity
+    android:name=".MainActivity"
+    android:launchMode="standard" />
+```

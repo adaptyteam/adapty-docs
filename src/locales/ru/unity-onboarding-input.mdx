@@ -1,0 +1,233 @@
+---
+title: "Обработка данных из онбординга в Unity SDK"
+description: "Сохраняйте и используйте данные из онбординга в вашем Unity-приложении с помощью Adapty SDK."
+metadataTitle: "Онбординги | Unity SDK | Документация Adapty"
+displayed_sidebar: sdkunity
+---
+
+Когда пользователи отвечают на вопрос викторины или вводят данные в поле ввода, вызывается метод `OnboardingViewOnStateUpdatedAction`. Вы можете сохранить или обработать тип поля в своём коде.
+
+Реализуйте метод `OnboardingViewOnStateUpdatedAction` в вашем классе:
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnStateUpdatedAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string elementId,
+        AdaptyOnboardingsStateUpdatedParams @params
+    )
+    {
+        switch (@params) {
+            case AdaptyOnboardingsSelectParams selectParams:
+                // handle single selection
+                break;
+            case AdaptyOnboardingsMultiSelectParams multiSelectParams:
+                // handle multiple selections
+                break;
+            case AdaptyOnboardingsInputParams inputParams:
+                // handle text input
+                break;
+            case AdaptyOnboardingsDatePickerParams datePickerParams:
+                // handle date selection
+                break;
+        }
+    }
+    
+    // ... other interface methods
+}
+```
+
+Параметры включают:
+
+| Параметр | Описание |
+|---|---|
+| `elementId` | Уникальный идентификатор элемента ввода. Используйте его, чтобы связать вопросы с ответами при их сохранении. |
+| `@params` | Объект с данными, введёнными пользователем. Может быть одного из следующих типов. |
+| `AdaptyOnboardingsSelectParams` | Одиночный выбор из вариантов. Содержит `Id`, `Value`, `Label` |
+| `AdaptyOnboardingsMultiSelectParams` | Множественный выбор из вариантов. Содержит список `Params` (каждый с `Id`, `Value`, `Label`)<br/>• `input`: объект с `type`, `value`<br/>• `datePicker`: объект с `day`, `month`, `year` |
+| `AdaptyOnboardingsInputParams` | Текстовое поле ввода. Содержит `Input`, который может быть `AdaptyOnboardingsTextInput`, `AdaptyOnboardingsEmailInput` или `AdaptyOnboardingsNumberInput` |
+| `AdaptyOnboardingsDatePickerParams` | Выбор даты. Содержит nullable-поля `Day`, `Month`, `Year` |
+
+<Details>
+<summary>Примеры сохранённых данных (в вашей реализации могут отличаться)</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## Варианты использования \{#use-cases\}
+
+### Обогащение профилей пользователей данными \{#enrich-user-profiles-with-data\}
+
+Если вы хотите сразу связать введённые данные с профилем пользователя и не спрашивать его дважды об одном и том же, [обновите профиль пользователя](unity-setting-user-attributes) с этими данными при обработке действия.
+
+Например, вы просите пользователей ввести имя в текстовое поле с ID `name` и хотите установить значение этого поля в качестве имени пользователя. Кроме того, вы просите их ввести email в поле `email`. В коде приложения это может выглядеть так:
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnStateUpdatedAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string elementId,
+        AdaptyOnboardingsStateUpdatedParams @params
+    )
+    {
+        if (@params is AdaptyOnboardingsInputParams inputParams) {
+            var builder = new AdaptyProfileParameters.Builder();
+            
+            switch (elementId) {
+                case "name":
+                    if (inputParams.Input is AdaptyOnboardingsTextInput textInput) {
+                        builder.SetFirstName(textInput.Value);
+                    }
+                    break;
+                case "email":
+                    if (inputParams.Input is AdaptyOnboardingsEmailInput emailInput) {
+                        builder.SetEmail(emailInput.Value);
+                    }
+                    break;
+            }
+            
+            Adapty.UpdateProfile(builder.Build(), (error) => {
+                if (error != null) {
+                    // handle the error
+                }
+            });
+        }
+    }
+    
+    // ... other interface methods
+}
+```
+
+### Кастомизация пейволов на основе ответов \{#customize-paywalls-based-on-answers\}
+
+С помощью викторин в онбординге вы также можете настраивать пейволы, которые показываются пользователям после его прохождения.
+
+Например, можно спросить пользователей об их опыте в спорте и показывать разные призывы к действию и продукты разным группам пользователей.
+
+1. [Добавьте викторину](onboarding-quizzes) в конструктор онбординга и задайте значимые ID её вариантам ответов.
+
+<ZoomImage id="experience.webp" />
+
+2. Обрабатывайте ответы викторины по их ID и [устанавливайте пользовательские атрибуты](unity-setting-user-attributes) для пользователей.
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnStateUpdatedAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string elementId,
+        AdaptyOnboardingsStateUpdatedParams @params
+    )
+    {
+        if (@params is AdaptyOnboardingsSelectParams selectParams) {
+            var builder = new AdaptyProfileParameters.Builder();
+            
+            switch (elementId) {
+                case "experience":
+                    // set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+                    builder.SetCustomStringAttribute("experience", selectParams.Value);
+                    break;
+            }
+            
+            Adapty.UpdateProfile(builder.Build(), (error) => {
+                if (error != null) {
+                    // handle the error
+                }
+            });
+        }
+    }
+    
+    // ... other interface methods
+}
+```
+
+3. [Создайте сегменты](segments) для каждого значения пользовательского атрибута.
+4. Создайте [плейсмент](placements) и добавьте [аудитории](audience) для каждого созданного сегмента.
+5. [Отобразите пейвол](unity-paywalls) для плейсмента в коде приложения. Если в вашем онбординге есть кнопка, открывающая пейвол, реализуйте код пейвола как [реакцию на действие этой кнопки](unity-handling-onboarding-events#opening-a-paywall).

@@ -1,0 +1,206 @@
+---
+title: "Android SDK'da remote config paywallları için paywall ve ürün çekme"
+description: "Kullanıcı monetizasyonunu artırmak için Adapty Android SDK'da paywall ve ürün çekme."
+metadataTitle: "Paywall ve Ürün Çekme | Android SDK | Adapty Dokümanları"
+keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'Android']
+displayed_sidebar: sdkandroid
+rank: 95
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md'; 
+
+Remote config ve özel paywallları göstermeden önce bunlara ait bilgileri çekmeniz gerekir. Bu konunun remote config ve özel paywalllarla ilgili olduğunu unutmayın. Paywall Builder ile özelleştirilmiş paywalllar için bilgi çekme konusunda [Paywall Builder paywalllarını ve yapılandırmalarını çekme](android-get-pb-paywalls) sayfasına bakabilirsiniz.
+
+<SampleApp />
+
+<details>
+   <summary>Mobil uygulamanızda paywall ve ürün çekmeye başlamadan önce (genişletmek için tıklayın)</summary>
+
+   1. Adapty Kontrol Paneli'nde [ürünlerinizi oluşturun](create-product).
+
+2. Adapty Kontrol Paneli'nde [bir paywall oluşturun ve ürünleri paywalla ekleyin](create-paywall).
+
+3. Adapty Kontrol Paneli'nde [placement'lar oluşturun ve paywallınızı placement'a ekleyin](create-placement).
+
+4. Mobil uygulamanıza [Adapty SDK'yı yükleyin](sdk-installation-android).
+</details>
+
+## Paywall bilgisini çekme \{#fetch-paywall-information\}
+
+Adapty'de bir [ürün](product), App Store ve Google Play'deki ürünlerin bir kombinasyonunu temsil eder. Bu platformlar arası ürünler paywalllarla entegre edilir ve belirli mobil uygulama placement'larında gösterilmesini sağlar.
+
+Ürünleri göstermek için `getPaywall` metoduyla [placement](placements)'larınızdan birinden bir [Paywall](paywalls) almanız gerekir.
+
+:::important
+**Ürün ID'lerini sabit kodlamayın.** Sabit kodlamanız gereken tek ID, placement ID'sidir. Paywalllar uzaktan yapılandırıldığından, ürün sayısı ve mevcut teklifler her an değişebilir. Uygulamanız bu değişiklikleri dinamik olarak ele almalıdır; bugün iki ürün döndüren bir paywall yarın üç ürün döndürürse, kod değişikliği yapmadan hepsini göstermelisiniz.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            // the requested paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        // the requested paywall
+      
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+      
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|-----------|
+| **placementId** | zorunlu | [Placement](placements)'ın tanımlayıcısı. Adapty Kontrol Paneli'nde placement oluştururken belirttiğiniz değerdir. |
+| **locale** | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | <p>[Paywall yerelleştirmesinin](add-remote-config-locale) tanımlayıcısı. Bu parametrenin, eksi (**-**) karakteriyle ayrılmış bir veya daha fazla alt etiket içeren bir dil kodu olması beklenir. İlk alt etiket dil, ikincisi bölge içindir.</p><p></p><p>Örnek: `en` İngilizce, `pt-br` Brezilya Portekizcesini temsil eder.</p><p></p><p>Yerel ayar kodları ve bunların nasıl kullanılmasını önerdiğimiz hakkında daha fazla bilgi için [Yerelleştirmeler ve yerel ayar kodları](android-localizations-and-locale-codes) sayfasına bakın.</p> |
+| **fetchPolicy** | varsayılan: `.reloadRevalidatingCacheData` | <p>SDK varsayılan olarak sunucudan veri yüklemeye çalışır; başarısız olursa önbelleğe alınmış veriyi döndürür. Kullanıcılarınızın her zaman en güncel verileri almasını sağladığından bu seçeneği öneririz.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internet bağlantısıyla karşılaştığını düşünüyorsanız, varsa önbelleğe alınmış veriyi döndürmek için `.returnCacheDataElseLoad` kullanabilirsiniz. Bu senaryoda kullanıcılar en güncel verileri alamayabilir, ancak internet bağlantısı ne kadar kötü olursa olsun daha hızlı yükleme süreleri yaşarlar. Önbellek düzenli olarak güncellenir, bu nedenle ağ isteklerinden kaçınmak için oturum sırasında güvenle kullanılabilir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında bozulmadan kaldığını ve yalnızca uygulama yeniden yüklendiğinde veya manuel temizleme yapıldığında silindiğini unutmayın.</p><p></p><p>Adapty SDK, paywallları iki katmanda saklar: yukarıda açıklanan düzenli olarak güncellenen önbellek ve [yedek paywalllar](android-use-fallback-paywalls). Paywallları daha hızlı getirmek için CDN ve CDN'e ulaşılamadığı durumlarda bağımsız bir yedek sunucu kullanırız. Bu sistem, internet bağlantısının zayıf olduğu durumlarda bile güvenilirliği sağlarken her zaman paywalllarınızın en güncel sürümünü almanızı garantilemek üzere tasarlanmıştır.</p> |
+| **loadTimeout** | varsayılan: 5 sn | <p>Bu değer, metodun zaman aşımını sınırlar. Zaman aşımına ulaşıldığında önbelleğe alınmış veri veya yerel yedek döndürülür.</p><p></p><p>İşlem arka planda farklı isteklerden oluşabileceğinden, bu metodun nadir durumlarda `loadTimeout`'ta belirtilenden biraz daha geç zaman aşımına uğrayabileceğini unutmayın.</p> |
+
+Ürün ID'lerini sabit kodlamayın! Paywalllar uzaktan yapılandırıldığından, mevcut ürünler, ürün sayısı ve özel teklifler (ücretsiz denemeler gibi) zaman içinde değişebilir. Kodunuzun bu senaryoları ele aldığından emin olun.  
+Örneğin, başlangıçta 2 ürün alıyorsanız uygulamanız o 2 ürünü göstermelidir. Ancak daha sonra 3 ürün alırsanız, herhangi bir kod değişikliği gerektirmeden 3 ürünün tamamını göstermelisiniz. Sabit kodlamanız gereken tek şey placement ID'sidir.
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | Ürün ID'leri listesi, paywall tanımlayıcısı, remote config ve diğer çeşitli özellikleri içeren bir [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/) nesnesi. |
+
+## Ürünleri çekme \{#fetch-products\}
+
+Paywalla sahip olduktan sonra ona karşılık gelen ürün dizisini sorgulayabilirsiniz:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getPaywallProducts(paywall) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val products = result.value
+            // the requested products
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.getPaywallProducts(paywall, result -> {
+    if (result instanceof AdaptyResult.Success) {
+        List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) result).getValue();
+        // the requested products
+      
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+      
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama |
+| :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Products  | Ürün tanımlayıcısı, ürün adı, fiyat, para birimi, abonelik süresi ve diğer çeşitli özellikleri içeren [`AdaptyPaywallProduct`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall-product/) nesnelerinin listesi. |
+
+Kendi paywall tasarımınızı uygularken [`AdaptyPaywallProduct`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall-product/) nesnesindeki bu özelliklere erişmeniz gerekecektir. Aşağıda en sık kullanılan özellikler gösterilmektedir; mevcut tüm özellikler hakkında tam ayrıntılar için bağlantılı belgeye bakın.
+
+| Özellik | Açıklama |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Başlık** | Ürünün başlığını göstermek için `product.localizedTitle` kullanın. Yerelleştirmenin cihazın dil ayarına değil, kullanıcının seçtiği mağaza ülkesine göre yapıldığını unutmayın. |
+| **Fiyat** | Fiyatın yerelleştirilmiş sürümünü göstermek için `product.price.localizedString` kullanın. Bu yerelleştirme cihazın dil bilgisine göre yapılır. Fiyata sayı olarak `product.price.amount` üzerinden de erişebilirsiniz. Değer yerel para biriminde sağlanacaktır. İlgili para birimi sembolünü almak için `product.price.currencySymbol` kullanın. |
+| **Abonelik Dönemi** | Dönemi (hafta, ay, yıl vb.) göstermek için `product.subscriptionDetails?.localizedSubscriptionPeriod` kullanın. Bu yerelleştirme cihazın dil ayarına göre yapılır. Abonelik dönemini programatik olarak almak için `product.subscriptionDetails?.subscriptionPeriod` kullanın. Buradan uzunluğu almak için `unit` enum'una erişebilirsiniz (DAY, WEEK, MONTH, YEAR veya UNKNOWN). `numberOfUnits` değeri, dönem birimi sayısını verir. Örneğin, üç aylık bir abonelik için `unit` özelliğinde `MONTH`, `numberOfUnits` özelliğinde `3` görürsünüz. |
+| **Başlangıç Teklifi** | Aboneliğin başlangıç teklifi içerdiğini gösteren bir rozet veya gösterge için `product.subscriptionDetails?.introductoryOfferPhases` özelliğine bakın. Bu, en fazla iki indirim aşaması içerebilen bir listedir: ücretsiz deneme aşaması ve başlangıç fiyatı aşaması. Her aşama nesnesinde şu yararlı özellikler bulunur:<br/>• `paymentMode`: `FREE_TRIAL`, `PAY_AS_YOU_GO`, `PAY_UPFRONT` ve `UNKNOWN` değerlerine sahip bir enum. Ücretsiz denemeler `FREE_TRIAL` tipinde olacaktır.<br/>• `price`: İndirimli fiyat, sayı olarak. Ücretsiz denemeler için burada `0` arayın.<br/>• `localizedNumberOfPeriods`: Teklifin uzunluğunu cihazın dil ayarını kullanarak yerelleştirilmiş bir dize olarak açıklar. Örneğin, üç günlük bir deneme teklifi bu alanda `3 days` gösterir.<br/>• `subscriptionPeriod`: Alternatif olarak, teklif döneminin ayrıntılarını bu özellikle alabilirsiniz. Teklifler için önceki bölümde açıklananla aynı şekilde çalışır.<br/>• `localizedSubscriptionPeriod`: Kullanıcının dil ayarı için biçimlendirilmiş indirim abonelik dönemi. |
+
+## Varsayılan kitle paywallıyla paywall çekmeyi hızlandırma \{#speed-up-paywall-fetching-with-default-audience-paywall\}
+
+Paywalllar genellikle neredeyse anında çekilir, bu nedenle bu süreci hızlandırma konusunda endişelenmenize gerek yoktur. Ancak çok sayıda kitle ve paywallınız varsa ve kullanıcılarınızın internet bağlantısı zayıfsa, paywall çekme işlemi istediğinizden daha uzun sürebilir. Bu gibi durumlarda, hiç paywall göstermemek yerine sorunsuz bir kullanıcı deneyimi sağlamak için varsayılan bir paywall görüntülemek isteyebilirsiniz.
+
+Bunu çözmek için, belirtilen placement'ın **Tüm Kullanıcılar** kitlesi için paywallını çeken `getPaywallForDefaultAudience` metodunu kullanabilirsiniz. Ancak önerilen yaklaşımın, yukarıdaki [Paywall Bilgisini Çekme](fetch-paywalls-and-products-android#fetch-paywall-information) bölümünde ayrıntılı olarak açıklandığı gibi `getPaywall` metoduyla paywall çekmek olduğunu anlamak kritik önem taşır.
+
+:::warning
+Neden `getPaywall` kullanmanızı öneriyoruz
+
+`getPaywallForDefaultAudience` metodunun birkaç önemli dezavantajı vardır:
+
+- **Olası geriye dönük uyumluluk sorunları**: Farklı uygulama sürümleri (mevcut ve gelecekteki) için farklı paywalllar göstermeniz gerekiyorsa zorluklarla karşılaşabilirsiniz. Ya mevcut (eski) sürümü destekleyen paywalllar tasarlamak zorunda kalırsınız ya da mevcut (eski) sürümdeki kullanıcıların render edilemeyen paywalllarla sorun yaşayabileceğini kabul etmek durumunda kalırsınız.
+- **Hedefleme kaybı**: Tüm kullanıcılar **Tüm Kullanıcılar** kitlesi için tasarlanmış aynı paywallı görür; bu da ülkelere, marketing attribution veya kendi özel niteliklerinize dayalı kişiselleştirilmiş hedeflemeyi kaybetmeniz anlamına gelir.
+
+Bu dezavantajları kabul ederek daha hızlı paywall çekme avantajından yararlanmak istiyorsanız `getPaywallForDefaultAudience` metodunu aşağıdaki gibi kullanın. Aksi takdirde [yukarıda](fetch-paywalls-and-products-android#fetch-paywall-information) açıklanan `getPaywall` metodunu kullanmaya devam edin.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            // the requested paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        // the requested paywall
+      
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+      
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+:::note
+`getPaywallForDefaultAudience` metodu Android SDK 2.11.3 sürümünden itibaren kullanılabilir.
+:::
+
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|-----------|
+| **placementId** | zorunlu | [Placement](placements)'ın tanımlayıcısı. Adapty Kontrol Paneli'nde placement oluştururken belirttiğiniz değerdir. |
+| **locale** | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | <p>[Paywall yerelleştirmesinin](add-remote-config-locale) tanımlayıcısı. Bu parametrenin, eksi (**-**) karakteriyle ayrılmış bir veya daha fazla alt etiket içeren bir dil kodu olması beklenir. İlk alt etiket dil, ikincisi bölge içindir.</p><p></p><p>Örnek: `en` İngilizce, `pt-br` Brezilya Portekizcesini temsil eder.</p><p></p><p>Yerel ayar kodları ve bunların nasıl kullanılmasını önerdiğimiz hakkında daha fazla bilgi için [Yerelleştirmeler ve yerel ayar kodları](android-localizations-and-locale-codes) sayfasına bakın.</p> |
+| **fetchPolicy** | varsayılan: `.reloadRevalidatingCacheData` | <p>SDK varsayılan olarak sunucudan veri yüklemeye çalışır; başarısız olursa önbelleğe alınmış veriyi döndürür. Kullanıcılarınızın her zaman en güncel verileri almasını sağladığından bu seçeneği öneririz.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internet bağlantısıyla karşılaştığını düşünüyorsanız, varsa önbelleğe alınmış veriyi döndürmek için `.returnCacheDataElseLoad` kullanabilirsiniz. Bu senaryoda kullanıcılar en güncel verileri alamayabilir, ancak internet bağlantısı ne kadar kötü olursa olsun daha hızlı yükleme süreleri yaşarlar. Önbellek düzenli olarak güncellenir, bu nedenle ağ isteklerinden kaçınmak için oturum sırasında güvenle kullanılabilir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında bozulmadan kaldığını ve yalnızca uygulama yeniden yüklendiğinde veya manuel temizleme yapıldığında silindiğini unutmayın.</p> |

@@ -1,0 +1,12 @@
+| Параметр          | Тип        | Nullable           | Описание                                                     |
+| ----------------- | ---------- | ------------------ | ------------------------------------------------------------ |
+| app_id            | String     | :heavy_minus_sign: | Внутренний ID вашего приложения. Можно найти в дашборде Adapty: [App Settings -> General tab](https://app.adapty.io/settings/general). |
+| profile_id        | UUID       | :heavy_minus_sign: | ID профиля Adapty. Можно найти в поле **Adapty ID** на дашборде Adapty -> [Profiles](https://app.adapty.io/profiles/users) -> страница конкретного профиля. |
+| customer_user_id  | String     | :heavy_plus_sign:  | ID вашего пользователя в вашей системе. Можно найти в поле **Customer user ID** на дашборде Adapty -> [Profiles](https://app.adapty.io/profiles/users) -> страница конкретного профиля. Работает только если вы [идентифицируете пользователей](identifying-users) в коде мобильного приложения через Adapty SDK. |
+| total_revenue_usd | Float      | :heavy_minus_sign: | Число с плавающей точкой, представляющее общую выручку профиля в долларах США. |
+| segment_hash      | String     | :heavy_minus_sign: | Внутренний параметр.                                         |
+| timestamp         | Integer    | :heavy_minus_sign: | Время ответа в миллисекундах, необходимо для разрешения состояния гонки. |
+| custom_attributes | Array      | :heavy_minus_sign: | <p>Для профиля можно задать не более 30 пользовательских атрибутов. Если передаёте массив `custom_attributes`, необходимо указать хотя бы один ключ атрибута.</p><p>**Ключ:** строка длиной не более 30 символов. Допустимы только буквы, цифры, дефисы, точки и символы подчёркивания.</p><p>**Значение:** не более 30 символов. Допустимы только строки и числа с плавающей точкой; булевы значения преобразуются в числа с плавающей точкой. Передайте пустое значение или null, чтобы удалить атрибут.</p> |
+| access_levels     | Array      | :heavy_plus_sign:  | Массив объектов [уровня доступа](server-side-api-objects#access-level). Может быть null, если у пользователя нет уровней доступа. |
+| subscriptions     | Array      | :heavy_plus_sign:  | Массив объектов [подписки](server-side-api-objects#subscription). Может быть null, если у пользователя нет подписок. |
+| non_subscriptions | Array      | :heavy_plus_sign:  | Массив объектов [разовых покупок](server-side-api-objects#non-subscription). Может быть null, если у пользователя нет покупок. |

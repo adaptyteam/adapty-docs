@@ -1,137 +1,63 @@
 ---
-import fs from 'node:fs';
-import path from 'node:path';
 import DocsLayout from '../../../layouts/DocsLayout.astro';
-import ApiReferencePage from '../../../components/ApiReferencePage.astro';
+import OperationPage from '../../../components/api-reference/OperationPage.astro';
 import apiConfig from '../../../api-reference/config.json';
-import { SUPPORTED_LOCALES } from '../../../data/locales';
+import apiPlatformSidebar from '../../../data/sidebars/api.json';
+import { loadSpec } from '../../../api-reference/lib/load-spec';
+import { buildApiSpec } from '../../../api-reference/lib/model';
+import { buildSidebar } from '../../../api-reference/lib/build-sidebar';
+import { forceCollapseTopLevel } from '../../../api-reference/lib/force-collapse';
+import { getBuildLocales } from '../../../data/locales';
 
 export async function getStaticPaths() {
-  function parseOperations(specContent) {
-    const lines = specContent.split('\n');
-    const operations = [];
-    let currentPath = '';
-
-    for (let i = 0; i < lines.length; i++) {
-      const pathMatch = lines[i].match(/^  (\/\S+):\s*$/);
-      if (pathMatch) { currentPath = pathMatch[1]; continue; }
-
-      const methodMatch = lines[i].match(/^\s{4}(get|post|put|patch|delete):\s*$/);
-      if (!methodMatch) continue;
-
-      const method = methodMatch[1].toUpperCase();
-      let operationId = '', summary = '', description = '', tag = '';
-
-      for (let j = i + 1; j < lines.length; j++) {
-        if (/^  \/\S+:\s*$/.test(lines[j]) || /^\s{4}(get|post|put|patch|delete):\s*$/.test(lines[j])) break;
-
-        const opIdMatch = lines[j].match(/^\s{6}operationId:\s*(\S+)/);
-        if (opIdMatch) { operationId = opIdMatch[1]; continue; }
-
-        const sumMatch = lines[j].match(/^\s{6}summary:\s*(.+)/);
-        if (sumMatch && !summary) { summary = sumMatch[1].trim(); continue; }
-
-        const descMatch = lines[j].match(/^\s{6}description:\s*(.+)/);
-        if (descMatch && !description) {
-          const rawValue = descMatch[1].trim();
-          if (/^[|>][+\-\d]*\s*$/.test(rawValue)) {
-            const contentLines = [];
-            while (j + 1 < lines.length) {
-              const nextLine = lines[j + 1];
-              if (!/^\s{7,}\S/.test(nextLine) && !/^\s*$/.test(nextLine)) break;
-              if (/^\s{7,}\S/.test(nextLine)) contentLines.push(nextLine.trim());
-              j++;
-            }
-            const fullText = contentLines.join(' ');
-            const sentenceMatch = fullText.match(/^(.+?\.)\s/);
-            description = sentenceMatch ? sentenceMatch[1] : fullText;
-          } else {
-            description = rawValue;
-          }
-          continue;
-        }
-
-        const tagMatch = lines[j].match(/^\s{8}- ([A-Za-z][\w\s]*)/);
-        if (tagMatch && !tag && lines[j - 1]?.match(/^\s{6}tags:\s*$/)) {
-          tag = tagMatch[1].trim();
-        }
-      }
-
-      if (operationId) {
-        operations.push({ operationId, summary, description, method, path: currentPath, tag });
-      }
-    }
-    return operations;
-  }
-
-  const paths = [];
-
-  for (const locale of SUPPORTED_LOCALES) {
+  const baseUrl = (import.meta.env.BASE_URL ?? '/').replace(/\/+$/, '');
+  const paths: Array<{ params: any; props: any }> = [];
+  for (const locale of getBuildLocales()) {
+    const localeBase = `${baseUrl}/${locale}`;
     for (const api of apiConfig) {
-      // Resolve localized spec, fall back to English
-      const specBasename = api.specFile.replace(/\.yaml$/, '');
-      const localizedSpecFile = `${specBasename}.${locale}.yaml`;
-      const localizedSpecPath = path.join(process.cwd(), 'public', 'api-specs', localizedSpecFile);
-      const specFile = fs.existsSync(localizedSpecPath) ? localizedSpecFile : api.specFile;
-
-      const specPath = path.join(process.cwd(), 'public', 'api-specs', specFile);
-      const specContent = fs.readFileSync(specPath, 'utf-8');
-      const operations = parseOperations(specContent);
-
-      for (const op of operations) {
+      const deref = await loadSpec(api.specFile, locale);
+      const spec = buildApiSpec(deref, api, localeBase);
+      for (const op of spec.operations) {
         paths.push({
           params: { locale, slug: api.slug, rest: `operations/${op.operationId}` },
-          props: {
-            api,
-            locale,
-            specFile,
-            operationSummary: op.summary,
-            operationDescription: op.description,
-            operationMethod: op.method,
-            operationPath: op.path,
-            operationTag: op.tag,
-          },
+          props: { api, locale, opId: op.operationId },
         });
       }
     }
   }
-
   return paths;
 }
 
-const { api, locale, specFile, operationSummary, operationDescription, operationMethod, operationPath } = Astro.props;
+const { api, locale, opId } = Astro.props;
 const { slug } = Astro.params;
+const baseUrl = (import.meta.env.BASE_URL ?? '/').replace(/\/+$/, '');
+const localeBase = `${baseUrl}/${locale}`;
 
-const specUrl = api.specUrl || `${import.meta.env.BASE_URL}/api-specs/${specFile}`.replace(/\/+/g, '/');
-const basePath = `${import.meta.env.BASE_URL}/${locale}/${slug}`.replace(/\/+/g, '/');
-
-const title = operationSummary ? `${operationSummary} (API)` : api.name;
-const description = operationDescription || '';
-const keywords = operationSummary || '';
+const deref = await loadSpec(api.specFile, locale);
+const spec = buildApiSpec(deref, api, localeBase);
+const operation = spec.operations.find(o => o.operationId === opId)!;
+const sidebarData = forceCollapseTopLevel(apiPlatformSidebar);
+const apiSidebarData = buildSidebar(spec, localeBase);
 
 const breadcrumbs = [
-  { label: 'Home', href: `${import.meta.env.BASE_URL}/`.replace(/\/+/g, '/') },
-  { label: api.name, href: `${import.meta.env.BASE_URL}/${locale}/${slug}`.replace(/\/+/g, '/') },
-  { label: operationSummary || 'Operation' }
+  { label: 'Home', href: `${baseUrl}/` },
+  { label: api.name, href: `${localeBase}/${slug}` },
+  { label: operation.summary },
 ];
 ---
 
 <DocsLayout
-  title={title}
-  description={description}
-  keywords={keywords}
+  title={`${operation.summary} (API)`}
+  description={operation.summary}
+  keywords={operation.summary}
   rank={70}
-  sidebarData={null}
+  sidebarData={sidebarData}
+  apiSidebarData={apiSidebarData}
   currentPlatformId="api"
-  currentSlug={slug}
+  currentSlug={`${slug}/operations/${operation.operationId}`}
   currentLocale={locale}
   breadcrumbs={breadcrumbs}
-  isFullWidth={true}
+  hideRightColumn={true}
 >
-  <div class="api-seo-content">
-    {operationSummary && <h1>{operationSummary}</h1>}
-    {operationMethod && operationPath && <p>{operationMethod} {operationPath}</p>}
-    {operationDescription && <p>{operationDescription}</p>}
-  </div>
-  <ApiReferencePage api={api} slug={`${locale}/${slug}`} specUrl={specUrl} basePath={basePath} />
+  <OperationPage spec={spec} operation={operation} />
 </DocsLayout>

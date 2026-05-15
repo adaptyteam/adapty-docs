@@ -25,6 +25,15 @@ function getLocaleUrl(targetLocale: string | null): string {
 
 const ht = getUIStrings(currentLocale).header;
 
+// Build client-side string map from the canonical ui-strings source so the
+// inline script never needs to be updated when locales or strings change.
+const clientUIStrings = Object.fromEntries(
+  (['en', ...SUPPORTED_LOCALES] as const).map(locale => {
+    const s = getUIStrings(locale);
+    return [locale, { ...s.header, searchPlaceholder: s.search.placeholder, searchNoResults: s.search.noResults }];
+  })
+);
+
 // Prefix an internal /docs/... path with the current locale (for initial server render)
 function localizeHref(path: string): string {
   if (!currentLocale) return path;
@@ -174,6 +183,9 @@ const localeLinks = SUPPORTED_LOCALES.map(locale => ({
       </button>
     </div>
   </div>
+  <!-- Build-time data for the persistent inline script — sourced from ui-strings.ts and locales.ts -->
+  <script id="cc-locale-names" type="application/json" set:html={JSON.stringify(LOCALE_NAMES)} />
+  <script id="cc-ui-strings" type="application/json" set:html={JSON.stringify(clientUIStrings)} />
 </header>
 
 <style>
@@ -383,34 +395,10 @@ const localeLinks = SUPPORTED_LOCALES.map(locale => ({
   initMobileThemeToggle();
   document.addEventListener('astro:page-load', initMobileThemeToggle);
 
-  // Locale names map for client-side use
-  const LOCALE_NAMES_CLIENT: Record<string, string> = { zh: '中文' };
-
-  // UI string translations for client-side sync (mirrors src/locales/ui-strings.ts)
-  const UI_STRINGS_CLIENT: Record<string, Record<string, string>> = {
-    zh: {
-      documentation: '文档',
-      mobileSdk: '移动端 SDK',
-      serverApi: '服务端 API',
-      whatsNew: '最新动态',
-      supportForum: '支持论坛',
-      signIn: '登录',
-      signUpFree: '免费注册',
-      searchPlaceholder: '搜索文档...',
-      searchNoResults: '未找到相关结果。',
-    },
-    en: {
-      documentation: 'Documentation',
-      mobileSdk: 'Mobile SDK',
-      serverApi: 'Server API',
-      whatsNew: "What's new",
-      supportForum: 'Support Forum',
-      signIn: 'Sign In',
-      signUpFree: 'Sign Up for Free',
-      searchPlaceholder: 'Search documentation...',
-      searchNoResults: 'No results found.',
-    },
-  };
+  // Locale names and UI strings sourced from build-time data injected by Header.astro.
+  // To update strings or add a locale, edit src/locales/ui-strings.ts and src/data/locales.ts only.
+  const LOCALE_NAMES_CLIENT: Record<string, string> = JSON.parse(document.getElementById('cc-locale-names')!.textContent!);
+  const UI_STRINGS_CLIENT: Record<string, Record<string, string>> = JSON.parse(document.getElementById('cc-ui-strings')!.textContent!);
 
   // Rewrite internal nav link hrefs to include (or strip) the current locale prefix
   function syncNavLinks() {

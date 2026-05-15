@@ -1,0 +1,169 @@
+---
+title: "Adapty Mail'e Başlarken"
+description: "Adapty Mail'i kurun ve ilk e-posta akışınızı başlatın."
+metadataTitle: "Adapty Mail'e Başlarken | Adapty Dokümanları"
+keywords: ['adapty mail']
+---
+
+Bu kılavuzda Adapty Mail'i kuracak ve ilk e-posta akışınızı başlatacaksınız.
+
+Kurulum altı bölümden oluşur:
+1. [Adapty SDK'nızı yapılandırın](#1-configure-your-adapty-sdk)
+2. [Adapty Mail'i uygulama verilerinize bağlayın](#2-connect-adapty-mail-to-your-app-data)
+3. [Gönderim alan adınızı ayarlayın](#3-set-up-your-sending-domain)
+4. [Web paywallı oluşturun](#4-create-a-web-paywall)
+5. [Yapay zeka ile kampanya oluşturun](#5-generate-a-campaign-with-ai)
+6. [Bir akış başlatın](#6-launch-a-flow)
+## Başlamadan önce \{#before-you-start\}
+
+Başlamadan önce aşağıdakilerin hazır olduğundan emin olun:
+
+- **DNS erişimi**: Kök alan adınıza kayıt ekleyebiliyorsunuz.
+- **Web ödeme sağlayıcısı**: Abonelik ürünlerinizin yapılandırılmış olduğu bir Stripe, Paddle veya PayPal hesabınız var.
+## 1. Adapty SDK'nızı yapılandırın \{#1-configure-your-adapty-sdk\}
+
+:::important
+Adapty Mail **bağımsız bir üründür**. Paywall'larınız, abonelikleriniz veya analizleriniz Adapty üzerinden yönetilmiyor olsa bile kullanabilirsiniz; tüm sisteminizi taşımanıza gerek yoktur.
+
+Doğru gelir verisi elde etmek için gereken minimum kurulum, Adapty SDK'yı gözlemci (observer) modunda yüklemek ve App Store sunucu bildirimlerini etkinleştirmektir.
+:::
+
+Adapty Mail'in uygulamanızdan ihtiyaç duyduğu üç şey vardır: satın alma verileri (her dönüşümü tetikleyen e-postaya geliri bağlayabilmek için), sabit bir kullanıcı tanımlayıcısı ve kullanıcı e-posta adresleri.
+1. **Adapty'nin gelirinizi takip etmesine izin verin.** İlk adım, uygulama içi satın alma işlemlerinizin zaten mevcut olup olmadığına göre değişir:
+   - **Adapty ile uygulama içi satın almaları zaten uyguladıysanız**, bu aşamada başka bir şey yapmanıza gerek yoktur.
+   - **Adapty olmadan uygulama içi satın almaları zaten uyguladıysanız** ve Adapty'ye geçiş yapmayı planlamıyorsanız, platformunuz için Adapty SDK'yı gözlemci modunda yükleyin. Bu aşamada yalnızca SDK'yı projenize eklemeniz, gözlemci modu etkin şekilde başlatmanız ve işlemleri raporlamanız gerekir. Platform kılavuzları: [iOS](implement-observer-mode), [Android](implement-observer-mode-android), [React Native](implement-observer-mode-react-native), [Flutter](implement-observer-mode-flutter), [Unity](implement-observer-mode-unity), [Kotlin Multiplatform](implement-observer-mode-kmp), [Capacitor](implement-observer-mode-capacitor).
+   - **Henüz uygulama içi satın alma uygulamadıysanız ve Adapty'yi kullanmak istiyorsanız**, satın alma işlemlerini Adapty'ye devretmek için [hızlı başlangıç kılavuzundaki](quickstart) adımları tamamlayın.
+Ardından gelir ile ilgili güncellemeleri doğrudan App Store'dan almak için [Adapty'de App Store sunucu bildirimlerini etkinleştirin](enable-app-store-server-notifications).
+
+2. **Kullanıcı tanımlamayı ayarlayın.** Backend kullanıcı ID'niz, Firebase UID'niz veya benzeri bir değer gibi sabit bir ID'yi — `Adapty.identify()` çağırarak ya da SDK başlatma sırasında `.activate()` metoduna `customerUserId` geçirerek — iletin. Adapty Mail, kampanyaları, tıklamaları ve satın almaları doğru profile eşleştirmek için `customer_user_id` alanını kullanır.
+Platform kılavuzları: [iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), [Unity](unity-identifying-users), [Kotlin Multiplatform](kmp-identifying-users), [Capacitor](capacitor-identifying-users).
+
+3. **Kullanıcı e-postalarını toplayın.** Bir kullanıcı uygulamanızda e-posta adresini girdiğinde (örneğin kayıt veya ödeme sırasında), e-posta özniteliğiyle `updateProfile` çağırarak bunu Adapty'ye iletin. Bir kampanyanın tüm alıcılarının bu değere sahip olması gerekir.
+Platform kılavuzları: [iOS](setting-user-attributes), [Android](android-setting-user-attributes), [React Native](react-native-setting-user-attributes), [Flutter](flutter-setting-user-attributes), [Unity](unity-setting-user-attributes), [Kotlin Multiplatform](kmp-setting-user-attributes), [Capacitor](capacitor-setting-user-attributes).
+
+Uygulamanız henüz e-posta toplamıyorsa, [E-posta toplama stratejileri](mail-collect-emails#email-collection-strategies) bölümüne bakın.
+## 2. Adapty Mail'i uygulama verilerinize bağlayın \{#2-connect-adapty-mail-to-your-app-data\}
+
+SDK bağlandıktan sonra, ürünün SDK'nın gönderdiği verileri gerçekten kullanabilmesi için iki kontrol paneli ayarı uygulamanızı Adapty Mail'e bağlar.
+1. **Adapty entegrasyonunu etkinleştirin.** Adapty Mail'de **Settings → Integrations** bölümüne gidin ve **Adapty** entegrasyonunu açın. Etkinleştirildiğinde, Adapty müşterilerinizin oluşturduğu tüm olaylara ilişkin bilgileri gönderir — yeni abonelikler, yenilemeler, denemeler, dönüşümler, iadeler ve ödeme sorunları. Bu olaylar doğrudan bir müşterinin hangi segmente gireceğini, hangi kampanyaya atanacağını ve satın alma durumuna göre e-posta gönderiminin durdurup durdurulmayacağını belirler.
+
+   <ZoomImage id="adapty-mail-adapty-integration.webp" width="500px" />
+2. **App Store veya Google Play URL'nizi ekleyin.** Adapty Mail'de **Settings → App metadata** bölümüne gidin ve doğrudan mağaza URL'sini yapıştırın — iOS için `https://apps.apple.com/…id{numbers}`, Android için `https://play.google.com/store/apps/details?id={package}`.
+## 3. Gönderim alan adınızı ayarlayın \{#set-up-your-sending-domain\}
+
+Adapty Mail, kendi alan adınızdan gönderim yapar. DNS kayıtlarını bir kez eklersiniz — tüm kampanyalar aynı doğrulanmış alan adını kullanır.
+
+1. Adapty Mail'de **Settings → Email Domains** bölümüne gidin.
+2. Ana alan adınızı girin (örneğin, `yourapp.com`) ve **Preview**'e tıklayın. Yalnızca apex alan adları kabul edilir — `app.yourapp.com` gibi alt alan adları girişte reddedilir.
+
+<ZoomImage id="mail-email-domains.webp" width="500px" />
+
+3. Adapty iki gönderim alt alan adı oluşturur (`mail.yourapp.com` ve `email.yourapp.com`). Gerekli DNS kayıtlarını görmek için **Confirm**'e tıklayın.
+<ZoomImage id="confirm-subdomains.webp" width="500px" />
+
+4. Domain kayıt sağlayıcınızda gösterilen 10 DNS kaydını ekleyin (her subdomain için 5):
+   - Her subdomain için 3 CNAME kaydı (DKIM)
+   - Her subdomain için 1 MX kaydı (Mail-From)
+   - Her subdomain için 1 TXT kaydı (SPF, `v=spf1 include:amazonses.com ~all`)
+5. İsteğe bağlı olarak, kök domaininize bir DMARC TXT kaydı ekleyin (önerilir).
+6. **Settings → Email Domains** bölümüne geri dönün ve **Check Verification** butonuna tıklayın.
+
+<ZoomImage id="email-domains.webp" width="500px" />
+
+Doğrulama süresine genel bakış:
+- **Otomatik yoklama**: İlk kontrol, gönderimin ardından yaklaşık 5 dakika sonra başlar. Kayıtlar bulunana kadar aralıklar saatte bire kadar uzar.
+- **Manuel kontrol**: Anında kontrol başlatmak için istediğiniz zaman **Check Verification** düğmesine tıklayın.
+- **DNS yayılımı**: Genellikle dakikalar içinde tamamlanır; nadir durumlarda 48 saate kadar sürebilir.
+- **Doğrulama penceresi**: 7 gün. Süre dolarsa DNS kayıtlarınız yerinde kalır — yeni bir pencere başlatmak için **Settings → Email Domains** bölümüne alan adınızı yeniden girin.
+
+Her kayıt türü ve alan adı ısınması hakkında ayrıntılı bilgi için bkz. [Gönderme alan adınızı kurma](mail-sending-domain).
+## 4. Bir web paywall oluşturun \{#create-a-web-paywall\}
+
+Her e-posta, kullanıcıların bir CTA'ya tıkladığında açılan ödeme sayfası olan bir web paywall'a bağlantı içerir. İki seçeneğiniz var:
+
+- **Yapay zeka ile oluştur**: Dahili web paywall builder'ın uygulamanız için bir tane oluşturmasına izin verin.
+- **Kendi barındırdığınız paywall'ı kullanın**: Halihazırda barındırdığınız bir paywall'ı bağlayın.
+
+Başlamak için Adapty Mail'de **Web Paywalls → Create** bölümüne gidin.
+
+<ZoomImage id="new-web-paywall.webp" width="500px" />
+### A Seçeneği: Yapay Zeka ile Oluştur \{#option-a-generate-with-ai\}
+
+1. **Generate with AI** seçeneğini seçin.
+2. **Log in to the paywall builder** butonuna tıklayın. Web paywall builder yeni bir sekmede açılır. Henüz oturum açmadıysanız Adapty kimlik bilgilerinizle giriş yapın.
+3. Builder'da ödeme sağlayıcı entegrasyonunuzu (Stripe, Paddle veya PayPal) etkinleştirin. Ayrıntılar için [Web paywall yapılandırması](web-paywall-configuration) bölümüne bakın.
+4. Adapty Mail'e dönün ve **Proceed to generation** butonuna tıklayın.
+5. Oluşturulan paywallı inceleyin, ardından kaydedin ve yayınlayın.
+### Seçenek B: Kendi barındırdığınız paywallı kullanın \{#option-b-use-your-own-hosted-paywall\}
+
+1. **Enter URL manually** seçeneğini seçin.
+2. Barındırdığınız paywallın URL'sini yapıştırın. URL, sorgu parametresi olarak `{email}` ve `{external_profile_id}` yer tutucularını içermelidir — Adapty Mail, ödeme sayfasının ziyaretçiyi tanıyabilmesi için bunları her alıcıya göre doldurur. Örnek:
+
+   ```
+   https://example.com/paywall?email={email}&profile={external_profile_id}
+   ```
+3. Kaydedin ve yayınlayın.
+
+:::important
+Paywall, ödeme trafiğine hizmet verebilmesi için yayınlanmış olmalıdır. Yayınlanmamış paywalllar, kullanıcılar e-posta ödeme bağlantılarına tıkladığında hata döndürür.
+:::
+Ödeme hunisinin anatomisi ve kişiselleştirmenin nasıl çalıştığı hakkında bilgi almak için [Ödemeyi ayarlama](mail-checkout) konusuna bakın.
+
+<ZoomImage id="generate-web-paywall.webp" width="500px" />
+## 5. Yapay Zeka ile Kampanya Oluşturma \{#generate-a-campaign-with-ai\}
+
+Yapay zeka, e-posta dizisinin tamamını sizin için oluşturur — metin, tasarım, hero görseller ve kişiselleştirilmiş ödeme bağlantıları, hepsi uygulamanıza özel.
+
+1. Adapty Mail'de **Campaigns** bölümüne gidin ve **Create** düğmesine tıklayın.
+2. Kampanya adını belirleyin.
+3. **Web paywall** açılır menüsünden önceki adımda eklediğiniz web paywall'u seçin.
+
+<ZoomImage id="mail-new-campaign.webp" width="500px" />
+4. **E-posta oluştur**'a tıklayın.
+5. Açılan diyalog penceresinde ton ve dil seçin. Varsayılan olarak AI, uygulama bağlamına ve en iyi uygulamalara göre oluşturulacak e-posta sayısını belirler. Sayıyı kendiniz ayarlamak istiyorsanız **Sayıyı manuel olarak ayarla**'ya tıklayıp değeri girin (**1–15**, varsayılan 4).
+
+<ZoomImage id="generate-emails.webp" width="500px" />
+6. **Generate**'a tıklayın. Oluşturma işlemi genellikle birkaç dakika sürer. Tamamlanamazsa sistem 5 dakika sonra zaman aşımına uğrar — böyle bir durumda tekrar deneyin.
+7. Her e-postayı önizleyin. Tek tek e-postaları yeniden oluşturabilir, metni düzenleyebilir veya ayrıntılı kontrol için HTML düzenleyiciyi açabilirsiniz.
+
+<ZoomImage id="generated-emails.webp" width="700px" />
+
+8. Kampanyayı kaydetmek için **Create**'e tıklayın.
+
+Kampanya **taslak** olarak kaydedilir ve henüz gönderilmeye başlanmaz — kampanyalar yalnızca bir akışa bağlandığında yayına girer (sonraki adım). Kampanya düzenleyicisinde ayrı bir "yayınla" butonu yoktur.
+## 6. Bir flow başlatın \{#launch-a-flow\}
+
+Bir flow, bir **tetikleyici**yi (aboneliğin sona ermesi gibi bir olay) bir **segment** ile eşleştirir ve o segmente seçtiğiniz **kampanyayı** gönderir. Adapty Mail, her birinin kendine ait bir flow görünümü bulunan üç sabit tetikleyiciyle birlikte gelir.
+
+1. Adapty Mail'de **Flows** bölümüne gidin, ardından yapılandırmak istediğiniz tetikleyiciyi açın:
+   - **Never purchased** — kaydolmuş ancak henüz satın almamış kullanıcılar.
+   - **Expired** — sona ermiş abonelikler.
+   - **Refunded** — iade edilmiş satın almalar.
+2. Diyaloğu açmak için **Create**'e tıklayın.
+
+<ZoomImage id="create-flow-mail.webp" width="500px" />
+3. İletişim kutusunda:
+   - Bir **Segment** seçin (örneğin, bu tetikleyiciye ulaşan herkesi hedeflemek için **All Users**; ya da profil özelliklerine göre yeni bir segment oluşturun).
+   - İçerik türünü **Campaign** olarak bırakın (A/B testi seçeneği [A/B testi](mail-ab-testing) bölümünde ele alınmaktadır).
+   - 5. Adımda kaydettiğiniz **Campaign**'i seçin.
+4. **Save**'e tıklayın.
+
+Akış hemen devreye girer — ayrı bir başlatma adımı yoktur. Artık segmentle eşleşen kullanıcılar, tetikleyici olayına ulaştıkları anda kampanyayı almaya başlar.
+:::note
+Aynı tetikleyiciye birden fazla segment → kampanya satırı ekleyebilirsiniz; bunlar öncelik sırasına göre çalışır. **All Users** satırı, kullanılıyorsa, daha spesifik bir segment tarafından eşleştirilmeyen herkesi yakalamak için en son (en düşük öncelikli) satır olmalıdır.
+:::
+
+<ZoomImage id="mail-flow-details.webp" width="500px" />
+## Sorun Giderme \{#troubleshooting\}
+| Sorun | Çözüm |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| DNS doğrulaması takılı kaldı | Kayıtların tam olarak eşleştiğini kontrol edin — sonda nokta olmamalı, CNAME hedefleri doğru olmalı. 5–10 dakika bekleyip **Check Verification** butonuna tekrar tıklayın |
+| Doğrulama penceresi sona erdi | Kayıtlarınız yerinde duruyor. Yeni bir pencere başlatmak için **Settings → Email Domains** bölümüne alan adınızı tekrar girin |
+| Oluşturma başarısız oldu veya zaman aşımına uğradı | İnternet bağlantınızı kontrol edip tekrar deneyin. Sorun devam ederse Adapty desteğiyle iletişime geçin |
+## Daha fazla bilgi edinin \{#learn-more\}
+
+- **[Kullanıcı e-postalarını toplayın](mail-collect-emails)**: Uygulamanız henüz e-posta toplamıyorsa e-posta kapsamı elde etmeye yönelik stratejiler.
+- **[Gönderme etki alanınızı ayarlayın](mail-sending-domain)**: DNS kayıt ayrıntıları, ısınma kademeleri ve sorun giderme.
+- **[Ödeme sayfasını ayarlayın](mail-checkout)**: Ödeme hunisi yapısı ve kişiselleştirme.
+- **[Kampanya analitiği](mail-analytics)**: Teslimat, etkileşim ve geliri takip edin.
+- **[A/B testi](mail-ab-testing)**: Birden fazla sıra sürümünü test edin.

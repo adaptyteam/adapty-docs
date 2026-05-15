@@ -1,0 +1,73 @@
+---
+title: "A/B testlerinde tahminler"
+description: "A/B testlerindeki tahminlerin abonelik fiyatlandırma stratejilerini nasıl geliştirdiğini öğrenin."
+metadataTitle: "A/B Testlerinde Tahminler | Adapty Dokümanları"
+---
+
+Adapty'nin A/B testi özelliği için Tahminsel Analiz dokümantasyonuna hoş geldiniz. Bu araç, çalışan A/B testlerinizin gelecekteki sonuçlarına dair içgörüler sunar ve Adapty'nin makine öğrenmesiyle desteklenen tahminleri sayesinde veriye dayalı kararlar almanızı hızlandırır 🚀
+
+### A/B testi tahminleri nedir? \{#what-are-ab-test-predictions\}
+
+Adapty'nin A/B Testi Tahminleri, bir A/B testinde karşılaştırılan paywallların uzun vadeli gelir potansiyelini öngörmek için gelişmiş makine öğrenmesi tekniklerinden (özellikle gradient boosting modelleri) yararlanır.
+
+Bu tahminsel model, test çalışırken gözlemlediğiniz metriklere bağlı kalmak yerine, bir yıl sonraki tahmini gelire göre en etkili paywallı seçmenizi sağlar. Bu sayede verinin birikmesini haftalar boyu beklemek zorunda kalmadan kazananı daha güvenilir ve hızlı bir şekilde belirleyebilirsiniz.
+
+### Model nasıl çalışır? \{#how-does-the-model-work\}
+
+Model, farklı kategorilerdeki çok sayıda uygulamadan elde edilen kapsamlı geçmiş A/B testi verileriyle eğitilmiştir. Bir paywallın deney başlangıcından itibaren bir yıl içinde üreteceği geliri tahmin etmek için geniş bir özellik yelpazesini kullanır. Bu özellikler şunlardır:
+
+- Farklı dönemlerde kullanıcı işlemleri ve dönüşüm oranları
+- Kullanıcıların coğrafi dağılımı
+- Platform kullanımı (iOS veya Android)
+- İptal ve iade oranları
+- Abonelik ürünleri ve dönem uzunlukları (günlük, aylık, yıllık vb.)
+- Diğer işlem verisi
+
+Model ayrıca paywallardaki deneme sürelerini de hesaba katar; kullanıcıların zaten dönüşüm gerçekleştirmiş gibi geliri tahmin etmek için geçmiş dönüşüm oranlarını kullanır. Bu yaklaşım, deneme teklifleri olan ve olmayan paywalllar arasında adil bir karşılaştırma yapılmasını sağlar; çünkü aktif denemelerin gelecekte gelir getirebileceği ihtimali de hesaba katılır.
+
+### Tahminsel P2BB, standart P2BB'den nasıl farklıdır? \{#how-is-predicted-p2bb-different-from-just-the-p2bb\}
+
+A/B testlerimizde Bayesçi yaklaşımı kullanıyoruz: temel olarak kullanıcı başına gelirin (daha doğrusu "1.000 kullanıcı başına gelir") dağılımını modelliyoruz, ardından bir dağılımın diğerinden "gerçek anlamda" daha iyi olup olmadığını ve bunun rastlantısal olmamasını hesaplıyoruz — buna En İyi Olma Olasılığı ya da P2BB diyoruz (yaklaşımımız hakkında daha fazla bilgiye [buradan](maths-behind-it) ulaşabilirsiniz).
+
+Bunu yaparken yalnızca testin çalıştığı süre boyunca biriken gelire dayandığımızı belirtmek önemlidir. Örneğin yıllık bir aboneliği haftalık bir abonelikle karşılaştıran bir test çalıştırırsanız, hangisinin daha iyi performans gösterdiğini gerçekten anlamak için çok uzun süre beklemeniz gerekir. Benzer bir durum, A/B testinde deneme aboneliklerini deneme içermeyen aboneliklerle karşılaştırdığınızda da yaşanır; çünkü kazanan dinamiklerini etkileyebilecek aktif denemeler her zaman gelir hesabının dışında kalır.
+
+İşte tahminsel modelimiz tam da burada devreye giriyor. Bir A/B testindeki mevcut gelir dağılımını alarak ve büyük bir veri setiyle eğitilerek, gelir dağılımının gelecekteki halini (yani 1 yıl sonrasını) tahmin edebiliyor. Bunu yaptıktan sonra, testi tüm yıl boyunca çalıştırsaydınız ulaşacağınız P2BB'yi yani tahminsel P2BB'yi üretiyor.
+
+Bazen tahminsel P2BB ile mevcut P2BB'nin çelişebileceğini unutmayın. Bu durumda varyasyon satırlarını aşağıdaki gibi sarı renkle vurgularız:
+
+<Zoom>
+  <img src="/assets/shared/img/74577c6-CleanShot_2024-02-15_at_13.08.452x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Bunu, kazananı teyit etmek için daha fazla veri biriktirmeniz ya da A/B testini daha derinlemesine incelemeniz gerektiğinin bir işareti olarak değerlendiriyoruz. Genel olarak daha fazla veriyi göz önünde bulundurduğu için mevcut P2BB yerine tahminsel P2BB'ye güvenmenizi öneririz; ancak nihai karar elbette size aittir.
+
+### Modelin doğruluğu ve güvenilirliği \{#model-accuracy-and-certainty\}
+
+Model, %10'un biraz altında bir Ortalama Mutlak Yüzde Hata (MAPE) değeriyle yüksek düzeyde doğruluk sağlar. Bu hassasiyet düzeyi, işletmelerin veriye dayalı kararlar alırken modelin tahminlerine güvenle dayanmasına olanak tanır.
+
+Kararlılığı daha da güvence altına almak için model, üç faktöre dayanan bir "kesinlik" kriteri uygular:
+
+- Dar bir tahmin aralığı — model sonuçtan emindir
+- Testte yeterli miktarda abonelik ve gelir bulunması
+- Testin başlangıcından itibaren en az 2 haftanın geçmiş olması
+
+Tahmin kalitesinin mümkün olan en yüksek standartlarda olmasını sağlamak amacıyla, bir tahmin yalnızca bu kriterlerden en az ikisini karşıladığında ve üçüncüsünü tamamen geçemediğinde güvenilir kabul edilir.
+
+Yeni bir A/B testi başladığında model, her paywall için 1.000 kullanıcı başına yıllık gelir tahmini (temel A/B testi metriğimiz) sunar. Tahminler yalnızca kesinlik kriterlerini karşıladığında görüntülenir. Veri yetersiz olduğunda model "tahmin için yetersiz veri" uyarısı gösterir.
+
+### Sınırlılıklar ve dikkat edilmesi gerekenler \{#limitations-and-considerations\}
+
+Tahminsel modelimiz güçlü bir araç olsa da sınırlılıklarını göz önünde bulundurmak önemlidir.
+
+Modelin performansı, mevcut verilerin kalitesine ve temsiliyetine bağlıdır. Alışılmadık kohort davranışları ya da eğitim setinde yer almayan yeni uygulamalar tahmin doğruluğunu etkileyebilir.
+
+Bununla birlikte, tahminler en güncel verileri ve kullanıcı davranışlarını yansıtmak amacıyla her gün güncellenir. Bu sayede aldığınız içgörüler her zaman en güncel bilgilere dayanır.
+
+🚧 Not: Bu araç, uzman değerlendirmenizin ve uygulamanızın kendine özgü dinamiklerine dair anlayışınızın yerini almaz; ona destek sağlar. Bu tahminleri, bilinçli kararlar vermek için diğer metrikler ve pazar bilgisiyle birlikte bir rehber olarak kullanın.

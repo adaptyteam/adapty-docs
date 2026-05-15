@@ -1,0 +1,114 @@
+---
+title: "Capacitor SDK'da onboarding'leri alma"
+description: "Adapty'de Capacitor için onboarding'leri nasıl alacağınızı öğrenin."
+metadataTitle: "Adapty'de Onboarding'leri Alma | Adapty Dokümanları"
+customSlug: /capacitor-get-onboardings
+displayed_sidebar: sdkcapacitor
+---
+
+Adapty Kontrol Paneli'ndeki builder ile [onboarding'inizin görsel kısmını tasarladıktan](design-onboarding) sonra, onu Capacitor uygulamanızda gösterebilirsiniz. Bu sürecin ilk adımı, aşağıda açıklandığı gibi placement ile ilişkili onboarding'i ve görünüm yapılandırmasını almaktır.
+
+Başlamadan önce şunları yaptığınızdan emin olun:
+
+1. [Bir onboarding oluşturdunuz](create-onboarding).
+2. Onboarding'i bir [placement](placements)'a eklediniz.
+
+## Onboarding'i getirme \{#fetch-onboarding\}
+
+No-code builder'ımızla bir [onboarding](onboardings) oluşturduğunuzda, bu onboarding uygulamanızın getirmesi ve görüntülemesi gereken bir yapılandırma içeren container olarak saklanır. Bu container tüm deneyimi yönetir: hangi içeriğin görüneceği, nasıl sunulacağı ve kullanıcı etkileşimlerinin (quiz yanıtları veya form girişleri gibi) nasıl işleneceği. Container ayrıca analitik olaylarını otomatik olarak izlediğinden ayrı görünüm takibi uygulamanız gerekmez.
+
+En iyi performans için, kullanıcılara göstermeden önce görsellerin indirilmesine yeterli zaman tanımak amacıyla onboarding yapılandırmasını erken getirin.
+
+Bir onboarding almak için `getOnboarding` metodunu kullanın:
+
+```typescript showLineNumbers
+
+try {
+  const onboarding = await adapty.getOnboarding({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data', // Load from server, fallback to cache
+      loadTimeoutMs: 5000 // 5 second timeout
+    }
+  });
+  console.log('Onboarding fetched successfully');
+} catch (error) {
+  console.error('Failed to fetch onboarding:', error);
+}
+```
+
+Ardından, bir görünüm örneği oluşturmak için `createOnboardingView` metodunu çağırın.
+
+:::warning
+`createOnboardingView` metodunun sonucu yalnızca bir kez kullanılabilir. Tekrar kullanmanız gerekiyorsa `createOnboardingView` metodunu yeniden çağırın.
+:::
+
+```typescript showLineNumbers
+
+if (onboarding.hasViewConfiguration) {
+  try {
+    const view = await createOnboardingView(onboarding);
+    console.log('Onboarding view created successfully');
+  } catch (error) {
+    console.error('Failed to create onboarding view:', error);
+  }
+} else {
+  // Use your custom logic
+  console.log('Onboarding does not have view configuration');
+}
+```
+
+Parametreler:
+
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|-----------|
+| **placementId** | zorunlu | İstenen [Placement](placements)'ın tanımlayıcısı. Bu, Adapty Kontrol Paneli'nde placement oluştururken belirttiğiniz değerdir. |
+| **locale** | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | <p>Onboarding yerelleştirmesinin tanımlayıcısı. Bu parametre, eksi (**-**) karakteriyle ayrılmış bir veya iki alt etiketten oluşan bir dil kodu olmalıdır. İlk alt etiket dil, ikincisi bölge içindir.</p><p></p><p>Örnek: `en` İngilizce anlamına gelir, `pt-br` Brezilya Portekizcesini temsil eder.</p><p>Yerel ayar kodları ve bunların nasıl kullanılması gerektiği hakkında daha fazla bilgi için [Yerelleştirmeler ve yerel ayar kodları](localizations-and-locale-codes) sayfasına bakın.</p> |
+| **params.fetchPolicy** | <p>isteğe bağlı</p><p>varsayılan: `'reload_revalidating_cache_data'`</p> | <p>Varsayılan olarak SDK, sunucudan veri yüklemeye çalışır ve hata durumunda önbelleğe alınmış verileri döndürür. Kullanıcılarınızın her zaman en güncel verileri almasını sağladığından bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internet bağlantısıyla uğraştığını düşünüyorsanız, mevcut olduğunda önbelleğe alınmış verileri döndürmek için `'return_cache_data_else_load'` kullanmayı değerlendirin. Bu durumda kullanıcılar en son verilere ulaşamayabilir; ancak internet bağlantısı ne kadar kesintili olursa olsun daha hızlı yükleme süreleri yaşarlar. Önbellek düzenli olarak güncellendiğinden, ağ isteklerini önlemek amacıyla oturum sırasında kullanmak güvenlidir.</p><p></p><p>Önbelleğin, uygulama yeniden başlatıldığında bozulmadan kaldığını ve yalnızca uygulama yeniden yüklendiğinde veya manuel temizlik yapıldığında silindiğini unutmayın.</p> |
+| **params.loadTimeoutMs** | <p>isteğe bağlı</p><p>varsayılan: 5000 ms</p> | <p>Bu değer, bu metot için zaman aşımını (milisaniye cinsinden) sınırlar. Zaman aşımına ulaşılırsa önbelleğe alınmış veriler veya yerel yedek döndürülür.</p><p>Nadir durumlarda bu metot, `loadTimeoutMs` içinde belirtilenden biraz daha geç zaman aşımına uğrayabilir; çünkü işlem arka planda farklı isteklerden oluşabilir.</p> |
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama |
+|:----------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onboarding** | Onboarding tanımlayıcısı ve yapılandırması, remote config ve diğer çeşitli özellikleri içeren bir [`AdaptyOnboarding`](https://capacitor.adapty.io/interfaces/adaptyonboarding) nesnesi. |
+
+## Varsayılan kitle onboarding'i ile onboarding getirmeyi hızlandırın \{#speed-up-onboarding-fetching-with-default-audience-onboarding\}
+
+Onboarding'ler genellikle neredeyse anında getirilir, bu nedenle bu süreci hızlandırmak için endişelenmenize gerek yoktur. Ancak çok sayıda kitleniz ve onboarding'iniz varsa ve kullanıcılarınızın internet bağlantısı zayıfsa, bir onboarding'i getirmek istediğinizden daha uzun sürebilir. Bu gibi durumlarda, hiç onboarding göstermemek yerine sorunsuz bir kullanıcı deneyimi sağlamak amacıyla varsayılan bir onboarding görüntülemek isteyebilirsiniz.
+
+Bu sorunu gidermek için, belirtilen placement'ın **Tüm Kullanıcılar** kitlesi için onboarding'i getiren `getOnboardingForDefaultAudience` metodunu kullanabilirsiniz. Ancak önerilen yaklaşımın, yukarıdaki [Onboarding'i Getirme](#fetch-onboarding) bölümünde açıklandığı şekilde `getOnboarding` metoduyla onboarding getirmek olduğunu anlamak önemlidir.
+
+:::warning
+`getOnboardingForDefaultAudience` yerine `getOnboarding` kullanmayı değerlendirin; çünkü ikincisinin önemli sınırlamaları vardır:
+
+- **Uyumluluk sorunları**: Birden fazla uygulama sürümünü desteklerken sorunlara yol açabilir; geriye dönük uyumlu tasarımlar yapmanızı ya da eski sürümlerin hatalı görüntülenebileceğini kabul etmenizi gerektirir.
+- **Kişiselleştirme yok**: Yalnızca "Tüm Kullanıcılar" kitlesi için içerik gösterir; ülke, attribution veya özel niteliklere dayalı hedeflemeyi ortadan kaldırır.
+
+Kullanım durumunuzda daha hızlı getirme bu dezavantajlardan daha önemliyse aşağıda gösterildiği gibi `getOnboardingForDefaultAudience` kullanın. Aksi takdirde [yukarıda](#fetch-onboarding) açıklandığı gibi `getOnboarding` kullanın.
+:::
+
+```typescript showLineNumbers
+
+try {
+  const onboarding = await adapty.getOnboardingForDefaultAudience({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data' // Load from server, fallback to cache
+    }
+  });
+  console.log('Default audience onboarding fetched successfully');
+} catch (error) {
+  console.error('Failed to fetch default audience onboarding:', error);
+}
+```
+
+Parametreler:
+
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|-----------|
+| **placementId** | zorunlu | İstenen [Placement](placements)'ın tanımlayıcısı. Bu, Adapty Kontrol Paneli'nde placement oluştururken belirttiğiniz değerdir. |
+| **locale** | <p>isteğe bağlı</p><p>varsayılan: `en`</p> | <p>Onboarding yerelleştirmesinin tanımlayıcısı. Bu parametre, eksi (**-**) karakteriyle ayrılmış bir veya iki alt etiketten oluşan bir dil kodu olmalıdır. İlk alt etiket dil, ikincisi bölge içindir.</p><p></p><p>Örnek: `en` İngilizce anlamına gelir, `pt-br` Brezilya Portekizcesini temsil eder.</p><p>Yerel ayar kodları ve bunların nasıl kullanılması gerektiği hakkında daha fazla bilgi için [Yerelleştirmeler ve yerel ayar kodları](localizations-and-locale-codes) sayfasına bakın.</p> |
+| **params.fetchPolicy** | <p>isteğe bağlı</p><p>varsayılan: `'reload_revalidating_cache_data'`</p> | <p>Varsayılan olarak SDK, sunucudan veri yüklemeye çalışır ve hata durumunda önbelleğe alınmış verileri döndürür. Kullanıcılarınızın her zaman en güncel verileri almasını sağladığından bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internet bağlantısıyla uğraştığını düşünüyorsanız, mevcut olduğunda önbelleğe alınmış verileri döndürmek için `'return_cache_data_else_load'` kullanmayı değerlendirin. Bu durumda kullanıcılar en son verilere ulaşamayabilir; ancak internet bağlantısı ne kadar kesintili olursa olsun daha hızlı yükleme süreleri yaşarlar. Önbellek düzenli olarak güncellendiğinden, ağ isteklerini önlemek amacıyla oturum sırasında kullanmak güvenlidir.</p><p></p><p>Önbelleğin, uygulama yeniden başlatıldığında bozulmadan kaldığını ve yalnızca uygulama yeniden yüklendiğinde veya manuel temizlik yapıldığında silindiğini unutmayın.</p> |

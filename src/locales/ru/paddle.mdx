@@ -1,0 +1,308 @@
+---
+title: "Начальная интеграция с Paddle"
+description: "Интегрируйте Paddle с Adapty для бесперебойной обработки платежей по подпискам."
+metadataTitle: "Гайд по интеграции с Paddle | Документация Adapty"
+keywords: ['paddle']
+---
+
+Adapty поддерживает web2app-сценарии, отслеживая веб-платежи и подписки, оформленные через [Paddle](https://www.paddle.com/).
+
+Интеграция охватывает покупки, инициированные на сайте, и синхронизирует их с доступом в мобильном приложении и аналитикой — наряду со встроенными покупками из сторов.
+
+Она полезна в следующих сценариях:
+
+- Собирать данные о подписках из встроенных покупок и покупок на сайте в единой системе
+- Предоставлять доступ к платным функциям мобильного приложения пользователям, совершившим покупку на сайте
+- Просматривать аналитику и данные о подписках по всем каналам продаж в одном дашборде
+
+:::note
+Apple теперь разрешает приложениям в US App Store включать ссылки на внешние платёжные системы, однако приложения всё равно могут быть обязаны предлагать встроенные покупки наряду с внешними вариантами. Уточните актуальные правила App Store для своего региона и категории приложения.
+:::
+
+:::note
+Эта интеграция ориентирована на отслеживание и синхронизацию веб-покупок в Paddle. Если вам нужно направлять пользователей из приложения на веб-чекаут, используйте [веб-пейволы](web-paywall) Adapty.
+:::
+
+Чтобы настроить интеграцию с Paddle, выполните следующие шаги:
+
+## 1\. Подключите Paddle к Adapty \{#1-connect-paddle-to-adapty\}
+
+Интеграция использует вебхуки для отправки данных о подписках из Paddle в Adapty. Чтобы связать аккаунты Adapty и Paddle, вам потребуется:
+
+1. Предоставить API-ключи Paddle.
+2. Добавить URL вебхука Adapty в Paddle.
+
+:::note
+Описанные ниже шаги применимы как к Production, так и к Test окружению — можно настроить оба одновременно. Приведённые ссылки ведут на Production — чтобы получить ссылки для Test, просто добавьте `sandbox-` в начало каждого URL. Например, используйте `https://sandbox-vendors.paddle.com/authentication-v2` вместо `https://vendors.paddle.com/authentication-v2`.
+:::
+
+### 1.1. Получите и добавьте API-ключи Paddle \{#11-get-and-add-paddle-api-keys\}
+
+1. В Paddle перейдите в [Developer Tools → Authentication](https://vendors.paddle.com/authentication-v2) и нажмите **New API key**.
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-new-key.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. Задайте название ключа и установите дату истечения. Чтобы API-ключ работал с Adapty, необходимо предоставить ему разрешение **Read** для всех сущностей. Нажмите **Save**.
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-key.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '300px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Нажмите **Copy key**.
+
+<Zoom>
+  <img src="/assets/shared/img/copy-paddle-key.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. В Adapty перейдите в [App Settings → Paddle](https://app.adapty.io/settings/paddle) и вставьте ключ в поле **Paddle API key**.
+
+:::warning
+Если вы установили срок действия API-ключа Paddle, необходимо вручную сгенерировать новый ключ и обновить его в Adapty до истечения срока. Когда ключ истечёт, интеграция перестанет работать без каких-либо предупреждений, и пользователи не смогут совершать покупки.
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-api-keys-adapty.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 1.2. Добавьте события, которые будут отправляться в Adapty \{#12-add-events-that-will-be-sent-to-adapty\}
+
+1. Скопируйте **Webhook URL** с той же страницы **Paddle** в Adapty.
+2. В Paddle перейдите в [**Developer Tools → Notifications**](https://vendors.paddle.com/notifications-v2) и нажмите **New destination**, чтобы добавить вебхук.
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-webhook.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Введите понятное название для вебхука. Рекомендуем включить в него слово «Adapty», чтобы легко найти его при необходимости.
+
+4. Вставьте **Webhook URL** из Adapty в поле **URL**. Убедитесь, что используете вебхук для нужного окружения.
+
+5. Установите **Notification type** в значение **Webhook**.
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-create-webhook.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+6. Выберите следующие события:
+
+   - `subscription.created`
+
+   - `subscription.updated`
+
+   - `transaction.created`
+
+   - `transaction.updated`
+
+   - `adjustment.created`
+
+   - `adjustment.updated`
+
+<Zoom>
+  <img src="/assets/shared/img/paddle_events.png"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+7. Нажмите **Save destination**, чтобы завершить настройку вебхука.
+
+### 1.3. Получите и добавьте секретный ключ вебхука \{#13-retrieve-and-add-the-webhook-secret-key\}
+
+1. В окне **Notifications** нажмите на три точки рядом с только что созданным вебхуком и выберите **Edit destination**.
+2. В панели **Edit destination** появится новое поле **Secret key**. Скопируйте его.
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-webhook-secret-key-copy.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. В Adapty перейдите в [App Settings → Paddle](https://app.adapty.io/settings/paddle) и вставьте ключ в поле **Notification secret key**. Этот ключ используется для проверки данных вебхука в Adapty.
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-webhook-secret-key.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 1.4. Свяжите клиентов Paddle с профилями Adapty \{#14-match-paddle-customers-with-adapty-profiles\}
+
+Adapty нужно привязать каждую покупку к [профилю пользователя](profiles-crm), чтобы использовать её в вашем приложении. По умолчанию профили создаются автоматически, когда Adapty получает вебхуки от Paddle. Вы можете выбрать, какое значение использовать в качестве `customer_user_id` в Adapty:
+
+1. **По умолчанию и рекомендуется:** `customer_user_id`, который вы передаёте в поле `custom_data` (см. [документацию Paddle](https://developer.paddle.com/build/transactions/custom-data))
+2. `email` из объекта Paddle Customer (см. [документацию Paddle](https://developer.paddle.com/paddlejs/methods/paddle-checkout-open#params))
+3. Paddle Customer ID в формате `ctm-...` (см. [документацию Paddle](https://developer.paddle.com/paddlejs/methods/paddle-checkout-open#params))
+4. Не создавать профили. Выберите этот вариант, если хотите самостоятельно управлять профилями пользователей.
+
+Настроить используемое значение можно в поле **Profile creation behavior** в разделе [App Settings → Paddle](https://app.adapty.io/settings/paddle).
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-users.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## 2. Добавьте продукты Paddle в Adapty \{#2-add-paddle-products-to-adapty\}
+
+:::warning
+
+Обязательно добавьте продукты Paddle в дашборд Adapty или привяжите Paddle product ID к уже существующим продуктам. Adapty отслеживает события только для транзакций, связанных с этими продуктами. Если пропустить этот шаг, события транзакций создаваться не будут.
+
+:::
+
+Paddle работает в Adapty так же, как App Store и Google Play — это ещё одна платформа, на которой вы продаёте цифровые продукты. Чтобы настроить её, добавьте соответствующие значения `product_id` и `price_id` из Paddle в разделе [Products](https://app.adapty.io/products) в Adapty.
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-create-product.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+В Paddle ID продуктов выглядят как `pro_...`, а ID цен — как `pri_...`. Найти их можно в [каталоге продуктов Paddle](https://vendors.paddle.com/products-v2), открыв конкретный продукт:
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-product-price.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+После добавления продуктов следующий шаг — убедиться, что Adapty может связать покупку с нужным пользователем.
+
+## 3\. Предоставьте доступ пользователям на мобильном устройстве \{#3-provide-access-to-users-on-the-mobile\}
+
+Чтобы пользователи, совершившие покупку на сайте, получили доступ в мобильном приложении, вызовите `Adapty.activate()` или `Adapty.identify()` с тем же `customer_user_id`, который был передан при оформлении покупки. Подробнее см. в разделе [Идентификация пользователей](identifying-users).
+
+## 4\. Протестируйте интеграцию \{#4-test-your-integration\}
+
+После завершения настройки можно протестировать интеграцию. Транзакции в Test-окружении Paddle будут отображаться в Adapty со статусом **Test**, а транзакции из Production — со статусом **Production**.
+
+Интеграция завершена. Пользователи могут оформлять подписки на вашем сайте и автоматически получать доступ к премиум-функциям в мобильном приложении, а вы отслеживаете всю аналитику подписок в едином дашборде Adapty.
+
+## Важные замечания \{#important-considerations\}
+
+- В аналитике Adapty суммы транзакций включают налоги и комиссии Paddle, что отличается от дашборда Paddle, где суммы отображаются уже за вычетом налогов и комиссий. Это означает, что цифры в Adapty будут выше, чем в вашем дашборде Paddle.
+- В отличие от других сторов, возвраты в Paddle затрагивают только конкретную возвращаемую транзакцию и не отменяют подписку автоматически. Подписка останется активной, если только её не отменить явно.
+- Также можно указать `variation_id` в поле `custom_data`, чтобы атрибутировать покупки к конкретным экземплярам пейвола. Adapty обработает эти данные из вебхуков и включит их в аналитику.
+
+### Платные триалы \{#paid-trials\}
+
+При работе с платными триалами в Paddle необходимо создать два продукта в Adapty:
+
+1. Создайте продукт без подписки и привяжите его к цене Paddle, которая списывает плату за триальный период.
+2. Затем создайте продукт с подпиской (Monthly/Weekly/etc.) и привяжите его к цене Paddle, в которой есть компонент бесплатного триала.
+
+С точки зрения Paddle, это один продукт с двумя ценами в одной транзакции: одна цена — за платный триал (например, $0.99), другая — за бесплатный триал ($0.00).
+
+С точки зрения Adapty, это создаёт два отдельных события: разовую покупку за триальный платёж и событие начала триала для продукта-подписки.
+
+Например, когда пользователь начинает платный триал за $0.99 для подписки по $9.99/месяц, Paddle создаёт одну транзакцию с обеими ценами, а Adapty обрабатывает это как разовую покупку за $0.99 (немедленное списание) и событие начала триала за $0.00 (будущая подписка по $9.99/месяц).
+
+:::note
+Когда пользователи отменяют платный триал, вы получаете события **Trial expired** и **Trial renewal canceled**.
+:::
+
+## Больше возможностей с данными Paddle \{#get-more-from-your-paddle-data\}
+
+:::important
+Чтобы события Paddle работали с интеграциями, ваши пользователи должны хотя бы раз войти в приложение через аккаунт App Store/Google Play.
+:::
+
+После интеграции с Paddle Adapty сразу готов предоставлять аналитику. Чтобы максимально использовать данные Paddle, можно настроить дополнительные интеграции Adapty для передачи событий Paddle — это объединит всю аналитику подписок в едином дашборде Adapty.
+
+Интеграции для передачи и анализа событий Paddle:
+- [AppsFlyer](appsflyer)
+- [Webhook](webhook)
+- [Posthog](posthog)
+
+## Текущие ограничения \{#current-limitations\}
+
+- **Отмена подписок**: Paddle предлагает два варианта отмены подписки:
+
+  1. Немедленная отмена: подписка отменяется сразу.
+
+  2. Отмена в конце периода: подписка отменяется по окончании текущего расчётного периода (аналогично встроенным подпискам в сторах).
+
+- **Возвраты**: Adapty отслеживает полные и частичные возвраты.
+
+- **Льготный период**: по умолчанию Paddle применяет фиксированный льготный период в 30 дней при проблемах с оплатой, в течение которого подписка остаётся активной. Вы можете [настроить продолжительность льготного периода и действие после его окончания (приостановку или отмену подписки)](https://developer.paddle.com/build/retain/configure-payment-recovery-dunning#prerequisites).
+
+  **Триалы**: если после окончания триала не удаётся собрать платёж, статус подписки меняется на `past_due`. В production Paddle Retain применяет окно повторных попыток для восстановления платежа до отмены или приостановки подписки. В песочнице Retain недоступен, поэтому повторные попытки оплаты не предпринимаются, и подписка остаётся в статусе `past_due` бессрочно.
+
+---
+
+**Смотрите также:**
+
+- [Валидация покупки в Paddle, получение уровня доступа и импорт истории транзакций из Paddle через серверный API](api-adapty/operations/validatePaddlePurchase)

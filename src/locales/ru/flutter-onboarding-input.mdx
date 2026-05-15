@@ -1,0 +1,250 @@
+---
+title: "Обработка данных из онбордингов в Flutter SDK"
+description: "Сохраняйте и используйте данные из онбордингов в вашем Flutter-приложении с помощью Adapty SDK."
+metadataTitle: "Онбординги | Flutter SDK | Документация Adapty"
+---
+
+Когда пользователь отвечает на вопрос викторины или вводит данные в поле ввода, вызывается метод `onStateUpdatedAction`. Вы можете сохранить или обработать тип поля в своём коде.
+
+Например:
+
+```dart
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Process data 
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  // Process data 
+}
+```
+
+Формат действия описан [здесь](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyUIOnboardingPlatformView/onStateUpdatedAction.html).
+
+<Details>
+<summary>Примеры сохранённых данных (формат может отличаться в вашей реализации)</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## Сценарии использования \{#use-cases\}
+
+### Обогащение профилей пользователей данными \{#enrich-user-profiles-with-data\}
+
+Если вы хотите сразу связать введённые данные с профилем пользователя и не спрашивать его дважды об одном и том же, нужно [обновить профиль пользователя](flutter-setting-user-attributes) введёнными данными при обработке действия.
+
+Например, вы просите пользователя ввести имя в текстовое поле с идентификатором `name` и хотите сохранить значение этого поля как имя пользователя. Также вы просите ввести email в поле `email`. В коде приложения это может выглядеть так:
+
+```dart showLineNumbers
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Store user preferences or responses
+  if (params is AdaptyOnboardingsInputParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map elementId to appropriate profile field
+    switch (elementId) {
+      case 'name':
+        if (params.input is AdaptyOnboardingsTextInput) {
+          builder.setFirstName((params.input as AdaptyOnboardingsTextInput).value);
+        }
+        break;
+      case 'email':
+        if (params.input is AdaptyOnboardingsEmailInput) {
+          builder.setEmail((params.input as AdaptyOnboardingsEmailInput).value);
+        }
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  // Store user preferences or responses
+  if (params is AdaptyOnboardingsInputParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map elementId to appropriate profile field
+    switch (elementId) {
+      case 'name':
+        if (params.input is AdaptyOnboardingsTextInput) {
+          builder.setFirstName((params.input as AdaptyOnboardingsTextInput).value);
+        }
+        break;
+      case 'email':
+        if (params.input is AdaptyOnboardingsEmailInput) {
+          builder.setEmail((params.input as AdaptyOnboardingsEmailInput).value);
+        }
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+```
+
+### Персонализация пейволов на основе ответов \{#customize-paywalls-based-on-answers\}
+
+С помощью викторин в онбордингах можно также настраивать пейволы, которые показываются пользователям после завершения онбординга.
+
+Например, можно спросить пользователей об их опыте в спорте и показывать разные CTA и продукты разным группам пользователей.
+
+1. [Добавьте викторину](onboarding-quizzes) в конструкторе онбординга и назначьте вариантам понятные идентификаторы.
+
+<ZoomImage id="experience.webp" />
+
+2. Обрабатывайте ответы на викторину по их идентификаторам и [устанавливайте пользовательские атрибуты](flutter-setting-user-attributes) для пользователей.
+
+```dart showLineNumbers
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Handle quiz responses and set custom attributes
+  if (params is AdaptyOnboardingsSelectParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map quiz responses to custom attributes
+    switch (elementId) {
+      case 'experience':
+        // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+        builder.setCustomStringAttribute(params.value, 'experience');
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  // Handle quiz responses and set custom attributes
+  if (params is AdaptyOnboardingsSelectParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map quiz responses to custom attributes
+    switch (elementId) {
+      case 'experience':
+        // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+        builder.setCustomStringAttribute(params.value, 'experience');
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+```
+
+3. [Создайте сегменты](segments) для каждого значения пользовательского атрибута.
+4. Создайте [плейсмент](placements) и добавьте [аудитории](audience) для каждого созданного сегмента.
+5. [Отобразите пейвол](flutter-paywalls) для плейсмента в коде приложения. Если в онбординге есть кнопка, открывающая пейвол, реализуйте код пейвола как [реакцию на действие этой кнопки](flutter-handling-onboarding-events#opening-a-paywall).

@@ -7,11 +7,43 @@ on:
     workflows: ["Translate docs"]
     types: [completed]
     branches: [main]
+
 jobs:
-  check-internal-links:
-    name: Check internal links
+  # ──────────────────────────────────────────────────────────────
+  # Determine whether this is a translation-only deploy
+  # ──────────────────────────────────────────────────────────────
+  classify:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
+    outputs:
+      translation_only: ${{ steps.check.outputs.translation_only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "translation_only=true" >> $GITHUB_OUTPUT
+          else
+            # Check if the commit is a translation-only commit (from the bot)
+            AUTHOR=$(git log -1 --pretty=format:'%an')
+            MSG=$(git log -1 --pretty=format:'%s')
+            if [[ "$AUTHOR" == "github-actions[bot]" && "$MSG" == "chore: update translations" ]]; then
+              echo "translation_only=true" >> $GITHUB_OUTPUT
+            else
+              echo "translation_only=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+  check-internal-links:
+    name: Check internal links
+    needs: classify
+    if: needs.classify.outputs.translation_only == 'false'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: check-internal-links-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,24 +51,127 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
       - run: npm install github-slugger
-      - run: node scripts/check-links/index.mjs --diff --internal-only
+      - run: node scripts/check-links/index.mjs --diff --base=last-production-deploy --internal-only
 
-  deploy:
+  # ──────────────────────────────────────────────────────────────
+  # Full deploy: English + all locales (on content pushes)
+  # ──────────────────────────────────────────────────────────────
+  build-en:
     needs: check-internal-links
     runs-on: ubuntu-latest
+    concurrency:
+      group: build-en-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Cache Astro build
+        uses: actions/cache@v4
+        with:
+          path: .astro
+          key: astro-en-${{ github.sha }}
+          restore-keys: astro-en-
+
+      - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+
+      - name: Build English only
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=none npx astro build
+
+      - name: Generate markdown exports
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: npm run build:md:prod
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-en
+          path: build/
+          retention-days: 1
+
+  build-locale-full:
+    needs: check-internal-links
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        locale: [zh, tr, ru]
+    concurrency:
+      group: build-locale-full-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Cache Astro build
+        uses: actions/cache@v4
+        with:
+          path: .astro
+          key: astro-${{ matrix.locale }}-${{ github.sha }}
+          restore-keys: astro-${{ matrix.locale }}-
+
+      - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+
+      - name: Build locale ${{ matrix.locale }}
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} npx astro build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.locale }}
+          path: build/${{ matrix.locale }}/
+          retention-days: 1
+
+  deploy-full:
+    needs: [build-en, build-locale-full]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-full-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
     environment: production
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-en
+          path: build/
 
-      - name: Build
-        run: ASTRO_TELEMETRY_DISABLED=1 npm run build
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-zh
+          path: build/zh/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-tr
+          path: build/tr/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-ru
+          path: build/ru/
 
       - name: Deploy
         uses: reggionick/s3-deploy@v4
@@ -47,6 +182,101 @@ jobs:
           dist-id: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
           invalidation: /*
           delete-removed: true
-          # no-cache: true
           private: true
-          # files-to-include: '{.*/**,**}'
+
+      - name: Update deployment tag
+        run: |
+          git tag -f last-production-deploy
+          git push -f origin last-production-deploy
+
+  # ──────────────────────────────────────────────────────────────
+  # Translation-only deploy: build + upload only locale dirs
+  # ──────────────────────────────────────────────────────────────
+  build-locale-only:
+    needs: classify
+    if: needs.classify.outputs.translation_only == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        locale: [zh, tr, ru]
+    concurrency:
+      group: build-locale-only-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Cache Astro build
+        uses: actions/cache@v4
+        with:
+          path: .astro
+          key: astro-${{ matrix.locale }}-${{ github.sha }}
+          restore-keys: astro-${{ matrix.locale }}-
+
+      - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+
+      - name: Build locale ${{ matrix.locale }}
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} npx astro build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-tr-only-${{ matrix.locale }}
+          path: build/${{ matrix.locale }}/
+          retention-days: 1
+
+  deploy-translations:
+    needs: build-locale-only
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-translations-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    environment: production
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-tr-only-zh
+          path: build/zh/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-tr-only-tr
+          path: build/tr/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-tr-only-ru
+          path: build/ru/
+
+      # Sync locale directories to S3 using AWS CLI —
+      # only overwrites zh/, tr/, and ru/ prefixes, leaves English untouched.
+      - name: Deploy translations to S3
+        run: |
+          aws s3 sync build/zh/ s3://${{ secrets.S3_BUCKET }}/zh/ --delete
+          aws s3 sync build/tr/ s3://${{ secrets.S3_BUCKET }}/tr/ --delete
+          aws s3 sync build/ru/ s3://${{ secrets.S3_BUCKET }}/ru/ --delete
+
+      - name: Invalidate locale paths
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/zh/*" "/tr/*" "/ru/*"
+
+      - name: Update deployment tag
+        run: |
+          git tag -f last-production-deploy
+          git push -f origin last-production-deploy

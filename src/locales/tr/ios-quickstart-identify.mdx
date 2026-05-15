@@ -1,0 +1,214 @@
+---
+title: "iOS SDK'da kullanıcıları tanımlama"
+description: "Uygulama içi abonelik yönetimi için Adapty kurulum hızlı başlangıç kılavuzu."
+metadataTitle: "Adapty Hızlı Başlangıç Kılavuzu | Adapty Dokümanları"
+keywords: ['tanımlama', 'kullanıcıları tanımlama', 'customeruserid']
+rank: 100
+---
+
+:::important
+Bu kılavuz, kendi kimlik doğrulama sisteminiz varsa size yöneliktir. Burada, Adapty'deki kullanıcı profillerinin mevcut kimlik doğrulama sisteminizle uyumlu çalışmasını nasıl sağlayacağınızı öğreneceksiniz.
+:::
+
+Kullanıcıların satın alımlarını nasıl yöneteceğiniz, uygulamanızın kimlik doğrulama modeline bağlıdır:
+- Uygulamanız arka uç kimlik doğrulaması kullanmıyor ve kullanıcı verilerini depolamıyorsa, [anonim kullanıcılar bölümüne](#anonymous-users) bakın.
+- Uygulamanız arka uç kimlik doğrulamasına sahipse (veya ileride sahip olacaksa), [tanımlanmış kullanıcılar bölümüne](#identified-users) bakın.
+
+**Temel kavramlar**:
+- **Profiller**, SDK'nın çalışması için gereken varlıklardır. Adapty bunları otomatik olarak oluşturur.
+- Anonim **(customer user ID olmadan)** veya tanımlanmış **(customer user ID ile)** olabilirler.
+- Adapty'deki profilleri kendi dahili kimlik doğrulama sisteminizle çapraz referanslamak için **customer user ID** sağlarsınız.
+
+Anonim ve tanımlanmış kullanıcılar arasındaki farklar:
+
+|                            | Anonim kullanıcılar                                         | Tanımlanmış kullanıcılar                                                        |
+|----------------------------|-------------------------------------------------------------|---------------------------------------------------------------------------------|
+| **Satın alma yönetimi**    | Mağaza düzeyinde satın alma geri yükleme                    | Customer user ID aracılığıyla cihazlar arası satın alma geçmişini koruma        |
+| **Profil yönetimi**        | Her yeniden yüklemede yeni profiller                        | Oturumlar ve cihazlar genelinde aynı profil                                     |
+| **Veri sürekliliği**       | Anonim kullanıcıların verileri uygulama yüklemesine bağlıdır | Tanımlanmış kullanıcıların verileri uygulama yüklemeleri arasında korunur       |
+
+## Anonim kullanıcılar \{#anonymous-users\}
+
+Arka uç kimlik doğrulamanız yoksa, **uygulama kodunda kimlik doğrulamayı işlemenize gerek yoktur**:
+
+1. SDK, uygulamanın ilk açılışında etkinleştirildiğinde, Adapty **kullanıcı için yeni bir profil oluşturur**.
+2. Kullanıcı uygulamada bir şey satın aldığında, bu satın alma **Adapty profili ve mağaza hesabıyla ilişkilendirilir**.
+3. Kullanıcı uygulamayı **yeniden yüklediğinde** veya **yeni bir cihaza** yüklediğinde, Adapty **aktivasyonda yeni bir anonim profil oluşturur**.
+4. Kullanıcı uygulamanızda daha önce satın alma yapmışsa, varsayılan olarak satın alımları SDK aktivasyonunda App Store'dan otomatik olarak senkronize edilir.
+
+:::note
+Yedekten geri yükleme, yeniden yüklemeden farklı davranır. Varsayılan olarak, bir kullanıcı yedekten geri yükleme yaptığında SDK önbelleğe alınan verileri korur ve yeni bir profil oluşturmaz. Bu davranışı `clearDataOnBackup` ayarını kullanarak yapılandırabilirsiniz. [Daha fazla bilgi edinin](sdk-installation-ios#clear-data-on-backup-restore).
+:::
+
+Anonim kullanıcılarda her yüklemede yeni profiller oluşturulacaktır, ancak bu bir sorun değildir; çünkü Adapty analitiğinde [yeni yükleme olarak neyin sayılacağını yapılandırabilirsiniz](general#4-installs-definition-for-analytics).
+
+Anonim kullanıcılar için yüklemeleri **cihaz ID'lerine** göre saymanız gerekir. Bu durumda, yeniden yüklemeler de dahil olmak üzere bir cihazdaki her uygulama yüklemesi bir yükleme olarak sayılır.
+
+## Tanımlanmış kullanıcılar \{#identified-users\}
+
+Kullanıcıları uygulamada tanımlamak için iki seçeneğiniz vardır:
+
+- [**Giriş/kayıt sırasında:**](#during-loginsignup) Kullanıcılar uygulamanız başladıktan sonra oturum açıyorsa, kimlik doğruladıklarında `identify()` metodunu bir customer user ID ile çağırın.
+
+- [**SDK aktivasyonu sırasında:**](#during-the-sdk-activation) Uygulama başlatıldığında zaten depolanmış bir customer user ID'niz varsa, bunu `activate()` çağrısında gönderin.
+
+:::important
+Varsayılan olarak, Adapty başka bir Customer User ID ile ilişkilendirilmiş bir Customer User ID'den satın alma aldığında, access level paylaşılır; dolayısıyla her iki profil de ücretli erişime sahip olur. Bu ayarı, ücretli erişimi bir profilden diğerine aktaracak veya paylaşımı tamamen devre dışı bırakacak şekilde yapılandırabilirsiniz. Ayrıntılar için [makaleye](general#6-sharing-paid-access-between-user-accounts) bakın.
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/identify-diagram.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Giriş/kayıt sırasında \{#during-loginsignup\}
+
+Kullanıcıları uygulama başlatıldıktan sonra tanımlıyorsanız (örneğin uygulamanıza giriş yaptıktan veya kaydolduktan sonra), customer user ID'yi ayarlamak için `identify` metodunu kullanın.
+
+- Bu customer user ID'yi **daha önce kullanmadıysanız**, Adapty onu otomatik olarak mevcut profile bağlar.
+- Bu customer user ID'yi **daha önce kullanıcıyı tanımlamak için kullandıysanız**, Adapty bu customer user ID ile ilişkili profille çalışmaya geçer.
+
+:::important
+Customer user ID'ler her kullanıcı için benzersiz olmalıdır. Parametre değerini sabit kodlarsanız, tüm kullanıcılar tek bir kullanıcı olarak değerlendirilir.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    try await Adapty.identify("YOUR_USER_ID") // Unique for each user
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// User IDs must be unique for each user
+Adapty.identify("YOUR_USER_ID") { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+### SDK aktivasyonu sırasında \{#during-the-sdk-activation\}
+
+SDK'yı etkinleştirdiğinizde zaten bir customer user ID biliyorsanız, `identify` metodunu ayrıca çağırmak yerine bunu `activate` metodunda gönderebilirsiniz.
+
+Bir customer user ID bilmenize rağmen bunu yalnızca aktivasyon sonrasında ayarlarsanız, aktivasyonda Adapty yeni bir anonim profil oluşturacak ve siz `identify` metodunu çağırdıktan sonra mevcut profile geçecektir.
+
+Mevcut bir customer user ID (daha önce kullandığınız bir ID) veya yeni bir tane geçirebilirsiniz. Yeni bir tane geçerseniz, aktivasyonda oluşturulan yeni profil otomatik olarak customer user ID'ye bağlanacaktır.
+
+:::note
+Varsayılan olarak, anonim profil oluşturma analitik kontrol panellerini etkilemez; çünkü yüklemeler cihaz ID'lerine göre sayılır.
+
+Bir cihaz ID'si, bir cihazdaki mağazadan yapılan tek bir uygulama yüklemesini temsil eder ve yalnızca uygulama yeniden yüklendikten sonra yeniden oluşturulur.
+Bu, ilk mi yoksa tekrarlanan bir yükleme mi olduğuna ya da mevcut bir customer user ID'nin kullanılıp kullanılmadığına bağlı değildir.
+
+Profil oluşturma (SDK aktivasyonunda veya çıkış yapılmasında), oturum açma veya uygulamayı yeniden yüklemeden güncelleme, ek yükleme olayları oluşturmaz.
+
+Yüklemeleri cihazlar yerine benzersiz kullanıcılara göre saymak istiyorsanız, **App settings** bölümüne gidin ve [**Installs definition for analytics**](general#4-installs-definition-for-analytics) ayarını yapılandırın.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+// Place in the app main struct for SwiftUI or in AppDelegate for UIKit
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID") // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// Place in the app main struct for SwiftUI or in AppDelegate for UIKit
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID") // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+```
+
+</TabItem>
+
+</Tabs>
+
+### Kullanıcı oturumunu kapatma \{#log-users-out\}
+
+Kullanıcıların oturumunu kapatmak için bir butonunuz varsa, `logout` metodunu kullanın.
+
+:::important
+Kullanıcının oturumunu kapatmak, o kullanıcı için yeni bir anonim profil oluşturur.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    try await Adapty.logout()
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.logout { error in
+    if error == nil {
+        // successful logout
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+:::info
+Kullanıcıları tekrar uygulamaya giriş yaptırmak için `identify` metodunu kullanın.
+:::
+
+### Giriş yapmadan satın almaya izin verme \{#allow-purchases-without-login\}
+
+Kullanıcılarınız uygulamanıza giriş yapmadan önce ve sonra satın alma yapabiliyorsa, giriş yaptıklarında erişimlerini kaybetmeyeceklerinden emin olmanız gerekir:
+
+1. Oturumu kapalı bir kullanıcı satın alma yaptığında, Adapty bunu anonim profil ID'sine bağlar.
+2. Kullanıcı hesabına giriş yaptığında, Adapty tanımlanmış profiliyle çalışmaya geçer.
+    - Yeni bir customer user ID ise (örneğin satın alma kayıt olmadan önce yapılmışsa), Adapty customer user ID'yi mevcut profile atar; böylece tüm satın alma geçmişi korunur.
+    - Mevcut bir customer user ID ise (customer user ID zaten bir profile bağlıysa), profil geçişinin ardından gerçek access level'ı almanız gerekir. Tanımlamanın hemen ardından [`getProfile`](ios-check-subscription-status) metodunu çağırabilir veya verinin otomatik olarak senkronize olması için [profil güncellemelerini dinleyebilirsiniz](ios-check-subscription-status).
+
+## Sonraki adımlar \{#next-steps\}
+
+Tebrikler! Uygulamanıza uygulama içi ödeme mantığını başarıyla uyguladınız! Uygulamanızın monetizasyonunda başarılar dileriz!
+
+Adapty'den daha fazla yararlanmak için şu konuları inceleyebilirsiniz:
+- [**Test etme**](test-purchases-in-sandbox): Her şeyin beklendiği gibi çalıştığından emin olun
+- [**Onboardings**](ios-onboardings): Kullanıcıları onboarding'lerle etkileşime geçirin ve elde tutma oranını artırın
+- [**Entegrasyonlar**](configuration): Tek satır kodla pazarlama attribution ve analitik hizmetleriyle entegre edin
+- [**Özel profil öznitelikleri ayarlama**](setting-user-attributes): Kullanıcı profillerine özel öznitelikler ekleyin ve segmentler oluşturun; böylece A/B testleri başlatabilir veya farklı kullanıcılara farklı paywall'lar gösterebilirsiniz

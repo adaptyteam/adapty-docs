@@ -13,8 +13,12 @@ import ArticleButtons from '../../components/ArticleButtons.astro';
 import Button from '../../components/Button.astro';
 import Inline from '../../components/Inline.astro';
 import MDXImage from '../../components/MDXImage.astro';
-import { Calculator } from '../../components/Calculator';
-import { SUPPORTED_LOCALES } from '../../data/locales';
+import SDKv4 from '../../components/SDKv4.astro';
+import SDKv3 from '../../components/SDKv3.astro';
+import MethodPromo from '../../components/MethodPromo.astro';
+import { CompoundCalculator } from '../../components/CompoundCalculator';
+import { SimpleCalculator } from '../../components/SimpleCalculator';
+import { SUPPORTED_LOCALES, getBuildLocales } from '../../data/locales';
 import { buildDocPaths, findDocEntry, buildBreadcrumbs } from '../../utils/docs';
 import Homepage from '../../components/Homepage';
 
@@ -23,7 +27,7 @@ export async function getStaticPaths() {
   const englishPaths = await buildDocPaths(allDocs);
 
   const paths = [];
-  for (const locale of SUPPORTED_LOCALES) {
+  for (const locale of getBuildLocales()) {
     for (const entry of englishPaths) {
       // Skip redirects in localized routes — always serve content directly
       if (entry.props.redirectTo) continue;
@@ -109,6 +113,8 @@ try {
   // No labels file — use sidebar as-is
 }
 
+const LocalizedHomepage = (props: any) => Homepage({ ...props, locale });
+
 // Breadcrumbs — use locale-prefixed base so hrefs point to /docs/{locale}/...
 const breadcrumbs = sidebarData
   ? buildBreadcrumbs(sidebarData, slug || '', allDocs, `${import.meta.env.BASE_URL}${locale}/`)
@@ -180,10 +186,14 @@ Object.entries(localeReusableComponents).forEach(([p, module]: [string, any]) =>
         InlineTooltip,
         ZoomImage,
         MDXImage,
-        Calculator,
+        CompoundCalculator,
+        SimpleCalculator,
         Button,
         Inline,
-        Homepage,
+        SDKv4,
+        SDKv3,
+        MethodPromo,
+        Homepage: LocalizedHomepage,
         img: MDXImage,
         ...globalComponents
       }} />
@@ -232,4 +242,88 @@ Object.entries(localeReusableComponents).forEach(([p, module]: [string, any]) =>
   }
   initCopyLinkButton();
   document.addEventListener('astro:page-load', initCopyLinkButton);
+</script>
+
+<script>
+  const SDK_VERSION_KEY = 'adapty-sdk-version-tab';
+
+  function initSDKVersionTabs() {
+    const v4Blocks = document.querySelectorAll('[data-sdk-version="v4"]');
+    const v3Blocks = document.querySelectorAll('[data-sdk-version="v3"]');
+
+    // Only activate on pages that have version blocks
+    if (v4Blocks.length === 0 && v3Blocks.length === 0) return;
+
+    // Remove any previously injected tab bar (for Astro client-side nav)
+    document.querySelector('.sdk-version-tabs')?.remove();
+
+    const savedTab = localStorage.getItem(SDK_VERSION_KEY) || 'v4';
+
+    // Build tab bar
+    const tabBar = document.createElement('div');
+    tabBar.className = 'sdk-version-tabs';
+
+    const v4Tab = document.createElement('button');
+    v4Tab.className = 'sdk-version-tab';
+    v4Tab.dataset.tab = 'v4';
+    v4Tab.textContent = 'SDK v4+';
+
+    const v3Tab = document.createElement('button');
+    v3Tab.className = 'sdk-version-tab';
+    v3Tab.dataset.tab = 'v3';
+    v3Tab.innerHTML = 'SDK v3 <span class="sdk-legacy-badge">Legacy</span>';
+
+    tabBar.append(v4Tab, v3Tab);
+
+    // Inject tab bar after ArticleButtons (below copy/markdown buttons, above content)
+    const articleButtons = document.getElementById('article-buttons');
+    if (articleButtons) {
+      articleButtons.after(tabBar);
+    } else {
+      // Fallback: insert after the h1's parent flex wrapper
+      const h1 = document.querySelector('.content-wrapper h1');
+      if (h1) {
+        const wrapper = h1.closest('div') ?? h1;
+        wrapper.after(tabBar);
+      }
+    }
+
+    // Tag TOC <li>s with a class indicating which SDK version their heading
+    // belongs to. Use a class (not data-sdk-version) to avoid colliding with
+    // the global `[data-sdk-version] { display: none }` rule that hides
+    // page-content blocks.
+    document.querySelectorAll('.toc-link').forEach(link => {
+      const slug = link.getAttribute('data-slug');
+      if (!slug) return;
+      const heading = document.getElementById(slug);
+      if (!heading) return;
+      const sdkBlock = heading.closest('[data-sdk-version]');
+      if (!sdkBlock) return;
+      const li = link.closest('li');
+      if (!li) return;
+      const version = sdkBlock.getAttribute('data-sdk-version');
+      if (version === 'v3' || version === 'v4') {
+        li.classList.add(`toc-sdk-${version}`);
+      }
+    });
+
+    function activate(tab) {
+      v4Blocks.forEach(el => el.classList.toggle('sdk-version-active', tab === 'v4'));
+      v3Blocks.forEach(el => el.classList.toggle('sdk-version-active', tab === 'v3'));
+      v4Tab.classList.toggle('active', tab === 'v4');
+      v3Tab.classList.toggle('active', tab === 'v3');
+      // Toggle a root class so CSS can hide inactive-tab TOC entries.
+      document.documentElement.classList.toggle('sdk-active-v4', tab === 'v4');
+      document.documentElement.classList.toggle('sdk-active-v3', tab === 'v3');
+      localStorage.setItem(SDK_VERSION_KEY, tab);
+    }
+
+    v4Tab.addEventListener('click', () => activate('v4'));
+    v3Tab.addEventListener('click', () => activate('v3'));
+
+    activate(savedTab);
+  }
+
+  initSDKVersionTabs();
+  document.addEventListener('astro:page-load', initSDKVersionTabs);
 </script>

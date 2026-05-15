@@ -1,0 +1,106 @@
+---
+title: "Проверка статуса подписки в Unity SDK"
+description: "Узнайте, как проверить статус подписки в приложении Unity с помощью Adapty."
+metadataTitle: "Проверка статуса подписки | Документация Adapty"
+displayed_sidebar: sdkunity
+keywords: ['getProfile', 'subscription status']
+rank: 75
+---
+
+Чтобы решить, может ли пользователь получить доступ к платному контенту или нужно показать ему пейвол, проверьте его [уровень доступа](access-level) в профиле.
+
+В этой статье рассказывается, как обращаться к состоянию профиля, чтобы понимать, что показывать пользователю — пейвол или платный контент.
+
+## Получение статуса подписки \{#get-subscription-status\}
+
+Когда нужно решить, показать пользователю пейвол или платный контент, проверьте его [уровень доступа](access-level) в профиле. Есть два способа:
+
+- Вызвать `GetProfile`, если нужны актуальные данные профиля прямо сейчас (например, при запуске приложения) или требуется принудительное обновление.
+- Настроить **автоматические обновления профиля**, чтобы хранить локальную копию, которая автоматически обновляется при изменении статуса подписки.
+
+### Получение профиля \{#get-profile\}
+
+Самый простой способ узнать статус подписки — использовать метод `GetProfile`:
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+// check the access
+});
+```
+
+### Отслеживание обновлений подписки \{#listen-to-subscription-updates\}
+
+Чтобы автоматически получать обновления профиля в приложении:
+
+1. Унаследуйте `AdaptyEventListener` и реализуйте метод `OnLoadLatestProfile` — Adapty будет автоматически вызывать его при каждом изменении статуса подписки пользователя.
+2. Сохраняйте обновлённые данные профиля при вызове этого метода, чтобы использовать их в приложении без дополнительных сетевых запросов.
+
+```csharp
+public class SubscriptionManager : MonoBehaviour, AdaptyEventListener {
+    private AdaptyProfile currentProfile;
+    
+    void Start() {
+        // Register this object as an Adapty event listener
+        Adapty.SetEventListener(this);
+    }
+    
+    // Store the profile when it updates
+    public void OnLoadLatestProfile(AdaptyProfile profile) {
+        currentProfile = profile;
+        // Update UI, unlock content, etc.
+    }
+    
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+    
+    // Use stored profile instead of calling getProfile()
+    public bool HasAccess() {
+        if (currentProfile?.AccessLevels != null && 
+            currentProfile.AccessLevels.ContainsKey("premium")) {
+            return currentProfile.AccessLevels["premium"].IsActive;
+        }
+        return false;
+    }
+}
+```
+
+:::note
+Adapty автоматически вызывает `OnLoadLatestProfile` при запуске приложения, предоставляя кешированные данные о подписке даже при отсутствии интернета.
+:::
+
+## Связь профиля с логикой пейвола \{#connect-profile-with-paywall-logic\}
+
+Когда нужно мгновенно решить, показывать пейвол или открывать доступ к платным функциям, можно проверить профиль пользователя напрямую. Это удобно при запуске приложения, входе в премиальные разделы или перед показом определённого контента.
+
+```csharp
+private void CheckAccessLevel()
+{
+    Adapty.GetProfile((profile, error) => {
+        if (error != null) {
+            Debug.LogError("Error checking access level: " + error.Message);
+            // Show paywall if access check fails
+            return;
+        }
+        
+        var accessLevel = profile.AccessLevels["YOUR_ACCESS_LEVEL"];
+        if (accessLevel == null || !accessLevel.IsActive) {
+            // Show paywall if no access
+        }
+    });
+}
+
+private void InitializePaywall()
+{
+    LoadPaywall();
+    CheckAccessLevel();
+}
+``` 
+
+## Дальнейшие шаги \{#next-steps\}
+
+Теперь, когда вы знаете, как отслеживать статус подписки, узнайте, как [работать с профилями пользователей](unity-quickstart-identify), чтобы они получали доступ к тому, за что заплатили.

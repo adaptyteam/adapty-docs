@@ -1,0 +1,120 @@
+---
+title: "React Native SDK'da kullanıcıları tanımlama"
+description: "Adapty SDK ile React Native uygulamanızda kullanıcıları nasıl tanımlayacağınızı öğrenin."
+metadataTitle: "Kullanıcıları Tanımlama | React Native SDK | Adapty Dokümanları"
+customSlug: /react-native-identifying-users
+displayed_sidebar: sdkreactnative
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+
+Adapty, her kullanıcı için dahili bir profil ID'si oluşturur. Ancak kendi kimlik doğrulama sisteminiz varsa, kendi Customer User ID'nizi ayarlamalısınız. Kullanıcıları Customer User ID'leri ile [Profiller](profiles-crm) bölümünde bulabilir ve tüm entegrasyonlara gönderilecek olan [sunucu tarafı API](getting-started-with-server-side-api)'sinde kullanabilirsiniz.
+
+### Yapılandırma sırasında customer user ID ayarlama \{#setting-customer-user-id-on-configuration\}
+
+Yapılandırma sırasında kullanıcı ID'niz varsa, bunu `.activate()` metoduna `customerUserId` parametresi olarak geçirin:
+
+```typescript showLineNumbers
+adapty.activate("PUBLIC_SDK_KEY", {
+    customerUserId: "YOUR_USER_ID"
+});
+```
+
+<SampleApp />
+
+### Yapılandırma sonrasında customer user ID ayarlama \{#setting-customer-user-id-after-configuration\}
+
+SDK yapılandırmasında kullanıcı ID'niz yoksa, bunu daha sonra istediğiniz zaman `.identify()` metoduyla ayarlayabilirsiniz. Bu metodun en yaygın kullanım durumları; kayıt veya yetkilendirme sonrasında, yani kullanıcı anonim kullanıcıdan kimliği doğrulanmış kullanıcıya geçtiğinde ortaya çıkar.
+
+```typescript showLineNumbers
+try {
+    await adapty.identify("YOUR_USER_ID");
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```
+
+İstek parametreleri:
+
+- **Customer User ID** (zorunlu): bir string kullanıcı tanımlayıcısı.
+
+:::warning
+Önemli kullanıcı verilerinin yeniden gönderilmesi
+
+Kullanıcının hesabına tekrar giriş yapması gibi bazı durumlarda Adapty'nin sunucuları o kullanıcıya ait bilgilere zaten sahiptir. Bu senaryolarda Adapty SDK, yeni kullanıcıyla çalışmaya otomatik olarak geçer. Anonim kullanıcıya özel nitelikler veya üçüncü taraf ağlardan attribution gibi veriler ilettiyseniz, bu verileri tanımlanan kullanıcı için yeniden göndermeniz gerekir.
+
+Ayrıca, yeni kullanıcının verileri farklı olabileceğinden, kullanıcıyı tanımladıktan sonra tüm paywall'ları ve ürünleri yeniden istemeniz gerektiğini unutmayın.
+:::
+
+### Çıkış yapma ve giriş yapma \{#logging-out-and-logging-in\}
+
+`.logout()` metodunu çağırarak kullanıcının istediğiniz zaman çıkış yapmasını sağlayabilirsiniz:
+
+```typescript showLineNumbers
+try {
+    await adapty.logout();
+    // successful logout
+} catch (error) {
+    // handle the error
+}
+```
+
+Ardından `.identify()` metodunu kullanarak kullanıcıyı tekrar giriş yaptırabilirsiniz.
+
+## `appAccountToken` atama (iOS) \{#assign-appaccounttoken-ios\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)), App Store işlemlerini dahili kullanıcı kimliğinizle ilişkilendirmenizi sağlayan bir **UUID**'dir.  
+StoreKit bu token'ı her işlemle ilişkilendirir; böylece backend'iniz App Store verilerini kullanıcılarınızla eşleştirebilir.
+
+Her kullanıcı için oluşturulan kararlı bir UUID kullanın ve aynı hesap için farklı cihazlarda da bu UUID'yi yeniden kullanın.
+Bu sayede satın almalar ve App Store bildirimleri doğru şekilde ilişkilendirilmiş kalır.
+
+Token'ı iki şekilde ayarlayabilirsiniz: SDK etkinleştirmesi sırasında veya kullanıcıyı tanımlarken.
+
+:::important
+`appAccountToken`'ı her zaman `customerUserId` ile birlikte geçirmelisiniz.
+Yalnızca token'ı geçerseniz, işleme dahil edilmez.
+:::
+
+```typescript showLineNumbers
+// During configuration:
+adapty.activate("PUBLIC_SDK_KEY", {
+    customerUserId: "YOUR_USER_ID",
+    ios: { appAccountToken: "YOUR_APP_ACCOUNT_TOKEN" },
+});
+
+// Or when identifying users
+try {
+    await adapty.identify("YOUR_USER_ID", {
+        ios: {appAccountToken: 'YOUR_APP_ACCOUNT_TOKEN'}
+    });
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```
+
+### Gizlenmiş hesap ID'leri ayarlama (Android) \{#set-obfuscated-account-ids-android\}
+
+Google Play, kullanıcı gizliliğini ve güvenliğini artırmak için belirli kullanım durumlarında gizlenmiş hesap ID'leri gerektirir. Bu ID'ler, Google Play'in kullanıcı bilgilerini anonim tutarken satın almaları tanımlamasına yardımcı olur; bu durum özellikle sahtecilik önleme ve analitik açısından önemlidir.
+
+Uygulamanız hassas kullanıcı verilerini işliyorsa veya belirli gizlilik düzenlemelerine uymak zorundaysanız bu ID'leri ayarlamanız gerekebilir. Gizlenmiş ID'ler, Google Play'in gerçek kullanıcı tanımlayıcılarını ifşa etmeden satın almaları takip etmesine olanak tanır.
+
+```typescript showLineNumbers
+// During configuration:
+adapty.activate("PUBLIC_SDK_KEY", {
+    customerUserId: "YOUR_USER_ID",
+    android: { obfuscatedAccountId: 'YOUR_OBFUSCATED_ACCOUNT_ID' }
+});
+
+// Or when identifying users
+try {
+    await adapty.identify("YOUR_USER_ID", {
+        android: { obfuscatedAccountId: 'YOUR_OBFUSCATED_ACCOUNT_ID' }
+    });
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```

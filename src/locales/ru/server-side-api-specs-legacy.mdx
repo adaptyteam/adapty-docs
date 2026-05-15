@@ -1,0 +1,406 @@
+---
+title: "Устаревшие спецификации серверного API"
+description: ""
+metadataTitle: ""
+---
+
+**Базовый URL**: `https://api.adapty.io/api/v1/sdk`
+## Авторизация \{#authorization\}
+
+:::warning
+
+**Вы просматриваете гайд по устаревшему серверному API.**
+Для актуальной версии обратитесь к [Server-side API V2](ss-authorization) и [Руководству по миграции на Server-side API V2](migration-guide-to-server-side-api-v2).
+
+:::
+Каждый запрос к API должен быть подписан [секретным ключом](general).
+
+При вызове API:
+- Необходимо добавлять заголовок **Authorization** со значением "Api-Key \{secret\_token\}" \(без кавычек\) к каждому запросу, например `Api-Key secret_live_BEHrYLTr.ce5zuDEWz06lFRNiaJC8mrLtL8fUwswD`
+- Используйте JSON-payload в теле запроса для POST и PATCH запросов
+- Все запросы должны содержать заголовок **Content-Type**: application/json
+## Работа с customer user ID \{#working-with-customer-user-id\}
+
+:::warning
+
+**Вы просматриваете гайд для устаревшего серверного API.**
+Актуальная версия доступна в разделе [Server-side API V2](ss-authorization) и [Руководство по миграции на Server-side API V2](migration-guide-to-server-side-api-v2).
+
+:::
+
+Большинство запросов к серверному API поддерживают передачу `customer_user_id` в качестве параметра URL. Это позволяет легко запрашивать и обновлять данные в Adapty, не сохраняя `profile_id` Adapty. В большинстве случаев `customer_user_id` следует передавать как есть, без каких-либо изменений.
+Однако если ваш `customer_user_id` содержит [зарезервированные символы URI](https://en.wikipedia.org/wiki/Percent-encoding), например `/`, `?`, `+`, его нужно передавать в закодированном виде. Используйте кодировку [Base64URL](https://www.base64encode.org/) (не обычный Base64). Так все специальные символы будут закодированы, а Adapty декодирует их при получении. Чтобы сообщить Adapty, что `customer_user_id` закодирован, передайте GET-параметр `is_user_id_base64url_encoded=1`. Обратите внимание: если передать параметр `is_user_id_base64url_encoded=1` без фактического кодирования, вернётся ошибка валидации 400.
+Кодировать `customer_user_id` нужно только в том случае, если вы передаёте его как часть URL-пути. Если `customer_user_id` передаётся внутри JSON-тела запроса (например, при создании профиля), кодировать его не нужно.
+```python showLineNumbers title="Python"
+## Don't encode
+customer_user_id = '123' # GET: /profiles/123/
+customer_user_id = 'abc' # GET: /profiles/abc/
+customer_user_id = '3c410419-9959-447a-84b5-be7cb6a308d9' # GET: /profiles/3c410419-9959-447a-84b5-be7cb6a308d9/
+
+## Base64URL encode
+customer_user_id = '123+456' # GET: /profiles/MTIzKzQ1Ng==/?is_user_id_base64url_encoded=1
+customer_user_id = 'abc/def' # GET: /profiles/YWJjL2RlZg==/?is_user_id_base64url_encoded=1
+customer_user_id = '012?012' # GET: /profiles/MDEyPzAxMg==/?is_user_id_base64url_encoded=1
+```
+## Запросы \{#requests\}
+### Продление/предоставление подписки пользователю \{#prolonggrant-a-subscription-for-a-user\}
+
+:::warning
+
+**Вы просматриваете гайд для устаревшего серверного API.**
+Актуальная версия доступна в следующих запросах:
+
+- [Set Transaction](api-adapty/operations/setTransaction): Добавление деталей транзакции с предоставлением доступа.
+- [Grant Access Level](api-adapty/operations/grantAccessLevel): Добавление или продление доступа без транзакции.
+- [Revoke Access Level](api-adapty/operations/revokeAccessLevel): Сокращение или отзыв доступа без транзакции.
+
+:::
+```http
+POST: /profiles/{profile_id_or_customer_user_id}/paid-access-levels/{access_level}/grant/
+```
+
+Параметры пути:
+| Param                              | Type | Required | Nullable | Description                                                     |
+| :--------------------------------- | :--- | :------- | :------- | :-------------------------------------------------------------- |
+| **profile_id_or_customer_user_id** | str  | ✅        | ❌        | Adapty profile ID или внутренний ID разработчика |
+| **access_level**                   | str  | ✅        | ❌        | ID \(slug\) платного уровня доступа. Найдите его в дашборде Adapty |
+
+Параметры запроса:
+| Param                              | Type          | Required      | Nullable | Description                                                  |
+| ---------------------------------- | ------------- | ------------- | -------- | ------------------------------------------------------------ |
+| **expires_at**                     | ISO 8601 date | ✅\* см. ниже | ❌        | Дата окончания подписки                                        |
+| **duration_days**                  | int           | ✅\* см. ниже | ❌        | Дополнительные дни к текущей подписке\*\*                |
+| **is_lifetime**                    | bool          | ✅\* см. ниже | ❌        | Если установлено значение true, пользователь получит пожизненный доступ навсегда |
+| **starts_at**                      | ISO 8601 date | ❌             | ❌        | Если время начала действия относится к будущему, его можно передать. Если указаны время начала и период, период будет отсчитываться от указанного времени |
+| **vendor_product_id**              | str           | ❌             | ❌        | При публикации транзакции укажите ID продукта, который инициирует продление подписки. Если вы предоставляете уровень доступа без транзакции, пропустите этот параметр — по умолчанию будет использован **adapty_server_side_product**. |
+| **base_plan_id**                   | str           | ❌             | ❌        | [ID базового плана](https://support.google.com/googleplay/android-developer/answer/12154973) в Google Play Store или [ID цены](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) в Stripe. |
+| **vendor_original_transaction_id** | str           | ❌             | ❌        | ID исходной транзакции в цепочке продлений подписки в среде вендора. |
+| **vendor_transaction_id**          | str           | ❌             | ❌        | <p>ID транзакции в среде вендора.</p><p>Если значение совпадает с **vendor_original_transaction_id** или если **vendor_original_transaction_id** отсутствует, Adapty считает это первой покупкой подписки. Если значение отличается от **vendor_original_transaction_id**, Adapty считает покупку продлением подписки.</p> |
+| **store**                          | str           | ❌             | ❌        | Стор, в котором пользователь приобрёл продукт, например **app\_store** и **play\_store**; может быть кастомным. По умолчанию — **adapty** |
+| **introductory_offer_type**        | str           | ❌             | ❌        | Тип introductory offer. Доступные значения: **free\_trial**, **pay\_as\_you\_go** и **pay\_up\_front**. |
+| **price**                          | float         | ❌             | ❌        | <p>Цена подписки/покупки для сохранения в [транзакции](server-side-api-specs-legacy#transaction).</p><p>Первая покупка подписки с нулевой ценой считается бесплатным пробным периодом, а продление с нулевой ценой — бесплатным продлением подписки.</p><p></p><p>Если вы указываете цену, укажите также `price_locale`.</p> |
+| **price_locale**                   | str           | ❌             | ❌        | Валюта транзакции в [трёхбуквенном](https://en.wikipedia.org/wiki/ISO_4217) формате. По умолчанию используется `USD`. |
+| **proceeds**                       | float         | ❌             | ❌        | Выручка \(цена за вычетом комиссии стора\) подписки/покупки для сохранения в [транзакции](server-side-api-specs-legacy#transaction). |
+| **is_sandbox**                     | bool          | ❌             | ❌        | Булево значение, указывающее, была ли покупка совершена в песочнице или в продакшн-среде. |
+#### Платный уровень доступа \{#paid-access-level\}
+
+Есть три способа предоставить пользователям подписку. Поэтому необходимо задать хотя бы один из параметров: **is\_lifetime**, **expires\_at** или **duration\_days**. Если задано несколько параметров, приоритет имеет **is\_lifetime=true**, затем **expires\_at**, и наконец **duration\_days**.
+Поскольку всю обработку платежей выполняет Apple/Google, Adapty не может управлять этим процессом или влиять на него. Поэтому при использовании **duration\_days** для активной подписки помните: пользователь всё равно будет списан в нужный день. Например, у пользователя есть ежемесячная подписка, и следующее списание запланировано на 5 апреля. Вы добавляете 7 дней, _но пользователь всё равно будет списан 5 апреля!_ Лучше использовать **duration\_days** для пользователей, которые никогда не подписывались, или для отписавшихся. В этом случае отправной точкой будет день предоставления доступа.
+
+#### Транзакция \{#transaction\}
+Если указаны все параметры **vendor_product_id**, **vendor\_transaction\_id** и **store**, Adapty создаёт и сохраняет запись о транзакции, которая учитывается в [графиках](charts) (Revenue, MRR, Subscriptions) — при условии, что транзакция с такими параметрами ещё не существует (например, созданная в результате покупки на iOS). Если указан параметр **price**, он привязывается к этой транзакции.
+
+На данный момент такой тип транзакции не генерирует события профиля, не влияет на статус подписки пользователя и не отображается в [**Event Feed**](https://app.adapty.io/event-feed).
+Также учтите, что эти транзакции влияют на биллинг, поскольку учитываются в MTR.
+
+Пример запроса:
+
+```json showLineNumbers title="Json"
+{
+    "starts_at": "2020-01-15T15:10:36.517975+0000",
+    "expires_at": "2020-02-15T15:10:36.517975+0000",
+    "vendor_product_id": "basic_subscription_1_month",
+    "vendor_transaction_id": "1000000630116569",
+    "store": "app_store",
+    "introductory_offer_type": null
+}
+```
+
+Пример ответа:
+```json showLineNumbers title="Json"
+{
+  "data": {
+    "app_id": "ff90dd2e-e7f2-454b-9d86-071036a284fe",
+    "profile_id": "77112400-89f1-4465-b9c9-5437e58c6688",
+    "customer_user_id": "iwitaly@adapty.io",
+    "paid_access_levels": {
+      "premium": {
+        "id": "premium",
+        "is_active": true,
+        "is_lifetime": false,
+        "expires_at": "2023-03-29T15:30:34.000000+0000",
+        "starts_at": null,
+        "will_renew": false,
+        "vendor_product_id": "adapty_server_side_product",
+        "base_plan_id": "premium_autorenewing",
+        "vendor_transaction_id": "1000000630116569",
+        "vendor_original_transaction_id": "1000000625263604",
+        "store": "adapty",
+        "activated_at": "2020-03-26T16:24:19.497674+0000",
+        "renewed_at": "2020-03-26T16:24:19.497674+0000",
+        "unsubscribed_at": null,
+        "billing_issue_detected_at": null,
+        "is_in_grace_period": false,
+        "active_introductory_offer_type": "free_trial",
+        "active_promotional_offer_type": null,
+        "active_promotional_offer_id": null,
+        "cancellation_reason": null
+      }
+    },
+    "subscriptions": {
+      "com.adapty.premium.monthly": {
+        "is_active": false,
+        "is_lifetime": false,
+        "expires_at": "2020-02-21T16:30:34.000000+0000",
+        "starts_at": null,
+        "will_renew": false,
+        "vendor_product_id": "com.adapty.premium.monthly",
+        "base_plan_id": "monthly_autorenewing",
+        "vendor_transaction_id": "1000000630116569",
+        "vendor_original_transaction_id": "1000000625263604",
+        "store": "app_store",
+        "activated_at": "2020-02-10T19:14:02.000000+0000",
+        "renewed_at": "2020-02-21T16:25:34.000000+0000",
+        "unsubscribed_at": "2020-02-21T16:30:34.000000+0000",
+        "billing_issue_detected_at": "2020-02-21T16:30:34.000000+0000",
+        "is_in_grace_period": false,
+        "active_introductory_offer_type": null,
+        "active_promotional_offer_type": null,
+        "active_promotional_offer_id": null,
+        "cancellation_reason": "voluntarily_cancelled",
+        "is_sandbox": true
+      },
+      "com.adapty.premium.weekly": {
+        "is_active": false,
+        "is_lifetime": false,
+        "expires_at": "2020-02-10T19:32:00.000000+0000",
+        "starts_at": null,
+        "will_renew": true,
+        "vendor_product_id": "com.adapty.premium.weekly",
+        "base_plan_id": "weekly_autorenewing",
+        "vendor_transaction_id": "1000000625265713",
+        "vendor_original_transaction_id": "1000000625263604",
+        "store": "app_store",
+        "activated_at": "2020-02-10T19:14:02.000000+0000",
+        "renewed_at": "2020-02-10T19:29:00.000000+0000",
+        "unsubscribed_at": null,
+        "billing_issue_detected_at": null,
+        "is_in_grace_period": false,
+        "active_introductory_offer_type": null,
+        "active_promotional_offer_type": null,
+        "active_promotional_offer_id": null,
+        "cancellation_reason": null,
+        "is_sandbox": true
+      },
+      "basic_subscription_unlimited": {
+        "is_active": true,
+        "is_lifetime": false,
+        "expires_at": "2021-02-27T11:00:30.000000+0000",
+        "starts_at": null,
+        "will_renew": false,
+        "vendor_product_id": "basic_subscription_unlimited",
+        "base_plan_id": "basic_prepaid",
+        "vendor_transaction_id": "1000000632277988",
+        "vendor_original_transaction_id": "1000000632277988",
+        "store": "app_store",
+        "activated_at": "2020-02-27T11:00:30.000000+0000",
+        "renewed_at": null,
+        "unsubscribed_at": null,
+        "billing_issue_detected_at": null,
+        "is_in_grace_period": false,
+        "active_introductory_offer_type": null,
+        "active_promotional_offer_type": null,
+        "active_promotional_offer_id": null,
+        "cancellation_reason": null,
+        "is_sandbox": true
+      }
+    },
+    "non_subscriptions": null
+  }
+}
+```
+Подробнее об ответах читайте в разделе [Объекты API](server-side-api-objects)**.**
+### Отзыв подписки у пользователя \{#revoke-subscription-from-a-user\}
+
+:::warning
+
+**Вы просматриваете гайд для устаревшего серверного API.**
+Для последней версии обратитесь к запросу [Revoke Access Level](api-adapty/operations/revokeAccessLevel), который позволяет как сократить, так и отозвать уровень доступа без транзакции.
+
+:::
+
+```http
+POST: /profiles/{profile_id_or_customer_user_id}/paid-access-levels/{access_level}/revoke/
+```
+
+Параметры пути:
+| Параметр                           | Тип  | Обязательный | Nullable | Описание                                                     |
+| :--------------------------------- | :--- | :----------- | :------- | :----------------------------------------------------------- |
+| **profile_id_or_customer_user_id** | str  | ✅            | ❌        | ID профиля Adapty или внутренний ID разработчика             |
+| **access_level**                   | str  | ✅            | ❌        | ID (slug) платного уровня доступа. Найдите его в дашборде Adapty |
+
+Параметры запроса:
+| Param          | Type | Required | Nullable | Description                                          |
+| :------------- | :--- | :------- | :------- | :--------------------------------------------------- |
+| **is\_refund** | bool | ✅        | ❌        | Была ли подписка отозвана в связи с возвратом средств |
+Отзывает подписку пользователя, устанавливая **unsubscribed\_at** в текущее время, а **expires\_at** — в максимальное из текущего **starts\_at** и текущего времени \(чтобы **expires\_at** не оказалось меньше **starts\_at**\). Если с этим платным уровнем доступа связана [транзакция](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user), срок её истечения также обновляется до нового значения **expires\_at**. Если **is\_refund** равно **true**, транзакция помечается как возврат, а выручка обнуляется.
+### Валидация покупки в Stripe, предоставление уровня доступа пользователю и импорт истории транзакций из Stripe \{#validate-a-purchase-from-stripe-provide-access-level-to-a-customer-and-import-his-transaction-history-from-stripe\}
+
+```http
+POST: /api/v1/sdk/purchase/stripe/token/validate/
+```
+
+:::warning
+Этот запрос должен использовать другой Content-Type: `Content-Type: application/vnd.api+json'`
+:::
+
+Параметры запроса:
+| Param                  | Type | Required | Nullable | Description                                                  |
+| :--------------------- | :--- | :------- | :------- | :----------------------------------------------------------- |
+| **customer\_user\_id** | str  | ✅        | ❌        | Внутренний ID пользователя в системе разработчика            |
+| **stripe\_token**      | str  | ✅        | ❌        | Токен объекта Stripe, представляющего уникальную покупку. Может быть токеном Stripe Subscription (`sub_XXX`) или Payment Intent (`pi_XXX`). |
+
+Пример запроса:
+```json showLineNumbers title="CURL"
+curl
+--location 'https://api.adapty.io/api/v1/sdk/purchase/stripe/token/validate/' \
+--header 'Content-Type: application/vnd.api+json' \
+--header 'Authorization: Api-Key <PUBLIC_OR_PRIVATE_KEY' \
+--data-raw '{
+  "data": {
+    "type": "stripe_receipt_validation_result",
+    "attributes": {
+        "customer_user_id": "<CUSTOMER_USER_ID>",
+        "stripe_token": "sub_1OM8brJTlbIG45BdDRFOHWAU"
+    }
+  }
+}'
+```
+Проверяет покупку по переданному токену Stripe, используя учётные данные Stripe из **App Settings** дашборда Adapty. Если покупка действительна, история транзакций импортируется из Stripe в профиль Adapty с указанным `customer_user_id`. Если профиля с таким `customer_user_id` не существовало — он будет создан.
+
+В процессе генерируются события профиля, а импортированные транзакции учитываются в MTR.
+### Получение информации о пользователе \{#get-info-about-a-user\}
+
+:::warning
+
+**Вы просматриваете гайд по устаревшему серверному API.**
+Для последней версии обратитесь к запросу [Get profile](api-adapty/operations/getProfile).
+
+:::
+
+```http
+GET: /profiles/{profile_id_or_customer_user_id}/
+```
+
+Параметры пути:
+| Param                              | Type | Required | Nullable | Description                                  |
+| :--------------------------------- | :--- | :------- | :------- | :------------------------------------------- |
+| **profile_id_or_customer_user_id** | str  | ✅        | ❌        | Adapty profile ID или внутренний ID разработчика |
+
+Пример ответа такой же, как для [Продления/предоставления подписки пользователю](server-side-api-specs-legacy#prolonggrant-a-subscription-for-a-user).
+Чтобы получить расширенный ответ, добавьте ключ **"extended"** с любым значением в параметры запроса (Query Params). Это работает только для GET-запросов.
+| Свойство                  | Тип           | Обязательное | Nullable | Описание                                                     |
+| :------------------------ | :------------ | :----------- | :------- | :----------------------------------------------------------- |
+| **created_at**            | ISO 8601 date | ✅            | ❌        | Дата создания профиля, обычно совпадает с датой установки    |
+| **email**                 | str           | ✅            | ✅        | Email пользователя                                           |
+| **phone_number**          | str           | ✅            | ✅        | Номер телефона пользователя                                  |
+| **att_status**            | str           | ✅            | ✅        |                                                              |
+| **first_name**            | str           | ✅            | ✅        | Имя пользователя                                             |
+| **last_name**             | str           | ✅            | ✅        | Фамилия пользователя                                         |
+| **username**              | str           | ✅            | ✅        | Имя пользователя (никнейм)                                   |
+| **gender**                | str           | ✅            | ✅        | Пол пользователя                                             |
+| **birthday**              | ISO 8601 date | ✅            | ✅        | Дата рождения пользователя                                   |
+| **idfa**                  | str           | ✅            | ✅        | Идентификатор для рекламодателей (IDFA), назначаемый Apple устройству пользователя. |
+| **idfv**                  | str           | ✅            | ✅        | Идентификатор для вендоров (IDFV) — код, присваиваемый всем приложениям одного разработчика и общий для всех его приложений на устройстве. |
+| **advertising_id**        | str           | ✅            | ✅        | Advertising ID — уникальный идентификатор операционной системы Android, который рекламодатели могут использовать для однозначной идентификации пользователя. |
+| **appsflyer_id**          | str           | ✅            | ✅        | AppsFlyer ID — идентификатор, автоматически создаваемый AppsFlyer при каждой новой установке приложения. |
+| **amplitude_user_id**     | str           | ✅            | ✅        | Свойство Amplitude User ID и свойство External User ID в OneSignal должны быть заданы, чтобы данные сообщений для этого устройства отслеживались. |
+| **amplitude_device_id**   | str           | ✅            | ✅        | Amplitude Device ID, поступающий непосредственно с устройств пользователей. |
+| **mixpanel_user_id**      | str           | ✅            | ✅        | User ID из Mixpanel.                                         |
+| **appmetrica_profile_id** | str           | ✅            | ✅        | ID профиля пользователя из AppMetrica.                       |
+| **appmetrica_device_id**  | str           | ✅            | ✅        | Device ID из AppMetrica.                                     |
+| **facebook_anonymous_id** | str           | ✅            | ✅        | Facebook Anonymous ID.                                       |
+### Создание пользователя \{#create-a-user\}
+
+:::warning
+
+**Вы просматриваете гайд по устаревшему серверному API.**
+Актуальная версия — в запросе [Create profile](api-adapty/operations/createProfile).
+
+:::
+
+```http
+POST: /profiles/
+```
+
+Параметры запроса:
+
+| Параметр               | Тип  | Обязательный | Nullable | Описание |
+| :--------------------- | :--- | :----------- | :------- | :------- |
+| **customer\_user\_id** | str  | ✅            | ❌        |          |
+
+Пример запроса:
+
+```json showLineNumbers title="Json"
+{
+    "customer_user_id": "123456"
+}
+```
+Ответ аналогичен GET-запросу (параметр **extended** здесь не работает).
+
+Также можно задать атрибуты пользователя так же, как в методе PATCH.
+### Задать атрибут пользователя \{#set-the-users-attribute\}
+
+:::warning
+
+**Вы просматриваете гайд для устаревшей версии серверного API.**
+Для актуальной версии обратитесь к запросу [Обновить профиль](api-adapty/operations/updateProfile).
+
+:::
+
+```http
+PATCH: /profiles/{profile_id_or_customer_user_id}/
+```
+
+Параметры пути:
+| Параметр                           | Тип  | Обязательный | Nullable | Описание                                          |
+| :--------------------------------- | :--- | :----------- | :------- | :------------------------------------------------ |
+| **profile_id_or_customer_user_id** | str  | ✅            | ❌        | Adapty profile ID или внутренний ID разработчика  |
+
+Параметры запроса:
+| Param        | Type | Required | Nullable | Description                                                  |
+| :----------- | :--- | :------- | :------- | :----------------------------------------------------------- |
+| ip_country   | str  | ❌        | ✅        | Код страны в [двухбуквенном](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) формате, например US. |
+| email        | str  | ❌        | ✅        |                                                              |
+| phone_number | str  | ❌        | ✅        |                                                              |
+| first_name   | str  | ❌        | ✅        |                                                              |
+| last_name    | str  | ❌        | ✅        |                                                              |
+| gender       | str  | ❌        | ✅        | Пол пользователя                                             |
+| birthday     | date | ❌        | ✅        | Дата в формате YYYY-MM-DD, например 1990-10-31.              |
+Чтобы задать пользовательские атрибуты, передайте их в словаре `custom_attributes`. Для профиля можно задать не более 10 пользовательских атрибутов. В качестве значений допустимы только строки и числа с плавающей точкой; булевы значения будут автоматически преобразованы в числа с плавающей точкой.
+| Param                | Type       | Required | Nullable | Description                                                  |
+| :------------------- | :--------- | :------- | :------- | :----------------------------------------------------------- |
+| **attribute\_key**   | str        | ✅        | ❌        | Допустимы только буквы, цифры, дефисы, точки и символы подчёркивания. Длина ключа атрибута не должна превышать 30 символов. |
+| **attribute\_value** | str\|float | ✅        | ✅        | Длина значения атрибута не должна превышать 30 символов. Передайте пустое значение или null, чтобы удалить атрибут. |
+```json showLineNumbers title="Json"
+{
+    "phone_number": "+18003330000",
+    "custom_attributes": {
+        "grade": 10,
+        "favorite_topic": "sports"
+    }
+}
+```
+
+Ответ аналогичен GET-запросу (параметр **extended** здесь не работает).
+### Удаление данных пользователя
+
+:::warning
+
+**Вы просматриваете гайд по устаревшему серверному API.**
+Для последней версии обратитесь к запросу [Удалить профиль](api-adapty/operations/deleteProfile).
+
+:::
+
+```http
+DELETE /profiles/{profile_id_or_customer_user_id}/delete
+```
+
+Параметры пути:
+| Param                              | Type | Required | Nullable | Description                                  |
+| :--------------------------------- | :--- | :------- | :------- | :------------------------------------------- |
+| **profile_id_or_customer_user_id** | str  | ✅        | ❌        | Adapty profile ID или внутренний ID разработчика |
+Вызов этого эндпоинта удаляет профиль пользователя и все связанные с ним данные, делая их недоступными для клиента. История профиля, связанная с удалённым профилем, будет отвязана, а интеграционные события, ранее отправленные в интеграции, будут удалены из ленты событий.
+
+Если другой профиль совершит покупку с того же устройства с тем же Apple ID (или при восстановлении подписки), история профиля будет переназначена новому профилю, а интеграционные события будут отправлены повторно.
+Обратите внимание, что этот эндпоинт не поддерживает массовое удаление, поэтому каждый запрос обрабатывается отдельно. При работе с большим количеством пользователей рекомендуется выполнять запросы параллельно.

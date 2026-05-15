@@ -38,7 +38,7 @@ export default defineConfig({
           '**/.DS_Store',
           '**/.Spotlight-V100/**',
           '**/.DocumentRevisions-V100/**',
-          '**/.astro/content-modules.mjs',
+          '**/.astro/**',
         ],
       },
     },
@@ -89,7 +89,14 @@ export default defineConfig({
     react(),
     sitemap({
       // Exclude localized pages — they are covered by locale-specific sitemaps (e.g. sitemap-zh-index.xml)
-      filter: (page) => !page.includes('/docs/zh/'),
+      filter: (page) => !page.includes('/docs/zh/') && !page.includes('/docs/tr/') && !page.includes('/docs/ru/'),
+      // Strip trailing slashes so sitemap URLs match the canonical tags emitted by DocsLayout.
+      // The canonical strips trailing slashes (DocsLayout.astro:35-37), so the sitemap must too.
+      // Mismatch causes the Algolia crawler (ignoreCanonicalTo: false) to skip sitemap entries.
+      serialize: (item) => ({
+        ...item,
+        url: item.url.endsWith('/') ? item.url.slice(0, -1) : item.url,
+      }),
     }),
     mdx({
       remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],

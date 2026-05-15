@@ -1,0 +1,663 @@
+---
+title: "React Native SDK'da onboarding olaylarını yönetin"
+description: "React Native'de Adapty kullanarak onboarding ile ilgili olayları yönetin."
+metadataTitle: "React Native'de Onboarding Olaylarını Yönetme | Adapty Dokümanları"
+toc_max_heading_level: 4
+---
+
+Başlamadan önce şunları kontrol edin:
+
+Onboarding builder ile yapılandırılan onboarding'ler, uygulamanızın yanıt verebileceği olaylar üretir. Bu olayları nasıl ele alacağınız, hangi sunum yaklaşımını kullandığınıza bağlıdır:
+
+- **Modal sunum**: Tüm onboarding görünümleri için olayları işleyen olay işleyicilerinin kurulmasını gerektirir
+- **React bileşeni**: Olayları doğrudan widget içindeki satır içi callback parametreleri aracılığıyla işler
+1. [Adapty React Native SDK](sdk-installation-reactnative) 3.8.0 veya daha yeni bir sürümünü yüklediniz.
+2. [Bir onboarding oluşturdunuz](create-onboarding).
+3. Onboarding'i bir [placement](placements)'a eklediniz.
+
+Mobil uygulamanızdaki onboarding ekranında gerçekleşen süreçleri kontrol etmek veya izlemek için olay işleyicilerini uygulayın:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+React bileşeninde, olayları `AdaptyOnboardingView` bileşenindeki tekil olay işleyici prop'ları aracılığıyla yönetirsiniz:
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
+  const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+      onClose={onClose}
+      onCustom={onCustom}
+      onPaywall={onPaywall}
+      onStateUpdated={onStateUpdated}
+      onFinishedLoading={onFinishedLoading}
+      onError={onError}
+    />
+  );
+}
+```
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Modal sunum için event handler metodunu uygulayın.
+
+:::important
+`setEventHandlers` metodunu birden fazla kez çağırmak, sağladığınız handler'ları geçersiz kılar ve ilgili olaylar için hem varsayılan hem de daha önce ayarlanan handler'ların yerini alır.
+:::
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(event, meta) {
+    // Analitik olaylarını takip et
+  },
+  onClose(actionId, meta) {
+    // Kapatma eylemini işle
+    view.dismiss();
+    return true;
+  },
+  onCustom(actionId, meta) {
+    // Özel eylemleri işle
+  },
+  onPaywall(actionId, meta) {
+    // Paywall eylemlerini işle
+  },
+  onStateUpdated(action, meta) {
+    // Kullanıcı girişi güncellemelerini işle
+  },
+  onFinishedLoading(meta) {
+    // Onboarding yüklemesi tamamlandı
+  },
+  onError(error) {
+    // Yükleme hatalarını işle
+  },
+});
+
+try {
+  await view.present();
+} catch (error) {
+  // hatayı işle
+}
+```
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+SDK version < 3.14 için yalnızca modal sunum desteklenmektedir:
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onAnalytics(event, meta) {
+    // Analitik olaylarını takip et
+  },
+  onClose(actionId, meta) {
+    // Kapatma eylemini işle
+    view.dismiss();
+    return true;
+  },
+  onCustom(actionId, meta) {
+    // Özel eylemleri işle
+  },
+  onPaywall(actionId, meta) {
+    // Paywall eylemlerini işle
+  },
+  onStateUpdated(action, meta) {
+    // Kullanıcı girişi güncellemelerini işle
+  },
+  onFinishedLoading(meta) {
+    // Onboarding yüklemesi tamamlandı
+  },
+  onError(error) {
+    // Yükleme hatalarını işle
+  },
+});
+
+try {
+  await view.present();
+} catch (error) {
+  // hatayı işle
+}
+```
+</TabItem>
+</Tabs>
+## Etkinlik türleri \{#event-types\}
+
+Aşağıdaki bölümler, hangi sunum yaklaşımını kullandığınızdan bağımsız olarak işleyebileceğiniz farklı etkinlik türlerini açıklamaktadır.
+### Özel eylemleri yönetme \{#handle-custom-actions\}
+
+Builder'da bir butona **özel** eylem ekleyebilir ve ona bir ID atayabilirsiniz.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+Ardından bu ID'yi kodunuzda kullanabilir ve özel bir eylem olarak işleyebilirsiniz. Örneğin, bir kullanıcı **Login** veya **Allow notifications** gibi özel bir butona dokunduğunda, olay işleyicisi **Action ID** parametresiyle tetiklenir ve bu parametre builder'daki **Action ID** ile eşleşir. "allowNotifications" gibi kendi ID'lerinizi oluşturabilirsiniz.
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onCustom={onCustom}
+    />
+  );
+}
+```
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onCustom(actionId, meta) {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK sürümü < 3.14">
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onCustom(actionId, meta) {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+```json
+{
+  "actionId": "allow_notifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+### Onboarding yüklemesi tamamlandığında \{#finishing-loading-onboarding\}
+
+Bir onboarding yüklemesi tamamlandığında şu olay tetiklenir:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK sürüm 3.14 veya sonrası" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React bileşeni" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onFinishedLoading={onFinishedLoading}
+    />
+  );
+}
+```
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onFinishedLoading(meta) {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onFinishedLoading(meta) {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Etkinlik örneği (Genişletmek için tıklayın)</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+### Onboarding'i kapatma \{#closing-onboarding\}
+
+Kullanıcı **Close** eylemine atanmış bir butona dokunduğunda onboarding kapatılmış sayılır.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+Kullanıcı onboarding'i kapattığında ne olacağını yönetmeniz gerektiğini unutmayın. Örneğin, onboarding'in kendisini göstermeyi durdurmanız gerekir.
+:::
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK sürüm 3.14 veya üzeri" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React bileşeni" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding, navigation }) {
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
+    navigation.goBack();  
+  }, [navigation]);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onClose={onClose}
+    />
+  );
+}
+```
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onClose(actionId, meta) {
+    await view.dismiss();
+    return true;
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK sürümü < 3.14">
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onClose(actionId, meta) {
+    await view.dismiss();
+    return true;
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Etkinlik örneği (Genişletmek için tıklayın)</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+</Details>
+### Paywall açma \{#opening-a-paywall\}
+
+:::tip
+Onboarding içinde bir paywall açmak istiyorsanız bu olayı işleyin. Paywall kapandıktan sonra açmak istiyorsanız daha kolay bir yol var: kapatma eylemini yakalayıp olay verisine gerek kalmadan paywall'ı açabilirsiniz.
+:::
+
+Kullanıcı bir paywall açan düğmeye tıkladığında, [manuel olarak ayarladığınız](get-paid-in-onboardings) düğme eylem ID'sini alırsınız. Onboardinglerde paywall'larla çalışmanın en sorunsuz yolu, eylem ID'sini paywall placement ID'siyle aynı yapmaktır.
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK sürüm 3.14 veya üzeri" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React bileşeni" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
+    openPaywall(actionId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onPaywall={onPaywall}
+    />
+  );
+}
+
+const openPaywall = async (placementId) => {
+  // Implement your paywall opening logic here
+};
+```
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+iOS'ta aynı anda yalnızca bir görünüm (paywall veya onboarding) ekranda gösterilebilir. Bir onboarding'in üzerine paywall sunarsanız, arka plandaki onboarding'i programatik olarak kontrol edemezsiniz. Onboarding'i kapatmaya çalışırsanız bunun yerine paywall kapanır ve onboarding görünür kalır. Bunu önlemek için paywall'ı sunmadan önce her zaman onboarding görünümünü kapatın.
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onPaywall(actionId, meta) {
+    view.dismiss().then(() => {
+      openPaywall(actionId);
+    });
+  },
+});
+
+const openPaywall = async (placementId) => {
+  // Paywall açma mantığınızı buraya ekleyin
+};
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK sürümü < 3.14">
+:::note
+
+iOS'ta aynı anda yalnızca bir görünüm (paywall veya onboarding) ekranda gösterilebilir. Bir onboarding'in üzerine paywall sunarsanız, arka plandaki onboarding'i programatik olarak kontrol edemezsiniz. Onboarding'i kapatmaya çalışırsanız bunun yerine paywall kapanır ve onboarding görünür kalır. Bunu önlemek için paywall'ı sunmadan önce her zaman onboarding görünümünü kapatın.
+
+:::
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onPaywall(actionId, meta) {
+    view.dismiss().then(() => {
+      openPaywall(actionId);
+    });
+  },
+});
+
+const openPaywall = async (placementId) => {
+  // Paywall açma mantığınızı buraya uygulayın
+};
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Etkinlik örneği (Genişletmek için tıklayın)</summary>
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+### Navigasyonu İzleme \{#tracking-navigation\}
+
+Onboarding akışı sırasında çeşitli navigasyonla ilgili olaylar gerçekleştiğinde bir analitik etkinliği alırsınız:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK sürüm 3.14 veya üzeri" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
+    trackEvent(event.name, meta.onboardingId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+    />
+  );
+}
+```
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(event, meta) {
+    trackEvent(event.name, meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onAnalytics(event, meta) {
+    trackEvent(event.name, meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+`event` nesnesi aşağıdaki türlerden biri olabilir:
+| Tür | Açıklama |
+|------------|-------------|
+| `onboardingStarted` | Onboarding yüklendiğinde |
+| `screenPresented` | Herhangi bir ekran gösterildiğinde |
+| `screenCompleted` | Bir ekran tamamlandığında. İsteğe bağlı `elementId` (tamamlanan öğenin tanımlayıcısı) ve isteğe bağlı `reply` (kullanıcının yanıtı) içerir. Kullanıcılar ekrandan çıkmak için herhangi bir işlem yaptığında tetiklenir. |
+| `secondScreenPresented` | İkinci ekran gösterildiğinde |
+| `userEmailCollected` | Kullanıcının e-postası giriş alanı aracılığıyla toplandığında tetiklenir |
+| `onboardingCompleted` | Kullanıcı `final` ID'sine sahip bir ekrana ulaştığında tetiklenir. Bu olaya ihtiyaç duyuyorsanız [son ekrana `final` ID'sini atayın](design-onboarding). |
+| `unknown` | Tanınmayan olay türleri için. `name` (bilinmeyen olayın adı) ve `meta` (ek meta veriler) içerir |
+Her etkinlik, aşağıdakileri içeren `meta` bilgilerini barındırır:
+
+| Alan | Açıklama |
+|------------|-------------|
+| `onboardingId` | Onboarding akışının benzersiz tanımlayıcısı |
+| `screenClientId` | Mevcut ekranın tanımlayıcısı |
+| `screenIndex` | Mevcut ekranın akıştaki konumu |
+| `screensTotal` | Akıştaki toplam ekran sayısı |
+
+<Details>
+<summary>Etkinlik örnekleri (Genişletmek için tıklayın)</summary>
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+```
+</Details>

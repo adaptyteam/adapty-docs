@@ -1,0 +1,308 @@
+---
+title: "Paddle ile İlk Entegrasyon"
+description: "Kesintisiz abonelik ödeme işlemleri için Paddle'ı Adapty ile entegre edin."
+metadataTitle: "Paddle Entegrasyon Rehberi | Adapty Dokümanları"
+keywords: ['paddle']
+---
+
+Adapty, [Paddle](https://www.paddle.com/) üzerinden yapılan web ödemelerini ve aboneliklerini takip ederek web2app abonelik akışlarını destekler.
+
+Bu entegrasyon, web üzerinden başlatılan satın almaları kapsar ve bunları mobil uygulama erişimi ve analitiğiyle, uygulama içi satın almalarla birlikte senkronize eder.
+
+Şu senaryolarda işinize yarar:
+
+- Hem uygulama içi hem de web sitesi üzerinden yapılan satın almalara ait abonelik verilerini tek bir sistemde toplayın
+- Web sitenizden satın alan kullanıcılara mobil uygulamanızda ücretli özelliklere erişim sağlayın
+- Tüm satış kanallarındaki analitik ve abonelik verilerini tek bir kontrol panelinde görüntüleyin
+
+:::note
+Apple artık ABD App Store uygulamalarının harici ödeme sistemlerine bağlantı içermesine izin veriyor; ancak uygulamaların harici seçeneklerin yanı sıra uygulama içi satın alma da sunması gerekebilir. Bölgeniz ve uygulama kategoriniz için güncel App Store yönergelerini kontrol edin.
+:::
+
+:::note
+Bu entegrasyon, Paddle web satın almalarının takibine ve senkronizasyonuna odaklanır. Kullanıcıları uygulamadan web ödeme sayfasına yönlendirmeniz gerekiyorsa Adapty [web paywalls](web-paywall) özelliğini kullanın.
+:::
+
+Paddle entegrasyonunu kurmak için şu adımları izleyin:
+
+## 1\. Paddle'ı Adapty'ye Bağlama \{#1-connect-paddle-to-adapty\}
+
+Entegrasyon, Paddle'dan Adapty'ye abonelik verileri göndermek için webhook'lar kullanır. Adapty ve Paddle hesaplarınızı bağlamak için şunları yapmanız gerekir:
+
+1. Paddle API anahtarlarınızı sağlayın.
+2. Adapty'nin webhook URL'sini Paddle'a ekleyin.
+
+:::note
+Aşağıdaki adımlar hem Production hem de Test ortamları için geçerlidir. İkisini aynı anda yapılandırabilirsiniz. Verilen bağlantılar Production ortamı içindir; Test ortamı bağlantılarını almak için her URL'nin başına `sandbox-` ekleyin. Örneğin `https://vendors.paddle.com/authentication-v2` yerine `https://sandbox-vendors.paddle.com/authentication-v2` kullanın.
+:::
+
+### 1.1. Paddle API Anahtarlarını Alma ve Ekleme \{#11-get-and-add-paddle-api-keys\}
+
+1. Paddle'da [Developer Tools → Authentication](https://vendors.paddle.com/authentication-v2) sayfasına gidin ve **New API key** düğmesine tıklayın.
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-new-key.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. Anahtara bir ad verin ve son kullanma tarihini belirleyin. API anahtarının Adapty ile çalışabilmesi için tüm varlıklara **Read** izni vermeniz gerekir. **Save** düğmesine tıklayın.
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-key.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '300px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. **Copy key** düğmesine tıklayın.
+
+<Zoom>
+  <img src="/assets/shared/img/copy-paddle-key.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. Adapty'de [App Settings → Paddle](https://app.adapty.io/settings/paddle) sayfasına gidin ve anahtarı **Paddle API key** alanına yapıştırın.
+
+:::warning
+Paddle API anahtarınız için bir son kullanma tarihi belirlediyseniz, süre dolmadan önce yeni bir anahtar oluşturup Adapty'deki anahtarı manuel olarak güncellemeniz gerekir. Anahtar süresi dolduğunda herhangi bir uyarı verilmeksizin entegrasyon çalışmayı durdurur ve kullanıcılar satın alma yapamaz.
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-api-keys-adapty.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 1.2. Adapty'ye Gönderilecek Etkinlikleri Ekleme \{#12-add-events-that-will-be-sent-to-adapty\}
+
+1. Adapty'deki **Paddle** sayfasından **Webhook URL**'yi kopyalayın.
+2. Paddle'da [**Developer Tools → Notifications**](https://vendors.paddle.com/notifications-v2) sayfasına gidin ve bir webhook eklemek için **New destination** düğmesine tıklayın.
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-webhook.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Webhook için açıklayıcı bir ad girin. Gerektiğinde kolayca bulabilmek için "Adapty" ifadesini eklemenizi öneririz.
+
+4. Adapty'deki **Webhook URL**'yi **URL** alanına yapıştırın. Doğru ortam için webhook kullandığınızdan emin olun.
+
+5. **Notification type** olarak **Webhook** seçeneğini belirleyin.
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-create-webhook.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+6. Aşağıdaki etkinlikleri seçin:
+
+   - `subscription.created`
+
+   - `subscription.updated`
+
+   - `transaction.created`
+
+   - `transaction.updated`
+
+   - `adjustment.created`
+
+   - `adjustment.updated`
+
+<Zoom>
+  <img src="/assets/shared/img/paddle_events.png"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+7. Webhook kurulumunu tamamlamak için **Save destination** düğmesine tıklayın.
+
+### 1.3. Webhook Gizli Anahtarını Alma ve Ekleme \{#13-retrieve-and-add-the-webhook-secret-key\}
+
+1. **Notifications** penceresinde, az önce oluşturduğunuz webhook'un yanındaki üç noktaya tıklayın ve **Edit destination** seçeneğini seçin.
+2. **Edit destination** panelinde **Secret key** adında yeni bir alan görünecektir. Kopyalayın.
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-webhook-secret-key-copy.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Adapty'de [App Settings → Paddle](https://app.adapty.io/settings/paddle) sayfasına gidin ve anahtarı **Notification secret key** alanına yapıştırın. Bu anahtar, Adapty'deki webhook verilerini doğrulamak için kullanılır.
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-webhook-secret-key.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 1.4. Paddle Müşterilerini Adapty Profilleriyle Eşleştirme \{#14-match-paddle-customers-with-adapty-profiles\}
+
+Adapty'nin her satın almayı uygulamanızda kullanılabilmesi için bir [müşteri profiliyle](profiles-crm) ilişkilendirmesi gerekir. Varsayılan olarak, Adapty Paddle'dan webhook aldığında profiller otomatik olarak oluşturulur. Adapty'de `customer_user_id` olarak hangi değerin kullanılacağını seçebilirsiniz:
+
+1. **Varsayılan ve önerilen:** `custom_data` alanında ilettiğiniz `customer_user_id` (bkz. [Paddle docs](https://developer.paddle.com/build/transactions/custom-data))
+2. Paddle Customer nesnesindeki `email` (bkz. [Paddle docs](https://developer.paddle.com/paddlejs/methods/paddle-checkout-open#params))
+3. `ctm-...` formatındaki Paddle Customer ID (bkz. [Paddle docs](https://developer.paddle.com/paddlejs/methods/paddle-checkout-open#params))
+4. Profil oluşturma. Müşteri profilleriniz üzerinde daha fazla kontrol sahibi olmak ve bunu kendiniz yönetmek istiyorsanız bu seçeneği tercih edin.
+
+Hangi değerin kullanılacağını [App Settings → Paddle](https://app.adapty.io/settings/paddle) sayfasındaki **Profile creation behavior** alanından yapılandırabilirsiniz.
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-users.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## 2. Paddle Ürünlerini Adapty'ye Ekleme \{#2-add-paddle-products-to-adapty\}
+
+:::warning
+
+Paddle ürünlerinizi Adapty Kontrol Paneli'ne eklediğinizden ya da mevcut ürünlerinize bir Paddle ürün kimliği eklediğinizden emin olun. Adapty yalnızca bu ürünlere bağlı işlemlere ait etkinlikleri takip eder. Bu adımı atlarsanız işlem etkinlikleri oluşturulmaz.
+
+:::
+
+Paddle, Adapty'de App Store ve Google Play gibi çalışır; dijital ürünlerinizi sattığınız başka bir platformdur. Yapılandırmak için Adapty'deki [Products](https://app.adapty.io/products) bölümüne Paddle'dan ilgili `product_id` ve `price_id` değerlerini ekleyin.
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-create-product.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Paddle'da ürün kimlikleri `pro_...`, fiyat kimlikleri ise `pri_...` şeklinde görünür. Bunları [Paddle ürün kataloğunuzda](https://vendors.paddle.com/products-v2) ilgili ürünü açtığınızda bulabilirsiniz:
+
+<Zoom>
+  <img src="/assets/shared/img/paddle-product-price.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Ürünlerinizi ekledikten sonra bir sonraki adım, Adapty'nin satın almayı doğru kullanıcıyla ilişkilendirebilmesini sağlamaktır.
+
+## 3\. Mobil Uygulamada Kullanıcılara Erişim Sağlama \{#3-provide-access-to-users-on-the-mobile\}
+
+Web üzerinden satın alan kullanıcıların mobil uygulamada da erişim kazanmasını sağlamak için `Adapty.activate()` veya `Adapty.identify()` çağrısını, satın alma sırasında ilettiğiniz `customer_user_id` ile yapın. Ayrıntılar için [Kullanıcıları Tanımlama](identifying-users) bölümüne bakın.
+
+## 4\. Entegrasyonu Test Etme \{#4-test-your-integration\}
+
+Her şeyi ayarladıktan sonra entegrasyonunuzu test edebilirsiniz. Paddle'ın Test ortamında yapılan işlemler Adapty'de **Test** olarak görünür. Production ortamındaki işlemler ise **Production** olarak görünür.
+
+Entegrasyonunuz artık tamamdır. Kullanıcılar web sitenizden abonelik satın alabilir ve mobil uygulamanızda premium özelliklere otomatik olarak erişebilir; siz de tüm abonelik analitiğini tek bir Adapty Kontrol Paneli'nden takip edebilirsiniz.
+
+## Önemli Noktalar \{#important-considerations\}
+
+- Adapty'nin analitiğinde işlem tutarlarına vergiler ve Paddle ücretleri dahildir; bu durum, tutarların vergiler ve ücretler sonrası gösterildiği Paddle'ın kontrol panelinden farklıdır. Yani Adapty'de gördüğünüz rakamlar Paddle'dakinden daha yüksek olacaktır.
+- Diğer mağazalardan farklı olarak, Paddle'daki iade işlemleri yalnızca iade edilen ilgili işlemi etkiler ve aboneliği otomatik olarak iptal etmez. Abonelik, açıkça iptal edilmediği sürece aktif kalmaya devam eder.
+- Satın almaları belirli paywall örneklerine atfetmek için `custom_data` alanına `variation_id` de ekleyebilirsiniz. Adapty bu veriyi webhook'lardan işleyerek analitiğe dahil eder.
+
+### Ücretli Denemeler \{#paid-trials\}
+
+Paddle'da ücretli denemelerle çalışırken Adapty'de iki ürün oluşturmanız gerekir:
+
+1. Abonelik dışı bir ürün oluşturun ve bunu deneme süresini ücretlendiren Paddle fiyatına bağlayın.
+2. Ardından bir abonelik ürünü (Aylık/Haftalık/vb.) oluşturun ve bunu ücretsiz deneme bileşeni olan Paddle fiyatına bağlayın.
+
+Paddle açısından bu, tek bir işlemdeki iki fiyatlı tek bir üründür: biri deneme ücreti için (örneğin 0,99 $), diğeri ücretsiz deneme için (0,00 $).
+
+Adapty açısından ise bu iki ayrı etkinlik oluşturur: deneme ödemesi için abonelik dışı bir satın alma ve abonelik ürünü için bir deneme başlangıcı etkinliği.
+
+Örneğin, bir kullanıcı aylık 9,99 $ değerinde bir abonelik için 0,99 $'lık ücretli deneme başlattığında, Paddle her iki fiyatı da içeren tek bir işlem oluşturur. Adapty ise bunu 0,99 $'lık abonelik dışı satın alma (anlık ödeme) ve 0,00 $'lık deneme başlangıcı etkinliği (gelecekte aylık 9,99 $) olarak işler.
+
+:::note
+Kullanıcılar ücretli bir denemeyi iptal ettiğinde **Trial expired** ve **Trial renewal canceled** etkinliklerini alırsınız.
+:::
+
+## Paddle Verilerinizden Daha Fazla Yararlanın \{#get-more-from-your-paddle-data\}
+
+:::important
+Paddle etkinliklerinin entegrasyonlarla çalışabilmesi için kullanıcılarınızın App Store/Google Play hesaplarıyla uygulamaya en az bir kez giriş yapmış olması gerekir.
+:::
+
+Paddle ile entegrasyon kurduktan sonra Adapty hemen içgörüler sunmaya hazırdır. Paddle verilerinizden en iyi şekilde yararlanmak için, tüm abonelik analitiğinizi tek bir Adapty Kontrol Paneli'nde toplamak amacıyla Paddle etkinliklerini yönlendiren ek Adapty entegrasyonları kurabilirsiniz.
+
+Paddle etkinliklerinizi yönlendirmek ve analiz etmek için kullanabileceğiniz entegrasyonlar:
+- [AppsFlyer](appsflyer)
+- [Webhook](webhook)
+- [Posthog](posthog)
+
+## Mevcut Kısıtlamalar \{#current-limitations\}
+
+- **İptaller**: Paddle'ın iki abonelik iptal seçeneği vardır:
+
+  1. Anlık iptal: Abonelik hemen iptal edilir.
+
+  2. Dönem sonunda iptal: Abonelik, mevcut faturalama döneminin sonunda iptal edilir (uygulama mağazalarındaki uygulama içi aboneliklerine benzer şekilde).
+
+- **İadeler**: Adapty tam ve kısmi iadeleri takip eder.
+
+- **Ek süre**: Paddle, varsayılan olarak faturalandırma sorunları için sabit 30 günlük bir ek süre uygular; bu süre boyunca abonelik aktif kalır. [Ek süre süresini ve süre sonundaki eylemi (aboneliği duraklatma veya iptal etme) özelleştirebilirsiniz](https://developer.paddle.com/build/retain/configure-payment-recovery-dunning#prerequisites).
+
+  **Denemeler**: Deneme süresi sona erdikten sonra ödeme tahsilinde başarısızlık olursa abonelik durumu `past_due` olarak değişir. Production ortamında Paddle'ın Retain özelliği, abonelik iptal edilmeden veya duraklatılmadan önce ödemeyi kurtarmaya çalışmak için bir dunning penceresi uygular. Sandbox ortamında ise Retain kullanılamaz, bu nedenle ödeme yeniden denemesi yapılmaz ve abonelik süresiz olarak `past_due` durumunda kalır.
+
+---
+
+**Ayrıca bakın:**
+
+- [Paddle'da satın almayı doğrulama, access level edinme ve sunucu taraflı API ile Paddle'dan işlem geçmişini içe aktarma](api-adapty/operations/validatePaddlePurchase)

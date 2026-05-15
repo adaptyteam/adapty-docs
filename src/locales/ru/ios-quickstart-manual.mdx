@@ -1,0 +1,192 @@
+---
+title: "Включение покупок в пользовательском пейволе в iOS SDK"
+description: "Интегрируйте Adapty SDK в ваши пользовательские iOS пейволы для включения встроенных покупок."
+metadataTitle: "Быстрый старт с Adapty | Документация Adapty"
+keywords: ['paywalls ios', 'sdk ios', 'paywall', 'getPaywall']
+---
+
+Этот гайд описывает, как интегрировать Adapty в ваши пользовательские пейволы. Вы сохраняете полный контроль над реализацией пейвола, а Adapty SDK берёт на себя получение продуктов, обработку новых покупок и восстановление предыдущих.
+
+:::important
+**Этот гайд предназначен для разработчиков, реализующих пользовательские пейволы.** Если вы хотите самый простой способ включить покупки, используйте [Adapty Paywall Builder](ios-quickstart-paywalls). С Paywall Builder вы создаёте пейволы в визуальном редакторе без кода, Adapty автоматически обрабатывает всю логику покупок, и вы можете тестировать разные дизайны без повторной публикации приложения.
+:::
+
+## Перед началом работы \{#before-you-start\}
+
+### Настройте продукты \{#set-up-products\}
+
+Чтобы включить встроенные покупки, вам нужно понять три ключевых концепции:
+
+- [**Продукты**](product) — всё, что пользователи могут купить (подписки, расходуемые покупки, пожизненный доступ)
+- [**Пейволы**](paywalls) — конфигурации, определяющие, какие продукты предлагать. В Adapty пейволы — единственный способ получить продукты, но такой подход позволяет изменять продукты, цены и предложения без изменения кода приложения.
+- [**Плейсменты**](placements) — где и когда в приложении показываются пейволы (например, `main`, `onboarding`, `settings`). Вы настраиваете пейволы для плейсментов в дашборде, а затем запрашиваете их по ID плейсмента в коде. Это упрощает проведение A/B-тестов и показ разных пейволов разным пользователям.
+
+Убедитесь, что вы понимаете эти концепции, даже если работаете с пользовательским пейволом. По сути, это просто ваш способ управлять продуктами, которые вы продаёте в приложении.
+
+Для реализации пользовательского пейвола вам нужно создать **пейвол** и добавить его в **плейсмент**. Эта настройка позволяет получать продукты. Чтобы понять, что нужно сделать в дашборде, воспользуйтесь гайдом по быстрому старту [здесь](quickstart).
+
+### Управление пользователями \{#manage-users\}
+
+Вы можете работать как с backend-аутентификацией на вашей стороне, так и без неё.
+
+Однако Adapty SDK по-разному обрабатывает анонимных и идентифицированных пользователей. Прочитайте [гайд по идентификации](ios-quickstart-identify), чтобы разобраться в особенностях и правильно работать с пользователями.
+
+## Шаг 1. Получите продукты \{#step-1-get-products\}
+
+Чтобы получить продукты для вашего пользовательского пейвола, вам нужно:
+
+1. Получить объект `paywall`, передав ID [плейсмента](placements) в метод `getPaywall`.
+2. Получить массив продуктов для этого пейвола с помощью метода `getPaywallProducts`.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swift" label="Swift" default>
+
+```swift
+
+func loadPaywall() async {
+    do {
+        let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+        let products = try await Adapty.getPaywallProducts(paywall: paywall)
+        
+        // Use products to build your custom paywall UI
+    } catch {
+        // Handle the error
+    }
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift
+
+func loadPaywall() {
+    Adapty.getPaywall("YOUR_PLACEMENT_ID") { result in
+        switch result {
+        case let .success(paywall):
+            Adapty.getPaywallProducts(paywall: paywall) { result in
+                switch result {
+                case let .success(products):
+                    // Use products to build your custom paywall UI
+                case let .failure(error):
+                    // Handle the error
+                }
+            }
+        case let .failure(error):
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## Шаг 2. Примите покупки \{#step-2-accept-purchases\}
+
+Когда пользователь нажимает на продукт в вашем пользовательском пейволе, вызовите метод `makePurchase` с выбранным продуктом. Он обработает процесс покупки и вернёт обновлённый профиль.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swift" label="Swift" default>
+
+```swift
+
+func purchaseProduct(_ product: AdaptyPaywallProduct) async {
+    do {
+        let purchaseResult = try await Adapty.makePurchase(product: product)
+        
+        switch purchaseResult {
+        case .userCancelled:
+            // User canceled the purchase
+            break
+        case .pending:
+            // Purchase is pending (e.g., awaiting parental approval)
+            break
+        case let .success(profile, transaction):
+            // Purchase successful, profile updated
+            break
+        }
+    } catch {
+        // Handle the error
+    }
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift
+
+func purchaseProduct(_ product: AdaptyPaywallProduct) {
+    Adapty.makePurchase(product: product) { result in
+        switch result {
+        case let .success(purchaseResult):
+            switch purchaseResult {
+            case .userCancelled:
+                // User canceled the purchase
+                break
+            case .pending:
+                // Purchase is pending (e.g., awaiting parental approval)
+                break
+            case let .success(profile, transaction):
+                // Purchase successful, profile updated
+                break
+            }
+        case let .failure(error):
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## Шаг 3. Восстановите покупки \{#step-3-restore-purchases\}
+
+Apple требует, чтобы все приложения с подписками предоставляли пользователям возможность восстановить покупки. Покупки автоматически восстанавливаются при входе пользователя с Apple ID, но вы всё равно должны реализовать кнопку восстановления в приложении.
+
+Вызывайте метод `restorePurchases`, когда пользователь нажимает кнопку восстановления. Это синхронизирует историю покупок с Adapty и вернёт обновлённый профиль.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swift" label="Swift" default>
+
+```swift
+
+func restorePurchases() async {
+    do {
+        let profile = try await Adapty.restorePurchases()
+        // Restore successful, profile updated
+    } catch {
+        // Handle the error
+    }
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift
+
+func restorePurchases() {
+    Adapty.restorePurchases { result in
+        switch result {
+        case let .success(profile):
+            // Restore successful, profile updated
+        case let .failure(error):
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## Следующие шаги \{#next-steps\}
+
+<SupportForum />
+
+Ваш пейвол готов к отображению в приложении. [Протестируйте покупки в режиме песочницы](test-purchases-in-sandbox), чтобы убедиться, что вы можете выполнить тестовую покупку через пейвол.
+
+Затем [проверьте, совершили ли пользователи покупку](ios-check-subscription-status), чтобы решить, показывать пейвол или предоставить доступ к платным функциям.

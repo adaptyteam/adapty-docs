@@ -1,0 +1,296 @@
+---
+title: "Kotlin Multiplatform - Yeni Paywall Builder paywalllarını göster"
+description: "Etkili monetizasyon için Kotlin Multiplatform'da paywallları nasıl göstereceğinizi öğrenin."
+metadataTitle: "Kotlin Multiplatform'da Paywall Gösterme | Adapty Dokümanları"
+---
+
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+Paywall Builder ile bir paywall tasarladıysanız, onu mobil uygulama kodunuzda kullanıcıya göstermek için ekstra bir şey yapmanıza gerek yok. Böyle bir paywall, hem ne gösterileceğini hem de nasıl gösterileceğini zaten içerir.
+
+:::warning
+
+Bu rehber yalnızca **yeni Paywall Builder paywallları** içindir. Remote config paywallları ve [Observer modu](observer-vs-full-mode) ile tasarlanan paywallları gösterme süreci farklıdır.
+
+**Remote config paywallları** göstermek için bkz. [Remote config ile tasarlanan paywallı render etme](present-remote-config-paywalls-kmp).
+
+:::
+
+Adapty Kotlin Multiplatform SDK, paywallları iki şekilde göstermenizi sağlar:
+
+- **Compose Multiplatform ile**
+- **Compose Multiplatform olmadan**
+
+## Compose Multiplatform ile \{#with-compose-multiplatform\}
+
+Bir paywall göstermek için, [`createPaywallView`](kmp-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) metoduyla oluşturulan `view` üzerinde `view.present()` metodunu çağırın. Her `view` yalnızca bir kez kullanılabilir. Paywall'ı tekrar göstermeniz gerekiyorsa yeni bir `view` örneği oluşturmak için `createPaywallView`'ı tekrar çağırın.
+
+:::warning
+Aynı `view`'ı yeniden oluşturmadan yeniden kullanmak hataya yol açabilir.
+:::
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.models.AdaptyPaywall
+import kotlinx.coroutines.launch
+
+viewModelScope.launch {
+    AdaptyUI.createPaywallView(paywall = paywall).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+### Dialog göster \{#show-dialog\}
+
+Android'de bir paywall görünümü gösterilirken yerel uyarı diyalogları yerine bu metodu kullanın. Android'de normal uyarılar paywall görünümünün arkasında kalır ve kullanıcılar tarafından görülemez. Bu metot, tüm platformlarda diyalogun paywall'ın üzerinde doğru şekilde gösterilmesini sağlar.
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+import com.adapty.kmp.models.AdaptyUIDialogActionType
+import kotlinx.coroutines.launch
+
+viewModelScope.launch {
+    view.showDialog(
+        title = "Close paywall?",
+        content = "You will lose access to exclusive offers.",
+        primaryActionTitle = "Stay",
+        secondaryActionTitle = "Close"
+    ).onSuccess { action ->
+        if (action == AdaptyUIDialogActionType.SECONDARY) {
+            // User confirmed - close the paywall
+            view.dismiss()
+        }
+        // If primary - do nothing, user stays
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+### iOS sunum stilini yapılandır \{#configure-ios-presentation-style\}
+
+`present()` metoduna `iosPresentationStyle` parametresini geçerek paywall'ın iOS'ta nasıl gösterileceğini yapılandırın. Parametre `AdaptyUIIOSPresentationStyle.FULLSCREEN` (varsayılan) veya `AdaptyUIIOSPresentationStyle.PAGESHEET` değerlerini alır.
+
+```kotlin showLineNumbers
+import com.adapty.kmp.AdaptyUI
+import com.adapty.kmp.models.AdaptyUIIOSPresentationStyle
+import kotlinx.coroutines.launch
+
+viewModelScope.launch {
+    val view = AdaptyUI.createPaywallView(paywall = paywall).getOrNull()
+    view?.present(iosPresentationStyle = AdaptyUIIOSPresentationStyle.PAGESHEET)
+}
+```
+
+## Compose Multiplatform olmadan \{#without-compose-multiplatform\}
+
+:::note
+`createNativePaywallView`, `io.adapty:adapty-kmp` çekirdek modülünün bir parçasıdır. Projeniz Compose Multiplatform kullanmıyorsa `io.adapty:adapty-kmp-ui` bağımlılığına ihtiyacınız yoktur.
+:::
+
+Compose Multiplatform olmadan bir paywall eklemek için `createNativePaywallView`'ı çağırın. Bu metot, layout'unuza eklediğiniz bir `AdaptyNativePaywallView` döndürür:
+
+<Tabs>
+<TabItem value="android" label="Android">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+import com.adapty.kmp.AdaptyUI
+
+val nativeView = AdaptyUI.createNativePaywallView(
+    context = context,
+    viewModelStoreOwner = activity,
+    paywall = paywall,
+    observer = myPaywallObserver,
+)
+
+// Embed in your Compose layout:
+AndroidView(
+    factory = { nativeView.view },
+    modifier = Modifier.fillMaxSize()
+)
+```
+</TabItem>
+<TabItem value="ios" label="iOS">
+KMP arayüz varsayılan metotları Swift'te `@required` olduğundan, `AdaptyUIPaywallsEventsObserver`'ı Swift'ten doğrudan uygulayamazsınız. Önce `iosMain`'de açık bir temel sınıf tanımlayın:
+
+```kotlin showLineNumbers title="iosMain (Kotlin)"
+open class BasePaywallObserver : AdaptyUIPaywallsEventsObserver
+```
+
+Ardından Swift'te bu sınıfı alt sınıflandırın ve yalnızca ihtiyacınız olanları geçersiz kılın:
+
+```swift showLineNumbers title="Swift"
+class MyPaywallObserver: BasePaywallObserver {
+    override func paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: any AdaptyUIAction) {
+        if action is AdaptyUIActionCloseAction {
+            // remove nativeView from your view hierarchy
+        }
+    }
+}
+
+let nativeView = AdaptyUI.shared.createNativePaywallView(
+    paywall: paywall,
+    observer: MyPaywallObserver()
+)
+// nativeView.viewController is a UIViewController.
+// Add it to your SwiftUI view or UIKit hierarchy.
+```
+</TabItem>
+</Tabs>
+
+### Görünümü kaldır \{#dispose-the-view\}
+
+Görünümü layout'unuzdan kaldırırken `dispose()`'u çağırın. Bu işlem olay dinleyicisinin kaydını siler ve dahili kaynakları serbest bırakır.
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+nativeView.dispose()
+```
+
+## Özel etiketler \{#custom-tags\}
+
+Özel etiketler, farklı senaryolar için ayrı paywalllar oluşturmanıza gerek kalmadan işinizi görür. Kullanıcı verilerine göre dinamik olarak uyum sağlayan tek bir paywall hayal edin. Örneğin, genel bir "Merhaba!" yerine kullanıcıları "Merhaba, John!" veya "Merhaba, Ann!" şeklinde kişisel olarak selamlayabilirsiniz.
+
+Özel etiketleri kullanabileceğiniz bazı durumlar:
+
+- Paywall'da kullanıcının adını veya e-postasını göstermek.
+- Satışları artırmak için haftanın gününü göstermek (örneğin, "İyi Perşembeler").
+- Sattığınız ürünler hakkında kişiselleştirilmiş ayrıntılar eklemek (bir fitness programının adı veya VoIP uygulamasında telefon numarası gibi).
+
+Özel etiketler, çeşitli durumlarla uyum sağlayan esnek bir paywall oluşturmanıza yardımcı olur; böylece uygulamanızın arayüzü daha kişisel ve ilgi çekici hale gelir.
+
+:::warning
+Bazı durumlarda uygulamanız, özellikle kullanıcılar AdaptyUI SDK'sının eski bir sürümündeyse, özel etiketi neyle değiştireceğini bilemeyebilir. Bunu önlemek için, bilinmeyen özel etiket içeren satırların yerine geçecek bir geri dönüş metni ekleyin. Aksi takdirde kullanıcılar etiketleri kod olarak görebilir (`<USERNAME/>`).
+:::
+
+Paywall'ınızda özel etiketleri kullanmak için bunları paywall görünümünü oluştururken geçirin:
+
+<Tabs>
+<TabItem value="standalone" label="With Compose Multiplatform" default>
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+import kotlinx.coroutines.launch
+import com.adapty.kmp.AdaptyUI
+
+viewModelScope.launch {
+    val customTags = mapOf(
+        "USERNAME" to "John",
+        "DAY_OF_WEEK" to "Thursday"
+    )
+
+    AdaptyUI.createPaywallView(
+        paywall = paywall,
+        customTags = customTags
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="native" label="Without Compose Multiplatform">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+import com.adapty.kmp.AdaptyUI
+
+val customTags = mapOf(
+    "USERNAME" to "John",
+    "DAY_OF_WEEK" to "Thursday"
+)
+
+val nativeView = AdaptyUI.createNativePaywallView(
+    context = context,
+    viewModelStoreOwner = activity,
+    paywall = paywall,
+    observer = myPaywallObserver,
+    customTags = customTags,
+)
+```
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+import com.adapty.kmp.AdaptyUI
+
+val customTags = mapOf(
+    "USERNAME" to "John",
+    "DAY_OF_WEEK" to "Thursday"
+)
+
+val nativeView = AdaptyUI.createNativePaywallView(
+    paywall = paywall,
+    observer = myPaywallObserver,
+    customTags = customTags,
+)
+```
+</TabItem>
+</Tabs>
+
+## Özel zamanlayıcılar \{#custom-timers\}
+
+Paywall zamanlayıcısı, süreli özel ve sezonsal teklifleri tanıtmak için harika bir araçtır. Ancak bu zamanlayıcının teklifin geçerliliği veya kampanyanın süresiyle bağlantılı olmadığını belirtmek gerekir. Belirlediğiniz değerden sıfıra kadar geri sayan bağımsız bir geri sayımdır. Zamanlayıcı sıfıra ulaştığında hiçbir şey olmaz; sadece sıfırda kalır.
+
+İstediğiniz mesajı oluşturmak için zamanlayıcının önüne ve arkasına metin ekleyebilirsiniz; örneğin: "Teklif bitiyor: 10:00 sn."
+
+Paywall'ınızda özel zamanlayıcıları kullanmak için bunları paywall görünümünü oluştururken geçirin:
+
+<Tabs>
+<TabItem value="standalone" label="With Compose Multiplatform" default>
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+import kotlinx.coroutines.launch
+import com.adapty.kmp.AdaptyUI
+import kotlinx.datetime.LocalDateTime
+
+viewModelScope.launch {
+    val customTimers = mapOf(
+        "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+        "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+    )
+
+    AdaptyUI.createPaywallView(
+        paywall = paywall,
+        customTimers = customTimers
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="native" label="Without Compose Multiplatform">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+import com.adapty.kmp.AdaptyUI
+import kotlinx.datetime.LocalDateTime
+
+val customTimers = mapOf(
+    "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+    "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+)
+
+val nativeView = AdaptyUI.createNativePaywallView(
+    context = context,
+    viewModelStoreOwner = activity,
+    paywall = paywall,
+    observer = myPaywallObserver,
+    customTimers = customTimers,
+)
+```
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+import com.adapty.kmp.AdaptyUI
+import kotlinx.datetime.LocalDateTime
+
+val customTimers = mapOf(
+    "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+    "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+)
+
+val nativeView = AdaptyUI.createNativePaywallView(
+    paywall = paywall,
+    observer = myPaywallObserver,
+    customTimers = customTimers,
+)
+```
+</TabItem>
+</Tabs>

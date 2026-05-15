@@ -1,0 +1,138 @@
+---
+title: "Миграция Adapty React Native SDK на версию 3.14"
+description: "Перейдите на Adapty React Native SDK v3.14 для повышения производительности и новых возможностей монетизации."
+metadataTitle: "Миграция на Adapty React Native SDK v3.14 | Документация Adapty"
+---
+
+Adapty React Native SDK 3.14.0 — это мажорный релиз, который вносит изменения, требующие миграции с вашей стороны:
+
+- Метод `registerEventHandlers` заменён методом `setEventHandlers`.
+- В `AdaptyOnboardingView` обработчики событий теперь передаются как отдельные пропсы вместо объекта `eventHandlers`.
+- Введён новый упрощённый стиль импорта для UI-компонентов.
+- Метод `logShowOnboarding` удалён.
+- Минимальная версия React Native обновлена до 0.73.0.
+- Стиль представления по умолчанию для пейволов и онбордингов на iOS изменился с page sheet на полный экран.
+
+## Замените `registerEventHandlers` на `setEventHandlers` \{#replace-registereventhandlers-with-seteventhandlers\}
+
+Метод `registerEventHandlers`, использовавшийся для работы с Adapty Paywall Builder и Onboarding Builder, заменён методом `setEventHandlers`.
+Если вы используете Adapty Paywall Builder и/или Adapty Onboarding Builder, найдите `registerEventHandlers` в коде вашего приложения и замените его на `setEventHandlers`.
+
+Это изменение сделано для того, чтобы поведение метода стало понятнее: теперь обработчики работают по одному, поскольку каждый возвращает `true`/`false`, а наличие нескольких обработчиков для одного события делало итоговое поведение неочевидным.
+
+Обратите внимание: при использовании React-компонентов `AdaptyOnboardingView` или `AdaptyPaywallView` возвращать `true`/`false` из обработчиков событий не нужно — видимостью компонента вы управляете через собственное состояние. Возвращаемые значения нужны только при модальном представлении экранов, когда жизненным циклом представления управляет SDK.
+
+:::important
+Каждый последующий вызов `setEventHandlers` переопределяет переданные обработчики, заменяя как дефолтные, так и ранее установленные обработчики для указанных событий.
+:::
+
+```diff showLineNumbers 
+- const unsubscribe = view.registerEventHandlers({
+-    // your event handlers
+- })
+
+ const unsubscribe = view.setEventHandlers({
+    // your event handlers
+ })
+``` 
+
+## Обновите пути импорта UI-компонентов \{#update-import-paths-for-ui-components\}
+
+В Adapty SDK 3.14.0 введён упрощённый стиль импорта для UI-компонентов. Теперь вместо импорта из `react-native-adapty/dist/ui` можно импортировать напрямую из `react-native-adapty`.
+
+Новый стиль импорта лучше соответствует стандартным практикам React Native и делает инструкции импорта чище. Если вы используете UI-компоненты `AdaptyPaywallView` или `AdaptyOnboardingView`, обновите импорты, как показано ниже:
+
+```diff showLineNumbers
+- import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
++ import { AdaptyPaywallView } from 'react-native-adapty';
+
+- import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
++ import { AdaptyOnboardingView } from 'react-native-adapty';
+
+- import { createPaywallView } from 'react-native-adapty/dist/ui';
++ import { createPaywallView } from 'react-native-adapty';
+
+- import { createOnboardingView } from 'react-native-adapty/dist/ui';
++ import { createOnboardingView } from 'react-native-adapty';
+```
+
+:::note
+Для обратной совместимости старый стиль импорта (`react-native-adapty/dist/ui`) по-прежнему поддерживается. Тем не менее рекомендуем использовать новый стиль для единообразия и ясности.
+:::
+
+## Обновите обработчики событий онбординга в React-компоненте \{#update-onboarding-event-handlers-in-the-react-component\}
+
+Обработчики событий для онбордингов вынесены из объекта `eventHandlers` в `AdaptyOnboardingView`. Если вы отображаете онбординги с помощью `AdaptyOnboardingView`, обновите структуру обработки событий.
+
+:::important
+Обратите внимание на рекомендуемый способ реализации обработчиков событий. Чтобы избежать пересоздания объектов при каждом рендере, используйте `useCallback` для функций-обработчиков событий.
+:::
+
+```diff showLineNumbers
+ import React, { useCallback } from 'react';
+- import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
++ import { AdaptyOnboardingView } from 'react-native-adapty';
++ import type { OnboardingEventHandlers } from 'react-native-adapty';
++
++ function MyOnboarding({ onboarding }) {
++   const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
++   const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
++   const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
++   const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
++   const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
++   const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
++   const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
++
+   return (
+     <AdaptyOnboardingView
+       onboarding={onboarding}
+       style={styles.container}
+-       eventHandlers={{
+-         onAnalytics(event, meta) { /* ... */ },
+-         onClose(actionId, meta) { /* ... */ },
+-         onCustom(actionId, meta) { /* ... */ },
+-         onPaywall(actionId, meta) { /* ... */ },
+-         onStateUpdated(action, meta) { /* ... */ },
+-         onFinishedLoading(meta) { /* ... */ },
+-         onError(error) { /* ... */ },
+-       }}
++       onAnalytics={onAnalytics}
++       onClose={onClose}
++       onCustom={onCustom}
++       onPaywall={onPaywall}
++       onStateUpdated={onStateUpdated}
++       onFinishedLoading={onFinishedLoading}
++       onError={onError}
+     />
+   );
++ }
+```
+
+:::note
+Для обратной совместимости проп `eventHandlers` по-прежнему поддерживается, но считается устаревшим. Рекомендуем перейти на отдельные пропсы обработчиков событий, как показано выше.
+:::
+
+## Удалите `logShowOnboarding` \{#delete-logshowonboarding\}
+
+В Adapty SDK 3.14.0 метод `logShowOnboarding` удалён из SDK.
+Если вы использовали этот метод, после обновления SDK до версии 3.14 и выше он будет недоступен.
+
+Вместо него вы можете [создавать онбординги в no-code конструкторе онбордингов Adapty](onboardings). Аналитика для таких онбордингов отслеживается автоматически, а возможностей для кастомизации достаточно много.
+
+## Обновите React Native \{#update-react-native\}
+
+Начиная с Adapty SDK 3.14.0, минимальная поддерживаемая версия React Native — 0.73.0. Если вы используете более раннюю версию, обновите React Native до 0.73.0 или выше, чтобы работа с Adapty SDK оставалась стабильной и предсказуемой.
+
+## Обновите стиль представления iOS для модальных пейволов и онбордингов \{#update-ios-presentation-style-for-modal-paywalls-and-onboardings\}
+
+В Adapty SDK 3.14.0 стиль представления по умолчанию для пейволов и онбордингов, отображаемых с помощью метода `view.present()`, изменился с page sheet на полный экран на iOS.
+
+Если вы хотите сохранить прежний стиль представления page sheet, передайте параметр `iosPresentationStyle` в метод `present()`:
+
+```typescript showLineNumbers title="React Native (TSX)"
+try {
+  await view.present({ iosPresentationStyle: 'page_sheet' });
+} catch (error) {
+  // handle the error
+}
+```

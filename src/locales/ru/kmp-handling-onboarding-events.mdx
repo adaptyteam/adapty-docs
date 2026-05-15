@@ -1,0 +1,372 @@
+---
+title: "Обработка событий онбординга в Kotlin Multiplatform SDK"
+description: "Обрабатывайте события, связанные с онбордингом, в Kotlin Multiplatform с помощью Adapty."
+metadataTitle: "Обработка событий онбординга в Kotlin Multiplatform | Документация Adapty"
+toc_max_heading_level: 4
+keywords: ['onboardingViewOnCustomAction', 'onboardingViewOnCloseAction', 'onboardingViewOnStateUpdatedAction', 'onboardingViewOnPaywallAction', 'onboardingViewDidFinishLoading', 'onboardingViewOnAnalyticsEvent']
+---
+
+Прежде чем начать, убедитесь, что:
+
+1. Установлен [Adapty Kotlin Multiplatform SDK](sdk-installation-kotlin-multiplatform) версии 3.15.0 или выше.
+2. Вы [создали онбординг](create-onboarding).
+3. Вы добавили онбординг в [плейсмент](placements).
+
+Онбординги, настроенные в билдере, генерируют события, на которые может реагировать ваше приложение. Ниже описано, как с ними работать.
+
+## Настройка обозревателя событий онбординга \{#set-up-the-onboarding-event-observer\}
+
+Чтобы обрабатывать события онбординга, нужно реализовать интерфейс `AdaptyUIOnboardingsEventsObserver` и зарегистрировать его через `AdaptyUI.setOnboardingsEventsObserver()`. Это следует делать на ранних этапах жизненного цикла приложения — как правило, в главной activity или при инициализации приложения.
+
+```kotlin
+
+// In your app initialization
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+## Пользовательские действия \{#custom-actions\}
+
+В билдере можно добавить к кнопке действие **custom** и задать ему идентификатор. Затем этот идентификатор используется в коде для обработки пользовательского действия.
+
+<Zoom>
+    <img src={require('./img/ios-events-1.webp').default}
+         style={{
+             border: '1px solid #727272', /* border width and color */
+             width: '700px', /* image width */
+             display: 'block', /* for alignment */
+             margin: '0 auto' /* center alignment */
+         }}
+    />
+</Zoom>
+
+Например, если пользователь нажимает на пользовательскую кнопку — **Login** или **Allow notifications** — вызывается метод делегата `onCustomAction` с идентификатором действия из билдера. Вы можете задавать собственные идентификаторы, например "allowNotifications".
+
+```kotlin
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnCustomAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        actionId: String
+    ) {
+        when (actionId) {
+            "openPaywall" -> {
+                // Display paywall from onboarding
+                // You would typically fetch and present a new paywall here
+                mainUiScope.launch {
+                    // Example: Get paywall by placement ID
+                    // val paywallResult = Adapty.getPaywall("your_placement_id")
+                    // paywallResult.onSuccess { paywall ->
+                    //     val paywallViewResult = AdaptyUI.createPaywallView(paywall)
+                    //     paywallViewResult.onSuccess { paywallView ->
+                    //         paywallView.present()
+                    //     }
+                    // }
+                }
+            }
+            "allowNotifications" -> {
+                // Handle notification permissions
+            }
+            else -> {
+                // Handle other custom actions
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+<Details>
+    <summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+    ```json
+    {
+        "actionId": "allowNotifications",
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    }
+    }
+    ```
+</Details>
+
+## Закрытие онбординга \{#closing-onboarding\}
+
+Онбординг считается закрытым, когда пользователь нажимает кнопку с назначенным действием **Close**. Вам нужно самостоятельно определить, что происходит при закрытии онбординга. Например:
+
+:::important
+Вам нужно самостоятельно управлять тем, что происходит при закрытии онбординга. В частности, необходимо прекратить его отображение.
+:::
+
+Если вы используете [`createNativeOnboardingView`](kmp-present-onboardings#without-compose-multiplatform), значение `view.isStandaloneView` равно `false` — реализация по умолчанию не вызывает `view.dismiss()`. В этом обратном вызове удалите представление из макета и вызовите на нём `dispose()`.
+
+```kotlin
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnCloseAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        actionId: String
+    ) {
+        // Dismiss the onboarding screen
+        mainUiScope.launch {
+            view.dismiss()
+        }
+
+        // Additional cleanup or navigation logic can be added here
+        // For example, navigate back or show main app content
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+<Details>
+    <summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+    ```json
+    {
+        "action_id": "close_button",
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+    }
+    ```
+
+</Details>
+
+## Открытие пейвола \{#opening-a-paywall\}
+
+:::tip
+Обрабатывайте это событие, если хотите открыть пейвол прямо внутри онбординга. Если пейвол нужно открыть после его закрытия, есть более простой способ — обработайте [`onboardingViewOnCloseAction`](#closing-onboarding) и откройте пейвол без привязки к данным события.
+:::
+
+Если пользователь нажимает кнопку, открывающую пейвол, вы получите идентификатор действия кнопки, который вы [задали вручную](get-paid-in-onboardings). Удобнее всего сделать идентификатор действия равным идентификатору плейсмента пейвола — тогда по нему сразу можно получить и открыть пейвол:
+
+```kotlin
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnPaywallAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        actionId: String
+    ) {
+        // Get the paywall using the placement ID from the action
+        mainUiScope.launch {
+            val paywallResult = Adapty.getPaywall(placementId = actionId)
+            paywallResult.onSuccess { paywall ->
+                val paywallViewResult = AdaptyUI.createPaywallView(paywall)
+                paywallViewResult.onSuccess { paywallView ->
+                    paywallView.present()
+                }.onError { error ->
+                    // handle the error
+                }
+            }.onError { error ->
+                // handle the error
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+<Details>
+    <summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+    ```json
+    {
+        "action_id": "premium_offer_1",
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+    }
+    ```
+
+</Details>
+
+## Завершение загрузки онбординга \{#finishing-loading-onboarding\}
+
+Когда онбординг завершает загрузку, вызывается следующий метод:
+
+```kotlin
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewDidFinishLoading(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta
+    ) {
+        // Handle loading completion
+        // You can add any initialization logic here
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+<Details>
+    <summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+    ```json
+    {
+        "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+    }
+    ```
+
+</Details>
+
+## События навигации \{#navigation-events\}
+
+Метод `onboardingViewOnAnalyticsEvent` вызывается при различных аналитических событиях в процессе прохождения онбординга.
+
+Объект `event` может быть одного из следующих типов:
+|Тип | Описание |
+|------------|-------------|
+| `AdaptyOnboardingsAnalyticsEventOnboardingStarted` | Онбординг загружен |
+| `AdaptyOnboardingsAnalyticsEventScreenPresented` | Показан любой экран |
+| `AdaptyOnboardingsAnalyticsEventScreenCompleted` | Экран завершён. Включает необязательный `elementId` (идентификатор завершённого элемента) и необязательный `reply` (ответ пользователя). Срабатывает, когда пользователь совершает любое действие для выхода с экрана. |
+| `AdaptyOnboardingsAnalyticsEventSecondScreenPresented` | Показан второй экран |
+| `AdaptyOnboardingsAnalyticsEventUserEmailCollected` | Срабатывает, когда email пользователя собран через поле ввода |
+| `AdaptyOnboardingsAnalyticsEventOnboardingCompleted` | Срабатывает, когда пользователь достигает экрана с идентификатором `final`. Чтобы получать это событие, присвойте последнему экрану идентификатор `final`. |
+| `AdaptyOnboardingsAnalyticsEventUnknown` | Для нераспознанных типов событий. Включает `name` (название неизвестного события) и `meta` (дополнительные метаданные) |
+
+Каждое событие содержит информацию `meta`:
+| Поле | Описание |
+|------------|-------------|
+| `onboardingId` | Уникальный идентификатор онбординга |
+| `screenClientId` | Идентификатор текущего экрана |
+| `screenIndex` | Позиция текущего экрана в потоке |
+| `screensTotal` | Общее количество экранов в потоке |
+
+Пример использования аналитических событий для трекинга:
+
+```kotlin
+
+class MyAdaptyUIOnboardingsEventsObserver : AdaptyUIOnboardingsEventsObserver {
+    override fun onboardingViewOnAnalyticsEvent(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        event: AdaptyOnboardingsAnalyticsEvent
+    ) {
+        when (event) {
+            is AdaptyOnboardingsAnalyticsEventOnboardingStarted -> {
+                // Track onboarding start
+                trackEvent("onboarding_started", event.meta)
+            }
+            is AdaptyOnboardingsAnalyticsEventScreenPresented -> {
+                // Track screen presentation
+                trackEvent("screen_presented", event.meta)
+            }
+            is AdaptyOnboardingsAnalyticsEventScreenCompleted -> {
+                // Track screen completion with user response
+                trackEvent("screen_completed", event.meta, event.elementId, event.reply)
+            }
+            is AdaptyOnboardingsAnalyticsEventOnboardingCompleted -> {
+                // Track successful onboarding completion
+                trackEvent("onboarding_completed", event.meta)
+            }
+            is AdaptyOnboardingsAnalyticsEventUnknown -> {
+                // Handle unknown events
+                trackEvent(event.name, event.meta)
+            }
+            // Handle other cases as needed
+        }
+    }
+
+    private fun trackEvent(eventName: String, meta: AdaptyUIOnboardingMeta, elementId: String? = null, reply: String? = null) {
+        // Implement your analytics tracking here
+        // For example, send to your analytics service
+    }
+}
+
+// Set up the observer
+AdaptyUI.setOnboardingsEventsObserver(MyAdaptyUIOnboardingsEventsObserver())
+```
+
+<Details>
+    <summary>Примеры событий (нажмите, чтобы развернуть)</summary>
+
+    ```javascript
+    // OnboardingStarted
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "welcome_screen",
+        "screenIndex": 0,
+        "screensTotal": 4
+    }
+    }
+
+    // ScreenPresented
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 4
+    }
+    }
+
+    // ScreenCompleted
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 1,
+        "screensTotal": 4
+    },
+        "elementId": "profile_form",
+        "reply": "success"
+    }
+
+    // SecondScreenPresented
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 1,
+        "screensTotal": 4
+    }
+    }
+
+    // UserEmailCollected
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 1,
+        "screensTotal": 4
+    }
+    }
+
+    // OnboardingCompleted
+    {
+        "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "final_screen",
+        "screenIndex": 3,
+        "screensTotal": 4
+    }
+    }
+
+    ```
+
+</Details>

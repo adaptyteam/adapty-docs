@@ -1,0 +1,202 @@
+---
+title: "Обработка ошибок в Capacitor SDK"
+description: "Обработка ошибок в Capacitor SDK."
+metadataTitle: "Обработка ошибок в Capacitor | Документация Adapty"
+---
+
+import CrossPlatformErrors from '@site/src/locales/ru/reusable/CrossPlatformErrors.md';
+
+Каждая ошибка, возвращаемая SDK, является экземпляром `AdaptyError`. Пример:
+
+```typescript showLineNumbers
+
+try {
+  const result = await adapty.makePurchase({ product });
+  
+  // Handle purchase result
+  if (result.type === 'success') {
+    console.log('Purchase successful:', result.profile);
+  } else if (result.type === 'user_cancelled') {
+    console.log('User cancelled the purchase');
+  } else if (result.type === 'pending') {
+    console.log('Purchase is pending');
+  }
+} catch (error) {
+  if (error instanceof AdaptyError) {
+    console.error('Adapty error:', error.adaptyCode, error.localizedDescription);
+    
+    // Handle specific error codes
+    switch (error.adaptyCode) {
+      case ErrorCodeName.cantMakePayments:
+        console.log('In-app purchases are not allowed on this device');
+        break;
+      case ErrorCodeName.notActivated:
+        console.log('Adapty SDK is not activated');
+        break;
+      case ErrorCodeName.productPurchaseFailed:
+        console.log('Purchase failed:', error.detail);
+        break;
+      default:
+        console.log('Other error occurred:', error.detail);
+    }
+  } else {
+    console.error('Non-Adapty error:', error);
+  }
+}
+```
+
+## Свойства ошибки \{#error-properties\}
+
+Класс `AdaptyError` предоставляет следующие свойства:
+
+| Свойство | Тип | Описание |
+|----------|------|-------------|
+| `adaptyCode` | `number` | Числовой код ошибки (например, `1003` для cantMakePayments) |
+| `localizedDescription` | `string` | Понятное пользователю сообщение об ошибке |
+| `detail` | `string \| undefined` | Дополнительная информация об ошибке (необязательно) |
+| `message` | `string` | Полное сообщение об ошибке с кодом и описанием |
+
+## Коды ошибок \{#error-codes\}
+
+SDK экспортирует константы и утилиты для работы с кодами ошибок:
+
+### Константа ErrorCodeName \{#errorcodename-constant\}
+
+Сопоставляет строковые идентификаторы с числовыми кодами:
+
+```typescript
+
+ErrorCodeName.cantMakePayments // 1003
+ErrorCodeName.notActivated // 2002
+ErrorCodeName.networkFailed // 2005
+```
+
+### Константа ErrorCode \{#errorcode-constant\}
+
+Сопоставляет числовые коды со строковыми идентификаторами:
+
+```typescript
+
+ErrorCode[1003] // 'cantMakePayments'
+ErrorCode[2002] // 'notActivated'
+ErrorCode[2005] // 'networkFailed'
+```
+
+### Вспомогательные функции \{#helper-functions\}
+
+```typescript
+
+// Get numeric code from string name:
+getErrorCode('cantMakePayments') // 1003
+
+// Get string name from numeric code:
+getErrorPrompt(1003) // 'cantMakePayments'
+```
+
+### Сравнение кодов ошибок \{#comparing-error-codes\}
+
+**Важно:** `error.adaptyCode` — это **число**, поэтому сравнивайте его напрямую с числовыми кодами:
+
+```typescript
+// Option 1: Use ErrorCodeName constant (recommended) ✅
+if (error.adaptyCode === ErrorCodeName.cantMakePayments) {
+  console.log('Cannot make payments');
+}
+
+// Option 2: Compare with numeric literal ✅
+if (error.adaptyCode === 1003) {
+  console.log('Cannot make payments');
+}
+
+// NOT like this ❌ - compares number to string and will never match
+if (error.adaptyCode === ErrorCode[1003]) {
+}
+```
+
+## Глобальный обработчик ошибок \{#global-error-handler\}
+
+Вы можете настроить глобальный обработчик для перехвата всех ошибок Adapty:
+
+```typescript showLineNumbers
+
+// Set up global error handler
+AdaptyError.onError = (error: AdaptyError) => {
+  console.error('Global Adapty error:', {
+    code: error.adaptyCode,
+    message: error.localizedDescription,
+    detail: error.detail
+  });
+  
+  // Handle specific error types globally
+  if (error.adaptyCode === ErrorCodeName.notActivated) {
+    // SDK not activated - maybe retry activation
+    console.log('SDK not activated, attempting to reactivate...');
+  }
+};
+```
+
+## Типовые паттерны обработки ошибок \{#common-error-handling-patterns\}
+
+### Обработка ошибок покупки \{#handle-purchase-errors\}
+
+```typescript showLineNumbers
+
+async function handlePurchase(product: AdaptyPaywallProduct) {
+  try {
+    const result = await adapty.makePurchase({ product });
+    
+    if (result.type === 'success') {
+      console.log('Purchase successful:', result.profile);
+    } else if (result.type === 'user_cancelled') {
+      console.log('User cancelled the purchase');
+    } else if (result.type === 'pending') {
+      console.log('Purchase is pending');
+    }
+  } catch (error) {
+    if (error instanceof AdaptyError) {
+      switch (error.adaptyCode) {
+        case ErrorCodeName.cantMakePayments:
+          console.log('In-app purchases not allowed');
+          break;
+        case ErrorCodeName.productPurchaseFailed:
+          console.log('Purchase failed:', error.detail);
+          break;
+        default:
+          console.error('Purchase error:', error.localizedDescription);
+      }
+    }
+  }
+}
+```
+
+### Обработка сетевых ошибок \{#handle-network-errors\}
+
+```typescript showLineNumbers
+
+async function fetchPaywall(placementId: string) {
+  try {
+    const paywall = await adapty.getPaywall({ placementId });
+    return paywall;
+  } catch (error) {
+    if (error instanceof AdaptyError) {
+      switch (error.adaptyCode) {
+        case ErrorCodeName.networkFailed:
+          console.log('Network error, retrying...');
+          // Implement retry logic
+          break;
+        case ErrorCodeName.serverError:
+          console.log('Server error:', error.detail);
+          break;
+        case ErrorCodeName.notActivated:
+          console.log('SDK not activated');
+          break;
+        default:
+          console.error('Paywall fetch error:', error.localizedDescription);
+      }
+    }
+    throw error;
+  }
+}
+```
+
+<CrossPlatformErrors />

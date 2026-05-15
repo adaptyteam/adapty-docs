@@ -1,0 +1,145 @@
+---
+title: "Android SDK'da abonelik durumunu kontrol etme"
+description: "Android uygulamanızda müşteri elde tutmayı iyileştirmek için Adapty'de kullanıcı abonelik durumunu takip edin ve yönetin."
+metadataTitle: "Abonelik Durumunu Anlama | Adapty Dokümanları"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+
+Adapty ile abonelik durumunu takip etmek çok kolaydır. Ürün kimliklerini kodunuza manuel olarak eklemenize gerek yoktur. Bunun yerine, aktif bir [access level](access-level) olup olmadığını kontrol ederek kullanıcının abonelik durumunu zahmetsizce doğrulayabilirsiniz.
+
+Abonelik durumunu kontrol etmeye başlamadan önce [Gerçek Zamanlı Geliştirici Bildirimleri (RTDN)](enable-real-time-developer-notifications-rtdn) kurulumunu yapın.
+
+## Access level ve AdaptyProfile nesnesi \{#access-level-and-the-adaptyprofile-object\}
+
+Access level'lar, [AdaptyProfile](https://android.adapty.io/adapty/com.adapty.models/-adapty-profile/) nesnesinin özellikleridir. Profili uygulamanız başladığında, örneğin [bir kullanıcı tanımladığınızda](android-identifying-users#setting-customer-user-id-on-configuration) alıp değişiklikler gerçekleştiğinde güncellemenizi öneririz. Bu sayede profil nesnesini tekrar tekrar istek göndermeden kullanabilirsiniz.
+
+Profil güncellemelerinden haberdar olmak için, aşağıdaki [Profil güncellemelerini dinleme, access level dahil](android-listen-subscription-changes) bölümünde açıklandığı gibi profil değişikliklerini dinleyin.
+
+<SampleApp />
+
+## Sunucudan access level alma \{#retrieving-the-access-level-from-the-server\}
+
+Sunucudan access level almak için `.getProfile()` metodunu kullanın:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+            // check the access
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        // check the access
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama                                                  |
+| --------- | ------------------------------------------------------------ |
+| Profile   | <p>Bir [AdaptyProfile](https://android.adapty.io/adapty/com.adapty.models/-adapty-profile/) nesnesi. Genel olarak, kullanıcının uygulamaya premium erişimi olup olmadığını belirlemek için yalnızca profilin access level durumunu kontrol etmeniz yeterlidir.</p><p></p><p>`.getProfile` metodu her zaman API'yi sorgulamaya çalıştığından en güncel sonucu sağlar. Herhangi bir nedenle (örneğin internet bağlantısı olmadığında) Adapty SDK sunucudan bilgi alamazsa, önbellekteki veriler döndürülür. Adapty SDK'nın bilgileri mümkün olduğunca güncel tutmak için `AdaptyProfile` önbelleğini düzenli olarak güncellediğini de belirtmek gerekir.</p> |
+
+`.getProfile()` metodu, kullanıcı profilini size sağlar ve bu profilden access level durumunu öğrenebilirsiniz. Uygulama başına birden fazla access level tanımlayabilirsiniz. Örneğin, bir gazete uygulamanız varsa ve farklı konulara bağımsız abonelikler satıyorsanız "sports" ve "science" gibi access level'lar oluşturabilirsiniz. Ancak çoğu durumda yalnızca bir access level'a ihtiyaç duyarsınız; bu durumda varsayılan "premium" access level'ı kullanabilirsiniz.
+
+Varsayılan "premium" access level'ını kontrol etmeye yönelik bir örnek:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+
+            if (profile.accessLevels["premium"]?.isActive == true) {
+                // grant access to premium features
+            }
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        
+        AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("premium");
+        
+        if (premium != null && premium.isActive()) {
+            // grant access to premium features
+        }
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+### Abonelik durumu güncellemelerini dinleme \{#listening-for-subscription-status-updates\}
+
+Kullanıcının aboneliği her değiştiğinde Adapty bir olay tetikler.
+
+Adapty'den mesaj alabilmek için bazı ek yapılandırmalar yapmanız gerekir:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.setOnProfileUpdatedListener { profile ->
+    // handle any changes to subscription state
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers t
+Adapty.setOnProfileUpdatedListener(profile -> {
+    // handle any changes to subscription state
+});
+```
+</TabItem>
+
+</Tabs>
+
+Adapty, uygulamanın başlangıcında da bir olay tetikler. Bu durumda önbellekteki abonelik durumu iletilir.
+
+### Abonelik durumu önbelleği \{#subscription-status-cache\}
+
+Adapty SDK'da uygulanan önbellek, profilin abonelik durumunu saklar. Bu sayede sunucu kullanılamaz olsa bile, profil abonelik durumuna ilişkin bilgilere önbellekteki verilerden erişilebilir.
+
+Ancak önbellekten doğrudan veri talep etmenin mümkün olmadığını belirtmek gerekir. SDK, profille ilgili güncellemeleri ve değişiklikleri kontrol etmek için sunucuyu periyodik olarak her dakika sorgular. Yeni işlemler veya başka güncellemeler gibi değişiklikler olduğunda, bunlar önbellekteki veriyle sunucuyla senkronize kalması için önbelleğe gönderilir.

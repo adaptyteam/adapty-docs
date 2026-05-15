@@ -6,10 +6,6 @@ keywords: ['安装 sdk', 'sdk 安装', '在 ios 上安装 sdk', 'adaptyui']
 rank: 100
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
 import GetKey from '@site/src/locales/zh/reusable/GetKey.md';
 import InstallationPrereqs from '@site/src/locales/zh/reusable/InstallationPrereqs.mdx';
@@ -116,8 +112,6 @@ Adapty SDK 在您的应用中只需激活一次。
 <TabItem value="swiftui" label="SwiftUI">
 
 ```swift showLineNumbers
-import SwiftUI
-import Adapty
 
 @main
 struct YourApp: App {
@@ -160,7 +154,6 @@ struct YourApp: App {
 // If you use a SceneDelegate, place the following code in the
 // scene(_:willConnectTo:options:) method.
 
-import Adapty
 
 Task {
   do {
@@ -197,9 +190,6 @@ Task {
 <TabItem value="swiftui" label="SwiftUI">
 
 ```swift showLineNumbers title="Swift"
-import SwiftUI
-import Adapty
-import AdaptyUI
 
 @main
 struct YourApp: App {
@@ -231,8 +221,6 @@ struct YourApp: App {
 // If you use a SceneDelegate, place the following code in the
 // scene(_:willConnectTo:options:) method.
 
-import Adapty
-import AdaptyUI
 
 Task {
    do {
@@ -322,7 +310,6 @@ let configurationBuilder =
 请注意，AdaptyUI 配置是可选的。您可以在不提供配置的情况下激活 AdaptyUI 模块。但如果您使用配置，则所有参数均为必填项。
 
 ```swift showLineNumbers title="Swift"
-import AdaptyUI 
 
 // Configure AdaptyUI
         let adaptyUIConfiguration = AdaptyUI.Configuration(
@@ -374,18 +361,16 @@ let configurationBuilder = AdaptyConfiguration
     .with(clearDataOnBackup: true) // default – false
 ```
 
-## 故障排除 \{#troubleshooting\}
+## 故障排查 \{#troubleshooting\}
 
 #### 使用 Tuist 时出现 Swift 6 并发错误 \{#swift-6-concurrency-error-with-tuist\}
 
-使用 [Tuist](https://tuist.dev/) 构建时，您可能会遇到 Swift 6 严格并发编译错误。典型症状包括 `AdaptyUIBuilderLogic` 中的 `@Sendable` 属性不匹配，或类似的跨模块 Sendability 错误。
+使用 [Tuist](https://tuist.dev/) 构建时，可能会遇到 Swift 6 严格并发编译错误。常见症状包括 `AdaptyUIBuilderLogic` 中出现 `@Sendable` 属性不匹配，或类似的跨模块 Sendability 错误。
+这是因为 Tuist 从 SPM 包生成 Xcode 项目时，不会保留 `swift-tools-version: 6.0` 设置。因此，部分 Adapty 目标（`Adapty`、`AdaptyUI`、`AdaptyUIBuilder`）以 Swift 5 规则编译，而其他目标使用 Swift 6，导致跨模块出现 `@Sendable` 不匹配问题。
 
-这是因为 Tuist 从 SPM 包生成 Xcode 项目时不会保留 `swift-tools-version: 6.0` 设置。因此，某些 Adapty 目标（`Adapty`、`AdaptyUI`、`AdaptyUIBuilder`）使用 Swift 5 规则编译，而其他目标使用 Swift 6，从而导致跨模块 `@Sendable` 不匹配。
+**修复方案**：升级到 Adapty SDK **3.15.5** 或更高版本，无论 Swift 语言版本是否混用，该版本均可解决此问题。
 
-**解决方案**：升级至 Adapty SDK **3.15.5** 或更高版本，无论混合 Swift 语言版本如何，该版本均可解决此问题。
-
-**临时方案**：如果无法升级，请在您的 Tuist 配置中为所有三个 Adapty 目标显式设置 Swift 6：
-
+**临时解决方案**：如果暂时无法升级，请在 Tuist 配置中为所有三个 Adapty 目标显式设置 Swift 6：
 ```swift showLineNumbers
 targetSettings: [
   "Adapty": .init().swiftVersion("6"),
@@ -393,3 +378,36 @@ targetSettings: [
   "AdaptyUIBuilder": .init().swiftVersion("6"),
 ]
 ```
+
+#### 由 Podfile SWIFT_VERSION 覆盖引发的 Swift 6 构建错误 \{#swift-6-build-errors-caused-by-podfile-swift_version-override\}
+
+使用 [CocoaPods](sdk-installation-ios#install-adapty-sdk) 为 iOS 构建时，你可能会在 Adapty pod 目标上看到 Swift 6 编译错误。常见症状包括：`AdaptyUIBuilderLogic` 中出现 `@Sendable` 不匹配、Adapty 类型缺少 `Sendable` 一致性，或 actor 隔离错误。
+Adapty pods 声明了 `s.swift_version = '6.0'`，构建时需要 Swift 6。你自己的应用代码可以继续使用 Swift 5 —— 只有 Adapty 相关的 pod target（`Adapty`、`AdaptyUI`、`AdaptyUIBuilder`、`AdaptyLogger`）需要用 Swift 6 构建。
+
+最常见的原因是 `Podfile` 中有一个 `post_install` hook，它会把所有 pod target 的 `SWIFT_VERSION` 都覆盖掉：
+
+```ruby showLineNumbers title="Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+**修复方案**：将 Adapty 相关的 pod target 排除在覆盖范围之外：
+
+```ruby showLineNumbers title="Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger].include?(target.name)
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+然后运行 `pod install` 并重新构建。
+
+如需验证，请打开 `Pods.xcodeproj`，选择 `Adapty` pod target → **Build Settings** → **Swift Language Version**，确认显示为 **Swift 6**。

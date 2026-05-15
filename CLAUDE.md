@@ -48,6 +48,10 @@ Sidebars are defined per platform in `src/data/sidebars/*.json` (ios, android, r
 - Use `<ZoomImage id="image.png" width="700px" alt="desc" />` (preferred)
 - Legacy `<Zoom><img src={require(...)}/></Zoom>` still works
 
+### Localization
+
+Translated versions of articles live in `src/locales/{locale}/` (e.g., `src/locales/zh/`, `src/locales/tr/`). A GitHub Actions workflow automatically translates and updates them on every push to `main` — do not edit them as part of normal doc work. Edit only the source English file in `src/content/docs/`. The only exception is targeted manual corrections requested explicitly (e.g., fixing a translation error a native speaker caught).
+
 ### Path aliases
 
 - `@site` → repo root

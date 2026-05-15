@@ -1,0 +1,115 @@
+---
+title: "Adapty User Acquisition'da ertelenmiş derin bağlantılar"
+description: "Adapty User Acquisition'da derin bağlantıları ayarlayın"
+metadataTitle: "Adapty User Acquisition'da Ertelenmiş Derin Bağlantılar | Adapty Dokümanları"
+keywords: ['adapty ua', 'user acquisition', 'deeplink', 'deferred deeplink']
+---
+Ertelenmiş deeplink'ler, kullanıcılar reklamlarınıza tıkladıktan sonra uygulamanızı yüklediğinde özel verileri uygulamanıza aktarmanızı sağlar. Örneğin, kullanıcıları uygulamayı yükleyip ilk kez başlattıklarında doğrudan belirli bir ekrana yönlendirebilirsiniz.
+
+Nasıl çalışır:
+
+1. Kullanıcı reklamınıza tıkladığında Adapty, tıklama verilerini kaydeder.
+2. Adapty yükleme olayını kaydettiğinde, tıklamadan gelen ertelenmiş verileri alır.
+3. Kullanıcı uygulamanızı yükleyip ilk kez başlattığında Adapty saklanan verileri getirir ve uygulamanız özel parametreleri alarak uygulama kodunda farklı değerlere tepki verebilir.
+Adapty aşağıdaki ertelenmiş veri parametrelerini destekler:
+
+- `ios_deferred_data`
+- `android_deferred_data`
+- `deferred_data_sub[1-10]`
+
+Ertelenmiş veri parametreleri eklemek için bunları kampanya ayarlarınızdaki tıklama bağlantısına ekleyin:
+
+1. Kampanyanızın tıklama bağlantısını kopyalayın.
+
+<ZoomImage id="ua-lnk.webp" width="900px" />
+
+2. Parametreleri bağlantıya ekleyin. Örneğin, iOS kullanıcılarınızın 'Welcome' ekranına yönlendirilmesini istiyorsanız bağlantınız şöyle görünebilir:
+```
+https://api-ua.adapty.io/api/v1/attribution/click?adpt_cid=__ADAPTY__ID__&ios_deferred_data=welcome&campaign_id=__CAMPAIGN_ID__&adset_id=__AID__&ad_id=__CID__&campaign_name=__CAMPAIGN_NAME__&adset_name=__AID_NAME__&ad_name=__CID_NAME__&redirect_url=__APP_LINK__
+```
+
+3. Uygulama kodunuzda parametrelere yanıt verin. Ertelenmiş veri parametrelerinin `payload` parametresinin içinde olduğunu ve `payload` parametresinin kaçışlı bir JSON olduğunu unutmayın; bu nedenle uygulama kodunuzda bunu ayrıştırmanız gerekir.
+
+Örneğin, `ios_deferred_data` değerinin `welcome` olduğu kurulumları şu şekilde yönetebilirsiniz:
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+```swift showLineNumbers
+Adapty.delegate = self
+
+nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetails) {
+    guard
+        let payloadStr = details.payload,
+        let data = payloadStr.data(using: .utf8),
+        let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+        let deeplink = payload["ios_deferred_data"] as? String,
+        deeplink == "welcome"
+    else { return }
+
+    DispatchQueue.main.async {
+        print("Navigate to welcome screen")
+        // navigate to your screen here
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Kotlin">
+
+```kotlin showLineNumbers
+Adapty.setOnInstallationDetailsListener(object : OnInstallationDetailsListener {
+    override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
+        details.payload?.let {
+            runCatching {
+                val json = JSONObject(it)
+                if (json.optString("android_deferred_data") == "welcome") {
+                    println("Navigate to welcome screen")
+                    // navigate here
+                }
+            }.onFailure(Throwable::printStackTrace)
+        }
+    }
+})
+
+```
+</TabItem>
+
+<TabItem value="rn" label="React Native" default>
+```typescript showLineNumbers
+adapty.addEventListener('onInstallationDetailsSuccess', details => {
+    // Payload JSON'ı ayrıştır ve gerekirse karşılama ekranına git
+    try {
+        if (details.payload) {
+            const payload = JSON.parse(details.payload);
+            if (payload.ios_deferred_data === 'welcome') {
+                // Karşılama ekranına git
+                // Uygulamanızın navigasyon mantığıyla değiştirin
+                // Örneğin, React Navigation kullanıyorsanız:
+                // navigation.navigate('Welcome');
+                console.log('Navigate to welcome screen');
+            }
+        }
+    } catch (error) {
+        console.error('Error parsing installation details payload:', error);
+    }
+});
+```
+</TabItem>
+
+<TabItem value="flutter" label="Flutter">
+
+```dart showLineNumbers
+Adapty().onUpdateInstallationDetailsSuccessStream.listen((details) {
+  final payloadStr = details.payload;
+  if (payloadStr == null) return;
+
+  final payload = json.decode(payloadStr) as Map<String, dynamic>;
+  if (payload['ios_deferred_data'] == 'welcome') {
+    print('Navigate to welcome screen');
+  }
+});
+
+```
+
+</TabItem>
+
+</Tabs>

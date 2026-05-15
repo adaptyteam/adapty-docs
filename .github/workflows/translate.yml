@@ -10,9 +10,16 @@ on:
       - 'src/api-reference/specs/*.yaml'
       - 'src/locales/dictionary.json'
 
+# Queue concurrent runs (do not cancel) so an in-flight Anthropic batch isn't
+# killed mid-call and two pushes don't race on the translation commit.
+concurrency:
+  group: translate-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   translate:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     permissions:
       contents: write
 
@@ -22,17 +29,6 @@ jobs:
           # Need parent commit to compute the diff
           fetch-depth: 2
 
-      # Hashes are gitignored but must persist between runs so --incremental
-      # only re-translates sections that actually changed within a file.
-      # The key includes the commit SHA so each push creates a new entry;
-      # restore-keys fetches the most recent previous entry as a fallback.
-      - name: Restore translation hash cache
-        uses: actions/cache@v4
-        with:
-          path: src/locales/*/.hashes
-          key: translation-hashes-${{ github.sha }}
-          restore-keys: translation-hashes-
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -40,6 +36,8 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
 
       # Split the diff into added/modified files (to translate) and deleted files (to clean up).
       - name: Get changed translatable files
@@ -58,7 +56,7 @@ jobs:
         if: steps.diff.outputs.files != ''
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: node scripts/translate.mjs --incremental --only-files "${{ steps.diff.outputs.files }}"
+        run: node scripts/translate.mjs --incremental --batch --only-files "${{ steps.diff.outputs.files }}"
 
       # Remove translated files and hash caches for deleted source content.
       # Sidebars are intentionally excluded: deleting a sidebar JSON is rare and
