@@ -57,7 +57,7 @@ Translated versions of articles live in `src/locales/{locale}/` (e.g., `src/loca
 
 | Component | Import required? | Usage |
 |-----------|-----------------|-------|
-| `ZoomImage` | Yes | `<ZoomImage id="file.png" width="700px" alt="..." />` |
+| `ZoomImage` | Yes | `<ZoomImage id="file.png" width="700px" alt="..." />` — add `float="right"` or `float="left"` to float image beside text |
 | `Tabs`/`TabItem` | Yes | `<Tabs groupId="platform"><TabItem value="ios" label="iOS">...</TabItem></Tabs>` |
 | `Details` | Yes | `<Details summary="Title">content</Details>` |
 | `InlineTooltip` | Yes | `<InlineTooltip tooltip="hover text">[link](page.md)</InlineTooltip>` |

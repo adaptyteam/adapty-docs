@@ -108,6 +108,13 @@ function stripContent(content, reusableComponents) {
     return processed.trim();
 }
 
+// Check if a document is marked as draft
+function isDraft(content) {
+    const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
+    if (!match) return false;
+    return /^draft:\s*true\s*$/m.test(match[1]);
+}
+
 // Clean frontmatter (keep only title and description)
 function cleanFrontmatter(content) {
     const frontmatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n/;
@@ -204,6 +211,9 @@ async function processMarkdownFile(docId, reusableComponents, locale = null) {
 
     try {
         let content = await fs.readFile(filePath, 'utf8');
+
+        // Skip draft documents
+        if (isDraft(content)) return null;
 
         // Clean frontmatter
         content = cleanFrontmatter(content);

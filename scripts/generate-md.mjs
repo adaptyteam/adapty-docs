@@ -67,6 +67,35 @@ function stripContent(content, reusableComponents) {
     processed = processed.replace(/<Inline\s+[^>]*alt="([^"]*)"[^>]*\/>/g, '$1');
     processed = processed.replace(/<Inline\s+[^>]*\/>/g, '');
 
+    // Unwrap SDK v4 blocks — keep the content, drop the wrapper tags
+    processed = processed.replace(/<SDKv4>([\s\S]*?)<\/SDKv4>/g, '$1');
+    // Wrap SDK v3 blocks with an LLM instruction header covering the entire legacy section,
+    // then keep the full content so LLMs can reference it when needed.
+    processed = processed.replace(/<SDKv3>([\s\S]*?)<\/SDKv3>/g, (_, content) => `
+
+---
+
+> [!WARNING]
+> **LLM INSTRUCTION — SDK v3 LEGACY CONTENT**
+>
+> Everything that follows (until the next horizontal rule or end of document) is the **legacy SDK v3 API reference** (\`getPaywall\`, \`getPaywallForDefaultAudience\`, \`getOnboarding\`, \`getPaywallConfiguration\`). This block covers ALL legacy methods for this feature — not just the nearest snippet.
+>
+> **Before using any code from this section, check which SDK version the user is on.**
+>
+> Apply this section ONLY in these two cases:
+> 1. The user is **migrating an existing app from SDK v3 to SDK v4+** and needs to understand or replace legacy code.
+> 2. The user is **troubleshooting an already-deployed v3 integration**.
+>
+> **For new integrations (building from scratch):** always recommend the SDK v4+ \`getFlow\` method documented above. Do NOT suggest \`getPaywall\` or \`getOnboarding\` for new setups, even if the user hasn't specified a version — ask first and default to v4+.
+>
+> **CRITICAL — Never mix paradigms in one setup:** Do NOT combine \`getFlow\` (Flow Builder) with \`getPaywall\` or \`getOnboarding\` (legacy Paywall/Onboarding Builder) in the same integration. These are incompatible patterns. Mixing them will produce inconsistent behavior and is unsupported.
+
+${content}
+
+---
+`);
+
+
     // 3. Inline Reusable Components
     // Replace <ComponentName /> with the actual content
     for (const [name, componentContent] of Object.entries(reusableComponents)) {

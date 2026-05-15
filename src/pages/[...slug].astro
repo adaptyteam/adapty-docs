@@ -16,6 +16,10 @@ import ArticleButtons from '../components/ArticleButtons.astro';
 import Button from '../components/Button.astro';
 import Inline from '../components/Inline.astro';
 import MDXImage from '../components/MDXImage.astro';
+import SDKv4 from '../components/SDKv4.astro';
+import SDKv3 from '../components/SDKv3.astro';
+import MethodPromo from '../components/MethodPromo.astro';
+
 
 export async function getStaticPaths() {
   // When BUILD_LOCALES is set, skip English pages — this build produces only locale output.
@@ -49,6 +53,10 @@ export async function getStaticPaths() {
                         const basename = idWithoutExt.split('/').pop();
                         return idWithoutExt === id || basename === id || d.id === id;
                     });
+
+                    // Skip draft documents
+                    if (doc?.data.draft) return;
+
                     const actualId = doc ? doc.id : id;
 
                     // Add the slug path
@@ -95,6 +103,8 @@ export async function getStaticPaths() {
   // 2. Orphaned Pages (ensuring all docs are reachable via their basename as well)
   for (const doc of allDocs) {
       if (!doc.id || typeof doc.id !== 'string') continue;
+      // Skip draft documents
+      if (doc.data.draft) continue;
       // Use the basename without extension as the primary slug for orphans
       const docBasename = doc.id.split('/').pop()?.replace(/\.(md|mdx)$/, '');
       
@@ -261,6 +271,9 @@ const globalComponents = Object.entries(reusableComponents).reduce((acc, [path, 
           MDXImage,
           Button,
           Inline,
+          SDKv4,
+          SDKv3,
+          MethodPromo,
           img: MDXImage,
           ...globalComponents
         }} />
@@ -454,4 +467,88 @@ const globalComponents = Object.entries(reusableComponents).reduce((acc, [path, 
     initCopyLinkButton();
     initHeadingAnchors();
   });
+</script>
+
+<script>
+  const SDK_VERSION_KEY = 'adapty-sdk-version-tab';
+
+  function initSDKVersionTabs() {
+    const v4Blocks = document.querySelectorAll('[data-sdk-version="v4"]');
+    const v3Blocks = document.querySelectorAll('[data-sdk-version="v3"]');
+
+    // Only activate on pages that have version blocks
+    if (v4Blocks.length === 0 && v3Blocks.length === 0) return;
+
+    // Remove any previously injected tab bar (for Astro client-side nav)
+    document.querySelector('.sdk-version-tabs')?.remove();
+
+    const savedTab = localStorage.getItem(SDK_VERSION_KEY) || 'v4';
+
+    // Build tab bar
+    const tabBar = document.createElement('div');
+    tabBar.className = 'sdk-version-tabs';
+
+    const v4Tab = document.createElement('button');
+    v4Tab.className = 'sdk-version-tab';
+    v4Tab.dataset.tab = 'v4';
+    v4Tab.textContent = 'SDK v4+';
+
+    const v3Tab = document.createElement('button');
+    v3Tab.className = 'sdk-version-tab';
+    v3Tab.dataset.tab = 'v3';
+    v3Tab.innerHTML = 'SDK v3 <span class="sdk-legacy-badge">Legacy</span>';
+
+    tabBar.append(v4Tab, v3Tab);
+
+    // Inject tab bar after ArticleButtons (below copy/markdown buttons, above content)
+    const articleButtons = document.getElementById('article-buttons');
+    if (articleButtons) {
+      articleButtons.after(tabBar);
+    } else {
+      // Fallback: insert after the h1's parent flex wrapper
+      const h1 = document.querySelector('.content-wrapper h1');
+      if (h1) {
+        const wrapper = h1.closest('div') ?? h1;
+        wrapper.after(tabBar);
+      }
+    }
+
+    // Tag TOC <li>s with a class indicating which SDK version their heading
+    // belongs to. Use a class (not data-sdk-version) to avoid colliding with
+    // the global `[data-sdk-version] { display: none }` rule that hides
+    // page-content blocks.
+    document.querySelectorAll('.toc-link').forEach(link => {
+      const slug = link.getAttribute('data-slug');
+      if (!slug) return;
+      const heading = document.getElementById(slug);
+      if (!heading) return;
+      const sdkBlock = heading.closest('[data-sdk-version]');
+      if (!sdkBlock) return;
+      const li = link.closest('li');
+      if (!li) return;
+      const version = sdkBlock.getAttribute('data-sdk-version');
+      if (version === 'v3' || version === 'v4') {
+        li.classList.add(`toc-sdk-${version}`);
+      }
+    });
+
+    function activate(tab) {
+      v4Blocks.forEach(el => el.classList.toggle('sdk-version-active', tab === 'v4'));
+      v3Blocks.forEach(el => el.classList.toggle('sdk-version-active', tab === 'v3'));
+      v4Tab.classList.toggle('active', tab === 'v4');
+      v3Tab.classList.toggle('active', tab === 'v3');
+      // Toggle a root class so CSS can hide inactive-tab TOC entries.
+      document.documentElement.classList.toggle('sdk-active-v4', tab === 'v4');
+      document.documentElement.classList.toggle('sdk-active-v3', tab === 'v3');
+      localStorage.setItem(SDK_VERSION_KEY, tab);
+    }
+
+    v4Tab.addEventListener('click', () => activate('v4'));
+    v3Tab.addEventListener('click', () => activate('v3'));
+
+    activate(savedTab);
+  }
+
+  initSDKVersionTabs();
+  document.addEventListener('astro:page-load', initSDKVersionTabs);
 </script>
