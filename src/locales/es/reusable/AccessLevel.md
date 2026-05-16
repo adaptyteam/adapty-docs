@@ -1,0 +1,18 @@
+| Parámetro                     | Tipo          | Obligatorio | Nullable | Descripción                                                  |
+| :---------------------------- | :------------ | ----------- | -------- | :----------------------------------------------------------- |
+| access_level_id               | String        | Sí          | No       | ID del nivel de acceso de pago configurado en el Adapty Dashboard. |
+| store                         | String        | Sí          | No       | Store donde se compró el producto. Opciones: **app_store**, **play_store**, **stripe** o el nombre de tu [store personalizado](custom-store). |
+| store_product_id              | String        | Sí          | No       | ID del producto en el store (como App Store, Google Play o Stripe) que desbloqueó este nivel de acceso. |
+| store_base_plan_id            | String        | Sí          | Sí       | [ID del plan base](https://support.google.com/googleplay/android-developer/answer/12154973) en Google Play o [ID de precio](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) en Stripe. |
+| store_transaction_id          | String        | Sí          | No       | ID de transacción en el store (App Store, Google Play, Stripe, etc.). |
+| store_original_transaction_id | String        | Sí          | No       | <p>Para suscripciones, este ID vincula la transacción original en la cadena de renovaciones. Las transacciones posteriores se registran como renovaciones.</p><p>Si no hay renovación, store_original_transaction_id coincide con store_transaction_id.</p> |
+| offer                         | Object        | Sí          | No       | El objeto [Offer](server-side-api-objects#offer). Puede ser `null` si el cliente no tiene niveles de acceso. |
+| environment                   | String        | No          | No       | Entorno de la transacción que otorgó el acceso. Opciones: `Sandbox`, `Production`. |
+| starts_at                     | ISO 8601 date | Sí          | Sí       | Fecha y hora en que el nivel de acceso se activa. Puede ser en el futuro. |
+| purchased_at                  | ISO 8601 date | Sí          | No       | Fecha y hora de la compra más reciente para el nivel de acceso. |
+| originally_purchased_at       | ISO 8601 date | Sí          | No       | Para suscripciones, es la fecha y hora de la primera compra (original) en la cadena, vinculada a `store_original_transaction_id`. |
+| expires_at                    | ISO 8601 date | Sí          | Sí       | Fecha y hora en que expira el nivel de acceso. Puede ser en el pasado, o `null` para acceso de por vida. |
+| renewal_cancelled_at          | ISO 8601 date | Sí          | Sí       | Fecha y hora en que se desactivó la renovación automática de una suscripción. La suscripción puede seguir activa; simplemente no se renovará de forma automática. Se establece en `null` si el usuario reactiva la suscripción. |
+| billing_issue_detected_at     | ISO 8601 date | Sí          | Sí       | Fecha y hora en que se detectó un problema de facturación (como un cargo fallido a la tarjeta). La suscripción puede seguir activa. Se limpia si el pago se procesa posteriormente. |
+| is_in_grace_period            | Boolean       | Sí          | No       | Indica si la suscripción está en un [período de gracia](https://developer.apple.com/news/?id=09122019c) (solo para suscripciones de renovación automática). |
+| cancellation_reason           | String        | Sí          | Sí       | Motivo de cancelación, con opciones como: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `upgraded`, `unknown`. |

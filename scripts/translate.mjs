@@ -44,6 +44,7 @@ const LANGUAGE_NAMES = {
   ja: 'Japanese (ja-JP)',
   tr: 'Turkish (tr-TR)',
   ru: 'Russian (ru-RU)',
+  es: 'Spanish (es-ES)',
 };
 
 // Locale-specific suffix for metadataTitle values (the part after the page title)
@@ -52,14 +53,24 @@ const METADATA_TITLE_SUFFIXES = {
   ja: '| Adapty ドキュメント',
   tr: '| Adapty Dokümanları',
   ru: '| Документация Adapty',
+  es: '| Documentación de Adapty',
 };
 
 // ---------------------------------------------------------------------------
 // CLI argument parsing
 // ---------------------------------------------------------------------------
 
-// Global error counter — set to 1 if any translation fails (used for CI exit code)
+// Error tracking. `hadErrors` flips on any translation error and gates the
+// CI exit code. Article counters let the exit logic tolerate a small share
+// of article-translation failures (typically transient Anthropic capacity
+// errors) instead of blocking the deploy for everything else that succeeded.
 let hadErrors = false;
+let articlesAttempted = 0;
+let articlesFailed = 0;
+
+// Maximum share of attempted articles that may fail before the script still
+// exits 0. Above this, partial output is rejected and the workflow fails.
+const ARTICLE_FAILURE_TOLERANCE = 0.25;
 
 const args = process.argv.slice(2);
 
@@ -111,6 +122,10 @@ const onlySpecIds = onlyFilePaths
 const onlyReusableIds = onlyFilePaths
   ? new Set(onlyFilePaths.filter(p => p.startsWith('src/components/reusable/') && /\.mdx?$/.test(p)).map(p => path.basename(p).replace(/\.mdx?$/, '')))
   : null;
+
+// A "full run" is the default: no targeting flags. It translates reusables,
+// sidebar-listed articles, sidebar labels, and API specs for every locale.
+const isFullRun = !flagApiSpecs && !flagReusables && !flagSidebarsOnly && !sidebarName && !platform && !fileId && !fileIds;
 
 // Targeted operations require an explicit --lang
 if ((flagResume || fileId || fileIds || sidebarName || platform) && !lang) {
@@ -316,24 +331,40 @@ async function main() {
         await translateReusableForLang(client, currentLang, localesDir, hashesDir, systemPrompt, tag, onlyReusableIds);
       }
 
-      // --sidebar / --sidebars target sidebar labels only; skip article translation
-      if (!sidebarName && !flagSidebarsOnly) {
+      // --sidebar / --sidebars target sidebar labels only; --reusables targets snippets only; skip article translation
+      if (!sidebarName && !flagSidebarsOnly && !flagReusables) {
         await translateForLang(client, currentLang, localesDir, hashesDir, systemPrompt, tag, onlyDocIds);
       }
 
-      // Sidebars are not file/platform-specific; skip only for --file/--ids targeting
-      if (!fileId && !fileIds) {
+      // Sidebars are not file/platform-specific; skip for --file/--ids and --reusables targeting
+      if (!fileId && !fileIds && !flagReusables) {
         await translateSidebarsForLang(client, currentLang, localesDir, hashesDir, targetLanguage, glossary, tag, sidebarName, onlySidebarNames);
       }
     }
 
-    if (flagApiSpecs || flagIncremental) {
+    if (flagApiSpecs || flagIncremental || isFullRun) {
       await translateApiSpecsForLang(client, currentLang, localesDir, hashesDir, targetLanguage, glossary, tag, onlySpecIds);
     }
   }
 
   if (hadErrors) {
-    process.exit(1);
+    // Tolerate isolated article-translation failures below the threshold.
+    // These are typically transient Anthropic capacity errors that resolve
+    // on the next run. The failed files keep their previous on-disk state
+    // (or stay untranslated if new) and will be retried automatically when
+    // the English source next changes. Non-article failures (sidebars,
+    // reusables, API specs) always exit non-zero — they're rare and usually
+    // indicate a real bug, not transient load.
+    const failurePct = articlesAttempted > 0 ? articlesFailed / articlesAttempted : 1;
+    if (articlesFailed === 0 || failurePct >= ARTICLE_FAILURE_TOLERANCE) {
+      process.exit(1);
+    }
+    console.warn(
+      `\n[translate] WARNING: ${articlesFailed} of ${articlesAttempted} article(s) ` +
+      `failed translation (${(failurePct * 100).toFixed(1)}% — below ` +
+      `${(ARTICLE_FAILURE_TOLERANCE * 100).toFixed(0)}% threshold). ` +
+      `Continuing with partial output; the failed files will be retried on the next run.\n`
+    );
   }
 }
 
@@ -351,9 +382,11 @@ async function translateForLang(client, lang, localesDir, hashesDir, systemPromp
     return;
   }
 
-  // In incremental mode, skip articles that aren't in any sidebar — they are
-  // orphaned pages (API reference stubs, legacy content) that don't need translation.
-  if (flagIncremental && !fileId && !fileIds && !platform) {
+  // On a broad sweep (full run or incremental without targeting), skip articles
+  // that aren't in any sidebar — they are orphaned pages (API reference stubs,
+  // legacy content) that don't need translation. Targeted runs (--file/--ids/
+  // --platform) honor the user's explicit selection without filtering.
+  if ((isFullRun || flagIncremental) && !fileId && !fileIds && !platform) {
     const sidebarIds = await getAllSidebarIds();
     files = files.filter(f => sidebarIds.has(path.basename(f, '.mdx')));
   }
@@ -457,6 +490,7 @@ async function translateForLang(client, lang, localesDir, hashesDir, systemPromp
   }
 
   console.log(`${tag} ${toTranslate.length} article(s) to translate.`);
+  articlesAttempted += toTranslate.length;
 
   if (syncMode) {
     await translateSync(client, toTranslate, systemPrompt, localesDir, hashesDir, tag, lang);
@@ -489,12 +523,12 @@ async function translateSync(client, files, systemPrompt, localesDir, hashesDir,
         } else {
           const content = await fs.readFile(file, 'utf-8');
           // Auto-switch to section mode for large files to avoid max_tokens truncation
-          if (content.length > 20000) {
+          if (content.length > 40000) {
             await translateFileWithSections(client, file, systemPrompt, localesDir, hashesDir, lang);
           } else {
             const response = await client.messages.create({
               model: 'claude-sonnet-4-6',
-              max_tokens: 16000,
+              max_tokens: 24000,
               system: cachedSystem(systemPrompt),
               messages: [{ role: 'user', content }],
             });
@@ -511,6 +545,7 @@ async function translateSync(client, files, systemPrompt, localesDir, hashesDir,
         console.error(`  ✗ ${basename}: ${err.message}`);
         errors++;
         hadErrors = true;
+        articlesFailed++;
       }
     }
   }
@@ -1098,6 +1133,7 @@ async function translateBatchSections(client, files, systemPrompt, localesDir, h
 
     if (!allOk) {
       console.error(`  ✗ ${plan.basename}: some sections failed — file left unwritten`);
+      articlesFailed++;
       continue;
     }
 
@@ -1141,7 +1177,7 @@ async function translateBatch(client, files, systemPrompt, localesDir, tag, lang
   const batchFiles = [];
   for (const file of files) {
     const stat = await fs.stat(file);
-    if (stat.size > 20000) largeFiles.push(file);
+    if (stat.size > 30000) largeFiles.push(file);
     else batchFiles.push(file);
   }
 
@@ -1179,7 +1215,7 @@ async function translateBatch(client, files, systemPrompt, localesDir, tag, lang
           custom_id: basename,
           params: {
             model: 'claude-sonnet-4-6',
-            max_tokens: 8192,
+            max_tokens: 16000,
             system: cachedSystem(systemPrompt),
             messages: [{ role: 'user', content }],
           },

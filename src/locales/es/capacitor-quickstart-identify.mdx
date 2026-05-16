@@ -1,0 +1,133 @@
+---
+title: "Identificar usuarios en el SDK de Capacitor"
+description: "Guía de inicio rápido para configurar Adapty en la gestión de suscripciones in-app en Capacitor."
+metadataTitle: "Guía de inicio rápido de Adapty | Documentación de Adapty"
+rank: 70
+---
+
+La forma en que gestionas las compras de tus usuarios depende del modelo de autenticación de tu app:
+- Si tu app no usa autenticación de backend ni almacena datos de usuarios, consulta la [sección sobre usuarios anónimos](#anonymous-users).
+- Si tu app tiene (o tendrá) autenticación de backend, consulta la [sección sobre usuarios identificados](#identified-users).
+
+:::tip
+**Conceptos clave**:
+- Los **perfiles** son las entidades necesarias para que el SDK funcione. Adapty los crea automáticamente. Pueden ser anónimos (sin customer user ID) o identificados (con customer user ID).
+- Los **customer user IDs** son identificadores opcionales que **tú creas** para que Adapty vincule a tus usuarios con sus perfiles de Adapty.
+:::
+
+Estas son las diferencias entre usuarios anónimos e identificados:
+
+|                              | Usuarios anónimos                                              | Usuarios identificados                                                              |
+|------------------------------|----------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| **Gestión de compras**       | Restauración de compras a nivel de store                       | Mantienen el historial de compras en todos los dispositivos mediante su customer user ID |
+| **Gestión de perfiles**      | Nuevo perfil en cada reinstalación                             | El mismo perfil en todas las sesiones y dispositivos                                |
+| **Persistencia de datos**    | Los datos de usuarios anónimos están vinculados al dispositivo/instalación | Los datos de usuarios identificados persisten en todos los dispositivos y sesiones |
+
+## Usuarios anónimos \{#anonymous-users\}
+
+Si no tienes autenticación de backend, **no necesitas gestionar la autenticación en el código de la app**:
+
+1. Cuando el SDK se activa en el primer inicio de la app, Adapty **crea un nuevo perfil para el usuario**.
+2. Cuando el usuario realiza cualquier compra en la app, esta compra queda **asociada a su perfil de Adapty y a su cuenta en el store**.
+3. Cuando el usuario **reinstala** la app o la instala en un **nuevo dispositivo**, Adapty **crea un nuevo perfil vacío al activarse**.
+4. Si el usuario ha realizado compras anteriormente en tu app, por defecto sus compras se sincronizan automáticamente desde el App Store al activar el SDK.
+
+:::note
+Las restauraciones desde copia de seguridad se comportan de forma diferente a las reinstalaciones. Por defecto, cuando un usuario restaura desde una copia de seguridad, el SDK conserva los datos en caché y no crea un nuevo perfil. Puedes configurar este comportamiento mediante el parámetro `clearDataOnBackup`. [Más información](sdk-installation-capacitor#clear-data-on-backup-restore).
+:::
+
+## Usuarios identificados \{#identified-users\}
+
+- Si un perfil todavía no tiene customer user ID (es decir, **el usuario no ha iniciado sesión**), cuando envías un customer user ID este queda asociado a ese perfil.
+- Si es una **reinstalación, un inicio de sesión o una instalación desde un nuevo dispositivo**, y ya has enviado su customer user ID anteriormente, no se crea un nuevo perfil. En su lugar, se cambia al perfil existente asociado al customer user ID.
+
+Tienes dos opciones para identificar usuarios en la app:
+
+- [**Durante el inicio/registro de sesión:**](#during-loginsignup) Si los usuarios inician sesión después de que tu app arranque, llama a `identify()` con un customer user ID cuando se autentiquen.
+
+- [**Durante la activación del SDK:**](#during-the-sdk-activation) Si ya tienes un customer user ID almacenado cuando la app se inicia, envíalo al llamar a `activate()`.
+
+:::important
+Por defecto, cuando Adapty recibe una compra de un Customer User ID que está actualmente asociado a otro Customer User ID, el nivel de acceso se comparte, de modo que ambos perfiles tienen acceso de pago. Puedes configurar este ajuste para transferir el acceso de pago de un perfil a otro o deshabilitar el uso compartido por completo. Consulta el [artículo](general#6-sharing-paid-access-between-user-accounts) para más detalles.
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/identify-diagram.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Durante el inicio/registro de sesión \{#during-loginsignup\}
+
+Si identificas a los usuarios después de que la app se inicie (por ejemplo, tras iniciar sesión o registrarse), usa el método `identify` para establecer su customer user ID.
+
+- Si **no has usado este customer user ID antes**, Adapty lo vinculará automáticamente al perfil actual.
+- Si **ya has usado este customer user ID para identificar al usuario antes**, Adapty cambiará a trabajar con el perfil asociado a ese customer user ID.
+
+:::tip
+Al crear un customer user ID, guárdalo junto con los datos de tu usuario para poder enviar el mismo ID cuando inicie sesión desde nuevos dispositivos o reinstale tu app.
+:::
+
+Siempre usa `await` con `identify` antes de llamar a otros métodos del SDK. Las llamadas concurrentes producen `#3006 profileWasChanged` o recaen en el perfil anónimo. Consulta [Orden de llamadas en el SDK de Capacitor](capacitor-sdk-call-order).
+
+```typescript showLineNumbers
+try {
+  await adapty.identify({ customerUserId: "YOUR_USER_ID" });
+  // successfully identified
+} catch (error) {
+  // handle the error
+}
+```
+
+### Durante la activación del SDK \{#during-the-sdk-activation\}
+
+Si ya conoces el customer user ID cuando activas el SDK, puedes enviarlo en el método `activate` en lugar de llamar a `identify` por separado.
+
+Si conoces el customer user ID pero lo estableces solo después de la activación, eso significa que, al activarse, Adapty creará un nuevo perfil vacío y cambiará al existente únicamente cuando llames a `identify`.
+
+Puedes pasar un customer user ID existente (uno que hayas usado antes) o uno nuevo. Si pasas uno nuevo, el nuevo perfil creado en la activación se vinculará automáticamente al customer user ID.
+
+:::tip
+Para excluir los perfiles vacíos creados de las [analíticas](analytics-charts) del dashboard, ve a **App settings** y configura [**Installs definition for analytics**](general#4-installs-definition-for-analytics).
+:::
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: "YOUR_PUBLIC_SDK_KEY",
+  params: {
+    customerUserId: "YOUR_USER_ID"
+  }
+});
+```
+
+### Cerrar sesión de usuarios \{#log-users-out\}
+
+Si tienes un botón para cerrar la sesión de los usuarios, usa el método `logout`. Esto crea un nuevo ID de perfil anónimo para el usuario.
+
+```typescript showLineNumbers
+try {
+  await adapty.logout();
+  // successful logout
+} catch (error) {
+  // handle the error
+}
+```
+
+:::info
+Para volver a iniciar sesión en la app, usa el método `identify`.
+:::
+
+### Permitir compras sin inicio de sesión \{#allow-purchases-without-login\}
+
+Si tus usuarios pueden realizar compras tanto antes como después de iniciar sesión en tu app, no necesitas realizar ninguna configuración adicional:
+
+Así es como funciona:
+1. Cuando un usuario sin sesión iniciada realiza una compra, Adapty la asocia a su ID de perfil anónimo.
+2. Cuando el usuario inicia sesión en su cuenta, Adapty cambia a trabajar con su perfil identificado.
+    - Si es un customer user ID existente (el customer user ID ya está vinculado a un perfil), Adapty sincroniza sus transacciones automáticamente.
+    - Si es un customer user ID nuevo (por ejemplo, la compra se realizó antes del registro), Adapty asigna el customer user ID al perfil actual, por lo que se mantiene todo el historial de compras.

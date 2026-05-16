@@ -1,0 +1,137 @@
+---
+title: "Migración desde Superwall"
+description: "Migra de Superwall a Adapty con una guía paso a paso que mapea cada llamada al SDK y cada concepto."
+metadataTitle: "Migrar de Superwall a Adapty | Documentación de Adapty"
+keywords: ['migración', 'superwall']
+---
+
+La mayoría de las migraciones desde Superwall a Adapty llevan unas dos horas. Cambias el SDK, apuntas las notificaciones del servidor de la store a Adapty y publicas una nueva versión de la app. Tus suscriptores de pago conservan su acceso — Adapty lo restaura desde los recibos de App Store y Google Play en el primer arranque.
+
+:::info
+Tus suscriptores migrarán automáticamente
+
+Todos los usuarios que alguna vez hayan activado una suscripción pasan a Adapty en cuanto abran una nueva versión de tu app con el SDK de Adapty. La validación del estado de la suscripción y el acceso premium se restauran automáticamente.
+:::
+
+## Cómo está organizada esta guía \{#how-this-guide-is-organized\}
+
+La migración tiene seis pasos:
+
+1. [Mapea los conceptos de Superwall a Adapty](#map-your-superwall-concepts-to-adapty)
+2. [Instala el SDK de Adapty](#install-the-adapty-sdk)
+3. [Reemplaza las llamadas al SDK](#replace-sdk-calls)
+4. [Cambia las notificaciones del servidor de App Store y Google Play](#switch-app-store-and-google-play-server-notifications)
+5. [Prueba y publica](#test-and-release)
+6. [(Opcional) Importa datos históricos](#optional-import-historical-data)
+
+## Mapea los conceptos de Superwall a Adapty \{#map-your-superwall-concepts-to-adapty\}
+
+La mayoría de los conceptos de Superwall tienen un equivalente directo en Adapty:
+
+| Superwall            | Adapty                                            | Qué cambia                                                                 |
+| :------------------- | :------------------------------------------------ | :--------------------------------------------------------------------------- |
+| Campaign             | [Placement](placements) + [Audience](audience)    | La lógica de la campaña se divide en un placement (la ubicación) y una audiencia (la regla). |
+| Placement            | [Placement](placements)                           | Mismo concepto, mismo nombre.                                                     |
+| Audience filter      | [Audience](audience)                              | Los conjuntos de reglas viven dentro de un placement.                                           |
+| Entitlement          | [Nivel de acceso](access-level)                      | Identificador con nombre (por ejemplo, `premium`).                                   |
+| WebView paywall      | [Paywall de Paywall Builder](adapty-paywall-builder) | Renderizado por el SDK de Adapty de forma nativa en lugar de un `WKWebView`.                         |
+| `PurchaseController` | Integrado                                          | No hay protocolo que implementar — Adapty gestiona las compras.                         |
+| Feature gating       | Comprobación de [nivel de acceso](access-level)                | Comprueba `profile.accessLevels["premium"]?.isActive`.                           |
+
+Hay dos cambios conceptuales que vale la pena tener en cuenta antes de tocar el código:
+
+- **Obtener y presentar son pasos separados**: El método `register` de Superwall obtiene el paywall, evalúa la campaña y presenta la interfaz en una sola llamada. Adapty divide estos pasos — obtienes el paywall, su configuración de vista y luego lo presentas. Esto añade unas pocas líneas, pero te permite precargar configuraciones, mostrar un estado de carga personalizado o cancelar la presentación según tu propia lógica.
+- **El estado de la suscripción es por nivel de acceso**: Superwall expone una sola propiedad publicada `subscriptionStatus`. Adapty devuelve un [`AdaptyProfile`](https://swift.adapty.io/documentation/adapty/adaptyprofile) con niveles de acceso con nombre, de modo que un usuario puede tener los niveles de acceso `sports` y `science` de forma independiente. Para lecturas síncronas, guarda en caché el perfil del `AdaptyDelegate` en lugar de llamar a `getProfile()` en cada carga de vista.
+
+## Instala el SDK de Adapty \{#install-the-adapty-sdk\}
+
+Instala el SDK de Adapty para tu plataforma — [iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity) o [Capacitor](sdk-installation-capacitor) — y elimina SuperwallKit de tu proyecto al mismo tiempo.
+
+## Reemplaza las llamadas al SDK \{#replace-sdk-calls\}
+
+Revisa cada área de tu integración y sustituye la llamada de Superwall por su equivalente en Adapty. Los enlaces al final de cada subsección cubren los siete SDKs de plataforma — sigue el que corresponda a tu app.
+
+### Inicializa el SDK \{#initialize-the-sdk\}
+
+Reemplaza `Superwall.configure` con `Adapty.activate`.
+
+Consulta la guía de instalación para tu plataforma — [iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity) o [Capacitor](sdk-installation-capacitor).
+
+### Identifica y desconecta usuarios \{#identify-and-log-out-users\}
+
+Reemplaza `Superwall.shared.identify` con `Adapty.identify` y `Superwall.shared.reset` con `Adapty.logout`. Ambos SDKs generan un perfil anónimo en el primer arranque, por lo que estas llamadas solo son necesarias cuando un usuario inicia o cierra sesión. Vuelve a obtener los paywalls después de identificar — el nuevo usuario puede resolverse a una audiencia diferente.
+
+Consulta la guía de identificación para tu plataforma — [iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), [Kotlin Multiplatform](kmp-identifying-users), [Unity](unity-identifying-users) o [Capacitor](capacitor-identifying-users).
+
+### Obtén y presenta un paywall \{#fetch-and-present-a-paywall\}
+
+Reemplaza `Superwall.shared.register` con un flujo de dos pasos: obtén el paywall con `Adapty.getPaywall`, carga su configuración de vista con `AdaptyUI.getPaywallConfiguration` y luego preséntalo.
+
+Dos diferencias a destacar:
+
+- **El feature gating reemplaza el closure `feature:`**: Después de que se cierre el paywall, comprueba el nivel de acceso activo en el perfil devuelto (o en `Adapty.getProfile`) y ramifica desde ahí.
+- **Los paywalls son renderizados por el SDK**: Superwall renderiza los paywalls dentro de un `WKWebView`. Adapty renderiza los paywalls del Paywall Builder de forma nativa — las fuentes, la información del producto y los botones los dibuja el SDK.
+
+Consulta la guía de inicio rápido de paywalls para tu plataforma — [iOS](ios-quickstart-paywalls), [Android](android-quickstart-paywalls), [React Native](react-native-quickstart-paywalls), [Flutter](flutter-quickstart-paywalls), [Kotlin Multiplatform](kmp-quickstart-paywalls), [Unity](unity-quickstart-paywalls) o [Capacitor](capacitor-quickstart-paywalls).
+
+### Comprueba el estado de la suscripción \{#check-subscription-status\}
+
+Reemplaza `Superwall.shared.subscriptionStatus` con una comprobación del nivel de acceso con nombre en el perfil: `profile.accessLevels["premium"]?.isActive`. Observa los cambios mediante `AdaptyDelegate.didLoadLatestProfile(_:)` en lugar del patrón de propiedad `@Published`, y guarda el perfil en caché en tu lado para lecturas síncronas.
+
+Consulta la guía de estado de suscripción para tu plataforma — [iOS](ios-check-subscription-status), [Android](android-check-subscription-status), [React Native](react-native-check-subscription-status), [Flutter](flutter-check-subscription-status), [Kotlin Multiplatform](kmp-check-subscription-status), [Unity](unity-check-subscription-status) o [Capacitor](capacitor-check-subscription-status).
+
+### Gestiona compras y restauraciones \{#handle-purchases-and-restores\}
+
+Con el Paywall Builder, ambos SDKs procesan las compras automáticamente dentro de la interfaz del paywall — **puedes saltarte este paso**.
+
+Para paywalls personalizados, Superwall requiere una implementación de `PurchaseController`. Adapty no: reemplaza `PurchaseController.purchase` con `Adapty.makePurchase` y `PurchaseController.restorePurchases` con `Adapty.restorePurchases`. El SDK gestiona la validación por su cuenta.
+
+Consulta la guía de inicio rápido de paywall personalizado para tu plataforma — [iOS](ios-quickstart-manual), [Android](android-quickstart-manual), [React Native](react-native-quickstart-manual), [Flutter](flutter-quickstart-manual), [Kotlin Multiplatform](kmp-quickstart-manual), [Unity](unity-quickstart-manual) o [Capacitor](capacitor-quickstart-manual).
+
+### Configura atributos de usuario \{#set-user-attributes\}
+
+Reemplaza `Superwall.shared.setUserAttributes` con `Adapty.updateProfile`.
+
+Consulta la guía de atributos de usuario para tu plataforma — [iOS](setting-user-attributes), [Android](android-setting-user-attributes), [React Native](react-native-setting-user-attributes), [Flutter](flutter-setting-user-attributes), [Kotlin Multiplatform](kmp-setting-user-attributes), [Unity](unity-setting-user-attributes) o [Capacitor](capacitor-setting-user-attributes).
+
+## Cambia las notificaciones del servidor de App Store y Google Play \{#switch-app-store-and-google-play-server-notifications\}
+
+Apunta las notificaciones del servidor de la store a Adapty. Adapty funciona sin ellas, pero las analíticas, las integraciones de terceros y las métricas de pruebas A/B dependen de ellas:
+
+- **App Store**: Sigue [Habilitar notificaciones del servidor de App Store](enable-app-store-server-notifications).
+- **Google Play**: Sigue [Habilitar notificaciones en tiempo real para desarrolladores](enable-real-time-developer-notifications-rtdn).
+
+Si quieres ejecutar Superwall y Adapty en paralelo durante el lanzamiento, usa el [reenvío de eventos sin procesar](enable-app-store-server-notifications#raw-events-forwarding) — Adapty reenvía los eventos de la store a Superwall mientras verificas la nueva integración.
+
+## Prueba y publica \{#test-and-release\}
+
+Antes de publicar, comprueba cada elemento:
+
+- [x] Configurado el Adapty Dashboard (productos, paywalls, placements, niveles de acceso)
+- [x] Instalado el SDK de Adapty
+- [x] Reemplazadas las llamadas al SDK de Superwall por sus equivalentes en Adapty
+- [x] Apuntadas las notificaciones del servidor de App Store y Google Play a Adapty
+- [ ] Realizada una compra en sandbox
+- [ ] Enviada una nueva versión de la app
+
+Revisa el [checklist de lanzamiento](release-checklist) para una validación final.
+
+## (Opcional) Importa datos históricos \{#optional-import-historical-data\}
+
+Superwall no es dueño de tu estado de suscripción — lo son App Store y Google Play. Adapty valida los recibos en el primer arranque, por lo que los usuarios de pago conservan su acceso sin necesidad de ninguna importación.
+
+Si quieres que las transacciones históricas queden registradas en las analíticas de Adapty, sigue [Importar datos históricos a Adapty](importing-historical-data-to-adapty). Espera al menos una semana después del lanzamiento del SDK para que tenga tiempo de recopilar precios de compra actualizados.
+
+## Preguntas frecuentes \{#faq\}
+
+### ¿Qué pasa con los suscriptores que no actualizan la app? \{#what-happens-to-subscribers-who-dont-update-the-app\}
+
+La mayoría de los usuarios actualizan sus apps automáticamente durante la noche, por lo que la proporción de usuarios en la versión anterior disminuye rápidamente. Los suscriptores en la versión antigua conservan su acceso directamente a través de App Store o Google Play — no es necesario forzar una actualización.
+
+### ¿Las audiencias de mis campañas de Superwall se migran? \{#do-my-superwall-campaign-audiences-carry-over\}
+
+No. Los filtros de audiencia de Superwall y las audiencias de Adapty se configuran en dashboards diferentes y usan identificadores distintos. Recrea tu segmentación como [audiencias](audience) dentro de los [placements](placements) de Adapty. La mayoría de las apps tienen uno o dos placements (onboarding y un trigger general dentro de la app), por lo que la reconstrucción suele ser rápida.
+
+### ¿Tiene Adapty un equivalente a `getPresentationResult`? \{#does-adapty-have-an-equivalent-to-getpresentationresult\}
+
+No como una sola llamada. Para comprobar si un placement mostraría un paywall, llama a `Adapty.getPaywall(placementId:)` y ramifica según el resultado. Si la llamada tiene éxito, hay un paywall asignado para la audiencia de ese usuario. Si falla porque no hay ningún paywall configurado, omite la presentación y ejecuta tu lógica de respaldo.

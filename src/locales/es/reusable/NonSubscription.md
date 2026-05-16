@@ -1,0 +1,12 @@
+| Parámetro                     | Tipo          | Obligatorio | Nullable | Descripción                                                  |
+| :---------------------------- | :------------ | -------- | -------- | :----------------------------------------------------------- |
+| purchase_id                   | String        | Sí      | No       | Identificador de la compra en Adapty. Puedes usarlo para asegurarte de que ya has procesado esta compra, por ejemplo, para rastrear productos consumibles de un solo uso. |
+| store                         | String        | Sí      | No       | Store donde se realizó la compra del producto. Los valores posibles son: **app_store**, **play_store**, **stripe** y el nombre de tu [store personalizada.](custom-store) |
+| store_product_id              | String        | Sí      | No       | Identificador del producto en la store (App Store/Google Play/Stripe, etc.) que desbloqueó este nivel de acceso. |
+| store_base_plan_id            | String        | Sí      | Sí      | [ID del plan base](https://support.google.com/googleplay/android-developer/answer/12154973) en Google Play Store o [ID de precio](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) en Stripe. |
+| store_transaction_id          | String        | Sí      | No       | ID de la transacción en la store (App Store/Google Play/Stripe, etc.). |
+| store_original_transaction_id | String        | Sí      | No       | <p>En el caso de suscripciones prolongadas, se genera una cadena de suscripciones. La transacción original es la primera de esa cadena, que queda vinculada por ella. Las demás transacciones de la cadena son renovaciones.</p><br /><p>Si no hay renovación, `store_original_transaction_id` coincidirá con `store_transaction_id`.</p> |
+| purchased_at                  | ISO 8601 date | Sí      | No       | Fecha y hora en que se compró el nivel de acceso por última vez. |
+| environment                   | String        | No       | No       | Entorno de la transacción que proporcionó el nivel de acceso. Valores posibles: `Sandbox`, `Production.` |
+| is_refund                     | Boolean       | Sí      | No       | Indica si el producto ha sido reembolsado.                  |
+| is_consumable                 | Boolean       | Sí      | No       | Indica si el producto es consumible.                 |

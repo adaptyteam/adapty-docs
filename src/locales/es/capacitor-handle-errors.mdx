@@ -1,0 +1,197 @@
+---
+title: "Gestionar errores en el SDK de Capacitor"
+description: "Gestionar errores en el SDK de Capacitor."
+metadataTitle: "Gestión de errores en Capacitor | Documentación de Adapty"
+---
+
+import CrossPlatformErrors from '@site/src/locales/es/reusable/CrossPlatformErrors.md';
+
+Cada error que devuelve el SDK es una instancia de `AdaptyError`. Aquí tienes un ejemplo:
+:::tip
+**Activa los logs detallados antes de depurar.** La mayoría de los `AdaptyError` envuelven un error subyacente de StoreKit, Play Billing, red o backend. Con los logs detallados activados (`adapty.setLogLevel({ logLevel: 'verbose' })` — consulta [Logging](sdk-installation-capacitor#logging)), ese error se muestra en la consola, lo que generalmente indica la causa real. La propiedad `detail` de `AdaptyError` se rellena independientemente del nivel de log — los logs detallados simplemente la muestran en la consola.
+:::
+```typescript showLineNumbers
+
+try {
+  const result = await adapty.makePurchase({ product });
+  
+  // Manejar el resultado de la compra
+  if (result.type === 'success') {
+    console.log('Compra exitosa:', result.profile);
+  } else if (result.type === 'user_cancelled') {
+    console.log('El usuario canceló la compra');
+  } else if (result.type === 'pending') {
+    console.log('La compra está pendiente');
+  }
+} catch (error) {
+  if (error instanceof AdaptyError) {
+    console.error('Error de Adapty:', error.adaptyCode, error.localizedDescription);
+    
+    // Manejar códigos de error específicos
+    switch (error.adaptyCode) {
+      case ErrorCodeName.cantMakePayments:
+        console.log('Las compras in-app no están permitidas en este dispositivo');
+        break;
+      case ErrorCodeName.notActivated:
+        console.log('El SDK de Adapty no está activado');
+        break;
+      case ErrorCodeName.productPurchaseFailed:
+        console.log('La compra falló:', error.detail);
+        break;
+      default:
+        console.log('Se produjo otro error:', error.detail);
+    }
+  } else {
+    console.error('Error no relacionado con Adapty:', error);
+  }
+}
+```
+## Propiedades del error \{#error-properties\}
+
+La clase `AdaptyError` expone las siguientes propiedades:
+
+| Propiedad | Tipo | Descripción |
+|----------|------|-------------|
+| `adaptyCode` | `number` | Código de error numérico (p. ej., `1003` para cantMakePayments) |
+| `localizedDescription` | `string` | Mensaje de error legible por el usuario |
+| `detail` | `string \| undefined` | Detalles adicionales del error (opcional) |
+| `message` | `string` | Mensaje de error completo con código y descripción |
+
+## Códigos de error \{#error-codes\}
+
+El SDK exporta constantes y utilidades para trabajar con códigos de error:
+
+### Constante ErrorCodeName \{#errorcodename-constant\}
+
+Mapea identificadores de cadena a códigos numéricos:
+
+```typescript
+
+ErrorCodeName.cantMakePayments // 1003
+ErrorCodeName.notActivated // 2002
+ErrorCodeName.networkFailed // 2005
+```
+
+### Constante ErrorCode \{#errorcode-constant\}
+
+Mapea códigos numéricos a identificadores de cadena:
+
+```typescript
+
+ErrorCode[1003] // 'cantMakePayments'
+ErrorCode[2002] // 'notActivated'
+ErrorCode[2005] // 'networkFailed'
+```
+
+### Funciones de ayuda \{#helper-functions\}
+
+```typescript
+
+// Get numeric code from string name:
+getErrorCode('cantMakePayments') // 1003
+
+// Get string name from numeric code:
+getErrorPrompt(1003) // 'cantMakePayments'
+```
+
+### Comparar códigos de error \{#comparing-error-codes\}
+
+**Importante:** `error.adaptyCode` es un **número**, así que compáralo directamente con códigos numéricos:
+
+```typescript
+// Option 1: Use ErrorCodeName constant (recommended) ✅
+if (error.adaptyCode === ErrorCodeName.cantMakePayments) {
+  console.log('Cannot make payments');
+}
+
+// Option 2: Compare with numeric literal ✅
+if (error.adaptyCode === 1003) {
+  console.log('Cannot make payments');
+}
+
+// NOT like this ❌ - compares number to string and will never match
+if (error.adaptyCode === ErrorCode[1003]) {
+}
+```
+
+## Manejador de errores global \{#global-error-handler\}
+
+Puedes configurar un manejador de errores global para capturar todos los errores de Adapty:
+```typescript showLineNumbers
+
+// Configura el manejador de errores global
+AdaptyError.onError = (error: AdaptyError) => {
+  console.error('Error global de Adapty:', {
+    code: error.adaptyCode,
+    message: error.localizedDescription,
+    detail: error.detail
+  });
+  
+  // Gestiona tipos de error específicos de forma global
+  if (error.adaptyCode === ErrorCodeName.notActivated) {
+    // SDK no activado - puede que sea necesario reintentar la activación
+    console.log('SDK no activado, intentando reactivar...');
+  }
+};
+```
+## Patrones comunes de manejo de errores \{#common-error-handling-patterns\}
+
+### Gestión de errores en las compras \{#handle-purchase-errors\}
+```typescript showLineNumbers
+
+async function handlePurchase(product: AdaptyPaywallProduct) {
+  try {
+    const result = await adapty.makePurchase({ product });
+    
+    if (result.type === 'success') {
+      console.log('Compra exitosa:', result.profile);
+    } else if (result.type === 'user_cancelled') {
+      console.log('El usuario canceló la compra');
+    } else if (result.type === 'pending') {
+      console.log('La compra está pendiente');
+    }
+  } catch (error) {
+    if (error instanceof AdaptyError) {
+      switch (error.adaptyCode) {
+        case ErrorCodeName.cantMakePayments:
+          console.log('Las compras in-app no están permitidas');
+          break;
+        case ErrorCodeName.productPurchaseFailed:
+          console.log('La compra falló:', error.detail);
+          break;
+        default:
+          console.error('Error en la compra:', error.localizedDescription);
+      }
+    }
+  }
+}
+```
+### Gestión de errores de red \{#handle-network-errors\}
+```typescript showLineNumbers
+
+async function fetchPaywall(placementId: string) {
+  try {
+    const paywall = await adapty.getPaywall({ placementId });
+    return paywall;
+  } catch (error) {
+    if (error instanceof AdaptyError) {
+      switch (error.adaptyCode) {
+        case ErrorCodeName.networkFailed:
+          console.log('Network error, retrying...');
+          // Implement retry logic
+          break;
+        case ErrorCodeName.serverError:
+          console.log('Server error:', error.detail);
+          break;
+        case ErrorCodeName.notActivated:
+          console.log('SDK not activated');
+          break;
+        default:
+          console.error('Paywall fetch error:', error.localizedDescription);
+      }
+    }
+    throw error;
+  }
+}
+```
+<CrossPlatformErrors />

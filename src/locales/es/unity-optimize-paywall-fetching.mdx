@@ -1,0 +1,30 @@
+---
+title: "Optimizar la carga de paywalls en Unity SDK"
+description: "Carga paywalls de Adapty de forma fiable: timing, caché y patrones de respaldo para Unity."
+metadataTitle: "Optimizar la carga de paywalls | Unity SDK | Documentación de Adapty"
+---
+
+Una carga de paywall fiable en Unity hace tres cosas: renderiza rápido, devuelve el paywall dirigido a la audiencia correcta y recurre al respaldo cuando la red es lenta. Las reglas a continuación cubren el timing, la caché y los patrones de respaldo para conseguirlo.
+
+:::tip
+Las reglas asumen que `Adapty.Activate()` y `Adapty.Identify()` ya han finalizado. Consulta [Orden de llamadas en Unity SDK](unity-sdk-call-order).
+:::
+
+## Reglas y errores comunes \{#rules-and-pitfalls\}
+
+| Haz esto | No hagas esto | Por qué |
+|---|---|---|
+| Carga el placement que vas a mostrar.                                                                                  | Precarga todos los placements de forma concurrente al iniciar.        | La precarga masiva bloquea el hilo principal y produce una pantalla en negro durante la ráfaga.                                  |
+| Llama a `GetPaywall` después de que la atribución haya tenido tiempo de resolverse — por ejemplo, 1–2 segundos después de `Activate` o cuando se dispare `OnLoadLatestProfile`. | Llama a `GetPaywall` en `Awake()`.                        | La atribución aún no ha llegado. El paywall se resuelve contra la audiencia predeterminada y omite silenciosamente los segmentos y la personalización de ASA. |
+| Establece un `loadTimeout` y configura un [paywall de respaldo](fallback-paywalls) para cada placement.                             | Esperes indefinidamente a que `GetPaywall` responda.                     | Sin un timeout, los usuarios con conectividad deficiente ven una pantalla en blanco hasta que la red responde — o cierran la app.     |
+
+Consulta [Cargar paywalls y productos](fetch-paywalls-and-products-unity) para la referencia de los parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
+
+## Ajustar para conectividad deficiente \{#tune-for-poor-connectivity\}
+
+Para mercados con conectividad sistemáticamente deficiente (zonas rurales, transporte, regiones con problemas de enrutamiento):
+
+- Establece `fetchPolicy` a `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` en cada carga excepto la primera.
+- Configura un [paywall de respaldo](fallback-paywalls) para cada placement en el Adapty Dashboard.
+- Establece `loadTimeout` entre 3 y 5 segundos y acepta el paywall de respaldo cuando se agote el tiempo.
+- No condicionales la visualización del paywall a `GetProfile`. Llama a `GetPaywall` de forma independiente para que un perfil lento no bloquee la interfaz.

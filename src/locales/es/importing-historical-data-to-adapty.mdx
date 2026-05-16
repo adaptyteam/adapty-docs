@@ -1,0 +1,113 @@
+---
+title: "Importar datos históricos en Adapty"
+description: "Importa datos históricos en Adapty para obtener analíticas detalladas."
+metadataTitle: "Importar datos históricos en Adapty | Documentación de Adapty"
+---
+
+Después de instalar el SDK de Adapty y publicar tu app, puedes acceder a tus usuarios y suscriptores en la sección [Profiles](profiles-crm). Pero ¿qué pasa si tienes una infraestructura legacy y necesitas migrar a Adapty, o simplemente quieres ver tus datos existentes en Adapty?
+
+:::note
+La importación de datos no es obligatoria
+
+Adapty otorgará automáticamente niveles de acceso a los usuarios históricos y restaurará sus eventos de compra en cuanto abran la app con el SDK de Adapty integrado. Para este caso de uso, importar datos históricos no es necesario. Sin embargo, importar los datos garantiza unas analíticas precisas si tienes un volumen significativo de transacciones históricas, aunque en general no es un requisito para la migración.
+:::
+
+Para importar datos en Adapty:
+
+1. Exporta tus transacciones a un archivo CSV (se deben proporcionar archivos separados para iOS, Android y Stripe). Consulta la sección [Formato del archivo de importación](importing-historical-data-to-adapty#import-file-format) más abajo para conocer los requisitos detallados.
+2. Si algún archivo supera 1 GB, prepara una muestra de datos con aproximadamente 100 líneas.
+3. Sube todos los archivos a Google Drive (puedes comprimirlos, pero mantenlos separados).
+4. Para las transacciones de iOS, asegúrate de que la sección **In-app purchase API** en [**App settings**](https://app.adapty.io/settings/ios-sdk) esté completada con el **Issuer ID**, **Key ID** y la **Private key** (archivo .P8), incluso si usas StoreKit 1. Consulta las secciones [Provide Issuer ID and Key ID](app-store-connection-configuration#step-2-provide-issuer-id-and-key-id) y [Upload In-App Purchase Key file](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file) para obtener instrucciones detalladas.
+5. Comparte los enlaces con nuestro equipo a través de [correo electrónico](mailto:support@adapty.io) o del chat en línea en el Adapty Dashboard.
+
+No te preocupes: importar datos históricos no creará duplicados, aunque esos datos se solapen con entradas ya existentes en Adapty.
+
+## Limitaciones conocidas para Android \{#known-limitations-for-android\}
+
+1. Solo se restaurarán las suscripciones activas; las transacciones expiradas no se restaurarán.
+2. Solo se restaurarán las renovaciones más recientes de una suscripción; no se restaurará toda la cadena de compras.
+3. Si el precio del producto ha cambiado desde la compra, se utilizará el precio actual, lo que puede dar lugar a precios incorrectos.
+
+:::note
+Si tienes un gran volumen de transacciones de Android, es posible que necesites [solicitar un aumento de cuota de la Google Play Developer API](google-play-quota-increase) antes de comenzar la importación para evitar superar el límite predeterminado de la API.
+:::
+
+## Formato del archivo de importación \{#import-file-format\}
+
+:::tip
+Si estás migrando desde RevenueCat, puedes enviar el archivo de exportación de RevenueCat directamente, sin necesidad de convertirlo. Consulta la [documentación de RevenueCat](https://www.revenuecat.com/docs/integrations/scheduled-data-exports) para obtener instrucciones de exportación.
+:::
+
+Prepara tus datos en uno o varios archivos que cumplan las siguientes reglas:
+
+- [ ] El formato del archivo es .CSV.
+- [ ] Archivos separados para importaciones de Android, iOS y Stripe.
+- [ ] Cada archivo de importación contiene todas las [columnas requeridas](importing-historical-data-to-adapty#required-fields).
+- [ ] Las columnas de los archivos de importación tienen encabezados.
+- [ ] Los encabezados de columna coinciden exactamente con los de la columna **Column name** de la tabla de abajo. Comprueba que no haya errores tipográficos.
+- [ ] Las columnas que no son obligatorias pueden estar ausentes del archivo. No añadas columnas vacías para datos que no tengas.
+- [ ] Los archivos de importación no deben tener columnas adicionales que no se mencionen en la tabla. Si las hay, elimínalas.
+- [ ] Los valores están separados por comas.
+- [ ] Los valores no están entre comillas.
+- [ ] Si hay varios **apple_original_transaction_id** para un mismo usuario, añádelos todos como líneas separadas para cada **apple_original_transaction_id**. De lo contrario, es posible que no podamos restaurar las compras consumibles.
+
+Usa los siguientes archivos como ejemplos para [iOS](https://raw.githubusercontent.com/adaptyteam/adapty-docs/refs/heads/main/Downloads/adapty_import_ios_sample.csv) y [Android](https://raw.githubusercontent.com/adaptyteam/adapty-docs/refs/heads/main/Downloads/adapty_import_android_sample.csv).
+
+### Columnas disponibles en el archivo de importación \{#available-import-file-columns\}
+
+| Nombre de columna | Presencia | Descripción |
+|-----------|--------|-----------|
+| **user_id** | obligatorio | ID de tu usuario |
+| **apple_original_transaction_id** | obligatorio para iOS | <p>El ID de transacción original u OTID ([más información](https://developer.apple.com/documentation/appstoreserverapi/originaltransactionid)), utilizado en el mecanismo de importación de StoreKit 2. Como un usuario puede tener varios OTID, basta con proporcionar al menos uno para una importación exitosa.</p><p></p><p>**Nota:** Para esta importación es necesario que las credenciales de la In-app purchase API estén configuradas en tu Adapty Dashboard. Aprende cómo hacerlo [aquí](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file).</p> |
+| **google_product_id** | obligatorio para Google | ID del producto en la Google Play Store. |
+| **google_purchase_token** | obligatorio para Google | Identificador único que representa al usuario y el ID del producto de la compra in-app que realizó |
+| **google_is_subscription** | obligatorio para Google | Los valores posibles son `1` \| `0` |
+| **stripe_token** | obligatorio para Stripe | Token de un objeto de Stripe que representa una compra única. Puede ser el token de una Suscripción de Stripe (`sub_...`) o de un Payment Intent (`pi_...`). |
+| **subscription_expiration_date** | opcional | La fecha de expiración de la suscripción, es decir, la próxima fecha de cobro, con fecha y hora con zona horaria (2020-12-31T23:59:59-06:00) |
+| **created_at** | opcional | Fecha y hora de creación del perfil (2019-12-31 23:59:59-06:00) |
+| **birthday** | opcional | La fecha de nacimiento del usuario en formato 2000-12-31 |
+| **email** | opcional | El correo electrónico de tu usuario |
+| **gender** | opcional | El género del usuario |
+| **phone_number** | opcional | El número de teléfono de tu usuario |
+| **country** | opcional | formato [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) |
+| **first_name** | opcional | El nombre de tu usuario |
+| **last_name** | opcional | El apellido de tu usuario |
+| **last_seen** | opcional | La fecha y hora con zona horaria (2020-12-31T23:59:59-06:00) |
+| **idfa** | opcional | El identificador para anunciantes (IDFA) es un identificador de dispositivo aleatorio que Apple asigna al dispositivo del usuario. Solo aplicable a apps de iOS |
+| **idfv** | opcional | El identificador para proveedores (IDFV) es un código único asignado a todas las apps desarrolladas por un mismo desarrollador, en este caso las tuyas. Solo aplicable a apps de iOS |
+| **advertising_id** | opcional | El Advertising ID es un código único asignado por el sistema operativo Android que los anunciantes pueden usar para identificar de forma única el dispositivo de un usuario |
+| **amplitude_user_id** | opcional | El ID de usuario de Amplitude |
+| **amplitude_device_id** | opcional | El ID de dispositivo de Amplitude |
+| **mixpanel_user_id** | opcional | ID de usuario de Mixpanel |
+| **appmetrica_profile_id** | opcional | ID de perfil de usuario de AppMetrica |
+| **appmetrica_device_id** | opcional | El ID de dispositivo de AppMetrica |
+| **appsflyer_id** | opcional | Identificador único de AppsFlyer |
+| **adjust_device_id** | opcional | El ID de dispositivo de Adjust |
+| **facebook_anonymous_id** | opcional | Identificador único generado por Facebook para usuarios que interactúan con tu app o sitio web de forma anónima, es decir, sin haber iniciado sesión en Facebook |
+| **branch_id** | opcional | Identificador único de Branch |
+| **attribution_source** | opcional | La integración de origen de la atribución, por ejemplo, appsflyer |
+| **attribution_status** | opcional | organic |
+| **attribution_channel** | opcional | El canal de atribución que trajo la transacción |
+| **attribution_campaign** | opcional | La campaña de atribución que trajo la transacción |
+| **attribution_ad_group** | opcional | El grupo de anuncios de atribución que trajo la transacción |
+| **attribution_ad_set** | opcional | El conjunto de anuncios de atribución que trajo la transacción |
+| **attribution_creative** | opcional | Elementos visuales o textuales específicos utilizados en un anuncio o campaña de marketing que se rastrean para determinar su efectividad a la hora de generar acciones deseadas, como clics, conversiones o instalaciones |
+| **custom_attributes** | opcional | Define hasta 30 atributos personalizados como un diccionario JSON en formato clave-valor: <ul><li>**key**: (string) El nombre del atributo personalizado</li><li> **value**: (string, entero, float o booleano) El valor del atributo personalizado.</li></ul><p> Formato: `"{'string_value': 'some_value', 'float_value': 123.0, 'int_value': 456}"`.</p><p>Ten en cuenta el uso de comillas dobles y simples en el formato. Los valores booleanos y enteros se convertirán a float.</p> |
+
+### Campos obligatorios \{#required-fields\}
+
+Hay 2 grupos de campos obligatorios para cada plataforma: **user_id** y los datos que identifican las compras específicas de la plataforma correspondiente. Consulta la tabla a continuación para conocer los campos obligatorios por plataforma.
+
+| Plataforma | Campos obligatorios |
+|--------|---------------|
+| iOS | <p>user_id</p><p>apple_original_transaction_id</p> |
+| Android | <p>user_id</p><p>google_product_id</p><p>google_purchase_token</p><p>google_is_subscription</p> |
+| Stripe | <p>user_id</p><p>stripe_token</p> |
+
+Sin estos campos, Adapty no podrá obtener las transacciones.
+
+Para unas analíticas de cohorte precisas, especifica `created_at`. Si no se proporciona, asumiremos que la fecha de instalación coincide con la fecha de la primera compra.
+
+### Importar datos en Adapty \{#import-data-to-adapty\}
+
+Ponte en contacto con nosotros y comparte tus archivos de importación a través de [support@adapty.io](mailto:support@adapty.io) o del chat en línea en el [Adapty Dashboard](https://app.adapty.io/overview).

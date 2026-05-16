@@ -68,11 +68,29 @@ jobs:
           node-version: 20
       - run: node scripts/lint-mdx.mjs
 
+  # MDX parse sweep: compiles every .mdx file with the same remark plugins
+  # Astro uses, surfaces every parse error in one pass. Astro's locale
+  # builds halt at the first error, so without this gate broken files
+  # stay hidden behind whichever one CI happens to hit first.
+  check-mdx-parse:
+    name: Check MDX parse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+      - run: node scripts/check-mdx-parse.mjs
+
   # ──────────────────────────────────────────────────────────────
   # Full deploy: English + all locales (on content pushes)
   # ──────────────────────────────────────────────────────────────
   build-en:
-    needs: [check-internal-links, lint-mdx]
+    needs: [check-internal-links, lint-mdx, check-mdx-parse]
     runs-on: ubuntu-latest
     concurrency:
       group: build-en-${{ github.workflow }}-${{ github.ref }}
@@ -98,12 +116,12 @@ jobs:
 
       - name: Build English only
         env:
-          NODE_OPTIONS: --max-old-space-size=6144
+          NODE_OPTIONS: --max-old-space-size=8192
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=none npx astro build
 
       - name: Generate markdown exports
         env:
-          NODE_OPTIONS: --max-old-space-size=6144
+          NODE_OPTIONS: --max-old-space-size=8192
         run: npm run build:md:prod
 
       - uses: actions/upload-artifact@v4
@@ -113,11 +131,11 @@ jobs:
           retention-days: 1
 
   build-locale-full:
-    needs: [check-internal-links, lint-mdx]
+    needs: [check-internal-links, lint-mdx, check-mdx-parse]
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr, ru]
+        locale: [zh, tr, ru, es]
     concurrency:
       group: build-locale-full-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -142,7 +160,7 @@ jobs:
 
       - name: Build locale ${{ matrix.locale }}
         env:
-          NODE_OPTIONS: --max-old-space-size=6144
+          NODE_OPTIONS: --max-old-space-size=8192
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} npx astro build
 
       # Generate locale .md / llms.txt / llms-full.txt exports into
@@ -151,7 +169,7 @@ jobs:
       # wipes them from S3 on every translator commit.
       - name: Generate locale markdown exports
         env:
-          NODE_OPTIONS: --max-old-space-size=6144
+          NODE_OPTIONS: --max-old-space-size=8192
           BUILD_LOCALES: ${{ matrix.locale }}
         run: npm run build:md:prod
 
@@ -196,6 +214,11 @@ jobs:
           name: build-ru
           path: build/ru/
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-es
+          path: build/es/
+
       - name: Deploy
         uses: reggionick/s3-deploy@v4
         with:
@@ -216,12 +239,12 @@ jobs:
   # Translation-only deploy: build + upload only locale dirs
   # ──────────────────────────────────────────────────────────────
   build-locale-only:
-    needs: [classify, lint-mdx]
+    needs: [classify, lint-mdx, check-mdx-parse]
     if: needs.classify.outputs.translation_only == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr, ru]
+        locale: [zh, tr, ru, es]
     concurrency:
       group: build-locale-only-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -246,7 +269,7 @@ jobs:
 
       - name: Build locale ${{ matrix.locale }}
         env:
-          NODE_OPTIONS: --max-old-space-size=6144
+          NODE_OPTIONS: --max-old-space-size=8192
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} npx astro build
 
       # Generate locale .md / llms.txt / llms-full.txt exports into
@@ -256,7 +279,7 @@ jobs:
       # update.
       - name: Generate locale markdown exports
         env:
-          NODE_OPTIONS: --max-old-space-size=6144
+          NODE_OPTIONS: --max-old-space-size=8192
           BUILD_LOCALES: ${{ matrix.locale }}
         run: npm run build:md:prod
 
@@ -296,19 +319,25 @@ jobs:
           name: build-tr-only-ru
           path: build/ru/
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-tr-only-es
+          path: build/es/
+
       # Sync locale directories to S3 using AWS CLI —
-      # only overwrites zh/, tr/, and ru/ prefixes, leaves English untouched.
+      # only overwrites zh/, tr/, ru/, and es/ prefixes, leaves English untouched.
       - name: Deploy translations to S3
         run: |
           aws s3 sync build/zh/ s3://${{ secrets.S3_BUCKET }}/zh/ --delete
           aws s3 sync build/tr/ s3://${{ secrets.S3_BUCKET }}/tr/ --delete
           aws s3 sync build/ru/ s3://${{ secrets.S3_BUCKET }}/ru/ --delete
+          aws s3 sync build/es/ s3://${{ secrets.S3_BUCKET }}/es/ --delete
 
       - name: Invalidate locale paths
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/zh/*" "/tr/*" "/ru/*"
+            --paths "/zh/*" "/tr/*" "/ru/*" "/es/*"
 
       - name: Update deployment tag
         run: |

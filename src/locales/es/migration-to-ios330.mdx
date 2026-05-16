@@ -1,0 +1,558 @@
+---
+title: "Migrar el SDK de Adapty iOS a la v. 3.3"
+description: "Migra al SDK de Adapty iOS v3.3 para mejorar el rendimiento y acceder a nuevas funciones de monetización."
+metadataTitle: "Migración al SDK de Adapty iOS v3.3 | Documentación de Adapty"
+---
+
+El SDK de Adapty 3.3.0 es una versión mayor que incluye mejoras que pueden requerir algunos pasos de migración de tu parte.
+
+1. Renombra `Adapty.Configuration` a `AdaptyConfiguration`.
+2. Renombra el método `getViewConfiguration` a `getPaywallConfiguration`.
+3. Elimina los parámetros `didCancelPurchase` y `paywall` de SwiftUI, y renombra el parámetro `viewConfiguration` a `paywallConfiguration`.
+4. Actualiza cómo procesas las compras in-app promocionales desde el App Store eliminando el parámetro `defermentCompletion` del método `AdaptyDelegate`.
+5. Elimina el método `getProductsIntroductoryOfferEligibility`.
+6. Actualiza las configuraciones de integración para Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase y Google Analytics, Mixpanel, OneSignal, Pushwoosh.
+7. Actualiza la implementación del modo Observer.
+
+<div style={{ textAlign: 'center' }}>
+  <iframe 
+    width="560" 
+    height="315" 
+    src="https://www.youtube.com/embed/9Xs8d0lt_RY?si=xvWhUO2tlG1tKP5f" 
+    title="YouTube video player" 
+    frameborder="0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerpolicy="strict-origin-when-cross-origin" 
+    allowfullscreen>
+  </iframe>
+</div>
+
+## Renombrar Adapty.Configuration a AdaptyConfiguration \{#rename-adaptyconfiguration-to-adaptyconfiguration\}
+
+Actualiza el código de activación del SDK de Adapty iOS de la siguiente manera:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```diff showLineNumbers
+// In your AppDelegate class:
+
+let configurationBuilder =
+-        Adapty.Configuration
++        AdaptyConfiguration
+          .builder(withAPIKey: "PUBLIC_SDK_KEY")
+          .with(observerMode: false)
+          .with(customerUserId: "YOUR_USER_ID")
+          .with(idfaCollectionDisabled: false)
+          .with(ipAddressCollectionDisabled: false)
+
+Adapty.activate(with: configurationBuilder) { error in
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+```diff showLineNumbers
+
+@main
+struct SampleApp: App {
+    init() 
+      let configurationBuilder =
+-        Adapty.Configuration
++        AdaptyConfiguration
+          .builder(withAPIKey: "PUBLIC_SDK_KEY")
+          .with(observerMode: false) // optional
+          .with(customerUserId: "YOUR_USER_ID") // optional
+          .with(idfaCollectionDisabled: false) // optional
+          .with(ipAddressCollectionDisabled: false) // optional
+
+        Task {
+            try await Adapty.activate(with: configurationBuilder)
+        }
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Renombrar el método getViewConfiguration a getPaywallConfiguration \{#rename-getviewconfiguration-method-to-getpaywallconfiguration\}
+
+Actualiza el nombre del método para obtener el `viewConfiguration` del paywall:
+
+```diff showLineNumbers
+
+guard paywall.hasViewConfiguration else {
+    //  use your custom logic
+    return
+}
+
+do {
+-    let paywallConfiguration = try await AdaptyUI.getViewConfiguration(
++    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
+            forPaywall: paywall
+    )
+    // use loaded configuration
+} catch {
+    // handle the error
+}
+```
+
+Para más detalles sobre el método, consulta [Obtener la configuración de vista del paywall diseñado con Paywall Builder](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder).
+
+## Cambiar parámetros en SwiftUI \{#change-parameters-in-swiftui\}
+
+Se han realizado las siguientes actualizaciones en SwiftUI:
+
+1. Se ha eliminado el parámetro `didCancelPurchase`. Usa `didFinishPurchase` en su lugar.
+2. El método `.paywall()` ya no acepta un objeto paywall.
+3. El parámetro `paywallConfiguration` ha reemplazado al parámetro `viewConfiguration`.
+
+Actualiza tu código de la siguiente manera:
+
+```diff showLineNumbers
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+-         paywall: <paywall object>,
+-         viewConfiguration: <LocalizedViewConfiguration>,
++         paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+-         didFinishPurchase: { product, profile in paywallPresented = false },
++         didFinishPurchase: { product, purchaseResult in /* handle the result*/ },
+          didFailPurchase: { product, error in /* handle the error */ },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false }
+-         didCancelPurchase: { product in /* handle the result*/}
+
+      )
+}
+```
+
+## Actualizar el manejo de compras in-app promocionales desde el App Store \{#update-handling-of-promotional-in-app-purchases-from-app-store\}
+
+Actualiza cómo gestionas las compras in-app promocionales desde el App Store eliminando el parámetro `defermentCompletion` del método `AdaptyDelegate`, como se muestra en el siguiente ejemplo:
+
+```swift showLineNumbers title="Swift"
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
+        // 1a.
+        // Return `true` to continue the transaction in your app.
+
+        // 1b.
+        // Store the product object and return `false` to defer or cancel the transaction.
+        false
+    }
+    
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase`
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyDeferredProduct = // get the product object from the 1b.
+        do {
+            try await Adapty.makePurchase(product: storedProduct)
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+## Eliminar el método getProductsIntroductoryOfferEligibility \{#remove-getproductsintroductoryoffereligibility-method\}
+
+Antes del SDK de Adapty iOS 3.3.0, el objeto de producto siempre incluía las ofertas, independientemente de si el usuario era elegible. Tenías que verificar manualmente la elegibilidad antes de usar la oferta.
+
+Ahora, el objeto de producto solo incluye una oferta si el usuario es elegible. Esto significa que ya no necesitas verificar la elegibilidad: si hay una oferta presente, el usuario es elegible.
+
+Si aún quieres ver las ofertas para usuarios que no son elegibles, consulta `sk1Product` y `sk2Product`.
+
+## Actualizar la configuración del SDK de integraciones de terceros \{#update-third-party-integration-sdk-configuration\}
+
+A partir del SDK de Adapty iOS 3.3.0, hemos actualizado la API pública del método `updateAttribution`. Anteriormente aceptaba un diccionario `[AnyHashable: Any]`, lo que te permitía pasar objetos de atribución directamente desde varios servicios. Ahora requiere un `[String: any Sendable]`, por lo que deberás convertir los objetos de atribución antes de pasarlos.
+
+Para garantizar que las integraciones funcionen correctamente con el SDK de Adapty iOS 3.3.0 y versiones posteriores, actualiza las configuraciones de tu SDK para las siguientes integraciones tal como se describe en las secciones a continuación.
+
+### Adjust \{#adjust\}
+
+Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo completo, consulta la [configuración del SDK para la integración con Adjust](adjust#connect-your-app-to-adjust).
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="v5" label="Adjust 5.x+" default>
+
+```diff showLineNumbers
+class AdjustModuleImplementation {
+-    func updateAdjustAttribution() {
+-        Adjust.attribution { attribution in
+-            guard let attributionDictionary = attribution?.dictionary()?.toSendableDict() else { return }
+-
+-            Adjust.adid { adid in
+-                guard let adid else { return }
+-
+-                Adapty.updateAttribution(attributionDictionary, source: .adjust, networkUserId: adid) { error in
+-                    // handle the error
+-                }
+-            }
+-        }
+-    }
+
++    func updateAdjustAdid() {
++        Adjust.adid { adid in
++            guard let adid else { return }
++
++            Adapty.setIntegrationIdentifier(key: "adjust_device_id", value: adid)
++        }
++    }
++
++    func updateAdjustAttribution() {
++        Adjust.attribution { attribution in
++            guard let attribution = attribution?.dictionary() else { 
++                return
++            }
++            
++            Adapty.updateAttribution(attribution, source: "adjust")
++        }
++    }
+}
+```
+
+</TabItem>
+
+<TabItem value="v4" label="Adjust 4.x" default>
+
+```diff showLineNumbers
+class YourAdjustDelegateImplementation {
+    // Find your implementation of AdjustDelegate 
+    // and update adjustAttributionChanged method:
+    func adjustAttributionChanged(_ attribution: ADJAttribution?) {
+-       if let attribution = attribution?.dictionary()?.toSendableDict() {
+-           Adapty.updateAttribution(attribution, source: .adjust)
++       if let attribution = attribution?.dictionary() {
++           Adapty.updateAttribution(attribution, source: "adjust")
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+### AirBridge \{#airbridge\}
+
+Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo completo, consulta la [configuración del SDK para la integración con AirBridge](airbridge#connect-your-app-to-airbridge).
+
+```diff showLineNumbers
+ import AirBridge
+
+- let builder = AdaptyProfileParameters.Builder()
+-             .with(airbridgeDeviceId: AirBridge.deviceUUID())
+-
+- Adapty.updateProfile(params: builder.build())
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "airbridge_device_id", 
++         value: AirBridge.deviceUUID()
++     )
++ } catch {
++     // handle the error
++ }
+```
+
+### Amplitude \{#amplitude\}
+
+Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo completo, consulta la [configuración del SDK para la integración con Amplitude](amplitude#sdk-configuration).
+
+```diff showLineNumbers
+ import Amplitude 
+
+- let builder = AdaptyProfileParameters.Builder()
+-             .with(amplitudeUserId: Amplitude.instance().userId)
+-             .with(amplitudeDeviceId: Amplitude.instance().deviceId)
+-
+- Adapty.updateProfile(params: builder.build())
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "amplitude_user_id", 
++         value: Amplitude.instance().userId
++     )
++     try await Adapty.setIntegrationIdentifier(
++         key: "amplitude_device_id", 
++         value: Amplitude.instance().deviceId
++     )
++ } catch {
++     // handle the error
++ }
+
+```
+
+### AppMetrica \{#appmetrica\}
+
+Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo completo, consulta la [configuración del SDK para la integración con AppMetrica](appmetrica#sdk-configuration).
+
+```diff showLineNumbers
+ import AppMetricaCore
+        
+- if let deviceID = AppMetrica.deviceID {
+-   let builder = AdaptyProfileParameters.Builder()
+-     .with(appmetricaDeviceId: deviceID)
+-     .with(appmetricaProfileId: "YOUR_ADAPTY_CUSTOMER_USER_ID")
+-
+-   Adapty.updateProfile(params: builder.build())
+- }
+
++ if let deviceID = AppMetrica.deviceID {
++     do {
++         try await Adapty.setIntegrationIdentifier(
++             key: "appmetrica_device_id", 
++             value: deviceID
++         )
++         try await Adapty.setIntegrationIdentifier(
++             key: "appmetrica_profile_id", 
++             value: "YOUR_ADAPTY_CUSTOMER_USER_ID"
++         )
++     } catch {
++         // handle the error
++     }
++ }
+
+```
+
+### AppsFlyer \{#appsflyer\}
+
+Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo completo, consulta la [configuración del SDK para la integración con AppsFlyer](appsflyer#connect-your-app-to-appsflyer).
+
+```diff showLineNumbers
+class YourAppsFlyerLibDelegateImplementation {
+    // Find your implementation of AppsFlyerLibDelegate 
+    // and update onConversionDataSuccess method:
+     func onConversionDataSuccess(_ conversionInfo: [AnyHashable : Any]) {
+         let uid = AppsFlyerLib.shared().getAppsFlyerUID()
+
+-        Adapty.updateAttribution(
+-           conversionInfo.toSendableDict(),
+-            source: .appsflyer,
+-            networkUserId: uid
+-        )
++        Adapty.setIntegrationIdentifier(key: "appsflyer_id", value: uid)
++        Adapty.updateAttribution(conversionInfo, source: "appsflyer")
+    }
+}
+```
+
+### Branch \{#branch\}
+
+Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo completo, consulta la [configuración del SDK para la integración con Branch](branch#connect-your-app-to-branch).
+
+```diff showLineNumbers
+class YourBranchImplementation {
+    func initializeBranch() {
+        // Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
+        Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+-           if let data = data?.toSendableDict() {
+-                Adapty.updateAttribution(data, source: .branch)
+-           }
++           if let data {
++               Adapty.updateAttribution(data, source: "branch")
++           }
+        }
+    }
+}
+```
+
+### Facebook Ads \{#facebook-ads\}
+
+Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo completo, consulta la [configuración del SDK para la integración con Facebook Ads](facebook-ads#connect-your-app-to-facebook-ads).
+
+```diff showLineNumbers
+ import FacebookCore
+
+- let builder = AdaptyProfileParameters.Builder()
+-     .with(facebookAnonymousId: AppEvents.shared.anonymousID)
+-
+- do {
+-     try Adapty.updateProfile(params: builder.build())
+- } catch {
+-     // handle the error
+- }
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "facebook_anonymous_id", 
++         value: AppEvents.shared.anonymousID
++     )
++ } catch {
++     // handle the error
++ }
+
+```
+
+### Firebase y Google Analytics \{#firebase-and-google-analytics\}
+
+Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo completo, consulta la [configuración del SDK para la integración con Firebase y Google Analytics](firebase-and-google-analytics).
+
+```diff showLineNumbers
+ import FirebaseCore
+ import FirebaseAnalytics
+
+ FirebaseApp.configure()
+        
+- if let appInstanceId = Analytics.appInstanceID() {            
+-     let builder = AdaptyProfileParameters.Builder()
+-         .with(firebaseAppInstanceId: appInstanceId)
+            
+-     Adapty.updateProfile(params: builder.build()) { error in
+-         // handle error
+-     }
+- }
+
++ if let appInstanceId = Analytics.appInstanceID() {            
++     do {
++         try await Adapty.setIntegrationIdentifier(
++             key: "firebase_app_instance_id", 
++             value: appInstanceId
++         )
++     } catch {
++         // handle the error
++     }
++ }
+```
+
+### Mixpanel \{#mixpanel\}
+
+Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo completo, consulta la [configuración del SDK para la integración con Mixpanel](mixpanel#sdk-configuration).
+
+```diff showLineNumbers
+ import Mixpanel
+
+- let builder = AdaptyProfileParameters.Builder()
+-             .with(mixpanelUserId: Mixpanel.mainInstance().distinctId)
+-
+- do {
+-     try await Adapty.updateProfile(params: builder.build())
+- } catch {
+-     // handle the error
+- }
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "mixpanel_user_id", 
++         value: Mixpanel.mainInstance().distinctId
++     )
++ } catch {
++     // handle the error
++ }
+
+```
+
+### OneSignal \{#onesignal\}
+
+Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo completo, consulta la [configuración del SDK para la integración con OneSignal](onesignal#sdk-configuration).
+
+```diff showLineNumbers
+ // PlayerID (pre-v5 OneSignal SDK)
+ // in your OSSubscriptionObserver implementation
+ func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
+     if let playerId = stateChanges.to.userId {
+-         let params = AdaptyProfileParameters.Builder()
+-             .with(oneSignalPlayerId: playerId)
+-             .build()
+-
+-         Adapty.updateProfile(params:params) { error in
+-             // check error
+-         }
++         Task {
++             try await Adapty.setIntegrationIdentifier(
++                 key: "one_signal_player_id", 
++                 value: playerId
++             )
++         }
+     }
+ }
+
+ // SubscriptionID (v5+ OneSignal SDK)
+ OneSignal.Notifications.requestPermission({ accepted in
+-     let id = OneSignal.User.pushSubscription.id
+-
+-     let builder = AdaptyProfileParameters.Builder()
+-         .with(oneSignalSubscriptionId: id)
+-
+-     Adapty.updateProfile(params: builder.build())
++     Task {
++         try await Adapty.setIntegrationIdentifier(
++             key: "one_signal_subscription_id", 
++             value: OneSignal.User.pushSubscription.id
++         )
++     }
+ }, fallbackToSettings: true)
+```
+
+### Pushwoosh \{#pushwoosh\}
+
+Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo completo, consulta la [configuración del SDK para la integración con Pushwoosh](pushwoosh#sdk-configuration).
+
+```diff showLineNumbers
+- let params = AdaptyProfileParameters.Builder()
+-     .with(pushwooshHWID: Pushwoosh.sharedInstance().getHWID())
+-     .build()
+-
+- Adapty.updateProfile(params: params) { error in
+-     // handle the error
+- }
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "pushwoosh_hwid", 
++         value: Pushwoosh.sharedInstance().getHWID()
++     )
++ } catch {
++     // handle the error
++ }
+```
+
+## Actualizar la implementación del modo Observer \{#update-observer-mode-implementation\}
+
+Actualiza cómo vinculas los paywalls a las transacciones. Anteriormente, usabas el método `setVariationId` para asignar el `variationId`. Ahora puedes incluir el `variationId` directamente al registrar la transacción usando el nuevo método `reportTransaction`. Consulta el ejemplo de código final en [Asociar paywalls con transacciones de compra en el modo Observer](report-transactions-observer-mode).
+
+:::warning
+
+Recuerda registrar la transacción usando el método `reportTransaction`. Si omites este paso, Adapty no reconocerá la transacción, no otorgará niveles de acceso, no la incluirá en los análisis ni la enviará a las integraciones. ¡Este paso es esencial!
+
+:::
+
+```diff showLineNumbers
+- let variationId = paywall.variationId
+-
+- // There are two overloads: for StoreKit 1 and StoreKit 2
+- Adapty.setVariationId(variationId, forPurchasedTransaction: transaction) { error in
+-     if error == nil {
+-         // successful binding
+-     }
+- }
+
++ do {
++     // every time when calling transaction.finish()
++     try await Adapty.reportTransaction(transaction, withVariationId: <YOUR_PAYWALL_VARIATION_ID>)
++ } catch {
++     // handle the error
++ }
+```

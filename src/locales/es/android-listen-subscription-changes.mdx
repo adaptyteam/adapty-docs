@@ -1,0 +1,145 @@
+---
+title: "Comprobar el estado de la suscripción en el SDK de Android"
+description: "Rastrea y gestiona el estado de la suscripción del usuario en Adapty para mejorar la retención de clientes en tu app de Android."
+metadataTitle: "Entender el Estado de la Suscripción | Documentación de Adapty"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+
+Con Adapty, hacer seguimiento del estado de la suscripción es muy sencillo. No necesitas insertar manualmente los IDs de producto en tu código. En su lugar, puedes confirmar fácilmente el estado de la suscripción de un usuario comprobando si tiene un [nivel de acceso](access-level) activo.
+
+Antes de empezar a comprobar el estado de la suscripción, configura las [notificaciones en tiempo real para desarrolladores (RTDN)](enable-real-time-developer-notifications-rtdn).
+
+## Nivel de acceso y el objeto AdaptyProfile \{#access-level-and-the-adaptyprofile-object\}
+
+Los niveles de acceso son propiedades del objeto [AdaptyProfile](https://android.adapty.io/adapty/com.adapty.models/-adapty-profile/). Te recomendamos recuperar el perfil cuando tu app arranque, por ejemplo al [identificar a un usuario](android-identifying-users#setting-customer-user-id-on-configuration), y luego actualizarlo cada vez que se produzcan cambios. Así podrás usar el objeto de perfil sin tener que solicitarlo repetidamente.
+
+Para recibir notificaciones sobre actualizaciones del perfil, escucha los cambios tal como se describe en la sección [Escuchar actualizaciones del perfil, incluidos los niveles de acceso](android-listen-subscription-changes) más abajo.
+
+<SampleApp />
+
+## Obtener el nivel de acceso desde el servidor \{#retrieving-the-access-level-from-the-server\}
+
+Para obtener el nivel de acceso desde el servidor, usa el método `.getProfile()`:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+            // check the access
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        // check the access
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+Parámetros de respuesta:
+
+| Parámetro | Descripción                                                  |
+| --------- | ------------------------------------------------------------ |
+| Profile   | <p>Un objeto [AdaptyProfile](https://android.adapty.io/adapty/com.adapty.models/-adapty-profile/). En general, solo necesitas comprobar el estado del nivel de acceso del perfil para determinar si el usuario tiene acceso premium a la app.</p><p></p><p>El método `.getProfile` devuelve el resultado más actualizado posible, ya que siempre intenta consultar la API. Si por algún motivo (p. ej., sin conexión a internet) el SDK de Adapty no puede obtener información del servidor, se devolverán los datos de la caché. También es importante tener en cuenta que el SDK de Adapty actualiza la caché de `AdaptyProfile` con regularidad para mantener esta información lo más actualizada posible.</p> |
+
+El método `.getProfile()` te proporciona el perfil del usuario, a partir del cual puedes obtener el estado del nivel de acceso. Puedes tener varios niveles de acceso por app. Por ejemplo, si tienes una app de periódico y vendes suscripciones a distintos temas de forma independiente, puedes crear los niveles de acceso "sports" y "science". Sin embargo, la mayoría de las veces solo necesitarás un nivel de acceso; en ese caso, puedes utilizar simplemente el nivel de acceso "premium" predeterminado.
+
+A continuación se muestra un ejemplo para comprobar el nivel de acceso "premium" predeterminado:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+
+            if (profile.accessLevels["premium"]?.isActive == true) {
+                // grant access to premium features
+            }
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        
+        AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("premium");
+        
+        if (premium != null && premium.isActive()) {
+            // grant access to premium features
+        }
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+### Escuchar actualizaciones del estado de la suscripción \{#listening-for-subscription-status-updates\}
+
+Cada vez que cambia la suscripción del usuario, Adapty lanza un evento.
+
+Para recibir mensajes de Adapty, necesitas hacer alguna configuración adicional:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.setOnProfileUpdatedListener { profile ->
+    // handle any changes to subscription state
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers t
+Adapty.setOnProfileUpdatedListener(profile -> {
+    // handle any changes to subscription state
+});
+```
+</TabItem>
+
+</Tabs>
+
+Adapty también lanza un evento al iniciar la aplicación. En ese caso, se pasará el estado de la suscripción en caché.
+
+### Caché del estado de la suscripción \{#subscription-status-cache\}
+
+La caché implementada en el SDK de Adapty almacena el estado de la suscripción del perfil. Esto significa que, aunque el servidor no esté disponible, se puede acceder a los datos en caché para obtener información sobre el estado de la suscripción del perfil.
+
+No obstante, hay que tener en cuenta que no es posible solicitar datos directamente desde la caché. El SDK consulta periódicamente el servidor cada minuto para comprobar si hay actualizaciones o cambios relacionados con el perfil. Si existen modificaciones, como nuevas transacciones u otras actualizaciones, se enviarán a los datos en caché para mantenerlos sincronizados con el servidor.

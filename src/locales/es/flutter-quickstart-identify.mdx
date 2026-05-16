@@ -1,0 +1,157 @@
+---
+title: "Identificar usuarios en el SDK de Flutter"
+description: "Guía de inicio rápido para configurar Adapty para la gestión de suscripciones in-app en Flutter."
+metadataTitle: "Guía de inicio rápido de Adapty | Documentación de Adapty"
+keywords: ['identify', 'identifying users', 'customeruserid']
+rank: 80
+---
+
+:::important
+Esta guía es para ti si tienes tu propio sistema de autenticación. Aquí aprenderás a trabajar con perfiles de usuario en Adapty para que se alinee con tu sistema de autenticación existente.
+:::
+
+La forma en que gestionas las compras de los usuarios depende del modelo de autenticación de tu app:
+- Si tu app no usa autenticación de backend y no almacena datos de usuario, consulta la [sección sobre usuarios anónimos](#anonymous-users).
+- Si tu app tiene (o tendrá) autenticación de backend, consulta la [sección sobre usuarios identificados](#identified-users).
+
+**Conceptos clave**:
+- Los **perfiles** son las entidades necesarias para que funcione el SDK. Adapty los crea automáticamente.
+- Pueden ser anónimos **(sin customer user ID)** o identificados **(con customer user ID)**.
+- Tú proporcionas el **customer user ID** para relacionar los perfiles de Adapty con tu sistema de autenticación interno.
+
+Esto es lo que diferencia a los usuarios anónimos de los identificados:
+
+|                              | Usuarios anónimos                                           | Usuarios identificados                                                           |
+|------------------------------|-------------------------------------------------------------|----------------------------------------------------------------------------------|
+| **Gestión de compras**       | Restauración de compras a nivel de store                    | Mantienen el historial de compras en todos los dispositivos mediante su customer user ID |
+| **Gestión de perfiles**      | Nuevo perfil en cada reinstalación                          | El mismo perfil en todas las sesiones y dispositivos                             |
+| **Persistencia de datos**    | Los datos de usuarios anónimos están vinculados a la instalación | Los datos de usuarios identificados persisten entre instalaciones                |
+
+## Usuarios anónimos \{#anonymous-users\}
+
+Si no tienes autenticación de backend, **no necesitas gestionar la autenticación en el código de la app**:
+
+1. Cuando se activa el SDK en el primer lanzamiento de la app, Adapty **crea un nuevo perfil para el usuario**.
+2. Cuando el usuario realiza una compra en la app, esta compra se **asocia a su perfil de Adapty y a su cuenta del store**.
+3. Cuando el usuario **reinstala** la app o la instala en un **dispositivo nuevo**, Adapty **crea un nuevo perfil anónimo al activarse**.
+4. Si el usuario había realizado compras anteriormente en tu app, de forma predeterminada sus compras se sincronizan automáticamente desde el App Store al activarse el SDK.
+
+Con usuarios anónimos se crearán nuevos perfiles en cada instalación, pero no es un problema porque en los análisis de Adapty puedes [configurar qué se considerará una nueva instalación](general#4-installs-definition-for-analytics).
+
+Para usuarios anónimos, debes contar las instalaciones por **ID de dispositivo**. En este caso, cada instalación de la app en un dispositivo se cuenta como una instalación, incluidas las reinstalaciones.
+
+## Usuarios identificados \{#identified-users\}
+
+Tienes dos opciones para identificar usuarios en la app:
+
+- [**Durante el login/registro:**](#during-loginsignup) Si los usuarios inician sesión después de que se inicia tu app, llama a `identify()` con un customer user ID cuando se autentiquen.
+
+- [**Durante la activación del SDK:**](#during-the-sdk-activation) Si ya tienes un customer user ID almacenado cuando se inicia la app, envíalo al llamar a `activate()`.
+
+:::important
+De forma predeterminada, cuando Adapty recibe una compra de un Customer User ID que está actualmente asociado a otro Customer User ID, el nivel de acceso se comparte, de modo que ambos perfiles tienen acceso de pago. Puedes configurar este ajuste para transferir el acceso de pago de un perfil a otro o desactivar el uso compartido por completo. Consulta el [artículo](general#6-sharing-paid-access-between-user-accounts) para más detalles.
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/identify-diagram.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Durante el login/registro \{#during-loginsignup\}
+
+Si identificas a los usuarios después del lanzamiento de la app (por ejemplo, después de que inicien sesión o se registren), usa el método `identify` para establecer su customer user ID.
+
+- Si **no has usado este customer user ID antes**, Adapty lo vinculará automáticamente al perfil actual.
+- Si **ya has usado este customer user ID para identificar al usuario**, Adapty cambiará al perfil asociado a ese customer user ID.
+
+:::important
+Los customer user IDs deben ser únicos para cada usuario. Si defines el valor del parámetro de forma fija en el código, todos los usuarios se considerarán como uno solo.
+:::
+
+Siempre usa `await` con `identify` antes de llamar a otros métodos del SDK. Las llamadas concurrentes generan `#3006 profileWasChanged` o se aplican al perfil anónimo. Consulta [Orden de llamadas en el SDK de Flutter](flutter-sdk-call-order).
+
+```dart showLineNumbers
+try {
+  await Adapty().identify(customerUserId); // Unique for each user
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+### Durante la activación del SDK \{#during-the-sdk-activation\}
+
+Si ya conoces el customer user ID cuando activas el SDK, puedes enviarlo en el método `activate` en lugar de llamar a `identify` por separado.
+
+Si conoces el customer user ID pero lo defines solo después de la activación, Adapty creará un nuevo perfil anónimo al activarse y cambiará al existente solo después de que llames a `identify`.
+
+Puedes pasar un customer user ID existente (uno que hayas usado antes) o uno nuevo. Si pasas uno nuevo, el perfil creado al activarse se vinculará automáticamente al customer user ID.
+
+:::note
+De forma predeterminada, la creación de perfiles anónimos no afecta a los dashboards de análisis, porque las instalaciones se cuentan según los IDs de dispositivo.
+
+Un ID de dispositivo representa una única instalación de la app desde el store en un dispositivo y solo se regenera después de reinstalar la app.  
+No depende de si es una primera o posterior instalación, ni de si se usa un customer user ID existente.
+
+Crear un perfil (al activar el SDK o al cerrar sesión), iniciar sesión o actualizar la app sin reinstalarla no genera eventos de instalación adicionales.
+
+Si quieres contar las instalaciones por usuarios únicos en lugar de por dispositivos, ve a **App settings** y configura [**Installs definition for analytics**](general#4-installs-definition-for-analytics).
+:::
+
+```dart showLineNumbers"
+   try {
+       await Adapty().activate(
+           configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+             ..withCustomerUserId(YOUR_CUSTOMER_USER_ID) // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+       );
+   } catch (e) {
+       // handle the error
+   }
+```
+
+### Cerrar sesión de usuarios \{#log-users-out\}
+
+Si tienes un botón para cerrar sesión de los usuarios, usa el método `logout`.
+
+:::important
+Cerrar la sesión de un usuario crea un nuevo perfil anónimo para ese usuario.
+:::
+
+```dart showLineNumbers
+try {
+  await Adapty().logout();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle unknown error
+}
+```
+
+:::info
+Para volver a iniciar sesión en la app, usa el método `identify`.
+:::
+
+### Permitir compras sin inicio de sesión \{#allow-purchases-without-login\}
+
+Si tus usuarios pueden realizar compras tanto antes como después de iniciar sesión en tu app, debes asegurarte de que conserven el acceso después de iniciar sesión:
+
+1. Cuando un usuario sin sesión iniciada realiza una compra, Adapty la vincula a su ID de perfil anónimo.
+2. Cuando el usuario inicia sesión en su cuenta, Adapty cambia a trabajar con su perfil identificado.
+    - Si es un nuevo customer user ID (por ejemplo, la compra se realizó antes del registro), Adapty asigna el customer user ID al perfil actual, por lo que se mantiene todo el historial de compras.
+    - Si es un customer user ID existente (el customer user ID ya está vinculado a un perfil), debes obtener el nivel de acceso actual después del cambio de perfil. Puedes llamar a [`getProfile`](flutter-check-subscription-status) justo después de la identificación, o [escuchar las actualizaciones del perfil](flutter-check-subscription-status) para que los datos se sincronicen automáticamente.
+
+## Siguientes pasos \{#next-steps\}
+
+¡Enhorabuena! Has implementado la lógica de pagos in-app en tu app. ¡Te deseamos mucho éxito con la monetización de tu app!
+
+Para sacar aún más partido a Adapty, puedes explorar estos temas:
+- [**Pruebas**](troubleshooting-test-purchases): Verifica que todo funciona como se espera
+- [**Onboardings**](flutter-onboardings): Engancha a los usuarios con onboardings y mejora la retención
+- [**Integraciones**](configuration): Integra con servicios de atribución de marketing y análisis con una sola línea de código
+- [**Establecer atributos de perfil personalizados**](flutter-setting-user-attributes): Añade atributos personalizados a los perfiles de usuario y crea segmentos para lanzar pruebas A/B o mostrar diferentes paywalls a distintos usuarios

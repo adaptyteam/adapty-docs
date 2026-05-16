@@ -1,0 +1,631 @@
+---
+title: "Migrar Adapty Unity SDK a la versión 3.3"
+description: "Migra al Adapty Unity SDK v3.3 para obtener mejor rendimiento y nuevas funciones de monetización."
+metadataTitle: "Migración al Adapty Unity SDK v3.3 | Documentación de Adapty"
+---
+
+Adapty SDK 3.3.0 es una versión mayor que incorpora mejoras que pueden requerir algunos pasos de migración por tu parte.
+
+1. Actualiza a Adapty SDK v3.3.x.
+2. Se han renombrado varias clases, propiedades y métodos en los módulos Adapty y AdaptyUI del SDK de Adapty.
+3. A partir de ahora, el método `SetLogLevel` acepta un callback como argumento.
+4. A partir de ahora, el método `PresentCodeRedemptionSheet` acepta un callback como argumento.
+5. Cambia la forma en que se crea la vista del paywall.
+6. Elimina el método `GetProductsIntroductoryOfferEligibility`.
+7. Guarda los paywalls de respaldo en archivos separados (uno por plataforma) en `Assets/StreamingAssets/` y pasa los nombres de archivo al método `SetFallbackPaywalls`.
+8. Actualiza la lógica de compra.
+9. Actualiza el manejo de eventos del Paywall Builder.
+10. Actualiza el manejo de errores del paywall del Paywall Builder.
+11. Actualiza las configuraciones de integración para Adjust, Amplitude, AppMetrica, Appsflyer, Branch, Firebase and Google Analytics, Mixpanel, OneSignal, Pushwoosh.
+13. Actualiza la implementación del modo Observer.
+14. Actualiza la inicialización del plugin de Unity con una llamada explícita a `Activate`.
+
+## Actualizar el Adapty Unity SDK a la versión 3.3.x \{#upgrade-adapty-unity-sdk-to-33x\}
+
+Hasta esta versión, Adapty SDK era el SDK principal e imprescindible para el funcionamiento correcto de Adapty en tu app, mientras que AdaptyUI SDK era un SDK opcional que solo se necesitaba si usabas el Adapty Paywall Builder.
+
+A partir de la versión 3.3.0, AdaptyUI SDK queda obsoleto y AdaptyUI se fusiona con el Adapty SDK como módulo. Debido a estos cambios, debes eliminar AdaptyUISDK y reinstalar AdaptySDK.
+
+1. Elimina las dependencias de los paquetes **AdaptySDK** y **AdaptyUISDK** de tu proyecto.
+2. Borra las carpetas **AdaptySDK** y **AdaptyUISDK**.
+3. Importa de nuevo el paquete AdaptySDK tal como se describe en la página [Instalación y configuración del SDK de Adapty para Unity](sdk-installation-unity).
+
+## Renombramientos \{#renamings\}
+
+1. Renombramientos en el módulo Adapty:
+
+   | Versión anterior          | Nueva versión            |
+   | ------------------------- | ------------------------ |
+   | Adapty.sdkVersion         | Adapty.SDKVersion        |
+   | Adapty.LogLevel           | AdaptyLogLevel           |
+   | Adapty.Paywall            | AdaptyPaywall            |
+   | Adapty.PaywallFetchPolicy | AdaptyPaywallFetchPolicy |
+   | PaywallProduct            | AdaptyPaywallProduct     |
+   | Adapty.Profile            | AdaptyProfile            |
+   | Adapty.ProfileParameters  | AdaptyProfileParameters  |
+   | ProfileGender             | AdaptyProfileGender      |
+   | Error                     | AdaptyError              |
+
+2. Renombramientos en el módulo AdaptyUI:
+
+   | Versión anterior   | Nueva versión      |
+   | ------------------ | ------------------ |
+   | CreatePaywallView  | CreateView         |
+   | PresentPaywallView | PresentView        |
+   | DismissPaywallView | DismissView        |
+   | AdaptyUI.View      | AdaptyUIView       |
+   | AdaptyUI.Action    | AdaptyUIUserAction |
+
+## Cambiar el método SetLogLevel \{#change-the-setloglevel-method\}
+
+A partir de ahora, el método `SetLogLevel` acepta un callback como argumento.
+
+```diff showLineNumbers
+- Adapty.SetLogLevel(Adapty.LogLevel.Verbose);
++ Adapty.SetLogLevel(Adapty.LogLevel.Verbose, null); // or you can pass the callback to handle the possible error
+```
+
+## Cambiar el método PresentCodeRedemptionSheet \{#change-the-presentcoderedemptionsheet-method\}
+
+A partir de ahora, el método `PresentCodeRedemptionSheet` acepta un callback como argumento.
+
+```diff showLineNumbers
+- Adapty.PresentCodeRedemptionSheet();
++ Adapty.PresentCodeRedemptionSheet(null); // or you can pass the callback to handle the possible error
+```
+
+## Cambiar la forma en que se crea la vista del paywall \{#change-how-the-paywall-view-is-created\}
+
+Para ver el ejemplo de código completo, consulta [Obtener la configuración de vista del paywall diseñado con el Paywall Builder](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder).
+
+```diff showLineNumbers
++ var parameters = new AdaptyUICreateViewParameters()
++   .SetPreloadProducts(true);
+
+- AdaptyUI.CreatePaywallView(
++ AdaptyUI.CreateView(
+   paywall, 
+-  preloadProducts: true,
++  parameters,
+  (view, error) => {
+  // use the view
+});
+```
+
+## Eliminar el método GetProductsIntroductoryOfferEligibility \{#remove-the-getproductsintroductoryoffereligibility-method\}
+
+Antes de Adapty iOS SDK 3.3.0, el objeto producto siempre incluía las ofertas, independientemente de si el usuario era elegible. Había que comprobar la elegibilidad manualmente antes de usar la oferta.
+
+Ahora, el objeto producto solo incluye una oferta si el usuario es elegible. Esto significa que ya no es necesario comprobar la elegibilidad: si hay una oferta disponible, el usuario es elegible.
+
+## Actualizar el método para proporcionar paywalls de respaldo \{#update-method-for-providing-fallback-paywalls\}
+
+Hasta esta versión, los paywalls de respaldo se pasaban como JSON serializado. A partir de la versión 3.3.0, el mecanismo ha cambiado:
+
+1. Guarda los paywalls de respaldo en archivos dentro de `/Assets/StreamingAssets/`, un archivo para Android y otro para iOS.
+2. Pasa los nombres de archivo al método `SetFallbackPaywalls`.
+
+Tu código cambiará de la siguiente manera:
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void SetFallBackPaywalls() {
+
++ #if UNITY_IOS
++   var assetId = "adapty_fallback_ios.json";
++ #elif UNITY_ANDROID
++   var assetId = "adapty_fallback_android.json";
++ #else
++   var assetId = "";
++ #endif
+
+-   Adapty.SetFallbackPaywalls("FALLBACK_PAYWALLS_JSON_STRING", (error) => {
++   Adapty.SetFallbackPaywalls(assetId, (error) => {
+    // handle the error
+  });
+}
+```
+
+Consulta el ejemplo de código completo en la página [Usar paywalls de respaldo en Unity](unity-use-fallback-paywalls).
+
+## Actualizar la lógica de compra \{#update-making-purchase\}
+
+Anteriormente, las compras canceladas y pendientes se consideraban errores y devolvían los códigos `PaymentCancelled` y `PendingPurchase`, respectivamente.
+
+Ahora se usa una nueva clase `AdaptyPurchaseResultType` para procesar las compras canceladas, exitosas y pendientes. Actualiza el código de compra de la siguiente manera:
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void MakePurchase(AdaptyPaywallProduct product) {
+- Adapty.MakePurchase(product, (profile, error) => {
+-   // handle successfull purchase
++ Adapty.MakePurchase(product, (result, error) => {
++   switch (result.Type) {
++     case AdaptyPurchaseResultType.Pending:
++       // handle pending purchase
++       break;
++     case AdaptyPurchaseResultType.UserCancelled:
++       // handle purchase cancellation
++       break;
++     case AdaptyPurchaseResultType.Success:
++       var profile = result.Profile;
++       // handle successful purchase
++       break;
++     default:
++       break;
+    }
+  });
+}
+```
+
+Consulta el ejemplo de código completo en la página [Realizar compras en la app móvil](unity-making-purchases).
+
+## Actualizar el manejo de eventos del Paywall Builder \{#update-handling-of-paywall-builder-events\}
+
+Las compras canceladas y pendientes ya no se consideran errores; todos estos casos se procesan con el método `PaywallViewDidFinishPurchase`.
+
+1. Elimina el procesamiento del evento de compra cancelada.
+
+2. Actualiza el manejo del evento de compra exitosa de la siguiente manera:
+
+   ```diff showLineNumbers
+   - public void OnFinishPurchase(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product, 
+   -   Adapty.Profile profile
+   - ) { }
+   
+   + public void PaywallViewDidFinishPurchase(
+   +   AdaptyUIView view, 
+   +   AdaptyPaywallProduct product, 
+   +   AdaptyPurchaseResult purchasedResult
+   + ) { }
+   ```
+
+3. Actualiza el manejo de acciones:
+
+   ```diff showLineNumbers
+   - public void OnPerformAction(
+   -   AdaptyUI.View view, 
+   -   AdaptyUI.Action action
+   - ) {
+   + public void PaywallViewDidPerformAction(
+   +   AdaptyUIView view, 
+   +   AdaptyUIUserAction action
+   + ) {
+       switch (action.Type) {
+   -     case AdaptyUI.ActionType.Close:
+   +     case AdaptyUIUserActionType.Close:
+           view.Dismiss(null);
+           break;
+   -     case AdaptyUI.ActionType.OpenUrl:
+   +     case AdaptyUIUserActionType.OpenUrl:
+           var urlString = action.Value;
+           if (urlString != null {
+           	Application.OpenURL(urlString); 
+           }
+         default:
+           // handle other events
+           break;
+       }
+   }
+   ```
+
+4. Actualiza el manejo del inicio de compra:
+
+   ```diff showLineNumbers
+   - public void OnSelectProduct(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product
+   - ) { }
+   
+   + public void PaywallViewDidSelectProduct(
+   +   AdaptyUIView view, 
+   +   string productId
+   + ) { }
+   ```
+
+5. Actualiza el manejo de compra fallida:
+
+   ```diff showLineNumbers
+   - public void OnFailPurchase(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailPurchase(
+   +   AdaptyUIView view, 
+   +   AdaptyPaywallProduct product, 
+   +   AdaptyError error
+   + ) { }
+   
+   ```
+
+6. Actualiza el manejo del evento de restauración exitosa:
+
+   ```diff showLineNumbers
+   - public void OnFailRestore(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailRestore(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   
+   ```
+
+Consulta el ejemplo de código completo en la página [Manejar eventos del paywall](unity-handling-events).
+
+## Actualizar el manejo de errores del paywall del Paywall Builder \{#update-handling-of-paywall-builder-paywall-errors\}
+
+El manejo de errores también ha cambiado; actualiza tu código según las indicaciones a continuación.
+
+1. Actualiza el manejo de errores de carga de productos:
+
+   ```diff showLineNumbers
+   - public void OnFailLoadingProducts(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailLoadingProducts(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   ```
+
+2. Actualiza el manejo de errores de renderizado:
+
+   ```diff showLineNumbers
+   - public void OnFailRendering(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailRendering(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   ```
+
+   
+
+## Actualizar la configuración del SDK de integraciones de terceros \{#update-third-party-integration-sdk-configuration\}
+
+A partir de Adapty Unity SDK 3.3.0, hemos actualizado la API pública del método `updateAttribution`. Anteriormente, aceptaba un diccionario `[AnyHashable: Any]`, lo que permitía pasar objetos de atribución directamente desde varios servicios. Ahora requiere un `[String: any Sendable]`, por lo que tendrás que convertir los objetos de atribución antes de pasarlos.
+
+Para garantizar que las integraciones funcionen correctamente con Adapty Unity SDK 3.3.0 y versiones posteriores, actualiza las configuraciones de tu SDK para las siguientes integraciones tal como se describe en las secciones a continuación.
+
+### Adjust
+
+Actualiza el código de tu app móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [Configuración del SDK para la integración con Adjust](adjust#connect-your-app-to-adjust).
+
+```diff showLineNumbers
+- using static AdaptySDK.Adapty;
+ using AdaptySDK;
+
+ Adjust.GetAdid((adid) => {
+-   Adjust.GetAttribution((attribution) => {
+-     Dictionary<String, object> data = new Dictionary<String, object>();
+-
+-     data["network"] = attribution.Network;
+-     data["campaign"] = attribution.Campaign;
+-     data["adgroup"] = attribution.Adgroup;
+-     data["creative"] = attribution.Creative;
+-
+-     String attributionString = JsonUtility.ToJson(data);
+-     Adapty.UpdateAttribution(attributionString, AttributionSource.Adjust, adid, (error) => {
+-       // handle the error
+-     });
++   if (adid != null) {
++     Adapty.SetIntegrationIdentifier(
++       "adjust_device_id", 
++       adid, 
++       (error) => {
++         // handle the error
++     });
+    }
+ });
+
+ Adjust.GetAttribution((attribution) => {
+   Dictionary<String, object> data = new Dictionary<String, object>();
+
+   data["network"] = attribution.Network;
+   data["campaign"] = attribution.Campaign;
+   data["adgroup"] = attribution.Adgroup;
+   data["creative"] = attribution.Creative;
+
+   String attributionString = JsonUtility.ToJson(data);
+    
+-   Adapty.UpdateAttribution(attributionString, AttributionSource.Adjust, adid, (error) => {
++   Adapty.UpdateAttribution(attributionString, "adjust", (error) => {
+       // handle the error
+   });
+ });
+```
+
+### Amplitude
+
+Actualiza el código de tu app móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [Configuración del SDK para la integración con Amplitude](amplitude#sdk-configuration).
+
+```diff showLineNumbers
+using AdaptySDK;
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetAmplitudeUserId("YOUR_AMPLITUDE_USER_ID");
+- builder.SetAmplitudeDeviceId(amplitude.getDeviceId());
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ Adapty.SetIntegrationIdentifier(
++   "amplitude_user_id", 
++   "YOUR_AMPLITUDE_USER_ID", 
++   (error) => {
++   // handle the error
++ });
+
++ Adapty.SetIntegrationIdentifier(
++   "amplitude_device_id", 
++   amplitude.getDeviceId(), 
++   (error) => {
++   // handle the error
++ });
+```
+
+### AppMetrica
+
+Actualiza el código de tu app móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [Configuración del SDK para la integración con AppMetrica](appmetrica#sdk-configuration).
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- var deviceId = AppMetrica.GetDeviceId();
+
+- if (deviceId != null {
+-   var builder = new Adapty.ProfileParameters.Builder();
+
+-   builder.SetAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
+-   builder.SetAppmetricaDeviceId(deviceId);
+
+-   Adapty.UpdateProfile(builder.Build(), (error) => {
+-       // handle error
+-   });
+- }
+
++ var deviceId = AppMetrica.GetDeviceId();
+
++ if (deviceId != null {
++   Adapty.SetIntegrationIdentifier(
++     "appmetrica_device_id", 
++     deviceId, 
++     (error) => {
++     // handle the error
++   });
++   
++   Adapty.SetIntegrationIdentifier(
++     "appmetrica_profile_id", 
++     "YOUR_ADAPTY_CUSTOMER_USER_ID", 
++     (error) => {
++     // handle the error
++   });
++ }
+```
+
+### AppsFlyer
+
+Actualiza el código de tu app móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [Configuración del SDK para la integración con AppsFlyer](appsflyer#connect-your-app-to-appsflyer).
+
+```diff showLineNumbers
+ using AppsFlyerSDK;
+ using AdaptySDK;
+
+ // before SDK initialization
+ AppsFlyer.getConversionData(this.name);
+
+ // in your IAppsFlyerConversionData
+ void onConversionDataSuccess(string conversionData) {
+     // It's important to include the network user ID
+-    string appsFlyerId = AppsFlyer.getAppsFlyerId();
+-    Adapty.UpdateAttribution(conversionData, AttributionSource.Appsflyer, appsFlyerId, (error) => {
++    string appsFlyerId = AppsFlyer.getAppsFlyerId();
++    
++    Adapty.SetIntegrationIdentifier(
++      "appsflyer_id", 
++      appsFlyerId, 
++      (error) => {
+         // handle the error
+     });
++    
++    Adapty.UpdateAttribution(
++      conversionData, 
++      "appsflyer",
++      (error) => {
++        // handle the error
++      });
+ }
+
+```
+
+### Branch
+
+Actualiza el código de tu app móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [Configuración del SDK para la integración con Branch](branch#connect-your-app-to-branch).
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- class YourBranchImplementation {
+-     func initializeBranch() {
+-         Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+-             if let data {
+-                 Adapty.updateAttribution(data, source: .branch)
+-             }
+-         }
+-     }
+- }
+
++ Branch.initSession(delegate(Dictionary<string, object> parameters, string error) {
++     string attributionString = JsonUtility.ToJson(parameters);
++     
++     Adapty.UpdateAttribution(
++       attributionString, 
++       "branch", 
++       (error) => {
++         // handle the error
++       });
++ });
+```
+
+### Firebase and Google Analytics
+
+Actualiza el código de tu app móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [Configuración del SDK para la integración con Firebase and Google Analytics](firebase-and-google-analytics).
+
+```diff showLineNumbers
+ // We suppose FirebaseAnalytics Unity Plugin is already installed
+
+ using AdaptySDK;
+
+ Firebase.Analytics
+   .FirebaseAnalytics
+   .GetAnalyticsInstanceIdAsync()
+   .ContinueWithOnMainThread((task) => {
+     if (!task.IsCompletedSuccessfully) {
+       // handle error
+       return;
+     }
+
+     var firebaseId = task.Result
+     var builder = new Adapty.ProfileParameters.Builder();
+     
+-    builder.SetFirebaseAppInstanceId(firebaseId);
+-
+-    Adapty.UpdateProfile(builder.Build(), (error) => {
+-        // handle error
+   
++     Adapty.SetIntegrationIdentifier(
++       "firebase_app_instance_id", 
++       firebaseId, 
++       (error) => {
++         // handle the error
+     });
+   });
+```
+
+### Mixpanel
+
+Actualiza el código de tu app móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [Configuración del SDK para la integración con Mixpanel](mixpanel#sdk-configuration).
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetMixpanelUserId(Mixpanel.DistinctId);
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ var distinctId = Mixpanel.DistinctId;
+
++ if (distinctId != null) {
++   Adapty.SetIntegrationIdentifier(
++     "mixpanel_user_id", 
++     distinctId, 
++     (error) => {
++       // handle the error
++   });
++ }
+```
+
+### OneSignal
+
+Actualiza el código de tu app móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [Configuración del SDK para la integración con OneSignal](onesignal#sdk-configuration).
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- using OneSignalSDK;
+
+- var pushUserId = OneSignal.Default.PushSubscriptionState.userId;
+
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetOneSignalPlayerId(pushUserId);
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ var distinctId = Mixpanel.DistinctId;
+
++ if (distinctId != null) {
++   Adapty.SetIntegrationIdentifier(
++     "mixpanel_user_id", 
++     distinctId, 
++     (error) => {
++       // handle the error
++   });
++ }
+```
+
+### Pushwoosh
+
+Actualiza el código de tu app móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [Configuración del SDK para la integración con Pushwoosh](pushwoosh#sdk-configuration).
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetPushwooshHWID(Pushwoosh.Instance.HWID);
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ Adapty.SetIntegrationIdentifier(
++   "pushwoosh_hwid", 
++   Pushwoosh.Instance.HWID, 
++   (error) => {
++   // handle the error
++ });
+```
+
+## Actualizar la implementación del modo Observer \{#update-observer-mode-implementation\}
+
+Actualiza cómo vinculas los paywalls a las transacciones. Anteriormente, usabas el método `setVariationId` para asignar el `variationId`. Ahora puedes incluir el `variationId` directamente al registrar la transacción mediante el nuevo método `reportTransaction`. Consulta el ejemplo de código completo en [Asociar paywalls con transacciones de compra en el modo Observer](report-transactions-observer-mode-unity).
+
+```diff showLineNumbers
+ // every time when calling transaction.finish()
+- Adapty.SetVariationForTransaction("<variationId>", "<transactionId>", (error) => { 
+-     if(error != null) {
+-         // handle the error
+-         return;
+-     }
+-
+-     // successful binding
+- });
+
++ Adapty.ReportTransaction(
++   "YOUR_TRANSACTION_ID", 
++   "PAYWALL_VARIATION_ID", // optional
++   (error) => {
++   // handle the error
++ });
+```
+
+## Actualizar la inicialización del plugin de Unity \{#update-the-unity-plugin-initialization\}
+
+A partir de Adapty Unity SDK 3.3.0, es obligatorio llamar al método `Activate` de forma explícita durante la inicialización del plugin:
+
+```csharp showLineNumbers
+Adapty.Activate(builder.Build(), (error) => {
+   if (error != null) {
+       // handle the error
+       return;
+   }
+});
+```

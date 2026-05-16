@@ -1,0 +1,162 @@
+---
+title: "Realizar compras en app móvil con el SDK de Kotlin Multiplatform"
+description: "Guía para gestionar compras in-app y suscripciones con Adapty."
+metadataTitle: "Gestión de compras in-app en Adapty | Documentación de Adapty"
+keywords: ['makePurchase', 'pending', 'offer code']
+rank: 95
+displayed_sidebar: sdkkmp
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/es/reusable/OfferCodesInfo.mdx';
+
+Mostrar paywalls dentro de tu app es un paso fundamental para ofrecer a los usuarios acceso a contenido o servicios premium. Sin embargo, simplemente mostrar estos paywalls es suficiente para gestionar las compras solo si usas el [Paywall Builder](adapty-paywall-builder) para personalizar tus paywalls.
+
+Si no usas el Paywall Builder, debes utilizar un método aparte llamado `.makePurchase()` para completar una compra y desbloquear el contenido deseado. Este método actúa como la puerta de entrada para que los usuarios interactúen con los paywalls y procedan con sus transacciones.
+
+Si tu paywall tiene una oferta promocional activa para el producto que el usuario quiere comprar, Adapty la aplicará automáticamente en el momento de la compra.
+
+:::warning
+Ten en cuenta que la oferta introductoria solo se aplicará automáticamente si usas los paywalls configurados con el Paywall Builder.
+
+En otros casos, necesitarás [verificar la elegibilidad del usuario para una oferta introductoria en iOS](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios). Saltarte este paso puede provocar que tu app sea rechazada durante la revisión. Además, podría dar lugar a cobrar el precio completo a usuarios que sí son elegibles para una oferta introductoria.
+:::
+
+Asegúrate de haber [completado la configuración inicial](quickstart) sin saltarte ningún paso. Sin ella, no podemos validar las compras.
+
+## Realizar una compra \{#make-purchase\}
+
+:::note
+**¿Usas el [Paywall Builder](adapty-paywall-builder)?** Las compras se procesan automáticamente; puedes saltarte este paso.
+
+**¿Buscas una guía paso a paso?** Consulta la [guía de inicio rápido](kmp-implement-paywalls-manually) para instrucciones de implementación completas con todo el contexto.
+:::
+
+```kotlin showLineNumbers
+
+Adapty.makePurchase(product = product).onSuccess { purchaseResult ->
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            val profile = purchaseResult.profile
+            if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
+                // Grant access to the paid features
+            }
+        }
+        is AdaptyPurchaseResult.UserCanceled -> {
+            // Handle the case where the user canceled the purchase
+        }
+        is AdaptyPurchaseResult.Pending -> {
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
+        }
+    }
+}.onError { error ->
+    // Handle the error
+}
+```
+
+Parámetros de la solicitud:
+
+| Parámetro   | Presencia | Descripción                                                                                                                                   |
+| :---------- | :-------- |:----------------------------------------------------------------------------------------------------------------------------------------------|
+| **Product** | obligatorio | Un objeto [`AdaptyPaywallProduct`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall-product/) obtenido del paywall. |
+
+Parámetros de la respuesta:
+
+| Parámetro | Descripción                                                                                                                                                                                                                                                                                                                                                                                                          |
+|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>Si la solicitud fue exitosa, la respuesta contiene este objeto. Un objeto [AdaptyProfile](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-profile/) proporciona información completa sobre los niveles de acceso, suscripciones y compras únicas de un usuario dentro de la app.</p><p>Comprueba el estado del nivel de acceso para verificar si el usuario tiene el acceso requerido a la app.</p> |
+
+:::warning
+**Nota:** si aún usas una versión de StoreKit de Apple inferior a v2.0 y una versión del SDK de Adapty inferior a v.2.9.0, necesitas proporcionar el [secreto compartido de App Store de Apple](app-store-connection-configuration#step-5-enter-app-store-shared-secret). Este método está actualmente obsoleto según Apple.
+:::
+
+## Cambiar suscripción al realizar una compra \{#change-subscription-when-making-a-purchase\}
+
+Cuando un usuario elige una nueva suscripción en lugar de renovar la actual, el comportamiento depende del store. En Google Play, la suscripción no se actualiza automáticamente. Tendrás que gestionar el cambio en el código de tu app como se describe a continuación.
+
+Para reemplazar la suscripción por otra en Android, llama al método `.makePurchase()` con el parámetro adicional:
+
+```kotlin showLineNumbers
+
+val subscriptionUpdateParams = AdaptyAndroidSubscriptionUpdateParameters(
+    oldSubVendorProductId = "old_subscription_product_id",
+    replacementMode = AdaptyAndroidSubscriptionUpdateReplacementMode.CHARGE_FULL_PRICE
+)
+
+val purchaseParams = AdaptyPurchaseParameters.Builder()
+    .setSubscriptionUpdateParams(subscriptionUpdateParams)
+    .build()
+
+Adapty.makePurchase(
+    product = product,
+    parameters = purchaseParams
+).onSuccess { purchaseResult ->
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            val profile = purchaseResult.profile
+            // successful cross-grade
+        }
+        is AdaptyPurchaseResult.UserCanceled -> {
+            // user canceled the purchase flow
+        }
+        is AdaptyPurchaseResult.Pending -> {
+            // the purchase has not been finished yet, e.g. user will pay offline by cash
+        }
+    }
+}.onError { error ->
+    // Handle the error
+}
+
+```
+Parámetro adicional de la solicitud:
+
+| Parámetro      | Presencia | Descripción                                                                                                                                                                                                                                                                                   |
+|:---------------|:---------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **parameters** | opcional | Un objeto [`AdaptyAndroidSubscriptionUpdateParameters`](https://kmp.adapty.io/////adapty/com.adapty.kmp.models/-adapty-android-subscription-update-parameters/) pasado a través de [`AdaptyPurchaseParameters`](https://kmp.adapty.io/adapty/com.adapty.kmp.models/-adapty-purchase-parameters/). |
+
+Puedes leer más sobre las suscripciones y los modos de reemplazo en la documentación de Google para desarrolladores:
+
+- [Acerca de los modos de reemplazo](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Recomendaciones de Google para los modos de reemplazo](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Modo de reemplazo [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Nota: este método solo está disponible para actualizaciones de suscripción. No se admiten cambios a un nivel inferior.
+- Modo de reemplazo [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Nota: el cambio de suscripción real solo ocurrirá cuando finalice el período de facturación de la suscripción actual.
+
+## Canjear códigos de oferta en iOS \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+Para mostrar la pantalla de canje de códigos en tu app:
+
+```kotlin showLineNumbers
+Adapty.presentCodeRedemptionSheet()
+    .onSuccess {
+        // code redemption sheet presented successfully
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+:::danger
+Según nuestras observaciones, la pantalla de canje de códigos de oferta en algunas apps puede no funcionar de forma fiable. Recomendamos redirigir al usuario directamente a la App Store.
+
+Para hacerlo, debes abrir la URL con el siguiente formato:
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
+
+## Gestionar planes de prepago (Android) \{#manage-prepaid-plans-android\}
+
+Si los usuarios de tu app pueden comprar [planes de prepago](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (por ejemplo, comprar una suscripción no renovable por varios meses), puedes habilitar las [transacciones pendientes](https://developer.android.com/google/play/billing/subscriptions#pending) para planes de prepago.
+
+```kotlin showLineNumbers
+
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withGoogleEnablePendingPrepaidPlans(true)
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+}
+```

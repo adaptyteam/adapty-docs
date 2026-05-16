@@ -43,18 +43,23 @@ Uygulama ayrıntıları için [kullanıcıları tanımlama](identifying-users) S
 Geri dönen bir kullanıcı daha önce uygulamanızı customer user ID olmadan kullandıysa, SDK etkinleştirmesinde tanımlamaya başladığınızda bu anonim profiller otomatik olarak birleştirilmez. Bu tür kullanıcılar için eksiksiz geçmişi korumak amacıyla bunun yerine girişten sonra `identify()` kullanın.
 :::
 
-## Ebeveyn ve kalıtımcı profiller \{#parent-and-inheritor-profiles\}
+## Ebeveyn ve miras alan profiller \{#parent-and-inheritor-profiles\}
 
-Birden fazla profil aynı aboneliğe (aynı Apple/Google ID aracılığıyla) bağlandığında Adapty, bunları ebeveyn-kalıtımcı ilişkisi kullanarak takip eder. Bu durum, bir kullanıcı kimlik belirtmeden uygulamayı yeniden yüklediğinde veya farklı kimliği belirlenmiş kullanıcılar aynı cihazda satın alımları geri yüklediğinde ortaya çıkar.
+Aynı mağaza tarafındaki abonelik birden fazla Adapty profiliyle ilişkilendirildiğinde, Adapty bu profilleri bir zincir olarak ele alır: bir **ebeveyn** profil ve aynı satın almadan erişimi paylaşan bir ya da birden fazla **miras alan** profil.
 
-**Ebeveyn profil**, satın alımı yapan profildir — mutlaka oluşturulan ilk profil değildir. Örneğin: uygulamayı yükleyip hiçbir şey satın almıyorsunuz, ardından yeniden yükleyip bir abonelik alıyorsunuz. İkinci profil, satın alımı yaptığı için ebeveyn olur. Birinci profil kalıtımcı olur ve paylaşım yoluyla erişim kazanır.
+Bu durum şu koşullarda ortaya çıkar:
+- [Kullanıcı hesapları arasında ücretli erişim paylaşımı](sharing-paid-access-between-user-accounts) etkinleştirildiğinde ve bir kullanıcı, daha önce farklı bir profilin satın alma yaptığı bir cihazda oturum açtığında.
+- Bir kullanıcı uygulamayı `customer_user_id` olmadan yeniden yüklediğinde ve yeni profil önceki kurulumun satın almasını devraldığında.
+- Farklı tanımlı kullanıcılar aynı cihazda satın almaları geri yüklediğinde.
+- Bir uygulama Apple Team ID'leri arasında aktarıldığında ve yeni uygulama eski Team ID altında yapılan satın almaları devraldığında.
 
-**Olayların dağılımı:**
+**Üst öğenin nasıl seçildiği.**
+**Üst profil**, **satın alma işlemini ilk kaydeden profildir** — bu, profil oluşturma sırasına göre değil, Adapty'deki satın alma makbuzu sırasına göre belirlenir. Örneğin: uygulamayı yükleyip hiçbir satın alma yapmıyorsunuz, ardından yeniden yükleyip bir abonelik satın alıyorsunuz. İkinci profil, satın alma işlemini gerçekleştirdiği için üst profil olur. Birinci profil ise kalıtımcı olur ve paylaşım yoluyla erişim kazanır.
 
-- **İşlemsel olaylar** (satın alımlar, yenilemeler, iptaller, faturalama sorunları, ek süreler, iadeler): Yalnızca satın alımı yapan **ebeveyn profilde** görünür. Tüm abonelik yenilemeleri ve güncellemeleri bu profilde görünmeye devam eder.
-- **access_level_updated olayları**: Access level durumu her değiştiğinde **hem ebeveyn hem de kalıtımcı profillerde** görünür. Bu sayede bağlı tüm profiller mevcut erişim durumları hakkında güncel kalır.
-
-Ebeveyn profil, eksiksiz işlem geçmişini gösterir. Kalıtımcı profiller yalnızca kendi access level güncellemelerini ve **Access level** bölümünde ebeveyn profile bir bağlantıyı gösterir.
+**Olaylar nasıl dağıtılır:**
+- **İşlemsel olaylar** (satın almalar, yenilemeler, iptaller, faturalama sorunları, ek süreler, iade): Yalnızca satın almayı gerçekleştiren **üst profilde** görünür. Tüm abonelik yenilemeleri ve güncellemeleri bu profilde görünmeye devam eder.
+- **`access_level_updated` olayları**: Access level durumu her değiştiğinde **hem üst hem de devralan profillerde** görünür. Bu sayede bağlı tüm profiller güncel erişim durumlarından haberdar olur.
+Ana profil, işlem geçmişinin tamamını gösterir. Miras alan profiller ise yalnızca kendi access level güncellemelerini ve **Access level** bölümünde ana profile bir bağlantıyı gösterir.
 
 <Zoom>
   <img src="/assets/shared/img/98d0dad-non-original_profile.webp"
@@ -67,6 +72,13 @@ Ebeveyn profil, eksiksiz işlem geçmişini gösterir. Kalıtımcı profiller ya
 />
 </Zoom>
 
+**Aynı aboneliği farklı profiller üzerinden takip etme.**
+Her miras alan profilin kendine ait bir `profile_id`'si vardır; bu nedenle `profile_id`, bir zincir boyunca tutarlı değildir. Aynı aboneliği birden fazla profil arasında tanımlamak için — örneğin webhook olaylarını eşleştirirken veya kontrol paneli profillerini tek bir kullanıcıyla ilişkilendirirken — bunun yerine mağaza tarafındaki tanımlayıcıyı kullanın.
+| Alan | Kullanım amacı |
+| --- | --- |
+| `store_original_transaction_id` | Profiller arasında bir abonelik zincirini tanımlamak için. Her Apple aboneliğine özel benzersiz bir değerdir. |
+| `profiles_sharing_access_level` (webhook alanı) | Paylaşım etkinleştirildiğinde, abonelik tarafından yetkilendirilen tüm profiller. |
+| `profile_id` | Profiller arası takip için **uygun değildir** — her devralan profilin kendine ait bir `profile_id`'si vardır. |
 ## Kullanıcı hesapları arasında ücretli erişimi paylaşma \{#sharing-paid-access-between-user-accounts\}
 
 :::link

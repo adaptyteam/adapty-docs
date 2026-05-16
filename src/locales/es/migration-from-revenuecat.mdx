@@ -1,0 +1,195 @@
+---
+title: "Migración desde RevenueCat"
+description: "Migra de RevenueCat a Adapty con nuestra guía paso a paso."
+metadataTitle: "Migrar de RevenueCat a Adapty | Documentación de Adapty"
+keywords: ['migración', 'revenuecat']
+---
+
+Tu plan de migración tiene 5 pasos lógicos y dura una media de 2 horas. El 90 % de todas las migraciones se completan en menos de un día laborable.
+
+1. Aprende las diferencias clave y crea y prepara una cuenta de Adapty _(5 minutos)_;
+2. Instala el SDK de Adapty para tu plataforma ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity)) en lugar del SDK de RevenueCat _(1 hora)_;
+3. Configura las [notificaciones de servidor de Apple App Store](enable-app-store-server-notifications) para Adapty y (opcionalmente) el [reenvío de eventos sin procesar](enable-app-store-server-notifications#raw-events-forwarding) _(5 minutos)_;
+4. Prueba y publica la actualización de tu app _(30 minutos)_;
+5. (Opcional) Solicita al soporte de RevenueCat los datos históricos en formato CSV _(5 minutos)_;
+6. (Opcional) Importa los datos históricos a través del soporte de Adapty _(30 minutos)_.
+
+:::info
+Tus suscriptores migrarán automáticamente
+
+Todos los usuarios que alguna vez hayan activado una suscripción pasarán a Adapty automáticamente en cuanto abran la nueva versión de tu app con el SDK de Adapty. La validación del estado de la suscripción y el acceso premium se restaurarán de forma automática.
+:::
+
+Antes de publicar una nueva versión de tu app con el SDK de Adapty, asegúrate de revisar nuestra [lista de verificación para el lanzamiento](release-checklist).
+
+## Aprende las diferencias clave y crea y prepara una cuenta de Adapty \{#learn-the-core-differences-create-and-prepare-an-adapty-account\}
+
+Los SDKs de Adapty y RevenueCat tienen un diseño similar. La mayor diferencia está en el uso de red y la velocidad: el SDK de Adapty está diseñado para proporcionarte información lo más rápido posible cuando la solicitas. Por ejemplo, al pedir un paywall, primero recibes el [Remote Config](customize-paywall-with-remote-config) para precomponer tu onboarding o paywall, y luego solicitas los productos en una petición separada.
+
+Los nombres son ligeramente distintos:
+
+| RevenueCat  | Adapty          |
+| :---------- | :-------------- |
+| Package     | Product         |
+| Offering    | Paywall         |
+| Paywall     | Paywall Builder |
+| Entitlement | Access level    |
+
+Adapty tiene el concepto de [placement](placements). Es un lugar lógico dentro de tu app donde el usuario puede realizar una compra. En la mayoría de los casos, tendrás uno o dos placements:
+
+- Onboarding (ya que el 80 % de todas las compras se realizan ahí);
+- General (se muestra en los ajustes o dentro de la app después del onboarding).
+
+<Zoom>
+  <img src="/assets/shared/img/2406d97-image.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '300px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Instala el SDK de Adapty y reemplaza el SDK de RevenueCat \{#install-adapty-sdk-and-replace-revenuecat-sdk\}
+
+Instala el SDK de Adapty para tu plataforma ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity)) en tu app.
+
+Necesitas reemplazar algunos métodos del SDK en el lado de la app. Veamos las funciones más comunes y cómo sustituirlas por las del SDK de Adapty.
+
+### Activación del SDK \{#sdk-activation\}
+
+Reemplaza `Purchases.configure` con `Adapty.activate`.
+
+### Obtener paywalls (offerings) \{#getting-paywalls-offerings\}
+
+Reemplaza `Purchases.shared.getOfferings` con [`Adapty.getPaywall`](fetch-paywalls-and-products#fetch-paywall-information).
+
+En Adapty, siempre solicitas el paywall mediante el [placement id](placements). En la práctica, solo obtienes 1 o 2 paywalls como máximo, así que lo hemos diseñado así a propósito para acelerar el SDK y reducir el uso de red.
+
+### Obtener un usuario (perfil del cliente) \{#getting-a-user-customer-profile\}
+
+Reemplaza `Purchases.shared.getCustomerInfo` con `Adapty.getProfile`.
+
+### Obtener productos \{#getting-products\}
+
+En RevenueCat, usas la siguiente estructura: `Purchases.shared.getOfferings` y luego `self.offering?.availablePackages`.
+
+En Adapty, primero solicitas un paywall (ver arriba) para acceder de inmediato al [Remote Config](customize-paywall-with-remote-config) de Adapty, y luego obtienes los productos con [`Adapty.getPaywallProducts`](fetch-paywalls-and-products#fetch-products).
+
+### Realizar una compra \{#making-a-purchase\}
+
+Reemplaza `Purchases.shared.purchase` con [`Adapty.makePurchase`](making-purchases#make-purchase).
+
+### Verificar el nivel de acceso (entitlement) \{#checking-access-level-entitlement\}
+
+Obtén el perfil del cliente (lee el apartado anterior primero) y luego reemplaza
+
+`customerInfo?.entitlements["premium"]?.isActive == true`
+
+con
+
+[`profile.accessLevels["premium"]?.isActive == true`](subscription-status#retrieving-the-access-level-from-the-server).
+
+### Restaurar una compra \{#restore-purchase\}
+
+Reemplaza `Purchases.shared.restorePurchases` con [`Adapty.restorePurchases`](restore-purchase).
+
+### Comprobar si el usuario ha iniciado sesión \{#check-if-the-user-is-logged-in\}
+
+Reemplaza `Purchases.shared.isAnonymous` con `if profile.customerUserId == nil`.
+
+### Iniciar sesión con un usuario \{#log-in-user\}
+
+Reemplaza `Purchases.shared.logIn` con [`Adapty.identify`](identifying-users#set-customer-user-id-after-configuration).
+
+### Cerrar sesión de un usuario \{#log-out-user\}
+
+Reemplaza `Purchases.shared.logOut` con [`Adapty.logout`](identifying-users#logging-out-and-logging-in).
+
+## Cambia las notificaciones del servidor de App Store a Adapty \{#switch-app-store-server-side-notifications-to-adapty\}
+
+Lee cómo hacerlo [aquí](migrate-to-adapty-from-another-solutions#changing-apple-server-notifications).
+
+## Prueba y publica una nueva versión de tu app \{#test-and-release-a-new-version-of-your-app\}
+
+Si estás leyendo esto, ya has:
+
+- [x] Configurado el Adapty Dashboard
+- [x] Instalado el SDK de Adapty
+- [x] Reemplazado la lógica del SDK con las funciones de Adapty
+- [x] Cambiado las notificaciones del servidor de App Store a Adapty y, opcionalmente, activado el reenvío de eventos sin procesar a RevenueCat
+- [ ] Realizado una compra en sandbox
+- [ ] Publicado una nueva versión de la app
+
+Si has marcado los puntos anteriores, haz una compra de prueba en el Sandbox y luego publica la app.
+
+:::info
+Repasa la [lista de verificación para el lanzamiento](release-checklist).
+
+Haz la revisión final con nuestra lista para validar la integración existente o añadir funciones adicionales como integraciones de [atribución](attribution-integration) o [análisis](analytics-integration).
+:::
+
+## (Opcional) Exporta tus datos históricos de RevenueCat en formato CSV \{#optional-export-your-revenuecat-historical-data-in-csv-format\}
+
+:::warning
+No te precipites con la importación de datos históricos
+
+Deberías esperar al menos una semana después de publicar la versión con el SDK antes de importar los datos históricos. Durante ese tiempo recopilaremos toda la información sobre los precios de compra desde el SDK, por lo que los datos que importes serán más relevantes.
+:::
+
+Exporta tus datos históricos de RevenueCat en formato CSV siguiendo las instrucciones de la [documentación oficial de RevenueCat](https://www.revenuecat.com/docs/integrations/scheduled-data-exports).
+
+## (Opcional) Solicita al soporte de RevenueCat los tokens de compra de Google \{#optional-ask-revenuecat-support-for-google-purchase-tokens\}
+
+Si necesitas importar transacciones de Google Play, contacta con el soporte de RevenueCat para obtener un archivo CSV con los Google Purchase Tokens a través de su [página de soporte](https://app.revenuecat.com/settings/support). El Google Purchase Token es un identificador único que proporciona Google Play para cada transacción, imprescindible para rastrear y verificar las compras con precisión en Adapty. Esta información no se incluye en el archivo de exportación estándar. El archivo contiene las siguientes tres columnas:
+
+- `user_id`
+- `google_purchase_token`
+- `google_product_id`
+
+## Escríbenos para importar tus datos históricos \{#write-us-to-import-your-historical-data\}
+
+Contáctanos a través del chat del sitio web o envíanos un correo a [support@adapty.io](mailto:support@adapty.io) con tus archivos CSV.
+
+1. Envía el archivo CSV que exportaste de RevenueCat directamente a nuestro equipo de soporte.
+2. Si vas a importar transacciones de Google Play, incluye el archivo CSV con los Google Purchase Tokens que recibiste del soporte de RevenueCat.
+3. Indícanos qué ID de usuario debe usarse como Customer User ID (el identificador principal de usuario en Adapty): `rc_original_app_user_id` o `rc_last_seen_app_user_id_alias`.
+
+Nuestro equipo de soporte importará tus transacciones a Adapty. Se importarán los siguientes datos para cada transacción:
+
+| Parámetro                     | Descripción                                                  |
+| ----------------------------- | ------------------------------------------------------------ |
+| user_id                       | Customer User ID, el identificador principal de tu usuario en Adapty y en tu sistema. |
+| apple_original_transaction_id | Para cadenas de suscripciones, esta es la fecha de compra de la transacción original, vinculada por `store_original_transaction_id`. |
+| google_product_id             | El ID del producto en Google Play Store.                     |
+| google_purchase_token         | Un identificador único proporcionado por Google Play para cada transacción, necesario para la validación. |
+| country                       | El país del usuario.                                         |
+| created_at                    | La fecha y hora de creación del usuario.                     |
+| subscription_expiration_date  | La fecha y hora en que expira la suscripción.                |
+| email                         | El correo electrónico del usuario final.                     |
+| phone_number                  | El número de teléfono del usuario final.                     |
+| idfa                          | El Identificador para Anunciantes (IDFA), asignado por Apple al dispositivo de un usuario. |
+| idfv                          | El Identificador para Proveedores (IDFV), un código asignado a todas las apps de un mismo desarrollador y compartido entre esas apps en un dispositivo. |
+| advertising_id                | Un identificador único proporcionado por el sistema operativo Android que los anunciantes pueden usar para el seguimiento. |
+| attribution_channel           | El nombre del canal de marketing.                            |
+| attribution_campaign          | El nombre de la campaña de marketing.                        |
+| attribution_ad_group          | El grupo de anuncios de atribución.                          |
+| attribution_ad_set            | El conjunto de anuncios de atribución.                       |
+| attribution_creative          | La palabra clave creativa de atribución.                     |
+
+Además, se importarán los identificadores de integración para las siguientes integraciones: Amplitude, Mixpanel, AppsFlyer, Adjust y FacebookAds.
+
+## Preguntas frecuentes \{#faq\}
+
+### Instalé el SDK de Adapty correctamente y publiqué una nueva versión de la app. ¿Qué pasará con mis suscriptores existentes que no actualicen a la versión con el SDK de Adapty? \{#i-successfully-installed-adapty-sdk-and-released-a-new-app-version-with-it-what-will-happen-to-my-legacy-subscribers-who-did-not-update-to-a-version-with-adapty-sdk\}
+
+La mayoría de los usuarios cargan sus teléfonos por la noche, que es cuando App Store suele actualizar automáticamente todas sus apps, por lo que no debería ser un problema. Puede que quede un pequeño número de suscriptores de pago que no hayan actualizado, pero seguirán teniendo acceso al contenido premium. No tienes que preocuparte por ello ni forzarlos a actualizar.
+
+### ¿Necesito exportar mis datos históricos de RevenueCat lo antes posible o los perderé? \{#do-i-need-to-export-my-historical-data-from-revenuecat-as-quickly-as-possible-or-will-i-lose-it\}
+
+No hace falta hacerlo con prisa; primero publica la versión con el SDK de Adapty y luego compártenos tus datos históricos. Restauraremos el historial de pagos de tus usuarios y completaremos los [perfiles](profiles-crm) y los [gráficos](charts).
+
+### Uso MMP (AppsFlyer, Adjust, etc.) y herramientas de análisis (Mixpanel, Amplitude, etc.). ¿Cómo me aseguro de que todo funcionará correctamente? \{#i-use-mmp-appsflyer-adjust-etc-and-analytics-mixpanel-amplitude-etc-how-do-i-make-sure-that-everything-will-work\}
+
+Primero tienes que pasarnos los IDs de esos servicios de terceros a través de nuestro SDK para que podamos enviarles datos. Lee la guía de [integración de atribución](attribution-integration) y de [integración de análisis](analytics-integration). Para los datos históricos y los usuarios existentes, **asegúrate de pasarnos esos IDs a partir de los datos que exportaste de RevenueCat.**

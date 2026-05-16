@@ -1,0 +1,256 @@
+---
+title: "Android - Presentar paywalls con el nuevo Paywall Builder"
+description: "Aprende a presentar paywalls en Android para una monetización efectiva."
+metadataTitle: "Presentar paywalls en Android | Documentación de Adapty"
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+
+Si has personalizado un paywall con el Paywall Builder, no necesitas preocuparte por renderizarlo en el código de tu app para mostrárselo al usuario. Ese paywall ya contiene tanto lo que se muestra como la forma en que se muestra.
+
+:::warning
+
+Esta guía es solo para **paywalls del nuevo Paywall Builder** que requieren SDK v3.0. El proceso para mostrar paywalls es diferente según si fueron diseñados con versiones anteriores del Paywall Builder, si son paywalls con Remote Config, o si usas el [modo Observer](observer-vs-full-mode).
+- Para presentar **paywalls con Remote Config**, consulta [Renderizar paywalls diseñados con Remote Config](present-remote-config-paywalls).
+- Para presentar **paywalls en modo Observer**, consulta [Android - Presentar paywalls de Paywall Builder en modo Observer](android-present-paywall-builder-paywalls-in-observer-mode)
+
+:::
+
+Para obtener el objeto `viewConfiguration` utilizado a continuación, consulta [Obtener paywalls de Paywall Builder y su configuración](android-get-pb-paywalls).
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="views" label="Views" default>
+Para mostrar el paywall visual en la pantalla del dispositivo, primero debes configurarlo. Para ello, llama al método `AdaptyUI.getPaywallView()` o crea el `AdaptyPaywallView` directamente:
+
+<Tabs groupId="current-os" queryString>
+  <TabItem value="kotlin" label="Kotlin (opción 1)" default>
+```kotlin showLineNumbers
+   val paywallView = AdaptyUI.getPaywallView(
+       activity,
+       viewConfiguration,
+       products,
+       eventListener,
+       insets,
+       personalizedOfferResolver,
+       tagResolver,
+       timerResolver,
+   )
+```
+</TabItem>
+<TabItem value="kotlin2" label="Kotlin (opción 2)" default>
+```kotlin showLineNumbers
+   val paywallView =
+        AdaptyPaywallView(activity) // or retrieve it from xml
+   ...
+   with(paywallView) {
+       showPaywall(
+           viewConfiguration,
+           products,
+					 eventListener,
+           insets,
+           personalizedOfferResolver,
+           tagResolver,
+           timerResolver,
+       )
+   }
+```
+
+</TabItem>
+<TabItem value="java" label="Java (opción 1)" default>
+```java showLineNumbers
+AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
+        activity,
+        viewConfiguration,
+        products,
+        eventListener,
+        insets,
+        personalizedOfferResolver,
+        tagResolver,
+        timerResolver
+);
+```
+</TabItem>
+<TabItem value="java2" label="Java (opción 2)" default>
+```java showLineNumbers
+AdaptyPaywallView paywallView =
+  new AdaptyPaywallView(activity); //añade a la jerarquía de vistas si es necesario, o recíbela desde xml
+...
+paywallView.showPaywall(viewConfiguration, products, eventListener, insets, personalizedOfferResolver, tagResolver, timerResolver);
+```
+
+</TabItem>
+<TabItem value="XML" label="XML" default>
+
+```xml showLineNumbers
+<com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />
+```
+</TabItem>
+</Tabs>
+Después de crear la vista correctamente, puedes añadirla a la jerarquía de vistas y mostrarla en la pantalla del dispositivo.
+
+Si obtienes `AdaptyPaywallView` _sin_ llamar a `AdaptyUI.getPaywallView()`, también tendrás que llamar al método `.showPaywall()`.
+
+</TabItem>
+<TabItem value="compose" label="Jetpack Compose" default>
+
+Para mostrar el paywall visual en la pantalla del dispositivo, primero debes configurarlo. Para ello, utiliza esta función composable:
+```kotlin showLineNumbers
+AdaptyPaywallScreen(
+    viewConfiguration,
+    products,
+    eventListener,
+    insets,
+    personalizedOfferResolver,
+    tagResolver,
+    timerResolver,
+)
+```
+</TabItem>
+</Tabs>
+
+Parámetros de la solicitud:
+| Parámetro                     | Presencia | Descripción                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| :---------------------------- | :------- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **viewConfiguration**         | obligatorio | Proporciona un objeto `AdaptyUI.LocalizedViewConfiguration` con los detalles visuales del paywall. Usa el método `Adapty.getViewConfiguration(paywall)` para cargarlo. Consulta el tema [Fetch the visual configuration of paywall](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) para más detalles.                                                                                                                 |
+| **products**                  | opcional | Proporciona un array de `AdaptyPaywallProduct` para optimizar el momento en que se muestran los productos en pantalla. Si se pasa `null`, AdaptyUI obtendrá automáticamente los productos necesarios.                                                                                                                                                                                                                                                              |
+| **eventListener**             | opcional | Proporciona un `AdaptyUiEventListener` para observar los eventos del paywall. Se recomienda extender `AdaptyUiDefaultEventListener` para facilitar su uso. Consulta el tema [Handling paywall events](android-handling-events) para más detalles.                                                                                                                                                                                                                                       |
+| **insets**                    | opcional | <p>Los insets son los espacios alrededor del paywall que evitan que los elementos interactivos queden ocultos detrás de las barras del sistema.</p><p>Por defecto: `UNSPECIFIED`, lo que significa que Adapty ajustará automáticamente los insets. Esto funciona bien para paywalls de borde a borde.</p><p>Si tu paywall no es de borde a borde, puede que quieras definir insets personalizados. Consulta la sección [Change paywall insets](android-present-paywalls#change-paywall-insets) más abajo para saber cómo hacerlo.</p> |
+| **personalizedOfferResolver** | opcional | Para indicar precios personalizados ([más información](https://developer.android.com/google/play/billing/integrate#personalized-price)), implementa `AdaptyUiPersonalizedOfferResolver` y proporciona tu propia lógica que mapee `AdaptyPaywallProduct` a `true` si el precio del producto es personalizado, o a `false` en caso contrario.                                                                                                                      |
+| **tagResolver**               | opcional | Usa `AdaptyUiTagResolver` para resolver etiquetas personalizadas dentro del texto del paywall. Este resolver recibe un parámetro de etiqueta y lo resuelve a la cadena correspondiente. Consulta el tema [Custom tags in Paywall Builder](custom-tags-in-paywall-builder) para más detalles.                                                                                                                                                                                                      |
+| **timerResolver**             | opcional | Pasa el resolver aquí si vas a usar funcionalidad de temporizador personalizado.                                                                                                                                                                                                                                                                                                                                                                                      |
+<SampleApp />
+## Cambiar los márgenes del paywall \{#change-paywall-insets\}
+
+Los márgenes son los espacios alrededor del paywall que evitan que los elementos interactivos queden ocultos detrás de las barras del sistema. Por defecto, Adapty ajusta automáticamente estos márgenes, lo que funciona perfectamente para paywalls de borde a borde.
+
+Si tu paywall no es de borde a borde, puede que quieras definir márgenes personalizados:
+- Si ni la barra de estado ni la barra de navegación se superponen con `AdaptyPaywallView`, usa `AdaptyPaywallInsets.NONE`.
+- Para configuraciones más personalizadas, como cuando tu paywall se superpone con la barra de estado superior pero no con la inferior, puedes establecer solo el `bottomInset` a `0`, como se muestra en el ejemplo a continuación:
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+//create extension function
+fun View.onReceiveSystemBarsInsets(action: (insets: Insets) -> Unit) {
+    ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
+        val systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+        ViewCompat.setOnApplyWindowInsetsListener(this, null)
+        action(systemBarInsets)
+        insets
+    }
+}
+//and then use it with the view
+paywallView.onReceiveSystemBarsInsets { insets ->
+    val paywallInsets = AdaptyPaywallInsets.vertical(insets.top, 0)
+    paywallView.showPaywall(
+           viewConfiguration,
+           products,
+					 eventListener,
+           paywallInsets,
+           personalizedOfferResolver,
+           tagResolver,
+           timerResolver,
+       )
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+...
+
+ViewCompat.setOnApplyWindowInsetsListener(paywallView, (view, insets) -> {
+    Insets systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+    ViewCompat.setOnApplyWindowInsetsListener(paywallView, null);
+
+    AdaptyPaywallInsets paywallInsets =
+                AdaptyPaywallInsets.of(systemBarInsets.top, 0);
+    paywallView.showPaywall(paywall, products, viewConfiguration, paywallInsets, productTitleResolver);
+
+    return insets;
+});
+```
+</TabItem>
+</Tabs>
+## Usar temporizador definido por el desarrollador \{#use-developer-defined-timer\}
+
+Para usar temporizadores definidos por el desarrollador en tu app, crea un objeto `timerResolver` —un diccionario o mapa que asocia temporizadores personalizados con los valores de cadena que los reemplazarán cuando se renderice el paywall. Aquí tienes un ejemplo:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+...
+
+val customTimers = mapOf(
+    "CUSTOM_TIMER_NY" to Calendar.getInstance(TimeZone.getDefault()).apply { set(2025, 0, 1) }.time, // New Year 2025
+)
+val timerResolver = AdaptyUiTimerResolver { timerId ->
+    customTimers.getOrElse(timerId, { Date(System.currentTimeMillis() + 3600 * 1000L) /* in 1 hour */ } )
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+...
+
+Map<String, Date> customTimers = new HashMap<>();
+customTimers.put(
+        "CUSTOM_TIMER_NY",
+        new Calendar.Builder().setTimeZone(TimeZone.getDefault()).setDate(2025, 0, 1).build().getTime()
+);
+AdaptyUiTimerResolver timerResolver = new AdaptyUiTimerResolver() {
+    @NonNull
+    @Override
+    public Date timerEndAtDate(@NonNull String timerId) {
+        Date date = customTimers.get(timerId);
+        return date != null ? date : new Date(System.currentTimeMillis() + 3600 * 1000L); /* en 1 hora */
+    }
+};
+```
+</TabItem>
+
+</Tabs>
+
+En este ejemplo, `CUSTOM_TIMER_NY` es el **Timer ID** del temporizador definido por el desarrollador que configuraste en el Adapty dashboard. El `timerResolver` garantiza que tu app actualice dinámicamente el temporizador con el valor correcto, como `13d 09h 03m 34s` (calculado como la hora de fin del temporizador, por ejemplo el Año Nuevo, menos la hora actual).
+## Usa etiquetas personalizadas \{#use-custom-tags\}
+
+Para usar etiquetas personalizadas en tu app, crea un objeto `tagResolver`—un diccionario o mapa que asocia etiquetas personalizadas con los valores de cadena que las reemplazarán cuando se renderice el paywall. Aquí tienes un ejemplo:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+val customTags = mapOf("USERNAME" to "John")
+val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Map<String, String> customTags = new HashMap<>();
+customTags.put("USERNAME", "John");
+AdaptyUiTagResolver tagResolver = customTags::get;
+```
+
+</TabItem>
+</Tabs>
+
+En este ejemplo, `USERNAME` es una etiqueta personalizada que introdujiste en el Adapty dashboard como `<USERNAME/>`. El `tagResolver` se encarga de que tu app reemplace dinámicamente esta etiqueta personalizada con el valor especificado, como `John`.
+
+Te recomendamos crear y rellenar el `tagResolver` justo antes de mostrar tu paywall. Una vez listo, pásalo al método de AdaptyUI que uses para presentar el paywall.
+## Cambiar el color del indicador de carga del paywall \{#change-paywall-loading-indicator-color\}
+
+Puedes sobrescribir el color predeterminado del indicador de carga de la siguiente manera:
+
+```xml showLineNumbers title = "XML"
+
+<style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
+
+    <item name="adapty_progressIndicatorColor">@color/yourColor</item>
+</style>
+```

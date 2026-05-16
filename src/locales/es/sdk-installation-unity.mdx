@@ -1,0 +1,337 @@
+---
+title: "Instalar y configurar el SDK de Unity"
+description: "Guía paso a paso para instalar Adapty SDK en Unity para apps basadas en suscripciones."
+metadataTitle: "Instalar Adapty SDK en Unity | Documentación de Adapty"
+keywords: ['instalar sdk', 'instalación sdk', 'instalar sdk unity', 'google play billing library', 'gpbl', 'billing library']
+rank: 30
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+import GetKey from '@site/src/locales/es/reusable/GetKey.md';
+import AndroidBackupRules from '@site/src/locales/es/reusable/AndroidBackupRules.md';
+import InstallationPrereqs from '@site/src/locales/es/reusable/InstallationPrereqs.mdx';
+
+El SDK de Adapty incluye dos módulos clave para una integración fluida en tu app de Unity:
+
+- **Core Adapty**: Este SDK esencial es necesario para que Adapty funcione correctamente en tu app.
+- **AdaptyUI**: Este módulo es necesario si usas el [Adapty Paywall Builder](adapty-paywall-builder), una herramienta visual sin código para crear paywalls multiplataforma fácilmente.
+
+:::tip
+¿Quieres ver un ejemplo real de cómo se integra el SDK de Adapty en una app móvil? Consulta nuestra [app de ejemplo](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Assets), que muestra la configuración completa, incluyendo la visualización de paywalls, la realización de compras y otras funcionalidades básicas.
+:::
+
+## Requisitos \{#requirements\}
+
+El SDK de Adapty es compatible con iOS 13.0+, pero requiere iOS 15.0+ para trabajar con paywalls creados en el paywall builder.
+
+:::info
+Adapty es compatible con Google Play Billing Library hasta la versión 8.x. Por defecto, Adapty usa Google Play Billing Library v7.0.0. Para usar una versión más reciente, [sobreescribe la dependencia de Billing](https://developer.android.com/google/play/billing/integrate#dependency) en tu build de Android.
+:::
+
+<InstallationPrereqs />
+
+## Instalar el SDK de Adapty \{#install-adapty-sdk\}
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Unity.svg?style=flat&logo=unity)](https://github.com/adaptyteam/AdaptySDK-Unity/releases)
+
+1. Descarga el [`adapty-unity-plugin-*.unitypackage`](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Releases) desde GitHub e impórtalo en tu proyecto.
+
+<Zoom>
+  <img src="/assets/shared/img/456bd98-adapty-unity-plugin.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '400px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. Descarga e importa el [plugin External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver).
+
+3. El SDK usa el plugin "External Dependency Manager" para gestionar las dependencias de iOS Cocoapods y las dependencias de Android gradle. Tras la instalación, puede que necesites invocar el gestor de dependencias:
+
+   `Assets -> External Dependency Manager -> Android Resolver -> Force Resolve`
+
+   y
+
+   `Assets -> External Dependency Manager -> iOS Resolver -> Install Cocoapods`
+
+4. Al compilar tu proyecto de Unity para iOS, obtendrás el archivo `Unity-iPhone.xcworkspace`, que debes abrir en lugar de `Unity-iPhone.xcodeproj`; de lo contrario, las dependencias de Cocoapods no se usarán.
+
+## Activar el módulo Adapty del SDK de Adapty \{#activate-adapty-module-of-adapty-sdk\}
+
+Activa el SDK de Adapty en el código de tu app.
+
+:::note
+El SDK de Adapty solo necesita activarse una vez en tu app.
+:::
+
+<GetKey />
+
+```csharp showLineNumbers title="C#"
+using UnityEngine;
+using AdaptySDK;
+
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+    void Start() {
+        DontDestroyOnLoad(this.gameObject);
+        Adapty.SetEventListener(this);
+
+        var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY");
+
+        Adapty.Activate(builder.Build(), (error) => {
+            if (error != null) {
+                // handle the error
+                return;
+            }
+        });
+    }
+
+    public void OnLoadLatestProfile(AdaptyProfile profile) { }
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+}
+```
+
+:::important
+Espera al callback de finalización de `Activate` antes de llamar a cualquier otro método del SDK de Adapty. Consulta [Orden de llamadas en el SDK de Unity](unity-sdk-call-order) para ver la secuencia completa.
+:::
+
+## Configurar la escucha de eventos \{#set-up-event-listening\}
+
+Crea un script para escuchar los eventos de Adapty. Nómbralo `AdaptyListener` en tu escena. Te recomendamos usar el método `DontDestroyOnLoad` para este objeto, de modo que persista durante toda la vida útil de la aplicación.
+
+<Zoom>
+  <img src="/assets/shared/img/2ccd564-create_adapty_listener.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Adapty usa el namespace `AdaptySDK`. Al principio de los archivos de script que usen el SDK de Adapty, puedes añadir:
+
+```csharp showLineNumbers title="C#"
+using AdaptySDK;
+```
+
+Suscríbete a los eventos de Adapty:
+
+```csharp showLineNumbers title="C#"
+using UnityEngine;
+using AdaptySDK;
+
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+    public void OnLoadLatestProfile(AdaptyProfile profile) {
+        // handle updated profile data
+    }
+
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+}
+```
+
+Te recomendamos ajustar el Script Execution Order para colocar el AdaptyListener antes de Default Time. Esto garantiza que Adapty se inicialice lo antes posible.
+
+<Zoom>
+  <img src="/assets/shared/img/activate_unity.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Añadir el plugin de Kotlin a tu proyecto \{#add-kotlin-plugin-to-your-project\}
+
+:::warning
+
+Este paso es obligatorio. Si lo omites, tu app móvil puede fallar cuando se muestre el paywall.
+
+:::
+
+1. En **Player Settings**, asegúrate de que las opciones **Custom Launcher Gradle Template** y **Custom Base Gradle Template** estén seleccionadas.
+   <Zoom>
+   <img src="/assets/shared/img/kotlin-plugin1.webp"
+   style={{
+   border: 'none', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+
+2. Añade la siguiente línea a `/Assets/Plugins/Android/launcherTemplate.gradle`:
+
+   ```groovy showLineNumbers
+   apply plugin: 'com.android.application'
+   // highlight-next-line
+   apply plugin: 'kotlin-android'
+   apply from: 'setupSymbols.gradle'
+   apply from: '../shared/keepUnitySymbols.gradle'
+   ```
+
+3. Añade la siguiente línea a `/Assets/Plugins/Android/baseProjectTemplate.gradle`:
+
+   ```groovy showLineNumbers
+   plugins {
+       // If you are changing the Android Gradle Plugin version, make sure it is compatible with the Gradle version preinstalled with Unity
+       // See which Gradle version is preinstalled with Unity here https://docs.unity3d.com/Manual/android-gradle-overview.html
+       // See official Gradle and Android Gradle Plugin compatibility table here https://developer.android.com/studio/releases/gradle-plugin#updating-gradle
+       // To specify a custom Gradle version in Unity, go do "Preferences > External Tools", uncheck "Gradle Installed with Unity (recommended)" and specify a path to a custom Gradle version
+       id 'com.android.application' version '8.3.0' apply false
+       id 'com.android.library' version '8.3.0' apply false
+   // highlight-next-line
+       id 'org.jetbrains.kotlin.android' version '1.8.0' apply false
+       **BUILD_SCRIPT_DEPS**
+   }
+   ```
+
+Ahora configura los paywalls en tu app:
+
+- Si usas el [Adapty Paywall Builder](adapty-paywall-builder), primero [activa el módulo AdaptyUI](#activate-adaptyui-module-of-adapty-sdk) a continuación y luego sigue la [guía de inicio rápido del Paywall Builder](unity-quickstart-paywalls).
+- Si construyes tu propia UI de paywall, consulta la [guía de inicio rápido para paywalls personalizados](unity-quickstart-manual).
+
+## Activar el módulo AdaptyUI del SDK de Adapty \{#activate-adaptyui-module-of-adapty-sdk\}
+
+Si planeas usar el [Paywall Builder](adapty-paywall-builder) y has instalado el módulo AdaptyUI, necesitas que AdaptyUI esté activo. Puedes activarlo durante la configuración:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetActivateUI(true);
+```
+
+## Configuración opcional \{#optional-setup\}
+
+### Registro de logs \{#logging\}
+
+#### Configurar el sistema de logs \{#set-up-the-logging-system\}
+
+Adapty registra errores y otra información importante para ayudarte a entender qué ocurre. Estos son los niveles disponibles:
+
+| Nivel      | Descripción                                                  |
+| ---------- | ------------------------------------------------------------ |
+| `error`    | Solo se registrarán los errores                              |
+| `warn`     | Se registrarán los errores y los mensajes del SDK que no causan errores críticos pero merecen atención |
+| `info`     | Se registrarán los errores, advertencias y varios mensajes informativos |
+| `verbose`  | Se registrará cualquier información adicional que pueda ser útil durante la depuración, como llamadas a funciones, consultas a la API, etc. |
+
+Puedes establecer el nivel de log en tu app durante la configuración de Adapty:
+
+```csharp showLineNumbers title="C#"
+// 'verbose' is recommended for development and the first production release
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY");
+builder.LogLevel = AdaptyLogLevel.Verbose;
+```
+
+También puedes cambiar el nivel de log en tiempo de ejecución:
+
+```csharp showLineNumbers title="C#"
+Adapty.SetLogLevel(AdaptyLogLevel.Verbose, (error) => {
+    // handle result
+});
+```
+
+### Políticas de datos \{#data-policies\}
+
+Adapty no almacena datos personales de tus usuarios a menos que los envíes explícitamente, pero puedes implementar políticas adicionales de seguridad de datos para cumplir con las directrices del store o del país.
+
+#### Deshabilitar la recopilación y el uso compartido de la dirección IP \{#disable-ip-address-collection-and-sharing\}
+
+Al activar el módulo Adapty, establece `SetIPAddressCollectionDisabled` en `true` para deshabilitar la recopilación y el uso compartido de la dirección IP del usuario. El valor predeterminado es `false`.
+
+Usa este parámetro para mejorar la privacidad del usuario, cumplir con las regulaciones regionales de protección de datos (como el RGPD o la CCPA), o reducir la recopilación de datos innecesaria cuando las funciones basadas en IP no son necesarias para tu app.
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetIPAddressCollectionDisabled(true);
+```
+
+#### Deshabilitar la recopilación y el uso compartido del ID publicitario \{#disable-advertising-id-collection-and-sharing\}
+
+Al activar el módulo Adapty, establece `SetAppleIDFACollectionDisabled` y/o `SetGoogleAdvertisingIdCollectionDisabled` en `true` para deshabilitar la recopilación de identificadores publicitarios. El valor predeterminado es `false`.
+
+Usa este parámetro para cumplir con las políticas de App Store/Google Play, evitar activar el prompt de App Tracking Transparency, o si tu app no requiere atribución publicitaria ni analíticas basadas en IDs publicitarios.
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAppleIDFACollectionDisabled(true)
+    .SetGoogleAdvertisingIdCollectionDisabled(true);
+```
+
+#### Configurar la caché de medios para AdaptyUI \{#set-up-media-cache-configuration-for-adaptyui\}
+
+Por defecto, AdaptyUI almacena en caché los medios (como imágenes y vídeos) para mejorar el rendimiento y reducir el uso de red. Puedes personalizar la configuración de la caché proporcionando una configuración personalizada.
+
+Usa `SetAdaptyUIMediaCache` para sobreescribir la configuración predeterminada de la caché:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAdaptyUIMediaCache(
+        100 * 1024 * 1024, // MemoryStorageTotalCostLimit 100MB
+        null, // MemoryStorageCountLimit
+        100 * 1024 * 1024 // DiskStorageSizeLimit 100MB
+    );
+```
+
+Parámetros:
+
+| Parámetro                   | Obligatorio | Descripción                                                                      |
+|-----------------------------|-------------|----------------------------------------------------------------------------------|
+| memoryStorageTotalCostLimit | opcional    | Tamaño total de la caché en memoria en bytes. Por defecto, valor específico de la plataforma. |
+| memoryStorageCountLimit     | opcional    | El límite de número de elementos en el almacenamiento en memoria. Por defecto, valor específico de la plataforma. |
+| diskStorageSizeLimit        | opcional    | El límite de tamaño de archivo en disco en bytes. Por defecto, valor específico de la plataforma. |
+
+
+### Habilitar niveles de acceso locales (Android) \{#enable-local-access-levels-android\}
+
+Por defecto, los [niveles de acceso locales](local-access-levels) están habilitados en iOS y deshabilitados en Android. Para habilitarlos también en Android, establece `SetGoogleLocalAccessLevelAllowed` en `true`:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetGoogleLocalAccessLevelAllowed(true);
+```
+
+### Limpiar datos al restaurar desde copia de seguridad \{#clear-data-on-backup-restore\}
+
+Cuando `SetAppleClearDataOnBackup` se establece en `true`, el SDK detecta cuándo la app se restaura desde una copia de seguridad de iCloud y elimina todos los datos del SDK almacenados localmente, incluida la información de perfil en caché, los detalles del producto y los paywalls. El SDK se inicializa entonces con un estado limpio. El valor predeterminado es `false`.
+
+:::note
+Solo se elimina la caché local del SDK. El historial de transacciones con Apple y los datos de usuario en los servidores de Adapty permanecen sin cambios.
+:::
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAppleClearDataOnBackup(true);
+```
+
+## Solución de problemas \{#troubleshooting\}
+
+#### Reglas de copia de seguridad de Android (configuración de Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
+
+<AndroidBackupRules />
+
+:::important
+En Unity, aplica estos cambios en `Assets/Plugins/Android/AndroidManifest.xml` y crea los archivos de reglas de copia de seguridad en `Assets/Plugins/Android/res/xml/`.
+:::
+
+#### Las compras fallan al volver desde otra app en Android \{#purchases-fail-after-returning-from-another-app-in-android\}
+
+Si la Activity que inicia el flujo de compra usa un `launchMode` no predeterminado, Android puede recrearla o reutilizarla incorrectamente cuando el usuario regresa desde Google Play, una app bancaria o un navegador. Esto puede provocar que el resultado de la compra se pierda o se trate como cancelado.
+
+Para garantizar que las compras funcionen correctamente, usa solo los modos de lanzamiento `standard` o `singleTop` para la Activity que inicia el flujo de compra, y evita cualquier otro modo.
+
+En tu `AndroidManifest.xml`, asegúrate de que la Activity que inicia el flujo de compra esté configurada como `standard` o `singleTop`:
+
+```xml
+<activity
+    android:name=".MainActivity"
+    android:launchMode="standard" />
+```

@@ -1,0 +1,68 @@
+---
+title: "Analíticas de campaña en Adapty Mail"
+description: "Métricas de entrega, engagement e ingresos por variación, mostradas en el editor de Flows y en la página de A/B Tests."
+metadataTitle: "Analíticas de campaña | Adapty Mail | Documentación de Adapty"
+keywords: ['adapty mail']
+---
+
+Adapty Mail registra cada evento de entrega de SES y cada evento de ingresos atribuido a un clic en un email. Las métricas se muestran **por fila de variación** en dos lugares:
+
+- **Página de Flows**: Integrada en cada fila de segmento en una vista de trigger, independientemente de si el contenido de la fila es una campaña o una prueba A/B.
+- **Página de A/B Tests**: Solo para pruebas A/B — aquí es donde se comparan las variantes una al lado de la otra.
+
+El conjunto de métricas es idéntico en ambas vistas. No existe un dashboard de Analytics independiente; las analíticas viven junto a las filas que se están midiendo.
+
+## Qué se registra por variación \{#whats-tracked-per-variation\}
+
+Cada fila de variación expone los siguientes recuentos brutos:
+
+- **Sends**: Emails enviados a SES.
+- **Deliveries**: Entregas en la bandeja de entrada confirmadas por SES.
+- **Bounces**: Rebotes reportados por SES. Los rebotes duros y blandos no se distinguen — ambos cuentan como un **Bounce**.
+- **Opens**: Cargas del píxel. Apple Mail Privacy Protection precarga imágenes en iOS 15+ e infla este recuento — usa los clics y los ingresos como señales más fiables.
+- **Clicks**: Clics en enlaces del cuerpo del email.
+- **Unsubs**: Cancelaciones de suscripción desde el enlace del pie de página o la cabecera `List-Unsubscribe`.
+- **Purchases**: Eventos de compra atribuidos, contados de forma única por email programado. Un destinatario que realiza varias compras desde el mismo email programado cuenta una sola vez.
+- **Revenue**: Suma de ingresos atribuidos (USD) de inicios de suscripción, renovaciones y compras únicas.
+
+## Tasas derivadas \{#derived-rates\}
+
+Cada tasa se calcula a partir de los recuentos brutos. Los denominadores varían — elige el que corresponda al paso del embudo que estás midiendo.
+
+| Tasa          | Fórmula                |
+| ------------- | ---------------------- |
+| Del Rate      | Deliveries / Sends     |
+| Bounce Rate   | Bounces / Sends        |
+| Open/Send     | Opens / Sends          |
+| Open/Del      | Opens / Deliveries     |
+| Click/Send    | Clicks / Sends         |
+| Click/Del     | Clicks / Deliveries    |
+| Click/Open    | Clicks / Opens         |
+| Purch/Send    | Purchases / Sends      |
+| Purch/Del     | Purchases / Deliveries |
+| Purch/Open    | Purchases / Opens      |
+| Purch/Click   | Purchases / Clicks     |
+| Unsub/Send    | Unsubs / Sends         |
+| Unsub/Del     | Unsubs / Deliveries    |
+| Unsub/Open    | Unsubs / Opens         |
+| Rev/Send      | Revenue / Sends        |
+
+## Atribución de ingresos \{#revenue-attribution\}
+
+Los ingresos se atribuyen mediante **último clic** en un enlace rastreado:
+
+1. Cuando un destinatario hace clic en cualquier enlace de un email, Adapty Mail almacena el `scheduled_email_id` en ese perfil en un almacén temporal.
+2. Si llega un evento de compra sin atribución existente, Adapty Mail rellena el `scheduled_email_id` almacenado en la transacción, siempre que la marca de tiempo de la compra sea posterior al clic.
+3. Las compras sin un clic rastreado previo quedan sin atribuir.
+
+El parámetro rastreado es `scheduled_email_id`. La URL de pago también incluye la identidad del destinatario mediante los marcadores `{email}` y `{external_profile_id}` para que el paywall web pueda personalizar el flujo — ese es un mecanismo independiente de la atribución. Consulta [Configurar el pago](mail-checkout).
+
+## Limitaciones \{#limitations\}
+
+- **Sin dashboard consolidado**: Las métricas se muestran de forma integrada en el editor de Flows y en la página de A/B Tests — no hay una vista de resumen entre proyectos o campañas.
+- **La página de A/B Tests oculta las filas de campaña**: Las filas de flujo de campaña única se almacenan como envoltorios internos de prueba A/B, pero la página de A/B Tests las filtra. Para ver sus métricas, abre el flujo al que están vinculadas.
+- **Sin filtro de fechas**: Los recuentos son acumulativos desde el primer evento de SES en la variación — no es posible acotar a "los últimos 7 días" en la interfaz.
+- **Sin detalle por destinatario**: La vista de analíticas no muestra el historial de emails de usuarios individuales.
+- **Sin distinción entre rebote blando y duro**: Todos los rebotes, temporales o permanentes, se agrupan en un único recuento de Bounce.
+- **Las compras cuentan emails programados únicos, no destinatarios**: Un destinatario que coincide con varios emails de la secuencia puede contribuir más de una vez en el agregado total de la variación.
+- **Consistencia eventual, no en tiempo real**: Los datos se agregan desde las tablas de eventos de ClickHouse. Los eventos recientes suelen aparecer en minutos, pero no hay garantía de streaming.

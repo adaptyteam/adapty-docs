@@ -1,0 +1,131 @@
+---
+title: "Reportar transacciones en Observer Mode en el SDK de React Native"
+description: "Reporta transacciones de compra en el Observer Mode de Adapty para obtener información sobre usuarios y seguimiento de ingresos en el SDK de React Native."
+metadataTitle: "Reportar transacciones en Observer Mode en el SDK de React Native | Documentación de Adapty"
+---
+
+<Tabs groupId="sdk-version" queryString> 
+
+<TabItem value="current" label="Adapty SDK v3.4+ (current)" default> 
+En Observer Mode, el SDK de Adapty no puede rastrear por sí solo las compras realizadas a través de tu sistema de compras existente. Debes reportar las transacciones desde tu app store. Es fundamental configurar esto **antes** de publicar tu app para evitar errores en los análisis.
+
+Usa `reportTransaction` para reportar explícitamente cada transacción y que Adapty pueda reconocerla.
+
+:::warning
+
+**¡No omitas el reporte de transacciones!**
+Si no llamas a `reportTransaction`, Adapty no reconocerá la transacción, no aparecerá en los análisis y no se enviará a las integraciones.
+
+:::
+
+Si usas paywalls de Adapty, incluye el `variationId` al reportar una transacción. Esto vincula la compra al paywall que la originó, garantizando análisis precisos del paywall.
+
+```typescript showLineNumbers
+const variationId = paywall.variationId;
+
+try {
+    await adapty.reportTransaction(transactionId, variationId);
+} catch (error) {
+    // handle the `AdaptyError`
+}
+```
+
+Parámetros:
+
+| Parámetro     | Presencia | Descripción                                                  |
+| ------------- | --------- | ------------------------------------------------------------ |
+| transactionId | obligatorio | <ul><li> Para iOS: identificador de la transacción.</li><li> Para Android: identificador de cadena (`purchase.getOrderId`) de la compra, donde la compra es una instancia de la clase [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) de la biblioteca de facturación.</li></ul> |
+| variationId   | opcional | El identificador de cadena de la variante. Puedes obtenerlo usando la propiedad `variationId` del objeto [AdaptyPaywall](https://react-native.adapty.io/interfaces/adaptypaywall). |
+
+</TabItem>
+<TabItem value="old" label="Adapty SDK 3.3.x (legacy)" default> 
+
+En Observer Mode, el SDK de Adapty no puede rastrear por sí solo las compras realizadas a través de tu sistema de compras existente. Debes reportar las transacciones desde tu app store o restaurarlas. Es fundamental configurar esto **antes** de publicar tu app para evitar errores en los análisis.
+
+Usa `reportTransaction` en ambas plataformas para reportar explícitamente cada transacción, y usa `restorePurchases` en Android como paso adicional para asegurarte de que Adapty la reconozca.
+
+:::warning
+
+**¡No omitas el reporte de transacciones!**
+Si no llamas a estos métodos, Adapty no reconocerá la transacción, no aparecerá en los análisis y no se enviará a las integraciones.
+
+:::
+
+Si usas paywalls de Adapty, incluye el `variationId` al reportar una transacción. Esto vincula la compra al paywall que la originó, garantizando análisis precisos del paywall.
+
+```typescript showLineNumbers
+if (Platform.OS === 'android') {
+    try {
+        await adapty.restorePurchases();
+    } catch (error) {
+        // handle the error
+    }
+}
+
+...
+
+const variationId = paywall.variationId;
+
+try {
+    await adapty.reportTransaction(transactionId, variationId);
+} catch (error) {
+    // handle the `AdaptyError`
+}
+```
+
+Parámetros:
+
+| Parámetro     | Presencia | Descripción                                                  |
+| ------------- | --------- | ------------------------------------------------------------ |
+| transactionId | obligatorio | <ul><li> Para iOS, StoreKit 1: un objeto [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction).</li><li> Para iOS, StoreKit 2: objeto [Transaction](https://developer.apple.com/documentation/storekit/transaction).</li><li> Para Android: identificador de cadena (`purchase.getOrderId`) de la compra, donde la compra es una instancia de la clase [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) de la biblioteca de facturación.</li></ul> |
+| variationId   | opcional | El identificador de cadena de la variante. Puedes obtenerlo usando la propiedad `variationId` del objeto [AdaptyPaywall](https://react-native.adapty.io/interfaces/adaptypaywall). |
+
+</TabItem>
+<TabItem value="old2" label="Adapty SDK up to 3.2.x (legacy)" default> 
+
+<Tabs groupId="current-os" queryString> 
+<TabItem value="swift" label="iOS" default> 
+
+**Reportar transacciones**
+
+- Las versiones hasta la 3.1.x escuchan automáticamente las transacciones en el App Store, por lo que no se requiere reporte manual.
+- La versión 3.2 no admite Observer Mode.
+
+</TabItem> 
+<TabItem value="kotlin" label="Android and Android-based cross-platforms" default> 
+
+**Reportar transacciones**
+
+Usa `restorePurchases` para reportar una transacción a Adapty en Observer Mode, tal como se explica en la página [Restaurar compras en el código móvil](react-native-restore-purchase).
+
+:::warning
+**¡No omitas el reporte de transacciones!**
+Si no llamas a `restorePurchases`, Adapty no reconocerá la transacción, no aparecerá en los análisis y no se enviará a las integraciones.
+::: 
+
+</TabItem>
+</Tabs>
+
+**Asociar paywalls a transacciones**
+
+El SDK de Adapty no puede determinar el origen de las compras, ya que eres tú quien las procesa. Por lo tanto, si planeas usar paywalls y/o pruebas A/B en Observer Mode, debes asociar la transacción proveniente de tu app store con el paywall correspondiente en el código de tu app móvil. Es importante hacerlo correctamente antes de publicar tu app; de lo contrario, generará errores en los análisis.
+
+```typescript 
+const variationId = paywall.variationId;
+
+try {
+    await adapty.setVariationId('transactionId', variationId);
+} catch (error) {
+    // handle the `AdaptyError`
+}
+```
+
+Parámetros de la solicitud:
+
+| Parámetro     | Presencia | Descripción                                                  |
+| ------------- | --------- | ------------------------------------------------------------ |
+| transactionId | obligatorio | <p>Para iOS, StoreKit 1: un objeto [SKPaymentTransaction](https://developer.apple.com/documentation/storekit/skpaymenttransaction).</p><p>Para iOS, StoreKit 2: objeto [Transaction](https://developer.apple.com/documentation/storekit/transaction).</p><p>Para Android: identificador de cadena (purchase.getOrderId de la compra, donde la compra es una instancia de la clase [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) de la biblioteca de facturación.</p> |
+| variationId   | obligatorio | El identificador de cadena de la variante. Puedes obtenerlo usando la propiedad `variationId` del objeto [AdaptyPaywall](https://react-native.adapty.io/interfaces/adaptypaywall). |
+
+</TabItem> 
+</Tabs>

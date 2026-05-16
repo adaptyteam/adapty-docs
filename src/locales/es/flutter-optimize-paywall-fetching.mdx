@@ -1,0 +1,30 @@
+---
+title: "Optimizar la carga de paywalls en Flutter SDK"
+description: "Carga paywalls de Adapty de forma fiable: tiempos, caché y patrones de respaldo para Flutter."
+metadataTitle: "Optimizar la Carga de Paywalls | Flutter SDK | Documentación de Adapty"
+---
+
+Una carga fiable de paywalls en Flutter hace tres cosas: renderiza rápido, devuelve el paywall con la audiencia correcta y recurre a un respaldo cuando la red es lenta. Las reglas a continuación cubren los tiempos, la caché y los patrones de respaldo para lograrlo.
+
+:::tip
+Las reglas asumen que `Adapty().activate()` y `Adapty().identify()` ya se han resuelto. Consulta [Orden de llamadas en Flutter SDK](flutter-sdk-call-order).
+:::
+
+## Reglas y errores comunes \{#rules-and-pitfalls\}
+
+| Haz esto | No hagas esto | Por qué |
+|---|---|---|
+| Carga el placement que vas a mostrar.                                                                                  | Precarga todos los placements de forma concurrente al arrancar.        | La precarga masiva bloquea el hilo principal y produce una pantalla en negro durante la ráfaga.                                  |
+| Llama a `getPaywall` después de que la atribución haya tenido tiempo de resolverse — por ejemplo, 1–2 segundos después de `activate` o cuando se dispare `didUpdateProfileStream`. | Llama a `getPaywall` en `main()` antes de `runApp`.         | La atribución aún no ha llegado. El paywall se resuelve contra la audiencia predeterminada y omite silenciosamente los segmentos y la personalización de ASA. |
+| Establece un `loadTimeout` y configura un [paywall de respaldo](fallback-paywalls) para cada placement.                             | Esperar indefinidamente a `getPaywall`.                     | Sin un tiempo de espera, los usuarios con mala conectividad ven una pantalla en blanco hasta que la red se resuelva — o cierran la app.     |
+
+Consulta [Obtener paywalls y productos](fetch-paywalls-and-products-flutter) para la referencia de los parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
+
+## Ajuste para mala conectividad \{#tune-for-poor-connectivity\}
+
+Para mercados con conectividad consistentemente deficiente (zonas rurales, transporte, regiones afectadas por enrutamiento):
+
+- Establece `fetchPolicy: AdaptyPaywallFetchPolicy.returnCacheDataElseLoad` en cada carga excepto la primera.
+- Configura un [paywall de respaldo](fallback-paywalls) para cada placement en el Adapty Dashboard.
+- Establece `loadTimeout` en 3–5 segundos y acepta el respaldo cuando se agote el tiempo.
+- No condicionales la visualización del paywall a `getProfile()`. Llama a `getPaywall` de forma independiente para que un perfil lento no bloquee la interfaz.

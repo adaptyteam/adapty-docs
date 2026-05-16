@@ -1,0 +1,101 @@
+---
+title: "Implementar web paywalls en el SDK de iOS"
+description: "Configura un web paywall para cobrar sin las comisiones y revisiones de la App Store."
+metadataTitle: "Aceptar pagos en web para apps iOS en EE. UU. | Documentación de Adapty"
+keywords: ['web paywalls']
+sidebar_label: "Implementar web paywalls"
+---
+
+:::important
+Antes de empezar, asegúrate de haber [configurado tu web paywall en el dashboard](web-paywall) y de tener instalada la versión 3.6.1 o posterior del SDK de Adapty.
+:::
+
+## Abrir web paywalls \{#open-web-paywalls\}
+
+Si estás trabajando con un paywall que desarrollaste tú mismo, debes gestionar los web paywalls usando el método del SDK. El método `.openWebPaywall`:
+1. Genera una URL única que permite a Adapty vincular un paywall específico mostrado a un usuario concreto con la página web a la que es redirigido.
+2. Detecta cuando tus usuarios vuelven a la app y luego solicita `.getProfile` a intervalos cortos para determinar si los derechos de acceso del perfil se han actualizado.
+
+De este modo, si el pago se ha completado correctamente y los derechos de acceso se han actualizado, la suscripción se activa en la app casi de inmediato.
+
+```swift showLineNumbers title="Swift"
+do {
+    try await Adapty.openWebPaywall(for: product)
+} catch {
+    print("Failed to open web paywall: \(error)")
+}
+```
+
+:::note
+Existen dos versiones del método `openWebPaywall`:
+1. `openWebPaywall(product)`, que genera URLs a partir del paywall y también añade los datos del producto a las URLs.
+2. `openWebPaywall(paywall)`, que genera URLs a partir del paywall sin añadir los datos del producto. Úsalo cuando tus productos en el paywall de Adapty sean distintos de los del web paywall.
+:::
+
+## Gestionar errores \{#handle-errors\}
+
+| Error                                   | Descripción                                                      | Acción recomendada                                                                              |
+|-----------------------------------------|------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| AdaptyError.paywallWithoutPurchaseUrl   | El paywall no tiene configurada una URL de compra web            | Comprueba si el paywall está correctamente configurado en el Adapty Dashboard                   |
+| AdaptyError.productWithoutPurchaseUrl   | El producto no tiene una URL de compra web                       | Verifica la configuración del producto en el Adapty Dashboard                                   |
+| AdaptyError.failedOpeningWebPaywallUrl  | No se pudo abrir la URL en el navegador                          | Revisa la configuración del dispositivo o proporciona un método de compra alternativo           |
+| AdaptyError.failedDecodingWebPaywallUrl | No se pudieron codificar correctamente los parámetros de la URL  | Verifica que los parámetros de la URL sean válidos y estén correctamente formateados            |
+
+## Ejemplo de implementación \{#implementation-example\}
+```swift showLineNumbers title="Swift"
+class SubscriptionViewController: UIViewController {
+    var paywall: AdaptyPaywall?
+    
+    @IBAction func purchaseButtonTapped(_ sender: UIButton) {
+        guard let paywall = paywall, let product = paywall.products.first else { return }
+         Task {
+            await offerWebPurchase(for: product)
+         }
+    }
+    
+    func offerWebPurchase(for paywallProduct: AdaptyPaywallProduct) async {
+        do {
+            // Attempt to open web paywall
+            try await Adapty.openWebPaywall(for: paywallProduct)
+        } catch let error as AdaptyError {
+            
+            switch error {
+            case .paywallWithoutPurchaseUrl, .productWithoutPurchaseUrl:
+                showAlert(message: "Web purchase is not available for this product.")
+            case .failedOpeningWebPaywallUrl:
+                showAlert(message: "Could not open web browser. Please try again.")
+            default:
+                showAlert(message: "An error occurred: \(error.localizedDescription)")
+            }
+        } catch {
+            showAlert(message: "An unexpected error occurred.")
+        }
+    }
+    
+    // Helper methods
+    private func showAlert(message: String) { /* ... */ }
+}
+```
+:::note
+Cuando los usuarios vuelvan a la app, actualiza la interfaz para reflejar los cambios del perfil. `AdaptyDelegate` recibirá y procesará los eventos de actualización del perfil.
+:::
+
+## Abrir web paywalls en un navegador in-app \{#open-web-paywalls-in-an-in-app-browser\}
+
+:::important
+La apertura de web paywalls en un navegador in-app es compatible a partir del SDK de Adapty v. 3.15.
+:::
+
+Por defecto, los web paywalls se abren en el navegador externo.
+
+Para ofrecer una experiencia de usuario más fluida, puedes abrir los web paywalls en un navegador in-app. Esto muestra la página de compra web dentro de tu aplicación, permitiendo a los usuarios completar las transacciones sin cambiar de app.
+
+Para activarlo, establece el parámetro `in` en `.inAppBrowser`:
+
+```swift showLineNumbers title="Swift"
+do {
+    try await Adapty.openWebPaywall(for: product, in: .inAppBrowser) // default – .externalBrowser
+} catch {
+    print("Failed to open web paywall: \(error)")
+}
+```

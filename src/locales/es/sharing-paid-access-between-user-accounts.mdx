@@ -1,0 +1,78 @@
+---
+title: "Compartir acceso de pago entre cuentas de usuario"
+description: "Cómo compartir el acceso de pago entre diferentes cuentas de usuario para usuarios con varios dispositivos o múltiples perfiles en la app"
+metadataTitle: "Compartir acceso de pago entre diferentes cuentas de usuario para que el usuario no pierda el acceso a sus compras | Documentación de Adapty"
+---
+
+Cuando un usuario realiza una compra, Adapty asigna un nuevo [nivel de acceso](access-level) a su [perfil](identifying-users) activo. Este nivel de acceso autoriza al comprador a acceder al contenido de pago.
+
+El perfil del comprador puede cambiar involuntariamente si reinstala la app o inicia sesión en una nueva cuenta dentro de la app. Para garantizar un acceso ininterrumpido, Adapty comparte automáticamente el nivel de acceso del usuario entre el perfil original y los que le siguen.
+
+Este enfoque funciona bien para la mayoría de las aplicaciones. Sin embargo, si tu lógica de negocio lo requiere, puedes seleccionar una política de compartición de acceso de pago más restrictiva.
+Abre la página de [General Settings](https://app.adapty.io/settings/general) para configurar una política de compartir niveles de acceso. Para facilitar las pruebas, puedes cambiar esta configuración solo para el [entorno sandbox](#sharing-paid-access-on-sandbox).
+
+<Details>
+
+:::important
+Si tu aplicación no autentica usuarios, puedes ignorar esta configuración. Los perfiles anónimos asociados a la misma cuenta de la store *siempre* comparten su nivel de acceso.
+:::
+
+    <summary>¿Qué política de compartir acceso debo elegir? (Haz clic para expandir)</summary>
+| Mi aplicación...                                                    | Mejor opción                                             |
+    | ------------------------------------------------------------ | ------------------------------------------------------------ |
+    | No tiene capacidades de autenticación y solo usa los IDs de perfil anónimos de Adapty. | Usa la opción **Enabled (default)**. |
+    | Permite autenticar usuarios, pero les permite hacer compras sin una cuenta. | Activa la opción **Transfer access to new user**. Los usuarios podrán registrarse y reclamar las compras anónimas. |
+    | Requiere que los clientes creen una cuenta antes de comprar, pero puede vincular un único producto a varios Customer User IDs. | Activa la opción **Transfer access to new user**. Varias cuentas podrán acceder al producto, pero solo de forma secuencial. |
+    | Requiere que los clientes creen una cuenta antes de comprar, con reglas estrictas que vinculan las compras a un único Customer User ID. | **Desactiva** el uso compartido del nivel de acceso. |
+</Details>
+<Zoom>
+  <img src="/assets/shared/img/sharing-paid-access.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+## Habilitado (por defecto) \{#enabled-default\}
+
+Esta configuración funciona mejor para aplicaciones **sin autenticación integrada**. Tras la compra, todos los perfiles asociados a la misma cuenta del store heredan automáticamente el nivel de acceso.
+* Si un usuario inicia sesión en tu app con un nuevo conjunto de credenciales, conserva el acceso al contenido de pago.
+* Si un usuario reinstala tu aplicación tras un restablecimiento de fábrica, conserva el acceso al contenido de pago.
+* Si un usuario instala la aplicación en otros dispositivos con la misma cuenta de la store, la compra estará disponible en todos los dispositivos, incluso si cada instancia de la aplicación tiene su propio perfil de cliente.
+## Transferir el acceso a un nuevo usuario \{#transfer-access-to-new-user\}
+
+Esta configuración es ideal para aplicaciones que permiten compras **con o sin autenticación**, o que quieren aplicar una política de **un dispositivo por usuario**.
+
+Adapty limita el acceso a las compras a 1 customer ID a la vez. El propietario del dispositivo puede reinstalar la app, iniciar y cerrar sesión, pero no puede acceder al mismo producto desde más de un customer ID al mismo tiempo.
+Con esta opción activada, los perfiles anónimos (por ejemplo, un perfil que se activa cuando el usuario cierra sesión) siempre heredan el nivel de acceso del último ID de cliente activo. Esto es necesario para evitar que se pierda el acceso más adelante.
+
+:::warning
+Cuando desactivas la configuración predeterminada y activas **Transfer access to new user**, Adapty no actualiza inmediatamente los niveles de acceso de los perfiles de cliente existentes.
+
+El cambio se produce cuando el usuario genera un nuevo evento en el store: por ejemplo, renueva la suscripción o restaura sus compras.
+:::
+## Desactivar el acceso compartido de pago \{#disable-paid-access-sharing\}
+
+Esta configuración **solo es adecuada** para aplicaciones con **autenticación obligatoria** o una implementación propia de gestión de accesos. En cualquier otro caso, los usuarios podrían no poder acceder a sus compras, y tu aplicación corre el riesgo de **no superar la revisión obligatoria del store**.
+Si deshabilitas el acceso compartido de pago, Adapty vincula el producto al [ID de cliente](identifying-users#set-customer-user-id-on-configuration) activo en el momento de la compra y no comparte el nivel de acceso con ningún otro perfil. Esta política permite una distribución estricta de productos en proporción 1 a 1.
+
+:::warning
+Al deshabilitar el acceso compartido de pago, impides que los IDs de cliente hereden el acceso de pago. Si un ID de cliente ya heredó acceso de pago en el pasado, ese acceso no se puede revocar automáticamente.
+:::
+:::important
+En situaciones de emergencia, puede que necesites [eliminar un perfil de usuario](api-adapty/operations/deleteProfile) para que el siguiente perfil disponible (ya sea identificado o anónimo) pueda reclamar su nivel de acceso.
+:::
+## Compartir acceso de pago en sandbox \{#sharing-paid-access-on-sandbox\}
+
+Puedes establecer una política de compartición de acceso de pago específicamente para el entorno sandbox. Al probar compras en sandbox, ten en cuenta el siguiente comportamiento:
+* Apple almacena información sobre tus compras anteriores en el historial de compras de la cuenta. El SDK de Adapty también puede acceder a él.
+* Si reinstalaas la aplicación y Adapty detecta que el producto ya fue comprado, el perfil activo heredará el nivel de acceso.
+* Si Apple detecta una compra existente para el producto, no permitirá realizar la misma compra dos veces, aunque el perfil activo no tenga el nivel de acceso necesario.
+Este comportamiento se produce **independientemente de la configuración de acceso de pago compartido**. Si tu app no muestra el paywall, no puedes comprar el producto. La única solución es **borrar el historial de compras de tu cuenta**. Consulta la [guía de pruebas en sandbox](test-purchases-in-sandbox) para obtener instrucciones detalladas.
+## Compartición de acceso de pago en los análisis \{#paid-access-sharing-in-analytics\}
+
+* Adapty registra las transacciones a medida que se producen. Una misma transacción puede estar asociada a más de un perfil, pero no se contabiliza más de una vez.
+* Si dos o más perfiles comparten el mismo nivel de acceso, la compra se atribuye al [perfil principal](how-profiles-work#parent-and-inheritor-profiles).
+* La herencia del nivel de acceso no afecta a las estadísticas de instalación. Para saber cómo Adapty contabiliza las instalaciones, puedes seleccionar una de las dos [definiciones de instalación](installs#calculation) disponibles en la página de configuración.

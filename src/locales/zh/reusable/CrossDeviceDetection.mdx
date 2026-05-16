@@ -1,0 +1,22 @@
+---
+no_index: true
+---
+
+当 SDK 激活时，它会自动从 StoreKit (iOS) 或 Google Play Billing (Android) 读取用户现有的权益，并将其同步到 Adapty 后端。活跃订阅无需应用调用 `restorePurchases`，即可出现在 Adapty 用户画像中。
+
+**不会**自动发生的是：识别新设备上的用户画像与原设备上的用户画像属于同一用户。Adapty 通过 Customer User ID 匹配用户画像，因此身份连续性取决于您使用什么作为 CUID。
+
+**Adapty 跨设备可检测的内容**
+
+| 您的配置 | Adapty 检测到的内容 | 您需要做什么 |
+| --- | --- | --- |
+| Customer User ID = `device_id`（无应用登录） | 新设备获得不同的 CUID，因此拥有不同的用户画像。订阅通过 **Access level updated** 事件同步到新用户画像，但 `subscription_started` 不会触发——新用户画像被视为原始购买的继承者。基于 `subscription_started` 的分析将少计回归用户。 | 使用稳定的账户 ID 作为 Customer User ID，以便回归用户能跨设备匹配到现有用户画像。 |
+| Customer User ID = 稳定账户 ID（每台设备均需登录） | SDK 在 `activate()` 时自动同步订阅，`identify()` 通过 CUID 匹配现有用户画像。 | 无需额外配置——身份和订阅均可自动解析。 |
+| Apple Family Sharing 继承者 | 家庭成员仅通过 **Access level updated** 事件接收订阅——`subscription_started` 不会触发。 | 监听 **Access level updated**。完整的事件矩阵请参见 [Apple Family Sharing](apple-family-sharing)。 |
+| 同一 Apple/Google 账户，不同应用内用户 | 最先记录购买的用户画像成为父级。后续用户画像通过继承链查看订阅，并触发一次 **Access level updated** 事件。 | 要求用户登录，然后选择适合您业务模型的[共享模式](sharing-paid-access-between-user-accounts)。 |
+
+**在新设备上恢复购买**
+
+在付费墙上提供一个用户可主动触发的"恢复购买"按钮。Apple App Review（指南 3.1.1）要求提供此按钮，且当自动同步遗漏边缘情况时，它也可作为备用方案。该按钮应调用 SDK 中的 `restorePurchases`。
+
+正常使用时，首次启动时无需通过代码调用 `restorePurchases`——SDK 已在 `activate()` 时执行了等效操作。仅在需要强制刷新收据检查时才使用代码调用，例如在 `activate()` 完成后调试访问等级缺失问题时。
