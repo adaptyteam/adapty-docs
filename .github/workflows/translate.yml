@@ -224,6 +224,11 @@ jobs:
       # Commit any new or updated locale files back to main. This push
       # triggers s3-deploy-production.yml, so the deploy that follows will
       # include the freshly translated content.
+      #
+      # Push is retried with rebase to recover from the common race where
+      # another commit lands on main while translation is in flight (the
+      # workflow can run 5–10 min). Without this, the push is rejected and
+      # the run has to be re-applied manually.
       - name: Commit updated translations
         run: |
           git config user.name "github-actions[bot]"
@@ -231,10 +236,20 @@ jobs:
           git add src/locales/
           if git diff --staged --quiet; then
             echo "No translation changes to commit."
-          else
-            git commit -m "chore: update translations"
-            git push
+            exit 0
           fi
+          git commit -m "chore: update translations"
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin main
+            if git push; then
+              echo "Pushed translations on attempt $attempt."
+              exit 0
+            fi
+            echo "Push attempt $attempt rejected; will rebase and retry."
+            sleep $((RANDOM % 10 + 5))
+          done
+          echo "Failed to push translations after 5 attempts."
+          exit 1
 
       # If lint or commit failed, preserve the aggregated locale state for
       # manual recovery. The per-locale `failed-*` artifacts from the matrix
