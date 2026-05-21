@@ -301,6 +301,24 @@ This command replaces all paywall fields, including the full product list.
 | `--title` | Yes | Paywall title |
 | `--product-id` | Yes | [Product](product) ID (UUID). Repeat for multiple products: `--product-id <id1> --product-id <id2>` |
 
+### adapty paywalls placements
+
+List all [placements](placements) that currently use a given [paywall](paywalls).
+
+```bash
+adapty paywalls placements --app <app-id> <paywall-id>
+```
+
+| Argument | Description |
+|---|---|
+| `paywall-id` | Paywall ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Use this command before swapping a paywall to see which placements would be affected.
+
 ## Placements
 
 ### adapty placements list
@@ -333,12 +351,14 @@ adapty placements get --app <app-id> <placement-id>
 |---|---|---|
 | `--app` | Yes | App ID (UUID) |
 
+The response contains an `audiences` array. Each entry is `{segment_ids, paywall_id, priority}`. The default audience has `segment_ids: []` and the highest priority value (last evaluated). The formatted human output also shows a top-level `Paywall ID` derived from the default audience for convenience. `--json` returns the raw API shape unchanged.
+
 ### adapty placements create
 
 Create a new [placement](placements).
 
 ```bash
-adapty placements create --app <app-id> --title "Main" --developer-id "main" --paywall-id <paywall-id>
+adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
 ```
 
 | Flag | Required | Description |
@@ -346,15 +366,24 @@ adapty placements create --app <app-id> --title "Main" --developer-id "main" --p
 | `--app` | Yes | App ID (UUID) |
 | `--title` | Yes | Placement title |
 | `--developer-id` | Yes | String identifier used in app code to request this [placement](placements) |
-| `--paywall-id` | Yes | [Paywall](paywalls) ID (UUID) to show at this placement |
+| `--audiences` | One of the two | JSON array of `{segment_ids, paywall_id, priority}` entries. See [Audiences shape](#audiences-shape) |
+| `--paywall-id` | One of the two | **Deprecated.** [Paywall](paywalls) ID (UUID). Wrapped client-side into a single default audience |
+
+Pass exactly one of `--audiences` or `--paywall-id`. Passing both or neither errors out.
+
+:::warning
+`--paywall-id` is deprecated and will be removed. When passed, the CLI prints a stderr warning and converts the value into a default audience. Use `--audiences` for new automation.
+:::
 
 ### adapty placements update
 
 Replace all fields of an existing [placement](placements).
 
 ```bash
-adapty placements update --app <app-id> <placement-id> --title "Main" --developer-id "main" --paywall-id <paywall-id>
+adapty placements update --app <app-id> <placement-id> --title "Main" --developer-id "main" --audiences '[{"segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
 ```
+
+This command replaces all placement fields, including the full audiences list.
 
 | Argument | Description |
 |---|---|
@@ -365,7 +394,89 @@ adapty placements update --app <app-id> <placement-id> --title "Main" --develope
 | `--app` | Yes | App ID (UUID) |
 | `--title` | Yes | Placement title |
 | `--developer-id` | Yes | String identifier used in app code to request this [placement](placements) |
-| `--paywall-id` | Yes | [Paywall](paywalls) ID (UUID) to show at this placement |
+| `--audiences` | One of the two | JSON array of `{segment_ids, paywall_id, priority}` entries. See [Audiences shape](#audiences-shape) |
+| `--paywall-id` | One of the two | **Deprecated.** [Paywall](paywalls) ID (UUID). Replaces all audiences with a single default audience |
+
+:::warning
+Passing `--paywall-id` rewrites all audiences on the placement. Segment-specific audiences are dropped. To preserve them, use `--audiences` and include all entries you want to keep.
+:::
+
+#### Audiences shape
+
+The `--audiences` flag takes a JSON array. Each entry has:
+
+| Field | Type | Description |
+|---|---|---|
+| `segment_ids` | `string[]` | [Segment](segments) IDs targeted by this audience. Length 0 or 1. Empty array marks the **default audience** — the fallback for users who match no other segment |
+| `paywall_id` | `string` | [Paywall](paywalls) ID (UUID) shown to users in this audience |
+| `priority` | `number` | 0-based, unique within the placement. Audiences are evaluated low-to-high; the default audience must have the highest value |
+
+A placement must have exactly one default audience.
+
+Example with one targeted audience and one default:
+
+```bash
+adapty placements update <placement-id> --app <app-id> --title "Main" --developer-id "main" \
+  --audiences '[{"segment_ids":["<vip-segment-id>"],"paywall_id":"<vip-paywall-id>","priority":0},{"segment_ids":[],"paywall_id":"<default-paywall-id>","priority":1}]'
+```
+
+To swap a paywall across multiple placements without losing segment-specific routing:
+
+1. Find affected placements:
+
+   ```bash
+   adapty paywalls placements --app <app-id> <old-paywall-id>
+   ```
+
+2. For each, read the full `audiences` array:
+
+   ```bash
+   adapty placements get --app <app-id> <placement-id> --json
+   ```
+
+3. Replace the matching `paywall_id` values client-side.
+
+4. Write the modified payload back:
+
+   ```bash
+   adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'
+   ```
+
+## Segments
+
+[Segments](segments) are read-only via the CLI. Create and edit them in the [Adapty dashboard](https://app.adapty.io). Use these commands to look up segment IDs when composing placement audiences.
+
+### adapty segments list
+
+List all [segments](segments) for an app.
+
+```bash
+adapty segments list --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Accepts [pagination flags](#global-flags).
+
+### adapty segments get
+
+Get details for a specific [segment](segments).
+
+```bash
+adapty segments get --app <app-id> <segment-id>
+```
+
+| Argument | Description |
+|---|---|
+| `segment-id` | Segment ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+The response contains `id`, `title`, and `description`. Filter rules are not exposed via this API.
 
 ## Auth
 

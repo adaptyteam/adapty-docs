@@ -1,0 +1,30 @@
+---
+title: "Optimize paywall fetching in iOS SDK"
+description: "Fetch Adapty paywalls reliably: timing, caching, and fallback patterns for iOS."
+metadataTitle: "Optimize Paywall Fetching | iOS SDK | Adapty Docs"
+---
+
+A reliable paywall fetch on iOS does three things: renders fast, returns the audience-targeted paywall, and falls back gracefully when the network is slow. The rules below cover the timing, caching, and fallback patterns to get there.
+
+:::tip
+The rules assume `Adapty.activate()` and `Adapty.identify()` have already resolved. See [Call order in iOS SDK](ios-sdk-call-order).
+:::
+
+## Rules and pitfalls
+
+| Do this | Don't do this | Why |
+|---|---|---|
+| Fetch the placement you're about to show.                                                                                  | Prefetch all placements concurrently on launch.        | Bulk prefetch blocks the main thread and produces a black screen during the burst.                                  |
+| Fetch `getPaywall` after attribution has had a chance to resolve — for example, 1–2 seconds after `activate` or after `onProfileUpdate` fires. | Call `getPaywall` at `App.init()`.                     | Attribution hasn't landed yet. The paywall resolves against the default audience and silently bypasses segments and ASA personalization. |
+| Set a `loadTimeout` and configure a [fallback paywall](fallback-paywalls) for every placement.                             | Wait on `getPaywall` indefinitely.                     | Without a timeout, users on poor connectivity see a blank screen until the network resolves — or close the app.     |
+
+See [Fetch paywalls and products](fetch-paywalls-and-products) for the `fetchPolicy` and `loadTimeout` parameter reference, and [Placements](placements) for picking the right placement.
+
+## Tune for poor connectivity
+
+For markets with consistently poor connectivity (rural areas, transit, regions affected by routing):
+
+- Set `fetchPolicy: .returnCacheDataElseLoad` on every fetch except the very first.
+- Configure a [fallback paywall](fallback-paywalls) for every placement in the Adapty dashboard.
+- Set `loadTimeout` to 3–5 seconds and accept the fallback when the timeout fires.
+- Don't gate paywall display on `getProfile()`. Call `getPaywall` independently so a slow profile doesn't block the UI.

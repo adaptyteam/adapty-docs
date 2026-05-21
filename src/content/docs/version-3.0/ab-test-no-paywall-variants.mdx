@@ -1,0 +1,196 @@
+---
+title: "Add A/B test variants without paywalls"
+description: "Run an A/B test where one variant skips the paywall, using a remote config flag to control whether the paywall is shown."
+metadataTitle: "A/B Test Variants Without Paywalls | Adapty Docs"
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+You can measure the impact of your paywall by running an A/B test against an empty variant. One variant shows your paywall; the other shows nothing. Your app reads a flag from the paywall's remote config to decide whether to render.
+
+## How it works
+
+The setup uses two paywalls in the same placement:
+
+- **Paywall A**: The paywall you want to test, with `show_paywall` set to `true` in its remote config.
+- **Paywall B**: An empty paywall with `show_paywall` set to `false` in its remote config.
+
+When `getPaywall` returns a paywall, your app reads the `show_paywall` flag. If the flag is `true`, the app renders the paywall. If the flag is `false`, the app skips rendering and the user continues without a paywall.
+
+## 1. Add the show_paywall flag in remote config
+
+You need two paywalls in the same placement: Paywall A (the one you want to test) and Paywall B (an empty paywall). Add a `show_paywall` field to each so your app can branch on the same key for both variants.
+
+To add the flag to Paywall A:
+
+1. Open the [**Paywalls**](https://app.adapty.io/paywalls) section in the Adapty main menu and select Paywall A.
+2. Switch to the **Remote config** tab.
+3. In the **Table** view, click **Add row** and create a field with the name `show_paywall` and the value `true`. In the **JSON** view, the entry looks like:
+
+   ```json showLineNumbers
+   {
+     "show_paywall": true
+   }
+   ```
+
+4. Save the changes.
+
+Repeat the same steps for Paywall B, but set `show_paywall` to `false`.
+
+For full details on remote config, see [Design paywall with remote config](customize-paywall-with-remote-config).
+
+:::tip
+Setting `show_paywall` on both variants keeps the code path identical for both groups and makes the test easier to extend with more variants later.
+:::
+
+## 2. Set up the A/B test
+
+1. [Create an A/B test](run_stop_ab_tests) on the placement and add both paywalls as variants.
+2. Set the variant weights to split traffic between users who see the paywall and users who do not.
+
+## 3. Check the flag in your app
+
+Read `show_paywall` from the remote config of the paywall returned by `getPaywall`. If the flag is `false`, skip rendering and let the user continue.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS" default>
+
+```swift showLineNumbers
+do {
+    let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID")
+    let showPaywall = paywall.remoteConfig?.dictionary?["show_paywall"] as? Bool ?? true
+
+    if showPaywall {
+        // Render the paywall
+    }
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="kotlin" label="Android">
+
+```kotlin showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            val showPaywall = paywall.remoteConfig?.dataMap?.get("show_paywall") as? Boolean ?: true
+
+            if (showPaywall) {
+                // Render the paywall
+            }
+        }
+        is AdaptyResult.Error -> {
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="react-native" label="React Native">
+
+```typescript showLineNumbers
+try {
+  const paywall = await adapty.getPaywall({ placementId: "YOUR_PLACEMENT_ID" });
+  const showPaywall = paywall.remoteConfig?.data?.["show_paywall"] ?? true;
+
+  if (showPaywall) {
+    // Render the paywall
+  }
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="flutter" label="Flutter">
+
+```dart showLineNumbers
+try {
+  final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID");
+  final bool showPaywall = paywall.remoteConfig?.dictionary?['show_paywall'] as bool? ?? true;
+
+  if (showPaywall) {
+    // Render the paywall
+  }
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="unity" label="Unity">
+
+```csharp showLineNumbers
+Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    var showPaywall = paywall.RemoteConfig?.Dictionary?["show_paywall"] as bool? ?? true;
+
+    if (showPaywall) {
+        // Render the paywall
+    }
+});
+```
+
+</TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform">
+
+```kotlin showLineNumbers
+Adapty.getPaywall(
+    placementId = "YOUR_PLACEMENT_ID"
+).onSuccess { paywall ->
+    val showPaywall = paywall.remoteConfig?.dataMap?.get("show_paywall") as? Boolean ?: true
+
+    if (showPaywall) {
+        // Render the paywall
+    }
+}.onError { error ->
+    // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="capacitor" label="Capacitor">
+
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
+try {
+  const paywall = await adapty.getPaywall({ placementId: 'YOUR_PLACEMENT_ID' });
+  const showPaywall = paywall.remoteConfig?.data?.['show_paywall'] ?? true;
+
+  if (showPaywall) {
+    // Render the paywall
+  }
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+The fallback value `true` keeps the paywall visible when the flag is missing, so existing paywalls without the flag are unaffected.
+
+:::important
+If you render the paywall yourself (without the [paywall builder](adapty-paywall-builder)), call [`logShowPaywall`](present-remote-config-paywalls#track-paywall-view-events) when you display Paywall A. Without it, Adapty cannot count paywall views in the test. Do not log a view for Paywall B, since it is never shown.
+:::
+
+## Next steps
+
+- [Create, run, and stop an A/B test](run_stop_ab_tests) — Set up the test that includes both variants
+- [A/B test results and metrics](results-and-metrics) — Compare the no-paywall variant against your paywall
