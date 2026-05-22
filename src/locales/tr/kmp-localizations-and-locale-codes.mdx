@@ -1,0 +1,91 @@
+---
+title: "Kotlin Multiplatform SDK'da yerelleştirmeleri ve yerel ayar kodlarını kullanma"
+description: "Kotlin Multiplatform uygulamanızda küresel bir kitleye ulaşmak için uygulama yerelleştirmelerini ve yerel ayar kodlarını yönetin."
+metadataTitle: "Paywalls'ı Yerelleştirme | Kotlin Multiplatform SDK | Adapty Dokümanları"
+displayed_sidebar: sdkkmp
+---
+## Bu neden önemli \{#why-this-is-important\}
+
+Locale kodlarının devreye girdiği birkaç senaryo vardır; örneğin uygulamanızın mevcut yerelleştirmesi için doğru paywall'ı almaya çalıştığınızda.
+
+Locale kodları karmaşık olabilir ve platformdan platforma farklılık gösterebilir; bu nedenle desteklediğimiz tüm platformlar için dahili bir standart kullanıyoruz. Ancak bu kodlar karmaşık olduğundan, sunucumuza tam olarak ne gönderdiğinizi ve ardından ne olduğunu anlamanız son derece önemlidir; böylece her zaman beklediğiniz sonucu alırsınız.
+## Adapty'de yerel ayar kodu standardı \{#locale-code-standard-at-adapty\}
+
+Adapty, yerel ayar kodları için hafif değiştirilmiş bir [BCP 47 standardı](https://en.wikipedia.org/wiki/IETF_language_tag) kullanır: her kod, tire ile ayrılmış küçük harf alt etiketlerden oluşur. Bazı örnekler: `en` (İngilizce), `pt-br` (Portekizce (Brezilya)), `zh` (Basitleştirilmiş Çince), `zh-hant` (Geleneksel Çince).
+## Yerel ayar kodu eşleştirme \{#locale-code-matching\}
+
+Adapty, istemci tarafı SDK'dan yerel ayar koduyla bir çağrı aldığında ve paywall için ilgili yerelleştirmeyi aramaya başladığında şu adımlar gerçekleşir:
+
+1. Gelen yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`), kısa çizgiyle (`-`) değiştirilir.
+2. Tam olarak eşleşen yerel ayar koduna sahip yerelleştirme aranır.
+3. Eşleşme bulunamazsa, ilk kısa çizgiden önceki alt dize alınır (`pt-br` için `pt`) ve bu kodla eşleşen yerelleştirme aranır.
+4. Yine eşleşme bulunamazsa varsayılan `en` yerelleştirmesi döndürülür.
+Bu sayede `'pt_BR'` gönderen bir iOS cihazı, `pt-BR` gönderen bir Android cihazı ve `pt-br` gönderen başka bir cihaz aynı sonucu alacaktır.
+## Lokalizasyonları uygulama: önerilen yöntem \{#implementing-localizations-recommended-way\}
+
+Lokalizasyonlarla ilgileniyorsanız, büyük ihtimalle projenizdeki lokalize edilmiş string kaynaklarıyla zaten çalışıyorsunuzdur. Eğer öyleyse, her kaynak dosyanıza ilgili lokalizasyon için Adapty locale kodu içeren bir anahtar-değer çifti eklemenizi öneririz. Ardından SDK'mızı çağırırken bu anahtarın değerini şu şekilde çekebilirsiniz:
+```kotlin showLineNumbers
+// 1. Adapty yerel ayar kodunu Compose Multiplatform kaynaklarınıza ekleyin
+
+/*
+composeResources/values/strings.xml (varsayılan — İngilizce)
+*/
+<string name="adapty_paywalls_locale">en</string>
+
+/*
+composeResources/values-es/strings.xml (İspanyolca)
+*/
+<string name="adapty_paywalls_locale">es</string>
+
+/*
+composeResources/values-pt-rBR/strings.xml (Portekizce — Brezilya)
+*/
+<string name="adapty_paywalls_locale">pt-br</string>
+
+// 2. Yerel ayar kodunu çıkarın ve kullanın
+
+suspend fun fetchPaywall() {
+    val locale = getString(Res.string.adapty_paywalls_locale)
+    Adapty.getPaywall(
+        placementId = "YOUR_PLACEMENT_ID",
+        locale = locale
+    ).onSuccess { paywall ->
+        // istenen paywall
+    }.onError { error ->
+        // hatayı işle
+    }
+}
+```
+Bu sayede uygulamanızın her kullanıcısı için hangi yerelleştirmenin alınacağı üzerinde tam kontrol sahibi olursunuz.
+
+Compose Multiplatform kaynakları kullanmıyorsanız, aynı fikir kullandığınız herhangi bir yerelleştirme kütüphanesi için de geçerlidir (örneğin, [moko-resources](https://github.com/icerockdev/moko-resources)) — Adapty yerel ayar kodunu her yerel ayarın kaynak paketinde bir dize olarak saklayın ve SDK'yı çağırmadan önce okuyun.
+## Yerelleştirmeleri uygulama: alternatif yol \{#implementing-localizations-the-other-way\}
+
+Her yerelleştirme için açıkça dil kodu tanımlamadan da benzer (ancak aynı değil) sonuçlar elde edebilirsiniz. Bu yaklaşım, dil kodunu doğrudan cihazdan çıkarmak anlamına gelir; ancak `commonMain` içinde ortak bir dil kodu API'si olmadığından `expect`/`actual` bildirimleri gereklidir:
+```kotlin showLineNumbers
+// commonMain
+expect fun currentLocaleTag(): String
+
+// androidMain
+actual fun currentLocaleTag(): String = Locale.getDefault().toLanguageTag()
+
+// iosMain
+actual fun currentLocaleTag(): String = NSLocale.currentLocale.localeIdentifier
+
+// commonMain — pass the locale code to Adapty
+
+suspend fun fetchPaywall() {
+    Adapty.getPaywall(
+        placementId = "YOUR_PLACEMENT_ID",
+        locale = currentLocaleTag()
+    ).onSuccess { paywall ->
+        // istenen paywall
+    }.onError { error ->
+        // hatayı işle
+    }
+}
+```
+Birkaç nedenden dolayı bu yaklaşımı önermiyoruz:
+1. iOS'ta kullanıcının tercih ettiği dil ile cihazın bölgesel yerel ayarı aynı değildir. `NSLocale.currentLocale.localeIdentifier`, kullanıcının uygulamanızı gerçekte hangi dilde okuduğuyla örtüşmeyebilecek bölgesel yerel ayarı döndürür. Yerelleştirilmiş string dosyaları kullanan iOS uygulamaları, her ikisini birleştirmek için Apple'ın çözümleme mantığına dayanır; bu da yukarıdaki önerilen yaklaşımla doğrudan çalışır.
+2. Cihazın tam olarak ne döndüreceğini ve bunun Adapty'deki bir yerelleştirmeyle eşleşip eşleşmeyeceğini tahmin etmek güçtür. Cihaz yerel ayarı, Adapty'de yapılandırmadığınız uzantılar veya bölge kodları içerebilir; bu durumda SDK, ilk alt etikete göre eşleşmeye ya da nihayetinde `en` diline geri döner.
+Should you decide to use this approach anyway — make sure you've covered all the relevant use cases.
