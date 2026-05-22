@@ -2348,6 +2348,17 @@ async function translateSidebarsForLang(
         continue;
       }
 
+      // Dry-run: report what would be translated and skip the API call.
+      // The cache file is left untouched so the next real run picks up the
+      // same work.
+      if (flagDryRun) {
+        console.log(
+          `  ⊘ sidebar:${name} (dry run — would translate ${toTranslateEntries.length}/${labelEntries.length} label(s)): ${toTranslateEntries.map((e) => `"${e.label}"`).join(", ")}`,
+        );
+        anyUpdated = true;
+        continue;
+      }
+
       // Translate only the changed/new labels
       const response = await client.messages.create({
         model: "claude-sonnet-4-6",
@@ -2412,7 +2423,10 @@ async function translateSidebarsForLang(
     }
   }
 
-  if (!anyUpdated) {
+  // Only claim "all up to date" when there were no errors — masking failures
+  // with a success message led to a confusing dry-run where API failures were
+  // silently shrugged off.
+  if (!anyUpdated && !hadErrors) {
     console.log(`${tag} Sidebars: all up to date.`);
   }
 
