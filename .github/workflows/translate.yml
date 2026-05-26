@@ -213,13 +213,16 @@ jobs:
             done
           done
 
-      # Static-check the freshly written translations before committing them.
-      # --fix auto-repairs rules that are mechanically safe (blank-line). If
-      # lint exits non-zero, unfixable issues remain — the workflow stops
-      # here without committing. The aggregated upload step below preserves
-      # the runner's state as an artifact so the operator can recover.
-      - name: Lint translated MDX
-        run: node scripts/lint-mdx.mjs --fix
+      # Apply lint --fix in best-effort mode so any auto-fixable rule
+      # (blank-line, locale-import-drift, missing-import,
+      # reusable-missing-import — see scripts/lint-mdx.mjs) is repaired and
+      # included in the commit. Unfixable issues no longer block translation:
+      # they fall through to s3-deploy-*.yml, which gates every build on a
+      # strict (no --fix) lint run. That trade keeps `main` translations
+      # flowing on every push and consolidates manual recovery to one place
+      # (the deploy log) instead of an artifact download.
+      - name: Auto-fix translated MDX (best-effort)
+        run: node scripts/lint-mdx.mjs --fix || true
 
       # Commit any new or updated locale files back to main. This push
       # triggers s3-deploy-production.yml, so the deploy that follows will
@@ -258,10 +261,13 @@ jobs:
           echo "Failed to push translations after 5 attempts."
           exit 1
 
-      # If lint or commit failed, preserve the aggregated locale state for
-      # manual recovery. The per-locale `failed-*` artifacts from the matrix
-      # also remain (uploaded on translate failure) — together they cover
-      # both upstream and downstream failure modes.
+      # Preserve the aggregated locale state when the commit/push step fails
+      # (typically: rebase conflict on main, push rejection, working-tree
+      # drift). Lint no longer trips this — auto-fix is best-effort and the
+      # deploy workflow's strict lint is the gate for unfixable issues — so
+      # this artifact now exists only as a recovery hatch for git-level
+      # failures. The per-locale `failed-*` artifacts from the matrix also
+      # remain (uploaded on translate failure).
       - name: Upload aggregated state on failure
         if: failure() && needs.setup.outputs.changed != ''
         uses: actions/upload-artifact@v4
