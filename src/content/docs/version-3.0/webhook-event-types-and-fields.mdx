@@ -16,6 +16,10 @@ You can send all event types to your webhook or choose only some of them. You ca
 
 <WebhookEvents />
 
+:::note
+`subscription_renewal_reactivated` carries the **prior** product ID — the one that was active when the user cancelled — even if the user later reactivated by purchasing a different product. Apple keeps the same `original_transaction_id` across the cancel → reactivate chain, so this event reflects the original product. The new product surfaces in the next `subscription_renewed` event when billing for the new product begins.
+:::
+
 ## Webhook event structure
 
 Adapty will send you only those events you've chosen in the **Events names** section of the [Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook) page.
@@ -230,7 +234,7 @@ The event properties for most event types are consistent (except for **Access Le
 | **transaction_id**            | String        | Unique identifier for a transaction.                                                                                                                                                                                                                                                                                                                             |
 | **trial_duration**            | String        | Duration of a trial period in days. Sent in a format "{} days", for example, "7 days". Present in the trial connected event types only: `trial_started`, `trial_converted`, `trial_cancelled`.                                                                                                                                                                   |
 | **variation_id**              | UUID          | Unique ID of the paywall where the purchase was made.                                                                                                                                                                                                                                                                                                            |
-| **vendor_product_id**         | String        | Product ID in the Apple App Store, Google Play Store, or Stripe.                                                                                                                                                                                                                                                                                                 |
+| **vendor_product_id**         | String        | <p>Product ID in the Apple App Store, Google Play Store, or Stripe.</p><p>If access was granted without a real store transaction, `vendor_product_id` will be one of:</p><ul><li>`adapty_server_side_product` — granted via the [server-side API](api-adapty/operations/grantAccessLevel).</li><li>`adapty_dashboard_product` — [granted manually](give-access-level-to-specific-customer) in the Adapty Dashboard.</li><li>`adapty_promotion` — legacy.</li></ul> |
 
 #### Additional tax and revenue event properties
 
@@ -239,7 +243,7 @@ The event properties related to taxes and revenue below are additional fields th
 Event types that have the tax and revenue event properties:
 
 - `subscription_renewed`
-- `subscription_initial_purchase`
+- `subscription_initial_purchase` (also referred to as `subscription_started` — same event)
 - `subscription_refunded`
 - `non_subscription_purchase`
 
@@ -251,6 +255,53 @@ Event types that have the tax and revenue event properties:
 | **proceeds_usd**      | Float | Product price after Apple/Google cut.                        |
 | **tax_amount_local**  | Float | Tax amount deducted in local currency.                       |
 | **tax_amount_usd**    | Float | Tax amount deducted in USD.                                  |
+
+#### `non_subscription_purchase` example payload
+
+`non_subscription_purchase` follows the same structure as subscription events but reflects a one-time or consumable purchase. Subscription-only fields don't apply: `cancellation_reason`, `will_renew`, `is_in_grace_period`, `is_refund`, `is_lifetime`, and `trial_duration` are absent. `subscription_expires_at` is present but `null`. The tax and revenue fields (`net_revenue_*`, `proceeds_*`, `tax_amount_*`) are included.
+
+<details>
+<summary>Example payload (click to expand)</summary>
+
+```json title="Json" showLineNumbers
+{
+  "profile_id": "00000000-0000-0000-0000-000000000000",
+  "customer_user_id": "UserIdInYourSystem",
+  "event_type": "non_subscription_purchase",
+  "event_datetime": "2000-01-31T00:00:00.000000+0000",
+  "event_properties": {
+    "store": "app_store",
+    "currency": "USD",
+    "price_usd": 4.99,
+    "price_local": 4.99,
+    "proceeds_usd": 4.2415,
+    "proceeds_local": 4.2415,
+    "net_revenue_usd": 4.2415,
+    "net_revenue_local": 4.2415,
+    "tax_amount_usd": 0,
+    "tax_amount_local": 0,
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "environment": "Production",
+    "vendor_product_id": "100coins",
+    "transaction_id": "0000000000000000",
+    "original_transaction_id": "0000000000000000",
+    "purchase_date": "2024-11-15T10:45:36.181000+0000",
+    "original_purchase_date": "2024-11-15T10:45:36.181000+0000",
+    "subscription_expires_at": null,
+    "store_country": "US",
+    "profile_country": "US",
+    "profile_ip_address": "10.10.1.1",
+    "profile_has_access_level": false,
+    "profile_total_revenue_usd": 4.99,
+    "consecutive_payments": 1,
+    "rate_after_first_year": false,
+    "profile_event_id": "00000000-0000-0000-0000-000000000000"
+  },
+  "event_api_version": 1
+}
+```
+
+</details>
 
 #### For Access Level Updated event
 
@@ -291,7 +342,7 @@ Use this event to update the user’s access level in your database, grant or re
 | **profile_event_id**               | UUID          | Unique event ID that can be used for deduplication.          |
 | **profile_has_access_level**       | Boolean       | Boolean indicating whether the profile has an active access level. |
 | **profile_id**                     | UUID          | Adapty internal user profile ID.                             |
-| **profile_ip_address**             | String        | Profile IP address of the user.                              |
+| **profile_ip_address**             | String        | Profile IP (can be IPv4 or IPv6, with IPv4 preferred when available). `null` if **Collect users' IP addresses** is disabled in the [app settings](https://app.adapty.io/settings/general). |
 | **profile_total_revenue_usd**      | Float         | Total revenue for the profile, refunds included.             |
 | **purchase_date**                  | ISO 8601 date | The date and time of product purchase.                       |
 | **renewed_at**                     | ISO 8601 date | Date and time when the access will be renewed.               |
@@ -302,7 +353,7 @@ Use this event to update the user’s access level in your database, grant or re
 | **transaction_id**                 | String        | Unique identifier for a transaction.                         |
 | **trial_duration**                 | String        | Duration of a trial period in days (e.g., "7 days").         |
 | **variation_id**                   | UUID          | An identifier of a variation, used to attribute purchases to this paywall. |
-| **vendor_product_id**              | String        | Product ID in the store (Apple/Google/Stripe).               |
+| **vendor_product_id**              | String        | <p>Product ID in the store (Apple/Google/Stripe).</p><p>If access was granted without a real store transaction, `vendor_product_id` will be one of:</p><ul><li>`adapty_server_side_product` — granted via the [server-side API](api-adapty/operations/grantAccessLevel).</li><li>`adapty_dashboard_product` — [granted manually](give-access-level-to-specific-customer) in the Adapty Dashboard.</li><li>`adapty_promotion` — legacy.</li></ul> |
 | **will_renew**                     | Boolean       | Indicates whether the paid access level will be renewed.     |
 
 :::warning
