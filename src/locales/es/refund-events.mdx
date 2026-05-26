@@ -1,29 +1,48 @@
 ---
 title: "Eventos de reembolso"
-description: "Gestiona los eventos de reembolso en Adapty para reducir la pérdida de usuarios y optimizar los ingresos."
+description: "Gestiona los eventos de reembolso en Adapty para reducir la pérdida de clientes y optimizar los ingresos."
 metadataTitle: "Gestión de eventos de reembolso en Adapty | Documentación de Adapty"
 ---
 
-El gráfico de eventos de reembolso muestra cuántas compras y suscripciones fueron reembolsadas. Adapty asocia cada evento de reembolso a la fecha en que se emitió el reembolso, no a la fecha de inicio de la suscripción.
+El gráfico de eventos de reembolso muestra cuántas compras y suscripciones han sido reembolsadas. Adapty asocia cada evento de reembolso a la fecha en que se emitió el reembolso, no a la fecha de inicio de la suscripción.
 
 <ZoomImage id="a3e1945-small-CleanShot_2023-05-11_at_18.36.262x.webp" width="700px" alt="Gráfico de eventos de reembolso" />
-
 ## Cálculo \{#calculation\}
 
-Adapty cuenta cada compra o suscripción reembolsada dentro del período seleccionado. Cada reembolso se atribuye a la fecha en que ocurrió, no a cuando comenzó la suscripción. Los reembolsos de pruebas gratuitas se excluyen porque no generan ingresos.
+Adapty contabiliza cada compra o suscripción reembolsada dentro del período seleccionado. Cada reembolso se atribuye a la fecha en que ocurrió, no a cuando comenzó la suscripción. Los reembolsos de períodos de prueba se excluyen porque los períodos de prueba no generan ingresos.
+## Cómo gestionan los reembolsos las métricas \{#how-metrics-handle-refunds\}
 
+Las distintas métricas tratan los reembolsos de forma diferente. Un mismo evento de reembolso puede reducir un gráfico de forma inmediata, reducir otro de forma retroactiva (modificando valores de períodos pasados) o no afectar a un tercero en absoluto. La tabla siguiente muestra las reglas por métrica.
+| Métrica | ¿Se aplican reembolsos? | Fecha de atribución | ¿Puede ser negativo? | Notas |
+| --- | --- | --- | --- | --- |
+| [Revenue](revenue) | Sí | Fecha del reembolso, no la fecha de compra original | Sí — en días en que los reembolsos superan los ingresos nuevos | Revenue = transacciones totales − reembolsos. |
+| [MRR](mrr) | Sí, de forma retroactiva | La suscripción se elimina de todos los períodos en que estuvo activa | No | Los valores de períodos pasados pueden disminuir tras un reembolso. |
+| [ARR](arr) | Sí, de forma retroactiva | Igual que MRR | No | Los valores de períodos pasados pueden disminuir tras un reembolso. |
+| [ARPU](arpu) | Sí | Fecha del reembolso | Sí (en períodos con muchos reembolsos) | Los reembolsos se restan del numerador de ingresos. |
+| [ARPPU](arppu) | Sí, solo en el numerador | Fecha del reembolso | Sí (en períodos con muchos reembolsos) | Los reembolsos se restan del numerador de ingresos. Un usuario reembolsado sigue contando en el denominador de usuarios de pago, por lo que muchos reembolsos reducen el ARPPU más rápido de lo esperado. |
+| [Suscripciones activas](active-subscriptions) | Sí, de forma retroactiva | La suscripción se elimina del recuento | No | |
+| [Nuevas suscripciones](reactivated-subscriptions) | **No** | — | No | El recuento incluye suscripciones reembolsadas posteriormente. Compara con [Refund events](refund-events) para el impacto neto. |
+| [Refund money](refund-money) / [Refund events](refund-events) | Los reembolsos **son** el dato | Fecha del reembolso | No (siempre ≥ 0) | |
+| [Retención](analytics-retention) | **No** | — | No | Los usuarios reembolsados siguen contando en la curva de retención. Esto puede hacer que la retención parezca mayor que [Active subscriptions](active-subscriptions) o [Revenue](revenue) para la misma cohorte. |
+| [Ingresos de cohorte](analytics-cohorts) | Sí, de forma acumulativa | Fecha del reembolso | No (las sustracciones acumulativas no llevan el ingreso de cohorte por debajo de cero) | Los reembolsos se restan de los ingresos de cohorte cuando ocurren. |
+| Métricas de [paywall](paywall-metrics) / [prueba A/B](results-and-metrics) (recuentos) | **No** | — | No | Los recuentos de Subscribers, Paying Subscribers y ARPPU en estas páginas no deducen reembolsos. |
+| Exportaciones GCS / S3 | El reembolso aparece como su propia fila de evento | `event_datetime` = marca de tiempo del reembolso | Las columnas netas pueden ser negativas al agregar | La fila de reembolso lleva `is_refund = true` (S3/GCS) o el tipo de evento `subscription_refunded` (webhooks). |
+### Valores negativos \{#negative-values\}
+
+En las vistas agregadas (el gráfico de Revenue, los análisis personalizados en exportaciones), una métrica puede mostrar un valor negativo para un período o agrupación concreta cuando los reembolsos de ese bloque superan los ingresos nuevos del mismo bloque. No es un error: es la aritmética funcionando como se diseñó.
+
+Por ejemplo: un país no tuvo nuevas compras un martes, pero ese día se procesó un reembolso de 100 $ por una compra anterior. Los ingresos de ese país para el martes aparecerán como −100 $.
 ## Filtros y agrupaciones disponibles \{#available-filters-and-grouping\}
 
 :::link
 Artículo principal: [Controles de análisis](controls-filters-grouping-compare-proceeds)
 :::
 
-- ✅ Filtrar por: Atribución, país, paywall, store, producto, duración y motivo de reembolso.
-- ✅ Agrupar por: Producto, país, store, paywall, duración, motivo de reembolso, estado de atribución, canal de atribución, campaña de atribución, grupo de anuncios de atribución, conjunto de anuncios de atribución y creatividad de atribución.
-
+- ✅ Filtrar por: Atribución, Audiencia, Motivo de reembolso, País, Tipo de oferta, ID de oferta, Tipo de descuento de oferta, Paywall, Pruebas A/B, Placement, Período, Segmento, Store, Producto y Duración.
+- ✅ Agrupar por: Motivo de reembolso, Producto, País, Store, Paywall, Audiencia, Placement, Duración, Tipo de oferta, Tipo de descuento de oferta, ID de oferta, Segmento y Atribución.
 ## Métricas similares \{#similar-metrics\}
 
-Para una comparación detallada de estas métricas, consulta la [tabla de comparación de métricas](metric-comparison-table#revenue).
+Para una comparación en paralelo de estas métricas, consulta la [tabla de comparación de métricas](metric-comparison-table#revenue).
 
 - [Dinero reembolsado](refund-money)
 - [Problema de facturación](billing-issue)
