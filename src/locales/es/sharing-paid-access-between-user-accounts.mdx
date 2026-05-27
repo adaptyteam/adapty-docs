@@ -53,6 +53,11 @@ Cuando desactivas la configuración predeterminada y activas **Transfer access t
 
 El cambio se produce cuando el usuario genera un nuevo evento en el store: por ejemplo, renueva la suscripción o restaura sus compras.
 :::
+:::important
+Adapty revoca el perfil antiguo solo cuando el nuevo perfil tiene un [Customer User ID](identifying-users#set-customer-user-id-on-configuration) en el momento en que el SDK propaga la transacción. Si `restorePurchases` se ejecuta en un perfil anónimo, tanto el antiguo Customer User ID como el nuevo perfil anónimo obtendrán el nivel de acceso. El perfil antiguo se revoca más adelante, cuando identificas el perfil anónimo.
+
+Para evitarlo, llama a los métodos del SDK en este orden: `activate` → `identify` → `restorePurchases`.
+:::
 ## Desactivar el acceso compartido de pago \{#disable-paid-access-sharing\}
 
 Esta configuración **solo es adecuada** para aplicaciones con **autenticación obligatoria** o una implementación propia de gestión de accesos. En cualquier otro caso, los usuarios podrían no poder acceder a sus compras, y tu aplicación corre el riesgo de **no superar la revisión obligatoria del store**.
@@ -64,6 +69,14 @@ Al deshabilitar el acceso compartido de pago, impides que los IDs de cliente her
 :::important
 En situaciones de emergencia, puede que necesites [eliminar un perfil de usuario](api-adapty/operations/deleteProfile) para que el siguiente perfil disponible (ya sea identificado o anónimo) pueda reclamar su nivel de acceso.
 :::
+## Referencia práctica \{#practical-reference\}
+
+Una vez elegido un modo, los contratos a continuación describen qué esperar: qué perfiles verán el acceso, cuándo lo pierde el perfil anterior y qué eventos de webhook se disparan.
+| Modo | ¿Varios perfiles comparten una compra? | ¿Se revoca el perfil antiguo al transferir? | Cuándo se revoca el perfil antiguo | Eventos de webhook cuando un segundo perfil reclama la suscripción |
+| --- | --- | --- | --- | --- |
+| **Habilitado (por defecto)** | Sí — todos los perfiles que restauran o inician sesión heredan el acceso | Nunca | N/A | `access_level_updated` (`is_active=true`) por cada nuevo perfil que hereda |
+| **Transferir acceso al nuevo usuario** | No — exclusivo, pero se puede mover entre perfiles | Sí | Inmediatamente cuando el nuevo dispositivo identificado propaga la transacción (`restorePurchases`, identify, o el siguiente evento del store) | Perfil nuevo: `access_level_updated` (`is_active=true`). Perfil antiguo: `access_level_updated` (`is_active=false`) |
+| **Deshabilitado** | No — un Customer User ID por compra, de forma permanente | N/A — el acceso nunca se transfiere | N/A | Ninguno en el segundo perfil. El SDK no muestra acceso para ese perfil |
 ## Compartir acceso de pago en sandbox \{#sharing-paid-access-on-sandbox\}
 
 Puedes establecer una política de compartición de acceso de pago específicamente para el entorno sandbox. Al probar compras en sandbox, ten en cuenta el siguiente comportamiento:
@@ -71,6 +84,9 @@ Puedes establecer una política de compartición de acceso de pago específicame
 * Si reinstalaas la aplicación y Adapty detecta que el producto ya fue comprado, el perfil activo heredará el nivel de acceso.
 * Si Apple detecta una compra existente para el producto, no permitirá realizar la misma compra dos veces, aunque el perfil activo no tenga el nivel de acceso necesario.
 Este comportamiento se produce **independientemente de la configuración de acceso de pago compartido**. Si tu app no muestra el paywall, no puedes comprar el producto. La única solución es **borrar el historial de compras de tu cuenta**. Consulta la [guía de pruebas en sandbox](test-purchases-in-sandbox) para obtener instrucciones detalladas.
+:::warning
+Las suscripciones sandbox en Apple se renuevan automáticamente cada pocos minutos. Estas renovaciones rápidas pueden cambiar qué perfil trata Adapty como [principal](how-profiles-work#parent-and-inheritor-profiles) — un patrón de cadena que raramente se reproduce en producción. Prueba el modo que usas en producción y confirma el comportamiento con un Apple ID real antes de sacar conclusiones del sandbox.
+:::
 ## Compartición de acceso de pago en los análisis \{#paid-access-sharing-in-analytics\}
 
 * Adapty registra las transacciones a medida que se producen. Una misma transacción puede estar asociada a más de un perfil, pero no se contabiliza más de una vez.

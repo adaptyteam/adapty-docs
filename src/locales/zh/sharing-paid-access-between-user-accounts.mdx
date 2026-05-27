@@ -53,6 +53,11 @@ Adapty 每次限制一个客户 ID 持有购买访问权限。设备所有者可
 
 切换操作会在用户触发新的商店事件时发生：例如，续订订阅或恢复购买。
 :::
+:::important
+只有当 SDK 传播交易时新用户画像已设置 [Customer User ID](identifying-users#set-customer-user-id-on-configuration)，Adapty 才会撤销旧用户画像。如果 `restorePurchases` 在匿名用户画像上运行，旧的 Customer User ID 和新的匿名用户画像都会获得访问等级。旧用户画像会在您识别该匿名用户画像后才被撤销。
+
+为避免此问题，请按顺序调用 SDK 方法：`activate` → `identify` → `restorePurchases`。
+:::
 ## 禁用付费访问共享 \{#disable-paid-access-sharing\}
 
 此设置**仅适用于**具有**强制身份验证**或独立访问管理实现的应用程序。在其他情况下，用户可能无法访问其已购买的内容，您的应用程序将面临**无法通过商店强制审核**的风险。
@@ -64,6 +69,14 @@ Adapty 每次限制一个客户 ID 持有购买访问权限。设备所有者可
 :::important
 在紧急情况下，您可能需要[删除用户画像](api-adapty/operations/deleteProfile)，以便下一个可用的用户画像（无论是已识别的还是匿名的）能够获得其访问等级。
 :::
+## 实用参考 \{#practical-reference\}
+
+选定合并模式后，以下规则说明了你可以期望的结果：哪些用户画像能看到该访问等级、旧用户画像何时失去访问权限，以及会触发哪些 webhook 事件。
+| 模式 | 多个用户画像共享同一次购买？ | 转移时吊销旧用户画像？ | 何时吊销旧用户画像 | 第二个用户画像认领订阅时触发的 Webhook 事件 |
+| --- | --- | --- | --- | --- |
+| **已启用（默认）** | 是——每个通过恢复购买或登录的用户画像均可继承访问等级 | 从不 | 不适用 | 每个继承访问权限的新用户画像均触发 `access_level_updated`（`is_active=true`） |
+| **将访问权限转移给新用户** | 否——独占，但可在用户画像之间转移 | 是 | 新的已识别设备传播该交易时立即吊销（`restorePurchases`、identify 或下一次商店侧事件） | 新用户画像：`access_level_updated`（`is_active=true`）。旧用户画像：`access_level_updated`（`is_active=false`） |
+| **已禁用** | 否——每次购买永久绑定唯一一个 Customer User ID | 不适用——访问权限永不转移 | 不适用 | 第二个用户画像不触发任何事件。SDK 对该用户画像不显示任何访问权限 |
 ## 在沙盒环境中共享付费访问权限 \{#sharing-paid-access-on-sandbox\}
 
 您可以专门为沙盒环境设置共享付费访问权限策略。在沙盒环境中测试购买时，请注意以下行为：
@@ -71,6 +84,9 @@ Adapty 每次限制一个客户 ID 持有购买访问权限。设备所有者可
 * 如果您重新安装应用，Adapty 检测到该产品已被购买，当前用户画像将继承相应的访问等级。
 * 如果 Apple 检测到该产品已有购买记录，即使当前用户画像没有所需的访问等级，也不会允许您重复购买同一产品。
 此行为**与您的共享付费权限设置无关**。如果您的应用未显示付费墙，您就无法购买该产品。唯一的解决方案是**清除您账号的购买记录**。请参阅[沙盒测试指南](test-purchases-in-sandbox)获取详细说明。
+:::warning
+沙盒环境中的 Apple 订阅每隔几分钟就会自动续订。这种快速续订可能导致 Adapty 识别的[父级](how-profiles-work#parent-and-inheritor-profiles)用户画像发生切换——这种链式模式在正式环境中很少出现。请在与生产环境一致的模式下进行测试，并在得出结论之前，使用真实 Apple ID 验证实际行为。
+:::
 ## 付费访问共享在分析中的表现 \{#paid-access-sharing-in-analytics\}
 
 * Adapty 按实际发生的交易进行记录。单笔交易可能关联多个用户画像，但不会被重复计算。
