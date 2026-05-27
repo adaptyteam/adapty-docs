@@ -65,6 +65,12 @@ When you disable the default setting, and enable **Transfer access to new user**
 The switch occurs when a user triggers a new store event: for example, renews the subscription, or restores their purchases.
 :::
 
+:::important
+Adapty revokes the old profile only when the new profile has a [Customer User ID](identifying-users#set-customer-user-id-on-configuration) at the moment the SDK propagates the transaction. If `restorePurchases` runs on an anonymous profile, both the old Customer User ID and the new anonymous profile end up with the access level. The old profile is revoked later, when you identify the anonymous profile.
+
+To avoid this, call the SDK methods in order: `activate` → `identify` → `restorePurchases`.
+:::
+
 ## Disable paid access sharing
 
 This setting is **only appropriate** for applications with **mandatory authentication** or an independent access management implementation. In other cases, the users may not be able to access their purchases, and your application risks **failing the mandatory store review**.
@@ -79,6 +85,16 @@ When you disable paid access sharing, you prevent customer IDs from inheriting p
 In emergency situations, you may need to [delete a user profile](api-adapty/operations/deleteProfile) in order for the next available profile (whether identified or anonymous) to claim its access level.
 :::
 
+## Practical reference
+
+After you pick a mode, the contracts below describe what to expect: which profiles see the access, when the old profile loses it, and which webhook events fire.
+
+| Mode | Multiple profiles share one purchase? | Old profile revoked on transfer? | When the old profile is revoked | Webhook events when a second profile claims the subscription |
+| --- | --- | --- | --- | --- |
+| **Enabled (default)** | Yes — every profile that restores or signs in inherits access | Never | N/A | `access_level_updated` (`is_active=true`) for each new profile that inherits |
+| **Transfer access to new user** | No — exclusive, but movable between profiles | Yes | Immediately when the new identified device propagates the transaction (`restorePurchases`, identify, or the next store-side event) | New profile: `access_level_updated` (`is_active=true`). Old profile: `access_level_updated` (`is_active=false`) |
+| **Disabled** | No — one Customer User ID per purchase, permanently | N/A — access never transfers | N/A | None on the second profile. The SDK shows no access for it |
+
 ## Sharing paid access on sandbox
 
 You can set a sharing paid access policy specifically for the sandbox environment. When you test purchases in the sandbox environment, expect the following behavior:
@@ -88,6 +104,10 @@ You can set a sharing paid access policy specifically for the sandbox environmen
 * If Apple detects an existing purchase for the product, it won't allow you to make the same purchase twice, even if the active profile doesn't have the necessary access level.
 
 This behavior occurs **independently of your sharing paid access setting**. Your app doesn't display the paywall, you can't buy the product. The only solution is to **clear your account's purchase history**. Follow the [sandbox testing guide](test-purchases-in-sandbox) for in-depth instructions.
+
+:::warning
+Sandbox subscriptions on Apple auto-renew every few minutes. These rapid renewals can swap which profile Adapty treats as the [parent](how-profiles-work#parent-and-inheritor-profiles) — a chain pattern production rarely reproduces. Test the mode you ship in production, and confirm behavior with a real Apple ID before drawing conclusions from sandbox.
+:::
 
 ## Paid access sharing in analytics
 
