@@ -1,10 +1,10 @@
 
 :::note
-To proceed, ensure that you created a paywall, onboarding, or A/B test you want to run and an audience, you'd like to specify.
+To proceed, ensure that you created a flow, paywall, onboarding, or A/B test you want to run and an audience, you'd like to specify.
 :::
 
-1. In the **Placements/ Your placement** window, add a paywall, onboarding, or A/B test to display for default *All users* audience. To do this, click either the **Run paywall** or **Run A/B test** button, then select the desired paywall, onboarding, or A/B test from the dropdown list.
-2. If you want to use more than one audience in the placement to create personalized paywalls tailored to different user groups, click the **Add audience** button and choose the desired user segment from the list.
+1. In the **Placements/ Your placement** window, add a flow, paywall, onboarding, or A/B test to display for default *All users* audience. To do this, click either the **Run flow**, **Run paywall**, or **Run A/B test** button (the label depends on the placement type), then select the desired flow, paywall, onboarding, or A/B test from the dropdown list.
+2. If you want to use more than one audience in the placement to create personalized content tailored to different user groups, click the **Add audience** button and choose the desired user segment from the list.
 
 <Zoom>
   <img src="/docs/img/placement-add-audience.webp"
@@ -17,7 +17,7 @@ To proceed, ensure that you created a paywall, onboarding, or A/B test you want 
 />
 </Zoom>
 
-3. Now add the paywall, onboarding, or A/B test to show for this audience.
+3. Now add the flow, paywall, onboarding, or A/B test to show for this audience.
 4. Add as many audiences as you need.
 5. If you have more than one audience, check that the audiences have the correct priorities.
 6. Click the **Save and publish button**.
