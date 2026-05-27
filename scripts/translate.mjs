@@ -271,6 +271,73 @@ TRANSLATE:
 Output valid YAML only. No explanation, no commentary, no markdown fences wrapping the output.`;
 }
 
+/**
+ * Strip non-YAML preamble and outer markdown fences from a model response.
+ *
+ * Defends against the model occasionally ignoring "Output valid YAML only"
+ * and producing things like:
+ *
+ *   I need to translate the OpenAPI specification for you. Here it is:
+ *   ```
+ *   openapi: 3.1.0
+ *   ...
+ *   ```
+ *
+ * Strategy (conservative — pass through untouched when the response is
+ * already well-formed):
+ *   1. If the first non-blank line is already a YAML-shaped key, list item,
+ *      or document separator, return as-is. This avoids touching legitimate
+ *      ``` that appears inside description values.
+ *   2. Otherwise, try to extract the first fenced code block (```yaml,
+ *      ```yml, or bare ```).
+ *   3. If no closing fence, drop preamble lines until we hit a YAML-shaped
+ *      line and return from there.
+ *
+ * Logs a warning when sanitization actually changes the content so flaky
+ * model behavior is visible in CI logs.
+ */
+function sanitizeYamlResponse(text, contextLabel) {
+  if (!text) return text;
+
+  // Fast path: first non-blank line looks like a top-level YAML key
+  // (`paths:`, `components:`, `info:`, …) or a list/doc-separator marker.
+  // Anything later in the document — including ``` inside a description —
+  // is left alone.
+  const head = text.trimStart();
+  const firstLine = head.split("\n", 1)[0];
+  const yamlStartRe = /^(?:[A-Za-z_$][\w$./{}-]*\s*:|---|- )/;
+  if (yamlStartRe.test(firstLine)) {
+    return text;
+  }
+
+  let cleaned = null;
+
+  // First fenced block wins. Tolerant of ```yaml, ```yml, or bare ```.
+  const fenceMatch = text.match(/```(?:ya?ml)?\s*\n([\s\S]*?)\n```/);
+  if (fenceMatch) {
+    cleaned = fenceMatch[1];
+  } else {
+    // No closing fence — drop preamble line-by-line until YAML appears.
+    const lines = text.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^```/.test(line)) continue;
+      if (yamlStartRe.test(line)) {
+        cleaned = lines.slice(i).join("\n");
+        break;
+      }
+    }
+  }
+
+  if (cleaned !== null && cleaned !== text) {
+    console.warn(
+      `  ⚠ ${contextLabel}: model wrapped output in preamble/fence — sanitized before parse`,
+    );
+    return cleaned;
+  }
+  return text;
+}
+
 // ---------------------------------------------------------------------------
 // Glossary loader
 // ---------------------------------------------------------------------------
@@ -2618,7 +2685,10 @@ async function translateApiSpecBatchSections(
           hadErrors = true;
           continue;
         }
-        newTranslations[sectionId] = r.result.message.content[0].text;
+        newTranslations[sectionId] = sanitizeYamlResponse(
+          r.result.message.content[0].text,
+          `api-spec:${spec.basename} ${sectionId}`,
+        );
       } else {
         console.error(
           `  ✗ api-spec:${spec.basename} ${sectionId} (${r.custom_id}): ${JSON.stringify(r.result)}`,
@@ -2778,7 +2848,11 @@ async function translateApiSpecsForLang(
           API_SPECS_DIR,
           `${spec.basename}.${lang}.yaml`,
         );
-        await fs.writeFile(outputPath, translated, "utf-8");
+        await fs.writeFile(
+          outputPath,
+          sanitizeYamlResponse(translated, `api-spec:${spec.basename}`),
+          "utf-8",
+        );
 
         const hash = await fileHash(spec.full);
         await fs.mkdir(apiHashesDir, { recursive: true });
