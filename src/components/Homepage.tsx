@@ -16,8 +16,8 @@ const T = {
     analyticsDesc: "Review detailed metrics related to your app monetization.",
     integrationsTitle: "Connect integrations",
     integrationsDesc: "Send events to the third party analytics and attribution services your team already uses.",
-    paywallTitle: "Design paywalls in the no-code builder",
-    paywallDesc: "Create paywalls in minutes with the Adapty Paywall Builder. Make changes to your paywalls without releasing a new version of your app.",
+    builderTitle: "Create flows in the no-code builder",
+    builderDesc: "Create customizable paywalls and multi-screen onboarding flows without coding. Natively rendered by the Adapty SDK.",
     platformsTitle: "SDKs for every platform",
     ios: "Guide for integrating Adapty with iOS",
     android: "Guide for integrating Adapty with Android",
@@ -41,8 +41,8 @@ const T = {
     analyticsDesc: "查看与应用变现相关的详细指标。",
     integrationsTitle: "连接集成",
     integrationsDesc: "将事件发送到您团队已在使用的第三方分析和归因服务。",
-    paywallTitle: "在无代码构建器中设计付费墙",
-    paywallDesc: "使用 Adapty 付费墙构建器在几分钟内创建付费墙。无需发布新版本即可修改付费墙。",
+    builderTitle: "在无代码构建器中创建流程",
+    builderDesc: "无需编写代码即可创建可定制的付费墙和多屏引导流程。由 Adapty SDK 原生渲染。",
     platformsTitle: "适配所有平台的 SDK",
     ios: "iOS 版 Adapty 集成指南",
     android: "Android 版 Adapty 集成指南",
@@ -66,8 +66,8 @@ const T = {
     analyticsDesc: "Uygulama gelir performansınızla ilgili detaylı metrikleri inceleyin.",
     integrationsTitle: "Entegrasyonları bağlayın",
     integrationsDesc: "Ekibinizin halihazırda kullandığı üçüncü parti analitik ve attribution servislerine event gönderin.",
-    paywallTitle: "No-code builder ile paywall tasarlayın",
-    paywallDesc: "Adapty Paywall Builder ile dakikalar içinde paywall oluşturun. Uygulamanızın yeni bir sürümünü yayınlamadan paywall'larınızda değişiklik yapın.",
+    builderTitle: "No-code builder ile flow oluşturun",
+    builderDesc: "Kod yazmadan özelleştirilebilir paywall'lar ve çok ekranlı onboarding akışları oluşturun. Adapty SDK tarafından natif olarak render edilir.",
     platformsTitle: "Her platform için SDK'lar",
     ios: "Adapty'yi iOS ile entegre etme rehberi",
     android: "Adapty'yi Android ile entegre etme rehberi",
@@ -91,8 +91,8 @@ const T = {
     analyticsDesc: "Просматривайте подробные метрики, связанные с монетизацией вашего приложения.",
     integrationsTitle: "Подключить интеграции",
     integrationsDesc: "Отправляйте события в сторонние сервисы аналитики и атрибуции, которые уже использует ваша команда.",
-    paywallTitle: "Дизайн пейволов в конструкторе без кода",
-    paywallDesc: "Создавайте пейволы за минуты с помощью конструктора Adapty Paywall Builder. Вносите изменения в пейволы без выпуска новой версии приложения.",
+    builderTitle: "Создавайте флоу в конструкторе без кода",
+    builderDesc: "Создавайте кастомизируемые пейволы и многоэкранные онбординг-флоу без написания кода. Adapty SDK рендерит их нативно.",
     platformsTitle: "SDK для каждой платформы",
     ios: "Интеграция Adapty с iOS",
     android: "Интеграция Adapty с Android",
@@ -171,6 +171,26 @@ const Homepage: React.FC<HomepageProps> = ({ locale }) => {
         <h2 className="section-title">{t.nextTitle}</h2>
 
         <div className="action-cards-grid">
+          {/* Flow Builder Card */}
+          <a href={`${base}/adapty-flow-builder`} className="action-card">
+            <div className="action-card-icon" style={{background: 'linear-gradient(135deg, #FECACA 0%, #FCA5A5 100%)'}}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" strokeWidth="2"
+                   stroke="#DC2626">
+                <path strokeLinecap="round" strokeLinejoin="round"
+                      d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"/>
+              </svg>
+            </div>
+            <div className="action-card-content">
+              <h3 className="action-card-title">{t.builderTitle}</h3>
+              <p className="action-card-description">{t.builderDesc}</p>
+            </div>
+            <div className="action-card-arrow">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </a>
+
           {/* A/B Testing Card */}
           <a href={`${base}/ab-tests`} className="action-card">
             <div className="action-card-icon" style={{ background: 'linear-gradient(135deg, #E9D5FF 0%, #DDD6FE 100%)' }}>
@@ -222,26 +242,6 @@ const Homepage: React.FC<HomepageProps> = ({ locale }) => {
             <div className="action-card-content">
               <h3 className="action-card-title">{t.integrationsTitle}</h3>
               <p className="action-card-description">{t.integrationsDesc}</p>
-            </div>
-            <div className="action-card-arrow">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-          </a>
-
-          {/* Paywall builder Card */}
-          <a href={`${base}/adapty-paywall-builder`} className="action-card">
-            <div className="action-card-icon" style={{background: 'linear-gradient(135deg, #FECACA 0%, #FCA5A5 100%)'}}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" strokeWidth="2"
-                   stroke="#DC2626">
-                <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"/>
-              </svg>
-            </div>
-            <div className="action-card-content">
-              <h3 className="action-card-title">{t.paywallTitle}</h3>
-              <p className="action-card-description">{t.paywallDesc}</p>
             </div>
             <div className="action-card-arrow">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

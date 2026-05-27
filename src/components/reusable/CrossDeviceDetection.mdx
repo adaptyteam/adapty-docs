@@ -1,0 +1,22 @@
+---
+no_index: true
+---
+
+When the SDK is activated, it automatically reads the user's existing entitlements from StoreKit (iOS) or Google Play Billing (Android) and syncs them with the Adapty backend. An active subscription appears on the Adapty profile without the app calling `restorePurchases`.
+
+What does **not** happen automatically is recognizing that a profile on a new device belongs to the same user as a profile on the original device. Adapty matches profiles by Customer User ID, so identity continuity depends on what you use as the CUID.
+
+**What Adapty can detect across devices**
+
+| Your setup | What Adapty detects | What you must do |
+| --- | --- | --- |
+| Customer User ID = `device_id` (no app login) | The new device gets a different CUID and therefore a different profile. The subscription syncs to the new profile via an **Access level updated** event, but `subscription_started` does not fire — the new profile is treated as an inheritor of the original purchase. Analytics keyed on `subscription_started` will undercount returning users. | Use a stable account ID as the Customer User ID so a returning user matches the existing profile across devices. |
+| Customer User ID = stable account ID (login on every device) | The SDK auto-syncs the subscription on `activate()`, and `identify()` matches the existing profile by CUID. | No additional setup needed — both identity and subscription resolve automatically. |
+| Apple Family Sharing inheritor | The family member receives the subscription through an **Access level updated** event only — `subscription_started` does not fire. | Listen for **Access level updated**. See [Apple Family Sharing](apple-family-sharing) for the full event matrix. |
+| Same Apple/Google account, different in-app users | The first profile to record the purchase becomes the parent. Subsequent profiles see the subscription through an inheritor chain, with one **Access level updated** event. | Require login, then choose a [sharing mode](sharing-paid-access-between-user-accounts) that fits your model. |
+
+**Restoring purchases on a new device**
+
+Expose a user-initiated "Restore purchases" button on your paywall. Apple App Review (guideline 3.1.1) requires one, and it acts as a fallback when the automatic sync misses an edge case. The button should call `restorePurchases` on your SDK.
+
+A programmatic `restorePurchases` call on first launch is not required for normal use — the SDK already runs the equivalent on `activate()`. Reserve programmatic calls for forcing a fresh receipt check, for example when debugging missing access after `activate()` completed.
