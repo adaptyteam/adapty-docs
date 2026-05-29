@@ -1,0 +1,698 @@
+---
+title: "Manejar eventos de onboarding en React Native SDK"
+description: "Maneja eventos relacionados con el onboarding en React Native usando Adapty."
+metadataTitle: "Gestión de Eventos de Onboarding en React Native | Documentación de Adapty"
+toc_max_heading_level: 4
+---
+
+Los onboardings configurados con el builder generan eventos a los que tu app puede responder. La forma de manejarlos depende del enfoque de presentación que estés usando:
+
+- **Presentación modal**: Requiere configurar manejadores de eventos que gestionen los eventos de todas las vistas de onboarding
+- **Componente React**: Maneja los eventos mediante parámetros de callback en línea directamente en el widget
+
+Antes de empezar, asegúrate de que:
+
+1. Tienes instalado el [SDK de React Native de Adapty](sdk-installation-reactnative) versión 3.8.0 o posterior.
+2. Has [creado un onboarding](create-onboarding).
+3. Has añadido el onboarding a un [placement](placements).
+
+Para controlar o monitorizar los procesos que ocurren en la pantalla de onboarding dentro de tu app, implementa manejadores de eventos:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+Para el componente React, los eventos se manejan mediante props individuales de manejadores de eventos en el componente `AdaptyOnboardingView`:
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
+  const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+      onClose={onClose}
+      onCustom={onCustom}
+      onPaywall={onPaywall}
+      onStateUpdated={onStateUpdated}
+      onFinishedLoading={onFinishedLoading}
+      onError={onError}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Para la presentación modal, implementa el método de manejadores de eventos.
+
+:::important
+Llamar a `setEventHandlers` varias veces sobrescribirá los manejadores que proporciones, reemplazando tanto los predeterminados como los configurados anteriormente para esos eventos específicos.
+:::
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(event, meta) {
+    // Track analytics events
+  },
+  onClose(actionId, meta) {
+    // Handle close action
+    view.dismiss();
+    return true;
+  },
+  onCustom(actionId, meta) {
+    // Handle custom actions
+  },
+  onPaywall(actionId, meta) {
+    // Handle paywall actions
+  },
+  onStateUpdated(action, meta) {
+    // Handle user input updates
+  },
+  onFinishedLoading(meta) {
+    // Onboarding finished loading
+  },
+  onError(error) {
+    // Handle loading errors
+  },
+});
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+Para versiones del SDK anteriores a 3.14, solo se admite la presentación modal:
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onAnalytics(event, meta) {
+    // Track analytics events
+  },
+  onClose(actionId, meta) {
+    // Handle close action
+    view.dismiss();
+    return true;
+  },
+  onCustom(actionId, meta) {
+    // Handle custom actions
+  },
+  onPaywall(actionId, meta) {
+    // Handle paywall actions
+  },
+  onStateUpdated(action, meta) {
+    // Handle user input updates
+  },
+  onFinishedLoading(meta) {
+    // Onboarding finished loading
+  },
+  onError(error) {
+    // Handle loading errors
+  },
+});
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Tipos de eventos \{#event-types\}
+
+Las siguientes secciones describen los distintos tipos de eventos que puedes manejar, independientemente del enfoque de presentación que estés usando.
+
+### Manejar acciones personalizadas \{#handle-custom-actions\}
+
+En el builder, puedes añadir una acción **custom** a un botón y asignarle un ID.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Después, puedes usar ese ID en tu código y manejarlo como una acción personalizada. Por ejemplo, si un usuario pulsa un botón personalizado como **Login** o **Allow notifications**, el manejador de eventos se disparará con el parámetro `actionId` que coincide con el **Action ID** del builder. Puedes crear tus propios IDs, como "allowNotifications".
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onCustom={onCustom}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onCustom(actionId, meta) {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onCustom(actionId, meta) {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Ejemplo de evento (Haz clic para expandir)</summary>
+
+```json
+{
+  "actionId": "allow_notifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+### Finalización de la carga del onboarding \{#finishing-loading-onboarding\}
+
+Cuando un onboarding termina de cargarse, se dispara este evento:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onFinishedLoading={onFinishedLoading}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onFinishedLoading(meta) {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onFinishedLoading(meta) {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Ejemplo de evento (Haz clic para expandir)</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+
+### Cerrar el onboarding \{#closing-onboarding\}
+
+El onboarding se considera cerrado cuando el usuario pulsa un botón con la acción **Close** asignada.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+Ten en cuenta que debes gestionar qué ocurre cuando el usuario cierra el onboarding. Por ejemplo, necesitas dejar de mostrar el propio onboarding.
+:::
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding, navigation }) {
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
+    navigation.goBack();  
+  }, [navigation]);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onClose={onClose}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onClose(actionId, meta) {
+    await view.dismiss();
+    return true;
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onClose(actionId, meta) {
+    await view.dismiss();
+    return true;
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Ejemplo de evento (Haz clic para expandir)</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+</Details>
+
+### Abrir un paywall \{#opening-a-paywall\}
+
+:::tip
+Maneja este evento para abrir un paywall si quieres abrirlo dentro del onboarding. Si prefieres abrirlo después de que se cierre, hay una forma más directa: maneja la acción de cierre y abre el paywall sin depender de los datos del evento.
+:::
+
+Si el usuario pulsa un botón que abre un paywall, recibirás el ID de acción del botón que [configuraste manualmente](get-paid-in-onboardings). La forma más sencilla de trabajar con paywalls en onboardings es hacer que el ID de acción coincida con el ID del placement del paywall.
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
+    openPaywall(actionId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onPaywall={onPaywall}
+    />
+  );
+}
+
+const openPaywall = async (placementId) => {
+  // Implement your paywall opening logic here
+};
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Ten en cuenta que, en iOS, solo se puede mostrar una vista (paywall u onboarding) en pantalla al mismo tiempo. Si presentas un paywall encima de un onboarding, no podrás controlar el onboarding en segundo plano de forma programática. Si intentas cerrar el onboarding, se cerrará el paywall en su lugar, dejando el onboarding visible. Para evitarlo, cierra siempre la vista del onboarding antes de presentar el paywall.
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onPaywall(actionId, meta) {
+    view.dismiss().then(() => {
+      openPaywall(actionId);
+    });
+  },
+});
+
+const openPaywall = async (placementId) => {
+  // Implement your paywall opening logic here
+};
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+Ten en cuenta que, en iOS, solo se puede mostrar una vista (paywall u onboarding) en pantalla al mismo tiempo. Si presentas un paywall encima de un onboarding, no podrás controlar el onboarding en segundo plano de forma programática. Si intentas cerrar el onboarding, se cerrará el paywall en su lugar, dejando el onboarding visible. Para evitarlo, cierra siempre la vista del onboarding antes de presentar el paywall.
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onPaywall(actionId, meta) {
+    view.dismiss().then(() => {
+      openPaywall(actionId);
+    });
+  },
+});
+
+const openPaywall = async (placementId) => {
+  // Implement your paywall opening logic here
+};
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Ejemplo de evento (Haz clic para expandir)</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+
+### Seguimiento de la navegación \{#tracking-navigation\}
+
+Recibes un evento de análisis cuando se producen distintos eventos relacionados con la navegación durante el flujo del onboarding:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
+    trackEvent(event.name, meta.onboardingId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(event, meta) {
+    trackEvent(event.name, meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onAnalytics(event, meta) {
+    trackEvent(event.name, meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+El objeto `event` puede ser uno de los siguientes tipos:
+
+| Tipo | Descripción |
+|------------|-------------|
+| `onboardingStarted` | Cuando el onboarding ha terminado de cargarse |
+| `screenPresented` | Cuando se muestra cualquier pantalla |
+| `screenCompleted` | Cuando se completa una pantalla. Incluye `elementId` opcional (identificador del elemento completado) y `reply` opcional (respuesta del usuario). Se dispara cuando el usuario realiza cualquier acción para salir de la pantalla. |
+| `secondScreenPresented` | Cuando se muestra la segunda pantalla |
+| `userEmailCollected` | Se dispara cuando se recoge el correo electrónico del usuario mediante el campo de entrada |
+| `onboardingCompleted` | Se dispara cuando el usuario llega a una pantalla con el ID `final`. Si necesitas este evento, [asigna el ID `final` a la última pantalla](design-onboarding). |
+| `unknown` | Para cualquier tipo de evento no reconocido. Incluye `name` (el nombre del evento desconocido) y `meta` (metadatos adicionales) |
+
+Cada evento incluye información `meta` con los siguientes campos:
+
+| Campo | Descripción |
+|------------|-------------|
+| `onboardingId` | Identificador único del flujo de onboarding |
+| `screenClientId` | Identificador de la pantalla actual |
+| `screenIndex` | Posición de la pantalla actual en el flujo |
+| `screensTotal` | Número total de pantallas en el flujo |
+
+<Details>
+<summary>Ejemplos de eventos (Haz clic para expandir)</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+```
+</Details>

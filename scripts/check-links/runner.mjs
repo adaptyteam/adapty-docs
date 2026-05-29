@@ -152,8 +152,8 @@ async function checkExternal(uniqueUrls, allLinks, existingErrors, { concurrency
     } else if (result.anchorMissing) {
       warnings.push({ ...link, type: 'external', severity: 'anchor', anchor: result.anchorMissing });
     } else if (result.redirect) {
-      const severity = isCaptchaRedirect(result.redirect) ? 'bot-protected'
-        : isLoginRedirect(result.redirect) ? 'login'
+      const severity = isCaptchaRedirect(result.redirect, link.url) ? 'bot-protected'
+        : isLoginRedirect(result.redirect, link.url) ? 'login'
         : result.localeRedirect ? 'locale-redirect' : 'redirect';
       warnings.push({ ...link, type: 'external', severity, redirect: result.redirect });
     }

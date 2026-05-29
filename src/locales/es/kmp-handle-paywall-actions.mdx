@@ -1,0 +1,165 @@
+---
+title: "Responder a acciones de botones en el SDK de Kotlin Multiplatform"
+description: "Gestiona las acciones de botones del paywall en Kotlin Multiplatform usando Adapty para una mejor monetización de tu app."
+metadataTitle: "Gestión de acciones de botones en paywalls | Documentación de Adapty"
+displayed_sidebar: sdkkmp
+toc_max_heading_level: 4
+keywords: ['botón de paywall', 'botón', 'acciones de botones de paywall', 'gestionar acciones']
+---
+
+:::warning
+**Solo las compras y restauraciones se gestionan automáticamente.** El resto de acciones de botones, como cerrar paywalls o abrir enlaces, requieren implementar las respuestas correspondientes en el código de la app.
+:::
+
+Si estás creando paywalls con el Paywall Builder de Adapty, es fundamental configurar los botones correctamente:
+
+1. Añade un [botón en el Paywall Builder](paywall-buttons) y asígnale una acción existente o crea un ID de acción personalizado.
+2. Escribe código en tu app para gestionar cada acción que hayas asignado.
+
+Esta guía muestra cómo gestionar acciones personalizadas y predefinidas en tu código.
+
+## Configurar AdaptyUIPaywallsEventsObserver \{#set-up-the-adaptyuipaywallseventsob server\}
+
+Para gestionar las acciones del paywall, necesitas implementar la interfaz `AdaptyUIPaywallsEventsObserver` y configurarla con `AdaptyUI.setPaywallsEventsObserver()`. Esto debe hacerse al inicio del ciclo de vida de tu app, normalmente en tu actividad principal o en la inicialización de la app.
+
+```kotlin
+
+// In your app initialization
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
+```
+
+## Cerrar paywalls \{#close-paywalls\}
+
+Para añadir un botón que cierre tu paywall:
+
+1. En el Paywall Builder, añade un botón y asígnale la acción **Close**.
+2. En el código de tu app, implementa un manejador para la acción `close` que descarte el paywall.
+
+:::info
+En el SDK de Kotlin Multiplatform, `CloseAction` y `AndroidSystemBackAction` cierran el paywall por defecto. Sin embargo, puedes sobreescribir este comportamiento en tu código si lo necesitas. Por ejemplo, cerrar un paywall podría abrir otro.
+:::
+
+```kotlin
+
+class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            AdaptyUIAction.CloseAction, AdaptyUIAction.AndroidSystemBackAction -> view.dismiss()
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
+```
+
+Si estás usando [`createNativePaywallView`](kmp-present-paywalls#without-compose-multiplatform), llamar a `view.dismiss()` no tiene ningún efecto — la vista está integrada en tu layout, no presentada a través del stack de KMP. En su lugar, elimina la vista de tu layout y llama a `dispose()` sobre ella.
+
+## Abrir URLs desde paywalls \{#open-urls-from-paywalls\}
+
+:::tip
+Si quieres añadir un grupo de enlaces (por ejemplo, términos de uso y restauración de compras), añade un elemento **Link** en el Paywall Builder y gestiónalo igual que los botones con la acción **Open URL**.
+:::
+
+Para añadir un botón que abra un enlace desde tu paywall (por ejemplo, **Términos de uso** o **Política de privacidad**):
+
+1. En el Paywall Builder, añade un botón, asígnale la acción **Open URL** e introduce la URL que quieres abrir.
+2. En el código de tu app, implementa un manejador para la acción `openUrl` que abra la URL recibida en un navegador.
+
+:::info
+En el SDK de Kotlin Multiplatform, `OpenUrlAction` proporciona la URL que debe abrirse. Puedes implementar lógica personalizada para gestionar la apertura de URLs, como mostrar un diálogo de confirmación o usar el método de gestión de URLs preferido de tu app.
+:::
+
+```kotlin
+
+class MyAdaptyUIPaywallsEventsObserver(
+    private val uriHandler: UriHandler
+) : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.OpenUrlAction -> {
+                // Show confirmation dialog before opening URL
+                mainUiScope.launch {
+                    val selectedAction = view.showDialog(
+                        title = "Open URL?",
+                        content = action.url,
+                        primaryActionTitle = "Cancel",
+                        secondaryActionTitle = "Open"
+                    ).getOrNull()
+
+                    when (selectedAction) {
+                        AdaptyUIDialogActionType.PRIMARY -> {
+                            // User cancelled
+                        }
+                        AdaptyUIDialogActionType.SECONDARY -> {
+                            // User confirmed - open URL
+                            uriHandler.openUri(action.url)
+                        }
+                        else -> Unit
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Set up the observer with UriHandler
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver(uriHandler))
+```
+
+## Iniciar sesión en la app \{#log-into-the-app\}
+
+Para añadir un botón que permita a los usuarios iniciar sesión en tu app:
+
+1. En el Paywall Builder, añade un botón y asígnale una acción **Custom** con el ID "login".
+2. En el código de tu app, implementa un manejador para la acción personalizada que identifique a tu usuario.
+
+```kotlin
+
+class MyAdaptyUIObserver : AdaptyUIObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                if (action.action == "login") {
+                    // Handle login action - navigate to login screen
+                    // This depends on your app's navigation system
+                    // For example, in Compose Multiplatform:
+                    // navController.navigate("login")
+                }
+            }
+        }
+    }
+}
+```
+
+## Gestionar acciones personalizadas \{#handle-custom-actions\}
+
+Para añadir un botón que gestione cualquier otra acción:
+
+1. En el Paywall Builder, añade un botón, asígnale la acción **Custom** y asígnale un ID.
+2. En el código de tu app, implementa un manejador para el ID de acción que hayas creado.
+
+Por ejemplo, si tienes otro conjunto de ofertas de suscripción o compras únicas, puedes añadir un botón que muestre otro paywall:
+
+```kotlin
+
+class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                when (action.action) {
+                    "login" -> {
+                        // Handle login action - navigate to login screen
+                        // This depends on your app's navigation system
+                        // For example, in Compose Multiplatform:
+                        // navController.navigate("login")
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
+```

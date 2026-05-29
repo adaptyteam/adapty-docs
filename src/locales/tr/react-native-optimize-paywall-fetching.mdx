@@ -1,0 +1,25 @@
+---
+title: "React Native SDK'da paywall getirmeyi optimize etme"
+description: "Adapty paywall'larını güvenilir şekilde getirin: React Native için zamanlama, önbellek ve yedek paywall desenleri."
+metadataTitle: "Paywall Getirmeyi Optimize Etme | React Native SDK | Adapty Dokümanları"
+---
+
+React Native'de güvenilir bir paywall getirme işlemi üç şeyi başarır: hızlı render eder, kitleye yönelik paywall'ı döndürür ve ağ yavaş olduğunda sorunsuz yedek paywall'a geçer. Aşağıdaki kurallar, bunu sağlamak için zamanlama, önbellek ve yedek paywall desenlerini kapsamaktadır.
+:::tip
+Bu kurallar, `adapty.activate()` ve `adapty.identify()` işlemlerinin zaten tamamlandığını varsayar. Daha fazla bilgi için bkz. [React Native SDK'da çağrı sırası](react-native-sdk-call-order).
+:::
+## Kurallar ve yaygın hatalar \{#rules-and-pitfalls\}
+| Bunu yap | Bunu yapma | Neden |
+|---|---|---|
+| Göstermek üzere olduğun placement'ı getir. | Uygulama açılışında tüm placement'ları eş zamanlı olarak önceden getir. | Toplu önceden getirme JS thread'ini bloklar ve bu süre zarfında siyah ekran görünür. |
+| Attribution'ın çözülmesine fırsat tanındıktan sonra — örneğin `activate`'ten 1–2 saniye sonra ya da `onProfileUpdate` tetiklendikten sonra — `getPaywall`'ı çağır. | `getPaywall`'ı kök bileşen mount'lanırken çağır. | Attribution henüz gelmemiştir. Paywall, varsayılan kitleye göre çözümlenir ve segmentler ile ASA kişiselleştirmesi sessizce atlanır. |
+| Her placement için bir `loadTimeoutMs` belirle ve bir [yedek paywall](fallback-paywalls) yapılandır. | `getPaywall`'ın sonuçlanmasını süresiz bekle. | Timeout olmazsa, bağlantısı zayıf olan kullanıcılar ağ çözümlenene kadar boş ekran görür — ya da uygulamayı kapatır. |
+Bkz. `fetchPolicy` ve `loadTimeoutMs` parametre referansı için [Paywall ve ürünleri getirme](fetch-paywalls-and-products-react-native), doğru placement'ı seçmek için ise [Placement'lar](placements).
+## Zayıf bağlantı için ayarlama \{#tune-for-poor-connectivity\}
+
+Sürekli zayıf bağlantının yaşandığı pazarlar için (kırsal alanlar, toplu taşıma, yönlendirme sorunları olan bölgeler):
+
+- İlk istek dışındaki her fetch işleminde `fetchPolicy: .returnCacheDataElseLoad` kullanın.
+- Adapty kontrol panelindeki her placement için bir [yedek paywall](fallback-paywalls) yapılandırın.
+- `loadTimeoutMs` değerini 3–5 saniye olarak ayarlayın ve zaman aşımı gerçekleştiğinde yedek paywalle geçin.
+- Paywall görüntülemeyi `getProfile()` işlemine bağlamayın. `getPaywall` çağrısını bağımsız yapın; böylece yavaş bir profil yanıtı arayüzü bloke etmez.

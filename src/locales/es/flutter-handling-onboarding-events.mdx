@@ -1,0 +1,452 @@
+---
+title: "Gestionar eventos de onboarding en Flutter SDK"
+description: "Gestiona eventos relacionados con el onboarding en Flutter usando Adapty."
+metadataTitle: "Gestión de eventos de onboarding en Flutter | Documentación de Adapty"
+toc_max_heading_level: 4
+---
+
+Los onboardings configurados con el builder generan eventos a los que tu app puede responder. La forma de gestionar estos eventos depende del enfoque de presentación que estés usando:
+
+- **Presentación en pantalla completa**: Requiere configurar un observador de eventos global que gestione los eventos de todas las vistas de onboarding
+- **Widget embebido**: Gestiona los eventos a través de parámetros de callback inline directamente en el widget
+
+Antes de empezar, asegúrate de que:
+
+1. Has instalado el [SDK de Flutter de Adapty](sdk-installation-flutter) 3.8.0 o posterior.
+2. Has [creado un onboarding](create-onboarding).
+3. Has añadido el onboarding a un [placement](placements).
+
+## Eventos de presentación en pantalla completa \{#full-screen-presentation-events\}
+
+### Configurar el observador de eventos \{#set-up-event-observer\}
+
+Para gestionar eventos de onboardings en pantalla completa, implementa `AdaptyUIOnboardingsEventsObserver` y configúralo antes de presentarlo:
+
+```javascript showLineNumbers title="Flutter"
+AdaptyUI().setOnboardingsEventsObserver(this);
+
+try {
+  await onboardingView.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+### Gestionar eventos \{#handle-events\}
+
+Implementa estos métodos en tu observador:
+
+```javascript showLineNumbers title="Flutter"
+void onboardingViewDidFinishLoading(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+) {
+  // Onboarding finished loading
+}
+
+void onboardingViewDidFailWithError(
+  AdaptyUIOnboardingView view,
+  AdaptyError error,
+) {
+  // Handle loading errors
+}
+
+void onboardingViewOnCloseAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  // Handle close action
+  view.dismiss();
+}
+
+void onboardingViewOnPaywallAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  // Dismiss onboarding before presenting paywall
+  view.dismiss().then((_) {
+    _openPaywall(actionId);
+  });
+}
+
+void onboardingViewOnCustomAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  // Handle custom actions
+}
+
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Handle user input updates
+}
+
+void onboardingViewOnAnalyticsEvent(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  AdaptyOnboardingsAnalyticsEvent event,
+) {
+  // Track analytics events
+}
+```
+
+## Eventos del widget embebido \{#embedded-widget-events\}
+
+Al usar `AdaptyUIOnboardingPlatformView`, puedes gestionar eventos a través de parámetros de callback inline directamente en el widget. Ten en cuenta que los eventos se enviarán tanto a los callbacks del widget como al observador global (si está configurado), pero el observador global es opcional:
+
+```javascript showLineNumbers title="Flutter"
+AdaptyUIOnboardingPlatformView(
+  onboarding: onboarding,
+  onDidFinishLoading: (meta) {
+    // Onboarding finished loading
+  },
+  onDidFailWithError: (error) {
+    // Handle loading errors
+  },
+  onCloseAction: (meta, actionId) {
+    // Handle close action
+  },
+  onPaywallAction: (meta, actionId) {
+    _openPaywall(actionId);
+  },
+  onCustomAction: (meta, actionId) {
+    // Handle custom actions
+  },
+  onStateUpdatedAction: (meta, elementId, params) {
+    // Handle user input updates
+  },
+  onAnalyticsEvent: (meta, event) {
+    // Track analytics events
+  },
+)
+```
+
+## Tipos de eventos \{#event-types\}
+
+Las siguientes secciones describen los distintos tipos de eventos que puedes gestionar, independientemente del enfoque de presentación que estés usando.
+
+### Gestionar acciones personalizadas \{#handle-custom-actions\}
+
+En el builder, puedes añadir una acción **custom** a un botón y asignarle un ID.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Después puedes usar este ID en tu código y gestionarlo como una acción personalizada. Por ejemplo, si un usuario pulsa un botón personalizado como **Login** o **Allow notifications**, el método delegado `onboardingController` se activará con el caso `.custom(id:)` y el parámetro `actionId` corresponde al **Action ID** del builder. Puedes crear tus propios IDs, como "allowNotifications".
+
+```javascript
+// Full-screen presentation
+void onboardingViewOnCustomAction(
+    AdaptyUIOnboardingView view,
+    AdaptyUIOnboardingMeta meta,
+    String actionId,
+) {
+    switch (actionId) {
+        case 'login':
+            _login();
+            break;
+        case 'allow_notifications':
+            _allowNotifications();
+            break;
+    }
+}
+
+// Embedded widget
+onCustomAction: (meta, actionId) {
+    _handleCustomAction(actionId);
+}
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```json
+{
+  "actionId": "allowNotifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+### Finalización de carga del onboarding \{#finishing-loading-onboarding\}
+
+Cuando un onboarding termina de cargarse, se activará este evento:
+
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewDidFinishLoading(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+) {
+  print('Onboarding loaded: ${meta.onboardingId}');
+}
+
+// Embedded widget
+onDidFinishLoading: (meta) {
+  print('Onboarding loaded: ${meta.onboardingId}');
+}
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+### Cerrar el onboarding \{#closing-onboarding\}
+
+El onboarding se considera cerrado cuando el usuario pulsa un botón con la acción **Close** asignada.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+Ten en cuenta que debes gestionar qué ocurre cuando un usuario cierra el onboarding. Por ejemplo, debes dejar de mostrar el propio onboarding.
+:::
+
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewOnCloseAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  await view.dismiss();
+}
+
+// Embedded widget
+onCloseAction: (meta, actionId) {
+  Navigator.of(context).pop();
+}
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+
+</Details>
+
+### Abrir un paywall \{#opening-a-paywall\}
+
+:::tip
+Gestiona este evento para abrir un paywall si quieres abrirlo dentro del onboarding. Si quieres abrirlo después de que el onboarding se cierre, hay una forma más directa: gestiona la acción de cierre y abre el paywall sin depender de los datos del evento.
+:::
+
+Si el usuario pulsa un botón que abre un paywall, recibirás el ID de la acción del botón que [configuraste manualmente](get-paid-in-onboardings). La forma más fluida de trabajar con paywalls en onboardings es que el ID de acción sea igual al ID del placement del paywall:
+
+Ten en cuenta que, en iOS, solo se puede mostrar una vista (paywall o onboarding) en pantalla al mismo tiempo. Si presentas un paywall encima de un onboarding, no puedes controlar el onboarding en segundo plano de forma programática. Intentar cerrar el onboarding cerrará el paywall en su lugar, dejando el onboarding visible. Para evitarlo, cierra siempre la vista del onboarding antes de presentar el paywall.
+
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewOnPaywallAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  // Dismiss onboarding before presenting paywall
+  view.dismiss().then((_) {
+    _openPaywall(actionId);
+  });
+}
+
+Future<void> _openPaywall(String actionId) async {
+  // Implement your paywall opening logic here
+}
+
+// Embedded widget
+onPaywallAction: (meta, actionId) {
+  _openPaywall(actionId);
+}
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+### Seguimiento de navegación \{#tracking-navigation\}
+
+Recibes un evento de analítica cuando ocurren distintos eventos relacionados con la navegación durante el flujo de onboarding:
+
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewOnAnalyticsEvent(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  AdaptyOnboardingsAnalyticsEvent event,
+) {
+  trackEvent(event.type, meta.onboardingId);
+}
+
+// Embedded widget
+onAnalyticsEvent: (meta, event) {
+  trackEvent(event.type, meta.onboardingId);
+}
+```
+
+El objeto `event` puede ser uno de los siguientes tipos:
+
+| Tipo | Descripción |
+|------------|-------------|
+| `onboardingStarted` | Cuando el onboarding se ha cargado |
+| `screenPresented` | Cuando se muestra cualquier pantalla |
+| `screenCompleted` | Cuando se completa una pantalla. Incluye `elementId` opcional (identificador del elemento completado) y `reply` opcional (respuesta del usuario). Se activa cuando el usuario realiza cualquier acción para salir de la pantalla. |
+| `secondScreenPresented` | Cuando se muestra la segunda pantalla |
+| `userEmailCollected` | Se activa cuando se recopila el email del usuario a través del campo de entrada |
+| `onboardingCompleted` | Se activa cuando el usuario llega a una pantalla con el ID `final`. Si necesitas este evento, [asigna el ID `final` a la última pantalla](design-onboarding). |
+| `unknown` | Para cualquier tipo de evento no reconocido. Incluye `name` (el nombre del evento desconocido) y `meta` (metadatos adicionales) |
+
+Cada evento incluye información `meta` que contiene:
+
+| Campo | Descripción |
+|------------|-------------|
+| `onboardingId` | Identificador único del flujo de onboarding |
+| `screenClientId` | Identificador de la pantalla actual |
+| `screenIndex` | Posición de la pantalla actual en el flujo |
+| `screensTotal` | Número total de pantallas en el flujo |
+
+<Details>
+<summary>Ejemplos de eventos (haz clic para expandir)</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+
+```
+
+</Details>

@@ -1,0 +1,288 @@
+---
+title: "Integra Adapty en tu app de Unity con IA"
+description: "Una guía paso a paso para integrar Adapty en tu app de Unity usando Cursor, Context7, ChatGPT, Claude u otras herramientas de IA."
+metadataTitle: "Integra Adapty con IA para Unity | Documentación de Adapty"
+customSlug: /adapty-cursor-unity
+displayed_sidebar: sdkunity
+---
+
+Esta página describe dos formas de integrar Adapty en tu app de Unity. Usa la skill de integración del SDK para un flujo automatizado de extremo a extremo, o sigue el recorrido manual más abajo.
+
+## Usa la skill de integración del SDK (beta) \{#use-the-sdk-integration-skill-beta\}
+
+La [skill adapty-sdk-integration](https://github.com/adaptyteam/adapty-sdk-integration-skill) automatiza la integración de principio a fin: configuración del dashboard, instalación del SDK, paywall y verificación por etapas. El recorrido manual más abajo es el plan B si tu herramienta no admite el formato Claude Skills.
+
+**Herramientas compatibles**: Claude Code, GitHub Copilot CLI, OpenAI Codex, Gemini CLI.
+
+### Instalación \{#install\}
+
+Elige el formato según tu herramienta. La lista completa está en el [README de la skill](https://github.com/adaptyteam/adapty-sdk-integration-skill).
+
+- **Claude Code**: Ejecuta `claude plugin marketplace add adaptyteam/adapty-sdk-integration-skill` y luego `claude plugin install adapty-sdk-integration@adapty` desde tu terminal.
+- **GitHub Copilot CLI**: Ejecuta `gh skill install adaptyteam/adapty-sdk-integration-skill`.
+- **Gemini CLI**: Ejecuta `gemini skills install https://github.com/adaptyteam/adapty-sdk-integration-skill`.
+- **OpenAI Codex u otra herramienta**: Clona el repositorio y copia `plugins/adapty-sdk-integration/skills/adapty-sdk-integration/` en el directorio de skills de tu herramienta.
+
+### Ejecución \{#run\}
+
+En tu proyecto, ejecuta `/adapty-sdk-integration`. La skill detecta tu plataforma y hace algunas preguntas de configuración. Luego te guía por la configuración del dashboard, la instalación del SDK, el paywall y la verificación, consultando la documentación de Adapty en cada etapa.
+
+:::note
+La skill está en beta. Si se detiene o se comporta de forma inesperada, el recorrido manual de más abajo cubre cada etapa paso a paso.
+:::
+
+## Antes de empezar: configuración del dashboard \{#before-you-start-dashboard-setup\}
+
+Adapty requiere cierta configuración en el dashboard antes de escribir código. Puedes hacerlo con una skill interactiva de LLM o manualmente desde el Dashboard.
+
+### Con la skill (recomendado) \{#skill-approach-recommended\}
+
+La skill de la CLI de Adapty permite que tu LLM configure tu app, productos, niveles de acceso, paywalls y placements directamente, sin abrir el Dashboard en cada paso. Solo necesitas [conectar tus stores](integrate-payments) en el Dashboard.
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+Una vez añadida la skill, ejecuta `/adapty-cli` en tu agente. Te guiará por cada paso, incluido cuándo abrir el Dashboard para conectar tus stores.
+
+### Con el Dashboard \{#dashboard-approach\}
+
+Si prefieres configurar todo manualmente, esto es lo que necesitas antes de escribir código. Tu LLM no puede buscar los valores del dashboard por ti — tendrás que proporcionárselos.
+
+1. **Conecta tus app stores**: En el Adapty Dashboard, ve a **App settings → General**. Conecta tanto App Store como Google Play si tu app de Unity apunta a ambas plataformas. Esto es obligatorio para que las compras funcionen.
+   [Conectar app stores](integrate-payments)
+
+2. **Copia tu clave pública del SDK**: En el Adapty Dashboard, ve a **App settings → General** y busca la sección **API keys**. En el código, es la cadena que pasas al constructor de configuración de Adapty.
+
+3. **Crea al menos un producto**: En el Adapty Dashboard, ve a la página **Products**. No haces referencia a los productos directamente en el código — Adapty los entrega a través de los paywalls.
+   [Añadir productos](quickstart-products)
+
+4. **Crea un paywall y un placement**: En el Adapty Dashboard, crea un paywall en la página **Paywalls** y asígnalo a un placement en la página **Placements**. En el código, el ID del placement es la cadena que pasas a `Adapty.GetPaywall("YOUR_PLACEMENT_ID")`.
+   [Crear paywall](quickstart-paywalls)
+
+5. **Configura los niveles de acceso**: En el Adapty Dashboard, configúralos por producto en la página **Products**. En el código, la cadena que se comprueba en `profile.AccessLevels["premium"]?.IsActive`. El nivel de acceso `premium` predeterminado funciona para la mayoría de las apps. Si los usuarios de pago acceden a funciones distintas según el producto (por ejemplo, un plan `basic` frente a un plan `pro`), [crea niveles de acceso adicionales](assigning-access-level-to-a-product) antes de empezar a programar.
+
+:::tip
+Con estos cinco elementos listos, ya puedes escribir código. Dile a tu LLM: "Mi clave pública del SDK es X, mi ID de placement es Y" para que pueda generar el código correcto de inicialización y obtención del paywall.
+:::
+
+### Configura cuando estés listo \{#set-up-when-ready\}
+
+Estos elementos no son necesarios para empezar a programar, pero los querrás a medida que tu integración madure:
+
+- **Pruebas A/B**: Configúralas en la página **Placements**. No requieren cambios en el código.
+  [Pruebas A/B](ab-tests)
+- **Paywalls y placements adicionales**: Añade más llamadas a `GetPaywall` con distintos IDs de placement.
+- **Integraciones de analíticas**: Configúralas en la página **Integrations**. La configuración varía según la integración. Consulta [integraciones de analíticas](analytics-integration) e [integraciones de atribución](attribution-integration).
+
+## Proporciona la documentación de Adapty a tu LLM \{#feed-adapty-docs-to-your-llm\}
+
+### Usa Context7 (recomendado) \{#use-context7-recommended\}
+
+[Context7](https://context7.com) es un servidor MCP que da a tu LLM acceso directo a la documentación actualizada de Adapty. El LLM obtiene automáticamente la documentación adecuada según lo que le preguntes — sin necesidad de pegar URLs manualmente.
+
+Context7 funciona con **Cursor**, **Claude Code**, **Windsurf** y otras herramientas compatibles con MCP. Para configurarlo, ejecuta:
+
+```
+npx ctx7 setup
+```
+
+Esto detecta tu editor y configura el servidor Context7. Para la configuración manual, consulta el [repositorio de Context7 en GitHub](https://github.com/upstash/context7).
+
+Una vez configurado, haz referencia a la biblioteca de Adapty en tus prompts:
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the Unity SDK
+```
+
+:::warning
+Aunque Context7 elimina la necesidad de pegar enlaces de documentación manualmente, el orden de implementación sigue siendo importante. Sigue el [recorrido de implementación](#implementation-walkthrough) paso a paso para asegurarte de que todo funciona correctamente.
+:::
+
+### Usa la documentación en texto plano \{#use-plain-text-docs\}
+
+Puedes acceder a cualquier artículo de Adapty en texto plano Markdown. Añade `.md` al final de su URL o haz clic en **Copy for LLM** debajo del título del artículo. Por ejemplo: [adapty-cursor-unity.md](https://adapty.io/docs/es/adapty-cursor-unity.md).
+
+Cada etapa del [recorrido de implementación](#implementation-walkthrough) incluye un bloque "Envía esto a tu LLM" con enlaces `.md` para pegar.
+
+Para acceder a más documentación a la vez, consulta los [archivos índice y subconjuntos por plataforma](#plain-text-doc-index-files) más abajo.
+
+## Recorrido de implementación \{#implementation-walkthrough\}
+
+El resto de esta guía recorre la integración de Adapty en orden de implementación. Cada etapa incluye la documentación que debes enviar a tu LLM, lo que deberías ver al terminar y los problemas más comunes.
+
+### Planifica tu integración \{#plan-your-integration\}
+
+Antes de ponerte a programar, pide a tu LLM que analice tu proyecto y cree un plan de implementación. Si tu herramienta de IA admite un modo de planificación (como el de Cursor o Claude Code), úsalo para que el LLM pueda leer tanto la estructura de tu proyecto como la documentación de Adapty antes de escribir código.
+
+Indica a tu LLM qué enfoque usas para las compras — esto determina las guías que debe seguir:
+
+- [**Adapty Paywall Builder**](adapty-paywall-builder): Creas paywalls en el editor no-code de Adapty y el SDK los renderiza automáticamente.
+- [**Paywalls creados manualmente**](unity-making-purchases): Construyes tu propia interfaz de paywall en código, pero usas Adapty para obtener los productos y gestionar las compras.
+- [**Modo Observer**](observer-vs-full-mode): Mantienes tu infraestructura de compras existente y usas Adapty solo para analíticas e integraciones.
+
+¿No sabes cuál elegir? Lee la [tabla comparativa del quickstart](unity-quickstart-paywalls).
+
+### Instala y configura el SDK \{#install-and-configure-the-sdk\}
+
+Añade el paquete del SDK de Adapty a través del Unity Package Manager y actívalo con tu clave pública del SDK. Esta es la base — nada más funciona sin ella.
+
+**Guía:** [Instalar y configurar el SDK de Adapty](sdk-installation-unity)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/sdk-installation-unity.md
+```
+
+:::tip[Punto de control]
+- **Esperado:** El proyecto compila y se ejecuta. La consola de Unity muestra el log de activación de Adapty.
+- **Problema frecuente:** "Public API key is missing" → comprueba que hayas reemplazado el marcador de posición con tu clave real de App settings.
+:::
+
+### Muestra paywalls y gestiona las compras \{#show-paywalls-and-handle-purchases\}
+
+Obtén un paywall por ID de placement, muéstralo y gestiona los eventos de compra. Las guías que necesitas dependen de cómo gestionas las compras.
+
+Prueba cada compra en el sandbox a medida que avances — no esperes al final. Consulta [Probar compras en sandbox](test-purchases-in-sandbox) para las instrucciones de configuración.
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**Guías:**
+- [Habilitar compras con paywalls (quickstart)](unity-quickstart-paywalls)
+- [Obtener paywalls del Paywall Builder y su configuración](unity-get-pb-paywalls)
+- [Mostrar paywalls](unity-present-paywalls)
+- [Gestionar eventos de paywall](unity-handling-events)
+- [Responder a acciones de botones](unity-handle-paywall-actions)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/unity-quickstart-paywalls.md
+- https://adapty.io/docs/es/unity-get-pb-paywalls.md
+- https://adapty.io/docs/es/unity-present-paywalls.md
+- https://adapty.io/docs/es/unity-handling-events.md
+- https://adapty.io/docs/es/unity-handle-paywall-actions.md
+```
+
+:::tip[Punto de control]
+- **Esperado:** El paywall aparece con tus productos configurados. Al pulsar un producto se abre el diálogo de compra en sandbox.
+- **Problema frecuente:** Paywall vacío o error en `GetPaywall` → verifica que el ID de placement coincide exactamente con el del dashboard y que el placement tiene una audiencia asignada.
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Paywalls manuales">
+
+**Guías:**
+- [Habilitar compras en tu paywall personalizado (quickstart)](unity-quickstart-manual)
+- [Obtener paywalls y productos](fetch-paywalls-and-products-unity)
+- [Renderizar paywalls diseñados con Remote Config](present-remote-config-paywalls-unity)
+- [Realizar compras](unity-making-purchases)
+- [Restaurar compras](unity-restore-purchase)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/unity-quickstart-manual.md
+- https://adapty.io/docs/es/fetch-paywalls-and-products-unity.md
+- https://adapty.io/docs/es/present-remote-config-paywalls-unity.md
+- https://adapty.io/docs/es/unity-making-purchases.md
+- https://adapty.io/docs/es/unity-restore-purchase.md
+```
+
+:::tip[Punto de control]
+- **Esperado:** Tu paywall personalizado muestra los productos obtenidos de Adapty. Al pulsar un producto se abre el diálogo de compra en sandbox.
+- **Problema frecuente:** Array de productos vacío → verifica que el paywall tiene productos asignados en el dashboard y que el placement tiene una audiencia.
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**Guías:**
+- [Descripción general del modo Observer](observer-vs-full-mode)
+- [Implementar el modo Observer](implement-observer-mode-unity)
+- [Reportar transacciones en modo Observer](report-transactions-observer-mode-unity)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/observer-vs-full-mode.md
+- https://adapty.io/docs/es/implement-observer-mode-unity.md
+- https://adapty.io/docs/es/report-transactions-observer-mode-unity.md
+```
+
+:::tip[Punto de control]
+- **Esperado:** Tras una compra en sandbox usando tu flujo de compras existente, la transacción aparece en el **Event Feed** del dashboard de Adapty.
+- **Problema frecuente:** Sin eventos → verifica que estás reportando las transacciones a Adapty y que las notificaciones del servidor están configuradas para ambos stores.
+:::
+
+</TabItem>
+
+</Tabs>
+
+### Comprueba el estado de la suscripción \{#check-subscription-status\}
+
+Tras una compra, comprueba el perfil de usuario para ver si hay un nivel de acceso activo que permita el acceso al contenido premium.
+
+**Guía:** [Comprobar el estado de la suscripción](unity-check-subscription-status)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/unity-check-subscription-status.md
+```
+
+:::tip[Punto de control]
+- **Esperado:** Tras una compra en sandbox, `profile.AccessLevels["premium"]?.IsActive` devuelve `true`.
+- **Problema frecuente:** `AccessLevels` vacío tras la compra → comprueba que el producto tiene un nivel de acceso asignado en el dashboard.
+:::
+
+### Identifica a los usuarios \{#identify-users\}
+
+Vincula las cuentas de usuario de tu app con los perfiles de Adapty para que las compras persistan entre dispositivos.
+
+:::important
+Omite este paso si tu app no tiene autenticación.
+:::
+
+**Guía:** [Identificar usuarios](unity-quickstart-identify)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/es/unity-quickstart-identify.md
+```
+
+:::tip[Punto de control]
+- **Esperado:** Tras llamar a `Adapty.Identify("your-user-id")`, la sección **Profiles** del dashboard muestra tu ID de usuario personalizado.
+- **Problema frecuente:** Llama a `Identify` después de la activación pero antes de obtener los paywalls para evitar problemas de atribución con perfiles anónimos.
+:::
+
+### Prepárate para el lanzamiento \{#prepare-for-release\}
+
+Una vez que tu integración funcione en el sandbox, revisa la lista de verificación de lanzamiento para asegurarte de que todo está listo para producción.
+
+**Guía:** [Lista de verificación para el lanzamiento](release-checklist)
+
+Envía esto a tu LLM:
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/es/release-checklist.md
+```
+
+:::tip[Punto de control]
+- **Esperado:** Todos los elementos de la lista confirmados: conexiones de stores, notificaciones del servidor, flujo de compras, comprobaciones de nivel de acceso y requisitos de privacidad.
+- **Problema frecuente:** Notificaciones del servidor no configuradas → configura las App Store Server Notifications en **App settings → iOS SDK** y las Google Play Real-Time Developer Notifications en **App settings → Android SDK**.
+:::
+
+## Archivos índice de documentación en texto plano \{#plain-text-doc-index-files\}
+
+Si necesitas dar a tu LLM un contexto más amplio más allá de páginas individuales, ofrecemos archivos índice que listan o combinan toda la documentación de Adapty:
+
+- [`llms.txt`](https://adapty.io/docs/es/llms.txt): Lista todas las páginas con enlaces `.md`. Es un [estándar emergente](https://llmstxt.org/) para hacer los sitios web accesibles a los LLMs. Ten en cuenta que para algunos agentes de IA (por ejemplo, ChatGPT) necesitarás descargar `llms.txt` y subirlo al chat como archivo.
+- [`llms-full.txt`](https://adapty.io/docs/es/llms-full.txt): Toda la documentación del sitio de Adapty combinada en un único archivo. Muy grande — úsalo solo cuando necesites el panorama completo.
+- Subconjuntos específicos de Unity: [`unity-llms.txt`](https://adapty.io/docs/es/unity-llms.txt) y [`unity-llms-full.txt`](https://adapty.io/docs/es/unity-llms-full.txt): Subconjuntos específicos de la plataforma que ahorran tokens en comparación con el sitio completo.

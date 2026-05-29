@@ -1,0 +1,425 @@
+---
+title: "Instalar y configurar el SDK de iOS"
+description: "Guía paso a paso para instalar el SDK de Adapty en iOS para apps con suscripciones."
+metadataTitle: "Instalar el SDK de Adapty en iOS | Documentación de Adapty"
+keywords: ['instalar sdk', 'instalación sdk', 'instalar sdk ios', 'adaptyui']
+rank: 100
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+import GetKey from '@site/src/locales/es/reusable/GetKey.md';
+import InstallationPrereqs from '@site/src/locales/es/reusable/InstallationPrereqs.mdx';
+
+El SDK de Adapty incluye dos módulos clave para integrarse fácilmente en tu app:
+
+- **Core Adapty**: El SDK esencial, necesario para que Adapty funcione correctamente en tu app.
+- **AdaptyUI**: Módulo opcional que necesitas si usas el [Adapty Paywall Builder](adapty-paywall-builder), una herramienta visual sin código para crear paywalls multiplataforma de forma sencilla.
+
+:::tip
+¿Quieres ver un ejemplo real de cómo se integra el SDK de Adapty en una app? Consulta nuestras [apps de ejemplo](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples), que muestran la configuración completa: cómo mostrar paywalls, realizar compras y otras funciones básicas.
+:::
+
+Para ver una implementación completa paso a paso, también puedes ver los vídeos:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="iOS (SwiftUI)" default>
+
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/cSChHc8k2zA?si=KhNFhqXccIzYwTcm" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+</TabItem>
+<TabItem value="uikit" label="iOS (UIKit)" default>
+
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/WEUnlaAjSI0?si=sjXKVVb56tEHDKzJ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+</TabItem>
+</Tabs>
+
+## Requisitos \{#requirements\}
+
+Aunque el SDK es técnicamente compatible con iOS 13.0+ para el módulo principal, en la práctica se requiere iOS 15.0+ porque:
+- Todas las funciones de StoreKit 2 requieren iOS 15.0+
+- El módulo AdaptyUI solo es compatible con iOS 15.0+
+
+:::important
+Se requiere Adapty SDK 3.15.7+ al compilar con Xcode 26.4 o posterior.
+:::
+
+<InstallationPrereqs />
+
+## Instalar el SDK de Adapty \{#install-adapty-sdk\}
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-iOS.svg?style=flat&logo=apple)](https://github.com/adaptyteam/AdaptySDK-iOS/releases)
+
+<Tabs>
+<TabItem value="spm" label="Swift Package Manager (recomendado)" default>
+En Xcode, ve a **File** -> **Add Package Dependency...**. Ten en cuenta que los pasos para añadir dependencias pueden variar según la versión de Xcode, así que consulta la documentación de Xcode si es necesario.
+
+1. Introduce la URL del repositorio:
+   ```
+   https://github.com/adaptyteam/AdaptySDK-iOS.git
+   ```
+2. Selecciona la versión (se recomienda la última versión estable) y haz clic en **Add Package**.
+3. En la ventana **Choose Package Products**, selecciona los módulos que necesitas:
+   - **Adapty** (módulo principal)
+   - **AdaptyUI** (opcional - solo si planeas usar el Paywall Builder)
+   :::note
+   Nota:
+     - Para activar el [modo Kids](kids-mode), selecciona **Adapty_KidsMode** en lugar de **Adapty**.
+     - No selecciones ningún otro paquete de la lista, no los necesitas.
+   :::
+4. Haz clic en **Add Package** para completar la instalación.
+5. **Verifica la instalación:** En el navegador de tu proyecto deberías ver "Adapty" (y "AdaptyUI" si lo seleccionaste) bajo **Package Dependencies**.
+
+</TabItem>
+
+<TabItem value="cocoapods" label="CocoaPods (heredado)" default>
+
+:::info
+
+CocoaPods está ahora en modo de mantenimiento y su desarrollo se ha detenido oficialmente. Recomendamos cambiar a [Swift Package Manager](sdk-installation-ios#install-adapty-sdk).
+
+:::
+
+1. Añade Adapty a tu `Podfile`. Elige los módulos que necesitas:
+
+    1. **Adapty** es el módulo obligatorio.
+    2. **AdaptyUI** es un módulo opcional que necesitas si planeas usar el [Adapty Paywall Builder](adapty-paywall-builder).
+
+   ```shell showLineNumbers title="Podfile"
+   pod 'Adapty'
+   pod 'AdaptyUI'  # optional module needed only for Paywall Builder
+   ```
+
+2. Ejecuta:
+
+   ```sh showLineNumbers title="Shell"
+   pod install
+   ```
+
+Esto creará un archivo `.xcworkspace` para tu app. Usa este archivo para todo el desarrollo posterior.
+</TabItem>
+</Tabs>
+
+## Activar el módulo Adapty del SDK de Adapty \{#activate-adapty-module-of-adapty-sdk\}
+
+Activa el SDK de Adapty en el código de tu app.
+
+:::note
+El SDK de Adapty solo necesita activarse una vez en tu app.
+:::
+
+<GetKey />
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="SwiftUI">
+
+```swift showLineNumbers
+
+@main
+struct YourApp: App {
+  init() {
+    // Configure Adapty SDK
+    let configurationBuilder = AdaptyConfiguration
+      .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
+
+   Adapty.logLevel = .verbose // recommended for development and the first production release
+
+    let config = configurationBuilder.build()
+
+    // Activate Adapty SDK asynchronously
+    Task {
+      do {
+        try await Adapty.activate(with: config)
+      } catch {
+        // Handle error appropriately for your app
+        print("Adapty activation failed: ", error)
+      }
+    }
+
+    var body: some Scene {
+      WindowGroup {
+        // Your content view
+      }
+    }
+  }
+}
+```
+
+</TabItem>
+<TabItem value="swift" label="UIKit" default>
+
+```swift showLineNumbers
+// In your AppDelegate class:
+// If you only use an AppDelegate, place the following code in the
+// application(_:didFinishLaunchingWithOptions:) method.
+
+// If you use a SceneDelegate, place the following code in the
+// scene(_:willConnectTo:options:) method.
+
+
+Task {
+  do {
+    let configurationBuilder = AdaptyConfiguration
+      .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
+      .with(logLevel: .verbose) // recommended for development and the first production release
+
+    let config = configurationBuilder.build()
+    try await Adapty.activate(with: config)
+  } catch {
+    // Handle error appropriately for your app
+    print("Adapty activation failed: ", error)
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::important
+Espera a que `activate` se resuelva antes de llamar a cualquier otro método del SDK de Adapty. Consulta [Orden de llamadas en el SDK de iOS](ios-sdk-call-order) para ver la secuencia completa.
+:::
+
+Ahora configura los paywalls en tu app:
+
+- Si usas el [Adapty Paywall Builder](adapty-paywall-builder), primero [activa el módulo AdaptyUI](#activate-adaptyui-module-of-adapty-sdk) a continuación, y luego sigue la [guía de inicio rápido del Paywall Builder](ios-quickstart-paywalls).
+- Si construyes tu propia interfaz de paywall, consulta la [guía de inicio rápido para paywalls personalizados](ios-quickstart-manual).
+
+## Activar el módulo AdaptyUI del SDK de Adapty \{#activate-adaptyui-module-of-adapty-sdk\}
+
+Si planeas usar el [Paywall Builder](adapty-paywall-builder) y has [instalado el módulo AdaptyUI](sdk-installation-ios#install-adapty-sdk), también necesitas activar AdaptyUI.
+
+:::important
+En tu código, debes activar el módulo principal de Adapty antes de activar AdaptyUI.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="SwiftUI">
+
+```swift showLineNumbers title="Swift"
+
+@main
+struct YourApp: App {
+  init() {
+    // ...ConfigurationBuilder steps
+
+    // Activate Adapty SDK asynchronously
+    Task {
+      do {
+        try await Adapty.activate(with: config)
+        try await AdaptyUI.activate()
+      } catch {
+        // Handle error appropriately for your app
+        print("Adapty activation failed: ", error)
+      }
+    }
+
+    // main body...
+  }
+}
+```
+</TabItem>
+<TabItem value="uikit" label="UIKit" default>
+
+```swift showLineNumbers title="UIKit"
+// If you only use an AppDelegate, place the following code in the
+// application(_:didFinishLaunchingWithOptions:) method.
+
+// If you use a SceneDelegate, place the following code in the
+// scene(_:willConnectTo:options:) method.
+
+
+Task {
+   do {
+      let configurationBuilder = AdaptyConfiguration
+         .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
+         .with(logLevel: .verbose) // recommended for development
+
+   let config = configurationBuilder.build()
+   try await Adapty.activate(with: config)
+   try await AdaptyUI.activate()
+      } catch {
+      // Handle error appropriately for your app
+      print("Adapty activation failed: ", error)
+   }
+}
+```
+</TabItem>
+</Tabs>
+
+:::tip
+De forma opcional, al activar AdaptyUI puedes [personalizar la configuración de caché para los paywalls](#set-up-media-cache-configuration-for-adaptyui).
+:::
+
+## Configuración opcional \{#optional-setup\}
+
+### Registro de eventos \{#logging\}
+
+#### Configurar el sistema de registro \{#set-up-the-logging-system\}
+
+Adapty registra errores e información importante para ayudarte a entender qué está ocurriendo. Los niveles disponibles son:
+
+| Nivel      | Descripción                                                  |
+| ---------- | ------------------------------------------------------------ |
+| `error`    | Solo se registran errores                                    |
+| `warn`     | Se registran errores y mensajes del SDK que no causan errores críticos pero merecen atención |
+| `info`     | Se registran errores, advertencias y varios mensajes informativos |
+| `verbose`  | Se registra cualquier información adicional que pueda ser útil durante la depuración, como llamadas a funciones, consultas a la API, etc. |
+
+```swift showLineNumbers
+ let configurationBuilder = AdaptyConfiguration
+         .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+         .with(logLevel: .verbose) // recommended for development
+```
+
+#### Redirigir los mensajes del sistema de registro \{#redirect-the-logging-system-messages\}
+
+Si necesitas enviar los mensajes de registro de Adapty a tu sistema o guardarlos en un archivo, usa el método `setLogHandler` e implementa tu lógica de registro personalizada dentro de él. Este handler recibe registros con el contenido del mensaje y su nivel de severidad.
+
+```swift showLineNumbers title="Swift"
+Adapty.setLogHandler { record in
+    writeToLocalFile("Adapty \(record.level): \(record.message)")
+}
+```
+
+### Políticas de datos \{#data-policies\}
+
+Adapty no almacena datos personales de tus usuarios a menos que los envíes explícitamente, pero puedes implementar políticas adicionales de seguridad de datos para cumplir con las directrices de la store o de tu país.
+
+#### Deshabilitar la recopilación y el uso compartido del IDFA \{#disable-idfa-collection-and-sharing\}
+
+Al activar el módulo Adapty, establece `idfaCollectionDisabled` en `true` para deshabilitar la recopilación y el uso compartido del IDFA.
+
+Usa este parámetro para cumplir con las directrices de revisión del App Store o para evitar activar el prompt de App Tracking Transparency cuando el IDFA no es necesario para tu app. El valor predeterminado es `false`. Para más detalles sobre la recopilación del IDFA, consulta la sección de [Integración de analíticas](analytics-integration#disable-collection-of-advertising-identifiers).
+
+```swift showLineNumbers
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+        .with(idfaCollectionDisabled: true)
+```
+
+#### Deshabilitar la recopilación y el uso compartido de la IP \{#disable-ip-collection-and-sharing\}
+
+Al activar el módulo Adapty, establece `ipAddressCollectionDisabled` en `true` para deshabilitar la recopilación y el uso compartido de la dirección IP del usuario. El valor predeterminado es `false`.
+
+Usa este parámetro para mejorar la privacidad del usuario, cumplir con normativas regionales de protección de datos (como el RGPD o el CCPA) o reducir la recopilación de datos innecesaria cuando las funciones basadas en IP no son necesarias para tu app.
+
+```swift showLineNumbers
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+        .with(ipAddressCollectionDisabled: true)
+```
+
+#### Configuración de caché de medios para paywalls en AdaptyUI \{#set-up-media-cache-configuration-for-adaptyui\}
+
+Ten en cuenta que la configuración de AdaptyUI es opcional. Puedes activar el módulo AdaptyUI sin su configuración. Sin embargo, si usas la configuración, todos los parámetros son obligatorios.
+
+```swift showLineNumbers title="Swift"
+
+// Configure AdaptyUI
+        let adaptyUIConfiguration = AdaptyUI.Configuration(
+            mediaCacheConfiguration: .init(
+                memoryStorageTotalCostLimit: 100 * 1024 * 1024,
+                memoryStorageCountLimit: .max,
+                diskStorageSizeLimit: 100 * 1024 * 1024
+            )
+        )
+
+        // Activate AdaptyUI
+        AdaptyUI.activate(configuration: adaptyUIConfiguration)
+```
+Parámetros:
+
+| Parámetro                   | Presencia | Descripción                                                  |
+| :-------------------------- | :-------- | :----------------------------------------------------------- |
+| memoryStorageTotalCostLimit | obligatorio | Límite de coste total del almacenamiento en bytes.           |
+| memoryStorageCountLimit     | obligatorio | Límite de elementos del almacenamiento en memoria.           |
+| diskStorageSizeLimit        | obligatorio | Límite de tamaño del archivo en disco en bytes. 0 significa sin límite. |
+
+### Comportamiento de finalización de transacciones \{#transaction-finishing-behavior\}
+
+:::info
+Esta función está disponible a partir de la versión 3.12.0 del SDK.
+:::
+
+Por defecto, Adapty finaliza las transacciones automáticamente tras una validación exitosa. Sin embargo, si necesitas una validación avanzada de transacciones (como validación de recibos en el servidor, detección de fraude o lógica de negocio personalizada), puedes configurar el SDK para usar la finalización manual de transacciones.
+
+```swift showLineNumbers title="Swift"
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+    .with(transactionsFinishBehavior: .manual) // .auto is the default
+```
+
+Consulta más detalles sobre cómo finalizar transacciones en la [guía](ios-transaction-management).
+
+### Borrar datos al restaurar desde copia de seguridad \{#clear-data-on-backup-restore\}
+
+Cuando `clearDataOnBackup` está establecido en `true`, el SDK detecta cuándo la app se restaura desde una copia de seguridad de iCloud y elimina todos los datos del SDK almacenados localmente, incluida la información de perfil en caché, los detalles de productos y los paywalls. El SDK se inicializa entonces con un estado limpio. El valor predeterminado es `false`.
+
+:::note
+Solo se elimina la caché local del SDK. El historial de transacciones con Apple y los datos del usuario en los servidores de Adapty no se modifican.
+:::
+
+```swift showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+    .with(clearDataOnBackup: true) // default – false
+```
+
+## Resolución de problemas \{#troubleshooting\}
+
+#### Error de concurrencia de Swift 6 con Tuist \{#swift-6-concurrency-error-with-tuist\}
+
+Al compilar con [Tuist](https://tuist.dev/), puede que veas errores de compilación de concurrencia estricta de Swift 6. Los síntomas habituales incluyen errores de compatibilidad con el atributo `@Sendable` en `AdaptyUIBuilderLogic` u otros errores de Sendability entre módulos.
+
+Esto ocurre porque Tuist genera proyectos Xcode a partir de paquetes SPM pero no conserva la configuración `swift-tools-version: 6.0`. Como resultado, algunos targets de Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`) se compilan con las reglas de Swift 5 mientras que otros usan Swift 6, lo que genera errores de `@Sendable` entre módulos.
+
+**Solución**: Actualiza al SDK de Adapty **3.15.5** o posterior, que resuelve el problema independientemente de las versiones mixtas de Swift.
+
+**Solución alternativa**: Si no puedes actualizar, establece explícitamente Swift 6 para los tres targets de Adapty en tu configuración de Tuist:
+
+```swift showLineNumbers
+targetSettings: [
+  "Adapty": .init().swiftVersion("6"),
+  "AdaptyUI": .init().swiftVersion("6"),
+  "AdaptyUIBuilder": .init().swiftVersion("6"),
+]
+```
+
+#### Errores de compilación de Swift 6 causados por la sobreescritura de SWIFT_VERSION en el Podfile \{#swift-6-build-errors-caused-by-podfile-swift_version-override\}
+
+Al compilar para iOS con [CocoaPods](sdk-installation-ios#install-adapty-sdk), puede que veas errores de compilación de Swift 6 en los targets de los pods de Adapty. Los síntomas habituales incluyen errores de `@Sendable` en `AdaptyUIBuilderLogic`, falta de conformidad con `Sendable` en tipos de Adapty, o errores de aislamiento de actores.
+
+Los pods de Adapty declaran `s.swift_version = '6.0'` y requieren Swift 6 para compilar. Tu propio código de la app puede permanecer en Swift 5 — solo los targets de los pods de Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`) necesitan compilarse con Swift 6.
+
+La causa más común es un hook `post_install` en tu `Podfile` que sobreescribe `SWIFT_VERSION` para cada target de pod:
+
+```ruby showLineNumbers title="Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+**Solución**: Excluye los targets de los pods de Adapty de la sobreescritura:
+
+```ruby showLineNumbers title="Podfile"
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger].include?(target.name)
+    target.build_configurations.each do |config|
+      config.build_settings['SWIFT_VERSION'] = '5.9'
+    end
+  end
+end
+```
+
+Luego ejecuta `pod install` y vuelve a compilar.
+
+Para verificarlo, abre `Pods.xcodeproj`, selecciona el target del pod `Adapty` → **Build Settings** → **Swift Language Version**. Debería ser **Swift 6**.

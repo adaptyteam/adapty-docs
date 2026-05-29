@@ -1,0 +1,114 @@
+---
+title: "Obtener onboardings en el SDK de Capacitor"
+description: "Aprende a obtener onboardings en Adapty para Capacitor."
+metadataTitle: "Obtener onboardings en Adapty | Documentación de Adapty"
+customSlug: /capacitor-get-onboardings
+displayed_sidebar: sdkcapacitor
+---
+
+Después de [diseñar la parte visual de tu onboarding](design-onboarding) con el builder en el Adapty Dashboard, puedes mostrarlo en tu app de Capacitor. El primer paso es obtener el onboarding asociado al placement y su configuración de vista, tal como se describe a continuación.
+
+Antes de empezar, asegúrate de que:
+
+1. Has [creado un onboarding](create-onboarding).
+2. Has añadido el onboarding a un [placement](placements).
+
+## Obtener el onboarding \{#fetch-onboarding\}
+
+Cuando creas un [onboarding](onboardings) con nuestro builder sin código, se almacena como un contenedor con configuración que tu app necesita obtener y mostrar. Este contenedor gestiona toda la experiencia: qué contenido aparece, cómo se presenta y cómo se procesan las interacciones del usuario (como respuestas a cuestionarios o entradas de formularios). El contenedor también registra automáticamente los eventos de analítica, por lo que no necesitas implementar un seguimiento de vistas por separado.
+
+Para un mejor rendimiento, obtén la configuración del onboarding con antelación para que las imágenes tengan tiempo suficiente de descargarse antes de mostrárselas a los usuarios.
+
+Para obtener un onboarding, usa el método `getOnboarding`:
+
+```typescript showLineNumbers
+
+try {
+  const onboarding = await adapty.getOnboarding({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data', // Load from server, fallback to cache
+      loadTimeoutMs: 5000 // 5 second timeout
+    }
+  });
+  console.log('Onboarding fetched successfully');
+} catch (error) {
+  console.error('Failed to fetch onboarding:', error);
+}
+```
+
+Luego, llama al método `createOnboardingView` para crear una instancia de vista.
+
+:::warning
+El resultado del método `createOnboardingView` solo se puede usar una vez. Si necesitas usarlo de nuevo, vuelve a llamar al método `createOnboardingView`.
+:::
+
+```typescript showLineNumbers
+
+if (onboarding.hasViewConfiguration) {
+  try {
+    const view = await createOnboardingView(onboarding);
+    console.log('Onboarding view created successfully');
+  } catch (error) {
+    console.error('Failed to create onboarding view:', error);
+  }
+} else {
+  // Use your custom logic
+  console.log('Onboarding does not have view configuration');
+}
+```
+
+Parámetros:
+
+| Parámetro | Presencia | Descripción |
+|---------|--------|-----------|
+| **placementId** | obligatorio | El identificador del [Placement](placements) deseado. Es el valor que especificaste al crear un placement en el Adapty Dashboard. |
+| **locale** | <p>opcional</p><p>predeterminado: `en`</p> | <p>El identificador de la localización del onboarding. Se espera que este parámetro sea un código de idioma compuesto de uno o dos subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta es para el idioma y la segunda para la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p>Consulta [Localizaciones y códigos de configuración regional](localizations-and-locale-codes) para más información sobre los códigos de configuración regional y cómo recomendamos usarlos.</p> |
+| **params.fetchPolicy** | <p>opcional</p><p>predeterminado: `'reload_revalidating_cache_data'`</p> | <p>Por defecto, el SDK intentará cargar los datos desde el servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre obtengan los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `'return_cache_data_else_load'` para devolver los datos en caché si existen. En este caso, es posible que los usuarios no obtengan los datos más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de la calidad de su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Ten en cuenta que la caché se conserva al reiniciar la app y solo se borra cuando se desinstala la app o mediante una limpieza manual.</p> |
+| **params.loadTimeoutMs** | <p>opcional</p><p>predeterminado: 5000 ms</p> | <p>Este valor limita el tiempo de espera (en milisegundos) para este método. Si se alcanza el tiempo de espera, se devolverán los datos en caché o el fallback local.</p><p>Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo especificado en `loadTimeoutMs`, ya que la operación puede estar compuesta de diferentes solicitudes internamente.</p> |
+
+Parámetros de respuesta:
+
+| Parámetro | Descripción |
+|:----------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onboarding** | Un objeto [`AdaptyOnboarding`](https://capacitor.adapty.io/interfaces/adaptyonboarding) con: el identificador y la configuración del onboarding, Remote Config y varias otras propiedades. |
+
+## Acelera la obtención del onboarding con el onboarding de audiencia predeterminada \{#speed-up-onboarding-fetching-with-default-audience-onboarding\}
+
+Por lo general, los onboardings se obtienen casi de inmediato, por lo que no necesitas preocuparte por acelerar este proceso. Sin embargo, en casos en los que tengas numerosas audiencias y onboardings, y tus usuarios tengan una conexión a internet lenta, obtener un onboarding puede tardar más de lo deseado. En estas situaciones, puede que quieras mostrar un onboarding predeterminado para garantizar una experiencia de usuario fluida en lugar de no mostrar ningún onboarding.
+
+Para ello, puedes usar el método `getOnboardingForDefaultAudience`, que obtiene el onboarding del placement especificado para la audiencia **All Users**. Sin embargo, es importante entender que el enfoque recomendado es obtener el onboarding con el método `getOnboarding`, tal como se detalla en la sección [Obtener el onboarding](#fetch-onboarding) anterior.
+
+:::warning
+Considera usar `getOnboarding` en lugar de `getOnboardingForDefaultAudience`, ya que este último tiene limitaciones importantes:
+
+- **Problemas de compatibilidad**: Puede generar problemas al dar soporte a varias versiones de la app, lo que requiere diseños compatibles con versiones anteriores o aceptar que las versiones más antiguas puedan mostrarse incorrectamente.
+- **Sin personalización**: Solo muestra contenido para la audiencia "All Users", eliminando la segmentación por país, atribución o atributos personalizados.
+
+Si para tu caso de uso la mayor velocidad de obtención compensa estos inconvenientes, usa `getOnboardingForDefaultAudience` como se muestra a continuación. De lo contrario, usa `getOnboarding` como se describe [arriba](#fetch-onboarding).
+:::
+
+```typescript showLineNumbers
+
+try {
+  const onboarding = await adapty.getOnboardingForDefaultAudience({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data' // Load from server, fallback to cache
+    }
+  });
+  console.log('Default audience onboarding fetched successfully');
+} catch (error) {
+  console.error('Failed to fetch default audience onboarding:', error);
+}
+```
+
+Parámetros:
+
+| Parámetro | Presencia | Descripción |
+|---------|--------|-----------|
+| **placementId** | obligatorio | El identificador del [Placement](placements) deseado. Es el valor que especificaste al crear un placement en el Adapty Dashboard. |
+| **locale** | <p>opcional</p><p>predeterminado: `en`</p> | <p>El identificador de la localización del onboarding. Se espera que este parámetro sea un código de idioma compuesto de uno o dos subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta es para el idioma y la segunda para la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p>Consulta [Localizaciones y códigos de configuración regional](localizations-and-locale-codes) para más información sobre los códigos de configuración regional y cómo recomendamos usarlos.</p> |
+| **params.fetchPolicy** | <p>opcional</p><p>predeterminado: `'reload_revalidating_cache_data'`</p> | <p>Por defecto, el SDK intentará cargar los datos desde el servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre obtengan los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `'return_cache_data_else_load'` para devolver los datos en caché si existen. En este caso, es posible que los usuarios no obtengan los datos más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de la calidad de su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Ten en cuenta que la caché se conserva al reiniciar la app y solo se borra cuando se desinstala la app o mediante una limpieza manual.</p> |

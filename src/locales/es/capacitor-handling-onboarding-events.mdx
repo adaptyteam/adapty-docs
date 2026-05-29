@@ -1,0 +1,331 @@
+---
+title: "Gestionar eventos de onboarding en el SDK de Capacitor"
+description: "Gestiona eventos relacionados con el onboarding en Capacitor usando Adapty."
+metadataTitle: "Gestión de eventos de onboarding en Capacitor | Documentación de Adapty"
+toc_max_heading_level: 4
+---
+
+Los onboardings configurados con el builder generan eventos a los que tu app puede responder. Usa el método `setEventHandlers` para gestionar estos eventos en la presentación de pantallas independientes.
+
+Antes de empezar, asegúrate de que:
+
+1. Has [creado un onboarding](create-onboarding).
+2. Has añadido el onboarding a un [placement](placements).
+
+## Configurar los manejadores de eventos \{#set-up-event-handlers\}
+
+Para gestionar eventos de onboardings, usa el método `view.setEventHandlers`:
+
+```typescript showLineNumbers
+
+try {
+  const view = await createOnboardingView(onboarding);
+  
+  view.setEventHandlers({
+    onAnalytics(event, meta) {
+      console.log('Analytics event:', event);
+    },
+    onClose(actionId, meta) {
+      console.log('Onboarding closed:', actionId);
+      return true; // Allow the onboarding to close
+    },
+    onCustom(actionId, meta) {
+      console.log('Custom action:', actionId);
+      return false; // Don't close the onboarding
+    },
+    onPaywall(actionId, meta) {
+      console.log('Paywall action:', actionId);
+      view.dismiss().then(() => {
+        openPaywall(actionId);
+      });
+    },
+    onStateUpdated(action, meta) {
+      console.log('State updated:', action);
+    },
+    onFinishedLoading(meta) {
+      console.log('Onboarding finished loading');
+    },
+    onError(error) {
+      console.error('Onboarding error:', error);
+    },
+  });
+  
+  await view.present();
+} catch (error) {
+  console.error('Failed to present onboarding:', error);
+}
+```
+
+## Tipos de eventos \{#event-types\}
+
+Las siguientes secciones describen los distintos tipos de eventos que puedes gestionar.
+
+### Gestionar acciones personalizadas \{#handle-custom-actions\}
+
+En el builder, puedes añadir una acción **custom** a un botón y asignarle un ID.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Luego puedes usar ese ID en tu código y gestionarlo como una acción personalizada. Por ejemplo, si el usuario pulsa un botón personalizado como **Login** o **Allow notifications**, el manejador de eventos se activará con el parámetro `actionId` que coincide con el **Action ID** del builder. Puedes crear tus propios IDs, como "allowNotifications".
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onCustom(actionId, meta) {
+    switch (actionId) {
+      case 'login':
+        console.log('Login action triggered');
+        break;
+      case 'allow_notifications':
+        console.log('Allow notifications action triggered');
+        break;
+    }
+    return false; // Don't close the onboarding
+  },
+});
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```json
+{
+  "actionId": "allow_notifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+### Finalización de la carga del onboarding \{#finishing-loading-onboarding\}
+
+Cuando un onboarding termina de cargarse, se activa este evento:
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onFinishedLoading(meta) {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  },
+});
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+
+### Cerrar el onboarding \{#closing-onboarding\}
+
+El onboarding se considera cerrado cuando el usuario pulsa un botón con la acción **Close** asignada.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+Ten en cuenta que debes gestionar qué ocurre cuando el usuario cierra el onboarding. Por ejemplo, necesitas dejar de mostrar el propio onboarding.
+:::
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onClose(actionId, meta) {
+    console.log('Onboarding closed:', actionId);
+    return true; // Allow the onboarding to close
+  },
+});
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+</Details>
+
+### Abrir un paywall \{#opening-a-paywall\}
+
+:::tip
+Gestiona este evento para abrir un paywall si quieres abrirlo dentro del onboarding. Si prefieres abrirlo después de que se cierre, hay una forma más sencilla: gestiona la acción de cierre y abre el paywall sin depender de los datos del evento.
+:::
+
+Si el usuario pulsa un botón que abre un paywall, recibirás el ID de acción del botón que [configuraste manualmente](get-paid-in-onboardings). La forma más fluida de trabajar con paywalls en onboardings es que el ID de acción coincida con el ID del placement del paywall.
+
+Ten en cuenta que, en iOS, solo se puede mostrar una vista (paywall u onboarding) en pantalla a la vez. Si presentas un paywall sobre un onboarding, no podrás controlar el onboarding programáticamente en segundo plano. Si intentas cerrar el onboarding, se cerrará el paywall en su lugar y el onboarding quedará visible. Para evitarlo, cierra siempre la vista del onboarding antes de presentar el paywall.
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onPaywall(actionId, meta) {
+    // Dismiss onboarding before presenting paywall
+    view.dismiss().then(() => {
+      openPaywall(actionId);
+    });
+  },
+});
+
+async function openPaywall(placementId: string) {
+  // Implement your paywall opening logic here
+}
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+
+### Seguimiento de la navegación \{#tracking-navigation\}
+
+Recibes un evento de analítica cuando ocurren distintos eventos relacionados con la navegación durante el flujo del onboarding:
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onAnalytics(event, meta) {
+    console.log('Analytics event:', event.type, meta.onboardingId);
+  },
+});
+```
+
+El objeto `event` puede ser de uno de los siguientes tipos:
+
+|Tipo | Descripción |
+|------------|-------------|
+| `onboardingStarted` | Cuando el onboarding se ha cargado |
+| `screenPresented` | Cuando se muestra cualquier pantalla |
+| `screenCompleted` | Cuando se completa una pantalla. Incluye un `elementId` opcional (identificador del elemento completado) y un `reply` opcional (respuesta del usuario). Se activa cuando el usuario realiza cualquier acción para salir de la pantalla. |
+| `secondScreenPresented` | Cuando se muestra la segunda pantalla |
+| `userEmailCollected` | Se activa cuando se recoge el correo electrónico del usuario a través del campo de entrada |
+| `onboardingCompleted` | Se activa cuando el usuario llega a una pantalla con el ID `final`. Si necesitas este evento, [asigna el ID `final` a la última pantalla](design-onboarding). |
+| `unknown` | Para cualquier tipo de evento no reconocido. Incluye `name` (el nombre del evento desconocido) y `meta` (metadatos adicionales) |
+
+Cada evento incluye información `meta` con los siguientes campos:
+
+| Campo | Descripción |
+|------------|-------------|
+| `onboardingId` | Identificador único del flujo del onboarding |
+| `screenClientId` | Identificador de la pantalla actual |
+| `screenIndex` | Posición de la pantalla actual en el flujo |
+| `screensTotal` | Número total de pantallas en el flujo |
+
+<Details>
+<summary>Ejemplos de eventos (haz clic para expandir)</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+```
+</Details>

@@ -1,0 +1,36 @@
+---
+title: "iOS SDK'da çağrı sırası"
+description: "Adapty SDK metodlarını doğru sırayla çağırarak premium erişim kaybını, eksik attribution'ı ve aralıklı #2002 hatalarını önleyin."
+metadataTitle: "iOS SDK Çağrı Sırası | Adapty Dokümanları"
+---
+
+`Adapty.activate()` tamamlanmadan başka hiçbir Adapty SDK metodunu çağırmamalısınız. Bu metod sonuçlanmadan SDK'nın herhangi bir durumu yoktur. `activate()` ile eş zamanlı ya da öncesinde yapılan her çağrı [`#2002 notActivated`](ios-sdk-error-handling#network-errors) hatasıyla başarısız olur.
+Uygulamanız kullanıcıları doğruluyorsa ve başlatma sonrasında bir müşteri kullanıcı kimliği topluyorsanız, bu noktada `Adapty.identify()` çağrısı yapın. `identify` tamamlanana kadar kullanıcı eylemine bağlı metodları çağırmayın. Bu çağrıyla yarışan işlemler ya [`#3006 profileWasChanged`](ios-sdk-error-handling#general-errors) hatasıyla başarısız olur ya da aktivasyon sırasında oluşturulan anonim profile düşer. Bu durumda attribution, `appsflyer_id` gibi MMP kimlik bilgileri ve kurulum sahipliği her zaman tanımlanan profile aktarılmaz. Uygulamanız kullanıcıları doğrulamıyorsa `identify` çağrısını atlayın ve anonim profille çalışmaya devam edin.
+MMP ve analitik SDK'ları (AppsFlyer, Adjust, Branch, PostHog) aynı kurala tabidir. `Adapty.activate` çağrısından önce bunları başlatın ve UID callback'lerini bekleyin. Aksi takdirde MMP ID'si kısa ömürlü anonim bir profile düşer ve tanımlı profile her zaman aktarılamaz. AppsFlyer'a özgü ayrıntılar için bkz. [AppsFlyer](appsflyer).
+## Doğru sıra \{#the-correct-order\}
+
+Hangi adımları izleyeceğiniz iki şeye bağlıdır: müşteri kullanıcı kimliğini ne zaman öğrendiğiniz ve MMP ya da analitik SDK kullanıp kullanmadığınız.
+
+- **2. ve 5. adımlar**: Her uygulama için zorunludur. SDK'yı etkinleştirin, ardından SDK metotlarını çağırın.
+- **1. ve 3. adımlar**: Yalnızca bir MMP veya analitik SDK (AppsFlyer, Adjust, Branch, PostHog) entegre ediyorsanız gereklidir.
+- **4. adım**: Yalnızca uygulamanız kullanıcıların kimliğini doğruluyorsa ve müşteri kullanıcı kimliğini başlatma sonrasında topluyorsa gereklidir.
+Uygulama başlatıldığında müşteri kullanıcı kimliğine sahipseniz, doğrudan `activate()` fonksiyonuna aktarın (adım 2a). Bu yöntem hiçbir zaman anonim profil oluşturmaz, dolayısıyla 4. adım gereksizdir.
+| Adım | Çağrı | Ne Zaman | Notlar |
+|------|-------|----------|--------|
+| 1 | MMP veya analitik SDK'nızı başlatın (AppsFlyer, Adjust, PostHog, Branch) | Uygulama başlangıcı, ilk sırada | MMP'nin UID callback'ini bekleyin, örneğin `getAppsFlyerUID`. |
+| 2a | `customerUserId` config üzerinde ayarlanmış şekilde `Adapty.activate(with: config)` | Uygulama başlangıcı, 1. adımdan sonra, customer user ID'niz varsa | Önerilen yöntem. Anonim profil hiçbir zaman oluşturulmaz. |
+| 2b | `customerUserId` olmadan `Adapty.activate(with: config)` | Uygulama başlangıcı, 1. adımdan sonra, customer user ID'niz yoksa (veya hiç toplamıyorsanız) | Adapty anonim bir profil oluşturur. |
+| 3 | Her MMP için `Adapty.setIntegrationIdentifier(key:value:)` | 2. adımdan sonra, herhangi bir kullanıcı işlemi çağrısından önce | MMP ID'lerinin doğru profile düşmesi için zorunludur. |
+| 4 | `try await Adapty.identify("YOUR_USER_ID")` | 3. adımdan sonra (veya MMP yoksa 2. adımdan sonra), 5. adımdan önce — yalnızca kimlik doğrulamayla 2b yolunda | Her zaman `await` kullanın. `identify` sırasında eş zamanlı çağrılar `#3006 profileWasChanged` hatasına yol açar. |
+| 5 | `getPaywall`, `getPaywallProducts`, `restorePurchases`, `makePurchase`, `updateAttribution`, `updateProfile` | `identify` çağırıyorsanız 4. adımdan sonra; aksi takdirde 3. adımdan sonra (veya MMP yoksa 2. adımdan sonra) | Bu çağrılar kararlı bir profile ihtiyaç duyar. |
+:::important
+Bu adımları atlamak; geri dönen kullanıcıların premium erişimini kaybetmesine, profillerde eksik `appsflyer_id` bilgisine ve yanlış kitleye karşı döndürülen paywalls'a yol açar.
+:::
+## Web2app ve web-funnel kurulumları \{#web2app-and-web-funnel-installs\}
+
+Kullanıcılar bir web ödeme sayfasından (Stripe, Paddle, FunnelFox) satın alıp ardından uygulamayı yüklerse, cihazın ilk `activate()` çağrısı yeni bir anonim profil oluşturur. Bu profil, web profiliyle ilişkilendirilmez. Uygulama başlatılmadan önce kullanıcı kimliğini (auth akışından veya install referrer'dan) çözümleyebiliyorsanız, doğrudan `activate()` içine geçirin. Aksi takdirde web satın alımı, `identify("YOUR_USER_ID")` ve ardından `restorePurchases` çağrısı yapılana kadar cihazda görünmez.
+
+Her web ödeme sayfasıyla gönderilecek metadata için şuralara bakın:
+
+- [Stripe](stripe)
+- [Paddle](paddle)

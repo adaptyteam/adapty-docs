@@ -1,0 +1,88 @@
+---
+title: "Capacitor SDK'da yerelleştirmeleri ve yerel ayar kodlarını kullanma"
+description: "Adapty SDK ile Capacitor uygulamanızda paywallları nasıl yerelleştireceğinizi öğrenin."
+metadataTitle: "Paywallları Yerelleştirme | Capacitor SDK | Adapty Dokümanları"
+customSlug: /capacitor-localizations-and-locale-codes
+displayed_sidebar: sdkcapacitor
+---
+
+## Bu neden önemli \{#why-this-is-important\}
+
+Yerel ayar kodlarının devreye girdiği birkaç senaryo vardır — örneğin, uygulamanızın mevcut yerelleştirmesine uygun paywall'ı almaya çalıştığınızda.
+
+Yerel ayar kodları karmaşık olabilir ve platformdan platforma farklılık gösterebilir; bu nedenle desteklediğimiz tüm platformlar için dahili bir standart kullanıyoruz. Ancak bu kodlar karmaşık olduğundan, doğru yerelleştirmeyi almak için sunucumuza tam olarak ne gönderdiğinizi ve ardından ne olduğunu anlamanız kritik önem taşır; böylece her zaman beklediğinizi alırsınız.
+## Adapty'de kullanılan yerel ayar kodu standardı \{#locale-code-standard-at-adapty\}
+
+Adapty, yerel ayar kodları için hafifçe değiştirilmiş bir [BCP 47 standardı](https://en.wikipedia.org/wiki/IETF_language_tag) kullanır: her kod, küçük harfli alt etiketlerden oluşur ve bunlar kısa çizgilerle ayrılır. Birkaç örnek: `en` (İngilizce), `pt-br` (Portekizce (Brezilya)), `zh` (Basitleştirilmiş Çince), `zh-hant` (Geleneksel Çince).
+## Yerel ayar kodu eşleştirme \{#locale-code-matching\}
+
+Adapty, istemci tarafı SDK'dan yerel ayar koduyla birlikte bir çağrı aldığında ve paywall'ın ilgili yerelleştirmesini aramaya başladığında şu adımlar gerçekleşir:
+
+1. Gelen yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgiyle (`-`) değiştirilir
+2. Ardından tam olarak eşleşen yerel ayar koduna sahip yerelleştirme aranır
+3. Eşleşme bulunamazsa, ilk kısa çizgiden önceki alt dize alınır (`pt-br` için `pt`) ve eşleşen yerelleştirme aranır
+4. Yine eşleşme bulunamazsa varsayılan `en` yerelleştirmesi döndürülür
+Bu sayede `'pt_BR'` gönderen bir iOS cihazı, `pt-BR` gönderen bir Android cihazı ve `pt-br` gönderen başka bir cihaz aynı sonucu alır.
+## Yerelleştirmeleri Uygulama: Önerilen Yol \{#implementing-localizations-recommended-way\}
+
+Yerelleştirmelerle ilgileniyorsanız, muhtemelen projenizde zaten yerelleştirilmiş string dosyalarıyla çalışıyorsunuzdur. Bu durumda, ilgili yerelleştirmeler için her dosyaya Adapty yerel ayar kodu içeren bir anahtar-değer çifti eklemenizi öneririz. Ardından SDK'mızı çağırırken bu anahtarın değerini şu şekilde alın:
+```javascript showLineNumbers
+// 1. Yerelleştirme dosyalarınızı değiştirin (örneğin, react-i18next kullanarak)
+
+/*
+en.json
+*/
+{
+  "adapty_paywalls_locale": "en"
+}
+
+/*
+es.json
+*/
+{
+  "adapty_paywalls_locale": "es"
+}
+
+/*
+pt-BR.json
+*/
+{
+  "adapty_paywalls_locale": "pt-br"
+}
+
+// 2. Yerel ayar kodunu çıkarın ve kullanın
+
+const MyComponent = () => {
+  const { t } = useTranslation();
+  
+  const fetchPaywall = async () => {
+    const locale = t('adapty_paywalls_locale');
+    // yerel ayar kodunu adapty.getPaywall veya adapty.getPaywallForDefaultAudience metoduna iletin
+    const paywall = await adapty.getPaywallForDefaultAudience('placement_id', locale);
+  };
+};
+```
+Bu sayede uygulamanızın her kullanıcısı için hangi yerelleştirmenin alınacağını tam olarak kontrol edebilirsiniz.
+## Yerelleştirmeleri uygulama: alternatif yöntem \{#implementing-localizations-the-other-way\}
+
+Her yerelleştirme için açıkça yerel ayar kodu tanımlamadan da benzer (ancak özdeş olmayan) sonuçlar elde edebilirsiniz. Bu yaklaşımda, platformunuzun sağladığı başka nesnelerden yerel ayar kodu çıkarmak gerekir; örneğin:
+```javascript showLineNumbers
+
+const getLocaleCode = () => {
+  if (Capacitor.getPlatform() === 'ios') {
+    return navigator.language || 'en';
+  } else {
+    return navigator.language || 'en';
+  }
+};
+
+const fetchPaywall = async () => {
+  const locale = getLocaleCode();
+  // yerel ayar kodunu adapty.getPaywall veya adapty.getPaywallForDefaultAudience metoduna aktarın
+  const paywall = await adapty.getPaywallForDefaultAudience('placement_id', locale);
+};
+```
+Bu yaklaşımı birkaç nedenden dolayı önermiyoruz:
+1. iOS'ta tercih edilen diller ile mevcut locale aynı değildir. Yerelleştirmenin doğru seçilmesini istiyorsanız, Apple'ın mantığına güvenmeniz gerekir; bu mantık, yerelleştirilmiş string dosyalarıyla önerilen yaklaşımı kullandığınızda kutudan çıktığı gibi çalışır. Alternatif olarak bu mantığı kendiniz de yeniden oluşturabilirsiniz.
+2. Adapty sunucusunun tam olarak ne alacağını tahmin etmek güçtür. Örneğin iOS'ta bir cihazda `ar_OM@numbers='latn'` gibi bir locale elde edip bunu sunucumuza gönderebilirsiniz. Bu durumda aradığınız `ar-om` yerelleştirmesini değil, büyük ihtimalle beklenmedik olan `ar` yerelleştirmesini alırsınız.
+Bu yaklaşımı kullanmaya karar verirseniz, ilgili tüm kullanım senaryolarını kapsadığınızdan emin olun.

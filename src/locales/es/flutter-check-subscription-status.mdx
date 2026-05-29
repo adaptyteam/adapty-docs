@@ -1,0 +1,92 @@
+---
+title: "Verificar el estado de la suscripción en el SDK de Flutter"
+description: "Aprende cómo verificar el estado de la suscripción en tu app de Flutter con Adapty."
+metadataTitle: "Verificar el estado de la suscripción | Documentación de Adapty"
+displayed_sidebar: sdkflutter
+keywords: ['getProfile', 'subscription status']
+rank: 85
+---
+
+Para decidir si los usuarios pueden acceder al contenido de pago o ver un paywall, necesitas comprobar su [nivel de acceso](access-level) en el perfil.
+
+Este artículo te muestra cómo acceder al estado del perfil para decidir qué deben ver los usuarios: si mostrarles un paywall o darles acceso a las funciones de pago.
+
+## Obtener el estado de la suscripción \{#get-subscription-status\}
+
+Cuando decides si mostrar un paywall o contenido de pago a un usuario, compruebas su [nivel de acceso](access-level) en su perfil. Tienes dos opciones:
+
+- Llama a `getProfile` si necesitas los datos más recientes del perfil de inmediato (por ejemplo, al lanzar la app) o quieres forzar una actualización.
+- Configura **actualizaciones automáticas del perfil** para mantener una copia local que se actualice automáticamente cada vez que cambie el estado de la suscripción.
+
+### Obtener el perfil \{#get-profile\}
+
+La forma más sencilla de obtener el estado de la suscripción es usar el método `getProfile` para acceder al perfil:
+
+```javascript showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  // check the access
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+### Escuchar actualizaciones de la suscripción \{#listen-to-subscription-updates\}
+
+Para recibir actualizaciones del perfil automáticamente en tu app:
+
+1. Usa `Adapty().didUpdateProfileStream.listen()` para escuchar los cambios del perfil: Adapty llamará a este método automáticamente cada vez que cambie el estado de la suscripción del usuario.
+2. Guarda los datos del perfil actualizado cuando se invoque este método, para poder usarlos en toda tu app sin realizar peticiones de red adicionales.
+
+```dart
+class SubscriptionManager {
+  AdaptyProfile? _currentProfile;
+  
+  SubscriptionManager() {
+    // Listen for profile updates
+    Adapty().didUpdateProfileStream.listen((profile) {
+      _currentProfile = profile;
+      // Update UI, unlock content, etc.
+    });
+  }
+  
+  // Use stored profile instead of calling getProfile()
+  bool hasAccess() {
+    return _currentProfile?.accessLevels['premium']?.isActive ?? false;
+  }
+}
+```
+
+:::note
+Adapty llama automáticamente al listener del stream de actualización del perfil cuando se inicia tu app, proporcionando datos de suscripción en caché incluso si el dispositivo está sin conexión.
+:::
+
+## Conectar el perfil con la lógica del paywall \{#connect-profile-with-paywall-logic\}
+
+Cuando necesitas tomar decisiones inmediatas sobre si mostrar paywalls o dar acceso a funciones de pago, puedes comprobar el perfil del usuario directamente. Este enfoque es útil en situaciones como el lanzamiento de la app, al acceder a secciones premium o antes de mostrar contenido específico.
+
+```dart
+Future<bool> _checkAccessLevel() async {
+  try {
+    final profile = await Adapty().getProfile();
+    return profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false;
+  } catch (e) {
+    print('Error checking access level: $e');
+    return false; // Show paywall if access check fails
+  }
+}
+
+Future<void> _initializePaywall() async {
+  await _loadPaywall();
+  
+  final hasAccess = await _checkAccessLevel();
+  if (!hasAccess) {
+    // Show paywall if no access
+  }
+}
+``` 
+
+## Próximos pasos \{#next-steps\}
+
+Ahora que sabes cómo hacer seguimiento del estado de la suscripción, aprende a [trabajar con perfiles de usuario](flutter-quickstart-identify) para asegurarte de que pueden acceder a lo que han pagado.

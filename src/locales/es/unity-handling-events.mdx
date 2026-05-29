@@ -1,0 +1,411 @@
+---
+title: "Gestionar eventos del paywall"
+description: "Aprende a gestionar eventos del paywall en tu aplicación Unity con el SDK de Adapty."
+metadataTitle: "Gestionar Eventos del Paywall | SDK de Unity | Documentación de Adapty"
+customSlug: /unity-handling-events
+displayed_sidebar: sdkunity
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+import PaywallAction from '@site/src/locales/es/reusable/PaywallAction.md';
+
+:::important
+Esta guía cubre la gestión de eventos para compras, restauraciones, selección de productos y renderizado del paywall. También debes implementar el manejo de botones (cerrar paywall, abrir enlaces, etc.). Consulta nuestra [guía sobre el manejo de acciones de botones](unity-handle-paywall-actions) para más detalles.
+:::
+
+Los paywalls configurados con el [Paywall Builder](adapty-paywall-builder) no necesitan código adicional para realizar y restaurar compras. Sin embargo, generan ciertos eventos a los que tu aplicación puede responder. Estos eventos incluyen pulsaciones de botones (botones de cierre, URLs, selecciones de productos, etc.), así como notificaciones sobre acciones relacionadas con compras realizadas en el paywall. A continuación aprenderás cómo responder a estos eventos.
+
+:::warning
+Esta guía es **exclusivamente para paywalls del nuevo Paywall Builder**, que requieren el SDK de Adapty v3.3.0 o posterior.
+:::
+
+<SampleApp />
+
+## Gestión de eventos \{#handling-events\}
+
+Para controlar o monitorear los procesos que ocurren en la pantalla del paywall dentro de tu aplicación móvil, implementa la interfaz `AdaptyPaywallsEventsListener`:
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+public class PaywallEventsHandler : MonoBehaviour, AdaptyPaywallsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetPaywallsEventsListener(this);
+    }
+
+    // Implement all required interface methods below
+}
+```
+
+### Eventos generados por el usuario \{#user-generated-events\}
+
+#### Paywall mostrado \{#paywall-appeared\}
+
+Se invoca cuando la vista del paywall aparece en pantalla.
+
+:::note
+En iOS, también se invoca cuando el usuario pulsa el [botón del web paywall](web-paywall#step-2a-add-a-web-purchase-button) dentro de un paywall y el web paywall se abre en un navegador integrado.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidAppear(AdaptyUIPaywallView view) { }
+```
+
+#### Paywall ocultado \{#paywall-disappeared\}
+
+Se invoca cuando la vista del paywall desaparece de la pantalla.
+
+:::note
+En iOS, también se invoca cuando un [web paywall](web-paywall#step-2a-add-a-web-purchase-button) abierto desde un paywall en un navegador integrado desaparece de la pantalla.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidDisappear(AdaptyUIPaywallView view) { }
+```
+
+#### Selección de producto \{#product-selection\}
+
+Se invoca cuando se selecciona un producto para comprar (por el usuario o por el sistema).
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidSelectProduct(
+    AdaptyUIPaywallView view, 
+    string productId
+) { }
+```
+
+<Details>
+<summary>Ejemplo de evento (Haz clic para expandir)</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+#### Compra iniciada \{#started-purchase\}
+
+Se invoca cuando el usuario inicia el proceso de compra.
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidStartPurchase(
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product
+) { }
+```
+
+<Details>
+<summary>Ejemplo de evento (Haz clic para expandir)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Compra exitosa, cancelada o pendiente \{#successful-canceled-or-pending-purchase\}
+
+Si la compra se completa correctamente, el usuario la cancela, o queda en estado pendiente, se invocará este método. Las cancelaciones del usuario y los pagos pendientes (como los que requieren aprobación parental) activan este método, no `PaywallViewDidFailPurchase`.
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFinishPurchase(
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product, 
+    AdaptyPurchaseResult purchasedResult
+) { }
+```
+
+<Details>
+<summary>Ejemplos de eventos (Haz clic para expandir)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCancelled"
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+```
+</Details>
+
+Recomendamos cerrar la pantalla en ese caso.
+
+#### Compra fallida \{#failed-purchase\}
+
+Si una compra falla debido a un error, se invocará este método. Esto incluye errores de StoreKit/Google Play Billing (restricciones de pago, productos inválidos, fallos de red), errores de verificación de transacciones y errores del sistema. Ten en cuenta que las cancelaciones del usuario activan `PaywallViewDidFinishPurchase` con un resultado de cancelación, y los pagos pendientes no activan este método.
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFailPurchase(
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product, 
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Ejemplo de evento (Haz clic para expandir)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+#### Restauración iniciada \{#started-restore\}
+
+Se invoca cuando el usuario inicia el proceso de restauración:
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidStartRestore(AdaptyUIPaywallView view) { }
+```
+
+#### Restauración exitosa \{#successful-restore\}
+
+Se invoca cuando la restauración de compras se completa correctamente:
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFinishRestore(
+    AdaptyUIPaywallView view, 
+    AdaptyProfile profile
+) { }
+```
+
+<Details>
+<summary>Ejemplo de evento (Haz clic para expandir)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Recomendamos cerrar la pantalla si el usuario tiene el `accessLevel` requerido. Consulta el tema [Estado de la suscripción](unity-listen-subscription-changes) para aprender cómo verificarlo.
+
+#### Restauración fallida \{#failed-restore\}
+
+Se invoca cuando la restauración de compras falla:
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFailRestore(
+    AdaptyUIPaywallView view, 
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Ejemplo de evento (Haz clic para expandir)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### Navegación web de pago finalizada \{#finished-web-payment-navigation\}
+
+Después de intentar abrir un [web paywall](web-paywall) para realizar una compra (tanto si tuvo éxito como si falló), se invocará este método:
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFinishWebPaymentNavigation(
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product, 
+    AdaptyError error
+) { }
+```
+
+**Parámetros:**
+- `product`: El producto para el que se abrió (o intentó abrir) el web paywall
+- `error`: `null` si el web paywall se abrió correctamente, o un `AdaptyError` si falló
+
+<Details>
+<summary>Ejemplos de eventos (Haz clic para expandir)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "wrong_param",
+    "message": "Current method is not available for this product",
+    "details": {
+      "underlyingError": "Product not configured for web purchases"
+    }
+  }
+}
+```
+</Details>
+
+### Obtención de datos y renderizado \{#data-fetching-and-rendering\}
+
+#### Errores de carga de productos \{#product-loading-errors\}
+
+Se invoca cuando falla la carga de productos y proporciona un `AdaptyError`. Si no pasaste el array de productos durante la inicialización, AdaptyUI recuperará los objetos necesarios del servidor por sí solo. Esta operación puede fallar, y AdaptyUI reportará el error invocando este método:
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFailLoadingProducts(
+    AdaptyUIPaywallView view, 
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Ejemplo de evento (Haz clic para expandir)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+#### Errores de renderizado \{#rendering-errors\}
+
+Se invoca cuando ocurre un error durante el renderizado de la interfaz y proporciona un `AdaptyError`:
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFailRendering(
+    AdaptyUIPaywallView view, 
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Ejemplo de evento (Haz clic para expandir)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+En condiciones normales, estos errores no deberían producirse, por lo que si encuentras alguno, por favor haznos saber.

@@ -1,0 +1,95 @@
+---
+title: "Verificar el estado de suscripción en el SDK de Capacitor"
+description: "Rastrea y gestiona el estado de suscripción de usuarios en Adapty para mejorar la retención de clientes en tu app de Capacitor."
+metadataTitle: "Entender el estado de suscripción | Documentación de Adapty"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
+
+Con Adapty, controlar el estado de la suscripción es muy sencillo. No tienes que insertar manualmente los ID de producto en tu código. En cambio, puedes confirmar fácilmente el estado de suscripción de un usuario comprobando si tiene un [nivel de acceso](access-level) activo.
+
+<details>
+   <summary>Antes de empezar a comprobar el estado de suscripción (haz clic para expandir)</summary>
+
+- Para iOS, configura las [notificaciones del servidor de App Store](enable-app-store-server-notifications)
+- Para Android, configura las [notificaciones en tiempo real para desarrolladores (RTDN)](enable-real-time-developer-notifications-rtdn)
+</details>
+
+## El nivel de acceso y el objeto AdaptyProfile \{#access-level-and-the-adaptyprofile-object\}
+
+Los niveles de acceso son propiedades del objeto [AdaptyProfile](https://capacitor.adapty.io/interfaces/adaptyprofile). Te recomendamos recuperar el perfil cuando arranca la app, por ejemplo al [identificar un usuario](capacitor-identifying-users#setting-customer-user-id-on-configuration), y actualizarlo cada vez que haya cambios. Así podrás usar el objeto del perfil sin tener que solicitarlo repetidamente.
+
+Para recibir notificaciones de las actualizaciones del perfil, escucha los cambios en el perfil tal como se describe en la sección [Escuchar actualizaciones del perfil, incluidos los niveles de acceso](capacitor-listen-subscription-changes) más abajo.
+
+<SampleApp />
+
+## Obtener el nivel de acceso desde el servidor \{#retrieving-the-access-level-from-the-server\}
+
+Para obtener el nivel de acceso desde el servidor, usa el método `.getProfile()`:
+
+```typescript showLineNumbers
+
+try {
+  const profile = await adapty.getProfile();
+  console.log('Profile retrieved successfully');
+} catch (error) {
+  console.error('Failed to get profile:', error);
+}
+```
+
+Parámetros de respuesta:
+
+| Parámetro | Descripción                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| --------- |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **profile**   | Un objeto [AdaptyProfile](https://capacitor.adapty.io/interfaces/adaptyprofile). En general, solo necesitas comprobar el estado del nivel de acceso del perfil para determinar si el usuario tiene acceso premium a la app. El método `.getProfile` devuelve el resultado más actualizado, ya que siempre intenta consultar la API. Si por alguna razón (por ejemplo, sin conexión a internet) el SDK de Adapty no puede obtener información del servidor, se devolverán los datos de la caché. También es importante tener en cuenta que el SDK de Adapty actualiza la caché de `AdaptyProfile` de forma regular para mantener esta información lo más actualizada posible. |
+
+El método `.getProfile()` te proporciona el perfil de usuario desde el que puedes obtener el estado del nivel de acceso. Puedes tener múltiples niveles de acceso por app. Por ejemplo, si tienes una app de noticias y vendes suscripciones a diferentes temáticas de forma independiente, puedes crear los niveles de acceso "sports" y "science". Sin embargo, la mayoría de las veces solo necesitarás un nivel de acceso; en ese caso, puedes usar simplemente el nivel de acceso "premium" por defecto.
+
+A continuación se muestra un ejemplo para comprobar el nivel de acceso "premium" por defecto:
+
+```typescript showLineNumbers
+
+try {
+  const profile = await adapty.getProfile();
+  
+  const isActive = profile.accessLevels['premium']?.isActive;
+  if (isActive) {
+    // Grant access to premium features
+    console.log('User has premium access');
+  } else {
+    console.log('User does not have premium access');
+  }
+} catch (error) {
+  console.error('Failed to check subscription status:', error);
+}
+```
+
+### Escuchar actualizaciones del estado de suscripción \{#listening-for-subscription-status-updates\}
+
+Cada vez que cambia la suscripción del usuario, Adapty lanza un evento.
+
+Para recibir mensajes de Adapty, necesitas realizar alguna configuración adicional:
+
+```typescript showLineNumbers
+
+// Create an "onLatestProfileLoad" event listener
+adapty.addListener('onLatestProfileLoad', (data) => {
+  const profile = data.profile;
+  const isActive = profile.accessLevels['premium']?.isActive;
+  
+  if (isActive) {
+    console.log('Subscription status updated: User has premium access');
+  } else {
+    console.log('Subscription status updated: User does not have premium access');
+  }
+});
+```
+
+Adapty también lanza un evento al iniciar la aplicación. En ese caso, se pasará el estado de suscripción almacenado en caché.
+
+### Caché del estado de suscripción \{#subscription-status-cache\}
+
+La caché implementada en el SDK de Adapty almacena el estado de suscripción del perfil. Esto significa que, aunque el servidor no esté disponible, se puede acceder a los datos en caché para obtener información sobre el estado de suscripción del perfil.
+
+Sin embargo, es importante tener en cuenta que no es posible realizar solicitudes de datos directamente desde la caché. El SDK consulta el servidor periódicamente cada minuto para comprobar si hay actualizaciones o cambios relacionados con el perfil. Si hay modificaciones, como nuevas transacciones u otras actualizaciones, se enviarán a los datos en caché para mantenerlos sincronizados con el servidor.

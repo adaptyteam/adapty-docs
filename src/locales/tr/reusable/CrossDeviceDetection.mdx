@@ -1,0 +1,22 @@
+---
+no_index: true
+---
+
+SDK etkinleştirildiğinde, StoreKit (iOS) veya Google Play Billing (Android) üzerinden kullanıcının mevcut haklarını otomatik olarak okur ve bunları Adapty backend'iyle senkronize eder. Aktif bir abonelik, uygulamanın `restorePurchases` çağrısı yapmadan Adapty profilinde görünür.
+
+Otomatik olarak **gerçekleşmeyen** şey, yeni bir cihazdaki profilin orijinal cihazdaki profille aynı kullanıcıya ait olduğunun tanınmasıdır. Adapty, profilleri Customer User ID ile eşleştirir; dolayısıyla kimlik sürekliliği CUID olarak ne kullandığınıza bağlıdır.
+
+**Adapty'nin cihazlar arasında neleri algılayabildiği**
+
+| Kurulumunuz | Adapty'nin algıladığı | Yapmanız gereken |
+| --- | --- | --- |
+| Customer User ID = `device_id` (uygulama girişi yok) | Yeni cihaz farklı bir CUID ve dolayısıyla farklı bir profil alır. Abonelik, **Access level updated** olayı aracılığıyla yeni profile senkronize edilir; ancak `subscription_started` tetiklenmez — yeni profil, orijinal satın almanın devralıcısı olarak değerlendirilir. `subscription_started` üzerine kurulu analizler, geri dönen kullanıcıları eksik sayar. | Geri dönen bir kullanıcının cihazlar arasında mevcut profille eşleşmesi için Customer User ID olarak kararlı bir hesap kimliği kullanın. |
+| Customer User ID = kararlı hesap kimliği (her cihazda oturum açma) | SDK, `activate()` sırasında aboneliği otomatik olarak senkronize eder ve `identify()`, CUID ile mevcut profili eşleştirir. | Ek kurulum gerekmez — hem kimlik hem de abonelik otomatik olarak çözümlenir. |
+| Apple Family Sharing devralıcısı | Aile üyesi, aboneliği yalnızca **Access level updated** olayı aracılığıyla alır — `subscription_started` tetiklenmez. | **Access level updated** olayını dinleyin. Tam olay matrisi için [Apple Family Sharing](apple-family-sharing) sayfasına bakın. |
+| Aynı Apple/Google hesabı, farklı uygulama içi kullanıcılar | Satın almayı kaydeden ilk profil üst profil olur. Sonraki profiller, tek bir **Access level updated** olayıyla bir devralıcı zinciri aracılığıyla aboneliği görür. | Oturum açmayı zorunlu kılın, ardından modelinize uygun bir [paylaşım modu](sharing-paid-access-between-user-accounts) seçin. |
+
+**Yeni bir cihazda satın almaları geri yükleme**
+
+Paywallınızda kullanıcı tarafından başlatılan bir "Satın almaları geri yükle" butonu gösterin. Apple App Review (kural 3.1.1) bunu zorunlu kılar ve otomatik senkronizasyonun uç bir durumu kaçırması halinde yedek olarak işlev görür. Buton, SDK'nızda `restorePurchases` çağrısı yapmalıdır.
+
+İlk açılışta programatik bir `restorePurchases` çağrısı normal kullanım için gerekli değildir — SDK, `activate()` sırasında zaten eşdeğerini çalıştırır. Programatik çağrıları yalnızca zorunlu bir güncel makbuz kontrolü için ayırın; örneğin `activate()` tamamlandıktan sonra eksik erişimi hata ayıklarken.

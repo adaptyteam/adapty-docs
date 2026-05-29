@@ -1,41 +1,49 @@
 ---
 title: "İade etkinlikleri"
-description: "Churn oranını düşürmek ve geliri optimize etmek için Adapty'deki iade etkinliklerini yönetin."
+description: "Churn'ü azaltmak ve geliri optimize etmek için Adapty'deki iade etkinliklerini yönetin."
 metadataTitle: "Adapty'de İade Etkinliklerini Yönetme | Adapty Dokümanları"
 ---
 
 İade etkinlikleri grafiği, kaç satın alma ve aboneliğin iade edildiğini gösterir. Adapty, her iade etkinliğini abonelik başlangıç tarihine değil, iadenin gerçekleştiği tarihe bağlar.
 
-<Zoom>
-  <img src="/assets/shared/img/a3e1945-small-CleanShot_2023-05-11_at_18.36.262x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+<ZoomImage id="a3e1945-small-CleanShot_2023-05-11_at_18.36.262x.webp" width="700px" alt="İade etkinlikleri grafiği" />
+## Hesaplama \{#calculation\}
 
-### Hesaplama \{#calculation\}
+Adapty, seçilen dönem içinde iade edilen her satın alma veya aboneliği sayar. Her iade, aboneliğin başladığı tarihe değil, gerçekleştiği tarihe atfedilir. Deneme süreleri herhangi bir gelir oluşturmadığından, bunlara ait iadeler hesaba katılmaz.
+## Metriklerin iadeleri nasıl işlediği \{#how-metrics-handle-refunds\}
 
-Adapty, seçilen dönem içinde iade edilen her satın alma veya aboneliği sayar. Her iade, aboneliğin başladığı tarihe değil gerçekleştiği tarihe atfedilir. Denemeler herhangi bir gelir oluşturmadığından, deneme sürümlerine ait iadeler hariç tutulur.
+Farklı metrikler iadeleri farklı şekilde ele alır. Aynı iade olayı bir grafiği anında düşürürken, başka bir grafiği geriye dönük olarak (geçmiş dönem değerlerini değiştirerek) etkileyebilir ya da üçüncü bir grafiği hiç etkilemeyebilir. Aşağıdaki tablo, metrik başına kuralları göstermektedir.
+| Metrik | İadeler uygulandı mı? | Attribution tarihi | Negatife düşebilir mi? | Notlar |
+| --- | --- | --- | --- | --- |
+| [Gelir](revenue) | Evet | İade tarihi — orijinal satın alma tarihi değil | Evet — iadelerin yeni geliri aştığı günlerde | Gelir = toplam işlemler − iadeler. |
+| [MRR](mrr) | Evet, geriye dönük olarak | Abonelik, aktif olduğu tüm dönemlerden kaldırılır | Hayır | Geçmiş dönem değerleri iade sonrasında düşebilir. |
+| [ARR](arr) | Evet, geriye dönük olarak | MRR ile aynı | Hayır | Geçmiş dönem değerleri iade sonrasında düşebilir. |
+| [ARPU](arpu) | Evet | İade tarihi | Evet (iade ağırlıklı dönemlerde) | İadeler, gelir payından düşülür. |
+| [ARPPU](arppu) | Evet, yalnızca pay | İade tarihi | Evet (iade ağırlıklı dönemlerde) | İadeler, gelir payından düşülür. İade edilen kullanıcı yine de ödeme yapan kullanıcı paydasında sayılır; bu nedenle yoğun iadeler ARPPU'yu beklenenden daha hızlı düşürür. |
+| [Aktif abonelikler](active-subscriptions) | Evet, geriye dönük olarak | Abonelik sayıdan kaldırılır | Hayır | |
+| [Yeni abonelikler](reactivated-subscriptions) | **Hayır** | — | Hayır | Sayım, sonradan iade edilen abonelikleri de kapsar. Net etki için [İade olayları](refund-events) ile karşılaştırın. |
+| [İade tutarı](refund-money) / [İade olayları](refund-events) | İadeler **verinin kendisidir** | İade tarihi | Hayır (her zaman ≥ 0) | |
+| [Elde tutma](analytics-retention) | **Hayır** | — | Hayır | İade edilen kullanıcılar elde tutma eğrisinde sayılmaya devam eder. Bu durum, aynı kohort için Elde Tutma'nın [Aktif abonelikler](active-subscriptions) veya [Gelir](revenue)'den daha yüksek görünmesine yol açabilir. |
+| [Kohort geliri](analytics-cohorts) | Evet, kümülatif olarak | İade tarihi | Hayır (kümülatif çıkarmalar kohort gelirini sıfırın altına düşürmez) | İadeler gerçekleştikçe kohort gelirinden düşülür. |
+| [Paywall metrikleri](paywall-metrics) / [A/B testi metrikleri](results-and-metrics) (sayımlar) | **Hayır** | — | Hayır | Bu sayfalardaki Aboneler, Ödeme Yapan Aboneler ve ARPPU sayımları iadeleri düşmez. |
+| GCS / S3 dışa aktarımları | İade kendi olay satırı olarak yer alır | `event_datetime` = iade zaman damgası | Toplama yapılırken net sütunlar negatife düşebilir | İade satırı `is_refund = true` (S3/GCS) veya `subscription_refunded` olay türünü (webhook'lar) taşır. |
+### Negatif Değerler \{#negative-values\}
 
-### Mevcut filtreler ve gruplama \{#available-filters-and-grouping\}
+Toplu görünümlerde (Gelir grafiği, dışa aktarmalardaki özel analizler), belirli bir dönem veya gruplama için bir metrik negatif değer gösterebilir; bu durum, o dilimde işlenen iadeler aynı dilimde elde edilen yeni geliri aştığında ortaya çıkar. Bu bir hata değil, sistemin tasarlandığı şekilde çalışmasının doğal bir sonucudur.
 
-- ✅ Filtrele: Attribution, ülke, paywall, mağaza, ürün, süre ve iade nedeni.
-- ✅ Grupla: Ürün, ülke, mağaza, paywall, süre, iade nedeni, attribution durumu, attribution kanalı, attribution kampanyası, attribution reklam grubu, attribution reklam seti ve attribution görseli.
+Örneğin: Bir ülkede Salı günü yeni satın alma yapılmadıysa, ancak o gün eski bir satın alma için 100 $ iade işlendiyse, o ülkenin Salı günü geliri −100 $ olarak görünür.
+## Mevcut filtreler ve gruplama \{#available-filters-and-grouping\}
 
-Mevcut kontroller, filtreler, gruplama seçenekleri ve bunların nasıl kullanılacağı hakkında daha fazla bilgiyi [ayrıntılı kılavuzda](controls-filters-grouping-compare-proceeds) bulabilirsiniz.
+:::link
+Ana makale: [Analitik kontrolleri](controls-filters-grouping-compare-proceeds)
+:::
 
-### İade etkinlikleri grafiğinin kullanımı \{#refund-events-chart-usage\}
+- ✅ Filtrele: Attribution, Kitle, İade Nedeni, Ülke, Teklif Türü, Teklif ID, Teklif İndirim Türü, Paywall, A/B testi, Placement, Dönem, Segment, Mağaza, Ürün ve Süre.
+- ✅ Grupla: İade Nedeni, Ürün, Ülke, Mağaza, Paywall, Kitle, Placement, Süre, Teklif Türü, Teklif İndirim Türü, Teklif ID, Segment ve Attribution.
+## Benzer metrikler \{#similar-metrics\}
 
-İade etkinlikleri grafiğini, iade artışlarını ve tekrarlayan sorunları tespit etmek için kullanın. İadeleri zaman içinde takip etmek, örüntüleri fark etmenize ve churn oranını düşürüp geliri korumak için harekete geçmenize yardımcı olur.
+Bu metriklerin yan yana karşılaştırması için [Metrik karşılaştırma tablosuna](metric-comparison-table#revenue) bakın.
 
-### Benzer metrikler \{#similar-metrics\}
-
-Adapty, sorunlarla ilgili diğer etkinlikleri de izler: İade parası, Faturalama sorunu ve Ek süre. İlgili dokümantasyona bakın:
-
-- [İade parası](refund-money)
-- [Faturalama sorunu](billing-issue)
+- [Para iadesi](refund-money)
+- [Faturalandırma sorunu](billing-issue)
 - [Ek süre](grace-period)

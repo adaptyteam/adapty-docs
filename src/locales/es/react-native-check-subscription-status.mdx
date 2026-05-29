@@ -1,0 +1,94 @@
+---
+title: "Comprobar el estado de la suscripción en el SDK de React Native"
+description: "Aprende a comprobar el estado de la suscripción en tu app de React Native con Adapty."
+metadataTitle: "Comprobar el Estado de la Suscripción | Documentación de Adapty"
+displayed_sidebar: sdkreactnative
+keywords: ['getProfile', 'subscription status']
+rank: 90
+---
+
+Para decidir si los usuarios pueden acceder a contenido de pago o ver un paywall, necesitas comprobar su [nivel de acceso](access-level) en el perfil.
+
+Este artículo te muestra cómo acceder al estado del perfil para decidir qué deben ver los usuarios: si mostrarles un paywall o concederles acceso a las funciones de pago.
+
+## Obtener el estado de la suscripción \{#get-subscription-status\}
+
+Cuando decides si mostrar un paywall o contenido de pago a un usuario, compruebas su [nivel de acceso](access-level) en su perfil. Tienes dos opciones:
+
+- Llama a `getProfile` si necesitas los datos más recientes del perfil de inmediato (por ejemplo, al arrancar la app) o quieres forzar una actualización.
+- Configura **actualizaciones automáticas del perfil** para mantener una copia local que se refresca automáticamente cada vez que cambia el estado de la suscripción.
+
+### Obtener el perfil \{#get-profile\}
+
+La forma más sencilla de obtener el estado de la suscripción es usar el método `getProfile` para acceder al perfil:
+
+```typescript showLineNumbers
+try {
+    const profile = await adapty.getProfile();
+} catch (error) {
+  // handle the error
+}
+```
+
+### Escuchar actualizaciones de la suscripción \{#listen-to-subscription-updates\}
+
+Para recibir actualizaciones del perfil automáticamente en tu app:
+
+1. Usa `adapty.addEventListener('onLatestProfileLoad')` para escuchar cambios en el perfil: Adapty llamará a este método automáticamente cada vez que cambie el estado de la suscripción del usuario.
+2. Guarda los datos del perfil actualizado cuando se llame a este método, para poder usarlos en toda tu app sin hacer peticiones de red adicionales.
+
+```javascript
+class SubscriptionManager {
+    private currentProfile: any = null;
+    
+    constructor() {
+        // Listen for profile updates
+        adapty.addEventListener('onLatestProfileLoad', (profile) => {
+            this.currentProfile = profile;
+            // Update UI, unlock content, etc.
+        });
+    }
+    
+    // Use stored profile instead of calling getProfile()
+    hasAccess(): boolean {
+        return this.currentProfile?.accessLevels?.['premium']?.isActive ?? false;
+    }
+}
+```
+
+:::note
+Adapty llama automáticamente al listener del evento `onLatestProfileLoad` cuando arranca tu app, proporcionando datos de suscripción en caché incluso si el dispositivo está sin conexión.
+:::
+
+## Conectar el perfil con la lógica del paywall \{#connect-profile-with-paywall-logic\}
+
+Cuando necesitas tomar decisiones inmediatas sobre mostrar paywalls o conceder acceso a funciones de pago, puedes comprobar el perfil del usuario directamente. Este enfoque es útil en situaciones como el arranque de la app, al entrar en secciones premium o antes de mostrar contenido específico.
+
+```javascript
+const checkAccessLevel = async () => {
+  try {
+    const profile = await adapty.getProfile();
+    return profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive === true;
+  } catch (error) {
+    console.warn('Error checking access level:', error);
+    return false; // Show paywall if access check fails
+  }
+};
+
+const initializePaywall = async () => {
+  try {
+    await loadPaywall();
+    
+    const hasAccess = await checkAccessLevel();
+    if (!hasAccess) {
+      // Show paywall if no access
+    }
+  } catch (error) {
+    console.warn('Error initializing paywall:', error);
+  }
+};
+``` 
+
+## Próximos pasos \{#next-steps\}
+
+Ahora que sabes cómo hacer seguimiento del estado de la suscripción, aprende a [trabajar con perfiles de usuario](react-native-quickstart-identify) para asegurarte de que pueden acceder a lo que han pagado.
