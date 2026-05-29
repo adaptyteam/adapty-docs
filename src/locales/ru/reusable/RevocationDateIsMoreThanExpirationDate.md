@@ -1,11 +1,11 @@
-Запрос завершился ошибкой, потому что указанный в запросе параметр `revoke_at` позже текущего значения `expires_at` для данного уровня доступа. Если вы хотите продлить уровень доступа, используйте запрос [Предоставление уровня доступа](ss-grant-access-level).
+Запрос завершился ошибкой, потому что `revoke_at`, указанный в запросе, позже текущего параметра `expires_at` уровня доступа. Если вы хотите продлить уровень доступа, воспользуйтесь запросом [Grant access level](https://adapty.io/docs/ru/api-adapty/operations/grantAccessLevel).
 
 #### Body
 
 | Параметр    | Тип     | Описание                                                     |
 | ----------- | ------- | ------------------------------------------------------------ |
 | errors      | Object  | <ul><li> **source**: (string) Всегда `non_field_errors`</li><li> **errors**: Описание ошибки.</li></ul> |
-| error_code  | String  | Короткое название ошибки. Всегда `revocation_date_more_than_expiration_date`. |
+| error_code  | String  | Краткое название ошибки. Всегда `revocation_date_more_than_expiration_date`. |
 | status_code | Integer | HTTP-статус. Всегда `400`.                                   |
 
 #### Пример ответа

@@ -1,24 +1,123 @@
 ---
-title: "在 iOS SDK 中响应按钮操作"
-description: "使用 Adapty 在 iOS 中处理付费墙按钮操作，提升应用变现效果。"
-metadataTitle: "处理付费墙按钮操作 | Adapty 文档"
+title: "响应流程操作 - iOS"
+description: "在 iOS 应用中处理付费墙和用户引导流程中的按钮操作及用户输入。"
+metadataTitle: "响应流程操作 - iOS | Adapty 文档"
 toc_max_heading_level: 4
 keywords: ['付费墙按钮', '按钮', '付费墙按钮操作', '处理操作']
 ---
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
-如果您正在使用 Adapty 付费墙编辑工具构建付费墙，正确设置按钮至关重要：
+<SDKv4>
 
-1. 在付费墙编辑工具中[添加一个按钮](paywall-buttons)，并为其分配一个预设操作或创建自定义操作 ID。
-2. 在您的应用代码中，编写处理每个已分配操作的逻辑。
+如果你正在使用 Adapty Flow Builder 或付费墙编辑工具构建流程或付费墙，请务必正确设置按钮：
+1. 在[付费墙编辑工具中添加按钮](paywall-buttons)，并为其分配预置动作或创建自定义动作 ID。
+2. 在应用代码中编写处理每个动作的逻辑。
 
-本指南介绍如何在代码中处理自定义操作和预设操作。
+本指南介绍如何在代码中处理自定义动作和预置动作。
 
 :::warning
-**只有购买、恢复购买、关闭付费墙和打开 URL 会被自动处理。** 所有其他按钮操作都需要在应用代码中正确实现响应逻辑。
+**只有流程/付费墙关闭和 URL 打开会被自动处理。** 其他所有按钮动作都需要在应用代码中实现相应的响应逻辑。
+:::
+## 关闭流程与付费墙 \{#close-flows-and-paywalls\}
+
+要添加一个可以关闭流程或付费墙的按钮：
+
+1. 在编辑工具中，添加一个按钮并为其分配 **Close** 操作。
+2. 在应用代码中，为 `close` 动作实现相应的处理逻辑。
+
+:::info
+在 iOS SDK 中，`close` 动作默认会触发关闭流程或付费墙。不过，如有需要，你可以在代码中覆盖此行为。例如，关闭一个流程时可以触发打开另一个流程。
+:::
+```swift
+.flow(
+    isPresented: $flowPresented,
+    flowConfiguration: flowConfiguration,
+    didPerformAction: { action in
+        switch action {
+        case .close:
+            flowPresented = false // dismiss the flow or paywall
+        default:
+            break
+        }
+    },
+    didFailPurchase: { product, error in /* handle the error */ },
+    didFinishRestore: { profile in /* check access level and dismiss */ },
+    didFailRestore: { error in /* handle the error */ },
+    didFailRendering: { error in flowPresented = false }
+)
+```
+## 从流程和付费墙中打开 URL \{#open-urls-from-flows-and-paywalls\}
+
+:::tip
+如果你想添加一组链接（例如使用条款和购买恢复），可以在编辑工具中添加 **Link** 元素，并像处理带有 **Open URL** 动作的按钮一样处理它。
 :::
 
+要添加一个从流程或付费墙中打开链接的按钮（例如**使用条款**或**隐私政策**）：
+
+1. 在编辑工具中，添加一个按钮，为其指定 **Open URL** 动作，并输入你想打开的 URL。
+2. 在应用代码中，为 `openURL` 动作实现一个处理程序，用于在浏览器中打开接收到的 URL。
+:::info
+在 iOS SDK 中，`openURL` 操作默认会触发打开对应 URL。不过，如有需要，你可以在代码中覆盖此行为。
+:::
+```swift
+.flow(
+    isPresented: $flowPresented,
+    flowConfiguration: flowConfiguration,
+    didPerformAction: { action in
+        switch action {
+        case let .openURL(url):
+            UIApplication.shared.open(url, options: [:]) // default behavior
+        default:
+            break
+        }
+    },
+    didFailPurchase: { product, error in /* handle the error */ },
+    didFinishRestore: { profile in /* check access level and dismiss */ },
+    didFailRestore: { error in /* handle the error */ },
+    didFailRendering: { error in flowPresented = false }
+)
+```
+## 处理自定义动作 \{#handle-custom-actions\}
+
+要添加一个处理其他动作的按钮：
+
+1. 在编辑工具中，添加一个按钮，为其分配 **Custom** 动作，并设置一个 ID。
+2. 在应用代码中，为你创建的动作 ID 实现对应的处理逻辑。
+
+例如，如果你有另一组订阅优惠或一次性购买，可以添加一个按钮来展示另一个流程或付费墙：
+```swift
+.flow(
+    isPresented: $flowPresented,
+    flowConfiguration: flowConfiguration,
+    didPerformAction: { action in
+        switch action {
+        case let .custom(id):
+            if id == "openNewPaywall" {
+                // Display another flow or paywall
+            }
+        default:
+            break
+        }
+    },
+    didFailPurchase: { product, error in /* handle the error */ },
+    didFinishRestore: { profile in /* check access level and dismiss */ },
+    didFailRestore: { error in /* handle the error */ },
+    didFailRendering: { error in flowPresented = false }
+)
+```
+</SDKv4>
+
+<SDKv3>
+
+如果你正在使用 Adapty 付费墙编辑工具构建付费墙，正确设置按钮至关重要：
+
+1. 在[付费墙编辑工具中添加按钮](paywall-buttons)，并为其分配已有操作或创建自定义操作 ID。
+2. 在应用代码中编写逻辑，处理每个已分配的操作。
+
+本指南介绍如何在代码中处理自定义操作和已有操作。
+
+:::warning
+**只有购买、恢复购买、关闭付费墙和打开 URL 会被自动处理。** 其他所有按钮操作都需要在应用代码中实现相应的响应逻辑。
+:::
 ## 关闭付费墙 \{#close-paywalls\}
 
 要添加一个可关闭付费墙的按钮：
@@ -101,10 +200,12 @@ func paywallController(_ controller: AdaptyPaywallController,
    switch action {
        case let .custom(id):
            if id == "openNewPaywall" {
-              // Display another paywall
+              // 展示另一个付费墙
               }
            }
            break
    }
 }
 ```
+
+</SDKv3>
