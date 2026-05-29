@@ -1,4 +1,4 @@
-La solicitud falló porque el `revoke_at` que definiste en la solicitud es posterior al parámetro `expires_at` del nivel de acceso actual. Si deseas prolongar el nivel de acceso, utiliza la solicitud [Conceder nivel de acceso](ss-grant-access-level).
+La solicitud falló porque el `revoke_at` que definiste en la solicitud es posterior al parámetro `expires_at` del nivel de acceso actual. Si deseas prolongar el nivel de acceso, utiliza la solicitud [Conceder nivel de acceso](https://adapty.io/docs/es/api-adapty/operations/grantAccessLevel).
 
 #### Body
 
