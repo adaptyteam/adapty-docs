@@ -1,12 +1,12 @@
-İstekte tanımladığınız `revoke_at` değeri, mevcut access level'ın `expires_at` parametresinden daha ileri bir tarihe işaret ettiği için istek başarısız oldu. Access level'ı uzatmak istiyorsanız [Access level tanımlama](ss-grant-access-level) isteğini kullanın.
+İstekte tanımladığınız `revoke_at` değeri, mevcut access level'ın `expires_at` parametresinden daha ileri bir tarihe ayarlanmış. Access level'ı uzatmak istiyorsanız [Grant access level](https://adapty.io/docs/tr/api-adapty/operations/grantAccessLevel) isteğini kullanın.
 
-#### Gövde
+#### Body
 
 | Parametre   | Tür     | Açıklama                                                     |
 | ----------- | ------- | ------------------------------------------------------------ |
 | errors      | Object  | <ul><li> **source**: (string) Her zaman `non_field_errors`</li><li> **errors**: Hatanın açıklaması.</li></ul> |
 | error_code  | String  | Kısa hata adı. Her zaman `revocation_date_more_than_expiration_date`. |
-| status_code | Integer | HTTP durumu. Her zaman `400`.                                |
+| status_code | Integer | HTTP durum kodu. Her zaman `400`.                            |
 
 #### Yanıt örneği
 

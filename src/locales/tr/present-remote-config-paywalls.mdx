@@ -1,14 +1,74 @@
 ---
-title: "iOS SDK'da remote config ile tasarlanan paywallı render etme"
-description: "Kullanıcı deneyimini kişiselleştirmek için Adapty'de remote config paywalllarının nasıl sunulacağını keşfedin."
-metadataTitle: "Remote Config Paywalllarını Sunma | Adapty Dokümanları"
-keywords: ['remote config']
+title: "iOS SDK'da remote config ile tasarlanan paywall'u render etme"
+description: "Kullanıcı deneyimini kişiselleştirmek için Adapty'de remote config paywall'larının nasıl sunulacağını keşfedin."
+metadataTitle: "Remote Config Paywall'larını Sunma | Adapty Dokümanları"
+keywords: ['remote config', 'logShowPaywall']
 ---
 
-Remote config kullanarak bir paywall özelleştirdiyseniz, bunu kullanıcılara göstermek için mobil uygulamanızın kodunda render işlemini kendiniz uygulamanız gerekir. Remote config ihtiyaçlarınıza göre esneklik sunduğundan, paywall görünümünüzde nelerin yer alacağını ve nasıl görüneceğini siz belirlersiniz. Remote config aracılığıyla yapılandırdığınız özel paywallı sergileyebilmeniz için remote yapılandırmayı getirmeye yönelik bir metot sunuyoruz.
+<SDKv4>
+Remote config ile bir paywall özelleştirdiyseniz, bunu kullanıcılara göstermek için mobil uygulama kodunuzda render işlemini kendiniz uygulamanız gerekir. Remote config ihtiyaçlarınıza göre esneklik sunduğundan, paywall görünümünüzde nelerin yer alacağını ve nasıl görüneceğini siz belirlersiniz. Adapty, remote config'i çekmeniz için bir metot sunar; özel paywall'ınızı nasıl göstereceğiniz tamamen size kalmıştır.
+[iOS'ta kullanıcının başlangıç teklifine uygun olup olmadığını kontrol etmeyi](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios) ve paywall görünümünü bu duruma göre ayarlamayı unutmayın.
+## Flow remote config'ini alın ve sunun \{#get-flow-remote-config-and-present-it\}
 
-[iOS'ta kullanıcının başlangıç teklifine uygun olup olmadığını kontrol etmeyi](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios) ve uygun olduğu durumu işlemek için paywall görünümünü buna göre düzenlemeyi unutmayın.
+v4'te bir flow, `remoteConfigs` dizisinde yapılandırılmış her locale için bir `AdaptyRemoteConfig` girişi taşır. Kullanıcının tercihiyle eşleşen locale'i seçin, ardından ihtiyaç duyduğunuz değerleri okuyun.
 
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+```swift showLineNumbers
+do {
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+    let config = flow.remoteConfigs.first(where: { $0.locale == "en" })
+        ?? flow.remoteConfigs.first
+    let headerText = config?.dictionary?["header_text"] as? String
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+```swift showLineNumbers
+Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID") { result in
+    let flow = try? result.get()
+    let config = flow?.remoteConfigs.first(where: { $0.locale == "en" })
+        ?? flow?.remoteConfigs.first
+    let headerText = config?.dictionary?["header_text"] as? String
+}
+```
+
+</TabItem>
+</Tabs>
+Bu noktada, gerekli tüm değerleri aldıktan sonra bunları görsel olarak çekici bir sayfada render etme ve bir araya getirme zamanı gelmiştir. Tasarımın farklı mobil telefon ekranlarına ve yönlendirmelerine uyum sağladığından emin olarak tüm cihazlarda sorunsuz ve kullanıcı dostu bir deneyim sunun.
+
+:::warning
+Adapty analitiğinin huni ve A/B testi bilgilerini yakalayabilmesi için aşağıda açıklandığı şekilde [paywall görüntüleme etkinliğini kaydettiğinizden](present-remote-config-paywalls#track-paywall-view-events) emin olun.
+:::
+Paywwall'ı görüntüledikten sonra, satın alma akışını kurmaya devam edin. Kullanıcı bir satın alma yaptığında, flow'unuzdaki ürünle birlikte `.makePurchase()` metodunu çağırmanız yeterlidir. `.makePurchase()` metodu hakkında ayrıntılar için [Satın alma yapma](making-purchases) bölümünü okuyun.
+
+[Yedek paywall olarak adlandırılan bir yedek paywall oluşturmanızı](fallback-paywalls) öneririz. Bu yedek, internet bağlantısı olmadığında veya önbellek mevcut olmadığında kullanıcıya gösterilir ve bu durumlarda bile sorunsuz bir deneyim sağlar.
+## Paywall görüntüleme olaylarını takip etme \{#track-paywall-view-events\}
+
+Adapty, paywall'larınızın performansını ölçmenize yardımcı olur. Satın alma verilerini otomatik olarak toplasak da, paywall görüntüleme olaylarını kaydetmek sizin müdahalenizi gerektiriyor; çünkü bir müşterinin paywall'ı ne zaman gördüğünü yalnızca siz biliyorsunuz.
+
+Paywall görüntüleme olayını kaydetmek için `.logShowFlow(flow)` metodunu çağırmanız yeterli. Bu işlem, funnel'lar ve A/B testlerindeki paywall metriklerinize yansıyacaktır.
+:::important
+[Flow Builder](adapty-flow-builder) veya [Paywall Builder](adapty-paywall-builder) tarafından oluşturulan flow'ları ya da paywall'ları görüntülüyorsanız `.logShowFlow(flow)` çağrısına gerek yoktur. Adapty bu durumlarda görüntülemeleri otomatik olarak takip eder.
+:::
+
+```swift showLineNumbers
+try await Adapty.logShowFlow(flow)
+```
+
+İstek parametreleri:
+| Parametre | Zorunluluk | Açıklama |
+| :-------- | :------- |:-----------------------------------------------------------------------------------------|
+| **flow**  | zorunlu | `Adapty.getFlow(placementId:)` ile elde edilen bir `AdaptyFlow` nesnesi. |
+
+</SDKv4>
+
+<SDKv3>
+Remote config kullanarak bir paywall özelleştirdiyseniz, kullanıcılara göstermek için mobil uygulamanızın kodunda render işlemini kendiniz uygulamanız gerekir. Remote config ihtiyaçlarınıza göre esneklik sunduğundan, paywallınıza nelerin dahil edileceğini ve nasıl görüneceğini siz belirlersiniz. Remote config aracılığıyla yapılandırılan özel paywallınızı göstermek için remote config'i çekmenizi sağlayan bir metot sunuyoruz.
+[iOS'ta kullanıcının başlangıç teklifine uygun olup olmadığını kontrol etmeyi](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios) ve uygun olduğu durumu işlemek için paywall görünümünü ayarlamayı unutmayın.
 ## Paywall remote config'ini alma ve sunma \{#get-paywall-remote-config-and-present-it\}
 
 Bir paywallın remote config'ini almak için `remoteConfig` özelliğine erişin ve gerekli değerleri çıkarın.
@@ -46,24 +106,24 @@ Adapty analitiğinin dönüşüm hunileri ve A/B testleri için bilgi toplayabil
 
 Paywallı göstermeyi tamamladıktan sonra satın alma akışını kurmaya devam edin. Kullanıcı bir satın alma yaptığında, paywallınızdaki ürünle birlikte `.makePurchase()` metodunu çağırmanız yeterlidir. `.makePurchase()` metodu hakkında ayrıntılı bilgi için [Satın alma yapma](making-purchases) bölümüne bakın.
 
-[Yedek paywall adı verilen bir yedek paywall oluşturmanızı](fallback-paywalls) öneririz. Bu yedek, internet bağlantısı olmadığında veya önbellekte veri bulunmadığında kullanıcıya gösterilir ve bu durumlarda bile sorunsuz bir deneyim sağlar.
-
+Yedek paywall olarak adlandırılan [bir yedek paywall oluşturmanızı](fallback-paywalls) öneririz. Bu yedek, internet bağlantısı olmadığında veya önbellek mevcut olmadığında kullanıcıya gösterilir; böylece bu durumlarda bile sorunsuz bir deneyim sağlanır.
 ## Paywall görüntüleme olaylarını takip etme \{#track-paywall-view-events\}
 
-Adapty, paywalllarınızın performansını ölçmenize yardımcı olur. Satın alma verilerini otomatik olarak toplasak da paywall görüntüleme olaylarını kaydetmek sizin müdahalenizi gerektirir; çünkü müşterinin bir paywallı ne zaman gördüğünü yalnızca siz bilirsiniz.
+Adapty, paywall'larınızın performansını ölçmenize yardımcı olur. Satın almalara ilişkin verileri otomatik olarak toplarken, paywall görüntülemelerini kayıt altına almak sizin müdahalenizi gerektirir; çünkü bir müşterinin paywall'ı ne zaman gördüğünü yalnızca siz bilirsiniz.
 
-Bir paywall görüntüleme olayını kaydetmek için `.logShowPaywall(paywall)` metodunu çağırmanız yeterlidir; bu olay dönüşüm hunileri ve A/B testlerindeki paywall metriklerinize yansıtılır.
+Bir paywall görüntüleme olayını kaydetmek için `.logShowPaywall(paywall)` metodunu çağırmanız yeterlidir; bu işlem, funnel'lardaki ve A/B testlerindeki paywall metriklerinize yansıyacaktır.
 
 :::important
-[Paywall builder](adapty-paywall-builder) ile oluşturulan paywallları görüntülüyorsanız `.logShowPaywall(paywall)` çağrısı yapmanıza gerek yoktur.
+[Paywall Builder](adapty-paywall-builder) ile oluşturulmuş paywall'ları gösteriyorsanız `.logShowPaywall(paywall)` çağrısı yapmanıza gerek yoktur.
 :::
 
 ```swift showLineNumbers
 Adapty.logShowPaywall(paywall)
 ```
-
 İstek parametreleri:
 
-| Parametre   | Zorunluluk | Açıklama                                                                                 |
-| :---------- | :--------- |:-----------------------------------------------------------------------------------------|
-| **paywall** | zorunlu    | Bir [`AdaptyPaywall`](https://swift.adapty.io/documentation/adapty/adaptypaywall) nesnesi. |
+| Parametre   | Zorunluluk | Açıklama                                                                              |
+| :---------- | :--------- |:--------------------------------------------------------------------------------------|
+| **paywall** | zorunlu | Bir [`AdaptyPaywall`](https://swift.adapty.io/documentation/adapty/adaptypaywall) nesnesi. |
+
+</SDKv3>

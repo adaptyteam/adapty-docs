@@ -1,25 +1,147 @@
 ---
-title: "iOS SDK'da yeni Paywall Builder paywalllarını gösterme"
-description: "iOS'ta dönüşümleri ve geliri artırmak için paywallları nasıl göstereceğinizi keşfedin."
-metadataTitle: "iOS'ta Paywallları Gösterme | Adapty Dokümanları"
-keywords: ['paywallController']
+title: "Flow ve paywallları görüntüleme - iOS"
+description: "iOS uygulamanızda kullanıcılara flow ve paywallları sunun."
+metadataTitle: "Flow ve Paywallları Görüntüleme - iOS | Adapty Dokümanları"
 ---
 
-import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md'; 
+<SDKv4>
 
-Paywall Builder ile bir paywall özelleştirdiyseniz, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmenize gerek yoktur. Böyle bir paywall, hem paywall içinde nelerin gösterileceğini hem de nasıl gösterileceğini barındırır.
+<MethodPromo method="getFlow" label="Flow ve paywallları görüntüleme" />
 
-:::warning
+Bir flow ya da paywall oluşturduysan, bunu kullanıcıya göstermek için mobil uygulama kodunda ayrıca render etmen gerekmez. Böyle bir flow veya paywall, hem ne gösterileceğini hem de nasıl gösterileceğini içinde barındırır.
 
-Bu kılavuz **[yeni Paywall Builder paywallları](adapty-paywall-builder)** içindir. Paywallları gösterme süreci; farklı Paywall Builder sürümleriyle tasarlanan paywalllar, remote config paywalllar ve [Observer modu](observer-vs-full-mode) için farklılık gösterir.
+Aşağıda kullanılan `AdaptyUI.FlowConfiguration` nesnesini edinmek için [Flow ve paywallları alma](get-pb-paywalls) sayfasına bakabilirsin.
+## SwiftUI'da flow ve paywall'ları sunun \{#present-flows-and-paywalls-in-swiftui\}
+### Modal görünüm olarak sunma \{#present-as-a-modal-view\}
 
-- **Remote config paywalllarını** göstermek için bkz. [Remote config ile tasarlanan paywallı render etme](present-remote-config-paywalls).
-- **Observer modu paywalllarını** göstermek için bkz. [iOS - Observer modunda Paywall Builder paywalllarını gösterme](ios-present-paywall-builder-paywalls-in-observer-mode)
+Bir flow ya da paywall'ı cihaz ekranında modal görünüm olarak göstermek için SwiftUI'da `.flow` modifier'ını kullanın. En sade çağrı; `isPresented`, `flowConfiguration` ve dört zorunlu callback'i gerektirir:
+```swift showLineNumbers title="SwiftUI"
+.flow(
+    isPresented: $flowPresented,
+    flowConfiguration: <AdaptyUI.FlowConfiguration>,
+    didFailPurchase: { _, _ in /* handle the error */ },
+    didFinishRestore: { _ in /* check access level and dismiss */ },
+    didFailRestore: { _ in /* handle the error */ },
+    didReceiveError: { _ in flowPresented = false }
+)
+```
+
+Daha fazla kontrol için `didPerformAction` gibi isteğe bağlı callback'ler ekleyerek buton tıklamalarını yönetebilir, `didFinishPurchase` ile de başarılı satın almalara tepki verebilirsiniz:
+```swift showLineNumbers title="SwiftUI"
+@State var flowPresented = false // ensure that you manage this variable state and set it to `true` at the moment you want to show the flow or paywall
+
+var body: some View {
+  Text("Hello, AdaptyUI!")
+      .flow(
+          isPresented: $flowPresented,
+          flowConfiguration: <AdaptyUI.FlowConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      flowPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+          didFailPurchase: { product, error in /* handle the error */ },
+          didFinishRestore: { profile in /* check access level and dismiss */ },
+          didFailRestore: { error in /* handle the error */ },
+          didReceiveError: { error in flowPresented = false }
+      )
+}
+```
+
+Parametreler:
+
+| Parametre              | Zorunlu  | Açıklama                                                                                                                                                                                                                                                                |
+|:-----------------------|:---------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented**        | zorunlu | Flow veya paywall ekranının gösterilip gösterilmediğini yöneten bir binding.                                                                                                                                                                                                    |
+| **flowConfiguration**  | zorunlu | Flow veya paywallın görsel ayrıntılarını içeren bir `AdaptyUI.FlowConfiguration` nesnesi. `AdaptyUI.getFlowConfiguration(forFlow:)` metodunu kullanın. Daha fazla bilgi için [Flow'ları ve paywall'ları edinin](get-pb-paywalls) bölümüne bakın.                                                    |
+| **didFailPurchase**    | zorunlu | `Adapty.makePurchase()` başarısız olduğunda çağrılır.                                                                                                                                                                                                                                |
+| **didFinishRestore**   | zorunlu | `Adapty.restorePurchases()` başarıyla tamamlandığında çağrılır.                                                                                                                                                                                                                           |
+| **didFailRestore**     | zorunlu | `Adapty.restorePurchases()` başarısız olduğunda çağrılır.                                                                                                                                                                                                                            |
+| **didReceiveError**    | zorunlu | Bir render hatası veya flow script'inden kaynaklanan çalışma zamanı hatası için çağrılır (örneğin, bir JavaScript istisnası, `AdaptyUIError` kodu `4105`). Render hataları için [Adapty Destek ekibiyle iletişime geçin](mailto:support@adapty.io).                                                       |
+| **fullScreen**         | isteğe bağlı | Flow veya paywallın tam ekran modunda mı yoksa bir sheet olarak mı görüneceğini belirler. Varsayılan değer `true`.                                                                                                                                                                           |
+| **didAppear**          | isteğe bağlı | Flow veya paywall görünümü sunulduğunda çağrılır.                                                                                                                                                                                                                       |
+| **didDisappear**       | isteğe bağlı | Flow veya paywall görünümü kapatıldığında çağrılır.                                                                                                                                                                                                                       |
+| **didPerformAction**   | isteğe bağlı | Kullanıcı bir butona tıkladığında çağrılır. İki action ID önceden tanımlıdır: `close` ve `openURL`; diğerleri özel olup builder'da ayarlanabilir.                                                                                                                               |
+| **didSelectProduct**   | isteğe bağlı | Kullanıcı veya sistem tarafından satın alma için bir ürün seçildiğinde çağrılır.                                                                                                                                                                                              |
+| **didStartPurchase**   | isteğe bağlı | Kullanıcı satın alma sürecini başlattığında çağrılır.                                                                                                                                                                                                                         |
+| **didFinishPurchase**  | isteğe bağlı | `Adapty.makePurchase()` başarıyla tamamlandığında çağrılır.                                                                                                                                                                                                                               |
+| **didFinishWebPaymentNavigation** | isteğe bağlı | Web ödeme navigasyonu tamamlandığında çağrılır.                                                                                                                                                                                                                    |
+| **didStartRestore**    | isteğe bağlı | Kullanıcı geri yükleme sürecini başlattığında çağrılır.                                                                                                                                                                                                                          |
+| **didFailLoadingProducts** | isteğe bağlı | Ürün yükleme sırasında hata oluştuğunda çağrılır. Yeniden yüklemeyi denemek için `true` döndürün.                                                                                                                                                                                      |
+| **didPartiallyLoadProducts** | isteğe bağlı | Ürünler kısmen yüklendiğinde çağrılır.                                                                                                                                                                                                                          |
+| **showAlertItem**      | isteğe bağlı | Flow veya paywallın üzerinde alert öğelerinin görüntülenmesini yöneten bir binding.                                                                                                                                                                                               |
+| **showAlertBuilder**   | isteğe bağlı | Alert görünümünü render etmek için kullanılan bir fonksiyon.                                                                                                                                                                                                                                   |
+| **placeholderBuilder** | isteğe bağlı | Flow veya paywall yüklenirken placeholder görünümünü render etmek için kullanılan bir fonksiyon. Varsayılan olarak bir `ProgressView` gösterir.                                                                                                                                          |
+Parametreler hakkında daha fazla bilgi için [iOS - Olayları yönetme](ios-handling-events) konusuna bakın.
+
+### Navigation görünümü olarak sunma \{#present-as-a-non-modal-view\}
+
+Flow'ları ve paywallları, uygulamanızın navigasyon akışı içinde bir navigasyon hedefi veya satır içi görünüm olarak da sunabilirsiniz. SwiftUI görünümlerinizde doğrudan `AdaptyFlowView` kullanın:
+```swift showLineNumbers title="SwiftUI"
+AdaptyFlowView(
+    flowConfiguration: <AdaptyUI.FlowConfiguration>,
+    didFailPurchase: { product, error in
+        // Handle purchase failure
+    },
+    didFinishRestore: { profile in
+        // Handle successful restore
+    },
+    didFailRestore: { error in
+        // Handle restore failure
+    },
+    didReceiveError: { error in
+        // Handle the error (rendering or JS exception from the flow script).
+    }
+)
+```
+
+## UIKit'te flow ve paywallları gösterme \{#present-flows-and-paywalls-in-uikit\}
+
+Flow veya paywall'ı cihaz ekranında göstermek için şu adımları izleyin:
+
+1. Göstermek istediğiniz görsel flow'u `AdaptyUI.flowController(with:delegate:)` metodunu kullanarak başlatın:
+
+     ```swift showLineNumbers title="Swift"
+     import AdaptyUI
+
+     let visualFlow = try AdaptyUI.flowController(
+         with: <AdaptyUI.FlowConfiguration>,
+         delegate: <AdaptyFlowControllerDelegate>
+     )
+     ```
+
+    İstek parametreleri:
+| Parametre | Zorunluluk | Açıklama |
+   | :----------------------- | :------- | :---------- |
+   | **flowConfiguration**    | zorunlu | Flow veya paywall'ın görsel detaylarını içeren bir `AdaptyUI.FlowConfiguration` nesnesi. `AdaptyUI.getFlowConfiguration(forFlow:)` metodunu kullanın. Daha fazla bilgi için [Flow ve paywall'ları alma](get-pb-paywalls) konusuna bakın. |
+   | **delegate**             | zorunlu | Flow ve paywall olaylarını dinlemek için bir `AdaptyFlowControllerDelegate`. Daha fazla bilgi için [Flow ve paywall olaylarını yönetme](ios-handling-events) konusuna bakın. |
+
+    Döndürür:
+| Nesne | Açıklama |
+   | :---------------------- | :------------------------------------------------------- |
+   | **AdaptyFlowController** | İstenen flow veya paywall ekranını temsil eden nesne. |
+
+2. Nesne başarıyla oluşturulduktan sonra cihaz ekranında gösterebilirsiniz:
+
+   ```swift showLineNumbers title="Swift"
+   present(visualFlow, animated: true)
+   ```
+
+:::tip
+Adapty SDK'nın bir mobil uygulamaya nasıl entegre edildiğini gerçek dünyadan bir örnekle görmek ister misiniz? Kurulumun tamamını, paywall görüntülemeyi, satın alma yapmayı ve diğer temel işlevleri gösteren [örnek uygulamalarımıza](sample-apps) göz atın.
 
 :::
 
-Aşağıda kullanılan `AdaptyUI.PaywallConfiguration` nesnesini edinmek için bkz. [Paywall Builder paywalllarını ve yapılandırmalarını getirme](get-pb-paywalls).
+</SDKv4>
 
+<SDKv3>
+
+Paywall Builder kullanarak bir paywall özelleştirdiyseniz, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Böyle bir paywall, içinde ne gösterileceğini ve nasıl gösterileceğini zaten içerir.
+`AdaptyUI.PaywallConfiguration` nesnesini almak için [Paywall Builder paywalllarını ve yapılandırmalarını getir](get-pb-paywalls) bölümüne bakın.
 ## SwiftUI'da paywallları gösterme \{#present-paywalls-in-swiftui\}
 
 ### Modal görünüm olarak gösterme \{#present-as-a-modal-view\}
@@ -27,7 +149,7 @@ Aşağıda kullanılan `AdaptyUI.PaywallConfiguration` nesnesini edinmek için b
 Görsel paywallı cihaz ekranında modal görünüm olarak göstermek için SwiftUI'da `.paywall` modifier'ını kullanın:
 
 ```swift showLineNumbers title="SwiftUI"
-@State var paywallPresented = false // bu değişkenin durumunu yönettiğinizden ve paywallı göstermek istediğiniz anda `true` olarak ayarladığınızdan emin olun
+@State var paywallPresented = false // bu değişkenin durumunu yönettiğinizden ve paywall'ı göstermek istediğiniz anda `true` olarak ayarladığınızdan emin olun
 
 var body: some View {
   Text("Hello, AdaptyUI!")
@@ -39,46 +161,42 @@ var body: some View {
                   case .close:
                       paywallPresented = false
                   default:
-                      // Handle other actions
+                      // Diğer aksiyonları yönetin
                       break
               }
           },
           didFinishPurchase: { product, profile in paywallPresented = false },
-          didFailPurchase: { product, error in /* handle the error */ },
-          didFinishRestore: { profile in /* check access level and dismiss */  },
-          didFailRestore: { error in /* handle the error */ },
+          didFailPurchase: { product, error in /* hatayı yönetin */ },
+          didFinishRestore: { profile in /* access level'ı kontrol edin ve kapatın */  },
+          didFailRestore: { error in /* hatayı yönetin */ },
           didFailRendering: { error in paywallPresented = false }
       )
 }
 ```
-
-Parametreler:
-
-| Parametre                         | Zorunluluk | Açıklama                                                                                                                                                                                                                                                                                                                    |
-|:----------------------------------|:-----------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **isPresented**                   | zorunlu    | Paywall ekranının görüntülenip görüntülenmediğini yöneten bir binding.                                                                                                                                                                                                                                                      |
-| **paywallConfiguration**          | zorunlu    | Paywallın görsel ayrıntılarını içeren `AdaptyUI.PaywallConfiguration` nesnesi. `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)` metodunu kullanın. Daha fazla bilgi için [Paywall Builder paywalllarını ve yapılandırmalarını getirme](get-pb-paywalls) konusuna bakın. |
-| **didFailPurchase**               | zorunlu    | `Adapty.makePurchase()` başarısız olduğunda çağrılır.                                                                                                                                                                                                                                                                       |
-| **didFinishRestore**              | zorunlu    | `Adapty.restorePurchases()` başarıyla tamamlandığında çağrılır.                                                                                                                                                                                                                                                             |
-| **didFailRestore**                | zorunlu    | `Adapty.restorePurchases()` başarısız olduğunda çağrılır.                                                                                                                                                                                                                                                                   |
-| **didFailRendering**              | zorunlu    | Arayüz render edilirken hata oluştuğunda çağrılır. Bu durumda [Adapty Destek](mailto:support@adapty.io) ile iletişime geçin.                                                                                                                                                                                                |
-| **fullScreen**                    | isteğe bağlı | Paywallın tam ekran mı yoksa modal olarak mı görüneceğini belirler. Varsayılan değer `true`'dur.                                                                                                                                                                                                                            |
-| **didAppear**                     | isteğe bağlı | Paywall görünümü gösterildiğinde çağrılır.                                                                                                                                                                                                                                                                                  |
-| **didDisappear**                  | isteğe bağlı | Paywall görünümü kapatıldığında çağrılır.                                                                                                                                                                                                                                                                                   |
-| **didPerformAction**              | isteğe bağlı | Kullanıcı bir butona tıkladığında çağrılır. Farklı butonların farklı aksiyon ID'leri vardır. `close` ve `openURL` olmak üzere iki aksiyon ID'si önceden tanımlıdır; diğerleri özel olup builder'da ayarlanabilir.                                                                                                           |
-| **didSelectProduct**              | isteğe bağlı | Bir ürün satın alma için seçildiğinde (kullanıcı veya sistem tarafından) bu callback çağrılır.                                                                                                                                                                                                                              |
-| **didStartPurchase**              | isteğe bağlı | Kullanıcı satın alma sürecini başlattığında çağrılır.                                                                                                                                                                                                                                                                       |
-| **didFinishPurchase**             | isteğe bağlı | `Adapty.makePurchase()` başarıyla tamamlandığında çağrılır.                                                                                                                                                                                                                                                                 |
-| **didFinishWebPaymentNavigation** | isteğe bağlı | Web ödeme navigasyonu tamamlandığında çağrılır.                                                                                                                                                                                                                                                                             |
-| **didStartRestore**               | isteğe bağlı | Kullanıcı geri yükleme sürecini başlattığında çağrılır.                                                                                                                                                                                                                                                                     |
-| **didFailLoadingProducts**        | isteğe bağlı | Ürün yükleme sırasında hata oluştuğunda çağrılır. Yüklemeyi yeniden denemek için `true` döndürün.                                                                                                                                                                                                                          |
-| **didPartiallyLoadProducts**      | isteğe bağlı | Ürünler kısmen yüklendiğinde çağrılır.                                                                                                                                                                                                                                                                                      |
-| **showAlertItem**                 | isteğe bağlı | Paywallın üzerinde uyarı öğelerinin görüntülenmesini yöneten bir binding.                                                                                                                                                                                                                                                   |
-| **showAlertBuilder**              | isteğe bağlı | Uyarı görünümünü render etmek için kullanılan bir fonksiyon.                                                                                                                                                                                                                                                                |
-| **placeholderBuilder**            | isteğe bağlı | Paywall yüklenirken yer tutucu görünümü render etmek için kullanılan bir fonksiyon.                                                                                                                                                                                                                                         |
-
-Parametreler hakkında daha fazla bilgi için [iOS - Olayları yönetme](ios-handling-events) konusuna bakın.
-
+The input appears to be empty or contains only the heading "Parameters:" with no actual MDX content to translate. Please provide the full MDX documentation content you'd like translated from English to Turkish.
+| Parametre | Zorunlu | Açıklama |
+|:----------------------------------|:---------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented** | zorunlu | Paywall ekranının görüntülenip görüntülenmeyeceğini yöneten bir binding. |
+| **paywallConfiguration** | zorunlu | Paywallın görsel ayrıntılarını içeren bir `AdaptyUI.PaywallConfiguration` nesnesi. `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)` metodunu kullanın. Daha fazla bilgi için [Paywall Builder paywall'larını ve yapılandırmalarını getirme](get-pb-paywalls) konusuna bakın. |
+| **didFailPurchase** | zorunlu | `Adapty.makePurchase()` başarısız olduğunda çağrılır. |
+| **didFinishRestore** | zorunlu | `Adapty.restorePurchases()` başarıyla tamamlandığında çağrılır. |
+| **didFailRestore** | zorunlu | `Adapty.restorePurchases()` başarısız olduğunda çağrılır. |
+| **didFailRendering** | zorunlu | Arayüz oluşturulurken bir hata oluşursa çağrılır. Bu durumda [Adapty Destek ekibiyle iletişime geçin](mailto:support@adapty.io). |
+| **fullScreen** | isteğe bağlı | Paywallın tam ekran modunda mı yoksa modal olarak mı görüneceğini belirler. Varsayılan değer `true`'dur. |
+| **didAppear** | isteğe bağlı | Paywall görünümü gösterildiğinde çağrılır. |
+| **didDisappear** | isteğe bağlı | Paywall görünümü kapatıldığında çağrılır. |
+| **didPerformAction** | isteğe bağlı | Kullanıcı bir butona tıkladığında çağrılır. Farklı butonların farklı aksiyon ID'leri vardır. `close` ve `openURL` olmak üzere iki aksiyon ID'si önceden tanımlıdır; diğerleri özel olup builder'da ayarlanabilir. |
+| **didSelectProduct** | isteğe bağlı | Bir ürün satın alma için seçildiyse (kullanıcı veya sistem tarafından) bu callback çağrılır. |
+| **didStartPurchase** | isteğe bağlı | Kullanıcı satın alma sürecini başlattığında çağrılır. |
+| **didFinishPurchase** | isteğe bağlı | `Adapty.makePurchase()` başarıyla tamamlandığında çağrılır. |
+| **didFinishWebPaymentNavigation** | isteğe bağlı | Web ödeme navigasyonu tamamlandığında çağrılır. |
+| **didStartRestore** | isteğe bağlı | Kullanıcı geri yükleme sürecini başlattığında çağrılır. |
+| **didFailLoadingProducts** | isteğe bağlı | Ürün yükleme sırasında hata oluştuğunda çağrılır. Yüklemeyi yeniden denemek için `true` döndürün. |
+| **didPartiallyLoadProducts** | isteğe bağlı | Ürünler kısmen yüklendiğinde çağrılır. |
+| **showAlertItem** | isteğe bağlı | Paywallın üzerindeki uyarı öğelerinin görüntülenmesini yöneten bir binding. |
+| **showAlertBuilder** | isteğe bağlı | Uyarı görünümünü oluşturmak için kullanılan bir fonksiyon. |
+| **placeholderBuilder** | isteğe bağlı | Paywall yüklenirken yer tutucu görünümü oluşturmak için kullanılan bir fonksiyon. |
+Parametreler hakkında daha fazla bilgi için [iOS - Olayları işleme](ios-handling-events) konusuna bakın.
 ### Modal olmayan görünüm olarak gösterme \{#present-as-a-non-modal-view\}
 
 Paywallları uygulamanızın navigasyon akışı içinde navigasyon hedefleri veya satır içi görünümler olarak da gösterebilirsiniz. SwiftUI görünümlerinizde doğrudan `AdaptyPaywallView` kullanın:
@@ -100,17 +218,15 @@ AdaptyPaywallView(
     }
 )
 ```
+## UIKit'te paywall'ları görüntüleme \{#present-paywalls-in-uikit\}
 
-## UIKit'te paywallları gösterme \{#present-paywalls-in-uikit\}
+Paywall'ı cihaz ekranında görüntülemek için şunları yapın:
 
-Görsel paywallı cihaz ekranında göstermek için şu adımları izleyin:
-
-1. Görüntülemek istediğiniz görsel paywallı `.paywallController(for:products:viewConfiguration:delegate:)` metodunu kullanarak başlatın:
+1. Görüntülemek istediğiniz paywall'ı `.paywallController(for:products:viewConfiguration:delegate:)` metodunu kullanarak başlatın:
 
      ```swift showLineNumbers title="Swift"
-     import Adapty
      import AdaptyUI
-        
+
      let visualPaywall = AdaptyUI.paywallController(
          with: <paywall configuration object>,
          delegate: <AdaptyPaywallControllerDelegate>
@@ -118,22 +234,26 @@ Görsel paywallı cihaz ekranında göstermek için şu adımları izleyin:
      ```
 
     İstek parametreleri:
-
    | Parametre                | Zorunluluk | Açıklama |
    | :----------------------- | :--------- | :-------- |
    | **paywall configuration**         | zorunlu | Paywallın görsel ayrıntılarını içeren `AdaptyUI.PaywallConfiguration` nesnesi. `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` metodunu kullanın. Daha fazla bilgi için [Paywall Builder paywalllarını ve yapılandırmalarını getirme](get-pb-paywalls) konusuna bakın. |
    | **delegate**            | zorunlu | Paywall olaylarını dinlemek için kullanılan `AdaptyPaywallControllerDelegate`. Daha fazla bilgi için [Paywall olaylarını yönetme](ios-handling-events) konusuna bakın. |
 
-    Dönen değer:
+Döndürür:
 
-    | Nesne                   | Açıklama                                                        |
-    | :---------------------- | :-------------------------------------------------------------- |
-    | **AdaptyPaywallController** | İstenen paywall ekranını temsil eden nesne |
+    | Nesne                   | Açıklama                                             |
+    | :---------------------- | :--------------------------------------------------- |
+    | **AdaptyPaywallController** | İstenen paywall ekranını temsil eden bir nesne |
 
-2. Nesne başarıyla oluşturulduktan sonra cihaz ekranında görüntüleyebilirsiniz:
+2. Nesne başarıyla oluşturulduktan sonra cihaz ekranında gösterebilirsiniz:
 
    ```swift showLineNumbers title="Swift"
    present(visualPaywall, animated: true)
    ```
 
-<SampleApp />
+:::tip
+Adapty SDK'nın mobil bir uygulamaya nasıl entegre edildiğine dair gerçek dünya örneği görmek ister misiniz? Kurulumun tamamını, paywall gösterme, satın alma yapma ve diğer temel işlevleri içeren [örnek uygulamalarımıza](sample-apps) göz atın.
+
+:::
+
+</SDKv3>
