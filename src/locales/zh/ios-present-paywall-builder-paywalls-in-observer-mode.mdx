@@ -4,22 +4,145 @@ description: "了解如何在观察者模式下展示付费墙编辑工具构建
 metadataTitle: "在观察者模式下展示付费墙编辑工具构建的付费墙 | Adapty 文档"
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
-import Details from '@site/src/components/Details';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
-如果您已使用付费墙编辑工具自定义了付费墙，则无需在移动应用代码中手动渲染即可将其展示给用户。此类付费墙已包含展示内容及展示方式的完整配置。
+如果你已经使用付费墙编辑工具自定义了付费墙，则无需在移动端代码中手动处理其渲染逻辑——这类付费墙已经包含了展示内容与展示方式的完整定义。
 
 :::warning
-本节仅适用于[观察者模式](observer-vs-full-mode)。如果您未使用观察者模式，请参阅 [iOS - 展示付费墙编辑工具构建的付费墙](ios-present-paywalls)。
+本节仅适用于 [Observer 模式](observer-vs-full-mode)。如果你不使用 Observer 模式，请参阅 [iOS - 展示付费墙编辑工具构建的付费墙](ios-present-paywalls)。
 :::
-<Tabs groupId="current-os" queryString>
-<TabItem value="sdk3" label="New Paywall Builder (SDK 3.0+)" default>
-<details>
-   <summary>开始展示付费墙前的准备工作（点击展开）</summary>
 
+<SDKv4>
+
+<details>
+   <summary>开始展示流程前的准备工作（点击展开）</summary>
+1. 完成 Adapty [与 App Store 的初始集成](initial_ios)。
+   2. 安装并配置 Adapty SDK。请确保将 `observerMode` 参数设置为 `true`。参阅 [iOS SDK 安装指南](sdk-installation-ios#activate-adapty-module-of-adapty-sdk)。
+   3. 在 Adapty 看板中[创建产品](create-product)。
+   4. [在编辑工具中配置流程或付费墙](create-paywall)，并为其分配产品。
+   5. [创建版位并为其分配流程或付费墙](create-placement)。
+   6. 在移动应用代码中[获取流程及其配置](get-pb-paywalls)。
+</details>
+
+<p> </p>
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swift" label="Swift" default>
+
+1. 实现 `AdaptyObserverModeResolver` 对象。该协议与 SDK v3 中相同——观察者模式本身不会因流程和付费墙渲染方式的不同而改变：
+```swift showLineNumbers title="Swift"
+   func observerMode(didInitiatePurchase product: AdaptyPaywallProduct,
+                     onStartPurchase: @escaping () -> Void,
+                     onFinishPurchase: @escaping () -> Void) {
+          // 使用 product 对象处理购买
+          // 调用 onStartPurchase / onFinishPurchase 通知 AdaptyUI 购买进度
+   }
+```swift
+func observerModeDidInitiateRestorePurchases(onStartRestore: @escaping () -> Void,
+                                              onFinishRestore: @escaping () -> Void) {
+      // call onStartRestore / onFinishRestore to notify AdaptyUI about the restore progress
+}
+```
+
+2. 创建流程配置对象，将您的解析器作为 `observerModeResolver:` 参数传入：
+```swift showLineNumbers title="Swift"
+   do {
+       let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+           forFlow: flow,
+           observerModeResolver: <AdaptyObserverModeResolver>
+       )
+   } catch {
+       // handle the error
+   }
+   ```
+
+   请求参数：
+| 参数                         | 是否必填 | 描述                                                                                                                       |
+| :----------------------- | :------- | :----------------------------------------------------------------------------------------------------------------------- |
+| **forFlow**              | 必填 | 通过 `Adapty.getFlow(placementId:)` 获取的 `AdaptyFlow` 对象。详见[获取流程与付费墙](get-pb-paywalls)。 |
+| **observerModeResolver** | 必填 | 你在上面实现的 `AdaptyObserverModeResolver`。                                                                  |
+3. 使用 `AdaptyUI.flowController(with:delegate:)` 初始化流控制器：
+
+   ```swift showLineNumbers title="Swift"
+   import AdaptyUI
+
+   let visualFlow = try AdaptyUI.flowController(
+       with: flowConfiguration,
+       delegate: <AdaptyFlowControllerDelegate>
+   )
+   ```
+
+   请求参数：
+| 参数 | 是否必填 | 描述 |
+   | :------------------------- | :------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
+   | **flowConfiguration**      | required | 包含流程视觉细节的 `AdaptyUI.FlowConfiguration` 对象。请参阅 [获取流程和付费墙](get-pb-paywalls)。                     |
+   | **delegate**               | required | 用于监听流程事件的 `AdaptyFlowControllerDelegate`。请参阅 [处理流程与付费墙事件](ios-handling-events)。                             |
+返回值：
+
+   | 对象                 | 描述                                                   |
+   | :------------------- | :----------------------------------------------------- |
+   | AdaptyFlowController | 表示所请求流程页面的对象。                             |
+
+4. 展示控制器：
+
+   ```swift showLineNumbers title="Swift"
+   present(visualFlow, animated: true)
+   ```
+
+:::warning
+不要忘记[将付费墙与购买交易关联](report-transactions-observer-mode)。否则，Adapty 将无法确定该购买来源于哪个付费墙。
+:::
+
+</TabItem>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+在 SwiftUI 中，使用 resolver 获取流程配置，并将其传入 `.flow` 修饰符：
+```swift showLineNumbers title="SwiftUI"
+@State var flowPresented = false
+@State var flowConfiguration: AdaptyUI.FlowConfiguration?
+
+var body: some View {
+    Text("Hello, AdaptyUI!")
+        .flow(
+            isPresented: $flowPresented,
+            flowConfiguration: flowConfiguration,
+            didPerformAction: { action in
+                switch action {
+                    case .close:
+                        flowPresented = false
+                    default:
+                        break
+                }
+            },
+            didFailPurchase: { product, error in /* handle the error */ },
+            didFinishRestore: { profile in /* check access level and dismiss */ },
+            didFailRestore: { error in /* handle the error */ },
+            didReceiveError: { error in flowPresented = false }
+        )
+        .task {
+            flowConfiguration = try? await AdaptyUI.getFlowConfiguration(
+                forFlow: flow,
+                observerModeResolver: <AdaptyObserverModeResolver>
+            )
+        }
+}
+```
+`getFlowConfiguration` 上的 `observerModeResolver:` 参数使渲染的流程遵循你的自定义购买逻辑——该修饰符本身使用与完整模式相同的回调。
+
+:::warning
+不要忘记[将付费墙关联到购买交易](report-transactions-observer-mode)。否则，Adapty 将无法确定购买来源的付费墙。
+:::
+
+</TabItem>
+
+</Tabs>
+
+</SDKv4>
+
+<SDKv3>
+<Tabs groupId="current-os" queryString>
+<TabItem value="sdk3" label="付费墙编辑工具 (SDK 3.x)" default>
+<details>
+   <summary>开始展示付费墙之前（点击展开）</summary>
       1. 完成 Adapty 与 [Google Play](initial-android) 及 [App Store](initial_ios) 的初始集成配置。
    2. 安装并配置 Adapty SDK。请确保将 `observerMode` 参数设置为 `true`。请参阅我们针对 [iOS](sdk-installation-ios#activate-adapty-module-of-adapty-sdk) 的框架专项说明。
    3. 在 Adapty 控制台中[创建产品](create-product)。
@@ -84,10 +207,9 @@ import TabItem from '@theme/TabItem';
    | **Paywall**              | 必填     | 用于获取所需付费墙控制器的 `AdaptyPaywall` 对象。                                                                     |
    | **ObserverModeResolver** | 必填     | 您在上一步中实现的 `AdaptyObserverModeResolver` 对象。                                                               |
 
-3. 使用 `.paywallController(for:products:viewConfiguration:delegate:)` 方法初始化您要展示的可视化付费墙：
+3. 使用 `.paywallController(for:products:viewConfiguration:delegate:)` 方法初始化你要展示的付费墙：
 
    ```swift showLineNumbers title="Swift"
-   import Adapty
    import AdaptyUI
    
    let visualPaywall = AdaptyUI.paywallController(
@@ -97,7 +219,6 @@ import TabItem from '@theme/TabItem';
    ```
 
 请求参数：
-
 | 参数                            | 是否必填 | 描述                                                                                                                                                                                                           |
 | :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Paywall Configuration**              | 必填     | 包含付费墙视觉详情的 `AdaptyUI.PaywallConfiguration` 对象。使用 `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` 方法。详情请参阅[获取付费墙编辑工具构建的付费墙及其配置](get-pb-paywalls)。                                                                                                                                                                                                                                             |
@@ -149,13 +270,12 @@ var body: some View {
 
 请求参数：
 
-| 参数                            | 是否必填 | 描述                                                                                                                                                                                                            |
-| :----------------------- | :------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Paywall Configuration**              | 必填     | 包含付费墙视觉详情的 `AdaptyUI.PaywallConfiguration` 对象。使用 `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` 方法。详情请参阅[获取付费墙编辑工具构建的付费墙及其配置](get-pb-paywalls)。                                                                                                                                                                                                                                             |
-| **Products**             | 可选     | 提供 `AdaptyPaywallProducts` 数组以优化产品在屏幕上的显示时机。如果传入 `nil`，AdaptyUI 将自动获取所需产品。                                                                                                        |
-| **TagResolver**          | 可选     | 定义自定义标签及其解析值的字典。自定义标签在付费墙内容中充当占位符，会被动态替换为特定字符串，用于付费墙中的个性化内容。详情请参阅[付费墙编辑工具中的自定义标签](custom-tags-in-paywall-builder)。                        |
-| **ObserverModeResolver** | 可选     | 您在上一步中实现的 `AdaptyObserverModeResolver` 对象。                                                                                                                                                          |
-
+| 参数                       | 是否必填 | 描述                                                                                                                                                                                                                                                                                                                   |
+| :----------------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paywall Configuration**              | 必填 | 一个包含付费墙视觉详情的 `AdaptyUI.PaywallConfiguration` 对象。使用 `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` 方法获取。详情请参阅[获取付费墙编辑工具的付费墙及其配置](get-pb-paywalls)。                                                                                                                                                                                                                                                             |
+| **Products**             | 可选 | 提供一个 `AdaptyPaywallProduct` 对象数组，以优化产品在屏幕上的显示时机。如果传入 `nil`，AdaptyUI 将自动获取所需产品。                                                                                                                                                                   |
+| **TagResolver**          | 可选 | 定义一个自定义标签及其解析值的字典。自定义标签作为付费墙内容中的占位符，会被动态替换为特定字符串，从而实现付费墙内的个性化内容。详情请参阅付费墙编辑工具中的自定义标签主题。 |
+| **ObserverModeResolver** | 可选 | 您在上一步中实现的 `AdaptyObserverModeResolver` 对象。                                                                                                                                                                                                                                                        |
 闭包参数：
 
 | 闭包参数                 | 描述                                                              |
@@ -212,42 +332,37 @@ var body: some View {
 
 2. 使用 `.paywallController(for:products:viewConfiguration:delegate:observerModeDelegate:)` 方法初始化您要展示的可视化付费墙：
 
-   ```swift showLineNumbers title="Swift"
-   import Adapty
-   import AdaptyUI
-   
-   let visualPaywall = AdaptyUI.paywallController(
-       for: <paywall object>,
-       products: <paywall products array>,
-       viewConfiguration: <LocalizedViewConfiguration>,
-       delegate: <AdaptyPaywallControllerDelegate>
-       observerModeDelegate: <AdaptyObserverModeDelegate>
-   )
-   ```
+```swift showLineNumbers title="Swift"
+
+let visualPaywall = AdaptyUI.paywallController(
+    for: <paywall object>,
+    products: <paywall products array>,
+    viewConfiguration: <LocalizedViewConfiguration>,
+    delegate: <AdaptyPaywallControllerDelegate>
+    observerModeDelegate: <AdaptyObserverModeDelegate>
+)
+```
 
 请求参数：
-
-| 参数                       | 是否必填 | 描述                                                                                                                                                                                          |
+| 参数 | 是否必填 | 描述 |
 | :----------------------- | :------- | :----------------------------------------------------------- |
-| **Paywall**              | 必填     | 用于获取所需付费墙控制器的 `AdaptyPaywall` 对象。                                                                                                                                            |
-| **Products**             | 可选     | 提供 `AdaptyPaywallProducts` 数组以优化产品在屏幕上的显示时机。如果传入 `nil`，AdaptyUI 将自动获取所需产品。                                                                                  |
-| **ViewConfiguration**    | 必填     | 包含付费墙视觉详情的 `AdaptyUI.LocalizedViewConfiguration` 对象。使用 `AdaptyUI.getViewConfiguration(paywall:locale:)` 方法。详情请参阅[获取付费墙编辑工具构建的付费墙及其配置](get-pb-paywalls)。 |
-| **Delegate**             | 必填     | 用于监听付费墙事件的 `AdaptyPaywallControllerDelegate`。详情请参阅[处理付费墙事件](ios-handling-events)。                                                                                      |
-| **ObserverModeDelegate** | 必填     | 您在上一步中实现的 `AdaptyObserverModeDelegate` 对象。                                                                                                                                       |
-| **TagResolver**          | 可选     | 定义自定义标签及其解析值的字典。自定义标签在付费墙内容中充当占位符，会被动态替换为特定字符串，用于付费墙中的个性化内容。详情请参阅[付费墙编辑工具中的自定义标签](custom-tags-in-paywall-builder)。  |
-
+| **Paywall** | 必填 | 用于获取目标付费墙控制器的 `AdaptyPaywall` 对象。 |
+| **Products** | 可选 | 提供 `AdaptyPaywallProduct` 对象数组，以优化产品在界面上的显示时机。若传入 `nil`，AdaptyUI 将自动获取所需产品。 |
+| **ViewConfiguration** | 必填 | 包含付费墙视觉细节的 `AdaptyUI.LocalizedViewConfiguration` 对象。请使用 `AdaptyUI.getViewConfiguration(paywall:locale:)` 方法。详情请参阅[获取付费墙编辑工具付费墙及其配置](get-pb-paywalls)。 |
+| **Delegate** | 必填 | 用于监听付费墙事件的 `AdaptyPaywallControllerDelegate`。详情请参阅[处理付费墙事件](ios-handling-events)。 |
+| **ObserverModeDelegate** | 必填 | 你在上一步中实现的 `AdaptyObserverModeDelegate` 对象。 |
+| **TagResolver** | 可选 | 定义自定义标签及其解析值的字典。自定义标签作为付费墙内容中的占位符，会被动态替换为特定字符串，从而实现付费墙内的个性化内容。详情请参阅付费墙编辑工具中的自定义标签。 |
 返回值：
 
-| 对象                      | 描述                        |
+| 对象                    | 描述                       |
 | :---------------------- | :------------------------- |
-| AdaptyPaywallController | 表示所请求付费墙屏幕的对象。 |
+| AdaptyPaywallController | 表示所请求付费墙界面的对象 |
 
-成功创建对象后，您可以按如下方式展示它：
+成功创建对象后，可以按如下方式显示它：
 
 ```swift showLineNumbers title="Swift"
 present(visualPaywall, animated: true)
 ```
-
 :::warning
 请不要忘记[将付费墙关联到购买交易](report-transactions-observer-mode)。否则，Adapty 将无法确定购买来源的付费墙。
 :::
@@ -284,15 +399,13 @@ var body: some View {
 }
 ```
 
-请求参数：
-
-| 参数                | 是否必填 | 描述                                                                                                                                                                                                            |
-| :---------------- | :------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Paywall**       | 必填     | 用于获取所需付费墙控制器的 `AdaptyPaywall` 对象。                                                                                                                                                                |
-| **Product**       | 可选     | 提供 `AdaptyPaywallProducts` 数组以优化产品在屏幕上的显示时机。如果传入 `nil`，AdaptyUI 将自动获取所需产品。                                                                                                      |
-| **Configuration** | 必填     | 包含付费墙视觉详情的 `AdaptyUI.LocalizedViewConfiguration` 对象。使用 `AdaptyUI.getViewConfiguration(paywall:locale:)` 方法。详情请参阅[获取付费墙编辑工具构建的付费墙及其配置](get-pb-paywalls)。               |
-| **TagResolver**   | 可选     | 定义自定义标签及其解析值的字典。自定义标签在付费墙内容中充当占位符，会被动态替换为特定字符串，用于付费墙中的个性化内容。详情请参阅[付费墙编辑工具中的自定义标签](custom-tags-in-paywall-builder)。                   |
-
+I don't see any MDX documentation content to translate. Please provide the MDX documentation you'd like me to translate from English to Simplified Chinese (zh-CN), and I'll be happy to help!
+| 参数 | 是否必填 | 描述 |
+| :---------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paywall** | 必填 | 用于获取目标付费墙控制器的 `AdaptyPaywall` 对象。 |
+| **Product** | 可选 | 提供 `AdaptyPaywallProduct` 对象数组，以优化产品在屏幕上的显示时机。如果传入 `nil`，AdaptyUI 将自动获取所需产品。 |
+| **Configuration** | 必填 | 包含付费墙视觉细节的 `AdaptyUI.LocalizedViewConfiguration` 对象。请使用 `AdaptyUI.getViewConfiguration(paywall:locale:)` 方法。详情请参阅[获取付费墙编辑工具付费墙及其配置](get-pb-paywalls)。 |
+| **TagResolver** | 可选 | 定义自定义标签及其解析值的字典。自定义标签在付费墙内容中充当占位符，可动态替换为特定字符串，实现付费墙内的个性化内容。详情请参阅付费墙编辑工具中的自定义标签主题。 |
 闭包参数：
 
 | 闭包参数                                | 描述                                                              |
@@ -302,13 +415,15 @@ var body: some View {
 | **didFailRendering**                | 如果在界面渲染过程中发生错误，此回调将被调用。                       |
 | **observerModeDidInitiatePurchase** | 当用户发起购买时，此回调将被调用。                                  |
 
-其他闭包参数请参阅 [iOS - 处理事件](ios-handling-events)。
+请参阅 [iOS - 处理事件](ios-handling-events) 主题，了解其他闭包参数。
 
 :::warning
-请不要忘记[将付费墙关联到购买交易](report-transactions-observer-mode)。否则，Adapty 将无法确定购买来源的付费墙。
+不要忘记[将付费墙与购买交易关联](report-transactions-observer-mode)。否则，Adapty 将无法确定购买来源的付费墙。
 :::
 </TabItem>
 </Tabs>
 
 </TabItem>
 </Tabs>
+
+</SDKv3>

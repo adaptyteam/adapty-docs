@@ -1,0 +1,200 @@
+---
+title: "将 Adapty iOS SDK 迁移至 v. 4.0"
+description: "通过将付费墙 API 替换为 Flow API，迁移至 Adapty iOS SDK v4.0（测试版），兼容 Flow Builder 和付费墙编辑工具。"
+metadataTitle: "迁移至 Adapty iOS SDK v4.0（测试版）| Adapty 文档"
+---
+
+Adapty iOS SDK 4.0（测试版）引入了 flows 功能，并相应重命名了付费墙 API。新 API 同时兼容全新的 Flow Builder 和现有的付费墙编辑工具——无需在 Adapty 看板侧进行任何配置变更。
+## 快速参考 \{#quick-reference\}
+| v3 | v4 |
+|---|---|
+| `Adapty.getPaywall(placementId:locale:)` | `Adapty.getFlow(placementId:)` |
+| `AdaptyUI.getPaywallConfiguration(forPaywall:)` | `AdaptyUI.getFlowConfiguration(forFlow:locale:)` |
+| `Adapty.getPaywallProducts(paywall:)` | `Adapty.getPaywallProducts(flow:)` |
+| `Adapty.logShowPaywall(_:)` | `Adapty.logShowFlow(_:)` |
+| `AdaptyPaywallController` | `AdaptyFlowController` |
+| `AdaptyPaywallControllerDelegate` | `AdaptyFlowControllerDelegate` |
+| `AdaptyUI.paywallController(with:delegate:)` | `AdaptyUI.flowController(with:delegate:)` |
+| `.paywall()` (SwiftUI 修饰符) | `.flow()` |
+| `AdaptyPaywallView` | `AdaptyFlowView` |
+| `didFailRenderingWith:` / `didFailRendering:` | `didReceiveError:` |
+## 已移除的 API \{#removed-apis\}
+
+- **`Adapty.getPaywallProductsWithoutDeterminingOffer(paywall:)`** — 已移除。所有产品现在均包含优惠信息，因此不再需要单独的资格验证步骤。
+- **`AdaptyPaywallProductWithoutDeterminingOffer`** — 已移除。之前传递此类型的回调（例如 `didSelectProduct`）现在改为传递 `AdaptyPaywallProduct`。
+## 获取付费墙 \{#fetching-paywalls\}
+### getPaywall + getPaywallConfiguration → getFlow + getFlowConfiguration
+
+返回类型从 `AdaptyPaywall` / `AdaptyUI.PaywallConfiguration` 变更为 `AdaptyFlow` / `AdaptyUI.FlowConfiguration`。`locale` 参数从 fetch 调用中移出，改为在 `getFlowConfiguration` 中传入：
+```diff showLineNumbers
+- let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en")
+- let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
++ let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
++ let flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow, locale: "en")
+```
+### getPaywallProducts(paywall:) → getPaywallProducts(flow:)
+
+`getPaywallProducts` 现在接受由 `Adapty.getFlow` 返回的 `AdaptyFlow`：
+
+```diff showLineNumbers
+- let products = try await Adapty.getPaywallProducts(paywall: paywall)
++ let products = try await Adapty.getPaywallProducts(flow: flow)
+```
+## 追踪付费墙展示 \{#tracking-paywall-views\}
+### logShowPaywall(_:) → logShowFlow(_:)
+
+`logShowPaywall` 已重命名为 `logShowFlow`，现在接受 `AdaptyFlow` 而非 `AdaptyPaywall`。事件仍会记录在相同的实验变体下，因此现有的漏斗和 A/B 测试数据图表无需修改看板即可继续正常使用。
+
+```diff showLineNumbers
+- try await Adapty.logShowPaywall(paywall)
++ try await Adapty.logShowFlow(flow)
+```
+与 v3 一样，在显示由[流程编辑工具](adapty-flow-builder)或[付费墙编辑工具](adapty-paywall-builder)渲染的流程或付费墙时，无需调用此方法——Adapty 会自动追踪这些浏览记录。
+## UIKit \{#uikit\}
+### AdaptyPaywallController → AdaptyFlowController
+
+重命名控制器类型和工厂方法：
+
+```diff showLineNumbers
+- let controller = try AdaptyUI.paywallController(
+-     with: paywallConfiguration,
+-     delegate: self
+- )
++ let controller = try AdaptyUI.flowController(
++     with: flowConfiguration,
++     delegate: self
++ )
+```
+### AdaptyPaywallControllerDelegate → AdaptyFlowControllerDelegate
+
+重命名该协议并更新所有方法签名。注意，`didSelectProduct` 现在接收 `AdaptyPaywallProduct`，而不再使用已移除的 `AdaptyPaywallProductWithoutDeterminingOffer`。
+```diff showLineNumbers
+- class YourClass: AdaptyPaywallControllerDelegate {
++ class YourClass: AdaptyFlowControllerDelegate {
+
+-     func paywallControllerDidAppear(_ controller: AdaptyPaywallController) { }
++     func flowControllerDidAppear(_ controller: AdaptyFlowController) { }
+
+-     func paywallControllerDidDisappear(_ controller: AdaptyPaywallController) { }
++     func flowControllerDidDisappear(_ controller: AdaptyFlowController) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didPerform action: AdaptyUI.Action) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didPerform action: AdaptyUI.Action) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didSelectProduct product: AdaptyPaywallProductWithoutDeterminingOffer) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didSelectProduct product: AdaptyPaywallProduct) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didStartPurchase product: AdaptyPaywallProduct) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didStartPurchase product: AdaptyPaywallProduct) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didFinishPurchase product: AdaptyPaywallProduct,
+-                            purchaseResult: AdaptyPurchaseResult) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didFinishPurchase product: AdaptyPaywallProduct,
++                         purchaseResult: AdaptyPurchaseResult) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didFailPurchase product: AdaptyPaywallProduct,
+-                            error: AdaptyError) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didFailPurchase product: AdaptyPaywallProduct,
++                         error: AdaptyError) { }
+
+-     func paywallControllerDidStartRestore(_ controller: AdaptyPaywallController) { }
++     func flowControllerDidStartRestore(_ controller: AdaptyFlowController) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didFinishRestoreWith profile: AdaptyProfile) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didFinishRestoreWith profile: AdaptyProfile) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didFailRestoreWith error: AdaptyError) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didFailRestoreWith error: AdaptyError) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didFailRenderingWith error: AdaptyUIError) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didReceiveError error: AdaptyUIError) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didFailLoadingProductsWith error: AdaptyError) -> Bool { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didFailLoadingProductsWith error: AdaptyError) -> Bool { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didPartiallyLoadProducts failedIds: [String]) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didPartiallyLoadProducts failedIds: [String]) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didFinishWebPaymentNavigation product: AdaptyPaywallProduct?,
+-                            error: AdaptyError?) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didFinishWebPaymentNavigation product: AdaptyPaywallProduct?,
++                         error: AdaptyError?) { }
+ }
+```
+## SwiftUI \{#swiftui\}
+### .paywall() 修饰符 → .flow() \{#paywall-modifier--flow\}
+
+重命名修饰符并更新配置参数名称：
+```diff showLineNumbers
+ @State var flowPresented = false // 变量名可以自由重命名
+
+ var body: some View {
+     Text("Hello, AdaptyUI!")
+-        .paywall(
++        .flow(
+             isPresented: $flowPresented,
+-            paywallConfiguration: paywallConfiguration,
++            flowConfiguration: flowConfiguration,
+             didFailPurchase: { product, error in /* 处理错误 */ },
+             didFinishRestore: { profile in /* 检查访问等级并关闭 */ },
+             didFailRestore: { error in /* 处理错误 */ },
+-            didFailRendering: { error in flowPresented = false }
++            didReceiveError: { error in flowPresented = false }
+         )
+ }
+```
+重命名后的回调触发时机与原来的 `didFailRendering` 相同，同时新增了流程脚本产生的运行时错误（`AdaptyUIError` 错误码 `4105`——`.jsException` 对应的 JavaScript 异常）。现有的处理器代码无需修改——只需重命名参数即可。
+### AdaptyPaywallView → AdaptyFlowView
+
+将视图重命名，更新配置参数，并更新所有 `didSelectProduct` 闭包——该闭包现在接收 `AdaptyPaywallProduct`，而非已移除的 `AdaptyPaywallProductWithoutDeterminingOffer`：
+```diff showLineNumbers
+- AdaptyPaywallView(
+-     paywallConfiguration: paywallConfiguration,
+-     didSelectProduct: { product: AdaptyPaywallProductWithoutDeterminingOffer in /* handle */ },
++ AdaptyFlowView(
++     flowConfiguration: flowConfiguration,
++     didSelectProduct: { product: AdaptyPaywallProduct in /* handle */ },
+     didFailPurchase: { product, error in /* handle the error */ },
+     didFinishRestore: { profile in /* check access level and dismiss */ },
+     didFailRestore: { error in /* handle the error */ },
+-    didFailRendering: { error in /* handle the error */ }
++    didReceiveError: { error in /* handle the error */ }
+ )
+```
+## AdaptyUI 自定义资源 \{#adaptyui-custom-assets\}
+### AdaptyUICustomVideoAsset
+
+以下两项变更会影响所有已有的调用位置：
+
+- `.player` 现在接受 `AVPlayer` 而非 `AVQueuePlayer`。
+- 每个 case 新增了末尾参数 `resolution: CGSize?`。传入 `nil` 可保持现有行为；传入实际像素尺寸后，播放器可在视频加载前预留布局空间（宽高比 = `width / height`）。
+```diff showLineNumbers
+- case file(url: URL, preview: AdaptyUICustomImageAsset?)
+- case remote(url: URL, preview: AdaptyUICustomImageAsset?)
+- case player(item: AVPlayerItem, player: AVQueuePlayer, preview: AdaptyUICustomImageAsset?)
++ case file(url: URL, preview: AdaptyUICustomImageAsset?, resolution: CGSize?)
++ case remote(url: URL, preview: AdaptyUICustomImageAsset?, resolution: CGSize?)
++ case player(item: AVPlayerItem, player: AVPlayer, preview: AdaptyUICustomImageAsset?, resolution: CGSize?)
+```

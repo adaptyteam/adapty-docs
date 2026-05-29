@@ -1,36 +1,186 @@
 ---
 title: "在 iOS SDK 中获取远程配置付费墙的付费墙和产品"
-description: "在 Adapty iOS SDK 中获取付费墙和产品，以提升用户变现效果。"
-metadataTitle: "获取付费墙与产品 | Adapty 文档"
-keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', '远程配置', '缓存']
+description: "通过 Adapty iOS SDK 获取付费墙和产品，提升用户变现效果。"
+metadataTitle: "获取付费墙和产品 | Adapty 文档"
+keywords: ['getFlow', 'getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getFlowForDefaultAudience', 'getPaywallForDefaultAudience', 'remote config', 'cache']
 rank: 100
 ---
-
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
-import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
-import Contentid from '@site/src/components/InlineTooltip';
-import InlineTooltip from '@site/src/components/InlineTooltip'; 
 
-在展示远程配置和自定义付费墙之前，您需要先获取相关信息。请注意，本主题涉及远程配置和自定义付费墙。有关获取付费墙编辑工具自定义付费墙的指导，请参阅 <InlineTooltip tooltip="guides on how to fetch Paywall Builder paywalls in your app">[iOS](get-pb-paywalls)、[Android](android-get-pb-paywalls)、[React Native](react-native-get-pb-paywalls)、[Flutter](flutter-get-pb-paywalls) 和 [Unity](unity-get-pb-paywalls)</InlineTooltip>。
+<SDKv4>
+在展示远程配置和自定义付费墙之前，你需要先获取相关信息。请注意，本主题针对的是远程配置和自定义付费墙。如需了解如何获取在 **Flow Builder** 或 **Paywall Builder** 中配置的流程或付费墙，请参阅 <InlineTooltip tooltip="关于如何在应用中获取流程和付费墙的指南">[iOS](get-pb-paywalls)、[Android](android-get-pb-paywalls)、[React Native](react-native-get-pb-paywalls)、[Flutter](flutter-get-pb-paywalls) 和 [Unity](unity-get-pb-paywalls)</InlineTooltip>。
 
 <SampleApp />
-
 <details>
-   <summary>在移动应用中开始获取付费墙和产品之前（点击展开）</summary>
+   <summary>在开始获取流程和产品之前（点击展开）</summary>
 
-   1. 在 Adapty 控制台中[创建您的产品](create-product)。
+   1. 在 Adapty 看板中[创建产品](create-product)。
 
-2. 在 Adapty 控制台中[创建付费墙并将产品添加到付费墙中](create-paywall)。
+2. 在 Adapty 看板中[创建流程或付费墙，并将产品添加到其中](create-paywall)。
 
-3. 在 Adapty 控制台中[创建版位并将付费墙添加到版位中](create-placement)。
+3. 在 Adapty 看板中[创建版位，并将流程或付费墙添加到版位中](create-placement)。
 
-4. 在您的移动应用中[安装 Adapty SDK](sdk-installation-ios)。
+4. 在移动应用中[安装 Adapty SDK](sdk-installation-ios)。
 </details>
+## 获取流程信息 \{#fetch-flow-information\}
 
+在 Adapty 中，[产品](product)是 App Store 和 Google Play 产品的统一组合。这些跨平台产品被整合到流程和付费墙中，让你可以在移动应用的特定版位中展示它们。
+
+要展示产品，你需要通过 `getFlow` 方法从某个[版位](placements)获取 `AdaptyFlow`。
+:::important
+**不要硬编码产品 ID。** 唯一需要硬编码的是版位 ID。流程是远程配置的，产品数量和可用优惠随时可能变化。你的应用必须动态处理这些变化——如果某个流程今天返回两个产品，明天返回三个，无需修改代码即可全部展示。
+:::
+
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+    // the requested flow
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID") { result in
+    switch result {
+        case let .success(flow):
+            // the requested flow
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是你在 Adapty 看板中创建版位时指定的值。 |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若请求失败则返回缓存数据。我们推荐使用这种方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果你认为用户的网络连接不稳定，可以考虑使用 `.returnCacheDataElseLoad`——当缓存数据存在时优先返回缓存。这样用户获取到的数据可能不是最新的，但无论网络状况如何，都能获得更快的加载速度。缓存会定期更新，因此在会话期间使用缓存来减少网络请求是完全安全的。</p><p></p><p>请注意，重启应用后缓存仍然保留，只有在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 通过两个层级存储流程和付费墙：上述定期更新的缓存，以及[备用付费墙](fallback-paywalls)。我们还使用 CDN 来加速流程和付费墙的加载，并在 CDN 不可用时提供独立的备用服务器。</p> |
+| **loadTimeout** | 默认值：5 秒 | <p>该值限制此方法的超时时间。一旦超时，将返回缓存数据或本地备用数据。</p><p></p><p>请注意，在少数情况下，此方法的实际超时时间可能比 `loadTimeout` 中指定的值略长，因为该操作在底层可能由多个不同的请求组成。</p> |
+:::note
+在 v4 中，`locale` 参数已从 `getFlow` 移至 `getFlowConfiguration`（仅在使用 AdaptyUI 渲染时使用）。对于自定义付费墙，所有可用的语言区域会一并通过 `flow.remoteConfigs` 返回——请选取与用户设备或应用设置相匹配的语言区域。
+:::
+不要硬编码产品 ID！由于流程是远程配置的，可用的产品、产品数量以及特殊优惠（如免费试用）可能会随时间变化。请确保你的代码能处理这些情况。
+
+例如，如果你最初获取到 2 个产品，应用应显示这 2 个产品；但如果后续获取到 3 个产品，应用无需修改代码即可显示全部 3 个。唯一需要硬编码的是版位 ID。
+
+响应参数：
+| 参数 | 描述 |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flow      | 一个 `AdaptyFlow` 对象，包含版位、标识符（`id`、`variationId`）、名称、`remoteConfigs` 数组（每个已配置的语言区域对应一条记录）以及 `hasViewConfiguration` 标志。如需获取该流程对应的产品，请调用 `getPaywallProducts(flow:)`。 |
+## 获取产品 \{#fetch-products\}
+
+获取流之后，你可以查询与其对应的产品数组：
+
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let products = try await Adapty.getPaywallProducts(flow: flow)
+    // the requested products array
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+```swift showLineNumbers
+Adapty.getPaywallProducts(flow: flow) { result in
+    switch result {
+    case let .success(products):
+        // the requested products array
+    case let .failure(error):
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+响应参数：
+
+| 参数 | 描述 |
+| :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Products  | [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) 对象列表，包含：产品标识符、产品名称、价格、货币、订阅时长及其他多个属性。 |
+在实现自定义付费墙设计时，您可能需要访问 [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) 对象的这些属性。以下列出了最常用的属性，完整属性列表请参阅链接文档。
+
+| 属性 | 描述 |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Title（标题）** | 要显示产品标题，请使用 `product.localizedTitle`。请注意，本地化基于用户选择的商店国家/地区，而非设备语言环境。 |
+| **Price（价格）** | 要显示本地化价格，请使用 `product.localizedPrice`。本地化基于设备的语言环境信息。您也可以通过 `product.price` 以数字形式访问价格，该值以本地货币表示。要获取对应的货币符号，请使用 `product.currencySymbol`。 |
+| **Subscription Period（订阅周期）** | 要显示周期（如周、月、年等），请使用 `product.localizedSubscriptionPeriod`。本地化基于设备语言环境。要以编程方式获取订阅周期，请使用 `product.subscriptionPeriod`。您可以通过 `unit` 枚举获取时长（即天、周、月、年或未知）。`numberOfUnits` 值表示周期单位的数量。例如，对于季度订阅，`unit` 属性值为 `.month`，`numberOfUnits` 属性值为 `3`。 |
+| **Introductory Offer（新用户优惠）** | 要显示表示订阅包含新用户优惠的徽章或其他指示器，请查看 `product.subscriptionOffer` 属性。该对象包含以下实用属性：<br/>• `offerType`：枚举，值为 `introductory`、`promotional` 和 `winBack`。免费试用和初始折扣订阅属于 `introductory` 类型。<br/>• `price`：折扣价格（数字形式）。对于免费试用，此处值为 `0`。<br/>• `localizedPrice`：针对用户语言环境格式化的折扣价格。<br/>• `localizedNumberOfPeriods`：使用设备语言环境本地化的字符串，描述优惠时长。例如，三天试用优惠在此字段中显示为 `3 days`。<br/>• `subscriptionPeriod`：您也可以通过此属性获取优惠周期的各项详情，其用法与前一节描述的订阅周期相同。<br/>• `localizedSubscriptionPeriod`：针对用户语言环境格式化的折扣订阅周期。 |
+
+:::note
+在 v4 中，`getPaywallProducts(flow:)` 返回的所有产品已包含优惠资格信息。v3 中单独的 `getPaywallProductsWithoutDeterminingOffer` 调用已被移除。
+:::
+## 通过默认目标受众流加速流的获取 \{#speed-up-flow-fetching-with-default-audience-flow\}
+
+通常情况下，流的获取几乎是即时完成的，无需特别关注。但如果你有大量目标受众和版位，且用户的网络连接较差，获取流的时间可能会比预期更长。在这种情况下，你可能希望先展示一个默认流，以确保良好的用户体验，而不是让用户面对空白页面。
+要解决这个问题，你可以使用 `getFlowForDefaultAudience` 方法，该方法会获取指定版位中 **All Users** 目标受众的流程。但请务必了解，推荐的方式是通过 `getFlow` 方法获取流程，详见上方的[获取流程信息](fetch-paywalls-and-products#fetch-flow-information)章节。
+
+:::warning
+为什么我们推荐使用 `getFlow`
+
+`getFlowForDefaultAudience` 方法存在以下几个明显缺陷：
+- **潜在的向后兼容性问题**：如果需要为不同的应用版本（当前版本和未来版本）展示不同的流程，可能会遇到挑战。要么设计出同时兼容当前（旧版）版本的流程，要么接受使用当前（旧版）版本的用户可能无法正常渲染流程的风险。
+- **失去精准定向**：所有用户都将看到为 **All Users** 目标受众设计的同一流程，这意味着你将失去个性化定向能力（包括基于国家、营销归因或自定义属性的定向）。
+如果您愿意接受这些缺点以换取更快的流程获取速度，请按如下方式使用 `getFlowForDefaultAudience` 方法。否则，请继续使用[上文](fetch-paywalls-and-products#fetch-flow-information)介绍的 `getFlow`。
+:::
+
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let flow = try await Adapty.getFlowForDefaultAudience(placementId: "YOUR_PLACEMENT_ID")
+   // the requested flow
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+```swift showLineNumbers
+Adapty.getFlowForDefaultAudience(placementId: "YOUR_PLACEMENT_ID") { result in
+    switch result {
+        case let .success(flow):
+            // 请求的流程
+        case let .failure(error):
+            // 处理错误
+    }
+}
+```
+</TabItem>
+</Tabs>
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是你在 Adapty 看板中创建版位时指定的值。 |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若请求失败则返回缓存数据。我们推荐这种方式，因为它能确保用户始终获取最新数据。</p><p></p><p>不过，如果你认为用户的网络环境不稳定，可以考虑使用 `.returnCacheDataElseLoad`——在缓存存在时优先返回缓存数据。这种情况下，用户看到的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存来减少网络请求是安全的。</p><p></p><p>请注意，重启应用不会清除缓存，只有在卸载重装应用或手动清理时，缓存才会被清除。</p> |
+</SDKv4>
+
+<SDKv3>
+
+在展示远程配置和自定义付费墙之前，您需要先获取相关信息。请注意，本主题涉及远程配置和自定义付费墙。有关获取付费墙编辑工具自定义付费墙的指南，请参阅 <InlineTooltip tooltip="关于如何在应用中获取付费墙编辑工具付费墙的指南">[iOS](get-pb-paywalls)、[Android](android-get-pb-paywalls)、[React Native](react-native-get-pb-paywalls)、[Flutter](flutter-get-pb-paywalls) 和 [Unity](unity-get-pb-paywalls)</InlineTooltip>。
+
+<SampleApp />
+<details>
+   <summary>在开始获取付费墙和产品之前（点击展开）</summary>
+
+   1. 在 Adapty 看板中[创建产品](create-product)。
+
+2. 在 Adapty 看板中[创建付费墙并将产品添加到付费墙中](create-paywall)。
+
+3. 在 Adapty 看板中[创建版位并将付费墙添加到版位中](create-placement)。
+
+4. 在移动应用中[安装 Adapty SDK](sdk-installation-ios)。
+</details>
 ## 获取付费墙信息 \{#fetch-paywall-information\}
 
 在 Adapty 中，[产品](product)是 App Store 和 Google Play 产品的组合体。这些跨平台产品被整合到付费墙中，使您可以在移动应用的特定版位中展示它们。
@@ -76,11 +226,11 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
 | **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若失败则返回缓存数据。我们推荐此选项，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络连接不稳定，可以考虑使用 `.returnCacheDataElseLoad`，在缓存存在时返回缓存数据。这样用户获取的数据可能不是最新的，但加载速度更快，无论网络状况如何。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍然保留，仅在卸载重装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 以两层方式存储付费墙：上述定期更新的缓存以及[备用付费墙](fallback-paywalls)。我们还使用 CDN 加速付费墙的获取，并在 CDN 不可访问时使用独立的备用服务器。该系统旨在确保您始终获取最新版本的付费墙，同时在网络稀缺的情况下保证可靠性。</p> |
 | **loadTimeout** | 默认值：5 秒 | <p>该值限制此方法的超时时间。如果达到超时，将返回缓存数据或本地备用数据。</p><p></p><p>请注意，在极少数情况下，此方法的超时可能略晚于 `loadTimeout` 中指定的时间，因为该操作在底层可能由多个请求组成。</p> |
 
-不要将产品 ID 硬编码！由于付费墙是远程配置的，可用产品、产品数量及特殊优惠（如免费试用）可能随时变化。请确保您的代码能够处理这些场景。  
-例如，如果您最初获取了 2 个产品，您的应用应显示这 2 个产品。但如果之后获取了 3 个产品，您的应用应在无需任何代码更改的情况下显示全部 3 个产品。唯一需要硬编码的是版位 ID。
+不要硬编码产品 ID！由于付费墙是远程配置的，可用产品、产品数量以及特殊优惠（如免费试用）都可能随时变化。请确保你的代码能够处理这些情况。
+
+例如，如果最初获取到 2 个产品，你的应用应显示这 2 个产品；如果后来获取到 3 个产品，应用应在无需修改代码的情况下显示全部 3 个。唯一需要硬编码的是版位 ID。
 
 响应参数：
-
 | 参数 | 描述 |
 | :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Paywall | 一个 [`AdaptyPaywall`](https://swift.adapty.io/documentation/adapty/adaptypaywall) 对象，包含：产品 ID 列表、付费墙标识符、远程配置及其他若干属性。 |
@@ -104,12 +254,12 @@ do {
 <TabItem value="callback" label="Swift-Callback">
 
 ```swift showLineNumbers
-Adapty.getPaywallProducts(paywall: paywall) { result in    
+Adapty.getPaywallProducts(paywall: paywall) { result in
     switch result {
     case let .success(products):
-        // the requested products array
+        // 请求到的产品数组
     case let .failure(error):
-        // handle the error
+        // 处理错误
     }
 }
 ```
@@ -117,20 +267,17 @@ Adapty.getPaywallProducts(paywall: paywall) { result in
 </Tabs>
 
 响应参数：
-
 | 参数 | 描述 |
 | :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Products | [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) 对象列表，包含：产品标识符、产品名称、价格、货币、订阅时长及其他若干属性。 |
 
-在实现自定义付费墙设计时，您可能需要访问 [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) 对象的这些属性。以下列出了最常用的属性，完整属性列表请参阅链接文档。
-
+在实现自定义付费墙设计时，您可能需要访问 [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) 对象中的这些属性。下面列出了最常用的属性，完整的属性列表请参阅链接文档。
 | 属性 | 描述 |
 |-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Title（标题）** | 要显示产品标题，请使用 `product.localizedTitle`。请注意，本地化基于用户选择的商店国家/地区，而非设备语言环境。 |
-| **Price（价格）** | 要显示本地化价格，请使用 `product.localizedPrice`。本地化基于设备的语言环境信息。您也可以通过 `product.price` 以数字形式访问价格，该值以本地货币表示。要获取对应的货币符号，请使用 `product.currencySymbol`。 |
-| **Subscription Period（订阅周期）** | 要显示周期（如周、月、年等），请使用 `product.localizedSubscriptionPeriod`。本地化基于设备语言环境。要以编程方式获取订阅周期，请使用 `product.subscriptionPeriod`。您可以通过 `unit` 枚举获取时长（即天、周、月、年或未知）。`numberOfUnits` 值表示周期单位的数量。例如，对于季度订阅，`unit` 属性值为 `.month`，`numberOfUnits` 属性值为 `3`。 |
-| **Introductory Offer（新用户优惠）** | 要显示表示订阅包含新用户优惠的徽章或其他指示器，请查看 `product.subscriptionOffer` 属性。该对象包含以下实用属性：<br/>• `offerType`：枚举，值为 `introductory`、`promotional` 和 `winBack`。免费试用和初始折扣订阅属于 `introductory` 类型。<br/>• `price`：折扣价格（数字形式）。对于免费试用，此处值为 `0`。<br/>• `localizedPrice`：针对用户语言环境格式化的折扣价格。<br/>• `localizedNumberOfPeriods`：使用设备语言环境本地化的字符串，描述优惠时长。例如，三天试用优惠在此字段中显示为 `3 days`。<br/>• `subscriptionPeriod`：您也可以通过此属性获取优惠周期的各项详情，其用法与前一节描述的订阅周期相同。<br/>• `localizedSubscriptionPeriod`：针对用户语言环境格式化的折扣订阅周期。 |
-
+| **标题** | 使用 `product.localizedTitle` 显示产品标题。请注意，本地化基于用户所选的商店国家/地区，而非设备本身的语言区域设置。 |
+| **价格** | 使用 `product.localizedPrice` 显示本地化价格，本地化基于设备的语言区域信息。你也可以通过 `product.price` 以数字形式获取价格，值以本地货币表示。若要获取对应的货币符号，请使用 `product.currencySymbol`。 |
+| **订阅周期** | 使用 `product.localizedSubscriptionPeriod` 显示周期（如周、月、年等），本地化基于设备的语言区域设置。若要以编程方式获取订阅周期，请使用 `product.subscriptionPeriod`。通过该属性可访问 `unit` 枚举，获取时长单位（即 day、week、month、year 或 unknown）。`numberOfUnits` 表示周期单位的数量。例如，对于季度订阅，`unit` 属性为 `.month`，`numberOfUnits` 为 `3`。 |
+| **新用户优惠** | 若要显示徽标或其他标识，表明某个订阅包含新用户优惠，请查看 `product.subscriptionOffer` 属性。该对象包含以下实用属性：<br/>• `offerType`：枚举类型，取值为 `introductory`、`promotional` 和 `winBack`。免费试用和初始折扣订阅属于 `introductory` 类型。<br/>• `price`：折扣价格的数字形式。免费试用时该值为 `0`。<br/>• `localizedPrice`：针对用户语言区域格式化后的折扣价格。<br/>• `localizedNumberOfPeriods`：使用设备语言区域本地化的字符串，描述优惠时长。例如，三天试用优惠在此字段中显示为 `3 days`。<br/>• `subscriptionPeriod`：也可以通过该属性获取优惠周期的各项详细信息，其使用方式与前一节中描述的订阅周期相同。<br/>• `localizedSubscriptionPeriod`：针对用户语言区域格式化后的折扣订阅周期。 |
 ## 在 iOS 上检查新用户优惠资格 \{#check-intro-offer-eligibility-on-ios\}
 
 默认情况下，`getPaywallProducts` 方法会检查新用户优惠、促销活动和赢回优惠的资格。如果您需要在 SDK 确定优惠资格之前展示产品，请改用 `getPaywallProductsWithoutDeterminingOffer` 方法。
@@ -153,7 +300,7 @@ do {
 <TabItem value="callback" label="Swift-Callback">
 
 ```swift showLineNumbers
-Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall) { result in    
+Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall) { result in
     switch result {
     case let .success(products):
         // the requested products array without subscriptionOffer
@@ -215,6 +362,7 @@ Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "e
 
 | 参数 | 是否必填 | 描述 |
 |---------|--------|-----------|
-| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 控制台创建版位时指定的值。 |
-| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为由一个或多个子标签组成的语言代码，子标签之间用减号（**-**）分隔。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关区域设置代码及我们推荐的使用方式，请参阅[本地化与区域代码](localizations-and-locale-codes)。</p> |
-| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若失败则返回缓存数据。我们推荐此选项，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络连接不稳定，可以考虑使用 `.returnCacheDataElseLoad`，在缓存存在时返回缓存数据。这样用户获取的数据可能不是最新的，但加载速度更快，无论网络状况如何。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍然保留，仅在卸载重装应用或手动清理时才会被清除。</p> |
+| **placementId** | 必填 | [版位](placements)的标识符。这是你在 Adapty 看板中创建版位时指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为语言代码，由一个或多个子标签组成，子标签之间用连字符（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言区域代码及推荐使用方式的更多信息，请参阅[本地化与语言区域代码](localizations-and-locale-codes)。</p> |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若加载失败则返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果你认为用户的网络状况不稳定，可以考虑使用 `.returnCacheDataElseLoad`，在缓存数据存在时直接返回缓存。这种情况下，用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存来减少网络请求是安全的。</p><p></p><p>请注意，重启应用后缓存依然保留，只有在卸载重装应用或手动清理时才会被清除。</p> |
+</SDKv3>
