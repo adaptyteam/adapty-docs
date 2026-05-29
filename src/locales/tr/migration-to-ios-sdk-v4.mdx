@@ -1,0 +1,200 @@
+---
+title: "Adapty iOS SDK'yı v. 4.0'a Geçirin"
+description: "Adapty iOS SDK v4.0'a (beta) geçiş yapın: paywall API'lerini flow API'leriyle değiştirin; hem Flow Builder hem de Paywall Builder ile uyumludur."
+metadataTitle: "Adapty iOS SDK v4.0'a (beta) Geçiş | Adapty Dokümanları"
+---
+
+Adapty iOS SDK 4.0 (beta), flow'ları tanıtır ve paywall API'lerini buna göre yeniden adlandırır. Yeni API'ler hem yeni Flow Builder hem de mevcut Paywall Builder ile çalışır; Adapty Kontrol Paneli tarafında herhangi bir kurulum değişikliği gerekmez.
+## Hızlı referans \{#quick-reference\}
+| v3 | v4 |
+|---|---|
+| `Adapty.getPaywall(placementId:locale:)` | `Adapty.getFlow(placementId:)` |
+| `AdaptyUI.getPaywallConfiguration(forPaywall:)` | `AdaptyUI.getFlowConfiguration(forFlow:locale:)` |
+| `Adapty.getPaywallProducts(paywall:)` | `Adapty.getPaywallProducts(flow:)` |
+| `Adapty.logShowPaywall(_:)` | `Adapty.logShowFlow(_:)` |
+| `AdaptyPaywallController` | `AdaptyFlowController` |
+| `AdaptyPaywallControllerDelegate` | `AdaptyFlowControllerDelegate` |
+| `AdaptyUI.paywallController(with:delegate:)` | `AdaptyUI.flowController(with:delegate:)` |
+| `.paywall()` (SwiftUI modifier) | `.flow()` |
+| `AdaptyPaywallView` | `AdaptyFlowView` |
+| `didFailRenderingWith:` / `didFailRendering:` | `didReceiveError:` |
+## Kaldırılan API'ler \{#removed-apis\}
+
+- **`Adapty.getPaywallProductsWithoutDeterminingOffer(paywall:)`** — kaldırıldı. Artık tüm ürünler teklif bilgisini içerdiğinden, ayrı bir uygunluk kontrolü adımına gerek kalmadı.
+- **`AdaptyPaywallProductWithoutDeterminingOffer`** — kaldırıldı. Daha önce bu türü (örneğin `didSelectProduct` gibi) callback'lere geçiren yapılar artık `AdaptyPaywallProduct` kullanıyor.
+## Paywall'ları Getirme \{#fetching-paywalls\}
+### getPaywall + getPaywallConfiguration → getFlow + getFlowConfiguration
+
+Döndürülen türler `AdaptyPaywall` / `AdaptyUI.PaywallConfiguration` yerine `AdaptyFlow` / `AdaptyUI.FlowConfiguration` olarak değişiyor. `locale` parametresi fetch çağrısından çıkarılıp `getFlowConfiguration` üzerine taşınıyor:
+```diff showLineNumbers
+- let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en")
+- let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
++ let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
++ let flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow, locale: "en")
+```
+### getPaywallProducts(paywall:) → getPaywallProducts(flow:)
+
+`getPaywallProducts` artık `Adapty.getFlow` tarafından döndürülen bir `AdaptyFlow` alıyor:
+
+```diff showLineNumbers
+- let products = try await Adapty.getPaywallProducts(paywall: paywall)
++ let products = try await Adapty.getPaywallProducts(flow: flow)
+```
+## Paywall görüntülemelerini takip etme \{#tracking-paywall-views\}
+### logShowPaywall(_:) → logShowFlow(_:)
+
+`logShowPaywall`, `logShowFlow` olarak yeniden adlandırıldı ve artık `AdaptyPaywall` yerine `AdaptyFlow` alıyor. Olay hâlâ aynı varyasyona karşı kaydedildiği için mevcut dönüşüm hunisi ve A/B testi metrikleri kontrol panelinde herhangi bir değişiklik yapılmadan çalışmaya devam eder.
+
+```diff showLineNumbers
+- try await Adapty.logShowPaywall(paywall)
++ try await Adapty.logShowFlow(flow)
+```
+v3'te olduğu gibi, [Flow Builder](adapty-flow-builder) veya [Paywall Builder](adapty-paywall-builder) tarafından oluşturulan flow veya paywall'ları görüntülerken bu metodu çağırmanız gerekmez — Adapty bu görüntülemeleri otomatik olarak takip eder.
+## UIKit \{#uikit\}
+### AdaptyPaywallController → AdaptyFlowController
+
+Kontrolcü türünü ve fabrika metodunu yeniden adlandırın:
+
+```diff showLineNumbers
+- let controller = try AdaptyUI.paywallController(
+-     with: paywallConfiguration,
+-     delegate: self
+- )
++ let controller = try AdaptyUI.flowController(
++     with: flowConfiguration,
++     delegate: self
++ )
+```
+### AdaptyPaywallControllerDelegate → AdaptyFlowControllerDelegate
+
+Protokolü yeniden adlandırın ve her method imzasını güncelleyin. `didSelectProduct`'ın artık kaldırılmış `AdaptyPaywallProductWithoutDeterminingOffer` yerine `AdaptyPaywallProduct` aldığına dikkat edin.
+```diff showLineNumbers
+- class YourClass: AdaptyPaywallControllerDelegate {
++ class YourClass: AdaptyFlowControllerDelegate {
+
+-     func paywallControllerDidAppear(_ controller: AdaptyPaywallController) { }
++     func flowControllerDidAppear(_ controller: AdaptyFlowController) { }
+
+-     func paywallControllerDidDisappear(_ controller: AdaptyPaywallController) { }
++     func flowControllerDidDisappear(_ controller: AdaptyFlowController) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didPerform action: AdaptyUI.Action) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didPerform action: AdaptyUI.Action) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didSelectProduct product: AdaptyPaywallProductWithoutDeterminingOffer) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didSelectProduct product: AdaptyPaywallProduct) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didStartPurchase product: AdaptyPaywallProduct) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didStartPurchase product: AdaptyPaywallProduct) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didFinishPurchase product: AdaptyPaywallProduct,
+-                            purchaseResult: AdaptyPurchaseResult) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didFinishPurchase product: AdaptyPaywallProduct,
++                         purchaseResult: AdaptyPurchaseResult) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didFailPurchase product: AdaptyPaywallProduct,
+-                            error: AdaptyError) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didFailPurchase product: AdaptyPaywallProduct,
++                         error: AdaptyError) { }
+
+-     func paywallControllerDidStartRestore(_ controller: AdaptyPaywallController) { }
++     func flowControllerDidStartRestore(_ controller: AdaptyFlowController) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didFinishRestoreWith profile: AdaptyProfile) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didFinishRestoreWith profile: AdaptyProfile) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didFailRestoreWith error: AdaptyError) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didFailRestoreWith error: AdaptyError) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didFailRenderingWith error: AdaptyUIError) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didReceiveError error: AdaptyUIError) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didFailLoadingProductsWith error: AdaptyError) -> Bool { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didFailLoadingProductsWith error: AdaptyError) -> Bool { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didPartiallyLoadProducts failedIds: [String]) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didPartiallyLoadProducts failedIds: [String]) { }
+
+-     func paywallController(_ controller: AdaptyPaywallController,
+-                            didFinishWebPaymentNavigation product: AdaptyPaywallProduct?,
+-                            error: AdaptyError?) { }
++     func flowController(_ controller: AdaptyFlowController,
++                         didFinishWebPaymentNavigation product: AdaptyPaywallProduct?,
++                         error: AdaptyError?) { }
+ }
+```
+## SwiftUI \{#swiftui\}
+### .paywall() değiştirici → .flow() \{#paywall-modifier--flow\}
+
+`.paywall()` değiştiricisini `.flow()` olarak yeniden adlandırın ve konfigürasyon parametre adını güncelleyin:
+```diff showLineNumbers
+ @State var flowPresented = false // adı istediğiniz gibi değiştirebilirsiniz
+
+ var body: some View {
+     Text("Hello, AdaptyUI!")
+-        .paywall(
++        .flow(
+             isPresented: $flowPresented,
+-            paywallConfiguration: paywallConfiguration,
++            flowConfiguration: flowConfiguration,
+             didFailPurchase: { product, error in /* hatayı işleyin */ },
+             didFinishRestore: { profile in /* access level'i kontrol edin ve kapatın */ },
+             didFailRestore: { error in /* hatayı işleyin */ },
+-            didFailRendering: { error in flowPresented = false }
++            didReceiveError: { error in flowPresented = false }
+         )
+ }
+```
+Yeniden adlandırılan callback, `didFailRendering`'in tetiklendiği tüm render hatalarında olduğu gibi, flow script'inden gelen yeni çalışma zamanı hatalarında da (`AdaptyUIError` kodu `4105` — `.jsException` olan JavaScript istisnaları) tetiklenir. Mevcut handler gövdelerinde kod değişikliği gerekmez — yalnızca parametreyi yeniden adlandırın.
+### AdaptyPaywallView → AdaptyFlowView
+
+Görünümü yeniden adlandırın, yapılandırma parametresini güncelleyin ve `didSelectProduct` closure'ını güncelleyin — artık kaldırılan `AdaptyPaywallProductWithoutDeterminingOffer` yerine `AdaptyPaywallProduct` alıyor:
+```diff showLineNumbers
+- AdaptyPaywallView(
+-     paywallConfiguration: paywallConfiguration,
+-     didSelectProduct: { product: AdaptyPaywallProductWithoutDeterminingOffer in /* handle */ },
++ AdaptyFlowView(
++     flowConfiguration: flowConfiguration,
++     didSelectProduct: { product: AdaptyPaywallProduct in /* handle */ },
+     didFailPurchase: { product, error in /* handle the error */ },
+     didFinishRestore: { profile in /* check access level and dismiss */ },
+     didFailRestore: { error in /* handle the error */ },
+-    didFailRendering: { error in /* handle the error */ }
++    didReceiveError: { error in /* handle the error */ }
+ )
+```
+## AdaptyUI özel varlıklar \{#adaptyui-custom-assets\}
+### AdaptyUICustomVideoAsset
+
+Mevcut her çağrı noktasını etkileyen iki değişiklik:
+
+- `.player` artık `AVQueuePlayer` yerine `AVPlayer` alıyor.
+- Her case'e sonda `resolution: CGSize?` parametresi eklendi. Mevcut davranışı korumak için `nil` geçin ya da video yüklenmeden önce yerleşim alanını ayırt etmesi (en-boy oranı = `width / height`) için gerçek piksel boyutunu belirtin.
+```diff showLineNumbers
+- case file(url: URL, preview: AdaptyUICustomImageAsset?)
+- case remote(url: URL, preview: AdaptyUICustomImageAsset?)
+- case player(item: AVPlayerItem, player: AVQueuePlayer, preview: AdaptyUICustomImageAsset?)
++ case file(url: URL, preview: AdaptyUICustomImageAsset?, resolution: CGSize?)
++ case remote(url: URL, preview: AdaptyUICustomImageAsset?, resolution: CGSize?)
++ case player(item: AVPlayerItem, player: AVPlayer, preview: AdaptyUICustomImageAsset?, resolution: CGSize?)
+```

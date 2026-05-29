@@ -1,42 +1,40 @@
 ---
-title: "Procesar datos de onboardings en iOS SDK"
-description: "Guarda y utiliza datos de onboardings en tu app iOS con Adapty SDK."
-metadataTitle: "Onboardings | iOS SDK | Documentación de Adapty"
+title: "Procesar datos de onboardings en el SDK de iOS"
+description: "Guarda y usa datos de onboardings en tu app de iOS con el SDK de Adapty."
+metadataTitle: "Onboardings | SDK de iOS | Documentación de Adapty"
 displayed_sidebar: sdkios
 ---
-
+:::tip
+**A partir del SDK v4 (beta)**, puedes crear [flows](get-pb-paywalls) como alternativa más potente a los onboardings. A diferencia de los onboardings, que se ejecutan dentro de un WebView, los flows renderizan de forma nativa en el dispositivo, lo que proporciona animaciones más fluidas, una apariencia coherente con iOS, tiempos de carga más rápidos y sin dependencia del runtime de WebView. Consulta [Obtener flows y paywalls](get-pb-paywalls) y [Mostrar flows y paywalls](ios-present-paywalls) para empezar.
+:::
 Cuando tus usuarios responden a una pregunta de un cuestionario o introducen datos en un campo de texto, se invocará el método `onStateUpdatedAction`. Puedes guardar o procesar el tipo de campo en tu código.
 
 Por ejemplo:
-
 ```swift showLineNumbers
 func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
-    // Store user preferences or responses
+    // Almacenar preferencias o respuestas del usuario
     switch action.params {
     case .select(let params):
-        // Handle single selection
+        // Manejar selección única
     case .multiSelect(let params):
-        // Handle multiple selections
+        // Manejar selecciones múltiples
     case .input(let params):
-        // Handle text input
+        // Manejar entrada de texto
     case .datePicker(let params):
-        // Handle date selection
+        // Manejar selección de fecha
     }
 }
 ```
 
 El objeto `action` contiene:
-
 | Parámetro      | Descripción                                                                                                                                                                                                                                                                                          |
 |----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `elementId`    | Un identificador único para el elemento de entrada. Puedes usarlo para asociar preguntas con respuestas al guardarlas.                                                                                                                                                                               |
 | `params`       | El objeto de datos de entrada del usuario que contiene las propiedades de tipo y valor.                                                                                                                                                                                                              |
-| `params.type`  | El tipo de elemento de entrada. Puede ser:<br/>• `"select"` - Selección única entre opciones<br/>• `"multiSelect"` - Selección múltiple entre opciones<br/>• `"input"` - Campo de texto<br/>• `"datePicker"` - Selección de fecha                                                                    |
-| `params.value` | El o los valores seleccionados o introducidos por el usuario. La estructura depende del tipo:<br/>• `select`: Objeto con `id`, `value`, `label`<br/>• `multiSelect`: Array de objetos con `id`, `value`, `label`<br/>• `input`: Objeto con `type`, `value`<br/>• `datePicker`: Objeto con `day`, `month`, `year` |
-
+| `params.type`  | El tipo de elemento de entrada. Puede ser:<br/>• `"select"` - Selección única entre opciones<br/>• `"multiSelect"` - Selecciones múltiples entre opciones<br/>• `"input"` - Campo de entrada de texto<br/>• `"datePicker"` - Selección de fecha                                                      |
+| `params.value` | El valor o valores seleccionados o introducidos por el usuario. La estructura depende del tipo:<br/>• `select`: Objeto con `id`, `value`, `label`<br/>• `multiSelect`: Array de objetos con `id`, `value`, `label`<br/>• `input`: Objeto con `type`, `value`<br/>• `datePicker`: Objeto con `day`, `month`, `year` |
 <Details>
-<summary>Ejemplos de datos guardados (pueden variar según tu implementación)</summary>
-
+<summary>Ejemplos de datos guardados (pueden diferir en tu implementación)</summary>
 ```javascript
 // Example of a saved select action
 {
@@ -121,15 +119,13 @@ El objeto `action` contiene:
 }
 ```
 </Details>
-
 ## Casos de uso \{#use-cases\}
 
-### Enriquecer perfiles de usuario con datos \{#enrich-user-profiles-with-data\}
+### Enriquece los perfiles de usuario con datos \{#enrich-user-profiles-with-data\}
 
-Si quieres vincular de inmediato los datos de entrada con el perfil del usuario y evitar pedirle la misma información dos veces, debes [actualizar el perfil del usuario](setting-user-attributes) con los datos de entrada al gestionar la acción.
+Si quieres vincular inmediatamente los datos introducidos con el perfil del usuario y evitar pedirle la misma información dos veces, necesitas [actualizar el perfil del usuario](setting-user-attributes) con esos datos al gestionar la acción.
 
-Por ejemplo, pides a los usuarios que introduzcan su nombre en el campo de texto con el ID `name` y quieres establecer el valor de ese campo como nombre de pila del usuario. Además, les pides que introduzcan su email en el campo `email`. En el código de tu app, puede quedar así:
-
+Por ejemplo, pides a los usuarios que introduzcan su nombre en el campo de texto con el ID `name`, y quieres usar ese valor como nombre de pila del usuario. También les pides que introduzcan su email en el campo `email`. En el código de tu app, podría tener este aspecto:
 ```swift showLineNumbers
 func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
     // Store user preferences or responses
@@ -137,35 +133,42 @@ func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdat
     case .input(let params):
         // Handle text input
         let builder = AdaptyProfileParameters.Builder()
-        
+
         // Map elementId to appropriate profile field
         switch action.elementId {
         case "name":
             builder.with(firstName: params.value.value)
         case "email":
             builder.with(email: params.value.value)
+        default:
+            break
         }
-        
-        do {
-            try await Adapty.updateProfile(params: builder.build())
-        } catch {
-            // handle the error
+
+        // Delegate methods are synchronous; kick off the async update in a Task.
+        Task {
+            do {
+                try await Adapty.updateProfile(params: builder.build())
+            } catch {
+                // handle the error
+            }
         }
+    default:
+        break
+    }
 }
 ```
 
-### Personalizar paywalls según las respuestas \{#customize-paywalls-based-on-answers\}
+### Personaliza los paywalls en función de las respuestas \{#customize-paywalls-based-on-answers\}
 
-Usando cuestionarios en los onboardings, también puedes personalizar los paywalls que muestras a los usuarios tras completar el onboarding.
+Con los cuestionarios en los onboardings, también puedes personalizar los paywalls que muestras a los usuarios después de que completen el onboarding.
 
-Por ejemplo, puedes preguntarles sobre su experiencia con el deporte y mostrar diferentes CTAs y productos a distintos grupos de usuarios.
+Por ejemplo, puedes preguntarles sobre su experiencia con el deporte y mostrar distintos CTAs y productos a diferentes grupos de usuarios.
 
 1. [Añade un cuestionario](onboarding-quizzes) en el constructor de onboarding y asigna IDs significativos a sus opciones.
 
 <ZoomImage id="experience.webp" />
 
 2. Gestiona las respuestas del cuestionario según sus IDs y [establece atributos personalizados](setting-user-attributes) para los usuarios.
-
 ```swift showLineNumbers
 func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
     // Handle quiz responses and set custom attributes
@@ -173,19 +176,26 @@ func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdat
     case .select(let params):
         // Handle quiz selection
         let builder = AdaptyProfileParameters.Builder()
-        
+
         // Map quiz responses to custom attributes
         switch action.elementId {
         case "experience":
             // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
             try? builder.with(customAttribute: params.value.value, forKey: "experience")
+        default:
+            break
         }
-        
-        do {
-            try await Adapty.updateProfile(params: builder.build())
-        } catch {
-            // handle the error
+
+        // Delegate methods are synchronous; kick off the async update in a Task.
+        Task {
+            do {
+                try await Adapty.updateProfile(params: builder.build())
+            } catch {
+                // handle the error
+            }
         }
+    default:
+        break
     }
 }
 ```
