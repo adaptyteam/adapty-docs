@@ -1,0 +1,14 @@
+| Parámetro          | Tipo          | Requerido | Nullable | Descripción                                                  |
+| :----------------- | :------------ | --------- | -------- | :----------------------------------------------------------- |
+| first_name         | String        | No        | Sí       | Nombre de tu usuario final.                                  |
+| last_name          | String        | No        | Sí       | Apellido de tu usuario final.                                |
+| gender             | String        | No        | Sí       | Género de tu usuario final.                                  |
+| email              | String        | No        | Sí       | Correo electrónico de tu usuario final.                      |
+| phone_number       | String        | No        | Sí       | Número de teléfono de tu usuario final.                      |
+| birthday           | ISO 8601 date | No        | No       | Fecha de nacimiento de tu usuario final.                     |
+| ip_country         | String        | No        | No       | País del usuario final en formato ISO 3166-2. Debe enviarse si la solicitud se realiza desde el servidor y no desde el cliente, para establecer el país actual. De lo contrario, determinamos el país por la dirección IP de la solicitud. |
+| store_country      | String        | No        | Sí       | País del store de aplicaciones del usuario final.            |
+| store              | String        | No        | Sí       | La plataforma que usa el usuario para realizar compras in-app en tu aplicación. Valores posibles: `app_store`, `play_store` o `stripe`. |
+| analytics_disabled | Boolean       | No        | No       | <p>Opción para desactivar el análisis externo. Cuando el análisis está desactivado, los eventos no se enviarán a las integraciones y los campos `idfa`, `idfv` y `advertising_id` pasarán a ser nullable.</p><p>ON: El análisis externo está desactivado para este usuario.</p><p>OFF: El análisis está activo de forma predeterminada.</p> |
+| custom_attributes  | Array         | No        | No       | <p>Permite configurar hasta 30 atributos personalizados para el perfil. Si usas el array `custom_attributes`, se requiere al menos un par de clave y valor.</p><p>**Clave:** Debe ser una cadena de no más de 30 caracteres, usando solo letras, números, guiones, puntos y guiones bajos.</p><p>**Valor:** Debe ser una cadena o un float de no más de 30 caracteres. Los booleanos y los enteros se convertirán a float. Para eliminar un atributo, envía un valor vacío o `null`.</p> |
+| installation_meta  | Object        | No        | No       | Contiene información sobre la aplicación específica en un dispositivo concreto, estructurada como un objeto [Installation Meta](server-side-api-objects#installation-meta). |

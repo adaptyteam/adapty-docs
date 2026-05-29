@@ -1,0 +1,64 @@
+---
+title: "Flutter SDK'da yerelleştirmeleri ve yerel ayar kodlarını kullanma"
+description: "Global bir kitleye ulaşmak için uygulama yerelleştirmelerini ve yerel ayar kodlarını yönetin."
+metadataTitle: "Yerelleştirmeleri ve Yerel Ayar Kodlarını Yönetme | Adapty Dokümanları"
+displayed_sidebar: sdkflutter
+---
+
+## Bu neden önemli \{#why-this-is-important\}
+
+Yerel ayar kodlarının devreye girdiği birkaç senaryo vardır; örneğin uygulamanızın mevcut yerelleştirmesi için doğru paywall'ı getirmeye çalışırken.
+
+Yerel ayar kodları karmaşık olabilir ve platformdan platforma farklılık gösterebilir; bu nedenle desteklediğimiz tüm platformlarda dahili bir standarda güveniyoruz. Ancak bu kodlar karmaşık olduğundan, doğru yerelleştirmeyi alabilmek için sunucumuza tam olarak ne gönderdiğinizi ve bundan sonra ne olduğunu anlamanız son derece önemlidir; böylece her zaman beklediğinizi alırsınız.
+## Adapty'de dil kodu standardı \{#locale-code-standard-at-adapty\}
+
+Dil kodları için Adapty, [BCP 47 standardının](https://en.wikipedia.org/wiki/IETF_language_tag) hafifçe değiştirilmiş bir versiyonunu kullanır: her kod, tire ile ayrılmış küçük harf alt etiketlerinden oluşur. Bazı örnekler: `en` (İngilizce), `pt-br` (Portekizce (Brezilya)), `zh` (Basitleştirilmiş Çince), `zh-hant` (Geleneksel Çince).
+## Yerel ayar kodu eşleştirme \{#locale-code-matching\}
+
+Adapty, istemci tarafı SDK'sından yerel ayar koduyla birlikte bir çağrı aldığında ve bir paywall için ilgili yerelleştirmeyi aramaya başladığında şunlar gerçekleşir:
+
+1. Gelen yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgilerle (`-`) değiştirilir
+2. Ardından tam olarak eşleşen yerel ayar koduna sahip yerelleştirmeyi arayız
+3. Eşleşme bulunamazsa, ilk kısa çizgiden önceki alt dizeyi alırız (`pt-br` için `pt`) ve eşleşen yerelleştirmeyi arayız
+4. Yine eşleşme bulunamazsa, varsayılan `en` yerelleştirmesini döndürürüz
+Bu sayede `'pt_BR'` gönderen bir iOS cihazı, `pt-BR` gönderen bir Android cihazı ve `pt-br` gönderen başka bir cihaz aynı sonucu alır.
+## Yerelleştirmeleri uygulama: önerilen yöntem \{#implementing-localizations-recommended-way\}
+
+Yerelleştirmelerle ilgileniyorsanız, büyük ihtimalle projenizde zaten yerelleştirilmiş string dosyalarıyla çalışıyorsunuzdur. Bu durumda, her bir dosyaya ilgili yerelleştirme için hedeflenen Adapty locale kodunu içeren bir anahtar-değer çifti eklemenizi öneririz. Ardından SDK'mızı çağırırken bu anahtara karşılık gelen değeri şu şekilde çıkarabilirsiniz:
+```dart showLineNumbers
+// 1. app_en.arb, app_es.arb, app_pt_br.arb dosyalarınızı düzenleyin
+
+/*
+app_en.arb
+*/
+"adapty_paywalls_locale": "en",
+
+/*
+app_es.arb
+*/
+"adapty_paywalls_locale": "es",
+
+/*
+app_pt_br.arb
+*/
+"adapty_paywalls_locale": "pt-br",
+
+// 2. Locale kodunu çıkarın ve kullanın
+final locale = AppLocalizations.of(context)!.adapty_paywalls_locale;
+// locale kodunu AdaptyUI.getViewConfiguration veya Adapty.getPaywall metoduna iletin
+```
+
+Bu sayede uygulamanızın her kullanıcısı için hangi yerelleştirmenin alınacağını tam olarak kontrol edebilirsiniz.
+## Yerelleştirmeleri uygulama: alternatif yöntem \{#implementing-localizations-the-other-way\}
+
+Her yerelleştirme için açıkça yerel ayar kodu tanımlamak yerine benzer (ama özdeş olmayan) sonuçlar elde edebilirsiniz. Bu yaklaşımda, platformun sağladığı başka nesnelerden yerel ayar kodunu çıkarırsınız:
+
+```dart showLineNumbers
+final locale = Localizations.localeOf(context).languageCode;
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+Bu yaklaşımı önermiyoruz; bunun birkaç nedeni var:
+1. iOS'ta tercih edilen diller ile mevcut yerel ayar özdeş değildir. Yerelleştirmenin doğru şekilde seçilmesini istiyorsanız, ya Apple'ın mantığına güvenmeniz gerekir (bu, yerelleştirilmiş string dosyalarıyla önerilen yaklaşımı kullandığınızda kutudan çıkar gibi çalışır) ya da bunu kendiniz yeniden oluşturmanız gerekir.
+2. Adapty'nin sunucusunun tam olarak ne alacağını öngörmek zordur. Örneğin iOS'ta, bir cihazdan `ar_OM@numbers='latn'` gibi bir yerel ayar elde edip sunucumuza göndermeniz mümkündür. Bu çağrı için aradığınız `ar-om` yerelleştirmesini değil, büyük olasılıkla beklemediğiniz `ar` yerelleştirmesini alırsınız.
+Bu yaklaşımı kullanmaya karar verirseniz, ilgili tüm kullanım durumlarını ele aldığınızdan emin olun.

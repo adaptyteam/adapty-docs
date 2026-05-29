@@ -1,0 +1,25 @@
+---
+title: "优化 React Native SDK 中的付费墙获取"
+description: "可靠地获取 Adapty 付费墙：React Native 的时机、缓存与备用模式。"
+metadataTitle: "优化付费墙获取 | React Native SDK | Adapty 文档"
+---
+
+在 React Native 中可靠地获取付费墙需要做到三点：渲染速度快、返回针对目标受众的付费墙、以及在网络较慢时优雅降级。以下规则涵盖了实现这些目标所需的时机、缓存和备用模式。
+:::tip
+以下规则假设 `adapty.activate()` 和 `adapty.identify()` 已执行完毕。详见 [React Native SDK 的调用顺序](react-native-sdk-call-order)。
+:::
+## 规则与注意事项 \{#rules-and-pitfalls\}
+| 推荐做法 | 避免做法 | 原因 |
+|---|---|---|
+| 仅在即将展示的版位时才去获取。 | 在启动时并发预取所有版位。 | 批量预取会阻塞 JS 线程，导致启动过程中出现黑屏。 |
+| 在归因有机会完成解析之后再调用 `getPaywall`——例如在 `activate` 后等待 1–2 秒，或等待 `onProfileUpdate` 触发。 | 在根组件挂载时调用 `getPaywall`。 | 归因数据尚未落地，付费墙将按默认目标受众解析，静默跳过市场细分和 ASA 个性化。 |
+| 设置 `loadTimeoutMs`，并为每个版位配置[备用付费墙](fallback-paywalls)。 | 无限期等待 `getPaywall` 返回。 | 若没有超时限制，网络较差的用户会看到空白屏幕，直到网络恢复——或者直接关闭应用。 |
+有关 `fetchPolicy` 和 `loadTimeoutMs` 参数的说明，请参阅[获取付费墙和产品](fetch-paywalls-and-products-react-native)；有关如何选择合适的版位，请参阅[版位](placements)。
+## 针对网络较差的情况进行调优 \{#tune-for-poor-connectivity\}
+
+对于网络持续较差的市场（偏远地区、交通途中、受路由影响的地区）：
+
+- 除首次请求外，所有请求都设置 `fetchPolicy: .returnCacheDataElseLoad`。
+- 在 Adapty 看板中为每个版位配置[备用付费墙](fallback-paywalls)。
+- 将 `loadTimeoutMs` 设置为 3–5 秒，并在超时触发时接受备用付费墙。
+- 不要让付费墙的展示依赖 `getProfile()`。将 `getPaywall` 独立调用，避免因 profile 加载缓慢而阻塞 UI。

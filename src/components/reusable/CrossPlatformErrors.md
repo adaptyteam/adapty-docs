@@ -50,7 +50,7 @@
 | cantMakePayments | 1003 | In-App purchases are not allowed on this device. |
 | noPurchasesToRestore | 1004 | This error indicates that Google Play did not find the purchase to restore. |
 | cantReadReceipt | 1005 | <p>There is no valid receipt available on the device. This can be an issue during sandbox testing.</p><p>No action is required, but in terms of the business logic, you can offer a discount to your user or remind them later.</p> |
-| productPurchaseFailed | 1006 | Product purchase failed. |
+| productPurchaseFailed | 1006 | Product purchase failed. This wraps an underlying StoreKit error — read the wrapped error (or enable verbose logs to see it in the console) for the actual reason. The wrapped error is typically one of the StoreKit codes 0–14 in the table above — most commonly `paymentCancelled`, `paymentInvalid`, `paymentNotAllowed`, or `invalidOfferPrice`. If you can't identify a specific reason, try a new [sandbox profile](test-purchases-in-sandbox); if it still fails, contact Apple support. |
 | refreshReceiptFailed | 1010 | This error indicates that the receipt was not received. Applicable to StoreKit 1 only. |
 | receiveRestoredTransactionsFailed | 1011 | Purchase restoration failed. |
 

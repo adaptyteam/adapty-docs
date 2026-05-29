@@ -1,0 +1,334 @@
+---
+title: "Habilitar compras usando paywalls en el SDK de Android"
+description: "Guía de inicio rápido para configurar Adapty en la gestión de suscripciones in-app."
+metadataTitle: "Guía de inicio rápido de Adapty | Documentación de Adapty"
+keywords: ['paywalls android', 'sdk android', 'paywall', 'paywall builder', 'getPaywall']
+rank: 70
+---
+
+import PaywallsIntro from '@site/src/locales/es/reusable/PaywallsIntro.md';
+
+Para habilitar las compras in-app, necesitas entender tres conceptos clave:
+
+- [**Productos**](product) – todo lo que los usuarios pueden comprar (suscripciones, consumibles, acceso de por vida)
+- Los [**paywalls**](paywalls) son configuraciones que definen qué productos ofrecer. En Adapty, los paywalls son la única forma de recuperar productos, pero este diseño te permite modificar ofertas, precios y combinaciones de productos sin tocar el código de tu app.
+- Los [**placements**](placements) – dónde y cuándo muestras los paywalls en tu app (como `main`, `onboarding`, `settings`). Configuras los paywalls para los placements en el dashboard y luego los solicitas por ID de placement en tu código. Esto facilita ejecutar pruebas A/B y mostrar diferentes paywalls a distintos usuarios.
+
+Adapty te ofrece tres formas de habilitar las compras en tu app. Selecciona una según los requisitos de tu aplicación:
+
+| Implementación         | Complejidad | Cuándo usarla                                                                                                                                                                                                                                |
+|------------------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty Paywall Builder | ✅ Fácil     | [Creas un paywall completo y listo para compras en el editor sin código](quickstart-paywalls). Adapty lo renderiza automáticamente y gestiona todo el flujo de compra, la validación de recibos y la gestión de suscripciones en segundo plano. |
+| Paywalls creados manualmente | 🟡 Medio  | Implementas la UI de tu paywall en el código de tu app, pero sigues obteniendo el objeto paywall de Adapty para mantener flexibilidad en las ofertas de productos. Consulta la [guía](android-quickstart-manual).                              |
+| Modo observador              | 🔴 Difícil    | Ya tienes tu propia infraestructura de gestión de compras y quieres seguir usándola. Ten en cuenta que el modo observador tiene sus limitaciones en Adapty. Consulta el [artículo](observer-vs-full-mode).                                   |
+
+:::important
+**Los pasos a continuación muestran cómo implementar un paywall creado en el Paywall Builder de Adapty.**
+
+Si no quieres usar el Paywall Builder, consulta la [guía para gestionar compras en paywalls creados manualmente](android-making-purchases).
+:::
+
+Para mostrar un paywall creado en el Paywall Builder de Adapty, en el código de tu app solo necesitas:
+
+1. **Obtener el paywall**: Obtén el paywall desde Adapty.
+2. **Mostrar el paywall y Adapty gestionará las compras por ti**: Muestra el contenedor del paywall que obtuviste en tu app.
+3. **Gestionar las acciones de los botones**: Asocia las interacciones del usuario con el paywall a las respuestas de tu app. Por ejemplo, abrir enlaces o cerrar el paywall cuando los usuarios pulsan botones.
+
+## Antes de empezar \{#before-you-start\}
+
+Antes de empezar, completa estos pasos:
+
+1. [Conecta tu app a Google Play](initial-android) en el Adapty Dashboard.
+2. [Crea tus productos](create-product) en Adapty.
+3. [Crea un paywall y añade productos](create-paywall).
+4. [Crea un placement y añade tu paywall](create-placement).
+5. [Instala y activa el SDK de Adapty](sdk-installation-android) en el código de tu app.
+
+:::tip
+La forma más rápida de completar estos pasos es seguir la [guía de inicio rápido](quickstart) o crear paywalls y placements usando el [CLI para desarrolladores](developer-cli-quickstart).
+:::
+
+## 1. Obtener el paywall \{#1-get-the-paywall\}
+
+Tus paywalls están asociados a placements configurados en el dashboard. Los placements te permiten ejecutar diferentes paywalls para distintas audiencias o para correr [pruebas A/B](ab-tests).
+
+Para obtener un paywall creado en el Paywall Builder de Adapty, debes:
+
+1. Obtener el objeto `paywall` por el ID del [placement](placements) usando el método `getPaywall` y verificar si se trata de un paywall creado en el builder.
+
+2. Obtener la configuración de vista del paywall usando el método `getViewConfiguration`. La configuración de vista contiene los elementos de UI y el estilo necesarios para mostrar el paywall.
+
+:::important
+Para obtener la configuración de vista, debes activar el toggle **Show on device** en el Paywall Builder. De lo contrario, obtendrás una configuración de vista vacía y el paywall no se mostrará.
+:::
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
+    if (result is AdaptyResult.Success) {
+        val paywall = result.value
+        
+        if (!paywall.hasViewConfiguration) {
+            return@getPaywall
+        }
+        
+        AdaptyUI.getViewConfiguration(paywall) { configResult ->
+            if (configResult is AdaptyResult.Success) {
+                val viewConfiguration = configResult.value
+            }
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        
+        if (!paywall.hasViewConfiguration()) {
+            return;
+        }
+        
+        AdaptyUI.getViewConfiguration(paywall, configResult -> {
+            if (configResult instanceof AdaptyResult.Success) {
+                AdaptyUI.LocalizedViewConfiguration viewConfiguration =
+                    ((AdaptyResult.Success<AdaptyUI.LocalizedViewConfiguration>) configResult).getValue();
+                // use loaded configuration
+            }
+        });
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+## 2. Mostrar el paywall \{#2-display-the-paywall\}
+
+Ahora que tienes la configuración del paywall, basta con añadir unas pocas líneas para mostrarlo.
+
+Para mostrar el paywall visual en la pantalla del dispositivo, primero debes configurarlo. Para ello, llama al método `AdaptyUI.getPaywallView()` o crea el `AdaptyPaywallView` directamente:
+
+<Tabs groupId="current-os" queryString>
+  <TabItem value="kotlin" label="Kotlin (opción 1)" default>
+
+```kotlin showLineNumbers
+   val paywallView = AdaptyUI.getPaywallView(
+       activity,
+       viewConfiguration,
+       null, // products = null means auto-fetch
+       eventListener,
+   )
+```
+</TabItem>
+<TabItem value="kotlin2" label="Kotlin (opción 2)" default>
+
+```kotlin showLineNumbers
+   val paywallView =
+        AdaptyPaywallView(activity) // or retrieve it from xml
+   ...
+   with(paywallView) {
+       showPaywall(
+           viewConfiguration,
+           null, // products = null means auto-fetch
+		   eventListener,
+       )
+   }
+```
+
+</TabItem>
+<TabItem value="java" label="Java (opción 1)" default>
+
+```java showLineNumbers
+AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
+        activity,
+        viewConfiguration,
+        null, // products = null means auto-fetch
+        eventListener,
+);
+```
+</TabItem>
+<TabItem value="java2" label="Java (opción 2)" default>
+
+```java showLineNumbers
+AdaptyPaywallView paywallView =
+  new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
+...
+paywallView.showPaywall(viewConfiguration, products, eventListener);
+```
+
+</TabItem>
+<TabItem value="XML" label="XML" default>
+
+```xml showLineNumbers
+<com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />
+```
+</TabItem>
+</Tabs>
+
+Una vez creada la vista correctamente, puedes añadirla a la jerarquía de vistas y mostrarla en la pantalla del dispositivo.
+
+:::tip
+Para más detalles sobre cómo mostrar un paywall, consulta nuestra [guía](android-present-paywalls).
+:::
+
+## 3. Gestionar las acciones de los botones \{#3-handle-button-actions\}
+
+Cuando los usuarios pulsan botones en el paywall, el SDK de Android gestiona automáticamente las compras, la restauración, el cierre del paywall y la apertura de enlaces.
+
+Sin embargo, otros botones tienen IDs personalizados o predefinidos y requieren gestionar sus acciones en tu código. También puedes querer sobrescribir su comportamiento predeterminado.
+
+Por ejemplo, aquí está el comportamiento predeterminado del botón de cierre. No necesitas añadirlo en el código, pero aquí puedes ver cómo hacerlo si fuera necesario.
+
+:::tip
+Lee nuestras guías sobre cómo gestionar [acciones](android-handle-paywall-actions) y [eventos](android-handling-events) de los botones.
+:::
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
+    when (action) {
+        AdaptyUI.Action.Close -> (context as? Activity)?.onBackPressed() // default behavior
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+@Override
+public void onActionPerformed(@NonNull AdaptyUI.Action action, @NonNull Context context) {
+    if (action instanceof AdaptyUI.Action.Close) {
+        if (context instanceof Activity) {
+            ((Activity) context).onBackPressed();
+        }
+    }
+}
+```
+</TabItem>
+
+</Tabs>
+
+## Próximos pasos \{#next-steps\}
+
+<SupportForum />
+
+Tu paywall está listo para mostrarse en la app. [Prueba tus compras en Google Play Store](testing-on-android) para asegurarte de que puedes completar una compra de prueba desde el paywall.
+
+A continuación, debes [comprobar el nivel de acceso de los usuarios](android-check-subscription-status) para asegurarte de que muestras un paywall o das acceso a las funciones de pago a los usuarios correctos.
+
+## Ejemplo completo \{#full-example\}
+
+Aquí se muestra cómo integrar todos estos pasos en tu app.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+class MainActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        Adapty.getPaywall("YOUR_PLACEMENT_ID") { paywallResult ->
+            if (paywallResult is AdaptyResult.Success) {
+                val paywall = paywallResult.value
+
+                if (!paywall.hasViewConfiguration) {
+                    // Use custom logic
+                    return@getPaywall
+                }
+
+                AdaptyUI.getViewConfiguration(paywall) { configResult ->
+                    if (configResult is AdaptyResult.Success) {
+                        val viewConfiguration = configResult.value
+
+                        val paywallView = AdaptyUI.getPaywallView(
+                            this,
+                            viewConfiguration,
+                            null, // products = null means auto-fetch
+                            object : AdaptyUIEventListener {
+                                override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
+                                    when (action) {
+                                        is AdaptyUI.Action.Close -> {
+                                            (context as? Activity)?.onBackPressed()
+                                        }
+                                    }
+                                }
+                            }
+                        )
+
+                        setContentView(paywallView)
+                    }
+                }
+            }
+        }
+    }
+}
+
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        Adapty.getPaywall("YOUR_PLACEMENT_ID", paywallResult -> {
+            if (paywallResult instanceof AdaptyResult.Success) {
+                AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) paywallResult).getValue();
+
+                if (!paywall.hasViewConfiguration()) {
+                    // Use custom logic
+                    return;
+                }
+
+                AdaptyUI.getViewConfiguration(paywall, configResult -> {
+                    if (configResult instanceof AdaptyResult.Success) {
+                        AdaptyUI.LocalizedViewConfiguration viewConfiguration =
+                            ((AdaptyResult.Success<AdaptyUI.LocalizedViewConfiguration>) configResult).getValue();
+
+                        AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
+                            this,
+                            viewConfiguration,
+                            null, // products = null means auto-fetch
+                            new AdaptyUIEventListener() {
+                               @Override
+                                    public void onActionPerformed(@NonNull AdaptyUI.Action action, @NonNull Context context) {
+                                        if (action instanceof AdaptyUI.Action.Close) {
+                                            if (context instanceof Activity) {
+                                                ((Activity) context).onBackPressed();
+                                            }
+                                        }
+                                    }
+                            }
+                        );
+
+                        setContentView(paywallView);
+                    }
+                });
+            }
+        });
+    }
+}
+
+```
+</TabItem>
+
+</Tabs>

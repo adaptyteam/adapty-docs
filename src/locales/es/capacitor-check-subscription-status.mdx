@@ -1,0 +1,96 @@
+---
+title: "Comprobar el estado de la suscripción en el SDK de Capacitor"
+description: "Aprende a comprobar el estado de la suscripción en tu app de Capacitor con Adapty."
+metadataTitle: "Comprobar el Estado de la Suscripción | Documentación de Adapty"
+displayed_sidebar: sdkcapacitor
+---
+
+Para decidir si los usuarios pueden acceder al contenido de pago o ver un paywall, necesitas comprobar su [nivel de acceso](access-level) en el perfil.
+
+Este artículo te muestra cómo acceder al estado del perfil para decidir qué deben ver los usuarios: si mostrarles un paywall o darles acceso a las funciones de pago.
+
+## Obtener el estado de la suscripción \{#get-subscription-status\}
+
+Cuando decides si mostrar un paywall o contenido de pago a un usuario, compruebas su [nivel de acceso](access-level) en su perfil. Tienes dos opciones:
+
+- Llama a `getProfile` si necesitas los datos del perfil más recientes de inmediato (por ejemplo, al iniciar la app) o quieres forzar una actualización.
+- Configura **actualizaciones automáticas del perfil** para mantener una copia local que se actualice automáticamente cada vez que cambie el estado de la suscripción.
+
+### Obtener el perfil \{#get-profile\}
+
+La forma más sencilla de obtener el estado de la suscripción es usar el método `getProfile` para acceder al perfil:
+
+```typescript showLineNumbers
+try {
+  const profile = await adapty.getProfile();
+} catch (error) {
+  // handle the error
+}
+```
+
+### Escuchar actualizaciones de la suscripción \{#listen-to-subscription-updates\}
+
+Para recibir actualizaciones del perfil automáticamente en tu app:
+
+1. Usa `adapty.addListener('onLatestProfileLoad')` para escuchar cambios en el perfil. Adapty llamará a este método automáticamente cada vez que cambie el estado de la suscripción del usuario.
+2. Almacena los datos del perfil actualizados cuando se invoque este método, para poder usarlos en toda la app sin hacer peticiones de red adicionales.
+
+```typescript showLineNumbers
+class SubscriptionManager {
+  private currentProfile: any = null;
+  
+  constructor() {
+    // Listen for profile updates
+    adapty.addListener('onLatestProfileLoad', (data) => {
+      this.currentProfile = data.profile;
+      // Update UI, unlock content, etc.
+    });
+  }
+  
+  // Use stored profile instead of calling getProfile()
+  hasAccess(): boolean {
+    return this.currentProfile?.accessLevels?.['YOUR_ACCESS_LEVEL']?.isActive ?? false;
+  }
+}
+```
+
+:::note
+Adapty llama automáticamente al listener del evento `onLatestProfileLoad` cuando se inicia tu app, proporcionando datos de suscripción en caché aunque el dispositivo esté sin conexión.
+:::
+
+## Conectar el perfil con la lógica del paywall \{#connect-profile-with-paywall-logic\}
+
+Cuando necesitas tomar decisiones inmediatas sobre si mostrar paywalls o dar acceso a funciones de pago, puedes comprobar el perfil del usuario directamente. Este enfoque es útil en situaciones como el inicio de la app, al entrar en secciones premium o antes de mostrar contenido específico.
+
+```typescript showLineNumbers
+const checkAccessLevel = async () => {
+  try {
+    const profile = await adapty.getProfile();
+    return profile?.accessLevels?.['YOUR_ACCESS_LEVEL']?.isActive === true;
+  } catch (error) {
+    console.warn('Error checking access level:', error);
+    return false; // Show paywall if access check fails
+  }
+};
+
+const getAccessLevel = () => {
+  return profile?.accessLevels?.['YOUR_ACCESS_LEVEL'];
+};
+
+const initializePaywall = async () => {
+  try {
+    await loadPaywall();
+    
+    const hasAccess = await checkAccessLevel();
+    if (!hasAccess) {
+      // Show paywall if no access
+    }
+  } catch (error) {
+    console.warn('Error initializing paywall:', error);
+  }
+};
+```
+
+## Próximos pasos \{#next-steps\}
+
+Ahora que sabes cómo hacer seguimiento del estado de la suscripción, aprende a [trabajar con perfiles de usuario](capacitor-quickstart-identify) para garantizar que puedan acceder a lo que han pagado.

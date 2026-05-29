@@ -1,0 +1,321 @@
+---
+title: "Amazon S3"
+description: "Exporta datos de suscripción a S3 para análisis e informes avanzados."
+metadataTitle: "Exportaciones S3 y gestión de datos | Documentación de Adapty"
+---
+
+La integración de Adapty con Amazon S3 te permite almacenar de forma segura los datos de eventos y visitas a paywalls en un único lugar centralizado. Podrás guardar tus [eventos de suscripción](events) en tu bucket de Amazon S3 como archivos .csv.  
+Para configurar esta integración, solo tienes que seguir unos sencillos pasos en la consola de AWS y en el Adapty Dashboard.
+:::note
+Programación
+
+Adapty envía tus datos cada **24h** a las 4:00 UTC.
+
+Cada archivo contendrá datos de los eventos creados durante el día natural anterior completo en UTC. Por ejemplo, los datos exportados automáticamente a las 4:00 UTC del 8 de marzo contendrán todos los eventos creados el 7 de marzo entre las 00:00:00 y las 23:59:59 UTC.
+:::
+## Cómo configurar la integración con Amazon S3 \{#how-to-set-up-amazon-s3-integration\}
+
+Para empezar a recibir datos, necesitarás las siguientes credenciales:
+
+1. Access key ID
+2. Secret access key
+3. S3 bucket name
+4. Folder name inside the S3 bucket
+
+:::note
+Directorios anidados
+
+Puedes especificar directorios anidados en el campo S3 bucket name, por ejemplo: adapty-events/com.sample-app
+:::
+
+Para integrar Amazon S3, ve a [**Integrations** -> **Amazon S3**](https://app.adapty.io/integrations/s3), activa el interruptor y rellena los campos.
+
+En primer lugar, introduce las credenciales para establecer la conexión entre Amazon S3 y los perfiles de Adapty.
+<Zoom>
+  <img src="/assets/shared/img/2b1a6e3-CleanShot_2023-03-24_at_14.51.272x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+En el Adapty Dashboard, los siguientes campos son necesarios para configurar la conexión:
+| Campo | Descripción |
+| :--- | :--- |
+| **Access Key ID** | Identificador único que se usa para autenticar el acceso de un usuario o aplicación a un servicio de AWS. Encuéntralo en el [archivo csv](s3-exports#how-to-create-amazon-s3-credentials) descargado. |
+| **Secret Access Key** | Clave privada que se usa junto con el Access Key ID para autenticar el acceso de un usuario o aplicación a un servicio de AWS. Encuéntrala en el [archivo csv](s3-exports#how-to-create-amazon-s3-credentials) descargado. |
+| **S3 Bucket Name** | Nombre único a nivel global que identifica un bucket de S3 específico dentro de la nube de AWS. Los buckets de S3 son un servicio de almacenamiento simple que permite a los usuarios guardar y recuperar objetos de datos, como archivos e imágenes, en la nube. |
+| **Folder Inside the Bucker** | El nombre de la carpeta que quieres crear dentro del bucket de S3 seleccionado. Ten en cuenta que S3 simula carpetas mediante prefijos de clave de objeto, que son esencialmente nombres de carpetas. |
+## Cómo crear credenciales de Amazon S3 \{#how-to-create-amazon-s3-credentials\}
+
+Esta guía te ayudará a crear las credenciales necesarias en tu consola de AWS.
+### 1\. Crear política de acceso \{#create-access-policy\}
+
+Primero, ve al [Panel de políticas de IAM](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/policies) en tu consola de AWS y selecciona la opción **Create Policy**.
+
+<Zoom>
+  <img src="/assets/shared/img/7af075c-CleanShot_2023-03-21_at_10.52.002x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+En el editor de políticas, pega el siguiente JSON y cambia `adapty-s3-integration-test` por el nombre de tu bucket:
+```json showLineNumbers title="Json"
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowListObjectsInBucket",
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        },
+        {
+            "Sid": "AllowAllObjectActions",
+            "Effect": "Allow",
+            "Action": "s3:*Object",
+            "Resource": [
+                "arn:aws:s3:::adapty-s3-integration-test/*",
+                "arn:aws:s3:::adapty-s3-integration-test"
+            ]
+        },
+        {
+            "Sid": "AllowBucketLocation",
+            "Effect": "Allow",
+            "Action": "s3:GetBucketLocation",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        }
+    ]
+}
+```
+<Zoom>
+  <img src="/assets/shared/img/d4e474a-CleanShot_2023-03-21_at_10.56.212x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Una vez completada la configuración de la política, puedes añadir etiquetas (opcional) y hacer clic en **Next** para continuar con el paso final. En este paso, deberás asignar un nombre a tu política y simplemente hacer clic en el botón **Create policy** para finalizar el proceso de creación.
+<Zoom>
+  <img src="/assets/shared/img/7dcb02f-CleanShot_2023-03-21_at_11.03.372x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+### 2\. Crear un usuario IAM \{#2-create-iam-user\}
+
+Para que Adapty pueda subir informes de datos brutos a tu bucket, deberás proporcionarles el Access Key ID y el Secret Access Key de un usuario con acceso de escritura al bucket específico.
+
+Para ello, ve a la consola de IAM y selecciona la [sección Users](https://console.aws.amazon.com/iamv2/home#/users). Desde allí, haz clic en el botón **Add users**.
+<Zoom>
+  <img src="/assets/shared/img/bb612c8-CleanShot_2023-03-21_at_11.12.392x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Dale un nombre al usuario, elige **Access key – Programmatic access** y continúa con los permisos.
+<Zoom>
+  <img src="/assets/shared/img/467ee4d-j6aoX.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Para el siguiente paso, selecciona la opción **Add user to group** y luego haz clic en el botón **Create group**.
+<Zoom>
+  <img src="/assets/shared/img/bfd0e80-CleanShot_2023-03-21_at_11.24.592x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+A continuación, asigna un nombre a tu Grupo de Usuarios y selecciona la política que creaste anteriormente. Una vez seleccionada, haz clic en el botón **Create group** para completar el proceso.
+<Zoom>
+  <img src="/assets/shared/img/df29c12-CleanShot_2023-03-21_at_11.28.052x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Una vez creado el grupo con éxito, **selecciónalo** y continúa con el siguiente paso.
+<Zoom>
+  <img src="/assets/shared/img/1f3722e-CleanShot_2023-03-21_at_11.36.192x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Como este es el último paso de esta sección, puedes continuar haciendo clic en el botón **Create User**.
+<Zoom>
+  <img src="/assets/shared/img/ea43722-CleanShot_2023-03-21_at_11.40.462x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Por último, puedes **descargar las credenciales en formato .csv** o copiarlas y pegarlas directamente desde el dashboard.
+<Zoom>
+  <img src="/assets/shared/img/bcf35e1-S3created.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+## Exportación manual de datos \{#manual-data-export\}
+
+Además de la exportación automática de datos de eventos a Amazon S3, Adapty también ofrece una funcionalidad de exportación manual de archivos. Con esta función, puedes seleccionar un intervalo de tiempo específico para los datos de eventos y exportarlos a tu bucket de S3 de forma manual. Esto te da mayor control sobre los datos que exportas y cuándo los exportas.
+
+El rango de fechas especificado se usará para exportar los eventos creados desde la Fecha A 00:00:00 UTC hasta la Fecha B 23:59:59 UTC.
+<Zoom>
+  <img src="/assets/shared/img/466bd29-CleanShot_2023-03-21_at_12.35.252x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+## Estructura de la tabla \{#table-structure\}
+
+En la integración con AWS S3, Adapty proporciona una tabla para almacenar datos históricos de eventos de transacciones y visitas a paywalls. La tabla contiene información sobre el perfil del usuario, los ingresos y beneficios, y el store de origen, entre otros datos. En esencia, estas tablas registran todas las transacciones generadas por una app durante un período de tiempo determinado.
+:::warning
+Ten en cuenta que esta estructura puede crecer con el tiempo, ya que nosotros o los terceros con los que trabajamos podemos añadir nuevos datos. Asegúrate de que el código que la procesa sea lo suficientemente robusto y se base en campos concretos, no en la estructura en su conjunto.
+:::
+
+Aquí está la estructura de la tabla para los eventos:
+| Columna                         | Descripción                                                                                                                                                                                                                                                                                                                            |
+|---------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **profile_id**                  | ID de usuario de Adapty.                                                                                                                                                                                                                                                                                                               |
+| **event_type**                  | Nombre del evento en minúsculas. Consulta la sección [Eventos](events) para conocer los tipos de eventos.                                                                                                                                                                                                                              |
+| **event_datetime**              | Fecha en formato ISO 8601.                                                                                                                                                                                                                                                                                                             |
+| **transaction_id**              | Identificador único de una transacción, como una compra o renovación.                                                                                                                                                                                                                                                                  |
+| **original_transaction_id**     | Identificador de la transacción de compra original.                                                                                                                                                                                                                                                                                    |
+| **subscription_expires_at**     | Fecha de vencimiento de la suscripción. Normalmente en el futuro.                                                                                                                                                                                                                                                                      |
+| **environment**                 | Puede ser Sandbox o Production.                                                                                                                                                                                                                                                                                                        |
+| **revenue_usd**                 | Ingresos en USD. Puede estar vacío.                                                                                                                                                                                                                                                                                                    |
+| **proceeds_usd**                | Ingresos netos en USD. Puede estar vacío.                                                                                                                                                                                                                                                                                              |
+| **net_revenue_usd**             | Ingresos netos (tras impuestos) en USD. Puede estar vacío.                                                                                                                                                                                                                                                                             |
+| **tax_amount_usd**              | Importe deducido en concepto de impuestos en USD. Puede estar vacío.                                                                                                                                                                                                                                                                   |
+| **revenue_local**               | Ingresos en moneda local. Puede estar vacío.                                                                                                                                                                                                                                                                                           |
+| **proceeds_local**              | Ingresos netos en moneda local. Puede estar vacío.                                                                                                                                                                                                                                                                                     |
+| **net_revenue_local**           | Ingresos netos (tras impuestos) en moneda local. Puede estar vacío.                                                                                                                                                                                                                                                                    |
+| **tax_amount_local**            | Importe deducido en concepto de impuestos en moneda local. Puede estar vacío.                                                                                                                                                                                                                                                          |
+| **customer_user_id**            | ID de usuario del desarrollador. Por ejemplo, puede ser tu UUID de usuario, email u otro identificador. Null si no lo has configurado.                                                                                                                                                                                                  |
+| **store**                       | Puede ser _app_store_ o _play_store_.                                                                                                                                                                                                                                                                                                  |
+| **product_id**                  | ID del producto en Apple App Store, Google Play Store o Stripe.                                                                                                                                                                                                                                                                        |
+| **base_plan_id**                | [ID del plan base](https://support.google.com/googleplay/android-developer/answer/12154973) en Google Play Store o [ID de precio](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) en Stripe.                                                                                             |
+| **developer_id**                | ID del desarrollador (SDK) del paywall donde se originó la transacción.                                                                                                                                                                                                                                                                |
+| **ab_test_name**                | Nombre de la prueba A/B donde se originó la transacción.                                                                                                                                                                                                                                                                               |
+| **ab_test_revision**            | Revisión de la prueba A/B donde se originó la transacción.                                                                                                                                                                                                                                                                             |
+| **paywall_name**                | Nombre del paywall donde se originó la transacción.                                                                                                                                                                                                                                                                                    |
+| **paywall_revision**            | Revisión del paywall donde se originó la transacción.                                                                                                                                                                                                                                                                                  |
+| **profile_county**              | País del perfil determinado por Adapty a partir de la IP.                                                                                                                                                                                                                                                                              |
+| **install_date**                | Fecha de instalación en formato ISO 8601.                                                                                                                                                                                                                                                                                              |
+| **idfv**                        | [identifierForVendor](https://developer.apple.com/documentation/uikit/uidevice/identifierforvendor) en dispositivos iOS                                                                                                                                                                                                                |
+| **idfa**                        | [advertisingIdentifier](https://developer.apple.com/documentation/adsupport/asidentifiermanager/advertisingidentifier) en dispositivos iOS                                                                                                                                                                                             |
+| **advertising_id**              | El Advertising ID es un código único asignado por el sistema operativo Android que los anunciantes pueden usar para identificar de forma única el dispositivo de un usuario.                                                                                                                                                            |
+| **ip_address**                  | IP del dispositivo (puede ser IPv4 o IPv6, con preferencia por IPv4 cuando esté disponible). Se actualiza cada vez que cambia la IP del dispositivo.                                                                                                                                                                                    |
+| **cancellation_reason**         | <p>Motivo por el que el usuario canceló una suscripción.</p><p></p><p>Puede ser:</p><p>**iOS & Android**  _voluntarily_cancelled_, _billing_error_, _refund_</p><p>**iOS**  _price_increase_, _product_was_not_available_, _unknown_, _upgraded_</p><p>**Android** _new_subscription_replace_, _cancelled_by_developer_</p>           |
+| **android_app_set_id**          | Un [AppSetId](https://developer.android.com/design-for-safety/privacy-sandbox/reference/adservices/appsetid/AppSetId): ID único por dispositivo y por cuenta de desarrollador, restablecible por el usuario, para casos de uso publicitario sin monetización.                                                                           |
+| **android_id**                  | En Android 8.0 (nivel de API 26) y versiones superiores, un número de 64 bits (expresado como cadena hexadecimal), único para cada combinación de clave de firma de la app, usuario y dispositivo. Para más detalles, consulta la [documentación para desarrolladores de Android](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID). |
+| **device**                      | Nombre del modelo de dispositivo visible para el usuario final.                                                                                                                                                                                                                                                                        |
+| **currency**                    | Código de moneda de 3 letras (ISO-4217) de la transacción.                                                                                                                                                                                                                                                                             |
+| **store_country**               | País del perfil determinado por la store de Apple/Google.                                                                                                                                                                                                                                                                              |
+| **attribution_source**          | Fuente de atribución.                                                                                                                                                                                                                                                                                                                  |
+| **attribution_network_user_id** | ID asignado al usuario por la fuente de atribución.                                                                                                                                                                                                                                                                                    |
+| **attribution_status**          | Puede ser organic, non_organic o unknown.                                                                                                                                                                                                                                                                                              |
+| **attribution_channel**         | Nombre del canal de marketing.                                                                                                                                                                                                                                                                                                         |
+| **attribution_campaign**        | Nombre de la campaña de marketing.                                                                                                                                                                                                                                                                                                     |
+| **attribution_ad_group**        | Grupo de anuncios de atribución.                                                                                                                                                                                                                                                                                                       |
+| **attribution_ad_set**          | Conjunto de anuncios de atribución.                                                                                                                                                                                                                                                                                                    |
+| **attribution_creative**        | Palabra clave creativa de atribución.                                                                                                                                                                                                                                                                                                  |
+| **attributes**                  | JSON de [atributos de usuario personalizados](setting-user-attributes#custom-user-attributes). Incluye los atributos personalizados que hayas configurado para enviar desde tu app móvil. Para enviarlo, activa la opción **Send User Attributes** en la página [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook). |
+| **integration_ids**             | Todos los IDs de integración asociados a un perfil. Diccionario. Ejemplo: &#123;&#39;mixpanel_user_id&#39;: &#39;mixpanelUserId-test&#39;, &#39;facebook_anonymous_id&#39;: &#39;facebookAnonymousId-test&#39;&#125;                                                                                                                    |
+Here is the table structure for the paywall visits:
+| Columna               | Descripción                                                                                                         |
+| :-------------------- | :------------------------------------------------------------------------------------------------------------------ |
+| **profile_id**        | ID de usuario de Adapty.                                                                                            |
+| **customer_user_id**  | ID de usuario del desarrollador. Por ejemplo, puede ser tu UUID de usuario, email o cualquier otro ID. Null si no lo configuraste. |
+| **profile_country**   | País del perfil determinado por la store de Apple/Google.                                                           |
+| **install_date**      | Fecha ISO 8601 en que se produjo la instalación.                                                                    |
+| **store**             | Puede ser _app_store_ o _play_store_.                                                                               |
+| **paywall_showed_at** | La fecha en que el paywall se mostró al cliente.                                                                    |
+| **developer_id**      | ID de desarrollador (SDK) del paywall donde se originó la transacción.                                              |
+| **ab_test_name**      | Nombre de la prueba A/B donde se originó la transacción.                                                            |
+| **ab_test_revision**  | Revisión de la prueba A/B donde se originó la transacción.                                                          |
+| **paywall_name**      | Nombre del paywall donde se originó la transacción.                                                                 |
+| **paywall_revision**  | Revisión del paywall donde se originó la transacción.                                                               |
+## Eventos y etiquetas \{#events-and-tags\}
+
+Puedes gestionar qué datos comunica la integración. La integración ofrece las siguientes opciones de configuración:
+| Parámetro                          | Descripción                                                  |
+| :--------------------------------- | :----------------------------------------------------------- |
+| **Exclude Historical Events**      | Elige excluir los eventos que ocurrieron antes de que el usuario instalara la app con el SDK de Adapty. Esto evita la duplicación de eventos y garantiza informes precisos. Por ejemplo, si un usuario activó una suscripción mensual el 10 de enero y actualizó la app con el SDK de Adapty el 6 de marzo, Adapty omitirá los eventos anteriores al 6 de marzo y conservará los posteriores. |
+| **Include events without profile** | Elige incluir las transacciones que no están vinculadas a un perfil de usuario en Adapty. Esto puede incluir compras realizadas antes de instalar el SDK de Adapty o transacciones recibidas desde las notificaciones del servidor del store que no pueden asociarse inmediatamente a un usuario concreto. |
+| **Send User Attributes**           | Si deseas enviar atributos específicos del usuario, como preferencias de idioma, y tu plan de OneSignal admite más de 10 etiquetas, selecciona esta opción. Al activarla, se permite incluir información adicional más allá de las 10 etiquetas predeterminadas. Ten en cuenta que superar los límites de etiquetas puede provocar errores. |
+<Zoom>
+  <img src="/assets/shared/img/s3-settings.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Debajo de los ajustes de integración, hay tres grupos de eventos que puedes exportar, enviar y almacenar en Amazon S3 desde Adapty. Activa los que necesites. Consulta la lista completa de eventos que ofrece Adapty [aquí](events).
+<Zoom>
+  <img src="/assets/shared/img/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>

@@ -1,0 +1,91 @@
+---
+title: "React Native SDK'da yerelleştirmeleri ve yerel ayar kodlarını kullanma"
+description: "React Native uygulamanızda Adapty SDK ile paywallları nasıl yerelleştireceğinizi öğrenin."
+metadataTitle: "Paywall'ları Yerelleştirme | React Native SDK | Adapty Dokümanları"
+customSlug: /react-native-localizations-and-locale-codes
+---
+
+## Bu neden önemli \{#why-this-is-important\}
+
+Yerel ayar kodlarının devreye girdiği birkaç senaryo vardır; örneğin, uygulamanızın mevcut yerelleştirmesi için doğru paywall'ı almaya çalışırken.
+
+Yerel ayar kodları karmaşık olabilir ve platformdan platforma farklılık gösterebilir; bu nedenle desteklediğimiz tüm platformlar için dahili bir standart kullanıyoruz. Ancak bu kodlar karmaşık olduğundan, sunucumuza doğru yerelleştirmeyi almak için tam olarak ne gönderdiğinizi ve bundan sonra ne olduğunu anlamanız son derece önemlidir; böylece her zaman beklediğiniz sonucu alırsınız.
+
+## Adapty'de yerel ayar kodu standardı \{#locale-code-standard-at-adapty\}
+
+Adapty, yerel ayar kodları için [BCP 47 standardını](https://en.wikipedia.org/wiki/IETF_language_tag) hafifçe değiştirerek kullanır: her kod, kısa çizgilerle ayrılmış küçük harfli alt etiketlerden oluşur. Birkaç örnek: `en` (İngilizce), `pt-br` (Portekizce (Brezilya)), `zh` (Basitleştirilmiş Çince), `zh-hant` (Geleneksel Çince).
+
+## Yerel ayar kodu eşleştirme \{#locale-code-matching\}
+
+Adapty, istemci tarafı SDK'dan yerel ayar koduyla bir çağrı aldığında ve bir paywall için karşılık gelen yerelleştirmeyi aramaya başladığında şunlar gerçekleşir:
+
+1. Gelen yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgilerle (`-`) değiştirilir
+2. Ardından tam eşleşen yerel ayar koduna sahip yerelleştirme aranır
+3. Eşleşme bulunamazsa, ilk kısa çizgiden önceki alt dize alınır (`pt-br` için `pt`) ve eşleşen yerelleştirme aranır
+4. Yine eşleşme bulunamazsa varsayılan `en` yerelleştirmesi döndürülür
+
+Bu sayede `'pt_BR'` gönderen bir iOS cihazı, `pt-BR` gönderen bir Android cihazı ve `pt-br` gönderen başka bir cihaz aynı sonucu alır.
+
+## Yerelleştirmeleri uygulama: önerilen yöntem \{#implementing-localizations-recommended-way\}
+
+Yerelleştirmeler hakkında düşünüyorsanız, büyük ihtimalle projenizde zaten yerelleştirilmiş dize dosyalarıyla çalışıyorsunuzdur. Bu durumda, her dosyaya ilgili yerelleştirme için kullanılacak Adapty yerel ayar kodunu içeren bir anahtar-değer çifti eklemenizi öneririz. Ardından SDK'mızı çağırırken bu anahtarın değerini şu şekilde alın:
+
+```javascript showLineNumbers
+// 1. Modify your localization files (e.g., using react-i18next)
+
+/*
+en.json
+*/
+{
+  "adapty_paywalls_locale": "en"
+}
+
+/*
+es.json
+*/
+{
+  "adapty_paywalls_locale": "es"
+}
+
+/*
+pt-BR.json
+*/
+{
+  "adapty_paywalls_locale": "pt-br"
+}
+
+// 2. Extract and use the locale code
+
+const MyComponent = () => {
+  const { t } = useTranslation();
+  
+  const fetchPaywall = async () => {
+    const locale = t('adapty_paywalls_locale');
+    // pass locale code to adapty.getPaywall or adapty.getPaywallForDefaultAudience method
+    const paywall = await adapty.getPaywallForDefaultAudience('placement_id', locale);
+  };
+};
+```
+
+Bu sayede uygulamanızın her kullanıcısı için hangi yerelleştirmenin alınacağını tam olarak kontrol edebilirsiniz.
+
+## Yerelleştirmeleri uygulama: diğer yöntem \{#implementing-localizations-the-other-way\}
+
+Her yerelleştirme için yerel ayar kodlarını açıkça tanımlamadan benzer (ancak özdeş olmayan) sonuçlar elde edebilirsiniz. Bu yaklaşım, yerel ayar kodunu cihazdan almak anlamına gelir; örneğin [`react-native-localize`](https://github.com/zoontek/react-native-localize) aracılığıyla:
+
+```javascript showLineNumbers
+
+const fetchPaywall = async () => {
+  // getLocales() returns the user's preferred locales in BCP-47 format (e.g., 'en-US', 'pt-BR')
+  const locale = RNLocalize.getLocales()[0].languageTag;
+  // pass locale code to adapty.getPaywall or adapty.getPaywallForDefaultAudience method
+  const paywall = await adapty.getPaywallForDefaultAudience('placement_id', locale);
+};
+```
+
+Bu yaklaşımı birkaç nedenle önermediğimizi belirtelim:
+
+1. iOS'ta tercih edilen diller ile mevcut bölgesel yerel ayar aynı şey değildir. Yerelleştirmenin doğru şekilde seçilmesini istiyorsanız, ya Apple'ın çözüm mantığına güvenmeniz gerekir — bu, yerelleştirilmiş dize dosyalarıyla önerilen yaklaşımı kullandığınızda otomatik olarak çalışır — ya da bu mantığı kendiniz yeniden oluşturmanız gerekir.
+2. Cihaz yerel ayarı, Adapty'de yapılandırdığınız hiçbir yerelleştirmeyle eşleşmeyebilir. Bu durumda SDK, ilk alt etiket eşleşmesine veya nihayetinde `en` diline döner; bu, söz konusu kullanıcı için varsayılan olarak istediğiniz dil olmayabilir.
+
+Yine de bu yaklaşımı kullanmaya karar verirseniz, ilgili tüm kullanım senaryolarını kapsadığınızdan emin olun.

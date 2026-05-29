@@ -1,0 +1,25 @@
+---
+title: "在 Kotlin Multiplatform SDK 中优化付费墙获取"
+description: "可靠地获取 Adapty 付费墙：针对 Kotlin Multiplatform 的时机选择、缓存策略与备用方案。"
+metadataTitle: "优化付费墙获取 | Kotlin Multiplatform SDK | Adapty 文档"
+---
+
+在 Kotlin Multiplatform 上实现可靠的付费墙获取需要做到三点：渲染速度快、返回符合目标受众的付费墙，以及在网络较慢时优雅地降级到备用方案。以下规则涵盖了实现这一目标所需的时机选择、缓存策略和备用模式。
+:::tip
+以下规则要求 `Adapty.activate()` 和 `Adapty.identify()` 已完成执行。详情请参阅 [Kotlin Multiplatform SDK 中的调用顺序](kmp-sdk-call-order)。
+:::
+## 规则与注意事项 \{#rules-and-pitfalls\}
+| 建议做法 | 避免做法 | 原因 |
+|---|---|---|
+| 按需拉取即将展示的版位。 | 启动时并发预取所有版位。 | 批量预取会阻塞主线程，并在请求高峰期间产生黑屏。 |
+| 在归因数据有机会解析之后再调用 `getPaywall`，例如在 `activate` 之后等待 1–2 秒，或在 `setOnProfileUpdatedListener` 触发之后。 | 在应用启动时调用 `getPaywall`。 | 此时归因数据尚未到达。付费墙会按默认目标受众解析，并静默跳过市场细分和 ASA 个性化。 |
+| 为每个版位设置 `loadTimeout` 并配置[备用付费墙](fallback-paywalls)。 | 无限期等待 `getPaywall` 返回。 | 没有超时设置时，网络状况不佳的用户会一直看到空白屏幕，直到网络恢复——或者直接关闭应用。 |
+请参阅[获取付费墙和产品](fetch-paywalls-and-products-kmp)了解 `fetchPolicy` 和 `loadTimeout` 参数说明，以及[版位](placements)了解如何选择合适的版位。
+## 针对弱网环境的调优 \{#tune-for-poor-connectivity\}
+
+对于网络连接持续较差的市场（农村地区、交通途中、受路由影响的地区）：
+
+- 除首次请求外，每次获取付费墙时均设置 `fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad`。
+- 在 Adapty 看板中为每个版位配置[备用付费墙](fallback-paywalls)。
+- 将 `loadTimeout` 设置为 3–5 秒，并在超时触发时接受备用付费墙。
+- 不要将付费墙的显示与 `Adapty.getProfile()` 绑定。独立调用 `getPaywall`，避免因用户画像加载缓慢而阻塞 UI。

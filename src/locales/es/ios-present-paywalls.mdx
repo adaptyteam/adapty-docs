@@ -1,0 +1,139 @@
+---
+title: "Presentar paywalls del nuevo Paywall Builder en el SDK de iOS"
+description: "Descubre cómo presentar paywalls en iOS para aumentar las conversiones y los ingresos."
+metadataTitle: "Presentar paywalls en iOS | Documentación de Adapty"
+keywords: ['paywallController']
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md'; 
+
+Si has personalizado un paywall con el Paywall Builder, no necesitas preocuparte por renderizarlo en el código de tu app para mostrárselo al usuario. Ese paywall ya contiene tanto lo que debe mostrarse como la forma en que debe hacerlo.
+
+:::warning
+
+Esta guía es para **[paywalls del nuevo Paywall Builder](adapty-paywall-builder)**. El proceso para presentar paywalls varía según la versión del Paywall Builder con la que se diseñaron, si son paywalls de Remote Config o si usas el [modo Observer](observer-vs-full-mode).
+
+- Para presentar **paywalls de Remote Config**, consulta [Renderizar paywall diseñado con Remote Config](present-remote-config-paywalls).
+- Para presentar **paywalls en modo Observer**, consulta [iOS - Presentar paywalls del Paywall Builder en modo Observer](ios-present-paywall-builder-paywalls-in-observer-mode)
+
+:::
+
+Para obtener el objeto `AdaptyUI.PaywallConfiguration` que se usa a continuación, consulta [Obtener paywalls del Paywall Builder y su configuración](get-pb-paywalls).
+
+## Presentar paywalls en SwiftUI \{#present-paywalls-in-swiftui\}
+
+### Presentar como vista modal \{#present-as-a-modal-view\}
+
+Para mostrar el paywall visual en la pantalla del dispositivo como vista modal, usa el modificador `.paywall` en SwiftUI:
+
+```swift showLineNumbers title="SwiftUI"
+@State var paywallPresented = false // ensure that you manage this variable state and set it to `true` at the moment you want to show the paywall
+
+var body: some View {
+  Text("Hello, AdaptyUI!")
+      .paywall(
+          isPresented: $paywallPresented,
+          paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+          didFinishPurchase: { product, profile in paywallPresented = false },
+          didFailPurchase: { product, error in /* handle the error */ },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false }
+      )
+}
+```
+
+Parámetros:
+
+| Parámetro                         | Requerido | Descripción                                                                                                                                                                                                                                                                                                                    |
+|:----------------------------------|:---------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented**                   | requerido | Un binding que controla si la pantalla del paywall está visible.                                                                                                                                                                                                                                                               |
+| **paywallConfiguration**          | requerido | Un objeto `AdaptyUI.PaywallConfiguration` con los detalles visuales del paywall. Usa el método `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)`. Consulta [Obtener paywalls del Paywall Builder y su configuración](get-pb-paywalls) para más detalles. |
+| **didFailPurchase**               | requerido | Se invoca cuando `Adapty.makePurchase()` falla.                                                                                                                                                                                                                                                                                |
+| **didFinishRestore**              | requerido | Se invoca cuando `Adapty.restorePurchases()` finaliza correctamente.                                                                                                                                                                                                                                                           |
+| **didFailRestore**                | requerido | Se invoca cuando `Adapty.restorePurchases()` falla.                                                                                                                                                                                                                                                                            |
+| **didFailRendering**              | requerido | Se invoca si ocurre un error al renderizar la interfaz. En ese caso, [contacta con el soporte de Adapty](mailto:support@adapty.io).                                                                                                                                                                                            |
+| **fullScreen**                    | opcional | Determina si el paywall se muestra en pantalla completa o como modal. Por defecto es `true`.                                                                                                                                                                                                                                   |
+| **didAppear**                     | opcional | Se invoca cuando la vista del paywall se presenta.                                                                                                                                                                                                                                                                             |
+| **didDisappear**                  | opcional | Se invoca cuando la vista del paywall se descarta.                                                                                                                                                                                                                                                                             |
+| **didPerformAction**              | opcional | Se invoca cuando el usuario pulsa un botón. Cada botón tiene un ID de acción distinto. Hay dos IDs predefinidos: `close` y `openURL`; los demás son personalizados y se pueden configurar en el builder.                                                                                                                       |
+| **didSelectProduct**              | opcional | Se invoca cuando se selecciona un producto para la compra (por el usuario o por el sistema).                                                                                                                                                                                                                                   |
+| **didStartPurchase**              | opcional | Se invoca cuando el usuario inicia el proceso de compra.                                                                                                                                                                                                                                                                       |
+| **didFinishPurchase**             | opcional | Se invoca cuando `Adapty.makePurchase()` finaliza correctamente.                                                                                                                                                                                                                                                               |
+| **didFinishWebPaymentNavigation** | opcional | Se invoca cuando finaliza la navegación del pago web.                                                                                                                                                                                                                                                                          |
+| **didStartRestore**               | opcional | Se invoca cuando el usuario inicia el proceso de restauración.                                                                                                                                                                                                                                                                 |
+| **didFailLoadingProducts**        | opcional | Se invoca cuando ocurren errores al cargar los productos. Devuelve `true` para reintentar la carga.                                                                                                                                                                                                                            |
+| **didPartiallyLoadProducts**      | opcional | Se invoca cuando los productos se cargan de forma parcial.                                                                                                                                                                                                                                                                     |
+| **showAlertItem**                 | opcional | Un binding que gestiona la visualización de alertas sobre el paywall.                                                                                                                                                                                                                                                          |
+| **showAlertBuilder**              | opcional | Una función para renderizar la vista de alerta.                                                                                                                                                                                                                                                                                |
+| **placeholderBuilder**            | opcional | Una función para renderizar la vista de marcador de posición mientras se carga el paywall.                                                                                                                                                                                                                                     |
+
+Consulta el tema [iOS - Gestión de eventos](ios-handling-events) para más detalles sobre los parámetros.
+
+### Presentar como vista no modal \{#present-as-a-non-modal-view\}
+
+También puedes presentar paywalls como destinos de navegación o vistas en línea dentro del flujo de navegación de tu app. Usa `AdaptyPaywallView` directamente en tus vistas SwiftUI:
+
+```swift showLineNumbers title="SwiftUI"
+AdaptyPaywallView(
+    paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+    didFailPurchase: { product, error in
+        // Handle purchase failure
+    },
+    didFinishRestore: { profile in
+        // Handle successful restore
+    },
+    didFailRestore: { error in
+        // Handle restore failure
+    },
+    didFailRendering: { error in
+        // Handle rendering error
+    }
+)
+```
+
+## Presentar paywalls en UIKit \{#present-paywalls-in-uikit\}
+
+Para mostrar el paywall visual en la pantalla del dispositivo, sigue estos pasos:
+
+1. Inicializa el paywall visual que quieres mostrar usando el método `.paywallController(for:products:viewConfiguration:delegate:)`:
+
+     ```swift showLineNumbers title="Swift"
+     import Adapty
+     import AdaptyUI
+        
+     let visualPaywall = AdaptyUI.paywallController(
+         with: <paywall configuration object>,
+         delegate: <AdaptyPaywallControllerDelegate>
+     )
+     ```
+
+    Parámetros de la solicitud:
+
+   | Parámetro                | Presencia | Descripción |
+   | :----------------------- | :------- | :---------- |
+   | **paywall configuration**         | requerido | Un objeto `AdaptyUI.PaywallConfiguration` con los detalles visuales del paywall. Usa el método `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)`. Consulta [Obtener paywalls del Paywall Builder y su configuración](get-pb-paywalls) para más detalles. |
+   | **delegate**            | requerido | Un `AdaptyPaywallControllerDelegate` para escuchar los eventos del paywall. Consulta el tema [Gestión de eventos del paywall](ios-handling-events) para más detalles.
+
+    Devuelve:
+
+    | Objeto                  | Descripción                                          |
+    | :---------------------- | :--------------------------------------------------- |
+    | **AdaptyPaywallController** | Un objeto que representa la pantalla del paywall solicitado |
+
+2. Una vez creado el objeto correctamente, puedes mostrarlo en la pantalla del dispositivo: 
+
+   ```swift showLineNumbers title="Swift"
+   present(visualPaywall, animated: true)
+   ```
+
+<SampleApp />

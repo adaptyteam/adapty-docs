@@ -1,0 +1,22 @@
+---
+no_index: true
+---
+
+Cuando el SDK se activa, lee automáticamente los derechos existentes del usuario desde StoreKit (iOS) o Google Play Billing (Android) y los sincroniza con el backend de Adapty. Una suscripción activa aparece en el perfil de Adapty sin que la app llame a `restorePurchases`.
+
+Lo que **no** ocurre automáticamente es reconocer que un perfil en un dispositivo nuevo pertenece al mismo usuario que el perfil en el dispositivo original. Adapty relaciona perfiles por Customer User ID, así que la continuidad de identidad depende de lo que uses como CUID.
+
+**Lo que Adapty puede detectar entre dispositivos**
+
+| Tu configuración | Lo que Adapty detecta | Lo que debes hacer |
+| --- | --- | --- |
+| Customer User ID = `device_id` (sin login en la app) | El nuevo dispositivo obtiene un CUID diferente y, por tanto, un perfil diferente. La suscripción se sincroniza con el nuevo perfil mediante un evento **Access level updated**, pero `subscription_started` no se dispara — el nuevo perfil se trata como heredero de la compra original. Los análisis basados en `subscription_started` contarán de menos a los usuarios que vuelven. | Usa un ID de cuenta estable como Customer User ID para que un usuario que regresa coincida con el perfil existente en todos los dispositivos. |
+| Customer User ID = ID de cuenta estable (login en cada dispositivo) | El SDK sincroniza automáticamente la suscripción en `activate()`, e `identify()` relaciona el perfil existente por CUID. | No se necesita configuración adicional — tanto la identidad como la suscripción se resuelven automáticamente. |
+| Heredero de Apple Family Sharing | El miembro de la familia recibe la suscripción solo a través de un evento **Access level updated** — `subscription_started` no se dispara. | Escucha el evento **Access level updated**. Consulta [Apple Family Sharing](apple-family-sharing) para ver la matriz de eventos completa. |
+| Misma cuenta de Apple/Google, distintos usuarios dentro de la app | El primer perfil que registra la compra se convierte en el principal. Los perfiles posteriores ven la suscripción a través de una cadena de herederos, con un evento **Access level updated**. | Exige login y elige un [modo de compartición](sharing-paid-access-between-user-accounts) que se adapte a tu modelo. |
+
+**Restaurar compras en un dispositivo nuevo**
+
+Muestra un botón "Restaurar compras" iniciado por el usuario en tu paywall. Apple App Review (directriz 3.1.1) lo exige, y actúa como alternativa cuando la sincronización automática no cubre algún caso límite. El botón debe llamar a `restorePurchases` en tu SDK.
+
+No es necesario llamar a `restorePurchases` de forma programática al primer inicio para el uso normal — el SDK ya ejecuta el equivalente en `activate()`. Reserva las llamadas programáticas para forzar una verificación de recibo actualizada, por ejemplo al depurar un acceso que falta después de que `activate()` haya completado.

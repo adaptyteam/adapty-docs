@@ -4,11 +4,20 @@ on:
   push:
     branches: [main]
     paths:
-      - 'src/content/docs/**'
-      - 'src/components/reusable/**'
-      - 'src/data/sidebars/**'
-      - 'src/api-reference/specs/*.yaml'
-      - 'src/locales/dictionary.json'
+      - "src/content/docs/**"
+      - "src/components/reusable/**"
+      - "src/data/sidebars/**"
+      - "src/api-reference/specs/*.yaml"
+      - "src/locales/dictionary.json"
+  # Manual trigger for replaying a wider diff (e.g. recovering from a failed
+  # CI translate run that used a buggy script version). Always uses the latest
+  # script from the dispatched ref; computes the diff against `base_sha`.
+  workflow_dispatch:
+    inputs:
+      base_sha:
+        description: "Base SHA to diff against (e.g. last good commit before the merge that needs re-translating). Leave blank to use HEAD^1."
+        required: false
+        default: ""
 
 # Queue concurrent runs (do not cancel) so an in-flight Anthropic batch isn't
 # killed mid-call and two pushes don't race on the translation commit.
@@ -17,54 +26,175 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  translate:
+  # Compute the diff once and discover locales dynamically so the translate
+  # matrix doesn't need a hardcoded list. Adding a new locale only requires
+  # creating its `src/locales/<code>/` directory (handled by the localize
+  # skill) — no workflow edits.
+  setup:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-    permissions:
-      contents: write
-
+    outputs:
+      changed: ${{ steps.diff.outputs.files }}
+      deleted: ${{ steps.diff.outputs.deleted }}
+      locales: ${{ steps.locales.outputs.list }}
     steps:
       - uses: actions/checkout@v4
         with:
-          # Need parent commit to compute the diff
-          fetch-depth: 2
+          # Push: parent commit suffices. Dispatch: may target an older commit,
+          # so fetch full history. Inverted from the obvious form because
+          # `0 || 2` evaluates to `2` in GH expressions (0 is falsy).
+          fetch-depth: ${{ github.event_name == 'push' && 2 || 0 }}
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-        env:
-          PUPPETEER_SKIP_DOWNLOAD: '1'
-
-      # Split the diff into added/modified files (to translate) and deleted files (to clean up).
       - name: Get changed translatable files
         id: diff
         run: |
-          CHANGED=$(git diff --name-only --diff-filter=AMR HEAD^1 HEAD \
+          # Resolve the base ref for diffing.
+          # - Push: HEAD^1 (the parent commit).
+          # - Manual dispatch: the user-supplied base SHA, or HEAD^1 if blank.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.base_sha }}" ]; then
+            BASE="${{ github.event.inputs.base_sha }}"
+          else
+            BASE="HEAD^1"
+          fi
+          echo "Diffing $BASE..HEAD"
+          CHANGED=$(git diff --name-only --diff-filter=AMR "$BASE" HEAD \
             | grep -E '^(src/content/docs/.+\.mdx|src/components/reusable/.+\.mdx?|src/data/sidebars/.+\.json|src/api-reference/specs/[^./]+\.yaml)$' \
             | tr '\n' ',' | sed 's/,$//')
-          DELETED=$(git diff --name-only --diff-filter=D HEAD^1 HEAD \
+          DELETED=$(git diff --name-only --diff-filter=D "$BASE" HEAD \
             | grep -E '^(src/content/docs/.+\.mdx|src/components/reusable/.+\.mdx?|src/api-reference/specs/[^./]+\.yaml)$' \
             | tr '\n' ',' | sed 's/,$//')
           echo "files=$CHANGED" >> $GITHUB_OUTPUT
           echo "deleted=$DELETED" >> $GITHUB_OUTPUT
 
-      - name: Translate changed files
-        if: steps.diff.outputs.files != ''
+      # Discover locales by listing subdirectories of src/locales/. Matches the
+      # logic in `discoverLocales()` in scripts/translate.mjs so the workflow
+      # processes the same set the script would default to.
+      - name: Discover locales
+        id: locales
+        run: |
+          LOCALES=$(ls -d src/locales/*/ 2>/dev/null | xargs -n1 basename | jq -R . | jq -sc .)
+          echo "list=$LOCALES" >> $GITHUB_OUTPUT
+          echo "Detected locales: $LOCALES"
+
+  # One job per locale, all running in parallel. fail-fast: false lets the
+  # other locales finish even if one hits a transient Anthropic error, so a
+  # single flaky batch doesn't block the others' commits.
+  translate:
+    needs: setup
+    if: needs.setup.outputs.changed != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        locale: ${{ fromJson(needs.setup.outputs.locales) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: "1"
+
+      - name: Translate changed files for ${{ matrix.locale }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: node scripts/translate.mjs --incremental --batch --only-files "${{ steps.diff.outputs.files }}"
+        run: node scripts/translate.mjs --lang ${{ matrix.locale }} --incremental --batch --only-files "${{ needs.setup.outputs.changed }}"
+
+      # Upload the locale's full state on success — the apply job consumes
+      # these to assemble the final commit. include-hidden-files preserves
+      # the `.hashes/` subdirectory the script uses for change detection.
+      - name: Upload translated locale
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: locale-${{ matrix.locale }}
+          path: src/locales/${{ matrix.locale }}/
+          include-hidden-files: true
+          retention-days: 1
+
+      # On failure, preserve the locale's state under a distinct artifact name
+      # so the operator can recover translations without paying for another
+      # Claude batch. Distinct from the success artifact so the apply job
+      # won't pick this up.
+      - name: Upload locale state on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-${{ matrix.locale }}-${{ github.run_id }}
+          path: src/locales/${{ matrix.locale }}/
+          include-hidden-files: true
+          retention-days: 30
+
+  # Aggregate successful per-locale artifacts, clean up deleted sources,
+  # lint, and commit once. Runs even if some matrix entries failed (so a
+  # flaky locale doesn't block the others from shipping), and also runs in
+  # the delete-only case (no `changed` files but `deleted` is non-empty).
+  apply:
+    needs: [setup, translate]
+    if: |
+      always()
+      && needs.setup.result == 'success'
+      && needs.translate.result != 'cancelled'
+      && (needs.setup.outputs.changed != '' || needs.setup.outputs.deleted != '')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: "1"
+
+      # Pull every successful per-locale artifact. Each artifact extracts to
+      # its own subdirectory matching the artifact name (e.g. `locale-zh/`).
+      # Missing artifacts (failed matrix entries) are silently skipped.
+      - name: Download translated locales
+        if: needs.setup.outputs.changed != ''
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/translated/
+          pattern: locale-*
+
+      # Replace each locale's checked-out state with the artifact's contents.
+      # rsync --delete ensures the locale dir exactly matches what the
+      # translate script wrote (any files removed during translation, e.g.
+      # rare hash-cache rewrites, are dropped too). `cp -a` on the trailing
+      # `/.` is used over rsync to avoid an extra apt step on the runner.
+      - name: Apply translated locales
+        if: needs.setup.outputs.changed != ''
+        run: |
+          shopt -s nullglob
+          for dir in /tmp/translated/locale-*/; do
+            locale=$(basename "$dir" | sed 's/^locale-//')
+            mkdir -p "src/locales/$locale"
+            # Remove existing locale contents (including hidden .hashes/), then
+            # copy the artifact's full state in. The `/.` source syntax copies
+            # directory contents (including dotfiles) instead of the directory
+            # itself.
+            rm -rf "src/locales/$locale"/* "src/locales/$locale"/.[!.]*
+            cp -a "$dir"/. "src/locales/$locale/"
+          done
 
       # Remove translated files and hash caches for deleted source content.
-      # Sidebars are intentionally excluded: deleting a sidebar JSON is rare and
-      # rebuildSidebarLabels will naturally omit it on the next sidebar update.
+      # Sidebars are intentionally excluded: deleting a sidebar JSON is rare
+      # and rebuildSidebarLabels will naturally omit it on the next sidebar
+      # update.
       - name: Clean up deleted translations
-        if: steps.diff.outputs.deleted != ''
+        if: needs.setup.outputs.deleted != ''
         run: |
-          for SRC_PATH in $(echo "${{ steps.diff.outputs.deleted }}" | tr ',' '\n'); do
+          for SRC_PATH in $(echo "${{ needs.setup.outputs.deleted }}" | tr ',' '\n'); do
             BASENAME=$(basename "$SRC_PATH")
             EXT="${BASENAME##*.}"
             NAME="${BASENAME%.*}"
@@ -83,9 +213,25 @@ jobs:
             done
           done
 
-      # Commit any new or updated locale files back to main.
-      # This push triggers s3-deploy-production.yml, so the deploy that follows
-      # will include the freshly translated content.
+      # Apply lint --fix in best-effort mode so any auto-fixable rule
+      # (blank-line, locale-import-drift, missing-import,
+      # reusable-missing-import — see scripts/lint-mdx.mjs) is repaired and
+      # included in the commit. Unfixable issues no longer block translation:
+      # they fall through to s3-deploy-*.yml, which gates every build on a
+      # strict (no --fix) lint run. That trade keeps `main` translations
+      # flowing on every push and consolidates manual recovery to one place
+      # (the deploy log) instead of an artifact download.
+      - name: Auto-fix translated MDX (best-effort)
+        run: node scripts/lint-mdx.mjs --fix || true
+
+      # Commit any new or updated locale files back to main. This push
+      # triggers s3-deploy-production.yml, so the deploy that follows will
+      # include the freshly translated content.
+      #
+      # Push is retried with rebase to recover from the common race where
+      # another commit lands on main while translation is in flight (the
+      # workflow can run 5–10 min). Without this, the push is rejected and
+      # the run has to be re-applied manually.
       - name: Commit updated translations
         run: |
           git config user.name "github-actions[bot]"
@@ -93,7 +239,40 @@ jobs:
           git add src/locales/
           if git diff --staged --quiet; then
             echo "No translation changes to commit."
-          else
-            git commit -m "chore: update translations"
-            git push
+            exit 0
           fi
+          git commit -m "chore: update translations"
+          # Surface any spurious working-tree dirt so the next failure is easier
+          # to diagnose. `--autostash` below stashes/pops these around the
+          # rebase — they're not intended for the commit (we only staged
+          # src/locales/), but without --autostash the rebase aborts.
+          echo "::group::Working-tree status after commit"
+          git status --porcelain
+          echo "::endgroup::"
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase --autostash origin main
+            if git push; then
+              echo "Pushed translations on attempt $attempt."
+              exit 0
+            fi
+            echo "Push attempt $attempt rejected; will rebase and retry."
+            sleep $((RANDOM % 10 + 5))
+          done
+          echo "Failed to push translations after 5 attempts."
+          exit 1
+
+      # Preserve the aggregated locale state when the commit/push step fails
+      # (typically: rebase conflict on main, push rejection, working-tree
+      # drift). Lint no longer trips this — auto-fix is best-effort and the
+      # deploy workflow's strict lint is the gate for unfixable issues — so
+      # this artifact now exists only as a recovery hatch for git-level
+      # failures. The per-locale `failed-*` artifacts from the matrix also
+      # remain (uploaded on translate failure).
+      - name: Upload aggregated state on failure
+        if: failure() && needs.setup.outputs.changed != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: apply-failed-${{ github.run_id }}
+          path: src/locales/
+          include-hidden-files: true
+          retention-days: 30

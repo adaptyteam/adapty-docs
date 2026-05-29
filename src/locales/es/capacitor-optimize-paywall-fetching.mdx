@@ -1,0 +1,30 @@
+---
+title: "Optimizar la obtención de paywalls en el SDK de Capacitor"
+description: "Obtén paywalls de Adapty de forma fiable: temporización, caché y patrones de respaldo para Capacitor."
+metadataTitle: "Optimizar la obtención de paywalls | SDK de Capacitor | Documentación de Adapty"
+---
+
+Una obtención de paywall fiable en Capacitor hace tres cosas: renderiza rápido, devuelve el paywall dirigido a la audiencia y recurre al respaldo sin problemas cuando la red es lenta. Las reglas siguientes cubren los patrones de temporización, caché y respaldo para conseguirlo.
+
+:::tip
+Las reglas asumen que `adapty.activate()` y `adapty.identify()` ya se han resuelto. Consulta [Orden de llamadas en el SDK de Capacitor](capacitor-sdk-call-order).
+:::
+
+## Reglas y errores comunes \{#rules-and-pitfalls\}
+
+| Haz esto | No hagas esto | Por qué |
+|---|---|---|
+| Obtén el placement que estás a punto de mostrar.                                                                                                                | No hagas prefetch de todos los placements de forma concurrente al iniciar.        | El prefetch masivo bloquea el hilo principal y produce una pantalla en negro durante la ráfaga.                                  |
+| Llama a `getPaywall` después de que la atribución haya tenido oportunidad de resolverse — por ejemplo, 1–2 segundos después de `activate` o tras dispararse el listener `onLatestProfileLoad`. | No llames a `getPaywall` al iniciar la app en `App.tsx`.          | La atribución aún no ha llegado. El paywall se resuelve contra la audiencia predeterminada y omite silenciosamente los segmentos y la personalización de ASA. |
+| Establece un `loadTimeoutMs` y configura un [paywall de respaldo](fallback-paywalls) para cada placement.                                                          | No esperes `getPaywall` indefinidamente.                     | Sin tiempo de espera, los usuarios con conectividad deficiente ven una pantalla en blanco hasta que la red se resuelve — o cierran la app.     |
+
+Consulta [Obtener paywalls y productos](fetch-paywalls-and-products-capacitor) para la referencia de parámetros `fetchPolicy` y `loadTimeoutMs`, y [Placements](placements) para elegir el placement adecuado.
+
+## Ajuste para conectividad deficiente \{#tune-for-poor-connectivity\}
+
+Para mercados con conectividad consistentemente deficiente (zonas rurales, transporte, regiones afectadas por enrutamiento):
+
+- Establece `fetchPolicy: 'return_cache_data_else_load'` en cada obtención excepto la primera.
+- Configura un [paywall de respaldo](fallback-paywalls) para cada placement en el Adapty Dashboard.
+- Establece `loadTimeoutMs` entre 3000 y 5000 milisegundos y acepta el paywall de respaldo cuando se agote el tiempo.
+- No condicionales la visualización del paywall a `adapty.getProfile()`. Llama a `getPaywall` de forma independiente para que un perfil lento no bloquee la interfaz.

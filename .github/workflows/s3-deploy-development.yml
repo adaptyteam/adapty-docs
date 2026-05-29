@@ -4,7 +4,18 @@ on:
     branches:
       - develop
 jobs:
+  lint-mdx:
+    name: Lint MDX
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/lint-mdx.mjs
+
   build-en:
+    needs: lint-mdx
     runs-on: ubuntu-latest
     concurrency:
       group: build-en-${{ github.workflow }}-${{ github.ref }}
@@ -30,12 +41,12 @@ jobs:
 
       - name: Build English only
         env:
-          NODE_OPTIONS: --max-old-space-size=6144
+          NODE_OPTIONS: --max-old-space-size=8192
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=none npx astro build
 
       - name: Generate markdown exports
         env:
-          NODE_OPTIONS: --max-old-space-size=6144
+          NODE_OPTIONS: --max-old-space-size=8192
         run: npm run build:md:prod
 
       - uses: actions/upload-artifact@v4
@@ -45,10 +56,11 @@ jobs:
           retention-days: 1
 
   build-locale:
+    needs: lint-mdx
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr, ru]
+        locale: [zh, tr, ru, es]
     concurrency:
       group: build-locale-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -73,8 +85,17 @@ jobs:
 
       - name: Build locale ${{ matrix.locale }}
         env:
-          NODE_OPTIONS: --max-old-space-size=6144
+          NODE_OPTIONS: --max-old-space-size=8192
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} npx astro build
+
+      # Generate locale .md / llms.txt / llms-full.txt exports into
+      # build/${{ matrix.locale }}/ so they land in the artifact alongside
+      # the Astro HTML pages.
+      - name: Generate locale markdown exports
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+          BUILD_LOCALES: ${{ matrix.locale }}
+        run: npm run build:md:prod
 
       - uses: actions/upload-artifact@v4
         with:
@@ -116,6 +137,11 @@ jobs:
         with:
           name: build-ru
           path: build/ru/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-es
+          path: build/es/
 
       - name: Deploy
         uses: reggionick/s3-deploy@v4

@@ -72,7 +72,6 @@ export function remarkStripHighlightComments() {
       if (linesToHighlight.length > 0) {
         const highlightMeta = `{${linesToHighlight.join(',')}}`;
         node.meta = (node.meta || '') + ` ${highlightMeta}`;
-        console.log('[Remark] Added highlight metadata:', highlightMeta, 'to node with lang:', node.lang);
       }
     });
   };

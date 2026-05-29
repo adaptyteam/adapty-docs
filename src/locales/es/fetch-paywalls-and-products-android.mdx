@@ -1,0 +1,206 @@
+---
+title: "Obtener paywalls y productos para paywalls de Remote Config en el SDK de Android"
+description: "Obtén paywalls y productos en el SDK de Android de Adapty para mejorar la monetización de usuarios."
+metadataTitle: "Obtener Paywalls y Productos | SDK de Android | Documentación de Adapty"
+keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'Android']
+displayed_sidebar: sdkandroid
+rank: 95
+---
+
+import SampleApp from '@site/src/locales/es/reusable/SampleApp.md'; 
+
+Antes de mostrar paywalls de Remote Config y personalizadas, necesitas obtener la información sobre ellas. Ten en cuenta que este tema hace referencia a paywalls de Remote Config y personalizadas. Para obtener orientación sobre cómo obtener paywalls configuradas con Paywall Builder, consulta [Obtener paywalls del Paywall Builder y su configuración](android-get-pb-paywalls).
+
+<SampleApp />
+
+<details>
+   <summary>Antes de empezar a obtener paywalls y productos en tu app (haz clic para expandir)</summary>
+
+   1. [Crea tus productos](create-product) en el Adapty Dashboard.
+
+2. [Crea un paywall e incorpora los productos en tu paywall](create-paywall) en el Adapty Dashboard.
+
+3. [Crea placements e incorpora tu paywall en el placement](create-placement) en el Adapty Dashboard.
+
+4. [Instala el SDK de Adapty](sdk-installation-android) en tu app.
+</details>
+
+## Obtener información del paywall \{#fetch-paywall-information\}
+
+En Adapty, un [producto](product) es una combinación de productos tanto de App Store como de Google Play. Estos productos multiplataforma se integran en paywalls, lo que te permite mostrarlos dentro de placements específicos de tu app.
+
+Para mostrar los productos, necesitas obtener un [Paywall](paywalls) de uno de tus [placements](placements) con el método `getPaywall`.
+
+:::important
+**No escribas los IDs de producto en el código.** El único ID que debes escribir directamente en el código es el ID del placement. Los paywalls se configuran de forma remota, por lo que el número de productos y las ofertas disponibles pueden cambiar en cualquier momento. Tu app debe gestionar estos cambios de forma dinámica: si hoy un paywall devuelve dos productos y mañana devuelve tres, debes mostrarlos todos sin modificar el código.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            // the requested paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        // the requested paywall
+      
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+      
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+| Parámetro | Presencia | Descripción |
+|---------|--------|-----------|
+| **placementId** | obligatorio | El identificador del [Placement](placements). Es el valor que especificaste al crear un placement en tu Adapty Dashboard. |
+| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la [localización del paywall](add-remote-config-locale). Se espera que este parámetro sea un código de idioma compuesto de una o más subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta es para el idioma y la segunda para la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p></p><p>Consulta [Localizaciones y códigos de idioma](android-localizations-and-locale-codes) para más información sobre los códigos de idioma y cómo recomendamos utilizarlos.</p> |
+| **fetchPolicy** | por defecto: `.reloadRevalidatingCacheData` | <p>Por defecto, el SDK intentará cargar datos del servidor y devolverá los datos en caché en caso de error. Recomendamos esta opción porque garantiza que tus usuarios siempre obtengan los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión inestable, considera usar `.returnCacheDataElseLoad` para devolver los datos en caché si existen. En este caso, los usuarios puede que no obtengan los datos más recientes, pero experimentarán tiempos de carga más rápidos independientemente de la calidad de su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Ten en cuenta que la caché permanece intacta al reiniciar la app y solo se borra cuando se reinstala la app o mediante limpieza manual.</p><p></p><p>El SDK de Adapty almacena los paywalls en dos capas: la caché actualizada regularmente descrita anteriormente y los [paywalls de respaldo](android-use-fallback-paywalls). También usamos CDN para obtener paywalls más rápido y un servidor de respaldo independiente en caso de que el CDN no sea accesible. Este sistema está diseñado para garantizar que siempre obtengas la versión más reciente de tus paywalls, asegurando la fiabilidad incluso cuando la conexión a internet es escasa.</p> |
+| **loadTimeout** | por defecto: 5 seg | <p>Este valor limita el tiempo de espera de este método. Si se alcanza el tiempo de espera, se devolverán los datos en caché o el respaldo local.</p><p></p><p>Ten en cuenta que en casos excepcionales este método puede agotar el tiempo de espera un poco más tarde de lo especificado en `loadTimeout`, ya que la operación puede consistir en diferentes solicitudes internamente.</p> |
+
+¡No escribas los IDs de producto en el código! Como los paywalls se configuran de forma remota, los productos disponibles, el número de productos y las ofertas especiales (como pruebas gratuitas) pueden cambiar con el tiempo. Asegúrate de que tu código gestione estos escenarios.  
+Por ejemplo, si inicialmente obtienes 2 productos, tu app debería mostrar esos 2 productos. Sin embargo, si más adelante obtienes 3 productos, tu app debería mostrar los 3 sin necesidad de cambios en el código. Lo único que debes escribir directamente en el código es el ID del placement.
+
+Parámetros de respuesta:
+
+| Parámetro | Descripción |
+| :-------- | :----------- |
+| Paywall   | Un objeto [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/) con: una lista de IDs de producto, el identificador del paywall, Remote Config y varias otras propiedades. |
+
+## Obtener productos \{#fetch-products\}
+
+Una vez que tienes el paywall, puedes consultar el array de productos que le corresponde:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getPaywallProducts(paywall) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val products = result.value
+            // the requested products
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.getPaywallProducts(paywall, result -> {
+    if (result instanceof AdaptyResult.Success) {
+        List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) result).getValue();
+        // the requested products
+      
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+      
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+Parámetros de respuesta:
+
+| Parámetro | Descripción |
+| :-------- | :----------- |
+| Products  | Lista de objetos [`AdaptyPaywallProduct`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall-product/) con: identificador del producto, nombre del producto, precio, moneda, duración de la suscripción y varias otras propiedades. |
+
+Al implementar tu propio diseño de paywall, probablemente necesitarás acceder a estas propiedades del objeto [`AdaptyPaywallProduct`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall-product/). A continuación se muestran las propiedades más utilizadas, pero consulta el documento enlazado para obtener detalles completos sobre todas las propiedades disponibles.
+
+| Propiedad | Descripción |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Title** | Para mostrar el título del producto, usa `product.localizedTitle`. Ten en cuenta que la localización se basa en el país de la store seleccionado por el usuario, no en el idioma del dispositivo. |
+| **Price** | Para mostrar una versión localizada del precio, usa `product.price.localizedString`. Esta localización se basa en la información de idioma del dispositivo. También puedes acceder al precio como número usando `product.price.amount`. El valor se proporcionará en la moneda local. Para obtener el símbolo de moneda asociado, usa `product.price.currencySymbol`. |
+| **Subscription Period** | Para mostrar el período (p. ej., semana, mes, año, etc.), usa `product.subscriptionDetails?.localizedSubscriptionPeriod`. Esta localización se basa en el idioma del dispositivo. Para obtener el período de suscripción de forma programática, usa `product.subscriptionDetails?.subscriptionPeriod`. Desde ahí puedes acceder al enum `unit` para obtener la duración (es decir, DAY, WEEK, MONTH, YEAR, o UNKNOWN). El valor `numberOfUnits` te dará el número de unidades del período. Por ejemplo, para una suscripción trimestral, verás `MONTH` en la propiedad unit y `3` en la propiedad numberOfUnits. |
+| **Introductory Offer** | Para mostrar un distintivo u otro indicador de que una suscripción incluye una oferta introductoria, consulta la propiedad `product.subscriptionDetails?.introductoryOfferPhases`. Es una lista que puede contener hasta dos fases de descuento: la fase de prueba gratuita y la fase de precio introductorio. Dentro de cada objeto de fase están las siguientes propiedades útiles:<br/>• `paymentMode`: un enum con los valores `FREE_TRIAL`, `PAY_AS_YOU_GO`, `PAY_UPFRONT` y `UNKNOWN`. Las pruebas gratuitas serán del tipo `FREE_TRIAL`.<br/>• `price`: el precio con descuento como número. Para las pruebas gratuitas, busca `0` aquí.<br/>• `localizedNumberOfPeriods`: una cadena localizada usando el idioma del dispositivo que describe la duración de la oferta. Por ejemplo, una oferta de prueba de tres días muestra `3 days` en este campo.<br/>• `subscriptionPeriod`: alternativamente, puedes obtener los detalles individuales del período de la oferta con esta propiedad. Funciona de la misma manera para las ofertas que la sección anterior describe.<br/>• `localizedSubscriptionPeriod`: un período de suscripción formateado del descuento para el idioma del usuario. |
+
+## Acelera la obtención de paywalls con el paywall de audiencia predeterminada \{#speed-up-paywall-fetching-with-default-audience-paywall\}
+
+Normalmente, los paywalls se obtienen casi al instante, por lo que no necesitas preocuparte por acelerar este proceso. Sin embargo, en casos donde tienes numerosas audiencias y paywalls, y tus usuarios tienen una conexión a internet débil, obtener un paywall puede tardar más de lo deseado. En estas situaciones, puede que quieras mostrar un paywall predeterminado para garantizar una experiencia de usuario fluida en lugar de no mostrar ningún paywall.
+
+Para solucionar esto, puedes usar el método `getPaywallForDefaultAudience`, que obtiene el paywall del placement especificado para la audiencia **All Users**. Sin embargo, es fundamental entender que el enfoque recomendado es obtener el paywall con el método `getPaywall`, como se detalla en la sección [Obtener información del paywall](fetch-paywalls-and-products-android#fetch-paywall-information) anterior.
+
+:::warning
+Por qué recomendamos usar `getPaywall`
+
+El método `getPaywallForDefaultAudience` tiene algunos inconvenientes importantes:
+
+- **Posibles problemas de compatibilidad con versiones anteriores**: Si necesitas mostrar diferentes paywalls para distintas versiones de la app (actual y futuras), puede que encuentres problemas. Tendrás que diseñar paywalls que sean compatibles con la versión actual (legacy) o aceptar que los usuarios con la versión actual (legacy) puedan encontrar problemas con paywalls que no se renderizan.
+- **Pérdida de targeting**: Todos los usuarios verán el mismo paywall diseñado para la audiencia **All Users**, lo que significa que pierdes el targeting personalizado (incluido el basado en países, atribución de marketing o tus propios atributos personalizados).
+
+Si estás dispuesto a aceptar estos inconvenientes para beneficiarte de una obtención de paywalls más rápida, usa el método `getPaywallForDefaultAudience` tal como se indica a continuación. De lo contrario, sigue usando el método `getPaywall` descrito [anteriormente](fetch-paywalls-and-products-android#fetch-paywall-information).
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            // the requested paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        // the requested paywall
+      
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+      
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+:::note
+El método `getPaywallForDefaultAudience` está disponible a partir de la versión 2.11.3 del SDK de Android.
+:::
+
+| Parámetro | Presencia | Descripción |
+|---------|--------|-----------|
+| **placementId** | obligatorio | El identificador del [Placement](placements). Es el valor que especificaste al crear un placement en tu Adapty Dashboard. |
+| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la [localización del paywall](add-remote-config-locale). Se espera que este parámetro sea un código de idioma compuesto de una o más subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta es para el idioma y la segunda para la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p></p><p>Consulta [Localizaciones y códigos de idioma](android-localizations-and-locale-codes) para más información sobre los códigos de idioma y cómo recomendamos utilizarlos.</p> |
+| **fetchPolicy** | por defecto: `.reloadRevalidatingCacheData` | <p>Por defecto, el SDK intentará cargar datos del servidor y devolverá los datos en caché en caso de error. Recomendamos esta opción porque garantiza que tus usuarios siempre obtengan los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión inestable, considera usar `.returnCacheDataElseLoad` para devolver los datos en caché si existen. En este caso, los usuarios puede que no obtengan los datos más recientes, pero experimentarán tiempos de carga más rápidos independientemente de la calidad de su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Ten en cuenta que la caché permanece intacta al reiniciar la app y solo se borra cuando se reinstala la app o mediante limpieza manual.</p> |

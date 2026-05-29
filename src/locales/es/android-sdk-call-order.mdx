@@ -1,0 +1,43 @@
+---
+title: "Orden de llamadas en el SDK de Android"
+description: "Evita perder el acceso premium, que falten datos de atribución y errores intermitentes de ADAPTY_NOT_INITIALIZED llamando a los métodos del SDK de Adapty en el orden correcto."
+metadataTitle: "Orden de llamadas en el SDK de Android | Documentación de Adapty"
+---
+
+`Adapty.activate()` debe completarse antes de llamar a cualquier otro método del SDK de Adapty. Hasta que finalice, el SDK no tiene estado. Cualquier llamada emitida antes o en paralelo con `activate()` falla con [`ADAPTY_NOT_INITIALIZED`](android-sdk-error-handling).
+
+Si tu app autentica usuarios y recoges un ID de usuario personalizado después del lanzamiento, llama a `Adapty.identify()` en ese momento. No llames a métodos de acción de usuario hasta que se ejecute el callback de finalización de `identify`. Las llamadas que compiten con él devuelven un error en su callback, o recaen sobre el perfil anónimo creado en la activación. Cuando esto ocurre, la atribución, los IDs de MMP como `appsflyer_id` y la propiedad de la instalación no siempre se transfieren al perfil identificado. Si tu app no autentica usuarios, omite `identify` y sigue trabajando con el perfil anónimo.
+
+Los SDKs de MMP y analíticas (AppsFlyer, Adjust, Branch, PostHog) siguen la misma regla. Inicialízalos primero y espera sus callbacks de UID antes de llamar a `Adapty.activate`. De lo contrario, el ID del MMP queda en un perfil anónimo temporal y no siempre se transfiere al perfil identificado. Para los detalles específicos de AppsFlyer, consulta [AppsFlyer](appsflyer).
+
+## El orden correcto \{#the-correct-order\}
+
+Tu camino depende de dos cosas: cuándo conoces el ID de usuario personalizado y si usas un SDK de MMP o analíticas.
+
+- **Pasos 2 y 5**: Obligatorios para toda app. Activa el SDK y luego llama a los métodos del SDK.
+- **Pasos 1 y 3**: Necesarios solo si integras un SDK de MMP o analíticas (AppsFlyer, Adjust, Branch, PostHog).
+- **Paso 4**: Necesario solo si tu app autentica usuarios y recoge el ID de usuario personalizado después del lanzamiento.
+
+Si tienes el ID de usuario personalizado al lanzar la app, pásalo en el `AdaptyConfig.Builder` antes de llamar a `activate()` (paso 2a). Esta ruta nunca crea un perfil anónimo, por lo que el paso 4 no es necesario.
+
+| Paso | Llamada                                                                                                       | Cuándo                                                                                  | Notas                                                                                          |
+|------|---------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| 1    | Inicializa tu SDK de MMP o analíticas (AppsFlyer, Adjust, PostHog, Branch)                                    | Al lanzar la app, primero                                                               | Espera el callback de UID del MMP, por ejemplo `getAppsFlyerUID`.                              |
+| 2a   | `Adapty.activate(context, AdaptyConfig.Builder("KEY").withCustomerUserId(...).build())`                       | Al lanzar la app, tras el paso 1, si tienes el ID de usuario personalizado              | Recomendado. Nunca se crea un perfil anónimo.                                                  |
+| 2b   | `Adapty.activate(context, AdaptyConfig.Builder("KEY").build())` sin `customerUserId`                          | Al lanzar la app, tras el paso 1, si no tienes el ID de usuario personalizado (o nunca lo recoges) | Adapty crea un perfil anónimo.                                                        |
+| 3    | `Adapty.setIntegrationIdentifier("appsflyer_id", uid)` para cada MMP                                          | Tras el paso 2, antes de cualquier llamada de acción de usuario                         | Necesario para que los IDs de MMP queden en el perfil correcto.                                |
+| 4    | `Adapty.identify("YOUR_USER_ID") { error -> ... }`                                                            | Tras el paso 3 (o el paso 2 si no hay MMP), antes del paso 5 — solo en la ruta 2b con autenticación | Usa el callback de finalización. Las llamadas concurrentes durante `identify` pueden recaer en el perfil anónimo. |
+| 5    | `getPaywall`, `getPaywallProducts`, `restorePurchases`, `makePurchase`, `updateAttribution`, `updateProfile`  | Tras el paso 4 si llamas a `identify`; si no, tras el paso 3 (o el paso 2 si no hay MMP) | Estas llamadas necesitan un perfil estable.                                                    |
+
+:::important
+Saltarse estos pasos provoca pérdida de acceso premium para usuarios que regresan, que falte `appsflyer_id` en los perfiles, y que se devuelvan paywalls para la audiencia equivocada.
+:::
+
+## Instalaciones web2app y de embudo web \{#web2app-and-web-funnel-installs\}
+
+Si los usuarios compran en un checkout web (Stripe, Paddle) y luego instalan la app nativa, el primer `activate()` del dispositivo crea un nuevo perfil anónimo. Este perfil no está vinculado al perfil web. Si puedes resolver el ID de usuario personalizado antes del lanzamiento de la app (desde tu flujo de autenticación o el referrer de instalación), pásalo directamente en el `AdaptyConfig.Builder`. De lo contrario, la compra web será invisible en el dispositivo hasta que llames a `identify("YOUR_USER_ID")` y luego a `restorePurchases`.
+
+Para los metadatos que enviar con cada checkout web, consulta:
+
+- [Stripe](stripe)
+- [Paddle](paddle)

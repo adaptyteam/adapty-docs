@@ -1,0 +1,133 @@
+---
+title: "Presentar onboardings en Kotlin Multiplatform SDK"
+description: "Aprende a presentar onboardings de forma efectiva para impulsar más conversiones."
+metadataTitle: "Presentar onboardings | Documentación de Adapty"
+---
+
+Si has personalizado un onboarding con el builder, no necesitas preocuparte por renderizarlo en el código de tu app Kotlin Multiplatform para mostrárselo al usuario. Ese onboarding incluye tanto lo que debe mostrarse como la forma en que debe hacerlo.
+
+Antes de empezar, asegúrate de que:
+
+1. Tienes instalado [Adapty Kotlin Multiplatform SDK](sdk-installation-kotlin-multiplatform) 3.16.1 o posterior.
+2. Has [creado un onboarding](create-onboarding).
+3. Has añadido el onboarding a un [placement](placements).
+
+El SDK de Adapty para Kotlin Multiplatform ofrece dos formas de presentar onboardings:
+
+- **Con Compose Multiplatform**
+- **Sin Compose Multiplatform**
+
+## Con Compose Multiplatform \{#with-compose-multiplatform\}
+
+Para mostrar un onboarding, usa el método `view.present()` sobre el `view` creado por el método `createOnboardingView`. Cada `view` solo puede usarse una vez. Si necesitas mostrar el onboarding de nuevo, llama a `createOnboardingView` otra vez para crear una nueva instancia de `view`.
+
+:::warning
+Reutilizar el mismo `view` sin recrearlo puede producir un error.
+:::
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    AdaptyUI.createOnboardingView(onboarding = onboarding).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+### Configurar el estilo de presentación en iOS \{#configure-ios-presentation-style\}
+
+Configura cómo se presenta el onboarding en iOS pasando el parámetro `iosPresentationStyle` al método `present()`. El parámetro acepta los valores `AdaptyUIIOSPresentationStyle.FULLSCREEN` (predeterminado) o `AdaptyUIIOSPresentationStyle.PAGESHEET`.
+
+```kotlin showLineNumbers
+
+viewModelScope.launch {
+    val view = AdaptyUI.createOnboardingView(onboarding = onboarding).getOrNull()
+    view?.present(iosPresentationStyle = AdaptyUIIOSPresentationStyle.PAGESHEET)
+}
+```
+
+### Personalizar cómo se abren los enlaces en los onboardings \{#customize-how-links-open-in-onboardings\}
+
+Por defecto, los enlaces de los onboardings se abren en un navegador in-app. Esto ofrece una experiencia fluida al mostrar las páginas web dentro de tu aplicación, sin que el usuario tenga que cambiar de app.
+
+Si prefieres que los enlaces se abran en un navegador externo, puedes personalizar este comportamiento estableciendo el parámetro `externalUrlsPresentation` en `AdaptyWebPresentation.EXTERNAL_BROWSER`:
+
+```kotlin showLineNumbers
+
+viewModelScope.launch {
+    AdaptyUI.createOnboardingView(
+        onboarding = onboarding,
+        externalUrlsPresentation = AdaptyWebPresentation.EXTERNAL_BROWSER // default – IN_APP_BROWSER
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+## Sin Compose Multiplatform \{#without-compose-multiplatform\}
+
+:::note
+`createNativeOnboardingView` forma parte del módulo principal `io.adapty:adapty-kmp`. Si tu proyecto no usa Compose Multiplatform, no necesitas la dependencia `io.adapty:adapty-kmp-ui`.
+:::
+
+Para integrar un onboarding sin Compose Multiplatform, llama a `createNativeOnboardingView`. Devuelve un `AdaptyNativeOnboardingView` que añades a tu layout:
+
+<Tabs>
+<TabItem value="android" label="Android">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val nativeView = AdaptyUI.createNativeOnboardingView(
+    context = context,
+    viewModelStoreOwner = activity,
+    onboarding = onboarding,
+    observer = myOnboardingObserver,
+)
+
+// Embed in your Compose layout:
+AndroidView(
+    factory = { nativeView.view },
+    modifier = Modifier.fillMaxSize()
+)
+```
+</TabItem>
+<TabItem value="ios" label="iOS">
+Dado que los métodos predeterminados de la interfaz KMP se convierten en `@required` en Swift, no puedes implementar `AdaptyUIOnboardingsEventsObserver` directamente desde Swift. Primero declara una clase base abierta en `iosMain`:
+
+```kotlin showLineNumbers title="iosMain (Kotlin)"
+open class BaseOnboardingObserver : AdaptyUIOnboardingsEventsObserver
+```
+
+Luego crea una subclase en Swift, sobreescribiendo solo lo que necesites:
+
+```swift showLineNumbers title="Swift"
+class MyOnboardingObserver: BaseOnboardingObserver {
+    override func onboardingViewOnCloseAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        actionId: String
+    ) {
+        // remove nativeView from your view hierarchy
+    }
+}
+
+let nativeView = AdaptyUI.shared.createNativeOnboardingView(
+    onboarding: onboarding,
+    observer: MyOnboardingObserver()
+)
+// nativeView.viewController is a UIViewController.
+// Add it to your SwiftUI view or UIKit hierarchy.
+```
+</TabItem>
+</Tabs>
+
+### Liberar la vista \{#dispose-the-view\}
+
+Llama a `dispose()` cuando elimines la vista de tu layout. Esto cancela el registro del listener de eventos y libera los recursos internos.
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+nativeView.dispose()
+```
