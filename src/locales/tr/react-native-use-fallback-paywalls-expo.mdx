@@ -1,0 +1,84 @@
+---
+title: "Expo projesinde yedek paywall kullanımı"
+description: "react-native-adapty config plugin'i aracılığıyla Expo React Native projesinde yedek paywall'ları yapılandırın."
+metadataTitle: "Expo'da Yedek Paywall Kullanımı | Adapty Dokümanları"
+keywords: ['yedek paywall', 'expo', 'react native', 'config plugin', 'prebuild', 'çevrimdışı paywall']
+---
+import FallbackPaywallIntroduction from '@site/src/locales/tr/reusable/FallbackPaywallIntroduction.md';
+
+:::important
+Bu kılavuz **Expo projeleri** için geçerlidir.
+**Saf React Native (Expo olmayan)** kullanıyorsanız, bunun yerine [saf React Native yedek paywall kılavuzunu](react-native-use-fallback-paywalls-pure) izleyin.
+:::
+
+<FallbackPaywallIntroduction />
+Adapty SDK, yedek dosyasını **native** bundle'dan okur; iOS'ta `.app` paketinin içindeki bir kaynak dosyası, Android'de ise `android/app/src/main/assets/` altındaki bir girdi olarak yer alır. Expo projelerinde `npx expo prebuild --clean` komutu her çalıştırıldığında bu dizinleri yeniden oluşturur, bu yüzden dosyaları manuel olarak ekleyemezsiniz. `react-native-adapty` config plugin, dosyayı native bundle'a sizin yerinize bağlar.
+
+:::tip
+Tam çalışan bir örnek kurulum [`FocusJournalExpo` örnek uygulamasında](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo) mevcuttur.
+:::
+## Yapılandırma \{#configuration\}
+
+1. Yedek JSON dosyalarını projenizin herhangi bir yerine koyun — genellikle diğer varlıkların yanına:
+
+   ```
+   <your-project>/
+   └── assets/
+       ├── ios_fallback.json
+       └── android_fallback.json
+   ```
+
+2. `app.json` (veya `app.config.js`) dosyasındaki `react-native-adapty` girişine `fallbackFile` seçeneğini ekleyin. Her platform anahtarı isteğe bağlıdır — yalnızca ihtiyacınız olan platformları bağlayın:
+```json title="app.json"
+   {
+     "expo": {
+       "plugins": [
+         [
+           "react-native-adapty",
+           {
+             "fallbackFile": {
+               "ios": "./assets/ios_fallback.json",
+               "android": "./assets/android_fallback.json"
+             }
+           }
+         ]
+       ]
+     }
+   }
+   ```
+
+   :::note
+   Adapty her platform için farklı bir yedek JSON dışa aktarır — iOS'ta Apple ürün kimlikleri, Android'de Google Play ürün kimlikleri kullanılır. Her platformu kendi dosyasına yönlendirin.
+   :::
+
+3. Native projeleri yeniden oluşturun:
+```sh title="Shell"
+npx expo prebuild
+```
+
+   Eklenti, iOS dosyasını Xcode projesinin bundle resource'larına ekler ve Android dosyasını `android/app/src/main/assets/` dizinine kopyalar. Prebuild çıktısı şu satırları içerir:
+
+   ```
+   [react-native-adapty] Registered ios_fallback.json as iOS bundle resource
+   [react-native-adapty] Copied android_fallback.json to android assets/
+   ```
+
+4. Dosyayı çalışma zamanında SDK ile kaydedin:
+
+   ```typescript showLineNumbers title="App.tsx"
+   import { adapty } from 'react-native-adapty';
+
+   await adapty.activate('PUBLIC_SDK_KEY');
+```
+
+The file names passed to `setFallback` must match the basenames of the files configured under `fallbackFile`.
+
+:::important
+`setFallback`, SDK herhangi bir paywall veya onboarding çekmeden önce çalıştırılmalıdır.
+:::
+## Doğrulama \{#verification\}
+
+`npx expo prebuild` çalıştırdıktan sonra her iki platformu da kontrol edin:
+
+- **Android**: `android/app/src/main/assets/` dizininin içeriğini listeleyin. `fallbackFile.android` altında yapılandırılan dosya burada bulunmalı, yalnızca iOS'a ait dosya adı ise burada görünmemelidir.
+- **iOS**: `ios/<ProjectName>.xcodeproj/project.pbxproj` dosyasında iOS dosya adını aratın. `PBXFileReference`, `Resources` grubu ve `PBXResourcesBuildPhase` içinde görünmelidir. Yalnızca Android'e ait dosya adı ise `project.pbxproj` içinde yer almamalıdır.

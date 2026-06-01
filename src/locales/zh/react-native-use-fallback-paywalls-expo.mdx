@@ -1,0 +1,156 @@
+---
+title: "在 Expo 项目中使用备用付费墙"
+description: "通过 react-native-adapty 配置插件在 Expo React Native 项目中配置备用付费墙。"
+metadataTitle: "在 Expo 中使用备用付费墙 | Adapty 文档"
+keywords: ['备用付费墙', 'expo', 'react native', '配置插件', 'prebuild', '离线付费墙']
+---
+import FallbackPaywallIntroduction from '@site/src/locales/zh/reusable/FallbackPaywallIntroduction.md';
+
+<FallbackPaywallIntroduction />
+
+## 在 Expo 项目中使用备用付费墙 \{#use-fallback-paywalls-in-expo-project\}
+
+在 Expo 中，你无法直接修改原生的 `ios/` 和 `android/` 目录，因为它们是由 `expo prebuild` 生成的。因此，你需要使用 `react-native-adapty` 提供的 config plugin 来添加备用付费墙文件。
+
+### 第一步：下载备用付费墙文件 \{#step-1-download-fallback-paywall-files\}
+
+1. 打开 Adapty 看板，进入 **Paywalls** 页面。
+2. 选择你想使用的付费墙，点击 **Download fallback** 下载备用付费墙文件。
+3. 将下载的文件保存到项目目录中，例如 `assets/fallback_ios.json` 和 `assets/fallback_android.json`。
+
+### 第二步：配置 config plugin \{#step-2-configure-config-plugin\}
+
+在 `app.json` 或 `app.config.js` 中，将备用付费墙文件路径传入 `react-native-adapty` 的 config plugin：
+
+```json title="app.json"
+{
+  "expo": {
+    "plugins": [
+      [
+        "react-native-adapty",
+        {
+          "ios": {
+            "fallbackPaywall": "./assets/fallback_ios.json"
+          },
+          "android": {
+            "fallbackPaywall": "./assets/fallback_android.json"
+          }
+        }
+      ]
+    ]
+  }
+}
+```
+
+### 第三步：在代码中使用备用付费墙 \{#step-3-use-fallback-paywalls-in-code\}
+
+通过 config plugin 配置后，备用付费墙文件会在 `expo prebuild` 时自动复制到对应的原生目录。你只需在代码中调用 `setFallbackPaywalls` 方法，并传入对应的文件引用即可。
+
+对于 iOS，使用 `require` 引用文件：
+
+```typescript
+
+await adapty.setFallbackPaywalls(require('./assets/fallback_ios.json'));
+```
+
+对于 Android，同样使用 `require`：
+
+```typescript
+
+await adapty.setFallbackPaywalls(require('./assets/fallback_android.json'));
+```
+
+:::note
+如果你在同一份代码中同时支持 iOS 和 Android，可以使用 `Platform.select` 来区分：
+
+```typescript
+
+const fallback = Platform.select({
+  ios: require('./assets/fallback_ios.json'),
+  android: require('./assets/fallback_android.json'),
+});
+
+await adapty.setFallbackPaywalls(fallback);
+```
+:::
+:::important
+本指南适用于 **Expo 项目**。
+如果你使用的是**纯 React Native（非 Expo）**，请参阅[纯 React Native 备用付费墙指南](react-native-use-fallback-paywalls-pure)。
+:::
+
+<FallbackPaywallIntroduction />
+Adapty SDK 从**原生**包中读取备用文件——iOS 资源存放在 `.app` 包内，Android 条目位于 `android/app/src/main/assets/` 下。在 Expo 项目中，`npx expo prebuild --clean` 每次运行都会重新生成这些目录，因此无法手动将文件放入其中。`react-native-adapty` 配置插件会自动将文件注入原生包。
+
+:::tip
+可以在 [`FocusJournalExpo` 示例应用](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo)中查看完整的可运行示例。
+:::
+## 配置 \{#configuration\}
+
+1. 将备用付费墙 JSON 文件放置在项目中的任意位置——通常与其他资源文件放在一起：
+
+   ```
+   <your-project>/
+   └── assets/
+       ├── ios_fallback.json
+       └── android_fallback.json
+   ```
+
+2. 在 `app.json`（或 `app.config.js`）的 `react-native-adapty` 条目中添加 `fallbackFile` 选项。每个平台键均为可选项——只需配置你需要的平台即可：
+```json title="app.json"
+   {
+     "expo": {
+       "plugins": [
+         [
+           "react-native-adapty",
+           {
+             "fallbackFile": {
+               "ios": "./assets/ios_fallback.json",
+               "android": "./assets/android_fallback.json"
+             }
+           }
+         ]
+       ]
+     }
+   }
+   ```
+
+   :::note
+   Adapty 为每个平台导出不同的备用付费墙 JSON 文件——iOS 使用 Apple 产品 ID，Android 使用 Google Play 产品 ID。请将每个平台指向各自对应的文件。
+   :::
+
+3. 重新生成原生项目：
+```sh title="Shell"
+   npx expo prebuild
+   ```
+
+   该插件会将 iOS 文件添加到 Xcode 项目的 bundle 资源中，并将 Android 文件复制到 `android/app/src/main/assets/`。预构建输出包含如下内容：
+
+   ```
+   [react-native-adapty] Registered ios_fallback.json as iOS bundle resource
+   [react-native-adapty] Copied android_fallback.json to android assets/
+   ```
+
+4. 在运行时向 SDK 注册该文件：
+
+   ```typescript showLineNumbers title="App.tsx"
+   import { adapty } from 'react-native-adapty';
+
+   await adapty.activate('PUBLIC_SDK_KEY');
+```
+  await adapty.setFallback({
+     ios: { fileName: 'ios_fallback.json' },
+     android: { relativeAssetPath: 'android_fallback.json' },
+   });
+   ```
+
+   传递给 `setFallback` 的文件名必须与 `fallbackFile` 中配置的文件基本名称一致。
+
+:::important
+`setFallback` 必须在 SDK 获取任何付费墙或用户引导之前运行。
+:::
+## 验证 \{#verification\}
+
+运行 `npx expo prebuild` 后，检查两个平台：
+
+- **Android**：列出 `android/app/src/main/assets/` 的内容。`fallbackFile.android` 配置的文件应该存在，且仅适用于 iOS 的文件名不应出现在这里。
+- **iOS**：在 `ios/<ProjectName>.xcodeproj/project.pbxproj` 中搜索 iOS 文件名。它应出现在 `PBXFileReference`、`Resources` 组和 `PBXResourcesBuildPhase` 中。仅适用于 Android 的文件名不应出现在 `project.pbxproj` 中。
