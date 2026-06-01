@@ -36,6 +36,76 @@ const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
     </ul>
     
     <script>
+        // ---- Tab-aware TOC ----
+        // Tag each TOC <li> with the tab (group + value) that contains its heading,
+        // then show/hide based on the active tab. Listens to `tab-sync` events that
+        // Tabs.astro dispatches on user interaction; reads initial state from the DOM.
+        function tagTocItemsByTabs() {
+            const article = document.querySelector('article');
+            if (!article) return;
+            document.querySelectorAll('.toc-nav li').forEach(li => {
+                const link = li.querySelector('.toc-link');
+                if (!link) return;
+                const slug = link.getAttribute('data-slug');
+                if (!slug) return;
+                let heading;
+                try {
+                    heading = article.querySelector(`#${CSS.escape(slug)}`);
+                } catch (_) {
+                    return;
+                }
+                if (!heading) return;
+                const tabItem = heading.closest('.tab-item');
+                if (!tabItem) return;
+                const tabContainer = tabItem.closest('.tabs-container');
+                if (!tabContainer) return;
+                const groupId = tabContainer.getAttribute('data-group-id');
+                const value = tabItem.getAttribute('data-value');
+                if (!groupId || !value) return;
+                li.setAttribute('data-toc-tab-group', groupId);
+                li.setAttribute('data-toc-tab-value', value);
+            });
+        }
+
+        function applyTocTabFilter(groupId, activeValue) {
+            document.querySelectorAll(`.toc-nav li[data-toc-tab-group="${groupId}"]`).forEach(li => {
+                if (li.getAttribute('data-toc-tab-value') === activeValue) {
+                    li.classList.remove('toc-tab-hidden');
+                } else {
+                    li.classList.add('toc-tab-hidden');
+                }
+            });
+        }
+
+        function syncTocWithActiveTabs() {
+            document.querySelectorAll('article .tabs-container[data-group-id]').forEach(container => {
+                const groupId = container.getAttribute('data-group-id');
+                const activeButton = container.querySelector('[role="tablist"] .tab-button-active');
+                if (!groupId || !activeButton) return;
+                const value = activeButton.dataset.value;
+                if (value) applyTocTabFilter(groupId, value);
+            });
+        }
+
+        function initTocTabSync() {
+            tagTocItemsByTabs();
+            // rAF gives Tabs.astro time to set its initial `.tab-button-active` class
+            requestAnimationFrame(syncTocWithActiveTabs);
+        }
+
+        if (!window.__tocTabSyncAttached) {
+            window.__tocTabSyncAttached = true;
+            window.addEventListener('tab-sync', (e) => {
+                if (e.detail && e.detail.groupId && e.detail.value) {
+                    applyTocTabFilter(e.detail.groupId, e.detail.value);
+                }
+            });
+        }
+
+        initTocTabSync();
+        document.addEventListener('astro:page-load', initTocTabSync);
+        // ---- /Tab-aware TOC ----
+
         function initTOC() {
             const headings = Array.from(document.querySelectorAll('article h2, article h3'));
             if (headings.length === 0) return;
@@ -83,27 +153,30 @@ const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
                 const scrollY = window.scrollY;
                 const windowHeight = window.innerHeight;
                 const documentHeight = document.documentElement.scrollHeight;
-                
+
+                const currentHeadings = visibleHeadings();
+                if (currentHeadings.length === 0) return;
+
                 // Check if we're at the bottom of the page
                 // If the user has scrolled to near the bottom, always highlight the last item
                 // This handles cases where the last section is too short to reach the top offset
                 if (scrollY + windowHeight >= documentHeight - 50) {
-                     const lastHeading = headings[headings.length - 1];
+                     const lastHeading = currentHeadings[currentHeadings.length - 1];
                      const id = lastHeading?.getAttribute('id');
                      if (id) {
                          setActiveLink(id);
                          return;
                      }
                 }
-                
+
                 // Find the last heading that is above or at the headerOffset
                 // This mimics standard "scroll spy" behavior: the section you are reading
                 // is the one whose header you most recently passed.
-                let activeHeading = headings[0];
-                
-                for (const heading of headings) {
+                let activeHeading = currentHeadings[0];
+
+                for (const heading of currentHeadings) {
                     const rect = heading.getBoundingClientRect();
-                    
+
                     if (rect.top <= headerOffset) {
                         activeHeading = heading;
                     } else {
@@ -122,7 +195,13 @@ const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
             // Update on scroll with throttling
             let ticking = false;
             let scrollEndTimer;
-            
+
+            // SDK-version blocks hide their content via `display: none` on the
+            // wrapping `[data-sdk-version]` div. Headings inside a hidden block
+            // have offsetParent === null — skip them so scrollspy never lands on
+            // a heading the user can't see.
+            const visibleHeadings = () => headings.filter(h => h.offsetParent !== null);
+
             const handleScroll = () => {
                 // If we are in "click mode", we purely want to detect when scrolling STOPS
                 // We don't want to run the expensive/noisy update logic during the smooth scroll
@@ -248,5 +327,9 @@ const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
   .toc-link.toc-active {
     color: var(--accent-primary);
     border-left-color: var(--accent-primary);
+  }
+
+  .toc-nav li.toc-tab-hidden {
+    display: none;
   }
 </style>

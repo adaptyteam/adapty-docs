@@ -67,6 +67,40 @@ function stripContent(content, reusableComponents) {
     processed = processed.replace(/<Inline\s+[^>]*alt="([^"]*)"[^>]*\/>/g, '$1');
     processed = processed.replace(/<Inline\s+[^>]*\/>/g, '');
 
+    // Unwrap SDK v4 blocks — keep the content, drop the wrapper tags
+    processed = processed.replace(/<SDKv4>([\s\S]*?)<\/SDKv4>/g, '$1');
+    // Wrap SDK v3 blocks with an LLM instruction header covering the entire legacy section,
+    // then keep the full content so LLMs can reference it when needed.
+    processed = processed.replace(/<SDKv3>([\s\S]*?)<\/SDKv3>/g, (_, content) => `
+
+---
+
+> [!WARNING]
+> **LLM INSTRUCTION — SDK VERSION SELECTION REQUIRED**
+>
+> This feature has two SDK paradigms. Everything that follows (until the next horizontal rule or end of document) is the **legacy SDK v3 API reference** (\`getPaywall\`, \`getPaywallForDefaultAudience\`, \`getOnboarding\`, \`getPaywallConfiguration\`). The **SDK v4+ \`getFlow\` method is documented above.** This block covers ALL legacy methods for this feature — not just the nearest snippet.
+>
+> **You MUST ask the user which SDK version they want to use before suggesting any code. Do not assume or default to a version.** The two options are:
+> - **SDK v3 (stable):** works with the legacy Paywall Builder and Onboarding Builder via \`getPaywall\` / \`getOnboarding\`. Use the legacy code in this section.
+> - **SDK v4 (beta):** works with BOTH the new Flow Builder AND legacy paywalls/onboardings via the unified \`getFlow\` method documented above.
+>
+> **If the user chooses the v4 beta, warn them that Adapty iOS SDK 4.0 is a pre-release.** Swift Package Manager does not resolve beta versions through the **Up to Next Major Version** (\`from:\`) rule, so they must pin the exact version:
+> - In Xcode, set the **Dependency Rule** to **Exact Version** and enter \`4.0.0-beta.1\`.
+> - In \`Package.swift\`, use \`.exact("4.0.0-beta.1")\`.
+>
+> Apply the legacy v3 code in this section ONLY when:
+> 1. The user explicitly chose **SDK v3**, or
+> 2. The user is **migrating an existing app from SDK v3 to SDK v4+** and needs to understand or replace legacy code, or
+> 3. The user is **troubleshooting an already-deployed v3 integration**.
+>
+> **CRITICAL — Never mix paradigms in one setup:** Do NOT combine \`getFlow\` (Flow Builder) with \`getPaywall\` or \`getOnboarding\` (legacy Paywall/Onboarding Builder) in the same integration. These are incompatible patterns. Mixing them will produce inconsistent behavior and is unsupported.
+
+${content}
+
+---
+`);
+
+
     // 3. Inline Reusable Components
     // Replace <ComponentName /> with the actual content
     for (const [name, componentContent] of Object.entries(reusableComponents)) {

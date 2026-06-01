@@ -1,17 +1,77 @@
 ---
-title: "Mostrar un paywall diseñado con Remote Config en iOS SDK"
+title: "Renderizar paywall diseñado con Remote Config en el SDK de iOS"
 description: "Descubre cómo presentar paywalls de Remote Config en Adapty para personalizar la experiencia del usuario."
-metadataTitle: "Presentar paywalls con Remote Config | Documentación de Adapty"
-keywords: ['remote config']
+metadataTitle: "Presentar paywalls de Remote Config | Documentación de Adapty"
+keywords: ['remote config', 'logShowPaywall']
 ---
 
-Si has personalizado un paywall usando Remote Config, necesitarás implementar el renderizado en el código de tu app para mostrárselo a los usuarios. Como Remote Config ofrece flexibilidad adaptada a tus necesidades, tú decides qué incluir y cómo se ve tu paywall. Te proporcionamos un método para obtener la configuración remota, dándote autonomía para mostrar tu paywall personalizado configurado mediante Remote Config.
-
+<SDKv4>
+Si has personalizado un paywall con Remote Config, tendrás que implementar el renderizado en el código de tu app para mostrárselo a los usuarios. Como Remote Config ofrece flexibilidad adaptada a tus necesidades, tú decides qué incluir y cómo se ve la vista del paywall. Adapty proporciona un método para obtener la configuración remota, dándote autonomía para mostrar tu paywall personalizado.
 No olvides [comprobar si un usuario es elegible para una oferta introductoria en iOS](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios) y adaptar la vista del paywall para gestionar el caso en que sea elegible.
+## Obtener el Remote Config de un flow y mostrarlo \{#get-flow-remote-config-and-present-it\}
 
-## Obtener el Remote Config del paywall y mostrarlo \{#get-paywall-remote-config-and-present-it\}
+En v4, un flow contiene una entrada `AdaptyRemoteConfig` por cada idioma configurado en el array `remoteConfigs`. Elige el idioma que coincida con la preferencia del usuario y lee los valores que necesites.
 
-Para obtener el Remote Config de un paywall, accede a la propiedad `remoteConfig` y extrae los valores necesarios.
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+```swift showLineNumbers
+do {
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+    let config = flow.remoteConfigs.first(where: { $0.locale == "en" })
+        ?? flow.remoteConfigs.first
+    let headerText = config?.dictionary?["header_text"] as? String
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+```swift showLineNumbers
+Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID") { result in
+    let flow = try? result.get()
+    let config = flow?.remoteConfigs.first(where: { $0.locale == "en" })
+        ?? flow?.remoteConfigs.first
+    let headerText = config?.dictionary?["header_text"] as? String
+}
+```
+
+</TabItem>
+</Tabs>
+En este punto, una vez que hayas recibido todos los valores necesarios, es hora de renderizarlos y ensamblarlos en una página visualmente atractiva. Asegúrate de que el diseño se adapte a diferentes pantallas y orientaciones de móvil, ofreciendo una experiencia fluida y fácil de usar en distintos dispositivos.
+
+:::warning
+Asegúrate de [registrar el evento de visualización del paywall](present-remote-config-paywalls#track-paywall-view-events) como se describe a continuación, para que el análisis de Adapty pueda recopilar información para funnels y pruebas A/B.
+:::
+Una vez que hayas mostrado el paywall, continúa configurando el flow de compra. Cuando el usuario realice una compra, simplemente llama a `.makePurchase()` con el producto de tu flow. Para más información sobre el método `.makePurchase()`, consulta [Realizar compras](making-purchases).
+
+Te recomendamos [crear un paywall de respaldo llamado paywall de respaldo](fallback-paywalls). Este respaldo se mostrará al usuario cuando no haya conexión a internet ni caché disponible, garantizando una experiencia fluida incluso en esas situaciones.
+## Rastrear eventos de visualización de paywall \{#track-paywall-view-events\}
+
+Adapty te ayuda a medir el rendimiento de tus paywalls. Aunque los datos de compras se recopilan automáticamente, el registro de las visualizaciones de paywall requiere tu intervención, ya que solo tú sabes cuándo un usuario ve un paywall.
+
+Para registrar un evento de visualización de paywall, simplemente llama a `.logShowFlow(flow)`, y se reflejará en las métricas de tu paywall en los embudos y pruebas A/B.
+:::important
+No es necesario llamar a `.logShowFlow(flow)` si estás mostrando flows o paywalls renderizados por el [Flow Builder](adapty-flow-builder) o el [Paywall Builder](adapty-paywall-builder). En esos casos, Adapty registra las vistas automáticamente.
+:::
+
+```swift showLineNumbers
+try await Adapty.logShowFlow(flow)
+```
+
+Parámetros de la solicitud:
+| Parámetro | Presencia | Descripción                                                                              |
+| :-------- | :------- |:-----------------------------------------------------------------------------------------|
+| **flow**  | required | Un objeto `AdaptyFlow` obtenido mediante `Adapty.getFlow(placementId:)`. |
+
+</SDKv4>
+
+<SDKv3>
+Si has personalizado un paywall mediante Remote Config, deberás implementar el renderizado en el código de tu app para mostrárselo a los usuarios. Como Remote Config ofrece flexibilidad adaptada a tus necesidades, tú controlas qué se incluye y cómo se ve tu paywall. Proporcionamos un método para obtener la configuración remota, dándote autonomía para mostrar tu paywall personalizado configurado a través de Remote Config.
+No olvides [comprobar si un usuario es elegible para una oferta introductoria en iOS](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios) y ajustar la vista del paywall para gestionar el caso en que sea elegible.
+## Obtener el Remote Config de un paywall y mostrarlo \{#get-paywall-remote-config-and-present-it\}
+
+Para obtener el Remote Config de un paywall, accede a la propiedad `remoteConfig` y extrae los valores que necesites.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -27,7 +87,6 @@ do {
 </TabItem>
 
 <TabItem value="swift-callback" label="Swift-Callback" default>
-
 ```swift showLineNumbers
 Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID") { result in
     let paywall = try? result.get()
@@ -38,32 +97,28 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID") { result in
 </TabItem>
 </Tabs>
 
-En este punto, una vez que hayas recibido todos los valores necesarios, es momento de renderizarlos y ensamblarlos en una página visualmente atractiva. Asegúrate de que el diseño se adapte a las distintas pantallas y orientaciones de los móviles, ofreciendo una experiencia fluida y amigable en todos los dispositivos.
-
+En este punto, una vez que hayas recibido todos los valores necesarios, es momento de renderizarlos y componerlos en una página visualmente atractiva. Asegúrate de que el diseño se adapte a distintas pantallas y orientaciones de dispositivos móviles, ofreciendo una experiencia fluida y cómoda en cualquier dispositivo.
 :::warning
-Asegúrate de [registrar el evento de visualización del paywall](present-remote-config-paywalls#track-paywall-view-events) como se describe a continuación, para que los análisis de Adapty capturen la información necesaria para los embudos y las pruebas A/B.
+Asegúrate de [registrar el evento de visualización del paywall](present-remote-config-paywalls#track-paywall-view-events) tal como se describe a continuación, para que los análisis de Adapty puedan capturar información para funnels y pruebas A/B.
 :::
 
-Una vez que hayas terminado de mostrar el paywall, continúa configurando el flujo de compra. Cuando el usuario realice una compra, simplemente llama a `.makePurchase()` con el producto de tu paywall. Para más información sobre el método `.makePurchase()`, consulta [Realizar compras](making-purchases).
+Una vez que hayas terminado de mostrar el paywall, continúa configurando el flow de compra. Cuando el usuario realice una compra, simplemente llama a `.makePurchase()` con el producto de tu paywall. Para más detalles sobre el método `.makePurchase()`, consulta [Realizar compras](making-purchases).
+Recomendamos [crear un paywall de respaldo llamado paywall de respaldo](fallback-paywalls). Este respaldo se mostrará al usuario cuando no haya conexión a internet ni caché disponible, garantizando una experiencia fluida incluso en esas situaciones.
+## Registrar eventos de visualización de paywall \{#track-paywall-view-events\}
 
-Te recomendamos [crear un paywall de respaldo llamado fallback paywall](fallback-paywalls). Este respaldo se mostrará al usuario cuando no haya conexión a internet o caché disponible, garantizando una experiencia fluida incluso en esas situaciones.
+Adapty te ayuda a medir el rendimiento de tus paywalls. Aunque los datos de compras se recopilan automáticamente, registrar las visualizaciones de paywalls requiere tu intervención, ya que solo tú sabes cuándo un cliente ve un paywall.
 
-## Registrar eventos de visualización del paywall \{#track-paywall-view-events\}
-
-Adapty te ayuda a medir el rendimiento de tus paywalls. Aunque los datos de compras se recopilan automáticamente, registrar las visualizaciones del paywall requiere tu intervención, ya que solo tú sabes cuándo un usuario ve un paywall.
-
-Para registrar un evento de visualización del paywall, simplemente llama a `.logShowPaywall(paywall)`, y quedará reflejado en las métricas de tu paywall en los embudos y las pruebas A/B.
+Para registrar un evento de visualización de paywall, simplemente llama a `.logShowPaywall(paywall)`, y quedará reflejado en las métricas de tu paywall en los embudos y pruebas A/B.
 
 :::important
-No es necesario llamar a `.logShowPaywall(paywall)` si estás mostrando paywalls creados con el [Paywall Builder](adapty-paywall-builder).
+No es necesario llamar a `.logShowPaywall(paywall)` si estás mostrando paywalls creados en el [Paywall Builder](adapty-paywall-builder).
 :::
 
 ```swift showLineNumbers
 Adapty.logShowPaywall(paywall)
 ```
-
-Parámetros de la solicitud:
-
 | Parámetro   | Presencia | Descripción                                                                              |
-| :---------- | :------- |:-----------------------------------------------------------------------------------------|
-| **paywall** | obligatorio | Un objeto [`AdaptyPaywall`](https://swift.adapty.io/documentation/adapty/adaptypaywall). |
+| :---------- | :-------- |:-----------------------------------------------------------------------------------------|
+| **paywall** | requerido | Un objeto [`AdaptyPaywall`](https://swift.adapty.io/documentation/adapty/adaptypaywall). |
+
+</SDKv3>

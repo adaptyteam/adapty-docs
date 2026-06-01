@@ -1,49 +1,45 @@
----
-no_index: true
----
-
 **Etkin (varsayılan)**
 
-Tanımlı kullanıcılar (bir [Müşteri Kullanıcı Kimliği](identifying-users#set-customer-user-id-on-configuration) ile tanımlanmış olanlar), cihazları aynı Apple/Google ID ile oturum açmışsa Adapty tarafından sağlanan aynı [access level](access-level)'ı paylaşabilir. Bu, kullanıcının uygulamayı yeniden yükleyip farklı bir e-postayla giriş yapması durumunda bile önceki satın alımına erişimini koruması açısından kullanışlıdır. Bu seçenekle birden fazla tanımlı kullanıcı aynı access level'ı paylaşabilir.
+Kimliği belirlenmiş kullanıcılar ([Müşteri Kullanıcı Kimliği](identifying-users#set-customer-user-id-on-configuration) atanmış olanlar), cihazları aynı Apple/Google ID ile oturum açmışsa Adapty tarafından sağlanan aynı [access level](access-level)'ı paylaşabilir. Bu, kullanıcının uygulamayı yeniden yükleyip farklı bir e-posta ile giriş yapması durumunda bile önceki satın alımına erişimini korumasını sağlar. Bu seçenekte birden fazla kimliği belirlenmiş kullanıcı aynı access level'ı paylaşabilir.
 
-Access level paylaşılsa da tutarlı analizleri korumak ve deneme süreleri, abonelik satın alımları, yenilemeler ve daha fazlası dahil olmak üzere eksiksiz bir işlem geçmişini aynı profile bağlı tutmak amacıyla tüm geçmiş ve gelecek işlemler, orijinal Müşteri Kullanıcı Kimliğinde etkinlik olarak kaydedilir.
+Access level paylaşılıyor olsa da tüm geçmiş ve gelecekteki işlemler; deneme süreleri, abonelik satın alımları, yenilemeler ve daha fazlası dahil olmak üzere tutarlı bir analitik ve eksiksiz bir işlem geçmişi sağlamak amacıyla orijinal Müşteri Kullanıcı Kimliği'nde olay olarak kaydedilir ve aynı profile bağlı kalır.
 
 **Erişimi yeni kullanıcıya aktar**
 
-Tanımlı kullanıcılar, cihazları aynı Apple/Google ID ile oturum açtığı sürece farklı bir [Müşteri Kullanıcı Kimliği](identifying-users#set-customer-user-id-on-configuration) ile giriş yapsalar veya uygulamayı yeniden yükleseler bile Adapty tarafından sağlanan [access level](access-level)'a erişmeye devam edebilir.
+Kimliği belirlenmiş kullanıcılar, farklı bir [Müşteri Kullanıcı Kimliği](identifying-users#set-customer-user-id-on-configuration) ile giriş yapsalar veya uygulamayı yeniden yükleseler bile, cihazları aynı Apple/Google ID ile oturum açık olduğu sürece Adapty tarafından sağlanan [access level](access-level)'a erişmeye devam edebilir.
 
-Önceki seçenekten farklı olarak Adapty, satın alımı tanımlı kullanıcılar arasında aktarır. Bu sayede satın alınan içeriğe erişim sağlanır; ancak aynı anda yalnızca bir kullanıcı erişime sahip olabilir. Örneğin, KullanıcıA bir abonelik satın alırsa ve KullanıcıB aynı cihazda oturum açarak işlemleri geri yüklerse, KullanıcıB aboneliğe erişim kazanır ve KullanıcıA'nın erişimi iptal edilir.
+Önceki seçenekten farklı olarak Adapty, satın alımı kimliği belirlenmiş kullanıcılar arasında aktarır. Bu sayede satın alınan içeriğe erişim sağlanır; ancak aynı anda yalnızca bir kullanıcı erişime sahip olabilir. Örneğin, KullanıcıA bir abonelik satın alır ve KullanıcıB aynı cihazda oturum açarak işlemleri geri yüklerse KullanıcıB aboneliğe erişim kazanırken KullanıcıA'nın erişimi iptal edilir.
 
-Kullanıcılardan biri (yeni ya da eski) tanımlı değilse, access level Adapty'deki bu profiller arasında yine de paylaşılır.
+Kullanıcılardan biri (yeni veya eski) kimliği belirlenmemişse, access level yine de Adapty'deki bu profiller arasında paylaşılmaya devam eder.
 
-Access level aktarılsa da tutarlı analizleri korumak ve deneme süreleri, abonelik satın alımları, yenilemeler ve daha fazlası dahil olmak üzere eksiksiz bir işlem geçmişini aynı profile bağlı tutmak amacıyla tüm geçmiş ve gelecek işlemler, orijinal Müşteri Kullanıcı Kimliğinde etkinlik olarak kaydedilir.
+Access level aktarılıyor olsa da tüm geçmiş ve gelecekteki işlemler; deneme süreleri, abonelik satın alımları, yenilemeler ve daha fazlası dahil olmak üzere tutarlı bir analitik ve eksiksiz bir işlem geçmişi sağlamak amacıyla orijinal Müşteri Kullanıcı Kimliği'nde olay olarak kaydedilir ve aynı profile bağlı kalır.
 
-**Erişimi yeni kullanıcıya aktar** seçeneğine geçtikten sonra access level'lar profiller arasında hemen aktarılmaz. Belirli bir access level için aktarım süreci, yalnızca Adapty mağazadan abonelik yenileme, geri yükleme veya işlem doğrulama gibi bir etkinlik aldığında tetiklenir.
+**Erişimi yeni kullanıcıya aktar** seçeneğine geçtikten sonra, access level'lar profiller arasında hemen aktarılmaz. Belirli bir access level için aktarım süreci; abonelik yenilemesi, geri yükleme veya işlem doğrulama gibi mağazadan bir olay alındığında tetiklenir.
 
-**Devre dışı**
+**Devre Dışı**
 
-Bir access level'a ilk ulaşan tanımlı kullanıcı profili, bu erişimi sonsuza kadar korur. İş mantığınız satın alımların tek bir Müşteri Kullanıcı Kimliğine bağlı olmasını gerektiriyorsa bu en uygun seçenektir.
+Bir access level alan ilk kimliği belirlenmiş kullanıcı profili, bu erişimi kalıcı olarak elinde tutar. İş mantığınızın satın alımların tek bir Müşteri Kullanıcı Kimliği'ne bağlı olmasını gerektirdiği durumlarda en uygun seçenektir.
 
-Anonim kullanıcılar arasında access level'ların paylaşılmaya devam ettiğini unutmayın.
+Anonim kullanıcılar arasında access level paylaşımının devam ettiğini unutmayın.
 
-[Sahip kullanıcı profilini silerek](ss-delete-profile) bir satın alımı "bağlantısından koparabilirsiniz". Silme işleminin ardından access level, ister anonim ister tanımlı olsun, onu talep eden ilk kullanıcı profiline açık hale gelir.
+Bir satın alımı "ayırmak" için [kullanıcının profilini silebilirsiniz](https://adapty.io/docs/tr/api-adapty/operations/deleteProfile). Silme işleminin ardından access level, ister anonim ister kimliği belirlenmiş olsun, ilk talep eden kullanıcı profiline açık hale gelir.
 
-Paylaşımı devre dışı bırakmak yalnızca yeni kullanıcıları etkiler. Kullanıcılar arasında zaten paylaşılmış olan abonelikler, bu seçenek devre dışı bırakıldıktan sonra da paylaşılmaya devam eder.
+Paylaşımı devre dışı bırakmak yalnızca yeni kullanıcıları etkiler. Kullanıcılar arasında zaten paylaşılmakta olan abonelikler, bu seçenek devre dışı bırakıldıktan sonra da paylaşılmaya devam eder.
 
 :::warning
 
-Apple ve Google, uygulama içi satın alımların satın alımı Apple/Google ID ile ilişkilendirdiğinden kullanıcılar arasında paylaşılmasını veya aktarılmasını zorunlu kılar. Paylaşım olmadan, sonraki yeniden yüklemelerde satın alımları geri yüklemek çalışmayabilir.
+Apple ve Google, uygulama içi satın alımların kullanıcılar arasında paylaşılmasını veya aktarılmasını zorunlu kılar; çünkü satın alımı belirli bir kullanıcıyla ilişkilendirmek için Apple/Google ID'ye güvenirler. Paylaşım olmadan, sonraki yeniden yüklemelerde satın alımların geri yüklenmesi çalışmayabilir.
 
-Paylaşımı devre dışı bırakmak, kullanıcıların giriş yaptıktan sonra erişimlerini yeniden kazanamamasına yol açabilir.
+Paylaşımı devre dışı bırakmak, kullanıcıların giriş yaptıktan sonra erişimi yeniden kazanamamasına neden olabilir.
 
-Paylaşımı yalnızca kullanıcılarınızın satın alım yapmadan önce **giriş yapmak zorunda olduğu** durumlarda devre dışı bırakmanızı öneririz. Aksi takdirde tanımlı bir kullanıcı abonelik satın alıp başka bir hesaba giriş yapabilir ve erişimini kalıcı olarak kaybedebilir.
+Paylaşımı yalnızca kullanıcılarınızın satın alma yapmadan önce **giriş yapmasının zorunlu olduğu** durumlarda devre dışı bırakmanızı öneririz. Aksi takdirde, kimliği belirlenmiş bir kullanıcı abonelik satın alıp başka bir hesaba giriş yaparak erişimini kalıcı olarak kaybedebilir.
 :::
 
 ### Hangi ayarı seçmeliyim? \{#which-setting-should-i-choose\}
 
-| Uygulamam...                                                    | Seçilecek seçenek                                             |
+| Uygulamam...                                                 | Seçilecek seçenek                                            |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| Giriş sistemi yok ve yalnızca Adapty'nin anonim profil ID'lerini kullanıyor. | Varsayılan seçeneği kullanın; zira her üç seçenekte de access level'lar anonim profil ID'leri arasında her zaman paylaşılır. |
-| İsteğe bağlı bir giriş sistemi var ve müşterilerin hesap oluşturmadan önce satın alım yapmasına izin veriyor. | Hesap oluşturmadan satın alım yapan müşterilerin işlemlerini daha sonra geri yükleyebilmesini sağlamak için **Erişimi yeni kullanıcıya aktar** seçeneğini tercih edin. |
-| Satın alım yapmadan önce hesap oluşturmayı zorunlu kılıyor ancak satın alımların birden fazla Müşteri Kullanıcı Kimliğine bağlanmasına izin veriyor. | Aynı anda yalnızca bir Müşteri Kullanıcı Kimliğinin erişime sahip olmasını sağlarken kullanıcıların ücretli erişimlerini kaybetmeden farklı bir Müşteri Kullanıcı Kimliğiyle giriş yapabilmesine olanak tanımak için **Erişimi yeni kullanıcıya aktar** seçeneğini tercih edin. |
-| Satın alım yapmadan önce hesap oluşturmayı zorunlu kılıyor ve satın alımları tek bir Müşteri Kullanıcı Kimliğine bağlayan katı kurallara sahip. | İşlemlerin hesaplar arasında hiçbir zaman aktarılmamasını sağlamak için **Devre dışı** seçeneğini tercih edin. |
+| Giriş sistemi yok ve yalnızca Adapty'nin anonim profil ID'lerini kullanıyor. | Access level'lar her üç seçenekte de anonim profil ID'leri arasında her zaman paylaşıldığından varsayılan seçeneği kullanın. |
+| İsteğe bağlı giriş sistemine sahip ve müşterilerin hesap oluşturmadan önce satın alım yapmasına izin veriyor. | Hesapsız satın alım yapan müşterilerin işlemlerini daha sonra geri yükleyebilmesini sağlamak için **Erişimi yeni kullanıcıya aktar** seçeneğini belirleyin. |
+| Satın alım öncesinde hesap oluşturmayı zorunlu kılıyor ancak satın alımların birden fazla Müşteri Kullanıcı Kimliği'ne bağlanmasına izin veriyor. | Aynı anda yalnızca bir Müşteri Kullanıcı Kimliği'nin erişime sahip olmasını sağlarken kullanıcıların ücretli erişimlerini kaybetmeden farklı bir Müşteri Kullanıcı Kimliği ile giriş yapabilmesine olanak tanımak için **Erişimi yeni kullanıcıya aktar** seçeneğini belirleyin. |
+| Satın alım öncesinde hesap oluşturmayı zorunlu kılıyor ve satın alımları tek bir Müşteri Kullanıcı Kimliği'ne bağlayan katı kurallara sahip. | İşlemlerin hesaplar arasında hiçbir zaman aktarılmamasını sağlamak için **Devre Dışı** seçeneğini belirleyin. |

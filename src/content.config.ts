@@ -11,6 +11,7 @@ const docs = defineCollection({
     keywords: z.union([z.string(), z.array(z.string())]).optional(),
     rank: z.number().optional(),
     customSlug: z.string().optional(),
+    draft: z.boolean().optional(),
   }),
 });
 

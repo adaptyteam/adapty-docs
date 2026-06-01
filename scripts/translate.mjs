@@ -1233,6 +1233,11 @@ async function translateFileWithSections(
         extractCodeBlocks(section.content),
       );
       patchCount++;
+    } else if (!hasTranslatableProse(section.content)) {
+      // No natural-language text (code-only or empty) — keep source verbatim, no
+      // API call. Sending these elicits refusal replies that corrupt the file.
+      console.log(`    · ${section.id} → skip (no translatable text)`);
+      translation = section.content;
     } else {
       // Prose changed (or first translation) — call Claude
       const reason = !cached
@@ -1273,6 +1278,29 @@ async function translateFileWithSections(
         );
       }
       translation = response.content[0].text;
+      if (looksLikeRefusal(translation)) {
+        console.warn(
+          `    ⚠ ${section.id} → reply looked like a refusal; retrying with hardened prompt`,
+        );
+        let retried = "";
+        try {
+          retried = await translateFragmentHardened(
+            client,
+            systemPrompt,
+            section.content,
+          );
+        } catch (e) {
+          console.error(`      retry failed: ${e.message}`);
+        }
+        if (!retried.trim() || looksLikeRefusal(retried)) {
+          console.error(
+            `    ✗ ${section.id} → still refused; keeping English source for this section`,
+          );
+          translation = section.content;
+        } else {
+          translation = retried;
+        }
+      }
       apiCallCount++;
     }
 
@@ -1448,6 +1476,16 @@ async function buildSectionPlan(file, lang, localesDir, hashesDir) {
         proseHash,
         cachedTranslation: patched,
       });
+    } else if (!hasTranslatableProse(section.content)) {
+      // No natural-language text (code-only or empty) — pass through unchanged,
+      // no batch entry. Sending these elicits refusal replies that corrupt files.
+      decisions.push({
+        section,
+        kind: "skip",
+        contentHash,
+        proseHash,
+        cachedTranslation: section.content,
+      });
     } else {
       decisions.push({ section, kind: "send", contentHash, proseHash });
     }
@@ -1497,6 +1535,7 @@ async function translateBatchSections(
       customIdLookup[customId] = {
         basename: plan.basename,
         sectionId: decision.section.id,
+        content: decision.section.content,
       };
       allEntries.push({
         custom_id: customId,
@@ -1515,10 +1554,10 @@ async function translateBatchSections(
       for (const d of p.decisions) acc[d.kind]++;
       return acc;
     },
-    { hit: 0, patch: 0, send: 0 },
+    { hit: 0, patch: 0, send: 0, skip: 0 },
   );
   console.log(
-    `${tag} Sections: ${stats.hit} cached, ${stats.patch} code-patch, ${stats.send} to translate.`,
+    `${tag} Sections: ${stats.hit} cached, ${stats.patch} code-patch, ${stats.skip} skipped (no text), ${stats.send} to translate.`,
   );
 
   if (flagDryRun) {
@@ -1579,7 +1618,33 @@ async function translateBatchSections(
           hadErrors = true;
           continue;
         }
-        translationsByCustomId[r.custom_id] = r.result.message.content[0].text;
+        const text = r.result.message.content[0].text;
+        if (looksLikeRefusal(text)) {
+          const meta = customIdLookup[r.custom_id];
+          console.warn(
+            `  ⚠ ${meta?.basename}::${meta?.sectionId} (${r.custom_id}): reply looked like a refusal — retrying with hardened prompt`,
+          );
+          let retried = "";
+          try {
+            retried = await translateFragmentHardened(
+              client,
+              systemPrompt,
+              meta?.content ?? "",
+            );
+          } catch (e) {
+            console.error(`     retry failed: ${e.message}`);
+          }
+          if (!retried.trim() || looksLikeRefusal(retried)) {
+            console.error(
+              `  ✗ ${meta?.basename}::${meta?.sectionId}: still refused — keeping English source for this section`,
+            );
+            translationsByCustomId[r.custom_id] = meta?.content ?? "";
+          } else {
+            translationsByCustomId[r.custom_id] = retried;
+          }
+          continue;
+        }
+        translationsByCustomId[r.custom_id] = text;
       } else {
         console.error(
           `  ✗ ${customIdLookup[r.custom_id]?.basename}::${customIdLookup[r.custom_id]?.sectionId} (${r.custom_id}): ${JSON.stringify(r.result)}`,
@@ -1599,7 +1664,11 @@ async function translateBatchSections(
 
     for (const decision of plan.decisions) {
       let translation;
-      if (decision.kind === "hit" || decision.kind === "patch") {
+      if (
+        decision.kind === "hit" ||
+        decision.kind === "patch" ||
+        decision.kind === "skip"
+      ) {
         translation = decision.cachedTranslation;
       } else {
         const customId = customIdFor(plan.basename, decision.section.id);
@@ -3257,6 +3326,68 @@ function stripCodeBlocks(content) {
     }
   }
   return result.join("\n");
+}
+
+/**
+ * True when `content` has natural-language text worth sending to the translator.
+ * After stripping fenced code blocks, a section with no Unicode letter is empty
+ * or code-only. Sending such fragments elicits model refusals ("you've shared a
+ * code snippet…", "the input appears to be empty…") that were being written
+ * verbatim into locale files. These sections are passed through unchanged
+ * instead of translated — code and empty blocks need no translation anyway.
+ */
+function hasTranslatableProse(content) {
+  return /\p{L}/u.test(stripCodeBlocks(content));
+}
+
+/**
+ * Detects when the model replied with an apology / request-for-input instead of
+ * a translation. Such replies appear when a fragment looks empty or code-only to
+ * the model. Matched against the start of the reply (refusals always lead); the
+ * scoped phrases keep false positives away from legitimate translated bodies.
+ */
+const REFUSAL_PATTERNS = [
+  /\bappears to be (empty|incomplete|just a|only a)\b/i,
+  /\b(please|could you)\s+(please\s+)?(paste|provide|share)\b[^.\n]{0,60}\b(mdx|document|documentation|content|text)\b/i,
+  /\byou'?d like (me )?(to )?translate/i,
+  /\bI'?ll get it done\b/i,
+  /\bit looks like (you|the (content|input|document|message|text))/i,
+  /\bI notice (the|that)\b[^.\n]{0,60}\b(empty|incomplete|missing)\b/i,
+  /\bshared a code snippet\b/i,
+  /\bno actual content to translate\b/i,
+  /\bcontent (you want translated|to translate) is (empty|incomplete|missing)\b/i,
+];
+function looksLikeRefusal(text) {
+  if (!text) return false;
+  const head = text.slice(0, 400);
+  return REFUSAL_PATTERNS.some((re) => re.test(head));
+}
+
+/**
+ * Re-translate a short/odd fragment with an explicit, refusal-proof instruction.
+ * Used as a fallback when the normal translation reply looked like a refusal.
+ * The returned text may itself still be a refusal — the caller must re-check.
+ */
+async function translateFragmentHardened(client, systemPrompt, content) {
+  const resp = await withRetry(() =>
+    client.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 8192,
+      system: cachedSystem(systemPrompt),
+      messages: [
+        {
+          role: "user",
+          content:
+            "Translate the natural-language text in the MDX fragment below. " +
+            "It may be very short — a single heading, label, table, or code block — but it is NOT empty. " +
+            "Translate all prose; leave code, markup, URLs, attributes, and identifiers unchanged. " +
+            "Return ONLY the translated fragment, with no commentary, apology, or request for more input:\n\n" +
+            content,
+        },
+      ],
+    }),
+  );
+  return resp.content?.[0]?.text ?? "";
 }
 
 /**

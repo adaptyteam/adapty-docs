@@ -1,0 +1,89 @@
+---
+title: "Handle permission requests in flows (beta) - iOS"
+description: "Implement AdaptySystemRequestsHandler to respond to system permission requests triggered from paywall and onboarding flows."
+metadataTitle: "Handle Permission Requests in Flows (beta) - iOS | Adapty Docs"
+draft: true
+---
+
+If a flow includes buttons that request system permissions (push notifications, camera access, and others), the SDK calls your `AdaptySystemRequestsHandler`. You implement this handler to request the permission from the OS and return the result.
+
+## When the handler fires
+
+The handler is invoked when the user taps a button in the rendered flow that triggers a system permission request. The SDK calls your `handlePermission` method with the permission type, you request the permission from the OS, and return the result — the flow then continues based on whether you returned `.granted` or `.denied`.
+
+## Implement AdaptySystemRequestsHandler
+
+Create a class that conforms to the `AdaptySystemRequestsHandler` protocol and implement the required `handlePermission` method. Return `.granted(_)` or `.denied(_)` to report the result back to the flow — the associated `String?` carries optional detail (often `nil`).
+
+```swift
+import UserNotifications
+
+class MyPermissionsHandler: AdaptySystemRequestsHandler {
+    func handlePermission(
+        _ permission: AdaptyPermission,
+        withCustomArgs customArgs: [String: String]?
+    ) async -> AdaptyPermissionResult {
+        switch permission {
+        case .push:
+            let center = UNUserNotificationCenter.current()
+            let granted = (try? await center.requestAuthorization(options: [.alert, .badge, .sound])) ?? false
+            return granted ? .granted(nil) : .denied(nil)
+        default:
+            return .denied(nil)
+        }
+    }
+}
+```
+
+The `customArgs` parameter contains key-value pairs configured in the Flow Builder — use them for app-specific logic if needed.
+
+### Handle App Store review requests
+
+When the flow includes a **Request review** action, the SDK calls `handleAppReviewRequest`. The default implementation calls `SKStoreReviewController.requestReview(in:)` — you don't need to override it unless you want custom behavior.
+
+```swift
+// Override only if you need custom behavior
+func handleAppReviewRequest() async {
+    // Custom review request logic
+}
+```
+
+## Pass the handler to the flow configuration
+
+Pass your handler instance as the `systemRequestsHandler:` parameter when calling `AdaptyUI.getFlowConfiguration`:
+
+```swift
+let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+    forFlow: flow,
+    systemRequestsHandler: MyPermissionsHandler()
+)
+```
+
+## Supported permissions
+
+The `AdaptyPermission` enum covers the following iOS system permissions:
+
+| Case | Description | Framework |
+|---|---|---|
+| `.push` | Push notifications | `UNUserNotificationCenter` |
+| `.camera` | Camera access | `AVCaptureDevice` |
+| `.microphone` | Microphone access | `AVCaptureDevice` |
+| `.locationWhenInUse` | Location while app is in use | `CLLocationManager` |
+| `.locationAlways` | Location at all times | `CLLocationManager` |
+| `.locationFullAccuracy` | Full location accuracy | `CLLocationManager` |
+| `.photos` | Photo library access | `PHPhotoLibrary` |
+| `.contacts` | Contacts access | `CNContactStore` |
+| `.tracking` | App Tracking Transparency | `ATTrackingManager` |
+| `.calendar` | Calendar access | `EKEventStore` |
+| `.bluetooth` | Bluetooth access | `CBCentralManager` |
+| `.motion` | Motion and fitness data | `CMMotionActivityManager` |
+| `.reminders` | Reminders access | `EKEventStore` |
+| `.speech` | Speech recognition | `SFSpeechRecognizer` |
+| `.mediaLibrary` | Media library access | `MPMediaLibrary` |
+| `.localNetwork` | Local network access | — |
+| `.focusStatus` | Focus status | `INFocusStatusCenter` |
+| `.homekit` | HomeKit access | `HMHomeManager` |
+| `.health` | HealthKit access | `HKHealthStore` |
+| `.siri` | Siri authorization | `INPreferences` |
+| `.music` | Apple Music / MusicKit | `SKCloudServiceController` |
+| `.custom(String)` | Android-only or unrecognized permission | — |

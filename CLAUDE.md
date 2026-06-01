@@ -37,10 +37,14 @@ customSlug: "override-url"  # Optional URL override
 
 Sidebars are defined per platform in `src/data/sidebars/*.json` (ios, android, react-native, flutter, unity, kmp, capacitor, tutorial, api). Each entry references an article by its filename-based `id`. To add an article to navigation, add its id to the appropriate sidebar JSON.
 
+**Always use sidebar JSON files as the source of truth** for discovering which articles exist in a section. Do not glob MDX files — the sidebar defines what is published and how it is organized. Match the feature area to the correct sidebar file first, then read the relevant entries.
+
 ### Images
 
-- Article-specific: `src/assets/{article-name}/image.png`
-- Shared: `src/assets/shared/image.png`
+**In practice, almost all screenshots live in `src/assets/shared/img/`** (including subdirectories like `flow-builder/`). When looking for new screenshots, check here first.
+
+- Article-specific: `src/assets/{article-name}/image.png` (rarely used)
+- Shared: `src/assets/shared/img/image.png`
 - Use `<ZoomImage id="image.png" width="700px" alt="desc" />` (preferred)
 - Legacy `<Zoom><img src={require(...)}/></Zoom>` still works
 
@@ -57,7 +61,7 @@ Translated versions of articles live in `src/locales/{locale}/` (e.g., `src/loca
 
 | Component | Import required? | Usage |
 |-----------|-----------------|-------|
-| `ZoomImage` | Yes | `<ZoomImage id="file.png" width="700px" alt="..." />` |
+| `ZoomImage` | Yes | `<ZoomImage id="file.png" width="700px" alt="..." />` — add `float="right"` or `float="left"` to float image beside text |
 | `Tabs`/`TabItem` | Yes | `<Tabs groupId="platform"><TabItem value="ios" label="iOS">...</TabItem></Tabs>` |
 | `Details` | Yes | `<Details summary="Title">content</Details>` |
 | `InlineTooltip` | Yes | `<InlineTooltip tooltip="hover text">[link](page.md)</InlineTooltip>` |
@@ -80,6 +84,10 @@ Import path pattern: `import Component from '@site/src/components/Component.astr
 - `remark-heading-id` — auto-generates heading anchors
 - `remark-strip-imports` — removes imports during markdown export
 - `remark-strip-highlight-comments` — cleans highlight syntax
+
+## Markdown conventions
+
+- Use `-` for unordered lists, not `*`.
 
 ## Code blocks
 
