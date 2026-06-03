@@ -26,6 +26,18 @@ function filterLocales(allAvailableLocales) {
     return allAvailableLocales.filter(l => requested.has(l));
 }
 
+// Output basename overrides — force the generated .md filename for specific
+// articles regardless of the source filename's casing.
+//
+// `migration-guide-to-server-side-API-v2.mdx` keeps the uppercase `API` on
+// disk, but its page URL (driven by the sidebar id, which Astro lowercases via
+// github-slugger) is the all-lowercase form. Without this override the .md
+// lands at `/docs/...API-v2.md` and 404s from the lowercase page. Applies to
+// English and every locale.
+const MD_BASENAME_OVERRIDES = new Map([
+    ['migration-guide-to-server-side-API-v2', 'migration-guide-to-server-side-api-v2'],
+]);
+
 // Helper to convert kebab-case file name to PascalCase component name
 const toPascalCase = (str) => {
     if (/^\d/.test(str)) return `Error${str}`;
@@ -163,6 +175,7 @@ async function processFiles(dir, reusableComponents, englishFiles) {
 
             // Determine output filename (flattened basename logic)
             let basename = entry.name.replace(/\.(md|mdx)$/, '');
+            basename = MD_BASENAME_OVERRIDES.get(basename) ?? basename;
 
             const destPath = path.join(OUTPUT_DIR, `${basename}.md`);
 
@@ -202,7 +215,8 @@ async function processLocaleFiles(locale, baseComponents, englishFiles) {
         let content = cleanFrontmatter(rawContent);
         content = stripContent(content, components);
 
-        const basename = entry.name.replace(/\.(md|mdx)$/, '');
+        const rawBasename = entry.name.replace(/\.(md|mdx)$/, '');
+        const basename = MD_BASENAME_OVERRIDES.get(rawBasename) ?? rawBasename;
         translatedBasenames.add(basename);
         await fs.writeFile(path.join(localeOutputDir, `${basename}.md`), content, 'utf-8');
     }
