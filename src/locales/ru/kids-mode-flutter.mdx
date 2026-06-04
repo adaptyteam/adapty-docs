@@ -6,27 +6,25 @@ metadataTitle: "Режим Kids Mode во Flutter SDK | Документация
 
 Если ваше Flutter-приложение предназначено для детей, необходимо соблюдать политики [Apple](https://developer.apple.com/kids/) и [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Если вы используете Adapty SDK, несколько простых шагов помогут настроить его в соответствии с этими требованиями и успешно пройти проверку в стор.
 
-## Что нужно сделать? \{#whats-required\}
+## Что нужно настроить? \{#whats-required\}
 
-Необходимо настроить Adapty SDK так, чтобы отключить сбор следующих данных:
+Необходимо настроить SDK, чтобы отключить сбор следующих данных:
 
 - [IDFA (Identifier for Advertisers)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers) (iOS)
 - [Android Advertising ID (AAID/GAID)](https://support.google.com/googleplay/android-developer/answer/6048248) (Android)
 - [IP-адрес](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
-
-Кроме того, рекомендуем осторожно обращаться с пользовательским идентификатором. User ID в формате `<FirstName.LastName>` будет однозначно расценён как сбор персональных данных — так же, как использование email. Для режима Kids Mode лучшей практикой является использование рандомизированных или анонимизированных идентификаторов (например, хэшированных ID или UUID, сгенерированных устройством).
-
+Кроме того, рекомендуем осторожно подходить к выбору customer user ID. Идентификатор в формате `<FirstName.LastName>` однозначно будет расценён как сбор персональных данных — так же, как и использование email. Для Kids Mode лучшей практикой является использование случайных или анонимизированных идентификаторов (например, хешированных ID или UUID, сгенерированных на устройстве) для обеспечения соответствия требованиям.
 ## Включение Kids Mode \{#enabling-kids-mode\}
 
 ### Настройки в дашборде Adapty \{#updates-in-the-adapty-dashboard\}
 
 В дашборде Adapty необходимо отключить сбор IP-адресов. Для этого перейдите в [App settings](https://app.adapty.io/settings/general) и нажмите **Disable IP address collection** в разделе **Collect users' IP address**.
 
-### Изменения в коде мобильного приложения \{#updates-in-your-mobile-app-code\}
+### Обновления в коде вашего мобильного приложения \{#updates-in-your-mobile-app-code\}
 
-Чтобы соответствовать политикам, отключите сбор IDFA пользователя (для iOS), GAID/AAID (для Android) и IP-адреса.
+В соответствии с требованиями политик отключите сбор IDFA пользователя (для iOS), GAID/AAID (для Android) и IP-адреса.
 
-**Android: обновите конфигурацию SDK**
+**Android: Обновите конфигурацию SDK**
 
 ```dart showLineNumbers title="Dart"
 try {
@@ -41,31 +39,40 @@ try {
     // handle the error
 }
 ```
+**iOS: Включить режим Kids Mode с помощью CocoaPods**
 
-**iOS: включите Kids Mode через CocoaPods**
+1. Обновите ваш Podfile:
 
-1. Обновите Podfile:
-
-   - Если у вас **нет** секции `post_install` — добавьте весь блок кода ниже.
-   - Если секция `post_install` **уже есть** — добавьте в неё выделенные строки.
-
-    ```ruby showLineNumbers title="Podfile"
-    post_install do |installer|
+   - Если у вас **нет** секции `post_install`, добавьте весь блок кода ниже.
+   - Если у вас **есть** секция `post_install`, добавьте в неё выделенные строки.
+```ruby showLineNumbers title="Podfile"
+    def adapty_enable_kids_mode(installer)
       installer.pods_project.targets.each do |target|
-        // highlight-start
-        if target.name == 'Adapty'
-          target.build_configurations.each do |config|
-            config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)']
-            config.build_settings['OTHER_SWIFT_FLAGS'] << '-DADAPTY_KIDS_MODE'
-          end
+        next unless target.name == 'Adapty'
+        target.build_configurations.each do |config|
+          flags = config.build_settings['OTHER_SWIFT_FLAGS'] || '$(inherited)'
+          flags = flags.join(' ') if flags.is_a?(Array)
+          config.build_settings['OTHER_SWIFT_FLAGS'] = "#{flags} -DADAPTY_KIDS_MODE"
         end
-        // highlight-end
+        target.frameworks_build_phase.files.dup.each do |bf|
+          target.frameworks_build_phase.remove_build_file(bf) if bf.display_name.to_s.include?('AdSupport')
+        end
       end
+      installer.pods_project.save
+      Dir.glob(File.join(installer.sandbox.root, 'Target Support Files', '**', '*.xcconfig')).each do |xc|
+        File.write(xc, File.read(xc).gsub(/\s*-framework\s+"?AdSupport"?/, ''))
+      end
+    end
+```
+   post_install do |installer|
+      # ... сохраните существующее тело post_install (Flutter добавляет его автоматически) ...
+
+      adapty_enable_kids_mode(installer)   # <-- включить Adapty Kids Mode
     end
     ```
 
-2. Примените изменения, выполнив команду:
+2. Примените изменения, выполнив команду
 
     ```sh showLineNumbers title="Shell"
     pod install
-    ``` 
+    ```

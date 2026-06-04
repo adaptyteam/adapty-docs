@@ -8,25 +8,23 @@ metadataTitle: "Flutter SDK 中的儿童模式 | Adapty 文档"
 
 ## 需要做什么？\{#whats-required\}
 
-您需要配置 Adapty SDK，以禁用以下数据的收集：
+你需要配置 Adapty SDK 以禁止收集以下信息：
 
-- [IDFA（广告标识符）](https://en.wikipedia.org/wiki/Identifier_for_Advertisers)（iOS）
+- [IDFA（广告主标识符）](https://en.wikipedia.org/wiki/Identifier_for_Advertisers)（iOS）
 - [Android 广告 ID（AAID/GAID）](https://support.google.com/googleplay/android-developer/answer/6048248)（Android）
 - [IP 地址](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
-
-此外，我们建议谨慎使用客户用户 ID。格式为 `<FirstName.LastName>` 的用户 ID 以及使用电子邮件，都将被视为收集个人数据。对于儿童模式，最佳实践是使用随机化或匿名化的标识符（例如哈希 ID 或设备生成的 UUID），以确保合规。
-
+此外，我们建议谨慎使用 customer user ID。以 `<FirstName.LastName>` 格式设置的 User ID 与使用邮箱地址一样，会被认定为收集个人数据。在儿童模式下，最佳做法是使用随机化或匿名化的标识符（例如哈希 ID 或设备生成的 UUID），以确保合规。
 ## 启用儿童模式 \{#enabling-kids-mode\}
 
 ### 在 Adapty 看板中进行更新 \{#updates-in-the-adapty-dashboard\}
 
 在 Adapty 看板中，您需要禁用 IP 地址收集。为此，请前往 [App settings](https://app.adapty.io/settings/general)，然后在 **Collect users' IP address** 下点击 **Disable IP address collection**。
 
-### 在移动应用代码中进行更新 \{#updates-in-your-mobile-app-code\}
+### 更新您的移动应用代码 \{#updates-in-your-mobile-app-code\}
 
-为了遵守相关政策，请禁用用户 IDFA（针对 iOS）、GAID/AAID（针对 Android）和 IP 地址的收集。
+为了遵守相关政策，请禁用用户 IDFA（iOS）、GAID/AAID（Android）以及 IP 地址的收集。
 
-**Android：更新您的 SDK 配置**
+**Android：更新 SDK 配置**
 
 ```dart showLineNumbers title="Dart"
 try {
@@ -41,31 +39,40 @@ try {
     // handle the error
 }
 ```
+**iOS：使用 CocoaPods 启用 Kids Mode**
 
-**iOS：使用 CocoaPods 启用儿童模式**
+1. 更新你的 Podfile：
 
-1. 更新您的 Podfile：
-
-   - 如果您**没有** `post_install` 部分，请添加以下完整代码块。
-   - 如果您**已有** `post_install` 部分，请将高亮行合并到其中。
-
-    ```ruby showLineNumbers title="Podfile"
-    post_install do |installer|
+   - 如果你**没有** `post_install` 部分，请添加下方完整代码块。
+   - 如果你**已有** `post_install` 部分，请将高亮行合并进去。
+```ruby showLineNumbers title="Podfile"
+    def adapty_enable_kids_mode(installer)
       installer.pods_project.targets.each do |target|
-        // highlight-start
-        if target.name == 'Adapty'
-          target.build_configurations.each do |config|
-            config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)']
-            config.build_settings['OTHER_SWIFT_FLAGS'] << '-DADAPTY_KIDS_MODE'
-          end
+        next unless target.name == 'Adapty'
+        target.build_configurations.each do |config|
+          flags = config.build_settings['OTHER_SWIFT_FLAGS'] || '$(inherited)'
+          flags = flags.join(' ') if flags.is_a?(Array)
+          config.build_settings['OTHER_SWIFT_FLAGS'] = "#{flags} -DADAPTY_KIDS_MODE"
         end
-        // highlight-end
+        target.frameworks_build_phase.files.dup.each do |bf|
+          target.frameworks_build_phase.remove_build_file(bf) if bf.display_name.to_s.include?('AdSupport')
+        end
+      end
+      installer.pods_project.save
+      Dir.glob(File.join(installer.sandbox.root, 'Target Support Files', '**', '*.xcconfig')).each do |xc|
+        File.write(xc, File.read(xc).gsub(/\s*-framework\s+"?AdSupport"?/, ''))
       end
     end
-    ```
+```
+   post_install do |installer|
+     # ... 保留你现有的 post_install 内容（Flutter 会自动添加一个）...
 
-2. 运行以下命令应用更改：
+     adapty_enable_kids_mode(installer)   # <-- 启用 Adapty 儿童模式
+   end
+   ```
 
-    ```sh showLineNumbers title="Shell"
-    pod install
-    ```
+2. 运行以下命令使更改生效
+
+   ```sh showLineNumbers title="Shell"
+   pod install
+   ```

@@ -34,12 +34,12 @@ try {
     params: {
       // Disable IP address collection
       ipAddressCollectionDisabled: true,
-      
+
       // Disable IDFA collection on iOS
       ios: {
         idfaCollectionDisabled: true
       },
-      
+
       // Disable Google Advertising ID collection on Android
       android: {
         adIdCollectionDisabled: true
@@ -63,36 +63,36 @@ iOS için CocoaPods kullanıyorsanız Kids Mode'u yerel düzeyde de etkinleştir
    - `post_install` bölümünüz **yoksa** aşağıdaki kod bloğunun tamamını ekleyin.
    - `post_install` bölümünüz **varsa** vurgulanan satırları mevcut bölümünüzle birleştirin.
 
-   ```ruby showLineNumbers title="Podfile"
-   post_install do |installer|
+```ruby showLineNumbers title="Podfile"
+   def adapty_enable_kids_mode(installer)
      installer.pods_project.targets.each do |target|
-       # highlight-start
-       if target.name == 'Adapty'
-         target.build_configurations.each do |config|
-           config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)']
-           config.build_settings['OTHER_SWIFT_FLAGS'] << '-DADAPTY_KIDS_MODE'
-         end
+       next unless target.name == 'Adapty'
+       target.build_configurations.each do |config|
+         flags = config.build_settings['OTHER_SWIFT_FLAGS'] || '$(inherited)'
+         flags = flags.join(' ') if flags.is_a?(Array)
+         config.build_settings['OTHER_SWIFT_FLAGS'] = "#{flags} -DADAPTY_KIDS_MODE"
        end
-       # highlight-end
+       target.frameworks_build_phase.files.dup.each do |bf|
+         target.frameworks_build_phase.remove_build_file(bf) if bf.display_name.to_s.include?('AdSupport')
+       end
+     end
+     installer.pods_project.save
+     Dir.glob(File.join(installer.sandbox.root, 'Target Support Files', '**', '*.xcconfig')).each do |xc|
+       File.write(xc, File.read(xc).gsub(/\s*-framework\s+"?AdSupport"?/, ''))
      end
    end
+```sh showLineNumbers title="Shell"
+   pod install
    ```
 
-2. Değişiklikleri uygulamak için aşağıdaki komutu çalıştırın:
+#### Android: Gradle Kullanarak Kids Mode'u Etkinleştirme \{#android-enable-kids-mode-using-gradle\}
 
-   ```sh showLineNumbers title="Shell"
-   pod install 
-   ```
-
-#### Android: Gradle kullanarak Kids Mode'u etkinleştirme \{#android-enable-kids-mode-using-gradle\}
-
-Android için, uygulamanızın `build.gradle` dosyasına aşağıdakini ekleyerek Kids Mode'u yerel düzeyde de etkinleştirebilirsiniz:
-
+Android için, uygulamanızın `build.gradle` dosyasına aşağıdakileri ekleyerek Kids Mode'u yerel düzeyde etkinleştirebilirsiniz:
 ```groovy showLineNumbers title="android/app/build.gradle"
 android {
     defaultConfig {
         // ... existing config ...
-        
+
         // Enable Kids Mode
         buildConfigField "boolean", "ADAPTY_KIDS_MODE", "true"
     }
@@ -101,11 +101,11 @@ android {
 
 ## Sonraki adımlar \{#next-steps\}
 
-Kids Mode'u etkinleştirdikten sonra şunları yaptığınızdan emin olun:
+Kids Mode'u etkinleştirdikten sonra şunları yapmayı unutmayın:
 
-1. Tüm işlevlerin doğru çalıştığını doğrulamak için uygulamanızı kapsamlı şekilde test edin
-2. Devre dışı bırakılan veri toplamasını yansıtmak için uygulamanızın gizlilik politikasını gözden geçirin
-3. Kids Mode uyumluluğuna ilişkin net belgelerle uygulamanızı incelemeye gönderin
+1. Tüm işlevlerin doğru çalıştığından emin olmak için uygulamanızı kapsamlı şekilde test edin
+2. Devre dışı bırakılan veri toplamayı yansıtmak için uygulamanızın gizlilik politikasını güncelleyin
+3. Kids Mode uyumluluğuna ilişkin açık belgelerle uygulamanızı incelemeye gönderin
 
 Platforma özgü gereksinimler hakkında daha fazla bilgi için:
 - Ek iOS yapılandırma ayrıntıları için [iOS SDK'da Kids Mode](kids-mode)
