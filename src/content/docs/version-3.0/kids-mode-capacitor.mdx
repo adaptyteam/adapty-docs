@@ -35,12 +35,12 @@ try {
     params: {
       // Disable IP address collection
       ipAddressCollectionDisabled: true,
-      
+
       // Disable IDFA collection on iOS
       ios: {
         idfaCollectionDisabled: true
       },
-      
+
       // Disable Google Advertising ID collection on Android
       android: {
         adIdCollectionDisabled: true
@@ -65,24 +65,35 @@ If you're using CocoaPods for iOS, you can also enable Kids Mode at the native l
    - If you **do** have a `post_install` section, merge the highlighted lines into it.
 
    ```ruby showLineNumbers title="Podfile"
-   post_install do |installer|
+   def adapty_enable_kids_mode(installer)
      installer.pods_project.targets.each do |target|
-       # highlight-start
-       if target.name == 'Adapty'
-         target.build_configurations.each do |config|
-           config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)']
-           config.build_settings['OTHER_SWIFT_FLAGS'] << '-DADAPTY_KIDS_MODE'
-         end
+       next unless target.name == 'Adapty'
+       target.build_configurations.each do |config|
+         flags = config.build_settings['OTHER_SWIFT_FLAGS'] || '$(inherited)'
+         flags = flags.join(' ') if flags.is_a?(Array)
+         config.build_settings['OTHER_SWIFT_FLAGS'] = "#{flags} -DADAPTY_KIDS_MODE"
        end
-       # highlight-end
+       target.frameworks_build_phase.files.dup.each do |bf|
+         target.frameworks_build_phase.remove_build_file(bf) if bf.display_name.to_s.include?('AdSupport')
+       end
      end
+     installer.pods_project.save
+     Dir.glob(File.join(installer.sandbox.root, 'Target Support Files', '**', '*.xcconfig')).each do |xc|
+       File.write(xc, File.read(xc).gsub(/\s*-framework\s+"?AdSupport"?/, ''))
+     end
+   end
+
+   post_install do |installer|
+     # ... keep your existing post_install body (Flutter adds one automatically) ...
+
+     adapty_enable_kids_mode(installer)   # <-- enable Adapty Kids Mode
    end
    ```
 
 2. Run the following command to apply the changes:
 
    ```sh showLineNumbers title="Shell"
-   pod install 
+   pod install
    ```
 
 #### Android: Enable Kids Mode using Gradle
@@ -93,7 +104,7 @@ For Android, you can also enable Kids Mode at the native level by adding the fol
 android {
     defaultConfig {
         // ... existing config ...
-        
+
         // Enable Kids Mode
         buildConfigField "boolean", "ADAPTY_KIDS_MODE", "true"
     }
@@ -110,4 +121,4 @@ Once you've enabled Kids Mode, make sure to:
 
 For more information about platform-specific requirements:
 - [Kids Mode in iOS SDK](kids-mode) for additional iOS configuration details
-- [Kids Mode in Android SDK](kids-mode-android) for additional Android configuration details 
+- [Kids Mode in Android SDK](kids-mode-android) for additional Android configuration details
