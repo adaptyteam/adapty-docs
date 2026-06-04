@@ -1,7 +1,4 @@
 ---
-import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
-
 interface Props {
   id: string;
   alt: string;
@@ -11,16 +8,20 @@ interface Props {
 const { id, alt, width = '20px' } = Astro.props;
 
 const isSvg = id.endsWith('.svg');
-let svgContent: string | undefined;
+const normalizedId = id.split('/').pop() || id;
 
+const allSvgs = import.meta.glob<string>(
+  '/src/assets/Inline/**/*.svg',
+  { query: '?raw', eager: true, import: 'default' }
+);
+
+let svgContent: string | undefined;
 if (isSvg) {
-  const assetsDir = fileURLToPath(new URL('../assets/Inline', import.meta.url));
-  const normalizedId = id.split('/').pop() || id;
-  const svgPath = `${assetsDir}/${normalizedId}`;
-  try {
-    svgContent = fs.readFileSync(svgPath, 'utf-8');
-  } catch {
-    // fall through to code fallback
+  for (const [path, raw] of Object.entries(allSvgs)) {
+    if (path.split('/').pop() === normalizedId) {
+      svgContent = raw;
+      break;
+    }
   }
 }
 
@@ -29,7 +30,6 @@ const allImages = isSvg ? {} : import.meta.glob<{ default: ImageMetadata }>(
   { eager: true }
 );
 
-const normalizedId = id.split('/').pop() || id;
 let imageSrc: ImageMetadata | undefined;
 
 if (!isSvg) {
