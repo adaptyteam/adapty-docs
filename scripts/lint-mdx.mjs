@@ -42,10 +42,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compile } from '@mdx-js/mdx';
-import remarkDirective from 'remark-directive';
-import { remarkAside } from '../src/plugins/remark-aside.mjs';
-import yaml from 'js-yaml';
+// Heavy parse dependencies (@mdx-js/mdx, remark-*, js-yaml) are imported
+// lazily inside parsesClean() — see note there. The strict lint gate runs in
+// a dependency-free CI job (no `npm ci`), so they must NOT be imported at the
+// top level or the whole script fails to load with ERR_MODULE_NOT_FOUND.
 
 const ROOT = process.cwd();
 
@@ -404,7 +404,18 @@ export function fixNestedQuotes(content) {
 }
 
 // True if the content has valid frontmatter YAML AND compiles as MDX.
+// Imports its parse dependencies lazily: this is only ever called from the
+// --fix path (the translate apply job, which runs `npm ci`), never from the
+// strict gate (the dependency-free Lint MDX CI job). Keeping these imports out
+// of module scope is what lets the strict gate run without node_modules.
 export async function parsesClean(content) {
+  const [{ compile }, { default: remarkDirective }, { remarkAside }, { default: yaml }] =
+    await Promise.all([
+      import('@mdx-js/mdx'),
+      import('remark-directive'),
+      import('../src/plugins/remark-aside.mjs'),
+      import('js-yaml'),
+    ]);
   const parts = splitFrontmatter(content);
   if (parts.fm !== null) {
     try { yaml.load(parts.fm); } catch { return false; }
