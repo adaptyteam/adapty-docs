@@ -254,6 +254,10 @@ If the user has an inherited access level, follow these steps for accurate testi
 5. [Clear purchase history](#step-5-clear-purchase-history).
 6. [Open the app and make your test purchase](#step-6-make-test-purchase).
 
+:::note
+Clearing the purchase history is what resets the store-side purchase. Deleting the parent profile only removes the Adapty-side record. For why a reused account keeps access and which reset actions actually work, see [Resetting a tester's subscription](#resetting-a-testers-subscription).
+:::
+
 ### Updating app in TestFlight
 
 If the TestFlight app has been updated:
@@ -264,9 +268,39 @@ If the TestFlight app has been updated:
 4. [Clear purchase history](#step-5-clear-purchase-history).
 5. [Open the app and make your test purchase](#step-6-make-test-purchase).
 
-### Authorization during the purchase process
+## Resetting a tester's subscription
 
-If you have downloaded the TestFlight app and haven't [logged into the sandbox account from the device settings](#step-4-switch-to-sandbox-test-account), logging into it during the purchase process won't work. For purchase to succeed, you must log into your sandbox account from the device settings before attempting to make a purchase.
+In the sandbox environment, a purchase belongs to the **Apple sandbox account**, not to the Adapty profile. Actions you take on the profile — deleting it or editing its access level — don't remove the purchase from the store account. On the next reinstall or sync, the SDK re-attaches the same transaction, and the tester gets access again.
+
+The table below shows what each reset action changes and what the tester sees afterward.
+
+| Action                                                                            | Adapty profile                                          | Apple sandbox account  | Tester's access afterward                                                                          |
+| :-------------------------------------------------------------------------------- | :------------------------------------------------------ | :--------------------- | :------------------------------------------------------------------------------------------------- |
+| Delete the profile in the Adapty Dashboard                                        | Deleted                                            | Untouched              | **Returns** — on reinstall, a new profile re-attaches the same transaction chain                   |
+| Delete the profile via the [Delete profile API](api-adapty/operations/deleteProfile) | Deleted                                         | Untouched              | **Returns** — same as deleting in the Dashboard                                                    |
+| Add a past expiration date via **Add access level**                               | Overridden on the next sync                             | Untouched              | **Returns** at the next renewal — the live subscription re-applies a future expiration date        |
+| Call the [Revoke access level API](api-adapty/operations/revokeAccessLevel)       | Expires now, fires `access_level_updated` (`is_active=false`) | Untouched         | **Returns** at the next renewal or reinstall — not a reliable sandbox reset                        |
+| Cancel the subscription in the sandbox account                                    | No direct change                                        | Subscription cancelled | Renewals stop, access ends when the current period expires, and the tester can buy the product again |
+| Sign in with a fresh Apple sandbox account                                        | New profile                                             | New, empty account     | **Clean** — recommended for repeat testing                                                         |
+
+### Reset a tester to a clean state
+
+For repeat purchase-flow testing, use a fresh Apple sandbox account for each test instead of resetting the profile. Follow [Step 1](#step-1-create-sandbox-test-account-in-app-store-connect) to create the account and [Step 4](#step-4-switch-to-sandbox-test-account) to switch to it on the device. If you reuse an existing sandbox account, [clear its purchase history](#step-5-clear-purchase-history) first — deleting the Adapty profile doesn't clear it.
+
+### Remove access from an existing tester
+
+To remove a tester's access, don't backdate the expiration date or call the Revoke access level API. In sandbox, the subscription auto-renews every few minutes. Each renewal restores a future expiration date on the same transaction chain, so access returns on its own. The Revoke access level API does fire an `access_level_updated` (`is_active=false`) event, but the next renewal overrides it.
+
+To actually stop access, cancel the subscription on the store side. On the test device, go to **Settings > Developer > Sandbox Apple Account**, select **Manage**, and cancel the subscription. Renewals stop, and access ends when the current period expires.
+
+### Why deleting the profile brings access back
+
+When a tester reinstalls the app, Adapty receives the sandbox account's purchase history and links the new install to the existing purchase. The purchase is tied to the store account, not to the profile you deleted.
+
+- **Anonymous profiles**: A reinstall without a `customer_user_id` always inherits the store account's access level, regardless of your [paid access sharing](sharing-paid-access-between-user-accounts) setting.
+- **Identified profiles**: Whether access transfers to a new `customer_user_id` depends on your paid access sharing setting.
+
+For how Adapty links these profiles into a chain, see [How profiles work](how-profiles-work#parent-and-inheritor-profiles).
 
 ## Test subscriptions
 
@@ -283,6 +317,8 @@ By default, subscriptions renew up to 12 times before they stop, according to th
 :::note
 Keep in mind that test transactions take up to 10 minutes to appear in the [Event feed](validate-test-purchases).
 :::
+
+Use sandbox to confirm that your app and backend handle renewals, billing retries, and grace periods — not to predict production renewal timing. The accelerated, capped schedule above doesn't match production. To replay transactions on your server for backend testing, use the [Set transaction API](api-adapty/operations/setTransaction).
 
 ## Test offers
 
