@@ -70,43 +70,40 @@ function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
 
 /**
  * Resolves once Apple Ads attribution is applied to the profile, or rejects
- * after `timeoutMs`. Always removes the listener and clears the timer.
- *
- * `onLatestProfileLoad` is a React Native event emitter — it does NOT replay
- * events fired before the listener attached. So we subscribe first (to catch
- * the update that applies attribution on first launch) and then read the
- * current profile once (to catch attribution already applied on a prior
- * launch). Subscribing before reading guarantees no update slips through the gap.
+ * after `timeoutMs`. Removes the listener and clears the timer on every path.
  */
-function waitForAppleAdsAttribution(timeoutMs: number): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    let settled = false;
-    const settle = (action: () => void) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      subscription.remove();
-      action();
-    };
+async function waitForAppleAdsAttribution(timeoutMs: number): Promise<void> {
+  let onAttributionApplied!: () => void;
+  const attributionApplied = new Promise<void>(resolve => {
+    onAttributionApplied = resolve;
+  });
 
-    const subscription = adapty.addEventListener('onLatestProfileLoad', profile => {
-      if (hasAppleAdsAttribution(profile)) settle(resolve);
+  const subscription = adapty.addEventListener('onLatestProfileLoad', profile => {
+    if (hasAppleAdsAttribution(profile)) onAttributionApplied();
+  });
+
+  // Events aren't replayed, so read the current profile once too. The listener
+  // is already active, so an update firing in between can't be missed.
+  adapty
+    .getProfile()
+    .then(profile => {
+      if (hasAppleAdsAttribution(profile)) onAttributionApplied();
+    })
+    .catch(() => {
+      // Offline with no cached profile — the listener or timeout settles the race.
     });
 
-    const timer = setTimeout(
-      () => settle(() => reject(new Error('Apple Ads attribution timed out'))),
-      timeoutMs,
-    );
-
-    adapty
-      .getProfile()
-      .then(profile => {
-        if (hasAppleAdsAttribution(profile)) settle(resolve);
-      })
-      .catch(() => {
-        // Offline with no cached profile — the listener or timeout settles the race.
-      });
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timedOut = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Apple Ads attribution timed out')), timeoutMs);
   });
+
+  try {
+    await Promise.race([attributionApplied, timedOut]);
+  } finally {
+    clearTimeout(timer);
+    subscription.remove();
+  }
 }
 
 /**
