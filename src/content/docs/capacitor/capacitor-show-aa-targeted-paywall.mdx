@@ -70,31 +70,24 @@ function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
 
 /**
  * Resolves once Apple Ads attribution is applied to the profile, or rejects
- * after `timeoutMs`. Always removes the listener and clears the timer.
- *
- * `onLatestProfileLoad` is a Capacitor plugin event — it does NOT replay events
- * fired before the listener attached. So we subscribe first (to catch the update
- * that applies attribution on first launch) and then read the current profile
- * once (to catch attribution already applied on a prior launch). Subscribing
- * before reading guarantees no update slips through the gap.
+ * after `timeoutMs`. Removes the listener and clears the timer on every path.
  */
 async function waitForAppleAdsAttribution(timeoutMs: number): Promise<void> {
-  // `addListener` is async, so capture the resolver and wire the listener to it.
-  let onAttribution!: () => void;
+  let onAttributionApplied!: () => void;
   const attributionApplied = new Promise<void>(resolve => {
-    onAttribution = resolve;
+    onAttributionApplied = resolve;
   });
 
   const handle = await adapty.addListener('onLatestProfileLoad', ({ profile }) => {
-    if (hasAppleAdsAttribution(profile)) onAttribution();
+    if (hasAppleAdsAttribution(profile)) onAttributionApplied();
   });
 
-  // The listener is active now, so this read can't miss an update that fires
-  // in between. Covers attribution already applied on a previous launch.
+  // Events aren't replayed, so read the current profile once too. The listener
+  // is already active, so an update firing in between can't be missed.
   adapty
     .getProfile()
     .then(profile => {
-      if (hasAppleAdsAttribution(profile)) onAttribution();
+      if (hasAppleAdsAttribution(profile)) onAttributionApplied();
     })
     .catch(() => {
       // Offline with no cached profile — the listener or timeout settles the race.
@@ -109,7 +102,7 @@ async function waitForAppleAdsAttribution(timeoutMs: number): Promise<void> {
     await Promise.race([attributionApplied, timedOut]);
   } finally {
     clearTimeout(timer);
-    await handle.remove().catch(() => {});
+    await handle.remove();
   }
 }
 
