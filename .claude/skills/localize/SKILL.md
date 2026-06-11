@@ -7,7 +7,7 @@ description: Use when adding support for a new locale/language to the Adapty doc
 
 ## Overview
 
-Adding a locale touches ~8 files plus new content/sitemap files. Miss any one and the locale will partially break (no search, broken auto-redirect, missing from sitemap, etc.). Follow this checklist in order.
+Adding a locale touches ~9 files plus new content/sitemap files. Miss any one and the locale will partially break (no search, broken auto-redirect, missing from sitemap, etc.). Follow this checklist in order.
 
 **Active locales:** `zh` (Chinese), `tr` (Turkish), `ru` (Russian). All examples use `{LOCALE}` as placeholder — replace with the actual code (e.g. `ja`, `ko`, `de`).
 
@@ -168,6 +168,27 @@ const SUPPORTED_LOCALES = ['zh', 'tr', 'ru', '{LOCALE}'] as const;
 ```
 
 The glob itself is derived from `BUILD_LOCALES` and doesn't need editing — only the tuple of allowed locales does.
+
+### 1j. `src/components/SkillPromo.astro`
+
+Like `Homepage.tsx` (1f), this component carries its own hardcoded `T` constant — **separate from `ui-strings.ts` and not touched by the translate script**. It detects the locale from the URL and renders the SDK-integration-skill promo (used on every SDK overview, manual integration guide, and `what-is-adapty`). Add a new locale key with all three strings:
+
+```ts
+const T: Record<string, { label: string; desc: string; linkText: string }> = {
+  en: { label: "...", desc: "...", linkText: "..." },
+  zh: { ... },
+  tr: { ... },
+  ru: { ... },
+  es: { ... },
+  '{LOCALE}': {
+    label: "...",     // short eyebrow, e.g. "Automated integration · Beta"
+    desc: "...",      // the one-sentence promo
+    linkText: "...",  // CTA, e.g. "Use the skill"
+  },
+};
+```
+
+Locale detection reuses `SUPPORTED_LOCALES` from `src/data/locales.ts` (1a) — once the locale is added there, the component recognizes it automatically; you only add the `T` entry here. A missing entry falls back to English.
 
 ---
 
@@ -500,6 +521,7 @@ strategy:
 | 1g | Add to `LOCALE_NAMES_CLIENT` + `UI_STRINGS_CLIENT` | `src/components/Header.astro` |
 | 1h | Add auto-redirect block | `src/layouts/DocsLayout.astro` |
 | 1i | Add to `SUPPORTED_LOCALES` (scopes the locales collection glob per CI job) | `src/content.config.ts` |
+| 1j | Add locale key to `T` object (label, desc, linkText) — like 1f; detection reuses `SUPPORTED_LOCALES` | `src/components/SkillPromo.astro` |
 | 2 | Add env vars | `.env` + deployment config |
 | 3 | Create sitemap files + update astro.config.mjs | `src/pages/sitemap-{LOCALE}*.xml.ts`, `astro.config.mjs` |
 | 4 | Add npm scripts (optional) | `package.json` |

@@ -1,0 +1,200 @@
+---
+import platformsData from "../data/platforms.json";
+import { SUPPORTED_LOCALES } from "../data/locales";
+
+interface Props {
+    platform?: string;
+    label?: string;
+    desc?: string;
+    linkText?: string;
+}
+
+// platform id -> dedicated skill-article slug
+const SKILL_SLUGS: Record<string, string> = {
+    ios: "adapty-sdk-integration-skill",
+    android: "adapty-sdk-integration-skill-android",
+    "react-native": "adapty-sdk-integration-skill-react-native",
+    flutter: "adapty-sdk-integration-skill-flutter",
+    unity: "adapty-sdk-integration-skill-unity",
+    kmp: "adapty-sdk-integration-skill-kmp",
+    capacitor: "adapty-sdk-integration-skill-capacitor",
+};
+
+// Auto-detect the platform from the current page's sidebar membership (same approach as MethodPromo)
+const sidebars = import.meta.glob("../data/sidebars/*.json", { eager: true });
+const currentSlug = Astro.url.pathname.split("/").filter(Boolean).pop() ?? "";
+
+function containsSlug(items: any[], target: string): boolean {
+    for (const item of items) {
+        const id = item.id ?? item.link?.id;
+        if (id === target) return true;
+        if (item.items && containsSlug(item.items, target)) return true;
+    }
+    return false;
+}
+
+const { platform: platformProp, label, desc, linkText } = Astro.props;
+
+let detected: string | null = null;
+for (const [filepath, mod] of Object.entries(sidebars)) {
+    const pid = filepath.split("/").pop()!.replace(".json", "");
+    if (!platformsData.sdkPlatforms.some((p) => p.id === pid)) continue;
+    if (containsSlug((mod as any).default, currentSlug)) {
+        detected = pid;
+        break;
+    }
+}
+
+// Explicit prop wins, then auto-detected platform, then iOS fallback
+const platform = platformProp ?? detected ?? "ios";
+const skillSlug = SKILL_SLUGS[platform] ?? SKILL_SLUGS.ios;
+
+// UI strings per locale. Auto-translation only touches MDX in src/locales — this
+// component's text lives here, so add a new entry when adding a locale (see the localize skill).
+const T: Record<string, { label: string; desc: string; linkText: string }> = {
+    en: {
+        label: "Automated integration · Beta",
+        desc: "The Adapty SDK integration skill runs the whole integration from your AI coding tool in one command.",
+        linkText: "Use the skill",
+    },
+    zh: {
+        label: "自动化集成 · Beta",
+        desc: "Adapty SDK 集成技能可在你的 AI 编程工具中通过一条命令完成整个集成。",
+        linkText: "使用该技能",
+    },
+    tr: {
+        label: "Otomatik entegrasyon · Beta",
+        desc: "Adapty SDK entegrasyon skill'i, tüm entegrasyonu AI kodlama aracınızda tek komutla gerçekleştirir.",
+        linkText: "Skill'i kullan",
+    },
+    ru: {
+        label: "Автоматическая интеграция · Beta",
+        desc: "Skill для интеграции Adapty SDK выполняет всю интеграцию из вашего AI-инструмента одной командой.",
+        linkText: "Использовать skill",
+    },
+    es: {
+        label: "Integración automatizada · Beta",
+        desc: "La skill de integración del SDK de Adapty realiza toda la integración desde tu herramienta de IA con un solo comando.",
+        linkText: "Usar la skill",
+    },
+};
+
+// Detect locale from the URL (/docs/{locale}/... on localized pages); English otherwise.
+const segments = Astro.url.pathname.split("/").filter(Boolean);
+const locale =
+    segments.find((s) => (SUPPORTED_LOCALES as readonly string[]).includes(s)) ?? "en";
+const t = T[locale] ?? T.en;
+
+const resolvedLabel = label ?? t.label;
+const resolvedDesc = desc ?? t.desc;
+const resolvedLinkText = linkText ?? t.linkText;
+---
+
+<div class="skill-promo">
+    <div class="skill-promo-label">{resolvedLabel}</div>
+    <div class="skill-promo-body">
+        <span class="skill-promo-accent">✦</span>
+        <span class="skill-promo-desc">{resolvedDesc}</span>
+    </div>
+    <div class="skill-promo-footer">
+        <a href={skillSlug} class="skill-promo-link">
+            {resolvedLinkText}<span class="skill-promo-arrow" aria-hidden="true"
+                >→</span
+            >
+        </a>
+    </div>
+</div>
+
+<style>
+    .skill-promo {
+        margin: 1.75rem 0;
+        padding: 1.125rem 1.375rem;
+        border-radius: 0.625rem;
+        border: 1px solid color-mix(in srgb, #6720ff 18%, transparent);
+        background: color-mix(in srgb, #6720ff 3.5%, white);
+    }
+
+    .dark .skill-promo {
+        background: color-mix(in srgb, #a78bfa 5%, #0f0f10);
+        border-color: color-mix(in srgb, #a78bfa 22%, transparent);
+    }
+
+    .skill-promo-label {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: #7c3aed;
+        margin-bottom: 0.75rem;
+        line-height: 1;
+    }
+
+    .dark .skill-promo-label {
+        color: #a78bfa;
+    }
+
+    .skill-promo-body {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.45rem;
+    }
+
+    .skill-promo-accent {
+        flex-shrink: 0;
+        font-size: 0.625rem;
+        line-height: 1;
+        margin-top: 0.28rem;
+        color: #7c3aed;
+        user-select: none;
+    }
+
+    .dark .skill-promo-accent {
+        color: #a78bfa;
+    }
+
+    .skill-promo-desc {
+        font-size: 0.8125rem;
+        line-height: 1.5;
+        color: #374151;
+    }
+
+    .dark .skill-promo-desc {
+        color: #cbd5e1;
+    }
+
+    .skill-promo-footer {
+        margin-top: 0.875rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid color-mix(in srgb, #6720ff 12%, transparent);
+    }
+
+    .dark .skill-promo-footer {
+        border-top-color: color-mix(in srgb, #a78bfa 18%, transparent);
+    }
+
+    .skill-promo-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #6720ff;
+        text-decoration: none;
+    }
+
+    .dark .skill-promo-link {
+        color: #a78bfa;
+    }
+
+    .skill-promo-link:hover {
+        opacity: 0.8;
+    }
+
+    .skill-promo-arrow {
+        transition: transform 0.2s ease;
+    }
+
+    .skill-promo-link:hover .skill-promo-arrow {
+        transform: translateX(0.2rem);
+    }
+</style>

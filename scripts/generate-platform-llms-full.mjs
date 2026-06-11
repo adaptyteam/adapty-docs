@@ -93,6 +93,12 @@ function stripContent(content, reusableComponents) {
     processed = processed.replace(/<Inline\s+[^>]*alt="([^"]*)"[^>]*\/>/g, '$1');
     processed = processed.replace(/<Inline\s+[^>]*\/>/g, '');
 
+    // Replace <SkillPromo ... /> with a plain-text promo + a markdown link to the skill repo
+    processed = processed.replace(
+        /<SkillPromo\b[^>]*\/>/g,
+        'For a fully automated integration, use the [adapty-sdk-integration skill](https://github.com/adaptyteam/adapty-sdk-integration-skill): it runs the whole integration from your AI coding tool in one command.'
+    );
+
     // 3. Inline Reusable Components
     for (const [name, componentContent] of Object.entries(reusableComponents)) {
         const regex = new RegExp(`<${name}\\s*\\/>`, 'g');
