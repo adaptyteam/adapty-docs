@@ -1,0 +1,99 @@
+---
+title: "React Native SDK'da ilk başlatmada AA hedefli paywall gösterme"
+description: "React Native'de attribution uygulandığında Apple Ads kullanıcıları için bir paywall'ı hemen gösterin ve yükseltin; AdaptyProfile.appliedAttributionSources kullanılarak."
+metadataTitle: "İlk başlatmada AA hedefli paywall gösterme | React Native SDK | Adapty Dokümanları"
+---
+Apple Ads (AA) attribution, `adapty.activate()` çağrısından sonra eşzamansız olarak gelir. İlk açılışta henüz gelmemiş olacağından `getPaywall`, varsayılan kitleye göre çözümlenir ve Apple Ads kullanıcıları AA segmentli paywallı göremez. Paywall'ı attribution gelene kadar bekletmek yerine, hemen bir tane gösterin ve AA attribution uygulandıktan sonra yenileyin — böylece Apple Ads kullanıcıları hedeflenmiş varyantı görürken diğer kullanıcılar hiç beklemeden paywalllarına erişir. `AdaptyProfile.appliedAttributionSources`, AA attribution'ın ne zaman uygulandığını size bildirir.
+## Başlamadan önce \{#before-you-start\}
+
+İhtiyacınız olanlar:
+- Adapty React Native SDK **3.17.1** veya üzeri.
+- Adapty'de uygulama için yapılandırılmış Apple Ads. Bkz. [Apple Ads](apple-search-ads).
+## Nasıl çalışır \{#how-it-works\}
+
+`adapty.activate()` çağrısının ardından SDK, arka planda Apple'dan Apple Ads attribution verisi talep eder ve sonucu Adapty'nin backend'ine iletir. AA, profil için etkin attribution kaynağı haline geldiğinde SDK, `onLatestProfileLoad` dinleyicinize güncellenmiş bir `AdaptyProfile` gönderir; bu profilin `appliedAttributionSources` dizisinde `'apple_search_ads'` yer alır.
+
+Bu sayede paywall'ı iki adımda yükleyebilirsiniz:
+1. Hemen `getPaywall` çağırın. Henüz attribution uygulanmadığından Adapty, isteği varsayılan kitleye göre çözümler ve kullanıcı hemen bir paywall görür.
+2. `'apple_search_ads'` göründüğünde tekrar `getPaywall` çağırın. Adapty bu sefer isteği Apple Ads kitlesine göre çözümler ve hedeflenmiş paywallı döndürür; bu paywall ilkinin yerini alır.
+
+`appliedAttributionSources` boş ya da eksik olabilir. Bu şu anlama gelir:
+
+- Bu profil için Apple Ads attribution'ı henüz işlenmemiştir, ya da
+- hiç attribution gelmemiştir.
+Her iki durumda da 1. adım güvenlidir — Adapty, isteği mevcut profil durumuna uyan kitleyle (genellikle varsayılan kitle) çözümler. 2. adım yalnızca `'apple_search_ads'` göründüğünde çalışır.
+
+:::important
+Sonraki her başlatmada, önbelleğe alınmış profil zaten `appliedAttributionSources` içinde `'apple_search_ads'` taşır; dolayısıyla ilk `getPaywall` çağrısı doğrudan Apple Ads segmentine göre paywall'ı döndürür — ikinci bir istek veya görünür bir değişiklik olmaz. İki adımlı flow yalnızca attribution henüz işlenirken, yani ilk başlatmada önem taşır.
+:::
+## Uygulama \{#implementation\}
+
+Hemen bir paywall göster, ardından `'apple_search_ads'` olayını dinle ve geldiğinde paywall'ı yenile.
+1. **SDK'yı etkinleştirin.** Bkz. [React Native SDK'yı yükleyin ve yapılandırın](sdk-installation-reactnative).
+2. **Bir paywall yükleyin ve gösterin** — `getPaywall` ile her zamanki gibi yapın, attribution için beklemeyin.
+3. **Profil güncellemelerine abone olun** — `adapty.addEventListener('onLatestProfileLoad', …)` ile `'apple_search_ads'` değerini takip edin. Bu değer göründüğünde, paywall'u tekrar çekip güncellenmiş olanı gösterin. Listener'ı henüz kurmadıysanız bkz. [Abonelik güncellemelerini dinleyin](react-native-check-subscription-status#listen-to-subscription-updates):
+```typescript
+const subscription = adapty.addEventListener('onLatestProfileLoad', async profile => {
+  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
+  const targeted = await adapty.getPaywall(placementId);
+  // present the targeted paywall in place of the first one
+});
+
+// Call subscription.remove() after the upgrade, or after a timeout (see below).
+```
+
+4. **Zaman aşımından sonra dinlemeyi durdurun.** Kullanıcıların büyük çoğunluğu Apple Ads attribution'ı hiçbir zaman almaz; bu nedenle dinleyiciyi tüm oturum boyunca açık tutmak yerine bir süre sonra kaldırın. İstek başarısız olduğunda kullanıcının her zaman bir şey görmesi için placement'a bir [yedek paywall](react-native-use-fallback-paywalls) yapılandırın.
+## Eksiksiz örnek \{#complete-example\}
+
+`onAppleAdsAttribution`, Apple Ads attribution uygulandığında çözümlenir ya da `timeoutMs` süresi geçince reddedilir. Aşağıdaki kullanımda paywall hemen yüklenir, ardından attribution geldiğinde yeniden çekilir — Apple Ads kullanıcıları hedefli paywall'ı görür; attribution hiç gelmezse ilk paywall yerinde kalır:
+```typescript
+
+const APPLE_ADS_SOURCE = 'apple_search_ads';
+const placementId = 'YOUR_PLACEMENT_ID';
+
+function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
+  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+}
+
+/**
+ * Resolves once Apple Ads attribution is applied to the profile.
+ * Rejects with a timeout error if attribution never arrives within `timeoutMs`.
+ * Call after `adapty.activate()`.
+ */
+export function onAppleAdsAttribution(timeoutMs: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let subscription: { remove: () => void } | undefined;
+
+    const stop = () => {
+      clearTimeout(timer);
+      subscription?.remove();
+    };
+
+    subscription = adapty.addEventListener('onLatestProfileLoad', profile => {
+      if (!hasAppleAdsAttribution(profile)) return;
+      stop();
+      resolve();
+    });
+
+    timer = setTimeout(() => {
+      stop();
+      reject(new Error(`Apple Ads attribution timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+}
+
+let paywall = await adapty.getPaywall(placementId);
+
+onAppleAdsAttribution(30_000)
+  .then(() => adapty.getPaywall(placementId))
+  .then(updated => {
+    paywall = updated;
+  })
+  .catch(() => {
+    console.log('Apple Ads attribution or loading failed');
+  });
+```
+
+İlk açılışta Apple Ads kullanıcıları, varsayılan paywall'un değiştirilmeden önce kısa süreliğine görünmesine tanık olabilir. Paywall'ları Paywall Builder ile sunuyorsanız, yeniden sunumun kabul edilebilir olup olmadığına karar verin ya da güncellemeyi yalnızca paywall gösterilmeden önce uygulayın. `timeoutMs` değerini ne kadar süre dinlemeye hazır olduğunuza göre ayarlayın — gelen attribution verisi genellikle uygulamanın açılmasından sonraki birkaç saniye içinde ulaşır.
+Uygulamanız başka amaçlarla zaten `onLatestProfileLoad` dinliyorsa (örneğin, [abonelik durumunu kontrol etmek](react-native-check-subscription-status#listen-to-subscription-updates) için), bunu değiştirmenize gerek yok. `adapty.addEventListener` birden fazla bağımsız dinleyiciyi destekler, dolayısıyla bu kendi dinleyicisini mevcut olanları etkilemeden ekler.

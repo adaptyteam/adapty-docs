@@ -1,0 +1,99 @@
+---
+title: "在 React Native SDK 中首次启动时展示 AA 定向付费墙"
+description: "在 React Native 中，通过 AdaptyProfile.appliedAttributionSources 立即展示付费墙，并在归因应用后为 Apple Ads 用户升级付费墙。"
+metadataTitle: "首次启动时展示 AA 定向付费墙 | React Native SDK | Adapty 文档"
+---
+Apple Ads (AA) 归因数据在 `adapty.activate()` 之后异步到达。首次启动时，归因数据通常尚未到位，因此 `getPaywall` 会按默认目标受众解析，Apple Ads 用户将错过为 AA 市场细分设置的付费墙。与其等待归因数据到位后再展示付费墙，不如先立即展示一个，等 AA 归因应用后再刷新——这样 Apple Ads 用户能看到精准定向的实验变体，其他用户也无需等待。`AdaptyProfile.appliedAttributionSources` 可告知你 AA 归因何时已被应用。
+## 开始之前 \{#before-you-start\}
+
+你需要：
+- Adapty React Native SDK **3.17.1** 或更高版本。
+- 在 Adapty 中为应用配置好 Apple Ads。请参阅 [Apple Ads](apple-search-ads)。
+## 工作原理 \{#how-it-works\}
+
+调用 `adapty.activate()` 后，SDK 会在后台向 Apple 请求 Apple Ads 归因数据，并将结果转发至 Adapty 后端。当 AA 成为该用户画像的有效归因来源时，SDK 会向你的 `onLatestProfileLoad` 监听器推送更新后的 `AdaptyProfile`，其 `appliedAttributionSources` 数组中会包含 `'apple_search_ads'`。
+
+这样你就可以分两步加载付费墙：
+1. 立即调用 `getPaywall`。由于此时尚未应用归因数据，Adapty 会根据默认目标受众解析请求，用户可立即看到付费墙。
+2. 当出现 `'apple_search_ads'` 时，再次调用 `getPaywall`。Adapty 此时会根据 Apple Ads 目标受众解析请求，并返回针对性付费墙，替换第一个付费墙。
+
+`appliedAttributionSources` 可以为空或不存在，这意味着：
+
+- 该用户画像的 Apple Ads 归因尚未处理完成，或
+- 完全没有收到任何归因数据。
+无论如何，第一步都是安全的——Adapty 会根据当前用户画像状态匹配的目标受众（通常是默认受众）来处理请求。第二步仅在 `'apple_search_ads'` 出现后才会执行。
+
+:::important
+在每次后续启动时，缓存的用户画像已经在 `appliedAttributionSources` 中包含 `'apple_search_ads'`，因此第一次 `getPaywall` 就会直接返回针对 Apple Ads 市场细分的付费墙——不会有第二次请求，也不会有任何可见变化。这个两步流程只在首次启动时有意义，因为那时归因数据仍在处理中。
+:::
+## 实现 \{#implementation\}
+
+立即展示付费墙，然后监听 `'apple_search_ads'` 事件，待其到达后刷新付费墙。
+1. **激活 SDK。** 请参阅[安装与配置 React Native SDK](sdk-installation-reactnative)。
+2. **使用 `getPaywall` 正常加载并展示付费墙** — 不要等待归因数据才展示。
+3. **通过 `adapty.addEventListener('onLatestProfileLoad', …)` 订阅用户画像更新**，并监听 `'apple_search_ads'`。当该字段出现时，重新获取付费墙并展示更新后的版本。如果你还没有设置监听器，请参阅[监听订阅更新](react-native-check-subscription-status#listen-to-subscription-updates)：
+```typescript
+const subscription = adapty.addEventListener('onLatestProfileLoad', async profile => {
+  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
+  const targeted = await adapty.getPaywall(placementId);
+  // present the targeted paywall in place of the first one
+});
+
+// Call subscription.remove() after the upgrade, or after a timeout (see below).
+```
+
+4. **超时后停止监听。** 大多数用户不会获得 Apple Ads 归因数据，因此请在一段时间后移除监听器，而不是在整个会话中保持其开启。为版位配置[备用付费墙](react-native-use-fallback-paywalls)，这样即使请求失败，用户也能看到内容。
+## 完整示例 \{#complete-example\}
+
+`onAppleAdsAttribution` 在 Apple Ads 归因成功应用后 resolve，或在 `timeoutMs` 超时后 reject。下面的示例会立即加载付费墙，然后在归因数据到达时重新获取——Apple Ads 用户将看到定向付费墙，若归因始终未到达，则继续使用首次加载的付费墙：
+```typescript
+
+const APPLE_ADS_SOURCE = 'apple_search_ads';
+const placementId = 'YOUR_PLACEMENT_ID';
+
+function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
+  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+}
+
+/**
+ * Resolves once Apple Ads attribution is applied to the profile.
+ * Rejects with a timeout error if attribution never arrives within `timeoutMs`.
+ * Call after `adapty.activate()`.
+ */
+export function onAppleAdsAttribution(timeoutMs: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let subscription: { remove: () => void } | undefined;
+
+    const stop = () => {
+      clearTimeout(timer);
+      subscription?.remove();
+    };
+
+    subscription = adapty.addEventListener('onLatestProfileLoad', profile => {
+      if (!hasAppleAdsAttribution(profile)) return;
+      stop();
+      resolve();
+    });
+
+    timer = setTimeout(() => {
+      stop();
+      reject(new Error(`Apple Ads attribution timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+}
+
+let paywall = await adapty.getPaywall(placementId);
+
+onAppleAdsAttribution(30_000)
+  .then(() => adapty.getPaywall(placementId))
+  .then(updated => {
+    paywall = updated;
+  })
+  .catch(() => {
+    console.log('Apple Ads attribution or loading failed');
+  });
+```
+
+首次启动时，Apple Ads 用户会短暂看到默认付费墙，随后被替换。如果你使用付费墙编辑工具展示付费墙，请决定是否接受重新展示，或仅在付费墙显示之前进行更新。根据你愿意等待的时长来调整 `timeoutMs`——通常情况下，归因数据会在启动后几秒内到达。
+如果你的应用已经出于其他目的监听 `onLatestProfileLoad`（例如[检查订阅状态](react-native-check-subscription-status#listen-to-subscription-updates)），则无需做任何修改。`adapty.addEventListener` 支持多个独立监听器，因此这里只是新增一个，不会影响其他监听器。
