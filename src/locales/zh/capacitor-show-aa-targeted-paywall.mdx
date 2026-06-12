@@ -1,0 +1,142 @@
+---
+title: "在 Capacitor SDK 中首次启动时展示 AA 定向付费墙"
+description: "在 Capacitor 中立即展示付费墙，并在应用 Apple Ads 归因后为 Apple Ads 用户升级付费墙，使用 AdaptyProfile.appliedAttributionSources。"
+metadataTitle: "首次启动时展示 AA 定向付费墙 | Capacitor SDK | Adapty 文档"
+---
+Apple Ads (AA) 归因数据是在 `adapty.activate()` 之后异步到达的。首次启动时，归因数据通常还未就绪，因此 `getPaywall` 会按默认目标受众来解析，Apple Ads 用户就会错过你针对 AA 市场细分配置的付费墙。与其等待归因数据到位再展示付费墙，不如先立即展示一个付费墙，等 AA 归因数据应用后再刷新——这样 Apple Ads 用户能看到定向版本的付费墙，其他用户也无需等待。`AdaptyProfile.appliedAttributionSources` 可告知你 AA 归因何时已完成应用。
+## 开始之前 \{#before-you-start\}
+
+你需要准备以下内容：
+- Adapty Capacitor SDK **3.17.1** 或更高版本。
+- 在 Adapty 中为应用配置 Apple Ads。请参阅 [Apple Ads](apple-search-ads)。
+## 工作原理 \{#how-it-works\}
+
+调用 `adapty.activate()` 后，SDK 会在后台向 Apple 请求 Apple Ads 归因数据，并将结果转发给 Adapty 后端。当 AA 成为该用户画像的有效归因来源时，SDK 会向你的 `onLatestProfileLoad` 监听器推送更新后的 `AdaptyProfile`，其 `appliedAttributionSources` 数组中会包含 `'apple_search_ads'`。
+
+因此，你可以分两步加载付费墙：
+1. 立即调用 `getPaywall`。由于尚未应用任何归因，Adapty 会根据默认目标受众解析请求，用户可立即看到付费墙。
+2. 当出现 `'apple_search_ads'` 时，再次调用 `getPaywall`。Adapty 此时会根据 Apple Ads 目标受众解析请求，并返回定向付费墙，替换第一个付费墙。
+
+`appliedAttributionSources` 可以为空或不存在，这意味着：
+
+- 该用户画像的 Apple Ads 归因尚未处理完成，或
+- 根本没有收到任何归因数据。
+无论如何，第一步都是安全的——Adapty 会根据当前用户画像状态匹配到对应的目标受众（通常是默认受众）来处理请求。第二步只有在 `'apple_search_ads'` 出现后才会执行。
+
+:::important
+在后续每次启动时，缓存的用户画像已经在 `appliedAttributionSources` 中包含了 `'apple_search_ads'`，因此第一次 `getPaywall` 调用就会直接返回基于 Apple Ads 市场细分的付费墙——不会有第二次请求，也不会出现可见的变化。这个两步流程只在首次启动时才有意义，因为此时归因数据还在处理中。
+:::
+## 实现 \{#implementation\}
+
+立即显示付费墙，然后监听 `'apple_search_ads'` 事件，当其到达时刷新付费墙。
+1. **激活 SDK。** 请参阅[安装并配置 Capacitor SDK](sdk-installation-capacitor)。
+2. **使用 `getPaywall` 正常加载并展示付费墙** — 无需等待归因数据。
+3. **通过 `adapty.addListener('onLatestProfileLoad', …)` 订阅用户画像更新**，并监听 `'apple_search_ads'`。一旦出现该数据，重新获取付费墙并展示更新后的版本。如果尚未配置监听器，请参阅[监听订阅状态更新](capacitor-check-subscription-status#listen-to-subscription-updates)：
+```typescript
+const handle = await adapty.addListener('onLatestProfileLoad', async ({ profile }) => {
+  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
+  const targeted = await adapty.getPaywall({ placementId });
+  // present the targeted paywall in place of the first one
+});
+
+// Call handle.remove() after the upgrade, or after a timeout (see below).
+```
+
+4. **超时后停止监听。** 大多数用户不会收到 Apple Ads 归因数据，因此建议在几秒钟后移除监听器，而不是让它在整个会话期间持续运行。为版位配置[备用付费墙](capacitor-use-fallback-paywalls)，这样即使请求失败，用户也能看到内容。
+## 完整示例 \{#complete-example\}
+
+下面的函数会立即展示付费墙，然后在 `timeoutMs` 时间内获取到归因数据后，将其升级为 Apple Ads 细分的实验变体。每次付费墙更新都会通过 `onPaywall` 回调上报，因此你可以将其接入 UI——用户无需等待，Apple Ads 用户一旦归因落地，即可看到精准投放的付费墙。
+
+`waitForAppleAdsAttribution` 会在归因应用后立即 resolve，超时则 reject。`loadPaywallWithAppleAdsUpgrade` 在首次拉取之前就启动监听，先展示默认目标受众的付费墙，归因落地后再重新拉取：
+```typescript title="loadPaywallWithAppleAdsUpgrade.ts"
+
+const APPLE_ADS_SOURCE = 'apple_search_ads';
+
+function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
+  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+}
+
+/**
+ * Resolves once Apple Ads attribution is applied to the profile, or rejects
+ * after `timeoutMs`. Removes the listener and clears the timer on every path.
+ */
+async function waitForAppleAdsAttribution(timeoutMs: number): Promise<void> {
+  let onAttributionApplied!: () => void;
+  const attributionApplied = new Promise<void>(resolve => {
+    onAttributionApplied = resolve;
+  });
+
+  const handle = await adapty.addListener('onLatestProfileLoad', ({ profile }) => {
+    if (hasAppleAdsAttribution(profile)) onAttributionApplied();
+  });
+
+  // Events aren't replayed, so read the current profile once too. The listener
+  // is already active, so an update firing in between can't be missed.
+  adapty
+    .getProfile()
+    .then(profile => {
+      if (hasAppleAdsAttribution(profile)) onAttributionApplied();
+    })
+    .catch(() => {
+      // Offline with no cached profile — the listener or timeout settles the race.
+    });
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timedOut = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Apple Ads attribution timed out')), timeoutMs);
+  });
+
+  try {
+    await Promise.race([attributionApplied, timedOut]);
+  } finally {
+    clearTimeout(timer);
+    await handle.remove();
+  }
+}
+
+/**
+ * Shows a paywall immediately, then upgrades it to the Apple-Ads-segmented
+ * variant if attribution is applied within `timeoutMs`. Each paywall is reported
+ * through `onPaywall`: the first one renders right away, and Apple Ads users get
+ * the targeted one as soon as attribution lands. Rejects only if the first fetch
+ * fails — an attribution timeout is the normal non-Apple-Ads outcome, not an error.
+ */
+export async function loadPaywallWithAppleAdsUpgrade(
+  placementId: string,
+  timeoutMs: number,
+  onPaywall: (paywall: AdaptyPaywall) => void,
+): Promise<void> {
+  // Start watching for attribution before the first fetch, so an update that
+  // lands while it's loading isn't missed. Don't await it yet — the first
+  // paywall must not wait.
+  const attributionApplied = waitForAppleAdsAttribution(timeoutMs);
+  attributionApplied.catch(() => {});
+
+  // Show a paywall now. With no attribution yet, this is the default audience.
+  onPaywall(await adapty.getPaywall({ placementId }));
+
+  try {
+    await attributionApplied;
+    // Attribution applied — re-fetch so Apple Ads users get the targeted paywall.
+    onPaywall(await adapty.getPaywall({ placementId }));
+  } catch {
+    // Attribution didn't arrive in time — keep the paywall already shown.
+  }
+}
+```
+
+:::note
+Capacitor 插件事件不会重放给在事件触发后才订阅的监听器。这就是为什么 `waitForAppleAdsAttribution` 同时订阅 `onLatestProfileLoad` 并调用一次 `getProfile()`：监听器捕获本次启动期间到达的归因数据，而 `getProfile()` 捕获在上次启动时已应用的归因数据。
+:::
+
+在你展示付费墙的地方接入此逻辑：
+```typescript
+loadPaywallWithAppleAdsUpgrade('YOUR_PLACEMENT_ID', 5000, paywall => {
+  // Present the paywall. If it's already on screen, replace it with this one.
+}).catch(() => {
+  // The first load failed (for example, no network) — show a fallback paywall.
+});
+```
+
+首次启动时，Apple Ads 用户可能会短暂看到默认付费墙，随后才被替换。如果你使用付费墙编辑工具展示付费墙，请决定是否接受重新展示，或者在付费墙显示之前应用升级。`timeoutMs` 设置几秒钟就足够了——即将到来的归因数据会在启动后不久到达。
+如果你的应用已经出于其他目的监听了 `onLatestProfileLoad`（例如[检查订阅状态](capacitor-check-subscription-status#listen-to-subscription-updates)），则无需做任何更改。`adapty.addListener` 支持多个独立监听器，因此新增的监听器不会影响已有的其他监听器。

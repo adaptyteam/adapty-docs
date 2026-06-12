@@ -1,0 +1,142 @@
+---
+title: "Mostrar un paywall dirigido por AA en el primer lanzamiento con Capacitor SDK"
+description: "Muestra un paywall de inmediato y mejóralo para usuarios de Apple Ads una vez aplicada la atribución en Capacitor, usando AdaptyProfile.appliedAttributionSources."
+metadataTitle: "Mostrar paywall dirigido por AA en el primer lanzamiento | Capacitor SDK | Documentación de Adapty"
+---
+La atribución de Apple Ads (AA) llega de forma asíncrona después de `adapty.activate()`. En el primer lanzamiento normalmente todavía no ha llegado, por lo que `getPaywall` resuelve contra la audiencia por defecto y los usuarios de Apple Ads se pierden tu paywall segmentado por AA. En lugar de retrasar el paywall hasta que llegue la atribución, muestra uno inmediatamente y refrésalo una vez que se aplique la atribución de AA — así los usuarios de Apple Ads reciben la variante segmentada y el resto ve un paywall sin espera. `AdaptyProfile.appliedAttributionSources` te indica cuándo se ha aplicado la atribución de AA.
+## Antes de empezar \{#before-you-start\}
+
+Necesitas:
+- Adapty Capacitor SDK **3.17.1** o posterior.
+- Apple Ads configurado para la app en Adapty. Consulta [Apple Ads](apple-search-ads).
+## Cómo funciona \{#how-it-works\}
+
+Tras llamar a `adapty.activate()`, el SDK solicita en segundo plano los datos de atribución de Apple Ads a Apple y reenvía el resultado al backend de Adapty. Cuando AA se convierte en la fuente de atribución activa del perfil, el SDK entrega un `AdaptyProfile` actualizado a tu listener `onLatestProfileLoad`, con `'apple_search_ads'` en el array `appliedAttributionSources`.
+
+Esto te permite cargar el paywall en dos pasos:
+1. Llama a `getPaywall` de inmediato. Sin atribución aplicada todavía, Adapty resuelve la solicitud contra la audiencia predeterminada, por lo que el usuario ve un paywall inmediatamente.
+2. Cuando aparece `'apple_search_ads'`, vuelve a llamar a `getPaywall`. Adapty ahora resuelve la solicitud contra la audiencia de Apple Ads y devuelve el paywall segmentado, que reemplaza al primero.
+
+`appliedAttributionSources` puede estar vacío o ausente. Eso significa que:
+
+- La atribución de Apple Ads aún no se ha procesado para este perfil, o
+- no ha llegado ninguna atribución.
+De todos modos, el paso 1 es seguro — Adapty resuelve la solicitud según la audiencia que coincida con el estado actual del perfil, normalmente la audiencia por defecto. El paso 2 solo se ejecuta una vez que `'apple_search_ads'` aparece.
+
+:::important
+En cada lanzamiento posterior, el perfil en caché ya lleva `'apple_search_ads'` en `appliedAttributionSources`, por lo que el primer `getPaywall` ya devuelve el paywall segmentado por Apple Ads — no hay una segunda petición ni ningún cambio visible. El flujo de dos pasos solo importa en el primer lanzamiento, mientras la atribución aún está en proceso.
+:::
+## Implementación \{#implementation\}
+
+Muestra un paywall de inmediato, luego escucha `'apple_search_ads'` y actualiza el paywall cuando llegue.
+1. **Activa el SDK.** Consulta [Instalar y configurar el SDK de Capacitor](sdk-installation-capacitor).
+2. **Carga y muestra un paywall** con `getPaywall` como siempre — no bloquees esperando la atribución.
+3. **Suscríbete a las actualizaciones del perfil** con `adapty.addListener('onLatestProfileLoad', …)` y observa si aparece `'apple_search_ads'`. Cuando aparezca, vuelve a obtener el paywall y muestra el actualizado. Si aún no has configurado el listener, consulta [Escuchar actualizaciones de suscripción](capacitor-check-subscription-status#listen-to-subscription-updates):
+```typescript
+const handle = await adapty.addListener('onLatestProfileLoad', async ({ profile }) => {
+  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
+  const targeted = await adapty.getPaywall({ placementId });
+  // present the targeted paywall in place of the first one
+});
+
+// Call handle.remove() after the upgrade, or after a timeout (see below).
+```
+
+4. **Deja de escuchar tras un tiempo de espera.** La mayoría de los usuarios nunca reciben atribución de Apple Ads, así que elimina el listener después de unos segundos en lugar de mantenerlo activo durante toda la sesión. Configura un [paywall de respaldo](capacitor-use-fallback-paywalls) para el placement de modo que el usuario siempre vea algo si una solicitud falla.
+## Ejemplo completo \{#complete-example\}
+
+La función de abajo muestra un paywall de inmediato y, si la atribución llega antes de que expire `timeoutMs`, lo actualiza a la variante segmentada por Apple Ads. Notifica cada paywall a través de un callback `onPaywall`, así puedes conectarlo a tu UI — nadie espera, y los usuarios de Apple Ads reciben el paywall específico en cuanto llega la atribución.
+
+`waitForAppleAdsAttribution` se resuelve en cuanto se aplica la atribución, o se rechaza al agotar el tiempo de espera. `loadPaywallWithAppleAdsUpgrade` inicia esa escucha antes del primer fetch, muestra el paywall de la audiencia por defecto y vuelve a hacer fetch cuando llega la atribución:
+```typescript title="loadPaywallWithAppleAdsUpgrade.ts"
+
+const APPLE_ADS_SOURCE = 'apple_search_ads';
+
+function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
+  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+}
+
+/**
+ * Resolves once Apple Ads attribution is applied to the profile, or rejects
+ * after `timeoutMs`. Removes the listener and clears the timer on every path.
+ */
+async function waitForAppleAdsAttribution(timeoutMs: number): Promise<void> {
+  let onAttributionApplied!: () => void;
+  const attributionApplied = new Promise<void>(resolve => {
+    onAttributionApplied = resolve;
+  });
+
+  const handle = await adapty.addListener('onLatestProfileLoad', ({ profile }) => {
+    if (hasAppleAdsAttribution(profile)) onAttributionApplied();
+  });
+
+  // Events aren't replayed, so read the current profile once too. The listener
+  // is already active, so an update firing in between can't be missed.
+  adapty
+    .getProfile()
+    .then(profile => {
+      if (hasAppleAdsAttribution(profile)) onAttributionApplied();
+    })
+    .catch(() => {
+      // Offline with no cached profile — the listener or timeout settles the race.
+    });
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timedOut = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Apple Ads attribution timed out')), timeoutMs);
+  });
+
+  try {
+    await Promise.race([attributionApplied, timedOut]);
+  } finally {
+    clearTimeout(timer);
+    await handle.remove();
+  }
+}
+
+/**
+ * Shows a paywall immediately, then upgrades it to the Apple-Ads-segmented
+ * variant if attribution is applied within `timeoutMs`. Each paywall is reported
+ * through `onPaywall`: the first one renders right away, and Apple Ads users get
+ * the targeted one as soon as attribution lands. Rejects only if the first fetch
+ * fails — an attribution timeout is the normal non-Apple-Ads outcome, not an error.
+ */
+export async function loadPaywallWithAppleAdsUpgrade(
+  placementId: string,
+  timeoutMs: number,
+  onPaywall: (paywall: AdaptyPaywall) => void,
+): Promise<void> {
+  // Start watching for attribution before the first fetch, so an update that
+  // lands while it's loading isn't missed. Don't await it yet — the first
+  // paywall must not wait.
+  const attributionApplied = waitForAppleAdsAttribution(timeoutMs);
+  attributionApplied.catch(() => {});
+
+  // Show a paywall now. With no attribution yet, this is the default audience.
+  onPaywall(await adapty.getPaywall({ placementId }));
+
+  try {
+    await attributionApplied;
+    // Attribution applied — re-fetch so Apple Ads users get the targeted paywall.
+    onPaywall(await adapty.getPaywall({ placementId }));
+  } catch {
+    // Attribution didn't arrive in time — keep the paywall already shown.
+  }
+}
+```
+
+:::note
+Los eventos del plugin de Capacitor no se repiten para un listener que se conecta después de que se disparan. Por eso `waitForAppleAdsAttribution` tanto se suscribe a `onLatestProfileLoad` como lee `getProfile()` una vez: el listener captura la atribución que llega durante este arranque, mientras que `getProfile()` captura la atribución ya aplicada en un arranque anterior.
+:::
+
+Conéctalo donde presentes el paywall:
+```typescript
+loadPaywallWithAppleAdsUpgrade('YOUR_PLACEMENT_ID', 5000, paywall => {
+  // Present the paywall. If it's already on screen, replace it with this one.
+}).catch(() => {
+  // The first load failed (for example, no network) — show a fallback paywall.
+});
+```
+
+En el primer lanzamiento, un usuario de Apple Ads verá brevemente el paywall predeterminado antes de que sea reemplazado. Si presentas paywalls con el Paywall Builder, decide si volver a presentarlo es aceptable, o aplica la actualización antes de mostrar el paywall. Unos pocos segundos son suficientes para `timeoutMs` — la atribución que llega lo hace poco después del lanzamiento.
+Si tu app ya escucha `onLatestProfileLoad` para otros propósitos (por ejemplo, [comprobar el estado de la suscripción](capacitor-check-subscription-status#listen-to-subscription-updates)), no necesitas cambiarlo. `adapty.addListener` admite múltiples listeners independientes, así que este añade el suyo propio sin afectar a los demás.
