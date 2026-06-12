@@ -50,107 +50,63 @@ const subscription = adapty.addEventListener('onLatestProfileLoad', async profil
 // Call subscription.remove() after the upgrade, or after a timeout (see below).
 ```
 
-4. **Stop listening after a timeout.** Most users never get Apple Ads attribution, so remove the listener after a few seconds instead of keeping it open for the whole session. Configure a [fallback paywall](react-native-use-fallback-paywalls) for the placement so the user always sees something if a request fails.
+4. **Stop listening after a timeout.** Most users never get Apple Ads attribution, so remove the listener after a while instead of keeping it open for the whole session. Configure a [fallback paywall](react-native-use-fallback-paywalls) for the placement so the user always sees something if a request fails.
 
 ## Complete example
 
-The function below shows a paywall immediately, then upgrades it to the Apple-Ads-segmented variant if attribution is applied within `timeoutMs`. It reports each paywall through an `onPaywall` callback, so you can wire it to your UI — nobody waits, and Apple Ads users get the targeted paywall as soon as attribution lands.
+`onAppleAdsAttribution` resolves once Apple Ads attribution is applied, or rejects after `timeoutMs`. The usage below loads a paywall immediately, then re-fetches it when attribution lands — Apple Ads users get the targeted paywall, and if attribution never arrives the first paywall stays in place:
 
-`waitForAppleAdsAttribution` resolves as soon as attribution is applied, or rejects after the timeout. `loadPaywallWithAppleAdsUpgrade` starts that watch before the first fetch, shows the default-audience paywall, then re-fetches when attribution lands:
-
-```typescript title="loadPaywallWithAppleAdsUpgrade.ts"
+```typescript
 import { adapty } from 'react-native-adapty';
-import type { AdaptyPaywall, AdaptyProfile } from 'react-native-adapty';
+import type { AdaptyProfile } from 'react-native-adapty';
 
 const APPLE_ADS_SOURCE = 'apple_search_ads';
+const placementId = 'YOUR_PLACEMENT_ID';
 
 function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
   return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
 }
 
 /**
- * Resolves once Apple Ads attribution is applied to the profile, or rejects
- * after `timeoutMs`. Removes the listener and clears the timer on every path.
+ * Resolves once Apple Ads attribution is applied to the profile.
+ * Rejects with a timeout error if attribution never arrives within `timeoutMs`.
+ * Call after `adapty.activate()`.
  */
-async function waitForAppleAdsAttribution(timeoutMs: number): Promise<void> {
-  let onAttributionApplied!: () => void;
-  const attributionApplied = new Promise<void>(resolve => {
-    onAttributionApplied = resolve;
-  });
+export function onAppleAdsAttribution(timeoutMs: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let subscription: { remove: () => void } | undefined;
 
-  const subscription = adapty.addEventListener('onLatestProfileLoad', profile => {
-    if (hasAppleAdsAttribution(profile)) onAttributionApplied();
-  });
+    const stop = () => {
+      clearTimeout(timer);
+      subscription?.remove();
+    };
 
-  // Events aren't replayed, so read the current profile once too. The listener
-  // is already active, so an update firing in between can't be missed.
-  adapty
-    .getProfile()
-    .then(profile => {
-      if (hasAppleAdsAttribution(profile)) onAttributionApplied();
-    })
-    .catch(() => {
-      // Offline with no cached profile — the listener or timeout settles the race.
+    subscription = adapty.addEventListener('onLatestProfileLoad', profile => {
+      if (!hasAppleAdsAttribution(profile)) return;
+      stop();
+      resolve();
     });
 
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timedOut = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error('Apple Ads attribution timed out')), timeoutMs);
+    timer = setTimeout(() => {
+      stop();
+      reject(new Error(`Apple Ads attribution timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
   });
-
-  try {
-    await Promise.race([attributionApplied, timedOut]);
-  } finally {
-    clearTimeout(timer);
-    subscription.remove();
-  }
 }
 
-/**
- * Shows a paywall immediately, then upgrades it to the Apple-Ads-segmented
- * variant if attribution is applied within `timeoutMs`. Each paywall is reported
- * through `onPaywall`: the first one renders right away, and Apple Ads users get
- * the targeted one as soon as attribution lands. Rejects only if the first fetch
- * fails — an attribution timeout is the normal non-Apple-Ads outcome, not an error.
- */
-export async function loadPaywallWithAppleAdsUpgrade(
-  placementId: string,
-  timeoutMs: number,
-  onPaywall: (paywall: AdaptyPaywall) => void,
-): Promise<void> {
-  // Start watching for attribution before the first fetch, so an update that
-  // lands while it's loading isn't missed. Don't await it yet — the first
-  // paywall must not wait.
-  const attributionApplied = waitForAppleAdsAttribution(timeoutMs);
-  attributionApplied.catch(() => {});
+let paywall = await adapty.getPaywall(placementId);
 
-  // Show a paywall now. With no attribution yet, this is the default audience.
-  onPaywall(await adapty.getPaywall(placementId));
-
-  try {
-    await attributionApplied;
-    // Attribution applied — re-fetch so Apple Ads users get the targeted paywall.
-    onPaywall(await adapty.getPaywall(placementId));
-  } catch {
-    // Attribution didn't arrive in time — keep the paywall already shown.
-  }
-}
+onAppleAdsAttribution(30_000)
+  .then(() => adapty.getPaywall(placementId))
+  .then(updated => {
+    paywall = updated;
+  })
+  .catch(() => {
+    console.log('Apple Ads attribution or loading failed');
+  });
 ```
 
-:::note
-React Native event emitters aren't replayed to a listener that attaches after they fire. That's why `waitForAppleAdsAttribution` both subscribes to `onLatestProfileLoad` and reads `getProfile()` once: the listener catches attribution that lands during this launch, while `getProfile()` catches attribution already applied on a previous launch.
-:::
-
-Wire it to wherever you present the paywall:
-
-```typescript
-loadPaywallWithAppleAdsUpgrade('YOUR_PLACEMENT_ID', 5000, paywall => {
-  // Present the paywall. If it's already on screen, replace it with this one.
-}).catch(() => {
-  // The first load failed (for example, no network) — show a fallback paywall.
-});
-```
-
-On first launch, an Apple Ads user briefly sees the default paywall before it's replaced. If you present paywalls with the Paywall Builder, decide whether re-presenting is acceptable, or apply the upgrade only before the paywall is shown. A few seconds is enough for `timeoutMs` — attribution that's coming arrives shortly after launch.
+On first launch, an Apple Ads user briefly sees the default paywall before it's replaced. If you present paywalls with the Paywall Builder, decide whether re-presenting is acceptable, or apply the upgrade only before the paywall is shown. Tune `timeoutMs` to how long you're willing to keep listening — attribution that's coming usually arrives within a few seconds of launch.
 
 If your app already listens to `onLatestProfileLoad` for other purposes (for example, [checking subscription status](react-native-check-subscription-status#listen-to-subscription-updates)), you don't need to change it. `adapty.addEventListener` supports multiple independent listeners, so this adds its own without affecting the others.
