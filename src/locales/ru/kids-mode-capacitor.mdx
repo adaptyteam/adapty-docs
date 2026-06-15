@@ -8,24 +8,21 @@ metadataTitle: "Режим «Для детей» в Capacitor SDK | Докуме
 
 ## Что нужно сделать? \{#whats-required\}
 
-Необходимо настроить Adapty SDK так, чтобы отключить сбор следующих данных:
+Необходимо настроить SDK, чтобы отключить сбор:
 
 - [IDFA (Identifier for Advertisers)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers) (iOS)
 - [Android Advertising ID (AAID/GAID)](https://support.google.com/googleplay/android-developer/answer/6048248) (Android)
-- [IP-адрес](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
-
-Кроме того, рекомендуем осторожно подходить к использованию пользовательских идентификаторов. Идентификатор в формате `<Имя.Фамилия>` однозначно расценивается как сбор персональных данных, как и использование email. В режиме «Для детей» лучшая практика — использовать рандомизированные или анонимизированные идентификаторы (например, хешированные ID или UUID, сгенерированные на устройстве).
-
+- [IP-адреса](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+Кроме того, рекомендуем обращаться с customer user ID с осторожностью. User ID в формате `<FirstName.LastName>` однозначно расценивается как сбор персональных данных — так же, как и использование email. Для режима «Для детей» лучшая практика — использовать рандомизированные или анонимизированные идентификаторы (например, хэшированные ID или UUID, сгенерированные на устройстве), чтобы обеспечить соответствие требованиям.
 ## Включение режима «Для детей» \{#enabling-kids-mode\}
 
 ### Настройки в дашборде Adapty \{#updates-in-the-adapty-dashboard\}
 
 В дашборде Adapty необходимо отключить сбор IP-адресов. Для этого перейдите в [App settings](https://app.adapty.io/settings/general) и нажмите **Disable IP address collection** в разделе **Collect users' IP address**.
 
-### Изменения в коде мобильного приложения \{#updates-in-your-mobile-app-code\}
+### Обновления в коде мобильного приложения \{#updates-in-your-mobile-app-code\}
 
-Чтобы соответствовать политикам, отключите сбор IDFA, GAID и IP-адреса пользователя:
-
+Чтобы соответствовать требованиям политик, отключите сбор IDFA, GAID и IP-адреса пользователя:
 ```typescript showLineNumbers
 
 try {
@@ -34,12 +31,12 @@ try {
     params: {
       // Disable IP address collection
       ipAddressCollectionDisabled: true,
-      
+
       // Disable IDFA collection on iOS
       ios: {
         idfaCollectionDisabled: true
       },
-      
+
       // Disable Google Advertising ID collection on Android
       android: {
         adIdCollectionDisabled: true
@@ -52,47 +49,91 @@ try {
 }
 ```
 
-### Платформенные настройки \{#platform-specific-configurations\}
+### Конфигурация для отдельных платформ \{#platform-specific-configurations\}
 
-#### iOS: включение режима «Для детей» через CocoaPods \{#ios-enable-kids-mode-using-cocoapods\}
+#### iOS: включение режима Kids Mode через CocoaPods \{#ios-enable-kids-mode-using-cocoapods\}
 
-Если вы используете CocoaPods для iOS, режим «Для детей» можно включить и на нативном уровне:
+Если вы используете CocoaPods для iOS, вы также можете включить Kids Mode на нативном уровне:
 
-1. Обновите Podfile:
+1. Обновите ваш Podfile:
 
    - Если у вас **нет** секции `post_install`, добавьте весь блок кода ниже целиком.
-   - Если секция `post_install` **уже есть**, добавьте в неё выделенные строки.
-
-   ```ruby showLineNumbers title="Podfile"
-   post_install do |installer|
+   - Если у вас **есть** секция `post_install`, добавьте в неё выделенные строки.
+```ruby showLineNumbers title="Podfile"
+   def adapty_enable_kids_mode(installer)
      installer.pods_project.targets.each do |target|
-       # highlight-start
-       if target.name == 'Adapty'
-         target.build_configurations.each do |config|
-           config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)']
-           config.build_settings['OTHER_SWIFT_FLAGS'] << '-DADAPTY_KIDS_MODE'
-         end
+       next unless target.name == 'Adapty'
+       target.build_configurations.each do |config|
+         flags = config.build_settings['OTHER_SWIFT_FLAGS'] || '$(inherited)'
+         flags = flags.join(' ') if flags.is_a?(Array)
+         config.build_settings['OTHER_SWIFT_FLAGS'] = "#{flags} -DADAPTY_KIDS_MODE"
        end
-       # highlight-end
+       target.frameworks_build_phase.files.dup.each do |bf|
+         target.frameworks_build_phase.remove_build_file(bf) if bf.display_name.to_s.include?('AdSupport')
+       end
      end
+     installer.pods_project.save
+     Dir.glob(File.join(installer.sandbox.root, 'Target Support Files', '**', '*.xcconfig')).each do |xc|
+       File.write(xc, File.read(xc).gsub(/\s*-framework\s+"?AdSupport"?/, ''))
+     end
+   end
+```groovy showLineNumbers title="build.gradle"
+   android {
+       defaultConfig {
+           manifestPlaceholders = [
+               AdaptyKidsMode: "true"
+           ]
+       }
+   }
+   ```
+
+## Disable Kids Mode \{#disable-kids-mode\}
+
+If you need to disable Kids Mode...
+```
+
+Переведи следующий MDX-документ с английского на русский (ru-RU):
+
+```mdx
+  post_install do |installer|
+     # ... keep your existing post_install body (Flutter adds one automatically) ...
+
+     adapty_enable_kids_mode(installer)   # <-- enable Adapty Kids Mode
+   end
+   ```
+
+2. Run the following command to apply the changes:
+
+   ```sh showLineNumbers title="Shell"
+   pod install
+   ```
+
+#### Android: Enable Kids Mode using Gradle
+
+For Android, you can also enable Kids Mode at the native level by adding the following to your app's `build.gradle`:
+```
+
+  post_install do |installer|
+     # ... keep your existing post_install body (Flutter adds one automatically) ...
+
+     adapty_enable_kids_mode(installer)   # <-- enable Adapty Kids Mode
    end
    ```
 
 2. Выполните следующую команду, чтобы применить изменения:
 
    ```sh showLineNumbers title="Shell"
-   pod install 
+   pod install
    ```
 
-#### Android: включение режима «Для детей» через Gradle \{#android-enable-kids-mode-using-gradle\}
+#### Android: включение Kids Mode через Gradle \{#android-enable-kids-mode-using-gradle\}
 
-Для Android режим «Для детей» также можно включить на нативном уровне, добавив следующее в файл `build.gradle` вашего приложения:
-
+Для Android Kids Mode также можно включить на нативном уровне, добавив следующее в `build.gradle` вашего приложения:
 ```groovy showLineNumbers title="android/app/build.gradle"
 android {
     defaultConfig {
         // ... existing config ...
-        
+
         // Enable Kids Mode
         buildConfigField "boolean", "ADAPTY_KIDS_MODE", "true"
     }

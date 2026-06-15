@@ -1,0 +1,141 @@
+---
+title: "Usar paywalls de respaldo en un proyecto Expo"
+description: "Configura paywalls de respaldo en un proyecto Expo React Native mediante el plugin de configuración de react-native-adapty."
+metadataTitle: "Usar paywalls de respaldo en Expo | Documentación de Adapty"
+keywords: ['paywalls de respaldo', 'expo', 'react native', 'plugin de configuración', 'prebuild', 'paywalls sin conexión']
+---
+import FallbackPaywallIntroduction from '@site/src/locales/es/reusable/FallbackPaywallIntroduction.md';
+
+<FallbackPaywallIntroduction />
+
+## Configurar un paywall de respaldo en un proyecto Expo \{#configure-a-fallback-paywall-in-an-expo-project\}
+
+En un proyecto Expo gestionado (o cualquier proyecto que use `expo prebuild`), el plugin de configuración `react-native-adapty` puede copiar automáticamente los archivos de paywall de respaldo a las ubicaciones correctas de iOS y Android durante el prebuild.
+
+### Paso 1. Descarga el archivo de paywall de respaldo \{#step-1-download-the-fallback-paywall-file\}
+
+<FallbackPaywallIntroduction />
+
+### Paso 2. Coloca el archivo de respaldo en tu proyecto \{#step-2-place-the-fallback-file-in-your-project\}
+
+Guarda el archivo descargado en algún lugar dentro de tu proyecto, por ejemplo:
+
+```
+assets/adapty_fallback.json
+```
+
+### Paso 3. Configura el plugin en `app.json` \{#step-3-configure-the-plugin-in-appjson\}
+
+En tu `app.json` (o `app.config.js`), añade `react-native-adapty` a la lista de plugins e indica la ruta al archivo de respaldo:
+
+```json title="app.json"
+{
+  "expo": {
+    "plugins": [
+      [
+        "react-native-adapty",
+        {
+          "fallbackPaywall": "./assets/adapty_fallback.json"
+        }
+      ]
+    ]
+  }
+}
+```
+
+El plugin copiará el archivo a las ubicaciones nativas correctas durante `expo prebuild`.
+
+### Paso 4. Ejecuta el prebuild \{#step-4-run-prebuild\}
+
+```sh
+npx expo prebuild
+```
+
+### Paso 5. Activa el paywall de respaldo en el código \{#step-5-activate-the-fallback-paywall-in-code\}
+
+Después del prebuild, activa el paywall de respaldo en el código de tu aplicación:
+
+```typescript
+await adapty.setFallbackPaywalls(require('./assets/adapty_fallback.json'));
+```
+:::important
+Esta guía aplica a **proyectos Expo**.
+Si usas **React Native puro (sin Expo)**, consulta la [guía de paywall de respaldo para React Native puro](react-native-use-fallback-paywalls-pure) en su lugar.
+:::
+
+<FallbackPaywallIntroduction />
+El SDK de Adapty lee el archivo de respaldo desde el bundle **nativo**: un recurso iOS dentro del paquete `.app`, o una entrada en `android/app/src/main/assets/`. En un proyecto Expo, `npx expo prebuild --clean` regenera esos directorios en cada ejecución, por lo que no puedes añadir los archivos manualmente. El plugin de configuración de `react-native-adapty` se encarga de conectar el archivo al bundle nativo por ti.
+
+:::tip
+Hay una configuración completa y funcional disponible en la [app de ejemplo `FocusJournalExpo`](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo).
+:::
+## Configuración \{#configuration\}
+
+1. Coloca los archivos JSON de respaldo en cualquier lugar de tu proyecto — normalmente junto a otros recursos:
+
+   ```
+   <your-project>/
+   └── assets/
+       ├── ios_fallback.json
+       └── android_fallback.json
+   ```
+
+2. Añade la opción `fallbackFile` a la entrada `react-native-adapty` en `app.json` (o `app.config.js`). Cada clave de plataforma es opcional — configura solo las plataformas que necesites:
+```json title="app.json"
+   {
+     "expo": {
+       "plugins": [
+         [
+           "react-native-adapty",
+           {
+             "fallbackFile": {
+               "ios": "./assets/ios_fallback.json",
+               "android": "./assets/android_fallback.json"
+             }
+           }
+         ]
+       ]
+     }
+   }
+   ```
+
+   :::note
+   Adapty exporta un JSON de respaldo distinto para cada plataforma: IDs de producto de Apple en iOS e IDs de producto de Google Play en Android. Apunta cada plataforma a su propio archivo.
+   :::
+
+3. Regenera los proyectos nativos:
+```sh title="Shell"
+   npx expo prebuild
+   ```
+
+   El plugin añade el archivo iOS a los recursos del bundle del proyecto Xcode y copia el archivo Android en `android/app/src/main/assets/`. La salida del prebuild incluye líneas como:
+
+   ```
+   [react-native-adapty] Registered ios_fallback.json as iOS bundle resource
+   [react-native-adapty] Copied android_fallback.json to android assets/
+   ```
+
+4. Registra el archivo con el SDK en tiempo de ejecución:
+
+   ```typescript showLineNumbers title="App.tsx"
+   import { adapty } from 'react-native-adapty';
+
+   await adapty.activate('PUBLIC_SDK_KEY');
+```
+  await adapty.setFallback({
+     ios: { fileName: 'ios_fallback.json' },
+     android: { relativeAssetPath: 'android_fallback.json' },
+   });
+   ```
+
+   Los nombres de archivo que se pasan a `setFallback` deben coincidir con los nombres base de los archivos configurados en `fallbackFile`.
+
+:::important
+`setFallback` debe ejecutarse antes de que el SDK obtenga cualquier paywall u onboarding.
+:::
+## Verificación \{#verification\}
+
+Después de `npx expo prebuild`, comprueba ambas plataformas:
+
+- **Android**: Lista el contenido de `android/app/src/main/assets/`. El archivo configurado en `fallbackFile.android` debe estar presente, y el nombre de archivo exclusivo de iOS no debe aparecer aquí.
+- **iOS**: Busca `ios/<ProjectName>.xcodeproj/project.pbxproj` el nombre de archivo exclusivo de iOS. Debe aparecer en `PBXFileReference`, el grupo `Resources` y `PBXResourcesBuildPhase`. El nombre de archivo exclusivo de Android no debe aparecer en `project.pbxproj`.

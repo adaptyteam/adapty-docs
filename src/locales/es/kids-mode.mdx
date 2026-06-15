@@ -6,31 +6,28 @@ metadataTitle: "Modo Kids en iOS SDK | Documentación de Adapty"
 
 Si tu aplicación iOS está destinada a niños, debes seguir las políticas de [Apple](https://developer.apple.com/kids/). Si usas el SDK de Adapty, unos pocos pasos sencillos te ayudarán a configurarlo para cumplir con estas políticas y superar las revisiones de la app store.
 
-## ¿Qué se necesita? \{#whats-required\}
+## ¿Qué se requiere? \{#whats-required\}
 
-Debes configurar el SDK de Adapty para deshabilitar la recopilación de:
+Necesitas configurar el SDK para desactivar la recopilación de:
 
 - [IDFA (Identificador para anunciantes)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers)
 - [Dirección IP](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
-
-Además, te recomendamos usar el ID de usuario del cliente con cuidado. Un ID de usuario con el formato `<Nombre.Apellido>` se considerará claramente como recopilación de datos personales, al igual que el uso de un correo electrónico. En el Modo Kids, la mejor práctica es utilizar identificadores aleatorios o anonimizados (por ejemplo, IDs con hash o UUIDs generados por el dispositivo) para garantizar el cumplimiento.
-
+Además, te recomendamos usar el customer user ID con cuidado. Un ID con formato `<FirstName.LastName>` se tratará definitivamente como recopilación de datos personales, al igual que usar un email. Para el modo Kids, la mejor práctica es usar identificadores aleatorios o anonimizados (por ejemplo, IDs con hash o UUIDs generados por el dispositivo) para garantizar el cumplimiento normativo.
 ## Activar el Modo Kids \{#enabling-kids-mode\}
 
 ### Cambios en el Adapty Dashboard \{#updates-in-the-adapty-dashboard\}
 
 En el Adapty Dashboard, debes deshabilitar la recopilación de direcciones IP. Para ello, ve a [App settings](https://app.adapty.io/settings/general) y haz clic en **Disable IP address collection** bajo **Collect users' IP address**.
 
-### Cambios en el código de tu aplicación \{#updates-in-your-mobile-app-code\}
+### Actualizaciones en el código de tu app móvil \{#updates-in-your-mobile-app-code\}
 
-Para cumplir con las políticas, deshabilita la recopilación del IDFA y la dirección IP del usuario.
+Para cumplir con las políticas, desactiva la recopilación del IDFA y la dirección IP del usuario.
 
 <Tabs>
 <TabItem value="spm" label="Swift Package Manager" default>
-Si usas Swift Package Manager, puedes activar el Modo Kids seleccionando el módulo **Adapty_KidsMode** en Xcode al instalar el SDK.
+Si usas Swift Package Manager, puedes activar el modo Kids seleccionando el módulo **Adapty_KidsMode** en Xcode al instalar el SDK.
 
-En Xcode, ve a **File** -> **Add Package Dependency...**. Ten en cuenta que los pasos para agregar dependencias de paquetes pueden variar entre versiones de Xcode, así que consulta la documentación de Xcode si es necesario.
-
+En Xcode, ve a **File** -> **Add Package Dependency...**. Ten en cuenta que los pasos para añadir dependencias de paquetes pueden variar entre versiones de Xcode, así que consulta la documentación de Xcode si es necesario.
 1. Introduce la URL del repositorio:
    ```
    https://github.com/adaptyteam/AdaptySDK-iOS.git
@@ -38,36 +35,41 @@ En Xcode, ve a **File** -> **Add Package Dependency...**. Ten en cuenta que los 
 2. Selecciona la versión (se recomienda la última versión estable) y haz clic en **Add Package**.
 3. En la ventana **Choose Package Products**, selecciona los módulos que necesites:
    - **Adapty_KidsMode** (módulo principal)
-   - **AdaptyUI** (opcional: solo si planeas usar Paywall Builder)
+   - **AdaptyUI_KidsMode** (opcional: solo si vas a usar Paywall Builder)
 
    No necesitarás ningún otro paquete.
 4. Haz clic en **Add Package** para completar la instalación.
+5. En tu código, escribe `import Adapty_KidsMode` en lugar de `import Adapty`, y `import AdaptyUI_KidsMode` en lugar de `import AdaptyUI`:
+
+```swift
+```
+
 </TabItem>
 <TabItem value="cocoapods" label="CocoaPods">
 1. Actualiza tu Podfile:
 
-   - Si **no** tienes una sección `post_install`, añade el bloque de código completo a continuación.
-   - Si **sí** tienes una sección `post_install`, incorpora las líneas resaltadas en ella.
-
-   ```ruby showLineNumbers title="Podfile"
-   post_install do |installer|
+   - Si **no** tienes una sección `post_install`, añade el bloque de código completo que aparece a continuación.
+   - Si **sí** tienes una sección `post_install`, combina las líneas resaltadas con la tuya.
+```ruby showLineNumbers title="Podfile"
+   def adapty_enable_kids_mode(installer)
      installer.pods_project.targets.each do |target|
-       // highlight-start
-       if target.name == 'Adapty'
-         target.build_configurations.each do |config|
-           config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)']
-           config.build_settings['OTHER_SWIFT_FLAGS'] << '-DADAPTY_KIDS_MODE'
-         end
+       next unless target.name == 'Adapty'
+       target.build_configurations.each do |config|
+         flags = config.build_settings['OTHER_SWIFT_FLAGS'] || '$(inherited)'
+         flags = flags.join(' ') if flags.is_a?(Array)
+         config.build_settings['OTHER_SWIFT_FLAGS'] = "#{flags} -DADAPTY_KIDS_MODE"
        end
-       // highlight-end
+       target.frameworks_build_phase.files.dup.each do |bf|
+         target.frameworks_build_phase.remove_build_file(bf) if bf.display_name.to_s.include?('AdSupport')
+       end
+     end
+     installer.pods_project.save
+     Dir.glob(File.join(installer.sandbox.root, 'Target Support Files', '**', '*.xcconfig')).each do |xc|
+       File.write(xc, File.read(xc).gsub(/\s*-framework\s+"?AdSupport"?/, ''))
      end
    end
-   ```
-
-2. Ejecuta el siguiente comando para aplicar los cambios:
-
-   ```sh showLineNumbers title="Shell"
-   pod install 
+```sh showLineNumbers title="Shell"
+   pod install
    ```
 </TabItem>
 </Tabs>

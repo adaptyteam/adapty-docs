@@ -1,0 +1,112 @@
+---
+title: "Show an AA-targeted paywall on first launch in React Native SDK"
+description: "Show a paywall immediately and upgrade it for Apple Ads users once attribution is applied in React Native, using AdaptyProfile.appliedAttributionSources."
+metadataTitle: "Show AA-targeted paywall on first launch | React Native SDK | Adapty Docs"
+---
+
+Apple Ads (AA) attribution arrives asynchronously after `adapty.activate()`. On first launch it usually hasn't landed yet, so `getPaywall` resolves against the default audience and Apple Ads users miss your AA-segmented paywall. Rather than delay the paywall until attribution lands, show one immediately and refresh it once AA attribution is applied — so Apple Ads users get the targeted variant and everyone else sees a paywall with no wait. `AdaptyProfile.appliedAttributionSources` tells you when AA attribution has been applied.
+
+## Before you start
+
+You need:
+- Adapty React Native SDK **3.17.1** or later.
+- Apple Ads configured for the app in Adapty. See [Apple Ads](apple-search-ads).
+
+## How it works
+
+After `adapty.activate()`, the SDK requests Apple Ads attribution from Apple in the background and forwards the result to Adapty's backend. When AA becomes the active attribution source for the profile, the SDK delivers an updated `AdaptyProfile` to your `onLatestProfileLoad` listener, with `'apple_search_ads'` in its `appliedAttributionSources` array.
+
+This lets you load the paywall in two steps:
+
+1. Call `getPaywall` right away. With no attribution applied yet, Adapty resolves the request against the default audience, so the user sees a paywall immediately.
+2. When `'apple_search_ads'` appears, call `getPaywall` again. Adapty now resolves the request against the Apple Ads audience and returns the targeted paywall, which replaces the first one.
+
+`appliedAttributionSources` can be empty or absent. That means either:
+
+- Apple Ads attribution hasn't been processed yet for this profile, or
+- no attribution has arrived at all.
+
+Either way, step 1 is safe — Adapty resolves the request against whichever audience matches the current profile state, typically the default audience. Step 2 runs only once `'apple_search_ads'` appears.
+
+:::important
+On every subsequent launch, the cached profile already carries `'apple_search_ads'` in `appliedAttributionSources`, so the first `getPaywall` already returns the Apple-Ads-segmented paywall — there's no second fetch or visible change. The two-step flow only matters on the first launch, while attribution is still in flight.
+:::
+
+## Implementation
+
+Show a paywall right away, then listen for `'apple_search_ads'` and refresh the paywall when it arrives.
+
+1. **Activate the SDK.** See [Install & configure the React Native SDK](sdk-installation-reactnative).
+2. **Load and present a paywall** with `getPaywall` as usual — don't block on attribution.
+3. **Subscribe to profile updates** with `adapty.addEventListener('onLatestProfileLoad', …)` and watch for `'apple_search_ads'`. When it appears, fetch the paywall again and present the updated one. If you haven't set up the listener yet, see [Listen to subscription updates](react-native-check-subscription-status#listen-to-subscription-updates):
+
+```typescript
+const subscription = adapty.addEventListener('onLatestProfileLoad', async profile => {
+  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
+  const targeted = await adapty.getPaywall(placementId);
+  // present the targeted paywall in place of the first one
+});
+
+// Call subscription.remove() after the upgrade, or after a timeout (see below).
+```
+
+4. **Stop listening after a timeout.** Most users never get Apple Ads attribution, so remove the listener after a while instead of keeping it open for the whole session. Configure a [fallback paywall](react-native-use-fallback-paywalls) for the placement so the user always sees something if a request fails.
+
+## Complete example
+
+`onAppleAdsAttribution` resolves once Apple Ads attribution is applied, or rejects after `timeoutMs`. The usage below loads a paywall immediately, then re-fetches it when attribution lands — Apple Ads users get the targeted paywall, and if attribution never arrives the first paywall stays in place:
+
+```typescript
+import { adapty } from 'react-native-adapty';
+import type { AdaptyProfile } from 'react-native-adapty';
+
+const APPLE_ADS_SOURCE = 'apple_search_ads';
+const placementId = 'YOUR_PLACEMENT_ID';
+
+function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
+  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+}
+
+/**
+ * Resolves once Apple Ads attribution is applied to the profile.
+ * Rejects with a timeout error if attribution never arrives within `timeoutMs`.
+ * Call after `adapty.activate()`.
+ */
+export function onAppleAdsAttribution(timeoutMs: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let subscription: { remove: () => void } | undefined;
+
+    const stop = () => {
+      clearTimeout(timer);
+      subscription?.remove();
+    };
+
+    subscription = adapty.addEventListener('onLatestProfileLoad', profile => {
+      if (!hasAppleAdsAttribution(profile)) return;
+      stop();
+      resolve();
+    });
+
+    timer = setTimeout(() => {
+      stop();
+      reject(new Error(`Apple Ads attribution timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+}
+
+let paywall = await adapty.getPaywall(placementId);
+
+onAppleAdsAttribution(30_000)
+  .then(() => adapty.getPaywall(placementId))
+  .then(updated => {
+    paywall = updated;
+  })
+  .catch(() => {
+    console.log('Apple Ads attribution or loading failed');
+  });
+```
+
+On first launch, an Apple Ads user briefly sees the default paywall before it's replaced. If you present paywalls with the Paywall Builder, decide whether re-presenting is acceptable, or apply the upgrade only before the paywall is shown. Tune `timeoutMs` to how long you're willing to keep listening — attribution that's coming usually arrives within a few seconds of launch.
+
+If your app already listens to `onLatestProfileLoad` for other purposes (for example, [checking subscription status](react-native-check-subscription-status#listen-to-subscription-updates)), you don't need to change it. `adapty.addEventListener` supports multiple independent listeners, so this adds its own without affecting the others.

@@ -16,9 +16,11 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { compile } from '@mdx-js/mdx';
 import remarkDirective from 'remark-directive';
 import { remarkAside } from '../src/plugins/remark-aside.mjs';
+import yaml from 'js-yaml';
 
 const ROOT = process.cwd();
 const SCAN_DIRS = ['src/content/docs', 'src/locales', 'src/components/reusable'];
@@ -42,9 +44,39 @@ async function* walk(dir) {
   }
 }
 
-async function checkFile(file) {
+// Returns a parse-error descriptor for the file's YAML frontmatter, or null if
+// the frontmatter is valid / absent. @mdx-js/mdx does not validate frontmatter,
+// so this closes the gap that let bad-YAML translations reach the slow build.
+export function frontmatterError(content) {
+  const m = content.match(/^﻿?---\r?\n([\s\S]*?)\r?\n---/);
+  if (!m) return null;
   try {
-    await compile(await fs.readFile(file, 'utf-8'), {
+    yaml.load(m[1]);
+    return null;
+  } catch (err) {
+    return {
+      message: err.message.split('\n')[0],
+      // js-yaml mark line is 0-based and relative to the frontmatter body;
+      // +2 maps it to the file (1 for the opening `---`, 1 for 1-based lines).
+      line: err.mark ? err.mark.line + 2 : null,
+      column: err.mark ? err.mark.column + 1 : null,
+    };
+  }
+}
+
+async function checkFile(file) {
+  const content = await fs.readFile(file, 'utf-8');
+  const fmErr = frontmatterError(content);
+  if (fmErr) {
+    return {
+      file: path.relative(ROOT, file),
+      message: `frontmatter: ${fmErr.message}`,
+      line: fmErr.line,
+      column: fmErr.column,
+    };
+  }
+  try {
+    await compile(content, {
       jsx: true,
       remarkPlugins: [remarkDirective, remarkAside],
     });
@@ -59,29 +91,37 @@ async function checkFile(file) {
   }
 }
 
-const files = [];
-for (const dir of SCAN_DIRS) {
-  for await (const f of walk(path.join(ROOT, dir))) files.push(f);
+async function main() {
+  const files = [];
+  for (const dir of SCAN_DIRS) {
+    for await (const f of walk(path.join(ROOT, dir))) files.push(f);
+  }
+
+  const issues = [];
+  for (let i = 0; i < files.length; i += CONCURRENCY) {
+    const chunk = files.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(chunk.map(checkFile));
+    for (const r of results) if (r) issues.push(r);
+  }
+
+  issues.sort((a, b) => a.file.localeCompare(b.file));
+
+  if (issues.length === 0) {
+    console.log(`check-mdx-parse: ${files.length} file(s) parsed cleanly`);
+    process.exit(0);
+  }
+
+  console.error(`check-mdx-parse: ${files.length} scanned, ${issues.length} parse error(s):\n`);
+  for (const i of issues) {
+    const loc = i.line ? `${i.file}:${i.line}${i.column ? ':' + i.column : ''}` : i.file;
+    console.error(`  ${loc}`);
+    console.error(`    ${i.message}\n`);
+  }
+  process.exit(1);
 }
 
-const issues = [];
-for (let i = 0; i < files.length; i += CONCURRENCY) {
-  const chunk = files.slice(i, i + CONCURRENCY);
-  const results = await Promise.all(chunk.map(checkFile));
-  for (const r of results) if (r) issues.push(r);
+const isMain = process.argv[1]
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  main();
 }
-
-issues.sort((a, b) => a.file.localeCompare(b.file));
-
-if (issues.length === 0) {
-  console.log(`check-mdx-parse: ${files.length} file(s) parsed cleanly`);
-  process.exit(0);
-}
-
-console.error(`check-mdx-parse: ${files.length} scanned, ${issues.length} parse error(s):\n`);
-for (const i of issues) {
-  const loc = i.line ? `${i.file}:${i.line}${i.column ? ':' + i.column : ''}` : i.file;
-  console.error(`  ${loc}`);
-  console.error(`    ${i.message}\n`);
-}
-process.exit(1);

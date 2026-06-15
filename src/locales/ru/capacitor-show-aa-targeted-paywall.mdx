@@ -1,0 +1,103 @@
+---
+title: "Показ пейвола с таргетингом по Apple Ads при первом запуске в Capacitor SDK"
+description: "Показывайте пейвол сразу и обновляйте его для пользователей Apple Ads после применения атрибуции в Capacitor, используя AdaptyProfile.appliedAttributionSources."
+metadataTitle: "Показ пейвола с таргетингом по Apple Ads при первом запуске | Capacitor SDK | Документация Adapty"
+---
+Атрибуция Apple Ads (AA) поступает асинхронно после вызова `adapty.activate()`. При первом запуске она обычно ещё не получена, поэтому `getPaywall` разрешается по аудитории по умолчанию, и пользователи Apple Ads не попадают на пейвол, настроенный под AA-сегмент. Вместо того чтобы откладывать показ пейвола до получения атрибуции, покажите его сразу, а затем обновите, как только атрибуция AA будет применена — тогда пользователи Apple Ads увидят целевой вариант, а остальные не будут ждать. `AdaptyProfile.appliedAttributionSources` сообщает, когда атрибуция AA применена.
+## Перед началом работы \{#before-you-start\}
+
+Вам понадобится:
+- Adapty Capacitor SDK версии **3.17.1** или выше.
+- Настроенная интеграция Apple Ads для приложения в Adapty. См. [Apple Ads](apple-search-ads).
+## Как это работает \{#how-it-works\}
+
+После `adapty.activate()` SDK в фоновом режиме запрашивает данные атрибуции Apple Ads у Apple и передаёт результат в бэкенд Adapty. Когда AA становится активным источником атрибуции для профиля, SDK доставляет обновлённый `AdaptyProfile` в ваш слушатель `onLatestProfileLoad`, в массиве `appliedAttributionSources` которого появляется `'apple_search_ads'`.
+
+Это позволяет загружать пейвол в два шага:
+1. Вызовите `getPaywall` сразу. Поскольку атрибуция ещё не применена, Adapty обрабатывает запрос относительно аудитории по умолчанию, и пользователь видит пейвол немедленно.
+2. Когда появится `'apple_search_ads'`, вызовите `getPaywall` снова. Adapty теперь обрабатывает запрос относительно аудитории Apple Ads и возвращает целевой пейвол, который заменяет первый.
+
+`appliedAttributionSources` может быть пустым или отсутствовать. Это означает одно из двух:
+
+- атрибуция Apple Ads ещё не обработана для этого профиля, или
+- атрибуция не поступила вовсе.
+При любом раскладе шаг 1 безопасен — Adapty обрабатывает запрос с учётом аудитории, соответствующей текущему состоянию профиля, как правило это аудитория по умолчанию. Шаг 2 выполняется только после того, как `'apple_search_ads'` появится в атрибуции.
+
+:::important
+При каждом последующем запуске в кешированном профиле уже содержится `'apple_search_ads'` в `appliedAttributionSources`, поэтому первый же `getPaywall` сразу возвращает пейвол, сегментированный по Apple Ads, — никакого повторного запроса или видимого изменения не происходит. Двухшаговое флоу актуально только при первом запуске, пока атрибуция ещё не получена.
+:::
+## Реализация \{#implementation\}
+
+Покажите пейвол сразу, а затем слушайте событие `'apple_search_ads'` и обновляйте пейвол при его получении.
+1. **Активируйте SDK.** См. [Установка и настройка Capacitor SDK](sdk-installation-capacitor).
+2. **Загрузите и покажите пейвол** с помощью `getPaywall` как обычно — не блокируйте выполнение на ожидании атрибуции.
+3. **Подпишитесь на обновления профиля** через `adapty.addListener('onLatestProfileLoad', …)` и отслеживайте появление `'apple_search_ads'`. Когда оно появится, снова запросите пейвол и покажите обновлённый. Если слушатель ещё не настроен, см. [Подписка на обновления подписки](capacitor-check-subscription-status#listen-to-subscription-updates):
+```typescript
+const listener = await adapty.addListener('onLatestProfileLoad', async ({ profile }) => {
+  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
+  const targeted = await adapty.getPaywall({ placementId });
+  // present the targeted paywall in place of the first one
+});
+
+// Call listener.remove() after the upgrade, or after a timeout (see below).
+```
+
+4. **Прекращайте слушать по таймауту.** Большинство пользователей никогда не получают атрибуцию Apple Ads, поэтому удаляйте слушатель через некоторое время, а не держите его открытым на протяжении всей сессии. Настройте [резервный пейвол](capacitor-use-fallback-paywalls) для плейсмента, чтобы пользователь всегда что-то видел в случае ошибки запроса.
+## Полный пример \{#complete-example\}
+
+`onAppleAdsAttribution` резолвится, когда атрибуция Apple Ads применена, или отклоняется по истечении `timeoutMs`. В примере ниже пейвол загружается сразу, а затем перезагружается, когда приходит атрибуция — пользователи Apple Ads видят целевой пейвол, а если атрибуция так и не пришла, остаётся первый пейвол:
+```typescript
+
+const APPLE_ADS_SOURCE = 'apple_search_ads';
+const placementId = 'YOUR_PLACEMENT_ID';
+
+function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
+  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+}
+
+/**
+ * Resolves once Apple Ads attribution is applied to the profile.
+ * Rejects with a timeout error if attribution never arrives within `timeoutMs`.
+ * Call after `adapty.activate()`.
+ */
+export function onAppleAdsAttribution(timeoutMs: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let handle: { remove: () => void } | undefined;
+
+    const stop = () => {
+      clearTimeout(timer);
+      handle?.remove();
+    };
+
+    adapty
+      .addListener('onLatestProfileLoad', ({ profile }) => {
+        if (!hasAppleAdsAttribution(profile)) return;
+        stop();
+        resolve();
+      })
+      .then(listener => {
+        handle = listener;
+      });
+
+    timer = setTimeout(() => {
+      stop();
+      reject(new Error(`Apple Ads attribution timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+}
+
+let paywall = await adapty.getPaywall({ placementId });
+
+onAppleAdsAttribution(30_000)
+  .then(() => adapty.getPaywall({ placementId }))
+  .then(updated => {
+    paywall = updated;
+  })
+  .catch(() => {
+    console.log('Apple Ads attribution or loading failed');
+  });
+```
+
+При первом запуске пользователь Apple Ads ненадолго видит пейвол по умолчанию, прежде чем он заменяется. Если вы показываете пейволы через Paywall Builder, решите, допустимо ли повторное отображение, или применяйте обновление до того, как пейвол будет показан. Настройте `timeoutMs` в зависимости от того, сколько вы готовы ждать — атрибуция, если она придёт, обычно поступает в течение нескольких секунд после запуска.
+Если ваше приложение уже слушает `onLatestProfileLoad` для других целей (например, [проверки статуса подписки](capacitor-check-subscription-status#listen-to-subscription-updates)), менять ничего не нужно. `adapty.addListener` поддерживает несколько независимых слушателей, поэтому этот добавляется самостоятельно, не затрагивая остальные.

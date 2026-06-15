@@ -1,0 +1,103 @@
+---
+title: "Capacitor SDK'da ilk başlatmada AA hedefli bir paywall gösterme"
+description: "Bir paywallı hemen gösterin ve attribution uygulandıktan sonra Apple Ads kullanıcıları için Capacitor'da yükseltin; bunun için AdaptyProfile.appliedAttributionSources kullanın."
+metadataTitle: "İlk başlatmada AA hedefli paywall gösterme | Capacitor SDK | Adapty Dokümanları"
+---
+Apple Ads (AA) attribution, `adapty.activate()` çağrısından sonra asenkron olarak gelir. İlk açılışta genellikle henüz gelmemiş olduğundan `getPaywall`, varsayılan kitleye göre çözümlenir ve Apple Ads kullanıcıları AA segmentine özel paywallı kaçırır. Paywallı attribution gelene kadar bekletmek yerine hemen gösterin, ardından AA attribution uygulandığında yenileyin; böylece Apple Ads kullanıcıları hedeflenmiş varyantı alır, diğer kullanıcılar ise hiç beklemeden paywallı görür. `AdaptyProfile.appliedAttributionSources`, AA attribution'ın ne zaman uygulandığını size söyler.
+## Başlamadan önce \{#before-you-start\}
+
+İhtiyacınız olanlar:
+- Adapty Capacitor SDK **3.17.1** veya üstü.
+- Uygulamanız için Adapty'de Apple Ads yapılandırılmış olmalı. Bkz. [Apple Ads](apple-search-ads).
+## Nasıl çalışır \{#how-it-works\}
+
+`adapty.activate()` çağrısının ardından SDK, arka planda Apple'dan Apple Ads attribution verisi ister ve sonucu Adapty'nin backend'ine iletir. AA, profil için aktif attribution kaynağı haline geldiğinde SDK, `onLatestProfileLoad` dinleyicinize güncellenmiş bir `AdaptyProfile` iletir; bu profildeki `appliedAttributionSources` dizisinde `'apple_search_ads'` yer alır.
+
+Bu sayede paywall'ı iki adımda yükleyebilirsiniz:
+1. `getPaywall` fonksiyonunu hemen çağırın. Henüz attribution uygulanmadığından Adapty, isteği varsayılan kitleye göre çözümler ve kullanıcı bir paywall görür.
+2. `'apple_search_ads'` göründüğünde `getPaywall` fonksiyonunu tekrar çağırın. Adapty artık isteği Apple Ads kitlesine göre çözümler ve ilk paywall'un yerini alan hedeflenmiş paywall'u döndürür.
+
+`appliedAttributionSources` boş olabilir veya hiç bulunmayabilir. Bu şu anlama gelir:
+
+- Bu profil için Apple Ads attribution'ı henüz işlenmemiştir, veya
+- Hiç attribution gelmemiştir.
+Her iki durumda da 1. adım güvenlidir — Adapty, isteği mevcut profil durumuna uyan kitleye göre çözümler; bu genellikle varsayılan kitledir. 2. adım yalnızca `'apple_search_ads'` göründüğünde çalışır.
+
+:::important
+Sonraki her başlatmada, önbelleğe alınmış profil zaten `appliedAttributionSources` içinde `'apple_search_ads'` bilgisini taşır; dolayısıyla ilk `getPaywall` çağrısı doğrudan Apple Ads segmentine göre belirlenmiş paywall'ı döndürür — ikinci bir istek veya görünür bir değişiklik olmaz. İki adımlı flow yalnızca attribution henüz tamamlanmamışken, yani ilk başlatmada önem taşır.
+:::
+## Uygulama \{#implementation\}
+
+Hemen bir paywall göster, ardından `'apple_search_ads'` olayını dinle ve geldiğinde paywall'ı yenile.
+1. **SDK'yı etkinleştirin.** Bkz. [Capacitor SDK'yı yükleyin ve yapılandırın](sdk-installation-capacitor).
+2. **Bir paywall yükleyip sunun** — `getPaywall` ile her zamanki gibi yapın, attribution için beklemeyin.
+3. **Profil güncellemelerini dinleyin** — `adapty.addListener('onLatestProfileLoad', …)` ile `'apple_search_ads'` değerini izleyin. Bu değer geldiğinde, paywallı tekrar çekip güncellenmiş olanı sunun. Listener'ı henüz ayarlamadıysanız bkz. [Abonelik güncellemelerini dinleyin](capacitor-check-subscription-status#listen-to-subscription-updates):
+```typescript
+const listener = await adapty.addListener('onLatestProfileLoad', async ({ profile }) => {
+  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
+  const targeted = await adapty.getPaywall({ placementId });
+  // present the targeted paywall in place of the first one
+});
+
+// Call listener.remove() after the upgrade, or after a timeout (see below).
+```
+
+4. **Zaman aşımından sonra dinlemeyi durdurun.** Kullanıcıların büyük çoğunluğu hiçbir zaman Apple Ads attribution verisi almaz; bu nedenle dinleyiciyi tüm oturum boyunca açık tutmak yerine bir süre sonra kaldırın. İstek başarısız olduğunda kullanıcının her zaman bir şey görmesini sağlamak için placement'a bir [yedek paywall](capacitor-use-fallback-paywalls) yapılandırın.
+## Tam örnek \{#complete-example\}
+
+`onAppleAdsAttribution`, Apple Ads attribution uygulandığında çözümlenir ya da `timeoutMs` süresinde reddedilir. Aşağıdaki kullanımda paywall hemen yüklenir, ardından attribution geldiğinde yeniden getirilir — Apple Ads kullanıcıları hedeflenmiş paywalli görür; attribution hiç gelmezse ilk paywall geçerli kalır:
+```typescript
+
+const APPLE_ADS_SOURCE = 'apple_search_ads';
+const placementId = 'YOUR_PLACEMENT_ID';
+
+function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
+  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+}
+
+/**
+ * Resolves once Apple Ads attribution is applied to the profile.
+ * Rejects with a timeout error if attribution never arrives within `timeoutMs`.
+ * Call after `adapty.activate()`.
+ */
+export function onAppleAdsAttribution(timeoutMs: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let handle: { remove: () => void } | undefined;
+
+    const stop = () => {
+      clearTimeout(timer);
+      handle?.remove();
+    };
+
+    adapty
+      .addListener('onLatestProfileLoad', ({ profile }) => {
+        if (!hasAppleAdsAttribution(profile)) return;
+        stop();
+        resolve();
+      })
+      .then(listener => {
+        handle = listener;
+      });
+
+    timer = setTimeout(() => {
+      stop();
+      reject(new Error(`Apple Ads attribution timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+}
+
+let paywall = await adapty.getPaywall({ placementId });
+
+onAppleAdsAttribution(30_000)
+  .then(() => adapty.getPaywall({ placementId }))
+  .then(updated => {
+    paywall = updated;
+  })
+  .catch(() => {
+    console.log('Apple Ads attribution or loading failed');
+  });
+```
+
+İlk başlatmada, Apple Ads kullanıcısı varsayılan paywallı kısaca görür ve ardından yenisiyle değiştirilir. Paywallları Paywall Builder ile sunuyorsanız, yeniden sunmanın kabul edilebilir olup olmadığına karar verin ya da güncellemeyi yalnızca paywall gösterilmeden önce uygulayın. `timeoutMs` değerini ne kadar süre dinlemeye hazır olduğunuza göre ayarlayın — gelmekte olan attribution genellikle başlatmanın birkaç saniyesi içinde ulaşır.
+Uygulamanız halihazırda başka amaçlarla `onLatestProfileLoad` dinliyorsa (örneğin, [abonelik durumunu kontrol etmek](capacitor-check-subscription-status#listen-to-subscription-updates) için), herhangi bir değişiklik yapmanıza gerek yok. `adapty.addListener` birden fazla bağımsız dinleyiciyi destekler; bu nedenle kendi dinleyicisi, diğerlerini etkilemeden eklenir.

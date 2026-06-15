@@ -1,0 +1,90 @@
+---
+title: "Использование резервных пейволов в проекте Expo"
+description: "Настройте резервные пейволы в проекте Expo React Native с помощью конфиг-плагина react-native-adapty."
+metadataTitle: "Использование резервных пейволов в Expo | Документация Adapty"
+keywords: ['резервные пейволы', 'expo', 'react native', 'конфиг-плагин', 'prebuild', 'офлайн пейволы']
+---
+import FallbackPaywallIntroduction from '@site/src/locales/ru/reusable/FallbackPaywallIntroduction.md';
+
+:::important
+Это руководство применимо к проектам на **Expo**.
+Если вы используете **чистый React Native (без Expo)**, следуйте [гайду по резервным пейволам для чистого React Native](react-native-use-fallback-paywalls-pure).
+:::
+
+<FallbackPaywallIntroduction />
+SDK Adapty считывает резервный файл из **нативного** бандла — ресурса iOS внутри пакета `.app` или записи в `android/app/src/main/assets/`. В Expo-проекте команда `npx expo prebuild --clean` каждый раз пересоздаёт эти директории, поэтому добавлять файлы вручную не получится. Конфиг-плагин `react-native-adapty` автоматически подключает файл к нативному бандлу.
+
+:::tip
+Полностью рабочий пример доступен в [приложении `FocusJournalExpo`](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo).
+:::
+## Настройка \{#configuration\}
+
+1. Разместите резервные JSON-файлы в любом месте проекта — как правило, рядом с остальными ресурсами:
+
+   ```
+   <your-project>/
+   └── assets/
+       ├── ios_fallback.json
+       └── android_fallback.json
+   ```
+
+2. Добавьте опцию `fallbackFile` в запись `react-native-adapty` в файле `app.json` (или `app.config.js`). Каждый ключ платформы необязателен — подключайте только нужные вам платформы:
+```json title="app.json"
+   {
+     "expo": {
+       "plugins": [
+         [
+           "react-native-adapty",
+           {
+             "fallbackFile": {
+               "ios": "./assets/ios_fallback.json",
+               "android": "./assets/android_fallback.json"
+             }
+           }
+         ]
+       ]
+     }
+   }
+   ```
+
+   :::note
+   Adapty экспортирует отдельный резервный JSON для каждой платформы — с идентификаторами продуктов Apple для iOS и Google Play для Android. Укажите для каждой платформы свой файл.
+   :::
+
+3. Пересоздайте нативные проекты:
+```sh title="Shell"
+npx expo prebuild
+```
+
+Плагин добавляет iOS-файл в ресурсы бандла Xcode-проекта и копирует Android-файл в `android/app/src/main/assets/`. В выводе prebuild появятся строки:
+
+```
+[react-native-adapty] Registered ios_fallback.json as iOS bundle resource
+[react-native-adapty] Copied android_fallback.json to android assets/
+```
+
+4. Зарегистрируйте файл в SDK во время выполнения:
+
+   ```typescript showLineNumbers title="App.tsx"
+   import { adapty } from 'react-native-adapty';
+
+   await adapty.activate('PUBLIC_SDK_KEY');
+   ```
+```
+   await adapty.setFallback({
+     ios: { fileName: 'ios_fallback.json' },
+     android: { relativeAssetPath: 'android_fallback.json' },
+   });
+   ```
+
+   Имена файлов, передаваемые в `setFallback`, должны совпадать с именами файлов, указанных в `fallbackFile`.
+
+:::important
+`setFallback` должен быть вызван до того, как SDK запросит пейвол или онбординг.
+:::
+## Проверка \{#verification\}
+
+После выполнения `npx expo prebuild` проверьте обе платформы:
+
+- **Android**: просмотрите содержимое директории `android/app/src/main/assets/`. Файл, указанный в `fallbackFile.android`, должен присутствовать, а имя файла только для iOS — отсутствовать.
+- **iOS**: найдите в файле `ios/<ProjectName>.xcodeproj/project.pbxproj` имя файла только для iOS. Оно должно встречаться в `PBXFileReference`, группе `Resources` и `PBXResourcesBuildPhase`. Имя файла только для Android не должно появляться в `project.pbxproj`.

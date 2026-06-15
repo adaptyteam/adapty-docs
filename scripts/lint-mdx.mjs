@@ -41,6 +41,11 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+// Heavy parse dependencies (@mdx-js/mdx, remark-*, js-yaml) are imported
+// lazily inside parsesClean() — see note there. The strict lint gate runs in
+// a dependency-free CI job (no `npm ci`), so they must NOT be imported at the
+// top level or the whole script fails to load with ERR_MODULE_NOT_FOUND.
 
 const ROOT = process.cwd();
 
@@ -63,6 +68,7 @@ const FIXABLE_RULES = new Set([
   'locale-import-drift',
   'missing-import',
   'reusable-missing-import',
+  'nested-quote',
 ]);
 
 async function* walkMdx(dir) {
@@ -266,6 +272,176 @@ function checkLocaleReusableImportDrift(localeReusables) {
   return issues;
 }
 
+// Repair a double-quoted YAML frontmatter scalar whose value contains raw
+// (unescaped) inner double-quotes — the translator wraps UI terms in `"` even
+// when the English source uses single quotes. Converts each raw inner `"` to
+// `'` (matching the English convention) and leaves the delimiters intact.
+// Single-line scalars only (title/description/metadataTitle are always one line).
+export function fixFrontmatterQuotes(fmText) {
+  let changed = false;
+  const lines = fmText.split('\n').map((line) => {
+    const m = line.match(/^(\s*[\w-]+:\s*)"(.*)"(\s*)$/);
+    if (!m) return line;
+    const [, pre, val, post] = m;
+    // Only act when a raw (non-escaped) inner quote is present.
+    if (!val.replace(/\\"/g, '').includes('"')) return line;
+    const fixedVal = val.replace(/\\?"/g, (q) => (q === '\\"' ? q : "'"));
+    changed = true;
+    return `${pre}"${fixedVal}"${post}`;
+  });
+  return { result: lines.join('\n'), changed };
+}
+
+// Within a single JSX tag string, convert raw inner double-quotes inside a
+// double-quoted attribute value to single quotes. The real closing quote is the
+// one followed (after optional whitespace) by another `name=`, by `>`/`/>`, or
+// by end-of-tag; any earlier `"` is an inner quote and gets converted. Escaped
+// `\"` is preserved. Returns { result, changed }.
+export function fixTagAttrQuotes(tag) {
+  let out = '';
+  let changed = false;
+  let i = 0;
+  const n = tag.length;
+  const prevNonSpaceIsEq = () => {
+    for (let k = out.length - 1; k >= 0; k--) {
+      if (/\s/.test(out[k])) continue;
+      return out[k] === '=';
+    }
+    return false;
+  };
+  while (i < n) {
+    if (tag[i] === '"' && prevNonSpaceIsEq()) {
+      out += '"'; // opening delimiter
+      i++;
+      let value = '';
+      while (i < n) {
+        if (tag[i] === '\\' && tag[i + 1] === '"') { value += '\\"'; i += 2; continue; }
+        if (tag[i] === '"') {
+          // Decide whether this `"` is the real closing delimiter or a stray
+          // inner quote. In valid JSX, a closed attribute value is followed
+          // (after optional whitespace) by the tag close (`>` / `/>`), another
+          // attribute name (`[A-Za-z_]…`, valued or boolean), or a `{…}`
+          // expression/spread. Anything else (CJK, digits, punctuation — i.e.
+          // continuation of the value text) means this `"` was an inner quote.
+          let j = i + 1;
+          while (j < n && /\s/.test(tag[j])) j++;
+          const next = j < n ? tag[j] : '';
+          const isBoundary = j >= n
+            || next === '>' || next === '/' || next === '{'
+            || /[A-Za-z_]/.test(next);
+          if (isBoundary) break; // real closing quote
+          value += "'"; // inner quote
+          changed = true;
+          i++;
+          continue;
+        }
+        value += tag[i];
+        i++;
+      }
+      out += `${value}"`;
+      i++; // skip closing quote
+      continue;
+    }
+    out += tag[i];
+    i++;
+  }
+  return { result: out, changed };
+}
+
+// Apply fixTagAttrQuotes to every JSX tag in the body, line by line, skipping
+// fenced code blocks so code samples are never altered. Inline-code spans are
+// not specially handled because the target tags (ZoomImage/Inline alt|title)
+// never appear inside backtick spans in practice.
+export function fixNestedQuotesInBody(body) {
+  let changed = false;
+  let fence = null;
+  const lines = body.split('\n').map((line) => {
+    const f = line.match(/^\s*(`{3,}|~{3,})/);
+    if (f) {
+      if (fence === null) fence = f[1][0];
+      else if (line.trimStart()[0] === fence) fence = null;
+      return line;
+    }
+    if (fence !== null) return line;
+    if (!line.includes('"')) return line;
+    return line.replace(/<[A-Za-z][A-Za-z0-9]*\b[^>]*?\/?>/g, (tag) => {
+      const { result, changed: c } = fixTagAttrQuotes(tag);
+      if (c) changed = true;
+      return result;
+    });
+  });
+  return { result: lines.join('\n'), changed };
+}
+
+// Split a file into its frontmatter block (without fences) and body.
+function splitFrontmatter(content) {
+  const lines = content.split('\n');
+  if (lines[0]?.trim() !== '---') return { fm: null, body: content };
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i].trim() === '---') {
+      return {
+        fm: lines.slice(1, i).join('\n'),
+        fmEnd: i,
+        head: lines.slice(0, i + 1).join('\n'),
+        body: lines.slice(i + 1).join('\n'),
+      };
+    }
+  }
+  return { fm: null, body: content };
+}
+
+// Repair nested-quote artifacts across the whole file (frontmatter + body).
+export function fixNestedQuotes(content) {
+  const parts = splitFrontmatter(content);
+  if (parts.fm === null) {
+    return fixNestedQuotesInBody(content);
+  }
+  const fmFix = fixFrontmatterQuotes(parts.fm);
+  const bodyFix = fixNestedQuotesInBody(parts.body);
+  if (!fmFix.changed && !bodyFix.changed) return { result: content, changed: false };
+  const result = `---\n${fmFix.result}\n---\n${bodyFix.result}`;
+  return { result, changed: true };
+}
+
+// True if the content has valid frontmatter YAML AND compiles as MDX.
+// Imports its parse dependencies lazily: this is only ever called from the
+// --fix path (the translate apply job, which runs `npm ci`), never from the
+// strict gate (the dependency-free Lint MDX CI job). Keeping these imports out
+// of module scope is what lets the strict gate run without node_modules.
+export async function parsesClean(content) {
+  const [{ compile }, { default: remarkDirective }, { remarkAside }, { default: yaml }] =
+    await Promise.all([
+      import('@mdx-js/mdx'),
+      import('remark-directive'),
+      import('../src/plugins/remark-aside.mjs'),
+      import('js-yaml'),
+    ]);
+  const parts = splitFrontmatter(content);
+  if (parts.fm !== null) {
+    try { yaml.load(parts.fm); } catch { return false; }
+  }
+  try {
+    await compile(content, { jsx: true, remarkPlugins: [remarkDirective, remarkAside] });
+  } catch { return false; }
+  return true;
+}
+
+// Flags files containing nested-quote artifacts. Detection = "the fixer would
+// change something", which only happens on genuinely broken constructs (a raw
+// inner quote inside a JSX attribute or a double-quoted frontmatter scalar
+// always breaks the parser). So this never fires on valid content.
+function checkNestedQuotes(file, content) {
+  if (!fixNestedQuotes(content).changed) return [];
+  return [{
+    file,
+    line: 0,
+    rule: 'nested-quote',
+    message:
+      'nested double-quote inside a JSX attribute or frontmatter scalar (translation artifact); inner " must be a single quote',
+  }];
+}
+
+async function main() {
 const allIssues = [];
 
 // Map relative path → absolute path so --fix can write repaired content back.
@@ -287,6 +463,7 @@ for await (const file of walkMdx(path.join(ROOT, 'src'))) {
   allIssues.push(...checkBlankAfterImports(rel, lines));
   allIssues.push(...checkClientLoadImports(rel, content, lines));
   allIssues.push(...checkReusableCalloutDirective(rel, content, lines));
+  allIssues.push(...checkNestedQuotes(rel, content));
 
   // Stash locale reusables for the cross-locale drift pass below.
   const reusableMatch = rel.match(/^src\/locales\/([^/]+)\/reusable\/(.+)\.(mdx?)$/);
@@ -313,6 +490,21 @@ if (FIX) {
   for (const [rel, issues] of fixableByFile) {
     const abs = absByRel.get(rel);
     if (!abs) continue;
+    // nested-quote operates on raw content (not line indices) and uses
+    // fix-then-verify: only write the repair if the result parses cleanly,
+    // otherwise leave the file for the strict deploy gate to block.
+    const hasNestedQuote = issues.some(i => i.rule === 'nested-quote');
+    if (hasNestedQuote) {
+      const original = await fs.readFile(abs, 'utf-8');
+      const { result, changed } = fixNestedQuotes(original);
+      if (changed && await parsesClean(result)) {
+        await fs.writeFile(abs, result, 'utf-8');
+        fixedCount += 1;
+      }
+      // A nested-quote file has no other line-based fixes queued in practice;
+      // skip the rest of this iteration to avoid stale line numbers.
+      continue;
+    }
     const lines = (await fs.readFile(abs, 'utf-8')).split('\n');
     // locale-import-drift inserts at top-of-body; do those first so existing
     // line-numbered blank-line fixes (later in the file) stay valid.
@@ -396,3 +588,10 @@ for (const i of remainingIssues) {
   console.error(`  [${i.rule}] ${loc} — ${i.message}`);
 }
 process.exit(1);
+}
+
+const isMain = process.argv[1]
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  main();
+}

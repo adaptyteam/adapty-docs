@@ -895,33 +895,10 @@ async function translateSync(
  *   - en and zh have different raw-block counts (structure diverged in translation)
  */
 function mapParaChunksToZh(enContent, zhContent) {
-  // Collect raw blocks (blank-line-separated, code fences kept intact) — same
-  // logic as splitByParagraphBlocks so the resulting chunks are identical.
-  function getRawBlocks(text) {
-    const lines = text.split("\n");
-    const blocks = [];
-    let start = 0;
-    let codeBlockFence = null;
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const fenceMatch = line.match(/^(`{3,}|~{3,})/);
-      if (fenceMatch) {
-        if (codeBlockFence === null) codeBlockFence = fenceMatch[1][0];
-        else if (line[0] === codeBlockFence) codeBlockFence = null;
-      }
-      if (codeBlockFence === null && line.trim() === "" && i > start) {
-        const block = lines.slice(start, i + 1).join("\n");
-        if (block.trim()) blocks.push(block);
-        start = i + 1;
-      }
-    }
-    const tail = lines.slice(start).join("\n");
-    if (tail.trim()) blocks.push(tail);
-    return blocks;
-  }
-
-  const enRaw = getRawBlocks(enContent);
-  const zhRaw = getRawBlocks(zhContent);
+  // Collect raw blocks (blank-line-separated, code fences kept intact) — shared
+  // with splitByParagraphBlocks so the resulting chunks are identical.
+  const enRaw = splitIntoRawBlocks(enContent);
+  const zhRaw = splitIntoRawBlocks(zhContent);
   if (enRaw.length !== zhRaw.length) return null; // structure diverged — skip
 
   // Greedy grouping: accumulate raw blocks until adding the next would exceed
@@ -2993,12 +2970,13 @@ function splitIntoSections(content, { paragraphFallback = true } = {}) {
       }
     }
 
-    // Code block toggle — track opening character so ~~~ cannot close a ``` block
-    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+    // Code block toggle — track opening character so ~~~ cannot close a ``` block.
+    // Leading-whitespace tolerant so indented (list-nested) fences are tracked.
+    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
     if (fenceMatch) {
       if (codeBlockFence === null) {
         codeBlockFence = fenceMatch[1][0]; // enter block; record '`' or '~'
-      } else if (line[0] === codeBlockFence) {
+      } else if (line.trimStart()[0] === codeBlockFence) {
         codeBlockFence = null; // exit block only if same fence character
       }
     }
@@ -3049,30 +3027,40 @@ function splitIntoSections(content, { paragraphFallback = true } = {}) {
  * unchanged paragraphs always hit the translation cache.
  * If the section cannot be split (e.g. one giant code block), returns it as-is.
  */
-function splitByParagraphBlocks(section) {
-  const lines = section.content.split("\n");
-  const rawBlocks = [];
+// Split text into blank-line-separated raw blocks, keeping fenced code blocks
+// intact. Fence detection tolerates leading whitespace so that code fences
+// nested inside list items (indented) are recognized. Otherwise a blank line
+// *inside* an indented code block is mistaken for a paragraph boundary, the
+// block is split across translation sections, and the fence is reassembled
+// incorrectly — the kids-mode regression, where the split dropped a closing
+// fence and the orphaned `# <--` comment parsed as JSX. Mirrors the
+// indentation-tolerant fence handling in scripts/lint-mdx.mjs.
+export function splitIntoRawBlocks(text) {
+  const lines = text.split("\n");
+  const blocks = [];
   let start = 0;
   let codeBlockFence = null;
-
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-
-    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
     if (fenceMatch) {
       if (codeBlockFence === null) codeBlockFence = fenceMatch[1][0];
-      else if (line[0] === codeBlockFence) codeBlockFence = null;
+      else if (line.trimStart()[0] === codeBlockFence) codeBlockFence = null;
     }
-
     // Blank line outside a code block = paragraph boundary
     if (codeBlockFence === null && line.trim() === "" && i > start) {
       const block = lines.slice(start, i + 1).join("\n");
-      if (block.trim()) rawBlocks.push(block);
+      if (block.trim()) blocks.push(block);
       start = i + 1;
     }
   }
   const tail = lines.slice(start).join("\n");
-  if (tail.trim()) rawBlocks.push(tail);
+  if (tail.trim()) blocks.push(tail);
+  return blocks;
+}
+
+function splitByParagraphBlocks(section) {
+  const rawBlocks = splitIntoRawBlocks(section.content);
 
   if (rawBlocks.length <= 1) return [section]; // can't split further
 
@@ -3312,12 +3300,12 @@ function stripCodeBlocks(content) {
   let inBlock = false;
   let fenceChar = null;
   for (const line of lines) {
-    const m = line.match(/^(`{3,}|~{3,})/);
+    const m = line.match(/^\s*(`{3,}|~{3,})/);
     if (m) {
       if (!inBlock) {
         inBlock = true;
         fenceChar = m[1][0];
-      } else if (line[0] === fenceChar) {
+      } else if (line.trimStart()[0] === fenceChar) {
         inBlock = false;
         fenceChar = null;
       }
@@ -3401,13 +3389,13 @@ function extractCodeBlocks(content) {
   let fenceChar = null;
   let blockLines = [];
   for (const line of lines) {
-    const m = line.match(/^(`{3,}|~{3,})/);
+    const m = line.match(/^\s*(`{3,}|~{3,})/);
     if (m) {
       if (!inBlock) {
         inBlock = true;
         fenceChar = m[1][0];
         blockLines = [line];
-      } else if (line[0] === fenceChar) {
+      } else if (line.trimStart()[0] === fenceChar) {
         blockLines.push(line);
         blocks.push(blockLines.join("\n"));
         inBlock = false;
@@ -3435,7 +3423,7 @@ function patchCodeBlocks(translationContent, newBlocks) {
   let fenceChar = null;
   let blockIndex = 0;
   for (const line of lines) {
-    const m = line.match(/^(`{3,}|~{3,})/);
+    const m = line.match(/^\s*(`{3,}|~{3,})/);
     if (!inBlock && m) {
       // Opening fence — emit replacement block (or original if no replacement left)
       result.push(blockIndex < newBlocks.length ? newBlocks[blockIndex] : line);
@@ -3443,7 +3431,7 @@ function patchCodeBlocks(translationContent, newBlocks) {
       inBlock = true;
       fenceChar = m[1][0];
     } else if (inBlock) {
-      if (m && line[0] === fenceChar) {
+      if (m && line.trimStart()[0] === fenceChar) {
         // Closing fence — already consumed inside the replacement; just end tracking
         inBlock = false;
         fenceChar = null;
@@ -3654,7 +3642,14 @@ async function withRetry(fn, maxRetries = 3) {
 // Run
 // ---------------------------------------------------------------------------
 
-main().catch((err) => {
-  console.error("[translate] Fatal error:", err);
-  process.exit(1);
-});
+// Only run the CLI when invoked directly — importing this module (e.g. from
+// tests) must not kick off a translation run.
+const isMain =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  main().catch((err) => {
+    console.error("[translate] Fatal error:", err);
+    process.exit(1);
+  });
+}

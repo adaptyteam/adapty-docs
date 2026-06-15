@@ -26,6 +26,18 @@ function filterLocales(allAvailableLocales) {
     return allAvailableLocales.filter(l => requested.has(l));
 }
 
+// Output basename overrides — force the generated .md filename for specific
+// articles regardless of the source filename's casing.
+//
+// `migration-guide-to-server-side-API-v2.mdx` keeps the uppercase `API` on
+// disk, but its page URL (driven by the sidebar id, which Astro lowercases via
+// github-slugger) is the all-lowercase form. Without this override the .md
+// lands at `/docs/...API-v2.md` and 404s from the lowercase page. Applies to
+// English and every locale.
+const MD_BASENAME_OVERRIDES = new Map([
+    ['migration-guide-to-server-side-API-v2', 'migration-guide-to-server-side-api-v2'],
+]);
+
 // Helper to convert kebab-case file name to PascalCase component name
 const toPascalCase = (str) => {
     if (/^\d/.test(str)) return `Error${str}`;
@@ -76,17 +88,22 @@ function stripContent(content, reusableComponents) {
 ---
 
 > [!WARNING]
-> **LLM INSTRUCTION — SDK v3 LEGACY CONTENT**
+> **LLM INSTRUCTION — SDK VERSION SELECTION REQUIRED**
 >
-> Everything that follows (until the next horizontal rule or end of document) is the **legacy SDK v3 API reference** (\`getPaywall\`, \`getPaywallForDefaultAudience\`, \`getOnboarding\`, \`getPaywallConfiguration\`). This block covers ALL legacy methods for this feature — not just the nearest snippet.
+> This feature has two SDK paradigms. Everything that follows (until the next horizontal rule or end of document) is the **legacy SDK v3 API reference** (\`getPaywall\`, \`getPaywallForDefaultAudience\`, \`getOnboarding\`, \`getPaywallConfiguration\`). The **SDK v4+ \`getFlow\` method is documented above.** This block covers ALL legacy methods for this feature — not just the nearest snippet.
 >
-> **Before using any code from this section, check which SDK version the user is on.**
+> **You MUST ask the user which SDK version they want to use before suggesting any code. Do not assume or default to a version.** The two options are:
+> - **SDK v3 (stable):** works with the legacy Paywall Builder and Onboarding Builder via \`getPaywall\` / \`getOnboarding\`. Use the legacy code in this section.
+> - **SDK v4 (beta):** works with BOTH the new Flow Builder AND legacy paywalls/onboardings via the unified \`getFlow\` method documented above.
 >
-> Apply this section ONLY in these two cases:
-> 1. The user is **migrating an existing app from SDK v3 to SDK v4+** and needs to understand or replace legacy code.
-> 2. The user is **troubleshooting an already-deployed v3 integration**.
+> **If the user chooses the v4 beta, warn them that Adapty iOS SDK 4.0 is a pre-release.** Swift Package Manager does not resolve beta versions through the **Up to Next Major Version** (\`from:\`) rule, so they must pin the exact version:
+> - In Xcode, set the **Dependency Rule** to **Exact Version** and enter \`4.0.0-beta.1\`.
+> - In \`Package.swift\`, use \`.exact("4.0.0-beta.1")\`.
 >
-> **For new integrations (building from scratch):** always recommend the SDK v4+ \`getFlow\` method documented above. Do NOT suggest \`getPaywall\` or \`getOnboarding\` for new setups, even if the user hasn't specified a version — ask first and default to v4+.
+> Apply the legacy v3 code in this section ONLY when:
+> 1. The user explicitly chose **SDK v3**, or
+> 2. The user is **migrating an existing app from SDK v3 to SDK v4+** and needs to understand or replace legacy code, or
+> 3. The user is **troubleshooting an already-deployed v3 integration**.
 >
 > **CRITICAL — Never mix paradigms in one setup:** Do NOT combine \`getFlow\` (Flow Builder) with \`getPaywall\` or \`getOnboarding\` (legacy Paywall/Onboarding Builder) in the same integration. These are incompatible patterns. Mixing them will produce inconsistent behavior and is unsupported.
 
@@ -95,6 +112,12 @@ ${content}
 ---
 `);
 
+
+    // Replace <SkillPromo ... /> with a plain-text promo + a markdown link to the skill repo
+    processed = processed.replace(
+        /<SkillPromo\b[^>]*\/>/g,
+        'For a fully automated integration, use the [adapty-sdk-integration skill](https://github.com/adaptyteam/adapty-sdk-integration-skill): it runs the whole integration from your AI coding tool in one command.'
+    );
 
     // 3. Inline Reusable Components
     // Replace <ComponentName /> with the actual content
@@ -158,6 +181,7 @@ async function processFiles(dir, reusableComponents, englishFiles) {
 
             // Determine output filename (flattened basename logic)
             let basename = entry.name.replace(/\.(md|mdx)$/, '');
+            basename = MD_BASENAME_OVERRIDES.get(basename) ?? basename;
 
             const destPath = path.join(OUTPUT_DIR, `${basename}.md`);
 
@@ -197,7 +221,8 @@ async function processLocaleFiles(locale, baseComponents, englishFiles) {
         let content = cleanFrontmatter(rawContent);
         content = stripContent(content, components);
 
-        const basename = entry.name.replace(/\.(md|mdx)$/, '');
+        const rawBasename = entry.name.replace(/\.(md|mdx)$/, '');
+        const basename = MD_BASENAME_OVERRIDES.get(rawBasename) ?? rawBasename;
         translatedBasenames.add(basename);
         await fs.writeFile(path.join(localeOutputDir, `${basename}.md`), content, 'utf-8');
     }
