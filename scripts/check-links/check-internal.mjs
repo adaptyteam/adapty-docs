@@ -9,6 +9,7 @@ const RUNTIME_ROUTE_PREFIXES = [
   'api-adapty/',
   'api-web/',
   'api-export-analytics/',
+  'api-mail/',
 ];
 
 const MALFORMED_URL_RE = /^[a-z]https?:\/\//i;

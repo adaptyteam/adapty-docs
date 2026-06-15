@@ -1,0 +1,364 @@
+openapi: 3.1.0
+info:
+  title: Adapty Mail API
+  version: 1.0.0
+  description: |
+    The Adapty Mail API lets you send user profiles and transaction events to Adapty Mail directly
+    from your server, without routing the data through the Adapty SDK.
+
+    Use it to:
+
+    - Add subscribers when you don't have a base in Adapty Mail yet.
+    - Reuse the subscriber base from your other apps.
+    - Feed Adapty Mail server-to-server, with your backend as the source of truth.
+
+    A profile with an email is enough for the **never purchased** flow. Every other flow
+    (renewal cancelled, billing issue, expired, refunded) is driven by purchase history, so those
+    profiles also need transaction events to be placed in the right flow.
+
+    For a step-by-step walkthrough, see [Send emails and transactions via the Adapty Mail API](/docs/mail-send-data-via-api).
+servers:
+  - url: https://api-mail.adapty.io
+    description: Production server
+paths:
+  /api/v1/profile/save/:
+    post:
+      summary: Save profile
+      description: |
+        Creates or updates a profile in Adapty Mail. A profile carries the user's email and attributes
+        that Adapty Mail uses to identify recipients and build [segments](/docs/mail-segments).
+
+        Identify each user by a stable `external_profile_id`. Sending the same `external_profile_id`
+        again updates the existing profile rather than creating a duplicate.
+      operationId: saveProfile
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileDTO'
+            examples:
+              basic:
+                summary: Profile with an email, ready for the "never purchased" flow
+                value:
+                  external_profile_id: "user_12345"
+                  external_created_at: "2026-06-01T10:30:00Z"
+                  email: "jane@example.com"
+                  country: "US"
+                  custom_attributes:
+                    plan: "trial"
+      responses:
+        '200':
+          description: Profile saved successfully. The response body is an empty object.
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                default:
+                  value: {}
+        '400':
+          description: Validation failed — a required field is missing or invalid. `field_name` shows which field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Field required"
+                        error_code: "base_error"
+                        status_code: 400
+                        field_name: "email"
+        '403':
+          description: Missing or invalid secret API key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Secret key doesn't exist"
+                        error_code: "secret_key_does_not_exist_error"
+                        status_code: 403
+                        field_name: null
+  /api/v1/profile/transaction-event/save/:
+    post:
+      summary: Save transaction event
+      description: |
+        Records a store transaction event for a profile. Adapty Mail uses transaction events to place
+        profiles in purchase-based flows — the `event_type` maps to flows such as renewal cancelled,
+        billing issue, expired, and refunded — and for revenue attribution.
+
+        Send these events as you handle purchases, renewals, and cancellations. Only the
+        **never purchased** flow works without them.
+      operationId: saveTransactionEvent
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionEventDTO'
+            examples:
+              basic:
+                summary: A new monthly subscription purchase
+                value:
+                  event_type: "subscription_started"
+                  event_id: "evt_abc123"
+                  event_datetime: "2026-06-10T14:20:05Z"
+                  external_profile_id: "user_12345"
+                  store: "app_store"
+                  store_product_id: "premium_monthly"
+                  store_transaction_id: "1000000123456789"
+                  store_original_transaction_id: "1000000123456789"
+                  purchased_at: "2026-06-10T14:20:00Z"
+                  originally_purchased_at: "2026-06-10T14:20:00Z"
+                  price_usd: "9.99"
+                  expires_at: "2026-07-10T14:20:00Z"
+      responses:
+        '200':
+          description: Transaction event saved successfully. The response body is an empty object.
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                default:
+                  value: {}
+        '400':
+          description: Validation failed — a required field is missing or invalid. `field_name` shows which field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Field required"
+                        error_code: "base_error"
+                        status_code: 400
+                        field_name: "event_type"
+        '403':
+          description: Missing or invalid secret API key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Secret key doesn't exist"
+                        error_code: "secret_key_does_not_exist_error"
+                        status_code: 403
+                        field_name: null
+components:
+  securitySchemes:
+    apikeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        Authenticate every request with your Adapty Mail secret API key, sent as the **Authorization**
+        header with the value `Bearer {your_secret_api_key}`, for example, `Bearer secret_live_...`.
+
+        Find this key in Adapty Mail under **Settings**. The key is project-specific — it identifies the
+        project the data belongs to, so the profile and transaction endpoints don't take a project ID.
+  schemas:
+    ProfileDTO:
+      type: object
+      required:
+        - external_profile_id
+        - external_created_at
+        - email
+      properties:
+        external_profile_id:
+          type: string
+          description: |
+            Stable identifier for the user, owned by your app or backend. Reuse the same value across
+            requests so Adapty Mail links emails, clicks, and purchases to one profile. Never use an
+            anonymous or per-install identifier.
+        external_created_at:
+          type: string
+          format: date-time
+          description: |
+            The user creation time, in ISO 8601 format (for example, `"2026-06-01T10:30:00Z"`).
+            You can use this date in segments.
+        email:
+          type: string
+          format: email
+          description: The user's email address. Adapty Mail delivers campaigns to this address.
+        first_name:
+          type: string
+          description: The user's first name.
+        last_name:
+          type: string
+          description: The user's last name.
+        gender:
+          type: string
+          description: The user's gender.
+        birthday:
+          type: string
+          format: date
+          description: The user's date of birth, in ISO 8601 format (for example, `"1990-05-21"`).
+        country:
+          type: string
+          description: The user's country as a two-letter uppercase ISO 3166-1 alpha-2 code (for example, `US`).
+        store_country:
+          type: string
+          description: The user's store region as a two-letter uppercase ISO 3166-1 alpha-2 code (for example, `US`).
+        custom_attributes:
+          type: object
+          description: |
+            Arbitrary key-value pairs (string or number values) to attach to the profile. Use them to
+            build [segments](/docs/mail-segments) — for example, `plan`, `signup_source`, or `trial_days`.
+        device_info:
+          $ref: '#/components/schemas/DeviceInfoDTO'
+    DeviceInfoDTO:
+      type: object
+      required:
+        - platform
+      properties:
+        platform:
+          type: string
+          description: The platform the user is on, for example, `iOS` or `Android`.
+        device:
+          type: string
+          description: Device model, for example, `iPhone15,2`.
+        os:
+          type: string
+          description: Operating system version, for example, `17.5`.
+        locale:
+          type: string
+          description: The user's locale, for example, `en-US`.
+        timezone:
+          type: string
+          description: The user's timezone, for example, `America/New_York`.
+        app_version:
+          type: string
+          description: Version of your app the user is running, for example, `3.1.0`.
+    TransactionEventDTO:
+      type: object
+      required:
+        - event_type
+        - event_id
+        - event_datetime
+        - external_profile_id
+        - store
+        - store_product_id
+        - store_transaction_id
+        - store_original_transaction_id
+        - purchased_at
+        - originally_purchased_at
+      properties:
+        event_type:
+          $ref: '#/components/schemas/TransactionEventType'
+        event_id:
+          type: string
+          description: Unique identifier for this event, owned by your system. Use it to keep events idempotent.
+        event_datetime:
+          type: string
+          format: date-time
+          description: When the event was recorded, in ISO 8601 format.
+        external_profile_id:
+          type: string
+          description: The same stable `external_profile_id` you send when saving the profile. Links the transaction to the right profile.
+        store:
+          type: string
+          description: The store the transaction came from, for example, `app_store`, `play_store`, or `stripe`.
+        store_product_id:
+          type: string
+          description: Identifier of the purchased product in the store.
+        store_transaction_id:
+          type: string
+          description: Identifier of this transaction in the store.
+        store_original_transaction_id:
+          type: string
+          description: Identifier of the first transaction in the subscription chain. For the first purchase, this equals `store_transaction_id`.
+        purchased_at:
+          type: string
+          format: date-time
+          description: When this transaction occurred, in ISO 8601 format.
+        originally_purchased_at:
+          type: string
+          format: date-time
+          description: When the subscription was first purchased, in ISO 8601 format.
+        price_usd:
+          type: string
+          description: The transaction amount in USD, as a decimal string (for example, `"9.99"`).
+        expires_at:
+          type: string
+          format: date-time
+          description: When the subscription expires or expired, in ISO 8601 format. Omit for non-subscription purchases.
+        offer:
+          $ref: '#/components/schemas/Offer'
+    TransactionEventType:
+      type: string
+      description: The kind of transaction event. Purchase-based flows are triggered by these values.
+      enum:
+        - subscription_started
+        - subscription_renewed
+        - subscription_renewal_cancelled
+        - subscription_renewal_reactivated
+        - billing_issue_detected
+        - entered_grace_period
+        - subscription_refunded
+        - subscription_expired
+        - non_subscription_purchase
+        - non_subscription_purchase_refunded
+    Offer:
+      type: object
+      description: Details of a promotional or introductory offer applied to the transaction.
+      required:
+        - category
+        - offer_type
+      properties:
+        category:
+          $ref: '#/components/schemas/OfferCategory'
+        offer_type:
+          $ref: '#/components/schemas/OfferType'
+        offer_id:
+          type: string
+          description: Identifier of the offer in the store, if any.
+    OfferCategory:
+      type: string
+      enum:
+        - introductory
+        - promotional
+        - offer_code
+        - win_back
+    OfferType:
+      type: string
+      enum:
+        - free_trial
+        - pay_as_you_go
+        - pay_up_front
+    Errors:
+      type: object
+      description: Standard error response. Every failure returns a 4XX status with this shape.
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: string
+                description: Human-readable description of the error.
+              error_code:
+                type: string
+                description: Machine-readable error identifier.
+              status_code:
+                type: integer
+                description: HTTP status code for this error.
+              field_name:
+                type: string
+                description: The request field that caused the error, or `null` if the error isn't field-specific.
