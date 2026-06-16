@@ -48,6 +48,16 @@ const METADATA_TITLE_SUFFIXES = {
 };
 ```
 
+Then add the new language's **refusal patterns** to `REFUSAL_PATTERNS` (search for the `// Russian (ru)` comment to find the localized block). The auto-translator occasionally injects a refusal / "this is only code, not a full document" meta-message **in the target language** — sometimes mid-output, after translating the leading prose — instead of translating. `looksLikeRefusal()` must recognize it so the existing hardened-retry / English-fallback path kicks in; otherwise the broken reply lands on `main` and fails the production deploy's `check-mdx-parse` gate (this is what happened on 2026-06-16). Scope patterns to refusal-meta phrasing — references to the input/document being incomplete, or a request to "provide the full document" — and **avoid generic words** like "code snippet" that appear in real docs:
+
+```js
+  // {LANGUAGE} ({LOCALE})
+  /<refusal phrase>/iu,   // e.g. "I don't see the full MDX document"
+  /<request-for-full-doc phrase>/iu,
+```
+
+To collect real phrasings, translate the known English refusals into the new language: *"I don't see the full MDX document / you sent only a code fragment"*, *"please provide the complete MDX document"*, *"this is just a code block, no translation needed"*. Then add the new locale's refusal strings to the regression test `scripts/__tests__/refusal-detection.test.mjs`, which asserts every active locale's refusal is caught (and that a normal translated body is not).
+
 ### 1c. `src/locales/ui-strings.ts`
 
 Add translations for every key in every group. Groups: `feedback`, `header`, `search`, `articleButtons`, `toc`, `mobileSidebar`, `footer`. Pattern:
@@ -513,7 +523,7 @@ strategy:
 | # | What | File(s) |
 |---|------|---------|
 | 1a | Add to `SUPPORTED_LOCALES` + `LOCALE_NAMES` | `src/data/locales.ts` |
-| 1b | Add to `LANGUAGE_NAMES` + `METADATA_TITLE_SUFFIXES` | `scripts/translate.mjs` |
+| 1b | Add to `LANGUAGE_NAMES` + `METADATA_TITLE_SUFFIXES` + localized `REFUSAL_PATTERNS` (+ regression test) | `scripts/translate.mjs`, `scripts/__tests__/refusal-detection.test.mjs` |
 | 1c | Add UI string translations for all groups | `src/locales/ui-strings.ts` |
 | 1d | Add dictionary translations | `src/locales/dictionary.json` |
 | 1e | Add to `LOCALE_INDEX` + `data-index-name-{LOCALE}` attr | `src/components/Search.astro` |
