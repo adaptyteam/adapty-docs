@@ -1,0 +1,101 @@
+---
+title: "通过 Adapty Mail API 发送邮件和交易数据"
+description: "无需 Adapty SDK，直接从服务器向 Adapty Mail 发送用户画像和交易数据。"
+metadataTitle: "通过 Adapty Mail API 发送数据 | Adapty 文档"
+---
+
+Adapty Mail API 让你无需通过 Adapty SDK 中转，直接从服务器向 Adapty Mail 发送用户画像和交易数据。以下场景适合使用它：
+- 在 Adapty Mail 中尚未有用户列表时添加订阅者。
+- 复用来自其他应用的订阅者列表。
+- 以你的后端作为数据源，通过服务器到服务器的方式向 Adapty Mail 推送数据。
+
+:::note
+**用 API 还是 SDK？** 大多数应用通过 Adapty SDK 向 Adapty Mail 发送数据，SDK 会自动收集邮箱和购买信息。如果你的应用没有集成 Adapty SDK、数据已存储在服务器上，或者需要从其他来源导入订阅者，请选择 API 方式。
+:::
+## 开始之前 \{#before-you-start\}
+
+:::warning
+在发送数据之前，请先完成 Adapty Mail 的配置——包括创建营销活动、市场细分（如有需要）、网页付费墙以及已上线的流程。Adapty Mail 仅向配置完成后创建的用户画像发送邮件；此前已发送的用户画像不会收到任何邮件。请先参阅[Adapty Mail 入门指南](mail-get-started)完成配置，再回到此处继续操作。
+:::
+
+你还需要准备好 API 密钥和基础 URL：
+- **Secret API key（密钥）**：在 Adapty Mail 中，进入 **Settings** 并复制你的 Secret API key。该密钥与项目绑定，API 通过它识别数据所属的项目。
+- **Base URL**：所有请求均发送至 `https://api-mail.adapty.io`。
+- **Authentication（身份验证）**：在 **Authorization** 请求头中以 `Bearer {your_secret_api_key}` 的格式传入密钥。
+
+:::important
+在收集用户邮箱并将其发送至 Adapty Mail 之前，请务必获得用户的明确授权。您有责任遵守 GDPR、CAN-SPAM 及所在市场的其他相关法规。
+:::
+## 发送用户画像 \{#send-user-profiles\}
+
+用户画像包含用户的邮箱和属性。要创建或更新用户画像，请向 `/api/v1/profile/save/` 发送 POST 请求。
+
+以下三个字段为必填项：
+- 由你的应用或后端维护的稳定 `external_profile_id`
+- Adapty Mail 用于发送营销活动邮件的 `email`
+- `external_created_at` —— 用户创建时间，可用于市场细分
+
+:::important
+请始终传入稳定的 `external_profile_id`，不要使用匿名 ID 或每次安装时生成的值。Adapty Mail 依靠它将邮件、点击和购买行为关联到同一个用户画像。
+:::
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/save/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "external_profile_id": "user_12345",
+    "external_created_at": "2026-06-01T10:30:00Z",
+    "email": "jane@example.com",
+    "country": "US",
+    "custom_attributes": {
+      "plan": "trial"
+    }
+  }'
+```
+
+请参阅 [保存用户画像](api-mail/operations/saveProfile) 参考文档，了解所有可用字段。
+## 发送交易事件 \{#send-transaction-events\}
+
+:::note
+拥有邮箱的用户画像即可进入 **never purchased** 流程。其他所有流程还需要交易事件。
+:::
+
+除 **never purchased** 之外的所有流程都依赖购买历史。在处理购买、续订和取消订阅时，同步发送用户画像的交易事件，这样 Adapty Mail 才能将其归入正确的流程。交易事件同时也支持收入归因。只有在你仅运行 **never purchased** 营销活动时，才可以跳过这一步。
+要记录一笔交易，请向 `/api/v1/profile/transaction-event/save/` 发送 POST 请求。使用与用户画像相同的 `external_profile_id`，这样 Adapty Mail 才能将该交易关联到正确的用户。
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/transaction-event/save/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "event_type": "subscription_started",
+    "event_id": "evt_abc123",
+    "event_datetime": "2026-06-10T14:20:05Z",
+    "external_profile_id": "user_12345",
+    "store": "app_store",
+    "store_product_id": "premium_monthly",
+    "store_transaction_id": "1000000123456789",
+    "store_original_transaction_id": "1000000123456789",
+    "purchased_at": "2026-06-10T14:20:00Z",
+    "originally_purchased_at": "2026-06-10T14:20:00Z",
+    "price_usd": "9.99"
+  }'
+```
+
+请参阅 [保存交易事件](api-mail/operations/saveTransactionEvent) 参考文档，了解所有可用字段。
+### 将事件映射到流程 \{#map-your-events-to-flows\}
+
+发送与实际发生情况对应的 `event_type`。Adapty Mail 会根据用户画像的事件历史推断其当前状态，并将其路由到匹配的流程。
+| `event_type` | 发送时机 | 流程 |
+| --- | --- | --- |
+| `subscription_started` | 用户开始新订阅。 | 活跃 — 无再触达流程 |
+| `subscription_renewed` | 订阅自动续期。 | 活跃 — 无再触达流程 |
+| `subscription_renewal_reactivated` | 用户重新开启自动续订。 | 活跃 — 无再触达流程 |
+| `non_subscription_purchase` | 用户完成一次性购买。 | 活跃 — 无再触达流程 |
+| `subscription_renewal_cancelled` | 用户关闭自动续订（订阅在到期前仍有效）。 | 续订已取消 |
+| `billing_issue_detected` | 续订付款失败。 | 账单问题 |
+| `entered_grace_period` | 付款失败，但用户仍处于宽限期内。 | 账单问题 |
+| `subscription_expired` | 订阅到期，访问权限终止。 | 已过期 |
+| `subscription_refunded` | 订阅购买已退款。 | 已退款 |
+| `non_subscription_purchase_refunded` | 一次性购买已退款。 | 已退款 |
