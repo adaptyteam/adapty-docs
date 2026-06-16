@@ -1,20 +1,178 @@
 ---
-title: "将 Adapty Android SDK 迁移到 v. 3.0"
-description: "迁移到 Adapty Android SDK v3.0，获得更好的性能和新的变现功能。"
-metadataTitle: "迁移到 Adapty Android SDK v3.0 | Adapty 文档"
+title: "迁移 Adapty Android SDK 至 v3.0"
+description: "迁移至 Adapty Android SDK v3.0，享受更优性能与全新变现功能。"
+metadataTitle: "迁移至 Adapty Android SDK v3.0 | Adapty 文档"
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
+Adapty SDK v3.0 带来了重大改进，在迁移之前，请务必了解以下关键变更。
 
-Adapty SDK v.3.0 支持全新的 [Adapty 付费墙编辑工具](adapty-paywall-builder)，这是一款用于创建付费墙的全新无代码、用户友好型工具。凭借其高度灵活性和丰富的设计能力，您的付费墙将变得更加有效且盈利。
+## 更换弃用方法 \{#replace-deprecated-methods\}
 
-Adapty SDK 以 BoM（物料清单）的形式交付，确保应用中的 Adapty SDK 和 AdaptyUI SDK 版本保持一致。
+### activateAdapty → Adapty.activate \{#activateadapty--adaptyadapty\}
 
-要迁移到 v3.0，请按如下方式更新您的代码：
+`activateAdapty` 函数已被弃用，请改用 `Adapty.activate`。
 
+<Tabs>
+<TabItem value="v3" label="v3.0">
+
+```kotlin
+override fun onCreate() {
+    super.onCreate()
+    Adapty.activate(
+        applicationContext,
+        AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+            .withObserverMode(false)
+            .withCustomerUserId(customerUserId)
+            .withIpAddressCollectionDisabled(false)
+            .build()
+    )
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x（已弃用）">
+
+```kotlin
+override fun onCreate() {
+    super.onCreate()
+    Adapty.activate(applicationContext, "PUBLIC_SDK_KEY", observerMode = false, customerUserId = "YOUR_USER_ID")
+}
+```
+
+</TabItem>
+</Tabs>
+
+### getPaywalls → getPaywall \{#getpaywalls--getpaywall\}
+
+`getPaywalls` 函数已被弃用，请改用 `getPaywall`。
+
+<Tabs>
+<TabItem value="v3" label="v3.0">
+
+```kotlin
+Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            // 使用付费墙
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // 处理错误
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x（已弃用）">
+
+```kotlin
+Adapty.getPaywalls(forceUpdate = false) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywalls = result.value.paywalls
+            // 使用付费墙
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // 处理错误
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+### getPaywallProducts → getPaywallProducts \{#getpaywallproducts--getpaywallproducts\}
+
+`getPaywallProducts` 函数签名已更新。
+
+<Tabs>
+<TabItem value="v3" label="v3.0">
+
+```kotlin
+Adapty.getPaywallProducts(paywall) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val products = result.value
+            // 使用产品
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // 处理错误
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x（已弃用）">
+
+```kotlin
+Adapty.getPaywallProducts(paywall) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val products = result.value
+            // 使用产品
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // 处理错误
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+## 更新后的模型 \{#updated-models\}
+
+### AdaptyPaywall \{#adaptypaywall\}
+
+`AdaptyPaywall` 模型已更新，包含以下变更：
+
+| 属性 | v2.x | v3.0 |
+|------|------|------|
+| `name` | 已弃用 | 已移除 |
+| `variationId` | 保留 | 保留 |
+| `revision` | 保留 | 保留 |
+| `isPromo` | 已弃用 | 已移除 |
+
+### AdaptyProduct \{#adaptyprodcut\}
+
+`AdaptyProduct` 模型已更新，包含以下变更：
+
+| 属性 | v2.x | v3.0 |
+|------|------|------|
+| `variationId` | 保留 | 已移除（移至 `AdaptyPaywall`）|
+| `paywallName` | 保留 | 已移除 |
+| `paywallABTestName` | 保留 | 已移除 |
+
+## 移除的功能 \{#removed-functionality\}
+
+以下功能已在 v3.0 中移除：
+
+- **Promo campaigns**：不再支持促销活动功能
+- **getPromo**：`getPromo` 方法已移除
+- **setExternalAnalyticsEnabled**：此方法已移除，请参阅[分析集成文档](analytics-integration)了解替代方案
+
+## 迁移步骤 \{#migration-steps\}
+
+1. 将 `build.gradle` 中的 SDK 版本更新至 `3.0.0`
+2. 将所有 `activateAdapty` 调用替换为 `Adapty.activate`，并使用新的 `AdaptyConfig.Builder`
+3. 将所有 `getPaywalls` 调用替换为 `getPaywall`，并传入版位 ID
+4. 移除所有对已弃用属性的引用
+5. 测试所有购买流程，确保功能正常
+
+如需获取完整的迁移支持，请联系 [Adapty 支持团队](https://adapty.io/contact)。
+Adapty SDK v3.0 带来了全新的 [Adapty 付费墙编辑工具](adapty-paywall-builder)，这是用于创建付费墙的全新无代码工具，操作简单、功能强大。凭借其极高的灵活性和丰富的设计能力，你的付费墙将变得更加高效、更具盈利潜力。
+
+Adapty SDK 以 BoM（Bill of Materials）方式分发，确保应用中 Adapty SDK 与 AdaptyUI SDK 的版本始终保持一致。
+
+如需迁移至 v3.0，请按以下步骤更新代码：
 <Tabs groupId="current-os" queryString>
   <TabItem value="module-level build.gradle" label="module-level build.gradle" default>
 
