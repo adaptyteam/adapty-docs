@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { getAllDocFiles, extractReusableImports } from './scan.mjs';
 import { curlCheck, checkExternalUrl } from './check-external.mjs';
 import GithubSlugger from 'github-slugger';
@@ -9,7 +10,63 @@ const RUNTIME_ROUTE_PREFIXES = [
   'api-adapty/',
   'api-web/',
   'api-export-analytics/',
+  'api-mail/',
 ];
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const API_CONFIG_PATH = path.join(__dirname, '../../src/api-reference/config.json');
+const API_SPECS_DIR = path.join(__dirname, '../../src/api-reference/specs');
+
+// Registry of locally-registered API references: slug -> { ops: Set<operationId>, specLoaded }.
+// Runtime API routes (api-*/operations/*) are generated at build time from these
+// specs, so a route that resolves here will exist after deploy even if it isn't on
+// the live site yet — e.g. a brand-new API reference added in the same PR.
+let apiRouteIndex = null;
+async function buildApiRouteIndex() {
+  if (apiRouteIndex) return apiRouteIndex;
+  apiRouteIndex = new Map();
+  let apis;
+  try {
+    apis = JSON.parse(await readFile(API_CONFIG_PATH, 'utf-8'));
+  } catch {
+    return apiRouteIndex; // no config — every runtime route falls back to the live check
+  }
+  for (const api of apis) {
+    if (!api.slug || !api.specFile) continue;
+    const ops = new Set();
+    let specLoaded = false;
+    try {
+      const spec = await readFile(path.join(API_SPECS_DIR, api.specFile), 'utf-8');
+      const re = /^\s*operationId:\s*["']?([^"'\s]+)["']?\s*$/gm;
+      let m;
+      while ((m = re.exec(spec)) !== null) ops.add(m[1]);
+      specLoaded = true;
+    } catch { /* spec unreadable — landing still resolves, operations fall back to live */ }
+    apiRouteIndex.set(api.slug, { ops, specLoaded });
+  }
+  return apiRouteIndex;
+}
+
+/**
+ * Resolve a runtime API route (e.g. `api-mail/operations/saveProfile`) against the
+ * local config + spec. Returns:
+ *   true  — route is generated from this checkout (valid; will deploy)
+ *   false — slug is registered but the operation doesn't exist (genuine broken link)
+ *   null  — can't decide locally (slug not registered, or spec unreadable) → caller
+ *           should fall back to checking the live site.
+ */
+async function resolveApiRouteLocally(rawSlug) {
+  const index = await buildApiRouteIndex();
+  const [apiSlug, section, op] = rawSlug.split('/');
+  const entry = index.get(apiSlug);
+  if (!entry) return null;                  // not a locally-registered reference
+  if (!section) return true;                // landing page, e.g. /api-mail
+  if (section === 'operations' && op) {
+    if (!entry.specLoaded) return null;     // couldn't read spec — don't risk a false break
+    return entry.ops.has(op);
+  }
+  return null;                              // unexpected sub-route — let the live check decide
+}
 
 const MALFORMED_URL_RE = /^[a-z]https?:\/\//i;
 
@@ -130,10 +187,20 @@ export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs 
 
   const rawSlug = urlWithoutAnchor.replace(/^\.?\//, '').replace(/\/$/, '').replace(/\.(md|mdx)$/, '');
 
-  // Runtime API routes → check against live site (preserve original case).
-  // Retries with backoff because these HTTP checks are sensitive to transient
-  // network issues on CI runners (DNS blips, CDN edge cache misses, etc.).
+  // Runtime API routes → resolve against the local config + spec first (preserve
+  // original case). The repo is the source of truth for what will deploy, so a
+  // route that resolves locally is valid even if it isn't on the live site yet
+  // (e.g. a new API reference added in this same PR).
   if (RUNTIME_ROUTE_PREFIXES.some(p => rawSlug.startsWith(p))) {
+    const local = await resolveApiRouteLocally(rawSlug);
+    if (local === true) return { ok: true, status: 'found' };
+    if (local === false) {
+      return { ok: false, status: 'NOT_FOUND', error: 'API operation not found in local spec' };
+    }
+
+    // Can't resolve locally → fall back to the live site (preserve original case).
+    // Retries with backoff because these HTTP checks are sensitive to transient
+    // network issues on CI runners (DNS blips, CDN edge cache misses, etc.).
     const liveUrl = `${liveSiteBase}/${rawSlug}`;
     const RETRY_BACKOFF = [2000, 5000];
     let result;

@@ -1,0 +1,111 @@
+---
+title: "Send emails and transactions via the Adapty Mail API"
+description: "Send user profiles and transactions to Adapty Mail directly from your server, without the Adapty SDK."
+metadataTitle: "Send Data via the Adapty Mail API | Adapty Docs"
+---
+
+The Adapty Mail API lets you send user profiles and transactions to Adapty Mail directly from your server, without routing data through the Adapty SDK. Use it when you want to:
+
+- Add subscribers when you don't have a base in Adapty Mail yet.
+- Reuse the subscriber base from your other apps.
+- Feed Adapty Mail server-to-server, with your backend as the source of truth.
+
+:::note
+**API or SDK?** Most apps send data to Adapty Mail through the Adapty SDK, which collects emails and purchases automatically. Choose the API when your app has no Adapty SDK, when the data already lives on your server, or when you import subscribers from another source.
+:::
+
+## Before you start
+
+:::warning
+Finish setting up Adapty Mail before you send data — that means a campaign, segments (if you need them), a web paywall, and a launched flow. Adapty Mail sends emails only to profiles created after this setup is complete; profiles you send earlier won't receive any emails. Follow [Get started with Adapty Mail](mail-get-started) first, then return here.
+:::
+
+You also need your API key and base URL:
+
+- **Secret API key**: In Adapty Mail, go to **Settings** and copy your secret API key. The key is project-specific, so the API knows which project the data belongs to.
+- **Base URL**: All requests go to `https://api-mail.adapty.io`.
+- **Authentication**: Send the key in the **Authorization** header as `Bearer {your_secret_api_key}`.
+
+:::important
+Get explicit consent before you collect emails and send them to Adapty Mail. You are responsible for compliance with GDPR, CAN-SPAM, and similar regulations in your markets.
+:::
+
+## Send user profiles
+
+A profile carries the user's email and attributes. To create or update one, send a POST request to `/api/v1/profile/save/`.
+
+Three fields are required:
+- A stable `external_profile_id` that your app or backend owns
+- The `email` Adapty Mail delivers campaigns to
+- `external_created_at` — the user creation time, which you can use in segments
+
+:::important
+Always send a stable `external_profile_id`, never an anonymous or per-install value. Adapty Mail uses it to link emails, clicks, and purchases to one profile.
+:::
+
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/save/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "external_profile_id": "user_12345",
+    "external_created_at": "2026-06-01T10:30:00Z",
+    "email": "jane@example.com",
+    "country": "US",
+    "custom_attributes": {
+      "plan": "trial"
+    }
+  }'
+```
+
+See the [Save profile](api-mail/operations/saveProfile) reference for every available field.
+
+## Send transaction events
+
+:::note
+A profile with an email is enough to reach users in the **never purchased** flow. Users in every other flow also need transaction events.
+:::
+
+Every flow except **never purchased** is driven by purchase history. Send a profile's transaction events as you handle purchases, renewals, and cancellations, so Adapty Mail can place it in the right flow. Transaction events also power revenue attribution. Skip them only if you run **never purchased** campaigns exclusively.
+
+To record a transaction, send a POST request to `/api/v1/profile/transaction-event/save/`. Use the same `external_profile_id` you sent with the profile so Adapty Mail links the transaction to the right user.
+
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/transaction-event/save/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "event_type": "subscription_started",
+    "event_id": "evt_abc123",
+    "event_datetime": "2026-06-10T14:20:05Z",
+    "external_profile_id": "user_12345",
+    "store": "app_store",
+    "store_product_id": "premium_monthly",
+    "store_transaction_id": "1000000123456789",
+    "store_original_transaction_id": "1000000123456789",
+    "purchased_at": "2026-06-10T14:20:00Z",
+    "originally_purchased_at": "2026-06-10T14:20:00Z",
+    "price_usd": "9.99"
+  }'
+```
+
+See the [Save transaction event](api-mail/operations/saveTransactionEvent) reference for every available field.
+
+### Map your events to flows
+
+Send the `event_type` that matches what happened. Adapty Mail derives the profile's state from its event history and routes it to the matching flow.
+
+| `event_type` | Send it when | Flow |
+| --- | --- | --- |
+| `subscription_started` | A user starts a new subscription. | Active — no re-engagement flow |
+| `subscription_renewed` | A subscription auto-renews. | Active — no re-engagement flow |
+| `subscription_renewal_reactivated` | A user turns auto-renew back on. | Active — no re-engagement flow |
+| `non_subscription_purchase` | A user makes a one-time purchase. | Active — no re-engagement flow |
+| `subscription_renewal_cancelled` | A user turns off auto-renew (still active until expiry). | Renewal cancelled |
+| `billing_issue_detected` | A renewal payment fails. | Billing issue |
+| `entered_grace_period` | Payment fails but the user is still in a grace period. | Billing issue |
+| `subscription_expired` | A subscription lapses and access ends. | Expired |
+| `subscription_refunded` | A subscription purchase is refunded. | Refunded |
+| `non_subscription_purchase_refunded` | A one-time purchase is refunded. | Refunded |
