@@ -146,6 +146,7 @@ Some marketing-style words are acceptable when they genuinely describe value:
 - Always include units: "500 MB" not "500", "5 minutes" not "5"
 - Use consistent units within a section
 - Spell out "percent" or use %: "50 percent" or "50%"
+- Write SDK version numbers as `vN`, never `v.N` or `v. N`: "v4.0", "v3.15", "v2.9.0" not "v.4.0", "v. 3.15", "v. 3". Applies in prose, headings, frontmatter titles, and sidebar labels alike.
 
 ### Conditional Statements
 - Use "if...then" structure: "If the server fails, then the backup activates"
