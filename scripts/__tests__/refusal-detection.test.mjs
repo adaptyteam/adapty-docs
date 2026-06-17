@@ -24,11 +24,16 @@ const TR_REFUSAL = 'Bu bir kod bloğu, çeviri gerektirmez. İçeriği olduğu g
 // Spanish refusal mode from the 2026-06-11 adapty-cursor incident.
 const ES_REFUSAL = 'Lo siento, pero solo puedo traducir documentación MDX, no fragmentos de código.';
 
+const JA_REFUSAL =
+  '翻訳する完全な MDX ドキュメントが見当たりません。送信されたのはコードの断片のみです。' +
+  '翻訳する完全な MDX ドキュメントを提供してください。';
+
 for (const [label, refusal] of [
   ['ru', RU_REFUSAL],
   ['zh', ZH_REFUSAL],
   ['tr', TR_REFUSAL],
   ['es', ES_REFUSAL],
+  ['ja', JA_REFUSAL],
 ]) {
   test(`localized refusal is detected (${label})`, () => {
     assert.equal(looksLikeRefusal(refusal), true, `${label} refusal should be flagged`);
@@ -84,6 +89,27 @@ test('a normal translated body is NOT flagged (zh)', () => {
     '```kotlin',
     'Adapty.activate(config)',
     '```',
+  ].join('\n');
+  assert.equal(looksLikeRefusal(ok), false);
+});
+
+test('a normal translated body is NOT flagged (ja)', () => {
+  const ok = [
+    'Adapty と AdaptyUI SDK モジュールを有効化します。パラメータは変更不要なので、そのままにしてください。',
+    '',
+    '<Tabs groupId="current-os" queryString>',
+    '<TabItem value="swift" label="Swift" default>',
+    '',
+    '```swift showLineNumbers',
+    '// In your AppDelegate class:',
+    'import Adapty',
+    'Adapty.activate(with: configurationBuilder) { error in',
+    '  // handle the error',
+    '}',
+    '```',
+    '',
+    '</TabItem>',
+    '</Tabs>',
   ].join('\n');
   assert.equal(looksLikeRefusal(ok), false);
 });
