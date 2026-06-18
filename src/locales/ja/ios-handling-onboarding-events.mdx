@@ -1,0 +1,326 @@
+---
+title: "iOS SDKでオンボーディングイベントを処理する"
+description: "AdaptyのiOSを使用してオンボーディング関連のイベントを処理します。"
+metadataTitle: "iOSでオンボーディングイベントを処理する | Adapty ドキュメント"
+toc_max_heading_level: 4
+keywords: ['onCloseAction', 'AdaptyOnboardingsCloseAction', 'onStateUpdatedAction', 'onPaywallAction', 'didFinishLoading', 'onAnalyticsEvent']
+---
+
+:::tip
+**SDK v4（ベータ版）以降**、オンボーディングよりも強力な代替手段として[フロー](get-pb-paywalls)を構築できます。オンボーディングがWebView内で動作するのに対し、フローはデバイス上でネイティブにレンダリングされます。これにより、よりスムーズなアニメーション、一貫したiOSのルック&フィール、高速な読み込み、そしてWebViewランタイムへの依存がなくなります。はじめに[フロー＆ペイウォールを取得する](get-pb-paywalls)と[フロー＆ペイウォールを表示する](ios-present-paywalls)をご覧ください。
+:::
+
+始める前に、以下を確認してください。
+
+1. [Adapty iOS SDK](sdk-installation-ios) 3.8.0以降をインストール済みであること。
+2. [オンボーディングを作成](create-onboarding)済みであること。
+3. オンボーディングを[プレースメント](placements)に追加済みであること。
+
+ビルダーで設定されたオンボーディングは、アプリが応答できるイベントを生成します。これらのイベントへの応答方法について以下で説明します。
+
+モバイルアプリのオンボーディング画面で発生するプロセスを制御または監視するには、`AdaptyOnboardingControllerDelegate`のメソッドを実装します。
+
+## カスタムアクション \{#custom-actions\}
+
+ビルダーでは、ボタンに**カスタム**アクションを追加してIDを割り当てることができます。
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+このIDをコード内で使用し、カスタムアクションとして処理できます。たとえば、ユーザーが**ログイン**や**通知を許可**などのカスタムボタンをタップすると、デリゲートメソッド`onboardingController`が`.custom(id:)`ケースでトリガーされ、`actionId`パラメータはビルダーの**Action ID**になります。"allowNotifications"のような独自のIDを作成できます。
+
+```swift showLineNumbers    
+func onboardingController(_ controller: AdaptyOnboardingController, onCustomAction action: AdaptyOnboardingsCustomAction) {
+    if action.actionId == "allowNotifications" {
+        // Request notification permissions
+    }
+}
+    
+func onboardingController(_ controller: AdaptyOnboardingController, didFailWithError error: AdaptyUIError) {
+    // Handle errors
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```json
+{
+  "actionId": "allowNotifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+## オンボーディングを閉じる \{#closing-onboarding\}
+
+オンボーディングは、ユーザーが**閉じる**アクションが割り当てられたボタンをタップすると閉じられたと見なされます。
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+ユーザーがオンボーディングを閉じたときの処理を自分で実装する必要があります。たとえば、オンボーディング自体の表示を停止する必要があります。
+:::
+例：
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onCloseAction action: AdaptyOnboardingsCloseAction) {
+    controller.dismiss(animated: true)
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+
+</Details>
+
+## ペイウォールを開く \{#opening-a-paywall\}
+
+:::tip
+オンボーディング内でペイウォールを開きたい場合はこのイベントを処理してください。オンボーディングが閉じた後にペイウォールを開きたい場合は、[`AdaptyOnboardingsCloseAction`](#closing-onboarding)を処理してイベントデータに依存せずにペイウォールを開く、よりシンプルな方法があります。
+:::
+
+オンボーディングでペイウォールをシームレスに扱う最善の方法は、アクションIDをペイウォールのプレースメントIDと同じにすることです。これにより、`AdaptyOnboardingsOpenPaywallAction`の後、プレースメントIDを使用してすぐにペイウォールを取得して開くことができます。
+
+一度に表示できるビュー（ペイウォールまたはオンボーディング）は1つだけです。オンボーディングの上にペイウォールを表示すると、バックグラウンドのオンボーディングをプログラムで制御することができません。オンボーディングを閉じようとすると、代わりにペイウォールが閉じられ、オンボーディングが表示されたままになります。これを避けるために、ペイウォールを表示する前に必ずオンボーディングビューを閉じてください。
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onPaywallAction action: AdaptyOnboardingsOpenPaywallAction) {
+    // Dismiss onboarding before presenting the flow
+    controller.dismiss(animated: true) {
+        Task {
+            do {
+                // Get the flow using the placement ID from the action
+                let flow = try await Adapty.getFlow(placementId: action.actionId)
+
+                // Get the flow configuration
+                let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+                    forFlow: flow
+                )
+
+                // Create and present the flow controller
+                let flowController = try AdaptyUI.flowController(
+                    with: flowConfiguration,
+                    delegate: self
+                )
+
+                // Present the flow from the root view controller
+                if let rootVC = UIApplication.shared.windows.first?.rootViewController {
+                    rootVC.present(flowController, animated: true)
+                }
+            } catch {
+                // Handle any errors that occur during flow loading
+                print("Failed to present flow: \(error)")
+            }
+        }
+    }
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## オンボーディングの読み込み完了 \{#finishing-loading-onboarding\}
+
+オンボーディングの読み込みが完了すると、このメソッドが呼び出されます。
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, didFinishLoading action: OnboardingsDidFinishLoadingAction) {
+    // Handle loading completion
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## ナビゲーションの追跡 \{#tracking-navigation\}
+
+`onAnalyticsEvent`メソッドは、オンボーディングフロー中にさまざまなアナリティクスイベントが発生したときに呼び出されます。
+
+`event`オブジェクトは以下のいずれかのタイプになります。
+|タイプ | 説明 |
+|------------|-------------|
+| `onboardingStarted` | オンボーディングが読み込まれたとき |
+| `screenPresented` | 任意の画面が表示されたとき |
+| `screenCompleted` | 画面が完了したとき。オプションの`elementId`（完了した要素の識別子）とオプションの`reply`（ユーザーからの回答）が含まれます。ユーザーが画面を離れるためのアクションを実行したときにトリガーされます。 |
+| `secondScreenPresented` | 2番目の画面が表示されたとき |
+| `userEmailCollected` | 入力フィールドを通じてユーザーのメールアドレスが収集されたときにトリガーされます |
+| `onboardingCompleted` | ユーザーが`final` IDを持つ画面に到達したときにトリガーされます。このイベントが必要な場合は、[最後の画面に`final` IDを割り当ててください](design-onboarding)。 |
+| `unknown` | 認識できないイベントタイプの場合。`name`（不明なイベントの名前）と`meta`（追加のメタデータ）が含まれます |
+
+各イベントには以下を含む`meta`情報が含まれます。
+| フィールド | 説明 |
+|------------|-------------|
+| `onboardingId` | オンボーディングフローの一意の識別子 |
+| `screenClientId` | 現在の画面の識別子 |
+| `screenIndex` | フロー内の現在の画面の位置 |
+| `screensTotal` | フロー内の画面の総数 |
+
+以下はアナリティクスイベントをトラッキングに使用する例です。
+
+```swift
+func onboardingController(_ controller: AdaptyOnboardingController, onAnalyticsEvent event: AdaptyOnboardingsAnalyticsEvent) {
+    switch event {
+    case .onboardingStarted(let meta):
+        // Track onboarding start
+        trackEvent("onboarding_started", meta: meta)
+    case .screenPresented(let meta):
+        // Track screen presentation
+        trackEvent("screen_presented", meta: meta)
+    case .screenCompleted(let meta, let elementId, let reply):
+        // Track screen completion with user response
+        trackEvent("screen_completed", meta: meta, elementId: elementId, reply: reply)
+    case .onboardingCompleted(let meta):
+        // Track successful onboarding completion
+        trackEvent("onboarding_completed", meta: meta)
+    case .unknown(let meta, let name):
+        // Handle unknown events
+        trackEvent(name, meta: meta)
+    // Handle other cases as needed
+    }
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+
+```
+
+</Details>

@@ -1,0 +1,113 @@
+---
+title: "iOS SDK でサブスクリプションのステータスを確認する"
+description: "Adapty でユーザーのサブスクリプションステータスを追跡・管理して、顧客維持率を向上させましょう。"
+metadataTitle: "サブスクリプションステータスの理解 | Adapty ドキュメント"
+keywords: ['getProfile', 'cache']
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md'; 
+
+Adapty を使えば、サブスクリプションのステータス管理が簡単になります。プロダクト ID をコードに手動で埋め込む必要はなく、アクティブな[アクセスレベル](access-level)を確認するだけで、ユーザーのサブスクリプションステータスをスムーズに把握できます。
+
+サブスクリプションのステータス確認を始める前に、[App Store サーバー通知](enable-app-store-server-notifications)を設定してください。
+
+## アクセスレベルと AdaptyProfile オブジェクト \{#access-level-and-the-adaptyprofile-object\}
+
+アクセスレベルは [AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile) オブジェクトのプロパティです。アプリ起動時（[ユーザーを識別する](identifying-users#set-customer-user-id-on-configuration)タイミングなど）にプロファイルを取得し、変更が発生したときに更新することをおすすめします。こうすることで、都度リクエストを送ることなくプロファイルオブジェクトを活用できます。
+
+プロファイルの更新通知を受け取るには、以下の[サブスクリプションステータスの更新をリッスンする](subscription-status#listening-for-subscription-status-updates)セクションで説明している方法でプロファイルの変更を監視してください。
+
+<SampleApp />
+
+## サーバーからアクセスレベルを取得する \{#retrieving-the-access-level-from-the-server\}
+
+サーバーからアクセスレベルを取得するには、`.getProfile()` メソッドを使用します。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get() {
+        // check the access
+        profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // grant access to premium features
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+レスポンスパラメーター:
+
+| パラメーター | 説明                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Profile      | <p>[AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile) オブジェクト。通常、ユーザーがプレミアムアクセスを持っているかどうかを判断するには、プロファイルのアクセスレベルのステータスだけを確認すれば十分です。</p><p></p><p>`.getProfile` メソッドは常に API へのクエリを試みるため、最新の結果を返します。何らかの理由（インターネット接続がないなど）で Adapty SDK がサーバーから情報を取得できない場合は、キャッシュのデータが返されます。また、Adapty SDK は `AdaptyProfile` キャッシュを定期的に更新し、情報をできる限り最新の状態に保ちます。</p> |
+
+`.getProfile()` メソッドはユーザープロファイルを返し、そこからアクセスレベルのステータスを取得できます。アプリごとに複数のアクセスレベルを設定することも可能です。たとえばニュースアプリで複数のトピックのサブスクリプションを独立して販売する場合、「sports」や「science」といったアクセスレベルを作成できます。ただし、ほとんどの場合はアクセスレベルは 1 つで十分なので、デフォルトの「premium」アクセスレベルをそのまま使用できます。
+
+デフォルトの「premium」アクセスレベルを確認する例を示します。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    let isPremium = profile.accessLevels["premium"]?.isActive ?? false
+    // grant access to premium features
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get(), 
+       profile.accessLevels["premium"]?.isActive ?? false {
+        // grant access to premium features
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+### サブスクリプションステータスの更新をリッスンする \{#listening-for-subscription-status-updates\}
+
+ユーザーのサブスクリプションが変更されるたびに、Adapty はイベントを発火します。
+
+Adapty からのメッセージを受け取るには、追加の設定が必要です。
+
+```swift showLineNumbers
+Adapty.delegate = self
+
+// To receive subscription updates, extend `AdaptyDelegate` with this method:
+nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
+    // handle any changes to subscription state
+}
+```
+
+Adapty はアプリ起動時にもイベントを発火します。この場合、キャッシュされたサブスクリプションステータスが渡されます。
+
+### サブスクリプションステータスのキャッシュ \{#subscription-status-cache\}
+
+Adapty SDK に実装されたキャッシュはプロファイルのサブスクリプションステータスを保持します。これにより、サーバーが利用できない場合でも、キャッシュされたデータからプロファイルのサブスクリプションステータス情報を取得できます。
+
+ただし、キャッシュから直接データをリクエストすることはできません。SDK は 1 分ごとにサーバーに問い合わせて、プロファイルに関する更新や変更を確認します。新しいトランザクションなどの変更があった場合は、サーバーとの同期を維持するためにキャッシュデータへ反映されます。

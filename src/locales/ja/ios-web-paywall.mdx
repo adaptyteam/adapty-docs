@@ -1,0 +1,101 @@
+---
+title: "iOS SDKでウェブペイウォールを実装する"
+description: "App Storeの手数料や審査なしで決済を受け付けるウェブペイウォールを設定します。"
+metadataTitle: "米国のiOSアプリでウェブ決済を受け付ける | Adapty ドキュメント"
+keywords: ['ウェブペイウォール']
+sidebar_label: "ウェブペイウォールを実装する"
+---
+
+:::important
+始める前に、[ダッシュボードでウェブペイウォールを設定](web-paywall)済みであること、および Adapty SDK バージョン 3.6.1 以降がインストールされていることを確認してください。
+:::
+
+## ウェブペイウォールを開く \{#open-web-paywalls\}
+
+自分で開発したペイウォールを利用している場合は、SDK メソッドを使ってウェブペイウォールを処理する必要があります。`.openWebPaywall` メソッドは次の処理を行います。
+1. 特定のユーザーに表示されたペイウォールとリダイレクト先のウェブページを Adapty が紐付けるための一意の URL を生成します。
+2. ユーザーがアプリに戻ったタイミングを検知し、短い間隔で `.getProfile` を呼び出して、プロファイルのアクセス権が更新されたかどうかを確認します。
+
+これにより、決済が成功してアクセス権が更新された場合、アプリ内でほぼ即座にサブスクリプションが有効化されます。
+
+```swift showLineNumbers title="Swift"
+do {
+    try await Adapty.openWebPaywall(for: product)
+} catch {
+    print("Failed to open web paywall: \(error)")
+}
+```
+
+:::note
+`openWebPaywall` メソッドには2つのバージョンがあります。
+1. `openWebPaywall(product)` はペイウォールごとに URL を生成し、プロダクトのデータも URL に追加します。
+2. `openWebPaywall(paywall)` はペイウォールごとに URL を生成しますが、プロダクトのデータは URL に追加しません。Adapty のペイウォールに設定されたプロダクトとウェブペイウォールのプロダクトが異なる場合に使用してください。
+:::
+
+## エラーを処理する \{#handle-errors\}
+
+| エラー                                    | 説明                                                 | 推奨される対処法                                                          |
+|-----------------------------------------|------------------------------------------------------|---------------------------------------------------------------------------|
+| AdaptyError.paywallWithoutPurchaseUrl   | ペイウォールにウェブ購入 URL が設定されていない         | Adapty ダッシュボードでペイウォールが正しく設定されているか確認してください |
+| AdaptyError.productWithoutPurchaseUrl   | プロダクトにウェブ購入 URL が設定されていない           | Adapty ダッシュボードでプロダクトの設定を確認してください                  |
+| AdaptyError.failedOpeningWebPaywallUrl  | ブラウザで URL を開くことができなかった                 | デバイスの設定を確認するか、別の購入方法を提供してください                  |
+| AdaptyError.failedDecodingWebPaywallUrl | URL 内のパラメーターを正しくエンコードできなかった       | URL パラメーターが有効かつ適切にフォーマットされているか確認してください     |
+
+## 実装例 \{#implementation-example\}
+```swift showLineNumbers title="Swift"
+class SubscriptionViewController: UIViewController {
+    var paywall: AdaptyPaywall?
+    
+    @IBAction func purchaseButtonTapped(_ sender: UIButton) {
+        guard let paywall = paywall, let product = paywall.products.first else { return }
+         Task {
+            await offerWebPurchase(for: product)
+         }
+    }
+    
+    func offerWebPurchase(for paywallProduct: AdaptyPaywallProduct) async {
+        do {
+            // Attempt to open web paywall
+            try await Adapty.openWebPaywall(for: paywallProduct)
+        } catch let error as AdaptyError {
+            
+            switch error {
+            case .paywallWithoutPurchaseUrl, .productWithoutPurchaseUrl:
+                showAlert(message: "Web purchase is not available for this product.")
+            case .failedOpeningWebPaywallUrl:
+                showAlert(message: "Could not open web browser. Please try again.")
+            default:
+                showAlert(message: "An error occurred: \(error.localizedDescription)")
+            }
+        } catch {
+            showAlert(message: "An unexpected error occurred.")
+        }
+    }
+    
+    // Helper methods
+    private func showAlert(message: String) { /* ... */ }
+}
+```
+:::note
+ユーザーがアプリに戻った後は、プロファイルの更新を反映するために UI をリフレッシュしてください。`AdaptyDelegate` がプロファイル更新イベントを受信して処理します。
+:::
+
+## アプリ内ブラウザでウェブペイウォールを開く \{#open-web-paywalls-in-an-in-app-browser\}
+
+:::important
+アプリ内ブラウザでのウェブペイウォール表示は、Adapty SDK v3.15 以降でサポートされています。
+:::
+
+デフォルトでは、ウェブペイウォールは外部ブラウザで開きます。
+
+シームレスなユーザー体験を提供するために、アプリ内ブラウザでウェブペイウォールを開くことができます。これにより、アプリを切り替えることなく、アプリ内でウェブ購入ページを表示してトランザクションを完了できます。
+
+この機能を有効にするには、`in` パラメーターを `.inAppBrowser` に設定します。
+
+```swift showLineNumbers title="Swift"
+do {
+    try await Adapty.openWebPaywall(for: product, in: .inAppBrowser) // default – .externalBrowser
+} catch {
+    print("Failed to open web paywall: \(error)")
+}
+```

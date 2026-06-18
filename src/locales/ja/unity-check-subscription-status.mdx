@@ -1,0 +1,106 @@
+---
+title: "Unity SDKでサブスクリプションステータスを確認する"
+description: "AdaptyでUnityアプリのサブスクリプションステータスを確認する方法を学びます。"
+metadataTitle: "サブスクリプションステータスの確認 | Adapty ドキュメント"
+displayed_sidebar: sdkunity
+keywords: ['getProfile', 'subscription status']
+rank: 75
+---
+
+ユーザーが有料コンテンツにアクセスできるか、またはペイウォールを表示するかどうかを判断するには、プロファイル内の[アクセスレベル](access-level)を確認する必要があります。
+
+この記事では、プロファイルの状態にアクセスして、ユーザーにペイウォールを表示するか有料機能へのアクセスを許可するかを判断する方法を説明します。
+
+## サブスクリプションステータスを取得する \{#get-subscription-status\}
+
+ユーザーにペイウォールを表示するか有料コンテンツを表示するかを判断する際は、プロファイル内の[アクセスレベル](access-level)を確認します。2つの方法があります：
+
+- アプリ起動時などに最新のプロファイルデータがすぐに必要な場合や、強制的に更新したい場合は `GetProfile` を呼び出します。
+- サブスクリプションステータスが変わるたびに自動的に更新されるローカルコピーを保持するために、**プロファイルの自動更新**を設定します。
+
+### プロファイルを取得する \{#get-profile\}
+
+サブスクリプションステータスを取得するもっとも簡単な方法は、`GetProfile` メソッドを使ってプロファイルにアクセスすることです：
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+// check the access
+});
+```
+
+### サブスクリプションの更新を受け取る \{#listen-to-subscription-updates\}
+
+アプリでプロファイルの更新を自動的に受け取るには：
+
+1. `AdaptyEventListener` を継承して `OnLoadLatestProfile` メソッドを実装します。ユーザーのサブスクリプションステータスが変わると、Adaptyが自動的にこのメソッドを呼び出します。
+2. このメソッドが呼び出されたときに更新されたプロファイルデータを保存しておくと、追加のネットワークリクエストなしにアプリ全体で利用できます。
+
+```csharp
+public class SubscriptionManager : MonoBehaviour, AdaptyEventListener {
+    private AdaptyProfile currentProfile;
+    
+    void Start() {
+        // Register this object as an Adapty event listener
+        Adapty.SetEventListener(this);
+    }
+    
+    // Store the profile when it updates
+    public void OnLoadLatestProfile(AdaptyProfile profile) {
+        currentProfile = profile;
+        // Update UI, unlock content, etc.
+    }
+    
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+    
+    // Use stored profile instead of calling getProfile()
+    public bool HasAccess() {
+        if (currentProfile?.AccessLevels != null && 
+            currentProfile.AccessLevels.ContainsKey("premium")) {
+            return currentProfile.AccessLevels["premium"].IsActive;
+        }
+        return false;
+    }
+}
+```
+
+:::note
+Adaptyはアプリ起動時に自動的に `OnLoadLatestProfile` を呼び出し、デバイスがオフラインでもキャッシュされたサブスクリプションデータを提供します。
+:::
+
+## プロファイルとペイウォールロジックを連携させる \{#connect-profile-with-paywall-logic\}
+
+ペイウォールの表示や有料機能へのアクセス許可をすぐに判断したい場合は、ユーザーのプロファイルを直接確認できます。この方法は、アプリ起動時、プレミアムセクションに入るとき、特定のコンテンツを表示する前など、さまざまなシナリオで役立ちます。
+
+```csharp
+private void CheckAccessLevel()
+{
+    Adapty.GetProfile((profile, error) => {
+        if (error != null) {
+            Debug.LogError("Error checking access level: " + error.Message);
+            // Show paywall if access check fails
+            return;
+        }
+        
+        var accessLevel = profile.AccessLevels["YOUR_ACCESS_LEVEL"];
+        if (accessLevel == null || !accessLevel.IsActive) {
+            // Show paywall if no access
+        }
+    });
+}
+
+private void InitializePaywall()
+{
+    LoadPaywall();
+    CheckAccessLevel();
+}
+``` 
+
+## 次のステップ \{#next-steps\}
+
+サブスクリプションステータスの追跡方法を確認したら、次は[ユーザープロファイルの操作](unity-quickstart-identify)を学んで、ユーザーが購入したものにアクセスできるようにしましょう。

@@ -1,0 +1,138 @@
+---
+title: "Adapty React Native SDK を v3.14 に移行する"
+description: "Adapty React Native SDK v3.14 に移行して、パフォーマンスの向上と新しいマネタイズ機能を活用しましょう。"
+metadataTitle: "Adapty React Native SDK v3.14 への移行 | Adapty ドキュメント"
+---
+
+Adapty React Native SDK 3.14.0 はメジャーリリースであり、以下の対応が必要な変更が含まれています：
+
+- `registerEventHandlers` メソッドが `setEventHandlers` メソッドに置き換えられました。
+- `AdaptyOnboardingView` では、イベントハンドラーが `eventHandlers` オブジェクトではなく個別の props として渡されるようになりました。
+- UI コンポーネント向けの新しいシンプルなインポート方法が導入されました。
+- `logShowOnboarding` メソッドが削除されました。
+- React Native の最低バージョンが 0.73.0 に更新されました。
+- ペイウォールとオンボーディングの iOS デフォルト表示スタイルがページシートからフルスクリーンに変更されました。
+
+## `registerEventHandlers` を `setEventHandlers` に置き換える \{#replace-registereventhandlers-with-seteventhandlers\}
+
+Adapty ペイウォールビルダーおよびオンボーディングビルダーで使用されていた `registerEventHandlers` メソッドが `setEventHandlers` メソッドに置き換えられました。
+Adapty ペイウォールビルダーやオンボーディングビルダーを使用している場合は、アプリのコード内で `registerEventHandlers` を見つけて `setEventHandlers` に置き換えてください。
+
+この変更はメソッドの動作をより明確にするために行われました。ハンドラーは `true`/`false` を返すため、1 つずつ処理されます。1 つのイベントに複数のハンドラーを設定すると、結果の動作が不明確になっていたためです。
+
+`AdaptyOnboardingView` や `AdaptyPaywallView` などの React コンポーネントを使用する場合、自分自身の状態管理でコンポーネントの表示を制御するため、イベントハンドラーから `true`/`false` を返す必要はありません。戻り値が必要なのは、SDK がビューのライフサイクルを管理するモーダル画面表示の場合のみです。
+
+:::important
+`setEventHandlers` を複数回呼び出すと、指定したハンドラーが上書きされ、デフォルトおよびそれ以前に設定したハンドラーが置き換えられます。
+:::
+
+```diff showLineNumbers 
+- const unsubscribe = view.registerEventHandlers({
+-    // your event handlers
+- })
+
+ const unsubscribe = view.setEventHandlers({
+    // your event handlers
+ })
+``` 
+
+## UI コンポーネントのインポートパスを更新する \{#update-import-paths-for-ui-components\}
+
+Adapty SDK 3.14.0 では、UI コンポーネント向けのシンプルなインポート方法が導入されました。`react-native-adapty/dist/ui` からインポートする代わりに、`react-native-adapty` から直接インポートできるようになりました。
+
+新しいインポート方法は標準的な React Native の慣行に沿っており、インポート文がよりシンプルになります。`AdaptyPaywallView` や `AdaptyOnboardingView` などの UI コンポーネントを使用している場合は、以下のようにインポートを更新してください：
+
+```diff showLineNumbers
+- import { AdaptyPaywallView } from 'react-native-adapty/dist/ui';
++ import { AdaptyPaywallView } from 'react-native-adapty';
+
+- import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
++ import { AdaptyOnboardingView } from 'react-native-adapty';
+
+- import { createPaywallView } from 'react-native-adapty/dist/ui';
++ import { createPaywallView } from 'react-native-adapty';
+
+- import { createOnboardingView } from 'react-native-adapty/dist/ui';
++ import { createOnboardingView } from 'react-native-adapty';
+```
+
+:::note
+後方互換性のため、旧インポート方法（`react-native-adapty/dist/ui`）は引き続きサポートされています。ただし、一貫性と明確さのために新しいインポート方法の使用を推奨します。
+:::
+
+## React コンポーネントのオンボーディングイベントハンドラーを更新する \{#update-onboarding-event-handlers-in-the-react-component\}
+
+オンボーディングのイベントハンドラーが、`AdaptyOnboardingView` の `eventHandlers` オブジェクトの外に移動されました。`AdaptyOnboardingView` を使用してオンボーディングを表示している場合は、イベント処理の構造を更新してください。
+
+:::important
+イベントハンドラーの実装方法に注意してください。レンダリングのたびにオブジェクトが再生成されないようにするため、イベントを処理する関数には `useCallback` を使用してください。
+:::
+
+```diff showLineNumbers
+ import React, { useCallback } from 'react';
+- import { AdaptyOnboardingView } from 'react-native-adapty/dist/ui';
++ import { AdaptyOnboardingView } from 'react-native-adapty';
++ import type { OnboardingEventHandlers } from 'react-native-adapty';
++
++ function MyOnboarding({ onboarding }) {
++   const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
++   const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
++   const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
++   const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
++   const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
++   const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
++   const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
++
+   return (
+     <AdaptyOnboardingView
+       onboarding={onboarding}
+       style={styles.container}
+-       eventHandlers={{
+-         onAnalytics(event, meta) { /* ... */ },
+-         onClose(actionId, meta) { /* ... */ },
+-         onCustom(actionId, meta) { /* ... */ },
+-         onPaywall(actionId, meta) { /* ... */ },
+-         onStateUpdated(action, meta) { /* ... */ },
+-         onFinishedLoading(meta) { /* ... */ },
+-         onError(error) { /* ... */ },
+-       }}
++       onAnalytics={onAnalytics}
++       onClose={onClose}
++       onCustom={onCustom}
++       onPaywall={onPaywall}
++       onStateUpdated={onStateUpdated}
++       onFinishedLoading={onFinishedLoading}
++       onError={onError}
+     />
+   );
++ }
+```
+
+:::note
+後方互換性のため、`eventHandlers` プロパティは引き続きサポートされていますが、非推奨となっています。上記のように個別のイベントハンドラープロパティへの移行を推奨します。
+:::
+
+## `logShowOnboarding` を削除する \{#delete-logshowonboarding\}
+
+Adapty SDK 3.14.0 では、`logShowOnboarding` メソッドが SDK から削除されました。
+このメソッドを使用していた場合、SDK をバージョン 3.14 以降にアップグレードすると利用できなくなります。
+
+代わりに、[Adapty のノーコードオンボーディングビルダーでオンボーディングを作成](onboardings)できます。これらのオンボーディングのアナリティクスは自動的に追跡され、多くのカスタマイズオプションも利用できます。
+
+## React Native を更新する \{#update-react-native\}
+
+Adapty SDK 3.14.0 以降、React Native の最低サポートバージョンは 0.73.0 となります。それ以前のバージョンを使用している場合は、React Native を 0.73.0 以降に更新して、Adapty SDK を安定して利用できるようにしてください。
+
+## モーダルペイウォールとオンボーディングの iOS 表示スタイルを更新する \{#update-ios-presentation-style-for-modal-paywalls-and-onboardings\}
+
+Adapty SDK 3.14.0 では、`view.present()` メソッドを使用して表示するペイウォールとオンボーディングの iOS デフォルト表示スタイルがページシートからフルスクリーンに変更されました。
+
+以前のページシート表示スタイルを維持したい場合は、`present()` メソッドに `iosPresentationStyle` パラメーターを渡してください：
+
+```typescript showLineNumbers title="React Native (TSX)"
+try {
+  await view.present({ iosPresentationStyle: 'page_sheet' });
+} catch (error) {
+  // handle the error
+}
+```

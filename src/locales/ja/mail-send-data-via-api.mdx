@@ -1,0 +1,111 @@
+---
+title: "Adapty Mail APIでメールとトランザクションを送信する"
+description: "Adapty SDKを使わずに、サーバーから直接Adapty Mailにユーザープロファイルとトランザクションを送信します。"
+metadataTitle: "Adapty Mail APIでデータを送信する | Adapty ドキュメント"
+---
+
+Adapty Mail APIを使うと、Adapty SDKを経由せずに、サーバーから直接Adapty Mailにユーザープロファイルとトランザクションを送信できます。以下のような場合に活用してください：
+
+- Adapty Mailにまだベースがない状態でサブスクライバーを追加したい場合
+- 他のアプリのサブスクライバーベースを再利用したい場合
+- バックエンドをソースオブトラスとして、サーバー間でAdapty Mailにデータを送りたい場合
+
+:::note
+**APIとSDK、どちらを使う？** ほとんどのアプリは、メールや購入情報を自動収集するAdapty SDKを通じてAdapty Mailにデータを送信します。アプリにAdapty SDKがない場合、データがすでにサーバー上にある場合、または別のソースからサブスクライバーをインポートする場合にAPIを選択してください。
+:::
+
+## 始める前に \{#before-you-start\}
+
+:::warning
+データを送信する前に、Adapty Mailのセットアップを完了させてください。具体的には、キャンペーン、セグメント（必要な場合）、ウェブペイウォール、そして起動済みのフローが必要です。Adapty Mailは、このセットアップ完了後に作成されたプロファイルにのみメールを送信します。それより前に送信したプロファイルはメールを受信しません。まず[Adapty Mailをはじめる](mail-get-started)に従ってセットアップを完了させてから、こちらに戻ってください。
+:::
+
+APIキーとベースURLも必要です：
+
+- **シークレットAPIキー**: Adapty Mailの **Settings** に移動し、シークレットAPIキーをコピーします。キーはプロジェクト固有であるため、APIはどのプロジェクトのデータかを識別できます。
+- **ベースURL**: すべてのリクエストは `https://api-mail.adapty.io` に送信します。
+- **認証**: **Authorization** ヘッダーに `Bearer {your_secret_api_key}` の形式でキーを送信します。
+
+:::important
+メールを収集してAdapty Mailに送信する前に、明示的な同意を取得してください。GDPR、CAN-SPAM、および各市場の関連法規への準拠はお客様の責任となります。
+:::
+
+## ユーザープロファイルを送信する \{#send-user-profiles\}
+
+プロファイルには、ユーザーのメールアドレスと属性が含まれます。プロファイルを作成または更新するには、`/api/v1/profile/save/` にPOSTリクエストを送信します。
+
+以下の3つのフィールドが必須です：
+- アプリまたはバックエンドが管理する安定した `external_profile_id`
+- Adapty Mailがキャンペーンを配信する `email`
+- ユーザー作成日時を示す `external_created_at`（セグメントで使用可能）
+
+:::important
+`external_profile_id` には必ず安定した値を使用し、匿名値やインストールごとの値は使わないでください。Adapty Mailはこれを使用して、メール、クリック、購入を1つのプロファイルに紐付けます。
+:::
+
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/save/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "external_profile_id": "user_12345",
+    "external_created_at": "2026-06-01T10:30:00Z",
+    "email": "jane@example.com",
+    "country": "US",
+    "custom_attributes": {
+      "plan": "trial"
+    }
+  }'
+```
+
+利用可能なすべてのフィールドについては、[プロファイルを保存する](api-mail/operations/saveProfile)のリファレンスを参照してください。
+
+## トランザクションイベントを送信する \{#send-transaction-events\}
+
+:::note
+**一度も購入していない**フローでユーザーにリーチするには、メールアドレスを持つプロファイルがあれば十分です。それ以外のすべてのフローでは、トランザクションイベントも必要です。
+:::
+
+**一度も購入していない**フローを除くすべてのフローは、購入履歴によって動作します。購入、更新、キャンセルを処理する際にトランザクションイベントを送信することで、Adapty Mailはプロファイルを適切なフローに振り分けられます。トランザクションイベントは収益アトリビューションにも活用されます。**一度も購入していない**キャンペーンのみを実施する場合は省略できます。
+
+トランザクションを記録するには、`/api/v1/profile/transaction-event/save/` にPOSTリクエストを送信します。プロファイルの送信時と同じ `external_profile_id` を使用することで、Adapty Mailがトランザクションを正しいユーザーに紐付けられます。
+
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/transaction-event/save/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "event_type": "subscription_started",
+    "event_id": "evt_abc123",
+    "event_datetime": "2026-06-10T14:20:05Z",
+    "external_profile_id": "user_12345",
+    "store": "app_store",
+    "store_product_id": "premium_monthly",
+    "store_transaction_id": "1000000123456789",
+    "store_original_transaction_id": "1000000123456789",
+    "purchased_at": "2026-06-10T14:20:00Z",
+    "originally_purchased_at": "2026-06-10T14:20:00Z",
+    "price_usd": "9.99"
+  }'
+```
+
+利用可能なすべてのフィールドについては、[トランザクションイベントを保存する](api-mail/operations/saveTransactionEvent)のリファレンスを参照してください。
+
+### イベントをフローにマッピングする \{#map-your-events-to-flows\}
+
+発生した内容に合った `event_type` を送信してください。Adapty Mailはイベント履歴からプロファイルの状態を導き出し、対応するフローにルーティングします。
+
+| `event_type` | 送信するタイミング | フロー |
+| --- | --- | --- |
+| `subscription_started` | ユーザーが新しいサブスクリプションを開始したとき | アクティブ — リエンゲージメントフローなし |
+| `subscription_renewed` | サブスクリプションが自動更新されたとき | アクティブ — リエンゲージメントフローなし |
+| `subscription_renewal_reactivated` | ユーザーが自動更新を再度有効にしたとき | アクティブ — リエンゲージメントフローなし |
+| `non_subscription_purchase` | ユーザーが買い切り購入をしたとき | アクティブ — リエンゲージメントフローなし |
+| `subscription_renewal_cancelled` | ユーザーが自動更新をオフにしたとき（有効期限まではアクティブ） | 更新キャンセル |
+| `billing_issue_detected` | 更新の支払いが失敗したとき | 請求問題 |
+| `entered_grace_period` | 支払いが失敗したがユーザーがグレース期間中のとき | 請求問題 |
+| `subscription_expired` | サブスクリプションが失効しアクセスが終了したとき | 期限切れ |
+| `subscription_refunded` | サブスクリプションの購入が返金されたとき | 返金済み |
+| `non_subscription_purchase_refunded` | 買い切り購入が返金されたとき | 返金済み |

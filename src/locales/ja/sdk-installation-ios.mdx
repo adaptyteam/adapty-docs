@@ -1,0 +1,360 @@
+---
+title: "iOS SDKのインストールと設定"
+description: "サブスクリプションアプリ向けに、iOS で Adapty SDK をインストールするステップバイステップガイド。"
+metadataTitle: "iOS への Adapty SDK インストール | Adapty ドキュメント"
+keywords: ['install sdk', 'sdk install', 'install sdk ios', 'adaptyui']
+rank: 100
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+import GetKey from '@site/src/locales/ja/reusable/GetKey.md';
+import InstallationPrereqs from '@site/src/locales/ja/reusable/InstallationPrereqs.mdx';
+
+Adapty SDK には、モバイルアプリにシームレスに統合するための 2 つの主要モジュールが含まれています。
+
+- **Core Adapty**: アプリで Adapty を正しく動作させるために必要な必須 SDK です。
+- **AdaptyUI**: ノーコードでクロスプラットフォームのペイウォールを簡単に作成できるツール [Adapty ペイウォールビルダー](adapty-paywall-builder) を使用する場合に必要なオプションモジュールです。
+
+:::tip
+実際のモバイルアプリへの Adapty SDK 統合例を見たい方は、[サンプルアプリ](https://github.com/adaptyteam/AdaptySDK-iOS/tree/master/Examples)をご覧ください。ペイウォールの表示、購入処理、その他の基本機能を含む完全なセットアップが確認できます。
+:::
+
+実装の詳細なウォークスルーは、以下の動画でも確認できます。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="iOS (SwiftUI)" default>
+
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/cSChHc8k2zA?si=KhNFhqXccIzYwTcm" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+</TabItem>
+<TabItem value="uikit" label="iOS (UIKit)" default>
+
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/WEUnlaAjSI0?si=sjXKVVb56tEHDKzJ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+</TabItem>
+</Tabs>
+
+## 必要要件 \{#requirements\}
+
+Adapty iOS SDK は iOS 15.0 以降が必要です。
+
+:::important
+Xcode 26.4 以降でビルドする場合は、Adapty SDK 3.15.7 以上が必要です。
+:::
+
+<InstallationPrereqs />
+
+## Adapty SDK のインストール \{#install-adapty-sdk\}
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-iOS.svg?style=flat&logo=apple)](https://github.com/adaptyteam/AdaptySDK-iOS/releases)
+
+Adapty SDK は Swift Package Manager でインストールします。Xcode で **File** -> **Add Package Dependency...** を選択してください。パッケージ依存関係の追加手順は Xcode のバージョンによって異なる場合があるため、必要に応じて Xcode のドキュメントを参照してください。
+
+1. リポジトリ URL を入力します。
+   ```
+   https://github.com/adaptyteam/AdaptySDK-iOS.git
+   ```
+2. バージョンを選択し（最新の安定版を推奨）、**Add Package** をクリックします。
+3. **Choose Package Products** ウィンドウで、必要なモジュールを選択します。
+   - **Adapty**（コアモジュール）
+   - **AdaptyUI**（オプション - ペイウォールビルダーを使用する場合のみ）
+   :::note
+   注意:
+     - [キッズモード](kids-mode)を有効にするには、**Adapty** の代わりに **Adapty_KidsMode** を選択してください。
+     - リストに表示される他のパッケージは選択しないでください。それらは不要です。
+   :::
+4. **Add Package** をクリックしてインストールを完了します。
+5. **インストールの確認:** プロジェクトナビゲーターの **Package Dependencies** 以下に「Adapty」（および選択した場合は「AdaptyUI」）が表示されていることを確認してください。
+
+:::important
+Adapty iOS SDK 4.0 はプレリリース版です。Swift Package Manager は **Up to Next Major Version**（`from:`）ルールではベータ版を解決しないため、正確なバージョンを固定する必要があります。Xcode では **Dependency Rule** を **Exact Version** に設定し、`4.0.0-beta.1` と入力してください。`Package.swift` では `.exact("4.0.0-beta.1")` を使用します。詳しくは [Adapty iOS SDK を v4 へ移行する](migration-to-ios-sdk-v4)をご覧ください。
+:::
+
+## Adapty SDK の Adapty モジュールを有効化する \{#activate-adapty-module-of-adapty-sdk\}
+
+アプリのコードで Adapty SDK を有効化します。
+
+:::note
+Adapty SDK の有効化はアプリ内で 1 度だけ行えば十分です。
+:::
+
+<GetKey />
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="SwiftUI">
+
+```swift showLineNumbers
+
+@main
+struct YourApp: App {
+  init() {
+    // Configure Adapty SDK
+    let configurationBuilder = AdaptyConfiguration
+      .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
+
+   Adapty.logLevel = .verbose // recommended for development and the first production release
+
+    let config = configurationBuilder.build()
+
+    // Activate Adapty SDK asynchronously
+    Task {
+      do {
+        try await Adapty.activate(with: config)
+      } catch {
+        // Handle error appropriately for your app
+        print("Adapty activation failed: ", error)
+      }
+    }
+
+    var body: some Scene {
+      WindowGroup {
+        // Your content view
+      }
+    }
+  }
+}
+```
+
+</TabItem>
+<TabItem value="swift" label="UIKit" default>
+
+```swift showLineNumbers
+// In your AppDelegate class:
+// If you only use an AppDelegate, place the following code in the
+// application(_:didFinishLaunchingWithOptions:) method.
+
+// If you use a SceneDelegate, place the following code in the
+// scene(_:willConnectTo:options:) method.
+
+
+Task {
+  do {
+    let configurationBuilder = AdaptyConfiguration
+      .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
+      .with(logLevel: .verbose) // recommended for development and the first production release
+
+    let config = configurationBuilder.build()
+    try await Adapty.activate(with: config)
+  } catch {
+    // Handle error appropriately for your app
+    print("Adapty activation failed: ", error)
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::important
+他の Adapty SDK メソッドを呼び出す前に、`activate` の完了を待ってください。完全な呼び出し順序については [iOS SDK の呼び出し順序](ios-sdk-call-order)をご覧ください。
+:::
+
+次に、アプリでペイウォールを設定します。
+
+- [Adapty ペイウォールビルダー](adapty-paywall-builder)を使用する場合は、まず下記の [AdaptyUI モジュールを有効化する](#activate-adaptyui-module-of-adapty-sdk)を行い、その後[ペイウォールビルダーのクイックスタート](ios-quickstart-paywalls)に従ってください。
+- 独自のペイウォール UI を構築する場合は、[カスタムペイウォールのクイックスタート](ios-quickstart-manual)をご覧ください。
+
+## Adapty SDK の AdaptyUI モジュールを有効化する \{#activate-adaptyui-module-of-adapty-sdk\}
+
+[ペイウォールビルダー](adapty-paywall-builder)を使用する予定があり、[AdaptyUI モジュールをインストール済み](sdk-installation-ios#install-adapty-sdk)の場合は、AdaptyUI も有効化する必要があります。
+
+:::important
+コード内では、AdaptyUI を有効化する前に必ずコアの Adapty モジュールを有効化してください。
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="SwiftUI">
+
+```swift showLineNumbers title="Swift"
+
+@main
+struct YourApp: App {
+  init() {
+    // ...ConfigurationBuilder steps
+
+    // Activate Adapty SDK asynchronously
+    Task {
+      do {
+        try await Adapty.activate(with: config)
+        try await AdaptyUI.activate()
+      } catch {
+        // Handle error appropriately for your app
+        print("Adapty activation failed: ", error)
+      }
+    }
+
+    // main body...
+  }
+}
+```
+</TabItem>
+<TabItem value="uikit" label="UIKit" default>
+
+```swift showLineNumbers title="UIKit"
+// If you only use an AppDelegate, place the following code in the
+// application(_:didFinishLaunchingWithOptions:) method.
+
+// If you use a SceneDelegate, place the following code in the
+// scene(_:willConnectTo:options:) method.
+
+
+Task {
+   do {
+      let configurationBuilder = AdaptyConfiguration
+         .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY") // Get from Adapty dashboard
+         .with(logLevel: .verbose) // recommended for development
+
+   let config = configurationBuilder.build()
+   try await Adapty.activate(with: config)
+   try await AdaptyUI.activate()
+      } catch {
+      // Handle error appropriately for your app
+      print("Adapty activation failed: ", error)
+   }
+}
+```
+</TabItem>
+</Tabs>
+
+:::tip
+AdaptyUI を有効化する際に、オプションとして[ペイウォールのデフォルトキャッシュ設定を上書き](#set-up-media-cache-configuration-for-adaptyui)することができます。
+:::
+
+## オプション設定 \{#optional-setup\}
+
+### ログ \{#logging\}
+
+#### ログシステムの設定 \{#set-up-the-logging-system\}
+
+Adapty は、何が起きているかを把握できるように、エラーや重要な情報をログに記録します。利用可能なレベルは以下のとおりです。
+
+| レベル     | 説明                                                         |
+| ---------- | ------------------------------------------------------------ |
+| `error`    | エラーのみをログに記録します                                  |
+| `warn`     | エラーと、重大なエラーではないが注意が必要な SDK からのメッセージをログに記録します |
+| `info`     | エラー、警告、および各種情報メッセージをログに記録します      |
+| `verbose`  | 関数呼び出し、API クエリなど、デバッグ時に役立つ追加情報をすべてログに記録します |
+
+```swift showLineNumbers
+ let configurationBuilder = AdaptyConfiguration
+         .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+         .with(logLevel: .verbose) // recommended for development
+```
+
+#### ログシステムのメッセージをリダイレクトする \{#redirect-the-logging-system-messages\}
+
+Adapty のログメッセージを独自のシステムに送信したり、ファイルに保存したりする必要がある場合は、`setLogHandler` メソッドを使用して、その中にカスタムのログロジックを実装してください。このハンドラーは、メッセージ内容と重大度レベルを含むログレコードを受け取ります。
+
+```swift showLineNumbers title="Swift"
+Adapty.setLogHandler { record in
+    writeToLocalFile("Adapty \(record.level): \(record.message)")
+}
+```
+
+### データポリシー \{#data-policies\}
+
+Adapty は、明示的に送信しない限りユーザーの個人データを保存しませんが、ストアや各国のガイドラインに準拠するために、追加のデータセキュリティポリシーを実装することができます。
+
+#### IDFA の収集と共有を無効にする \{#disable-idfa-collection-and-sharing\}
+
+Adapty モジュールを有効化する際に、`idfaCollectionDisabled` を `true` に設定すると、IDFA の収集と共有を無効にできます。
+
+このパラメーターは、App Store レビューガイドラインに準拠する場合や、アプリで IDFA が不要なときに App Tracking Transparency のプロンプトが表示されるのを避けるために使用してください。デフォルト値は `false` です。IDFA 収集の詳細については、[アナリティクス連携](analytics-integration#disable-collection-of-advertising-identifiers)セクションを参照してください。
+
+```swift showLineNumbers
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+        .with(idfaCollectionDisabled: true)
+```
+
+#### IP の収集と共有を無効にする \{#disable-ip-collection-and-sharing\}
+
+Adapty モジュールを有効化する際に、`ipAddressCollectionDisabled` を `true` に設定すると、ユーザーの IP アドレスの収集と共有を無効にできます。デフォルト値は `false` です。
+
+このパラメーターは、ユーザーのプライバシーを強化する場合、GDPR や CCPA などの地域データ保護規制に準拠する場合、またはアプリで IP ベースの機能が不要なときに不要なデータ収集を減らす場合に使用してください。
+
+```swift showLineNumbers
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+        .with(ipAddressCollectionDisabled: true)
+```
+
+#### AdaptyUI のペイウォール向けメディアキャッシュ設定 \{#set-up-media-cache-configuration-for-adaptyui\}
+
+AdaptyUI の設定はオプションです。設定なしで AdaptyUI モジュールを有効化することもできます。ただし、設定を使用する場合はすべてのパラメーターが必須です。
+
+```swift showLineNumbers title="Swift"
+
+// Configure AdaptyUI
+        let adaptyUIConfiguration = AdaptyUI.Configuration(
+            mediaCacheConfiguration: .init(
+                memoryStorageTotalCostLimit: 100 * 1024 * 1024,
+                memoryStorageCountLimit: .max,
+                diskStorageSizeLimit: 100 * 1024 * 1024
+            )
+        )
+
+        // Activate AdaptyUI
+        AdaptyUI.activate(configuration: adaptyUIConfiguration)
+```
+パラメーター:
+
+| パラメーター                | 必須/任意 | 説明                                                         |
+| :-------------------------- | :------- | :----------------------------------------------------------- |
+| memoryStorageTotalCostLimit | 必須     | ストレージの合計コスト上限（バイト単位）。                    |
+| memoryStorageCountLimit     | 必須     | メモリストレージのアイテム数上限。                           |
+| diskStorageSizeLimit        | 必須     | ストレージのディスク上のファイルサイズ上限（バイト単位）。0 は上限なしを意味します。 |
+
+### トランザクション終了の動作 \{#transaction-finishing-behavior\}
+
+:::info
+この機能は SDK バージョン 3.12.0 以降で利用できます。
+:::
+
+デフォルトでは、Adapty は検証が成功した後にトランザクションを自動的に終了します。ただし、高度なトランザクション検証（サーバーサイドのレシート検証、不正検出、カスタムビジネスロジックなど）が必要な場合は、SDK が手動でトランザクションを終了するように設定できます。
+
+```swift showLineNumbers title="Swift"
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+    .with(transactionsFinishBehavior: .manual) // .auto is the default
+```
+
+トランザクションの終了方法の詳細については、[ガイド](ios-transaction-management)をご覧ください。
+
+### バックアップ復元時のデータ消去 \{#clear-data-on-backup-restore\}
+
+`clearDataOnBackup` を `true` に設定すると、SDK はアプリが iCloud バックアップから復元されたことを検知し、キャッシュされたプロファイル情報、プロダクト詳細、ペイウォールを含むローカルに保存されたすべての SDK データを削除します。SDK はその後クリーンな状態で初期化されます。デフォルト値は `false` です。
+
+:::note
+削除されるのはローカルの SDK キャッシュのみです。Apple とのトランザクション履歴および Adapty サーバー上のユーザーデータは変更されません。
+:::
+
+```swift showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+    .with(clearDataOnBackup: true) // default – false
+```
+
+## トラブルシューティング \{#troubleshooting\}
+
+#### Tuist での Swift 6 並行性エラー \{#swift-6-concurrency-error-with-tuist\}
+
+[Tuist](https://tuist.dev/) でビルドすると、Swift 6 の strict concurrency コンパイルエラーが発生することがあります。典型的な症状としては、`AdaptyUIBuilderLogic` での `@Sendable` 属性の不一致や、類似したモジュール間の Sendability エラーがあります。
+
+これは、Tuist が SPM パッケージから Xcode プロジェクトを生成する際に `swift-tools-version: 6.0` の設定を保持しないために発生します。その結果、一部の Adapty ターゲット（`Adapty`、`AdaptyUI`、`AdaptyUIBuilder`）が Swift 5 のルールでコンパイルされ、他のターゲットが Swift 6 を使用するため、モジュール間で `@Sendable` の不一致が生じます。
+
+**修正方法**: Adapty SDK **3.15.5** 以降にアップグレードしてください。Swift の言語バージョンが混在していても問題が解消されます。
+
+**回避策**: アップグレードできない場合は、Tuist の設定で 3 つの Adapty ターゲットすべてに対して明示的に Swift 6 を設定してください。
+
+```swift showLineNumbers
+targetSettings: [
+  "Adapty": .init().swiftVersion("6"),
+  "AdaptyUI": .init().swiftVersion("6"),
+  "AdaptyUIBuilder": .init().swiftVersion("6"),
+]
+```

@@ -1,0 +1,91 @@
+---
+title: "React Native SDKでローカライゼーションとロケールコードを使用する"
+description: "Adapty SDKを使ってReact NativeアプリのペイウォールをローカライズするFormatする方法を学びましょう。"
+metadataTitle: "ペイウォールのローカライズ | React Native SDK | Adapty ドキュメント"
+customSlug: /react-native-localizations-and-locale-codes
+---
+
+## なぜ重要なのか \{#why-this-is-important\}
+
+ロケールコードが必要になるシナリオはいくつかあります。たとえば、アプリの現在のローカライゼーションに対応した正しいペイウォールを取得しようとする場合などです。
+
+ロケールコードは複雑で、プラットフォームによって異なる場合があるため、Adaptyではサポートするすべてのプラットフォームに対して独自の統一標準を採用しています。ただし、このコードが複雑であるため、サーバーに何を送信して正しいローカライゼーションを取得しているのか、またその後の処理がどのように行われるのかを正確に理解することが非常に重要です。そうすることで、期待どおりの結果を常に受け取れるようになります。
+
+## AdaptyのロケールコードFormatの標準 \{#locale-code-standard-at-adapty\}
+
+ロケールコードについて、Adaptyはわずかに修正した [BCP 47標準](https://en.wikipedia.org/wiki/IETF_language_tag) を使用しています。各コードは小文字のサブタグをハイフンで区切った形式です。例：`en`（英語）、`pt-br`（ポルトガル語（ブラジル））、`zh`（簡体字中国語）、`zh-hant`（繁体字中国語）。
+
+## ロケールコードのマッチング \{#locale-code-matching\}
+
+Adaptyがクライアントサイドのセルからロケールコードを受け取り、ペイウォールの対応するローカライゼーションを探し始めると、以下の処理が行われます：
+
+1. 受け取ったロケール文字列が小文字に変換され、アンダースコア（`_`）がすべてハイフン（`-`）に置換されます
+2. 完全に一致するロケールコードのローカライゼーションを検索します
+3. 一致するものが見つからなかった場合、最初のハイフンより前の部分文字列（`pt-br` の場合は `pt`）を取得し、一致するローカライゼーションを探します
+4. それでも見つからない場合、デフォルトの `en` ローカライゼーションを返します
+
+これにより、`'pt_BR'` を送信したiOSデバイス、`pt-BR` を送信したAndroidデバイス、そして `pt-br` を送信した別のデバイスはすべて同じ結果を受け取ります。
+
+## ローカライゼーションの実装：推奨する方法 \{#implementing-localizations-recommended-way\}
+
+ローカライゼーションについて気になっているということは、すでにプロジェクト内でローカライズされた文字列ファイルを扱っている可能性が高いです。その場合、各ローカライゼーションに対応するファイルに、意図するAdaptyロケールコードをキーと値のペアとして追加することをおすすめします。そして、SDKを呼び出す際にそのキーの値を取得します。次のようにします：
+
+```javascript showLineNumbers
+// 1. Modify your localization files (e.g., using react-i18next)
+
+/*
+en.json
+*/
+{
+  "adapty_paywalls_locale": "en"
+}
+
+/*
+es.json
+*/
+{
+  "adapty_paywalls_locale": "es"
+}
+
+/*
+pt-BR.json
+*/
+{
+  "adapty_paywalls_locale": "pt-br"
+}
+
+// 2. Extract and use the locale code
+
+const MyComponent = () => {
+  const { t } = useTranslation();
+  
+  const fetchPaywall = async () => {
+    const locale = t('adapty_paywalls_locale');
+    // pass locale code to adapty.getPaywall or adapty.getPaywallForDefaultAudience method
+    const paywall = await adapty.getPaywallForDefaultAudience('placement_id', locale);
+  };
+};
+```
+
+この方法により、アプリのすべてのユーザーに対してどのローカライゼーションが取得されるかを完全にコントロールできます。
+
+## ローカライゼーションの実装：別の方法 \{#implementing-localizations-the-other-way\}
+
+すべてのローカライゼーションに対して明示的にロケールコードを定義せずに、同様の（ただし完全に同一ではない）結果を得ることもできます。その場合、たとえば [`react-native-localize`](https://github.com/zoontek/react-native-localize) などを使ってデバイスからロケールコードを取得します：
+
+```javascript showLineNumbers
+
+const fetchPaywall = async () => {
+  // getLocales() returns the user's preferred locales in BCP-47 format (e.g., 'en-US', 'pt-BR')
+  const locale = RNLocalize.getLocales()[0].languageTag;
+  // pass locale code to adapty.getPaywall or adapty.getPaywallForDefaultAudience method
+  const paywall = await adapty.getPaywallForDefaultAudience('placement_id', locale);
+};
+```
+
+この方法は以下の理由からおすすめしていません：
+
+1. iOSでは、優先言語と現在の地域ロケールは同一ではありません。ローカライゼーションが正しく選択されるようにするには、Appleの解決ロジックに任せるか（推奨方法のローカライズ済み文字列ファイルを使用すれば自動的に機能します）、自分でそのロジックを再現する必要があります。
+2. デバイスのロケールが、Adaptyで設定したローカライゼーションのいずれとも一致しない場合があります。その場合、SDKは最初のサブタグで一致するものにフォールバックするか、最終的に `en` にフォールバックします。これは、そのユーザーに対してデフォルトにしたい言語ではない可能性があります。
+
+それでもこの方法を使用する場合は、関連するすべてのユースケースに対応できていることを確認してください。

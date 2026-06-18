@@ -1,0 +1,132 @@
+---
+title: "Flutter SDK でユーザーを識別する"
+description: "Adapty でユーザーを識別して、パーソナライズされたサブスクリプション体験を向上させましょう。"
+metadataTitle: "Adapty でのユーザー識別 | Adapty ドキュメント"
+displayed_sidebar: sdkflutter
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+import CrossDeviceDetection from '@site/src/locales/ja/reusable/CrossDeviceDetection.mdx';
+
+Adapty はすべてのユーザーに対して内部プロファイル ID を作成します。ただし、独自の認証システムがある場合は、独自の Customer User ID を設定する必要があります。[Profiles](profiles-crm) セクションで Customer User ID によってユーザーを検索でき、また[サーバーサイド API](getting-started-with-server-side-api) でも使用でき、すべてのインテグレーションに送信されます。
+
+### 設定時に Customer User ID を設定する \{#setting-customer-user-id-on-configuration\}
+
+設定時にユーザー ID がある場合は、`.activate()` メソッドの `customerUserId` パラメータとして渡すだけです：
+
+```dart showLineNumbers title="Dart"
+   try {
+       await Adapty().activate(
+           configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+             ..withCustomerUserId(YOUR_CUSTOMER_USER_ID)
+       );
+   } catch (e) {
+       // handle the error
+   }
+```
+
+<SampleApp />
+
+### 設定後に Customer User ID を設定する \{#setting-customer-user-id-after-configuration\}
+
+SDK の設定時にユーザー ID がない場合は、`.identify()` メソッドを使っていつでも後から設定できます。このメソッドが最もよく使われるケースは、登録または認証後に匿名ユーザーから認証済みユーザーに切り替わるときです。
+
+```dart showLineNumbers
+try {
+  await Adapty().identify(customerUserId);
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+リクエストパラメータ：
+
+- **Customer User ID**（必須）：文字列のユーザー識別子。
+
+:::warning
+重要なユーザーデータの再送信
+
+ユーザーが再度ログインするなど、一部のケースでは Adapty のサーバーにはすでにそのユーザーの情報があります。このような場合、Adapty SDK は自動的に新しいユーザーとして動作するよう切り替わります。カスタム属性やサードパーティネットワークからのアトリビューションなど、匿名ユーザーに渡したデータがある場合は、識別されたユーザーに対してそのデータを再送信する必要があります。
+
+また、新しいユーザーのデータが異なる可能性があるため、ユーザーを識別した後はすべてのペイウォールとプロダクトを再取得する必要があることにも注意してください。
+:::
+
+### ログアウトとログイン \{#logging-out-and-logging-in\}
+
+`.logout()` メソッドを呼び出すことで、いつでもユーザーをログアウトできます：
+
+```dart showLineNumbers
+try {
+  await Adapty().logout();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle unknown error
+}
+```
+
+その後、`.identify()` メソッドを使ってユーザーをログインできます。
+
+## `appAccountToken` を設定する（iOS） \{#assign-appaccounttoken-ios\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) は、App Store のトランザクションを内部ユーザー ID に紐付けるための **UUID** です。  
+StoreKit はすべてのトランザクションにこのトークンを関連付けるため、バックエンドで App Store のデータとユーザーを照合できます。
+
+ユーザーごとに生成した安定した UUID を使用し、同じアカウントに対してデバイスをまたいで再利用してください。
+これにより、購入と App Store の通知が正しく紐付けられます。
+
+トークンは 2 つの方法で設定できます — SDK の起動時またはユーザーの識別時です。
+
+:::important
+`appAccountToken` は必ず `customerUserId` と一緒に渡す必要があります。
+トークンのみを渡した場合、トランザクションに含まれません。
+:::
+
+```dart showLineNumbers
+// During configuration:
+try {
+   await Adapty().activate(
+       configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+         ..withCustomerUserId(YOUR_CUSTOMER_USER_ID, iosAppAccountToken: "YOUR_APP_ACCOUNT_TOKEN")
+   );
+} catch (e) {
+   // handle the error
+}
+// Or when identifying users
+try {
+    await Adapty().identify(customerUserId, iosAppAccountToken: "YOUR_APP_ACCOUNT_TOKEN");
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+}
+```
+
+### 難読化されたアカウント ID を設定する（Android） \{#set-obfuscated-account-ids-android\}
+
+Google Play では、ユーザーのプライバシーとセキュリティを強化するために、特定のユースケースで難読化されたアカウント ID が必要です。これらの ID により、Google Play はユーザー情報を匿名に保ちながら購入を識別できます。これは不正防止や分析において特に重要です。
+
+アプリが機密性の高いユーザーデータを扱う場合、または特定のプライバシー規制に準拠する必要がある場合は、これらの ID を設定する必要があるかもしれません。難読化された ID により、Google Play は実際のユーザー識別子を公開せずに購入を追跡できます。
+
+```dart showLineNumbers
+// During configuration:
+try {
+   await Adapty().activate(
+       configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+         ..withCustomerUserId(YOUR_CUSTOMER_USER_ID, androidObfuscatedAccountId: "OBFUSCATED_ACCOUNT_ID")
+   );
+} catch (e) {
+   // handle the error
+}
+// Or when identifying users
+try {
+    await Adapty().identify(customerUserId, androidObfuscatedAccountId: "OBFUSCATED_ACCOUNT_ID");
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+}
+```
+
+## デバイスをまたいでユーザーを識別する \{#detect-users-across-devices\}
+
+<CrossDeviceDetection />

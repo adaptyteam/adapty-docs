@@ -1,0 +1,201 @@
+---
+title: "Unity SDKでペイウォールビルダーのペイウォールと設定を取得する"
+description: "Adaptyでペイウォールビルダーのペイウォールを取得し、Unityアプリのサブスクリプション管理を改善する方法を学びます。"
+metadataTitle: "Adaptyでペイウォールビルダーのペイウォールを取得する | Adapty ドキュメント"
+displayed_sidebar: sdkunity
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+rank: 80
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+
+Adapty ダッシュボードの新しいペイウォールビルダーで[ペイウォールのビジュアルを設計](adapty-paywall-builder)したら、モバイルアプリに表示できます。まずは、プレースメントに関連付けられたペイウォールとそのビュー設定を取得する必要があります。
+
+:::warning
+新しいペイウォールビルダーは Unity SDK バージョン 3.3.0 以降で動作します。
+:::
+
+このトピックはペイウォールビルダーでカスタマイズされたペイウォールに関するものです。ペイウォールを手動で実装する場合は、[モバイルアプリでリモートコンフィグペイウォールのペイウォールとプロダクトを取得する](fetch-paywalls-and-products-unity)をご参照ください。
+
+<SampleApp />
+
+<details>
+   <summary>モバイルアプリでペイウォールを表示する前に（クリックして展開）</summary>
+
+1. Adapty ダッシュボードで[プロダクトを作成](create-product)します。
+2. Adapty ダッシュボードで[ペイウォールを作成し、プロダクトを追加](create-paywall)します。
+3. Adapty ダッシュボードで[プレースメントを作成し、ペイウォールを追加](create-placement)します。
+4. モバイルアプリに [Adapty SDK](sdk-installation-unity) をインストールします。
+</details>
+
+## ペイウォールビルダーで設計したペイウォールを取得する \{#fetch-paywall-designed-with-paywall-builder\}
+
+[ペイウォールビルダーでペイウォールを設計](adapty-paywall-builder)した場合、ユーザーに表示するためにモバイルアプリのコードでレンダリング処理を書く必要はありません。このようなペイウォールには、表示内容と表示方法の両方が含まれています。ただし、プレースメントからペイウォールのIDを取得し、ビュー設定を取得してからモバイルアプリに表示する必要があります。
+
+最適なパフォーマンスを確保するために、ペイウォールと[ビュー設定](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)はできるだけ早く取得し、ユーザーに表示する前に画像のダウンロードに十分な時間を確保することが重要です。
+
+ペイウォールを取得するには、`GetPaywall` メソッドを使用します：
+
+```csharp showLineNumbers
+Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
+  if(error != null) {
+    // handle the error
+    return;
+  }
+  
+  // paywall - the resulting object
+});
+```
+
+パラメーター：
+
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | 対象の[プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>[ペイウォールのローカライズ](add-paywall-locale-in-adapty-paywall-builder)の識別子。マイナス（**-**）文字で区切られた1つまたは2つのサブタグからなる言語コードを指定します。最初のサブタグは言語、2番目は地域を表します。</p><p></p><p>例：`en` は英語、`pt-br` はブラジルポルトガル語を表します。</p><p>ロケールコードと推奨される使用方法については、[ローカライズとロケールコード](localizations-and-locale-codes)を参照してください。</p> |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDKはサーバーからデータの読み込みを試み、失敗した場合はキャッシュされたデータを返します。ユーザーが常に最新のデータを取得できるため、このオプションを推奨します。</p><p></p><p>ただし、ユーザーの接続が不安定な場合は、`.returnCacheDataElseLoad` を使用してキャッシュデータが存在する場合はそれを返すことを検討してください。この場合、最新のデータが得られないことがありますが、接続状況にかかわらず読み込み時間が短縮されます。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを避けるために使用しても安全です。</p><p></p><p>キャッシュはアプリの再起動後も保持され、アプリの再インストールまたは手動クリーンアップ時にのみクリアされます。</p><p></p><p>Adapty SDK はペイウォールをローカルに2層で保存します：上述の定期更新キャッシュと[フォールバックペイウォール](fallback-paywalls)です。また、CDNを使用してペイウォールをより高速に取得し、CDNが利用できない場合のためにスタンドアロンのフォールバックサーバーも用意しています。このシステムは、インターネット接続が不安定な場合でも常に最新バージョンのペイウォールを取得できるよう設計されています。</p> |
+| **loadTimeout** | デフォルト: 5秒 | <p>このメソッドのタイムアウトを制限する値です。タイムアウトに達した場合、キャッシュデータまたはローカルフォールバックが返されます。</p><p>内部で複数のリクエストが発生する場合があるため、まれに `loadTimeout` で指定した時間より少し遅くタイムアウトすることがあります。</p> |
+
+レスポンスパラメーター：
+
+| パラメーター | 説明 |
+| :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | プロダクトIDのリスト、ペイウォール識別子、リモートコンフィグ、その他のプロパティを含む [`AdaptyPaywall`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall.html) オブジェクト。 |
+
+## ペイウォールビルダーで設計したペイウォールのビュー設定を取得する \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+ペイウォールビルダーで **Show on device** トグルが有効になっていることを確認してください。このオプションがオンになっていない場合、ビュー設定を取得できません。
+:::
+
+ペイウォールを取得したら、`ViewConfiguration` が含まれているかどうかを確認します。これはペイウォールビルダーで作成されたことを示します。`ViewConfiguration` が存在する場合はペイウォールビルダーのペイウォールとして扱い、存在しない場合は[リモートコンフィグペイウォールとして処理](present-remote-config-paywalls-unity)します。
+
+Unity SDK では、ビュー設定を手動で取得せずに、直接 `CreatePaywallView` メソッドを呼び出します。
+
+:::warning
+`CreatePaywallView` メソッドの結果は1回のみ使用できます。再度使用する必要がある場合は、`CreatePaywallView` メソッドを再度呼び出してください。再作成せずに2回呼び出すと、`AdaptyUIError.viewAlreadyPresented` エラーが発生する場合があります。
+:::
+
+```csharp showLineNumbers
+var parameters = new AdaptyUICreatePaywallViewParameters()
+  .SetPreloadProducts(preloadProducts)
+  .SetLoadTimeout(new TimeSpan(0, 0, 3));
+
+AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+  // handle the result
+});
+```
+
+パラメーター：
+
+| パラメーター | 必須/任意 | 説明 |
+| :------------------ | :------------- | :----------------------------------------------------------- |
+| **paywall** | 必須 | 対象のペイウォールのコントローラーを取得するための `AdaptyPaywall` オブジェクト。 |
+| **loadTimeout** | デフォルト: 5秒 | このメソッドのタイムアウトを制限する値です。タイムアウトに達した場合、キャッシュデータまたはローカルフォールバックが返されます。内部で複数のリクエストが発生する場合があるため、まれに `loadTimeout` で指定した時間より少し遅くタイムアウトすることがあります。 |
+| **PreloadProducts** | 任意 | `AdaptyPaywallProducts` の配列を提供して、画面上のプロダクト表示タイミングを最適化します。`nil` が渡された場合、AdaptyUI は必要なプロダクトを自動的に取得します。 |
+| **CustomTags** | 任意 | カスタムタグとその解決済みの値の辞書を定義します。カスタムタグはペイウォールコンテンツのプレースホルダーとして機能し、ペイウォール内のパーソナライズされたコンテンツのために特定の文字列に動的に置き換えられます。詳細はペイウォールビルダーのカスタムタグのトピックを参照してください。 |
+| **CustomTimers** | 任意 | カスタムタイマーとその終了日時の辞書を定義します。カスタムタイマーを使用すると、ペイウォールにカウントダウンタイマーを表示できます。 |
+
+:::note
+複数の言語を使用する場合、[ペイウォールビルダーのローカライズ](add-paywall-locale-in-adapty-paywall-builder)を追加する方法と、ロケールコードを正しく使用する方法を[こちら](localizations-and-locale-codes)で確認してください。
+:::
+
+ビューを取得したら、[ペイウォールを表示](unity-present-paywalls)します。
+
+## アセットをカスタマイズする \{#customize-assets\}
+
+ペイウォール内の画像や動画をカスタマイズするには、カスタムアセットを実装します。
+
+ヒーロー画像と動画には事前定義されたID（`hero_image` と `hero_video`）があります。カスタムアセットバンドルでは、これらのIDでターゲット要素を指定してカスタマイズします。
+
+その他の画像や動画については、Adapty ダッシュボードで[カスタムIDを設定](custom-media)する必要があります。
+
+例えば、以下のことができます：
+
+- 一部のユーザーに異なる画像や動画を表示する。
+- リモートのメイン画像の読み込み中にローカルのプレビュー画像を表示する。
+- 動画再生前にプレビュー画像を表示する。
+
+:::important
+この機能を使用するには、Adapty Unity SDK をバージョン 3.8.0 以降に更新してください。
+:::
+
+シンプルな辞書でカスタムアセットを提供する例：
+
+```csharp showLineNumbers
+var customAssets = new Dictionary<string, AdaptyCustomAsset>
+{
+    { "custom_image", AdaptyCustomAsset.LocalImageFile("custom_assets/images/custom_image.png") },
+    { "hero_video", AdaptyCustomAsset.LocalVideoFile("custom_assets/videos/custom_video.mp4") }
+};
+
+var parameters = new AdaptyUICreatePaywallViewParameters()
+    .SetCustomAssets(customAssets)
+    .SetLoadTimeout(new TimeSpan(0, 0, 3));
+
+AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+    // handle the result
+});
+```
+
+:::note
+アセットが見つからない場合、ペイウォールはデフォルトの表示にフォールバックします。
+:::
+
+## 開発者定義のタイマーを設定する \{#set-up-developer-defined-timers\}
+
+Unity アプリでカスタムタイマーを使用するには、タイマーIDと終了日時の辞書を `SetCustomTimers` メソッドに直接渡します。以下に例を示します：
+
+```csharp showLineNumbers
+var customTimers = new Dictionary<string, DateTime> {
+    { "CUSTOM_TIMER_6H", DateTime.Now.AddHours(6) },
+    { "CUSTOM_TIMER_NY", new DateTime(2025, 1, 1) }
+};
+
+var parameters = new AdaptyUICreatePaywallViewParameters()
+    .SetCustomTimers(customTimers)
+    .SetLoadTimeout(new TimeSpan(0, 0, 3));
+
+AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+    // handle the result
+});
+```
+
+この例では、`CUSTOM_TIMER_NY` と `CUSTOM_TIMER_6H` は Adapty ダッシュボードで設定した開発者定義タイマーの **Timer ID** です。タイマーリゾルバーにより、アプリは各タイマーを正しい値で動的に更新します。例えば：
+
+- `CUSTOM_TIMER_NY`：元旦などのタイマー終了までの残り時間。
+- `CUSTOM_TIMER_6H`：ユーザーがペイウォールを開いてから始まる6時間の残り時間。
+
+## デフォルトオーディエンスのペイウォールでペイウォール取得を高速化する \{#speed-up-paywall-fetching-with-default-audience-paywall\}
+
+通常、ペイウォールはほぼ即座に取得されるため、このプロセスを高速化することを心配する必要はありません。ただし、オーディエンスやペイウォールが多数あり、ユーザーのインターネット接続が弱い場合、ペイウォールの取得に想定より時間がかかることがあります。そのような場合、ペイウォールをまったく表示しないよりも、デフォルトのペイウォールを表示してスムーズなユーザー体験を確保したいことがあります。
+
+これに対応するために、`GetPaywallForDefaultAudience` メソッドを使用できます。このメソッドは **All Users** オーディエンスの指定されたプレースメントのペイウォールを取得します。ただし、推奨されるアプローチは上記の[ペイウォールを取得する](#fetch-paywall)セクションで詳述されている `getPaywall` メソッドを使用することであることを理解しておくことが重要です。
+
+:::warning
+`GetPaywallForDefaultAudience` の代わりに `GetPaywall` の使用を検討してください。前者には重要な制限があります：
+
+- **互換性の問題**：複数のアプリバージョンをサポートする際に問題が生じる可能性があり、後方互換性のあるデザインを作成するか、古いバージョンで正しく表示されないことを許容する必要があります。
+- **パーソナライズなし**：「All Users」オーディエンスのコンテンツのみが表示され、国、アトリビューション、カスタム属性に基づくターゲティングが利用できません。
+
+ユースケースにおいて高速な取得がこれらのデメリットを上回る場合は、以下のように `GetPaywallForDefaultAudience` を使用してください。それ以外の場合は、[上記](#fetch-paywall)で説明した `GetPaywall` を使用してください。
+:::
+
+```csharp showLineNumbers
+Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
+  if(error != null) {
+    // handle the error
+    return;
+  }
+  
+  // paywall - the resulting object
+});
+```
+
+パラメーター：
+
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | 必須 | 対象の[プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>ペイウォールのローカライズの識別子。マイナス（**-**）文字で区切られた1つまたは2つのサブタグからなる言語コードを指定します。最初のサブタグは言語、2番目は地域を表します。</p><p></p><p>例：`en` は英語、`pt-br` はブラジルポルトガル語を表します。</p> |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDKはサーバーからデータの読み込みを試み、失敗した場合はキャッシュされたデータを返します。ユーザーが常に最新のデータを取得できるため、このオプションを推奨します。</p><p></p><p>ただし、ユーザーの接続が不安定な場合は、`.returnCacheDataElseLoad` を使用してキャッシュデータが存在する場合はそれを返すことを検討してください。この場合、最新のデータが得られないことがありますが、接続状況にかかわらず読み込み時間が短縮されます。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを避けるために使用しても安全です。</p><p></p><p>キャッシュはアプリの再起動後も保持され、アプリの再インストールまたは手動クリーンアップ時にのみクリアされます。</p><p></p><p>Adapty SDK はペイウォールをローカルに2層で保存します：上述の定期更新キャッシュとフォールバックペイウォールです。また、CDNを使用してペイウォールをより高速に取得し、CDNが利用できない場合のためにスタンドアロンのフォールバックサーバーも用意しています。このシステムは、インターネット接続が不安定な場合でも常に最新バージョンのペイウォールを取得できるよう設計されています。</p> |

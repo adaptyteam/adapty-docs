@@ -1,0 +1,144 @@
+---
+title: "iOS SDKでリモートコンフィグ設計のペイウォールをレンダリングする"
+description: "Adaptyでリモートコンフィグペイウォールを表示してユーザー体験をパーソナライズする方法を解説します。"
+metadataTitle: "リモートコンフィグペイウォールの表示 | Adapty ドキュメント"
+keywords: ['remote config', 'logShowPaywall']
+---
+
+<SDKv4>
+
+リモートコンフィグを使ってペイウォールをカスタマイズした場合、ユーザーに表示するためのレンダリング処理をアプリのコードに実装する必要があります。リモートコンフィグは柔軟にカスタマイズできるため、ペイウォールに何を含めるか、どのように表示するかはすべて開発者次第です。Adapty はリモートコンフィグを取得するメソッドを提供しており、カスタムペイウォールを自由に表示できます。
+
+[iOS で初回オファーの対象ユーザーを確認する](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios)ことを忘れずに、対象ユーザーの場合の処理もペイウォールに組み込んでください。
+
+## フローのリモートコンフィグを取得して表示する \{#get-flow-remote-config-and-present-it\}
+
+v4 では、フローは設定済みロケールごとに 1 つの `AdaptyRemoteConfig` エントリを `remoteConfigs` 配列に持ちます。ユーザーの設定に合ったロケールを選択し、必要な値を読み取ってください。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+    let config = flow.remoteConfigs.first(where: { $0.locale == "en" })
+        ?? flow.remoteConfigs.first
+    let headerText = config?.dictionary?["header_text"] as? String
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID") { result in
+    let flow = try? result.get()
+    let config = flow?.remoteConfigs.first(where: { $0.locale == "en" })
+        ?? flow?.remoteConfigs.first
+    let headerText = config?.dictionary?["header_text"] as? String
+}
+```
+
+</TabItem>
+</Tabs>
+
+必要な値をすべて取得したら、それらを組み合わせて見栄えの良いページをレンダリングしましょう。さまざまなスマートフォンの画面サイズや向きに対応したデザインにして、どのデバイスでもシームレスで使いやすい体験を提供してください。
+
+:::warning
+以下で説明する[ペイウォール表示イベントの記録](present-remote-config-paywalls#track-paywall-view-events)を必ず行ってください。これにより、Adapty アナリティクスがファネルや A/B テストの情報を取得できるようになります。
+:::
+
+ペイウォールの表示が完了したら、次は購入フローの設定に進みます。ユーザーが購入する際は、フローのプロダクトを使って `.makePurchase()` を呼び出すだけです。`.makePurchase()` メソッドの詳細は[購入処理](making-purchases)を参照してください。
+
+[フォールバックペイウォールというバックアップペイウォールを作成する](fallback-paywalls)ことをおすすめします。インターネット接続がない場合やキャッシュが利用できない場合でも、このバックアップが表示されるためスムーズな体験が維持されます。
+
+## ペイウォール表示イベントのトラッキング \{#track-paywall-view-events\}
+
+Adapty はペイウォールのパフォーマンス測定をサポートしています。購入データは自動的に収集されますが、ペイウォールの表示ログはユーザーがペイウォールを見たタイミングを把握しているのが開発者だけのため、手動での記録が必要です。
+
+ペイウォール表示イベントを記録するには、`.logShowFlow(flow)` を呼び出すだけです。ファネルや A/B テストのペイウォール指標に反映されます。
+
+:::important
+[フロービルダー](adapty-flow-builder)や[ペイウォールビルダー](adapty-paywall-builder)でレンダリングされたフローやペイウォールを表示している場合は、`.logShowFlow(flow)` を呼び出す必要はありません。それらの場合、Adapty が自動的に表示をトラッキングします。
+:::
+
+```swift showLineNumbers
+try await Adapty.logShowFlow(flow)
+```
+
+リクエストパラメーター:
+
+| パラメーター | 必須 | 説明                                                                              |
+| :-------- | :------- |:-----------------------------------------------------------------------------------------|
+| **flow**  | 必須 | `Adapty.getFlow(placementId:)` で取得した `AdaptyFlow` オブジェクト。 |
+
+</SDKv4>
+
+<SDKv3>
+
+リモートコンフィグを使ってペイウォールをカスタマイズした場合、ユーザーに表示するためのレンダリング処理をアプリのコードに実装する必要があります。リモートコンフィグは柔軟にカスタマイズできるため、ペイウォールに何を含めるか、どのように表示するかはすべて開発者次第です。Adapty はリモートコンフィグを取得するメソッドを提供しており、リモートコンフィグで設定したカスタムペイウォールを自由に表示できます。
+
+[iOS で初回オファーの対象ユーザーを確認する](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios)ことを忘れずに、対象ユーザーの場合の処理もペイウォールに組み込んでください。
+
+## ペイウォールのリモートコンフィグを取得して表示する \{#get-paywall-remote-config-and-present-it\}
+
+ペイウォールのリモートコンフィグを取得するには、`remoteConfig` プロパティにアクセスして必要な値を取り出します。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID")
+    let headerText = paywall.remoteConfig?.dictionary?["header_text"] as? String
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID") { result in
+    let paywall = try? result.get()
+    let headerText = paywall?.remoteConfig?.dictionary?["header_text"] as? String
+}
+```
+
+</TabItem>
+</Tabs>
+
+必要な値をすべて取得したら、それらを組み合わせて見栄えの良いページをレンダリングしましょう。さまざまなスマートフォンの画面サイズや向きに対応したデザインにして、どのデバイスでもシームレスで使いやすい体験を提供してください。
+
+:::warning
+以下で説明する[ペイウォール表示イベントの記録](present-remote-config-paywalls#track-paywall-view-events)を必ず行ってください。これにより、Adapty アナリティクスがファネルや A/B テストの情報を取得できるようになります。
+:::
+
+ペイウォールの表示が完了したら、次は購入フローの設定に進みます。ユーザーが購入する際は、ペイウォールのプロダクトを使って `.makePurchase()` を呼び出すだけです。`.makePurchase()` メソッドの詳細は[購入処理](making-purchases)を参照してください。
+
+[フォールバックペイウォールというバックアップペイウォールを作成する](fallback-paywalls)ことをおすすめします。インターネット接続がない場合やキャッシュが利用できない場合でも、このバックアップが表示されるためスムーズな体験が維持されます。
+
+## ペイウォール表示イベントのトラッキング \{#track-paywall-view-events\}
+
+Adapty はペイウォールのパフォーマンス測定をサポートしています。購入データは自動的に収集されますが、ペイウォールの表示ログはユーザーがペイウォールを見たタイミングを把握しているのが開発者だけのため、手動での記録が必要です。
+
+ペイウォール表示イベントを記録するには、`.logShowPaywall(paywall)` を呼び出すだけです。ファネルや A/B テストのペイウォール指標に反映されます。
+
+:::important
+[ペイウォールビルダー](adapty-paywall-builder)で作成したペイウォールを表示している場合は、`.logShowPaywall(paywall)` を呼び出す必要はありません。
+:::
+
+```swift showLineNumbers
+Adapty.logShowPaywall(paywall)
+```
+
+リクエストパラメーター:
+
+| パラメーター   | 必須 | 説明                                                                              |
+| :---------- | :------- |:-----------------------------------------------------------------------------------------|
+| **paywall** | 必須 | [`AdaptyPaywall`](https://swift.adapty.io/documentation/adapty/adaptypaywall) オブジェクト。 |
+
+</SDKv3>

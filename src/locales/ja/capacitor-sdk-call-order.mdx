@@ -1,0 +1,43 @@
+---
+title: "Capacitor SDKの呼び出し順序"
+description: "Adapty SDKのメソッドを正しい順序で呼び出すことで、プレミアムアクセスの喪失、アトリビューションの欠落、断続的な#2002エラーを回避できます。"
+metadataTitle: "Capacitor SDK 呼び出し順序 | Adapty ドキュメント"
+---
+
+`adapty.activate()` が完了してから、他のAdapty SDKメソッドを呼び出してください。解決される前は、SDKに状態がありません。`activate()` の前または並行して発行されたすべての呼び出しは、[`#2002 notActivated`](capacitor-handle-errors#custom-network-codes) で失敗します。
+
+アプリがユーザー認証を行い、起動後にカスタマーユーザーIDを取得する場合は、その時点で `adapty.identify()` を呼び出してください。`identify` が解決されるまで、ユーザーアクションメソッドを呼び出さないでください。`identify` と競合する呼び出しは、[`#3006 profileWasChanged`](capacitor-handle-errors#custom-network-codes) で失敗するか、アクティベーション時に作成された匿名プロファイルに対して実行されます。これが発生すると、アトリビューション、`appsflyer_id` などのMMP ID、インストールの帰属が識別済みプロファイルに常に転送されるとは限りません。アプリがユーザー認証を行わない場合は、`identify` をスキップして匿名プロファイルで作業を続けてください。
+
+MMP・アナリティクスSDK（AppsFlyer、Adjust、Branch、PostHog）も同じルールに従います。まずそれらを初期化し、UIDコールバックを待ってから `adapty.activate` を呼び出してください。そうしないと、MMP IDが一時的な匿名プロファイルに紐づき、識別済みプロファイルに常に転送されるとは限りません。AppsFlyerの詳細については、[AppsFlyer](appsflyer) を参照してください。
+
+## 正しい呼び出し順序 \{#the-correct-order\}
+
+どのパスを取るかは、カスタマーユーザーIDをいつ取得できるか、そしてMMPやアナリティクスSDKを使用するかどうかの2点によって決まります。
+
+- **ステップ2と5**: すべてのアプリで必須。SDKをアクティベートしてから、SDKメソッドを呼び出します。
+- **ステップ1と3**: MMPやアナリティクスSDK（AppsFlyer、Adjust、Branch、PostHog）を統合する場合のみ必須。
+- **ステップ4**: アプリがユーザー認証を行い、起動後にカスタマーユーザーIDを収集する場合のみ必須。
+
+アプリ起動時にカスタマーユーザーIDが分かっている場合は、`activate()` に直接渡してください（ステップ2a）。このパスでは匿名プロファイルが作成されないため、ステップ4は不要です。
+
+| ステップ | 呼び出し | タイミング | 備考 |
+|------|---------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| 1    | MMPまたはアナリティクスSDKを初期化する（AppsFlyer、Adjust、PostHog、Branch）                                     | アプリ起動時、最初に                                                                      | MMPのUIDコールバック（例：`getAppsFlyerUID`）を待ちます。                                |
+| 2a   | `adapty.activate({ apiKey: '...', params: { customerUserId: '...' } })`                                       | ステップ1の後、アプリ起動時、カスタマーユーザーIDが分かっている場合                             | 推奨。匿名プロファイルは一切作成されません。                                             |
+| 2b   | `adapty.activate({ apiKey: '...' })` （`customerUserId` なし）                                                 | ステップ1の後、アプリ起動時、カスタマーユーザーIDが分からない場合（または収集しない場合） | Adaptyが匿名プロファイルを作成します。                                                           |
+| 3    | 各MMPに対して `adapty.setIntegrationIdentifier({ key: '...', value: '...' })`                                  | ステップ2の後、ユーザーアクション呼び出しの前                                              | MMP IDが正しいプロファイルに紐づくために必須。                                               |
+| 4    | `await adapty.identify({ customerUserId: 'YOUR_USER_ID' })`                                                   | ステップ3の後（MMPがない場合はステップ2の後）、ステップ5の前 — 認証ありのパス2bのみ | 必ず `await` を使用。`identify` 中の並行呼び出しは `#3006 profileWasChanged` を引き起こします。          |
+| 5    | `getPaywall`、`getPaywallProducts`、`restorePurchases`、`makePurchase`、`updateAttribution`、`updateProfile`  | `identify` を呼び出す場合はステップ4の後、それ以外はステップ3の後（MMPがない場合はステップ2の後）      | これらの呼び出しには安定したプロファイルが必要です。                                                             |
+
+:::important
+これらのステップをスキップすると、復帰ユーザーのプレミアムアクセスの喪失、プロファイルへの `appsflyer_id` の欠落、誤ったオーディエンスに対するペイウォールの返却が発生します。
+:::
+
+## Web2appとウェブファネルのインストール \{#web2app-and-web-funnel-installs\}
+
+ユーザーがウェブチェックアウト（Stripe、Paddle）で購入した後にネイティブアプリをインストールする場合、デバイスの最初の `activate()` は新しい匿名プロファイルを作成します。このプロファイルはウェブプロファイルとリンクされていません。アプリ起動前にカスタマーユーザーIDを解決できる場合（認証フローやインストールリファラーから）、`activate()` に直接渡してください。そうでない場合、ウェブ購入は `identify({ customerUserId: 'YOUR_USER_ID' })` を呼び出してから `restorePurchases` を呼び出すまで、デバイス上では表示されません。
+
+各ウェブチェックアウトで送信するメタデータについては、以下を参照してください：
+
+- [Stripe](stripe)
+- [Paddle](paddle)

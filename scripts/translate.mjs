@@ -3384,6 +3384,13 @@ const REFUSAL_PATTERNS = [
   // Spanish (es)
   /lo siento[^.\n]{0,40}(traducir|MDX|documentaci[oó]n)/iu,
   /(solo|sólo) puedo traducir/iu,
+
+  // Japanese (ja)
+  /MDX\s*(ドキュメント|文書)[^。\n]{0,16}(見当たりません|見つかりません|ありません)/u,
+  /(完全な|全文|完全)[^。\n]{0,20}(MDX|ドキュメント|文書)[^。\n]{0,20}(提供|お送り|ください)/u,
+  /翻訳(は|が)?(不要|必要ありません|の必要はありません)/u,
+  /(コード(の)?(断片|フラグメント|スニペット|ブロック))(のみ|だけ)/u,
+  /(のみ|だけ)(を)?翻訳でき(ます|る)/u,
 ];
 export function looksLikeRefusal(text) {
   if (!text) return false;

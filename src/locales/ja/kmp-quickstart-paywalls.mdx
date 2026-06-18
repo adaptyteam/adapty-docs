@@ -1,0 +1,154 @@
+---
+title: "Kotlin Multiplatform SDKのペイウォールを使用してアプリ内課金を有効にする"
+description: "アプリ内サブスクリプション管理のためにAdaptyをセットアップするクイックスタートガイド。"
+metadataTitle: "Adaptyクイックスタートガイド | Adapty ドキュメント"
+keywords: ['paywalls kotlin multiplatform', 'sdk kotlin multiplatform', 'paywall', 'paywall builder', 'getPaywall']
+rank: 70
+displayed_sidebar: sdkkmp
+---
+
+import PaywallsIntro from '@site/src/locales/ja/reusable/PaywallsIntro.md';
+
+アプリ内課金を有効にするには、3つの重要な概念を理解する必要があります：
+
+- [**プロダクト**](product) – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセスなど）
+- [**ペイウォール**](paywalls) – どのプロダクトを提供するかを定義する設定です。Adaptyでは、ペイウォールがプロダクトを取得する唯一の手段ですが、この設計によりアプリのコードを変更せずに商品内容、価格、プロダクトの組み合わせを変更できます。
+- [**プレースメント**](placements) – アプリ内でペイウォールを表示する場所とタイミング（`main`、`onboarding`、`settings`など）。ダッシュボードでプレースメントにペイウォールを設定し、コード内ではプレースメントIDで取得します。これにより、A/B テストの実施やユーザーごとに異なるペイウォールの表示が簡単になります。
+
+Adaptyでは、アプリ内課金を有効にする3つの方法を提供しています。アプリの要件に応じていずれかを選択してください：
+
+| 実装方法                      | 複雑さ     | 適した場面                                                                                                                                                                                                                                   |
+|---------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty ペイウォールビルダー    | ✅ 簡単     | [ノーコードビルダーで完全な購入対応のペイウォールを作成](quickstart-paywalls)します。Adaptyが自動的にレンダリングし、複雑な購入フロー、レシート検証、サブスクリプション管理をすべて裏側で処理します。 |
+| 手動作成のペイウォール | 🟡 中程度  | アプリコードでペイウォールUIを実装しますが、プロダクト提供の柔軟性を維持するためAdaptyからペイウォールオブジェクトを取得します。[ガイド](kmp-quickstart-manual)を参照してください。                                                         |
+| オブザーバーモード             | 🔴 難しい    | 既に独自の購入処理インフラを持っており、それを引き続き使用したい場合。オブザーバーモードにはAdaptyでの制限があります。[記事](observer-vs-full-mode)を参照してください。                                                                 |
+
+:::important
+**以下の手順は、Adaptyペイウォールビルダーで作成したペイウォールの実装方法を示しています。**
+
+ペイウォールビルダーを使用しない場合は、[手動作成のペイウォールで購入を処理するガイド](kmp-making-purchases)を参照してください。
+:::
+
+Adaptyペイウォールビルダーで作成したペイウォールをアプリコードに表示するには、以下の手順だけが必要です：
+
+1. **ペイウォールを取得する**：AdaptyからペイウォールのPaywallオブジェクトを取得します。
+2. **ペイウォールを表示し、Adaptyが購入を処理する**：取得したペイウォールコンテナをアプリに表示します。
+3. **ボタンアクションを処理する**：ペイウォール上のユーザー操作と、アプリの応答を関連付けます。たとえば、ユーザーがボタンをクリックしたときにリンクを開いたり、ペイウォールを閉じたりします。
+
+## 開始前の準備 \{#before-you-start\}
+
+開始前に、以下の手順を完了してください：
+
+1. Adapty ダッシュボードでアプリを[App Store](initial_ios)や[Google Play](initial-android)に接続します。
+2. Adaptyで[プロダクトを作成](create-product)します。
+3. [ペイウォールを作成してプロダクトを追加](create-paywall)します。
+4. [プレースメントを作成してペイウォールを追加](create-placement)します。
+5. アプリコードに[Adapty SDKをインストールして有効化](sdk-installation-kotlin-multiplatform)します。
+
+:::tip
+これらの手順を最も素早く完了するには、[クイックスタートガイド](quickstart)に従うか、[Developer CLI](developer-cli-quickstart)を使用してペイウォールとプレースメントを作成してください。
+:::
+
+## 1. ペイウォールを取得する \{#1-get-the-paywall\}
+
+ペイウォールはダッシュボードで設定されたプレースメントに紐付けられています。プレースメントを使用することで、異なるオーディエンスに異なるペイウォールを表示したり、[A/B テスト](ab-tests)を実施したりできます。
+
+Adaptyペイウォールビルダーで作成したペイウォールを取得するには、以下の手順が必要です：
+
+1. `getPaywall`メソッドを使用して[プレースメント](placements)IDから`paywall`オブジェクトを取得し、それがビルダーで作成されたペイウォールかどうかを確認します。
+
+2. `createPaywallView`メソッドを使用してペイウォールのビュー設定を取得します。ビュー設定にはペイウォールを表示するために必要なUI要素とスタイリングが含まれています。
+
+:::important
+ビュー設定を取得するには、ペイウォールビルダーで **Show on device** トグルをオンにする必要があります。オンにしないと空のビュー設定が返され、ペイウォールが表示されません。
+:::
+
+```kotlin showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    .onSuccess { paywall ->
+        if (!paywall.hasViewConfiguration) {
+            return@onSuccess
+        }
+        
+        val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
+        paywallView?.present()
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+## 2. ペイウォールを表示する \{#2-display-the-paywall\}
+
+ペイウォールの設定を取得したら、数行追加するだけでペイウォールを表示できます。
+
+デバイス画面にビジュアルなペイウォールを表示するには、まず設定を行う必要があります。`AdaptyUI.createPaywallView()`メソッドを呼び出してください：
+
+```kotlin showLineNumbers
+val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
+paywallView?.present()
+```
+
+ビューの作成が完了したら、デバイスの画面に表示できます。
+
+:::tip
+ペイウォールの表示方法の詳細については、[ガイド](kmp-present-paywalls)を参照してください。
+:::
+
+## 3. ボタンアクションを処理する \{#3-handle-button-actions\}
+
+ユーザーがペイウォール内のボタンをクリックすると、Kotlin Multiplatform SDKが購入、復元、ペイウォールのクローズ、リンクの開封を自動的に処理します。
+
+ただし、カスタムまたは事前定義されたIDを持つボタンについては、コード内でアクションを処理する必要があります。または、デフォルトの動作をオーバーライドしたい場合もあります。
+
+たとえば、以下は閉じるボタンのデフォルトの動作です。コードに追加する必要はありませんが、必要な場合にどのように実装するかを確認できます。
+
+:::tip
+ボタンの[アクション](kmp-handle-paywall-actions)と[イベント](kmp-handling-events)の処理方法については、ガイドをお読みください。
+:::
+
+```kotlin showLineNumbers
+AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            AdaptyUIAction.CloseAction, AdaptyUIAction.AndroidSystemBackAction -> view.dismiss()
+        }
+    }
+})
+```
+
+## 次のステップ \{#next-steps\}
+
+ペイウォールをアプリに表示する準備ができました。[App Storeサンドボックス](test-purchases-in-sandbox)または[Google Play Store](testing-on-android)でテスト購入を行い、ペイウォールからテスト購入が完了できることを確認してください。
+
+次に、[ユーザーのアクセスレベルを確認](kmp-check-subscription-status)して、適切なユーザーにペイウォールを表示したり、有料機能へのアクセスを付与したりするようにしてください。
+
+## 完全な例 \{#full-example\}
+
+以下は、これらの手順をアプリにまとめて統合する方法です。
+
+```kotlin showLineNumbers
+// Set up the observer for handling paywall actions
+AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CloseAction -> view.dismiss()
+        }
+    }
+})
+
+// Get and display the paywall
+Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    .onSuccess { paywall ->
+        if (!paywall.hasViewConfiguration) {
+            // Use custom logic
+            return@onSuccess
+        }
+
+        val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
+        paywallView?.present()
+    }
+    .onError { error ->
+        // handle the error
+    }
+```

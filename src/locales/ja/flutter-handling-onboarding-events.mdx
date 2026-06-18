@@ -1,0 +1,452 @@
+---
+title: "Flutter SDKでオンボーディングイベントを処理する"
+description: "AdaptyのFlutterでオンボーディング関連イベントを処理する。"
+metadataTitle: "FlutterでオンボーディングイベントをHandle する | Adapty ドキュメント"
+toc_max_heading_level: 4
+---
+
+ビルダーで設定されたオンボーディングは、アプリが対応できるイベントを生成します。これらのイベントをどのように処理するかは、使用しているプレゼンテーション方式によって異なります。
+
+- **フルスクリーン表示**: すべてのオンボーディングビューのイベントを処理するグローバルイベントオブザーバーのセットアップが必要
+- **埋め込みウィジェット**: ウィジェット内のインラインコールバックパラメーターを通じてイベントを処理
+
+始める前に、以下を確認してください：
+
+1. [Adapty Flutter SDK](sdk-installation-flutter) 3.8.0以降がインストールされていること。
+2. [オンボーディングが作成されている](create-onboarding)こと。
+3. オンボーディングが[プレースメント](placements)に追加されていること。
+
+## フルスクリーン表示のイベント \{#full-screen-presentation-events\}
+
+### イベントオブザーバーの設定 \{#set-up-event-observer\}
+
+フルスクリーンオンボーディングのイベントを処理するには、`AdaptyUIOnboardingsEventsObserver`を実装して、表示前に設定します：
+
+```javascript showLineNumbers title="Flutter"
+AdaptyUI().setOnboardingsEventsObserver(this);
+
+try {
+  await onboardingView.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+### イベントの処理 \{#handle-events\}
+
+オブザーバーに以下のメソッドを実装します：
+
+```javascript showLineNumbers title="Flutter"
+void onboardingViewDidFinishLoading(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+) {
+  // Onboarding finished loading
+}
+
+void onboardingViewDidFailWithError(
+  AdaptyUIOnboardingView view,
+  AdaptyError error,
+) {
+  // Handle loading errors
+}
+
+void onboardingViewOnCloseAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  // Handle close action
+  view.dismiss();
+}
+
+void onboardingViewOnPaywallAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  // Dismiss onboarding before presenting paywall
+  view.dismiss().then((_) {
+    _openPaywall(actionId);
+  });
+}
+
+void onboardingViewOnCustomAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  // Handle custom actions
+}
+
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Handle user input updates
+}
+
+void onboardingViewOnAnalyticsEvent(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  AdaptyOnboardingsAnalyticsEvent event,
+) {
+  // Track analytics events
+}
+```
+
+## 埋め込みウィジェットのイベント \{#embedded-widget-events\}
+
+`AdaptyUIOnboardingPlatformView`を使用する場合、ウィジェット内のインラインコールバックパラメーターを通じてイベントを処理できます。イベントはウィジェットのコールバックとグローバルオブザーバー（設定されている場合）の両方に送信されますが、グローバルオブザーバーは任意です：
+
+```javascript showLineNumbers title="Flutter"
+AdaptyUIOnboardingPlatformView(
+  onboarding: onboarding,
+  onDidFinishLoading: (meta) {
+    // Onboarding finished loading
+  },
+  onDidFailWithError: (error) {
+    // Handle loading errors
+  },
+  onCloseAction: (meta, actionId) {
+    // Handle close action
+  },
+  onPaywallAction: (meta, actionId) {
+    _openPaywall(actionId);
+  },
+  onCustomAction: (meta, actionId) {
+    // Handle custom actions
+  },
+  onStateUpdatedAction: (meta, elementId, params) {
+    // Handle user input updates
+  },
+  onAnalyticsEvent: (meta, event) {
+    // Track analytics events
+  },
+)
+```
+
+## イベントの種類 \{#event-types\}
+
+以下のセクションでは、使用しているプレゼンテーション方式に関わらず処理できる各種イベントについて説明します。
+
+### カスタムアクションの処理 \{#handle-custom-actions\}
+
+ビルダーでは、ボタンに **custom** アクションを追加してIDを割り当てることができます。
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+このIDをコードで使用し、カスタムアクションとして処理できます。たとえば、**Login** や **Allow notifications** などのカスタムボタンをユーザーがタップすると、デリゲートメソッド `onboardingController` が `.custom(id:)` ケースでトリガーされ、`actionId` パラメーターにはビルダーの **Action ID** が入ります。"allowNotifications" のような独自のIDを作成できます。
+
+```javascript
+// Full-screen presentation
+void onboardingViewOnCustomAction(
+    AdaptyUIOnboardingView view,
+    AdaptyUIOnboardingMeta meta,
+    String actionId,
+) {
+    switch (actionId) {
+        case 'login':
+            _login();
+            break;
+        case 'allow_notifications':
+            _allowNotifications();
+            break;
+    }
+}
+
+// Embedded widget
+onCustomAction: (meta, actionId) {
+    _handleCustomAction(actionId);
+}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```json
+{
+  "actionId": "allowNotifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+### オンボーディングの読み込み完了 \{#finishing-loading-onboarding\}
+
+オンボーディングの読み込みが完了すると、このイベントがトリガーされます：
+
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewDidFinishLoading(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+) {
+  print('Onboarding loaded: ${meta.onboardingId}');
+}
+
+// Embedded widget
+onDidFinishLoading: (meta) {
+  print('Onboarding loaded: ${meta.onboardingId}');
+}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+### オンボーディングのクローズ \{#closing-onboarding\}
+
+ユーザーが **Close** アクションが割り当てられたボタンをタップしたとき、オンボーディングはクローズされたと見なされます。
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+ユーザーがオンボーディングをクローズしたときの動作を管理する必要があります。たとえば、オンボーディング自体の表示を停止する処理が必要です。
+:::
+
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewOnCloseAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  await view.dismiss();
+}
+
+// Embedded widget
+onCloseAction: (meta, actionId) {
+  Navigator.of(context).pop();
+}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+
+</Details>
+
+### ペイウォールを開く \{#opening-a-paywall\}
+
+:::tip
+オンボーディング内でペイウォールを開きたい場合は、このイベントを処理してください。クローズ後にペイウォールを開く場合は、クローズアクションを処理してイベントデータに依存せずにペイウォールを開く方が簡単です。
+:::
+
+オンボーディング内でペイウォールを扱う最もシームレスな方法は、アクションIDをペイウォールのプレースメントIDと同じにすることです：
+
+iOSでは、一度に表示できるビュー（ペイウォールまたはオンボーディング）は1つだけです。オンボーディングの上にペイウォールを表示すると、バックグラウンドのオンボーディングをプログラムで操作できなくなります。オンボーディングをdismissしようとすると、代わりにペイウォールが閉じられ、オンボーディングが表示されたままになります。これを避けるために、ペイウォールを表示する前に必ずオンボーディングビューをdismissしてください。
+
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewOnPaywallAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String actionId,
+) {
+  // Dismiss onboarding before presenting paywall
+  view.dismiss().then((_) {
+    _openPaywall(actionId);
+  });
+}
+
+Future<void> _openPaywall(String actionId) async {
+  // Implement your paywall opening logic here
+}
+
+// Embedded widget
+onPaywallAction: (meta, actionId) {
+  _openPaywall(actionId);
+}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+### ナビゲーションのトラッキング \{#tracking-navigation\}
+
+オンボーディングフロー中にナビゲーション関連のイベントが発生すると、アナリティクスイベントを受け取ります：
+
+```javascript showLineNumbers title="Flutter"
+// Full-screen presentation
+void onboardingViewOnAnalyticsEvent(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  AdaptyOnboardingsAnalyticsEvent event,
+) {
+  trackEvent(event.type, meta.onboardingId);
+}
+
+// Embedded widget
+onAnalyticsEvent: (meta, event) {
+  trackEvent(event.type, meta.onboardingId);
+}
+```
+
+`event` オブジェクトは以下のいずれかのタイプになります：
+
+|タイプ | 説明 |
+|------------|-------------|
+| `onboardingStarted` | オンボーディングが読み込まれたとき |
+| `screenPresented` | いずれかの画面が表示されたとき |
+| `screenCompleted` | 画面が完了したとき。オプションの `elementId`（完了した要素の識別子）とオプションの `reply`（ユーザーからの返答）を含む。ユーザーが画面を離れるためのアクションを行ったときにトリガーされる。 |
+| `secondScreenPresented` | 2番目の画面が表示されたとき |
+| `userEmailCollected` | 入力フィールドからユーザーのメールアドレスが収集されたときにトリガーされる |
+| `onboardingCompleted` | ユーザーが `final` IDを持つ画面に到達したときにトリガーされる。このイベントが必要な場合は、[最後の画面に `final` IDを割り当てる](design-onboarding)。 |
+| `unknown` | 認識されないイベントタイプの場合。`name`（不明なイベントの名前）と `meta`（追加のメタデータ）を含む |
+
+各イベントには以下の `meta` 情報が含まれます：
+
+| フィールド | 説明 |
+|------------|-------------|
+| `onboardingId` | オンボーディングフローの一意の識別子 |
+| `screenClientId` | 現在の画面の識別子 |
+| `screenIndex` | フロー内の現在の画面の位置 |
+| `screensTotal` | フロー内の画面の合計数 |
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+
+```
+
+</Details>

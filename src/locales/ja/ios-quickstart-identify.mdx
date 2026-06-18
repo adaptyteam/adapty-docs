@@ -1,0 +1,216 @@
+---
+title: "iOS SDKでのユーザー識別"
+description: "アプリ内サブスクリプション管理のためのAdaptyセットアップ クイックスタートガイド。"
+metadataTitle: "Adaptyクイックスタートガイド | Adapty ドキュメント"
+keywords: ['identify', 'identifying users', 'customeruserid']
+rank: 100
+---
+
+:::important
+このガイドは、独自の認証システムをお持ちの方を対象としています。ここでは、既存の認証システムに合わせてAdaptyのユーザープロファイルを管理する方法を説明します。
+:::
+
+ユーザーの購入履歴をどのように管理するかは、アプリの認証モデルによって異なります。
+- バックエンド認証を使用せず、ユーザーデータを保存しないアプリの場合は、[匿名ユーザーに関するセクション](#anonymous-users)を参照してください。
+- バックエンド認証を使用している（または使用予定の）アプリの場合は、[識別済みユーザーに関するセクション](#identified-users)を参照してください。
+
+**主要な概念**:
+- **プロファイル**はSDKが動作するために必要なエンティティです。Adaptyが自動的に作成します。
+- プロファイルは匿名 **(カスタマーユーザーIDなし)** または識別済み **(カスタマーユーザーIDあり)** のどちらかになります。
+- **カスタマーユーザーID**を提供することで、Adaptyのプロファイルと社内の認証システムを紐付けられます。
+
+匿名ユーザーと識別済みユーザーの違いは次のとおりです。
+
+|                         | 匿名ユーザー                                   | 識別済みユーザー                                                        |
+|-------------------------|---------------------------------------------------|-------------------------------------------------------------------------|
+| **購入管理** | ストアレベルの購入復元                  | カスタマーユーザーIDを通じたデバイス間での購入履歴の維持 |
+| **プロファイル管理**  | 再インストールのたびに新しいプロファイルが作成される                    | セッションとデバイスをまたいで同一プロファイルを使用                            |
+| **データの永続性**    | 匿名ユーザーのデータはアプリインストールに紐付く | 識別済みユーザーのデータはアプリインストールをまたいで保持される                |
+
+## 匿名ユーザー \{#anonymous-users\}
+
+バックエンド認証を使用していない場合、**アプリコード内で認証処理を実装する必要はありません**。
+
+1. アプリの初回起動時にSDKが有効化されると、Adaptyは**ユーザーの新しいプロファイルを作成します**。
+2. ユーザーがアプリ内で何かを購入すると、その購入は**ユーザーのAdaptyプロファイルとストアアカウントに紐付けられます**。
+3. ユーザーがアプリを**再インストール**したり、**新しいデバイス**にインストールしたりすると、Adaptyは有効化時に**新しい匿名プロファイルを作成します**。
+4. ユーザーがアプリ内で以前に購入を行っていた場合、デフォルトではSDKの有効化時にApp Storeから購入履歴が自動的に同期されます。
+
+:::note
+バックアップからの復元は再インストールとは動作が異なります。デフォルトでは、ユーザーがバックアップから復元した場合、SDKはキャッシュデータを保持し、新しいプロファイルを作成しません。この動作は`clearDataOnBackup`設定で変更できます。[詳細はこちら](sdk-installation-ios#clear-data-on-backup-restore)。
+:::
+
+匿名ユーザーの場合、インストールのたびに新しいプロファイルが作成されますが、Adaptyのアナリティクスで[新規インストールとして扱う基準を設定できる](general#4-installs-definition-for-analytics)ため、問題ありません。
+
+匿名ユーザーの場合、インストール数は**デバイスID**でカウントする必要があります。この場合、再インストールを含め、デバイスでのアプリインストールが1件としてカウントされます。
+
+## 識別済みユーザー \{#identified-users\}
+
+アプリ内でユーザーを識別する方法は2つあります。
+
+- [**ログイン/サインアップ時:**](#during-loginsignup) アプリ起動後にユーザーがサインインする場合、認証時にカスタマーユーザーIDを指定して`identify()`を呼び出します。
+
+- [**SDK有効化時:**](#during-the-sdk-activation) アプリ起動時にカスタマーユーザーIDが既にわかっている場合は、`activate()`を呼び出す際に送信します。
+
+:::important
+デフォルトでは、Adaptyが別のカスタマーユーザーIDに現在紐付いているカスタマーユーザーIDから購入を受け取った場合、アクセスレベルは共有されます。つまり、両方のプロファイルが有料アクセスを持つことになります。この設定を変更して、一方のプロファイルから他方へ有料アクセスを移行したり、共有を完全に無効にしたりすることもできます。詳細は[こちらの記事](general#6-sharing-paid-access-between-user-accounts)を参照してください。
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/identify-diagram.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### ログイン/サインアップ時 \{#during-loginsignup\}
+
+アプリ起動後にユーザーを識別する場合（たとえば、アプリへのログイン後やサインアップ後）、`identify`メソッドを使用してカスタマーユーザーIDを設定します。
+
+- **このカスタマーユーザーIDを以前使用したことがない**場合、Adaptyは自動的に現在のプロファイルに紐付けます。
+- **このカスタマーユーザーIDでユーザーを以前識別したことがある**場合、AdaptyはそのカスタマーユーザーIDに紐付いたプロファイルに切り替えます。
+
+:::important
+カスタマーユーザーIDはユーザーごとに一意である必要があります。パラメーター値をハードコードすると、すべてのユーザーが同一として扱われます。
+:::
+
+他のSDKメソッドを呼び出す前に、必ず`identify`を`await`してください。並列呼び出しを行うと`#3006 profileWasChanged`が発生するか、匿名プロファイルが対象になります。詳細は[iOS SDKの呼び出し順序](ios-sdk-call-order)を参照してください。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    try await Adapty.identify("YOUR_USER_ID") // Unique for each user
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// User IDs must be unique for each user
+Adapty.identify("YOUR_USER_ID") { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+### SDK有効化時 \{#during-the-sdk-activation\}
+
+SDKを有効化する時点でカスタマーユーザーIDが既にわかっている場合は、`identify`を別途呼び出す代わりに、`activate`メソッドで送信できます。
+
+カスタマーユーザーIDがわかっているにもかかわらず、有効化後にのみ設定した場合、有効化時にAdaptyが新しい匿名プロファイルを作成し、`identify`を呼び出した後に既存のプロファイルへ切り替えることになります。
+
+既存のカスタマーユーザーID（以前使用したもの）でも新しいものでも渡すことができます。新しいものを渡した場合、有効化時に作成された新しいプロファイルが自動的にそのカスタマーユーザーIDに紐付けられます。
+
+:::note
+デフォルトでは、匿名プロファイルの作成はアナリティクスのダッシュボードに影響しません。これはインストール数がデバイスIDに基づいてカウントされるためです。
+
+デバイスIDはデバイス上のストアからのアプリの単一インストールを表し、アプリの再インストール後にのみ再生成されます。
+初回インストールか再インストールかに関わらず、また既存のカスタマーユーザーIDを使用するかどうかにも依存しません。
+
+プロファイルの作成（SDKの有効化またはログアウト時）、ログイン、または再インストールなしのアプリアップグレードでは、追加のインストールイベントは発生しません。
+
+デバイスではなくユニークユーザーに基づいてインストールをカウントしたい場合は、**App settings**で[**Installs definition for analytics**](general#4-installs-definition-for-analytics)を設定してください。
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+// Place in the app main struct for SwiftUI or in AppDelegate for UIKit
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID") // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// Place in the app main struct for SwiftUI or in AppDelegate for UIKit
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID") // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+```
+
+</TabItem>
+
+</Tabs>
+
+### ユーザーのログアウト \{#log-users-out\}
+
+ユーザーをログアウトさせるボタンがある場合は、`logout`メソッドを使用します。
+
+:::important
+ユーザーをログアウトすると、そのユーザーの新しい匿名プロファイルが作成されます。
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    try await Adapty.logout()
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.logout { error in
+    if error == nil {
+        // successful logout
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+:::info
+ユーザーをアプリに再ログインさせるには、`identify`メソッドを使用します。
+:::
+
+### ログインなしでの購入を許可する \{#allow-purchases-without-login\}
+
+ユーザーがアプリにログインする前後どちらでも購入できる場合、ログイン後もアクセスが維持されるようにする必要があります。
+
+1. ログアウト状態のユーザーが購入を行うと、Adaptyはその購入を匿名プロファイルIDに紐付けます。
+2. ユーザーがアカウントにログインすると、Adaptyは識別済みプロファイルへの切り替えを行います。
+    - 新しいカスタマーユーザーIDの場合（たとえば、登録前に購入が行われた場合）、AdaptyはカスタマーユーザーIDを現在のプロファイルに割り当て、購入履歴がすべて維持されます。
+    - 既存のカスタマーユーザーIDの場合（カスタマーユーザーIDがすでにプロファイルに紐付いている場合）、プロファイル切り替え後に実際のアクセスレベルを取得する必要があります。識別後すぐに[`getProfile`](ios-check-subscription-status)を呼び出すか、データが自動的に同期されるよう[プロファイルの更新をリッスンする](ios-check-subscription-status)ことができます。
+
+## 次のステップ \{#next-steps\}
+
+おめでとうございます！アプリにアプリ内決済のロジックを実装できました！アプリのマネタイズがうまくいくことを願っています。
+
+Adaptyをさらに活用するために、以下のトピックもご覧ください。
+- [**テスト**](test-purchases-in-sandbox): すべてが期待どおりに動作するか確認する
+- [**オンボーディング**](ios-onboardings): オンボーディングでユーザーを引き込みリテンションを高める
+- [**インテグレーション**](configuration): マーケティングアトリビューションおよびアナリティクスサービスとわずか1行のコードで連携する
+- [**カスタムプロファイル属性の設定**](setting-user-attributes): ユーザープロファイルにカスタム属性を追加してセグメントを作成し、A/B テストを実施したり異なるユーザーに異なるペイウォールを表示したりする

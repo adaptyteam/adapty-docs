@@ -1,0 +1,94 @@
+---
+title: "ExpoプロジェクトでフォールバックペイウォールToを使用する"
+description: "react-native-adapty の config plugin を使って、Expo React Native プロジェクトにフォールバックペイウォールを設定します。"
+metadataTitle: "Expoでフォールバックペイウォールを使用する | Adapty ドキュメント"
+keywords: ['フォールバックペイウォール', 'expo', 'react native', 'config plugin', 'prebuild', 'オフラインペイウォール']
+---
+import FallbackPaywallIntroduction from '@site/src/locales/ja/reusable/FallbackPaywallIntroduction.md';
+
+:::important
+このガイドは **Expo プロジェクト** を対象としています。
+**純粋な React Native（non-Expo）** を使用している場合は、[純粋な React Native のフォールバックガイド](react-native-use-fallback-paywalls-pure) を参照してください。
+:::
+
+<FallbackPaywallIntroduction />
+
+Adapty SDK は **ネイティブ** バンドルからフォールバックファイルを読み込みます。iOS では `.app` パッケージ内のリソース、Android では `android/app/src/main/assets/` 以下のエントリです。Expo プロジェクトでは `npx expo prebuild --clean` を実行するたびにこれらのディレクトリが再生成されるため、手動でファイルを配置することはできません。`react-native-adapty` の config plugin が、ファイルをネイティブバンドルに組み込む処理を自動的に行います。
+
+:::tip
+完全な動作サンプルは [`FocusJournalExpo` サンプルアプリ](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo) で確認できます。
+:::
+
+## 設定 \{#configuration\}
+
+1. フォールバック JSON ファイルをプロジェクト内の任意の場所に配置します。通常は他のアセットの隣が適しています：
+
+   ```
+   <your-project>/
+   └── assets/
+       ├── ios_fallback.json
+       └── android_fallback.json
+   ```
+
+2. `app.json`（または `app.config.js`）の `react-native-adapty` エントリに `fallbackFile` オプションを追加します。各プラットフォームのキーはオプションです。必要なプラットフォームだけ設定してください：
+
+   ```json title="app.json"
+   {
+     "expo": {
+       "plugins": [
+         [
+           "react-native-adapty",
+           {
+             "fallbackFile": {
+               "ios": "./assets/ios_fallback.json",
+               "android": "./assets/android_fallback.json"
+             }
+           }
+         ]
+       ]
+     }
+   }
+   ```
+
+   :::note
+   Adapty はプラットフォームごとに異なるフォールバック JSON をエクスポートします。iOS は Apple のプロダクト ID、Android は Google Play のプロダクト ID が使われます。各プラットフォームに対応するファイルを指定してください。
+   :::
+
+3. ネイティブプロジェクトを再生成します：
+
+   ```sh title="Shell"
+   npx expo prebuild
+   ```
+
+   plugin は iOS ファイルを Xcode プロジェクトのバンドルリソースに追加し、Android ファイルを `android/app/src/main/assets/` にコピーします。prebuild の出力には次のような行が含まれます：
+
+   ```
+   [react-native-adapty] Registered ios_fallback.json as iOS bundle resource
+   [react-native-adapty] Copied android_fallback.json to android assets/
+   ```
+
+4. 実行時に SDK へファイルを登録します：
+
+   ```typescript showLineNumbers title="App.tsx"
+   import { adapty } from 'react-native-adapty';
+
+   await adapty.activate('PUBLIC_SDK_KEY');
+
+   await adapty.setFallback({
+     ios: { fileName: 'ios_fallback.json' },
+     android: { relativeAssetPath: 'android_fallback.json' },
+   });
+   ```
+
+   `setFallback` に渡すファイル名は、`fallbackFile` で設定したファイルのベース名と一致している必要があります。
+
+:::important
+`setFallback` は、SDK がペイウォールまたはオンボーディングを取得する前に実行する必要があります。
+:::
+
+## 確認 \{#verification\}
+
+`npx expo prebuild` 実行後、両方のプラットフォームを確認してください：
+
+- **Android**: `android/app/src/main/assets/` の内容を一覧表示します。`fallbackFile.android` で設定したファイルが存在し、iOS 専用のファイル名が含まれていないことを確認してください。
+- **iOS**: `ios/<ProjectName>.xcodeproj/project.pbxproj` で iOS のファイル名を検索します。`PBXFileReference`、`Resources` グループ、`PBXResourcesBuildPhase` に表示されているはずです。Android 専用のファイル名が `project.pbxproj` に含まれていないことを確認してください。

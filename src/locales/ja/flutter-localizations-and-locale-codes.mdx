@@ -1,0 +1,72 @@
+---
+title: "Flutter SDKでローカライズとロケールコードを使用する"
+description: "グローバルなユーザーにリーチするために、アプリのローカライズとロケールコードを管理します。"
+metadataTitle: "ローカライズとロケールコードの管理 | Adapty ドキュメント"
+displayed_sidebar: sdkflutter
+---
+
+## なぜこれが重要なのか \{#why-this-is-important\}
+
+ロケールコードが関係するシナリオはいくつかあります。たとえば、アプリの現在のローカライズに合わせた正しいペイウォールを取得しようとする場合などです。
+
+ロケールコードは複雑で、プラットフォームによって異なることがあるため、サポートしているすべてのプラットフォームに対して内部標準を採用しています。ただし、コードが複雑なため、サーバーに何を送信して正しいローカライズを取得するか、そしてその後何が起こるかを正確に理解することが非常に重要です。そうすることで、常に期待通りの結果を受け取れます。
+
+## Adaptyにおけるロケールコード標準 \{#locale-code-standard-at-adapty\}
+
+ロケールコードには、Adaptyは若干修正した [BCP 47標準](https://en.wikipedia.org/wiki/IETF_language_tag) を使用しています。各コードはハイフンで区切られた小文字のサブタグで構成されています。例: `en`（英語）、`pt-br`（ポルトガル語（ブラジル））、`zh`（簡体字中国語）、`zh-hant`（繁体字中国語）。
+
+## ロケールコードのマッチング \{#locale-code-matching\}
+
+Adaptyがクライアント側SDKからロケールコード付きのリクエストを受け取り、ペイウォールの対応するローカライズを探す際、以下の処理が行われます：
+
+1. 受信したロケール文字列が小文字に変換され、アンダースコア（`_`）がすべてハイフン（`-`）に置き換えられます
+2. 完全に一致するロケールコードのローカライズを検索します
+3. 一致するものが見つからない場合、最初のハイフンより前の部分文字列（`pt-br` の場合は `pt`）を取り出し、一致するローカライズを検索します
+4. それでも一致するものが見つからない場合、デフォルトの `en` ローカライズを返します
+
+こうすることで、`'pt_BR'` を送信したiOSデバイス、`pt-BR` を送信したAndroidデバイス、`pt-br` を送信した別のデバイスがすべて同じ結果を受け取ることができます。
+
+## ローカライズの実装：推奨される方法 \{#implementing-localizations-recommended-way\}
+
+ローカライズについて検討しているなら、プロジェクト内でローカライズされた文字列ファイルをすでに扱っていることでしょう。その場合、各ローカライズ用のファイルに対応するAdaptyロケールコードをキーと値のペアとして記述することをお勧めします。そして、SDKを呼び出す際にそのキーの値を取り出して使用します：
+
+```dart showLineNumbers
+// 1. Modify your app_en.arb, app_es.arb, app_pt_br.arb files
+
+/*
+app_en.arb
+*/
+"adapty_paywalls_locale": "en",
+
+/*
+app_es.arb
+*/
+"adapty_paywalls_locale": "es",
+
+/*
+app_pt_br.arb
+*/
+"adapty_paywalls_locale": "pt-br",
+
+// 2. Extract and use the locale code
+final locale = AppLocalizations.of(context)!.adapty_paywalls_locale;
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+こうすることで、アプリの各ユーザーに対してどのローカライズが取得されるかを完全にコントロールできます。
+
+## ローカライズの実装：別の方法 \{#implementing-localizations-the-other-way\}
+
+ロケールコードをすべてのローカライズに対して明示的に定義しなくても、同様の（ただし同一ではない）結果を得ることができます。その場合、プラットフォームが提供する他のオブジェクトからロケールコードを取り出す方法が考えられます：
+
+```dart showLineNumbers
+final locale = Localizations.localeOf(context).languageCode;
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+この方法はいくつかの理由から推奨していません：
+
+1. iOSでは、優先言語と現在のロケールは同一ではありません。ローカライズを正しく選択させるには、Appleのロジックに依存するか（ローカライズされた文字列ファイルを使った推奨アプローチを使用していれば自動的に機能します）、自分でそのロジックを再現する必要があります。
+2. Adaptyのサーバーが実際に何を受け取るかを予測するのが困難です。たとえばiOSでは、デバイスで `ar_OM@numbers='latn'` のようなロケールを取得してサーバーに送信することがあります。この場合、期待していた `ar-om` ローカライズではなく `ar` が返ってくる可能性があります。
+
+それでもこのアプローチを使用する場合は、関連するすべてのユースケースをカバーしていることを確認してください。

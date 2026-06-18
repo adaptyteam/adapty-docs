@@ -1,0 +1,453 @@
+---
+title: "フローとペイウォールを取得する - iOS"
+description: "iOS アプリで Adapty からフローとペイウォールを取得します。"
+metadataTitle: "フローとペイウォールを取得する - iOS | Adapty ドキュメント"
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience', 'cache']
+rank: 100
+---
+
+<SDKv4>
+
+<MethodPromo method="getFlow" />
+
+[フローまたはペイウォールビルダーのペイウォールをデザインしたら](adapty-paywall-builder)、モバイルアプリにそれを表示できます。最初のステップは、プレースメントに関連付けられたフローまたはペイウォールと、そのビュー設定を取得することです。
+
+:::tip
+
+Adapty SDK をモバイルアプリに統合した実際の例を見たいですか？ペイウォールの表示、購入の実行、その他の基本的な機能を含む完全なセットアップを示す[サンプルアプリ](sample-apps)をご確認ください。
+
+:::
+
+<details>
+<summary>始める前に</summary>
+
+1. Adapty ダッシュボードで[プロダクトを作成する](create-product)。
+2. Adapty ダッシュボードで[フロー/ペイウォールを作成し、プロダクトを組み込む](create-paywall)。
+3. Adapty ダッシュボードで[プレースメントを作成し、フロー/ペイウォールを組み込む](create-placement)。
+4. モバイルアプリに [Adapty SDK](sdk-installation-ios) をインストールする。
+</details>
+
+## フロー/ペイウォールを取得する \{#fetch-flowpaywall\}
+
+フロービルダーまたはペイウォールビルダーを使ってフローやペイウォールをデザインした場合、ユーザーに表示するためにモバイルアプリのコードでレンダリングを気にする必要はありません。そのようなフローやペイウォールには、表示する内容と表示方法の両方が含まれています。ただし、プレースメントを通じて ID を取得し、ビュー設定を得てから、モバイルアプリに表示する必要があります。
+
+最適なパフォーマンスを確保するために、フローまたはペイウォールと[ビュー設定](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)をできるだけ早く取得し、ユーザーに表示する前に画像のダウンロードに十分な時間を確保することが重要です。
+
+フローまたはペイウォールを取得するには、`getFlow` メソッドを使用します：
+
+<Tabs>
+<TabItem value="swift" label="Swift">
+
+```swift showLineNumbers
+do {
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+    // the requested flow/paywall
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID") { result in
+    switch result {
+        case let .success(flow):
+            // the requested flow/paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+パラメーター：
+
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | 目的の[プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成したときに指定した値です。 |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDK はサーバーからデータを読み込もうとし、失敗した場合はキャッシュされたデータを返します。この方法はユーザーが常に最新データを取得できるため推奨します。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境にある場合は、`.returnCacheDataElseLoad` を使用してキャッシュデータが存在する場合はそれを返すことを検討してください。この場合、ユーザーは最新データを取得できない可能性がありますが、インターネット接続が不安定でも読み込みが速くなります。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを避けるために使用しても安全です。</p><p></p><p>キャッシュはアプリの再起動後も保持され、アプリの再インストール時または手動でクリアした場合にのみ削除されます。</p><p></p><p>Adapty SDK はペイウォールをローカルに2つの層で保存します：上記の定期的に更新されるキャッシュと[フォールバックペイウォール](fallback-paywalls)です。また、CDN を使ってペイウォールをより速く取得し、CDN が到達不能な場合のスタンドアロンフォールバックサーバーも使用します。このシステムは、インターネット接続が乏しい場合でも常に最新バージョンのペイウォールを取得できるよう設計されています。</p> |
+| **loadTimeout** | デフォルト: 5秒 | <p>このメソッドのタイムアウトを制限する値です。タイムアウトに達した場合、キャッシュデータまたはローカルフォールバックが返されます。</p><p>まれに、内部で異なるリクエストで構成される操作のため、`loadTimeout` で指定した時間よりわずかに遅くタイムアウトすることがあります。</p> |
+
+レスポンスパラメーター：
+
+| パラメーター | 説明 |
+| :-------- | :---------- |
+| Flow   | プレースメント、識別子（`id`、`variationId`）、名前、リモートコンフィグ、およびフローにビュー設定が含まれているかどうかを示す `hasViewConfiguration` フラグを含む `AdaptyFlow` オブジェクト。プリロード、カスタム UI、またはプログラムチェック用に実際のプロダクトを取得するには、`getPaywallProducts(flow:)` を呼び出してください。 |
+
+## ビュー設定を取得する \{#fetch-the-view-configuration\}
+
+フローまたはペイウォールを取得した後、`flow.hasViewConfiguration` でビュー設定が含まれているかどうかを確認してください。このフラグは、プレースメントが Adapty ダッシュボードでどのようにデザインされたかを示します：
+
+- **`true`** — プレースメントは**フロービルダー**（フロー）または**ペイウォールビルダー**（ペイウォール）でデザインされており、Adapty が UI をレンダリングします。以下の手順でビュー設定を取得し、[フローまたはペイウォールを表示](ios-present-paywalls)してください。
+- **`false`** — プレースメントはビルダー UI のないカスタムペイウォールです。
+
+`getFlowConfiguration` メソッドを使用してビュー設定を読み込みます。
+
+```swift showLineNumbers
+
+guard flow.hasViewConfiguration else {
+    // handle as remote config paywall
+    return
+}
+
+let flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow)
+```
+
+パラメーター：
+
+| パラメーター | 必須/任意 | 説明 |
+| :----------------------- | :------------- | :---------- |
+| **forFlow**              | 必須       | `Adapty.getFlow` で取得した `AdaptyFlow` オブジェクト。 |
+| **locale**               | <p>任意</p><p>デフォルト: `nil`</p> | [ペイウォールのローカライゼーション](add-paywall-locale-in-adapty-paywall-builder)の識別子。`-` で区切られた1つまたは2つのサブタグを持つ言語コードとして指定します（例：`en`、`pt-br`）。[ローカライゼーションとロケールコード](localizations-and-locale-codes)を参照してください。 |
+| **loadTimeout**          | デフォルト: 5秒 | このメソッドのタイムアウトを制限する値です。タイムアウトに達した場合、キャッシュデータまたはローカルフォールバックが返されます。まれに、`loadTimeout` で指定した時間よりわずかに遅くタイムアウトすることがあります。 |
+| **products**             | 任意       | 画面上のプロダクト表示タイミングを最適化するために `AdaptyPaywallProduct` オブジェクトの配列を渡します。`nil` を渡した場合、AdaptyUI が必要なプロダクトを自動的に取得します。 |
+| **systemRequestsHandler** | 任意      | フローアクションによってトリガーされるシステム権限とレビューリクエストを処理する `AdaptySystemRequestsHandler` 準拠オブジェクト。フローにそのようなアクションが含まれる場合のみ必要です。 |
+| **assetsResolver**       | 任意       | フロー/ペイウォール内の画像や動画を上書きする `[String: AdaptyCustomAsset]` 辞書。[アセットのカスタマイズ](#customize-assets)を参照してください。 |
+| **timerResolver**        | 任意       | 開発者定義タイマーの終了日を提供する `AdaptyTimerResolver` 準拠オブジェクト。[開発者定義タイマーの設定](#set-up-developer-defined-timers)を参照してください。 |
+
+読み込み後、[フロー/ペイウォールを表示](ios-present-paywalls)してください。
+
+## デフォルトオーディエンス向けにフローまたはペイウォールを高速取得する \{#get-a-flow-or-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+通常、フローとペイウォールはほぼ即座に取得されるため、このプロセスを高速化することを心配する必要はありません。ただし、オーディエンスとプレースメントが多数あり、ユーザーのインターネット接続が弱い場合、フローまたはペイウォールの取得に想定以上の時間がかかることがあります。そのような状況では、何も表示しないよりもスムーズなユーザー体験を確保するために、デフォルトのフローまたはペイウォールを表示することが望ましい場合があります。
+
+これに対応するために、`getFlowForDefaultAudience` メソッドを使用できます。このメソッドは、指定したプレースメントの**すべてのユーザー**オーディエンス向けのフローまたはペイウォールを取得します。ただし、推奨されるアプローチは上記の[フローまたはペイウォール情報の取得](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder)セクションで詳述されているように、`getFlow` メソッドを使用してフローまたはペイウォールを取得することです。
+
+:::warning
+`getFlow` の使用を推奨する理由
+
+`getFlowForDefaultAudience` メソッドにはいくつかの重大な欠点があります：
+
+- **後方互換性の問題の可能性**：現在と将来のアプリバージョンで異なるペイウォールを表示する必要がある場合、課題が生じる可能性があります。現在（レガシー）バージョンをサポートするペイウォールをデザインするか、現在（レガシー）バージョンのユーザーがレンダリングされないペイウォールに遭遇するリスクを受け入れる必要があります。
+- **ターゲティングの損失**：すべてのユーザーが**すべてのユーザー**オーディエンス向けにデザインされた同じペイウォールを見ることになり、国、マーケティングのアトリビューション、独自のカスタム属性に基づくパーソナライズされたターゲティングが失われます。
+
+これらの欠点を受け入れてフローまたはペイウォールの取得を高速化したい場合は、以下の `getFlowForDefaultAudience` メソッドを使用してください。そうでない場合は、[上記で説明した](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder) `getFlow` を使用してください。
+:::
+
+```swift showLineNumbers
+Adapty.getFlowForDefaultAudience(placementId: "YOUR_PLACEMENT_ID") { result in
+    switch result {
+        case let .success(flow):
+            // the requested flow
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成したときに指定した値です。 |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDK はサーバーからデータを読み込もうとし、失敗した場合はキャッシュされたデータを返します。この方法はユーザーが常に最新データを取得できるため推奨します。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境にある場合は、`.returnCacheDataElseLoad` を使用してキャッシュデータが存在する場合はそれを返すことを検討してください。この場合、ユーザーは最新データを取得できない可能性がありますが、インターネット接続が不安定でも読み込みが速くなります。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを避けるために使用しても安全です。</p><p></p><p>キャッシュはアプリの再起動後も保持され、アプリの再インストール時または手動でクリアした場合にのみ削除されます。</p> |
+
+## アセットのカスタマイズ \{#customize-assets\}
+
+ペイウォール/フロー内の画像や動画をカスタマイズするには、カスタムアセットを実装してください。
+
+ヒーロー画像と動画には事前定義された ID があります：`hero_image` と `hero_video`。カスタムアセットバンドルでは、これらの ID でターゲット要素を指定し、その動作をカスタマイズします。
+
+その他の画像や動画については、Adapty ダッシュボードで[カスタム ID を設定](custom-media)する必要があります。
+
+例えば、以下のことができます：
+
+- 一部のユーザーに異なる画像や動画を表示する。
+- リモートのメイン画像が読み込まれる間、ローカルのプレビュー画像を表示する。
+- 動画を再生する前にプレビュー画像を表示する。
+- 動画が読み込まれる前にプレーヤーがレイアウトスペースを確保できるよう、動画のピクセル解像度を指定する（アスペクト比 = `width / height`）。スキップするには `nil` を渡します。
+
+カスタムアセットをシンプルな辞書で提供する例を以下に示します：
+
+```swift showLineNumbers
+let customAssets: [String: AdaptyCustomAsset] = [
+    // Show a local image using a custom ID
+    "custom_image": .image(
+        .uiImage(value: UIImage(named: "image_name")!)
+    ),
+
+    // Show a local preview image while a remote main image is loading
+    "hero_image": .image(
+        .remote(
+            url: URL(string: "https://example.com/image.jpg")!,
+            preview: UIImage(named: "preview_image")
+        )
+    ),
+
+    // Show a local video with a preview image and a known resolution
+    "hero_video": .video(
+        .file(
+            url: Bundle.main.url(forResource: "custom_video", withExtension: "mp4")!,
+            preview: .uiImage(value: UIImage(named: "video_preview")!),
+            resolution: CGSize(width: 1080, height: 1920)
+        )
+    ),
+]
+
+let flowConfig = try await AdaptyUI.getFlowConfiguration(
+    forFlow: flow,
+    assetsResolver: customAssets
+)
+```
+
+:::note
+アセットが見つからない場合、ペイウォール/フローはデフォルトの外観にフォールバックします。
+:::
+
+## 開発者定義タイマーの設定 \{#set-up-developer-defined-timers\}
+
+モバイルアプリでカスタムタイマーを使用するには、`AdaptyTimerResolver` プロトコルに準拠したオブジェクトを作成します。このオブジェクトは各カスタムタイマーのレンダリング方法を定義します。`[String: Date]` 辞書はすでにこのプロトコルに準拠しているため、直接使用することもできます。例を以下に示します：
+
+```swift showLineNumbers
+@MainActor
+struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
+    func timerEndAtDate(for timerId: String) -> Date {
+        switch timerId {
+        case "CUSTOM_TIMER_6H":
+            Date(timeIntervalSinceNow: 3600.0 * 6.0) // 6 hours
+        case "CUSTOM_TIMER_NY":
+            Calendar.current.date(from: DateComponents(year: 2025, month: 1, day: 1)) ?? Date(timeIntervalSinceNow: 3600.0)
+        default:
+            Date(timeIntervalSinceNow: 3600.0) // 1 hour
+        }
+    }
+}
+```
+
+この例では、`CUSTOM_TIMER_NY` と `CUSTOM_TIMER_6H` は Adapty ダッシュボードで設定した開発者定義タイマーの **Timer ID** です。`timerResolver` はアプリが各タイマーを正しい値で動的に更新することを保証します。例えば：
+
+- `CUSTOM_TIMER_NY`：元日までの残り時間など、タイマーの終了までの残り時間。
+- `CUSTOM_TIMER_6H`：ユーザーがペイウォールを開いたときから始まる6時間の残り時間。
+
+</SDKv4>
+
+<SDKv3>
+
+[Adapty ダッシュボードのペイウォールビルダーでペイウォールのビジュアル部分をデザインしたら](adapty-paywall-builder)、モバイルアプリにそれを表示できます。最初のステップは、プレースメントに関連付けられたペイウォールとそのビュー設定を取得することです。
+
+このトピックはペイウォールビルダーでカスタマイズされたペイウォールに関するものです。ペイウォールを手動で実装している場合は、[リモートコンフィグペイウォール用のペイウォールとプロダクトの取得](fetch-paywalls-and-products)を参照してください。
+
+:::tip
+
+Adapty SDK をモバイルアプリに統合した実際の例を見たいですか？ペイウォールの表示、購入の実行、その他の基本的な機能を含む完全なセットアップを示す[サンプルアプリ](sample-apps)をご確認ください。
+
+:::
+
+<details>
+<summary>モバイルアプリでペイウォールを表示する前に</summary>
+
+1. Adapty ダッシュボードで[プロダクトを作成する](create-product)。
+2. Adapty ダッシュボードで[ペイウォールを作成し、プロダクトを組み込む](create-paywall)。
+3. Adapty ダッシュボードで[プレースメントを作成し、ペイウォールを組み込む](create-placement)。
+4. モバイルアプリに [Adapty SDK](sdk-installation-ios) をインストールする。
+</details>
+
+## ペイウォールビルダーでデザインされたペイウォールを取得する \{#fetch-paywall-designed-with-paywall-builder\}
+
+[ペイウォールビルダーを使ってペイウォールをデザインした場合](adapty-paywall-builder)、ユーザーに表示するためにモバイルアプリのコードでレンダリングを気にする必要はありません。そのようなペイウォールには、表示する内容と表示方法の両方が含まれています。ただし、プレースメントを通じて ID を取得し、ビュー設定を得てから、モバイルアプリに表示する必要があります。
+
+最適なパフォーマンスを確保するために、ペイウォールと[ビュー設定](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)をできるだけ早く取得し、ユーザーに表示する前に画像のダウンロードに十分な時間を確保することが重要です。
+
+ペイウォールを取得するには、`getPaywall` メソッドを使用します：
+
+<Tabs>
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    // the requested paywall
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+パラメーター：
+
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | 目的の[プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成したときに指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>[ペイウォールのローカライゼーション](add-paywall-locale-in-adapty-paywall-builder)の識別子。このパラメーターは、マイナス（**-**）文字で区切られた1つまたは2つのサブタグで構成される言語コードであることが期待されます。最初のサブタグは言語、2番目は地域を表します。</p><p></p><p>例：`en` は英語を意味し、`pt-br` はブラジルポルトガル語を表します。</p><p>ロケールコードとその推奨使用方法については[ローカライゼーションとロケールコード](localizations-and-locale-codes)を参照してください。</p> |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDK はサーバーからデータを読み込もうとし、失敗した場合はキャッシュされたデータを返します。この方法はユーザーが常に最新データを取得できるため推奨します。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境にある場合は、`.returnCacheDataElseLoad` を使用してキャッシュデータが存在する場合はそれを返すことを検討してください。この場合、ユーザーは最新データを取得できない可能性がありますが、インターネット接続が不安定でも読み込みが速くなります。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを避けるために使用しても安全です。</p><p></p><p>キャッシュはアプリの再起動後も保持され、アプリの再インストール時または手動でクリアした場合にのみ削除されます。</p><p></p><p>Adapty SDK はペイウォールをローカルに2つの層で保存します：上記の定期的に更新されるキャッシュと[フォールバックペイウォール](fallback-paywalls)です。また、CDN を使ってペイウォールをより速く取得し、CDN が到達不能な場合のスタンドアロンフォールバックサーバーも使用します。このシステムは、インターネット接続が乏しい場合でも常に最新バージョンのペイウォールを取得できるよう設計されています。</p> |
+| **loadTimeout** | デフォルト: 5秒 | <p>このメソッドのタイムアウトを制限する値です。タイムアウトに達した場合、キャッシュデータまたはローカルフォールバックが返されます。</p><p>まれに、内部で異なるリクエストで構成される操作のため、`loadTimeout` で指定した時間よりわずかに遅くタイムアウトすることがあります。</p> |
+
+レスポンスパラメーター：
+
+| パラメーター | 説明 |
+| :-------- | :---------- |
+| Paywall   | プロダクト ID のリスト、ペイウォール識別子、リモートコンフィグ、その他いくつかのプロパティを持つ [`AdaptyPaywall`](https://swift.adapty.io/documentation/adapty/adaptypaywall) オブジェクト。 |
+
+## ペイウォールビルダーでデザインされたペイウォールのビュー設定を取得する \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+ペイウォールビルダーの **Show on device** トグルが有効になっていることを確認してください。このオプションが有効でない場合、ビュー設定は取得できません。
+:::
+
+ペイウォールを取得したら、ビュー設定が含まれているかどうかを確認します。ビュー設定が含まれている場合、それはペイウォールビルダーを使って作成されたことを示します。これによりペイウォールの表示方法が決まります。ビュー設定がある場合はペイウォールビルダーのペイウォールとして扱い、ない場合は[リモートコンフィグペイウォールとして処理](present-remote-config-paywalls)してください。
+
+`getPaywallConfiguration` メソッドを使用してビュー設定を読み込みます。
+
+```swift showLineNumbers
+
+guard paywall.hasViewConfiguration else {
+    //  use your custom logic
+    return
+}
+
+do {
+    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
+            forPaywall: paywall,
+            products: products
+    )
+    // use loaded configuration
+} catch {
+    // handle the error
+}
+```
+
+パラメーター：
+
+| パラメーター | 必須/任意 | 説明 |
+| :----------------------- | :------------- | :---------- |
+| **paywall**              | 必須       | 目的のペイウォールのコントローラーを取得するための `AdaptyPaywall` オブジェクト。 |
+| **loadTimeout**          | デフォルト: 5秒 | このメソッドのタイムアウトを制限する値です。タイムアウトに達した場合、キャッシュデータまたはローカルフォールバックが返されます。まれに、`loadTimeout` で指定した時間よりわずかに遅くタイムアウトすることがあります。 |
+| **products**             | 任意       | 画面上のプロダクト表示タイミングを最適化するために `AdaptyPaywallProduct` オブジェクトの配列を渡します。`nil` を渡した場合、AdaptyUI が必要なプロダクトを自動的に取得します。 |
+
+:::note
+複数の言語を使用している場合は、[ペイウォールビルダーのローカライゼーションを追加する](add-paywall-locale-in-adapty-paywall-builder)方法と、ロケールコードを正しく使用する方法を[こちら](localizations-and-locale-codes)で確認してください。
+:::
+
+読み込み後、[ペイウォールを表示](ios-present-paywalls)してください。
+
+## デフォルトオーディエンス向けにペイウォールを高速取得する \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+通常、ペイウォールはほぼ即座に取得されるため、このプロセスを高速化することを心配する必要はありません。ただし、オーディエンスとペイウォールが多数あり、ユーザーのインターネット接続が弱い場合、ペイウォールの取得に想定以上の時間がかかることがあります。そのような状況では、何も表示しないよりもスムーズなユーザー体験を確保するために、デフォルトのペイウォールを表示することが望ましい場合があります。
+
+これに対応するために、`getPaywallForDefaultAudience` メソッドを使用できます。このメソッドは、指定したプレースメントの**すべてのユーザー**オーディエンス向けのペイウォールを取得します。ただし、推奨されるアプローチは上記の[ペイウォール情報の取得](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder)セクションで詳述されているように、`getPaywall` メソッドを使用してペイウォールを取得することです。
+
+:::warning
+`getPaywall` の使用を推奨する理由
+
+`getPaywallForDefaultAudience` メソッドにはいくつかの重大な欠点があります：
+
+- **後方互換性の問題の可能性**：現在と将来のアプリバージョンで異なるペイウォールを表示する必要がある場合、課題が生じる可能性があります。現在（レガシー）バージョンをサポートするペイウォールをデザインするか、現在（レガシー）バージョンのユーザーがレンダリングされないペイウォールに遭遇するリスクを受け入れる必要があります。
+- **ターゲティングの損失**：すべてのユーザーが**すべてのユーザー**オーディエンス向けにデザインされた同じペイウォールを見ることになり、国、マーケティングのアトリビューション、独自のカスタム属性に基づくパーソナライズされたターゲティングが失われます。
+
+これらの欠点を受け入れてペイウォールの取得を高速化したい場合は、以下の `getPaywallForDefaultAudience` メソッドを使用してください。そうでない場合は、[上記で説明した](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder) `getPaywall` を使用してください。
+:::
+
+```swift showLineNumbers
+Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+
+:::note
+`getPaywallForDefaultAudience` メソッドは iOS SDK バージョン 2.11.2 以降から利用可能です。
+:::
+
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成したときに指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>[ペイウォールのローカライゼーション](add-remote-config-locale)の識別子。このパラメーターは、マイナス（**-**）文字で区切られた1つ以上のサブタグで構成される言語コードであることが期待されます。最初のサブタグは言語、2番目は地域を表します。</p><p></p><p>例：`en` は英語を意味し、`pt-br` はブラジルポルトガル語を表します。</p><p></p><p>ロケールコードとその推奨使用方法については[ローカライゼーションとロケールコード](localizations-and-locale-codes)を参照してください。</p> |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDK はサーバーからデータを読み込もうとし、失敗した場合はキャッシュされたデータを返します。この方法はユーザーが常に最新データを取得できるため推奨します。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境にある場合は、`.returnCacheDataElseLoad` を使用してキャッシュデータが存在する場合はそれを返すことを検討してください。この場合、ユーザーは最新データを取得できない可能性がありますが、インターネット接続が不安定でも読み込みが速くなります。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを避けるために使用しても安全です。</p><p></p><p>キャッシュはアプリの再起動後も保持され、アプリの再インストール時または手動でクリアした場合にのみ削除されます。</p> |
+
+## アセットのカスタマイズ \{#customize-assets\}
+
+ペイウォール内の画像や動画をカスタマイズするには、カスタムアセットを実装してください。
+
+ヒーロー画像と動画には事前定義された ID があります：`hero_image` と `hero_video`。カスタムアセットバンドルでは、これらの ID でターゲット要素を指定し、その動作をカスタマイズします。
+
+その他の画像や動画については、Adapty ダッシュボードで[カスタム ID を設定](custom-media)する必要があります。
+
+例えば、以下のことができます：
+
+- 一部のユーザーに異なる画像や動画を表示する。
+- リモートのメイン画像が読み込まれる間、ローカルのプレビュー画像を表示する。
+- 動画を再生する前にプレビュー画像を表示する。
+
+:::important
+この機能を使用するには、Adapty iOS SDK をバージョン 3.7.0 以上に更新してください。
+:::
+
+カスタムアセットをシンプルな辞書で提供する例を以下に示します：
+
+```swift showLineNumbers
+let customAssets: [String: AdaptyCustomAsset] = [
+    // Show a local image using a custom ID
+    "custom_image": .image(
+        .uiImage(value: UIImage(named: "image_name")!)
+    ),
+
+    // Show a local preview image while a remote main image is loading
+    "hero_image": .image(
+        .remote(
+            url: URL(string: "https://example.com/image.jpg")!,
+            preview: UIImage(named: "preview_image")
+        )
+    ),
+
+    // Show a local video with a preview image
+    "hero_video": .video(
+        .file(
+            url: Bundle.main.url(forResource: "custom_video", withExtension: "mp4")!,
+            preview: .uiImage(value: UIImage(named: "video_preview")!)
+        )
+    ),
+]
+
+let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
+    forPaywall: paywall,
+    assetsResolver: customAssets
+)
+```
+
+:::note
+アセットが見つからない場合、ペイウォールはデフォルトの外観にフォールバックします。
+:::
+
+## 開発者定義タイマーの設定 \{#set-up-developer-defined-timers\}
+
+モバイルアプリでカスタムタイマーを使用するには、`AdaptyTimerResolver` プロトコルに準拠したオブジェクトを作成します。このオブジェクトは各カスタムタイマーのレンダリング方法を定義します。`[String: Date]` 辞書はすでにこのプロトコルに準拠しているため、直接使用することもできます。例を以下に示します：
+
+```swift showLineNumbers
+@MainActor
+struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
+    func timerEndAtDate(for timerId: String) -> Date {
+        switch timerId {
+        case "CUSTOM_TIMER_6H":
+            Date(timeIntervalSinceNow: 3600.0 * 6.0) // 6 hours
+        case "CUSTOM_TIMER_NY":
+            Calendar.current.date(from: DateComponents(year: 2025, month: 1, day: 1)) ?? Date(timeIntervalSinceNow: 3600.0)
+        default:
+            Date(timeIntervalSinceNow: 3600.0) // 1 hour
+        }
+    }
+}
+```
+
+この例では、`CUSTOM_TIMER_NY` と `CUSTOM_TIMER_6H` は Adapty ダッシュボードで設定した開発者定義タイマーの **Timer ID** です。`timerResolver` はアプリが各タイマーを正しい値で動的に更新することを保証します。例えば：
+
+- `CUSTOM_TIMER_NY`：元日までの残り時間など、タイマーの終了までの残り時間。
+- `CUSTOM_TIMER_6H`：ユーザーがペイウォールを開いたときから始まる6時間の残り時間。
+
+</SDKv3>

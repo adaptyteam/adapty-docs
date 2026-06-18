@@ -1,0 +1,88 @@
+---
+title: "Unity SDKでサブスクリプションステータスを確認する"
+description: "UnityアプリでAdaptyを使ってユーザーのサブスクリプションステータスを追跡・管理し、顧客維持率を向上させましょう。"
+metadataTitle: "サブスクリプションステータスの確認 | Adapty ドキュメント"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+
+Adaptyを使えば、サブスクリプションステータスの管理が簡単になります。プロダクトIDをコードに直接記述する必要はありません。アクティブな[アクセスレベル](access-level)を確認するだけで、ユーザーのサブスクリプションステータスを簡単に把握できます。
+
+<details>
+   <summary>サブスクリプションステータスの確認を始める前に（クリックして展開）</summary>
+
+- iOSの場合は、[App Store Server Notifications](enable-app-store-server-notifications)を設定してください
+- Androidの場合は、[リアルタイム デベロッパー通知（RTDN）](enable-real-time-developer-notifications-rtdn)を設定してください
+</details>
+
+## アクセスレベルとAdaptyProfileオブジェクト \{#access-level-and-the-adaptyprofile-object\}
+
+アクセスレベルは[AdaptyProfile](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_profile.html)オブジェクトのプロパティです。アプリ起動時（例えば[ユーザーを識別する](unity-identifying-users#setting-customer-user-id-on-configuration)タイミングなど）にプロファイルを取得し、変更があれば都度更新することをおすすめします。こうすることで、毎回リクエストせずにプロファイルオブジェクトを利用できます。
+
+プロファイルの更新通知を受け取るには、下記の[サブスクリプションステータスの更新をリッスンする](#listening-for-subscription-status-updates)セクションに従って、プロファイルの変更を監視してください。
+
+<SampleApp />
+
+## サーバーからアクセスレベルを取得する \{#retrieving-the-access-level-from-the-server\}
+
+サーバーからアクセスレベルを取得するには、`.GetProfile()`メソッドを使用します。
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+// check the access
+});
+```
+
+レスポンスのパラメータ：
+
+| パラメータ | 説明                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------- |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Profile   | <p>[AdaptyProfile](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_profile.html)オブジェクト。通常は、ユーザーがプレミアムアクセスを持っているかどうかを判断するために、プロファイルのアクセスレベルのステータスだけを確認すれば十分です。</p><p></p><p>`.getProfile`メソッドは常にAPIへの問い合わせを試みるため、最新の情報を返します。何らかの理由（例：インターネット接続なし）でAdapty SDKがサーバーから情報を取得できなかった場合は、キャッシュのデータが返されます。また、Adapty SDKは`AdaptyProfile`のキャッシュを定期的に更新し、情報をできる限り最新の状態に保っています。</p> |
+
+`.getProfile()`メソッドはユーザープロファイルを返し、そこからアクセスレベルのステータスを取得できます。アプリごとに複数のアクセスレベルを設定することも可能です。たとえば、新聞アプリでさまざまなトピックへのサブスクリプションを独立して販売する場合、「sports」と「science」というアクセスレベルを作成できます。ただし、多くの場合はアクセスレベルは1つで十分であり、その場合はデフォルトの「premium」アクセスレベルを使うだけで問題ありません。
+
+デフォルトの「premium」アクセスレベルを確認する例を示します。
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+// "premium" is an identifier of default access level
+var accessLevel = profile.AccessLevels["premium"];
+if (accessLevel != null && accessLevel.IsActive) {
+// grant access to premium features
+}
+});
+```
+
+### サブスクリプションステータスの更新をリッスンする \{#listening-for-subscription-status-updates\}
+
+ユーザーのサブスクリプションが変更されるたびに、Adaptyはイベントを発火します。
+
+Adaptyからメッセージを受け取るには、追加の設定が必要です。
+
+```csharp showLineNumbers
+// Extend `AdaptyEventListener ` with `OnLoadLatestProfile ` method:
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+  public void OnLoadLatestProfile(AdaptyProfile profile) {
+    // handle any changes to subscription state
+  }
+}
+```
+
+Adaptyはアプリケーション起動時にもイベントを発火します。この場合、キャッシュされたサブスクリプションステータスが渡されます。
+
+### サブスクリプションステータスのキャッシュ \{#subscription-status-cache\}
+
+Adapty SDKに実装されたキャッシュは、プロファイルのサブスクリプションステータスを保存します。そのため、サーバーにアクセスできない状況でも、キャッシュされたデータを使ってプロファイルのサブスクリプションステータスを確認できます。
+
+ただし、キャッシュからデータを直接取得することはできない点に注意してください。SDKは1分ごとに定期的にサーバーへ問い合わせを行い、プロファイルに関する更新や変更がないかを確認します。新しいトランザクションやその他の更新といった変更があった場合は、サーバーと同期するためにキャッシュデータへ反映されます。

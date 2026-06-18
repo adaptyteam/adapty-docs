@@ -1,0 +1,266 @@
+---
+title: "AIアシスタンスを使ってAdaptyをKotlin Multiplatformアプリに統合する"
+description: "Cursor、Context7、ChatGPT、Claude、またはその他のAIツールを使用して、Kotlin MultiplatformアプリにAdaptyを統合するためのステップバイステップガイド。"
+metadataTitle: "AIアシスタンスを使ったKotlin MultiplatformへのAdapty統合 | Adapty ドキュメント"
+displayed_sidebar: sdkkmp
+---
+
+このガイドでは、AIコーディングツールを使いながら、Kotlin MultiplatformアプリへのAdapty統合をステップバイステップで進めます。適切なAdaptyドキュメントを正しい順番でAIに渡していくことがポイントです。
+
+<SkillPromo />
+
+## はじめる前に：ダッシュボードの設定 \{#before-you-start-dashboard-setup\}
+
+AdaptyのSDKコードを書く前に、ダッシュボードでいくつかの設定が必要です。インタラクティブなLLMスキルを使う方法と、ダッシュボードから手動で行う方法があります。
+
+### スキルを使う方法（推奨） \{#skill-approach-recommended\}
+
+Adapty CLIスキルを使うと、アプリ、プロダクト、アクセスレベル、ペイウォール、プレースメントの設定をLLMから直接行えます。ダッシュボードを都度開く必要がありません。必要なのは、ダッシュボードで[ストアを接続する](integrate-payments)ことだけです。
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+スキルを追加したら、エージェントで `/adapty-cli` を実行してください。各ステップを順番にガイドしてくれます。ストアの接続が必要なタイミングでは、ダッシュボードを開くよう案内されます。
+
+### ダッシュボードを使う方法 \{#dashboard-approach\}
+
+すべて手動で設定したい場合は、コードを書く前に以下の手順を完了してください。ダッシュボードの値はLLMが自動で取得することはできないため、自分で用意する必要があります。
+
+1. **アプリストアを接続する**: Adapty ダッシュボードで **App settings → General** に移動し、KMPアプリがApp StoreとGoogle Play両方を対象とする場合は両方接続してください。これは購入機能を動作させるために必要です。
+   [アプリストアを接続する](integrate-payments)
+
+2. **Public SDK keyをコピーする**: Adapty ダッシュボードで **App settings → General** に移動し、**API keys** セクションを確認してください。コード上では、Adaptyの設定ビルダーに渡す文字列です。
+
+3. **プロダクトを少なくとも1つ作成する**: Adapty ダッシュボードの **Products** ページで作成してください。コードからプロダクトを直接参照することはなく、Adaptyはペイウォール経由でプロダクトを配信します。
+   [プロダクトを追加する](quickstart-products)
+
+4. **ペイウォールとプレースメントを作成する**: Adapty ダッシュボードの **Paywalls** ページでペイウォールを作成し、**Placements** ページでプレースメントに割り当ててください。コード上では、`Adapty.getPaywall("YOUR_PLACEMENT_ID")` に渡す文字列がプレースメントIDです。
+   [ペイウォールを作成する](quickstart-paywalls)
+
+5. **アクセスレベルを設定する**: Adapty ダッシュボードの **Products** ページで各プロダクトに対して設定してください。コード上では `profile.accessLevels["premium"]?.isActive` で確認する文字列です。デフォルトの `premium` アクセスレベルはほとんどのアプリで使えます。プロダクトによってアクセスできる機能が異なる場合（例: `basic` プランと `pro` プラン）は、コーディングを始める前に[追加のアクセスレベルを作成](assigning-access-level-to-a-product)してください。
+
+:::tip
+5つすべて揃ったら、コードを書く準備ができています。LLMに「Public SDK keyはX、プレースメントIDはY」と伝えることで、正確な初期化コードとペイウォール取得コードを生成してもらえます。
+:::
+
+### 準備が整ったら設定するもの \{#set-up-when-ready\}
+
+コーディングを始めるのに必須ではありませんが、統合が進むにつれて必要になるものです：
+
+- **A/B テスト**: **Placements** ページで設定できます。コードの変更は不要です。
+  [A/B テスト](ab-tests)
+- **追加のペイウォールとプレースメント**: 異なるプレースメントIDを使って `getPaywall` の呼び出しを追加してください。
+- **アナリティクス連携**: **Integrations** ページで設定します。連携方法は各サービスによって異なります。[アナリティクス連携](analytics-integration)と[アトリビューション連携](attribution-integration)を参照してください。
+
+## AdaptyドキュメントをLLMに渡す \{#feed-adapty-docs-to-your-llm\}
+
+### Context7を使う（推奨） \{#use-context7-recommended\}
+
+[Context7](https://context7.com)は、LLMが最新のAdaptyドキュメントに直接アクセスできるMCPサーバーです。質問内容に応じて必要なドキュメントを自動的に取得するため、URLを手動で貼り付ける必要がありません。
+
+Context7は **Cursor**、**Claude Code**、**Windsurf**、その他のMCP対応ツールで利用できます。設定するには次のコマンドを実行してください：
+
+```
+npx ctx7 setup
+```
+
+エディタを自動検出してContext7サーバーを設定します。手動でセットアップする場合は[Context7 GitHubリポジトリ](https://github.com/upstash/context7)を参照してください。
+
+設定後は、プロンプトでAdaptyライブラリを参照できます：
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the Kotlin Multiplatform SDK
+```
+
+:::warning
+Context7を使えばドキュメントのリンクを手動で貼る手間は省けますが、実装の順序は重要です。以下の[実装ウォークスルー](#implementation-walkthrough)をステップごとに進めて、確実に動作させてください。
+:::
+
+### プレーンテキストのドキュメントを使う \{#use-plain-text-docs\}
+
+AdaptyのドキュメントはどれもプレーンテキストのMarkdownで取得できます。URLの末尾に `.md` を付けるか、記事タイトルの下にある **Copy for LLM** をクリックしてください。例: [adapty-cursor-kmp.md](https://adapty.io/docs/ja/adapty-cursor-kmp.md)
+
+以下の[実装ウォークスルー](#implementation-walkthrough)の各ステップには、「LLMに送る内容」ブロックに `.md` リンクが含まれています。
+
+まとめて複数のドキュメントを渡したい場合は、下記の[インデックスファイルとプラットフォーム別サブセット](#plain-text-doc-index-files)を参照してください。
+
+## 実装ウォークスルー \{#implementation-walkthrough\}
+
+このガイドの残りの部分では、実装順にAdaptyの統合を進めます。各ステップにはLLMに送るドキュメント、完了時の確認事項、よくある問題を記載しています。
+
+### 統合を計画する \{#plan-your-integration\}
+
+コードを書き始める前に、LLMにプロジェクトを分析させて実装計画を立てましょう。AIツールにプランニングモードがある場合（CursorやClaude Codeのプランモードなど）、それを使うことでLLMがプロジェクト構造とAdaptyドキュメントの両方を読んでからコードを書いてくれます。
+
+購入の実装方法をLLMに伝えてください。選択によって参照すべきガイドが変わります：
+
+- [**Adapty ペイウォールビルダー**](adapty-paywall-builder): Adaptyのノーコードビルダーでペイウォールを作成し、SDKが自動的にレンダリングします。
+- [**手動作成のペイウォール**](kmp-making-purchases): 自分でペイウォールUIをコードで作成しますが、プロダクトの取得と購入処理にはAdaptyを使います。
+- [**オブザーバーモード**](observer-vs-full-mode): 既存の購入インフラをそのまま使い、Adaptyはアナリティクスと連携のみに使います。
+
+どれを選べばいいか迷ったら、[クイックスタートの比較表](kmp-quickstart-paywalls)を参照してください。
+
+### SDKのインストールと設定 \{#install-and-configure-the-sdk\}
+
+GradleでAdapty SDKの依存関係を追加し、Public SDK keyで有効化してください。これがすべての基盤になります。
+
+**ガイド:** [Adapty SDKのインストールと設定](sdk-installation-kotlin-multiplatform)
+
+LLMに送る内容：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/sdk-installation-kotlin-multiplatform.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** アプリがビルドされ、起動します。Logcat（Android）またはXcodeコンソール（iOS）にAdaptyの有効化ログが表示されます。
+- **注意点:** 「Public API key is missing」→ プレースホルダーをApp settingsの実際のキーに置き換えたか確認してください。
+:::
+
+### ペイウォールの表示と購入処理 \{#show-paywalls-and-handle-purchases\}
+
+プレースメントIDでペイウォールを取得し、表示して、購入イベントを処理します。必要なガイドは購入の実装方法によって異なります。
+
+進めながら都度サンドボックスで購入をテストしてください。最後まで待たないようにしましょう。設定方法は[サンドボックスでの購入テスト](test-purchases-in-sandbox)を参照してください。
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**ガイド:**
+- [ペイウォールを使って購入を有効化する（クイックスタート）](kmp-quickstart-paywalls)
+- [ペイウォールビルダーのペイウォールと設定を取得する](kmp-get-pb-paywalls)
+- [ペイウォールを表示する](kmp-present-paywalls)
+- [ペイウォールのイベントを処理する](kmp-handling-events)
+- [ボタンアクションに対応する](kmp-handle-paywall-actions)
+
+LLMに送る内容：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/kmp-quickstart-paywalls.md
+- https://adapty.io/docs/ja/kmp-get-pb-paywalls.md
+- https://adapty.io/docs/ja/kmp-present-paywalls.md
+- https://adapty.io/docs/ja/kmp-handling-events.md
+- https://adapty.io/docs/ja/kmp-handle-paywall-actions.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** 設定したプロダクトとともにペイウォールが表示されます。プロダクトをタップするとサンドボックスの購入ダイアログが表示されます。
+- **注意点:** ペイウォールが空または `getPaywall` エラーが出る → プレースメントIDがダッシュボードと完全に一致しているか、プレースメントにオーディエンスが設定されているか確認してください。
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Manual paywalls">
+
+**ガイド:**
+- [カスタムペイウォールで購入を有効化する（クイックスタート）](kmp-quickstart-manual)
+- [ペイウォールとプロダクトを取得する](fetch-paywalls-and-products-kmp)
+- [リモートコンフィグで設計したペイウォールをレンダリングする](present-remote-config-paywalls-kmp)
+- [購入を行う](kmp-making-purchases)
+- [購入を復元する](kmp-restore-purchase)
+
+LLMに送る内容：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/kmp-quickstart-manual.md
+- https://adapty.io/docs/ja/fetch-paywalls-and-products-kmp.md
+- https://adapty.io/docs/ja/present-remote-config-paywalls-kmp.md
+- https://adapty.io/docs/ja/kmp-making-purchases.md
+- https://adapty.io/docs/ja/kmp-restore-purchase.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** カスタムペイウォールにAdaptyから取得したプロダクトが表示されます。プロダクトをタップするとサンドボックスの購入ダイアログが表示されます。
+- **注意点:** プロダクトの配列が空 → ダッシュボードのペイウォールにプロダクトが設定されているか、プレースメントにオーディエンスが設定されているか確認してください。
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**ガイド:**
+- [オブザーバーモードの概要](observer-vs-full-mode)
+- [オブザーバーモードを実装する](implement-observer-mode-kmp)
+- [オブザーバーモードでトランザクションを報告する](report-transactions-observer-mode-kmp)
+
+LLMに送る内容：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/observer-vs-full-mode.md
+- https://adapty.io/docs/ja/implement-observer-mode-kmp.md
+- https://adapty.io/docs/ja/report-transactions-observer-mode-kmp.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** 既存の購入フローでサンドボックス購入を行った後、トランザクションがAdaptyダッシュボードの **Event Feed** に表示されます。
+- **注意点:** イベントが表示されない → Adaptyへのトランザクション報告が実装されているか、両ストアのサーバー通知が設定されているか確認してください。
+:::
+
+</TabItem>
+
+</Tabs>
+
+### サブスクリプションのステータスを確認する \{#check-subscription-status\}
+
+購入後、ユーザープロファイルのアクティブなアクセスレベルを確認してプレミアムコンテンツを制限します。
+
+**ガイド:** [サブスクリプションのステータスを確認する](kmp-check-subscription-status)
+
+LLMに送る内容：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/kmp-check-subscription-status.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** サンドボックス購入後、`profile.accessLevels["premium"]?.isActive` が `true` を返します。
+- **注意点:** 購入後に `accessLevels` が空 → ダッシュボードでプロダクトにアクセスレベルが設定されているか確認してください。
+:::
+
+### ユーザーを識別する \{#identify-users\}
+
+アプリのユーザーアカウントをAdaptyプロファイルに紐付けて、デバイスをまたいで購入情報を引き継げるようにします。
+
+:::important
+アプリに認証機能がない場合は、このステップをスキップしてください。
+:::
+
+**ガイド:** [ユーザーを識別する](kmp-quickstart-identify)
+
+LLMに送る内容：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/kmp-quickstart-identify.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** `Adapty.identify("your-user-id")` を呼び出した後、ダッシュボードの **Profiles** セクションにカスタムユーザーIDが表示されます。
+- **注意点:** 匿名プロファイルへのアトリビューションを避けるため、`identify` はアクティベーション後、ペイウォールの取得前に呼び出してください。
+:::
+
+### リリースの準備をする \{#prepare-for-release\}
+
+サンドボックスで統合の動作確認ができたら、リリースチェックリストを確認してすべて本番環境に対応しているか確認しましょう。
+
+**ガイド:** [リリースチェックリスト](release-checklist)
+
+LLMに送る内容：
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/ja/release-checklist.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** すべてのチェックリスト項目が確認済み：ストアの接続、サーバー通知、購入フロー、アクセスレベルの確認、プライバシー要件。
+- **注意点:** サーバー通知が未設定 → **App settings → iOS SDK** でApp Store Server Notificationsを設定し、**App settings → Android SDK** でGoogle Play Real-Time Developer Notificationsを設定してください。
+:::
+
+## プレーンテキストのドキュメントインデックスファイル \{#plain-text-doc-index-files\}
+
+個別のページを超えてLLMにより広いコンテキストを提供したい場合は、Adaptyのすべてのドキュメントをリスト化または統合したインデックスファイルを用意しています：
+
+- [`llms.txt`](https://adapty.io/docs/ja/llms.txt): すべてのページを `.md` リンク付きでリスト化しています。LLMがウェブサイトにアクセスしやすくするための[新たな標準](https://llmstxt.org/)です。一部のAIエージェント（ChatGPTなど）では、`llms.txt` をダウンロードしてチャットにファイルとしてアップロードする必要があります。
+- [`llms-full.txt`](https://adapty.io/docs/ja/llms-full.txt): Adaptyのドキュメントサイト全体を1つのファイルにまとめたものです。非常に大きいため、全体像が必要なときだけ使用してください。
+- Kotlin Multiplatform専用の [`kmp-llms.txt`](https://adapty.io/docs/ja/kmp-llms.txt) と [`kmp-llms-full.txt`](https://adapty.io/docs/ja/kmp-llms-full.txt): サイト全体と比べてトークンを節約できるプラットフォーム別サブセットです。
