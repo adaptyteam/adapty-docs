@@ -1,0 +1,113 @@
+---
+title: "Adaptyへの過去データのインポート"
+description: "詳細なアナリティクスのためにAdaptyへ過去データをインポートします。"
+metadataTitle: "Adaptyへの過去データのインポート | Adapty ドキュメント"
+---
+
+Adapty SDKをインストールしてアプリをリリースすると、[Profiles](profiles-crm)セクションでユーザーとサブスクライバーを確認できます。しかし、レガシーインフラを持っていてAdaptyへ移行したい場合や、既存のデータをAdaptyで確認したい場合はどうすればよいでしょうか？
+
+:::note
+データのインポートは必須ではありません
+
+Adapty SDKが組み込まれたアプリをユーザーが開くと、Adaptyは自動的に過去ユーザーへアクセスレベルを付与し、購入イベントを復元します。このユースケースでは、過去データのインポートは不要です。ただし、大量の過去トランザクションがある場合、データのインポートによってアナリティクスの精度が上がります。移行に際して一般的には必須ではありません。
+:::
+
+Adaptyにデータをインポートするには：
+
+1. トランザクションをCSVファイルにエクスポートします（iOS、Android、Stripeごとに別々のファイルを用意してください）。詳細な要件については、下記の[インポートファイルの形式](importing-historical-data-to-adapty#import-file-format)セクションを参照してください。
+2. ファイルが1 GBを超える場合は、約100行のデータサンプルを準備してください。
+3. すべてのファイルをGoogle Driveにアップロードします（圧縮してもかまいませんが、それぞれ別々のファイルのままにしてください）。
+4. iOSトランザクションについては、StoreKit 1を使用している場合でも、[**App settings**](https://app.adapty.io/settings/ios-sdk)の**In-app purchase API**セクションに**Issuer ID**、**Key ID**、**Private key**（.P8ファイル）が入力されていることを確認してください。詳細な手順については、[Issuer IDとKey IDの入力](app-store-connection-configuration#step-2-provide-issuer-id-and-key-id)および[アプリ内購入キーファイルのアップロード](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file)セクションを参照してください。
+5. [メール](mailto:support@adapty.io)またはAdapty Dashboardのオンラインチャットでチームにリンクを共有してください。
+
+過去データのインポートは、Adaptyの既存エントリと重複する場合でも、重複が発生することはありませんのでご安心ください。
+
+## Androidの既知の制限事項 \{#known-limitations-for-android\}
+
+1. アクティブなサブスクリプションのみが復元されます。期限切れのトランザクションは復元されません。
+2. サブスクリプションの最新の更新のみが復元されます。購入の全チェーンは復元されません。
+3. 購入後にプロダクト価格が変更された場合、現在の価格が使用されるため、価格が正しく表示されないことがあります。
+
+:::note
+Androidトランザクションの件数が多い場合、デフォルトのAPI制限を超えないよう、インポートを開始する前に[Google Play Developer APIのクォータ増加をリクエスト](google-play-quota-increase)する必要があるかもしれません。
+:::
+
+## インポートファイルの形式 \{#import-file-format\}
+
+:::tip
+RevenueCatから移行する場合、RevenueCatのエクスポートファイルをそのまま送信できます。変換は不要です。エクスポート手順については[RevenueCatのドキュメント](https://www.revenuecat.com/docs/integrations/scheduled-data-exports)を参照してください。
+:::
+
+以下のルールに従ったファイルでデータを準備してください：
+
+- [ ] ファイル形式は.CSVです。
+- [ ] Android、iOS、Stripeのインポートはそれぞれ別々のファイルを使用します。
+- [ ] すべてのインポートファイルに[必須カラム](importing-historical-data-to-adapty#required-fields)がすべて含まれています。
+- [ ] インポートファイルのカラムにヘッダーがあります。
+- [ ] カラムヘッダーは下記の表の**Column name**列に記載されているものと完全に一致します。タイポがないか確認してください。
+- [ ] 必須でないカラムはファイルに含めなくてもかまいません。データがない場合、空のカラムを追加しないでください。
+- [ ] インポートファイルには、表に記載されていない余分なカラムを含めないでください。含まれている場合は削除してください。
+- [ ] 値はカンマで区切られています。
+- [ ] 値は引用符で囲まれていません。
+- [ ] 1人のユーザーに対して複数の**apple_original_transaction_id**がある場合、それぞれの**apple_original_transaction_id**ごとに別の行として追加してください。そうしないと、消耗型アイテムの購入を復元できない場合があります。
+
+サンプルファイルとして、[iOS](https://raw.githubusercontent.com/adaptyteam/adapty-docs/refs/heads/main/Downloads/adapty_import_ios_sample.csv)および[Android](https://raw.githubusercontent.com/adaptyteam/adapty-docs/refs/heads/main/Downloads/adapty_import_android_sample.csv)のファイルをご利用ください。
+
+### インポートファイルの利用可能なカラム \{#available-import-file-columns\}
+
+| カラム名 | 必須/任意 | 説明 |
+|-----------|--------|-----------|
+| **user_id** | 必須 | ユーザーのID |
+| **apple_original_transaction_id** | iOSで必須 | <p>オリジナルトランザクションIDまたはOTID（[詳細](https://developer.apple.com/documentation/appstoreserverapi/originaltransactionid)）。StoreKit 2のインポートメカニズムで使用されます。1人のユーザーが複数のOTIDを持つ場合、インポートを成功させるには少なくとも1つを提供すれば十分です。</p><p></p><p>**注意：** このインポートにはAdapty Dashboardでアプリ内購入APIの資格情報を設定する必要があります。設定方法は[こちら](app-store-connection-configuration#step-3-upload-in-app-purchase-key-file)をご覧ください。</p> |
+| **google_product_id** | Googleで必須 | Google Play StoreのプロダクトID |
+| **google_purchase_token** | Googleで必須 | ユーザーと購入したアプリ内プロダクトのプロダクトIDを表す一意の識別子 |
+| **google_is_subscription** | Googleで必須 | 使用可能な値は `1` \| `0` |
+| **stripe_token** | Stripeで必須 | 一意の購入を表すStripeオブジェクトのトークン。StripeのSubscription（`sub_...`）またはPayment Intent（`pi_...`）のトークンのいずれかを使用できます。 |
+| **subscription_expiration_date** | 任意 | サブスクリプションの有効期限日（次の課金日）。タイムゾーン付きの日時（2020-12-31T23:59:59-06:00） |
+| **created_at** | 任意 | プロファイル作成日時（2019-12-31 23:59:59-06:00） |
+| **birthday** | 任意 | ユーザーの誕生日（形式：2000-12-31） |
+| **email** | 任意 | ユーザーのメールアドレス |
+| **gender** | 任意 | ユーザーの性別 |
+| **phone_number** | 任意 | ユーザーの電話番号 |
+| **country** | 任意 | 形式：[ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) |
+| **first_name** | 任意 | ユーザーの名 |
+| **last_name** | 任意 | ユーザーの姓 |
+| **last_seen** | 任意 | タイムゾーン付きの日時（2020-12-31T23:59:59-06:00） |
+| **idfa** | 任意 | IDFA（広告識別子）は、Appleがユーザーのデバイスに割り当てるランダムなデバイス識別子です。iOSアプリのみに適用されます |
+| **idfv** | 任意 | IDFV（ベンダー識別子）は、1人の開発者が開発したすべてのアプリに割り当てられる一意のコードです。iOSアプリのみに適用されます |
+| **advertising_id** | 任意 | 広告IDは、AndroidのOSによって割り当てられる一意のコードで、広告主がユーザーのデバイスを一意に識別するために使用することがあります |
+| **amplitude_user_id** | 任意 | AmplitudeのユーザーID |
+| **amplitude_device_id** | 任意 | AmplitudeのデバイスID |
+| **mixpanel_user_id** | 任意 | MixpanelのユーザーID |
+| **appmetrica_profile_id** | 任意 | AppMetricaのユーザープロファイルID |
+| **appmetrica_device_id** | 任意 | AppMetricaのデバイスID |
+| **appsflyer_id** | 任意 | AppsFlyerの一意識別子 |
+| **adjust_device_id** | 任意 | AdjustのデバイスID |
+| **facebook_anonymous_id** | 任意 | Facebookがアプリやウェブサイトに匿名でアクセスするユーザー（Facebookにログインしていない状態）に対して生成する一意識別子 |
+| **branch_id** | 任意 | Branchの一意識別子 |
+| **attribution_source** | 任意 | アトリビューションのソースインテグレーション（例：appsflyer） |
+| **attribution_status** | 任意 | organic |
+| **attribution_channel** | 任意 | トランザクションをもたらしたアトリビューションチャネル |
+| **attribution_campaign** | 任意 | トランザクションをもたらしたアトリビューションキャンペーン |
+| **attribution_ad_group** | 任意 | トランザクションをもたらしたアトリビューション広告グループ |
+| **attribution_ad_set** | 任意 | トランザクションをもたらしたアトリビューション広告セット |
+| **attribution_creative** | 任意 | 広告やマーケティングキャンペーンで使用される特定のビジュアルまたはテキスト要素。クリック、コンバージョン、インストールなどの目的のアクションを促進する効果を測定するために追跡されます |
+| **custom_attributes** | 任意 | キーと値の形式のJSON辞書として最大30個のカスタム属性を定義します：<ul><li>**key**：（文字列）カスタム属性の名前</li><li>**value**：（文字列、整数、浮動小数点数、またはブール値）カスタム属性の値</li></ul><p>形式：`"{'string_value': 'some_value', 'float_value': 123.0, 'int_value': 456}"`</p><p>形式内のダブルクォートとシングルクォートの使い方に注意してください。ブール値と整数は浮動小数点数に変換されることにご注意ください。</p> |
+
+### 必須フィールド \{#required-fields\}
+
+各プラットフォームには、**user_id**と対応するプラットフォーム固有の購入を識別するデータという2つの必須フィールドグループがあります。プラットフォームごとの必須フィールドは下記の表を参照してください。
+
+| プラットフォーム | 必須フィールド |
+|--------|---------------|
+| iOS | <p>user_id</p><p>apple_original_transaction_id</p> |
+| Android | <p>user_id</p><p>google_product_id</p><p>google_purchase_token</p><p>google_is_subscription</p> |
+| Stripe | <p>user_id</p><p>stripe_token</p> |
+
+これらのフィールドがなければ、Adaptyはトランザクションを取得できません。
+
+正確なコホートアナリティクスのために、`created_at`を指定してください。指定しない場合、インストール日は最初の購入日と同じとみなされます。
+
+### Adaptyへのデータインポート \{#import-data-to-adapty\}
+
+[support@adapty.io](mailto:support@adapty.io)または[Adapty Dashboard](https://app.adapty.io/overview)のオンラインチャットからお問い合わせいただき、インポートファイルを共有してください。

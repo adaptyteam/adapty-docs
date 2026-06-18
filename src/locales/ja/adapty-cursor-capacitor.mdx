@@ -1,0 +1,267 @@
+---
+title: "AIアシスタントを使ってCapacitorアプリにAdaptyを統合する"
+description: "Cursor、Context7、ChatGPT、Claude、その他のAIツールを使ってCapacitorアプリにAdaptyを統合するステップバイステップガイド。"
+metadataTitle: "AIアシスタントを使ったCapacitor向けAdapty統合 | Adapty ドキュメント"
+customSlug: /adapty-cursor-capacitor
+displayed_sidebar: sdkcapacitor
+---
+
+このガイドでは、AIコーディングツールを使ってCapacitorアプリにAdaptyを段階的に統合する方法を説明します。適切なAdaptyドキュメントを適切な順序でAIに提供することで、スムーズに進められます。
+
+<SkillPromo />
+
+## はじめる前に：ダッシュボードの設定 \{#before-you-start-dashboard-setup\}
+
+AdaptyはSDKコードを書く前に、いくつかのダッシュボード設定が必要です。インタラクティブなLLMスキルを使うか、ダッシュボードから手動で設定できます。
+
+### スキルを使う方法（推奨） \{#skill-approach-recommended\}
+
+Adapty CLIスキルを使うと、LLMがアプリ、プロダクト、アクセスレベル、ペイウォール、プレースメントを直接設定できます。各ステップでダッシュボードを開く必要がありません。[ストアの接続](integrate-payments)だけダッシュボードで行う必要があります。
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+スキルを追加したら、エージェントで `/adapty-cli` を実行してください。ストアの接続が必要なタイミングも含め、各ステップをガイドしてくれます。
+
+### ダッシュボードを使う方法 \{#dashboard-approach\}
+
+すべて手動で設定したい場合は、コードを書く前に以下の準備が必要です。LLMはダッシュボードの値を調べることはできないため、ご自身で提供する必要があります。
+
+1. **アプリストアを接続する**: Adapty ダッシュボードで **App settings → General** に移動します。CapacitorアプリがiOSとAndroidの両方を対象とする場合は、App StoreとGoogle Playの両方を接続してください。これは購入処理に必須です。
+   [アプリストアを接続する](integrate-payments)
+
+2. **パブリックSDKキーをコピーする**: Adapty ダッシュボードで **App settings → General** に移動し、**API keys** セクションを確認します。コード上では、これが `adapty.activate()` に渡す文字列です。
+
+3. **プロダクトを少なくとも1つ作成する**: Adapty ダッシュボードの **Products** ページでプロダクトを作成します。コードからプロダクトを直接参照することはなく、Adaptyはペイウォールを通じてプロダクトを提供します。
+   [プロダクトを追加する](quickstart-products)
+
+4. **ペイウォールとプレースメントを作成する**: Adapty ダッシュボードの **Paywalls** ページでペイウォールを作成し、**Placements** ページでプレースメントに割り当てます。コード上では、プレースメントIDが `adapty.getPaywall()` に渡す文字列です。
+   [ペイウォールを作成する](quickstart-paywalls)
+
+5. **アクセスレベルを設定する**: Adapty ダッシュボードの **Products** ページでプロダクトごとに設定します。コード上では、`profile.accessLevels['premium']?.isActive` でチェックする文字列です。デフォルトの `premium` アクセスレベルはほとんどのアプリで機能します。プロダクトによってユーザーがアクセスできる機能が異なる場合（例：`basic` プランと `pro` プラン）は、コーディングを始める前に[追加のアクセスレベルを作成](assigning-access-level-to-a-product)してください。
+
+:::tip
+この5つが揃えば、コードを書く準備ができています。LLMに「パブリックSDKキーはX、プレースメントIDはY」と伝えると、正確な初期化とペイウォール取得のコードを生成してもらえます。
+:::
+
+### 準備ができたら設定すること \{#set-up-when-ready\}
+
+コーディングを始める前に必須ではありませんが、統合が成熟するにつれて必要になります：
+
+- **A/B テスト**: **Placements** ページで設定します。コードの変更は不要です。
+  [A/B テスト](ab-tests)
+- **追加のペイウォールとプレースメント**: 異なるプレースメントIDで `getPaywall` の呼び出しを追加します。
+- **アナリティクス連携**: **Integrations** ページで設定します。セットアップは連携先によって異なります。[アナリティクス連携](analytics-integration)と[アトリビューション連携](attribution-integration)を参照してください。
+
+## AdaptyドキュメントをLLMに提供する \{#feed-adapty-docs-to-your-llm\}
+
+### Context7を使う（推奨） \{#use-context7-recommended\}
+
+[Context7](https://context7.com)は、LLMが最新のAdaptyドキュメントに直接アクセスできるMCPサーバーです。質問内容に基づいて適切なドキュメントを自動的に取得するため、URLを手動で貼り付ける必要がありません。
+
+Context7は**Cursor**、**Claude Code**、**Windsurf**、その他のMCP対応ツールで動作します。セットアップするには以下を実行してください：
+
+```
+npx ctx7 setup
+```
+
+これによりエディタが検出され、Context7サーバーが設定されます。手動セットアップの場合は[Context7 GitHubリポジトリ](https://github.com/upstash/context7)を参照してください。
+
+設定後は、プロンプトでAdaptyライブラリを参照してください：
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the Capacitor SDK
+```
+
+:::warning
+Context7を使えばドキュメントのリンクを手動で貼り付ける必要はなくなりますが、実装の順序は重要です。すべてが正しく動作するよう、以下の[実装ウォークスルー](#implementation-walkthrough)をステップごとに確認してください。
+:::
+
+### プレーンテキストのドキュメントを使う \{#use-plain-text-docs\}
+
+Adaptyのドキュメントはプレーンテキストのマークダウンとして取得できます。URLの末尾に `.md` を追加するか、記事タイトルの下にある **Copy for LLM** をクリックしてください。例：[adapty-cursor-capacitor.md](https://adapty.io/docs/ja/adapty-cursor-capacitor.md)
+
+以下の[実装ウォークスルー](#implementation-walkthrough)の各ステージには、貼り付け用の `.md` リンクが含まれた「LLMに送るもの」ブロックがあります。
+
+一度に複数のドキュメントが必要な場合は、以下の[インデックスファイルとプラットフォーム別サブセット](#plain-text-doc-index-files)を参照してください。
+
+## 実装ウォークスルー \{#implementation-walkthrough\}
+
+このガイドの残りでは、実装順序に沿ってAdapty統合を進めていきます。各ステージには、LLMに送るドキュメント、完了時に確認できること、よくある問題が含まれています。
+
+### 統合を計画する \{#plan-your-integration\}
+
+コードに取り掛かる前に、LLMにプロジェクトを分析して実装計画を立てるよう依頼してください。AIツールが計画モードをサポートしている場合（CursorやClaude Codeのプランモードなど）、LLMがコードを書く前にプロジェクト構造とAdaptyドキュメントの両方を確認できるよう、そのモードを使用してください。
+
+購入処理のアプローチをLLMに伝えてください。これによって参照すべきガイドが変わります：
+
+- [**Adapty ペイウォールビルダー**](adapty-paywall-builder): Adaptyのノーコードビルダーでペイウォールを作成し、SDKが自動的にレンダリングします。
+- [**手動作成のペイウォール**](capacitor-making-purchases): コードで独自のペイウォールUIを構築しますが、プロダクトの取得と購入処理にはAdaptyを使います。
+- [**オブザーバーモード**](observer-vs-full-mode): 既存の購入インフラを維持し、アナリティクスと連携にのみAdaptyを使います。
+
+どれを選べばよいかわからない場合は、[クイックスタートの比較表](capacitor-quickstart-paywalls)を参照してください。
+
+### SDKをインストールして設定する \{#install-and-configure-the-sdk\}
+
+npmでAdapty SDKの依存関係を追加し、パブリックSDKキーで有効化します。これが基盤となるため、これなしでは他の機能は動作しません。
+
+**ガイド:** [Adapty SDKのインストールと設定](sdk-installation-capacitor)
+
+LLMに送るもの：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/sdk-installation-capacitor.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** iOSとAndroidの両方でアプリがビルド・起動し、コンソールにAdaptyのアクティベーションログが表示される。
+- **注意点:** "Public API key is missing" → **App settings** の実際のキーでプレースホルダーを置き換えているか確認してください。
+:::
+
+### ペイウォールを表示して購入を処理する \{#show-paywalls-and-handle-purchases\}
+
+プレースメントIDでペイウォールを取得し、表示して、購入イベントを処理します。必要なガイドは購入処理の方法によって異なります。
+
+進めながら各購入をサンドボックスでテストしてください — 最後まで待つ必要はありません。セットアップ手順については[サンドボックスでの購入テスト](test-purchases-in-sandbox)を参照してください。
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**ガイド:**
+- [ペイウォールを使って購入を有効化する（クイックスタート）](capacitor-quickstart-paywalls)
+- [ペイウォールビルダーのペイウォールと設定を取得する](capacitor-get-pb-paywalls)
+- [ペイウォールを表示する](capacitor-present-paywalls)
+- [ペイウォールイベントを処理する](capacitor-handling-events)
+- [ボタンアクションに応答する](capacitor-handle-paywall-actions)
+
+LLMに送るもの：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/capacitor-quickstart-paywalls.md
+- https://adapty.io/docs/ja/capacitor-get-pb-paywalls.md
+- https://adapty.io/docs/ja/capacitor-present-paywalls.md
+- https://adapty.io/docs/ja/capacitor-handling-events.md
+- https://adapty.io/docs/ja/capacitor-handle-paywall-actions.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** 設定したプロダクトとともにペイウォールが表示される。プロダクトをタップするとサンドボックス購入ダイアログが表示される。
+- **注意点:** ペイウォールが空か `getPaywall` エラー → プレースメントIDがダッシュボードと完全に一致しているか、プレースメントにオーディエンスが割り当てられているか確認してください。
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Manual paywalls">
+
+**ガイド:**
+- [カスタムペイウォールで購入を有効化する（クイックスタート）](capacitor-quickstart-manual)
+- [ペイウォールとプロダクトを取得する](fetch-paywalls-and-products-capacitor)
+- [リモートコンフィグで設計されたペイウォールをレンダリングする](present-remote-config-paywalls-capacitor)
+- [購入を行う](capacitor-making-purchases)
+- [購入を復元する](capacitor-restore-purchase)
+
+LLMに送るもの：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/capacitor-quickstart-manual.md
+- https://adapty.io/docs/ja/fetch-paywalls-and-products-capacitor.md
+- https://adapty.io/docs/ja/present-remote-config-paywalls-capacitor.md
+- https://adapty.io/docs/ja/capacitor-making-purchases.md
+- https://adapty.io/docs/ja/capacitor-restore-purchase.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** カスタムペイウォールにAdaptyから取得したプロダクトが表示される。プロダクトをタップするとサンドボックス購入ダイアログが表示される。
+- **注意点:** プロダクト配列が空 → ダッシュボードでペイウォールにプロダクトが割り当てられているか、プレースメントにオーディエンスが設定されているか確認してください。
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**ガイド:**
+- [オブザーバーモードの概要](observer-vs-full-mode)
+- [オブザーバーモードを実装する](implement-observer-mode-capacitor)
+- [オブザーバーモードでトランザクションを報告する](report-transactions-observer-mode-capacitor)
+
+LLMに送るもの：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/observer-vs-full-mode.md
+- https://adapty.io/docs/ja/implement-observer-mode-capacitor.md
+- https://adapty.io/docs/ja/report-transactions-observer-mode-capacitor.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** 既存の購入フローでサンドボックス購入を行った後、Adapty ダッシュボードの **Event Feed** にトランザクションが表示される。
+- **注意点:** イベントが表示されない → Adaptyにトランザクションを報告しているか、両ストアのサーバー通知が設定されているか確認してください。
+:::
+
+</TabItem>
+
+</Tabs>
+
+### サブスクリプションステータスを確認する \{#check-subscription-status\}
+
+購入後、ユーザープロファイルのアクティブなアクセスレベルを確認して、プレミアムコンテンツへのアクセスを制御します。
+
+**ガイド:** [サブスクリプションステータスを確認する](capacitor-check-subscription-status)
+
+LLMに送るもの：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/capacitor-check-subscription-status.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** サンドボックス購入後、`profile.accessLevels['premium']?.isActive` が `true` を返す。
+- **注意点:** 購入後に `accessLevels` が空 → ダッシュボードでプロダクトにアクセスレベルが割り当てられているか確認してください。
+:::
+
+### ユーザーを識別する \{#identify-users\}
+
+アプリのユーザーアカウントをAdaptyプロファイルにリンクし、デバイスをまたいで購入が引き継がれるようにします。
+
+:::important
+アプリに認証機能がない場合はこのステップをスキップしてください。
+:::
+
+**ガイド:** [ユーザーを識別する](capacitor-quickstart-identify)
+
+LLMに送るもの：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/capacitor-quickstart-identify.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** `adapty.identify()` を呼び出した後、ダッシュボードの **Profiles** セクションにカスタムユーザーIDが表示される。
+- **注意点:** 匿名プロファイルへのアトリビューションを避けるため、アクティベーション後、ペイウォールの取得前に `identify` を呼び出してください。
+:::
+
+### リリース準備をする \{#prepare-for-release\}
+
+サンドボックスで統合が正常に動作したら、リリースチェックリストを確認してすべてが本番環境に対応できているか確認しましょう。
+
+**ガイド:** [リリースチェックリスト](release-checklist)
+
+LLMに送るもの：
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/ja/release-checklist.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** すべてのチェックリスト項目を確認済み：ストア接続、サーバー通知、購入フロー、アクセスレベルのチェック、プライバシー要件。
+- **注意点:** サーバー通知が未設定 → **App settings → iOS SDK** でApp Store Server Notificationsを設定し、**App settings → Android SDK** でGoogle Play Real-Time Developer Notificationsを設定してください。
+:::
+
+## プレーンテキストのドキュメントインデックスファイル \{#plain-text-doc-index-files\}
+
+個別のページを超えてLLMにより広いコンテキストを提供する必要がある場合、Adaptyのすべてのドキュメントを一覧表示または統合したインデックスファイルを提供しています：
+
+- [`llms.txt`](https://adapty.io/docs/ja/llms.txt): `.md` リンク付きですべてのページを一覧表示します。LLMがウェブサイトにアクセスできるようにするための[新しい標準](https://llmstxt.org/)です。一部のAIエージェント（ChatGPTなど）では `llms.txt` をダウンロードしてチャットにファイルとしてアップロードする必要があります。
+- [`llms-full.txt`](https://adapty.io/docs/ja/llms-full.txt): Adaptyのドキュメントサイト全体を1つのファイルにまとめたものです。非常に大きなファイルなので、全体像が必要な場合にのみ使用してください。
+- Capacitor専用の [`capacitor-llms.txt`](https://adapty.io/docs/ja/capacitor-llms.txt) と [`capacitor-llms-full.txt`](https://adapty.io/docs/ja/capacitor-llms-full.txt): サイト全体と比べてトークンを節約できる、プラットフォーム別のサブセットです。

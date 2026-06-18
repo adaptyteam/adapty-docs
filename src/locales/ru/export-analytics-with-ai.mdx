@@ -1,0 +1,76 @@
+---
+title: "Задавайте вопросы ИИ о своей аналитике"
+description: "Запрашивайте аналитику Adapty на естественном языке с помощью ИИ-агента, используя Export Analytics API."
+metadataTitle: "Задавайте вопросы ИИ о своей аналитике | Документация Adapty"
+keywords: ['ask ai about analytics', 'adapty analytics ai', 'query analytics with ai', 'export analytics api', 'analytics ai agent', 'mcp', 'llm']
+---
+Задайте вопрос AI-агенту о вашей аналитике Adapty на обычном языке — выручка, конверсии, удержание, LTV — и он сам подтянет нужные цифры. Подключите инструмент с доступом к API к [Export Analytics API](export-analytics-api), и он будет запрашивать ваши метрики по требованию.
+## Что можно запрашивать \{#what-you-can-ask-about\}
+
+Export Analytics API возвращает те же метрики, что вы видите на графиках дашборда Adapty. Для каждой метрики предусмотрена отдельная операция:
+| Метрика | Что охватывает | Операция |
+| --- | --- | --- |
+| Revenue, MRR, ARR, ARPU | Деньги, заработанные за период, сгруппированные по периоду, стране или кампании | [retrieveAnalyticsData](https://adapty.io/docs/ru/api-export-analytics/operations/retrieveAnalyticsData.md) |
+| Удержание когорты | Как долго подписчики из данной когорты продолжают платить | [retrieveCohortData](https://adapty.io/docs/ru/api-export-analytics/operations/retrieveCohortData.md) |
+| Конверсии | Сколько пользователей переходит с одного шага или канала на следующий | [retrieveConversionData](https://adapty.io/docs/ru/api-export-analytics/operations/retrieveConversionData.md) |
+| Отток и воронка | Где пользователи отваливаются и как быстро отписываются | [retrieveFunnelData](https://adapty.io/docs/ru/api-export-analytics/operations/retrieveFunnelData.md) |
+| Пожизненная ценность (LTV) | Средняя выручка на пользователя по сегментам за период | [retrieveLTVData](https://adapty.io/docs/ru/api-export-analytics/operations/retrieveLTVData.md) |
+| Удержание | Доля пользователей, остающихся активными спустя N дней | [retrieveRetentionData](https://adapty.io/docs/ru/api-export-analytics/operations/retrieveRetentionData.md) |
+Полный список параметров и фильтров см. в [справочнике API](api-export-analytics).
+## Прежде чем начать \{#before-you-start\}
+
+Вам понадобятся три вещи:
+- **Аккаунт Adapty с данными**: API возвращает те же метрики, что и графики на дашборде, поэтому ваше приложение должно уже собирать аналитику.
+- **Секретный API-ключ**: Найдите его в [App settings → General](https://app.adapty.io/settings/general), в поле **Secret key**. Ключи привязаны к конкретному приложению, поэтому используйте отдельный ключ для каждого из них. Сохраните ключ в переменную окружения (например, `ADAPTY_SECRET_KEY`), чтобы агент мог его считать без необходимости вставлять в чат вручную.
+- **AI-инструмент с возможностью вызова API**: Например, Claude Code, Cursor или Claude Desktop с инструментом fetch. Обычные чат-инструменты вроде claude.ai или ChatGPT не могут напрямую обращаться к API.
+:::note
+export-analytics-secret-key.webp
+:::
+## Дайте агенту спецификацию API \{#give-your-agent-the-api-spec\}
+
+[Спецификация OpenAPI](https://adapty.io/docs/ru/api-specs/export-analytics-api.yaml) описывает все эндпоинты, заголовок аутентификации, тело запроса и примеры ответов. Получив спецификацию, агент самостоятельно формирует корректные запросы — без написания кода с вашей стороны.
+
+Передайте агенту спецификацию по URL:
+- **Вставьте URL**: Если ваш агент умеет загружать URL, дайте ему `https://adapty.io/docs/ru/api-specs/export-analytics-api.yaml` и попросите прочитать спецификацию.
+- **Используйте инструмент fetch**: Если у вашего агента есть инструмент для загрузки URL (например, MCP fetch server), укажите ему тот же URL.
+
+Спецификация задаёт базовый URL `https://api-admin.adapty.io`, так что агенту будет достаточно этого, как только ключ окажется в переменных окружения.
+## Задайте вопрос о своих данных \{#ask-about-your-data\}
+
+Загрузив спецификацию и указав ключ в переменной окружения, описывайте нужную метрику на обычном языке.
+
+Примеры запросов:
+```
+What was my MRR at the end of each month this year, and how does it compare to last year?
+
+Show my trial-to-paid conversion rate for the last 90 days, broken down by product.
+
+Which countries drive the most revenue from my yearly subscription? Top 10.
+
+How is week-1 retention trending for subscribers who started in the last 6 months?
+
+What's the refund rate on my annual plan since launch, by month?
+
+Compare LTV for paid-campaign users vs. organic over the last year, and export it as CSV.
+```
+
+Агент сопоставляет ваш запрос с нужной операцией, считывает ключ из переменной окружения и возвращает данные. По умолчанию ответы приходят в формате JSON. Если нужен файл, готовый для работы в таблицах, попросите CSV — агент укажет `format` со значением `csv` в теле запроса.
+
+:::warning
+Храните секретный ключ в переменной окружения — не вставляйте его в чат и не коммитьте в файл правил. Ключи привязаны к конкретному приложению, поэтому если ключ утёк, смените его в **Settings → General**. См. [ротация API-ключей](export-analytics-api-authorization#rotate-api-keys).
+:::
+## Настройте один раз для повторного использования \{#set-up-once-for-repeated-use\}
+
+Чтобы не повторять настройку каждый раз, сохраните спецификацию и ключ там, где агент сможет их повторно использовать:
+- **Сохраните ссылку на спецификацию**: добавьте URL спецификации в правила или файл памяти вашего агента (например, `CLAUDE.md` или файл правил Cursor), чтобы он загружался при каждой сессии.
+- **Храните ключ в переменных окружения**: добавьте `ADAPTY_SECRET_KEY` в профиль shell или хранилище секретов инструмента, чтобы больше не вводить его вручную.
+- **Сохраните часто используемые промпты или создайте кастомный скилл**: держите типовые вопросы в виде сохранённых промптов или оберните их в кастомный скилл или slash-команду, чтобы агент запускал отчёт по запросу.
+## Ограничения \{#limits\}
+
+Учитывайте следующие ограничения:
+
+- **Лимит запросов**: API допускает 2 запроса в секунду на один API-ключ. При превышении лимита возвращается ошибка `429 Too Many Requests`. Настройте агента так, чтобы он ожидал и повторял запрос при получении `429`.
+- **Ключи привязаны к приложению**: Каждый ключ работает только с одним приложением. Чтобы получить данные по нескольким приложениям, используйте соответствующий ключ для каждого из них.
+- **Формат вывода**: По умолчанию ответы возвращаются в формате JSON. Чтобы экспортировать данные в CSV, укажите `format: csv` в теле запроса.
+
+Полное описание правил авторизации и формата запросов см. в разделе [Авторизация и формат запроса](export-analytics-api-authorization).

@@ -1,0 +1,472 @@
+---
+title: "Android - ペイウォールイベントの処理"
+description: "AdaptyのイベントトラッキングツールでAndroidのサブスクリプションイベントを効率的に処理しましょう。"
+metadataTitle: "Androidでのイベント処理 | Adapty ドキュメント"
+toc_max_heading_level: 4
+keywords: ['AdaptyUiEventListener', 'onActionPerformed', 'onProductSelected', 'onPurchaseStarted', 'onPurchaseFinished', 'onPurchaseFailure', 'onRestoreSuccess', 'onRestoreFailure', 'onAwaitingSubscriptionUpdateParams', 'onLoadingProductsFailure', 'onRenderingError']
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+import PaywallAction from '@site/src/locales/ja/reusable/PaywallAction.md';
+
+:::important
+このガイドでは、購入・復元・プロダクト選択・ペイウォールレンダリングに関するイベント処理について説明します。ボタン操作（ペイウォールのクローズ、リンクを開くなど）も別途実装が必要です。詳しくは[ボタンアクションの処理ガイド](android-handle-paywall-actions)を参照してください。
+:::
+
+[ペイウォールビルダー](adapty-paywall-builder)で設定したペイウォールは、購入や復元のために追加のコードは不要です。ただし、アプリが対応できるいくつかのイベントが発生します。これらのイベントには、ボタン操作（閉じるボタン、URL、プロダクト選択など）や、ペイウォール上の購入関連アクションの通知が含まれます。以下でこれらのイベントへの対応方法を確認してください。
+
+:::warning
+このガイドは、Adapty SDK v3.0以降が必要な**新しいペイウォールビルダーのペイウォール**専用です。
+:::
+
+<SampleApp />
+
+購入画面で発生する処理を制御・監視したい場合は、`AdaptyUiEventListener` のメソッドを実装してください。
+
+一部のケースでデフォルトの動作を維持したい場合は、`AdaptyUiDefaultEventListener` を継承して、変更したいメソッドだけをオーバーライドできます。
+
+以下は `AdaptyUiDefaultEventListener` のデフォルト実装です。
+
+### ユーザー起因のイベント \{#user-generated-events\}
+
+#### プロダクト選択 \{#product-selection\}
+
+プロダクトが購入のために選択された場合（ユーザーまたはシステムによる）、このメソッドが呼び出されます：
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onProductSelected(
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### 購入開始 \{#started-purchase\}
+
+ユーザーが購入プロセスを開始すると、このメソッドが呼び出されます：
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseStarted(
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+このメソッドはObserverモードでは呼び出されません。詳しくは[Android - ObserverモードでのペイウォールビルダーペイウォールのPresent](android-present-paywall-builder-paywalls-in-observer-mode)を参照してください。
+
+#### 購入成功・キャンセル・保留 \{#successful-canceled-or-pending-purchase\}
+
+購入が成功すると、このメソッドが呼び出されます：
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseFinished(
+    purchaseResult: AdaptyPurchaseResult,
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {
+    if (purchaseResult !is AdaptyPurchaseResult.UserCanceled)
+        context.getActivityOrNull()?.onBackPressed()
+}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+// Successful purchase
+{
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Cancelled purchase
+{
+  "purchaseResult": {
+    "type": "UserCanceled"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Pending purchase
+{
+  "purchaseResult": {
+    "type": "Pending"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+この場合は画面を閉じることをお勧めします。
+
+このメソッドはObserverモードでは呼び出されません。詳しくは[Android - ObserverモードでのペイウォールビルダーペイウォールのPresent](android-present-paywall-builder-paywalls-in-observer-mode)を参照してください。
+
+#### 購入失敗 \{#failed-purchase\}
+
+エラーにより購入が失敗した場合、このメソッドが呼び出されます。対象はGoogle Play Billing のエラー（支払い制限、無効なプロダクト、ネットワーク障害）、トランザクション検証失敗、システムエラーです。なお、ユーザーによるキャンセルはこのメソッドではなく `onPurchaseFinished` がキャンセル結果付きで呼び出され、保留中の支払いもこのメソッドは呼び出されません。
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseFailure(
+    error: AdaptyError,
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+このメソッドはObserverモードでは呼び出されません。詳しくは[Android - ObserverモードでのペイウォールビルダーペイウォールのPresent](android-present-paywall-builder-paywalls-in-observer-mode)を参照してください。
+
+#### Webペイメントナビゲーション完了 \{#finished-web-payment-navigation\}
+
+特定のプロダクトに対して[Webペイウォール](web-paywall)を開こうとした後にこのメソッドが呼び出されます。ナビゲーションの成功・失敗どちらの場合も対象です：
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onFinishWebPaymentNavigation(
+    product: AdaptyPaywallProduct?,
+    error: AdaptyError?,
+    context: Context,
+) {}
+```
+
+**パラメーター：**
+
+| パラメーター | 説明 |
+|:------------|:-----|
+| **product** | Webペイウォールが開かれた `AdaptyPaywallProduct`。`null` の場合があります。 |
+| **error** | Webペイウォールのナビゲーションが失敗した場合の `AdaptyError` オブジェクト。成功した場合は `null`。 |
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_navigation_failed",
+    "message": "Failed to open web paywall",
+    "details": {
+      "underlyingError": "Browser unavailable"
+    }
+  }
+}
+```
+</Details>
+
+#### 購入復元成功 \{#successful-restore\}
+
+購入の復元が成功すると、このメソッドが呼び出されます：
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRestoreSuccess(
+    profile: AdaptyProfile,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+ユーザーが必要な `accessLevel` を持っている場合は、画面を閉じることをお勧めします。確認方法については[サブスクリプションのステータス](android-listen-subscription-changes)を参照してください。
+
+#### 購入復元失敗 \{#failed-restore\}
+
+`Adapty.restorePurchases()` が失敗した場合、このメソッドが呼び出されます：
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRestoreFailure(
+    error: AdaptyError,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### サブスクリプションのアップグレード \{#upgrade-subscription\}
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="new" label="SDK version 3.10.0 or later" default>
+
+ユーザーが別のサブスクリプションがアクティブな状態で新しいサブスクリプションを購入しようとした場合、このメソッドをオーバーライドして新しい購入の処理方法を制御できます。2つの選択肢があります：
+
+1. **現在のサブスクリプションを新しいものに置き換える**：
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingPurchaseParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
+): AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked {
+    onPurchaseParamsReceived(
+        AdaptyPurchaseParameters.Builder()
+            .withSubscriptionUpdateParams(AdaptySubscriptionUpdateParameters(...))
+            .build()
+    )
+    return AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked
+}
+```
+
+2. **両方のサブスクリプションを維持する**（新しいものを別途追加する）：
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingPurchaseParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
+): AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked {
+    onPurchaseParamsReceived(AdaptyPurchaseParameters.Empty)
+    return AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked
+}
+```
+
+:::note
+このメソッドをオーバーライドしない場合、デフォルトの動作は両方のサブスクリプションをアクティブに維持します（`AdaptyPurchaseParameters.Empty` を使用した場合と同等です）。
+:::
+
+必要に応じて追加の購入パラメーターを設定することもできます：
+```kotlin
+AdaptyPurchaseParameters.Builder()
+    .withSubscriptionUpdateParams(AdaptySubscriptionUpdateParameters(...)) // 任意 - 現在のサブスクリプションを置き換える場合
+    .withOfferPersonalized(true) // 任意 - パーソナライズされた価格設定を使用する場合
+    .build()
+```
+
+</TabItem>
+<TabItem value="old" label="SDK version earlier than 3.10.0" default>
+
+別のサブスクリプションがアクティブな状態で新しいサブスクリプションが購入された場合、このメソッドをオーバーライドして現在のサブスクリプションを新しいものに置き換えます。アクティブなサブスクリプションをそのままにして新しいものを別途追加する場合は、`onSubscriptionUpdateParamsReceived(null)` を呼び出してください：
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingSubscriptionUpdateParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onSubscriptionUpdateParamsReceived: SubscriptionUpdateParamsCallback,
+) {
+    onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
+}
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_yearly",
+    "localizedTitle": "Premium Yearly",
+    "localizedDescription": "Premium subscription for 1 year",
+    "localizedPrice": "$99.99",
+    "price": 99.99,
+    "currencyCode": "USD"
+  },
+  "subscriptionUpdateParams": {
+    "replacementMode": "with_time_proration"
+  }
+}
+```
+</Details>
+
+### データ取得とレンダリング \{#data-fetching-and-rendering\}
+
+#### プロダクト読み込みエラー \{#product-loading-errors\}
+
+初期化時にプロダクトを渡さない場合、AdaptyUI はサーバーから必要なオブジェクトを自動的に取得します。この操作が失敗した場合、AdaptyUI はこのメソッドを呼び出してエラーを通知します：
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onLoadingProductsFailure(
+    error: AdaptyError,
+    context: Context,
+): Boolean = false
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+`true` を返すと、AdaptyUI は2秒後にリクエストを再試行します。
+
+#### レンダリングエラー \{#rendering-errors\}
+
+インターフェースのレンダリング中にエラーが発生した場合、このメソッドを呼び出して報告されます：
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRenderingError(
+    error: AdaptyError,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+通常の状況ではこのようなエラーは発生しないため、遭遇した場合はお知らせください。

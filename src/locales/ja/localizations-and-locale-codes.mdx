@@ -1,0 +1,64 @@
+---
+title: "iOS SDKでローカライゼーションとロケールコードを使用する"
+description: "iOSアプリでグローバルなユーザーにリーチするために、アプリのローカライゼーションとロケールコードを管理します。"
+metadataTitle: "ローカライゼーションとロケールコードの管理 | Adapty ドキュメント"
+---
+
+## これが重要な理由 \{#why-this-is-important\}
+
+ロケールコードが関係するシナリオはいくつかあります。たとえば、アプリの現在のローカライゼーションに対応する正しいペイウォールを取得しようとする場合などです。
+
+ロケールコードは複雑で、プラットフォームによって異なることがあります。そのため、Adaptyがサポートするすべてのプラットフォームに対して独自の内部標準を設けています。ただし、コードが複雑であるため、サーバーに何を送信しているのか、そして次に何が起こるのかを正確に把握することが重要です。これにより、期待通りの結果を常に受け取ることができます。
+
+## Adaptyのロケールコード標準 \{#locale-code-standard-at-adapty\}
+
+ロケールコードについて、Adaptyはわずかに変更した [BCP 47標準](https://en.wikipedia.org/wiki/IETF_language_tag) を使用しています。各コードはハイフンで区切られた小文字のサブタグで構成されています。例：`en`（英語）、`pt-br`（ポルトガル語（ブラジル））、`zh`（簡体字中国語）、`zh-hant`（繁体字中国語）。
+
+## ロケールコードのマッチング \{#locale-code-matching\}
+
+Adaptyがクライアント側SDKからロケールコード付きの呼び出しを受け取り、ペイウォールの対応するローカライゼーションを検索する際、以下の処理が行われます：
+
+1. 受信したロケール文字列が小文字に変換され、すべてのアンダースコア（`_`）がハイフン（`-`）に置き換えられます
+2. 完全に一致するロケールコードのローカライゼーションを検索します
+3. 一致するものが見つからない場合、最初のハイフンの前の部分文字列（`pt-br`の場合は`pt`）を取り出し、一致するローカライゼーションを検索します
+4. それでも一致するものが見つからない場合、デフォルトの`en`ローカライゼーションを返します
+
+これにより、`'pt_BR'`を送信したiOSデバイス、`pt-BR`を送信したAndroidデバイス、`pt-br`を送信した別のデバイスは、すべて同じ結果を受け取ります。
+
+## ローカライゼーションの実装：推奨方法 \{#implementing-localizations-recommended-way\}
+
+ローカライゼーションについて検討しているなら、すでにプロジェクト内のローカライズされた文字列ファイルを扱っているでしょう。その場合、各ローカライゼーションに対応するファイルに、意図したAdaptyロケールコードをキーと値のペアとして配置することをお勧めします。そして、次のようにSDKを呼び出す際にそのキーの値を取得します：
+
+```swift showLineNumbers
+// 1. Modify your Localizable.strings files
+
+/*
+Localizable.strings - Spanish
+*/
+adapty_paywalls_locale = "es";
+/*
+Localizable.strings - Portuguese (Brazil)
+*/
+adapty_paywalls_locale = "pt-br";
+// 2. Extract and use the locale code
+let locale = NSLocalizedString("adapty_paywalls_locale", comment: "")
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+これにより、アプリのすべてのユーザーに対してどのローカライゼーションが取得されるかを完全にコントロールできます。
+
+## ローカライゼーションの実装：別の方法 \{#implementing-localizations-the-other-way\}
+
+ロケールコードをすべてのローカライゼーションに明示的に定義しなくても、類似した（ただし同一ではない）結果を得ることができます。その場合、プラットフォームが提供する他のオブジェクトからロケールコードを抽出することになります。例：
+
+```swift showLineNumbers
+let locale = Locale.current.identifier
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+いくつかの理由から、このアプローチは推奨しません：
+
+1. iOSでは、優先言語と現在のロケールは同一ではありません。ローカライゼーションを正しく選択したい場合、Appleのロジックに依存するか（ローカライズされた文字列ファイルを使用する推奨アプローチでは自動的に機能します）、それを再現する必要があります。
+2. Adaptyのサーバーが何を受け取るかを予測するのが難しいです。たとえばiOSでは、デバイスから`ar_OM@numbers='latn'`のようなロケールを取得してサーバーに送信することがあります。この場合、期待していた`ar-om`ローカライゼーションではなく、`ar`が返ってくる可能性があり、意図しない結果になることがあります。
+
+このアプローチを使用する場合は、関連するすべてのユースケースを網羅していることを確認してください。

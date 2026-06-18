@@ -1,0 +1,350 @@
+---
+title: "iOS SDKでリモートコンフィグペイウォールのペイウォールとプロダクトを取得する"
+description: "AdaptyのiOS SDKでペイウォールとプロダクトを取得し、ユーザーの収益化を向上させます。"
+metadataTitle: "ペイウォールとプロダクトの取得 | Adapty ドキュメント"
+keywords: ['getFlow', 'getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getFlowForDefaultAudience', 'getPaywallForDefaultAudience', 'remote config', 'cache']
+rank: 100
+---
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+
+<SDKv4>
+リモートコンフィグやカスタムペイウォールを表示する前に、それらの情報を取得する必要があります。このトピックはリモートコンフィグとカスタムペイウォールに関するものです。**Flow Builder** または **Paywall Builder** でカスタマイズされたフローやペイウォールの取得方法については、<InlineTooltip tooltip="フローとペイウォールのアプリ内での取得方法に関するガイド">[iOS](get-pb-paywalls)、[Android](android-get-pb-paywalls)、[React Native](react-native-get-pb-paywalls)、[Flutter](flutter-get-pb-paywalls)、および [Unity](unity-get-pb-paywalls)</InlineTooltip>をご覧ください。
+
+<SampleApp />
+<details>
+   <summary>モバイルアプリでフローとプロダクトの取得を開始する前に（クリックして展開）</summary>
+
+   1. Adapty ダッシュボードで[プロダクトを作成](create-product)する。
+
+2. Adapty ダッシュボードで[フローまたはペイウォールを作成し、プロダクトを組み込む](create-paywall)。
+
+3. Adapty ダッシュボードで[プレースメントを作成し、フローまたはペイウォールをプレースメントに組み込む](create-placement)。
+
+4. モバイルアプリに[Adapty SDK をインストール](sdk-installation-ios)する。
+</details>
+## フローの情報を取得する \{#fetch-flow-information\}
+
+Adapty では、[プロダクト](product)は App Store と Google Play 両方のプロダクトを組み合わせたものです。これらのクロスプラットフォームプロダクトはフローやペイウォールに統合され、モバイルアプリの特定のプレースメントに表示できます。
+
+プロダクトを表示するには、`getFlow` メソッドを使って[プレースメント](placements)のいずれかから `AdaptyFlow` を取得する必要があります。
+:::important
+**プロダクトIDをハードコードしないでください。** ハードコードすべきIDはプレースメントIDのみです。フローはリモートで設定されるため、プロダクトの数や利用可能なオファーはいつでも変更される可能性があります。アプリはこれらの変更を動的に処理する必要があります。つまり、今日フローが2つのプロダクトを返し、明日3つを返す場合でも、コードを変更せずにすべてを表示できなければなりません。
+:::
+
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+    // the requested flow
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID") { result in
+    switch result {
+        case let .success(flow):
+            // the requested flow
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDK はサーバーからデータの読み込みを試み、失敗した場合はキャッシュされたデータを返します。この設定を推奨します。ユーザーが常に最新のデータを取得できるためです。</p><p></p><p>ただし、ユーザーのインターネット接続が不安定な場合は、`.returnCacheDataElseLoad` を使用することを検討してください。キャッシュが存在する場合はキャッシュデータを返します。この場合、最新データが得られないことがありますが、接続状況にかかわらず読み込みが速くなります。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを避けるために活用しても安全です。</p><p></p><p>キャッシュはアプリの再起動後も保持され、アプリの再インストール時または手動でクリアした場合にのみ削除されます。</p><p></p><p>Adapty SDK はフローとペイウォールを 2 つのレイヤーで保存しています。上記の定期更新されるキャッシュと[フォールバックペイウォール](fallback-paywalls)です。また、フローとペイウォールをより速く取得するために CDN を使用し、CDN が利用できない場合に備えてスタンドアロンのフォールバックサーバーも用意しています。</p> |
+| **loadTimeout** | デフォルト: 5 秒 | <p>このメソッドのタイムアウト上限を設定します。タイムアウトに達した場合、キャッシュデータまたはローカルフォールバックが返されます。</p><p></p><p>まれに、内部で複数のリクエストが行われるため、`loadTimeout` で指定した時間よりわずかに遅れてタイムアウトする場合があります。</p> |
+:::note
+v4 では、`locale` パラメータは `getFlow` から移動し、`getFlowConfiguration`（AdaptyUI でレンダリングする場合のみ使用）に設定するようになりました。カスタムペイウォールの場合、利用可能なすべてのロケールは `flow.remoteConfigs` にまとめて返されるため、ユーザーのデバイスまたはアプリの設定に合ったロケールを選んでください。
+:::
+プロダクトIDをハードコードしないでください！フローはリモートで設定されるため、利用可能なプロダクト、プロダクトの数、特典（無料トライアルなど）は随時変更される可能性があります。こうしたシナリオに対応できるようコードを作成してください。
+
+たとえば、最初に2つのプロダクトを取得した場合、アプリはそれら2つを表示します。しかし後に3つのプロダクトを取得した場合は、コードを変更することなく3つすべてを表示できる必要があります。ハードコードが必要なのはプレースメントIDだけです。
+
+レスポンスパラメーター：
+| パラメーター | 説明                                                                                                                                                  |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flow      | `AdaptyFlow` オブジェクト。プレースメント、識別子（`id`、`variationId`）、名前、設定済みロケールごとのエントリを含む `remoteConfigs` 配列、および `hasViewConfiguration` フラグを保持します。フローのプロダクトを取得するには `getPaywallProducts(flow:)` を呼び出してください。 |
+## プロダクトを取得する \{#fetch-products\}
+
+フローを取得したら、そのフローに対応するプロダクトの配列を取得できます：
+
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let products = try await Adapty.getPaywallProducts(flow: flow)
+    // the requested products array
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+```swift showLineNumbers
+Adapty.getPaywallProducts(flow: flow) { result in
+    switch result {
+    case let .success(products):
+        // the requested products array
+    case let .failure(error):
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+レスポンスパラメーター:
+| パラメータ | 説明                                                                                                                                                                                 |
+| :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Products  | [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) オブジェクトのリスト。プロダクト識別子、プロダクト名、価格、通貨、サブスクリプション期間、その他いくつかのプロパティを含みます。 |
+独自のペイウォールデザインを実装する場合、[`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) オブジェクトから以下のプロパティにアクセスする必要があります。よく使われるプロパティを以下に示しますが、利用可能なすべてのプロパティの詳細については、リンク先のドキュメントを参照してください。
+| プロパティ | 説明 |
+|---|---|
+| **Title** | プロダクトのタイトルを表示するには、`product.localizedTitle` を使用してください。ローカライズはデバイスのロケールではなく、ユーザーが選択したストアの国に基づきます。 |
+| **Price** | ローカライズされた価格を表示するには、`product.localizedPrice` を使用してください。このローカライズはデバイスのロケール情報に基づきます。また、`product.price` で価格を数値として取得することもできます。値はローカル通貨で提供されます。対応する通貨記号を取得するには、`product.currencySymbol` を使用してください。 |
+| **Subscription Period** | 期間（週、月、年など）を表示するには、`product.localizedSubscriptionPeriod` を使用してください。このローカライズはデバイスのロケールに基づきます。サブスクリプション期間をプログラムで取得するには、`product.subscriptionPeriod` を使用してください。そこから `unit` 列挙型にアクセスして期間の長さ（day、week、month、year、または unknown）を取得できます。`numberOfUnits` の値で期間単位の数を取得できます。たとえば、四半期ごとのサブスクリプションの場合、`unit` プロパティには `.month`、`numberOfUnits` プロパティには `3` が表示されます。 |
+| **Introductory Offer** | サブスクリプションに初回オファーが含まれていることを示すバッジやインジケーターを表示するには、`product.subscriptionOffer` プロパティを確認してください。このオブジェクトには以下の便利なプロパティがあります：<br/>• `offerType`：`introductory`、`promotional`、`winBack` の値を持つ列挙型。無料トライアルや初期割引サブスクリプションは `introductory` タイプになります。<br/>• `price`：割引価格を数値で表したもの。無料トライアルの場合は `0` を確認してください。<br/>• `localizedPrice`：ユーザーのロケールに合わせてフォーマットされた割引価格。<br/>• `localizedNumberOfPeriods`：オファーの期間をデバイスのロケールでローカライズした文字列。たとえば、3日間のトライアルオファーの場合、このフィールドには `3 days` と表示されます。<br/>• `subscriptionPeriod`：オファー期間の個別の詳細はこのプロパティで取得することもできます。オファーに対してもサブスクリプション期間と同様に機能します。<br/>• `localizedSubscriptionPeriod`：ユーザーのロケールに合わせてフォーマットされた割引のサブスクリプション期間。 |
+:::note
+v4では、`getPaywallProducts(flow:)` が返すすべてのプロダクトにオファーの適格性情報が含まれています。v3にあった `getPaywallProductsWithoutDeterminingOffer` の個別呼び出しは削除されました。
+:::
+## デフォルトオーディエンスフローでフロー取得を高速化する \{#speed-up-flow-fetching-with-default-audience-flow\}
+
+通常、フローはほぼ瞬時に取得されるため、この処理を高速化することを特に気にする必要はありません。ただし、オーディエンスやプレースメントが多数あり、ユーザーのインターネット接続が不安定な場合、フローの取得に想定以上の時間がかかることがあります。そのような状況では、何も表示しないよりもデフォルトフローを表示して、スムーズなユーザー体験を確保したい場合があるでしょう。
+これに対処するには、`getFlowForDefaultAudience` メソッドを使用できます。このメソッドは、指定されたプレースメントの **All Users** オーディエンス向けのフローを取得します。ただし、推奨されるアプローチは `getFlow` メソッドを使用してフローを取得することである点を理解しておくことが重要です。詳細は上記の[フロー情報の取得](fetch-paywalls-and-products#fetch-flow-information)セクションを参照してください。
+
+:::warning
+`getFlow` の使用を推奨する理由
+
+`getFlowForDefaultAudience` メソッドにはいくつかの重大な欠点があります：
+- **後方互換性の問題**: 現在のバージョンと将来のバージョンで異なるフローを表示する必要がある場合、課題に直面する可能性があります。現在の（レガシー）バージョンに対応したフローを設計するか、現在の（レガシー）バージョンのユーザーがレンダリングされないフローで問題に遭遇することを許容するかのどちらかになります。
+- **ターゲティングの喪失**: すべてのユーザーが **All Users** オーディエンス向けに設計された同じフローを見ることになるため、パーソナライズされたターゲティング（国、マーケティングアトリビューション、独自のカスタム属性に基づくターゲティングを含む）が失われます。
+これらのデメリットを受け入れてでもフローの取得を高速化したい場合は、以下のように `getFlowForDefaultAudience` メソッドを使用してください。それ以外の場合は、[上記](fetch-paywalls-and-products#fetch-flow-information)の `getFlow` を使用してください。
+:::
+
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let flow = try await Adapty.getFlowForDefaultAudience(placementId: "YOUR_PLACEMENT_ID")
+   // the requested flow
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+```swift showLineNumbers
+Adapty.getFlowForDefaultAudience(placementId: "YOUR_PLACEMENT_ID") { result in
+    switch result {
+        case let .success(flow):
+            // the requested flow
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+| パラメータ | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDK はサーバーからデータを読み込もうとし、失敗した場合はキャッシュされたデータを返します。この方式はユーザーが常に最新のデータを取得できるため、推奨しています。</p><p></p><p>ただし、ユーザーがネットワークの不安定な環境にいると想定される場合は、`.returnCacheDataElseLoad` の使用を検討してください。キャッシュが存在する場合はキャッシュされたデータを返します。この場合、最新のデータが届かない可能性はありますが、ネットワーク状況に関わらず読み込みが速くなります。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを避けるために活用しても安全です。</p><p></p><p>なお、キャッシュはアプリを再起動しても保持され、アプリのアンインストール時または手動でクリアした場合にのみ削除されます。</p> |
+</SDKv4>
+
+<SDKv3>
+
+リモートコンフィグとカスタムペイウォールを表示する前に、それらに関する情報を取得する必要があります。このトピックはリモートコンフィグとカスタムペイウォールに関するものです。ペイウォールビルダーでカスタマイズされたペイウォールの取得方法については、<InlineTooltip tooltip="アプリでペイウォールビルダーのペイウォールを取得するガイド">[iOS](get-pb-paywalls)、[Android](android-get-pb-paywalls)、[React Native](react-native-get-pb-paywalls)、[Flutter](flutter-get-pb-paywalls)、[Unity](unity-get-pb-paywalls)</InlineTooltip>を参照してください。
+
+<SampleApp />
+<details>
+   <summary>モバイルアプリでペイウォールとプロダクトの取得を開始する前に（クリックして展開）</summary>
+
+   1. Adapty ダッシュボードで[プロダクトを作成](create-product)してください。
+
+2. Adapty ダッシュボードで[ペイウォールを作成し、プロダクトをペイウォールに追加](create-paywall)してください。
+
+3. Adapty ダッシュボードで[プレースメントを作成し、ペイウォールをプレースメントに追加](create-placement)してください。
+
+4. モバイルアプリに [Adapty SDK をインストール](sdk-installation-ios)してください。
+</details>
+## ペイウォール情報の取得 \{#fetch-paywall-information\}
+
+Adapty では、[プロダクト](product)はApp StoreとGoogle Playの両方のプロダクトを組み合わせたものです。これらのクロスプラットフォームプロダクトはペイウォールに統合されており、モバイルアプリの特定のプレースメントで表示できます。
+
+プロダクトを表示するには、`getPaywall` メソッドを使って[プレースメント](placements)のいずれかから[ペイウォール](paywalls)を取得する必要があります。
+:::important
+**プロダクト ID をハードコードしないでください。** ハードコードするのはプレースメント ID のみにしてください。ペイウォールはリモートで設定されるため、プロダクトの数や利用可能なオファーはいつでも変わる可能性があります。アプリはこれらの変更に動的に対応する必要があります。今日は 2 つのプロダクトを返すペイウォールが明日は 3 つを返すことになっても、コードを変更せずにすべて表示できるようにしてください。
+:::
+
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID")
+    // the requested paywall
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>[ペイウォールのローカライズ](add-remote-config-locale)の識別子。このパラメーターは、マイナス（**-**）文字で区切られた1つ以上のサブタグで構成される言語コードである必要があります。最初のサブタグは言語を表し、2番目のサブタグは地域を表します。</p><p></p><p>例: `en` は英語、`pt-br` はブラジルポルトガル語を表します。</p><p></p><p>ロケールコードの詳細とその推奨される使用方法については、[ローカライズとロケールコード](localizations-and-locale-codes)を参照してください。</p> |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDK はサーバーからデータを読み込もうとし、失敗した場合はキャッシュされたデータを返します。この方法を推奨します。ユーザーが常に最新のデータを取得できるからです。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境を使用していると思われる場合は、`.returnCacheDataElseLoad` を使用してキャッシュデータが存在すればそれを返すことを検討してください。この場合、ユーザーは最新のデータを取得できないことがありますが、インターネット接続が不安定な場合でも読み込み時間が短縮されます。キャッシュは定期的に更新されるため、ネットワークリクエストを避けるためにセッション中に使用しても安全です。</p><p></p><p>キャッシュはアプリを再起動しても保持され、アプリの再インストールまたは手動でのクリーンアップによってのみ消去されます。</p><p></p><p>Adapty SDK はペイウォールを2つの層に保存します：上記の定期的に更新されるキャッシュと[フォールバックペイウォール](fallback-paywalls)です。また、ペイウォールをより速く取得するために CDN を使用し、CDN が到達不能な場合に備えてスタンドアローンのフォールバックサーバーも使用しています。このシステムは、インターネット接続が限られている状況でも信頼性を確保しながら、常に最新バージョンのペイウォールを取得できるように設計されています。</p> |
+| **loadTimeout** | デフォルト: 5秒 | <p>このメソッドのタイムアウト上限を設定します。タイムアウトに達した場合、キャッシュされたデータまたはローカルのフォールバックが返されます。</p><p></p><p>まれに、このメソッドが `loadTimeout` で指定した時間よりもわずかに遅くタイムアウトすることがあります。これは、処理内部で複数のリクエストが実行される場合があるためです。</p> |
+プロダクトIDをハードコードしないでください！ペイウォールはリモートで設定されるため、利用可能なプロダクト、プロダクト数、特典（無料トライアルなど）は随時変更される可能性があります。これらのシナリオに対応できるよう、コードを実装してください。
+
+たとえば、最初に2つのプロダクトを取得した場合、アプリはその2つのプロダクトを表示する必要があります。その後3つのプロダクトを取得した場合は、コードを変更することなく3つすべてを表示できなければなりません。ハードコードが必要なのはプレースメントIDのみです。
+
+レスポンスのパラメーター：
+| パラメーター | 説明                                                                                                                                                  |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | プロダクトIDのリスト、ペイウォールの識別子、リモートコンフィグなどのプロパティを含む [`AdaptyPaywall`](https://swift.adapty.io/documentation/adapty/adaptypaywall) オブジェクト。 |
+## プロダクトを取得する \{#fetch-products\}
+
+ペイウォールを取得したら、それに対応するプロダクトの配列をクエリできます：
+
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let products = try await Adapty.getPaywallProducts(paywall: paywall)
+    // the requested products array
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+```swift showLineNumbers
+Adapty.getPaywallProducts(paywall: paywall) { result in
+    switch result {
+    case let .success(products):
+        // 取得したプロダクトの配列
+    case let .failure(error):
+        // エラーを処理する
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+レスポンスパラメーター:
+| パラメータ | 説明                                                                                                                                                                                 |
+| :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Products  | [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) オブジェクトのリストで、プロダクト識別子、プロダクト名、価格、通貨、サブスクリプション期間、その他のプロパティを含みます。 |
+独自のペイウォールデザインを実装する際、[`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) オブジェクトから以下のプロパティにアクセスする必要があります。以下によく使われるプロパティを示しますが、利用可能なすべてのプロパティの詳細はリンク先のドキュメントを参照してください。
+| プロパティ | 説明 |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **タイトル** | プロダクトのタイトルを表示するには、`product.localizedTitle` を使用します。ローカライズはデバイスのロケールではなく、ユーザーが選択したストアの国に基づいて行われます。 |
+| **価格** | ローカライズされた価格を表示するには、`product.localizedPrice` を使用します。このローカライズはデバイスのロケール情報に基づいています。`product.price` を使用すると価格を数値として取得することもできます。値はローカル通貨で提供されます。対応する通貨記号を取得するには、`product.currencySymbol` を使用します。 |
+| **サブスクリプション期間** | 期間（週、月、年など）を表示するには、`product.localizedSubscriptionPeriod` を使用します。このローカライズはデバイスのロケールに基づいています。サブスクリプション期間をプログラムで取得するには、`product.subscriptionPeriod` を使用します。そこから `unit` 列挙型にアクセスして長さ（day、week、month、year、または unknown）を取得できます。`numberOfUnits` の値は期間単位の数を返します。たとえば四半期サブスクリプションの場合、unit プロパティには `.month`、numberOfUnits プロパティには `3` が表示されます。 |
+| **初回オファー** | サブスクリプションに初回オファーが含まれているかをバッジなどで表示するには、`product.subscriptionOffer` プロパティを確認します。このオブジェクト内には以下の便利なプロパティが含まれています。<br/>• `offerType`: `introductory`、`promotional`、`winBack` の値を持つ列挙型。無料トライアルや初期割引サブスクリプションは `introductory` タイプになります。<br/>• `price`: 割引後の価格（数値）。無料トライアルの場合は `0` になります。<br/>• `localizedPrice`: ユーザーのロケールに合わせてフォーマットされた割引価格。<br/>• `localizedNumberOfPeriods`: オファーの期間をデバイスのロケールでローカライズした文字列。たとえば3日間のトライアルオファーの場合、このフィールドには `3 days` と表示されます。<br/>• `subscriptionPeriod`: オファー期間の詳細を個別に取得する場合はこのプロパティを使用します。前のセクションで説明したのと同じ方法でオファーに対しても機能します。<br/>• `localizedSubscriptionPeriod`: ユーザーのロケールに合わせてフォーマットされた割引のサブスクリプション期間。 |
+## iOS での初回オファー適格性の確認 \{#check-intro-offer-eligibility-on-ios\}
+
+デフォルトでは、`getPaywallProducts` メソッドが初回オファー、プロモーションオファー、ウィンバックオファーの適格性を確認します。SDK がオファーの適格性を判定する前にプロダクトを表示する必要がある場合は、代わりに `getPaywallProductsWithoutDeterminingOffer` メソッドを使用してください。
+
+:::note
+初期プロダクトを表示した後は、必ず通常の `getPaywallProducts` メソッドを呼び出して、正確なオファー適格性情報でプロダクトを更新してください。
+:::
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let products = try await Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall)
+    // the requested products array without subscriptionOffer
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+```swift showLineNumbers
+Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall) { result in
+    switch result {
+    case let .success(products):
+        // subscriptionOfferなしでリクエストしたプロダクト配列
+    case let .failure(error):
+        // エラーを処理する
+    }
+}
+```
+</TabItem>
+</Tabs>
+## デフォルトオーディエンスのペイウォールでペイウォールの取得を高速化する \{#speed-up-paywall-fetching-with-default-audience-paywall\}
+
+通常、ペイウォールはほぼ瞬時に取得されるため、このプロセスを高速化することを特に意識する必要はありません。しかし、オーディエンスやペイウォールの数が多く、ユーザーのインターネット接続が不安定な場合、ペイウォールの取得に想定以上の時間がかかることがあります。そのような状況では、ペイウォールをまったく表示しないよりも、デフォルトのペイウォールを表示してスムーズなユーザー体験を提供したい場合があるでしょう。
+この問題を解決するために、`getPaywallForDefaultAudience` メソッドを使用できます。このメソッドは、指定されたプレースメントの **All Users** オーディエンス向けペイウォールを取得します。ただし、推奨されるアプローチは `getPaywall` メソッドでペイウォールを取得することであり、詳細は上記の[ペイウォール情報の取得](fetch-paywalls-and-products#fetch-paywall-information)セクションをご覧ください。
+
+:::warning
+`getPaywall` を推奨する理由
+
+`getPaywallForDefaultAudience` メソッドにはいくつかの重大な欠点があります：
+- **後方互換性の問題**: 異なるアプリバージョン（現行バージョンと将来のバージョン）で異なるペイウォールを表示する必要がある場合、課題が生じることがあります。現行（レガシー）バージョンに対応したペイウォールを設計するか、現行（レガシー）バージョンのユーザーがペイウォールを正しく表示できないリスクを受け入れるかのどちらかになります。
+- **ターゲティングの喪失**: すべてのユーザーが **All Users** オーディエンス向けに設計された同じペイウォールを見ることになるため、パーソナライズされたターゲティング（国、マーケティングアトリビューション、カスタム属性に基づくものを含む）が失われます。
+これらのデメリットを許容してでもペイウォールの取得を高速化したい場合は、以下のように `getPaywallForDefaultAudience` メソッドを使用してください。そうでない場合は、[上記](fetch-paywalls-and-products#fetch-paywall-information)で説明した `getPaywall` を使用してください。
+:::
+
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let paywall = try await Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID")
+   // the requested paywall
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+```swift showLineNumbers
+Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+:::note
+`getPaywallForDefaultAudience` メソッドは iOS SDK バージョン 2.11.2 以降で利用できます。
+:::
+| パラメータ | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>[ペイウォールのローカライズ](add-remote-config-locale)の識別子。このパラメータは、マイナス（**-**）文字で区切られた1つ以上のサブタグで構成される言語コードです。最初のサブタグは言語、2番目は地域を表します。</p><p></p><p>例: `en` は英語、`pt-br` はブラジルポルトガル語を表します。</p><p></p><p>ロケールコードと推奨される使い方については、[ローカライズとロケールコード](localizations-and-locale-codes)を参照してください。</p> |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDK はサーバーからデータの読み込みを試み、失敗した場合はキャッシュされたデータを返します。ユーザーが常に最新のデータを受け取れるため、この設定を推奨します。</p><p></p><p>ただし、ユーザーがネットワークの不安定な環境にいると想定される場合は、`.returnCacheDataElseLoad` を使用してキャッシュデータが存在すればそれを返すことも検討してください。この場合、最新データが取得できないことがありますが、接続状況に左右されず読み込みが速くなります。キャッシュはセッション中も定期的に更新されるため、ネットワークリクエストを減らす目的で安全に使用できます。</p><p></p><p>キャッシュはアプリの再起動後も保持され、アプリの再インストールまたは手動でのクリア時にのみ削除されます。</p> |
+</SDKv3>

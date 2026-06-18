@@ -1,0 +1,110 @@
+---
+title: "React Native SDKで初回起動時にAA対象のペイウォールを表示する"
+description: "React NativeでApple Ads向けのペイウォールをすぐに表示し、AdaptyProfile.appliedAttributionSourcesを使用してアトリビューションが適用されたときにApple Ads ユーザー向けにアップグレードする方法を解説します。"
+metadataTitle: "初回起動時にAA対象のペイウォールを表示する | React Native SDK | Adapty ドキュメント"
+---
+
+Apple Ads（AA）のアトリビューションは、`adapty.activate()` の後に非同期で届きます。初回起動時はまだ届いていないことが多いため、`getPaywall` はデフォルトのオーディエンスに対して解決され、Apple Ads ユーザーが AA セグメント対象のペイウォールを見逃してしまいます。アトリビューションが届くまでペイウォールの表示を遅らせるのではなく、まずすぐにペイウォールを表示し、AA アトリビューションが適用されたらリフレッシュするようにしましょう。これにより、Apple Ads ユーザーはターゲット向けのバリアントを受け取り、それ以外のユーザーは待たずにペイウォールを見ることができます。`AdaptyProfile.appliedAttributionSources` で AA アトリビューションが適用されたタイミングを確認できます。
+
+## 始める前に \{#before-you-start\}
+
+以下が必要です：
+- Adapty React Native SDK **3.17.1** 以降。
+- Adapty でアプリの Apple Ads が設定済みであること。[Apple Ads](apple-search-ads) を参照してください。
+
+## 仕組み \{#how-it-works\}
+
+`adapty.activate()` の後、SDK はバックグラウンドで Apple から Apple Ads のアトリビューションをリクエストし、その結果を Adapty のバックエンドに転送します。AA がプロファイルのアクティブなアトリビューションソースになると、SDK は `onLatestProfileLoad` リスナーに更新された `AdaptyProfile` を届けます。この時点で `appliedAttributionSources` 配列に `'apple_search_ads'` が含まれています。
+
+これにより、ペイウォールの読み込みを2段階で行うことができます：
+
+1. すぐに `getPaywall` を呼び出します。アトリビューションがまだ適用されていないため、Adapty はデフォルトのオーディエンスに対してリクエストを解決し、ユーザーはすぐにペイウォールを見ることができます。
+2. `'apple_search_ads'` が現れたら、再度 `getPaywall` を呼び出します。Adapty は今度は Apple Ads のオーディエンスに対してリクエストを解決し、ターゲット向けのペイウォールを返します。これが最初のペイウォールと置き換わります。
+
+`appliedAttributionSources` は空または存在しない場合があります。これは次のどちらかを意味します：
+
+- このプロファイルに対して Apple Ads のアトリビューションがまだ処理されていない、または
+- アトリビューションが全く届いていない。
+
+いずれの場合でも、ステップ1は安全です。Adapty は現在のプロファイル状態に合致するオーディエンス（通常はデフォルトオーディエンス）に対してリクエストを解決します。ステップ2は `'apple_search_ads'` が現れたときだけ実行されます。
+
+:::important
+その後の起動では、キャッシュされたプロファイルにすでに `appliedAttributionSources` に `'apple_search_ads'` が含まれているため、最初の `getPaywall` からすでに Apple Ads セグメント対象のペイウォールが返されます。2回目のフェッチや見た目の変化は発生しません。この2段階のフローが重要になるのは、アトリビューションがまだ処理中の初回起動時のみです。
+:::
+
+## 実装 \{#implementation\}
+
+すぐにペイウォールを表示し、`'apple_search_ads'` を監視して届いたらペイウォールをリフレッシュします。
+
+1. **SDKを有効化します。** [React Native SDKのインストールと設定](sdk-installation-reactnative)を参照してください。
+2. **通常どおり `getPaywall` でペイウォールを読み込んで表示します。** アトリビューションを待たずに進めてください。
+3. **`adapty.addEventListener('onLatestProfileLoad', …)` でプロファイルの更新を購読し**、`'apple_search_ads'` を監視します。現れたらペイウォールを再度フェッチし、更新されたものを表示します。リスナーをまだ設定していない場合は、[サブスクリプション更新のリッスン](react-native-check-subscription-status#listen-to-subscription-updates)を参照してください：
+
+```typescript
+const subscription = adapty.addEventListener('onLatestProfileLoad', async profile => {
+  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
+  const targeted = await adapty.getPaywall(placementId);
+  // present the targeted paywall in place of the first one
+});
+
+// Call subscription.remove() after the upgrade, or after a timeout (see below).
+```
+
+4. **タイムアウト後にリッスンを停止します。** ほとんどのユーザーは Apple Ads のアトリビューションを受け取らないため、セッション全体でリスナーを開き続けるのではなく、しばらくしたらリスナーを削除してください。リクエストが失敗した場合でもユーザーに常に何かが表示されるよう、そのプレースメントに[フォールバックペイウォール](react-native-use-fallback-paywalls)を設定してください。
+
+## 完全な実装例 \{#complete-example\}
+
+`onAppleAdsAttribution` は Apple Ads のアトリビューションが適用されると解決し、`timeoutMs` 以内に届かなければ拒否されます。以下の使用例では、すぐにペイウォールを読み込み、アトリビューションが届いたら再フェッチします。Apple Ads ユーザーはターゲット向けのペイウォールを受け取り、アトリビューションが届かなかった場合は最初のペイウォールがそのまま表示されます：
+
+```typescript
+
+const APPLE_ADS_SOURCE = 'apple_search_ads';
+const placementId = 'YOUR_PLACEMENT_ID';
+
+function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
+  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+}
+
+/**
+ * Resolves once Apple Ads attribution is applied to the profile.
+ * Rejects with a timeout error if attribution never arrives within `timeoutMs`.
+ * Call after `adapty.activate()`.
+ */
+export function onAppleAdsAttribution(timeoutMs: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let subscription: { remove: () => void } | undefined;
+
+    const stop = () => {
+      clearTimeout(timer);
+      subscription?.remove();
+    };
+
+    subscription = adapty.addEventListener('onLatestProfileLoad', profile => {
+      if (!hasAppleAdsAttribution(profile)) return;
+      stop();
+      resolve();
+    });
+
+    timer = setTimeout(() => {
+      stop();
+      reject(new Error(`Apple Ads attribution timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+}
+
+let paywall = await adapty.getPaywall(placementId);
+
+onAppleAdsAttribution(30_000)
+  .then(() => adapty.getPaywall(placementId))
+  .then(updated => {
+    paywall = updated;
+  })
+  .catch(() => {
+    console.log('Apple Ads attribution or loading failed');
+  });
+```
+
+初回起動時、Apple Ads ユーザーはデフォルトのペイウォールが置き換わる前に一瞬表示されることがあります。ペイウォールビルダーでペイウォールを表示している場合は、再表示が許容できるかどうかを検討するか、ペイウォールが表示される前にアップグレードを適用してください。`timeoutMs` は、どのくらいの間リッスンし続けるかに合わせて調整してください。届く場合のアトリビューションは通常、起動から数秒以内に届きます。
+
+アプリがすでに別の目的（たとえば[サブスクリプションステータスの確認](react-native-check-subscription-status#listen-to-subscription-updates)など）で `onLatestProfileLoad` をリッスンしている場合は、変更の必要はありません。`adapty.addEventListener` は複数の独立したリスナーをサポートしているため、既存のリスナーに影響を与えることなく、このリスナーを追加できます。

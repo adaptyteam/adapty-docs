@@ -1,0 +1,199 @@
+---
+title: "Flutter SDKでペイウォールビルダーのペイウォールとその設定を取得する"
+description: "Flutter向けAdaptyでPBペイウォールを取得し、サブスクリプション管理を改善する方法を学びましょう。"
+metadataTitle: "AdaptyでPBペイウォールを取得する | Adapty ドキュメント"
+displayed_sidebar: sdkflutter
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+rank: 85
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+
+Adapty ダッシュボードの新しいペイウォールビルダーで[ペイウォールのビジュアル部分をデザインした](adapty-paywall-builder)後、モバイルアプリにそれを表示できます。このプロセスの最初のステップは、プレースメントに関連付けられたペイウォールとそのビュー設定を取得することです。
+
+:::warning
+新しいペイウォールビルダーはFlutter SDK バージョン3.3.0以上が必要です。
+:::
+
+このトピックはペイウォールビルダーでカスタマイズされたペイウォールに関するものです。ペイウォールを手動で実装する場合は、[モバイルアプリのリモートコンフィグペイウォール用にペイウォールとプロダクトを取得する](fetch-paywalls-and-products-flutter)トピックを参照してください。
+
+<SampleApp />
+
+<details>
+   <summary>モバイルアプリでペイウォールの表示を始める前に（クリックして展開）</summary>
+
+   1. Adapty ダッシュボードで[プロダクトを作成する](create-product)。
+2. Adapty ダッシュボードで[ペイウォールを作成してプロダクトを追加する](create-paywall)。
+3. Adapty ダッシュボードで[プレースメントを作成してペイウォールを追加する](create-placement)。
+4. モバイルアプリに[Adapty SDK](sdk-installation-flutter)をインストールする。
+</details>
+
+## ペイウォールビルダーで作成されたペイウォールを取得する \{#fetch-paywall-designed-with-paywall-builder\}
+
+[ペイウォールビルダーを使用してペイウォールをデザインした](adapty-paywall-builder)場合、ユーザーに表示するためにモバイルアプリのコードでレンダリングする必要はありません。このようなペイウォールには、ペイウォール内に表示する内容と表示方法の両方が含まれています。ただし、プレースメントを通じてそのIDを取得し、ビュー設定を取得してからモバイルアプリに表示する必要があります。
+
+最適なパフォーマンスを確保するために、ペイウォールとその[ビュー設定](flutter-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)をできるだけ早く取得し、ユーザーに提示する前に画像をダウンロードするのに十分な時間を確保することが重要です。
+
+ペイウォールを取得するには、`getPaywall` メソッドを使用します。
+
+```dart showLineNumbers
+try {
+  final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en");
+  // the requested paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+パラメーター：
+
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | 取得したい[プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト：`en`</p> | <p>[ペイウォールのローカライズ](add-paywall-locale-in-adapty-paywall-builder)の識別子。マイナス（**-**）で区切られた1つまたは2つのサブタグで構成される言語コードを指定します。最初のサブタグは言語、2番目は地域を表します。</p><p></p><p>例：`en` は英語、`pt-br` はブラジルポルトガル語を表します。</p><p>ロケールコードと推奨される使用方法については、[ローカライズとロケールコード](flutter-localizations-and-locale-codes)を参照してください。</p> |
+| **fetchPolicy** | デフォルト：`.reloadRevalidatingCacheData` | <p>デフォルトでは、SDKはサーバーからデータを読み込もうとし、失敗した場合はキャッシュデータを返します。ユーザーが常に最新のデータを取得できるため、このオプションを推奨します。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境にある場合は、`.returnCacheDataElseLoad` を使用してキャッシュデータが存在する場合に返すことを検討してください。この場合、ユーザーは最新のデータを取得できないこともありますが、インターネット接続が不安定でも読み込み時間が短縮されます。キャッシュは定期的に更新されるため、ネットワークリクエストを避けるためにセッション中に使用しても安全です。</p><p></p><p>キャッシュはアプリの再起動後も保持され、アプリの再インストールまたは手動クリーンアップ時にのみクリアされます。</p><p></p><p>Adapty SDKはペイウォールをローカルに2層で保存します：上記の定期更新されるキャッシュと[フォールバックペイウォール](fallback-paywalls)です。また、ペイウォールをより速く取得するためにCDNを使用し、CDNに到達できない場合のスタンドアロンフォールバックサーバーも備えています。このシステムは、インターネット接続が不安定な場合でも信頼性を確保しながら、常に最新バージョンのペイウォールを取得できるように設計されています。</p> |
+| **loadTimeout** | デフォルト：5秒 | <p>このメソッドのタイムアウト上限を設定します。タイムアウトに達した場合、キャッシュデータまたはローカルフォールバックが返されます。</p><p>操作が内部で複数のリクエストで構成される場合があるため、まれに `loadTimeout` で指定した時間よりもわずかに遅くタイムアウトすることがあります。</p><p>Android の場合：拡張関数（例：`5.seconds`、`.seconds` は `import com.adapty.utils.seconds` から）または `TimeInterval.seconds(5)` を使用して `TimeInterval` を作成できます。制限を設けない場合は `TimeInterval.INFINITE` を使用してください。</p> |
+
+レスポンスパラメーター：
+
+| パラメーター | 説明                                                                                                                                                                 |
+| :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | プロダクトIDのリスト、ペイウォール識別子、リモートコンフィグ、その他いくつかのプロパティを持つ [`AdaptyPaywall`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywall-class.html) オブジェクト。 |
+
+## ペイウォールビルダーで作成されたペイウォールのビュー設定を取得する \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+ペイウォールビルダーで **Show on device** トグルを有効にしてください。このオプションがオンになっていない場合、ビュー設定を取得できません。
+:::
+
+ペイウォールを取得した後、`ViewConfiguration` が含まれているか確認してください。これはペイウォールビルダーで作成されたことを示します。この確認によってペイウォールの表示方法が決まります。`ViewConfiguration` が存在する場合はペイウォールビルダーのペイウォールとして扱い、存在しない場合は[リモートコンフィグのペイウォールとして処理します](present-remote-config-paywalls-flutter)。
+
+```dart showLineNumbers
+
+try {
+  final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+      );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+ビューを取得したら、[ペイウォールを表示します](flutter-present-paywalls)。
+
+## デフォルトオーディエンス向けのペイウォールをより速く取得する \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+通常、ペイウォールはほぼ瞬時に取得されるため、このプロセスの高速化について心配する必要はありません。ただし、多数のオーディエンスとペイウォールがあり、ユーザーのインターネット接続が弱い場合、ペイウォールの取得に予想以上の時間がかかることがあります。そのような状況では、ペイウォールをまったく表示しないよりも、スムーズなユーザー体験を確保するためにデフォルトのペイウォールを表示したい場合があります。
+
+これに対処するため、`getPaywallForDefaultAudience` メソッドを使用できます。このメソッドは、**All Users** オーディエンス向けの指定されたプレースメントのペイウォールを取得します。ただし、上記の[ペイウォール情報を取得する](flutter-get-pb-paywalls#fetch-paywall-designed-with-paywall-builder)セクションで詳述しているように、`getPaywall` メソッドでペイウォールを取得することが推奨されるアプローチであることを理解することが重要です。
+
+:::warning
+`getPaywall` の使用を推奨する理由
+
+`getPaywallForDefaultAudience` メソッドにはいくつかの重大な欠点があります：
+
+- **後方互換性の問題が発生する可能性**：異なるアプリバージョン（現在と将来）に対して異なるペイウォールを表示する必要がある場合、課題が生じる可能性があります。現在の（レガシー）バージョンをサポートするペイウォールを設計するか、現在の（レガシー）バージョンのユーザーがレンダリングされないペイウォールの問題に直面するリスクを受け入れるかのどちらかを選択する必要があります。
+- **ターゲティングの喪失**：すべてのユーザーが **All Users** オーディエンス向けに設計された同じペイウォールを表示するため、パーソナライズされたターゲティング（国、マーケティングアトリビューション、または独自のカスタム属性に基づくものを含む）が失われます。
+
+ペイウォール取得の高速化という恩恵を受けるためにこれらの欠点を受け入れる場合は、以下のように `getPaywallForDefaultAudience` メソッドを使用してください。そうでない場合は、[上記](#fetch-paywall-designed-with-paywall-builder)で説明した `getPaywall` を使用してください。
+:::
+
+```dart showLineNumbers
+try {
+    final paywall = await Adapty().getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
+} on AdaptyError catch (adaptyError) {
+    // handle error
+} catch (e) {
+    // handle unknown error
+}
+```
+
+:::note
+`getPaywallForDefaultAudience` メソッドはFlutter SDK バージョン3.2.0以降で利用可能です。
+:::
+
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト：`en`</p> | <p>[ペイウォールのローカライズ](add-remote-config-locale)の識別子。マイナス（**-**）で区切られた1つ以上のサブタグで構成される言語コードを指定します。最初のサブタグは言語、2番目は地域を表します。</p><p></p><p>例：`en` は英語、`pt-br` はブラジルポルトガル語を表します。</p><p></p><p>ロケールコードと推奨される使用方法については、[ローカライズとロケールコード](localizations-and-locale-codes)を参照してください。</p> |
+| **fetchPolicy** | デフォルト：`.reloadRevalidatingCacheData` | <p>デフォルトでは、SDKはサーバーからデータを読み込もうとし、失敗した場合はキャッシュデータを返します。ユーザーが常に最新のデータを取得できるため、このオプションを推奨します。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境にある場合は、`.returnCacheDataElseLoad` を使用してキャッシュデータが存在する場合に返すことを検討してください。この場合、ユーザーは最新のデータを取得できないこともありますが、インターネット接続が不安定でも読み込み時間が短縮されます。キャッシュは定期的に更新されるため、ネットワークリクエストを避けるためにセッション中に使用しても安全です。</p><p></p><p>キャッシュはアプリの再起動後も保持され、アプリの再インストールまたは手動クリーンアップ時にのみクリアされます。</p> |
+
+## アセットをカスタマイズする \{#customize-assets\}
+
+ペイウォール内の画像や動画をカスタマイズするには、カスタムアセットを実装します。
+
+ヒーロー画像と動画には事前定義されたID（`hero_image` および `hero_video`）があります。カスタムアセットバンドルでは、これらのIDを使用して要素をターゲットにし、その動作をカスタマイズします。
+
+その他の画像や動画については、Adapty ダッシュボードで[カスタムIDを設定する](custom-media)必要があります。
+
+例えば、次のことができます：
+
+- 一部のユーザーに異なる画像や動画を表示する。
+- リモートのメイン画像が読み込まれている間にローカルのプレビュー画像を表示する。
+- 動画を再生する前にプレビュー画像を表示する。
+
+:::important
+この機能を使用するには、Adapty Flutter SDK をバージョン3.8.0以上にアップデートしてください。
+:::
+
+シンプルなディクショナリを使用してカスタムアセットを提供する例を示します：
+
+```dart
+
+final customAssets = {
+    // Show a local image using a custom ID
+    'custom_image': AdaptyCustomAsset.localImageAsset(
+        assetId: 'assets/images/image_name.png',
+    ),
+
+    // Show a local video with a preview image
+    'hero_video': AdaptyCustomAsset.localVideoAsset(
+        assetId: 'assets/videos/custom_video.mp4',
+    ),
+};
+
+try {
+    final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+        customAssets: <CUSTOM_ASSETS>,
+        preloadProducts: preloadProducts,
+        );
+    } on AdaptyError catch (e) {
+        // handle the error
+    } catch (e) {
+// handle the error
+}
+```
+
+:::note
+アセットが見つからない場合、ペイウォールはデフォルトの外観にフォールバックします。
+:::
+
+## 開発者定義タイマーを設定する \{#set-up-developer-defined-timers\}
+
+モバイルアプリでカスタムタイマーを使用するには、`AdaptyTimerResolver` プロトコルに準拠したオブジェクトを作成してください。このオブジェクトは各カスタムタイマーのレンダリング方法を定義します。必要であれば、このプロトコルにすでに準拠している `[String: Date]` ディクショナリを直接使用することもできます。以下に例を示します：
+
+```dart showLineNumbers
+
+try {
+  final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+        customTimers: {
+          'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
+          'CUSTOM_TIMER_NY': DateTime(2025, 1, 1), // New Year 2025
+        },
+      );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+この例では、`CUSTOM_TIMER_NY` と `CUSTOM_TIMER_6H` はAdapity ダッシュボードで設定した開発者定義タイマーの **Timer ID** です。`timerResolver` は、アプリが各タイマーを正しい値で動的に更新することを保証します。例えば：
+
+- `CUSTOM_TIMER_NY`：元日など、タイマー終了までの残り時間。
+- `CUSTOM_TIMER_6H`：ユーザーがペイウォールを開いた時点から始まる6時間の残り時間。

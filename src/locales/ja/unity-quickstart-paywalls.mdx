@@ -1,0 +1,260 @@
+---
+title: "Unity SDK のペイウォールを使って購入を有効にする"
+description: "Adapty SDK を使って Unity アプリでペイウォールを表示する方法を学ぶ"
+metadataTitle: "ペイウォールの表示 | Unity SDK | Adapty ドキュメント"
+customSlug: /unity-quickstart-paywalls
+displayed_sidebar: sdkunity
+keywords: ['paywall', 'paywall builder', 'getPaywall']
+rank: 60
+---
+
+import PaywallsIntro from '@site/src/locales/ja/reusable/PaywallsIntro.md';
+
+アプリ内課金を有効にするには、3 つの重要な概念を理解する必要があります。
+
+- [**プロダクト**](product) – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセスなど）
+- [**ペイウォール**](paywalls) – どのプロダクトを提供するかを定義する設定です。Adapty では、プロダクトの取得はペイウォールを通じてのみ行えます。この設計により、アプリのコードを変更せずにオファー内容、価格、プロダクトの組み合わせを変更できます。
+- [**プレースメント**](placements) – アプリ内でペイウォールを表示する場所とタイミング（`main`、`onboarding`、`settings` など）。ダッシュボードでプレースメントに対してペイウォールを設定し、コード内でプレースメント ID を使ってリクエストします。これにより、A/B テストの実施や、ユーザーごとに異なるペイウォールの表示が容易になります。
+
+Adapty では、アプリ内で購入を有効にする 3 つの方法を提供しています。アプリの要件に応じて選択してください。
+
+| 実装方法                  | 複雑さ       | 使用場面                                                                                                                                                                                                                                   |
+|---------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty ペイウォールビルダー | ✅ 簡単     | [ノーコードビルダーで完全な購入対応ペイウォールを作成します](quickstart-paywalls)。Adapty が自動的にレンダリングし、複雑な購入フロー、レシート検証、サブスクリプション管理をすべて裏側で処理します。 |
+| 手動作成のペイウォール     | 🟡 中程度  | ペイウォールの UI をアプリのコードで実装しますが、プロダクトオファーの柔軟性を保つため、Adapty からペイウォールオブジェクトを取得します。[ガイド](unity-quickstart-manual)を参照してください。                                                       |
+| オブザーバーモード         | 🔴 難しい  | 独自の購入処理インフラを既に持っており、それを引き続き使用したい場合に選びます。オブザーバーモードには Adapty における制限があることに注意してください。[記事](observer-vs-full-mode)を参照してください。                                                 |
+
+:::important
+**以下の手順は、Adapty ペイウォールビルダーで作成したペイウォールの実装方法を示しています。**
+
+ペイウォールビルダーを使用しない場合は、[手動作成ペイウォールでの購入処理ガイド](unity-making-purchases)を参照してください。
+:::
+
+Adapty ペイウォールビルダーで作成したペイウォールを表示するには、アプリのコードで以下の手順を実行するだけです。
+
+1. **ペイウォールを取得する**: Adapty からペイウォールを取得します。
+2. **ペイウォールを表示する（購入処理は Adapty が行います）**: 取得したペイウォールコンテナをアプリに表示します。
+3. **ボタンアクションを処理する**: ペイウォール上のユーザー操作とアプリのレスポンスを紐付けます。たとえば、ユーザーがボタンをクリックしたときにリンクを開いたり、ペイウォールを閉じたりします。
+
+## 始める前に \{#before-you-start\}
+
+始める前に、以下の手順を完了してください。
+
+1. Adapty ダッシュボードでアプリを [App Store](initial_ios) および/または [Google Play](initial-android) に接続します。
+2. Adapty で[プロダクトを作成します](create-product)。
+3. [ペイウォールを作成してプロダクトを追加します](create-paywall)。
+4. [プレースメントを作成してペイウォールを追加します](create-placement)。
+5. アプリのコードに [Adapty SDK をインストールして有効化します](sdk-installation-unity)。
+
+:::tip
+これらの手順を最短で完了するには、[クイックスタートガイド](quickstart)に従うか、[Developer CLI](developer-cli-quickstart) を使ってペイウォールとプレースメントを作成してください。
+:::
+
+## 1. ペイウォールを取得する \{#1-get-the-paywall\}
+
+ペイウォールはダッシュボードで設定したプレースメントに紐付けられています。プレースメントを使うと、異なるオーディエンスに対して別々のペイウォールを表示したり、[A/B テスト](ab-tests)を実施したりできます。
+
+Adapty ペイウォールビルダーで作成したペイウォールを取得するには、以下の手順を実行します。
+
+1. `GetPaywall` メソッドを使って[プレースメント](placements) ID から `paywall` オブジェクトを取得し、`HasViewConfiguration` プロパティでビルダーで作成されたペイウォールかどうかを確認します。
+
+2. `CreatePaywallView` メソッドを使ってペイウォールビューを作成します。このビューには、ペイウォールを表示するために必要な UI 要素とスタイルが含まれています。
+
+:::important
+ビュー設定を取得するには、ペイウォールビルダーで **Show on device** トグルをオンにする必要があります。オフのままにすると、空のビュー設定が返され、ペイウォールが表示されません。
+:::
+
+```csharp showLineNumbers
+Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
+    if(error != null) {
+        // handle the error
+        return;
+    }
+    
+    // Create paywall view parameters
+    var parameters = new AdaptyUICreatePaywallViewParameters();
+    
+    // Create the paywall view
+    AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+        if(error != null) {
+            // handle the error
+            return;
+        }
+        
+        // view - the paywall view ready to be presented
+    });
+});
+```
+
+:::info
+このクイックスタートはペイウォールを表示するための最小限の設定を提供しています。高度な設定の詳細については、[ペイウォールの取得に関するガイド](unity-get-pb-paywalls)を参照してください。
+:::
+
+## 2. ペイウォールを表示する \{#2-display-the-paywall\}
+
+ペイウォール設定を取得したら、数行追加するだけでペイウォールを表示できます。
+
+ペイウォールを表示するには、`CreatePaywallView` メソッドで作成した `view` に対して `view.Present()` メソッドを呼び出します。各 `view` は一度しか使用できません。ペイウォールを再度表示する必要がある場合は、`CreatePaywallView` をもう一度呼び出して新しい `view` インスタンスを作成してください。
+
+```csharp showLineNumbers title="Unity"
+view.Present((error) => {
+  // handle the error
+});
+```
+
+:::info
+ペイウォールの表示方法の詳細については、[ガイド](unity-present-paywalls)を参照してください。
+:::
+
+## 3. ボタンアクションを処理する \{#3-handle-button-actions\}
+
+ユーザーがペイウォール内のボタンをクリックすると、Unity SDK が購入と復元を自動的に処理します。ただし、カスタムまたは事前定義された ID を持つその他のボタンについては、コードでアクションを処理する必要があります。
+
+たとえば、ペイウォールには通常、閉じるボタンや開くべき URL（利用規約やプライバシーポリシーなど）があります。これらのアクションを処理するには、クラスが `AdaptyPaywallsEventsListener` インターフェースを実装し、リスナーとして登録する必要があります。
+
+:::tip
+ボタンの[アクション](unity-handle-paywall-actions)と[イベント](unity-handling-events)の処理方法については、各ガイドを参照してください。
+:::
+
+```csharp showLineNumbers title="Unity"
+public class YourClass : MonoBehaviour, AdaptyPaywallsEventsListener
+{
+    void Start()
+    {
+        // Register this class as the paywall events listener
+        Adapty.SetPaywallsEventsListener(this);
+    }
+
+    // AdaptyPaywallsEventsListener method - handles button actions
+    public void PaywallViewDidPerformAction(
+        AdaptyUIPaywallView view,
+        AdaptyUIUserAction action
+    ) {
+        switch (action.Type) {
+            case AdaptyUIUserActionType.Close:
+                view.Dismiss(null);
+                break;
+            case AdaptyUIUserActionType.OpenUrl:
+                Application.OpenURL(action.Value);
+                break;
+            default:
+                break;
+        }
+    }
+}
+```
+
+## 次のステップ \{#next-steps\}
+
+<SupportForum />
+
+ペイウォールをアプリに表示する準備が整いました。[App Store サンドボックス](test-purchases-in-sandbox)または [Google Play ストア](testing-on-android)でテスト購入を行い、ペイウォールからテスト購入を完了できることを確認してください。
+
+次に、[ユーザーのアクセスレベルを確認し](unity-check-subscription-status)、適切なユーザーにペイウォールを表示したり、有料機能へのアクセスを付与したりできるようにする必要があります。
+
+## 完全な実装例 \{#full-example\}
+
+以下は、すべての手順をアプリに統合した場合の例です。
+
+```csharp showLineNumbers
+using System;
+using UnityEngine;
+using AdaptySDK;
+
+public class PaywallManager : MonoBehaviour, AdaptyPaywallsEventsListener
+{
+    [SerializeField] private string placementId = "YOUR_PLACEMENT_ID";
+    
+    private AdaptyUIPaywallView currentPaywallView;
+    
+    void Start()
+    {
+        // Register for paywall events
+        Adapty.SetPaywallsEventsListener(this);
+        GetAndDisplayPaywall();
+    }
+    
+    private void GetAndDisplayPaywall()
+    {
+        Adapty.GetPaywall(placementId, (paywall, error) => {
+            if (error != null) {
+                Debug.LogError("Error getting paywall: " + error.Message);
+                return;
+            }
+            
+            if (paywall.HasViewConfiguration) {
+                CreateAndPresentPaywallView(paywall);
+            } else {
+                Debug.LogWarning("Paywall was not created using the builder");
+            }
+        });
+    }
+    
+    private void CreateAndPresentPaywallView(AdaptyPaywall paywall)
+    {
+        var parameters = new AdaptyUICreatePaywallViewParameters();
+        
+        AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+            if (error != null) {
+                Debug.LogError("Error creating paywall view: " + error.Message);
+                return;
+            }
+            
+            currentPaywallView = view;
+            
+            view.Present((presentError) => {
+                if (presentError != null) {
+                    Debug.LogError("Error presenting paywall: " + presentError.Message);
+                    return;
+                }
+                
+                Debug.Log("Paywall presented successfully");
+            });
+        });
+    }
+    
+    // AdaptyPaywallsEventsListener implementation
+    public void PaywallViewDidPerformAction(
+        AdaptyUIPaywallView view, 
+        AdaptyUIUserAction action
+    ) {
+        switch (action.Type) {
+            case AdaptyUIUserActionType.Close:
+                Debug.Log("Close button pressed");
+                view.Dismiss(null);
+                break;
+            case AdaptyUIUserActionType.OpenUrl:
+                Application.OpenURL(action.Value);
+                break;
+            default:
+                break;
+        }
+    }
+    
+    // Required interface methods (implement as needed)
+    public void PaywallViewDidAppear(AdaptyUIPaywallView view) { }
+    public void PaywallViewDidDisappear(AdaptyUIPaywallView view) { }
+    public void PaywallViewDidSelectProduct(AdaptyUIPaywallView view, string productId) { }
+    public void PaywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) { }
+    public void PaywallViewDidFinishPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product, AdaptyPurchaseResult purchasedResult) { }
+    public void PaywallViewDidFailPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product, AdaptyError error) { }
+    public void PaywallViewDidStartRestore(AdaptyUIPaywallView view) { }
+    public void PaywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) { }
+    public void PaywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) { }
+    public void PaywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) { }
+    public void PaywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) { }
+    public void PaywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view, AdaptyPaywallProduct product, AdaptyError error) { }
+    
+    public void ShowPaywall()
+    {
+        GetAndDisplayPaywall();
+    }
+    
+    void OnDestroy()
+    {
+        if (currentPaywallView != null) {
+            currentPaywallView.Dismiss(null);
+        }
+    }
+}
+```

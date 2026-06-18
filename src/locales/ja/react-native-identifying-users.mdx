@@ -1,0 +1,125 @@
+---
+title: "React Native SDKでユーザーを識別する"
+description: "Adapty SDKを使用してReact Nativeアプリでユーザーを識別する方法を学びましょう。"
+metadataTitle: "ユーザーの識別 | React Native SDK | Adapty ドキュメント"
+customSlug: /react-native-identifying-users
+displayed_sidebar: sdkreactnative
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+import CrossDeviceDetection from '@site/src/locales/ja/reusable/CrossDeviceDetection.mdx';
+
+Adaptyはすべてのユーザーに対して内部プロファイルIDを作成します。ただし、独自の認証システムがある場合は、Customer User IDを設定してください。[Profiles](profiles-crm)セクションでCustomer User IDからユーザーを検索したり、[サーバーサイドAPI](getting-started-with-server-side-api)で使用したりできます。このIDはすべての連携先にも送信されます。
+
+### 設定時にCustomer User IDを設定する \{#setting-customer-user-id-on-configuration\}
+
+設定時にユーザーIDが取得できる場合は、`.activate()`メソッドの`customerUserId`パラメーターとして渡すだけです。
+
+```typescript showLineNumbers
+adapty.activate("PUBLIC_SDK_KEY", {
+    customerUserId: "YOUR_USER_ID"
+});
+```
+
+<SampleApp />
+
+### 設定後にCustomer User IDを設定する \{#setting-customer-user-id-after-configuration\}
+
+SDKの設定時にユーザーIDが取得できない場合は、後から`.identify()`メソッドを使っていつでも設定できます。最も一般的なユースケースは、ユーザーが匿名ユーザーから認証済みユーザーに切り替わる、登録後や認証後です。
+
+```typescript showLineNumbers
+try {
+    await adapty.identify("YOUR_USER_ID");
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```
+
+リクエストパラメーター：
+
+- **Customer User ID**（必須）: 文字列のユーザー識別子。
+
+:::warning
+重要なユーザーデータの再送信
+
+ユーザーがアカウントに再度ログインした場合など、Adaptyのサーバーがそのユーザーの情報をすでに保持しているケースがあります。そのような場合、Adapty SDKは自動的に新しいユーザーとして動作を切り替えます。カスタム属性やサードパーティネットワークからのアトリビューションなど、匿名ユーザーに対して設定していたデータがあれば、識別済みユーザーに対して再度送信する必要があります。
+
+また、新しいユーザーのデータが異なる可能性があるため、ユーザーを識別した後はすべてのペイウォールとプロダクトを再取得することも重要です。
+:::
+
+### ログアウトとログイン \{#logging-out-and-logging-in\}
+
+`.logout()`メソッドを呼び出すことで、いつでもユーザーをログアウトできます。
+
+```typescript showLineNumbers
+try {
+    await adapty.logout();
+    // successful logout
+} catch (error) {
+    // handle the error
+}
+```
+
+その後、`.identify()`メソッドを使ってユーザーをログインさせることができます。
+
+## `appAccountToken`を割り当てる（iOS） \{#assign-appaccounttoken-ios\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:))は、App Storeのトランザクションを内部のユーザーIDに紐付けるための**UUID**です。  
+StoreKitはすべてのトランザクションにこのトークンを関連付けるため、バックエンドでApp Storeのデータとユーザーを照合できます。
+
+ユーザーごとに生成した安定したUUIDを使用し、同じアカウントでは複数のデバイス間で同じものを再利用してください。
+これにより、購入とApp Storeの通知が正しく紐付けられます。
+
+トークンは2つの方法で設定できます。SDKのアクティベーション時、またはユーザーの識別時です。
+
+:::important
+`appAccountToken`は必ず`customerUserId`と一緒に渡す必要があります。
+トークンのみを渡した場合、トランザクションに含まれません。
+:::
+
+```typescript showLineNumbers
+// During configuration:
+adapty.activate("PUBLIC_SDK_KEY", {
+    customerUserId: "YOUR_USER_ID",
+    ios: { appAccountToken: "YOUR_APP_ACCOUNT_TOKEN" },
+});
+
+// Or when identifying users
+try {
+    await adapty.identify("YOUR_USER_ID", {
+        ios: {appAccountToken: 'YOUR_APP_ACCOUNT_TOKEN'}
+    });
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```
+
+### 難読化アカウントIDを設定する（Android） \{#set-obfuscated-account-ids-android\}
+
+Google Playでは、ユーザーのプライバシーとセキュリティを強化するために、特定のユースケースで難読化アカウントIDが必要です。これらのIDは、ユーザー情報を匿名のまま購入をGoogle Playが識別するのに役立ちます。不正防止や分析において特に重要です。
+
+アプリが機密性の高いユーザーデータを扱う場合や、特定のプライバシー規制への準拠が求められる場合に、これらのIDを設定する必要があります。難読化されたIDを使うことで、実際のユーザー識別子を公開せずにGoogle Playが購入を追跡できます。
+
+```typescript showLineNumbers
+// During configuration:
+adapty.activate("PUBLIC_SDK_KEY", {
+    customerUserId: "YOUR_USER_ID",
+    android: { obfuscatedAccountId: 'YOUR_OBFUSCATED_ACCOUNT_ID' }
+});
+
+// Or when identifying users
+try {
+    await adapty.identify("YOUR_USER_ID", {
+        android: { obfuscatedAccountId: 'YOUR_OBFUSCATED_ACCOUNT_ID' }
+    });
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```
+
+## 複数デバイス間でユーザーを検出する \{#detect-users-across-devices\}
+
+<CrossDeviceDetection />

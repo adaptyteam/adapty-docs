@@ -1,0 +1,350 @@
+openapi: 3.1.0
+info:
+  title: Adapty Mail API
+  version: 1.0.0
+  description: |
+    Adapty Mail API を使用すると、Adapty SDK を経由せずに、サーバーから直接ユーザーのプロファイルとトランザクションイベントを Adapty Mail に送信できます。
+
+    用途:
+
+    - Adapty Mail にまだベースがない場合にサブスクライバーを追加する。
+    - 他のアプリのサブスクライバーベースを再利用する。
+    - バックエンドをデータの信頼できる情報源として、Adapty Mail をサーバー間で連携させる。
+
+    メールアドレスを持つプロファイルは **never purchased** フローに対して十分です。その他のフロー（renewal cancelled、billing issue、expired、refunded）は購入履歴によって駆動されるため、それらのプロファイルには適切なフローに配置されるためのトランザクションイベントも必要です。
+
+    手順のウォークスルーについては、[Adapty Mail API 経由でメールとトランザクションを送信する](/docs/mail-send-data-via-api) を参照してください。
+servers:
+  - url: https://api-mail.adapty.io
+    description: 本番サーバー
+paths:
+  /api/v1/profile/save/:
+    post:
+      summary: プロファイルを保存する
+      description: |
+        Adapty Mail にプロファイルを作成または更新します。プロファイルには、Adapty Mail が受信者を識別し[セグメント](/docs/mail-segments)を構築するために使用する、ユーザーのメールアドレスと属性が含まれます。
+
+        各ユーザーを安定した `external_profile_id` で識別してください。同じ `external_profile_id` を再度送信すると、重複を作成するのではなく、既存のプロファイルが更新されます。
+      operationId: saveProfile
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileDTO'
+            examples:
+              basic:
+                summary: メールアドレスを持ち、"never purchased" フローに対応したプロファイル
+                value:
+                  external_profile_id: "user_12345"
+                  external_created_at: "2026-06-01T10:30:00Z"
+                  email: "jane@example.com"
+                  country: "US"
+                  custom_attributes:
+                    plan: "trial"
+      responses:
+        '200':
+          description: プロファイルが正常に保存されました。レスポンスボディは空のオブジェクトです。
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                default:
+                  value: {}
+        '400':
+          description: バリデーションに失敗しました — 必須フィールドが不足しているか無効です。`field_name` にどのフィールドかが表示されます。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Field required"
+                        error_code: "base_error"
+                        status_code: 400
+                        field_name: "email"
+        '403':
+          description: シークレット API キーが不足しているか無効です。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Secret key doesn't exist"
+                        error_code: "secret_key_does_not_exist_error"
+                        status_code: 403
+                        field_name: null
+  /api/v1/profile/transaction-event/save/:
+    post:
+      summary: トランザクションイベントを保存する
+      description: |
+        プロファイルのストアトランザクションイベントを記録します。Adapty Mail はトランザクションイベントを使用して、プロファイルを購入ベースのフロー（`event_type` が renewal cancelled、billing issue、expired、refunded などのフローにマッピングされます）に配置し、収益アトリビューションにも利用します。
+
+        購入、更新、キャンセルを処理する際にこれらのイベントを送信してください。**never purchased** フローのみ、これらのイベントなしで機能します。
+      operationId: saveTransactionEvent
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionEventDTO'
+            examples:
+              basic:
+                summary: 新規の月次サブスクリプション購入
+                value:
+                  event_type: "subscription_started"
+                  event_id: "evt_abc123"
+                  event_datetime: "2026-06-10T14:20:05Z"
+                  external_profile_id: "user_12345"
+                  store: "app_store"
+                  store_product_id: "premium_monthly"
+                  store_transaction_id: "1000000123456789"
+                  store_original_transaction_id: "1000000123456789"
+                  purchased_at: "2026-06-10T14:20:00Z"
+                  originally_purchased_at: "2026-06-10T14:20:00Z"
+                  price_usd: "9.99"
+                  expires_at: "2026-07-10T14:20:00Z"
+      responses:
+        '200':
+          description: トランザクションイベントが正常に保存されました。レスポンスボディは空のオブジェクトです。
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                default:
+                  value: {}
+        '400':
+          description: バリデーションに失敗しました — 必須フィールドが不足しているか無効です。`field_name` にどのフィールドかが表示されます。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Field required"
+                        error_code: "base_error"
+                        status_code: 400
+                        field_name: "event_type"
+        '403':
+          description: シークレット API キーが不足しているか無効です。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Secret key doesn't exist"
+                        error_code: "secret_key_does_not_exist_error"
+                        status_code: 403
+                        field_name: null
+components:
+  securitySchemes:
+    apikeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        すべてのリクエストを Adapty Mail のシークレット API キーで認証してください。キーは **Authorization** ヘッダーに `Bearer {your_secret_api_key}` の形式（例: `Bearer secret_live_...`）で送信します。
+
+        このキーは Adapty Mail の **Settings** で確認できます。キーはプロジェクト固有であり、データが属するプロジェクトを識別するため、プロファイルエンドポイントとトランザクションエンドポイントにはプロジェクト ID は不要です。
+  schemas:
+    ProfileDTO:
+      type: object
+      required:
+        - external_profile_id
+        - external_created_at
+        - email
+      properties:
+        external_profile_id:
+          type: string
+          description: |
+            アプリまたはバックエンドが所有するユーザーの安定した識別子です。Adapty Mail がメール、クリック、購入を一つのプロファイルに紐付けられるよう、リクエスト間で同じ値を再利用してください。匿名識別子やインストールごとの識別子は使用しないでください。
+        external_created_at:
+          type: string
+          format: date-time
+          description: |
+            ISO 8601 形式（例: `"2026-06-01T10:30:00Z"`）のユーザー作成日時です。この日付はセグメントで使用できます。
+        email:
+          type: string
+          format: email
+          description: ユーザーのメールアドレスです。Adapty Mail はこのアドレスにキャンペーンを配信します。
+        first_name:
+          type: string
+          description: ユーザーの名前（名）です。
+        last_name:
+          type: string
+          description: ユーザーの名前（姓）です。
+        gender:
+          type: string
+          description: ユーザーの性別です。
+        birthday:
+          type: string
+          format: date
+          description: ISO 8601 形式（例: `"1990-05-21"`）のユーザーの生年月日です。
+        country:
+          type: string
+          description: ユーザーの国を表す ISO 3166-1 alpha-2 の2文字大文字コードです（例: `US`）。
+        store_country:
+          type: string
+          description: ユーザーのストアリージョンを表す ISO 3166-1 alpha-2 の2文字大文字コードです（例: `US`）。
+        custom_attributes:
+          type: object
+          description: |
+            プロファイルに付加する任意のキーと値のペア（文字列または数値）です。[セグメント](/docs/mail-segments)の構築に使用します（例: `plan`、`signup_source`、`trial_days`）。
+        device_info:
+          $ref: '#/components/schemas/DeviceInfoDTO'
+    DeviceInfoDTO:
+      type: object
+      required:
+        - platform
+      properties:
+        platform:
+          type: string
+          description: ユーザーが使用しているプラットフォームです（例: `iOS` または `Android`）。
+        device:
+          type: string
+          description: デバイスのモデルです（例: `iPhone15,2`）。
+        os:
+          type: string
+          description: オペレーティングシステムのバージョンです（例: `17.5`）。
+        locale:
+          type: string
+          description: ユーザーのロケールです（例: `en-US`）。
+        timezone:
+          type: string
+          description: ユーザーのタイムゾーンです（例: `America/New_York`）。
+        app_version:
+          type: string
+          description: ユーザーが実行しているアプリのバージョンです（例: `3.1.0`）。
+    TransactionEventDTO:
+      type: object
+      required:
+        - event_type
+        - event_id
+        - event_datetime
+        - external_profile_id
+        - store
+        - store_product_id
+        - store_transaction_id
+        - store_original_transaction_id
+        - purchased_at
+        - originally_purchased_at
+      properties:
+        event_type:
+          $ref: '#/components/schemas/TransactionEventType'
+        event_id:
+          type: string
+          description: あなたのシステムが所有するこのイベントの一意の識別子です。イベントの冪等性を保つために使用してください。
+        event_datetime:
+          type: string
+          format: date-time
+          description: ISO 8601 形式でイベントが記録された日時です。
+        external_profile_id:
+          type: string
+          description: プロファイルを保存する際に送信するのと同じ安定した `external_profile_id` です。トランザクションを正しいプロファイルに紐付けます。
+        store:
+          type: string
+          description: トランザクションが発生したストアです（例: `app_store`、`play_store`、`stripe`）。
+        store_product_id:
+          type: string
+          description: ストアで購入されたプロダクトの識別子です。
+        store_transaction_id:
+          type: string
+          description: ストアにおけるこのトランザクションの識別子です。
+        store_original_transaction_id:
+          type: string
+          description: サブスクリプションチェーンにおける最初のトランザクションの識別子です。最初の購入の場合、これは `store_transaction_id` と同じ値になります。
+        purchased_at:
+          type: string
+          format: date-time
+          description: ISO 8601 形式でこのトランザクションが発生した日時です。
+        originally_purchased_at:
+          type: string
+          format: date-time
+          description: ISO 8601 形式でサブスクリプションが最初に購入された日時です。
+        price_usd:
+          type: string
+          description: 10進数の文字列（例: `"9.99"`）で表した USD 建てのトランザクション金額です。
+        expires_at:
+          type: string
+          format: date-time
+          description: ISO 8601 形式でサブスクリプションが失効する、または失効した日時です。サブスクリプション以外の購入の場合は省略してください。
+        offer:
+          $ref: '#/components/schemas/Offer'
+    TransactionEventType:
+      type: string
+      description: トランザクションイベントの種類です。購入ベースのフローはこれらの値によってトリガーされます。
+      enum:
+        - subscription_started
+        - subscription_renewed
+        - subscription_renewal_cancelled
+        - subscription_renewal_reactivated
+        - billing_issue_detected
+        - entered_grace_period
+        - subscription_refunded
+        - subscription_expired
+        - non_subscription_purchase
+        - non_subscription_purchase_refunded
+    Offer:
+      type: object
+      description: トランザクションに適用されたプロモーションオファーまたは初回オファーの詳細です。
+      required:
+        - category
+        - offer_type
+      properties:
+        category:
+          $ref: '#/components/schemas/OfferCategory'
+        offer_type:
+          $ref: '#/components/schemas/OfferType'
+        offer_id:
+          type: string
+          description: ストア内のオファーの識別子（存在する場合）です。
+    OfferCategory:
+      type: string
+      enum:
+        - introductory
+        - promotional
+        - offer_code
+        - win_back
+    OfferType:
+      type: string
+      enum:
+        - free_trial
+        - pay_as_you_go
+        - pay_up_front
+    Errors:
+      type: object
+      description: 標準エラーレスポンスです。すべての失敗はこの形式で 4XX ステータスを返します。
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: string
+                description: エラーの人間が読める説明です。
+              error_code:
+                type: string
+                description: マシンが読み取り可能なエラー識別子です。
+              status_code:
+                type: integer
+                description: このエラーの HTTP ステータスコードです。
+              field_name:
+                type: string
+                description: エラーの原因となったリクエストフィールド、またはエラーがフィールド固有でない場合は `null` です。

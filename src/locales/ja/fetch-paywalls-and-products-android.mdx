@@ -1,0 +1,206 @@
+---
+title: "Android SDKでリモートコンフィグペイウォールのペイウォールとプロダクトを取得する"
+description: "Adapty Android SDKでペイウォールとプロダクトを取得して、ユーザーの収益化を強化します。"
+metadataTitle: "ペイウォールとプロダクトの取得 | Android SDK | Adapty ドキュメント"
+keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'Android']
+displayed_sidebar: sdkandroid
+rank: 95
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md'; 
+
+リモートコンフィグおよびカスタムペイウォールを表示する前に、それらに関する情報を取得する必要があります。このトピックはリモートコンフィグおよびカスタムペイウォールに関するものです。ペイウォールビルダーでカスタマイズされたペイウォールの取得方法については、[ペイウォールビルダーのペイウォールと設定の取得](android-get-pb-paywalls)を参照してください。
+
+<SampleApp />
+
+<details>
+   <summary>モバイルアプリでペイウォールとプロダクトの取得を始める前に（クリックして展開）</summary>
+
+   1. Adapty ダッシュボードで[プロダクトを作成](create-product)します。
+
+2. Adapty ダッシュボードで[ペイウォールを作成し、プロダクトをペイウォールに組み込み](create-paywall)ます。
+
+3. Adapty ダッシュボードで[プレースメントを作成し、ペイウォールをプレースメントに組み込み](create-placement)ます。
+
+4. モバイルアプリに[Adapty SDKをインストール](sdk-installation-android)します。
+</details>
+
+## ペイウォール情報の取得 \{#fetch-paywall-information\}
+
+Adaptyでは、[プロダクト](product)はApp StoreとGoogle Play両方のプロダクトを組み合わせたものです。これらのクロスプラットフォームプロダクトはペイウォールに統合され、特定のモバイルアプリのプレースメント内で表示できます。
+
+プロダクトを表示するには、`getPaywall`メソッドを使用して、いずれかの[プレースメント](placements)から[ペイウォール](paywalls)を取得する必要があります。
+
+:::important
+**プロダクトIDをハードコーディングしないでください。** ハードコーディングすべき唯一のIDはプレースメントIDです。ペイウォールはリモートで設定されるため、プロダクトの数や利用可能なオファーはいつでも変更される可能性があります。アプリはこれらの変更を動的に処理する必要があります。今日ペイウォールが2つのプロダクトを返し、明日3つ返した場合、コードを変更せずにすべてを表示できるようにしてください。
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            // the requested paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        // the requested paywall
+      
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+      
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+| パラメータ | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>[ペイウォールのローカライゼーション](add-remote-config-locale)の識別子。このパラメータはマイナス（**-**）文字で区切られた1つ以上のサブタグで構成される言語コードであることが期待されます。最初のサブタグは言語、2番目は地域を表します。</p><p></p><p>例：`en`は英語、`pt-br`はブラジルポルトガル語を表します。</p><p></p><p>ロケールコードおよび推奨される使用方法については、[ローカライゼーションとロケールコード](android-localizations-and-locale-codes)を参照してください。</p> |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDKはサーバーからデータを読み込もうとし、失敗した場合はキャッシュされたデータを返します。ユーザーが常に最新のデータを取得できるため、この方法を推奨します。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境にある場合は、`.returnCacheDataElseLoad`を使用してキャッシュデータが存在する場合に返すことを検討してください。この場合、ユーザーは最新のデータを取得できない可能性がありますが、インターネット接続が不安定でも高速な読み込みを体験できます。キャッシュは定期的に更新されるため、ネットワークリクエストを避けるためにセッション中に使用しても安全です。</p><p></p><p>キャッシュはアプリの再起動後も保持され、アプリの再インストールまたは手動クリーンアップ時にのみクリアされます。</p><p></p><p>Adapty SDKはペイウォールを2つのレイヤーに保存します：上記の定期的に更新されるキャッシュと[フォールバックペイウォール](android-use-fallback-paywalls)です。また、CDNを使用してペイウォールをより速く取得し、CDNに到達できない場合のスタンドアロンフォールバックサーバーも使用します。このシステムは、インターネット接続が不安定な場合でも常にペイウォールの最新バージョンを取得できるよう設計されています。</p> |
+| **loadTimeout** | デフォルト: 5秒 | <p>この値はこのメソッドのタイムアウトを制限します。タイムアウトに達した場合、キャッシュされたデータまたはローカルフォールバックが返されます。</p><p></p><p>まれに、処理が内部で複数のリクエストで構成される場合があるため、このメソッドは`loadTimeout`で指定した時間よりわずかに遅くタイムアウトする場合があります。</p> |
+
+プロダクトIDをハードコーディングしないでください！ペイウォールはリモートで設定されるため、利用可能なプロダクト、プロダクト数、特別オファー（無料トライアルなど）は時間とともに変更される可能性があります。これらのシナリオをコードで処理してください。  
+例えば、最初に2つのプロダクトを取得した場合、アプリはその2つを表示する必要があります。その後3つのプロダクトを取得した場合、コードを変更せずに3つすべてを表示する必要があります。ハードコーディングが必要なのはプレースメントIDだけです。
+
+レスポンスパラメータ：
+
+| パラメータ | 説明 |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | プロダクトIDのリスト、ペイウォール識別子、リモートコンフィグ、その他いくつかのプロパティを含む[`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/)オブジェクト。 |
+
+## プロダクトの取得 \{#fetch-products\}
+
+ペイウォールを取得したら、それに対応するプロダクト配列を照会できます：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getPaywallProducts(paywall) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val products = result.value
+            // the requested products
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.getPaywallProducts(paywall, result -> {
+    if (result instanceof AdaptyResult.Success) {
+        List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) result).getValue();
+        // the requested products
+      
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+      
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+レスポンスパラメータ：
+
+| パラメータ | 説明 |
+| :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Products  | プロダクト識別子、プロダクト名、価格、通貨、サブスクリプション期間、その他いくつかのプロパティを含む[`AdaptyPaywallProduct`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall-product/)オブジェクトのリスト。 |
+
+独自のペイウォールデザインを実装する場合、[`AdaptyPaywallProduct`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall-product/)オブジェクトのこれらのプロパティにアクセスする必要があるでしょう。以下によく使用されるプロパティを示しますが、利用可能なすべてのプロパティの詳細については、リンクされたドキュメントを参照してください。
+
+| プロパティ | 説明 |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Title** | プロダクトのタイトルを表示するには、`product.localizedTitle`を使用します。ローカライゼーションはデバイス自体のロケールではなく、ユーザーが選択したストアの国に基づいています。 |
+| **Price** | ローカライズされた価格を表示するには、`product.price.localizedString`を使用します。このローカライゼーションはデバイスのロケール情報に基づいています。`product.price.amount`を使用して数値として価格にアクセスすることもできます。値はローカル通貨で提供されます。関連する通貨記号を取得するには、`product.price.currencySymbol`を使用します。 |
+| **Subscription Period** | 期間（週、月、年など）を表示するには、`product.subscriptionDetails?.localizedSubscriptionPeriod`を使用します。このローカライゼーションはデバイスのロケールに基づいています。プログラムでサブスクリプション期間を取得するには、`product.subscriptionDetails?.subscriptionPeriod`を使用します。そこから`unit`列挙型にアクセスして期間の長さ（DAY、WEEK、MONTH、YEAR、またはUNKNOWN）を取得できます。`numberOfUnits`の値で期間単位の数を取得できます。例えば、四半期ごとのサブスクリプションの場合、unitプロパティに`MONTH`、numberOfUnitsプロパティに`3`が表示されます。 |
+| **Introductory Offer** | サブスクリプションに初回オファーが含まれているかどうかを示すバッジやインジケーターを表示するには、`product.subscriptionDetails?.introductoryOfferPhases`プロパティを確認してください。これは最大2つの割引フェーズ（無料トライアルフェーズと初回価格フェーズ）を含めることができるリストです。各フェーズオブジェクト内には以下の役立つプロパティがあります：<br/>• `paymentMode`：`FREE_TRIAL`、`PAY_AS_YOU_GO`、`PAY_UPFRONT`、`UNKNOWN`の値を持つ列挙型。無料トライアルは`FREE_TRIAL`タイプになります。<br/>• `price`：数値としての割引価格。無料トライアルの場合は`0`を探してください。<br/>• `localizedNumberOfPeriods`：オファーの期間を説明するデバイスのロケールを使用してローカライズされた文字列。例えば、3日間のトライアルオファーはこのフィールドに`3 days`と表示されます。<br/>• `subscriptionPeriod`：または、このプロパティでオファー期間の個別の詳細を取得できます。オファーに対しては前のセクションで説明したのと同じ方法で機能します。<br/>• `localizedSubscriptionPeriod`：ユーザーのロケールに対してフォーマットされた割引のサブスクリプション期間。 |
+
+## デフォルトオーディエンスのペイウォールでペイウォール取得を高速化する \{#speed-up-paywall-fetching-with-default-audience-paywall\}
+
+通常、ペイウォールはほぼ即座に取得されるため、このプロセスの高速化を心配する必要はありません。ただし、オーディエンスとペイウォールが多数あり、ユーザーのインターネット接続が弱い場合、ペイウォールの取得に予想以上に時間がかかることがあります。そのような状況では、ペイウォールをまったく表示しないよりもスムーズなユーザー体験を確保するために、デフォルトのペイウォールを表示したい場合があります。
+
+これに対処するため、`getPaywallForDefaultAudience`メソッドを使用できます。このメソッドは、**All Users**オーディエンス向けに指定されたプレースメントのペイウォールを取得します。ただし、上記の[ペイウォール情報の取得](fetch-paywalls-and-products-android#fetch-paywall-information)セクションで詳述されているように、推奨されるアプローチは`getPaywall`メソッドでペイウォールを取得することであることを理解することが重要です。
+
+:::warning
+`getPaywall`を推奨する理由
+
+`getPaywallForDefaultAudience`メソッドにはいくつかの重大な欠点があります：
+
+- **後方互換性の問題の可能性**：現在および将来のアプリバージョンで異なるペイウォールを表示する必要がある場合、課題に直面する可能性があります。現在の（レガシー）バージョンをサポートするペイウォールを設計するか、現在の（レガシー）バージョンのユーザーがレンダリングされないペイウォールに問題が発生する可能性を受け入れる必要があります。
+- **ターゲティングの喪失**：すべてのユーザーが**All Users**オーディエンス向けに設計された同じペイウォールを表示するため、パーソナライズされたターゲティング（国、マーケティングアトリビューション、独自のカスタム属性に基づくものを含む）が失われます。
+
+これらの欠点を受け入れてペイウォール取得の高速化の恩恵を受けたい場合は、以下のように`getPaywallForDefaultAudience`メソッドを使用してください。そうでない場合は、[上記](#fetch-paywall-information)で説明した`getPaywall`を使用してください。
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            // the requested paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        // the requested paywall
+      
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+      
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+:::note
+`getPaywallForDefaultAudience`メソッドはAndroid SDKバージョン2.11.3以降から利用可能です。
+:::
+
+| パラメータ | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>[ペイウォールのローカライゼーション](add-remote-config-locale)の識別子。このパラメータはマイナス（**-**）文字で区切られた1つ以上のサブタグで構成される言語コードであることが期待されます。最初のサブタグは言語、2番目は地域を表します。</p><p></p><p>例：`en`は英語、`pt-br`はブラジルポルトガル語を表します。</p><p></p><p>ロケールコードおよび推奨される使用方法については、[ローカライゼーションとロケールコード](android-localizations-and-locale-codes)を参照してください。</p> |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDKはサーバーからデータを読み込もうとし、失敗した場合はキャッシュされたデータを返します。ユーザーが常に最新のデータを取得できるため、この方法を推奨します。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境にある場合は、`.returnCacheDataElseLoad`を使用してキャッシュデータが存在する場合に返すことを検討してください。この場合、ユーザーは最新のデータを取得できない可能性がありますが、インターネット接続が不安定でも高速な読み込みを体験できます。キャッシュは定期的に更新されるため、ネットワークリクエストを避けるためにセッション中に使用しても安全です。</p><p></p><p>キャッシュはアプリの再起動後も保持され、アプリの再インストールまたは手動クリーンアップ時にのみクリアされます。</p> |

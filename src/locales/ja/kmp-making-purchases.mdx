@@ -1,0 +1,162 @@
+---
+title: "Kotlin Multiplatform SDKでモバイルアプリ内で購入を行う"
+description: "Adaptyを使用したアプリ内課金とサブスクリプションの処理に関するガイド。"
+metadataTitle: "AdaptyでのアプリContent内課金の処理 | Adapty ドキュメント"
+keywords: ['makePurchase', 'pending', 'offer code']
+rank: 95
+displayed_sidebar: sdkkmp
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/ja/reusable/OfferCodesInfo.mdx';
+
+モバイルアプリ内にペイウォールを表示することは、プレミアムコンテンツやサービスへのアクセスをユーザーに提供するための重要なステップです。ただし、[ペイウォールビルダー](adapty-paywall-builder)を使用してペイウォールをカスタマイズしている場合に限り、ペイウォールを表示するだけで購入をサポートできます。
+
+ペイウォールビルダーを使用しない場合は、購入を完了してコンテンツをアンロックするために、`.makePurchase()` という別のメソッドを使用する必要があります。このメソッドは、ユーザーがペイウォールを利用して購入処理を進めるための入り口となります。
+
+ペイウォールに、ユーザーが購入しようとしているプロダクトに対する有効なプロモーションオファーが設定されている場合、Adaptyは購入時に自動的にそのオファーを適用します。
+
+:::warning
+初回オファーが自動的に適用されるのは、ペイウォールビルダーで設定したペイウォールを使用している場合に限ります。
+
+それ以外の場合は、[iOS での初回オファーの適用資格を確認する](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios)必要があります。この手順を省略すると、リリース時にアプリが審査で却下される可能性があります。また、初回オファーの対象ユーザーに通常価格が請求されるリスクもあります。
+:::
+
+[初期設定](quickstart)をすべての手順を飛ばさずに完了していることを確認してください。これが完了していないと、購入を検証できません。
+
+## 購入を行う \{#make-purchase\}
+
+:::note
+**[ペイウォールビルダー](adapty-paywall-builder)を使用していますか？** 購入は自動的に処理されるため、この手順はスキップできます。
+
+**ステップごとのガイダンスをお探しですか？** エンドツーエンドの実装手順については、[クイックスタートガイド](kmp-implement-paywalls-manually)をご覧ください。
+:::
+
+```kotlin showLineNumbers
+
+Adapty.makePurchase(product = product).onSuccess { purchaseResult ->
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            val profile = purchaseResult.profile
+            if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
+                // Grant access to the paid features
+            }
+        }
+        is AdaptyPurchaseResult.UserCanceled -> {
+            // Handle the case where the user canceled the purchase
+        }
+        is AdaptyPurchaseResult.Pending -> {
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
+        }
+    }
+}.onError { error ->
+    // Handle the error
+}
+```
+
+リクエストパラメータ：
+
+| パラメータ      | 必須 | 説明                                                                                                                                            |
+| :---------- | :------- |:----------------------------------------------------------------------------------------------------------------------------------------------|
+| **Product** | 必須 | ペイウォールから取得した [`AdaptyPaywallProduct`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall-product/) オブジェクト。 |
+
+レスポンスパラメータ：
+
+| パラメータ | 説明                                                                                                                                                                                                                                                                                                                               |
+|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>リクエストが成功した場合、レスポンスにはこのオブジェクトが含まれます。[AdaptyProfile](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-profile/) オブジェクトは、ユーザーのアクセスレベル、サブスクリプション、アプリ内の買い切り購入に関する包括的な情報を提供します。</p><p>アクセスレベルのステータスを確認して、ユーザーが必要なアクセス権を持っているかどうかを判断してください。</p> |
+
+:::warning
+**注意：** Apple の StoreKit バージョンが v2.0 未満で、Adapty SDK バージョンが v2.9.0 未満の場合は、代わりに [Apple App Store 共有シークレット](app-store-connection-configuration#step-5-enter-app-store-shared-secret)を提供する必要があります。この方法は現在 Apple により非推奨となっています。
+:::
+
+## 購入時にサブスクリプションを変更する \{#change-subscription-when-making-a-purchase\}
+
+ユーザーが現在のサブスクリプションを更新する代わりに新しいサブスクリプションを選択した場合、その動作はアプリストアによって異なります。Google Play の場合、サブスクリプションは自動的に更新されません。以下の説明に従って、モバイルアプリのコードで切り替えを管理する必要があります。
+
+Android でサブスクリプションを別のものに切り替えるには、追加パラメータを指定して `.makePurchase()` メソッドを呼び出してください：
+
+```kotlin showLineNumbers
+
+val subscriptionUpdateParams = AdaptyAndroidSubscriptionUpdateParameters(
+    oldSubVendorProductId = "old_subscription_product_id",
+    replacementMode = AdaptyAndroidSubscriptionUpdateReplacementMode.CHARGE_FULL_PRICE
+)
+
+val purchaseParams = AdaptyPurchaseParameters.Builder()
+    .setSubscriptionUpdateParams(subscriptionUpdateParams)
+    .build()
+
+Adapty.makePurchase(
+    product = product,
+    parameters = purchaseParams
+).onSuccess { purchaseResult ->
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            val profile = purchaseResult.profile
+            // successful cross-grade
+        }
+        is AdaptyPurchaseResult.UserCanceled -> {
+            // user canceled the purchase flow
+        }
+        is AdaptyPurchaseResult.Pending -> {
+            // the purchase has not been finished yet, e.g. user will pay offline by cash
+        }
+    }
+}.onError { error ->
+    // Handle the error
+}
+
+```
+追加リクエストパラメータ：
+
+| パラメータ      | 必須 | 説明                                                                                                                                                                                                                                                                                          |
+|:---------------|:---------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **parameters** | 任意 | [`AdaptyPurchaseParameters`](https://kmp.adapty.io/adapty/com.adapty.kmp.models/-adapty-purchase-parameters/) を通じて渡される [`AdaptyAndroidSubscriptionUpdateParameters`](https://kmp.adapty.io/////adapty/com.adapty.kmp.models/-adapty-android-subscription-update-parameters/) オブジェクト。 |
+
+サブスクリプションと切り替えモードについては、Google Developer ドキュメントで詳しく確認できます：
+
+- [切り替えモードについて](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [切り替えモードに関する Google の推奨事項](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- 切り替えモード [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE())。注意：このメソッドはサブスクリプションのアップグレードにのみ対応しています。ダウングレードはサポートされていません。
+- 切り替えモード [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED())。注意：実際のサブスクリプション変更は、現在のサブスクリプションの請求期間が終了した時点でのみ適用されます。
+
+## iOS でオファーコードを利用する \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+アプリ内でコード引き換えシートを表示するには：
+
+```kotlin showLineNumbers
+Adapty.presentCodeRedemptionSheet()
+    .onSuccess {
+        // code redemption sheet presented successfully
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+:::danger
+確認された事例によると、一部のアプリではオファーコード引き換えシートが正常に動作しないことがあります。ユーザーを直接 App Store にリダイレクトすることをお勧めします。
+
+そのためには、次の形式の URL を開く必要があります：
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
+
+## プリペイドプランを管理する（Android） \{#manage-prepaid-plans-android\}
+
+アプリユーザーが[プリペイドプラン](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans)（例：数か月分の非更新型サブスクリプションを購入するなど）を利用できる場合、プリペイドプランの[保留中のトランザクション](https://developer.android.com/google/play/billing/subscriptions#pending)を有効にすることができます。
+
+```kotlin showLineNumbers
+
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withGoogleEnablePendingPrepaidPlans(true)
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+}
+```

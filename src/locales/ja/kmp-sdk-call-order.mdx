@@ -1,0 +1,43 @@
+---
+title: "Kotlin Multiplatform SDKの呼び出し順序"
+description: "Adapty SDKのメソッドを正しい順序で呼び出すことで、プレミアムアクセスの消失、アトリビューションの欠落、断続的な有効化エラーを防ぎます。"
+metadataTitle: "Kotlin Multiplatform SDK 呼び出し順序 | Adapty ドキュメント"
+---
+
+`Adapty.activate()` は、他のAdapty SDKメソッドを呼び出す前に完了している必要があります。完了するまで、SDKには状態がありません。`activate()` の前または並行して発行された呼び出しは、有効化エラーで失敗します。[Kotlin Multiplatform SDKでのエラー処理](kmp-handle-errors)を参照してください。
+
+アプリでユーザー認証を行い、起動後にカスタマーユーザーIDを取得する場合は、そのタイミングで `Adapty.identify()` を呼び出してください。`identify` が完了するまで、ユーザーアクションのメソッドを呼び出さないでください。`identify` と競合する呼び出しはエラーを返すか、有効化時に作成された匿名プロファイルに対して実行されます。これが発生すると、アトリビューション、`appsflyer_id` などのMMP IDやインストールの所有権が、識別済みプロファイルに必ずしも引き継がれません。アプリでユーザー認証を行わない場合は、`identify` をスキップして匿名プロファイルで作業を続けてください。
+
+MMP・アナリティクスSDK（AppsFlyer、Adjust、Branch、PostHog）も同じルールに従います。まずそれらを初期化し、UID コールバックを受け取ってから `Adapty.activate` を呼び出してください。そうしないと、MMP IDが一時的な匿名プロファイルに紐付けられ、識別済みプロファイルに必ずしも引き継がれません。AppsFlyerの詳細については、[AppsFlyer](appsflyer)を参照してください。
+
+## 正しい呼び出し順序 \{#the-correct-order\}
+
+どのパスをたどるかは、カスタマーユーザーIDをいつ取得できるか、およびMMPやアナリティクスSDKを使用するかどうかによって異なります。
+
+- **ステップ2と5**：すべてのアプリで必須です。SDKを有効化してから、SDKメソッドを呼び出します。
+- **ステップ1と3**：MMPやアナリティクスSDK（AppsFlyer、Adjust、Branch、PostHog）を統合する場合のみ必要です。
+- **ステップ4**：アプリでユーザー認証を行い、起動後にカスタマーユーザーIDを収集する場合のみ必要です。
+
+アプリ起動時にカスタマーユーザーIDがわかっている場合は、`activate()` を呼び出す前（ステップ2a）に `AdaptyConfig.Builder` に渡してください。このパスでは匿名プロファイルが作成されないため、ステップ4は不要です。
+
+| ステップ | 呼び出し                                                                                                          | タイミング                                                                                   | 備考                                                                                          |
+|------|---------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| 1    | MMPまたはアナリティクスSDKを初期化する（AppsFlyer、Adjust、PostHog、Branch）                                     | アプリ起動時、最初に                                                                      | MMPのUIDコールバック（例：`getAppsFlyerUID`）を待ってください。                                |
+| 2a   | `Adapty.activate(configuration = AdaptyConfig.Builder("KEY").withCustomerUserId(...).build())`                | アプリ起動時、ステップ1の後、カスタマーユーザーIDがある場合                             | 推奨。匿名プロファイルは一切作成されません。                                                             |
+| 2b   | `Adapty.activate(configuration = AdaptyConfig.Builder("KEY").build())` （`withCustomerUserId` なし）           | アプリ起動時、ステップ1の後、カスタマーユーザーIDがない場合（または収集しない場合） | Adaptが匿名プロファイルを作成します。                                                           |
+| 3    | `Adapty.setIntegrationIdentifier("appsflyer_id", uid)` （各MMPに対して）                                           | ステップ2の後、ユーザーアクション呼び出しの前                                              | MMP IDが正しいプロファイルに紐付けられるために必要です。                                               |
+| 4    | `Adapty.identify("YOUR_USER_ID").onSuccess { ... }.onError { ... }`                                           | ステップ3の後（MMPなしの場合はステップ2の後）、ステップ5の前 — 認証がある2bのパスのみ | ユーザーアクション呼び出しの前に `onSuccess` を待ってください。`identify` 中の並行呼び出しは匿名プロファイルに対して実行される可能性があります。 |
+| 5    | `getPaywall`、`getPaywallProducts`、`restorePurchases`、`makePurchase`、`updateAttribution`、`updateProfile`  | `identify` を呼び出す場合はステップ4の後、そうでない場合はステップ3の後（MMPなしの場合はステップ2の後）      | これらの呼び出しには安定したプロファイルが必要です。                                                             |
+
+:::important
+これらのステップをスキップすると、既存ユーザーのプレミアムアクセスの消失、プロファイルへの `appsflyer_id` の欠落、誤ったオーディエンスに対するペイウォールの返却が発生します。
+:::
+
+## Web2appおよびウェブファネルインストール \{#web2app-and-web-funnel-installs\}
+
+ユーザーがウェブチェックアウト（Stripe、Paddle）で購入し、後でネイティブアプリをインストールした場合、デバイスの最初の `activate()` によって新しい匿名プロファイルが作成されます。このプロファイルはウェブプロファイルとリンクされていません。認証フローやインストールリファラーからアプリ起動前にカスタマーユーザーIDを解決できる場合は、直接 `AdaptyConfig.Builder` に渡してください。そうしないと、`identify("YOUR_USER_ID")` を呼び出し、さらに `restorePurchases` を呼び出すまで、デバイスからウェブ購入が見えない状態になります。
+
+各ウェブチェックアウトで送信するメタデータについては、以下を参照してください：
+
+- [Stripe](stripe)
+- [Paddle](paddle)

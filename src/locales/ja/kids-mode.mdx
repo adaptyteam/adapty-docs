@@ -1,0 +1,90 @@
+---
+title: "iOS SDK のキッズモード"
+description: "キッズモードを簡単に有効化して Apple のポリシーに準拠できます。iOS SDK では IDFA や広告データは収集されません。"
+metadataTitle: "iOS SDK のキッズモード | Adapty ドキュメント"
+---
+
+iOS アプリがお子様向けの場合は、[Apple](https://developer.apple.com/kids/) のポリシーに従う必要があります。Adapty SDK を使用している場合、いくつかの簡単な手順でポリシーに準拠した設定を行い、App Store の審査を通過できます。
+
+## 必要な対応 \{#whats-required\}
+
+以下の情報の収集を無効化するよう、Adapty SDK を設定する必要があります。
+
+- [IDFA（広告識別子）](https://en.wikipedia.org/wiki/Identifier_for_Advertisers)
+- [IP アドレス](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
+また、カスタマーユーザー ID の扱いにも注意が必要です。`<名前.苗字>` 形式のユーザー ID やメールアドレスは、個人情報の収集とみなされます。キッズモードでは、ランダム化または匿名化された識別子（ハッシュ化された ID やデバイスが生成した UUID など）を使用することがベストプラクティスです。
+
+## キッズモードの有効化 \{#enabling-kids-mode\}
+
+### Adapty ダッシュボードでの設定 \{#updates-in-the-adapty-dashboard\}
+
+Adapty ダッシュボードで IP アドレスの収集を無効化する必要があります。[App settings](https://app.adapty.io/settings/general) に移動し、**Collect users' IP address** の下にある **Disable IP address collection** をクリックしてください。
+
+### アプリコードの変更 \{#updates-in-your-mobile-app-code\}
+
+ポリシーに準拠するために、ユーザーの IDFA と IP アドレスの収集を無効化してください。
+
+<Tabs>
+<TabItem value="spm" label="Swift Package Manager" default>
+Swift Package Manager を使用している場合、SDK インストール時に Xcode で **Adapty_KidsMode** モジュールを選択することでキッズモードを有効化できます。
+
+Xcode で **File** -> **Add Package Dependency...** に進んでください。パッケージ依存関係の追加手順は Xcode のバージョンによって異なる場合があるため、必要に応じて Xcode のドキュメントを参照してください。
+
+1. リポジトリ URL を入力します：
+   ```
+   https://github.com/adaptyteam/AdaptySDK-iOS.git
+   ```
+2. バージョンを選択し（最新の安定版を推奨）、**Add Package** をクリックします。
+3. **Choose Package Products** ウィンドウで、必要なモジュールを選択します：
+   - **Adapty_KidsMode**（コアモジュール）
+   - **AdaptyUI_KidsMode**（オプション - ペイウォールビルダーを使用する場合のみ）
+
+   他のパッケージは不要です。
+4. **Add Package** をクリックしてインストールを完了します。
+
+5. コード内で `import Adapty` の代わりに `import Adapty_KidsMode`、`import AdaptyUI` の代わりに `import AdaptyUI_KidsMode` と記述します：
+
+```swift
+```
+
+</TabItem>
+<TabItem value="cocoapods" label="CocoaPods">
+1. Podfile を更新します：
+
+   - `post_install` セクションが**ない**場合は、以下のコードブロック全体を追加してください。
+   - `post_install` セクションが**ある**場合は、ハイライトされた行をそこにマージしてください。
+
+   ```ruby showLineNumbers title="Podfile"
+   def adapty_enable_kids_mode(installer)
+     installer.pods_project.targets.each do |target|
+       next unless target.name == 'Adapty'
+       target.build_configurations.each do |config|
+         flags = config.build_settings['OTHER_SWIFT_FLAGS'] || '$(inherited)'
+         flags = flags.join(' ') if flags.is_a?(Array)
+         config.build_settings['OTHER_SWIFT_FLAGS'] = "#{flags} -DADAPTY_KIDS_MODE"
+       end
+       target.frameworks_build_phase.files.dup.each do |bf|
+         target.frameworks_build_phase.remove_build_file(bf) if bf.display_name.to_s.include?('AdSupport')
+       end
+     end
+     installer.pods_project.save
+     Dir.glob(File.join(installer.sandbox.root, 'Target Support Files', '**', '*.xcconfig')).each do |xc|
+       File.write(xc, File.read(xc).gsub(/\s*-framework\s+"?AdSupport"?/, ''))
+     end
+   end
+
+   post_install do |installer|
+     # ... keep your existing post_install body (Flutter adds one automatically) ...
+
+     adapty_enable_kids_mode(installer)   # <-- enable Adapty Kids Mode
+   end
+   ```
+
+2. 以下のコマンドを実行して変更を適用します：
+
+   ```sh showLineNumbers title="Shell"
+   pod install
+   ```
+</TabItem>
+</Tabs>

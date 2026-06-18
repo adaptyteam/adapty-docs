@@ -1,0 +1,183 @@
+---
+title: "iOS SDKでユーザーを識別する"
+description: "Adaptyでユーザーを識別し、パーソナライズされたサブスクリプション体験を向上させましょう。"
+metadataTitle: "Adaptyでのユーザー識別 | Adapty ドキュメント"
+keywords: ['identify', 'identifying users']
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+import CrossDeviceDetection from '@site/src/locales/ja/reusable/CrossDeviceDetection.mdx';
+
+Adaptyはすべてのユーザーに対して内部プロファイルIDを作成します。ただし、独自の認証システムがある場合は、独自のCustomer User IDを設定してください。[Profiles](profiles-crm)セクションでCustomer User IDによるユーザー検索が可能で、[サーバーサイドAPI](getting-started-with-server-side-api)でも使用できます。このIDはすべてのインテグレーションに送信されます。
+
+## 設定時にCustomer User IDを設定する \{#set-customer-user-id-on-configuration\}
+
+設定時にユーザーIDが利用可能な場合は、`.activate()`メソッドの`customerUserId`パラメーターとして渡してください：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+// In your AppDelegate class:
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID")
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// In your AppDelegate class:
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID")
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+```
+
+</TabItem>
+
+</Tabs>
+
+<SampleApp />
+
+## 設定後にCustomer User IDを設定する \{#set-customer-user-id-after-configuration\}
+
+SDKの設定時にユーザーIDがない場合は、`.identify()`メソッドを使っていつでも後から設定できます。最も一般的なユースケースは、登録や認証の後、ユーザーが匿名ユーザーから認証済みユーザーに切り替わるタイミングです。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    try await Adapty.identify("YOUR_USER_ID")
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.identify("YOUR_USER_ID") { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+リクエストパラメーター：
+
+- **Customer User ID**（必須）: 文字列のユーザー識別子。
+
+:::warning
+重要なユーザーデータの再送信
+
+ユーザーが再度ログインするなど、Adaptyのサーバーにすでにそのユーザーの情報が存在する場合があります。このような場合、Adapty SDKは自動的に新しいユーザーへ切り替えます。匿名ユーザーにカスタム属性やサードパーティネットワークからのアトリビューションなどのデータを渡していた場合は、識別済みユーザーに対してそのデータを再送信してください。
+
+また、新しいユーザーのデータが異なる可能性があるため、ユーザーを識別した後はすべてのペイウォールとプロダクトを再取得することが重要です。
+:::
+
+## ログアウトとログイン \{#logging-out-and-logging-in\}
+
+`.logout()`メソッドを呼び出すことで、いつでもユーザーをログアウトできます：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    try await Adapty.logout()
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.logout { error in
+    if error == nil {
+        // successful logout
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+その後、`.identify()`メソッドを使ってユーザーをログインできます。
+
+## appAccountTokenを設定する \{#set-appaccounttoken\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:))は、AppleのStoreKit 2がアプリのインストールやデバイスをまたいでユーザーを識別するためのUUIDです。
+
+Adapty iOS SDK 3.10.2以降、SDKの設定時またはユーザーの識別時に`appAccountToken`を渡せるようになりました：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: UUID())
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
+  // handle the error
+}
+
+// Or when identifying a user:
+do {
+    try await Adapty.identify("YOUR_USER_ID", withAppAccountToken: UUID())
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: UUID())
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+
+// Or when identifying a user:
+Adapty.identify("YOUR_USER_ID", withAppAccountToken: UUID()) { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+その後、`.identify()`メソッドを使ってユーザーをログインできます。
+
+## デバイスをまたいでユーザーを検出する \{#detect-users-across-devices\}
+
+<CrossDeviceDetection />

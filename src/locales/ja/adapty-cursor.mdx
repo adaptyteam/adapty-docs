@@ -1,0 +1,265 @@
+---
+title: "AIアシスタントを使ってAdaptyをiOSアプリに組み込む"
+description: "Cursor、Context7、ChatGPT、Claude、その他のAIツールを使ってAdaptyをiOSアプリに組み込むためのステップバイステップガイドです。"
+metadataTitle: "AIアシスタントを使ってAdaptyをiOSに組み込む | Adapty ドキュメント"
+---
+
+このガイドでは、AIコーディングツールを使ってAdaptyをiOSアプリに段階的に組み込む方法を説明します。正しいAdaptyドキュメントを正しい順序でAIに渡すことがポイントです。
+
+<SkillPromo />
+
+## 始める前に：ダッシュボードのセットアップ \{#before-you-start-dashboard-setup\}
+
+AdaptyはSDKコードを書く前に、ダッシュボードでいくつかの設定が必要です。インタラクティブなLLMスキルを使うか、ダッシュボードから手動で設定することができます。
+
+### スキルを使う方法（推奨） \{#skill-approach-recommended\}
+
+Adapty CLIスキルを使うと、LLMがアプリ、プロダクト、アクセスレベル、ペイウォール、プレースメントを直接設定できます。ダッシュボードを各ステップで開く必要はありません。[ストアの接続](integrate-payments)だけはダッシュボードで行う必要があります。
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+スキルを追加したら、エージェントで `/adapty-cli` を実行してください。ストアの接続のためにダッシュボードを開くタイミングも含め、各ステップをガイドしてくれます。
+
+### ダッシュボードを使う方法 \{#dashboard-approach\}
+
+すべてを手動で設定したい場合は、コードを書く前に以下の準備が必要です。LLMはダッシュボードの値を自動で調べることはできないので、自分で確認して提供する必要があります。
+
+1. **アプリストアに接続する**: Adapty ダッシュボードで **App settings → General** を開きます。購入機能を動かすために必須の設定です。
+   [App Store に接続する](integrate-payments)
+
+2. **公開SDKキーをコピーする**: Adapty ダッシュボードで **App settings → General** を開き、**API keys** セクションを確認します。コード上では、`Adapty.activate("YOUR_PUBLIC_SDK_KEY")` に渡す文字列です。
+
+3. **プロダクトを少なくとも1つ作成する**: Adapty ダッシュボードの **Products** ページで作成します。コードからプロダクトを直接参照することはありません — Adaptlyはフローやペイウォールを通じてプロダクトを配信します。
+   [プロダクトを追加する](quickstart-products)
+
+4. **フローまたはペイウォールとプレースメントを作成する**: Adapty ダッシュボードでフロー（またはUIを自分で作る場合はペイウォール）を作成し、**Placements** ページでプレースメントに割り当てます。コード上では、`Adapty.getFlow("YOUR_PLACEMENT_ID")` に渡すプレースメントIDが該当します。
+   [フローを作成する](quickstart-paywalls)
+
+5. **アクセスレベルを設定する**: Adapty ダッシュボードの **Products** ページで各プロダクトに設定します。コード上では、`profile.accessLevels["premium"]` で確認する文字列です。ほとんどのアプリではデフォルトの `premium` アクセスレベルで十分です。プロダクトによって（たとえば `basic` プランと `pro` プラン）ユーザーがアクセスできる機能が異なる場合は、コーディングを始める前に[追加のアクセスレベルを作成](assigning-access-level-to-a-product)してください。
+
+:::tip
+5つすべてが揃ったら、コードを書く準備完了です。LLMに「公開SDKキーはX、プレースメントIDはY」と伝えておくと、正確な初期化コードとペイウォール取得コードを生成してもらえます。
+:::
+
+### 後から設定するもの \{#set-up-when-ready\}
+
+コーディングを始めるためには必須ではありませんが、組み込みが進んだ段階で必要になります。
+
+- **A/B テスト**: **Placements** ページで設定します。コードの変更は不要です。
+  [A/B テスト](ab-tests)
+- **フローやプレースメントの追加**: 別のプレースメントIDで `getFlow` を追加で呼び出します。
+- **アナリティクス連携**: **Integrations** ページで設定します。連携ごとに設定方法が異なります。[アナリティクス連携](analytics-integration)と[アトリビューション連携](attribution-integration)を参照してください。
+
+## AdaptyドキュメントをLLMに渡す \{#feed-adapty-docs-to-your-llm\}
+
+### Context7を使う（推奨） \{#use-context7-recommended\}
+
+[Context7](https://context7.com)は、LLMが最新のAdaptyドキュメントに直接アクセスできるようにするMCPサーバーです。質問内容に応じて適切なドキュメントを自動で取得するため、URLを手動で貼り付ける手間がありません。
+
+Context7は**Cursor**、**Claude Code**、**Windsurf**、その他のMCP対応ツールで動作します。セットアップするには以下を実行してください。
+
+```
+npx ctx7 setup
+```
+
+このコマンドがエディタを自動検出してContext7サーバーを設定します。手動でセットアップする場合は、[Context7 GitHubリポジトリ](https://github.com/upstash/context7)を参照してください。
+
+設定後は、プロンプト内でAdaptyライブラリを参照してください。
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the iOS SDK
+```
+
+:::warning
+Context7を使えばドキュメントのURLを手動で貼り付ける必要はなくなりますが、実装の順序は重要です。すべてが正しく動くよう、以下の[実装ウォークスルー](#implementation-walkthrough)をステップごとに進めてください。
+:::
+
+### プレーンテキストのドキュメントを使う \{#use-plain-text-docs\}
+
+AdaptyのドキュメントはプレーンテキストのMarkdownとして取得できます。URLの末尾に `.md` を付けるか、記事タイトルの下にある **Copy for LLM** をクリックしてください。例: [adapty-cursor.md](https://adapty.io/docs/ja/adapty-cursor.md)
+
+以下の[実装ウォークスルー](#implementation-walkthrough)の各ステージには、「LLMに送る内容」ブロックがあり、貼り付け用の `.md` リンクが含まれています。
+
+まとめて多くのドキュメントが必要な場合は、以下の[インデックスファイルとプラットフォーム別のサブセット](#plain-text-doc-index-files)を参照してください。
+
+## 実装ウォークスルー \{#implementation-walkthrough\}
+
+このガイドの残りの部分では、実装の順序に沿ってAdaptyの組み込みを進めていきます。各ステージには、LLMに送るドキュメント、完了時に確認できる内容、よくある問題が記載されています。
+
+### 組み込みを計画する \{#plan-your-integration\}
+
+コードに入る前に、LLMにプロジェクトを分析させて実装計画を立ててもらいましょう。AIツールにプランニングモード（CursorやClaude Codeのプランモードなど）があれば、コードを書く前にプロジェクト構造とAdaptyドキュメントの両方を確認させるために活用してください。
+
+購入処理にどのアプローチを使うかをLLMに伝えてください — これによって参照すべきガイドが変わります。
+
+- [**Adapty Flow Builder**](adapty-flow-builder): Adaptのノーコードビルダーでフローを作成し、SDKが自動でレンダリングします。
+- [**手動作成のペイウォール**](ios-quickstart-manual): 独自のペイウォールUIをコードで構築しますが、プロダクトの取得と購入処理にはAdaptyを使います。
+- [**オブザーバーモード**](observer-vs-full-mode): 既存の購入インフラをそのまま維持し、アナリティクスと連携のみAdaptyを使います。
+
+どれを選べばよいかわからない場合は、[クイックスタートの比較表](ios-quickstart-paywalls)をご覧ください。
+
+### SDKをインストールして設定する \{#install-and-configure-the-sdk\}
+
+XcodeのSwift Package ManagerでAdapty SDKパッケージをインストールし、公開SDKキーで有効化します。これが基盤となるステップで、これなしには他の機能は動きません。
+
+**ガイド:** [Adapty SDKのインストールと設定](sdk-installation-ios)
+
+LLMに送る内容:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/sdk-installation-ios.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** アプリがビルドして起動する。XcodeコンソールにAdaptyの有効化ログが表示される。
+- **注意点:** "Public API key is missing" → App settingsで取得した実際のキーがプレースホルダーと置き換えられているか確認する。
+:::
+
+### フローまたはペイウォールを表示して購入を処理する \{#show-flows-or-paywalls-and-handle-purchases\}
+
+プレースメントIDでフローまたはペイウォールを取得して表示し、購入イベントを処理します。必要なガイドは購入の処理方法によって異なります。
+
+進めながらサンドボックスで都度購入をテストしてください — 最後まで待たずに行いましょう。セットアップ手順は[サンドボックスでの購入テスト](test-purchases-in-sandbox)を参照してください。
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Flow Builder" default>
+
+**ガイド:**
+- [Flow Builderで購入を有効にする（クイックスタート）](ios-quickstart-paywalls)
+- [フローとその設定を取得する](get-pb-paywalls)
+- [フローを表示する](ios-present-paywalls)
+- [フローのイベントを処理する](ios-handling-events)
+- [ボタンアクションに対応する](handle-paywall-actions)
+
+LLMに送る内容:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/ios-quickstart-paywalls.md
+- https://adapty.io/docs/ja/get-pb-paywalls.md
+- https://adapty.io/docs/ja/ios-present-paywalls.md
+- https://adapty.io/docs/ja/ios-handling-events.md
+- https://adapty.io/docs/ja/handle-paywall-actions.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** 設定したプロダクトがフローに表示される。プロダクトをタップするとサンドボックスの購入ダイアログが表示される。
+- **注意点:** フローが空または `getFlow` エラー → プレースメントIDがダッシュボードと完全に一致しているか、プレースメントにオーディエンスが割り当てられているか確認する。
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Manual paywalls">
+
+**ガイド:**
+- [カスタムペイウォールで購入を有効にする（クイックスタート）](ios-quickstart-manual)
+- [ペイウォールとプロダクトを取得する](fetch-paywalls-and-products)
+- [リモートコンフィグで設計されたペイウォールを表示する](present-remote-config-paywalls)
+- [購入を行う](making-purchases)
+- [購入を復元する](restore-purchase)
+
+LLMに送る内容:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/ios-quickstart-manual.md
+- https://adapty.io/docs/ja/fetch-paywalls-and-products.md
+- https://adapty.io/docs/ja/present-remote-config-paywalls.md
+- https://adapty.io/docs/ja/making-purchases.md
+- https://adapty.io/docs/ja/restore-purchase.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** カスタムペイウォールにAdaptyから取得したプロダクトが表示される。プロダクトをタップするとサンドボックスの購入ダイアログが表示される。
+- **注意点:** プロダクト配列が空 → ダッシュボードでペイウォールにプロダクトが割り当てられているか、プレースメントにオーディエンスがあるか確認する。
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**ガイド:**
+- [オブザーバーモードの概要](observer-vs-full-mode)
+- [オブザーバーモードを実装する](implement-observer-mode)
+- [オブザーバーモードでトランザクションを報告する](report-transactions-observer-mode)
+
+LLMに送る内容:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/observer-vs-full-mode.md
+- https://adapty.io/docs/ja/implement-observer-mode.md
+- https://adapty.io/docs/ja/report-transactions-observer-mode.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** 既存の購入フローでサンドボックス購入を行った後、Adaptのダッシュボード **Event Feed** にトランザクションが表示される。
+- **注意点:** イベントが表示されない → Adaptにトランザクションを報告しているか、App Store Server Notificationsが設定されているか確認する。
+:::
+
+</TabItem>
+
+</Tabs>
+
+### サブスクリプションのステータスを確認する \{#check-subscription-status\}
+
+購入後、ユーザープロファイルでアクティブなアクセスレベルを確認して、プレミアムコンテンツへのアクセスを制限します。
+
+**ガイド:** [サブスクリプションのステータスを確認する](ios-check-subscription-status)
+
+LLMに送る内容:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/ios-check-subscription-status.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** サンドボックス購入後、`profile.accessLevels["premium"]?.isActive` が `true` を返す。
+- **注意点:** 購入後も `accessLevels` が空 → ダッシュボードでプロダクトにアクセスレベルが割り当てられているか確認する。
+:::
+
+### ユーザーを識別する \{#identify-users\}
+
+アプリのユーザーアカウントをAdaptyのプロファイルに紐付けて、デバイスをまたいで購入が引き継がれるようにします。
+
+:::important
+アプリに認証機能がない場合はこのステップをスキップしてください。
+:::
+
+**ガイド:** [ユーザーを識別する](ios-quickstart-identify)
+
+LLMに送る内容:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/ios-quickstart-identify.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** `Adapty.identify("your-user-id")` を呼び出した後、ダッシュボードの **Profiles** セクションにカスタムユーザーIDが表示される。
+- **注意点:** 匿名プロファイルへのアトリビューションを避けるため、`identify` はアクティベーション後、ペイウォール取得前に呼び出す。
+:::
+
+### リリースの準備をする \{#prepare-for-release\}
+
+サンドボックスで組み込みが動作したら、すべてが本番環境に対応しているかリリースチェックリストを確認しましょう。
+
+**ガイド:** [リリースチェックリスト](release-checklist)
+
+LLMに送る内容:
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/ja/release-checklist.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** すべてのチェックリスト項目が確認済み：ストア接続、サーバー通知、購入フロー、アクセスレベルチェック、プライバシー要件。
+- **注意点:** App Store Server Notificationsが未設定 → **App settings → iOS SDK** で設定しないと、イベントがダッシュボードに表示されません。
+:::
+
+## プレーンテキストのドキュメントインデックスファイル \{#plain-text-doc-index-files\}
+
+個別ページを超えてLLMに広いコンテキストを提供したい場合、Adaptyドキュメント全体をリスト化または統合したインデックスファイルを提供しています。
+
+- [`llms.txt`](https://adapty.io/docs/ja/llms.txt): すべてのページを `.md` リンク付きでリスト化しています。LLMがウェブサイトにアクセスしやすくするための[新興標準](https://llmstxt.org/)です。一部のAIエージェント（ChatGPTなど）では、`llms.txt` をダウンロードしてチャットにファイルとしてアップロードする必要があります。
+- [`llms-full.txt`](https://adapty.io/docs/ja/llms-full.txt): Adaptyドキュメントサイト全体を1つのファイルにまとめたものです。非常に大きいため、全体像が必要な場合のみ使用してください。
+- iOS専用の [`ios-llms.txt`](https://adapty.io/docs/ja/ios-llms.txt) と [`ios-llms-full.txt`](https://adapty.io/docs/ja/ios-llms-full.txt): サイト全体と比べてトークンを節約できる、プラットフォーム別のサブセットです。

@@ -1,0 +1,177 @@
+---
+title: "Capacitor SDKでペイウォールビルダーのペイウォールとその設定を取得する"
+description: "Capacitorアプリでサブスクリプション管理を強化するために、AdaptyでPBペイウォールを取得する方法を学びましょう。"
+metadataTitle: "AdaptyでPBペイウォールを取得する | Adapty ドキュメント"
+displayed_sidebar: sdkcapacitor
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+
+Adapty ダッシュボードの新しいペイウォールビルダーで[ペイウォールのビジュアルデザインを作成](adapty-paywall-builder)したら、モバイルアプリに表示できます。まず、プレースメントに紐づくペイウォールとそのビュー設定を取得する必要があります。
+
+このトピックはペイウォールビルダーでカスタマイズされたペイウォールについて説明しています。リモートコンフィグペイウォールの取得については、[モバイルアプリでリモートコンフィグペイウォールのペイウォールとプロダクトを取得する](fetch-paywalls-and-products-capacitor)トピックをご参照ください。
+
+<details>
+   <summary>モバイルアプリにペイウォールを表示する前に（クリックして展開）</summary>
+
+1. Adapty ダッシュボードで[プロダクトを作成](create-product)します。
+2. Adapty ダッシュボードで[ペイウォールを作成してプロダクトを追加](create-paywall)します。
+3. Adapty ダッシュボードで[プレースメントを作成してペイウォールを追加](create-placement)します。
+4. モバイルアプリに[Adapty SDK](sdk-installation-capacitor)をインストールします。
+</details>
+
+## ペイウォールビルダーで作成されたペイウォールを取得する \{#fetch-paywall-designed-with-paywall-builder\}
+
+[ペイウォールビルダーでペイウォールをデザイン](adapty-paywall-builder)した場合、ユーザーに表示するためにモバイルアプリコードでレンダリングを心配する必要はありません。このようなペイウォールには、表示する内容と表示方法の両方が含まれています。ただし、プレースメントを通じてそのIDを取得し、ビュー設定を取得してからモバイルアプリに表示する必要があります。
+
+最適なパフォーマンスを確保するには、ペイウォールと[ビュー設定](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)をできるだけ早く取得し、ユーザーに表示する前に画像のダウンロードが完了する時間を十分に確保することが重要です。
+
+ペイウォールを取得するには、`getPaywall` メソッドを使用します：
+
+```typescript showLineNumbers
+try {
+  const paywall = await adapty.getPaywall({
+    placementId: 'YOUR_PLACEMENT_ID',
+    locale: 'en',
+  });
+  // the requested paywall
+} catch (error) {
+  // handle the error
+}
+```
+
+パラメーター：
+
+| パラメーター | 必須 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | 取得したい[プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>[ペイウォールのローカライゼーション](add-paywall-locale-in-adapty-paywall-builder)の識別子。このパラメーターはマイナス（**-**）文字で区切られた1つまたは2つのサブタグで構成される言語コードを指定します。最初のサブタグは言語、2番目はリージョンを表します。</p><p></p><p>例：`en` は英語、`pt-br` はブラジルポルトガル語を表します。</p><p>ロケールコードとその推奨使用方法については[ローカライゼーションとロケールコード](localizations-and-locale-codes)をご参照ください。</p> |
+| **params** | 任意 | ペイウォール取得のための追加パラメーター。 |
+
+**プロダクトIDをハードコードしないでください。** ハードコードすべき唯一のIDはプレースメントIDです。ペイウォールはリモートで設定されるため、プロダクト数や利用可能なオファーはいつでも変更される可能性があります。アプリはこれらの変更を動的に処理する必要があります。今日2つのプロダクトを返すペイウォールが明日3つを返しても、コードを変更せずにすべてを表示できるようにしてください。
+
+レスポンスパラメーター：
+
+| パラメーター | 説明 |
+| :-------- |:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | プロダクトIDのリスト、ペイウォール識別子、リモートコンフィグ、その他のプロパティを含む[`AdaptyPaywall`](https://capacitor.adapty.io/interfaces/adaptypaywall)オブジェクト。 |
+
+## ペイウォールビルダーで作成されたペイウォールのビュー設定を取得する \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+ペイウォールビルダーの **Show on device** トグルを有効にしてください。このオプションがオンになっていない場合、ビュー設定を取得できません。
+:::
+
+ペイウォールを取得したら、`ViewConfiguration` が含まれているかどうかを確認します。これはペイウォールビルダーで作成されたことを示します。`ViewConfiguration` がある場合はペイウォールビルダーのペイウォールとして扱い、ない場合は[リモートコンフィグペイウォールとして処理](present-remote-config-paywalls-capacitor)します。
+
+Capacitor SDKでは、ビュー設定を手動で取得せずに直接 `createPaywallView` メソッドを呼び出します。
+
+:::warning
+`createPaywallView` メソッドの結果は一度しか使用できません。再度使用する場合は、`createPaywallView` メソッドを新たに呼び出してください。
+:::
+
+```typescript showLineNumbers
+
+if (paywall.hasViewConfiguration) {
+  try {
+    const view = await createPaywallView(paywall);
+  } catch (error) {
+    // handle the error
+  }
+} else {
+  // use your custom logic
+}
+```
+
+パラメーター：
+
+| パラメーター | 必須 | 説明 |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **paywall**          | 必須 | 目的のペイウォールのコントローラーを取得するための `AdaptyPaywall` オブジェクト。 |
+| **customTags**       | 任意 | カスタムタグとその解決された値の辞書を定義します。カスタムタグはペイウォールコンテンツのプレースホルダーとして機能し、ペイウォール内のパーソナライズされたコンテンツのために特定の文字列に動的に置き換えられます。詳細はペイウォールビルダーのカスタムタグのトピックをご参照ください。 |
+| **prefetchProducts** | 任意 | 画面上のプロダクト表示タイミングを最適化するために有効にします。`true` の場合、AdaptyUIが必要なプロダクトを自動的に取得します。デフォルト: `false`。 |
+
+:::note
+複数の言語を使用している場合は、[ペイウォールビルダーのローカライゼーション](add-paywall-locale-in-adapty-paywall-builder)の追加方法と、ロケールコードの正しい使用方法を[こちら](capacitor-localizations-and-locale-codes)で確認してください。
+:::
+
+ビューを取得したら、[ペイウォールを表示](capacitor-present-paywalls)します。
+
+## デフォルトオーディエンスのペイウォールをより早く取得する \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+通常、ペイウォールはほぼ瞬時に取得されるため、このプロセスを高速化することを心配する必要はありません。しかし、多数のオーディエンスとペイウォールがあり、ユーザーのインターネット接続が弱い場合、ペイウォールの取得に想定以上の時間がかかることがあります。そのような状況では、ペイウォールをまったく表示しないよりも、スムーズなユーザー体験を確保するためにデフォルトのペイウォールを表示したい場合があります。
+
+これに対応するために、`getPaywallForDefaultAudience` メソッドを使用できます。このメソッドは **All Users** オーディエンス用に指定されたプレースメントのペイウォールを取得します。ただし、推奨されるアプローチは上記の[ペイウォール情報を取得する](#fetch-paywall-designed-with-paywall-builder)セクションで詳しく説明されている `getPaywall` メソッドでペイウォールを取得することです。
+
+:::warning
+`getPaywall` の使用を推奨する理由
+
+`getPaywallForDefaultAudience` メソッドには以下のような重大な欠点があります：
+
+- **後方互換性の問題**: 異なるアプリバージョン（現在と将来）で異なるペイウォールを表示する必要がある場合、現在（レガシー）バージョンをサポートするペイウォールを設計するか、現在（レガシー）バージョンのユーザーがレンダリングされないペイウォールに遭遇する可能性を受け入れる必要があります。
+- **ターゲティングの喪失**: すべてのユーザーが **All Users** オーディエンス向けに設計された同じペイウォールを見ることになり、国、マーケティングアトリビューション、独自のカスタム属性などに基づいたパーソナライズされたターゲティングが失われます。
+
+ペイウォールの取得を高速化するためにこれらの欠点を受け入れる場合は、以下のように `getPaywallForDefaultAudience` メソッドを使用してください。そうでない場合は[上記](#fetch-paywall-designed-with-paywall-builder)で説明した `getPaywall` を使用してください。
+:::
+
+```typescript showLineNumbers
+try {
+  const paywall = await adapty.getPaywallForDefaultAudience({
+    placementId: 'YOUR_PLACEMENT_ID',
+    locale: 'en',
+  });
+  // the requested paywall
+} catch (error) {
+  // handle the error
+}
+```
+
+:::note
+`getPaywallForDefaultAudience` メソッドは Capacitor SDK バージョン 2.11.2 以降で利用可能です。
+:::
+
+| パラメーター | 必須 | 説明 |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>[ペイウォールのローカライゼーション](add-remote-config-locale)の識別子。このパラメーターはマイナス（**-**）文字で区切られた1つ以上のサブタグで構成される言語コードを指定します。最初のサブタグは言語、2番目はリージョンを表します。</p><p></p><p>例：`en` は英語、`pt-br` はブラジルポルトガル語を表します。</p><p></p><p>ロケールコードとその推奨使用方法については[ローカライゼーションとロケールコード](capacitor-localizations-and-locale-codes)をご参照ください。</p> |
+| **params** | 任意 | ペイウォール取得のための追加パラメーター。 |
+
+## アセットをカスタマイズする \{#customize-assets\}
+
+ペイウォール内の画像や動画をカスタマイズするには、カスタムアセットを実装します。
+
+ヒーロー画像と動画には `hero_image` と `hero_video` という事前定義されたIDがあります。カスタムアセットバンドルでは、これらの要素をIDで指定して動作をカスタマイズします。
+
+その他の画像や動画については、Adapty ダッシュボードで[カスタムIDを設定](custom-media)する必要があります。
+
+例えば、以下のことができます：
+
+- 一部のユーザーに異なる画像や動画を表示する。
+- リモートのメイン画像が読み込まれている間にローカルのプレビュー画像を表示する。
+- 動画を再生する前にプレビュー画像を表示する。
+
+:::important
+この機能を使用するには、Adapty Capacitor SDK をバージョン 3.8.0 以上にアップデートしてください。
+:::
+
+シンプルな辞書を使ってカスタムアセットを提供する例を示します：
+
+```typescript showLineNumbers
+const customAssets: Record<string, AdaptyCustomAsset> = {
+  'custom_image': { type: 'image', relativeAssetPath: 'custom_image.png' },
+  'hero_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'custom_video.mp4' },
+      android: { relativeAssetPath: 'videos/custom_video.mp4' }
+    }
+  }
+};
+
+view = await createPaywallView(paywall, { customAssets });
+```
+
+:::note
+アセットが見つからない場合、ペイウォールはデフォルトの外観にフォールバックします。
+:::

@@ -1,0 +1,81 @@
+---
+title: "Flutter SDKでサブスクリプションステータスを確認する"
+description: "AdaptyでFlutterアプリのユーザーのサブスクリプションステータスを追跡・管理し、顧客維持率を向上させましょう。"
+metadataTitle: "サブスクリプションステータスの理解 | Adapty ドキュメント"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+
+Adaptyを使えば、サブスクリプションステータスの追跡が簡単になります。プロダクトIDをコードに手動で埋め込む必要はありません。代わりに、アクティブな[アクセスレベル](access-level)を確認するだけで、ユーザーのサブスクリプションステータスをすぐに把握できます。
+
+<details>
+   <summary>サブスクリプションステータスの確認を始める前に（クリックして展開）</summary>
+
+- iOS の場合、[App Store Server Notifications](enable-app-store-server-notifications) を設定してください
+- Android の場合、[リアルタイム デベロッパー通知（RTDN）](enable-real-time-developer-notifications-rtdn) を設定してください
+</details>
+
+## アクセスレベルと AdaptyProfile オブジェクト \{#access-level-and-the-adaptyprofile-object\}
+
+アクセスレベルは [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html) オブジェクトのプロパティです。アプリ起動時（[ユーザーを識別する](flutter-identifying-users#setting-customer-user-id-on-configuration)タイミングなど）にプロファイルを取得し、変更があるたびに更新することをおすすめします。こうすることで、都度リクエストを送ることなくプロファイルオブジェクトを利用できます。
+
+プロファイルの更新通知を受け取るには、以下の[サブスクリプションステータス更新のリッスン](flutter-listen-subscription-changes)セクションで説明しているプロファイル変更のリスニングを設定してください。
+
+<SampleApp />
+
+## サーバーからアクセスレベルを取得する \{#retrieving-the-access-level-from-the-server\}
+
+サーバーからアクセスレベルを取得するには、`.getProfile()` メソッドを使用します。
+
+```javascript showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  // check the access
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+レスポンスパラメーター：
+
+| パラメーター | 説明                                                  |
+| --------- | ------------------------------------------------------------ |
+| Profile   | <p>[AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html) オブジェクト。通常は、ユーザーがアプリのプレミアムアクセス権を持っているかどうかを判断するために、プロファイルのアクセスレベルのステータスだけを確認すれば十分です。</p><p></p><p>`.getProfile` メソッドは常にAPIへのクエリを試みるため、最新の結果を返します。何らかの理由（インターネット接続がないなど）でAdapty SDKがサーバーから情報を取得できない場合は、キャッシュのデータが返されます。また、Adapty SDKは `AdaptyProfile` のキャッシュを定期的に更新し、情報をできる限り最新の状態に保ちます。</p> |
+
+`.getProfile()` メソッドはユーザープロファイルを返し、そこからアクセスレベルのステータスを取得できます。アプリごとに複数のアクセスレベルを設定できます。たとえば、ニュースアプリでトピックごとに独立したサブスクリプションを販売する場合、「sports」と「science」というアクセスレベルを作成できます。ただし、多くの場合はアクセスレベルは1つで十分であり、その場合はデフォルトの「premium」アクセスレベルを使用するだけで問題ありません。
+
+デフォルトの「premium」アクセスレベルを確認する例を示します。
+
+```javascript showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  if (profile?.accessLevels['premium']?.isActive ?? false) {
+        // grant access to premium features
+    }
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+### サブスクリプションステータス更新のリッスン \{#listening-for-subscription-status-updates\}
+
+ユーザーのサブスクリプションが変更されるたびに、Adaptyはイベントを発火します。
+
+Adaptyからメッセージを受け取るには、追加の設定が必要です。
+
+```javascript showLineNumbers
+Adapty().didUpdateProfileStream.listen((profile) {
+  // handle any changes to subscription state
+});
+```
+
+Adaptyはアプリ起動時にもイベントを発火します。この場合、キャッシュされたサブスクリプションステータスが渡されます。
+
+### サブスクリプションステータスのキャッシュ \{#subscription-status-cache\}
+
+Adapty SDKに実装されているキャッシュは、プロファイルのサブスクリプションステータスを保存します。そのため、サーバーが利用できない場合でも、キャッシュされたデータからプロファイルのサブスクリプションステータスを取得できます。
+
+ただし、キャッシュから直接データをリクエストすることはできません。SDKは1分ごとにサーバーへ定期的にクエリを送信し、プロファイルに関する更新や変更を確認します。新しいトランザクションやその他の更新など変更があった場合は、サーバーとの同期を保つためにキャッシュデータへ反映されます。

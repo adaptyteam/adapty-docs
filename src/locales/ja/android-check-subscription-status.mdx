@@ -1,0 +1,206 @@
+---
+title: "Android SDKでサブスクリプションステータスを確認する"
+description: "AdaptyでAndroidアプリのサブスクリプションステータスを確認する方法を学びましょう。"
+metadataTitle: "サブスクリプションステータスの確認 | Adapty ドキュメント"
+keywords: ['getProfile', 'サブスクリプションステータス']
+rank: 95
+---
+
+有料コンテンツへのアクセス許可やペイウォールの表示を判断するには、プロファイル内の[アクセスレベル](access-level)を確認する必要があります。
+
+この記事では、プロファイルの状態にアクセスして、ペイウォールを表示するか有料機能へのアクセスを許可するかを決める方法を説明します。
+
+## サブスクリプションステータスを取得する \{#get-subscription-status\}
+
+ペイウォールを表示するか有料コンテンツを見せるかを判断するとき、プロファイルの[アクセスレベル](access-level)を確認します。方法は2つあります：
+
+- 最新のプロファイルデータがすぐに必要な場合（アプリ起動時など）や強制更新したい場合は、`getProfile` を呼び出す。
+- **プロファイルの自動更新**を設定して、サブスクリプションステータスが変わるたびに自動でリフレッシュされるローカルコピーを保持する。
+
+### プロファイルを取得する \{#get-profile\}
+
+サブスクリプションステータスを取得する最もシンプルな方法は、`getProfile` メソッドを使ってプロファイルにアクセスすることです：
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+            // check the access
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        // check the access
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+### サブスクリプション更新を監視する \{#listen-to-subscription-updates\}
+
+アプリでプロファイルの更新を自動的に受け取るには：
+
+1. `Adapty.setOnProfileUpdatedListener()` を使ってプロファイルの変更を監視する。ユーザーのサブスクリプションステータスが変わると、Adaptyが自動でこのメソッドを呼び出します。
+2. このメソッドが呼び出されたら更新されたプロファイルデータを保存し、追加のネットワークリクエストなしにアプリ全体で利用できるようにする。
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin
+class SubscriptionManager {
+    private var currentProfile: AdaptyProfile? = null
+    
+    init {
+        // Listen for profile updates
+        Adapty.setOnProfileUpdatedListener { profile ->
+            currentProfile = profile
+            // Update UI, unlock content, etc.
+        }
+    }
+    
+    // Use stored profile instead of calling getProfile()
+    fun hasAccess(): Boolean {
+        return currentProfile?.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="java" label="Java">
+
+```java
+public class SubscriptionManager {
+    private AdaptyProfile currentProfile;
+
+    public SubscriptionManager() {
+        // Listen for profile updates
+        Adapty.setOnProfileUpdatedListener(profile -> {
+            this.currentProfile = profile;
+            // Update UI, unlock content, etc.
+        });
+    }
+    
+    // Use stored profile instead of calling getProfile()
+    public boolean hasAccess() {
+        if (currentProfile == null) {
+            return false;
+        }
+        
+        AdaptyAccessLevel premiumAccess = currentProfile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
+        return premiumAccess != null && premiumAccess.isActive();
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::note
+Adaptyはアプリ起動時にプロファイル更新リスナーを自動で呼び出し、デバイスがオフラインでもキャッシュされたサブスクリプションデータを提供します。
+:::
+
+## プロファイルとペイウォールのロジックを連携させる \{#connect-profile-with-paywall-logic\}
+
+ペイウォールの表示や有料機能へのアクセス許可をすぐに判断する必要がある場合、ユーザーのプロファイルを直接確認できます。このアプローチは、アプリ起動時、プレミアムセクションへの遷移時、特定コンテンツの表示前など、さまざまなシナリオで役立ちます。
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin
+private fun initializePaywall() {
+    loadPaywall { paywallView ->
+        checkAccessLevel { result ->
+            when (result) {
+                is AdaptyResult.Success -> {
+                    if (!result.value && paywallView != null) {
+                        setContentView(paywallView) // Show paywall if no access
+                    }
+                }
+                is AdaptyResult.Error -> {
+                    if (paywallView != null) {
+                        setContentView(paywallView) // Show paywall if access check fails
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun checkAccessLevel(callback: ResultCallback<Boolean>) {
+    Adapty.getProfile { result ->
+        when (result) {
+            is AdaptyResult.Success -> {
+                val hasAccess = result.value.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true
+                callback.onResult(AdaptyResult.Success(hasAccess))
+            }
+            is AdaptyResult.Error -> {
+                callback.onResult(AdaptyResult.Error(result.error))
+            }
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="java" label="Java">
+
+```java
+private void initializePaywall() {
+    loadPaywall(paywallView -> {
+        checkAccessLevel(result -> {
+            if (result instanceof AdaptyResult.Success) {
+                boolean hasAccess = ((AdaptyResult.Success<Boolean>) result).getValue();
+                if (!hasAccess && paywallView != null) {
+                    setContentView(paywallView); // Show paywall if no access
+                }
+            } else if (result instanceof AdaptyResult.Error) {
+                if (paywallView != null) {
+                    setContentView(paywallView); // Show paywall if access check fails
+                }
+            }
+        });
+    });
+}
+
+private void checkAccessLevel(ResultCallback<Boolean> callback) {
+    Adapty.getProfile(result -> {
+        if (result instanceof AdaptyResult.Success) {
+            AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+            AdaptyAccessLevel premiumAccess = profile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
+            boolean hasAccess = premiumAccess != null && premiumAccess.isActive();
+            callback.onResult(AdaptyResult.success(hasAccess));
+        } else if (result instanceof AdaptyResult.Error) {
+            callback.onResult(AdaptyResult.error(((AdaptyResult.Error) result).getError()));
+        }
+    });
+}
+```
+
+</TabItem>
+</Tabs>
+
+## 次のステップ \{#next-steps\}
+
+サブスクリプションステータスの確認方法を習得したら、次は[ユーザープロファイルの操作](android-quickstart-identify)を学び、ユーザーが購入済みのコンテンツにアクセスできるようにしましょう。

@@ -1,0 +1,30 @@
+---
+title: "Kotlin Multiplatform SDKでペイウォール取得を最適化する"
+description: "Adapty ペイウォールを確実に取得: Kotlin Multiplatformのタイミング、キャッシュ、フォールバックパターン。"
+metadataTitle: "ペイウォール取得の最適化 | Kotlin Multiplatform SDK | Adapty ドキュメント"
+---
+
+Kotlin Multiplatformでペイウォールを確実に取得するには、3つのことを行う必要があります: 高速にレンダリングする、オーディエンスに合わせたペイウォールを返す、ネットワークが遅いときでも適切にフォールバックする。以下のルールは、これを実現するためのタイミング、キャッシュ、フォールバックパターンをカバーしています。
+
+:::tip
+このルールは、`Adapty.activate()` と `Adapty.identify()` がすでに完了していることを前提としています。[Kotlin Multiplatform SDKでのコール順序](kmp-sdk-call-order)を参照してください。
+:::
+
+## ルールと注意点 \{#rules-and-pitfalls\}
+
+| 推奨 | 非推奨 | 理由 |
+|---|---|---|
+| 表示しようとしているプレースメントを取得する。                                                                                                                | 起動時にすべてのプレースメントを一括でプリフェッチする。        | 一括プリフェッチはメインスレッドをブロックし、バースト中にブラックスクリーンが発生する。                                                  |
+| アトリビューションが解決される機会を与えた後（例: `activate` から1〜2秒後、または `setOnProfileUpdatedListener` が発火した後）に `getPaywall` を取得する。 | アプリ起動時に `getPaywall` を呼び出す。                       | アトリビューションがまだ確定していない。ペイウォールがデフォルトのオーディエンスに対して解決され、セグメントやASAのパーソナライゼーションが無効になる。 |
+| `loadTimeout` を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。                                                           | `getPaywall` を無期限に待ち続ける。                     | タイムアウトがない場合、接続が悪いユーザーにはネットワークが解決されるまで（またはアプリを閉じるまで）空白の画面が表示される。     |
+
+`fetchPolicy` と `loadTimeout` パラメーターについては[ペイウォールとプロダクトの取得](fetch-paywalls-and-products-kmp)を、適切なプレースメントの選び方については[プレースメント](placements)を参照してください。
+
+## 接続が不安定な環境向けの調整 \{#tune-for-poor-connectivity\}
+
+接続が継続的に不安定な市場（農村地帯、交通機関、ルーティングの影響を受ける地域）向け:
+
+- 最初の取得を除くすべての取得で `fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` を設定する。
+- Adapty ダッシュボードのすべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。
+- `loadTimeout` を3〜5秒に設定し、タイムアウトが発生した場合はフォールバックを受け入れる。
+- ペイウォールの表示を `Adapty.getProfile()` に依存させない。`getPaywall` を独立して呼び出し、プロファイルの遅延がUIをブロックしないようにする。

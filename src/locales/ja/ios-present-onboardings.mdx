@@ -1,0 +1,135 @@
+---
+title: "iOS SDKでオンボーディングを表示する"
+description: "iOSでオンボーディングを表示してコンバージョンと収益を高める方法を説明します。"
+metadataTitle: "iOSでオンボーディングを表示する | Adapty ドキュメント"
+keywords: ['getOnboardingConfiguration']
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+
+:::tip
+**SDK v4（ベータ版）以降**、オンボーディングのより強力な代替手段として[フロー](get-pb-paywalls)を構築できます。オンボーディングはWebView内で動作しますが、フローはデバイス上でネイティブにレンダリングされるため、スムーズなアニメーション、iOSらしい一貫した外観、高速な読み込み、WebViewランタイムへの依存がなくなります。始めるには[フロー & ペイウォールの取得](get-pb-paywalls)と[フロー & ペイウォールの表示](ios-present-paywalls)をご覧ください。
+:::
+
+ビルダーを使ってオンボーディングをカスタマイズした場合、モバイルアプリのコードでレンダリング処理を実装する必要はありません。オンボーディングには、表示内容と表示方法がすべて含まれています。
+
+開始する前に、以下を確認してください：
+
+1. [Adapty iOS SDK](sdk-installation-ios) 3.8.0 以降をインストール済みであること。
+2. [オンボーディングを作成](create-onboarding)済みであること。
+3. オンボーディングを[プレースメント](placements)に追加済みであること。
+
+## SwiftでオンボーディングををPresent \{#present-onboardings-in-swift\}
+
+デバイス画面にビジュアルオンボーディングを表示するには、以下の手順を実行します：
+
+1. `.getOnboardingConfiguration` メソッドを使ってオンボーディングのビュー設定を取得します。
+2. `.onboardingController` メソッドを使って表示したいビジュアルオンボーディングを初期化します：
+
+   リクエストパラメータ：
+
+   | パラメータ                    | 必須/任意 | 説明                                                                                                                                                 |
+   |:-----------------------------|:---------|:----------------------------------------------------------------------------------------------------------------------------------------------------|
+   | **onboarding configuration** | 必須 | オンボーディングのすべてのプロパティを含む `AdaptyUI.OnboardingConfiguration` オブジェクト。`AdaptyUI.getOnboardingConfiguration` メソッドで取得します。 |
+   | **delegate**                 | 必須 | オンボーディングのイベントを受け取るための `AdaptyOnboardingControllerDelegate`。                                                                     |
+
+   戻り値：
+
+   | オブジェクト                         | 説明                                             |
+   |:-------------------------------|:--------------------------------------------------------|
+   | **AdaptyOnboardingController** | リクエストされたオンボーディング画面を表すオブジェクト |
+
+3. オブジェクトの作成に成功したら、デバイスの画面に表示できます：
+
+   ```swift showLineNumbers title="Swift"
+   import Adapty
+   import AdaptyUI
+   
+   // 0. Get an onboarding if you haven't done it yet     
+   let onboarding = try await Adapty.getOnboarding(placementId: "YOUR_PLACEMENT_ID")
+   
+   // 1. Obtain the onboarding view configuration:
+   let configuration = try AdaptyUI.getOnboardingConfiguration(forOnboarding: onboarding)
+
+   // 2. Create Onboarding View Controller
+   let onboardingController = try AdaptyUI.onboardingController(
+       with: configuration,
+       delegate: <AdaptyOnboardingControllerDelegate>
+   ) 
+
+   // 3. Present it to the user
+   present(onboardingController, animated: true)
+   ```
+
+## SwiftUIでオンボーディングをPresent \{#present-onboardings-in-swiftui\}
+
+SwiftUIでデバイス画面にビジュアルオンボーディングを表示するには：
+
+```swift showLineNumbers title="SwiftUI"
+// 1. Obtain the onboarding view configuration:
+let configuration = try AdaptyUI.getOnboardingConfiguration(forOnboarding: onboarding)
+
+// 2. Display the Onboarding View within your view hierarchy
+AdaptyOnboardingView(
+    configuration: configuration,
+    placeholder: { Text("Your Placeholder View") },
+    onCloseAction: { action in
+        // hide the onboarding view
+    },
+    onError: { error in
+         // handle the error
+    }
+)
+```
+
+## スプラッシュ画面とオンボーディング間のトランジションをスムーズにする \{#add-smooth-transitions-between-the-splash-screen-and-onboarding\}
+
+デフォルトでは、スプラッシュ画面とオンボーディングの間、オンボーディングが完全に読み込まれるまでローディング画面が表示されます。よりスムーズなトランジションにしたい場合は、スプラッシュ画面を延長したり、別のコンテンツを表示するようにカスタマイズできます。
+
+そのためには、プレースホルダー（オンボーディングの読み込み中に表示するもの）を定義してください。プレースホルダーを定義すると、オンボーディングはバックグラウンドで読み込まれ、準備ができ次第自動的に表示されます。
+
+<Tabs>
+<TabItem value="swift" label="UIKit">
+```swift showLineNumbers
+
+extension YourOnboardingManagerClass: AdaptyOnboardingControllerDelegate {
+   func onboardingsControllerLoadingPlaceholder(
+      _ controller: AdaptyOnboardingController
+      ) -> UIView? {
+         // instantiate and return the UIView which will be presented while onboarding is being loaded
+   }
+}
+```
+</TabItem>
+
+<TabItem value="swiftui" label="SwiftUI">
+```swift showLineNumbers
+AdaptyOnboardingView(
+    configuration: configuration,
+    placeholder: { 
+        // define your placeholder view, which will be presented while onboarding is being loaded
+    },
+    // the rest of the implementation
+)
+```
+</TabItem>
+
+</Tabs>
+
+## オンボーディング内のリンクの開き方をカスタマイズする \{#customize-how-links-open-in-onboardings\}
+
+:::important
+オンボーディング内のリンクの開き方のカスタマイズは、Adapty SDK v3.15.1 以降でサポートされています。
+:::
+
+デフォルトでは、オンボーディング内のリンクはアプリ内ブラウザで開きます。これにより、アプリを切り替えることなくウェブページをアプリ内で表示でき、シームレスなユーザー体験を提供します。
+
+外部ブラウザでリンクを開きたい場合は、`externalUrlsPresentation` パラメータを `.externalBrowser` に設定することでこの動作をカスタマイズできます：
+
+```swift showLineNumbers
+
+let configuration = try AdaptyUI.getOnboardingConfiguration(
+    forOnboarding: onboarding,
+    externalUrlsPresentation: .externalBrowser // default – .inAppBrowser
+)
+```

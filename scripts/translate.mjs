@@ -245,6 +245,9 @@ TRANSLATION STYLE — write natural, idiomatic ${targetLanguage}:
 - Prefer everyday vocabulary over technical loan words when a natural equivalent exists.
 - Do not translate mechanically word-for-word. Read the full sentence for meaning, then write it as a native speaker would naturally say it.
 
+NEVER REFUSE — you are translating ONE FRAGMENT of a larger MDX document:
+You are given a section of a bigger file, never the whole document. A fragment may be short or consist mostly (or entirely) of a fenced code block — this is expected and correct, NOT an error and NOT a sign of missing input. Never refuse, never claim the input is empty, incomplete, "just a code fragment", "only a code snippet", or "not a complete MDX document", never ask for the full document or more context, and never add commentary, apologies, notes, or meta-remarks — in English OR in ${targetLanguage}. If a fragment has no translatable prose (e.g. it is only code), return it byte-for-byte unchanged.
+
 Output valid MDX only. No explanation, no commentary, no markdown fences wrapping the output. For section fragments that do not include frontmatter, do not add import statements, frontmatter blocks, or document-level wrapper structure.`;
 }
 
@@ -3329,12 +3332,27 @@ function hasTranslatableProse(content) {
 }
 
 /**
- * Detects when the model replied with an apology / request-for-input instead of
- * a translation. Such replies appear when a fragment looks empty or code-only to
- * the model. Matched against the start of the reply (refusals always lead); the
- * scoped phrases keep false positives away from legitimate translated bodies.
+ * Detects when the model replied with an apology / request-for-input / "this is
+ * only code" meta-message instead of a translation. Such replies appear when a
+ * fragment looks empty or code-dominated to the model.
+ *
+ * We scan the WHOLE reply, not just the head: the refusal is sometimes injected
+ * MID-OUTPUT — after the model has translated the leading prose and opening
+ * tags — which is exactly how it slipped past the head-only check to production
+ * on 2026-06-16 (deploy run 27615485926). Scanning the full body is safe because
+ * a real translated body is in the TARGET language, so English refusal phrases
+ * only appear when the model actually broke into commentary; the localized
+ * patterns are scoped to refusal-meta phrasing (references to the input/document
+ * being incomplete, or a request to provide the full file) that never occurs in
+ * genuine translated SDK prose.
+ *
+ * LOCALIZED PATTERNS MUST TRACK THE ACTIVE LOCALES. When adding a language, add
+ * its refusal/meta phrasings here too — see the localize skill (Step 1b). A
+ * missing language means a mid-output refusal in that language passes undetected
+ * to the deploy gate (a broken locale file on main + a failed production deploy).
  */
 const REFUSAL_PATTERNS = [
+  // English
   /\bappears to be (empty|incomplete|just a|only a)\b/i,
   /\b(please|could you)\s+(please\s+)?(paste|provide|share)\b[^.\n]{0,60}\b(mdx|document|documentation|content|text)\b/i,
   /\byou'?d like (me )?(to )?translate/i,
@@ -3344,11 +3362,39 @@ const REFUSAL_PATTERNS = [
   /\bshared a code snippet\b/i,
   /\bno actual content to translate\b/i,
   /\bcontent (you want translated|to translate) is (empty|incomplete|missing)\b/i,
+  /\b(only|just) a code (fragment|snippet|block)\b/i,
+  /\b(not|isn'?t) a (complete|full) MDX document\b/i,
+
+  // Russian (ru)
+  /не вижу[^.\n]{0,40}MDX/iu,
+  /(предоставьте|пришлите|поделитесь)[^.\n]{0,60}(MDX|документ|файл)/iu,
+  /прислали[^.\n]{0,20}фрагмент/iu,
+  /без MDX-?разметки/iu,
+
+  // Chinese (zh)
+  /我无法(处理|翻译|完成)/u,
+  /请提供[^。\n]{0,20}(完整|MDX|文档)/u,
+  /不是完整的[^。\n]{0,8}(MDX|文档)/u,
+
+  // Turkish (tr)
+  /çeviri gerektirmez/iu,
+  /olduğu gibi bırak/iu,
+  /(tam|eksiksiz)[^.\n]{0,30}MDX[^.\n]{0,20}(belge|doküman)/iu,
+
+  // Spanish (es)
+  /lo siento[^.\n]{0,40}(traducir|MDX|documentaci[oó]n)/iu,
+  /(solo|sólo) puedo traducir/iu,
+
+  // Japanese (ja)
+  /MDX\s*(ドキュメント|文書)[^。\n]{0,16}(見当たりません|見つかりません|ありません)/u,
+  /(完全な|全文|完全)[^。\n]{0,20}(MDX|ドキュメント|文書)[^。\n]{0,20}(提供|お送り|ください)/u,
+  /翻訳(は|が)?(不要|必要ありません|の必要はありません)/u,
+  /(コード(の)?(断片|フラグメント|スニペット|ブロック))(のみ|だけ)/u,
+  /(のみ|だけ)(を)?翻訳でき(ます|る)/u,
 ];
-function looksLikeRefusal(text) {
+export function looksLikeRefusal(text) {
   if (!text) return false;
-  const head = text.slice(0, 400);
-  return REFUSAL_PATTERNS.some((re) => re.test(head));
+  return REFUSAL_PATTERNS.some((re) => re.test(text));
 }
 
 /**
@@ -3369,7 +3415,7 @@ async function translateFragmentHardened(client, systemPrompt, content) {
             "Translate the natural-language text in the MDX fragment below. " +
             "It may be very short — a single heading, label, table, or code block — but it is NOT empty. " +
             "Translate all prose; leave code, markup, URLs, attributes, and identifiers unchanged. " +
-            "Return ONLY the translated fragment, with no commentary, apology, or request for more input:\n\n" +
+            "Return ONLY the translated fragment, with no commentary, apology, or request for more input — in English or the target language:\n\n" +
             content,
         },
       ],

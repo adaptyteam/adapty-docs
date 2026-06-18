@@ -1,0 +1,270 @@
+---
+title: "Amazon S3"
+description: "ユーザー獲得データを S3 にエクスポートして、高度な分析とレポートを実現します。"
+metadataTitle: "S3 エクスポートとデータ管理 | Adapty ドキュメント"
+keywords: ['adapty ua', 'ユーザー獲得', 's3', 'amazon']
+---
+
+Adapty UA の Amazon S3 インテグレーションを使用すると、ユーザー獲得キャンペーンデータを一か所に安全に保存できます。キャンペーンのパフォーマンスデータ、アトリビューションデータ、ユーザー獲得イベントを .csv ファイルとして Amazon S3 バケットに保存できます。  
+このインテグレーションを設定するには、AWS コンソールと Adapty UA ダッシュボードでいくつかの簡単な手順を行う必要があります。
+
+:::note
+Adapty UA は毎日 UTC 4:00 に **24h** ごとにデータを送信します。
+
+各ファイルには、UTC での前の暦日に作成されたイベントのデータが含まれます。たとえば、3 月 8 日の UTC 4:00 に自動的にエクスポートされたデータには、3 月 7 日の UTC 00:00:00 から 23:59:59 までに作成されたすべてのイベントが含まれます。
+:::
+
+## Amazon S3 インテグレーションのセットアップ方法 \{#how-to-set-up-amazon-s3-integration\}
+
+データの受信を開始するには、以下の認証情報が必要です：
+
+1. アクセスキー ID
+2. シークレットアクセスキー
+3. S3 バケット名
+4. S3 バケット内のフォルダ名
+
+:::note
+ネストされたディレクトリ
+
+Amazon S3 バケット名フィールドにネストされたディレクトリを指定できます。例：adapty-ua-events/com.sample-app
+:::
+
+### ステップ 1. Amazon S3 認証情報の作成 \{#step-1-create-amazon-s3-credentials\}
+
+このガイドでは、AWS コンソールで必要な認証情報を作成する方法を説明します。
+
+#### 1.1. アクセスポリシーの作成 \{#11-create-access-policy\}
+
+1. AWS コンソールの [IAM ポリシーダッシュボード](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/policies) に移動します
+2. **Create Policy** オプションを選択します
+
+<Zoom>
+  <img src="/assets/shared/img/7af075c-CleanShot_2023-03-21_at_10.52.002x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. ポリシーエディターで以下の JSON を貼り付け、`adapty-s3-integration-test` をご自身のバケット名に変更します：
+
+```json showLineNumbers title="Json"
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowListObjectsInBucket",
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        },
+        {
+            "Sid": "AllowAllObjectActions",
+            "Effect": "Allow",
+            "Action": "s3:*Object",
+            "Resource": [
+                "arn:aws:s3:::adapty-s3-integration-test/*",
+                "arn:aws:s3:::adapty-s3-integration-test"
+            ]
+        },
+        {
+            "Sid": "AllowBucketLocation",
+            "Effect": "Allow",
+            "Action": "s3:GetBucketLocation",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        }
+    ]
+}
+```
+
+<Zoom>
+  <img src="/assets/shared/img/d4e474a-CleanShot_2023-03-21_at_10.56.212x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. ポリシーの設定が完了したら、タグを追加することもできます（省略可能）。その後、**Next** をクリックして最終ステップに進みます
+5. このステップでポリシーに名前を付け、**Create policy** ボタンをクリックして作成を完了します
+
+<Zoom>
+  <img src="/assets/shared/img/7dcb02f-CleanShot_2023-03-21_at_11.03.372x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+#### 1.2. IAM ユーザーの作成 \{#12-create-iam-user\}
+
+Adapty UA が生データレポートをバケットにアップロードできるようにするには、特定のバケットへの書き込みアクセス権を持つユーザーのアクセスキー ID とシークレットアクセスキーを提供する必要があります。
+
+1. IAM コンソールに移動し、[ユーザーセクション](https://console.aws.amazon.com/iamv2/home#/users) を選択します
+2. **Add users** ボタンをクリックします
+
+<Zoom>
+  <img src="/assets/shared/img/bb612c8-CleanShot_2023-03-21_at_11.12.392x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. ユーザーに名前を付け、**Access key – Programmatic access** を選択して、権限の設定に進みます
+
+<Zoom>
+  <img src="/assets/shared/img/467ee4d-j6aoX.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. 次のステップで **Add user to group** オプションを選択し、**Create group** ボタンをクリックします
+
+<Zoom>
+  <img src="/assets/shared/img/bfd0e80-CleanShot_2023-03-21_at_11.24.592x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+5. ユーザーグループに名前を付け、先ほど作成したポリシーを選択します
+6. ポリシーを選択したら、**Create group** ボタンをクリックしてプロセスを完了します
+
+<Zoom>
+  <img src="/assets/shared/img/df29c12-CleanShot_2023-03-21_at_11.28.052x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+7. グループを正常に作成したら、**それを選択**して次のステップに進みます
+
+<Zoom>
+  <img src="/assets/shared/img/1f3722e-CleanShot_2023-03-21_at_11.36.192x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+8. このセクションの最終ステップですので、**Create User** ボタンをクリックして進みます
+
+<Zoom>
+  <img src="/assets/shared/img/ea43722-CleanShot_2023-03-21_at_11.40.462x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+9. 最後に、**認証情報を .csv 形式でダウンロード**するか、ダッシュボードから直接コピーして貼り付けることができます
+
+<Zoom>
+  <img src="/assets/shared/img/bcf35e1-S3created.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### ステップ 2. Adapty UA でのインテグレーション設定 \{#step-2-configure-integration-in-adapty-ua\}
+
+1. [**Integrations** -> **Amazon S3**](https://app.adapty.io/ua/integrations/s3) に移動します
+2. **Export install events to Amazon S3** トグルをオンにします
+3. 以下のフィールドに入力して、Amazon S3 と Adapty UA プロファイルの接続を設定します：
+
+| フィールド                   | 説明                                                  |
+|:-----------------------------| :----------------------------------------------------------- |
+| **Access Key ID**            | AWS サービスへのユーザーまたはアプリケーションのアクセスを認証するための一意の識別子です。この ID はダウンロードした [csv ファイル](ua-amazon-s3#step-1-create-amazon-s3-credentials) で確認できます。 |
+| **Secret Access Key**        | アクセスキー ID と組み合わせて AWS サービスへのアクセスを認証するためのプライベートキーです。このキーはダウンロードした [csv ファイル](ua-amazon-s3#step-1-create-amazon-s3-credentials) で確認できます。 |
+| **S3 Bucket Name**           | AWS クラウド内の特定の S3 バケットを識別するグローバルに一意の名前です。S3 バケットは、ファイルや画像などのデータオブジェクトをクラウドに保存・取得できるシンプルなストレージサービスです。 |
+| **Folder Inside the Bucker** | 選択した S3 バケット内に作成したいフォルダの名前です。S3 はオブジェクトキープレフィックス（実質的にフォルダ名）を使用してフォルダをシミュレートしていることにご注意ください。 |
+| **Region**（省略可能）        | AWS マネジメントコンソールの IAM ユーザーアカウントでリージョンを確認できます。                                                                                                                                                                                  |
+
+<ZoomImage id="ua-amazon-s3.webp" width="700px" />
+
+## 手動データエクスポート \{#manual-data-export\}
+
+Amazon S3 への自動イベントデータエクスポートに加えて、Adapty UA では手動ファイルエクスポート機能も提供しています。この機能を使用すると、ユーザー獲得データの特定の日付を選択して、S3 バケットに手動でエクスポートできます。これにより、エクスポートするデータとそのタイミングをより細かく制御できます。
+
+## テーブル構造 \{#table-structure\}
+
+AWS S3 インテグレーションでは、Adapty UA はインストールイベントの履歴データを保存するテーブルを提供します。このテーブルには、ユーザープロファイル、収益と取り分、オリジンストアなどに関する情報が含まれています。
+
+:::warning
+この構造は、私たちや連携する第三者から新しいデータが追加されるにつれて、今後拡張される可能性があります。データを処理するコードは特定のフィールドに依存するようにし、構造全体に依存しないよう注意してください。
+:::
+
+イベントのテーブル構造は以下のとおりです：
+
+| カラム                   | 説明                               |
+|--------------------------|-------------------------------------------|
+| `adapty_profile_id`      | Adapty プロファイルの一意の識別子          |
+| `install_id`             | インストールの一意の識別子            |
+| `created_at`             | レコード作成タイムスタンプ（ISO 8601）      |
+| `installed_at`           | アプリインストールタイムスタンプ（ISO 8601）     |
+| `store`                  | アプリストア（`ios`、`android`）              |
+| `country`                | ユーザーの国コード（ISO 3166-1 alpha-2）  |
+| `ip_address`             | クライアント IP アドレス                         |
+| `idfa`                   | iOS 広告識別子（Identifier for Advertisers）            |
+| `idfv`                   | iOS ベンダー識別子（Identifier for Vendors）                   |
+| `gaid`                   | Google 広告 ID（Android）           |
+| `android_id`             | Android デバイス ID                         |
+| `app_set_id`             | Android App Set ID                        |
+| `channel`                | アトリビューションチャネル                       |
+| `campaign_id`            | キャンペーン識別子                       |
+| `campaign_name`          | キャンペーン名                             |
+| `adset_id`               | 広告セット識別子                         |
+| `adset_name`             | 広告セット名                               |
+| `ad_id`                  | 広告識別子                             |
+| `ad_name`                | 広告名                                   |
+| `keyword_id`             | キーワード識別子                        |
+| `keyword_name`           | キーワード名                              |
+| `asa_org_id`             | Apple Search Ads 組織 ID          |
+| `asa_keyword_match_type` | ASA キーワードマッチタイプ（`Exact`、`Broad`） |
+| `asa_attribution`        | ASA アトリビューションデータ（JSON 文字列）        |
+| `asa_conversion_type`    | ASA コンバージョンタイプ                   |
+| `asa_country_or_region`  | ASA の国またはリージョン                     |
+| `asa_creative_set_name`  | ASA クリエイティブセット名                  |
+| `fbclid`                 | Facebook クリック ID                         |
+| `ttclid`                 | TikTok クリック ID                           |
+| `utm_source`             | UTM ソースパラメータ                      |
+| `utm_medium`             | UTM メディアパラメータ                      |
+| `utm_campaign`           | UTM キャンペーンパラメータ                    |
+| `utm_term`               | UTM タームパラメータ                        |
+| `utm_content`            | UTM コンテンツパラメータ                     |

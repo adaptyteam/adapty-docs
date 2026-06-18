@@ -1,0 +1,90 @@
+---
+title: "AIにアナリティクスデータについて質問する"
+description: "Export Analytics APIを使用して、AIコーディングエージェントでAdaptyアナリティクスを自然言語でクエリする。"
+metadataTitle: "AIにアナリティクスデータについて質問する | Adapty ドキュメント"
+keywords: ['アナリティクスについてAIに質問', 'adaptyアナリティクスai', 'aiでアナリティクスをクエリ', 'エクスポートアナリティクスapi', 'アナリティクスaiエージェント', 'mcp', 'llm']
+---
+
+AIコーディングエージェントに、Adaptyのアナリティクスについて自然言語で質問できます。収益、コンバージョン、リテンション、LTVなど、数字を引き出す作業をエージェントに任せましょう。[Export Analytics API](export-analytics-api)にAPIコールできるツールを接続すれば、オンデマンドで指標をクエリできます。
+
+## 質問できる内容 \{#what-you-can-ask-about\}
+
+Export Analytics APIは、Adaptyダッシュボードのチャートに表示されるのと同じ指標を返します。各指標には専用のオペレーションがあります。
+
+| 指標 | 対象内容 | オペレーション |
+| --- | --- | --- |
+| 収益、MRR、ARR、ARPU | 期間・国・キャンペーン別の収益推移 | [retrieveAnalyticsData](https://adapty.io/docs/ja/api-export-analytics/operations/retrieveAnalyticsData.md) |
+| コホートリテンション | 特定のコホートのサブスクライバーが支払いを継続する期間 | [retrieveCohortData](https://adapty.io/docs/ja/api-export-analytics/operations/retrieveCohortData.md) |
+| コンバージョン率 | ステップやチャネル間のユーザー遷移数 | [retrieveConversionData](https://adapty.io/docs/ja/api-export-analytics/operations/retrieveConversionData.md) |
+| チャーンとファネル | ユーザーが離脱する場所と解約のペース | [retrieveFunnelData](https://adapty.io/docs/ja/api-export-analytics/operations/retrieveFunnelData.md) |
+| ライフタイムバリュー（LTV） | ユーザーセグメントごとの平均収益の推移 | [retrieveLTVData](https://adapty.io/docs/ja/api-export-analytics/operations/retrieveLTVData.md) |
+| リテンション | 一定日数後もアクティブなユーザーの割合 | [retrieveRetentionData](https://adapty.io/docs/ja/api-export-analytics/operations/retrieveRetentionData.md) |
+
+パラメーターとフィルターの完全な一覧は[APIリファレンス](api-export-analytics)を参照してください。
+
+## 始める前に \{#before-you-start\}
+
+必要なものが3つあります。
+
+- **データが入ったAdaptyアカウント**: APIはダッシュボードのチャートと同じ指標を返すため、アプリがすでにアナリティクスを収集していることが必要です。
+- **シークレットAPIキー**: [App settings → General](https://app.adapty.io/settings/general)の**Secret key**フィールドで確認できます。キーはアプリごとに固有なので、アプリ別に別々のキーを使用してください。エージェントがチャットに貼り付けなくても読み取れるよう、環境変数（例：`ADAPTY_SECRET_KEY`）に保存しておきましょう。
+- **APIを呼び出せるAIツール**: Claude Code、Cursor、またはフェッチツール付きのClaude Desktopなどが使えます。claude.aiやChatGPTのような通常のチャットツールは、APIを直接呼び出せません。
+
+:::note
+export-analytics-secret-key.webp
+:::
+
+## エージェントにAPIスペックを渡す \{#give-your-agent-the-api-spec\}
+
+[OpenAPIスペック](https://adapty.io/docs/ja/api-specs/export-analytics-api.yaml)には、すべてのエンドポイント、認証ヘッダー、リクエストボディ、レスポンス例が記載されています。エージェントがスペックを持っていれば、コードを書かなくても正しいリクエストを生成できます。
+
+URLでエージェントにスペックを渡す方法：
+
+- **URLを貼り付ける**: エージェントがURLを取得できる場合は、`https://adapty.io/docs/ja/api-specs/export-analytics-api.yaml`を渡してスペックを読むよう指示してください。
+- **フェッチツールを使う**: エージェントにURLを取得するツール（例：MCPフェッチサーバー）がある場合は、同じURLを指定してください。
+
+スペックにはベースURL`https://api-admin.adapty.io`が設定されているため、キーを環境変数に入れれば必要なものがすべて揃います。
+
+## データについて質問する \{#ask-about-your-data\}
+
+スペックを読み込み、キーを環境変数に設定したら、欲しい指標を自然言語で説明するだけです。
+
+プロンプトの例：
+
+```
+What was my MRR at the end of each month this year, and how does it compare to last year?
+
+Show my trial-to-paid conversion rate for the last 90 days, broken down by product.
+
+Which countries drive the most revenue from my yearly subscription? Top 10.
+
+How is week-1 retention trending for subscribers who started in the last 6 months?
+
+What's the refund rate on my annual plan since launch, by month?
+
+Compare LTV for paid-campaign users vs. organic over the last year, and export it as CSV.
+```
+
+エージェントはリクエストを適切なオペレーションにマッピングし、環境変数からキーを読み取ってデータを返します。レスポンスはデフォルトでJSON形式です。スプレッドシートで使いやすいCSVが必要な場合はその旨を伝えると、エージェントがリクエストボディの`format`を`csv`に設定します。
+
+:::warning
+シークレットキーは環境変数に保存してください。チャットに貼り付けたり、ルールファイルにコミットしたりしないでください。キーはアプリごとに固有なので、漏洩した場合は**Settings → General**でローテーションしてください。[APIキーのローテーション](export-analytics-api-authorization#rotate-api-keys)を参照してください。
+:::
+
+## 繰り返し使うための初期設定 \{#set-up-once-for-repeated-use\}
+
+毎回のセッションで設定を繰り返さないよう、スペックとキーをエージェントが再利用できる場所に保存しておきましょう。
+
+- **スペックリンクを保存する**: エージェントのルールやメモリファイル（例：`CLAUDE.md`やCursorのルールファイル）にスペックURLを追加しておくと、毎セッション自動的に読み込まれます。
+- **キーを環境変数に保存する**: `ADAPTY_SECRET_KEY`をシェルプロファイルやツールのシークレットストアに保存しておけば、二度と貼り付け作業が不要になります。
+- **再利用可能なプロンプトを保存するか、カスタムスキルを作成する**: よく使う質問をプロンプトとして保存するか、カスタムスキルやスラッシュコマンドにまとめておくと、オンデマンドでレポートを実行できます。
+
+## 制限事項 \{#limits\}
+
+以下の制約に注意してください。
+
+- **レート制限**: APIはAPIキーごとに1秒あたり2リクエストまで許可されています。超過すると`429 Too Many Requests`エラーが返ります。`429`が返ったときは待ってからリトライするようエージェントに伝えてください。
+- **アプリごとのキー**: 各キーは1つのアプリにのみ有効です。複数アプリのデータを取得する場合は、アプリごとに対応するキーを提供してください。
+- **出力フォーマット**: レスポンスはデフォルトでJSON形式です。CSVでエクスポートするには、リクエストボディで`format`を`csv`に設定してください。
+
+認証とリクエストのルールの詳細は、[認証とリクエスト形式](export-analytics-api-authorization)を参照してください。

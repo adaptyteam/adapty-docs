@@ -1,0 +1,195 @@
+---
+title: "RevenueCatからの移行"
+description: "ステップバイステップガイドでRevenueCatからAdaptyに移行しましょう。"
+metadataTitle: "RevenueCatからAdaptyへの移行 | Adapty ドキュメント"
+keywords: ['移行', 'revenuecat']
+---
+
+移行は5つのステップで構成されており、平均所要時間は約2時間です。移行の90%は1営業日以内に完了します。
+
+1. 主要な違いを理解し、Adaptyアカウントを作成・準備する _（5分）_；
+2. RevenueCat SDKの代わりに、各プラットフォーム向けのAdapty SDKをインストールする（[iOS](sdk-installation-ios)、[Android](sdk-installation-android)、[React Native](sdk-installation-reactnative)、[Flutter](sdk-installation-flutter)、[Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)、[Unity](sdk-installation-unity)）_（1時間）_；
+3. AdaptyへのApple App Storeサーバー通知を設定し、オプションで[rawイベント転送](enable-app-store-server-notifications#raw-events-forwarding)を設定する _（5分）_；
+4. アプリのアップデートをテストしてリリースする _（30分）_；
+5. （オプション）RevenueCatサポートにCSV形式の過去データをリクエストする _（5分）_；
+6. （オプション）Adaptyサポート経由で過去データをインポートする _（30分）_。
+
+:::info
+サブスクライバーは自動的に移行されます
+
+サブスクリプションを有効にしたことがあるすべてのユーザーは、Adapty SDKを搭載した新しいバージョンのアプリを開いた瞬間に自動的にAdaptyへ移行されます。サブスクリプションのステータス検証とプレミアムアクセスは自動的に復元されます。
+:::
+
+Adapty SDKを搭載したアプリの新バージョンをリリースする前に、必ず[リリースチェックリスト](release-checklist)を確認してください。
+
+## 主要な違いを理解し、Adaptyアカウントを作成・準備する \{#learn-the-core-differences-create-and-prepare-an-adapty-account\}
+
+AdaptyとRevenueCatのSDKは設計が似ています。最大の違いはネットワーク使用量とスピードです。Adapty SDKは、必要な情報をリクエスト時にできる限り高速に提供するよう設計されています。たとえば、ペイウォールをリクエストする際、オンボーディングやペイウォールの事前構築に使える[リモートコンフィグ](customize-paywall-with-remote-config)がまず返され、その後プロダクトが専用リクエストで取得されます。
+
+名称は少し異なります：
+
+| RevenueCat  | Adapty          |
+| :---------- | :-------------- |
+| Package     | Product         |
+| Offering    | Paywall         |
+| Paywall     | Paywall Builder |
+| Entitlement | Access level    |
+
+Adaptyには[プレースメント](placements)というコンセプトがあります。これはアプリ内でユーザーが購入できる論理的な場所です。ほとんどの場合、プレースメントは1〜2つです：
+
+- オンボーディング（全購入の80%がここで発生するため）；
+- 全般（オンボーディング後の設定画面やアプリ内で表示）。
+
+<Zoom>
+  <img src="/assets/shared/img/2406d97-image.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '300px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Adapty SDKのインストールとRevenueCat SDKの置き換え \{#install-adapty-sdk-and-replace-revenuecat-sdk\}
+
+各プラットフォーム向けのAdapty SDKをアプリにインストールしてください（[iOS](sdk-installation-ios)、[Android](sdk-installation-android)、[React Native](sdk-installation-reactnative)、[Flutter](sdk-installation-flutter)、[Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)、[Unity](sdk-installation-unity)）。
+
+アプリ側でいくつかのSDKメソッドを置き換える必要があります。よく使われる関数とAdapty SDKでの置き換え方法を見ていきましょう。
+
+### SDKのアクティベーション \{#sdk-activation\}
+
+`Purchases.configure` を `Adapty.activate` に置き換えてください。
+
+### ペイウォール（オファリング）の取得 \{#getting-paywalls-offerings\}
+
+`Purchases.shared.getOfferings` を [`Adapty.getPaywall`](fetch-paywalls-and-products#fetch-paywall-information) に置き換えてください。
+
+Adaptyでは、常に[プレースメントID](placements)を使ってペイウォールをリクエストします。実際には1〜2個のペイウォールしか取得しないため、SDKの高速化とネットワーク使用量の削減を目的として意図的にこのような設計にしています。
+
+### ユーザー（カスタマープロファイル）の取得 \{#getting-a-user-customer-profile\}
+
+`Purchases.shared.getCustomerInfo` を `Adapty.getProfile` に置き換えてください。
+
+### プロダクトの取得 \{#getting-products\}
+
+RevenueCatでは、`Purchases.shared.getOfferings`を使い、その後`self.offering?.availablePackages`で取得します。
+
+Adaptyでは、まずペイウォールをリクエストして（上記参照）Adaptyの[リモートコンフィグ](customize-paywall-with-remote-config)にすぐアクセスし、その後[`Adapty.getPaywallProducts`](fetch-paywalls-and-products#fetch-products)でプロダクトを取得します。
+
+### 購入する \{#making-a-purchase\}
+
+`Purchases.shared.purchase` を [`Adapty.makePurchase`](making-purchases#make-purchase) に置き換えてください。
+
+### アクセスレベル（エンタイトルメント）の確認 \{#checking-access-level-entitlement\}
+
+カスタマープロファイルを取得し（上記参照）、
+
+`customerInfo?.entitlements["premium"]?.isActive == true`
+
+を以下に置き換えてください：
+
+[`profile.accessLevels["premium"]?.isActive == true`](subscription-status#retrieving-the-access-level-from-the-server)
+
+### 購入の復元 \{#restore-purchase\}
+
+`Purchases.shared.restorePurchases` を [`Adapty.restorePurchases`](restore-purchase) に置き換えてください。
+
+### ユーザーのログイン状態を確認する \{#check-if-the-user-is-logged-in\}
+
+`Purchases.shared.isAnonymous` を `if profile.customerUserId == nil` に置き換えてください。
+
+### ユーザーのログイン \{#log-in-user\}
+
+`Purchases.shared.logIn` を [`Adapty.identify`](identifying-users#set-customer-user-id-after-configuration) に置き換えてください。
+
+### ユーザーのログアウト \{#log-out-user\}
+
+`Purchases.shared.logOut` を [`Adapty.logout`](identifying-users#logging-out-and-logging-in) に置き換えてください。
+
+## App Storeのサーバーサイド通知をAdaptyに切り替える \{#switch-app-store-server-side-notifications-to-adapty\}
+
+手順は[こちら](migrate-to-adapty-from-another-solutions#changing-apple-server-notifications)をご覧ください。
+
+## アプリの新バージョンをテストしてリリースする \{#test-and-release-a-new-version-of-your-app\}
+
+ここまで読んでいるということは、すでに以下の作業が完了しているはずです：
+
+- [x] Adapty ダッシュボードの設定
+- [x] Adapty SDKのインストール
+- [x] SDKロジックのAdapty関数への置き換え
+- [x] App StoreのサーバーサイドサービスをAdaptyに切り替え（オプションでRevenueCatへのrawイベント転送を有効化）
+- [ ] サンドボックスでの購入テスト
+- [ ] 新しいアプリのリリース
+
+上記の項目を確認したら、サンドボックスでテスト購入を行い、アプリをリリースしてください。
+
+:::info
+[リリースチェックリスト](release-checklist)を確認してください。
+
+リストを使って既存のインテグレーションを検証し、[アトリビューション](attribution-integration)や[アナリティクス](analytics-integration)インテグレーションなどの追加機能の設定も行いましょう。
+:::
+
+## （オプション）RevenueCatの過去データをCSV形式でエクスポートする \{#optional-export-your-revenuecat-historical-data-in-csv-format\}
+
+:::warning
+過去データのインポートは慌てないでください
+
+過去データのインポートを行う前に、SDK搭載バージョンのリリース後、少なくとも1週間は待つ必要があります。その間にSDKから購入金額に関する情報がすべて取得されるため、インポートされるデータがより正確になります。
+:::
+
+[RevenueCatの公式ドキュメント](https://www.revenuecat.com/docs/integrations/scheduled-data-exports)の手順に従って、RevenueCatからCSV形式で過去データをエクスポートしてください。
+
+## （オプション）RevenueCatサポートにGoogle Purchase Tokensをリクエストする \{#optional-ask-revenuecat-support-for-google-purchase-tokens\}
+
+Google Playのトランザクションをインポートする場合は、RevenueCatの[サポートページ](https://app.revenuecat.com/settings/support)からGoogle Purchase Tokensが含まれたCSVファイルをリクエストしてください。Google Purchase Tokenは、Google Playが各トランザクションに付与する一意の識別子で、Adaptyで購入を正確に追跡・検証するために必要です。この情報は標準のエクスポートファイルには含まれていません。ファイルには以下の3つの列が含まれます：
+
+- `user_id`
+- `google_purchase_token`
+- `google_product_id`
+
+## 過去データのインポートをご依頼ください \{#write-us-to-import-your-historical-data\}
+
+ウェブサイトのメッセンジャーまたは[support@adapty.io](mailto:support@adapty.io)にCSVファイルを添付してご連絡ください。
+
+1. RevenueCatからエクスポートしたCSVファイルをサポートチームに直接送付してください。
+2. Google Playのトランザクションをインポートする場合は、RevenueCatサポートから受け取ったGoogle Purchase Tokensが含まれたCSVファイルも添付してください。
+3. Customer User ID（AdaptyのメインユーザーID）として使用するユーザーIDをお知らせください：`rc_original_app_user_id` または `rc_last_seen_app_user_id_alias` のいずれかです。
+
+サポートチームがトランザクションをAdaptyにインポートします。各トランザクションについて以下のデータがインポートされます：
+
+| パラメータ                    | 説明                                                         |
+| ----------------------------- | ------------------------------------------------------------ |
+| user_id                       | Customer User ID。Adaptyおよびあなたのシステムにおけるユーザーのメイン識別子。 |
+| apple_original_transaction_id | サブスクリプションチェーンの場合、`store_original_transaction_id`でリンクされた元のトランザクションの購入日。 |
+| google_product_id             | Google Play StoreのプロダクトID。                            |
+| google_purchase_token         | 各トランザクションに対してGoogle Playが発行する一意の識別子。検証に必要。 |
+| country                       | ユーザーの国。                                               |
+| created_at                    | ユーザー作成日時。                                           |
+| subscription_expiration_date  | サブスクリプションの有効期限日時。                           |
+| email                         | エンドユーザーのメールアドレス。                             |
+| phone_number                  | エンドユーザーの電話番号。                                   |
+| idfa                          | Appleがユーザーのデバイスに割り当てる広告識別子（IDFA）。    |
+| idfv                          | 1人の開発者の全アプリに割り当てられ、デバイス上でそれらのアプリ間で共有されるベンダー識別子（IDFV）。 |
+| advertising_id                | 広告トラッキングのためにAndroid OSが提供する一意の識別子。   |
+| attribution_channel           | マーケティングチャネル名。                                   |
+| attribution_campaign          | マーケティングキャンペーン名。                               |
+| attribution_ad_group          | アトリビューションの広告グループ。                           |
+| attribution_ad_set            | アトリビューションの広告セット。                             |
+| attribution_creative          | アトリビューションのクリエイティブキーワード。               |
+
+また、Amplitude、Mixpanel、AppsFlyer、Adjust、FacebookAdsのインテグレーション識別子もインポートされます。
+
+## よくある質問 \{#faq\}
+
+### Adapty SDKのインストールとAdapty SDK搭載の新バージョンのリリースが完了しました。Adapty SDKを含む新バージョンにアップデートしていない既存のサブスクライバーはどうなりますか？ \{#i-successfully-installed-adapty-sdk-and-released-a-new-app-version-with-it-what-will-happen-to-my-legacy-subscribers-who-did-not-update-to-a-version-with-adapty-sdk\}
+
+ほとんどのユーザーは夜間に充電する際にApp Storeが全アプリを自動更新するため、問題にはならないでしょう。アップデートしていない有料サブスクライバーが若干残る可能性はありますが、引き続きプレミアムコンテンツにアクセスできます。強制的にアップデートさせる必要はありません。
+
+### RevenueCatから過去データをできるだけ早くエクスポートする必要がありますか？それとも失ってしまいますか？ \{#do-i-need-to-export-my-historical-data-from-revenuecat-as-quickly-as-possible-or-will-i-lose-it\}
+
+急ぐ必要はありません。まずAdapty SDKでリリースを行い、その後に過去データをご提供ください。ユーザーの支払い履歴を復元し、[プロファイル](profiles-crm)と[チャート](charts)に反映します。
+
+### MMP（AppsFlyer、Adjustなど）やアナリティクス（Mixpanel、Amplitudeなど）を使用しています。すべて正常に動作するか確認するにはどうすればいいですか？ \{#i-use-mmp-appsflyer-adjust-etc-and-analytics-mixpanel-amplitude-etc-how-do-i-make-sure-that-everything-will-work\}
+
+まず、データを送信したいサードパーティサービスのIDをSDK経由でAdaptyに渡す必要があります。[アトリビューションインテグレーション](attribution-integration)と[アナリティクスインテグレーション](analytics-integration)のガイドをご参照ください。過去データや既存ユーザーについては、**RevenueCatからエクスポートしたデータからそれらのIDを必ず渡してください。**

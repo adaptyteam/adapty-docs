@@ -1,0 +1,123 @@
+---
+title: "アトリビューション統合"
+description: "アトリビューションツールとAdaptyを統合して、ユーザー獲得とLTVを追跡します。"
+metadataTitle: "アトリビューション統合ガイド | Adapty ドキュメント"
+keywords: ['attribution', 'updateAttribution']
+---
+
+Adaptyはサードパーティのサービスと情報を連携し、サブスクリプションイベントを特定のマーケティングキャンペーンに紐付けるアトリビューションを実現します。この連携により、次のことが可能になります：
+
+* どのマーケティング戦略が最も収益を生んでいるかを把握する
+* Adaptyの[サブスクリプションチャート](charts)をアトリビューションでフィルタリングする
+* サードパーティサービスの機能を使ってAdaptyのサブスクリプションデータを分析する
+
+設定方法は2つあります：
+
+* [統合アトリビューション](#integrated-attribution)は最小限の設定で利用でき、9つの人気プラットフォームとAdaptyのデータ連携を可能にします。
+* [手動アトリビューション](#manual-attribution)はサードパーティのサービスAPIから自分でアトリビューションデータを取得してからAdaptyに送信する必要があります。
+
+:::tip
+アプリの収益全体を把握するために、[ユーザー獲得アナリティクス](user-acquisition)を有効にしましょう。
+
+Adapty UAは設定が簡単なWebダッシュボードで、さまざまなソースのデータを集約して効率的なユーザー獲得戦略を検出します。
+:::
+
+:::warning
+データをクリーンに保ちましょう：イベントの重複やアトリビューションの競合を避けてください。新しいデータソースがアナリティクスを汚染しないよう、**[データの問題を防ぐ](#prevent-data-issues)**セクションのアドバイスに従ってください。
+:::
+
+## 統合アトリビューション \{#integrated-attribution\}
+
+Adaptyは9つの人気サービスとのアトリビューション統合をすぐに利用できる形で提供しています。これらのプラットフォームはAdaptyから[サブスクリプションデータ](events)を自動的に受け取り、各購入を処理して適切なアトリビューションを返します。
+
+プラットフォームごとにワークフローは異なりますが、手順はどれも簡単です：
+
+1. **自動データ共有を設定する。** Adaptyが選択したプラットフォームと通信できるよう認証します。
+2. **Adapty SDKを統合する。** 一部のプラットフォームではアトリビューションデータを設定するための追加コードが必要です。
+3. **他のイベント共有サービスとアトリビューションソースを無効にする**。[イベントの重複](#avoid-event-duplication)や[データの競合](#select-a-single-attribution-source)を防ぐためです。
+
+詳細な統合手順については、各プラットフォームのガイドをご覧ください：
+
+- [Adjust](adjust)
+- [Airbridge](airbridge)
+- [Apple Search Ads](apple-search-ads)
+- [AppsFlyer](appsflyer)
+- [Asapty](asapty)
+- [Branch](branch)
+- [Facebook Ads](facebook-ads)
+- [Singular](singular)
+- [Tenjin](tenjin)
+
+:::note
+AdaptyにリストへVの追加を希望する場合は、[機能リクエストを作成](https://adapty.featurebase.app/en?b=6979f233ebd3cffd4f425ba0)して特定のサービスへの関心を表明してください。
+:::
+
+## 手動アトリビューション \{#manual-attribution\}
+
+Adaptyが選択したサービスとの[統合アトリビューション](#integrated-attribution)を提供していない場合は、アトリビューションソースとのデータ連携を行う独自のコードを記述する必要があります。
+
+1. **アトリビューションサービスからデータを取得する**。サービスのAPIを使ってアトリビューションデータをリクエストします。
+2. **取得したアトリビューションデータでディクショナリを作成する。**
+
+    ディクショナリには以下のキーを含めることができます：
+
+    - `status`（`organic`、`non-organic`、または `unknown`）
+    - `channel`
+    - `campaign`
+    - `ad_group`
+    - `ad_set`
+    - `creative`
+
+    :::important
+    * すべてのキーはオプションです。
+    * リストにないキーはAdaptyが無視します。
+    * 各キーの値は最大50文字です。
+    :::
+
+    **例：**
+
+    ```swift showLineNumbers title="Swift"
+    let attribution = [
+        "status": "non_organic",
+        "channel": "Google Ads",
+        "campaign": "Christmas Sale",
+        "ad_group": "ad group 1",
+        "ad_set": "ad set 1",
+        "creative": "creative id 1"
+    ]
+    ```
+
+3. **アトリビューションデータを設定する**：
+
+    アトリビューションディクショナリを`updateAttribution`メソッドに渡します。一度アトリビューションの値を設定すると、上書きすることはできません：
+
+    ```swift showLineNumbers title="Swift"
+    Adapty.updateAttribution(attribution, source: "custom") { error in
+        if error == nil {
+            // successful attribution update
+        }
+    }
+    ```
+
+    **パラメータ：**
+
+    - `attribution`（必須）：アトリビューションデータのディクショナリ。
+    - `source`（必須）：アトリビューションソース。アトリビューションプロバイダーが[統合アトリビューション](#integrated-attribution)に対応していない場合は`.custom`に設定します。
+
+4. **他のイベント共有サービスとアトリビューションソースを無効にする**。[イベントの重複](#avoid-event-duplication)や[データの競合](#select-a-single-attribution-source)を防ぐためです。
+
+## データの問題を防ぐ \{#prevent-data-issues\}
+
+### アトリビューションソースを1つに絞る \{#select-a-single-attribution-source\}
+
+複数のプラットフォームとのアトリビューション統合を同時に有効にしないでください。Adaptyは一度に1つのアトリビューションソースしか受け付けられず、一度アトリビューションの値を保存すると上書きできません。
+
+複数のアトリビューションソースを有効にした場合、Adaptyは最もデータ量の多いソースを選択しますが、それが必ずしも最良のデータとは限りません。
+
+たとえば、オーガニックでない[Apple Search Adsのアトリビューション](apple-search-ads)はiOSで常に優先されます。Apple Search Adsのアトリビューションをオフにするには、[**App Settings** -> **Apple Search Ads**タブ](https://app.adapty.io/settings/apple-search-ads)を開き、**Receive Apple Search Ads attribution**スイッチをオフにしてください。
+
+### イベントの重複を避ける \{#avoid-event-duplication\}
+
+Adaptyを使ってリアルタイムのサブスクリプションデータをアトリビューションサービスと共有している場合、同じ目的を果たす他のサービスを**無効にする必要があります**。FacebookアカウントをAppsFlyer、Adjust、またはBranchに接続している場合、オプトアウトしない限り、これらのサービスにイベントが自動的に転送されます。
+
+イベントが重複するとアナリティクスが歪み、データの解釈が困難になります。Adaptyのイベント共有を設定したら、サードパーティのイベント転送機能を**オフ**にしてください。

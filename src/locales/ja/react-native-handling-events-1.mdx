@@ -1,0 +1,368 @@
+---
+title: "React Native - ペイウォールイベントの処理"
+description: "AdaptyのSDKを使用して、React Nativeでサブスクリプションイベントを処理します。"
+metadataTitle: "React Nativeでのイベント処理 | Adapty ドキュメント"
+toc_max_heading_level: 4
+keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed', 'onPaywallClosed', 'onPaywallShown', 'onWebPaymentNavigationFinished']
+---
+
+import PaywallAction from '@site/src/locales/ja/reusable/PaywallAction.md';
+
+:::important
+このガイドでは、購入・復元・プロダクト選択・ペイウォールのレンダリングに関するイベント処理を説明します。ボタン操作（ペイウォールを閉じる、リンクを開くなど）の処理も実装する必要があります。詳細は[ボタンアクションの処理ガイド](react-native-handle-paywall-actions)を参照してください。
+:::
+
+[ペイウォールビルダー](adapty-paywall-builder)で設定されたペイウォールは、購入や復元のために追加のコードは不要です。ただし、アプリが反応できるいくつかのイベントが発生します。これらのイベントには、ボタン操作（閉じるボタン、URL、プロダクト選択など）や、ペイウォール上で行われた購入関連のアクションの通知が含まれます。以下でこれらのイベントへの対応方法を確認してください。
+
+:::warning
+このガイドは**新しいペイウォールビルダーのペイウォール**専用です。Adapty SDK v3.0以降が必要です。
+:::
+
+モバイルアプリのペイウォール画面で発生するプロセスを制御・監視するには、イベントハンドラーを実装します：
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+Reactコンポーネントの場合、`AdaptyPaywallView`コンポーネントの個別のイベントハンドラーpropを通じてイベントを処理します：
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyPaywall({ paywall }) {
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {}, []);
+  const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {}, []);
+  const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {}, []);
+  const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {}, []);
+  const onRestoreStarted = useCallback<EventHandlers['onRestoreStarted']>(() => {}, []);
+  const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {}, []);
+  const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {}, []);
+  const onPaywallShown = useCallback<EventHandlers['onPaywallShown']>(() => {}, []);
+  const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {}, []);
+  const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {}, []);
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {}, []);
+  const onWebPaymentNavigationFinished = useCallback<EventHandlers['onWebPaymentNavigationFinished']>(() => {}, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+      onProductSelected={onProductSelected}
+      onPurchaseStarted={onPurchaseStarted}
+      onPurchaseCompleted={onPurchaseCompleted}
+      onPurchaseFailed={onPurchaseFailed}
+      onRestoreStarted={onRestoreStarted}
+      onRestoreCompleted={onRestoreCompleted}
+      onRestoreFailed={onRestoreFailed}
+      onPaywallShown={onPaywallShown}
+      onRenderingFailed={onRenderingFailed}
+      onLoadingProductsFailed={onLoadingProductsFailed}
+      onUrlPress={onUrlPress}
+      onCustomAction={onCustomAction}
+      onWebPaymentNavigationFinished={onWebPaymentNavigationFinished}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+モーダル表示の場合は、イベントハンドラーメソッドを実装します。
+
+:::important
+`setEventHandlers`を複数回呼び出すと、以前に設定したハンドラーが上書きされます。デフォルトのハンドラーも含め、該当するイベントのハンドラーがすべて置き換えられます。
+:::
+
+```javascript showLineNumbers title="React Native (TSX)"
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+  onCloseButtonPress() {
+    return true;
+  },
+  onAndroidSystemBack() {
+    return true;
+  },
+  onPurchaseCompleted(purchaseResult, product) {
+    return purchaseResult.type !== 'user_cancelled';
+  },
+  onPurchaseStarted(product) { /***/},
+  onPurchaseFailed(error) { /***/ },
+  onRestoreCompleted(profile) { /***/ },
+  onRestoreFailed(error, product) { /***/ },
+  onProductSelected(productId) { /***/},
+  onRenderingFailed(error) { /***/ },
+  onLoadingProductsFailed(error) { /***/ },
+  onUrlPress(url) {
+      Linking.openURL(url);
+      return false; // Keep paywall open
+  },
+  onPaywallShown() { /***/ },
+  onPaywallClosed() { /***/ },
+  onWebPaymentNavigationFinished() { /***/ },  
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+SDK version < 3.14では、モーダル表示のみサポートされています：
+
+```javascript showLineNumbers title="React Native (TSX)"
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.registerEventHandlers({
+  onCloseButtonPress() {
+    return true;
+  },
+  onAndroidSystemBack() {
+    return true;
+  },
+  onPurchaseCompleted(purchaseResult, product) {
+    return purchaseResult.type !== 'user_cancelled';
+  },
+  onPurchaseStarted(product) { /***/},
+  onPurchaseFailed(error, product) { /***/ },
+  onRestoreCompleted(profile) { /***/ },
+  onRestoreFailed(error) { /***/ },
+  onProductSelected(productId) { /***/},
+  onRenderingFailed(error) { /***/ },
+  onLoadingProductsFailed(error) { /***/ },
+  onUrlPress(url) {
+      Linking.openURL(url);
+      return false; // Keep paywall open
+  },
+  onPaywallShown() { /***/ },
+  onPaywallClosed() { /***/ },
+  onWebPaymentNavigationFinished() { /***/ },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```javascript
+// onCloseButtonPress
+{
+  "event": "close_button_press"
+}
+
+// onAndroidSystemBack
+{
+  "event": "android_system_back"
+}
+
+// onUrlPress
+{
+  "event": "url_press",
+  "url": "https://example.com/terms"
+}
+
+// onCustomAction
+{
+  "event": "custom_action",
+  "actionId": "login"
+}
+
+// onProductSelected
+{
+  "event": "product_selected",
+  "productId": "premium_monthly"
+}
+
+// onPurchaseStarted
+{
+  "event": "purchase_started",
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// onPurchaseCompleted - Success
+{
+  "event": "purchase_completed",
+  "purchaseResult": {
+    "type": "success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// onPurchaseCompleted - Cancelled
+{
+  "event": "purchase_completed",
+  "purchaseResult": {
+    "type": "user_cancelled"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// onPurchaseFailed
+{
+  "event": "purchase_failed",
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    },
+    "product": {
+        "vendorProductId": "premium_monthly",
+            "localizedTitle": "Premium Monthly",
+            "localizedDescription": "Premium subscription for 1 month",
+            "localizedPrice": "$9.99",
+            "price": 9.99,
+            "currencyCode": "USD"
+    }
+  }
+}
+
+// onRestoreCompleted
+{
+  "event": "restore_completed",
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+
+// onRestoreFailed
+{
+  "event": "restore_failed",
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+
+// onRenderingFailed
+{
+  "event": "rendering_failed",
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+
+// onLoadingProductsFailed
+{
+  "event": "loading_products_failed",
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+
+// onPaywallShown
+{
+  "event": "paywall_shown"
+}
+
+// onPaywallClosed
+{
+  "event": "paywall_closed"
+}
+
+// onWebPaymentNavigationFinished
+{
+  "event": "web_payment_navigation_finished"
+}
+```
+</Details>
+
+必要なイベントハンドラーのみを登録し、不要なものは省略できます。この場合、未使用のイベントリスナーは作成されません。必須のイベントハンドラーはありません。
+
+イベントハンドラーはbooleanを返します。`true`が返された場合、表示プロセスが完了したとみなされ、ペイウォール画面が閉じられ、そのビューのイベントリスナーが削除されます。
+
+一部のイベントハンドラーにはデフォルトの動作があり、必要に応じてオーバーライドできます：
+- `onCloseButtonPress`：閉じるボタンが押されたときにペイウォールを閉じます。
+- `onUrlPress`：タップされたURLを開き、ペイウォールを開いたままにします。
+- `onAndroidSystemBack`（モーダル表示のみ）：**Back**ボタンが押されたときにペイウォールを閉じます。
+- `onRestoreCompleted`：復元が成功した後にペイウォールを閉じます。
+- `onPurchaseCompleted`：ユーザーがキャンセルした場合を除き、ペイウォールを閉じます。
+- `onRenderingFailed`：レンダリングに失敗した場合にペイウォールを閉じます。
+
+### イベントハンドラー \{#event-handlers\}
+
+| イベントハンドラー                   | 説明                                                                                                                                                                                                                                                                                              |
+|:-----------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onCustomAction**                 | ユーザーがカスタムアクション（例：[カスタムボタン](paywall-buttons)のクリック）を実行したときに呼び出されます。                                                                                                                                                                                      |
+| **onUrlPress**                     | ユーザーがペイウォール内のURLをクリックしたときに呼び出されます。                                                                                                                                                                                                                                   |
+| **onAndroidSystemBack**            | モーダル表示のみ：ユーザーがAndroidのシステム**Back**ボタンをタップしたときに呼び出されます。                                                                                                                                                                                                        |
+| **onCloseButtonPress**             | 閉じるボタンが表示されていてユーザーがタップしたときに呼び出されます。このハンドラーでペイウォール画面を閉じることを推奨します。                                                                                                                                                                       |
+| **onPurchaseCompleted**            | 購入が完了したとき（成功、ユーザーによるキャンセル、承認待ちのいずれの場合も）に呼び出されます。購入成功時は更新された`AdaptyProfile`を提供します。ユーザーのキャンセルや保留中の支払い（保護者の承認が必要な場合など）は`onPurchaseFailed`ではなくこのイベントをトリガーします。                       |
+| **onPurchaseStarted**              | ユーザーが「購入」アクションボタンをタップして購入プロセスを開始したときに呼び出されます。                                                                                                                                                                                                           |
+| **onPurchaseFailed**               | エラー（支払い制限、無効なプロダクト、ネットワーク障害、トランザクション検証の失敗など）により購入が失敗したときに呼び出されます。ユーザーのキャンセルや保留中の支払いでは呼び出されず、それらは`onPurchaseCompleted`をトリガーします。                                                                 |
+| **onRestoreStarted**               | ユーザーが購入の復元プロセスを開始したときに呼び出されます。                                                                                                                                                                                                                                        |
+| **onRestoreCompleted**             | 購入の復元が成功し、更新された`AdaptyProfile`を提供するときに呼び出されます。ユーザーが必要な`accessLevel`を持っている場合は画面を閉じることを推奨します。確認方法については[サブスクリプションステータス](react-native-listen-subscription-changes)のトピックを参照してください。                    |
+| **onRestoreFailed**                | 復元プロセスが失敗し、`AdaptyError`を提供するときに呼び出されます。                                                                                                                                                                                                                                |
+| **onProductSelected**              | ペイウォールビュー内のプロダクトが選択されたときに呼び出されます。購入前にユーザーが何を選択しているかを監視できます。                                                                                                                                                                                |
+| **onRenderingFailed**              | ビューのレンダリング中にエラーが発生し、`AdaptyError`を提供するときに呼び出されます。このようなエラーは通常発生しないため、もし発生した場合はご連絡ください。                                                                                                                                          |
+| **onLoadingProductsFailed**        | プロダクトの読み込みに失敗し、`AdaptyError`を提供するときに呼び出されます。ビュー作成時に`prefetchProducts: true`を設定していない場合、AdaptyUIが自動的にサーバーから必要なオブジェクトを取得します。                                                                                                  |
+| **onPaywallShown**                 | ペイウォールがユーザーに表示されたときに呼び出されます。iOSでは、ユーザーがペイウォール内の[ウェブペイウォールボタン](web-paywall#step-2a-add-a-web-purchase-button)をタップしてアプリ内ブラウザでウェブペイウォールが開いたときにも呼び出されます。                                                    |
+| **onPaywallClosed**                | モーダル表示のみ：ユーザーがペイウォールを閉じたときに呼び出されます。iOSでは、アプリ内ブラウザで開いた[ウェブペイウォール](web-paywall#step-2a-add-a-web-purchase-button)が画面から消えたときにも呼び出されます。                                                                                     |
+| **onWebPaymentNavigationFinished** | [ウェブペイウォール](web-paywall)を購入のために開こうとした後（成功・失敗を問わず）に呼び出されます。                                                                                                                                                                                               |
