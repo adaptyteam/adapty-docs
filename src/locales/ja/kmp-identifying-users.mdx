@@ -1,0 +1,154 @@
+---
+title: "Kotlin Multiplatform SDK でユーザーを識別する"
+description: "Adapty でユーザーを識別して、パーソナライズされたサブスクリプション体験を向上させましょう。"
+metadataTitle: "Adapty でのユーザー識別 | Adapty ドキュメント"
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+import CrossDeviceDetection from '@site/src/locales/ja/reusable/CrossDeviceDetection.mdx';
+
+Adapty はすべてのユーザーに対して内部プロファイル ID を作成します。ただし、独自の認証システムを持っている場合は、独自の Customer User ID を設定する必要があります。[Profiles](profiles-crm) セクションで Customer User ID によってユーザーを検索したり、すべてのインテグレーションに送信される[サーバーサイド API](getting-started-with-server-side-api) で使用することができます。
+
+### 設定時に Customer User ID を設定する \{#setting-customer-user-id-on-configuration\}
+
+設定時にユーザー ID がある場合は、`.activate()` メソッドの `customerUserId` パラメータとして渡すだけです：
+
+```kotlin showLineNumbers
+
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withCustomerUserId("YOUR_USER_ID")
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+    }
+}
+```
+
+<SampleApp />
+
+### 設定後に Customer User ID を設定する \{#setting-customer-user-id-after-configuration\}
+
+SDK の設定時にユーザー ID がない場合は、後から `.identify()` メソッドを使っていつでも設定できます。このメソッドが最もよく使われるのは、登録後やログイン後に匿名ユーザーから認証済みユーザーへ切り替わるタイミングです。
+
+```kotlin showLineNumbers
+
+Adapty.identify("YOUR_USER_ID").onSuccess {
+    // successful identify
+}.onError { error ->
+    // handle the error
+}
+```
+
+リクエストパラメータ：
+
+- **Customer User ID**（必須）: 文字列のユーザー識別子。
+
+:::warning
+重要なユーザーデータの再送信
+
+ユーザーが再度アカウントにログインする場合など、Adapty のサーバーにすでにそのユーザーの情報が存在していることがあります。このような場合、Adapty SDK は自動的に新しいユーザーとして動作を切り替えます。カスタム属性やサードパーティネットワークからのアトリビューションなど、匿名ユーザーに対してデータを渡していた場合は、識別されたユーザーに対してそのデータを再送信する必要があります。
+
+また、新しいユーザーのデータが異なる可能性があるため、ユーザーを識別した後はすべてのペイウォールとプロダクトを再取得する必要があることにも注意してください。
+:::
+
+### ログアウトとログイン \{#logging-out-and-logging-in\}
+
+`.logout()` メソッドを呼び出すことで、いつでもユーザーをログアウトさせることができます：
+
+```kotlin showLineNumbers
+
+Adapty.logout().onSuccess {
+    // successful logout
+}.onError { error ->
+    // handle the error
+}
+```
+
+その後、`.identify()` メソッドを使ってユーザーをログインさせることができます。
+
+## `appAccountToken` を割り当てる（iOS） \{#assign-appaccounttoken-ios\}
+
+[`iosAppAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) は、App Store のトランザクションを内部ユーザー ID に紐付けるための **UUID** です。
+StoreKit はすべてのトランザクションにこのトークンを関連付けるため、バックエンドで App Store のデータをユーザーと照合することができます。
+
+ユーザーごとに安定した UUID を生成し、同じアカウントに対してデバイスをまたいで再利用してください。
+これにより、購入や App Store の通知が正しく紐付けられたままになります。
+
+トークンは、SDK のアクティベーション時またはユーザーの識別時の 2 つの方法で設定できます。
+
+:::important
+`iosAppAccountToken` は必ず `customerUserId` と一緒に渡す必要があります。
+トークンのみを渡した場合、トランザクションに含まれません。
+:::
+
+```kotlin showLineNumbers
+
+// During configuration:
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withCustomerUserId(
+            id = "YOUR_USER_ID",
+            iosAppAccountToken = "YOUR_IOS_APP_ACCOUNT_TOKEN"
+        )
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+}
+
+// Or when identifying users
+Adapty.identify(
+    customerUserId = "YOUR_USER_ID",
+    iosAppAccountToken = "YOUR_IOS_APP_ACCOUNT_TOKEN"
+).onSuccess {
+    // successful identify
+}.onError { error ->
+    // handle the error
+}
+```
+
+## 難読化アカウント ID を設定する（Android） \{#set-obfuscated-account-ids-android\}
+
+Google Play では、ユーザーのプライバシーとセキュリティを強化するために、特定のユースケースで難読化アカウント ID が必要です。これらの ID は、ユーザー情報を匿名に保ちながら Google Play が購入を識別するのに役立ち、不正防止やアナリティクスにおいて特に重要です。
+
+アプリが機密性の高いユーザーデータを扱っている場合や、特定のプライバシー規制への準拠が求められる場合に、これらの ID を設定する必要があるかもしれません。難読化 ID により、Google Play は実際のユーザー識別子を公開せずに購入を追跡できます。
+
+:::important
+`androidObfuscatedAccountId` は必ず `customerUserId` と一緒に渡す必要があります。
+難読化アカウント ID のみを渡した場合、トランザクションに含まれません。
+:::
+
+```kotlin showLineNumbers
+
+// During configuration:
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withCustomerUserId(
+            id = "YOUR_USER_ID",
+            androidObfuscatedAccountId = "YOUR_OBFUSCATED_ACCOUNT_ID"
+        )
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+}
+
+// Or when identifying users
+Adapty.identify(
+    customerUserId = "YOUR_USER_ID",
+    androidObfuscatedAccountId = "YOUR_OBFUSCATED_ACCOUNT_ID"
+).onSuccess {
+    // successful identify
+}.onError { error ->
+    // handle the error
+}
+```
+
+## デバイスをまたいでユーザーを検出する \{#detect-users-across-devices\}
+
+<CrossDeviceDetection />

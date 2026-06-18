@@ -1,0 +1,244 @@
+---
+title: "React Native - 新しいペイウォールビルダーのペイウォールを表示する"
+description: "Adapty を使用して React Native アプリでペイウォールを表示します。"
+metadataTitle: "React Native でのペイウォール表示 | Adapty ドキュメント"
+
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+
+ペイウォールビルダーを使ってペイウォールをカスタマイズした場合、ユーザーに表示するためのレンダリングコードをモバイルアプリ側で書く必要はありません。そのようなペイウォールには、表示する内容と表示方法の両方が含まれています。
+
+始める前に、以下を確認してください：
+
+1. [ペイウォールを作成](create-paywall)していること。
+2. ペイウォールを[プレースメント](placements)に追加していること。
+3. [ペイウォールを取得し、ビューを準備](react-native-get-pb-paywalls)していること。
+
+:::warning
+
+このガイドは、SDK v3.0 以降が必要な**新しいペイウォールビルダーのペイウォール**専用です。ペイウォールの表示方法は、ペイウォールビルダーのバージョンやリモートコンフィグペイウォールによって異なります。
+
+- **リモートコンフィグペイウォール**の表示については、[リモートコンフィグで設計したペイウォールのレンダリング](present-remote-config-paywalls)を参照してください。
+
+:::
+
+Adapty React Native SDK では、ペイウォールを表示する方法が 2 つあります：
+
+- **React コンポーネント**: アプリのアーキテクチャやナビゲーションシステムに組み込める埋め込みコンポーネントです。
+
+- **モーダル表示**
+
+## React コンポーネント \{#react-component\}
+
+:::note
+**React コンポーネント**方式には SDK 3.14.0 以降が必要です。
+:::
+
+既存のコンポーネントツリーにペイウォールを埋め込むには、React Native コンポーネントの階層内で `AdaptyPaywallView` コンポーネントを直接使用します。埋め込みコンポーネントにより、アプリのアーキテクチャやナビゲーションシステムに統合できます。
+
+:::note
+Android では、ペイウォールがステータスバーの後ろまで拡張されない場合、上部にビジュアルオーバーレイが表示されることがあります。ペイウォールではこれをオフにすることをお勧めします。[ペイウォール上部のビジュアルオーバーレイ（Android）](#visual-overlay-at-the-top-of-the-paywall-android)を参照してください。
+:::
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyPaywall({ paywall }) {
+  const paywallParams = useMemo(() => ({
+    loadTimeoutMs: 3000,
+  }), []);
+
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {}, []);
+  const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {}, []);
+  const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {}, []);
+  const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {}, []);
+  const onRestoreStarted = useCallback<EventHandlers['onRestoreStarted']>(() => {}, []);
+  const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {}, []);
+  const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {}, []);
+  const onPaywallShown = useCallback<EventHandlers['onPaywallShown']>(() => {}, []);
+  const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {}, []);
+  const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {}, []);
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {}, []);
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {}, []);
+  const onWebPaymentNavigationFinished = useCallback<EventHandlers['onWebPaymentNavigationFinished']>(() => {}, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      params={paywallParams}
+      style={styles.paywall}
+      onCloseButtonPress={onCloseButtonPress}
+      onProductSelected={onProductSelected}
+      onPurchaseStarted={onPurchaseStarted}
+      onPurchaseCompleted={onPurchaseCompleted}
+      onPurchaseFailed={onPurchaseFailed}
+      onRestoreStarted={onRestoreStarted}
+      onRestoreCompleted={onRestoreCompleted}
+      onRestoreFailed={onRestoreFailed}
+      onPaywallShown={onPaywallShown}
+      onRenderingFailed={onRenderingFailed}
+      onLoadingProductsFailed={onLoadingProductsFailed}
+      onCustomAction={onCustomAction}
+      onUrlPress={onUrlPress}
+      onWebPaymentNavigationFinished={onWebPaymentNavigationFinished}
+    />
+  );
+}
+```
+
+## モーダル表示 \{#modal-presentation\}
+
+ペイウォールをスタンドアロン画面として表示するには、[`createPaywallView`](react-native-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) メソッドで作成した `view` の `view.present()` メソッドを使用します。各 `view` は一度しか使用できません。ペイウォールを再度表示する必要がある場合は、`createPaywallView` をもう一度呼び出して新しい `view` インスタンスを作成してください。
+
+:::warning
+同じ `view` を再作成せずに再利用することは禁止されています。`AdaptyUIError.viewAlreadyPresented` エラーが発生します。
+:::
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createPaywallView(paywall);
+
+// Optional: handle paywall events (close, purchase, restore, etc)
+// view.setEventHandlers({ ... });
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+:::important
+`setEventHandlers` を複数回呼び出すと、提供したハンドラーが上書きされ、対象のイベントに設定されていたデフォルトおよび以前のハンドラーが置き換えられます。
+:::
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createPaywallView(paywall);
+
+view.registerEventHandlers(); // handle close press, etc
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+### iOS の表示スタイルを設定する \{#configure-ios-presentation-style\}
+
+`present()` メソッドに `iosPresentationStyle` パラメーターを渡すことで、iOS でのペイウォールの表示方法を設定できます。パラメーターには `'full_screen'`（デフォルト）または `'page_sheet'` を指定します。
+
+```typescript showLineNumbers
+try {
+  await view.present(iosPresentationStyle: 'page_sheet');
+} catch (error) {
+  // handle the error
+}
+```
+
+## 開発者定義タイマーを使用する \{#use-developer-defined-timer\}
+
+モバイルアプリで開発者定義タイマーを使用するには、`timerId`（この例では `CUSTOM_TIMER_NY`）を使用します。これは Adapty ダッシュボードで設定した開発者定義タイマーの **Timer ID** です。これにより、アプリがタイマーの終了時刻（元旦など）から現在時刻を引いて計算した `13d 09h 03m 34s` のような正確な値でタイマーを動的に更新できます。
+
+<Tabs>
+<TabItem value="component" label="React component">
+```typescript showLineNumbers title="React Native (TSX)"
+const paywallParams = {
+  customTimers: { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+};
+
+<AdaptyPaywallView
+  paywall={paywall}
+  params={paywallParams}
+  // ... your event handlers
+/>
+```
+</TabItem>
+<TabItem value="modal" label="Modal presentation">
+```typescript showLineNumbers title="React Native (TSX)"
+const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+
+const view = await createPaywallView(paywall, { customTimers });
+```
+</TabItem>
+</Tabs>
+この例では、`CUSTOM_TIMER_NY` は Adapty ダッシュボードで設定した開発者定義タイマーの **Timer ID** です。`timerResolver` により、アプリがタイマーの終了時刻（元旦など）から現在時刻を引いて計算した `13d 09h 03m 34s` のような正確な値でタイマーを動的に更新できます。
+
+## ダイアログを表示する \{#show-dialog\}
+
+Android でペイウォールビューが表示されているときは、ネイティブのアラートダイアログの代わりにこのメソッドを使用してください。Android では、通常の RN アラートがペイウォールビューの後ろに表示されるため、ユーザーには見えません。このメソッドを使用することで、すべてのプラットフォームでペイウォールの上に正しくダイアログが表示されます。
+
+```typescript showLineNumbers title="React Native (TSX)"
+try {
+  const action = await view.showDialog({
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  });
+  
+  if (action === 'secondary') {
+    // User confirmed - close the paywall
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (error) {
+  // handle error
+}
+```
+
+## あるサブスクリプションを別のものに置き換える \{#replace-one-subscription-with-another\}
+
+Android で別のサブスクリプションがアクティブな状態でユーザーが新しいサブスクリプションを購入しようとした場合、ペイウォールビューを作成する際にサブスクリプション更新パラメーターを渡すことで、新しい購入の処理方法を制御できます。現在のサブスクリプションを新しいものに置き換えるには、`createPaywallView` の `productPurchaseParams` に `oldSubVendorProductId` と `prorationMode` パラメーターを指定します。
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+const productPurchaseParams = paywall.productIdentifiers.map((productId) => {
+  let params = {};
+  if (Platform.OS === 'android') {
+    params.android = {
+      subscriptionUpdateParams: {
+        oldSubVendorProductId: 'PRODUCT_ID_OF_THE_CURRENT_ACTIVE_SUBSCRIPTION',
+        prorationMode: 'with_time_proration',
+      },
+    };
+  }
+  return { productId, params };
+});
+
+const view = await createPaywallView(paywall, { productPurchaseParams });
+```
+
+## トラブルシューティング \{#troubleshooting\}
+
+### ペイウォール上部のビジュアルオーバーレイ（Android） \{#visual-overlay-at-the-top-of-the-paywall-android\}
+
+:::note
+この設定は React Native SDK 3.15.5 以降でサポートされており、ベアの React Native プロジェクトでのみ利用できます。
+
+Expo マネージドワークフローを使用している場合、この Android リソースを直接追加することはできません。この設定を適用するには、対応する Android リソースを追加するカスタム Expo config プラグインを作成し、app.config.js に登録する必要があります。これは Expo がネイティブ Android プロジェクトを管理しているために必要です。
+:::
+
+`AdaptyPaywallView` がステータスバーの後ろまで拡張されない場合でも、上部にビジュアルオーバーレイが表示されることがあります。これを削除するには、アプリに以下のブールリソースを追加します：
+
+1. `android/app/src/main/res/values` に移動します。`bools.xml` ファイルがない場合は作成してください。
+
+2. 以下のリソースを追加します：
+
+```xml
+<resources>
+    <bool name="adapty_paywall_enable_safe_area_paddings">false</bool>
+</resources>
+```
+
+この変更はアプリ内のすべてのペイウォールにグローバルに適用されることに注意してください。

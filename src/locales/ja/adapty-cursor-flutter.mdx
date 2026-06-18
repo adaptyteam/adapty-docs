@@ -1,0 +1,266 @@
+---
+title: "AIアシスタントを使ってAdaptyをFlutterアプリに統合する"
+description: "Cursor、Context7、ChatGPT、Claude、その他のAIツールを使ってAdaptyをFlutterアプリに統合するステップバイステップガイド。"
+metadataTitle: "AIアシスタントを使ったFlutter向けAdapty統合 | Adapty ドキュメント"
+displayed_sidebar: sdkflutter
+---
+
+このガイドでは、AIコーディングツールを使ってAdaptyをFlutterアプリにステップバイステップで統合する方法を説明します。適切なAdaptyドキュメントを正しい順序でAIに渡していきます。
+
+<SkillPromo />
+
+## 始める前に：ダッシュボードの設定 \{#before-you-start-dashboard-setup\}
+
+AdaptyはSDKのコードを書く前に、ダッシュボードでいくつかの設定が必要です。インタラクティブなLLMスキルを使うか、ダッシュボードで手動設定するかを選べます。
+
+### スキルを使う方法（推奨） \{#skill-approach-recommended\}
+
+Adapty CLIスキルを使うと、LLMがダッシュボードを開かずに直接アプリ、プロダクト、アクセスレベル、ペイウォール、プレースメントを設定できます。必要なのは、ダッシュボードで[ストアを接続する](integrate-payments)ことだけです。
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+スキルを追加したら、エージェントで `/adapty-cli` を実行します。ダッシュボードでストアを接続するタイミングも含め、各ステップをガイドしてくれます。
+
+### ダッシュボードを使う方法 \{#dashboard-approach\}
+
+手動で設定したい場合は、コードを書く前に以下の手順を完了させてください。ダッシュボードの値はLLMが調べることはできないため、自分で用意する必要があります。
+
+1. **ストアを接続する**: Adapty ダッシュボードで **App settings → General** に移動します。FlutterアプリがiOSとAndroidの両方を対象としている場合は、App StoreとGoogle Playの両方を接続してください。購入機能を動作させるために必要です。
+   [ストアを接続する](integrate-payments)
+
+2. **Public SDKキーをコピーする**: Adapty ダッシュボードで **App settings → General** に移動し、**API keys** セクションを確認します。コードでは、このキーをAdapty設定に渡します。
+
+3. **プロダクトを1つ以上作成する**: Adapty ダッシュボードで **Products** ページに移動します。コードでプロダクトを直接参照することはなく、Adaptyはペイウォールごしにプロダクトをデリバリーします。
+   [プロダクトを追加する](quickstart-products)
+
+4. **ペイウォールとプレースメントを作成する**: Adapty ダッシュボードで **Paywalls** ページにペイウォールを作成し、**Placements** ページでプレースメントに割り当てます。コードでは、プレースメントIDを `Adapty().getPaywall()` に渡す文字列として使います。
+   [ペイウォールを作成する](quickstart-paywalls)
+
+5. **アクセスレベルを設定する**: Adapty ダッシュボードの **Products** ページでプロダクトごとに設定します。コードでは `profile.accessLevels['premium']?.isActive` でチェックする文字列です。デフォルトの `premium` アクセスレベルはほとんどのアプリで使えます。プロダクトによって利用できる機能が異なる場合（たとえば `basic` プランと `pro` プラン）は、コーディングを始める前に[追加のアクセスレベルを作成](assigning-access-level-to-a-product)してください。
+
+:::tip
+この5つが揃えばコードを書く準備は完了です。LLMに「Public SDKキーはX、プレースメントIDはY」と伝えることで、正確な初期化とペイウォール取得コードを生成してもらえます。
+:::
+
+### 準備ができたら設定するもの \{#set-up-when-ready\}
+
+これらはコーディングを始めるために必須ではありませんが、統合が進むにつれて必要になります。
+
+- **A/Bテスト**: **Placements** ページで設定します。コードの変更は不要です。
+  [A/Bテスト](ab-tests)
+- **追加のペイウォールとプレースメント**: 異なるプレースメントIDで `getPaywall` の呼び出しを追加します。
+- **アナリティクス統合**: **Integrations** ページで設定します。統合によって手順が異なります。[アナリティクス統合](analytics-integration)および[アトリビューション統合](attribution-integration)を参照してください。
+
+## AdaptyドキュメントをLLMに渡す \{#feed-adapty-docs-to-your-llm\}
+
+### Context7を使う（推奨） \{#use-context7-recommended\}
+
+[Context7](https://context7.com)は、LLMに最新のAdaptyドキュメントへの直接アクセスを提供するMCPサーバーです。質問内容に応じて適切なドキュメントをLLMが自動的に取得するため、URLを手動でペーストする必要はありません。
+
+Context7は**Cursor**、**Claude Code**、**Windsurf**、その他のMCP対応ツールで動作します。セットアップするには次を実行します。
+
+```
+npx ctx7 setup
+```
+
+これにより、エディタを自動検出してContext7サーバーを設定します。手動でのセットアップは[Context7 GitHubリポジトリ](https://github.com/upstash/context7)を参照してください。
+
+設定が完了したら、プロンプトでAdaptyライブラリを参照します。
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the Flutter SDK
+```
+
+:::warning
+Context7を使えばドキュメントリンクを手動でペーストする必要はなくなりますが、実装の順序は重要です。すべてが正しく動作するよう、以下の[実装ウォークスルー](#implementation-walkthrough)をステップごとに進めてください。
+:::
+
+### プレーンテキストのドキュメントを使う \{#use-plain-text-docs\}
+
+AdaptyのドキュメントはプレーンテキストのMarkdownとして取得できます。URLの末尾に `.md` を追加するか、記事タイトルの下にある **Copy for LLM** をクリックしてください。例: [adapty-cursor-flutter.md](https://adapty.io/docs/ja/adapty-cursor-flutter.md)
+
+以下の[実装ウォークスルー](#implementation-walkthrough)の各ステージには「LLMに送る」ブロックがあり、ペーストできる `.md` リンクが含まれています。
+
+まとめて多くのドキュメントが必要な場合は、以下の[インデックスファイルとプラットフォーム別サブセット](#plain-text-doc-index-files)を参照してください。
+
+## 実装ウォークスルー \{#implementation-walkthrough\}
+
+このガイドの残りの部分では、実装の順序でAdaptyの統合を進めます。各ステージには、LLMに送るドキュメント、完了時に確認できること、よくある問題が含まれています。
+
+### 統合の計画を立てる \{#plan-your-integration\}
+
+コードを書き始める前に、LLMにプロジェクトを分析させて実装計画を作成してもらいましょう。AIツールに計画モード（CursorやClaude Codeのプランモードなど）がある場合は活用してください。コードを書く前にLLMがプロジェクト構造とAdaptyドキュメントの両方を読めます。
+
+購入に使うアプローチをLLMに伝えてください。これにより、参照するガイドが変わります。
+
+- [**Adapty ペイウォールビルダー**](adapty-paywall-builder): Adaptyのノーコードビルダーでペイウォールを作成し、SDKが自動的にレンダリングします。
+- [**手動作成のペイウォール**](flutter-making-purchases): 独自のペイウォールUIをコードで構築しつつ、プロダクトの取得と購入処理にAdaptyを使います。
+- [**オブザーバーモード**](observer-vs-full-mode): 既存の購入インフラをそのまま使い、アナリティクスと統合にのみAdaptyを使います。
+
+どれを選べばよいかわからない場合は、[クイックスタートの比較表](flutter-quickstart-paywalls)を参照してください。
+
+### SDKのインストールと設定 \{#install-and-configure-the-sdk\}
+
+`flutter pub add` でAdapty SDKの依存関係を追加し、Public SDKキーで有効化します。これが基盤となり、ここなしには何も動きません。
+
+**ガイド:** [Adapty SDKのインストールと設定](sdk-installation-flutter)
+
+LLMに送る内容:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/sdk-installation-flutter.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** アプリがiOSとAndroidの両方でビルド・起動する。デバッグコンソールにAdaptyのアクティベーションログが表示される。
+- **注意点:** 「Public API key is missing」→ プレースホルダーをApp settingsの実際のキーに置き換えたか確認する。
+:::
+
+### ペイウォールの表示と購入の処理 \{#show-paywalls-and-handle-purchases\}
+
+プレースメントIDでペイウォールを取得し、表示して、購入イベントを処理します。必要なガイドは購入の処理方法によって異なります。
+
+進める中でサンドボックスでの購入テストを都度行ってください。最後まで待たないようにしましょう。設定手順は[サンドボックスで購入テストする](test-purchases-in-sandbox)を参照してください。
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**ガイド:**
+- [ペイウォールを使って購入を有効にする（クイックスタート）](flutter-quickstart-paywalls)
+- [ペイウォールビルダーのペイウォールと設定を取得する](flutter-get-pb-paywalls)
+- [ペイウォールを表示する](flutter-present-paywalls)
+- [ペイウォールイベントを処理する](flutter-handling-events)
+- [ボタンアクションに応答する](flutter-handle-paywall-actions)
+
+LLMに送る内容:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/flutter-quickstart-paywalls.md
+- https://adapty.io/docs/ja/flutter-get-pb-paywalls.md
+- https://adapty.io/docs/ja/flutter-present-paywalls.md
+- https://adapty.io/docs/ja/flutter-handling-events.md
+- https://adapty.io/docs/ja/flutter-handle-paywall-actions.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** 設定したプロダクトでペイウォールが表示される。プロダクトをタップするとサンドボックス購入ダイアログが表示される。
+- **注意点:** ペイウォールが空または `getPaywall` エラー → プレースメントIDがダッシュボードと完全に一致しているか、プレースメントにオーディエンスが割り当てられているか確認する。
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Manual paywalls">
+
+**ガイド:**
+- [カスタムペイウォールで購入を有効にする（クイックスタート）](flutter-quickstart-manual)
+- [ペイウォールとプロダクトを取得する](fetch-paywalls-and-products-flutter)
+- [リモートコンフィグで設計したペイウォールをレンダリングする](present-remote-config-paywalls-flutter)
+- [購入を行う](flutter-making-purchases)
+- [購入を復元する](flutter-restore-purchase)
+
+LLMに送る内容:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/flutter-quickstart-manual.md
+- https://adapty.io/docs/ja/fetch-paywalls-and-products-flutter.md
+- https://adapty.io/docs/ja/present-remote-config-paywalls-flutter.md
+- https://adapty.io/docs/ja/flutter-making-purchases.md
+- https://adapty.io/docs/ja/flutter-restore-purchase.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** カスタムペイウォールにAdaptyから取得したプロダクトが表示される。プロダクトをタップするとサンドボックス購入ダイアログが表示される。
+- **注意点:** プロダクト配列が空 → ダッシュボードでペイウォールにプロダクトが割り当てられているか、プレースメントにオーディエンスがあるか確認する。
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**ガイド:**
+- [オブザーバーモードの概要](observer-vs-full-mode)
+- [オブザーバーモードを実装する](implement-observer-mode-flutter)
+- [オブザーバーモードでトランザクションを報告する](report-transactions-observer-mode-flutter)
+
+LLMに送る内容:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/observer-vs-full-mode.md
+- https://adapty.io/docs/ja/implement-observer-mode-flutter.md
+- https://adapty.io/docs/ja/report-transactions-observer-mode-flutter.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** 既存の購入フローでサンドボックス購入を行うと、Adapty ダッシュボードの **Event Feed** にトランザクションが表示される。
+- **注意点:** イベントが表示されない → Adaptyへのトランザクション報告が行われているか、両ストアでサーバー通知が設定されているか確認する。
+:::
+
+</TabItem>
+
+</Tabs>
+
+### サブスクリプションステータスを確認する \{#check-subscription-status\}
+
+購入後、ユーザープロファイルのアクティブなアクセスレベルを確認してプレミアムコンテンツを制限します。
+
+**ガイド:** [サブスクリプションステータスを確認する](flutter-check-subscription-status)
+
+LLMに送る内容:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/flutter-check-subscription-status.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** サンドボックス購入後、`profile.accessLevels['premium']?.isActive` が `true` を返す。
+- **注意点:** 購入後に `accessLevels` が空 → ダッシュボードでプロダクトにアクセスレベルが割り当てられているか確認する。
+:::
+
+### ユーザーを識別する \{#identify-users\}
+
+アプリのユーザーアカウントをAdaptyプロファイルに紐付けて、デバイスをまたいで購入が維持されるようにします。
+
+:::important
+アプリに認証機能がない場合はこのステップをスキップしてください。
+:::
+
+**ガイド:** [ユーザーを識別する](flutter-quickstart-identify)
+
+LLMに送る内容:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/flutter-quickstart-identify.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** `Adapty().identify()` を呼び出した後、ダッシュボードの **Profiles** セクションにカスタムユーザーIDが表示される。
+- **注意点:** 匿名プロファイルへのアトリビューションを防ぐため、アクティベーション後かつペイウォール取得前に `identify` を呼び出すこと。
+:::
+
+### リリースの準備をする \{#prepare-for-release\}
+
+サンドボックスでの統合が動作したら、リリースチェックリストを確認してすべてが本番環境で問題ないことを確かめます。
+
+**ガイド:** [リリースチェックリスト](release-checklist)
+
+LLMに送る内容:
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/ja/release-checklist.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** すべてのチェックリスト項目が確認済み：ストア接続、サーバー通知、購入フロー、アクセスレベルの確認、プライバシー要件。
+- **注意点:** サーバー通知が未設定 → **App settings → iOS SDK** でApp Store Server Notificationsを設定し、**App settings → Android SDK** でGoogle Play Real-Time Developer Notificationsを設定する。
+:::
+
+## プレーンテキストのドキュメントインデックスファイル \{#plain-text-doc-index-files\}
+
+個別ページを超えてLLMに広いコンテキストを提供したい場合は、すべてのAdaptyドキュメントを一覧化または統合したインデックスファイルを用意しています。
+
+- [`llms.txt`](https://adapty.io/docs/ja/llms.txt): `.md` リンクつきで全ページを一覧表示します。LLMがウェブサイトにアクセスしやすくするための[新興標準](https://llmstxt.org/)です。一部のAIエージェント（ChatGPTなど）では `llms.txt` をダウンロードしてチャットにファイルとしてアップロードする必要があります。
+- [`llms-full.txt`](https://adapty.io/docs/ja/llms-full.txt): Adaptyドキュメントサイト全体を1つのファイルに統合したものです。非常に大きいため、全体像が必要な場合のみ使用してください。
+- Flutter専用の [`flutter-llms.txt`](https://adapty.io/docs/ja/flutter-llms.txt) と [`flutter-llms-full.txt`](https://adapty.io/docs/ja/flutter-llms-full.txt): サイト全体よりもトークンを節約できるプラットフォーム別サブセットです。

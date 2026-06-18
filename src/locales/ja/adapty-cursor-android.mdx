@@ -1,0 +1,266 @@
+---
+title: "AIを使ってAndroidアプリにAdaptyを統合する"
+description: "Cursor、Context7、ChatGPT、Claude、その他のAIツールを使って、AndroidアプリにAdaptyをステップバイステップで統合するガイド。"
+metadataTitle: "AIアシスタントでAndroid向けAdaptyを統合する | Adapty ドキュメント"
+displayed_sidebar: sdkandroid
+---
+
+このガイドでは、AIコーディングツールを使って、AdaptyをAndroidアプリへ段階的に統合していきます。適切なAdaptyドキュメントを正しい順番でAIに渡すのがポイントです。
+
+<SkillPromo />
+
+## 始める前に：ダッシュボードの設定 \{#before-you-start-dashboard-setup\}
+
+AdaptyはSDKコードを書く前に、ダッシュボードで一定の設定が必要です。インタラクティブなLLMスキルを使う方法と、ダッシュボードから手動で行う方法があります。
+
+### スキルを使う方法（推奨） \{#skill-approach-recommended\}
+
+Adapty CLIスキルを使えば、LLMがアプリ、プロダクト、アクセスレベル、ペイウォール、プレースメントを直接設定できます。各ステップでダッシュボードを開く必要がなく、[ストアの接続](integrate-payments)だけダッシュボードで行えば十分です。
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+スキルを追加したら、エージェント内で `/adapty-cli` を実行してください。ストアに接続するためにダッシュボードを開くタイミングも含め、各ステップを案内してくれます。
+
+### ダッシュボードを使う方法 \{#dashboard-approach\}
+
+手動ですべてを設定したい場合は、コードを書き始める前に以下の準備が必要です。ダッシュボードの値はLLMが調べることができないため、自分で用意する必要があります。
+
+1. **アプリストアを接続する**: Adapty ダッシュボードで **App settings → General** へ移動します。購入機能を動かすには必須です。
+   [Google Playを接続する](integrate-payments)
+
+2. **Public SDKキーをコピーする**: Adapty ダッシュボードで **App settings → General** へ移動し、**API keys** セクションを確認します。コード内では、Adaptyの設定ビルダーに渡す文字列として使用します。
+
+3. **プロダクトを1つ以上作成する**: Adapty ダッシュボードの **Products** ページへ移動します。プロダクトはコード内で直接参照しません — Adatyはペイウォールを通じてプロダクトを届けます。
+   [プロダクトを追加する](quickstart-products)
+
+4. **ペイウォールとプレースメントを作成する**: Adapty ダッシュボードで **Paywalls** ページにペイウォールを作成し、**Placements** ページでプレースメントに割り当てます。コード内では、`Adapty.getPaywall("YOUR_PLACEMENT_ID")` に渡す文字列がプレースメントIDです。
+   [ペイウォールを作成する](quickstart-paywalls)
+
+5. **アクセスレベルを設定する**: Adapty ダッシュボードで **Products** ページのプロダクトごとに設定します。コード内では `profile.accessLevels["premium"]?.isActive` でチェックする文字列です。デフォルトの `premium` アクセスレベルはほとんどのアプリで機能します。プロダクトによって（例：`basic` プランと `pro` プランなど）ユーザーがアクセスできる機能が異なる場合は、コーディングを始める前に[アクセスレベルを追加作成](assigning-access-level-to-a-product)してください。
+
+:::tip
+以上の5つが揃ったら、コードを書く準備完了です。「Public SDKキーはX、プレースメントIDはY」とLLMに伝えると、正しい初期化コードとペイウォール取得コードを生成してもらえます。
+:::
+
+### 準備ができたら設定するもの \{#set-up-when-ready\}
+
+コーディング開始に必須ではありませんが、統合が進んだ段階で必要になります。
+
+- **A/Bテスト**: **Placements** ページで設定します。コードの変更は不要です。
+  [A/Bテスト](ab-tests)
+- **追加のペイウォールとプレースメント**: 異なるプレースメントIDで `getPaywall` 呼び出しを追加します。
+- **アナリティクス連携**: **Integrations** ページで設定します。連携先によって手順が異なります。[アナリティクス連携](analytics-integration)・[アトリビューション連携](attribution-integration)を参照してください。
+
+## LLMにAdaptyドキュメントを渡す \{#feed-adapty-docs-to-your-llm\}
+
+### Context7を使う（推奨） \{#use-context7-recommended\}
+
+[Context7](https://context7.com) は、LLMに最新のAdaptyドキュメントへの直接アクセスを提供するMCPサーバーです。質問内容に基づいて適切なドキュメントを自動的に取得するため、URLを手動で貼り付ける必要がありません。
+
+Context7は **Cursor**、**Claude Code**、**Windsurf**、その他MCP対応ツールで動作します。セットアップするには以下を実行してください：
+
+```
+npx ctx7 setup
+```
+
+エディタを自動検出してContext7サーバーを設定します。手動セットアップの方法は [Context7 GitHubリポジトリ](https://github.com/upstash/context7)をご覧ください。
+
+設定完了後、プロンプトでAdaptyライブラリを参照できます：
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the Android SDK
+```
+
+:::warning
+Context7を使えばドキュメントのリンクを手動で貼り付ける必要はなくなりますが、実装の順序は重要です。すべてが正しく動作するよう、以下の[実装ウォークスルー](#implementation-walkthrough)をステップごとに進めてください。
+:::
+
+### プレーンテキストドキュメントを使う \{#use-plain-text-docs\}
+
+AdaptyのドキュメントはプレーンテキストのMarkdownとして取得できます。URLの末尾に `.md` を追加するか、記事タイトル下の **Copy for LLM** をクリックしてください。例：[adapty-cursor-android.md](https://adapty.io/docs/ja/adapty-cursor-android.md)
+
+以下の[実装ウォークスルー](#implementation-walkthrough)の各ステップには、貼り付けるための `.md` リンクが入った「LLMへ送るプロンプト」ブロックがあります。
+
+まとめて多くのドキュメントを取得する場合は、以下の[インデックスファイルとプラットフォーム別サブセット](#plain-text-doc-index-files)を参照してください。
+
+## 実装ウォークスルー \{#implementation-walkthrough\}
+
+ここからは、実装順にAdaptyの統合を進めます。各ステージには、LLMに送るドキュメント、完了時に確認すべき内容、よくある問題が含まれています。
+
+### 統合計画を立てる \{#plan-your-integration\}
+
+コードを書き始める前に、LLMにプロジェクトを分析させ、実装計画を作成してもらいましょう。AIツールに計画モード（CursorやClaude Codeのプランモードなど）がある場合は、LLMがコードを書く前にプロジェクト構造とAdaptyドキュメントの両方を読めるよう活用してください。
+
+購入に使うアプローチをLLMに伝えてください — これにより、参照すべきガイドが変わります。
+
+- [**Adaptyペイウォールビルダー**](adapty-paywall-builder): Adaptのノーコードビルダーでペイウォールを作成し、SDKが自動でレンダリングします。
+- [**手動作成のペイウォール**](android-making-purchases): 自分でペイウォールUIをコードで構築しつつ、プロダクトの取得と購入処理はAdaptyを使います。
+- [**オブザーバーモード**](observer-vs-full-mode): 既存の購入インフラを維持したまま、アナリティクスと連携にのみAdaptyを使います。
+
+どれを選べばいいかわからない場合は、[クイックスタートの比較表](android-quickstart-paywalls)をご覧ください。
+
+### SDKのインストールと設定 \{#install-and-configure-the-sdk\}
+
+Android StudioでGradleを使ってAdapty SDKの依存関係を追加し、Public SDKキーで有効化します。これが基盤となるため、他の機能はすべてこのステップが完了しないと動きません。
+
+**ガイド:** [Adapty SDKのインストールと設定](sdk-installation-android)
+
+LLMへ送るプロンプト：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/sdk-installation-android.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** アプリがビルド・実行され、LogcatにAdaptyのアクティベーションログが表示される。
+- **注意点:** 「Public API key is missing」エラーが出た場合 → プレースホルダーをApp settingsで確認した実際のキーに置き換えたか確認してください。
+:::
+
+### ペイウォールの表示と購入処理 \{#show-paywalls-and-handle-purchases\}
+
+プレースメントIDでペイウォールを取得し、表示して、購入イベントを処理します。必要なガイドは購入処理の方法によって異なります。
+
+進めながらサンドボックスで各購入をテストしてください。最後まで待たないようにしましょう。セットアップ方法は[サンドボックスでの購入テスト](test-purchases-in-sandbox)をご覧ください。
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**ガイド:**
+- [ペイウォールを使って購入を有効にする（クイックスタート）](android-quickstart-paywalls)
+- [ペイウォールビルダーのペイウォールと設定の取得](android-get-pb-paywalls)
+- [ペイウォールの表示](android-present-paywalls)
+- [ペイウォールイベントの処理](android-handling-events)
+- [ボタンアクションへの対応](android-handle-paywall-actions)
+
+LLMへ送るプロンプト：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/android-quickstart-paywalls.md
+- https://adapty.io/docs/ja/android-get-pb-paywalls.md
+- https://adapty.io/docs/ja/android-present-paywalls.md
+- https://adapty.io/docs/ja/android-handling-events.md
+- https://adapty.io/docs/ja/android-handle-paywall-actions.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** 設定したプロダクトとともにペイウォールが表示され、プロダクトをタップするとサンドボックスの購入ダイアログが起動する。
+- **注意点:** ペイウォールが空、または `getPaywall` エラーが出る場合 → プレースメントIDがダッシュボードと完全に一致しているか、プレースメントにオーディエンスが割り当てられているかを確認してください。
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Manual paywalls">
+
+**ガイド:**
+- [カスタムペイウォールで購入を有効にする（クイックスタート）](android-quickstart-manual)
+- [ペイウォールとプロダクトの取得](fetch-paywalls-and-products-android)
+- [リモートコンフィグで設計したペイウォールのレンダリング](present-remote-config-paywalls-android)
+- [購入処理](android-making-purchases)
+- [購入の復元](android-restore-purchase)
+
+LLMへ送るプロンプト：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/android-quickstart-manual.md
+- https://adapty.io/docs/ja/fetch-paywalls-and-products-android.md
+- https://adapty.io/docs/ja/present-remote-config-paywalls-android.md
+- https://adapty.io/docs/ja/android-making-purchases.md
+- https://adapty.io/docs/ja/android-restore-purchase.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** カスタムペイウォールにAdaptyから取得したプロダクトが表示され、プロダクトをタップするとサンドボックスの購入ダイアログが起動する。
+- **注意点:** プロダクト配列が空の場合 → ダッシュボードでペイウォールにプロダクトが割り当てられているか、プレースメントにオーディエンスがあるかを確認してください。
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**ガイド:**
+- [オブザーバーモードの概要](observer-vs-full-mode)
+- [オブザーバーモードの実装](implement-observer-mode-android)
+- [オブザーバーモードでのトランザクション報告](report-transactions-observer-mode-android)
+
+LLMへ送るプロンプト：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/observer-vs-full-mode.md
+- https://adapty.io/docs/ja/implement-observer-mode-android.md
+- https://adapty.io/docs/ja/report-transactions-observer-mode-android.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** 既存の購入フローでサンドボックス購入を行った後、Adapty ダッシュボードの **Event Feed** にトランザクションが表示される。
+- **注意点:** イベントが表示されない場合 → Adaptyへのトランザクション報告が設定されているか、Google Play リアルタイム デベロッパー通知が設定されているかを確認してください。
+:::
+
+</TabItem>
+
+</Tabs>
+
+### サブスクリプションのステータス確認 \{#check-subscription-status\}
+
+購入後、ユーザープロファイルでアクティブなアクセスレベルを確認し、プレミアムコンテンツへのアクセスを制御します。
+
+**ガイド:** [サブスクリプションのステータス確認](android-check-subscription-status)
+
+LLMへ送るプロンプト：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/android-check-subscription-status.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** サンドボックスで購入後、`profile.accessLevels["premium"]?.isActive` が `true` を返す。
+- **注意点:** 購入後に `accessLevels` が空の場合 → ダッシュボードでプロダクトにアクセスレベルが割り当てられているかを確認してください。
+:::
+
+### ユーザーの識別 \{#identify-users\}
+
+アプリのユーザーアカウントとAdaptyプロファイルを紐付けることで、デバイスをまたいで購入情報が維持されます。
+
+:::important
+アプリに認証機能がない場合はこのステップをスキップしてください。
+:::
+
+**ガイド:** [ユーザーの識別](android-quickstart-identify)
+
+LLMへ送るプロンプト：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/android-quickstart-identify.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** `Adapty.identify("your-user-id")` を呼び出した後、ダッシュボードの **Profiles** セクションにカスタムユーザーIDが表示される。
+- **注意点:** アクティベーション後・ペイウォール取得前に `identify` を呼び出すことで、匿名プロファイルへのアトリビューションを防げます。
+:::
+
+### リリース準備 \{#prepare-for-release\}
+
+サンドボックスでの統合確認が完了したら、リリースチェックリストに沿ってプロダクション対応を確認しましょう。
+
+**ガイド:** [リリースチェックリスト](release-checklist)
+
+LLMへ送るプロンプト：
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/ja/release-checklist.md
+```
+
+:::tip[チェックポイント]
+- **期待される結果:** チェックリストの全項目を確認済み：ストア接続、サーバー通知、購入フロー、アクセスレベルの確認、プライバシー要件。
+- **注意点:** Google Play リアルタイム デベロッパー通知が未設定の場合 → **App settings → Android SDK** で設定してください。設定しないとダッシュボードにイベントが表示されません。
+:::
+
+## プレーンテキストドキュメントのインデックスファイル \{#plain-text-doc-index-files\}
+
+個別ページを超えた幅広いコンテキストをLLMに提供したい場合は、Adaptyドキュメント全体をまとめたインデックスファイルを用意しています：
+
+- [`llms.txt`](https://adapty.io/docs/ja/llms.txt): すべてのページを `.md` リンク付きで一覧表示。LLMがウェブサイトにアクセスしやすくするための[新興標準](https://llmstxt.org/)です。一部のAIエージェント（ChatGPTなど）では、`llms.txt` をダウンロードしてチャットにファイルとしてアップロードする必要があります。
+- [`llms-full.txt`](https://adapty.io/docs/ja/llms-full.txt): Adaptyドキュメントサイト全体を1つのファイルにまとめたもの。非常に大きなファイルのため、全体像が必要なときのみ使用してください。
+- Android専用の [`android-llms.txt`](https://adapty.io/docs/ja/android-llms.txt) と [`android-llms-full.txt`](https://adapty.io/docs/ja/android-llms-full.txt): サイト全体と比べてトークン数を節約できるプラットフォーム別サブセットです。

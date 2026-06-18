@@ -1,0 +1,395 @@
+---
+title: "Unity SDKでオンボーディングイベントを処理する"
+description: "Adaptyを使ってUnityでオンボーディング関連のイベントを処理します。"
+metadataTitle: "UnityでオンボーディングイベントをHandleする | Adapty ドキュメント"
+toc_max_heading_level: 4
+keywords: ['onCloseAction', 'AdaptyOnboardingsCloseAction', 'onStateUpdatedAction', 'onPaywallAction', 'didFinishLoading', 'onAnalyticsEvent']
+---
+
+始める前に、以下を確認してください：
+
+1. [Adapty Unity SDK](sdk-installation-unity) 3.14.0以降をインストール済みであること。
+2. [オンボーディングを作成済み](create-onboarding)であること。
+3. オンボーディングを[プレースメント](placements)に追加済みであること。
+
+ビルダーで設定されたオンボーディングは、アプリが反応できるイベントを生成します。これらのイベントへの対応方法を以下で説明します。
+
+Unityアプリ内のオンボーディング画面で発生するプロセスを制御・監視するには、`AdaptyOnboardingsEventsListener`インターフェースを実装してください。
+
+## カスタムアクション \{#custom-actions\}
+
+ビルダーでは、ボタンに**カスタム**アクションを追加してIDを割り当てることができます。
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+このIDをコード内で使用し、カスタムアクションとして処理できます。たとえば、ユーザーが**ログイン**や**通知を許可**などのカスタムボタンをタップすると、`OnboardingViewOnCustomAction`メソッドが呼び出され、`actionId`パラメーターにビルダーで設定した**アクションID**が渡されます。"allowNotifications"のような独自のIDを作成できます。
+
+オンボーディングイベントを処理するには、`AdaptyOnboardingsEventsListener`インターフェースを実装してください：
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetOnboardingsEventsListener(this);
+    }
+
+    public void OnboardingViewOnCustomAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string actionId
+    )
+    {
+        if (actionId == "allowNotifications") {
+            // request notification permissions
+        }
+    }
+    
+    public void OnboardingViewDidFailWithError(
+        AdaptyUIOnboardingView view,
+        AdaptyError error
+    )
+    {
+        // handle errors
+    }
+
+    // Implement other required interface methods (see examples below)
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```json
+{
+  "actionId": "allowNotifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+## オンボーディングを閉じる \{#closing-onboarding\}
+
+オンボーディングは、ユーザーが**閉じる**アクションが割り当てられたボタンをタップしたときに閉じられたとみなされます。
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+ユーザーがオンボーディングを閉じたときの動作を自分で管理する必要があります。たとえば、オンボーディング自体の表示を停止する処理が必要です。
+:::
+
+クラスに`OnboardingViewOnCloseAction`メソッドを実装してください：
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnCloseAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string actionId
+    )
+    {
+        view.Dismiss((error) => {
+            if (error != null) {
+                // handle the error
+            }
+        });
+    }
+    
+    // ... other interface methods
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+
+</Details>
+
+## ペイウォールを開く \{#opening-a-paywall\}
+
+:::tip
+オンボーディング内でペイウォールを開きたい場合は、このイベントを処理してください。オンボーディングが閉じた後にペイウォールを開く場合は、[`OnboardingViewOnCloseAction`](#closing-onboarding)を処理してイベントデータに依存せずにペイウォールを開く方がシンプルです。
+:::
+
+オンボーディングでペイウォールを扱う最もシームレスな方法は、アクションIDをペイウォールのプレースメントIDと同じにすることです。こうすることで、`OnboardingViewOnPaywallAction`の後にそのプレースメントIDを使ってすぐにペイウォールを取得して開くことができます。
+
+iOS では、ペイウォールとオンボーディングのどちらか一方しか同時に表示できません。オンボーディングの上にペイウォールを表示した場合、バックグラウンドのオンボーディングをプログラムで制御することはできません。オンボーディングを閉じようとするとペイウォールが閉じられてしまい、オンボーディングがそのまま表示された状態になります。これを避けるため、ペイウォールを表示する前に必ずオンボーディングビューを閉じてください。
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnPaywallAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string actionId
+    )
+    {
+        // Dismiss onboarding before presenting paywall
+        view.Dismiss((dismissError) => {
+            if (dismissError != null) {
+                // handle the error
+                return;
+            }
+
+            Adapty.GetPaywall(actionId, (paywall, error) => {
+                if (error != null) {
+                    // handle the error
+                    return;
+                }
+
+                AdaptyUI.CreatePaywallView(paywall, (paywallView, createError) => {
+                    if (createError != null) {
+                        // handle the error
+                        return;
+                    }
+
+                    paywallView.Present((presentError) => {
+                        if (presentError != null) {
+                            // handle the error
+                        }
+                    });
+                });
+            });
+        });
+    }
+    
+    // ... other interface methods
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## オンボーディングの読み込み完了 \{#finishing-loading-onboarding\}
+
+オンボーディングの読み込みが完了したら、`OnboardingViewDidFinishLoading`メソッドを実装してください：
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewDidFinishLoading(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta
+    )
+    {
+        // handle loading completion
+    }
+    
+    // ... other interface methods
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## ナビゲーションのトラッキング \{#tracking-navigation\}
+
+`OnboardingViewOnAnalyticsEvent`メソッドは、オンボーディングフロー中にさまざまな分析イベントが発生したときに呼び出されます。
+
+`analyticsEvent`オブジェクトは以下のいずれかの型になります：
+| 型 | 説明 |
+|------------|-------------|
+| `AdaptyOnboardingsAnalyticsEventOnboardingStarted` | オンボーディングが読み込まれたとき |
+| `AdaptyOnboardingsAnalyticsEventScreenPresented` | 任意の画面が表示されたとき |
+| `AdaptyOnboardingsAnalyticsEventScreenCompleted` | 画面が完了したとき。オプションの`ElementId`（完了した要素の識別子）とオプションの`Reply`（ユーザーからの応答）を含みます。ユーザーが画面を離れるアクションを実行したときに発火します。 |
+| `AdaptyOnboardingsAnalyticsEventSecondScreenPresented` | 2番目の画面が表示されたとき |
+| `AdaptyOnboardingsAnalyticsEventUserEmailCollected` | 入力フィールドでユーザーのメールアドレスが収集されたとき |
+| `AdaptyOnboardingsAnalyticsEventOnboardingCompleted` | ユーザーが`final`IDを持つ画面に到達したときに発火します。このイベントが必要な場合は、[最後の画面に`final`IDを割り当てて](design-onboarding)ください。 |
+| `AdaptyOnboardingsAnalyticsEventUnknown` | 認識できないイベントタイプの場合。`Name`（不明なイベントの名前）と`meta`（追加のメタデータ）を含みます。 |
+
+各イベントには以下の`meta`情報が含まれます：
+| フィールド | 説明 |
+|------------|-------------|
+| `OnboardingId` | オンボーディングフローの一意識別子 |
+| `ScreenClientId` | 現在の画面の識別子 |
+| `ScreenIndex` | フロー内の現在の画面の位置 |
+| `ScreensTotal` | フロー内の総画面数 |
+
+分析イベントをトラッキングに使用する例を以下に示します：
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnAnalyticsEvent(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        AdaptyOnboardingsAnalyticsEvent analyticsEvent
+    )
+    {
+        switch (analyticsEvent) {
+            case AdaptyOnboardingsAnalyticsEventOnboardingStarted:
+                // track onboarding start
+                TrackEvent("onboarding_started", meta);
+                break;
+            case AdaptyOnboardingsAnalyticsEventScreenPresented:
+                // track screen presentation
+                TrackEvent("screen_presented", meta);
+                break;
+            case AdaptyOnboardingsAnalyticsEventScreenCompleted screenCompleted:
+                // track screen completion with user response
+                TrackEvent("screen_completed", meta, screenCompleted.ElementId, screenCompleted.Reply);
+                break;
+            case AdaptyOnboardingsAnalyticsEventOnboardingCompleted:
+                // track successful onboarding completion
+                TrackEvent("onboarding_completed", meta);
+                break;
+            case AdaptyOnboardingsAnalyticsEventUnknown unknownEvent:
+                // handle unknown events
+                TrackEvent(unknownEvent.Name, meta);
+                break;
+            // handle other cases as needed
+        }
+    }
+    
+    // ... other interface methods
+}
+```
+
+:::note
+`TrackEvent`メソッドは、お好みの分析サービスに分析データを送信するために自分で実装する必要があるプレースホルダーです。
+:::
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+
+```
+
+</Details>

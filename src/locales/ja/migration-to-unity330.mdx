@@ -1,0 +1,631 @@
+---
+title: "Adapty Unity SDK を v3.3 へ移行する"
+description: "パフォーマンス向上と新しいマネタイズ機能のために Adapty Unity SDK v3.3.3 へ移行する方法を説明します。"
+metadataTitle: "Adapty Unity SDK v3.3 への移行 | Adapty ドキュメント"
+---
+
+Adapty SDK 3.3.0 はメジャーリリースであり、いくつかの改善が含まれていますが、移行作業が必要な場合があります。
+
+1. Adapty SDK v3.3.x へアップグレードする。
+2. Adapty SDK の Adapty モジュールおよび AdaptyUI モジュールで、複数のクラス・プロパティ・メソッドの名前が変更されました。
+3. `SetLogLevel` メソッドがコールバックを引数として受け取るようになりました。
+4. `PresentCodeRedemptionSheet` メソッドがコールバックを引数として受け取るようになりました。
+5. ペイウォールビューの作成方法を変更する。
+6. `GetProductsIntroductoryOfferEligibility` メソッドを削除する。
+7. フォールバックペイウォールをプラットフォームごとに別々のファイル（各プラットフォーム1ファイル）として `Assets/StreamingAssets/` に保存し、そのファイル名を `SetFallbackPaywalls` メソッドに渡す。
+8. 購入処理を更新する。
+9. ペイウォールビルダーのイベント処理を更新する。
+10. ペイウォールビルダーのペイウォールエラー処理を更新する。
+11. Adjust、Amplitude、AppMetrica、Appsflyer、Branch、Firebase および Google Analytics、Mixpanel、OneSignal、Pushwoosh のインテグレーション設定を更新する。
+13. Observer モードの実装を更新する。
+14. 明示的な `Activate` 呼び出しで Unity プラグインの初期化を更新する。
+
+## Adapty Unity SDK を 3.3.x へアップグレードする \{#upgrade-adapty-unity-sdk-to-33x\}
+
+このバージョンまでは、Adapty SDK がアプリ内で Adapty を正常に動作させるためのコアかつ必須の SDK であり、AdaptyUI SDK はペイウォールビルダーを使用する場合にのみ必要なオプションの SDK でした。
+
+バージョン 3.3.0 以降、AdaptyUI SDK は非推奨となり、AdaptyUI は Adapty SDK のモジュールとして統合されました。この変更により、AdaptyUISDK を削除し、AdaptySDK を再インストールする必要があります。
+
+1. プロジェクトから **AdaptySDK** と **AdaptyUISDK** の両方のパッケージ依存関係を削除する。
+2. **AdaptySDK** フォルダーと **AdaptyUISDK** フォルダーを削除する。
+3. [Adapty SDK installation & configuration for Unity](sdk-installation-unity) ページの説明に従って、AdaptySDK パッケージを再度インポートする。
+
+## 名前変更 \{#renamings\}
+
+1. Adapty モジュールでの名前変更:
+
+   | 旧バージョン              | 新バージョン             |
+   | ------------------------- | ------------------------ |
+   | Adapty.sdkVersion         | Adapty.SDKVersion        |
+   | Adapty.LogLevel           | AdaptyLogLevel           |
+   | Adapty.Paywall            | AdaptyPaywall            |
+   | Adapty.PaywallFetchPolicy | AdaptyPaywallFetchPolicy |
+   | PaywallProduct            | AdaptyPaywallProduct     |
+   | Adapty.Profile            | AdaptyProfile            |
+   | Adapty.ProfileParameters  | AdaptyProfileParameters  |
+   | ProfileGender             | AdaptyProfileGender      |
+   | Error                     | AdaptyError              |
+
+2. AdaptyUI モジュールでの名前変更:
+
+   | 旧バージョン       | 新バージョン       |
+   | ------------------ | ------------------ |
+   | CreatePaywallView  | CreateView         |
+   | PresentPaywallView | PresentView        |
+   | DismissPaywallView | DismissView        |
+   | AdaptyUI.View      | AdaptyUIView       |
+   | AdaptyUI.Action    | AdaptyUIUserAction |
+
+## SetLogLevel メソッドの変更 \{#change-the-setloglevel-method\}
+
+`SetLogLevel` メソッドがコールバックを引数として受け取るようになりました。
+
+```diff showLineNumbers
+- Adapty.SetLogLevel(Adapty.LogLevel.Verbose);
++ Adapty.SetLogLevel(Adapty.LogLevel.Verbose, null); // or you can pass the callback to handle the possible error
+```
+
+## PresentCodeRedemptionSheet メソッドの変更 \{#change-the-presentcoderedemptionsheet-method\}
+
+`PresentCodeRedemptionSheet` メソッドがコールバックを引数として受け取るようになりました。
+
+```diff showLineNumbers
+- Adapty.PresentCodeRedemptionSheet();
++ Adapty.PresentCodeRedemptionSheet(null); // or you can pass the callback to handle the possible error
+```
+
+## ペイウォールビューの作成方法を変更する \{#change-how-the-paywall-view-is-created\}
+
+完全なコード例については、[ペイウォールビルダーで作成したペイウォールのビュー設定を取得する](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) を参照してください。
+
+```diff showLineNumbers
++ var parameters = new AdaptyUICreateViewParameters()
++   .SetPreloadProducts(true);
+
+- AdaptyUI.CreatePaywallView(
++ AdaptyUI.CreateView(
+   paywall, 
+-  preloadProducts: true,
++  parameters,
+  (view, error) => {
+  // use the view
+});
+```
+
+## GetProductsIntroductoryOfferEligibility メソッドの削除 \{#remove-the-getproductsintroductoryoffereligibility-method\}
+
+Adapty iOS SDK 3.3.0 より前は、ユーザーが対象かどうかに関わらず、プロダクトオブジェクトには常にオファーが含まれていました。そのため、オファーを使用する前に手動で対象確認を行う必要がありました。
+
+現在は、ユーザーが対象である場合にのみプロダクトオブジェクトにオファーが含まれます。つまり、対象確認は不要になりました — オファーが存在する場合、そのユーザーは対象です。
+
+## フォールバックペイウォールの提供方法を更新する \{#update-method-for-providing-fallback-paywalls\}
+
+このバージョンまでは、フォールバックペイウォールはシリアライズされた JSON として渡されていました。v 3.3.0 以降、仕組みが変更されました。
+
+1. フォールバックペイウォールを `/Assets/StreamingAssets/` 内のファイルに保存する（Android 用に 1 ファイル、iOS 用に 1 ファイル）。
+2. ファイル名を `SetFallbackPaywalls` メソッドに渡す。
+
+コードの変更は次のようになります。
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void SetFallBackPaywalls() {
+
++ #if UNITY_IOS
++   var assetId = "adapty_fallback_ios.json";
++ #elif UNITY_ANDROID
++   var assetId = "adapty_fallback_android.json";
++ #else
++   var assetId = "";
++ #endif
+
+-   Adapty.SetFallbackPaywalls("FALLBACK_PAYWALLS_JSON_STRING", (error) => {
++   Adapty.SetFallbackPaywalls(assetId, (error) => {
+    // handle the error
+  });
+}
+```
+
+最終的なコード例は [Unity でフォールバックペイウォールを使用する](unity-use-fallback-paywalls) ページを参照してください。
+
+## 購入処理の更新 \{#update-making-purchase\}
+
+以前は、キャンセルされた購入と保留中の購入はエラーとして扱われ、それぞれ `PaymentCancelled` と `PendingPurchase` コードが返されていました。
+
+新しい `AdaptyPurchaseResultType` クラスを使用して、キャンセル済み・成功・保留中の購入を処理します。購入コードを次のように更新してください。
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void MakePurchase(AdaptyPaywallProduct product) {
+- Adapty.MakePurchase(product, (profile, error) => {
+-   // handle successfull purchase
++ Adapty.MakePurchase(product, (result, error) => {
++   switch (result.Type) {
++     case AdaptyPurchaseResultType.Pending:
++       // handle pending purchase
++       break;
++     case AdaptyPurchaseResultType.UserCancelled:
++       // handle purchase cancellation
++       break;
++     case AdaptyPurchaseResultType.Success:
++       var profile = result.Profile;
++       // handle successful purchase
++       break;
++     default:
++       break;
+    }
+  });
+}
+```
+
+最終的なコード例は [モバイルアプリで購入する](unity-making-purchases) ページを参照してください。
+
+## ペイウォールビルダーのイベント処理を更新する \{#update-handling-of-paywall-builder-events\}
+
+キャンセルされた購入と保留中の購入はエラーとして扱われなくなり、これらのケースはすべて `PaywallViewDidFinishPurchase` メソッドで処理されます。
+
+1. キャンセルされた購入イベントの処理を削除する。
+
+2. 購入成功イベントの処理を次のように更新する。
+
+   ```diff showLineNumbers
+   - public void OnFinishPurchase(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product, 
+   -   Adapty.Profile profile
+   - ) { }
+   
+   + public void PaywallViewDidFinishPurchase(
+   +   AdaptyUIView view, 
+   +   AdaptyPaywallProduct product, 
+   +   AdaptyPurchaseResult purchasedResult
+   + ) { }
+   ```
+
+3. アクションの処理を更新する。
+
+   ```diff showLineNumbers
+   - public void OnPerformAction(
+   -   AdaptyUI.View view, 
+   -   AdaptyUI.Action action
+   - ) {
+   + public void PaywallViewDidPerformAction(
+   +   AdaptyUIView view, 
+   +   AdaptyUIUserAction action
+   + ) {
+       switch (action.Type) {
+   -     case AdaptyUI.ActionType.Close:
+   +     case AdaptyUIUserActionType.Close:
+           view.Dismiss(null);
+           break;
+   -     case AdaptyUI.ActionType.OpenUrl:
+   +     case AdaptyUIUserActionType.OpenUrl:
+           var urlString = action.Value;
+           if (urlString != null {
+           	Application.OpenURL(urlString); 
+           }
+         default:
+           // handle other events
+           break;
+       }
+   }
+   ```
+
+4. 購入開始の処理を更新する。
+
+   ```diff showLineNumbers
+   - public void OnSelectProduct(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product
+   - ) { }
+   
+   + public void PaywallViewDidSelectProduct(
+   +   AdaptyUIView view, 
+   +   string productId
+   + ) { }
+   ```
+
+5. 購入失敗の処理を更新する。
+
+   ```diff showLineNumbers
+   - public void OnFailPurchase(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailPurchase(
+   +   AdaptyUIView view, 
+   +   AdaptyPaywallProduct product, 
+   +   AdaptyError error
+   + ) { }
+   
+   ```
+
+6. リストア成功イベントの処理を更新する。
+
+   ```diff showLineNumbers
+   - public void OnFailRestore(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailRestore(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   
+   ```
+
+最終的なコード例は [ペイウォールのイベントを処理する](unity-handling-events) ページを参照してください。
+
+## ペイウォールビルダーのペイウォールエラー処理を更新する \{#update-handling-of-paywall-builder-paywall-errors\}
+
+エラーの処理も変更されました。以下のガイダンスに従ってコードを更新してください。
+
+1. プロダクト読み込みエラーの処理を更新する。
+
+   ```diff showLineNumbers
+   - public void OnFailLoadingProducts(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailLoadingProducts(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   ```
+
+2. レンダリングエラーの処理を更新する。
+
+   ```diff showLineNumbers
+   - public void OnFailRendering(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailRendering(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   ```
+
+   
+
+## サードパーティインテグレーション SDK 設定の更新 \{#update-third-party-integration-sdk-configuration\}
+
+Adapty Unity SDK 3.3.0 以降、`updateAttribution` メソッドのパブリック API を更新しました。以前は `[AnyHashable: Any]` ディクショナリを受け取り、さまざまなサービスからアトリビューションオブジェクトを直接渡すことができました。現在は `[String: any Sendable]` が必要なため、渡す前にアトリビューションオブジェクトを変換する必要があります。
+
+Adapty Unity SDK 3.3.0 以降でインテグレーションが正しく機能するよう、以下のセクションに記載されているインテグレーションの SDK 設定を更新してください。
+
+### Adjust
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[Adjust インテグレーションの SDK 設定](adjust#connect-your-app-to-adjust) を参照してください。
+
+```diff showLineNumbers
+- using static AdaptySDK.Adapty;
+ using AdaptySDK;
+
+ Adjust.GetAdid((adid) => {
+-   Adjust.GetAttribution((attribution) => {
+-     Dictionary<String, object> data = new Dictionary<String, object>();
+-
+-     data["network"] = attribution.Network;
+-     data["campaign"] = attribution.Campaign;
+-     data["adgroup"] = attribution.Adgroup;
+-     data["creative"] = attribution.Creative;
+-
+-     String attributionString = JsonUtility.ToJson(data);
+-     Adapty.UpdateAttribution(attributionString, AttributionSource.Adjust, adid, (error) => {
+-       // handle the error
+-     });
++   if (adid != null) {
++     Adapty.SetIntegrationIdentifier(
++       "adjust_device_id", 
++       adid, 
++       (error) => {
++         // handle the error
++     });
+    }
+ });
+
+ Adjust.GetAttribution((attribution) => {
+   Dictionary<String, object> data = new Dictionary<String, object>();
+
+   data["network"] = attribution.Network;
+   data["campaign"] = attribution.Campaign;
+   data["adgroup"] = attribution.Adgroup;
+   data["creative"] = attribution.Creative;
+
+   String attributionString = JsonUtility.ToJson(data);
+    
+-   Adapty.UpdateAttribution(attributionString, AttributionSource.Adjust, adid, (error) => {
++   Adapty.UpdateAttribution(attributionString, "adjust", (error) => {
+       // handle the error
+   });
+ });
+```
+
+### Amplitude
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[Amplitude インテグレーションの SDK 設定](amplitude#sdk-configuration) を参照してください。
+
+```diff showLineNumbers
+using AdaptySDK;
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetAmplitudeUserId("YOUR_AMPLITUDE_USER_ID");
+- builder.SetAmplitudeDeviceId(amplitude.getDeviceId());
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ Adapty.SetIntegrationIdentifier(
++   "amplitude_user_id", 
++   "YOUR_AMPLITUDE_USER_ID", 
++   (error) => {
++   // handle the error
++ });
+
++ Adapty.SetIntegrationIdentifier(
++   "amplitude_device_id", 
++   amplitude.getDeviceId(), 
++   (error) => {
++   // handle the error
++ });
+```
+
+### AppMetrica
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[AppMetrica インテグレーションの SDK 設定](appmetrica#sdk-configuration) を参照してください。
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- var deviceId = AppMetrica.GetDeviceId();
+
+- if (deviceId != null {
+-   var builder = new Adapty.ProfileParameters.Builder();
+
+-   builder.SetAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
+-   builder.SetAppmetricaDeviceId(deviceId);
+
+-   Adapty.UpdateProfile(builder.Build(), (error) => {
+-       // handle error
+-   });
+- }
+
++ var deviceId = AppMetrica.GetDeviceId();
+
++ if (deviceId != null {
++   Adapty.SetIntegrationIdentifier(
++     "appmetrica_device_id", 
++     deviceId, 
++     (error) => {
++     // handle the error
++   });
++   
++   Adapty.SetIntegrationIdentifier(
++     "appmetrica_profile_id", 
++     "YOUR_ADAPTY_CUSTOMER_USER_ID", 
++     (error) => {
++     // handle the error
++   });
++ }
+```
+
+### AppsFlyer
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[AppsFlyer インテグレーションの SDK 設定](appsflyer#connect-your-app-to-appsflyer) を参照してください。
+
+```diff showLineNumbers
+ using AppsFlyerSDK;
+ using AdaptySDK;
+
+ // before SDK initialization
+ AppsFlyer.getConversionData(this.name);
+
+ // in your IAppsFlyerConversionData
+ void onConversionDataSuccess(string conversionData) {
+     // It's important to include the network user ID
+-    string appsFlyerId = AppsFlyer.getAppsFlyerId();
+-    Adapty.UpdateAttribution(conversionData, AttributionSource.Appsflyer, appsFlyerId, (error) => {
++    string appsFlyerId = AppsFlyer.getAppsFlyerId();
++    
++    Adapty.SetIntegrationIdentifier(
++      "appsflyer_id", 
++      appsFlyerId, 
++      (error) => {
+         // handle the error
+     });
++    
++    Adapty.UpdateAttribution(
++      conversionData, 
++      "appsflyer",
++      (error) => {
++        // handle the error
++      });
+ }
+
+```
+
+### Branch
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[Branch インテグレーションの SDK 設定](branch#connect-your-app-to-branch) を参照してください。
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- class YourBranchImplementation {
+-     func initializeBranch() {
+-         Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+-             if let data {
+-                 Adapty.updateAttribution(data, source: .branch)
+-             }
+-         }
+-     }
+- }
+
++ Branch.initSession(delegate(Dictionary<string, object> parameters, string error) {
++     string attributionString = JsonUtility.ToJson(parameters);
++     
++     Adapty.UpdateAttribution(
++       attributionString, 
++       "branch", 
++       (error) => {
++         // handle the error
++       });
++ });
+```
+
+### Firebase と Google Analytics \{#firebase-and-google-analytics\}
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[Firebase および Google Analytics インテグレーションの SDK 設定](firebase-and-google-analytics) を参照してください。
+
+```diff showLineNumbers
+ // We suppose FirebaseAnalytics Unity Plugin is already installed
+
+ using AdaptySDK;
+
+ Firebase.Analytics
+   .FirebaseAnalytics
+   .GetAnalyticsInstanceIdAsync()
+   .ContinueWithOnMainThread((task) => {
+     if (!task.IsCompletedSuccessfully) {
+       // handle error
+       return;
+     }
+
+     var firebaseId = task.Result
+     var builder = new Adapty.ProfileParameters.Builder();
+     
+-    builder.SetFirebaseAppInstanceId(firebaseId);
+-
+-    Adapty.UpdateProfile(builder.Build(), (error) => {
+-        // handle error
+   
++     Adapty.SetIntegrationIdentifier(
++       "firebase_app_instance_id", 
++       firebaseId, 
++       (error) => {
++         // handle the error
+     });
+   });
+```
+
+### Mixpanel
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[Mixpanel インテグレーションの SDK 設定](mixpanel#sdk-configuration) を参照してください。
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetMixpanelUserId(Mixpanel.DistinctId);
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ var distinctId = Mixpanel.DistinctId;
+
++ if (distinctId != null) {
++   Adapty.SetIntegrationIdentifier(
++     "mixpanel_user_id", 
++     distinctId, 
++     (error) => {
++       // handle the error
++   });
++ }
+```
+
+### OneSignal
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[OneSignal インテグレーションの SDK 設定](onesignal#sdk-configuration) を参照してください。
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- using OneSignalSDK;
+
+- var pushUserId = OneSignal.Default.PushSubscriptionState.userId;
+
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetOneSignalPlayerId(pushUserId);
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ var distinctId = Mixpanel.DistinctId;
+
++ if (distinctId != null) {
++   Adapty.SetIntegrationIdentifier(
++     "mixpanel_user_id", 
++     distinctId, 
++     (error) => {
++       // handle the error
++   });
++ }
+```
+
+### Pushwoosh
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[Pushwoosh インテグレーションの SDK 設定](pushwoosh#sdk-configuration) を参照してください。
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetPushwooshHWID(Pushwoosh.Instance.HWID);
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ Adapty.SetIntegrationIdentifier(
++   "pushwoosh_hwid", 
++   Pushwoosh.Instance.HWID, 
++   (error) => {
++   // handle the error
++ });
+```
+
+## Observer モードの実装を更新する \{#update-observer-mode-implementation\}
+
+ペイウォールとトランザクションの紐付け方法を更新してください。以前は `setVariationId` メソッドを使用して `variationId` を割り当てていました。現在は、新しい `reportTransaction` メソッドを使用してトランザクションを記録する際に `variationId` を直接含めることができます。最終的なコード例は [Observer モードで購入トランザクションにペイウォールを紐付ける](report-transactions-observer-mode-unity) ページを参照してください。
+
+```diff showLineNumbers
+ // every time when calling transaction.finish()
+- Adapty.SetVariationForTransaction("<variationId>", "<transactionId>", (error) => { 
+-     if(error != null) {
+-         // handle the error
+-         return;
+-     }
+-
+-     // successful binding
+- });
+
++ Adapty.ReportTransaction(
++   "YOUR_TRANSACTION_ID", 
++   "PAYWALL_VARIATION_ID", // optional
++   (error) => {
++   // handle the error
++ });
+```
+
+## Unity プラグインの初期化を更新する \{#update-the-unity-plugin-initialization\}
+
+Adapty Unity SDK 3.3.0 以降、プラグインの初期化時に `Activate` メソッドを明示的に呼び出すことが必須になりました。
+
+```csharp showLineNumbers
+Adapty.Activate(builder.Build(), (error) => {
+   if (error != null) {
+       // handle the error
+       return;
+   }
+});
+```

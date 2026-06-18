@@ -1,0 +1,174 @@
+---
+title: "Capacitor SDKでペイウォールを使って購入を有効にする"
+description: "Adapty SDKを使用してCapacitorアプリにペイウォールを表示する方法を学びましょう。"
+metadataTitle: "ペイウォールの表示 | Capacitor SDK | Adapty ドキュメント"
+customSlug: /capacitor-quickstart-paywalls
+displayed_sidebar: sdkcapacitor
+---
+
+import PaywallsIntro from '@site/src/locales/ja/reusable/PaywallsIntro.md';
+
+アプリ内課金を有効にするには、次の3つの主要な概念を理解する必要があります。
+
+- **プロダクト** – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセス）
+- **ペイウォール** – どのプロダクトを提供するかを定義する設定です。Adaptyではペイウォールを通じてのみプロダクトを取得できますが、この設計によりアプリのコードを変更せずにオファー内容、価格、プロダクトの組み合わせを変更できます。
+- **プレースメント** – アプリ内でペイウォールをどこでいつ表示するか（`main`、`onboarding`、`settings` など）。ダッシュボードでプレースメントにペイウォールを設定し、コード内ではプレースメントIDで取得します。これによりA/Bテストの実行や、ユーザーごとに異なるペイウォールの表示が簡単になります。
+
+Adaptyではアプリに購入機能を実装するための方法を3つ提供しています。アプリの要件に応じて選択してください。
+
+| 実装方法                       | 複雑さ     | 使うタイミング                                                                                                                                                                                                                              |
+|-------------------------------|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Adapty ペイウォールビルダー** | ✅ 簡単     | [ノーコードビルダーで購入対応ペイウォールを作成します](quickstart-paywalls)。Adaptyが自動的にレンダリングし、複雑な購入フロー、レシート検証、サブスクリプション管理をすべて裏側で処理します。 |
+| `makePurchase`                 | 🟡 中程度  | アプリのコードでペイウォールUIを実装しますが、プロダクトオファーの柔軟性を保つためにAdaptyからペイウォールオブジェクトを取得します。[ガイド](capacitor-quickstart-manual)をご覧ください。                                                   |
+| オブザーバーモード              | 🔴 難しい   | 購入フローを完全に自分で実装します。[ガイド](implement-observer-mode-capacitor)をご覧ください。                                                                                                                                              |
+
+:::important
+**以下の手順は、Adaptyペイウォールビルダーで作成したペイウォールの実装方法を示しています。**
+
+ペイウォールビルダーを使用しない場合は、[手動作成ペイウォールでの購入処理ガイド](capacitor-making-purchases)をご覧ください。
+:::
+
+Adaptyペイウォールビルダーで作成したペイウォールを表示するには、アプリのコードで次の3つの手順のみ必要です。
+
+1. **ペイウォールを取得する**: AdaptyからペイウォールのObjectを取得します。
+2. **ペイウォールを表示する（購入はAdaptyが処理）**: 取得したペイウォールコンテナをアプリに表示します。
+3. **ボタンアクションを処理する**: ペイウォール上のユーザー操作とアプリの応答を関連付けます。たとえば、ユーザーがボタンをクリックしたときにリンクを開いたりペイウォールを閉じたりします。
+
+## 始める前に \{#before-you-start\}
+
+始める前に、次の手順を完了してください。
+
+1. Adaptyダッシュボードでアプリを[App Store](initial_ios)または[Google Play](initial-android)（あるいはその両方）に接続します。
+2. Adaptyで[プロダクトを作成します](create-product)。
+3. [ペイウォールを作成してプロダクトを追加します](create-paywall)。
+4. [プレースメントを作成してペイウォールを追加します](create-placement)。
+5. アプリのコードに[Adapty SDKをインストールして有効化します](sdk-installation-capacitor)。
+
+:::tip
+これらの手順を最速で完了するには、[クイックスタートガイド](quickstart)に従うか、[Developer CLI](developer-cli-quickstart)を使ってペイウォールとプレースメントを作成してください。
+:::
+
+## 1. ペイウォールを取得する \{#1-get-the-paywall\}
+
+ペイウォールはダッシュボードで設定したプレースメントに関連付けられています。プレースメントを使うことで、異なるオーディエンスに異なるペイウォールを表示したり、[A/Bテスト](ab-tests)を実行したりできます。
+
+Adaptyペイウォールビルダーで作成したペイウォールを取得するには、次の手順が必要です。
+
+1. `getPaywall` メソッドを使って[プレースメント](placements)IDで `paywall` オブジェクトを取得し、`hasViewConfiguration` プロパティでビルダーで作成したペイウォールかどうかを確認します。
+
+2. `createPaywallView` メソッドを使ってペイウォールビューを作成します。このビューにはペイウォールを表示するためのUI要素とスタイリングが含まれています。
+
+:::important
+ビュー設定を取得するには、ペイウォールビルダーで **Show on device** トグルをオンにする必要があります。そうしないと、空のビュー設定が返され、ペイウォールが表示されません。
+:::
+
+```typescript showLineNumbers title="Capacitor"
+
+try {
+  const paywall = await adapty.getPaywall({
+    placementId: 'YOUR_PLACEMENT_ID',
+  });
+  // the requested paywall
+} catch (error) {
+  // handle the error
+}
+
+if (paywall.hasViewConfiguration) {
+  try {
+    const view = await createPaywallView(paywall);
+  } catch (error) {
+    // handle the error
+  }
+} else {
+  // use your custom logic
+}
+```
+
+## 2. ペイウォールを表示する \{#2-display-the-paywall\}
+
+ペイウォールの設定を取得したら、数行のコードを追加するだけでペイウォールを表示できます。
+
+ペイウォールを表示するには、`createPaywallView` メソッドで作成した `view` に対して `view.present()` メソッドを呼び出します。各 `view` は一度しか使用できません。再度ペイウォールを表示する必要がある場合は、`createPaywallView` をもう一度呼び出して新しい `view` インスタンスを作成してください。
+
+```typescript showLineNumbers title="Capacitor"
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+:::tip
+ペイウォールの表示方法についての詳細は、[ガイド](capacitor-present-paywalls)をご覧ください。
+:::
+
+## 3. ボタンアクションを処理する \{#3-handle-button-actions\}
+
+ユーザーがペイウォール内のボタンをクリックすると、Capacitor SDKは購入、復元、ペイウォールのクローズを自動的に処理します。
+
+ただし、カスタムまたは事前定義のIDを持つボタンはコード内でアクションを処理する必要があります。また、デフォルトの動作をオーバーライドしたい場合もあります。
+
+たとえば、ユーザーがWebリンクを開いた後もペイウォールを開いたままにしたい場合があります。実装でどのように処理できるか見てみましょう。
+
+:::tip
+ボタンの[アクション](capacitor-handle-paywall-actions)と[イベント](capacitor-handling-events)の処理方法については、各ガイドをご覧ください。
+:::
+
+```typescript showLineNumbers title="Capacitor"
+const unsubscribe = view.setEventHandlers({
+  onUrlPress(url) {
+    window.open(url, '_blank');
+    return false;
+  },
+});
+```
+
+## 次のステップ \{#next-steps\}
+
+<SupportForum />
+
+ペイウォールをアプリに表示する準備ができました。[App Storeのサンドボックス](test-purchases-in-sandbox)または[Google Play Store](testing-on-android)でテスト購入を行い、ペイウォールからのテスト購入が正常に完了することを確認してください。
+
+次に、適切なユーザーにペイウォールを表示したり有料機能へのアクセスを付与したりするため、[ユーザーのアクセスレベルを確認する](capacitor-check-subscription-status)必要があります。
+
+## 完全なサンプル \{#full-example\}
+
+以下は、これらすべての手順をアプリに統合した例です。
+
+```typescript showLineNumbers title="Capacitor"
+
+export default function PaywallScreen() {
+  const showPaywall = async () => {
+    try {
+      const paywall = await adapty.getPaywall({
+        placementId: 'YOUR_PLACEMENT_ID',
+      });
+
+      if (!paywall.hasViewConfiguration) {
+        // use your custom logic
+        return;
+      }
+
+      const view = await createPaywallView(paywall);
+
+      view.setEventHandlers({
+        onUrlPress(url) {
+          window.open(url, '_blank');
+          return false;
+        },
+      });
+
+      await view.present();
+    } catch (error) {
+      // handle any error that may occur during the process
+      console.warn('Error showing paywall:', error);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <button onClick={showPaywall}>Show Paywall</button>
+    </div>
+  );
+}
+```

@@ -1,0 +1,138 @@
+---
+title: "Unity SDKでローカライゼーションとロケールコードを使用する"
+description: "Adapty SDKを使用してUnityアプリのペイウォールをローカライズする方法を説明します。"
+metadataTitle: "ペイウォールのローカライズ | Unity SDK | Adapty ドキュメント"
+---
+
+## なぜこれが重要なのか \{#why-this-is-important\}
+
+ロケールコードが関係するシナリオはいくつかあります。たとえば、アプリの現在のローカライゼーションに合った正しいペイウォールを取得しようとする場合などです。
+
+ロケールコードは複雑で、プラットフォームによって異なるため、Adaptyではサポートするすべてのプラットフォームに対して独自の標準を採用しています。ただし、これらのコードが複雑であるがゆえに、サーバーに何を送信して正しいローカライゼーションを取得するのか、そしてその後何が起こるのかを正確に理解することが非常に重要です。そうすれば、常に期待通りの結果を受け取ることができます。
+
+## AdaptyのロケールコードI標準 \{#locale-code-standard-at-adapty\}
+
+ロケールコードについて、Adaptyはわずかに修正された[BCP 47標準](https://en.wikipedia.org/wiki/IETF_language_tag)を使用しています。各コードは小文字のサブタグで構成され、ハイフンで区切られています。例：`en`（英語）、`pt-br`（ポルトガル語（ブラジル））、`zh`（簡体字中国語）、`zh-hant`（繁体字中国語）。
+
+## ロケールコードのマッチング \{#locale-code-matching\}
+
+Adaptyがクライアント側のSDKからロケールコード付きの呼び出しを受け取り、ペイウォールの対応するローカライゼーションを検索する際、以下の処理が行われます：
+
+1. 受信したロケール文字列が小文字に変換され、アンダースコア（`_`）がすべてハイフン（`-`）に置き換えられます
+2. 完全に一致するロケールコードを持つローカライゼーションを検索します
+3. 一致するものが見つからない場合、最初のハイフンより前の部分文字列（`pt-br`なら`pt`）を取り出して、一致するローカライゼーションを検索します
+4. それでも一致するものが見つからない場合、デフォルトの`en`ローカライゼーションを返します
+
+これにより、`'pt_BR'`を送信したiOSデバイス、`pt-BR`を送信したAndroidデバイス、`pt-br`を送信した別のデバイスはすべて同じ結果を受け取ります。
+
+## ローカライゼーションの実装：推奨方法 \{#implementing-localizations-recommended-way\}
+
+ローカライゼーションについて検討しているなら、すでにプロジェクトでローカライズされた文字列ファイルを扱っているかもしれません。その場合、各ローカライゼーションに対応するファイルに、意図したAdaptyロケールコードをキーと値のペアとして追加することをお勧めします。そして、SDKを呼び出す際にそのキーの値を取り出します：
+
+```csharp showLineNumbers
+// 1. Modify your localization files (e.g., using Unity's Localization package)
+
+/*
+en.json
+*/
+{
+  "adapty_paywalls_locale": "en"
+}
+
+/*
+es.json
+*/
+{
+  "adapty_paywalls_locale": "es"
+}
+
+/*
+pt-BR.json
+*/
+{
+  "adapty_paywalls_locale": "pt-br"
+}
+
+// 2. Extract and use the locale code
+using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
+using AdaptySDK;
+
+public class PaywallManager : MonoBehaviour
+{
+    public async void FetchPaywall()
+    {
+        // Get the current locale from Unity's Localization system
+        var locale = LocalizationSettings.SelectedLocale;
+        var localeCode = GetAdaptyLocaleCode(locale);
+        
+        // Pass locale code to Adapty.GetPaywall or Adapty.GetPaywallForDefaultAudience method
+        Adapty.GetPaywall("placement_id", localeCode, (paywall, error) => {
+            if (error != null) {
+                // handle the error
+                return;
+            }
+            // Use the paywall
+        });
+    }
+    
+    private string GetAdaptyLocaleCode(Locale locale)
+    {
+        // Convert Unity locale to Adapty format
+        var localeIdentifier = locale.Identifier.Code;
+        return localeIdentifier.ToLower().Replace('_', '-');
+    }
+}
+```
+
+これにより、アプリのすべてのユーザーに対してどのローカライゼーションが取得されるかを完全にコントロールできます。
+
+## ローカライゼーションの実装：別の方法 \{#implementing-localizations-the-other-way\}
+
+すべてのローカライゼーションに対してロケールコードを明示的に定義せずに、同様の（ただし同一ではない）結果を得ることもできます。その場合、プラットフォームが提供する他のオブジェクトからロケールコードを抽出します：
+
+```csharp showLineNumbers
+using UnityEngine;
+using System.Globalization;
+using AdaptySDK;
+
+public class PaywallManager : MonoBehaviour
+{
+    public void FetchPaywall()
+    {
+        var localeCode = GetSystemLocaleCode();
+        
+        // Pass locale code to Adapty.GetPaywall or Adapty.GetPaywallForDefaultAudience method
+        Adapty.GetPaywall("placement_id", localeCode, (paywall, error) => {
+            if (error != null) {
+                // handle the error
+                return;
+            }
+            // Use the paywall
+        });
+    }
+    
+    private string GetSystemLocaleCode()
+    {
+        // Get the system's current culture
+        var culture = CultureInfo.CurrentCulture;
+        var languageCode = culture.TwoLetterISOLanguageName;
+        var regionCode = culture.Name.Contains('-') ? culture.Name.Split('-')[1] : null;
+        
+        if (!string.IsNullOrEmpty(regionCode))
+        {
+            return $"{languageCode}-{regionCode.ToLower()}";
+        }
+        
+        return languageCode;
+    }
+}
+```
+
+この方法はいくつかの理由からお勧めしません：
+
+1. iOSでは優先言語と現在のロケールは同一ではありません。ローカライゼーションを正しく選択したい場合は、Appleのロジックに頼るか（ローカライズされた文字列ファイルを使った推奨アプローチを使用すれば自動的に機能します）、またはそのロジックを再実装する必要があります。
+2. Adaptyのサーバーが受け取る内容を正確に予測することが難しくなります。たとえばiOSでは、デバイスから`ar_OM@numbers='latn'`のようなロケールを取得してサーバーに送信することがあります。この呼び出しに対して、期待していた`ar-om`ローカライゼーションではなく、`ar`が返されることになり、予期しない結果となる可能性があります。
+
+それでもこのアプローチを使用する場合は、関連するユースケースをすべて網羅していることを確認してください。

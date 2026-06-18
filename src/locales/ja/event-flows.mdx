@@ -1,0 +1,449 @@
+---
+title: "イベントフロー"
+description: "Adaptyのサブスクリプションイベントフローの詳細スキームを確認しましょう。サブスクリプションイベントの生成方法やインテグレーションへの送信方法を学び、顧客ジャーニーの重要な瞬間を追跡するのに役立てましょう。"
+metadataTitle: "Adaptyのイベントフローを理解する：スキームとシナリオ | Adapty ドキュメント"
+keywords: ['返金', 'トライアル', 'リストア', 'イベント', 'event']
+rank: 70
+---
+
+Adaptyでは、アプリ内での顧客のジャーニーを通じてさまざまなサブスクリプションイベントを受け取ります。これらのサブスクリプションフローは、ユーザーがサブスクリプションを開始・キャンセル・再有効化する際にAdaptyが生成するイベントを理解するための一般的なシナリオを示しています。
+
+Appleはサブスクリプションの実際の開始・更新時間より数時間前に支払い処理を行います。以下のフローでは、図をわかりやすくするために、サブスクリプションの開始・更新と課金が同時に発生するように示しています。
+
+また、同じアクションに関連するイベントは同時に発生するため、図に示した順序とは異なる順序で **Event Feed** に表示される場合があります。
+
+## サブスクリプションのライフサイクル \{#subscription-lifecycle\}
+
+### 初回購入フロー \{#initial-purchase-flow\}
+
+このフローは、顧客がトライアルなしで初めてサブスクリプションを購入したときに発生します。この場合、以下のイベントが生成されます：
+
+- **Subscription started**
+- **Access level updated**：ユーザーへのアクセス付与
+
+サブスクリプションの更新日が来ると、サブスクリプションが更新されます。この場合、以下のイベントが生成されます：
+
+- **Subscription renewal**：サブスクリプションの新しい期間の開始
+- **Access level updated**：サブスクリプションの有効期限を更新し、さらに1期間のアクセスを延長
+
+支払いが成功しない場合やユーザーが更新をキャンセルした場合については、それぞれ [請求問題の結果フロー](event-flows#billing-issue-outcome-flow) と [サブスクリプションキャンセルフロー](event-flows#subscription-cancellation-flow) をご参照ください。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Initial_Purchase_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### サブスクリプションキャンセルフロー \{#subscription-cancellation-flow\}
+
+ユーザーがサブスクリプションをキャンセルすると、以下のイベントが生成されます：
+
+- **Subscription renewal canceled**：現在の期間が終了するまでサブスクリプションが有効であり、その後ユーザーはアクセスを失うことを示す
+- **Access level updated**：アクセスの自動更新を無効化
+
+サブスクリプションが終了すると、**Subscription expired (churned)** イベントがトリガーされ、サブスクリプションの終了を示します。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Cancellation_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+返金が承認された場合、**Subscription expired (churned)** の代わりに以下のイベントが生成されます：
+
+- **Subscription refunded**：サブスクリプションを終了し、返金の詳細を提供
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Cancellation_Flow_with_a_Refund.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Stripeでは、残りの期間をスキップしてサブスクリプションを即時キャンセルすることができます。この場合、すべてのイベントが同時に生成されます：
+
+- **Subscription renewal cancelled**
+- **Subscription expired (churned)**
+- **Access Level updated**：ユーザーのアクセスを削除
+
+返金が承認された場合、承認時に **Subscription refunded** イベントも発生します。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Immediate_Cancellation_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### サブスクリプション再有効化フロー \{#subscription-reactivation-flow\}
+
+ユーザーがサブスクリプションをキャンセルして期限切れになり、その後同じサブスクリプションを再購入した場合、**Subscription renewed** イベントが生成されます。アクセスが途切れた場合でも、Adaptyは `vendor_original_transaction_id` によってリンクされた単一のトランザクションチェーンとして扱います。そのため、再購入は更新とみなされます。
+
+**Access level updated** イベントは2回生成されます：
+
+- サブスクリプション終了時にユーザーのアクセスを取り消すとき
+- サブスクリプション再購入時にアクセスを付与するとき
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Rejoin_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### サブスクリプション一時停止フロー（Androidのみ） \{#subscription-pause-flow-android-only\}
+
+このフローは、ユーザーがAndroidでサブスクリプションを一時停止し、後で再開する場合に適用されます。
+
+サブスクリプションの一時停止には遅延効果があります。ユーザーが更新前にサブスクリプションを一時停止した場合、サブスクリプションは有効なままで、ユーザーは請求期間の残り期間中、有料アクセスを維持します。
+
+1. ユーザーがサブスクリプションを一時停止すると、**Subscription paused (Android only)** イベントがトリガーされます。
+2. サブスクリプション期間終了時に、Adaptyは **Access level updated** イベントをトリガーしてユーザーのアクセスを取り消します。
+3. ユーザーがサブスクリプションを再開すると、以下のイベントがトリガーされます：
+
+    - **Subscription renewed**
+    - **Access level updated**：ユーザーのアクセスを復元
+
+これらのサブスクリプションは、同じ **vendor_original_transaction_id** でリンクされた同一のトランザクションチェーンに属します。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Paused_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## トライアルフロー \{#trial-flows\}
+
+アプリでトライアルを使用している場合、トライアル関連の追加イベントが発生します。
+
+### 変換成功のトライアルフロー \{#trial-with-successful-conversion-flow\}
+
+最も一般的なフローは、ユーザーがトライアルを開始し、クレジットカードを登録して、トライアル期間終了時に通常のサブスクリプションへ正常に変換される場合です。この場合、トライアル開始時に以下のイベントが生成されます：
+
+- **Trial started**：トライアル開始を示す
+- **Access level updated**：アクセスを付与
+
+通常のサブスクリプションが開始されると **Trial converted** イベントが生成されます。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Trial_Flow_with_Successful_Conversion.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 変換失敗のトライアルフロー \{#trial-without-successful-conversion-flow\}
+
+ユーザーがトライアルをサブスクリプションに変換する前にキャンセルした場合、キャンセル時に以下のイベントが生成されます：
+
+- **Trial renewal cancelled**：トライアルからサブスクリプションへの自動変換を無効化
+- **Access level updated**：アクセス更新を無効化
+
+ユーザーはトライアル終了まで引き続きアクセスでき、トライアルの終了を示す **Trial expired** イベントが生成されます。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Trial_Flow_without_Successful_Conversion.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 期限切れトライアル後のサブスクリプション再有効化フロー \{#subscription-reactivation-after-expired-trial-flow\}
+
+トライアルが（請求の問題またはキャンセルにより）期限切れになり、ユーザーが後でサブスクリプションを購入した場合、以下のイベントが生成されます：
+
+- **Access level updated**：ユーザーへのアクセス付与
+- **Trial converted**
+
+トライアルとサブスクリプションの間に空白期間があっても、Adaptyは `vendor_original_transaction_id` を使って両者をリンクします。この変換は、ゼロ価格のトライアルから始まる継続的なトランザクションチェーンの一部として扱われます。そのため、**Subscription started** ではなく **Trial converted** イベントが生成されます。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Reactivation_Flow_after_Expired_Trial.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## プロダクトの変更 \{#product-changes\}
+
+このセクションでは、アップグレード、ダウングレード、別グループのプロダクトの購入など、アクティブなサブスクリプションに加えられた変更について説明します。
+
+### 即時プロダクト変更フロー \{#immediate-product-change-flow\}
+
+ユーザーがプロダクトを変更した後、サブスクリプション終了前にシステムで即時変更が適用される場合があります（主にアップグレードまたはプロダクトの置き換えの場合）。この場合、プロダクト変更時に以下のイベントが生成されます：
+
+- アクセスレベルが変更され、2つの **Access level updated** イベントが生成されます：
+  1. 最初のプロダクトへのアクセスを削除
+  2. 2番目のプロダクトへのアクセスを付与
+- 古いサブスクリプションが終了し、返金が行われます（**Subscription refunded** イベントが `cancellation_reason` = `upgraded` で生成されます）。**Subscription expired (churned)** イベントは生成されず、**Subscription refunded** イベントに置き換えられます。
+- 新しいサブスクリプションが開始されます（新しいプロダクトの **Subscription started** イベントが生成されます）。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Immediate_Product_Change_Flow_Upgrade.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+ユーザーがサブスクリプションをダウングレードした場合、最初のサブスクリプションは有料期間の終了まで継続し、終了時に新しい下位プランのサブスクリプションに置き換えられます。この場合、アクセスの自動更新を無効化する **Access level updated** イベントのみが即時に生成されます。その他のイベントはサブスクリプションが実際に置き換えられる時点で生成されます：
+
+- 別の **Access level updated** イベントが生成され、2番目のプロダクトへのアクセスを付与
+- **Subscription expired (churned)** イベントが生成され、最初のプロダクトのサブスクリプションを終了
+- **Subscription started** イベントが生成され、新しいプロダクトの新しいサブスクリプションを開始
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Delayed_Product_Change_Downgrade.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### 遅延プロダクト変更フロー \{#delayed-product-change-flow\}
+
+サブスクリプション更新時にプロダクトを変更するバリアントもあります。このバリアントは前のケースと非常に似ており、古いプロダクトのアクセス自動更新を無効化する **Access level updated** イベントが1つ即時に生成されます。その他のイベントはユーザーがサブスクリプションを変更してシステムで反映される時点で生成されます：
+
+- 別の **Access level updated** イベントが生成され、2番目のプロダクトへのアクセスを付与
+- **Subscription expired (churned)** イベントが生成され、最初のプロダクトのサブスクリプションを終了
+- **Subscription started** イベントが生成され、新しいプロダクトの新しいサブスクリプションを開始
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Product_Change_on_Renewal_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## 請求問題の結果フロー \{#billing-issue-outcome-flow\}
+
+トライアルの変換またはサブスクリプションの更新が請求問題により失敗した場合、次の動作はグレース期間が有効かどうかによって異なります。
+
+グレース期間が設定されている場合、支払いが成功すればトライアルが変換されるかサブスクリプションが更新されます。失敗した場合、アプリストアはユーザーへの課金を繰り返し試み、それでも失敗するとアプリストアがトライアルまたはサブスクリプションを終了します。
+
+したがって、請求問題が発生した時点でAdaptyに以下のイベントが生成されます：
+
+- **Billing issue detected**
+- **Entered grace period**（グレース期間が有効な場合）
+- **Access level updated**：グレース期間終了までのアクセスを提供
+
+後で支払いが成功した場合、Adaptyは **Trial converted** または **Subscription renewed** イベントを記録し、ユーザーはアクセスを失いません。
+
+最終的に支払いが失敗してアプリストアがサブスクリプションをキャンセルした場合、Adaptyは以下のイベントを生成します：
+
+- **Trial expired** または **Subscription expired (churned)**（`cancellation_reason: billing_error` 付き）
+- **Access level updated**：ユーザーのアクセスを取り消す
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Billing_Issue_Outcome_Flow_with_Grace_Period.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+グレース期間なしの場合、請求再試行期間（アプリストアがユーザーへの課金を繰り返し試みる期間）が即時に開始されます。
+
+グレース期間終了まで支払いが成功しない場合のフローは同じで、アプリストアがサブスクリプションを自動終了したときに同じイベントが生成されます：
+
+- **Trial expired** または **Subscription expired (churned)**（`cancellation_reason` が `billing_error` のもの）
+
+- **Access level updated**：ユーザーのアクセスを取り消す
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Billing_Issue_Outcome_Flow_without_Grace_Period.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## ユーザーアカウント間での購入共有フロー \{#sharing-purchases-across-user-accounts-flows\}
+
+<InlineTooltip tooltip="カスタマーユーザーID">[iOS](identifying-users#set-customer-user-id-on-configuration)、[Android](android-identifying-users#setting-customer-user-id-on-configuration)、[React Native](react-native-identifying-users#setting-customer-user-id-on-configuration)、[Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration)、[Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> が、別の <InlineTooltip tooltip="カスタマーユーザーID">[iOS](identifying-users#set-customer-user-id-on-configuration)、[Android](android-identifying-users#setting-customer-user-id-on-configuration)、[React Native](react-native-identifying-users#setting-customer-user-id-on-configuration)、[Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration)、[Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> にすでに紐付いているサブスクリプションを復元または延長しようとした場合、Adaptyの **Sharing paid access between user accounts** 設定でアクセス管理方法が制御されます。選択したオプションによってフローが異なります。
+
+:::note
+Apple Family Sharingのトランザクション（`in_app_ownership_type=FAMILY_SHARED`）の場合、**Access level updated** イベントのみが発火し、以下のプロダクト別サブスクリプションイベントは発生しません。完全なイベントマトリクスについては [Apple Family Sharing](apple-family-sharing) をご参照ください。
+:::
+
+:::note
+ユーザーが **Restore Purchases** をタップしても、同じプロファイルですでにアクセスがある場合、リストアは何も行わず、Webhookイベントは発生しません。このセクションのイベントは、プロファイル間でアクセスが実際に移行する場合にのみ発生します。
+:::
+
+2番目のプロファイルが既存のサブスクリプションを要求したときにどのイベントが発生するかを一目で確認するには、以下のマトリクスを参照してください。その後のセクションでは、各フローの完全なJSONペイロードを示します。
+
+| イベント | 有効（デフォルト） | 新しいユーザーにアクセスを移行 | 無効 |
+| --- | --- | --- | --- |
+| 新しいプロファイル：**Access level updated**（`is_active=true`） | 発生する | 発生する | 発生しない |
+| 古いプロファイル：**Access level updated**（`is_active=false`） | 発生しない — 両方のプロファイルがアクセスを保持 | 新しい識別済みデバイスがトランザクションを伝播したときに発生 | 発生しない — 元のプロファイルがアクセスを保持 |
+| 新しいイベントの `profiles_sharing_access_level` フィールド | アクセスレベルを共有している他のプロファイルを一覧表示 | `null` | 該当なし — イベントは発生しない |
+
+移行されたサブスクリプションの更新、返金、期限切れは、現在アクセスレベルを保持しているプロファイルで `subscription_renewed`、`subscription_refunded`、`subscription_expired` イベントを引き続き発生させます。移行イベント自体は `subscription_started` イベントを発生させません。新しいトランザクションは記録されず、アトリビューションのみが変更されるためです。
+
+モード別の詳細については、[実用的なリファレンス](sharing-paid-access-between-user-accounts#practical-reference)をご参照ください。
+
+### 新しいユーザーへのアクセス移行フロー \{#transfer-access-to-new-user-flow\}
+
+推奨オプションは、新しいユーザーにアクセスレベルを移行することです。これにより、一貫したアナリティクスのために元のユーザーのトランザクション履歴が保持されます。生成される **Access level updated** イベントは2つのみです：
+
+1. 最初のユーザーのアクセスを削除
+2. 2番目のユーザーにアクセスを付与
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Transfer_Access_to_New_User_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+このシナリオで生成されるイベントにおける、アクセスレベルの割り当てと移行に関連するフィールドの内訳は以下の通りです：
+
+- **ユーザーA：Access level updated（ユーザーAがアプリでサブスクリプションを購入したときに送信）**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **ユーザーA：Access level updated（アプリが再インストールされてユーザーBがログインし、ユーザーAのアクセスが取り消されたときに送信）**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": false,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **ユーザーB：Access level updated（ユーザーBがログインしてアクセスが付与されたときに送信）**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000001",
+    "customer_user_id": UserB,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+### ユーザー間でのアクセス共有フロー \{#shared-access-between-users-flow\}
+
+このオプションでは、デバイスが同じApple/Google IDでサインインしている場合、複数のユーザーが同じアクセスレベルを共有できます。これは、ユーザーがアプリを再インストールして別のメールアドレスでログインした場合でも、以前の購入へのアクセスを維持できるため便利です。このオプションでは、複数の識別済みユーザーが同じアクセスレベルを共有できます。アクセスレベルを共有している間、すべてのトランザクションは完全なトランザクション履歴とアナリティクスを維持するために、元の <InlineTooltip tooltip="カスタマーユーザーID">[iOS](identifying-users#set-customer-user-id-on-configuration)、[Android](android-identifying-users#setting-customer-user-id-on-configuration)、[React Native](react-native-identifying-users#setting-customer-user-id-on-configuration)、[Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration)、[Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> の下に記録されます。
+
+したがって、生成されるイベントは1つのみです：**Access level updated**（2番目のユーザーにアクセスを付与）。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Share_Access_Between_Users_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+このシナリオで生成されるイベントにおける、アクセスレベルの割り当てと共有に関連するフィールドの内訳は以下の通りです：
+
+**ユーザーB：Access level updated（ユーザーBがログインしてアクセスが付与されたときに送信）**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": [
+      {
+        "profile_id": "00000000-0000-0000-0000-000000000001,
+        "customer_user_id": UserB
+      }
+    ]
+  }
+  ```
+
+### ユーザー間でアクセスを共有しないフロー \{#access-not-shared-between-users-flow\}
+
+このオプションでは、最初にアクセスレベルを取得したユーザープロファイルのみが永続的にそれを保持します。購入を単一の <InlineTooltip tooltip="カスタマーユーザーID">[iOS](identifying-users#set-customer-user-id-on-configuration)、[Android](android-identifying-users#setting-customer-user-id-on-configuration)、[React Native](react-native-identifying-users#setting-customer-user-id-on-configuration)、[Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration)、[Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> に紐付ける必要がある場合に最適です。
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Share_Access_Between_Users_Disabled_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>

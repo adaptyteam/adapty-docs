@@ -1,0 +1,562 @@
+---
+title: "Android SDKのインストールと設定"
+description: "サブスクリプションアプリ向けに、Android に Adapty SDK をインストールするステップバイステップのガイドです。"
+metadataTitle: "Android に Adapty SDK をインストールする | Adapty ドキュメント"
+keywords: ['install sdk', 'sdk install', 'install sdk android', 'google play billing library', 'gpbl', 'billing library', 'adaptyui']
+rank: 70
+---
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+import GetKey from '@site/src/locales/ja/reusable/GetKey.md';
+import InstallationPrereqs from '@site/src/locales/ja/reusable/InstallationPrereqs.mdx';
+
+Adapty SDK には、モバイルアプリにシームレスに統合するための2つの主要モジュールが含まれています。
+
+- **Core Adapty**: Adapty をアプリで正しく動作させるために必須の SDK です。
+- **AdaptyUI**: クロスプラットフォームのペイウォールを簡単に作成できるノーコードツール、[Adapty ペイウォールビルダー](adapty-paywall-builder)を使用する場合に必要なモジュールです。AdaptyUI はコアモジュールと同時に自動的に有効化されます。
+
+:::tip
+Adapty SDK がモバイルアプリにどのように統合されているか、実際の例を確認したい方は、ペイウォールの表示・購入処理・その他の基本機能を含むフルセットアップを示す[サンプルアプリ](https://github.com/adaptyteam/AdaptySDK-Android/tree/master/app)をご覧ください。
+:::
+
+## 要件 \{#requirements\}
+
+最低 SDK 要件: `minSdkVersion 21`
+
+:::info
+Adapty は Google Play Billing Library 8.x まで対応しています。デフォルトでは Google Play Billing Library v7.0.0 で動作しますが、より新しいバージョンを使用したい場合は、手動で[依存関係を追加](https://developer.android.com/google/play/billing/integrate#dependency)できます。
+:::
+
+<InstallationPrereqs />
+
+## Adapty SDK をインストールする \{#install-adapty-sdk\}
+
+依存関係の設定方法を選択してください:
+- Standard Gradle: **モジュールレベル**の `build.gradle` に依存関係を追加する
+- プロジェクトで `.gradle.kts` ファイルを使用している場合は、モジュールレベルの `build.gradle.kts` に依存関係を追加する
+- バージョンカタログを使用している場合は、`libs.versions.toml` ファイルに依存関係を追加し、`build.gradle.kts` で参照する
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Android.svg?style=flat&logo=android)](https://github.com/adaptyteam/AdaptySDK-Android/releases)
+
+<Tabs>
+<TabItem value="module-level build.gradle" label="module-level build.gradle" default>
+
+```groovy showLineNumbers
+dependencies {
+    ...
+    implementation platform('io.adapty:adapty-bom:<the latest SDK version>')
+    implementation 'io.adapty:android-sdk'
+    
+    // Only add this line if you plan to use Paywall Builder
+    implementation 'io.adapty:android-ui'
+}
+```
+
+</TabItem>
+<TabItem value="module-level build.gradle.kts" label="module-level build.gradle.kts" default>
+
+```kotlin showLineNumbers
+dependencies {
+    ...
+    implementation(platform("io.adapty:adapty-bom:<the latest SDK version>"))
+    implementation("io.adapty:android-sdk")
+    
+    // Only add this line if you plan to use Paywall Builder:
+    implementation("io.adapty:android-ui")
+}
+```
+
+</TabItem>
+<TabItem value="version catalog" label="version catalog" default>
+
+```toml showLineNumbers
+//libs.versions.toml
+
+[versions]
+..
+adaptyBom = "<the latest SDK version>"
+
+[libraries]
+..
+adapty-bom = { module = "io.adapty:adapty-bom", version.ref = "adaptyBom" }
+adapty = { module = "io.adapty:android-sdk" }
+
+// Only add this line if you plan to use Paywall Builder:
+adapty-ui = { module = "io.adapty:android-ui" }
+
+//module-level build.gradle.kts
+
+dependencies {
+    ...
+    implementation(platform(libs.adapty.bom))
+    implementation(libs.adapty)
+    
+    // Only add this line if you plan to use Paywall Builder:
+    implementation(libs.adapty.ui)
+}
+```
+
+</TabItem>
+</Tabs>
+
+依存関係が解決されない場合は、Gradle スクリプトに `mavenCentral()` が含まれているか確認してください。
+
+<details>
+   <summary>追加方法の手順</summary>
+
+   プロジェクトの `settings.gradle` に `dependencyResolutionManagement` がない場合は、トップレベルの `build.gradle` のリポジトリの末尾に以下を追加してください:
+
+```groovy showLineNumbers title="top-level build.gradle"
+allprojects {
+    repositories {
+        ...
+        mavenCentral()
+    }
+}
+```
+
+それ以外の場合は、`settings.gradle` の `dependencyResolutionManagement` セクション内の `repositories` に以下を追加してください:
+
+```groovy showLineNumbers title="settings.gradle"
+dependencyResolutionManagement {
+    ...
+    repositories {
+        ...
+        mavenCentral()
+    }
+}
+```
+
+</details>
+
+## Adapty SDK の Adapty モジュールを有効化する \{#activate-adapty-module-of-adapty-sdk\}
+
+### 基本セットアップ \{#basic-setup\}
+
+アプリのコードで Adapty SDK を有効化します。
+
+:::note
+Adapty SDK はアプリ内で一度だけ有効化すれば十分です。
+:::
+
+<GetKey />
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+// In your Application class
+
+class MyApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        Adapty.activate(
+            applicationContext,
+            AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+                .build()
+        )
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+// In your Application class
+
+public class MyApplication extends Application {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Adapty.activate(
+            getApplicationContext(),
+            new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+                .build()
+        );
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::important
+`Adapty.activate` が完了するまで待ってから、他の Adapty SDK メソッドを呼び出してください。完全な呼び出し順序については、[Android SDK の呼び出し順序](android-sdk-call-order)を参照してください。
+:::
+
+次に、アプリにペイウォールを設定します:
+
+- [Adapty ペイウォールビルダー](adapty-paywall-builder)を使用する場合は、[ペイウォールビルダーのクイックスタート](android-quickstart-paywalls)に従ってください。
+- 独自のペイウォール UI を構築する場合は、[カスタムペイウォールのクイックスタート](android-quickstart-manual)を参照してください。
+
+## Adapty SDK の AdaptyUI モジュールを有効化する \{#activate-adaptyui-module-of-adapty-sdk\}
+
+[ペイウォールビルダー](adapty-paywall-builder)を使用する予定の場合、AdaptyUI モジュールが必要です。コアモジュールを有効化すると自動的に有効化されるため、追加の操作は不要です。
+
+## Proguard を設定する \{#configure-proguard\}
+
+本番環境でアプリを公開する前に、Proguard の設定に `-keep class com.adapty.** { *; }` を追加してください。
+
+## オプションの設定 \{#optional-setup\}
+
+### ログ \{#logging\}
+
+#### ログシステムを設定する \{#set-up-the-logging-system\}
+
+Adapty は、何が起きているかを把握するためにエラーやその他の重要な情報をログに記録します。利用可能なレベルは以下のとおりです:
+
+| レベル                    | 説明                                                                                                               |
+| :----------------------- | :------------------------------------------------------------------------------------------------------------------------ |
+| `AdaptyLogLevel.NONE`    | 何もログに記録されません。デフォルト値                                                                                     |
+| `AdaptyLogLevel.ERROR`   | エラーのみログに記録されます                                                                                                |
+| `AdaptyLogLevel.WARN`    | エラーと、重大なエラーではないが注意が必要な SDK からのメッセージがログに記録されます。     |
+| `AdaptyLogLevel.INFO`    | エラー、警告、およびさまざまな情報メッセージがログに記録されます。                                                        |
+| `AdaptyLogLevel.VERBOSE` | 関数呼び出しや API クエリなど、デバッグ時に役立つ追加情報がすべてログに記録されます。 |
+
+Adapty を設定する前に、アプリでログレベルを設定できます。
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+Adapty.logLevel = AdaptyLogLevel.VERBOSE 
+//recommended for development and the first production release
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
+//recommended for development and the first production release
+```
+</TabItem>
+</Tabs>
+
+#### ログシステムのメッセージをリダイレクトする \{#redirect-the-logging-system-messages\}
+
+何らかの理由で Adapty からのメッセージを独自のシステムに送信したり、ファイルに保存したりする必要がある場合は、デフォルトの動作をオーバーライドできます:
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+Adapty.setLogHandler { level, message ->
+    //handle the log
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+Adapty.setLogHandler((level, message) -> {
+    //handle the log
+});
+```
+</TabItem>
+</Tabs>
+
+### データポリシー \{#data-policies\}
+
+Adapty は明示的に送信しない限りユーザーの個人データを保存しませんが、ストアや国のガイドラインに準拠するために追加のデータセキュリティポリシーを実装することができます。
+
+#### IP アドレスの収集と共有を無効にする \{#disable-ip-address-collection-and-sharing\}
+
+Adapty モジュールを有効化する際に、`ipAddressCollectionDisabled` を `true` に設定すると、ユーザーの IP アドレスの収集と共有を無効にできます。デフォルト値は `false` です。
+
+このパラメータは、ユーザーのプライバシーを強化したり、地域のデータ保護規制（GDPR や CCPA など）に準拠したり、IP ベースの機能がアプリに不要な場合に不必要なデータ収集を削減するために使用します。
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withIpAddressCollectionDisabled(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withIpAddressCollectionDisabled(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
+#### 広告 ID（Ad ID）の収集と共有を無効にする \{#disable-advertising-id-ad-id-collection-and-sharing\}
+
+Adapty モジュールを有効化する際に、`adIdCollectionDisabled` を `true` に設定すると、ユーザーの[広告 ID](https://support.google.com/googleplay/android-developer/answer/6048248) の収集を無効にできます。デフォルト値は `false` です。
+
+このパラメータは、Play Store のポリシーに準拠したり、広告 ID の権限プロンプトの表示を避けたり、Ad ID に基づく広告アトリビューションやアナリティクスがアプリに不要な場合に使用します。
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withAdIdCollectionDisabled(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withAdIdCollectionDisabled(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
+#### AdaptyUI のメディアキャッシュ設定をセットアップする \{#set-up-media-cache-configuration-for-adaptyui\}
+
+デフォルトでは、AdaptyUI はパフォーマンスの向上とネットワーク使用量の削減のために、画像や動画などのメディアをキャッシュします。カスタム設定を指定することでキャッシュの設定をカスタマイズできます。
+
+`AdaptyUI.configureMediaCache` を使用して、デフォルトのキャッシュサイズと有効期間をオーバーライドします。これはオプションです。このメソッドを呼び出さない場合、デフォルト値（ディスクサイズ 100MB、有効期間 7 日）が使用されます。
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+val cacheConfig = MediaCacheConfiguration.Builder()
+    .overrideDiskStorageSizeLimit(200L * 1024 * 1024) // 200 MB
+    .overrideDiskCacheValidityTime(3.days)
+    .build()
+
+AdaptyUI.configureMediaCache(cacheConfig)
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+MediaCacheConfiguration cacheConfig = new MediaCacheConfiguration.Builder()
+    .overrideDiskStorageSizeLimit(200L * 1024 * 1024) // 200 MB
+    .overrideDiskCacheValidityTime(TimeInterval.days(3))
+    .build();
+
+AdaptyUI.configureMediaCache(cacheConfig);
+```
+</TabItem>
+</Tabs>
+
+**パラメータ:**
+
+| パラメータ                | 必須/任意 | 説明                                                                 |
+|-------------------------|----------|-----------------------------------------------------------------------------|
+| diskStorageSizeLimit    | 任意 | ディスク上の合計キャッシュサイズ（バイト単位）。デフォルトは 100 MB。                       |
+| diskCacheValidityTime   | 任意 | キャッシュされたファイルが有効とみなされる期間。デフォルトは 7 日。              |
+
+:::tip
+`AdaptyUI.clearMediaCache(strategy)` を使用して、実行時にメディアキャッシュをクリアできます。`strategy` には `CLEAR_ALL` または `CLEAR_EXPIRED_ONLY` を指定します。
+:::
+
+### 難読化アカウント ID を設定する \{#set-obfuscated-account-ids\}
+
+Google Play では、ユーザーのプライバシーとセキュリティを強化するために、特定のユースケースで難読化アカウント ID が必要です。これらの ID により、Google Play はユーザー情報を匿名に保ちながら購入を識別できます。これは特に不正防止とアナリティクスにおいて重要です。
+
+アプリが機密性の高いユーザーデータを扱う場合や、特定のプライバシー規制に準拠する必要がある場合は、これらの ID を設定する必要があります。難読化された ID により、Google Play は実際のユーザー識別子を公開せずに購入を追跡できます。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+    .build()
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+    .build();
+```
+
+</TabItem>
+</Tabs>
+
+### カスタムプロセスで Adapty を実行する \{#run-adapty-in-a-custom-process\}
+
+デフォルトでは、Adapty はアプリのメインプロセスでのみ実行できます。
+アプリが複数のプロセスを使用する場合は、Adapty の初期化を一度だけ行ってください。そうしないと予期しない動作が発生する可能性があります。
+
+別のプロセスで Adapty を実行する必要がある場合は、設定でプロセスを指定してください:
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withProcessName(":custom")
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withProcessName(":custom")
+    .build();
+```
+</TabItem>
+</Tabs>
+
+この値を設定せずに別のプロセスで Adapty を有効化しようとすると、SDK は警告をログに記録し、有効化をスキップします。
+
+### ローカルアクセスレベルを有効にする \{#enable-local-access-levels\}
+
+デフォルトでは、Android では[ローカルアクセスレベル](local-access-levels)が無効になっています。有効にするには、`withLocalAccessLevelAllowed` を `true` に設定してください:
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withLocalAccessLevelAllowed(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withLocalAccessLevelAllowed(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
+## トラブルシューティング \{#troubleshooting\}
+
+#### Android バックアップルール（自動バックアップの設定） \{#android-backup-rules-auto-backup-configuration\}
+
+一部の SDK（Adapty を含む）は独自の Android 自動バックアップ設定を同梱しています。バックアップルールを定義する複数の SDK を使用している場合、Android マニフェストマージャーが `android:fullBackupContent`、`android:dataExtractionRules`、または `android:allowBackup` に関するエラーで失敗することがあります。
+
+エラーの典型的な症状: `Manifest merger failed: Attribute application@dataExtractionRules value=(@xml/sample_data_extraction_rules)
+is also present at [com.other.sdk:library:1.0.0] value=(@xml/other_sdk_data_extraction_rules)`
+
+これを解決するには:
+
+- マニフェストマージャーにバックアップ関連の属性についてアプリの値を使用するよう指定する。
+
+- Adapty と他の SDK のバックアップルールを単一の XML ファイル（Android 12 以上の場合はファイルのペア）にまとめる。
+
+#### 1. マニフェストに `tools` 名前空間を追加する \{#1-add-the-tools-namespace-to-your-manifest\}
+
+まだ存在しない場合は、ルートの `<manifest>` タグに `tools` 名前空間を追加してください:
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:tools="http://schemas.android.com/tools"
+package="com.example.app">
+
+    ...
+</manifest>
+```
+
+#### 2. `<application>` でバックアップ属性をオーバーライドする \{#2-override-backup-attributes-in-application\}
+
+アプリの `AndroidManifest.xml` で、`<application>` タグを更新して、アプリが最終的な値を提供し、マニフェストマージャーにライブラリの値を置き換えるよう指示します:
+
+```xml
+<application
+android:name=".App"
+android:allowBackup="true"
+android:fullBackupContent="@xml/sample_backup_rules"           
+android:dataExtractionRules="@xml/sample_data_extraction_rules"
+tools:replace="android:fullBackupContent,android:dataExtractionRules">
+
+    ...
+</application>
+```
+
+いずれかの SDK でも `android:allowBackup` が設定されている場合は、`tools:replace` に含めてください:
+
+```xml
+tools:replace="android:allowBackup,android:fullBackupContent,android:dataExtractionRules"
+```
+
+#### 3. マージされたバックアップルールファイルを作成する \{#3-create-merged-backup-rules-files\}
+
+`app/src/main/res/xml/` 以下に、Adapty のルールと他の SDK のルールを組み合わせた XML ファイルを作成します。Android は OS バージョンによって異なるバックアップルール形式を使用するため、両方のファイルを作成することでアプリがサポートするすべての Android バージョンとの互換性が確保されます。
+
+:::note
+以下の例では、サードパーティ SDK のサンプルとして AppsFlyer を使用しています。アプリで使用している他の SDK のルールに置き換えるか追加してください。
+:::
+
+**Android 12 以上向け**（新しいデータ抽出ルール形式を使用）:
+
+```xml title="sample_data_extraction_rules.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        
+        <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
+        <exclude domain="database" path="afpurchases.db"/>
+        
+        <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+    </cloud-backup>
+
+    <device-transfer>
+        
+        <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
+        <exclude domain="database" path="afpurchases.db"/>
+        <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+    </device-transfer>
+</data-extraction-rules>
+```
+
+**Android 11 以下向け**（従来のフルバックアップコンテンツ形式を使用）:
+
+```xml title="sample_backup_rules.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    
+    <exclude domain="sharedpref" path="appsflyer-data"/>
+
+    
+    <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+
+    
+    
+</full-backup-content>
+```
+
+この設定により:
+
+- Adapty のバックアップ除外設定（`AdaptySDKPrefs.xml`）が維持されます。
+
+- 他の SDK の除外設定（例: `appsflyer-data`）も適用されます。
+
+- マニフェストマージャーはアプリの設定を使用し、競合するバックアップ属性での失敗がなくなります。
+
+#### 別のアプリから戻った後に購入が失敗する \{#purchases-fail-after-returning-from-another-app\}
+
+購入フローを開始する Activity が非デフォルトの `launchMode` を使用している場合、ユーザーが Google Play、銀行アプリ、またはブラウザから戻ってきたときに Android が誤って Activity を再作成または再利用することがあります。これにより、購入結果が失われたり、キャンセルとして処理されたりする可能性があります。
+
+購入が正しく機能するよう、購入フローを開始する Activity には `standard` または `singleTop` の起動モードのみを使用し、他のモードは避けてください。
+
+`AndroidManifest.xml` で、購入フローを開始する Activity が `standard` または `singleTop` に設定されていることを確認してください:
+
+```xml
+<activity
+    android:name=".MainActivity"
+    android:launchMode="standard" />
+```

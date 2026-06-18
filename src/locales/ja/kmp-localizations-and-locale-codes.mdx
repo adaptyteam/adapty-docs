@@ -1,0 +1,103 @@
+---
+title: "Kotlin Multiplatform SDKでローカライゼーションとロケールコードを使用する"
+description: "Kotlin Multiplatformアプリでグローバルなユーザーにリーチするために、アプリのローカライゼーションとロケールコードを管理します。"
+metadataTitle: "ペイウォールのローカライズ | Kotlin Multiplatform SDK | Adapty ドキュメント"
+displayed_sidebar: sdkkmp
+---
+
+## なぜこれが重要なのか \{#why-this-is-important\}
+
+ロケールコードが必要になるシナリオはいくつかあります。たとえば、アプリの現在のローカライゼーションに合った正しいペイウォールを取得しようとする場合などです。
+
+ロケールコードは複雑で、プラットフォームによって異なることがあります。そのため、Adaptyがサポートするすべてのプラットフォームで統一した内部標準を採用しています。ただし、これらのコードが複雑であるため、サーバーに送信している内容と、その後何が起こるかを正確に理解することがとても重要です。そうすることで、常に期待通りの結果を受け取ることができます。
+
+## Adaptyにおけるロケールコードの標準 \{#locale-code-standard-at-adapty\}
+
+ロケールコードについて、Adaptyは[BCP 47標準](https://en.wikipedia.org/wiki/IETF_language_tag)を若干修正したものを使用しています。各コードは小文字のサブタグをハイフンで区切って構成されます。例：`en`（英語）、`pt-br`（ポルトガル語（ブラジル））、`zh`（簡体字中国語）、`zh-hant`（繁体字中国語）。
+
+## ロケールコードのマッチング \{#locale-code-matching\}
+
+AdaptyがクライアントサイドSDKからロケールコードを含む呼び出しを受け取り、対応するペイウォールのローカライゼーションを検索する際、以下の処理が行われます：
+
+1. 受信したロケール文字列を小文字に変換し、アンダースコア（`_`）をすべてハイフン（`-`）に置換します
+2. 完全一致するロケールコードのローカライゼーションを検索します
+3. 一致するものが見つからない場合、最初のハイフンより前の部分文字列（`pt-br` に対しては `pt`）を取り出して、一致するローカライゼーションを検索します
+4. それでも一致するものが見つからない場合、デフォルトの `en` ローカライゼーションを返します
+
+これにより、`'pt_BR'` を送信したiOSデバイス、`pt-BR` を送信したAndroidデバイス、`pt-br` を送信した別のデバイスはすべて同じ結果を受け取ります。
+
+## ローカライゼーションの実装：推奨方法 \{#implementing-localizations-recommended-way\}
+
+ローカライゼーションについて検討しているなら、おそらくすでにプロジェクトでローカライズされた文字列リソースを扱っているでしょう。その場合、各リソースファイルに対応するローカライゼーション用のAdaptyロケールコードをキーと値のペアとして追加することをお勧めします。そして、次のようにSDKを呼び出す際にそのキーの値を取り出して使用してください：
+
+```kotlin showLineNumbers
+// 1. Add the Adapty locale code to your Compose Multiplatform resources
+
+/*
+composeResources/values/strings.xml (default — English)
+*/
+<string name="adapty_paywalls_locale">en</string>
+
+/*
+composeResources/values-es/strings.xml (Spanish)
+*/
+<string name="adapty_paywalls_locale">es</string>
+
+/*
+composeResources/values-pt-rBR/strings.xml (Portuguese — Brazil)
+*/
+<string name="adapty_paywalls_locale">pt-br</string>
+
+// 2. Extract and use the locale code
+
+suspend fun fetchPaywall() {
+    val locale = getString(Res.string.adapty_paywalls_locale)
+    Adapty.getPaywall(
+        placementId = "YOUR_PLACEMENT_ID",
+        locale = locale
+    ).onSuccess { paywall ->
+        // the requested paywall
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+この方法により、アプリのすべてのユーザーに対してどのローカライゼーションが取得されるかを完全に制御できます。
+
+Compose Multiplatformのリソースを使用していない場合でも、同じ考え方は他のローカライゼーションライブラリ（例：[moko-resources](https://github.com/icerockdev/moko-resources)）にも適用できます。各ロケールのリソースバンドルにAdaptyロケールコードを文字列として保存し、SDKを呼び出す前にそれを読み取るようにしてください。
+
+## ローカライゼーションの実装：別の方法 \{#implementing-localizations-the-other-way\}
+
+すべてのローカライゼーションに対してロケールコードを明示的に定義しなくても、同様の（ただし同一ではない）結果を得ることができます。その場合、デバイスから直接ロケールコードを取得することになりますが、`commonMain` に共通のロケールAPIが存在しないため、`expect`/`actual` 宣言が必要になります：
+
+```kotlin showLineNumbers
+// commonMain
+expect fun currentLocaleTag(): String
+
+// androidMain
+actual fun currentLocaleTag(): String = Locale.getDefault().toLanguageTag()
+
+// iosMain
+actual fun currentLocaleTag(): String = NSLocale.currentLocale.localeIdentifier
+
+// commonMain — pass the locale code to Adapty
+
+suspend fun fetchPaywall() {
+    Adapty.getPaywall(
+        placementId = "YOUR_PLACEMENT_ID",
+        locale = currentLocaleTag()
+    ).onSuccess { paywall ->
+        // the requested paywall
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+この方法はいくつかの理由から推奨しません：
+
+1. iOSでは、ユーザーの優先言語とデバイスの地域ロケールは同一ではありません。`NSLocale.currentLocale.localeIdentifier` は地域ロケールを返しますが、これはユーザーが実際にアプリを読む言語と異なる場合があります。ローカライズされた文字列ファイルを使用するiOSアプリは、Appleの解決ロジックを使って両者を組み合わせており、上記の推奨方法ではこれが自動的に処理されます。
+2. デバイスが返す値を正確に予測するのは難しく、それがAdaptyのローカライゼーションと一致するかどうかも不明です。デバイスのロケールには、Adaptyで設定していない拡張子や地域コードが含まれる場合があり、その場合SDKは最初のサブタグの一致、または最終的に `en` にフォールバックします。
+
+それでもこの方法を使用する場合は、関連するすべてのユースケースに対応できていることを確認してください。

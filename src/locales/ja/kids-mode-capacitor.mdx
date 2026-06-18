@@ -1,0 +1,123 @@
+---
+title: "Capacitor SDKのキッズモード"
+description: "AppleとGoogleのポリシーに準拠するためのキッズモードを簡単に有効化。Capacitor SDKではIDFA、GAID、広告データは収集されません。"
+metadataTitle: "Capacitor SDKのキッズモード | Adapty ドキュメント"
+---
+
+Capacitorアプリが子ども向けの場合、[Apple](https://developer.apple.com/kids/)と[Google](https://support.google.com/googleplay/android-developer/answer/9893335)のポリシーに従う必要があります。Adapty SDKを使用している場合、いくつかの簡単な手順でポリシーに準拠した設定を行い、アプリストアの審査を通過できます。
+
+## 必要な対応 \{#whats-required\}
+
+以下のデータ収集を無効にするよう、Adapty SDKを設定する必要があります：
+
+- [IDFA（広告識別子）](https://en.wikipedia.org/wiki/Identifier_for_Advertisers)（iOS）
+- [Android広告ID（AAID/GAID）](https://support.google.com/googleplay/android-developer/answer/6048248)（Android）
+- [IPアドレス](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
+また、カスタマーユーザーIDの扱いには注意が必要です。`<FirstName.LastName>`形式のユーザーIDや、メールアドレスを使用することは、個人情報の収集とみなされます。キッズモードでは、コンプライアンスを確保するために、ランダム化または匿名化された識別子（ハッシュ化されたIDやデバイス生成のUUIDなど）を使用することをお勧めします。
+
+## キッズモードの有効化 \{#enabling-kids-mode\}
+
+### Adapty ダッシュボードでの設定 \{#updates-in-the-adapty-dashboard\}
+
+Adapty ダッシュボードでIPアドレスの収集を無効にする必要があります。[App settings](https://app.adapty.io/settings/general)に移動し、**Collect users' IP address**の下にある**Disable IP address collection**をクリックしてください。
+
+### モバイルアプリのコード変更 \{#updates-in-your-mobile-app-code\}
+
+ポリシーに準拠するため、ユーザーのIDFA、GAID、およびIPアドレスの収集を無効にしてください：
+
+```typescript showLineNumbers
+
+try {
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+      // Disable IP address collection
+      ipAddressCollectionDisabled: true,
+
+      // Disable IDFA collection on iOS
+      ios: {
+        idfaCollectionDisabled: true
+      },
+
+      // Disable Google Advertising ID collection on Android
+      android: {
+        adIdCollectionDisabled: true
+      }
+    }
+  });
+  console.log('Adapty activated with Kids Mode enabled');
+} catch (error) {
+  console.error('Failed to activate Adapty with Kids Mode:', error);
+}
+```
+
+### プラットフォーム固有の設定 \{#platform-specific-configurations\}
+
+#### iOS：CocoaPodsでキッズモードを有効にする \{#ios-enable-kids-mode-using-cocoapods\}
+
+iOSでCocoaPodsを使用している場合、ネイティブレベルでキッズモードを有効にすることもできます：
+
+1. Podfileを更新します：
+
+   - `post_install`セクションが**ない**場合は、以下のコードブロック全体を追加してください。
+   - `post_install`セクションが**ある**場合は、ハイライトされた行をそのセクションに追記してください。
+
+   ```ruby showLineNumbers title="Podfile"
+   def adapty_enable_kids_mode(installer)
+     installer.pods_project.targets.each do |target|
+       next unless target.name == 'Adapty'
+       target.build_configurations.each do |config|
+         flags = config.build_settings['OTHER_SWIFT_FLAGS'] || '$(inherited)'
+         flags = flags.join(' ') if flags.is_a?(Array)
+         config.build_settings['OTHER_SWIFT_FLAGS'] = "#{flags} -DADAPTY_KIDS_MODE"
+       end
+       target.frameworks_build_phase.files.dup.each do |bf|
+         target.frameworks_build_phase.remove_build_file(bf) if bf.display_name.to_s.include?('AdSupport')
+       end
+     end
+     installer.pods_project.save
+     Dir.glob(File.join(installer.sandbox.root, 'Target Support Files', '**', '*.xcconfig')).each do |xc|
+       File.write(xc, File.read(xc).gsub(/\s*-framework\s+"?AdSupport"?/, ''))
+     end
+   end
+
+   post_install do |installer|
+     # ... keep your existing post_install body (Flutter adds one automatically) ...
+
+     adapty_enable_kids_mode(installer)   # <-- enable Adapty Kids Mode
+   end
+   ```
+
+2. 変更を適用するために以下のコマンドを実行します：
+
+   ```sh showLineNumbers title="Shell"
+   pod install
+   ```
+
+#### Android：Gradleでキッズモードを有効にする \{#android-enable-kids-mode-using-gradle\}
+
+Androidの場合、アプリの`build.gradle`に以下を追加することで、ネイティブレベルでもキッズモードを有効にできます：
+
+```groovy showLineNumbers title="android/app/build.gradle"
+android {
+    defaultConfig {
+        // ... existing config ...
+
+        // Enable Kids Mode
+        buildConfigField "boolean", "ADAPTY_KIDS_MODE", "true"
+    }
+}
+```
+
+## 次のステップ \{#next-steps\}
+
+キッズモードを有効にしたら、以下を確認してください：
+
+1. アプリを十分にテストし、すべての機能が正常に動作することを確認する
+2. 無効にしたデータ収集を反映するよう、アプリのプライバシーポリシーを見直す
+3. キッズモードのコンプライアンスに関する明確なドキュメントを添えてアプリを審査に提出する
+
+プラットフォーム固有の要件の詳細については：
+- [iOS SDKのキッズモード](kids-mode)（追加のiOS設定の詳細）
+- [Android SDKのキッズモード](kids-mode-android)（追加のAndroid設定の詳細）

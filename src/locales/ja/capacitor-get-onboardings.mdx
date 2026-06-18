@@ -1,0 +1,114 @@
+---
+title: "Capacitor SDK でオンボーディングを取得する"
+description: "Capacitor 向け Adapty でオンボーディングを取得する方法を説明します。"
+metadataTitle: "Adapty でオンボーディングを取得する | Adapty ドキュメント"
+customSlug: /capacitor-get-onboardings
+displayed_sidebar: sdkcapacitor
+---
+
+Adapty ダッシュボードのビルダーで[オンボーディングのビジュアルをデザイン](design-onboarding)したら、Capacitor アプリに表示できます。最初のステップは、プレースメントに紐づくオンボーディングとそのビュー設定を取得することです。
+
+始める前に、以下を確認してください：
+
+1. [オンボーディングを作成](create-onboarding)済みであること。
+2. オンボーディングを[プレースメント](placements)に追加済みであること。
+
+## オンボーディングの取得 \{#fetch-onboarding\}
+
+ノーコードビルダーで[オンボーディング](onboardings)を作成すると、アプリが取得・表示する必要のある設定コンテナとして保存されます。このコンテナはコンテンツの内容・表示方法・ユーザー操作（クイズの回答やフォーム入力など）の処理方法を含む、エクスペリエンス全体を管理します。また、分析イベントを自動的に追跡するため、個別のビュートラッキングを実装する必要はありません。
+
+パフォーマンスを最適化するため、ユーザーに表示する前に画像のダウンロードが完了するよう、早めにオンボーディング設定を取得してください。
+
+オンボーディングを取得するには、`getOnboarding` メソッドを使用します：
+
+```typescript showLineNumbers
+
+try {
+  const onboarding = await adapty.getOnboarding({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data', // サーバーから読み込み、失敗時はキャッシュを使用
+      loadTimeoutMs: 5000 // 5秒タイムアウト
+    }
+  });
+  console.log('Onboarding fetched successfully');
+} catch (error) {
+  console.error('Failed to fetch onboarding:', error);
+}
+```
+
+次に、`createOnboardingView` メソッドを呼び出してビューインスタンスを作成します。
+
+:::warning
+`createOnboardingView` メソッドの結果は一度しか使用できません。再度使用する必要がある場合は、`createOnboardingView` メソッドを新たに呼び出してください。
+:::
+
+```typescript showLineNumbers
+
+if (onboarding.hasViewConfiguration) {
+  try {
+    const view = await createOnboardingView(onboarding);
+    console.log('Onboarding view created successfully');
+  } catch (error) {
+    console.error('Failed to create onboarding view:', error);
+  }
+} else {
+  // Use your custom logic
+  console.log('Onboarding does not have view configuration');
+}
+```
+
+パラメーター：
+
+| パラメーター | 必須 / 任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | 目的の[プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成した際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>オンボーディングのローカライズ識別子。マイナス（**-**）区切りの 1 つまたは 2 つのサブタグで構成される言語コードを指定します。最初のサブタグは言語、2 番目は地域を表します。</p><p></p><p>例：`en` は英語、`pt-br` はブラジルポルトガル語を表します。</p><p>ロケールコードと推奨利用方法については、[ローカライズとロケールコード](localizations-and-locale-codes)を参照してください。</p> |
+| **params.fetchPolicy** | <p>任意</p><p>デフォルト: `'reload_revalidating_cache_data'`</p> | <p>デフォルトでは、SDK はサーバーからデータの読み込みを試み、失敗した場合はキャッシュデータを返します。常に最新データをユーザーに提供できるため、このオプションを推奨します。</p><p></p><p>ユーザーのインターネット接続が不安定だと思われる場合は、`'return_cache_data_else_load'` を使用すると、キャッシュが存在する場合はキャッシュデータを返します。この場合、最新データが得られないことがありますが、接続状況によらず読み込みが速くなります。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを避けるために使用しても安全です。</p><p></p><p>キャッシュはアプリを再起動しても保持され、アプリの再インストールまたは手動でのクリーンアップ時にのみ削除されます。</p> |
+| **params.loadTimeoutMs** | <p>任意</p><p>デフォルト: 5000 ms</p> | <p>このメソッドのタイムアウト（ミリ秒）を制限します。タイムアウトに達した場合、キャッシュデータまたはローカルフォールバックが返されます。</p><p>内部で複数のリクエストが発生する場合があるため、まれに `loadTimeoutMs` で指定した時間より少し遅くタイムアウトすることがあります。</p> |
+
+レスポンスパラメーター：
+
+| パラメーター | 説明 |
+|:----------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onboarding** | オンボーディングの識別子・設定・リモートコンフィグなどを含む [`AdaptyOnboarding`](https://capacitor.adapty.io/interfaces/adaptyonboarding) オブジェクト。 |
+
+## デフォルトオーディエンスオンボーディングで取得を高速化する \{#speed-up-onboarding-fetching-with-default-audience-onboarding\}
+
+通常、オンボーディングはほぼ瞬時に取得されるため、このプロセスを速くすることを特に意識する必要はありません。ただし、オーディエンスやオンボーディングが多数あり、ユーザーのインターネット接続が弱い場合は、取得に時間がかかることがあります。そのような場合、オンボーディングを全く表示しないよりも、デフォルトのオンボーディングを表示してスムーズなユーザー体験を提供したいことがあるでしょう。
+
+この場合、`getOnboardingForDefaultAudience` メソッドを使用できます。このメソッドは、指定したプレースメントの **All Users** オーディエンス向けオンボーディングを取得します。ただし、推奨される方法は[オンボーディングの取得](#fetch-onboarding)セクションで説明した `getOnboarding` メソッドを使用することです。
+
+:::warning
+`getOnboardingForDefaultAudience` の代わりに `getOnboarding` の使用を検討してください。前者には以下の重要な制限があります：
+
+- **互換性の問題**：複数のアプリバージョンをサポートする際に問題が生じる可能性があり、後方互換性のあるデザインが必要になるか、古いバージョンで正しく表示されないことを受け入れる必要があります。
+- **パーソナライズなし**：「All Users」オーディエンス向けのコンテンツのみ表示され、国・アトリビューション・カスタム属性に基づくターゲティングは行われません。
+
+取得速度の向上がこれらのデメリットを上回る場合は、以下のように `getOnboardingForDefaultAudience` を使用してください。そうでない場合は、[上記](#fetch-onboarding)の `getOnboarding` を使用してください。
+:::
+
+```typescript showLineNumbers
+
+try {
+  const onboarding = await adapty.getOnboardingForDefaultAudience({ 
+    placementId: 'YOUR_PLACEMENT_ID', 
+    locale: 'en',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data' // サーバーから読み込み、失敗時はキャッシュを使用
+    }
+  });
+  console.log('Default audience onboarding fetched successfully');
+} catch (error) {
+  console.error('Failed to fetch default audience onboarding:', error);
+}
+```
+
+パラメーター：
+
+| パラメーター | 必須 / 任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | 目的の[プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成した際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>オンボーディングのローカライズ識別子。マイナス（**-**）区切りの 1 つまたは 2 つのサブタグで構成される言語コードを指定します。最初のサブタグは言語、2 番目は地域を表します。</p><p></p><p>例：`en` は英語、`pt-br` はブラジルポルトガル語を表します。</p><p>ロケールコードと推奨利用方法については、[ローカライズとロケールコード](localizations-and-locale-codes)を参照してください。</p> |
+| **params.fetchPolicy** | <p>任意</p><p>デフォルト: `'reload_revalidating_cache_data'`</p> | <p>デフォルトでは、SDK はサーバーからデータの読み込みを試み、失敗した場合はキャッシュデータを返します。常に最新データをユーザーに提供できるため、このオプションを推奨します。</p><p></p><p>ユーザーのインターネット接続が不安定だと思われる場合は、`'return_cache_data_else_load'` を使用すると、キャッシュが存在する場合はキャッシュデータを返します。この場合、最新データが得られないことがありますが、接続状況によらず読み込みが速くなります。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを避けるために使用しても安全です。</p><p></p><p>キャッシュはアプリを再起動しても保持され、アプリの再インストールまたは手動でのクリーンアップ時にのみ削除されます。</p> |

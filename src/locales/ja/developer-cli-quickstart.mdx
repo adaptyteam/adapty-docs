@@ -1,0 +1,167 @@
+---
+title: "Adapty Developer CLI クイックスタートガイド"
+description: "Developer CLI を使って Adapty アカウントをエンドツーエンドでセットアップ — アプリ作成からプレースメント公開まで、数コマンドで完了。"
+metadataTitle: "Developer CLI クイックスタート | Adapty ドキュメント"
+keywords: ['cli', 'developer cli', 'mcp']
+---
+
+:::link
+AI アシスタントを使っていますか？LLM が CLI を操作しやすくなる [Adapty CLI スキル](https://github.com/adaptyteam/adapty-cli/tree/main/skills/adapty-cli) が利用できます。
+:::
+
+Adapty CLI を使うと、アプリの設定をすべてコマンドラインから行えます。ターミナル作業を好む方や [MCP クライアント](https://github.com/adaptyteam/adapty-cli/tree/main/skills/adapty-cli)を使う方向けに、[ダッシュボードのクイックスタート](integrate-payments)の代替手段として活用できます。
+
+:::note
+App Store Connect や Google Play への接続は、ダッシュボードでの一度きりのセットアップが必要です — 手順 3 で説明します。
+:::
+
+この手順を完了すると、アプリ・アクセスレベル・プロダクト・ペイウォール・プレースメントがすべて [Adapty ダッシュボード](https://app.adapty.io) に表示されます。
+
+## 1. CLI をインストールする \{#1-install-the-cli\}
+
+[Node.js](https://nodejs.org/en/download) 18 以降が必要です。
+
+CLI をインストールするには、次のコマンドを実行します：
+
+```bash
+npm install -g adapty
+```
+
+または、直接実行する場合：
+
+```bash
+npx adapty auth login
+```
+
+## 2. 認証する \{#2-authenticate\}
+
+ログインコマンドを実行して、CLI を Adapty アカウントに接続します。
+
+```bash
+adapty auth login
+```
+
+CLI がブラウザタブを開きます。ターミナルに表示されたコードとブラウザに表示されたコードが一致していることを確認し、**Authorize** をクリックします。認証が完了するとターミナルに確認メッセージが表示されます。
+
+## 3. アプリを作成する \{#3-create-your-app\}
+
+Adapty のアプリはモバイルアプリケーションを表します。1 つの Adapty アプリが App Store と Google Play の両方に接続されるため、公開するストアの数に関わらず、作成するのは 1 つで十分です。
+
+<Tabs>
+  <TabItem value="ios-android" label="iOS + Android">
+    ```bash
+    adapty apps create --title "My App" --platform ios --platform android --apple-bundle-id com.example.app --google-bundle-id com.example.app
+    ```
+  </TabItem>
+  <TabItem value="ios" label="iOS only">
+    ```bash
+    adapty apps create --title "My App" --platform ios --apple-bundle-id com.example.app
+    ```
+  </TabItem>
+  <TabItem value="android" label="Android only">
+    ```bash
+    adapty apps create --title "My App" --platform android --google-bundle-id com.example.app
+    ```
+  </TabItem>
+</Tabs>
+
+このコマンドは `<app-id>` を返します。以降のコマンドではすべてこの ID を使用します。
+
+:::important
+次の手順に進む前に、Adapty ダッシュボードでアプリを App Store Connect および Google Play に接続してください。手順 5 では両ストアのプロダクト ID が必要です。
+
+- [App Store Connect を接続する](app-store-connection-configuration)
+- [Google Play を接続する](google-play-store-connection-configuration)
+:::
+
+## 4. アクセスレベルを作成する（任意） \{#4-create-an-access-level-optional\}
+
+[アクセスレベル](access-level)は、購入後にユーザーがアクセスできる内容を管理します。特定のプロダクトを購入したかどうかを確認する代わりに、アプリはユーザーが特定のアクセスレベルを持っているかどうかを確認します。これにより、アプリのロジックを特定のプロダクト ID から切り離すことができます。
+
+`premium` アクセスレベルは新しいアプリとともに自動的に作成されます。**ほとんどのアプリではこの手順はスキップできます。** 手順 5 ではアクセスレベル ID として `premium` を使用してください。
+
+異なるプロダクトが異なるユーザーグループの異なる機能をアンロックする場合 — たとえば「Basic」サブスクライバーと「Pro」サブスクライバーがアプリの異なる部分にアクセスできる場合 — にのみ、このコマンドを実行してください。
+
+```bash
+adapty access-levels create --app <app-id> --sdk-id "pro" --title "Pro"
+```
+
+- `--sdk-id` はアプリコード内でユーザーがその機能を利用できるかどうかを確認するために使う識別子です（例：`if user.hasAccessLevel("pro")`）。この手順をスキップしてデフォルトのアクセスレベルを使う場合、その `--sdk-id` は `premium` です。
+- `--title` は Adapty ダッシュボードでの参照用に表示されるラベルです。
+
+このコマンドは `<access-level-id>` を返します。
+
+## 5. プロダクトを作成する \{#5-create-a-product\}
+
+Adapty における[プロダクト](product)は、アプリが販売するもの — サブスクリプションや買い切り購入 — を表します。App Store Connect と Google Play のアイテムを 1 つの Adapty プロダクトにまとめて、一元管理できます。
+
+各ストアのプロダクト ID が必要です：App Store Connect の Apple プロダクト ID、および Google Play Console の Android プロダクト ID とベースプラン ID。確認方法の詳細は[プロダクト](quickstart-products)を参照してください。
+
+手順 4 をスキップした場合は、手順 3 の `apps create` コマンドが返した `default_access_level.id` を `<access-level-id>` として使用してください。
+
+:::important
+ここでリンクするストアのプロダクト ID（`--ios-product-id`、`--android-product-id`）は作成後に変更できません。別のストアプロダクト ID を使用する場合は、新しいプロダクトを作成してください。
+:::
+
+<Tabs>
+  <TabItem value="ios-android" label="iOS + Android">
+    ```bash
+    adapty products create --app <app-id> --title "My Product" --access-level-id <access-level-id> --period monthly --ios-product-id <your.apple.id> --android-product-id <your.google.id> --android-base-plan-id <your.base-plan.id>
+    ```
+  </TabItem>
+  <TabItem value="ios" label="iOS only">
+    ```bash
+    adapty products create --app <app-id> --title "My Product" --access-level-id <access-level-id> --period monthly --ios-product-id <your.apple.id>
+    ```
+  </TabItem>
+  <TabItem value="android" label="Android only">
+    ```bash
+    adapty products create --app <app-id> --title "My Product" --access-level-id <access-level-id> --period monthly --android-product-id <your.google.id> --android-base-plan-id <your.base-plan.id>
+    ```
+  </TabItem>
+</Tabs>
+
+このコマンドは `<product-id>` を返します。
+
+## 6. ペイウォールを作成する \{#6-create-a-paywall\}
+
+[ペイウォール](paywalls)はプロダクトを格納するコンテナです。Adapty では、ペイウォールがユーザーにプロダクトを届ける唯一の方法です。すべてのプロダクトは、アプリに表示される前にペイウォールに含まれている必要があります。
+
+:::important
+ペイウォールがプレースメントにリンクされると、そのプロダクトは変更できません。別のプロダクトを使用するには、新しいペイウォールを作成してプレースメントがそちらを参照するように更新してください。
+:::
+
+<Tabs>
+  <TabItem value="single" label="プロダクト 1 つ">
+    ```bash
+    adapty paywalls create --app <app-id> --title "My Paywall" --product-id <product-id>
+    ```
+  </TabItem>
+  <TabItem value="multiple" label="プロダクト複数">
+    ```bash
+    adapty paywalls create --app <app-id> --title "My Paywall" --product-id <product-id-1> --product-id <product-id-2>
+    ```
+  </TabItem>
+</Tabs>
+
+このコマンドは `<paywall-id>` を返します。
+
+## 7. プレースメントを作成する \{#7-create-a-placement\}
+
+[プレースメント](placements)は、アプリ内でペイウォールを表示する場所を指します。アプリコードにハードコードするのはプレースメント ID だけです。どのペイウォールをどのユーザーに表示するかといった設定はすべて、新しいアプリバージョンをリリースすることなくダッシュボードから管理できます。
+
+`--developer-id` は、後でアプリコードからこの場所に表示するペイウォールを Adapty に問い合わせる際に参照する文字列です。場所を表すわかりやすい名前（例：`"main"`、`"onboarding"`、`"settings"`）を指定してください。
+
+```bash
+adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+```
+
+`--audiences` フラグは、どのユーザーにどのペイウォールを表示するかを制御します。上の例では単一のデフォルトオーディエンスを設定しており、このプレースメントのすべてのユーザーに同じペイウォールが表示されます。
+
+## 次のステップ \{#whats-next\}
+
+すべてのエンティティが [Adapty ダッシュボード](https://app.adapty.io) に表示されるようになりました。次は：
+
+- [ペイウォールをデザインする](adapty-paywall-builder) — ノーコードのペイウォールビルダーを使って、作成したペイウォールにビジュアル・レイアウト・コピーを追加します。
+- [Adapty SDK を組み込む](quickstart-sdk) — アプリに SDK を追加して、プレースメントを取得・表示します。
+- 異なるユーザー[セグメント](segments)を異なるペイウォールにルーティングする — 詳細は完全リファレンスの [`placements update`](developer-cli-reference#adapty-placements-update) と [`segments list`](developer-cli-reference#adapty-segments-list) を参照してください。

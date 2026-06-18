@@ -1,0 +1,114 @@
+---
+title: "Capacitor SDKで初回起動時にAA対象のペイウォールを表示する"
+description: "AdaptyProfile.appliedAttributionSourcesを使用して、Capacitorで即座にペイウォールを表示し、アトリビューションが適用されたApple Adsユーザー向けにアップグレードする方法を説明します。"
+metadataTitle: "初回起動時にAA対象のペイウォールを表示する | Capacitor SDK | Adapty ドキュメント"
+---
+
+Apple Ads（AA）のアトリビューションは、`adapty.activate()` の後に非同期で届きます。初回起動時にはまだ届いていないことが多いため、`getPaywall` はデフォルトのオーディエンスに対して解決され、Apple AdsユーザーはAAセグメント向けのペイウォールを見逃してしまいます。アトリビューションが届くまでペイウォールの表示を遅らせるのではなく、まず即座に表示しておき、AAのアトリビューションが適用されたタイミングでリフレッシュしましょう。こうすることで、Apple Adsユーザーはターゲット向けのバリアントを受け取り、それ以外のユーザーは待ち時間なくペイウォールを見ることができます。`AdaptyProfile.appliedAttributionSources` を使うと、AAのアトリビューションが適用されたタイミングを把握できます。
+
+## 始める前に \{#before-you-start\}
+
+必要なもの：
+- Adapty Capacitor SDK **3.17.1** 以降。
+- AdaptyでApple Adsがアプリに設定済みであること。[Apple Ads](apple-search-ads) を参照してください。
+
+## 仕組み \{#how-it-works\}
+
+`adapty.activate()` の後、SDKはバックグラウンドでAppleからApple Adsのアトリビューションを取得し、Adaptyのバックエンドに転送します。AAがプロファイルのアクティブなアトリビューションソースになると、SDKは更新された `AdaptyProfile` を `onLatestProfileLoad` リスナーに配信します。この `AdaptyProfile` の `appliedAttributionSources` 配列には `'apple_search_ads'` が含まれています。
+
+これにより、ペイウォールの読み込みを2ステップで行うことができます：
+
+1. すぐに `getPaywall` を呼び出します。アトリビューションがまだ適用されていない状態では、Adaptyはデフォルトのオーディエンスでリクエストを解決するため、ユーザーはすぐにペイウォールを見ることができます。
+2. `'apple_search_ads'` が現れたら、再度 `getPaywall` を呼び出します。AdaptyはApple Adsのオーディエンスに対してリクエストを解決し、ターゲット向けのペイウォールを返します。これが最初のペイウォールと置き換わります。
+
+`appliedAttributionSources` は空またはない場合があります。その場合は以下のどちらかを意味します：
+
+- このプロファイルに対するApple Adsのアトリビューションがまだ処理されていない、または
+- アトリビューションがまったく届いていない。
+
+いずれの場合も、ステップ1は安全です。Adaptyは現在のプロファイル状態に一致するオーディエンス（通常はデフォルトオーディエンス）でリクエストを解決します。ステップ2は `'apple_search_ads'` が現れたときにのみ実行されます。
+
+:::important
+それ以降の起動では、キャッシュされたプロファイルにすでに `appliedAttributionSources` に `'apple_search_ads'` が含まれているため、最初の `getPaywall` からApple Ads向けのセグメントペイウォールが返されます。2回目のフェッチや表示の変化は発生しません。この2ステップのフローが意味を持つのは、アトリビューションがまだ処理中の初回起動時のみです。
+:::
+
+## 実装 \{#implementation\}
+
+まずペイウォールをすぐに表示し、`'apple_search_ads'` を監視して、届いたタイミングでペイウォールをリフレッシュします。
+
+1. **SDKを有効化します。** [Capacitor SDKのインストールと設定](sdk-installation-capacitor) を参照してください。
+2. **`getPaywall` でペイウォールを読み込んで表示します。** アトリビューションを待たずに進めてください。
+3. **`adapty.addListener('onLatestProfileLoad', …)` でプロファイルの更新を購読し、**`'apple_search_ads'` を監視します。現れたら再度ペイウォールを取得し、更新されたものを表示します。リスナーをまだ設定していない場合は、[サブスクリプションの更新を監視する](capacitor-check-subscription-status#listen-to-subscription-updates) を参照してください：
+
+```typescript
+const listener = await adapty.addListener('onLatestProfileLoad', async ({ profile }) => {
+  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
+  const targeted = await adapty.getPaywall({ placementId });
+  // present the targeted paywall in place of the first one
+});
+
+// Call listener.remove() after the upgrade, or after a timeout (see below).
+```
+
+4. **タイムアウト後にリスナーを停止します。** ほとんどのユーザーはApple Adsのアトリビューションを受け取らないため、セッション全体を通じてリスナーを開いたままにせず、一定時間後に削除してください。プレースメントに[フォールバックペイウォール](capacitor-use-fallback-paywalls)を設定しておくと、リクエストが失敗した場合でも常にユーザーに何かを表示できます。
+
+## 完全な例 \{#complete-example\}
+
+`onAppleAdsAttribution` は、Apple Adsのアトリビューションが適用されると解決され、`timeoutMs` 後にタイムアウトで拒否されます。以下の使用例では、まずすぐにペイウォールを読み込み、アトリビューションが届いたときに再取得します。Apple Adsユーザーはターゲット向けのペイウォールを受け取り、アトリビューションが届かない場合は最初のペイウォールがそのまま表示されます：
+
+```typescript
+
+const APPLE_ADS_SOURCE = 'apple_search_ads';
+const placementId = 'YOUR_PLACEMENT_ID';
+
+function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
+  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+}
+
+/**
+ * Resolves once Apple Ads attribution is applied to the profile.
+ * Rejects with a timeout error if attribution never arrives within `timeoutMs`.
+ * Call after `adapty.activate()`.
+ */
+export function onAppleAdsAttribution(timeoutMs: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let handle: { remove: () => void } | undefined;
+
+    const stop = () => {
+      clearTimeout(timer);
+      handle?.remove();
+    };
+
+    adapty
+      .addListener('onLatestProfileLoad', ({ profile }) => {
+        if (!hasAppleAdsAttribution(profile)) return;
+        stop();
+        resolve();
+      })
+      .then(listener => {
+        handle = listener;
+      });
+
+    timer = setTimeout(() => {
+      stop();
+      reject(new Error(`Apple Ads attribution timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+}
+
+let paywall = await adapty.getPaywall({ placementId });
+
+onAppleAdsAttribution(30_000)
+  .then(() => adapty.getPaywall({ placementId }))
+  .then(updated => {
+    paywall = updated;
+  })
+  .catch(() => {
+    console.log('Apple Ads attribution or loading failed');
+  });
+```
+
+初回起動時、Apple Adsユーザーはデフォルトのペイウォールをわずかな間表示した後、ターゲット向けのペイウォールに切り替わります。ペイウォールビルダーでペイウォールを表示している場合は、再表示が許容できるかどうかを検討するか、ペイウォールが表示される前にのみアップグレードを適用するようにしてください。`timeoutMs` は、リスナーをどのくらいの間維持したいかに合わせて調整してください。届くアトリビューションは通常、起動から数秒以内に届きます。
+
+アプリが他の目的（例えば[サブスクリプションステータスの確認](capacitor-check-subscription-status#listen-to-subscription-updates)）でも `onLatestProfileLoad` を監視している場合、変更は必要ありません。`adapty.addListener` は複数の独立したリスナーをサポートしているため、既存のリスナーに影響を与えることなく独自のリスナーを追加できます。

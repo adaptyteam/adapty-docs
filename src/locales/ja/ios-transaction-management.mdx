@@ -1,0 +1,139 @@
+---
+title: "iOS SDKにおける高度なトランザクション管理"
+description: "Adapty SDKを使用してiOSアプリでトランザクションを手動で完了する方法を説明します。"
+metadataTitle: "高度なトランザクション管理 | iOS SDK | Adapty ドキュメント"
+displayed_sidebar: sdkios
+---
+
+:::note
+高度なトランザクション管理は、Adapty iOS SDK バージョン3.12以降でサポートされています。
+:::
+
+Adaptyの高度なトランザクション管理を使用すると、トランザクションの処理、検証、完了をより細かく制御できます。
+
+高度なトランザクション管理には、連携して動作する3つのオプション機能が含まれています。
+
+| 機能                                                          | 目的 |
+|-------------------------------------------------------------|----------|
+| [`appAccountToken`](#assign-appaccounttoken)                | Appleのトランザクションを内部ユーザーIDに紐付ける |
+| [`jwsTransaction`](#access-the-jws-representation)          | バリデーション用にAppleの署名済みトランザクションペイロードを提供する |
+| [手動完了](#control-transaction-finishing-behavior) | バックエンドが成功を確認した後にのみトランザクションを完了できる |
+
+これらのツールを組み合わせることで、AdaptyがバックエンドとのトランザクションSync機能を維持しながら、堅牢なカスタムバリデーションフローを構築できます。
+
+:::important
+ほとんどのアプリにはこの機能は不要です。
+デフォルトでは、AdaptyはStoreKitトランザクションを自動的に検証・完了します。
+このガイドは、独自のバックエンドバリデーションを実行する場合や、購入ライフサイクルを完全に制御したい場合にのみ使用してください。
+:::
+
+## `appAccountToken`を設定する \{#assign-appaccounttoken\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:))は、App Storeのトランザクションを内部ユーザーIDに紐付けるための**UUID**です。
+StoreKitはこのトークンをすべてのトランザクションに関連付けるため、バックエンドでApp Storeのデータとユーザーを照合できます。
+
+ユーザーごとに生成した安定したUUIDを使用し、デバイスをまたいで同じアカウントに対して再利用してください。
+これにより、購入とApp Storeの通知が正しく紐付けられます。
+
+トークンは2つの方法で設定できます。SDK初期化時またはユーザーを識別するときです。
+
+:::important
+`appAccountToken`は必ず`customerUserId`と一緒に渡す必要があります。
+トークンのみを渡した場合、トランザクションに含まれません。
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: UUID())
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
+  // handle the error
+}
+
+// Or when identifying a user:
+do {
+    try await Adapty.identify("YOUR_USER_ID", withAppAccountToken: UUID())
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: <APP_ACCOUNT_TOKEN>)
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+
+// Or when identifying a user:
+Adapty.identify("YOUR_USER_ID", withAppAccountToken: <APP_ACCOUNT_TOKEN>) { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## JWS表現にアクセスする \{#access-the-jws-representation\}
+
+購入を行うと、結果にはAppleのトランザクションが[JWSコンパクトシリアライゼーション形式](https://developer.apple.com/documentation/storekit/verificationresult/jwsrepresentation-21vgo)で含まれます。
+この値をバックエンドに転送して、独自のバリデーションやログ記録に活用できます。
+
+```swift
+let result = try await Adapty.makePurchase(product: paywallProduct)
+let jwsRepresentation = result.jwsTransaction
+```
+
+## トランザクション完了の動作を制御する \{#control-transaction-finishing-behavior\}
+
+<ZoomImage id="transaction-management.png" width="700px" />
+
+デフォルトでは、AdaptyはバリデーションAfterにStoreKitトランザクションを自動的に完了します。
+バックエンドが成功を確認するまで完了を遅らせたい場合は、完了動作を手動に設定してください。
+
+このモードでは：
+- Adaptyは引き続き購入を検証し、バックエンドとSyncします。
+- `finish()`を明示的に呼び出すまで、トランザクションは未完了のままです。
+
+```swift
+var configBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_API_KEY")
+    .with(transactionFinishBehavior: .manual)
+
+try await Adapty.activate(with: configBuilder.build())   
+```
+
+手動トランザクション完了を使用する場合、未完了のトランザクションを処理するために`onUnfinishedTransaction`デリゲートメソッドを実装する必要があります。
+
+```swift showLineNumbers title="Swift"
+extension YourApp: AdaptyDelegate {
+    func onUnfinishedTransaction(_ transaction: AdaptyUnfinishedTransaction) async {
+        // Perform your custom validation logic here
+        
+        // When ready, finish the transaction
+        await transaction.finish()
+    }
+}
+```
+
+現在の未完了トランザクションをすべて取得するには、`getUnfinishedTransactions()`メソッドを使用してください。
+
+```swift
+let unfinishedTransactions = try await Adapty.getUnfinishedTransactions()
+```

@@ -1,0 +1,643 @@
+---
+title: "Adapty Android SDK を v3.3 に移行する"
+description: "パフォーマンス向上と新しいマネタイズ機能のために Adapty Android SDK v3.3 に移行します。"
+metadataTitle: "Adapty Android SDK v3.3 への移行 | Adapty ドキュメント"
+---
+
+Adapty SDK 3.3.0 はメジャーリリースであり、いくつかの改善が含まれていますが、移行手順が必要になる場合があります。
+
+1. ペイウォールビルダーで作成されていないペイウォールでの購入処理を更新してください。`USER_CANCELED` および `PENDING_PURCHASE` エラーコードの処理を停止してください。キャンセルされた購入はエラーとして扱われなくなり、エラーなしの購入結果として返されます。
+2. ペイウォールビルダーで作成されたペイウォールの `onPurchaseCanceled` および `onPurchaseSuccess` イベントを、新しい `onPurchaseFinished` イベントに置き換えてください。この変更も同じ理由です：キャンセルされた購入はエラーとして扱われなくなり、エラーなしの購入結果に含まれます。
+3. ペイウォールビルダーのペイウォールに対する `onAwaitingSubscriptionUpdateParams` のメソッドシグネチャを変更してください。
+4. ファイル URI を直接渡してフォールバックペイウォールを提供している場合は、その方法を更新してください。
+5. Adjust、AirBridge、Amplitude、AppMetrica、Appsflyer、Branch、Facebook Ads、Firebase and Google Analytics、Mixpanel、OneSignal、Pushwoosh のインテグレーション設定を更新してください。
+
+## 購入処理の更新 \{#update-making-purchase\}
+
+以前は、キャンセルされた購入と保留中の購入はエラーとして扱われ、それぞれ `USER_CANCELED` および `PENDING_PURCHASE` コードが返されていました。
+
+新しい `AdaptyPurchaseResult` クラスを使用して、キャンセル・成功・保留中の購入を示すようになりました。以下のように購入コードを更新してください：
+
+~~~diff
+Adapty.makePurchase(activity, product) { result ->
+     when (result) {
+         is AdaptyResult.Success -> {
+-            val info = result.value
+-            val profile = info?.profile
+-        
+-            if (profile?.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true) {
+-                // Grant access to the paid features
+-            }
++            when (val purchaseResult = result.value) {
++                is AdaptyPurchaseResult.Success -> {
++                    val profile = purchaseResult.profile
++                    if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
++                        // Grant access to the paid features
++                    }
++                }
++
++                is AdaptyPurchaseResult.UserCanceled -> {
++                    // Handle the case where the user canceled the purchase
++                }
++
++                is AdaptyPurchaseResult.Pending -> {
++                    // Handle deferred purchases (e.g., the user will pay offline with cash
++                }
++            }
+         }
+         is AdaptyResult.Error -> {
+             val error = result.error
+             // Handle the error
+         }
+     }
+ }
+~~~
+
+完全なコード例については、[モバイルアプリで購入する](android-making-purchases#make-purchase) ページをご覧ください。
+
+## ペイウォールビルダーの購入イベントを変更する \{#modify-paywall-builder-purchase-events\}
+
+1. `onPurchaseFinished` イベントを追加します：
+
+   ```diff showLineNumbers
+   + public override fun onPurchaseFinished(
+   +     purchaseResult: AdaptyPurchaseResult,
+   +     product: AdaptyPaywallProduct,
+   +     context: Context,
+   + ) {
+   +    when (purchaseResult) {
+   +        is AdaptyPurchaseResult.Success -> {
+   +            // Grant access to the paid features
+   +        }
+   +        is AdaptyPurchaseResult.UserCanceled -> {
+   +            // Handle the case where the user canceled the purchase
+   +        }
+   +        is AdaptyPurchaseResult.Pending -> {
+   +            // Handle deferred purchases (e.g., the user will pay offline with cash)
+   +        }
+   +    }
+   + }
+   ```
+
+   完全なコード例については、[成功・キャンセル・保留中の購入](android-handling-events#successful-canceled-or-pending-purchase) とイベントの説明をご覧ください。
+
+2. `onPurchaseCancelled` イベントの処理を削除します：
+
+   ```diff showLineNumbers
+   - public override fun onPurchaseCanceled(
+   -     product: AdaptyPaywallProduct,
+   -     context: Context,
+   - ) {}
+   ```
+
+3. `onPurchaseSuccess` を削除します：
+
+   ```diff showLineNumbers
+   
+   - public override fun onPurchaseSuccess(
+   -     profile: AdaptyProfile?,
+   -     product: AdaptyPaywallProduct,
+   -   context: Context,
+   - ) {
+   -     // Your logic on successful purchase
+   - }
+   ```
+
+## onAwaitingSubscriptionUpdateParams メソッドのシグネチャを変更する \{#change-the-signature-of--onawaitingsubscriptionupdateparams-method\}
+
+別のサブスクリプションがアクティブな状態で新しいサブスクリプションが購入された場合、新しいサブスクリプションで既存のサブスクリプションを置き換えるには `onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters...))` を、既存のサブスクリプションをアクティブに維持しながら新しいサブスクリプションを別途追加するには `onSubscriptionUpdateParamsReceived(null)` を呼び出してください：
+
+ ```diff showLineNumbers
+- public override fun onAwaitingSubscriptionUpdateParams(
+-     product: AdaptyPaywallProduct,
+-     context: Context,
+- ): AdaptySubscriptionUpdateParameters? {
+-     return AdaptySubscriptionUpdateParameters(...)
+- }
++ public override fun onAwaitingSubscriptionUpdateParams(
++     product: AdaptyPaywallProduct,
++     context: Context,
++     onSubscriptionUpdateParamsReceived: SubscriptionUpdateParamsCallback,
++ ) {
++     onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
++ }
+ ```
+
+最終的なコード例については、[サブスクリプションのアップグレード](android-handling-events#upgrade-subscription) のドキュメントセクションをご覧ください。
+
+## フォールバックペイウォールの提供方法を更新する \{#update-providing-fallback-paywalls\}
+
+フォールバックペイウォールを提供するためにファイル URI を渡している場合は、以下のように更新してください：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff showLineNumbers
+val fileUri: Uri = // Get the URI for the file with fallback paywalls
+- Adapty.setFallbackPaywalls(fileUri, callback)
++ Adapty.setFallbackPaywalls(FileLocation.fromFileUri(fileUri), callback)
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```diff showLineNumbers
+Uri fileUri = // Get the URI for the file with fallback paywalls
+- Adapty.setFallbackPaywalls(fileUri, callback);
++ Adapty.setFallbackPaywalls(FileLocation.fromFileUri(fileUri), callback);
+```
+
+</TabItem>
+</Tabs>
+
+## サードパーティインテグレーションの SDK 設定を更新する \{#update-third-party-integration-sdk-configuration\}
+
+Adapty Android SDK 3.3.0 以降でインテグレーションが正しく動作するように、以下のセクションに従って各インテグレーションの SDK 設定を更新してください。
+
+### Adjust
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[Adjust インテグレーションの SDK 設定](adjust#connect-your-app-to-adjust) をご覧ください。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="v5" label="Adjust 5.x+" default>
+
+```diff showLineNumbers
+- Adjust.getAttribution { attribution ->
+-     if (attribution == null) return@getAttribution
+-
+-     Adjust.getAdid { adid ->
+-         if (adid == null) return@getAdid
+-
+-         Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST, adid) { error ->
+-             // Handle the error
+-         }
+-     }
+- }
+
++ Adjust.getAdid { adid ->
++     if (adid == null) return@getAdid
++
++     Adapty.setIntegrationIdentifier("adjust_device_id", adid) { error ->
++         if (error != null) {
++             // Handle the error
++         }
++     }
++ }
++
++ Adjust.getAttribution { attribution ->
++     if (attribution == null) return@getAttribution
++
++     Adapty.updateAttribution(attribution, "adjust") { error ->
++         if (error != null) {
++             // Handle the error
++         }
++     }
++ }
+```
+
+</TabItem>
+
+<TabItem value="v4" label="Adjust 4.x" default>
+
+```diff showLineNumbers
+ val config = AdjustConfig(context, adjustAppToken, environment)
+ config.setOnAttributionChangedListener { attribution ->
+     attribution?.let { attribution ->
+-         Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error ->
++         Adapty.updateAttribution(attribution, "adjust") { error ->
+             if (error != null) {
+                 // Handle the error
+             }
+         }
+     }
+ }
+ Adjust.onCreate(config)
+```
+
+</TabItem>
+</Tabs>
+
+### AirBridge
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[AirBridge インテグレーションの SDK 設定](airbridge#connect-your-app-to-airbridge) をご覧ください。
+
+```diff showLineNumbers
+ Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<String>() {
+     override fun onSuccess(result: String) {
+-         val params = AdaptyProfileParameters.Builder()
+-             .withAirbridgeDeviceId(result)
+-             .build()
+-         Adapty.updateProfile(params) { error ->
+-             if (error != null) {
+-                 // Handle the error
+-             }
+-         }
++         Adapty.setIntegrationIdentifier("airbridge_device_id", result) { error ->
++             if (error != null) {
++                 // Handle the error
++             }
++         }
+     }
+     override fun onFailure(throwable: Throwable) {
+     }
+ })
+```
+
+### Amplitude
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[Amplitude インテグレーションの SDK 設定](amplitude#sdk-configuration) をご覧ください。
+
+```diff showLineNumbers
+ // For Amplitude maintenance SDK (obsolete)
+ val amplitude = Amplitude.getInstance()
+ val amplitudeDeviceId = amplitude.getDeviceId()
+ val amplitudeUserId = amplitude.getUserId()
+
+ //for actual Amplitude Kotlin SDK
+ val amplitude = Amplitude(
+     Configuration(
+         apiKey = AMPLITUDE_API_KEY,
+         context = applicationContext
+     )
+ )
+ val amplitudeDeviceId = amplitude.store.deviceId
+ val amplitudeUserId = amplitude.store.userId
+
+ //
+
+- val params = AdaptyProfileParameters.Builder()
+-     .withAmplitudeDeviceId(amplitudeDeviceId)
+-     .withAmplitudeUserId(amplitudeUserId)
+-     .build()
+- Adapty.updateProfile(params) { error ->
+-     if (error != null) {
+-         // Handle the error
+-     }
+- }
+
++ Adapty.setIntegrationIdentifier("amplitude_user_id", amplitudeUserId) { error ->
++     if (error != null) {
++         // Handle the error
++     }
++ }
+
++ Adapty.setIntegrationIdentifier("amplitude_device_id", amplitudeDeviceId) { error ->
++     if (error != null) {
++         // Handle the error
++     }
++ }
+```
+
+### AppMetrica
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[AppMetrica インテグレーションの SDK 設定](appmetrica#sdk-configuration) をご覧ください。
+
+```diff showLineNumbers
+ val startupParamsCallback = object: StartupParamsCallback {
+     override fun onReceive(result: StartupParamsCallback.Result?) {
+         val deviceId = result?.deviceId ?: return
+
+-        val params = AdaptyProfileParameters.Builder()
+-            .withAppmetricaDeviceId(deviceId)
+-            .withAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID")
+-            .build()
+-        Adapty.updateProfile(params) { error ->
+-            if (error != null) {
+-                // Handle the error
+-            }
+-        }
+
++        Adapty.setIntegrationIdentifier("appmetrica_device_id", deviceId) { error ->
++            if (error != null) {
++                // Handle the error
++            }
++        }
++        
++        Adapty.setIntegrationIdentifier("appmetrica_profile_id", "YOUR_ADAPTY_CUSTOMER_USER_ID") { error ->
++            if (error != null) {
++                // Handle the error
++            }
++        }
+     }
+
+     override fun onRequestError(
+         reason: StartupParamsCallback.Reason,
+         result: StartupParamsCallback.Result?
+     ) {
+         // Handle the error
+     }
+ }
+
+ AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID))
+```
+
+### AppsFlyer
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[AppsFlyer インテグレーションの SDK 設定](appsflyer#connect-your-app-to-appsflyer) をご覧ください。
+
+```diff showLineNumbers
+ val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
+     override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
+-        Adapty.updateAttribution(
+-            conversionData,
+-            AdaptyAttributionSource.APPSFLYER,
+-            AppsFlyerLib.getInstance().getAppsFlyerUID(context)
+-        ) { error ->
+-            if (error != null) {
+-                // Handle the error
+-            }
+-        }
+
++        val uid = AppsFlyerLib.getInstance().getAppsFlyerUID(context)
++        Adapty.setIntegrationIdentifier("appsflyer_id", uid) { error ->
++            if (error != null) {
++                // Handle the error
++            }
++        }
++        Adapty.updateAttribution(conversionData, "appsflyer") { error ->
++            if (error != null) {
++                // Handle the error
++            }
++        }
+     }
+ }
+```
+
+### Branch
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[Branch インテグレーションの SDK 設定](branch#connect-your-app-to-branch) をご覧ください。
+
+```diff showLineNumbers
+// Login and update attribution
+ Branch.getAutoInstance(this)
+   .setIdentity("YOUR_USER_ID") { referringParams, error ->
+       referringParams?.let { data ->
+-            Adapty.updateAttribution(data, AdaptyAttributionSource.BRANCH) { error ->
+-                if (error != null) {
+-                    // Handle the error
+-                }
+-            }
++            Adapty.updateAttribution(data, "branch") { error ->
++                if (error != null) {
++                    // Handle the error
++                }
++            }
+       }
+   }
+
+ // Logout
+ Branch.getAutoInstance(context).logout()
+```
+
+### Facebook Ads
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[Facebook Ads インテグレーションの SDK 設定](facebook-ads#connect-your-app-to-facebook-ads) をご覧ください。
+
+```diff showLineNumbers
+- val builder = AdaptyProfileParameters.Builder()
+-     .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context))
+-   
+- Adapty.updateProfile(builder.build()) { error ->
+-     if (error != null) {
+-        // Handle the error
+-     }
+- }
+
++ Adapty.setIntegrationIdentifier(
++     "facebook_anonymous_id",
++     AppEventsLogger.getAnonymousAppDeviceGUID(context)
++ ) { error ->
++     if (error != null) {
++        // Handle the error
++     }
++ }
+```
+
+### Firebase and Google Analytics
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[Firebase and Google Analytics インテグレーションの SDK 設定](firebase-and-google-analytics) をご覧ください。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff showLineNumbers
+ // After Adapty.activate()
+
+ FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appInstanceId ->
+-    Adapty.updateProfile(
+-        AdaptyProfileParameters.Builder()
+-            .withFirebaseAppInstanceId(appInstanceId)
+-            .build()
+-    ) { error ->
+-        if (error != null) {
+-            // Handle the error
+-        }
+-    }
++    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId) { error ->
++        if (error != null) {
++            // Handle the error
++        }
++    }
+ }
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```diff showLineNumbers
+// After Adapty.activate()
+
+- FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
+-     AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
+-         .withFirebaseAppInstanceId(appInstanceId)
+-         .build();
+-     
+-     Adapty.updateProfile(params, error -> {
+-         if (error != null) {
+-             // Handle the error
+-         }
+-     });
+- });
+
++ FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
++     Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId, error -> {
++        if (error != null) {
++            // Handle the error
++         }
++     });
++ });
+```
+
+</TabItem>
+</Tabs>
+
+### Mixpanel
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[Mixpanel インテグレーションの SDK 設定](mixpanel#sdk-configuration) をご覧ください。
+
+```diff showLineNumbers
+- val params = AdaptyProfileParameters.Builder()
+-     .withMixpanelUserId(mixpanelAPI.distinctId)
+-     .build()
+-
+- Adapty.updateProfile(params) { error ->
+-     if (error != null) {
+-         // Handle the error
+-     }
+- }
+
++ Adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelAPI.distinctId) { error ->
++     if (error != null) {
++         // Handle the error
++     }
++ }
+```
+
+### OneSignal
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[OneSignal インテグレーションの SDK 設定](onesignal#sdk-configuration) をご覧ください。
+
+<Tabs groupId="current-os" queryString> 
+
+<TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
+
+<Tabs groupId="current-os" queryString> 
+
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+
+```diff showLineNumbers
+ // SubscriptionID 
+ val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
+     override fun onPushSubscriptionChange(state: PushSubscriptionChangedState) {
+-        val params = AdaptyProfileParameters.Builder()
+-            .withOneSignalSubscriptionId(state.current.id)
+-            .build()
+-        
+-        Adapty.updateProfile(params) { error ->
++        Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.current.id) { error ->
+             if (error != null) {
+                 // Handle the error
+             }
+        }
+     }
+ }
+```
+
+</TabItem>
+<TabItem value="java" label="(Android) Java" default>
+
+```diff showLineNumbers
+ // SubscriptionID 
+ IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
+-    AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
+-            .withOneSignalSubscriptionId(state.getCurrent().getId())
+-            .build();
+-    Adapty.updateProfile(params, error -> {
++    Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.getCurrent().getId(), error -> {
+         if (error != null) {
+             // Handle the error
+         }
+     });
+ };
+```
+
+</TabItem>  
+</Tabs>
+
+</TabItem> 
+
+<TabItem value="pre-v5" label="OneSignal SDK v. up to 4.x (legacy)" default> 
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+
+```diff showLineNumbers
+ // PlayerID 
+ val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
+     stateChanges?.to?.userId?.let { playerId ->
+-        val params = AdaptyProfileParameters.Builder()
+-            .withOneSignalPlayerId(playerId)
+-            .build()
+-      
+-        Adapty.updateProfile(params) { error ->
++        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId) { error ->
+             if (error != null) {
+                 // Handle the error
+             }
+-        }
+     }
+ }
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```diff showLineNumbers
+ // PlayerID 
+ OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
+     OSSubscriptionState to = stateChanges != null ? stateChanges.getTo() : null;
+     String playerId = to != null ? to.getUserId() : null;
+     
+     if (playerId != null) {
+-        AdaptyProfileParameters params1 = new AdaptyProfileParameters.Builder()
+-                .withOneSignalPlayerId(playerId)
+-                .build();
+-        
+-        Adapty.updateProfile(params1, error -> {
++        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId, error -> {
+             if (error != null) {
+                 // Handle the error
+             }
+-        });
+     }
+ };
+```
+
+</TabItem> 
+
+</Tabs>
+
+ </TabItem> 
+
+</Tabs> 
+
+### Pushwoosh
+
+以下のようにモバイルアプリのコードを更新してください。完全なコード例については、[Pushwoosh インテグレーションの SDK 設定](pushwoosh#sdk-configuration) をご覧ください。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff showLineNumbers
+- val params = AdaptyProfileParameters.Builder()
+-     .withPushwooshHwid(Pushwoosh.getInstance().hwid)
+-     .build()
+  
+- Adapty.updateProfile(params) { error ->
++ Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().hwid) { error ->
+     if (error != null) {
+         // Handle the error
+     }
+  }
+```
+
+</TabItem> <TabItem value="java" label="Java" default>
+
+```diff showLineNumbers
+- AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
+-     .withPushwooshHwid(Pushwoosh.getInstance().getHwid())
+-     .build();
+-
+- Adapty.updateProfile(params, error -> {
++ Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().getHwid(), error -> {
+     if (error != null) {
+         // Handle the error
+     }
+  });
+```
+
+</TabItem> 
+
+</Tabs>

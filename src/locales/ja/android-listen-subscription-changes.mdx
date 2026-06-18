@@ -1,0 +1,145 @@
+---
+title: "Android SDKでサブスクリプションステータスを確認する"
+description: "Adaptyを使用してAndroidアプリのユーザーサブスクリプションステータスを追跡・管理し、顧客維持率を向上させましょう。"
+metadataTitle: "サブスクリプションステータスの確認 | Adapty ドキュメント"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+
+Adaptyを使えば、サブスクリプションのステータス管理が簡単になります。プロダクトIDをコードに直接記述する必要はありません。アクティブな[アクセスレベル](access-level)を確認するだけで、ユーザーのサブスクリプションステータスを手軽に把握できます。
+
+サブスクリプションステータスの確認を始める前に、[リアルタイム デベロッパー通知（RTDN）](enable-real-time-developer-notifications-rtdn)を設定してください。
+
+## アクセスレベルとAdaptyProfileオブジェクト \{#access-level-and-the-adaptyprofile-object\}
+
+アクセスレベルは[AdaptyProfile](https://android.adapty.io/adapty/com.adapty.models/-adapty-profile/)オブジェクトのプロパティです。アプリ起動時（例：[ユーザーを識別する](android-identifying-users#setting-customer-user-id-on-configuration)タイミングなど）にプロファイルを取得し、変更があるたびに更新することをおすすめします。こうすることで、毎回リクエストを送らずともプロファイルオブジェクトを活用できます。
+
+プロファイルの更新通知を受け取るには、以下の[プロファイル更新（アクセスレベルを含む）をリッスンする](android-listen-subscription-changes)セクションで説明している方法でプロファイルの変更を監視してください。
+
+<SampleApp />
+
+## サーバーからアクセスレベルを取得する \{#retrieving-the-access-level-from-the-server\}
+
+サーバーからアクセスレベルを取得するには、`.getProfile()`メソッドを使用します：
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+            // check the access
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        // check the access
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+レスポンスパラメーター：
+
+| パラメーター | 説明                                                  |
+| --------- | ------------------------------------------------------------ |
+| Profile   | <p>[AdaptyProfile](https://android.adapty.io/adapty/com.adapty.models/-adapty-profile/)オブジェクト。通常、ユーザーがプレミアムアクセスを持っているかどうかを判断するには、プロファイルのアクセスレベルのステータスを確認するだけで十分です。</p><p></p><p>`.getProfile`メソッドは常にAPIへのクエリを試みるため、最新の結果を返します。何らかの理由（例：インターネット接続なし）でAdapty SDKがサーバーから情報を取得できない場合、キャッシュのデータが返されます。なお、Adapty SDKは`AdaptyProfile`のキャッシュを定期的に更新し、情報をできる限り最新の状態に保ちます。</p> |
+
+`.getProfile()`メソッドはユーザープロファイルを返し、そこからアクセスレベルのステータスを取得できます。アプリごとに複数のアクセスレベルを設定することが可能です。たとえばニュースアプリで異なるトピックへのサブスクリプションを個別に販売する場合、「sports」や「science」といったアクセスレベルを作成できます。ただし、ほとんどの場合は1つのアクセスレベルで十分であり、その場合はデフォルトの「premium」アクセスレベルを使用するだけで問題ありません。
+
+デフォルトの「premium」アクセスレベルを確認する例：
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+
+            if (profile.accessLevels["premium"]?.isActive == true) {
+                // grant access to premium features
+            }
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        
+        AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("premium");
+        
+        if (premium != null && premium.isActive()) {
+            // grant access to premium features
+        }
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+### サブスクリプションステータスの更新をリッスンする \{#listening-for-subscription-status-updates\}
+
+ユーザーのサブスクリプションが変更されるたびに、Adaptyはイベントを発火します。
+
+Adaptyからメッセージを受け取るには、追加の設定が必要です：
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.setOnProfileUpdatedListener { profile ->
+    // handle any changes to subscription state
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers t
+Adapty.setOnProfileUpdatedListener(profile -> {
+    // handle any changes to subscription state
+});
+```
+</TabItem>
+
+</Tabs>
+
+Adaptyはアプリケーション起動時にもイベントを発火します。この場合、キャッシュされたサブスクリプションステータスが渡されます。
+
+### サブスクリプションステータスのキャッシュ \{#subscription-status-cache\}
+
+Adapty SDKに実装されているキャッシュは、プロファイルのサブスクリプションステータスを保存します。そのため、サーバーが利用できない状況でも、キャッシュされたデータからプロファイルのサブスクリプションステータスを取得できます。
+
+ただし、キャッシュから直接データをリクエストすることはできません。SDKは1分ごとにサーバーへクエリを送り、プロファイルに関する更新や変更を確認します。新しいトランザクションやその他の更新があった場合、それらはサーバーとの同期を保つためにキャッシュデータへ反映されます。

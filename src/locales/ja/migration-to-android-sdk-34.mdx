@@ -1,0 +1,83 @@
+---
+title: "Adapty Android SDK を v3.4 へ移行する"
+description: "Adapty Android SDK v3.4 への移行で、パフォーマンス向上と新しいマネタイズ機能を活用しましょう。"
+metadataTitle: "Adapty Android SDK v3.4 への移行 | Adapty ドキュメント"
+---
+
+Adapty SDK 3.4.0 はメジャーリリースであり、お客様側での移行作業が必要な改善が含まれています。
+
+## フォールバックペイウォールファイルの更新 \{#update-fallback-paywall-files\}
+
+新しい SDK バージョンとの互換性を確保するため、フォールバックペイウォールファイルを更新してください。
+
+1. Adapty ダッシュボードから[更新済みのフォールバックペイウォールファイルをダウンロード](fallback-paywalls)します。
+2. モバイルアプリ内の[既存のフォールバックペイウォールを新しいファイルに置き換え](android-use-fallback-paywalls)ます。
+
+## オブザーバーモードの実装を更新する \{#update-implementation-of-observer-mode\}
+
+オブザーバーモードを使用している場合は、その実装を更新してください。
+
+以前のバージョンでは、オブザーバーモードで Adapty が独自インフラ経由のトランザクションに直接アクセスできないため、Adapty に認識させるには購入を復元する必要がありました。ペイウォールを使用していた場合は、各トランザクションをそれを起点としたペイウォールに手動で紐付ける必要もありました。
+
+新しいバージョンでは、Adapty にトランザクションを認識させるために各トランザクションを明示的にレポートする必要があります。ペイウォールを使用している場合は、トランザクションを使用したペイウォールに紐付けるためにバリエーション ID も渡す必要があります。
+
+:::warning
+
+**トランザクションのレポートを省略しないでください！**
+`reportTransaction` を呼び出さないと、Adapty はトランザクションを認識できず、アナリティクスに表示されず、インテグレーションにも送信されません。
+
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```diff showLineNumbers
+- Adapty.restorePurchases { result ->
+-     if (result is AdaptyResult.Success) {
+-         // success
+-     }
+- }
+- 
+- Adapty.setVariationId(transactionId, variationId) { error ->
+-     if (error == null) {
+-         // success
+-     }
+- }
+
++ val transactionInfo = TransactionInfo.fromPurchase(purchase)
++ 
++ Adapty.reportTransaction(transactionInfo, variationId) { result ->
++     if (result is AdaptyResult.Success) {
++         // success
++     }
++ }
+```
+
+</TabItem>
+
+<TabItem value="java" label="Java" default>
+
+```diff showLineNumbers
+- Adapty.restorePurchases(result -> {
+-     if (result instanceof AdaptyResult.Success) {
+-         // success
+-     }
+- });
+- 
+- Adapty.setVariationId(transactionId, variationId, error -> {
+-     if (error == null) {
+-         // success
+-     }
+- });
+
++ TransactionInfo transactionInfo = TransactionInfo.fromPurchase(purchase);
++ 
++ Adapty.reportTransaction(transactionInfo, variationId, result -> {
++     if (result instanceof AdaptyResult.Success) {
++         // success
++     }
++ });
+```
+
+</TabItem>
+</Tabs>

@@ -1,0 +1,104 @@
+---
+title: "Firebase アプリ"
+description: "Firebase と Adapty を連携して、モバイルアプリのユーザー分析とサブスクリプション追跡を強化しましょう。"
+metadataTitle: "アプリへの Firebase 連携 | Adapty ドキュメント"
+---
+
+このページは、Firebase 上で動作するアプリへの Adapty 連携についての説明です。
+
+:::note
+はじめに
+
+これは Adapty を動作させるために必要なすべての手順ではなく、Firebase との連携に役立つヒントをまとめたものです。アプリに Adapty を導入したい場合は、まず [クイックスタートガイド](quickstart) をお読みください。
+:::
+
+## ユーザーの識別 \{#user-identification\}
+
+Firebase 認証を使用している場合、このスニペットを参考にすることで Firebase と Adapty 間のユーザーを同期できます。これはあくまでサンプルコードであり、アプリの認証仕様に合わせて適宜調整してください。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS with Firebase" default>
+```swift showLineNumbers
+ 
+@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate {
+ 
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Configure Adapty before Firebase
+        Adapty.activate("YOUR_API_KEY")
+        Adapty.delegate = self
+        
+        // Configure Firebase
+        FirebaseApp.configure()
+        
+        // Add state change listener for Firebase Authentication
+        Auth.auth().addStateDidChangeListener { (auth, user) in
+            if let uid = user?.uid {
+                // identify Adapty SDK with new Firebase user
+                Adapty.identify(uid) { error in
+                    if let e = error {
+                        print("Sign in error: \(e.localizedDescription)")
+                    } else {
+                        print("User \(uid) signed in")
+                    }
+                }
+            }
+        }
+ 
+        return true
+    }
+ 
+}
+ 
+extension AppDelegate: AdaptyDelegate {
+ 
+    // MARK: - Adapty delegate
+    func didReceiveUpdatedPurchaserInfo(_ purchaserInfo: PurchaserInfoModel) {
+        // You can optionally post to the notification center whenever
+        // purchaser info changes.
+ 
+        // You can subscribe to this notification throughout your app
+        // to refresh tableViews or change the UI based on the user's
+        // subscription status
+        
+        NotificationCenter.default.post(name: NSNotification.Name(rawValue: "com.Adapty.PurchaserInfoUpdatedNotification"), object: purchaserInfo)
+    }
+ 
+}
+```
+</TabItem>
+<TabItem value="kotlin" label="Android with Firebase" default>
+```kotlin showLineNumbers
+class App : Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+        // Configure Adapty
+        Adapty.activate(this, "YOUR_API_KEY")
+
+        Adapty.setOnPurchaserInfoUpdatedListener(object : OnPurchaserInfoUpdatedListener {
+            override fun onPurchaserInfoReceived(purchaserInfo: PurchaserInfoModel) {
+                // handle any changes to subscription state
+            }
+        })
+
+        // Add state change listener for Firebase Authentication
+        FirebaseAuth.getInstance().addAuthStateListener { auth ->
+            val currentUserId = auth.currentUser?.uid
+
+            if (currentUserId != null) {
+                // identify Adapty SDK with new Firebase user
+                Adapty.identify(currentUserId) { error ->
+                    if (error == null) {
+                        //success
+                    }
+                }
+            } else {
+                Adapty.logout { }
+            }
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>

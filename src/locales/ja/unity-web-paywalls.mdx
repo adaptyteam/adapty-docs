@@ -1,0 +1,82 @@
+---
+title: "Unity SDKでWebペイウォールを実装する"
+description: "App Storeの手数料や審査なしで支払いを受け取るWebペイウォールを設定します。"
+metadataTitle: "米国のUnityアプリでWeb支払いを受け付ける | Adapty ドキュメント"
+displayed_sidebar: sdkunity
+---
+
+:::important
+始める前に、[ダッシュボードでWebペイウォールを設定](web-paywall)し、Adapty SDK バージョン3.14以降をインストールしていることを確認してください。
+:::
+
+## Webペイウォールを開く \{#open-web-paywalls\}
+
+自分で開発したペイウォールを使用している場合は、SDKメソッドでWebペイウォールを処理する必要があります。`Adapty.OpenWebPaywall`メソッドは以下を行います：
+1. 特定のユーザーに表示された特定のペイウォールを、リダイレクト先のWebページに紐付けるための一意のURLを生成します。
+2. ユーザーがアプリに戻ったタイミングを検知し、短い間隔で`Adapty.GetProfile`をリクエストして、プロファイルのアクセス権が更新されたかどうかを確認します。
+
+これにより、支払いが成功してアクセス権が更新された場合、サブスクリプションはほぼ即座にアプリ内で有効になります。
+
+```csharp showLineNumbers title="Unity"
+Adapty.OpenWebPaywall(
+    product,
+    (error) =>
+    {
+        if (error != null)
+        {
+            Debug.LogError($"Failed to open web paywall: {error.Message}");
+        }
+        else
+        {
+            Debug.Log("Web paywall opened successfully");
+        }
+    }
+);
+```
+
+:::note
+`OpenWebPaywall`メソッドには2つのバージョンがあります：
+1. `OpenWebPaywall(product)` — ペイウォールでURLを生成し、プロダクトデータもURLに追加します。
+2. `OpenWebPaywall(paywall)` — プロダクトデータを追加せず、ペイウォールでURLを生成します。AdaptyペイウォールのプロダクトとWebペイウォールのプロダクトが異なる場合に使用してください。
+:::
+
+#### エラーの処理 \{#handle-errors\}
+
+| エラーコード | 説明 | 推奨アクション |
+|-----------|--------------------------------------------------------|---------------------------------------------------------------------------|
+| `AdaptyErrorCode.WrongParam`   | ペイウォールまたはプロダクトにWeb購入URLが設定されていない、またはブラウザでURLを開くことができなかった | エラーメッセージで詳細を確認してください。Adapty ダッシュボードでペイウォール/プロダクトの設定を確認するか、デバイスの設定を確認してください。 |
+| `AdaptyErrorCode.DecodingFailed` | URLのパラメーターを正しくエンコードできなかった | URLパラメーターが有効で適切な形式になっているか確認してください |
+
+:::note
+`WrongParam`は複数の問題（購入URLの欠如、ブラウザを開けないなど）を示す可能性があるため、何が問題だったかの詳細を取得するにはエラーの`Message`プロパティを確認してください。
+:::
+
+## アプリ内ブラウザでWebペイウォールを開く \{#open-web-paywalls-in-an-in-app-browser\}
+
+:::important
+アプリ内ブラウザでWebペイウォールを開く機能は、Adapty SDK v3.15以降でサポートされています。
+:::
+
+デフォルトでは、WebペイウォールはアプリのExternalBrowserで開き、ユーザーはアプリの外に移動します。
+
+シームレスなユーザー体験を提供するために、代わりにアプリ内ブラウザでWebペイウォールを開くことができます。これにより、Web購入ページがアプリ内に表示され、ユーザーはアプリを切り替えることなく取引を完了できます。
+
+これを有効にするには、`OpenWebPaywall`メソッドに`AdaptyWebPresentation.InAppBrowser`を渡します：
+
+```csharp showLineNumbers title="Unity"
+Adapty.OpenWebPaywall(
+    product,
+    AdaptyWebPresentation.InAppBrowser, // default — ExternalBrowser
+    (error) =>
+    {
+        if (error != null)
+        {
+            Debug.LogError($"Failed to open web paywall: {error.Message}");
+        }
+        else
+        {
+            Debug.Log("Web paywall opened successfully");
+        }
+    }
+);
+```

@@ -1,0 +1,272 @@
+---
+title: "AIアシスタントを使ってAdaptyをReact Nativeアプリに統合する"
+description: "Cursor、Context7、ChatGPT、Claude、その他のAIツールを使って、AdaptyをReact Nativeアプリに統合するためのステップバイステップガイド。"
+metadataTitle: "AIアシスタントを使ってAdaptyをReact Nativeに統合する | Adapty ドキュメント"
+customSlug: /adapty-cursor-react-native
+displayed_sidebar: sdkreactnative
+---
+
+このガイドでは、AIコーディングツールを使いながら、AdaptyをReact Nativeアプリに順を追って統合していきます。必要なAdaptyのドキュメントを正しい順番でAIに渡してください。
+
+<SkillPromo />
+
+## 始める前に：ダッシュボードの設定 \{#before-you-start-dashboard-setup\}
+
+AdaptyでSDKのコードを書く前に、ダッシュボードでいくつかの設定が必要です。インタラクティブなLLMスキルを使うか、ダッシュボードから手動で行うかを選べます。
+
+### スキルを使う方法（推奨）\{#skill-approach-recommended\}
+
+Adapty CLIスキルを使うと、LLMがダッシュボードを開かずに、アプリ・プロダクト・アクセスレベル・ペイウォール・プレースメントを直接設定できます。必要なのは、ダッシュボードで[ストアを連携する](integrate-payments)ことだけです。
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+スキルを追加したら、エージェントで `/adapty-cli` を実行してください。ストアの連携でダッシュボードを開くタイミングも含め、各ステップをガイドしてくれます。
+
+### ダッシュボードを使う方法 \{#dashboard-approach\}
+
+手動で設定したい場合は、コードを書く前に以下の準備が必要です。LLMはダッシュボードの値を自動で取得できないため、自分で用意する必要があります。
+
+1. **ストアを連携する**：Adapty ダッシュボードで **App settings → General** を開き、両プラットフォームを対象とする場合はApp StoreとGoogle Playの両方を連携してください。課金を機能させるために必須です。
+   [ストアを連携する](integrate-payments)
+
+2. **Public SDKキーをコピーする**：Adapty ダッシュボードで **App settings → General** を開き、**API keys** セクションを確認します。コード内では、`adapty.activate("YOUR_PUBLIC_SDK_KEY")` に渡す文字列です。
+
+3. **プロダクトを1つ以上作成する**：Adapty ダッシュボードで **Products** ページを開いてください。コード内でプロダクトを直接参照することはありません — Adaptはペイウォールを通じてプロダクトを提供します。
+   [プロダクトを追加する](quickstart-products)
+
+4. **ペイウォールとプレースメントを作成する**：Adapty ダッシュボードで **Paywalls** ページにペイウォールを作成し、**Placements** ページでプレースメントに割り当ててください。コード内では、`adapty.getPaywall("YOUR_PLACEMENT_ID")` に渡すプレースメントIDを使います。
+   [ペイウォールを作成する](quickstart-paywalls)
+
+5. **アクセスレベルを設定する**：Adapty ダッシュボードで **Products** ページの各プロダクトに設定します。コード内では `profile.accessLevels['premium']?.isActive` で確認する文字列です。デフォルトの `premium` アクセスレベルはほとんどのアプリで問題ありません。プロダクトによって異なる機能（例：`basic` プランと `pro` プラン）をユーザーに提供する場合は、コーディングを始める前に[追加のアクセスレベルを作成](assigning-access-level-to-a-product)してください。
+
+:::tip
+5つの準備が整ったら、コードを書き始められます。「Public SDKキーはXで、プレースメントIDはY」とLLMに伝えると、正しい初期化コードとペイウォール取得コードを生成してもらえます。
+:::
+
+### 準備ができたら設定するもの \{#set-up-when-ready\}
+
+コーディングを始める前に必須ではありませんが、統合が進むにつれて必要になります：
+
+- **A/B テスト**：**Placements** ページで設定します。コードの変更は不要です。
+  [A/B テスト](ab-tests)
+- **追加のペイウォールとプレースメント**：異なるプレースメントIDで `getPaywall` の呼び出しを追加します。
+- **アナリティクス連携**：**Integrations** ページで設定します。設定方法は連携先によって異なります。[アナリティクス連携](analytics-integration)と[アトリビューション連携](attribution-integration)を参照してください。
+
+## LLMにAdaptyのドキュメントを渡す \{#feed-adapty-docs-to-your-llm\}
+
+### Context7を使う方法（推奨）\{#use-context7-recommended\}
+
+[Context7](https://context7.com)は、LLMが最新のAdaptyドキュメントに直接アクセスできるMCPサーバーです。質問内容に応じて適切なドキュメントを自動で取得するため、URLを手動で貼り付ける必要がありません。
+
+Context7は**Cursor**、**Claude Code**、**Windsurf**、その他のMCP対応ツールで動作します。セットアップするには以下を実行してください：
+
+```
+npx ctx7 setup
+```
+
+エディタを自動検出してContext7サーバーを設定します。手動セットアップの方法は[Context7のGitHubリポジトリ](https://github.com/upstash/context7)を参照してください。
+
+設定が完了したら、プロンプト内でAdaptyライブラリを参照します：
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the React Native SDK
+```
+
+:::warning
+Context7を使えばドキュメントのURLを手動で貼り付ける必要はなくなりますが、実装の順序は重要です。すべてが正しく動作するよう、以下の[実装ウォークスルー](#implementation-walkthrough)をステップごとに進めてください。
+:::
+
+### プレーンテキストのドキュメントを使う方法 \{#use-plain-text-docs\}
+
+AdaptyのドキュメントはプレーンテキストのMarkdownとして取得できます。URLの末尾に `.md` を追加するか、記事タイトルの下にある **Copy for LLM** をクリックしてください。例：[adapty-cursor-react-native.md](https://adapty.io/docs/ja/adapty-cursor-react-native.md)
+
+以下の[実装ウォークスルー](#implementation-walkthrough)の各ステップには、貼り付け用の `.md` リンクが入った「LLMに送るプロンプト」ブロックが含まれています。
+
+より多くのドキュメントを一度に渡したい場合は、以下の[インデックスファイルとプラットフォーム別サブセット](#plain-text-doc-index-files)を参照してください。
+
+## 実装ウォークスルー \{#implementation-walkthrough\}
+
+ここからは、Adaptyの統合を実装順に進めていきます。各ステップには、LLMに渡すドキュメント、完了時の確認事項、よくある問題が記載されています。
+
+### 統合の計画を立てる \{#plan-your-integration\}
+
+コードを書く前に、LLMにプロジェクトを分析させて実装計画を作成させてください。AIツールがプランニングモード（CursorやClaude Codeのプランモードなど）をサポートしている場合は、コードを書く前にLLMがプロジェクト構成とAdaptyのドキュメントの両方を読めるよう、そのモードを使用してください。
+
+購入の処理方法をLLMに伝えてください — これによって参照すべきガイドが変わります：
+
+- [**Adapty ペイウォールビルダー**](adapty-paywall-builder)：Adaptyのノーコードビルダーでペイウォールを作成し、SDKが自動でレンダリングします。
+- [**手動で作成したペイウォール**](react-native-making-purchases)：コードで独自のペイウォールUIを構築しつつ、プロダクトの取得と購入処理にAdaptyを使います。
+- [**オブザーバーモード**](observer-vs-full-mode)：既存の購入インフラをそのまま使い、Adaptyはアナリティクスと連携にのみ使用します。
+
+どれを選ぶか迷ったら、[クイックスタートの比較表](react-native-quickstart-paywalls)を参照してください。
+
+### SDKのインストールと設定 \{#install-and-configure-the-sdk\}
+
+npm（またはyarn）でAdapty SDKの依存関係を追加し、Public SDKキーで有効化します。これが基盤となるため、ここが機能しないと他のすべてが動作しません。
+
+ExpoとベアのReact Nativeプロジェクトでは別々のインストールガイドがあります — 自分のセットアップに合ったものを選んでください。
+
+**ガイド：**
+- [Expoでインストールする](sdk-installation-react-native-expo)
+- [ベアReact Nativeでインストールする](sdk-installation-react-native-pure)
+
+LLMに送るプロンプト（セットアップに合ったものを選ぶか、両方送ってください）：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/sdk-installation-react-native-expo.md
+- https://adapty.io/docs/ja/sdk-installation-react-native-pure.md
+```
+
+:::tip[チェックポイント]
+- **確認事項：** アプリがiOSとAndroidの両方でビルドおよび実行できること。Metroバンドラーのログにアクティベーションログが表示されること。
+- **注意点：** 「Public API key is missing」が表示される場合 → プレースホルダーをApp settingsの実際のキーに置き換えたか確認してください。
+:::
+
+### ペイウォールの表示と購入処理 \{#show-paywalls-and-handle-purchases\}
+
+プレースメントIDでペイウォールを取得し、表示して、購入イベントを処理します。必要なガイドは購入の処理方法によって異なります。
+
+進めながらサンドボックスで各購入をテストしてください — 最後まで待たずに行うことをお勧めします。設定方法は[サンドボックスで購入をテストする](test-purchases-in-sandbox)を参照してください。
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**ガイド：**
+- [ペイウォールを使って購入を有効にする（クイックスタート）](react-native-quickstart-paywalls)
+- [ペイウォールビルダーのペイウォールと設定を取得する](react-native-get-pb-paywalls)
+- [ペイウォールを表示する](react-native-present-paywalls)
+- [ペイウォールのイベントを処理する](react-native-handling-events-1)
+- [ボタンアクションに応答する](react-native-handle-paywall-actions)
+
+LLMに送るプロンプト：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/react-native-quickstart-paywalls.md
+- https://adapty.io/docs/ja/react-native-get-pb-paywalls.md
+- https://adapty.io/docs/ja/react-native-present-paywalls.md
+- https://adapty.io/docs/ja/react-native-handling-events-1.md
+- https://adapty.io/docs/ja/react-native-handle-paywall-actions.md
+```
+
+:::tip[チェックポイント]
+- **確認事項：** 設定したプロダクトとともにペイウォールが表示されること。プロダクトをタップするとサンドボックス購入ダイアログが表示されること。
+- **注意点：** ペイウォールが空、または `getPaywall` エラーが出る場合 → プレースメントIDがダッシュボードと完全に一致しているか、プレースメントにオーディエンスが割り当てられているかを確認してください。
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Manual paywalls">
+
+**ガイド：**
+- [カスタムペイウォールで購入を有効にする（クイックスタート）](react-native-quickstart-manual)
+- [ペイウォールとプロダクトを取得する](fetch-paywalls-and-products-react-native)
+- [リモートコンフィグで設計したペイウォールをレンダリングする](present-remote-config-paywalls-react-native)
+- [購入を処理する](react-native-making-purchases)
+- [購入を復元する](react-native-restore-purchase)
+
+LLMに送るプロンプト：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/react-native-quickstart-manual.md
+- https://adapty.io/docs/ja/fetch-paywalls-and-products-react-native.md
+- https://adapty.io/docs/ja/present-remote-config-paywalls-react-native.md
+- https://adapty.io/docs/ja/react-native-making-purchases.md
+- https://adapty.io/docs/ja/react-native-restore-purchase.md
+```
+
+:::tip[チェックポイント]
+- **確認事項：** カスタムペイウォールにAdaptyから取得したプロダクトが表示されること。プロダクトをタップするとサンドボックス購入ダイアログが表示されること。
+- **注意点：** プロダクト配列が空の場合 → ダッシュボードでペイウォールにプロダクトが割り当てられているか、プレースメントにオーディエンスが設定されているかを確認してください。
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**ガイド：**
+- [オブザーバーモードの概要](observer-vs-full-mode)
+- [オブザーバーモードを実装する](implement-observer-mode-react-native)
+- [オブザーバーモードでトランザクションを報告する](report-transactions-observer-mode-react-native)
+
+LLMに送るプロンプト：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/observer-vs-full-mode.md
+- https://adapty.io/docs/ja/implement-observer-mode-react-native.md
+- https://adapty.io/docs/ja/report-transactions-observer-mode-react-native.md
+```
+
+:::tip[チェックポイント]
+- **確認事項：** 既存の購入フローでサンドボックス購入を行った後、Adapty ダッシュボードの **Event Feed** にトランザクションが表示されること。
+- **注意点：** イベントが表示されない場合 → Adaptyにトランザクションを報告しているか、両方のストアでサーバー通知が設定されているかを確認してください。
+:::
+
+</TabItem>
+
+</Tabs>
+
+### サブスクリプション状態を確認する \{#check-subscription-status\}
+
+購入後、ユーザープロファイルのアクセスレベルがアクティブかどうかを確認してプレミアムコンテンツの表示を制限します。
+
+**ガイド：** [サブスクリプション状態を確認する](react-native-check-subscription-status)
+
+LLMに送るプロンプト：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/react-native-check-subscription-status.md
+```
+
+:::tip[チェックポイント]
+- **確認事項：** サンドボックス購入後、`profile.accessLevels['premium']?.isActive` が `true` を返すこと。
+- **注意点：** 購入後に `accessLevels` が空の場合 → ダッシュボードでプロダクトにアクセスレベルが割り当てられているかを確認してください。
+:::
+
+### ユーザーを識別する \{#identify-users\}
+
+アプリのユーザーアカウントをAdaptyのプロファイルに紐づけて、複数のデバイスをまたいで購入を継続させます。
+
+:::important
+アプリに認証機能がない場合は、このステップをスキップしてください。
+:::
+
+**ガイド：** [ユーザーを識別する](react-native-quickstart-identify)
+
+LLMに送るプロンプト：
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/ja/react-native-quickstart-identify.md
+```
+
+:::tip[チェックポイント]
+- **確認事項：** `adapty.identify("your-user-id")` を呼び出した後、ダッシュボードの **Profiles** セクションにカスタムユーザーIDが表示されること。
+- **注意点：** 匿名プロファイルのアトリビューションを避けるため、アクティベーション後、ペイウォールの取得前に `identify` を呼び出してください。
+:::
+
+### リリース準備をする \{#prepare-for-release\}
+
+サンドボックスでの統合が正常に動作したら、リリースチェックリストを確認して本番環境の準備が整っているか確認してください。
+
+**ガイド：** [リリースチェックリスト](release-checklist)
+
+LLMに送るプロンプト：
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/ja/release-checklist.md
+```
+
+:::tip[チェックポイント]
+- **確認事項：** チェックリストの全項目が確認済みであること：ストアの連携、サーバー通知、購入フロー、アクセスレベルの確認、プライバシー要件。
+- **注意点：** サーバー通知が設定されていない場合 → **App settings → iOS SDK** でApp Store サーバー通知を設定し、**App settings → Android SDK** でGoogle Play リアルタイム デベロッパー通知を設定してください。
+:::
+
+## プレーンテキストのドキュメントインデックスファイル \{#plain-text-doc-index-files\}
+
+個別ページを超えた広いコンテキストをLLMに提供したい場合、Adaptyの全ドキュメントをリスト化・統合したインデックスファイルを用意しています：
+
+- [`llms.txt`](https://adapty.io/docs/ja/llms.txt)：`.md` リンク付きで全ページをリスト化。LLMがウェブサイトにアクセスしやすくするための[新しいスタンダード](https://llmstxt.org/)です。一部のAIエージェント（例：ChatGPT）では、`llms.txt` をダウンロードしてチャットにファイルとしてアップロードする必要があります。
+- [`llms-full.txt`](https://adapty.io/docs/ja/llms-full.txt)：Adaptyの全ドキュメントを1つのファイルにまとめたもの。非常に大きいファイルのため、全体像が必要な場合にのみ使用してください。
+- React Native専用の [`react-native-llms.txt`](https://adapty.io/docs/ja/react-native-llms.txt) と [`react-native-llms-full.txt`](https://adapty.io/docs/ja/react-native-llms-full.txt)：サイト全体と比べてトークン数を節約できるプラットフォーム別のサブセットです。
