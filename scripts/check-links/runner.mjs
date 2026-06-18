@@ -101,23 +101,13 @@ function lintLinks(externalLinks, internalLinks) {
     }
   }
 
-  // External links to our own docs should be internal links
-  const SELF_DOCS_RE = /^https?:\/\/(www\.)?adapty\.io\/docs(\/|$)/;
-  const SELF_LINK_EXCEPTIONS = /\.(txt|md)$|\/api-adapty\/|\/api-web\/|\/api-export-analytics\//;
-  for (const link of externalLinks) {
-    if (SELF_DOCS_RE.test(link.url) && !SELF_LINK_EXCEPTIONS.test(link.url)) {
-      errors.push({ ...link, type: 'external', status: 'SELF_LINK', error: 'Use an internal link instead of a full URL to adapty.io/docs' });
-    }
-  }
-
   return { errors, warnings, mdExtUrls };
 }
 
 // ── Stage 3a: External checks ────────────────────────────────────
 
 async function checkExternal(uniqueUrls, allLinks, existingErrors, { concurrency, timeoutMs, jsRendered }) {
-  const selfLinkUrls = new Set(existingErrors.filter(e => e.status === 'SELF_LINK').map(e => e.url));
-  const urlsToCheck = uniqueUrls.filter(url => !selfLinkUrls.has(url));
+  const urlsToCheck = uniqueUrls;
 
   console.log(`Checking ${urlsToCheck.length} external URLs (concurrency: ${concurrency})...`);
   const resultsByUrl = new Map();
