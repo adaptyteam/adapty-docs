@@ -13,8 +13,6 @@ export function remarkAside() {
             if (node.type === 'containerDirective' || node.type === 'leafDirective' || node.type === 'textDirective') {
                 const name = node.name;
 
-            const type = node.name;
-            if (!['note', 'tip', 'info', 'warning', 'danger', 'link'].includes(type)) return;
                 // Handle known directives (Callouts)
                 if (CALLOUT_TYPES.includes(name)) {
                     // Force it to be a block element (Callout component)
