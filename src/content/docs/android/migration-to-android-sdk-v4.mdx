@@ -1,0 +1,140 @@
+---
+title: "Migrate Adapty Android SDK to v. 4.0"
+description: "Migrate to Adapty Android SDK v4.0 (beta) by replacing paywall APIs with flow APIs, compatible with both Flow Builder and Paywall Builder."
+metadataTitle: "Migrating to Adapty Android SDK v4.0 (beta) | Adapty Docs"
+---
+
+Adapty Android SDK 4.0 (beta) introduces flows and renames the paywall APIs accordingly. The new APIs work with both the new Flow Builder and the existing Paywall Builder — no setup changes are required on the Adapty Dashboard side.
+
+## Quick reference
+
+| v3 | v4 |
+|---|---|
+| `Adapty.getPaywall(placementId, locale)` | `Adapty.getFlow(placementId)` |
+| `AdaptyUI.getViewConfiguration(paywall)` | `AdaptyUI.getFlowConfiguration(flow, locale)` |
+| `Adapty.getPaywallProducts(paywall)` | `Adapty.getPaywallProducts(flow)` |
+| `Adapty.logShowPaywall(paywall)` | `Adapty.logShowFlow(flow)` |
+| `AdaptyPaywall` | `AdaptyFlow` |
+| `AdaptyUI.LocalizedViewConfiguration` | `AdaptyUI.FlowConfiguration` |
+| `AdaptyUI.getPaywallView(...)` | `AdaptyUI.getFlowView(...)` |
+| `AdaptyPaywallView` | `AdaptyFlowView` |
+| `AdaptyPaywallScreen` (Compose) | `AdaptyFlowScreen` |
+| `showPaywall(...)` | `showFlow(...)` |
+| `AdaptyPaywallInsets` | `AdaptyFlowInsets` |
+| `AdaptyUiEventListener.onPaywallShown` / `onPaywallClosed` | `onFlowShown` / `onFlowClosed` |
+
+`AdaptyPaywallProduct` keeps its name — products still belong to a flow, and `getPaywallProducts` now takes an `AdaptyFlow`. The other `AdaptyUiEventListener` methods (`onProductSelected`, `onPurchaseStarted`, `onPurchaseFinished`, `onPurchaseFailure`, `onRestoreSuccess`, `onRestoreFailure`, `onActionPerformed`, and so on) are unchanged.
+
+## Installation
+
+Update the `adapty` and `adapty-ui` dependencies to version 4.0 in your Gradle files, then sync the project. See [Install Adapty SDK](sdk-installation-android) for the current dependency declarations.
+
+## Fetching flows
+
+### getPaywall + getViewConfiguration → getFlow + getFlowConfiguration
+
+The returned types change from `AdaptyPaywall` / `AdaptyUI.LocalizedViewConfiguration` to `AdaptyFlow` / `AdaptyUI.FlowConfiguration`, and the `locale` parameter moves out of the fetch call and onto `getFlowConfiguration`:
+
+```diff showLineNumbers
+- Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
++ Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
+      if (result is AdaptyResult.Success) {
+-         val paywall = result.value
+-         if (!paywall.hasViewConfiguration) return@getPaywall
+-         AdaptyUI.getViewConfiguration(paywall) { configResult ->
++         val flow = result.value
++         if (!flow.hasViewConfiguration) return@getFlow
++         AdaptyUI.getFlowConfiguration(flow, locale = "en") { configResult ->
+              if (configResult is AdaptyResult.Success) {
+                  val flowConfiguration = configResult.value
+              }
+          }
+      }
+  }
+```
+
+### getPaywallProducts(paywall) → getPaywallProducts(flow)
+
+`getPaywallProducts` now takes an `AdaptyFlow` returned by `Adapty.getFlow`:
+
+```diff showLineNumbers
+- Adapty.getPaywallProducts(paywall) { result -> /* products */ }
++ Adapty.getPaywallProducts(flow) { result -> /* products */ }
+```
+
+## Tracking flow views
+
+### logShowPaywall → logShowFlow
+
+`logShowPaywall` is renamed to `logShowFlow` and now takes an `AdaptyFlow` instead of an `AdaptyPaywall`. The event is still logged against the same variation, so existing funnel and A/B test metrics continue to work without dashboard changes.
+
+```diff showLineNumbers
+- Adapty.logShowPaywall(paywall)
++ Adapty.logShowFlow(flow)
+```
+
+As in v3, you do not need to call this method when displaying flows or paywalls rendered by the [Flow Builder](adapty-flow-builder) or the [Paywall Builder](adapty-paywall-builder) — Adapty tracks those views automatically.
+
+## Displaying flows
+
+### getPaywallView / AdaptyPaywallView → getFlowView / AdaptyFlowView
+
+Rename the factory method and the view type, and pass the `AdaptyUI.FlowConfiguration`:
+
+```diff showLineNumbers
+- val paywallView = AdaptyUI.getPaywallView(
+-     activity,
+-     viewConfiguration,
+-     products,
+-     eventListener,
+- )
++ val flowView = AdaptyUI.getFlowView(
++     activity,
++     flowConfiguration,
++     products,
++     eventListener,
++ )
+```
+
+If you create the view directly, the show method is renamed too:
+
+```diff showLineNumbers
+- val paywallView = AdaptyPaywallView(activity)
+- paywallView.showPaywall(viewConfiguration, products, eventListener)
++ val flowView = AdaptyFlowView(activity)
++ flowView.showFlow(flowConfiguration, products, eventListener)
+```
+
+In XML layouts, update the view tag:
+
+```diff showLineNumbers
+- <com.adapty.ui.AdaptyPaywallView ... />
++ <com.adapty.ui.AdaptyFlowView ... />
+```
+
+### AdaptyPaywallScreen → AdaptyFlowScreen
+
+In Jetpack Compose, rename the composable and update the configuration parameter:
+
+```diff showLineNumbers
+- AdaptyPaywallScreen(
+-     viewConfiguration,
++ AdaptyFlowScreen(
++     flowConfiguration,
+      products,
+      eventListener,
+  )
+```
+
+## Handling events
+
+The `AdaptyUiEventListener` interface keeps the same name and most of its methods. Only the two lifecycle callbacks are renamed:
+
+```diff showLineNumbers
+- override fun onPaywallShown(context: Context) {}
+- override fun onPaywallClosed() {}
++ override fun onFlowShown(context: Context) {}
++ override fun onFlowClosed() {}
+```
+
+Existing handler bodies don't need code changes — just rename the overrides. See [Handle flow & paywall events](android-handling-events) for the full list of callbacks.
