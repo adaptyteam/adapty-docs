@@ -28,12 +28,17 @@ const JA_REFUSAL =
   '翻訳する完全な MDX ドキュメントが見当たりません。送信されたのはコードの断片のみです。' +
   '翻訳する完全な MDX ドキュメントを提供してください。';
 
+const VI_REFUSAL =
+  'Tôi không thấy tài liệu MDX đầy đủ để dịch. Bạn chỉ gửi một đoạn mã. ' +
+  'Vui lòng cung cấp tài liệu MDX đầy đủ cần dịch.';
+
 for (const [label, refusal] of [
   ['ru', RU_REFUSAL],
   ['zh', ZH_REFUSAL],
   ['tr', TR_REFUSAL],
   ['es', ES_REFUSAL],
   ['ja', JA_REFUSAL],
+  ['vi', VI_REFUSAL],
 ]) {
   test(`localized refusal is detected (${label})`, () => {
     assert.equal(looksLikeRefusal(refusal), true, `${label} refusal should be flagged`);
@@ -96,6 +101,30 @@ test('a normal translated body is NOT flagged (zh)', () => {
 test('a normal translated body is NOT flagged (ja)', () => {
   const ok = [
     'Adapty と AdaptyUI SDK モジュールを有効化します。パラメータは変更不要なので、そのままにしてください。',
+    '',
+    '<Tabs groupId="current-os" queryString>',
+    '<TabItem value="swift" label="Swift" default>',
+    '',
+    '```swift showLineNumbers',
+    '// In your AppDelegate class:',
+    'import Adapty',
+    'Adapty.activate(with: configurationBuilder) { error in',
+    '  // handle the error',
+    '}',
+    '```',
+    '',
+    '</TabItem>',
+    '</Tabs>',
+  ].join('\n');
+  assert.equal(looksLikeRefusal(ok), false);
+});
+
+test('a normal translated body is NOT flagged (vi)', () => {
+  // Includes "dịch vụ" (= service), which contains the word "dịch" (= translate) —
+  // the negative lookahead in the vi "không cần dịch" pattern must not flag it.
+  const ok = [
+    'Kích hoạt các mô-đun SDK Adapty và AdaptyUI. Không cần thay đổi tham số, hãy giữ nguyên.',
+    'Gửi sự kiện đến các dịch vụ phân bổ mà nhóm của bạn đang sử dụng.',
     '',
     '<Tabs groupId="current-os" queryString>',
     '<TabItem value="swift" label="Swift" default>',

@@ -122,6 +122,11 @@ jobs:
       - name: Generate markdown exports
         env:
           NODE_OPTIONS: --max-old-space-size=12288
+          # English-only: locale .md/llms files come from each locale's own
+          # matrix job and overwrite this job's output at deploy anyway. Without
+          # this the generators default to ALL locales (BUILD_LOCALES unset), so
+          # this job redundantly re-walked every locale's corpus.
+          BUILD_LOCALES: none
         run: npm run build:md:prod
 
       - uses: actions/upload-artifact@v4
@@ -135,7 +140,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr, ru, es, ja]
+        locale: [zh, tr, ru, es, ja, vi]
     concurrency:
       group: build-locale-full-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -224,6 +229,11 @@ jobs:
           name: build-ja
           path: build/ja/
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-vi
+          path: build/vi/
+
       - name: Deploy
         uses: reggionick/s3-deploy@v4
         with:
@@ -249,7 +259,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr, ru, es, ja]
+        locale: [zh, tr, ru, es, ja, vi]
     concurrency:
       group: build-locale-only-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -334,8 +344,13 @@ jobs:
           name: build-tr-only-ja
           path: build/ja/
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-tr-only-vi
+          path: build/vi/
+
       # Sync locale directories to S3 using AWS CLI —
-      # only overwrites zh/, tr/, ru/, es/, and ja/ prefixes, leaves English untouched.
+      # only overwrites zh/, tr/, ru/, es/, ja/, and vi/ prefixes, leaves English untouched.
       - name: Deploy translations to S3
         run: |
           aws s3 sync build/zh/ s3://${{ secrets.S3_BUCKET }}/zh/ --delete
@@ -343,12 +358,13 @@ jobs:
           aws s3 sync build/ru/ s3://${{ secrets.S3_BUCKET }}/ru/ --delete
           aws s3 sync build/es/ s3://${{ secrets.S3_BUCKET }}/es/ --delete
           aws s3 sync build/ja/ s3://${{ secrets.S3_BUCKET }}/ja/ --delete
+          aws s3 sync build/vi/ s3://${{ secrets.S3_BUCKET }}/vi/ --delete
 
       - name: Invalidate locale paths
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/zh/*" "/tr/*" "/ru/*" "/es/*" "/ja/*"
+            --paths "/zh/*" "/tr/*" "/ru/*" "/es/*" "/ja/*" "/vi/*"
 
       - name: Update deployment tag
         run: |

@@ -50,6 +50,7 @@ const LANGUAGE_NAMES = {
   tr: "Turkish (tr-TR)",
   ru: "Russian (ru-RU)",
   es: "Spanish (es-ES)",
+  vi: "Vietnamese (vi-VN)",
 };
 
 // Locale-specific suffix for metadataTitle values (the part after the page title)
@@ -59,6 +60,7 @@ const METADATA_TITLE_SUFFIXES = {
   tr: "| Adapty Dokümanları",
   ru: "| Документация Adapty",
   es: "| Documentación de Adapty",
+  vi: "| Tài liệu Adapty",
 };
 
 // ---------------------------------------------------------------------------
@@ -3391,6 +3393,12 @@ const REFUSAL_PATTERNS = [
   /翻訳(は|が)?(不要|必要ありません|の必要はありません)/u,
   /(コード(の)?(断片|フラグメント|スニペット|ブロック))(のみ|だけ)/u,
   /(のみ|だけ)(を)?翻訳でき(ます|る)/u,
+
+  // Vietnamese (vi)
+  /không thấy[^.\n]{0,40}(MDX|tài liệu)/iu, // "I don't see the (full) MDX document"
+  /(vui lòng|hãy|xin)[^.\n]{0,30}(cung cấp|gửi|chia sẻ)[^.\n]{0,40}(MDX|tài liệu)/iu, // "please provide the full MDX document"
+  /(chỉ là|chỉ có)[^.\n]{0,25}(đoạn|khối)\s*(mã|code)/iu, // "this is just a code snippet/block"
+  /không cần (phải )?dịch(?!\s*vụ)/iu, // "doesn't need translation" — negative lookahead guards against "dịch vụ" (= service)
 ];
 export function looksLikeRefusal(text) {
   if (!text) return false;
