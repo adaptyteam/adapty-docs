@@ -1,0 +1,208 @@
+---
+title: "Hiển thị onboarding trong Flutter SDK"
+description: "Tìm hiểu cách hiển thị onboarding hiệu quả để tăng tỷ lệ chuyển đổi."
+metadataTitle: "Hiển thị onboarding | Tài liệu Adapty"
+displayed_sidebar: sdkflutter
+---
+
+Nếu bạn đã tùy chỉnh một onboarding bằng builder, bạn không cần lo lắng về việc render nó trong code Flutter của mình để hiển thị cho người dùng. Onboarding đó đã bao gồm cả nội dung cần hiển thị lẫn cách thức hiển thị.
+
+Trước khi bắt đầu, hãy đảm bảo rằng:
+
+1. Bạn đã cài đặt [Adapty Flutter SDK](sdk-installation-flutter) phiên bản 3.8.0 trở lên.
+2. Bạn đã [tạo một onboarding](create-onboarding).
+3. Bạn đã thêm onboarding vào một [placement](placements).
+
+Adapty Flutter SDK cung cấp hai cách để hiển thị onboarding:
+
+- **Màn hình độc lập**
+
+- **Widget nhúng**
+
+## Hiển thị dưới dạng màn hình độc lập \{#present-as-standalone-screen\}
+
+Để hiển thị onboarding dưới dạng màn hình độc lập, sử dụng phương thức `onboardingView.present()` trên `onboardingView` được tạo bởi phương thức `createOnboardingView`. Mỗi `view` chỉ có thể được sử dụng một lần. Nếu bạn cần hiển thị lại onboarding, hãy gọi `createOnboardingView` thêm một lần nữa để tạo một instance `onboardingView` mới.
+
+:::warning
+Tái sử dụng cùng một `onboardingView` mà không tạo lại có thể dẫn đến lỗi `AdaptyUIError.viewAlreadyPresented`.
+:::
+
+```javascript showLineNumbers title="Flutter"
+try {
+  await onboardingView.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+### Đóng onboarding \{#dismiss-the-onboarding\}
+
+Khi bạn cần đóng onboarding theo cách lập trình, hãy sử dụng phương thức `dismiss()`:
+
+```dart showLineNumbers title="Flutter"
+try {
+  await onboardingView.dismiss();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+### Cấu hình kiểu hiển thị trên iOS \{#configure-ios-presentation-style\}
+
+Cấu hình cách onboarding được hiển thị trên iOS bằng cách truyền tham số `iosPresentationStyle` vào phương thức `present()`. Tham số này chấp nhận giá trị `AdaptyUIIOSPresentationStyle.fullScreen` (mặc định) hoặc `AdaptyUIIOSPresentationStyle.pageSheet`.
+
+```dart showLineNumbers
+try {
+  await onboardingView.present(iosPresentationStyle: AdaptyUIIOSPresentationStyle.pageSheet);
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+## Nhúng vào cây widget \{#embed-in-widget-hierarchy\}
+
+Để nhúng onboarding vào cây widget hiện có, sử dụng widget `AdaptyUIOnboardingPlatformView` trực tiếp trong cây widget Flutter của bạn.
+
+```javascript showLineNumbers title="Flutter"
+AdaptyUIOnboardingPlatformView(
+  onboarding: onboarding, // The onboarding object you fetched
+  onDidFinishLoading: (meta) {
+  },
+  onDidFailWithError: (error) {
+  },
+  onCloseAction: (meta, actionId) {
+  },
+  onPaywallAction: (meta, actionId) {
+  },
+  onCustomAction: (meta, actionId) {
+  },
+  onStateUpdatedAction: (meta, elementId, params) {
+  },
+  onAnalyticsEvent: (meta, event) {
+  },
+)
+```
+
+:::note 
+Để platform view trên Android hoạt động, hãy đảm bảo `MainActivity` của bạn kế thừa `FlutterFragmentActivity`:
+
+```kotlin showLineNumbers title="Kotlin"
+class MainActivity : FlutterFragmentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
+}
+```
+:::
+
+## Loader trong quá trình tải onboarding \{#loader-during-onboarding\}
+
+Khi hiển thị onboarding, bạn có thể nhận thấy một màn hình tải ngắn giữa splash screen và onboarding trong khi view bên dưới đang được khởi tạo. Bạn có thể xử lý điều này theo nhiều cách khác nhau tùy theo nhu cầu.
+
+#### Kiểm soát splash screen bằng onDidFinishLoading \{#control-splash-screen-using-ondidfinishloading\}
+
+:::note
+Cách này chỉ khả dụng khi nhúng onboarding dưới dạng widget. Không áp dụng cho màn hình hiển thị độc lập.
+:::
+
+Cách tiếp cận đa nền tảng được khuyến nghị là giữ splash screen hoặc overlay tùy chỉnh hiển thị cho đến khi onboarding được tải đầy đủ, sau đó ẩn nó thủ công.
+
+Khi sử dụng widget nhúng, hãy đặt widget của bạn phủ lên trên và ẩn overlay khi `onDidFinishLoading` được kích hoạt:
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIOnboardingPlatformView(
+  onboarding: onboarding,
+  onDidFinishLoading: (meta) {
+    // Hide your custom splash screen or overlay here
+  },
+  // ... other callbacks
+)
+```
+
+### Tùy chỉnh loader mặc định \{#customize-native-loader\}
+
+:::important
+Cách này phụ thuộc vào từng nền tảng và yêu cầu duy trì code UI native. Không được khuyến nghị trừ khi bạn đã duy trì các native layer riêng biệt trong ứng dụng của mình.
+:::
+
+Nếu bạn cần tùy chỉnh loader mặc định, bạn có thể thay thế nó bằng các layout theo từng nền tảng. Cách này yêu cầu triển khai riêng cho Android và iOS:
+
+- **iOS**: Thêm `AdaptyOnboardingPlaceholderView.xib` vào dự án Xcode của bạn
+- **Android**: Tạo `adapty_onboarding_placeholder_view.xml` trong `res/layout` và định nghĩa một placeholder ở đó
+
+## Tùy chỉnh cách mở liên kết trong onboarding \{#customize-how-links-open-in-onboardings\}
+
+:::important
+Tùy chỉnh cách mở liên kết trong onboarding được hỗ trợ từ Adapty SDK v3.15.1 trở lên.
+:::
+
+Theo mặc định, các liên kết trong onboarding mở trong trình duyệt trong ứng dụng. Điều này mang lại trải nghiệm liền mạch bằng cách hiển thị trang web ngay trong ứng dụng của bạn, cho phép người dùng xem mà không cần chuyển sang ứng dụng khác.
+
+Nếu bạn muốn mở liên kết trong trình duyệt bên ngoài thay thế, bạn có thể tùy chỉnh hành vi này bằng cách đặt tham số `externalUrlsPresentation` thành `AdaptyWebPresentation.externalBrowser`:
+
+<Tabs>
+<TabItem value="standalone" label="Màn hình độc lập" default>
+
+```dart showLineNumbers title="Flutter"
+final onboardingView = await AdaptyUI().createOnboardingView(
+  onboarding: onboarding,
+  externalUrlsPresentation: AdaptyWebPresentation.externalBrowser, // default – AdaptyWebPresentation.inAppBrowser
+);
+
+try {
+  await onboardingView.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="embedded" label="Widget nhúng">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIOnboardingPlatformView(
+  onboarding: onboarding,
+  externalUrlsPresentation: AdaptyWebPresentation.externalBrowser, // default – AdaptyWebPresentation.inAppBrowser
+  onDidFinishLoading: (meta) {
+  },
+  onDidFailWithError: (error) {
+  },
+  onCloseAction: (meta, actionId) {
+  },
+  onPaywallAction: (meta, actionId) {
+  },
+  onCustomAction: (meta, actionId) {
+  },
+  onStateUpdatedAction: (meta, elementId, params) {
+  },
+  onAnalyticsEvent: (meta, event) {
+  },
+)
+```
+
+</TabItem>
+</Tabs>
+
+## Tắt safe area padding (Android) \{#disable-safe-area-paddings-android\}
+
+Theo mặc định, trên thiết bị Android, view onboarding tự động áp dụng safe area padding để tránh các thành phần UI hệ thống như thanh trạng thái và thanh điều hướng. Tuy nhiên, nếu bạn muốn tắt hành vi này và kiểm soát toàn bộ layout, bạn có thể thực hiện bằng cách thêm một boolean resource vào ứng dụng:
+
+1. Vào `android/app/src/main/res/values`. Nếu chưa có file `bools.xml`, hãy tạo mới.
+
+2. Thêm resource sau:
+
+```xml
+<resources>
+    <bool name="adapty_onboarding_enable_safe_area_paddings">false</bool>
+</resources>
+```
+
+Lưu ý rằng các thay đổi này áp dụng toàn cục cho tất cả onboarding trong ứng dụng của bạn.

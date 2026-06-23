@@ -1,0 +1,64 @@
+---
+title: "Sử dụng localizations và locale codes trong iOS SDK"
+description: "Quản lý app localizations và locale codes để tiếp cận người dùng toàn cầu trong ứng dụng iOS của bạn."
+metadataTitle: "Quản lý Localizations & Locale Codes | Tài liệu Adapty"
+---
+
+## Tại sao điều này quan trọng \{#why-this-is-important\}
+
+Có một vài tình huống mà locale codes phát huy tác dụng — ví dụ, khi bạn muốn lấy đúng paywall cho localization hiện tại của ứng dụng.
+
+Vì locale codes khá phức tạp và có thể khác nhau tùy nền tảng, chúng tôi sử dụng một tiêu chuẩn nội bộ cho tất cả các nền tảng được hỗ trợ. Tuy nhiên, chính vì sự phức tạp đó, bạn cần hiểu rõ mình đang gửi gì lên server để nhận đúng localization — từ đó luôn nhận được kết quả như mong muốn.
+
+## Tiêu chuẩn locale code tại Adapty \{#locale-code-standard-at-adapty\}
+
+Adapty sử dụng phiên bản được điều chỉnh nhẹ của [chuẩn BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): mỗi code gồm các subtag viết thường, phân cách bằng dấu gạch ngang. Ví dụ: `en` (tiếng Anh), `pt-br` (tiếng Bồ Đào Nha (Brazil)), `zh` (tiếng Trung giản thể), `zh-hant` (tiếng Trung phồn thể).
+
+## Đối khớp locale code \{#locale-code-matching\}
+
+Khi Adapty nhận được lệnh gọi từ SDK phía client kèm theo locale code và bắt đầu tìm localization tương ứng của paywall, quá trình diễn ra như sau:
+
+1. Chuỗi locale đầu vào được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay bằng dấu gạch ngang (`-`)
+2. Hệ thống tìm kiếm localization có locale code khớp hoàn toàn
+3. Nếu không tìm thấy, hệ thống lấy chuỗi con trước dấu gạch ngang đầu tiên (`pt` từ `pt-br`) và tìm localization phù hợp
+4. Nếu vẫn không tìm thấy, hệ thống trả về localization mặc định `en`
+
+Nhờ vậy, một thiết bị iOS gửi `'pt_BR'`, một thiết bị Android gửi `pt-BR`, và một thiết bị khác gửi `pt-br` đều nhận được cùng một kết quả.
+
+## Triển khai localizations: cách được khuyến nghị \{#implementing-localizations-recommended-way\}
+
+Nếu bạn đang quan tâm đến localizations, nhiều khả năng bạn đã làm việc với các file localized string trong dự án. Nếu vậy, chúng tôi khuyến nghị đặt một cặp key-value chứa Adapty locale code tương ứng vào từng file localization. Sau đó, trích xuất giá trị của key đó khi gọi SDK, như sau:
+
+```swift showLineNumbers
+// 1. Modify your Localizable.strings files
+
+/*
+Localizable.strings - Spanish
+*/
+adapty_paywalls_locale = "es";
+/*
+Localizable.strings - Portuguese (Brazil)
+*/
+adapty_paywalls_locale = "pt-br";
+// 2. Extract and use the locale code
+let locale = NSLocalizedString("adapty_paywalls_locale", comment: "")
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+Cách này giúp bạn kiểm soát hoàn toàn localization nào sẽ được lấy cho từng người dùng của ứng dụng.
+
+## Triển khai localizations: cách khác \{#implementing-localizations-the-other-way\}
+
+Bạn có thể đạt được kết quả tương tự (nhưng không hoàn toàn giống) mà không cần định nghĩa rõ locale code cho từng localization. Điều đó có nghĩa là trích xuất locale code từ các đối tượng khác mà nền tảng cung cấp, như thế này:
+
+```swift showLineNumbers
+let locale = Locale.current.identifier
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+Lưu ý rằng chúng tôi không khuyến nghị cách này vì một số lý do:
+
+1. Trên iOS, ngôn ngữ ưa thích và locale hiện tại không giống nhau. Nếu muốn localization được chọn đúng, bạn phải hoặc dựa vào logic của Apple — vốn hoạt động tốt nếu bạn dùng cách được khuyến nghị với các file localized string — hoặc tự tái tạo lại logic đó.
+2. Khó dự đoán chính xác server của Adapty sẽ nhận được gì. Ví dụ, trên iOS, có thể thu được locale như `ar_OM@numbers='latn'` trên thiết bị và gửi lên server. Với lệnh gọi này, bạn sẽ không nhận được localization `ar-om` như mong muốn, mà thay vào đó là `ar` — điều này có thể nằm ngoài dự tính.
+
+Nếu bạn vẫn quyết định dùng cách này — hãy đảm bảo đã xử lý hết tất cả các trường hợp liên quan.

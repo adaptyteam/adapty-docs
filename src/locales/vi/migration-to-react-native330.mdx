@@ -1,0 +1,547 @@
+---
+title: "Migrate Adapty React Native SDK to v3.3"
+description: "Migrate to Adapty React Native SDK v3.3 for better performance and new monetization features."
+metadataTitle: "Hướng dẫn migration lên Adapty React Native SDK v3.3 | Tài liệu Adapty"
+---
+
+Adapty SDK 3.3.1 là bản phát hành lớn mang lại một số cải tiến có thể yêu cầu bạn thực hiện các bước migration.
+
+1. Nâng cấp lên Adapty SDK v3.3.x.
+2. Cập nhật các model.
+3. Xóa phương thức `getProductsIntroductoryOfferEligibility`.
+4. Cập nhật cách thực hiện giao dịch mua.
+5. Cập nhật cách hiển thị paywall trong Paywall Builder.
+6. Xem lại cách triển khai timer do developer định nghĩa.
+7. Cập nhật cách xử lý sự kiện mua hàng trong Paywall Builder.
+8. Cập nhật cách xử lý sự kiện custom action trong Paywall Builder.
+9. Sửa đổi callback `onProductSelected`.
+10. Xóa các tham số tích hợp bên thứ ba khỏi phương thức `updateProfile`.
+11. Cập nhật cấu hình tích hợp cho Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase and Google Analytics, Mixpanel, OneSignal, và Pushwoosh.
+12. Cập nhật cách triển khai Observer mode.
+
+## Nâng cấp Adapty React Native SDK lên 3.3.x \{#upgrade-adapty-react-native-sdk-to-33x\}
+
+Trước phiên bản 3.3.1, SDK `react-native-adapty` là SDK cốt lõi và bắt buộc để Adapty hoạt động đúng trong ứng dụng của bạn. SDK `@adapty/react-native-ui` là tùy chọn và chỉ cần thiết nếu bạn sử dụng Adapty Paywall Builder.
+
+Kể từ phiên bản 3.3.1, SDK `@adapty/react-native-ui` đã bị deprecated và chức năng của nó đã được tích hợp vào SDK `react-native-adapty`. Để nâng cấp lên phiên bản 3.3.1, hãy thực hiện các bước sau:
+
+1. Cập nhật gói `react-native-adapty` lên phiên bản 3.3.1.
+2. Xóa gói `@adapty/react-native-ui` khỏi các dependency của dự án.
+3. Đồng bộ hóa các dependency của dự án để áp dụng các thay đổi.
+
+## Thay đổi trong các model \{#changes-in-models\}
+
+### Model mới \{#new-models\}
+
+1. [AdaptySubscriptionOffer](https://react-native.adapty.io/interfaces/adaptysubscriptionoffer):
+
+    ```typescript showLineNumbers
+    export interface AdaptySubscriptionOffer {
+      readonly identifier: AdaptySubscriptionOfferId;
+
+      phases: AdaptyDiscountPhase[];
+
+      android?: {
+        offerTags?: string[];
+      };
+    }
+    ```
+
+2. [AdaptySubscriptionOfferId](https://react-native.adapty.io/types/adaptysubscriptionofferid):
+
+    ```typescript showLineNumbers
+    export type AdaptySubscriptionOfferId =
+      | { id?: string; type: 'introductory'; }
+      | { id: string; type: 'promotional' | 'win_back'; };
+    ```
+
+### Model đã thay đổi \{#changed-models\}
+
+1. [AdaptyPaywallProduct](https://react-native.adapty.io/interfaces/adaptypaywallproduct):
+   
+    - Đổi tên thuộc tính `subscriptionDetails` thành `subscription`.
+      
+      <p> </p>
+      
+     ```diff showLineNumbers
+     -  subscriptionDetails?: AdaptySubscriptionDetails; 
+     +  subscription?: AdaptySubscriptionDetails;
+     ```
+    
+2. [AdaptySubscriptionDetails](https://react-native.adapty.io/interfaces/adaptysubscriptiondetails):
+
+    - `promotionalOffer` đã bị xóa. Bây giờ ưu đãi chỉ được trả về trong thuộc tính `offer` nếu có. Trong trường hợp đó, `offer?.identifier?.type` sẽ là `'promotional'`.
+
+    - `introductoryOfferEligibility` đã bị xóa (ưu đãi chỉ được trả về nếu người dùng đủ điều kiện).
+
+    - `offerId` đã bị xóa. ID ưu đãi hiện được lưu trong `AdaptySubscriptionOffer.identifier`.
+
+    - `offerTags` đã được chuyển sang `AdaptySubscriptionOffer.android`.
+      
+      <p> </p>
+
+    ```diff showLineNumbers
+    -  introductoryOffers?: AdaptyDiscountPhase[];
+    +  offer?: AdaptySubscriptionOffer;
+    
+       ios?: {
+    -    promotionalOffer?: AdaptyDiscountPhase;
+         subscriptionGroupIdentifier?: string;
+       };
+    
+       android?: {
+    -    offerId?: string;
+         basePlanId: string;
+    -    introductoryOfferEligibility: OfferEligibility;
+    -    offerTags?: string[];
+         renewalType?: 'prepaid' | 'autorenewable';
+       };
+     }
+    ```
+3. [AdaptyDiscountPhase](https://react-native.adapty.io/interfaces/adaptydiscountphase):
+   
+    - Trường `identifier` đã bị xóa khỏi model `AdaptyDiscountPhase`. Identifier của ưu đãi hiện được lưu trong `AdaptySubscriptionOffer.identifier`.
+      
+      <p> </p>
+      
+     ```diff showLineNumbers
+     -  ios?: {
+     -    readonly identifier?: string;
+     -  };
+     ```
+
+### Xóa các model \{#remove-models\}
+
+1. `AttributionSource`:
+   - Chuỗi string hiện được sử dụng ở những nơi trước đây dùng `AttributionSource`.
+2. `OfferEligibility`:
+   - Model này đã bị xóa vì không còn cần thiết. Hiện tại, ưu đãi chỉ được trả về nếu người dùng đủ điều kiện.
+
+## Xóa phương thức `getProductsIntroductoryOfferEligibility` \{#remove-getproductsintroductoryoffereligibility-method\}
+
+Trước Adapty SDK 3.3.1, các object sản phẩm luôn bao gồm ưu đãi, ngay cả khi người dùng không đủ điều kiện. Điều này yêu cầu bạn phải kiểm tra điều kiện thủ công trước khi sử dụng ưu đãi.
+
+Kể từ phiên bản 3.3.1, object sản phẩm chỉ bao gồm ưu đãi nếu người dùng đủ điều kiện. Điều này đơn giản hóa quy trình vì bạn có thể giả định người dùng đủ điều kiện nếu có ưu đãi.
+
+## Cập nhật cách thực hiện giao dịch mua \{#update-making-purchase\}
+
+Trong các phiên bản trước, giao dịch bị hủy và đang chờ xử lý được coi là lỗi và trả về mã `2: 'paymentCancelled'` và `25: 'pendingPurchase'` tương ứng.
+
+Kể từ phiên bản 3.3.1, giao dịch bị hủy và đang chờ xử lý hiện được coi là kết quả thành công và nên được xử lý tương ứng:
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+
+## Cập nhật cách hiển thị paywall trong Paywall Builder \{#update-paywall-builder-paywall-presentation\}
+
+Để xem các ví dụ cập nhật, hãy tham khảo tài liệu [Hiển thị paywall mới từ Paywall Builder trong React Native](react-native-present-paywalls).
+
+```diff showLineNumbers
+- import { createPaywallView } from '@adapty/react-native-ui';
++ import { createPaywallView } from 'react-native-adapty/dist/ui';
+
+const view = await createPaywallView(paywall);
+
+view.registerEventHandlers(); // handle close press, etc
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+## Cập nhật cách triển khai timer do developer định nghĩa \{#update-developer-defined-timer-implementation\}
+
+Đổi tên tham số `timerInfo` thành `customTimers`:
+
+```diff showLineNumbers
+- let timerInfo = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
++ let customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+ //and then you can pass it to createPaywallView as follows:
+- view = await createPaywallView(paywall, { timerInfo })
++ view = await createPaywallView(paywall, { customTimers })
+```
+
+## Sửa đổi sự kiện mua hàng trong Paywall Builder \{#modify-paywall-builder-purchase-events\}
+
+Trước đây:
+
+- Giao dịch bị hủy kích hoạt callback `onPurchaseCancelled`.
+- Giao dịch đang chờ xử lý trả về mã lỗi `25: 'pendingPurchase'`.
+
+Bây giờ:
+
+- Cả hai trường hợp đều được xử lý bởi callback `onPurchaseCompleted`.
+
+#### Các bước migration:
+
+1. Xóa callback `onPurchaseCancelled`.
+2. Xóa phần xử lý mã lỗi `25: 'pendingPurchase'`.
+3. Cập nhật callback `onPurchaseCompleted`:
+
+```typescript showLineNumbers
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.registerEventHandlers({
+  // ... other optional callbacks
+  onPurchaseCompleted(purchaseResult, product) {
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+// highlight-start
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+// highlight-end
+    }
+// highlight-start
+    return purchaseResult.type !== 'user_cancelled';
+// highlight-end
+  },
+});
+```
+
+## Sửa đổi sự kiện custom action trong Paywall Builder \{#modify-paywall-builder-custom-action-events\}
+
+Các callback đã bị xóa:
+
+-  `onAction`
+-  `onCustomEvent`
+
+Callback mới được thêm vào:
+
+- Callback `onCustomAction(actionId)` mới. Sử dụng nó cho các custom action.
+
+## Sửa đổi callback `onProductSelected` \{#modify-onproductselected-callback\}
+
+Trước đây, `onProductSelected` yêu cầu object `product`. Bây giờ yêu cầu `productId` dưới dạng chuỗi string.
+
+## Xóa các tham số tích hợp bên thứ ba khỏi phương thức `updateProfile` \{#remove-third-party-integration-parameters-from-updateprofile-method\}
+
+Các identifier tích hợp bên thứ ba hiện được thiết lập bằng phương thức `setIntegrationIdentifier`. Phương thức `updateProfile` không còn chấp nhận chúng nữa.
+
+## Cập nhật cấu hình SDK tích hợp bên thứ ba \{#update-third-party-integration-sdk-configuration\}
+
+Để đảm bảo các tích hợp hoạt động đúng với Adapty React Native SDK 3.3.1 trở lên, hãy cập nhật cấu hình SDK của bạn cho các tích hợp sau đây như được mô tả trong các phần bên dưới.
+
+Ngoài ra, nếu bạn đã sử dụng `AttributionSource` để lấy attribution identifier, hãy thay đổi code của bạn để cung cấp identifier cần thiết dưới dạng chuỗi string.
+
+### Adjust \{#adjust\}
+
+Cập nhật code ứng dụng di động của bạn như hướng dẫn bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp Adjust](adjust#connect-your-app-to-adjust).
+
+```diff showLineNumbers
+ import { Adjust, AdjustConfig } from "react-native-adjust";
+ import { adapty } from "react-native-adapty";
+
+ var adjustConfig = new AdjustConfig(appToken, environment);
+
+ // Before submiting Adjust config...
+ adjustConfig.setAttributionCallbackListener(attribution => {
+   // Make sure Adapty SDK is activated at this point
+   // You may want to lock this thread awaiting of `activate`
+   adapty.updateAttribution(attribution, "adjust");
+ });
+
+ // ...
+ Adjust.create(adjustConfig);
+
++ Adjust.getAdid((adid) => {
++   if (adid)
++     adapty.setIntegrationIdentifier("adjust_device_id", adid);
++ });
+```
+
+### AirBridge \{#airbridge\}
+
+Cập nhật code ứng dụng di động của bạn như hướng dẫn bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp AirBridge](airbridge#connect-your-app-to-airbridge).
+
+```diff showLineNumbers
+ import Airbridge from 'airbridge-react-native-sdk';
+ import { adapty } from 'react-native-adapty';
+
+ try {
+   const deviceId = await Airbridge.state.deviceUUID();
+
+-  await adapty.updateProfile({
+-    airbridgeDeviceId: deviceId,
+-  });
++  await adapty.setIntegrationIdentifier("airbridge_device_id", deviceId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### Amplitude \{#amplitude\}
+
+Cập nhật code ứng dụng di động của bạn như hướng dẫn bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp Amplitude](amplitude#sdk-configuration).
+
+```diff showLineNumbers
+  import { adapty } from 'react-native-adapty';
+
+ try {
+-   await adapty.updateProfile({
+-     amplitudeDeviceId: deviceId,
+-     amplitudeUserId: userId,
+-   });
++   await adapty.setIntegrationIdentifier("amplitude_device_id", deviceId);
++   await adapty.setIntegrationIdentifier("amplitude_user_id", userId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### AppMetrica \{#appmetrica\}
+
+Cập nhật code ứng dụng di động của bạn như hướng dẫn bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp AppMetrica](appmetrica#sdk-configuration).
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import AppMetrica, { DEVICE_ID_KEY, StartupParams, StartupParamsReason } from '@appmetrica/react-native-analytics';
+
+ // ...
+ const startupParamsCallback = async (
+   params?: StartupParams,
+   reason?: StartupParamsReason
+ ) => {
+   const deviceId = params?.deviceId
+   if (deviceId) {
+     try {
+-       await adapty.updateProfile({
+-         appmetricaProfileId: 'YOUR_ADAPTY_CUSTOMER_USER_ID',
+-         appmetricaDeviceId: deviceId,
+-       });
++       await adapty.setIntegrationIdentifier("appmetrica_profile_id", 'YOUR_ADAPTY_CUSTOMER_USER_ID');
++       await adapty.setIntegrationIdentifier("appmetrica_device_id", deviceId);
+     } catch (error) {
+       // handle `AdaptyError`
+     }
+   }
+ }
+
+ AppMetrica.requestStartupParams(startupParamsCallback, [DEVICE_ID_KEY])
+```
+
+### AppsFlyer \{#appsflyer\}
+
+Cập nhật code ứng dụng di động của bạn như hướng dẫn bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp AppsFlyer](appsflyer#connect-your-app-to-appsflyer).
+
+```diff showLineNumbers
+ import { adapty, AttributionSource } from 'react-native-adapty';
+ import appsFlyer from 'react-native-appsflyer';
+
+ appsFlyer.onInstallConversionData(installData => {
+     try {
+-        const networkUserId = appsFlyer.getAppsFlyerUID();
+-        adapty.updateAttribution(installData, AttributionSource.AppsFlyer, networkUserId);
++        const uid = appsFlyer.getAppsFlyerUID();
++        adapty.setIntegrationIdentifier("appsflyer_id", uid);
++        adapty.updateAttribution(installData, "appsflyer");
+     } catch (error) {
+         // handle the error
+     }
+ });
+
+ // ...
+ appsFlyer.initSdk(/*...*/);
+```
+
+### Branch \{#branch\}
+
+Cập nhật code ứng dụng di động của bạn như hướng dẫn bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp Branch](branch#connect-your-app-to-branch).
+
+```diff showLineNumbers
+ import { adapty, AttributionSource } from 'react-native-adapty';
+ import branch from 'react-native-branch';
+
+ branch.subscribe({
+   enComplete: ({
+     params,
+   }) => {
+-    adapty.updateAttribution(params, AttributionSource.Branch);
++    adapty.updateAttribution(params, "branch");
+   },
+ });
+```
+
+### Facebook Ads \{#facebook-ads\}
+
+Cập nhật code ứng dụng di động của bạn như hướng dẫn bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp Facebook Ads](facebook-ads#connect-your-app-to-facebook-ads).
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import { AppEventsLogger } from 'react-native-fbsdk-next';
+
+ try {
+   const anonymousId = await AppEventsLogger.getAnonymousID();
+
+-  await adapty.updateProfile({
+-    facebookAnonymousId: anonymousId,
+-  });
++  await adapty.setIntegrationIdentifier("facebook_anonymous_id", anonymousId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### Firebase and Google Analytics \{#firebase-and-google-analytics\}
+
+Cập nhật code ứng dụng di động của bạn như hướng dẫn bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp Firebase and Google Analytics](firebase-and-google-analytics).
+
+```diff showLineNumbers
+ import analytics from '@react-native-firebase/analytics';
+ import { adapty } from 'react-native-adapty';
+
+ try {
+   const appInstanceId = await analytics().getAppInstanceId();
+
+-   await adapty.updateProfile({
+-     firebaseAppInstanceId: appInstanceId,
+-   });
++   await adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### Mixpanel \{#mixpanel\}
+
+Cập nhật code ứng dụng di động của bạn như hướng dẫn bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp Mixpanel](mixpanel#sdk-configuration).
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import { Mixpanel } from 'mixpanel-react-native';
+
+ // ...
+ try {
+-   await adapty.updateProfile({
+-     mixpanelUserId: mixpanelUserId,
+-   });
++   await adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelUserId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### OneSignal \{#onesignal\}
+
+Cập nhật code ứng dụng di động của bạn như hướng dẫn bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp OneSignal](onesignal#sdk-configuration).
+
+<Tabs groupId="current-os" queryString> 
+
+<TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import OneSignal from 'react-native-onesignal';
+
+ OneSignal.User.pushSubscription.addEventListener('change', (subscription) => {
+   const subscriptionId = subscription.current.id;
+
+   if (subscriptionId) {
+-    adapty.updateProfile({
+-      oneSignalSubscriptionId: subscriptionId,
+-    });
++    adapty.setIntegrationIdentifier("one_signal_subscription_id", subscriptionId);
+   }
+ });
+```
+
+ </TabItem> 
+
+<TabItem value="pre-v5" label="OneSignal SDK v. up to 4.x (legacy)" default> 
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import OneSignal from 'react-native-onesignal';
+
+ OneSignal.addSubscriptionObserver(event => {
+   const playerId = event.to.userId;
+   
+-  adapty.updateProfile({
+-    oneSignalPlayerId: playerId,
+-  });
++  adapty.setIntegrationIdentifier("one_signal_player_id", playerId);
+ });
+```
+
+ </TabItem> 
+
+</Tabs>
+
+### Pushwoosh \{#pushwoosh\}
+
+Cập nhật code ứng dụng di động của bạn như hướng dẫn bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp Pushwoosh](pushwoosh#sdk-configuration).
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import Pushwoosh from 'pushwoosh-react-native-plugin';
+
+ // ...
+ try {
+-  await adapty.updateProfile({
+-    pushwooshHWID: hwid,
+-  });
++  await adapty.setIntegrationIdentifier("pushwoosh_hwid", hwid);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+## Cập nhật cách triển khai Observer mode \{#update-observer-mode-implementation\}
+
+Cập nhật cách bạn liên kết paywall với giao dịch. Trước đây, bạn sử dụng phương thức `setVariationId` để gán `variationId`. Bây giờ, bạn có thể đưa `variationId` trực tiếp khi ghi lại giao dịch bằng phương thức `reportTransaction` mới. Xem ví dụ code hoàn chỉnh trong [Liên kết paywall với giao dịch mua trong Observer mode](report-transactions-observer-mode-react-native).
+
+:::warning
+
+Đừng quên ghi lại giao dịch bằng phương thức `reportTransaction`. Bỏ qua bước này đồng nghĩa với việc Adapty sẽ không nhận ra giao dịch, không cấp mức độ truy cập, không đưa vào analytics, và không gửi đến các tích hợp. Đây là bước không thể bỏ qua!
+
+:::
+
+:::note
+
+Hãy lưu ý rằng thứ tự các tham số của phương thức `reportTransaction` khác với phương thức `setVariationId`.
+
+:::
+
+```diff showLineNumbers
+  const variationId = paywall.variationId;
+
+ try {
+-    await adapty.setVariationId(variationId, transactionId);
++    await adapty.reportTransaction(transactionId, variationId);
+ } catch (error) {
+     // handle the `AdaptyError`
+ }
+
+```

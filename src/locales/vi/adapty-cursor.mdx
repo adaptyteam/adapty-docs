@@ -1,0 +1,265 @@
+---
+title: "Tích hợp Adapty vào ứng dụng iOS với sự hỗ trợ của AI"
+description: "Hướng dẫn từng bước tích hợp Adapty vào ứng dụng iOS sử dụng Cursor, Context7, ChatGPT, Claude hoặc các công cụ AI khác."
+metadataTitle: "Tích hợp Adapty với sự hỗ trợ của AI cho iOS | Tài liệu Adapty"
+---
+
+Hướng dẫn này sẽ đưa bạn qua từng bước tích hợp Adapty vào ứng dụng iOS với sự hỗ trợ của công cụ lập trình AI — bạn cung cấp đúng tài liệu Adapty theo đúng thứ tự.
+
+<SkillPromo />
+
+## Trước khi bắt đầu: thiết lập dashboard \{#before-you-start-dashboard-setup\}
+
+Adapty yêu cầu một số cấu hình trên dashboard trước khi bạn viết bất kỳ code SDK nào. Bạn có thể thực hiện điều này với kỹ năng LLM tương tác, hoặc thủ công thông qua Dashboard.
+
+### Cách tiếp cận với Skill (khuyến nghị) \{#skill-approach-recommended\}
+
+Kỹ năng Adapty CLI cho phép LLM của bạn thiết lập ứng dụng, sản phẩm, mức độ truy cập, paywall và placement trực tiếp — mà không cần mở Dashboard cho từng bước. Bạn chỉ cần [kết nối cửa hàng của mình](integrate-payments) trong Dashboard.
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+Sau khi thêm kỹ năng, chạy `/adapty-cli` trong agent của bạn. Nó sẽ hướng dẫn bạn từng bước — bao gồm cả khi nào cần mở Dashboard để kết nối cửa hàng.
+
+### Cách tiếp cận thủ công qua Dashboard \{#dashboard-approach\}
+
+Nếu bạn muốn cấu hình mọi thứ thủ công, đây là những gì bạn cần trước khi viết code. LLM của bạn không thể tra cứu các giá trị trên dashboard thay cho bạn — bạn cần tự cung cấp chúng.
+
+1. **Kết nối app store của bạn**: Trong Adapty Dashboard, vào **App settings → General**. Đây là yêu cầu bắt buộc để mua hàng hoạt động.
+   [Kết nối App Store](integrate-payments)
+
+2. **Sao chép Public SDK key của bạn**: Trong Adapty Dashboard, vào **App settings → General**, sau đó tìm phần **API keys**. Trong code, đây là chuỗi bạn truyền vào `Adapty.activate("YOUR_PUBLIC_SDK_KEY")`.
+
+3. **Tạo ít nhất một sản phẩm**: Trong Adapty Dashboard, vào trang **Products**. Bạn không tham chiếu trực tiếp đến sản phẩm trong code — Adapty phân phối chúng thông qua flow hoặc paywall.
+   [Thêm sản phẩm](quickstart-products)
+
+4. **Tạo một flow hoặc paywall và một placement**: Trong Adapty Dashboard, tạo một flow (hoặc paywall nếu bạn tự xây dựng giao diện), sau đó gán nó cho một placement trên trang **Placements**. Trong code, placement ID là chuỗi bạn truyền vào `Adapty.getFlow("YOUR_PLACEMENT_ID")`.
+   [Tạo flow](quickstart-paywalls)
+
+5. **Thiết lập mức độ truy cập**: Trong Adapty Dashboard, cấu hình cho từng sản phẩm trên trang **Products**. Trong code, chuỗi được kiểm tra trong `profile.accessLevels["premium"]`. Mức độ truy cập `premium` mặc định phù hợp với hầu hết ứng dụng. Nếu người dùng trả phí được truy cập vào các tính năng khác nhau tùy theo sản phẩm (ví dụ, gói `basic` so với gói `pro`), hãy [tạo các mức độ truy cập bổ sung](assigning-access-level-to-a-product) trước khi bắt đầu lập trình.
+
+:::tip
+Khi bạn có đủ năm mục này, bạn đã sẵn sàng viết code. Hãy nói với LLM của bạn: "Public SDK key của tôi là X, placement ID của tôi là Y" để nó có thể tạo code khởi tạo và lấy paywall chính xác.
+:::
+
+### Thiết lập khi sẵn sàng \{#set-up-when-ready\}
+
+Những mục này không bắt buộc để bắt đầu lập trình, nhưng bạn sẽ cần chúng khi tích hợp trưởng thành hơn:
+
+- **A/B test**: Cấu hình trên trang **Placements**. Không cần thay đổi code.
+  [A/B test](ab-tests)
+- **Thêm flow và placement**: Thêm nhiều lệnh gọi `getFlow` với các placement ID khác nhau.
+- **Tích hợp analytics**: Cấu hình trên trang **Integrations**. Thiết lập khác nhau tùy theo tích hợp. Xem [tích hợp analytics](analytics-integration) và [tích hợp attribution](attribution-integration).
+
+## Cung cấp tài liệu Adapty cho LLM của bạn \{#feed-adapty-docs-to-your-llm\}
+
+### Sử dụng Context7 (khuyến nghị) \{#use-context7-recommended\}
+
+[Context7](https://context7.com) là một máy chủ MCP cung cấp cho LLM của bạn quyền truy cập trực tiếp vào tài liệu Adapty cập nhật. LLM của bạn tự động lấy đúng tài liệu dựa trên những gì bạn hỏi — không cần dán URL thủ công.
+
+Context7 hoạt động với **Cursor**, **Claude Code**, **Windsurf** và các công cụ tương thích MCP khác. Để thiết lập, chạy:
+
+```
+npx ctx7 setup
+```
+
+Lệnh này phát hiện trình soạn thảo của bạn và cấu hình máy chủ Context7. Để thiết lập thủ công, xem [kho lưu trữ GitHub của Context7](https://github.com/upstash/context7).
+
+Sau khi cấu hình, hãy tham chiếu thư viện Adapty trong các prompt của bạn:
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the iOS SDK
+```
+
+:::warning
+Dù Context7 giúp bạn không cần dán link tài liệu thủ công, thứ tự triển khai vẫn quan trọng. Hãy làm theo [hướng dẫn triển khai](#implementation-walkthrough) bên dưới từng bước để đảm bảo mọi thứ hoạt động đúng.
+:::
+
+### Sử dụng tài liệu dạng văn bản thuần \{#use-plain-text-docs\}
+
+Bạn có thể truy cập bất kỳ tài liệu Adapty nào dưới dạng văn bản thuần Markdown. Thêm `.md` vào cuối URL của nó, hoặc nhấp vào **Copy for LLM** bên dưới tiêu đề bài viết. Ví dụ: [adapty-cursor.md](https://adapty.io/docs/vi/adapty-cursor.md).
+
+Mỗi giai đoạn trong [hướng dẫn triển khai](#implementation-walkthrough) bên dưới bao gồm một khối "Gửi đến LLM của bạn" với các link `.md` để dán.
+
+Để có thêm tài liệu cùng một lúc, xem [tệp chỉ mục và tập hợp con theo nền tảng](#plain-text-doc-index-files) bên dưới.
+
+## Hướng dẫn triển khai \{#implementation-walkthrough\}
+
+Phần còn lại của hướng dẫn này đi qua việc tích hợp Adapty theo thứ tự triển khai. Mỗi giai đoạn bao gồm các tài liệu cần gửi cho LLM, những gì bạn sẽ thấy khi hoàn thành và các vấn đề thường gặp.
+
+### Lên kế hoạch tích hợp \{#plan-your-integration\}
+
+Trước khi bắt đầu viết code, hãy yêu cầu LLM phân tích dự án của bạn và tạo kế hoạch triển khai. Nếu công cụ AI của bạn hỗ trợ chế độ lập kế hoạch (như chế độ plan của Cursor hoặc Claude Code), hãy sử dụng nó để LLM có thể đọc cả cấu trúc dự án lẫn tài liệu Adapty trước khi viết code.
+
+Hãy cho LLM biết bạn sử dụng cách tiếp cận nào cho việc mua hàng — điều này ảnh hưởng đến các hướng dẫn nó nên tuân theo:
+
+- [**Adapty Flow Builder**](adapty-flow-builder): Bạn tạo flow trong trình xây dựng no-code của Adapty, và SDK hiển thị chúng tự động.
+- [**Paywall tự tạo thủ công**](ios-quickstart-manual): Bạn tự xây dựng giao diện paywall trong code nhưng vẫn dùng Adapty để lấy sản phẩm và xử lý mua hàng.
+- [**Observer mode**](observer-vs-full-mode): Bạn giữ nguyên cơ sở hạ tầng mua hàng hiện có và chỉ dùng Adapty cho analytics và tích hợp.
+
+Chưa biết chọn cái nào? Đọc [bảng so sánh trong quickstart](ios-quickstart-paywalls).
+
+### Cài đặt và cấu hình SDK \{#install-and-configure-the-sdk\}
+
+Cài đặt gói Adapty SDK qua Swift Package Manager trong Xcode và kích hoạt nó với Public SDK key của bạn. Đây là nền tảng — không có gì hoạt động được nếu thiếu bước này.
+
+**Hướng dẫn:** [Cài đặt & cấu hình Adapty SDK](sdk-installation-ios)
+
+Gửi đến LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/sdk-installation-ios.md
+```
+
+:::tip[Điểm kiểm tra]
+- **Kết quả mong đợi:** Ứng dụng build và chạy được. Console Xcode hiển thị log kích hoạt Adapty.
+- **Lưu ý:** "Public API key is missing" → kiểm tra xem bạn đã thay placeholder bằng key thực từ App settings chưa.
+:::
+
+### Hiển thị flow hoặc paywall và xử lý mua hàng \{#show-flows-or-paywalls-and-handle-purchases\}
+
+Lấy một flow hoặc paywall theo placement ID, hiển thị nó và xử lý các sự kiện mua hàng. Các hướng dẫn bạn cần phụ thuộc vào cách bạn xử lý mua hàng.
+
+Hãy kiểm tra từng giao dịch trong sandbox khi bạn tiến hành — đừng đợi đến cuối. Xem [Kiểm tra mua hàng trong sandbox](test-purchases-in-sandbox) để biết hướng dẫn thiết lập.
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Flow Builder" default>
+
+**Hướng dẫn:**
+- [Kích hoạt mua hàng với Flow Builder (quickstart)](ios-quickstart-paywalls)
+- [Lấy flow và cấu hình của chúng](get-pb-paywalls)
+- [Hiển thị flow](ios-present-paywalls)
+- [Xử lý sự kiện flow](ios-handling-events)
+- [Phản hồi hành động nút](handle-paywall-actions)
+
+Gửi đến LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/ios-quickstart-paywalls.md
+- https://adapty.io/docs/vi/get-pb-paywalls.md
+- https://adapty.io/docs/vi/ios-present-paywalls.md
+- https://adapty.io/docs/vi/ios-handling-events.md
+- https://adapty.io/docs/vi/handle-paywall-actions.md
+```
+
+:::tip[Điểm kiểm tra]
+- **Kết quả mong đợi:** Flow hiển thị với các sản phẩm bạn đã cấu hình. Nhấn vào một sản phẩm sẽ kích hoạt hộp thoại mua hàng sandbox.
+- **Lưu ý:** Flow trống hoặc lỗi `getFlow` → xác minh placement ID khớp chính xác với dashboard và placement đã được gán đối tượng.
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Manual paywalls">
+
+**Hướng dẫn:**
+- [Kích hoạt mua hàng trong paywall tùy chỉnh của bạn (quickstart)](ios-quickstart-manual)
+- [Lấy paywall và sản phẩm](fetch-paywalls-and-products)
+- [Hiển thị paywall được thiết kế bằng remote config](present-remote-config-paywalls)
+- [Thực hiện mua hàng](making-purchases)
+- [Khôi phục mua hàng](restore-purchase)
+
+Gửi đến LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/ios-quickstart-manual.md
+- https://adapty.io/docs/vi/fetch-paywalls-and-products.md
+- https://adapty.io/docs/vi/present-remote-config-paywalls.md
+- https://adapty.io/docs/vi/making-purchases.md
+- https://adapty.io/docs/vi/restore-purchase.md
+```
+
+:::tip[Điểm kiểm tra]
+- **Kết quả mong đợi:** Paywall tùy chỉnh của bạn hiển thị các sản phẩm được lấy từ Adapty. Nhấn vào một sản phẩm sẽ kích hoạt hộp thoại mua hàng sandbox.
+- **Lưu ý:** Mảng sản phẩm rỗng → xác minh paywall đã được gán sản phẩm trong dashboard và placement đã có đối tượng.
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**Hướng dẫn:**
+- [Tổng quan về Observer mode](observer-vs-full-mode)
+- [Triển khai Observer mode](implement-observer-mode)
+- [Báo cáo giao dịch trong Observer mode](report-transactions-observer-mode)
+
+Gửi đến LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/observer-vs-full-mode.md
+- https://adapty.io/docs/vi/implement-observer-mode.md
+- https://adapty.io/docs/vi/report-transactions-observer-mode.md
+```
+
+:::tip[Điểm kiểm tra]
+- **Kết quả mong đợi:** Sau khi mua hàng sandbox bằng flow mua hàng hiện có của bạn, giao dịch xuất hiện trong **Event Feed** trên Adapty dashboard.
+- **Lưu ý:** Không có sự kiện → xác minh bạn đang báo cáo giao dịch cho Adapty và App Store Server Notifications đã được cấu hình.
+:::
+
+</TabItem>
+
+</Tabs>
+
+### Kiểm tra trạng thái gói đăng ký \{#check-subscription-status\}
+
+Sau khi mua hàng, kiểm tra hồ sơ người dùng để xem mức độ truy cập đang hoạt động nhằm giới hạn nội dung premium.
+
+**Hướng dẫn:** [Kiểm tra trạng thái gói đăng ký](ios-check-subscription-status)
+
+Gửi đến LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/ios-check-subscription-status.md
+```
+
+:::tip[Điểm kiểm tra]
+- **Kết quả mong đợi:** Sau khi mua hàng sandbox, `profile.accessLevels["premium"]?.isActive` trả về `true`.
+- **Lưu ý:** `accessLevels` rỗng sau khi mua → kiểm tra xem sản phẩm đã được gán mức độ truy cập trong dashboard chưa.
+:::
+
+### Xác định người dùng \{#identify-users\}
+
+Liên kết tài khoản người dùng trong ứng dụng của bạn với hồ sơ Adapty để giao dịch mua hàng được duy trì trên nhiều thiết bị.
+
+:::important
+Bỏ qua bước này nếu ứng dụng của bạn không có xác thực.
+:::
+
+**Hướng dẫn:** [Xác định người dùng](ios-quickstart-identify)
+
+Gửi đến LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/ios-quickstart-identify.md
+```
+
+:::tip[Điểm kiểm tra]
+- **Kết quả mong đợi:** Sau khi gọi `Adapty.identify("your-user-id")`, phần **Profiles** trên dashboard hiển thị ID người dùng tùy chỉnh của bạn.
+- **Lưu ý:** Gọi `identify` sau khi kích hoạt nhưng trước khi lấy paywall để tránh attribution hồ sơ ẩn danh.
+:::
+
+### Chuẩn bị phát hành \{#prepare-for-release\}
+
+Khi tích hợp của bạn hoạt động trong sandbox, hãy xem qua danh sách kiểm tra phát hành để đảm bảo mọi thứ sẵn sàng cho production.
+
+**Hướng dẫn:** [Danh sách kiểm tra phát hành](release-checklist)
+
+Gửi đến LLM của bạn:
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/vi/release-checklist.md
+```
+
+:::tip[Điểm kiểm tra]
+- **Kết quả mong đợi:** Tất cả các mục trong danh sách đã được xác nhận: kết nối cửa hàng, thông báo máy chủ, flow mua hàng, kiểm tra mức độ truy cập và yêu cầu về quyền riêng tư.
+- **Lưu ý:** Thiếu App Store Server Notifications → cấu hình trong **App settings → iOS SDK** hoặc sự kiện sẽ không xuất hiện trong dashboard.
+:::
+
+## Tệp chỉ mục tài liệu văn bản thuần \{#plain-text-doc-index-files\}
+
+Nếu bạn cần cung cấp cho LLM bối cảnh rộng hơn ngoài các trang riêng lẻ, chúng tôi lưu trữ các tệp chỉ mục liệt kê hoặc kết hợp toàn bộ tài liệu Adapty:
+
+- [`llms.txt`](https://adapty.io/docs/vi/llms.txt): Liệt kê tất cả các trang với các link `.md`. Đây là [tiêu chuẩn đang nổi lên](https://llmstxt.org/) để làm cho các trang web có thể truy cập được bởi LLM. Lưu ý rằng đối với một số AI agent (ví dụ: ChatGPT), bạn sẽ cần tải xuống `llms.txt` và tải nó lên chat dưới dạng tệp.
+- [`llms-full.txt`](https://adapty.io/docs/vi/llms-full.txt): Toàn bộ tài liệu Adapty được kết hợp thành một tệp duy nhất. Rất lớn — chỉ sử dụng khi bạn cần toàn bộ nội dung.
+- Tập hợp con dành riêng cho iOS: [`ios-llms.txt`](https://adapty.io/docs/vi/ios-llms.txt) và [`ios-llms-full.txt`](https://adapty.io/docs/vi/ios-llms-full.txt): Tiết kiệm token hơn so với toàn bộ tài liệu.

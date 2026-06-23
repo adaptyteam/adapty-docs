@@ -1,0 +1,123 @@
+---
+title: "Chế độ Trẻ em trong Capacitor SDK"
+description: "Dễ dàng bật Chế độ Trẻ em để tuân thủ chính sách của Apple và Google. Không thu thập IDFA, GAID hay dữ liệu quảng cáo trong Capacitor SDK."
+metadataTitle: "Chế độ Trẻ em trong Capacitor SDK | Tài liệu Adapty"
+---
+
+Nếu ứng dụng Capacitor của bạn dành cho trẻ em, bạn phải tuân thủ chính sách của [Apple](https://developer.apple.com/kids/) và [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Nếu bạn đang sử dụng Adapty SDK, chỉ cần vài bước đơn giản là có thể cấu hình SDK để đáp ứng các chính sách này và vượt qua quá trình xét duyệt trên cửa hàng ứng dụng.
+
+## Cần làm gì? \{#whats-required\}
+
+Bạn cần cấu hình Adapty SDK để tắt việc thu thập:
+
+- [IDFA (Identifier for Advertisers)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers) (iOS)
+- [Android Advertising ID (AAID/GAID)](https://support.google.com/googleplay/android-developer/answer/6048248) (Android)
+- [Địa chỉ IP](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
+Ngoài ra, chúng tôi khuyến nghị sử dụng customer user ID một cách cẩn thận. ID người dùng theo định dạng `<FirstName.LastName>` chắc chắn sẽ bị coi là thu thập dữ liệu cá nhân, cũng như việc sử dụng email. Đối với Chế độ Trẻ em, cách tốt nhất là sử dụng các định danh được tạo ngẫu nhiên hoặc ẩn danh (ví dụ: ID đã hash hoặc UUID do thiết bị tạo ra) để đảm bảo tuân thủ.
+
+## Bật Chế độ Trẻ em \{#enabling-kids-mode\}
+
+### Cập nhật trong Adapty Dashboard \{#updates-in-the-adapty-dashboard\}
+
+Trong Adapty Dashboard, bạn cần tắt tính năng thu thập địa chỉ IP. Để làm điều này, hãy vào [App settings](https://app.adapty.io/settings/general) và nhấn **Disable IP address collection** trong phần **Collect users' IP address**.
+
+### Cập nhật trong code ứng dụng di động \{#updates-in-your-mobile-app-code\}
+
+Để tuân thủ các chính sách, hãy tắt việc thu thập IDFA, GAID và địa chỉ IP của người dùng:
+
+```typescript showLineNumbers
+
+try {
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+      // Disable IP address collection
+      ipAddressCollectionDisabled: true,
+
+      // Disable IDFA collection on iOS
+      ios: {
+        idfaCollectionDisabled: true
+      },
+
+      // Disable Google Advertising ID collection on Android
+      android: {
+        adIdCollectionDisabled: true
+      }
+    }
+  });
+  console.log('Adapty activated with Kids Mode enabled');
+} catch (error) {
+  console.error('Failed to activate Adapty with Kids Mode:', error);
+}
+```
+
+### Cấu hình theo từng nền tảng \{#platform-specific-configurations\}
+
+#### iOS: Bật Chế độ Trẻ em bằng CocoaPods \{#ios-enable-kids-mode-using-cocoapods\}
+
+Nếu bạn đang dùng CocoaPods cho iOS, bạn cũng có thể bật Chế độ Trẻ em ở cấp độ native:
+
+1. Cập nhật Podfile của bạn:
+
+   - Nếu bạn **chưa có** phần `post_install`, hãy thêm toàn bộ đoạn code bên dưới.
+   - Nếu bạn **đã có** phần `post_install`, hãy merge các dòng được highlight vào đó.
+
+   ```ruby showLineNumbers title="Podfile"
+   def adapty_enable_kids_mode(installer)
+     installer.pods_project.targets.each do |target|
+       next unless target.name == 'Adapty'
+       target.build_configurations.each do |config|
+         flags = config.build_settings['OTHER_SWIFT_FLAGS'] || '$(inherited)'
+         flags = flags.join(' ') if flags.is_a?(Array)
+         config.build_settings['OTHER_SWIFT_FLAGS'] = "#{flags} -DADAPTY_KIDS_MODE"
+       end
+       target.frameworks_build_phase.files.dup.each do |bf|
+         target.frameworks_build_phase.remove_build_file(bf) if bf.display_name.to_s.include?('AdSupport')
+       end
+     end
+     installer.pods_project.save
+     Dir.glob(File.join(installer.sandbox.root, 'Target Support Files', '**', '*.xcconfig')).each do |xc|
+       File.write(xc, File.read(xc).gsub(/\s*-framework\s+"?AdSupport"?/, ''))
+     end
+   end
+
+   post_install do |installer|
+     # ... keep your existing post_install body (Flutter adds one automatically) ...
+
+     adapty_enable_kids_mode(installer)   # <-- enable Adapty Kids Mode
+   end
+   ```
+
+2. Chạy lệnh sau để áp dụng các thay đổi:
+
+   ```sh showLineNumbers title="Shell"
+   pod install
+   ```
+
+#### Android: Bật Chế độ Trẻ em bằng Gradle \{#android-enable-kids-mode-using-gradle\}
+
+Đối với Android, bạn cũng có thể bật Chế độ Trẻ em ở cấp độ native bằng cách thêm nội dung sau vào `build.gradle` của ứng dụng:
+
+```groovy showLineNumbers title="android/app/build.gradle"
+android {
+    defaultConfig {
+        // ... existing config ...
+
+        // Enable Kids Mode
+        buildConfigField "boolean", "ADAPTY_KIDS_MODE", "true"
+    }
+}
+```
+
+## Các bước tiếp theo \{#next-steps\}
+
+Sau khi bật Chế độ Trẻ em, hãy đảm bảo:
+
+1. Kiểm thử ứng dụng kỹ lưỡng để đảm bảo tất cả các tính năng hoạt động đúng
+2. Xem lại chính sách quyền riêng tư của ứng dụng để phản ánh việc đã tắt thu thập dữ liệu
+3. Nộp ứng dụng để xét duyệt kèm theo tài liệu rõ ràng về việc tuân thủ Chế độ Trẻ em
+
+Để biết thêm thông tin về yêu cầu theo từng nền tảng:
+- [Chế độ Trẻ em trong iOS SDK](kids-mode) để biết thêm chi tiết cấu hình iOS
+- [Chế độ Trẻ em trong Android SDK](kids-mode-android) để biết thêm chi tiết cấu hình Android

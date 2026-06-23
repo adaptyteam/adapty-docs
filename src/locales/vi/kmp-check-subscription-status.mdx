@@ -1,0 +1,116 @@
+---
+title: "Kiểm tra trạng thái gói đăng ký trong Kotlin Multiplatform SDK"
+description: "Tìm hiểu cách kiểm tra trạng thái gói đăng ký trong ứng dụng Kotlin Multiplatform của bạn với Adapty."
+metadataTitle: "Kiểm Tra Trạng Thái Gói Đăng Ký | Tài liệu Adapty"
+keywords: ['getProfile', 'subscription status']
+rank: 95
+displayed_sidebar: sdkkmp
+---
+
+Để quyết định xem người dùng có thể truy cập nội dung trả phí hay cần xem một paywall, bạn cần kiểm tra [mức độ truy cập](access-level) của họ trong hồ sơ người dùng.
+
+Bài viết này hướng dẫn bạn cách truy cập trạng thái hồ sơ người dùng để quyết định những gì họ cần thấy - hiển thị paywall hay cấp quyền truy cập vào các tính năng trả phí.
+
+## Lấy trạng thái gói đăng ký \{#get-subscription-status\}
+
+Khi quyết định có nên hiển thị paywall hay nội dung trả phí cho người dùng, bạn cần kiểm tra [mức độ truy cập](access-level) trong hồ sơ người dùng của họ. Bạn có hai lựa chọn:
+
+- Gọi `getProfile` nếu bạn cần dữ liệu hồ sơ người dùng mới nhất ngay lập tức (ví dụ: khi khởi động ứng dụng) hoặc muốn ép buộc cập nhật.
+- Thiết lập **cập nhật hồ sơ tự động** để lưu một bản sao cục bộ được tự động làm mới mỗi khi trạng thái gói đăng ký thay đổi.
+
+### Lấy hồ sơ người dùng \{#get-profile\}
+
+Cách đơn giản nhất để lấy trạng thái gói đăng ký là dùng phương thức `getProfile` để truy cập hồ sơ người dùng:
+
+```kotlin showLineNumbers
+Adapty.getProfile()
+    .onSuccess { profile ->
+        // check the access
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+### Lắng nghe các cập nhật gói đăng ký \{#listen-to-subscription-updates\}
+
+Để tự động nhận các cập nhật hồ sơ trong ứng dụng của bạn:
+
+1. Dùng `Adapty.setOnProfileUpdatedListener()` để lắng nghe các thay đổi hồ sơ - Adapty sẽ tự động gọi phương thức này mỗi khi trạng thái gói đăng ký của người dùng thay đổi.
+2. Lưu dữ liệu hồ sơ được cập nhật khi phương thức này được gọi, để bạn có thể dùng nó trong toàn bộ ứng dụng mà không cần thực hiện thêm các yêu cầu mạng.
+
+```kotlin showLineNumbers
+class SubscriptionManager {
+    private var currentProfile: AdaptyProfile? = null
+    
+    init {
+        // Listen for profile updates
+        Adapty.setOnProfileUpdatedListener { profile ->
+            currentProfile = profile
+            // Update UI, unlock content, etc.
+        }
+    }
+    
+    // Use stored profile instead of calling getProfile()
+    fun hasAccess(): Boolean {
+        return currentProfile?.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true
+    }
+}
+```
+
+:::note
+Adapty tự động gọi trình lắng nghe cập nhật hồ sơ khi ứng dụng của bạn khởi động, cung cấp dữ liệu gói đăng ký được lưu trong cache ngay cả khi thiết bị ngoại tuyến.
+:::
+
+## Kết nối hồ sơ người dùng với logic paywall \{#connect-profile-with-paywall-logic\}
+
+Khi bạn cần đưa ra quyết định ngay lập tức về việc hiển thị paywall hay cấp quyền truy cập vào các tính năng trả phí, bạn có thể kiểm tra trực tiếp hồ sơ người dùng. Cách tiếp cận này hữu ích cho các tình huống như khi khởi động ứng dụng, khi vào các phần nội dung premium, hoặc trước khi hiển thị nội dung cụ thể.
+
+```kotlin showLineNumbers
+private fun checkAccessAndShowPaywall() {
+    // First, check if user has access
+    Adapty.getProfile()
+        .onSuccess { profile ->
+            val hasAccess = profile.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true
+            
+            if (!hasAccess) {
+                // User doesn't have access, show paywall
+                showPaywall()
+            } else {
+                // User has access, show premium content
+                showPremiumContent()
+            }
+        }
+        .onError { error ->
+            // If we can't check access, show paywall as fallback
+            showPaywall()
+        }
+}
+
+private fun showPaywall() {
+    // Get and display paywall using the KMP SDK
+    Adapty.getPaywall("YOUR_PLACEMENT_ID")
+        .onSuccess { paywall ->
+            if (paywall.hasViewConfiguration) {
+                val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
+                paywallView?.present()
+            } else {
+                // Handle remote config paywall or show custom UI
+                handleRemoteConfigPaywall(paywall)
+            }
+        }
+        .onError { error ->
+            // Handle paywall loading error
+            showError("Unable to load paywall")
+        }
+}
+
+private fun showPremiumContent() {
+    // Show your premium content here
+    // This is where you unlock paid features
+}
+```
+
+## Các bước tiếp theo \{#next-steps\}
+
+Bây giờ, khi bạn đã biết cách theo dõi trạng thái gói đăng ký, hãy tìm hiểu cách [làm việc với hồ sơ người dùng](kmp-quickstart-identify) để đảm bảo họ có thể truy cập những gì họ đã trả tiền.

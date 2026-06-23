@@ -1,0 +1,30 @@
+---
+title: "Tối ưu hóa việc tải paywall trong Flutter SDK"
+description: "Tải paywall Adapty một cách đáng tin cậy: thời điểm, bộ nhớ cache và các mẫu fallback cho Flutter."
+metadataTitle: "Tối ưu hóa việc tải Paywall | Flutter SDK | Tài liệu Adapty"
+---
+
+Một lần tải paywall đáng tin cậy trên Flutter cần đảm bảo ba điều: hiển thị nhanh, trả về đúng paywall theo đối tượng, và fallback một cách linh hoạt khi mạng chậm. Các quy tắc dưới đây bao gồm thời điểm, bộ nhớ cache và các mẫu fallback để đạt được điều đó.
+
+:::tip
+Các quy tắc này giả định rằng `Adapty().activate()` và `Adapty().identify()` đã hoàn tất. Xem [Thứ tự gọi trong Flutter SDK](flutter-sdk-call-order).
+:::
+
+## Quy tắc và những lỗi thường gặp \{#rules-and-pitfalls\}
+
+| Nên làm | Không nên làm | Lý do |
+|---|---|---|
+| Tải placement bạn sắp hiển thị.                                                                                  | Tải trước tất cả các placement đồng thời khi khởi động.        | Tải trước hàng loạt sẽ chặn luồng chính và gây màn hình đen trong thời gian đó.                                  |
+| Gọi `getPaywall` sau khi attribution đã có cơ hội xử lý xong — ví dụ, 1–2 giây sau khi `activate` hoặc sau khi `didUpdateProfileStream` kích hoạt. | Gọi `getPaywall` trong `main()` trước `runApp`.         | Attribution chưa được ghi nhận. Paywall sẽ được xác định theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
+| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement.                             | Chờ `getPaywall` vô thời hạn.                     | Nếu không có timeout, người dùng kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phục hồi — hoặc họ sẽ thoát ứng dụng.     |
+
+Xem [Tải paywall và sản phẩm](fetch-paywalls-and-products-flutter) để tham khảo các tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn đúng placement.
+
+## Tối ưu cho kết nối kém \{#tune-for-poor-connectivity\}
+
+Đối với các thị trường có kết nối liên tục kém (khu vực nông thôn, phương tiện công cộng, vùng bị ảnh hưởng bởi định tuyến mạng):
+
+- Đặt `fetchPolicy: AdaptyPaywallFetchPolicy.returnCacheDataElseLoad` cho mọi lần tải, ngoại trừ lần đầu tiên.
+- Cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement trong Adapty Dashboard.
+- Đặt `loadTimeout` từ 3–5 giây và chấp nhận paywall dự phòng khi timeout xảy ra.
+- Không chặn việc hiển thị paywall bởi `getProfile()`. Gọi `getPaywall` độc lập để một profile phản hồi chậm không làm tắc nghẽn giao diện.

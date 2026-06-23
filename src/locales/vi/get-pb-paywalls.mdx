@@ -1,0 +1,453 @@
+---
+title: "Lấy flows & paywalls - iOS"
+description: "Lấy flows và paywalls từ Adapty trong ứng dụng iOS của bạn."
+metadataTitle: "Lấy Flows & Paywalls - iOS | Tài liệu Adapty"
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience', 'cache']
+rank: 100
+---
+
+<SDKv4>
+
+<MethodPromo method="getFlow" />
+
+Sau khi [thiết kế flow hoặc paywall bằng Paywall Builder](adapty-paywall-builder), bạn có thể hiển thị chúng trong ứng dụng. Bước đầu tiên là lấy flow hoặc paywall được gắn với placement cùng cấu hình hiển thị như mô tả bên dưới.
+
+:::tip
+
+Bạn muốn xem ví dụ thực tế về cách tích hợp Adapty SDK vào ứng dụng? Hãy xem [ứng dụng mẫu](sample-apps) của chúng tôi — chúng minh họa toàn bộ quá trình thiết lập, bao gồm hiển thị paywall, thực hiện mua hàng và các chức năng cơ bản khác.
+
+:::
+
+<details>
+<summary>Trước khi bắt đầu</summary>
+
+1. [Tạo sản phẩm](create-product) trong Adapty Dashboard.
+2. [Tạo flow/paywall và thêm sản phẩm vào đó](create-paywall) trong Adapty Dashboard.
+3. [Tạo placement và thêm flow/paywall vào đó](create-placement) trong Adapty Dashboard.
+4. Cài đặt [Adapty SDK](sdk-installation-ios) trong ứng dụng của bạn.
+</details>
+
+## Lấy flow/paywall \{#fetch-flowpaywall\}
+
+Nếu bạn đã thiết kế flow hoặc paywall bằng Flow Builder hoặc Paywall Builder, bạn không cần lo lắng về việc tự render nó trong code để hiển thị cho người dùng. Flow hoặc paywall như vậy đã bao gồm cả nội dung hiển thị lẫn cách hiển thị. Tuy nhiên, bạn vẫn cần lấy ID của nó thông qua placement, lấy cấu hình hiển thị, rồi mới trình bày trong ứng dụng.
+
+Để đảm bảo hiệu năng tốt nhất, hãy lấy flow hoặc paywall cùng [cấu hình hiển thị](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) càng sớm càng tốt, để ảnh có đủ thời gian tải về trước khi hiển thị cho người dùng.
+
+Dùng phương thức `getFlow` để lấy flow hoặc paywall:
+
+<Tabs>
+<TabItem value="swift" label="Swift">
+
+```swift showLineNumbers
+do {
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+    // the requested flow/paywall
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID") { result in
+    switch result {
+        case let .success(flow):
+            // the requested flow/paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+Tham số:
+
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements) mong muốn. Đây là giá trị bạn đã đặt khi tạo placement trong Adapty Dashboard. |
+| **fetchPolicy** | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ máy chủ và trả về dữ liệu đã cache nếu thất bại. Chúng tôi khuyến nghị cách này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng có kết nối internet không ổn định, hãy cân nhắc dùng `.returnCacheDataElseLoad` để trả về dữ liệu cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng tốc độ tải sẽ nhanh hơn dù kết nối mạng kém. Cache được cập nhật thường xuyên nên hoàn toàn an toàn khi dùng trong phiên để tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng cache không bị xóa khi khởi động lại ứng dụng, chỉ bị xóa khi gỡ cài đặt ứng dụng hoặc dọn dẹp thủ công.</p><p></p><p>Adapty SDK lưu trữ paywall cục bộ theo hai lớp: cache được cập nhật thường xuyên như trên và [paywall dự phòng](fallback-paywalls). Chúng tôi cũng dùng CDN để tải paywall nhanh hơn và máy chủ dự phòng độc lập trong trường hợp CDN không khả dụng. Hệ thống này được thiết kế để đảm bảo bạn luôn nhận được phiên bản paywall mới nhất, đồng thời đảm bảo độ tin cậy ngay cả khi kết nối internet yếu.</p> |
+| **loadTimeout** | mặc định: 5 giây | <p>Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu hết thời gian chờ, dữ liệu cache hoặc fallback cục bộ sẽ được trả về.</p><p>Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ muộn hơn một chút so với giá trị đã chỉ định trong `loadTimeout`, do thao tác có thể bao gồm nhiều yêu cầu khác nhau bên dưới.</p> |
+
+Tham số trả về:
+
+| Tham số | Mô tả |
+| :-------- | :---------- |
+| Flow   | Đối tượng `AdaptyFlow` chứa placement, các định danh (`id`, `variationId`), tên, Remote Config, và cờ `hasViewConfiguration` cho biết flow có bao gồm cấu hình hiển thị hay không. Để lấy sản phẩm thực tế phục vụ việc tải trước, giao diện tùy chỉnh hoặc kiểm tra theo chương trình, hãy gọi `getPaywallProducts(flow:)`. |
+
+## Lấy cấu hình hiển thị \{#fetch-the-view-configuration\}
+
+Sau khi lấy flow hoặc paywall, hãy kiểm tra xem nó có bao gồm cấu hình hiển thị hay không thông qua `flow.hasViewConfiguration`. Cờ này cho biết cách placement được thiết kế trong Adapty Dashboard:
+
+- **`true`** — placement được thiết kế trong **Flow Builder** (một flow) hoặc **Paywall Builder** (một paywall). Adapty sẽ tự render giao diện cho bạn. Tiếp tục với các bước bên dưới để lấy cấu hình hiển thị và [trình bày flow hoặc paywall](ios-present-paywalls).
+- **`false`** — placement là paywall tùy chỉnh không có giao diện Builder.
+
+Dùng phương thức `getFlowConfiguration` để tải cấu hình hiển thị.
+
+```swift showLineNumbers
+
+guard flow.hasViewConfiguration else {
+    // handle as remote config paywall
+    return
+}
+
+let flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow)
+```
+
+Tham số:
+
+| Tham số                | Bắt buộc       | Mô tả |
+| :----------------------- | :------------- | :---------- |
+| **forFlow**              | bắt buộc       | Đối tượng `AdaptyFlow` lấy được qua `Adapty.getFlow`. |
+| **locale**               | <p>tùy chọn</p><p>mặc định: `nil`</p> | Định danh của [bản địa hóa paywall](add-paywall-locale-in-adapty-paywall-builder). Được truyền dưới dạng mã ngôn ngữ với một hoặc hai subtag phân tách bởi `-` (ví dụ: `en`, `pt-br`). Xem [Localizations and locale codes](localizations-and-locale-codes). |
+| **loadTimeout**          | mặc định: 5 giây | Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu hết thời gian chờ, dữ liệu cache hoặc fallback cục bộ sẽ được trả về. Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ muộn hơn một chút so với giá trị đã chỉ định trong `loadTimeout`, do thao tác có thể bao gồm nhiều yêu cầu khác nhau bên dưới. |
+| **products**             | tùy chọn       | Truyền mảng các đối tượng `AdaptyPaywallProduct` để tối ưu hóa thời điểm hiển thị sản phẩm trên màn hình. Nếu truyền `nil`, AdaptyUI sẽ tự động lấy các sản phẩm cần thiết. |
+| **systemRequestsHandler** | tùy chọn      | Đối tượng tuân theo `AdaptySystemRequestsHandler` xử lý các yêu cầu quyền hệ thống và yêu cầu đánh giá được kích hoạt bởi các hành động trong flow. Chỉ cần thiết nếu flow của bạn có các hành động đó. |
+| **assetsResolver**       | tùy chọn       | Dictionary `[String: AdaptyCustomAsset]` dùng để ghi đè hình ảnh và video trong flow/paywall. Xem [Tùy chỉnh assets](#customize-assets). |
+| **timerResolver**        | tùy chọn       | Đối tượng tuân theo `AdaptyTimerResolver` cung cấp ngày kết thúc cho các timer do developer định nghĩa. Xem [Thiết lập timer do developer định nghĩa](#set-up-developer-defined-timers). |
+
+Sau khi tải xong, [trình bày flow/paywall](ios-present-paywalls).
+
+## Lấy flow hoặc paywall cho đối tượng mặc định để tải nhanh hơn \{#get-a-flow-or-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Thông thường, flow và paywall được lấy gần như ngay lập tức nên bạn không cần lo lắng về việc tăng tốc quá trình này. Tuy nhiên, trong trường hợp bạn có nhiều đối tượng và placement, đồng thời người dùng có kết nối internet yếu, việc lấy flow hoặc paywall có thể mất nhiều thời gian hơn mong muốn. Trong tình huống đó, bạn có thể muốn hiển thị flow hoặc paywall mặc định để đảm bảo trải nghiệm người dùng mượt mà thay vì không hiển thị gì.
+
+Để giải quyết vấn đề này, bạn có thể dùng phương thức `getFlowForDefaultAudience`, phương thức này lấy flow hoặc paywall của placement đã chỉ định cho đối tượng **All Users**. Tuy nhiên, cần hiểu rằng cách tiếp cận được khuyến nghị là lấy flow hoặc paywall bằng phương thức `getFlow`, như đã mô tả trong phần [Lấy thông tin Paywall](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder) ở trên.
+
+:::warning
+Tại sao chúng tôi khuyến nghị dùng `getFlow`
+
+Phương thức `getFlowForDefaultAudience` có một số hạn chế đáng kể:
+
+- **Vấn đề tương thích ngược**: Nếu bạn cần hiển thị các paywall khác nhau cho các phiên bản ứng dụng khác nhau (hiện tại và tương lai), bạn có thể gặp khó khăn. Bạn sẽ phải thiết kế paywall hỗ trợ phiên bản hiện tại (legacy) hoặc chấp nhận rằng người dùng phiên bản hiện tại (legacy) có thể gặp sự cố với paywall không được render.
+- **Mất khả năng nhắm mục tiêu**: Tất cả người dùng sẽ thấy cùng một paywall được thiết kế cho đối tượng **All Users**, nghĩa là bạn mất khả năng nhắm mục tiêu cá nhân hóa (bao gồm theo quốc gia, attribution marketing hoặc các thuộc tính tùy chỉnh của bạn).
+
+Nếu bạn sẵn sàng chấp nhận những hạn chế này để được hưởng lợi từ việc lấy flow hoặc paywall nhanh hơn, hãy dùng phương thức `getFlowForDefaultAudience` như bên dưới. Ngược lại, hãy tiếp tục dùng `getFlow` đã mô tả [ở trên](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder).
+:::
+
+```swift showLineNumbers
+Adapty.getFlowForDefaultAudience(placementId: "YOUR_PLACEMENT_ID") { result in
+    switch result {
+        case let .success(flow):
+            // the requested flow
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements). Đây là giá trị bạn đã đặt khi tạo placement trong Adapty Dashboard. |
+| **fetchPolicy** | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ máy chủ và trả về dữ liệu đã cache nếu thất bại. Chúng tôi khuyến nghị cách này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng có kết nối internet không ổn định, hãy cân nhắc dùng `.returnCacheDataElseLoad` để trả về dữ liệu cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng tốc độ tải sẽ nhanh hơn dù kết nối mạng kém. Cache được cập nhật thường xuyên nên hoàn toàn an toàn khi dùng trong phiên để tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng cache không bị xóa khi khởi động lại ứng dụng, chỉ bị xóa khi gỡ cài đặt ứng dụng hoặc dọn dẹp thủ công.</p> |
+
+## Tùy chỉnh assets \{#customize-assets\}
+
+Để tùy chỉnh hình ảnh và video trong paywall/flow, hãy triển khai custom assets.
+
+Hình ảnh hero và video có ID được xác định trước: `hero_image` và `hero_video`. Trong bundle asset tùy chỉnh, bạn nhắm đến các phần tử này theo ID và tùy chỉnh hành vi của chúng.
+
+Đối với các hình ảnh và video khác, bạn cần [đặt ID tùy chỉnh](custom-media) trong Adapty dashboard.
+
+Ví dụ, bạn có thể:
+
+- Hiển thị hình ảnh hoặc video khác cho một số người dùng.
+- Hiển thị ảnh xem trước cục bộ trong khi ảnh chính từ xa đang tải.
+- Hiển thị ảnh xem trước trước khi phát video.
+- Cung cấp độ phân giải pixel của video để trình phát dành sẵn không gian bố cục (tỷ lệ khung hình = `width / height`) trước khi video tải xong. Truyền `nil` để bỏ qua.
+
+Đây là ví dụ về cách cung cấp custom assets thông qua một dictionary đơn giản:
+
+```swift showLineNumbers
+let customAssets: [String: AdaptyCustomAsset] = [
+    // Show a local image using a custom ID
+    "custom_image": .image(
+        .uiImage(value: UIImage(named: "image_name")!)
+    ),
+
+    // Show a local preview image while a remote main image is loading
+    "hero_image": .image(
+        .remote(
+            url: URL(string: "https://example.com/image.jpg")!,
+            preview: UIImage(named: "preview_image")
+        )
+    ),
+
+    // Show a local video with a preview image and a known resolution
+    "hero_video": .video(
+        .file(
+            url: Bundle.main.url(forResource: "custom_video", withExtension: "mp4")!,
+            preview: .uiImage(value: UIImage(named: "video_preview")!),
+            resolution: CGSize(width: 1080, height: 1920)
+        )
+    ),
+]
+
+let flowConfig = try await AdaptyUI.getFlowConfiguration(
+    forFlow: flow,
+    assetsResolver: customAssets
+)
+```
+
+:::note
+Nếu không tìm thấy asset, paywall/flow sẽ hiển thị theo giao diện mặc định.
+:::
+
+## Thiết lập timer do developer định nghĩa \{#set-up-developer-defined-timers\}
+
+Để sử dụng timer tùy chỉnh trong ứng dụng, hãy tạo một đối tượng tuân theo giao thức `AdaptyTimerResolver`. Đối tượng này xác định cách render mỗi timer tùy chỉnh. Nếu muốn, bạn có thể dùng trực tiếp dictionary `[String: Date]` vì nó đã tuân thủ giao thức này. Đây là một ví dụ:
+
+```swift showLineNumbers
+@MainActor
+struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
+    func timerEndAtDate(for timerId: String) -> Date {
+        switch timerId {
+        case "CUSTOM_TIMER_6H":
+            Date(timeIntervalSinceNow: 3600.0 * 6.0) // 6 hours
+        case "CUSTOM_TIMER_NY":
+            Calendar.current.date(from: DateComponents(year: 2025, month: 1, day: 1)) ?? Date(timeIntervalSinceNow: 3600.0)
+        default:
+            Date(timeIntervalSinceNow: 3600.0) // 1 hour
+        }
+    }
+}
+```
+
+Trong ví dụ này, `CUSTOM_TIMER_NY` và `CUSTOM_TIMER_6H` là các **Timer ID** của timer do developer định nghĩa mà bạn đặt trong Adapty Dashboard. `timerResolver` đảm bảo ứng dụng cập nhật động mỗi timer với giá trị chính xác. Ví dụ:
+
+- `CUSTOM_TIMER_NY`: Thời gian còn lại đến khi timer kết thúc, chẳng hạn như Năm Mới.
+- `CUSTOM_TIMER_6H`: Thời gian còn lại trong khoảng 6 giờ bắt đầu khi người dùng mở paywall.
+
+</SDKv4>
+
+<SDKv3>
+
+Sau khi [thiết kế phần giao diện cho paywall](adapty-paywall-builder) bằng Paywall Builder trong Adapty Dashboard, bạn có thể hiển thị nó trong ứng dụng. Bước đầu tiên là lấy paywall được gắn với placement cùng cấu hình hiển thị như mô tả bên dưới.
+
+Lưu ý rằng chủ đề này đề cập đến các paywall được tùy chỉnh bằng Paywall Builder. Nếu bạn đang triển khai paywall theo cách thủ công, hãy tham khảo [Lấy paywall và sản phẩm cho paywall remote config](fetch-paywalls-and-products).
+
+:::tip
+
+Bạn muốn xem ví dụ thực tế về cách tích hợp Adapty SDK vào ứng dụng? Hãy xem [ứng dụng mẫu](sample-apps) của chúng tôi — chúng minh họa toàn bộ quá trình thiết lập, bao gồm hiển thị paywall, thực hiện mua hàng và các chức năng cơ bản khác.
+
+:::
+
+<details>
+<summary>Trước khi bắt đầu hiển thị paywall trong ứng dụng</summary>
+
+1. [Tạo sản phẩm](create-product) trong Adapty Dashboard.
+2. [Tạo paywall và thêm sản phẩm vào đó](create-paywall) trong Adapty Dashboard.
+3. [Tạo placement và thêm paywall vào đó](create-placement) trong Adapty Dashboard.
+4. Cài đặt [Adapty SDK](sdk-installation-ios) trong ứng dụng của bạn.
+</details>
+
+## Lấy paywall được thiết kế bằng Paywall Builder \{#fetch-paywall-designed-with-paywall-builder\}
+
+Nếu bạn đã [thiết kế paywall bằng Paywall Builder](adapty-paywall-builder), bạn không cần lo lắng về việc tự render nó trong code để hiển thị cho người dùng. Paywall như vậy đã bao gồm cả nội dung hiển thị lẫn cách hiển thị. Tuy nhiên, bạn vẫn cần lấy ID của nó thông qua placement, lấy cấu hình hiển thị, rồi mới trình bày trong ứng dụng.
+
+Để đảm bảo hiệu năng tốt nhất, hãy lấy paywall cùng [cấu hình hiển thị](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) càng sớm càng tốt, để ảnh có đủ thời gian tải về trước khi hiển thị cho người dùng.
+
+Dùng phương thức `getPaywall` để lấy paywall:
+
+<Tabs>
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let paywall = try await Adapty.getPaywall("YOUR_PLACEMENT_ID")
+    // the requested paywall
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+Tham số:
+
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements) mong muốn. Đây là giá trị bạn đã đặt khi tạo placement trong Adapty Dashboard. |
+| **locale** | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Định danh của [bản địa hóa paywall](add-paywall-locale-in-adapty-paywall-builder). Tham số này được truyền dưới dạng mã ngôn ngữ gồm một hoặc hai subtag phân tách bởi dấu trừ (**-**). Subtag đầu tiên là ngôn ngữ, subtag thứ hai là vùng.</p><p></p><p>Ví dụ: `en` là tiếng Anh, `pt-br` là tiếng Bồ Đào Nha Brazil.</p><p>Xem [Localizations and locale codes](localizations-and-locale-codes) để biết thêm thông tin về mã locale và cách chúng tôi khuyến nghị sử dụng.</p> |
+| **fetchPolicy** | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ máy chủ và trả về dữ liệu đã cache nếu thất bại. Chúng tôi khuyến nghị cách này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng có kết nối internet không ổn định, hãy cân nhắc dùng `.returnCacheDataElseLoad` để trả về dữ liệu cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng tốc độ tải sẽ nhanh hơn dù kết nối mạng kém. Cache được cập nhật thường xuyên nên hoàn toàn an toàn khi dùng trong phiên để tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng cache không bị xóa khi khởi động lại ứng dụng, chỉ bị xóa khi gỡ cài đặt ứng dụng hoặc dọn dẹp thủ công.</p><p></p><p>Adapty SDK lưu trữ paywall cục bộ theo hai lớp: cache được cập nhật thường xuyên như trên và [paywall dự phòng](fallback-paywalls). Chúng tôi cũng dùng CDN để tải paywall nhanh hơn và máy chủ dự phòng độc lập trong trường hợp CDN không khả dụng. Hệ thống này được thiết kế để đảm bảo bạn luôn nhận được phiên bản paywall mới nhất, đồng thời đảm bảo độ tin cậy ngay cả khi kết nối internet yếu.</p> |
+| **loadTimeout** | mặc định: 5 giây | <p>Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu hết thời gian chờ, dữ liệu cache hoặc fallback cục bộ sẽ được trả về.</p><p>Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ muộn hơn một chút so với giá trị đã chỉ định trong `loadTimeout`, do thao tác có thể bao gồm nhiều yêu cầu khác nhau bên dưới.</p> |
+
+Tham số trả về:
+
+| Tham số | Mô tả |
+| :-------- | :---------- |
+| Paywall   | Đối tượng [`AdaptyPaywall`](https://swift.adapty.io/documentation/adapty/adaptypaywall) với danh sách ID sản phẩm, định danh paywall, Remote Config và một số thuộc tính khác. |
+
+## Lấy cấu hình hiển thị của paywall được thiết kế bằng Paywall Builder \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+Hãy đảm bảo bật toggle **Show on device** trong paywall builder. Nếu tùy chọn này không được bật, cấu hình hiển thị sẽ không thể lấy được.
+:::
+
+Sau khi lấy paywall, hãy kiểm tra xem nó có bao gồm cấu hình hiển thị hay không — điều này cho biết paywall đã được tạo bằng Paywall Builder. Thông tin này sẽ hướng dẫn bạn cách hiển thị paywall. Nếu có cấu hình hiển thị, hãy xử lý như paywall Paywall Builder; nếu không, [xử lý như paywall remote config](present-remote-config-paywalls).
+
+Dùng phương thức `getPaywallConfiguration` để tải cấu hình hiển thị.
+
+```swift showLineNumbers
+
+guard paywall.hasViewConfiguration else {
+    //  use your custom logic
+    return
+}
+
+do {
+    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
+            forPaywall: paywall,
+            products: products
+    )
+    // use loaded configuration
+} catch {
+    // handle the error
+}
+```
+
+Tham số:
+
+| Tham số                | Bắt buộc       | Mô tả |
+| :----------------------- | :------------- | :---------- |
+| **paywall**              | bắt buộc       | Đối tượng `AdaptyPaywall` để lấy controller cho paywall mong muốn. |
+| **loadTimeout**          | mặc định: 5 giây | Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu hết thời gian chờ, dữ liệu cache hoặc fallback cục bộ sẽ được trả về. Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ muộn hơn một chút so với giá trị đã chỉ định trong `loadTimeout`, do thao tác có thể bao gồm nhiều yêu cầu khác nhau bên dưới. |
+| **products**             | tùy chọn       | Truyền mảng các đối tượng `AdaptyPaywallProduct` để tối ưu hóa thời điểm hiển thị sản phẩm trên màn hình. Nếu truyền `nil`, AdaptyUI sẽ tự động lấy các sản phẩm cần thiết. |
+
+:::note
+Nếu bạn đang dùng nhiều ngôn ngữ, hãy tìm hiểu cách thêm [bản địa hóa Paywall Builder](add-paywall-locale-in-adapty-paywall-builder) và cách sử dụng đúng mã locale [tại đây](localizations-and-locale-codes).
+:::
+
+Sau khi tải xong, [trình bày paywall](ios-present-paywalls).
+
+## Lấy paywall cho đối tượng mặc định để tải nhanh hơn \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Thông thường, paywall được lấy gần như ngay lập tức nên bạn không cần lo lắng về việc tăng tốc quá trình này. Tuy nhiên, trong trường hợp bạn có nhiều đối tượng và paywall, đồng thời người dùng có kết nối internet yếu, việc lấy paywall có thể mất nhiều thời gian hơn mong muốn. Trong tình huống đó, bạn có thể muốn hiển thị paywall mặc định để đảm bảo trải nghiệm người dùng mượt mà thay vì không hiển thị gì.
+
+Để giải quyết vấn đề này, bạn có thể dùng phương thức `getPaywallForDefaultAudience`, phương thức này lấy paywall của placement đã chỉ định cho đối tượng **All Users**. Tuy nhiên, cần hiểu rằng cách tiếp cận được khuyến nghị là lấy paywall bằng phương thức `getPaywall`, như đã mô tả trong phần [Lấy thông tin Paywall](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder) ở trên.
+
+:::warning
+Tại sao chúng tôi khuyến nghị dùng `getPaywall`
+
+Phương thức `getPaywallForDefaultAudience` có một số hạn chế đáng kể:
+
+- **Vấn đề tương thích ngược**: Nếu bạn cần hiển thị các paywall khác nhau cho các phiên bản ứng dụng khác nhau (hiện tại và tương lai), bạn có thể gặp khó khăn. Bạn sẽ phải thiết kế paywall hỗ trợ phiên bản hiện tại (legacy) hoặc chấp nhận rằng người dùng phiên bản hiện tại (legacy) có thể gặp sự cố với paywall không được render.
+- **Mất khả năng nhắm mục tiêu**: Tất cả người dùng sẽ thấy cùng một paywall được thiết kế cho đối tượng **All Users**, nghĩa là bạn mất khả năng nhắm mục tiêu cá nhân hóa (bao gồm theo quốc gia, attribution marketing hoặc các thuộc tính tùy chỉnh của bạn).
+
+Nếu bạn sẵn sàng chấp nhận những hạn chế này để được hưởng lợi từ việc lấy paywall nhanh hơn, hãy dùng phương thức `getPaywallForDefaultAudience` như bên dưới. Ngược lại, hãy tiếp tục dùng `getPaywall` đã mô tả [ở trên](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder).
+:::
+
+```swift showLineNumbers
+Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+
+:::note
+Phương thức `getPaywallForDefaultAudience` khả dụng từ iOS SDK phiên bản 2.11.2 trở lên.
+:::
+
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements). Đây là giá trị bạn đã đặt khi tạo placement trong Adapty Dashboard. |
+| **locale** | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Định danh của [bản địa hóa paywall](add-remote-config-locale). Tham số này được truyền dưới dạng mã ngôn ngữ gồm một hoặc nhiều subtag phân tách bởi dấu trừ (**-**). Subtag đầu tiên là ngôn ngữ, subtag thứ hai là vùng.</p><p></p><p>Ví dụ: `en` là tiếng Anh, `pt-br` là tiếng Bồ Đào Nha Brazil.</p><p></p><p>Xem [Localizations and locale codes](localizations-and-locale-codes) để biết thêm thông tin về mã locale và cách chúng tôi khuyến nghị sử dụng.</p> |
+| **fetchPolicy** | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ máy chủ và trả về dữ liệu đã cache nếu thất bại. Chúng tôi khuyến nghị cách này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng có kết nối internet không ổn định, hãy cân nhắc dùng `.returnCacheDataElseLoad` để trả về dữ liệu cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng tốc độ tải sẽ nhanh hơn dù kết nối mạng kém. Cache được cập nhật thường xuyên nên hoàn toàn an toàn khi dùng trong phiên để tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng cache không bị xóa khi khởi động lại ứng dụng, chỉ bị xóa khi gỡ cài đặt ứng dụng hoặc dọn dẹp thủ công.</p> |
+
+## Tùy chỉnh assets \{#customize-assets\}
+
+Để tùy chỉnh hình ảnh và video trong paywall, hãy triển khai custom assets.
+
+Hình ảnh hero và video có ID được xác định trước: `hero_image` và `hero_video`. Trong bundle asset tùy chỉnh, bạn nhắm đến các phần tử này theo ID và tùy chỉnh hành vi của chúng.
+
+Đối với các hình ảnh và video khác, bạn cần [đặt ID tùy chỉnh](custom-media) trong Adapty dashboard.
+
+Ví dụ, bạn có thể:
+
+- Hiển thị hình ảnh hoặc video khác cho một số người dùng.
+- Hiển thị ảnh xem trước cục bộ trong khi ảnh chính từ xa đang tải.
+- Hiển thị ảnh xem trước trước khi phát video.
+
+:::important
+Để sử dụng tính năng này, hãy cập nhật Adapty iOS SDK lên phiên bản 3.7.0 hoặc cao hơn.
+:::
+
+Đây là ví dụ về cách cung cấp custom assets thông qua một dictionary đơn giản:
+
+```swift showLineNumbers
+let customAssets: [String: AdaptyCustomAsset] = [
+    // Show a local image using a custom ID
+    "custom_image": .image(
+        .uiImage(value: UIImage(named: "image_name")!)
+    ),
+
+    // Show a local preview image while a remote main image is loading
+    "hero_image": .image(
+        .remote(
+            url: URL(string: "https://example.com/image.jpg")!,
+            preview: UIImage(named: "preview_image")
+        )
+    ),
+
+    // Show a local video with a preview image
+    "hero_video": .video(
+        .file(
+            url: Bundle.main.url(forResource: "custom_video", withExtension: "mp4")!,
+            preview: .uiImage(value: UIImage(named: "video_preview")!)
+        )
+    ),
+]
+
+let paywallConfig = try await AdaptyUI.getPaywallConfiguration(
+    forPaywall: paywall,
+    assetsResolver: customAssets
+)
+```
+
+:::note
+Nếu không tìm thấy asset, paywall sẽ hiển thị theo giao diện mặc định.
+:::
+
+## Thiết lập timer do developer định nghĩa \{#set-up-developer-defined-timers\}
+
+Để sử dụng timer tùy chỉnh trong ứng dụng, hãy tạo một đối tượng tuân theo giao thức `AdaptyTimerResolver`. Đối tượng này xác định cách render mỗi timer tùy chỉnh. Nếu muốn, bạn có thể dùng trực tiếp dictionary `[String: Date]` vì nó đã tuân thủ giao thức này. Đây là một ví dụ:
+
+```swift showLineNumbers
+@MainActor
+struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
+    func timerEndAtDate(for timerId: String) -> Date {
+        switch timerId {
+        case "CUSTOM_TIMER_6H":
+            Date(timeIntervalSinceNow: 3600.0 * 6.0) // 6 hours
+        case "CUSTOM_TIMER_NY":
+            Calendar.current.date(from: DateComponents(year: 2025, month: 1, day: 1)) ?? Date(timeIntervalSinceNow: 3600.0)
+        default:
+            Date(timeIntervalSinceNow: 3600.0) // 1 hour
+        }
+    }
+}
+```
+
+Trong ví dụ này, `CUSTOM_TIMER_NY` và `CUSTOM_TIMER_6H` là các **Timer ID** của timer do developer định nghĩa mà bạn đặt trong Adapty Dashboard. `timerResolver` đảm bảo ứng dụng cập nhật động mỗi timer với giá trị chính xác. Ví dụ:
+
+- `CUSTOM_TIMER_NY`: Thời gian còn lại đến khi timer kết thúc, chẳng hạn như Năm Mới.
+- `CUSTOM_TIMER_6H`: Thời gian còn lại trong khoảng 6 giờ bắt đầu khi người dùng mở paywall.
+
+</SDKv3>

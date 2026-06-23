@@ -1,0 +1,371 @@
+---
+title: "Tích hợp ban đầu với Stripe"
+description: "Tích hợp Stripe với Adapty để xử lý thanh toán gói đăng ký liền mạch."
+metadataTitle: "Hướng dẫn tích hợp Stripe | Tài liệu Adapty"
+keywords: ['stripe', 'tích hợp stripe']
+rank: 50
+---
+
+Adapty hỗ trợ luồng gói đăng ký web2app bằng cách theo dõi các khoản thanh toán và gói đăng ký web được thực hiện qua [Stripe](https://stripe.com/).
+
+Tích hợp này bao gồm các giao dịch mua được khởi tạo từ web (Stripe Checkout, các trang thanh toán được lưu trữ, hoặc các luồng web tùy chỉnh) và đồng bộ hóa chúng với quyền truy cập ứng dụng di động và phân tích.
+
+Tích hợp này hữu ích trong các trường hợp sau:
+
+- Tự động cấp quyền truy cập vào các tính năng trả phí cho người dùng đã mua trên web nhưng sau đó cài đặt ứng dụng và đăng nhập vào tài khoản của họ
+- Có toàn bộ phân tích gói đăng ký trong một Adapty Dashboard duy nhất (bao gồm cohort, dự đoán, và các công cụ phân tích khác của chúng tôi)
+
+Mặc dù các giao dịch mua trên web đang ngày càng phổ biến với các ứng dụng, Apple App Store chỉ cho phép hệ thống khác ngoài in-app purchase đối với hàng hóa kỹ thuật số tại Hoa Kỳ. Hãy đảm bảo bạn không quảng bá gói đăng ký web bên trong ứng dụng của mình cho các quốc gia khác. Nếu không, ứng dụng của bạn có thể bị từ chối hoặc bị cấm.
+
+Các bước dưới đây mô tả cách cấu hình tích hợp Stripe.
+
+:::important
+Tích hợp này tập trung vào việc theo dõi và đồng bộ hóa các giao dịch mua Stripe trên web. Nếu bạn cần chuyển người dùng từ ứng dụng sang một trang thanh toán web, hãy xem [Web paywalls](web-paywall).
+:::
+
+## 1\. Kết nối Stripe với Adapty \{#1-connect-stripe-to-adapty\}
+
+Tích hợp này chủ yếu dựa vào việc Adapty lấy dữ liệu gói đăng ký từ Stripe qua webhook. Do đó, bạn cần kết nối tài khoản Adapty của mình với tài khoản Stripe bằng cách cung cấp API Keys và sử dụng URL webhook của Adapty trong Stripe. Để tự động hóa việc cấu hình webhook, hãy cài đặt ứng dụng Adapty trong Stripe:
+
+:::note
+Các bước dưới đây giống nhau cho cả chế độ Production và Test của Stripe, nhưng bạn cần sử dụng các API key khác nhau cho mỗi chế độ.
+:::
+
+0. Xác định xem bạn đang kết nối Stripe ở chế độ test hay live. Nếu ban đầu bạn thực hiện ở chế độ test, bạn sẽ cần lặp lại các bước dưới đây cho chế độ live.
+
+1. Truy cập [Stripe App Marketplace](https://marketplace.stripe.com/apps/adapty) và cài đặt ứng dụng Adapty. Lưu ý rằng chế độ sandbox không hỗ trợ cài đặt ứng dụng. Bạn chỉ có thể thực hiện điều này ở chế độ production hoặc test.
+
+<Zoom>
+      <img src="/assets/shared/img/stripe1.png"/>
+</Zoom>
+
+2. Cấp cho ứng dụng các quyền cần thiết. Điều này cho phép Adapty truy cập dữ liệu và lịch sử gói đăng ký. Sau đó, nhấp vào **Continue to app settings** để tiếp tục.
+
+Ở cuối pop-up quyền, bạn có thể chọn cài đặt ứng dụng ở chế độ live hay test.
+
+<Zoom>
+      <img src="/assets/shared/img/stripe2.png"/>
+</Zoom>
+
+3. Trong pop-up, tạo một restricted key mới. Bạn sẽ cần xác minh danh tính bằng email, Touch ID, hoặc security key. Sau khi tạo key, bạn sẽ không thể xem lại được nữa, vì vậy hãy lưu trữ an toàn trong trình quản lý mật khẩu hoặc secret store.
+
+<Zoom>
+      <img src="/assets/shared/img/stripe4.png"/>
+</Zoom>
+
+4. Sao chép key đã tạo từ pop-up và truy cập [App Settings → Stripe](https://app.adapty.io/settings/stripe) của Adapty. Dán key vào phần **Stripe App Restricted API Key** tùy theo chế độ của bạn. Lưu ý rằng bạn phải tạo các key khác nhau cho chế độ test và live.
+
+<Zoom>
+      <img src="/assets/shared/img/Stripe3.png"/>
+</Zoom>
+
+Xong rồi! Tiếp theo, hãy tạo sản phẩm trên Stripe và thêm chúng vào Adapty.
+
+<Details>
+
+<summary>Quy trình cài đặt đã lỗi thời</summary>
+
+1. Truy cập [Developers → API Keys](https://dashboard.stripe.com/apikeys) trong Stripe:
+
+<Zoom>
+  <img src="/assets/shared/img/6549602-CleanShot_2023-12-06_at_17.29.122x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. Nhấp vào nút **Reveal live (test) key** bên cạnh tiêu đề **Secret key**, sao chép nó và truy cập [App Settings → Stripe](https://app.adapty.io/settings/stripe) của Adapty. Dán key vào đây:
+
+<Zoom>
+  <img src="/assets/shared/img/2989508-CleanShot_2023-12-07_at_14.59.122x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Tiếp theo, sao chép Webhook URL từ cuối trang tương tự trong Adapty. Truy cập [**Developers** → **Webhooks**](https://dashboard.stripe.com/webhooks) trong Stripe và nhấp vào nút **Add endpoint**:
+
+<Zoom>
+  <img src="/assets/shared/img/e7149f5-CleanShot_2023-12-07_at_17.31.392x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. Dán webhook URL từ Adapty vào trường **Endpoint URL**. Sau đó chọn **Latest API version** trong trường **Version** của webhook. Tiếp theo chọn các sự kiện sau:
+
+   - charge.refunded
+   - customer.subscription.created
+   - customer.subscription.deleted
+   - customer.subscription.paused
+   - customer.subscription.resumed
+   - customer.subscription.updated
+   - invoice.created
+   - invoice.updated
+   - payment_intent.succeeded
+
+<Zoom>
+  <img src="/assets/shared/img/cbc5404-CleanShot_2023-12-07_at_17.36.232x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+5. Nhấn "Add endpoint" rồi nhấn "Reveal" bên dưới "Signing secret". Đây là key dùng để giải mã dữ liệu webhook phía Adapty, hãy sao chép nó sau khi hiển thị:
+
+<Zoom>
+  <img src="/assets/shared/img/0460cbb-CleanShot_2023-12-07_at_17.52.582x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+6. Cuối cùng, dán key này vào App Settings → Stripe của Adapty tại mục "Stripe Webhook Secret":
+
+<Zoom>
+  <img src="/assets/shared/img/055db20-CleanShot_2023-12-07_at_14.56.212x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+</Details>
+
+## 2\. Tạo sản phẩm trên Stripe \{#2-create-products-on-stripe\}
+
+:::note
+Nếu bạn đang thiết lập ở chế độ test, hãy đảm bảo Stripe cũng đang ở chế độ Test trước khi tiếp tục bước này.
+:::
+
+Truy cập [Product catalog](https://dashboard.stripe.com/products?active=true) của Stripe và tạo các sản phẩm bạn muốn bán cùng với các gói giá của chúng. Lưu ý rằng Stripe cho phép bạn có nhiều gói giá cho mỗi sản phẩm, rất hữu ích để tùy chỉnh ưu đãi mà không cần tạo thêm sản phẩm mới.
+
+<Zoom>
+  <img src="/assets/shared/img/b202e2e-CleanShot_2023-12-06_at_15.06.262x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::warning
+Hiện tại Adapty chỉ hỗ trợ **Flat rate** ($9.99/tháng) hoặc **Package pricing** ($9.99/10 đơn vị), vì chúng hoạt động tương tự như các cửa hàng ứng dụng. Các tùy chọn **Tiered pricing**, **Usage-based fee** và **Customer chooses price** không được hỗ trợ
+:::
+
+## 3\. Thêm sản phẩm Stripe vào Adapty \{#3-add-stripe-products-to-adapty\}
+
+:::warning
+
+Sản phẩm là bắt buộc! Hãy chắc chắn tạo sản phẩm Stripe của bạn trong Adapty Dashboard. Adapty chỉ theo dõi các sự kiện cho các giao dịch được liên kết với những sản phẩm này, vì vậy đừng bỏ qua bước này—nếu không, các sự kiện giao dịch sẽ không được tạo.
+
+:::
+
+Chúng tôi xử lý Stripe tương tự như App Store và Google Play: đó chỉ là một cửa hàng khác nơi bạn bán sản phẩm kỹ thuật số. Vì vậy nó được cấu hình tương tự: chỉ cần thêm các sản phẩm Stripe (cụ thể là `product_id` và `price_id` của chúng) vào phần Products của Adapty:
+
+<Zoom>
+  <img src="/assets/shared/img/stripe-add-product.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '500px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Product ID trong Stripe trông giống như `prod_...` và price ID trông giống như `price_...`. Chúng khá dễ tìm cho mỗi sản phẩm trong [Product Catalog](https://dashboard.stripe.com/products?active=true) của Stripe, khi bạn mở bất kỳ sản phẩm nào:
+
+<Zoom>
+  <img src="/assets/shared/img/14a72d7-CleanShot_2023-12-06_at_17.32.512x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Sau khi bạn đã thêm tất cả các sản phẩm cần thiết, bước tiếp theo là cho Stripe biết người dùng nào đang thực hiện giao dịch mua, để Adapty có thể nhận diện được!
+
+## 4\. Bổ sung thông tin người dùng vào giao dịch mua trên web \{#4-enrich-purchases-made-on-the-web-with-your-user-id\}
+
+Adapty dựa vào webhooks từ Stripe để cung cấp và cập nhật mức độ truy cập cho người dùng như là nguồn thông tin duy nhất. Nhưng bạn phải cung cấp thông tin bổ sung từ phía mình khi làm việc với Stripe để tích hợp này hoạt động đúng.
+
+Để mức độ truy cập nhất quán trên các nền tảng (web hoặc di động), bạn phải đảm bảo có một ID người dùng duy nhất mà Adapty có thể nhận diện từ các webhook. Đây có thể là email, số điện thoại hoặc bất kỳ ID nào khác từ hệ thống xác thực bạn đang sử dụng.
+
+Xác định ID bạn muốn dùng để nhận diện người dùng. Sau đó, truy cập phần code khởi tạo thanh toán qua Stripe — và thêm ID người dùng này vào object `metadata` của [Stripe Subscription](https://docs.stripe.com/api/subscriptions/object#subscription_object-metadata) (`sub_...`) hoặc [Checkout Session](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-metadata) (`ses_...`) với tên `customer_user_id` như sau:
+
+```json showLineNumbers title="Stripe Metadata contents"
+{'customer_user_id': "YOUR_USER_ID"}
+```
+
+Chỉ cần thêm một dòng đơn giản này là tất cả những gì bạn cần làm trong code. Sau đó, Adapty sẽ phân tích tất cả các webhook nhận được từ Stripe, trích xuất `metadata` này và liên kết chính xác các gói đăng ký với khách hàng của bạn.
+
+:::warning
+User ID là bắt buộc
+
+Nếu không có, chúng tôi không có cách nào để khớp người dùng này và cấp cho họ mức độ truy cập trên di động.
+
+Nếu bạn không cung cấp `customer_user_id` vào `metadata`, bạn sẽ có tùy chọn để Adapty tìm kiếm `customer_user_id` ở các vị trí khác: `email` từ Customer object của Stripe hoặc `client_reference_id` từ Session của Stripe.
+
+Tìm hiểu thêm về cấu hình hành vi tạo hồ sơ người dùng [bên dưới](stripe#profile-creation-behavior)
+:::
+
+:::note
+Customer trong Stripe cũng là bắt buộc
+
+Nếu bạn đang sử dụng Checkout Sessions, [hãy đảm bảo bạn đang tạo Stripe Customer](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-customer_creation) bằng cách đặt `customer_creation` thành `always`.
+:::
+
+## 5\. Cấp quyền truy cập cho người dùng trên di động \{#5-provide-access-to-users-on-the-mobile\}
+
+Để đảm bảo người dùng di động đến từ web có thể truy cập các tính năng trả phí, chỉ cần gọi `Adapty.activate()` hoặc `Adapty.identify()` với cùng `customer_user_id` bạn đã cung cấp ở bước trước (xem <InlineTooltip tooltip="Xác định người dùng">[iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), và [Unity](unity-identifying-users)</InlineTooltip> để biết thêm).
+
+## 6\. Kiểm tra tích hợp của bạn \{#6-test-your-integration\}
+
+Hãy đảm bảo bạn đã hoàn thành các bước trên cho cả Sandbox và Production. Các giao dịch bạn thực hiện từ chế độ Test của Stripe sẽ được coi là Sandbox trong Adapty.
+
+:::info
+Xong rồi!
+
+Người dùng của bạn giờ có thể hoàn tất giao dịch mua trên web và truy cập các tính năng trả phí trong ứng dụng. Và bạn cũng có thể xem toàn bộ phân tích gói đăng ký của mình ở một nơi duy nhất.
+:::
+
+## Hành vi tạo hồ sơ người dùng \{#profile-creation-behavior\}
+
+Adapty phải liên kết một giao dịch mua với [hồ sơ người dùng](profiles-crm) để nó khả dụng trên di động — vì vậy mặc định nó tạo hồ sơ người dùng khi nhận webhook từ Stripe. Bạn có thể chọn dùng gì làm customer user ID trong Adapty:
+
+1. **Mặc định và khuyến nghị:** `customer_user_id` bạn đã cung cấp trong metadata ở [bước 4 ở trên](stripe#4-enrich-purchases-made-on-the-web-with-your-user-id)
+2. `email` trong Customer object của Stripe (xem [tài liệu Stripe](https://docs.stripe.com/api/customers/object#customer_object-email))
+3. `client_reference_id` trong Session object của Stripe (xem [tài liệu Stripe](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-client_reference_id))
+
+Bạn có thể cấu hình ID nào bạn muốn sử dụng trong [App Settings → Stripe](https://app.adapty.io/settings/stripe).
+
+:::warning
+**Lưu ý:** nếu một giao dịch cụ thể từ Stripe không chứa ID được chỉ định, chúng tôi sẽ không tạo hồ sơ người dùng. Giao dịch này sẽ vẫn ẩn danh cho đến khi được liên kết với một hồ sơ nào đó (ví dụ: nếu bạn sử dụng [S2S validate](api-adapty/operations/validateStripePurchase) sau đó và thông báo cho chúng tôi về giao dịch này theo cách thủ công).
+
+Nó sẽ hiển thị trong Analytics nhưng không trong các phần dựa vào việc đếm hồ sơ người dùng (LTV, Cohorts, Conversions, v.v.) và bạn sẽ không thể xem nó trong Event feed.
+:::
+
+Bạn cũng có tùy chọn thứ tư là không tạo hồ sơ người dùng nào cả, nhưng điều này không được khuyến nghị do các giới hạn Analytics đã nêu ở trên.
+
+## Giới hạn hiện tại \{#current-limitations\}
+
+### Nâng cấp, hạ cấp và phân bổ phí \{#upgrading-downgrading-and-proration\}
+
+Các thay đổi gói đăng ký như nâng cấp hoặc hạ cấp có thể dẫn đến các khoản phí theo tỷ lệ. Adapty sẽ không tính các khoản phí này vào tính toán doanh thu. Tốt nhất là vô hiệu hóa các tùy chọn này theo cách thủ công qua Stripe dashboard. Bạn cũng có thể vô hiệu hóa chúng bằng cách đặt giá trị thuộc tính `proration_behaviour` thành `none` qua Stripe API.
+
+### Hủy gói đăng ký \{#cancellations\}
+
+Stripe có hai tùy chọn hủy gói đăng ký:
+
+1. Hủy ngay lập tức: Gói đăng ký hủy ngay lập tức có hoặc không có tùy chọn phân bổ phí
+2. Hủy vào cuối kỳ: Gói đăng ký hủy vào cuối kỳ thanh toán hiện tại (tương tự như gói đăng ký trong ứng dụng trên các cửa hàng ứng dụng).
+
+Adapty hỗ trợ cả hai tùy chọn, nhưng tính toán doanh thu khi hủy ngay lập tức sẽ bỏ qua tùy chọn phân bổ phí.
+
+### Vấn đề thanh toán và thời gian ân hạn \{#billing-issues-and-grace-period\}
+
+Khi khách hàng gặp vấn đề với thanh toán, Adapty sẽ tạo sự kiện billing issue và quyền truy cập sẽ bị thu hồi. Chúng tôi chưa hỗ trợ Grace Period của Stripe — điều này sẽ là một phần của các bản phát hành trong tương lai.
+
+### Hoàn tiền \{#refunds\}
+
+Adapty chỉ theo dõi hoàn tiền toàn bộ. Hoàn tiền theo tỷ lệ hoặc một phần hiện không được hỗ trợ.
+
+### Tính duy nhất của Transaction ID \{#transaction-id-uniqueness\}
+
+Adapty khớp hồ sơ người dùng và giao dịch bằng `store_transaction_id` và `store_original_transaction_id`. Những giá trị này **phải là duy nhất** trên các môi trường Test và Production.
+
+#### Tại sao điều này quan trọng \{#why-this-matters\}
+
+Nếu cùng một transaction ID tồn tại trong cả hai môi trường, Adapty xử lý chúng như một giao dịch, gây ra:
+- Giao dịch mua Production kế thừa mức độ truy cập và product ID từ Test
+- Product ID và môi trường sai trong phản hồi API
+- Liên kết hồ sơ người dùng và sự kiện gói đăng ký bị gián đoạn
+
+#### Cách đảm bảo tính duy nhất \{#how-to-ensure-uniqueness\}
+
+Invoice ID của Stripe có thể trùng lặp giữa môi trường Test và Live. Để ngăn xung đột giữa các môi trường, hãy chọn một trong các cách sau
+
+#### Tùy chọn 1: Đánh số theo tài khoản với tiền tố môi trường \{#option-1-account-level-numbering-with-environment-prefixes\}
+
+Cấu hình tiền tố riêng cho mỗi môi trường:
+
+1. Trong Stripe Dashboard, chuyển sang chế độ Test.
+2. Truy cập [Settings → Billing → Invoices](https://dashboard.stripe.com/settings/account/?support_details=true).
+3. Đặt **Invoice numbering** thành **Sequentially across your account**.
+4. Đặt **Invoice prefix** thành TEST- (hoặc tiền tố khác dành riêng cho môi trường test).
+5. Chuyển sang chế độ Live và lặp lại các bước 2-4, sử dụng LIVE- (hoặc tiền tố khác dành riêng cho môi trường live) làm tiền tố
+
+#### Tùy chọn 2: Đánh số theo khách hàng \{#option-2-customer-level-numbering\}
+
+Đặt **Invoice numbering** trong [**Stripe settings** -> **Billing** -> **Invoices** tab](https://dashboard.stripe.com/settings/account/?support_details=true) thành **Sequentially for each customer (customer-level)**.
+
+Ngay cả với cấu hình trên, nếu bạn xóa một invoice, Stripe có thể tái sử dụng ID đó cho các invoice mới của cùng khách hàng. Tốt nhất là tránh xóa invoice khi có thể.
+
+### Giao dịch mua một lần qua Stripe Checkout hoặc Payment Links \{#one-time-purchases-via-stripe-checkout-or-payment-links\}
+
+Adapty theo dõi các giao dịch mua một lần (không phải gói đăng ký) được thực hiện qua Stripe Checkout (`mode=payment`) hoặc Payment Links chỉ khi Stripe tạo invoice cho giao dịch. Theo mặc định, Stripe không tạo invoice cho các giao dịch mua Checkout một lần. Trong trường hợp này, `payment_intent.succeeded` đến mà không có dữ liệu invoice, không đủ để Adapty ghi lại giao dịch.
+
+Để theo dõi các giao dịch mua Checkout một lần trong Adapty, [hãy bật tính năng tạo invoice](https://docs.stripe.com/payments/checkout/receipts?payment-ui=stripe-hosted#paid-invoices-hosted) khi bạn tạo session. Stripe sau đó sẽ tạo invoice và phát ra các sự kiện `invoice.created` và `invoice.updated` liên quan, mà Adapty xử lý để ghi lại giao dịch.
+
+## Khai thác tối đa dữ liệu Stripe của bạn \{#get-more-from-your-stripe-data\}
+Sau khi tích hợp với Stripe, Adapty sẵn sàng cung cấp thông tin chi tiết ngay lập tức. Để tận dụng tối đa dữ liệu Stripe của bạn, bạn có thể thiết lập thêm các tích hợp Adapty để chuyển tiếp các sự kiện Stripe — đưa toàn bộ phân tích gói đăng ký vào một Adapty Dashboard duy nhất.
+
+:::tip
+Để phân tích nâng cao, bạn có thể thêm `variation_id` vào metadata Stripe để gán giao dịch mua cho các phiên bản paywall cụ thể. Điều này đặc biệt hữu ích khi triển khai các web paywall tự xây dựng mà bạn muốn theo dõi paywall nào đã dẫn đến chuyển đổi.
+
+Lưu ý rằng `variation_id` chỉ được đọc từ metadata trong các object Stripe Subscription (`sub_...`) và Checkout Session (`ses_...`):
+
+```json showLineNumbers title="Stripe Metadata with variation_id"
+{
+  'customer_user_id': "YOUR_USER_ID",
+  'variation_id': "YOUR_VARIATION_ID"
+}
+```
+:::
+
+Các tích hợp bạn có thể sử dụng để chuyển tiếp và phân tích các sự kiện Stripe:
+- [Amplitude](amplitude/)
+- [Webhook](webhook)
+- [Firebase](firebase-and-google-analytics)
+- [Mixpanel](mixpanel)
+- [Posthog](posthog)
+
+### Các sự kiện Stripe được hỗ trợ \{#supported-stripe-events\}
+Adapty hỗ trợ các sự kiện Stripe sau:
+- charge.refunded
+- customer.subscription.created
+- customer.subscription.deleted
+- customer.subscription.paused
+- customer.subscription.resumed
+- customer.subscription.updated
+- invoice.created
+- invoice.updated
+- payment_intent.succeeded

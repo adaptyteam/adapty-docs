@@ -1,0 +1,129 @@
+---
+title: "Lấy paywall và sản phẩm cho remote config paywall trong Kotlin Multiplatform SDK"
+description: "Lấy paywall và sản phẩm trong Adapty Kotlin Multiplatform SDK để tăng cường khả năng kiếm tiền từ người dùng."
+metadataTitle: "Lấy Paywall & Sản Phẩm | Kotlin Multiplatform SDK | Tài liệu Adapty"
+keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'Kotlin Multiplatform']
+displayed_sidebar: sdkkmp
+rank: 95
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md'; 
+
+Trước khi hiển thị remote config và paywall tùy chỉnh, bạn cần lấy thông tin về chúng. Lưu ý rằng chủ đề này đề cập đến remote config và paywall tùy chỉnh. Để biết hướng dẫn lấy paywall cho Paywall Builder, vui lòng tham khảo [Lấy paywall Paywall Builder và cấu hình của chúng](kmp-get-pb-paywalls).
+
+<SampleApp />
+
+<details>
+   <summary>Trước khi bắt đầu lấy paywall và sản phẩm trong ứng dụng mobile của bạn (click để mở rộng)</summary>
+
+   1. [Tạo sản phẩm](create-product) của bạn trong Adapty Dashboard.
+
+2. [Tạo paywall và thêm sản phẩm vào paywall](create-paywall) trong Adapty Dashboard.
+
+3. [Tạo placement và thêm paywall vào placement](create-placement) trong Adapty Dashboard.
+
+4. [Cài đặt Adapty SDK](sdk-installation-kotlin-multiplatform) trong ứng dụng mobile của bạn.
+</details>
+
+## Lấy thông tin paywall \{#fetch-paywall-information\}
+
+Trong Adapty, một [sản phẩm](product) là sự kết hợp của các sản phẩm từ cả App Store và Google Play. Các sản phẩm đa nền tảng này được tích hợp vào paywall, cho phép bạn hiển thị chúng trong các placement cụ thể của ứng dụng mobile.
+
+Để hiển thị các sản phẩm, bạn cần lấy [Paywall](paywalls) từ một trong các [placement](placements) của bạn bằng phương thức `getPaywall`.
+
+:::important
+**Đừng hardcode ID sản phẩm.** ID duy nhất bạn nên hardcode là placement ID. Paywall được cấu hình từ xa, vì vậy số lượng sản phẩm và ưu đãi có thể thay đổi bất kỳ lúc nào. Ứng dụng của bạn phải xử lý những thay đổi này một cách linh hoạt — nếu hôm nay paywall trả về hai sản phẩm và ngày mai trả về ba, hãy hiển thị tất cả mà không cần thay đổi code.
+:::
+
+```kotlin showLineNumbers
+
+Adapty.getPaywall(
+    placementId = "YOUR_PLACEMENT_ID", 
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+    loadTimeout = 5.seconds
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
+    // handle the error
+}
+```
+
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements). Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **locale** | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Định danh của [bản địa hóa paywall](add-remote-config-locale). Tham số này được kỳ vọng là mã ngôn ngữ gồm một hoặc nhiều thẻ phụ được phân tách bằng ký tự dấu trừ (**-**). Thẻ phụ đầu tiên là ngôn ngữ, thẻ thứ hai là vùng.</p><p></p><p>Ví dụ: `en` là tiếng Anh, `pt-br` là tiếng Bồ Đào Nha Brazil.</p> |
+| **fetchPolicy** | mặc định: `AdaptyPaywallFetchPolicy.Default` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ server và trả về dữ liệu đã cache trong trường hợp thất bại. Chúng tôi khuyến nghị tùy chọn này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường xuyên gặp vấn đề kết nối internet không ổn định, hãy cân nhắc dùng `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` để trả về dữ liệu đã cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất, nhưng thời gian tải sẽ nhanh hơn, bất kể chất lượng kết nối internet của họ. Cache được cập nhật thường xuyên nên an toàn khi sử dụng trong phiên làm việc để tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng cache vẫn còn nguyên sau khi khởi động lại ứng dụng và chỉ bị xóa khi ứng dụng được cài đặt lại hoặc thông qua việc dọn dẹp thủ công.</p><p></p><p>Adapty SDK lưu trữ paywall ở hai lớp: cache được cập nhật thường xuyên như mô tả ở trên và [paywall dự phòng](kmp-use-fallback-paywalls). Chúng tôi cũng sử dụng CDN để tải paywall nhanh hơn và một server dự phòng độc lập trong trường hợp CDN không truy cập được. Hệ thống này được thiết kế để đảm bảo bạn luôn nhận được phiên bản paywall mới nhất trong khi vẫn đảm bảo độ tin cậy ngay cả khi kết nối internet kém.</p> |
+| **loadTimeout** | mặc định: 5 giây | <p>Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu hết thời gian chờ, dữ liệu đã cache hoặc fallback cục bộ sẽ được trả về.</p><p></p><p>Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết hạn chậm hơn một chút so với thời gian chỉ định trong `loadTimeout`, vì thao tác có thể bao gồm nhiều yêu cầu khác nhau bên dưới.</p> |
+
+Đừng hardcode ID sản phẩm! Vì paywall được cấu hình từ xa, các sản phẩm khả dụng, số lượng sản phẩm và ưu đãi đặc biệt (như dùng thử miễn phí) có thể thay đổi theo thời gian. Hãy đảm bảo code của bạn xử lý được các tình huống này.  
+Ví dụ: nếu ban đầu bạn lấy được 2 sản phẩm, ứng dụng của bạn nên hiển thị 2 sản phẩm đó. Tuy nhiên, nếu sau này bạn lấy được 3 sản phẩm, ứng dụng của bạn nên hiển thị cả 3 mà không cần thay đổi code. Thứ duy nhất bạn phải hardcode là placement ID.
+
+Các tham số phản hồi:
+
+| Tham số | Mô tả |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | Một đối tượng [`AdaptyPaywall`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall/) với: danh sách ID sản phẩm, định danh paywall, Remote Config và một số thuộc tính khác. |
+
+## Lấy sản phẩm \{#fetch-products\}
+
+Sau khi có paywall, bạn có thể truy vấn mảng sản phẩm tương ứng với nó:
+
+```kotlin showLineNumbers
+Adapty.getPaywallProducts(paywall).onSuccess { products ->
+    // the requested products
+}.onError { error ->
+    // handle the error
+}
+```
+
+Các tham số phản hồi:
+
+| Tham số | Mô tả |
+| :-------- |:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Products  | Danh sách các đối tượng [`AdaptyPaywallProduct`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall-product/) với: định danh sản phẩm, tên sản phẩm, giá, tiền tệ, thời hạn gói đăng ký và một số thuộc tính khác. |
+
+Khi triển khai thiết kế paywall của riêng bạn, bạn sẽ cần truy cập các thuộc tính này từ đối tượng [`AdaptyPaywallProduct`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall-product/). Dưới đây là các thuộc tính được sử dụng phổ biến nhất, nhưng hãy tham khảo tài liệu được liên kết để biết đầy đủ chi tiết về tất cả các thuộc tính có sẵn.
+
+| Thuộc tính | Mô tả |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Title** | Để hiển thị tiêu đề sản phẩm, sử dụng `product.localizedTitle`. Lưu ý rằng việc bản địa hóa dựa trên quốc gia cửa hàng được chọn của người dùng chứ không phải ngôn ngữ của thiết bị. |
+| **Price** | Để hiển thị phiên bản đã bản địa hóa của giá, sử dụng `product.price.localizedString`. Việc bản địa hóa này dựa trên thông tin ngôn ngữ của thiết bị. Bạn cũng có thể truy cập giá dưới dạng số bằng `product.price.amount`. Giá trị sẽ được cung cấp theo đơn vị tiền tệ địa phương. Để lấy ký hiệu tiền tệ tương ứng, sử dụng `product.price.currencySymbol`. |
+| **Subscription Period** | Để hiển thị chu kỳ (ví dụ: tuần, tháng, năm, v.v.), sử dụng `product.subscriptionDetails?.localizedSubscriptionPeriod`. Việc bản địa hóa này dựa trên ngôn ngữ của thiết bị. Để lấy chu kỳ gói đăng ký theo chương trình, sử dụng `product.subscriptionDetails?.subscriptionPeriod`. Từ đó bạn có thể truy cập enum `unit` để lấy độ dài (tức là DAY, WEEK, MONTH, YEAR hoặc UNKNOWN). Giá trị `numberOfUnits` sẽ cho bạn biết số đơn vị chu kỳ. Ví dụ: đối với gói đăng ký theo quý, bạn sẽ thấy `MONTH` trong thuộc tính unit và `3` trong thuộc tính numberOfUnits. |
+| **Introductory Offer** | Để hiển thị huy hiệu hoặc chỉ số khác cho biết gói đăng ký có ưu đãi giới thiệu, hãy xem thuộc tính `product.subscriptionDetails?.introductoryOfferPhases`. Đây là danh sách có thể chứa tối đa hai giai đoạn giảm giá: giai đoạn dùng thử miễn phí và giai đoạn giá giới thiệu. Trong mỗi đối tượng giai đoạn có các thuộc tính hữu ích sau:<br/>• `paymentMode`: một enum với các giá trị `FREE_TRIAL`, `PAY_AS_YOU_GO`, `PAY_UPFRONT` và `UNKNOWN`. Dùng thử miễn phí sẽ thuộc loại `FREE_TRIAL`.<br/>• `price`: Giá được giảm dưới dạng số. Đối với dùng thử miễn phí, hãy tìm giá trị `0` ở đây.<br/>• `localizedNumberOfPeriods`: một chuỗi được bản địa hóa theo ngôn ngữ của thiết bị mô tả độ dài của ưu đãi. Ví dụ: ưu đãi dùng thử ba ngày hiển thị `3 days` trong trường này.<br/>• `subscriptionPeriod`: Ngoài ra, bạn có thể lấy chi tiết riêng lẻ của chu kỳ ưu đãi bằng thuộc tính này. Nó hoạt động theo cách tương tự cho các ưu đãi như phần trước đã mô tả.<br/>• `localizedSubscriptionPeriod`: Chu kỳ gói đăng ký được định dạng theo ngôn ngữ của người dùng. |
+
+## Tăng tốc độ lấy paywall với paywall đối tượng mặc định \{#speed-up-paywall-fetching-with-default-audience-paywall\}
+
+Thông thường, paywall được lấy gần như ngay lập tức, vì vậy bạn không cần lo lắng về việc tăng tốc quá trình này. Tuy nhiên, trong trường hợp bạn có nhiều đối tượng và paywall, và người dùng của bạn có kết nối internet yếu, việc lấy paywall có thể mất nhiều thời gian hơn bạn muốn. Trong những tình huống như vậy, bạn có thể muốn hiển thị một paywall mặc định để đảm bảo trải nghiệm người dùng mượt mà thay vì không hiển thị paywall nào.
+
+Để giải quyết vấn đề này, bạn có thể sử dụng phương thức `getPaywallForDefaultAudience`, phương thức này lấy paywall của placement được chỉ định cho đối tượng **All Users**. Tuy nhiên, điều quan trọng cần hiểu là cách tiếp cận được khuyến nghị là lấy paywall bằng phương thức `getPaywall`, như đã trình bày chi tiết trong phần [Lấy thông tin paywall](fetch-paywalls-and-products-kmp#fetch-paywall-information) ở trên.
+
+:::warning
+Lý do chúng tôi khuyến nghị sử dụng `getPaywall`
+
+Phương thức `getPaywallForDefaultAudience` có một số nhược điểm đáng kể:
+
+- **Các vấn đề tương thích ngược tiềm ẩn**: Nếu bạn cần hiển thị các paywall khác nhau cho các phiên bản ứng dụng khác nhau (hiện tại và tương lai), bạn có thể gặp khó khăn. Bạn sẽ phải thiết kế paywall hỗ trợ phiên bản hiện tại (cũ) hoặc chấp nhận rằng người dùng phiên bản hiện tại (cũ) có thể gặp sự cố với paywall không hiển thị được.
+- **Mất khả năng nhắm mục tiêu**: Tất cả người dùng sẽ thấy cùng một paywall được thiết kế cho đối tượng **All Users**, nghĩa là bạn mất đi khả năng nhắm mục tiêu cá nhân hóa (bao gồm cả theo quốc gia, attribution marketing hoặc các thuộc tính tùy chỉnh của riêng bạn).
+
+Nếu bạn sẵn sàng chấp nhận những nhược điểm này để được hưởng lợi từ việc lấy paywall nhanh hơn, hãy sử dụng phương thức `getPaywallForDefaultAudience` như sau. Nếu không, hãy tiếp tục dùng `getPaywall` được mô tả [ở trên](fetch-paywalls-and-products-kmp#fetch-paywall-information).
+:::
+
+```kotlin showLineNumbers
+
+Adapty.getPaywallForDefaultAudience(
+    placementId = "YOUR_PLACEMENT_ID",
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
+    // handle the error
+}
+```
+
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements). Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **locale** | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Định danh của [bản địa hóa paywall](add-remote-config-locale). Tham số này được kỳ vọng là mã ngôn ngữ gồm một hoặc nhiều thẻ phụ được phân tách bằng ký tự dấu trừ (**-**). Thẻ phụ đầu tiên là ngôn ngữ, thẻ thứ hai là vùng.</p><p></p><p>Ví dụ: `en` là tiếng Anh, `pt-br` là tiếng Bồ Đào Nha Brazil.</p><p></p> |
+| **fetchPolicy** | mặc định: `AdaptyPaywallFetchPolicy.Default` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ server và trả về dữ liệu đã cache trong trường hợp thất bại. Chúng tôi khuyến nghị tùy chọn này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường xuyên gặp vấn đề kết nối internet không ổn định, hãy cân nhắc dùng `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` để trả về dữ liệu đã cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất, nhưng thời gian tải sẽ nhanh hơn, bất kể chất lượng kết nối internet của họ. Cache được cập nhật thường xuyên nên an toàn khi sử dụng trong phiên làm việc để tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng cache vẫn còn nguyên sau khi khởi động lại ứng dụng và chỉ bị xóa khi ứng dụng được cài đặt lại hoặc thông qua việc dọn dẹp thủ công.</p> |

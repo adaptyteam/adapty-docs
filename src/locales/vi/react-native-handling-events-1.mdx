@@ -1,0 +1,368 @@
+---
+title: "React Native - Xử lý sự kiện paywall"
+description: "Xử lý các sự kiện gói đăng ký trong React Native với Adapty SDK."
+metadataTitle: "Xử lý Sự kiện trong React Native | Tài liệu Adapty"
+toc_max_heading_level: 4
+keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed', 'onPaywallClosed', 'onPaywallShown', 'onWebPaymentNavigationFinished']
+---
+
+import PaywallAction from '@site/src/locales/vi/reusable/PaywallAction.md';
+
+:::important
+Hướng dẫn này đề cập đến việc xử lý sự kiện cho các giao dịch mua, khôi phục, chọn sản phẩm và hiển thị paywall. Bạn cũng cần triển khai xử lý các nút bấm (đóng paywall, mở liên kết, v.v.). Xem [hướng dẫn xử lý hành động nút bấm](react-native-handle-paywall-actions) để biết thêm chi tiết.
+:::
+
+Các paywall được cấu hình bằng [Paywall Builder](adapty-paywall-builder) không cần thêm code để thực hiện và khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể phản hồi. Những sự kiện đó bao gồm các lần nhấn nút (nút đóng, URL, chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua trên paywall. Tìm hiểu cách phản hồi các sự kiện này bên dưới.
+
+:::warning
+Hướng dẫn này chỉ dành cho **paywall Paywall Builder mới** yêu cầu Adapty SDK v3.0 trở lên.
+:::
+
+Để kiểm soát hoặc theo dõi các quy trình diễn ra trên màn hình paywall trong ứng dụng di động của bạn, hãy triển khai các event handler:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+Với React component, bạn xử lý các sự kiện thông qua các prop event handler riêng lẻ trong component `AdaptyPaywallView`:
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyPaywall({ paywall }) {
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {}, []);
+  const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {}, []);
+  const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {}, []);
+  const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {}, []);
+  const onRestoreStarted = useCallback<EventHandlers['onRestoreStarted']>(() => {}, []);
+  const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {}, []);
+  const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {}, []);
+  const onPaywallShown = useCallback<EventHandlers['onPaywallShown']>(() => {}, []);
+  const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {}, []);
+  const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {}, []);
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {}, []);
+  const onWebPaymentNavigationFinished = useCallback<EventHandlers['onWebPaymentNavigationFinished']>(() => {}, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+      onProductSelected={onProductSelected}
+      onPurchaseStarted={onPurchaseStarted}
+      onPurchaseCompleted={onPurchaseCompleted}
+      onPurchaseFailed={onPurchaseFailed}
+      onRestoreStarted={onRestoreStarted}
+      onRestoreCompleted={onRestoreCompleted}
+      onRestoreFailed={onRestoreFailed}
+      onPaywallShown={onPaywallShown}
+      onRenderingFailed={onRenderingFailed}
+      onLoadingProductsFailed={onLoadingProductsFailed}
+      onUrlPress={onUrlPress}
+      onCustomAction={onCustomAction}
+      onWebPaymentNavigationFinished={onWebPaymentNavigationFinished}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Với modal presentation, hãy triển khai phương thức event handler.
+
+:::important
+Gọi `setEventHandlers` nhiều lần sẽ ghi đè các handler bạn đã cung cấp, thay thế cả handler mặc định lẫn các handler đã thiết lập trước đó cho những sự kiện cụ thể đó.
+:::
+
+```javascript showLineNumbers title="React Native (TSX)"
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+  onCloseButtonPress() {
+    return true;
+  },
+  onAndroidSystemBack() {
+    return true;
+  },
+  onPurchaseCompleted(purchaseResult, product) {
+    return purchaseResult.type !== 'user_cancelled';
+  },
+  onPurchaseStarted(product) { /***/},
+  onPurchaseFailed(error) { /***/ },
+  onRestoreCompleted(profile) { /***/ },
+  onRestoreFailed(error, product) { /***/ },
+  onProductSelected(productId) { /***/},
+  onRenderingFailed(error) { /***/ },
+  onLoadingProductsFailed(error) { /***/ },
+  onUrlPress(url) {
+      Linking.openURL(url);
+      return false; // Keep paywall open
+  },
+  onPaywallShown() { /***/ },
+  onPaywallClosed() { /***/ },
+  onWebPaymentNavigationFinished() { /***/ },  
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+Với SDK version < 3.14, chỉ hỗ trợ modal presentation:
+
+```javascript showLineNumbers title="React Native (TSX)"
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.registerEventHandlers({
+  onCloseButtonPress() {
+    return true;
+  },
+  onAndroidSystemBack() {
+    return true;
+  },
+  onPurchaseCompleted(purchaseResult, product) {
+    return purchaseResult.type !== 'user_cancelled';
+  },
+  onPurchaseStarted(product) { /***/},
+  onPurchaseFailed(error, product) { /***/ },
+  onRestoreCompleted(profile) { /***/ },
+  onRestoreFailed(error) { /***/ },
+  onProductSelected(productId) { /***/},
+  onRenderingFailed(error) { /***/ },
+  onLoadingProductsFailed(error) { /***/ },
+  onUrlPress(url) {
+      Linking.openURL(url);
+      return false; // Keep paywall open
+  },
+  onPaywallShown() { /***/ },
+  onPaywallClosed() { /***/ },
+  onWebPaymentNavigationFinished() { /***/ },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Ví dụ về sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+// onCloseButtonPress
+{
+  "event": "close_button_press"
+}
+
+// onAndroidSystemBack
+{
+  "event": "android_system_back"
+}
+
+// onUrlPress
+{
+  "event": "url_press",
+  "url": "https://example.com/terms"
+}
+
+// onCustomAction
+{
+  "event": "custom_action",
+  "actionId": "login"
+}
+
+// onProductSelected
+{
+  "event": "product_selected",
+  "productId": "premium_monthly"
+}
+
+// onPurchaseStarted
+{
+  "event": "purchase_started",
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// onPurchaseCompleted - Success
+{
+  "event": "purchase_completed",
+  "purchaseResult": {
+    "type": "success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// onPurchaseCompleted - Cancelled
+{
+  "event": "purchase_completed",
+  "purchaseResult": {
+    "type": "user_cancelled"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// onPurchaseFailed
+{
+  "event": "purchase_failed",
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    },
+    "product": {
+        "vendorProductId": "premium_monthly",
+            "localizedTitle": "Premium Monthly",
+            "localizedDescription": "Premium subscription for 1 month",
+            "localizedPrice": "$9.99",
+            "price": 9.99,
+            "currencyCode": "USD"
+    }
+  }
+}
+
+// onRestoreCompleted
+{
+  "event": "restore_completed",
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+
+// onRestoreFailed
+{
+  "event": "restore_failed",
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+
+// onRenderingFailed
+{
+  "event": "rendering_failed",
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+
+// onLoadingProductsFailed
+{
+  "event": "loading_products_failed",
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+
+// onPaywallShown
+{
+  "event": "paywall_shown"
+}
+
+// onPaywallClosed
+{
+  "event": "paywall_closed"
+}
+
+// onWebPaymentNavigationFinished
+{
+  "event": "web_payment_navigation_finished"
+}
+```
+</Details>
+
+Bạn có thể đăng ký những event handler mà bạn cần và bỏ qua những cái không cần. Trong trường hợp đó, các event listener không dùng đến sẽ không được tạo. Không có event handler nào là bắt buộc.
+
+Các event handler trả về một giá trị boolean. Nếu trả về `true`, quá trình hiển thị được coi là hoàn tất, do đó màn hình paywall sẽ đóng lại và các event listener cho view này sẽ bị xóa.
+
+Một số event handler có hành vi mặc định mà bạn có thể ghi đè nếu cần:
+- `onCloseButtonPress`: đóng paywall khi nhấn nút đóng.
+- `onUrlPress`: mở URL được nhấn và giữ paywall mở.
+- `onAndroidSystemBack` (chỉ dành cho modal presentation): đóng paywall khi nhấn nút **Back**.
+- `onRestoreCompleted`: đóng paywall sau khi khôi phục thành công.
+- `onPurchaseCompleted`: đóng paywall trừ khi người dùng hủy.
+- `onRenderingFailed`: đóng paywall nếu quá trình hiển thị của nó thất bại.
+
+### Các event handler \{#event-handlers\}
+
+| Event handler                      | Mô tả                                                                                                                                                                                                                                                                                                      |
+|:-----------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onCustomAction**                 | Được gọi khi người dùng thực hiện một hành động tùy chỉnh, ví dụ: nhấn vào [nút tùy chỉnh](paywall-buttons).                                                                                                                                                                                              |
+| **onUrlPress**                     | Được gọi khi người dùng nhấn vào một URL trong paywall của bạn.                                                                                                                                                                                                                                            |
+| **onAndroidSystemBack**            | Chỉ dành cho modal presentation: Được gọi khi người dùng nhấn nút **Back** hệ thống của Android.                                                                                                                                                                                                          |
+| **onCloseButtonPress**             | Được gọi khi nút đóng hiển thị và người dùng nhấn vào nó. Nên đóng màn hình paywall trong handler này.                                                                                                                                                                                                    |
+| **onPurchaseCompleted**            | Được gọi khi giao dịch mua hoàn thành, dù thành công, bị người dùng hủy, hay đang chờ phê duyệt. Trong trường hợp mua thành công, nó cung cấp `AdaptyProfile` đã được cập nhật. Việc người dùng hủy và thanh toán đang chờ xử lý (ví dụ: cần phê duyệt của phụ huynh) sẽ kích hoạt sự kiện này, không phải `onPurchaseFailed`. |
+| **onPurchaseStarted**              | Được gọi khi người dùng nhấn nút hành động "Purchase" để bắt đầu quá trình mua.                                                                                                                                                                                                                           |
+| **onPurchaseFailed**               | Được gọi khi giao dịch mua thất bại do lỗi (ví dụ: hạn chế thanh toán, sản phẩm không hợp lệ, lỗi mạng, lỗi xác minh giao dịch). Không được gọi khi người dùng hủy hoặc thanh toán đang chờ xử lý, những trường hợp này sẽ kích hoạt `onPurchaseCompleted`.                                             |
+| **onRestoreStarted**               | Được gọi khi người dùng bắt đầu quá trình khôi phục giao dịch mua.                                                                                                                                                                                                                                        |
+| **onRestoreCompleted**             | Được gọi khi khôi phục giao dịch mua thành công và cung cấp `AdaptyProfile` đã được cập nhật. Nên đóng màn hình nếu người dùng có `accessLevel` yêu cầu. Tham khảo chủ đề [Trạng thái gói đăng ký](react-native-listen-subscription-changes) để biết cách kiểm tra.                                       |
+| **onRestoreFailed**                | Được gọi khi quá trình khôi phục thất bại và cung cấp `AdaptyError`.                                                                                                                                                                                                                                      |
+| **onProductSelected**              | Được gọi khi bất kỳ sản phẩm nào trong paywall view được chọn, cho phép bạn theo dõi những gì người dùng chọn trước khi mua.                                                                                                                                                                              |
+| **onRenderingFailed**              | Được gọi khi xảy ra lỗi trong quá trình hiển thị view và cung cấp `AdaptyError`. Những lỗi như vậy không nên xảy ra, vì vậy nếu bạn gặp phải, vui lòng thông báo cho chúng tôi.                                                                                                                          |
+| **onLoadingProductsFailed**        | Được gọi khi tải sản phẩm thất bại và cung cấp `AdaptyError`. Nếu bạn chưa đặt `prefetchProducts: true` khi tạo view, AdaptyUI sẽ tự động lấy các đối tượng cần thiết từ server.                                                                                                                          |
+| **onPaywallShown**                 | Được gọi khi paywall hiển thị cho người dùng. Trên iOS, cũng được gọi khi người dùng nhấn vào [nút web paywall](web-paywall#step-2a-add-a-web-purchase-button) bên trong paywall và web paywall mở trong trình duyệt trong ứng dụng.                                                                       |
+| **onPaywallClosed**                | Chỉ dành cho modal presentation: Được gọi khi người dùng đóng paywall. Trên iOS, cũng được gọi khi một [web paywall](web-paywall#step-2a-add-a-web-purchase-button) được mở từ paywall trong trình duyệt trong ứng dụng biến mất khỏi màn hình.                                                            |
+| **onWebPaymentNavigationFinished** | Được gọi sau khi cố gắng mở [web paywall](web-paywall) để mua, dù thành công hay thất bại.                                                                                                                                                                                                                |

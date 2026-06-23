@@ -1,0 +1,180 @@
+---
+title: "Google Cloud Storage"
+description: "Tích hợp Google Cloud Storage với Adapty để lưu trữ dữ liệu an toàn."
+metadataTitle: "Tích hợp Google Cloud Storage | Tài liệu Adapty"
+---
+
+Bật tích hợp Google Cloud Storage để lưu trữ an toàn [các sự kiện gói đăng ký](events) và [dữ liệu lượt xem paywall](paywall-metrics) tại một nơi duy nhất: bucket Google Cloud Storage của bạn.
+
+Mỗi ngày lúc 4 giờ sáng UTC, Adapty sẽ tải lên các file .csv chứa dữ liệu của ngày hôm trước vào bucket của bạn. Bạn có thể chọn nhận dữ liệu **sự kiện**, dữ liệu **lượt xem paywall**, hoặc **cả hai**. Bạn cũng có thể xuất dữ liệu này [thủ công](#manual-data-export) bất cứ lúc nào, cho bất kỳ khoảng thời gian nào.
+
+Để thiết lập tích hợp, [tạo khóa truy cập bucket](#create-google-cloud-storage-credentials) trong Google Cloud Console, sau đó [thêm vào cài đặt Adapty của bạn](#set-up-google-cloud-storage-integration).
+
+## Lịch tải lên và thời gian xử lý \{#upload-schedule-and-duration\}
+
+Adapty tải dữ liệu lên Google Cloud Storage mỗi 24 giờ, lúc 04:00 UTC.
+
+Các file chứa dữ liệu cho các sự kiện được tạo trong ngày dương lịch trước đó (UTC). File được tải lên vào ngày 8 tháng 3 sẽ chứa tất cả sự kiện được tạo vào ngày 7 tháng 3, từ 00:00:00 đến 23:59:59 UTC.
+
+Quá trình này có thể mất đến vài giờ, tùy thuộc vào tổng số file trong hàng đợi cũng như lượng dữ liệu bạn yêu cầu. Nếu Adapty đưa dữ liệu lịch sử vào lần tải lên đầu tiên, thời gian xử lý sẽ lâu hơn so với các lần tải lên hàng ngày sau đó.
+
+## Thiết lập tích hợp Google Cloud Storage \{#set-up-google-cloud-storage-integration\}
+
+Bạn cần có khóa tài khoản dịch vụ Google Cloud hợp lệ với **quyền ghi**. Để tạo khóa, làm theo các bước trong phần [tạo thông tin xác thực](#create-google-cloud-storage-credentials).
+
+:::warning
+Bạn có thể dùng các bucket khác nhau với thông tin xác thực khác nhau cho sự kiện và lượt xem paywall. Tuy nhiên, nếu **một trong hai** bộ thông tin xác thực không hợp lệ, [**cả hai lần tải lên đều sẽ thất bại**](#troubleshooting).
+:::
+
+Vào [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage), mở tab cần thiết (**Events** hoặc **Paywall visits**). Bật tích hợp.
+
+Tải lên file chứa **khóa tài khoản dịch vụ Google Cloud** của bạn. Chỉ định **bucket** và **folder** đích. Lưu các thay đổi.
+
+<ZoomImage id="google-cloud-storage-setup.webp" width="700px" />
+
+### Cài đặt tùy chọn cho dữ liệu sự kiện \{#optional-settings-for-event-data\}
+
+Bạn có thể chỉ định những sự kiện nào được đưa vào báo cáo và đặt tên tùy chỉnh cho các sự kiện. Xem bài viết [events](events) để biết danh sách đầy đủ các sự kiện khả dụng.
+
+<ZoomImage id="event-specific-settings.webp" width="700px" />
+
+| Tên | Mặc định | Mô tả |
+| ------------------------------ | ----------------- | ----------- |
+| Exclude historical events      | true    |   Loại trừ thông tin về các sự kiện xảy ra trước khi bạn tích hợp Adapty SDK vào ứng dụng. <br /> <br />Nếu nền tảng phân tích của bạn đã nhận các sự kiện gói đăng ký **trước khi** bạn bắt đầu dùng Adapty, tùy chọn này đảm bảo nền tảng không nhận các sự kiện trùng lặp. <Details summary="Ví dụ thực tế"><p>Một người dùng đã mua gói đăng ký hàng tháng vào ngày 10 tháng 1. Bản cập nhật ngày 1 tháng 3 của ứng dụng là bản đầu tiên tích hợp Adapty SDK. <br /> <br /> Nếu cài đặt này **bật**, báo cáo sẽ không bao gồm sự kiện "subscription started" từ tháng 1, cũng như sự kiện "subscription renewed" từ tháng 2. Nhưng **sẽ** bao gồm sự kiện "subscription renewed" từ ngày 10 tháng 3.</p> </Details> |
+| Include events without profile | false | Bao gồm các giao dịch không được liên kết với hồ sơ người dùng, hoặc không thể liên kết ngay với một người dùng cụ thể. Có thể bao gồm các giao dịch thực hiện trước khi cài Adapty SDK, hoặc các giao dịch nhận qua thông báo từ server. |
+| Send user attributes           | false |    Bao gồm [các thuộc tính người dùng tùy chỉnh](setting-user-attributes), chẳng hạn như dữ liệu người dùng và dữ liệu sử dụng ứng dụng. Chọn tùy chọn này nếu gói OneSignal của bạn hỗ trợ hơn 10 thẻ. Lưu ý rằng vượt quá giới hạn thẻ có thể gây ra lỗi.  |
+
+## Tạo thông tin xác thực Google Cloud Storage \{#create-google-cloud-storage-credentials\}
+
+Hướng dẫn này giúp bạn tạo các thông tin xác thực cần thiết trong Google Cloud Platform Console.
+
+Để Adapty có thể tải báo cáo dữ liệu thô lên bucket của bạn, cần có khóa tài khoản dịch vụ cùng với quyền ghi vào bucket tương ứng. Bằng cách cung cấp khóa tài khoản dịch vụ và cấp quyền ghi vào bucket, bạn cho phép Adapty chuyển báo cáo dữ liệu thô từ nền tảng của Adapty sang môi trường lưu trữ của bạn một cách an toàn và hiệu quả.
+
+:::warning
+Lưu ý rằng chúng tôi chỉ hỗ trợ xác thực bằng khóa HMAC của Service Account, nghĩa là Service Account HMAC key của bạn phải được gán các vai trò "Storage Object Viewer", "Storage Legacy Bucket Writer" và "Storage Object Creator" để truy cập đúng cách vào Google Cloud Storage.
+:::
+
+1. Đầu tiên, truy cập phần [IAM](https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts) trong tài khoản Google Cloud của bạn và chọn dự án phù hợp hoặc tạo dự án mới.
+
+  <ZoomImage id="30a81ef-CleanShot_2023-03-17_at_15.22.142x.webp" width="700px" />
+
+
+1. Tiếp theo, tạo tài khoản dịch vụ mới cho Adapty bằng cách nhấp vào nút "+ CREATE SERVICE ACCOUNT".
+
+    <ZoomImage id="98f8ebf-CleanShot_2023-03-17_at_15.40.062x.webp" width="700px" />
+
+2. Điền vào các trường ở bước đầu tiên; quyền truy cập sẽ được cấp ở bước sau. Để tìm hiểu thêm về trang này, đọc tài liệu [tại đây](https://docs.cloud.google.com/iam/docs/service-accounts-create).
+
+    <ZoomImage id="2190c50-CleanShot_2023-03-17_at_15.48.552x.webp" width="700px" />
+
+3. Để tạo và tải xuống [khóa JSON riêng tư](https://docs.cloud.google.com/iam/docs/keys-create-delete), điều hướng đến phần KEYS và nhấp vào nút "ADD KEY".
+
+    <ZoomImage id="8a45468-CleanShot_2023-03-17_at_15.58.092x.webp" width="700px" />
+
+4. Trong phần DETAILS, tìm giá trị Email liên kết với tài khoản dịch vụ vừa tạo và sao chép lại. Thông tin này sẽ cần thiết cho các bước tiếp theo để xác thực tài khoản và cho phép ghi vào bucket.
+
+    <ZoomImage id="6ccd0f0-CleanShot_2023-03-17_at_16.03.162x.webp" width="700px" />
+    
+
+5. Tiếp theo, vào trang [Buckets](https://console.cloud.google.com/storage/browser) của Google Cloud Storage, chọn bucket hiện có hoặc tạo bucket mới để lưu trữ báo cáo dữ liệu Sự kiện hoặc Lượt xem từ Adapty. Sau đó điều hướng đến phần PERMISSIONS và chọn tùy chọn [GRANT ACCESS](https://docs.cloud.google.com/identity/docs/how-to?hl=en).
+
+    <ZoomImage id="3cdd937-CleanShot_2023-03-17_at_16.14.232x.webp" width="700px" />
+
+6. Trong phần PERMISSIONS, nhập Email của tài khoản dịch vụ đã lấy ở bước năm, chọn vai trò Storage Object Creator. Cuối cùng, nhấp SAVE để áp dụng các thay đổi.
+
+
+    <ZoomImage id="62801f4-CleanShot_2023-03-17_at_16.17.312x.webp" width="700px" />
+
+    Hãy ghi nhớ tên bucket để sử dụng sau này.
+
+## Xuất dữ liệu thủ công \{#manual-data-export\}
+
+Ngoài tính năng tự động xuất dữ liệu sự kiện sang Google Cloud Storage, Adapty còn cung cấp chức năng xuất file thủ công. Với tính năng này, bạn có thể chọn khoảng thời gian cụ thể cho dữ liệu sự kiện và xuất thủ công vào bucket GCS của mình. Điều này giúp bạn kiểm soát tốt hơn dữ liệu cần xuất và thời điểm xuất.
+
+Khoảng thời gian được chỉ định sẽ dùng để xuất các sự kiện được tạo từ Ngày A 00:00:00 UTC đến Ngày B 23:59:59 UTC.
+
+<ZoomImage id="e347308-CleanShot_2023-03-17_at_17.39.452x.webp" width="700px" />
+
+## Cấu trúc dữ liệu \{#data-structure\}
+
+Adapty sử dụng file `.csv` để xuất dữ liệu ở định dạng bảng.
+
+:::warning
+Nội dung sự kiện có thể tăng theo thời gian — khi chúng tôi hoặc các bên thứ ba mà chúng tôi hợp tác giới thiệu dữ liệu mới. Hãy đảm bảo code xử lý dữ liệu của bạn đủ linh hoạt và dựa vào các trường cụ thể, không phụ thuộc vào cấu trúc tổng thể.
+:::
+
+### Sự kiện \{#events\}
+
+Bạn có thể [chỉnh sửa](#optional-settings-for-event-data) danh sách sự kiện được đưa vào báo cáo.
+
+| Cột | Mô tả |
+|------|-----------|
+| **profile_id** | ID người dùng Adapty. |
+| **event_type** | Tên sự kiện viết thường. Tham khảo phần [Events](events) để biết các loại sự kiện. |
+| **event_datetime** | Ngày theo định dạng ISO 8601. |
+| **transaction_id** | Mã định danh duy nhất cho một giao dịch như mua hàng hoặc gia hạn. |
+| **original_transaction_id** | Mã định danh giao dịch của lần mua ban đầu. |
+| **subscription_expires_at** | Ngày hết hạn của gói đăng ký. Thường là trong tương lai. |
+| **environment** | Có thể là Sandbox hoặc Production. |
+| **revenue_usd** | Doanh thu tính bằng USD. Có thể trống. |
+| **proceeds_usd** | Tiền thu được tính bằng USD. Có thể trống. |
+| **net_revenue_usd** | Doanh thu thuần (thu nhập sau thuế) tính bằng USD. Có thể trống. |
+| **tax_amount_usd** | Số tiền khấu trừ cho thuế tính bằng USD. Có thể trống. |
+| **revenue_local** | Doanh thu theo tiền tệ địa phương. Có thể trống. |
+| **proceeds_local** | Tiền thu được theo tiền tệ địa phương. Có thể trống. |
+| **net_revenue_local** | Doanh thu thuần (thu nhập sau thuế) theo tiền tệ địa phương. Có thể trống. |
+| **tax_amount_local** | Số tiền khấu trừ cho thuế theo tiền tệ địa phương. Có thể trống. |
+| **customer_user_id** | ID người dùng do nhà phát triển đặt. Ví dụ: UUID người dùng, email hoặc ID bất kỳ. Null nếu bạn chưa thiết lập. |
+| **store** | Có thể là *app_store* hoặc *play_store*. |
+| **product_id** | ID sản phẩm trên Apple App Store, Google Play Store hoặc Stripe. |
+| **base_plan_id** | [ID gói cơ bản](https://support.google.com/googleplay/android-developer/answer/12154973) trên Google Play Store hoặc [ID giá](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) trên Stripe. |
+| **developer_id** | ID nhà phát triển (SDK) của paywall nơi giao dịch bắt nguồn. |
+| **ab_test_name** | Tên A/B test nơi giao dịch bắt nguồn. |
+| **ab_test_revision** | Phiên bản của A/B test nơi giao dịch bắt nguồn. |
+| **paywall_name** | Tên paywall nơi giao dịch bắt nguồn. |
+| **paywall_revision** | Phiên bản của paywall nơi giao dịch bắt nguồn. |
+| **profile_country** | Quốc gia của hồ sơ người dùng được Adapty xác định dựa trên IP. |
+| **install_date** | Ngày cài đặt theo định dạng ISO 8601. |
+| **idfv** | [identifierForVendor](https://developer.apple.com/documentation/uikit/uidevice/identifierforvendor) trên thiết bị iOS |
+| **idfa** | [advertisingIdentifier](https://developer.apple.com/documentation/adsupport/asidentifiermanager/advertisingidentifier) trên thiết bị iOS |
+| **advertising_id** | Advertising ID là mã duy nhất do Hệ điều hành Android gán, mà các nhà quảng cáo có thể dùng để nhận dạng thiết bị của người dùng |
+| **ip_address** | IP thiết bị (có thể là IPv4 hoặc IPv6, ưu tiên IPv4 khi có). Được cập nhật mỗi khi IP thiết bị thay đổi |
+| **cancellation_reason** | <p>Lý do người dùng hủy gói đăng ký.</p><p></p><p>Các giá trị có thể:</p><p>**iOS & Android** — *voluntarily_cancelled*, *billing_error*, *refund*</p><p>**Chỉ iOS** — *price_increase*, *product_was_not_available*, *unknown*, *upgraded*</p><p>**Chỉ Android** — *new_subscription_replace*, *cancelled_by_developer*</p> |
+| **android_app_set_id** | Một [AppSetId](https://developer.android.com/design-for-safety/privacy-sandbox/reference/adservices/appsetid/AppSetId) - ID duy nhất theo từng thiết bị, theo từng tài khoản nhà phát triển, có thể đặt lại bởi người dùng, dùng cho các trường hợp quảng cáo không phát sinh doanh thu. |
+| **android_id** | Trên Android 8.0 (API level 26) trở lên, đây là số 64-bit (biểu diễn dưới dạng chuỗi thập lục phân), duy nhất cho mỗi tổ hợp khóa ký ứng dụng, người dùng và thiết bị. Xem thêm tại [tài liệu dành cho nhà phát triển Android](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID). |
+| **device** | Tên model thiết bị hiển thị cho người dùng. |
+| **currency** | Mã tiền tệ 3 chữ cái (ISO-4217) của giao dịch. |
+| **store_country** | Quốc gia của hồ sơ người dùng được xác định bởi cửa hàng Apple/Google. |
+| **attribution_source** | Nguồn attribution. |
+| **attribution_network_user_id** | ID được nguồn attribution gán cho người dùng. |
+| **attribution_status** | Có thể là organic, non_organic hoặc unknown. |
+| **attribution_channel** | Tên kênh marketing. |
+| **attribution_campaign** | Tên chiến dịch marketing. |
+| **attribution_ad_group** | Nhóm quảng cáo attribution. |
+| **attribution_ad_set** | Bộ quảng cáo attribution. |
+| **attribution_creative** | Từ khóa sáng tạo attribution. |
+| **attributes** | JSON của [thuộc tính người dùng tùy chỉnh](setting-user-attributes#custom-user-attributes). Bao gồm mọi thuộc tính tùy chỉnh bạn đã thiết lập để gửi từ ứng dụng di động. Để gửi, bật tùy chọn **Send User Attributes** trong trang [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook). |
+| **integration_ids**             | Tất cả ID tích hợp liên kết với một hồ sơ người dùng. Dạng Dictionary. Ví dụ: &#123;&#39;mixpanel_user_id&#39;: &#39;mixpanelUserId-test&#39;, &#39;facebook_anonymous_id&#39;: &#39;facebookAnonymousId-test&#39;&#125;                                                                                                                         |
+
+### Lượt xem paywall \{#paywall-visits\}
+
+| Cột                | Mô tả                                                                                                  |
+| :-------------------- | :----------------------------------------------------------------------------------------------------------- |
+| **profile_id**        | ID người dùng Adapty.                                                                                              |
+| **customer_user_id**  | ID người dùng do nhà phát triển đặt. Ví dụ: UUID người dùng, email hoặc ID bất kỳ. Null nếu bạn chưa thiết lập. |
+| **profile_country**   | Quốc gia của hồ sơ người dùng được xác định bởi cửa hàng Apple/Google.                                                            |
+| **install_date**      | Ngày cài đặt theo định dạng ISO 8601.                                                                |
+| **store**             | Có thể là *app_store* hoặc *play_store*.                                                                        |
+| **paywall_showed_at** | Ngày paywall được hiển thị cho khách hàng.                                                |
+| **developer_id**      | ID nhà phát triển (SDK) của paywall nơi giao dịch bắt nguồn.                                          |
+| **ab_test_name**      | Tên A/B test nơi giao dịch bắt nguồn.                                                       |
+| **ab_test_revision**  | Phiên bản của A/B test nơi giao dịch bắt nguồn.                                                   |
+| **paywall_name**      | Tên paywall nơi giao dịch bắt nguồn.                                                        |
+| **paywall_revision**  | Phiên bản của paywall nơi giao dịch bắt nguồn.                                                    |
+
+
+## Xử lý sự cố \{#troubleshooting\}
+
+Adapty kiểm tra tính hợp lệ của khóa truy cập **trước khi** bắt đầu tải lên. Ngay cả khi chỉ một trong các khóa Google Cloud Storage không hợp lệ, Adapty **sẽ hủy toàn bộ quá trình tải lên** và báo lỗi.
+
+Để đảm bảo quá trình tải lên không bị gián đoạn, hãy thay thế khóa trước khi hết hạn. Nếu bạn cập nhật khóa cho **sự kiện**, đừng quên cập nhật khóa cho **lượt xem paywall**, và ngược lại.

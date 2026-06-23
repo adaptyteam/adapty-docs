@@ -1,0 +1,350 @@
+---
+title: "Lấy paywall và sản phẩm cho paywall remote config trong iOS SDK"
+description: "Lấy paywall và sản phẩm trong Adapty iOS SDK để tăng cường monetization cho người dùng."
+metadataTitle: "Lấy Paywall & Sản phẩm | Tài liệu Adapty"
+keywords: ['getFlow', 'getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getFlowForDefaultAudience', 'getPaywallForDefaultAudience', 'remote config', 'cache']
+rank: 100
+---
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+
+<SDKv4>
+Trước khi hiển thị Remote Config và các paywall tùy chỉnh, bạn cần lấy thông tin về chúng. Lưu ý rằng phần này đề cập đến Remote Config và paywall tùy chỉnh. Để biết hướng dẫn lấy flow hoặc paywall được tùy chỉnh trong **Flow Builder** hoặc **Paywall Builder**, vui lòng tham khảo <InlineTooltip tooltip="hướng dẫn cách lấy flow và paywall trong ứng dụng của bạn">[iOS](get-pb-paywalls), [Android](android-get-pb-paywalls), [React Native](react-native-get-pb-paywalls), [Flutter](flutter-get-pb-paywalls), và [Unity](unity-get-pb-paywalls)</InlineTooltip>.
+
+<SampleApp />
+<details>
+   <summary>Trước khi bắt đầu lấy flow và sản phẩm trong ứng dụng mobile của bạn (nhấn để mở rộng)</summary>
+
+   1. [Tạo sản phẩm của bạn](create-product) trong Adapty Dashboard.
+
+2. [Tạo flow hoặc paywall và thêm sản phẩm vào đó](create-paywall) trong Adapty Dashboard.
+
+3. [Tạo placement và thêm flow hoặc paywall vào placement](create-placement) trong Adapty Dashboard.
+
+4. [Cài đặt Adapty SDK](sdk-installation-ios) trong ứng dụng mobile của bạn.
+</details>
+## Lấy thông tin flow \{#fetch-flow-information\}
+
+Trong Adapty, một [sản phẩm](product) là sự kết hợp của các sản phẩm từ cả App Store và Google Play. Các sản phẩm đa nền tảng này được tích hợp vào các flow và paywall, cho phép bạn hiển thị chúng tại các placement cụ thể trong ứng dụng di động.
+
+Để hiển thị các sản phẩm, bạn cần lấy `AdaptyFlow` từ một trong các [placement](placements) của mình bằng phương thức `getFlow`.
+:::important
+**Đừng hardcode product ID.** ID duy nhất bạn cần hardcode là placement ID. Các flow được cấu hình từ xa, nên số lượng sản phẩm và ưu đãi có thể thay đổi bất cứ lúc nào. Ứng dụng của bạn phải xử lý những thay đổi này một cách linh hoạt—nếu hôm nay flow trả về hai sản phẩm và ngày mai trả về ba, hãy hiển thị tất cả mà không cần thay đổi code.
+:::
+
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+    // the requested flow
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID") { result in
+    switch result {
+        case let .success(flow):
+            // the requested flow
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements). Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **fetchPolicy** | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ server và trả về dữ liệu đã cache nếu thất bại. Chúng tôi khuyến nghị phương án này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường xuyên gặp kết nối internet không ổn định, hãy cân nhắc sử dụng `.returnCacheDataElseLoad` để trả về dữ liệu đã cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng họ sẽ có trải nghiệm tải nhanh hơn, bất kể kết nối internet của họ có kém ổn định đến đâu. Cache được cập nhật thường xuyên, nên hoàn toàn an toàn khi sử dụng trong suốt phiên làm việc để tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng cache vẫn được giữ nguyên sau khi khởi động lại ứng dụng và chỉ bị xóa khi gỡ cài đặt ứng dụng hoặc thực hiện dọn dẹp thủ công.</p><p></p><p>Adapty SDK lưu trữ flow và paywall theo hai lớp: cache được cập nhật thường xuyên như mô tả ở trên và [paywall dự phòng](fallback-paywalls). Chúng tôi cũng sử dụng CDN để tải flow và paywall nhanh hơn, cùng một server dự phòng độc lập trong trường hợp CDN không thể truy cập được.</p> |
+| **loadTimeout** | mặc định: 5 giây | <p>Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu hết thời gian chờ, dữ liệu đã cache hoặc fallback cục bộ sẽ được trả về.</p><p></p><p>Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ muộn hơn một chút so với giá trị được chỉ định trong `loadTimeout`, do thao tác có thể bao gồm nhiều yêu cầu khác nhau bên dưới.</p> |
+:::note
+Trong v4, tham số `locale` đã được chuyển ra khỏi `getFlow` và sang `getFlowConfiguration` (chỉ dùng khi render với AdaptyUI). Đối với các paywall tùy chỉnh, tất cả các locale khả dụng được trả về cùng nhau trong `flow.remoteConfigs` — hãy chọn locale phù hợp với thiết bị của người dùng hoặc cài đặt trong ứng dụng của bạn.
+:::
+Đừng hardcode ID sản phẩm! Vì các flow được cấu hình từ xa, các sản phẩm có sẵn, số lượng sản phẩm và các ưu đãi đặc biệt (như dùng thử miễn phí) có thể thay đổi theo thời gian. Hãy đảm bảo code của bạn xử lý được các tình huống này.
+
+Ví dụ: nếu ban đầu bạn lấy được 2 sản phẩm, ứng dụng nên hiển thị đúng 2 sản phẩm đó. Nhưng nếu sau này lấy được 3 sản phẩm, ứng dụng phải hiển thị cả 3 mà không cần thay đổi code. Thứ duy nhất bạn cần hardcode là placement ID.
+
+Các tham số phản hồi:
+| Tham số | Mô tả |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flow | Một đối tượng `AdaptyFlow` chứa placement, các định danh (`id`, `variationId`), tên, mảng `remoteConfigs` (một mục cho mỗi ngôn ngữ được cấu hình) và cờ `hasViewConfiguration`. Để lấy sản phẩm cho flow, hãy gọi `getPaywallProducts(flow:)`. |
+## Lấy sản phẩm \{#fetch-products\}
+
+Sau khi có flow, bạn có thể truy vấn mảng sản phẩm tương ứng với nó:
+
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let products = try await Adapty.getPaywallProducts(flow: flow)
+    // the requested products array
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+```swift showLineNumbers
+Adapty.getPaywallProducts(flow: flow) { result in
+    switch result {
+    case let .success(products):
+        // the requested products array
+    case let .failure(error):
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+Tham số phản hồi:
+| Tham số | Mô tả |
+| :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Products  | Danh sách các đối tượng [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) bao gồm: mã định danh sản phẩm, tên sản phẩm, giá, đơn vị tiền tệ, thời hạn gói đăng ký và một số thuộc tính khác. |
+Khi tự thiết kế paywall, bạn sẽ cần truy cập các thuộc tính từ đối tượng [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct). Dưới đây là các thuộc tính được dùng phổ biến nhất — xem tài liệu được liên kết để biết đầy đủ thông tin về tất cả các thuộc tính có sẵn.
+| Thuộc tính | Mô tả |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Tiêu đề** | Để hiển thị tiêu đề của sản phẩm, sử dụng `product.localizedTitle`. Lưu ý rằng bản địa hóa dựa trên quốc gia cửa hàng mà người dùng đã chọn, không phải ngôn ngữ của thiết bị. |
+| **Giá** | Để hiển thị giá đã được bản địa hóa, sử dụng `product.localizedPrice`. Bản địa hóa này dựa trên thông tin ngôn ngữ của thiết bị. Bạn cũng có thể truy cập giá dưới dạng số bằng `product.price`. Giá trị sẽ được cung cấp theo đơn vị tiền tệ địa phương. Để lấy ký hiệu tiền tệ tương ứng, sử dụng `product.currencySymbol`. |
+| **Chu kỳ gói đăng ký** | Để hiển thị chu kỳ (ví dụ: tuần, tháng, năm,...), sử dụng `product.localizedSubscriptionPeriod`. Bản địa hóa này dựa trên ngôn ngữ của thiết bị. Để lấy chu kỳ gói đăng ký theo chương trình, sử dụng `product.subscriptionPeriod`. Từ đó bạn có thể truy cập enum `unit` để lấy đơn vị thời gian (tức là ngày, tuần, tháng, năm hoặc không xác định). Giá trị `numberOfUnits` sẽ cho bạn biết số lượng đơn vị chu kỳ. Ví dụ, với gói đăng ký theo quý, bạn sẽ thấy `.month` trong thuộc tính unit và `3` trong thuộc tính numberOfUnits. |
+| **Ưu đãi giới thiệu** | Để hiển thị huy hiệu hoặc chỉ số khác cho biết gói đăng ký có ưu đãi giới thiệu, hãy kiểm tra thuộc tính `product.subscriptionOffer`. Trong đối tượng này có các thuộc tính hữu ích sau:<br/>• `offerType`: một enum với các giá trị `introductory`, `promotional` và `winBack`. Dùng thử miễn phí và gói đăng ký giảm giá ban đầu sẽ thuộc loại `introductory`.<br/>• `price`: Giá giảm dưới dạng số. Với bản dùng thử miễn phí, giá trị này là `0`.<br/>• `localizedPrice`: Giá đã được định dạng theo ngôn ngữ của người dùng.<br/>• `localizedNumberOfPeriods`: một chuỗi được bản địa hóa theo ngôn ngữ của thiết bị, mô tả độ dài của ưu đãi. Ví dụ, ưu đãi dùng thử ba ngày sẽ hiển thị `3 days` trong trường này.<br/>• `subscriptionPeriod`: Ngoài ra, bạn có thể lấy thông tin chi tiết về chu kỳ ưu đãi thông qua thuộc tính này. Cách hoạt động tương tự như mô tả ở phần trước.<br/>• `localizedSubscriptionPeriod`: Chu kỳ gói đăng ký đã được định dạng theo ngôn ngữ của người dùng. |
+:::note
+Trong v4, tất cả sản phẩm được trả về bởi `getPaywallProducts(flow:)` đã bao gồm thông tin về điều kiện áp dụng ưu đãi. Lời gọi `getPaywallProductsWithoutDeterminingOffer` riêng biệt từ v3 đã bị loại bỏ.
+:::
+## Tăng tốc tải flow với flow đối tượng mặc định \{#speed-up-flow-fetching-with-default-audience-flow\}
+
+Thông thường, flow được tải gần như ngay lập tức, vì vậy bạn không cần lo lắng về việc tăng tốc quá trình này. Tuy nhiên, trong các trường hợp bạn có nhiều đối tượng và placement, và người dùng có kết nối internet yếu, việc tải flow có thể mất nhiều thời gian hơn bạn mong muốn. Trong những tình huống như vậy, bạn có thể muốn hiển thị một flow mặc định để đảm bảo trải nghiệm người dùng mượt mà thay vì không hiển thị gì cả.
+Để giải quyết vấn đề này, bạn có thể sử dụng phương thức `getFlowForDefaultAudience`, phương thức này sẽ lấy flow của placement được chỉ định cho đối tượng **All Users**. Tuy nhiên, điều quan trọng cần hiểu là cách tiếp cận được khuyến nghị là lấy flow bằng phương thức `getFlow`, như đã mô tả chi tiết trong phần [Lấy thông tin flow](fetch-paywalls-and-products#fetch-flow-information) ở trên.
+
+:::warning
+Lý do chúng tôi khuyến nghị sử dụng `getFlow`
+
+Phương thức `getFlowForDefaultAudience` có một số hạn chế đáng kể:
+- **Các vấn đề tiềm ẩn về tương thích ngược**: Nếu bạn cần hiển thị các flow khác nhau cho các phiên bản ứng dụng khác nhau (hiện tại và tương lai), bạn có thể gặp khó khăn. Bạn sẽ phải thiết kế các flow hỗ trợ phiên bản hiện tại (cũ) hoặc chấp nhận rằng người dùng đang dùng phiên bản hiện tại (cũ) có thể gặp sự cố với các flow không được hiển thị.
+- **Mất khả năng nhắm mục tiêu**: Tất cả người dùng sẽ thấy cùng một flow được thiết kế cho đối tượng **All Users**, nghĩa là bạn mất khả năng nhắm mục tiêu cá nhân hóa (bao gồm theo quốc gia, attribution marketing hoặc các thuộc tính tùy chỉnh của riêng bạn).
+Nếu bạn chấp nhận những hạn chế này để đổi lấy tốc độ tải flow nhanh hơn, hãy sử dụng phương thức `getFlowForDefaultAudience` như sau. Nếu không, hãy tiếp tục dùng `getFlow` đã mô tả [ở trên](fetch-paywalls-and-products#fetch-flow-information).
+:::
+
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let flow = try await Adapty.getFlowForDefaultAudience(placementId: "YOUR_PLACEMENT_ID")
+   // the requested flow
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+```swift showLineNumbers
+Adapty.getFlowForDefaultAudience(placementId: "YOUR_PLACEMENT_ID") { result in
+    switch result {
+        case let .success(flow):
+            // the requested flow
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Mã định danh của [Placement](placements). Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **fetchPolicy** | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ máy chủ và trả về dữ liệu đã cache nếu có lỗi xảy ra. Chúng tôi khuyến nghị dùng tùy chọn này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường xuyên gặp tình trạng mạng không ổn định, hãy cân nhắc dùng `.returnCacheDataElseLoad` để trả về dữ liệu đã cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng sẽ có tốc độ tải nhanh hơn bất kể kết nối mạng của họ kém đến đâu. Cache được cập nhật thường xuyên, vì vậy hoàn toàn an toàn khi dùng trong suốt phiên làm việc để tránh các yêu cầu mạng không cần thiết.</p><p></p><p>Lưu ý rằng cache vẫn được giữ nguyên khi khởi động lại ứng dụng và chỉ bị xóa khi gỡ cài đặt ứng dụng hoặc xóa thủ công.</p> |
+</SDKv4>
+
+<SDKv3>
+
+Trước khi hiển thị Remote Config và các paywall tùy chỉnh, bạn cần tải thông tin về chúng. Lưu ý rằng chủ đề này đề cập đến Remote Config và các paywall tùy chỉnh. Để biết hướng dẫn tải paywall cho các paywall được tùy chỉnh bằng Paywall Builder, vui lòng tham khảo <InlineTooltip tooltip="hướng dẫn cách tải paywall Paywall Builder trong ứng dụng của bạn">[iOS](get-pb-paywalls), [Android](android-get-pb-paywalls), [React Native](react-native-get-pb-paywalls), [Flutter](flutter-get-pb-paywalls), và [Unity](unity-get-pb-paywalls)</InlineTooltip>.
+
+<SampleApp />
+<details>
+   <summary>Trước khi bắt đầu tải paywall và sản phẩm trong ứng dụng mobile (nhấn để mở rộng)</summary>
+
+   1. [Tạo sản phẩm](create-product) trên Adapty Dashboard.
+
+2. [Tạo paywall và thêm sản phẩm vào paywall](create-paywall) trên Adapty Dashboard.
+
+3. [Tạo placement và thêm paywall vào placement](create-placement) trên Adapty Dashboard.
+
+4. [Cài đặt Adapty SDK](sdk-installation-ios) trong ứng dụng mobile của bạn.
+</details>
+## Lấy thông tin paywall \{#fetch-paywall-information\}
+
+Trong Adapty, một [sản phẩm](product) là sự kết hợp của các sản phẩm từ cả App Store và Google Play. Các sản phẩm đa nền tảng này được tích hợp vào các paywall, cho phép bạn hiển thị chúng trong các placement cụ thể của ứng dụng di động.
+
+Để hiển thị các sản phẩm, bạn cần lấy một [Paywall](paywalls) từ một trong các [placement](placements) của bạn bằng phương thức `getPaywall`.
+:::important
+**Đừng hardcode ID sản phẩm.** ID duy nhất bạn nên hardcode là placement ID. Paywall được cấu hình từ xa, vì vậy số lượng sản phẩm và ưu đãi có thể thay đổi bất kỳ lúc nào. Ứng dụng của bạn phải xử lý những thay đổi này một cách linh hoạt—nếu hôm nay paywall trả về hai sản phẩm và ngày mai trả về ba, hãy hiển thị tất cả mà không cần thay đổi code.
+:::
+
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID")
+    // the requested paywall
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements). Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **locale** | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Định danh của [bản dịch paywall](add-remote-config-locale). Tham số này là mã ngôn ngữ gồm một hoặc nhiều thẻ con được phân tách bằng ký tự dấu trừ (**-**). Thẻ con đầu tiên là mã ngôn ngữ, thẻ con thứ hai là mã vùng.</p><p></p><p>Ví dụ: `en` là tiếng Anh, `pt-br` là tiếng Bồ Đào Nha (Brazil).</p><p></p><p>Xem [Localizations and locale codes](localizations-and-locale-codes) để biết thêm thông tin về mã locale và cách chúng tôi khuyến nghị sử dụng chúng.</p> |
+| **fetchPolicy** | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ máy chủ và trả về dữ liệu đã cache nếu thất bại. Chúng tôi khuyến nghị phương án này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường gặp tình trạng kết nối internet không ổn định, hãy cân nhắc dùng `.returnCacheDataElseLoad` để trả về dữ liệu đã cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng thời gian tải sẽ nhanh hơn bất kể chất lượng kết nối. Cache được cập nhật thường xuyên nên hoàn toàn an toàn khi dùng trong phiên làm việc để tránh các yêu cầu mạng không cần thiết.</p><p></p><p>Lưu ý rằng cache vẫn được giữ nguyên sau khi khởi động lại ứng dụng và chỉ bị xóa khi cài đặt lại ứng dụng hoặc thực hiện dọn dẹp thủ công.</p><p></p><p>Adapty SDK lưu trữ paywall ở hai lớp: cache được cập nhật thường xuyên như mô tả ở trên và [paywall dự phòng](fallback-paywalls). Chúng tôi cũng sử dụng CDN để tải paywall nhanh hơn và một máy chủ dự phòng độc lập trong trường hợp CDN không thể truy cập. Hệ thống này được thiết kế để đảm bảo bạn luôn nhận được phiên bản mới nhất của paywall trong khi vẫn đảm bảo độ tin cậy ngay cả khi kết nối internet hạn chế.</p> |
+| **loadTimeout** | mặc định: 5 giây | <p>Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu hết thời gian chờ, dữ liệu đã cache hoặc fallback cục bộ sẽ được trả về.</p><p></p><p>Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ muộn hơn một chút so với giá trị được chỉ định trong `loadTimeout`, do thao tác có thể bao gồm nhiều yêu cầu khác nhau bên dưới.</p> |
+Đừng hardcode product ID! Vì paywall được cấu hình từ xa, các sản phẩm có sẵn, số lượng sản phẩm và các ưu đãi đặc biệt (chẳng hạn như dùng thử miễn phí) có thể thay đổi theo thời gian. Hãy đảm bảo code của bạn xử lý được những trường hợp này.
+
+Ví dụ: nếu ban đầu bạn lấy được 2 sản phẩm, ứng dụng nên hiển thị đúng 2 sản phẩm đó. Nhưng nếu sau này lấy được 3 sản phẩm, ứng dụng cũng phải hiển thị cả 3 mà không cần thay đổi code. Thứ duy nhất bạn cần hardcode là placement ID.
+
+Tham số trả về:
+| Tham số | Mô tả |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paywall   | Một đối tượng [`AdaptyPaywall`](https://swift.adapty.io/documentation/adapty/adaptypaywall) gồm: danh sách ID sản phẩm, định danh paywall, Remote Config và một số thuộc tính khác. |
+## Lấy sản phẩm \{#fetch-products\}
+
+Sau khi có paywall, bạn có thể truy vấn mảng sản phẩm tương ứng với paywall đó:
+
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let products = try await Adapty.getPaywallProducts(paywall: paywall)
+    // the requested products array
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+```swift showLineNumbers
+Adapty.getPaywallProducts(paywall: paywall) { result in
+    switch result {
+    case let .success(products):
+        // mảng sản phẩm được yêu cầu
+    case let .failure(error):
+        // xử lý lỗi
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+Các tham số phản hồi:
+| Tham số | Mô tả |
+| :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Products | Danh sách các đối tượng [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) bao gồm: mã định danh sản phẩm, tên sản phẩm, giá, đơn vị tiền tệ, thời hạn gói đăng ký và một số thuộc tính khác. |
+Khi tự thiết kế paywall, bạn sẽ cần truy cập các thuộc tính từ đối tượng [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct). Dưới đây là các thuộc tính được sử dụng phổ biến nhất — xem tài liệu được liên kết để biết đầy đủ chi tiết về tất cả các thuộc tính có sẵn.
+| Thuộc tính                | Mô tả                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Tiêu đề**               | Để hiển thị tiêu đề của sản phẩm, dùng `product.localizedTitle`. Lưu ý rằng việc bản địa hóa dựa trên quốc gia cửa hàng mà người dùng đã chọn, không phải ngôn ngữ của thiết bị.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Giá**               | Để hiển thị giá đã được bản địa hóa, dùng `product.localizedPrice`. Việc bản địa hóa dựa trên thông tin ngôn ngữ của thiết bị. Bạn cũng có thể lấy giá dưới dạng số bằng `product.price`. Giá trị sẽ được tính theo đơn vị tiền tệ địa phương. Để lấy ký hiệu tiền tệ tương ứng, dùng `product.currencySymbol`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Chu kỳ gói đăng ký** | Để hiển thị chu kỳ (ví dụ: tuần, tháng, năm,...), dùng `product.localizedSubscriptionPeriod`. Việc bản địa hóa dựa trên ngôn ngữ của thiết bị. Để lấy chu kỳ gói đăng ký theo lập trình, dùng `product.subscriptionPeriod`. Từ đó bạn có thể truy cập enum `unit` để lấy độ dài (tức là ngày, tuần, tháng, năm hoặc không xác định). Giá trị `numberOfUnits` sẽ cho bạn số lượng đơn vị chu kỳ. Ví dụ: với gói đăng ký theo quý, thuộc tính unit sẽ là `.month` và numberOfUnits sẽ là `3`.                                                                                                                                                                                                                                                                                                                       |
+| **Ưu đãi giới thiệu**  | Để hiển thị badge hoặc chỉ báo khác cho biết gói đăng ký có ưu đãi giới thiệu, hãy kiểm tra thuộc tính `product.subscriptionOffer`. Trong object này có các thuộc tính hữu ích sau:<br/>• `offerType`: enum với các giá trị `introductory`, `promotional` và `winBack`. Dùng thử miễn phí và gói đăng ký giảm giá ban đầu sẽ thuộc loại `introductory`.<br/>• `price`: Giá ưu đãi dưới dạng số. Với dùng thử miễn phí, giá trị này sẽ là `0`.<br/>• `localizedPrice`: Giá ưu đãi đã được định dạng theo ngôn ngữ của người dùng.<br/>• `localizedNumberOfPeriods`: Chuỗi được bản địa hóa theo ngôn ngữ thiết bị, mô tả độ dài của ưu đãi. Ví dụ: ưu đãi dùng thử 3 ngày sẽ hiển thị `3 days` trong trường này.<br/>• `subscriptionPeriod`: Ngoài ra, bạn có thể lấy thông tin chi tiết riêng lẻ của chu kỳ ưu đãi bằng thuộc tính này. Cách hoạt động giống như phần mô tả ở trên.<br/>• `localizedSubscriptionPeriod`: Chu kỳ gói đăng ký ưu đãi đã được định dạng theo ngôn ngữ của người dùng. |
+## Kiểm tra điều kiện nhận ưu đãi giới thiệu trên iOS \{#check-intro-offer-eligibility-on-ios\}
+
+Theo mặc định, phương thức `getPaywallProducts` sẽ kiểm tra điều kiện nhận ưu đãi giới thiệu, ưu đãi và ưu đãi thu hút khách hàng cũ. Nếu bạn cần hiển thị sản phẩm trước khi SDK xác định điều kiện nhận ưu đãi, hãy sử dụng phương thức `getPaywallProductsWithoutDeterminingOffer` thay thế.
+
+:::note
+Sau khi hiển thị các sản phẩm ban đầu, hãy nhớ gọi phương thức `getPaywallProducts` thông thường để cập nhật sản phẩm với thông tin điều kiện nhận ưu đãi chính xác.
+:::
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let products = try await Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall)
+    // the requested products array without subscriptionOffer
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+```swift showLineNumbers
+Adapty.getPaywallProductsWithoutDeterminingOffer(paywall: paywall) { result in
+    switch result {
+    case let .success(products):
+        // mảng sản phẩm yêu cầu không có subscriptionOffer
+    case let .failure(error):
+        // xử lý lỗi
+    }
+}
+```
+</TabItem>
+</Tabs>
+## Tăng tốc độ tải paywall với paywall đối tượng mặc định \{#speed-up-paywall-fetching-with-default-audience-paywall\}
+
+Thông thường, paywall được tải gần như ngay lập tức, nên bạn không cần lo lắng về việc tối ưu tốc độ này. Tuy nhiên, trong trường hợp bạn có nhiều đối tượng và paywall, cộng với kết nối internet yếu, việc tải paywall có thể mất nhiều thời gian hơn mong đợi. Trong những tình huống đó, bạn có thể muốn hiển thị một paywall mặc định để đảm bảo trải nghiệm người dùng mượt mà, thay vì không hiển thị gì cả.
+Để giải quyết vấn đề này, bạn có thể sử dụng phương thức `getPaywallForDefaultAudience`, phương thức này sẽ lấy paywall của placement đã chỉ định dành cho đối tượng **All Users**. Tuy nhiên, điều quan trọng cần hiểu là cách tiếp cận được khuyến nghị vẫn là lấy paywall bằng phương thức `getPaywall`, như đã mô tả chi tiết trong phần [Lấy thông tin paywall](fetch-paywalls-and-products#fetch-paywall-information) ở trên.
+
+:::warning
+Tại sao chúng tôi khuyến nghị sử dụng `getPaywall`
+
+Phương thức `getPaywallForDefaultAudience` có một số nhược điểm đáng kể:
+- **Vấn đề tương thích ngược tiềm ẩn**: Nếu bạn cần hiển thị các paywall khác nhau cho các phiên bản ứng dụng khác nhau (hiện tại và tương lai), bạn có thể gặp khó khăn. Bạn sẽ phải thiết kế các paywall hỗ trợ phiên bản hiện tại (cũ) hoặc chấp nhận rằng người dùng với phiên bản hiện tại (cũ) có thể gặp sự cố với các paywall không được hiển thị.
+- **Mất khả năng nhắm mục tiêu**: Tất cả người dùng sẽ thấy cùng một paywall được thiết kế cho đối tượng **All Users**, nghĩa là bạn mất khả năng nhắm mục tiêu cá nhân hóa (bao gồm dựa trên quốc gia, attribution marketing hoặc các thuộc tính tùy chỉnh của riêng bạn).
+Nếu bạn chấp nhận những hạn chế này để được hưởng lợi từ việc tải paywall nhanh hơn, hãy sử dụng phương thức `getPaywallForDefaultAudience` như sau. Nếu không, hãy tiếp tục dùng `getPaywall` được mô tả [ở trên](fetch-paywalls-and-products#fetch-paywall-information).
+:::
+
+<Tabs group="current-os">
+<TabItem value="swift" label="Swift">
+```swift showLineNumbers
+do {
+    let paywall = try await Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID")
+   // the requested paywall
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+```swift showLineNumbers
+Adapty.getPaywallForDefaultAudience(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+:::note
+Phương thức `getPaywallForDefaultAudience` khả dụng từ iOS SDK phiên bản 2.11.2 trở lên.
+:::
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements). Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **locale** | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Định danh của [bản địa hóa paywall](add-remote-config-locale). Tham số này phải là mã ngôn ngữ gồm một hoặc nhiều thẻ con được phân tách bằng ký tự dấu trừ (**-**). Thẻ con đầu tiên là ngôn ngữ, thẻ con thứ hai là vùng.</p><p></p><p>Ví dụ: `en` nghĩa là tiếng Anh, `pt-br` là tiếng Bồ Đào Nha của Brazil.</p><p></p><p>Xem [Localizations and locale codes](localizations-and-locale-codes) để biết thêm thông tin về mã locale và cách chúng tôi khuyến nghị sử dụng.</p> |
+| **fetchPolicy** | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ máy chủ và trả về dữ liệu đã lưu trong cache nếu thất bại. Chúng tôi khuyến nghị tùy chọn này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường xuyên gặp tình trạng internet không ổn định, hãy cân nhắc dùng `.returnCacheDataElseLoad` để trả về dữ liệu cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng thời gian tải sẽ nhanh hơn dù kết nối internet kém ổn định. Cache được cập nhật thường xuyên, vì vậy hoàn toàn an toàn khi sử dụng trong phiên làm việc để tránh các yêu cầu mạng không cần thiết.</p><p></p><p>Lưu ý rằng cache vẫn được giữ nguyên sau khi khởi động lại ứng dụng và chỉ bị xóa khi gỡ cài đặt ứng dụng hoặc thực hiện dọn dẹp thủ công.</p> |
+</SDKv3>
