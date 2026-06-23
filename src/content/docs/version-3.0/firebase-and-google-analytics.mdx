@@ -1,8 +1,8 @@
 ---
-title: "Set up Google Analytics with Firebase"
-description: "Send Adapty subscription events to Google Analytics 4 via Firebase to power Google Ads attribution, audiences, and funnel analysis."
-metadataTitle: "Set up Google Analytics with Firebase | Adapty Docs"
-keywords: ['firebase', 'google analytics', 'ga4', 'integration', 'attribution', 'audiences', 'measurement protocol']
+title: "Firebase and Google Analytics"
+description: "Send Adapty subscription events to Firebase Analytics and Google Analytics 4 — power Audiences, Remote Config, Crashlytics, and Google Ads attribution."
+metadataTitle: "Firebase and Google Analytics | Adapty Docs"
+keywords: ['firebase', 'firebase analytics', 'google analytics', 'ga4', 'audiences', 'remote config', 'integration']
 ---
 
 import ZoomImage from '@site/src/components/ZoomImage.astro';
@@ -12,29 +12,49 @@ import SdkIntegrationNote from '@site/src/components/reusable/SdkIntegrationNote
 import InlineTooltip from '@site/src/components/InlineTooltip';
 import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
-If you want to include Adapty data in Google Analytics, the data needs to go through Firebase — Google's mobile app analytics platform. GA4 cannot receive mobile data any other way. Even if you only use GA4, you'll need to set up Firebase and link it to your GA4 property.
+Adapty can pass subscription events — purchases, renewals, refunds, trial starts — to Firebase and Google Analytics 4. The two products share a backend, so a single 
+integration delivers data to both. 
 
-Once connected, your `purchase` and `refund` events appear in GA4 with revenue, currency, and product details. From there, you can use them as Google Ads conversions, build GA4 audiences from subscription state, and analyze conversion funnels alongside the in-app behavior you already track.
+:::warning
+You need both a Firebase project and a linked GA4 property — even if you only use one. Firebase Analytics is built on GA4. GA4 can't take mobile data without Firebase.
+:::
+
+Each event arrives with revenue, currency, and product details attached. The same data feeds Firebase's mobile tools (Audiences, Remote Config, Crashlytics, etc.) and GA4's reporting / attribution.
+
+This is an analytics integration, not a Google Ads attribution tool — see [Limitations](#limitations).
 
 ## What you can do with this integration
 
-- See which actions suggest a future conversion: detect the correlation between Adapty's subscription events and GA4 events. Adapty Analytics contains funnel data, GA4 tracks in-app behavior, but the two need to be combined for a complete picture.
-- Register `purchase` and `refund` events in Google Analytics. After this, Google Ads can classify these events as **conversions** to optimize your click bidding.
-- Build GA4 audiences with `subscription_state` to target Google Ads campaigns at non-paying users. Adapty [segments](segments) cover the same logic for in-app targeting but don't reach Google's ad inventory.
-- Feed GA4's predictive audience models. GA4 reads your purchase events to predict future revenue, top spenders, and likely churners. The resulting audiences are shared with Google Ads automatically.
-- Track the same user across devices and improve Google Ads conversion matching. When you identify users with `Adapty.identify()`, Adapty forwards their `customer_user_id` to GA4 as `user_id` — GA4 and Google Ads use this to link sessions and conversions back to the same person.
+Adapty groups users by `subscription_state` (`subscribed`, `active_trial`, `never_subscribed`, etc.) and forwards subscription lifecycle events to Firebase and GA4.
+
+- **Audiences**: Target users by subscription state across Firebase and GA4.
+- **Google Ads conversions** *(GA4)*: Use `purchase` and `refund` as Google Ads conversion goals.
+- **Firebase Remote Config**: Change rate limits, copy, or feature flags without an app update. (Not to be confused with [Adapty Remote Config](customize-paywall-with-remote-config), which configures paywall content.)
+- **In-App Messaging**: Show modals and banners to specific subscriber groups — win-back, trial nudges, onboarding.
+- **Cloud Messaging**: Push notifications to lapsed subscribers when the app is closed.
+- **Cross-device tracking** *(GA4)*: Adapty sends `customer_user_id` to GA4 so Google Ads can track the same person across devices.
+- **Crashlytics**: With extra app-side code (custom `subscription_state` keys), breaks crash reports down by paying vs. free users.
+- **Conversion funnels** *(GA4)*: See what users did in your app before converting or churning.
+- **Predictions**: Forecast churn and spending using purchase history.
+- **A/B Testing**: Test app features on subscriber cohorts — for example, roll out a new flow to trial users and measure trial-to-paid conversion. (For paywall variants, use [Adapty A/B Tests](ab-tests).)
 
 ## How does this integration work
 
-1. When a user first opens your app, the Firebase SDK creates a unique identifier for the installation — the **Firebase App Instance ID**. GA4 requires this ID on every mobile event — web users are tracked separately.
-2. Your app's code passes the Firebase ID to Adapty's SDK. From that moment, to fulfill the GA4 requirements, Adapty tags that installation's events with the Firebase ID.
-3. When the user makes a purchase, Adapty's servers forward the purchase event to GA4 with the Firebase ID attached. This data is exchanged outside of the app, server-to-server.
-4. GA4 uses the Firebase ID to identify which installation is responsible for the purchase. Now you can see what the user did in the app before buying.
+1. When a user first opens your app, the Firebase SDK creates a unique identifier for the installation — the **Firebase App Instance ID**. Firebase Analytics and GA4 use this ID to identify the installation responsible for each event.
+2. Your app passes the Firebase App Instance ID to Adapty's SDK. Adapty links the user's profile to this Firebase installation.
+3. When the user makes a purchase, Adapty's servers forward the event to Firebase with the Firebase App Instance ID attached. The data is exchanged server-to-server, outside the app.
+4. Firebase matches the purchase to the installation, so you can see purchases alongside everything else the user did in the app.
+
+:::note
+A Firebase App Instance ID is device-specific. When the same Adapty user opens the app on another device, the new Firebase ID overwrites the previous one. Use a [customer user ID](identifying-users) to maintain user identity across devices.
+:::
 
 ### Limitations
 
-- **This integration only carries mobile-app purchases.** No mobile app means no Firebase ID. Users who pay on the web without installing the app don't reach GA4 this way. To track web users, take advantage of [FunnelFox's Firebase integration](https://funnelfox.com/docs/integrations/subscription-management/adapty) or GA4's web data stream.
-- **Paddle purchases aren't included.** This integration doesn't currently support Paddle. Paddle purchases stay in Adapty Analytics and don't reach GA4 via this path.
+- **Not a Google Ads attribution tool.** This integration sends Adapty events into Firebase and GA4 for analytics. It doesn't attribute app installs to Google Ads campaigns (UAC / Universal App Campaigns) or separate paid traffic from organic. For install attribution, use Adapty's built-in [User Acquisition](adapty-user-acquisition) or a third-party MMP like [AppsFlyer](appsflyer) or [Adjust](adjust).
+- **No historical backfill.** Adapty forwards events from activation onward — past purchases, renewals, and refunds never reach Firebase. (Past data lives in Adapty's [S3](s3-exports) / [GCS](google-cloud-storage) exports, but importing it into Firebase isn't part of this integration.)
+- **This integration only carries mobile-app purchases.** No mobile app means no Firebase ID. Users who pay on the web without installing the app don't reach Firebase this way. To track web users, take advantage of [FunnelFox's Firebase integration](https://funnelfox.com/docs/integrations/subscription-management/adapty) or GA4's web data stream.
+- **Paddle purchases aren't included.** This integration doesn't currently support Paddle. Paddle purchases stay in Adapty Analytics and don't reach Firebase via this path.
 - **Stripe purchases inherit Adapty's Stripe integration limitations.** See [Stripe integration limitations](stripe#current-limitations).
 
 
@@ -42,8 +62,8 @@ Once connected, your `purchase` and `refund` events appear in GA4 with revenue, 
 
 ### Configure Firebase
 
-1. Open [Firebase Console](https://console.firebase.google.com/) and open or create a project. To keep production analytics clean from sandbox events, use a separate Firebase project for development builds.
-2. Link the project to a GA4 property. Firebase prompts you during project creation, or you can add the link at any time via **Project settings** > **Integrations** > **Google Analytics**.
+1. Open [Firebase Console](https://console.firebase.google.com/) and select or create a project. To keep production analytics clean from sandbox events, use a separate Firebase project for development builds.
+2. Link the project to a GA4 property. Required even for Firebase-only users. Firebase prompts you during project creation, or add it later via **Project settings** > **Integrations** > **Google Analytics**.
 
     <ZoomImage id="firebase-analytics-integration-settings.webp" width="700px" alt="Adapty Dashboard Firebase integration settings page" />
 
@@ -69,23 +89,23 @@ Once connected, your `purchase` and `refund` events appear in GA4 with revenue, 
 4. Configure how Adapty forwards revenue and user data. The four controls share one row in the dashboard:
 
    - **Revenue definition** dropdown: Gross revenue, Proceeds after store commission, or [Proceeds after store commission and taxes](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue).
-   - **Send user properties** toggle: When on, events include `subscription_state` and `subscription_product_id`. To use them in GA4 reports or audiences, see [Use subscription data in GA4](#use-subscription-data-in-ga4-reports-and-audiences).
+   - **Send user properties** toggle: When on, events include `subscription_state` and `subscription_product_id`. To use them in reports or audiences, see [Use subscription data in reports](#use-subscription-data-in-reports-and-audiences).
    - **Report user's currency** toggle: When on, Adapty converts every transaction's local currency to your account's reporting currency before forwarding to GA4.
-   - **Send trial price** toggle: Trial starts are valuable — most paying users start with a trial. But Google Ads' bid optimization only treats events with revenue as worth chasing. Turn this on to assign a placeholder price to each trial so Google sees them as conversions and optimizes ad spend toward acquiring trial starters. When on, the **Trial price multiplier** field appears — for example, `0.5` reports half the subscription price during trial.
+   - **Send trial price** toggle: Trial starts are valuable — most paying users start with a trial. But Google Ads' bid optimization only treats events with revenue as worth chasing. Turn this on to assign a placeholder price to each trial so Google sees them as conversions and optimizes ad spend toward acquiring trial starters. When on, the **Trial price multiplier** field appears. Set it to the share of the full subscription price that Google should treat each trial as worth — for example, `50%` reports half the subscription price during trial.
 
    <ZoomImage id="revenue-data-options-firebase.webp" width="700px" alt="Firebase integration revenue data row with the four controls" />
 
-5. Map Adapty events to GA4 event names. Adapty exposes a separate maps for **iOS** and **Android** so you can use different names per platform. **Stripe purchases use the iOS event map** — there's no separate Stripe map.
+5. Map Adapty events to Firebase/GA4 event names. Adapty exposes separate event maps for **iOS** and **Android** so you can use different names per platform. **Stripe purchases use the iOS event map** — there's no separate Stripe map.
 
     Google Analytics enforces strict Measurement Protocol limits — 40-character event names, 24-character user-property names, and 36-character values. GA4 silently drops custom events that exceed these limits.
 
     :::warning
-    Some events map to GA4's reserved ecommerce vocabulary — `purchase` and `refund`. Google Ads conversion import, GA4 revenue reports, and predictive audiences depend on these exact strings. Override the defaults only if you don't need those features.
+    Some events map to Firebase/GA4's reserved ecommerce vocabulary — `purchase` and `refund`. Google Ads conversion import, GA4 revenue reports, and predictive audiences depend on these exact strings. Override the defaults only if you don't need those features.
     :::
 
    <ZoomImage id="ios-event-map-firebase.webp" width="700px" alt="Adapty Dashboard Firebase event names configuration" />
 
-6. Click **Save**. Adapty starts forwarding events to GA4 within a few minutes.
+6. Click **Save**. Adapty starts forwarding events to Firebase within a few minutes.
 
 ### Configure your app code
 
@@ -93,7 +113,7 @@ Once connected, your `purchase` and `refund` events appear in GA4 with revenue, 
 Make sure your app includes the <InlineTooltip tooltip="Firebase SDK">[iOS](https://firebase.google.com/docs/ios/setup), [Android](https://firebase.google.com/docs/android/setup), [Flutter](https://firebase.google.com/docs/flutter/setup), [Unity](https://firebase.google.com/docs/unity/setup), [React Native](https://rnfirebase.io/), and [Capacitor](https://github.com/capawesome-team/capacitor-firebase)</InlineTooltip>.
 :::
 
-Adapty needs to include the **Firebase App Instance ID** with each event — otherwise nothing reaches GA4 (`MISSING_INTEGRATION_ID`).
+Adapty needs to include the **Firebase App Instance ID** with each event — otherwise nothing reaches Firebase (`MISSING_INTEGRATION_ID`).
 
 After `FirebaseApp.configure()` and `Adapty.activate()`, ask the Firebase SDK for the App Instance ID. Pass it to Adapty via `setIntegrationIdentifier`. Run this once per app launch, before any purchase flow.
 
@@ -263,13 +283,13 @@ The fastest way to confirm events are flowing is Firebase DebugView:
 2. Trigger a sandbox purchase or any event you've enabled in the Adapty Dashboard.
 3. Open Firebase Console > **Analytics** > **DebugView**. Events appear within seconds, with all parameters.
 
-Standard GA4 reports — Realtime, the Reports overview, and audiences — populate within minutes to 24 hours, depending on the report. DebugView is the only place to confirm in real time that the integration is working.
+Standard reports — Realtime, Reports, audiences — populate within minutes to 24 hours, depending on the report. DebugView is the only place to confirm in real time.
 
-## Use subscription data in GA4 reports and audiences
+## Use subscription data in reports and audiences
 
-This step is optional. By default, GA4 hides user properties. To use `subscription_state` and `subscription_product_id` in reports, Explorations, or audiences, register each as a custom dimension. This is useful for filtering by subscription state, building Google Ads audiences of paying users, or feeding predictive models.
+This step is optional. By default, Firebase Analytics and GA4 hide user properties. To use `subscription_state` and `subscription_product_id` in reports, Explorations, or audiences, register each as a custom dimension. (Custom dimensions are configured in GA4 Admin — once registered, they're queryable in both Firebase Analytics and GA4 thanks to the shared backend.) Useful for filtering by subscription state, building Google Ads audiences of paying users, or feeding predictive models.
 
-When you complete the setup, Adapty will populate these dimensions for upcoming GA4 events. Existing events won't be updated.
+When you complete the setup, Adapty will populate these dimensions for upcoming events. Existing events won't be updated.
 
 1. In Google Analytics, open **Admin** > **Custom definitions**.
     <ZoomImage id="firebase-ga4-custom-definitions.webp" width="700px" alt="Google Analytics Custom Definitions" />
@@ -283,21 +303,33 @@ When you complete the setup, Adapty will populate these dimensions for upcoming 
 
 ## Troubleshooting
 
-### Events don't appear in GA4
+### Events don't appear in Firebase
 
-- Confirm the Firebase App Instance ID is set on the profile before the first purchase. Events without it are dropped with `MISSING_INTEGRATION_ID`.
-- Confirm the GA4 property linked in the Firebase Console matches the data stream whose API secret you used in Adapty.
-- Confirm the credentials in Adapty match the event's platform — iOS App ID and iOS API secret on iOS, Android on Android, Stripe on Stripe.
+- Confirm the Firebase App Instance ID is set on the profile **before** the first purchase is made. Events without a Firebase ID do not reach Firebase, and yield the `MISSING_INTEGRATION_ID` error.
+- Confirm the GA4 property linked in the Firebase Console matches the data stream.
+- Confirm that the set of credentials (ID + secret) in Adapty match the platform.
+
+### `access_level_updated` shows as failed in the Event Feed
+
+`access_level_updated` is a **webhook-only event**. Adapty never attempts to deliver it to Firebase — but the Event Feed still lists it as a failed delivery. Ignore the line. Your integration is fine. To use this event, configure the [webhook integration](webhook).
 
 ### Sandbox events pollute production data
 
-Adapty forwards sandbox and production transactions to the same Firebase project. See [Set up Firebase and link it to GA4](#set-up-firebase-and-link-it-to-ga4) — using a separate Firebase project for development builds avoids this entirely.
+Adapty forwards sandbox and production transactions to the same Firebase project. See [Configure Firebase](#configure-firebase) — using a separate Firebase project for development builds avoids this entirely.
 
-### Adapty Analytics and GA4 numbers disagree
+### Firebase undercounts revenue on StoreKit 2 apps
 
-- **SDK adoption**: GA4 only sees events from users whose app version forwards a Firebase App Instance ID. Older app versions without that call are invisible to GA4 but counted in Adapty.
-- **Sandbox events**: Sandbox transactions reach GA4 the same way as production ones unless you isolate them in a separate Firebase project.
-- **Sampling**: GA4 Explorations sample high-volume tables. Cross-check against the Realtime view or standard reports for unsampled counts.
+Firebase Analytics auto-logs an `in_app_purchase` event for every StoreKit 1 purchase — no code required. StoreKit 2 uses a different API. Firebase never sees those transactions.
+
+The fallout: SK2-heavy apps without a separate revenue pipeline under-report by half or more — in Firebase, in GA4, and in every Google Ads campaign downstream. Bid optimization runs against the wrong number. Revenue reports show half the picture.
+
+The fix: pass `firebase_app_instance_id` to Adapty (see [Configure your app code](#configure-your-app-code)). Adapty forwards every purchase via the Measurement Protocol — revenue, currency, and product attached. For SK1 apps using this integration, Adapty's `purchase` event and Firebase's `in_app_purchase` fire side-by-side. They feed different GA4 metrics, so the standard revenue report doesn't double-count.
+
+### Adapty Analytics and Firebase numbers diverge
+
+- **SDK adoption**: Firebase only counts events from users whose app sends a Firebase App Instance ID. Older app versions don't make that call. Adapty still counts those users; Firebase doesn't.
+- **Sandbox events**: Adapty forwards sandbox transactions to Firebase too. Use a separate Firebase project for development builds to keep them apart.
+- **Sampling**: GA4 Explorations sample large datasets. For unsampled counts, check the Realtime view or standard reports.
 
 ### Custom event names are rejected by GA4
 
