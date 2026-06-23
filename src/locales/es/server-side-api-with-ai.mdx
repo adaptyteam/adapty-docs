@@ -1,0 +1,84 @@
+---
+title: "Verificar y otorgar acceso a suscripciones desde tu backend"
+description: "Usa la API de servidor de Adapty para comprobar si un usuario tiene una suscripción activa y otorgar acceso manualmente, con ayuda de un agente de codificación con IA."
+metadataTitle: "Verificar y Otorgar Acceso a Suscripciones desde tu Backend | Documentación de Adapty"
+---
+Desde tu backend, usa la API de servidor de Adapty para comprobar si un usuario tiene una suscripción activa y para conceder acceso manualmente. Esta guía cubre las dos llamadas más comunes — `getProfile` y `grantAccessLevel` — y muestra cómo hacer que un agente de codificación con IA escriba la integración para tu stack.
+
+:::tip
+¿Usas un agente de codificación con IA? Haz clic en **Copy for LLM** debajo del título y pega toda esta página en tu agente — contiene las llamadas, los campos y los detalles que necesita.
+:::
+## Antes de empezar \{#before-you-start\}
+
+- **Una clave de API secreta**: Encuéntrala en [App settings → General](https://app.adapty.io/settings/general), en el campo **Secret key**. Las claves son específicas de cada app. Guárdala en una variable de entorno (por ejemplo, `ADAPTY_SECRET_KEY`) y envíala como `Authorization: Api-Key {key}`.
+- **La URL base**: Todas las solicitudes van a `https://api.adapty.io`.
+- **Una forma de identificar al usuario**: Envía `adapty-customer-user-id` (tu propio ID de usuario — solo funciona si identificas a los usuarios en la app) o `adapty-profile-id` (el ID de perfil de Adapty). Son intercambiables; usa uno.
+## Comprobar una suscripción \{#check-a-subscription\}
+
+Para comprobar el estado, llama a `getProfile` con `GET` y pasa el identificador de usuario como encabezado — no hay cuerpo de solicitud.
+```javascript title="check-access.js"
+const res = await fetch("https://api.adapty.io/api/v2/server-side-api/profile/", {
+  headers: {
+    "Authorization": `Api-Key ${process.env.ADAPTY_SECRET_KEY}`,
+    "adapty-customer-user-id": userId,
+  },
+});
+const { data } = await res.json();
+
+function hasActiveAccess(profile, accessLevelId = "premium") {
+  const level = profile.access_levels?.find(a => a.access_level_id === accessLevelId);
+  if (!level) return false;
+  if (level.is_in_grace_period) return true;
+  if (!level.expires_at) return true;             // lifetime / non-expiring
+  return new Date(level.expires_at) > new Date(); // not expired yet
+}
+
+if (hasActiveAccess(data)) {
+  // unlock premium features
+}
+```
+
+A diferencia del perfil del SDK, la respuesta del servidor **no tiene campo `is_active`**. Determina el estado tú mismo a partir de `access_levels[].expires_at`: `null` significa acceso de por vida, una fecha futura significa activo y una fecha pasada significa expirado. Trata `is_in_grace_period` como aún activo. Para ver todos los campos de perfil y nivel de acceso, consulta [getProfile](https://adapty.io/docs/es/api-adapty/operations/getProfile.md).
+## Conceder acceso manualmente \{#grant-access-manually\}
+
+Para desbloquear funciones de pago sin una compra —códigos promocionales, acceso para inversores o beta testers, casos de soporte— llama a `grantAccessLevel` con `POST`.
+
+```javascript title="grant-access.js"
+await fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/", {
+  method: "POST",
+  headers: {
+    "Authorization": `Api-Key ${process.env.ADAPTY_SECRET_KEY}`,
+    "adapty-customer-user-id": userId,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ access_level_id: "premium" }), // add "expires_at" for temporary access
+});
+```
+Dos cosas a tener en cuenta:
+
+- **El nivel de acceso debe existir previamente** en tu dashboard (**Access levels**) — `access_level_id` es su identificador, no un nombre nuevo.
+- **Las concesiones manuales no aparecen en los análisis**. Solo se entregan a tu integración de webhook y al Event Feed, por lo que los gráficos de ingresos y conversión no las reflejarán.
+
+Para los detalles de solicitud y respuesta, consulta [grantAccessLevel](https://adapty.io/docs/es/api-adapty/operations/grantAccessLevel.md).
+## Constrúyelo con tu agente de código IA \{#build-it-with-your-ai-coding-agent\}
+
+Dale a tu agente de código IA esta guía y la especificación de la API en Markdown (añade `.md` a cualquier URL de página), indícale tu stack y deja que escriba las llamadas:
+
+- [Especificación OpenAPI](https://adapty.io/docs/es/api-specs/adapty-api.yaml)
+- [getProfile](https://adapty.io/docs/es/api-adapty/operations/getProfile.md)
+- [grantAccessLevel](https://adapty.io/docs/es/api-adapty/operations/grantAccessLevel.md)
+
+Ejemplo de prompt:
+```
+Using the Adapty server-side API spec, write backend functions to check whether a
+user has an active "premium" access level (GET /profile/, derive status from
+expires_at — there's no is_active field) and to grant it (grantAccessLevel).
+Authenticate with ADAPTY_SECRET_KEY and identify users by adapty-customer-user-id.
+```
+
+The agent writes the code, but it can't run your backend or set your keys — you provide the secret key and the user identifiers.
+## Límites \{#limits\}
+
+- **Límite de velocidad**: Hasta 40.000 solicitudes por minuto por app.
+- **Claves específicas por app**: Cada clave funciona para una sola app; usa la clave correspondiente para cada app.
+- **Se requiere un identificador**: Cada solicitud necesita `adapty-customer-user-id` o `adapty-profile-id`.

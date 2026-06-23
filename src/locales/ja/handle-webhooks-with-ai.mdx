@@ -1,0 +1,144 @@
+---
+title: "ウェブフックでAdaptyのサブスクリプションイベントを処理する"
+description: "ウェブフックを使ってサーバーでAdaptyのサブスクリプションイベントを受信・処理する方法 — エンドポイントの設定、認証、ペイロード、テストを1ページで解説。"
+metadataTitle: "ウェブフックでAdaptyのサブスクリプションイベントを処理する | Adapty ドキュメント"
+keywords: ['adapty webhook', 'サブスクリプションイベント', 'ウェブフック連携', 'サブスクリプションイベントの処理', 'ウェブフックハンドラー', 'ai agent', 'llm']
+---
+Webhookを使うと、サーバーがAdaptyのサブスクリプションイベント（購入、更新、キャンセル、請求エラー、返金）をリアルタイムで受信できます。アクセス権の付与、バックエンドとの同期、ワークフローのトリガーなどに活用できます。このガイドでは、エンドポイントの設定から検証済みの統合テストまでを1ページで説明し、AIコーディングエージェントを使ってハンドラーを自動生成する方法も紹介します。
+
+:::tip
+AIコーディングエージェントを使っていますか？タイトル下の **Copy for LLM** をクリックして、このページ全体をエージェントに貼り付けてください。セットアップ、ペイロード、ハンドラーロジックがすべて含まれています。
+:::
+## Adapty ウェブフックの仕組み \{#how-adapty-webhooks-work\}
+
+- **一方向かつリアルタイム**: イベントが発生すると、Adapty がサーバーに HTTP `POST` を送信します。ポーリング不要です。
+- **2 種類のリクエスト**: インテグレーション保存時に送信される一回限りの確認リクエストと、継続的なサブスクリプションイベントの 2 種類があります。
+- **環境ごとに 1 つの URL**: 本番環境とサンドボックス環境それぞれに別々のエンドポイントを設定します。
+- **各リクエストへの応答が必要**: `2xx` ステータスをすばやく返してください。失敗した場合、Adapty はリトライします。
+## エンドポイントを構築する \{#build-your-endpoint\}
+
+2種類のリクエストを処理する公開HTTPSエンドポイントを作成します。
+
+- **確認リクエスト**: インテグレーションを保存したときに1回送信されます。JSONボディは空（`{}`）です。`2xx` ステータスとJSONボディを返してください。
+- **サブスクリプションイベント**: イベントをボディに含む継続的な `POST` リクエストです。10秒以内に `200` を返し、重い処理は非同期で行ってください。
+シークレット文字列を選んで環境変数（例：`ADAPTY_WEBHOOK_SECRET`）として保存してください。リクエストのたびに `Authorization` ヘッダーがその値と一致するか検証し、一致しない場合はリクエストを拒否します。この同じシークレットを、次のステップでダッシュボードに入力します。
+```javascript title="webhook.js"
+
+const app = express();
+app.use(express.json());
+
+const WEBHOOK_SECRET = process.env.ADAPTY_WEBHOOK_SECRET;
+
+app.post("/adapty/webhook", (req, res) => {
+  // 1. Verify the shared secret Adapty echoes back.
+  if (req.get("Authorization") !== WEBHOOK_SECRET) {
+    return res.sendStatus(401);
+  }
+
+  // 2. Acknowledge fast, then process asynchronously.
+  res.status(200).json({});
+
+  // 3. The verification request has an empty body — nothing to handle.
+  const event = req.body;
+  if (!event.event_type) return;
+
+  switch (event.event_type) {
+    case "subscription_started":
+    case "subscription_renewed":
+    case "trial_converted":
+      // Grant or extend access.
+      break;
+    case "subscription_expired":
+    case "subscription_refunded":
+      // Revoke access.
+      break;
+    default:
+      break;
+  }
+});
+
+app.listen(3000);
+```
+
+Adaptyはエンドポイントを保存した瞬間に検証リクエストを送信するため、インテグレーションを設定する前にエンドポイントをパブリックなHTTPS URLにデプロイしておいてください。
+### 主なイベントとペイロード \{#key-events-and-the-payload\}
+
+すべてのイベントは同じエンベロープを共有しています。フィールドはイベントタイプ、ストア、有効にしたオプションによって異なります。以下は `subscription_started` イベントの簡略版です。
+```json title="Example event"
+{
+  "profile_id": "00000000-0000-0000-0000-000000000000",
+  "customer_user_id": "UserIdInYourSystem",
+  "event_type": "subscription_started",
+  "event_datetime": "2024-11-15T10:45:36.181000+0000",
+  "event_properties": {
+    "store": "play_store",
+    "currency": "USD",
+    "price_usd": 4.99,
+    "vendor_product_id": "onemonth_no_trial",
+    "transaction_id": "0000000000000000",
+    "original_transaction_id": "0000000000000000",
+    "subscription_expires_at": "2024-12-15T10:45:36.181000+0000",
+    "profile_event_id": "00000000-0000-0000-0000-000000000000"
+  },
+  "event_api_version": 1
+}
+```
+
+最もよく扱うイベント:
+| イベントタイプ | 発火タイミング |
+| --- | --- |
+| `subscription_started` | ユーザーが有料サブスクリプションを開始したとき |
+| `subscription_renewed` | サブスクリプションが正常に更新・課金されたとき |
+| `subscription_renewal_cancelled` | ユーザーが自動更新をオフにしたとき（アクセスは有効期限まで継続） |
+| `subscription_expired` | 更新されなかったサブスクリプションの有効期限が切れてアクセスが終了したとき |
+| `trial_started` | ユーザーが無料トライアルを開始したとき |
+| `trial_converted` | トライアルが有料サブスクリプションに転換したとき |
+| `billing_issue_detected` | 更新時の支払いが失敗したとき |
+| `subscription_refunded` | サブスクリプションの購入が返金されたとき |
+全イベントの一覧とフィールドの詳細については、[Webhookイベントのタイプとフィールド](https://adapty.io/docs/ja/webhook-event-types-and-fields.md)を参照してください。
+
+:::warning
+`event_datetime` でイベントを並べないでください。これはイベントのビジネス上の発生時刻であるため、イベントが順序どおりに届かなかったり、同じタイムスタンプを持つ場合があります。並べ替えには自分の受信時刻を使用し、`profile_event_id` またはトランザクションIDを使って重複を排除してください。
+:::
+## Adapty でウェブフックを設定する \{#configure-the-webhook-in-adapty\}
+1. Adapty ダッシュボードで [Integrations → Webhook](https://app.adapty.io/integrations/customwebhook) を開きます。
+2. インテグレーションをオンにします。
+3. **Production endpoint URL** に、デプロイしたエンドポイントの HTTPS URL を入力します。
+4. **Authorization header value for production endpoint** に、エンドポイントが検証に使用するシークレットと同じ値を入力します。Adapty はすべてのリクエストの `Authorization` ヘッダーにこの値を付与して送信します。省略可能ですが、強く推奨されます。
+5. 先にサンドボックスでテストする場合は、**Sandbox endpoint URL** とその **Authorization header value** も入力します。
+6. **Save** をクリックします。Adapty はすぐにエンドポイントへ検証リクエストを送信し、エンドポイントが `2xx` を返すとセットアップが完了します。
+送信するイベントの選択、イベント名のマッピング、オプションフィールド（トライアル価格、過去のイベント、アトリビューション、ユーザー属性、Play Store トークン）の有効化については、[Webhook インテグレーションの設定](https://adapty.io/docs/ja/set-up-webhook-integration.md)をご参照ください。
+
+<ZoomImage id="handle-webhooks-dashboard-config.webp" width="700px" alt="Adapty Dashboard webhook integration settings with the production endpoint URL and Authorization header value fields" />
+## AIコーディングエージェントで構築する \{#build-it-with-your-ai-coding-agent\}
+
+このガイドとリファレンスドキュメントをMarkdown形式（任意のページURLに`.md`を追加）でAIコーディングエージェントに渡し、使用しているスタックを伝えて、ハンドラーのひな形を生成させましょう。
+
+- [Webhookイベントの種類とフィールド](https://adapty.io/docs/ja/webhook-event-types-and-fields.md)
+- [Webhook連携のセットアップ](https://adapty.io/docs/ja/set-up-webhook-integration.md)
+
+プロンプトの例：
+```
+Read these Adapty webhook docs, then write a webhook handler for my Express app:
+verify the Authorization header against ADAPTY_WEBHOOK_SECRET, answer the
+verification request, acknowledge events with 200, and grant or revoke access
+based on event_type.
+```
+
+The agent writes the handler code, but it can't deploy your endpoint or configure the dashboard — host the endpoint yourself and set the URL and secret in **Integrations → Webhook**.
+## Webhookをテストする \{#test-your-webhook\}
+
+本番環境に移行する前に、サンドボックスでテストしましょう：
+
+1. 上記の手順に従って、サンドボックス用のエンドポイントとシークレットを設定します。
+2. サンドボックスアプリで、購入・トライアル開始・返金などを行い、イベントをトリガーします。
+3. インテグレーションの **Last sent events** セクションを開きます。正常に配信されたイベントには **Success** ステータスが表示されます。
+
+**Sending failed** と表示されている場合、サーバーが200〜399の範囲外のステータスを返しています。ステータスにカーソルを合わせると詳細を確認できます。テストの詳細な手順については、[Webhookインテグレーションのテスト](https://adapty.io/docs/ja/test-webhook.md)をご覧ください。
+<ZoomImage id="handle-webhooks-test-result.webp" width="700px" alt="Webhookインテグレーションの最終送信イベント一覧。Successステータスの配信済みイベントが表示されています" />
+## 制限事項 \{#limits\}
+
+- **10秒以内に応答すること**: 時間内にレスポンスが返らない場合、Adapty はその試みを失敗とみなして再試行します。
+- **再試行**: ステータスが 200〜404 の範囲外の場合、Adapty は指数バックオフで再試行します — 24時間以内に最大 9 回まで。
+- **キャンセルの遅延**: キャンセルイベントは届くまで最大 2 時間かかる場合があります。
+- **環境ごとに URL は 1 つ**: 複数のサービスにイベントを配信したい場合は、自分のバックエンドに Webhook を向け、そこからファンアウトしてください。

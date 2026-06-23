@@ -1,0 +1,144 @@
+---
+title: "Обработка событий подписки Adapty с помощью вебхуков"
+description: "Получайте и обрабатывайте события подписки Adapty на своём сервере с помощью вебхуков — настройка эндпоинта, аутентификация, полезная нагрузка и тестирование на одной странице."
+metadataTitle: "Обработка событий подписки Adapty с помощью вебхуков | Документация Adapty"
+keywords: ['adapty webhook', 'события подписки', 'интеграция вебхуков', 'обработка событий подписки', 'обработчик вебхуков', 'ai agent', 'llm']
+---
+Вебхуки позволяют вашему серверу получать события подписок Adapty в режиме реального времени — покупки, продления, отмены, проблемы с оплатой и возвраты — чтобы вы могли предоставлять доступ, синхронизировать бэкенд или запускать рабочие процессы. Этот гайд проведёт вас от настройки эндпоинта до проверенной, протестированной интеграции на одной странице, а также покажет, как поручить написание обработчика AI-агенту.
+
+:::tip
+Используете AI-агент? Нажмите **Copy for LLM** под заголовком и вставьте всю страницу в агент — там есть всё необходимое: настройка, формат payload и логика обработчика.
+:::
+## Как работают вебхуки Adapty \{#how-adapty-webhooks-work\}
+
+- **Однонаправленные и в реальном времени**: Adapty отправляет HTTP `POST` на ваш сервер при наступлении события — никакого поллинга.
+- **Два типа запросов**: Одноразовый запрос верификации (отправляется при сохранении интеграции) и текущие события подписки.
+- **Один URL на окружение**: Вы настраиваете отдельный эндпоинт для продакшена и для песочницы.
+- **Подтверждение каждого запроса**: Ответьте статусом `2xx` как можно быстрее — при сбое Adapty повторит попытку.
+## Создайте свой endpoint \{#build-your-endpoint\}
+
+Создайте публичный HTTPS-endpoint, который обрабатывает два типа запросов:
+
+- **Verification request**: отправляется один раз при сохранении интеграции. Тело запроса — пустой JSON (`{}`). В ответ верните статус `2xx` и тело в формате JSON.
+- **Subscription events**: постоянные `POST`-запросы с событием в теле. Верните `200` в течение 10 секунд, а всю тяжёлую работу выполняйте асинхронно.
+Выберите секретную строку и сохраните её как переменную окружения (например, `ADAPTY_WEBHOOK_SECRET`). При каждом запросе проверяйте, совпадает ли заголовок `Authorization` с ней, и отклоняйте запрос, если нет — тот же секрет вы введёте в дашборде чуть позже.
+```javascript title="webhook.js"
+
+const app = express();
+app.use(express.json());
+
+const WEBHOOK_SECRET = process.env.ADAPTY_WEBHOOK_SECRET;
+
+app.post("/adapty/webhook", (req, res) => {
+  // 1. Verify the shared secret Adapty echoes back.
+  if (req.get("Authorization") !== WEBHOOK_SECRET) {
+    return res.sendStatus(401);
+  }
+
+  // 2. Acknowledge fast, then process asynchronously.
+  res.status(200).json({});
+
+  // 3. The verification request has an empty body — nothing to handle.
+  const event = req.body;
+  if (!event.event_type) return;
+
+  switch (event.event_type) {
+    case "subscription_started":
+    case "subscription_renewed":
+    case "trial_converted":
+      // Grant or extend access.
+      break;
+    case "subscription_expired":
+    case "subscription_refunded":
+      // Revoke access.
+      break;
+    default:
+      break;
+  }
+});
+
+app.listen(3000);
+```
+
+Задеплойте эндпойнт на публичный HTTPS-адрес до того, как настраивать интеграцию — Adapty отправляет запрос верификации в момент сохранения.
+### Ключевые события и их содержимое \{#key-events-and-the-payload\}
+
+Все события используют одну и ту же оболочку. Набор полей зависит от типа события, стора и включённых вами настроек. Ниже приведён сокращённый пример события `subscription_started`:
+```json title="Example event"
+{
+  "profile_id": "00000000-0000-0000-0000-000000000000",
+  "customer_user_id": "UserIdInYourSystem",
+  "event_type": "subscription_started",
+  "event_datetime": "2024-11-15T10:45:36.181000+0000",
+  "event_properties": {
+    "store": "play_store",
+    "currency": "USD",
+    "price_usd": 4.99,
+    "vendor_product_id": "onemonth_no_trial",
+    "transaction_id": "0000000000000000",
+    "original_transaction_id": "0000000000000000",
+    "subscription_expires_at": "2024-12-15T10:45:36.181000+0000",
+    "profile_event_id": "00000000-0000-0000-0000-000000000000"
+  },
+  "event_api_version": 1
+}
+```
+
+Самые частые события, с которыми вам придётся работать:
+| Тип события | Срабатывает когда |
+| --- | --- |
+| `subscription_started` | Пользователь оформляет платную подписку |
+| `subscription_renewed` | Подписка успешно продлевается и списывается оплата |
+| `subscription_renewal_cancelled` | Пользователь отключает автопродление (доступ сохраняется до истечения срока) |
+| `subscription_expired` | Доступ прекращается после окончания не продлённой подписки |
+| `trial_started` | Пользователь начинает бесплатный пробный период |
+| `trial_converted` | Пробный период конвертируется в платную подписку |
+| `billing_issue_detected` | Платёж за продление не проходит |
+| `subscription_refunded` | Покупка подписки возвращается |
+Полный список событий и все поля описаны в разделе [Типы и поля событий вебхука](https://adapty.io/docs/ru/webhook-event-types-and-fields.md).
+
+:::warning
+Не сортируйте события по `event_datetime` — это бизнес-время события, поэтому события могут приходить не по порядку или иметь одинаковую временну́ю метку. Сортируйте по времени получения на вашей стороне и устраняйте дубликаты с помощью `profile_event_id` или идентификаторов транзакций.
+:::
+## Настройте вебхук в Adapty \{#configure-the-webhook-in-adapty\}
+1. Откройте [Integrations → Webhook](https://app.adapty.io/integrations/customwebhook) в дашборде Adapty.
+2. Включите интеграцию.
+3. В поле **Production endpoint URL** введите HTTPS URL задеплоенного эндпоинта.
+4. В поле **Authorization header value for production endpoint** введите тот же секрет, который проверяет ваш эндпоинт. Adapty отправляет это значение в заголовке `Authorization` с каждым запросом. Поле необязательное, но мы настоятельно рекомендуем его заполнить.
+5. Чтобы сначала протестировать в песочнице, заполните **Sandbox endpoint URL** и соответствующее поле **Authorization header value**.
+6. Нажмите **Save**. Adapty сразу отправит верификационный запрос на эндпоинт, который должен ответить кодом `2xx` — это завершит настройку.
+Чтобы выбрать события для отправки, настроить названия событий или включить дополнительные поля (цена триала, исторические события, атрибуция, атрибуты пользователя, токен Play Store), см. [Настройка интеграции с вебхуком](https://adapty.io/docs/ru/set-up-webhook-integration.md).
+
+<ZoomImage id="handle-webhooks-dashboard-config.webp" width="700px" alt="Adapty Dashboard webhook integration settings with the production endpoint URL and Authorization header value fields" />
+## Создайте обработчик с помощью AI-агента \{#build-it-with-your-ai-coding-agent\}
+
+Передайте вашему AI-агенту этот гайд и справочную документацию в формате Markdown (добавьте `.md` к любому URL страницы), укажите ваш стек и дайте ему сгенерировать обработчик:
+
+- [Типы событий и поля вебхука](https://adapty.io/docs/ru/webhook-event-types-and-fields.md)
+- [Настройка интеграции с вебхуком](https://adapty.io/docs/ru/set-up-webhook-integration.md)
+
+Пример промпта:
+```
+Read these Adapty webhook docs, then write a webhook handler for my Express app:
+verify the Authorization header against ADAPTY_WEBHOOK_SECRET, answer the
+verification request, acknowledge events with 200, and grant or revoke access
+based on event_type.
+```
+
+The agent writes the handler code, but it can't deploy your endpoint or configure the dashboard — host the endpoint yourself and set the URL and secret in **Integrations → Webhook**.
+## Протестируйте вебхук \{#test-your-webhook\}
+
+Перед запуском в продакшн протестируйте в песочнице:
+
+1. Настройте эндпоинт и секрет для песочницы, как описано выше.
+2. В приложении для песочницы совершите покупку, запустите триал или оформите возврат, чтобы вызвать событие.
+3. Откройте раздел **Last sent events** интеграции. Доставленное событие отображается со статусом **Success**.
+
+Если событие показывает **Sending failed**, ваш сервер вернул статус вне диапазона 200–399 — наведите курсор на статус для получения подробностей. Полное руководство по тестированию см. в разделе [Тест интеграции с вебхуком](https://adapty.io/docs/ru/test-webhook.md).
+<ZoomImage id="handle-webhooks-test-result.webp" width="700px" alt="Список последних отправленных событий в интеграции webhook с доставленным событием со статусом Success" />
+## Ограничения \{#limits\}
+
+- **Подтверждение в течение 10 секунд**: если Adapty не получает ответ вовремя, попытка считается неудачной и повторяется.
+- **Повторные попытки**: если статус ответа выходит за пределы диапазона 200–404, Adapty повторяет запрос с экспоненциальной задержкой — до 9 повторов в течение 24 часов.
+- **Задержка отмены**: события об отмене могут поступать с задержкой до 2 часов.
+- **Один URL на окружение**: чтобы доставлять события в несколько сервисов, направьте вебхук на свой бэкенд и распределяйте их уже оттуда.
