@@ -1,0 +1,160 @@
+---
+title: "Thực hiện mua hàng trong ứng dụng với React Native SDK"
+description: "Hướng dẫn xử lý in-app purchase và gói đăng ký bằng Adapty."
+metadataTitle: "Xử lý In-App Purchase trong Adapty | Tài liệu Adapty"
+keywords: ['makePurchase', 'offer code']
+rank: 90
+displayed_sidebar: sdkreactnative
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/vi/reusable/OfferCodesInfo.mdx';
+
+Hiển thị paywall trong ứng dụng là bước quan trọng để cung cấp cho người dùng quyền truy cập vào nội dung hoặc dịch vụ cao cấp. Tuy nhiên, chỉ cần hiển thị paywall là đủ để hỗ trợ mua hàng nếu bạn dùng [Paywall Builder](adapty-paywall-builder) để tùy chỉnh paywall của mình.
+
+Nếu không dùng Paywall Builder, bạn phải sử dụng một phương thức riêng là `.makePurchase()` để hoàn tất giao dịch và mở khóa nội dung. Phương thức này là cổng để người dùng tương tác với paywall và tiến hành giao dịch.
+
+Nếu paywall của bạn có ưu đãi đang hoạt động cho sản phẩm mà người dùng muốn mua, Adapty sẽ tự động áp dụng ưu đãi đó tại thời điểm mua hàng.
+
+:::warning
+Lưu ý rằng ưu đãi giới thiệu chỉ được áp dụng tự động nếu bạn sử dụng paywall được thiết lập bằng Paywall Builder.
+
+Trong các trường hợp khác, bạn cần [xác minh tính đủ điều kiện của người dùng để nhận ưu đãi giới thiệu trên iOS](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios). Bỏ qua bước này có thể dẫn đến ứng dụng bị từ chối khi phát hành. Ngoài ra, điều này có thể khiến người dùng đủ điều kiện nhận ưu đãi giới thiệu bị tính giá đầy đủ.
+:::
+
+Hãy đảm bảo bạn đã [hoàn thành cấu hình ban đầu](quickstart) mà không bỏ qua bất kỳ bước nào. Nếu không, chúng tôi không thể xác thực giao dịch mua hàng.
+
+## Thực hiện mua hàng \{#make-purchase\}
+
+:::note
+**Đang dùng [Paywall Builder](adapty-paywall-builder)?** Các giao dịch mua được xử lý tự động — bạn có thể bỏ qua bước này.
+
+**Muốn có hướng dẫn từng bước?** Xem [hướng dẫn quickstart](react-native-implement-paywalls-manually) để có hướng dẫn triển khai đầy đủ từ đầu đến cuối.
+:::
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+
+Tham số yêu cầu:
+
+| Tham số     | Bắt buộc | Mô tả                                                                                                                          |
+| :---------- | :------- |:-------------------------------------------------------------------------------------------------------------------------------|
+| **Product** | bắt buộc | Đối tượng [`AdaptyPaywallProduct`](https://react-native.adapty.io/interfaces/adaptypaywallproduct) lấy từ paywall. |
+
+Tham số phản hồi:
+
+| Tham số | Mô tả                                                                                                                                                                                                                                                                                                                                                                            |
+|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>Nếu yêu cầu thành công, phản hồi chứa đối tượng này. Đối tượng [AdaptyProfile](https://react-native.adapty.io/interfaces/adaptyprofile) cung cấp thông tin toàn diện về mức độ truy cập, gói đăng ký và sản phẩm mua một lần của người dùng trong ứng dụng.</p><p>Kiểm tra trạng thái mức độ truy cập để xác định xem người dùng có quyền truy cập cần thiết vào ứng dụng hay không.</p> |
+
+:::warning
+**Lưu ý:** Nếu bạn vẫn đang dùng StoreKit của Apple phiên bản thấp hơn 2.0 và Adapty SDK phiên bản thấp hơn 2.9.0, bạn cần cung cấp [Apple App Store shared secret](app-store-connection-configuration#step-5-enter-app-store-shared-secret) thay thế. Phương thức này hiện đã bị Apple ngừng hỗ trợ.
+:::
+
+## Thay đổi gói đăng ký khi mua hàng \{#change-subscription-when-making-a-purchase\}
+
+Khi người dùng chọn một gói đăng ký mới thay vì gia hạn gói hiện tại, cách xử lý phụ thuộc vào cửa hàng:
+
+- Với App Store, gói đăng ký sẽ tự động được cập nhật trong cùng nhóm gói đăng ký. Nếu người dùng mua một gói từ nhóm này trong khi đã có gói từ nhóm khác, cả hai gói đều sẽ hoạt động đồng thời.
+- Với Google Play, gói đăng ký không tự động được cập nhật. Bạn cần xử lý việc chuyển đổi trong code ứng dụng như mô tả bên dưới.
+
+Để thay thế gói đăng ký bằng gói khác trên Android, gọi phương thức `.makePurchase()` với tham số bổ sung:
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product, params);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+Tham số yêu cầu bổ sung:
+
+| Tham số    | Bắt buộc | Mô tả                                                  |
+| :--------- | :------- | :----------------------------------------------------------- |
+| **params** | bắt buộc | Đối tượng thuộc kiểu [`MakePurchaseParamsInput`](https://react-native.adapty.io/types/makepurchaseparamsinput). |
+
+:::info
+**Phiên bản 3.8.2+**: Cấu trúc `MakePurchaseParamsInput` đã được cập nhật. `oldSubVendorProductId` và `prorationMode` giờ nằm trong `subscriptionUpdateParams`, và `isOfferPersonalized` được chuyển lên cấp trên.
+
+Ví dụ:
+```javascript
+makePurchase(product, {
+    android: {
+        subscriptionUpdateParams: {
+            oldSubVendorProductId: 'old_product_id',
+            prorationMode: 'charge_prorated_price'
+        },
+        isOfferPersonalized: true
+    }
+});
+```
+:::
+
+Bạn có thể đọc thêm về gói đăng ký và các chế độ thay thế trong tài liệu Google Developer:
+
+- [Về các chế độ thay thế](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Khuyến nghị của Google về chế độ thay thế](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Chế độ thay thế [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Lưu ý: phương thức này chỉ áp dụng cho việc nâng cấp gói đăng ký. Hạ cấp không được hỗ trợ.
+- Chế độ thay thế [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Lưu ý: Việc thay đổi gói đăng ký thực sự chỉ xảy ra khi chu kỳ thanh toán hiện tại kết thúc.
+
+## Đổi mã ưu đãi trên iOS \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+Để hiển thị sheet đổi mã trong ứng dụng:
+
+```typescript showLineNumbers
+adapty.presentCodeRedemptionSheet();
+```
+
+:::danger
+Qua quan sát của chúng tôi, sheet Offer Code Redemption trong một số ứng dụng có thể hoạt động không ổn định. Chúng tôi khuyến nghị chuyển hướng người dùng trực tiếp đến App Store.
+
+Để thực hiện điều này, bạn cần mở URL theo định dạng sau:
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
+
+## Quản lý gói trả trước (Android) \{#manage-prepaid-plans-android\}
+
+Nếu người dùng ứng dụng của bạn có thể mua [gói trả trước](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (ví dụ: mua gói đăng ký không tự gia hạn cho vài tháng), bạn có thể bật [giao dịch đang chờ xử lý](https://developer.android.com/google/play/billing/subscriptions#pending) cho các gói trả trước.
+
+```typescript showLineNumbers
+adapty.activate("PUBLIC_SDK_KEY", {
+    android: { pendingPrepaidPlansEnabled: true }
+});
+```

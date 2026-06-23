@@ -1,0 +1,260 @@
+---
+title: "Bật tính năng mua hàng bằng cách sử dụng paywall trong Unity SDK"
+description: "Tìm hiểu cách hiển thị paywall trong ứng dụng Unity của bạn với Adapty SDK."
+metadataTitle: "Hiển thị Paywall | Unity SDK | Tài liệu Adapty"
+customSlug: /unity-quickstart-paywalls
+displayed_sidebar: sdkunity
+keywords: ['paywall', 'paywall builder', 'getPaywall']
+rank: 60
+---
+
+import PaywallsIntro from '@site/src/locales/vi/reusable/PaywallsIntro.md';
+
+Để bật tính năng in-app purchase, bạn cần hiểu ba khái niệm chính:
+
+- [**Sản phẩm**](product) – bất kỳ thứ gì người dùng có thể mua (gói đăng ký, consumable, quyền truy cập trọn đời)
+- [**Paywall**](paywalls) là các cấu hình xác định sản phẩm nào sẽ được cung cấp. Trong Adapty, paywall là cách duy nhất để lấy sản phẩm, nhưng thiết kế này cho phép bạn thay đổi ưu đãi, giá cả và tổ hợp sản phẩm mà không cần chỉnh sửa code ứng dụng.
+- [**Placement**](placements) – vị trí và thời điểm hiển thị paywall trong ứng dụng (như `main`, `onboarding`, `settings`). Bạn thiết lập paywall cho các placement trong dashboard, sau đó yêu cầu chúng bằng placement ID trong code. Điều này giúp dễ dàng chạy A/B test và hiển thị các paywall khác nhau cho từng nhóm người dùng.
+
+Adapty cung cấp cho bạn ba cách để bật tính năng mua hàng trong ứng dụng. Hãy chọn một trong số đó tùy theo yêu cầu của ứng dụng:
+
+| Cách triển khai           | Độ phức tạp | Khi nào nên dùng                                                                                                                                                                                                                          |
+|---------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty Paywall Builder    | ✅ Dễ       | Bạn [tạo một paywall hoàn chỉnh, sẵn sàng để mua trong no-code builder](quickstart-paywalls). Adapty tự động render và xử lý toàn bộ flow mua hàng phức tạp, xác thực receipt và quản lý gói đăng ký ở phía sau.                        |
+| Paywall tạo thủ công      | 🟡 Trung bình | Bạn tự triển khai giao diện paywall trong code ứng dụng, nhưng vẫn lấy đối tượng paywall từ Adapty để duy trì tính linh hoạt trong ưu đãi sản phẩm. Xem [hướng dẫn](unity-quickstart-manual).                                          |
+| Observer mode             | 🔴 Khó     | Bạn đã có cơ sở hạ tầng xử lý mua hàng riêng và muốn tiếp tục sử dụng. Lưu ý rằng observer mode có những giới hạn nhất định trong Adapty. Xem [bài viết](observer-vs-full-mode).                                                       |
+
+:::important
+**Các bước dưới đây hướng dẫn cách triển khai paywall được tạo trong Adapty paywall builder.**
+
+Nếu bạn không muốn dùng paywall builder, hãy xem [hướng dẫn xử lý mua hàng trong paywall tạo thủ công](unity-making-purchases).
+:::
+
+Để hiển thị paywall được tạo trong Adapty paywall builder, trong code ứng dụng, bạn chỉ cần:
+
+1. **Lấy paywall**: Lấy paywall từ Adapty.
+2. **Hiển thị paywall và Adapty sẽ xử lý mua hàng cho bạn**: Hiển thị paywall container bạn đã lấy được trong ứng dụng.
+3. **Xử lý các hành động nút bấm**: Liên kết tương tác của người dùng với paywall với phản hồi tương ứng trong ứng dụng. Ví dụ: mở liên kết hoặc đóng paywall khi người dùng nhấn nút.
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Trước khi bắt đầu, hãy hoàn thành các bước sau:
+
+1. Kết nối ứng dụng của bạn với [App Store](initial_ios) và/hoặc [Google Play](initial-android) trong Adapty Dashboard.
+2. [Tạo sản phẩm](create-product) trong Adapty.
+3. [Tạo paywall và thêm sản phẩm vào đó](create-paywall).
+4. [Tạo placement và thêm paywall vào đó](create-placement).
+5. [Cài đặt và kích hoạt Adapty SDK](sdk-installation-unity) trong code ứng dụng.
+
+:::tip
+Cách nhanh nhất để hoàn thành các bước này là làm theo [hướng dẫn quickstart](quickstart) hoặc tạo paywall và placement bằng [Developer CLI](developer-cli-quickstart).
+:::
+
+## 1. Lấy paywall \{#1-get-the-paywall\}
+
+Các paywall của bạn được liên kết với các placement đã cấu hình trong dashboard. Placement cho phép bạn chạy các paywall khác nhau cho các đối tượng khác nhau hoặc chạy [A/B test](ab-tests).
+
+Để lấy paywall được tạo trong Adapty paywall builder, bạn cần:
+
+1. Lấy đối tượng `paywall` theo [placement](placements) ID bằng phương thức `GetPaywall` và kiểm tra xem đó có phải là paywall được tạo trong builder hay không thông qua thuộc tính `HasViewConfiguration`.
+
+2. Tạo paywall view bằng phương thức `CreatePaywallView`. View chứa các phần tử giao diện và styling cần thiết để hiển thị paywall.
+
+:::important
+Để lấy cấu hình view, bạn phải bật toggle **Show on device** trong Paywall Builder. Nếu không, bạn sẽ nhận được cấu hình view rỗng và paywall sẽ không được hiển thị.
+:::
+
+```csharp showLineNumbers
+Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
+    if(error != null) {
+        // handle the error
+        return;
+    }
+    
+    // Create paywall view parameters
+    var parameters = new AdaptyUICreatePaywallViewParameters();
+    
+    // Create the paywall view
+    AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+        if(error != null) {
+            // handle the error
+            return;
+        }
+        
+        // view - the paywall view ready to be presented
+    });
+});
+```
+
+:::info
+Hướng dẫn quickstart này cung cấp cấu hình tối thiểu cần thiết để hiển thị paywall. Để biết chi tiết cấu hình nâng cao, xem [hướng dẫn lấy paywall](unity-get-pb-paywalls).
+:::
+
+## 2. Hiển thị paywall \{#2-display-the-paywall\}
+
+Khi đã có cấu hình paywall, bạn chỉ cần thêm vài dòng code để hiển thị paywall của mình.
+
+Để hiển thị paywall, sử dụng phương thức `view.Present()` trên `view` được tạo bởi phương thức `CreatePaywallView`. Mỗi `view` chỉ có thể dùng một lần. Nếu cần hiển thị lại paywall, hãy gọi `CreatePaywallView` thêm một lần nữa để tạo instance `view` mới.
+
+```csharp showLineNumbers title="Unity"
+view.Present((error) => {
+  // handle the error
+});
+```
+
+:::info
+Để biết thêm chi tiết về cách hiển thị paywall, xem [hướng dẫn](unity-present-paywalls).
+:::
+
+## 3. Xử lý các hành động nút bấm \{#3-handle-button-actions\}
+
+Khi người dùng nhấn các nút trong paywall, Unity SDK sẽ tự động xử lý việc mua hàng và khôi phục. Tuy nhiên, các nút khác có ID tùy chỉnh hoặc được định nghĩa sẵn và yêu cầu bạn xử lý hành động trong code.
+
+Ví dụ: paywall của bạn thường có nút đóng và các URL để mở (như điều khoản sử dụng và chính sách bảo mật). Để xử lý các hành động này, class của bạn cần implement interface `AdaptyPaywallsEventsListener` và đăng ký làm listener.
+
+:::tip
+Đọc hướng dẫn về cách xử lý [hành động](unity-handle-paywall-actions) và [sự kiện](unity-handling-events) của nút bấm.
+:::
+
+```csharp showLineNumbers title="Unity"
+public class YourClass : MonoBehaviour, AdaptyPaywallsEventsListener
+{
+    void Start()
+    {
+        // Register this class as the paywall events listener
+        Adapty.SetPaywallsEventsListener(this);
+    }
+
+    // AdaptyPaywallsEventsListener method - handles button actions
+    public void PaywallViewDidPerformAction(
+        AdaptyUIPaywallView view,
+        AdaptyUIUserAction action
+    ) {
+        switch (action.Type) {
+            case AdaptyUIUserActionType.Close:
+                view.Dismiss(null);
+                break;
+            case AdaptyUIUserActionType.OpenUrl:
+                Application.OpenURL(action.Value);
+                break;
+            default:
+                break;
+        }
+    }
+}
+```
+
+## Các bước tiếp theo \{#next-steps\}
+
+<SupportForum />
+
+Paywall của bạn đã sẵn sàng để hiển thị trong ứng dụng. Hãy kiểm tra giao dịch mua hàng của bạn trong [App Store sandbox](test-purchases-in-sandbox) hoặc trong [Google Play Store](testing-on-android) để đảm bảo bạn có thể hoàn thành một giao dịch mua thử từ paywall.
+
+Tiếp theo, bạn cần [kiểm tra mức độ truy cập của người dùng](unity-check-subscription-status) để đảm bảo hiển thị paywall hoặc cấp quyền truy cập tính năng trả phí cho đúng người dùng.
+
+## Ví dụ đầy đủ \{#full-example\}
+
+Dưới đây là cách tích hợp tất cả các bước đó vào ứng dụng của bạn.
+
+```csharp showLineNumbers
+using System;
+using UnityEngine;
+using AdaptySDK;
+
+public class PaywallManager : MonoBehaviour, AdaptyPaywallsEventsListener
+{
+    [SerializeField] private string placementId = "YOUR_PLACEMENT_ID";
+    
+    private AdaptyUIPaywallView currentPaywallView;
+    
+    void Start()
+    {
+        // Register for paywall events
+        Adapty.SetPaywallsEventsListener(this);
+        GetAndDisplayPaywall();
+    }
+    
+    private void GetAndDisplayPaywall()
+    {
+        Adapty.GetPaywall(placementId, (paywall, error) => {
+            if (error != null) {
+                Debug.LogError("Error getting paywall: " + error.Message);
+                return;
+            }
+            
+            if (paywall.HasViewConfiguration) {
+                CreateAndPresentPaywallView(paywall);
+            } else {
+                Debug.LogWarning("Paywall was not created using the builder");
+            }
+        });
+    }
+    
+    private void CreateAndPresentPaywallView(AdaptyPaywall paywall)
+    {
+        var parameters = new AdaptyUICreatePaywallViewParameters();
+        
+        AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+            if (error != null) {
+                Debug.LogError("Error creating paywall view: " + error.Message);
+                return;
+            }
+            
+            currentPaywallView = view;
+            
+            view.Present((presentError) => {
+                if (presentError != null) {
+                    Debug.LogError("Error presenting paywall: " + presentError.Message);
+                    return;
+                }
+                
+                Debug.Log("Paywall presented successfully");
+            });
+        });
+    }
+    
+    // AdaptyPaywallsEventsListener implementation
+    public void PaywallViewDidPerformAction(
+        AdaptyUIPaywallView view, 
+        AdaptyUIUserAction action
+    ) {
+        switch (action.Type) {
+            case AdaptyUIUserActionType.Close:
+                Debug.Log("Close button pressed");
+                view.Dismiss(null);
+                break;
+            case AdaptyUIUserActionType.OpenUrl:
+                Application.OpenURL(action.Value);
+                break;
+            default:
+                break;
+        }
+    }
+    
+    // Required interface methods (implement as needed)
+    public void PaywallViewDidAppear(AdaptyUIPaywallView view) { }
+    public void PaywallViewDidDisappear(AdaptyUIPaywallView view) { }
+    public void PaywallViewDidSelectProduct(AdaptyUIPaywallView view, string productId) { }
+    public void PaywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) { }
+    public void PaywallViewDidFinishPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product, AdaptyPurchaseResult purchasedResult) { }
+    public void PaywallViewDidFailPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product, AdaptyError error) { }
+    public void PaywallViewDidStartRestore(AdaptyUIPaywallView view) { }
+    public void PaywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) { }
+    public void PaywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) { }
+    public void PaywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) { }
+    public void PaywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) { }
+    public void PaywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view, AdaptyPaywallProduct product, AdaptyError error) { }
+    
+    public void ShowPaywall()
+    {
+        GetAndDisplayPaywall();
+    }
+    
+    void OnDestroy()
+    {
+        if (currentPaywallView != null) {
+            currentPaywallView.Dismiss(null);
+        }
+    }
+}
+```

@@ -1,0 +1,167 @@
+---
+title: "Hướng dẫn bắt đầu nhanh với Adapty Developer CLI"
+description: "Thiết lập tài khoản Adapty từ đầu đến cuối bằng Developer CLI — từ tạo app đến placement hoạt động thực tế, chỉ với vài lệnh."
+metadataTitle: "Hướng dẫn bắt đầu nhanh với Developer CLI | Tài liệu Adapty"
+keywords: ['cli', 'developer cli', 'mcp']
+---
+
+:::link
+Bạn đang dùng trợ lý AI? Có sẵn [Adapty CLI skill](https://github.com/adaptyteam/adapty-cli/tree/main/skills/adapty-cli) để giúp các LLM làm việc với CLI.
+:::
+
+Adapty CLI cho phép bạn thiết lập toàn bộ cấu hình app từ dòng lệnh. Dùng nó thay thế cho [hướng dẫn bắt đầu trên dashboard](integrate-payments) nếu bạn thích làm việc với terminal hoặc [MCP clients](https://github.com/adaptyteam/adapty-cli/tree/main/skills/adapty-cli).
+
+:::note
+Kết nối Adapty với App Store Connect và Google Play vẫn cần thiết lập một lần trên dashboard — được đề cập ở bước 3.
+:::
+
+Sau khi hoàn thành, app, mức độ truy cập, sản phẩm, paywall và placement của bạn đều hiển thị trên [Adapty dashboard](https://app.adapty.io).
+
+## 1. Cài đặt CLI \{#1-install-the-cli\}
+
+Yêu cầu [Node.js](https://nodejs.org/en/download) phiên bản 18 trở lên.
+
+Để cài đặt CLI, chạy lệnh:
+
+```bash
+npm install -g adapty
+```
+
+Hoặc, chạy trực tiếp:
+
+```bash
+npx adapty auth login
+```
+
+## 2. Xác thực \{#2-authenticate\}
+
+Chạy lệnh đăng nhập để kết nối CLI với tài khoản Adapty của bạn.
+
+```bash
+adapty auth login
+```
+
+CLI sẽ mở một tab trình duyệt. Khớp mã hiển thị trong terminal với mã hiển thị trên trình duyệt, sau đó nhấp **Authorize**. Terminal xác nhận khi quá trình xác thực hoàn tất.
+
+## 3. Tạo app của bạn \{#3-create-your-app\}
+
+Một app trong Adapty đại diện cho ứng dụng di động của bạn. Một Adapty app kết nối với cả App Store lẫn Google Play — bạn chỉ cần tạo một app, bất kể bạn phát hành trên bao nhiêu cửa hàng.
+
+<Tabs>
+  <TabItem value="ios-android" label="iOS + Android">
+    ```bash
+    adapty apps create --title "My App" --platform ios --platform android --apple-bundle-id com.example.app --google-bundle-id com.example.app
+    ```
+  </TabItem>
+  <TabItem value="ios" label="iOS only">
+    ```bash
+    adapty apps create --title "My App" --platform ios --apple-bundle-id com.example.app
+    ```
+  </TabItem>
+  <TabItem value="android" label="Android only">
+    ```bash
+    adapty apps create --title "My App" --platform android --google-bundle-id com.example.app
+    ```
+  </TabItem>
+</Tabs>
+
+Lệnh trả về một `<app-id>`. Dùng ID này trong tất cả các lệnh tiếp theo.
+
+:::important
+Trước khi tiếp tục, hãy kết nối app của bạn với App Store Connect và Google Play trên Adapty dashboard. ID sản phẩm từ cả hai cửa hàng là bắt buộc ở bước 5.
+
+- [Kết nối App Store Connect](app-store-connection-configuration)
+- [Kết nối Google Play](google-play-store-connection-configuration)
+:::
+
+## 4. Tạo mức độ truy cập (tùy chọn) \{#4-create-an-access-level-optional\}
+
+[Mức độ truy cập](access-level) kiểm soát những gì người dùng có thể truy cập sau khi mua hàng. Thay vì kiểm tra xem người dùng đã mua sản phẩm cụ thể nào, app của bạn chỉ cần kiểm tra xem người dùng có mức độ truy cập tương ứng hay không. Cách này giúp tách biệt logic app của bạn khỏi các ID sản phẩm cụ thể.
+
+Mức độ truy cập `premium` được tự động tạo cùng với mỗi app mới. **Với hầu hết các app, bạn có thể bỏ qua bước này.** Dùng `premium` làm access level ID ở bước 5.
+
+Chỉ chạy lệnh này nếu các sản phẩm khác nhau mở khóa các tính năng khác nhau cho các nhóm người dùng khác nhau — ví dụ, nếu người đăng ký "Basic" và người đăng ký "Pro" có quyền truy cập vào các phần khác nhau của app.
+
+```bash
+adapty access-levels create --app <app-id> --sdk-id "pro" --title "Pro"
+```
+
+- `--sdk-id` là định danh bạn sẽ dùng trong code app để kiểm tra xem một tính năng có nên khả dụng với người dùng hay không (ví dụ: `if user.hasAccessLevel("pro")`). Nếu bạn bỏ qua bước này và dùng mức độ truy cập mặc định, `--sdk-id` của nó là `premium`.
+- `--title` là nhãn hiển thị để bạn tham khảo trên Adapty dashboard.
+
+Lệnh trả về một `<access-level-id>`.
+
+## 5. Tạo sản phẩm \{#5-create-a-product\}
+
+Trong Adapty, một [sản phẩm](product) đại diện cho bất kỳ thứ gì app của bạn bán — gói đăng ký hoặc sản phẩm mua một lần. Các mục từ App Store Connect và Google Play có thể được nhóm thành một sản phẩm Adapty duy nhất và quản lý từ một nơi.
+
+Bạn sẽ cần ID sản phẩm từ mỗi cửa hàng: Apple product ID từ App Store Connect, và Android product ID cùng base plan ID từ Google Play Console. Xem [Sản phẩm](quickstart-products) để biết chi tiết về nơi tìm chúng.
+
+Nếu bạn bỏ qua bước 4, hãy dùng `default_access_level.id` được trả về bởi lệnh `apps create` ở bước 3 làm `<access-level-id>`.
+
+:::important
+ID sản phẩm trong cửa hàng mà bạn liên kết ở đây (`--ios-product-id`, `--android-product-id`) không thể thay đổi sau khi tạo. Để dùng các ID sản phẩm khác, hãy tạo một sản phẩm mới.
+:::
+
+<Tabs>
+  <TabItem value="ios-android" label="iOS + Android">
+    ```bash
+    adapty products create --app <app-id> --title "My Product" --access-level-id <access-level-id> --period monthly --ios-product-id <your.apple.id> --android-product-id <your.google.id> --android-base-plan-id <your.base-plan.id>
+    ```
+  </TabItem>
+  <TabItem value="ios" label="iOS only">
+    ```bash
+    adapty products create --app <app-id> --title "My Product" --access-level-id <access-level-id> --period monthly --ios-product-id <your.apple.id>
+    ```
+  </TabItem>
+  <TabItem value="android" label="Android only">
+    ```bash
+    adapty products create --app <app-id> --title "My Product" --access-level-id <access-level-id> --period monthly --android-product-id <your.google.id> --android-base-plan-id <your.base-plan.id>
+    ```
+  </TabItem>
+</Tabs>
+
+Lệnh trả về một `<product-id>`.
+
+## 6. Tạo paywall \{#6-create-a-paywall\}
+
+Một [paywall](paywalls) là nơi chứa các sản phẩm của bạn. Trong Adapty, paywall là cách duy nhất để đưa sản phẩm đến người dùng. Mọi sản phẩm đều phải nằm trong một paywall trước khi có thể xuất hiện trong app của bạn.
+
+:::important
+Khi một paywall đã được liên kết với một placement, các sản phẩm của nó không thể thay đổi. Để dùng các sản phẩm khác, hãy tạo một paywall mới và cập nhật placement để trỏ đến nó.
+:::
+
+<Tabs>
+  <TabItem value="single" label="Một sản phẩm">
+    ```bash
+    adapty paywalls create --app <app-id> --title "My Paywall" --product-id <product-id>
+    ```
+  </TabItem>
+  <TabItem value="multiple" label="Nhiều sản phẩm">
+    ```bash
+    adapty paywalls create --app <app-id> --title "My Paywall" --product-id <product-id-1> --product-id <product-id-2>
+    ```
+  </TabItem>
+</Tabs>
+
+Lệnh trả về một `<paywall-id>`.
+
+## 7. Tạo placement \{#7-create-a-placement\}
+
+Một [placement](placements) là điểm trong app của bạn nơi bạn hiển thị paywall. Thứ duy nhất bạn hardcode trong code app là placement ID. Tất cả những thứ còn lại — hiển thị paywall nào và cho người dùng nào — được quản lý trên dashboard mà không cần phát hành phiên bản app mới.
+
+`--developer-id` là chuỗi bạn sẽ tham chiếu sau này trong code app khi hỏi Adapty paywall nào cần hiển thị tại điểm này. Chọn tên mô tả vị trí, như `"main"`, `"onboarding"`, hoặc `"settings"`.
+
+```bash
+adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+```
+
+Cờ `--audiences` kiểm soát paywall nào được hiển thị cho người dùng nào. Ví dụ trên thiết lập một đối tượng mặc định duy nhất — mọi người dùng tại placement này đều thấy cùng một paywall.
+
+## Tiếp theo là gì \{#whats-next\}
+
+Tất cả các thực thể hiện đã hiển thị trên [Adapty dashboard](https://app.adapty.io). Tiếp theo:
+
+- [Thiết kế paywall của bạn](adapty-paywall-builder) — dùng Paywall Builder không cần code để thêm hình ảnh, bố cục và nội dung vào paywall bạn vừa tạo.
+- [Tích hợp Adapty SDK](quickstart-sdk) — thêm SDK vào app của bạn để lấy và hiển thị placement.
+- Định tuyến các [phân khúc](segments) người dùng khác nhau đến các paywall khác nhau — xem [`placements update`](developer-cli-reference#adapty-placements-update) và [`segments list`](developer-cli-reference#adapty-segments-list) trong tài liệu tham khảo đầy đủ.

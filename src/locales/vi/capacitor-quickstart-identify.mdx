@@ -1,0 +1,133 @@
+---
+title: "Xác định người dùng trong Capacitor SDK"
+description: "Hướng dẫn nhanh để thiết lập Adapty cho việc quản lý gói đăng ký trong ứng dụng với Capacitor."
+metadataTitle: "Hướng dẫn Bắt đầu Nhanh Adapty | Tài liệu Adapty"
+rank: 70
+---
+
+Cách bạn quản lý giao dịch mua của người dùng phụ thuộc vào mô hình xác thực của ứng dụng:
+- Nếu ứng dụng không sử dụng xác thực backend và không lưu trữ dữ liệu người dùng, xem [phần về người dùng ẩn danh](#anonymous-users).
+- Nếu ứng dụng có (hoặc sẽ có) xác thực backend, xem [phần về người dùng đã xác định](#identified-users).
+
+:::tip
+**Các khái niệm chính**:
+- **Hồ sơ người dùng** là các thực thể cần thiết để SDK hoạt động. Adapty tự động tạo chúng. Chúng có thể là ẩn danh (không có customer user ID) hoặc đã xác định (có customer user ID).
+- **Customer user ID** là định danh tùy chọn **bạn tạo** để Adapty liên kết người dùng của bạn với hồ sơ người dùng Adapty của họ.
+:::
+
+Dưới đây là sự khác biệt giữa người dùng ẩn danh và người dùng đã xác định:
+
+|                         | Người dùng ẩn danh                                       | Người dùng đã xác định                                                           |
+|-------------------------|----------------------------------------------------------|----------------------------------------------------------------------------------|
+| **Quản lý giao dịch mua** | Khôi phục giao dịch mua ở cấp cửa hàng               | Duy trì lịch sử giao dịch mua trên nhiều thiết bị thông qua customer user ID     |
+| **Quản lý hồ sơ người dùng** | Hồ sơ mới mỗi lần cài đặt lại                    | Cùng một hồ sơ người dùng trên các phiên và thiết bị                             |
+| **Tính bền vững của dữ liệu** | Dữ liệu người dùng ẩn danh gắn với thiết bị/lần cài đặt | Dữ liệu người dùng đã xác định tồn tại trên các thiết bị và phiên          |
+
+## Người dùng ẩn danh \{#anonymous-users\}
+
+Nếu bạn không có xác thực backend, **bạn không cần xử lý xác thực trong mã ứng dụng**:
+
+1. Khi SDK được kích hoạt lần đầu tiên khởi chạy ứng dụng, Adapty **tạo một hồ sơ người dùng mới cho người dùng**.
+2. Khi người dùng mua bất cứ thứ gì trong ứng dụng, giao dịch mua này được **liên kết với hồ sơ người dùng Adapty và tài khoản cửa hàng của họ**.
+3. Khi người dùng **cài đặt lại** ứng dụng hoặc cài đặt từ **thiết bị mới**, Adapty **tạo một hồ sơ người dùng mới trống khi kích hoạt**.
+4. Nếu người dùng đã từng mua hàng trong ứng dụng của bạn trước đó, theo mặc định, giao dịch mua của họ sẽ được tự động đồng bộ từ App Store khi SDK được kích hoạt.
+
+:::note
+Khôi phục từ bản sao lưu hoạt động khác với cài đặt lại. Theo mặc định, khi người dùng khôi phục từ bản sao lưu, SDK giữ nguyên dữ liệu đã lưu trong bộ nhớ đệm và không tạo hồ sơ người dùng mới. Bạn có thể cấu hình hành vi này bằng cài đặt `clearDataOnBackup`. [Tìm hiểu thêm](sdk-installation-capacitor#clear-data-on-backup-restore).
+:::
+
+## Người dùng đã xác định \{#identified-users\}
+
+- Nếu một hồ sơ người dùng chưa có customer user ID (nghĩa là **người dùng chưa đăng nhập**), khi bạn gửi customer user ID, nó sẽ được liên kết với hồ sơ người dùng đó.
+- Nếu đây là **cài đặt lại, đăng nhập lại, hoặc cài đặt từ thiết bị mới**, và bạn đã gửi customer user ID của họ trước đó, thì không tạo hồ sơ người dùng mới. Thay vào đó, chúng tôi chuyển sang hồ sơ người dùng hiện có được liên kết với customer user ID.
+
+Bạn có hai lựa chọn để xác định người dùng trong ứng dụng:
+
+- [**Trong quá trình đăng nhập/đăng ký:**](#during-loginsignup) Nếu người dùng đăng nhập sau khi ứng dụng khởi động, hãy gọi `identify()` với customer user ID khi họ xác thực.
+
+- [**Trong quá trình kích hoạt SDK:**](#during-the-sdk-activation) Nếu bạn đã có customer user ID được lưu trữ khi ứng dụng khởi chạy, hãy gửi nó khi gọi `activate()`.
+
+:::important
+Theo mặc định, khi Adapty nhận được giao dịch mua từ một Customer User ID hiện đang được liên kết với Customer User ID khác, mức độ truy cập sẽ được chia sẻ, vì vậy cả hai hồ sơ người dùng đều có quyền truy cập có trả phí. Bạn có thể cấu hình cài đặt này để chuyển quyền truy cập có trả phí từ hồ sơ người dùng này sang hồ sơ người dùng khác hoặc tắt hoàn toàn tính năng chia sẻ. Xem [bài viết](general#6-sharing-paid-access-between-user-accounts) để biết thêm chi tiết.
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/identify-diagram.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Trong quá trình đăng nhập/đăng ký \{#during-loginsignup\}
+
+Nếu bạn xác định người dùng sau khi ứng dụng khởi chạy (ví dụ: sau khi họ đăng nhập vào ứng dụng hoặc đăng ký), hãy sử dụng phương thức `identify` để đặt customer user ID cho họ.
+
+- Nếu bạn **chưa sử dụng customer user ID này trước đây**, Adapty sẽ tự động liên kết nó với hồ sơ người dùng hiện tại.
+- Nếu bạn **đã sử dụng customer user ID này để xác định người dùng trước đây**, Adapty sẽ chuyển sang làm việc với hồ sơ người dùng được liên kết với customer user ID này.
+
+:::tip
+Khi tạo customer user ID, hãy lưu nó cùng với dữ liệu người dùng để bạn có thể gửi cùng một ID khi họ đăng nhập từ thiết bị mới hoặc cài đặt lại ứng dụng của bạn.
+:::
+
+Luôn `await` `identify` trước khi gọi các phương thức SDK khác. Các lời gọi đồng thời sẽ tạo ra lỗi `#3006 profileWasChanged` hoặc kết thúc trên hồ sơ người dùng ẩn danh. Xem [Thứ tự gọi trong Capacitor SDK](capacitor-sdk-call-order).
+
+```typescript showLineNumbers
+try {
+  await adapty.identify({ customerUserId: "YOUR_USER_ID" });
+  // successfully identified
+} catch (error) {
+  // handle the error
+}
+```
+
+### Trong quá trình kích hoạt SDK \{#during-the-sdk-activation\}
+
+Nếu bạn đã biết customer user ID khi kích hoạt SDK, bạn có thể gửi nó trong phương thức `activate` thay vì gọi `identify` riêng.
+
+Nếu bạn biết customer user ID nhưng chỉ đặt nó sau khi kích hoạt, điều đó có nghĩa là khi kích hoạt, Adapty sẽ tạo một hồ sơ người dùng mới trống và chỉ chuyển sang hồ sơ người dùng hiện có sau khi bạn gọi `identify`.
+
+Bạn có thể truyền customer user ID hiện có (cái bạn đã sử dụng trước đây) hoặc customer user ID mới. Nếu bạn truyền cái mới, hồ sơ người dùng mới được tạo khi kích hoạt sẽ tự động được liên kết với customer user ID đó.
+
+:::tip
+Để loại trừ các hồ sơ người dùng trống đã tạo khỏi analytics của dashboard, hãy vào **App settings** và thiết lập [**Installs definition for analytics**](general#4-installs-definition-for-analytics).
+:::
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: "YOUR_PUBLIC_SDK_KEY",
+  params: {
+    customerUserId: "YOUR_USER_ID"
+  }
+});
+```
+
+### Đăng xuất người dùng \{#log-users-out\}
+
+Nếu bạn có nút để đăng xuất người dùng, hãy sử dụng phương thức `logout`. Thao tác này tạo một ID hồ sơ người dùng ẩn danh mới cho người dùng.
+
+```typescript showLineNumbers
+try {
+  await adapty.logout();
+  // successful logout
+} catch (error) {
+  // handle the error
+}
+```
+
+:::info
+Để đăng nhập lại người dùng vào ứng dụng, hãy sử dụng phương thức `identify`.
+:::
+
+### Cho phép mua hàng mà không cần đăng nhập \{#allow-purchases-without-login\}
+
+Nếu người dùng của bạn có thể mua hàng cả trước và sau khi đăng nhập vào ứng dụng, bạn không cần thiết lập thêm:
+
+Cách hoạt động:
+1. Khi người dùng chưa đăng nhập thực hiện mua hàng, Adapty liên kết giao dịch đó với ID hồ sơ người dùng ẩn danh của họ.
+2. Khi người dùng đăng nhập vào tài khoản của họ, Adapty chuyển sang làm việc với hồ sơ người dùng đã xác định của họ.
+    - Nếu đây là customer user ID hiện có (customer user ID đã được liên kết với một hồ sơ người dùng), Adapty sẽ tự động đồng bộ các giao dịch của nó.
+    - Nếu đây là customer user ID mới (ví dụ: giao dịch mua đã được thực hiện trước khi đăng ký), Adapty sẽ gán customer user ID cho hồ sơ người dùng hiện tại, vì vậy toàn bộ lịch sử giao dịch mua được duy trì.

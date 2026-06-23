@@ -1,0 +1,18 @@
+| Tên                      | Kiểu                         | Bắt buộc           | Mô tả                                                        |
+| ------------------------ | ---------------------------- | ------------------ | ------------------------------------------------------------ |
+| date                     | array of String values(data) | :heavy_plus_sign:  | Nhập ngày hoặc khoảng thời gian mà bạn muốn lấy dữ liệu biểu đồ. |
+| compare_date             | array of String values(data) | :heavy_minus_sign: | Nếu so sánh hai ngày hoặc hai khoảng thời gian, nhập ngày/khoảng sớm hơn vào đây và ngày/khoảng muộn hơn vào tham số `date`. |
+| store                    | array of String values       | :heavy_minus_sign: | Lọc theo cửa hàng ứng dụng nơi giao dịch mua được thực hiện. Các giá trị có thể gồm **app_store**, **play_store**, **stripe** và bất kỳ ID cửa hàng tùy chỉnh nào. Nếu dùng cửa hàng tùy chỉnh, nhập ID của nó như đã cấu hình trong Adapty Dashboard. |
+| country                  | array of String values       | :heavy_minus_sign: | Lọc theo mã quốc gia 2 chữ cái nơi giao dịch mua diễn ra, sử dụng mã chuẩn ISO 3166-1. |
+| store_product_id         | array of String values       | :heavy_minus_sign: | Mã định danh duy nhất của một sản phẩm từ cửa hàng ứng dụng. Bạn có thể xem ID này trong phần [**Products**](https://app.adapty.io/products) của Adapty Dashboard. |
+| duration                 | array of String              | :heavy_minus_sign: | Chỉ định thời hạn gói đăng ký. Các giá trị có thể là: <ul><li>Weekly</li><li>Monthly</li><li>2 months</li><li>3 months</li><li>6 months</li><li>Annual</li><li>Lifetime</li><li>Uncategorized</li></ul> |
+| attribution_source       | array of String values       | :heavy_minus_sign: | Nguồn tích hợp cho attribution. Các tùy chọn có thể gồm:<ul><li>adjust</li><li>airbridge</li><li>apple_search_ads</li><li>appsflyer</li><li>branch</li><li>custom</li></ul> |
+| attribution_status       | array of String values       | :heavy_minus_sign: | Cho biết attribution là organic hay non-organic. Các giá trị có thể là: <ul><li>organic</li><li>non-organic</li><li>unknown</li></ul> |
+| attribution_channel      | array of String values       | :heavy_minus_sign: | Kênh marketing dẫn đến giao dịch.                           |
+| attribution_campaign     | array of String values       | :heavy_minus_sign: | Chiến dịch marketing mang lại giao dịch.                    |
+| attribution_adgroup      | array of String values       | :heavy_minus_sign: | Nhóm quảng cáo attribution mang lại giao dịch.              |
+| attribution_adset        | array of String values       | :heavy_minus_sign: | Tập quảng cáo attribution dẫn đến giao dịch.               |
+| attribution_creative     | array of String values       | :heavy_minus_sign: | Các yếu tố hình ảnh hoặc văn bản cụ thể trong quảng cáo hay chiến dịch được theo dõi để đo hiệu quả (ví dụ: lượt nhấp, chuyển đổi). |
+| offer_category           | array of String values       | :heavy_minus_sign: | Chỉ định danh mục ưu đãi mà bạn muốn lấy dữ liệu. Các giá trị có thể là:<ul><li>introductory</li><li>promotional</li><li>winback</li></ul> |
+| offer_type               | array of String values       | :heavy_minus_sign: | Chỉ định loại ưu đãi mà bạn muốn lấy dữ liệu. Các giá trị có thể là:<ul><li>free_trial</li><li>pay_as_you_go</li><li>pay_up_front</li></ul> |
+| offer_id                 | array of String values       | :heavy_minus_sign: | Chỉ định các ưu đãi cụ thể mà bạn muốn lấy dữ liệu.       |

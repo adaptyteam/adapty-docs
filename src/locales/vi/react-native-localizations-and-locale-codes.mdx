@@ -1,0 +1,91 @@
+---
+title: "Sử dụng bản địa hóa và mã ngôn ngữ trong React Native SDK"
+description: "Tìm hiểu cách bản địa hóa paywall trong ứng dụng React Native của bạn với Adapty SDK."
+metadataTitle: "Bản địa hóa Paywall | React Native SDK | Tài liệu Adapty"
+customSlug: /react-native-localizations-and-locale-codes
+---
+
+## Tại sao điều này quan trọng \{#why-this-is-important\}
+
+Có một vài trường hợp mà mã ngôn ngữ (locale code) trở nên cần thiết — ví dụ, khi bạn muốn lấy đúng paywall phù hợp với bản địa hóa hiện tại của ứng dụng.
+
+Vì mã ngôn ngữ khá phức tạp và có thể khác nhau tùy nền tảng, chúng tôi sử dụng một chuẩn nội bộ thống nhất cho tất cả các nền tảng được hỗ trợ. Tuy nhiên, chính vì sự phức tạp đó, bạn cần hiểu rõ mình đang gửi gì lên server để nhận đúng bản địa hóa, và điều gì xảy ra tiếp theo — để đảm bảo bạn luôn nhận được kết quả như mong đợi.
+
+## Chuẩn mã ngôn ngữ tại Adapty \{#locale-code-standard-at-adapty\}
+
+Adapty sử dụng chuẩn [BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) với một số điều chỉnh nhỏ: mỗi mã gồm các subtag viết thường, phân cách bằng dấu gạch ngang. Ví dụ: `en` (tiếng Anh), `pt-br` (tiếng Bồ Đào Nha (Brazil)), `zh` (tiếng Trung giản thể), `zh-hant` (tiếng Trung phồn thể).
+
+## Khớp mã ngôn ngữ \{#locale-code-matching\}
+
+Khi Adapty nhận được yêu cầu từ SDK phía client kèm theo mã ngôn ngữ và bắt đầu tìm kiếm bản địa hóa tương ứng của paywall, quá trình diễn ra như sau:
+
+1. Chuỗi locale đầu vào được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay bằng dấu gạch ngang (`-`)
+2. Hệ thống tìm kiếm bản địa hóa có mã ngôn ngữ khớp hoàn toàn
+3. Nếu không tìm thấy, hệ thống lấy phần chuỗi trước dấu gạch ngang đầu tiên (`pt` từ `pt-br`) và tìm kiếm bản địa hóa khớp
+4. Nếu vẫn không tìm thấy, hệ thống trả về bản địa hóa mặc định `en`
+
+Nhờ vậy, một thiết bị iOS gửi `'pt_BR'`, một thiết bị Android gửi `pt-BR`, và một thiết bị khác gửi `pt-br` đều nhận được cùng kết quả.
+
+## Cách triển khai bản địa hóa được khuyến nghị \{#implementing-localizations-recommended-way\}
+
+Nếu bạn đang tìm hiểu về bản địa hóa, khả năng cao bạn đã làm việc với các file chuỗi đã được bản địa hóa trong dự án của mình. Trong trường hợp đó, chúng tôi khuyến nghị bạn đặt một cặp key-value chứa mã ngôn ngữ Adapty mong muốn vào từng file tương ứng. Sau đó trích xuất giá trị của key đó khi gọi SDK, như sau:
+
+```javascript showLineNumbers
+// 1. Modify your localization files (e.g., using react-i18next)
+
+/*
+en.json
+*/
+{
+  "adapty_paywalls_locale": "en"
+}
+
+/*
+es.json
+*/
+{
+  "adapty_paywalls_locale": "es"
+}
+
+/*
+pt-BR.json
+*/
+{
+  "adapty_paywalls_locale": "pt-br"
+}
+
+// 2. Extract and use the locale code
+
+const MyComponent = () => {
+  const { t } = useTranslation();
+  
+  const fetchPaywall = async () => {
+    const locale = t('adapty_paywalls_locale');
+    // pass locale code to adapty.getPaywall or adapty.getPaywallForDefaultAudience method
+    const paywall = await adapty.getPaywallForDefaultAudience('placement_id', locale);
+  };
+};
+```
+
+Cách này giúp bạn kiểm soát hoàn toàn bản địa hóa nào sẽ được lấy về cho từng người dùng của ứng dụng.
+
+## Cách triển khai bản địa hóa thay thế \{#implementing-localizations-the-other-way\}
+
+Bạn cũng có thể đạt được kết quả tương tự (nhưng không hoàn toàn giống) mà không cần định nghĩa rõ ràng mã ngôn ngữ cho từng bản địa hóa. Cách này đồng nghĩa với việc trích xuất mã ngôn ngữ từ thiết bị, chẳng hạn thông qua [`react-native-localize`](https://github.com/zoontek/react-native-localize):
+
+```javascript showLineNumbers
+
+const fetchPaywall = async () => {
+  // getLocales() returns the user's preferred locales in BCP-47 format (e.g., 'en-US', 'pt-BR')
+  const locale = RNLocalize.getLocales()[0].languageTag;
+  // pass locale code to adapty.getPaywall or adapty.getPaywallForDefaultAudience method
+  const paywall = await adapty.getPaywallForDefaultAudience('placement_id', locale);
+};
+```
+
+Lưu ý rằng chúng tôi không khuyến nghị cách tiếp cận này vì một số lý do:
+
+1. Trên iOS, ngôn ngữ ưu tiên và locale khu vực hiện tại là hai thứ khác nhau. Nếu bạn muốn bản địa hóa được chọn đúng, bạn phải dựa vào logic xử lý của Apple — vốn hoạt động tự động khi bạn dùng cách khuyến nghị với file chuỗi đã bản địa hóa — hoặc tự tái tạo lại logic đó.
+2. Locale của thiết bị có thể không khớp với bất kỳ bản địa hóa nào bạn đã cấu hình trong Adapty. Trong trường hợp đó, SDK sẽ fallback về kết quả khớp theo subtag đầu tiên hoặc cuối cùng là `en` — điều này có thể không phải ngôn ngữ mà bạn muốn mặc định cho người dùng đó.
+
+Nếu bạn vẫn quyết định dùng cách này — hãy đảm bảo bạn đã xử lý tất cả các trường hợp liên quan.

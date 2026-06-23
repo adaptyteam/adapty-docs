@@ -1,0 +1,86 @@
+---
+title: "Hiển thị paywall được thiết kế bằng Remote Config trong Android SDK"
+description: "Khám phá cách hiển thị paywall Remote Config trong Adapty Android SDK để cá nhân hóa trải nghiệm người dùng."
+metadataTitle: "Hiển thị Paywall Remote Config | Android SDK | Tài liệu Adapty"
+keywords: ['remote config']
+displayed_sidebar: sdkandroid
+---
+
+Nếu bạn đã tùy chỉnh paywall bằng Remote Config, bạn cần tự implement phần hiển thị trong code của ứng dụng để người dùng có thể thấy nó. Vì Remote Config linh hoạt và tùy biến theo nhu cầu của bạn, bạn hoàn toàn kiểm soát những gì được đưa vào và giao diện paywall sẽ trông như thế nào. Chúng tôi cung cấp một phương thức để lấy cấu hình remote, giúp bạn tự do trình bày paywall tùy chỉnh đã được cấu hình qua Remote Config.
+
+## Lấy Remote Config của paywall và hiển thị nó \{#get-paywall-remote-config-and-present-it\}
+
+Để lấy Remote Config của một paywall, truy cập thuộc tính `remoteConfig` và trích xuất các giá trị cần thiết.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            val headerText = paywall.remoteConfig?.dataMap?.get("header_text") as? String
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        
+        AdaptyPaywall.RemoteConfig remoteConfig = paywall.getRemoteConfig();
+        
+        if (remoteConfig != null) {
+            if (remoteConfig.getDataMap().get("header_text") instanceof String) {
+                String headerText = (String) remoteConfig.getDataMap().get("header_text");
+            }
+        }
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+Sau khi đã nhận được tất cả các giá trị cần thiết, đã đến lúc render và ghép chúng thành một trang trực quan hấp dẫn. Hãy đảm bảo thiết kế tương thích với nhiều kích thước màn hình và hướng xoay của điện thoại, mang lại trải nghiệm mượt mà và thân thiện với người dùng trên các thiết bị khác nhau.
+
+:::warning
+Hãy đảm bảo [ghi nhận sự kiện xem paywall](present-remote-config-paywalls-android#track-paywall-view-events) như mô tả bên dưới, để Adapty analytics có thể thu thập thông tin cho funnel và A/B test.
+:::
+
+Sau khi hoàn tất việc hiển thị paywall, hãy tiếp tục thiết lập luồng mua hàng. Khi người dùng thực hiện mua hàng, chỉ cần gọi `.makePurchase()` với sản phẩm từ paywall của bạn. Để biết thêm chi tiết về phương thức `.makePurchase()`, hãy đọc [Thực hiện mua hàng](android-making-purchases).
+
+Chúng tôi khuyến nghị [tạo một paywall dự phòng](android-use-fallback-paywalls). Paywall dự phòng này sẽ hiển thị cho người dùng khi không có kết nối internet hoặc không có cache, đảm bảo trải nghiệm mượt mà ngay cả trong những tình huống đó.
+
+## Ghi nhận sự kiện xem paywall \{#track-paywall-view-events\}
+
+Adapty giúp bạn đo lường hiệu quả của các paywall. Trong khi chúng tôi tự động thu thập dữ liệu về các giao dịch mua, việc ghi lại lượt xem paywall cần có sự tham gia của bạn vì chỉ bạn mới biết khi nào khách hàng nhìn thấy paywall.
+
+Để ghi nhận một sự kiện xem paywall, chỉ cần gọi `.logShowPaywall(paywall)`, và nó sẽ được phản ánh trong các chỉ số paywall của bạn trong funnel và A/B test.
+
+:::important
+Không cần gọi `.logShowPaywall(paywall)` nếu bạn đang hiển thị paywall được tạo trong [paywall builder](adapty-paywall-builder).
+:::
+
+```kotlin showLineNumbers
+Adapty.logShowPaywall(paywall)
+```
+
+Tham số yêu cầu:
+
+| Tham số     | Bắt buộc | Mô tả                                                                                                       |
+| :---------- | :------- |:------------------------------------------------------------------------------------------------------------|
+| **paywall** | bắt buộc | Một đối tượng [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/). |

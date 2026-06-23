@@ -1,0 +1,244 @@
+---
+title: "React Native - Hiển thị paywall mới bằng Paywall Builder"
+description: "Hiển thị paywall trong ứng dụng React Native bằng Adapty."
+metadataTitle: "Hiển thị Paywall trong React Native | Tài liệu Adapty"
+
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+
+Nếu bạn đã tùy chỉnh paywall bằng Paywall Builder, bạn không cần lo lắng về việc render nó trong mã ứng dụng di động để hiển thị cho người dùng. Một paywall như vậy chứa cả nội dung cần hiển thị lẫn cách thức hiển thị.
+
+Trước khi bắt đầu, hãy đảm bảo rằng:
+
+1. Bạn đã [tạo một paywall](create-paywall).
+2. Bạn đã thêm paywall vào một [placement](placements).
+3. Bạn đã [tải paywall và chuẩn bị view](react-native-get-pb-paywalls).
+
+:::warning
+
+Hướng dẫn này chỉ dành cho **paywall mới của Paywall Builder**, yêu cầu SDK v3.0 trở lên. Quy trình hiển thị paywall khác nhau tùy theo phiên bản Paywall Builder và paywall dùng Remote Config.
+
+- Để hiển thị **paywall dùng Remote Config**, xem [Render paywall được thiết kế bằng Remote Config](present-remote-config-paywalls).
+
+:::
+
+Adapty React Native SDK cung cấp hai cách để hiển thị paywall:
+
+- **React component**: Component được nhúng cho phép bạn tích hợp vào kiến trúc và hệ thống điều hướng của ứng dụng.
+
+- **Hiển thị dạng modal**
+
+## React component \{#react-component\}
+
+:::note
+Cách dùng **React component** yêu cầu SDK 3.14.0 trở lên.
+:::
+
+Để nhúng paywall vào cây component hiện có của bạn, hãy dùng component `AdaptyPaywallView` trực tiếp trong hệ thống phân cấp component React Native. Component được nhúng cho phép bạn tích hợp vào kiến trúc và hệ thống điều hướng của ứng dụng.
+
+:::note
+Trên Android, nếu paywall không kéo dài ra sau thanh trạng thái, một lớp phủ trực quan có thể xuất hiện ở phía trên cùng. Chúng tôi khuyên bạn nên tắt tính năng này cho các paywall của mình. Xem [Lớp phủ trực quan ở đầu paywall (Android)](#visual-overlay-at-the-top-of-the-paywall-android).
+:::
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyPaywall({ paywall }) {
+  const paywallParams = useMemo(() => ({
+    loadTimeoutMs: 3000,
+  }), []);
+
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onProductSelected = useCallback<EventHandlers['onProductSelected']>((productId) => {}, []);
+  const onPurchaseStarted = useCallback<EventHandlers['onPurchaseStarted']>((product) => {}, []);
+  const onPurchaseCompleted = useCallback<EventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {}, []);
+  const onPurchaseFailed = useCallback<EventHandlers['onPurchaseFailed']>((error, product) => {}, []);
+  const onRestoreStarted = useCallback<EventHandlers['onRestoreStarted']>(() => {}, []);
+  const onRestoreCompleted = useCallback<EventHandlers['onRestoreCompleted']>((profile) => {}, []);
+  const onRestoreFailed = useCallback<EventHandlers['onRestoreFailed']>((error) => {}, []);
+  const onPaywallShown = useCallback<EventHandlers['onPaywallShown']>(() => {}, []);
+  const onRenderingFailed = useCallback<EventHandlers['onRenderingFailed']>((error) => {}, []);
+  const onLoadingProductsFailed = useCallback<EventHandlers['onLoadingProductsFailed']>((error) => {}, []);
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {}, []);
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {}, []);
+  const onWebPaymentNavigationFinished = useCallback<EventHandlers['onWebPaymentNavigationFinished']>(() => {}, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      params={paywallParams}
+      style={styles.paywall}
+      onCloseButtonPress={onCloseButtonPress}
+      onProductSelected={onProductSelected}
+      onPurchaseStarted={onPurchaseStarted}
+      onPurchaseCompleted={onPurchaseCompleted}
+      onPurchaseFailed={onPurchaseFailed}
+      onRestoreStarted={onRestoreStarted}
+      onRestoreCompleted={onRestoreCompleted}
+      onRestoreFailed={onRestoreFailed}
+      onPaywallShown={onPaywallShown}
+      onRenderingFailed={onRenderingFailed}
+      onLoadingProductsFailed={onLoadingProductsFailed}
+      onCustomAction={onCustomAction}
+      onUrlPress={onUrlPress}
+      onWebPaymentNavigationFinished={onWebPaymentNavigationFinished}
+    />
+  );
+}
+```
+
+## Hiển thị dạng modal \{#modal-presentation\}
+
+Để hiển thị paywall dưới dạng màn hình độc lập, hãy dùng phương thức `view.present()` trên `view` được tạo bởi phương thức [`createPaywallView`](react-native-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Mỗi `view` chỉ có thể dùng một lần. Nếu bạn cần hiển thị paywall lại, hãy gọi `createPaywallView` thêm một lần nữa để tạo instance `view` mới.
+
+:::warning
+Việc tái sử dụng cùng một `view` mà không tạo lại là không được phép. Điều này sẽ dẫn đến lỗi `AdaptyUIError.viewAlreadyPresented`.
+:::
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createPaywallView(paywall);
+
+// Optional: handle paywall events (close, purchase, restore, etc)
+// view.setEventHandlers({ ... });
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+:::important
+Gọi `setEventHandlers` nhiều lần sẽ ghi đè các handler bạn đã cung cấp, thay thế cả handler mặc định lẫn handler đã đặt trước đó cho những sự kiện cụ thể đó.
+:::
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createPaywallView(paywall);
+
+view.registerEventHandlers(); // handle close press, etc
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Cấu hình kiểu trình bày trên iOS \{#configure-ios-presentation-style\}
+
+Cấu hình cách paywall được hiển thị trên iOS bằng cách truyền tham số `iosPresentationStyle` vào phương thức `present()`. Tham số này chấp nhận giá trị `'full_screen'` (mặc định) hoặc `'page_sheet'`.
+
+```typescript showLineNumbers
+try {
+  await view.present(iosPresentationStyle: 'page_sheet');
+} catch (error) {
+  // handle the error
+}
+```
+
+## Dùng bộ đếm thời gian do nhà phát triển định nghĩa \{#use-developer-defined-timer\}
+
+Để sử dụng bộ đếm thời gian do nhà phát triển định nghĩa trong ứng dụng di động, hãy dùng `timerId`, trong ví dụ này là `CUSTOM_TIMER_NY` — **Timer ID** của bộ đếm thời gian do nhà phát triển định nghĩa mà bạn đã đặt trong Adapty dashboard. Điều này đảm bảo ứng dụng của bạn cập nhật động bộ đếm thời gian với giá trị chính xác — như `13d 09h 03m 34s` (được tính bằng thời gian kết thúc của bộ đếm, chẳng hạn Ngày đầu năm mới, trừ đi thời gian hiện tại).
+
+<Tabs>
+<TabItem value="component" label="React component">
+```typescript showLineNumbers title="React Native (TSX)"
+const paywallParams = {
+  customTimers: { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+};
+
+<AdaptyPaywallView
+  paywall={paywall}
+  params={paywallParams}
+  // ... your event handlers
+/>
+```
+</TabItem>
+<TabItem value="modal" label="Modal presentation">
+```typescript showLineNumbers title="React Native (TSX)"
+const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+
+const view = await createPaywallView(paywall, { customTimers });
+```
+</TabItem>
+</Tabs>
+Trong ví dụ này, `CUSTOM_TIMER_NY` là **Timer ID** của bộ đếm thời gian do nhà phát triển định nghĩa mà bạn đã đặt trong Adapty dashboard. `timerResolver` đảm bảo ứng dụng của bạn cập nhật động bộ đếm thời gian với giá trị chính xác — như `13d 09h 03m 34s` (được tính bằng thời gian kết thúc của bộ đếm, chẳng hạn Ngày đầu năm mới, trừ đi thời gian hiện tại).
+
+## Hiển thị hộp thoại \{#show-dialog\}
+
+Sử dụng phương thức này thay vì hộp thoại cảnh báo gốc khi một paywall view đang được hiển thị trên Android. Trên Android, các alert thông thường của RN xuất hiện phía sau paywall view, khiến người dùng không thể nhìn thấy chúng. Phương thức này đảm bảo hộp thoại được hiển thị đúng cách phía trên paywall trên tất cả các nền tảng.
+
+```typescript showLineNumbers title="React Native (TSX)"
+try {
+  const action = await view.showDialog({
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  });
+  
+  if (action === 'secondary') {
+    // User confirmed - close the paywall
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (error) {
+  // handle error
+}
+```
+
+## Thay thế một gói đăng ký bằng gói khác \{#replace-one-subscription-with-another\}
+
+Khi người dùng cố gắng mua một gói đăng ký mới trong khi đang có gói đăng ký khác hoạt động trên Android, bạn có thể kiểm soát cách xử lý giao dịch mới bằng cách truyền tham số cập nhật gói đăng ký khi tạo paywall view. Để thay thế gói đăng ký hiện tại bằng gói mới, hãy dùng `productPurchaseParams` trong `createPaywallView` với các tham số `oldSubVendorProductId` và `prorationMode`.
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+const productPurchaseParams = paywall.productIdentifiers.map((productId) => {
+  let params = {};
+  if (Platform.OS === 'android') {
+    params.android = {
+      subscriptionUpdateParams: {
+        oldSubVendorProductId: 'PRODUCT_ID_OF_THE_CURRENT_ACTIVE_SUBSCRIPTION',
+        prorationMode: 'with_time_proration',
+      },
+    };
+  }
+  return { productId, params };
+});
+
+const view = await createPaywallView(paywall, { productPurchaseParams });
+```
+
+## Khắc phục sự cố \{#troubleshooting\}
+
+### Lớp phủ trực quan ở đầu paywall (Android) \{#visual-overlay-at-the-top-of-the-paywall-android\}
+
+:::note
+Cài đặt này được hỗ trợ từ React Native SDK 3.15.5 trở lên và chỉ khả dụng trong các dự án React Native thuần túy.
+
+Nếu bạn đang dùng Expo managed workflow, bạn không thể thêm tài nguyên Android này trực tiếp. Để áp dụng cài đặt này, bạn phải tạo một Expo config plugin tùy chỉnh để thêm tài nguyên Android tương ứng và đăng ký nó trong app.config.js. Điều này là bắt buộc vì Expo quản lý dự án Android gốc cho bạn.
+:::
+
+Nếu `AdaptyPaywallView` không kéo dài ra sau thanh trạng thái, một lớp phủ trực quan vẫn có thể xuất hiện ở phía trên cùng. Để xóa nó, hãy thêm tài nguyên boolean sau vào ứng dụng của bạn:
+
+1. Đi đến `android/app/src/main/res/values`. Nếu không có file `bools.xml`, hãy tạo file đó.
+
+2. Thêm tài nguyên sau:
+
+```xml
+<resources>
+    <bool name="adapty_paywall_enable_safe_area_paddings">false</bool>
+</resources>
+```
+
+Lưu ý rằng các thay đổi này áp dụng cho tất cả paywall trong ứng dụng của bạn.

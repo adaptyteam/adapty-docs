@@ -1,0 +1,250 @@
+---
+title: "Xử lý dữ liệu từ onboarding trong Flutter SDK"
+description: "Lưu và sử dụng dữ liệu từ onboarding trong ứng dụng Flutter của bạn với Adapty SDK."
+metadataTitle: "Onboarding | Flutter SDK | Tài liệu Adapty"
+---
+
+Khi người dùng trả lời câu hỏi trong bài kiểm tra hoặc nhập dữ liệu vào một trường nhập liệu, phương thức `onStateUpdatedAction` sẽ được gọi. Bạn có thể lưu hoặc xử lý loại trường đó trong code của mình.
+
+Ví dụ:
+
+```dart
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Process data 
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  // Process data 
+}
+```
+
+Xem định dạng action [tại đây](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyUIOnboardingPlatformView/onStateUpdatedAction.html).
+
+<Details>
+<summary>Ví dụ về dữ liệu đã lưu (định dạng có thể khác nhau tùy theo cách triển khai của bạn)</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## Các trường hợp sử dụng \{#use-cases\}
+
+### Bổ sung dữ liệu vào hồ sơ người dùng \{#enrich-user-profiles-with-data\}
+
+Nếu bạn muốn liên kết ngay dữ liệu nhập vào với hồ sơ người dùng và tránh hỏi họ hai lần cùng một thông tin, bạn cần [cập nhật hồ sơ người dùng](flutter-setting-user-attributes) với dữ liệu đầu vào khi xử lý action.
+
+Ví dụ: bạn yêu cầu người dùng nhập tên vào trường văn bản có ID là `name` và muốn đặt giá trị của trường đó làm tên của người dùng. Ngoài ra, bạn yêu cầu họ nhập email vào trường `email`. Trong code ứng dụng, nó có thể trông như thế này:
+
+```dart showLineNumbers
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Store user preferences or responses
+  if (params is AdaptyOnboardingsInputParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map elementId to appropriate profile field
+    switch (elementId) {
+      case 'name':
+        if (params.input is AdaptyOnboardingsTextInput) {
+          builder.setFirstName((params.input as AdaptyOnboardingsTextInput).value);
+        }
+        break;
+      case 'email':
+        if (params.input is AdaptyOnboardingsEmailInput) {
+          builder.setEmail((params.input as AdaptyOnboardingsEmailInput).value);
+        }
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  // Store user preferences or responses
+  if (params is AdaptyOnboardingsInputParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map elementId to appropriate profile field
+    switch (elementId) {
+      case 'name':
+        if (params.input is AdaptyOnboardingsTextInput) {
+          builder.setFirstName((params.input as AdaptyOnboardingsTextInput).value);
+        }
+        break;
+      case 'email':
+        if (params.input is AdaptyOnboardingsEmailInput) {
+          builder.setEmail((params.input as AdaptyOnboardingsEmailInput).value);
+        }
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+```
+
+### Tùy chỉnh paywall dựa trên câu trả lời \{#customize-paywalls-based-on-answers\}
+
+Sử dụng các bài kiểm tra trong onboarding, bạn cũng có thể tùy chỉnh paywall hiển thị cho người dùng sau khi họ hoàn thành onboarding.
+
+Ví dụ: bạn có thể hỏi người dùng về kinh nghiệm tập thể thao của họ và hiển thị các CTA và sản phẩm khác nhau cho các nhóm người dùng khác nhau.
+
+1. [Thêm bài kiểm tra](onboarding-quizzes) trong trình xây dựng onboarding và gán ID có ý nghĩa cho các lựa chọn.
+
+<ZoomImage id="experience.webp" />
+
+2. Xử lý các câu trả lời bài kiểm tra dựa trên ID của chúng và [đặt thuộc tính tùy chỉnh](flutter-setting-user-attributes) cho người dùng.
+
+```dart showLineNumbers
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Handle quiz responses and set custom attributes
+  if (params is AdaptyOnboardingsSelectParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map quiz responses to custom attributes
+    switch (elementId) {
+      case 'experience':
+        // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+        builder.setCustomStringAttribute(params.value, 'experience');
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  // Handle quiz responses and set custom attributes
+  if (params is AdaptyOnboardingsSelectParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map quiz responses to custom attributes
+    switch (elementId) {
+      case 'experience':
+        // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+        builder.setCustomStringAttribute(params.value, 'experience');
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+```
+
+3. [Tạo phân khúc](segments) cho từng giá trị thuộc tính tùy chỉnh.
+4. Tạo một [placement](placements) và thêm [đối tượng](audience) cho mỗi phân khúc bạn đã tạo.
+5. [Hiển thị paywall](flutter-paywalls) cho placement trong code ứng dụng của bạn. Nếu onboarding của bạn có nút mở paywall, hãy triển khai code paywall như một [phản hồi cho action của nút đó](flutter-handling-onboarding-events#opening-a-paywall).

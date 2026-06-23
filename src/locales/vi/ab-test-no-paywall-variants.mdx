@@ -1,0 +1,194 @@
+---
+title: "Thêm biến thể A/B test không có flow hoặc paywall"
+description: "Chạy A/B test trong đó một biến thể bỏ qua flow hoặc paywall, sử dụng cờ Remote Config để kiểm soát việc hiển thị."
+metadataTitle: "Biến Thể A/B Test Không Có Flow Hoặc Paywall | Tài liệu Adapty"
+---
+
+Bạn có thể đo lường tác động của flow hoặc paywall bằng cách chạy A/B test với một biến thể trống. Một biến thể hiển thị flow/paywall; biến thể kia không hiển thị gì cả. Ứng dụng của bạn đọc một cờ từ Remote Config để quyết định có render hay không.
+
+## Cách hoạt động \{#how-it-works\}
+
+Cách thiết lập sử dụng hai flow/paywall trong cùng một placement:
+
+- **Flow/Paywall A**: Flow hoặc paywall bạn muốn kiểm thử, với `show_paywall` được đặt thành `true` trong Remote Config của nó.
+- **Flow/Paywall B**: Một flow hoặc paywall trống với `show_paywall` được đặt thành `false` trong Remote Config của nó.
+
+Khi SDK trả về một flow hoặc paywall, ứng dụng của bạn đọc cờ `show_paywall`. Nếu cờ là `true`, ứng dụng render nó. Nếu cờ là `false`, ứng dụng bỏ qua việc render và người dùng tiếp tục mà không thấy gì.
+
+## 1. Thêm cờ show_paywall vào Remote Config \{#1-add-the-show_paywall-flag-in-remote-config\}
+
+Bạn cần hai flow hoặc paywall trong cùng một placement: Flow/Paywall A (cái bạn muốn kiểm thử) và Flow/Paywall B (một cái trống). Thêm trường `show_paywall` vào mỗi cái để ứng dụng của bạn có thể phân nhánh theo cùng một key cho cả hai biến thể.
+
+Để thêm cờ vào Flow/Paywall A:
+
+1. Mở mục [**Flows**](https://app.adapty.io/flows)/[**Paywalls**](https://app.adapty.io/paywalls) trong menu chính của Adapty và chọn Flow/Paywall A.
+2. Mở mục **Remote config**.
+3. Tạo một trường với tên `show_paywall` và giá trị `true`. Trong chế độ xem **JSON**, mục này trông như sau:
+
+   ```json showLineNumbers
+   {
+     "show_paywall": true
+   }
+   ```
+
+4. Lưu các thay đổi.
+
+Lặp lại các bước tương tự cho Flow/Paywall B, nhưng đặt `show_paywall` thành `false`.
+
+Để biết thêm chi tiết về Remote Config, xem [Tùy chỉnh flow với Remote Config](customize-flow-with-remote-config) hoặc [Thiết kế paywall với Remote Config](customize-paywall-with-remote-config).
+
+:::tip
+Đặt `show_paywall` trên cả hai biến thể giúp đường dẫn code giống nhau cho cả hai nhóm và giúp việc mở rộng thêm biến thể sau này dễ dàng hơn.
+:::
+
+## 2. Thiết lập A/B test \{#2-set-up-the-ab-test\}
+
+1. [Tạo một A/B test](run_stop_ab_tests) trên placement và thêm cả hai flow/paywall làm biến thể.
+2. Đặt trọng số biến thể để phân chia lưu lượng giữa người dùng thấy flow/paywall và người dùng không thấy.
+
+## 3. Kiểm tra cờ trong ứng dụng của bạn \{#3-check-the-flag-in-your-app\}
+
+Đọc `show_paywall` từ Remote Config được SDK trả về. Nếu cờ là `false`, bỏ qua việc render và để người dùng tiếp tục.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS" default>
+
+```swift showLineNumbers
+do {
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+    let config = flow.remoteConfigs.first(where: { $0.locale == "en" })
+        ?? flow.remoteConfigs.first
+    let showPaywall = config?.dictionary?["show_paywall"] as? Bool ?? true
+
+    if showPaywall {
+        // render the flow or paywall
+    }
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="kotlin" label="Android">
+
+```kotlin showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            val showPaywall = paywall.remoteConfig?.dataMap?.get("show_paywall") as? Boolean ?: true
+
+            if (showPaywall) {
+                // Render the paywall
+            }
+        }
+        is AdaptyResult.Error -> {
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="react-native" label="React Native">
+
+```typescript showLineNumbers
+try {
+  const paywall = await adapty.getPaywall({ placementId: "YOUR_PLACEMENT_ID" });
+  const showPaywall = paywall.remoteConfig?.data?.["show_paywall"] ?? true;
+
+  if (showPaywall) {
+    // Render the paywall
+  }
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="flutter" label="Flutter">
+
+```dart showLineNumbers
+try {
+  final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID");
+  final bool showPaywall = paywall.remoteConfig?.dictionary?['show_paywall'] as bool? ?? true;
+
+  if (showPaywall) {
+    // Render the paywall
+  }
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="unity" label="Unity">
+
+```csharp showLineNumbers
+Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    var showPaywall = paywall.RemoteConfig?.Dictionary?["show_paywall"] as bool? ?? true;
+
+    if (showPaywall) {
+        // Render the paywall
+    }
+});
+```
+
+</TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform">
+
+```kotlin showLineNumbers
+Adapty.getPaywall(
+    placementId = "YOUR_PLACEMENT_ID"
+).onSuccess { paywall ->
+    val showPaywall = paywall.remoteConfig?.dataMap?.get("show_paywall") as? Boolean ?: true
+
+    if (showPaywall) {
+        // Render the paywall
+    }
+}.onError { error ->
+    // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="capacitor" label="Capacitor">
+
+```typescript showLineNumbers
+
+try {
+  const paywall = await adapty.getPaywall({ placementId: 'YOUR_PLACEMENT_ID' });
+  const showPaywall = paywall.remoteConfig?.data?.['show_paywall'] ?? true;
+
+  if (showPaywall) {
+    // Render the paywall
+  }
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+Giá trị mặc định `true` giữ cho flow/paywall hiển thị khi cờ bị thiếu, do đó các flow/paywall hiện có không có cờ này sẽ không bị ảnh hưởng.
+
+:::important
+Nếu bạn tự render paywall (không dùng [Flow Builder](adapty-flow-builder) hoặc [Paywall Builder](adapty-paywall-builder)), hãy gọi [`logShowFlow` (iOS SDK v4+) / `logShowPaywall`](present-remote-config-paywalls#track-paywall-view-events) khi hiển thị Flow/Paywall A. Nếu không, Adapty không thể đếm lượt xem trong bài test. Không ghi lại lượt xem cho Flow/Paywall B vì nó không bao giờ được hiển thị.
+:::
+
+## Các bước tiếp theo \{#next-steps\}
+
+- [Tạo, chạy và dừng A/B test](run_stop_ab_tests) — Thiết lập bài test bao gồm cả hai biến thể
+- [Kết quả và chỉ số A/B test](results-and-metrics) — So sánh biến thể trống với flow/paywall của bạn

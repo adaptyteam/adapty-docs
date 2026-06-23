@@ -1,0 +1,214 @@
+---
+title: "Xử lý dữ liệu từ onboarding trong iOS SDK"
+description: "Lưu và sử dụng dữ liệu từ onboarding trong ứng dụng iOS của bạn với Adapty SDK."
+metadataTitle: "Onboarding | iOS SDK | Tài liệu Adapty"
+displayed_sidebar: sdkios
+---
+
+:::tip
+**Bắt đầu từ SDK v4 (beta)**, bạn có thể xây dựng [flow](get-pb-paywalls) như một lựa chọn mạnh mẽ hơn so với onboarding. Khác với onboarding chạy trong WebView, flow render trực tiếp trên thiết bị — mang lại hiệu ứng chuyển động mượt mà hơn, giao diện iOS nhất quán, tốc độ tải nhanh hơn và không phụ thuộc vào WebView runtime. Xem [Lấy flow & paywall](get-pb-paywalls) và [Hiển thị flow & paywall](ios-present-paywalls) để bắt đầu.
+:::
+
+Khi người dùng trả lời câu hỏi trong quiz hoặc nhập dữ liệu vào trường nhập liệu, phương thức `onStateUpdatedAction` sẽ được gọi. Bạn có thể lưu hoặc xử lý loại trường đó trong code của mình.
+
+Ví dụ:
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
+    // Store user preferences or responses
+    switch action.params {
+    case .select(let params):
+        // Handle single selection
+    case .multiSelect(let params):
+        // Handle multiple selections
+    case .input(let params):
+        // Handle text input
+    case .datePicker(let params):
+        // Handle date selection
+    }
+}
+```
+
+Đối tượng `action` chứa:
+
+| Tham số        | Mô tả                                                                                                                                                                                                                                                                                           |
+|----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `elementId`    | Định danh duy nhất của phần tử nhập liệu. Bạn có thể dùng nó để liên kết câu hỏi với câu trả lời khi lưu dữ liệu.                                                                                                                                                                             |
+| `params`       | Đối tượng dữ liệu đầu vào của người dùng, chứa các thuộc tính type và value.                                                                                                                                                                                                                   |
+| `params.type`  | Loại phần tử nhập liệu. Có thể là:<br/>• `"select"` - Chọn một trong các tùy chọn<br/>• `"multiSelect"` - Chọn nhiều trong các tùy chọn<br/>• `"input"` - Trường nhập văn bản<br/>• `"datePicker"` - Chọn ngày tháng                                                                           |
+| `params.value` | Giá trị người dùng đã chọn hoặc nhập. Cấu trúc tùy theo loại:<br/>• `select`: Object gồm `id`, `value`, `label`<br/>• `multiSelect`: Mảng các object gồm `id`, `value`, `label`<br/>• `input`: Object gồm `type`, `value`<br/>• `datePicker`: Object gồm `day`, `month`, `year` |
+
+<Details>
+<summary>Ví dụ về dữ liệu đã lưu (có thể khác trong cài đặt của bạn)</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## Các trường hợp sử dụng \{#use-cases\}
+
+### Bổ sung dữ liệu vào hồ sơ người dùng \{#enrich-user-profiles-with-data\}
+
+Nếu bạn muốn liên kết ngay dữ liệu đầu vào với hồ sơ người dùng và tránh hỏi họ lặp lại cùng một thông tin, bạn cần [cập nhật hồ sơ người dùng](setting-user-attributes) với dữ liệu đầu vào khi xử lý action.
+
+Ví dụ, bạn yêu cầu người dùng nhập tên vào trường văn bản có ID là `name` và muốn đặt giá trị của trường này làm tên của người dùng. Ngoài ra, bạn yêu cầu họ nhập email vào trường `email`. Trong code ứng dụng, nó có thể trông như thế này:
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
+    // Store user preferences or responses
+    switch action.params {
+    case .input(let params):
+        // Handle text input
+        let builder = AdaptyProfileParameters.Builder()
+
+        // Map elementId to appropriate profile field
+        switch action.elementId {
+        case "name":
+            builder.with(firstName: params.value.value)
+        case "email":
+            builder.with(email: params.value.value)
+        default:
+            break
+        }
+
+        // Delegate methods are synchronous; kick off the async update in a Task.
+        Task {
+            do {
+                try await Adapty.updateProfile(params: builder.build())
+            } catch {
+                // handle the error
+            }
+        }
+    default:
+        break
+    }
+}
+```
+
+### Tùy chỉnh paywall dựa trên câu trả lời \{#customize-paywalls-based-on-answers\}
+
+Sử dụng quiz trong onboarding, bạn cũng có thể tùy chỉnh các paywall hiển thị cho người dùng sau khi họ hoàn thành onboarding.
+
+Ví dụ, bạn có thể hỏi người dùng về kinh nghiệm thể thao của họ và hiển thị các CTA cùng sản phẩm khác nhau cho từng nhóm người dùng.
+
+1. [Thêm quiz](onboarding-quizzes) trong trình tạo onboarding và gán các ID có ý nghĩa cho các tùy chọn.
+
+<ZoomImage id="experience.webp" />
+
+2. Xử lý các câu trả lời quiz dựa trên ID của chúng và [đặt thuộc tính tùy chỉnh](setting-user-attributes) cho người dùng.
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
+    // Handle quiz responses and set custom attributes
+    switch action.params {
+    case .select(let params):
+        // Handle quiz selection
+        let builder = AdaptyProfileParameters.Builder()
+
+        // Map quiz responses to custom attributes
+        switch action.elementId {
+        case "experience":
+            // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+            try? builder.with(customAttribute: params.value.value, forKey: "experience")
+        default:
+            break
+        }
+
+        // Delegate methods are synchronous; kick off the async update in a Task.
+        Task {
+            do {
+                try await Adapty.updateProfile(params: builder.build())
+            } catch {
+                // handle the error
+            }
+        }
+    default:
+        break
+    }
+}
+```
+
+3. [Tạo phân khúc](segments) cho từng giá trị thuộc tính tùy chỉnh.
+4. Tạo một [placement](placements) và thêm [đối tượng](audience) cho từng phân khúc bạn đã tạo.
+5. [Hiển thị paywall](ios-paywalls) cho placement trong code ứng dụng của bạn. Nếu onboarding có nút mở paywall, hãy triển khai code paywall như một [phản hồi cho action của nút đó](ios-handling-onboarding-events#opening-a-paywall).

@@ -1,0 +1,364 @@
+openapi: 3.1.0
+info:
+  title: Adapty Mail API
+  version: 1.0.0
+  description: |
+    Adapty Mail API cho phép bạn gửi hồ sơ người dùng và các sự kiện giao dịch đến Adapty Mail trực tiếp
+    từ máy chủ của bạn, mà không cần định tuyến dữ liệu qua SDK.
+
+    Sử dụng để:
+
+    - Thêm người đăng ký khi bạn chưa có cơ sở dữ liệu trong Adapty Mail.
+    - Tái sử dụng cơ sở người đăng ký từ các ứng dụng khác của bạn.
+    - Cung cấp dữ liệu cho Adapty Mail theo hướng server-to-server, với backend của bạn là nguồn dữ liệu chính.
+
+    Một hồ sơ người dùng có email là đủ cho flow **never purchased**. Mọi flow khác
+    (renewal cancelled, billing issue, expired, refunded) đều được điều khiển bởi lịch sử mua hàng, vì vậy những
+    hồ sơ đó cũng cần có sự kiện giao dịch để được đặt vào đúng flow.
+
+    Để xem hướng dẫn từng bước, hãy xem [Gửi email và giao dịch qua Adapty Mail API](/docs/mail-send-data-via-api).
+servers:
+  - url: https://api-mail.adapty.io
+    description: Máy chủ production
+paths:
+  /api/v1/profile/save/:
+    post:
+      summary: Lưu hồ sơ người dùng
+      description: |
+        Tạo hoặc cập nhật một hồ sơ người dùng trong Adapty Mail. Hồ sơ người dùng mang theo email và các thuộc tính
+        mà Adapty Mail sử dụng để xác định người nhận và xây dựng [phân khúc](/docs/mail-segments).
+
+        Xác định từng người dùng bằng một `external_profile_id` ổn định. Gửi cùng một `external_profile_id`
+        lần nữa sẽ cập nhật hồ sơ hiện có thay vì tạo bản trùng lặp.
+      operationId: saveProfile
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileDTO'
+            examples:
+              basic:
+                summary: Hồ sơ người dùng có email, sẵn sàng cho flow "never purchased"
+                value:
+                  external_profile_id: "user_12345"
+                  external_created_at: "2026-06-01T10:30:00Z"
+                  email: "jane@example.com"
+                  country: "US"
+                  custom_attributes:
+                    plan: "trial"
+      responses:
+        '200':
+          description: Hồ sơ người dùng đã được lưu thành công. Nội dung phản hồi là một đối tượng rỗng.
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                default:
+                  value: {}
+        '400':
+          description: Xác thực thất bại — một trường bắt buộc bị thiếu hoặc không hợp lệ. `field_name` cho biết trường nào.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Field required"
+                        error_code: "base_error"
+                        status_code: 400
+                        field_name: "email"
+        '403':
+          description: Thiếu hoặc sai secret API key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Secret key doesn't exist"
+                        error_code: "secret_key_does_not_exist_error"
+                        status_code: 403
+                        field_name: null
+  /api/v1/profile/transaction-event/save/:
+    post:
+      summary: Lưu sự kiện giao dịch
+      description: |
+        Ghi lại một sự kiện giao dịch từ cửa hàng cho một hồ sơ người dùng. Adapty Mail sử dụng các sự kiện giao dịch để đặt
+        hồ sơ vào các flow dựa trên giao dịch mua — `event_type` ánh xạ đến các flow như renewal cancelled,
+        billing issue, expired và refunded — cũng như cho attribution doanh thu.
+
+        Gửi các sự kiện này khi bạn xử lý các giao dịch mua, gia hạn và hủy bỏ. Chỉ có
+        flow **never purchased** hoạt động mà không cần chúng.
+      operationId: saveTransactionEvent
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionEventDTO'
+            examples:
+              basic:
+                summary: Một giao dịch mua gói đăng ký hàng tháng mới
+                value:
+                  event_type: "subscription_started"
+                  event_id: "evt_abc123"
+                  event_datetime: "2026-06-10T14:20:05Z"
+                  external_profile_id: "user_12345"
+                  store: "app_store"
+                  store_product_id: "premium_monthly"
+                  store_transaction_id: "1000000123456789"
+                  store_original_transaction_id: "1000000123456789"
+                  purchased_at: "2026-06-10T14:20:00Z"
+                  originally_purchased_at: "2026-06-10T14:20:00Z"
+                  price_usd: "9.99"
+                  expires_at: "2026-07-10T14:20:00Z"
+      responses:
+        '200':
+          description: Sự kiện giao dịch đã được lưu thành công. Nội dung phản hồi là một đối tượng rỗng.
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                default:
+                  value: {}
+        '400':
+          description: Xác thực thất bại — một trường bắt buộc bị thiếu hoặc không hợp lệ. `field_name` cho biết trường nào.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Field required"
+                        error_code: "base_error"
+                        status_code: 400
+                        field_name: "event_type"
+        '403':
+          description: Thiếu hoặc sai secret API key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Secret key doesn't exist"
+                        error_code: "secret_key_does_not_exist_error"
+                        status_code: 403
+                        field_name: null
+components:
+  securitySchemes:
+    apikeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        Xác thực mọi yêu cầu bằng secret API key của Adapty Mail, được gửi dưới dạng header **Authorization**
+        với giá trị `Bearer {your_secret_api_key}`, ví dụ: `Bearer secret_live_...`.
+
+        Tìm key này trong Adapty Mail tại **Settings**. Key này dành riêng cho từng dự án — nó xác định
+        dự án mà dữ liệu thuộc về, vì vậy các endpoint hồ sơ và giao dịch không cần nhận project ID.
+  schemas:
+    ProfileDTO:
+      type: object
+      required:
+        - external_profile_id
+        - external_created_at
+        - email
+      properties:
+        external_profile_id:
+          type: string
+          description: |
+            Mã định danh ổn định cho người dùng, do ứng dụng hoặc backend của bạn quản lý. Sử dụng lại cùng một giá trị
+            trong các yêu cầu để Adapty Mail liên kết email, lượt nhấp và giao dịch mua với một hồ sơ duy nhất. Không bao giờ sử dụng
+            mã định danh ẩn danh hoặc mã định danh theo từng lần cài đặt.
+        external_created_at:
+          type: string
+          format: date-time
+          description: |
+            Thời gian tạo người dùng, theo định dạng ISO 8601 (ví dụ: `"2026-06-01T10:30:00Z"`).
+            Bạn có thể sử dụng ngày này trong các phân khúc.
+        email:
+          type: string
+          format: email
+          description: Địa chỉ email của người dùng. Adapty Mail gửi các chiến dịch đến địa chỉ này.
+        first_name:
+          type: string
+          description: Tên của người dùng.
+        last_name:
+          type: string
+          description: Họ của người dùng.
+        gender:
+          type: string
+          description: Giới tính của người dùng.
+        birthday:
+          type: string
+          format: date
+          description: Ngày sinh của người dùng, theo định dạng ISO 8601 (ví dụ: `"1990-05-21"`).
+        country:
+          type: string
+          description: Quốc gia của người dùng dưới dạng mã ISO 3166-1 alpha-2 viết hoa gồm hai chữ cái (ví dụ: `US`).
+        store_country:
+          type: string
+          description: Khu vực cửa hàng của người dùng dưới dạng mã ISO 3166-1 alpha-2 viết hoa gồm hai chữ cái (ví dụ: `US`).
+        custom_attributes:
+          type: object
+          description: |
+            Các cặp key-value tùy ý (giá trị chuỗi hoặc số) để đính kèm vào hồ sơ người dùng. Sử dụng chúng để
+            xây dựng [phân khúc](/docs/mail-segments) — ví dụ: `plan`, `signup_source` hoặc `trial_days`.
+        device_info:
+          $ref: '#/components/schemas/DeviceInfoDTO'
+    DeviceInfoDTO:
+      type: object
+      required:
+        - platform
+      properties:
+        platform:
+          type: string
+          description: Nền tảng mà người dùng đang sử dụng, ví dụ: `iOS` hoặc `Android`.
+        device:
+          type: string
+          description: Kiểu thiết bị, ví dụ: `iPhone15,2`.
+        os:
+          type: string
+          description: Phiên bản hệ điều hành, ví dụ: `17.5`.
+        locale:
+          type: string
+          description: Ngôn ngữ và vùng của người dùng, ví dụ: `en-US`.
+        timezone:
+          type: string
+          description: Múi giờ của người dùng, ví dụ: `America/New_York`.
+        app_version:
+          type: string
+          description: Phiên bản ứng dụng của bạn mà người dùng đang chạy, ví dụ: `3.1.0`.
+    TransactionEventDTO:
+      type: object
+      required:
+        - event_type
+        - event_id
+        - event_datetime
+        - external_profile_id
+        - store
+        - store_product_id
+        - store_transaction_id
+        - store_original_transaction_id
+        - purchased_at
+        - originally_purchased_at
+      properties:
+        event_type:
+          $ref: '#/components/schemas/TransactionEventType'
+        event_id:
+          type: string
+          description: Mã định danh duy nhất cho sự kiện này, do hệ thống của bạn quản lý. Sử dụng để đảm bảo tính idempotent của các sự kiện.
+        event_datetime:
+          type: string
+          format: date-time
+          description: Thời điểm sự kiện được ghi lại, theo định dạng ISO 8601.
+        external_profile_id:
+          type: string
+          description: Cùng một `external_profile_id` ổn định bạn gửi khi lưu hồ sơ người dùng. Liên kết giao dịch với đúng hồ sơ.
+        store:
+          type: string
+          description: Cửa hàng mà giao dịch đến từ, ví dụ: `app_store`, `play_store` hoặc `stripe`.
+        store_product_id:
+          type: string
+          description: Mã định danh của sản phẩm đã mua trong cửa hàng.
+        store_transaction_id:
+          type: string
+          description: Mã định danh của giao dịch này trong cửa hàng.
+        store_original_transaction_id:
+          type: string
+          description: Mã định danh của giao dịch đầu tiên trong chuỗi gói đăng ký. Đối với giao dịch mua đầu tiên, giá trị này bằng `store_transaction_id`.
+        purchased_at:
+          type: string
+          format: date-time
+          description: Thời điểm giao dịch này xảy ra, theo định dạng ISO 8601.
+        originally_purchased_at:
+          type: string
+          format: date-time
+          description: Thời điểm gói đăng ký được mua lần đầu tiên, theo định dạng ISO 8601.
+        price_usd:
+          type: string
+          description: Số tiền giao dịch bằng USD, dưới dạng chuỗi thập phân (ví dụ: `"9.99"`).
+        expires_at:
+          type: string
+          format: date-time
+          description: Thời điểm gói đăng ký hết hạn hoặc đã hết hạn, theo định dạng ISO 8601. Bỏ qua đối với các giao dịch mua không phải gói đăng ký.
+        offer:
+          $ref: '#/components/schemas/Offer'
+    TransactionEventType:
+      type: string
+      description: Loại sự kiện giao dịch. Các flow dựa trên giao dịch mua được kích hoạt bởi các giá trị này.
+      enum:
+        - subscription_started
+        - subscription_renewed
+        - subscription_renewal_cancelled
+        - subscription_renewal_reactivated
+        - billing_issue_detected
+        - entered_grace_period
+        - subscription_refunded
+        - subscription_expired
+        - non_subscription_purchase
+        - non_subscription_purchase_refunded
+    Offer:
+      type: object
+      description: Chi tiết của một ưu đãi hoặc ưu đãi giới thiệu được áp dụng cho giao dịch.
+      required:
+        - category
+        - offer_type
+      properties:
+        category:
+          $ref: '#/components/schemas/OfferCategory'
+        offer_type:
+          $ref: '#/components/schemas/OfferType'
+        offer_id:
+          type: string
+          description: Mã định danh của ưu đãi trong cửa hàng, nếu có.
+    OfferCategory:
+      type: string
+      enum:
+        - introductory
+        - promotional
+        - offer_code
+        - win_back
+    OfferType:
+      type: string
+      enum:
+        - free_trial
+        - pay_as_you_go
+        - pay_up_front
+    Errors:
+      type: object
+      description: Phản hồi lỗi chuẩn. Mọi lỗi đều trả về trạng thái 4XX với cấu trúc này.
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: string
+                description: Mô tả lỗi dễ đọc cho người dùng.
+              error_code:
+                type: string
+                description: Mã định danh lỗi dễ đọc cho máy.
+              status_code:
+                type: integer
+                description: Mã trạng thái HTTP cho lỗi này.
+              field_name:
+                type: string
+                description: Trường trong yêu cầu gây ra lỗi, hoặc `null` nếu lỗi không liên quan đến trường cụ thể nào.

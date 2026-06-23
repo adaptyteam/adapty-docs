@@ -1,0 +1,18 @@
+| Parameter                     | Type          | Required | Nullable | Description                                                  |
+| :---------------------------- | :------------ | -------- | -------- | :----------------------------------------------------------- |
+| access_level_id               | String        | Yes      | No       | ID của mức độ truy cập có trả phí được thiết lập trong Adapty Dashboard. |
+| store                         | String        | Yes      | No       | Cửa hàng nơi sản phẩm được mua. Các tùy chọn: **app_store**, **play_store**, **stripe**, hoặc tên [cửa hàng tùy chỉnh](custom-store) của bạn. |
+| store_product_id              | String        | Yes      | No       | ID của sản phẩm trong cửa hàng ứng dụng (như App Store, Google Play, Stripe) đã mở khóa mức độ truy cập này. |
+| store_base_plan_id            | String        | Yes      | Yes      | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) trong Google Play hoặc [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) trong Stripe. |
+| store_transaction_id          | String        | Yes      | No       | ID giao dịch trong cửa hàng ứng dụng (App Store, Google Play, Stripe, v.v.). |
+| store_original_transaction_id | String        | Yes      | No       | <p>Đối với các gói đăng ký, ID này liên kết giao dịch gốc trong chuỗi gia hạn. Các giao dịch sau được liên kết dưới dạng gia hạn.</p><p>Nếu không có gia hạn, store_original_transaction_id trùng với store_transaction_id.</p> |
+| offer                         | Object | Yes      | No       | Đối tượng [Offer](server-side-api-objects#offer). Có thể là `null` nếu khách hàng không có mức độ truy cập nào. |
+| environment                   | String        | No       | No       | Môi trường của giao dịch đã cấp quyền truy cập. Các tùy chọn: `Sandbox`, `Production`. |
+| starts_at                     | ISO 8601 date | Yes      | Yes      | Ngày giờ mức độ truy cập bắt đầu có hiệu lực. Có thể là thời điểm trong tương lai. |
+| purchased_at                  | ISO 8601 date | Yes      | No       | Ngày giờ của lần mua gần nhất cho mức độ truy cập này. |
+| originally_purchased_at       | ISO 8601 date | Yes      | No       | Đối với các gói đăng ký, đây là ngày giờ của lần mua đầu tiên (gốc) trong chuỗi, gắn với `store_original_transaction_id`. |
+| expires_at                    | ISO 8601 date | Yes      | Yes      | Ngày giờ mức độ truy cập hết hạn. Có thể là thời điểm trong quá khứ, hoặc `null` đối với quyền truy cập trọn đời. |
+| renewal_cancelled_at          | ISO 8601 date | Yes      | Yes      | Ngày giờ tự động gia hạn bị tắt cho một gói đăng ký. Gói đăng ký vẫn có thể còn hiệu lực; chỉ là sẽ không tự động gia hạn nữa. Đặt thành `null` nếu người dùng kích hoạt lại gói đăng ký. |
+| billing_issue_detected_at     | ISO 8601 date | Yes      | Yes      | Ngày giờ phát hiện sự cố thanh toán (như thẻ bị từ chối). Gói đăng ký vẫn có thể còn hiệu lực. Giá trị này sẽ được xóa nếu thanh toán thành công sau đó. |
+| is_in_grace_period            | Boolean       | Yes      | No       | Cho biết gói đăng ký có đang trong [thời gian ân hạn](https://developer.apple.com/news/?id=09122019c) hay không (chỉ áp dụng cho gói đăng ký tự động gia hạn). |
+| cancellation_reason           | String        | Yes      | Yes      | Lý do hủy, với các tùy chọn như: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `upgraded`, `unknown`. |

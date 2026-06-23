@@ -1,0 +1,70 @@
+---
+title: "Sử dụng localizations và locale codes trong Android SDK"
+description: "Quản lý localizations và locale codes của ứng dụng để tiếp cận người dùng toàn cầu (Android)."
+metadataTitle: "Quản lý Localizations & Locale Codes | Tài liệu Adapty"
+displayed_sidebar: sdkandroid
+---
+
+## Tại sao điều này quan trọng \{#why-this-is-important\}
+
+Có một vài trường hợp mà locale codes phát huy tác dụng — ví dụ, khi bạn cần lấy đúng paywall cho localization hiện tại của ứng dụng.
+
+Vì locale codes khá phức tạp và có thể khác nhau tùy nền tảng, chúng tôi sử dụng một chuẩn nội bộ thống nhất cho tất cả các nền tảng được hỗ trợ. Tuy nhiên, chính vì sự phức tạp đó, bạn cần hiểu rõ mình đang gửi gì lên server để nhận đúng localization — như vậy bạn sẽ luôn nhận được kết quả như mong đợi.
+
+## Chuẩn locale code tại Adapty \{#locale-code-standard-at-adapty\}
+
+Đối với locale codes, Adapty sử dụng phiên bản điều chỉnh nhẹ của [chuẩn BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): mỗi code gồm các subtag viết thường, phân cách bằng dấu gạch ngang. Một số ví dụ: `en` (tiếng Anh), `pt-br` (tiếng Bồ Đào Nha (Brazil)), `zh` (tiếng Trung giản thể), `zh-hant` (tiếng Trung phồn thể).
+
+## Khớp locale code \{#locale-code-matching\}
+
+Khi Adapty nhận được lời gọi từ SDK phía client kèm theo locale code và bắt đầu tìm kiếm localization tương ứng của một paywall, quá trình diễn ra như sau:
+
+1. Chuỗi locale đầu vào được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay bằng dấu gạch ngang (`-`)
+2. Chúng tôi tìm kiếm localization có locale code khớp hoàn toàn
+3. Nếu không tìm thấy, chúng tôi lấy phần chuỗi trước dấu gạch ngang đầu tiên (`pt` với `pt-br`) và tìm kiếm localization khớp
+4. Nếu vẫn không tìm thấy, chúng tôi trả về localization mặc định `en`
+
+Nhờ đó, một thiết bị iOS gửi `'pt_BR'`, một thiết bị Android gửi `pt-BR`, và một thiết bị khác gửi `pt-br` đều nhận được kết quả giống nhau.
+
+## Cách triển khai localizations được khuyến nghị \{#implementing-localizations-recommended-way\}
+
+Nếu bạn đang quan tâm đến localizations, rất có thể bạn đã làm việc với các file chuỗi đã được dịch trong dự án. Trong trường hợp đó, chúng tôi khuyến nghị bạn thêm một cặp key-value chứa Adapty locale code tương ứng vào từng file localization. Sau đó, trích xuất giá trị của key đó khi gọi SDK, như sau:
+
+```kotlin showLineNumbers
+// 1. Modify your strings.xml files
+
+/*
+strings.xml - Spanish
+*/
+<string name="adapty_paywalls_locale">es</string>
+
+/*
+strings.xml - Portuguese (Brazil)
+*/
+<string name="adapty_paywalls_locale">pt-br</string>
+
+// 2. Extract and use the locale code
+
+val localeCode = context.getString(R.string.adapty_paywalls_locale)
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+Cách này giúp bạn kiểm soát hoàn toàn localization nào sẽ được tải về cho từng người dùng trong ứng dụng của bạn.
+
+## Cách triển khai localizations khác \{#implementing-localizations-the-other-way\}
+
+Bạn cũng có thể đạt được kết quả tương tự (nhưng không hoàn toàn giống) mà không cần định nghĩa tường minh locale codes cho từng localization. Cách này có nghĩa là trích xuất locale code từ các đối tượng mà nền tảng của bạn cung cấp, như sau:
+
+```kotlin showLineNumbers
+val locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+    context.resources.configuration.locales[0]
+else
+    context.resources.configuration.locale
+
+val localeCode = locale.toLanguageTag()
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+Lưu ý rằng chúng tôi không khuyến nghị cách tiếp cận này vì khó dự đoán chính xác server của Adapty sẽ nhận được gì.
+
+Nếu bạn vẫn quyết định sử dụng cách này — hãy đảm bảo bạn đã xử lý tất cả các trường hợp liên quan.

@@ -1,0 +1,605 @@
+---
+title: "Xử lý sự kiện flow & paywall - iOS"
+description: "Xử lý các sự kiện flow và paywall trong ứng dụng iOS của bạn."
+metadataTitle: "Xử lý Sự Kiện Flow - iOS | Tài liệu Adapty"
+toc_max_heading_level: 4
+keywords: ['event', 'AdaptyFlowControllerDelegate', 'AdaptyPaywallControllerDelegate', 'flowController', 'didSelectProduct', 'didStartPurchase', 'didFinishPurchase', 'didFailPurchase', 'didFinishRestoreWith', 'didFailRestoreWith', 'didFailLoadingProductsWith', 'didFailRenderingWith', 'didReceiveError', 'didFinishWebPaymentNavigation']
+---
+
+<SDKv4>
+:::important
+Hướng dẫn này đề cập đến việc xử lý sự kiện cho các giao dịch mua, khôi phục, chọn sản phẩm và hiển thị paywall. Bạn cũng cần triển khai xử lý nút bấm (đóng paywall, mở liên kết, v.v.). Xem [hướng dẫn xử lý hành động nút bấm](handle-paywall-actions) của chúng tôi để biết thêm chi tiết.
+:::
+Flow và paywall không cần thêm code để thực hiện hoặc khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể phản hồi. Các sự kiện đó bao gồm thao tác nhấn nút (nút đóng, URL, lựa chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua. Tìm hiểu cách phản hồi các sự kiện này bên dưới.
+
+:::tip
+
+Muốn xem ví dụ thực tế về cách tích hợp Adapty SDK vào ứng dụng di động? Hãy xem [ứng dụng mẫu](sample-apps) của chúng tôi, bao gồm đầy đủ thiết lập, từ hiển thị paywall, thực hiện giao dịch mua cho đến các chức năng cơ bản khác.
+
+:::
+## Xử lý sự kiện trong SwiftUI \{#handling-events-in-swiftui\}
+
+Để kiểm soát hoặc theo dõi các tiến trình xảy ra trên màn hình flow hoặc paywall trong ứng dụng di động của bạn, hãy sử dụng modifier `.flow` trong SwiftUI:
+```swift showLineNumbers title="Swift"
+@State var flowPresented = false
+
+var body: some View {
+    Text("Hello, AdaptyUI!")
+        .flow(
+            isPresented: $flowPresented,
+            flowConfiguration: flowConfiguration,
+            didPerformAction: { action in
+                switch action {
+                    case .close:
+                        flowPresented = false
+                    case let .openURL(url):
+                        // handle opening the URL (incl. for terms and privacy)
+                    default:
+                        // handle other actions
+                }
+            },
+            didSelectProduct: { product in /* Handle the event */ },
+            didStartPurchase: { product in /* Handle the event */ },
+            didFailPurchase: { product, error in /* handle the error */ },
+            didStartRestore: { /* Handle the event */ },
+            didFinishRestore: { profile in /* check access level and dismiss */ },
+            didFailRestore: { error in /* handle the error */ },
+            didReceiveError: { error in
+                flowPresented = false
+            },
+            didFailLoadingProducts: { error in
+                // Return `true` to retry loading
+                return false
+            }
+        )
+}
+```
+
+Bạn chỉ cần đăng ký những tham số closure cần dùng và bỏ qua những tham số không cần thiết.
+| Tham số | Bắt buộc | Mô tả |
+|:-----------------------|:---------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented**        | bắt buộc | Binding kiểm soát việc hiển thị màn hình flow hoặc paywall.                                                                                                                                                                                             |
+| **flowConfiguration**  | bắt buộc | Đối tượng `AdaptyUI.FlowConfiguration` chứa thông tin hiển thị của flow hoặc paywall. Xem [Lấy flow và paywall](get-pb-paywalls) để biết thêm chi tiết.                                                                                       |
+| **didFailPurchase**    | bắt buộc | Được gọi khi `Adapty.makePurchase()` thất bại.                                                                                                                                                                                                         |
+| **didFinishRestore**   | bắt buộc | Được gọi khi `Adapty.restorePurchases()` hoàn tất thành công.                                                                                                                                                                                                    |
+| **didFailRestore**     | bắt buộc | Được gọi khi `Adapty.restorePurchases()` thất bại.                                                                                                                                                                                                     |
+| **didReceiveError**    | bắt buộc | Được gọi khi flow gặp lỗi hiển thị hoặc lỗi runtime từ script của flow (ví dụ: ngoại lệ JavaScript, mã `AdaptyUIError` `4105`). Trong trường hợp lỗi hiển thị, hãy [liên hệ bộ phận hỗ trợ Adapty](mailto:support@adapty.io).            |
+| **placeholderBuilder** | tùy chọn | Hàm dùng để hiển thị view placeholder trong khi flow hoặc paywall đang tải. Mặc định là `ProgressView`.                                                                                                                                                   |
+| **fullScreen**         | tùy chọn | Xác định flow hoặc paywall hiển thị ở chế độ toàn màn hình hay dạng sheet. Mặc định là `true`.                                                                                                                                                    |
+| **didAppear**          | tùy chọn | Được gọi khi view của flow hoặc paywall xuất hiện trên màn hình.                                                                                                                                                                                            |
+| **didDisappear**       | tùy chọn | Được gọi khi view của flow hoặc paywall bị đóng lại.                                                                                                                                                                                                |
+| **didPerformAction**   | tùy chọn | Được gọi khi người dùng nhấn một nút. Có hai action ID được định nghĩa sẵn: `close` và `openURL`; các ID còn lại là tùy chỉnh và có thể được thiết lập trong builder.                                                                                        |
+| **didSelectProduct**   | tùy chọn | Được gọi khi người dùng hoặc hệ thống chọn một sản phẩm để mua.                                                                                                                                                                                       |
+| **didStartPurchase**   | tùy chọn | Được gọi khi người dùng bắt đầu quá trình mua hàng.                                                                                                                                                                                                  |
+| **didFinishPurchase**  | tùy chọn | Được gọi khi `Adapty.makePurchase()` hoàn tất thành công.                                                                                                                                                                                                        |
+| **didFinishWebPaymentNavigation** | tùy chọn | Được gọi khi điều hướng thanh toán web hoàn tất.                                                                                                                                                                                          |
+| **didStartRestore**    | tùy chọn | Được gọi khi người dùng bắt đầu quá trình khôi phục.                                                                                                                                                                                                   |
+| **didFailLoadingProducts** | tùy chọn | Được gọi khi xảy ra lỗi trong quá trình tải sản phẩm. Trả về `true` để thử tải lại.                                                                                                                                                              |
+| **didPartiallyLoadProducts** | tùy chọn | Được gọi khi sản phẩm được tải một phần.                                                                                                                                                                                               |
+| **showAlertItem**      | tùy chọn | Binding kiểm soát việc hiển thị các mục cảnh báo phía trên flow hoặc paywall.                                                                                                                                                                        |
+| **showAlertBuilder**   | tùy chọn | Hàm dùng để hiển thị view cảnh báo.                                                                                                                                                                                                            |
+## Xử lý sự kiện trong UIKit \{#handling-events-in-uikit\}
+
+Đối với các ứng dụng UIKit, sự kiện được xử lý thông qua giao thức `AdaptyFlowControllerDelegate`. Xem [Hiển thị flow & paywall - iOS](ios-present-paywalls) để biết cách thiết lập `AdaptyFlowController` với `AdaptyFlowControllerDelegate`.
+
+Giao thức khai báo 13 phương thức. Ba trong số đó không có triển khai mặc định và bắt buộc phải được implement khi tuân thủ: `didFailPurchase`, `didFinishRestoreWith`, và `didFailRestoreWith`. Các phương thức còn lại cung cấp triển khai mặc định không làm gì (no-op) và có thể được ghi đè khi bạn muốn hành vi tùy chỉnh. Các phương thức được nhóm theo mục đích bên dưới.
+### Vòng đời \{#lifecycle\}
+
+```swift showLineNumbers title="Swift"
+func flowControllerDidAppear(_ controller: AdaptyFlowController) { }
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) { }
+```
+
+Các hàm này được gọi khi flow hoặc màn hình paywall được hiển thị và bị đóng lại.
+### Hành động của người dùng \{#user-actions\}
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didPerform action: AdaptyUI.Action
+) { }
+```
+
+Các trường hợp của `AdaptyUI.Action`:
+- `.close` — hành vi mặc định là đóng controller. Ghi đè nếu bạn muốn giữ controller trên màn hình hoặc thực hiện thêm thao tác dọn dẹp.
+- `.openURL(url:)` — hành vi mặc định là mở URL bằng `UIApplication.shared.open(...)`.
+- `.custom(id:)` — được kích hoạt cho các nút có ID hành động tùy chỉnh được thiết lập trong builder.
+### Chọn sản phẩm \{#product-selection\}
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didSelectProduct product: AdaptyPaywallProduct
+) { }
+```
+
+Được gọi khi người dùng hoặc hệ thống chọn một sản phẩm để mua. Sản phẩm mang đầy đủ thông tin ưu đãi (tính đủ điều kiện được xác định tự động trong v4 — không còn kiểu `AdaptyPaywallProductWithoutDeterminingOffer` riêng biệt nữa).
+### Sự kiện mua hàng \{#purchase-events\}
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didStartPurchase product: AdaptyPaywallProduct
+) { }
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishPurchase product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    // Default: dismiss the controller unless the purchase was cancelled.
+}
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFailPurchase product: AdaptyPaywallProduct,
+    error: AdaptyError
+) { }
+```
+`didFailPurchase` là sự kiện mua hàng duy nhất không có implementation mặc định. `didFinishPurchase` mặc định sẽ đóng controller khi mua thành công; chỉ cần override nếu bạn cần logic tùy chỉnh sau khi mua.
+### Sự kiện khôi phục \{#restore-events\}
+
+```swift showLineNumbers title="Swift"
+func flowControllerDidStartRestore(_ controller: AdaptyFlowController) { }
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishRestoreWith profile: AdaptyProfile
+) { }
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFailRestoreWith error: AdaptyError
+) { }
+```
+
+`didFinishRestoreWith` và `didFailRestoreWith` không có implementation mặc định. Hãy kiểm tra xem `AdaptyProfile` trả về có chứa mức độ truy cập mong muốn hay không trước khi dismiss controller.
+### Lỗi flow và lỗi tải sản phẩm \{#flow-errors-and-product-loading-errors\}
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveError error: AdaptyUIError
+) { }
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFailLoadingProductsWith error: AdaptyError
+) -> Bool {
+    // Return `true` to retry product loading; default returns `false`.
+    return false
+}
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didPartiallyLoadProducts failedIds: [String]
+) { }
+```
+`didReceiveError` kích hoạt khi có lỗi render và lỗi runtime từ script của flow (ngoại lệ JavaScript, mã `AdaptyUIError` `4105`). Với lỗi render, hãy [liên hệ Adapty Support](mailto:support@adapty.io). Với lỗi tải, trả về `true` từ `didFailLoadingProductsWith` để thử lại — hữu ích khi gặp sự cố mạng tạm thời.
+### Điều hướng thanh toán web \{#web-payment-navigation\}
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishWebPaymentNavigation product: AdaptyPaywallProduct?,
+    error: AdaptyError?
+) { }
+```
+
+Được gọi sau khi điều hướng thanh toán web kết thúc, dù thành công hay thất bại.
+
+</SDKv4>
+
+<SDKv3>
+:::important
+Hướng dẫn này đề cập đến việc xử lý các sự kiện mua hàng, khôi phục, chọn sản phẩm và hiển thị paywall. Bạn cũng cần triển khai xử lý nút bấm (đóng paywall, mở liên kết, v.v.). Xem [hướng dẫn xử lý hành động nút bấm](handle-paywall-actions) để biết thêm chi tiết.
+:::
+Paywall được cấu hình bằng [Paywall Builder](adapty-paywall-builder) không cần thêm code để thực hiện và khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể phản hồi. Các sự kiện đó bao gồm thao tác nhấn nút (nút đóng, URL, chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua được thực hiện trên paywall. Hãy tham khảo bên dưới để biết cách phản hồi các sự kiện này.
+
+Hướng dẫn này chỉ dành cho **paywall Paywall Builder mới** yêu cầu Adapty SDK v3.0 trở lên.
+
+:::tip
+Bạn muốn xem ví dụ thực tế về cách tích hợp Adapty SDK vào ứng dụng di động? Hãy xem [ứng dụng mẫu](sample-apps) của chúng tôi, minh họa toàn bộ quá trình thiết lập, bao gồm hiển thị paywall, thực hiện mua hàng và các chức năng cơ bản khác.
+
+:::
+## Xử lý sự kiện trong SwiftUI \{#handling-events-in-swiftui\}
+
+Để kiểm soát hoặc theo dõi các quá trình diễn ra trên màn hình paywall trong ứng dụng di động của bạn, hãy sử dụng modifier `.paywall` trong SwiftUI:
+```swift showLineNumbers title="Swift"
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywall: paywall,
+          viewConfiguration: viewConfig,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  case let .openURL(url):
+                      // handle opening the URL (incl. for terms and privacy)
+                  default:
+                      // handle other actions
+              }
+          },
+          didSelectProduct: { /* Handle the event */  },
+          didStartPurchase: { /* Handle the event */ },
+          didFinishPurchase: { product, info in /* Handle the event */ },
+          didFailPurchase: { product, error in /* Handle the event */ },
+          didStartRestore: { /* Handle the event */ },
+          didFinishRestore: { /* Handle the event */ },
+          didFailRestore: { /* Handle the event */ },
+          didFailRendering: { error in
+              paywallPresented = false
+          },
+          didFailLoadingProducts: { error in
+              return false
+          }
+      )
+}
+```
+
+Bạn chỉ cần đăng ký những tham số closure mà bạn cần, và bỏ qua những tham số không cần thiết. Trong trường hợp này, các tham số closure không được sử dụng sẽ không được tạo ra.
+| Tham số                           | Bắt buộc | Mô tả                                                                                                                                                                                                                                                                                                                          |
+|:----------------------------------|:---------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented**                   | bắt buộc | Một binding quản lý việc màn hình paywall có được hiển thị hay không.                                                                                                                                                                                                                                                          |
+| **paywallConfiguration**          | bắt buộc | Một đối tượng `AdaptyUI.PaywallConfiguration` chứa các chi tiết hiển thị của paywall. Sử dụng phương thức `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)`. Tham khảo chủ đề [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) để biết thêm chi tiết. |
+| **didFailPurchase**               | bắt buộc | Được gọi khi giao dịch mua thất bại do lỗi (ví dụ: thanh toán không được phép, sự cố mạng, sản phẩm không hợp lệ). Không được gọi khi người dùng hủy hoặc thanh toán đang chờ xử lý.                                                                                                                                         |
+| **didFinishRestore**              | bắt buộc | Được gọi khi giao dịch mua hoàn tất thành công.                                                                                                                                                                                                                                                                                |
+| **didFailRestore**                | bắt buộc | Được gọi khi khôi phục giao dịch mua thất bại.                                                                                                                                                                                                                                                                                 |
+| **didFailRendering**              | bắt buộc | Được gọi nếu xảy ra lỗi trong quá trình render giao diện. Trong trường hợp này, hãy [liên hệ Adapty Support](mailto:support@adapty.io).                                                                                                                                                                                        |
+| **fullScreen**                    | tùy chọn | Xác định paywall hiển thị ở chế độ toàn màn hình hay dạng modal. Mặc định là `true`.                                                                                                                                                                                                                                          |
+| **didAppear**                     | tùy chọn | Được gọi khi view paywall xuất hiện trên màn hình. Cũng được gọi khi người dùng nhấn [nút web paywall](web-paywall#step-2a-add-a-web-purchase-button) bên trong một paywall và web paywall mở trong trình duyệt in-app.                                                                                                        |
+| **didDisappear**                  | tùy chọn | Được gọi khi view paywall bị đóng. Cũng được gọi khi [web paywall](web-paywall#step-2a-add-a-web-purchase-button) được mở từ một paywall trong trình duyệt in-app biến mất khỏi màn hình.                                                                                                                                      |
+| **didPerformAction**              | tùy chọn | Được gọi khi người dùng nhấn một nút. Các nút khác nhau có ID hành động khác nhau. Hai ID hành động được định nghĩa sẵn là `close` và `openURL`, các ID còn lại là tùy chỉnh và có thể được thiết lập trong builder.                                                                                                           |
+| **didSelectProduct**              | tùy chọn | Được gọi khi một sản phẩm được chọn để mua (do người dùng hoặc hệ thống).                                                                                                                                                                                                                                                     |
+| **didStartPurchase**              | tùy chọn | Được gọi khi người dùng bắt đầu quá trình mua hàng.                                                                                                                                                                                                                                                                           |
+| **didFinishPurchase**             | tùy chọn | Được gọi khi giao dịch mua hoàn tất thành công.                                                                                                                                                                                                                                                                               |
+| **didFinishWebPaymentNavigation** | tùy chọn | Được gọi sau khi thử mở [web paywall](web-paywall) để mua hàng, dù thành công hay thất bại.                                                                                                                                                                                                                                   |
+| **didStartRestore**               | tùy chọn | Được gọi khi người dùng bắt đầu quá trình khôi phục.                                                                                                                                                                                                                                                                          |
+| **didFailLoadingProducts**        | tùy chọn | Được gọi khi xảy ra lỗi trong quá trình tải sản phẩm. Trả về `true` để thử tải lại.                                                                                                                                                                                                                                          |
+| **didPartiallyLoadProducts**      | tùy chọn | Được gọi khi sản phẩm được tải một phần.                                                                                                                                                                                                                                                                                       |
+| **showAlertItem**                 | tùy chọn | Một binding quản lý việc hiển thị các mục cảnh báo phía trên paywall.                                                                                                                                                                                                                                                         |
+| **showAlertBuilder**              | tùy chọn | Một hàm để render view cảnh báo.                                                                                                                                                                                                                                                                                               |
+| **placeholderBuilder**            | tùy chọn | Một hàm để render view placeholder trong khi paywall đang tải.                                                                                                                                                                                                                                                                 |
+## Xử lý sự kiện trong UIKit \{#handling-events-in-uikit\}
+
+Để kiểm soát hoặc theo dõi các tiến trình xảy ra trên màn hình paywall trong ứng dụng của bạn, hãy implement các phương thức `AdaptyPaywallControllerDelegate`.
+### Sự kiện do người dùng tạo ra \{#user-generated-events\}
+
+#### Chọn sản phẩm \{#product-selection\}
+
+Khi người dùng chọn một sản phẩm để mua, phương thức này sẽ được gọi:
+
+```swift showLineNumbers title="Swift"
+    func paywallController(
+        _ controller: AdaptyPaywallController,
+        didSelectProduct product: AdaptyPaywallProductWithoutDeterminingOffer
+    ) { }
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Bắt đầu mua hàng \{#started-purchase\}
+
+Nếu người dùng bắt đầu quá trình mua hàng, phương thức này sẽ được gọi:
+
+```swift showLineNumbers title="Swift"
+func paywallController(_ controller: AdaptyPaywallController,
+                       didStartPurchase product: AdaptyPaywallProduct) {
+}
+```
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+Sự kiện này sẽ không được gọi trong chế độ Observer. Tham khảo chủ đề [iOS - Hiển thị paywall Paywall Builder trong chế độ Observer](ios-present-paywall-builder-paywalls-in-observer-mode) để biết thêm chi tiết.
+
+#### Bắt đầu mua hàng bằng web paywall \{#started-purchase-using-a-web-paywall\}
+Nếu người dùng khởi tạo quá trình mua hàng bằng cách sử dụng [web paywall](web-paywall), phương thức này sẽ được gọi:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        shouldContinueWebPaymentNavigation product: AdaptyPaywallProduct
+    ) {
+    }
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Mua hàng thành công hoặc đã hủy \{#successful-or-canceled-purchase\}
+
+Nếu mua hàng thành công, phương thức này sẽ được gọi:
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFinishPurchase product: AdaptyPaywallProductWithoutDeterminingOffer,
+    purchaseResult: AdaptyPurchaseResult
+) { }
+}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "cancelled"
+  }
+}
+```
+</Details>
+Chúng tôi khuyến nghị đóng màn hình paywall trong trường hợp đó.
+
+Tính năng này sẽ không được gọi trong chế độ Observer. Xem thêm tại [iOS - Hiển thị paywall Paywall Builder trong chế độ Observer](ios-present-paywall-builder-paywalls-in-observer-mode) để biết chi tiết.
+
+#### Mua hàng thất bại \{#failed-purchase\}
+Nếu một giao dịch mua thất bại do lỗi, phương thức này sẽ được gọi. Điều này bao gồm các lỗi StoreKit (hạn chế thanh toán, sản phẩm không hợp lệ, lỗi mạng), lỗi xác minh giao dịch và lỗi hệ thống. Lưu ý rằng khi người dùng hủy, `didFinishPurchase` sẽ được gọi với kết quả đã hủy thay thế, và các thanh toán đang chờ xử lý không kích hoạt phương thức này.
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailPurchase product: AdaptyPaywallProduct,
+    error: AdaptyError
+) { }
+```
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+Nó sẽ không được gọi trong chế độ Observer. Tham khảo chủ đề [iOS - Present Paywall Builder paywalls in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode) để biết thêm chi tiết.
+
+#### Mua hàng thất bại khi dùng web paywall \{#failed-purchase-using-a-web-paywall\}
+
+Nếu `Adapty.openWebPaywall()` thất bại, phương thức này sẽ được gọi:
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        didFailWebPaymentNavigation product: AdaptyPaywallProduct,
+        error: AdaptyError
+    ) { }
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_payment_failed",
+    "message": "Web payment navigation failed",
+    "details": {
+      "underlyingError": "Network connection error"
+    }
+  }
+}
+```
+</Details>
+
+#### Khôi phục thành công \{#successful-restore\}
+
+Nếu việc khôi phục giao dịch thành công, phương thức này sẽ được gọi:
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController, 
+    didFinishRestoreWith profile: AdaptyProfile
+) { }
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+Chúng tôi khuyến nghị đóng màn hình nếu người dùng có `accessLevel` yêu cầu. Tham khảo chủ đề [Trạng thái gói đăng ký](subscription-status) để biết cách kiểm tra.
+
+#### Khôi phục thất bại \{#failed-restore\}
+
+Nếu việc khôi phục giao dịch thất bại, phương thức này sẽ được gọi:
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController, 
+    didFailRestoreWith error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>Ví dụ về sự kiện (Nhấn để mở rộng)</summary>
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+### Tải dữ liệu và hiển thị \{#data-fetching-and-rendering\}
+
+#### Lỗi tải sản phẩm \{#product-loading-errors\}
+
+Nếu bạn không truyền mảng sản phẩm trong quá trình khởi tạo, AdaptyUI sẽ tự động lấy các đối tượng cần thiết từ server. Nếu thao tác này thất bại, AdaptyUI sẽ báo lỗi bằng cách gọi phương thức sau:
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailLoadingProductsWith error: AdaptyError
+) -> Bool {
+    return true
+}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+Nếu bạn trả về `true`, AdaptyUI sẽ lặp lại yêu cầu sau 2 giây.
+
+#### Lỗi khi render \{#rendering-errors\}
+
+Nếu có lỗi xảy ra trong quá trình render giao diện, lỗi đó sẽ được báo cáo qua phương thức này:
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailRenderingWith error: AdaptyError
+) { }
+```
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+Trong điều kiện bình thường, các lỗi này không nên xảy ra, vì vậy nếu bạn gặp phải, hãy cho chúng tôi biết.
+
+</SDKv3>

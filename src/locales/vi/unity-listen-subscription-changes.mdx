@@ -1,0 +1,88 @@
+---
+title: "Kiểm tra trạng thái gói đăng ký trong Unity SDK"
+description: "Theo dõi và quản lý trạng thái gói đăng ký người dùng trong Adapty để cải thiện việc giữ chân khách hàng trong ứng dụng Unity của bạn."
+metadataTitle: "Tìm hiểu Trạng thái Gói đăng ký | Tài liệu Adapty"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+
+Với Adapty, việc theo dõi trạng thái gói đăng ký trở nên đơn giản hơn bao giờ hết. Bạn không cần phải tự chèn ID sản phẩm vào code. Thay vào đó, bạn có thể dễ dàng xác nhận trạng thái gói đăng ký của người dùng bằng cách kiểm tra [mức độ truy cập](access-level) đang hoạt động.
+
+<details>
+   <summary>Trước khi bắt đầu kiểm tra trạng thái gói đăng ký (Nhấp để mở rộng)</summary>
+
+- Với iOS, hãy thiết lập [App Store Server Notifications](enable-app-store-server-notifications)
+- Với Android, hãy thiết lập [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn)
+</details>
+
+## Mức độ truy cập và đối tượng AdaptyProfile \{#access-level-and-the-adaptyprofile-object\}
+
+Mức độ truy cập là thuộc tính của đối tượng [AdaptyProfile](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_profile.html). Chúng tôi khuyến nghị lấy hồ sơ người dùng khi ứng dụng khởi động, chẳng hạn như khi bạn [xác định người dùng](unity-identifying-users#setting-customer-user-id-on-configuration), rồi cập nhật lại mỗi khi có thay đổi. Bằng cách này, bạn có thể sử dụng đối tượng hồ sơ mà không cần gửi yêu cầu lặp đi lặp lại.
+
+Để nhận thông báo khi hồ sơ người dùng được cập nhật, hãy lắng nghe các thay đổi hồ sơ như mô tả trong phần [Lắng nghe cập nhật trạng thái gói đăng ký](#listening-for-subscription-status-updates) bên dưới.
+
+<SampleApp />
+
+## Lấy mức độ truy cập từ máy chủ \{#retrieving-the-access-level-from-the-server\}
+
+Để lấy mức độ truy cập từ máy chủ, sử dụng phương thức `.GetProfile()`:
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+// check the access
+});
+```
+
+Tham số phản hồi:
+
+| Tham số | Mô tả                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------- |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Profile   | <p>Một đối tượng [AdaptyProfile](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_profile.html). Thông thường, bạn chỉ cần kiểm tra trạng thái mức độ truy cập của hồ sơ để xác định người dùng có quyền truy cập premium vào ứng dụng hay không.</p><p></p><p>Phương thức `.getProfile` cung cấp kết quả cập nhật nhất vì nó luôn cố truy vấn API. Nếu vì lý do nào đó (ví dụ: không có kết nối internet), Adapty SDK không thể lấy thông tin từ máy chủ, dữ liệu từ cache sẽ được trả về. Cũng cần lưu ý rằng Adapty SDK thường xuyên cập nhật cache `AdaptyProfile` để giữ thông tin này luôn ở trạng thái mới nhất.</p> |
+
+Phương thức `.getProfile()` cung cấp cho bạn hồ sơ người dùng, từ đó bạn có thể lấy trạng thái mức độ truy cập. Bạn có thể có nhiều mức độ truy cập cho mỗi ứng dụng. Ví dụ: nếu bạn có ứng dụng báo và bán gói đăng ký cho các chủ đề khác nhau một cách độc lập, bạn có thể tạo các mức độ truy cập "sports" và "science". Tuy nhiên, trong hầu hết các trường hợp, bạn chỉ cần một mức độ truy cập — khi đó, bạn có thể sử dụng mức độ truy cập mặc định "premium".
+
+Dưới đây là ví dụ kiểm tra mức độ truy cập "premium" mặc định:
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+// "premium" is an identifier of default access level
+var accessLevel = profile.AccessLevels["premium"];
+if (accessLevel != null && accessLevel.IsActive) {
+// grant access to premium features
+}
+});
+```
+
+### Lắng nghe cập nhật trạng thái gói đăng ký \{#listening-for-subscription-status-updates\}
+
+Mỗi khi gói đăng ký của người dùng thay đổi, Adapty sẽ kích hoạt một sự kiện.
+
+Để nhận thông báo từ Adapty, bạn cần thực hiện một số cấu hình bổ sung:
+
+```csharp showLineNumbers
+// Extend `AdaptyEventListener ` with `OnLoadLatestProfile ` method:
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+  public void OnLoadLatestProfile(AdaptyProfile profile) {
+    // handle any changes to subscription state
+  }
+}
+```
+
+Adapty cũng kích hoạt một sự kiện khi ứng dụng khởi động. Trong trường hợp này, trạng thái gói đăng ký được lưu trong cache sẽ được truyền vào.
+
+### Cache trạng thái gói đăng ký \{#subscription-status-cache\}
+
+Cache được tích hợp trong Adapty SDK lưu trữ trạng thái gói đăng ký của hồ sơ người dùng. Điều này có nghĩa là ngay cả khi máy chủ không khả dụng, dữ liệu được lưu trong cache vẫn có thể được truy cập để cung cấp thông tin về trạng thái gói đăng ký của hồ sơ.
+
+Tuy nhiên, cần lưu ý rằng không thể truy vấn dữ liệu trực tiếp từ cache. SDK định kỳ truy vấn máy chủ mỗi phút để kiểm tra các cập nhật hoặc thay đổi liên quan đến hồ sơ. Nếu có bất kỳ thay đổi nào, chẳng hạn như giao dịch mới hoặc các cập nhật khác, chúng sẽ được đồng bộ vào dữ liệu cache để giữ cho nó luôn nhất quán với máy chủ.

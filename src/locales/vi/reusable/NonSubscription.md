@@ -1,0 +1,12 @@
+| Tham số                       | Loại         | Bắt buộc | Nullable | Mô tả                                                        |
+| :---------------------------- | :------------ | -------- | -------- | :----------------------------------------------------------- |
+| purchase_id                   | String        | Có       | Không    | Mã định danh của giao dịch mua trong Adapty. Bạn có thể dùng nó để kiểm tra xem giao dịch này đã được xử lý chưa, ví dụ như theo dõi các sản phẩm mua một lần. |
+| store                         | String        | Có       | Không    | Cửa hàng nơi sản phẩm được mua. Các giá trị có thể có: **app_store**, **play_store**, **stripe**, tên [custom store](custom-store) của bạn. |
+| store_product_id              | String        | Có       | Không    | Mã định danh của sản phẩm trong cửa hàng ứng dụng (App Store/Google Play/Stripe, v.v.) đã mở khóa mức độ truy cập này. |
+| store_base_plan_id            | String        | Có       | Có       | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) trong Google Play Store hoặc [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) trong Stripe. |
+| store_transaction_id          | String        | Có       | Không    | ID của giao dịch trong cửa hàng ứng dụng (App Store/Google Play/Stripe, v.v.). |
+| store_original_transaction_id | String        | Có       | Không    | <p>Đối với các gói đăng ký gia hạn liên tục, một chuỗi giao dịch sẽ được tạo ra. Giao dịch gốc là giao dịch đầu tiên trong chuỗi và toàn bộ chuỗi được liên kết qua nó. Các giao dịch còn lại trong chuỗi là các lần gia hạn.</p><br /><p>Nếu không có gia hạn, `store_original_transaction_id` sẽ trùng với `store_transaction_id`.</p> |
+| purchased_at                  | ISO 8601 date | Có       | Không    | Thời điểm mức độ truy cập được mua gần nhất.                 |
+| environment                   | String        | Không    | Không    | Môi trường của giao dịch cung cấp mức độ truy cập. Các giá trị có thể có: `Sandbox`, `Production.` |
+| is_refund                     | Boolean       | Có       | Không    | Cho biết sản phẩm có được hoàn tiền hay không.               |
+| is_consumable                 | Boolean       | Có       | Không    | Cho biết sản phẩm có phải là consumable hay không.           |

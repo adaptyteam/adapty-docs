@@ -1,0 +1,93 @@
+---
+title: "Kiểm tra và cấp quyền truy cập gói đăng ký từ backend"
+description: "Sử dụng API phía máy chủ của Adapty để kiểm tra xem người dùng có gói đăng ký đang hoạt động hay không và cấp quyền truy cập thủ công, với sự hỗ trợ của AI coding agent."
+metadataTitle: "Kiểm Tra và Cấp Quyền Truy Cập Gói Đăng Ký từ Backend | Tài liệu Adapty"
+---
+
+Từ backend của bạn, hãy sử dụng API phía máy chủ của Adapty để kiểm tra xem người dùng có gói đăng ký đang hoạt động hay không và cấp quyền truy cập thủ công. Hướng dẫn này đề cập đến hai lời gọi phổ biến nhất — `getProfile` và `grantAccessLevel` — và hướng dẫn cách để AI coding agent viết phần tích hợp cho stack của bạn.
+
+:::tip
+Đang dùng AI coding agent? Nhấn **Copy for LLM** bên dưới tiêu đề và dán toàn bộ trang này vào agent — nó có đủ các lời gọi, trường dữ liệu, và những điểm cần lưu ý.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+- **Secret API key**: Tìm trong [App settings → General](https://app.adapty.io/settings/general), ở trường **Secret key**. Key gắn với từng app cụ thể. Lưu vào biến môi trường (ví dụ: `ADAPTY_SECRET_KEY`) và gửi dưới dạng `Authorization: Api-Key {key}`.
+- **Base URL**: Tất cả các request đều gửi đến `https://api.adapty.io`.
+- **Cách xác định người dùng**: Gửi `adapty-customer-user-id` (ID người dùng của bạn — chỉ hoạt động nếu bạn xác định người dùng trong app) hoặc `adapty-profile-id` (ID hồ sơ người dùng của Adapty). Hai cái này có thể dùng thay thế nhau; chọn một trong hai.
+
+## Kiểm tra gói đăng ký \{#check-a-subscription\}
+
+Để kiểm tra trạng thái, gọi `getProfile` với phương thức `GET` và truyền định danh người dùng qua header — không có request body.
+
+```javascript title="check-access.js"
+const res = await fetch("https://api.adapty.io/api/v2/server-side-api/profile/", {
+  headers: {
+    "Authorization": `Api-Key ${process.env.ADAPTY_SECRET_KEY}`,
+    "adapty-customer-user-id": userId,
+  },
+});
+const { data } = await res.json();
+
+function hasActiveAccess(profile, accessLevelId = "premium") {
+  const level = profile.access_levels?.find(a => a.access_level_id === accessLevelId);
+  if (!level) return false;
+  if (level.is_in_grace_period) return true;
+  if (!level.expires_at) return true;             // lifetime / non-expiring
+  return new Date(level.expires_at) > new Date(); // not expired yet
+}
+
+if (hasActiveAccess(data)) {
+  // unlock premium features
+}
+```
+
+Khác với hồ sơ người dùng từ SDK, response phía máy chủ **không có trường `is_active`**. Bạn cần tự suy ra trạng thái từ `access_levels[].expires_at`: `null` nghĩa là quyền truy cập trọn đời, ngày trong tương lai nghĩa là đang hoạt động, và ngày trong quá khứ nghĩa là đã hết hạn. Hãy coi `is_in_grace_period` là vẫn đang hoạt động. Để xem đầy đủ các trường của Profile và access level, xem [getProfile](https://adapty.io/docs/vi/api-adapty/operations/getProfile.md).
+
+## Cấp quyền truy cập thủ công \{#grant-access-manually\}
+
+Để mở khóa tính năng trả phí mà không cần mua hàng — mã promo, quyền truy cập cho nhà đầu tư hoặc beta tester, các trường hợp hỗ trợ — gọi `grantAccessLevel` với phương thức `POST`.
+
+```javascript title="grant-access.js"
+await fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/", {
+  method: "POST",
+  headers: {
+    "Authorization": `Api-Key ${process.env.ADAPTY_SECRET_KEY}`,
+    "adapty-customer-user-id": userId,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ access_level_id: "premium" }), // add "expires_at" for temporary access
+});
+```
+
+Có hai điều cần lưu ý:
+
+- **Mức độ truy cập phải tồn tại sẵn** trong dashboard của bạn (**Access levels**) — `access_level_id` là định danh của nó, không phải tên mới.
+- **Các cấp quyền thủ công không xuất hiện trong analytics**. Chúng chỉ được gửi đến tích hợp webhook và Event Feed, vì vậy các biểu đồ doanh thu và chuyển đổi sẽ không phản ánh chúng.
+
+Để xem chi tiết về request và response, xem [grantAccessLevel](https://adapty.io/docs/vi/api-adapty/operations/grantAccessLevel.md).
+
+## Xây dựng với AI coding agent của bạn \{#build-it-with-your-ai-coding-agent\}
+
+Cung cấp cho AI coding agent hướng dẫn này và API spec dưới dạng Markdown (thêm `.md` vào bất kỳ URL trang nào), cho nó biết stack của bạn, và để nó viết các lời gọi:
+
+- [OpenAPI spec](https://adapty.io/docs/vi/api-specs/adapty-api.yaml)
+- [getProfile](https://adapty.io/docs/vi/api-adapty/operations/getProfile.md)
+- [grantAccessLevel](https://adapty.io/docs/vi/api-adapty/operations/grantAccessLevel.md)
+
+Ví dụ prompt:
+
+```
+Using the Adapty server-side API spec, write backend functions to check whether a
+user has an active "premium" access level (GET /profile/, derive status from
+expires_at — there's no is_active field) and to grant it (grantAccessLevel).
+Authenticate with ADAPTY_SECRET_KEY and identify users by adapty-customer-user-id.
+```
+
+Agent sẽ viết code, nhưng nó không thể chạy backend của bạn hay thiết lập key — bạn cần tự cung cấp secret key và định danh người dùng.
+
+## Giới hạn \{#limits\}
+
+- **Giới hạn tốc độ**: Tối đa 40.000 request mỗi phút cho mỗi app.
+- **Key theo từng app**: Mỗi key chỉ dùng được cho một app; hãy dùng đúng key cho đúng app.
+- **Bắt buộc phải có một định danh**: Mỗi request cần có `adapty-customer-user-id` hoặc `adapty-profile-id`.

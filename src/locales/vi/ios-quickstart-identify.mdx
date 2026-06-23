@@ -1,0 +1,216 @@
+---
+title: "Xác định người dùng trong iOS SDK"
+description: "Hướng dẫn nhanh để thiết lập Adapty cho việc quản lý gói đăng ký trong ứng dụng."
+metadataTitle: "Hướng dẫn Bắt đầu với Adapty | Tài liệu Adapty"
+keywords: ['xác định', 'xác định người dùng', 'customeruserid']
+rank: 100
+---
+
+:::important
+Hướng dẫn này dành cho bạn nếu bạn có hệ thống xác thực riêng. Ở đây, bạn sẽ học cách làm việc với hồ sơ người dùng trong Adapty để đảm bảo nó phù hợp với hệ thống xác thực hiện có của bạn.
+:::
+
+Cách bạn quản lý các giao dịch mua của người dùng phụ thuộc vào mô hình xác thực của ứng dụng:
+- Nếu ứng dụng của bạn không sử dụng xác thực backend và không lưu trữ dữ liệu người dùng, xem [phần về người dùng ẩn danh](#anonymous-users).
+- Nếu ứng dụng của bạn có (hoặc sẽ có) xác thực backend, xem [phần về người dùng đã xác định](#identified-users).
+
+**Các khái niệm chính**:
+- **Hồ sơ người dùng** là các thực thể cần thiết để SDK hoạt động. Adapty tự động tạo chúng.
+- Chúng có thể là ẩn danh **(không có customer user ID)** hoặc đã xác định **(có customer user ID)**.
+- Bạn cung cấp **customer user ID** để liên kết chéo hồ sơ người dùng trong Adapty với hệ thống xác thực nội bộ của bạn.
+
+Dưới đây là sự khác biệt giữa người dùng ẩn danh và người dùng đã xác định:
+
+|                         | Người dùng ẩn danh                                           | Người dùng đã xác định                                                              |
+|-------------------------|--------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| **Quản lý mua hàng**    | Khôi phục giao dịch mua ở cấp độ cửa hàng                   | Duy trì lịch sử mua hàng trên nhiều thiết bị thông qua customer user ID của họ      |
+| **Quản lý hồ sơ**       | Hồ sơ mới mỗi lần cài đặt lại                               | Cùng một hồ sơ xuyên suốt các phiên và thiết bị                                     |
+| **Lưu trữ dữ liệu**     | Dữ liệu của người dùng ẩn danh gắn với lần cài đặt ứng dụng | Dữ liệu của người dùng đã xác định được lưu trữ xuyên suốt các lần cài đặt ứng dụng |
+
+## Người dùng ẩn danh \{#anonymous-users\}
+
+Nếu bạn không có xác thực backend, **bạn không cần xử lý xác thực trong code ứng dụng**:
+
+1. Khi SDK được kích hoạt lần đầu tiên khởi chạy ứng dụng, Adapty **tạo một hồ sơ người dùng mới cho người dùng**.
+2. Khi người dùng mua bất cứ thứ gì trong ứng dụng, giao dịch mua này được **liên kết với hồ sơ Adapty và tài khoản cửa hàng của họ**.
+3. Khi người dùng **cài đặt lại** ứng dụng hoặc cài đặt từ **thiết bị mới**, Adapty **tạo một hồ sơ ẩn danh mới khi kích hoạt**.
+4. Nếu người dùng đã thực hiện giao dịch mua trước đó trong ứng dụng của bạn, theo mặc định, các giao dịch mua của họ sẽ được tự động đồng bộ từ App Store khi SDK kích hoạt.
+
+:::note
+Khôi phục từ backup hoạt động khác với cài đặt lại. Theo mặc định, khi người dùng khôi phục từ backup, SDK giữ nguyên dữ liệu đã lưu trong bộ nhớ cache và không tạo hồ sơ mới. Bạn có thể cấu hình hành vi này bằng cài đặt `clearDataOnBackup`. [Tìm hiểu thêm](sdk-installation-ios#clear-data-on-backup-restore).
+:::
+
+Vì vậy, với người dùng ẩn danh, hồ sơ mới sẽ được tạo mỗi lần cài đặt, nhưng đó không phải là vấn đề vì trong phân tích Adapty, bạn có thể [cấu hình những gì sẽ được coi là lần cài đặt mới](general#4-installs-definition-for-analytics).
+
+Đối với người dùng ẩn danh, bạn cần đếm lần cài đặt theo **ID thiết bị**. Trong trường hợp này, mỗi lần cài đặt ứng dụng trên một thiết bị được tính là một lần cài đặt, kể cả cài đặt lại.
+
+## Người dùng đã xác định \{#identified-users\}
+
+Bạn có hai tùy chọn để xác định người dùng trong ứng dụng:
+
+- [**Trong quá trình đăng nhập/đăng ký:**](#during-loginsignup) Nếu người dùng đăng nhập sau khi ứng dụng khởi động, gọi `identify()` với customer user ID khi họ xác thực.
+
+- [**Trong quá trình kích hoạt SDK:**](#during-the-sdk-activation) Nếu bạn đã có customer user ID được lưu trữ khi ứng dụng khởi động, hãy gửi nó khi gọi `activate()`.
+
+:::important
+Theo mặc định, khi Adapty nhận được giao dịch mua từ một Customer User ID hiện đang được liên kết với Customer User ID khác, mức độ truy cập sẽ được chia sẻ, vì vậy cả hai hồ sơ đều có quyền truy cập trả phí. Bạn có thể cấu hình cài đặt này để chuyển quyền truy cập trả phí từ hồ sơ này sang hồ sơ khác hoặc tắt hoàn toàn việc chia sẻ. Xem [bài viết](general#6-sharing-paid-access-between-user-accounts) để biết thêm chi tiết.
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/identify-diagram.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Trong quá trình đăng nhập/đăng ký \{#during-loginsignup\}
+
+Nếu bạn xác định người dùng sau khi ứng dụng khởi động (ví dụ: sau khi họ đăng nhập vào ứng dụng hoặc đăng ký), hãy dùng phương thức `identify` để đặt customer user ID của họ.
+
+- Nếu bạn **chưa sử dụng customer user ID này trước đây**, Adapty sẽ tự động liên kết nó với hồ sơ hiện tại.
+- Nếu bạn **đã sử dụng customer user ID này để xác định người dùng trước đây**, Adapty sẽ chuyển sang làm việc với hồ sơ được liên kết với customer user ID này.
+
+:::important
+Customer user ID phải là duy nhất cho mỗi người dùng. Nếu bạn hardcode giá trị tham số, tất cả người dùng sẽ được coi là một.
+:::
+
+Luôn `await` `identify` trước khi gọi các phương thức SDK khác. Các lệnh gọi đồng thời sẽ tạo ra lỗi `#3006 profileWasChanged` hoặc sẽ hoạt động trên hồ sơ ẩn danh. Xem [Thứ tự gọi trong iOS SDK](ios-sdk-call-order).
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    try await Adapty.identify("YOUR_USER_ID") // Unique for each user
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// User IDs must be unique for each user
+Adapty.identify("YOUR_USER_ID") { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+### Trong quá trình kích hoạt SDK \{#during-the-sdk-activation\}
+
+Nếu bạn đã biết customer user ID khi kích hoạt SDK, bạn có thể gửi nó trong phương thức `activate` thay vì gọi `identify` riêng.
+
+Nếu bạn biết customer user ID nhưng chỉ đặt nó sau khi kích hoạt, điều đó có nghĩa là khi kích hoạt, Adapty sẽ tạo một hồ sơ ẩn danh mới và chỉ chuyển sang hồ sơ hiện có sau khi bạn gọi `identify`.
+
+Bạn có thể truyền customer user ID hiện có (đã dùng trước đó) hoặc một customer user ID mới. Nếu bạn truyền một customer user ID mới, hồ sơ ẩn danh được tạo khi kích hoạt sẽ tự động được liên kết với customer user ID đó.
+
+:::note
+Theo mặc định, việc tạo hồ sơ ẩn danh không ảnh hưởng đến dashboard phân tích, vì lần cài đặt được đếm dựa trên ID thiết bị.
+
+ID thiết bị đại diện cho một lần cài đặt ứng dụng từ cửa hàng trên một thiết bị và chỉ được tạo lại sau khi ứng dụng được cài đặt lại.
+Nó không phụ thuộc vào việc đây là lần cài đặt đầu tiên hay lần cài đặt lặp lại, hoặc liệu có sử dụng customer user ID hiện có hay không.
+
+Việc tạo hồ sơ (khi kích hoạt SDK hoặc đăng xuất), đăng nhập, hoặc nâng cấp ứng dụng mà không cài đặt lại không tạo ra các sự kiện cài đặt bổ sung.
+
+Nếu bạn muốn đếm lần cài đặt dựa trên người dùng duy nhất thay vì thiết bị, hãy vào **App settings** và cấu hình [**Installs definition for analytics**](general#4-installs-definition-for-analytics).
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+// Place in the app main struct for SwiftUI or in AppDelegate for UIKit
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID") // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// Place in the app main struct for SwiftUI or in AppDelegate for UIKit
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID") // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+```
+
+</TabItem>
+
+</Tabs>
+
+### Đăng xuất người dùng \{#log-users-out\}
+
+Nếu bạn có nút để đăng xuất người dùng, hãy sử dụng phương thức `logout`.
+
+:::important
+Đăng xuất người dùng sẽ tạo một hồ sơ ẩn danh mới cho người dùng.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    try await Adapty.logout()
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.logout { error in
+    if error == nil {
+        // successful logout
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+:::info
+Để đăng nhập lại người dùng vào ứng dụng, hãy sử dụng phương thức `identify`.
+:::
+
+### Cho phép mua hàng mà không cần đăng nhập \{#allow-purchases-without-login\}
+
+Nếu người dùng của bạn có thể thực hiện giao dịch mua cả trước và sau khi đăng nhập vào ứng dụng, bạn cần đảm bảo rằng họ vẫn giữ được quyền truy cập sau khi đăng nhập:
+
+1. Khi người dùng chưa đăng nhập thực hiện giao dịch mua, Adapty liên kết nó với ID hồ sơ ẩn danh của họ.
+2. Khi người dùng đăng nhập vào tài khoản của họ, Adapty chuyển sang làm việc với hồ sơ đã xác định của họ.
+    - Nếu đây là customer user ID mới (ví dụ: giao dịch mua đã được thực hiện trước khi đăng ký), Adapty sẽ gán customer user ID cho hồ sơ hiện tại, do đó toàn bộ lịch sử mua hàng được duy trì.
+    - Nếu đây là customer user ID hiện có (customer user ID đã được liên kết với một hồ sơ), bạn cần lấy mức độ truy cập thực tế sau khi chuyển đổi hồ sơ. Bạn có thể gọi [`getProfile`](ios-check-subscription-status) ngay sau khi xác định, hoặc [lắng nghe các cập nhật hồ sơ](ios-check-subscription-status) để dữ liệu tự động đồng bộ.
+
+## Các bước tiếp theo \{#next-steps\}
+
+Chúc mừng! Bạn đã triển khai logic thanh toán trong ứng dụng! Chúc bạn thành công với việc kiếm tiền từ ứng dụng!
+
+Để khai thác thêm từ Adapty, bạn có thể khám phá các chủ đề sau:
+- [**Kiểm thử**](test-purchases-in-sandbox): Đảm bảo mọi thứ hoạt động như mong đợi
+- [**Onboardings**](ios-onboardings): Thu hút người dùng với onboarding và thúc đẩy tỷ lệ giữ chân
+- [**Tích hợp**](configuration): Tích hợp với các dịch vụ attribution marketing và phân tích chỉ trong một dòng code
+- [**Đặt thuộc tính hồ sơ tùy chỉnh**](setting-user-attributes): Thêm thuộc tính tùy chỉnh vào hồ sơ người dùng và tạo phân khúc, để bạn có thể chạy A/B test hoặc hiển thị các paywall khác nhau cho các người dùng khác nhau

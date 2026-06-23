@@ -1,0 +1,562 @@
+---
+title: "Cài đặt và cấu hình Android SDK"
+description: "Hướng dẫn từng bước cài đặt Adapty SDK trên Android cho các ứng dụng dựa trên gói đăng ký."
+metadataTitle: "Cài đặt Adapty SDK trên Android | Tài liệu Adapty"
+keywords: ['install sdk', 'sdk install', 'install sdk android', 'google play billing library', 'gpbl', 'billing library', 'adaptyui']
+rank: 70
+---
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+import GetKey from '@site/src/locales/vi/reusable/GetKey.md';
+import InstallationPrereqs from '@site/src/locales/vi/reusable/InstallationPrereqs.mdx';
+
+Adapty SDK bao gồm hai module chính để tích hợp liền mạch vào ứng dụng di động của bạn:
+
+- **Core Adapty**: Đây là SDK cốt lõi, bắt buộc phải có để Adapty hoạt động đúng trong ứng dụng của bạn.
+- **AdaptyUI**: Module này cần thiết nếu bạn sử dụng [Adapty Paywall Builder](adapty-paywall-builder) — công cụ no-code thân thiện để tạo paywall đa nền tảng. AdaptyUI được kích hoạt tự động cùng với module cốt lõi.
+
+:::tip
+Muốn xem ví dụ thực tế về cách tích hợp Adapty SDK vào ứng dụng di động? Hãy xem [ứng dụng mẫu](https://github.com/adaptyteam/AdaptySDK-Android/tree/master/app) của chúng tôi, minh họa toàn bộ quá trình thiết lập, bao gồm hiển thị paywall, thực hiện mua hàng và các chức năng cơ bản khác.
+:::
+
+## Yêu cầu \{#requirements\}
+
+Yêu cầu SDK tối thiểu: `minSdkVersion 21`
+
+:::info
+Adapty tương thích với Google Play Billing Library lên đến phiên bản 8.x. Mặc định, Adapty sử dụng Google Play Billing Library v7.0.0, nhưng nếu bạn muốn dùng phiên bản mới hơn, bạn có thể tự [thêm dependency](https://developer.android.com/google/play/billing/integrate#dependency).
+:::
+
+<InstallationPrereqs />
+
+## Cài đặt Adapty SDK \{#install-adapty-sdk\}
+
+Chọn phương thức thiết lập dependency:
+- Gradle thông thường: Thêm dependency vào file `build.gradle` ở **cấp module**
+- Nếu dự án của bạn dùng file `.gradle.kts`, thêm dependency vào `build.gradle.kts` ở cấp module
+- Nếu bạn dùng version catalog, thêm dependency vào file `libs.versions.toml` rồi tham chiếu trong `build.gradle.kts`
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Android.svg?style=flat&logo=android)](https://github.com/adaptyteam/AdaptySDK-Android/releases)
+
+<Tabs>
+<TabItem value="module-level build.gradle" label="module-level build.gradle" default>
+
+```groovy showLineNumbers
+dependencies {
+    ...
+    implementation platform('io.adapty:adapty-bom:<the latest SDK version>')
+    implementation 'io.adapty:android-sdk'
+    
+    // Only add this line if you plan to use Paywall Builder
+    implementation 'io.adapty:android-ui'
+}
+```
+
+</TabItem>
+<TabItem value="module-level build.gradle.kts" label="module-level build.gradle.kts" default>
+
+```kotlin showLineNumbers
+dependencies {
+    ...
+    implementation(platform("io.adapty:adapty-bom:<the latest SDK version>"))
+    implementation("io.adapty:android-sdk")
+    
+    // Only add this line if you plan to use Paywall Builder:
+    implementation("io.adapty:android-ui")
+}
+```
+
+</TabItem>
+<TabItem value="version catalog" label="version catalog" default>
+
+```toml showLineNumbers
+//libs.versions.toml
+
+[versions]
+..
+adaptyBom = "<the latest SDK version>"
+
+[libraries]
+..
+adapty-bom = { module = "io.adapty:adapty-bom", version.ref = "adaptyBom" }
+adapty = { module = "io.adapty:android-sdk" }
+
+// Only add this line if you plan to use Paywall Builder:
+adapty-ui = { module = "io.adapty:android-ui" }
+
+//module-level build.gradle.kts
+
+dependencies {
+    ...
+    implementation(platform(libs.adapty.bom))
+    implementation(libs.adapty)
+    
+    // Only add this line if you plan to use Paywall Builder:
+    implementation(libs.adapty.ui)
+}
+```
+
+</TabItem>
+</Tabs>
+
+Nếu dependency không được resolve, hãy đảm bảo rằng bạn đã có `mavenCentral()` trong Gradle scripts.
+
+<details>
+   <summary>Hướng dẫn cách thêm</summary>
+
+   Nếu dự án của bạn không có `dependencyResolutionManagement` trong `settings.gradle`, hãy thêm đoạn sau vào `build.gradle` cấp cao nhất ở cuối phần repositories:
+
+```groovy showLineNumbers title="top-level build.gradle"
+allprojects {
+    repositories {
+        ...
+        mavenCentral()
+    }
+}
+```
+
+Ngược lại, hãy thêm đoạn sau vào `settings.gradle` trong phần `repositories` của `dependencyResolutionManagement`:
+
+```groovy showLineNumbers title="settings.gradle"
+dependencyResolutionManagement {
+    ...
+    repositories {
+        ...
+        mavenCentral()
+    }
+}
+```
+
+</details>
+
+## Kích hoạt module Adapty của Adapty SDK \{#activate-adapty-module-of-adapty-sdk\}
+
+### Thiết lập cơ bản \{#basic-setup\}
+
+Kích hoạt Adapty SDK trong code ứng dụng của bạn.
+
+:::note
+Adapty SDK chỉ cần được kích hoạt một lần trong ứng dụng của bạn.
+:::
+
+<GetKey />
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+// In your Application class
+
+class MyApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        Adapty.activate(
+            applicationContext,
+            AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+                .build()
+        )
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+// In your Application class
+
+public class MyApplication extends Application {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Adapty.activate(
+            getApplicationContext(),
+            new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+                .build()
+        );
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::important
+Hãy đợi `Adapty.activate` hoàn tất trước khi gọi bất kỳ phương thức nào khác của Adapty SDK. Xem [Thứ tự gọi trong Android SDK](android-sdk-call-order) để biết toàn bộ trình tự.
+:::
+
+Bây giờ hãy thiết lập paywall trong ứng dụng của bạn:
+
+- Nếu bạn dùng [Adapty Paywall Builder](adapty-paywall-builder), hãy làm theo [hướng dẫn nhanh Paywall Builder](android-quickstart-paywalls).
+- Nếu bạn tự xây dựng UI paywall, xem [hướng dẫn nhanh cho paywall tùy chỉnh](android-quickstart-manual).
+
+## Kích hoạt module AdaptyUI của Adapty SDK \{#activate-adaptyui-module-of-adapty-sdk\}
+
+Nếu bạn có kế hoạch sử dụng [Paywall Builder](adapty-paywall-builder), bạn cần module AdaptyUI. Module này được kích hoạt tự động khi bạn kích hoạt module cốt lõi; bạn không cần thực hiện thêm bất cứ điều gì.
+
+## Cấu hình Proguard \{#configure-proguard\}
+
+Trước khi phát hành ứng dụng lên production, hãy thêm `-keep class com.adapty.** { *; }` vào cấu hình Proguard của bạn.
+
+## Thiết lập tùy chọn \{#optional-setup\}
+
+### Logging \{#logging\}
+
+#### Thiết lập hệ thống logging \{#set-up-the-logging-system\}
+
+Adapty ghi lại lỗi và các thông tin quan trọng khác để giúp bạn hiểu chuyện gì đang xảy ra. Các cấp độ log hiện có:
+
+| Cấp độ                   | Mô tả                                                                                                                          |
+| :----------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
+| `AdaptyLogLevel.NONE`    | Không có gì được ghi lại. Giá trị mặc định                                                                                    |
+| `AdaptyLogLevel.ERROR`   | Chỉ ghi lại lỗi                                                                                                               |
+| `AdaptyLogLevel.WARN`    | Ghi lại lỗi và các thông báo từ SDK không gây ra lỗi nghiêm trọng nhưng cần chú ý.                                           |
+| `AdaptyLogLevel.INFO`    | Ghi lại lỗi, cảnh báo và các thông báo thông tin.                                                                             |
+| `AdaptyLogLevel.VERBOSE` | Ghi lại thêm các thông tin có thể hữu ích khi gỡ lỗi, như các lời gọi hàm, truy vấn API, v.v.                                |
+
+Bạn có thể đặt cấp độ log trong ứng dụng trước khi cấu hình Adapty.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+Adapty.logLevel = AdaptyLogLevel.VERBOSE 
+//recommended for development and the first production release
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+Adapty.setLogLevel(AdaptyLogLevel.VERBOSE);
+//recommended for development and the first production release
+```
+</TabItem>
+</Tabs>
+
+#### Chuyển hướng thông báo của hệ thống logging \{#redirect-the-logging-system-messages\}
+
+Nếu vì lý do nào đó bạn cần gửi thông báo từ Adapty đến hệ thống của mình hoặc lưu vào file, bạn có thể ghi đè hành vi mặc định:
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+Adapty.setLogHandler { level, message ->
+    //handle the log
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+Adapty.setLogHandler((level, message) -> {
+    //handle the log
+});
+```
+</TabItem>
+</Tabs>
+
+### Chính sách dữ liệu \{#data-policies\}
+
+Adapty không lưu trữ dữ liệu cá nhân của người dùng trừ khi bạn gửi dữ liệu đó một cách rõ ràng, nhưng bạn có thể áp dụng các chính sách bảo mật dữ liệu bổ sung để tuân thủ các quy định của cửa hàng hoặc quốc gia.
+
+#### Tắt thu thập và chia sẻ địa chỉ IP \{#disable-ip-address-collection-and-sharing\}
+
+Khi kích hoạt module Adapty, đặt `ipAddressCollectionDisabled` thành `true` để tắt việc thu thập và chia sẻ địa chỉ IP của người dùng. Giá trị mặc định là `false`.
+
+Dùng tham số này để tăng cường quyền riêng tư của người dùng, tuân thủ các quy định bảo vệ dữ liệu khu vực (như GDPR hoặc CCPA), hoặc giảm thu thập dữ liệu không cần thiết khi các tính năng dựa trên IP không cần thiết cho ứng dụng của bạn.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withIpAddressCollectionDisabled(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withIpAddressCollectionDisabled(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
+#### Tắt thu thập và chia sẻ advertising ID (Ad ID) \{#disable-advertising-id-ad-id-collection-and-sharing\}
+
+Khi kích hoạt module Adapty, đặt `adIdCollectionDisabled` thành `true` để tắt việc thu thập [advertising ID](https://support.google.com/googleplay/android-developer/answer/6048248) của người dùng. Giá trị mặc định là `false`.
+
+Dùng tham số này để tuân thủ chính sách Play Store, tránh kích hoạt lời nhắc quyền advertising ID, hoặc nếu ứng dụng của bạn không cần attribution quảng cáo hoặc phân tích dựa trên Ad ID.
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withAdIdCollectionDisabled(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withAdIdCollectionDisabled(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
+#### Cấu hình media cache cho AdaptyUI \{#set-up-media-cache-configuration-for-adaptyui\}
+
+Mặc định, AdaptyUI lưu cache media (như hình ảnh và video) để cải thiện hiệu suất và giảm sử dụng mạng. Bạn có thể tùy chỉnh cài đặt cache bằng cách cung cấp cấu hình tùy chỉnh.
+
+Dùng `AdaptyUI.configureMediaCache` để ghi đè kích thước cache mặc định và thời gian hiệu lực. Đây là tùy chọn — nếu bạn không gọi phương thức này, các giá trị mặc định sẽ được sử dụng (100MB dung lượng đĩa, 7 ngày hiệu lực).
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+val cacheConfig = MediaCacheConfiguration.Builder()
+    .overrideDiskStorageSizeLimit(200L * 1024 * 1024) // 200 MB
+    .overrideDiskCacheValidityTime(3.days)
+    .build()
+
+AdaptyUI.configureMediaCache(cacheConfig)
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+MediaCacheConfiguration cacheConfig = new MediaCacheConfiguration.Builder()
+    .overrideDiskStorageSizeLimit(200L * 1024 * 1024) // 200 MB
+    .overrideDiskCacheValidityTime(TimeInterval.days(3))
+    .build();
+
+AdaptyUI.configureMediaCache(cacheConfig);
+```
+</TabItem>
+</Tabs>
+
+**Tham số:**
+
+| Tham số                  | Bắt buộc | Mô tả                                                                              |
+|-------------------------|----------|------------------------------------------------------------------------------------|
+| diskStorageSizeLimit    | tùy chọn | Tổng dung lượng cache trên đĩa tính bằng byte. Mặc định là 100 MB.                |
+| diskCacheValidityTime   | tùy chọn | Thời gian các file được cache còn hiệu lực. Mặc định là 7 ngày.                   |
+
+:::tip
+Bạn có thể xóa media cache trong lúc chạy bằng `AdaptyUI.clearMediaCache(strategy)`, trong đó `strategy` có thể là `CLEAR_ALL` hoặc `CLEAR_EXPIRED_ONLY`.
+:::
+
+### Đặt obfuscated account ID \{#set-obfuscated-account-ids\}
+
+Google Play yêu cầu obfuscated account ID trong một số trường hợp để tăng cường quyền riêng tư và bảo mật người dùng. Các ID này giúp Google Play nhận diện giao dịch mua trong khi vẫn giữ thông tin người dùng ẩn danh, đặc biệt quan trọng cho việc phòng chống gian lận và phân tích.
+
+Bạn có thể cần đặt các ID này nếu ứng dụng của bạn xử lý dữ liệu người dùng nhạy cảm hoặc nếu bạn phải tuân thủ các quy định quyền riêng tư cụ thể. Các obfuscated ID cho phép Google Play theo dõi giao dịch mua mà không tiết lộ định danh người dùng thực.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+    .build()
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withObfuscatedAccountId("YOUR_OBFUSCATED_ACCOUNT_ID")
+    .build();
+```
+
+</TabItem>
+</Tabs>
+
+### Chạy Adapty trong một process tùy chỉnh \{#run-adapty-in-a-custom-process\}
+
+Mặc định, Adapty chỉ có thể chạy trong process chính của ứng dụng.
+Nếu ứng dụng của bạn sử dụng nhiều process, hãy chỉ khởi tạo Adapty một lần; nếu không, có thể xảy ra hành vi không mong muốn.
+
+Nếu bạn cần chạy Adapty trong một process khác, hãy chỉ định trong cấu hình của bạn:
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withProcessName(":custom")
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withProcessName(":custom")
+    .build();
+```
+</TabItem>
+</Tabs>
+
+Nếu bạn cố kích hoạt Adapty trong một process khác mà không đặt giá trị này, SDK sẽ ghi lại cảnh báo và bỏ qua việc kích hoạt.
+
+### Bật local access levels \{#enable-local-access-levels\}
+
+Mặc định, [local access levels](local-access-levels) bị tắt trên Android. Để bật chúng, đặt `withLocalAccessLevelAllowed` thành `true`:
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withLocalAccessLevelAllowed(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withLocalAccessLevelAllowed(true)
+    .build();
+```
+</TabItem>
+</Tabs>
+
+## Xử lý sự cố \{#troubleshooting\}
+
+#### Quy tắc Android backup (Cấu hình Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
+
+Một số SDK (bao gồm Adapty) đi kèm với cấu hình Android Auto Backup riêng. Nếu bạn dùng nhiều SDK định nghĩa các quy tắc backup, Android manifest merger có thể thất bại với lỗi đề cập đến `android:fullBackupContent`, `android:dataExtractionRules`, hoặc `android:allowBackup`.
+
+Triệu chứng lỗi điển hình: `Manifest merger failed: Attribute application@dataExtractionRules value=(@xml/sample_data_extraction_rules)
+is also present at [com.other.sdk:library:1.0.0] value=(@xml/other_sdk_data_extraction_rules)`
+
+Để giải quyết vấn đề này, bạn cần:
+
+- Yêu cầu manifest merger sử dụng giá trị của ứng dụng bạn cho các thuộc tính liên quan đến backup.
+
+- Gộp các quy tắc backup từ Adapty và các SDK khác vào một file XML (hoặc một cặp file cho Android 12+).
+
+#### 1. Thêm namespace `tools` vào manifest \{#1-add-the-tools-namespace-to-your-manifest\}
+
+Nếu chưa có, hãy thêm namespace `tools` vào thẻ `<manifest>` gốc:
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:tools="http://schemas.android.com/tools"
+package="com.example.app">
+
+    ...
+</manifest>
+```
+
+#### 2. Ghi đè các thuộc tính backup trong `<application>` \{#2-override-backup-attributes-in-application\}
+
+Trong `AndroidManifest.xml` của ứng dụng, cập nhật thẻ `<application>` để ứng dụng của bạn cung cấp giá trị cuối cùng và yêu cầu manifest merger thay thế các giá trị của thư viện:
+
+```xml
+<application
+android:name=".App"
+android:allowBackup="true"
+android:fullBackupContent="@xml/sample_backup_rules"           
+android:dataExtractionRules="@xml/sample_data_extraction_rules"
+tools:replace="android:fullBackupContent,android:dataExtractionRules">
+
+    ...
+</application>
+```
+
+Nếu bất kỳ SDK nào cũng đặt `android:allowBackup`, hãy đưa nó vào `tools:replace` như sau:
+
+```xml
+tools:replace="android:allowBackup,android:fullBackupContent,android:dataExtractionRules"
+```
+
+#### 3. Tạo các file quy tắc backup đã gộp \{#3-create-merged-backup-rules-files\}
+
+Tạo các file XML trong `app/src/main/res/xml/` kết hợp các quy tắc của Adapty với quy tắc từ các SDK khác. Android sử dụng các định dạng quy tắc backup khác nhau tùy theo phiên bản hệ điều hành, vì vậy việc tạo cả hai file đảm bảo tính tương thích trên tất cả các phiên bản Android mà ứng dụng của bạn hỗ trợ.
+
+:::note
+Các ví dụ dưới đây dùng AppsFlyer làm SDK bên thứ ba mẫu. Hãy thay thế hoặc thêm các quy tắc cho bất kỳ SDK nào khác bạn đang sử dụng trong ứng dụng.
+:::
+
+**Dành cho Android 12 trở lên** (sử dụng định dạng data extraction rules mới):
+
+```xml title="sample_data_extraction_rules.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        
+        <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
+        <exclude domain="database" path="afpurchases.db"/>
+        
+        <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+    </cloud-backup>
+
+    <device-transfer>
+        
+        <exclude domain="sharedpref" path="appsflyer-data"/>
+        <exclude domain="sharedpref" path="appsflyer-purchase-data"/>
+        <exclude domain="database" path="afpurchases.db"/>
+        <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+    </device-transfer>
+</data-extraction-rules>
+```
+
+**Dành cho Android 11 trở xuống** (sử dụng định dạng full backup content cũ):
+
+```xml title="sample_backup_rules.xml"
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    
+    <exclude domain="sharedpref" path="appsflyer-data"/>
+
+    
+    <exclude domain="sharedpref" path="AdaptySDKPrefs.xml"/>
+
+    
+    
+</full-backup-content>
+```
+
+Với thiết lập này:
+
+- Các quy tắc loại trừ backup của Adapty (`AdaptySDKPrefs.xml`) được giữ lại.
+
+- Các quy tắc loại trừ của các SDK khác (ví dụ: `appsflyer-data`) cũng được áp dụng.
+
+- Manifest merger sử dụng cấu hình của ứng dụng bạn và không còn thất bại do các thuộc tính backup xung đột.
+
+#### Giao dịch mua thất bại sau khi quay lại từ ứng dụng khác \{#purchases-fail-after-returning-from-another-app\}
+
+Nếu Activity khởi động flow mua hàng sử dụng `launchMode` không mặc định, Android có thể tạo lại hoặc tái sử dụng nó không đúng cách khi người dùng quay lại từ Google Play, ứng dụng ngân hàng, hoặc trình duyệt. Điều này có thể khiến kết quả mua hàng bị mất hoặc bị xử lý như đã hủy.
+
+Để đảm bảo giao dịch mua hoạt động chính xác, chỉ sử dụng chế độ khởi động `standard` hoặc `singleTop` cho Activity khởi động flow mua hàng và tránh các chế độ khác.
+
+Trong `AndroidManifest.xml`, đảm bảo Activity khởi động flow mua hàng được đặt thành `standard` hoặc `singleTop`:
+
+```xml
+<activity
+    android:name=".MainActivity"
+    android:launchMode="standard" />
+```

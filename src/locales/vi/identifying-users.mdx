@@ -1,0 +1,183 @@
+---
+title: "Xác định người dùng trong iOS SDK"
+description: "Xác định người dùng trong Adapty để cải thiện trải nghiệm gói đăng ký được cá nhân hóa."
+metadataTitle: "Xác định người dùng trong Adapty | Tài liệu Adapty"
+keywords: ['identify', 'identifying users']
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+import CrossDeviceDetection from '@site/src/locales/vi/reusable/CrossDeviceDetection.mdx';
+
+Adapty tạo một ID hồ sơ nội bộ cho mỗi người dùng. Tuy nhiên, nếu bạn có hệ thống xác thực riêng, bạn nên đặt Customer User ID của mình. Bạn có thể tìm người dùng theo Customer User ID trong phần [Profiles](profiles-crm) và sử dụng nó trong [server-side API](getting-started-with-server-side-api) — giá trị này sẽ được gửi đến tất cả các tích hợp.
+
+## Đặt customer user ID khi cấu hình \{#set-customer-user-id-on-configuration\}
+
+Nếu bạn đã có user ID trong quá trình cấu hình, chỉ cần truyền nó qua tham số `customerUserId` vào phương thức `.activate()`:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+// In your AppDelegate class:
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID")
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// In your AppDelegate class:
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID")
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+```
+
+</TabItem>
+
+</Tabs>
+
+<SampleApp />
+
+## Đặt customer user ID sau khi cấu hình \{#set-customer-user-id-after-configuration\}
+
+Nếu bạn chưa có user ID khi cấu hình SDK, bạn có thể đặt nó sau bất kỳ lúc nào bằng phương thức `.identify()`. Trường hợp phổ biến nhất để dùng phương thức này là sau khi đăng ký hoặc đăng nhập, khi người dùng chuyển từ trạng thái ẩn danh sang người dùng đã xác thực.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    try await Adapty.identify("YOUR_USER_ID")
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.identify("YOUR_USER_ID") { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+Tham số yêu cầu:
+
+- **Customer User ID** (bắt buộc): chuỗi định danh người dùng.
+
+:::warning
+Gửi lại dữ liệu người dùng quan trọng
+
+Trong một số trường hợp, chẳng hạn khi người dùng đăng nhập lại vào tài khoản, máy chủ Adapty đã có thông tin về người dùng đó. Trong những trường hợp này, Adapty SDK sẽ tự động chuyển sang làm việc với người dùng mới. Nếu bạn đã truyền dữ liệu cho người dùng ẩn danh — chẳng hạn như thuộc tính tùy chỉnh hoặc attribution từ các mạng bên thứ ba — bạn cần gửi lại dữ liệu đó cho người dùng đã xác định.
+
+Ngoài ra, cần lưu ý rằng bạn nên yêu cầu lại tất cả paywall và sản phẩm sau khi xác định người dùng, vì dữ liệu của người dùng mới có thể khác.
+:::
+
+## Đăng xuất và đăng nhập \{#logging-out-and-logging-in\}
+
+Bạn có thể đăng xuất người dùng bất kỳ lúc nào bằng cách gọi phương thức `.logout()`:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    try await Adapty.logout()
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.logout { error in
+    if error == nil {
+        // successful logout
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+Sau đó, bạn có thể đăng nhập người dùng bằng phương thức `.identify()`.
+
+## Đặt appAccountToken \{#set-appaccounttoken\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) là một UUID giúp StoreKit 2 của Apple xác định người dùng qua các lần cài đặt ứng dụng và thiết bị khác nhau.
+
+Từ Adapty iOS SDK 3.10.2 trở đi, bạn có thể truyền `appAccountToken` khi cấu hình SDK hoặc khi xác định người dùng:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: UUID())
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
+  // handle the error
+}
+
+// Or when identifying a user:
+do {
+    try await Adapty.identify("YOUR_USER_ID", withAppAccountToken: UUID())
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: UUID())
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+
+// Or when identifying a user:
+Adapty.identify("YOUR_USER_ID", withAppAccountToken: UUID()) { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+Sau đó, bạn có thể đăng nhập người dùng bằng phương thức `.identify()`.
+
+## Phát hiện người dùng trên nhiều thiết bị \{#detect-users-across-devices\}
+
+<CrossDeviceDetection />

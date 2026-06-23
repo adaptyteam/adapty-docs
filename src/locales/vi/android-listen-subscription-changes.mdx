@@ -1,0 +1,145 @@
+---
+title: "Kiểm tra trạng thái gói đăng ký trong Android SDK"
+description: "Theo dõi và quản lý trạng thái gói đăng ký của người dùng trong Adapty để cải thiện việc giữ chân khách hàng trong ứng dụng Android của bạn."
+metadataTitle: "Hiểu về Trạng thái Gói đăng ký | Tài liệu Adapty"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+
+Với Adapty, việc theo dõi trạng thái gói đăng ký trở nên đơn giản hơn bao giờ hết. Bạn không cần phải nhập thủ công các ID sản phẩm vào code. Thay vào đó, bạn có thể dễ dàng xác nhận trạng thái gói đăng ký của người dùng bằng cách kiểm tra [mức độ truy cập](access-level) đang hoạt động.
+
+Trước khi bắt đầu kiểm tra trạng thái gói đăng ký, hãy thiết lập [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn).
+
+## Mức độ truy cập và đối tượng AdaptyProfile \{#access-level-and-the-adaptyprofile-object\}
+
+Mức độ truy cập là các thuộc tính của đối tượng [AdaptyProfile](https://android.adapty.io/adapty/com.adapty.models/-adapty-profile/). Chúng tôi khuyến nghị bạn lấy hồ sơ người dùng khi ứng dụng khởi động, chẳng hạn như khi [xác định người dùng](android-identifying-users#setting-customer-user-id-on-configuration), rồi cập nhật lại mỗi khi có thay đổi. Nhờ vậy, bạn có thể sử dụng đối tượng profile mà không cần phải gọi lại liên tục.
+
+Để nhận thông báo khi profile được cập nhật, hãy lắng nghe các thay đổi của profile như mô tả trong phần [Lắng nghe cập nhật profile, bao gồm mức độ truy cập](android-listen-subscription-changes) bên dưới.
+
+<SampleApp />
+
+## Lấy mức độ truy cập từ server \{#retrieving-the-access-level-from-the-server\}
+
+Để lấy mức độ truy cập từ server, sử dụng phương thức `.getProfile()`:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+            // check the access
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        // check the access
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+Tham số phản hồi:
+
+| Tham số | Mô tả                                                  |
+| --------- | ------------------------------------------------------------ |
+| Profile   | <p>Một đối tượng [AdaptyProfile](https://android.adapty.io/adapty/com.adapty.models/-adapty-profile/). Thông thường, bạn chỉ cần kiểm tra trạng thái mức độ truy cập của profile để xác định xem người dùng có quyền truy cập premium vào ứng dụng hay không.</p><p></p><p>Phương thức `.getProfile` cung cấp kết quả mới nhất vì nó luôn cố gắng truy vấn API. Nếu vì lý do nào đó (ví dụ: không có kết nối internet), Adapty SDK không thể lấy thông tin từ server, dữ liệu từ cache sẽ được trả về. Cần lưu ý rằng Adapty SDK cập nhật cache `AdaptyProfile` định kỳ để đảm bảo thông tin luôn được cập nhật nhất có thể.</p> |
+
+Phương thức `.getProfile()` cung cấp cho bạn hồ sơ người dùng, từ đó bạn có thể lấy trạng thái mức độ truy cập. Một ứng dụng có thể có nhiều mức độ truy cập. Ví dụ, nếu bạn có ứng dụng báo và bán gói đăng ký cho các chủ đề khác nhau một cách độc lập, bạn có thể tạo các mức độ truy cập "sports" và "science". Tuy nhiên, trong hầu hết các trường hợp, bạn chỉ cần một mức độ truy cập duy nhất — khi đó, bạn có thể dùng mức độ truy cập mặc định là "premium".
+
+Dưới đây là ví dụ kiểm tra mức độ truy cập "premium" mặc định:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+
+            if (profile.accessLevels["premium"]?.isActive == true) {
+                // grant access to premium features
+            }
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        
+        AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("premium");
+        
+        if (premium != null && premium.isActive()) {
+            // grant access to premium features
+        }
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+### Lắng nghe cập nhật trạng thái gói đăng ký \{#listening-for-subscription-status-updates\}
+
+Mỗi khi gói đăng ký của người dùng thay đổi, Adapty sẽ kích hoạt một sự kiện.
+
+Để nhận tin nhắn từ Adapty, bạn cần thực hiện một số cấu hình bổ sung:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.setOnProfileUpdatedListener { profile ->
+    // handle any changes to subscription state
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers t
+Adapty.setOnProfileUpdatedListener(profile -> {
+    // handle any changes to subscription state
+});
+```
+</TabItem>
+
+</Tabs>
+
+Adapty cũng kích hoạt một sự kiện khi ứng dụng khởi động. Trong trường hợp này, trạng thái gói đăng ký được lưu trong cache sẽ được truyền qua.
+
+### Cache trạng thái gói đăng ký \{#subscription-status-cache\}
+
+Cache được tích hợp trong Adapty SDK lưu trữ trạng thái gói đăng ký của hồ sơ người dùng. Điều này có nghĩa là ngay cả khi server không khả dụng, dữ liệu trong cache vẫn có thể được truy cập để cung cấp thông tin về trạng thái gói đăng ký của hồ sơ người dùng.
+
+Tuy nhiên, cần lưu ý rằng bạn không thể yêu cầu dữ liệu trực tiếp từ cache. SDK định kỳ truy vấn server mỗi phút một lần để kiểm tra các cập nhật hoặc thay đổi liên quan đến hồ sơ người dùng. Nếu có bất kỳ thay đổi nào — chẳng hạn như giao dịch mới hoặc các cập nhật khác — chúng sẽ được đồng bộ vào dữ liệu cache để giữ cho cache luôn đồng bộ với server.

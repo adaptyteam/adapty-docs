@@ -1,0 +1,266 @@
+---
+title: "Tích hợp Adapty vào ứng dụng Flutter của bạn với sự hỗ trợ của AI"
+description: "Hướng dẫn từng bước tích hợp Adapty vào ứng dụng Flutter của bạn bằng Cursor, Context7, ChatGPT, Claude hoặc các công cụ AI khác."
+metadataTitle: "Tích hợp Adapty với sự hỗ trợ AI cho Flutter | Tài liệu Adapty"
+displayed_sidebar: sdkflutter
+---
+
+Hướng dẫn này sẽ giúp bạn tích hợp Adapty vào ứng dụng Flutter từng bước với công cụ lập trình AI — bạn cung cấp cho nó đúng tài liệu Adapty theo đúng thứ tự.
+
+<SkillPromo />
+
+## Trước khi bắt đầu: thiết lập dashboard \{#before-you-start-dashboard-setup\}
+
+Adapty yêu cầu một số cấu hình trên dashboard trước khi bạn viết bất kỳ code SDK nào. Bạn có thể thực hiện điều này bằng một LLM skill tương tác, hoặc thủ công thông qua Dashboard.
+
+### Cách dùng Skill (khuyến nghị) \{#skill-approach-recommended\}
+
+Adapty CLI skill cho phép LLM của bạn thiết lập app, sản phẩm, mức độ truy cập, paywall và placement trực tiếp — không cần mở Dashboard cho từng bước. Bạn chỉ cần [kết nối các cửa hàng](integrate-payments) trong Dashboard.
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+Sau khi thêm skill, chạy `/adapty-cli` trong agent của bạn. Nó sẽ hướng dẫn bạn qua từng bước — bao gồm cả lúc cần mở Dashboard để kết nối các cửa hàng.
+
+### Cách thiết lập thủ công trên Dashboard \{#dashboard-approach\}
+
+Nếu bạn muốn tự cấu hình mọi thứ, đây là những gì cần có trước khi viết code. LLM của bạn không thể tra cứu các giá trị trên dashboard — bạn sẽ cần tự cung cấp chúng.
+
+1. **Kết nối các cửa hàng ứng dụng**: Trong Adapty Dashboard, vào **App settings → General**. Kết nối cả App Store và Google Play nếu ứng dụng Flutter của bạn hỗ trợ cả hai nền tảng. Đây là điều bắt buộc để các giao dịch mua hoạt động.
+   [Kết nối cửa hàng ứng dụng](integrate-payments)
+
+2. **Sao chép Public SDK key**: Trong Adapty Dashboard, vào **App settings → General**, sau đó tìm phần **API keys**. Trong code, đây là chuỗi bạn truyền vào cấu hình Adapty.
+
+3. **Tạo ít nhất một sản phẩm**: Trong Adapty Dashboard, vào trang **Products**. Bạn không tham chiếu sản phẩm trực tiếp trong code — Adapty cung cấp chúng thông qua paywall.
+   [Thêm sản phẩm](quickstart-products)
+
+4. **Tạo một paywall và một placement**: Trong Adapty Dashboard, tạo paywall trên trang **Paywalls**, sau đó gán nó vào một placement trên trang **Placements**. Trong code, placement ID là chuỗi bạn truyền vào `Adapty().getPaywall()`.
+   [Tạo paywall](quickstart-paywalls)
+
+5. **Thiết lập mức độ truy cập**: Trong Adapty Dashboard, cấu hình cho từng sản phẩm trên trang **Products**. Trong code, chuỗi được kiểm tra trong `profile.accessLevels['premium']?.isActive`. Mức độ truy cập `premium` mặc định phù hợp với hầu hết các ứng dụng. Nếu người dùng trả phí có quyền truy cập vào các tính năng khác nhau tùy theo sản phẩm (ví dụ: gói `basic` so với gói `pro`), hãy [tạo thêm mức độ truy cập](assigning-access-level-to-a-product) trước khi bắt đầu viết code.
+
+:::tip
+Khi đã có đủ năm điều trên, bạn đã sẵn sàng để viết code. Hãy nói với LLM của bạn: "Public SDK key của tôi là X, placement ID của tôi là Y" để nó có thể tạo code khởi tạo và lấy paywall chính xác.
+:::
+
+### Thiết lập khi sẵn sàng \{#set-up-when-ready\}
+
+Những mục này không bắt buộc để bắt đầu viết code, nhưng bạn sẽ cần chúng khi tích hợp trưởng thành hơn:
+
+- **A/B test**: Cấu hình trên trang **Placements**. Không cần thay đổi code.
+  [A/B test](ab-tests)
+- **Thêm paywall và placement**: Thêm các lời gọi `getPaywall` với các placement ID khác nhau.
+- **Tích hợp analytics**: Cấu hình trên trang **Integrations**. Cách thiết lập khác nhau tùy theo tích hợp. Xem [tích hợp analytics](analytics-integration) và [tích hợp attribution](attribution-integration).
+
+## Cung cấp tài liệu Adapty cho LLM của bạn \{#feed-adapty-docs-to-your-llm\}
+
+### Dùng Context7 (khuyến nghị) \{#use-context7-recommended\}
+
+[Context7](https://context7.com) là một MCP server cung cấp cho LLM của bạn quyền truy cập trực tiếp vào tài liệu Adapty luôn cập nhật. LLM của bạn tự động lấy đúng tài liệu dựa trên những gì bạn hỏi — không cần dán URL thủ công.
+
+Context7 hoạt động với **Cursor**, **Claude Code**, **Windsurf** và các công cụ tương thích MCP khác. Để thiết lập, chạy:
+
+```
+npx ctx7 setup
+```
+
+Lệnh này phát hiện trình soạn thảo của bạn và cấu hình Context7 server. Để thiết lập thủ công, xem [kho GitHub Context7](https://github.com/upstash/context7).
+
+Sau khi cấu hình, tham chiếu thư viện Adapty trong các prompt của bạn:
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the Flutter SDK
+```
+
+:::warning
+Dù Context7 không còn cần dán link tài liệu thủ công, thứ tự triển khai vẫn quan trọng. Hãy làm theo [hướng dẫn triển khai](#implementation-walkthrough) bên dưới từng bước để đảm bảo mọi thứ hoạt động đúng.
+:::
+
+### Dùng tài liệu dạng plain text \{#use-plain-text-docs\}
+
+Bạn có thể truy cập bất kỳ tài liệu Adapty nào dưới dạng Markdown thuần túy. Thêm `.md` vào cuối URL, hoặc nhấn **Copy for LLM** bên dưới tiêu đề bài viết. Ví dụ: [adapty-cursor-flutter.md](https://adapty.io/docs/vi/adapty-cursor-flutter.md).
+
+Mỗi bước trong [hướng dẫn triển khai](#implementation-walkthrough) bên dưới đều có khối "Gửi cho LLM của bạn" với các link `.md` để dán vào.
+
+Để xem thêm tài liệu cùng lúc, xem [các file index và tập hợp theo nền tảng](#plain-text-doc-index-files) bên dưới.
+
+## Hướng dẫn triển khai \{#implementation-walkthrough\}
+
+Phần còn lại của hướng dẫn này sẽ đi qua việc tích hợp Adapty theo thứ tự triển khai. Mỗi bước bao gồm tài liệu cần gửi cho LLM, những gì bạn cần thấy khi hoàn thành và các vấn đề thường gặp.
+
+### Lên kế hoạch tích hợp \{#plan-your-integration\}
+
+Trước khi bắt đầu viết code, hãy yêu cầu LLM phân tích dự án của bạn và tạo kế hoạch triển khai. Nếu công cụ AI của bạn hỗ trợ chế độ lập kế hoạch (như chế độ plan của Cursor hoặc Claude Code), hãy sử dụng nó để LLM có thể đọc cả cấu trúc dự án lẫn tài liệu Adapty trước khi viết bất kỳ code nào.
+
+Hãy cho LLM biết cách bạn xử lý giao dịch mua — điều này ảnh hưởng đến các hướng dẫn mà nó cần theo dõi:
+
+- [**Adapty Paywall Builder**](adapty-paywall-builder): Bạn tạo paywall trong trình xây dựng không cần code của Adapty, và SDK tự động hiển thị chúng.
+- [**Paywall tự tạo**](flutter-making-purchases): Bạn tự xây dựng giao diện paywall trong code nhưng vẫn dùng Adapty để lấy sản phẩm và xử lý giao dịch mua.
+- [**Observer mode**](observer-vs-full-mode): Bạn giữ nguyên hạ tầng mua hàng hiện có và chỉ dùng Adapty cho analytics và tích hợp.
+
+Chưa biết chọn cái nào? Đọc [bảng so sánh trong quickstart](flutter-quickstart-paywalls).
+
+### Cài đặt và cấu hình SDK \{#install-and-configure-the-sdk\}
+
+Thêm dependency Adapty SDK bằng `flutter pub add` và kích hoạt nó với Public SDK key của bạn. Đây là nền tảng — không có gì khác hoạt động được nếu thiếu bước này.
+
+**Hướng dẫn:** [Cài đặt & cấu hình Adapty SDK](sdk-installation-flutter)
+
+Gửi nội dung này cho LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/sdk-installation-flutter.md
+```
+
+:::tip[Checkpoint]
+- **Kết quả mong đợi:** Ứng dụng build và chạy được trên cả iOS và Android. Console debug hiển thị log kích hoạt Adapty.
+- **Lưu ý:** "Public API key is missing" → kiểm tra xem bạn đã thay thế placeholder bằng key thực của mình từ App settings chưa.
+:::
+
+### Hiển thị paywall và xử lý giao dịch mua \{#show-paywalls-and-handle-purchases\}
+
+Lấy paywall theo placement ID, hiển thị nó và xử lý các sự kiện mua hàng. Các hướng dẫn bạn cần phụ thuộc vào cách bạn xử lý giao dịch mua.
+
+Kiểm thử từng giao dịch mua trong sandbox khi bạn làm — đừng đợi đến cuối. Xem [Kiểm thử giao dịch mua trong sandbox](test-purchases-in-sandbox) để biết hướng dẫn thiết lập.
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**Hướng dẫn:**
+- [Kích hoạt giao dịch mua bằng paywall (quickstart)](flutter-quickstart-paywalls)
+- [Lấy paywall từ Paywall Builder và cấu hình của chúng](flutter-get-pb-paywalls)
+- [Hiển thị paywall](flutter-present-paywalls)
+- [Xử lý sự kiện paywall](flutter-handling-events)
+- [Phản hồi các hành động nút](flutter-handle-paywall-actions)
+
+Gửi nội dung này cho LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/flutter-quickstart-paywalls.md
+- https://adapty.io/docs/vi/flutter-get-pb-paywalls.md
+- https://adapty.io/docs/vi/flutter-present-paywalls.md
+- https://adapty.io/docs/vi/flutter-handling-events.md
+- https://adapty.io/docs/vi/flutter-handle-paywall-actions.md
+```
+
+:::tip[Checkpoint]
+- **Kết quả mong đợi:** Paywall hiển thị với các sản phẩm bạn đã cấu hình. Nhấn vào sản phẩm kích hoạt hộp thoại mua hàng sandbox.
+- **Lưu ý:** Paywall trống hoặc lỗi `getPaywall` → xác nhận placement ID khớp chính xác với dashboard và placement đã được gán đối tượng.
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Paywall tự tạo">
+
+**Hướng dẫn:**
+- [Kích hoạt giao dịch mua trong paywall tùy chỉnh của bạn (quickstart)](flutter-quickstart-manual)
+- [Lấy paywall và sản phẩm](fetch-paywalls-and-products-flutter)
+- [Hiển thị paywall được thiết kế bằng Remote Config](present-remote-config-paywalls-flutter)
+- [Thực hiện giao dịch mua](flutter-making-purchases)
+- [Khôi phục giao dịch mua](flutter-restore-purchase)
+
+Gửi nội dung này cho LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/flutter-quickstart-manual.md
+- https://adapty.io/docs/vi/fetch-paywalls-and-products-flutter.md
+- https://adapty.io/docs/vi/present-remote-config-paywalls-flutter.md
+- https://adapty.io/docs/vi/flutter-making-purchases.md
+- https://adapty.io/docs/vi/flutter-restore-purchase.md
+```
+
+:::tip[Checkpoint]
+- **Kết quả mong đợi:** Paywall tùy chỉnh của bạn hiển thị các sản phẩm được lấy từ Adapty. Nhấn vào sản phẩm kích hoạt hộp thoại mua hàng sandbox.
+- **Lưu ý:** Mảng sản phẩm trống → xác nhận paywall đã được gán sản phẩm trong dashboard và placement đã có đối tượng.
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**Hướng dẫn:**
+- [Tổng quan về Observer mode](observer-vs-full-mode)
+- [Triển khai Observer mode](implement-observer-mode-flutter)
+- [Báo cáo giao dịch trong Observer mode](report-transactions-observer-mode-flutter)
+
+Gửi nội dung này cho LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/observer-vs-full-mode.md
+- https://adapty.io/docs/vi/implement-observer-mode-flutter.md
+- https://adapty.io/docs/vi/report-transactions-observer-mode-flutter.md
+```
+
+:::tip[Checkpoint]
+- **Kết quả mong đợi:** Sau một giao dịch mua sandbox bằng flow mua hàng hiện có của bạn, giao dịch xuất hiện trong **Event Feed** trên Adapty dashboard.
+- **Lưu ý:** Không có sự kiện → xác nhận bạn đang báo cáo giao dịch cho Adapty và thông báo server đã được cấu hình cho cả hai cửa hàng.
+:::
+
+</TabItem>
+
+</Tabs>
+
+### Kiểm tra trạng thái gói đăng ký \{#check-subscription-status\}
+
+Sau khi mua, kiểm tra hồ sơ người dùng để xác nhận mức độ truy cập đang hoạt động nhằm chặn nội dung premium.
+
+**Hướng dẫn:** [Kiểm tra trạng thái gói đăng ký](flutter-check-subscription-status)
+
+Gửi nội dung này cho LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/flutter-check-subscription-status.md
+```
+
+:::tip[Checkpoint]
+- **Kết quả mong đợi:** Sau giao dịch mua sandbox, `profile.accessLevels['premium']?.isActive` trả về `true`.
+- **Lưu ý:** `accessLevels` trống sau khi mua → kiểm tra xem sản phẩm đã được gán mức độ truy cập trong dashboard chưa.
+:::
+
+### Xác định người dùng \{#identify-users\}
+
+Liên kết tài khoản người dùng trong ứng dụng của bạn với hồ sơ người dùng Adapty để giao dịch mua được duy trì trên nhiều thiết bị.
+
+:::important
+Bỏ qua bước này nếu ứng dụng của bạn không có xác thực.
+:::
+
+**Hướng dẫn:** [Xác định người dùng](flutter-quickstart-identify)
+
+Gửi nội dung này cho LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/flutter-quickstart-identify.md
+```
+
+:::tip[Checkpoint]
+- **Kết quả mong đợi:** Sau khi gọi `Adapty().identify()`, phần **Profiles** trên dashboard hiển thị custom user ID của bạn.
+- **Lưu ý:** Gọi `identify` sau khi kích hoạt nhưng trước khi lấy paywall để tránh attribution hồ sơ ẩn danh.
+:::
+
+### Chuẩn bị phát hành \{#prepare-for-release\}
+
+Khi tích hợp của bạn hoạt động tốt trong sandbox, hãy đi qua danh sách kiểm tra phát hành để đảm bảo mọi thứ đã sẵn sàng cho môi trường sản xuất.
+
+**Hướng dẫn:** [Danh sách kiểm tra phát hành](release-checklist)
+
+Gửi nội dung này cho LLM của bạn:
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/vi/release-checklist.md
+```
+
+:::tip[Checkpoint]
+- **Kết quả mong đợi:** Tất cả các mục trong danh sách đã được xác nhận: kết nối cửa hàng, thông báo server, flow mua hàng, kiểm tra mức độ truy cập và yêu cầu quyền riêng tư.
+- **Lưu ý:** Thiếu thông báo server → cấu hình App Store Server Notifications trong **App settings → iOS SDK** và Google Play Real-Time Developer Notifications trong **App settings → Android SDK**.
+:::
+
+## Các file index tài liệu dạng plain text \{#plain-text-doc-index-files\}
+
+Nếu bạn cần cung cấp cho LLM nhiều ngữ cảnh hơn ngoài các trang riêng lẻ, chúng tôi cung cấp các file index liệt kê hoặc tổng hợp toàn bộ tài liệu Adapty:
+
+- [`llms.txt`](https://adapty.io/docs/vi/llms.txt): Liệt kê tất cả các trang với link `.md`. Đây là [tiêu chuẩn đang nổi lên](https://llmstxt.org/) để làm cho các website dễ tiếp cận với LLM. Lưu ý rằng với một số AI agent (ví dụ: ChatGPT), bạn sẽ cần tải `llms.txt` về và tải lên chat dưới dạng file.
+- [`llms-full.txt`](https://adapty.io/docs/vi/llms-full.txt): Toàn bộ trang tài liệu Adapty được gộp vào một file duy nhất. Rất lớn — chỉ dùng khi bạn cần toàn bộ thông tin.
+- Tập hợp dành riêng cho Flutter [`flutter-llms.txt`](https://adapty.io/docs/vi/flutter-llms.txt) và [`flutter-llms-full.txt`](https://adapty.io/docs/vi/flutter-llms-full.txt): Tập hợp theo nền tảng giúp tiết kiệm token so với toàn bộ site.

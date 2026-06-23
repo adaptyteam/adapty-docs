@@ -1,0 +1,231 @@
+---
+title: "Migrate Adapty Unity SDK to v3.14"
+description: "Migrate to Adapty Unity SDK v3.14 for better performance and new monetization features."
+metadataTitle: "Migrating to Adapty Unity SDK v3.14 | Tài liệu Adapty"
+---
+
+Adapty SDK 3.14.0 là một bản phát hành lớn mang lại một số cải tiến, tuy nhiên có thể yêu cầu bạn thực hiện một số bước migration:
+
+1. Event listener riêng cho các sự kiện paywall.
+2. Đổi tên `AdaptyUI.CreateView` thành `AdaptyUI.CreatePaywallView` và các phương thức liên quan.
+3. Cập nhật phương thức `MakePurchase` để sử dụng `AdaptyPurchaseParameters` thay vì các tham số riêng lẻ.
+4. Thay thế `SetFallbackPaywalls` bằng phương thức `SetFallback`.
+5. Cập nhật cách truy cập thuộc tính paywall để sử dụng `AdaptyPlacement`.
+6. Cập nhật cách truy cập Remote Config để sử dụng đối tượng `AdaptyRemoteConfig`.
+7. Thay thế `VendorProductIds` bằng `ProductIdentifiers` trong model `AdaptyPaywall`.
+8. Cập nhật fetch policy của `GetPaywall` để sử dụng `AdaptyFetchPolicy`.
+
+## Event listener riêng cho các sự kiện paywall \{#separate-event-listener-for-paywall-events\}
+
+Nếu bạn hiển thị các paywall được thiết kế bằng [Paywall Builder](adapty-paywall-builder), các sự kiện của paywall view giờ đây sử dụng interface `AdaptyPaywallsEventsListener` và phương thức `SetPaywallsEventsListener` riêng biệt. Interface `AdaptyEventListener` cốt lõi vẫn dùng để nhận cập nhật hồ sơ người dùng và thông tin chi tiết về cài đặt.
+
+```diff showLineNumbers
+using UnityEngine;
+using AdaptySDK;
+
+public class AdaptyListener : MonoBehaviour, 
+-    AdaptyEventListener {
++    AdaptyEventListener,
++    AdaptyPaywallsEventsListener {
+    
+    void Start() {
+        Adapty.SetEventListener(this);
++       Adapty.SetPaywallsEventsListener(this);
+    }
+    
+    // AdaptyEventListener methods
+    public void OnLoadLatestProfile(AdaptyProfile profile) { }
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+    
++   // AdaptyPaywallsEventsListener methods
++   // Implement paywall event handlers here
+}
+```
+
+[Tìm hiểu thêm về cách xử lý sự kiện paywall](unity-handling-events).
+
+## Đổi tên các phương thức tạo và hiển thị view \{#rename-view-creation-and-presentation-methods\}
+
+Các phương thức tạo và hiển thị view đã được đổi tên:
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- AdaptyUI.CreateView(paywall, parameters, (view, error) => {
++ AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
+    if (error != null) {
+      // handle the error
+      return;
+    }
+
+-   AdaptyUI.PresentView(view, (error) => {
++   AdaptyUI.PresentPaywallView(view, (error) => {
+      // handle the error
+    });
+  });
+}
+```
+
+Tương tự, phương thức dismiss cũng được đổi tên:
+
+```diff showLineNumbers
+- AdaptyUI.DismissView(view, (error) => {
++ AdaptyUI.DismissPaywallView(view, (error) => {
+    // handle the error
+  });
+```
+
+## Cập nhật phương thức MakePurchase \{#update-makepurchase-method\}
+
+Phương thức `MakePurchase` giờ đây sử dụng `AdaptyPurchaseParameters` thay vì các đối số `subscriptionUpdateParams` và `isOfferPersonalized` riêng lẻ. Điều này giúp đảm bảo an toàn kiểu dữ liệu tốt hơn và cho phép mở rộng các tham số mua hàng trong tương lai.
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void MakePurchase(
+  AdaptyPaywallProduct product,
+  AdaptySubscriptionUpdateParameters subscriptionUpdate,
+  bool? isOfferPersonalized
+) {
+-  Adapty.MakePurchase(product, subscriptionUpdate, isOfferPersonalized, (result, error) => {
++  var parameters = new AdaptyPurchaseParametersBuilder()
++    .SetSubscriptionUpdateParams(subscriptionUpdate)
++    .SetIsOfferPersonalized(isOfferPersonalized)
++    .Build();
++
++  Adapty.MakePurchase(product, parameters, (result, error) => {
+    switch (result.Type) {
+      case AdaptyPurchaseResultType.Pending:
+        // handle pending purchase
+        break;
+      case AdaptyPurchaseResultType.UserCancelled:
+        // handle purchase cancellation
+        break;
+      case AdaptyPurchaseResultType.Success:
+        var profile = result.Profile;
+        // handle successful purchase
+        break;
+      default:
+        break;
+    }
+  });
+}
+```
+
+Nếu không cần thêm tham số nào, bạn có thể dùng đơn giản như sau:
+
+```csharp showLineNumbers
+using AdaptySDK;
+
+void MakePurchase(AdaptyPaywallProduct product) {
+  Adapty.MakePurchase(product, (result, error) => {
+    // handle purchase result
+  });
+}
+```
+
+## Cập nhật phương thức fallback \{#update-fallback-method\}
+
+:::important
+Khi nâng cấp lên Unity SDK 3.14, bạn cần tải xuống các file fallback mới từ Adapty dashboard và thay thế các file hiện có trong dự án của mình.
+:::
+
+Phương thức để thiết lập fallback đã được cập nhật. Phương thức `SetFallbackPaywalls` đã được đổi tên thành `SetFallback`:
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void SetFallBackPaywalls() {
+  #if UNITY_IOS
+    var assetId = "adapty_fallback_ios.json";
+  #elif UNITY_ANDROID
+    var assetId = "adapty_fallback_android.json";
+  #else
+    var assetId = "";
+  #endif
+
+-  Adapty.SetFallbackPaywalls(assetId, (error) => {
++  Adapty.SetFallback(assetId, (error) => {
+    // handle the error
+  });
+}
+```
+
+Xem ví dụ code hoàn chỉnh tại trang [Sử dụng paywall dự phòng trong Unity](unity-use-fallback-paywalls).
+
+## Cập nhật cách truy cập thuộc tính paywall \{#update-paywall-property-access\}
+
+Các thuộc tính sau đã được chuyển từ `AdaptyPaywall` sang `AdaptyPlacement`:
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void ProcessPaywall(AdaptyPaywall paywall) {
+-  var abTestName = paywall.ABTestName;
+-  var audienceName = paywall.AudienceName;
+-  var revision = paywall.Revision;
+-  var placementId = paywall.PlacementId;
+
++  var abTestName = paywall.Placement.ABTestName;
++  var audienceName = paywall.Placement.AudienceName;
++  var revision = paywall.Placement.Revision;
++  var placementId = paywall.Placement.Id;
+}
+```
+
+## Cập nhật cách truy cập Remote Config \{#update-remote-config-access\}
+
+Các thuộc tính Remote Config đã được tái cấu trúc vào đối tượng `AdaptyRemoteConfig` để tổ chức tốt hơn:
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void ProcessRemoteConfig(AdaptyPaywall paywall) {
+-  var remoteConfigString = paywall.RemoteConfigString;
+-  var locale = paywall.Locale;
+-  var remoteConfigDict = paywall.RemoteConfig;
+
++  var remoteConfigString = paywall.RemoteConfig.Data;
++  var locale = paywall.RemoteConfig.Locale;
++  var remoteConfigDict = paywall.RemoteConfig.Dictionary;
+}
+```
+
+## Cập nhật cách sử dụng model AdaptyPaywall \{#update-adapty-paywall-model-usage\}
+
+Thuộc tính `VendorProductIds` đã bị deprecated và thay thế bằng `ProductIdentifiers`. Thuộc tính mới trả về các đối tượng `AdaptyProductIdentifier` thay vì chuỗi đơn giản, cung cấp thông tin sản phẩm có cấu trúc hơn.
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void ProcessPaywallProducts(AdaptyPaywall paywall) {
+-  var productIds = paywall.VendorProductIds;
+-  foreach (var vendorId in productIds) {
+-    // use vendorId
+-  }
+
++  var productIdentifiers = paywall.ProductIdentifiers;
++  foreach (var productId in productIdentifiers) {
++    var vendorId = productId.VendorProductId;
++    // use vendorId
++  }
+}
+```
+
+Đối tượng `AdaptyProductIdentifier` cho phép truy cập ID sản phẩm của nhà cung cấp thông qua thuộc tính `VendorProductId`, duy trì chức năng tương đương đồng thời cung cấp cấu trúc tốt hơn cho các cải tiến trong tương lai.
+
+## Cập nhật fetch policy của GetPaywall \{#update-getpaywall-fetch-policy\}
+
+Kiểu tham số `fetchPolicy` trong phương thức `GetPaywall` đã được đổi từ `AdaptyPaywallFetchPolicy` sang `AdaptyPlacementFetchPolicy`. Thay đổi này giúp thống nhất cách sử dụng fetch policy trong toàn bộ SDK.
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void GetPaywall(string placementId) {
+-  Adapty.GetPaywall(placementId, AdaptyPaywallFetchPolicy.ReloadRevalidatingCacheData, null, (paywall, error) => {
++  Adapty.GetPaywall(placementId, AdaptyPlacementFetchPolicy.ReloadRevalidatingCacheData, null, (paywall, error) => {
+    // handle the result
+  });
+}
+```

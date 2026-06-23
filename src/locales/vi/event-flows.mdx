@@ -1,0 +1,449 @@
+---
+title: "Luồng sự kiện"
+description: "Khám phá các sơ đồ chi tiết về luồng sự kiện gói đăng ký trong Adapty. Tìm hiểu cách các sự kiện gói đăng ký được tạo ra và gửi đến các tích hợp, giúp bạn theo dõi các thời điểm quan trọng trong hành trình của khách hàng."
+metadataTitle: "Tìm hiểu Luồng Sự Kiện trong Adapty: Sơ đồ và Kịch bản | Tài liệu Adapty"
+keywords: ['hoàn tiền', 'dùng thử', 'khôi phục', 'sự kiện', 'event']
+rank: 70
+---
+
+Trong Adapty, bạn sẽ nhận được nhiều sự kiện gói đăng ký khác nhau trong suốt hành trình của khách hàng trong ứng dụng. Các luồng gói đăng ký này phác thảo các kịch bản phổ biến để giúp bạn hiểu các sự kiện mà Adapty tạo ra khi người dùng đăng ký, hủy hoặc kích hoạt lại gói đăng ký.
+
+Lưu ý rằng Apple xử lý thanh toán gói đăng ký vài giờ trước thời điểm bắt đầu/gia hạn thực tế. Trong các luồng dưới đây, chúng tôi hiển thị cả việc bắt đầu/gia hạn gói đăng ký và việc tính phí xảy ra cùng một lúc để sơ đồ dễ đọc hơn.
+
+Ngoài ra, các sự kiện liên quan đến cùng một hành động xảy ra đồng thời và có thể xuất hiện trong **Event Feed** của bạn theo bất kỳ thứ tự nào, có thể khác với trình tự được hiển thị trong sơ đồ của chúng tôi.
+
+## Vòng đời gói đăng ký \{#subscription-lifecycle\}
+
+### Luồng mua lần đầu \{#initial-purchase-flow\}
+
+Luồng này xảy ra khi khách hàng mua gói đăng ký lần đầu tiên mà không có dùng thử. Trong trường hợp này, các sự kiện sau được tạo ra:
+
+- **Subscription started**
+- **Access level updated** để cấp quyền truy cập cho người dùng
+
+Khi đến ngày gia hạn gói đăng ký, gói đăng ký sẽ được gia hạn. Trong trường hợp này, các sự kiện sau được tạo ra:
+
+- **Subscription renewal** để bắt đầu một kỳ mới của gói đăng ký
+- **Access level updated** để cập nhật ngày hết hạn gói đăng ký, kéo dài quyền truy cập thêm một kỳ nữa
+
+Các tình huống khi thanh toán không thành công hoặc khi người dùng hủy gia hạn được mô tả trong [Luồng kết quả sự cố thanh toán](event-flows#billing-issue-outcome-flow) và [Luồng hủy gói đăng ký](event-flows#subscription-cancellation-flow) tương ứng.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Initial_Purchase_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Luồng hủy gói đăng ký \{#subscription-cancellation-flow\}
+
+Khi người dùng hủy gói đăng ký của họ, các sự kiện sau được tạo ra:
+
+- **Subscription renewal canceled** để chỉ ra rằng gói đăng ký vẫn còn hiệu lực đến cuối kỳ hiện tại, sau đó người dùng sẽ mất quyền truy cập
+- Sự kiện **Access level updated** được tạo ra để tắt tự động gia hạn cho mức độ truy cập
+
+Khi gói đăng ký kết thúc, sự kiện **Subscription expired (churned)** được kích hoạt để đánh dấu kết thúc gói đăng ký.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Cancellation_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Nếu yêu cầu hoàn tiền được chấp thuận, sự kiện sau sẽ thay thế **Subscription expired (churned)**:
+
+- **Subscription refunded** để kết thúc gói đăng ký và cung cấp thông tin chi tiết về việc hoàn tiền
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Cancellation_Flow_with_a_Refund.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Đối với Stripe, gói đăng ký có thể bị hủy ngay lập tức, bỏ qua khoảng thời gian còn lại. Trong trường hợp này, tất cả các sự kiện được tạo ra đồng thời:
+
+- **Subscription renewal cancelled**
+- **Subscription expired (churned)**
+- **Access Level updated** để xóa quyền truy cập của người dùng
+
+Nếu yêu cầu hoàn tiền được chấp thuận, sự kiện **Subscription refunded** cũng được kích hoạt khi được phê duyệt.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Immediate_Cancellation_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Luồng kích hoạt lại gói đăng ký \{#subscription-reactivation-flow\}
+
+Nếu người dùng hủy gói đăng ký, gói đó hết hạn và sau đó họ mua lại cùng gói đăng ký đó, sự kiện **Subscription renewed** sẽ được tạo ra. Ngay cả khi có khoảng thời gian gián đoạn quyền truy cập, Adapty xử lý đây là một chuỗi giao dịch duy nhất, được liên kết bởi `vendor_original_transaction_id`. Vì vậy, việc mua lại được coi là một lần gia hạn.
+
+Các sự kiện **Access level updated** sẽ được tạo ra hai lần:
+
+- vào lúc kết thúc gói đăng ký để thu hồi quyền truy cập của người dùng
+- vào lúc mua lại gói đăng ký để cấp quyền truy cập
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Rejoin_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Luồng tạm dừng gói đăng ký (chỉ Android) \{#subscription-pause-flow-android-only\}
+
+Luồng này áp dụng khi người dùng tạm dừng và sau đó tiếp tục gói đăng ký trên Android.
+
+Việc tạm dừng gói đăng ký có hiệu lực trì hoãn. Nếu người dùng tạm dừng gói đăng ký trước khi đến ngày gia hạn, gói đăng ký vẫn còn hiệu lực và người dùng vẫn được truy cập trong phần còn lại của kỳ thanh toán.
+
+1. Khi người dùng tạm dừng gói đăng ký, họ kích hoạt sự kiện **Subscription paused (Android only)**.
+2. Vào cuối kỳ gói đăng ký, Adapty kích hoạt sự kiện **Access level updated** để thu hồi quyền truy cập của người dùng.
+3. Khi người dùng tiếp tục gói đăng ký, các sự kiện sau được kích hoạt:
+
+    - **Subscription renewed**
+    - **Access level updated** để khôi phục quyền truy cập của người dùng
+
+Các gói đăng ký này sẽ thuộc cùng một chuỗi giao dịch, được liên kết với cùng **vendor_original_transaction_id**.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Paused_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Luồng dùng thử \{#trial-flows\}
+
+Nếu bạn sử dụng tính năng dùng thử trong ứng dụng, bạn sẽ nhận được các sự kiện bổ sung liên quan đến dùng thử.
+
+### Luồng dùng thử với chuyển đổi thành công \{#trial-with-successful-conversion-flow\}
+
+Luồng phổ biến nhất xảy ra khi người dùng bắt đầu dùng thử, cung cấp thẻ tín dụng và chuyển đổi thành công sang gói đăng ký tiêu chuẩn vào cuối kỳ dùng thử. Trong trường hợp này, các sự kiện sau được tạo ra tại thời điểm bắt đầu dùng thử:
+
+- **Trial started** để đánh dấu thời điểm bắt đầu dùng thử
+- **Access level updated** để cấp quyền truy cập
+
+Sự kiện **Trial converted** được tạo ra khi gói đăng ký tiêu chuẩn bắt đầu.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Trial_Flow_with_Successful_Conversion.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Luồng dùng thử không chuyển đổi thành công \{#trial-without-successful-conversion-flow\}
+
+Nếu người dùng hủy dùng thử trước khi chuyển đổi sang gói đăng ký, các sự kiện sau được tạo ra tại thời điểm hủy:
+
+- **Trial renewal cancelled** để tắt chuyển đổi tự động từ dùng thử sang gói đăng ký
+- **Access level updated** để tắt gia hạn quyền truy cập
+
+Người dùng sẽ có quyền truy cập cho đến khi kết thúc kỳ dùng thử, khi đó sự kiện **Trial expired** được tạo ra để đánh dấu kết thúc dùng thử.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Trial_Flow_without_Successful_Conversion.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Luồng kích hoạt lại gói đăng ký sau khi dùng thử hết hạn \{#subscription-reactivation-after-expired-trial-flow\}
+
+Nếu dùng thử hết hạn (do sự cố thanh toán hoặc hủy) và người dùng sau đó mua gói đăng ký, các sự kiện sau được tạo ra:
+
+- **Access level updated** để cấp quyền truy cập cho người dùng
+- **Trial converted**
+
+Ngay cả khi có khoảng thời gian gián đoạn giữa dùng thử và gói đăng ký, Adapty liên kết hai sự kiện này bằng `vendor_original_transaction_id`. Việc chuyển đổi này được coi là một phần của chuỗi giao dịch liên tục, bắt đầu bằng dùng thử miễn phí. Đó là lý do tại sao sự kiện **Trial converted** được tạo ra thay vì **Subscription started**.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Subscription_Reactivation_Flow_after_Expired_Trial.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Thay đổi sản phẩm \{#product-changes\}
+
+Phần này đề cập đến mọi điều chỉnh đối với gói đăng ký đang hoạt động, chẳng hạn như nâng cấp, hạ cấp hoặc mua sản phẩm từ nhóm khác.
+
+### Luồng thay đổi sản phẩm ngay lập tức \{#immediate-product-change-flow\}
+
+Sau khi người dùng thay đổi sản phẩm, nó có thể được thay đổi trong hệ thống ngay lập tức trước khi gói đăng ký kết thúc (chủ yếu trong trường hợp nâng cấp hoặc thay thế sản phẩm). Trong trường hợp này, tại thời điểm thay đổi sản phẩm:
+
+- Mức độ truy cập được thay đổi và hai sự kiện **Access level updated** được tạo ra:
+  1. để xóa quyền truy cập vào sản phẩm đầu tiên.
+  2. để cấp quyền truy cập vào sản phẩm thứ hai.
+- Gói đăng ký cũ kết thúc và hoàn tiền được thực hiện (sự kiện **Subscription refunded** được tạo ra với `cancellation_reason` = `upgraded`). Lưu ý rằng không có sự kiện **Subscription expired (churned)** nào được tạo ra; sự kiện **Subscription refunded** thay thế nó.
+- Gói đăng ký mới bắt đầu (sự kiện **Subscription started** được tạo ra cho sản phẩm mới).
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Immediate_Product_Change_Flow_Upgrade.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Nếu người dùng hạ cấp gói đăng ký, gói đăng ký đầu tiên sẽ kéo dài đến cuối kỳ đã thanh toán, và khi gói đăng ký kết thúc, nó sẽ được thay thế bằng gói đăng ký mới ở cấp thấp hơn. Trong trường hợp này, chỉ có sự kiện **Access level updated** để tắt tự động gia hạn quyền truy cập được tạo ra ngay lập tức. Tất cả các sự kiện khác sẽ được tạo ra tại thời điểm thực tế thay thế gói đăng ký:
+
+- Một sự kiện **Access level updated** khác được tạo ra để cấp quyền truy cập vào sản phẩm thứ hai.
+- Sự kiện **Subscription expired (churned)** được tạo ra để kết thúc gói đăng ký cho sản phẩm đầu tiên.
+- Sự kiện **Subscription started** được tạo ra để bắt đầu gói đăng ký mới cho sản phẩm mới.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Delayed_Product_Change_Downgrade.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Luồng thay đổi sản phẩm trì hoãn \{#delayed-product-change-flow\}
+
+Cũng có một biến thể khi người dùng thay đổi sản phẩm vào thời điểm gia hạn gói đăng ký. Biến thể này rất giống với biến thể trước: một sự kiện **Access level updated** sẽ được tạo ra ngay lập tức để tắt tự động gia hạn quyền truy cập cho sản phẩm cũ. Tất cả các sự kiện khác sẽ được tạo ra tại thời điểm người dùng thay đổi gói đăng ký và nó được thay đổi trong hệ thống:
+
+- Một sự kiện **Access level updated** khác được tạo ra để cấp quyền truy cập vào sản phẩm thứ hai.
+- Sự kiện **Subscription expired (churned)** được tạo ra để kết thúc gói đăng ký cho sản phẩm đầu tiên.
+- Sự kiện **Subscription started** được tạo ra để bắt đầu gói đăng ký mới cho sản phẩm mới.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Product_Change_on_Renewal_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Luồng kết quả sự cố thanh toán \{#billing-issue-outcome-flow\}
+
+Nếu các lần thử chuyển đổi dùng thử hoặc gia hạn gói đăng ký thất bại do sự cố thanh toán, những gì xảy ra tiếp theo phụ thuộc vào việc thời gian ân hạn có được bật hay không.
+
+Với thời gian ân hạn, nếu thanh toán thành công, dùng thử sẽ được chuyển đổi hoặc gói đăng ký được gia hạn. Nếu thất bại, cửa hàng ứng dụng sẽ tiếp tục cố gắng tính phí người dùng cho gói đăng ký và nếu vẫn thất bại, cửa hàng ứng dụng sẽ tự kết thúc dùng thử hoặc gói đăng ký.
+
+Do đó, tại thời điểm xảy ra sự cố thanh toán, các sự kiện sau được tạo ra trong Adapty:
+
+- **Billing issue detected**
+- **Entered grace period** (nếu thời gian ân hạn được bật)
+- **Access level updated** để cấp quyền truy cập đến cuối thời gian ân hạn
+
+Nếu thanh toán thành công sau đó, Adapty ghi lại sự kiện **Trial converted** hoặc **Subscription renewed**, và người dùng không mất quyền truy cập.
+
+Nếu thanh toán cuối cùng thất bại và cửa hàng ứng dụng hủy gói đăng ký, Adapty tạo ra các sự kiện sau:
+
+- **Trial expired** hoặc **Subscription expired (churned)** với `cancellation_reason: billing_error`
+- **Access level updated** để thu hồi quyền truy cập của người dùng
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Billing_Issue_Outcome_Flow_with_Grace_Period.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Không có thời gian ân hạn, Thời gian thử lại thanh toán (khoảng thời gian cửa hàng ứng dụng tiếp tục cố gắng tính phí người dùng) bắt đầu ngay lập tức.
+
+Nếu thanh toán không bao giờ thành công đến cuối thời gian ân hạn, luồng vẫn giống nhau: các sự kiện tương tự được tạo ra khi cửa hàng ứng dụng tự động kết thúc gói đăng ký:
+
+- Sự kiện **Trial expired** hoặc **Subscription expired (churned)** với `cancellation_reason` là `billing_error`
+
+- **Access level updated** để thu hồi quyền truy cập của người dùng
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Billing_Issue_Outcome_Flow_without_Grace_Period.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Luồng chia sẻ giao dịch mua giữa các tài khoản người dùng \{#sharing-purchases-across-user-accounts-flows\}
+
+Khi một <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), và [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> cố gắng khôi phục hoặc mở rộng gói đăng ký đã được liên kết với một <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), và [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> khác, cài đặt **Sharing paid access between user accounts** của Adapty sẽ kiểm soát cách quản lý quyền truy cập. Luồng sẽ thay đổi tùy thuộc vào tùy chọn được chọn.
+
+:::note
+Đối với các giao dịch Apple Family Sharing (`in_app_ownership_type=FAMILY_SHARED`), chỉ có sự kiện **Access level updated** được kích hoạt — các sự kiện gói đăng ký theo từng sản phẩm bên dưới sẽ không được kích hoạt. Xem [Apple Family Sharing](apple-family-sharing) để biết ma trận sự kiện đầy đủ.
+:::
+
+:::note
+Nếu người dùng nhấn **Restore Purchases** nhưng đã có quyền truy cập trên cùng hồ sơ người dùng, thao tác khôi phục không có tác dụng và không có sự kiện webhook nào được kích hoạt. Các sự kiện trong phần này chỉ được kích hoạt khi quyền truy cập thực sự được chuyển giữa các hồ sơ.
+:::
+
+Để xem nhanh các sự kiện nào được kích hoạt khi hồ sơ thứ hai yêu cầu một gói đăng ký hiện có, hãy sử dụng ma trận này. Các phần tiếp theo hiển thị toàn bộ JSON payload cho mỗi luồng.
+
+| Sự kiện | Enabled (mặc định) | Transfer access to new user | Disabled |
+| --- | --- | --- | --- |
+| Hồ sơ mới: **Access level updated** (`is_active=true`) | Được kích hoạt | Được kích hoạt | Không được kích hoạt |
+| Hồ sơ cũ: **Access level updated** (`is_active=false`) | Không được kích hoạt — cả hai hồ sơ đều giữ quyền truy cập | Được kích hoạt khi thiết bị mới được nhận dạng truyền giao dịch | Không được kích hoạt — hồ sơ gốc giữ quyền truy cập |
+| Trường `profiles_sharing_access_level` trong sự kiện mới | Liệt kê các hồ sơ khác chia sẻ mức độ truy cập | `null` | Không áp dụng — không có sự kiện nào được kích hoạt |
+
+Các lần gia hạn, hoàn tiền và hết hạn trên gói đăng ký đã được chuyển tiếp tục kích hoạt các sự kiện `subscription_renewed`, `subscription_refunded` và `subscription_expired` trên hồ sơ hiện đang nắm giữ mức độ truy cập. Sự kiện chuyển nhượng bản thân không phát ra sự kiện `subscription_started`, vì không có giao dịch mới nào được ghi lại — chỉ có attribution thay đổi.
+
+Để biết chi tiết hợp đồng theo từng chế độ, xem [Tài liệu tham khảo thực tế](sharing-paid-access-between-user-accounts#practical-reference).
+
+### Luồng chuyển quyền truy cập sang người dùng mới \{#transfer-access-to-new-user-flow\}
+
+Tùy chọn được khuyến nghị là chuyển mức độ truy cập sang người dùng mới. Điều này giúp bảo toàn lịch sử giao dịch của người dùng gốc để phân tích nhất quán. Chỉ có 2 sự kiện **Access level updated** sẽ được tạo ra:
+
+1. để xóa quyền truy cập của người dùng đầu tiên
+2. để cấp quyền truy cập cho người dùng thứ hai
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Transfer_Access_to_New_User_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Đây là phân tích chi tiết các trường liên quan đến gán mức độ truy cập và chuyển nhượng trong các sự kiện được tạo ra trong kịch bản này:
+
+- **User A: Access level updated (được gửi khi User A mua gói đăng ký trong ứng dụng)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **User A: Access level updated (được gửi khi ứng dụng được cài đặt lại và User B đăng nhập, thu hồi quyền truy cập của User A)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": false,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **User B: Access level updated (được gửi khi User B đăng nhập và quyền truy cập được cấp)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000001",
+    "customer_user_id": UserB,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+### Luồng chia sẻ quyền truy cập giữa các người dùng \{#shared-access-between-users-flow\}
+
+Tùy chọn này cho phép nhiều người dùng chia sẻ cùng mức độ truy cập nếu thiết bị của họ được đăng nhập vào cùng Apple/Google ID. Điều này hữu ích khi người dùng cài đặt lại ứng dụng và đăng nhập bằng email khác — họ vẫn sẽ có quyền truy cập vào giao dịch mua trước đó. Với tùy chọn này, nhiều người dùng được xác định có thể chia sẻ cùng mức độ truy cập. Trong khi mức độ truy cập được chia sẻ, tất cả các giao dịch được ghi lại dưới <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), và [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> gốc để duy trì lịch sử giao dịch và phân tích đầy đủ.
+
+Do đó, chỉ có 1 sự kiện sẽ được tạo ra: **Access level updated** để cấp quyền truy cập cho người dùng thứ hai.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Share_Access_Between_Users_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Đây là phân tích chi tiết các trường liên quan đến gán mức độ truy cập và chia sẻ trong các sự kiện được tạo ra trong kịch bản này:
+
+**User B: Access level updated (được gửi khi User B đăng nhập và quyền truy cập được cấp)**
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": UserA,
+    "event_properties": {
+      "profile_has_access_level": true,
+    },
+    "profiles_sharing_access_level": [
+      {
+        "profile_id": "00000000-0000-0000-0000-000000000001,
+        "customer_user_id": UserB
+      }
+    ]
+  }
+  ```
+
+### Luồng không chia sẻ quyền truy cập giữa các người dùng \{#access-not-shared-between-users-flow\}
+
+Với tùy chọn này, chỉ hồ sơ người dùng đầu tiên nhận được mức độ truy cập mới giữ nó vĩnh viễn. Điều này lý tưởng khi các giao dịch mua cần được gắn với một <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), và [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> duy nhất.
+
+<Zoom>
+  <img src="/assets/shared/img_webhook_flows/Share_Access_Between_Users_Disabled_Flow.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>

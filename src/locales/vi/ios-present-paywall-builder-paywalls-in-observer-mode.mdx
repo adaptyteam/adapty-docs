@@ -1,0 +1,450 @@
+---
+title: "Hiển thị paywall Paywall Builder trong Observer mode trên iOS SDK"
+description: "Tìm hiểu cách hiển thị paywall PB trong observer mode để có thêm thông tin chi tiết."
+metadataTitle: "Hiển thị Paywall PB trong Observer Mode | Tài liệu Adapty"
+---
+
+Nếu bạn đã tùy chỉnh paywall bằng Paywall Builder, bạn không cần phải lo lắng về việc render nó trong code ứng dụng để hiển thị cho người dùng. Paywall đó đã bao gồm cả nội dung lẫn cách thức hiển thị.
+
+:::warning
+Phần này chỉ áp dụng cho [Observer mode](observer-vs-full-mode). Nếu bạn không làm việc trong Observer mode, hãy tham khảo [iOS - Hiển thị paywall Paywall Builder](ios-present-paywalls).
+:::
+
+<SDKv4>
+
+<details>
+   <summary>Trước khi bắt đầu hiển thị flow (Click để mở rộng)</summary>
+
+   1. Thiết lập tích hợp ban đầu của Adapty [với App Store](initial_ios).
+   2. Cài đặt và cấu hình Adapty SDK. Đảm bảo đặt tham số `observerMode` thành `true`. Tham khảo [hướng dẫn cài đặt iOS SDK](sdk-installation-ios#activate-adapty-module-of-adapty-sdk).
+   3. [Tạo sản phẩm](create-product) trong Adapty Dashboard.
+   4. [Cấu hình flow hoặc paywall trong các builder](create-paywall) và gán sản phẩm cho chúng.
+   5. [Tạo placement và gán flow hoặc paywall vào đó](create-placement).
+   6. [Lấy flow và cấu hình của chúng](get-pb-paywalls) trong code ứng dụng.
+
+</details>
+
+<p> </p>
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swift" label="Swift" default>
+
+1. Implement đối tượng `AdaptyObserverModeResolver`. Protocol này giống như trong SDK v3 — observer mode không thay đổi giữa việc render flow và paywall:
+
+   ```swift showLineNumbers title="Swift"
+   func observerMode(didInitiatePurchase product: AdaptyPaywallProduct,
+                     onStartPurchase: @escaping () -> Void,
+                     onFinishPurchase: @escaping () -> Void) {
+          // use the product object to handle the purchase
+          // call onStartPurchase / onFinishPurchase to notify AdaptyUI about the purchase progress
+   }
+
+   func observerModeDidInitiateRestorePurchases(onStartRestore: @escaping () -> Void,
+                                                onFinishRestore: @escaping () -> Void) {
+          // call onStartRestore / onFinishRestore to notify AdaptyUI about the restore progress
+   }
+   ```
+
+2. Tạo đối tượng cấu hình flow, truyền resolver của bạn vào tham số `observerModeResolver:`:
+
+   ```swift showLineNumbers title="Swift"
+   do {
+       let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+           forFlow: flow,
+           observerModeResolver: <AdaptyObserverModeResolver>
+       )
+   } catch {
+       // handle the error
+   }
+   ```
+
+   Tham số yêu cầu:
+
+   | Tham số                  | Bắt buộc | Mô tả                                                                                                              |
+   | :----------------------- | :------- | :----------------------------------------------------------------------------------------------------------------------- |
+   | **forFlow**              | bắt buộc | Đối tượng `AdaptyFlow` lấy qua `Adapty.getFlow(placementId:)`. Xem [Lấy flow và paywall](get-pb-paywalls). |
+   | **observerModeResolver** | bắt buộc | `AdaptyObserverModeResolver` bạn đã implement ở trên.                                                                  |
+
+3. Khởi tạo flow controller bằng `AdaptyUI.flowController(with:delegate:)`:
+
+   ```swift showLineNumbers title="Swift"
+   import AdaptyUI
+
+   let visualFlow = try AdaptyUI.flowController(
+       with: flowConfiguration,
+       delegate: <AdaptyFlowControllerDelegate>
+   )
+   ```
+
+   Tham số yêu cầu:
+
+   | Tham số                  | Bắt buộc | Mô tả                                                                                                                                                      |
+   | :------------------------- | :------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
+   | **flowConfiguration**      | bắt buộc | Đối tượng `AdaptyUI.FlowConfiguration` chứa thông tin hiển thị của flow. Xem [Lấy flow và paywall](get-pb-paywalls).                     |
+   | **delegate**               | bắt buộc | `AdaptyFlowControllerDelegate` để lắng nghe các sự kiện của flow. Xem [Xử lý sự kiện flow & paywall](ios-handling-events).                             |
+
+   Giá trị trả về:
+
+   | Đối tượng               | Mô tả                                            |
+   | :------------------- | :----------------------------------------------------- |
+   | AdaptyFlowController | Đối tượng đại diện cho màn hình flow được yêu cầu.      |
+
+4. Hiển thị controller:
+
+   ```swift showLineNumbers title="Swift"
+   present(visualFlow, animated: true)
+   ```
+
+:::warning
+Đừng quên [liên kết paywall với giao dịch mua](report-transactions-observer-mode). Nếu không, Adapty sẽ không xác định được paywall nguồn của giao dịch mua.
+:::
+
+</TabItem>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+
+Trong SwiftUI, lấy cấu hình flow cùng với resolver và truyền vào modifier `.flow`:
+
+```swift showLineNumbers title="SwiftUI"
+@State var flowPresented = false
+@State var flowConfiguration: AdaptyUI.FlowConfiguration?
+
+var body: some View {
+    Text("Hello, AdaptyUI!")
+        .flow(
+            isPresented: $flowPresented,
+            flowConfiguration: flowConfiguration,
+            didPerformAction: { action in
+                switch action {
+                    case .close:
+                        flowPresented = false
+                    default:
+                        break
+                }
+            },
+            didFailPurchase: { product, error in /* handle the error */ },
+            didFinishRestore: { profile in /* check access level and dismiss */ },
+            didFailRestore: { error in /* handle the error */ },
+            didReceiveError: { error in flowPresented = false }
+        )
+        .task {
+            flowConfiguration = try? await AdaptyUI.getFlowConfiguration(
+                forFlow: flow,
+                observerModeResolver: <AdaptyObserverModeResolver>
+            )
+        }
+}
+```
+
+Tham số `observerModeResolver:` trong `getFlowConfiguration` là thứ giúp flow được render tôn trọng logic mua hàng tùy chỉnh của bạn — bản thân modifier sử dụng các callback giống như full mode.
+
+:::warning
+Đừng quên [liên kết paywall với giao dịch mua](report-transactions-observer-mode). Nếu không, Adapty sẽ không xác định được paywall nguồn của giao dịch mua.
+:::
+
+</TabItem>
+
+</Tabs>
+
+</SDKv4>
+
+<SDKv3>
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="sdk3" label="Paywall Builder (SDK 3.x)" default>
+<details>
+   <summary>Trước khi bắt đầu hiển thị paywall (Click để mở rộng)</summary>
+
+      1. Thiết lập tích hợp ban đầu của Adapty [với Google Play](initial-android) và [với App Store](initial_ios). 
+   2. Cài đặt và cấu hình Adapty SDK. Đảm bảo đặt tham số `observerMode` thành `true`. Tham khảo hướng dẫn theo framework cho [iOS](sdk-installation-ios#activate-adapty-module-of-adapty-sdk).
+   3. [Tạo sản phẩm](create-product) trong Adapty Dashboard.
+   4. [Cấu hình paywall, gán sản phẩm cho chúng](create-paywall) và tùy chỉnh bằng Paywall Builder trong Adapty Dashboard.
+   5. [Tạo placement và gán paywall vào đó](create-placement) trong Adapty Dashboard.
+   6. [Lấy paywall Paywall Builder và cấu hình của chúng](get-pb-paywalls) trong code ứng dụng.
+
+    </details>
+
+<p> </p>
+
+<Tabs groupId="current-os" queryString> 
+
+<TabItem value="swift" label="Swift" default> 
+
+1. Implement đối tượng `AdaptyObserverModeResolver`:
+
+   ```swift showLineNumbers title="Swift"
+   func observerMode(didInitiatePurchase product: AdaptyPaywallProduct,
+                     onStartPurchase: @escaping () -> Void,
+                     onFinishPurchase: @escaping () -> Void) {
+          // use the product object to handle the purchase
+          // use the onStartPurchase and onFinishPurchase callbacks to notify AdaptyUI about the process of the purchase
+   }
+
+   func observerModeDidInitiateRestorePurchases(onStartRestore: @escaping () -> Void,
+                                                onFinishRestore: @escaping () -> Void) {
+          // use the onStartRestore and onFinishRestore callbacks to notify AdaptyUI about the process of the restore
+   }
+   ```
+
+   Sự kiện `observerMode(didInitiatePurchase:onStartPurchase:onFinishPurchase:)` sẽ thông báo cho bạn rằng người dùng đã bắt đầu một giao dịch mua. Bạn có thể kích hoạt flow mua hàng tùy chỉnh của mình khi nhận được callback này.
+
+   Sự kiện `observerModeDidInitiateRestorePurchases(onStartRestore:onFinishRestore:)` sẽ thông báo cho bạn rằng người dùng đã bắt đầu khôi phục. Bạn có thể kích hoạt flow khôi phục tùy chỉnh của mình khi nhận được callback này.
+
+   Ngoài ra, hãy nhớ gọi các callback sau để thông báo cho AdaptyUI về tiến trình mua hàng hoặc khôi phục. Điều này cần thiết để paywall hoạt động đúng, chẳng hạn như hiển thị loader:
+
+   | Callback           | Mô tả                                                                      |
+   | :----------------- | :------------------------------------------------------------------------------- |
+   | onStartPurchase()  | Gọi callback này để thông báo cho AdaptyUI rằng việc mua hàng đã bắt đầu.  |
+   | onFinishPurchase() | Gọi callback này để thông báo cho AdaptyUI rằng việc mua hàng đã hoàn tất. |
+   | onStartRestore()   | Gọi callback này để thông báo cho AdaptyUI rằng việc khôi phục đã bắt đầu.   |
+   | onFinishRestore()  | Gọi callback này để thông báo cho AdaptyUI rằng việc khôi phục đã hoàn tất.  |
+
+2. Tạo đối tượng cấu hình paywall:
+
+   ```swift showLineNumbers title="Swift"
+   do {
+       let paywallConfiguration = try AdaptyUI.getPaywallConfiguration(
+        forPaywall: <paywall object>, 
+        observerModeResolver: <AdaptyObserverModeResolver>
+        )
+   } catch {
+       // handle the error
+   }
+   ```
+
+   Tham số yêu cầu:
+
+   | Tham số                  | Bắt buộc | Mô tả                                                                                                                                                                                                                                                                                                           |
+   | :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | **Paywall**              | bắt buộc | Đối tượng `AdaptyPaywall` để lấy controller cho paywall mong muốn.                                                                                                                                                                                                                                             |
+   | **ObserverModeResolver** | bắt buộc | Đối tượng `AdaptyObserverModeResolver` bạn đã implement ở bước trước.                                                                                                                                                                                                                                      |
+
+3. Khởi tạo paywall trực quan muốn hiển thị bằng phương thức `.paywallController(for:products:viewConfiguration:delegate:)`:
+
+   ```swift showLineNumbers title="Swift"
+   import AdaptyUI
+   
+   let visualPaywall = AdaptyUI.paywallController(
+       with: <paywall configuration object>,
+       delegate: <AdaptyPaywallControllerDelegate>
+   )
+   ```
+
+Tham số yêu cầu:
+
+| Tham số                  | Bắt buộc | Mô tả                                                                                                                                                                                                                                                                                                           |
+| :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paywall Configuration**              | bắt buộc | Đối tượng `AdaptyUI.PaywallConfiguration` chứa thông tin hiển thị của paywall. Sử dụng phương thức `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)`. Tham khảo chủ đề [Lấy paywall Paywall Builder và cấu hình của chúng](get-pb-paywalls) để biết thêm chi tiết.                                                                                                                                                                                                                                             |
+| **Delegate**             | bắt buộc | `AdaptyPaywallControllerDelegate` để lắng nghe các sự kiện paywall. Tham khảo chủ đề [Xử lý sự kiện paywall](ios-handling-events) để biết thêm chi tiết.                                                                                                                                                                 |
+
+Giá trị trả về:
+
+| Đối tượng                  | Mô tả                                          |
+| :---------------------- | :--------------------------------------------------- |
+| AdaptyPaywallController | Đối tượng đại diện cho màn hình paywall được yêu cầu. |
+
+Sau khi đối tượng được tạo thành công, bạn có thể hiển thị nó như sau: 
+
+```swift showLineNumbers title="Swift"
+present(visualPaywall, animated: true)
+```
+
+:::warning
+Đừng quên [liên kết paywall với giao dịch mua](report-transactions-observer-mode). Nếu không, Adapty sẽ không xác định được paywall nguồn của giao dịch mua.
+:::
+</TabItem> 
+<TabItem value="swiftui" label="SwiftUI" default> 
+
+Để hiển thị paywall trực quan trên màn hình thiết bị, hãy sử dụng modifier `.paywall` trong SwiftUI:
+
+```swift showLineNumbers title="SwiftUI"
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywallConfiguration: <paywall configuration object>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false }
+      )
+}
+```
+
+Tham số yêu cầu:
+
+| Tham số                  | Bắt buộc | Mô tả                                                                                                                                                                                                                                                                                                            |
+| :----------------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paywall Configuration**              | bắt buộc | Đối tượng `AdaptyUI.PaywallConfiguration` chứa thông tin hiển thị của paywall. Sử dụng phương thức `AdaptyUI.getPaywallConfiguration(forPaywall:locale:)`. Tham khảo chủ đề [Lấy paywall Paywall Builder và cấu hình của chúng](get-pb-paywalls) để biết thêm chi tiết.                                                                                                                                                                                                                                             |
+| **Products**             | tùy chọn | Cung cấp một mảng các đối tượng `AdaptyPaywallProduct` để tối ưu thời gian hiển thị sản phẩm trên màn hình. Nếu truyền `nil`, AdaptyUI sẽ tự động lấy các sản phẩm cần thiết.                                                                                                                                   |
+| **TagResolver**          | tùy chọn | Xác định một dictionary các tag tùy chỉnh và giá trị tương ứng. Tag tùy chỉnh đóng vai trò placeholder trong nội dung paywall, được thay thế động bằng các chuỗi cụ thể để cá nhân hóa nội dung trong paywall. Tham khảo chủ đề Tag tùy chỉnh trong Paywall Builder để biết thêm chi tiết. |
+| **ObserverModeResolver** | tùy chọn | Đối tượng `AdaptyObserverModeResolver` bạn đã implement ở bước trước.                                                                                                                                                                                                                                        |
+
+Tham số closure:
+
+| Tham số closure    | Mô tả                                                                       |
+| :------------------- | :-------------------------------------------------------------------------------- |
+| **didFinishRestore** | Được gọi nếu Adapty.restorePurchases() thành công.             |
+| **didFailRestore**   | Được gọi nếu Adapty.restorePurchases() thất bại.                |
+| **didFailRendering** | Được gọi nếu xảy ra lỗi trong quá trình render giao diện. |
+
+Tham khảo chủ đề [iOS - Xử lý sự kiện](ios-handling-events) để biết các tham số closure khác.
+
+:::warning
+Đừng quên [liên kết paywall với giao dịch mua](report-transactions-observer-mode). Nếu không, Adapty sẽ không xác định được paywall nguồn của giao dịch mua.
+::: 
+
+</TabItem> 
+</Tabs>
+
+</TabItem>
+<TabItem value="sdk2" label="Legacy Paywall Builder (SDK up to 2.x)" default>
+<details>
+   <summary>Trước khi bắt đầu hiển thị paywall (Click để mở rộng)</summary>
+
+   1. Thiết lập tích hợp ban đầu của Adapty [với Google Play](initial-android) và [với App Store](initial_ios). 
+1. Cài đặt và cấu hình Adapty SDK. Đảm bảo đặt tham số `observerMode` thành `true`. Tham khảo hướng dẫn theo framework cho [iOS](sdk-installation-ios#activate-adapty-module-of-adapty-sdk), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk) và [Unity](sdk-installation-unity#activate-adapty-module-of-adapty-sdk).
+2. [Tạo sản phẩm](create-product) trong Adapty Dashboard.
+3. [Cấu hình paywall, gán sản phẩm cho chúng](create-paywall) và tùy chỉnh bằng Paywall Builder trong Adapty Dashboard.
+4. [Tạo placement và gán paywall vào đó](create-placement) trong Adapty Dashboard.
+5. [Lấy paywall Paywall Builder và cấu hình của chúng](get-pb-paywalls) trong code ứng dụng.
+</details>
+
+<p> </p>
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+1. Implement đối tượng `AdaptyObserverModeDelegate`:
+
+   ```swift showLineNumbers title="Swift"
+   func paywallController(_ controller: AdaptyPaywallController,
+                          didInitiatePurchase product: AdaptyPaywallProduct,
+                          onStartPurchase: @escaping () -> Void,
+                          onFinishPurchase: @escaping () -> Void) {
+          // use the product object to handle the purchase
+          // use the onStartPurchase and onFinishPurchase callbacks to notify AdaptyUI about the process of the purchase
+   }
+   ```
+
+   Sự kiện `paywallController(_:didInitiatePurchase:onStartPurchase:onFinishPurchase:)` sẽ thông báo cho bạn rằng người dùng đã bắt đầu một giao dịch mua. Bạn có thể kích hoạt flow mua hàng tùy chỉnh của mình khi nhận được sự kiện này.
+
+   Ngoài ra, hãy nhớ gọi các callback sau để thông báo cho AdaptyUI về tiến trình mua hàng. Điều này cần thiết để paywall hoạt động đúng, chẳng hạn như hiển thị loader:
+
+   | Callback         | Mô tả                                                                      |
+   | :--------------- | :------------------------------------------------------------------------------- |
+   | onStartPurchase  | Gọi callback này để thông báo cho AdaptyUI rằng việc mua hàng đã bắt đầu.  |
+   | onFinishPurchase | Gọi callback này để thông báo cho AdaptyUI rằng việc mua hàng đã hoàn tất. |
+
+2. Khởi tạo paywall trực quan muốn hiển thị bằng phương thức `.paywallController(for:products:viewConfiguration:delegate:observerModeDelegate:)`:
+
+   ```swift showLineNumbers title="Swift"
+   import AdaptyUI
+   
+   let visualPaywall = AdaptyUI.paywallController(
+       for: <paywall object>,
+       products: <paywall products array>,
+       viewConfiguration: <LocalizedViewConfiguration>,
+       delegate: <AdaptyPaywallControllerDelegate>
+       observerModeDelegate: <AdaptyObserverModeDelegate>
+   )
+   ```
+
+Tham số yêu cầu:
+
+| Tham số                  | Bắt buộc | Mô tả                                                  |
+| :----------------------- | :------- | :----------------------------------------------------------- |
+| **Paywall**              | bắt buộc | Đối tượng `AdaptyPaywall` để lấy controller cho paywall mong muốn. |
+| **Products**             | tùy chọn | Cung cấp một mảng các đối tượng `AdaptyPaywallProduct` để tối ưu thời gian hiển thị sản phẩm trên màn hình. Nếu truyền `nil`, AdaptyUI sẽ tự động lấy các sản phẩm cần thiết. |
+| **ViewConfiguration**    | bắt buộc | Đối tượng `AdaptyUI.LocalizedViewConfiguration` chứa thông tin hiển thị của paywall. Sử dụng phương thức `AdaptyUI.getViewConfiguration(paywall:locale:)`. Tham khảo chủ đề [Lấy paywall Paywall Builder và cấu hình của chúng](get-pb-paywalls) để biết thêm chi tiết. |
+| **Delegate**             | bắt buộc | `AdaptyPaywallControllerDelegate` để lắng nghe các sự kiện paywall. Tham khảo chủ đề [Xử lý sự kiện paywall](ios-handling-events) để biết thêm chi tiết. |
+| **ObserverModeDelegate** | bắt buộc | Đối tượng `AdaptyObserverModeDelegate` bạn đã implement ở bước trước. |
+| **TagResolver**          | tùy chọn | Xác định một dictionary các tag tùy chỉnh và giá trị tương ứng. Tag tùy chỉnh đóng vai trò placeholder trong nội dung paywall, được thay thế động bằng các chuỗi cụ thể để cá nhân hóa nội dung trong paywall. Tham khảo chủ đề Tag tùy chỉnh trong Paywall Builder để biết thêm chi tiết. |
+
+Giá trị trả về:
+
+| Đối tượng                  | Mô tả                                          |
+| :---------------------- | :--------------------------------------------------- |
+| AdaptyPaywallController | Đối tượng đại diện cho màn hình paywall được yêu cầu. |
+
+Sau khi đối tượng được tạo thành công, bạn có thể hiển thị nó như sau: 
+
+```swift showLineNumbers title="Swift"
+present(visualPaywall, animated: true)
+```
+
+:::warning
+Đừng quên [liên kết paywall với giao dịch mua](report-transactions-observer-mode). Nếu không, Adapty sẽ không xác định được paywall nguồn của giao dịch mua.
+:::
+</TabItem>
+<TabItem value="swiftui" label="SwiftUI" default>
+Để hiển thị paywall trực quan trên màn hình thiết bị, hãy sử dụng modifier `.paywall` trong SwiftUI:
+
+```swift showLineNumbers title="SwiftUI"
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywall: <paywall object>,
+          configuration: <LocalizedViewConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false },
+          observerModeDidInitiatePurchase: { product, onStartPurchase, onFinishPurchase in
+              // use the product object to handle the purchase
+              // use the onStartPurchase and onFinishPurchase callbacks to notify AdaptyUI about the process of the purchase
+          }, 
+      )
+}
+```
+
+Tham số yêu cầu:
+
+| Tham số           | Bắt buộc | Mô tả                                                                                                                                                                                                                                                                                                            |
+| :---------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paywall**       | bắt buộc | Đối tượng `AdaptyPaywall` để lấy controller cho paywall mong muốn.                                                                                                                                                                                                                                              |
+| **Product**       | tùy chọn | Cung cấp một mảng các đối tượng `AdaptyPaywallProduct` để tối ưu thời gian hiển thị sản phẩm trên màn hình. Nếu truyền `nil`, AdaptyUI sẽ tự động lấy các sản phẩm cần thiết.                                                                                                                                    |
+| **Configuration** | bắt buộc | Đối tượng `AdaptyUI.LocalizedViewConfiguration` chứa thông tin hiển thị của paywall. Sử dụng phương thức `AdaptyUI.getViewConfiguration(paywall:locale:)`. Tham khảo chủ đề [Lấy paywall Paywall Builder và cấu hình của chúng](get-pb-paywalls) để biết thêm chi tiết.                                             |
+| **TagResolver**   | tùy chọn | Xác định một dictionary các tag tùy chỉnh và giá trị tương ứng. Tag tùy chỉnh đóng vai trò placeholder trong nội dung paywall, được thay thế động bằng các chuỗi cụ thể để cá nhân hóa nội dung trong paywall. Tham khảo chủ đề Tag tùy chỉnh trong paywall builder để biết thêm chi tiết. |
+
+Tham số closure:
+
+| Tham số closure                   | Mô tả                                                                       |
+| :---------------------------------- | :-------------------------------------------------------------------------------- |
+| **didFinishRestore**                | Được gọi nếu Adapty.restorePurchases() thành công.             |
+| **didFailRestore**                  | Được gọi nếu Adapty.restorePurchases() thất bại.                |
+| **didFailRendering**                | Được gọi nếu xảy ra lỗi trong quá trình render giao diện. |
+| **observerModeDidInitiatePurchase** | Được gọi khi người dùng bắt đầu một giao dịch mua.                        |
+
+Tham khảo chủ đề [iOS - Xử lý sự kiện](ios-handling-events) để biết các tham số closure khác.
+
+:::warning
+Đừng quên [liên kết paywall với giao dịch mua](report-transactions-observer-mode). Nếu không, Adapty sẽ không xác định được paywall nguồn của giao dịch mua.
+:::
+</TabItem>
+</Tabs>
+
+</TabItem>
+</Tabs>
+
+</SDKv3>

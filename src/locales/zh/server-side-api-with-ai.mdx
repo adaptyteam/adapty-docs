@@ -1,0 +1,84 @@
+---
+title: "从后端检查并授予订阅访问权限"
+description: "使用 Adapty 服务端 API 检查用户是否拥有有效订阅，并通过 AI 编程助手手动授予访问权限。"
+metadataTitle: "从后端检查并授予订阅访问权限 | Adapty 文档"
+---
+在您的后端，使用 Adapty 服务端 API 来检查用户是否拥有有效订阅，以及手动授予访问权限。本指南涵盖两个最常用的接口调用——`getProfile` 和 `grantAccessLevel`——并介绍如何让 AI 编程助手为您的技术栈编写集成代码。
+
+:::tip
+正在使用 AI 编程助手？点击标题下方的 **Copy for LLM**，将整个页面粘贴给您的助手——其中包含所需的接口调用、字段说明和注意事项。
+:::
+## 开始之前 \{#before-you-start\}
+
+- **一个密钥（Secret API key）**：在 [App settings → General](https://app.adapty.io/settings/general) 的 **Secret key** 字段中找到它。密钥与应用绑定。请将其存储在环境变量中（例如 `ADAPTY_SECRET_KEY`），并通过 `Authorization: Api-Key {key}` 传递。
+- **基础 URL**：所有请求均发送至 `https://api.adapty.io`。
+- **识别用户的方式**：发送 `adapty-customer-user-id`（你自己的用户 ID——仅当你在应用中标识了用户时有效）或 `adapty-profile-id`（Adapty 用户画像 ID）。两者可互换，选其一即可。
+## 查看订阅 \{#check-a-subscription\}
+
+要查看订阅状态，请使用 `GET` 方法调用 `getProfile`，并在请求头中传入用户标识符——无需请求体。
+```javascript title="check-access.js"
+const res = await fetch("https://api.adapty.io/api/v2/server-side-api/profile/", {
+  headers: {
+    "Authorization": `Api-Key ${process.env.ADAPTY_SECRET_KEY}`,
+    "adapty-customer-user-id": userId,
+  },
+});
+const { data } = await res.json();
+
+function hasActiveAccess(profile, accessLevelId = "premium") {
+  const level = profile.access_levels?.find(a => a.access_level_id === accessLevelId);
+  if (!level) return false;
+  if (level.is_in_grace_period) return true;
+  if (!level.expires_at) return true;             // lifetime / non-expiring
+  return new Date(level.expires_at) > new Date(); // not expired yet
+}
+
+if (hasActiveAccess(data)) {
+  // unlock premium features
+}
+```
+
+与 SDK 的用户画像不同，服务端响应**没有 `is_active` 字段**。请自行根据 `access_levels[].expires_at` 判断状态：`null` 表示永久授权，未来日期表示有效，过去日期表示已过期。`is_in_grace_period` 应视为仍处于有效状态。完整的用户画像及访问等级字段说明，请参阅 [getProfile](https://adapty.io/docs/zh/api-adapty/operations/getProfile.md)。
+## 手动授予访问权限 \{#grant-access-manually\}
+
+如需在不经过购买流程的情况下解锁付费功能——例如促销码、投资者或测试版访问权限、客服案例——可使用 `POST` 方法调用 `grantAccessLevel`。
+
+```javascript title="grant-access.js"
+await fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/", {
+  method: "POST",
+  headers: {
+    "Authorization": `Api-Key ${process.env.ADAPTY_SECRET_KEY}`,
+    "adapty-customer-user-id": userId,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ access_level_id: "premium" }), // add "expires_at" for temporary access
+});
+```
+请注意以下两点：
+
+- **访问等级必须已存在**于看板中（**Access levels**）—— `access_level_id` 是该等级的标识符，而非新名称。
+- **手动授予的访问等级不会出现在分析报告中**。相关数据仅会推送至你的 webhook 集成和 Event Feed，因此收入和转化率数据图表不会反映这些操作。
+
+请求与响应的详细信息，请参阅 [grantAccessLevel](https://adapty.io/docs/zh/api-adapty/operations/grantAccessLevel.md)。
+## 使用 AI 编程助手来构建 \{#build-it-with-your-ai-coding-agent\}
+
+将本指南和 API 规范（在任意页面 URL 后加 `.md` 即可获取 Markdown 格式）提供给你的 AI 编程助手，告诉它你使用的技术栈，让它帮你编写调用代码：
+
+- [OpenAPI 规范](https://adapty.io/docs/zh/api-specs/adapty-api.yaml)
+- [getProfile](https://adapty.io/docs/zh/api-adapty/operations/getProfile.md)
+- [grantAccessLevel](https://adapty.io/docs/zh/api-adapty/operations/grantAccessLevel.md)
+
+示例提示词：
+```
+Using the Adapty server-side API spec, write backend functions to check whether a
+user has an active "premium" access level (GET /profile/, derive status from
+expires_at — there's no is_active field) and to grant it (grantAccessLevel).
+Authenticate with ADAPTY_SECRET_KEY and identify users by adapty-customer-user-id.
+```
+
+The agent writes the code, but it can't run your backend or set your keys — you provide the secret key and the user identifiers.
+## 限制 \{#limits\}
+
+- **频率限制**：每个应用每分钟最多 40,000 次请求。
+- **应用专属密钥**：每个密钥仅对应一个应用，请为每个应用使用对应的密钥。
+- **必填标识符**：每个请求都需要提供 `adapty-customer-user-id` 或 `adapty-profile-id`。
