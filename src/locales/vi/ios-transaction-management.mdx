@@ -1,0 +1,139 @@
+---
+title: "Quản lý giao dịch nâng cao trong iOS SDK"
+description: "Hoàn tất giao dịch thủ công trong ứng dụng iOS của bạn với Adapty SDK."
+metadataTitle: "Quản lý giao dịch nâng cao | iOS SDK | Tài liệu Adapty"
+displayed_sidebar: sdkios
+---
+
+:::note
+Quản lý giao dịch nâng cao được hỗ trợ trong Adapty iOS SDK bắt đầu từ phiên bản 3.12.
+:::
+
+Quản lý giao dịch nâng cao trong Adapty cho phép bạn kiểm soát nhiều hơn cách các giao dịch được xử lý, xác minh và hoàn tất.
+
+Tính năng này giới thiệu ba tính năng tùy chọn hoạt động cùng nhau:
+
+| Tính năng                                                   | Mục đích |
+|-------------------------------------------------------------|----------|
+| [`appAccountToken`](#assign-appaccounttoken)                | Liên kết giao dịch Apple với ID người dùng nội bộ của bạn |
+| [`jwsTransaction`](#access-the-jws-representation)          | Cung cấp payload giao dịch đã ký của Apple để xác thực |
+| [Hoàn tất thủ công](#control-transaction-finishing-behavior) | Cho phép bạn hoàn tất giao dịch chỉ sau khi backend xác nhận thành công |
+
+Kết hợp lại, các công cụ này giúp bạn xây dựng quy trình xác thực tùy chỉnh mạnh mẽ trong khi Adapty vẫn tiếp tục đồng bộ giao dịch với backend của mình.
+
+:::important
+Hầu hết ứng dụng không cần đến tính năng này.
+Mặc định, Adapty tự động xác thực và hoàn tất các giao dịch StoreKit.  
+Chỉ sử dụng hướng dẫn này nếu bạn chạy xác thực backend riêng hoặc muốn kiểm soát hoàn toàn vòng đời mua hàng.
+:::
+
+## Gán `appAccountToken` \{#assign-appaccounttoken\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) là một **UUID** cho phép bạn liên kết các giao dịch App Store với danh tính người dùng nội bộ của mình.  
+StoreKit gắn token này với mọi giao dịch, giúp backend của bạn có thể khớp dữ liệu App Store với người dùng của bạn.
+
+Hãy sử dụng một UUID ổn định được tạo cho mỗi người dùng và tái sử dụng nó cho cùng một tài khoản trên các thiết bị.
+Điều này đảm bảo rằng các giao dịch mua và thông báo App Store được liên kết chính xác.
+
+Bạn có thể đặt token theo hai cách – trong quá trình khởi tạo SDK hoặc khi xác định người dùng.
+
+:::important
+Bạn phải luôn truyền `appAccountToken` cùng với `customerUserId`.
+Nếu chỉ truyền token, nó sẽ không được đưa vào giao dịch.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: UUID())
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
+  // handle the error
+}
+
+// Or when identifying a user:
+do {
+    try await Adapty.identify("YOUR_USER_ID", withAppAccountToken: UUID())
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// During configuration:
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID", withAppAccountToken: <APP_ACCOUNT_TOKEN>)
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+
+// Or when identifying a user:
+Adapty.identify("YOUR_USER_ID", withAppAccountToken: <APP_ACCOUNT_TOKEN>) { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## Truy cập biểu diễn JWS \{#access-the-jws-representation\}
+
+Khi bạn thực hiện mua hàng, kết quả trả về bao gồm giao dịch của Apple ở [định dạng JWS Compact Serialization](https://developer.apple.com/documentation/storekit/verificationresult/jwsrepresentation-21vgo).
+Bạn có thể chuyển giá trị này đến backend của mình để xác thực độc lập hoặc ghi log.
+
+```swift
+let result = try await Adapty.makePurchase(product: paywallProduct)
+let jwsRepresentation = result.jwsTransaction
+```
+
+## Kiểm soát hành vi hoàn tất giao dịch \{#control-transaction-finishing-behavior\}
+
+<ZoomImage id="transaction-management.png" width="700px" />
+
+Mặc định, Adapty tự động hoàn tất các giao dịch StoreKit sau khi xác thực.
+Nếu bạn cần trì hoãn việc hoàn tất cho đến khi backend xác nhận thành công, hãy đặt hành vi hoàn tất thành thủ công.
+
+Trong chế độ này:
+- Adapty vẫn xác thực giao dịch mua và đồng bộ chúng với backend của mình.
+- Các giao dịch vẫn chưa được hoàn tất cho đến khi bạn gọi `finish()` một cách tường minh.
+
+```swift
+var configBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_API_KEY")
+    .with(transactionFinishBehavior: .manual)
+
+try await Adapty.activate(with: configBuilder.build())   
+```
+
+Khi sử dụng hoàn tất giao dịch thủ công, bạn cần triển khai phương thức delegate `onUnfinishedTransaction` để xử lý các giao dịch chưa hoàn tất:
+
+```swift showLineNumbers title="Swift"
+extension YourApp: AdaptyDelegate {
+    func onUnfinishedTransaction(_ transaction: AdaptyUnfinishedTransaction) async {
+        // Perform your custom validation logic here
+        
+        // When ready, finish the transaction
+        await transaction.finish()
+    }
+}
+```
+
+Để lấy tất cả các giao dịch chưa hoàn tất hiện tại, hãy sử dụng phương thức `getUnfinishedTransactions()`:
+
+```swift
+let unfinishedTransactions = try await Adapty.getUnfinishedTransactions()
+```

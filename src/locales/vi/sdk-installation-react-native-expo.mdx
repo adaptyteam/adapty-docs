@@ -1,0 +1,388 @@
+---
+title: "Cài đặt & cấu hình Adapty React Native SDK trong dự án Expo"
+description: "Hướng dẫn từng bước cài đặt Adapty React Native SDK trong dự án Expo cho ứng dụng dựa trên gói đăng ký."
+metadataTitle: "Cài đặt Adapty SDK trong dự án Expo React Native | Tài liệu Adapty"
+keywords: ['install sdk', 'sdk install', 'install sdk expo', 'expo dev client', 'expo react native', 'google play billing library', 'gpbl', 'billing library']
+rank: 60
+---
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+import GetKey from '@site/src/locales/vi/reusable/GetKey.md';
+import AndroidBackupRules from '@site/src/locales/vi/reusable/AndroidBackupRules.md';
+import InstallationPrereqs from '@site/src/locales/vi/reusable/InstallationPrereqs.mdx';
+
+:::important
+Hướng dẫn này đề cập đến việc cài đặt và cấu hình Adapty React Native SDK **trong dự án Expo**.
+
+Nếu bạn đang sử dụng **pure React Native (không dùng Expo)**, hãy làm theo [hướng dẫn cài đặt React Native](sdk-installation-react-native-pure) thay thế.
+:::
+
+Adapty SDK bao gồm hai module chính để tích hợp liền mạch vào ứng dụng React Native của bạn:
+
+- **Core Adapty**: Module này bắt buộc để Adapty hoạt động đúng trong ứng dụng của bạn.
+- **AdaptyUI**: Module này cần thiết nếu bạn sử dụng [Adapty Paywall Builder](adapty-paywall-builder), công cụ no-code thân thiện với người dùng để dễ dàng tạo paywall đa nền tảng. AdaptyUI được kích hoạt tự động cùng với module core.
+
+Nếu bạn cần hướng dẫn đầy đủ về cách triển khai IAP trong ứng dụng React Native, hãy xem [bài viết này](https://adapty.io/blog/react-native-in-app-purchases-tutorial/).
+
+:::tip
+Muốn xem ví dụ thực tế về cách tích hợp Adapty SDK vào ứng dụng Expo? Hãy xem các ứng dụng mẫu của chúng tôi:
+- [Expo dev build sample](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo) cho đầy đủ chức năng bao gồm mua hàng thực và Paywall Builder
+- [Expo Go & Web sample](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/ExpoGoWebMock) để kiểm thử với chế độ mock
+:::
+
+Để xem hướng dẫn triển khai đầy đủ, bạn cũng có thể xem video:
+<div style={{ textAlign: 'center' }}>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/TtCJswpt2ms?si=FlFJGvpj-U33yoNK" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+## Yêu cầu \{#requirements\}
+
+Adapty React Native SDK hỗ trợ iOS 13.0 trở lên, nhưng để sử dụng paywall tạo trong [Adapty paywall builder](adapty-paywall-builder) cần iOS 15.0 trở lên.
+
+:::info
+Từ SDK v3.17, Adapty SDK sử dụng Google Play Billing Library v8.0.0 theo mặc định.
+:::
+
+<InstallationPrereqs />
+
+## Cài đặt Adapty SDK \{#install-adapty-sdk\}
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-React-Native.svg?style=flat&logo=react)](https://github.com/adaptyteam/AdaptySDK-React-Native/releases)
+
+:::important
+[Expo Dev Client](https://docs.expo.dev/versions/latest/sdk/dev-client/) (bản build phát triển tùy chỉnh) là bắt buộc để sử dụng Adapty trong dự án Expo.
+
+Expo Go không hỗ trợ các native module tùy chỉnh, vì vậy bạn chỉ có thể sử dụng nó với [**chế độ mock**](#set-up-mock-mode-for-expo-go--expo-web) để phát triển UI/logic (không có mua hàng thực và không có AdaptyUI/Paywall Builder rendering).
+:::
+
+1. Cài đặt Adapty SDK (thao tác này cũng tự động cài đặt `@adapty/core`):
+   ```sh
+   npx expo install react-native-adapty
+   npx expo prebuild
+   ```
+2. Build ứng dụng để phát triển bằng EAS hoặc local build:
+
+   <Tabs>
+   <TabItem value="eas" label="EAS build" default>
+      ```sh
+      # For iOS
+      eas build --profile development --platform ios
+
+   # For Android
+   eas build --profile development --platform android
+      ```
+   </TabItem>
+
+   <TabItem value="local" label="Local build">
+      ```sh
+      # For iOS
+      npx expo run:ios
+
+      # For Android
+      npx expo run:android
+      ```
+   </TabItem>
+   </Tabs>
+3. Khởi động dev server:
+   ```sh
+   npx expo start --dev-client
+   ```
+
+## Kích hoạt module Adapty của Adapty SDK \{#activate-adapty-module-of-adapty-sdk\}
+
+<GetKey />
+
+Sao chép đoạn code sau vào `App.tsx` để kích hoạt Adapty:
+
+```typescript showLineNumbers title="App.tsx"
+
+adapty.activate('YOUR_PUBLIC_SDK_KEY');
+```
+
+:::important
+Hãy đợi `activate` hoàn tất trước khi gọi bất kỳ phương thức Adapty SDK nào khác. Xem [Thứ tự gọi trong React Native SDK](react-native-sdk-call-order) để biết toàn bộ trình tự.
+:::
+
+Bây giờ hãy thiết lập paywall trong ứng dụng của bạn:
+
+- Nếu bạn dùng [Adapty Paywall Builder](adapty-paywall-builder), hãy làm theo [hướng dẫn nhanh Paywall Builder](react-native-quickstart-paywalls).
+- Nếu bạn tự xây dựng UI paywall, hãy xem [hướng dẫn nhanh cho paywall tùy chỉnh](react-native-quickstart-manual).
+
+:::tip
+Để tránh lỗi kích hoạt trong môi trường phát triển, hãy dùng các [mẹo](#development-environment-tips).
+:::
+
+## Kích hoạt module AdaptyUI của Adapty SDK \{#activate-adaptyui-module-of-adapty-sdk\}
+
+Nếu bạn định sử dụng [Paywall Builder](adapty-paywall-builder), bạn cần module AdaptyUI. Module này được kích hoạt tự động khi bạn kích hoạt core module; bạn không cần làm thêm gì khác.
+
+## Thiết lập tùy chọn \{#optional-setup\}
+
+### Logging \{#logging\}
+
+#### Thiết lập hệ thống logging \{#set-up-the-logging-system\}
+
+Adapty ghi lại các lỗi và thông tin quan trọng khác để giúp bạn hiểu chuyện gì đang xảy ra. Có các cấp độ sau:
+
+| Cấp độ     | Mô tả                                                        |
+| ---------- | ------------------------------------------------------------ |
+| `error`    | Chỉ ghi lại các lỗi                                          |
+| `warn`     | Ghi lại các lỗi và thông báo từ SDK không gây lỗi nghiêm trọng nhưng đáng chú ý |
+| `info`     | Ghi lại các lỗi, cảnh báo và nhiều loại thông báo thông tin |
+| `verbose`  | Ghi lại mọi thông tin bổ sung có thể hữu ích khi debug, chẳng hạn như các lần gọi hàm, truy vấn API, v.v. |
+
+Bạn có thể đặt cấp độ log trong ứng dụng trước hoặc trong khi cấu hình Adapty:
+
+```typescript showLineNumbers title="App.tsx"
+// Set log level before activation
+// 'verbose' is recommended for development and the first production release
+adapty.setLogLevel('verbose');
+
+// Or set it during configuration
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  logLevel: 'verbose',
+});
+```
+
+### Chính sách dữ liệu \{#data-policies\}
+
+Adapty không lưu trữ dữ liệu cá nhân của người dùng trừ khi bạn chủ động gửi, nhưng bạn có thể triển khai các chính sách bảo mật dữ liệu bổ sung để tuân thủ quy định của cửa hàng hoặc quốc gia.
+
+#### Tắt thu thập và chia sẻ địa chỉ IP \{#disable-ip-address-collection-and-sharing\}
+
+Khi kích hoạt module Adapty, đặt `ipAddressCollectionDisabled` thành `true` để tắt thu thập và chia sẻ địa chỉ IP của người dùng. Giá trị mặc định là `false`.
+
+Dùng tham số này để tăng cường quyền riêng tư cho người dùng, tuân thủ các quy định bảo vệ dữ liệu khu vực (như GDPR hoặc CCPA), hoặc giảm thu thập dữ liệu không cần thiết khi các tính năng dựa trên IP không cần thiết cho ứng dụng của bạn.
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  ipAddressCollectionDisabled: true,
+});
+```
+
+#### Tắt thu thập và chia sẻ advertising ID \{#disable-advertising-id-collection-and-sharing\}
+
+Khi kích hoạt module Adapty, đặt `ios.idfaCollectionDisabled` (iOS) hoặc `android.adIdCollectionDisabled` (Android) thành `true` để tắt thu thập các advertising identifier. Giá trị mặc định là `false`.
+
+Dùng tham số này để tuân thủ chính sách App Store/Play Store, tránh kích hoạt yêu cầu App Tracking Transparency, hoặc nếu ứng dụng của bạn không cần attribution quảng cáo hay analytics dựa trên advertising ID.
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  ios: {
+    idfaCollectionDisabled: true,
+  },
+  android: {
+    adIdCollectionDisabled: true,
+  },
+});
+```
+
+#### Thiết lập cấu hình media cache cho AdaptyUI \{#set-up-media-cache-configuration-for-adaptyui\}
+
+Theo mặc định, AdaptyUI cache media (như hình ảnh và video) để cải thiện hiệu suất và giảm mức sử dụng mạng. Bạn có thể tùy chỉnh cài đặt cache bằng cách cung cấp cấu hình tùy chỉnh.
+
+Dùng `mediaCache` để ghi đè cài đặt cache mặc định:
+
+```typescript
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  mediaCache: {
+    memoryStorageTotalCostLimit: 200 * 1024 * 1024, // Optional: memory cache size in bytes
+    memoryStorageCountLimit: 2147483647,            // Optional: max number of items in memory
+    diskStorageSizeLimit: 200 * 1024 * 1024,       // Optional: disk cache size in bytes
+  },
+});
+```
+
+Các tham số:
+| Tham số | Bắt buộc | Mô tả |
+|-----------|----------|-------------|
+| memoryStorageTotalCostLimit | tùy chọn | Tổng kích thước cache trong bộ nhớ tính bằng byte. Mặc định theo giá trị cụ thể của nền tảng. |
+| memoryStorageCountLimit | tùy chọn | Giới hạn số lượng item trong memory storage. Mặc định theo giá trị cụ thể của nền tảng. |
+| diskStorageSizeLimit | tùy chọn | Giới hạn kích thước file trên đĩa tính bằng byte. Mặc định theo giá trị cụ thể của nền tảng. |
+
+### Bật local access levels (Android) \{#enable-local-access-levels-android\}
+
+Theo mặc định, [local access levels](local-access-levels) được bật trên iOS và tắt trên Android. Để bật trên Android, đặt `localAccessLevelAllowed` thành `true`:
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  android: {
+     localAccessLevelAllowed: true,
+  },
+});
+```
+
+### Xóa dữ liệu khi khôi phục từ backup \{#clear-data-on-backup-restore\}
+
+Khi `clearDataOnBackup` được đặt thành `true`, SDK sẽ phát hiện khi ứng dụng được khôi phục từ bản backup iCloud và xóa tất cả dữ liệu SDK được lưu cục bộ, bao gồm thông tin hồ sơ người dùng đã cache, chi tiết sản phẩm và paywall. Sau đó SDK sẽ khởi tạo lại với trạng thái mới. Giá trị mặc định là `false`.
+
+:::note
+Chỉ có cache SDK cục bộ bị xóa. Lịch sử giao dịch với Apple và dữ liệu người dùng trên máy chủ Adapty vẫn không thay đổi.
+:::
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+   ios: {
+       clearDataOnBackup: true
+   },
+});
+```
+
+## Mẹo cho môi trường phát triển \{#development-environment-tips\}
+
+#### Thiết lập chế độ mock cho Expo Go / Expo Web \{#set-up-mock-mode-for-expo-go--expo-web\}
+
+Môi trường Expo Go và Expo Web không có quyền truy cập vào các native module của Adapty. Để tránh lỗi runtime trong khi vẫn có thể build và kiểm thử UI và logic paywall của ứng dụng, Adapty cung cấp **chế độ mock**.
+
+::::important
+Chế độ mock **không** phải là công cụ để kiểm thử mua hàng thực:
+
+- Nó **không mở** luồng mua hàng của App Store / Google Play và **không tạo** giao dịch thực.
+- Nó **không render** paywall/onboarding được tạo bằng **Adapty Paywall Builder (AdaptyUI)**.
+- Các native module của Adapty **bị bỏ qua hoàn toàn**—ngay cả khi thiếu file native SDK trong Xcode/Android build hoặc API key không hợp lệ cũng sẽ không gây ra lỗi.
+
+Để kiểm thử mua hàng thực và paywall Paywall Builder, hãy sử dụng Expo Dev Client / production build — chế độ mock sẽ tự động bị tắt ở đó.
+::::
+
+**Theo mặc định**, SDK tự động phát hiện môi trường Expo Go và web rồi bật chế độ mock. Bạn không cần cấu hình gì trừ khi muốn tùy chỉnh dữ liệu mock.
+
+Khi chế độ mock đang hoạt động:
+- Tất cả các phương thức Adapty trả về dữ liệu mock mà không gửi yêu cầu mạng tới máy chủ Adapty.
+- Theo mặc định, hồ sơ người dùng mock ban đầu không có gói đăng ký đang hoạt động.
+- Theo mặc định, `makePurchase(...)` mô phỏng một lần mua hàng thành công và cấp quyền truy cập premium.
+
+Bạn có thể tùy chỉnh dữ liệu mock bằng `mockConfig` trong quá trình kích hoạt. Xem định dạng config và các tham số được hỗ trợ [tại đây](https://react-native.adapty.io/interfaces/adaptymockconfig).
+
+```typescript showLineNumbers title="App.tsx"
+
+try {
+  await adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+    mockConfig: {
+      // Customize the initial mock profile (optional)
+    },
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+}
+```
+
+Nếu bạn cần gọi các phương thức SDK trước khi kích hoạt (chẳng hạn như `isActivated()` hoặc `setLogLevel()`), hãy dùng `enableMock()` trước `activate()`. Nếu bridge đã được khởi tạo, phương thức này sẽ không làm gì cả.
+
+```typescript showLineNumbers title="App.tsx"
+
+adapty.enableMock(); // Optional: pass mockConfig to customize mock data
+
+// Now you can call methods before activation
+
+await adapty.activate('YOUR_PUBLIC_SDK_KEY');
+```
+
+#### Trì hoãn kích hoạt SDK cho mục đích phát triển \{#delay-sdk-activation-for-development-purposes\}
+
+Adapty tải trước tất cả dữ liệu người dùng cần thiết khi kích hoạt SDK, giúp truy cập dữ liệu mới nhanh hơn.
+
+Tuy nhiên, điều này có thể gây ra sự cố trong iOS Simulator, vốn thường xuyên yêu cầu xác thực trong quá trình phát triển. Mặc dù Adapty không thể kiểm soát luồng xác thực StoreKit, nhưng nó có thể trì hoãn các yêu cầu mà SDK thực hiện để lấy dữ liệu người dùng mới.
+
+Bằng cách bật thuộc tính `__debugDeferActivation`, lệnh gọi activate sẽ được giữ lại cho đến khi bạn thực hiện lệnh gọi Adapty SDK tiếp theo. Điều này ngăn các yêu cầu xác thực không cần thiết nếu không cần thiết.
+
+Điều quan trọng cần lưu ý là **tính năng này chỉ dành cho mục đích phát triển**, vì nó không bao gồm tất cả các tình huống người dùng tiềm năng. Trong môi trường production, không nên trì hoãn kích hoạt vì thiết bị thực thường ghi nhớ dữ liệu xác thực và không liên tục yêu cầu thông tin đăng nhập.
+
+Đây là cách tiếp cận được khuyến nghị:
+
+```typescript showLineNumbers title="Typescript"
+try {
+  adapty.activate('PUBLIC_SDK_KEY', {
+    __debugDeferActivation: isSimulator(), // 'isSimulator' from any 3rd party library
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+  // Handle the error appropriately for your app
+}
+```
+
+#### Khắc phục lỗi kích hoạt SDK với Fast Refresh của React Native \{#troubleshoot-sdk-activation-errors-on-react-natives-fast-refresh\}
+
+Khi phát triển với Adapty SDK trong React Native, bạn có thể gặp lỗi: `Adapty can only be activated once. Ensure that the SDK activation call is not made more than once.`
+
+Lỗi này xảy ra vì tính năng fast refresh của React Native kích hoạt nhiều lần gọi kích hoạt trong quá trình phát triển. Để ngăn điều này, hãy dùng tùy chọn `__ignoreActivationOnFastRefresh` đặt thành `__DEV__` (flag chế độ phát triển của React Native).
+```typescript showLineNumbers title="Typescript"
+try {
+  adapty.activate('PUBLIC_SDK_KEY', {
+    __ignoreActivationOnFastRefresh: __DEV__,
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty SDK:', error);
+  // Handle the error appropriately for your app
+}
+```
+
+## Xử lý sự cố \{#troubleshooting\}
+
+#### Lỗi phiên bản iOS tối thiểu \{#minimum-ios-version-error\}
+
+Khi build cho iOS, bạn có thể thấy lỗi về **phiên bản iOS tối thiểu** hoặc deployment target, đặc biệt nếu bạn dùng paywall được tạo trong [Adapty paywall builder](adapty-paywall-builder), yêu cầu **iOS 15.0 trở lên**.
+
+Vì Expo tạo dự án iOS (bao gồm `Podfile`) trong quá trình `expo prebuild`, **bạn không nên chỉnh sửa `Podfile` trực tiếp**. Thay vào đó, hãy cấu hình deployment target thông qua config plugin `expo-build-properties`.
+
+1. Cài đặt plugin:
+
+   ```sh
+   npx expo install expo-build-properties
+   ```
+2. Cập nhật Expo config (`app.json` hoặc `app.config.js`) để đặt iOS deployment target:
+
+```
+{
+    "expo": {
+        // ...other Expo config...
+        "plugins": [
+            [
+                "expo-build-properties",
+                {
+                    "ios": {
+                        // Use "13.0" for core Adapty features only,
+                        // or "15.0" if you use paywalls created in the paywall builder.
+                        "deploymentTarget": "15.0"
+                    }
+                }
+            ],
+        ]
+    }
+}
+```
+
+3. Tạo lại dự án iOS native và rebuild:
+
+```
+npx expo prebuild --clean
+npx expo run:ios      # or `eas build -p ios` on your CI
+```
+
+#### Xung đột Android Auto Backup manifest \{#android-auto-backup-manifest-conflict\}
+
+Khi sử dụng Expo với nhiều SDK có cấu hình Android Auto Backup (như Adapty, AppsFlyer, hoặc expo-secure-store), bạn có thể gặp xung đột manifest merger.
+
+Lỗi thường thấy như sau: `Manifest merger failed : Attribute application@fullBackupContent value=(@xml/secure_store_backup_rules) from AndroidManifest.xml:24:248-306
+is also present at [io.adapty:android-sdk:3.12.0] AndroidManifest.xml:9:18-70 value=(@xml/adapty_backup_rules).`
+
+Để giải quyết xung đột này, bạn cần để plugin Adapty quản lý cấu hình Android backup.
+Nếu dự án của bạn cũng dùng `expo-secure-store`, hãy tắt thiết lập backup của nó để tránh trùng lặp.
+
+Đây là cách cấu hình `app.json`:
+
+```json title="app.json"
+{
+  "expo": {
+    "plugins": [
+      ["react-native-adapty", { "replaceAndroidBackupConfig": true }],
+      ["expo-secure-store", { "configureAndroidBackup": false }]
+    ]
+  }
+}
+```
+Tùy chọn `replaceAndroidBackupConfig` mặc định là `false`. Khi được bật, nó cho phép plugin Adapty kiểm soát các quy tắc Android backup.
+Thêm `"configureAndroidBackup": false` nếu bạn dùng `expo-secure-store` để tránh cảnh báo, vì cấu hình backup của SecureStore sẽ được Adapty xử lý.
+
+:::important
+Thiết lập này chỉ áp dụng các yêu cầu backup cho Adapty, AppsFlyer và expo-secure-store.
+Nếu các thư viện khác trong dự án của bạn định nghĩa các quy tắc backup tùy chỉnh, bạn sẽ cần cấu hình thủ công cho những thư viện đó.
+:::

@@ -1,0 +1,124 @@
+---
+title: "Deeplink trì hoãn trong Adapty User Acquisition"
+description: "Thiết lập deeplink trong Adapty User Acquisition"
+metadataTitle: "Deeplink trì hoãn trong Adapty User Acquisition | Tài liệu Adapty"
+keywords: ['adapty ua', 'user acquisition', 'deeplink', 'deferred deeplink']
+---
+
+Deeplink trì hoãn cho phép bạn truyền dữ liệu tùy chỉnh vào ứng dụng khi người dùng cài đặt nó sau khi nhấp vào quảng cáo của bạn. Ví dụ, bạn có thể điều hướng họ đến một vị trí cụ thể trong ứng dụng ngay sau khi họ cài đặt và khởi chạy.
+
+Cơ chế hoạt động như sau:
+
+1. Khi người dùng nhấp vào quảng cáo, Adapty lưu dữ liệu của lượt nhấp đó.
+2. Khi Adapty ghi nhận sự kiện cài đặt, nó lấy dữ liệu trì hoãn từ lượt nhấp.
+3. Sau khi người dùng cài đặt ứng dụng và khởi chạy lần đầu tiên, Adapty truy xuất dữ liệu đã lưu và ứng dụng của bạn nhận được các tham số tùy chỉnh, cho phép bạn xử lý các giá trị khác nhau trong code ứng dụng.
+
+Adapty hỗ trợ các tham số dữ liệu trì hoãn sau:
+
+- `ios_deferred_data`
+- `android_deferred_data`
+- `deferred_data_sub[1-10]`
+
+Để thêm tham số dữ liệu trì hoãn, hãy gắn chúng vào link trong cài đặt chiến dịch của bạn:
+
+1. Mở chiến dịch của bạn từ trang **Integrations -> Meta/TikTok Ads**. Hoặc, mở tracking link của bạn từ trang **Tracking links**. Sao chép click link bạn sẽ sử dụng trong chiến dịch.
+
+<ZoomImage id="ua-lnk.webp" width="900px" />
+
+2. Trong nền tảng quảng cáo của bạn (Meta, TikTok, Google Ads, v.v.), dán link vào trường URL đích của quảng cáo, sau đó gắn thêm các tham số dữ liệu trì hoãn vào cuối dưới dạng query parameter bổ sung — mỗi tham số có tiền tố `&`. Ví dụ, để điều hướng người dùng iOS đến màn hình 'Welcome' sau khi cài đặt, thêm `&ios_deferred_data=welcome`. URL đích cuối cùng sẽ trông như thế này:
+
+```
+https://api-ua.adapty.io/api/v1/attribution/click?adpt_cid=__ADAPTY__ID__&ios_deferred_data=welcome&campaign_id=__CAMPAIGN_ID__&adset_id=__AID__&ad_id=__CID__&campaign_name=__CAMPAIGN_NAME__&adset_name=__AID_NAME__&ad_name=__CID_NAME__&redirect_url=__APP_LINK__
+```
+
+3. Xử lý các tham số trong code ứng dụng của bạn. Lưu ý rằng các tham số dữ liệu trì hoãn nằm trong tham số `payload`, và `payload` là một JSON đã được escape, vì vậy bạn cần parse nó trong code ứng dụng.
+
+Ví dụ, dưới đây là cách xử lý các lượt cài đặt có `ios_deferred_data` bằng `welcome`:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+Adapty.delegate = self
+
+nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetails) {
+    guard
+        let payloadStr = details.payload,
+        let data = payloadStr.data(using: .utf8),
+        let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+        let deeplink = payload["ios_deferred_data"] as? String,
+        deeplink == "welcome"
+    else { return }
+
+    DispatchQueue.main.async {
+        print("Navigate to welcome screen")
+        // navigate to your screen here
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="android" label="Kotlin">
+
+```kotlin showLineNumbers
+Adapty.setOnInstallationDetailsListener(object : OnInstallationDetailsListener {
+    override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
+        details.payload?.let {
+            runCatching {
+                val json = JSONObject(it)
+                if (json.optString("android_deferred_data") == "welcome") {
+                    println("Navigate to welcome screen")
+                    // navigate here
+                }
+            }.onFailure(Throwable::printStackTrace)
+        }
+    }
+})
+
+```
+
+</TabItem>
+
+<TabItem value="rn" label="React Native" default>
+
+```typescript showLineNumbers
+adapty.addEventListener('onInstallationDetailsSuccess', details => {
+    // Parse the payload JSON and navigate to welcome screen if needed
+    try {
+        if (details.payload) {
+            const payload = JSON.parse(details.payload);
+            if (payload.ios_deferred_data === 'welcome') {
+                // Navigate to welcome screen
+                // Replace with your app's navigation logic
+                // For example, using React Navigation:
+                // navigation.navigate('Welcome');
+                console.log('Navigate to welcome screen');
+            }
+        }
+    } catch (error) {
+        console.error('Error parsing installation details payload:', error);
+    }
+});
+```
+
+</TabItem>
+
+<TabItem value="flutter" label="Flutter">
+
+```dart showLineNumbers
+Adapty().onUpdateInstallationDetailsSuccessStream.listen((details) {
+  final payloadStr = details.payload;
+  if (payloadStr == null) return;
+
+  final payload = json.decode(payloadStr) as Map<String, dynamic>;
+  if (payload['ios_deferred_data'] == 'welcome') {
+    print('Navigate to welcome screen');
+  }
+});
+
+```
+
+</TabItem>
+
+</Tabs>

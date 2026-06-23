@@ -1,0 +1,472 @@
+---
+title: "Android - Xử lý sự kiện paywall"
+description: "Xử lý hiệu quả các sự kiện đăng ký trên Android với các công cụ theo dõi sự kiện của Adapty."
+metadataTitle: "Xử lý sự kiện trên Android | Tài liệu Adapty"
+toc_max_heading_level: 4
+keywords: ['AdaptyUiEventListener', 'onActionPerformed', 'onProductSelected', 'onPurchaseStarted', 'onPurchaseFinished', 'onPurchaseFailure', 'onRestoreSuccess', 'onRestoreFailure', 'onAwaitingSubscriptionUpdateParams', 'onLoadingProductsFailure', 'onRenderingError']
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+import PaywallAction from '@site/src/locales/vi/reusable/PaywallAction.md';
+
+:::important
+Hướng dẫn này đề cập đến việc xử lý sự kiện cho các giao dịch mua, khôi phục, chọn sản phẩm và hiển thị paywall. Bạn cũng cần triển khai xử lý nút bấm (đóng paywall, mở liên kết, v.v.). Xem [hướng dẫn xử lý hành động nút bấm](android-handle-paywall-actions) để biết thêm chi tiết.
+:::
+
+Các paywall được cấu hình bằng [Paywall Builder](adapty-paywall-builder) không cần thêm code để thực hiện và khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể phản hồi. Những sự kiện đó bao gồm các thao tác nhấn nút (nút đóng, URL, chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua được thực hiện trên paywall. Tìm hiểu cách phản hồi các sự kiện này bên dưới.
+
+:::warning
+Hướng dẫn này chỉ dành cho **paywall Paywall Builder mới** yêu cầu Adapty SDK v3.0 trở lên.
+:::
+
+<SampleApp />
+
+Nếu bạn muốn kiểm soát hoặc theo dõi các quy trình diễn ra trên màn hình mua hàng, hãy triển khai các phương thức `AdaptyUiEventListener`.
+
+Nếu bạn muốn giữ nguyên hành vi mặc định trong một số trường hợp, bạn có thể kế thừa `AdaptyUiDefaultEventListener` và chỉ ghi đè những phương thức bạn muốn thay đổi.
+
+Dưới đây là các giá trị mặc định từ `AdaptyUiDefaultEventListener`.
+
+### Sự kiện do người dùng tạo ra \{#user-generated-events\}
+
+#### Chọn sản phẩm \{#product-selection\}
+
+Phương thức này sẽ được gọi khi một sản phẩm được chọn để mua (bởi người dùng hoặc hệ thống):
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onProductSelected(
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Bắt đầu mua hàng \{#started-purchase\}
+
+Phương thức này sẽ được gọi khi người dùng bắt đầu quá trình mua hàng:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseStarted(
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+Phương thức này sẽ không được gọi trong chế độ Observer. Tham khảo chủ đề [Android - Hiển thị paywall Paywall Builder trong chế độ Observer](android-present-paywall-builder-paywalls-in-observer-mode) để biết chi tiết.
+
+#### Mua hàng thành công, đã hủy hoặc đang chờ xử lý \{#successful-canceled-or-pending-purchase\}
+
+Phương thức này sẽ được gọi khi giao dịch mua thành công:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseFinished(
+    purchaseResult: AdaptyPurchaseResult,
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {
+    if (purchaseResult !is AdaptyPurchaseResult.UserCanceled)
+        context.getActivityOrNull()?.onBackPressed()
+}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```javascript
+// Successful purchase
+{
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Cancelled purchase
+{
+  "purchaseResult": {
+    "type": "UserCanceled"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Pending purchase
+{
+  "purchaseResult": {
+    "type": "Pending"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+Chúng tôi khuyến nghị đóng màn hình trong trường hợp này.
+
+Phương thức này sẽ không được gọi trong chế độ Observer. Tham khảo chủ đề [Android - Hiển thị paywall Paywall Builder trong chế độ Observer](android-present-paywall-builder-paywalls-in-observer-mode) để biết chi tiết.
+
+#### Mua hàng thất bại \{#failed-purchase\}
+
+Phương thức này sẽ được gọi khi giao dịch mua thất bại do lỗi. Điều này bao gồm các lỗi Google Play Billing (hạn chế thanh toán, sản phẩm không hợp lệ, lỗi mạng), lỗi xác minh giao dịch và lỗi hệ thống. Lưu ý rằng khi người dùng hủy, `onPurchaseFinished` sẽ được gọi với kết quả đã hủy thay vào đó, và các khoản thanh toán đang chờ xử lý không kích hoạt phương thức này.
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseFailure(
+    error: AdaptyError,
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+Phương thức này sẽ không được gọi trong chế độ Observer. Tham khảo chủ đề [Android - Hiển thị paywall Paywall Builder trong chế độ Observer](android-present-paywall-builder-paywalls-in-observer-mode) để biết chi tiết.
+
+#### Hoàn tất điều hướng thanh toán web \{#finished-web-payment-navigation\}
+
+Phương thức này được gọi sau khi có thao tác mở [web paywall](web-paywall) cho một sản phẩm cụ thể. Điều này bao gồm cả các lần điều hướng thành công và thất bại:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onFinishWebPaymentNavigation(
+    product: AdaptyPaywallProduct?,
+    error: AdaptyError?,
+    context: Context,
+) {}
+```
+
+**Tham số:**
+
+| Tham số     | Mô tả                                                                                                          |
+|:------------|:---------------------------------------------------------------------------------------------------------------|
+| **product** | Một `AdaptyPaywallProduct` mà web paywall được mở cho. Có thể là `null`.                                       |
+| **error**   | Một đối tượng `AdaptyError` nếu điều hướng web paywall thất bại; `null` nếu điều hướng thành công.             |
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_navigation_failed",
+    "message": "Failed to open web paywall",
+    "details": {
+      "underlyingError": "Browser unavailable"
+    }
+  }
+}
+```
+</Details>
+
+#### Khôi phục thành công \{#successful-restore\}
+
+Phương thức này sẽ được gọi khi khôi phục giao dịch mua thành công:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRestoreSuccess(
+    profile: AdaptyProfile,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Chúng tôi khuyến nghị đóng màn hình nếu người dùng có `accessLevel` cần thiết. Tham khảo chủ đề [Trạng thái đăng ký](android-listen-subscription-changes) để tìm hiểu cách kiểm tra.
+
+#### Khôi phục thất bại \{#failed-restore\}
+
+Phương thức này sẽ được gọi nếu `Adapty.restorePurchases()` thất bại:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRestoreFailure(
+    error: AdaptyError,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### Nâng cấp gói đăng ký \{#upgrade-subscription\}
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="new" label="SDK version 3.10.0 or later" default>
+
+Khi người dùng cố gắng mua một gói đăng ký mới trong khi đang có gói đăng ký khác hoạt động, bạn có thể kiểm soát cách xử lý giao dịch mua mới bằng cách ghi đè phương thức này. Bạn có hai tùy chọn:
+
+1. **Thay thế gói đăng ký hiện tại** bằng gói mới:
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingPurchaseParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
+): AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked {
+    onPurchaseParamsReceived(
+        AdaptyPurchaseParameters.Builder()
+            .withSubscriptionUpdateParams(AdaptySubscriptionUpdateParameters(...))
+            .build()
+    )
+    return AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked
+}
+```
+
+2. **Giữ cả hai gói đăng ký** (thêm gói mới riêng biệt):
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingPurchaseParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
+): AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked {
+    onPurchaseParamsReceived(AdaptyPurchaseParameters.Empty)
+    return AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked
+}
+```
+
+:::note
+Nếu bạn không ghi đè phương thức này, hành vi mặc định là giữ cả hai gói đăng ký hoạt động (tương đương với việc sử dụng `AdaptyPurchaseParameters.Empty`).
+:::
+
+Bạn cũng có thể đặt các tham số mua hàng bổ sung nếu cần:
+```kotlin
+AdaptyPurchaseParameters.Builder()
+    .withSubscriptionUpdateParams(AdaptySubscriptionUpdateParameters(...)) // tùy chọn - để thay thế gói đăng ký hiện tại
+    .withOfferPersonalized(true) // tùy chọn - nếu sử dụng giá cá nhân hóa
+    .build()
+```
+
+</TabItem>
+<TabItem value="old" label="SDK version earlier than 3.10.0" default>
+
+Nếu một gói đăng ký mới được mua trong khi gói khác vẫn còn hoạt động, hãy ghi đè phương thức này để thay thế gói hiện tại bằng gói mới. Nếu gói đăng ký đang hoạt động vẫn cần tiếp tục và gói mới được thêm riêng biệt, hãy gọi `onSubscriptionUpdateParamsReceived(null)`:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingSubscriptionUpdateParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onSubscriptionUpdateParamsReceived: SubscriptionUpdateParamsCallback,
+) {
+    onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
+}
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_yearly",
+    "localizedTitle": "Premium Yearly",
+    "localizedDescription": "Premium subscription for 1 year",
+    "localizedPrice": "$99.99",
+    "price": 99.99,
+    "currencyCode": "USD"
+  },
+  "subscriptionUpdateParams": {
+    "replacementMode": "with_time_proration"
+  }
+}
+```
+</Details>
+
+### Tải dữ liệu và hiển thị \{#data-fetching-and-rendering\}
+
+#### Lỗi tải sản phẩm \{#product-loading-errors\}
+
+Nếu bạn không truyền các sản phẩm trong quá trình khởi tạo, AdaptyUI sẽ tự động lấy các đối tượng cần thiết từ máy chủ. Nếu thao tác này thất bại, AdaptyUI sẽ báo cáo lỗi bằng cách gọi phương thức này:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onLoadingProductsFailure(
+    error: AdaptyError,
+    context: Context,
+): Boolean = false
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+Nếu bạn trả về `true`, AdaptyUI sẽ thử lại yêu cầu sau 2 giây.
+
+#### Lỗi hiển thị \{#rendering-errors\}
+
+Nếu xảy ra lỗi trong quá trình hiển thị giao diện, lỗi đó sẽ được báo cáo bằng cách gọi phương thức này:
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRenderingError(
+    error: AdaptyError,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+Trong điều kiện bình thường, các lỗi như vậy không nên xảy ra, vì vậy nếu bạn gặp phải, vui lòng cho chúng tôi biết.

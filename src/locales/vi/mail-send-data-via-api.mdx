@@ -1,0 +1,111 @@
+---
+title: "Gửi email và giao dịch qua Adapty Mail API"
+description: "Gửi hồ sơ người dùng và giao dịch đến Adapty Mail trực tiếp từ máy chủ của bạn, không cần Adapty SDK."
+metadataTitle: "Gửi dữ liệu qua Adapty Mail API | Tài liệu Adapty"
+---
+
+Adapty Mail API cho phép bạn gửi hồ sơ người dùng và giao dịch đến Adapty Mail trực tiếp từ máy chủ, không cần chuyển dữ liệu qua Adapty SDK. Sử dụng API này khi bạn muốn:
+
+- Thêm người đăng ký khi chưa có danh sách nào trong Adapty Mail.
+- Tái sử dụng danh sách người đăng ký từ các ứng dụng khác của bạn.
+- Cung cấp dữ liệu cho Adapty Mail theo kiểu server-to-server, với backend của bạn là nguồn dữ liệu chính.
+
+:::note
+**API hay SDK?** Hầu hết các ứng dụng gửi dữ liệu đến Adapty Mail thông qua Adapty SDK, vì SDK tự động thu thập email và thông tin mua hàng. Chọn API khi ứng dụng của bạn không tích hợp Adapty SDK, khi dữ liệu đã có sẵn trên máy chủ của bạn, hoặc khi bạn import người đăng ký từ nguồn khác.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+:::warning
+Hoàn tất thiết lập Adapty Mail trước khi gửi dữ liệu — bao gồm tạo chiến dịch, phân khúc (nếu cần), web paywall và khởi chạy flow. Adapty Mail chỉ gửi email đến các hồ sơ người dùng được tạo sau khi hoàn tất thiết lập; các hồ sơ gửi trước đó sẽ không nhận được email nào. Hãy làm theo hướng dẫn [Bắt đầu với Adapty Mail](mail-get-started) trước, rồi quay lại đây.
+:::
+
+Bạn cũng cần API key và base URL:
+
+- **Secret API key**: Trong Adapty Mail, vào **Settings** và sao chép secret API key của bạn. Key này gắn với từng project, giúp API biết dữ liệu thuộc về project nào.
+- **Base URL**: Tất cả các request đều gửi đến `https://api-mail.adapty.io`.
+- **Xác thực**: Gửi key trong header **Authorization** theo dạng `Bearer {your_secret_api_key}`.
+
+:::important
+Hãy xin phép người dùng một cách rõ ràng trước khi thu thập email và gửi đến Adapty Mail. Bạn có trách nhiệm tuân thủ GDPR, CAN-SPAM và các quy định tương tự tại thị trường của mình.
+:::
+
+## Gửi hồ sơ người dùng \{#send-user-profiles\}
+
+Một hồ sơ chứa email và các thuộc tính của người dùng. Để tạo hoặc cập nhật hồ sơ, gửi request POST đến `/api/v1/profile/save/`.
+
+Ba trường bắt buộc:
+- `external_profile_id` ổn định do ứng dụng hoặc backend của bạn quản lý
+- `email` mà Adapty Mail dùng để gửi chiến dịch
+- `external_created_at` — thời điểm tạo người dùng, có thể dùng trong phân khúc
+
+:::important
+Luôn gửi `external_profile_id` ổn định, không dùng giá trị ẩn danh hoặc thay đổi theo từng lần cài đặt. Adapty Mail dùng giá trị này để liên kết email, lượt nhấp và giao dịch mua vào một hồ sơ duy nhất.
+:::
+
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/save/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "external_profile_id": "user_12345",
+    "external_created_at": "2026-06-01T10:30:00Z",
+    "email": "jane@example.com",
+    "country": "US",
+    "custom_attributes": {
+      "plan": "trial"
+    }
+  }'
+```
+
+Xem tài liệu tham khảo [Save profile](api-mail/operations/saveProfile) để biết tất cả các trường có thể dùng.
+
+## Gửi sự kiện giao dịch \{#send-transaction-events\}
+
+:::note
+Một hồ sơ có email là đủ để tiếp cận người dùng trong flow **chưa từng mua hàng**. Người dùng trong mọi flow khác cũng cần có sự kiện giao dịch.
+:::
+
+Mọi flow ngoại trừ flow **chưa từng mua hàng** đều dựa vào lịch sử mua hàng. Gửi sự kiện giao dịch của hồ sơ khi xử lý các giao dịch mua, gia hạn và hủy, để Adapty Mail có thể đưa hồ sơ vào đúng flow. Sự kiện giao dịch cũng hỗ trợ attribution doanh thu. Bỏ qua bước này chỉ khi bạn chỉ chạy chiến dịch **chưa từng mua hàng** mà thôi.
+
+Để ghi lại một giao dịch, gửi request POST đến `/api/v1/profile/transaction-event/save/`. Dùng cùng `external_profile_id` đã gửi với hồ sơ để Adapty Mail liên kết giao dịch với đúng người dùng.
+
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/transaction-event/save/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "event_type": "subscription_started",
+    "event_id": "evt_abc123",
+    "event_datetime": "2026-06-10T14:20:05Z",
+    "external_profile_id": "user_12345",
+    "store": "app_store",
+    "store_product_id": "premium_monthly",
+    "store_transaction_id": "1000000123456789",
+    "store_original_transaction_id": "1000000123456789",
+    "purchased_at": "2026-06-10T14:20:00Z",
+    "originally_purchased_at": "2026-06-10T14:20:00Z",
+    "price_usd": "9.99"
+  }'
+```
+
+Xem tài liệu tham khảo [Save transaction event](api-mail/operations/saveTransactionEvent) để biết tất cả các trường có thể dùng.
+
+### Ánh xạ sự kiện vào flow \{#map-your-events-to-flows\}
+
+Gửi `event_type` tương ứng với những gì đã xảy ra. Adapty Mail suy ra trạng thái của hồ sơ từ lịch sử sự kiện và chuyển hồ sơ vào flow phù hợp.
+
+| `event_type` | Gửi khi | Flow |
+| --- | --- | --- |
+| `subscription_started` | Người dùng bắt đầu gói đăng ký mới. | Đang hoạt động — không có flow tái tương tác |
+| `subscription_renewed` | Gói đăng ký tự động gia hạn. | Đang hoạt động — không có flow tái tương tác |
+| `subscription_renewal_reactivated` | Người dùng bật lại tự động gia hạn. | Đang hoạt động — không có flow tái tương tác |
+| `non_subscription_purchase` | Người dùng thực hiện sản phẩm mua một lần. | Đang hoạt động — không có flow tái tương tác |
+| `subscription_renewal_cancelled` | Người dùng tắt tự động gia hạn (vẫn còn hiệu lực đến khi hết hạn). | Đã hủy gia hạn |
+| `billing_issue_detected` | Thanh toán gia hạn thất bại. | Vấn đề thanh toán |
+| `entered_grace_period` | Thanh toán thất bại nhưng người dùng vẫn đang trong thời gian ân hạn. | Vấn đề thanh toán |
+| `subscription_expired` | Gói đăng ký hết hạn và quyền truy cập bị ngừng. | Đã hết hạn |
+| `subscription_refunded` | Giao dịch mua gói đăng ký được hoàn tiền. | Đã hoàn tiền |
+| `non_subscription_purchase_refunded` | Sản phẩm mua một lần được hoàn tiền. | Đã hoàn tiền |

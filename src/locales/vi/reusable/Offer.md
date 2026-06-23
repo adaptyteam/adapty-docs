@@ -1,0 +1,5 @@
+| Parameter | Type   | Required in request | Nullable in request | Description                                                  |
+| --------- | ------ | ------------------- | ------------------- | ------------------------------------------------------------ |
+| category  | String | :heavy_plus_sign:   | :heavy_minus_sign:  | Danh mục của ưu đãi được áp dụng. Các tùy chọn bao gồm: **introductory**, **promotional**, **offer_code**, **win_back**. |
+| type      | String | :heavy_plus_sign:   | :heavy_minus_sign:  | Loại ưu đãi đang hoạt động. Các tùy chọn bao gồm: **free_trial**, **pay_as_you_go**, **pay_up_front**, và **unknown**. Nếu giá trị này khác null, nghĩa là ưu đãi đã được áp dụng trong chu kỳ gói đăng ký hiện tại. |
+| id        | String | :heavy_minus_sign:  | :heavy_plus_sign:   | ID của ưu đãi được áp dụng.                                  |

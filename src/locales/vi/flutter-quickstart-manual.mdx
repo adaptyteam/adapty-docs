@@ -1,0 +1,112 @@
+---
+title: "Bật tính năng mua hàng trong paywall tùy chỉnh với Flutter SDK"
+description: "Tích hợp Adapty SDK vào các paywall Flutter tùy chỉnh để bật tính năng in-app purchase."
+metadataTitle: "Hướng dẫn bắt đầu nhanh với Adapty | Tài liệu Adapty"
+keywords: ['paywalls Flutter', 'sdk Flutter', 'paywall', 'getPaywall']
+---
+
+Hướng dẫn này mô tả cách tích hợp Adapty vào các paywall tùy chỉnh của bạn. Giữ toàn quyền kiểm soát việc triển khai paywall, trong khi Adapty SDK tự động lấy sản phẩm, xử lý giao dịch mua mới và khôi phục các giao dịch trước đó.
+
+:::important
+**Hướng dẫn này dành cho các nhà phát triển đang triển khai paywall tùy chỉnh.** Nếu bạn muốn cách đơn giản nhất để bật tính năng mua hàng, hãy sử dụng [Adapty Paywall Builder](flutter-quickstart-paywalls). Với Paywall Builder, bạn tạo paywall trong trình chỉnh sửa trực quan không cần code, Adapty tự động xử lý toàn bộ logic mua hàng, và bạn có thể thử nghiệm các thiết kế khác nhau mà không cần phát hành lại ứng dụng.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+### Thiết lập sản phẩm \{#set-up-products\}
+
+Để bật tính năng in-app purchase, bạn cần hiểu ba khái niệm chính:
+
+- [**Sản phẩm**](product) – bất cứ thứ gì người dùng có thể mua (gói đăng ký, consumable, quyền truy cập trọn đời)
+- [**Paywalls**](paywalls) – các cấu hình xác định sản phẩm nào sẽ được cung cấp. Trong Adapty, paywall là cách duy nhất để lấy sản phẩm, nhưng thiết kế này cho phép bạn thay đổi sản phẩm, giá cả và ưu đãi mà không cần chỉnh sửa code ứng dụng.
+- [**Placements**](placements) – nơi và thời điểm bạn hiển thị paywall trong ứng dụng (như `main`, `onboarding`, `settings`). Bạn thiết lập paywall cho placement trong dashboard, sau đó yêu cầu chúng theo placement ID trong code. Cách này giúp bạn dễ dàng chạy A/B test và hiển thị các paywall khác nhau cho từng nhóm người dùng.
+
+Hãy đảm bảo bạn hiểu những khái niệm này ngay cả khi làm việc với paywall tùy chỉnh. Về cơ bản, đây chỉ là cách bạn quản lý các sản phẩm bán trong ứng dụng của mình.
+
+Để triển khai paywall tùy chỉnh, bạn cần tạo một **paywall** và thêm nó vào một **placement**. Thiết lập này cho phép bạn lấy sản phẩm của mình. Để hiểu những gì cần làm trên dashboard, hãy theo dõi hướng dẫn bắt đầu nhanh [tại đây](quickstart).
+
+### Quản lý người dùng \{#manage-users\}
+
+Bạn có thể làm việc với hoặc không cần xác thực phía backend.
+
+Tuy nhiên, Adapty SDK xử lý người dùng ẩn danh và đã xác định theo cách khác nhau. Đọc [hướng dẫn bắt đầu nhanh về xác định người dùng](flutter-quickstart-identify) để hiểu rõ đặc điểm và đảm bảo bạn đang làm việc với người dùng đúng cách.
+
+## Bước 1. Lấy sản phẩm \{#step-1-get-products\}
+
+Để lấy sản phẩm cho paywall tùy chỉnh, bạn cần:
+
+1. Lấy đối tượng `paywall` bằng cách truyền [placement](placements) ID vào phương thức `getPaywall`.
+2. Lấy mảng sản phẩm cho paywall này bằng phương thức `getPaywallProducts`.
+
+```dart showLineNumbers
+
+Future<void> loadPaywall() async {
+  try {
+    final paywall = await Adapty().getPaywall(placementId: 'YOUR_PLACEMENT_ID');
+    final products = await Adapty().getPaywallProducts(paywall: paywall);
+    
+    // Use products to build your custom paywall UI
+  } on AdaptyError catch (adaptyError) {
+    // Handle the error
+  } catch (e) {
+    // Handle the error
+  }
+}
+```
+
+## Bước 2. Chấp nhận thanh toán \{#step-2-accept-purchases\}
+
+Khi người dùng nhấn vào một sản phẩm trong paywall tùy chỉnh của bạn, hãy gọi phương thức `makePurchase` với sản phẩm đã chọn. Phương thức này sẽ xử lý luồng mua hàng và trả về hồ sơ người dùng đã được cập nhật.
+
+```dart showLineNumbers
+
+Future<void> purchaseProduct(AdaptyPaywallProduct product) async {
+  try {
+    final purchaseResult = await Adapty().makePurchase(product: product);
+    
+    switch (purchaseResult) {
+      case AdaptyPurchaseResultSuccess(profile: final profile):
+        // Purchase successful, profile updated
+        break;
+      case AdaptyPurchaseResultUserCancelled():
+        // User canceled the purchase
+        break;
+      case AdaptyPurchaseResultPending():
+        // Purchase is pending (e.g., user will pay offline with cash)
+        break;
+    }
+  } on AdaptyError catch (adaptyError) {
+    // Handle the error
+  } catch (e) {
+    // Handle the error
+  }
+}
+```
+
+## Bước 3. Khôi phục giao dịch mua \{#step-3-restore-purchases\}
+
+Các cửa hàng ứng dụng yêu cầu tất cả ứng dụng có gói đăng ký phải cung cấp cách để người dùng khôi phục giao dịch mua của họ.
+
+Gọi phương thức `restorePurchases` khi người dùng nhấn nút khôi phục. Phương thức này sẽ đồng bộ lịch sử mua hàng của họ với Adapty và trả về hồ sơ người dùng đã được cập nhật.
+
+```dart showLineNumbers
+
+Future<void> restorePurchases() async {
+  try {
+    final profile = await Adapty().restorePurchases();
+    // Restore successful, profile updated
+  } on AdaptyError catch (adaptyError) {
+    // Handle the error
+  } catch (e) {
+    // Handle the error
+  }
+}
+```
+
+## Các bước tiếp theo \{#next-steps\}
+
+<SupportForum />
+
+Paywall của bạn đã sẵn sàng để hiển thị trong ứng dụng. Kiểm tra giao dịch mua trong [sandbox của App Store](test-purchases-in-sandbox) hoặc trên [Google Play Store](testing-on-android) để đảm bảo bạn có thể hoàn thành một giao dịch mua thử từ paywall. Để xem cách hoạt động trong một triển khai sẵn sàng cho môi trường production, hãy xem [PurchasesObserver](https://github.com/adaptyteam/AdaptySDK-Flutter/blob/master/example/lib/purchase_observer.dart) trong ứng dụng mẫu của chúng tôi, nơi minh họa cách xử lý giao dịch mua với error handling phù hợp, UI observers và tích hợp SDK toàn diện.
+
+Tiếp theo, [kiểm tra xem người dùng đã hoàn thành giao dịch mua chưa](flutter-check-subscription-status) để quyết định có nên hiển thị paywall hay cấp quyền truy cập vào các tính năng trả phí.

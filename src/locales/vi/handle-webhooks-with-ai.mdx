@@ -1,0 +1,161 @@
+---
+title: "Xử lý sự kiện gói đăng ký Adapty bằng webhook"
+description: "Nhận và xử lý sự kiện gói đăng ký Adapty trên máy chủ của bạn bằng webhook — thiết lập endpoint, xác thực, payload và kiểm thử trên một trang."
+metadataTitle: "Xử lý Sự Kiện Gói Đăng Ký Adapty bằng Webhook | Tài liệu Adapty"
+keywords: ['adapty webhook', 'sự kiện gói đăng ký', 'tích hợp webhook', 'xử lý sự kiện gói đăng ký', 'webhook handler', 'ai agent', 'llm']
+---
+
+Webhook cho phép máy chủ của bạn nhận sự kiện gói đăng ký Adapty theo thời gian thực — mua hàng, gia hạn, hủy, sự cố thanh toán và hoàn tiền — để bạn có thể cấp quyền truy cập, đồng bộ backend, hoặc kích hoạt các quy trình tự động. Hướng dẫn này đưa bạn từ bước cài đặt endpoint đến một tích hợp đã được xác minh và kiểm thử, đồng thời hướng dẫn cách để AI coding agent viết handler cho stack của bạn.
+
+:::tip
+Đang dùng AI coding agent? Nhấn **Copy for LLM** bên dưới tiêu đề và dán toàn bộ trang này vào agent — nó có đủ thông tin về thiết lập, payload và logic handler cần thiết.
+:::
+
+## Webhook Adapty hoạt động như thế nào \{#how-adapty-webhooks-work\}
+
+- **Một chiều và thời gian thực**: Adapty gửi HTTP `POST` đến máy chủ của bạn khi có sự kiện xảy ra — không cần polling.
+- **Hai loại request**: Một request xác minh (gửi một lần khi bạn lưu tích hợp) và các sự kiện gói đăng ký liên tục.
+- **Một URL cho mỗi môi trường**: Bạn cài đặt endpoint riêng cho môi trường production và sandbox.
+- **Bạn phải xác nhận từng request**: Phản hồi với trạng thái `2xx` nhanh chóng, và Adapty sẽ thử lại nếu thất bại.
+
+## Xây dựng endpoint của bạn \{#build-your-endpoint\}
+
+Tạo một HTTPS endpoint công khai xử lý hai loại request:
+
+- **Request xác minh**: Gửi một lần khi bạn lưu tích hợp. Nó có body JSON rỗng (`{}`). Phản hồi với trạng thái `2xx` và một body JSON.
+- **Sự kiện gói đăng ký**: Các request `POST` liên tục với sự kiện trong body. Phản hồi `200` trong vòng 10 giây, sau đó thực hiện các tác vụ nặng theo cách bất đồng bộ.
+
+Chọn một chuỗi bí mật và lưu nó làm biến môi trường (ví dụ: `ADAPTY_WEBHOOK_SECRET`). Với mỗi request, hãy xác minh header `Authorization` khớp với nó, và từ chối request nếu không khớp — bạn sẽ nhập cùng bí mật này vào dashboard sau.
+
+```javascript title="webhook.js"
+
+const app = express();
+app.use(express.json());
+
+const WEBHOOK_SECRET = process.env.ADAPTY_WEBHOOK_SECRET;
+
+app.post("/adapty/webhook", (req, res) => {
+  // 1. Verify the shared secret Adapty echoes back.
+  if (req.get("Authorization") !== WEBHOOK_SECRET) {
+    return res.sendStatus(401);
+  }
+
+  // 2. Acknowledge fast, then process asynchronously.
+  res.status(200).json({});
+
+  // 3. The verification request has an empty body — nothing to handle.
+  const event = req.body;
+  if (!event.event_type) return;
+
+  switch (event.event_type) {
+    case "subscription_started":
+    case "subscription_renewed":
+    case "trial_converted":
+      // Grant or extend access.
+      break;
+    case "subscription_expired":
+    case "subscription_refunded":
+      // Revoke access.
+      break;
+    default:
+      break;
+  }
+});
+
+app.listen(3000);
+```
+
+Triển khai endpoint lên một HTTPS URL công khai trước khi cài đặt tích hợp — Adapty gửi request xác minh ngay khi bạn lưu.
+
+### Các sự kiện chính và payload \{#key-events-and-the-payload\}
+
+Mỗi sự kiện dùng chung cùng một cấu trúc bao ngoài. Các trường thay đổi tùy theo loại sự kiện, cửa hàng và các tùy chọn bạn đã bật. Dưới đây là sự kiện `subscription_started` đã được rút gọn:
+
+```json title="Example event"
+{
+  "profile_id": "00000000-0000-0000-0000-000000000000",
+  "customer_user_id": "UserIdInYourSystem",
+  "event_type": "subscription_started",
+  "event_datetime": "2024-11-15T10:45:36.181000+0000",
+  "event_properties": {
+    "store": "play_store",
+    "currency": "USD",
+    "price_usd": 4.99,
+    "vendor_product_id": "onemonth_no_trial",
+    "transaction_id": "0000000000000000",
+    "original_transaction_id": "0000000000000000",
+    "subscription_expires_at": "2024-12-15T10:45:36.181000+0000",
+    "profile_event_id": "00000000-0000-0000-0000-000000000000"
+  },
+  "event_api_version": 1
+}
+```
+
+Các sự kiện bạn sẽ xử lý thường xuyên nhất:
+
+| Loại sự kiện | Kích hoạt khi |
+| --- | --- |
+| `subscription_started` | Người dùng bắt đầu gói đăng ký trả phí |
+| `subscription_renewed` | Gói đăng ký gia hạn và thanh toán thành công |
+| `subscription_renewal_cancelled` | Người dùng tắt tự động gia hạn (quyền truy cập duy trì đến khi hết hạn) |
+| `subscription_expired` | Quyền truy cập kết thúc sau khi gói đăng ký không được gia hạn |
+| `trial_started` | Người dùng bắt đầu dùng thử miễn phí |
+| `trial_converted` | Bản dùng thử chuyển sang gói đăng ký trả phí |
+| `billing_issue_detected` | Thanh toán gia hạn thất bại |
+| `subscription_refunded` | Giao dịch mua gói đăng ký được hoàn tiền |
+
+Để xem danh sách sự kiện đầy đủ và tất cả các trường, hãy xem [Loại sự kiện và trường webhook](https://adapty.io/docs/vi/webhook-event-types-and-fields.md).
+
+:::warning
+Đừng sắp xếp thứ tự sự kiện theo `event_datetime` — đây là thời gian nghiệp vụ của sự kiện, vì vậy các sự kiện có thể đến không theo thứ tự hoặc trùng timestamp. Hãy sắp xếp theo thời gian bạn nhận được, và loại trùng bằng `profile_event_id` hoặc các transaction ID.
+:::
+
+## Cài đặt webhook trong Adapty \{#configure-the-webhook-in-adapty\}
+
+1. Mở [Integrations → Webhook](https://app.adapty.io/integrations/customwebhook) trong Adapty Dashboard.
+2. Bật tích hợp.
+3. Trong **Production endpoint URL**, nhập HTTPS URL của endpoint bạn đã triển khai.
+4. Trong **Authorization header value for production endpoint**, nhập bí mật mà endpoint của bạn kiểm tra. Adapty gửi giá trị này trong header `Authorization` với mỗi request. Tùy chọn nhưng được khuyến nghị mạnh mẽ.
+5. Để kiểm thử trong sandbox trước, hãy điền **Sandbox endpoint URL** và **Authorization header value** tương ứng.
+6. Nhấn **Save**. Adapty ngay lập tức gửi request xác minh đến endpoint của bạn, endpoint phản hồi với `2xx` để hoàn tất thiết lập.
+
+Để chọn sự kiện cần gửi, ánh xạ tên sự kiện, hoặc bật các trường tùy chọn (giá dùng thử, sự kiện lịch sử, attribution, thuộc tính người dùng, Play Store token), hãy xem [Thiết lập tích hợp webhook](https://adapty.io/docs/vi/set-up-webhook-integration.md).
+
+<ZoomImage id="handle-webhooks-dashboard-config.webp" width="700px" alt="Cài đặt tích hợp webhook trên Adapty Dashboard với các trường URL endpoint production và giá trị Authorization header" />
+
+## Xây dựng với AI coding agent của bạn \{#build-it-with-your-ai-coding-agent\}
+
+Cung cấp cho AI coding agent của bạn hướng dẫn này và tài liệu tham khảo dưới dạng Markdown (thêm `.md` vào bất kỳ URL trang nào), cho nó biết stack của bạn và để nó tạo scaffolding cho handler:
+
+- [Loại sự kiện và trường webhook](https://adapty.io/docs/vi/webhook-event-types-and-fields.md)
+- [Thiết lập tích hợp webhook](https://adapty.io/docs/vi/set-up-webhook-integration.md)
+
+Ví dụ prompt:
+
+```
+Read these Adapty webhook docs, then write a webhook handler for my Express app:
+verify the Authorization header against ADAPTY_WEBHOOK_SECRET, answer the
+verification request, acknowledge events with 200, and grant or revoke access
+based on event_type.
+```
+
+Agent sẽ viết code handler, nhưng nó không thể triển khai endpoint hay cài đặt dashboard — hãy tự host endpoint và đặt URL cùng bí mật trong **Integrations → Webhook**.
+
+## Kiểm thử webhook của bạn \{#test-your-webhook\}
+
+Kiểm thử trong sandbox trước khi đưa lên production:
+
+1. Thiết lập sandbox endpoint và bí mật như mô tả ở trên.
+2. Trong app sandbox của bạn, thực hiện mua hàng, bắt đầu dùng thử, hoặc hoàn tiền để kích hoạt sự kiện.
+3. Mở phần **Last sent events** của tích hợp. Sự kiện được gửi thành công sẽ hiển thị trạng thái **Success**.
+
+Nếu sự kiện hiển thị **Sending failed**, máy chủ của bạn đã trả về trạng thái ngoài phạm vi 200–399 — di chuột qua trạng thái để xem chi tiết. Để xem toàn bộ quy trình kiểm thử, hãy xem [Kiểm thử tích hợp webhook](https://adapty.io/docs/vi/test-webhook.md).
+
+<ZoomImage id="handle-webhooks-test-result.webp" width="700px" alt="Danh sách Last sent events của tích hợp webhook hiển thị sự kiện đã gửi với trạng thái Success" />
+
+## Giới hạn \{#limits\}
+
+- **Xác nhận trong vòng 10 giây**: Nếu Adapty không nhận được phản hồi kịp thời, nó coi lần thử đó là thất bại và thử lại.
+- **Thử lại**: Nếu trạng thái của bạn nằm ngoài phạm vi 200–404, Adapty thử lại với backoff theo cấp số nhân — tối đa 9 lần trong 24 giờ.
+- **Độ trễ hủy**: Sự kiện hủy có thể mất đến 2 giờ để đến.
+- **Một URL cho mỗi môi trường**: Để gửi sự kiện đến nhiều dịch vụ, hãy trỏ webhook đến backend của bạn và phân phối từ đó.

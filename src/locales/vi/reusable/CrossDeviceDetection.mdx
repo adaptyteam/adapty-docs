@@ -1,0 +1,22 @@
+---
+no_index: true
+---
+
+Khi SDK được kích hoạt, nó tự động đọc các quyền hiện có của người dùng từ StoreKit (iOS) hoặc Google Play Billing (Android) và đồng bộ chúng với backend của Adapty. Một gói đăng ký đang hoạt động sẽ xuất hiện trên hồ sơ người dùng Adapty mà không cần ứng dụng gọi `restorePurchases`.
+
+Điều **không** xảy ra tự động là nhận diện rằng một hồ sơ người dùng trên thiết bị mới thuộc về cùng một người dùng như hồ sơ trên thiết bị ban đầu. Adapty khớp các hồ sơ người dùng theo Customer User ID, vì vậy tính liên tục danh tính phụ thuộc vào những gì bạn sử dụng làm CUID.
+
+**Những gì Adapty có thể phát hiện trên nhiều thiết bị**
+
+| Cài đặt của bạn | Adapty phát hiện được gì | Bạn phải làm gì |
+| --- | --- | --- |
+| Customer User ID = `device_id` (không đăng nhập ứng dụng) | Thiết bị mới nhận được CUID khác và do đó có hồ sơ người dùng khác. Gói đăng ký đồng bộ với hồ sơ người dùng mới thông qua sự kiện **Access level updated**, nhưng `subscription_started` không kích hoạt — hồ sơ người dùng mới được coi là người kế thừa của giao dịch mua ban đầu. Các phân tích dựa trên `subscription_started` sẽ đếm thiếu những người dùng quay lại. | Sử dụng ID tài khoản ổn định làm Customer User ID để người dùng quay lại khớp với hồ sơ người dùng hiện có trên các thiết bị. |
+| Customer User ID = ID tài khoản ổn định (đăng nhập trên mọi thiết bị) | SDK tự động đồng bộ gói đăng ký khi `activate()`, và `identify()` khớp hồ sơ người dùng hiện có theo CUID. | Không cần cài đặt thêm — cả danh tính lẫn gói đăng ký đều được xử lý tự động. |
+| Người kế thừa Apple Family Sharing | Thành viên gia đình nhận gói đăng ký thông qua sự kiện **Access level updated** — `subscription_started` không kích hoạt. | Lắng nghe sự kiện **Access level updated**. Xem [Apple Family Sharing](apple-family-sharing) để biết ma trận sự kiện đầy đủ. |
+| Cùng tài khoản Apple/Google, người dùng khác nhau trong ứng dụng | Hồ sơ người dùng đầu tiên ghi lại giao dịch mua trở thành hồ sơ cha. Các hồ sơ người dùng tiếp theo thấy gói đăng ký thông qua chuỗi kế thừa, với một sự kiện **Access level updated**. | Yêu cầu đăng nhập, sau đó chọn [chế độ chia sẻ](sharing-paid-access-between-user-accounts) phù hợp với mô hình của bạn. |
+
+**Khôi phục giao dịch mua trên thiết bị mới**
+
+Hiển thị nút "Khôi phục giao dịch mua" do người dùng khởi tạo trên paywall của bạn. Apple App Review (hướng dẫn 3.1.1) yêu cầu có nút này, và nó đóng vai trò dự phòng khi quá trình đồng bộ tự động bỏ sót một trường hợp đặc biệt. Nút này nên gọi `restorePurchases` trên SDK của bạn.
+
+Không cần gọi `restorePurchases` theo chương trình khi khởi chạy lần đầu trong điều kiện sử dụng bình thường — SDK đã thực hiện tương đương khi `activate()`. Chỉ dùng các lệnh gọi theo chương trình để buộc kiểm tra biên lai mới, ví dụ khi debug trường hợp mất quyền truy cập sau khi `activate()` đã hoàn thành.

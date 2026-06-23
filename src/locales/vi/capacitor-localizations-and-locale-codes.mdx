@@ -1,0 +1,99 @@
+---
+title: "Sử dụng localizations và mã locale trong Capacitor SDK"
+description: "Tìm hiểu cách localize paywall trong ứng dụng Capacitor của bạn với Adapty SDK."
+metadataTitle: "Localize Paywall | Capacitor SDK | Tài liệu Adapty"
+customSlug: /capacitor-localizations-and-locale-codes
+displayed_sidebar: sdkcapacitor
+---
+
+## Tại sao điều này quan trọng \{#why-this-is-important\}
+
+Có một vài trường hợp mã locale được dùng đến — ví dụ, khi bạn cần lấy đúng paywall cho ngôn ngữ hiện tại của ứng dụng.
+
+Vì mã locale khá phức tạp và có thể khác nhau tùy nền tảng, chúng tôi dựa vào một tiêu chuẩn nội bộ cho tất cả các nền tảng được hỗ trợ. Tuy nhiên, vì các mã này phức tạp, điều quan trọng là bạn phải hiểu chính xác mình đang gửi gì lên server để nhận đúng localization, và điều gì xảy ra tiếp theo — để bạn luôn nhận được kết quả như mong đợi.
+
+## Tiêu chuẩn mã locale tại Adapty \{#locale-code-standard-at-adapty\}
+
+Với mã locale, Adapty sử dụng tiêu chuẩn [BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) có chỉnh sửa nhẹ: mỗi mã gồm các subtag viết thường, phân cách bằng dấu gạch ngang. Một số ví dụ: `en` (Tiếng Anh), `pt-br` (Tiếng Bồ Đào Nha (Brazil)), `zh` (Tiếng Trung Giản thể), `zh-hant` (Tiếng Trung Phồn thể).
+
+## Khớp mã locale \{#locale-code-matching\}
+
+Khi Adapty nhận được yêu cầu từ SDK phía client kèm mã locale và bắt đầu tìm localization tương ứng của paywall, quá trình diễn ra như sau:
+
+1. Chuỗi locale đầu vào được chuyển về chữ thường và tất cả dấu gạch dưới (`_`) được thay bằng dấu gạch ngang (`-`)
+2. Chúng tôi tìm localization có mã locale khớp hoàn toàn
+3. Nếu không tìm thấy, chúng tôi lấy phần chuỗi trước dấu gạch ngang đầu tiên (`pt` từ `pt-br`) và tìm localization khớp
+4. Nếu vẫn không tìm thấy, chúng tôi trả về localization mặc định `en`
+
+Nhờ vậy, thiết bị iOS gửi `'pt_BR'`, thiết bị Android gửi `pt-BR`, và thiết bị khác gửi `pt-br` đều nhận được cùng một kết quả.
+
+## Cách triển khai localizations được khuyến nghị \{#implementing-localizations-recommended-way\}
+
+Nếu bạn đang tìm hiểu về localizations, có khả năng bạn đã làm việc với các file chuỗi đã localize trong dự án. Nếu vậy, chúng tôi khuyến nghị đặt một cặp key-value chứa mã locale Adapty dự kiến vào mỗi file tương ứng. Sau đó trích xuất giá trị theo key này khi gọi SDK, như sau:
+
+```javascript showLineNumbers
+// 1. Modify your localization files (e.g., using react-i18next)
+
+/*
+en.json
+*/
+{
+  "adapty_paywalls_locale": "en"
+}
+
+/*
+es.json
+*/
+{
+  "adapty_paywalls_locale": "es"
+}
+
+/*
+pt-BR.json
+*/
+{
+  "adapty_paywalls_locale": "pt-br"
+}
+
+// 2. Extract and use the locale code
+
+const MyComponent = () => {
+  const { t } = useTranslation();
+  
+  const fetchPaywall = async () => {
+    const locale = t('adapty_paywalls_locale');
+    // pass locale code to adapty.getPaywall or adapty.getPaywallForDefaultAudience method
+    const paywall = await adapty.getPaywallForDefaultAudience('placement_id', locale);
+  };
+};
+```
+
+Cách này giúp bạn kiểm soát hoàn toàn localization nào sẽ được lấy cho từng người dùng trong ứng dụng.
+
+## Cách triển khai localizations: hướng khác \{#implementing-localizations-the-other-way\}
+
+Bạn có thể đạt kết quả tương tự (nhưng không hoàn toàn giống) mà không cần định nghĩa tường minh mã locale cho từng localization. Điều đó có nghĩa là trích xuất mã locale từ các đối tượng khác mà nền tảng cung cấp, như sau:
+
+```javascript showLineNumbers
+
+const getLocaleCode = () => {
+  if (Capacitor.getPlatform() === 'ios') {
+    return navigator.language || 'en';
+  } else {
+    return navigator.language || 'en';
+  }
+};
+
+const fetchPaywall = async () => {
+  const locale = getLocaleCode();
+  // pass locale code to adapty.getPaywall or adapty.getPaywallForDefaultAudience method
+  const paywall = await adapty.getPaywallForDefaultAudience('placement_id', locale);
+};
+```
+
+Lưu ý rằng chúng tôi không khuyến nghị cách tiếp cận này vì một số lý do:
+
+1. Trên iOS, ngôn ngữ ưu tiên và locale hiện tại không giống nhau. Nếu muốn localization được chọn đúng, bạn sẽ phải dựa vào logic của Apple (hoạt động ngay lập tức nếu bạn dùng cách được khuyến nghị với file chuỗi đã localize), hoặc tự tái tạo lại logic đó.
+2. Khó đoán chính xác server của Adapty sẽ nhận được gì. Ví dụ, trên iOS có thể lấy được locale như `ar_OM@numbers='latn'` từ thiết bị rồi gửi lên server. Với lời gọi này, bạn sẽ không nhận được localization `ar-om` như mong muốn, mà thay vào đó là `ar` — điều này có thể ngoài ý muốn.
+
+Nếu bạn vẫn quyết định dùng cách này — hãy đảm bảo bạn đã xử lý đầy đủ tất cả các trường hợp liên quan.

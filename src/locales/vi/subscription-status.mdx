@@ -1,0 +1,113 @@
+---
+title: "Kiểm tra trạng thái gói đăng ký trong iOS SDK"
+description: "Theo dõi và quản lý trạng thái gói đăng ký của người dùng trong Adapty để cải thiện khả năng giữ chân khách hàng."
+metadataTitle: "Hiểu về Trạng thái Gói đăng ký | Tài liệu Adapty"
+keywords: ['getProfile', 'cache']
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md'; 
+
+Với Adapty, việc theo dõi trạng thái gói đăng ký trở nên đơn giản hơn bao giờ hết. Bạn không cần phải nhúng thủ công các product ID vào code. Thay vào đó, bạn có thể dễ dàng xác nhận trạng thái gói đăng ký của người dùng bằng cách kiểm tra [mức độ truy cập](access-level) đang hoạt động.
+
+Trước khi bắt đầu kiểm tra trạng thái gói đăng ký, hãy thiết lập [App Store Server Notifications](enable-app-store-server-notifications).
+
+## Mức độ truy cập và đối tượng AdaptyProfile \{#access-level-and-the-adaptyprofile-object\}
+
+Mức độ truy cập là thuộc tính của đối tượng [AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile). Chúng tôi khuyến nghị lấy hồ sơ người dùng khi ứng dụng khởi động, chẳng hạn như khi bạn [xác định người dùng](identifying-users#set-customer-user-id-on-configuration), rồi cập nhật lại mỗi khi có thay đổi. Như vậy, bạn có thể sử dụng đối tượng profile mà không cần phải gọi lại nhiều lần.
+
+Để nhận thông báo khi profile được cập nhật, hãy lắng nghe các thay đổi của profile như mô tả trong phần [Lắng nghe cập nhật profile, bao gồm mức độ truy cập](subscription-status#listening-for-subscription-status-updates) bên dưới.
+
+<SampleApp />
+
+## Lấy mức độ truy cập từ server \{#retrieving-the-access-level-from-the-server\}
+
+Để lấy mức độ truy cập từ server, sử dụng phương thức `.getProfile()`:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get() {
+        // check the access
+        profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // grant access to premium features
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+Tham số trả về:
+
+| Tham số | Mô tả                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Profile   | <p>Đối tượng [AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile). Thông thường, bạn chỉ cần kiểm tra trạng thái mức độ truy cập của profile để xác định xem người dùng có quyền truy cập premium vào ứng dụng hay không.</p><p></p><p>Phương thức `.getProfile` luôn cố gắng truy vấn API nên cho kết quả cập nhật nhất. Nếu vì lý do nào đó (ví dụ: không có kết nối internet), Adapty SDK không thể lấy thông tin từ server thì dữ liệu trong cache sẽ được trả về. Cũng cần lưu ý rằng Adapty SDK cập nhật cache của `AdaptyProfile` định kỳ để giữ thông tin luôn được đồng bộ nhất có thể.</p> |
+
+Phương thức `.getProfile()` trả về hồ sơ người dùng, từ đó bạn có thể lấy trạng thái mức độ truy cập. Một ứng dụng có thể có nhiều mức độ truy cập. Ví dụ: nếu bạn có ứng dụng đọc báo và bán gói đăng ký theo từng chủ đề riêng biệt, bạn có thể tạo các mức độ truy cập "sports" và "science". Tuy nhiên, trong hầu hết các trường hợp, bạn chỉ cần một mức độ truy cập — khi đó chỉ cần dùng mức mặc định "premium" là đủ.
+
+Dưới đây là ví dụ kiểm tra mức độ truy cập "premium" mặc định:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    let isPremium = profile.accessLevels["premium"]?.isActive ?? false
+    // grant access to premium features
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get(), 
+       profile.accessLevels["premium"]?.isActive ?? false {
+        // grant access to premium features
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+### Lắng nghe cập nhật trạng thái gói đăng ký \{#listening-for-subscription-status-updates\}
+
+Mỗi khi gói đăng ký của người dùng thay đổi, Adapty sẽ kích hoạt một sự kiện.
+
+Để nhận thông báo từ Adapty, bạn cần thực hiện thêm một số cấu hình:
+
+```swift showLineNumbers
+Adapty.delegate = self
+
+// To receive subscription updates, extend `AdaptyDelegate` with this method:
+nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
+    // handle any changes to subscription state
+}
+```
+
+Adapty cũng kích hoạt một sự kiện khi ứng dụng khởi động. Trong trường hợp này, trạng thái gói đăng ký được lưu trong cache sẽ được truyền vào.
+
+### Cache trạng thái gói đăng ký \{#subscription-status-cache\}
+
+Cache được tích hợp trong Adapty SDK lưu trữ trạng thái gói đăng ký của hồ sơ người dùng. Điều này có nghĩa là ngay cả khi server không khả dụng, dữ liệu trong cache vẫn có thể được truy cập để cung cấp thông tin về trạng thái gói đăng ký.
+
+Tuy nhiên, cần lưu ý rằng không thể truy vấn dữ liệu trực tiếp từ cache. SDK định kỳ gửi yêu cầu đến server mỗi phút một lần để kiểm tra xem có cập nhật hay thay đổi nào liên quan đến profile không. Nếu có bất kỳ thay đổi nào — chẳng hạn như giao dịch mới hay các cập nhật khác — chúng sẽ được đồng bộ vào dữ liệu cache để giữ thông tin luôn nhất quán với server.

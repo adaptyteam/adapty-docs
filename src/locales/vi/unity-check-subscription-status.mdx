@@ -1,0 +1,106 @@
+---
+title: "Kiểm tra trạng thái đăng ký trong Unity SDK"
+description: "Tìm hiểu cách kiểm tra trạng thái đăng ký trong ứng dụng Unity của bạn với Adapty."
+metadataTitle: "Kiểm Tra Trạng Thái Đăng Ký | Tài liệu Adapty"
+displayed_sidebar: sdkunity
+keywords: ['getProfile', 'subscription status']
+rank: 75
+---
+
+Để quyết định xem người dùng có thể truy cập nội dung trả phí hay cần xem paywall, bạn cần kiểm tra [mức độ truy cập](access-level) của họ trong hồ sơ người dùng.
+
+Bài viết này hướng dẫn bạn cách truy cập trạng thái hồ sơ người dùng để quyết định nội dung hiển thị — cho xem paywall hay mở quyền truy cập các tính năng trả phí.
+
+## Lấy trạng thái đăng ký \{#get-subscription-status\}
+
+Khi quyết định có nên hiển thị paywall hay nội dung trả phí cho người dùng, bạn kiểm tra [mức độ truy cập](access-level) trong hồ sơ người dùng của họ. Bạn có hai lựa chọn:
+
+- Gọi `GetProfile` nếu bạn cần dữ liệu hồ sơ mới nhất ngay lập tức (ví dụ: khi khởi động ứng dụng) hoặc muốn buộc cập nhật.
+- Thiết lập **cập nhật hồ sơ tự động** để giữ một bản sao cục bộ được tự động làm mới mỗi khi trạng thái đăng ký thay đổi.
+
+### Lấy hồ sơ người dùng \{#get-profile\}
+
+Cách đơn giản nhất để lấy trạng thái đăng ký là dùng phương thức `GetProfile` để truy cập hồ sơ:
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+// check the access
+});
+```
+
+### Lắng nghe cập nhật đăng ký \{#listen-to-subscription-updates\}
+
+Để tự động nhận cập nhật hồ sơ trong ứng dụng:
+
+1. Kế thừa `AdaptyEventListener` và implement phương thức `OnLoadLatestProfile` — Adapty sẽ tự động gọi phương thức này mỗi khi trạng thái đăng ký của người dùng thay đổi.
+2. Lưu dữ liệu hồ sơ được cập nhật khi phương thức này được gọi, để bạn có thể dùng nó trong toàn bộ ứng dụng mà không cần thực hiện thêm các yêu cầu mạng.
+
+```csharp
+public class SubscriptionManager : MonoBehaviour, AdaptyEventListener {
+    private AdaptyProfile currentProfile;
+    
+    void Start() {
+        // Register this object as an Adapty event listener
+        Adapty.SetEventListener(this);
+    }
+    
+    // Store the profile when it updates
+    public void OnLoadLatestProfile(AdaptyProfile profile) {
+        currentProfile = profile;
+        // Update UI, unlock content, etc.
+    }
+    
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+    
+    // Use stored profile instead of calling getProfile()
+    public bool HasAccess() {
+        if (currentProfile?.AccessLevels != null && 
+            currentProfile.AccessLevels.ContainsKey("premium")) {
+            return currentProfile.AccessLevels["premium"].IsActive;
+        }
+        return false;
+    }
+}
+```
+
+:::note
+Adapty tự động gọi `OnLoadLatestProfile` khi ứng dụng khởi động, cung cấp dữ liệu đăng ký đã được cache ngay cả khi thiết bị ngoại tuyến.
+:::
+
+## Kết nối hồ sơ với logic paywall \{#connect-profile-with-paywall-logic\}
+
+Khi bạn cần đưa ra quyết định ngay lập tức về việc hiển thị paywall hay cấp quyền truy cập tính năng trả phí, bạn có thể kiểm tra trực tiếp hồ sơ người dùng. Cách tiếp cận này hữu ích cho các tình huống như khởi động ứng dụng, khi vào các mục premium, hoặc trước khi hiển thị nội dung cụ thể.
+
+```csharp
+private void CheckAccessLevel()
+{
+    Adapty.GetProfile((profile, error) => {
+        if (error != null) {
+            Debug.LogError("Error checking access level: " + error.Message);
+            // Show paywall if access check fails
+            return;
+        }
+        
+        var accessLevel = profile.AccessLevels["YOUR_ACCESS_LEVEL"];
+        if (accessLevel == null || !accessLevel.IsActive) {
+            // Show paywall if no access
+        }
+    });
+}
+
+private void InitializePaywall()
+{
+    LoadPaywall();
+    CheckAccessLevel();
+}
+``` 
+
+## Bước tiếp theo \{#next-steps\}
+
+Sau khi đã biết cách theo dõi trạng thái đăng ký, hãy tìm hiểu cách [làm việc với hồ sơ người dùng](unity-quickstart-identify) để đảm bảo người dùng có thể truy cập những gì họ đã trả phí.
