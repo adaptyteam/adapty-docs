@@ -155,7 +155,7 @@ const T = {
   vi: {
     hero: "Adapty là nền tảng mua hàng trong ứng dụng mạnh mẽ và linh hoạt, giúp bạn mở rộng lượng người đăng ký. Dù bạn mới bắt đầu hay đã có hàng triệu người dùng, Adapty giúp bạn dễ dàng thiết lập mức giá đăng ký tối ưu, thử nghiệm các phương án khác nhau và tìm ra điều phù hợp nhất cho sự thành công của ứng dụng.",
     discoverTitle: "Adapty có phù hợp với tôi không?",
-    discoverDesc: "Tìm trường hợp sử dụng của bạn — dù bạn đang ra mắt ứng dụng mới, tối ưu doanh thu hay chuyển từ công cụ khác sang.",
+    discoverDesc: "Tìm trường hợp sử dụng của bạn — dù bạn đang ra mắt ứng dụng mới, tối ưu doanh thu hay migrate từ một công cụ khác.",
     quickstartTitle: "Hướng dẫn bắt đầu nhanh",
     quickstartDesc: "Kết nối Adapty với tài khoản cửa hàng của bạn, cấu hình sản phẩm và để Adapty xử lý các giao dịch mua trong ứng dụng.",
     quickstartBtn: "Thiết lập Adapty trong ứng dụng của tôi",
