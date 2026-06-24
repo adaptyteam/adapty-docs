@@ -1,7 +1,7 @@
 ---
-title: "React Native - Present new Paywall Builder paywalls"
-description: "Present paywalls in React Native apps using Adapty."
-metadataTitle: "Presenting Paywalls in React Native | Adapty Docs"
+title: "Display flows & paywalls - React Native"
+description: "Present flows and paywalls to users in your React Native app with Adapty."
+metadataTitle: "Displaying Flows & Paywalls in React Native | Adapty Docs"
 
 ---
 
@@ -10,6 +10,235 @@ import 'react-medium-image-zoom/dist/styles.css';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+
+<SDKv4>
+
+<MethodPromo method="getFlow" label="Display flows and paywalls" />
+
+If you've created a flow or paywall in the Flow Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a flow contains both what should be shown within it and how it should be shown.
+
+Before you start, ensure that:
+
+1. You have [created a flow or paywall](create-paywall).
+2. You have added it to a [placement](placements).
+3. You have [fetched the flow and prepared the view](react-native-get-pb-paywalls).
+
+:::warning
+
+This guide is for **flows and Paywall Builder paywalls** only, which require SDK v4.0 or later. The process for presenting flows differs for remote config paywalls.
+
+- For presenting **remote config paywalls**, see [Render paywall designed by remote config](present-remote-config-paywalls).
+
+:::
+
+Adapty React Native SDK provides two ways to present flows and paywalls:
+
+- **React component**: Embedded component allows you to integrate it into your app's architecture and navigation system.
+
+- **Modal presentation**
+
+## React component
+
+To embed a flow within your existing component tree, use the `AdaptyFlowView` component directly in your React Native component hierarchy. Embedded component allows you to integrate it into your app's architecture and navigation system.
+
+:::tip
+The `AdaptyFlowView` component creates its view when it renders, which is when the configuration and images load. To preload them, call [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration) for the same flow earlier in your app. The component then reuses the cached data and renders without waiting for downloads.
+:::
+
+:::note
+On Android, if the flow does not extend behind the status bar, a visual overlay may appear at its top. We recommend you to turn it off for your flows. See [Visual overlay at the top of the flow (Android)](#visual-overlay-at-the-top-of-the-flow-android).
+:::
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback, useMemo } from 'react';
+import { AdaptyFlowView } from 'react-native-adapty';
+import type { FlowEventHandlers } from 'react-native-adapty';
+
+function MyFlow({ flow }) {
+  const flowParams = useMemo(() => ({
+    loadTimeoutMs: 3000,
+  }), []);
+
+  const onCloseButtonPress = useCallback<FlowEventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onProductSelected = useCallback<FlowEventHandlers['onProductSelected']>((productId) => {}, []);
+  const onPurchaseStarted = useCallback<FlowEventHandlers['onPurchaseStarted']>((product) => {}, []);
+  const onPurchaseCompleted = useCallback<FlowEventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {}, []);
+  const onPurchaseFailed = useCallback<FlowEventHandlers['onPurchaseFailed']>((error, product) => {}, []);
+  const onRestoreStarted = useCallback<FlowEventHandlers['onRestoreStarted']>(() => {}, []);
+  const onRestoreCompleted = useCallback<FlowEventHandlers['onRestoreCompleted']>((profile) => {}, []);
+  const onRestoreFailed = useCallback<FlowEventHandlers['onRestoreFailed']>((error) => {}, []);
+  const onAppeared = useCallback<FlowEventHandlers['onAppeared']>(() => {}, []);
+  const onError = useCallback<FlowEventHandlers['onError']>((error) => {}, []);
+  const onLoadingProductsFailed = useCallback<FlowEventHandlers['onLoadingProductsFailed']>((error) => {}, []);
+  const onUrlPress = useCallback<FlowEventHandlers['onUrlPress']>((url) => {}, []);
+  const onCustomAction = useCallback<FlowEventHandlers['onCustomAction']>((actionId) => {}, []);
+  const onWebPaymentNavigationFinished = useCallback<FlowEventHandlers['onWebPaymentNavigationFinished']>(() => {}, []);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      params={flowParams}
+      style={styles.flow}
+      onCloseButtonPress={onCloseButtonPress}
+      onProductSelected={onProductSelected}
+      onPurchaseStarted={onPurchaseStarted}
+      onPurchaseCompleted={onPurchaseCompleted}
+      onPurchaseFailed={onPurchaseFailed}
+      onRestoreStarted={onRestoreStarted}
+      onRestoreCompleted={onRestoreCompleted}
+      onRestoreFailed={onRestoreFailed}
+      onAppeared={onAppeared}
+      onError={onError}
+      onLoadingProductsFailed={onLoadingProductsFailed}
+      onCustomAction={onCustomAction}
+      onUrlPress={onUrlPress}
+      onWebPaymentNavigationFinished={onWebPaymentNavigationFinished}
+    />
+  );
+}
+```
+
+## Modal presentation
+
+To display a flow as a standalone screen, use the `view.present()` method on the `view` created by the [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) method. Each `view` can only be used once. If you need to display the flow again, call `createFlowView` one more time to create a new `view` instance.
+
+:::warning
+Reusing the same `view` without recreating it is forbidden. It will result in an `AdaptyUIError.viewAlreadyPresented` error.
+:::
+
+```typescript showLineNumbers title="React Native (TSX)"
+import { createFlowView } from 'react-native-adapty';
+
+const view = await createFlowView(flow);
+
+// Optional: handle flow events (close, purchase, restore, etc)
+// view.setEventHandlers({ ... });
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+:::important
+Calling `setEventHandlers` multiple times will override the handlers you provide, replacing both default and previously set handlers for those specific events.
+:::
+
+### Configure iOS presentation style
+
+Configure how the flow is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `'full_screen'` (default) or `'page_sheet'` values.
+
+```typescript showLineNumbers
+try {
+  await view.present({ iosPresentationStyle: 'page_sheet' });
+} catch (error) {
+  // handle the error
+}
+```
+
+## Use developer-defined timer
+
+To use developer-defined timers in your mobile app, use the `timerId`, in this example, `CUSTOM_TIMER_NY`, the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. It ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer's end time, such as New Year's Day, minus the current time).
+
+<Tabs>
+<TabItem value="component" label="React component">
+```typescript showLineNumbers title="React Native (TSX)"
+const flowParams = {
+  customTimers: { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+};
+
+<AdaptyFlowView
+  flow={flow}
+  params={flowParams}
+  // ... your event handlers
+/>
+```
+</TabItem>
+<TabItem value="modal" label="Modal presentation">
+```typescript showLineNumbers title="React Native (TSX)"
+const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+
+const view = await createFlowView(flow, { customTimers });
+```
+</TabItem>
+</Tabs>
+In this example, `CUSTOM_TIMER_NY` is the **Timer ID** of the developer-defined timer you set in the Adapty dashboard. The `timerResolver` ensures your app dynamically updates the timer with the correct value—like `13d 09h 03m 34s` (calculated as the timer's end time, such as New Year's Day, minus the current time).
+
+## Show dialog
+
+Use this method instead of native alert dialogs when a flow view is presented on Android. On Android, regular RN alerts appear behind the flow view, which makes them invisible to users. This method ensures proper dialog presentation above the flow on all platforms.
+
+```typescript showLineNumbers title="React Native (TSX)"
+try {
+  const action = await view.showDialog({
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  });
+  
+  if (action === 'secondary') {
+    // User confirmed - close the flow
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (error) {
+  // handle error
+}
+```
+
+## Replace one subscription with another
+
+When a user attempts to purchase a new subscription while another subscription is active on Android, you can control how the new purchase should be handled by passing subscription update parameters when creating the flow view. To replace the current subscription with the new one, use `productPurchaseParams` in `createFlowView` with the `oldSubVendorProductId` and `prorationMode` parameters.
+
+```typescript showLineNumbers title="React Native (TSX)"
+import { Platform } from 'react-native';
+import { createFlowView } from 'react-native-adapty';
+
+const productPurchaseParams = flow.productIdentifiers.map((productId) => {
+  let params = {};
+  if (Platform.OS === 'android') {
+    params.android = {
+      subscriptionUpdateParams: {
+        oldSubVendorProductId: 'PRODUCT_ID_OF_THE_CURRENT_ACTIVE_SUBSCRIPTION',
+        prorationMode: 'with_time_proration',
+      },
+    };
+  }
+  return { productId, params };
+});
+
+const view = await createFlowView(flow, { productPurchaseParams });
+```
+
+## Troubleshooting
+
+### Visual overlay at the top of the flow (Android)
+
+:::note
+This setting is only available in bare React Native projects.
+
+If you are using an Expo managed workflow, you cannot add this Android resource directly. To apply this setting, you must create a custom Expo config plugin that adds the corresponding Android resource and register it in app.config.js. This is required because Expo manages the native Android project for you.
+:::
+
+If `AdaptyFlowView` does not extend behind the status bar, a visual overlay may still appear at its top. To remove it, add the following boolean resource to your app:
+
+1. Go to `android/app/src/main/res/values`. If there is no `bools.xml` file, create it.
+
+2. Add the following resource:
+
+```xml
+<resources>
+    <bool name="adapty_paywall_enable_safe_area_paddings">false</bool>
+</resources>
+```
+
+Note that the changes apply globally for all flows in your app.
+
+</SDKv4>
+
+<SDKv3>
 
 If you've customized a paywall using the Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a paywall contains both what should be shown within the paywall and how it should be shown.
 
@@ -102,8 +331,6 @@ To display a paywall as a standalone screen, use the `view.present()` method on 
 Reusing the same `view` without recreating it is forbidden. It will result in an `AdaptyUIError.viewAlreadyPresented` error.
 :::
 
-<Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.14 or later" default>
 ```typescript showLineNumbers title="React Native (TSX)"
 import { createPaywallView } from 'react-native-adapty';
 
@@ -123,33 +350,13 @@ try {
 Calling `setEventHandlers` multiple times will override the handlers you provide, replacing both default and previously set handlers for those specific events.
 :::
 
-</TabItem>
-
-<TabItem value="old" label="SDK version < 3.14" default>
-```typescript showLineNumbers title="React Native (TSX)"
-import { createPaywallView } from 'react-native-adapty/dist/ui';
-
-const view = await createPaywallView(paywall);
-
-view.registerEventHandlers(); // handle close press, etc
-
-try {
-  await view.present();
-} catch (error) {
-  // handle the error
-}
-```
-
-</TabItem>
-</Tabs>
-
 ### Configure iOS presentation style
 
 Configure how the paywall is presented on iOS by passing the `iosPresentationStyle` parameter to the `present()` method. The parameter accepts `'full_screen'` (default) or `'page_sheet'` values.
 
 ```typescript showLineNumbers
 try {
-  await view.present(iosPresentationStyle: 'page_sheet');
+  await view.present({ iosPresentationStyle: 'page_sheet' });
 } catch (error) {
   // handle the error
 }
@@ -253,3 +460,5 @@ If `AdaptyPaywallView` does not extend behind the status bar, a visual overlay m
 ```
 
 Note that the changes apply globally for all paywalls in your app.
+
+</SDKv3>
