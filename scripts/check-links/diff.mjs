@@ -187,7 +187,7 @@ async function runWithConcurrency(tasks, limit) {
  * If the resolved ref doesn't exist (e.g. deploy tag on first run),
  * returns null so the caller can fall back to a full scan.
  */
-async function resolveDiffBase(mode, explicitBase) {
+export async function resolveDiffBase(mode, explicitBase) {
   if (mode === 'dev') {
     try {
       const { stdout } = await execFileAsync('git', ['rev-parse', '--abbrev-ref', '@{upstream}']);
