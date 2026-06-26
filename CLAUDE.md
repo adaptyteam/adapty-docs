@@ -49,7 +49,7 @@ Do not `grep`, `find`, or `glob` the docs to find the right article. **Always us
 
 1. The `tutorial.json` sidebar is visible when the user views the Dashboard docs. It includes non-framework-specific articles that cover general subjects and the use of the Adapty Dashboard.
 2. Framework-specific sidebar files are visible when viewing SDK documentation for that specific framework. They named after the framework (`ios.json`, `android.json`, `react-native.json`, `flutter.json`, `unity.json`, `kmp.json`, `capacitor.json`).
-3. The `api.json` file contains the API documentation sidebar.
+3. The `api.json` file contains the API documentation sidebar. The OpenAPI specs it references live in `src/api-reference/specs/`.
 
 #### Rules and Exceptions
 
@@ -77,7 +77,7 @@ Translated versions of articles live in `src/locales/{locale}/` (e.g., `src/loca
 
 ## Key components
 
-All components below are **auto-registered** in `src/pages/[...slug].astro` — no `import` statement needed in articles.
+The components below are **auto-registered** in `src/pages/[...slug].astro` — no `import` statement needed in articles. Other components in `src/components/` require an explicit import (see pattern at the bottom of this section).
 
 | Component | Usage |
 |-----------|-------|
