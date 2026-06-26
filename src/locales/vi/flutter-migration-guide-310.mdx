@@ -1,0 +1,66 @@
+---
+title: "Hướng dẫn migration lên Flutter Adapty SDK 3.10.0"
+description: ""
+metadataTitle: ""
+---
+
+Adapty SDK 3.10.0 là một bản phát hành lớn mang lại một số cải tiến, tuy nhiên có thể yêu cầu bạn thực hiện một số bước migration:
+
+1. Cập nhật phương thức `makePurchase` để sử dụng `AdaptyPurchaseParameters` thay vì các tham số riêng lẻ.
+2. Thay thế `vendorProductIds` bằng `productIdentifiers` trong model `AdaptyPaywall`.
+
+## Cập nhật phương thức makePurchase \{#update-makepurchase-method\}
+
+Phương thức `makePurchase` hiện sử dụng `AdaptyPurchaseParameters` thay vì các đối số `subscriptionUpdateParams` và `isOfferPersonalized` riêng lẻ. Điều này giúp đảm bảo kiểu dữ liệu an toàn hơn và cho phép mở rộng các tham số mua hàng trong tương lai.
+
+```diff showLineNumbers
+- final purchaseResult = await adapty.makePurchase(
+-   product: product,
+-   subscriptionUpdateParams: subscriptionUpdateParams,
+-   isOfferPersonalized: true,
+- );
+
++ final parameters = AdaptyPurchaseParametersBuilder()
++   ..setSubscriptionUpdateParams(subscriptionUpdateParams)
++   ..setIsOfferPersonalized(true)
++   ..setObfuscatedAccountId('your-account-id')
++   ..setObfuscatedProfileId('your-profile-id');
+
++ final purchaseResult = await adapty.makePurchase(
++   product: product,
++   parameters: parameters.build(),
++ );
+```
+
+Nếu không cần thêm tham số nào, bạn có thể sử dụng đơn giản như sau:
+
+```dart showLineNumbers
+final purchaseResult = await adapty.makePurchase(
+  product: product,
+);
+```
+
+## Cập nhật cách sử dụng model AdaptyPaywall \{#update-adaptywall-model-usage\}
+
+Thuộc tính `vendorProductIds` đã bị deprecated và được thay thế bằng `productIdentifiers`. Thuộc tính mới trả về các đối tượng `AdaptyProductIdentifier` thay vì chuỗi đơn giản, cung cấp thông tin sản phẩm có cấu trúc hơn.
+
+```diff showLineNumbers
+- paywall.vendorProductIds.map((vendorId) => 
+-   ListTextTile(title: vendorId)
+- ).toList()
+
++ paywall.productIdentifiers.map((productId) => 
++   ListTextTile(title: productId.vendorProductId)
++ ).toList()
+```
+
+Đối tượng `AdaptyProductIdentifier` cung cấp quyền truy cập vào vendor product ID thông qua thuộc tính `vendorProductId`, giữ nguyên chức năng như cũ trong khi cung cấp cấu trúc tốt hơn cho các cải tiến trong tương lai.
+
+## Tương thích ngược \{#backward-compatibility\}
+
+Cả hai thay đổi đều duy trì tương thích ngược:
+- Các tham số cũ trong `makePurchase` đã bị deprecated nhưng vẫn hoạt động bình thường
+- Thuộc tính `vendorProductIds` đã bị deprecated nhưng vẫn có thể truy cập được
+- Code hiện tại sẽ tiếp tục hoạt động, mặc dù bạn sẽ thấy các cảnh báo deprecation
+
+Chúng tôi khuyến nghị cập nhật code của bạn để sử dụng các API mới nhằm đảm bảo khả năng tương thích trong tương lai và tận dụng tính an toàn kiểu dữ liệu và khả năng mở rộng được cải thiện.

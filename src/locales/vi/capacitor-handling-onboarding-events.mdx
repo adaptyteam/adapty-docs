@@ -1,0 +1,331 @@
+---
+title: "Xử lý sự kiện onboarding trong Capacitor SDK"
+description: "Xử lý các sự kiện liên quan đến onboarding trong Capacitor bằng Adapty."
+metadataTitle: "Xử lý Sự kiện Onboarding trong Capacitor | Tài liệu Adapty"
+toc_max_heading_level: 4
+---
+
+Các onboarding được cấu hình bằng builder sẽ tạo ra các sự kiện mà ứng dụng của bạn có thể xử lý. Sử dụng phương thức `setEventHandlers` để xử lý các sự kiện này khi hiển thị màn hình độc lập.
+
+Trước khi bắt đầu, hãy đảm bảo rằng:
+
+1. Bạn đã [tạo một onboarding](create-onboarding).
+2. Bạn đã thêm onboarding vào một [placement](placements).
+
+## Thiết lập event handler \{#set-up-event-handlers\}
+
+Để xử lý sự kiện cho các onboarding, hãy sử dụng phương thức `view.setEventHandlers`:
+
+```typescript showLineNumbers
+
+try {
+  const view = await createOnboardingView(onboarding);
+  
+  view.setEventHandlers({
+    onAnalytics(event, meta) {
+      console.log('Analytics event:', event);
+    },
+    onClose(actionId, meta) {
+      console.log('Onboarding closed:', actionId);
+      return true; // Allow the onboarding to close
+    },
+    onCustom(actionId, meta) {
+      console.log('Custom action:', actionId);
+      return false; // Don't close the onboarding
+    },
+    onPaywall(actionId, meta) {
+      console.log('Paywall action:', actionId);
+      view.dismiss().then(() => {
+        openPaywall(actionId);
+      });
+    },
+    onStateUpdated(action, meta) {
+      console.log('State updated:', action);
+    },
+    onFinishedLoading(meta) {
+      console.log('Onboarding finished loading');
+    },
+    onError(error) {
+      console.error('Onboarding error:', error);
+    },
+  });
+  
+  await view.present();
+} catch (error) {
+  console.error('Failed to present onboarding:', error);
+}
+```
+
+## Các loại sự kiện \{#event-types\}
+
+Các phần dưới đây mô tả các loại sự kiện khác nhau mà bạn có thể xử lý.
+
+### Xử lý hành động tùy chỉnh \{#handle-custom-actions\}
+
+Trong builder, bạn có thể thêm hành động **custom** vào một nút và gán cho nó một ID.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Sau đó, bạn có thể sử dụng ID này trong code và xử lý nó như một hành động tùy chỉnh. Ví dụ: nếu người dùng nhấn vào một nút tùy chỉnh như **Login** hoặc **Allow notifications**, event handler sẽ được kích hoạt với tham số `actionId` trùng với **Action ID** trong builder. Bạn có thể tự tạo ID, ví dụ "allowNotifications".
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onCustom(actionId, meta) {
+    switch (actionId) {
+      case 'login':
+        console.log('Login action triggered');
+        break;
+      case 'allow_notifications':
+        console.log('Allow notifications action triggered');
+        break;
+    }
+    return false; // Don't close the onboarding
+  },
+});
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```json
+{
+  "actionId": "allow_notifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+### Hoàn tất tải onboarding \{#finishing-loading-onboarding\}
+
+Khi onboarding hoàn tất việc tải, sự kiện này sẽ được kích hoạt:
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onFinishedLoading(meta) {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  },
+});
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+
+### Đóng onboarding \{#closing-onboarding\}
+
+Onboarding được coi là đã đóng khi người dùng nhấn vào nút có hành động **Close** được gán.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+Lưu ý rằng bạn cần tự quản lý những gì xảy ra khi người dùng đóng onboarding. Ví dụ, bạn cần dừng việc hiển thị onboarding đó.
+:::
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onClose(actionId, meta) {
+    console.log('Onboarding closed:', actionId);
+    return true; // Allow the onboarding to close
+  },
+});
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+</Details>
+
+### Mở paywall \{#opening-a-paywall\}
+
+:::tip
+Xử lý sự kiện này để mở paywall nếu bạn muốn mở nó bên trong onboarding. Nếu bạn muốn mở paywall sau khi onboarding đóng, có một cách đơn giản hơn — xử lý hành động đóng và mở paywall mà không cần dựa vào dữ liệu sự kiện.
+:::
+
+Cách liền mạch nhất để làm việc với paywall trong onboarding là đặt action ID bằng với placement ID của paywall.
+
+Lưu ý rằng với iOS, chỉ có thể hiển thị một view (paywall hoặc onboarding) trên màn hình tại một thời điểm. Nếu bạn hiển thị paywall lên trên onboarding, bạn không thể điều khiển onboarding ở nền bằng lập trình. Việc cố gắng dismiss onboarding sẽ đóng paywall thay vào đó, khiến onboarding vẫn hiển thị. Để tránh điều này, hãy luôn dismiss view onboarding trước khi hiển thị paywall.
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onPaywall(actionId, meta) {
+    // Dismiss onboarding before presenting paywall
+    view.dismiss().then(() => {
+      openPaywall(actionId);
+    });
+  },
+});
+
+async function openPaywall(placementId: string) {
+  // Implement your paywall opening logic here
+}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+
+### Theo dõi điều hướng \{#tracking-navigation\}
+
+Bạn nhận được sự kiện analytics khi các sự kiện liên quan đến điều hướng xảy ra trong flow onboarding:
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onAnalytics(event, meta) {
+    console.log('Analytics event:', event.type, meta.onboardingId);
+  },
+});
+```
+
+Đối tượng `event` có thể là một trong các loại sau:
+
+| Loại | Mô tả |
+|------------|-------------|
+| `onboardingStarted` | Khi onboarding đã được tải |
+| `screenPresented` | Khi bất kỳ màn hình nào được hiển thị |
+| `screenCompleted` | Khi một màn hình hoàn tất. Bao gồm `elementId` tùy chọn (định danh của phần tử đã hoàn tất) và `reply` tùy chọn (phản hồi từ người dùng). Được kích hoạt khi người dùng thực hiện bất kỳ hành động nào để thoát khỏi màn hình. |
+| `secondScreenPresented` | Khi màn hình thứ hai được hiển thị |
+| `userEmailCollected` | Được kích hoạt khi email của người dùng được thu thập qua trường nhập liệu |
+| `onboardingCompleted` | Được kích hoạt khi người dùng đến màn hình có ID `final`. Nếu bạn cần sự kiện này, hãy [gán ID `final` cho màn hình cuối cùng](design-onboarding). |
+| `unknown` | Cho bất kỳ loại sự kiện không xác định nào. Bao gồm `name` (tên của sự kiện không xác định) và `meta` (metadata bổ sung) |
+
+Mỗi sự kiện bao gồm thông tin `meta` chứa:
+
+| Trường | Mô tả |
+|------------|-------------|
+| `onboardingId` | Định danh duy nhất của flow onboarding |
+| `screenClientId` | Định danh của màn hình hiện tại |
+| `screenIndex` | Vị trí của màn hình hiện tại trong flow |
+| `screensTotal` | Tổng số màn hình trong flow |
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+```
+</Details>

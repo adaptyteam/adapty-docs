@@ -1,0 +1,82 @@
+---
+title: "Backend'inizden abonelik erişimini kontrol edin ve izin verin"
+description: "Bir kullanıcının aktif bir aboneliğe sahip olup olmadığını kontrol etmek ve erişimi manuel olarak vermek için Adapty sunucu tarafı API'sini kullanın; bir AI kodlama ajanının yardımıyla."
+metadataTitle: "Backend'inizden Abonelik Erişimini Kontrol Edin ve İzin Verin | Adapty Dokümanları"
+---
+Arka ucunuzdan, bir kullanıcının aktif aboneliğinin olup olmadığını kontrol etmek ve erişimi manuel olarak vermek için Adapty sunucu tarafı API'sini kullanın. Bu kılavuz en yaygın iki çağrıyı — `getProfile` ve `grantAccessLevel` — ele alır ve bir AI kodlama ajanının sizin için entegrasyonu nasıl yazabileceğini gösterir.
+
+:::tip
+Bir AI kodlama ajanı mı kullanıyorsunuz? Başlığın altındaki **Copy for LLM** seçeneğine tıklayın ve bu sayfanın tamamını ajanınıza yapıştırın — ihtiyaç duyduğu çağrılar, alanlar ve dikkat edilmesi gereken noktalar orada mevcut.
+:::
+## Başlamadan önce \{#before-you-start\}
+
+- **Gizli API anahtarı**: [App settings → General](https://app.adapty.io/settings/general) sayfasında, **Secret key** alanında bulabilirsiniz. Anahtarlar uygulamaya özeldir. Bir ortam değişkeninde saklayın (örneğin `ADAPTY_SECRET_KEY`) ve `Authorization: Api-Key {key}` olarak gönderin.
+- **Temel URL**: Tüm istekler `https://api.adapty.io` adresine gider.
+- **Kullanıcıyı tanımlamanın bir yolu**: `adapty-customer-user-id` (kendi kullanıcı kimliğiniz — yalnızca uygulamada kullanıcıları tanımlıyorsanız çalışır) veya `adapty-profile-id` (Adapty profil kimliği) gönderin. İkisi birbirinin yerine kullanılabilir; birini seçin.
+## Abonelik durumunu kontrol etme \{#check-a-subscription\}
+
+Durumu kontrol etmek için `GET` yöntemiyle `getProfile` çağrısı yapın ve kullanıcı tanımlayıcısını header olarak geçirin — istek gövdesi gerekmez.
+```javascript title="check-access.js"
+const res = await fetch("https://api.adapty.io/api/v2/server-side-api/profile/", {
+  headers: {
+    "Authorization": `Api-Key ${process.env.ADAPTY_SECRET_KEY}`,
+    "adapty-customer-user-id": userId,
+  },
+});
+const { data } = await res.json();
+
+function hasActiveAccess(profile, accessLevelId = "premium") {
+  const level = profile.access_levels?.find(a => a.access_level_id === accessLevelId);
+  if (!level) return false;
+  if (level.is_in_grace_period) return true;
+  if (!level.expires_at) return true;             // lifetime / non-expiring
+  return new Date(level.expires_at) > new Date(); // not expired yet
+}
+
+if (hasActiveAccess(data)) {
+  // unlock premium features
+}
+```
+
+SDK profilinin aksine, sunucu tarafı yanıtında **`is_active` alanı bulunmaz**. Durumu `access_levels[].expires_at` alanından kendiniz türetmeniz gerekir: `null` değeri süresiz erişim anlamına gelir, gelecekteki bir tarih aktif olduğunu, geçmişteki bir tarih ise sona erdiğini gösterir. `is_in_grace_period` durumunu hâlâ aktif olarak değerlendirin. Profil ve access level alanlarının tamamı için [getProfile](https://adapty.io/docs/tr/api-adapty/operations/getProfile.md) sayfasına bakın.
+## Erişimi manuel olarak ver \{#grant-access-manually\}
+
+Satın alma olmaksızın ücretli özelliklerin kilidini açmak için — promosyon kodları, yatırımcı veya beta erişimi, destek talepleri — `grantAccessLevel` metodunu `POST` ile çağırın.
+
+```javascript title="grant-access.js"
+await fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/", {
+  method: "POST",
+  headers: {
+    "Authorization": `Api-Key ${process.env.ADAPTY_SECRET_KEY}`,
+    "adapty-customer-user-id": userId,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ access_level_id: "premium" }), // geçici erişim için "expires_at" ekleyin
+});
+```
+- **Access level'ın kontrol panelinizde zaten mevcut olması gerekir** (**Access levels**) — `access_level_id` yeni bir isim değil, mevcut access level'ın tanımlayıcısıdır.
+- **Manuel olarak verilen erişimler analitikte görünmez.** Yalnızca webhook entegrasyonunuza ve Event Feed'e iletilir; bu nedenle gelir ve dönüşüm grafikleri bunları yansıtmaz.
+
+İstek ve yanıt ayrıntıları için [grantAccessLevel](https://adapty.io/docs/tr/api-adapty/operations/grantAccessLevel.md) sayfasına bakın.
+## AI kodlama ajanınızla geliştirin \{#build-it-with-your-ai-coding-agent\}
+
+AI kodlama ajanınıza bu kılavuzu ve API spesifikasyonunu Markdown olarak verin (herhangi bir sayfa URL'sine `.md` ekleyin), kullandığınız stack'i belirtin ve çağrıları yazdırmasına izin verin:
+
+- [OpenAPI spec](https://adapty.io/docs/tr/api-specs/adapty-api.yaml)
+- [getProfile](https://adapty.io/docs/tr/api-adapty/operations/getProfile.md)
+- [grantAccessLevel](https://adapty.io/docs/tr/api-adapty/operations/grantAccessLevel.md)
+
+Örnek prompt:
+```
+Using the Adapty server-side API spec, write backend functions to check whether a
+user has an active "premium" access level (GET /profile/, derive status from
+expires_at — there's no is_active field) and to grant it (grantAccessLevel).
+Authenticate with ADAPTY_SECRET_KEY and identify users by adapty-customer-user-id.
+```
+
+The agent writes the code, but it can't run your backend or set your keys — you provide the secret key and the user identifiers.
+## Sınırlar \{#limits\}
+
+- **Hız sınırı**: Uygulama başına dakikada en fazla 40.000 istek.
+- **Uygulamaya özel anahtarlar**: Her anahtar yalnızca bir uygulama için geçerlidir; her uygulama için doğru anahtarı kullanın.
+- **Bir tanımlayıcı zorunludur**: Her istek `adapty-customer-user-id` veya `adapty-profile-id` içermelidir.

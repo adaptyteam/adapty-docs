@@ -1,0 +1,192 @@
+---
+title: "iOS SDKのカスタムペイウォールで購入を有効にする"
+description: "Adapty SDKをカスタムiOSペイウォールに統合してアプリ内課金を有効にします。"
+metadataTitle: "Adaptyクイックスタートガイド | Adapty ドキュメント"
+keywords: ['paywalls ios', 'sdk ios', 'paywall', 'getFlow']
+---
+
+このガイドでは、Adaptyをカスタムペイウォールに統合する方法を説明します。ペイウォールの実装を完全にコントロールしながら、Adapty SDKがプロダクトの取得、新規購入の処理、過去の購入の復元を行います。
+
+:::important
+**このガイドはカスタムペイウォールを実装する開発者向けです。** 購入を最も簡単に有効にしたい場合は、[Adapty フローBuilder](ios-quickstart-paywalls)を使用してください。フローBuilderを使えば、ノーコードのビジュアルエディターでフローを作成でき、Adaptyが購入ロジックをすべて自動的に処理します。アプリを再公開せずにさまざまなデザインをテストできます。
+:::
+
+## 始める前に \{#before-you-start\}
+
+### プロダクトのセットアップ \{#set-up-products\}
+
+アプリ内課金を有効にするには、3つの重要な概念を理解する必要があります：
+
+- [**プロダクト**](product) – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセス）
+- [**ペイウォール**](paywalls) – どのプロダクトを提供するかを定義する設定。Adaptyでは、プロダクトを取得する唯一の方法がペイウォールですが、この設計によりアプリコードを変更せずにプロダクト、価格、オファーを変更できます。
+- [**プレースメント**](placements) – アプリ内でペイウォールを表示する場所とタイミング（`main`、`onboarding`、`settings`など）。ダッシュボードでプレースメントにペイウォールを設定し、コード内でプレースメントIDを使ってリクエストします。これにより、A/B テストの実施やユーザーごとに異なるペイウォールの表示が簡単になります。
+
+カスタムペイウォールを使用する場合でも、これらの概念を理解しておくことが重要です。基本的に、アプリで販売するプロダクトを管理するための仕組みです。
+
+カスタムペイウォールを実装するには、**ペイウォール**を作成して**プレースメント**に追加する必要があります。この設定によりプロダクトを取得できるようになります。ダッシュボードで何をする必要があるかを理解するには、[こちら](quickstart)のクイックスタートガイドに従ってください。
+
+### ユーザーの管理 \{#manage-users\}
+
+バックエンド認証の有無にかかわらず作業できます。
+
+ただし、Adapty SDKは匿名ユーザーと識別済みユーザーを異なる方法で処理します。[識別クイックスタートガイド](ios-quickstart-identify)を読んで、その詳細を理解し、ユーザーを適切に処理していることを確認してください。
+
+## ステップ1. プロダクトを取得する \{#step-1-get-products\}
+
+カスタムペイウォール用のプロダクトを取得するには、次の手順が必要です：
+
+1. `getFlow`メソッドに[プレースメント](placements)IDを渡して`flow`オブジェクトを取得します。
+2. `getPaywallProducts`メソッドを使ってこのフローのプロダクト配列を取得します。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swift" label="Swift" default>
+
+```swift
+
+func loadPaywall() async {
+    do {
+        let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+        let products = try await Adapty.getPaywallProducts(flow: flow)
+
+        // Use products to build your custom paywall UI
+    } catch {
+        // Handle the error
+    }
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift
+
+func loadPaywall() {
+    Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID") { result in
+        switch result {
+        case let .success(flow):
+            Adapty.getPaywallProducts(flow: flow) { result in
+                switch result {
+                case let .success(products):
+                    // Use products to build your custom paywall UI
+                case let .failure(error):
+                    // Handle the error
+                }
+            }
+        case let .failure(error):
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## ステップ2. 購入を受け付ける \{#step-2-accept-purchases\}
+
+ユーザーがカスタムペイウォールのプロダクトをタップしたら、選択したプロダクトを引数に`makePurchase`メソッドを呼び出します。これにより購入フローが処理され、更新されたプロファイルが返されます。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swift" label="Swift" default>
+
+```swift
+
+func purchaseProduct(_ product: AdaptyPaywallProduct) async {
+    do {
+        let purchaseResult = try await Adapty.makePurchase(product: product)
+        
+        switch purchaseResult {
+        case .userCancelled:
+            // User canceled the purchase
+            break
+        case .pending:
+            // Purchase is pending (e.g., awaiting parental approval)
+            break
+        case let .success(profile, transaction):
+            // Purchase successful, profile updated
+            break
+        }
+    } catch {
+        // Handle the error
+    }
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift
+
+func purchaseProduct(_ product: AdaptyPaywallProduct) {
+    Adapty.makePurchase(product: product) { result in
+        switch result {
+        case let .success(purchaseResult):
+            switch purchaseResult {
+            case .userCancelled:
+                // User canceled the purchase
+                break
+            case .pending:
+                // Purchase is pending (e.g., awaiting parental approval)
+                break
+            case let .success(profile, transaction):
+                // Purchase successful, profile updated
+                break
+            }
+        case let .failure(error):
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## ステップ3. 購入を復元する \{#step-3-restore-purchases\}
+
+Appleは、サブスクリプションのあるすべてのアプリに対して、ユーザーが購入を復元できる手段を提供することを求めています。Apple IDでログインした際に購入は自動的に復元されますが、それでもアプリに復元ボタンを実装する必要があります。
+
+ユーザーが復元ボタンをタップしたら`restorePurchases`メソッドを呼び出します。これにより購入履歴がAdaptyと同期され、更新されたプロファイルが返されます。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swift" label="Swift" default>
+
+```swift
+
+func restorePurchases() async {
+    do {
+        let profile = try await Adapty.restorePurchases()
+        // Restore successful, profile updated
+    } catch {
+        // Handle the error
+    }
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift
+
+func restorePurchases() {
+    Adapty.restorePurchases { result in
+        switch result {
+        case let .success(profile):
+            // Restore successful, profile updated
+        case let .failure(error):
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## 次のステップ \{#next-steps\}
+
+<SupportForum />
+
+ペイウォールはアプリに表示する準備ができました。[サンドボックスモードで購入をテスト](test-purchases-in-sandbox)して、ペイウォールからテスト購入を完了できることを確認してください。
+
+次に、[ユーザーが購入を完了したかどうかを確認](ios-check-subscription-status)して、ペイウォールを表示するか有料機能へのアクセスを許可するかを判断してください。

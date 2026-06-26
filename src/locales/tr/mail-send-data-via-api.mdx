@@ -1,0 +1,101 @@
+---
+title: "Adapty Mail API aracılığıyla e-posta ve işlem gönderme"
+description: "Adapty SDK'ya gerek kalmadan kullanıcı profillerini ve işlemleri doğrudan sunucunuzdan Adapty Mail'e gönderin."
+metadataTitle: "Adapty Mail API ile Veri Gönderme | Adapty Dokümanları"
+---
+
+Adapty Mail API, kullanıcı profillerini ve işlemleri Adapty SDK üzerinden yönlendirmeye gerek kalmadan doğrudan sunucunuzdan Adapty Mail'e göndermenizi sağlar. Şu durumlarda kullanabilirsiniz:
+- Adapty Mail'de henüz bir abone tabanınız yokken abone ekleyin.
+- Diğer uygulamalarınızdaki abone tabanını yeniden kullanın.
+- Adapty Mail'i sunucudan sunucuya besleyin; backend'iniz gerçeğin kaynağı olsun.
+
+:::note
+**API mi yoksa SDK mı?** Çoğu uygulama, e-postaları ve satın almaları otomatik olarak toplayan Adapty SDK'sı aracılığıyla Adapty Mail'e veri gönderir. Uygulamanızda Adapty SDK'sı yoksa, veriler zaten sunucunuzda bulunuyorsa veya başka bir kaynaktan abone içe aktarıyorsanız API'yi tercih edin.
+:::
+## Başlamadan önce \{#before-you-start\}
+
+:::warning
+Veri göndermeden önce Adapty Mail kurulumunu tamamlayın — bu, bir kampanya, segment (gerekiyorsa), web paywall ve başlatılmış bir flow anlamına gelir. Adapty Mail, yalnızca bu kurulum tamamlandıktan sonra oluşturulan profillere e-posta gönderir; daha önce gönderdiğiniz profiller hiçbir e-posta almaz. Önce [Adapty Mail ile başlarken](mail-get-started) adımlarını takip edin, ardından buraya dönün.
+:::
+
+API anahtarınıza ve temel URL'nize de ihtiyacınız olacak:
+- **Gizli API anahtarı**: Adapty Mail'de **Settings** bölümüne gidin ve gizli API anahtarınızı kopyalayın. Anahtar projeye özgüdür; bu sayede API hangi projeye ait olduğunu bilir.
+- **Temel URL**: Tüm istekler `https://api-mail.adapty.io` adresine gönderilir.
+- **Kimlik doğrulama**: Anahtarı **Authorization** başlığında `Bearer {your_secret_api_key}` biçiminde gönderin.
+
+:::important
+E-postaları toplayıp Adapty Mail'e göndermeden önce kullanıcılardan açık rıza alın. GDPR, CAN-SPAM ve faaliyet gösterdiğiniz pazarlardaki benzer düzenlemelere uyum sağlamak sizin sorumluluğunuzdadır.
+:::
+## Kullanıcı profilleri gönderme \{#send-user-profiles\}
+
+Profil, kullanıcının e-posta adresini ve özelliklerini içerir. Profil oluşturmak veya güncellemek için `/api/v1/profile/save/` adresine POST isteği gönderin.
+
+Üç alan zorunludur:
+- Uygulamanıza veya backend'inize ait sabit bir `external_profile_id`
+- Adapty Mail'in kampanyaları iletmek için kullandığı `email`
+- `external_created_at` — segment'lerde kullanabileceğiniz kullanıcı oluşturma zamanı
+
+:::important
+Her zaman sabit bir `external_profile_id` gönderin; anonim veya kuruluma özel bir değer kullanmayın. Adapty Mail, e-postaları, tıklamaları ve satın almaları tek bir profile bağlamak için bu alanı kullanır.
+:::
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/save/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "external_profile_id": "user_12345",
+    "external_created_at": "2026-06-01T10:30:00Z",
+    "email": "jane@example.com",
+    "country": "US",
+    "custom_attributes": {
+      "plan": "trial"
+    }
+  }'
+```
+
+Kullanılabilir her alan için [Profili kaydet](api-mail/operations/saveProfile) referansına bakın.
+## İşlem olaylarını gönder \{#send-transaction-events\}
+
+:::note
+**never purchased** flow'unda kullanıcılara ulaşmak için e-posta içeren bir profil yeterlidir. Diğer tüm flow'lardaki kullanıcılar için işlem olayları da gereklidir.
+:::
+
+**never purchased** dışındaki tüm flow'lar satın alma geçmişiyle çalışır. Satın alma, yenileme ve iptalleri işlerken profil işlem olaylarını gönderin; böylece Adapty Mail kullanıcıyı doğru flow'a yerleştirebilir. İşlem olayları aynı zamanda gelir attribution'ını da destekler. Yalnızca **never purchased** kampanyaları yürütüyorsanız bu adımı atlayabilirsiniz.
+Bir işlemi kaydetmek için `/api/v1/profile/transaction-event/save/` adresine POST isteği gönderin. Adapty Mail'in işlemi doğru kullanıcıyla ilişkilendirebilmesi için profille birlikte gönderdiğiniz `external_profile_id` değerini kullanın.
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/transaction-event/save/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "event_type": "subscription_started",
+    "event_id": "evt_abc123",
+    "event_datetime": "2026-06-10T14:20:05Z",
+    "external_profile_id": "user_12345",
+    "store": "app_store",
+    "store_product_id": "premium_monthly",
+    "store_transaction_id": "1000000123456789",
+    "store_original_transaction_id": "1000000123456789",
+    "purchased_at": "2026-06-10T14:20:00Z",
+    "originally_purchased_at": "2026-06-10T14:20:00Z",
+    "price_usd": "9.99"
+  }'
+```
+
+[Save transaction event](api-mail/operations/saveTransactionEvent) referansında mevcut tüm alanları görebilirsiniz.
+### Olaylarınızı flow'larla eşleştirin \{#map-your-events-to-flows\}
+
+Yaşanan olayı temsil eden `event_type` değerini gönderin. Adapty Mail, profilin durumunu olay geçmişinden çıkarır ve onu uygun flow'a yönlendirir.
+| `event_type` | Ne zaman gönderilir | Flow |
+| --- | --- | --- |
+| `subscription_started` | Bir kullanıcı yeni bir abonelik başlattığında. | Aktif — yeniden etkileşim flow'u yok |
+| `subscription_renewed` | Bir abonelik otomatik olarak yenilendiğinde. | Aktif — yeniden etkileşim flow'u yok |
+| `subscription_renewal_reactivated` | Bir kullanıcı otomatik yenilemeyi yeniden açtığında. | Aktif — yeniden etkileşim flow'u yok |
+| `non_subscription_purchase` | Bir kullanıcı tek seferlik satın alma yaptığında. | Aktif — yeniden etkileşim flow'u yok |
+| `subscription_renewal_cancelled` | Bir kullanıcı otomatik yenilemeyi kapattığında (süre dolana kadar hâlâ aktif). | Yenileme iptal edildi |
+| `billing_issue_detected` | Yenileme ödemesi başarısız olduğunda. | Ödeme sorunu |
+| `entered_grace_period` | Ödeme başarısız olsa da kullanıcı hâlâ ek süre içindeyken. | Ödeme sorunu |
+| `subscription_expired` | Abonelik sona erip erişim bittiğinde. | Süresi doldu |
+| `subscription_refunded` | Bir abonelik satın alımı iade edildiğinde. | İade edildi |
+| `non_subscription_purchase_refunded` | Tek seferlik satın alma iade edildiğinde. | İade edildi |

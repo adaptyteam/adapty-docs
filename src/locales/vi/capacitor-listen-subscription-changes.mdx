@@ -1,0 +1,95 @@
+---
+title: "Kiểm tra trạng thái gói đăng ký trong Capacitor SDK"
+description: "Theo dõi và quản lý trạng thái gói đăng ký của người dùng trong Adapty để cải thiện khả năng giữ chân khách hàng trong ứng dụng Capacitor của bạn."
+metadataTitle: "Hiểu về Trạng thái Gói đăng ký | Tài liệu Adapty"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+
+Với Adapty, việc theo dõi trạng thái gói đăng ký trở nên đơn giản hơn bao giờ hết. Bạn không cần phải chèn thủ công các ID sản phẩm vào code của mình. Thay vào đó, bạn có thể dễ dàng xác nhận trạng thái gói đăng ký của người dùng bằng cách kiểm tra [mức độ truy cập](access-level) đang hoạt động.
+
+<details>
+   <summary>Trước khi bắt đầu kiểm tra trạng thái gói đăng ký (Nhấn để mở rộng)</summary>
+
+- Đối với iOS, thiết lập [App Store Server Notifications](enable-app-store-server-notifications)
+- Đối với Android, thiết lập [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn)
+</details>
+
+## Mức độ truy cập và đối tượng AdaptyProfile \{#access-level-and-the-adaptyprofile-object\}
+
+Mức độ truy cập là các thuộc tính của đối tượng [AdaptyProfile](https://capacitor.adapty.io/interfaces/adaptyprofile). Chúng tôi khuyến nghị lấy hồ sơ người dùng khi ứng dụng khởi động, chẳng hạn như khi bạn [xác định người dùng](capacitor-identifying-users#setting-customer-user-id-on-configuration), sau đó cập nhật mỗi khi có thay đổi. Như vậy, bạn có thể sử dụng đối tượng profile mà không cần phải gọi lại nhiều lần.
+
+Để nhận thông báo khi hồ sơ người dùng được cập nhật, hãy lắng nghe các thay đổi như mô tả trong phần [Lắng nghe cập nhật hồ sơ, bao gồm mức độ truy cập](capacitor-listen-subscription-changes) bên dưới.
+
+<SampleApp />
+
+## Lấy mức độ truy cập từ server \{#retrieving-the-access-level-from-the-server\}
+
+Để lấy mức độ truy cập từ server, sử dụng phương thức `.getProfile()`:
+
+```typescript showLineNumbers
+
+try {
+  const profile = await adapty.getProfile();
+  console.log('Profile retrieved successfully');
+} catch (error) {
+  console.error('Failed to get profile:', error);
+}
+```
+
+Các tham số phản hồi:
+
+| Tham số | Mô tả                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| --------- |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **profile**   | Một đối tượng [AdaptyProfile](https://capacitor.adapty.io/interfaces/adaptyprofile). Thông thường, bạn chỉ cần kiểm tra trạng thái mức độ truy cập của hồ sơ người dùng để xác định xem người dùng có quyền truy cập premium hay không. Phương thức `.getProfile` luôn cố gắng truy vấn API để cung cấp kết quả mới nhất. Nếu vì lý do nào đó (ví dụ: không có kết nối internet), Adapty SDK không thể lấy thông tin từ server, dữ liệu từ cache sẽ được trả về. Cần lưu ý rằng Adapty SDK thường xuyên cập nhật cache của `AdaptyProfile` để giữ thông tin luôn được cập nhật nhất có thể. |
+
+Phương thức `.getProfile()` trả về hồ sơ người dùng, từ đó bạn có thể lấy trạng thái mức độ truy cập. Một ứng dụng có thể có nhiều mức độ truy cập. Ví dụ, nếu bạn có ứng dụng báo chí và bán gói đăng ký cho các chủ đề khác nhau một cách độc lập, bạn có thể tạo các mức độ truy cập "sports" và "science". Nhưng trong hầu hết các trường hợp, bạn chỉ cần một mức độ truy cập — khi đó bạn có thể dùng mức độ truy cập mặc định là "premium".
+
+Dưới đây là ví dụ kiểm tra mức độ truy cập "premium" mặc định:
+
+```typescript showLineNumbers
+
+try {
+  const profile = await adapty.getProfile();
+  
+  const isActive = profile.accessLevels['premium']?.isActive;
+  if (isActive) {
+    // Grant access to premium features
+    console.log('User has premium access');
+  } else {
+    console.log('User does not have premium access');
+  }
+} catch (error) {
+  console.error('Failed to check subscription status:', error);
+}
+```
+
+### Lắng nghe cập nhật trạng thái gói đăng ký \{#listening-for-subscription-status-updates\}
+
+Mỗi khi gói đăng ký của người dùng thay đổi, Adapty sẽ kích hoạt một sự kiện.
+
+Để nhận các thông báo từ Adapty, bạn cần thực hiện thêm một số cấu hình:
+
+```typescript showLineNumbers
+
+// Create an "onLatestProfileLoad" event listener
+adapty.addListener('onLatestProfileLoad', (data) => {
+  const profile = data.profile;
+  const isActive = profile.accessLevels['premium']?.isActive;
+  
+  if (isActive) {
+    console.log('Subscription status updated: User has premium access');
+  } else {
+    console.log('Subscription status updated: User does not have premium access');
+  }
+});
+```
+
+Adapty cũng kích hoạt một sự kiện khi ứng dụng khởi động. Trong trường hợp này, trạng thái gói đăng ký được lưu trong cache sẽ được truyền vào.
+
+### Cache trạng thái gói đăng ký \{#subscription-status-cache\}
+
+Cache được tích hợp trong Adapty SDK lưu trữ trạng thái gói đăng ký của hồ sơ người dùng. Điều này có nghĩa là ngay cả khi server không khả dụng, dữ liệu từ cache vẫn có thể được truy cập để cung cấp thông tin về trạng thái gói đăng ký của hồ sơ.
+
+Tuy nhiên, cần lưu ý rằng không thể truy cập dữ liệu trực tiếp từ cache. SDK định kỳ truy vấn server mỗi phút để kiểm tra các cập nhật hoặc thay đổi liên quan đến hồ sơ. Nếu có bất kỳ thay đổi nào, chẳng hạn như giao dịch mới hoặc các cập nhật khác, chúng sẽ được đồng bộ vào dữ liệu cache để giữ cache luôn nhất quán với server.

@@ -1,0 +1,308 @@
+---
+title: "アナリティクス連携"
+description: "アナリティクスツールをAdaptyと連携して、ユーザーのサブスクリプションを追跡・最適化しましょう。"
+metadataTitle: "アナリティクス連携ガイド | Adapty ドキュメント"
+---
+
+Adaptyは、[Amplitude](amplitude)、[Mixpanel](mixpanel)、[AppMetrica](appmetrica)などのアナリティクスサービスに、すべての[サブスクリプションイベント](events)を送信します。[webhook](webhook)連携を使ってサーバーにイベントを送ることも可能です。イベントの送信はすべてAdaptyが代わりに行うので、Adapty ダッシュボードで連携を設定するだけで大丈夫です。
+
+Adaptyは以下のサードパーティアナリティクスサービスとの連携をサポートしています：
+
+- [Amplitude](amplitude)
+- [AppMetrica](appmetrica)
+- [Firebase and Google Analytics](firebase-and-google-analytics)
+- [Mixpanel](mixpanel)
+- [PostHog](posthog)
+- [SplitMetrics Acquire](splitmetrics)
+
+:::note
+お使いのアナリティクスプロバイダーが見つかりませんか？
+
+ぜひお知らせください！[機能リクエストを作成](https://adapty.featurebase.app/en?b=6979f233ebd3cffd4f425ba0)していただければ、追加を検討します。
+:::
+
+## イベントプロパティ \{#event-properties\}
+
+WebhookイベントはJSON形式で送信されます。すべてのイベントは同じ構造に従いますが、フィールドはイベントの種類、ストア、設定内容によって異なります。
+
+| プロパティ                      | 型             | 説明                                                         |
+| ----------------------------- | ------------- | ------------------------------------------------------------ |
+| **profile_id**                | uuid          | AdaptyのユーザーID。                                          |
+| **currency**                  | str           | ローカル通貨（デフォルトはUSD）。                              |
+| **price_usd**                 | float         | Apple/Googleの手数料控除前のプロダクト価格。売上。            |
+| **proceeds_usd**              | float         | Apple/Googleの手数料控除後のプロダクト価格。純売上。          |
+| **net_revenue_usd**           | float         | USD建ての純収益（Apple/Googleの手数料と税金控除後の収益）。空の場合があります。 |
+| **price_local**               | float         | ローカル通貨でのApple/Googleの手数料控除前のプロダクト価格。売上。 |
+| **proceeds_local**            | float         | ローカル通貨でのApple/Googleの手数料控除後のプロダクト価格。純売上。 |
+| **transaction_id**            | str           | 購入や更新などのトランザクションの一意の識別子。              |
+| **original_transaction_id**   | str           | 最初の購入のトランザクション識別子。                          |
+| **purchase_date**             | ISO 8601 date | プロダクト購入の日時。                                        |
+| **original_purchase_date**    | ISO 8601 date | 最初の購入の日時。                                            |
+| **environment**               | str           | _Sandbox_ または _Production_。                              |
+| **vendor_product_id**         | str           | Apple App Store、Google Play Store、またはStripeのプロダクトID。 |
+| **base_plan_id**              | str           | Google Play Storeの[ベースプランID](https://support.google.com/googleplay/android-developer/answer/12154973)、またはStripeの[価格ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices)。 |
+| **event_datetime**            | ISO 8601 date | イベントの日時。                                              |
+| **store**                     | str           | _app_store_ または _play_store_。                            |
+| **trial_duration**            | str           | トライアル期間の日数。"{} days"形式で送信されます（例：「7 days」）。 |
+| **cancellation_reason**       | str           | <p>ユーザーがサブスクリプションをキャンセルした理由。</p><p></p><p>以下のいずれかです。</p><p>iOS & Android</p><p>_voluntarily_cancelled_, _billing_error_, _refund_</p><p>iOS</p><p>_price_increase_, _product_was_not_available_, _unknown_</p><p>Android</p><p>_new_subscription_replace_, _cancelled_by_developer_</p> |
+| **subscription_expires_at**   | ISO 8601 date | サブスクリプションの有効期限。通常は将来の日付。              |
+| **consecutive_payments**      | int           | ユーザーが中断なくサブスクライブしている期間数。現在の期間を含む。 |
+| **rate_after_first_year**     | bool          | 1年間の継続更新後に手数料率が引き下げられる（通常15%）条件を満たしているかを示すブール値。手数料率はプログラムの適格性や国によって異なります。詳細は[ストア手数料と税金](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue)をご覧ください。 |
+| **promotional_offer_id**      | str           | Adapty ダッシュボードのプロダクトセクションに記載されたプロモーションオファーのID。 |
+| **store_offer_category**      | str           | _introductory_ または _promotional_。                        |
+| **store_offer_discount_type** | str           | _free_trial_、_pay_as_you_go_、または _pay_up_front_。        |
+| **paywall_name**              | str           | トランザクションが発生したペイウォールの名前。                |
+| **paywall_revision**          | int           | トランザクションが発生したペイウォールのリビジョン。値は1に設定されます。 |
+| **developer_id**              | str           | トランザクションが発生したプレースメントのデベロッパー（SDK）ID。 |
+| **ab_test_name**              | str           | トランザクションが発生したA/Bテストの名前。                   |
+| **ab_test_revision**          | int           | トランザクションが発生したA/Bテストのリビジョン。値は1に設定されます。 |
+| **cohort_name**               | str           | プロファイルが属するオーディエンスの名前。                    |
+| **profile_event_id**          | uuid          | 重複排除に使用できる一意のイベントID。                        |
+| **store_country**             | str           | ストアから送信された国情報。                                  |
+| **profile_ip_address**        | str           | プロファイルのIPアドレス（IPv4またはIPv6。利用可能な場合はIPv4が優先）。デバイスのIPが変わるたびに更新されます。 |
+| **profile_country**           | str           | プロファイルのIPをもとにAdaptyが判定した国。                  |
+| **profile_total_revenue_usd** | float         | プロファイルの累計売上（返金分を含む）。                      |
+| **variation_id**              | uuid          | 購入が行われたペイウォールの一意のID。                        |
+| **access_level_id**           | str           | 有料アクセスレベルID。                                        |
+| **is_active**                 | bool          | プロファイルに対して有料アクセスレベルが有効かどうかを示すブール値。 |
+| **will_renew**                | bool          | 有料アクセスレベルが更新されるかどうかを示すブール値。        |
+| **is_refund**                 | bool          | トランザクションが返金されているかどうかを示すブール値。      |
+| **is_lifetime**               | bool          | 有料アクセスレベルが永続アクセスかどうかを示すブール値。      |
+| **is_in_grace_period**        | bool          | プロファイルがグレース期間中かどうかを示すブール値。          |
+| **starts_at**                 | ISO 8601 date | ユーザーの有料アクセスレベルが開始する日時。                  |
+| **renewed_at**                | ISO 8601 date | 有料アクセスが更新される日時。                                |
+| **expires_at**                | ISO 8601 date | 有料アクセスが失効する日時。                                  |
+| **activated_at**              | ISO 8601 date | 有料アクセスが有効化された日時。                              |
+| **billing_issue_detected_at** | ISO 8601 date | 請求エラーが検出された日時。                                  |
+| **profile_has_access_level**  | Bool          | プロファイルにアクティブなアクセスレベルがあるかどうかを示すブール値（Webhookのみ）。 |
+
+各イベントには以下のプロパティが含まれます：
+
+`transaction_id, original_transaction_id, purchase_date, original_purchase_date, environment, vendor_product_id, event_datetime, store`
+
+また、一部のイベントには追加プロパティがあります。`subscription_refunded` と `non_subscription_purchase_refunded` イベントでは、`price_usd` と `proceeds_usd` の値を追加プロパティとして必ず指定する必要があります。
+
+| イベント名                          | プロパティ                                                   |
+| :---------------------------------- | :----------------------------------------------------------- |
+| **subscription\_initial\_purchase** | price\_usd, proceeds\_usd, subscription\_expires\_at, consecutive\_payments, rate\_after\_first\_year, trial\_duration |
+| **subscription\_renewed**           | price\_usd, proceeds\_usd, subscription\_expires\_at, consecutive\_payments, rate\_after\_first\_year, trial\_duration |
+| **subscription\_cancelled**         | cancellation\_reason, trial\_duration                        |
+| **trial\_started**                  | subscription\_expires\_at, trial\_duration                   |
+| **trial\_converted**                | price\_usd, proceeds\_usd, subscription\_expires\_at, consecutive\_payments, rate\_after\_first\_year, trial\_duration |
+| **trial\_cancelled**                | cancellation\_reason, trial\_duration                        |
+| **non\_subscription\_purchase**     | price\_usd, proceeds\_usd                                    |
+| **billing\_issue\_detected**        | subscription\_expires\_at, trial\_duration                   |
+| **entered\_grace\_period**          | subscription\_expires\_at, trial\_duration                   |
+
+イベント例
+
+```json title="Json"
+{
+    "price_usd": 9.99,
+    "proceeds_usd": 6.99,
+    "transaction_id": "1000000628581600",
+    "original_transaction_id": "1000000628581600",
+    "purchase_date": "2020-02-18T18:40:22.000000+0000",
+    "original_purchase_date": "2020-02-18T18:40:22.000000+0000",
+    "environment": "Sandbox",
+    "vendor_product_id": "premium",
+    "event_datetime": "2020-02-18T18:40:22.000000+0000",
+    "store": "app_store"
+}
+```
+
+Adaptyはサーバーおよびサードパーティのアナリティクスシステムにイベントを送信します。
+
+**profile_ip_address** プロパティは現在のデバイスIPと同期されます。AdaptyサーバーがSDKから情報を受信するたびに、記録済みのIPと異なる場合はIPが更新されます。
+
+### プロファイルの識別子の設定 \{#setting-the-profiles-identifier\}
+
+- 選択したアナリティクス向けにプロファイルの識別子を設定するには、<InlineTooltip tooltip="アプリでユーザー属性を設定する手順">[iOS](setting-user-attributes)、[Android](android-setting-user-attributes)、[React Native](react-native-setting-user-attributes)、[Flutter](flutter-setting-user-attributes)、[Unity](unity-setting-user-attributes)</InlineTooltip>をご参照ください。
+
+:::warning
+重複を避けるために
+
+デバイスとサーバーの両方からサブスクリプションイベントを送信すると重複が発生するため、どちらか一方からのみ送信するようにしてください。
+:::
+
+### 特定のユーザーに対して外部アナリティクスを無効化する \{#disabling-external-analytics-for-a-specific-customer\}
+
+特定のユーザーへのアナリティクスイベント送信を停止したい場合があります。これは、アプリにアナリティクスサービスのオプトアウト機能を設けている場合などに便利です。
+
+特定ユーザーの外部アナリティクスを無効化するには、`updateProfile()` メソッドを使用します。`AdaptyProfileParameters.Builder` オブジェクトを作成し、対応する値を設定してください。  
+外部アナリティクスがブロックされると、Adaptyは対象ユーザーに関するイベントをいずれの連携サービスにも送信しなくなります。アプリのすべてのユーザーに対して連携を無効化したい場合は、Adapty ダッシュボードで該当の連携をオフにしてください。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+```swift showLineNumbers
+let builder = AdaptyProfileParameters.Builder()
+    .with(analyticsDisabled: true)
+
+Adapty.updateProfile(parameters: builder.build())
+```
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+val parameters = AdaptyProfileParameters(
+    analyticsDisabled = true
+)
+
+Adapty.updateProfile(parameters) { error ->
+    if (error == null) {
+        // successful update
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers ]
+AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()
+    .withExternalAnalyticsDisabled(true);
+
+Adapty.updateProfile(builder.build());
+```
+</TabItem>
+<TabItem value="flutter" label="Flutter" default>
+```javascript showLineNumbers
+final builder = AdaptyProfileParametersBuilder()
+  ..setAnalyticsDisabled(true);
+
+try {
+  await Adapty().updateProfile(builder.build());
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+</TabItem>
+<TabItem value="unity" label="Unity" default>
+```csharp showLineNumbers
+var builder = new AdaptyProfileParameters.Builder()
+    .SetAnalyticsDisabled(true);
+
+Adapty.UpdateProfile(builder.Build(), (error) => {
+    if(error != null) {
+      // handle the error
+    }
+});
+```
+</TabItem>
+<TabItem value="rn" label="React Native (TS)" default>
+```typescript showLineNumbers
+adapty.updateProfile({ analyticsDisabled: true });
+```
+</TabItem>
+</Tabs>
+
+### 広告識別子の収集を無効化する \{#disable-collection-of-advertising-identifiers\}
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS" default>
+`idfaCollectionDisabled` プロパティを使用してIDFAの収集を無効化できます。`.activate()` メソッドの前に呼び出してください。
+
+```swift showLineNumbers
+// In your AppDelegate class:
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+ // highlight-start
+        .with(idfaCollectionDisabled: true) // set to `true`
+// highlight-end
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+Adapty SDKを有効化する際に `withAdIdCollectionDisabled` プロパティを使用して、AAID/GAIDの収集を無効化できます：
+
+```swift showLineNumbers
+override fun onCreate() {
+    super.onCreate()
+    Adapty.activate(
+      applicationContext,
+      AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+      // highlight-start
+          .withAdIdCollectionDisabled(true) // set to `true`
+      // highlight-end
+          .build()
+    )  
+}
+```
+
+</TabItem>
+
+<TabItem value="java" label="Android (Java)" default>
+Adapty SDKを有効化する際に `withAdIdCollectionDisabled` プロパティを使用して、AAID/GAIDの収集を無効化できます：
+
+```swift showLineNumbers 
+@Override
+public void onCreate() {
+    super.onCreate();
+    Adapty.activate(
+      applicationContext,
+      new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+      // highlight-start
+          .withAdIdCollectionDisabled(true) // set to `true`
+      // highlight-end
+          .build()
+    );
+}
+```
+
+</TabItem>
+
+<TabItem value="flutter" label="Flutter" default>
+`withAppleIdfaCollectionDisabled` プロパティでIDFAの収集を、`withGoogleAdvertisingIdCollectionDisabled` プロパティでGoogle/AndroidのAdvertising IDの収集をそれぞれ無効化できます。Adapty SDKを有効化する際に `true` に設定してください：
+
+```dart showLineNumbers
+try {
+    await Adapty().activate(
+        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+ // highlight-start
+          ..withGoogleAdvertisingIdCollectionDisabled(true), // set to `true`
+          ..withAppleIdfaCollectionDisabled(true), // set to `true`
+// highlight-end
+    );
+} catch (e) {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="unity" label="Unity" default>
+Adapty SDKを有効化する際に `SetIDFACollectionDisabled` プロパティを使用してIDFAの収集を無効化できます。現時点でAAID/GAIDの収集は無効化できません。
+
+```dart showLineNumbers
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+ // highlight-start
+    .SetIDFACollectionDisabled(true); // set to `true`
+ // highlight-end
+
+Adapty.Activate(builder.Build(), (error) => {
+    // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="rn" label="React Native" default>
+Adapty SDKを有効化する際に `idfaCollectionDisabled` プロパティでIDFAの収集を無効化したり、`adIdCollectionDisabled` プロパティでAAID/GAIDの収集を無効化したりすることもできます。
+
+```typescript showLineNumbers
+adapty.activate('PUBLIC_SDK_KEY', {
+  // highlight-start 
+  ios: {
+      idfaCollectionDisabled: true, // set to `true`
+  }, 
+  android: {
+      adIdCollectionDisabled: true,
+  },
+  // highlight-end
+});
+```
+</TabItem>
+</Tabs>

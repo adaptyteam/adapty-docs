@@ -1,0 +1,137 @@
+---
+title: "Migration from Superwall"
+description: "Migrate từ Superwall sang Adapty với hướng dẫn từng bước ánh xạ mọi lệnh gọi SDK và khái niệm."
+metadataTitle: "Migrate từ Superwall sang Adapty | Tài liệu Adapty"
+keywords: ['migration', 'superwall']
+---
+
+Hầu hết các migration từ Superwall sang Adapty mất khoảng hai tiếng. Bạn thay thế SDK, trỏ thông báo server của cửa hàng về Adapty, và phát hành bản app mới. Người dùng đã mua gói đăng ký vẫn giữ quyền truy cập — Adapty khôi phục từ receipt của App Store và Google Play ngay lần khởi chạy đầu tiên.
+
+:::info
+Người dùng đăng ký sẽ được migrate tự động
+
+Tất cả người dùng đã từng kích hoạt gói đăng ký sẽ chuyển sang Adapty ngay khi họ mở phiên bản mới của app có tích hợp Adapty SDK. Trạng thái xác thực gói đăng ký và quyền truy cập premium được khôi phục tự động.
+:::
+
+## Cách tổ chức hướng dẫn này \{#how-this-guide-is-organized\}
+
+Migration gồm sáu bước:
+
+1. [Ánh xạ các khái niệm Superwall sang Adapty](#map-your-superwall-concepts-to-adapty)
+2. [Cài đặt Adapty SDK](#install-the-adapty-sdk)
+3. [Thay thế các lệnh gọi SDK](#replace-sdk-calls)
+4. [Chuyển thông báo server App Store và Google Play](#switch-app-store-and-google-play-server-notifications)
+5. [Kiểm tra và phát hành](#test-and-release)
+6. [(Tùy chọn) Import dữ liệu lịch sử](#optional-import-historical-data)
+
+## Ánh xạ các khái niệm Superwall sang Adapty \{#map-your-superwall-concepts-to-adapty\}
+
+Hầu hết các khái niệm trong Superwall đều có khái niệm tương đương trong Adapty:
+
+| Superwall            | Adapty                                            | Thay đổi gì                                                                 |
+| :------------------- | :------------------------------------------------ | :--------------------------------------------------------------------------- |
+| Campaign             | [Placement](placements) + [Audience](audience)    | Logic Campaign được tách thành placement (vị trí) và audience (quy tắc). |
+| Placement            | [Placement](placements)                           | Cùng khái niệm, cùng tên.                                                     |
+| Audience filter      | [Audience](audience)                              | Các bộ quy tắc nằm bên trong một placement.                                           |
+| Entitlement          | [Access level](access-level)                      | Tên định danh (ví dụ: `premium`).                                   |
+| WebView paywall      | [Paywall Builder paywall](adapty-paywall-builder) | Được Adapty SDK render theo native thay vì dùng `WKWebView`.                         |
+| `PurchaseController` | Built-in                                          | Không cần implement protocol — Adapty xử lý mua hàng.                         |
+| Feature gating       | Kiểm tra [mức độ truy cập](access-level)                | Kiểm tra `profile.accessLevels["premium"]?.isActive`.                           |
+
+Có hai điểm thay đổi tư duy đáng lưu ý trước khi bạn động đến code:
+
+- **Fetch và present là hai bước riêng biệt**: `register` của Superwall gộp việc fetch paywall, đánh giá campaign, và hiển thị UI vào một lệnh gọi duy nhất. Adapty tách hai bước này — bạn fetch paywall, lấy cấu hình của nó, rồi mới present. Cách này thêm vài dòng code nhưng cho phép bạn pre-load cấu hình, hiển thị trạng thái loading tùy chỉnh, hoặc hủy việc hiển thị theo logic riêng.
+- **Trạng thái gói đăng ký theo từng mức độ truy cập**: Superwall cung cấp một `subscriptionStatus` dạng published property duy nhất. Adapty trả về một [`AdaptyProfile`](https://swift.adapty.io/documentation/adapty/adaptyprofile) với các mức độ truy cập có tên, nên một người dùng có thể sở hữu cả mức độ truy cập `sports` và `science` độc lập với nhau. Để đọc đồng bộ, hãy cache profile từ `AdaptyDelegate` thay vì gọi `getProfile()` ở mỗi lần load view.
+
+## Cài đặt Adapty SDK \{#install-the-adapty-sdk\}
+
+Cài đặt Adapty SDK cho nền tảng của bạn — [iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity), hoặc [Capacitor](sdk-installation-capacitor) — và đồng thời gỡ SuperwallKit khỏi dự án.
+
+## Thay thế các lệnh gọi SDK \{#replace-sdk-calls\}
+
+Đi qua từng phần trong tích hợp của bạn và thay thế lệnh gọi Superwall bằng lệnh tương đương của Adapty. Các liên kết ở cuối mỗi mục bao gồm cả bảy nền tảng SDK — hãy chọn đúng nền tảng của app bạn.
+
+### Khởi tạo SDK \{#initialize-the-sdk\}
+
+Thay `Superwall.configure` bằng `Adapty.activate`.
+
+Xem hướng dẫn cài đặt cho nền tảng của bạn — [iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity), hoặc [Capacitor](sdk-installation-capacitor).
+
+### Xác định và đăng xuất người dùng \{#identify-and-log-out-users\}
+
+Thay `Superwall.shared.identify` bằng `Adapty.identify` và `Superwall.shared.reset` bằng `Adapty.logout`. Cả hai SDK đều tạo hồ sơ người dùng ẩn danh ngay lần khởi chạy đầu tiên, vì vậy các lệnh gọi này chỉ cần thiết khi người dùng đăng nhập hoặc đăng xuất. Hãy fetch lại paywall sau khi xác định người dùng — người dùng mới có thể thuộc về một đối tượng khác.
+
+Xem hướng dẫn xác định người dùng cho nền tảng của bạn — [iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), [Kotlin Multiplatform](kmp-identifying-users), [Unity](unity-identifying-users), hoặc [Capacitor](capacitor-identifying-users).
+
+### Fetch và hiển thị paywall \{#fetch-and-present-a-paywall\}
+
+Thay `Superwall.shared.register` bằng flow hai bước: fetch paywall với `Adapty.getPaywall`, load cấu hình view của nó với `AdaptyUI.getPaywallConfiguration`, rồi mới present.
+
+Hai điểm khác biệt cần lưu ý:
+
+- **Feature gating thay thế closure `feature:`**: Sau khi paywall đóng, kiểm tra mức độ truy cập đang hoạt động trên profile được trả về (hoặc trên `Adapty.getProfile`) rồi phân nhánh từ đó.
+- **Paywall được render bởi SDK**: Superwall render paywall bên trong `WKWebView`. Adapty render Paywall Builder paywall theo native — font chữ, thông tin sản phẩm, và các nút được SDK vẽ trực tiếp.
+
+Xem hướng dẫn nhanh về paywall cho nền tảng của bạn — [iOS](ios-quickstart-paywalls), [Android](android-quickstart-paywalls), [React Native](react-native-quickstart-paywalls), [Flutter](flutter-quickstart-paywalls), [Kotlin Multiplatform](kmp-quickstart-paywalls), [Unity](unity-quickstart-paywalls), hoặc [Capacitor](capacitor-quickstart-paywalls).
+
+### Kiểm tra trạng thái gói đăng ký \{#check-subscription-status\}
+
+Thay `Superwall.shared.subscriptionStatus` bằng cách kiểm tra mức độ truy cập có tên trên profile: `profile.accessLevels["premium"]?.isActive`. Theo dõi thay đổi qua `AdaptyDelegate.didLoadLatestProfile(_:)` thay vì dùng pattern `@Published` property, và cache profile ở phía bạn để đọc đồng bộ.
+
+Xem hướng dẫn kiểm tra trạng thái gói đăng ký cho nền tảng của bạn — [iOS](ios-check-subscription-status), [Android](android-check-subscription-status), [React Native](react-native-check-subscription-status), [Flutter](flutter-check-subscription-status), [Kotlin Multiplatform](kmp-check-subscription-status), [Unity](unity-check-subscription-status), hoặc [Capacitor](capacitor-check-subscription-status).
+
+### Xử lý mua hàng và khôi phục \{#handle-purchases-and-restores\}
+
+Với Paywall Builder, cả hai SDK đều tự động xử lý giao dịch mua bên trong giao diện paywall — **bạn có thể bỏ qua bước này**.
+
+Với paywall tùy chỉnh, Superwall yêu cầu implement `PurchaseController`. Adapty thì không: thay `PurchaseController.purchase` bằng `Adapty.makePurchase` và `PurchaseController.restorePurchases` bằng `Adapty.restorePurchases`. SDK tự xử lý việc xác thực.
+
+Xem hướng dẫn nhanh về custom paywall cho nền tảng của bạn — [iOS](ios-quickstart-manual), [Android](android-quickstart-manual), [React Native](react-native-quickstart-manual), [Flutter](flutter-quickstart-manual), [Kotlin Multiplatform](kmp-quickstart-manual), [Unity](unity-quickstart-manual), hoặc [Capacitor](capacitor-quickstart-manual).
+
+### Thiết lập thuộc tính người dùng \{#set-user-attributes\}
+
+Thay `Superwall.shared.setUserAttributes` bằng `Adapty.updateProfile`.
+
+Xem hướng dẫn thuộc tính người dùng cho nền tảng của bạn — [iOS](setting-user-attributes), [Android](android-setting-user-attributes), [React Native](react-native-setting-user-attributes), [Flutter](flutter-setting-user-attributes), [Kotlin Multiplatform](kmp-setting-user-attributes), [Unity](unity-setting-user-attributes), hoặc [Capacitor](capacitor-setting-user-attributes).
+
+## Chuyển thông báo server App Store và Google Play \{#switch-app-store-and-google-play-server-notifications\}
+
+Trỏ thông báo server của cửa hàng về Adapty. Adapty vẫn hoạt động mà không cần chúng, nhưng analytics, các tích hợp bên thứ ba, và chỉ số A/B test đều phụ thuộc vào đây:
+
+- **App Store**: Làm theo [Bật thông báo server App Store](enable-app-store-server-notifications).
+- **Google Play**: Làm theo [Bật thông báo thời gian thực cho nhà phát triển](enable-real-time-developer-notifications-rtdn).
+
+Nếu bạn muốn chạy song song Superwall và Adapty trong quá trình triển khai, hãy dùng [raw events forwarding](enable-app-store-server-notifications#raw-events-forwarding) — Adapty sẽ proxy các sự kiện từ cửa hàng về lại Superwall trong khi bạn xác minh tích hợp mới.
+
+## Kiểm tra và phát hành \{#test-and-release\}
+
+Trước khi phát hành, hãy kiểm tra từng mục:
+
+- [x] Đã cấu hình Adapty Dashboard (sản phẩm, paywall, placement, mức độ truy cập)
+- [x] Đã cài đặt Adapty SDK
+- [x] Đã thay thế các lệnh gọi Superwall SDK bằng các lệnh tương đương của Adapty
+- [x] Đã trỏ thông báo server App Store và Google Play về Adapty
+- [ ] Đã thực hiện giao dịch mua trong sandbox
+- [ ] Đã nộp bản phát hành app mới
+
+Xem qua [danh sách kiểm tra trước khi phát hành](release-checklist) để xác thực lần cuối.
+
+## (Tùy chọn) Import dữ liệu lịch sử \{#optional-import-historical-data\}
+
+Superwall không sở hữu trạng thái gói đăng ký của bạn — App Store và Google Play mới là nơi lưu trữ. Adapty xác thực receipt ngay lần khởi chạy đầu tiên, nên người dùng đã mua vẫn giữ quyền truy cập mà không cần import gì.
+
+Nếu bạn muốn backfill các giao dịch lịch sử vào Adapty analytics, hãy làm theo [Import dữ liệu lịch sử vào Adapty](importing-historical-data-to-adapty). Đợi ít nhất một tuần sau khi phát hành SDK để SDK có thời gian thu thập giá mua hàng mới.
+
+## Câu hỏi thường gặp \{#faq\}
+
+### Điều gì xảy ra với người dùng đã mua gói đăng ký nhưng chưa cập nhật app? \{#what-happens-to-subscribers-who-dont-update-the-app\}
+
+Hầu hết người dùng tự động cập nhật app qua đêm, nên tỷ lệ người dùng còn dùng phiên bản cũ giảm nhanh. Người dùng đăng ký trên phiên bản cũ vẫn giữ quyền truy cập trực tiếp qua App Store hoặc Google Play — bạn không cần ép buộc cập nhật.
+
+### Audience của Superwall campaign có chuyển sang được không? \{#do-my-superwall-campaign-audiences-carry-over\}
+
+Không. Bộ lọc audience của Superwall và đối tượng trong Adapty được cấu hình ở hai dashboard khác nhau và dùng các định danh khác nhau. Hãy tạo lại targeting của bạn dưới dạng [đối tượng](audience) bên trong [placement](placements) Adapty. Hầu hết các app chỉ có một hoặc hai placement (onboarding và một trigger trong app), nên việc tái tạo thường khá nhanh.
+
+### Adapty có tương đương với `getPresentationResult` không? \{#does-adapty-have-an-equivalent-to-getpresentationresult\}
+
+Không có lệnh gọi đơn lẻ nào tương đương. Để kiểm tra xem một placement có hiển thị paywall không, hãy gọi `Adapty.getPaywall(placementId:)` và phân nhánh dựa trên kết quả. Nếu lệnh gọi thành công, một paywall đã được gán cho đối tượng của người dùng đó. Nếu thất bại vì không có paywall nào được cấu hình, hãy bỏ qua việc hiển thị và chạy logic dự phòng của bạn.

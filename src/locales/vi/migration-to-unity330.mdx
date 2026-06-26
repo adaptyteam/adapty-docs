@@ -1,0 +1,631 @@
+---
+title: "Migrate Adapty Unity SDK to v3.3"
+description: "Migrate to Adapty Unity SDK v3.3 for better performance and new monetization features."
+metadataTitle: "Migrate sang Adapty Unity SDK v3.3 | Tài liệu Adapty"
+---
+
+Adapty SDK 3.3.0 là một bản phát hành lớn mang lại một số cải tiến, tuy nhiên có thể yêu cầu bạn thực hiện một số bước migration.
+
+1. Nâng cấp lên Adapty SDK v3.3.x.
+2. Đổi tên nhiều class, thuộc tính và phương thức trong các module Adapty và AdaptyUI của Adapty SDK.
+3. Từ nay, phương thức `SetLogLevel` nhận một callback làm đối số.
+4. Từ nay, phương thức `PresentCodeRedemptionSheet` nhận một callback làm đối số.
+5. Thay đổi cách tạo paywall view.
+6. Xóa phương thức `GetProductsIntroductoryOfferEligibility`.
+7. Lưu paywall dự phòng vào các file riêng biệt (một file cho mỗi nền tảng) trong `Assets/StreamingAssets/` và truyền tên file vào phương thức `SetFallbackPaywalls`.
+8. Cập nhật cách thực hiện mua hàng.
+9. Cập nhật xử lý sự kiện Paywall Builder.
+10. Cập nhật xử lý lỗi paywall trong Paywall Builder.
+11. Cập nhật cấu hình tích hợp cho Adjust, Amplitude, AppMetrica, Appsflyer, Branch, Firebase và Google Analytics, Mixpanel, OneSignal, Pushwoosh.
+13. Cập nhật cài đặt Observer mode.
+14. Cập nhật khởi tạo Unity plugin với lệnh gọi `Activate` tường minh.
+
+## Nâng cấp Adapty Unity SDK lên 3.3.x \{#upgrade-adapty-unity-sdk-to-33x\}
+
+Cho đến phiên bản này, Adapty SDK là SDK cốt lõi và bắt buộc để Adapty hoạt động đúng trong ứng dụng của bạn, còn AdaptyUI SDK là SDK tùy chọn chỉ cần thiết khi bạn sử dụng Adapty Paywall Builder.
+
+Bắt đầu từ phiên bản 3.3.0, AdaptyUI SDK đã bị deprecated và AdaptyUI được tích hợp vào Adapty SDK dưới dạng một module. Do những thay đổi này, bạn cần xóa AdaptyUISDK và cài đặt lại AdaptySDK.
+
+1. Xóa cả hai dependency **AdaptySDK** và **AdaptyUISDK** khỏi dự án của bạn.
+2. Xóa các thư mục **AdaptySDK** và **AdaptyUISDK**.
+3. Import lại package AdaptySDK như mô tả trong trang [Cài đặt & cấu hình Adapty SDK cho Unity](sdk-installation-unity).
+
+## Đổi tên \{#renamings\}
+
+1. Đổi tên trong module Adapty:
+
+   | Phiên bản cũ              | Phiên bản mới            |
+   | ------------------------- | ------------------------ |
+   | Adapty.sdkVersion         | Adapty.SDKVersion        |
+   | Adapty.LogLevel           | AdaptyLogLevel           |
+   | Adapty.Paywall            | AdaptyPaywall            |
+   | Adapty.PaywallFetchPolicy | AdaptyPaywallFetchPolicy |
+   | PaywallProduct            | AdaptyPaywallProduct     |
+   | Adapty.Profile            | AdaptyProfile            |
+   | Adapty.ProfileParameters  | AdaptyProfileParameters  |
+   | ProfileGender             | AdaptyProfileGender      |
+   | Error                     | AdaptyError              |
+
+2. Đổi tên trong module AdaptyUI:
+
+   | Phiên bản cũ       | Phiên bản mới      |
+   | ------------------ | ------------------ |
+   | CreatePaywallView  | CreateView         |
+   | PresentPaywallView | PresentView        |
+   | DismissPaywallView | DismissView        |
+   | AdaptyUI.View      | AdaptyUIView       |
+   | AdaptyUI.Action    | AdaptyUIUserAction |
+
+## Thay đổi phương thức SetLogLevel \{#change-the-setloglevel-method\}
+
+Từ nay, phương thức `SetLogLevel` nhận một callback làm đối số.
+
+```diff showLineNumbers
+- Adapty.SetLogLevel(Adapty.LogLevel.Verbose);
++ Adapty.SetLogLevel(Adapty.LogLevel.Verbose, null); // or you can pass the callback to handle the possible error
+```
+
+## Thay đổi phương thức PresentCodeRedemptionSheet \{#change-the-presentcoderedemptionsheet-method\}
+
+Từ nay, phương thức `PresentCodeRedemptionSheet` nhận một callback làm đối số.
+
+```diff showLineNumbers
+- Adapty.PresentCodeRedemptionSheet();
++ Adapty.PresentCodeRedemptionSheet(null); // or you can pass the callback to handle the possible error
+```
+
+## Thay đổi cách tạo paywall view \{#change-how-the-paywall-view-is-created\}
+
+Để xem ví dụ code đầy đủ, hãy xem phần [Lấy cấu hình view của paywall được thiết kế bằng Paywall Builder](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder).
+
+```diff showLineNumbers
++ var parameters = new AdaptyUICreateViewParameters()
++   .SetPreloadProducts(true);
+
+- AdaptyUI.CreatePaywallView(
++ AdaptyUI.CreateView(
+   paywall, 
+-  preloadProducts: true,
++  parameters,
+  (view, error) => {
+  // use the view
+});
+```
+
+## Xóa phương thức GetProductsIntroductoryOfferEligibility \{#remove-the-getproductsintroductoryoffereligibility-method\}
+
+Trước Adapty iOS SDK 3.3.0, đối tượng sản phẩm luôn bao gồm các ưu đãi, bất kể người dùng có đủ điều kiện hay không. Bạn phải kiểm tra điều kiện thủ công trước khi sử dụng ưu đãi.
+
+Hiện tại, đối tượng sản phẩm chỉ bao gồm ưu đãi nếu người dùng đủ điều kiện. Điều này có nghĩa là bạn không cần kiểm tra điều kiện nữa — nếu có ưu đãi, người dùng đã đủ điều kiện.
+
+## Cập nhật phương thức cung cấp paywall dự phòng \{#update-method-for-providing-fallback-paywalls\}
+
+Cho đến phiên bản này, các paywall dự phòng được truyền dưới dạng JSON đã được serialize. Bắt đầu từ v3.3.0, cơ chế đã thay đổi:
+
+1. Lưu các paywall dự phòng vào file trong `/Assets/StreamingAssets/`, 1 file cho Android và 1 file cho iOS.
+2. Truyền tên file vào phương thức `SetFallbackPaywalls`.
+
+Code của bạn sẽ thay đổi như sau:
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void SetFallBackPaywalls() {
+
++ #if UNITY_IOS
++   var assetId = "adapty_fallback_ios.json";
++ #elif UNITY_ANDROID
++   var assetId = "adapty_fallback_android.json";
++ #else
++   var assetId = "";
++ #endif
+
+-   Adapty.SetFallbackPaywalls("FALLBACK_PAYWALLS_JSON_STRING", (error) => {
++   Adapty.SetFallbackPaywalls(assetId, (error) => {
+    // handle the error
+  });
+}
+```
+
+Xem ví dụ code đầy đủ trong trang [Sử dụng paywall dự phòng trong Unity](unity-use-fallback-paywalls).
+
+## Cập nhật cách thực hiện mua hàng \{#update-making-purchase\}
+
+Trước đây, các giao dịch bị hủy và đang chờ xử lý được coi là lỗi và trả về các mã `PaymentCancelled` và `PendingPurchase` tương ứng.
+
+Hiện tại, một class `AdaptyPurchaseResultType` mới được sử dụng để xử lý các giao dịch bị hủy, thành công và đang chờ xử lý. Cập nhật code mua hàng theo cách sau:
+
+```diff showLineNumbers
+using AdaptySDK;
+
+void MakePurchase(AdaptyPaywallProduct product) {
+- Adapty.MakePurchase(product, (profile, error) => {
+-   // handle successfull purchase
++ Adapty.MakePurchase(product, (result, error) => {
++   switch (result.Type) {
++     case AdaptyPurchaseResultType.Pending:
++       // handle pending purchase
++       break;
++     case AdaptyPurchaseResultType.UserCancelled:
++       // handle purchase cancellation
++       break;
++     case AdaptyPurchaseResultType.Success:
++       var profile = result.Profile;
++       // handle successful purchase
++       break;
++     default:
++       break;
+    }
+  });
+}
+```
+
+Xem ví dụ code đầy đủ trong trang [Thực hiện mua hàng trong ứng dụng](unity-making-purchases).
+
+## Cập nhật xử lý sự kiện Paywall Builder \{#update-handling-of-paywall-builder-events\}
+
+Các giao dịch bị hủy và đang chờ xử lý không còn được coi là lỗi nữa, tất cả các trường hợp này được xử lý bằng phương thức `PaywallViewDidFinishPurchase`.
+
+1. Xóa xử lý sự kiện mua hàng bị hủy.
+
+2. Cập nhật xử lý sự kiện mua hàng thành công như sau:
+
+   ```diff showLineNumbers
+   - public void OnFinishPurchase(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product, 
+   -   Adapty.Profile profile
+   - ) { }
+   
+   + public void PaywallViewDidFinishPurchase(
+   +   AdaptyUIView view, 
+   +   AdaptyPaywallProduct product, 
+   +   AdaptyPurchaseResult purchasedResult
+   + ) { }
+   ```
+
+3. Cập nhật xử lý các action:
+
+   ```diff showLineNumbers
+   - public void OnPerformAction(
+   -   AdaptyUI.View view, 
+   -   AdaptyUI.Action action
+   - ) {
+   + public void PaywallViewDidPerformAction(
+   +   AdaptyUIView view, 
+   +   AdaptyUIUserAction action
+   + ) {
+       switch (action.Type) {
+   -     case AdaptyUI.ActionType.Close:
+   +     case AdaptyUIUserActionType.Close:
+           view.Dismiss(null);
+           break;
+   -     case AdaptyUI.ActionType.OpenUrl:
+   +     case AdaptyUIUserActionType.OpenUrl:
+           var urlString = action.Value;
+           if (urlString != null {
+           	Application.OpenURL(urlString); 
+           }
+         default:
+           // handle other events
+           break;
+       }
+   }
+   ```
+
+4. Cập nhật xử lý khi bắt đầu mua hàng:
+
+   ```diff showLineNumbers
+   - public void OnSelectProduct(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product
+   - ) { }
+   
+   + public void PaywallViewDidSelectProduct(
+   +   AdaptyUIView view, 
+   +   string productId
+   + ) { }
+   ```
+
+5. Cập nhật xử lý khi mua hàng thất bại:
+
+   ```diff showLineNumbers
+   - public void OnFailPurchase(
+   -   AdaptyUI.View view, 
+   -   Adapty.PaywallProduct product, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailPurchase(
+   +   AdaptyUIView view, 
+   +   AdaptyPaywallProduct product, 
+   +   AdaptyError error
+   + ) { }
+   
+   ```
+
+6. Cập nhật xử lý sự kiện khôi phục thành công:
+
+   ```diff showLineNumbers
+   - public void OnFailRestore(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailRestore(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   
+   ```
+
+Xem ví dụ code đầy đủ trong trang [Xử lý sự kiện paywall](unity-handling-events).
+
+## Cập nhật xử lý lỗi paywall trong Paywall Builder \{#update-handling-of-paywall-builder-paywall-errors\}
+
+Cách xử lý lỗi cũng đã thay đổi, hãy cập nhật code của bạn theo hướng dẫn bên dưới.
+
+1. Cập nhật xử lý lỗi tải sản phẩm:
+
+   ```diff showLineNumbers
+   - public void OnFailLoadingProducts(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailLoadingProducts(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   ```
+
+2. Cập nhật xử lý lỗi rendering:
+
+   ```diff showLineNumbers
+   - public void OnFailRendering(
+   -   AdaptyUI.View view, 
+   -   Adapty.Error error
+   - ) { }
+   
+   + public void PaywallViewDidFailRendering(
+   +   AdaptyUIView view, 
+   +   AdaptyError error
+   + ) { }
+   ```
+
+   
+
+## Cập nhật cấu hình SDK tích hợp bên thứ ba \{#update-third-party-integration-sdk-configuration\}
+
+Bắt đầu từ Adapty Unity SDK 3.3.0, chúng tôi đã cập nhật public API cho phương thức `updateAttribution`. Trước đây, nó nhận một dictionary `[AnyHashable: Any]`, cho phép bạn truyền trực tiếp các đối tượng attribution từ các dịch vụ khác nhau. Bây giờ, nó yêu cầu `[String: any Sendable]`, vì vậy bạn cần chuyển đổi các đối tượng attribution trước khi truyền vào.
+
+Để đảm bảo các tích hợp hoạt động đúng với Adapty Unity SDK 3.3.0 trở lên, hãy cập nhật cấu hình SDK cho các tích hợp sau theo mô tả trong các phần bên dưới.
+
+### Adjust
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem phần [Cấu hình SDK cho tích hợp Adjust](adjust#connect-your-app-to-adjust).
+
+```diff showLineNumbers
+- using static AdaptySDK.Adapty;
+ using AdaptySDK;
+
+ Adjust.GetAdid((adid) => {
+-   Adjust.GetAttribution((attribution) => {
+-     Dictionary<String, object> data = new Dictionary<String, object>();
+-
+-     data["network"] = attribution.Network;
+-     data["campaign"] = attribution.Campaign;
+-     data["adgroup"] = attribution.Adgroup;
+-     data["creative"] = attribution.Creative;
+-
+-     String attributionString = JsonUtility.ToJson(data);
+-     Adapty.UpdateAttribution(attributionString, AttributionSource.Adjust, adid, (error) => {
+-       // handle the error
+-     });
++   if (adid != null) {
++     Adapty.SetIntegrationIdentifier(
++       "adjust_device_id", 
++       adid, 
++       (error) => {
++         // handle the error
++     });
+    }
+ });
+
+ Adjust.GetAttribution((attribution) => {
+   Dictionary<String, object> data = new Dictionary<String, object>();
+
+   data["network"] = attribution.Network;
+   data["campaign"] = attribution.Campaign;
+   data["adgroup"] = attribution.Adgroup;
+   data["creative"] = attribution.Creative;
+
+   String attributionString = JsonUtility.ToJson(data);
+    
+-   Adapty.UpdateAttribution(attributionString, AttributionSource.Adjust, adid, (error) => {
++   Adapty.UpdateAttribution(attributionString, "adjust", (error) => {
+       // handle the error
+   });
+ });
+```
+
+### Amplitude
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem phần [Cấu hình SDK cho tích hợp Amplitude](amplitude#sdk-configuration).
+
+```diff showLineNumbers
+using AdaptySDK;
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetAmplitudeUserId("YOUR_AMPLITUDE_USER_ID");
+- builder.SetAmplitudeDeviceId(amplitude.getDeviceId());
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ Adapty.SetIntegrationIdentifier(
++   "amplitude_user_id", 
++   "YOUR_AMPLITUDE_USER_ID", 
++   (error) => {
++   // handle the error
++ });
+
++ Adapty.SetIntegrationIdentifier(
++   "amplitude_device_id", 
++   amplitude.getDeviceId(), 
++   (error) => {
++   // handle the error
++ });
+```
+
+### AppMetrica
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem phần [Cấu hình SDK cho tích hợp AppMetrica](appmetrica#sdk-configuration).
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- var deviceId = AppMetrica.GetDeviceId();
+
+- if (deviceId != null {
+-   var builder = new Adapty.ProfileParameters.Builder();
+
+-   builder.SetAppmetricaProfileId("YOUR_ADAPTY_CUSTOMER_USER_ID");
+-   builder.SetAppmetricaDeviceId(deviceId);
+
+-   Adapty.UpdateProfile(builder.Build(), (error) => {
+-       // handle error
+-   });
+- }
+
++ var deviceId = AppMetrica.GetDeviceId();
+
++ if (deviceId != null {
++   Adapty.SetIntegrationIdentifier(
++     "appmetrica_device_id", 
++     deviceId, 
++     (error) => {
++     // handle the error
++   });
++   
++   Adapty.SetIntegrationIdentifier(
++     "appmetrica_profile_id", 
++     "YOUR_ADAPTY_CUSTOMER_USER_ID", 
++     (error) => {
++     // handle the error
++   });
++ }
+```
+
+### AppsFlyer
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem phần [Cấu hình SDK cho tích hợp AppsFlyer](appsflyer#connect-your-app-to-appsflyer).
+
+```diff showLineNumbers
+ using AppsFlyerSDK;
+ using AdaptySDK;
+
+ // before SDK initialization
+ AppsFlyer.getConversionData(this.name);
+
+ // in your IAppsFlyerConversionData
+ void onConversionDataSuccess(string conversionData) {
+     // It's important to include the network user ID
+-    string appsFlyerId = AppsFlyer.getAppsFlyerId();
+-    Adapty.UpdateAttribution(conversionData, AttributionSource.Appsflyer, appsFlyerId, (error) => {
++    string appsFlyerId = AppsFlyer.getAppsFlyerId();
++    
++    Adapty.SetIntegrationIdentifier(
++      "appsflyer_id", 
++      appsFlyerId, 
++      (error) => {
+         // handle the error
+     });
++    
++    Adapty.UpdateAttribution(
++      conversionData, 
++      "appsflyer",
++      (error) => {
++        // handle the error
++      });
+ }
+
+```
+
+### Branch
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem phần [Cấu hình SDK cho tích hợp Branch](branch#connect-your-app-to-branch).
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- class YourBranchImplementation {
+-     func initializeBranch() {
+-         Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+-             if let data {
+-                 Adapty.updateAttribution(data, source: .branch)
+-             }
+-         }
+-     }
+- }
+
++ Branch.initSession(delegate(Dictionary<string, object> parameters, string error) {
++     string attributionString = JsonUtility.ToJson(parameters);
++     
++     Adapty.UpdateAttribution(
++       attributionString, 
++       "branch", 
++       (error) => {
++         // handle the error
++       });
++ });
+```
+
+### Firebase và Google Analytics
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem phần [Cấu hình SDK cho tích hợp Firebase và Google Analytics](firebase-and-google-analytics).
+
+```diff showLineNumbers
+ // We suppose FirebaseAnalytics Unity Plugin is already installed
+
+ using AdaptySDK;
+
+ Firebase.Analytics
+   .FirebaseAnalytics
+   .GetAnalyticsInstanceIdAsync()
+   .ContinueWithOnMainThread((task) => {
+     if (!task.IsCompletedSuccessfully) {
+       // handle error
+       return;
+     }
+
+     var firebaseId = task.Result
+     var builder = new Adapty.ProfileParameters.Builder();
+     
+-    builder.SetFirebaseAppInstanceId(firebaseId);
+-
+-    Adapty.UpdateProfile(builder.Build(), (error) => {
+-        // handle error
+   
++     Adapty.SetIntegrationIdentifier(
++       "firebase_app_instance_id", 
++       firebaseId, 
++       (error) => {
++         // handle the error
+     });
+   });
+```
+
+### Mixpanel
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem phần [Cấu hình SDK cho tích hợp Mixpanel](mixpanel#sdk-configuration).
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetMixpanelUserId(Mixpanel.DistinctId);
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ var distinctId = Mixpanel.DistinctId;
+
++ if (distinctId != null) {
++   Adapty.SetIntegrationIdentifier(
++     "mixpanel_user_id", 
++     distinctId, 
++     (error) => {
++       // handle the error
++   });
++ }
+```
+
+### OneSignal
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem phần [Cấu hình SDK cho tích hợp OneSignal](onesignal#sdk-configuration).
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- using OneSignalSDK;
+
+- var pushUserId = OneSignal.Default.PushSubscriptionState.userId;
+
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetOneSignalPlayerId(pushUserId);
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ var distinctId = Mixpanel.DistinctId;
+
++ if (distinctId != null) {
++   Adapty.SetIntegrationIdentifier(
++     "mixpanel_user_id", 
++     distinctId, 
++     (error) => {
++       // handle the error
++   });
++ }
+```
+
+### Pushwoosh
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem phần [Cấu hình SDK cho tích hợp Pushwoosh](pushwoosh#sdk-configuration).
+
+```diff showLineNumbers
+using AdaptySDK;
+
+- var builder = new Adapty.ProfileParameters.Builder();
+- builder.SetPushwooshHWID(Pushwoosh.Instance.HWID);
+
+- Adapty.UpdateProfile(builder.Build(), (error) => {
+-     // handle error
+- });
+
++ Adapty.SetIntegrationIdentifier(
++   "pushwoosh_hwid", 
++   Pushwoosh.Instance.HWID, 
++   (error) => {
++   // handle the error
++ });
+```
+
+## Cập nhật cài đặt Observer mode \{#update-observer-mode-implementation\}
+
+Cập nhật cách bạn liên kết các paywall với giao dịch. Trước đây, bạn dùng phương thức `setVariationId` để gán `variationId`. Bây giờ, bạn có thể đưa `variationId` trực tiếp khi ghi lại giao dịch bằng phương thức `reportTransaction` mới. Xem ví dụ code đầy đủ trong trang [Liên kết paywall với giao dịch mua hàng trong Observer mode](report-transactions-observer-mode-unity).
+
+```diff showLineNumbers
+ // every time when calling transaction.finish()
+- Adapty.SetVariationForTransaction("<variationId>", "<transactionId>", (error) => { 
+-     if(error != null) {
+-         // handle the error
+-         return;
+-     }
+-
+-     // successful binding
+- });
+
++ Adapty.ReportTransaction(
++   "YOUR_TRANSACTION_ID", 
++   "PAYWALL_VARIATION_ID", // optional
++   (error) => {
++   // handle the error
++ });
+```
+
+## Cập nhật khởi tạo Unity plugin \{#update-the-unity-plugin-initialization\}
+
+Bắt đầu từ Adapty Unity SDK 3.3.0, việc gọi tường minh phương thức `Activate` trong quá trình khởi tạo plugin là bắt buộc:
+
+```csharp showLineNumbers
+Adapty.Activate(builder.Build(), (error) => {
+   if (error != null) {
+       // handle the error
+       return;
+   }
+});
+```

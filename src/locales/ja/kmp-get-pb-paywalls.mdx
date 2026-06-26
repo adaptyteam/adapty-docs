@@ -1,0 +1,225 @@
+---
+title: "Kotlin Multiplatform SDKでペイウォールビルダーのペイウォールと設定を取得する"
+description: "Kotlin MultiatformアプリのAdaptyでPBペイウォールを取得し、サブスクリプションを管理する方法を学びます。"
+metadataTitle: "AdaptyでPBペイウォールを取得する | Adapty ドキュメント"
+displayed_sidebar: sdkkmp
+keywords: ['getPaywall', 'hasViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+rank: 70
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+
+Adapty ダッシュボードの新しいペイウォールビルダーで[ペイウォールのビジュアルデザインを作成](adapty-paywall-builder)したら、モバイルアプリで表示できます。最初のステップは、プレースメントに紐づいたペイウォールと、以下で説明するビュー設定を取得することです。
+
+このトピックはペイウォールビルダーでカスタマイズしたペイウォールに関するものです。ペイウォールを手動で実装する場合は、[モバイルアプリでリモートコンフィグペイウォールのペイウォールとプロダクトを取得する](fetch-paywalls-and-products-kmp)を参照してください。
+
+<SampleApp />
+
+<details>
+   <summary>モバイルアプリでペイウォールの表示を始める前に（クリックして展開）</summary>
+
+1. Adapty ダッシュボードで[プロダクトを作成](create-product)する。
+2. Adapty ダッシュボードで[ペイウォールを作成し、プロダクトを追加](create-paywall)する。
+3. Adapty ダッシュボードで[プレースメントを作成し、ペイウォールを追加](create-placement)する。
+4. モバイルアプリに[Adapty SDK](sdk-installation-kotlin-multiplatform)をインストールする。
+</details>
+
+## ペイウォールビルダーで作成したペイウォールを取得する \{#fetch-paywall-designed-with-paywall-builder\}
+
+[ペイウォールビルダーでペイウォールをデザイン](adapty-paywall-builder)した場合、ユーザーに表示するためのレンダリングコードをアプリに書く必要はありません。このようなペイウォールには、表示内容と表示方法の両方が含まれています。ただし、プレースメントを通じてIDを取得し、ビュー設定を取得したうえで、モバイルアプリで表示する必要があります。
+
+パフォーマンスを最適化するには、ペイウォールとその[ビュー設定](kmp-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)をできるだけ早く取得し、ユーザーに表示する前に画像のダウンロードが完了するよう時間を確保することが重要です。
+
+ペイウォールを取得するには、`getPaywall` メソッドを使用します。
+
+```kotlin showLineNumbers
+
+Adapty.getPaywall(
+    placementId = "YOUR_PLACEMENT_ID",
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+    loadTimeout = 5.seconds
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
+    // handle the error
+}
+```
+
+パラメーター:
+
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | 取得したい[プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>[ペイウォールのローカライズ](add-paywall-locale-in-adapty-paywall-builder)の識別子。マイナス（**-**）で区切られた1つまたは2つのサブタグで構成される言語コードです。最初のサブタグは言語、2番目はリージョンを表します。</p><p></p><p>例：`en` は英語、`pt-br` はブラジルポルトガル語を表します。</p><p>ロケールコードの詳細と推奨される使用方法については、[ローカライズとロケールコード](localizations-and-locale-codes)を参照してください。</p> |
+| **fetchPolicy** | デフォルト: `AdaptyPaywallFetchPolicy.Default` | <p>デフォルトでは、SDKはサーバーからデータを読み込もうとし、失敗した場合はキャッシュデータを返します。ユーザーが常に最新データを取得できるため、この設定を推奨します。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境にいる場合は、`AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` を使用してキャッシュデータが存在すればそれを返すことを検討してください。この場合、ユーザーが最新データを取得できないことがありますが、接続状況に関わらず読み込み時間が短縮されます。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを避けるために使用しても安全です。</p><p></p><p>キャッシュはアプリを再起動しても保持され、アプリの再インストールや手動クリーンアップ時のみクリアされます。</p><p></p><p>Adapty SDKはペイウォールを2層でローカルに保存します。上記の定期更新キャッシュと[フォールバックペイウォール](fallback-paywalls)です。また、CDNを使用してペイウォールを高速に取得し、CDNが到達不可能な場合に備えてスタンドアロンのフォールバックサーバーも用意しています。このシステムは、インターネット接続が不安定な状況でも信頼性を確保しながら、常に最新バージョンのペイウォールを提供するよう設計されています。</p> |
+| **loadTimeout** | デフォルト: 5秒 | <p>このメソッドのタイムアウト時間を制限します。タイムアウトに達した場合、キャッシュデータまたはローカルフォールバックが返されます。</p><p>内部的に複数のリクエストで構成される場合があるため、まれに `loadTimeout` で指定した時間より若干遅くタイムアウトすることがあります。</p><p>Kotlin Multiplatformでは、`TimeInterval` を拡張関数（例：`import com.adapty.utils.seconds` の `.seconds` を使った `5.seconds`）または `TimeInterval.seconds(5)` で作成できます。制限を設けない場合は `TimeInterval.INFINITE` を使用してください。</p> |
+
+レスポンスパラメーター:
+
+| パラメーター | 説明 |
+| :-------- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | プロダクトIDのリスト、ペイウォール識別子、リモートコンフィグ、その他いくつかのプロパティを含む [`AdaptyPaywall`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall/) オブジェクト。 |
+
+## ペイウォールビルダーで作成したペイウォールのビュー設定を取得する \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+ペイウォールビルダーの **Show on device** トグルが有効になっていることを確認してください。このオプションがオンになっていない場合、ビュー設定を取得できません。
+:::
+
+ペイウォールを取得したら、`ViewConfiguration` が含まれているか確認してください。これはペイウォールビルダーで作成されたことを示します。`ViewConfiguration` が存在する場合はペイウォールビルダーのペイウォールとして扱い、存在しない場合は[リモートコンフィグペイウォールとして処理](present-remote-config-paywalls-kmp)してください。
+
+ビュー設定を読み込むには `createPaywallView` メソッドを使用します。
+
+```kotlin showLineNumbers
+
+if (paywall.hasViewConfiguration) {
+    AdaptyUI.createPaywallView(
+        paywall = paywall,
+        loadTimeout = 5.seconds,
+        preloadProducts = true
+    ).onSuccess { paywallView ->
+        // use paywallView
+    }.onError { error ->
+        // handle the error
+    }
+} else {
+    // use your custom logic
+}
+```
+
+| パラメーター | 必須/任意 | 説明 |
+| :--------------------------- | :------------- | :----------------------------------------------------------- |
+| **paywall** | 必須 | 目的のペイウォールのコントローラーを取得するための `AdaptyPaywall` オブジェクト。 |
+| **loadTimeout** | 任意 | このメソッドのタイムアウト時間を制限します。タイムアウトに達した場合、キャッシュデータまたはローカルフォールバックが返されます。内部的に複数のリクエストで構成される場合があるため、まれに `loadTimeout` で指定した時間より若干遅くタイムアウトすることがあります。`kotlin.time.Duration.Companion` の `5.seconds` などの拡張関数を使用できます。 |
+| **preloadProducts** | 任意 | パフォーマンス向上のためにプロダクトをプリロードするには `true` に設定します。有効にすると、プロダクトが事前に読み込まれ、ペイウォールの表示にかかる時間が短縮されます。 |
+| **productPurchaseParams** | 任意 | [`AdaptyProductIdentifier`](https://kmp.adapty.io/adapty/com.adapty.kmp.models/-adapty-product-identifier/) から [`AdaptyPurchaseParameters`](https://kmp.adapty.io/adapty/com.adapty.kmp.models/-adapty-purchase-parameters/) へのマップ。ペイウォール内の個別プロダクトに対して、パーソナライズドオファーやサブスクリプション更新パラメーターなど、購入固有のパラメーターを設定するために使用します。 |
+
+:::note
+複数の言語を使用している場合は、[ペイウォールビルダーのローカライズ](add-paywall-locale-in-adapty-paywall-builder)を追加する方法を確認してください。
+:::
+
+読み込みが完了したら、[ペイウォールを表示](kmp-present-paywalls)します。
+
+## デフォルトオーディエンス向けのペイウォールを取得して高速化する \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+通常、ペイウォールはほぼ瞬時に取得できるため、この処理を高速化することを気にする必要はありません。ただし、オーディエンスやペイウォールが多数あり、ユーザーのインターネット接続が弱い場合、ペイウォールの取得に期待以上の時間がかかることがあります。そのような状況では、ペイウォールをまったく表示しないよりも、デフォルトのペイウォールを表示してスムーズなユーザー体験を確保したい場合があります。
+
+この問題に対処するため、指定されたプレースメントの **All Users** オーディエンス向けペイウォールを取得する `getPaywallForDefaultAudience` メソッドを使用できます。ただし、推奨されるアプローチは上記の[ペイウォール情報を取得する](#fetch-paywall-designed-with-paywall-builder)セクションで説明した `getPaywall` メソッドを使用することであることを理解しておくことが重要です。
+
+:::warning
+`getPaywall` の使用を推奨する理由
+
+`getPaywallForDefaultAudience` メソッドにはいくつかの重大な欠点があります:
+
+- **後方互換性の問題**: 現在と将来のアプリバージョンで異なるペイウォールを表示する必要がある場合、課題が生じる可能性があります。現在の（レガシー）バージョンをサポートするペイウォールを設計するか、現在の（レガシー）バージョンのユーザーがレンダリングされないペイウォールに遭遇する可能性を受け入れるかのどちらかになります。
+- **ターゲティングの喪失**: すべてのユーザーが **All Users** オーディエンス向けに設計された同じペイウォールを見ることになり、国、マーケティングのアトリビューション、独自のカスタム属性に基づくパーソナライズされたターゲティングが失われます。
+
+ペイウォールの取得を高速化するためにこれらの欠点を受け入れる場合は、以下のように `getPaywallForDefaultAudience` メソッドを使用してください。そうでない場合は、[上記](#fetch-paywall-designed-with-paywall-builder)で説明した `getPaywall` を使用してください。
+:::
+
+```kotlin showLineNumbers
+
+Adapty.getPaywallForDefaultAudience(
+    placementId = "YOUR_PLACEMENT_ID",
+    locale = "en",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+).onSuccess { paywall ->
+    // the requested paywall
+}.onError { error ->
+    // handle the error
+}
+```
+
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>[ペイウォールのローカライズ](add-remote-config-locale)の識別子。マイナス（**-**）で区切られた1つまたは複数のサブタグで構成される言語コードです。最初のサブタグは言語、2番目はリージョンを表します。</p><p></p><p>例：`en` は英語、`pt-br` はブラジルポルトガル語を表します。</p><p></p><p>ロケールコードの詳細と推奨される使用方法については、[ローカライズとロケールコード](localizations-and-locale-codes)を参照してください。</p> |
+| **fetchPolicy** | デフォルト: `AdaptyPaywallFetchPolicy.Default` | <p>デフォルトでは、SDKはサーバーからデータを読み込もうとし、失敗した場合はキャッシュデータを返します。ユーザーが常に最新データを取得できるため、この設定を推奨します。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境にいる場合は、`AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` を使用してキャッシュデータが存在すればそれを返すことを検討してください。この場合、ユーザーが最新データを取得できないことがありますが、接続状況に関わらず読み込み時間が短縮されます。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを避けるために使用しても安全です。</p><p></p><p>キャッシュはアプリを再起動しても保持され、アプリの再インストールや手動クリーンアップ時のみクリアされます。</p> |
+
+## アセットをカスタマイズする \{#customize-assets\}
+
+ペイウォール内の画像や動画をカスタマイズするには、カスタムアセットを実装します。
+
+ヒーロー画像と動画には事前定義されたID（`hero_image` と `hero_video`）があります。カスタムアセットバンドルでは、これらの要素をIDで指定して動作をカスタマイズします。
+
+その他の画像や動画については、Adapty ダッシュボードで[カスタムIDを設定](custom-media)する必要があります。
+
+たとえば、以下のことができます:
+
+- 一部のユーザーに異なる画像や動画を表示する。
+- リモートのメイン画像の読み込み中にローカルのプレビュー画像を表示する。
+- 動画再生前にプレビュー画像を表示する。
+
+:::important
+この機能を使用するには、Adapty SDKをバージョン3.7.0以上に更新してください。
+:::
+
+マップを使用してカスタムアセットを提供する例を示します:
+
+:::info
+Kotlin Multiplatform SDKはローカルアセットのみをサポートしています。リモートコンテンツの場合は、カスタムアセットで使用する前にアセットをダウンロードしてローカルにキャッシュしてください。
+:::
+
+```kotlin showLineNumbers
+// Import generated Res class for accessing resources
+
+viewModelScope.launch {
+    // Get URIs for bundled resources using Res.getUri()
+    val heroImagePath = Res.getUri("files/images/hero_image.png")
+    val demoVideoPath = Res.getUri("files/videos/demo_video.mp4")
+
+    // Or read image as byte data
+    val imageByteData = Res.readBytes("files/images/avatar.png")
+
+    // Create custom assets map
+    val customAssets: Map<String, AdaptyCustomAsset> = mapOf(
+        // Load image from app resources (bundled with the app)
+        // Files should be placed in commonMain/composeResources/files/
+        "hero_image" to AdaptyCustomAsset.localImageResource(
+            path = heroImagePath
+        ),
+
+        // Or use image byte data
+        "avatar" to AdaptyCustomAsset.localImageData(
+            data = imageByteData
+        ),
+
+        // Load video from app resources
+        "demo_video" to AdaptyCustomAsset.localVideoResource(
+            path = demoVideoPath
+        ),
+
+        // Or use a video file from device storage
+        "intro_video" to AdaptyCustomAsset.localVideoFile(
+            path = "/path/to/local/video.mp4"
+        ),
+
+        // Apply custom brand colors
+        "brand_primary" to AdaptyCustomAsset.color(
+            colorHex = "#FF6B35"
+        ),
+
+        // Create gradient background
+        "card_gradient" to AdaptyCustomAsset.linearGradient(
+            colors = listOf("#1E3A8A", "#3B82F6", "#60A5FA"),
+            stops = listOf(0.0f, 0.5f, 1.0f)
+        )
+    )
+
+    // Use custom assets when creating paywall view
+    AdaptyUI.createPaywallView(
+        paywall = paywall,
+        customAssets = customAssets
+    ).onSuccess { paywallView ->
+        // Present the paywall with custom assets
+        paywallView.present()
+    }.onError { error ->
+        // Handle the error - paywall will fall back to default appearance
+    }
+}
+```
+
+:::note
+アセットが見つからない場合や読み込みに失敗した場合、ペイウォールはペイウォールビルダーで設定されたデフォルトの外観にフォールバックします。
+:::

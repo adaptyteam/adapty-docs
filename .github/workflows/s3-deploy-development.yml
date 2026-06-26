@@ -41,12 +41,17 @@ jobs:
 
       - name: Build English only
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
+          NODE_OPTIONS: --max-old-space-size=12288
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=none npx astro build
 
       - name: Generate markdown exports
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
+          NODE_OPTIONS: --max-old-space-size=12288
+          # English-only: locale .md/llms files come from each locale's own
+          # matrix job and overwrite this job's output at deploy anyway. Without
+          # this the generators default to ALL locales (BUILD_LOCALES unset), so
+          # this job redundantly re-walked every locale's corpus.
+          BUILD_LOCALES: none
         run: npm run build:md:prod
 
       - uses: actions/upload-artifact@v4
@@ -60,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr, ru, es]
+        locale: [zh, tr, ru, es, ja, vi]
     concurrency:
       group: build-locale-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -85,7 +90,7 @@ jobs:
 
       - name: Build locale ${{ matrix.locale }}
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
+          NODE_OPTIONS: --max-old-space-size=12288
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} npx astro build
 
       # Generate locale .md / llms.txt / llms-full.txt exports into
@@ -93,7 +98,7 @@ jobs:
       # the Astro HTML pages.
       - name: Generate locale markdown exports
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
+          NODE_OPTIONS: --max-old-space-size=12288
           BUILD_LOCALES: ${{ matrix.locale }}
         run: npm run build:md:prod
 
@@ -142,6 +147,16 @@ jobs:
         with:
           name: build-es
           path: build/es/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-ja
+          path: build/ja/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-vi
+          path: build/vi/
 
       - name: Deploy
         uses: reggionick/s3-deploy@v4

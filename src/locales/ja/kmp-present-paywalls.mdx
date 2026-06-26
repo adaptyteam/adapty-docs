@@ -1,0 +1,271 @@
+---
+title: "Kotlin Multiplatform - 新しいペイウォールビルダーのペイウォールを表示する"
+description: "Kotlin Multiplatformでペイウォールを表示して効果的なマネタイズを実現する方法を学びましょう。"
+metadataTitle: "Kotlin Multiplatformでのペイウォール表示 | Adapty ドキュメント"
+---
+
+ペイウォールビルダーを使ってペイウォールをカスタマイズした場合、モバイルアプリのコードでレンダリングをゼロから実装する必要はありません。ペイウォールには「何を表示するか」と「どのように表示するか」の情報が含まれています。
+
+:::warning
+
+このガイドは**新しいペイウォールビルダーのペイウォール**専用です。リモートコンフィグで設計されたペイウォールや [Observer モード](observer-vs-full-mode) では、ペイウォールの表示方法が異なります。
+
+**リモートコンフィグのペイウォール**を表示する方法については、[リモートコンフィグで設計されたペイウォールをレンダリングする](present-remote-config-paywalls-kmp) をご覧ください。
+
+:::
+
+Adapty Kotlin Multiplatform SDK では、ペイウォールを表示する方法が 2 つあります。
+
+- **Compose Multiplatform を使用する**
+- **Compose Multiplatform を使用しない**
+
+## Compose Multiplatform を使用する \{#with-compose-multiplatform\}
+
+ペイウォールを表示するには、[`createPaywallView`](kmp-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) メソッドで作成した `view` に対して `view.present()` メソッドを呼び出します。各 `view` は一度しか使用できません。ペイウォールを再度表示する必要がある場合は、`createPaywallView` を再度呼び出して新しい `view` インスタンスを作成してください。
+
+:::warning
+`view` を再作成せずに使い回すとエラーが発生する場合があります。
+:::
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    AdaptyUI.createPaywallView(paywall = paywall).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+### ダイアログを表示する \{#show-dialog\}
+
+Android でペイウォールビューが表示されている場合は、ネイティブのアラートダイアログの代わりにこのメソッドを使用してください。Android では通常のアラートがペイウォールビューの背後に表示されてしまい、ユーザーから見えなくなります。このメソッドを使うことで、すべてのプラットフォームでペイウォールの上にダイアログが正しく表示されます。
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    view.showDialog(
+        title = "Close paywall?",
+        content = "You will lose access to exclusive offers.",
+        primaryActionTitle = "Stay",
+        secondaryActionTitle = "Close"
+    ).onSuccess { action ->
+        if (action == AdaptyUIDialogActionType.SECONDARY) {
+            // User confirmed - close the paywall
+            view.dismiss()
+        }
+        // If primary - do nothing, user stays
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+### iOS の表示スタイルを設定する \{#configure-ios-presentation-style\}
+
+`present()` メソッドに `iosPresentationStyle` パラメータを渡すことで、iOS でのペイウォールの表示スタイルを設定できます。このパラメータには `AdaptyUIIOSPresentationStyle.FULLSCREEN`（デフォルト）または `AdaptyUIIOSPresentationStyle.PAGESHEET` を指定できます。
+
+```kotlin showLineNumbers
+
+viewModelScope.launch {
+    val view = AdaptyUI.createPaywallView(paywall = paywall).getOrNull()
+    view?.present(iosPresentationStyle = AdaptyUIIOSPresentationStyle.PAGESHEET)
+}
+```
+
+## Compose Multiplatform を使用しない \{#without-compose-multiplatform\}
+
+:::note
+`createNativePaywallView` はコアモジュール `io.adapty:adapty-kmp` に含まれています。プロジェクトで Compose Multiplatform を使用していない場合、`io.adapty:adapty-kmp-ui` への依存は不要です。
+:::
+
+Compose Multiplatform を使用せずにペイウォールを埋め込むには、`createNativePaywallView` を呼び出します。このメソッドはレイアウトに追加できる `AdaptyNativePaywallView` を返します。
+
+<Tabs>
+<TabItem value="android" label="Android">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val nativeView = AdaptyUI.createNativePaywallView(
+    context = context,
+    viewModelStoreOwner = activity,
+    paywall = paywall,
+    observer = myPaywallObserver,
+)
+
+// Embed in your Compose layout:
+AndroidView(
+    factory = { nativeView.view },
+    modifier = Modifier.fillMaxSize()
+)
+```
+</TabItem>
+<TabItem value="ios" label="iOS">
+KMP インターフェースのデフォルトメソッドは Swift では `@required` になるため、Swift から直接 `AdaptyUIPaywallsEventsObserver` を実装することはできません。まず `iosMain` にオープンな基底クラスを宣言してください。
+
+```kotlin showLineNumbers title="iosMain (Kotlin)"
+open class BasePaywallObserver : AdaptyUIPaywallsEventsObserver
+```
+
+次に Swift でサブクラスを作成し、必要なメソッドのみオーバーライドします。
+
+```swift showLineNumbers title="Swift"
+class MyPaywallObserver: BasePaywallObserver {
+    override func paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: any AdaptyUIAction) {
+        if action is AdaptyUIActionCloseAction {
+            // remove nativeView from your view hierarchy
+        }
+    }
+}
+
+let nativeView = AdaptyUI.shared.createNativePaywallView(
+    paywall: paywall,
+    observer: MyPaywallObserver()
+)
+// nativeView.viewController is a UIViewController.
+// Add it to your SwiftUI view or UIKit hierarchy.
+```
+</TabItem>
+</Tabs>
+
+### ビューを破棄する \{#dispose-the-view\}
+
+レイアウトからビューを削除する際は `dispose()` を呼び出してください。これによりイベントリスナーの登録が解除され、内部リソースが解放されます。
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+nativeView.dispose()
+```
+
+## カスタムタグ \{#custom-tags\}
+
+カスタムタグを使うと、シナリオごとに別々のペイウォールを作らずに済みます。ユーザーデータに応じて動的に変化するペイウォールを 1 つ用意するイメージです。たとえば、"Hello!" という汎用的な文言の代わりに、"Hello, John!" や "Hello, Ann!" のようにユーザーに合わせた挨拶を表示できます。
+
+カスタムタグの活用例を以下に示します。
+
+- ペイウォールにユーザーの名前やメールアドレスを表示する。
+- 売上促進のために現在の曜日を表示する（例：「Happy Thursday」）。
+- 販売中のプロダクトに関するパーソナライズされた情報（フィットネスプログラムの名称や VoIP アプリの電話番号など）を追加する。
+
+カスタムタグを使うと、様々な状況に柔軟に対応できるペイウォールを作成でき、アプリのインターフェースをよりパーソナライズして魅力的にできます。
+
+:::warning
+AdaptyUI SDK の古いバージョンを使用しているユーザーを対象とするケースなど、カスタムタグの置換先が不明な場合があります。そのため、未知のカスタムタグを含む行を置き換えるフォールバックテキストを必ず設定してください。設定しないと、タグがコード（`<USERNAME/>`）としてそのまま表示されてしまいます。
+:::
+
+ペイウォールでカスタムタグを使用するには、ペイウォールビューを作成する際に渡します。
+
+<Tabs>
+<TabItem value="standalone" label="With Compose Multiplatform" default>
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    val customTags = mapOf(
+        "USERNAME" to "John",
+        "DAY_OF_WEEK" to "Thursday"
+    )
+
+    AdaptyUI.createPaywallView(
+        paywall = paywall,
+        customTags = customTags
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="native" label="Without Compose Multiplatform">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val customTags = mapOf(
+    "USERNAME" to "John",
+    "DAY_OF_WEEK" to "Thursday"
+)
+
+val nativeView = AdaptyUI.createNativePaywallView(
+    context = context,
+    viewModelStoreOwner = activity,
+    paywall = paywall,
+    observer = myPaywallObserver,
+    customTags = customTags,
+)
+```
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+
+val customTags = mapOf(
+    "USERNAME" to "John",
+    "DAY_OF_WEEK" to "Thursday"
+)
+
+val nativeView = AdaptyUI.createNativePaywallView(
+    paywall = paywall,
+    observer = myPaywallObserver,
+    customTags = customTags,
+)
+```
+</TabItem>
+</Tabs>
+
+## カスタムタイマー \{#custom-timers\}
+
+ペイウォールのタイマーは、期間限定の特別オファーや季節限定オファーを訴求する優れたツールです。ただし、このタイマーはオファーの有効期間やキャンペーンの期間とは連動していません。設定した値からゼロに向かってカウントダウンするだけのスタンドアロンのタイマーです。タイマーがゼロになっても何も起こりません。ゼロのまま停止するだけです。
+
+タイマーの前後にテキストをカスタマイズして、「残り時間：10:00 秒」のようなメッセージを作成できます。
+
+ペイウォールでカスタムタイマーを使用するには、ペイウォールビューを作成する際に渡します。
+
+<Tabs>
+<TabItem value="standalone" label="With Compose Multiplatform" default>
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    val customTimers = mapOf(
+        "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+        "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+    )
+
+    AdaptyUI.createPaywallView(
+        paywall = paywall,
+        customTimers = customTimers
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="native" label="Without Compose Multiplatform">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val customTimers = mapOf(
+    "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+    "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+)
+
+val nativeView = AdaptyUI.createNativePaywallView(
+    context = context,
+    viewModelStoreOwner = activity,
+    paywall = paywall,
+    observer = myPaywallObserver,
+    customTimers = customTimers,
+)
+```
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+
+val customTimers = mapOf(
+    "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+    "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+)
+
+val nativeView = AdaptyUI.createNativePaywallView(
+    paywall = paywall,
+    observer = myPaywallObserver,
+    customTimers = customTimers,
+)
+```
+</TabItem>
+</Tabs>

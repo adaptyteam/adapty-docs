@@ -1,0 +1,82 @@
+---
+title: "Triển khai web paywall trong Unity SDK"
+description: "Thiết lập web paywall để nhận thanh toán mà không mất phí và không cần kiểm duyệt của App Store."
+metadataTitle: "Chấp nhận thanh toán qua web cho ứng dụng Unity tại Mỹ | Tài liệu Adapty"
+displayed_sidebar: sdkunity
+---
+
+:::important
+Trước khi bắt đầu, hãy đảm bảo bạn đã [cấu hình web paywall trong dashboard](web-paywall) và đã cài đặt Adapty SDK phiên bản 3.14 trở lên.
+:::
+
+## Mở web paywall \{#open-web-paywalls\}
+
+Nếu bạn đang làm việc với paywall tự phát triển, bạn cần xử lý web paywall bằng phương thức SDK. Phương thức `Adapty.OpenWebPaywall`:
+1. Tạo một URL duy nhất cho phép Adapty liên kết paywall cụ thể được hiển thị cho một người dùng nhất định với trang web họ được chuyển hướng đến.
+2. Theo dõi khi người dùng quay lại ứng dụng và sau đó gọi `Adapty.GetProfile` theo chu kỳ ngắn để xác định xem quyền truy cập của hồ sơ người dùng có được cập nhật hay không.
+
+Nhờ vậy, nếu thanh toán thành công và quyền truy cập được cập nhật, gói đăng ký sẽ kích hoạt trong ứng dụng gần như ngay lập tức.
+
+```csharp showLineNumbers title="Unity"
+Adapty.OpenWebPaywall(
+    product,
+    (error) =>
+    {
+        if (error != null)
+        {
+            Debug.LogError($"Failed to open web paywall: {error.Message}");
+        }
+        else
+        {
+            Debug.Log("Web paywall opened successfully");
+        }
+    }
+);
+```
+
+:::note
+Có hai phiên bản của phương thức `OpenWebPaywall`:
+1. `OpenWebPaywall(product)` tạo URL theo paywall và đồng thời thêm dữ liệu sản phẩm vào URL.
+2. `OpenWebPaywall(paywall)` tạo URL theo paywall mà không thêm dữ liệu sản phẩm vào URL. Dùng phiên bản này khi các sản phẩm trong Adapty paywall của bạn khác với những sản phẩm trên web paywall.
+:::
+
+#### Xử lý lỗi \{#handle-errors\}
+
+| Mã lỗi | Mô tả | Hành động khuyến nghị |
+|-----------|--------------------------------------------------------|---------------------------------------------------------------------------|
+| `AdaptyErrorCode.WrongParam`   | Paywall hoặc sản phẩm chưa được cấu hình URL mua hàng qua web, hoặc không thể mở URL trong trình duyệt | Kiểm tra thông báo lỗi để biết chi tiết. Xác minh cấu hình paywall/sản phẩm trong Adapty Dashboard, hoặc kiểm tra cài đặt thiết bị. |
+| `AdaptyErrorCode.DecodingFailed` | Không thể mã hóa đúng các tham số trong URL | Xác minh các tham số URL hợp lệ và được định dạng đúng |
+
+:::note
+Kiểm tra thuộc tính `Message` của lỗi để biết thông tin cụ thể về vấn đề xảy ra, vì `WrongParam` có thể chỉ ra nhiều sự cố khác nhau (thiếu URL mua hàng, không mở được trình duyệt, v.v.).
+:::
+
+## Mở web paywall trong trình duyệt trong ứng dụng \{#open-web-paywalls-in-an-in-app-browser\}
+
+:::important
+Mở web paywall trong trình duyệt trong ứng dụng được hỗ trợ bắt đầu từ Adapty SDK v3.15.
+:::
+
+Theo mặc định, web paywall mở trong trình duyệt ngoài, khiến người dùng rời khỏi ứng dụng của bạn.
+
+Để mang lại trải nghiệm liền mạch cho người dùng, bạn có thể mở web paywall trong trình duyệt trong ứng dụng. Cách này hiển thị trang mua hàng web ngay bên trong ứng dụng, cho phép người dùng hoàn tất giao dịch mà không cần chuyển sang ứng dụng khác.
+
+Để bật tính năng này, truyền `AdaptyWebPresentation.InAppBrowser` vào phương thức `OpenWebPaywall`:
+
+```csharp showLineNumbers title="Unity"
+Adapty.OpenWebPaywall(
+    product,
+    AdaptyWebPresentation.InAppBrowser, // default — ExternalBrowser
+    (error) =>
+    {
+        if (error != null)
+        {
+            Debug.LogError($"Failed to open web paywall: {error.Message}");
+        }
+        else
+        {
+            Debug.Log("Web paywall opened successfully");
+        }
+    }
+);
+```

@@ -1,15 +1,312 @@
 ---
-title: "Migrar el SDK de Adapty para Android a la v. 3.0"
-description: "Migra al SDK de Adapty para Android v3.0 para mejorar el rendimiento y acceder a nuevas funciones de monetización."
-metadataTitle: "Migración al SDK de Adapty para Android v3.0 | Documentación de Adapty"
+title: "Migrar el SDK de Android de Adapty a la versión 3.0"
+description: "Migra al SDK de Android de Adapty v3.0 para obtener mejor rendimiento y nuevas funciones de monetización."
+metadataTitle: "Migración al SDK de Android de Adapty v3.0 | Documentación de Adapty"
 ---
 
-El SDK de Adapty v.3.0 incluye soporte para el nuevo y emocionante [Adapty Paywall Builder](adapty-paywall-builder), la nueva versión de la herramienta visual sin código para crear paywalls. Con su máxima flexibilidad y ricas capacidades de diseño, tus paywalls serán más efectivos y rentables.
+Adapty SDK v3.0 introduces significant changes. This document outlines the key modifications to help you upgrade from v2.x to v3.0. We've made every effort to ensure backward compatibility, but some changes may require updates to your codebase.
 
-Los SDKs de Adapty se distribuyen como BoM (Bill of Materials), lo que garantiza que las versiones del SDK de Adapty y del SDK de AdaptyUI en tu aplicación se mantengan sincronizadas.
+## Renaming Paywalls to Placements
 
-Para migrar a la v3.0, actualiza tu código de la siguiente manera:
+In v3.0, we've renamed "paywalls" to "placements" throughout the SDK. This change reflects the concept that a "placement" is a specific location in your app where a paywall can be displayed. Here's a summary of the renaming:
 
+| Before (v2.x) | After (v3.0) |
+|---|---|
+| `getPaywalls()` | `getPlacements()` |
+| `Paywall` | `Placement` |
+| `paywallId` | `placementId` |
+| `paywallVariationId` | `placementVariationId` |
+
+## Changes to `AdaptyPaywall`
+
+`AdaptyPaywall` in v3.0 contains the following properties:
+
+| Property | Type | Description |
+|---|---|---|
+| `placementId` | `String` | The ID of the placement in Adapty |
+| `variationId` | `String` | The ID of the variation in the A/B test |
+| `revision` | `Int` | The revision of the paywall |
+| `onboardingScreens` | `List<AdaptyOnboardingScreenContent>` | The onboarding screens for the paywall |
+| `remoteConfig` | `AdaptyRemoteConfig?` | The remote config for the paywall |
+| `products` | `List<AdaptyPaywallProduct>` | The products associated with the paywall |
+
+## Start Using Adapty Android SDK v3.0
+
+Starting with v3.0, we recommend initializing the Adapty Android SDK in the `Application.onCreate()` method. This ensures the SDK is ready to use when your app launches.
+
+To migrate to Adapty Android SDK v3.0:
+
+1. [Install Adapty Android SDK v3.x](sdk-installation-android).
+2. Make the changes listed in the sections below.
+
+## Changes to Adapty configuration
+
+### Configuration builder changes
+
+The configuration builder was updated to allow for a more flexible setup. The new builder accepts an `appKey` parameter, which is your Adapty API key. The old builder accepted a `apiKey` parameter.
+
+<Tabs>
+<TabItem value="v3.0" label="v3.0">
+
+```kotlin title="App.kt"
+override fun onCreate() {
+    super.onCreate()
+    Adapty.activate(
+        applicationContext,
+        AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+            .withObserverMode(false)
+            .withCustomerUserId(customerUserId)
+            .withIpAddressCollectionDisabled(false)
+            .withIpAddressCollectionDisabled(false)
+            .build()
+    )
+}
+```
+
+</TabItem>
+<TabItem value="v2.x" label="v2.x">
+
+```kotlin title="App.kt"
+override fun onCreate() {
+    super.onCreate()
+    Adapty.activate(
+        applicationContext,
+        AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+            .withObserverMode(false)
+            .withCustomerUserId(customerUserId)
+            .withIpAddressCollectionDisabled(false)
+            .build()
+    )
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Changes to paywalls
+
+### Retrieving paywalls
+
+<Tabs>
+<TabItem value="v3.0" label="v3.0">
+
+```kotlin title="kotlin"
+Adapty.getPaywall(placementId, locale, loadTimeout) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            // use paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="v2.x" label="v2.x">
+
+```kotlin title="kotlin"
+Adapty.getPaywall(id, locale, fetchPolicy, loadTimeout) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            // use paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+The `fetchPolicy` parameter has been removed from `getPaywall`. This parameter previously controlled whether the SDK fetched fresh data from the server or used a cached version. You can now control this via the configuration builder.
+
+### Retrieving paywall products
+
+<Tabs>
+<TabItem value="v3.0" label="v3.0">
+
+```kotlin title="kotlin"
+Adapty.getPaywallProducts(paywall) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val products = result.value
+            // use the products
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="v2.x" label="v2.x">
+
+```kotlin title="kotlin"
+Adapty.getPaywallProducts(paywall) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val products = result.value
+            // use the products
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Logging paywall display
+
+<Tabs>
+<TabItem value="v3.0" label="v3.0">
+
+```kotlin title="kotlin"
+Adapty.logShowPaywall(paywall)
+```
+
+</TabItem>
+<TabItem value="v2.x" label="v2.x">
+
+```kotlin title="kotlin"
+Adapty.logShowPaywall(paywall)
+```
+
+</TabItem>
+</Tabs>
+
+## Changes to `AdaptyProfile`
+
+In v3.0, we've updated `AdaptyProfile`. The `customAttributes` property is now included in the `AdaptyProfile.CustomerUser` object rather than directly in the profile.
+
+<Tabs>
+<TabItem value="v3.0" label="v3.0">
+
+```kotlin title="kotlin"
+val profile: AdaptyProfile
+val customAttributes = profile.customerUser?.customAttributes
+```
+
+</TabItem>
+<TabItem value="v2.x" label="v2.x">
+
+```kotlin title="kotlin"
+val profile: AdaptyProfile
+val customAttributes = profile.customAttributes
+```
+
+</TabItem>
+</Tabs>
+
+## Changes to `AdaptyPaywallProduct`
+
+In v3.0, we've updated `AdaptyPaywallProduct`. The `variationId` property has been removed and the `paywallVariationId` property has been renamed to `variationId`.
+
+<Tabs>
+<TabItem value="v3.0" label="v3.0">
+
+```kotlin title="kotlin"
+val product: AdaptyPaywallProduct
+val variationId = product.variationId
+```
+
+</TabItem>
+<TabItem value="v2.x" label="v2.x">
+
+```kotlin title="kotlin"
+val product: AdaptyPaywallProduct
+val variationId = product.paywallVariationId
+```
+
+</TabItem>
+</Tabs>
+
+## Changes to `AdaptySubscriptionUpdateParameters`
+
+In v3.0, we've updated `AdaptySubscriptionUpdateParameters`. The `replacementMode` property has been renamed to `prorationMode`.
+
+<Tabs>
+<TabItem value="v3.0" label="v3.0">
+
+```kotlin title="kotlin"
+val params = AdaptySubscriptionUpdateParameters(
+    oldSubVendorProductId, 
+    prorationMode
+)
+```
+
+</TabItem>
+<TabItem value="v2.x" label="v2.x">
+
+```kotlin title="kotlin"
+val params = AdaptySubscriptionUpdateParameters(
+    oldSubVendorProductId, 
+    replacementMode
+)
+```
+
+</TabItem>
+</Tabs>
+
+## Changes to `AdaptyPurchasedInfo`
+
+In v3.0, we've updated `AdaptyPurchasedInfo`. The response now includes the `profile` and, optionally, the `purchase` property.
+
+<Tabs>
+<TabItem value="v3.0" label="v3.0">
+
+```kotlin title="kotlin"
+Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value.profile
+            val purchase = result.value.purchase
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="v2.x" label="v2.x">
+
+```kotlin title="kotlin"
+Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value.profile
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+Adapty SDK v3.0 trae soporte para el nuevo e innovador [Adapty Paywall Builder](adapty-paywall-builder), la nueva versión de la herramienta no-code y fácil de usar para crear paywalls. Con su máxima flexibilidad y ricas capacidades de diseño, tus paywalls serán más efectivos y rentables.
+
+Los SDKs de Adapty se distribuyen como un BoM (Bill of Materials), lo que garantiza que las versiones del SDK de Adapty y del SDK de AdaptyUI en tu app sean siempre consistentes.
+
+Para migrar a v3.0, actualiza tu código de la siguiente manera:
 <Tabs groupId="current-os" queryString>
   <TabItem value="module-level build.gradle" label="module-level build.gradle" default>
 
@@ -26,7 +323,6 @@ dependencies {
 
 </TabItem>
 <TabItem value="module-level build.gradle.kts" label="module-level build.gradle.kts" default>
-
 ```diff showLineNumbers
 dependencies {
     ...
@@ -40,7 +336,6 @@ dependencies {
 
 </TabItem>
 <TabItem value="version catalog" label="version catalog" default>
-
 ```diff showLineNumbers
 //libs.versions.toml
 

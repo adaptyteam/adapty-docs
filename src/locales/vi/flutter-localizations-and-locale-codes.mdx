@@ -1,0 +1,72 @@
+---
+title: "Sử dụng localizations và mã locale trong Flutter SDK"
+description: "Quản lý localizations và mã locale của ứng dụng để tiếp cận người dùng toàn cầu."
+metadataTitle: "Quản lý Localizations & Mã Locale | Tài liệu Adapty"
+displayed_sidebar: sdkflutter
+---
+
+## Tại sao điều này quan trọng \{#why-this-is-important\}
+
+Có một số tình huống mà mã locale phát huy tác dụng — ví dụ, khi bạn cần lấy paywall phù hợp với localization hiện tại của ứng dụng.
+
+Vì mã locale khá phức tạp và có thể khác nhau tùy nền tảng, chúng tôi sử dụng một tiêu chuẩn nội bộ cho tất cả các nền tảng được hỗ trợ. Tuy nhiên, chính vì độ phức tạp đó, bạn cần hiểu rõ mình đang gửi gì lên server để nhận đúng localization — và điều gì xảy ra tiếp theo — để luôn nhận được kết quả như mong đợi.
+
+## Tiêu chuẩn mã locale tại Adapty \{#locale-code-standard-at-adapty\}
+
+Đối với mã locale, Adapty sử dụng phiên bản được điều chỉnh nhẹ của [tiêu chuẩn BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): mỗi mã gồm các subtag viết thường, phân cách bằng dấu gạch ngang. Một số ví dụ: `en` (tiếng Anh), `pt-br` (tiếng Bồ Đào Nha (Brazil)), `zh` (tiếng Trung giản thể), `zh-hant` (tiếng Trung phồn thể).
+
+## Khớp mã locale \{#locale-code-matching\}
+
+Khi Adapty nhận được yêu cầu từ SDK phía client kèm mã locale và bắt đầu tìm localization tương ứng của paywall, quá trình diễn ra như sau:
+
+1. Chuỗi locale đầu vào được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay bằng dấu gạch ngang (`-`)
+2. Hệ thống tìm kiếm localization có mã locale khớp hoàn toàn
+3. Nếu không tìm thấy, hệ thống lấy phần trước dấu gạch ngang đầu tiên (`pt` từ `pt-br`) và tiếp tục tìm kiếm
+4. Nếu vẫn không tìm thấy, hệ thống trả về localization mặc định `en`
+
+Nhờ vậy, một thiết bị iOS gửi `'pt_BR'`, một thiết bị Android gửi `pt-BR`, và một thiết bị khác gửi `pt-br` đều nhận được kết quả giống nhau.
+
+## Triển khai localizations: cách khuyến nghị \{#implementing-localizations-recommended-way\}
+
+Nếu bạn đang quan tâm đến localizations, nhiều khả năng bạn đã làm việc với các file chuỗi đã được bản địa hóa trong dự án. Trong trường hợp đó, chúng tôi khuyến nghị thêm một cặp key-value chứa mã locale Adapty tương ứng vào mỗi file localization. Sau đó, lấy giá trị của key đó khi gọi SDK, như sau:
+
+```dart showLineNumbers
+// 1. Modify your app_en.arb, app_es.arb, app_pt_br.arb files
+
+/*
+app_en.arb
+*/
+"adapty_paywalls_locale": "en",
+
+/*
+app_es.arb
+*/
+"adapty_paywalls_locale": "es",
+
+/*
+app_pt_br.arb
+*/
+"adapty_paywalls_locale": "pt-br",
+
+// 2. Extract and use the locale code
+final locale = AppLocalizations.of(context)!.adapty_paywalls_locale;
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+Cách này giúp bạn kiểm soát hoàn toàn localization nào sẽ được lấy về cho từng người dùng của ứng dụng.
+
+## Triển khai localizations: cách khác \{#implementing-localizations-the-other-way\}
+
+Bạn cũng có thể đạt được kết quả tương tự (nhưng không hoàn toàn giống) mà không cần định nghĩa mã locale một cách tường minh cho từng localization. Điều đó có nghĩa là lấy mã locale từ các đối tượng khác mà nền tảng cung cấp, như sau:
+
+```dart showLineNumbers
+final locale = Localizations.localeOf(context).languageCode;
+// pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
+```
+
+Lưu ý rằng chúng tôi không khuyến nghị cách này vì một số lý do:
+
+1. Trên iOS, ngôn ngữ ưu tiên và locale hiện tại không giống nhau. Nếu muốn localization được chọn đúng, bạn phải dựa vào logic của Apple — vốn hoạt động tốt nếu bạn dùng cách khuyến nghị với file chuỗi đã được bản địa hóa — hoặc tự tái tạo logic đó.
+2. Rất khó dự đoán chính xác server của Adapty sẽ nhận được gì. Ví dụ, trên iOS, có thể lấy được một locale như `ar_OM@numbers='latn'` từ thiết bị và gửi lên server. Khi đó bạn sẽ không nhận được localization `ar-om` như mong đợi, mà thay vào đó là `ar` — điều có thể gây bất ngờ.
+
+Nếu bạn vẫn quyết định dùng cách này, hãy đảm bảo đã xử lý tất cả các trường hợp liên quan.

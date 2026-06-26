@@ -1,0 +1,177 @@
+---
+title: "Lấy paywall Paywall Builder và cấu hình của chúng trong Capacitor SDK"
+description: "Tìm hiểu cách lấy PB paywall trong Adapty để kiểm soát gói đăng ký tốt hơn trong ứng dụng Capacitor của bạn."
+metadataTitle: "Lấy PB Paywalls trong Adapty | Tài liệu Adapty"
+displayed_sidebar: sdkcapacitor
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+
+Sau khi [bạn đã thiết kế phần giao diện cho paywall của mình](adapty-paywall-builder) với Paywall Builder mới trong Adapty Dashboard, bạn có thể hiển thị nó trong ứng dụng di động. Bước đầu tiên trong quy trình này là lấy paywall liên kết với placement và cấu hình view của nó như mô tả bên dưới.
+
+Lưu ý rằng chủ đề này đề cập đến các paywall được tùy chỉnh bằng Paywall Builder. Để biết hướng dẫn về cách lấy Remote Config paywall, hãy tham khảo chủ đề [Lấy paywall và sản phẩm cho remote config paywalls trong ứng dụng di động của bạn](fetch-paywalls-and-products-capacitor).
+
+<details>
+   <summary>Trước khi bắt đầu hiển thị paywall trong ứng dụng di động của bạn (nhấn để mở rộng)</summary>
+
+1. [Tạo sản phẩm của bạn](create-product) trong Adapty Dashboard.
+2. [Tạo paywall và thêm sản phẩm vào đó](create-paywall) trong Adapty Dashboard.
+3. [Tạo placement và thêm paywall vào đó](create-placement) trong Adapty Dashboard.
+4. Cài đặt [Adapty SDK](sdk-installation-capacitor) trong ứng dụng di động của bạn.
+</details>
+
+## Lấy paywall được thiết kế bằng Paywall Builder \{#fetch-paywall-designed-with-paywall-builder\}
+
+Nếu bạn đã [thiết kế paywall bằng Paywall Builder](adapty-paywall-builder), bạn không cần lo lắng về việc render nó trong code ứng dụng di động để hiển thị cho người dùng. Paywall như vậy chứa cả nội dung cần hiển thị bên trong paywall lẫn cách hiển thị nó. Tuy nhiên, bạn vẫn cần lấy ID của nó thông qua placement, cấu hình view của nó, rồi mới hiển thị trong ứng dụng di động.
+
+Để đảm bảo hiệu suất tối ưu, điều quan trọng là phải lấy paywall và [cấu hình view](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) của nó càng sớm càng tốt, tạo đủ thời gian để hình ảnh tải xuống trước khi hiển thị cho người dùng.
+
+Để lấy paywall, sử dụng phương thức `getPaywall`:
+
+```typescript showLineNumbers
+try {
+  const paywall = await adapty.getPaywall({
+    placementId: 'YOUR_PLACEMENT_ID',
+    locale: 'en',
+  });
+  // the requested paywall
+} catch (error) {
+  // handle the error
+}
+```
+
+Tham số:
+
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements) mong muốn. Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **locale** | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Định danh của [bản địa hóa paywall](add-paywall-locale-in-adapty-paywall-builder). Tham số này phải là mã ngôn ngữ gồm một hoặc hai thẻ phụ được phân tách bởi dấu trừ (**-**). Thẻ phụ đầu tiên là ngôn ngữ, thẻ phụ thứ hai là vùng.</p><p></p><p>Ví dụ: `en` là tiếng Anh, `pt-br` là tiếng Bồ Đào Nha Brazil.</p><p>Xem [Bản địa hóa và mã locale](localizations-and-locale-codes) để biết thêm thông tin về mã locale và cách chúng tôi khuyến nghị sử dụng chúng.</p> |
+| **params** | tùy chọn | Tham số bổ sung để lấy paywall. |
+
+**Đừng hardcode ID sản phẩm.** ID duy nhất bạn nên hardcode là placement ID. Paywall được cấu hình từ xa, vì vậy số lượng sản phẩm và ưu đãi có thể thay đổi bất kỳ lúc nào. Ứng dụng của bạn phải xử lý những thay đổi này một cách linh hoạt — nếu hôm nay paywall trả về hai sản phẩm và ngày mai trả về ba, hãy hiển thị tất cả chúng mà không cần thay đổi code.
+
+Tham số phản hồi:
+
+| Tham số | Mô tả |
+| :-------- |:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | Một đối tượng [`AdaptyPaywall`](https://capacitor.adapty.io/interfaces/adaptypaywall) chứa danh sách ID sản phẩm, định danh paywall, Remote Config và một số thuộc tính khác. |
+
+## Lấy cấu hình view của paywall được thiết kế bằng Paywall Builder \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+Hãy đảm bảo bật toggle **Show on device** trong paywall builder. Nếu tùy chọn này chưa được bật, cấu hình view sẽ không thể lấy được.
+:::
+
+Sau khi lấy paywall, hãy kiểm tra xem nó có chứa `ViewConfiguration` không — điều này cho biết paywall được tạo bằng Paywall Builder. Điều này sẽ hướng dẫn bạn cách hiển thị paywall. Nếu `ViewConfiguration` có mặt, hãy xử lý nó như một Paywall Builder paywall; nếu không, [xử lý nó như một Remote Config paywall](present-remote-config-paywalls-capacitor).
+
+Trong Capacitor SDK, hãy gọi trực tiếp phương thức `createPaywallView` mà không cần lấy cấu hình view thủ công trước.
+
+:::warning
+Kết quả của phương thức `createPaywallView` chỉ có thể được sử dụng một lần. Nếu bạn cần dùng lại, hãy gọi phương thức `createPaywallView` một lần nữa.
+:::
+
+```typescript showLineNumbers
+
+if (paywall.hasViewConfiguration) {
+  try {
+    const view = await createPaywallView(paywall);
+  } catch (error) {
+    // handle the error
+  }
+} else {
+  // use your custom logic
+}
+```
+
+Tham số:
+
+| Tham số | Bắt buộc | Mô tả |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **paywall** | bắt buộc | Một đối tượng `AdaptyPaywall` để lấy controller cho paywall mong muốn. |
+| **customTags** | tùy chọn | Định nghĩa một dictionary các custom tag và giá trị đã được xử lý của chúng. Custom tag đóng vai trò là placeholder trong nội dung paywall, được thay thế động bằng các chuỗi cụ thể để tạo nội dung cá nhân hóa trong paywall. Tham khảo chủ đề Custom tags in paywall builder để biết thêm chi tiết. |
+| **prefetchProducts** | tùy chọn | Bật để tối ưu hóa thời điểm hiển thị sản phẩm trên màn hình. Khi là `true`, AdaptyUI sẽ tự động lấy các sản phẩm cần thiết. Mặc định: `false`. |
+
+:::note
+Nếu bạn đang sử dụng nhiều ngôn ngữ, hãy tìm hiểu cách thêm [bản địa hóa Paywall Builder](add-paywall-locale-in-adapty-paywall-builder) và cách sử dụng mã locale đúng cách [tại đây](capacitor-localizations-and-locale-codes).
+:::
+
+Sau khi có view, [hiển thị paywall](capacitor-present-paywalls).
+
+## Lấy paywall cho đối tượng mặc định để tải nhanh hơn \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Thông thường, paywall được tải gần như ngay lập tức, vì vậy bạn không cần lo lắng về việc tăng tốc quá trình này. Tuy nhiên, trong trường hợp bạn có nhiều đối tượng và paywall, và người dùng có kết nối internet yếu, việc tải paywall có thể mất nhiều thời gian hơn mong đợi. Trong những tình huống như vậy, bạn có thể muốn hiển thị paywall mặc định để đảm bảo trải nghiệm người dùng mượt mà thay vì không hiển thị paywall nào.
+
+Để giải quyết vấn đề này, bạn có thể sử dụng phương thức `getPaywallForDefaultAudience`, phương thức này lấy paywall của placement được chỉ định cho đối tượng **All Users**. Tuy nhiên, điều quan trọng cần hiểu là cách tiếp cận được khuyến nghị là lấy paywall bằng phương thức `getPaywall`, như đã mô tả chi tiết trong phần [Lấy thông tin Paywall](#fetch-paywall-designed-with-paywall-builder) ở trên.
+
+:::warning
+Tại sao chúng tôi khuyến nghị dùng `getPaywall`
+
+Phương thức `getPaywallForDefaultAudience` có một số nhược điểm đáng kể:
+
+- **Các vấn đề tương thích ngược tiềm ẩn**: Nếu bạn cần hiển thị các paywall khác nhau cho các phiên bản ứng dụng khác nhau (hiện tại và tương lai), bạn sẽ phải thiết kế paywall hỗ trợ phiên bản hiện tại (cũ) hoặc chấp nhận rằng người dùng với phiên bản hiện tại (cũ) có thể gặp sự cố với paywall không render được.
+- **Mất khả năng nhắm mục tiêu**: Tất cả người dùng sẽ thấy cùng một paywall được thiết kế cho đối tượng **All Users**, nghĩa là bạn mất khả năng nhắm mục tiêu cá nhân hóa (bao gồm theo quốc gia, attribution marketing hoặc các thuộc tính tùy chỉnh của bạn).
+
+Nếu bạn sẵn sàng chấp nhận những nhược điểm này để hưởng lợi từ việc tải paywall nhanh hơn, hãy sử dụng phương thức `getPaywallForDefaultAudience` như sau. Nếu không, hãy tiếp tục dùng `getPaywall` như đã mô tả [ở trên](#fetch-paywall-designed-with-paywall-builder).
+:::
+
+```typescript showLineNumbers
+try {
+  const paywall = await adapty.getPaywallForDefaultAudience({
+    placementId: 'YOUR_PLACEMENT_ID',
+    locale: 'en',
+  });
+  // the requested paywall
+} catch (error) {
+  // handle the error
+}
+```
+
+:::note
+Phương thức `getPaywallForDefaultAudience` khả dụng từ Capacitor SDK phiên bản 2.11.2 trở lên.
+:::
+
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements). Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard của bạn. |
+| **locale** | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Định danh của [bản địa hóa paywall](add-remote-config-locale). Tham số này phải là mã ngôn ngữ gồm một hoặc nhiều thẻ phụ được phân tách bởi dấu trừ (**-**). Thẻ phụ đầu tiên là ngôn ngữ, thẻ phụ thứ hai là vùng.</p><p></p><p>Ví dụ: `en` là tiếng Anh, `pt-br` là tiếng Bồ Đào Nha Brazil.</p><p></p><p>Xem [Bản địa hóa và mã locale](capacitor-localizations-and-locale-codes) để biết thêm thông tin về mã locale và cách chúng tôi khuyến nghị sử dụng chúng.</p> |
+| **params** | tùy chọn | Tham số bổ sung để lấy paywall. |
+
+## Tùy chỉnh assets \{#customize-assets\}
+
+Để tùy chỉnh hình ảnh và video trong paywall của bạn, hãy triển khai custom assets.
+
+Hình ảnh và video hero có ID được định sẵn: `hero_image` và `hero_video`. Trong một custom asset bundle, bạn nhắm mục tiêu các phần tử này bằng ID của chúng và tùy chỉnh hành vi của chúng.
+
+Đối với các hình ảnh và video khác, bạn cần [đặt custom ID](custom-media) trong Adapty dashboard.
+
+Ví dụ, bạn có thể:
+
+- Hiển thị hình ảnh hoặc video khác nhau cho một số người dùng.
+- Hiển thị hình ảnh xem trước cục bộ trong khi hình ảnh chính từ xa đang tải.
+- Hiển thị hình ảnh xem trước trước khi phát video.
+
+:::important
+Để sử dụng tính năng này, hãy cập nhật Adapty Capacitor SDK lên phiên bản 3.8.0 trở lên.
+:::
+
+Dưới đây là ví dụ về cách bạn có thể cung cấp custom assets thông qua một dictionary đơn giản:
+
+```typescript showLineNumbers
+const customAssets: Record<string, AdaptyCustomAsset> = {
+  'custom_image': { type: 'image', relativeAssetPath: 'custom_image.png' },
+  'hero_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'custom_video.mp4' },
+      android: { relativeAssetPath: 'videos/custom_video.mp4' }
+    }
+  }
+};
+
+view = await createPaywallView(paywall, { customAssets });
+```
+
+:::note
+Nếu không tìm thấy asset, paywall sẽ tự động chuyển về giao diện mặc định của nó.
+:::

@@ -1,0 +1,30 @@
+---
+title: "Tối ưu hóa việc tải paywall trong Android SDK"
+description: "Tải paywall Adapty đáng tin cậy: thời điểm, bộ nhớ đệm và các mẫu dự phòng cho Android."
+metadataTitle: "Tối ưu hóa Tải Paywall | Android SDK | Tài liệu Adapty"
+---
+
+Một lần tải paywall đáng tin cậy trên Android cần đảm bảo ba điều: hiển thị nhanh, trả về paywall đúng với đối tượng mục tiêu, và xử lý dự phòng linh hoạt khi mạng chậm. Các quy tắc dưới đây đề cập đến thời điểm, bộ nhớ đệm và các mẫu dự phòng để đạt được điều đó.
+
+:::tip
+Các quy tắc này giả định rằng `Adapty.activate()` và `Adapty.identify()` đã hoàn thành. Xem [Thứ tự gọi trong Android SDK](android-sdk-call-order).
+:::
+
+## Quy tắc và lưu ý \{#rules-and-pitfalls\}
+
+| Nên làm | Không nên làm | Lý do |
+|---|---|---|
+| Tải placement mà bạn sắp hiển thị.                                                                                  | Tải trước tất cả các placement cùng lúc khi khởi động.        | Tải trước hàng loạt sẽ chặn luồng chính và gây màn hình đen trong suốt thời gian đó.                                  |
+| Gọi `getPaywall` sau khi attribution đã có cơ hội xử lý xong — ví dụ, 1–2 giây sau `activate` hoặc sau khi `setOnProfileUpdatedListener` kích hoạt. | Gọi `getPaywall` trong `Application.onCreate()`.         | Attribution chưa được xử lý xong. Paywall sẽ được phân giải theo đối tượng mặc định và bỏ qua phân khúc cũng như ASA personalization mà không có cảnh báo. |
+| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement.                             | Chờ `getPaywall` vô thời hạn.                     | Nếu không có timeout, người dùng ở kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phục hồi — hoặc thoát ứng dụng.     |
+
+Xem [Tải paywalls và sản phẩm](fetch-paywalls-and-products-android) để tham khảo tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn đúng placement.
+
+## Tối ưu cho kết nối kém \{#tune-for-poor-connectivity\}
+
+Đối với các thị trường có kết nối kém thường xuyên (khu vực nông thôn, phương tiện giao thông công cộng, vùng bị ảnh hưởng bởi routing):
+
+- Đặt `fetchPolicy` thành `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` cho mọi lần tải, trừ lần đầu tiên.
+- Cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement trong Adapty Dashboard.
+- Đặt `loadTimeout` từ 3–5 giây và chấp nhận paywall dự phòng khi timeout xảy ra.
+- Không để việc hiển thị paywall phụ thuộc vào `getProfile`. Gọi `getPaywall` độc lập để hồ sơ người dùng chậm không làm trì hoãn giao diện.

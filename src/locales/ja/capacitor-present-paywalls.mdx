@@ -1,0 +1,81 @@
+---
+title: "Capacitor SDKでペイウォールビルダーのペイウォールを表示する"
+description: "Adaptyを使用してCapacitorアプリにペイウォールを表示します。"
+metadataTitle: "Capacitorでのペイウォール表示 | Adapty ドキュメント"
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md'; 
+
+ペイウォールビルダーを使ってペイウォールをカスタマイズした場合、モバイルアプリのコードでレンダリングを行う必要はありません。ペイウォールビルダーのペイウォールには、表示内容と表示方法の両方が含まれているためです。
+
+:::warning
+このガイドは**ペイウォールビルダーのペイウォール**専用です。リモートコンフィグのペイウォールを表示する場合は、手順が異なります。**リモートコンフィグのペイウォール**の表示については、[リモートコンフィグで設計されたペイウォールのレンダリング](present-remote-config-paywalls)を参照してください。
+:::
+
+ペイウォールを表示するには、[`createPaywallView`](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)メソッドで作成した`view`に対して`view.present()`メソッドを呼び出します。各`view`は一度しか使用できません。ペイウォールを再度表示する必要がある場合は、`createPaywallView`を再度呼び出して新しい`view`インスタンスを作成してください。
+
+:::warning
+
+`view`を再作成せずに再利用すると、エラーが発生する場合があります。
+:::
+
+```typescript showLineNumbers
+
+const view = await createPaywallView(paywall);
+
+view.setEventHandlers({
+  onUrlPress(url) {
+    window.open(url, '_blank');
+    return false; 
+  },
+});
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+## デベロッパー定義タイマーの使用 \{#use-developer-defined-timer\}
+
+モバイルアプリでデベロッパー定義タイマーを使用するには、`timerId`を指定します。この例では`CUSTOM_TIMER_NY`が、Adaptyダッシュボードで設定したデベロッパー定義タイマーの**Timer ID**です。これにより、アプリは`13d 09h 03m 34s`のような正しい値（タイマーの終了時刻（例：元日）から現在時刻を引いた値）でタイマーを動的に更新できます。
+
+```typescript showLineNumbers
+const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+
+const view = await createPaywallView(paywall, { customTimers });
+```
+
+この例では、`CUSTOM_TIMER_NY`はAdaptyダッシュボードで設定したデベロッパー定義タイマーの**Timer ID**です。タイマーにより、アプリは`13d 09h 03m 34s`のような正しい値（タイマーの終了時刻（例：元日）から現在時刻を引いた値）でタイマーを動的に更新します。
+
+## ダイアログの表示 \{#show-dialog\}
+
+Androidでペイウォールビューが表示されている場合は、ネイティブのアラートダイアログの代わりにこのメソッドを使用してください。Androidでは通常のアラートがペイウォールビューの背後に表示されるため、ユーザーには見えません。このメソッドを使用することで、すべてのプラットフォームでペイウォールの上に適切にダイアログが表示されます。
+
+```typescript showLineNumbers title="Capacitor"
+try {
+  const action = await view.showDialog({
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  });
+  
+  if (action === 'secondary') {
+    // User confirmed - close the paywall
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (error) {
+  // handle error
+}
+```
+
+## iOSプレゼンテーションスタイルの設定 \{#configure-ios-presentation-style\}
+
+`present()`メソッドに`iosPresentationStyle`パラメーターを渡すことで、iOSでのペイウォールの表示方法を設定できます。パラメーターには`'full_screen'`（デフォルト）または`'page_sheet'`を指定できます。
+
+```typescript showLineNumbers
+await view.present({ iosPresentationStyle: 'page_sheet' });
+```

@@ -1,0 +1,472 @@
+---
+title: "Hiển thị paywall được tạo bằng Paywall Builder ở chế độ Observer trên Android SDK"
+description: "Tìm hiểu cách hiển thị paywall ở chế độ observer bằng Paywall Builder của Adapty."
+metadataTitle: "Hiển thị Paywall ở Chế độ Observer | Tài liệu Adapty"
+---
+
+Nếu bạn đã tùy chỉnh paywall bằng Paywall Builder, bạn không cần lo lắng về việc render nó trong code ứng dụng để hiển thị cho người dùng. Paywall đó đã bao gồm cả nội dung cần hiển thị lẫn cách hiển thị.
+
+:::warning
+Phần này chỉ áp dụng cho [chế độ Observer](observer-vs-full-mode). Nếu bạn không làm việc ở chế độ Observer, hãy tham khảo chủ đề [Android - Hiển thị paywall bằng Paywall Builder](android-present-paywalls).
+:::
+
+<Tabs groupId="current-os" queryString> 
+<TabItem value="SDK3" label="New Paywall Builder (SDK 3.0+)" default> 
+<details>
+   <summary>Trước khi bắt đầu hiển thị paywall (Nhấp để mở rộng)</summary>
+
+      1. Thiết lập tích hợp ban đầu của Adapty [với Google Play](initial-android) và [với App Store](initial_ios). 
+   2. Cài đặt và cấu hình Adapty SDK. Đảm bảo đặt tham số `observerMode` thành `true`. Tham khảo hướng dẫn theo framework [cho Android](sdk-installation-android).
+   3. [Tạo sản phẩm](create-product) trong Adapty Dashboard.
+   4. [Cấu hình paywall, gán sản phẩm cho chúng](create-paywall) và tùy chỉnh bằng Paywall Builder trong Adapty Dashboard.
+   5. [Tạo placement và gán paywall vào chúng](create-placement) trong Adapty Dashboard.
+   6. [Lấy paywall Paywall Builder và cấu hình của chúng](android-get-pb-paywalls) trong code ứng dụng của bạn.
+
+    </details>
+
+<p> </p>
+
+1. Triển khai `AdaptyUiObserverModeHandler`. 
+
+Sự kiện `onPurchaseInitiated` sẽ thông báo cho bạn khi người dùng bắt đầu thực hiện mua hàng. Bạn có thể kích hoạt flow mua hàng tùy chỉnh của mình trong callback này:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   val observerModeHandler =
+    AdaptyUiObserverModeHandler { product, paywall, paywallView, onStartPurchase, onFinishPurchase ->
+       onStartPurchase()
+       yourBillingClient.makePurchase(
+           product,
+           onSuccess = { purchase ->
+               onFinishPurchase()
+               //handle success
+           },
+           onError = {
+               onFinishPurchase()
+               //handle error
+           },
+           onCancel = {
+               onFinishPurchase()
+               //handle cancel
+           }
+       )
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   AdaptyUiObserverModeHandler observerModeHandler = (product, paywall, paywallView, onStartPurchase, onFinishPurchase) -> {
+       onStartPurchase.invoke();
+       yourBillingClient.makePurchase(
+           product,
+           purchase -> {
+               onFinishPurchase.invoke();
+               //handle success
+           },
+           error -> {
+               onFinishPurchase.invoke();
+               //handle error
+           },
+           () -> { //cancellation
+               onFinishPurchase.invoke();
+               //handle cancel
+           }
+       );
+   };
+   ```
+</TabItem>
+</Tabs>
+
+   Để xử lý khôi phục giao dịch ở chế độ Observer, hãy override `getRestoreHandler()`. Mặc định nó trả về `null`, tức là sử dụng flow `Adapty.restorePurchases()` tích hợp sẵn của Adapty. Để cung cấp triển khai khôi phục tùy chỉnh:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   val observerModeHandler = object : AdaptyUiObserverModeHandler {
+       // onPurchaseInitiated implementation (see above)
+
+       override fun getRestoreHandler() =
+           AdaptyUiObserverModeHandler.RestoreHandler { onStartRestore, onFinishRestore ->
+               onStartRestore()
+               yourBillingClient.restorePurchases(
+                   onSuccess = { restoredPurchases ->
+                       onFinishRestore()
+                       //handle successful restore
+                   },
+                   onError = {
+                       onFinishRestore()
+                       //handle error
+                   }
+               )
+           }
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   AdaptyUiObserverModeHandler observerModeHandler = new AdaptyUiObserverModeHandler() {
+       // onPurchaseInitiated implementation (see above)
+
+       @Override
+       public RestoreHandler getRestoreHandler() {
+           return (onStartRestore, onFinishRestore) -> {
+               onStartRestore.invoke();
+               yourBillingClient.restorePurchases(
+                   restoredPurchases -> {
+                       onFinishRestore.invoke();
+                       //handle successful restore
+                   },
+                   error -> {
+                       onFinishRestore.invoke();
+                       //handle error
+                   }
+               );
+           };
+       }
+   };
+   ```
+</TabItem>
+</Tabs>
+
+   Hãy nhớ gọi các callback sau để thông báo cho AdaptyUI về quá trình mua hàng hoặc khôi phục. Điều này cần thiết để paywall hoạt động đúng, chẳng hạn như hiển thị loader:
+
+   | Callback           | Mô tả                                                                                  |
+   | :----------------- |:---------------------------------------------------------------------------------------|
+   | onStartPurchase()  | Callback cần được gọi để thông báo cho AdaptyUI rằng quá trình mua hàng đã bắt đầu.   |
+   | onFinishPurchase() | Callback cần được gọi để thông báo cho AdaptyUI rằng quá trình mua hàng đã kết thúc.  |
+   | onStartRestore()   | Tùy chọn. Callback có thể được gọi để thông báo cho AdaptyUI rằng quá trình khôi phục đã bắt đầu.  |
+   | onFinishRestore()  | Tùy chọn. Callback có thể được gọi để thông báo cho AdaptyUI rằng quá trình khôi phục đã kết thúc. |
+
+2. Để hiển thị paywall trực quan trên màn hình thiết bị, bạn cần cấu hình nó trước.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="views" label="Views" default>
+
+Để làm điều đó, gọi phương thức `AdaptyUI.getPaywallView()` hoặc tạo `AdaptyPaywallView` trực tiếp:
+
+<Tabs groupId="current-os" queryString>
+  <TabItem value="kotlin" label="Kotlin (option 1)" default>
+
+```kotlin showLineNumbers
+   val paywallView = AdaptyUI.getPaywallView(
+       activity,
+       viewConfiguration,
+       products,
+       eventListener,
+       personalizedOfferResolver,
+       tagResolver,
+       timerResolver,
+       observerModeHandler, 
+   )
+```
+
+</TabItem>
+<TabItem value="kotlin2" label="Kotlin (option 2)" default>
+
+```kotlin showLineNumbers
+   val paywallView =
+        AdaptyPaywallView(activity) // or retrieve it from xml
+   ...
+   with(paywallView) {
+       showPaywall(
+           viewConfiguration,
+           products,
+					 eventListener,
+           personalizedOfferResolver,
+           tagResolver,
+           timerResolver,
+					 observerModeHandler,
+       )
+   }
+```
+
+</TabItem>
+<TabItem value="java" label="Java (option 1)" default>
+
+```java showLineNumbers
+AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
+        activity,
+        viewConfiguration,
+        products,
+        eventListener,
+        personalizedOfferResolver,
+        tagResolver,
+        timerResolver,
+        observerModeHandler
+);
+```
+
+</TabItem>
+<TabItem value="java2" label="Java (option 2)" default>
+
+```java showLineNumbers
+AdaptyPaywallView paywallView =
+  new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
+...
+paywallView.showPaywall(viewConfiguration, products, eventListener, personalizedOfferResolver, tagResolver, timerResolver, observerModeHandler);
+```
+
+</TabItem>
+<TabItem value="XML" label="XML" default>
+
+```xml showLineNumbers
+<com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />
+```
+
+</TabItem>
+</Tabs>
+
+   Sau khi view được tạo thành công, bạn có thể thêm nó vào view hierarchy và hiển thị.
+
+</TabItem>
+<TabItem value="compose" label="Jetpack Compose" default>
+
+Để làm điều đó, sử dụng hàm composable sau:
+
+```kotlin showLineNumbers
+AdaptyPaywallScreen(
+    viewConfiguration,
+    products,
+    eventListener,
+    personalizedOfferResolver,
+    tagResolver,
+    timerResolver,
+)
+```
+
+</TabItem>
+</Tabs>
+
+   Các tham số yêu cầu:
+
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **Products** | tùy chọn | Cung cấp một mảng `AdaptyPaywallProduct` để tối ưu thời gian hiển thị sản phẩm trên màn hình. Nếu truyền `null`, AdaptyUI sẽ tự động lấy các sản phẩm cần thiết. |
+| **ViewConfiguration** | bắt buộc | Cung cấp đối tượng `AdaptyViewConfiguration` chứa thông tin trực quan của paywall. Sử dụng phương thức `Adapty.getViewConfiguration(paywall)` để tải nó. Tham khảo chủ đề [Lấy cấu hình trực quan của paywall](#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) để biết thêm chi tiết. |
+| **EventListener** | tùy chọn | Cung cấp `AdaptyUiEventListener` để theo dõi các sự kiện paywall. Khuyến nghị mở rộng AdaptyUiDefaultEventListener để dễ sử dụng. Tham khảo chủ đề [Xử lý sự kiện paywall](android-handling-events) để biết thêm chi tiết. |
+| **PersonalizedOfferResolver** | tùy chọn | Để chỉ định giá cá nhân hóa ([đọc thêm](https://developer.android.com/google/play/billing/integrate#personalized-price)), hãy triển khai `AdaptyUiPersonalizedOfferResolver` và truyền logic của bạn để ánh xạ `AdaptyPaywallProduct` thành true nếu giá sản phẩm được cá nhân hóa, ngược lại là false. |
+| **TagResolver** | tùy chọn | Sử dụng `AdaptyUiTagResolver` để phân giải các custom tag trong văn bản paywall. Resolver này nhận tham số tag và phân giải thành chuỗi tương ứng. Tham khảo chủ đề Custom tags in Paywall Builder để biết thêm chi tiết. |
+| **ObserverModeHandler** | bắt buộc cho chế độ Observer | `AdaptyUiObserverModeHandler` mà bạn đã triển khai ở bước trước. |
+| **variationId** | bắt buộc | Chuỗi định danh của biến thể. Bạn có thể lấy nó bằng thuộc tính `variationId` của đối tượng [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/). |
+| **transaction** | bắt buộc | <p>Với iOS, StoreKit1: đối tượng [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction).</p><p>Với iOS, StoreKit 2: đối tượng [Transaction](https://developer.apple.com/documentation/storekit/transaction).</p><p>Với Android: Chuỗi định danh (`purchase.getOrderId()`) của giao dịch mua, trong đó purchase là một instance của lớp [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) trong thư viện billing.</p> |
+
+</TabItem> 
+<TabItem value="SDK2" label="Legacy Paywall Builder (SDK up to 2.x)" default> 
+<details>
+   <summary>Trước khi bắt đầu hiển thị paywall (Nhấp để mở rộng)</summary>
+
+   1. Thiết lập tích hợp ban đầu của Adapty [với Google Play](initial-android) và [với App Store](initial_ios). 
+2. Cài đặt và cấu hình Adapty SDK. Đảm bảo đặt tham số `observerMode` thành `true`. Tham khảo hướng dẫn theo framework [cho Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk) và [Unity](sdk-installation-unity#activate-adapty-module-of-adapty-sdk).
+3. [Tạo sản phẩm](create-product) trong Adapty Dashboard.
+4. [Cấu hình paywall, gán sản phẩm cho chúng](create-paywall) và tùy chỉnh bằng Paywall Builder trong Adapty Dashboard.
+5. [Tạo placement và gán paywall vào chúng](create-placement) trong Adapty Dashboard.
+6. [Lấy paywall Paywall Builder và cấu hình của chúng](android-get-pb-paywalls) trong code ứng dụng của bạn.
+</details>
+
+1. Triển khai `AdaptyUiObserverModeHandler`. Callback của `AdaptyUiObserverModeHandler` (`onPurchaseInitiated`) thông báo cho bạn khi người dùng bắt đầu thực hiện mua hàng. Bạn có thể kích hoạt flow mua hàng tùy chỉnh của mình trong callback này như sau:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   val observerModeHandler =
+   AdaptyUiObserverModeHandler { product, paywall, paywallView, onStartPurchase, onFinishPurchase ->
+       onStartPurchase()
+       yourBillingClient.makePurchase(
+           product,
+           onSuccess = { purchase ->
+               onFinishPurchase()
+               //handle success
+           },
+           onError = {
+               onFinishPurchase()
+               //handle error
+           },
+           onCancel = {
+               onFinishPurchase()
+               //handle cancel
+           }
+       )
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   AdaptyUiObserverModeHandler observerModeHandler = (product, paywall, paywallView, onStartPurchase, onFinishPurchase) -> {
+       onStartPurchase.invoke();
+       yourBillingClient.makePurchase(
+           product,
+           purchase -> {
+               onFinishPurchase.invoke();
+               //handle success
+           },
+           error -> {
+               onFinishPurchase.invoke();
+               //handle error
+           },
+           () -> { //cancellation
+               onFinishPurchase.invoke();
+               //handle cancel
+           }
+       );
+   };
+   ```
+</TabItem>
+</Tabs>
+
+   Ngoài ra, hãy nhớ gọi các callback này cho AdaptyUI. Điều này cần thiết để paywall hoạt động đúng, chẳng hạn như hiển thị loader:
+
+   | Callback trong Kotlin | Callback trong Java       | Mô tả                                                                                                                             |
+   | :----------------- | :------------------------ | :-------------------------------------------------------------------------------------------------------------------------------- |
+   | onStartPurchase()  | onStartPurchase.invoke()  | Callback cần được gọi để thông báo cho AdaptyUI rằng quá trình mua hàng đã bắt đầu.                                              |
+   | onFinishPurchase() | onFinishPurchase.invoke() | Callback cần được gọi để thông báo cho AdaptyUI rằng quá trình mua hàng đã hoàn thành (thành công, thất bại hoặc bị hủy). |
+
+2. Để hiển thị paywall trực quan, bạn cần khởi tạo nó trước. Để làm điều đó, gọi phương thức `AdaptyUI.getPaywallView()` hoặc tạo `AdaptyPaywallView` trực tiếp:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   val paywallView = AdaptyUI.getPaywallView(
+       activity,
+       viewConfiguration,
+       products,
+       AdaptyPaywallInsets.of(topInset, bottomInset),
+       eventListener,
+       personalizedOfferResolver,
+       tagResolver,
+       observerModeHandler,
+   )
+
+   //======= OR =======
+
+   val paywallView =
+        AdaptyPaywallView(activity) // or retrieve it from xml
+   ...
+   with(paywallView) {
+       setEventListener(eventListener)
+       setObserverModeHandler(observerModeHandler)
+       showPaywall(
+           viewConfiguration,
+           products,
+           AdaptyPaywallInsets.of(topInset, bottomInset),
+           personalizedOfferResolver,
+           tagResolver,
+       )
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
+           activity,
+           viewConfiguration,
+           products,
+           AdaptyPaywallInsets.of(topInset, bottomInset),
+           eventListener,
+           personalizedOfferResolver,
+           tagResolver,
+           observerModeHandler
+   );
+
+   //======= OR =======
+
+   AdaptyPaywallView paywallView =
+     new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
+   ...
+   paywallView.setEventListener(eventListener);
+   paywallView.setObserverModeHandler(observerModeHandler);
+   paywallView.showPaywall(viewConfiguration, products, AdaptyPaywallInsets.of(topInset, bottomInset), personalizedOfferResolver);
+   ```
+</TabItem>
+<TabItem value="XML" label="XML" default>
+   ```xml showLineNumbers
+   <com.adapty.ui.AdaptyPaywallView xmlns:android="http://schemas.android.com/apk/res/android"
+       android:layout_width="match_parent"
+       android:layout_height="match_parent" />
+   ```
+</TabItem>
+</Tabs>
+
+   Sau khi view được tạo thành công, bạn có thể thêm nó vào view hierarchy và hiển thị.
+
+   Các tham số yêu cầu:
+
+| Tham số | Bắt buộc | Mô tả                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Products** | tùy chọn | Cung cấp một mảng `AdaptyPaywallProduct` để tối ưu thời gian hiển thị sản phẩm trên màn hình. Nếu truyền `null`, AdaptyUI sẽ tự động lấy các sản phẩm cần thiết.                                                                                                                                                                                                                                                                                                                                       |
+| **ViewConfiguration** | bắt buộc | Cung cấp đối tượng `AdaptyViewConfiguration` chứa thông tin trực quan của paywall. Sử dụng phương thức `Adapty.getViewConfiguration(paywall)` để tải nó. Tham khảo chủ đề [Lấy cấu hình trực quan của paywall](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) để biết thêm chi tiết.                                                                                                                                                                      |
+| **Insets** | bắt buộc | Định nghĩa đối tượng `AdaptyPaywallInsets` chứa thông tin về vùng bị system bar che khuất, tạo margin dọc cho nội dung. Nếu cả status bar lẫn navigation bar không che `AdaptyPaywallView`, truyền `AdaptyPaywallInsets.NONE`. Đối với chế độ toàn màn hình khi system bar che một phần giao diện, lấy insets theo hướng dẫn bên dưới bảng.                                                                                                                                                |
+| **EventListener** | tùy chọn | Cung cấp `AdaptyUiEventListener` để theo dõi các sự kiện paywall. Khuyến nghị mở rộng AdaptyUiDefaultEventListener để dễ sử dụng. Tham khảo chủ đề [Xử lý sự kiện paywall](android-handling-events) để biết thêm chi tiết.                                                                                                                                                                                                                                                                                |
+| **PersonalizedOfferResolver** | tùy chọn | Để chỉ định giá cá nhân hóa ([đọc thêm](https://developer.android.com/google/play/billing/integrate#personalized-price)), hãy triển khai `AdaptyUiPersonalizedOfferResolver` và truyền logic của bạn để ánh xạ `AdaptyPaywallProduct` thành true nếu giá sản phẩm được cá nhân hóa, ngược lại là false.                                                                                                                                                                                               |
+| **TagResolver** | tùy chọn | Sử dụng `AdaptyUiTagResolver` để phân giải các custom tag trong văn bản paywall. Resolver này nhận tham số tag và phân giải thành chuỗi tương ứng. Tham khảo chủ đề Custom tags in Paywall Builder để biết thêm chi tiết.                                                                                                                                                                                                                              |
+| **ObserverModeHandler** | bắt buộc cho chế độ Observer | `AdaptyUiObserverModeHandler` mà bạn đã triển khai ở bước trước.                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **variationId** | bắt buộc | Chuỗi định danh của biến thể. Bạn có thể lấy nó bằng thuộc tính `variationId` của đối tượng [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/).                                                                                                                                                                                                                                                                                                                                                        |
+| **transaction** | bắt buộc | <p>Với iOS, StoreKit1: đối tượng [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction).</p><p>Với iOS, StoreKit 2: đối tượng [Transaction](https://developer.apple.com/documentation/storekit/transaction).</p><p>Với Android: Chuỗi định danh (`purchase.getOrderId()`) của giao dịch mua, trong đó purchase là một instance của lớp [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) trong thư viện billing.</p> |
+
+   Đối với chế độ toàn màn hình khi system bar che một phần giao diện, lấy insets theo cách sau:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   import androidx.core.graphics.Insets
+   import androidx.core.view.ViewCompat
+   import androidx.core.view.WindowInsetsCompat
+
+   //create extension function
+   fun View.onReceiveSystemBarsInsets(action: (insets: Insets) -> Unit) {
+       ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
+           val systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+           ViewCompat.setOnApplyWindowInsetsListener(this, null)
+           action(systemBarInsets)
+           insets
+       }
+   }
+   //and then use it with the view
+   paywallView.onReceiveSystemBarsInsets { insets ->
+       val paywallInsets = AdaptyPaywallInsets.of(insets.top, insets.bottom)
+       paywallView.setEventListener(eventListener)
+       paywallView.setObserverModeHandler(observerModeHandler)
+       paywallView.showPaywall(viewConfig, products, paywallInsets, personalizedOfferResolver, tagResolver)
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   import androidx.core.graphics.Insets;
+   import androidx.core.view.ViewCompat;
+   import androidx.core.view.WindowInsetsCompat;
+
+   ...
+
+   ViewCompat.setOnApplyWindowInsetsListener(paywallView, (view, insets) -> {
+       Insets systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+       ViewCompat.setOnApplyWindowInsetsListener(paywallView, null);
+     
+       AdaptyPaywallInsets paywallInsets =
+                    AdaptyPaywallInsets.of(systemBarInsets.top, systemBarInsets.bottom);
+       paywallView.setEventListener(eventListener);
+       paywallView.setObserverModeHandler(observerModeHandler);
+       paywallView.showPaywall(viewConfiguration, products, paywallInsets, personalizedOfferResolver, tagResolver);
+               
+       return insets;
+   });
+   ```
+</TabItem>
+</Tabs>
+
+   Kết quả trả về:
+
+   | Đối tượng           | Mô tả                                                      |
+   | :------------------ | :------------------------------------------------- |
+   | `AdaptyPaywallView` | Đối tượng đại diện cho màn hình paywall được yêu cầu. |
+
+:::warning
+Đừng quên [Liên kết paywall với giao dịch mua hàng](report-transactions-observer-mode-android). Nếu không, Adapty sẽ không xác định được paywall nguồn của giao dịch mua.
+:::
+
+</TabItem> 
+</Tabs>
+
+   

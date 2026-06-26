@@ -10,11 +10,15 @@
  *   node scripts/check-links/index.mjs --dev                    # Check files changed since last push
  *   node scripts/check-links/index.mjs --diff                   # Check files changed vs origin/main
  *   node scripts/check-links/index.mjs --diff --base=<ref>      # Check files changed vs explicit ref (tag, branch)
+ *   node scripts/check-links/index.mjs --locales                # Check localized files only (all locales)
+ *   node scripts/check-links/index.mjs --locales=zh,tr          # Check localized files only (specific locales)
+ *   node scripts/check-links/index.mjs --diff --locales         # Localized files changed vs base
  */
 
 import path from 'node:path';
 import { orchestrate } from './runner.mjs';
 import { orchestrateDiff } from './diff.mjs';
+import { orchestrateLocales } from './locales.mjs';
 import { printConsoleSummary } from './format-console.mjs';
 import { generateHtmlReport } from './format-html.mjs';
 import { emitAnnotations, writeStepSummary } from './format-ci.mjs';
@@ -26,8 +30,18 @@ const isDev = args.includes('--dev');
 const isDiff = args.includes('--diff');
 const diffBase = args.find(a => a.startsWith('--base='))?.split('=')[1];
 
+// --locales (all active locales) or --locales=zh,tr (a subset).
+const localesArg = args.find(a => a === '--locales' || a.startsWith('--locales='));
+const localesMode = !!localesArg;
+const localeCodes = localesArg?.includes('=')
+  ? localesArg.split('=')[1].split(',').map(s => s.trim()).filter(Boolean)
+  : null; // null = all locales found under src/locales
+
 const config = {
   docsDir: path.resolve('src/content/docs'),
+  localesRoot: path.resolve('src/locales'),
+  localesMode,
+  localeCodes,
   liveSiteBase: 'https://adapty.io/docs',
   concurrency: parseInt(args.find(a => a.startsWith('--concurrency='))?.split('=')[1] || '25'),
   timeoutMs: 10000,
@@ -40,9 +54,12 @@ const isCI = !!process.env.GITHUB_ACTIONS;
 const format = formatArg || (isCI ? 'ci' : 'html');
 
 async function main() {
-  const results = (isDev || isDiff)
-    ? await orchestrateDiff({ ...config, mode: isDev ? 'dev' : 'diff', diffBase })
-    : await orchestrate(config);
+  const mode = isDiff ? 'diff' : isDev ? 'dev' : 'full';
+  const results = localesMode
+    ? await orchestrateLocales({ ...config, mode, diffBase })
+    : (isDev || isDiff)
+      ? await orchestrateDiff({ ...config, mode: isDev ? 'dev' : 'diff', diffBase })
+      : await orchestrate(config);
 
   // Always print console summary
   printConsoleSummary(results);

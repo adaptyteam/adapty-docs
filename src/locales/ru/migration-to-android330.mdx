@@ -1,27 +1,27 @@
 ---
-title: "Миграция Android SDK Adapty на версию 3.3"
-description: "Перейдите на Android SDK Adapty v3.3 для повышения производительности и доступа к новым функциям монетизации."
-metadataTitle: "Миграция на Android SDK Adapty v3.3 | Документация Adapty"
+title: "Миграция Adapty Android SDK на v3.3"
+description: "Перейдите на Adapty Android SDK v3.3 для улучшения производительности и новых функций монетизации."
+metadataTitle: "Миграция на Adapty Android SDK v3.3 | Документация Adapty"
 ---
 
-Adapty SDK 3.3.0 — это major-релиз, который принёс ряд улучшений, однако для перехода на него могут потребоваться некоторые шаги миграции с вашей стороны.
-1. Обновите обработку покупок в пейволах, созданных не с помощью Paywall Builder. Перестаньте обрабатывать коды ошибок `USER_CANCELED` и `PENDING_PURCHASE`. Отменённая покупка больше не считается ошибкой и теперь будет появляться в результатах успешных покупок.
-2. Замените события `onPurchaseCanceled` и `onPurchaseSuccess` новым событием `onPurchaseFinished` для пейволов, созданных с помощью Paywall Builder. Это изменение связано с той же причиной: отменённые покупки больше не считаются ошибками и будут включены в результаты успешных покупок.
+Adapty SDK 3.3.0 — это мажорный релиз, который принёс ряд улучшений, однако для перехода на него могут потребоваться дополнительные шаги миграции.
+1. Обновите способ обработки покупок в пейволах, созданных без Paywall Builder. Перестаньте обрабатывать коды ошибок `USER_CANCELED` и `PENDING_PURCHASE`. Отменённая покупка больше не считается ошибкой и теперь будет отображаться в результатах покупки без ошибок.
+2. Замените события `onPurchaseCanceled` и `onPurchaseSuccess` новым событием `onPurchaseFinished` для пейволов, созданных с помощью Paywall Builder. Это изменение связано с той же причиной: отменённые покупки больше не считаются ошибками и будут включены в результаты покупки без ошибок.
 3. Измените сигнатуру метода `onAwaitingSubscriptionUpdateParams` для пейволов Paywall Builder.
-4. Обновите метод передачи резервных пейволов, если вы передаёте URI файла напрямую.
+4. Обновите метод, используемый для предоставления резервных пейволов, если вы передаёте URI файла напрямую.
 5. Обновите конфигурации интеграций для Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase и Google Analytics, Mixpanel, OneSignal, Pushwoosh.
-## Обновление совершения покупки \{#update-making-purchase\}
+## Обновление процесса покупки \{#update-making-purchase\}
 
 Ранее отменённые и ожидающие покупки считались ошибками и возвращали коды `USER_CANCELED` и `PENDING_PURCHASE` соответственно.
 
-Теперь для обозначения отменённых, успешных и ожидающих покупок используется новый класс `AdaptyPurchaseResult`. Обновите код совершения покупки следующим образом:
-```diff
+Теперь для обозначения отменённых, успешных и ожидающих покупок используется новый класс `AdaptyPurchaseResult`. Обновите код покупки следующим образом:
+~~~diff
 Adapty.makePurchase(activity, product) { result ->
      when (result) {
          is AdaptyResult.Success -> {
 -            val info = result.value
 -            val profile = info?.profile
--
+-        
 -            if (profile?.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true) {
 -                // Grant access to the paid features
 -            }
@@ -48,31 +48,33 @@ Adapty.makePurchase(activity, product) { result ->
          }
      }
  }
-```
+~~~
+
 Полный пример кода смотрите на странице [Совершение покупок в мобильном приложении](android-making-purchases#make-purchase).
 ## Изменение событий покупки в Paywall Builder \{#modify-paywall-builder-purchase-events\}
 
 1. Добавьте событие `onPurchaseFinished`:
-```diff showLineNumbers
-+ public override fun onPurchaseFinished(
-+     purchaseResult: AdaptyPurchaseResult,
-+     product: AdaptyPaywallProduct,
-+     context: Context,
-+ ) {
-+    when (purchaseResult) {
-+        is AdaptyPurchaseResult.Success -> {
-+            // Grant access to the paid features
-+        }
-+        is AdaptyPurchaseResult.UserCanceled -> {
-+            // Handle the case where the user canceled the purchase
-+        }
-+        is AdaptyPurchaseResult.Pending -> {
-+            // Handle deferred purchases (e.g., the user will pay offline with cash)
-+        }
-+    }
-+ }
-```
-Для полного примера кода смотрите раздел [Успешная, отменённая или отложенная покупка](android-handling-events#successful-canceled-or-pending-purchase) и описание событий.
+   ```diff showLineNumbers
+   + public override fun onPurchaseFinished(
+   +     purchaseResult: AdaptyPurchaseResult,
+   +     product: AdaptyPaywallProduct,
+   +     context: Context,
+   + ) {
+   +    when (purchaseResult) {
+   +        is AdaptyPurchaseResult.Success -> {
+   +            // Grant access to the paid features
+   +        }
+   +        is AdaptyPurchaseResult.UserCanceled -> {
+   +            // Handle the case where the user canceled the purchase
+   +        }
+   +        is AdaptyPurchaseResult.Pending -> {
+   +            // Handle deferred purchases (e.g., the user will pay offline with cash)
+   +        }
+   +    }
+   + }
+   ```
+
+Для полного примера кода ознакомьтесь с разделом [Успешная, отменённая или ожидающая покупка](android-handling-events#successful-canceled-or-pending-purchase) и описанием события.
 
 2. Удалите обработку события `onPurchaseCancelled`:
 
@@ -84,9 +86,8 @@ Adapty.makePurchase(activity, product) { result ->
    ```
 
 3. Удалите `onPurchaseSuccess`:
-
    ```diff showLineNumbers
-
+   
    - public override fun onPurchaseSuccess(
    -     profile: AdaptyProfile?,
    -     product: AdaptyPaywallProduct,
@@ -95,10 +96,11 @@ Adapty.makePurchase(activity, product) { result ->
    -     // Your logic on successful purchase
    - }
    ```
-## Измените сигнатуру метода onAwaitingSubscriptionUpdateParams \{#change-the-signature-of-on-awaiting-subscription-update-params-method\}
 
-Теперь, если новая подписка приобретается, пока другая ещё активна, вызывайте `onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters...))`, если новая подписка должна заменить текущую активную, или `onSubscriptionUpdateParamsReceived(null)`, если активная подписка должна остаться активной, а новая должна быть добавлена отдельно:
-```diff showLineNumbers
+## Изменение сигнатуры метода onAwaitingSubscriptionUpdateParams \{#change-the-signature-of-onawaitingsubscriptionupdateparams-method\}
+
+Теперь, если новая подписка приобретается, пока другая ещё активна, вызывайте `onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters...))`, если новая подписка должна заменить текущую активную, или `onSubscriptionUpdateParamsReceived(null)`, если активная подписка должна оставаться активной, а новая — добавиться отдельно:
+ ```diff showLineNumbers
 - public override fun onAwaitingSubscriptionUpdateParams(
 -     product: AdaptyPaywallProduct,
 -     context: Context,
@@ -113,10 +115,11 @@ Adapty.makePurchase(activity, product) { result ->
 +     onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
 + }
  ```
-Смотрите [раздел документации «Обновление подписки»](android-handling-events#upgrade-subscription) с финальным примером кода.
+
+Смотрите раздел документации [Обновление подписки](android-handling-events#upgrade-subscription) с финальным примером кода.
 ## Обновление передачи резервных пейволов \{#update-providing-fallback-paywalls\}
 
-Если вы передаёте URI файла для резервных пейволов, обновите этот код следующим образом:
+Если вы передаёте URI файла для предоставления резервных пейволов, обновите этот код следующим образом:
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
@@ -130,7 +133,7 @@ val fileUri: Uri = // Get the URI for the file with fallback paywalls
 </TabItem>
 <TabItem value="java" label="Java" default>
 ```diff showLineNumbers
-Uri fileUri = // Get the URI for the file with fallback paywalls
+Uri fileUri = // Получите URI для файла с резервными пейволами
 - Adapty.setFallbackPaywalls(fileUri, callback);
 + Adapty.setFallbackPaywalls(FileLocation.fromFileUri(fileUri), callback);
 ```
@@ -142,7 +145,7 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 Чтобы интеграции корректно работали с Adapty Android SDK 3.3.0 и выше, обновите конфигурации SDK для следующих интеграций, как описано в разделах ниже.
 ### Adjust
 
-Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Настройка SDK для интеграции с Adjust](adjust#connect-your-app-to-adjust).
+Обновите код вашего мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Настройка SDK для интеграции с Adjust](adjust#connect-your-app-to-adjust).
 
 <Tabs groupId="current-os" queryString>
 
@@ -180,6 +183,7 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 +     }
 + }
 ```
+
 </TabItem>
 
 <TabItem value="v4" label="Adjust 4.x" default>
@@ -203,7 +207,7 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 </Tabs>
 ### AirBridge
 
-Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Настройка SDK для интеграции с AirBridge](airbridge#connect-your-app-to-airbridge).
+Обновите код вашего мобильного приложения, как показано ниже. Полный пример кода можно найти в разделе [Настройка SDK для интеграции с AirBridge](airbridge#connect-your-app-to-airbridge).
 ```diff showLineNumbers
  Airbridge.getDeviceInfo().getUUID(object: AirbridgeCallback.SimpleCallback<String>() {
      override fun onSuccess(result: String) {
@@ -225,9 +229,10 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
      }
  })
 ```
+
 ### Amplitude
 
-Обновите код мобильного приложения, как показано ниже. Полный пример кода можно найти в разделе [Настройка SDK для интеграции с Amplitude](amplitude#sdk-configuration).
+Обновите код своего мобильного приложения, как показано ниже. Полный пример кода см. в разделе [настройка SDK для интеграции с Amplitude](amplitude#sdk-configuration).
 ```diff showLineNumbers
  // For Amplitude maintenance SDK (obsolete)
  val amplitude = Amplitude.getInstance()
@@ -268,9 +273,10 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 +     }
 + }
 ```
+
 ### AppMetrica
 
-Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Настройка SDK для интеграции с AppMetrica](appmetrica#sdk-configuration).
+Обновите код мобильного приложения, как показано ниже. Полный пример кода можно найти в разделе [Настройка SDK для интеграции с AppMetrica](appmetrica#sdk-configuration).
 ```diff showLineNumbers
  val startupParamsCallback = object: StartupParamsCallback {
      override fun onReceive(result: StartupParamsCallback.Result?) {
@@ -291,7 +297,7 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 +                // Handle the error
 +            }
 +        }
-+
++        
 +        Adapty.setIntegrationIdentifier("appmetrica_profile_id", "YOUR_ADAPTY_CUSTOMER_USER_ID") { error ->
 +            if (error != null) {
 +                // Handle the error
@@ -309,9 +315,10 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 
  AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID))
 ```
+
 ### AppsFlyer
 
-Обновите код вашего мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [настройка SDK для интеграции с AppsFlyer](appsflyer#connect-your-app-to-appsflyer).
+Обновите код своего мобильного приложения, как показано ниже. Полный пример кода можно найти в разделе [настройка SDK для интеграции с AppsFlyer](appsflyer#connect-your-app-to-appsflyer).
 ```diff showLineNumbers
  val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
      override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
@@ -339,9 +346,10 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
      }
  }
 ```
+
 ### Branch
 
-Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Настройка SDK для интеграции с Branch](branch#connect-your-app-to-branch).
+Обновите код своего мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Настройка SDK для интеграции с Branch](branch#connect-your-app-to-branch).
 ```diff showLineNumbers
 // Login and update attribution
  Branch.getAutoInstance(this)
@@ -363,13 +371,14 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
  // Logout
  Branch.getAutoInstance(context).logout()
 ```
+
 ### Facebook Ads
 
-Обновите код мобильного приложения, как показано ниже. Полный пример кода см. в разделе [настройка SDK для интеграции с Facebook Ads](facebook-ads#connect-your-app-to-facebook-ads).
+Обновите код мобильного приложения, как показано ниже. Полный пример кода можно найти в разделе [настройка SDK для интеграции с Facebook Ads](facebook-ads#connect-your-app-to-facebook-ads).
 ```diff showLineNumbers
 - val builder = AdaptyProfileParameters.Builder()
 -     .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context))
--
+-   
 - Adapty.updateProfile(builder.build()) { error ->
 -     if (error != null) {
 -        // Handle the error
@@ -385,9 +394,10 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 +     }
 + }
 ```
+
 ### Firebase и Google Analytics \{#firebase-and-google-analytics\}
 
-Обновите код вашего мобильного приложения, как показано ниже. Полный пример кода смотрите в [настройке SDK для интеграции с Firebase и Google Analytics](firebase-and-google-analytics).
+Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Настройка SDK для интеграции с Firebase и Google Analytics](firebase-and-google-analytics).
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
@@ -411,6 +421,7 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 +    }
  }
 ```
+
 </TabItem>
 <TabItem value="java" label="Java" default>
 ```diff showLineNumbers
@@ -420,7 +431,7 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 -     AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
 -         .withFirebaseAppInstanceId(appInstanceId)
 -         .build();
--
+-     
 -     Adapty.updateProfile(params, error -> {
 -         if (error != null) {
 -             // Handle the error
@@ -436,6 +447,7 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 +     });
 + });
 ```
+
 </TabItem>
 </Tabs>
 ### Mixpanel
@@ -461,23 +473,23 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 ```
 ### OneSignal
 
-Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [настройка SDK для интеграции с OneSignal](onesignal#sdk-configuration).
+Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Настройка SDK для интеграции с OneSignal](onesignal#sdk-configuration).
 
-<Tabs groupId="current-os" queryString>
+<Tabs groupId="current-os" queryString> 
 
-<TabItem value="v5+" label="OneSignal SDK v5+ (текущая версия)" default>
+<TabItem value="v5+" label="OneSignal SDK v5+ (текущий)" default> 
 
-<Tabs groupId="current-os" queryString>
+<Tabs groupId="current-os" queryString> 
 
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 ```diff showLineNumbers
- // SubscriptionID
+ // SubscriptionID 
  val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
      override fun onPushSubscriptionChange(state: PushSubscriptionChangedState) {
 -        val params = AdaptyProfileParameters.Builder()
 -            .withOneSignalSubscriptionId(state.current.id)
 -            .build()
--
+-        
 -        Adapty.updateProfile(params) { error ->
 +        Adapty.setIntegrationIdentifier("one_signal_subscription_id", state.current.id) { error ->
              if (error != null) {
@@ -487,11 +499,12 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
      }
  }
 ```
+
 </TabItem>
 <TabItem value="java" label="(Android) Java" default>
 
 ```diff showLineNumbers
- // SubscriptionID
+ // SubscriptionID 
  IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
 -    AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
 -            .withOneSignalSubscriptionId(state.getCurrent().getId())
@@ -515,13 +528,13 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 ```diff showLineNumbers
- // PlayerID
+ // PlayerID 
  val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
      stateChanges?.to?.userId?.let { playerId ->
 -        val params = AdaptyProfileParameters.Builder()
 -            .withOneSignalPlayerId(playerId)
 -            .build()
--
+-      
 -        Adapty.updateProfile(params) { error ->
 +        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId) { error ->
              if (error != null) {
@@ -535,16 +548,16 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 </TabItem>
 <TabItem value="java" label="Java" default>
 ```diff showLineNumbers
- // PlayerID
+ // PlayerID 
  OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {
      OSSubscriptionState to = stateChanges != null ? stateChanges.getTo() : null;
      String playerId = to != null ? to.getUserId() : null;
-
+     
      if (playerId != null) {
 -        AdaptyProfileParameters params1 = new AdaptyProfileParameters.Builder()
 -                .withOneSignalPlayerId(playerId)
 -                .build();
--
+-        
 -        Adapty.updateProfile(params1, error -> {
 +        Adapty.setIntegrationIdentifier("one_signal_player_id", playerId, error -> {
              if (error != null) {
@@ -554,6 +567,7 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
      }
  };
 ```
+
 </TabItem>
 
 </Tabs>
@@ -563,7 +577,7 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 </Tabs>
 ### Pushwoosh
 
-Обновите код мобильного приложения, как показано ниже. Полный пример кода можно найти в разделе [конфигурация SDK для интеграции с Pushwoosh](pushwoosh#sdk-configuration).
+Обновите код мобильного приложения, как показано ниже. Полный пример кода смотрите в разделе [Настройка SDK для интеграции с Pushwoosh](pushwoosh#sdk-configuration).
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
@@ -571,7 +585,7 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
 - val params = AdaptyProfileParameters.Builder()
 -     .withPushwooshHwid(Pushwoosh.getInstance().hwid)
 -     .build()
-
+  
 - Adapty.updateProfile(params) { error ->
 + Adapty.setIntegrationIdentifier("pushwoosh_hwid", Pushwoosh.getInstance().hwid) { error ->
      if (error != null) {
@@ -594,6 +608,6 @@ Uri fileUri = // Get the URI for the file with fallback paywalls
   });
 ```
 
-</TabItem>
+</TabItem> 
 
 </Tabs>

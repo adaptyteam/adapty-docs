@@ -1,0 +1,92 @@
+---
+title: "Flutter SDKでサブスクリプションステータスを確認する"
+description: "AdaptyでFlutterアプリのサブスクリプションステータスを確認する方法を学びましょう。"
+metadataTitle: "サブスクリプションステータスの確認 | Adapty ドキュメント"
+displayed_sidebar: sdkflutter
+keywords: ['getProfile', 'subscription status']
+rank: 85
+---
+
+有料コンテンツへのアクセスやペイウォールの表示を判断するには、プロファイルの[アクセスレベル](access-level)を確認する必要があります。
+
+この記事では、プロファイルの状態を取得して、ペイウォールを表示するか有料機能へのアクセスを許可するかを判断する方法を説明します。
+
+## サブスクリプションステータスを取得する \{#get-subscription-status\}
+
+ユーザーにペイウォールを表示するか有料コンテンツを見せるかを判断する際には、プロファイルの[アクセスレベル](access-level)を確認します。方法は2つあります。
+
+- アプリ起動時など、最新のプロファイルデータをすぐに取得したい場合や強制更新したい場合は `getProfile` を呼び出す。
+- **プロファイルの自動更新**を設定して、サブスクリプションステータスが変わるたびにローカルコピーを自動的に更新する。
+
+### プロファイルを取得する \{#get-profile\}
+
+サブスクリプションステータスを取得する最もシンプルな方法は、`getProfile` メソッドを使ってプロファイルにアクセスすることです。
+
+```javascript showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  // check the access
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+### サブスクリプション更新をリッスンする \{#listen-to-subscription-updates\}
+
+アプリでプロファイルの更新を自動的に受け取るには：
+
+1. `Adapty().didUpdateProfileStream.listen()` を使ってプロファイルの変更をリッスンします。ユーザーのサブスクリプションステータスが変わるたびに、Adaptyが自動的にこのメソッドを呼び出します。
+2. このメソッドが呼ばれた際に更新されたプロファイルデータを保存しておくと、追加のネットワークリクエストなしにアプリ全体で利用できます。
+
+```dart
+class SubscriptionManager {
+  AdaptyProfile? _currentProfile;
+  
+  SubscriptionManager() {
+    // Listen for profile updates
+    Adapty().didUpdateProfileStream.listen((profile) {
+      _currentProfile = profile;
+      // Update UI, unlock content, etc.
+    });
+  }
+  
+  // Use stored profile instead of calling getProfile()
+  bool hasAccess() {
+    return _currentProfile?.accessLevels['premium']?.isActive ?? false;
+  }
+}
+```
+
+:::note
+Adaptyはアプリ起動時にプロファイル更新ストリームのリスナーを自動的に呼び出し、デバイスがオフラインでもキャッシュされたサブスクリプションデータを提供します。
+:::
+
+## プロファイルとペイウォールのロジックを連携する \{#connect-profile-with-paywall-logic\}
+
+ペイウォールを表示するか有料機能へのアクセスを許可するかを即座に判断する必要がある場合、ユーザーのプロファイルを直接確認できます。このアプローチは、アプリ起動時、プレミアムセクションへの入場時、特定コンテンツを表示する前など、様々なシナリオで役立ちます。
+
+```dart
+Future<bool> _checkAccessLevel() async {
+  try {
+    final profile = await Adapty().getProfile();
+    return profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false;
+  } catch (e) {
+    print('Error checking access level: $e');
+    return false; // Show paywall if access check fails
+  }
+}
+
+Future<void> _initializePaywall() async {
+  await _loadPaywall();
+  
+  final hasAccess = await _checkAccessLevel();
+  if (!hasAccess) {
+    // Show paywall if no access
+  }
+}
+``` 
+
+## 次のステップ \{#next-steps\}
+
+サブスクリプションステータスの追跡方法がわかったので、次は[ユーザープロファイルの操作](flutter-quickstart-identify)について学び、ユーザーが購入済みのコンテンツにアクセスできるようにしましょう。

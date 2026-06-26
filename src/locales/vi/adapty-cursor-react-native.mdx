@@ -1,0 +1,272 @@
+---
+title: "Tích hợp Adapty vào ứng dụng React Native của bạn với sự hỗ trợ của AI"
+description: "Hướng dẫn từng bước tích hợp Adapty vào ứng dụng React Native của bạn bằng Cursor, Context7, ChatGPT, Claude hoặc các công cụ AI khác."
+metadataTitle: "Tích hợp Adapty với sự hỗ trợ của AI cho React Native | Tài liệu Adapty"
+customSlug: /adapty-cursor-react-native
+displayed_sidebar: sdkreactnative
+---
+
+Hướng dẫn này sẽ dẫn bạn qua từng bước tích hợp Adapty vào ứng dụng React Native của bạn với sự hỗ trợ của công cụ AI — bạn chỉ cần cung cấp đúng tài liệu Adapty theo đúng thứ tự.
+
+<SkillPromo />
+
+## Trước khi bắt đầu: thiết lập trên dashboard \{#before-you-start-dashboard-setup\}
+
+Adapty yêu cầu một số cấu hình trên dashboard trước khi bạn viết bất kỳ mã SDK nào. Bạn có thể thực hiện điều này thông qua một skill LLM tương tác, hoặc thủ công qua Dashboard.
+
+### Cách dùng Skill (khuyến nghị) \{#skill-approach-recommended\}
+
+Skill Adapty CLI cho phép LLM của bạn thiết lập ứng dụng, sản phẩm, mức độ truy cập, paywall và placement trực tiếp — mà không cần mở Dashboard cho từng bước. Bạn chỉ cần [kết nối cửa hàng của mình](integrate-payments) trong Dashboard.
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+Sau khi thêm skill, chạy `/adapty-cli` trong agent của bạn. Nó sẽ hướng dẫn bạn qua từng bước — kể cả khi nào cần mở Dashboard để kết nối cửa hàng.
+
+### Cách thiết lập thủ công trên Dashboard \{#dashboard-approach\}
+
+Nếu bạn muốn tự cấu hình mọi thứ, dưới đây là những gì bạn cần trước khi viết bất kỳ mã nào. LLM của bạn không thể tra cứu các giá trị từ dashboard — bạn sẽ phải cung cấp chúng.
+
+1. **Kết nối cửa hàng ứng dụng của bạn**: Trong Adapty Dashboard, vào **App settings → General**. Kết nối cả App Store và Google Play nếu ứng dụng của bạn nhắm đến cả hai nền tảng. Đây là điều kiện bắt buộc để mua hàng hoạt động.
+   [Kết nối cửa hàng ứng dụng](integrate-payments)
+
+2. **Sao chép Public SDK key của bạn**: Trong Adapty Dashboard, vào **App settings → General**, sau đó tìm phần **API keys**. Trong mã, đây là chuỗi bạn truyền vào `adapty.activate("YOUR_PUBLIC_SDK_KEY")`.
+
+3. **Tạo ít nhất một sản phẩm**: Trong Adapty Dashboard, vào trang **Products**. Bạn không tham chiếu sản phẩm trực tiếp trong mã — Adapty phân phối chúng thông qua paywall.
+   [Thêm sản phẩm](quickstart-products)
+
+4. **Tạo một paywall và một placement**: Trong Adapty Dashboard, tạo paywall trên trang **Paywalls**, sau đó gán nó cho một placement trên trang **Placements**. Trong mã, placement ID là chuỗi bạn truyền vào `adapty.getPaywall("YOUR_PLACEMENT_ID")`.
+   [Tạo paywall](quickstart-paywalls)
+
+5. **Thiết lập mức độ truy cập**: Trong Adapty Dashboard, cấu hình theo từng sản phẩm trên trang **Products**. Trong mã, đây là chuỗi được kiểm tra trong `profile.accessLevels['premium']?.isActive`. Mức độ truy cập `premium` mặc định phù hợp với hầu hết các ứng dụng. Nếu người dùng trả phí được truy cập các tính năng khác nhau tùy theo sản phẩm (ví dụ: gói `basic` so với gói `pro`), [hãy tạo thêm mức độ truy cập](assigning-access-level-to-a-product) trước khi bắt đầu viết mã.
+
+:::tip
+Khi bạn có đủ năm mục trên, bạn đã sẵn sàng viết mã. Hãy cho LLM của bạn biết: "Public SDK key của tôi là X, placement ID của tôi là Y" để nó có thể tạo mã khởi tạo và lấy paywall chính xác.
+:::
+
+### Thiết lập khi sẵn sàng \{#set-up-when-ready\}
+
+Những mục này không bắt buộc để bắt đầu viết mã, nhưng bạn sẽ cần chúng khi tích hợp trưởng thành hơn:
+
+- **A/B test**: Cấu hình trên trang **Placements**. Không cần thay đổi mã.
+  [A/B test](ab-tests)
+- **Thêm paywall và placement**: Thêm nhiều lời gọi `getPaywall` với các placement ID khác nhau.
+- **Tích hợp analytics**: Cấu hình trên trang **Integrations**. Cách thiết lập tùy theo từng tích hợp. Xem [tích hợp analytics](analytics-integration) và [tích hợp attribution](attribution-integration).
+
+## Cung cấp tài liệu Adapty cho LLM của bạn \{#feed-adapty-docs-to-your-llm\}
+
+### Dùng Context7 (khuyến nghị) \{#use-context7-recommended\}
+
+[Context7](https://context7.com) là một MCP server cho phép LLM của bạn truy cập trực tiếp vào tài liệu Adapty luôn cập nhật. LLM của bạn sẽ tự động lấy đúng tài liệu dựa trên câu hỏi của bạn — không cần dán URL thủ công.
+
+Context7 hoạt động với **Cursor**, **Claude Code**, **Windsurf** và các công cụ tương thích MCP khác. Để thiết lập, chạy:
+
+```
+npx ctx7 setup
+```
+
+Lệnh này sẽ phát hiện trình soạn thảo của bạn và cấu hình Context7 server. Để thiết lập thủ công, xem [repository GitHub của Context7](https://github.com/upstash/context7).
+
+Sau khi cấu hình xong, tham chiếu thư viện Adapty trong prompt của bạn:
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the React Native SDK
+```
+
+:::warning
+Dù Context7 giúp bạn không cần dán link tài liệu thủ công, thứ tự triển khai vẫn rất quan trọng. Hãy làm theo [hướng dẫn triển khai](#implementation-walkthrough) bên dưới từng bước để đảm bảo mọi thứ hoạt động đúng.
+:::
+
+### Dùng tài liệu dạng văn bản thuần \{#use-plain-text-docs\}
+
+Bạn có thể truy cập bất kỳ tài liệu Adapty nào dưới dạng Markdown thuần. Thêm `.md` vào cuối URL của nó, hoặc nhấp **Copy for LLM** bên dưới tiêu đề bài viết. Ví dụ: [adapty-cursor-react-native.md](https://adapty.io/docs/vi/adapty-cursor-react-native.md).
+
+Mỗi giai đoạn trong [hướng dẫn triển khai](#implementation-walkthrough) bên dưới đều có một khối "Gửi cho LLM của bạn" với các link `.md` để dán vào.
+
+Để có thêm tài liệu cùng lúc, xem [file index và các tập con theo nền tảng](#plain-text-doc-index-files) bên dưới.
+
+## Hướng dẫn triển khai \{#implementation-walkthrough\}
+
+Phần còn lại của hướng dẫn này sẽ đi qua việc tích hợp Adapty theo đúng thứ tự triển khai. Mỗi giai đoạn bao gồm tài liệu cần gửi cho LLM, kết quả mong đợi khi hoàn thành và các vấn đề thường gặp.
+
+### Lập kế hoạch tích hợp \{#plan-your-integration\}
+
+Trước khi bắt đầu viết mã, hãy yêu cầu LLM của bạn phân tích dự án và tạo kế hoạch triển khai. Nếu công cụ AI của bạn hỗ trợ chế độ lập kế hoạch (như chế độ plan của Cursor hoặc Claude Code), hãy sử dụng nó để LLM có thể đọc cả cấu trúc dự án của bạn lẫn tài liệu Adapty trước khi viết bất kỳ mã nào.
+
+Hãy cho LLM biết cách bạn xử lý mua hàng — điều này ảnh hưởng đến các hướng dẫn nó cần theo:
+
+- [**Adapty Paywall Builder**](adapty-paywall-builder): Bạn tạo paywall trong trình tạo no-code của Adapty, và SDK sẽ hiển thị chúng tự động.
+- [**Paywall tự tạo**](react-native-making-purchases): Bạn tự xây dựng giao diện paywall trong mã nhưng vẫn dùng Adapty để lấy sản phẩm và xử lý mua hàng.
+- [**Observer mode**](observer-vs-full-mode): Bạn giữ nguyên cơ sở hạ tầng mua hàng hiện có và chỉ dùng Adapty cho analytics và tích hợp.
+
+Chưa chắc nên chọn cái nào? Đọc [bảng so sánh trong quickstart](react-native-quickstart-paywalls).
+
+### Cài đặt và cấu hình SDK \{#install-and-configure-the-sdk\}
+
+Thêm dependency Adapty SDK bằng npm (hoặc yarn) và kích hoạt nó với Public SDK key của bạn. Đây là nền tảng — mọi thứ khác đều không hoạt động nếu thiếu bước này.
+
+Chúng tôi có hướng dẫn cài đặt riêng cho dự án Expo và bare React Native — hãy chọn cái phù hợp với thiết lập của bạn.
+
+**Hướng dẫn:**
+- [Cài đặt với Expo](sdk-installation-react-native-expo)
+- [Cài đặt với bare React Native](sdk-installation-react-native-pure)
+
+Gửi cho LLM của bạn (chọn cái phù hợp với thiết lập của bạn, hoặc gửi cả hai):
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/sdk-installation-react-native-expo.md
+- https://adapty.io/docs/vi/sdk-installation-react-native-pure.md
+```
+
+:::tip[Kiểm tra]
+- **Kết quả mong đợi:** Ứng dụng build và chạy được trên cả iOS và Android. Log của Metro bundler hiển thị log kích hoạt Adapty.
+- **Lưu ý:** "Public API key is missing" → kiểm tra xem bạn đã thay thế placeholder bằng key thật từ App settings chưa.
+:::
+
+### Hiển thị paywall và xử lý mua hàng \{#show-paywalls-and-handle-purchases\}
+
+Lấy paywall theo placement ID, hiển thị nó và xử lý các sự kiện mua hàng. Các hướng dẫn bạn cần phụ thuộc vào cách bạn xử lý mua hàng.
+
+Hãy kiểm tra từng giao dịch trong sandbox khi thực hiện — đừng đợi đến cuối. Xem [Kiểm tra mua hàng trong sandbox](test-purchases-in-sandbox) để biết hướng dẫn thiết lập.
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**Hướng dẫn:**
+- [Bật mua hàng bằng paywall (quickstart)](react-native-quickstart-paywalls)
+- [Lấy paywall từ Paywall Builder và cấu hình của chúng](react-native-get-pb-paywalls)
+- [Hiển thị paywall](react-native-present-paywalls)
+- [Xử lý sự kiện paywall](react-native-handling-events-1)
+- [Phản hồi các thao tác nút](react-native-handle-paywall-actions)
+
+Gửi cho LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/react-native-quickstart-paywalls.md
+- https://adapty.io/docs/vi/react-native-get-pb-paywalls.md
+- https://adapty.io/docs/vi/react-native-present-paywalls.md
+- https://adapty.io/docs/vi/react-native-handling-events-1.md
+- https://adapty.io/docs/vi/react-native-handle-paywall-actions.md
+```
+
+:::tip[Kiểm tra]
+- **Kết quả mong đợi:** Paywall xuất hiện với các sản phẩm bạn đã cấu hình. Nhấn vào một sản phẩm sẽ kích hoạt hộp thoại mua hàng sandbox.
+- **Lưu ý:** Paywall trống hoặc lỗi `getPaywall` → xác minh placement ID khớp chính xác với dashboard và placement có đối tượng được gán.
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Paywall tự tạo">
+
+**Hướng dẫn:**
+- [Bật mua hàng trong paywall tùy chỉnh của bạn (quickstart)](react-native-quickstart-manual)
+- [Lấy paywall và sản phẩm](fetch-paywalls-and-products-react-native)
+- [Hiển thị paywall được thiết kế bằng remote config](present-remote-config-paywalls-react-native)
+- [Thực hiện mua hàng](react-native-making-purchases)
+- [Khôi phục mua hàng](react-native-restore-purchase)
+
+Gửi cho LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/react-native-quickstart-manual.md
+- https://adapty.io/docs/vi/fetch-paywalls-and-products-react-native.md
+- https://adapty.io/docs/vi/present-remote-config-paywalls-react-native.md
+- https://adapty.io/docs/vi/react-native-making-purchases.md
+- https://adapty.io/docs/vi/react-native-restore-purchase.md
+```
+
+:::tip[Kiểm tra]
+- **Kết quả mong đợi:** Paywall tùy chỉnh của bạn hiển thị các sản phẩm lấy từ Adapty. Nhấn vào một sản phẩm sẽ kích hoạt hộp thoại mua hàng sandbox.
+- **Lưu ý:** Mảng sản phẩm trống → xác minh paywall đã có sản phẩm được gán trong dashboard và placement có đối tượng.
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Observer mode">
+
+**Hướng dẫn:**
+- [Tổng quan về Observer mode](observer-vs-full-mode)
+- [Triển khai Observer mode](implement-observer-mode-react-native)
+- [Báo cáo giao dịch trong Observer mode](report-transactions-observer-mode-react-native)
+
+Gửi cho LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/observer-vs-full-mode.md
+- https://adapty.io/docs/vi/implement-observer-mode-react-native.md
+- https://adapty.io/docs/vi/report-transactions-observer-mode-react-native.md
+```
+
+:::tip[Kiểm tra]
+- **Kết quả mong đợi:** Sau khi mua hàng trong sandbox bằng flow mua hàng hiện có của bạn, giao dịch sẽ xuất hiện trong **Event Feed** trên Adapty dashboard.
+- **Lưu ý:** Không có sự kiện → xác minh bạn đang báo cáo giao dịch cho Adapty và thông báo server đã được cấu hình cho cả hai cửa hàng.
+:::
+
+</TabItem>
+
+</Tabs>
+
+### Kiểm tra trạng thái gói đăng ký \{#check-subscription-status\}
+
+Sau khi mua hàng, kiểm tra hồ sơ người dùng để xem có mức độ truy cập đang hoạt động hay không nhằm giới hạn nội dung premium.
+
+**Hướng dẫn:** [Kiểm tra trạng thái gói đăng ký](react-native-check-subscription-status)
+
+Gửi cho LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/react-native-check-subscription-status.md
+```
+
+:::tip[Kiểm tra]
+- **Kết quả mong đợi:** Sau khi mua hàng trong sandbox, `profile.accessLevels['premium']?.isActive` trả về `true`.
+- **Lưu ý:** `accessLevels` trống sau khi mua → kiểm tra sản phẩm đã được gán mức độ truy cập trong dashboard chưa.
+:::
+
+### Xác định người dùng \{#identify-users\}
+
+Liên kết tài khoản người dùng trong ứng dụng của bạn với hồ sơ Adapty để mua hàng được duy trì trên nhiều thiết bị.
+
+:::important
+Bỏ qua bước này nếu ứng dụng của bạn không có xác thực.
+:::
+
+**Hướng dẫn:** [Xác định người dùng](react-native-quickstart-identify)
+
+Gửi cho LLM của bạn:
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/vi/react-native-quickstart-identify.md
+```
+
+:::tip[Kiểm tra]
+- **Kết quả mong đợi:** Sau khi gọi `adapty.identify("your-user-id")`, phần **Profiles** trong dashboard sẽ hiển thị ID người dùng tùy chỉnh của bạn.
+- **Lưu ý:** Gọi `identify` sau khi kích hoạt nhưng trước khi lấy paywall để tránh attribution hồ sơ ẩn danh.
+:::
+
+### Chuẩn bị phát hành \{#prepare-for-release\}
+
+Sau khi tích hợp hoạt động trong sandbox, hãy xem qua danh sách kiểm tra phát hành để đảm bảo mọi thứ sẵn sàng cho môi trường production.
+
+**Hướng dẫn:** [Danh sách kiểm tra phát hành](release-checklist)
+
+Gửi cho LLM của bạn:
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/vi/release-checklist.md
+```
+
+:::tip[Kiểm tra]
+- **Kết quả mong đợi:** Tất cả các mục trong danh sách đã được xác nhận: kết nối cửa hàng, thông báo server, flow mua hàng, kiểm tra mức độ truy cập và yêu cầu về quyền riêng tư.
+- **Lưu ý:** Thiếu thông báo server → cấu hình App Store Server Notifications trong **App settings → iOS SDK** và Google Play Real-Time Developer Notifications trong **App settings → Android SDK**.
+:::
+
+## File index tài liệu dạng văn bản thuần \{#plain-text-doc-index-files\}
+
+Nếu bạn cần cung cấp cho LLM ngữ cảnh rộng hơn ngoài các trang riêng lẻ, chúng tôi có các file index liệt kê hoặc kết hợp toàn bộ tài liệu Adapty:
+
+- [`llms.txt`](https://adapty.io/docs/vi/llms.txt): Liệt kê tất cả các trang với các link `.md`. Đây là [tiêu chuẩn đang nổi lên](https://llmstxt.org/) để làm cho các trang web có thể truy cập được bởi LLM. Lưu ý rằng với một số AI agent (ví dụ: ChatGPT), bạn sẽ cần tải `llms.txt` xuống và tải lên chat dưới dạng file.
+- [`llms-full.txt`](https://adapty.io/docs/vi/llms-full.txt): Toàn bộ trang tài liệu Adapty được kết hợp thành một file duy nhất. Rất lớn — chỉ dùng khi bạn cần toàn bộ bức tranh.
+- Các file dành riêng cho React Native [`react-native-llms.txt`](https://adapty.io/docs/vi/react-native-llms.txt) và [`react-native-llms-full.txt`](https://adapty.io/docs/vi/react-native-llms-full.txt): Các tập con theo nền tảng giúp tiết kiệm token so với toàn bộ trang.

@@ -46,6 +46,40 @@ Both modes check:
 
 If the base ref doesn't exist (e.g. a deploy tag on first run), the script falls back to a full scan with a warning.
 
+### Localized files (`--locales`)
+
+By default the checker only looks at English source (`src/content/docs/` +
+`src/components/reusable/`). `--locales` switches to **localized files only**,
+scanning `src/locales/<code>/` instead:
+
+```bash
+# All locales, internal links only (the npm shortcut)
+npm run check-links-locales
+
+# A specific locale (e.g. when adding one)
+node scripts/check-links/index.mjs --locales=zh --internal-only
+
+# Only localized files changed vs a base ref (used by the deploy gate)
+node scripts/check-links/index.mjs --diff --base=last-production-deploy --locales --internal-only
+```
+
+How localized checking differs from the English run:
+
+- Each file's links resolve against a **per-locale index**: the English doc set
+  with that locale's translated pages overlaid on top. A bare slug therefore
+  resolves to the canonical page (locale coverage is a subset of English and
+  falls back to English at runtime), so not-yet-translated pages are not false
+  "broken link" positives.
+- **Anchor fragments (`#heading`) are not validated.** The translator preserves
+  English anchor ids verbatim (as escaped `\{#id\}` on translated headings), so
+  anchors carry over from English; the English run owns anchor validation.
+- Only **outgoing** links from in-scope files are checked. Incoming-link
+  breakage detection is skipped — translations mirror English filenames and
+  preserve anchor ids, so they can't break an incoming link the English check
+  wouldn't already catch.
+- Localized checks are intended to run **internal-only** (external URLs don't
+  vary by locale; pass `--internal-only`).
+
 ### Flags
 
 | Flag | Description |
@@ -55,6 +89,8 @@ If the base ref doesn't exist (e.g. a deploy tag on first run), the script falls
 | `--dev` | Dev mode — check files changed since last push |
 | `--diff` | Diff mode — check files changed vs a base ref (default: `origin/main`) |
 | `--base=<ref>` | Override the diff base ref (use with `--diff`). Accepts any git ref: branch, tag, commit SHA |
+| `--locales` | Localized files only — scan `src/locales/*/` instead of English source (all locales) |
+| `--locales=zh,tr` | Localized files only, restricted to the listed locale codes |
 | `--concurrency=N` | Max parallel external requests (default: 25) |
 | `--format=html\|ci` | Output format override. Auto-detected: `ci` when `GITHUB_ACTIONS` env is set, `html` otherwise |
 
@@ -76,7 +112,6 @@ Links that don't resolve at all. These block CI.
 - Internal slugs not found in docs or on the live site
 - Malformed URL schemes (`khttps://`, `uhttps://`)
 - **`.md`/`.mdx` extension in internal links** — write `[text](article)` not `[text](article.md)`. The remark plugin strips extensions at build time, but source files should use the clean form. Links flagged this way are skipped during the regular internal check to avoid duplicate errors.
-- **Self-links** — external URLs pointing to `adapty.io/docs` that should be internal links instead (exceptions: `.txt`/`.md` files used in AI tool instructions, and API reference routes)
 
 ### Stale links (warnings)
 

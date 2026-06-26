@@ -39,20 +39,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Push: parent commit suffices. Dispatch: may target an older commit,
-          # so fetch full history. Inverted from the obvious form because
-          # `0 || 2` evaluates to `2` in GH expressions (0 is falsy).
-          fetch-depth: ${{ github.event_name == 'push' && 2 || 0 }}
+          # Full history. A single push can contain many commits, and the diff
+          # step below covers the whole push range (github.event.before..sha),
+          # not just the tip — so a 2-deep clone is insufficient. Manual
+          # dispatch may also diff against an arbitrarily old base SHA.
+          fetch-depth: 0
 
       - name: Get changed translatable files
         id: diff
         run: |
           # Resolve the base ref for diffing.
-          # - Push: HEAD^1 (the parent commit).
-          # - Manual dispatch: the user-supplied base SHA, or HEAD^1 if blank.
+          # - Manual dispatch with base_sha: use it verbatim.
+          # - Push: diff the FULL push range via github.event.before, so changes
+          #   in NON-tip commits of a multi-commit push are not missed (the old
+          #   HEAD^1 base only saw the tip commit). Falls back to HEAD^1 when
+          #   `before` is the zero SHA (branch creation) or is unreachable / not
+          #   an ancestor of HEAD (force-push).
+          # - Dispatch with blank base_sha: HEAD^1.
+          ZERO="0000000000000000000000000000000000000000"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.base_sha }}" ]; then
             BASE="${{ github.event.inputs.base_sha }}"
+          elif [ "${{ github.event_name }}" = "push" ] && [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "$ZERO" ] \
+            && git cat-file -e "${{ github.event.before }}^{commit}" 2>/dev/null \
+            && git merge-base --is-ancestor "${{ github.event.before }}" HEAD 2>/dev/null; then
+            BASE="${{ github.event.before }}"
           else
+            if [ "${{ github.event_name }}" = "push" ]; then
+              echo "[diff] push 'before' (${{ github.event.before }}) unusable — branch creation or force-push; falling back to HEAD^1"
+            fi
             BASE="HEAD^1"
           fi
           echo "Diffing $BASE..HEAD"

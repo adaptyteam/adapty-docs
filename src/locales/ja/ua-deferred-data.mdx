@@ -1,0 +1,124 @@
+---
+title: "Adapty ユーザー獲得における遅延ディープリンク"
+description: "Adapty ユーザー獲得でディープリンクを設定する"
+metadataTitle: "Adapty ユーザー獲得における遅延ディープリンク | Adapty ドキュメント"
+keywords: ['adapty ua', 'user acquisition', 'deeplink', 'deferred deeplink']
+---
+
+遅延ディープリンクを使うと、ユーザーが広告をクリックしてアプリをインストールしたとき、カスタムデータをアプリに渡すことができます。たとえば、インストール後の初回起動時に、アプリ内の特定の画面へ直接誘導することができます。
+
+仕組みは次のとおりです：
+
+1. ユーザーが広告をクリックすると、Adapty がクリックデータを保存します。
+2. Adapty がインストールイベントを検知すると、クリック時の遅延データを取得します。
+3. ユーザーがアプリをインストールして初めて起動すると、Adapty が保存済みのデータを取り出し、アプリがカスタムパラメーターを受け取ります。これにより、アプリのコードでさまざまな値に応じた処理が可能になります。
+
+Adapty がサポートする遅延データパラメーターは以下のとおりです：
+
+- `ios_deferred_data`
+- `android_deferred_data`
+- `deferred_data_sub[1-10]`
+
+遅延データパラメーターを追加するには、キャンペーン設定のリンクに追記します：
+
+1. **Integrations -> Meta/TikTok Ads** ページからキャンペーンを開くか、**Tracking links** ページからトラッキングリンクを開きます。キャンペーンで使用するクリックリンクをコピーしてください。
+
+<ZoomImage id="ua-lnk.webp" width="900px" />
+
+2. 広告プラットフォーム（Meta、TikTok、Google Ads など）で、広告の遷移先 URL フィールドにリンクを貼り付け、遅延データパラメーターを `&` で始まるクエリパラメーターとして末尾に追加します。たとえば、iOS ユーザーをインストール後に「Welcome」画面へ誘導したい場合は、`&ios_deferred_data=welcome` を追加します。最終的な遷移先 URL は次のようになります：
+
+```
+https://api-ua.adapty.io/api/v1/attribution/click?adpt_cid=__ADAPTY__ID__&ios_deferred_data=welcome&campaign_id=__CAMPAIGN_ID__&adset_id=__AID__&ad_id=__CID__&campaign_name=__CAMPAIGN_NAME__&adset_name=__AID_NAME__&ad_name=__CID_NAME__&redirect_url=__APP_LINK__
+```
+
+3. アプリのコードでパラメーターに応じた処理を実装します。遅延データパラメーターは `payload` パラメーター内に格納されており、`payload` はエスケープされた JSON です。そのため、アプリのコードで JSON をパースする必要があります。
+
+たとえば、`ios_deferred_data` が `welcome` の場合のインストール処理は次のように実装できます：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+Adapty.delegate = self
+
+nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetails) {
+    guard
+        let payloadStr = details.payload,
+        let data = payloadStr.data(using: .utf8),
+        let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+        let deeplink = payload["ios_deferred_data"] as? String,
+        deeplink == "welcome"
+    else { return }
+
+    DispatchQueue.main.async {
+        print("Navigate to welcome screen")
+        // navigate to your screen here
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="android" label="Kotlin">
+
+```kotlin showLineNumbers
+Adapty.setOnInstallationDetailsListener(object : OnInstallationDetailsListener {
+    override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
+        details.payload?.let {
+            runCatching {
+                val json = JSONObject(it)
+                if (json.optString("android_deferred_data") == "welcome") {
+                    println("Navigate to welcome screen")
+                    // navigate here
+                }
+            }.onFailure(Throwable::printStackTrace)
+        }
+    }
+})
+
+```
+
+</TabItem>
+
+<TabItem value="rn" label="React Native" default>
+
+```typescript showLineNumbers
+adapty.addEventListener('onInstallationDetailsSuccess', details => {
+    // Parse the payload JSON and navigate to welcome screen if needed
+    try {
+        if (details.payload) {
+            const payload = JSON.parse(details.payload);
+            if (payload.ios_deferred_data === 'welcome') {
+                // Navigate to welcome screen
+                // Replace with your app's navigation logic
+                // For example, using React Navigation:
+                // navigation.navigate('Welcome');
+                console.log('Navigate to welcome screen');
+            }
+        }
+    } catch (error) {
+        console.error('Error parsing installation details payload:', error);
+    }
+});
+```
+
+</TabItem>
+
+<TabItem value="flutter" label="Flutter">
+
+```dart showLineNumbers
+Adapty().onUpdateInstallationDetailsSuccessStream.listen((details) {
+  final payloadStr = details.payload;
+  if (payloadStr == null) return;
+
+  final payload = json.decode(payloadStr) as Map<String, dynamic>;
+  if (payload['ios_deferred_data'] == 'welcome') {
+    print('Navigate to welcome screen');
+  }
+});
+
+```
+
+</TabItem>
+
+</Tabs>

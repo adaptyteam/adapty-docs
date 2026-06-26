@@ -1,0 +1,411 @@
+---
+title: "ペイウォールイベントの処理"
+description: "Adapty SDK を使用して Unity アプリでペイウォールイベントを処理する方法を学びましょう。"
+metadataTitle: "ペイウォールイベントの処理 | Unity SDK | Adapty ドキュメント"
+customSlug: /unity-handling-events
+displayed_sidebar: sdkunity
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+import PaywallAction from '@site/src/locales/ja/reusable/PaywallAction.md';
+
+:::important
+このガイドでは、購入・復元・プロダクト選択・ペイウォールのレンダリングに関するイベント処理を説明します。ボタン操作（ペイウォールを閉じる、リンクを開くなど）の実装も必要です。詳細は[ボタンアクションの処理ガイド](unity-handle-paywall-actions)をご覧ください。
+:::
+
+[ペイウォールビルダー](adapty-paywall-builder)で設定されたペイウォールは、購入や復元のために追加コードは不要です。ただし、アプリが応答できるいくつかのイベントが生成されます。これらのイベントには、ボタン操作（閉じるボタン、URL、プロダクト選択など）や、ペイウォール上で行われた購入関連のアクションへの通知が含まれます。以下でこれらのイベントへの対応方法を説明します。
+
+:::warning
+このガイドは、Adapty SDK v3.3.0 以降が必要な**新しいペイウォールビルダーのペイウォール**専用です。
+:::
+
+<SampleApp />
+
+## イベントの処理 \{#handling-events\}
+
+モバイルアプリ内のペイウォール画面で発生するプロセスを制御・監視するには、`AdaptyPaywallsEventsListener` インターフェースを実装します。
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+public class PaywallEventsHandler : MonoBehaviour, AdaptyPaywallsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetPaywallsEventsListener(this);
+    }
+
+    // Implement all required interface methods below
+}
+```
+
+### ユーザーが生成するイベント \{#user-generated-events\}
+
+#### ペイウォールの表示 \{#paywall-appeared\}
+
+ペイウォールビューが画面に表示されたときに呼び出されます。
+
+:::note
+iOS では、ユーザーがペイウォール内の[ウェブペイウォールボタン](web-paywall#step-2a-add-a-web-purchase-button)をタップして、インアプリブラウザでウェブペイウォールが開いたときにも呼び出されます。
+:::
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidAppear(AdaptyUIPaywallView view) { }
+```
+
+#### ペイウォールの非表示 \{#paywall-disappeared\}
+
+ペイウォールビューが画面から閉じられたときに呼び出されます。
+
+:::note
+iOS では、ペイウォールからインアプリブラウザで開いた[ウェブペイウォール](web-paywall#step-2a-add-a-web-purchase-button)が画面から消えたときにも呼び出されます。
+:::
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidDisappear(AdaptyUIPaywallView view) { }
+```
+
+#### プロダクト選択 \{#product-selection\}
+
+プロダクトが購入対象として選択されたとき（ユーザーまたはシステムによる）に呼び出されます。
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidSelectProduct(
+    AdaptyUIPaywallView view, 
+    string productId
+) { }
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+#### 購入開始 \{#started-purchase\}
+
+ユーザーが購入プロセスを開始したときに呼び出されます。
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidStartPurchase(
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product
+) { }
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### 購入成功・キャンセル・保留 \{#successful-canceled-or-pending-purchase\}
+
+購入が成功した場合、ユーザーが購入をキャンセルした場合、または購入が保留中になった場合に、このメソッドが呼び出されます。ユーザーによるキャンセルや保留中の支払い（保護者の承認が必要な場合など）は、`PaywallViewDidFailPurchase` ではなくこのメソッドをトリガーします。
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFinishPurchase(
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product, 
+    AdaptyPurchaseResult purchasedResult
+) { }
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCancelled"
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+```
+</Details>
+
+その場合は画面を閉じることをお勧めします。
+
+#### 購入失敗 \{#failed-purchase\}
+
+エラーにより購入が失敗した場合に、このメソッドが呼び出されます。StoreKit/Google Play Billing のエラー（支払い制限、無効なプロダクト、ネットワーク障害）、トランザクション検証の失敗、システムエラーが含まれます。なお、ユーザーによるキャンセルはキャンセル結果として `PaywallViewDidFinishPurchase` をトリガーし、保留中の支払いはこのメソッドをトリガーしません。
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFailPurchase(
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product, 
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+#### 復元開始 \{#started-restore\}
+
+ユーザーが復元プロセスを開始したときに呼び出されます。
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidStartRestore(AdaptyUIPaywallView view) { }
+```
+
+#### 復元成功 \{#successful-restore\}
+
+購入の復元が成功したときに呼び出されます。
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFinishRestore(
+    AdaptyUIPaywallView view, 
+    AdaptyProfile profile
+) { }
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+ユーザーが必要な `accessLevel` を持っている場合は、画面を閉じることをお勧めします。確認方法については、[サブスクリプションのステータス](unity-listen-subscription-changes)を参照してください。
+
+#### 復元失敗 \{#failed-restore\}
+
+購入の復元が失敗したときに呼び出されます。
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFailRestore(
+    AdaptyUIPaywallView view, 
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### ウェブ支払いナビゲーション完了 \{#finished-web-payment-navigation\}
+
+購入のために[ウェブペイウォール](web-paywall)を開こうとした後（成功・失敗に関わらず）、このメソッドが呼び出されます。
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFinishWebPaymentNavigation(
+    AdaptyUIPaywallView view, 
+    AdaptyPaywallProduct product, 
+    AdaptyError error
+) { }
+```
+
+**パラメータ:**
+- `product`: ウェブペイウォールが開かれた（または開こうとした）プロダクト
+- `error`: ウェブペイウォールが正常に開いた場合は `null`、失敗した場合は `AdaptyError`
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "wrong_param",
+    "message": "Current method is not available for this product",
+    "details": {
+      "underlyingError": "Product not configured for web purchases"
+    }
+  }
+}
+```
+</Details>
+
+### データ取得とレンダリング \{#data-fetching-and-rendering\}
+
+#### プロダクト読み込みエラー \{#product-loading-errors\}
+
+プロダクトの読み込みに失敗し、`AdaptyError` が提供されたときに呼び出されます。初期化時にプロダクト配列を渡さなかった場合、AdaptyUI はサーバーから必要なオブジェクトを自動的に取得します。この処理が失敗した場合、AdaptyUI はこのメソッドを呼び出してエラーを報告します。
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFailLoadingProducts(
+    AdaptyUIPaywallView view, 
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+#### レンダリングエラー \{#rendering-errors\}
+
+インターフェースのレンダリング中にエラーが発生し、`AdaptyError` が提供されたときに呼び出されます。
+
+```csharp showLineNumbers title="Unity"
+public void PaywallViewDidFailRendering(
+    AdaptyUIPaywallView view, 
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+通常の状況ではこのようなエラーは発生しないはずです。もし遭遇した場合はお知らせください。

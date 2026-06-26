@@ -1,0 +1,698 @@
+---
+title: "Xử lý sự kiện onboarding trong React Native SDK"
+description: "Xử lý các sự kiện liên quan đến onboarding trong React Native bằng Adapty."
+metadataTitle: "Xử lý sự kiện Onboarding trong React Native | Tài liệu Adapty"
+toc_max_heading_level: 4
+---
+
+Các onboarding được cấu hình bằng builder sẽ tạo ra các sự kiện mà ứng dụng của bạn có thể xử lý. Cách xử lý những sự kiện này phụ thuộc vào phương thức hiển thị bạn đang dùng:
+
+- **Modal presentation**: Yêu cầu thiết lập các event handler để xử lý sự kiện cho tất cả onboarding view
+- **React component**: Xử lý sự kiện thông qua các tham số callback trực tiếp trong widget
+
+Trước khi bắt đầu, hãy đảm bảo rằng:
+
+1. Bạn đã cài đặt [Adapty React Native SDK](sdk-installation-reactnative) phiên bản 3.8.0 trở lên.
+2. Bạn đã [tạo một onboarding](create-onboarding).
+3. Bạn đã thêm onboarding vào một [placement](placements).
+
+Để kiểm soát hoặc theo dõi các tiến trình xảy ra trên màn hình onboarding trong ứng dụng di động của bạn, hãy triển khai các event handler:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+Với React component, bạn xử lý sự kiện thông qua các prop event handler riêng lẻ trong component `AdaptyOnboardingView`:
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
+  const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+      onClose={onClose}
+      onCustom={onCustom}
+      onPaywall={onPaywall}
+      onStateUpdated={onStateUpdated}
+      onFinishedLoading={onFinishedLoading}
+      onError={onError}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Với modal presentation, hãy triển khai phương thức event handler.
+
+:::important
+Gọi `setEventHandlers` nhiều lần sẽ ghi đè các handler bạn cung cấp, thay thế cả handler mặc định lẫn handler đã được thiết lập trước đó cho những sự kiện cụ thể đó.
+:::
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(event, meta) {
+    // Track analytics events
+  },
+  onClose(actionId, meta) {
+    // Handle close action
+    view.dismiss();
+    return true;
+  },
+  onCustom(actionId, meta) {
+    // Handle custom actions
+  },
+  onPaywall(actionId, meta) {
+    // Handle paywall actions
+  },
+  onStateUpdated(action, meta) {
+    // Handle user input updates
+  },
+  onFinishedLoading(meta) {
+    // Onboarding finished loading
+  },
+  onError(error) {
+    // Handle loading errors
+  },
+});
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+Với SDK phiên bản < 3.14, chỉ hỗ trợ modal presentation:
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onAnalytics(event, meta) {
+    // Track analytics events
+  },
+  onClose(actionId, meta) {
+    // Handle close action
+    view.dismiss();
+    return true;
+  },
+  onCustom(actionId, meta) {
+    // Handle custom actions
+  },
+  onPaywall(actionId, meta) {
+    // Handle paywall actions
+  },
+  onStateUpdated(action, meta) {
+    // Handle user input updates
+  },
+  onFinishedLoading(meta) {
+    // Onboarding finished loading
+  },
+  onError(error) {
+    // Handle loading errors
+  },
+});
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Các loại sự kiện \{#event-types\}
+
+Các phần dưới đây mô tả các loại sự kiện khác nhau mà bạn có thể xử lý, bất kể phương thức hiển thị bạn đang dùng là gì.
+
+### Xử lý hành động tùy chỉnh \{#handle-custom-actions\}
+
+Trong builder, bạn có thể thêm hành động **custom** vào một nút và gán cho nó một ID.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Sau đó, bạn có thể dùng ID này trong code và xử lý nó như một hành động tùy chỉnh. Ví dụ: nếu người dùng nhấn vào một nút tùy chỉnh như **Login** hay **Allow notifications**, event handler sẽ được kích hoạt với tham số `actionId` khớp với **Action ID** từ builder. Bạn có thể tạo ID riêng của mình, chẳng hạn như "allowNotifications".
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onCustom={onCustom}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onCustom(actionId, meta) {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onCustom(actionId, meta) {
+    switch (actionId) {
+      case 'login':
+        login();
+        break;
+      case 'allow_notifications':
+        allowNotifications();
+        break;
+    }
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```json
+{
+  "actionId": "allow_notifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+### Hoàn tất tải onboarding \{#finishing-loading-onboarding\}
+
+Khi onboarding hoàn tất việc tải, sự kiện này sẽ được kích hoạt:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onFinishedLoading={onFinishedLoading}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onFinishedLoading(meta) {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onFinishedLoading(meta) {
+    console.log('Onboarding loaded:', meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+
+### Đóng onboarding \{#closing-onboarding\}
+
+Onboarding được coi là đã đóng khi người dùng nhấn vào một nút có gán hành động **Close**.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+Lưu ý rằng bạn cần tự quản lý những gì xảy ra khi người dùng đóng onboarding. Ví dụ: bạn cần dừng hiển thị chính onboarding đó.
+:::
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding, navigation }) {
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {
+    navigation.goBack();  
+  }, [navigation]);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onClose={onClose}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onClose(actionId, meta) {
+    await view.dismiss();
+    return true;
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onClose(actionId, meta) {
+    await view.dismiss();
+    return true;
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+</Details>
+
+### Mở paywall \{#opening-a-paywall\}
+
+:::tip
+Xử lý sự kiện này để mở paywall nếu bạn muốn mở nó ngay bên trong onboarding. Nếu bạn muốn mở paywall sau khi onboarding đóng lại, có một cách đơn giản hơn – xử lý hành động đóng và mở paywall mà không cần dựa vào dữ liệu sự kiện.
+:::
+
+Cách làm liền mạch nhất khi làm việc với paywall trong onboarding là đặt action ID bằng với placement ID của paywall.
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {
+    openPaywall(actionId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onPaywall={onPaywall}
+    />
+  );
+}
+
+const openPaywall = async (placementId) => {
+  // Implement your paywall opening logic here
+};
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Lưu ý rằng trên iOS, chỉ có thể hiển thị một view (paywall hoặc onboarding) trên màn hình tại một thời điểm. Nếu bạn hiển thị paywall chồng lên onboarding, bạn không thể điều khiển onboarding ở nền bằng code. Cố gắng dismiss onboarding sẽ đóng paywall thay vào đó, khiến onboarding vẫn hiển thị. Để tránh điều này, hãy luôn dismiss onboarding view trước khi hiển thị paywall.
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onPaywall(actionId, meta) {
+    view.dismiss().then(() => {
+      openPaywall(actionId);
+    });
+  },
+});
+
+const openPaywall = async (placementId) => {
+  // Implement your paywall opening logic here
+};
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+Lưu ý rằng trên iOS, chỉ có thể hiển thị một view (paywall hoặc onboarding) trên màn hình tại một thời điểm. Nếu bạn hiển thị paywall chồng lên onboarding, bạn không thể điều khiển onboarding ở nền bằng code. Cố gắng dismiss onboarding sẽ đóng paywall thay vào đó, khiến onboarding vẫn hiển thị. Để tránh điều này, hãy luôn dismiss onboarding view trước khi hiển thị paywall.
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onPaywall(actionId, meta) {
+    view.dismiss().then(() => {
+      openPaywall(actionId);
+    });
+  },
+});
+
+const openPaywall = async (placementId) => {
+  // Implement your paywall opening logic here
+};
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+</Details>
+
+### Theo dõi điều hướng \{#tracking-navigation\}
+
+Bạn nhận được sự kiện analytics khi các sự kiện liên quan đến điều hướng xảy ra trong flow onboarding:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {
+    trackEvent(event.name, meta.onboardingId);
+  }, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(event, meta) {
+    trackEvent(event.name, meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14">
+
+```javascript showLineNumbers title="React Native"
+
+const view = await createOnboardingView(onboarding);
+
+const unsubscribe = view.registerEventHandlers({
+  onAnalytics(event, meta) {
+    trackEvent(event.name, meta.onboardingId);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+Object `event` có thể là một trong các kiểu sau:
+
+|Kiểu | Mô tả |
+|------------|-------------|
+| `onboardingStarted` | Khi onboarding đã được tải xong |
+| `screenPresented` | Khi bất kỳ màn hình nào được hiển thị |
+| `screenCompleted` | Khi một màn hình hoàn thành. Bao gồm `elementId` tùy chọn (định danh của phần tử đã hoàn thành) và `reply` tùy chọn (phản hồi từ người dùng). Được kích hoạt khi người dùng thực hiện bất kỳ hành động nào để thoát khỏi màn hình. |
+| `secondScreenPresented` | Khi màn hình thứ hai được hiển thị |
+| `userEmailCollected` | Được kích hoạt khi email của người dùng được thu thập qua trường nhập liệu |
+| `onboardingCompleted` | Được kích hoạt khi người dùng đến màn hình có ID `final`. Nếu bạn cần sự kiện này, [hãy gán ID `final` cho màn hình cuối cùng](design-onboarding). |
+| `unknown` | Dành cho bất kỳ loại sự kiện không được nhận diện. Bao gồm `name` (tên của sự kiện không xác định) và `meta` (metadata bổ sung) |
+
+Mỗi sự kiện bao gồm thông tin `meta` chứa:
+
+| Trường | Mô tả |
+|------------|-------------|
+| `onboardingId` | Định danh duy nhất của onboarding flow |
+| `screenClientId` | Định danh của màn hình hiện tại |
+| `screenIndex` | Vị trí của màn hình hiện tại trong flow |
+| `screensTotal` | Tổng số màn hình trong flow |
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+```
+</Details>

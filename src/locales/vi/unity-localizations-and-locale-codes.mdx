@@ -1,0 +1,138 @@
+---
+title: "Sử dụng localization và mã locale trong Unity SDK"
+description: "Tìm hiểu cách localize paywall trong ứng dụng Unity của bạn với Adapty SDK."
+metadataTitle: "Localize Paywall | Unity SDK | Tài liệu Adapty"
+---
+
+## Tại sao điều này quan trọng \{#why-this-is-important\}
+
+Có một vài trường hợp mà mã locale phát huy tác dụng — ví dụ, khi bạn cần lấy paywall phù hợp với localization hiện tại của ứng dụng.
+
+Vì mã locale khá phức tạp và có thể khác nhau tùy từng nền tảng, chúng tôi sử dụng một tiêu chuẩn nội bộ cho tất cả các nền tảng được hỗ trợ. Tuy nhiên, do sự phức tạp này, điều quan trọng là bạn phải hiểu rõ mình đang gửi gì đến máy chủ của chúng tôi để nhận được localization đúng, và điều gì xảy ra tiếp theo — để bạn luôn nhận được kết quả như mong đợi.
+
+## Tiêu chuẩn mã locale tại Adapty \{#locale-code-standard-at-adapty\}
+
+Đối với mã locale, Adapty sử dụng phiên bản được điều chỉnh nhẹ của [tiêu chuẩn BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): mỗi mã gồm các subtag viết thường, phân cách bằng dấu gạch ngang. Một số ví dụ: `en` (tiếng Anh), `pt-br` (tiếng Bồ Đào Nha (Brazil)), `zh` (tiếng Trung Giản thể), `zh-hant` (tiếng Trung Phồn thể).
+
+## Cách khớp mã locale \{#locale-code-matching\}
+
+Khi Adapty nhận được yêu cầu từ SDK phía client kèm mã locale và bắt đầu tìm kiếm localization tương ứng cho paywall, quá trình diễn ra như sau:
+
+1. Chuỗi locale đầu vào được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay thế bằng dấu gạch ngang (`-`)
+2. Chúng tôi tìm kiếm localization có mã locale khớp hoàn toàn
+3. Nếu không tìm thấy kết quả khớp, chúng tôi lấy chuỗi con trước dấu gạch ngang đầu tiên (`pt` cho `pt-br`) và tiếp tục tìm kiếm
+4. Nếu vẫn không tìm thấy, chúng tôi trả về localization mặc định `en`
+
+Nhờ vậy, một thiết bị iOS gửi `'pt_BR'`, một thiết bị Android gửi `pt-BR`, và một thiết bị khác gửi `pt-br` đều nhận được kết quả như nhau.
+
+## Triển khai localization: cách khuyến nghị \{#implementing-localizations-recommended-way\}
+
+Nếu bạn đang tìm hiểu về localization, nhiều khả năng bạn đã làm việc với các file chuỗi đã được localize trong dự án. Trong trường hợp đó, chúng tôi khuyến nghị thêm một cặp key-value chứa mã locale Adapty tương ứng vào mỗi file cho từng localization. Sau đó, trích xuất giá trị của key đó khi gọi SDK, như sau:
+
+```csharp showLineNumbers
+// 1. Modify your localization files (e.g., using Unity's Localization package)
+
+/*
+en.json
+*/
+{
+  "adapty_paywalls_locale": "en"
+}
+
+/*
+es.json
+*/
+{
+  "adapty_paywalls_locale": "es"
+}
+
+/*
+pt-BR.json
+*/
+{
+  "adapty_paywalls_locale": "pt-br"
+}
+
+// 2. Extract and use the locale code
+using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
+using AdaptySDK;
+
+public class PaywallManager : MonoBehaviour
+{
+    public async void FetchPaywall()
+    {
+        // Get the current locale from Unity's Localization system
+        var locale = LocalizationSettings.SelectedLocale;
+        var localeCode = GetAdaptyLocaleCode(locale);
+        
+        // Pass locale code to Adapty.GetPaywall or Adapty.GetPaywallForDefaultAudience method
+        Adapty.GetPaywall("placement_id", localeCode, (paywall, error) => {
+            if (error != null) {
+                // handle the error
+                return;
+            }
+            // Use the paywall
+        });
+    }
+    
+    private string GetAdaptyLocaleCode(Locale locale)
+    {
+        // Convert Unity locale to Adapty format
+        var localeIdentifier = locale.Identifier.Code;
+        return localeIdentifier.ToLower().Replace('_', '-');
+    }
+}
+```
+
+Cách này giúp bạn kiểm soát hoàn toàn localization nào sẽ được trả về cho từng người dùng trong ứng dụng.
+
+## Triển khai localization: cách khác \{#implementing-localizations-the-other-way\}
+
+Bạn có thể đạt kết quả tương tự (nhưng không hoàn toàn giống) mà không cần định nghĩa mã locale tường minh cho từng localization. Cách này có nghĩa là trích xuất mã locale từ các đối tượng khác mà nền tảng cung cấp, như sau:
+
+```csharp showLineNumbers
+using UnityEngine;
+using System.Globalization;
+using AdaptySDK;
+
+public class PaywallManager : MonoBehaviour
+{
+    public void FetchPaywall()
+    {
+        var localeCode = GetSystemLocaleCode();
+        
+        // Pass locale code to Adapty.GetPaywall or Adapty.GetPaywallForDefaultAudience method
+        Adapty.GetPaywall("placement_id", localeCode, (paywall, error) => {
+            if (error != null) {
+                // handle the error
+                return;
+            }
+            // Use the paywall
+        });
+    }
+    
+    private string GetSystemLocaleCode()
+    {
+        // Get the system's current culture
+        var culture = CultureInfo.CurrentCulture;
+        var languageCode = culture.TwoLetterISOLanguageName;
+        var regionCode = culture.Name.Contains('-') ? culture.Name.Split('-')[1] : null;
+        
+        if (!string.IsNullOrEmpty(regionCode))
+        {
+            return $"{languageCode}-{regionCode.ToLower()}";
+        }
+        
+        return languageCode;
+    }
+}
+```
+
+Lưu ý rằng chúng tôi không khuyến nghị cách này vì một vài lý do:
+
+1. Trên iOS, ngôn ngữ ưu tiên và locale hiện tại không giống nhau. Nếu muốn localization được chọn đúng, bạn phải hoặc dựa vào logic của Apple (vốn hoạt động tự động nếu dùng cách khuyến nghị với các file chuỗi đã localize), hoặc tự tái tạo lại logic đó.
+2. Khó dự đoán chính xác máy chủ của Adapty sẽ nhận được gì. Chẳng hạn, trên iOS, có thể lấy được locale như `ar_OM@numbers='latn'` từ thiết bị và gửi đến máy chủ. Với yêu cầu này, bạn sẽ không nhận được localization `ar-om` như mong đợi, mà thay vào đó là `ar` — điều này có thể ngoài ý muốn.
+
+Nếu bạn vẫn quyết định dùng cách này — hãy đảm bảo đã kiểm tra tất cả các trường hợp sử dụng liên quan.

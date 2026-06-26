@@ -1,0 +1,165 @@
+---
+title: "Kotlin Multiplatform SDKでボタンアクションに応答する"
+description: "Adaptyを使用してKotlin Multiplatformでペイウォールのボタンアクションを処理し、アプリの収益化を向上させます。"
+metadataTitle: "ペイウォールのボタンアクションの処理 | Adapty ドキュメント"
+displayed_sidebar: sdkkmp
+toc_max_heading_level: 4
+keywords: ['paywall button', 'button', 'paywall button actions', 'handle actions']
+---
+
+:::warning
+**購入と復元のみが自動で処理されます。** ペイウォールを閉じたりリンクを開いたりするような、それ以外のボタンアクションはすべて、アプリのコードで適切なレスポンスを実装する必要があります。
+:::
+
+Adaptyのペイウォールビルダーを使ってペイウォールを作成する場合、ボタンを適切に設定することが重要です：
+
+1. [ペイウォールビルダーにボタンを追加](paywall-buttons)し、既存のアクションを割り当てるか、カスタムアクションIDを作成します。
+2. 割り当てた各アクションを処理するコードをアプリに記述します。
+
+このガイドでは、コード内でカスタムアクションと既存アクションを処理する方法を説明します。
+
+## AdaptyUIPaywallsEventsObserverを設定する \{#set-up-the-adaptyuipaywallsevents-observer\}
+
+ペイウォールのアクションを処理するには、`AdaptyUIPaywallsEventsObserver`インターフェースを実装し、`AdaptyUI.setPaywallsEventsObserver()`で設定する必要があります。これはアプリのライフサイクルの早い段階、通常はメインアクティビティやアプリの初期化時に行います。
+
+```kotlin
+
+// In your app initialization
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
+```
+
+## ペイウォールを閉じる \{#close-paywalls\}
+
+ペイウォールを閉じるボタンを追加するには：
+
+1. ペイウォールビルダーでボタンを追加し、**Close**アクションを割り当てます。
+2. アプリのコードで、ペイウォールを閉じる`close`アクションのハンドラーを実装します。
+
+:::info
+Kotlin Multiplatform SDKでは、`CloseAction`と`AndroidSystemBackAction`がデフォルトでペイウォールを閉じます。ただし、必要に応じてコードでこの動作をオーバーライドできます。たとえば、あるペイウォールを閉じたときに別のペイウォールを開くといった使い方が可能です。
+:::
+
+```kotlin
+
+class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            AdaptyUIAction.CloseAction, AdaptyUIAction.AndroidSystemBackAction -> view.dismiss()
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
+```
+
+[`createNativePaywallView`](kmp-present-paywalls#without-compose-multiplatform)を使用している場合、`view.dismiss()`を呼び出しても効果はありません。このビューはKMPスタックを通じて表示されるのではなく、レイアウトに埋め込まれているためです。代わりに、レイアウトからビューを削除し、`dispose()`を呼び出してください。
+
+## ペイウォールからURLを開く \{#open-urls-from-paywalls\}
+
+:::tip
+リンクのグループ（利用規約や購入の復元など）を追加したい場合は、ペイウォールビルダーに**Link**要素を追加し、**Open URL**アクションが設定されたボタンと同じ方法で処理してください。
+:::
+
+ペイウォールからリンクを開くボタン（例：**利用規約**や**プライバシーポリシー**）を追加するには：
+
+1. ペイウォールビルダーでボタンを追加し、**Open URL**アクションを割り当てて、開きたいURLを入力します。
+2. アプリのコードで、受け取ったURLをブラウザで開く`openUrl`アクションのハンドラーを実装します。
+
+:::info
+Kotlin Multiplatform SDKでは、`OpenUrlAction`が開くべきURLを提供します。確認ダイアログの表示やアプリ独自のURL処理方法を使用するなど、URL開封処理のカスタムロジックを実装できます。
+:::
+
+```kotlin
+
+class MyAdaptyUIPaywallsEventsObserver(
+    private val uriHandler: UriHandler
+) : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.OpenUrlAction -> {
+                // Show confirmation dialog before opening URL
+                mainUiScope.launch {
+                    val selectedAction = view.showDialog(
+                        title = "Open URL?",
+                        content = action.url,
+                        primaryActionTitle = "Cancel",
+                        secondaryActionTitle = "Open"
+                    ).getOrNull()
+
+                    when (selectedAction) {
+                        AdaptyUIDialogActionType.PRIMARY -> {
+                            // User cancelled
+                        }
+                        AdaptyUIDialogActionType.SECONDARY -> {
+                            // User confirmed - open URL
+                            uriHandler.openUri(action.url)
+                        }
+                        else -> Unit
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Set up the observer with UriHandler
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver(uriHandler))
+```
+
+## アプリへのログイン \{#log-into-the-app\}
+
+ユーザーをアプリにログインさせるボタンを追加するには：
+
+1. ペイウォールビルダーでボタンを追加し、ID「login」の**Custom**アクションを割り当てます。
+2. アプリのコードで、ユーザーを識別するカスタムアクションのハンドラーを実装します。
+
+```kotlin
+
+class MyAdaptyUIObserver : AdaptyUIObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                if (action.action == "login") {
+                    // Handle login action - navigate to login screen
+                    // This depends on your app's navigation system
+                    // For example, in Compose Multiplatform:
+                    // navController.navigate("login")
+                }
+            }
+        }
+    }
+}
+```
+
+## カスタムアクションを処理する \{#handle-custom-actions\}
+
+その他のアクションを処理するボタンを追加するには：
+
+1. ペイウォールビルダーでボタンを追加し、**Custom**アクションを割り当ててIDを設定します。
+2. アプリのコードで、作成したアクションIDのハンドラーを実装します。
+
+たとえば、別のサブスクリプションオファーや買い切り購入がある場合、別のペイウォールを表示するボタンを追加できます：
+
+```kotlin
+
+class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
+    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                when (action.action) {
+                    "login" -> {
+                        // Handle login action - navigate to login screen
+                        // This depends on your app's navigation system
+                        // For example, in Compose Multiplatform:
+                        // navController.navigate("login")
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
+```

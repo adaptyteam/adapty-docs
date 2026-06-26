@@ -1,0 +1,148 @@
+---
+title: "Unity SDKでモバイルアプリ内購入を行う"
+description: "Adaptyを使用したアプリ内課金とサブスクリプションの処理ガイド。"
+metadataTitle: "AdaptyでのアプリIn-App購入の処理 | Adapty ドキュメント"
+keywords: ['makePurchase', 'pending', 'offer code']
+rank: 60
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/ja/reusable/OfferCodesInfo.mdx';
+
+モバイルアプリ内にペイウォールを表示することは、ユーザーにプレミアムコンテンツやサービスへのアクセスを提供するための重要なステップです。ただし、[ペイウォールビルダー](adapty-paywall-builder)を使ってペイウォールをカスタマイズしている場合は、ペイウォールを表示するだけで購入処理が完結します。
+
+ペイウォールビルダーを使用しない場合は、`.makePurchase()` という別のメソッドを使って購入を完了し、対象のコンテンツをアンロックする必要があります。このメソッドは、ユーザーがペイウォールを操作して購入を進めるための入口となります。
+
+ペイウォールに購入しようとしているプロダクトに対して有効なプロモーションオファーが設定されている場合、Adaptyは購入時に自動的にそのオファーを適用します。
+
+:::warning
+初回オファーが自動的に適用されるのは、ペイウォールビルダーで設定されたペイウォールを使用している場合のみです。
+
+それ以外の場合は、[iOS での初回オファーの適用資格をユーザーごとに確認する](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios)必要があります。このステップを省略すると、リリース時にアプリが審査でリジェクトされる可能性があります。また、初回オファーの対象となるユーザーに通常価格が請求されてしまう場合もあります。
+:::
+
+[初期設定](quickstart)をすべてのステップを漏らさず完了していることを確認してください。設定が完了していないと、購入の検証ができません。
+
+## 購入を行う \{#make-purchase\}
+
+:::note
+**[ペイウォールビルダー](adapty-paywall-builder)を使用していますか？** 購入は自動的に処理されるため、このステップは省略できます。
+
+**ステップバイステップのガイドをお探しですか？** エンドツーエンドの実装手順については、[クイックスタートガイド](unity-implement-paywalls-manually)をご確認ください。
+:::
+
+```csharp showLineNumbers
+using AdaptySDK;
+
+void MakePurchase(AdaptyPaywallProduct product) {
+  Adapty.MakePurchase(product, (result, error) => {
+    switch (result.Type) {
+      case AdaptyPurchaseResultType.Pending:
+        // handle pending purchase
+        break;
+      case AdaptyPurchaseResultType.UserCancelled:
+        // handle purchase cancellation
+        break;
+      case AdaptyPurchaseResultType.Success:
+        var profile = result.Profile;
+        // handle successfull purchase
+        break;
+      default:
+        break;
+    }
+  });
+}
+```
+
+リクエストパラメーター:
+
+| パラメーター | 必須/任意 | 説明                                                                                           |
+| :---------- | :------- |:------------------------------------------------------------------------------------------------------|
+| **Product** | 必須 | ペイウォールから取得した [`AdaptyPaywallProduct`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall_product.html) オブジェクト。 |
+
+レスポンスパラメーター:
+
+| パラメーター | 説明                                                                                                                                                                                                                                                                                                                                                                  |
+|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>リクエストが成功した場合、このオブジェクトがレスポンスに含まれます。[AdaptyProfile](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_profile.html) オブジェクトは、ユーザーのアクセスレベル、サブスクリプション、アプリ内の買い切り購入に関する包括的な情報を提供します。</p><p>アクセスレベルのステータスを確認して、ユーザーが必要なアクセス権を持っているかどうかを判断してください。</p> |
+
+:::warning
+**注意:** Apple の StoreKit バージョンが v2.0 未満、かつ Adapty SDK バージョンが v2.9.0 未満の場合は、代わりに [Apple App Store 共有シークレット](app-store-connection-configuration#step-5-enter-app-store-shared-secret)を提供する必要があります。この方法は現在 Apple によって非推奨とされています。
+:::
+
+## 購入時にサブスクリプションを変更する \{#change-subscription-when-making-a-purchase\}
+
+ユーザーが現在のサブスクリプションを更新する代わりに新しいサブスクリプションを選択する場合、動作はアプリストアによって異なります。
+
+- App Storeでは、サブスクリプショングループ内でサブスクリプションが自動的に更新されます。ユーザーがあるグループのサブスクリプションを購入した際に、別のグループのサブスクリプションがすでに有効な場合、両方のサブスクリプションが同時に有効になります。
+- Google Playでは、サブスクリプションは自動的に更新されません。以下に説明するように、モバイルアプリのコードで切り替え処理を管理する必要があります。
+
+Androidで別のサブスクリプションに切り替えるには、追加パラメーターを指定して `.makePurchase()` メソッドを呼び出します。
+
+```csharp showLineNumbers
+// Create subscription update parameters
+var subscriptionUpdateParams = new AdaptySubscriptionUpdateParameters(
+    "old_product_id", // Product ID of the current subscription
+    AdaptySubscriptionUpdateReplacementMode.WithTimeProration
+);
+
+Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
+  if(error != null) {
+      // Handle the error
+      return;
+  }
+
+  // successful cross-grade
+});
+```
+
+追加のリクエストパラメーター:
+
+| パラメーター                    | 必須/任意 | 説明                                                                                            |
+| :--------------------------- | :------- |:-------------------------------------------------------------------------------------------------------|
+| **subscriptionUpdateParams** | 必須 | [`AdaptySubscriptionUpdateParameters`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_subscription_update_parameters.html) オブジェクト。 |
+
+サブスクリプションと置き換えモードの詳細については、Google Developerのドキュメントをご参照ください。
+
+- [置き換えモードについて](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [置き換えモードに関するGoogleの推奨事項](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- 置き換えモード [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE())。注意: このメソッドはサブスクリプションのアップグレードにのみ使用できます。ダウングレードはサポートされていません。
+- 置き換えモード [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED())。注意: 実際のサブスクリプション変更は、現在のサブスクリプションの請求期間が終了した時点でのみ発生します。
+
+## iOSでオファーコードを利用する \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+アプリでコード引き換えシートを表示するには:
+
+```csharp showLineNumbers
+Adapty.PresentCodeRedemptionSheet((error) => {
+  // handle the error
+});
+```
+
+:::danger
+私たちの観察によると、一部のアプリではオファーコード引き換えシートが正常に動作しないことがあります。ユーザーをApp Storeに直接リダイレクトすることをお勧めします。
+
+そのためには、以下の形式のURLを開く必要があります:
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
+
+## プリペイドプランを管理する（Android） \{#manage-prepaid-plans-android\}
+
+アプリユーザーが[プリペイドプラン](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans)（例: 数か月分の非更新型サブスクリプションを購入する）を利用できる場合、プリペイドプランに対して[保留中のトランザクション](https://developer.android.com/google/play/billing/subscriptions#pending)を有効にできます。
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetGoogleEnablePendingPrepaidPlans(true);
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+```

@@ -1,0 +1,218 @@
+---
+title: "Bắt đầu với Adapty Mail"
+description: "Thiết lập Adapty Mail và khởi chạy email flow đầu tiên của bạn."
+metadataTitle: "Bắt đầu với Adapty Mail | Tài liệu Adapty"
+keywords: ['adapty mail']
+---
+
+Trong hướng dẫn này, bạn sẽ thiết lập Adapty Mail và khởi chạy email flow đầu tiên.
+
+:::note
+Bạn cũng có thể gửi dữ liệu đến Adapty Mail từ server của mình, không cần SDK. Nếu bạn đã lưu trữ email người dùng và dữ liệu mua hàng ở backend, hoặc đang import người đăng ký từ một nguồn khác, hãy xem [Gửi email và giao dịch qua Adapty Mail API](mail-send-data-via-api).
+:::
+
+Quá trình thiết lập gồm sáu phần:
+
+1. [Cấu hình SDK](#1-configure-your-adapty-sdk)
+2. [Thiết lập domain gửi email](#2-set-up-your-sending-domain)
+3. [Tạo web paywall](#3-create-a-web-paywall)
+4. [Tạo campaign bằng AI](#4-generate-a-campaign-with-ai)
+5. [Khởi chạy một flow](#5-launch-a-flow)
+6. [Bật tính năng gửi email](#6-enable-sending)
+
+:::tip
+Nếu bạn đăng ký Adapty Mail thông qua Adapty, **hồ sơ thương hiệu** của bạn sẽ được tạo tự động từ URL cửa hàng của dự án. Mở **Brand** bất cứ lúc nào để xem lại hoặc chỉnh sửa — xem [Brand](mail-brand). Nếu bạn đăng ký độc lập, hãy thiết lập thương hiệu trên cùng trang đó trước khi tạo campaign hoặc web paywall.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Đảm bảo các điều kiện sau đã được đáp ứng trước khi bắt đầu:
+
+- **Quyền truy cập DNS**: Bạn có thể thêm bản ghi vào domain gốc của mình.
+- **Nhà cung cấp thanh toán web**: Bạn có tài khoản Stripe, Paddle hoặc PayPal với các sản phẩm gói đăng ký đã được cấu hình.
+
+## 1. Cấu hình SDK \{#1-configure-your-adapty-sdk\}
+
+:::important
+Adapty Mail là một **sản phẩm độc lập**. Bạn có thể dùng nó ngay cả khi paywall, gói đăng ký hoặc phân tích của bạn không được xử lý bởi Adapty — không cần migrate toàn bộ hệ thống.
+
+Để có dữ liệu doanh thu chính xác, cấu hình tối thiểu là cài đặt SDK ở chế độ observer và bật thông báo server App Store.
+:::
+
+Adapty Mail cần ba thứ từ ứng dụng của bạn: dữ liệu mua hàng (để gắn doanh thu với email đã thúc đẩy mỗi lần chuyển đổi), một mã định danh người dùng ổn định, và email người dùng.
+
+1. **Cho phép Adapty theo dõi doanh thu của bạn.** Bước đầu tiên phụ thuộc vào việc bạn đã triển khai in-app purchase chưa:
+   - Nếu bạn **đã triển khai in-app purchase với Adapty**, bạn không cần làm thêm gì ở bước này.
+   - Nếu bạn **đã triển khai in-app purchase mà không dùng Adapty** và không có kế hoạch migrate sang Adapty, hãy cài đặt SDK cho nền tảng của bạn ở chế độ observer. Ở giai đoạn này, bạn chỉ cần thêm SDK vào dự án, kích hoạt nó với chế độ observer được bật, và báo cáo các giao dịch. Hướng dẫn theo nền tảng: [iOS](implement-observer-mode), [Android](implement-observer-mode-android), [React Native](implement-observer-mode-react-native), [Flutter](implement-observer-mode-flutter), [Unity](implement-observer-mode-unity), [Kotlin Multiplatform](implement-observer-mode-kmp), [Capacitor](implement-observer-mode-capacitor).
+   - Nếu bạn **chưa triển khai in-app purchase và muốn dùng Adapty**, hãy hoàn thành các bước trong [hướng dẫn quickstart](quickstart) để ủy quyền xử lý mua hàng cho Adapty.
+
+   Sau đó [bật thông báo server App Store trong Adapty](enable-app-store-server-notifications) để nhận các cập nhật liên quan đến doanh thu trực tiếp từ App Store.
+
+2. **Thiết lập định danh người dùng.** Truyền một ID ổn định — ID người dùng backend, Firebase UID, hoặc tương tự — bằng cách gọi `Adapty.identify()` hoặc truyền `customerUserId` vào `.activate()` lúc khởi động SDK. `customer_user_id` là cách Adapty Mail khớp campaign, lượt nhấp, và giao dịch mua hàng với đúng hồ sơ người dùng.
+
+   Hướng dẫn theo nền tảng: [iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), [Unity](unity-identifying-users), [Kotlin Multiplatform](kmp-identifying-users), [Capacitor](capacitor-identifying-users).
+
+3. **Thu thập email người dùng.** Khi người dùng cung cấp email trong ứng dụng (ví dụ: lúc đăng ký hoặc thanh toán), hãy truyền nó cho Adapty bằng cách gọi `updateProfile` với thuộc tính email. Mỗi người nhận trong campaign đều cần giá trị này.
+
+   Hướng dẫn theo nền tảng: [iOS](setting-user-attributes), [Android](android-setting-user-attributes), [React Native](react-native-setting-user-attributes), [Flutter](flutter-setting-user-attributes), [Unity](unity-setting-user-attributes), [Kotlin Multiplatform](kmp-setting-user-attributes), [Capacitor](capacitor-setting-user-attributes).
+
+   Nếu ứng dụng của bạn chưa thu thập email, xem [Chiến lược thu thập email](mail-collect-emails#email-collection-strategies).
+
+## 2. Thiết lập domain gửi email \{#2-set-up-your-sending-domain\}
+
+Adapty Mail gửi từ domain của riêng bạn. Bạn chỉ cần thêm bản ghi DNS một lần — tất cả campaign đều dùng chung domain đã xác minh.
+
+1. Trong Adapty Mail, vào **Settings → Email Domains**.
+2. Nhập domain gốc của bạn (ví dụ: `yourapp.com`) và nhấp **Preview**. Chỉ apex domain được chấp nhận — subdomain như `app.yourapp.com` sẽ bị từ chối ngay khi nhập.
+
+<ZoomImage id="mail-email-domains.webp" width="500px" />
+
+3. Adapty tạo hai subdomain gửi email (`mail.yourapp.com` và `email.yourapp.com`). Nhấp **Confirm** để xem các bản ghi DNS cần thiết.
+
+<ZoomImage id="confirm-subdomains.webp" width="500px" />
+
+4. Trong nhà đăng ký domain của bạn, thêm 10 bản ghi DNS được hiển thị (5 bản ghi mỗi subdomain):
+   - 3 bản ghi CNAME (DKIM) mỗi subdomain
+   - 1 bản ghi MX (Mail-From) mỗi subdomain
+   - 1 bản ghi TXT (SPF, `v=spf1 include:amazonses.com ~all`) mỗi subdomain
+5. Tùy chọn, thêm bản ghi DMARC TXT trên domain gốc của bạn (được khuyến nghị).
+6. Quay lại **Settings → Email Domains** và nhấp **Check Verification**.
+
+<ZoomImage id="email-domains.webp" width="500px" />
+
+Tổng quan về thời gian xác minh:
+
+- **Polling tự động**: Lần kiểm tra đầu tiên chạy khoảng 5 phút sau khi bạn gửi. Khoảng cách tăng dần lên mỗi giờ một lần cho đến khi tìm thấy bản ghi.
+- **Kiểm tra thủ công**: Nhấp **Check Verification** bất cứ lúc nào để kích hoạt kiểm tra ngay lập tức.
+- **Lan truyền DNS**: Thường mất vài phút, tối đa 48 giờ trong những trường hợp hiếm gặp.
+- **Cửa sổ xác minh**: 7 ngày. Nếu hết hạn, các bản ghi DNS của bạn vẫn còn nguyên — nhập lại domain của bạn trong **Settings → Email Domains** để bắt đầu cửa sổ mới.
+
+Để biết chi tiết về từng loại bản ghi và quá trình khởi động domain, xem [Thiết lập domain gửi email](mail-sending-domain).
+
+## 3. Tạo web paywall \{#3-create-a-web-paywall\}
+
+Mỗi email đều liên kết đến một web paywall — trang thanh toán mà người dùng truy cập khi nhấp vào CTA. Bạn có hai lựa chọn:
+
+- **Tạo bằng AI**: Để trình tạo web paywall tích hợp sẵn tạo một trang cho ứng dụng của bạn.
+- **Dùng paywall tự host**: Kết nối một paywall bạn đã tự host.
+
+Để bắt đầu, trong Adapty Mail vào **Web Paywalls → Create**.
+
+<ZoomImage id="new-web-paywall.webp" width="500px" />
+
+### Lựa chọn A: Tạo bằng AI \{#option-a-generate-with-ai\}
+
+Trang hiển thị danh sách **Prerequisites** với các nút inline — thực hiện theo thứ tự, rồi quay lại và tạo. Danh sách này bao gồm đăng nhập vào trình tạo paywall, kết nối Stripe, thêm sản phẩm, và xem lại kết quả. Xem [Thiết lập checkout](mail-checkout) để có hướng dẫn đầy đủ.
+
+Khi tất cả điều kiện tiên quyết đã xanh, nhấp **Generate** để mở hộp thoại tạo:
+
+- **Environment**: Chọn **Production** hoặc **Sandbox**. Sandbox dùng các sản phẩm chế độ test của Stripe và là lựa chọn mặc định an toàn cho môi trường phát triển và local.
+- **Plans**: Chọn tối đa **3 Stripe plans** (mỗi plan là một sản phẩm + giá). Đây là các ưu đãi mà paywall được tạo ra sẽ hiển thị cho người dùng khi thanh toán.
+
+Nhấp **Generate** để chạy quá trình build. Khi hoàn tất, mở trình chỉnh sửa để xem lại và publish.
+
+:::important
+Paywall phải được publish trước khi có thể phục vụ lưu lượng thanh toán. Các paywall chưa publish sẽ trả về lỗi khi người dùng nhấp vào liên kết thanh toán trong email.
+:::
+
+### Lựa chọn B: Dùng paywall tự host \{#option-b-use-your-own-hosted-paywall\}
+
+1. Chọn **Enter URL manually**.
+2. Dán URL của paywall bạn đã host. URL phải bao gồm các placeholder `{email}` và `{external_profile_id}` dưới dạng query parameter — Adapty Mail điền các giá trị này cho từng người nhận để trang thanh toán biết ai đang truy cập. Ví dụ:
+
+   ```
+   https://example.com/paywall?email={email}&profile={external_profile_id}
+   ```
+3. Lưu và publish.
+
+Để hiểu cấu trúc checkout funnel và cách cá nhân hóa hoạt động, xem [Thiết lập checkout](mail-checkout).
+
+<ZoomImage id="generate-web-paywall.webp" width="500px" />
+
+## 4. Tạo campaign bằng AI \{#4-generate-a-campaign-with-ai\}
+
+AI tạo toàn bộ chuỗi email cho bạn — nội dung, thiết kế, hình ảnh hero, và liên kết thanh toán được cá nhân hóa, tất cả được điều chỉnh theo thương hiệu của bạn.
+
+1. Trong Adapty Mail, vào **Campaigns** và nhấp **Create**.
+2. Đặt tên campaign.
+3. Trong dropdown **Web paywall**, chọn web paywall bạn đã thêm ở bước trước.
+
+<ZoomImage id="mail-new-campaign.webp" width="500px" />
+
+4. Nhấp **Generate emails**.
+5. Điền vào hộp thoại tạo — giọng điệu, ngôn ngữ, prompt tùy chỉnh tùy chọn (tối đa 2.000 ký tự), và số lượng email (1–15, mặc định 4). Xem [Tạo campaign](mail-create-campaign) để biết chức năng của từng trường.
+
+<ZoomImage id="generate-emails.webp" width="500px" />
+
+6. Nhấp **Generate**. Quá trình tạo thường mất vài phút. Hệ thống hết thời gian chờ sau 5 phút nếu không thể hoàn thành — hãy thử lại nếu điều đó xảy ra.
+7. Xem trước từng email. Header xem trước có **Theme toggle** (Auto, Light, Dark) để kiểm soát cách hiển thị xem trước — nội dung được tạo ra giống nhau ở tất cả các chế độ. Bạn có thể tạo lại từng email riêng lẻ, chỉnh sửa nội dung, hoặc mở trình chỉnh sửa HTML để kiểm soát chi tiết hơn.
+
+<ZoomImage id="generated-emails.webp" width="700px" />
+
+8. Nhấp **Create** để lưu campaign.
+
+Campaign được lưu dưới dạng **draft** và chưa gửi — campaign chỉ hoạt động khi được gắn vào một flow (bước tiếp theo). Không có hành động "publish" riêng trong trình chỉnh sửa campaign.
+
+## 5. Khởi chạy một flow \{#5-launch-a-flow\}
+
+Một flow kết hợp một **trigger** (một sự kiện như gói đăng ký hết hạn) với một **segment**, và gửi cho segment đó **campaign** bạn chọn. Adapty Mail đi kèm với năm trigger cố định, mỗi trigger có view flow riêng.
+
+1. Trong Adapty Mail, vào **Flows**, sau đó mở trigger bạn muốn cấu hình:
+   - **Never purchased** — người dùng đã đăng ký nhưng chưa mua hàng.
+   - **Renewal cancelled** — người dùng đã tắt tự động gia hạn nhưng vẫn còn gói đăng ký đang hoạt động.
+   - **Billing issue** — thanh toán thất bại, thẻ bị từ chối hoặc hết hạn, hoặc thời gian ân hạn.
+   - **Expired** — gói đăng ký đã hết hạn và quyền truy cập đã bị thu hồi.
+   - **Refunded** — người dùng đã yêu cầu hoàn tiền sau khi mua.
+
+   Xem [Flows](mail-flows) để hiểu mục tiêu và hướng dẫn giọng điệu cho từng trigger.
+
+2. Nhấp **Create** để mở hộp thoại.
+
+<ZoomImage id="create-flow-mail.webp" width="500px" />
+
+3. Trong hộp thoại:
+   - Chọn một **Segment** (ví dụ: **All Users** để nhắm mục tiêu tất cả mọi người khi họ kích hoạt trigger này, hoặc tạo một segment mới dựa trên thuộc tính hồ sơ người dùng).
+   - Để loại nội dung ở **Campaign** (tùy chọn A/B Test được đề cập trong [A/B testing](mail-ab-testing)).
+   - Chọn **Campaign** bạn đã lưu ở Bước 4.
+4. Nhấp **Save**.
+
+Flow hoạt động ngay lập tức — không có bước khởi chạy riêng. Từ thời điểm này, những người dùng khớp với segment sẽ bắt đầu nhận campaign ngay khi họ kích hoạt sự kiện trigger.
+
+:::note
+Bạn có thể thêm nhiều hơn một hàng segment → campaign vào cùng một trigger; chúng chạy theo thứ tự ưu tiên. Hàng **All Users**, nếu được dùng, phải là hàng cuối cùng (ưu tiên thấp nhất) để nó bắt tất cả những người không khớp với segment cụ thể hơn.
+:::
+
+<ZoomImage id="mail-flow-details.webp" width="500px" />
+
+## 6. Bật tính năng gửi email \{#6-enable-sending\}
+
+Cho đến thời điểm này, campaign của bạn đã được kết nối nhưng chưa thực sự hoạt động — **tích hợp Adapty** đồng bộ các sự kiện gói đăng ký vào Adapty Mail vẫn đang tắt. Bật nó lên là bước cuối cùng: các sự kiện bắt đầu chạy, các segment bắt đầu khớp, và email bắt đầu được gửi.
+
+Bước này chỉ mở khóa sau Bước 5. Trước khi bạn khởi chạy một flow, nút **Enable** trong **Settings → Integrations** bị vô hiệu hóa với tooltip *"Set up at least one flow before enabling Adapty integration."*
+
+1. Trong Adapty Mail, vào **Settings → Integrations**.
+2. Nhấp **Enable Adapty integration** (hoặc **Enable** nếu tích hợp đã tồn tại từ lần thiết lập trước).
+
+Khi được bật, Adapty gửi mọi sự kiện gói đăng ký — gói mới, gia hạn, dùng thử, chuyển đổi, hoàn tiền, vấn đề thanh toán — vào Adapty Mail. Các sự kiện này điều khiển tư cách thành viên segment, định tuyến campaign, và điều kiện dừng tạm dừng một chuỗi khi người dùng chuyển đổi.
+
+<ZoomImage id="adapty-mail-adapty-integration.webp" width="500px" />
+
+:::note
+Toggle **Adapty integration** trong Settings *không* giống với workspace đối tác Adapty đã đăng nhập bạn vào Adapty Mail. Workspace đối tác là thứ đã tạo tài khoản của bạn và (nếu bạn đăng ký qua Adapty) thương hiệu của bạn. Toggle tích hợp ở đây kiểm soát việc đồng bộ sự kiện — nó phải được bật theo từng dự án.
+:::
+
+## Xử lý sự cố \{#troubleshooting\}
+
+| Vấn đề | Giải pháp |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| Xác minh DNS bị kẹt | Kiểm tra các bản ghi khớp chính xác — không có dấu chấm ở cuối, đúng CNAME target. Đợi 5–10 phút, sau đó nhấp **Check Verification** lại |
+| Cửa sổ xác minh đã hết hạn | Các bản ghi của bạn vẫn còn nguyên. Nhập lại domain trong **Settings → Email Domains** để bắt đầu cửa sổ mới |
+| Tạo thất bại hoặc hết thời gian chờ | Kiểm tra kết nối internet và thử lại. Nếu vấn đề vẫn tiếp diễn, hãy liên hệ với bộ phận hỗ trợ Adapty |
+
+## Tìm hiểu thêm \{#learn-more\}
+
+- **[Thu thập email người dùng](mail-collect-emails)**: Chiến lược lấy email nếu ứng dụng của bạn chưa thu thập chúng.
+- **[Thiết lập domain gửi email](mail-sending-domain)**: Chi tiết bản ghi DNS, các cấp độ khởi động, và xử lý sự cố.
+- **[Thiết lập checkout](mail-checkout)**: Cấu trúc checkout funnel và cá nhân hóa.
+- **[Phân tích campaign](mail-analytics)**: Theo dõi khả năng gửi, mức độ tương tác, và doanh thu.
+- **[A/B testing](mail-ab-testing)**: Kiểm thử nhiều phiên bản chuỗi.

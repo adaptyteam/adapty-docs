@@ -1,0 +1,137 @@
+---
+title: "Superwallからの移行"
+description: "SuperwallからAdaptyへの移行を、SDKの全コールとコンセプトをマッピングしたステップバイステップガイドで行いましょう。"
+metadataTitle: "SuperwallからAdaptyへの移行 | Adapty ドキュメント"
+keywords: ['migration', 'superwall']
+---
+
+SuperwallからAdaptyへの移行は、ほとんどの場合2時間程度で完了します。SDKを入れ替え、ストアのサーバー通知をAdaptyに向け直し、新しいアプリリリースを公開するだけです。有料サブスクライバーはアクセスを維持できます — Adaptyは初回起動時にApp StoreとGoogle Playのレシートからアクセスを復元します。
+
+:::info
+サブスクライバーは自動的に移行されます
+
+サブスクリプションを有効化したことがあるすべてのユーザーは、Adapty SDKを搭載した新バージョンのアプリを開いた時点でAdaptyに移行されます。サブスクリプション状態の検証とプレミアムアクセスは自動的に復元されます。
+:::
+
+## このガイドの構成 \{#how-this-guide-is-organized\}
+
+移行は6つのステップで進みます：
+
+1. [SuperwallのコンセプトをAdaptyにマッピングする](#map-your-superwall-concepts-to-adapty)
+2. [Adapty SDKをインストールする](#install-the-adapty-sdk)
+3. [SDKの呼び出しを置き換える](#replace-sdk-calls)
+4. [App StoreとGoogle Playのサーバー通知を切り替える](#switch-app-store-and-google-play-server-notifications)
+5. [テストとリリース](#test-and-release)
+6. [(オプション) 過去のデータをインポートする](#optional-import-historical-data)
+
+## SuperwallのコンセプトをAdaptyにマッピングする \{#map-your-superwall-concepts-to-adapty\}
+
+Superwallのコンセプトのほとんどは、Adaptyに直接対応するものがあります：
+
+| Superwall            | Adapty                                            | 変更点                                                                 |
+| :------------------- | :------------------------------------------------ | :--------------------------------------------------------------------------- |
+| Campaign             | [プレースメント](placements) + [オーディエンス](audience)    | キャンペーンのロジックは、プレースメント（場所）とオーディエンス（ルール）に分かれます。 |
+| Placement            | [プレースメント](placements)                           | 同じコンセプト、同じ名前。                                                     |
+| Audience filter      | [オーディエンス](audience)                              | ルールセットはプレースメント内に存在します。                                           |
+| Entitlement          | [アクセスレベル](access-level)                      | 名前付き識別子（例：`premium`）。                                   |
+| WebView paywall      | [ペイウォールビルダーのペイウォール](adapty-paywall-builder) | `WKWebView`ではなく、Adapty SDKがネイティブにレンダリングします。                         |
+| `PurchaseController` | 組み込み                                          | 実装すべきプロトコルなし — Adaptyが購入処理を担当します。                         |
+| Feature gating       | [アクセスレベル](access-level)チェック                | `profile.accessLevels["premium"]?.isActive`を確認します。                           |
+
+コードに触れる前に、2つの考え方の転換を理解しておきましょう：
+
+- **フェッチと表示は別ステップです**: Superwallの`register`は、ペイウォールのフェッチ、キャンペーンの評価、UIの表示を1回の呼び出しで行います。Adaptyはこれらのステップを分けています — ペイウォールをフェッチし、その設定を取得してから表示します。手順は増えますが、設定のプリロード、カスタムローディング状態の表示、独自ロジックに基づいた表示のキャンセルが可能になります。
+- **サブスクリプション状態はアクセスレベルごとです**: Superwallは単一の`subscriptionStatus`パブリッシュプロパティを公開します。Adaptyは名前付きアクセスレベルを持つ[`AdaptyProfile`](https://swift.adapty.io/documentation/adapty/adaptyprofile)を返すため、1人のユーザーが`sports`と`science`のアクセスレベルを独立して持つことができます。同期的な読み取りには、ビューの読み込みごとに`getProfile()`を呼び出すのではなく、`AdaptyDelegate`からプロファイルをキャッシュしてください。
+
+## Adapty SDKをインストールする \{#install-the-adapty-sdk\}
+
+お使いのプラットフォーム向けのAdapty SDKをインストールしてください — [iOS](sdk-installation-ios)、[Android](sdk-installation-android)、[React Native](sdk-installation-reactnative)、[Flutter](sdk-installation-flutter)、[Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)、[Unity](sdk-installation-unity)、または[Capacitor](sdk-installation-capacitor) — そして同時にSuperwalKitをプロジェクトから削除してください。
+
+## SDKの呼び出しを置き換える \{#replace-sdk-calls\}
+
+インテグレーションの各部分を確認しながら、SupwallのコールをAdaptyの対応するものに置き換えてください。各サブセクションの末尾にあるリンクは7つのプラットフォームSDKすべてをカバーしています — アプリに合うものを参照してください。
+
+### SDKを初期化する \{#initialize-the-sdk\}
+
+`Superwall.configure`を`Adapty.activate`に置き換えます。
+
+お使いのプラットフォームのインストールガイドを参照してください — [iOS](sdk-installation-ios)、[Android](sdk-installation-android)、[React Native](sdk-installation-reactnative)、[Flutter](sdk-installation-flutter)、[Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)、[Unity](sdk-installation-unity)、または[Capacitor](sdk-installation-capacitor)。
+
+### ユーザーの識別とログアウト \{#identify-and-log-out-users\}
+
+`Superwall.shared.identify`を`Adapty.identify`に、`Superwall.shared.reset`を`Adapty.logout`に置き換えます。両SDKとも初回起動時に匿名プロファイルを生成するため、これらの呼び出しはユーザーのサインインまたはサインアウト時のみ必要です。識別後はペイウォールを再フェッチしてください — 新しいユーザーは別のオーディエンスに解決される可能性があります。
+
+お使いのプラットフォームの識別ガイドを参照してください — [iOS](identifying-users)、[Android](android-identifying-users)、[React Native](react-native-identifying-users)、[Flutter](flutter-identifying-users)、[Kotlin Multiplatform](kmp-identifying-users)、[Unity](unity-identifying-users)、または[Capacitor](capacitor-identifying-users)。
+
+### ペイウォールのフェッチと表示 \{#fetch-and-present-a-paywall\}
+
+`Superwall.shared.register`を2ステップのフローに置き換えます：`Adapty.getPaywall`でペイウォールをフェッチし、`AdaptyUI.getPaywallConfiguration`でビュー設定を読み込み、それから表示します。
+
+2つの違いに注目してください：
+
+- **`feature:`クロージャに代わるフィーチャーゲーティング**: ペイウォールが閉じた後、返されたプロファイル（または`Adapty.getProfile`）のアクティブなアクセスレベルを確認し、そこから分岐します。
+- **ペイウォールはSDKによってレンダリングされます**: Superwallは`WKWebView`内でペイウォールをレンダリングします。Adaptyはペイウォールビルダーのペイウォールをネイティブにレンダリングします — フォント、プロダクト情報、ボタンはSDKによって描画されます。
+
+お使いのプラットフォームのペイウォールクイックスタートを参照してください — [iOS](ios-quickstart-paywalls)、[Android](android-quickstart-paywalls)、[React Native](react-native-quickstart-paywalls)、[Flutter](flutter-quickstart-paywalls)、[Kotlin Multiplatform](kmp-quickstart-paywalls)、[Unity](unity-quickstart-paywalls)、または[Capacitor](capacitor-quickstart-paywalls)。
+
+### サブスクリプション状態を確認する \{#check-subscription-status\}
+
+`Superwall.shared.subscriptionStatus`を、プロファイルの名前付きアクセスレベルのチェックに置き換えます：`profile.accessLevels["premium"]?.isActive`。変更の監視は`@Published`プロパティパターンの代わりに`AdaptyDelegate.didLoadLatestProfile(_:)`を使用し、同期的な読み取りのためにプロファイルをキャッシュしてください。
+
+お使いのプラットフォームのサブスクリプション状態確認ガイドを参照してください — [iOS](ios-check-subscription-status)、[Android](android-check-subscription-status)、[React Native](react-native-check-subscription-status)、[Flutter](flutter-check-subscription-status)、[Kotlin Multiplatform](kmp-check-subscription-status)、[Unity](unity-check-subscription-status)、または[Capacitor](capacitor-check-subscription-status)。
+
+### 購入と復元を処理する \{#handle-purchases-and-restores\}
+
+ペイウォールビルダーを使用する場合、両SDKともペイウォールUI内で購入を自動的に処理します — **このステップはスキップできます**。
+
+カスタムペイウォールの場合、Superwallは`PurchaseController`の実装を必要とします。Adaptyは不要です：`PurchaseController.purchase`を`Adapty.makePurchase`に、`PurchaseController.restorePurchases`を`Adapty.restorePurchases`に置き換えてください。SDKが自動的に検証を処理します。
+
+お使いのプラットフォームのカスタムペイウォールクイックスタートを参照してください — [iOS](ios-quickstart-manual)、[Android](android-quickstart-manual)、[React Native](react-native-quickstart-manual)、[Flutter](flutter-quickstart-manual)、[Kotlin Multiplatform](kmp-quickstart-manual)、[Unity](unity-quickstart-manual)、または[Capacitor](capacitor-quickstart-manual)。
+
+### ユーザー属性を設定する \{#set-user-attributes\}
+
+`Superwall.shared.setUserAttributes`を`Adapty.updateProfile`に置き換えます。
+
+お使いのプラットフォームのユーザー属性ガイドを参照してください — [iOS](setting-user-attributes)、[Android](android-setting-user-attributes)、[React Native](react-native-setting-user-attributes)、[Flutter](flutter-setting-user-attributes)、[Kotlin Multiplatform](kmp-setting-user-attributes)、[Unity](unity-setting-user-attributes)、または[Capacitor](capacitor-setting-user-attributes)。
+
+## App StoreとGoogle Playのサーバー通知を切り替える \{#switch-app-store-and-google-play-server-notifications\}
+
+ストアのサーバー通知をAdaptyに向け直してください。Adaptyはそれなしでも動作しますが、アナリティクス、サードパーティインテグレーション、A/Bテストの指標はこれに依存しています：
+
+- **App Store**: [App Storeサーバー通知を有効にする](enable-app-store-server-notifications)の手順に従ってください。
+- **Google Play**: [リアルタイム開発者通知を有効にする](enable-real-time-developer-notifications-rtdn)の手順に従ってください。
+
+ロールアウト中にSuperwallとAdaptyを並行して動かしたい場合は、[rawイベントフォワーディング](enable-app-store-server-notifications#raw-events-forwarding)を使用してください — AdaptyがストアイベントをそのままのかたちでSuperwallに転送する一方で、新しいインテグレーションを検証できます。
+
+## テストとリリース \{#test-and-release\}
+
+リリース前に、各項目を確認してください：
+
+- [x] Adapty ダッシュボードを設定済み（プロダクト、ペイウォール、プレースメント、アクセスレベル）
+- [x] Adapty SDKをインストール済み
+- [x] Superwall SDKの呼び出しをAdaptyの対応するものに置き換え済み
+- [x] App StoreとGoogle PlayのサーバーNotificationsをAdaptyに向け直し済み
+- [ ] サンドボックス購入を実施済み
+- [ ] 新しいアプリリリースを提出済み
+
+最終検証として[リリースチェックリスト](release-checklist)を確認してください。
+
+## (オプション) 過去のデータをインポートする \{#optional-import-historical-data\}
+
+Superwallはサブスクリプション状態を所有していません — それはApp StoreとGoogle Playが所有しています。Adaptyは初回起動時にレシートを検証するため、有料ユーザーはインポートなしでアクセスを維持できます。
+
+過去のトランザクションをAdaptyアナリティクスにバックフィルしたい場合は、[Adaptyへの過去データのインポート](importing-historical-data-to-adapty)の手順に従ってください。SDKが新しい購入価格を収集する時間を確保するため、SDKリリース後少なくとも1週間待ってください。
+
+## よくある質問 \{#faq\}
+
+### アプリを更新しないサブスクライバーはどうなりますか？ \{#what-happens-to-subscribers-who-dont-update-the-app\}
+
+ほとんどのユーザーは夜間に自動更新するため、旧バージョンを使用しているユーザーの割合は急速に減少します。旧バージョンのサブスクライバーは、App StoreまたはGoogle Playを通じて直接アクセスを維持します — 強制更新は必要ありません。
+
+### Superwallのキャンペーンオーディエンスは引き継がれますか？ \{#do-my-superwall-campaign-audiences-carry-over\}
+
+いいえ。SuperwallのオーディエンスフィルターとAdaptyのオーディエンスは異なるダッシュボードで設定され、異なる識別子を使用します。ターゲティングをAdaptyの[プレースメント](placements)内の[オーディエンス](audience)として再作成してください。ほとんどのアプリは1〜2つのプレースメント（オンボーディングと一般的なアプリ内トリガー）を使用しているため、再構築は通常短時間で完了します。
+
+### `getPresentationResult`に相当するものはAdaptyにありますか？ \{#does-adapty-have-an-equivalent-to-getpresentationresult\}
+
+単一の呼び出しとしては存在しません。プレースメントがペイウォールを表示するかどうかを確認するには、`Adapty.getPaywall(placementId:)`を呼び出し、結果に基づいて分岐します。呼び出しが成功すれば、そのユーザーのオーディエンスにペイウォールが割り当てられています。ペイウォールが設定されていないために失敗した場合は、表示をスキップしてフォールバックロジックを実行してください。

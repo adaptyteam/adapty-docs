@@ -1,0 +1,107 @@
+---
+title: "Kích hoạt giao dịch mua trong paywall tùy chỉnh của bạn trong Capacitor SDK"
+description: "Tích hợp Adapty SDK vào các paywall tùy chỉnh trên Capacitor để kích hoạt in-app purchase."
+metadataTitle: "Hướng dẫn Bắt đầu Nhanh với Adapty | Tài liệu Adapty"
+keywords: ['paywalls capacitor', 'sdk capacitor', 'paywall', 'getPaywall']
+---
+
+Hướng dẫn này mô tả cách tích hợp Adapty vào các paywall tùy chỉnh của bạn. Bạn hoàn toàn kiểm soát việc triển khai paywall, trong khi Adapty SDK lo việc lấy sản phẩm, xử lý giao dịch mua mới và khôi phục các giao dịch trước đó.
+
+:::important
+**Hướng dẫn này dành cho các nhà phát triển đang triển khai paywall tùy chỉnh.** Nếu bạn muốn cách đơn giản nhất để kích hoạt giao dịch mua, hãy sử dụng [Adapty Paywall Builder](capacitor-quickstart-paywalls). Với Paywall Builder, bạn tạo paywall trong trình chỉnh sửa trực quan không cần code, Adapty tự động xử lý toàn bộ logic giao dịch, và bạn có thể kiểm tra các thiết kế khác nhau mà không cần phát hành lại ứng dụng.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+### Thiết lập sản phẩm \{#set-up-products\}
+
+Để kích hoạt in-app purchase, bạn cần hiểu ba khái niệm chính:
+
+- [**Sản phẩm**](product) – bất cứ thứ gì người dùng có thể mua (gói đăng ký, consumable, quyền truy cập trọn đời)
+- [**Paywalls**](paywalls) – các cấu hình xác định sản phẩm nào sẽ được cung cấp. Trong Adapty, paywall là cách duy nhất để lấy sản phẩm, nhưng thiết kế này cho phép bạn chỉnh sửa sản phẩm, giá cả và ưu đãi mà không cần thay đổi code ứng dụng.
+- [**Placements**](placements) – nơi và thời điểm hiển thị paywall trong ứng dụng của bạn (ví dụ: `main`, `onboarding`, `settings`). Bạn thiết lập paywall cho các placement trong dashboard, sau đó yêu cầu chúng theo placement ID trong code. Điều này giúp bạn dễ dàng chạy A/B test và hiển thị các paywall khác nhau cho các nhóm người dùng khác nhau.
+
+Hãy đảm bảo bạn hiểu các khái niệm này ngay cả khi bạn làm việc với paywall tùy chỉnh. Về cơ bản, đây chỉ là cách bạn quản lý các sản phẩm bán trong ứng dụng.
+
+Để triển khai paywall tùy chỉnh, bạn cần tạo một **paywall** và thêm nó vào một **placement**. Thiết lập này cho phép bạn lấy các sản phẩm. Để hiểu những gì cần làm trên dashboard, hãy xem hướng dẫn bắt đầu nhanh [tại đây](quickstart).
+
+### Quản lý người dùng \{#manage-users\}
+
+Bạn có thể làm việc với hoặc không có xác thực backend ở phía mình.
+
+Tuy nhiên, Adapty SDK xử lý người dùng ẩn danh và người dùng đã xác định theo cách khác nhau. Đọc [hướng dẫn bắt đầu nhanh về nhận dạng người dùng](capacitor-quickstart-identify) để hiểu rõ các đặc điểm và đảm bảo bạn đang làm việc với người dùng đúng cách.
+
+## Bước 1. Lấy sản phẩm \{#step-1-get-products\}
+
+Để lấy sản phẩm cho paywall tùy chỉnh, bạn cần:
+
+1. Lấy đối tượng `paywall` bằng cách truyền [placement](placements) ID vào phương thức `getPaywall`.
+2. Lấy mảng sản phẩm cho paywall này bằng phương thức `getPaywallProducts`.
+
+```typescript showLineNumbers
+
+async function loadPaywall() {
+  try {
+    const paywall: AdaptyPaywall = await adapty.getPaywall({
+      placementId: 'YOUR_PLACEMENT_ID'
+    });
+
+    const products: AdaptyPaywallProduct[] = await adapty.getPaywallProducts({
+      paywall
+    });
+
+    // Use products to build your custom paywall UI
+  } catch (error) {
+    // Handle the error
+  }
+}
+```
+
+## Bước 2. Chấp nhận giao dịch mua \{#step-2-accept-purchases\}
+
+Khi người dùng nhấn vào một sản phẩm trong paywall tùy chỉnh của bạn, hãy gọi phương thức `makePurchase` với sản phẩm đã chọn. Phương thức này sẽ xử lý luồng giao dịch và trả về hồ sơ người dùng đã cập nhật.
+
+```typescript showLineNumbers
+
+async function purchaseProduct(product: AdaptyPaywallProduct) {
+  try {
+    const result: AdaptyPurchaseResult = await adapty.makePurchase({ product });
+
+    if (result.type === 'success') {
+      // Purchase successful, profile updated
+    } else if (result.type === 'user_cancelled') {
+      // User canceled the purchase
+    } else if (result.type === 'pending') {
+      // Purchase is pending (e.g., user will pay offline with cash)
+    }
+  } catch (error) {
+    // Handle the error
+  }
+}
+```
+
+## Bước 3. Khôi phục giao dịch mua \{#step-3-restore-purchases\}
+
+Các cửa hàng ứng dụng yêu cầu tất cả ứng dụng có gói đăng ký phải cung cấp cách để người dùng khôi phục giao dịch mua của họ.
+
+Gọi phương thức `restorePurchases` khi người dùng nhấn nút khôi phục. Phương thức này sẽ đồng bộ lịch sử giao dịch của họ với Adapty và trả về hồ sơ người dùng đã cập nhật.
+
+```typescript showLineNumbers
+
+async function restorePurchases() {
+  try {
+    const profile: AdaptyProfile = await adapty.restorePurchases();
+    // Restore successful, profile updated
+  } catch (error) {
+    // Handle the error
+  }
+}
+```
+
+## Các bước tiếp theo \{#next-steps\}
+
+<SupportForum />
+
+Paywall của bạn đã sẵn sàng để hiển thị trong ứng dụng. Hãy kiểm tra giao dịch mua trong [sandbox App Store](test-purchases-in-sandbox) hoặc trong [Google Play Store](testing-on-android) để đảm bảo bạn có thể hoàn thành một giao dịch mua thử nghiệm từ paywall. Để xem cách hoạt động trong một triển khai sẵn sàng cho môi trường sản xuất, hãy xem [App.tsx](https://github.com/adaptyteam/AdaptySDK-Capacitor/blob/master/examples/adapty-devtools/src/screens/app/App.tsx) trong ứng dụng ví dụ của chúng tôi, nơi minh họa cách xử lý giao dịch mua với xử lý lỗi phù hợp, trạng thái tải và tích hợp SDK toàn diện.
+
+Tiếp theo, [kiểm tra xem người dùng đã hoàn thành giao dịch mua chưa](capacitor-check-subscription-status) để xác định có nên hiển thị paywall hay cấp quyền truy cập các tính năng trả phí.

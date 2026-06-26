@@ -1,0 +1,113 @@
+---
+title: "Kotlin Multiplatform SDKのカスタムペイウォールで購入を有効にする"
+description: "Adapty SDKをKotlin Multiplatformのカスタムペイウォールに統合して、アプリ内課金を有効にします。"
+metadataTitle: "Adapty クイックスタートガイド | Adapty ドキュメント"
+keywords: ['paywalls kmp', 'sdk kmp', 'paywall', 'getPaywall']
+---
+
+このガイドでは、カスタムペイウォールにAdaptyを統合する方法を説明します。ペイウォールの実装を完全にコントロールしながら、Adapty SDKがプロダクトの取得、新規購入の処理、過去の購入の復元を行います。
+
+:::important
+**このガイドは、カスタムペイウォールを実装する開発者向けです。** 最も簡単に購入を有効にする方法を使いたい場合は、[Adapty ペイウォールビルダー](kmp-quickstart-paywalls)をご利用ください。ペイウォールビルダーでは、ノーコードのビジュアルエディターでペイウォールを作成でき、Adaptyがすべての購入ロジックを自動で処理します。アプリを再公開せずに異なるデザインをテストすることも可能です。
+:::
+
+## 始める前に \{#before-you-start\}
+
+### プロダクトのセットアップ \{#set-up-products\}
+
+アプリ内課金を有効にするには、3つの重要な概念を理解する必要があります。
+
+- [**プロダクト**](product) – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセスなど）
+- [**ペイウォール**](paywalls) – 提供するプロダクトを定義する設定。Adaptyでは、ペイウォールがプロダクトを取得する唯一の手段です。この設計により、アプリのコードに触れることなく、プロダクト・価格・オファーを変更できます。
+- [**プレースメント**](placements) – アプリ内でペイウォールを表示する場所とタイミング（例：`main`、`onboarding`、`settings`）。ダッシュボードでプレースメントにペイウォールを設定し、コード上でプレースメントIDを指定してリクエストします。これにより、A/Bテストの実施や、ユーザーごとに異なるペイウォールを表示することが簡単になります。
+
+カスタムペイウォールを使う場合でも、これらの概念を理解しておくことが重要です。基本的には、アプリで販売するプロダクトを管理するための仕組みです。
+
+カスタムペイウォールを実装するには、**ペイウォール**を作成して**プレースメント**に追加する必要があります。この設定により、プロダクトを取得できるようになります。ダッシュボードで何をすべきかを理解するには、[こちら](quickstart)のクイックスタートガイドに従ってください。
+
+### ユーザーの管理 \{#manage-users\}
+
+バックエンド認証の有無にかかわらず利用できます。
+
+ただし、Adapty SDKは匿名ユーザーと識別済みユーザーを異なる方法で処理します。詳細を理解し、ユーザーを正しく扱うには、[識別クイックスタートガイド](kmp-quickstart-identify)をお読みください。
+
+## ステップ1. プロダクトを取得する \{#step-1-get-products\}
+
+カスタムペイウォール用のプロダクトを取得するには、次の手順を実行します。
+
+1. `getPaywall`メソッドに[プレースメント](placements)IDを渡して`paywall`オブジェクトを取得する。
+2. `getPaywallProducts`メソッドを使って、このペイウォールのプロダクト配列を取得する。
+
+```kotlin showLineNumbers
+
+fun loadPaywall() {
+    Adapty.getPaywall(placementId = "YOUR_PLACEMENT_ID")
+        .onSuccess { paywall ->
+            Adapty.getPaywallProducts(paywall = paywall)
+                .onSuccess { products ->
+                    // Use products to build your custom paywall UI
+                }
+                .onError { error ->
+                    // Handle the error
+                }
+        }
+        .onError { error ->
+            // Handle the error
+        }
+}
+```
+
+## ステップ2. 購入を受け付ける \{#step-2-accept-purchases\}
+
+ユーザーがカスタムペイウォール内でプロダクトをタップしたら、選択したプロダクトを引数に`makePurchase`メソッドを呼び出します。これにより購入フローが処理され、更新されたプロファイルが返されます。
+
+```kotlin showLineNumbers
+
+fun purchaseProduct(product: AdaptyPaywallProduct) {
+    Adapty.makePurchase(product = product)
+        .onSuccess { purchaseResult ->
+            when (purchaseResult) {
+                is AdaptyPurchaseResult.Success -> {
+                    val profile = purchaseResult.profile
+                    // Purchase successful, profile updated
+                }
+                is AdaptyPurchaseResult.UserCanceled -> {
+                    // User canceled the purchase
+                }
+                is AdaptyPurchaseResult.Pending -> {
+                    // Purchase is pending (e.g., user will pay offline with cash)
+                }
+            }
+        }
+        .onError { error ->
+            // Handle the error
+        }
+}
+```
+
+## ステップ3. 購入を復元する \{#step-3-restore-purchases\}
+
+アプリストアは、サブスクリプションを提供するすべてのアプリに対して、ユーザーが購入を復元できる手段を提供することを求めています。
+
+ユーザーが復元ボタンをタップしたら`restorePurchases`メソッドを呼び出します。これにより購入履歴がAdaptyと同期され、更新されたプロファイルが返されます。
+
+```kotlin showLineNumbers
+
+fun restorePurchases() {
+    Adapty.restorePurchases()
+        .onSuccess { profile ->
+            // Restore successful, profile updated
+        }
+        .onError { error ->
+            // Handle the error
+        }
+}
+```
+
+## 次のステップ \{#next-steps\}
+
+<SupportForum />
+
+ペイウォールをアプリに表示する準備が整いました。[App Storeサンドボックス](test-purchases-in-sandbox)または[Google Play Store](testing-on-android)でテスト購入を完了できることを確認してください。本番環境に近い実装例については、サンプルアプリの[AppViewModel.kt](https://github.com/adaptyteam/AdaptySDK-KMP/blob/main/example/composeMultiplatformApp/composeApp/src/commonMain/kotlin/com/adapty/exampleapp/AppViewModel.kt)を参照してください。適切なエラーハンドリングと状態管理を含む購入処理の実装例が確認できます。
+
+次に、[ユーザーが購入を完了しているかどうかを確認](kmp-check-subscription-status)し、ペイウォールを表示するか有料機能へのアクセスを許可するかを判断します。

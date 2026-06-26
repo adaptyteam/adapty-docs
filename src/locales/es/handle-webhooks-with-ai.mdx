@@ -1,0 +1,144 @@
+---
+title: "Gestiona eventos de suscripción de Adapty con webhooks"
+description: "Recibe y gestiona eventos de suscripción de Adapty en tu servidor con webhooks — configuración del endpoint, autenticación, payload y pruebas en una sola página."
+metadataTitle: "Gestiona eventos de suscripción de Adapty con webhooks | Documentación de Adapty"
+keywords: ['adapty webhook', 'eventos de suscripción', 'integración de webhook', 'gestionar eventos de suscripción', 'webhook handler', 'agente de ia', 'llm']
+---
+Los webhooks permiten que tu servidor reciba eventos de suscripción de Adapty en tiempo real — compras, renovaciones, cancelaciones, problemas de facturación y reembolsos — para que puedas otorgar acceso, sincronizar tu backend o activar flujos de trabajo. Esta guía te lleva desde el endpoint hasta una integración verificada y probada en una sola página, y muestra cómo hacer que un agente de codificación con IA escriba el handler para tu stack.
+
+:::tip
+¿Usando un agente de codificación con IA? Haz clic en **Copy for LLM** bajo el título y pega toda esta página en tu agente — tiene la configuración, el payload y la lógica del handler que necesita.
+:::
+## Cómo funcionan los webhooks de Adapty \{#how-adapty-webhooks-work\}
+
+- **Unidireccional y en tiempo real**: Adapty envía un `POST` HTTP a tu servidor cuando ocurre un evento — sin polling.
+- **Dos tipos de solicitud**: Una solicitud de verificación única (enviada al guardar la integración) y los eventos de suscripción continuos.
+- **Una URL por entorno**: Configuras un endpoint independiente para producción y para el sandbox.
+- **Debes confirmar cada solicitud**: Responde con un estado `2xx` rápidamente; Adapty reintentará en caso de fallo.
+## Crea tu endpoint \{#build-your-endpoint\}
+
+Crea un endpoint HTTPS público que gestione dos tipos de solicitudes:
+
+- **Solicitud de verificación**: Se envía una vez cuando guardas la integración. Tiene un cuerpo JSON vacío (`{}`). Responde con un estado `2xx` y un cuerpo JSON.
+- **Eventos de suscripción**: Solicitudes `POST` continuas con el evento en el cuerpo. Responde `200` en menos de 10 segundos y realiza cualquier tarea pesada de forma asíncrona.
+Elige una cadena secreta y guárdala como variable de entorno (por ejemplo, `ADAPTY_WEBHOOK_SECRET`). En cada petición, comprueba que el encabezado `Authorization` coincide con ella y rechaza la petición si no coincide — el mismo secreto lo introducirás en el dashboard a continuación.
+```javascript title="webhook.js"
+
+const app = express();
+app.use(express.json());
+
+const WEBHOOK_SECRET = process.env.ADAPTY_WEBHOOK_SECRET;
+
+app.post("/adapty/webhook", (req, res) => {
+  // 1. Verify the shared secret Adapty echoes back.
+  if (req.get("Authorization") !== WEBHOOK_SECRET) {
+    return res.sendStatus(401);
+  }
+
+  // 2. Acknowledge fast, then process asynchronously.
+  res.status(200).json({});
+
+  // 3. The verification request has an empty body — nothing to handle.
+  const event = req.body;
+  if (!event.event_type) return;
+
+  switch (event.event_type) {
+    case "subscription_started":
+    case "subscription_renewed":
+    case "trial_converted":
+      // Grant or extend access.
+      break;
+    case "subscription_expired":
+    case "subscription_refunded":
+      // Revoke access.
+      break;
+    default:
+      break;
+  }
+});
+
+app.listen(3000);
+```
+
+Despliega el endpoint en una URL HTTPS pública antes de configurar la integración: Adapty envía la solicitud de verificación en el momento en que guardas.
+### Eventos clave y el payload \{#key-events-and-the-payload\}
+
+Todos los eventos comparten el mismo sobre. Los campos varían según el tipo de evento, el store y las opciones que hayas activado. Aquí tienes un ejemplo reducido del evento `subscription_started`:
+```json title="Example event"
+{
+  "profile_id": "00000000-0000-0000-0000-000000000000",
+  "customer_user_id": "UserIdInYourSystem",
+  "event_type": "subscription_started",
+  "event_datetime": "2024-11-15T10:45:36.181000+0000",
+  "event_properties": {
+    "store": "play_store",
+    "currency": "USD",
+    "price_usd": 4.99,
+    "vendor_product_id": "onemonth_no_trial",
+    "transaction_id": "0000000000000000",
+    "original_transaction_id": "0000000000000000",
+    "subscription_expires_at": "2024-12-15T10:45:36.181000+0000",
+    "profile_event_id": "00000000-0000-0000-0000-000000000000"
+  },
+  "event_api_version": 1
+}
+```
+
+Los eventos que gestionarás con más frecuencia:
+| Tipo de evento | Se activa cuando |
+| --- | --- |
+| `subscription_started` | Un usuario inicia una suscripción de pago |
+| `subscription_renewed` | Una suscripción se renueva y se cobra con éxito |
+| `subscription_renewal_cancelled` | Un usuario desactiva la renovación automática (el acceso dura hasta la fecha de expiración) |
+| `subscription_expired` | El acceso termina después de que una suscripción no renovada caduca |
+| `trial_started` | Un usuario inicia una prueba gratuita |
+| `trial_converted` | Una prueba se convierte en una suscripción de pago |
+| `billing_issue_detected` | Falla el pago de una renovación |
+| `subscription_refunded` | Se reembolsa una compra de suscripción |
+Para la lista completa de eventos y cada campo, consulta [Tipos de eventos y campos de webhook](https://adapty.io/docs/es/webhook-event-types-and-fields.md).
+
+:::warning
+No ordenes los eventos por `event_datetime` — es el momento de negocio del evento, por lo que los eventos pueden llegar desordenados o compartir el mismo timestamp. Ordénalos por tu propio tiempo de recepción y deduplícalos usando `profile_event_id` o los IDs de transacción.
+:::
+## Configura el webhook en Adapty \{#configure-the-webhook-in-adapty\}
+1. Abre [Integrations → Webhook](https://app.adapty.io/integrations/customwebhook) en el Adapty Dashboard.
+2. Activa la integración.
+3. En **Production endpoint URL**, introduce la URL HTTPS del endpoint que has desplegado.
+4. En **Authorization header value for production endpoint**, introduce el mismo secreto que comprueba tu endpoint. Adapty envía este valor en el header `Authorization` en cada petición. Es opcional, pero muy recomendable.
+5. Para probar primero en sandbox, rellena también **Sandbox endpoint URL** y su **Authorization header value**.
+6. Haz clic en **Save**. Adapty envía inmediatamente la solicitud de verificación a tu endpoint, que responde con un `2xx` para completar la configuración.
+Para elegir qué eventos enviar, asignar nombres de eventos o habilitar campos opcionales (precio de prueba, eventos históricos, atribución, atributos de usuario, token de Play Store), consulta [Configurar la integración de webhook](https://adapty.io/docs/es/set-up-webhook-integration.md).
+
+<ZoomImage id="handle-webhooks-dashboard-config.webp" width="700px" alt="Configuración de la integración de webhook en el Adapty Dashboard con los campos de URL del endpoint de producción y el valor del encabezado de autorización" />
+## Constrúyelo con tu agente de programación IA \{#build-it-with-your-ai-coding-agent\}
+
+Dale a tu agente de programación IA esta guía y la documentación de referencia en Markdown (añade `.md` a cualquier URL de página), indícale tu stack y deja que genere el handler:
+
+- [Tipos de eventos y campos del webhook](https://adapty.io/docs/es/webhook-event-types-and-fields.md)
+- [Configurar la integración de webhook](https://adapty.io/docs/es/set-up-webhook-integration.md)
+
+Ejemplo de prompt:
+```
+Read these Adapty webhook docs, then write a webhook handler for my Express app:
+verify the Authorization header against ADAPTY_WEBHOOK_SECRET, answer the
+verification request, acknowledge events with 200, and grant or revoke access
+based on event_type.
+```
+
+The agent writes the handler code, but it can't deploy your endpoint or configure the dashboard — host the endpoint yourself and set the URL and secret in **Integrations → Webhook**.
+## Prueba tu webhook \{#test-your-webhook\}
+
+Prueba en el sandbox antes de pasar a producción:
+
+1. Configura el endpoint de sandbox y el secreto tal como se describe arriba.
+2. En tu app de sandbox, realiza una compra, inicia una prueba o emite un reembolso para activar un evento.
+3. Abre la sección **Last sent events** de la integración. Un evento entregado correctamente muestra el estado **Success**.
+
+Si un evento muestra **Sending failed**, tu servidor devolvió un estado fuera del rango 200–399 — pasa el cursor sobre el estado para ver los detalles. Para ver el proceso de prueba completo, consulta [Probar la integración de webhook](https://adapty.io/docs/es/test-webhook.md).
+<ZoomImage id="handle-webhooks-test-result.webp" width="700px" alt="Lista de últimos eventos enviados de la integración de Webhook que muestra un evento entregado con el estado Success" />
+## Límites \{#limits\}
+
+- **Responde en menos de 10 segundos**: Si Adapty no recibe respuesta a tiempo, considera el intento como fallido y reintenta.
+- **Reintentos**: Si tu código de estado está fuera del rango 200–404, Adapty reintenta con retroceso exponencial — hasta 9 reintentos en 24 horas.
+- **Retraso en cancelaciones**: Los eventos de cancelación pueden tardar hasta 2 horas en llegar.
+- **Una URL por entorno**: Para enviar eventos a varios servicios, apunta el webhook a tu propio backend y distribúyelos desde allí.

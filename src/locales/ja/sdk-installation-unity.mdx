@@ -1,0 +1,337 @@
+---
+title: "Unity SDK のインストールと設定"
+description: "サブスクリプション型アプリ向けに Unity に Adapty SDK をインストールするためのステップバイステップガイド。"
+metadataTitle: "Unity への Adapty SDK インストール | Adapty ドキュメント"
+keywords: ['install sdk', 'sdk install', 'install sdk unity', 'google play billing library', 'gpbl', 'billing library']
+rank: 30
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+import GetKey from '@site/src/locales/ja/reusable/GetKey.md';
+import AndroidBackupRules from '@site/src/locales/ja/reusable/AndroidBackupRules.md';
+import InstallationPrereqs from '@site/src/locales/ja/reusable/InstallationPrereqs.mdx';
+
+Adapty SDK には、Unity アプリへのシームレスな統合を実現するための 2 つの主要モジュールが含まれています。
+
+- **Core Adapty**: アプリで Adapty を正常に動作させるために必要な SDK です。
+- **AdaptyUI**: クロスプラットフォーム対応のペイウォールをノーコードで簡単に作成できるツール [Adapty ペイウォールビルダー](adapty-paywall-builder) を使用する場合に必要なモジュールです。
+
+:::tip
+Adapty SDK がモバイルアプリにどのように統合されているかの実例を確認したい場合は、[サンプルアプリ](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Assets)をご覧ください。ペイウォールの表示、購入処理、その他の基本機能を含む完全なセットアップを確認できます。
+:::
+
+## 要件 \{#requirements\}
+
+Adapty SDK は iOS 13.0 以上をサポートしていますが、ペイウォールビルダーで作成したペイウォールを使用するには iOS 15.0 以上が必要です。
+
+:::info
+Adapty は Google Play Billing Library 8.x 以下と互換性があります。デフォルトでは、Adapty は Google Play Billing Library v7.0.0 を使用します。新しいバージョンを使用するには、Android ビルドで [Billing の依存関係を上書き](https://developer.android.com/google/play/billing/integrate#dependency)してください。
+:::
+
+<InstallationPrereqs />
+
+## Adapty SDK のインストール \{#install-adapty-sdk\}
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Unity.svg?style=flat&logo=unity)](https://github.com/adaptyteam/AdaptySDK-Unity/releases)
+
+1. GitHub から [`adapty-unity-plugin-*.unitypackage`](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Releases) をダウンロードし、プロジェクトにインポートします。
+
+<Zoom>
+  <img src="/assets/shared/img/456bd98-adapty-unity-plugin.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '400px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. [External Dependency Manager プラグイン](https://github.com/googlesamples/unity-jar-resolver)をダウンロードしてインポートします。
+
+3. SDK は「External Dependency Manager」プラグインを使用して iOS Cocoapods の依存関係と Android gradle の依存関係を管理します。インストール後、依存関係マネージャーを手動で実行する必要がある場合があります。
+
+   `Assets -> External Dependency Manager -> Android Resolver -> Force Resolve`
+
+   および
+
+   `Assets -> External Dependency Manager -> iOS Resolver -> Install Cocoapods`
+
+4. Unity プロジェクトを iOS 向けにビルドすると `Unity-iPhone.xcworkspace` ファイルが生成されます。Cocoapods の依存関係を使用するために、`Unity-iPhone.xcodeproj` ではなく、この `Unity-iPhone.xcworkspace` を開いてください。
+
+## Adapty SDK の Adapty モジュールを有効化する \{#activate-adapty-module-of-adapty-sdk\}
+
+アプリのコードで Adapty SDK を有効化します。
+
+:::note
+Adapty SDK はアプリ内で一度だけ有効化する必要があります。
+:::
+
+<GetKey />
+
+```csharp showLineNumbers title="C#"
+using UnityEngine;
+using AdaptySDK;
+
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+    void Start() {
+        DontDestroyOnLoad(this.gameObject);
+        Adapty.SetEventListener(this);
+
+        var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY");
+
+        Adapty.Activate(builder.Build(), (error) => {
+            if (error != null) {
+                // handle the error
+                return;
+            }
+        });
+    }
+
+    public void OnLoadLatestProfile(AdaptyProfile profile) { }
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+}
+```
+
+:::important
+他の Adapty SDK メソッドを呼び出す前に、`Activate` のコールバックが完了するまで待機してください。詳細な呼び出し順序については [Unity SDK の呼び出し順序](unity-sdk-call-order)を参照してください。
+:::
+
+## イベントリスニングの設定 \{#set-up-event-listening\}
+
+Adapty のイベントを受け取るスクリプトを作成し、シーン内で `AdaptyListener` という名前を付けます。このオブジェクトにはアプリのライフサイクル全体を通じて持続させるため `DontDestroyOnLoad` メソッドの使用を推奨します。
+
+<Zoom>
+  <img src="/assets/shared/img/2ccd564-create_adapty_listener.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Adapty は `AdaptySDK` 名前空間を使用します。Adapty SDK を使用するスクリプトファイルの先頭に以下を追加できます。
+
+```csharp showLineNumbers title="C#"
+using AdaptySDK;
+```
+
+Adapty のイベントを購読します。
+
+```csharp showLineNumbers title="C#"
+using UnityEngine;
+using AdaptySDK;
+
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+    public void OnLoadLatestProfile(AdaptyProfile profile) {
+        // handle updated profile data
+    }
+
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+}
+```
+
+Adapty ができるだけ早く初期化されるよう、スクリプト実行順序を調整して AdaptyListener をデフォルト時間より前に配置することをお勧めします。
+
+<Zoom>
+  <img src="/assets/shared/img/activate_unity.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## プロジェクトに Kotlin プラグインを追加する \{#add-kotlin-plugin-to-your-project\}
+
+:::warning
+
+この手順は必須です。スキップすると、ペイウォールの表示時にモバイルアプリがクラッシュする可能性があります。
+
+:::
+
+1. **Player Settings** で、**Custom Launcher Gradle Template** と **Custom Base Gradle Template** のオプションが選択されていることを確認します。
+   <Zoom>
+   <img src="/assets/shared/img/kotlin-plugin1.webp"
+   style={{
+   border: 'none', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+
+2. `/Assets/Plugins/Android/launcherTemplate.gradle` に以下の行を追加します。
+
+   ```groovy showLineNumbers
+   apply plugin: 'com.android.application'
+   // highlight-next-line
+   apply plugin: 'kotlin-android'
+   apply from: 'setupSymbols.gradle'
+   apply from: '../shared/keepUnitySymbols.gradle'
+   ```
+
+3. `/Assets/Plugins/Android/baseProjectTemplate.gradle` に以下の行を追加します。
+
+   ```groovy showLineNumbers
+   plugins {
+       // If you are changing the Android Gradle Plugin version, make sure it is compatible with the Gradle version preinstalled with Unity
+       // See which Gradle version is preinstalled with Unity here https://docs.unity3d.com/Manual/android-gradle-overview.html
+       // See official Gradle and Android Gradle Plugin compatibility table here https://developer.android.com/studio/releases/gradle-plugin#updating-gradle
+       // To specify a custom Gradle version in Unity, go do "Preferences > External Tools", uncheck "Gradle Installed with Unity (recommended)" and specify a path to a custom Gradle version
+       id 'com.android.application' version '8.3.0' apply false
+       id 'com.android.library' version '8.3.0' apply false
+   // highlight-next-line
+       id 'org.jetbrains.kotlin.android' version '1.8.0' apply false
+       **BUILD_SCRIPT_DEPS**
+   }
+   ```
+
+次に、アプリのペイウォールを設定します。
+
+- [Adapty ペイウォールビルダー](adapty-paywall-builder)を使用する場合は、まず以下の [AdaptyUI モジュールを有効化する](#activate-adaptyui-module-of-adapty-sdk)手順を完了してから、[ペイウォールビルダーのクイックスタート](unity-quickstart-paywalls)に従ってください。
+- 独自のペイウォール UI を構築する場合は、[カスタムペイウォールのクイックスタート](unity-quickstart-manual)を参照してください。
+
+## Adapty SDK の AdaptyUI モジュールを有効化する \{#activate-adaptyui-module-of-adapty-sdk\}
+
+[ペイウォールビルダー](adapty-paywall-builder)を使用する予定があり、AdaptyUI モジュールをインストール済みの場合は、AdaptyUI を有効化する必要があります。設定時に有効化できます。
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetActivateUI(true);
+```
+
+## オプション設定 \{#optional-setup\}
+
+### ログ \{#logging\}
+
+#### ログシステムの設定 \{#set-up-the-logging-system\}
+
+Adapty は、何が起きているかを把握できるようにエラーやその他の重要な情報をログに記録します。以下のログレベルが利用可能です。
+
+| レベル     | 説明                                                                                                        |
+| ---------- | ----------------------------------------------------------------------------------------------------------- |
+| `error`    | エラーのみ記録されます                                                                                      |
+| `warn`     | エラーと、致命的なエラーではないものの注意が必要な SDK からのメッセージが記録されます                       |
+| `info`     | エラー、警告、および各種情報メッセージが記録されます                                                        |
+| `verbose`  | 関数呼び出し、API クエリなど、デバッグ中に役立つ可能性のある追加情報が記録されます                         |
+
+Adapty の設定時にアプリのログレベルを設定できます。
+
+```csharp showLineNumbers title="C#"
+// 'verbose' is recommended for development and the first production release
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY");
+builder.LogLevel = AdaptyLogLevel.Verbose;
+```
+
+実行時にログレベルを変更することもできます。
+
+```csharp showLineNumbers title="C#"
+Adapty.SetLogLevel(AdaptyLogLevel.Verbose, (error) => {
+    // handle result
+});
+```
+
+### データポリシー \{#data-policies\}
+
+Adapty は明示的に送信しない限りユーザーの個人データを保存しませんが、ストアや国のガイドラインに準拠するための追加のデータセキュリティポリシーを実装できます。
+
+#### IP アドレスの収集と共有を無効にする \{#disable-ip-address-collection-and-sharing\}
+
+Adapty モジュールを有効化する際に、`SetIPAddressCollectionDisabled` を `true` に設定すると、ユーザーの IP アドレスの収集と共有が無効になります。デフォルト値は `false` です。
+
+このパラメータは、ユーザーのプライバシーを強化したり、GDPR や CCPA などの地域のデータ保護規制に準拠したり、IP ベースの機能がアプリに不要な場合に不要なデータ収集を減らすために使用してください。
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetIPAddressCollectionDisabled(true);
+```
+
+#### 広告 ID の収集と共有を無効にする \{#disable-advertising-id-collection-and-sharing\}
+
+Adapty モジュールを有効化する際に、`SetAppleIDFACollectionDisabled` および/または `SetGoogleAdvertisingIdCollectionDisabled` を `true` に設定すると、広告識別子の収集が無効になります。デフォルト値は `false` です。
+
+このパラメータは、App Store / Google Play のポリシーに準拠したり、App Tracking Transparency プロンプトの表示を回避したり、アプリで広告 ID に基づくアトリビューションやアナリティクスが不要な場合に使用してください。
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAppleIDFACollectionDisabled(true)
+    .SetGoogleAdvertisingIdCollectionDisabled(true);
+```
+
+#### AdaptyUI のメディアキャッシュ設定を行う \{#set-up-media-cache-configuration-for-adaptyui\}
+
+デフォルトでは、AdaptyUI はパフォーマンスの向上とネットワーク使用量の削減のために画像や動画などのメディアをキャッシュします。カスタム設定を提供することでキャッシュの設定をカスタマイズできます。
+
+`SetAdaptyUIMediaCache` を使用してデフォルトのキャッシュ設定を上書きします。
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAdaptyUIMediaCache(
+        100 * 1024 * 1024, // MemoryStorageTotalCostLimit 100MB
+        null, // MemoryStorageCountLimit
+        100 * 1024 * 1024 // DiskStorageSizeLimit 100MB
+    );
+```
+
+パラメータ:
+
+| パラメータ                  | 必須     | 説明                                                                             |
+|-----------------------------|----------|----------------------------------------------------------------------------------|
+| memoryStorageTotalCostLimit | 任意     | メモリ内の合計キャッシュサイズ（バイト）。プラットフォーム固有のデフォルト値を使用します。 |
+| memoryStorageCountLimit     | 任意     | メモリストレージのアイテム数の上限。プラットフォーム固有のデフォルト値を使用します。     |
+| diskStorageSizeLimit        | 任意     | ディスク上のファイルサイズの上限（バイト）。プラットフォーム固有のデフォルト値を使用します。 |
+
+
+### ローカルアクセスレベルを有効にする（Android）\{#enable-local-access-levels-android\}
+
+デフォルトでは、[ローカルアクセスレベル](local-access-levels)は iOS で有効、Android で無効になっています。Android でも有効にするには、`SetGoogleLocalAccessLevelAllowed` を `true` に設定します。
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetGoogleLocalAccessLevelAllowed(true);
+```
+
+### バックアップ復元時にデータを消去する \{#clear-data-on-backup-restore\}
+
+`SetAppleClearDataOnBackup` を `true` に設定すると、SDK はアプリが iCloud バックアップから復元されたことを検知し、キャッシュされたプロファイル情報、プロダクト詳細、ペイウォールを含むローカルに保存されたすべての SDK データを削除します。その後、SDK はクリーンな状態で初期化されます。デフォルト値は `false` です。
+
+:::note
+削除されるのはローカルの SDK キャッシュのみです。Apple とのトランザクション履歴および Adapty サーバー上のユーザーデータは変更されません。
+:::
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAppleClearDataOnBackup(true);
+```
+
+## トラブルシューティング \{#troubleshooting\}
+
+#### Android バックアップルール（自動バックアップ設定）\{#android-backup-rules-auto-backup-configuration\}
+
+<AndroidBackupRules />
+
+:::important
+Unity では、これらの変更を `Assets/Plugins/Android/AndroidManifest.xml` に適用し、バックアップルールファイルを `Assets/Plugins/Android/res/xml/` 以下に作成してください。
+:::
+
+#### Android で別のアプリから戻った後に購入が失敗する \{#purchases-fail-after-returning-from-another-app-in-android\}
+
+購入フローを開始する Activity が非デフォルトの `launchMode` を使用している場合、ユーザーが Google Play、銀行アプリ、またはブラウザから戻ったときに Android が Activity を誤って再作成または再利用する可能性があります。これにより、購入結果が失われたりキャンセルとして処理されたりすることがあります。
+
+購入が正常に機能するよう、購入フローを開始する Activity には `standard` または `singleTop` の起動モードのみを使用し、他のモードは避けてください。
+
+`AndroidManifest.xml` で、購入フローを開始する Activity が `standard` または `singleTop` に設定されていることを確認してください。
+
+```xml
+<activity
+    android:name=".MainActivity"
+    android:launchMode="standard" />
+```

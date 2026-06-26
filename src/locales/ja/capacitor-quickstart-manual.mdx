@@ -1,0 +1,107 @@
+---
+title: "Capacitor SDKのカスタムペイウォールで購入を有効にする"
+description: "Adapty SDKをCapacitorのカスタムペイウォールに統合して、アプリ内課金を有効にします。"
+metadataTitle: "Adapty クイックスタートガイド | Adapty ドキュメント"
+keywords: ['paywalls capacitor', 'sdk capacitor', 'paywall', 'getPaywall']
+---
+
+このガイドでは、カスタムペイウォールにAdaptyを統合する方法を説明します。Adapty SDKがプロダクトの取得、新規購入の処理、過去の購入の復元を行いながら、ペイウォールの実装を完全にコントロールできます。
+
+:::important
+**このガイドはカスタムペイウォールを実装する開発者向けです。** 購入を手軽に有効にしたい場合は、[Adapty ペイウォールビルダー](capacitor-quickstart-paywalls)をご利用ください。ペイウォールビルダーを使えば、ノーコードのビジュアルエディターでペイウォールを作成でき、Adaptyがすべての購入ロジックを自動的に処理するため、アプリを再公開することなく異なるデザインをテストできます。
+:::
+
+## 始める前に \{#before-you-start\}
+
+### プロダクトのセットアップ \{#set-up-products\}
+
+アプリ内課金を有効にするには、次の3つの主要な概念を理解する必要があります。
+
+- [**プロダクト**](product) – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセス）
+- [**ペイウォール**](paywalls) – どのプロダクトを提供するかを定義する設定。Adaptyでは、ペイウォールがプロダクトを取得する唯一の手段ですが、この設計によりアプリのコードを変更せずにプロダクト、価格、オファーを変更できます。
+- [**プレースメント**](placements) – アプリ内でペイウォールを表示する場所とタイミング（`main`、`onboarding`、`settings`など）。ダッシュボードでプレースメントに対してペイウォールを設定し、コード内ではプレースメントIDで取得します。これにより、A/Bテストの実行や異なるユーザーへの異なるペイウォールの表示が簡単になります。
+
+カスタムペイウォールを使用する場合でも、これらの概念を理解しておいてください。基本的には、アプリで販売するプロダクトを管理する方法です。
+
+カスタムペイウォールを実装するには、**ペイウォール**を作成して**プレースメント**に追加する必要があります。この設定でプロダクトを取得できます。ダッシュボードで必要な作業を理解するには、[こちら](quickstart)のクイックスタートガイドに従ってください。
+
+### ユーザー管理 \{#manage-users\}
+
+バックエンド認証があってもなくても利用できます。
+
+ただし、Adapty SDKは匿名ユーザーと識別済みユーザーを異なる方法で扱います。詳細を理解し、ユーザーを適切に扱うために[識別クイックスタートガイド](capacitor-quickstart-identify)をお読みください。
+
+## ステップ1. プロダクトを取得する \{#step-1-get-products\}
+
+カスタムペイウォール用のプロダクトを取得するには、次の手順に従います。
+
+1. `getPaywall`メソッドに[プレースメント](placements)IDを渡して`paywall`オブジェクトを取得する。
+2. `getPaywallProducts`メソッドを使って、このペイウォールのプロダクト配列を取得する。
+
+```typescript showLineNumbers
+
+async function loadPaywall() {
+  try {
+    const paywall: AdaptyPaywall = await adapty.getPaywall({
+      placementId: 'YOUR_PLACEMENT_ID'
+    });
+
+    const products: AdaptyPaywallProduct[] = await adapty.getPaywallProducts({
+      paywall
+    });
+
+    // Use products to build your custom paywall UI
+  } catch (error) {
+    // Handle the error
+  }
+}
+```
+
+## ステップ2. 購入を受け付ける \{#step-2-accept-purchases\}
+
+ユーザーがカスタムペイウォールのプロダクトをタップしたら、選択したプロダクトを指定して`makePurchase`メソッドを呼び出します。これにより購入フローが処理され、更新されたプロファイルが返されます。
+
+```typescript showLineNumbers
+
+async function purchaseProduct(product: AdaptyPaywallProduct) {
+  try {
+    const result: AdaptyPurchaseResult = await adapty.makePurchase({ product });
+
+    if (result.type === 'success') {
+      // Purchase successful, profile updated
+    } else if (result.type === 'user_cancelled') {
+      // User canceled the purchase
+    } else if (result.type === 'pending') {
+      // Purchase is pending (e.g., user will pay offline with cash)
+    }
+  } catch (error) {
+    // Handle the error
+  }
+}
+```
+
+## ステップ3. 購入を復元する \{#step-3-restore-purchases\}
+
+アプリストアでは、サブスクリプションを提供するすべてのアプリに対して、ユーザーが購入を復元できる手段を提供することを求めています。
+
+ユーザーが復元ボタンをタップしたら`restorePurchases`メソッドを呼び出します。これにより購入履歴がAdaptyと同期され、更新されたプロファイルが返されます。
+
+```typescript showLineNumbers
+
+async function restorePurchases() {
+  try {
+    const profile: AdaptyProfile = await adapty.restorePurchases();
+    // Restore successful, profile updated
+  } catch (error) {
+    // Handle the error
+  }
+}
+```
+
+## 次のステップ \{#next-steps\}
+
+<SupportForum />
+
+ペイウォールをアプリに表示する準備ができました。[App Storeサンドボックス](test-purchases-in-sandbox)または[Google Play Store](testing-on-android)でテスト購入を完了できるか確認してください。本番環境に近い実装例については、サンプルアプリの[App.tsx](https://github.com/adaptyteam/AdaptySDK-Capacitor/blob/master/examples/adapty-devtools/src/screens/app/App.tsx)を参照してください。適切なエラーハンドリング、ローディング状態、包括的なSDK統合を含む購入処理の実装例を確認できます。
+
+次に、[ユーザーが購入を完了したかどうかを確認](capacitor-check-subscription-status)して、ペイウォールを表示するか有料機能へのアクセスを許可するかを判断します。

@@ -1,0 +1,307 @@
+---
+title: "React Native SDKでオンボーディングを表示する"
+description: "React Nativeでオンボーディングを表示してコンバージョンと収益を向上させる方法を解説します。"
+metadataTitle: "React Nativeでオンボーディングを表示する | Adapty ドキュメント"
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+
+ペイウォールビルダーを使ってオンボーディングをカスタマイズした場合、モバイルアプリのコード上でレンダリング処理を実装しなくても、ユーザーに表示できます。このようなオンボーディングには、表示する内容と表示方法の両方が含まれています。
+
+始める前に、以下を確認してください：
+
+1. [Adapty React Native SDK](sdk-installation-reactnative) 3.8.0 以降をインストール済みであること。
+2. [オンボーディングを作成](create-onboarding)済みであること。
+3. オンボーディングを[プレースメント](placements)に追加済みであること。
+
+Adapty React Native SDK では、オンボーディングを表示する方法が2つあります：
+- **Reactコンポーネント**: 埋め込み型コンポーネントとして、アプリのアーキテクチャやナビゲーションシステムに統合できます。
+
+- **モーダル表示**
+## React コンポーネント \{#react-component\}
+
+`AdaptyOnboardingView` コンポーネントを React Native のコンポーネント階層に直接組み込むことで、既存のコンポーネントツリーにオンボーディングを埋め込めます。埋め込み型コンポーネントを使うと、アプリのアーキテクチャやナビゲーションシステムとシームレスに統合できます。
+
+:::note
+Android では、視覚的なレンダリングアーティファクトを避けるために、`AdaptyOnboardingView` の追加設定を推奨します。詳しくは [Android でシステム UI がオンボーディングコンテンツと重なる場合](#system-ui-overlaps-onboarding-content-on-android) を参照してください。
+:::
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK バージョン 3.14 以降" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
+  const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+      onClose={onClose}
+      onCustom={onCustom}
+      onPaywall={onPaywall}
+      onStateUpdated={onStateUpdated}
+      onFinishedLoading={onFinishedLoading}
+      onError={onError}
+    />
+  );
+}
+```
+</TabItem>
+<TabItem value="old" label="SDK バージョン < 3.14" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={{ flex: 1 }}
+      eventHandlers={{
+        onAnalytics(event, meta) { 
+          // Handle analytics events
+        },
+        onClose(actionId, meta) { 
+          // Handle close actions
+        },
+        onCustom(actionId, meta) { 
+          // Handle custom actions
+        },
+        onPaywall(actionId, meta) { 
+          // Handle paywall actions
+        },
+        onStateUpdated(action, meta) { 
+          // Handle state updates
+        },
+        onFinishedLoading(meta) { 
+          // Handle when onboarding finishes loading
+        },
+        onError(error) { 
+          // Handle errors
+        },
+      }}
+    />
+  );
+}
+```
+</TabItem>
+</Tabs>
+## モーダル表示 \{#modal-presentation\}
+
+オンボーディングをユーザーが閉じられるスタンドアロン画面として表示するには、`createOnboardingView` メソッドで作成した `view` に対して `view.present()` メソッドを使用します。各 `view` は一度しか使用できません。オンボーディングを再度表示する必要がある場合は、`createOnboardingView` をもう一度呼び出して新しい `view` インスタンスを作成してください。
+
+:::warning
+同じ `view` を再作成せずに再利用することは禁止されています。これを行うと `AdaptyUIError.viewAlreadyPresented` エラーが発生します。
+:::
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createOnboardingView(onboarding);
+
+// Optional: handle onboarding events (close, custom actions, etc)
+// view.setEventHandlers({ ... });
+
+try {
+    await view.present();
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="old" label="SDK version < 3.14" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createOnboardingView(onboarding);
+
+view.registerEventHandlers(); // handle close press, etc
+
+try {
+    await view.present();
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+</Tabs>
+### iOSの表示スタイルを設定する \{#configure-ios-presentation-style\}
+
+`present()` メソッドに `iosPresentationStyle` パラメーターを渡すことで、iOSでのペイウォールの表示方法を設定できます。パラメーターには `'full_screen'`（デフォルト）または `'page_sheet'` を指定できます。
+
+```typescript showLineNumbers
+try {
+  await view.present({ iosPresentationStyle: 'page_sheet' });
+} catch (error) {
+  // handle the error
+}
+```
+
+## オンボーディング中のローダー \{#loader-during-onboarding\}
+
+React Native でオンボーディングを表示する際、オンボーディングが表示される前に短い白いフラッシュやローディング画面が表示されることがあります。これは、基盤となるネイティブビューが初期化される間に発生します。ニーズやワークフローに応じて、さまざまな方法で対処できます。
+
+#### onFinishedLoading を使ったスプラッシュ画面の制御 \{#control-splash-screen-using-onfinishedloading\}
+
+:::note
+このアプローチは React コンポーネントを使用する場合にのみ利用可能です。モーダル表示には対応していません。
+:::
+React Nativeで推奨されるアプローチは、オンボーディングが完全に読み込まれるまでスプラッシュスクリーンまたはカスタムオーバーレイを表示し続け、その後手動で非表示にすることです。
+
+Reactコンポーネント（`AdaptyOnboardingView`）を使用する場合は、スプラッシュスクリーンやオーバーレイを非表示にする前に`onFinishedLoading`イベントを待ちます：
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK バージョン 3.14 以降" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const [isLoading, setIsLoading] = useState(true);
+
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
+    // Hide your splash screen or custom overlay here
+    setIsLoading(false);
+  }, []);
+
+  return (
+    <>
+      <AdaptyOnboardingView
+        onboarding={onboarding}
+        onFinishedLoading={onFinishedLoading}
+        // ... other callbacks
+      />
+      {isLoading && <YourCustomLoadingOverlay />}
+    </>
+  );
+}
+```
+
+</TabItem>
+
+<TabItem value="old" label="SDK バージョン < 3.14">
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const [isLoading, setIsLoading] = useState(true);
+
+  return (
+    <>
+      <AdaptyOnboardingView
+        onboarding={onboarding}
+        eventHandlers={{
+          onFinishedLoading(meta) {
+            // Hide your splash screen or custom overlay here
+            setIsLoading(false);
+          },
+          // ... other handlers
+        }}
+      />
+      {isLoading && <YourCustomLoadingOverlay />}
+    </>
+  );
+}
+```
+
+</TabItem>
+</Tabs>
+
+#### ネイティブローダーのカスタマイズ \{#customize-native-loader\}
+
+:::important
+Expo マネージドワークフローでは、カスタムネイティブレイアウト（Android の `res/layout` など）を配置することはサポートされていません。Expo アプリの場合、スプラッシュスクリーンを制御するか、React Native オーバーレイを使用するのが唯一の選択肢です。
+:::
+
+Android と iOS それぞれのプラットフォーム固有のレイアウトを使って、ネイティブローダーを差し替えることができます。モーダル表示を使用している場合は、この方法が唯一の選択肢になります。
+
+ただし、React Native アプリではこのアプローチは通常あまり便利ではありません。
+
+- Android と iOS で別々の実装が必要
+- Expo マネージドワークフローとは互換性がない
+各プラットフォーム向けにプレースホルダーを定義します：
+
+- **iOS**: `AdaptyOnboardingPlaceholderView.xib` を Xcode プロジェクトに追加します。[詳細はこちら](ios-present-onboardings#add-smooth-transitions-between-the-splash-screen-and-onboarding)。
+- **Android**: `res/layout` に `adapty_onboarding_placeholder_view.xml` を作成し、プレースホルダーを定義します。[詳細はこちら](android-present-onboardings#add-smooth-transitions-between-the-splash-screen-and-onboarding)。
+## オンボーディングでのリンクの開き方をカスタマイズする \{#customize-how-links-open-in-onboardings\}
+
+:::important
+オンボーディングでのリンクの開き方のカスタマイズは、Adapty SDK v3.15.1 以降でサポートされています。
+:::
+
+デフォルトでは、オンボーディング内のリンクはアプリ内ブラウザで開きます。これにより、ユーザーはアプリを切り替えることなくウェブページを閲覧でき、シームレスなユーザー体験が提供されます。
+
+外部ブラウザでリンクを開くように変更したい場合は、`externalUrlsPresentation` パラメータを `WebPresentation.BrowserOutApp` に設定してこの動作をカスタマイズできます。
+<Tabs groupId="rn-onboarding-views" queryString>
+<TabItem value="component" label="React component" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
+  const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      externalUrlsPresentation={WebPresentation.BrowserOutApp} // default – BrowserInApp
+      onAnalytics={onAnalytics}
+      onClose={onClose}
+      onCustom={onCustom}
+      onPaywall={onPaywall}
+      onStateUpdated={onStateUpdated}
+      onFinishedLoading={onFinishedLoading}
+      onError={onError}
+    />
+  );
+}
+```
+</TabItem>
+<TabItem value="modal" label="Modal presentation">
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createOnboardingView(
+  onboarding, 
+  { externalUrlsPresentation: WebPresentation.BrowserOutApp } // default – BrowserInApp
+);
+
+try {
+    await view.present();
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+</Tabs>
+## トラブルシューティング \{#troubleshooting\}
+
+### システムUIがAndroidのオンボーディングコンテンツと重なる \{#system-ui-overlaps-onboarding-content-on-android\}
+
+:::note
+この設定はベアReact Nativeプロジェクトでのみサポートされています。
+
+Expoマネージドワークフローを使用している場合、このAndroidリソースを直接追加することはできません。この設定を適用するには、対応するAndroidリソースを追加するカスタムExpo設定プラグインを作成し、app.config.jsに登録する必要があります。ExpoがネイティブAndroidプロジェクトを管理しているため、この手順が必要です。
+:::
+Androidで`AdaptyOnboardingView`を使用すると、ステータスバーやナビゲーションバーなどのシステムUI要素がペイウォールコンテンツの上に表示される場合があります。これを防ぐには、次のboolean リソースをアプリに追加してください：
+
+1. `android/app/src/main/res/values` に移動します。`bools.xml` ファイルがない場合は作成してください。
+
+2. 次のリソースを追加します：
+
+```xml
+<resources>
+    <bool name="adapty_onboarding_enable_safe_area_paddings">false</bool>
+</resources>
+```
+
+この変更はアプリ内のすべてのオンボーディングにグローバルに適用されます。
+## 次のステップ \{#next-steps\}
+
+オンボーディングを表示したら、[ユーザーのインタラクションとイベントの処理](react-native-handling-onboarding-events)について確認しましょう。オンボーディングイベントを処理して、ユーザーのアクションに応答したりアナリティクスを追跡したりする方法を学べます。

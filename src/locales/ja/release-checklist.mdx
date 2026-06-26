@@ -1,0 +1,123 @@
+---
+title: "リリースチェックリスト"
+description: "Adaptyのリリースチェックリストに従って、スムーズなアプリのアップデートプロセスを確保しましょう。"
+metadataTitle: "アプリリリースチェックリスト | Adapty ドキュメント"
+---
+
+Adaptyをご利用いただきありがとうございます！実装がうまくいったことを願っています。このガイドでは、アプリをストアに公開する準備が整っているか確認するための手順を説明します。これにより、マネタイゼーションフローが正しく機能していることを安心して確認できます。
+
+## 事前確認事項 \{#pre-flight-essentials\}
+
+バリデーションを始める前に必要なもの：
+
+- サンドボックスアカウントを持つ実機デバイス
+
+- Adapty ダッシュボードへのアクセス
+
+- App Store Connect / Google Play Console へのアクセス
+
+:::note
+サンドボックス購入はシミュレーターでも実行できますが、支払いダイアログや生体認証プロンプトを含むすべてのフローを完全にテストするには実機デバイスが必要です。
+:::
+
+<Button id="test-purchases-in-sandbox">
+    App Store向けテストガイド
+</Button>
+
+<Button id="testing-on-android">
+    Google Play向けテストガイド
+</Button>
+
+## 共通バリデーション \{#universal-validations\}
+
+- [ ] **ストア接続**: AdaptyをApp StoreおよびGoogle Playに接続していることを確認してください：
+    - [ ] [App Store](initial_ios)
+    - [ ] [Google Play](initial-android)
+- [ ] **サブスクリプションイベントの配信**: サーバー通知が設定されていることを確認してください：
+    - [ ] [App Serverサーバー通知](enable-app-store-server-notifications)
+    - [ ] [リアルタイム開発者通知（RTDN）](enable-real-time-developer-notifications-rtdn)
+- [ ] **プロファイルの識別**: ユーザー識別ロジックを検証し、購入が正しいプロファイルに紐付けられていることを確認してください：
+    - [ ] [アプリコードの識別ロジックがユースケースに合っているか確認する](ios-quickstart-identify)
+    - [ ] [ユーザープロファイル間で有料アクセスを共有するための親/継承ロジックを理解しているか確認する](sharing-paid-access-between-user-accounts)
+- [ ] **オファー**: アプリにApp Storeのプロモーションオファーがある場合、[アプリ内購入キー](app-store-connection-configuration#step-4-for-trials-and-special-offers--set-up-promotional-offers)をメインフィールドと **App Store promotional offers** セクションの両方に追加していることを確認してください。
+- [ ] **データ収集**: プライバシーへの準拠を確保してください：
+    - [ ] GDPRやCCPAなどのプライバシー規制に準拠する必要がある場合、またはアプリが子供向けの場合は、[IDFAおよびIPの収集と共有を有効にするかどうか](sdk-installation-ios#data-policies)を制御してください。
+    - [ ] アプリがAppTrackingTransparencyを使用している場合は、[認証ステータスをAdaptyに送信](ios-deal-with-att)していることを確認してください。
+- [ ] **プライバシーラベル**: Adaptyが収集するデータとレビューに必要なフラグについては、[詳細はこちら](apple-app-privacy)をご覧ください。
+
+## 購入バリデーション \{#purchase-validations\}
+
+<SupportForum />
+
+公開前に、アプリ内購入が正しく機能し、ペイウォールがストアレビューの準備ができていることを確認してください。
+
+アプリ内購入のバリデーション方法は、実装方法によって異なります：
+
+- Adapty ペイウォールビルダーで作成したペイウォールを表示する
+- 独自のペイウォールを実装し、その中で `makePurchase` メソッドを使用して購入を処理する
+- オブザーバーモードでAdaptyを使用する（Adapty ペイウォールビルダーまたはカスタムペイウォールのどちらでも）
+
+<Tabs groupId="paywall" queryString>
+<TabItem value="builder" label="Adapty Paywall Builder" default>
+
+**目標**: Adaptyがペイウォールをレンダリングし、ユーザーがプロダクトを購入でき、アクセスがアンロックされ、購入復元フローが機能すること。
+
+- [ ] アプリが[ペイウォールを表示する](ios-present-paywalls)際、実際にリリースするのと同じプレースメントを使用している。
+    - [ ] ペイウォールが画面に表示される。読み込みに時間がかかりすぎる場合（不安定なインターネット環境など）は、[フェッチポリシーの調整](get-pb-paywalls#fetch-paywall-designed-with-paywall-builder)を検討してください。
+    - [ ] ペイウォールが期待するバリアント（該当する場合はオーディエンス/ロケール）と一致している。必要に応じて[オーディエンスの優先順位を変更](change-audience-priority)できます。
+- [ ] プロダクトと価格がペイウォールに表示される。テスト中（特に異なるリージョン設定の場合）にAppleのAPIが不正確な価格を提供することがあります。AdaptyはStoreの価格に影響を与えないため、価格の正確さよりも購入フローの機能テストを優先してください。
+- [ ] サンドボックス購入が正常に完了する。購入成功のコールバックが受信される。
+- [ ] アクセスがアンロックされ、維持される。[現在のAdaptyプロファイルに基づいて有料アクセスが付与されていること](ios-check-subscription-status#connect-profile-with-paywall-logic)を確認する。
+    - [ ] 購入後、Adaptyプロファイルにアクティブなアクセスレベルがある。
+    - [ ] プロファイルにそのアクセスレベルが含まれている場合に有料機能がアンロックされる（購入コールバックだけでなく）。
+- [ ] 購入の復元が機能する。アプリを再インストールするか新しいデバイスにインストールした場合、[有料アクセスの共有](sharing-paid-access-between-user-accounts)設定に従って購入の自動復元が機能する。バックエンド認証がない場合は、設定に関係なく購入が自動的に復元される。それ以外の場合は、アプリの再インストール後にユーザーが購入を復元できることを確認する。
+- [ ] ストアレビュー要件：
+    - [ ] **Restore purchases** ボタンがペイウォールに表示されている。ペイウォールビルダーで追加でき、タップ時に購入復元を自動的に処理します。
+    - [ ] 利用規約とプライバシーポリシーがペイウォール画面からアクセスでき、これらのリンクをクリックするとブラウザで開く。
+
+</TabItem>
+<TabItem value="makepurchase" label="カスタムペイウォール（makePurchase）" default>
+
+**目標**: UIをレンダリングし、AdaptyがPurchase処理、プロファイル更新、および復元を担当する。
+
+- [ ] プロダクトIDがアプリコードにハードコードされていない。ハードコードするのは[プレースメント](placements)IDのみ。
+- [ ] アプリが[プロダクトを取得する](fetch-paywalls-and-products)際、実際にリリースするのと同じプレースメントを使用している。
+    - [ ] プロダクトリストが正常に読み込まれる。読み込みに時間がかかりすぎる場合（不安定なインターネット環境など）は、[フェッチポリシーの調整](fetch-paywalls-and-products#fetch-paywall-information)を検討してください。
+    - [ ] 取得したプロダクトが期待するバリアント（該当する場合はオーディエンス/ロケール）と一致している。必要に応じて[オーディエンスの優先順位を変更](change-audience-priority)できます。
+- [ ] プロダクトと価格がペイウォールに表示される。テスト中（特に異なるリージョン設定の場合）にAppleのAPIが不正確な価格を提供することがあります。AdaptyはStoreの価格に影響を与えないため、価格の正確さよりも購入フローの機能テストを優先してください。
+- [ ] [makePurchase](making-purchases)を使用したサンドボックス購入が正常に完了する：
+    - [ ] 購入成功の結果が処理される。
+    - [ ] 保留中/失敗/キャンセルの結果が適切に処理される。
+- [ ] [リモートコンフィグを使用する](present-remote-config-paywalls)場合、その値がペイウォールに正しく反映されている。
+- [ ] ペイウォールが表示されたとき、[`logShowFlow`（iOS SDK v4+）/ `logShowPaywall` メソッド](present-remote-config-paywalls#track-paywall-view-events)が呼び出される。
+- [ ] サンドボックス購入が正常に完了する。購入成功のコールバックが受信される。
+- [ ] アクセスがアンロックされ、維持される。[現在のAdaptyプロファイルに基づいて有料アクセスが付与されていること](ios-check-subscription-status#connect-profile-with-paywall-logic)を確認する。
+    - [ ] 購入後、Adaptyプロファイルにアクティブなアクセスレベルがある。
+    - [ ] プロファイルにそのアクセスレベルが含まれている場合に有料機能がアンロックされる（購入コールバックだけでなく）。
+- [ ] 購入の復元が機能する。アプリを再インストールするか新しいデバイスにインストールした場合、[有料アクセスの共有](sharing-paid-access-between-user-accounts)設定に従って購入の自動復元が機能する。バックエンド認証がない場合は、設定に関係なく購入が自動的に復元される。それ以外の場合は、アプリの再インストール後にユーザーが購入を復元できることを確認する。
+- [ ] ストアレビュー要件：
+    - [ ] **Restore purchases** ボタンがアクセス可能で、[購入復元を処理](restore-purchase)している。
+    - [ ] 利用規約とプライバシーポリシーがペイウォール画面からアクセスでき、これらのリンクをクリックするとブラウザで開く。
+
+</TabItem>
+<TabItem value="observer" label="オブザーバーモード">
+
+**目標**: 購入処理、プロファイル更新、復元を自身で行い、Adaptyがトランザクションレポートを受け取る。
+
+- [ ] **アプリが独自の購入フロー（StoreKit / BillingClient / バックエンド）を使用して購入を完了する**：
+    - [ ] サンドボックス購入がストアUIで成功する。
+    - [ ] 保留中/失敗/キャンセルの結果がアプリ内で適切に処理される。
+- [ ] **トランザクションがAdaptyに報告される**。
+    - [ ] オブザーバーモードが[アプリコードで有効になっている](implement-observer-mode)。
+    - [ ] 購入がAdaptyのイベントフィードに表示される。
+    - [ ] 更新、キャンセル、返金が時間の経過とともに反映される（該当する場合）。
+- [ ] **ペイウォールビューが追跡される**。ペイウォールが表示されたとき、[`logShowFlow`（iOS SDK v4+）/ `logShowPaywall` メソッド](present-remote-config-paywalls#track-paywall-view-events)が呼び出される。
+- [ ] **実装に合わせた購入復元が機能する**。アプリの再インストールやデバイスの切り替えで、アクセスが正しく復元される。
+- [ ] **ストアレビュー要件**：
+    - [ ] **Restore purchases** アクションがアクセス可能で、独自の復元フローがトリガーされる。
+    - [ ] 利用規約とプライバシーポリシーがペイウォールまたは購入画面からアクセスでき、ブラウザで開く。
+</TabItem>
+
+</Tabs>
+
+Adapty SDKの統合についてご不明な点がある場合は、右下のAIチャットボットをご利用いただくか、[support@adapty.io](mailto:support@adapty.io)までお問い合わせください。

@@ -1,0 +1,207 @@
+---
+title: "Android SDKでオンボーディングのデータを処理する"
+description: "Adapty SDKを使ってAndroidアプリのオンボーディングデータを保存・活用する方法を説明します。"
+metadataTitle: "オンボーディング | Android SDK | Adapty ドキュメント"
+---
+
+ユーザーがクイズの質問に回答したり、入力フィールドにデータを入力したりすると、`onStateUpdatedAction` メソッドが呼び出されます。コード内でフィールドの種類を保存したり処理したりできます。
+
+例：
+
+```kotlin
+override fun onStateUpdatedAction(action: AdaptyOnboardingStateUpdatedAction, context: Context) {
+    // Store user preferences or responses
+    when (val params = action.params) {
+        is AdaptyOnboardingStateUpdatedParams.Select -> {
+            // Handle single selection
+        }
+        is AdaptyOnboardingStateUpdatedParams.MultiSelect -> {
+            // Handle multiple selections
+        }
+        is AdaptyOnboardingStateUpdatedParams.Input -> {
+            // Handle text input
+        }
+        is AdaptyOnboardingStateUpdatedParams.DatePicker -> {
+            // Handle date selection
+        }
+    }
+}
+```
+
+アクションのフォーマットは[こちら](https://android.adapty.io/adapty-ui/com.adapty.ui.onboardings.actions/-adapty-onboarding-state-updated-action/)でご確認ください。
+
+<Details>
+<summary>保存されたデータの例（実装によってフォーマットが異なる場合があります）</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## ユースケース \{#use-cases\}
+
+### ユーザープロファイルをデータで充実させる \{#enrich-user-profiles-with-data\}
+
+入力されたデータをユーザープロファイルにすぐ紐付けて、同じ情報を二度聞かないようにするには、アクションを処理するタイミングで入力データを使って[ユーザープロファイルを更新](android-setting-user-attributes)する必要があります。
+
+たとえば、ID が `name` のテキストフィールドに名前を入力してもらい、その値をユーザーの名（first name）として設定したいとします。また、`email` フィールドにメールアドレスを入力してもらう場合、アプリのコードは次のようになります。
+
+```kotlin showLineNumbers
+override fun onStateUpdatedAction(action: AdaptyOnboardingStateUpdatedAction, context: Context) {
+    // Store user preferences or responses
+    when (val params = action.params) {
+        is AdaptyOnboardingStateUpdatedParams.Input -> {
+            // Handle text input
+            val builder = AdaptyProfileParameters.Builder()
+            
+            // Map elementId to appropriate profile field
+            when (action.elementId) {
+                "name" -> {
+                    when (val inputParams = params.params) {
+                        is AdaptyOnboardingInputParams.Text -> {
+                            builder.withFirstName(inputParams.value)
+                        }
+                    }
+                }
+                "email" -> {
+                    when (val inputParams = params.params) {
+                        is AdaptyOnboardingInputParams.Email -> {
+                            builder.withEmail(inputParams.value)
+                        }
+                    }
+                }
+            }
+            
+            Adapty.updateProfile(builder.build()) { error ->
+                if (error != null) {
+                    // handle the error
+                }
+            }
+        }
+    }
+}
+```
+
+### 回答に基づいてペイウォールをカスタマイズする \{#customize-paywalls-based-on-answers\}
+
+オンボーディングのクイズを活用して、オンボーディング完了後にユーザーへ表示するペイウォールをカスタマイズすることもできます。
+
+たとえば、スポーツの経験について質問し、ユーザーグループごとに異なる CTA やプロダクトを表示できます。
+
+1. オンボーディングビルダーで[クイズを追加](onboarding-quizzes)し、各選択肢に意味のある ID を割り当てます。
+
+<ZoomImage id="experience.webp" />
+
+2. ID に基づいてクイズの回答を処理し、ユーザーに[カスタム属性を設定](android-setting-user-attributes)します。
+
+```kotlin showLineNumbers
+override fun onStateUpdatedAction(action: AdaptyOnboardingStateUpdatedAction, context: Context) {
+    // Handle quiz responses and set custom attributes
+    when (val params = action.params) {
+        is AdaptyOnboardingStateUpdatedParams.Select -> {
+            // Handle quiz selection
+            val builder = AdaptyProfileParameters.Builder()
+            
+            // Map quiz responses to custom attributes
+            when (action.elementId) {
+                "experience" -> {
+                    // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+                    builder.withCustomAttribute("experience", params.params.value)
+                }
+            }
+            
+            Adapty.updateProfile(builder.build()) { error ->
+                if (error != null) {
+                    // handle the error
+                }
+            }
+        }
+    }
+}
+```
+
+3. カスタム属性の値ごとに[セグメントを作成](segments)します。
+4. [プレースメント](placements)を作成し、作成した各セグメントに対して[オーディエンス](audience)を追加します。
+5. アプリのコードでそのプレースメントの[ペイウォールを表示](android-paywalls)します。オンボーディングにペイウォールを開くボタンがある場合は、[そのボタンのアクションへの応答](android-handle-onboarding-events#opening-a-paywall)としてペイウォールのコードを実装してください。
+
+Human

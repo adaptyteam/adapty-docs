@@ -1,0 +1,337 @@
+---
+title: "Cài đặt & cấu hình Unity SDK"
+description: "Hướng dẫn từng bước cài đặt Adapty SDK trên Unity cho ứng dụng dựa trên gói đăng ký."
+metadataTitle: "Cài đặt Adapty SDK trên Unity | Tài liệu Adapty"
+keywords: ['cài sdk', 'cài đặt sdk', 'cài sdk unity', 'google play billing library', 'gpbl', 'billing library']
+rank: 30
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+import GetKey from '@site/src/locales/vi/reusable/GetKey.md';
+import AndroidBackupRules from '@site/src/locales/vi/reusable/AndroidBackupRules.md';
+import InstallationPrereqs from '@site/src/locales/vi/reusable/InstallationPrereqs.mdx';
+
+Adapty SDK bao gồm hai module chính để tích hợp liền mạch vào ứng dụng Unity của bạn:
+
+- **Core Adapty**: SDK cốt lõi, bắt buộc phải có để Adapty hoạt động đúng trong ứng dụng.
+- **AdaptyUI**: Module này cần thiết nếu bạn sử dụng [Adapty Paywall Builder](adapty-paywall-builder) — công cụ no-code thân thiện giúp tạo paywall đa nền tảng dễ dàng.
+
+:::tip
+Muốn xem ví dụ thực tế về cách tích hợp Adapty SDK vào ứng dụng di động? Hãy xem [ứng dụng mẫu](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Assets) của chúng tôi, minh họa toàn bộ quá trình thiết lập, bao gồm hiển thị paywall, thực hiện mua hàng và các chức năng cơ bản khác.
+:::
+
+## Yêu cầu \{#requirements\}
+
+Adapty SDK hỗ trợ iOS 13.0 trở lên, nhưng yêu cầu iOS 15.0 trở lên để hoạt động với các paywall được tạo trong Paywall Builder.
+
+:::info
+Adapty tương thích với Google Play Billing Library lên đến phiên bản 8.x. Mặc định, Adapty sử dụng Google Play Billing Library v7.0.0. Để dùng phiên bản mới hơn, hãy [ghi đè dependency Billing](https://developer.android.com/google/play/billing/integrate#dependency) trong bản build Android của bạn.
+:::
+
+<InstallationPrereqs />
+
+## Cài đặt Adapty SDK \{#install-adapty-sdk\}
+
+[![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Unity.svg?style=flat&logo=unity)](https://github.com/adaptyteam/AdaptySDK-Unity/releases)
+
+1. Tải file [`adapty-unity-plugin-*.unitypackage`](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Releases) từ GitHub và import vào project của bạn.
+
+<Zoom>
+  <img src="/assets/shared/img/456bd98-adapty-unity-plugin.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '400px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. Tải và import [plugin External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver).
+
+3. SDK sử dụng plugin "External Dependency Manager" để quản lý các dependency iOS Cocoapods và Android gradle. Sau khi cài đặt, bạn có thể cần gọi dependency manager:
+
+   `Assets -> External Dependency Manager -> Android Resolver -> Force Resolve`
+
+   và
+
+   `Assets -> External Dependency Manager -> iOS Resolver -> Install Cocoapods`
+
+4. Khi build project Unity cho iOS, bạn sẽ nhận được file `Unity-iPhone.xcworkspace`. Bạn phải mở file này thay vì `Unity-iPhone.xcodeproj`, nếu không các dependency của Cocoapods sẽ không được sử dụng.
+
+## Kích hoạt module Adapty của Adapty SDK \{#activate-adapty-module-of-adapty-sdk\}
+
+Kích hoạt Adapty SDK trong code ứng dụng của bạn.
+
+:::note
+Adapty SDK chỉ cần được kích hoạt một lần trong ứng dụng.
+:::
+
+<GetKey />
+
+```csharp showLineNumbers title="C#"
+using UnityEngine;
+using AdaptySDK;
+
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+    void Start() {
+        DontDestroyOnLoad(this.gameObject);
+        Adapty.SetEventListener(this);
+
+        var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY");
+
+        Adapty.Activate(builder.Build(), (error) => {
+            if (error != null) {
+                // handle the error
+                return;
+            }
+        });
+    }
+
+    public void OnLoadLatestProfile(AdaptyProfile profile) { }
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+}
+```
+
+:::important
+Hãy chờ callback hoàn thành của `Activate` trước khi gọi bất kỳ phương thức nào khác của Adapty SDK. Xem [Thứ tự gọi trong Unity SDK](unity-sdk-call-order) để biết trình tự đầy đủ.
+:::
+
+## Thiết lập lắng nghe sự kiện \{#set-up-event-listening\}
+
+Tạo một script để lắng nghe các sự kiện Adapty. Đặt tên là `AdaptyListener` trong scene của bạn. Chúng tôi khuyên dùng phương thức `DontDestroyOnLoad` cho object này để đảm bảo nó tồn tại trong suốt vòng đời của ứng dụng.
+
+<Zoom>
+  <img src="/assets/shared/img/2ccd564-create_adapty_listener.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Adapty sử dụng namespace `AdaptySDK`. Ở đầu các file script sử dụng Adapty SDK, bạn có thể thêm:
+
+```csharp showLineNumbers title="C#"
+using AdaptySDK;
+```
+
+Đăng ký nhận sự kiện Adapty:
+
+```csharp showLineNumbers title="C#"
+using UnityEngine;
+using AdaptySDK;
+
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+    public void OnLoadLatestProfile(AdaptyProfile profile) {
+        // handle updated profile data
+    }
+
+    public void OnInstallationDetailsSuccess(AdaptyInstallationDetails details) { }
+    public void OnInstallationDetailsFail(AdaptyError error) { }
+}
+```
+
+Chúng tôi khuyên bạn nên điều chỉnh Script Execution Order để đặt AdaptyListener trước Default Time. Điều này đảm bảo Adapty được khởi tạo sớm nhất có thể.
+
+<Zoom>
+  <img src="/assets/shared/img/activate_unity.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Thêm Kotlin Plugin vào project của bạn \{#add-kotlin-plugin-to-your-project\}
+
+:::warning
+
+Bước này là bắt buộc. Nếu bỏ qua, ứng dụng di động của bạn có thể bị crash khi hiển thị paywall.
+
+:::
+
+1. Trong **Player Settings**, đảm bảo rằng các tùy chọn **Custom Launcher Gradle Template** và **Custom Base Gradle Template** đã được chọn.
+   <Zoom>
+   <img src="/assets/shared/img/kotlin-plugin1.webp"
+   style={{
+   border: 'none', /* border width and color */
+   width: '700px', /* image width */
+   display: 'block', /* for alignment */
+   margin: '0 auto' /* center alignment */
+   }}
+   />
+   </Zoom>
+
+2. Thêm dòng sau vào `/Assets/Plugins/Android/launcherTemplate.gradle`:
+
+   ```groovy showLineNumbers
+   apply plugin: 'com.android.application'
+   // highlight-next-line
+   apply plugin: 'kotlin-android'
+   apply from: 'setupSymbols.gradle'
+   apply from: '../shared/keepUnitySymbols.gradle'
+   ```
+
+3. Thêm dòng sau vào `/Assets/Plugins/Android/baseProjectTemplate.gradle`:
+
+   ```groovy showLineNumbers
+   plugins {
+       // If you are changing the Android Gradle Plugin version, make sure it is compatible with the Gradle version preinstalled with Unity
+       // See which Gradle version is preinstalled with Unity here https://docs.unity3d.com/Manual/android-gradle-overview.html
+       // See official Gradle and Android Gradle Plugin compatibility table here https://developer.android.com/studio/releases/gradle-plugin#updating-gradle
+       // To specify a custom Gradle version in Unity, go do "Preferences > External Tools", uncheck "Gradle Installed with Unity (recommended)" and specify a path to a custom Gradle version
+       id 'com.android.application' version '8.3.0' apply false
+       id 'com.android.library' version '8.3.0' apply false
+   // highlight-next-line
+       id 'org.jetbrains.kotlin.android' version '1.8.0' apply false
+       **BUILD_SCRIPT_DEPS**
+   }
+   ```
+
+Bây giờ hãy thiết lập paywall trong ứng dụng của bạn:
+
+- Nếu bạn dùng [Adapty Paywall Builder](adapty-paywall-builder), trước tiên hãy [kích hoạt module AdaptyUI](#activate-adaptyui-module-of-adapty-sdk) bên dưới, sau đó làm theo [hướng dẫn nhanh Paywall Builder](unity-quickstart-paywalls).
+- Nếu bạn tự xây dựng giao diện paywall, xem [hướng dẫn nhanh cho paywall tùy chỉnh](unity-quickstart-manual).
+
+## Kích hoạt module AdaptyUI của Adapty SDK \{#activate-adaptyui-module-of-adapty-sdk\}
+
+Nếu bạn có kế hoạch sử dụng [Paywall Builder](adapty-paywall-builder) và đã cài đặt module AdaptyUI, bạn cần kích hoạt AdaptyUI. Bạn có thể kích hoạt nó trong quá trình cấu hình:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetActivateUI(true);
+```
+
+## Cài đặt tùy chọn \{#optional-setup\}
+
+### Ghi log \{#logging\}
+
+#### Thiết lập hệ thống ghi log \{#set-up-the-logging-system\}
+
+Adapty ghi log các lỗi và thông tin quan trọng khác để giúp bạn hiểu những gì đang xảy ra. Có các mức độ sau:
+
+| Mức độ     | Mô tả                                                                                                                                                     |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `error`    | Chỉ ghi log các lỗi                                                                                                                                        |
+| `warn`     | Ghi log các lỗi và các thông điệp từ SDK không gây ra lỗi nghiêm trọng nhưng đáng chú ý                                                                   |
+| `info`     | Ghi log các lỗi, cảnh báo và các thông điệp thông tin                                                                                                     |
+| `verbose`  | Ghi log mọi thông tin bổ sung có thể hữu ích trong quá trình debug, chẳng hạn như các lời gọi hàm, truy vấn API, v.v.                                     |
+
+Bạn có thể đặt mức log trong ứng dụng khi cấu hình Adapty:
+
+```csharp showLineNumbers title="C#"
+// 'verbose' is recommended for development and the first production release
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY");
+builder.LogLevel = AdaptyLogLevel.Verbose;
+```
+
+Bạn cũng có thể thay đổi mức log tại runtime:
+
+```csharp showLineNumbers title="C#"
+Adapty.SetLogLevel(AdaptyLogLevel.Verbose, (error) => {
+    // handle result
+});
+```
+
+### Chính sách dữ liệu \{#data-policies\}
+
+Adapty không lưu trữ dữ liệu cá nhân của người dùng trừ khi bạn gửi rõ ràng, nhưng bạn có thể triển khai các chính sách bảo mật dữ liệu bổ sung để tuân thủ quy định của cửa hàng hoặc quốc gia.
+
+#### Tắt thu thập và chia sẻ địa chỉ IP \{#disable-ip-address-collection-and-sharing\}
+
+Khi kích hoạt module Adapty, đặt `SetIPAddressCollectionDisabled` thành `true` để tắt việc thu thập và chia sẻ địa chỉ IP của người dùng. Giá trị mặc định là `false`.
+
+Dùng tham số này để tăng cường quyền riêng tư của người dùng, tuân thủ các quy định bảo vệ dữ liệu theo khu vực (như GDPR hoặc CCPA), hoặc giảm việc thu thập dữ liệu không cần thiết khi các tính năng dựa trên IP không cần thiết cho ứng dụng của bạn.
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetIPAddressCollectionDisabled(true);
+```
+
+#### Tắt thu thập và chia sẻ advertising ID \{#disable-advertising-id-collection-and-sharing\}
+
+Khi kích hoạt module Adapty, đặt `SetAppleIDFACollectionDisabled` và/hoặc `SetGoogleAdvertisingIdCollectionDisabled` thành `true` để tắt thu thập các định danh quảng cáo. Giá trị mặc định là `false`.
+
+Dùng tham số này để tuân thủ chính sách App Store/Google Play, tránh kích hoạt lời nhắc App Tracking Transparency, hoặc nếu ứng dụng của bạn không yêu cầu attribution quảng cáo hoặc analytics dựa trên advertising ID.
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAppleIDFACollectionDisabled(true)
+    .SetGoogleAdvertisingIdCollectionDisabled(true);
+```
+
+#### Thiết lập cấu hình cache media cho AdaptyUI \{#set-up-media-cache-configuration-for-adaptyui\}
+
+Mặc định, AdaptyUI lưu cache media (chẳng hạn hình ảnh và video) để cải thiện hiệu suất và giảm sử dụng mạng. Bạn có thể tùy chỉnh cài đặt cache bằng cách cung cấp cấu hình tùy chỉnh.
+
+Dùng `SetAdaptyUIMediaCache` để ghi đè cài đặt cache mặc định:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAdaptyUIMediaCache(
+        100 * 1024 * 1024, // MemoryStorageTotalCostLimit 100MB
+        null, // MemoryStorageCountLimit
+        100 * 1024 * 1024 // DiskStorageSizeLimit 100MB
+    );
+```
+
+Tham số:
+
+| Tham số                     | Bắt buộc | Mô tả                                                                                         |
+|-----------------------------|----------|-----------------------------------------------------------------------------------------------|
+| memoryStorageTotalCostLimit | tùy chọn | Tổng kích thước cache trong bộ nhớ tính bằng byte. Mặc định theo giá trị của từng nền tảng.  |
+| memoryStorageCountLimit     | tùy chọn | Giới hạn số lượng item trong bộ nhớ cache. Mặc định theo giá trị của từng nền tảng.          |
+| diskStorageSizeLimit        | tùy chọn | Giới hạn kích thước file trên đĩa tính bằng byte. Mặc định theo giá trị của từng nền tảng.   |
+
+
+### Bật mức độ truy cập cục bộ (Android) \{#enable-local-access-levels-android\}
+
+Mặc định, [mức độ truy cập cục bộ](local-access-levels) được bật trên iOS và tắt trên Android. Để bật trên Android, đặt `SetGoogleLocalAccessLevelAllowed` thành `true`:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetGoogleLocalAccessLevelAllowed(true);
+```
+
+### Xóa dữ liệu khi khôi phục từ backup \{#clear-data-on-backup-restore\}
+
+Khi `SetAppleClearDataOnBackup` được đặt thành `true`, SDK sẽ phát hiện khi ứng dụng được khôi phục từ backup iCloud và xóa tất cả dữ liệu SDK được lưu cục bộ, bao gồm thông tin hồ sơ người dùng đã cache, chi tiết sản phẩm và paywall. Sau đó SDK sẽ khởi tạo lại với trạng thái sạch. Giá trị mặc định là `false`.
+
+:::note
+Chỉ cache SDK cục bộ bị xóa. Lịch sử giao dịch với Apple và dữ liệu người dùng trên server Adapty vẫn không thay đổi.
+:::
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAppleClearDataOnBackup(true);
+```
+
+## Khắc phục sự cố \{#troubleshooting\}
+
+#### Quy tắc backup Android (cấu hình Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
+
+<AndroidBackupRules />
+
+:::important
+Trong Unity, hãy áp dụng các thay đổi này vào `Assets/Plugins/Android/AndroidManifest.xml` và tạo các file quy tắc backup trong `Assets/Plugins/Android/res/xml/`.
+:::
+
+#### Mua hàng thất bại sau khi quay lại từ ứng dụng khác trên Android \{#purchases-fail-after-returning-from-another-app-in-android\}
+
+Nếu Activity khởi động flow mua hàng sử dụng `launchMode` không phải mặc định, Android có thể tái tạo hoặc tái sử dụng nó không chính xác khi người dùng quay lại từ Google Play, ứng dụng ngân hàng hoặc trình duyệt. Điều này có thể khiến kết quả mua hàng bị mất hoặc bị xử lý là đã hủy.
+
+Để đảm bảo mua hàng hoạt động đúng, chỉ sử dụng chế độ `standard` hoặc `singleTop` cho Activity khởi động flow mua hàng, và tránh các chế độ khác.
+
+Trong `AndroidManifest.xml` của bạn, hãy đảm bảo Activity khởi động flow mua hàng được đặt thành `standard` hoặc `singleTop`:
+
+```xml
+<activity
+    android:name=".MainActivity"
+    android:launchMode="standard" />
+```

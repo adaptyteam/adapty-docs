@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { getAllDocFiles, extractReusableImports } from './scan.mjs';
 import { curlCheck, checkExternalUrl } from './check-external.mjs';
 import GithubSlugger from 'github-slugger';
@@ -9,7 +10,63 @@ const RUNTIME_ROUTE_PREFIXES = [
   'api-adapty/',
   'api-web/',
   'api-export-analytics/',
+  'api-mail/',
 ];
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const API_CONFIG_PATH = path.join(__dirname, '../../src/api-reference/config.json');
+const API_SPECS_DIR = path.join(__dirname, '../../src/api-reference/specs');
+
+// Registry of locally-registered API references: slug -> { ops: Set<operationId>, specLoaded }.
+// Runtime API routes (api-*/operations/*) are generated at build time from these
+// specs, so a route that resolves here will exist after deploy even if it isn't on
+// the live site yet — e.g. a brand-new API reference added in the same PR.
+let apiRouteIndex = null;
+async function buildApiRouteIndex() {
+  if (apiRouteIndex) return apiRouteIndex;
+  apiRouteIndex = new Map();
+  let apis;
+  try {
+    apis = JSON.parse(await readFile(API_CONFIG_PATH, 'utf-8'));
+  } catch {
+    return apiRouteIndex; // no config — every runtime route falls back to the live check
+  }
+  for (const api of apis) {
+    if (!api.slug || !api.specFile) continue;
+    const ops = new Set();
+    let specLoaded = false;
+    try {
+      const spec = await readFile(path.join(API_SPECS_DIR, api.specFile), 'utf-8');
+      const re = /^\s*operationId:\s*["']?([^"'\s]+)["']?\s*$/gm;
+      let m;
+      while ((m = re.exec(spec)) !== null) ops.add(m[1]);
+      specLoaded = true;
+    } catch { /* spec unreadable — landing still resolves, operations fall back to live */ }
+    apiRouteIndex.set(api.slug, { ops, specLoaded });
+  }
+  return apiRouteIndex;
+}
+
+/**
+ * Resolve a runtime API route (e.g. `api-mail/operations/saveProfile`) against the
+ * local config + spec. Returns:
+ *   true  — route is generated from this checkout (valid; will deploy)
+ *   false — slug is registered but the operation doesn't exist (genuine broken link)
+ *   null  — can't decide locally (slug not registered, or spec unreadable) → caller
+ *           should fall back to checking the live site.
+ */
+async function resolveApiRouteLocally(rawSlug) {
+  const index = await buildApiRouteIndex();
+  const [apiSlug, section, op] = rawSlug.split('/');
+  const entry = index.get(apiSlug);
+  if (!entry) return null;                  // not a locally-registered reference
+  if (!section) return true;                // landing page, e.g. /api-mail
+  if (section === 'operations' && op) {
+    if (!entry.specLoaded) return null;     // couldn't read spec — don't risk a false break
+    return entry.ops.has(op);
+  }
+  return null;                              // unexpected sub-route — let the live check decide
+}
 
 const MALFORMED_URL_RE = /^[a-z]https?:\/\//i;
 
@@ -85,19 +142,21 @@ async function getHeadingIds(filePath) {
   return ids;
 }
 
-// Doc index: Map<lowercased-slug, filePath>
-let docIndex = null;
-async function buildDocIndex(docsDir) {
-  if (docIndex) return docIndex;
-  docIndex = new Map();
+// Doc index cache: key -> Map<lowercased-slug, filePath>.
+// Key is the docsDir for the plain English index, or `${docsDir}::${localeDir}`
+// for a locale-overlaid index (English pages with a locale's translated files
+// layered on top), so multiple locales can be resolved in one run.
+const docIndexCache = new Map();
+
+async function addEnglishPages(index, docsDir) {
   const files = await getAllDocFiles(docsDir);
   for (const f of files) {
     const basename = path.basename(f).replace(/\.(md|mdx)$/, '');
     const rel = path.relative(docsDir, f).replace(/\.(md|mdx)$/, '');
     const baseKey = basename.toLowerCase();
     const relKey = rel.toLowerCase();
-    if (!docIndex.has(baseKey)) docIndex.set(baseKey, f);
-    if (!docIndex.has(relKey)) docIndex.set(relKey, f);
+    if (!index.has(baseKey)) index.set(baseKey, f);
+    if (!index.has(relKey)) index.set(relKey, f);
 
     // Also index customSlug from frontmatter
     try {
@@ -105,11 +164,37 @@ async function buildDocIndex(docsDir) {
       const slugMatch = content.match(/^customSlug:\s*["']?\/?([^"'\n]+)["']?\s*$/m);
       if (slugMatch) {
         const customKey = slugMatch[1].trim().toLowerCase();
-        if (!docIndex.has(customKey)) docIndex.set(customKey, f);
+        if (!index.has(customKey)) index.set(customKey, f);
       }
     } catch { /* ignore */ }
   }
-  return docIndex;
+}
+
+// Overlay a locale's translated pages on top of the English index. Locale pages
+// live flat in src/locales/<code>/ (the reusable/ and .hashes/ subdirs are not
+// routable pages and are skipped). The translator preserves English anchor ids,
+// so overlaying by basename makes anchor checks resolve against the translated
+// file when it exists, while not-yet-translated slugs still fall back to their
+// English source (matching runtime locale-fallback behavior).
+async function addLocaleOverlay(index, localeDir) {
+  const files = (await getAllDocFiles(localeDir)).filter(f => {
+    const parts = f.split(path.sep);
+    return !parts.includes('reusable') && !parts.includes('.hashes');
+  });
+  for (const f of files) {
+    const baseKey = path.basename(f).replace(/\.(md|mdx)$/, '').toLowerCase();
+    index.set(baseKey, f); // locale page wins over the English entry
+  }
+}
+
+async function buildDocIndex(docsDir, localeDir = null) {
+  const key = localeDir ? `${docsDir}::${localeDir}` : docsDir;
+  if (docIndexCache.has(key)) return docIndexCache.get(key);
+  const index = new Map();
+  await addEnglishPages(index, docsDir);
+  if (localeDir) await addLocaleOverlay(index, localeDir);
+  docIndexCache.set(key, index);
+  return index;
 }
 
 /** Expose the doc index for external use (e.g. diff mode). */
@@ -119,7 +204,7 @@ export { buildDocIndex };
  * Check an internal doc link. Resolves slug to file, checks anchors,
  * falls back to live site for redirects.
  */
-export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs }) {
+export async function checkInternalLink(url, { docsDir, localeDir = null, liveSiteBase, timeoutMs, skipAnchors = false }) {
   const [urlWithoutAnchor, anchor] = url.split('#');
   if (!urlWithoutAnchor) return { ok: true, status: 'anchor-only' };
 
@@ -130,10 +215,20 @@ export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs 
 
   const rawSlug = urlWithoutAnchor.replace(/^\.?\//, '').replace(/\/$/, '').replace(/\.(md|mdx)$/, '');
 
-  // Runtime API routes → check against live site (preserve original case).
-  // Retries with backoff because these HTTP checks are sensitive to transient
-  // network issues on CI runners (DNS blips, CDN edge cache misses, etc.).
+  // Runtime API routes → resolve against the local config + spec first (preserve
+  // original case). The repo is the source of truth for what will deploy, so a
+  // route that resolves locally is valid even if it isn't on the live site yet
+  // (e.g. a new API reference added in this same PR).
   if (RUNTIME_ROUTE_PREFIXES.some(p => rawSlug.startsWith(p))) {
+    const local = await resolveApiRouteLocally(rawSlug);
+    if (local === true) return { ok: true, status: 'found' };
+    if (local === false) {
+      return { ok: false, status: 'NOT_FOUND', error: 'API operation not found in local spec' };
+    }
+
+    // Can't resolve locally → fall back to the live site (preserve original case).
+    // Retries with backoff because these HTTP checks are sensitive to transient
+    // network issues on CI runners (DNS blips, CDN edge cache misses, etc.).
     const liveUrl = `${liveSiteBase}/${rawSlug}`;
     const RETRY_BACKOFF = [2000, 5000];
     let result;
@@ -152,9 +247,10 @@ export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs 
     };
   }
 
-  // Case-insensitive lookup against the doc index
+  // Case-insensitive lookup against the doc index (locale-overlaid when checking
+  // a translated file, so anchors resolve against the translated page).
   const slug = rawSlug.toLowerCase();
-  const index = await buildDocIndex(docsDir);
+  const index = await buildDocIndex(docsDir, localeDir);
 
   let filePath = index.get(slug);
   if (!filePath) {
@@ -172,7 +268,7 @@ export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs 
     return { ok: false, status: 'NOT_FOUND', error: 'Page not found in docs' };
   }
 
-  if (anchor) {
+  if (anchor && !skipAnchors) {
     const headings = await getHeadingIds(filePath);
     if (!headings.has(anchor)) {
       return { ok: true, anchorMissing: `#${anchor} not found` };

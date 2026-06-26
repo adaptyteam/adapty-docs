@@ -1,0 +1,88 @@
+---
+title: "Hỏi AI về dữ liệu analytics của bạn"
+description: "Truy vấn analytics Adapty bằng ngôn ngữ tự nhiên với AI coding agent, sử dụng Export Analytics API."
+metadataTitle: "Hỏi AI về dữ liệu analytics của bạn | Tài liệu Adapty"
+keywords: ['hỏi ai về analytics', 'adapty analytics ai', 'truy vấn analytics với ai', 'export analytics api', 'analytics ai agent', 'mcp', 'llm']
+---
+
+Hỏi AI coding agent về dữ liệu analytics Adapty của bạn bằng ngôn ngữ tự nhiên — doanh thu, conversion, retention, LTV — và để nó kéo số liệu cho bạn. Trỏ một công cụ có thể thực hiện API call vào [Export Analytics API](https://adapty.io/docs/vi/export-analytics-api.md), và nó sẽ truy vấn các chỉ số của bạn theo yêu cầu.
+
+## Bạn có thể hỏi về những gì \{#what-you-can-ask-about\}
+
+Export Analytics API trả về các chỉ số giống như những gì bạn thấy trong các biểu đồ trên Adapty dashboard. Mỗi chỉ số có một operation riêng:
+
+| Chỉ số | Phạm vi | Operation |
+| --- | --- | --- |
+| Revenue, MRR, ARR, ARPU | Tiền kiếm được theo thời gian, phân nhóm theo kỳ, quốc gia hoặc chiến dịch | [retrieveAnalyticsData](https://adapty.io/docs/vi/api-export-analytics/operations/retrieveAnalyticsData.md) |
+| Cohort retention | Thời gian người dùng trong một cohort nhất định tiếp tục thanh toán | [retrieveCohortData](https://adapty.io/docs/vi/api-export-analytics/operations/retrieveCohortData.md) |
+| Tỷ lệ conversion | Số lượng người dùng chuyển từ bước này sang bước khác hoặc từ kênh này sang kênh khác | [retrieveConversionData](https://adapty.io/docs/vi/api-export-analytics/operations/retrieveConversionData.md) |
+| Churn và funnel | Nơi người dùng rời bỏ và tốc độ hủy đăng ký | [retrieveFunnelData](https://adapty.io/docs/vi/api-export-analytics/operations/retrieveFunnelData.md) |
+| Lifetime value (LTV) | Doanh thu trung bình mỗi phân khúc người dùng theo thời gian | [retrieveLTVData](https://adapty.io/docs/vi/api-export-analytics/operations/retrieveLTVData.md) |
+| Retention | Tỷ lệ người dùng vẫn còn hoạt động sau một số ngày nhất định | [retrieveRetentionData](https://adapty.io/docs/vi/api-export-analytics/operations/retrieveRetentionData.md) |
+
+Để xem đầy đủ danh sách các tham số và bộ lọc, xem [tài liệu tham khảo API](https://adapty.io/docs/vi/api-export-analytics.md).
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Bạn cần ba thứ:
+
+- **Tài khoản Adapty có dữ liệu**: API trả về các chỉ số giống như trong biểu đồ dashboard, vì vậy ứng dụng của bạn phải đã thu thập analytics.
+- **Secret API key**: Tìm tại [App settings → General](https://app.adapty.io/settings/general), trong trường **Secret key**. Key gắn với từng app, vì vậy hãy dùng key riêng cho mỗi app. Lưu key trong biến môi trường (ví dụ: `ADAPTY_SECRET_KEY`) để agent đọc được mà không cần bạn dán vào chat.
+- **Công cụ AI có thể gọi API**: Ví dụ: Claude Code, Cursor, hoặc Claude Desktop với fetch tool. Các công cụ chat thông thường như claude.ai hay ChatGPT không thể gọi API trực tiếp.
+
+<ZoomImage id="export-analytics-secret-key.webp" width="700px" alt="Trang Adapty App settings General với secret API key trong trường Secret key" />
+
+## Cung cấp API spec cho agent \{#give-your-agent-the-api-spec\}
+
+[OpenAPI spec](https://adapty.io/docs/vi/api-specs/export-analytics-api.yaml) mô tả mọi endpoint, header xác thực, request body và các response mẫu. Khi agent có spec, nó sẽ tạo request chính xác mà không cần bạn viết code.
+
+Cung cấp spec cho agent qua URL:
+
+- **Dán URL**: Nếu agent có thể fetch URL, cung cấp `https://adapty.io/docs/vi/api-specs/export-analytics-api.yaml` và yêu cầu nó đọc spec.
+- **Dùng fetch tool**: Nếu agent có tool để lấy URL (ví dụ: MCP fetch server), trỏ nó vào cùng URL đó.
+
+Spec đặt base URL là `https://api-admin.adapty.io`, vì vậy agent có đủ mọi thứ cần thiết khi key của bạn đã có trong môi trường.
+
+## Hỏi về dữ liệu của bạn \{#ask-about-your-data\}
+
+Khi đã load spec và lưu key vào biến môi trường, hãy mô tả chỉ số bạn muốn bằng ngôn ngữ tự nhiên.
+
+Ví dụ các câu hỏi:
+
+```
+What was my MRR at the end of each month this year, and how does it compare to last year?
+
+Show my trial-to-paid conversion rate for the last 90 days, broken down by product.
+
+Which countries drive the most revenue from my yearly subscription? Top 10.
+
+How is week-1 retention trending for subscribers who started in the last 6 months?
+
+What's the refund rate on my annual plan since launch, by month?
+
+Compare LTV for paid-campaign users vs. organic over the last year, and export it as CSV.
+```
+
+Agent sẽ ánh xạ yêu cầu của bạn vào operation phù hợp, đọc key từ môi trường và trả về dữ liệu. Response mặc định là JSON. Yêu cầu CSV khi bạn muốn file có thể dùng trong bảng tính — agent sẽ đặt `format` thành `csv` trong request body.
+
+:::warning
+Lưu secret key trong biến môi trường — không dán vào chat hay commit vào file rules. Key gắn với từng app, vì vậy hãy xoay vòng key trong **Settings → General** nếu bị lộ. Xem [xoay vòng API key](https://adapty.io/docs/vi/export-analytics-api-authorization.md).
+:::
+
+## Thiết lập một lần để dùng lại \{#set-up-once-for-repeated-use\}
+
+Để tránh lặp lại thiết lập mỗi phiên làm việc, hãy lưu spec và key để agent có thể tái sử dụng:
+
+- **Lưu link spec**: Thêm URL spec vào file rules hoặc memory của agent (ví dụ: file `CLAUDE.md` hoặc Cursor rules file) để nó load mỗi phiên.
+- **Lưu key trong môi trường**: Giữ `ADAPTY_SECRET_KEY` trong shell profile hoặc secret store của công cụ, để bạn không bao giờ phải dán lại.
+- **Lưu các prompt hay tạo custom skill**: Giữ các câu hỏi thường dùng dưới dạng saved prompt, hoặc bọc chúng trong custom skill hay slash command để agent chạy báo cáo theo yêu cầu.
+
+## Giới hạn \{#limits\}
+
+Hãy lưu ý những ràng buộc sau:
+
+- **Giới hạn tốc độ**: API cho phép 2 request mỗi giây mỗi API key. Vượt quá sẽ trả về lỗi `429 Too Many Requests`. Hãy bảo agent chờ và thử lại khi gặp `429`.
+- **Key theo từng app**: Mỗi key chỉ hoạt động cho một app. Để lấy dữ liệu từ nhiều app, cung cấp key tương ứng cho từng app.
+- **Định dạng đầu ra**: Response mặc định là JSON. Đặt `format` thành `csv` trong request body để xuất CSV.
+
+Để xem đầy đủ quy tắc xác thực và request, xem [Authorization và định dạng request](https://adapty.io/docs/vi/export-analytics-api-authorization.md).

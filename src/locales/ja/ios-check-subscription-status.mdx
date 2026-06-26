@@ -1,0 +1,131 @@
+---
+title: "iOS SDKでサブスクリプションステータスを確認する"
+description: "AdaptyでiOSアプリのサブスクリプションステータスを確認する方法を学びます。"
+metadataTitle: "サブスクリプションステータスの確認 | Adapty ドキュメント"
+displayed_sidebar: sdkios
+keywords: ['getProfile', 'subscription status']
+rank: 100
+---
+
+ユーザーが有料コンテンツにアクセスできるか、ペイウォールを表示するかを判断するには、プロファイルの[アクセスレベル](access-level)を確認する必要があります。
+
+この記事では、プロファイルの状態にアクセスして、ユーザーにペイウォールを表示するか有料機能へのアクセスを許可するかを判断する方法を説明します。
+
+## サブスクリプションステータスを取得する \{#get-subscription-status\}
+
+ペイウォールまたは有料コンテンツを表示するかどうかを決める際は、プロファイルの[アクセスレベル](access-level)を確認します。方法は2つあります：
+
+- 最新のプロファイルデータが即座に必要な場合（アプリ起動時など）や強制的に更新したい場合は `getProfile` を呼び出す。
+- **プロファイルの自動更新**を設定して、サブスクリプションステータスが変わるたびにローカルコピーを自動更新する。
+
+:::important
+デフォルトでは、`premium` アクセスレベルがAdaptyにすでに存在します。アクセスレベルを複数設定する必要がない場合は、`premium` をそのまま使用できます。
+:::
+
+### プロファイルを取得する \{#get-profile\}
+
+サブスクリプションステータスを取得する最も簡単な方法は、`getProfile` メソッドを使ってプロファイルにアクセスすることです：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get() {
+        // check the access
+        profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // grant access to premium features
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+### サブスクリプション更新を受け取る \{#listen-to-subscription-updates\}
+
+アプリでプロファイルの更新を自動的に受け取りたい場合：
+
+1. 任意の型で `AdaptyDelegate` プロトコルに準拠し、`didLoadLatestProfile` メソッドを実装します。ユーザーのサブスクリプションステータスが変わるたびに、Adaptyがこのメソッドを自動的に呼び出します。以下の例では、サブスクリプションのワークフローやユーザープロファイルの処理を支援する `SubscriptionManager` 型を使用しています。この型は依存性注入で渡したり、UIKitアプリのシングルトンとして設定したり、アプリのメイン構造体からSwiftUI環境に追加したりできます。
+2. このメソッドが呼び出されたときに更新されたプロファイルデータを保存して、追加のネットワークリクエストなしにアプリ全体で使用できるようにします。
+
+```swift
+class SubscriptionManager: AdaptyDelegate {
+
+    nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
+        let hasAccess = profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false
+        // Update UI, unlock content, etc.
+    }
+}
+
+// Set delegate after Adapty activation
+Adapty.delegate = subscriptionManager
+```
+
+:::note
+Adaptyはアプリ起動時に `didLoadLatestProfile` を自動的に呼び出し、デバイスがオフラインの場合でもキャッシュされたサブスクリプションデータを提供します。
+:::
+
+## プロファイルとペイウォールのロジックを連携させる \{#connect-profile-with-paywall-logic\}
+
+ペイウォールを表示するか有料機能へのアクセスを許可するかを即座に判断したい場合、ユーザーのプロファイルを直接確認できます。このアプローチは、アプリ起動時、プレミアムセクションへの入場時、特定コンテンツを表示する前などのシナリオで役立ちます。
+
+<Tabs>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+```swift
+private func checkAccessLevel() async -> Bool {
+    do {
+        let profile = try await Adapty.getProfile()
+        return profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false
+    } catch {
+        print("Error checking access level: \(error)")
+        return false
+    }
+}
+
+// In your initialization logic:
+let hasAccess = await checkAccessLevel()
+if !hasAccess {
+    paywallPresented = true // Show paywall if no access
+}
+```
+
+</TabItem>
+<TabItem value="uikit" label="UIKit">
+
+```swift
+private func checkAccessLevel() async throws -> Bool {
+    let profile = try await Adapty.getProfile()
+    return profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false
+}
+
+// In your initialization logic:
+let hasAccess = try await checkAccessLevel()
+if !hasAccess {
+    presentPaywall(with: paywallConfiguration)
+}
+```
+
+</TabItem>
+</Tabs>
+
+## 次のステップ \{#next-steps\}
+
+サブスクリプションステータスの追跡方法がわかったところで、[ユーザープロファイルの操作方法](ios-quickstart-identify)を確認して、既存の認証システムや有料アクセスの共有設定と適切に連携していることを確かめましょう。
+
+独自の認証システムがない場合でも、Adaptyがユーザーを管理しますので問題はありません。ただし、Adaptyが匿名ユーザーをどのように扱うかについては[ガイド](ios-quickstart-identify)を参照することをおすすめします。

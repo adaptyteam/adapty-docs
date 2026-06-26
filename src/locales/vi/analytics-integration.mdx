@@ -1,0 +1,308 @@
+---
+title: "Tích hợp analytics"
+description: "Tích hợp các công cụ analytics với Adapty để theo dõi và tối ưu hóa gói đăng ký của người dùng."
+metadataTitle: "Hướng dẫn tích hợp Analytics | Tài liệu Adapty"
+---
+
+Adapty gửi tất cả [sự kiện gói đăng ký](events) đến các dịch vụ analytics như [Amplitude](amplitude), [Mixpanel](mixpanel) và [AppMetrica](appmetrica). Chúng tôi cũng có thể gửi sự kiện đến máy chủ của bạn thông qua tích hợp [webhook](webhook). Điều tuyệt vời là bạn không cần tự gửi bất kỳ sự kiện nào — chúng tôi sẽ làm điều đó cho bạn. Chỉ cần đảm bảo bạn đã cấu hình tích hợp trong Adapty Dashboard.
+
+Adapty hỗ trợ tích hợp với các dịch vụ analytics bên thứ ba sau:
+
+- [Amplitude](amplitude)
+- [AppMetrica](appmetrica)
+- [Firebase and Google Analytics](firebase-and-google-analytics)
+- [Mixpanel](mixpanel)
+- [PostHog](posthog)
+- [SplitMetrics Acquire](splitmetrics)
+
+:::note
+Không thấy nhà cung cấp analytics của bạn?
+
+Hãy cho chúng tôi biết! [Tạo yêu cầu tính năng](https://adapty.featurebase.app/en?b=6979f233ebd3cffd4f425ba0) và chúng tôi sẽ xem xét thêm vào.
+:::
+
+## Thuộc tính sự kiện \{#event-properties\}
+
+Sự kiện webhook được gửi theo định dạng JSON. Tất cả sự kiện đều có cùng cấu trúc, nhưng các trường có thể khác nhau tùy theo loại sự kiện, cửa hàng và cấu hình cụ thể của bạn.
+
+| Thuộc tính                    | Kiểu          | Mô tả                                                        |
+| ----------------------------- | ------------- | ------------------------------------------------------------ |
+| **profile_id**                | uuid          | ID người dùng Adapty.                                        |
+| **currency**                  | str           | Đơn vị tiền tệ địa phương (mặc định là USD).                 |
+| **price_usd**                 | float         | Giá sản phẩm trước khi Apple/Google khấu trừ. Doanh thu.     |
+| **proceeds_usd**              | float         | Giá sản phẩm sau khi Apple/Google khấu trừ. Doanh thu ròng.  |
+| **net_revenue_usd**           | float         | Doanh thu ròng (thu nhập sau khi Apple/Google khấu trừ và thuế) tính bằng USD. Có thể để trống. |
+| **price_local**               | float         | Giá sản phẩm trước khi Apple/Google khấu trừ tính bằng tiền tệ địa phương. Doanh thu. |
+| **proceeds_local**            | float         | Giá sản phẩm sau khi Apple/Google khấu trừ tính bằng tiền tệ địa phương. Doanh thu ròng. |
+| **transaction_id**            | str           | Mã định danh duy nhất cho một giao dịch như mua hàng hoặc gia hạn. |
+| **original_transaction_id**   | str           | Mã định danh giao dịch của lần mua hàng gốc.                 |
+| **purchase_date**             | ISO 8601 date | Ngày và giờ mua sản phẩm.                                    |
+| **original_purchase_date**    | ISO 8601 date | Ngày và giờ của lần mua hàng gốc.                            |
+| **environment**               | str           | Có thể là _Sandbox_ hoặc _Production_.                       |
+| **vendor_product_id**         | str           | ID sản phẩm trên Apple App Store, Google Play Store hoặc Stripe. |
+| **base_plan_id**              | str           | [ID gói cơ bản](https://support.google.com/googleplay/android-developer/answer/12154973) trên Google Play Store hoặc [ID giá](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) trên Stripe. |
+| **event_datetime**            | ISO 8601 date | Ngày và giờ xảy ra sự kiện.                                  |
+| **store**                     | str           | Có thể là _app_store_ hoặc _play_store_.                     |
+| **trial_duration**            | str           | Thời hạn dùng thử tính bằng ngày. Được gửi theo định dạng "{} days", ví dụ: "7 days". |
+| **cancellation_reason**       | str           | <p>Lý do người dùng hủy gói đăng ký.</p><p></p><p>Có thể là</p><p>iOS & Android</p><p>_voluntarily_cancelled_, _billing_error_, _refund_</p><p>iOS</p><p>_price_increase_, _product_was_not_available_, _unknown_</p><p>Android</p><p>_new_subscription_replace_, _cancelled_by_developer_</p> |
+| **subscription_expires_at**   | ISO 8601 date | Ngày hết hạn của gói đăng ký. Thường là trong tương lai.     |
+| **consecutive_payments**      | int           | Số kỳ mà người dùng đã đăng ký liên tục không gián đoạn. Bao gồm kỳ hiện tại. |
+| **rate_after_first_year**     | bool          | Boolean cho biết gói đăng ký đủ điều kiện được áp dụng mức hoa hồng giảm (thường là 15%) sau một năm gia hạn liên tục. Mức hoa hồng thay đổi tùy theo điều kiện tham gia chương trình và quốc gia. Xem [Hoa hồng cửa hàng và thuế](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue) để biết thêm chi tiết. |
+| **promotional_offer_id**      | str           | ID của ưu đãi như được chỉ định trong phần Product của Adapty Dashboard |
+| **store_offer_category**      | str           | Có thể là _introductory_ hoặc _promotional_.                 |
+| **store_offer_discount_type** | str           | Có thể là _free_trial_, _pay_as_you_go_ hoặc _pay_up_front_. |
+| **paywall_name**              | str           | Tên của paywall nơi giao dịch được thực hiện.                |
+| **paywall_revision**          | int           | Phiên bản của paywall nơi giao dịch được thực hiện. Giá trị được đặt là 1. |
+| **developer_id**              | str           | ID (SDK) của nhà phát triển cho placement nơi giao dịch được thực hiện. |
+| **ab_test_name**              | str           | Tên của A/B test nơi giao dịch được thực hiện.               |
+| **ab_test_revision**          | int           | Phiên bản của A/B test nơi giao dịch được thực hiện. Giá trị được đặt là 1. |
+| **cohort_name**               | str           | Tên đối tượng mà hồ sơ người dùng thuộc về.                  |
+| **profile_event_id**          | uuid          | ID sự kiện duy nhất có thể được dùng để loại bỏ trùng lặp.   |
+| **store_country**             | str           | Quốc gia được cửa hàng gửi cho chúng tôi.                    |
+| **profile_ip_address**        | str           | IP hồ sơ người dùng (có thể là IPv4 hoặc IPv6, ưu tiên IPv4 khi có). Được cập nhật mỗi khi IP của thiết bị thay đổi. |
+| **profile_country**           | str           | Được Adapty xác định dựa trên IP hồ sơ người dùng.           |
+| **profile_total_revenue_usd** | float         | Tổng doanh thu của hồ sơ người dùng, bao gồm cả hoàn tiền.   |
+| **variation_id**              | uuid          | ID duy nhất của paywall nơi giao dịch được thực hiện.        |
+| **access_level_id**           | str           | ID mức độ truy cập có trả phí                                |
+| **is_active**                 | bool          | Boolean cho biết mức độ truy cập có trả phí có đang hoạt động cho hồ sơ người dùng hay không. |
+| **will_renew**                | bool          | Boolean cho biết mức độ truy cập có trả phí có được gia hạn hay không. |
+| **is_refund**                 | bool          | Boolean cho biết giao dịch có được hoàn tiền hay không.      |
+| **is_lifetime**               | bool          | Boolean cho biết mức độ truy cập có trả phí có phải là quyền truy cập trọn đời hay không. |
+| **is_in_grace_period**        | bool          | Boolean cho biết hồ sơ người dùng có đang trong thời gian ân hạn hay không. |
+| **starts_at**                 | ISO 8601 date | Ngày và giờ mức độ truy cập có trả phí bắt đầu cho người dùng. |
+| **renewed_at**                | ISO 8601 date | Ngày và giờ mức độ truy cập có trả phí sẽ được gia hạn.      |
+| **expires_at**                | ISO 8601 date | Ngày và giờ mức độ truy cập có trả phí sẽ hết hạn.           |
+| **activated_at**              | ISO 8601 date | Ngày và giờ mức độ truy cập có trả phí được kích hoạt.       |
+| **billing_issue_detected_at** | ISO 8601 date | Ngày và giờ xảy ra sự cố thanh toán.                         |
+| **profile_has_access_level**  | Bool          | Boolean cho biết hồ sơ người dùng có mức độ truy cập đang hoạt động hay không (chỉ dành cho Webhook). |
+
+Mỗi sự kiện có các thuộc tính sau:
+
+`transaction_id, original_transaction_id, purchase_date, original_purchase_date, environment, vendor_product_id, event_datetime, store`. 
+
+Ngoài ra, một số sự kiện có thêm các thuộc tính bổ sung. Đối với sự kiện `subscription_refunded` và `non_subscription_purchase_refunded`, bắt buộc phải cung cấp giá trị của `price_usd` và `proceeds_usd` làm thuộc tính bổ sung.
+
+| Tên sự kiện                         | Thuộc tính                                                   |
+| :---------------------------------- | :----------------------------------------------------------- |
+| **subscription\_initial\_purchase** | price\_usd, proceeds\_usd, subscription\_expires\_at, consecutive\_payments, rate\_after\_first\_year, trial\_duration |
+| **subscription\_renewed**           | price\_usd, proceeds\_usd, subscription\_expires\_at, consecutive\_payments, rate\_after\_first\_year, trial\_duration |
+| **subscription\_cancelled**         | cancellation\_reason, trial\_duration                        |
+| **trial\_started**                  | subscription\_expires\_at, trial\_duration                   |
+| **trial\_converted**                | price\_usd, proceeds\_usd, subscription\_expires\_at, consecutive\_payments, rate\_after\_first\_year, trial\_duration |
+| **trial\_cancelled**                | cancellation\_reason, trial\_duration                        |
+| **non\_subscription\_purchase**     | price\_usd, proceeds\_usd                                    |
+| **billing\_issue\_detected**        | subscription\_expires\_at, trial\_duration                   |
+| **entered\_grace\_period**          | subscription\_expires\_at, trial\_duration                   |
+
+Ví dụ sự kiện
+
+```json title="Json"
+{
+    "price_usd": 9.99,
+    "proceeds_usd": 6.99,
+    "transaction_id": "1000000628581600",
+    "original_transaction_id": "1000000628581600",
+    "purchase_date": "2020-02-18T18:40:22.000000+0000",
+    "original_purchase_date": "2020-02-18T18:40:22.000000+0000",
+    "environment": "Sandbox",
+    "vendor_product_id": "premium",
+    "event_datetime": "2020-02-18T18:40:22.000000+0000",
+    "store": "app_store"
+}
+```
+
+Adapty gửi sự kiện đến máy chủ của bạn và các hệ thống analytics bên thứ ba.
+
+Thuộc tính **profile_ip_address** được đồng bộ với IP hiện tại của thiết bị. Mỗi khi máy chủ Adapty nhận thông tin từ SDK, IP sẽ được cập nhật nếu khác với IP chúng tôi đang lưu.
+
+### Thiết lập mã định danh hồ sơ người dùng \{#setting-the-profiles-identifier\}
+
+- Thiết lập mã định danh hồ sơ người dùng cho analytics đã chọn bằng cách sử dụng <InlineTooltip tooltip="hướng dẫn thiết lập thuộc tính người dùng trong ứng dụng của bạn">[iOS](setting-user-attributes), [Android](android-setting-user-attributes), [React Native](react-native-setting-user-attributes), [Flutter](flutter-setting-user-attributes), và [Unity](unity-setting-user-attributes)</InlineTooltip>.
+
+:::warning
+Tránh trùng lặp dữ liệu
+
+Đừng quên tắt việc gửi sự kiện gói đăng ký từ thiết bị và máy chủ của bạn để tránh trùng lặp
+:::
+
+### Tắt analytics bên ngoài cho một khách hàng cụ thể \{#disabling-external-analytics-for-a-specific-customer\}
+
+Đôi khi bạn muốn ngừng gửi sự kiện analytics cho một khách hàng cụ thể. Điều này hữu ích khi ứng dụng của bạn có tùy chọn cho phép người dùng từ chối dịch vụ analytics.
+
+Để tắt analytics bên ngoài cho một khách hàng, dùng phương thức `updateProfile()`. Tạo đối tượng `AdaptyProfileParameters.Builder` và đặt giá trị tương ứng cho nó.  
+Khi analytics bên ngoài bị chặn, Adapty sẽ không gửi bất kỳ sự kiện nào đến bất kỳ tích hợp nào cho người dùng đó. Nếu bạn muốn tắt một tích hợp cho tất cả người dùng ứng dụng, hãy tắt nó trực tiếp trong Adapty Dashboard.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+```swift showLineNumbers
+let builder = AdaptyProfileParameters.Builder()
+    .with(analyticsDisabled: true)
+
+Adapty.updateProfile(parameters: builder.build())
+```
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+val parameters = AdaptyProfileParameters(
+    analyticsDisabled = true
+)
+
+Adapty.updateProfile(parameters) { error ->
+    if (error == null) {
+        // successful update
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers ]
+AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()
+    .withExternalAnalyticsDisabled(true);
+
+Adapty.updateProfile(builder.build());
+```
+</TabItem>
+<TabItem value="flutter" label="Flutter" default>
+```javascript showLineNumbers
+final builder = AdaptyProfileParametersBuilder()
+  ..setAnalyticsDisabled(true);
+
+try {
+  await Adapty().updateProfile(builder.build());
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+</TabItem>
+<TabItem value="unity" label="Unity" default>
+```csharp showLineNumbers
+var builder = new AdaptyProfileParameters.Builder()
+    .SetAnalyticsDisabled(true);
+
+Adapty.UpdateProfile(builder.Build(), (error) => {
+    if(error != null) {
+      // handle the error
+    }
+});
+```
+</TabItem>
+<TabItem value="rn" label="React Native (TS)" default>
+```typescript showLineNumbers
+adapty.updateProfile({ analyticsDisabled: true });
+```
+</TabItem>
+</Tabs>
+
+### Tắt thu thập mã định danh quảng cáo \{#disable-collection-of-advertising-identifiers\}
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS" default>
+Bạn có thể tắt thu thập IDFA bằng thuộc tính `idfaCollectionDisabled`. Hãy đảm bảo gọi nó trước phương thức `.activate()`.
+
+```swift showLineNumbers
+// In your AppDelegate class:
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+ // highlight-start
+        .with(idfaCollectionDisabled: true) // set to `true`
+// highlight-end
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+Bạn có thể tắt thu thập AAID/GAID bằng thuộc tính `withAdIdCollectionDisabled` khi kích hoạt Adapty SDK:
+
+```swift showLineNumbers
+override fun onCreate() {
+    super.onCreate()
+    Adapty.activate(
+      applicationContext,
+      AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+      // highlight-start
+          .withAdIdCollectionDisabled(true) // set to `true`
+      // highlight-end
+          .build()
+    )  
+}
+```
+
+</TabItem>
+
+<TabItem value="java" label="Android (Java)" default>
+Bạn có thể tắt thu thập AAID/GAID bằng thuộc tính `withAdIdCollectionDisabled` khi kích hoạt Adapty SDK:
+
+```swift showLineNumbers 
+@Override
+public void onCreate() {
+    super.onCreate();
+    Adapty.activate(
+      applicationContext,
+      new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+      // highlight-start
+          .withAdIdCollectionDisabled(true) // set to `true`
+      // highlight-end
+          .build()
+    );
+}
+```
+
+</TabItem>
+
+<TabItem value="flutter" label="Flutter" default>
+Bạn có thể tắt thu thập IDFA bằng thuộc tính `withAppleIdfaCollectionDisabled` và tắt Google/Android Advertising ID bằng thuộc tính `withGoogleAdvertisingIdCollectionDisabled`. Đặt chúng thành `true` khi kích hoạt Adapty SDK:
+
+```dart showLineNumbers
+try {
+    await Adapty().activate(
+        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+ // highlight-start
+          ..withGoogleAdvertisingIdCollectionDisabled(true), // set to `true`
+          ..withAppleIdfaCollectionDisabled(true), // set to `true`
+// highlight-end
+    );
+} catch (e) {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="unity" label="Unity" default>
+Bạn có thể tắt thu thập IDFA bằng thuộc tính `SetIDFACollectionDisabled` khi kích hoạt Adapty SDK. Hiện tại không thể tắt thu thập AAID/GAID.
+
+```dart showLineNumbers
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+ // highlight-start
+    .SetIDFACollectionDisabled(true); // set to `true`
+ // highlight-end
+
+Adapty.Activate(builder.Build(), (error) => {
+    // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="rn" label="React Native" default>
+Bạn cũng có thể tắt thu thập IDFA bằng thuộc tính `idfaCollectionDisabled` khi kích hoạt Adapty SDK, hoặc tắt thu thập AAID/GAID bằng thuộc tính `adIdCollectionDisabled`.
+
+```typescript showLineNumbers
+adapty.activate('PUBLIC_SDK_KEY', {
+  // highlight-start 
+  ios: {
+      idfaCollectionDisabled: true, // set to `true`
+  }, 
+  android: {
+      adIdCollectionDisabled: true,
+  },
+  // highlight-end
+});
+```
+</TabItem>
+</Tabs>

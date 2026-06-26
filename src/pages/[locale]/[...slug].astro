@@ -123,7 +123,13 @@ const breadcrumbs = sidebarData
 
 // Reusable components — English base + locale overrides
 const reusableComponents = import.meta.glob('../../components/reusable/*.{md,mdx}', { eager: true });
-const localeReusableComponents = import.meta.glob('../../locales/**/*.{md,mdx}', { eager: true });
+// Locale reusables are loaded lazily and scoped to `reusable/` only.
+// A previous `locales/**/*.{md,mdx}` eager glob pulled every locale's entire
+// translated corpus (~700 files per language) into every build — including the
+// English `BUILD_LOCALES=none` job, which renders no locale pages — and OOM'd as
+// languages were added. Lazy + narrowed: build-en loads none of these, and each
+// locale build awaits only its own ~70 reusables below.
+const localeReusableComponents = import.meta.glob('../../locales/*/reusable/*.{md,mdx}');
 
 const toPascalCase = (str: string) => {
   if (/^\d/.test(str)) return `Error${str}`;
@@ -136,15 +142,17 @@ const globalComponents = Object.entries(reusableComponents).reduce((acc: Record<
   return acc;
 }, {});
 
-// Apply locale-specific reusable overrides from src/locales/{locale}/reusable/
-Object.entries(localeReusableComponents).forEach(([p, module]: [string, any]) => {
+// Apply locale-specific reusable overrides from src/locales/{locale}/reusable/.
+// Only the current locale's reusables are imported; other locales' loaders are
+// never called, so they never enter the heap.
+for (const [p, loadModule] of Object.entries(localeReusableComponents)) {
   // Match paths like ../../locales/zh/reusable/SampleApp.mdx
   const match = p.match(/\/locales\/([^/]+)\/reusable\/(.+)\.(md|mdx)$/);
   if (match && match[1] === locale) {
-    const fileName = match[2];
-    globalComponents[toPascalCase(fileName)] = (module as any).Content;
+    const module = (await loadModule()) as any;
+    globalComponents[toPascalCase(match[2])] = module.Content;
   }
-});
+}
 ---
 
 <DocsLayout

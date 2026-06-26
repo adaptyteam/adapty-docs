@@ -1,0 +1,154 @@
+---
+title: "Xác định người dùng trong Kotlin Multiplatform SDK"
+description: "Xác định người dùng trong Adapty để cải thiện trải nghiệm gói đăng ký được cá nhân hóa."
+metadataTitle: "Xác định người dùng trong Adapty | Tài liệu Adapty"
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+import CrossDeviceDetection from '@site/src/locales/vi/reusable/CrossDeviceDetection.mdx';
+
+Adapty tạo một ID hồ sơ nội bộ cho mỗi người dùng. Tuy nhiên, nếu bạn có hệ thống xác thực riêng, bạn nên đặt Customer User ID của mình. Bạn có thể tìm người dùng theo Customer User ID trong phần [Profiles](profiles-crm) và sử dụng nó trong [server-side API](getting-started-with-server-side-api), thông tin này sẽ được gửi đến tất cả các tích hợp.
+
+### Đặt customer user ID khi cấu hình \{#setting-customer-user-id-on-configuration\}
+
+Nếu bạn có user ID trong quá trình cấu hình, chỉ cần truyền nó vào tham số `customerUserId` của phương thức `.activate()`:
+
+```kotlin showLineNumbers
+
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withCustomerUserId("YOUR_USER_ID")
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+    }
+}
+```
+
+<SampleApp />
+
+### Đặt customer user ID sau khi cấu hình \{#setting-customer-user-id-after-configuration\}
+
+Nếu bạn chưa có user ID khi cấu hình SDK, bạn có thể đặt nó sau bất kỳ lúc nào bằng phương thức `.identify()`. Trường hợp phổ biến nhất khi sử dụng phương thức này là sau khi đăng ký hoặc đăng nhập, khi người dùng chuyển từ trạng thái ẩn danh sang đã xác thực.
+
+```kotlin showLineNumbers
+
+Adapty.identify("YOUR_USER_ID").onSuccess {
+    // successful identify
+}.onError { error ->
+    // handle the error
+}
+```
+
+Các tham số yêu cầu:
+
+- **Customer User ID** (bắt buộc): chuỗi định danh người dùng.
+
+:::warning
+Gửi lại dữ liệu người dùng quan trọng
+
+Trong một số trường hợp, chẳng hạn khi người dùng đăng nhập lại vào tài khoản của họ, máy chủ Adapty đã có thông tin về người dùng đó. Trong những tình huống này, Adapty SDK sẽ tự động chuyển sang làm việc với người dùng mới. Nếu bạn đã truyền bất kỳ dữ liệu nào cho người dùng ẩn danh, chẳng hạn như thuộc tính tùy chỉnh hoặc attribution từ các mạng bên thứ ba, bạn nên gửi lại dữ liệu đó cho người dùng đã được xác định.
+
+Ngoài ra, hãy lưu ý rằng bạn nên yêu cầu lại tất cả các paywall và sản phẩm sau khi xác định người dùng, vì dữ liệu của người dùng mới có thể khác.
+:::
+
+### Đăng xuất và đăng nhập \{#logging-out-and-logging-in\}
+
+Bạn có thể đăng xuất người dùng bất kỳ lúc nào bằng cách gọi phương thức `.logout()`:
+
+```kotlin showLineNumbers
+
+Adapty.logout().onSuccess {
+    // successful logout
+}.onError { error ->
+    // handle the error
+}
+```
+
+Sau đó, bạn có thể đăng nhập người dùng bằng phương thức `.identify()`.
+
+## Gán `appAccountToken` (iOS) \{#assign-appaccounttoken-ios\}
+
+[`iosAppAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) là một **UUID** cho phép bạn liên kết các giao dịch App Store với danh tính người dùng nội bộ của bạn.
+StoreKit gắn token này với mọi giao dịch, để backend của bạn có thể khớp dữ liệu App Store với người dùng của bạn.
+
+Hãy sử dụng UUID ổn định được tạo cho mỗi người dùng và tái sử dụng nó cho cùng một tài khoản trên nhiều thiết bị.
+Điều này đảm bảo rằng các giao dịch mua và thông báo App Store được liên kết chính xác.
+
+Bạn có thể đặt token theo hai cách – trong quá trình kích hoạt SDK hoặc khi xác định người dùng.
+
+:::important
+Bạn phải luôn truyền `iosAppAccountToken` cùng với `customerUserId`.
+Nếu chỉ truyền token, nó sẽ không được đưa vào giao dịch.
+:::
+
+```kotlin showLineNumbers
+
+// During configuration:
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withCustomerUserId(
+            id = "YOUR_USER_ID",
+            iosAppAccountToken = "YOUR_IOS_APP_ACCOUNT_TOKEN"
+        )
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+}
+
+// Or when identifying users
+Adapty.identify(
+    customerUserId = "YOUR_USER_ID",
+    iosAppAccountToken = "YOUR_IOS_APP_ACCOUNT_TOKEN"
+).onSuccess {
+    // successful identify
+}.onError { error ->
+    // handle the error
+}
+```
+
+## Đặt obfuscated account ID (Android) \{#set-obfuscated-account-ids-android\}
+
+Google Play yêu cầu obfuscated account ID cho một số trường hợp sử dụng nhất định nhằm tăng cường quyền riêng tư và bảo mật người dùng. Các ID này giúp Google Play xác định giao dịch mua trong khi vẫn giữ thông tin người dùng ở dạng ẩn danh, điều này đặc biệt quan trọng cho việc ngăn chặn gian lận và phân tích.
+
+Bạn có thể cần đặt các ID này nếu ứng dụng của bạn xử lý dữ liệu người dùng nhạy cảm hoặc nếu bạn cần tuân thủ các quy định về quyền riêng tư cụ thể. Các ID ẩn danh cho phép Google Play theo dõi giao dịch mua mà không tiết lộ định danh người dùng thực.
+
+:::important
+Bạn phải luôn truyền `androidObfuscatedAccountId` cùng với `customerUserId`.
+Nếu chỉ truyền obfuscated account ID, nó sẽ không được đưa vào giao dịch.
+:::
+
+```kotlin showLineNumbers
+
+// During configuration:
+Adapty.activate(
+    AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+        .withCustomerUserId(
+            id = "YOUR_USER_ID",
+            androidObfuscatedAccountId = "YOUR_OBFUSCATED_ACCOUNT_ID"
+        )
+        .build()
+).onSuccess {
+    // successful activation
+}.onError { error ->
+    // handle the error
+}
+
+// Or when identifying users
+Adapty.identify(
+    customerUserId = "YOUR_USER_ID",
+    androidObfuscatedAccountId = "YOUR_OBFUSCATED_ACCOUNT_ID"
+).onSuccess {
+    // successful identify
+}.onError { error ->
+    // handle the error
+}
+```
+
+## Phát hiện người dùng trên nhiều thiết bị \{#detect-users-across-devices\}
+
+<CrossDeviceDetection />

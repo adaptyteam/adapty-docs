@@ -1,0 +1,74 @@
+---
+title: "AI にアナリティクスデータについて質問する"
+description: "Export Analytics API を使用して、AIコーディングエージェントで Adapty アナリティクスを自然言語でクエリします。"
+metadataTitle: "AI にアナリティクスデータについて質問する | Adapty ドキュメント"
+keywords: ['ask ai about analytics', 'adapty analytics ai', 'query analytics with ai', 'export analytics api', 'analytics ai agent', 'mcp', 'llm']
+---
+Ask an AI coding agent about your Adapty analytics in plain language — revenue, conversions, retention, LTV — and let it pull the numbers for you. Point a tool that can make API calls at the [Export Analytics API](https://adapty.io/docs/ja/export-analytics-api.md), and it queries your metrics on demand.
+## 質問できる内容 \{#what-you-can-ask-about\}
+
+Export Analytics API は、Adapty ダッシュボードのチャートで確認できる指標と同じものを返します。各指標には固有のオペレーションがあります。
+| 指標 | カバー範囲 | オペレーション |
+| --- | --- | --- |
+| Revenue、MRR、ARR、ARPU | 期間・国・キャンペーン別にグループ化された収益 | [retrieveAnalyticsData](https://adapty.io/docs/ja/api-export-analytics/operations/retrieveAnalyticsData.md) |
+| コホートリテンション | 特定のコホートのサブスクライバーが支払いを継続する期間 | [retrieveCohortData](https://adapty.io/docs/ja/api-export-analytics/operations/retrieveCohortData.md) |
+| コンバージョン率 | あるステップやチャネルから次のステップに進むユーザー数 | [retrieveConversionData](https://adapty.io/docs/ja/api-export-analytics/operations/retrieveConversionData.md) |
+| チャーンとファネル | ユーザーが離脱する箇所と解約スピード | [retrieveFunnelData](https://adapty.io/docs/ja/api-export-analytics/operations/retrieveFunnelData.md) |
+| ライフタイムバリュー（LTV） | 時間経過によるユーザーセグメントあたりの平均収益 | [retrieveLTVData](https://adapty.io/docs/ja/api-export-analytics/operations/retrieveLTVData.md) |
+| リテンション | 一定日数後もアクティブなユーザーの割合 | [retrieveRetentionData](https://adapty.io/docs/ja/api-export-analytics/operations/retrieveRetentionData.md) |
+APIパラメーターとフィルターの全一覧については、[APIリファレンス](https://adapty.io/docs/ja/api-export-analytics.md)をご覧ください。
+## 始める前に \{#before-you-start\}
+
+次の3つが必要です：
+- **データのある Adapty アカウント**: この API はダッシュボードのチャートと同じ指標を返すため、アプリがすでにアナリティクスを収集している必要があります。
+- **シークレット API キー**: [App settings → General](https://app.adapty.io/settings/general) の **Secret key** フィールドで確認できます。キーはアプリごとに異なるため、アプリごとに別々のキーを使用してください。エージェントがチャットに貼り付けずに読み取れるよう、環境変数（例: `ADAPTY_SECRET_KEY`）に保存してください。
+- **API を呼び出せる AI ツール**: Claude Code、Cursor、またはフェッチツールを備えた Claude Desktop などが使えます。claude.ai や ChatGPT のような通常のチャットツールは直接 API を呼び出せません。
+<ZoomImage id="export-analytics-secret-key.webp" width="700px" alt="Adapty の App settings 全般ページ、シークレット API キーが Secret key フィールドに表示されている" />
+## エージェントにAPI仕様を提供する \{#give-your-agent-the-api-spec\}
+
+[OpenAPI仕様](https://adapty.io/docs/ja/api-specs/export-analytics-api.yaml)には、すべてのエンドポイント、認証ヘッダー、リクエストボディ、レスポンス例が記載されています。エージェントがこの仕様を参照することで、コードを書かなくても正しいリクエストを構築できます。
+
+エージェントにURLで仕様を渡す:
+- **URLを貼り付ける**: エージェントがURLを取得できる場合は、`https://adapty.io/docs/ja/api-specs/export-analytics-api.yaml` を渡して仕様を読むよう指示してください。
+- **フェッチツールを使用する**: エージェントにURLを取得するツール（例：MCP フェッチサーバー）がある場合は、同じURLを指定してください。
+
+仕様にはベースURLとして `https://api-admin.adapty.io` が設定されているため、キーが環境に設定されていれば、エージェントは必要なものをすべて揃えています。
+## データについて質問する \{#ask-about-your-data\}
+
+スペックを読み込み、APIキーを環境変数に設定したら、取得したい指標を平易な言葉で説明してください。
+
+プロンプトの例：
+```
+What was my MRR at the end of each month this year, and how does it compare to last year?
+
+Show my trial-to-paid conversion rate for the last 90 days, broken down by product.
+
+Which countries drive the most revenue from my yearly subscription? Top 10.
+
+How is week-1 retention trending for subscribers who started in the last 6 months?
+
+What's the refund rate on my annual plan since launch, by month?
+
+Compare LTV for paid-campaign users vs. organic over the last year, and export it as CSV.
+```
+
+エージェントはリクエストを適切なオペレーションにマッピングし、環境変数からキーを読み取ってデータを返します。レスポンスはデフォルトでJSONです。スプレッドシートに適したファイルが必要な場合はCSVをリクエストしてください — エージェントはリクエストボディの `format` を `csv` に設定します。
+
+:::warning
+シークレットキーは環境変数に保存してください — チャットに貼り付けたり、ルールファイルにコミットしたりしないでください。キーはアプリ固有のため、漏洩した場合は **Settings → General** でローテーションしてください。[APIキーのローテーション](https://adapty.io/docs/ja/export-analytics-api-authorization.md)を参照してください。
+:::
+## セッションをまたいで再利用するための初期設定 \{#set-up-once-for-repeated-use\}
+
+毎回セットアップを繰り返さなくて済むよう、エージェントが再利用できる場所にスペックとキーを保存しておきましょう。
+- **スペックリンクを保存する**: スペックのURLをエージェントのルールやメモリファイル（例：`CLAUDE.md`やCursorのルールファイル）に追加しておくと、毎セッションで自動的に読み込まれます。
+- **キーを環境変数に保存する**: `ADAPTY_SECRET_KEY`をシェルプロファイルやツールのシークレットストアに保存しておけば、二度と貼り付ける手間がかかりません。
+- **よく使うプロンプトを保存するか、カスタムスキルを作成する**: よく使う質問を保存済みプロンプトとして管理するか、カスタムスキルやスラッシュコマンドとしてまとめておくと、オンデマンドでレポートを実行できます。
+## 制限事項 \{#limits\}
+
+以下の制約に注意してください。
+
+- **レート制限**: APIはAPIキーごとに1秒あたり2リクエストまで許可されています。超過すると`429 Too Many Requests`エラーが返ります。`429`が返ったときは待ってからリトライするようエージェントに伝えてください。
+- **アプリごとのキー**: 各キーは1つのアプリにのみ有効です。複数アプリのデータを取得する場合は、アプリごとに対応するキーを提供してください。
+- **出力フォーマット**: レスポンスはデフォルトでJSON形式です。CSVでエクスポートするには、リクエストボディで`format`を`csv`に設定してください。
+
+認証とリクエストのルールの詳細は、[認証とリクエスト形式](export-analytics-api-authorization)を参照してください。

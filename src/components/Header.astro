@@ -124,7 +124,7 @@ const localeLinks = SUPPORTED_LOCALES.map(locale => ({
       <!-- Language Switcher -->
       <div class="lang-switcher relative dropdown-container">
         <button class="lang-trigger nav-link" aria-label="Switch language">
-          <span id="lang-label">{currentLocale ? LOCALE_NAMES[currentLocale as keyof typeof LOCALE_NAMES] ?? currentLocale : 'EN'}</span>
+          <span id="lang-label" class="lang-label">{currentLocale ? LOCALE_NAMES[currentLocale as keyof typeof LOCALE_NAMES] ?? currentLocale : 'EN'}</span>
           <svg class="dropdown-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
@@ -182,7 +182,33 @@ const localeLinks = SUPPORTED_LOCALES.map(locale => ({
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
         </svg>
       </button>
-      
+
+      <!-- Language Switcher (mobile) -->
+      <div class="lang-switcher mobile-lang-switcher relative dropdown-container">
+        <button class="lang-trigger mobile-lang-trigger nav-link" aria-label="Switch language">
+          <span class="lang-label">{currentLocale ? LOCALE_NAMES[currentLocale as keyof typeof LOCALE_NAMES] ?? currentLocale : 'EN'}</span>
+          <svg class="dropdown-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div class="dropdown-menu lang-menu">
+          <div class="dropdown-content">
+            <a
+              href={englishUrl}
+              class:list={["dropdown-item", !currentLocale ? "lang-active" : ""]}
+              data-locale=""
+            >English</a>
+            {localeLinks.map(({ locale, label, href, active }) => (
+              <a
+                href={href}
+                class:list={["dropdown-item", active ? "lang-active" : ""]}
+                data-locale={locale}
+              >{label}</a>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <button id="mobile-menu-btn" class="p-2 text-[#443f49] dark:text-slate-300">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -312,7 +338,8 @@ const localeLinks = SUPPORTED_LOCALES.map(locale => ({
     transition: transform 0.2s, color 0.2s;
   }
   
-  .dropdown-container:hover .dropdown-chevron {
+  .dropdown-container:hover .dropdown-chevron,
+  .lang-switcher.open .dropdown-chevron {
     transform: rotate(180deg);
     color: var(--text-primary);
   }
@@ -377,6 +404,17 @@ const localeLinks = SUPPORTED_LOCALES.map(locale => ({
     gap: 0.375rem;
     font-size: 0.8125rem;
     min-width: 2.5rem;
+  }
+
+  /* Mobile language switcher — compact trigger, right-aligned menu so it stays on screen */
+  .mobile-lang-trigger {
+    padding: 0.5rem;
+    color: var(--text-secondary);
+  }
+
+  .mobile-lang-switcher .dropdown-menu {
+    left: auto;
+    right: 0;
   }
 
   /* Compact search icon (1024–1280px band) — matches the desktop nav color scheme */
@@ -477,11 +515,11 @@ const localeLinks = SUPPORTED_LOCALES.map(locale => ({
       ? path.replace(`${localeMatch[1]}${localeMatch[2]}/`, localeMatch[1])
       : path;
 
-    // Update button label
-    const labelEl = document.getElementById('lang-label');
-    if (labelEl) {
-      labelEl.textContent = currentLocale ? (LOCALE_NAMES_CLIENT[currentLocale] ?? currentLocale) : 'EN';
-    }
+    // Update button label (desktop + mobile switchers)
+    const labelText = currentLocale ? (LOCALE_NAMES_CLIENT[currentLocale] ?? currentLocale) : 'EN';
+    document.querySelectorAll<HTMLElement>('.header-main .lang-label').forEach(el => {
+      el.textContent = labelText;
+    });
 
     // Update link hrefs and active classes
     document.querySelectorAll<HTMLAnchorElement>('[data-locale]').forEach(el => {
@@ -512,20 +550,25 @@ const localeLinks = SUPPORTED_LOCALES.map(locale => ({
   // One-time setup: click-to-open lang switcher and locale preference saving.
   // These run once because the header is transition:persist and the script only
   // executes on first load.
-  const langSwitcherEl = document.querySelector<HTMLElement>('.lang-switcher');
-  const langTriggerEl = document.querySelector<HTMLElement>('.lang-trigger');
+  // Scoped to the header so the unrelated API-reference .lang-switcher is untouched.
+  const langSwitcherEls = document.querySelectorAll<HTMLElement>('.header-main .lang-switcher');
 
-  if (langTriggerEl && langSwitcherEl) {
-    langTriggerEl.addEventListener('click', (e) => {
+  langSwitcherEls.forEach(switcherEl => {
+    const triggerEl = switcherEl.querySelector<HTMLElement>('.lang-trigger');
+    if (!triggerEl) return;
+    triggerEl.addEventListener('click', (e) => {
       e.stopPropagation();
-      langSwitcherEl.classList.toggle('open');
+      const wasOpen = switcherEl.classList.contains('open');
+      langSwitcherEls.forEach(el => el.classList.remove('open'));
+      if (!wasOpen) switcherEl.classList.add('open');
     });
-    document.addEventListener('click', () => {
-      langSwitcherEl.classList.remove('open');
-    });
-  }
+  });
 
-  document.querySelectorAll<HTMLElement>('[data-locale]').forEach(el => {
+  document.addEventListener('click', () => {
+    langSwitcherEls.forEach(el => el.classList.remove('open'));
+  });
+
+  document.querySelectorAll<HTMLElement>('.header-main [data-locale]').forEach(el => {
     el.addEventListener('click', () => {
       const locale = el.dataset.locale;
       if (locale) {
@@ -533,7 +576,7 @@ const localeLinks = SUPPORTED_LOCALES.map(locale => ({
       } else {
         localStorage.removeItem('preferred-locale');
       }
-      langSwitcherEl?.classList.remove('open');
+      langSwitcherEls.forEach(el => el.classList.remove('open'));
     });
   });
 

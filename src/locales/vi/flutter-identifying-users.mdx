@@ -1,0 +1,132 @@
+---
+title: "Xác định người dùng trong Flutter SDK"
+description: "Xác định người dùng trong Adapty để cải thiện trải nghiệm đăng ký được cá nhân hóa."
+metadataTitle: "Xác định người dùng trong Adapty | Tài liệu Adapty"
+displayed_sidebar: sdkflutter
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+import CrossDeviceDetection from '@site/src/locales/vi/reusable/CrossDeviceDetection.mdx';
+
+Adapty tạo một ID hồ sơ nội bộ cho mỗi người dùng. Tuy nhiên, nếu bạn có hệ thống xác thực riêng, bạn nên đặt Customer User ID của mình. Bạn có thể tìm người dùng theo Customer User ID của họ trong phần [Profiles](profiles-crm) và sử dụng nó trong [server-side API](getting-started-with-server-side-api), thứ sẽ được gửi đến tất cả các tích hợp.
+
+### Đặt Customer User ID khi cấu hình \{#setting-customer-user-id-on-configuration\}
+
+Nếu bạn đã có user ID khi cấu hình, hãy truyền nó qua tham số `customerUserId` vào phương thức `.activate()`:
+
+```dart showLineNumbers title="Dart"
+   try {
+       await Adapty().activate(
+           configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+             ..withCustomerUserId(YOUR_CUSTOMER_USER_ID)
+       );
+   } catch (e) {
+       // handle the error
+   }
+```
+
+<SampleApp />
+
+### Đặt Customer User ID sau khi cấu hình \{#setting-customer-user-id-after-configuration\}
+
+Nếu bạn chưa có user ID khi cấu hình SDK, bạn có thể đặt nó bất cứ lúc nào sau đó bằng phương thức `.identify()`. Trường hợp phổ biến nhất để sử dụng phương thức này là sau khi đăng ký hoặc đăng nhập, khi người dùng chuyển từ người dùng ẩn danh sang người dùng đã xác thực.
+
+```dart showLineNumbers
+try {
+  await Adapty().identify(customerUserId);
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+Tham số yêu cầu:
+
+- **Customer User ID** (bắt buộc): chuỗi định danh người dùng.
+
+:::warning
+Gửi lại dữ liệu người dùng quan trọng
+
+Trong một số trường hợp, chẳng hạn khi người dùng đăng nhập lại vào tài khoản của họ, máy chủ Adapty đã có thông tin về người dùng đó. Trong những tình huống này, Adapty SDK sẽ tự động chuyển sang làm việc với người dùng mới. Nếu bạn đã truyền dữ liệu nào đó cho người dùng ẩn danh, chẳng hạn như thuộc tính tùy chỉnh hoặc attribution từ các mạng bên thứ ba, bạn cần gửi lại dữ liệu đó cho người dùng đã được xác định.
+
+Ngoài ra, bạn cần gọi lại tất cả các paywall và sản phẩm sau khi xác định người dùng, vì dữ liệu của người dùng mới có thể khác.
+:::
+
+### Đăng xuất và đăng nhập \{#logging-out-and-logging-in\}
+
+Bạn có thể đăng xuất người dùng bất cứ lúc nào bằng cách gọi phương thức `.logout()`:
+
+```dart showLineNumbers
+try {
+  await Adapty().logout();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle unknown error
+}
+```
+
+Sau đó bạn có thể đăng nhập người dùng bằng phương thức `.identify()`.
+
+## Gán `appAccountToken` (iOS) \{#assign-appaccounttoken-ios\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) là một **UUID** cho phép bạn liên kết các giao dịch App Store với danh tính người dùng nội bộ của mình.  
+StoreKit liên kết token này với mọi giao dịch, giúp backend của bạn khớp dữ liệu App Store với người dùng của bạn.
+
+Hãy sử dụng một UUID ổn định được tạo cho từng người dùng và tái sử dụng nó cho cùng một tài khoản trên nhiều thiết bị.
+Điều này đảm bảo rằng các giao dịch mua và thông báo từ App Store được liên kết đúng cách.
+
+Bạn có thể đặt token theo hai cách – trong quá trình kích hoạt SDK hoặc khi xác định người dùng.
+
+:::important
+Bạn phải luôn truyền `appAccountToken` cùng với `customerUserId`.
+Nếu bạn chỉ truyền token, nó sẽ không được đưa vào giao dịch.
+:::
+
+```dart showLineNumbers
+// During configuration:
+try {
+   await Adapty().activate(
+       configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+         ..withCustomerUserId(YOUR_CUSTOMER_USER_ID, iosAppAccountToken: "YOUR_APP_ACCOUNT_TOKEN")
+   );
+} catch (e) {
+   // handle the error
+}
+// Or when identifying users
+try {
+    await Adapty().identify(customerUserId, iosAppAccountToken: "YOUR_APP_ACCOUNT_TOKEN");
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+}
+```
+
+### Đặt obfuscated account ID (Android) \{#set-obfuscated-account-ids-android\}
+
+Google Play yêu cầu obfuscated account ID cho một số trường hợp sử dụng nhằm tăng cường quyền riêng tư và bảo mật người dùng. Các ID này giúp Google Play xác định các giao dịch mua trong khi vẫn giữ thông tin người dùng ẩn danh, điều này đặc biệt quan trọng để phòng chống gian lận và phân tích.
+
+Bạn có thể cần đặt các ID này nếu ứng dụng của bạn xử lý dữ liệu người dùng nhạy cảm hoặc nếu bạn cần tuân thủ các quy định về quyền riêng tư cụ thể. Các obfuscated ID cho phép Google Play theo dõi các giao dịch mua mà không để lộ định danh người dùng thực tế.
+
+```dart showLineNumbers
+// During configuration:
+try {
+   await Adapty().activate(
+       configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+         ..withCustomerUserId(YOUR_CUSTOMER_USER_ID, androidObfuscatedAccountId: "OBFUSCATED_ACCOUNT_ID")
+   );
+} catch (e) {
+   // handle the error
+}
+// Or when identifying users
+try {
+    await Adapty().identify(customerUserId, androidObfuscatedAccountId: "OBFUSCATED_ACCOUNT_ID");
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+}
+```
+
+## Phát hiện người dùng trên nhiều thiết bị \{#detect-users-across-devices\}
+
+<CrossDeviceDetection />

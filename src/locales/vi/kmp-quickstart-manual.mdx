@@ -1,0 +1,113 @@
+---
+title: "Kích hoạt mua hàng trong paywall tùy chỉnh của bạn trong Kotlin Multiplatform SDK"
+description: "Tích hợp Adapty SDK vào paywall tùy chỉnh Kotlin Multiplatform của bạn để kích hoạt in-app purchase."
+metadataTitle: "Hướng dẫn nhanh Adapty | Tài liệu Adapty"
+keywords: ['paywalls kmp', 'sdk kmp', 'paywall', 'getPaywall']
+---
+
+Hướng dẫn này mô tả cách tích hợp Adapty vào paywall tùy chỉnh của bạn. Bạn hoàn toàn kiểm soát việc triển khai paywall, trong khi Adapty SDK lo việc lấy sản phẩm, xử lý mua hàng mới và khôi phục các giao dịch trước đó.
+
+:::important
+**Hướng dẫn này dành cho các nhà phát triển đang triển khai paywall tùy chỉnh.** Nếu bạn muốn cách đơn giản nhất để kích hoạt mua hàng, hãy sử dụng [Adapty Paywall Builder](kmp-quickstart-paywalls). Với Paywall Builder, bạn tạo paywall trong trình chỉnh sửa trực quan không cần code, Adapty tự động xử lý toàn bộ logic mua hàng, và bạn có thể thử nghiệm các thiết kế khác nhau mà không cần phát hành lại ứng dụng.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+### Thiết lập sản phẩm \{#set-up-products\}
+
+Để kích hoạt in-app purchase, bạn cần hiểu ba khái niệm chính:
+
+- [**Sản phẩm**](product) – bất cứ thứ gì người dùng có thể mua (gói đăng ký, consumable, quyền truy cập trọn đời)
+- [**Paywalls**](paywalls) – các cấu hình xác định sản phẩm nào sẽ được cung cấp. Trong Adapty, paywall là cách duy nhất để lấy sản phẩm, nhưng thiết kế này cho phép bạn thay đổi sản phẩm, giá cả và ưu đãi mà không cần chỉnh sửa code ứng dụng.
+- [**Placements**](placements) – nơi và thời điểm bạn hiển thị paywall trong ứng dụng (như `main`, `onboarding`, `settings`). Bạn thiết lập paywall cho các placement trên dashboard, sau đó yêu cầu chúng bằng placement ID trong code. Điều này giúp bạn dễ dàng chạy A/B test và hiển thị paywall khác nhau cho từng người dùng.
+
+Hãy đảm bảo bạn hiểu các khái niệm này ngay cả khi bạn làm việc với paywall tùy chỉnh. Về cơ bản, đây chỉ là cách bạn quản lý các sản phẩm bán trong ứng dụng.
+
+Để triển khai paywall tùy chỉnh, bạn cần tạo một **paywall** và thêm nó vào một **placement**. Thiết lập này cho phép bạn lấy sản phẩm. Để hiểu những gì cần làm trên dashboard, hãy làm theo hướng dẫn nhanh [tại đây](quickstart).
+
+### Quản lý người dùng \{#manage-users\}
+
+Bạn có thể làm việc có hoặc không có xác thực backend từ phía mình.
+
+Tuy nhiên, Adapty SDK xử lý người dùng ẩn danh và đã xác định theo cách khác nhau. Đọc [hướng dẫn nhanh về xác định người dùng](kmp-quickstart-identify) để hiểu các đặc điểm cụ thể và đảm bảo bạn đang làm việc với người dùng đúng cách.
+
+## Bước 1. Lấy sản phẩm \{#step-1-get-products\}
+
+Để lấy sản phẩm cho paywall tùy chỉnh của bạn, bạn cần:
+
+1. Lấy đối tượng `paywall` bằng cách truyền ID [placement](placements) vào phương thức `getPaywall`.
+2. Lấy mảng sản phẩm cho paywall này bằng phương thức `getPaywallProducts`.
+
+```kotlin showLineNumbers
+
+fun loadPaywall() {
+    Adapty.getPaywall(placementId = "YOUR_PLACEMENT_ID")
+        .onSuccess { paywall ->
+            Adapty.getPaywallProducts(paywall = paywall)
+                .onSuccess { products ->
+                    // Use products to build your custom paywall UI
+                }
+                .onError { error ->
+                    // Handle the error
+                }
+        }
+        .onError { error ->
+            // Handle the error
+        }
+}
+```
+
+## Bước 2. Chấp nhận mua hàng \{#step-2-accept-purchases\}
+
+Khi người dùng nhấn vào một sản phẩm trong paywall tùy chỉnh, hãy gọi phương thức `makePurchase` với sản phẩm được chọn. Phương thức này sẽ xử lý luồng mua hàng và trả về hồ sơ người dùng đã cập nhật.
+
+```kotlin showLineNumbers
+
+fun purchaseProduct(product: AdaptyPaywallProduct) {
+    Adapty.makePurchase(product = product)
+        .onSuccess { purchaseResult ->
+            when (purchaseResult) {
+                is AdaptyPurchaseResult.Success -> {
+                    val profile = purchaseResult.profile
+                    // Purchase successful, profile updated
+                }
+                is AdaptyPurchaseResult.UserCanceled -> {
+                    // User canceled the purchase
+                }
+                is AdaptyPurchaseResult.Pending -> {
+                    // Purchase is pending (e.g., user will pay offline with cash)
+                }
+            }
+        }
+        .onError { error ->
+            // Handle the error
+        }
+}
+```
+
+## Bước 3. Khôi phục giao dịch \{#step-3-restore-purchases\}
+
+Các cửa hàng ứng dụng yêu cầu tất cả ứng dụng có gói đăng ký phải cung cấp cách để người dùng khôi phục giao dịch của họ.
+
+Gọi phương thức `restorePurchases` khi người dùng nhấn nút khôi phục. Phương thức này sẽ đồng bộ lịch sử mua hàng của họ với Adapty và trả về hồ sơ người dùng đã cập nhật.
+
+```kotlin showLineNumbers
+
+fun restorePurchases() {
+    Adapty.restorePurchases()
+        .onSuccess { profile ->
+            // Restore successful, profile updated
+        }
+        .onError { error ->
+            // Handle the error
+        }
+}
+```
+
+## Các bước tiếp theo \{#next-steps\}
+
+<SupportForum />
+
+Paywall của bạn đã sẵn sàng để hiển thị trong ứng dụng. Hãy kiểm tra giao dịch trong [sandbox App Store](test-purchases-in-sandbox) hoặc [Google Play Store](testing-on-android) để đảm bảo bạn có thể hoàn tất một giao dịch thử nghiệm từ paywall. Để xem cách hoạt động trong một triển khai thực tế, hãy xem [AppViewModel.kt](https://github.com/adaptyteam/AdaptySDK-KMP/blob/main/example/composeMultiplatformApp/composeApp/src/commonMain/kotlin/com/adapty/exampleapp/AppViewModel.kt) trong ứng dụng mẫu của chúng tôi, minh họa cách xử lý mua hàng với xử lý lỗi và quản lý trạng thái đúng cách.
+
+Tiếp theo, [kiểm tra xem người dùng đã hoàn tất giao dịch chưa](kmp-check-subscription-status) để xác định có nên hiển thị paywall hay cấp quyền truy cập vào các tính năng trả phí.

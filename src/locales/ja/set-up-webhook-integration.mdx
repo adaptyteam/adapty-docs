@@ -1,0 +1,150 @@
+---
+title: "Webhook連携の設定"
+description: "AdaptyでWebhook連携を設定してイベントトラッキングを自動化します。"
+metadataTitle: "Webhook連携の設定 | Adapty ドキュメント"
+rank: 100
+---
+
+Adaptyの[webhook連携](webhook)は、以下のステップで構成されています。
+
+<Zoom>
+  <img src="/assets/shared/img/webhook-setup.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '300px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+<p> </p>
+
+1. **エンドポイントを設定する:**
+   1. サーバーが **Content-Type** ヘッダーを `application/json` に設定したAdaptyリクエストを処理できることを確認します。
+   2. サーバーがAdaptyの検証リクエストを受信し、任意の `2xx` ステータスとJSONボディで応答するよう設定します。
+   3. 接続が確認されたら、[サブスクリプションイベントを処理します](#subscription-events)。
+2. **[Adapty ダッシュボード](#configure-webhook-integration-in-the-adapty-dashboard)でwebhook連携を設定して有効化します。** [Adaptyのイベントをカスタムイベント名にマッピング](#configure-webhook-integration-in-the-adapty-dashboard)することもできます。本番環境に切り替える前に、**Sandbox環境**でテストすることをおすすめします。
+3. **Adaptyがサーバーに検証リクエストを送信します。**
+4. **サーバーが** `2XX` ステータスとJSONボディで**応答します。**
+5. **Adaptyが有効なレスポンスを受信すると、サブスクリプションイベントの送信を開始します。**
+
+## Adaptyリクエストを処理するサーバーを設定する \{#set-up-your-server-to-process-adapty-requests\}
+
+AdaptyはWebhookエンドポイントに2種類のリクエストを送信します。
+
+1. [検証リクエスト](#verification-request): 接続が正しく設定されているか確認するための初回リクエストです。このリクエストにはイベントは含まれず、Adapty ダッシュボードのWebhook連携で **Save** ボタンをクリックした瞬間に送信されます。エンドポイントが検証リクエストを正常に受信したことを確認するため、エンドポイントは検証レスポンスを返す必要があります。
+2. [サブスクリプションイベント](#subscription-events): Adaptyサーバーでイベントが作成されるたびに送信される標準リクエストです。サーバーは特定のレスポンスを返す必要はありません。Adaptyサーバーが必要とするのは、メッセージを正常に受信した場合に標準の200コードHTTPレスポンスを受け取ることだけです。
+
+### 検証リクエスト \{#verification-request\}
+
+Adapty ダッシュボードでwebhook連携を有効にすると、Adaptyは空のJSONオブジェクト `{}` をボディとして含むPOST検証リクエストを送信します。
+
+エンドポイントの **Content-Typeヘッダー** が `application/json` になるよう設定してください。つまり、サーバーのエンドポイントは受信するWebhookリクエストのペイロードがJSON形式でフォーマットされることを想定している必要があります。
+
+サーバーは2xxステータスコードで応答し、以下のような有効なJSONレスポンスを返す必要があります。
+
+```json title="Json"
+{}
+```
+
+Adaptyが正しい形式かつ2xxステータスコードの検証レスポンスを受信すると、AdaptyのWebhook連携は完全に設定された状態になります。
+
+### サブスクリプションイベント \{#subscription-events\}
+
+サブスクリプションイベントは **Content-Type** ヘッダーが `application/json` に設定された状態で送信され、JSON形式のイベントデータが含まれます。可能なイベントタイプとリクエスト構造については、[Webhookイベントの種類とフィールド](webhook-event-types-and-fields)を参照してください。
+
+## Adapty ダッシュボードでWebhook連携を設定する \{#configure-webhook-integration-in-the-adapty-dashboard\}
+
+Adaptyでは、本番イベントとApple・Sandbox環境またはGoogleテストアカウントから受信するテストイベントに対して、別々のフローを設定できます。
+
+:::tip
+Adaptyは環境（本番とサンドボックス）ごとに1つのWebhook URLをサポートしています。複数のサービスにイベントを配信するには、Webhookを自分のバックエンドに向けてそこからファンアウトしてください。
+:::
+
+本番イベントには、コールバックの送信先URLを指定する **Production endpoint URL** フィールドを使用します。また、**Authorization header value for production endpoint** フィールドも設定してください。これはサーバーがAdaptyイベントを認証するためのヘッダーです。**Authorization header value for production endpoint** フィールドに指定した値は、変更や追加なしにそのまま `Authorization` ヘッダーとして使用されることにご注意ください。
+
+テストイベントには、**Sandbox endpoint URL** と **Authorization header value for sandbox endpoint** フィールドをそれぞれ使用します。
+
+Webhook連携を設定するには:
+
+1. Adapty ダッシュボードで [Integrations -> Webhook](https://app.adapty.io/integrations/customwebhook) を開きます。
+
+<Zoom>
+  <img src="/assets/shared/img/webhook_integration.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. トグルをオンにして連携を開始します。
+4. 連携フィールドに入力します。
+
+    | フィールド | 説明 |
+    | ------------------------------------------------------ | ------------------------------------------------------------ |
+    | **Production endpoint URL** | AdaptyがHTTP POSTリクエストを本番環境のイベントとして送信するURL。 |
+    | **Authorization header value for production endpoint** | <p>本番環境でサーバーがAdaptyからのリクエストを認証するためのヘッダー。このフィールドに指定した値は、変更や追加なしにそのまま `Authorization` ヘッダーとして使用されることにご注意ください。</p><p></p><p>必須ではありませんが、セキュリティ強化のために強くお勧めします。</p> |
+
+    サンドボックス環境でのテスト用に、さらに2つのフィールドが利用可能です。
+
+    | テストフィールド | 説明 |
+    | --------------------------------------------------- | ------------------------------------------------------------ |
+    | **Sandbox endpoint URL** | AdaptyがサンドボックスHTTP POSTリクエストを送信するURL。 |
+    | **Authorization header value for sandbox endpoint** | <p>サンドボックス環境でのテスト中にサーバーがAdaptyからのリクエストを認証するためのヘッダー。このフィールドに指定した値は、変更や追加なしにそのまま `Authorization` ヘッダーとして使用されることにご注意ください。</p><p></p><p>必須ではありませんが、セキュリティ強化のために強くお勧めします。</p> |
+
+4. （任意）受信するイベントを選択して名前をマッピングします。様々な状況でどのイベントが発生するかは、[イベントフロー](event-flows)をご確認ください。
+
+   イベントIDがAdaptyで使用されているものと異なる場合は、システム内のIDをそのまま維持し、[Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) ページの **Events names** セクションでデフォルトのAdaptyイベントIDをご自身のIDに置き換えてください。
+
+   イベントIDには任意の文字列を使用できます。Webhookを処理するサーバーのイベントIDと、Adapty ダッシュボードに入力したIDが一致していることを確認してください。有効なイベントのイベントIDを空のままにすることはできません。
+
+<Zoom>
+  <img src="/assets/shared/img/86942b8-event_names_renaming.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+5. その他のフィールドや設定は任意です。必要に応じて使用してください。
+
+    | 設定 | 説明 |
+    | :--------------------------------- | :----------------------------------------------------------- |
+    | **Send Trial Price** | 有効にすると、Adaptyは **Trial Started** イベントの `price_local` と `price_usd` フィールドにサブスクリプション価格を含めます。 |
+    | **Exclude Historical Events** | ユーザーがAdapty SDKを含むアプリをインストールする前に発生したイベントを除外するオプションです。これによりイベントの重複を防ぎ、正確なレポートを確保します。例えば、ユーザーが1月10日に月次サブスクリプションを有効化し、3月6日にAdapty SDK付きのアプリにアップデートした場合、Adaptyは3月6日より前のイベントを省略し、以降のイベントを保持します。 |
+    | **Send user attributes** | このオプションを有効にすると、言語設定などのユーザー固有の属性が送信されます。これらの属性は `user_attributes` フィールドに表示されます。詳細については、[イベントフィールド](webhook-event-types-and-fields#event-fields)を参照してください。 |
+    | **Send attribution** | このオプションをオンにすると、`attributions` フィールドにアトリビューション情報（AppsFlierデータなど）が含まれます。詳細は[アトリビューションデータ](webhook-event-types-and-fields#attributions)セクションを参照してください。 |
+    | **Send Play Store purchase token** | このオプションをオンにすると、必要に応じて購入の再検証に必要なPlay Storeトークンを受け取れます。有効にすると、イベントに `play_store_purchase_token` パラメータが追加されます。その内容の詳細については、[Play Store購入トークン](webhook-event-types-and-fields#play-store-purchase-token)セクションを参照してください。 |
+
+6. **Save** ボタンをクリックして変更を確定することを忘れないでください。
+
+**Save** ボタンをクリックした瞬間、Adaptyは検証リクエストを送信し、サーバーからの検証レスポンスを待ちます。
+
+### 送信するイベントを選択してイベント名をマッピングする \{#choose-events-to-send-and-map-event-names\}
+
+受信したいイベントの横にあるトグルを有効にして、サーバーで受信するイベントを選択します。Adaptyで使用されているイベント名と異なる名前を使用していて、そのままの名前を維持したい場合は、[Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) ページの **Events names** セクションでデフォルトのAdaptyイベント名をご自身のものに置き換えてマッピングを設定できます。
+
+<Zoom>
+  <img src="/assets/shared/img/86942b8-event_names_renaming.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+イベント名には任意の文字列を使用できます。有効なイベントのフィールドを空のままにすることはできません。誤ってAdaptyのイベント名を削除してしまった場合は、[サードパーティ連携に送信するイベント](events)のトピックからいつでも名前をコピーできます。
+
+## Webhookイベントを処理する \{#handle-webhook-events\}
+
+Webhookは通常、イベント発生後5〜60秒以内に配信されます。ただし、キャンセルイベントはユーザーがサブスクリプションをキャンセルしてから最大2時間後に配信される場合があります。
+サーバーのレスポンスステータスコードが200〜404の範囲外の場合、Adaptyは指数バックオフで再送を試みます。最初の再試行は初回の失敗からおよそ**1分後**に行われ、その後は試行ごとに間隔が倍になり、最大9回の再試行が24時間にわたって行われます。Adaptyが応答する前にイベントボディの基本的な検証のみを行うようWebhookを設定することをお勧めします。サーバーがイベントを処理できず、Adaptyに再試行させたくない場合は、200〜404の範囲内のステータスコードを使用してください。また、時間のかかるタスクは非同期で処理し、Adaptyに素早く応答するようにしてください。Adaptyが10秒以内にレスポンスを受信しない場合、その試行は失敗とみなされ、再試行が行われます。

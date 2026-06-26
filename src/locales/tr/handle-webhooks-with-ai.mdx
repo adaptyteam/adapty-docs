@@ -1,0 +1,144 @@
+---
+title: "Adapty abonelik etkinliklerini webhook'larla yönetin"
+description: "Adapty abonelik etkinliklerini sunucunuzda webhook'larla alın ve yönetin — uç nokta kurulumu, kimlik doğrulama, yük ve test tek sayfada."
+metadataTitle: "Adapty Abonelik Etkinliklerini Webhook'larla Yönetin | Adapty Dokümanları"
+keywords: ['adapty webhook', 'abonelik etkinlikleri', 'webhook entegrasyonu', 'abonelik etkinliklerini yönetme', 'webhook işleyici', 'ai agent', 'llm']
+---
+Webhook'lar, sunucunuzun Adapty abonelik olaylarını gerçek zamanlı olarak almasını sağlar — satın almalar, yenilemeler, iptaller, ödeme sorunları ve iadeler — böylece erişim izni verebilir, backend'inizi senkronize edebilir veya iş akışlarını tetikleyebilirsiniz. Bu kılavuz, uç noktadan doğrulanmış ve test edilmiş bir entegrasyona kadar tüm süreci tek sayfada anlatır ve bir AI kodlama ajanının sizin teknoloji yığınınız için handler'ı nasıl yazacağını gösterir.
+
+:::tip
+Bir AI kodlama ajanı mı kullanıyorsunuz? Başlığın altındaki **Copy for LLM** butonuna tıklayın ve bu sayfanın tamamını ajanınıza yapıştırın — kurulum, payload ve handler mantığı için ihtiyaç duyduğu her şey orada.
+:::
+## Adapty webhook'ları nasıl çalışır \{#how-adapty-webhooks-work\}
+
+- **Tek yönlü ve gerçek zamanlı**: Adapty, bir olay gerçekleştiğinde sunucunuza HTTP `POST` isteği gönderir — herhangi bir polling gerekmez.
+- **İki tür istek**: Entegrasyonu kaydettiğinizde gönderilen tek seferlik bir doğrulama isteği ve süregelen abonelik olayları.
+- **Ortam başına bir URL**: Production ve sandbox için ayrı bir endpoint yapılandırırsınız.
+- **Her isteği onaylamanız gerekir**: Hızlıca `2xx` durum koduyla yanıt verin; başarısız olması durumunda Adapty isteği yeniden dener.
+## Uç noktanızı oluşturun \{#build-your-endpoint\}
+
+İki istek türünü işleyen, herkese açık bir HTTPS uç noktası oluşturun:
+
+- **Doğrulama isteği**: Entegrasyonu kaydettiğinizde bir kez gönderilir. JSON gövdesi boştur (`{}`). `2xx` durum kodu ve bir JSON gövdesiyle yanıt verin.
+- **Abonelik olayları**: Olayı gövdede taşıyan süregelen `POST` istekleri. 10 saniye içinde `200` ile yanıt verin, ağır işlemleri ise asenkron olarak gerçekleştirin.
+Gizli bir dize seçin ve bunu bir ortam değişkeni olarak saklayın (örneğin, `ADAPTY_WEBHOOK_SECRET`). Her istekte, `Authorization` başlığının bu değerle eşleştiğini doğrulayın; eşleşmiyorsa isteği reddedin — aynı gizli diziyi bir sonraki adımda kontrol paneline gireceksiniz.
+```javascript title="webhook.js"
+
+const app = express();
+app.use(express.json());
+
+const WEBHOOK_SECRET = process.env.ADAPTY_WEBHOOK_SECRET;
+
+app.post("/adapty/webhook", (req, res) => {
+  // 1. Verify the shared secret Adapty echoes back.
+  if (req.get("Authorization") !== WEBHOOK_SECRET) {
+    return res.sendStatus(401);
+  }
+
+  // 2. Acknowledge fast, then process asynchronously.
+  res.status(200).json({});
+
+  // 3. The verification request has an empty body — nothing to handle.
+  const event = req.body;
+  if (!event.event_type) return;
+
+  switch (event.event_type) {
+    case "subscription_started":
+    case "subscription_renewed":
+    case "trial_converted":
+      // Grant or extend access.
+      break;
+    case "subscription_expired":
+    case "subscription_refunded":
+      // Revoke access.
+      break;
+    default:
+      break;
+  }
+});
+
+app.listen(3000);
+```
+
+Entegrasyonu yapılandırmadan önce endpoint'i herkese açık bir HTTPS URL'sine deploy edin — Adapty, kaydettiğiniz anda doğrulama isteğini gönderir.
+### Temel olaylar ve payload \{#key-events-and-the-payload\}
+
+Her olay aynı zarfı paylaşır. Alanlar olay türüne, mağazaya ve etkinleştirdiğiniz seçeneklere göre değişir. İşte kısaltılmış bir `subscription_started` olayı:
+```json title="Example event"
+{
+  "profile_id": "00000000-0000-0000-0000-000000000000",
+  "customer_user_id": "UserIdInYourSystem",
+  "event_type": "subscription_started",
+  "event_datetime": "2024-11-15T10:45:36.181000+0000",
+  "event_properties": {
+    "store": "play_store",
+    "currency": "USD",
+    "price_usd": 4.99,
+    "vendor_product_id": "onemonth_no_trial",
+    "transaction_id": "0000000000000000",
+    "original_transaction_id": "0000000000000000",
+    "subscription_expires_at": "2024-12-15T10:45:36.181000+0000",
+    "profile_event_id": "00000000-0000-0000-0000-000000000000"
+  },
+  "event_api_version": 1
+}
+```
+
+En sık karşılaşacağınız olaylar:
+| Etkinlik türü | Ne zaman tetiklenir |
+| --- | --- |
+| `subscription_started` | Bir kullanıcı ücretli abonelik başlattığında |
+| `subscription_renewed` | Bir abonelik yenilenip başarıyla faturalandığında |
+| `subscription_renewal_cancelled` | Bir kullanıcı otomatik yenilemeyi kapattığında (erişim sona erme tarihine kadar devam eder) |
+| `subscription_expired` | Yenilenmeyen bir abonelik sona erip erişim bittiğinde |
+| `trial_started` | Bir kullanıcı ücretsiz deneme başlattığında |
+| `trial_converted` | Deneme süresi ücretli aboneliğe dönüştüğünde |
+| `billing_issue_detected` | Yenileme ödemesi başarısız olduğunda |
+| `subscription_refunded` | Bir abonelik satın alımı iade edildiğinde |
+Tam etkinlik listesi ve her alan için bkz. [Webhook etkinlik türleri ve alanları](https://adapty.io/docs/tr/webhook-event-types-and-fields.md).
+
+:::warning
+Etkinlikleri `event_datetime` alanına göre sıralamayın — bu, etkinliğin iş zamanıdır; etkinlikler sıra dışı gelebilir ya da aynı zaman damgasını paylaşabilir. Kendi alım zamanınıza göre sıralayın ve `profile_event_id` ya da işlem kimliklerini kullanarak tekrar kayıtları temizleyin.
+:::
+## Adapty'de webhook'u yapılandırma \{#configure-the-webhook-in-adapty\}
+1. Adapty Kontrol Paneli'nde [Integrations → Webhook](https://app.adapty.io/integrations/customwebhook) bölümünü açın.
+2. Entegrasyonu etkinleştirin.
+3. **Production endpoint URL** alanına dağıttığınız endpoint'in HTTPS URL'sini girin.
+4. **Authorization header value for production endpoint** alanına, endpoint'inizin doğruladığı gizli anahtarı girin. Adapty bu değeri her istekte `Authorization` başlığıyla geri gönderir. Zorunlu değildir ancak kesinlikle önerilir.
+5. Önce sandbox ortamında test etmek istiyorsanız **Sandbox endpoint URL** ve ilgili **Authorization header value** alanlarını da doldurun.
+6. **Save** düğmesine tıklayın. Adapty hemen endpoint'inize doğrulama isteği gönderir; endpoint'iniz kurulumu tamamlamak için `2xx` yanıtı döner.
+Hangi etkinliklerin gönderileceğini seçmek, etkinlik adlarını eşleştirmek veya isteğe bağlı alanları (deneme fiyatı, geçmiş etkinlikler, attribution, kullanıcı nitelikleri, Play Store token) etkinleştirmek için bkz. [Webhook entegrasyonunu ayarlama](https://adapty.io/docs/tr/set-up-webhook-integration.md).
+
+<ZoomImage id="handle-webhooks-dashboard-config.webp" width="700px" alt="Adapty Dashboard webhook integration settings with the production endpoint URL and Authorization header value fields" />
+## AI kodlama aracınızla oluşturun \{#build-it-with-your-ai-coding-agent\}
+
+AI kodlama aracınıza bu kılavuzu ve referans dokümanları Markdown olarak verin (herhangi bir sayfa URL'sine `.md` ekleyin), kullandığınız teknolojiyi belirtin ve handler'ı oluşturmasını sağlayın:
+
+- [Webhook olay türleri ve alanları](https://adapty.io/docs/tr/webhook-event-types-and-fields.md)
+- [Webhook entegrasyonunu kurma](https://adapty.io/docs/tr/set-up-webhook-integration.md)
+
+Örnek prompt:
+```
+Read these Adapty webhook docs, then write a webhook handler for my Express app:
+verify the Authorization header against ADAPTY_WEBHOOK_SECRET, answer the
+verification request, acknowledge events with 200, and grant or revoke access
+based on event_type.
+```
+
+The agent writes the handler code, but it can't deploy your endpoint or configure the dashboard — host the endpoint yourself and set the URL and secret in **Integrations → Webhook**.
+## Webhook'unuzu test edin \{#test-your-webhook\}
+
+Üretime geçmeden önce sandbox ortamında test edin:
+
+1. Yukarıda açıklandığı gibi sandbox endpoint'ini ve secret'ı ayarlayın.
+2. Sandbox uygulamanızda bir satın alma yapın, deneme başlatın veya olay tetiklemek için iade isteyin.
+3. Entegrasyonun **Last sent events** bölümünü açın. Başarıyla iletilen bir olay **Success** durumunu gösterir.
+
+Bir olay **Sending failed** gösteriyorsa, sunucunuz 200–399 aralığı dışında bir durum kodu döndürmüş demektir — ayrıntılar için durumun üzerine gelin. Tam test adımları için bkz. [Webhook entegrasyonunu test etme](https://adapty.io/docs/tr/test-webhook.md).
+<ZoomImage id="handle-webhooks-test-result.webp" width="700px" alt="Webhook entegrasyonu Son gönderilen olaylar listesi, Başarılı durumunda teslim edilmiş bir olayı gösteriyor" />
+## Sınırlamalar \{#limits\}
+
+- **10 saniye içinde yanıt verin**: Adapty zamanında yanıt alamazsa denemeyi başarısız sayar ve yeniden dener.
+- **Yeniden denemeler**: Durum kodunuz 200–404 aralığının dışındaysa Adapty üstel geri çekilme ile yeniden dener — 24 saat içinde en fazla 9 deneme.
+- **İptal gecikmesi**: İptal olaylarının ulaşması 2 saate kadar sürebilir.
+- **Ortam başına tek URL**: Olayları birden fazla servise iletmek için webhook'u kendi backend'inize yönlendirin ve oradan dağıtın.

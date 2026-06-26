@@ -1,0 +1,71 @@
+---
+title: "テスト購入のトラブルシューティング"
+description: "Adaptyでのテスト購入をトラブルシューティングし、アプリ内トランザクションに関する一般的な問題を解決する方法を解説します。"
+metadataTitle: "テスト購入のトラブルシューティング | Adapty ドキュメント"
+---
+
+トランザクションの問題が発生した場合は、まず[リリースチェックリスト](release-checklist)に記載されているすべての手順を完了しているかご確認ください。すべての手順を完了しても問題が解決しない場合は、以下のガイダンスに従って対処してください。
+
+## モバイルアプリでエラーが返される \{#an-error-is-returned-in-the-mobile-app\}
+
+お使いのプラットフォームのエラーリストをご参照ください: [iOS向け](ios-sdk-error-handling)、[Android向け](android-sdk-error-handling)、[React Native向け](react-native-troubleshoot-purchases)、[Flutter](error-handling-on-flutter-react-native-unity)、[Unity](unity-troubleshoot-purchases)。記載の推奨事項に従って問題を解決してください。
+
+## モバイルアプリでエラーが返されないのにイベントフィードにトランザクションが表示されない \{#transaction-is-absent-from-the-event-feed-although-no-error-is-returned-in-the-mobile-app\}
+
+この問題を解決するには、以下の点をご確認ください。
+
+1. **iOS の場合**: シミュレーターではなく実機を使用していることを確認してください。
+2. アプリの `Bundle ID`/`Package name` が [**App settings**](https://app.adapty.io/settings/general) に設定されているものと一致していることを確認してください。
+3. アプリ内の `PUBLIC_SDK_KEY` が Adapty ダッシュボードの **Public SDK key** と一致していることを確認してください: [**App settings** -> **General** タブ -> **API keys** セクション](https://app.adapty.io/settings/general)。
+4. サンドボックスアカウントを使用していることを確認してください（[ローカル StoreKit 設定ファイル](local-sk-files)ではなく）。以前にローカル StoreKit 設定ファイルをテストに使用していた場合は、現在のビルドでそれを使用していないことを確認してください。
+
+## テスト用プロファイルにイベントが表示されない \{#no-event-is-present-in-my-testing-profile\}
+
+これは正常な動作です。新しいユーザープロファイルレコードは、以下のタイミングで Adapty に自動作成されます。
+
+- ユーザーが初めてアプリを起動したとき
+- ユーザーがアプリからログアウトしたとき
+
+**この動作の理由:** すべてのトランザクションとイベントは、最初のトランザクションを生成したプロファイルに紐付けられます。これにより、トランザクション履歴全体（トライアル、購入、更新）が同じプロファイルにリンクされ続けます。
+
+**表示される内容:** 新しいプロファイルレコード（「非オリジナルプロファイル」と呼ばれます）はイベントなしで表示されることがありますが、アクセスレベルは保持されます。`access_level_updated` イベントが表示される場合があります。これは期待される動作です。
+
+**テスト時の注意:** 複数のプロファイルが作成されないようにするため、アプリを再インストールするたびに新しいテストアカウント（サンドボックス Apple ID）を作成してください。
+
+詳細については、[プロファイルの作成](how-profiles-work#profile-creation)をご覧ください。
+
+以下は非オリジナルプロファイルの例です。**User history** にイベントがなく、アクセスレベルが設定されていることに注目してください。
+
+<Zoom>
+  <img src="/assets/shared/img/98d0dad-non-original_profile.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## App Store Connect で設定した実際の価格が反映されない \{#prices-do-not-reflect-the-actual-prices-set-in-app-store-connect\}
+
+サンドボックスおよびアプリ内課金にサンドボックス環境を使用する TestFlight では、価格の正確さよりも購入フローが正しく機能しているかどうかを確認することが重要です。Apple の API は、デバイスやアカウントに異なる地域が設定されている場合など、不正確なデータを返すことがあります。価格はストアから直接取得されるものであり、Adapty のバックエンドは購入価格に一切影響を与えないため、Adapty を通じた購入テスト中の価格の不正確さは無視していただいて構いません。
+
+そのため、価格の正確さよりも購入フロー自体のテストを優先し、意図した通りに機能していることを確認してください。
+
+## イベントフィードのトランザクション時刻が正しくない \{#the-transaction-time-in-the-event-feed-is-incorrect\}
+
+**Event Feed** は **App Settings** で設定されたタイムゾーンを使用します。イベントのタイムゾーンをローカル時刻に合わせるには、[**App settings** -> **General** タブ](https://app.adapty.io/settings/general)で **Reporting timezone** を変更してください。
+
+## ペイウォールとプロダクトの読み込みに時間がかかる \{#paywalls-and-products-take-a-long-time-to-load\}
+
+この問題は、テストアカウントのトランザクション履歴が長い場合に発生することがあります。[App Store Connect でサンドボックステストアカウント（サンドボックス Apple ID）を作成する](test-purchases-in-sandbox#step-1-create-sandbox-test-account-in-app-store-connect)セクションに記載の通り、毎回新しいテストアカウントを作成することを強くお勧めします。
+
+新しいアカウントを作成できない場合は、iOS デバイスで以下の手順に従って現在のアカウントのトランザクション履歴を消去できます。
+
+1. **設定**を開き、**App Store** をタップします。
+2. **サンドボックス Apple ID** をタップします。
+3. ポップアップで **管理** を選択します。
+4. **アカウント設定**ページで **購入履歴を消去** をタップします。
+
+詳細については、[Apple Developer ドキュメント](https://developer.apple.com/documentation/storekit/testing-in-app-purchases-with-sandbox)をご覧ください。

@@ -1,23 +1,587 @@
 ---
-title: "将 Adapty Flutter SDK 迁移到 v. 3.3"
-description: "迁移到 Adapty Flutter SDK v3.3，获得更好的性能和全新的变现功能。"
-metadataTitle: "迁移到 Adapty Flutter SDK v3.3 | Adapty 文档"
+title: "迁移 Adapty Flutter SDK 至 v3.3"
+description: "迁移至 Adapty Flutter SDK v3.3，获得更佳性能与全新变现功能。"
+metadataTitle: "迁移至 Adapty Flutter SDK v3.3 | Adapty 文档"
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
+Adapty SDK 3.3.0 是一个重大版本更新，带来了一些改进，但可能需要你执行一些迁移步骤。
 
-Adapty SDK 3.3.0 是一个重大版本更新，带来了一些改进，但可能需要您执行一些迁移步骤。
+---
+title: "迁移指南：从 Adapty iOS SDK v2.x 迁移至 v3.x"
+description: "将您的 iOS 应用从 Adapty SDK v2.x 无缝迁移至 v3.x，遵循我们的分步指南，了解关键变更，轻松完成集成升级。"
+metadataTitle: "iOS SDK v2.x 至 v3.x 迁移指南 | Adapty 文档"
+---
 
-1. 更新提供备用付费墙的方法。
-2. 移除 `getProductsIntroductoryOfferEligibility` 方法。
-3. 更新 Adjust、AirBridge、Amplitude、AppMetrica、Appsflyer、Branch、Facebook Ads、Firebase 和 Google Analytics、Mixpanel、OneSignal、Pushwoosh 的集成配置。
-4. 更新 Observer 模式实现。
 
-## 更新提供备用付费墙的方法 \{#update-method-for-providing-fallback-paywalls\}
+Adapty SDK v3.x 是一个重大版本更新，包含多项破坏性变更。本指南重点介绍这些变更，帮助您顺利完成迁移。
 
-以前，该方法需要将备用付费墙作为 JSON 字符串（`jsonString`）传入，但现在改为传入本地备用文件的路径（`assetId`）。
+## 公共 API 变更 \{#public-api-changes\}
 
+### AdaptyUI 更名 \{#adaptui-renamed\}
+
+`AdaptyUI` 已重命名为 `AdaptyUI`——抱歉，只是开个玩笑😄 实际上没有变化，但我们确实针对新版付费墙编辑工具对 `AdaptyUI` 进行了大量更新。
+
+### 获取付费墙和产品 \{#fetching-paywalls-and-products\}
+
+在 Adapty SDK v3.x 中，`getPaywall` 方法的加载策略机制已更新。
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+do {
+    let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en")
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
+    switch result {
+    case let .success(paywall):
+        // the requested paywall
+    case let .failure(error):
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+在 v3.x 中，我们移除了 `PaywallFetchPolicy`，转而采用更简洁的方案：默认加载已缓存的数据（若无缓存则从远端拉取），同时开放了直接从远端强制拉取的选项。
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+// Default: loads cached data or fetches from remote
+do {
+    let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en")
+} catch {
+    // handle the error
+}
+
+// Force fetch from remote
+do {
+    let paywall = try await Adapty.getPaywall(
+        placementId: "YOUR_PLACEMENT_ID",
+        locale: "en",
+        fetchPolicy: .reloadRevalidatingCacheData
+    )
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en", fetchPolicy: .returnCacheDataElseLoad) { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+
+Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en", fetchPolicy: .reloadRevalidatingCacheData) { result in
+    switch result {
+        case let .success(paywall):
+            // the requested paywall
+        case let .failure(error):
+            // handle the error
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+### 备用付费墙 \{#fallback-paywalls\}
+
+在 v3.x 中，设置备用付费墙的方法已更新。
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+// Provide fallback paywalls from a file URL
+guard let url = Bundle.main.url(forResource: "fallback_paywalls", withExtension: "json") else {
+    // handle the error
+    return
+}
+
+do {
+    try await Adapty.setFallbackPaywalls(fileURL: url)
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+guard let urlPath = Bundle.main.path(forResource: "fallback_paywalls", ofType: "json"),
+      let paywallsData = FileManager.default.contents(atPath: urlPath) else {
+    // handle the error
+    return
+}
+
+Adapty.setFallbackPaywalls(paywallsData) { error in
+    if let error = error {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+### 移除 `getProductsIntroductoryOfferEligibility` \{#removal-of-getproductsintroductoryoffereligibility\}
+
+`getProductsIntroductoryOfferEligibility` 方法已从 SDK 中移除。新用户优惠资格信息现在直接包含在 `AdaptyPaywallProduct` 对象中。
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+do {
+    let products = try await Adapty.getPaywallProducts(paywall: paywall)
+
+    for product in products {
+        let subscriptionOffer = product.subscriptionOffer
+        // Use the offer directly
+    }
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+Adapty.getPaywallProducts(paywall: paywall) { result in
+    switch result {
+    case let .success(products):
+        let productIds = products.map { $0.vendorProductId }
+        
+        Adapty.getProductsIntroductoryOfferEligibility(vendorProductIds: productIds) { result in
+            switch result {
+            case let .success(eligibilities):
+                // use eligibilities
+            case let .failure(error):
+                // handle the error
+            }
+        }
+    case let .failure(error):
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+#### `AdaptyPaywallProduct` 变更 \{#adaptpaywallproduct-changes\}
+
+`AdaptyPaywallProduct` 的结构已更新。在 v3.x 中，`subscriptionOffer` 属性会自动包含相应的优惠（新用户优惠或促销活动），无需额外的资格检查。
+
+| v2.x 属性                  | v3.x 属性                             |
+| :-------------------------- | :------------------------------------- |
+| `introductoryDiscount`      | 现已合并至 `subscriptionOffer`        |
+| `promotionalDiscount`       | 现已合并至 `subscriptionOffer`        |
+| `promotionalOfferId`        | 现已合并至 `subscriptionOffer`        |
+
+`subscriptionOffer` 属性返回适合当前用户的最优优惠：若用户符合新用户优惠资格，则返回新用户优惠；若存在促销活动，则返回促销活动；其他情况返回 `nil`。
+
+### 第三方集成配置变更 \{#integration-configuration-changes\}
+
+在 v3.x 中，多个第三方集成的配置方式已更新，从专有方法迁移至通用的 `setIntegrationIdentifier` 方法。
+
+#### Adjust \{#adjust\}
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "adjust_device_id",
+        value: adjustDeviceId
+    )
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+Adapty.setAdjustId(adjustId)
+```
+
+</TabItem>
+</Tabs>
+
+#### AirBridge \{#airbridge\}
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "airbridge_device_id",
+        value: airbridgeDeviceId
+    )
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+Adapty.setAirbridgeId(airbridgeDeviceId)
+```
+
+</TabItem>
+</Tabs>
+
+#### Amplitude \{#amplitude\}
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "amplitude_user_id",
+        value: amplitudeUserId
+    )
+    try await Adapty.setIntegrationIdentifier(
+        key: "amplitude_device_id",
+        value: amplitudeDeviceId
+    )
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+Adapty.setAmplitudeUserId(amplitudeUserId)
+Adapty.setAmplitudeDeviceId(amplitudeDeviceId)
+```
+
+</TabItem>
+</Tabs>
+
+#### AppMetrica \{#appmetrica\}
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "appmetrica_profile_id",
+        value: appMetricaProfileId
+    )
+    try await Adapty.setIntegrationIdentifier(
+        key: "appmetrica_device_id",
+        value: appMetricaDeviceId
+    )
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+Adapty.setAppMetricaProfileId(appMetricaProfileId)
+Adapty.setAppMetricaDeviceId(appMetricaDeviceId)
+```
+
+</TabItem>
+</Tabs>
+
+#### AppsFlyer \{#appsflyer\}
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "appsflyer_id",
+        value: appsFlyerId
+    )
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+Adapty.setAppsFlyerId(appsFlyerId)
+```
+
+</TabItem>
+</Tabs>
+
+#### Branch \{#branch\}
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "branch_id",
+        value: branchId
+    )
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+Adapty.setBranchId(branchId)
+```
+
+</TabItem>
+</Tabs>
+
+#### Facebook Ads \{#facebook-ads\}
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "facebook_anonymous_id",
+        value: facebookAnonymousId
+    )
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+Adapty.setFacebookAnonymousId(facebookAnonymousId)
+```
+
+</TabItem>
+</Tabs>
+
+#### Firebase 与 Google Analytics \{#firebase-and-google-analytics\}
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "firebase_app_instance_id",
+        value: firebaseAppInstanceId
+    )
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+Adapty.setFirebaseAppInstanceId(firebaseAppInstanceId)
+```
+
+</TabItem>
+</Tabs>
+
+#### Mixpanel \{#mixpanel\}
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "mixpanel_user_id",
+        value: mixpanelUserId
+    )
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+Adapty.setMixpanelUserId(mixpanelUserId)
+```
+
+</TabItem>
+</Tabs>
+
+#### OneSignal \{#onesignal\}
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "one_signal_player_id",
+        value: oneSignalPlayerId
+    )
+    try await Adapty.setIntegrationIdentifier(
+        key: "one_signal_subscription_id",
+        value: oneSignalSubscriptionId
+    )
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+Adapty.setOneSignalPlayerId(oneSignalPlayerId)
+```
+
+</TabItem>
+</Tabs>
+
+#### Pushwoosh \{#pushwoosh\}
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+do {
+    try await Adapty.setIntegrationIdentifier(
+        key: "pushwoosh_hwid",
+        value: pushwooshHWID
+    )
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+Adapty.setPushwooshHWID(pushwooshHWID)
+```
+
+</TabItem>
+</Tabs>
+
+### 观察者模式 \{#observer-mode\}
+
+在 v3.x 中，观察者模式的实现方式已更新。
+
+<Tabs>
+<TabItem value="v3" label="v3.x">
+
+```swift
+
+// Enable Observer mode during configuration
+let builder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_API_KEY")
+    .with(observerMode: true)
+
+Adapty.activate(with: builder.build())
+
+// Report transactions in Observer mode
+do {
+    try await Adapty.reportTransaction(transaction)
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="v2" label="v2.x">
+
+```swift
+
+// Enable Observer mode during configuration
+Adapty.activate("YOUR_API_KEY", observerMode: true)
+
+// Report transactions in Observer mode
+Adapty.setTransactionVariationId(transaction, variationId: variationId) { error in
+    if let error = error {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+## 更新备用付费墙的提供方式 \{#update-method-for-providing-fallback-paywalls\}
+
+此前，该方法需要以 JSON 字符串（`jsonString`）的形式传入备用付费墙，现在改为传入本地备用文件的路径（`assetId`）。
 ```diff showLineNumbers
  import 'dart:async' show Future;
  import 'dart:io' show Platform;
@@ -37,8 +601,7 @@ Adapty SDK 3.3.0 是一个重大版本更新，带来了一些改进，但可能
 
 ```
 
-完整代码示例请参见[使用备用付费墙](flutter-use-fallback-paywalls)页面。
-
+完整的代码示例请参阅[使用备用付费墙](flutter-use-fallback-paywalls)页面。
 ## 移除 `getProductsIntroductoryOfferEligibility` 方法 \{#remove-getproductsintroductoryoffereligibility-method\}
 
 在 Adapty iOS SDK 3.3.0 之前，无论用户是否具有资格，产品对象始终包含优惠信息。您需要在使用优惠之前手动检查资格。
@@ -51,8 +614,7 @@ Adapty SDK 3.3.0 是一个重大版本更新，带来了一些改进，但可能
 
 ### Adjust
 
-按如下所示更新您的移动应用代码。完整代码示例请参见 [Adjust 集成的 SDK 配置](adjust#connect-your-app-to-adjust)。
-
+按照以下方式更新您的移动应用代码。完整代码示例请参阅 [Adjust 集成的 SDK 配置](adjust#connect-your-app-to-adjust)。
 ```diff showLineNumbers
  import 'package:adjust_sdk/adjust.dart';
  import 'package:adjust_sdk/adjust_config.dart';
@@ -99,8 +661,7 @@ Adapty SDK 3.3.0 是一个重大版本更新，带来了一些改进，但可能
 
 ### AirBridge
 
-按如下所示更新您的移动应用代码。完整代码示例请参见 [AirBridge 集成的 SDK 配置](airbridge#connect-your-app-to-airbridge)。
-
+按照以下说明更新您的移动应用代码。完整代码示例请参阅 [AirBridge 集成的 SDK 配置](airbridge#connect-your-app-to-airbridge)。
 ```diff showLineNumbers
  import 'package:airbridge_flutter_sdk/airbridge_flutter_sdk.dart';
 
@@ -124,8 +685,7 @@ Adapty SDK 3.3.0 是一个重大版本更新，带来了一些改进，但可能
 
 ### Amplitude
 
-按如下所示更新您的移动应用代码。完整代码示例请参见 [Amplitude 集成的 SDK 配置](amplitude#sdk-configuration)。
-
+按如下所示更新您的移动应用代码。完整代码示例请参阅 [Amplitude 集成的 SDK 配置](amplitude#sdk-configuration)。
 ```diff showLineNumbers
  import 'package:amplitude_flutter/amplitude.dart';
 
@@ -157,8 +717,7 @@ Adapty SDK 3.3.0 是一个重大版本更新，带来了一些改进，但可能
 
 ### AppMetrica
 
-按如下所示更新您的移动应用代码。完整代码示例请参见 [AppMetrica 集成的 SDK 配置](appmetrica#sdk-configuration)。
-
+按照以下示例更新你的移动应用代码。完整代码示例请参阅 [AppMetrica 集成的 SDK 配置](appmetrica#sdk-configuration)。
 ```diff showLineNumbers
  import 'package:appmetrica_plugin/appmetrica_plugin.dart';
 
@@ -190,8 +749,7 @@ Adapty SDK 3.3.0 是一个重大版本更新，带来了一些改进，但可能
 
 ### AppsFlyer
 
-按如下所示更新您的移动应用代码。完整代码示例请参见 [AppsFlyer 集成的 SDK 配置](appsflyer#connect-your-app-to-appsflyer)。
-
+按照以下说明更新您的移动应用代码。完整代码示例请参阅 [AppsFlyer 集成的 SDK 配置](appsflyer#connect-your-app-to-appsflyer)。
 ```diff showLineNumbers
  import 'package:appsflyer_sdk/appsflyer_sdk.dart';
 
@@ -228,10 +786,8 @@ Adapty SDK 3.3.0 是一个重大版本更新，带来了一些改进，但可能
 
 ### Branch
 
-按如下所示更新您的移动应用代码。完整代码示例请参见 [Branch 集成的 SDK 配置](branch#connect-your-app-to-branch)。
-
+按照以下方式更新您的移动应用代码。完整代码示例请参阅 [Branch 集成的 SDK 配置](branch#connect-your-app-to-branch)。
 ```diff showLineNumbers
-import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
 
 FlutterBranchSdk.initSession().listen((data) async {
   try {
@@ -249,12 +805,10 @@ FlutterBranchSdk.initSession().listen((data) async {
 );
 ```
 
-### Firebase 和 Google Analytics
+### Firebase 与 Google Analytics \{#firebase-and-google-analytics\}
 
-按如下所示更新您的移动应用代码。完整代码示例请参见 [Firebase 和 Google Analytics 集成的 SDK 配置](firebase-and-google-analytics)。
-
+按照以下示例更新你的移动应用代码。完整代码示例请参阅 [Firebase 与 Google Analytics 集成的 SDK 配置](firebase-and-google-analytics)。
 ```diff showLineNumbers
-import 'package:firebase_analytics/firebase_analytics.dart';
 
 final appInstanceId = await FirebaseAnalytics.instance.appInstanceId;
 
@@ -276,10 +830,8 @@ try {
 
 ### Mixpanel
 
-按如下所示更新您的移动应用代码。完整代码示例请参见 [Mixpanel 集成的 SDK 配置](mixpanel#sdk-configuration)。
-
+按照以下方式更新您的移动应用代码。完整代码示例请参阅 [Mixpanel 集成的 SDK 配置](mixpanel#sdk-configuration)。
 ```diff showLineNumbers
-import 'package:mixpanel_flutter/mixpanel_flutter.dart';
 
 final mixpanel = await Mixpanel.init("Your Token", trackAutomaticEvents: true);
 final distinctId = await mixpanel.getDistinctId();
@@ -302,8 +854,7 @@ try {
 
 ### OneSignal
 
-按如下所示更新您的移动应用代码。完整代码示例请参见 [OneSignal 集成的 SDK 配置](onesignal#sdk-configuration)。
-
+按照以下方式更新您的移动应用代码。完整代码示例请参阅 [OneSignal 集成的 SDK 配置](onesignal#sdk-configuration)。
 ```diff showLineNumbers
  OneSignal.shared.setSubscriptionObserver((changes) {
      final playerId = changes.to.userId;
@@ -330,10 +881,8 @@ try {
 
 ### Pushwoosh
 
-按如下所示更新您的移动应用代码。完整代码示例请参见 [Pushwoosh 集成的 SDK 配置](pushwoosh#sdk-configuration)。
-
+按照以下说明更新你的移动应用代码。完整代码示例请参阅 [Pushwoosh 集成的 SDK 配置](pushwoosh#sdk-configuration)。
 ```diff showLineNumbers
-import 'package:pushwoosh/pushwoosh.dart';
 
 final hwid = await Pushwoosh.getInstance.getHWID;
 
@@ -355,14 +904,12 @@ final hwid = await Pushwoosh.getInstance.getHWID;
 
 ## 更新 Observer 模式实现 \{#update-observer-mode-implementation\}
 
-更新将付费墙与交易关联的方式。以前，您使用 `setVariationId` 方法来分配 `variationId`。现在，您可以在使用新的 `reportTransaction` 方法记录交易时直接包含 `variationId`。请参阅[在 Observer 模式下将付费墙与购买交易关联](report-transactions-observer-mode-flutter)中的最终代码示例。
+更新付费墙与交易的关联方式。此前，你需要使用 `setVariationId` 方法来分配 `variationId`。现在，你可以在使用新的 `reportTransaction` 方法记录交易时直接传入 `variationId`。请参阅[在 Observer 模式下将付费墙与购买交易关联](report-transactions-observer-mode-flutter)中的完整代码示例。
 
 :::warning
-
-请不要忘记使用 `reportTransaction` 方法记录交易。跳过此步骤意味着 Adapty 将无法识别该交易、无法授予访问等级、无法将其纳入分析统计，也无法将其发送到集成渠道。此步骤至关重要！
+不要忘记使用 `reportTransaction` 方法记录交易。如果跳过此步骤，Adapty 将无法识别该交易，不会授予访问等级，不会将其纳入分析数据，也不会将其发送到集成渠道。此步骤至关重要！
 
 :::
-
 ```diff showLineNumbers
  try {
 -     await Adapty().setVariationId("YOUR_TRANSACTION_ID", "PAYWALL_VARIATION_ID");
