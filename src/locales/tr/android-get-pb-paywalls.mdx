@@ -1,33 +1,289 @@
 ---
-title: "Android SDK'da Paywall Builder paywalllerini ve yapılandırmalarını getirme"
-description: "Android uygulamanızda abonelik kontrolünü iyileştirmek için Adapty'de PB paywalllerini nasıl alacağınızı öğrenin."
-metadataTitle: "Adapty'de PB Paywalllerini Getirme | Adapty Dokümanları"
+title: "Flow ve paywall'ları getir - Android"
+description: "Android uygulamanızda Adapty'den flow ve paywall'ları çekin."
+metadataTitle: "Flow ve Paywall'ları Getir - Android | Adapty Dokümanları"
 displayed_sidebar: sdkandroid
-keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+keywords: ['getFlow', 'getPaywall', 'getFlowConfiguration', 'getFlowForDefaultAudience']
 rank: 95
 ---
 
 import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
 
-Adapty Kontrol Paneli'ndeki yeni Paywall Builder ile [paywallınızın görsel kısmını tasarladıktan](adapty-paywall-builder) sonra, bunu mobil uygulamanızda gösterebilirsiniz. Bu süreçteki ilk adım, aşağıda açıklandığı gibi placement ile ilişkili paywallı ve onun görünüm yapılandırmasını almaktır.
+<SDKv4>
+
+<MethodPromo method="getFlow" />
+[flow veya Paywall Builder paywallınızı tasarladıktan](adapty-paywall-builder) sonra, bunu mobil uygulamanızda görüntüleyebilirsiniz. İlk adım, aşağıda açıklandığı gibi placement ile ilişkili flow veya paywall'ı ve görünüm yapılandırmasını almaktır.
+
+<SampleApp />
+
+<details>
+   <summary>Uygulamanızda flow'ları görüntülemeye başlamadan önce (genişletmek için tıklayın)</summary>
+1. Adapty Kontrol Paneli'nde [ürünlerinizi oluşturun](create-product).
+2. Adapty Kontrol Paneli'nde [bir flow/paywall oluşturun ve ürünleri ekleyin](create-paywall).
+3. Adapty Kontrol Paneli'nde [placement'lar oluşturun ve flow/paywall'ınızı ekleyin](create-placement).
+4. Mobil uygulamanıza [Adapty SDK](sdk-installation-android) yükleyin.
+</details>
+## Flow/paywall getirme \{#fetch-flowpaywall\}
+
+Bir flow veya paywall'ı Flow Builder ya da Paywall Builder kullanarak tasarladıysanız, kullanıcıya göstermek için mobil uygulama kodunuzda bunu render etme konusunda endişelenmenize gerek yoktur. Böyle bir flow veya paywall, içinde ne gösterileceğini ve nasıl gösterileceğini zaten içerir. Bununla birlikte, placement üzerinden ID'sini, görünüm yapılandırmasını almanız ve ardından onu mobil uygulamanızda sunmanız gerekir.
+En iyi performansı sağlamak için, flow veya paywall'ı ve [görünüm yapılandırmasını](android-get-pb-paywalls#fetch-the-view-configuration) mümkün olduğunca erken almanız kritik öneme sahiptir; bu sayede kullanıcıya gösterilmeden önce görsellerin indirilmesi için yeterli zaman tanınmış olur.
+
+Bir flow veya paywall almak için `getFlow` metodunu kullanın:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+...
+
+Adapty.getFlow("YOUR_PLACEMENT_ID", loadTimeout = 10.seconds) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val flow = result.value
+            // the requested flow/paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+...
+
+Adapty.getFlow("YOUR_PLACEMENT_ID", TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) result).getValue();
+        // istenen flow/paywall
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // hatayı işle
+
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+Parametreler:
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|-----------|
+| **placementId** | zorunlu | İstenen [Placement](placements)'ın tanımlayıcısı. Adapty Kontrol Paneli'nde bir placement oluştururken belirttiğiniz değerdir. |
+| **fetchPolicy** | varsayılan: `.reloadRevalidatingCacheData` | <p>SDK varsayılan olarak sunucudan veri yüklemeye çalışır; başarısız olursa önbelleğe alınmış veriyi döndürür. Kullanıcılarınızın her zaman en güncel veriyi almasını sağladığı için bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internet bağlantısıyla karşılaştığını düşünüyorsanız, önbelleğe alınmış veri varsa onu döndürmesi için `.returnCacheDataElseLoad` kullanmayı düşünebilirsiniz. Bu senaryoda kullanıcılar en güncel veriyi alamayabilir; ancak internet bağlantıları ne kadar kesintili olursa olsun daha hızlı yükleme süreleri yaşarlar. Önbellek düzenli olarak güncellenir; bu nedenle oturum sırasında ağ isteklerini önlemek amacıyla kullanmak güvenlidir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında bozulmadan kaldığını ve yalnızca uygulama yeniden yüklendiğinde veya manuel temizlik yapıldığında silindiğini unutmayın.</p><p></p><p>Adapty SDK, flow'ları ve paywallları yerel olarak iki katmanda depolar: yukarıda açıklanan düzenli olarak güncellenen önbellek ve [yedek paywalllar](fallback-paywalls). Ayrıca daha hızlı getirmek için CDN ve CDN'e ulaşılamadığı durumlarda bağımsız bir yedek sunucu kullanırız. Bu sistem, internet bağlantısının yetersiz olduğu durumlarda bile güvenilirliği sağlarken her zaman en son sürümü aldığınızdan emin olmak için tasarlanmıştır.</p> |
+| **loadTimeout** | varsayılan: 5 sn | <p>Bu değer, bu metodun zaman aşımını sınırlar. Zaman aşımına ulaşılırsa önbelleğe alınmış veri veya yerel yedek döndürülür.</p><p>Nadir durumlarda bu metodun `loadTimeout` içinde belirtilenden biraz daha geç zaman aşımına uğrayabileceğini unutmayın; çünkü işlem arka planda farklı isteklerden oluşabilir.</p><p>Android için: `TimeInterval`'ı uzantı fonksiyonlarıyla oluşturabilirsiniz (örneğin `5.seconds`; burada `.seconds`, `import com.adapty.utils.seconds`'tan gelir) ya da `TimeInterval.seconds(5)` şeklinde kullanabilirsiniz. Sınır koymamak için `TimeInterval.INFINITE` kullanın.</p> |
+Yanıt parametreleri:
+
+| Parametre | Açıklama |
+| :-------- | :---------- |
+| Flow   | Placement, tanımlayıcılar (`id`, `variationId`), ad, remote config'ler ve flow'un bir görünüm yapılandırması içerip içermediğini belirten `hasViewConfiguration` bayrağını barındıran bir `AdaptyFlow` nesnesi. Ön yükleme, özel UI veya programatik kontroller için gerçek ürünleri çekmek üzere `getPaywallProducts(flow)` çağrısını kullanın. |
+## View konfigürasyonunu alma \{#fetch-the-view-configuration\}
+
+Flow veya paywall'ı aldıktan sonra, `flow.hasViewConfiguration` ile bir view konfigürasyonu içerip içermediğini kontrol edin. Bu bayrak, placement'ın Adapty Kontrol Paneli'nde nasıl tasarlandığını ayırt eder:
+- **`true`** — placement, **Flow Builder** (bir flow) veya **Paywall Builder** (bir paywall) ile tasarlanmış. Adapty, arayüzü sizin için render eder. Görünüm yapılandırmasını almak ve [flow veya paywall'ı sunmak](android-present-paywalls) için aşağıdaki adımlara devam edin.
+- **`false`** — placement, Builder arayüzü olmayan özel bir paywall. [Remote config paywall olarak ele alın](present-remote-config-paywalls-android).
+
+:::important
+Flow Builder'da **Show on device** geçişinin etkinleştirildiğinden emin olun. Bu seçenek açık değilse görünüm yapılandırması alınamaz.
+:::
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+Görünüm yapılandırmasını yüklemek için `getFlowConfiguration` metodunu kullanın.
+```kotlin showLineNumbers
+if (!flow.hasViewConfiguration) {
+    // use your custom logic
+    return
+}
+
+AdaptyUI.getFlowConfiguration(flow, loadTimeout = 10.seconds) { result ->
+    when(result) {
+        is AdaptyResult.Success -> {
+            val flowConfiguration = result.value
+            // use loaded configuration
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+| Parametre       | Zorunluluk     | Açıklama                                                     |
+| :-------------- | :------------- | :----------------------------------------------------------- |
+| **flow**        | zorunlu        | `Adapty.getFlow` aracılığıyla elde edilen bir `AdaptyFlow` nesnesi. |
+| **locale**      | <p>isteğe bağlı</p><p>varsayılan: cihaz dili</p> | [Yerelleştirmenin](add-paywall-locale-in-adapty-paywall-builder) tanımlayıcısı; `-` ile ayrılmış bir veya iki alt etiket içeren dil kodu olarak beklenir (örn. `en`, `pt-br`). Bkz. [Yerelleştirmeler ve dil kodları](android-localizations-and-locale-codes). |
+| **loadTimeout** | varsayılan: 5 sn | Bu değer, metodun zaman aşımı süresini sınırlar. Zaman aşımına ulaşılırsa önbelleğe alınmış veriler veya yerel yedek döndürülür. Nadir durumlarda bu metod, `loadTimeout` içinde belirtilenden biraz daha geç zaman aşımına uğrayabilir; zira işlem arka planda farklı isteklerden oluşuyor olabilir. |
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+Görünüm yapılandırmasını yüklemek için `getFlowConfiguration` metodunu kullanın.
+```java showLineNumbers
+if (!flow.hasViewConfiguration()) {
+    // use your custom logic
+    return;
+}
+
+AdaptyUI.getFlowConfiguration(flow, TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyUI.FlowConfiguration flowConfiguration =
+          ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) result).getValue();
+        // use loaded configuration
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+| Parametre       | Zorunluluk     | Açıklama                                                     |
+| :-------------- | :------------- | :----------------------------------------------------------- |
+| **flow**        | zorunlu        | `Adapty.getFlow` aracılığıyla elde edilen bir `AdaptyFlow` nesnesi. |
+| **locale**      | <p>isteğe bağlı</p><p>varsayılan: cihaz dili</p> | Bir veya iki alt etiket içeren dil kodu formatında beklenen [yerelleştirme](add-paywall-locale-in-adapty-paywall-builder) tanımlayıcısı; etiketler `-` ile ayrılır (örn. `en`, `pt-br`). Bkz. [Yerelleştirmeler ve yerel ayar kodları](android-localizations-and-locale-codes). |
+| **loadTimeout** | varsayılan: 5 sn | Bu değer, metodun zaman aşımı süresini sınırlar. Zaman aşımına ulaşılırsa önbellekteki veriler veya yerel yedek döndürülür. Nadir durumlarda bu metot, arka planda farklı isteklerden oluşabileceğinden `loadTimeout`'ta belirtilenden biraz daha geç zaman aşımına uğrayabilir. |
+</TabItem>
+
+</Tabs>
+
+:::note
+Birden fazla dil kullanıyorsanız, [Builder yerelleştirmesinin nasıl ekleneceğini](add-paywall-locale-in-adapty-paywall-builder) ve yerel ayar kodlarının nasıl doğru kullanılacağını [buradan](android-localizations-and-locale-codes) öğrenin.
+:::
+
+Yüklendikten sonra [flow veya paywall'ı gösterin](android-present-paywalls).
+## Varsayılan kitle için bir flow veya paywall alarak daha hızlı yükleme sağlayın \{#get-a-flow-or-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Genellikle flow'lar ve paywall'lar neredeyse anında yüklenir, bu yüzden bu süreci hızlandırmak için endişelenmenize gerek yoktur. Ancak çok sayıda kitle ve placement'ınız varsa ve kullanıcılarınızın internet bağlantısı zayıfsa, bir flow veya paywall yüklemek istediğinizden daha uzun sürebilir. Böyle durumlarda, hiçbir şey göstermek yerine sorunsuz bir kullanıcı deneyimi sağlamak için varsayılan bir flow veya paywall görüntülemek isteyebilirsiniz.
+Bu sorunu çözmek için, belirtilen placement'ın **All Users** kitlesi için flow veya paywall'ı getiren `getFlowForDefaultAudience` metodunu kullanabilirsiniz. Ancak şunu anlamak çok önemlidir: önerilen yaklaşım, flow veya paywall'ı yukarıdaki [Flow/paywall getirme](#fetch-flowpaywall) bölümünde ayrıntılı olarak açıklanan `getFlow` metoduyla getirmektir.
+
+:::warning
+Neden `getFlow` kullanmanızı öneriyoruz
+
+`getFlowForDefaultAudience` metodunun birkaç önemli dezavantajı vardır:
+- **Olası geriye dönük uyumluluk sorunları**: Farklı uygulama sürümleri (mevcut ve gelecekteki) için farklı flow'lar göstermeniz gerekiyorsa bazı zorluklarla karşılaşabilirsiniz. Ya mevcut (eski) sürümü destekleyen flow'lar tasarlamanız gerekecek ya da mevcut (eski) sürüme sahip kullanıcıların render edilemeyen flow'larla sorun yaşayabileceğini kabul etmeniz gerekecek.
+- **Hedefleme kaybı**: Tüm kullanıcılar **All Users** kitlesi için tasarlanmış aynı flow'u görecektir; bu da kişiselleştirilmiş hedeflemeyi (ülkelere, marketing attribution'a veya kendi özel niteliklerinize dayalı hedefleme dahil) kaybetmeniz anlamına gelir.
+Eğer daha hızlı flow veya paywall yükleme avantajından yararlanmak için bu dezavantajları kabul etmeye hazırsanız, `getFlowForDefaultAudience` metodunu aşağıdaki şekilde kullanın. Aksi takdirde [yukarıda](#fetch-flowpaywall) açıklanan `getFlow` metodunu kullanmaya devam edin.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val flow = result.value
+            // the requested flow
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) result).getValue();
+        // the requested flow
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+
+    }
+});
+```
+</TabItem>
+</Tabs>
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|-----------|
+| **placementId** | zorunlu | [Placement](placements)'ın tanımlayıcısı. Adapty Kontrol Paneli'nde bir placement oluştururken belirttiğiniz değerdir. |
+| **fetchPolicy** | varsayılan: `.reloadRevalidatingCacheData` | <p>SDK varsayılan olarak sunucudan veri yüklemeye çalışır; başarısız olursa önbelleğe alınmış veriyi döndürür. Kullanıcılarınızın her zaman en güncel verilere ulaşmasını sağladığından bu seçeneği öneririz.</p><p></p><p>Ancak kullanıcılarınızın kararsız internet bağlantısıyla karşılaştığını düşünüyorsanız, önbellekte veri varsa onu döndürmek için `.returnCacheDataElseLoad` seçeneğini kullanabilirsiniz. Bu senaryoda kullanıcılar en son veriye ulaşamayabilir; ancak internet bağlantısı ne kadar dengesiz olursa olsun daha hızlı yükleme süreleri yaşarlar. Önbellek düzenli olarak güncellenir, bu nedenle oturum sırasında ağ isteklerini azaltmak amacıyla kullanmak güvenlidir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında silinmediğini, yalnızca uygulama kaldırıldığında veya manuel temizleme yapıldığında temizlendiğini unutmayın.</p> |
+## Varlıkları özelleştir \{#customize-assets\}
+
+Flow veya paywallınızdaki görselleri ve videoları özelleştirmek için özel varlıkları uygulayın.
+
+Hero görselleri ve videolarının önceden tanımlanmış kimlikleri vardır: `hero_image` ve `hero_video`. Özel bir varlık paketinde, bu öğeleri kimliklerine göre hedefler ve davranışlarını özelleştirirsiniz.
+
+Diğer görseller ve videolar için Adapty kontrol panelinde [özel bir kimlik belirlemeniz](custom-media) gerekir.
+
+Örneğin şunları yapabilirsiniz:
+
+- Bazı kullanıcılara farklı bir görsel veya video gösterin.
+- Uzak ana görsel yüklenirken yerel bir önizleme görseli gösterin.
+- Bir video başlamadan önce önizleme görseli gösterin.
+İşte özel varlıkları basit bir sözlük aracılığıyla nasıl sağlayabileceğinize dair bir örnek:
+```kotlin showLineNumbers
+val customAssets = AdaptyCustomAssets.of(
+    "hero_image" to
+            AdaptyCustomImageAsset.remote(
+                url = "https://example.com/image.jpg",
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromAsset("images/hero_image_preview.png"),
+                )
+            ),
+    "hero_video" to
+            AdaptyCustomVideoAsset.file(
+                FileLocation.fromResId(requireContext(), R.raw.custom_video),
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromResId(requireContext(), R.drawable.video_preview),
+                ),
+            ),
+)
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products,
+    eventListener,
+    insets,
+    customAssets,
+)
+```
+
+:::note
+Bir asset bulunamazsa, flow varsayılan görünümüne geri döner.
+:::
+
+Videolar için, isteğe bağlı olarak bir `resolution` geçerek video yüklenmeden önce düzen alanını ayırabilir ve en boy oranını (`width / height`) belirleyebilirsiniz:
+
+```kotlin showLineNumbers
+AdaptyCustomVideoAsset.file(
+    FileLocation.fromResId(requireContext(), R.raw.custom_video),
+    preview = AdaptyCustomImageAsset.file(
+        FileLocation.fromResId(requireContext(), R.drawable.video_preview),
+    ),
+    resolution = AdaptyCustomVideoAsset.Resolution(width = 1080, height = 1920),
+)
+```
+
+</SDKv4>
+
+<SDKv3>
+[Adapty Kontrol Paneli](adapty-paywall-builder)'nda yeni Paywall Builder ile [paywall'ınızın görsel kısmını tasarladıktan](adapty-paywall-builder) sonra, onu mobil uygulamanızda gösterebilirsiniz. Bu süreçteki ilk adım, aşağıda açıklandığı gibi placement ile ilişkili paywall'ı ve görünüm yapılandırmasını almaktır.
 
 :::warning
 Yeni Paywall Builder, Android SDK 3.0 veya daha yüksek sürümüyle çalışır.
 :::
-
-Bu konunun Paywall Builder ile özelleştirilmiş paywalllarla ilgili olduğunu unutmayın. Paywalllarınızı manuel olarak uyguluyorsanız, lütfen [Mobil uygulamanızda remote config paywallları için paywallları ve ürünleri getirme](fetch-paywalls-and-products-android) konusuna bakın.
+Paywall Builder ile özelleştirilmiş paywalllar için bu konuya başvurduğunuzu unutmayın. Paywalllarınızı manuel olarak uyguluyorsanız, lütfen [Mobil uygulamanızda remote config paywallları için paywallları ve ürünleri getirme](fetch-paywalls-and-products-android) konusuna bakın.
 
 <SampleApp />
 
 <details>
    <summary>Mobil uygulamanızda paywallları görüntülemeye başlamadan önce (genişletmek için tıklayın)</summary>
-
 1. Adapty Kontrol Paneli'nde [ürünlerinizi oluşturun](create-product).
-2. Adapty Kontrol Paneli'nde [bir paywall oluşturun ve ürünleri içine ekleyin](create-paywall).
-3. Adapty Kontrol Paneli'nde [placementlar oluşturun ve paywallınızı içine ekleyin](create-placement).
+2. Adapty Kontrol Paneli'nde [bir paywall oluşturun ve ürünleri ekleyin](create-paywall).
+3. Adapty Kontrol Paneli'nde [placement'lar oluşturun ve paywall'unuzu ekleyin](create-placement).
 4. Mobil uygulamanıza [Adapty SDK](sdk-installation-android) yükleyin.
 </details>
-
 ## Paywall Builder ile tasarlanan paywallı getirme \{#fetch-paywall-designed-with-paywall-builder\}
 
 [Paywall Builder kullanarak bir paywall tasarladıysanız](adapty-paywall-builder), bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Böyle bir paywall, hem paywall içinde neyin gösterileceğini hem de nasıl gösterileceğini içerir. Yine de placement aracılığıyla ID'sini, görünüm yapılandırmasını almanız ve ardından mobil uygulamanızda sunmanız gerekir.
@@ -284,3 +540,5 @@ val paywallView = AdaptyUI.getPaywallView(
 :::note
 Bir varlık bulunamazsa, paywall varsayılan görünümüne geri döner.
 :::
+
+</SDKv3>
