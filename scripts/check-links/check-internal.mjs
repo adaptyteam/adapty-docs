@@ -142,21 +142,25 @@ async function getHeadingIds(filePath) {
   return ids;
 }
 
-// Doc index cache: key -> Map<lowercased-slug, filePath>.
-// Key is the docsDir for the plain English index, or `${docsDir}::${localeDir}`
-// for a locale-overlaid index (English pages with a locale's translated files
-// layered on top), so multiple locales can be resolved in one run.
-const docIndexCache = new Map();
-
-async function addEnglishPages(index, docsDir) {
+// Doc index: Map<lowercased-slug, filePath>. Built from the ENGLISH source only,
+// and used for both English and localized link checking. A bare-slug link in a
+// localized file renders to the no-locale URL /docs/<slug> at runtime (verified
+// against production), so its validity depends on the ENGLISH page existing — a
+// translated page with the same slug but no English source is NOT reachable that
+// way, so it must not be treated as resolving. (Do not overlay locale pages here:
+// doing so masks links to orphaned translations that 404 in production.)
+let docIndex = null;
+async function buildDocIndex(docsDir) {
+  if (docIndex) return docIndex;
+  docIndex = new Map();
   const files = await getAllDocFiles(docsDir);
   for (const f of files) {
     const basename = path.basename(f).replace(/\.(md|mdx)$/, '');
     const rel = path.relative(docsDir, f).replace(/\.(md|mdx)$/, '');
     const baseKey = basename.toLowerCase();
     const relKey = rel.toLowerCase();
-    if (!index.has(baseKey)) index.set(baseKey, f);
-    if (!index.has(relKey)) index.set(relKey, f);
+    if (!docIndex.has(baseKey)) docIndex.set(baseKey, f);
+    if (!docIndex.has(relKey)) docIndex.set(relKey, f);
 
     // Also index customSlug from frontmatter
     try {
@@ -164,37 +168,11 @@ async function addEnglishPages(index, docsDir) {
       const slugMatch = content.match(/^customSlug:\s*["']?\/?([^"'\n]+)["']?\s*$/m);
       if (slugMatch) {
         const customKey = slugMatch[1].trim().toLowerCase();
-        if (!index.has(customKey)) index.set(customKey, f);
+        if (!docIndex.has(customKey)) docIndex.set(customKey, f);
       }
     } catch { /* ignore */ }
   }
-}
-
-// Overlay a locale's translated pages on top of the English index. Locale pages
-// live flat in src/locales/<code>/ (the reusable/ and .hashes/ subdirs are not
-// routable pages and are skipped). The translator preserves English anchor ids,
-// so overlaying by basename makes anchor checks resolve against the translated
-// file when it exists, while not-yet-translated slugs still fall back to their
-// English source (matching runtime locale-fallback behavior).
-async function addLocaleOverlay(index, localeDir) {
-  const files = (await getAllDocFiles(localeDir)).filter(f => {
-    const parts = f.split(path.sep);
-    return !parts.includes('reusable') && !parts.includes('.hashes');
-  });
-  for (const f of files) {
-    const baseKey = path.basename(f).replace(/\.(md|mdx)$/, '').toLowerCase();
-    index.set(baseKey, f); // locale page wins over the English entry
-  }
-}
-
-async function buildDocIndex(docsDir, localeDir = null) {
-  const key = localeDir ? `${docsDir}::${localeDir}` : docsDir;
-  if (docIndexCache.has(key)) return docIndexCache.get(key);
-  const index = new Map();
-  await addEnglishPages(index, docsDir);
-  if (localeDir) await addLocaleOverlay(index, localeDir);
-  docIndexCache.set(key, index);
-  return index;
+  return docIndex;
 }
 
 /** Expose the doc index for external use (e.g. diff mode). */
@@ -204,7 +182,7 @@ export { buildDocIndex };
  * Check an internal doc link. Resolves slug to file, checks anchors,
  * falls back to live site for redirects.
  */
-export async function checkInternalLink(url, { docsDir, localeDir = null, liveSiteBase, timeoutMs, skipAnchors = false }) {
+export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs, skipAnchors = false }) {
   const [urlWithoutAnchor, anchor] = url.split('#');
   if (!urlWithoutAnchor) return { ok: true, status: 'anchor-only' };
 
@@ -247,10 +225,9 @@ export async function checkInternalLink(url, { docsDir, localeDir = null, liveSi
     };
   }
 
-  // Case-insensitive lookup against the doc index (locale-overlaid when checking
-  // a translated file, so anchors resolve against the translated page).
+  // Case-insensitive lookup against the English doc index.
   const slug = rawSlug.toLowerCase();
-  const index = await buildDocIndex(docsDir, localeDir);
+  const index = await buildDocIndex(docsDir);
 
   let filePath = index.get(slug);
   if (!filePath) {

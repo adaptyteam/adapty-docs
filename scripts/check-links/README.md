@@ -65,11 +65,13 @@ node scripts/check-links/index.mjs --diff --base=last-production-deploy --locale
 
 How localized checking differs from the English run:
 
-- Each file's links resolve against a **per-locale index**: the English doc set
-  with that locale's translated pages overlaid on top. A bare slug therefore
-  resolves to the canonical page (locale coverage is a subset of English and
-  falls back to English at runtime), so not-yet-translated pages are not false
-  "broken link" positives.
+- Links resolve against the **English** doc index (plus the live-site fallback),
+  NOT a locale-overlaid one. A bare-slug link in a localized file renders to the
+  no-locale URL `/docs/<slug>` at runtime (verified against production), so its
+  validity depends on the **English** page existing. This is deliberate: a
+  translated page that exists only as a locale file (no English source) is an
+  orphan that 404s in production, and links to it must be flagged — overlaying
+  locale pages would mask exactly that breakage.
 - **Anchor fragments (`#heading`) are not validated.** The translator preserves
   English anchor ids verbatim (as escaped `\{#id\}` on translated headings), so
   anchors carry over from English; the English run owns anchor validation.

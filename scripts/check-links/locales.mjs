@@ -1,13 +1,13 @@
 /**
  * Localized link checking ("localized files only" mode, enabled by --locales).
  *
- * Unlike the English orchestrators, every changed/scanned file belongs to a
- * specific locale under src/locales/<code>/, and its links resolve against a
- * per-locale doc index (English source overlaid with that locale's translated
- * pages — see buildDocIndex in check-internal.mjs). The same URL can appear in
- * several locales and resolve differently per locale (anchors hit the
- * translated target), so internal links are deduplicated and checked
- * per-locale, never globally.
+ * Scans localized files under src/locales/<code>/ and checks their internal
+ * links against the ENGLISH doc index (NOT a locale-overlaid one): a bare-slug
+ * link in a localized file renders to the no-locale URL /docs/<slug> at runtime,
+ * so its validity depends on the English page existing. This is what catches
+ * links to orphaned translations (a slug that exists only as a locale file, with
+ * no English source, 404s in production). Resolution is therefore
+ * locale-independent, so a given URL is checked once and reused across locales.
  *
  * Supported modes (config.mode):
  *   full — scan every selected locale dir (pages + reusable snippets)
@@ -176,8 +176,9 @@ export async function orchestrateLocales(config) {
   const allLinks = [];
   const allFiles = [];
   const externalByLocale = []; // collected, checked once at the end
+  const internalResultsByUrl = new Map(); // url -> result, shared across locales (resolution is locale-independent)
 
-  // 3. Per-locale: extract, lint, check internal links against the locale index.
+  // 3. Per-locale: extract & lint, then check internal links against the English index.
   for (const [code, { dir, files }] of filesByLocale) {
     if (files.length === 0) continue;
     console.log(`\n[${code}] ${files.length} file(s)`);
@@ -211,20 +212,22 @@ export async function orchestrateLocales(config) {
 
     if (externalOnly) continue;
 
-    // Internal checks — dedupe by URL within this locale only.
+    // Internal checks. Resolution is locale-independent (English index + live
+    // fallback), so check each URL once and reuse the result across locales.
+    // skipAnchors: anchor validation lives in the English check; the translator
+    // preserves English anchor ids (escaped \{#id\}), so re-checking here only
+    // re-flags English-origin anchors. We verify the target page exists.
     const uniqueInternal = [...new Set(internalLinks.map(l => l.url))].filter(u => !mdExtUrls.has(u));
-    console.log(`[${code}] checking ${uniqueInternal.length} internal links...`);
-    const resultsByUrl = new Map();
+    let newlyChecked = 0;
     for (const url of uniqueInternal) {
-      // skipAnchors: the translator preserves English anchor ids (escaped
-      // \{#id\} form), so anchor links carry over from English. We only verify
-      // the target page exists for locales — anchor validation lives in the
-      // English check and would otherwise just re-flag English-origin anchors.
-      resultsByUrl.set(url, await checkInternalLink(url, { docsDir, localeDir: dir, liveSiteBase, timeoutMs, skipAnchors: true }));
+      if (internalResultsByUrl.has(url)) continue;
+      internalResultsByUrl.set(url, await checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs, skipAnchors: true }));
+      newlyChecked++;
     }
+    console.log(`[${code}] ${uniqueInternal.length} internal links (${newlyChecked} newly checked)`);
 
     for (const link of internalLinks) {
-      const result = resultsByUrl.get(link.url);
+      const result = internalResultsByUrl.get(link.url);
       if (!result) continue;
       if (!result.ok) {
         errors.push({ ...link, type: 'internal', status: result.status, error: result.error });
