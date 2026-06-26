@@ -3626,6 +3626,10 @@ function postProcessTranslation(content, lang) {
       // Keep reusable snippet imports (already rewritten to locales/<lang>/reusable/)
       if (line.includes("/locales/") && line.includes("/reusable/"))
         return line;
+      // Keep component imports inside reusable snippets (e.g. Callout), already
+      // rewritten in step above to '../../../components/*.astro'. The reusable
+      // file renders these itself; stripping them crashes the locale build.
+      if (/from ['"]\.\.\/\.\.\/\.\.\/components\//.test(line)) return line;
       return "";
     });
     // Clean up leading blank lines left by stripped imports
