@@ -1,0 +1,128 @@
+---
+title: "Show an AA-targeted paywall on first launch in Flutter SDK"
+description: "Wait briefly for Apple Ads attribution before showing the paywall on first launch in Flutter, falling back to the default audience on timeout. Uses AdaptyProfile.appliedAttributionSources."
+metadataTitle: "Show AA-targeted paywall on first launch | Flutter SDK | Adapty Docs"
+---
+
+Apple Ads (AA) attribution arrives asynchronously after `Adapty().activate()`. On first launch it usually hasn't landed yet, so if you call `getPaywall` right away, Adapty resolves the request against the default audience and Apple Ads users miss your AA-segmented paywall. Instead of showing a paywall and then replacing it, wait briefly for AA attribution before you display anything: show the targeted paywall if attribution lands within a short timeout, or the default-audience paywall if it doesn't. `AdaptyProfile.appliedAttributionSources` tells you when AA attribution has been applied.
+
+## Before you start
+
+You need:
+- Adapty Flutter SDK **3.17.0** or later.
+- Apple Ads configured for the app in Adapty. See [Apple Ads](apple-search-ads).
+
+## How it works
+
+After `Adapty().activate()`, the SDK requests Apple Ads attribution from Apple in the background and forwards the result to Adapty's backend. When AA becomes the active attribution source for the profile, the SDK delivers an updated `AdaptyProfile` to your `didUpdateProfileStream` listener, with `AdaptyAttributionSource.appleAds` in its `appliedAttributionSources` list.
+
+On first launch, this gives you two outcomes to handle:
+
+1. **Attribution lands within your timeout.** Call `getPaywall` — Adapty resolves the request against the Apple Ads audience and returns the targeted paywall.
+2. **The timeout elapses first.** Show the default-audience paywall instead, so users without Apple Ads attribution aren't left waiting. `getPaywallForDefaultAudience` returns it without waiting for segmentation.
+
+`appliedAttributionSources` can be empty. That means either:
+
+- Apple Ads attribution hasn't been processed yet for this profile, or
+- no attribution has arrived at all.
+
+Either way, `getPaywallForDefaultAudience` is safe to call — it returns the default-audience paywall regardless of the profile state.
+
+:::important
+The wait only applies to the first launch. Once Apple Ads attribution has been recorded, it's stored on the profile permanently. On every subsequent launch, the cached profile already carries `AdaptyAttributionSource.appleAds` in `appliedAttributionSources`, so the attribution path resolves right away and `getPaywall` returns the Apple-Ads-segmented paywall without any delay.
+:::
+
+## Implementation
+
+On first launch, wait for `AdaptyAttributionSource.appleAds` and apply a hard timeout — if Apple Ads attribution never arrives, those users still need to see a paywall.
+
+1. **Activate the SDK.** See [Install & configure the Flutter SDK](sdk-installation-flutter).
+2. **Subscribe to profile updates** with `Adapty().didUpdateProfileStream.listen(…)`. If you haven't set up the listener yet, see [Listen to subscription updates](flutter-check-subscription-status#listen-to-subscription-updates).
+3. **Watch for `AdaptyAttributionSource.appleAds` in `appliedAttributionSources`.** When it appears, load the paywall with `getPaywall` — Adapty returns the AA-segmented variant:
+
+```dart
+final subscription = Adapty().didUpdateProfileStream.listen((profile) async {
+  if (!profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) return;
+  final paywall = await Adapty().getPaywall(placementId: placementId);
+  // present the segmented paywall, then cancel the subscription and the timer
+});
+```
+
+   `didUpdateProfileStream` is a broadcast stream and doesn't replay, so also check the current profile once with `getProfile()`. On relaunches the stored attribution is already applied and won't re-emit.
+
+4. **Start a 3–5 second timer in parallel with the subscription.** If the timer fires before `AdaptyAttributionSource.appleAds` appears, load the default-audience paywall with `getPaywallForDefaultAudience` instead. Display whichever paywall resolves first and cancel the other path, so the paywall isn't fetched twice. Configure a [fallback paywall](flutter-use-fallback-paywalls) for the placement so the user is never stuck if the network request fails.
+
+## Complete example
+
+The implementation below races attribution against a timeout, prefetches the default-audience paywall in parallel, and returns whichever paywall is appropriate. The caller awaits a single function — no listeners or state flags to manage at the call site:
+
+- If attribution lands within `timeout`, it returns the segmented paywall via `getPaywall`.
+- If `timeout` elapses first, it returns the prefetched default-audience paywall via `getPaywallForDefaultAudience`.
+
+```dart title="apple_ads_paywall.dart"
+import 'dart:async';
+import 'package:adapty_flutter/adapty_flutter.dart';
+
+/// Returns the Apple Ads-segmented paywall if attribution is applied within
+/// [timeout], otherwise the default-audience paywall. Call after Adapty().activate().
+Future<AdaptyPaywall> getPaywallOrDefault({
+  required String placementId,
+  required Duration timeout,
+}) {
+  // Prefetch the default-audience paywall right away so the timeout path resolves
+  // without an extra network round-trip. `getPaywallForDefaultAudience` skips the
+  // wait for segmentation data. `..ignore()` keeps an unused prefetch from surfacing
+  // as an unhandled error; the error still reaches the caller if this paywall wins.
+  final defaultPaywall =
+      Adapty().getPaywallForDefaultAudience(placementId: placementId)..ignore();
+
+  final completer = Completer<AdaptyPaywall>();
+  late final StreamSubscription<AdaptyProfile> subscription;
+  late final Timer timer;
+
+  void resolve(Future<AdaptyPaywall> paywall) {
+    if (completer.isCompleted) return;
+    timer.cancel();
+    subscription.cancel();
+    completer.complete(paywall);
+  }
+
+  void onProfile(AdaptyProfile profile) {
+    if (profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) {
+      resolve(Adapty().getPaywall(placementId: placementId));
+    }
+  }
+
+  // Attribution path: react to profile updates as attribution is applied.
+  subscription = Adapty().didUpdateProfileStream.listen(onProfile);
+
+  // The stream is a broadcast stream and doesn't replay, so check the current
+  // profile too — on relaunches attribution is already stored and won't re-emit.
+  Adapty().getProfile().then(onProfile).ignore();
+
+  // Timeout path: fall back to the prefetched default-audience paywall.
+  timer = Timer(timeout, () => resolve(defaultPaywall));
+
+  return completer.future;
+}
+```
+
+Call from your splash screen, then present the paywall once it resolves:
+
+```dart
+try {
+  final paywall = await getPaywallOrDefault(
+    placementId: 'YOUR_PLACEMENT_ID',
+    timeout: const Duration(seconds: 5),
+  );
+  // present the paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error or show a fallback paywall
+} catch (e) {
+  // handle the error
+}
+```
+
+Tune `timeout` to how long you're willing to make users wait before any paywall appears. Most users have no Apple Ads attribution, so they wait the full timeout — 3 to 5 seconds is a reasonable balance. Attribution that's coming usually arrives within a few seconds of launch.
+
+If your app already listens to `didUpdateProfileStream` for other purposes (for example, [checking subscription status](flutter-check-subscription-status#listen-to-subscription-updates)), you don't need to change it. `didUpdateProfileStream` is a broadcast stream, so it supports multiple independent listeners without affecting the others.

@@ -1,0 +1,202 @@
+---
+title: "Adapty Android SDK を v. 4.0 へ移行する"
+description: "ペイウォール API をフロー API に置き換えて Adapty Android SDK v4.0（ベータ）へ移行します。Flow Builder と Paywall Builder の両方に対応しています。"
+metadataTitle: "Adapty Android SDK v4.0（ベータ）への移行 | Adapty ドキュメント"
+---
+
+Adapty Android SDK 4.0（ベータ）ではフローが導入され、ペイウォール API の名称が変更されました。新しい API は新しい Flow Builder と既存の Paywall Builder の両方で動作します。Adapty ダッシュボード側での設定変更は不要です。
+## クイックリファレンス \{#quick-reference\}
+| v3 | v4 |
+|---|---|
+| `Adapty.getPaywall(placementId, locale)` | `Adapty.getFlow(placementId)` |
+| `Adapty.getPaywallForDefaultAudience(placementId, locale)` | `Adapty.getFlowForDefaultAudience(placementId)` |
+| `AdaptyUI.getViewConfiguration(paywall)` | `AdaptyUI.getFlowConfiguration(flow, locale)` |
+| `AdaptyUI.LocalizedViewConfiguration` | `AdaptyUI.FlowConfiguration` |
+| `Adapty.getPaywallProducts(paywall)` | `Adapty.getPaywallProducts(flow)` |
+| `Adapty.logShowPaywall(paywall)` | `Adapty.logShowFlow(flow)` |
+| `AdaptyPaywall` | `AdaptyFlow` |
+| `AdaptyUI.getPaywallView(...)` | `AdaptyUI.getFlowView(...)` |
+| `AdaptyPaywallView` | `AdaptyFlowView` |
+| `AdaptyPaywallScreen` (Compose) | `AdaptyFlowScreen` |
+| `showPaywall(...)` | `showFlow(...)` |
+| `AdaptyPaywallInsets` | `AdaptyFlowInsets` |
+| `AdaptyUiEventListener` | `AdaptyFlowEventListener` |
+| `AdaptyUiDefaultEventListener` | `AdaptyFlowDefaultEventListener` |
+| `onPaywallShown` / `onPaywallClosed` | `onFlowShown` / `onFlowClosed` |
+| `onRenderingError` | `onError` |
+| `Adapty.updateAttribution(attribution, source)` (`source: String`) | `Adapty.updateAttribution(attribution, source)` (`source: AdaptyAttributionSource`) |
+| `Adapty.setIntegrationIdentifier(key, value)` | `Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier)` |
+`AdaptyPaywallProduct` はその名前を保持します。プロダクトは引き続きフローに属しており、`getPaywallProducts` は `AdaptyFlow` を受け取るようになります。その他の `AdaptyFlowEventListener` メソッド（`onProductSelected`、`onPurchaseStarted`、`onPurchaseFinished`、`onPurchaseFailure`、`onRestoreSuccess`、`onRestoreFailure`、`onActionPerformed`、`onAwaitingPurchaseParams`、`onLoadingProductsFailure` など）は、名前とシグネチャを変更しません。
+## インストール \{#installation\}
+
+Adapty Android SDK 4.0 はプレリリース版のため、動的なバージョン範囲ではなく正確なバージョンを指定する必要があります。`adapty-bom` のバージョンを `4.0.0-beta.1` に設定してプロジェクトを同期してください。BOM が対応する `android-sdk` と `android-ui` のバージョンを自動で解決します。依存関係の宣言方法については、[Adapty SDK のインストール](sdk-installation-android) を参照してください。
+## 削除および非推奨のAPI \{#removed-and-deprecated-apis\}
+
+- **`Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized, callback)`** — 削除されました。このオーバーロードはv3で非推奨になりました。代わりに `AdaptyPurchaseParameters` を使って同じオプションを渡してください：
+```diff showLineNumbers
+- Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized) { result -> /* ... */ }
++ val params = AdaptyPurchaseParameters.Builder()
++     .withSubscriptionUpdateParams(subscriptionUpdateParams)
++     .withOfferPersonalized(isOfferPersonalized)
++     .build()
++ Adapty.makePurchase(activity, product, params) { result -> /* ... */ }
+```
+
+- **オンボーディングは非推奨です。** `AdaptyUI.getOnboardingView` および `AdaptyUI.getOnboardingConfiguration` は 4.0 で `@Deprecated` としてマークされています — オンボーディングを [フロービルダー](adapty-flow-builder) で作成したフローに移行してください。
+## フローの取得 \{#fetching-flows\}
+### getPaywall + getViewConfiguration → getFlow + getFlowConfiguration \{#getpaywall--getviewconfiguration--getflow--getflowconfiguration\}
+
+フェッチの戻り値の型が `AdaptyPaywall` から `AdaptyFlow` に変わり、設定ローダーの名前が `AdaptyUI.getViewConfiguration` から `AdaptyUI.getFlowConfiguration` に変更されます（戻り値も `AdaptyUI.LocalizedViewConfiguration` の代わりに `AdaptyUI.FlowConfiguration` を返します）。`locale` パラメータはフェッチ呼び出しから `getFlowConfiguration` に移動します：
+```diff showLineNumbers
+- Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
++ Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
+      if (result is AdaptyResult.Success) {
+-         val paywall = result.value
+-         if (!paywall.hasViewConfiguration) return@getPaywall
+-         AdaptyUI.getViewConfiguration(paywall) { configResult ->
++         val flow = result.value
++         if (!flow.hasViewConfiguration) return@getFlow
++         AdaptyUI.getFlowConfiguration(flow, locale = "en") { configResult ->
+              if (configResult is AdaptyResult.Success) {
+                  val flowConfiguration = configResult.value
+              }
+          }
+      }
+  }
+```
+
+### getPaywallProducts(paywall) → getPaywallProducts(flow)
+
+`getPaywallProducts` は、`Adapty.getFlow` が返す `AdaptyFlow` を受け取るようになりました：
+
+```diff showLineNumbers
+- Adapty.getPaywallProducts(paywall) { result -> /* products */ }
++ Adapty.getPaywallProducts(flow) { result -> /* products */ }
+```
+## フローのビュー数トラッキング \{#tracking-flow-views\}
+### logShowPaywall → logShowFlow
+
+`logShowPaywall` は `logShowFlow` に名前が変更され、`AdaptyPaywall` の代わりに `AdaptyFlow` を受け取るようになりました。イベントは引き続き同じバリアションに対して記録されるため、既存のファネルや A/B テストの指標はダッシュボードを変更せずにそのまま機能します。
+
+```diff showLineNumbers
+- Adapty.logShowPaywall(paywall)
++ Adapty.logShowFlow(flow)
+```
+
+v3 と同様に、[フロービルダー](adapty-flow-builder)や[ペイウォールビルダー](adapty-paywall-builder)でレンダリングされたフローやペイウォールを表示する際は、このメソッドを呼び出す必要はありません。Adapty がそれらのビューを自動的に追跡します。
+## フローの表示 \{#displaying-flows\}
+### getPaywallView / AdaptyPaywallView → getFlowView / AdaptyFlowView
+
+ファクトリーメソッドとビュータイプをリネームし、`AdaptyUI.FlowConfiguration` を渡します：
+
+```diff showLineNumbers
+- val paywallView = AdaptyUI.getPaywallView(
+-     activity,
+-     viewConfiguration,
+-     products,
+-     eventListener,
+- )
++ val flowView = AdaptyUI.getFlowView(
++     activity,
++     flowConfiguration,
++     products,
++     eventListener,
++ )
+```
+
+ビューを直接作成する場合は、showメソッドもリネームされます：
+```diff showLineNumbers
+- val paywallView = AdaptyPaywallView(activity)
+- paywallView.showPaywall(viewConfiguration, products, eventListener)
++ val flowView = AdaptyFlowView(activity)
++ flowView.showFlow(flowConfiguration, products, eventListener)
+```
+
+XML レイアウトでは、ビュータグを次のように更新してください：
+
+```diff showLineNumbers
+- <com.adapty.ui.AdaptyPaywallView ... />
++ <com.adapty.ui.AdaptyFlowView ... />
+```
+オプションの `personalizedOfferResolver` パラメータが `getFlowView` / `showFlow` / `AdaptyFlowScreen` から削除されました。パーソナライズ価格を示すには、`onAwaitingPurchaseParams` を通じてプロダクトごとに設定してください（`AdaptyPurchaseParameters.Builder().withOfferPersonalized(true)`）。新しいオプションの `customAssets` パラメータを使用すると、実行時に画像や動画をオーバーライドできます — [アセットのカスタマイズ](android-get-pb-paywalls#customize-assets)を参照してください。
+### AdaptyPaywallScreen → AdaptyFlowScreen
+
+Jetpack Compose では、コンポーザブルの名前を変更し、設定パラメータを更新します：
+
+```diff showLineNumbers
+- AdaptyPaywallScreen(
+-     viewConfiguration,
++ AdaptyFlowScreen(
++     flowConfiguration,
+      products,
+      eventListener,
+  )
+```
+## イベントの処理 \{#handling-events\}
+
+イベントリスナーの名前が `AdaptyUiEventListener` から `AdaptyFlowEventListener` に変更されました（また `AdaptyUiDefaultEventListener` は `AdaptyFlowDefaultEventListener` に変更）。ほとんどのメソッド名は変わりませんが、ライフサイクルおよびレンダリングに関するコールバックは名前が変更されています：
+```diff showLineNumbers
+- class YourListener : AdaptyUiDefaultEventListener() {
++ class YourListener : AdaptyFlowDefaultEventListener() {
+
+-     override fun onPaywallShown(context: Context) {}
+-     override fun onPaywallClosed() {}
++     override fun onFlowShown(context: Context) {}
++     override fun onFlowClosed() {}
+
+-     override fun onRenderingError(error: AdaptyError, context: Context) {}
++     override fun onError(error: AdaptyError, context: Context) {}
+  }
+```
+
+既存のハンドラー本体はコードを変更する必要はありません。型名とオーバーライドの名前を変更するだけです。`onError` は、`onRenderingError` が対象としていたのと同じレンダリングエラーに加えて、その他の購入以外のランタイムエラーも対象としています。コールバックの完全な一覧については、[フロー＆ペイウォールイベントの処理](android-handling-events)を参照してください。
+## アトリビューションと統合識別子 \{#attribution-and-integration-identifiers\}
+### updateAttribution
+
+`source` パラメーターが `String` 型から新しい `AdaptyAttributionSource` 型に変更され、`attribution` は `Map<String, Any>` になりました（JSON `String` のオーバーロードも利用可能です）。事前定義されたソースのいずれかを使用してください：
+
+```diff showLineNumbers
+- Adapty.updateAttribution(attribution, "appsflyer") { error -> /* handle the error */ }
++ Adapty.updateAttribution(attribution, AdaptyAttributionSource.APPSFLYER) { error -> /* handle the error */ }
+```
+定義済みのソース: `AdaptyAttributionSource.APPLE_ADS`、`.ADJUST`、`.APPSFLYER`、`.BRANCH`、`.TENJIN`。その他のソースには、文字列からソースを作成してください: `AdaptyAttributionSource("your_source")`。
+### setIntegrationIdentifier
+
+`setIntegrationIdentifier(key, value)` は、1つまたは複数の `AdaptyIntegrationIdentifier` 値を受け取るメソッドに置き換えられました。生の文字列キーの代わりに、定義済みの `Key` 定数を使用してください：
+
+```diff showLineNumbers
+- Adapty.setIntegrationIdentifier("appsflyer_id", appsFlyerId) { error -> /* handle the error */ }
++ Adapty.setIntegrationIdentifier(
++     AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.APPSFLYER_ID, appsFlyerId)
++ ) { error -> /* handle the error */ }
+```
+
+1回の呼び出しで複数の識別子を設定することもできます：
+```kotlin showLineNumbers
+Adapty.setIntegrationIdentifier(
+    listOf(
+        AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.APPSFLYER_ID, appsFlyerId),
+        AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.ADJUST_DEVICE_ID, adjustDeviceId),
+    )
+) { error -> /* handle the error */ }
+```
+
+古いキー文字列をそれぞれの `Key` 定数に置き換えてください：
+| v3 キー | v4 `AdaptyIntegrationIdentifier.Key` |
+|---|---|
+| `"adjust_device_id"` | `ADJUST_DEVICE_ID` |
+| `"airbridge_device_id"` | `AIRBRIDGE_DEVICE_ID` |
+| `"amplitude_user_id"` | `AMPLITUDE_USER_ID` |
+| `"amplitude_device_id"` | `AMPLITUDE_DEVICE_ID` |
+| `"appmetrica_device_id"` | `APPMETRICA_DEVICE_ID` |
+| `"appmetrica_profile_id"` | `APPMETRICA_PROFILE_ID` |
+| `"appsflyer_id"` | `APPSFLYER_ID` |
+| `"branch_id"` | `BRANCH_ID` |
+| `"facebook_anonymous_id"` | `FACEBOOK_ANONYMOUS_ID` |
+| `"firebase_app_instance_id"` | `FIREBASE_APP_INSTANCE_ID` |
+| `"mixpanel_user_id"` | `MIXPANEL_USER_ID` |
+| `"one_signal_subscription_id"` | `ONE_SIGNAL_SUBSCRIPTION_ID` |
+| `"one_signal_player_id"` | `ONE_SIGNAL_PLAYER_ID` |
+| `"posthog_distinct_user_id"` | `POSTHOG_DISTINCT_USER_ID` |
+| `"pushwoosh_hwid"` | `PUSHWOOSH_HWID` |
+| `"tenjin_analytics_installation_id"` | `TENJIN_ANALYTICS_INSTALLATION_ID` |

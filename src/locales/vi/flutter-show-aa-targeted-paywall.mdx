@@ -1,0 +1,113 @@
+---
+title: "Hiển thị paywall theo mục tiêu AA khi khởi chạy lần đầu trong Flutter SDK"
+description: "Chờ một chút để nhận attribution từ Apple Ads trước khi hiển thị paywall khi khởi chạy lần đầu trong Flutter, tự động chuyển về đối tượng mặc định khi hết thời gian chờ. Sử dụng AdaptyProfile.appliedAttributionSources."
+metadataTitle: "Hiển thị paywall theo mục tiêu AA khi khởi chạy lần đầu | Flutter SDK | Tài liệu Adapty"
+---
+Attribution từ Apple Ads (AA) được nhận bất đồng bộ sau khi gọi `Adapty().activate()`. Ở lần khởi chạy đầu tiên, dữ liệu này thường chưa có, vì vậy nếu bạn gọi `getPaywall` ngay lập tức, Adapty sẽ xử lý yêu cầu dựa trên đối tượng mặc định và những người dùng Apple Ads sẽ không thấy paywall được nhắm mục tiêu theo AA. Thay vì hiển thị một paywall rồi thay thế nó, hãy chờ một chút để nhận attribution từ AA trước khi hiển thị bất cứ thứ gì: hiển thị paywall đúng đối tượng nếu attribution đến trong thời gian chờ ngắn, hoặc hiển thị paywall theo đối tượng mặc định nếu không. `AdaptyProfile.appliedAttributionSources` cho bạn biết khi nào attribution từ AA đã được áp dụng.
+## Trước khi bắt đầu \{#before-you-start\}
+
+Bạn cần:
+- Adapty Flutter SDK **3.17.0** trở lên.
+- Apple Ads đã được cấu hình cho ứng dụng trong Adapty. Xem [Apple Ads](apple-search-ads).
+## Cách hoạt động \{#how-it-works\}
+
+Sau khi gọi `Adapty().activate()`, SDK sẽ yêu cầu attribution từ Apple Ads ở chế độ nền và chuyển kết quả đó về backend của Adapty. Khi AA trở thành nguồn attribution đang hoạt động cho hồ sơ người dùng, SDK sẽ gửi một `AdaptyProfile` đã được cập nhật đến listener `didUpdateProfileStream` của bạn, với `AdaptyAttributionSource.appleAds` trong danh sách `appliedAttributionSources`.
+
+Ở lần chạy đầu tiên, bạn sẽ cần xử lý hai trường hợp:
+1. **Attribution đến trong thời gian chờ của bạn.** Gọi `getPaywall` — Adapty xử lý yêu cầu dựa trên đối tượng Apple Ads và trả về paywall được nhắm mục tiêu.
+2. **Thời gian chờ hết trước.** Hiển thị paywall cho đối tượng mặc định thay thế, để người dùng không có attribution Apple Ads không phải chờ đợi. `getPaywallForDefaultAudience` trả về paywall đó mà không cần chờ phân khúc.
+
+`appliedAttributionSources` có thể rỗng. Điều đó có nghĩa là:
+
+- Attribution Apple Ads chưa được xử lý cho hồ sơ người dùng này, hoặc
+- không có attribution nào đến cả.
+Dù thế nào, `getPaywallForDefaultAudience` vẫn an toàn để gọi — nó trả về paywall cho đối tượng mặc định bất kể trạng thái hồ sơ người dùng.
+
+:::important
+Việc chờ chỉ áp dụng cho lần khởi chạy đầu tiên. Sau khi attribution Apple Ads đã được ghi lại, nó sẽ được lưu trữ vĩnh viễn trên hồ sơ người dùng. Ở mọi lần khởi chạy tiếp theo, hồ sơ người dùng đã được cache sẵn `AdaptyAttributionSource.appleAds` trong `appliedAttributionSources`, nên đường dẫn attribution được xử lý ngay lập tức và `getPaywall` trả về paywall được phân khúc theo Apple Ads mà không có bất kỳ độ trễ nào.
+:::
+## Triển khai \{#implementation\}
+
+Khi khởi chạy lần đầu, hãy chờ `AdaptyAttributionSource.appleAds` và áp dụng thời gian chờ tối đa — nếu attribution từ Apple Ads không bao giờ đến, những người dùng đó vẫn cần được xem paywall.
+1. **Kích hoạt SDK.** Xem [Cài đặt & cấu hình Flutter SDK](sdk-installation-flutter).
+2. **Đăng ký nhận cập nhật hồ sơ người dùng** với `Adapty().didUpdateProfileStream.listen(…)`. Nếu bạn chưa thiết lập listener, xem [Lắng nghe cập nhật gói đăng ký](flutter-check-subscription-status#listen-to-subscription-updates).
+3. **Theo dõi `AdaptyAttributionSource.appleAds` trong `appliedAttributionSources`.** Khi nó xuất hiện, tải paywall bằng `getPaywall` — Adapty sẽ trả về biến thể được phân khúc theo AA:
+```dart
+final subscription = Adapty().didUpdateProfileStream.listen((profile) async {
+  if (!profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) return;
+  final paywall = await Adapty().getPaywall(placementId: placementId);
+  // present the segmented paywall, then cancel the subscription and the timer
+});
+```
+
+   `didUpdateProfileStream` là một broadcast stream và không replay, vì vậy hãy kiểm tra hồ sơ người dùng hiện tại một lần bằng `getProfile()`. Khi khởi động lại ứng dụng, attribution đã được lưu trữ sẽ không phát lại sự kiện.
+4. **Bắt đầu đồng hồ đếm ngược 3–5 giây song song với gói đăng ký.** Nếu đồng hồ kích hoạt trước khi `AdaptyAttributionSource.appleAds` xuất hiện, hãy tải paywall cho đối tượng mặc định bằng `getPaywallForDefaultAudience`. Hiển thị paywall nào được trả về trước và hủy luồng còn lại để tránh tải paywall hai lần. Hãy cấu hình [paywall dự phòng](flutter-use-fallback-paywalls) cho placement đó để người dùng không bị kẹt nếu yêu cầu mạng thất bại.
+## Ví dụ đầy đủ \{#complete-example\}
+
+Cách triển khai dưới đây chạy đua giữa attribution và một khoảng timeout, tải trước paywall cho đối tượng mặc định song song, và trả về paywall phù hợp. Phía gọi hàm chỉ cần `await` một hàm duy nhất — không cần listener hay cờ trạng thái nào ở call site:
+
+- Nếu attribution về kịp trong `timeout`, hàm trả về paywall theo phân khúc thông qua `getPaywall`.
+- Nếu `timeout` hết trước, hàm trả về paywall đối tượng mặc định đã tải trước thông qua `getPaywallForDefaultAudience`.
+```dart title="apple_ads_paywall.dart"
+
+/// Returns the Apple Ads-segmented paywall if attribution is applied within
+/// [timeout], otherwise the default-audience paywall. Call after Adapty().activate().
+Future<AdaptyPaywall> getPaywallOrDefault({
+  required String placementId,
+  required Duration timeout,
+}) {
+  // Prefetch the default-audience paywall right away so the timeout path resolves
+  // without an extra network round-trip. `getPaywallForDefaultAudience` skips the
+  // wait for segmentation data. `..ignore()` keeps an unused prefetch from surfacing
+  // as an unhandled error; the error still reaches the caller if this paywall wins.
+  final defaultPaywall =
+      Adapty().getPaywallForDefaultAudience(placementId: placementId)..ignore();
+
+  final completer = Completer<AdaptyPaywall>();
+  late final StreamSubscription<AdaptyProfile> subscription;
+  late final Timer timer;
+
+  void resolve(Future<AdaptyPaywall> paywall) {
+    if (completer.isCompleted) return;
+    timer.cancel();
+    subscription.cancel();
+    completer.complete(paywall);
+  }
+
+  void onProfile(AdaptyProfile profile) {
+    if (profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) {
+      resolve(Adapty().getPaywall(placementId: placementId));
+    }
+  }
+
+  // Attribution path: react to profile updates as attribution is applied.
+  subscription = Adapty().didUpdateProfileStream.listen(onProfile);
+
+  // The stream is a broadcast stream and doesn't replay, so check the current
+  // profile too — on relaunches attribution is already stored and won't re-emit.
+  Adapty().getProfile().then(onProfile).ignore();
+
+  // Timeout path: fall back to the prefetched default-audience paywall.
+  timer = Timer(timeout, () => resolve(defaultPaywall));
+
+  return completer.future;
+}
+```
+
+Gọi từ màn hình splash của bạn, sau đó hiển thị paywall khi promise được giải quyết:
+
+```dart
+try {
+  final paywall = await getPaywallOrDefault(
+    placementId: 'YOUR_PLACEMENT_ID',
+    timeout: const Duration(seconds: 5),
+  );
+  // present the paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error or show a fallback paywall
+} catch (e) {
+  // handle the error
+}
+```
+Điều chỉnh `timeout` theo thời gian bạn muốn người dùng chờ trước khi paywall xuất hiện. Hầu hết người dùng không có attribution từ Apple Ads, nên họ sẽ chờ hết toàn bộ thời gian timeout — 3 đến 5 giây là mức cân bằng hợp lý. Attribution nếu có thường đến trong vài giây sau khi khởi động ứng dụng.
+Nếu ứng dụng của bạn đã lắng nghe `didUpdateProfileStream` cho các mục đích khác (ví dụ: [kiểm tra trạng thái gói đăng ký](flutter-check-subscription-status#listen-to-subscription-updates)), bạn không cần thay đổi gì. `didUpdateProfileStream` là một broadcast stream, nên nó hỗ trợ nhiều listener độc lập mà không ảnh hưởng đến nhau.

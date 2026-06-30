@@ -1,0 +1,202 @@
+---
+title: "将 Adapty Android SDK 迁移至 v. 4.0"
+description: "通过将付费墙 API 替换为 flow API，将项目迁移至 Adapty Android SDK v4.0（beta），兼容 Flow Builder 和 Paywall Builder。"
+metadataTitle: "迁移至 Adapty Android SDK v4.0（beta）| Adapty 文档"
+---
+
+Adapty Android SDK 4.0（beta）引入了 flow 功能，并对付费墙 API 进行了相应重命名。新 API 同时兼容新版 Flow Builder 和现有的 Paywall Builder，无需在 Adapty 看板侧进行任何配置变更。
+## 快速参考 \{#quick-reference\}
+| v3 | v4 |
+|---|---|
+| `Adapty.getPaywall(placementId, locale)` | `Adapty.getFlow(placementId)` |
+| `Adapty.getPaywallForDefaultAudience(placementId, locale)` | `Adapty.getFlowForDefaultAudience(placementId)` |
+| `AdaptyUI.getViewConfiguration(paywall)` | `AdaptyUI.getFlowConfiguration(flow, locale)` |
+| `AdaptyUI.LocalizedViewConfiguration` | `AdaptyUI.FlowConfiguration` |
+| `Adapty.getPaywallProducts(paywall)` | `Adapty.getPaywallProducts(flow)` |
+| `Adapty.logShowPaywall(paywall)` | `Adapty.logShowFlow(flow)` |
+| `AdaptyPaywall` | `AdaptyFlow` |
+| `AdaptyUI.getPaywallView(...)` | `AdaptyUI.getFlowView(...)` |
+| `AdaptyPaywallView` | `AdaptyFlowView` |
+| `AdaptyPaywallScreen` (Compose) | `AdaptyFlowScreen` |
+| `showPaywall(...)` | `showFlow(...)` |
+| `AdaptyPaywallInsets` | `AdaptyFlowInsets` |
+| `AdaptyUiEventListener` | `AdaptyFlowEventListener` |
+| `AdaptyUiDefaultEventListener` | `AdaptyFlowDefaultEventListener` |
+| `onPaywallShown` / `onPaywallClosed` | `onFlowShown` / `onFlowClosed` |
+| `onRenderingError` | `onError` |
+| `Adapty.updateAttribution(attribution, source)` (`source: String`) | `Adapty.updateAttribution(attribution, source)` (`source: AdaptyAttributionSource`) |
+| `Adapty.setIntegrationIdentifier(key, value)` | `Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier)` |
+`AdaptyPaywallProduct` 保持原名不变——产品仍属于某个 flow，`getPaywallProducts` 现在接收 `AdaptyFlow` 参数。其他 `AdaptyFlowEventListener` 方法（`onProductSelected`、`onPurchaseStarted`、`onPurchaseFinished`、`onPurchaseFailure`、`onRestoreSuccess`、`onRestoreFailure`、`onActionPerformed`、`onAwaitingPurchaseParams`、`onLoadingProductsFailure` 等）保持原有名称和签名不变。
+## 安装 \{#installation\}
+
+Adapty Android SDK 4.0 目前为预发布版本，因此你必须指定精确版本号，而不能使用动态版本范围——将 `adapty-bom` 版本设置为 `4.0.0-beta.1` 并同步项目。BOM 会自动为你解析匹配的 `android-sdk` 和 `android-ui` 版本。依赖声明详情请参阅[安装 Adapty SDK](sdk-installation-android)。
+## 已移除和废弃的 API \{#removed-and-deprecated-apis\}
+
+- **`Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized, callback)`** — 已移除。此重载方法在 v3 中已废弃。请改用 `AdaptyPurchaseParameters` 传入相同的选项：
+```diff showLineNumbers
+- Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized) { result -> /* ... */ }
++ val params = AdaptyPurchaseParameters.Builder()
++     .withSubscriptionUpdateParams(subscriptionUpdateParams)
++     .withOfferPersonalized(isOfferPersonalized)
++     .build()
++ Adapty.makePurchase(activity, product, params) { result -> /* ... */ }
+```
+
+- **用户引导已弃用。** `AdaptyUI.getOnboardingView` 和 `AdaptyUI.getOnboardingConfiguration` 在 4.0 中标记为 `@Deprecated` — 请将用户引导迁移到在[流程编辑工具](adapty-flow-builder)中构建的流程。
+## 获取流程 \{#fetching-flows\}
+### getPaywall + getViewConfiguration → getFlow + getFlowConfiguration
+
+获取返回类型从 `AdaptyPaywall` 变更为 `AdaptyFlow`，配置加载器从 `AdaptyUI.getViewConfiguration` 重命名为 `AdaptyUI.getFlowConfiguration`（返回 `AdaptyUI.FlowConfiguration` 而非 `AdaptyUI.LocalizedViewConfiguration`）。`locale` 参数从获取调用中移出，改为传入 `getFlowConfiguration`：
+```diff showLineNumbers
+- Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
++ Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
+      if (result is AdaptyResult.Success) {
+-         val paywall = result.value
+-         if (!paywall.hasViewConfiguration) return@getPaywall
+-         AdaptyUI.getViewConfiguration(paywall) { configResult ->
++         val flow = result.value
++         if (!flow.hasViewConfiguration) return@getFlow
++         AdaptyUI.getFlowConfiguration(flow, locale = "en") { configResult ->
+              if (configResult is AdaptyResult.Success) {
+                  val flowConfiguration = configResult.value
+              }
+          }
+      }
+  }
+```
+
+### getPaywallProducts(paywall) → getPaywallProducts(flow)
+
+`getPaywallProducts` 现在接受由 `Adapty.getFlow` 返回的 `AdaptyFlow`：
+
+```diff showLineNumbers
+- Adapty.getPaywallProducts(paywall) { result -> /* products */ }
++ Adapty.getPaywallProducts(flow) { result -> /* products */ }
+```
+## 跟踪流程浏览数据 \{#tracking-flow-views\}
+### logShowPaywall → logShowFlow
+
+`logShowPaywall` 已重命名为 `logShowFlow`，现在接受 `AdaptyFlow` 而非 `AdaptyPaywall`。事件仍会记录在同一个实验变体下，因此现有的漏斗和 A/B 测试数据图表无需修改看板即可继续正常使用。
+
+```diff showLineNumbers
+- Adapty.logShowPaywall(paywall)
++ Adapty.logShowFlow(flow)
+```
+
+与 v3 一样，当展示由[流程编辑工具](adapty-flow-builder)或[付费墙编辑工具](adapty-paywall-builder)渲染的流程或付费墙时，无需手动调用此方法——Adapty 会自动追踪这些页面的浏览记录。
+## 显示流程 \{#displaying-flows\}
+### getPaywallView / AdaptyPaywallView → getFlowView / AdaptyFlowView
+
+重命名工厂方法和视图类型，并传入 `AdaptyUI.FlowConfiguration`：
+
+```diff showLineNumbers
+- val paywallView = AdaptyUI.getPaywallView(
+-     activity,
+-     viewConfiguration,
+-     products,
+-     eventListener,
+- )
++ val flowView = AdaptyUI.getFlowView(
++     activity,
++     flowConfiguration,
++     products,
++     eventListener,
++ )
+```
+
+如果直接创建视图，show 方法也需要重命名：
+```diff showLineNumbers
+- val paywallView = AdaptyPaywallView(activity)
+- paywallView.showPaywall(viewConfiguration, products, eventListener)
++ val flowView = AdaptyFlowView(activity)
++ flowView.showFlow(flowConfiguration, products, eventListener)
+```
+
+在 XML 布局中，更新视图标签：
+
+```diff showLineNumbers
+- <com.adapty.ui.AdaptyPaywallView ... />
++ <com.adapty.ui.AdaptyFlowView ... />
+```
+可选参数 `personalizedOfferResolver` 已从 `getFlowView` / `showFlow` / `AdaptyFlowScreen` 中移除。如需标记个性化定价，请通过 `onAwaitingPurchaseParams` 为每个产品单独设置（`AdaptyPurchaseParameters.Builder().withOfferPersonalized(true)`）。新增的可选参数 `customAssets` 允许你在运行时覆盖图片和视频——详见[自定义资源](android-get-pb-paywalls#customize-assets)。
+### AdaptyPaywallScreen → AdaptyFlowScreen
+
+在 Jetpack Compose 中，重命名 composable 并更新配置参数：
+
+```diff showLineNumbers
+- AdaptyPaywallScreen(
+-     viewConfiguration,
++ AdaptyFlowScreen(
++     flowConfiguration,
+      products,
+      eventListener,
+  )
+```
+## 处理事件 \{#handling-events\}
+
+事件监听器已从 `AdaptyUiEventListener` 重命名为 `AdaptyFlowEventListener`（`AdaptyUiDefaultEventListener` 也相应重命名为 `AdaptyFlowDefaultEventListener`）。大多数方法名保持不变；生命周期和渲染相关的回调已重命名：
+```diff showLineNumbers
+- class YourListener : AdaptyUiDefaultEventListener() {
++ class YourListener : AdaptyFlowDefaultEventListener() {
+
+-     override fun onPaywallShown(context: Context) {}
+-     override fun onPaywallClosed() {}
++     override fun onFlowShown(context: Context) {}
++     override fun onFlowClosed() {}
+
+-     override fun onRenderingError(error: AdaptyError, context: Context) {}
++     override fun onError(error: AdaptyError, context: Context) {}
+  }
+```
+
+现有的处理器主体无需修改代码——只需重命名类型和重写方法即可。`onError` 触发的场景与 `onRenderingError` 相同，还额外涵盖其他非购买类运行时错误。完整的回调列表请参阅[处理流程与付费墙事件](android-handling-events)。
+## 归因与集成标识符 \{#attribution-and-integration-identifiers\}
+### updateAttribution
+
+`source` 参数从 `String` 类型变更为新的 `AdaptyAttributionSource` 类型，`attribution` 现在是 `Map<String, Any>`（同时也提供 JSON `String` 重载）。请使用以下预定义来源之一：
+
+```diff showLineNumbers
+- Adapty.updateAttribution(attribution, "appsflyer") { error -> /* handle the error */ }
++ Adapty.updateAttribution(attribution, AdaptyAttributionSource.APPSFLYER) { error -> /* handle the error */ }
+```
+预定义来源：`AdaptyAttributionSource.APPLE_ADS`、`.ADJUST`、`.APPSFLYER`、`.BRANCH`、`.TENJIN`。如需使用其他来源，可通过字符串构建：`AdaptyAttributionSource("your_source")`。
+### setIntegrationIdentifier
+
+`setIntegrationIdentifier(key, value)` 已被替换为一个接受一个或多个 `AdaptyIntegrationIdentifier` 值的方法。请使用预定义的 `Key` 常量，而不是原始字符串键：
+
+```diff showLineNumbers
+- Adapty.setIntegrationIdentifier("appsflyer_id", appsFlyerId) { error -> /* handle the error */ }
++ Adapty.setIntegrationIdentifier(
++     AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.APPSFLYER_ID, appsFlyerId)
++ ) { error -> /* handle the error */ }
+```
+
+您可以在一次调用中设置多个标识符：
+```kotlin showLineNumbers
+Adapty.setIntegrationIdentifier(
+    listOf(
+        AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.APPSFLYER_ID, appsFlyerId),
+        AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.ADJUST_DEVICE_ID, adjustDeviceId),
+    )
+) { error -> /* handle the error */ }
+```
+
+将每个旧的键字符串替换为对应的 `Key` 常量：
+| v3 key | v4 `AdaptyIntegrationIdentifier.Key` |
+|---|---|
+| `"adjust_device_id"` | `ADJUST_DEVICE_ID` |
+| `"airbridge_device_id"` | `AIRBRIDGE_DEVICE_ID` |
+| `"amplitude_user_id"` | `AMPLITUDE_USER_ID` |
+| `"amplitude_device_id"` | `AMPLITUDE_DEVICE_ID` |
+| `"appmetrica_device_id"` | `APPMETRICA_DEVICE_ID` |
+| `"appmetrica_profile_id"` | `APPMETRICA_PROFILE_ID` |
+| `"appsflyer_id"` | `APPSFLYER_ID` |
+| `"branch_id"` | `BRANCH_ID` |
+| `"facebook_anonymous_id"` | `FACEBOOK_ANONYMOUS_ID` |
+| `"firebase_app_instance_id"` | `FIREBASE_APP_INSTANCE_ID` |
+| `"mixpanel_user_id"` | `MIXPANEL_USER_ID` |
+| `"one_signal_subscription_id"` | `ONE_SIGNAL_SUBSCRIPTION_ID` |
+| `"one_signal_player_id"` | `ONE_SIGNAL_PLAYER_ID` |
+| `"posthog_distinct_user_id"` | `POSTHOG_DISTINCT_USER_ID` |
+| `"pushwoosh_hwid"` | `PUSHWOOSH_HWID` |
+| `"tenjin_analytics_installation_id"` | `TENJIN_ANALYTICS_INSTALLATION_ID` |

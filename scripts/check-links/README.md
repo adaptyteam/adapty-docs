@@ -46,6 +46,42 @@ Both modes check:
 
 If the base ref doesn't exist (e.g. a deploy tag on first run), the script falls back to a full scan with a warning.
 
+### Localized files (`--locales`)
+
+By default the checker only looks at English source (`src/content/docs/` +
+`src/components/reusable/`). `--locales` switches to **localized files only**,
+scanning `src/locales/<code>/` instead:
+
+```bash
+# All locales, internal links only (the npm shortcut)
+npm run check-links-locales
+
+# A specific locale (e.g. when adding one)
+node scripts/check-links/index.mjs --locales=zh --internal-only
+
+# Only localized files changed vs a base ref (used by the deploy gate)
+node scripts/check-links/index.mjs --diff --base=last-production-deploy --locales --internal-only
+```
+
+How localized checking differs from the English run:
+
+- Links resolve against the **English** doc index (plus the live-site fallback),
+  NOT a locale-overlaid one. A bare-slug link in a localized file renders to the
+  no-locale URL `/docs/<slug>` at runtime (verified against production), so its
+  validity depends on the **English** page existing. This is deliberate: a
+  translated page that exists only as a locale file (no English source) is an
+  orphan that 404s in production, and links to it must be flagged — overlaying
+  locale pages would mask exactly that breakage.
+- **Anchor fragments (`#heading`) are not validated.** The translator preserves
+  English anchor ids verbatim (as escaped `\{#id\}` on translated headings), so
+  anchors carry over from English; the English run owns anchor validation.
+- Only **outgoing** links from in-scope files are checked. Incoming-link
+  breakage detection is skipped — translations mirror English filenames and
+  preserve anchor ids, so they can't break an incoming link the English check
+  wouldn't already catch.
+- Localized checks are intended to run **internal-only** (external URLs don't
+  vary by locale; pass `--internal-only`).
+
 ### Flags
 
 | Flag | Description |
@@ -55,6 +91,8 @@ If the base ref doesn't exist (e.g. a deploy tag on first run), the script falls
 | `--dev` | Dev mode — check files changed since last push |
 | `--diff` | Diff mode — check files changed vs a base ref (default: `origin/main`) |
 | `--base=<ref>` | Override the diff base ref (use with `--diff`). Accepts any git ref: branch, tag, commit SHA |
+| `--locales` | Localized files only — scan `src/locales/*/` instead of English source (all locales) |
+| `--locales=zh,tr` | Localized files only, restricted to the listed locale codes |
 | `--concurrency=N` | Max parallel external requests (default: 25) |
 | `--format=html\|ci` | Output format override. Auto-detected: `ci` when `GITHUB_ACTIONS` env is set, `html` otherwise |
 

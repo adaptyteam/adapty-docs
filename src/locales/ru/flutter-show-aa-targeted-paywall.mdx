@@ -1,0 +1,113 @@
+---
+title: "Показ пейвола с таргетингом Apple Ads при первом запуске во Flutter SDK"
+description: "Ненадолго подождите атрибуцию Apple Ads перед показом пейвола при первом запуске во Flutter, возвращаясь к аудитории по умолчанию при истечении таймаута. Использует AdaptyProfile.appliedAttributionSources."
+metadataTitle: "Показ пейвола с таргетингом Apple Ads при первом запуске | Flutter SDK | Документация Adapty"
+---
+Атрибуция Apple Ads (AA) поступает асинхронно после вызова `Adapty().activate()`. При первом запуске она, как правило, ещё не получена, поэтому если сразу вызвать `getPaywall`, Adapty обработает запрос по аудитории по умолчанию, и пользователи Apple Ads не увидят пейвол, настроенный для AA-сегмента. Вместо того чтобы показывать один пейвол, а затем заменять его другим, подождите немного, пока не придёт атрибуция AA: если она поступит в течение короткого таймаута — покажите целевой пейвол, если нет — пейвол аудитории по умолчанию. `AdaptyProfile.appliedAttributionSources` сообщает, когда атрибуция AA была применена.
+## Прежде чем начать \{#before-you-start\}
+
+Вам понадобится:
+- Adapty Flutter SDK **3.17.0** или новее.
+- Apple Ads, настроенный для приложения в Adapty. См. [Apple Ads](apple-search-ads).
+## Как это работает \{#how-it-works\}
+
+После `Adapty().activate()` SDK в фоне запрашивает у Apple данные атрибуции Apple Ads и передаёт результат на сервер Adapty. Когда AA становится активным источником атрибуции для профиля, SDK доставляет обновлённый `AdaptyProfile` в слушатель `didUpdateProfileStream`, а в списке `appliedAttributionSources` появляется `AdaptyAttributionSource.appleAds`.
+
+При первом запуске возможны два исхода:
+1. **Атрибуция поступает в рамках таймаута.** Вызовите `getPaywall` — Adapty обработает запрос с учётом аудитории Apple Ads и вернёт целевой пейвол.
+2. **Таймаут истекает первым.** В этом случае покажите пейвол для аудитории по умолчанию — пользователи без атрибуции Apple Ads не будут ждать. `getPaywallForDefaultAudience` вернёт его без ожидания сегментации.
+
+`appliedAttributionSources` может быть пустым. Это означает одно из двух:
+
+- атрибуция Apple Ads ещё не обработана для этого профиля, или
+- атрибуция не поступила вовсе.
+В любом случае вызов `getPaywallForDefaultAudience` безопасен — он возвращает пейвол для аудитории по умолчанию вне зависимости от состояния профиля.
+
+:::important
+Ожидание актуально только при первом запуске. После того как атрибуция Apple Ads записана, она постоянно хранится в профиле. При каждом последующем запуске кешированный профиль уже содержит `AdaptyAttributionSource.appleAds` в `appliedAttributionSources`, поэтому путь атрибуции разрешается немедленно и `getPaywall` возвращает пейвол для сегмента Apple Ads без какой-либо задержки.
+:::
+## Реализация \{#implementation\}
+
+При первом запуске дождитесь `AdaptyAttributionSource.appleAds` и установите жёсткий таймаут — если атрибуция Apple Ads так и не пришла, эти пользователи всё равно должны увидеть пейвол.
+1. **Активируйте SDK.** См. [Установка и настройка Flutter SDK](sdk-installation-flutter).
+2. **Подпишитесь на обновления профиля** с помощью `Adapty().didUpdateProfileStream.listen(…)`. Если вы ещё не настроили слушатель, см. [Отслеживание обновлений подписки](flutter-check-subscription-status#listen-to-subscription-updates).
+3. **Отслеживайте `AdaptyAttributionSource.appleAds` в `appliedAttributionSources`.** Когда он появится, загрузите пейвол с помощью `getPaywall` — Adapty вернёт вариант, сегментированный по AA:
+```dart
+final subscription = Adapty().didUpdateProfileStream.listen((profile) async {
+  if (!profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) return;
+  final paywall = await Adapty().getPaywall(placementId: placementId);
+  // present the segmented paywall, then cancel the subscription and the timer
+});
+```
+
+   `didUpdateProfileStream` — это широковещательный поток без повтора событий, поэтому также проверяйте текущий профиль через `getProfile()`. При повторных запусках приложения сохранённая атрибуция уже применена и повторно не отправляется.
+4. **Запустите таймер на 3–5 секунд параллельно с подпиской.** Если таймер сработает раньше, чем появится `AdaptyAttributionSource.appleAds`, загрузите пейвол для аудитории по умолчанию с помощью `getPaywallForDefaultAudience`. Отобразите тот пейвол, который разрешится первым, и отмените второй запрос, чтобы пейвол не загружался дважды. Настройте [резервный пейвол](flutter-use-fallback-paywalls) для плейсмента, чтобы пользователь не остался ни с чем при сбое сетевого запроса.
+## Полный пример \{#complete-example\}
+
+Реализация ниже запускает гонку между получением атрибуции и таймаутом, параллельно подгружает пейвол для аудитории по умолчанию и возвращает нужный пейвол. Вызывающий код ждёт одну функцию — никаких слушателей и флагов состояния на стороне вызова:
+
+- Если атрибуция приходит раньше `timeout`, возвращается сегментированный пейвол через `getPaywall`.
+- Если первым срабатывает `timeout`, возвращается заранее загруженный пейвол для аудитории по умолчанию через `getPaywallForDefaultAudience`.
+```dart title="apple_ads_paywall.dart"
+
+/// Returns the Apple Ads-segmented paywall if attribution is applied within
+/// [timeout], otherwise the default-audience paywall. Call after Adapty().activate().
+Future<AdaptyPaywall> getPaywallOrDefault({
+  required String placementId,
+  required Duration timeout,
+}) {
+  // Prefetch the default-audience paywall right away so the timeout path resolves
+  // without an extra network round-trip. `getPaywallForDefaultAudience` skips the
+  // wait for segmentation data. `..ignore()` keeps an unused prefetch from surfacing
+  // as an unhandled error; the error still reaches the caller if this paywall wins.
+  final defaultPaywall =
+      Adapty().getPaywallForDefaultAudience(placementId: placementId)..ignore();
+
+  final completer = Completer<AdaptyPaywall>();
+  late final StreamSubscription<AdaptyProfile> subscription;
+  late final Timer timer;
+
+  void resolve(Future<AdaptyPaywall> paywall) {
+    if (completer.isCompleted) return;
+    timer.cancel();
+    subscription.cancel();
+    completer.complete(paywall);
+  }
+
+  void onProfile(AdaptyProfile profile) {
+    if (profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) {
+      resolve(Adapty().getPaywall(placementId: placementId));
+    }
+  }
+
+  // Attribution path: react to profile updates as attribution is applied.
+  subscription = Adapty().didUpdateProfileStream.listen(onProfile);
+
+  // The stream is a broadcast stream and doesn't replay, so check the current
+  // profile too — on relaunches attribution is already stored and won't re-emit.
+  Adapty().getProfile().then(onProfile).ignore();
+
+  // Timeout path: fall back to the prefetched default-audience paywall.
+  timer = Timer(timeout, () => resolve(defaultPaywall));
+
+  return completer.future;
+}
+```
+
+Вызывайте этот метод с экрана-заставки, а затем отображайте пейвол после получения результата:
+
+```dart
+try {
+  final paywall = await getPaywallOrDefault(
+    placementId: 'YOUR_PLACEMENT_ID',
+    timeout: const Duration(seconds: 5),
+  );
+  // present the paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error or show a fallback paywall
+} catch (e) {
+  // handle the error
+}
+```
+Настройте `timeout` под то, сколько времени вы готовы заставлять пользователей ждать перед показом пейвола. У большинства пользователей нет атрибуции Apple Ads, поэтому они ждут всё отведённое время — 3–5 секунд — разумный баланс. Атрибуция, если она приходит, обычно поступает в течение нескольких секунд после запуска.
+Если ваше приложение уже слушает `didUpdateProfileStream` для других целей (например, [проверки статуса подписки](flutter-check-subscription-status#listen-to-subscription-updates)), менять ничего не нужно. `didUpdateProfileStream` — это широковещательный поток (broadcast stream), поэтому он поддерживает несколько независимых слушателей, не мешая друг другу.

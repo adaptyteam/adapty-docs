@@ -1,45 +1,297 @@
 ---
-title: "Obtener paywalls del Paywall Builder y su configuración en el SDK de Android"
-description: "Aprende a recuperar paywalls de PB en Adapty para un mejor control de suscripciones en tu app de Android."
-metadataTitle: "Recuperar paywalls de PB en Adapty | Documentación de Adapty"
+title: "Obtener flows y paywalls - Android"
+description: "Obtén flows y paywalls desde Adapty en tu app Android."
+metadataTitle: "Obtener Flows y Paywalls - Android | Documentación de Adapty"
 displayed_sidebar: sdkandroid
-keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+keywords: ['getFlow', 'getPaywall', 'getFlowConfiguration', 'getFlowForDefaultAudience']
 rank: 95
 ---
 
 import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
 
-Después de [diseñar la parte visual de tu paywall](adapty-paywall-builder) con el nuevo Paywall Builder en el Adapty Dashboard, puedes mostrarlo en tu app móvil. El primer paso es obtener el paywall asociado al placement y su configuración de vista, tal como se describe a continuación.
+<SDKv4>
 
-:::warning
-El nuevo Paywall Builder funciona con el SDK de Android versión 3.0 o superior.
+<MethodPromo method="getFlow" />
+Después de [diseñar tu flow o paywall con Paywall Builder](adapty-paywall-builder), puedes mostrarlo en tu app. El primer paso es obtener el flow o paywall asociado al placement y su configuración de vista, tal como se describe a continuación.
+
+<SampleApp />
+
+<details>
+   <summary>Antes de empezar a mostrar flows en tu app (haz clic para expandir)</summary>
+1. [Crea tus productos](create-product) en el Adapty Dashboard.
+2. [Crea un flow/paywall e incorpora productos en él](create-paywall) en el Adapty Dashboard.
+3. [Crea placements e incorpora tu flow/paywall en ellos](create-placement) en el Adapty Dashboard.
+4. Instala el [SDK de Adapty](sdk-installation-android) en tu aplicación móvil.
+</details>
+## Obtener el flow/paywall \{#fetch-flowpaywall\}
+
+Si has diseñado un flow o paywall con el Flow Builder o el Paywall Builder, no tienes que preocuparte por renderizarlo en el código de tu app para mostrárselo al usuario. Este tipo de flow o paywall ya incluye tanto lo que se muestra como la forma en que se muestra. Aun así, necesitas obtener su ID a través del placement, su configuración de vista, y luego presentarlo en tu app.
+Para garantizar un rendimiento óptimo, es fundamental obtener el flow o paywall y su [configuración de vista](android-get-pb-paywalls#fetch-the-view-configuration) lo antes posible, dejando tiempo suficiente para que las imágenes se descarguen antes de presentarlas al usuario.
+
+Para obtener un flow o paywall, utiliza el método `getFlow`:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+...
+
+Adapty.getFlow("YOUR_PLACEMENT_ID", loadTimeout = 10.seconds) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val flow = result.value
+            // the requested flow/paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+...
+
+Adapty.getFlow("YOUR_PLACEMENT_ID", TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) result).getValue();
+        // the requested flow/paywall
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+Parámetros:
+| Parámetro | Presencia | Descripción |
+|---------|--------|-----------|
+| **placementId** | obligatorio | El identificador del [Placement](placements) deseado. Es el valor que especificaste al crear un placement en el Adapty Dashboard. |
+| **fetchPolicy** | por defecto: `.reloadRevalidatingCacheData` | <p>Por defecto, el SDK intentará cargar los datos desde el servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre obtengan los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `.returnCacheDataElseLoad` para devolver los datos en caché si existen. En este caso, los usuarios podrían no obtener los datos más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de lo intermitente que sea su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Ten en cuenta que la caché permanece intacta al reiniciar la app y solo se borra cuando se reinstala la app o mediante una limpieza manual.</p><p></p><p>El SDK de Adapty almacena los flows y paywalls localmente en dos capas: la caché actualizada regularmente descrita anteriormente y los [paywalls de respaldo](fallback-paywalls). También usamos CDN para obtenerlos más rápido y un servidor de respaldo independiente en caso de que el CDN no sea accesible. Este sistema está diseñado para asegurarse de que siempre obtengas la versión más reciente, garantizando la fiabilidad incluso cuando la conexión a internet es limitada.</p> |
+| **loadTimeout** | por defecto: 5 seg | <p>Este valor limita el tiempo de espera de este método. Si se alcanza el tiempo límite, se devolverán los datos en caché o el fallback local.</p><p>Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo límite especificado en `loadTimeout`, ya que la operación puede estar compuesta por diferentes solicitudes internamente.</p><p>Para Android: puedes crear un `TimeInterval` con funciones de extensión (como `5.seconds`, donde `.seconds` proviene de `import com.adapty.utils.seconds`), o `TimeInterval.seconds(5)`. Para no establecer ningún límite, usa `TimeInterval.INFINITE`.</p> |
+| Parámetro | Descripción |
+| :-------- | :---------- |
+| Flow   | Un objeto `AdaptyFlow` que contiene el placement, los identificadores (`id`, `variationId`), el nombre, los Remote Configs y un flag `hasViewConfiguration` que indica si el flow incluye una configuración de vista. Para obtener los productos reales con fines de precarga, UI personalizada o comprobaciones programáticas, llama a `getPaywallProducts(flow)`. |
+## Obtener la configuración de vista \{#fetch-the-view-configuration\}
+
+Tras obtener el flow o el paywall, comprueba si incluye una configuración de vista mediante `flow.hasViewConfiguration`. Este indicador distingue cómo se diseñó el placement en el Adapty Dashboard:
+- **`true`** — el placement fue diseñado en el **Flow Builder** (un flow) o en el **Paywall Builder** (un paywall). Adapty renderiza la interfaz por ti. Sigue los pasos a continuación para obtener la configuración de la vista y [presentar el flow o el paywall](android-present-paywalls).
+- **`false`** — el placement es un paywall personalizado sin interfaz del Builder. [Gestiónalo como un paywall de Remote Config](present-remote-config-paywalls-android).
+
+:::important
+Asegúrate de activar el interruptor **Show on device** en el Flow Builder. Si esta opción no está activada, la configuración de la vista no estará disponible para recuperar.
+:::
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+Usa el método `getFlowConfiguration` para cargar la configuración de la vista.
+```kotlin showLineNumbers
+if (!flow.hasViewConfiguration) {
+    // use your custom logic
+    return
+}
+
+AdaptyUI.getFlowConfiguration(flow, loadTimeout = 10.seconds) { result ->
+    when(result) {
+        is AdaptyResult.Success -> {
+            val flowConfiguration = result.value
+            // use loaded configuration
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+| Parámetro       | Presencia       | Descripción                                                  |
+| :-------------- | :------------- | :----------------------------------------------------------- |
+| **flow**        | obligatorio       | Un objeto `AdaptyFlow` obtenido mediante `Adapty.getFlow`. |
+| **locale**      | <p>opcional</p><p>predeterminado: idioma del dispositivo</p> | El identificador de la [localización](add-paywall-locale-in-adapty-paywall-builder), como código de idioma con una o dos subetiquetas separadas por `-` (p. ej., `en`, `pt-br`). Consulta [Localizaciones y códigos de idioma](android-localizations-and-locale-codes). |
+| **loadTimeout** | predeterminado: 5 seg | Este valor limita el tiempo de espera del método. Si se alcanza el límite, se devolverán los datos en caché o el fallback local. Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo indicado en `loadTimeout`, ya que la operación puede estar compuesta de varias solicitudes internas. |
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+Usa el método `getFlowConfiguration` para cargar la configuración de la vista.
+```java showLineNumbers
+if (!flow.hasViewConfiguration()) {
+    // use your custom logic
+    return;
+}
+
+AdaptyUI.getFlowConfiguration(flow, TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyUI.FlowConfiguration flowConfiguration =
+          ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) result).getValue();
+        // use loaded configuration
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+| Parámetro       | Presencia      | Descripción                                                  |
+| :-------------- | :------------- | :----------------------------------------------------------- |
+| **flow**        | obligatorio    | Un objeto `AdaptyFlow` obtenido a través de `Adapty.getFlow`. |
+| **locale**      | <p>opcional</p><p>por defecto: idioma del dispositivo</p> | El identificador de la [localización](add-paywall-locale-in-adapty-paywall-builder), como código de idioma con una o dos subetiquetas separadas por `-` (p. ej., `en`, `pt-br`). Consulta [Localizaciones y códigos de idioma](android-localizations-and-locale-codes). |
+| **loadTimeout** | por defecto: 5 seg | Este valor limita el tiempo de espera de este método. Si se alcanza el tiempo límite, se devolverán los datos en caché o el fallback local. Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo indicado en `loadTimeout`, ya que la operación puede incluir varias solicitudes internas. |
+</TabItem>
+
+</Tabs>
+
+:::note
+Si usas varios idiomas, aprende cómo añadir una [localización en el Builder](add-paywall-locale-in-adapty-paywall-builder) y cómo usar los códigos de idioma correctamente [aquí](android-localizations-and-locale-codes).
 :::
 
-Ten en cuenta que este tema hace referencia a paywalls personalizados con Paywall Builder. Si estás implementando tus paywalls manualmente, consulta el tema [Obtener paywalls y productos para paywalls con Remote Config en tu app móvil](fetch-paywalls-and-products-android).
+Una vez cargado, [presenta el flow o el paywall](android-present-paywalls).
+## Obtén un flow o paywall para la audiencia predeterminada y cárgalo más rápido \{#get-a-flow-or-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Normalmente, los flows y paywalls se cargan casi de forma instantánea, por lo que no necesitas preocuparte por acelerar este proceso. Sin embargo, si tienes muchas audiencias y placements, y tus usuarios tienen una conexión a internet lenta, puede que la carga tarde más de lo deseado. En esas situaciones, puede que quieras mostrar un flow o paywall predeterminado para garantizar una experiencia fluida en lugar de no mostrar nada.
+Para solucionar esto, puedes usar el método `getFlowForDefaultAudience`, que obtiene el flow o paywall del placement indicado para la audiencia **All Users**. Sin embargo, es importante entender que el enfoque recomendado es obtener el flow o paywall mediante el método `getFlow`, tal como se describe en la sección [Obtener flow/paywall](#fetch-flowpaywall) anterior.
+
+:::warning
+Por qué recomendamos usar `getFlow`
+
+El método `getFlowForDefaultAudience` tiene algunos inconvenientes importantes:
+- **Posibles problemas de compatibilidad hacia atrás**: Si necesitas mostrar flows diferentes para distintas versiones de la app (la actual y las futuras), es posible que te encuentres con dificultades. Tendrás que diseñar flows que sean compatibles con la versión actual (legacy) o asumir que los usuarios con esa versión pueden tener problemas con flows que no se renderizan.
+- **Pérdida de targeting**: Todos los usuarios verán el mismo flow diseñado para la audiencia **All Users**, lo que significa que pierdes la personalización del targeting (incluyendo segmentación por país, atribución de marketing o atributos personalizados propios).
+Si estás dispuesto a aceptar estos inconvenientes a cambio de una obtención más rápida del flow o el paywall, usa el método `getFlowForDefaultAudience` como se indica a continuación. De lo contrario, sigue usando `getFlow` descrito [arriba](#fetch-flowpaywall).
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val flow = result.value
+            // the requested flow
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) result).getValue();
+        // the requested flow
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+
+    }
+});
+```
+</TabItem>
+</Tabs>
+| Parámetro | Presencia | Descripción |
+|---------|--------|-----------|
+| **placementId** | obligatorio | El identificador del [Placement](placements). Es el valor que especificaste al crear un placement en tu Adapty Dashboard. |
+| **fetchPolicy** | predeterminado: `.reloadRevalidatingCacheData` | <p>Por defecto, el SDK intentará cargar los datos desde el servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre reciban los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `.returnCacheDataElseLoad` para devolver los datos en caché si existen. En este caso, puede que los usuarios no obtengan los datos más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de lo intermitente que sea su conexión. La caché se actualiza con regularidad, por lo que es seguro usarla durante la sesión para evitar peticiones de red.</p><p></p><p>Ten en cuenta que la caché permanece intacta al reiniciar la app y solo se borra cuando se reinstala la app o mediante una limpieza manual.</p> |
+## Personalizar assets \{#customize-assets\}
+
+Para personalizar imágenes y vídeos en tu flow o paywall, implementa los assets personalizados.
+
+Las imágenes hero y los vídeos tienen IDs predefinidos: `hero_image` y `hero_video`. En un bundle de assets personalizado, te refieres a estos elementos por sus IDs y personalizas su comportamiento.
+
+Para otras imágenes y vídeos, necesitas [establecer un ID personalizado](custom-media) en el Adapty Dashboard.
+
+Por ejemplo, puedes:
+
+- Mostrar una imagen o vídeo diferente a algunos usuarios.
+- Mostrar una imagen de vista previa local mientras se carga la imagen principal remota.
+- Mostrar una imagen de vista previa antes de reproducir un vídeo.
+Aquí tienes un ejemplo de cómo puedes proporcionar recursos personalizados mediante un diccionario sencillo:
+```kotlin showLineNumbers
+val customAssets = AdaptyCustomAssets.of(
+    "hero_image" to
+            AdaptyCustomImageAsset.remote(
+                url = "https://example.com/image.jpg",
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromAsset("images/hero_image_preview.png"),
+                )
+            ),
+    "hero_video" to
+            AdaptyCustomVideoAsset.file(
+                FileLocation.fromResId(requireContext(), R.raw.custom_video),
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromResId(requireContext(), R.drawable.video_preview),
+                ),
+            ),
+)
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products,
+    eventListener,
+    insets,
+    customAssets,
+)
+```
+
+:::note
+Si no se encuentra un asset, el flow utilizará su apariencia predeterminada.
+:::
+
+Para vídeos, puedes pasar opcionalmente una `resolution` para reservar espacio en el layout y establecer la relación de aspecto (`width / height`) antes de que el vídeo cargue:
+
+```kotlin showLineNumbers
+AdaptyCustomVideoAsset.file(
+    FileLocation.fromResId(requireContext(), R.raw.custom_video),
+    preview = AdaptyCustomImageAsset.file(
+        FileLocation.fromResId(requireContext(), R.drawable.video_preview),
+    ),
+    resolution = AdaptyCustomVideoAsset.Resolution(width = 1080, height = 1920),
+)
+```
+
+</SDKv4>
+
+<SDKv3>
+Después de [diseñar la parte visual de tu paywall](adapty-paywall-builder) con el nuevo Paywall Builder en el Adapty Dashboard, puedes mostrarlo en tu aplicación móvil. El primer paso es obtener el paywall asociado al placement y su configuración de vista, tal como se describe a continuación.
+
+:::warning
+El nuevo Paywall Builder funciona con la versión 3.0 o superior del SDK de Android.
+:::
+Por favor, ten en cuenta que este tema hace referencia a paywalls personalizados con Paywall Builder. Si estás implementando tus paywalls manualmente, consulta el tema [Obtener paywalls y productos para paywalls con Remote Config en tu app móvil](fetch-paywalls-and-products-android).
 
 <SampleApp />
 
 <details>
    <summary>Antes de empezar a mostrar paywalls en tu app móvil (haz clic para expandir)</summary>
-
 1. [Crea tus productos](create-product) en el Adapty Dashboard.
 2. [Crea un paywall e incorpora los productos en él](create-paywall) en el Adapty Dashboard.
 3. [Crea placements e incorpora tu paywall en ellos](create-placement) en el Adapty Dashboard.
-4. Instala el [SDK de Adapty](sdk-installation-android) en tu app móvil.
+4. Instala el [SDK de Adapty](sdk-installation-android) en tu aplicación móvil.
 </details>
+## Obtener un paywall diseñado con Paywall Builder \{#fetch-paywall-designed-with-paywall-builder\}
 
-## Obtener el paywall diseñado con Paywall Builder \{#fetch-paywall-designed-with-paywall-builder\}
-
-Si has [diseñado un paywall usando el Paywall Builder](adapty-paywall-builder), no necesitas preocuparte por renderizarlo en el código de tu app para mostrárselo al usuario. Este tipo de paywall contiene tanto lo que se debe mostrar como la forma en que debe mostrarse. Aun así, necesitas obtener su ID a través del placement, su configuración de vista, y luego presentarlo en tu app móvil.
-
-Para garantizar un rendimiento óptimo, es fundamental recuperar el paywall y su [configuración de vista](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) lo antes posible, dando tiempo suficiente para que las imágenes se descarguen antes de presentárselas al usuario.
+Si has [diseñado un paywall con el Paywall Builder](adapty-paywall-builder), no necesitas preocuparte por renderizarlo en el código de tu app para mostrárselo al usuario. Este tipo de paywall incluye tanto qué mostrar como cómo mostrarlo. Aun así, necesitas obtener su ID a través del placement, su configuración de vista y, después, presentarlo en tu app.
+Para garantizar un rendimiento óptimo, es fundamental obtener el paywall y su [configuración de vista](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) lo antes posible, dejando tiempo suficiente para que las imágenes se descarguen antes de mostrárselas al usuario.
 
 Para obtener un paywall, usa el método `getPaywall`:
 
 <Tabs groupId="current-os" queryString>
 
 <TabItem value="kotlin" label="Kotlin" default>
-
 ```kotlin showLineNumbers
 
 ...
@@ -59,7 +311,6 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en", loadTimeout = 10.seconds) 
 ```
 </TabItem>
 <TabItem value="java" label="Java" default>
-
 ```java showLineNumbers
 
 ...
@@ -81,34 +332,29 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result ->
 </Tabs>
 
 Parámetros:
-
 | Parámetro | Presencia | Descripción |
 |---------|--------|-----------|
-| **placementId** | obligatorio | El identificador del [Placement](placements) deseado. Es el valor que especificaste al crear un placement en el Adapty Dashboard. |
-| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la [localización del paywall](add-paywall-locale-in-adapty-paywall-builder). Se espera que este parámetro sea un código de idioma compuesto por una o dos subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta corresponde al idioma y la segunda a la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p>Consulta [Localizaciones y códigos de idioma](localizations-and-locale-codes) para más información sobre los códigos de idioma y cómo recomendamos usarlos.</p> |
-| **fetchPolicy** | por defecto: `.reloadRevalidatingCacheData` | <p>Por defecto, el SDK intentará cargar datos del servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre obtengan los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `.returnCacheDataElseLoad` para devolver datos en caché si existen. En este caso, los usuarios podrían no obtener los datos más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de lo irregular que sea su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Ten en cuenta que la caché permanece intacta al reiniciar la app y solo se borra cuando se desinstala la app o mediante limpieza manual.</p><p></p><p>El SDK de Adapty almacena paywalls localmente en dos capas: la caché actualizada regularmente descrita anteriormente y los [paywalls de respaldo](fallback-paywalls). También usamos CDN para obtener paywalls más rápido y un servidor de respaldo independiente en caso de que el CDN sea inaccesible. Este sistema está diseñado para garantizar que siempre obtengas la versión más reciente de tus paywalls, asegurando la fiabilidad incluso cuando la conexión a internet es escasa.</p> |
-| **loadTimeout** | por defecto: 5 seg | <p>Este valor limita el tiempo de espera para este método. Si se alcanza el tiempo límite, se devolverán los datos en caché o el fallback local.</p><p>Ten en cuenta que en casos excepcionales este método puede exceder ligeramente el tiempo especificado en `loadTimeout`, ya que la operación puede consistir en diferentes solicitudes internamente.</p><p>Para Android: puedes crear `TimeInterval` con funciones de extensión (como `5.seconds`, donde `.seconds` es de `import com.adapty.utils.seconds`), o `TimeInterval.seconds(5)`. Para no establecer ningún límite, usa `TimeInterval.INFINITE`.</p> |
-
+| **placementId** | requerido | El identificador del [Placement](placements) deseado. Es el valor que especificaste al crear un placement en el Adapty Dashboard. |
+| **locale** | <p>opcional</p><p>predeterminado: `en`</p> | <p>El identificador de la [localización del paywall](add-paywall-locale-in-adapty-paywall-builder). Se espera que este parámetro sea un código de idioma compuesto por uno o dos subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta corresponde al idioma y la segunda a la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p>Consulta [Localizaciones y códigos de idioma](localizations-and-locale-codes) para más información sobre los códigos de idioma y cómo recomendamos utilizarlos.</p> |
+| **fetchPolicy** | predeterminado: `.reloadRevalidatingCacheData` | <p>Por defecto, el SDK intentará cargar los datos desde el servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre obtengan los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `.returnCacheDataElseLoad` para devolver los datos en caché si existen. En ese caso, puede que los usuarios no obtengan los datos más recientes, pero experimentarán tiempos de carga más rápidos independientemente de la calidad de su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Ten en cuenta que la caché permanece intacta al reiniciar la app y solo se borra cuando se reinstala la app o mediante limpieza manual.</p><p></p><p>El SDK de Adapty almacena los paywalls localmente en dos capas: la caché de actualización regular descrita anteriormente y los [paywalls de respaldo](fallback-paywalls). También usamos CDN para obtener los paywalls más rápido y un servidor de respaldo independiente en caso de que el CDN no esté disponible. Este sistema está diseñado para garantizar que siempre obtengas la versión más reciente de tus paywalls, asegurando la fiabilidad incluso cuando la conexión a internet es limitada.</p> |
+| **loadTimeout** | predeterminado: 5 seg | <p>Este valor limita el tiempo de espera de este método. Si se alcanza el tiempo límite, se devolverán los datos en caché o el fallback local.</p><p>Ten en cuenta que, en casos excepcionales, este método puede superar ligeramente el tiempo especificado en `loadTimeout`, ya que la operación puede estar compuesta por distintas solicitudes internamente.</p><p>Para Android: puedes crear `TimeInterval` con funciones de extensión (como `5.seconds`, donde `.seconds` proviene de `import com.adapty.utils.seconds`), o `TimeInterval.seconds(5)`. Para no establecer ningún límite, usa `TimeInterval.INFINITE`.</p> |
 Parámetros de respuesta:
 
-| Parámetro | Descripción |
+| Parámetro | Descripción                                                                                                                                                     |
 | :-------- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Paywall   | Un objeto [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/) con una lista de IDs de productos, el identificador del paywall, Remote Config y otras propiedades. |
-
-## Obtener la configuración de vista del paywall diseñado con Paywall Builder \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+| Paywall   | Un objeto [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/) con una lista de IDs de productos, el identificador del paywall, el Remote Config y otras propiedades. |
+## Obtener la configuración de vista de un paywall diseñado con Paywall Builder \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
 
 :::important
-Asegúrate de activar el toggle **Show on device** en el Paywall Builder. Si esta opción no está activada, la configuración de vista no estará disponible para recuperar.
+Asegúrate de activar el interruptor **Show on device** en el Paywall Builder. Si esta opción no está activada, la configuración de vista no estará disponible para recuperar.
 :::
 
-Después de obtener el paywall, comprueba si incluye una `ViewConfiguration`, lo que indica que fue creado con Paywall Builder. Esto te indicará cómo mostrar el paywall. Si la `ViewConfiguration` está presente, trátalo como un paywall de Paywall Builder; si no, [manéjalo como un paywall de Remote Config](present-remote-config-paywalls).
-
+Tras obtener el paywall, comprueba si incluye un `ViewConfiguration`, lo que indica que fue creado con Paywall Builder. Esto te guiará sobre cómo mostrar el paywall. Si el `ViewConfiguration` está presente, trátalo como un paywall de Paywall Builder; si no, [trátalo como un paywall de Remote Config](present-remote-config-paywalls).
 <Tabs groupId="current-os" queryString>
 
 <TabItem value="kotlin" label="Kotlin" default>
 
-Usa el método `getViewConfiguration` para cargar la configuración de vista.
-
+Usa el método `getViewConfiguration` para cargar la configuración de la vista.
 ```kotlin showLineNumbers
 if (!paywall.hasViewConfiguration) {
     // use your custom logic
@@ -128,16 +374,14 @@ AdaptyUI.getViewConfiguration(paywall, loadTimeout = 10.seconds) { result ->
     }
 }
 ```
-| Parámetro       | Presencia      | Descripción                                                  |
-| :-------------- | :------------- | :----------------------------------------------------------- |
-| **paywall**     | obligatorio    | Un objeto `AdaptyPaywall` para obtener un controlador del paywall deseado. |
-| **loadTimeout** | por defecto: 5 seg | Este valor limita el tiempo de espera para este método. Si se alcanza el tiempo límite, se devolverán los datos en caché o el fallback local. Ten en cuenta que en casos excepcionales este método puede exceder ligeramente el tiempo especificado en `loadTimeout`, ya que la operación puede consistir en diferentes solicitudes internamente. |
-
+| Parámetro       | Presencia          | Descripción                                                  |
+| :-------------- | :----------------- | :----------------------------------------------------------- |
+| **paywall**     | obligatorio        | Un objeto `AdaptyPaywall` para obtener un controlador del paywall deseado. |
+| **loadTimeout** | predeterminado: 5 s | Este valor limita el tiempo de espera de este método. Si se alcanza el tiempo límite, se devolverán los datos en caché o el respaldo local. Ten en cuenta que, en casos excepcionales, este método puede agotar el tiempo de espera ligeramente después del valor indicado en `loadTimeout`, ya que la operación puede constar de diferentes solicitudes internamente. |
 </TabItem>
 <TabItem value="java" label="Java" default>
 
 Usa el método `getViewConfiguration` para cargar la configuración de vista.
-
 ```java showLineNumbers
 if (!paywall.hasViewConfiguration()) {
     // use your custom logic
@@ -158,37 +402,31 @@ AdaptyUI.getViewConfiguration(paywall, TimeInterval.seconds(10), result -> {
 | Parámetro                | Presencia      | Descripción                                                  |
 | :----------------------- | :------------- | :----------------------------------------------------------- |
 | **paywall**              | obligatorio    | Un objeto `AdaptyPaywall` para obtener un controlador del paywall deseado. |
-| **loadTimeout**          | por defecto: 5 seg | Este valor limita el tiempo de espera para este método. Si se alcanza el tiempo límite, se devolverán los datos en caché o el fallback local. Ten en cuenta que en casos excepcionales este método puede exceder ligeramente el tiempo especificado en `loadTimeout`, ya que la operación puede consistir en diferentes solicitudes internamente. |
-
+| **loadTimeout**          | por defecto: 5 seg | Este valor limita el tiempo de espera para este método. Si se alcanza el límite, se devolverán los datos en caché o el fallback local. Ten en cuenta que en casos excepcionales este método puede agotar el tiempo ligeramente después de lo especificado en `loadTimeout`, ya que la operación puede constar de distintas solicitudes internamente. |
 </TabItem>
 
 </Tabs>
 
 :::note
-Si usas varios idiomas, aprende cómo añadir una [localización en Paywall Builder](add-paywall-locale-in-adapty-paywall-builder) y cómo usar los códigos de idioma correctamente [aquí](android-localizations-and-locale-codes).
+Si utilizas varios idiomas, aprende cómo añadir una [localización en el Paywall Builder](add-paywall-locale-in-adapty-paywall-builder) y cómo usar correctamente los códigos de idioma [aquí](android-localizations-and-locale-codes).
 :::
 
-Una vez cargado, [presenta el paywall](android-present-paywalls).
+Una vez cargado, [muestra el paywall](android-present-paywalls).
+## Obtén un paywall para la audiencia predeterminada y acelera la carga \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
 
-## Obtener un paywall para la audiencia predeterminada y cargarlo más rápido \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
-
-Normalmente, los paywalls se obtienen casi de forma instantánea, por lo que no necesitas preocuparte por acelerar este proceso. Sin embargo, si tienes muchas audiencias y paywalls y tus usuarios tienen una conexión a internet lenta, obtener un paywall puede tardar más de lo deseado. En esos casos, puede que quieras mostrar un paywall por defecto para garantizar una buena experiencia de usuario en lugar de no mostrar ninguno.
-
-Para resolver esto, puedes usar el método `getPaywallForDefaultAudience`, que obtiene el paywall del placement especificado para la audiencia **All Users**. Sin embargo, es importante entender que el enfoque recomendado es obtener el paywall con el método `getPaywall`, tal como se detalla en la sección [Obtener el paywall diseñado con Paywall Builder](#fetch-paywall-designed-with-paywall-builder) anterior.
+Normalmente, los paywalls se obtienen casi al instante, por lo que no necesitas preocuparte por acelerar este proceso. Sin embargo, cuando tienes muchas audiencias y paywalls, y tus usuarios tienen una conexión a internet débil, la carga puede tardar más de lo deseado. En esos casos, puede que quieras mostrar un paywall predeterminado para garantizar una buena experiencia de usuario en lugar de no mostrar ninguno.
+Para resolver esto, puedes usar el método `getPaywallForDefaultAudience`, que obtiene el paywall del placement indicado para la audiencia **All Users**. Sin embargo, es fundamental entender que el enfoque recomendado es obtener el paywall con el método `getPaywall`, tal como se describe en la sección [Obtener información del paywall](#fetch-paywall-designed-with-paywall-builder) anterior.
 
 :::warning
 Por qué recomendamos usar `getPaywall`
 
 El método `getPaywallForDefaultAudience` tiene algunos inconvenientes importantes:
-
-- **Posibles problemas de compatibilidad hacia atrás**: si necesitas mostrar paywalls diferentes para distintas versiones de la app (actual y futuras), puedes encontrarte con dificultades. Tendrás que diseñar paywalls que sean compatibles con la versión actual (legacy) o asumir que los usuarios con esa versión pueden tener problemas con paywalls que no se renderizan.
-- **Pérdida de segmentación**: todos los usuarios verán el mismo paywall diseñado para la audiencia **All Users**, lo que significa que pierdes la segmentación personalizada (incluyendo la basada en países, atribución de marketing o tus propios atributos personalizados).
-
-Si estás dispuesto a aceptar estos inconvenientes a cambio de una carga más rápida del paywall, usa el método `getPaywallForDefaultAudience` como se indica a continuación. De lo contrario, utiliza `getPaywall` como se describe [arriba](#fetch-paywall-designed-with-paywall-builder).
+- **Posibles problemas de compatibilidad con versiones anteriores**: Si necesitas mostrar diferentes paywalls para distintas versiones de la app (actual y futuras), podrías enfrentarte a dificultades. Tendrás que diseñar paywalls que sean compatibles con la versión actual (legacy) o aceptar que los usuarios con esa versión puedan encontrarse con paywalls que no se renderizan correctamente.
+- **Pérdida de segmentación**: Todos los usuarios verán el mismo paywall diseñado para la audiencia **All Users**, lo que significa que pierdes la segmentación personalizada (incluyendo la basada en países, atribución de marketing o tus propios atributos personalizados).
+Si estás dispuesto a aceptar estas desventajas para beneficiarte de una obtención más rápida del paywall, usa el método `getPaywallForDefaultAudience` de la siguiente manera. De lo contrario, utiliza `getPaywall` descrito [anteriormente](#fetch-paywall-designed-with-paywall-builder).
 :::
 
 <Tabs groupId="current-os" queryString>
-
 <TabItem value="kotlin" label="Kotlin" default>
 ```kotlin showLineNumbers
 Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result ->
@@ -220,39 +458,34 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 });
 ```
 </TabItem>
-
 </Tabs>
 
 :::note
-El método `getPaywallForDefaultAudience` está disponible a partir del SDK de Android 2.11.3
+El método `getPaywallForDefaultAudience` está disponible a partir del Android SDK 2.11.3
 :::
-
 | Parámetro | Presencia | Descripción |
 |---------|--------|-----------|
-| **placementId** | obligatorio | El identificador del [Placement](placements). Es el valor que especificaste al crear un placement en tu Adapty Dashboard. |
-| **locale** | <p>opcional</p><p>por defecto: `en`</p> | <p>El identificador de la [localización del paywall](add-remote-config-locale). Se espera que este parámetro sea un código de idioma compuesto por una o más subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta corresponde al idioma y la segunda a la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p></p><p>Consulta [Localizaciones y códigos de idioma](localizations-and-locale-codes) para más información sobre los códigos de idioma y cómo recomendamos usarlos.</p> |
-| **fetchPolicy** | por defecto: `.reloadRevalidatingCacheData` | <p>Por defecto, el SDK intentará cargar datos del servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre obtengan los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `.returnCacheDataElseLoad` para devolver datos en caché si existen. En este caso, los usuarios podrían no obtener los datos más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de lo irregular que sea su conexión. La caché se actualiza regularmente, por lo que es seguro usarla durante la sesión para evitar solicitudes de red.</p><p></p><p>Ten en cuenta que la caché permanece intacta al reiniciar la app y solo se borra cuando se desinstala la app o mediante limpieza manual.</p> |
+| **placementId** | requerido | El identificador del [Placement](placements). Es el valor que especificaste al crear un placement en tu Adapty Dashboard. |
+| **locale** | <p>opcional</p><p>predeterminado: `en`</p> | <p>El identificador de la [localización del paywall](add-remote-config-locale). Se espera que este parámetro sea un código de idioma compuesto por una o más subetiquetas separadas por el carácter menos (**-**). La primera subetiqueta corresponde al idioma y la segunda a la región.</p><p></p><p>Ejemplo: `en` significa inglés, `pt-br` representa el portugués de Brasil.</p><p></p><p>Consulta [Localizaciones y códigos de locale](localizations-and-locale-codes) para más información sobre los códigos de locale y cómo recomendamos utilizarlos.</p> |
+| **fetchPolicy** | predeterminado: `.reloadRevalidatingCacheData` | <p>Por defecto, el SDK intentará cargar los datos desde el servidor y devolverá los datos en caché en caso de fallo. Recomendamos esta opción porque garantiza que tus usuarios siempre reciban los datos más actualizados.</p><p></p><p>Sin embargo, si crees que tus usuarios tienen una conexión a internet inestable, considera usar `.returnCacheDataElseLoad` para devolver los datos en caché cuando existan. En este caso, puede que los usuarios no obtengan los datos absolutamente más recientes, pero experimentarán tiempos de carga más rápidos, independientemente de lo inestable que sea su conexión. La caché se actualiza con regularidad, por lo que es seguro usarla durante la sesión para evitar peticiones de red.</p><p></p><p>Ten en cuenta que la caché permanece intacta al reiniciar la app y solo se borra cuando se reinstala la aplicación o mediante una limpieza manual.</p> |
+## Personaliza los recursos \{#customize-assets\}
 
-## Personalizar assets \{#customize-assets\}
+Para personalizar imágenes y vídeos en tu paywall, implementa los recursos personalizados.
 
-Para personalizar imágenes y vídeos en tu paywall, implementa los assets personalizados.
+Las imágenes y vídeos hero tienen IDs predefinidos: `hero_image` y `hero_video`. En un bundle de recursos personalizados, apuntas a estos elementos por sus IDs y personalizas su comportamiento.
 
-Las imágenes y vídeos hero tienen IDs predefinidos: `hero_image` y `hero_video`. En un bundle de assets personalizado, apuntas a estos elementos por sus IDs y personalizas su comportamiento.
-
-Para otras imágenes y vídeos, necesitas [establecer un ID personalizado](custom-media) en el dashboard de Adapty.
+Para otras imágenes y vídeos, necesitas [establecer un ID personalizado](custom-media) en el Adapty Dashboard.
 
 Por ejemplo, puedes:
 
 - Mostrar una imagen o vídeo diferente a algunos usuarios.
-- Mostrar una imagen de vista previa local mientras se carga la imagen principal remota.
+- Mostrar una imagen de vista previa local mientras se carga una imagen principal remota.
 - Mostrar una imagen de vista previa antes de reproducir un vídeo.
-
 :::important
-Para usar esta funcionalidad, actualiza el SDK de Android de Adapty a la versión 3.7.0 o superior.
+Para usar esta función, actualiza el SDK de Adapty para Android a la versión 3.7.0 o superior.
 :::
 
-Aquí tienes un ejemplo de cómo puedes proporcionar assets personalizados mediante un diccionario simple:
-
+Aquí tienes un ejemplo de cómo proporcionar assets personalizados mediante un diccionario simple:
 ```kotlin showLineNumbers
 val customAssets = AdaptyCustomAssets.of(
     "hero_image" to
@@ -282,5 +515,7 @@ val paywallView = AdaptyUI.getPaywallView(
 ```
 
 :::note
-Si un asset no se encuentra, el paywall volverá a su apariencia predeterminada.
+Si no se encuentra un recurso, el paywall usará su apariencia predeterminada.
 :::
+
+</SDKv3>
