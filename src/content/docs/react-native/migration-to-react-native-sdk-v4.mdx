@@ -22,7 +22,7 @@ Adapty React Native SDK 4.0 (beta) introduces flows and renames the paywall APIs
 | `onPaywallClosed` | `onDisappeared` |
 | `onRenderingFailed` | `onError` |
 
-`AdaptyPaywallProduct` keeps its name — products still belong to a flow, and `getPaywallProducts` now takes an `AdaptyFlow`. The `getFlow` and `getFlowForDefaultAudience` methods no longer take a `locale` parameter. The view methods `present`, `dismiss`, `setEventHandlers`, and `showDialog`, and the unchanged event handlers (`onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished`, `onAndroidSystemBack`) are the same as in v3.
+`AdaptyPaywallProduct` keeps its name — products still belong to a flow, and `getPaywallProducts` now takes an `AdaptyFlow`. The `getFlow` and `getFlowForDefaultAudience` methods no longer take a `locale` parameter. The view methods `present`, `dismiss`, `setEventHandlers`, and `showDialog`, and the event handlers `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished`, and `onAndroidSystemBack` keep the same names as in v3. Some default behaviors changed — see [Default behavior changes](#default-behavior-changes).
 
 ## Minimum iOS version
 
@@ -122,6 +122,37 @@ The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale`
 + const products = await adapty.getPaywallProducts(flow);
 ```
 
+## Data model
+
+`getFlow` returns an `AdaptyFlow` instead of an `AdaptyPaywall`, and the object shape changed:
+
+| v3 `AdaptyPaywall` field | v4 `AdaptyFlow` field | Action |
+|---|---|---|
+| `remoteConfig?` (single) | `remoteConfigs?: AdaptyRemoteConfig[]` (array) | A flow carries one remote config per configured language. Read the one that matches the user: `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
+| `products` | `flow.variations[i].productIdentifiers` | Product identifiers now live on each flow variation, not on the flow. |
+| `version?: number` | `flowVersionId?: string` | Renamed, and the type changed from `number` to `string`. |
+| `hasViewConfiguration` | removed | Remove any `hasViewConfiguration` check from your code. |
+| `requestLocale` | removed | The locale is no longer part of the model. |
+| _(new)_ | `variations: AdaptyFlowPaywall[]` | Each entry is one paywall variation in the flow. |
+| _(new)_ | `responseCreatedAt: number` | Server response timestamp, in milliseconds. |
+
+Product identifiers moved from the flow to each variation:
+
+```diff showLineNumbers
+- const ids = paywall.products;
++ const ids = flow.variations[0].productIdentifiers;
+```
+
+## Web paywall methods
+
+`openWebPaywall` and `createWebPaywallUrl` keep their names, but the first argument is now an `AdaptyFlowPaywall` (a flow variation) instead of an `AdaptyPaywall`. You can still pass an `AdaptyPaywallProduct`.
+
+```diff showLineNumbers
+  const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
+- await adapty.openWebPaywall(paywall);
++ await adapty.openWebPaywall(flow.variations[0]);
+```
+
 ## Tracking flow views
 
 ### logShowPaywall → logShowFlow
@@ -178,3 +209,55 @@ The event-handler interface is renamed from `EventHandlers` to `FlowEventHandler
 ```
 
 All other event handlers keep their names and signatures. See [Handle flow & paywall events](react-native-handling-events-1) for the full list.
+
+## Removed and deprecated APIs
+
+### setFallbackPaywalls → setFallback
+
+`setFallbackPaywalls` is removed. Use `setFallback`, which takes the same argument:
+
+```diff showLineNumbers
+- await adapty.setFallbackPaywalls(fileLocation);
++ await adapty.setFallback(fileLocation);
+```
+
+### Removed exports
+
+These symbols are no longer exported from `react-native-adapty`. Remove their imports:
+
+- **`AdaptyPaywall`**: Use `AdaptyFlow` instead.
+- **`ProductReference`**: Use `AdaptyProductIdentifier`, read from `flow.variations[i].productIdentifiers`.
+- **`AdaptyPaywallBuilder`**: Removed. Flows and paywalls render natively.
+- **`AdaptyAndroidSubscriptionUpdateParameters`**: Use the nested `subscriptionUpdateParams` shape (see below).
+
+### activate: lockMethodsUntilReady
+
+`lockMethodsUntilReady` is deprecated and now on by default. Remove it from your `activate` call — keeping it has no effect and triggers a deprecation warning:
+
+```diff showLineNumbers
+- await adapty.activate('PUBLIC_SDK_KEY', { lockMethodsUntilReady: true });
++ await adapty.activate('PUBLIC_SDK_KEY');
+```
+
+### makePurchase: Android subscription update
+
+The flat Android subscription-update shape is deprecated. Move `oldSubVendorProductId` and `prorationMode` into a nested `subscriptionUpdateParams` object, and keep `isOfferPersonalized` at the top level. See [Make purchases](react-native-making-purchases) for the full example.
+
+### Mock mode
+
+If you run the SDK in mock mode (Expo Go or web preview), rename the mock config key `paywalls` to `flows`.
+
+## Default behavior changes
+
+These changes do not cause compile errors, so test them at runtime:
+
+- **`onAndroidSystemBack`**: The default changed from closing the view to keeping it open. To restore the previous behavior, return `true` from the handler.
+- **`dismiss()`**: The presented view is now destroyed, not just hidden. Call `createFlowView` again to present the flow once more.
+- **Embedded `AdaptyFlowView`**: An embedded view is dismissed by unmounting it. Returning `true` from a handler does not close an embedded view — change your own state instead, for example in `onCloseButtonPress`.
+- **`onUrlPress`**: The default now opens the URL through the native layer, honoring the in-app or external browser setting from the dashboard. Override the handler to open URLs yourself.
+
+## Onboarding API deprecation
+
+The legacy onboarding API is deprecated in v4.0 in favor of the [Flow Builder](adapty-flow-builder). It still works but emits deprecation warnings. Plan migration of your onboardings to the Flow Builder.
+
+Deprecated symbols: `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView`, and `AdaptyOnboardingView`.
