@@ -1,11 +1,23 @@
 Чтобы получить **Public SDK Key**:
 
 1. Откройте дашборд Adapty и перейдите в [**App settings → General**](https://app.adapty.io/settings/general).
-2. В разделе **Api keys** скопируйте **Public SDK Key** (не Secret Key).
-3. Замените `"YOUR_PUBLIC_SDK_KEY"` в коде на скопированный ключ.
+2. В разделе **Api keys** скопируйте **Public SDK Key** (НЕ Secret Key).
+3. Замените `"YOUR_PUBLIC_SDK_KEY"` в коде.
 
-:::important
+Или получите его программно с помощью [Adapty CLI](developer-cli):
 
-- Используйте **Public SDK key** для инициализации Adapty. **Secret key** предназначен только для [серверного API](getting-started-with-server-side-api).
-- **SDK keys** уникальны для каждого приложения, поэтому при наличии нескольких приложений убедитесь, что выбрали правильный ключ.
-:::
+```
+npm install -g adapty
+adapty auth login
+adapty apps list
+```
+
+Или напрямую:
+
+```
+npx adapty auth login
+adapty apps list
+```
+
+- Убедитесь, что для инициализации Adapty вы используете **Public SDK key** — **Secret key** предназначен только для [серверного API](getting-started-with-server-side-api).
+- **SDK-ключи** уникальны для каждого приложения, поэтому если у вас несколько приложений, выберите нужный ключ.
