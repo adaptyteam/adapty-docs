@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getAllDocFiles, extractReusableImports } from './scan.mjs';
+import { getAllDocFiles, extractReusableImports, toInternalPath } from './scan.mjs';
 import { curlCheck, checkExternalUrl } from './check-external.mjs';
 import GithubSlugger from 'github-slugger';
 
@@ -183,6 +183,13 @@ export { buildDocIndex };
  * falls back to live site for redirects.
  */
 export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs, skipAnchors = false }) {
+  // Self-referential absolute URLs (https://adapty.io/docs/<...>) are internal
+  // links written the long way — reduce them to the internal path so they
+  // resolve against the repo index. On a miss, the live fallback then hits the
+  // exact URL (locale segment preserved), catching orphaned-slug 404s.
+  const internalPath = toInternalPath(url);
+  if (internalPath !== null) url = internalPath;
+
   const [urlWithoutAnchor, anchor] = url.split('#');
   if (!urlWithoutAnchor) return { ok: true, status: 'anchor-only' };
 
