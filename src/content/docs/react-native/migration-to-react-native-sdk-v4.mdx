@@ -129,18 +129,19 @@ The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale`
 | v3 `AdaptyPaywall` field | v4 `AdaptyFlow` field | Action |
 |---|---|---|
 | `remoteConfig?` (single) | `remoteConfigs?: AdaptyRemoteConfig[]` (array) | A flow carries one remote config per configured language. Read the one that matches the user: `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
-| `products` | `flow.variations[i].productIdentifiers` | Product identifiers now live on each flow variation, not on the flow. |
+| `products` | `flow.paywalls[i].productIdentifiers` | Product identifiers now live on each flow variation, not on the flow. |
+| `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | Moved from the flow to each paywall variation. |
 | `version?: number` | `flowVersionId?: string` | Renamed, and the type changed from `number` to `string`. |
 | `hasViewConfiguration` | removed | Remove any `hasViewConfiguration` check from your code. |
 | `requestLocale` | removed | The locale is no longer part of the model. |
-| _(new)_ | `variations: AdaptyFlowPaywall[]` | Each entry is one paywall variation in the flow. |
+| _(new)_ | `paywalls: AdaptyFlowPaywall[]` | Each entry is one paywall variation in the flow. |
 | _(new)_ | `responseCreatedAt: number` | Server response timestamp, in milliseconds. |
 
 Product identifiers moved from the flow to each variation:
 
 ```diff showLineNumbers
 - const ids = paywall.products;
-+ const ids = flow.variations[0].productIdentifiers;
++ const ids = flow.paywalls[0].productIdentifiers;
 ```
 
 ## Web paywall methods
@@ -150,7 +151,7 @@ Product identifiers moved from the flow to each variation:
 ```diff showLineNumbers
   const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
 - await adapty.openWebPaywall(paywall);
-+ await adapty.openWebPaywall(flow.variations[0]);
++ await adapty.openWebPaywall(flow.paywalls[0]);
 ```
 
 ## Tracking flow views
@@ -193,6 +194,10 @@ If you render with the React component, rename it and pass the `flow` prop:
 + <AdaptyFlowView flow={flow} /* … */ />
 ```
 
+:::note
+A flow view created with `createFlowView` is single-use: after you call `dismiss()`, the view is destroyed, so call `createFlowView` again to present the flow once more. An embedded `AdaptyFlowView` is dismissed by unmounting it — returning `true` from a handler does not close an embedded view, so change your own state instead, for example in `onCloseButtonPress`.
+:::
+
 ## Handling events
 
 The event-handler interface is renamed from `EventHandlers` to `FlowEventHandlers`, and three callbacks are renamed. Existing handler bodies don't need code changes — just rename:
@@ -208,7 +213,16 @@ The event-handler interface is renamed from `EventHandlers` to `FlowEventHandler
 + onError: (error) => { /* … */ },
 ```
 
-All other event handlers keep their names and signatures. See [Handle flow & paywall events](react-native-handling-events-1) for the full list.
+All other event handlers keep their names. Two also gain a second argument: `onPurchaseCompleted` is now `(purchaseResult, product)` and `onPurchaseFailed` is now `(error, product)`, where `product` is the `AdaptyPaywallProduct` involved. See [Handle flow & paywall events](react-native-handling-events-1) for the full list.
+
+:::note
+`onDisappeared` fires only for a flow presented modally with `createFlowView().present()`. The `AdaptyFlowView` component does not expose it as a prop — dismiss an embedded view by unmounting it.
+:::
+
+v4 also adds a few capabilities you can opt into:
+
+- `adapty.openWebUrl(url, openIn?)` and `adapty.requestAppReview()` methods — these back the default `onUrlPress` and `onRequestAppReview` handlers, so URLs and app-review prompts are handled natively out of the box. Call them directly only if you override those handlers.
+- Observer-mode purchase handling inside flows via the new `onObserverPurchaseInitiated` / `onObserverRestoreInitiated` handlers. See [Handle purchases in observer mode](react-native-handling-events-1#handle-purchases-in-observer-mode).
 
 ## Removed and deprecated APIs
 
@@ -226,13 +240,13 @@ All other event handlers keep their names and signatures. See [Handle flow & pay
 These symbols are no longer exported from `react-native-adapty`. Remove their imports:
 
 - **`AdaptyPaywall`**: Use `AdaptyFlow` instead.
-- **`ProductReference`**: Use `AdaptyProductIdentifier`, read from `flow.variations[i].productIdentifiers`.
+- **`ProductReference`**: Use `AdaptyProductIdentifier`, read from `flow.paywalls[i].productIdentifiers`.
 - **`AdaptyPaywallBuilder`**: Removed. Flows and paywalls render natively.
 - **`AdaptyAndroidSubscriptionUpdateParameters`**: Use the nested `subscriptionUpdateParams` shape (see below).
 
 ### activate: lockMethodsUntilReady
 
-`lockMethodsUntilReady` is deprecated and now on by default. Remove it from your `activate` call — keeping it has no effect and triggers a deprecation warning:
+`lockMethodsUntilReady` is removed and this behavior is now always on. Remove it from your `activate` call — keeping it no longer compiles:
 
 ```diff showLineNumbers
 - await adapty.activate('PUBLIC_SDK_KEY', { lockMethodsUntilReady: true });
@@ -241,7 +255,7 @@ These symbols are no longer exported from `react-native-adapty`. Remove their im
 
 ### makePurchase: Android subscription update
 
-The flat Android subscription-update shape is deprecated. Move `oldSubVendorProductId` and `prorationMode` into a nested `subscriptionUpdateParams` object, and keep `isOfferPersonalized` at the top level. See [Make purchases](react-native-making-purchases) for the full example.
+The flat Android subscription-update shape is removed. Move `oldSubVendorProductId` and `prorationMode` into a nested `subscriptionUpdateParams` object, and keep `isOfferPersonalized` at the top level. See [Make purchases](react-native-making-purchases) for the full example.
 
 ### Mock mode
 
@@ -252,12 +266,11 @@ If you run the SDK in mock mode (Expo Go or web preview), rename the mock config
 These changes do not cause compile errors, so test them at runtime:
 
 - **`onAndroidSystemBack`**: The default changed from closing the view to keeping it open. To restore the previous behavior, return `true` from the handler.
-- **`dismiss()`**: The presented view is now destroyed, not just hidden. Call `createFlowView` again to present the flow once more.
-- **Embedded `AdaptyFlowView`**: An embedded view is dismissed by unmounting it. Returning `true` from a handler does not close an embedded view — change your own state instead, for example in `onCloseButtonPress`.
+- **`onPurchaseCompleted`**: The default changed from closing the view after a successful purchase to keeping it open. To restore the previous behavior, return `true` from the handler.
 - **`onUrlPress`**: The default now opens the URL through the native layer, honoring the in-app or external browser setting from the dashboard. Override the handler to open URLs yourself.
 
 ## Onboarding API deprecation
 
-The legacy onboarding API is deprecated in v4.0 in favor of the [Flow Builder](adapty-flow-builder). It still works but emits deprecation warnings. Plan migration of your onboardings to the Flow Builder.
+The legacy onboarding API is deprecated in v4.0 in favor of the [Flow Builder](adapty-flow-builder). It still works, and your IDE flags the deprecated symbols through their `@deprecated` annotations — there are no runtime warnings. These symbols will be removed in a future release, so plan migration of your onboardings to the Flow Builder.
 
 Deprecated symbols: `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView`, and `AdaptyOnboardingView`.
