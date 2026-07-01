@@ -78,7 +78,38 @@ export function extractReusableImports(content) {
 }
 
 /**
+ * Self-referential links: absolute URLs that point back at this docs site.
+ * Authors (and stale translations) sometimes hardcode
+ * `https://adapty.io/docs/<slug>` — or a localized `.../docs/<locale>/<slug>` —
+ * instead of a bare slug. These are internal links in disguise: their validity
+ * depends on the target doc existing, not on an HTTP round trip. Left as
+ * absolute URLs they'd be classified as external and skipped by the
+ * `--internal-only` locale gate (and only caught live in the English external
+ * pass), which is how orphaned-slug 404s slip into localized files. We instead
+ * resolve them as internal against the repo index.
+ */
+const SELF_SITE_RE = /^https?:\/\/(?:www\.)?adapty\.io\/docs(?=\/|$)/i;
+
+export function isSelfReferentialUrl(url) {
+  return SELF_SITE_RE.test(url);
+}
+
+/**
+ * Reduce a self-referential absolute URL to its internal path, keeping any
+ * locale segment and anchor (e.g. `https://adapty.io/docs/tr/foo#bar` →
+ * `tr/foo#bar`). Returns null if the URL isn't self-referential. The retained
+ * locale segment means the internal check's live fallback hits the exact
+ * localized URL, and its basename fallback still resolves the slug against the
+ * English index.
+ */
+export function toInternalPath(url) {
+  if (!SELF_SITE_RE.test(url)) return null;
+  return url.replace(SELF_SITE_RE, '').replace(/^\//, '');
+}
+
+/**
  * Split links into external vs internal, discarding mailto/tel/anchor-only/javascript.
+ * Self-referential absolute URLs (see toInternalPath) are treated as internal.
  */
 export function categorizeLinks(allLinks) {
   const externalLinks = [];
@@ -86,7 +117,9 @@ export function categorizeLinks(allLinks) {
 
   for (const link of allLinks) {
     const { url } = link;
-    if (/^https?:\/\//.test(url)) {
+    if (isSelfReferentialUrl(url)) {
+      internalLinks.push(link);
+    } else if (/^https?:\/\//.test(url)) {
       externalLinks.push(link);
     } else if (/^mailto:/.test(url) || /^tel:/.test(url) || /^#/.test(url) || /^javascript:/.test(url)) {
       // skip
