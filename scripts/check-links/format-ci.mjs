@@ -2,22 +2,31 @@ import { appendFile, writeFile } from 'node:fs/promises';
 import { statusLabel } from './group.mjs';
 
 /**
+ * Repo-relative path for an annotation. English sources are relative to the
+ * docs dir (e.g. `version-3.0/foo.mdx`); locale sources are already repo-rooted
+ * (e.g. `src/locales/zh/foo.mdx`), so don't prefix those again.
+ */
+function annotationPath(source) {
+  return source.startsWith('src/') ? source : `src/content/docs/${source}`;
+}
+
+/**
  * Emit GitHub Actions annotations for broken/bad links.
  * ::error annotations for broken links, ::warning for warnings.
  */
 export function emitAnnotations({ uniqueErrors, uniqueWarnings, manualCheckList, whitelistedWarnings = [] }) {
   for (const b of uniqueErrors) {
     const msg = `Broken link: ${b.url} — ${statusLabel(b)}`;
-    console.log(`::error file=src/content/docs/${b.source},line=${b.line}::${msg}`);
+    console.log(`::error file=${annotationPath(b.source)},line=${b.line}::${msg}`);
   }
   for (const b of uniqueWarnings) {
     const detail = b.redirect || b.anchor || statusLabel(b);
     const msg = `Stale link: ${b.url} — ${detail}`;
-    console.log(`::warning file=src/content/docs/${b.source},line=${b.line}::${msg}`);
+    console.log(`::warning file=${annotationPath(b.source)},line=${b.line}::${msg}`);
   }
   for (const b of manualCheckList) {
     const msg = `Manual check: ${b.url} — ${statusLabel(b)}`;
-    console.log(`::warning file=src/content/docs/${b.source},line=${b.line}::${msg}`);
+    console.log(`::warning file=${annotationPath(b.source)},line=${b.line}::${msg}`);
   }
 }
 

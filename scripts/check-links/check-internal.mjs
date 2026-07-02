@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getAllDocFiles, extractReusableImports } from './scan.mjs';
+import { getAllDocFiles, extractReusableImports, toInternalPath } from './scan.mjs';
 import { curlCheck, checkExternalUrl } from './check-external.mjs';
 import GithubSlugger from 'github-slugger';
 
@@ -142,7 +142,13 @@ async function getHeadingIds(filePath) {
   return ids;
 }
 
-// Doc index: Map<lowercased-slug, filePath>
+// Doc index: Map<lowercased-slug, filePath>. Built from the ENGLISH source only,
+// and used for both English and localized link checking. A bare-slug link in a
+// localized file renders to the no-locale URL /docs/<slug> at runtime (verified
+// against production), so its validity depends on the ENGLISH page existing — a
+// translated page with the same slug but no English source is NOT reachable that
+// way, so it must not be treated as resolving. (Do not overlay locale pages here:
+// doing so masks links to orphaned translations that 404 in production.)
 let docIndex = null;
 async function buildDocIndex(docsDir) {
   if (docIndex) return docIndex;
@@ -176,7 +182,14 @@ export { buildDocIndex };
  * Check an internal doc link. Resolves slug to file, checks anchors,
  * falls back to live site for redirects.
  */
-export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs }) {
+export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs, skipAnchors = false }) {
+  // Self-referential absolute URLs (https://adapty.io/docs/<...>) are internal
+  // links written the long way — reduce them to the internal path so they
+  // resolve against the repo index. On a miss, the live fallback then hits the
+  // exact URL (locale segment preserved), catching orphaned-slug 404s.
+  const internalPath = toInternalPath(url);
+  if (internalPath !== null) url = internalPath;
+
   const [urlWithoutAnchor, anchor] = url.split('#');
   if (!urlWithoutAnchor) return { ok: true, status: 'anchor-only' };
 
@@ -219,7 +232,7 @@ export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs 
     };
   }
 
-  // Case-insensitive lookup against the doc index
+  // Case-insensitive lookup against the English doc index.
   const slug = rawSlug.toLowerCase();
   const index = await buildDocIndex(docsDir);
 
@@ -239,7 +252,7 @@ export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs 
     return { ok: false, status: 'NOT_FOUND', error: 'Page not found in docs' };
   }
 
-  if (anchor) {
+  if (anchor && !skipAnchors) {
     const headings = await getHeadingIds(filePath);
     if (!headings.has(anchor)) {
       return { ok: true, anchorMissing: `#${anchor} not found` };

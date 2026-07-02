@@ -265,7 +265,7 @@ The translation script creates `.mdx` files and `.hashes/` automatically. You on
 
 ## Step 6 — Translate content (phased, gated by native-speaker reviews)
 
-> **Flow overview:** (1) research dictionary terminology → (2) native speaker reviews word-pair list → (3) translate tutorial 7 articles → (4) deploy to develop → (5) native speaker reviews rendered pages → (6) translate the rest → (7) on "we are done", run MDX lint + parse checks locally and auto-fix.
+> **Flow overview:** (1) research dictionary terminology → (2) native speaker reviews word-pair list → (3) translate tutorial 7 articles → (4) deploy to develop → (5) native speaker reviews rendered pages → (6) translate the rest → (7) on "we are done", run MDX lint + parse + localized link checks locally and auto-fix.
 >
 > **Note on `CustomDocCardList`:** This component is already locale-aware — it reads titles from `_sidebar-labels.json` and descriptions from the translated article frontmatter automatically. No extra step is needed; it works correctly once sidebar labels (Step 6f `--sidebars`) and article translations are done.
 
@@ -410,7 +410,7 @@ This translates the YAML specs in `src/api-reference/specs/` (e.g. `adapty-api.y
 
 **Trigger:** the user says "we're done", "that's it", "everything is translated", or otherwise signals end of translation work. Do not run this earlier — broken intermediate state is normal during translation.
 
-Two CI checks must pass before merging to `main` (and they're enforced in `s3-deploy-production.yml` via `lint-mdx` and `check-mdx-parse` jobs). Run them locally and resolve issues before the user pushes:
+Three checks must pass before merging to `main` (and they're enforced in `s3-deploy-production.yml` via the `lint-mdx`, `check-mdx-parse`, and `check-localized-links` jobs). Run them locally and resolve issues before the user pushes:
 
 **1. Run the lint check with auto-fix:**
 
@@ -428,9 +428,28 @@ node scripts/check-mdx-parse.mjs
 
 This compiles every `.mdx` under `src/content/docs/`, `src/locales/`, and `src/components/reusable/` using the same MDX plugins Astro uses. It reports every parse error at once (Astro's locale build halts at the first, so this surfaces hidden failures stacked behind it).
 
-**3. Auto-fix the remainder:**
+**3. Run the localized link check:**
 
-For every remaining issue from either script, read the file at the reported line, identify the cause, and edit it directly. Common causes after translation:
+```bash
+node scripts/check-links/index.mjs --locales={LOCALE} --internal-only
+```
+
+This checks internal links in the new locale's files only, resolving each
+against the English doc set with the locale's translated pages overlaid. It
+catches links a translation corrupted into a non-existent slug. Anchors
+(`#heading`) are intentionally not validated (the translator preserves English
+anchor ids), so the report stays focused on broken page links. A non-zero exit
+means at least one broken link — the same gate runs at deploy
+(`check-localized-links`), so resolve everything before pushing.
+
+Link breakage is **not** auto-fixable: for each broken link, open the flagged
+file at the reported line, compare to the English source, and fix the slug
+(usually the translator mangled a bare slug or invented a target). Re-run after
+each fix.
+
+**4. Auto-fix the remainder:**
+
+For every remaining issue from the lint/parse scripts, read the file at the reported line, identify the cause, and edit it directly. Common causes after translation:
 
 - **JSX comments** (`{/* ... */}`) inside MDX — crash the content collection. Replace with `:::note` callouts.
 - **Inline callout syntax** — `:::note text :::` on one line. Split into three lines: `:::note`, content, `:::`.
@@ -438,7 +457,7 @@ For every remaining issue from either script, read the file at the reported line
 - **Smart-quote contamination** in attribute values (e.g. `title=" "`) — replace with straight ASCII quotes.
 - **Stray backslashes** in heading anchors — `\{#id\}` must keep its backslash escapes exactly.
 
-After each edit pass, re-run both scripts. Loop until both exit clean. Only then tell the user the locale is ready to deploy.
+After each edit pass, re-run all three scripts. Loop until they all exit clean. Only then tell the user the locale is ready to deploy.
 
 ---
 
@@ -465,7 +484,7 @@ Create a new index named `adapty_{LOCALE}` in Algolia. Copy replica/ranking sett
 
 ## Step 8 — Update GitHub Actions deploy workflows
 
-The `translate.yml` workflow is locale-agnostic (uses `src/locales/*/` glob) — no changes needed there.
+The `translate.yml` workflow is locale-agnostic (uses `src/locales/*/` glob) — no changes needed there. The `check-localized-links` gate in `s3-deploy-production.yml` is also locale-agnostic (runs `--locales` over every locale dir) — no edit needed when adding a locale.
 
 Both deploy workflows have `[zh, tr]` hardcoded and **must be updated** in multiple places each.
 
@@ -560,7 +579,7 @@ strategy:
 | 6g | Output command to translate reusable snippets (skipped by targeted runs) | `--reusables` |
 | 6h | Output commands to translate platform article docs | `--platform` per sidebar |
 | 6i | Output command to translate API specs | `--api-specs` |
-| 6j | **BLOCKING on "we are done":** Run lint-mdx --fix + check-mdx-parse; auto-fix remaining issues | `scripts/lint-mdx.mjs`, `scripts/check-mdx-parse.mjs` |
+| 6j | **BLOCKING on "we are done":** Run lint-mdx --fix + check-mdx-parse + localized link check (`--locales={LOCALE} --internal-only`); auto-fix/​resolve remaining issues | `scripts/lint-mdx.mjs`, `scripts/check-mdx-parse.mjs`, `scripts/check-links/index.mjs` |
 | 7a | Update English crawler exclusion | Algolia dashboard |
 | 7b | Create new locale crawler | Algolia dashboard |
 | 7c | Create new Algolia index | Algolia dashboard |

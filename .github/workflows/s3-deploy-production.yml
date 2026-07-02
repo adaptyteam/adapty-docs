@@ -55,6 +55,29 @@ jobs:
       - run: npm install github-slugger
       - run: node scripts/check-links/index.mjs --diff --base=last-production-deploy --internal-only
 
+  # Blocking gate for the translation-only deploy path: checks internal links in
+  # the localized files changed since the last production deploy. Internal-only
+  # (external URLs don't vary by locale), so no puppeteer is needed. A broken
+  # translated link fails this job and blocks build-locale-only/deploy-translations.
+  check-localized-links:
+    name: Check localized links
+    needs: classify
+    if: needs.classify.outputs.translation_only == 'true'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: check-localized-links-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm install github-slugger
+      - run: node scripts/check-links/index.mjs --diff --base=last-production-deploy --locales --internal-only
+
   # Fast-fail static checks for translator-introduced regressions
   # (missing blank line after imports, missing client:load imports).
   # Gates both content and translation-only deploy paths.
@@ -254,7 +277,7 @@ jobs:
   # Translation-only deploy: build + upload only locale dirs
   # ──────────────────────────────────────────────────────────────
   build-locale-only:
-    needs: [classify, lint-mdx, check-mdx-parse]
+    needs: [classify, check-localized-links, lint-mdx, check-mdx-parse]
     if: needs.classify.outputs.translation_only == 'true'
     runs-on: ubuntu-latest
     strategy:

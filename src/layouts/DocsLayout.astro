@@ -9,6 +9,7 @@ import ZoomLightbox from '../components/ZoomLightbox.astro';
 import Footer from '../components/Footer.astro';
 import { ClientRouter } from 'astro:transitions';
 import { getUIStrings } from '../locales/ui-strings';
+import { SUPPORTED_LOCALES } from '../data/locales';
 
 interface Props {
   title: string;
@@ -34,10 +35,44 @@ const tSearch = getUIStrings(currentLocale).search;
 const derivedTitle = metadataTitle || title;
 const keywordsString = Array.isArray(keywords) ? keywords.join(', ') : keywords;
 
+// Trailing-slash policy: content pages are served at the no-slash form, but the
+// docs homepage (/docs/) and each locale home (/docs/{locale}/) are index.html files
+// served ONLY at the trailing-slash form (the no-slash /docs 301-redirects there).
+// The canonical must point at the URL that returns 200, so we strip the slash for
+// content pages but preserve it for these index roots.
+const basePath = import.meta.env.BASE_URL.replace(/\/+$/, ''); // "/docs"
+const indexPaths = new Set([basePath, ...SUPPORTED_LOCALES.map((l) => `${basePath}/${l}`)]);
+
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 if (canonicalURL.pathname.length > 1 && canonicalURL.pathname.endsWith('/')) {
   canonicalURL.pathname = canonicalURL.pathname.slice(0, -1);
 }
+const isIndexPage = indexPaths.has(canonicalURL.pathname);
+if (isIndexPage) {
+  canonicalURL.pathname = `${canonicalURL.pathname}/`;
+}
+
+// hreflang alternates — tie the language versions of this page together for search
+// engines. Build the English-relative slug (path after /docs and after any locale
+// prefix), then emit a reciprocal set (en + every locale + x-default) whose URL forms
+// exactly match each version's canonical. Locale routes fall back to English content,
+// so every target resolves 200.
+const afterBase = canonicalURL.pathname.slice(basePath.length); // "/", "/x", "/tr/", "/tr/x"
+const localeStripMatch = afterBase.match(/^\/([a-z]{2})(\/.*|\/?$)/);
+const slugPath =
+  localeStripMatch && (SUPPORTED_LOCALES as readonly string[]).includes(localeStripMatch[1])
+    ? localeStripMatch[2] || '/'
+    : afterBase;
+const enHref = new URL(`${basePath}${slugPath}`.replace(/\/{2,}/g, '/'), Astro.site).href;
+const hreflangAlternates = [
+  { hreflang: 'en', href: enHref },
+  ...SUPPORTED_LOCALES.map((locale) => ({
+    hreflang: locale,
+    href: new URL(`${basePath}/${locale}${slugPath}`.replace(/\/{2,}/g, '/'), Astro.site).href,
+  })),
+  { hreflang: 'x-default', href: enHref },
+];
+const showHreflang = !isFullWidth && !noindex;
 ---
 
 <!doctype html>
@@ -50,7 +85,10 @@ if (canonicalURL.pathname.length > 1 && canonicalURL.pathname.endsWith('/')) {
     <title>{derivedTitle}</title>
     <link rel="canonical" href={canonicalURL.href} />
     {noindex && <meta name="robots" content="noindex, follow" />}
-    {!isFullWidth && !noindex && (
+    {showHreflang && hreflangAlternates.map(({ hreflang, href }) => (
+      <link rel="alternate" hreflang={hreflang} href={href} />
+    ))}
+    {!isFullWidth && !noindex && !isIndexPage && (
       <link rel="alternate" type="text/markdown" href={`${canonicalURL.href.replace(/\/$/, '')}.md`} />
     )}
 

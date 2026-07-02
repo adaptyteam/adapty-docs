@@ -4,15 +4,256 @@ description: "Aprende cómo mostrar paywalls en modo observer usando el Paywall 
 metadataTitle: "Mostrar paywalls en modo Observer | Documentación de Adapty"
 ---
 
-Si has personalizado un paywall con el Paywall Builder, no tienes que preocuparte por renderizarlo en el código de tu app para mostrárselo al usuario. Este tipo de paywall incluye tanto qué mostrar como cómo mostrarlo.
+Si has creado un flow o paywall con el Flow Builder o el Paywall Builder, no tienes que preocuparte por renderizarlo en el código de tu app móvil para mostrárselo al usuario. Ese flow o paywall ya contiene tanto lo que debe mostrarse como la forma en que debe mostrarse.
 
 :::warning
-Esta sección es exclusivamente para el [modo Observer](observer-vs-full-mode). Si no trabajas en modo Observer, consulta el tema [Android - Mostrar paywalls creados con Paywall Builder](android-present-paywalls).
+Esta sección hace referencia únicamente al [modo Observer](observer-vs-full-mode). Si no trabajas en modo Observer, consulta el tema [Android - Presentar flows y paywalls](android-present-paywalls) en su lugar.
 :::
-<Tabs groupId="current-os" queryString>
-<TabItem value="SDK3" label="New Paywall Builder (SDK 3.0+)" default>
+
+<SDKv4>
+
 <details>
-   <summary>Antes de empezar a mostrar paywalls (haz clic para expandir)</summary>
+   <summary>Antes de empezar a presentar flows (Haz clic para expandir)</summary>
+1. Configura la integración inicial de Adapty [con Google Play](initial-android).
+   2. Instala y configura el SDK de Adapty. Asegúrate de establecer el parámetro `observerMode` en `true`. Consulta nuestras instrucciones por framework [para Android](sdk-installation-android).
+   3. [Crea productos](create-product) en el Adapty Dashboard.
+   4. [Configura flows o paywalls en los builders](create-paywall) y asígnales productos.
+   5. [Crea placements y asígna tus flows o paywalls](create-placement) en el Adapty Dashboard.
+   6. [Obtén los flows y su configuración](android-get-pb-paywalls) en el código de tu app.
+</details>
+
+<p> </p>
+
+1. Implementa el `AdaptyUiObserverModeHandler`.
+
+El evento `onPurchaseInitiated` te informará de que el usuario ha iniciado una compra. Puedes activar tu flujo de compra personalizado en respuesta a este callback:
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   val observerModeHandler =
+    AdaptyUiObserverModeHandler { product, flow, flowView, onStartPurchase, onFinishPurchase ->
+       onStartPurchase()
+       yourBillingClient.makePurchase(
+           product,
+           onSuccess = { purchase ->
+               onFinishPurchase()
+               //handle success
+           },
+           onError = {
+               onFinishPurchase()
+               //handle error
+           },
+           onCancel = {
+               onFinishPurchase()
+               //handle cancel
+           }
+       )
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   AdaptyUiObserverModeHandler observerModeHandler = (product, flow, flowView, onStartPurchase, onFinishPurchase) -> {
+       onStartPurchase.invoke();
+       yourBillingClient.makePurchase(
+           product,
+           purchase -> {
+               onFinishPurchase.invoke();
+               //handle success
+           },
+           error -> {
+               onFinishPurchase.invoke();
+               //handle error
+           },
+           () -> { //cancellation
+               onFinishPurchase.invoke();
+               //handle cancel
+           }
+       );
+   };
+   ```
+</TabItem>
+</Tabs>
+Para manejar restauraciones en modo Observer, sobreescribe `getRestoreHandler()`. Por defecto devuelve `null`, lo que utiliza el flow integrado de `Adapty.restorePurchases()` de Adapty. Para proporcionar tu propia implementación de restauración:
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+   ```kotlin showLineNumbers
+   val observerModeHandler = object : AdaptyUiObserverModeHandler {
+       // onPurchaseInitiated implementation (see above)
+
+       override fun getRestoreHandler() =
+           AdaptyUiObserverModeHandler.RestoreHandler { onStartRestore, onFinishRestore ->
+               onStartRestore()
+               yourBillingClient.restorePurchases(
+                   onSuccess = { restoredPurchases ->
+                       onFinishRestore()
+                       //handle successful restore
+                   },
+                   onError = {
+                       onFinishRestore()
+                       //handle error
+                   }
+               )
+           }
+   }
+   ```
+</TabItem>
+<TabItem value="java" label="Java" default>
+   ```java showLineNumbers
+   AdaptyUiObserverModeHandler observerModeHandler = new AdaptyUiObserverModeHandler() {
+       // onPurchaseInitiated implementation (see above)
+
+       @Override
+       public RestoreHandler getRestoreHandler() {
+           return (onStartRestore, onFinishRestore) -> {
+               onStartRestore.invoke();
+               yourBillingClient.restorePurchases(
+                   restoredPurchases -> {
+                       onFinishRestore.invoke();
+                       //handle successful restore
+                   },
+                   error -> {
+                       onFinishRestore.invoke();
+                       //handle error
+                   }
+               );
+           };
+       }
+   };
+   ```
+</TabItem>
+</Tabs>
+Recuerda invocar los siguientes callbacks para notificar a AdaptyUI sobre el proceso de compra o restauración. Esto es necesario para el correcto funcionamiento del flow, como mostrar el indicador de carga:
+| Callback           | Descripción                                                                                          |
+   | :----------------- |:-----------------------------------------------------------------------------------------------------|
+   | onStartPurchase()  | El callback debe invocarse para notificar a AdaptyUI que la compra ha comenzado.                     |
+   | onFinishPurchase() | El callback debe invocarse para notificar a AdaptyUI que la compra ha finalizado.                    |
+   | onStartRestore()   | Opcional. El callback puede invocarse para notificar a AdaptyUI que la restauración ha comenzado.    |
+   | onFinishRestore()  | Opcional. El callback puede invocarse para notificar a AdaptyUI que la restauración ha finalizado.   |
+2. Para mostrar el flow visual en la pantalla del dispositivo, primero debes configurarlo.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="views" label="Views" default>
+
+Para ello, llama al método `AdaptyUI.getFlowView()` o crea el `AdaptyFlowView` directamente:
+
+<Tabs groupId="current-os" queryString>
+  <TabItem value="kotlin" label="Kotlin (opción 1)" default>
+```kotlin showLineNumbers
+   val flowView = AdaptyUI.getFlowView(
+       activity,
+       flowConfiguration,
+       products,
+       eventListener,
+       insets,
+       customAssets,
+       tagResolver,
+       timerResolver,
+       observerModeHandler, 
+   )
+```
+
+</TabItem>
+<TabItem value="kotlin2" label="Kotlin (option 2)" default>
+```kotlin showLineNumbers
+   val flowView =
+        AdaptyFlowView(activity) // or retrieve it from xml
+   ...
+   with(flowView) {
+       showFlow(
+           flowConfiguration,
+           products,
+					 eventListener,
+           insets,
+           customAssets,
+           tagResolver,
+           timerResolver,
+					 observerModeHandler,
+       )
+   }
+```
+
+</TabItem>
+<TabItem value="java" label="Java (option 1)" default>
+```java showLineNumbers
+AdaptyFlowView flowView = AdaptyUI.getFlowView(
+        activity,
+        flowConfiguration,
+        products,
+        eventListener,
+        insets,
+        customAssets,
+        tagResolver,
+        timerResolver,
+        observerModeHandler
+);
+```
+
+</TabItem>
+<TabItem value="java2" label="Java (option 2)" default>
+```java showLineNumbers
+AdaptyFlowView flowView =
+  new AdaptyFlowView(activity); //add to the view hierarchy if needed, or you receive it from xml
+...
+flowView.showFlow(flowConfiguration, products, eventListener, insets, customAssets, tagResolver, timerResolver, observerModeHandler);
+```
+
+</TabItem>
+<TabItem value="XML" label="XML" default>
+
+```xml showLineNumbers
+<com.adapty.ui.AdaptyFlowView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />
+```
+
+</TabItem>
+</Tabs>
+Después de que la vista se haya creado correctamente, puedes añadirla a la jerarquía de vistas y mostrarla.
+
+</TabItem>
+<TabItem value="compose" label="Jetpack Compose" default>
+
+Para hacerlo, usa esta función composable:
+
+```kotlin showLineNumbers
+AdaptyFlowScreen(
+    flowConfiguration,
+    products,
+    eventListener,
+    insets,
+    customAssets,
+    tagResolver,
+    timerResolver,
+    observerModeHandler,
+)
+```
+
+</TabItem>
+</Tabs>
+
+   Parámetros de la solicitud:
+| Parámetro | Presencia | Descripción |
+|---------|--------|-----------|
+| **flowConfiguration** | requerido | Proporciona un objeto `AdaptyUI.FlowConfiguration` que contiene los detalles visuales del flow. Usa el método `AdaptyUI.getFlowConfiguration(flow)` para cargarlo. Consulta el tema [Fetch the view configuration](android-get-pb-paywalls#fetch-the-view-configuration) para más detalles. |
+| **products** | opcional | Proporciona un array de `AdaptyPaywallProduct` para optimizar el tiempo de visualización de los productos en pantalla. Si se pasa `null`, AdaptyUI obtendrá automáticamente los productos necesarios. |
+| **eventListener** | opcional | Proporciona un `AdaptyFlowEventListener` para observar los eventos del flow. Se recomienda extender `AdaptyFlowDefaultEventListener` para facilitar su uso. Consulta el tema [Handle flow & paywall events](android-handling-events) para más detalles. |
+| **insets** | opcional | Los insets son los espacios alrededor del flow que evitan que los elementos interactivos queden ocultos detrás de las barras del sistema. Por defecto: `Unspecified`, lo que permite que Adapty ajuste los insets automáticamente. Ver [Change flow insets](android-present-paywalls#change-flow-insets). |
+| **customAssets** | opcional | Pasa un objeto `AdaptyCustomAssets` para reemplazar imágenes y vídeos en tu flow o paywall en tiempo de ejecución. Consulta [Customize assets](android-get-pb-paywalls#customize-assets) para más detalles. |
+| **tagResolver** | opcional | Usa `AdaptyUiTagResolver` para resolver etiquetas personalizadas dentro del texto del flow. Este resolver toma un parámetro de etiqueta y lo convierte en la cadena de texto correspondiente. Consulta el tema Custom tags in Paywall Builder para más detalles. |
+| **observerModeHandler** | requerido para el modo Observer | El `AdaptyUiObserverModeHandler` que implementaste en el paso anterior. |
+:::warning
+No olvides [asociar los paywalls a las transacciones de compra](report-transactions-observer-mode-android). De lo contrario, Adapty no podrá determinar el flow de origen de la compra.
+:::
+
+</SDKv4>
+
+<SDKv3>
+
+<Tabs groupId="current-os" queryString> 
+<TabItem value="SDK3" label="New Paywall Builder (SDK 3.0+)" default> 
+<details>
+   <summary>Antes de empezar a mostrar paywalls (haz clic para ampliar)</summary>
 1. Configura la integración inicial de Adapty [con Google Play](initial-android) y [con App Store](initial_ios).
    2. Instala y configura el SDK de Adapty. Asegúrate de establecer el parámetro `observerMode` en `true`. Consulta nuestras instrucciones específicas por framework [para Android](sdk-installation-android).
    3. [Crea productos](create-product) en el Adapty Dashboard.
@@ -73,13 +314,12 @@ El evento `onPurchaseInitiated` te informará de que el usuario ha iniciado una 
    ```
 </TabItem>
 </Tabs>
-Para manejar las restauraciones en el modo Observer, sobreescribe `getRestoreHandler()`. Por defecto devuelve `null`, lo que utiliza el flujo integrado de `Adapty.restorePurchases()` de Adapty. Para proporcionar tu propia implementación de restauración:
-
+Para gestionar restauraciones en el modo Observador, sobreescribe `getRestoreHandler()`. Por defecto devuelve `null`, lo que usa el flow integrado `Adapty.restorePurchases()` de Adapty. Para proporcionar tu propia implementación de restauración:
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val observerModeHandler = object : AdaptyUiObserverModeHandler {
-       // Implementación de onPurchaseInitiated (ver más arriba)
+       // onPurchaseInitiated implementation (see above)
 
        override fun getRestoreHandler() =
            AdaptyUiObserverModeHandler.RestoreHandler { onStartRestore, onFinishRestore ->
@@ -101,7 +341,7 @@ Para manejar las restauraciones en el modo Observer, sobreescribe `getRestoreHan
 <TabItem value="java" label="Java" default>
    ```java showLineNumbers
    AdaptyUiObserverModeHandler observerModeHandler = new AdaptyUiObserverModeHandler() {
-       // Implementación de onPurchaseInitiated (ver más arriba)
+       // onPurchaseInitiated implementation (see above)
 
        @Override
        public RestoreHandler getRestoreHandler() {
@@ -172,7 +412,7 @@ Para ello, llama al método `AdaptyUI.getPaywallView()` o crea el `AdaptyPaywall
 ```
 
 </TabItem>
-<TabItem value="java" label="Java (opción 1)" default>
+<TabItem value="java" label="Java (option 1)" default>
 ```java showLineNumbers
 AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
         activity,
@@ -190,7 +430,7 @@ AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
 <TabItem value="java2" label="Java (opción 2)" default>
 ```java showLineNumbers
 AdaptyPaywallView paywallView =
-  new AdaptyPaywallView(activity); //añadir a la jerarquía de vistas si es necesario, o recibirlo desde xml
+  new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
 ...
 paywallView.showPaywall(viewConfiguration, products, eventListener, personalizedOfferResolver, tagResolver, timerResolver, observerModeHandler);
 ```
@@ -206,12 +446,12 @@ paywallView.showPaywall(viewConfiguration, products, eventListener, personalized
 
 </TabItem>
 </Tabs>
-Después de crear la vista correctamente, puedes añadirla a la jerarquía de vistas y mostrarla.
+Una vez creada la vista correctamente, puedes añadirla a la jerarquía de vistas y mostrarla.
 
 </TabItem>
 <TabItem value="compose" label="Jetpack Compose" default>
 
-Para hacerlo, utiliza esta función composable:
+Para hacerlo, usa esta función composable:
 
 ```kotlin showLineNumbers
 AdaptyPaywallScreen(
@@ -303,7 +543,6 @@ También recuerda invocar estos callbacks en AdaptyUI. Esto es necesario para el
    | onStartPurchase()  | onStartPurchase.invoke()  | Este callback debe invocarse para notificar a AdaptyUI que la compra ha comenzado.                                                               |
    | onFinishPurchase() | onFinishPurchase.invoke() | Este callback debe invocarse para notificar a AdaptyUI que la compra ha finalizado correctamente, que ha fallado, o que ha sido cancelada. |
 2. Para mostrar el paywall visual, primero debes inicializarlo. Para ello, llama al método `AdaptyUI.getPaywallView()` o crea el `AdaptyPaywallView` directamente:
-
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
@@ -319,7 +558,8 @@ También recuerda invocar estos callbacks en AdaptyUI. Esto es necesario para el
    )
 
    //======= OR =======
-val paywallView =
+
+   val paywallView =
         AdaptyPaywallView(activity) // or retrieve it from xml
    ...
    with(paywallView) {
@@ -347,8 +587,10 @@ val paywallView =
            tagResolver,
            observerModeHandler
    );
-//======= OR =======
-AdaptyPaywallView paywallView =
+
+   //======= OR =======
+
+   AdaptyPaywallView paywallView =
      new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
    ...
    paywallView.setEventListener(eventListener);
@@ -378,8 +620,7 @@ Parámetros de la solicitud:
 | **ObserverModeHandler** | obligatorio para el modo Observer | El `AdaptyUiObserverModeHandler` que implementaste en el paso anterior.                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | **variationId** | obligatorio | El identificador de cadena de la variante. Puedes obtenerlo usando la propiedad `variationId` del objeto [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/).                                                                                                                                                                                                                                                                                                          |
 | **transaction** | obligatorio | <p>Para iOS, StoreKit 1: un objeto [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction).</p><p>Para iOS, StoreKit 2: objeto [Transaction](https://developer.apple.com/documentation/storekit/transaction).</p><p>Para Android: identificador de cadena (`purchase.getOrderId()`) de la compra, donde la compra es una instancia de la clase [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) de la biblioteca de facturación.</p> |
-Para el modo de pantalla completa, donde las barras del sistema se superponen a parte de tu UI, obtén los insets de la siguiente manera:
-
+Para el modo de pantalla completa, donde las barras del sistema se superponen a parte de tu interfaz, obtén los insets de la siguiente manera:
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
@@ -387,7 +628,7 @@ Para el modo de pantalla completa, donde las barras del sistema se superponen a 
    import androidx.core.view.ViewCompat
    import androidx.core.view.WindowInsetsCompat
 
-   //crea una función de extensión
+   //create extension function
    fun View.onReceiveSystemBarsInsets(action: (insets: Insets) -> Unit) {
        ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
            val systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -396,7 +637,7 @@ Para el modo de pantalla completa, donde las barras del sistema se superponen a 
            insets
        }
    }
-   //y luego úsala con la vista
+   //and then use it with the view
    paywallView.onReceiveSystemBarsInsets { insets ->
        val paywallInsets = AdaptyPaywallInsets.of(insets.top, insets.bottom)
        paywallView.setEventListener(eventListener)
@@ -411,12 +652,12 @@ Para el modo de pantalla completa, donde las barras del sistema se superponen a 
    import androidx.core.view.ViewCompat;
    import androidx.core.view.WindowInsetsCompat;
 
-...
+   ...
 
    ViewCompat.setOnApplyWindowInsetsListener(paywallView, (view, insets) -> {
        Insets systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
        ViewCompat.setOnApplyWindowInsetsListener(paywallView, null);
-
+     
        AdaptyPaywallInsets paywallInsets =
                     AdaptyPaywallInsets.of(systemBarInsets.top, systemBarInsets.bottom);
        paywallView.setEventListener(eventListener);
@@ -428,15 +669,17 @@ Para el modo de pantalla completa, donde las barras del sistema se superponen a 
    ```
 </TabItem>
 </Tabs>
+Devuelve:
 
-   Devuelve:
-| Objeto              | Descripción                                        |
+   | Objeto              | Descripción                                        |
    | :------------------ | :------------------------------------------------- |
    | `AdaptyPaywallView` | objeto que representa la pantalla del paywall solicitado. |
 
 :::warning
-No olvides [Asociar paywalls a transacciones de compra](report-transactions-observer-mode-android). De lo contrario, Adapty no podrá determinar el paywall de origen de la compra.
+No olvides [asociar paywalls a las transacciones de compra](report-transactions-observer-mode-android). De lo contrario, Adapty no podrá determinar el paywall de origen de la compra.
 :::
 
 </TabItem> 
 </Tabs>
+
+</SDKv3>
