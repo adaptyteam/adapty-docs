@@ -30,8 +30,7 @@ For React component, you handle events through individual event handler props in
 
 ```typescript showLineNumbers title="React Native (TSX)"
 import React, { useCallback } from 'react';
-import { Linking } from 'react-native';
-import { AdaptyFlowView } from 'react-native-adapty';
+import { AdaptyFlowView, adapty } from 'react-native-adapty';
 import type { FlowEventHandlers } from 'react-native-adapty';
 
 function MyFlow({ flow }) {
@@ -46,8 +45,9 @@ function MyFlow({ flow }) {
   const onAppeared = useCallback<FlowEventHandlers['onAppeared']>(() => {}, []);
   const onError = useCallback<FlowEventHandlers['onError']>((error) => {}, []);
   const onLoadingProductsFailed = useCallback<FlowEventHandlers['onLoadingProductsFailed']>((error) => {}, []);
-  const onUrlPress = useCallback<FlowEventHandlers['onUrlPress']>((url) => {
-    Linking.openURL(url);
+  const onUrlPress = useCallback<FlowEventHandlers['onUrlPress']>((url, openIn) => {
+    adapty.openWebUrl(url, openIn);
+    return false;
   }, []);
   const onCustomAction = useCallback<FlowEventHandlers['onCustomAction']>((actionId) => {}, []);
   const onWebPaymentNavigationFinished = useCallback<FlowEventHandlers['onWebPaymentNavigationFinished']>(() => {}, []);
@@ -85,8 +85,7 @@ Calling `setEventHandlers` multiple times will override the handlers you provide
 :::
 
 ```javascript showLineNumbers title="React Native (TSX)"
-import { Linking } from 'react-native';
-import {createFlowView} from 'react-native-adapty';
+import {createFlowView, adapty} from 'react-native-adapty';
 
 const view = await createFlowView(flow);
 
@@ -101,14 +100,14 @@ const unsubscribe = view.setEventHandlers({
     return purchaseResult.type !== 'user_cancelled';
   },
   onPurchaseStarted(product) { /***/},
-  onPurchaseFailed(error) { /***/ },
+  onPurchaseFailed(error, product) { /***/ },
   onRestoreCompleted(profile) { /***/ },
   onRestoreFailed(error) { /***/ },
   onProductSelected(productId) { /***/},
   onError(error) { /***/ },
   onLoadingProductsFailed(error) { /***/ },
-  onUrlPress(url) {
-      Linking.openURL(url);
+  onUrlPress(url, openIn) {
+      adapty.openWebUrl(url, openIn);
       return false; // Keep flow open
   },
   onAppeared() { /***/ },
@@ -126,48 +125,46 @@ const unsubscribe = view.setEventHandlers({
 ```javascript
 // onCloseButtonPress
 {
-  "event": "close_button_press"
+  //Record the event
 }
 
 // onAndroidSystemBack
 {
-  "event": "android_system_back"
+  //Record the event
 }
 
 // onUrlPress
 {
-  "event": "url_press",
   "url": "https://example.com/terms"
 }
 
 // onCustomAction
 {
-  "event": "custom_action",
   "actionId": "login"
 }
 
 // onProductSelected
 {
-  "event": "product_selected",
   "productId": "premium_monthly"
 }
 
 // onPurchaseStarted
 {
-  "event": "purchase_started",
   "product": {
     "vendorProductId": "premium_monthly",
     "localizedTitle": "Premium Monthly",
     "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
+    }
   }
 }
 
 // onPurchaseCompleted - Success
 {
-  "event": "purchase_completed",
   "purchaseResult": {
     "type": "success",
     "profile": {
@@ -184,15 +181,17 @@ const unsubscribe = view.setEventHandlers({
     "vendorProductId": "premium_monthly",
     "localizedTitle": "Premium Monthly",
     "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
+    }
   }
 }
 
 // onPurchaseCompleted - Cancelled
 {
-  "event": "purchase_completed",
   "purchaseResult": {
     "type": "user_cancelled"
   },
@@ -200,35 +199,39 @@ const unsubscribe = view.setEventHandlers({
     "vendorProductId": "premium_monthly",
     "localizedTitle": "Premium Monthly",
     "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
+    }
   }
 }
 
 // onPurchaseFailed
 {
-  "event": "purchase_failed",
   "error": {
     "code": "purchase_failed",
     "message": "Purchase failed due to insufficient funds",
     "details": {
       "underlyingError": "Insufficient funds in account"
-    },
-    "product": {
-        "vendorProductId": "premium_monthly",
-            "localizedTitle": "Premium Monthly",
-            "localizedDescription": "Premium subscription for 1 month",
-            "localizedPrice": "$9.99",
-            "price": 9.99,
-            "currencyCode": "USD"
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
     }
   }
 }
 
 // onRestoreCompleted
 {
-  "event": "restore_completed",
   "profile": {
     "accessLevels": {
       "premium": {
@@ -249,7 +252,6 @@ const unsubscribe = view.setEventHandlers({
 
 // onRestoreFailed
 {
-  "event": "restore_failed",
   "error": {
     "code": "restore_failed",
     "message": "Purchase restoration failed",
@@ -261,7 +263,6 @@ const unsubscribe = view.setEventHandlers({
 
 // onError
 {
-  "event": "rendering_failed",
   "error": {
     "code": "rendering_failed",
     "message": "Failed to render flow interface",
@@ -273,7 +274,6 @@ const unsubscribe = view.setEventHandlers({
 
 // onLoadingProductsFailed
 {
-  "event": "loading_products_failed",
   "error": {
     "code": "products_loading_failed",
     "message": "Failed to load products from the server",
@@ -285,17 +285,17 @@ const unsubscribe = view.setEventHandlers({
 
 // onAppeared
 {
-  "event": "paywall_shown"
+  //Record the event
 }
 
 // onDisappeared
 {
-  "event": "paywall_closed"
+  //Record the event
 }
 
 // onWebPaymentNavigationFinished
 {
-  "event": "web_payment_navigation_finished"
+  //Record the event
 }
 ```
 </Details>
@@ -307,9 +307,9 @@ Event handlers return a boolean. If `true` is returned, the displaying process i
 Some event handlers have a default behavior that you can override if needed:
 - `onCloseButtonPress`: closes the flow when close button pressed.
 - `onUrlPress`: opens the tapped URL and keeps the flow open.
-- `onAndroidSystemBack` (only for modal presentation): closes the flow when the **Back** button pressed.
-- `onRestoreCompleted`: closes the flow after successful restore.
-- `onPurchaseCompleted`: closes the flow unless user cancelled.
+- `onAndroidSystemBack` (only for modal presentation): keeps the flow open when the **Back** button is pressed. Return `true` to close it.
+- `onRestoreCompleted`: keeps the flow open after a successful restore. Return `true` to close it.
+- `onPurchaseCompleted`: keeps the flow open after a purchase completes. Return `true` to close it.
 - `onError`: closes the flow if its rendering fails.
 
 ### Event handlers
@@ -335,6 +335,30 @@ Some event handlers have a default behavior that you can override if needed:
 | **onAnalytics** | Reserved for custom analytic events from a flow. Flows don't emit these to your code yet, so you don't need to implement it. |
 | **onRequestAppReview** | Reserved for app-review requests from a flow. Flows don't trigger app-review requests yet, so you don't need to implement it. |
 | **onRequestPermission** | Reserved for system-permission requests (such as push notifications or camera access) from a flow. Flows don't trigger permission requests yet, so you don't need to implement it. |
+| **onObserverPurchaseInitiated** | Observer mode only: Invoked when a user taps the purchase button in a flow. Adapty does not make the purchase — perform it with your own purchase code, then report the transaction to Adapty. See [Handle purchases in observer mode](#handle-purchases-in-observer-mode) below. |
+| **onObserverRestoreInitiated** | Observer mode only: Invoked when a user taps the restore button in a flow. Adapty does not restore — perform it yourself, then report any restored transactions. See [Handle purchases in observer mode](#handle-purchases-in-observer-mode) below. |
+
+### Handle purchases in observer mode
+
+If you activated the SDK in [Observer mode](implement-observer-mode-react-native) (`observerMode: true`) and present an Adapty-rendered flow, the SDK does not make purchases for you. When a user taps the purchase or restore button, the SDK invokes `onObserverPurchaseInitiated` or `onObserverRestoreInitiated` instead. Perform the purchase or restore with your own code, drive the flow's loading indicator with the provided callbacks, and [report the transaction](report-transactions-observer-mode-react-native) to Adapty afterwards.
+
+```typescript showLineNumbers
+const unsubscribe = view.setEventHandlers({
+  onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
+    onStartPurchase(); // show the flow's loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) => adapty.reportTransaction(transactionId))
+      .finally(() => onFinishPurchase()); // hide the loading indicator
+    return false; // keep the flow open; dismiss it yourself after success
+  },
+  onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
+    onStartRestore();
+    myRestoreApi()
+      .finally(() => onFinishRestore());
+    return false;
+  },
+});
+```
 
 </SDKv4>
 
@@ -455,48 +479,46 @@ const unsubscribe = view.setEventHandlers({
 ```javascript
 // onCloseButtonPress
 {
-  "event": "close_button_press"
+  //Record the event
 }
 
 // onAndroidSystemBack
 {
-  "event": "android_system_back"
+  //Record the event
 }
 
 // onUrlPress
 {
-  "event": "url_press",
   "url": "https://example.com/terms"
 }
 
 // onCustomAction
 {
-  "event": "custom_action",
   "actionId": "login"
 }
 
 // onProductSelected
 {
-  "event": "product_selected",
   "productId": "premium_monthly"
 }
 
 // onPurchaseStarted
 {
-  "event": "purchase_started",
   "product": {
     "vendorProductId": "premium_monthly",
     "localizedTitle": "Premium Monthly",
     "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
+    }
   }
 }
 
 // onPurchaseCompleted - Success
 {
-  "event": "purchase_completed",
   "purchaseResult": {
     "type": "success",
     "profile": {
@@ -513,15 +535,17 @@ const unsubscribe = view.setEventHandlers({
     "vendorProductId": "premium_monthly",
     "localizedTitle": "Premium Monthly",
     "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
+    }
   }
 }
 
 // onPurchaseCompleted - Cancelled
 {
-  "event": "purchase_completed",
   "purchaseResult": {
     "type": "user_cancelled"
   },
@@ -529,35 +553,39 @@ const unsubscribe = view.setEventHandlers({
     "vendorProductId": "premium_monthly",
     "localizedTitle": "Premium Monthly",
     "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
+    }
   }
 }
 
 // onPurchaseFailed
 {
-  "event": "purchase_failed",
   "error": {
     "code": "purchase_failed",
     "message": "Purchase failed due to insufficient funds",
     "details": {
       "underlyingError": "Insufficient funds in account"
-    },
-    "product": {
-        "vendorProductId": "premium_monthly",
-            "localizedTitle": "Premium Monthly",
-            "localizedDescription": "Premium subscription for 1 month",
-            "localizedPrice": "$9.99",
-            "price": 9.99,
-            "currencyCode": "USD"
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
     }
   }
 }
 
 // onRestoreCompleted
 {
-  "event": "restore_completed",
   "profile": {
     "accessLevels": {
       "premium": {
@@ -578,7 +606,6 @@ const unsubscribe = view.setEventHandlers({
 
 // onRestoreFailed
 {
-  "event": "restore_failed",
   "error": {
     "code": "restore_failed",
     "message": "Purchase restoration failed",
@@ -590,7 +617,6 @@ const unsubscribe = view.setEventHandlers({
 
 // onRenderingFailed
 {
-  "event": "rendering_failed",
   "error": {
     "code": "rendering_failed",
     "message": "Failed to render paywall interface",
@@ -602,7 +628,6 @@ const unsubscribe = view.setEventHandlers({
 
 // onLoadingProductsFailed
 {
-  "event": "loading_products_failed",
   "error": {
     "code": "products_loading_failed",
     "message": "Failed to load products from the server",
@@ -614,17 +639,17 @@ const unsubscribe = view.setEventHandlers({
 
 // onPaywallShown
 {
-  "event": "paywall_shown"
+  //Record the event
 }
 
 // onPaywallClosed
 {
-  "event": "paywall_closed"
+  //Record the event
 }
 
 // onWebPaymentNavigationFinished
 {
-  "event": "web_payment_navigation_finished"
+  //Record the event
 }
 ```
 </Details>
