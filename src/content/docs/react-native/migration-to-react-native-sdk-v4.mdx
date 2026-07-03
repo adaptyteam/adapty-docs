@@ -1,0 +1,281 @@
+---
+title: "Migrate Adapty React Native SDK to v. 4.0"
+description: "Migrate to Adapty React Native SDK v4.0 (beta) by replacing paywall APIs with flow APIs, compatible with both Flow Builder and Paywall Builder."
+metadataTitle: "Migrating to Adapty React Native SDK v4.0 (beta) | Adapty Docs"
+---
+
+Adapty React Native SDK 4.0 (beta) introduces flows and renames the paywall APIs accordingly. The new APIs work with both the new Flow Builder and the existing Paywall Builder — no setup changes are required on the Adapty Dashboard side.
+
+## Quick reference
+
+| v3 | v4 |
+|---|---|
+| `adapty.getPaywall(placementId, locale?, params?)` | `adapty.getFlow(placementId, params?)` |
+| `adapty.getPaywallForDefaultAudience(placementId, locale?, params?)` | `adapty.getFlowForDefaultAudience(placementId, params?)` |
+| `adapty.getPaywallProducts(paywall)` | `adapty.getPaywallProducts(flow)` |
+| `adapty.logShowPaywall(paywall)` | `adapty.logShowFlow(flow)` |
+| `AdaptyPaywall` (type) | `AdaptyFlow` |
+| `createPaywallView(paywall)` | `createFlowView(flow)` |
+| `AdaptyPaywallView` (component) | `AdaptyFlowView` |
+| `EventHandlers` (type) | `FlowEventHandlers` |
+| `onPaywallShown` | `onAppeared` |
+| `onPaywallClosed` | `onDisappeared` |
+| `onRenderingFailed` | `onError` |
+
+`AdaptyPaywallProduct` keeps its name — products still belong to a flow, and `getPaywallProducts` now takes an `AdaptyFlow`. The `getFlow` and `getFlowForDefaultAudience` methods no longer take a `locale` parameter. The view methods `present`, `dismiss`, `setEventHandlers`, and `showDialog`, and the event handlers `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished`, and `onAndroidSystemBack` keep the same names as in v3. Some default behaviors changed — see [Default behavior changes](#default-behavior-changes).
+
+## Minimum iOS version
+
+Adapty React Native SDK 4.0 raises the minimum iOS deployment target from iOS 13.0 to **iOS 15.0**. Set your iOS deployment target to 15.0 or later before upgrading.
+
+## Installation
+
+### Update the package
+
+v4.0 is a pre-release, so pin the exact version — npm does not select pre-release versions through caret/tilde ranges:
+
+```bash showLineNumbers
+npm install react-native-adapty@4.0.0-beta.1
+# or
+yarn add react-native-adapty@4.0.0-beta.1
+```
+
+### iOS: native SDKs now come through Swift Package Manager
+
+[CocoaPods' spec repo goes read-only in December 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), so starting with v4 the native `Adapty`, `AdaptyUI`, and `AdaptyPlugin` SDKs are **no longer pulled as CocoaPods sub-dependencies** — the podspec pulls them through **Swift Package Manager** (via the `spm_dependency` helper). Two things this requires:
+
+- **React Native 0.75 or later** — needed for the `spm_dependency` podspec helper. On an older version, `pod install` fails with an explicit error; upgrade React Native first, or stay on `react-native-adapty` 3.x.
+- **Dynamic frameworks** — SPM dependencies require dynamic linkage. The way you enable this differs for Expo and bare React Native.
+
+#### Expo
+
+Add the [`expo-build-properties`](https://docs.expo.dev/versions/latest/sdk/build-properties/) config plugin and set the iOS frameworks to dynamic in `app.json` (or `app.config.js`):
+
+```json showLineNumbers title="app.json"
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "dynamic"
+          }
+        }
+      ]
+    ]
+  }
+}
+```
+
+Then install the plugin and regenerate the native project:
+
+```bash showLineNumbers
+npx expo install expo-build-properties
+npx expo prebuild --clean
+```
+
+#### Bare React Native
+
+Add dynamic frameworks to your iOS target, then reinstall pods:
+
+```ruby showLineNumbers title="ios/Podfile"
+use_frameworks! :linkage => :dynamic
+```
+
+```bash showLineNumbers
+cd ios && pod install --repo-update
+```
+
+If you previously pulled `Adapty`, `AdaptyUI`, or `AdaptyPlugin` as CocoaPods sub-dependencies, remove any explicit `pod 'Adapty'`, `pod 'AdaptyUI'`, or `pod 'AdaptyPlugin'` lines from your `Podfile` first.
+
+:::warning
+Switching from the default static linkage to dynamic frameworks can conflict with libraries that don't yet support modular headers, and is incompatible with Flipper. If you hit build issues, see this [write-up on integrating Swift Package Manager with React Native libraries](https://www.callstack.com/blog/integrating-swift-package-manager-with-react-native-libraries).
+:::
+
+See [Install Adapty SDK](sdk-installation-reactnative) for the full setup.
+
+## Fetching flows
+
+### getPaywall → getFlow
+
+The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale` parameter is removed — when you render a flow, the locale is resolved automatically; for custom paywalls, all locales are returned in `flow.remoteConfigs`:
+
+```diff showLineNumbers
+- const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID', 'en');
++ const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
+```
+
+`getPaywallForDefaultAudience` is renamed the same way:
+
+```diff showLineNumbers
+- const paywall = await adapty.getPaywallForDefaultAudience('YOUR_PLACEMENT_ID', 'en');
++ const flow = await adapty.getFlowForDefaultAudience('YOUR_PLACEMENT_ID');
+```
+
+### getPaywallProducts(paywall) → getPaywallProducts(flow)
+
+`getPaywallProducts` keeps its name but now takes an `AdaptyFlow`:
+
+```diff showLineNumbers
+- const products = await adapty.getPaywallProducts(paywall);
++ const products = await adapty.getPaywallProducts(flow);
+```
+
+## Data model
+
+`getFlow` returns an `AdaptyFlow` instead of an `AdaptyPaywall`, and the object shape changed:
+
+| v3 `AdaptyPaywall` field | v4 `AdaptyFlow` field | Action |
+|---|---|---|
+| `remoteConfig?` (single) | `remoteConfigs?: AdaptyRemoteConfig[]` (array) | A flow carries one remote config per configured language. Read the one that matches the user: `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
+| `products` | `flow.paywalls[i].productIdentifiers` | Product identifiers now live on each flow variation, not on the flow. |
+| `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | Moved from the flow to each paywall variation. |
+| `version?: number` | `flowVersionId?: string` | Renamed, and the type changed from `number` to `string`. |
+| `hasViewConfiguration` | removed | Remove any `hasViewConfiguration` check from your code. |
+| `requestLocale` | removed | The locale is no longer part of the model. |
+| _(new)_ | `paywalls: AdaptyFlowPaywall[]` | Each entry is one paywall variation in the flow. |
+| _(new)_ | `responseCreatedAt: number` | Server response timestamp, in milliseconds. |
+
+Product identifiers moved from the flow to each variation:
+
+```diff showLineNumbers
+- const ids = paywall.products;
++ const ids = flow.paywalls[0].productIdentifiers;
+```
+
+## Web paywall methods
+
+`openWebPaywall` and `createWebPaywallUrl` keep their names, but the first argument is now an `AdaptyFlowPaywall` (a flow variation) instead of an `AdaptyPaywall`. You can still pass an `AdaptyPaywallProduct`.
+
+```diff showLineNumbers
+  const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
+- await adapty.openWebPaywall(paywall);
++ await adapty.openWebPaywall(flow.paywalls[0]);
+```
+
+## Tracking flow views
+
+### logShowPaywall → logShowFlow
+
+`logShowPaywall` is renamed to `logShowFlow` and now takes an `AdaptyFlow`. The event is still logged against the same variation, so existing funnel and A/B test metrics continue to work without dashboard changes.
+
+```diff showLineNumbers
+- await adapty.logShowPaywall(paywall);
++ await adapty.logShowFlow(flow);
+```
+
+As in v3, you do not need to call this method when displaying flows or paywalls rendered by the [Flow Builder](adapty-flow-builder) or the [Paywall Builder](adapty-paywall-builder) — Adapty tracks those views automatically.
+
+## Displaying flows
+
+### createPaywallView → createFlowView
+
+Rename the factory function and pass the `AdaptyFlow`. The returned controller's methods (`present`, `dismiss`, `setEventHandlers`, `showDialog`) are unchanged:
+
+```diff showLineNumbers
+- import { createPaywallView } from 'react-native-adapty';
++ import { createFlowView } from 'react-native-adapty';
+
+- const view = await createPaywallView(paywall);
++ const view = await createFlowView(flow);
+  await view.present();
+```
+
+### AdaptyPaywallView → AdaptyFlowView
+
+If you render with the React component, rename it and pass the `flow` prop:
+
+```diff showLineNumbers
+- import { AdaptyPaywallView } from 'react-native-adapty';
++ import { AdaptyFlowView } from 'react-native-adapty';
+
+- <AdaptyPaywallView paywall={paywall} /* … */ />
++ <AdaptyFlowView flow={flow} /* … */ />
+```
+
+:::note
+A flow view created with `createFlowView` is single-use: after you call `dismiss()`, the view is destroyed, so call `createFlowView` again to present the flow once more. An embedded `AdaptyFlowView` is dismissed by unmounting it — returning `true` from a handler does not close an embedded view, so change your own state instead, for example in `onCloseButtonPress`.
+:::
+
+## Handling events
+
+The event-handler interface is renamed from `EventHandlers` to `FlowEventHandlers`, and three callbacks are renamed. Existing handler bodies don't need code changes — just rename:
+
+```diff showLineNumbers
+- onPaywallShown: () => { /* … */ },
++ onAppeared: () => { /* … */ },
+
+- onPaywallClosed: () => { /* … */ },
++ onDisappeared: () => { /* … */ },
+
+- onRenderingFailed: (error) => { /* … */ },
++ onError: (error) => { /* … */ },
+```
+
+All other event handlers keep their names. Two also gain a second argument: `onPurchaseCompleted` is now `(purchaseResult, product)` and `onPurchaseFailed` is now `(error, product)`, where `product` is the `AdaptyPaywallProduct` involved. See [Handle flow & paywall events](react-native-handling-events-1) for the full list.
+
+:::note
+`onDisappeared` fires only for a flow presented modally with `createFlowView().present()`. The `AdaptyFlowView` component does not expose it as a prop — dismiss an embedded view by unmounting it.
+:::
+
+v4 also adds a few capabilities you can opt into:
+
+- `adapty.openWebUrl(url, openIn?)` and `adapty.requestAppReview()` methods — these back the default `onUrlPress` and `onRequestAppReview` handlers, so URLs and app-review prompts are handled natively out of the box. Call them directly only if you override those handlers.
+- Observer-mode purchase handling inside flows via the new `onObserverPurchaseInitiated` / `onObserverRestoreInitiated` handlers. See [Handle purchases in observer mode](react-native-handling-events-1#handle-purchases-in-observer-mode).
+
+## Removed and deprecated APIs
+
+### setFallbackPaywalls → setFallback
+
+`setFallbackPaywalls` is removed. Use `setFallback`, which takes the same argument:
+
+```diff showLineNumbers
+- await adapty.setFallbackPaywalls(fileLocation);
++ await adapty.setFallback(fileLocation);
+```
+
+### Removed exports
+
+These symbols are no longer exported from `react-native-adapty`. Remove their imports:
+
+- **`AdaptyPaywall`**: Use `AdaptyFlow` instead.
+- **`ProductReference`**: Use `AdaptyProductIdentifier`, read from `flow.paywalls[i].productIdentifiers`.
+- **`AdaptyPaywallBuilder`**: Removed. Flows and paywalls render natively.
+- **`AdaptyAndroidSubscriptionUpdateParameters`**: Use the nested `subscriptionUpdateParams` shape (see below).
+
+### activate: lockMethodsUntilReady
+
+`lockMethodsUntilReady` is removed and this behavior is now always on. Remove it from your `activate` call — keeping it no longer compiles:
+
+```diff showLineNumbers
+- await adapty.activate('PUBLIC_SDK_KEY', { lockMethodsUntilReady: true });
++ await adapty.activate('PUBLIC_SDK_KEY');
+```
+
+### makePurchase: Android subscription update
+
+The flat Android subscription-update shape is removed. Move `oldSubVendorProductId` and `prorationMode` into a nested `subscriptionUpdateParams` object, and keep `isOfferPersonalized` at the top level. See [Make purchases](react-native-making-purchases) for the full example.
+
+### Android: safe-area paddings
+
+The Android boolean resource `<bool name="adapty_paywall_enable_safe_area_paddings">…</bool>` is removed. Delete it from `res/values/bools.xml` and control safe-area paddings at runtime with the `enableSafeArea` parameter when you create the flow view. It defaults to `true` for modal presentation and `false` for the embedded component.
+
+### Mock mode
+
+If you run the SDK in mock mode (Expo Go or web preview), rename the mock config key `paywalls` to `flows`.
+
+## Default behavior changes
+
+These changes do not cause compile errors, so test them at runtime:
+
+- **`onAndroidSystemBack`**: The default changed from closing the view to keeping it open. To restore the previous behavior, return `true` from the handler.
+- **`onPurchaseCompleted`**: The default changed from closing the view (unless the user canceled the purchase) to always keeping it open. To restore the previous behavior, return `purchaseResult.type !== 'user_cancelled'` from the handler.
+- **`onRestoreCompleted`**: The default changed from closing the view after a successful restore to keeping it open. To restore the previous behavior, return `true` from the handler.
+- **`onUrlPress`**: The default now opens the URL through the native layer, honoring the in-app or external browser setting from the dashboard. Override the handler to open URLs yourself.
+
+## Onboarding API deprecation
+
+The legacy onboarding API is deprecated in v4.0 in favor of the [Flow Builder](adapty-flow-builder). It still works, and your IDE flags the deprecated symbols through their `@deprecated` annotations — there are no runtime warnings. These symbols will be removed in a future release, so plan migration of your onboardings to the Flow Builder.
+
+Deprecated symbols: `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView`, and `AdaptyOnboardingView`.

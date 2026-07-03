@@ -6,6 +6,10 @@ metadataTitle: "Kids Mode in React Native SDK | Adapty Docs"
 
 If your React Native application is intended for kids, you must follow the policies of [Apple](https://developer.apple.com/kids/) and [Google](https://support.google.com/googleplay/android-developer/answer/9893335). If you're using the Adapty SDK, a few simple steps will help you configure it to meet these policies and pass app store reviews.
 
+:::important
+On iOS, Kids Mode is enabled through the `KidsMode` Swift package trait, which compiles out all IDFA, AdSupport, and AppTrackingTransparency code. It requires the v4 SDK (which installs the native iOS SDK through Swift Package Manager) and **Xcode 26** or later. See [Updates in your iOS Podfile](#updates-in-your-ios-podfile) below.
+:::
+
 ## What's required?
 
 You need to configure the Adapty SDK to disable the collection of:
@@ -44,6 +48,40 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
   },
 });
 ```
+
+### Updates in your iOS Podfile
+
+For the App Store Kids Category (or COPPA compliance), the native iOS SDK must be built with the `KidsMode` Swift package trait, which compiles out all IDFA, AdSupport, and AppTrackingTransparency code. React Native installs the native SDK through Swift Package Manager, which can't forward package traits, so the SDK provides a Podfile helper that applies the trait for you. This step requires **Xcode 26** or later.
+
+In `ios/Podfile`, require the helper and call it **after** `react_native_post_install`:
+
+```ruby showLineNumbers title="ios/Podfile"
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native-adapty/ios/adapty_kids_mode.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+# ...
+
+post_install do |installer|
+  react_native_post_install(
+    installer,
+    config[:reactNativePath],
+    :mac_catalyst_enabled => false
+  )
+
+  adapty_enable_kids_mode(installer)
+end
+```
+
+Then run `pod install`:
+
+```sh showLineNumbers title="Shell"
+cd ios && pod install
+```
+
+To confirm Kids Mode is active, check that the `adapty.activate(...)` log line reports `kids_mode_enabled: true`. Keep the helper call in `post_install` permanently — React Native recreates the Swift package references on every `pod install`, and the helper re-applies the trait each time.
 
 ### Updates in your Android manifest
 
