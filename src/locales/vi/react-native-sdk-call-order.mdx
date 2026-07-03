@@ -1,0 +1,43 @@
+---
+title: "Thứ tự gọi trong React Native SDK"
+description: "Tránh mất quyền truy cập premium, thiếu attribution, và lỗi #2002 không ổn định bằng cách gọi các phương thức Adapty SDK theo đúng thứ tự."
+metadataTitle: "Thứ tự gọi React Native SDK | Tài liệu Adapty"
+---
+
+`adapty.activate()` phải hoàn thành trước khi bạn gọi bất kỳ phương thức nào khác của Adapty SDK. Cho đến khi nó resolve, SDK chưa có trạng thái. Bất kỳ lệnh gọi nào được thực hiện trước hoặc song song với `activate()` đều thất bại với lỗi [`#2002 notActivated`](react-native-handle-errors#custom-network-codes).
+
+Nếu ứng dụng của bạn xác thực người dùng và bạn thu thập customer user ID sau khi khởi chạy, hãy gọi `adapty.identify()` tại thời điểm đó. Đừng gọi các phương thức liên quan đến hành động của người dùng cho đến khi `identify` resolve. Các lệnh gọi chạy đua với nó hoặc thất bại với lỗi [`#3006 profileWasChanged`](react-native-handle-errors#custom-network-codes), hoặc tác động lên hồ sơ người dùng ẩn danh được tạo lúc kích hoạt. Khi điều này xảy ra, attribution, MMP ID như `appsflyer_id`, và quyền sở hữu cài đặt không phải lúc nào cũng được chuyển sang hồ sơ người dùng đã xác định. Nếu ứng dụng của bạn không xác thực người dùng, hãy bỏ qua `identify` và tiếp tục làm việc với hồ sơ người dùng ẩn danh.
+
+Các SDK MMP và analytics (AppsFlyer, Adjust, Branch, PostHog) tuân theo quy tắc tương tự. Hãy khởi tạo chúng trước và chờ callback UID của chúng trước khi gọi `adapty.activate`. Nếu không, MMP ID sẽ được gán vào hồ sơ người dùng ẩn danh tạm thời và không phải lúc nào cũng được chuyển sang hồ sơ người dùng đã xác định. Để biết thêm chi tiết về AppsFlyer, xem [AppsFlyer](appsflyer).
+
+## Thứ tự đúng \{#the-correct-order\}
+
+Quy trình của bạn phụ thuộc vào hai yếu tố: thời điểm bạn biết customer user ID, và liệu bạn có dùng MMP hoặc analytics SDK hay không.
+
+- **Bước 2 và 5**: Bắt buộc cho mọi ứng dụng. Kích hoạt SDK, sau đó gọi các phương thức SDK.
+- **Bước 1 và 3**: Chỉ bắt buộc nếu bạn tích hợp MMP hoặc analytics SDK (AppsFlyer, Adjust, Branch, PostHog).
+- **Bước 4**: Chỉ bắt buộc nếu ứng dụng của bạn xác thực người dùng và thu thập customer user ID sau khi khởi chạy.
+
+Nếu bạn có customer user ID ngay lúc khởi chạy ứng dụng, hãy truyền trực tiếp vào `activate()` (bước 2a). Cách này không bao giờ tạo hồ sơ người dùng ẩn danh, nên bước 4 là không cần thiết.
+
+| Bước | Lệnh gọi                                                                                                      | Thời điểm                                                                              | Ghi chú                                                                                        |
+|------|---------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| 1    | Khởi tạo MMP hoặc analytics SDK của bạn (AppsFlyer, Adjust, PostHog, Branch)                                  | Khởi chạy ứng dụng, đầu tiên                                                           | Chờ callback UID của MMP, ví dụ `getAppsFlyerUID`.                                             |
+| 2a   | `adapty.activate('YOUR_PUBLIC_SDK_KEY', { customerUserId: 'YOUR_USER_ID' })`                                  | Khởi chạy ứng dụng, sau bước 1, nếu bạn có customer user ID                           | Khuyến nghị. Không bao giờ tạo hồ sơ người dùng ẩn danh.                                      |
+| 2b   | `adapty.activate('YOUR_PUBLIC_SDK_KEY')` không có `customerUserId`                                            | Khởi chạy ứng dụng, sau bước 1, nếu bạn chưa có customer user ID (hoặc không bao giờ thu thập) | Adapty tạo hồ sơ người dùng ẩn danh.                                                  |
+| 3    | `adapty.updateAttribution(data, source, networkUserId)` cho từng MMP                                          | Sau bước 2, trước bất kỳ lệnh gọi hành động người dùng nào                             | Bắt buộc để MMP ID được gán vào đúng hồ sơ người dùng.                                        |
+| 4    | `await adapty.identify('YOUR_USER_ID')`                                                                       | Sau bước 3 (hoặc bước 2 nếu không có MMP), trước bước 5 — chỉ trên đường dẫn 2b với xác thực | Luôn dùng `await`. Các lệnh gọi đồng thời trong `identify` sẽ gây ra `#3006 profileWasChanged`. |
+| 5    | `getPaywall`, `getPaywallProducts`, `restorePurchases`, `makePurchase`, `updateAttribution`, `updateProfile`  | Sau bước 4 nếu bạn gọi `identify`; ngược lại sau bước 3 (hoặc bước 2 nếu không có MMP) | Các lệnh gọi này cần một hồ sơ người dùng ổn định.                                            |
+
+:::important
+Bỏ qua các bước này gây ra mất quyền truy cập premium cho người dùng quay lại, thiếu `appsflyer_id` trên hồ sơ người dùng, và paywall được trả về sai đối tượng.
+:::
+
+## Cài đặt web2app và web-funnel \{#web2app-and-web-funnel-installs\}
+
+Nếu người dùng mua hàng qua web checkout (Stripe, Paddle) và sau đó cài đặt ứng dụng native, lần `activate()` đầu tiên trên thiết bị sẽ tạo một hồ sơ người dùng ẩn danh mới. Hồ sơ người dùng này không được liên kết với hồ sơ người dùng web. Nếu bạn có thể xác định customer user ID trước khi khởi chạy ứng dụng (từ luồng xác thực hoặc install referrer), hãy truyền trực tiếp vào `activate()`. Nếu không, giao dịch mua trên web sẽ không hiển thị trên thiết bị cho đến khi bạn gọi `identify('YOUR_USER_ID')` và sau đó là `restorePurchases`.
+
+Để biết metadata cần gửi kèm theo từng web checkout, xem:
+
+- [Stripe](stripe)
+- [Paddle](paddle)

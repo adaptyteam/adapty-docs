@@ -1,0 +1,184 @@
+---
+title: "Lấy paywalls Paywall Builder và cấu hình của chúng trong React Native SDK"
+description: "Tìm hiểu cách truy xuất PB paywalls trong Adapty để kiểm soát gói đăng ký tốt hơn trong ứng dụng React Native của bạn."
+metadataTitle: "Truy xuất PB Paywalls trong Adapty | Tài liệu Adapty"
+displayed_sidebar: sdkreactnative
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+rank: 90
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+
+Sau khi [bạn đã thiết kế phần giao diện cho paywall của mình](adapty-paywall-builder) bằng Paywall Builder mới trong Adapty Dashboard, bạn có thể hiển thị nó trong ứng dụng di động của mình. Bước đầu tiên trong quá trình này là lấy paywall liên kết với placement và cấu hình view của nó như mô tả bên dưới.
+
+:::warning
+Paywall Builder mới hoạt động với React Native SDK phiên bản 3.0 trở lên.
+:::
+
+Lưu ý rằng chủ đề này đề cập đến các paywall được tùy chỉnh bằng Paywall Builder. Nếu bạn đang triển khai paywall thủ công, hãy tham khảo chủ đề [Lấy paywalls và sản phẩm cho remote config paywalls trong ứng dụng di động của bạn](fetch-paywalls-and-products-react-native).
+
+<SampleApp />
+
+<details>
+   <summary>Trước khi bắt đầu hiển thị paywalls trong ứng dụng di động của bạn (nhấp để mở rộng)</summary>
+
+1. [Tạo sản phẩm của bạn](create-product) trong Adapty Dashboard.
+2. [Tạo paywall và tích hợp các sản phẩm vào đó](create-paywall) trong Adapty Dashboard.
+3. [Tạo placements và tích hợp paywall của bạn vào đó](create-placement) trong Adapty Dashboard.
+4. Cài đặt [Adapty SDK](sdk-installation-reactnative) trong ứng dụng di động của bạn.
+</details>
+
+## Lấy paywall được thiết kế bằng Paywall Builder \{#fetch-paywall-designed-with-paywall-builder\}
+
+Nếu bạn đã [thiết kế paywall bằng Paywall Builder](adapty-paywall-builder), bạn không cần phải lo lắng về việc render nó trong code ứng dụng di động để hiển thị cho người dùng. Paywall như vậy chứa cả nội dung cần hiển thị và cách thức hiển thị. Tuy nhiên, bạn cần lấy ID của nó qua placement, cấu hình view, rồi hiển thị nó trong ứng dụng di động của mình.
+
+Để đảm bảo hiệu suất tối ưu, điều quan trọng là phải truy xuất paywall và [cấu hình view](react-native-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) càng sớm càng tốt, để có đủ thời gian tải ảnh trước khi hiển thị cho người dùng.
+
+Để lấy paywall, sử dụng phương thức `getPaywall`:
+
+```typescript showLineNumbers
+try {
+    const placementId = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
+
+    const paywall = await adapty.getPaywall(placementId, locale);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
+```
+Tham số:
+
+| Tham số           | Bắt buộc | Mô tả |
+|-------------------|--------|-----------|
+| **placementId**   | bắt buộc | Định danh của [Placement](placements) mong muốn. Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **locale**        | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Định danh của [bản địa hóa paywall](add-paywall-locale-in-adapty-paywall-builder). Tham số này được kỳ vọng là mã ngôn ngữ gồm một hoặc hai thẻ phụ được phân tách bằng dấu trừ (**-**). Thẻ phụ đầu tiên là ngôn ngữ, thẻ phụ thứ hai là khu vực.</p><p></p><p>Ví dụ: `en` là tiếng Anh, `pt-br` là tiếng Bồ Đào Nha Brazil.</p><p>Xem [Bản địa hóa và mã locale](localizations-and-locale-codes) để biết thêm thông tin về mã locale và cách chúng tôi khuyến nghị sử dụng chúng.</p> |
+| **fetchPolicy**   | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ server và trả về dữ liệu đã cache trong trường hợp thất bại. Chúng tôi khuyến nghị cách này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường xuyên gặp kết nối internet không ổn định, hãy cân nhắc sử dụng `.returnCacheDataElseLoad` để trả về dữ liệu đã cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất hoàn toàn, nhưng họ sẽ trải nghiệm thời gian tải nhanh hơn, bất kể kết nối internet của họ như thế nào. Cache được cập nhật thường xuyên nên an toàn để sử dụng trong phiên nhằm tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng cache vẫn còn nguyên sau khi khởi động lại ứng dụng và chỉ bị xóa khi ứng dụng được cài đặt lại hoặc thông qua dọn dẹp thủ công.</p><p></p><p>Adapty SDK lưu trữ paywalls cục bộ theo hai lớp: cache được cập nhật thường xuyên như mô tả ở trên và [paywall dự phòng](fallback-paywalls). Chúng tôi cũng sử dụng CDN để lấy paywalls nhanh hơn và một server dự phòng độc lập trong trường hợp CDN không thể truy cập được. Hệ thống này được thiết kế để đảm bảo bạn luôn nhận được phiên bản mới nhất của paywalls trong khi vẫn đảm bảo độ tin cậy ngay cả khi kết nối internet kém.</p> |
+| **loadTimeoutMs** | mặc định: 5 giây | <p>Giá trị này giới hạn timeout cho phương thức này. Nếu timeout được đạt đến, dữ liệu đã cache hoặc fallback cục bộ sẽ được trả về.</p><p>Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể timeout muộn hơn một chút so với giá trị được chỉ định trong `loadTimeout`, vì thao tác có thể bao gồm các yêu cầu khác nhau bên dưới.</p><p>Với Android: Bạn có thể tạo `TimeInterval` với các extension function (như `5.seconds`, trong đó `.seconds` là từ `import com.adapty.utils.seconds`), hoặc `TimeInterval.seconds(5)`. Để không giới hạn, sử dụng `TimeInterval.INFINITE`.</p> |
+
+Tham số phản hồi:
+
+| Tham số | Mô tả                                                                                                                                                                                  |
+| :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | Một đối tượng [`AdaptyPaywall`](https://react-native.adapty.io/interfaces/adaptypaywall) với danh sách ID sản phẩm, định danh paywall, remote config và một số thuộc tính khác. |
+
+## Lấy cấu hình view của paywall được thiết kế bằng Paywall Builder \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+Đảm bảo bật toggle **Show on device** trong paywall builder. Nếu tùy chọn này không được bật, cấu hình view sẽ không có sẵn để truy xuất.
+:::
+
+Sau khi lấy paywall, hãy kiểm tra xem nó có bao gồm `ViewConfiguration` hay không, điều này cho biết nó được tạo bằng Paywall Builder. Điều này sẽ hướng dẫn bạn cách hiển thị paywall. Nếu `ViewConfiguration` có mặt, hãy xử lý nó như một Paywall Builder paywall; nếu không, [xử lý nó như một remote config paywall](present-remote-config-paywalls-react-native).
+
+Trong React Native SDK, hãy gọi trực tiếp phương thức `createPaywallView` mà không cần lấy cấu hình view theo cách thủ công trước.
+
+:::warning
+Kết quả của phương thức `createPaywallView` chỉ có thể được sử dụng một lần. Nếu bạn cần sử dụng lại, hãy gọi phương thức `createPaywallView` lần nữa. Gọi hai lần mà không tạo lại có thể dẫn đến lỗi `AdaptyUIError.viewAlreadyPresented`.
+:::
+
+```typescript showLineNumbers
+// for the Adapty SDK < 3.14 – import {createPaywallView} from 'react-native-adapty/dist/ui';
+
+if (paywall.hasViewConfiguration) {
+  try {
+    const view = await createPaywallView(paywall);
+  } catch (error) {
+    // handle the error
+  }
+} else {
+    //use your custom logic
+}
+```
+
+Tham số:
+
+| Tham số              | Bắt buộc | Mô tả                                                        |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **paywall**          | bắt buộc | Một đối tượng `AdaptyPaywall` để lấy controller cho paywall mong muốn. |
+| **customTags**       | tùy chọn | Định nghĩa một dictionary các custom tag và giá trị đã được xử lý của chúng. Custom tag đóng vai trò là placeholder trong nội dung paywall, được thay thế động bằng các chuỗi cụ thể để cá nhân hóa nội dung trong paywall. Tham khảo chủ đề Custom tags in paywall builder để biết thêm chi tiết. |
+| **prefetchProducts** | tùy chọn | Bật để tối ưu hóa thời gian hiển thị sản phẩm trên màn hình. Khi `true`, AdaptyUI sẽ tự động lấy các sản phẩm cần thiết. Mặc định: `false`. |
+
+:::note
+Nếu bạn đang sử dụng nhiều ngôn ngữ, hãy tìm hiểu cách thêm [bản địa hóa Paywall Builder](add-paywall-locale-in-adapty-paywall-builder) và cách sử dụng mã locale đúng cách [tại đây](react-native-localizations-and-locale-codes).
+:::
+
+Sau khi có view, hãy [hiển thị paywall](react-native-present-paywalls).
+
+## Lấy paywall cho đối tượng mặc định để tải nhanh hơn \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Thông thường, paywalls được tải gần như ngay lập tức, vì vậy bạn không cần lo lắng về việc tăng tốc quá trình này. Tuy nhiên, trong những trường hợp bạn có nhiều đối tượng và paywalls, và người dùng của bạn có kết nối internet yếu, việc tải paywall có thể mất nhiều thời gian hơn mong muốn. Trong những tình huống như vậy, bạn có thể muốn hiển thị paywall mặc định để đảm bảo trải nghiệm người dùng mượt mà thay vì không hiển thị paywall nào.
+
+Để giải quyết vấn đề này, bạn có thể sử dụng phương thức `getPaywallForDefaultAudience`, phương thức này lấy paywall của placement được chỉ định cho đối tượng **All Users**. Tuy nhiên, điều quan trọng cần hiểu là cách tiếp cận được khuyến nghị là lấy paywall bằng phương thức `getPaywall`, như được mô tả chi tiết trong phần [Lấy thông tin Paywall](#fetch-paywall-designed-with-paywall-builder) ở trên.
+
+:::warning
+Lý do chúng tôi khuyến nghị sử dụng `getPaywall`
+
+Phương thức `getPaywallForDefaultAudience` có một số nhược điểm đáng kể:
+
+- **Vấn đề khả năng tương thích ngược tiềm ẩn**: Nếu bạn cần hiển thị các paywalls khác nhau cho các phiên bản ứng dụng khác nhau (hiện tại và tương lai), bạn có thể gặp khó khăn. Bạn sẽ phải thiết kế paywalls hỗ trợ phiên bản hiện tại (cũ) hoặc chấp nhận rằng người dùng có phiên bản hiện tại (cũ) có thể gặp sự cố với paywalls không được render.
+- **Mất khả năng nhắm mục tiêu**: Tất cả người dùng sẽ thấy cùng một paywall được thiết kế cho đối tượng **All Users**, nghĩa là bạn mất khả năng nhắm mục tiêu cá nhân hóa (bao gồm theo quốc gia, marketing attribution hoặc các thuộc tính tùy chỉnh của riêng bạn).
+
+Nếu bạn sẵn sàng chấp nhận những nhược điểm này để hưởng lợi từ việc tải paywall nhanh hơn, hãy sử dụng phương thức `getPaywallForDefaultAudience` như sau. Nếu không, hãy sử dụng `getPaywall` được mô tả [ở trên](#fetch-paywall-designed-with-paywall-builder).
+:::
+
+```typescript showLineNumbers
+try {
+    const id = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
+
+    const paywall = await adapty.getPaywallForDefaultAudience(id, locale);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
+```
+
+:::note
+Phương thức `getPaywallForDefaultAudience` có sẵn từ React Native SDK phiên bản 2.11.2 trở lên.
+:::
+
+| Tham số | Bắt buộc | Mô tả                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements). Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard của bạn.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| **locale** | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Định danh của [bản địa hóa paywall](add-remote-config-locale). Tham số này được kỳ vọng là mã ngôn ngữ gồm một hoặc nhiều thẻ phụ được phân tách bằng dấu trừ (**-**). Thẻ phụ đầu tiên là ngôn ngữ, thẻ phụ thứ hai là khu vực.</p><p></p><p>Ví dụ: `en` là tiếng Anh, `pt-br` là tiếng Bồ Đào Nha Brazil.</p><p></p><p>Xem [Bản địa hóa và mã locale](react-native-localizations-and-locale-codes) để biết thêm thông tin về mã locale và cách chúng tôi khuyến nghị sử dụng chúng.</p>                                                                                                                                                                                                                                                                                          |
+| **fetchPolicy** | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ server và trả về dữ liệu đã cache trong trường hợp thất bại. Chúng tôi khuyến nghị cách này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường xuyên gặp kết nối internet không ổn định, hãy cân nhắc sử dụng `.returnCacheDataElseLoad` để trả về dữ liệu đã cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất hoàn toàn, nhưng họ sẽ trải nghiệm thời gian tải nhanh hơn, bất kể kết nối internet của họ như thế nào. Cache được cập nhật thường xuyên nên an toàn để sử dụng trong phiên nhằm tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng cache vẫn còn nguyên sau khi khởi động lại ứng dụng và chỉ bị xóa khi ứng dụng được cài đặt lại hoặc thông qua dọn dẹp thủ công.</p> |
+
+## Tùy chỉnh assets \{#customize-assets\}
+
+Để tùy chỉnh hình ảnh và video trong paywall của bạn, hãy triển khai custom assets.
+
+Hình ảnh hero và video có ID được xác định trước: `hero_image` và `hero_video`. Trong một custom asset bundle, bạn nhắm mục tiêu các phần tử này bằng ID của chúng và tùy chỉnh hành vi của chúng.
+
+Đối với các hình ảnh và video khác, bạn cần [đặt custom ID](custom-media) trong Adapty dashboard.
+
+Ví dụ, bạn có thể:
+
+- Hiển thị hình ảnh hoặc video khác cho một số người dùng.
+- Hiển thị hình ảnh preview cục bộ trong khi hình ảnh chính từ xa đang tải.
+- Hiển thị hình ảnh preview trước khi chạy video.
+
+:::important
+Để sử dụng tính năng này, hãy cập nhật Adapty React Native SDK lên phiên bản 3.8.0 trở lên.
+:::
+
+Đây là ví dụ về cách bạn có thể cung cấp custom assets thông qua một dictionary đơn giản:
+
+```javascript
+const customAssets: Record<string, AdaptyCustomAsset> = {
+  'custom_image': { type: 'image', relativeAssetPath: 'custom_image.png' },
+  'hero_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'custom_video.mp4' },
+      android: { relativeAssetPath: 'videos/custom_video.mp4' }
+    }
+  }
+};
+
+view = await createPaywallView(paywall, { customAssets })
+
+```
+
+:::note
+Nếu không tìm thấy asset, paywall sẽ quay lại giao diện mặc định của nó.
+:::

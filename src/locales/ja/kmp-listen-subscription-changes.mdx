@@ -1,0 +1,75 @@
+---
+title: "Kotlin Multiplatform SDKでサブスクリプションのステータスを確認する"
+description: "Kotlin MultiplatorformアプリでAdaptyを使用してユーザーのサブスクリプションステータスを追跡・管理し、顧客維持率を向上させましょう。"
+metadataTitle: "サブスクリプションステータスの理解 | Adapty ドキュメント"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+
+Adaptyを使えば、サブスクリプションのステータス管理が簡単になります。プロダクトIDをコードに手動で埋め込む必要はありません。代わりに、[アクセスレベル](access-level)がアクティブかどうかを確認するだけで、ユーザーのサブスクリプションステータスをすぐに把握できます。
+
+サブスクリプションステータスの確認を始める前に、[リアルタイム デベロッパー通知 (RTDN)](enable-real-time-developer-notifications-rtdn) を設定してください。
+
+## アクセスレベルとAdaptyProfileオブジェクト \{#access-level-and-the-adaptyprofile-object\}
+
+アクセスレベルは [AdaptyProfile](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-profile/) オブジェクトのプロパティです。アプリ起動時（例：[ユーザーを識別する](android-identifying-users#setting-customer-user-id-on-configuration)タイミングなど）にプロファイルを取得し、変更があれば随時更新することを推奨します。こうすることで、都度リクエストを送らずにプロファイルオブジェクトを活用できます。
+
+プロファイルの更新通知を受け取るには、以下の[サブスクリプションステータスを含むプロファイル更新の監視](android-listen-subscription-changes)セクションで説明しているプロファイル変更のリスナーを設定してください。
+
+<SampleApp />
+
+## サーバーからアクセスレベルを取得する \{#retrieving-the-access-level-from-the-server\}
+
+サーバーからアクセスレベルを取得するには、`.getProfile()` メソッドを使用してください：
+
+```kotlin showLineNumbers
+
+Adapty.getProfile().onSuccess { profile ->
+    // check the access
+}.onError { error ->
+    // handle the error
+}
+```
+
+レスポンスパラメーター：
+
+| パラメーター | 説明                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --------- |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Profile   | <p>[AdaptyProfile](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-profile/) オブジェクトです。通常、ユーザーがアプリのプレミアム機能にアクセスできるかどうかを判断するには、プロファイルのアクセスレベルのステータスを確認するだけで十分です。</p><p></p><p>`.getProfile` メソッドは常にAPIへのクエリを試みるため、最新の結果を返します。ネットワーク接続がないなどの理由でAdapty SDKがサーバーから情報を取得できない場合は、キャッシュのデータが返されます。また、Adapty SDKは `AdaptyProfile` のキャッシュを定期的に更新し、情報をできるだけ最新の状態に保ちます。</p> |
+
+`.getProfile()` メソッドはユーザープロファイルを返し、そこからアクセスレベルのステータスを取得できます。アプリには複数のアクセスレベルを設定することも可能です。たとえばニュースアプリでトピックごとにサブスクリプションを販売する場合、「sports」や「science」といったアクセスレベルを作成できます。ただし、ほとんどのケースでは1つのアクセスレベルで十分です。その場合はデフォルトの「premium」アクセスレベルをそのままご利用ください。
+
+デフォルトの「premium」アクセスレベルを確認する例：
+
+```kotlin showLineNumbers
+
+Adapty.getProfile().onSuccess { profile ->
+    if (profile.accessLevels["premium"]?.isActive == true) {
+        // grant access to premium features
+    }
+}.onError { error ->
+    // handle the error
+}
+```
+
+### サブスクリプションステータスの更新を監視する \{#listening-for-subscription-status-updates\}
+
+ユーザーのサブスクリプションが変更されるたびに、Adaptyはイベントを発火します。
+
+Adaptyからのメッセージを受け取るには、追加の設定が必要です：
+
+```kotlin showLineNumbers
+
+Adapty.setOnProfileUpdatedListener { profile ->
+    // handle any changes to subscription state
+}
+```
+
+Adaptyはアプリ起動時にもイベントを発火します。この場合、キャッシュされたサブスクリプションステータスが渡されます。
+
+### サブスクリプションステータスのキャッシュ \{#subscription-status-cache\}
+
+Adapty SDKに実装されたキャッシュには、プロファイルのサブスクリプションステータスが保存されます。つまり、サーバーが利用できない場合でも、キャッシュされたデータからプロファイルのサブスクリプション情報を取得できます。
+
+ただし、キャッシュから直接データをリクエストすることはできません。SDKは1分ごとにサーバーへ定期的なクエリを行い、プロファイルに関する更新や変更を確認します。新しいトランザクションやその他の更新など、変更が検出された場合は、サーバーとの同期を保つためにキャッシュデータへ反映されます。

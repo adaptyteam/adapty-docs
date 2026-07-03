@@ -1,0 +1,96 @@
+---
+title: "Kiểm tra trạng thái gói đăng ký trong Capacitor SDK"
+description: "Tìm hiểu cách kiểm tra trạng thái gói đăng ký trong ứng dụng Capacitor với Adapty."
+metadataTitle: "Kiểm Tra Trạng Thái Gói Đăng Ký | Tài liệu Adapty"
+displayed_sidebar: sdkcapacitor
+---
+
+Để quyết định xem người dùng có thể truy cập nội dung trả phí hay cần xem paywall, bạn cần kiểm tra [mức độ truy cập](access-level) trong hồ sơ người dùng của họ.
+
+Bài viết này hướng dẫn cách truy cập trạng thái hồ sơ người dùng để quyết định nên hiển thị gì cho họ — cho họ xem paywall hay cho phép họ truy cập các tính năng trả phí.
+
+## Lấy trạng thái gói đăng ký \{#get-subscription-status\}
+
+Khi quyết định có nên hiển thị paywall hay nội dung trả phí cho người dùng, bạn kiểm tra [mức độ truy cập](access-level) trong hồ sơ của họ. Bạn có hai lựa chọn:
+
+- Gọi `getProfile` nếu bạn cần dữ liệu hồ sơ mới nhất ngay lập tức (ví dụ: khi khởi động ứng dụng) hoặc muốn buộc cập nhật.
+- Thiết lập **cập nhật hồ sơ tự động** để giữ một bản sao cục bộ được làm mới tự động mỗi khi trạng thái gói đăng ký thay đổi.
+
+### Lấy hồ sơ người dùng \{#get-profile\}
+
+Cách đơn giản nhất để lấy trạng thái gói đăng ký là dùng phương thức `getProfile` để truy cập hồ sơ:
+
+```typescript showLineNumbers
+try {
+  const profile = await adapty.getProfile();
+} catch (error) {
+  // handle the error
+}
+```
+
+### Lắng nghe cập nhật gói đăng ký \{#listen-to-subscription-updates\}
+
+Để tự động nhận cập nhật hồ sơ trong ứng dụng của bạn:
+
+1. Dùng `adapty.addListener('onLatestProfileLoad')` để lắng nghe các thay đổi của hồ sơ — Adapty sẽ tự động gọi phương thức này mỗi khi trạng thái gói đăng ký của người dùng thay đổi.
+2. Lưu dữ liệu hồ sơ được cập nhật khi phương thức này được gọi, để bạn có thể sử dụng nó trong toàn bộ ứng dụng mà không cần thực hiện thêm các yêu cầu mạng.
+
+```typescript showLineNumbers
+class SubscriptionManager {
+  private currentProfile: any = null;
+  
+  constructor() {
+    // Listen for profile updates
+    adapty.addListener('onLatestProfileLoad', (data) => {
+      this.currentProfile = data.profile;
+      // Update UI, unlock content, etc.
+    });
+  }
+  
+  // Use stored profile instead of calling getProfile()
+  hasAccess(): boolean {
+    return this.currentProfile?.accessLevels?.['YOUR_ACCESS_LEVEL']?.isActive ?? false;
+  }
+}
+```
+
+:::note
+Adapty tự động gọi event listener `onLatestProfileLoad` khi ứng dụng của bạn khởi động, cung cấp dữ liệu gói đăng ký đã được lưu cache ngay cả khi thiết bị đang ngoại tuyến.
+:::
+
+## Kết nối hồ sơ với logic paywall \{#connect-profile-with-paywall-logic\}
+
+Khi bạn cần đưa ra quyết định ngay lập tức về việc hiển thị paywall hay cấp quyền truy cập vào các tính năng trả phí, bạn có thể kiểm tra trực tiếp hồ sơ người dùng. Cách tiếp cận này hữu ích cho các tình huống như khi khởi động ứng dụng, khi vào các phần premium, hoặc trước khi hiển thị nội dung cụ thể.
+
+```typescript showLineNumbers
+const checkAccessLevel = async () => {
+  try {
+    const profile = await adapty.getProfile();
+    return profile?.accessLevels?.['YOUR_ACCESS_LEVEL']?.isActive === true;
+  } catch (error) {
+    console.warn('Error checking access level:', error);
+    return false; // Show paywall if access check fails
+  }
+};
+
+const getAccessLevel = () => {
+  return profile?.accessLevels?.['YOUR_ACCESS_LEVEL'];
+};
+
+const initializePaywall = async () => {
+  try {
+    await loadPaywall();
+    
+    const hasAccess = await checkAccessLevel();
+    if (!hasAccess) {
+      // Show paywall if no access
+    }
+  } catch (error) {
+    console.warn('Error initializing paywall:', error);
+  }
+};
+```
+
+## Các bước tiếp theo \{#next-steps\}
+
+Giờ bạn đã biết cách theo dõi trạng thái gói đăng ký, hãy tìm hiểu cách [làm việc với hồ sơ người dùng](capacitor-quickstart-identify) để đảm bảo họ có thể truy cập những gì họ đã thanh toán.

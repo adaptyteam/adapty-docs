@@ -1,0 +1,72 @@
+---
+title: "Hủy đăng ký và danh sách chặn trong Adapty Mail"
+description: "Cách Adapty Mail ngừng gửi email đến người dùng — thông qua hủy đăng ký, bounce từ SES, khiếu nại, và cơ chế điều kiện dừng."
+metadataTitle: "Hủy đăng ký và Danh sách chặn | Adapty Mail | Tài liệu Adapty"
+keywords: ['adapty mail', 'suppression', 'bounce', 'complaint', 'stop condition']
+---
+
+Adapty Mail ngừng gửi email đến người dùng trong hai trường hợp khác nhau:
+
+- **Danh sách chặn (Suppression)**: Người dùng bị loại khỏi tất cả các lần gửi trong tương lai của dự án này (đã hủy đăng ký, bị bounce, khiếu nại, bị từ chối, hoặc bị giới hạn tốc độ).
+- **Điều kiện dừng (Stop condition)**: Chuỗi email hiện tại của người dùng bị hủy vì họ đã chuyển đổi. Họ không bị đưa vào danh sách chặn và vẫn đủ điều kiện nhận các chiến dịch khác.
+
+Cả hai cơ chế đều hoạt động theo từng dự án. Danh sách chặn trong một dự án Adapty không ảnh hưởng đến dự án khác.
+
+## Hủy đăng ký \{#unsubscribe\}
+
+Mỗi email do Adapty Mail gửi đều có link hủy đăng ký ở chân trang.
+
+1. Người dùng nhấp vào link. Adapty Mail mở trang xác nhận.
+2. Người dùng xác nhận. Backend đánh dấu hồ sơ người dùng với `suppression_reason = 'unsubscribe'`, hủy chuỗi email còn lại, và loại hồ sơ đó khỏi các lần gửi trong tương lai của dự án.
+
+Token trong URL hủy đăng ký mã hóa `profile_id` và `scheduled_email_id`, nên không cần đăng nhập.
+
+:::note
+Adapty Mail cũng gửi header `List-Unsubscribe: <URL>, <mailto:>` kèm theo `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. Gmail và Yahoo yêu cầu điều này với những người gửi số lượng lớn (RFC 8058). Các email client hỗ trợ header này cung cấp nút hủy đăng ký một chạm ngay trong hộp thư — không cần trang xác nhận.
+:::
+
+## Tự động đưa vào danh sách chặn \{#automatic-suppression\}
+
+Adapty Mail lắng nghe các sự kiện giao nhận từ AWS SES qua SNS và đưa người dùng vào danh sách chặn ngay lập tức khi xảy ra bất kỳ trường hợp nào sau đây:
+
+| Sự kiện   | Mã lý do    | Ý nghĩa                                                                                  |
+| --------- | ----------- | ---------------------------------------------------------------------------------------- |
+| Bounce    | `bounce`    | Địa chỉ email không hợp lệ, hộp thư đầy, hoặc tên miền không tồn tại.                   |
+| Complaint | `complaint` | Người dùng đánh dấu email là spam.                                                       |
+| Reject    | `reject`    | SES từ chối tin nhắn trước khi gửi.                                                      |
+| Throttle  | `throttle`  | Tốc độ gửi vượt quá giới hạn an toàn của tên miền.                                      |
+
+Với mỗi sự kiện, kết quả đều như nhau: người dùng được thêm vào danh sách chặn, chuỗi email còn lại bị hủy, và họ bị loại khỏi các lần gửi trong tương lai của dự án.
+
+:::important
+Adapty Mail **không** phân biệt giữa hard bounce và soft bounce. Bất kỳ bounce nào — kể cả các trường hợp tạm thời như hộp thư đầy — đều đưa người dùng vào danh sách chặn ngay lập tức. Không có khoảng thời gian thử lại.
+:::
+
+## Điều kiện dừng \{#stop-condition\}
+
+Khi người dùng chuyển đổi giữa chừng trong chuỗi email, Adapty Mail hủy các email còn lại của họ với lý do `stop_condition`. Chuyển đổi có nghĩa là trạng thái gói đăng ký của họ đạt **Subscribed**, hoặc trạng thái sản phẩm mua một lần đạt **Purchased**.
+
+Điều kiện dừng khác với danh sách chặn:
+
+- **Danh sách chặn (Suppression)**: Loại người dùng khỏi tất cả các lần gửi trong tương lai của dự án.
+- **Điều kiện dừng (Stop condition)**: Chỉ hủy chuỗi email hiện tại. Người dùng vẫn đủ điều kiện nhận các chiến dịch khác — ví dụ, một flow gia hạn hoặc thu hút khách hàng cũ dành cho người đăng ký đang hoạt động.
+
+Các lần hủy do điều kiện dừng sẽ hiển thị cùng với danh sách chặn trong phân tích chiến dịch.
+
+## Quản lý danh sách chặn \{#managing-suppression\}
+
+Adapty Mail không có giao diện dashboard để xem hoặc xóa người dùng khỏi danh sách chặn. Để bỏ chặn một hồ sơ người dùng — chẳng hạn ai đó vô tình đánh dấu email thử nghiệm là spam — hãy liên hệ với bộ phận hỗ trợ của Adapty.
+
+## Những gì Adapty Mail xử lý cho việc tuân thủ \{#what-adapty-mail-handles-for-compliance\}
+
+Adapty Mail được tích hợp sẵn:
+
+- **Link hủy đăng ký**: Có trong chân trang mỗi email, được xử lý ngay khi người dùng xác nhận.
+- **Header List-Unsubscribe**: Được gửi kèm mỗi email để hủy đăng ký một chạm từ hộp thư (RFC 8058).
+- **Tự động đưa vào danh sách chặn**: Được kích hoạt khi xảy ra sự kiện bounce, complaint, reject, và throttle từ SES.
+
+Những phần bạn cần tự xử lý:
+
+- **Địa chỉ gửi thư vật lý**: CAN-SPAM yêu cầu phải có trong chân trang email. Adapty Mail không tự thêm vào — bạn cần tự thêm trong thiết kế chiến dịch của mình.
+- **Sự đồng ý opt-in rõ ràng**: Thu thập trước khi truyền email của người dùng vào Adapty. Xem [Collect user emails](mail-collect-emails).
+- **Yêu cầu xóa dữ liệu theo GDPR**: Adapty Mail không cung cấp endpoint "xóa dữ liệu của tôi". Phối hợp với bộ phận hỗ trợ Adapty nếu người dùng thực hiện quyền xóa dữ liệu của họ.

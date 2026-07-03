@@ -1,0 +1,523 @@
+---
+title: "フローとペイウォールの取得 - Android"
+description: "AdaptyからAndroidアプリでフローとペイウォールを取得します。"
+metadataTitle: "フローとペイウォールの取得 - Android | Adapty ドキュメント"
+displayed_sidebar: sdkandroid
+keywords: ['getFlow', 'getPaywall', 'getFlowConfiguration', 'getFlowForDefaultAudience']
+rank: 95
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+
+<SDKv4>
+
+<MethodPromo method="getFlow" />
+[フロー、またはペイウォールビルダーのペイウォールをデザインした](adapty-paywall-builder)後、それをモバイルアプリに表示できます。最初のステップは、プレースメントに関連付けられたフローまたはペイウォールと、そのビュー設定を以下の手順で取得することです。
+
+<SampleApp />
+
+<details>
+   <summary>モバイルアプリでフローを表示する前に（クリックして展開）</summary>
+1. Adapty ダッシュボードで[プロダクトを作成](create-product)する。
+2. Adapty ダッシュボードで[フロー/ペイウォールを作成してプロダクトを組み込む](create-paywall)。
+3. Adapty ダッシュボードで[プレースメントを作成してフロー/ペイウォールを組み込む](create-placement)。
+4. モバイルアプリに [Adapty SDK](sdk-installation-android) をインストールする。
+</details>
+## フローまたはペイウォールの取得 \{#fetch-flowpaywall\}
+
+フローまたはペイウォールをフロービルダーやペイウォールビルダーで作成した場合、モバイルアプリのコードでレンダリングしてユーザーに表示する処理を自分で実装する必要はありません。このようなフローまたはペイウォールには、表示するコンテンツと表示方法の両方が含まれています。ただし、プレースメントを通じてIDを取得し、ビュー設定を取得した上で、モバイルアプリ内で表示する必要があります。
+最適なパフォーマンスを確保するために、フローまたはペイウォールとその[ビュー設定](android-get-pb-paywalls#fetch-the-view-configuration)をできるだけ早く取得し、ユーザーに表示する前に画像のダウンロードに十分な時間を確保することが重要です。
+
+フローまたはペイウォールを取得するには、`getFlow` メソッドを使用します：
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+...
+
+Adapty.getFlow("YOUR_PLACEMENT_ID", loadTimeout = 10.seconds) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val flow = result.value
+            // the requested flow/paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+...
+
+Adapty.getFlow("YOUR_PLACEMENT_ID", TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) result).getValue();
+        // the requested flow/paywall
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+パラメーター:
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | 対象の[プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDK はサーバーからデータを読み込もうとし、失敗した場合はキャッシュされたデータを返します。この方法は常に最新のデータをユーザーに届けられるため、推奨しています。</p><p></p><p>ただし、ユーザーのインターネット接続が不安定な場合は、`.returnCacheDataElseLoad` を使用してキャッシュが存在すればそれを返すことも検討してください。この場合、最新データが届かないこともありますが、接続状況に関わらず読み込み時間が短縮されます。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを避けるために使用しても安全です。</p><p></p><p>キャッシュはアプリを再起動しても保持され、アプリの再インストールまたは手動でのクリア時のみ削除されます。</p><p></p><p>Adapty SDK はフローとペイウォールをローカルに2つの層で保存しています。1つは上述の定期更新キャッシュ、もう1つは[フォールバックペイウォール](fallback-paywalls)です。また、取得を高速化するために CDN を使用し、CDN にアクセスできない場合に備えてスタンドアロンのフォールバックサーバーも用意しています。このシステムにより、インターネット接続が不安定な状況でも、常に最新バージョンを取得しつつ高い信頼性を確保しています。</p> |
+| **loadTimeout** | デフォルト: 5秒 | <p>このメソッドのタイムアウト上限を設定します。タイムアウトに達した場合、キャッシュされたデータまたはローカルフォールバックが返されます。</p><p>なお、内部的に複数のリクエストで構成される場合があるため、`loadTimeout` で指定した時間よりわずかに遅れてタイムアウトすることがまれにあります。</p><p>Android の場合: 拡張関数（例: `5.seconds`、`.seconds` は `import com.adapty.utils.seconds` から）または `TimeInterval.seconds(5)` を使って `TimeInterval` を作成できます。制限なしにするには `TimeInterval.INFINITE` を使用してください。</p> |
+レスポンスパラメーター：
+
+| パラメーター | 説明 |
+| :-------- | :---------- |
+| Flow   | プレースメント、識別子（`id`、`variationId`）、名前、リモートコンフィグ、およびフローにビュー設定が含まれているかどうかを示す `hasViewConfiguration` フラグを含む `AdaptyFlow` オブジェクト。プリロード、カスタム UI、またはプログラムによるチェックのために実際のプロダクトを取得するには、`getPaywallProducts(flow)` を呼び出してください。 |
+## ビュー設定の取得 \{#fetch-the-view-configuration\}
+
+フローまたはペイウォールを取得したら、`flow.hasViewConfiguration` を使ってビュー設定が含まれているかどうかを確認します。このフラグは、Adapty ダッシュボードでプレースメントがどのように設計されているかを示します。
+- **`true`** — プレースメントが **Flow Builder**（フロー）または **Paywall Builder**（ペイウォール）でデザインされています。Adapty が UI をレンダリングします。以下の手順に進み、ビュー設定を取得して[フローまたはペイウォールを表示](android-present-paywalls)してください。
+- **`false`** — プレースメントはビルダー UI を持たないカスタムペイウォールです。[リモートコンフィグペイウォールとして処理してください](present-remote-config-paywalls-android)。
+
+:::important
+Flow Builder で **Show on device** トグルを必ず有効にしてください。このオプションがオンになっていない場合、ビュー設定を取得できません。
+:::
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+`getFlowConfiguration` メソッドを使用して、ビュー設定を読み込みます。
+```kotlin showLineNumbers
+if (!flow.hasViewConfiguration) {
+    // use your custom logic
+    return
+}
+
+AdaptyUI.getFlowConfiguration(flow, loadTimeout = 10.seconds) { result ->
+    when(result) {
+        is AdaptyResult.Success -> {
+            val flowConfiguration = result.value
+            // use loaded configuration
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+| パラメーター       | 必須/任意       | 説明                                                  |
+| :-------------- | :------------- | :----------------------------------------------------------- |
+| **flow**        | 必須       | `Adapty.getFlow` で取得した `AdaptyFlow` オブジェクト。 |
+| **locale**      | <p>任意</p><p>デフォルト: デバイスのロケール</p> | [ローカライゼーション](add-paywall-locale-in-adapty-paywall-builder)の識別子。`-` で区切られた1つまたは2つのサブタグを持つ言語コードとして指定します（例: `en`、`pt-br`）。[ローカライゼーションとロケールコード](android-localizations-and-locale-codes)を参照してください。 |
+| **loadTimeout** | デフォルト: 5秒 | このメソッドのタイムアウト上限を設定します。タイムアウトに達した場合、キャッシュされたデータまたはローカルフォールバックが返されます。この処理は内部的に複数のリクエストで構成される場合があるため、`loadTimeout` で指定した時間よりもわずかに遅れてタイムアウトすることがまれにあります。 |
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+`getFlowConfiguration` メソッドを使用して、ビュー設定を読み込みます。
+```java showLineNumbers
+if (!flow.hasViewConfiguration()) {
+    // use your custom logic
+    return;
+}
+
+AdaptyUI.getFlowConfiguration(flow, TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyUI.FlowConfiguration flowConfiguration =
+          ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) result).getValue();
+        // use loaded configuration
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+| パラメーター       | 必須/任意       | 説明                                                  |
+| :-------------- | :------------- | :----------------------------------------------------------- |
+| **flow**        | 必須       | `Adapty.getFlow` で取得した `AdaptyFlow` オブジェクト。 |
+| **locale**      | <p>任意</p><p>デフォルト: デバイスのロケール</p> | [ローカライゼーション](add-paywall-locale-in-adapty-paywall-builder)の識別子。`-` で区切られた1つまたは2つのサブタグを含む言語コードで指定します（例: `en`、`pt-br`）。詳細は [ローカライゼーションとロケールコード](android-localizations-and-locale-codes) を参照してください。 |
+| **loadTimeout** | デフォルト: 5秒 | このメソッドのタイムアウト上限を設定します。タイムアウトに達した場合、キャッシュされたデータまたはローカルのフォールバックが返されます。内部で複数のリクエストが発生する場合があるため、まれに `loadTimeout` で指定した時間よりわずかに遅くタイムアウトすることがあります。 |
+</TabItem>
+
+</Tabs>
+
+:::note
+複数の言語を使用している場合は、[ビルダーのローカライゼーション](add-paywall-locale-in-adapty-paywall-builder)の追加方法と、ロケールコードの正しい使用方法を[こちら](android-localizations-and-locale-codes)でご確認ください。
+:::
+
+読み込みが完了したら、[フローまたはペイウォールを表示](android-present-paywalls)します。
+## デフォルトオーディエンス向けのフローまたはペイウォールを素早く取得する \{#get-a-flow-or-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+通常、フローやペイウォールはほぼ瞬時に取得されるため、速度を意識する必要はありません。ただし、オーディエンスやプレースメントの数が多く、ユーザーのインターネット接続が不安定な場合、取得に想定以上の時間がかかることがあります。そのような状況では、何も表示しないよりも、デフォルトのフローまたはペイウォールを表示してスムーズなユーザー体験を提供したい場合があります。
+これに対応するには、`getFlowForDefaultAudience` メソッドを使用できます。このメソッドは、指定されたプレースメントの **All Users** オーディエンス向けのフローまたはペイウォールを取得します。ただし、推奨されるアプローチは上記の [フロー/ペイウォールを取得する](#fetch-flowpaywall) セクションで説明した `getFlow` メソッドでフローまたはペイウォールを取得する方法であることを理解しておくことが重要です。
+
+:::warning
+`getFlow` を推奨する理由
+
+`getFlowForDefaultAudience` メソッドにはいくつかの重大な欠点があります：
+- **後方互換性の問題**: 異なるアプリバージョン（現行バージョンと将来のバージョン）で異なるフローを表示する必要がある場合、課題が生じる可能性があります。現行（レガシー）バージョンに対応したフローを設計するか、現行（レガシー）バージョンのユーザーがフローを正しくレンダリングできない問題を受け入れるかのどちらかを選択する必要があります。
+- **ターゲティングの喪失**: すべてのユーザーが **All Users** オーディエンス向けに設計された同一のフローを見ることになるため、パーソナライズされたターゲティング（国、マーケティングアトリビューション、独自のカスタム属性に基づくものを含む）が失われます。
+対応するデメリットを許容してでもフローやペイウォールの取得を高速化したい場合は、以下のように `getFlowForDefaultAudience` メソッドを使用してください。そうでない場合は、[上記](#fetch-flowpaywall)で説明した `getFlow` を使用してください。
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val flow = result.value
+            // the requested flow
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) result).getValue();
+        // the requested flow
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+
+    }
+});
+```
+</TabItem>
+</Tabs>
+| パラメータ | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDK はサーバーからデータを読み込もうとし、失敗した場合はキャッシュされたデータを返します。ユーザーが常に最新のデータを取得できるよう、この設定を推奨します。</p><p></p><p>ただし、ユーザーのインターネット接続が不安定な場合は、`.returnCacheDataElseLoad` の使用を検討してください。キャッシュが存在する場合はキャッシュデータを返します。この場合、最新のデータが取得できないこともありますが、接続状況に関わらず読み込みが速くなります。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを減らす目的で使用しても問題ありません。</p><p></p><p>キャッシュはアプリを再起動しても保持され、アプリの再インストールまたは手動でのクリア操作によってのみ削除されます。</p> |
+## アセットのカスタマイズ \{#customize-assets\}
+
+フローやペイウォールの画像や動画をカスタマイズするには、カスタムアセットを実装します。
+
+ヒーロー画像と動画には、定義済みのID（`hero_image` と `hero_video`）があります。カスタムアセットバンドルでは、これらのIDを使って要素を指定し、その動作をカスタマイズします。
+
+その他の画像や動画については、Adapty ダッシュボードで[カスタムIDを設定する](custom-media)必要があります。
+
+例えば、次のようなことができます：
+
+- 特定のユーザーに異なる画像や動画を表示する。
+- リモートのメイン画像の読み込み中に、ローカルのプレビュー画像を表示する。
+- 動画を再生する前にプレビュー画像を表示する。
+Here's an example of how you can provide custom assets via a simple dictionary:
+```kotlin showLineNumbers
+val customAssets = AdaptyCustomAssets.of(
+    "hero_image" to
+            AdaptyCustomImageAsset.remote(
+                url = "https://example.com/image.jpg",
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromAsset("images/hero_image_preview.png"),
+                )
+            ),
+    "hero_video" to
+            AdaptyCustomVideoAsset.file(
+                FileLocation.fromResId(requireContext(), R.raw.custom_video),
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromResId(requireContext(), R.drawable.video_preview),
+                ),
+            ),
+)
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products,
+    eventListener,
+    insets,
+    customAssets,
+)
+```
+
+:::note
+アセットが見つからない場合、フローはデフォルトの外観にフォールバックします。
+:::
+
+動画の場合、オプションで `resolution` を渡すことで、動画の読み込み前にレイアウトスペースを確保し、アスペクト比（`width / height`）を設定できます：
+
+```kotlin showLineNumbers
+AdaptyCustomVideoAsset.file(
+    FileLocation.fromResId(requireContext(), R.raw.custom_video),
+    preview = AdaptyCustomImageAsset.file(
+        FileLocation.fromResId(requireContext(), R.drawable.video_preview),
+    ),
+    resolution = AdaptyCustomVideoAsset.Resolution(width = 1080, height = 1920),
+)
+```
+
+</SDKv4>
+
+<SDKv3>
+[Adapty ダッシュボード](adapty-paywall-builder)の新しいペイウォールビルダーで[ペイウォールのビジュアル部分をデザイン](adapty-paywall-builder)したら、それをモバイルアプリに表示できます。このプロセスの最初のステップは、プレースメントに紐づいたペイウォールとそのビュー設定を取得することです。詳細は以下をご覧ください。
+
+:::warning
+新しいペイウォールビルダーは Android SDK バージョン 3.0 以上で動作します。
+:::
+Paywall Builderでカスタマイズされたペイウォールについての説明です。ペイウォールを手動で実装する場合は、[リモートコンフィグペイウォール用のペイウォールとプロダクトの取得](fetch-paywalls-and-products-android)を参照してください。
+
+<SampleApp />
+
+<details>
+   <summary>モバイルアプリでペイウォールの表示を始める前に（クリックして展開）</summary>
+1. Adapty ダッシュボードで[プロダクトを作成する](create-product)。
+2. Adapty ダッシュボードで[ペイウォールを作成し、プロダクトを追加する](create-paywall)。
+3. Adapty ダッシュボードで[プレースメントを作成し、ペイウォールを追加する](create-placement)。
+4. モバイルアプリに [Adapty SDK](sdk-installation-android) をインストールする。
+</details>
+## ペイウォールビルダーで作成したペイウォールを取得する \{#fetch-paywall-designed-with-paywall-builder\}
+
+[ペイウォールビルダーでペイウォールを作成した](adapty-paywall-builder)場合、ユーザーに表示するためにモバイルアプリのコードでレンダリングを実装する必要はありません。このようなペイウォールには、表示する内容と表示方法の両方が含まれています。ただし、プレースメントを通じてペイウォールの ID を取得し、ビュー設定を行ったうえで、モバイルアプリに表示する必要があります。
+最適なパフォーマンスを確保するには、ペイウォールとその[ビュー設定](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)をできるだけ早く取得し、ユーザーに表示する前に画像のダウンロードに十分な時間を確保することが重要です。
+
+ペイウォールを取得するには、`getPaywall` メソッドを使用します：
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+...
+
+Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en", loadTimeout = 10.seconds) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            // the requested paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+...
+
+Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        // the requested paywall
+      
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+      
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+パラメーター:
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | 取得したい[プレースメント](placements)の識別子です。Adapty ダッシュボードでプレースメントを作成する際に指定した値を使用します。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>[ペイウォールのローカライズ](add-paywall-locale-in-adapty-paywall-builder)の識別子です。このパラメーターは、マイナス（**-**）文字で区切られた1つまたは2つのサブタグで構成される言語コードを指定します。最初のサブタグは言語、2つ目はリージョンを表します。</p><p></p><p>例: `en` は英語、`pt-br` はブラジルポルトガル語を表します。</p><p>ロケールコードと推奨する使用方法については、[ローカライズとロケールコード](localizations-and-locale-codes)をご覧ください。</p> |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDK はサーバーからデータの読み込みを試み、失敗した場合はキャッシュされたデータを返します。ユーザーが常に最新のデータを取得できるため、この設定を推奨します。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境を使用していると考えられる場合は、`.returnCacheDataElseLoad` を使用してキャッシュが存在する場合はキャッシュデータを返すことを検討してください。この場合、ユーザーが最新のデータを取得できないことがありますが、インターネット接続が不安定であっても高速なロードを実現できます。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを避けるために使用しても問題ありません。</p><p></p><p>キャッシュはアプリを再起動しても保持され、アプリの再インストールまたは手動でのクリア時のみ削除されます。</p><p></p><p>Adapty SDK はペイウォールをローカルに2層で保存します。1つ目は上述の定期更新されるキャッシュ、2つ目は[フォールバックペイウォール](fallback-paywalls)です。また、ペイウォールをより高速に取得するために CDN を使用し、CDN に到達できない場合に備えたスタンドアロンのフォールバックサーバーも用意しています。このシステムは、インターネット接続が限られた状況でも信頼性を確保しながら、常に最新バージョンのペイウォールを取得できるよう設計されています。</p> |
+| **loadTimeout** | デフォルト: 5秒 | <p>このメソッドのタイムアウト時間を制限する値です。タイムアウトに達した場合、キャッシュされたデータまたはローカルのフォールバックが返されます。</p><p>処理が内部で複数のリクエストで構成される場合があるため、まれに `loadTimeout` で指定した時間よりわずかに遅れてタイムアウトすることがあります。</p><p>Android の場合: 拡張関数（例: `5.seconds`、`.seconds` は `import com.adapty.utils.seconds` から）を使用して `TimeInterval` を作成するか、`TimeInterval.seconds(5)` を使用できます。制限を設けない場合は `TimeInterval.INFINITE` を使用してください。</p> |
+レスポンスパラメーター:
+
+| パラメーター | 説明                                                                                                                                                     |
+| :-------- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | プロダクト ID のリスト、ペイウォール識別子、リモートコンフィグ、およびその他のプロパティを含む [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/) オブジェクト。 |
+## ペイウォールビルダーで作成したペイウォールのビュー設定を取得する \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+ペイウォールビルダーで **Show on device** トグルを必ず有効にしてください。このオプションがオンになっていない場合、ビュー設定を取得できません。
+:::
+
+ペイウォールを取得したら、`ViewConfiguration` が含まれているかどうかを確認してください。これが含まれている場合、そのペイウォールはペイウォールビルダーで作成されたことを示します。`ViewConfiguration` が存在する場合はペイウォールビルダーのペイウォールとして処理し、存在しない場合は[リモートコンフィグのペイウォールとして処理](present-remote-config-paywalls)してください。
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+`getViewConfiguration` メソッドを使用して、ビュー設定を読み込みます。
+```kotlin showLineNumbers
+if (!paywall.hasViewConfiguration) {
+    // use your custom logic
+    return
+}
+
+AdaptyUI.getViewConfiguration(paywall, loadTimeout = 10.seconds) { result ->
+    when(result) {
+        is AdaptyResult.Success -> {
+            val viewConfiguration = result.value
+            // use loaded configuration
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+| パラメーター        | 必須/任意              | 説明                                                         |
+| :-------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**     | 必須       | 目的のペイウォールのコントローラーを取得するための `AdaptyPaywall` オブジェクト。 |
+| **loadTimeout** | デフォルト: 5秒 | このメソッドのタイムアウト上限を設定します。タイムアウトに達した場合、キャッシュされたデータまたはローカルのフォールバックが返されます。なお、このメソッドは内部で複数のリクエストで構成されることがあるため、まれに `loadTimeout` で指定した時間よりわずかに遅れてタイムアウトすることがあります。 |
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+ビューの設定を読み込むには、`getViewConfiguration` メソッドを使用します。
+```java showLineNumbers
+if (!paywall.hasViewConfiguration()) {
+    // use your custom logic
+    return;
+}
+
+AdaptyUI.getViewConfiguration(paywall, TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyUI.LocalizedViewConfiguration viewConfiguration =
+          ((AdaptyResult.Success<AdaptyUI.LocalizedViewConfiguration>) result).getValue();
+        // use loaded configuration
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+| パラメータ               | 必須/任意      | 説明                                                         |
+| :----------------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**              | 必須           | 目的のペイウォールのコントローラーを取得するための `AdaptyPaywall` オブジェクト。 |
+| **loadTimeout**          | デフォルト: 5秒 | このメソッドのタイムアウト上限を設定します。タイムアウトに達した場合、キャッシュされたデータまたはローカルのフォールバックが返されます。なお、このメソッドは内部で複数のリクエストを実行する場合があるため、まれに `loadTimeout` で指定した時間よりもわずかに遅れてタイムアウトすることがあります。 |
+</TabItem>
+
+</Tabs>
+
+:::note
+複数の言語を使用している場合は、[ペイウォールビルダーのローカライゼーション](add-paywall-locale-in-adapty-paywall-builder)の追加方法と、ロケールコードの正しい使い方[こちら](android-localizations-and-locale-codes)を参照してください。
+:::
+
+読み込みが完了したら、[ペイウォールを表示](android-present-paywalls)してください。
+## デフォルトオーディエンス向けペイウォールを素早く取得する \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+通常、ペイウォールはほぼ瞬時に取得されるため、速度を気にする必要はありません。ただし、オーディエンスやペイウォールの数が多く、ユーザーのインターネット接続が不安定な場合、ペイウォールの取得に想定以上の時間がかかることがあります。そのような状況では、ペイウォールをまったく表示しないよりも、スムーズなユーザー体験を確保するためにデフォルトのペイウォールを表示したい場合があるでしょう。
+これに対処するには、`getPaywallForDefaultAudience` メソッドを使用できます。このメソッドは、指定したプレースメントの **All Users** オーディエンス向けペイウォールを取得します。ただし、推奨されるアプローチは `getPaywall` メソッドによるペイウォールの取得であることを理解しておくことが重要です。詳細は上記の[ペイウォール情報の取得](#fetch-paywall-designed-with-paywall-builder)セクションをご参照ください。
+
+:::warning
+`getPaywall` を推奨する理由
+
+`getPaywallForDefaultAudience` メソッドにはいくつかの重大な欠点があります：
+- **後方互換性の問題**: 現在のバージョンと将来のバージョンで異なるペイウォールを表示する必要がある場合、課題が生じる可能性があります。現在の（レガシー）バージョンに対応したペイウォールを設計するか、現在の（レガシー）バージョンのユーザーがペイウォールを正常に表示できない問題を受け入れるかのどちらかになります。
+- **ターゲティングの喪失**: すべてのユーザーが **All Users** オーディエンス向けに設計された同じペイウォールを見ることになり、国、マーケティングのアトリビューション、独自のカスタム属性に基づくパーソナライズされたターゲティングができなくなります。
+ペイウォールの取得速度を優先してこれらのデメリットを許容できる場合は、以下のように `getPaywallForDefaultAudience` メソッドを使用してください。そうでない場合は、[上記](#fetch-paywall-designed-with-paywall-builder)で説明した `getPaywall` を使用してください。
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            // the requested paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        // the requested paywall
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+      
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+:::note
+`getPaywallForDefaultAudience` メソッドは Android SDK 2.11.3 以降で利用可能です。
+:::
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>[ペイウォールのローカライゼーション](add-remote-config-locale)の識別子。マイナス（**-**）文字で区切られた1つ以上のサブタグで構成される言語コードを指定します。最初のサブタグは言語、2番目のサブタグは地域を表します。</p><p></p><p>例: `en` は英語、`pt-br` はブラジルポルトガル語を表します。</p><p></p><p>ロケールコードおよび推奨される使用方法については、[ローカライゼーションとロケールコード](localizations-and-locale-codes)を参照してください。</p> |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDK はサーバーからデータの読み込みを試み、失敗した場合はキャッシュされたデータを返します。この方法を推奨します。ユーザーが常に最新のデータを受け取れることが保証されるためです。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境を利用していると考えられる場合は、`.returnCacheDataElseLoad` を使用することで、キャッシュが存在する場合はキャッシュデータを返すことができます。この場合、最新データが取得できないことはありますが、インターネット接続が不安定であっても読み込み速度が向上します。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを省くためにキャッシュを使用しても安全です。</p><p></p><p>キャッシュはアプリを再起動しても保持され、アプリの再インストールまたは手動でのクリーンアップ時にのみクリアされます。</p> |
+## アセットのカスタマイズ \{#customize-assets\}
+
+ペイウォール内の画像や動画をカスタマイズするには、カスタムアセットを実装します。
+
+ヒーロー画像と動画には、あらかじめ定義されたID（`hero_image` と `hero_video`）があります。カスタムアセットバンドルでは、これらのIDを使って要素を指定し、動作をカスタマイズします。
+
+その他の画像や動画については、Adapty ダッシュボードで[カスタムIDを設定する](custom-media)必要があります。
+
+たとえば、次のようなことができます：
+
+- 一部のユーザーに別の画像や動画を表示する。
+- リモートのメイン画像の読み込み中に、ローカルのプレビュー画像を表示する。
+- 動画を再生する前にプレビュー画像を表示する。
+:::important
+この機能を使用するには、Adapty Android SDK をバージョン 3.7.0 以上にアップデートしてください。
+:::
+
+カスタムアセットをシンプルな辞書で提供する方法の例を示します。
+```kotlin showLineNumbers
+val customAssets = AdaptyCustomAssets.of(
+    "hero_image" to
+            AdaptyCustomImageAsset.remote(
+                url = "https://example.com/image.jpg",
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromAsset("images/hero_image_preview.png"),
+                )
+            ),
+    "hero_video" to
+            AdaptyCustomVideoAsset.file(
+                FileLocation.fromResId(requireContext(), R.raw.custom_video),
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromResId(requireContext(), R.drawable.video_preview),
+                ),
+            ),
+)
+
+val paywallView = AdaptyUI.getPaywallView(
+    activity,
+    viewConfiguration,
+    products,
+    eventListener,
+    insets,
+    customAssets,
+)
+```
+
+:::note
+アセットが見つからない場合、ペイウォールはデフォルトの外観にフォールバックします。
+:::
+
+</SDKv3>

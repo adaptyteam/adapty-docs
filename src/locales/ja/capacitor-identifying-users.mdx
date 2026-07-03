@@ -1,0 +1,134 @@
+---
+title: "Capacitor SDKでユーザーを識別する"
+description: "Adapty SDKを使用してCapacitorアプリでユーザーを識別する方法を学びます。"
+metadataTitle: "ユーザーの識別 | Capacitor SDK | Adapty ドキュメント"
+customSlug: /capacitor-identifying-users
+displayed_sidebar: sdkcapacitor
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+import CrossDeviceDetection from '@site/src/locales/ja/reusable/CrossDeviceDetection.mdx';
+
+Adaptyはすべてのユーザーに対して内部プロファイルIDを作成します。ただし、独自の認証システムを持っている場合は、独自のCustomer User IDを設定することができます。[Profiles](profiles-crm)セクションでCustomer User IDによりユーザーを検索したり、すべてのインテグレーションに送信される[サーバーサイドAPI](getting-started-with-server-side-api)で使用したりできます。
+
+### 設定時にCustomer User IDを設定する \{#setting-customer-user-id-on-configuration\}
+
+設定時にユーザーIDがある場合は、`.activate()`メソッドの`customerUserId`パラメーターとして渡すだけです：
+
+```typescript showLineNumbers
+
+try {
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+      customerUserId: 'YOUR_USER_ID'
+    }
+  });
+} catch (error) {
+  console.error('Failed to activate Adapty:', error);
+}
+```
+
+### 設定後にCustomer User IDを設定する \{#setting-customer-user-id-after-configuration\}
+
+SDKの設定時にユーザーIDがない場合は、`.identify()`メソッドを使っていつでも後から設定できます。このメソッドの最も一般的なユースケースは、ユーザーが匿名ユーザーから認証済みユーザーに切り替わる際の登録後または認証後です。
+
+```typescript showLineNumbers
+
+try {
+  await adapty.identify({ customerUserId: 'YOUR_USER_ID' });
+  console.log('User identified successfully');
+} catch (error) {
+  console.error('Failed to identify user:', error);
+}
+```
+
+リクエストパラメーター：
+
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **customerUserId** | 必須 | 文字列のユーザー識別子。 |
+
+:::warning
+重要なユーザーデータの再送信
+
+ユーザーが再度アカウントにログインする場合など、Adaptyのサーバーにすでにそのユーザーの情報が存在していることがあります。このような場合、Adapty SDKは自動的に新しいユーザーに切り替えて動作します。カスタム属性やサードパーティネットワークからのアトリビューションなど、匿名ユーザーに渡したデータがある場合は、識別されたユーザーに対してそのデータを再送信する必要があります。
+
+また、新しいユーザーのデータが異なる可能性があるため、ユーザーを識別した後にすべてのペイウォールとプロダクトを再取得する必要があることも重要です。
+:::
+
+### ログアウトとログイン \{#logging-out-and-logging-in\}
+
+`.logout()`メソッドを呼び出すことで、いつでもユーザーをログアウトできます：
+
+```typescript showLineNumbers
+
+try {
+  await adapty.logout();
+  console.log('User logged out successfully');
+} catch (error) {
+  console.error('Failed to logout user:', error);
+}
+```
+
+その後、`.identify()`メソッドを使ってユーザーをログインできます。
+
+## `appAccountToken`を設定する（iOS） \{#assign-appaccounttoken-ios\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:))は、App Storeのトランザクションを内部ユーザーIDにリンクするための**UUID**です。  
+StoreKitはこのトークンをすべてのトランザクションに関連付けるため、バックエンドがApp StoreのデータをユーザーIDと照合できます。
+
+ユーザーごとに生成した安定したUUIDを使用し、同じアカウントに対してデバイスをまたいで再利用してください。
+これにより、購入とApp Storeの通知が正しく紐付けられます。
+
+トークンは2つの方法で設定できます。SDKのアクティベーション時、またはユーザーを識別する際です。
+
+:::important
+`appAccountToken`は必ず`customerUserId`と一緒に渡す必要があります。
+トークンのみを渡した場合、トランザクションに含まれません。
+:::
+
+```typescript showLineNumbers
+// During configuration:
+await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
+        customerUserId: 'YOUR_USER_ID',
+        ios: { appAccountToken: "YOUR_APP_ACCOUNT_TOKEN" },
+    }
+});
+// Or when identifying users
+await adapty.identify({
+    customerUserId: 'YOUR_USER_ID',
+    params: {
+        ios: { appAccountToken: 'YOUR_APP_ACCOUNT_TOKEN' },
+    }
+});
+```
+
+### 難読化されたアカウントIDを設定する（Android） \{#set-obfuscated-account-ids-android\}
+
+Google Playでは、ユーザーのプライバシーとセキュリティを強化するために、特定のユースケースで難読化されたアカウントIDが必要です。これらのIDにより、Google Playはユーザー情報を匿名のまま購入を識別できます。これは不正防止や分析において特に重要です。
+
+アプリが機密性の高いユーザーデータを扱う場合や、特定のプライバシー規制に準拠する必要がある場合は、これらのIDを設定する必要があります。難読化されたIDにより、Google Playは実際のユーザー識別子を公開せずに購入を追跡できます。
+
+```typescript showLineNumbers
+// During configuration:
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    android: { obfuscatedAccountId: 'YOUR_OBFUSCATED_ACCOUNT_ID' },
+  }
+});
+// Or when identifying users
+await adapty.identify({
+    customerUserId: 'YOUR_USER_ID',
+    params: {
+        android: { obfuscatedAccountId: 'YOUR_OBFUSCATED_ACCOUNT_ID' },
+    }
+});
+```
+
+## デバイスをまたいだユーザー検出 \{#detect-users-across-devices\}
+
+<CrossDeviceDetection />

@@ -1,0 +1,214 @@
+---
+title: "iOS SDKでオンボーディングのデータを処理する"
+description: "Adapty SDKを使用して、iOSアプリのオンボーディングからデータを保存・活用する方法を説明します。"
+metadataTitle: "オンボーディング | iOS SDK | Adapty ドキュメント"
+displayed_sidebar: sdkios
+---
+
+:::tip
+**SDK v4（ベータ版）以降**、オンボーディングのより強力な代替手段として[フロー](get-pb-paywalls)を構築できます。オンボーディングがWebView内で動作するのに対し、フローはデバイス上でネイティブにレンダリングされるため、よりスムーズなアニメーション、一貫したiOSの外観、高速な読み込み、そしてWebViewランタイムへの依存がなくなります。詳細は[フローとペイウォールの取得](get-pb-paywalls)および[フローとペイウォールの表示](ios-present-paywalls)をご覧ください。
+:::
+
+ユーザーがクイズの質問に回答したり、入力フィールドにデータを入力したりすると、`onStateUpdatedAction` メソッドが呼び出されます。フィールドの種類をコード内で保存または処理することができます。
+
+例：
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
+    // Store user preferences or responses
+    switch action.params {
+    case .select(let params):
+        // Handle single selection
+    case .multiSelect(let params):
+        // Handle multiple selections
+    case .input(let params):
+        // Handle text input
+    case .datePicker(let params):
+        // Handle date selection
+    }
+}
+```
+
+`action` オブジェクトに含まれる情報：
+
+| パラメーター      | 説明                                                                                                                                                                                                                                                                                     |
+|----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `elementId`    | 入力要素の一意の識別子です。回答を保存する際に、質問と回答を紐付けるために使用できます。                                                                                                                                                                                 |
+| `params`       | ユーザーの入力データオブジェクトで、typeとvalueのプロパティを含みます。                                                                                                                                                                                                                              |
+| `params.type`  | 入力要素のタイプです。以下のいずれかになります：<br/>• `"select"` - オプションからの単一選択<br/>• `"multiSelect"` - オプションからの複数選択<br/>• `"input"` - テキスト入力フィールド<br/>• `"datePicker"` - 日付選択                                                                           |
+| `params.value` | ユーザーが選択または入力した値です。構造はタイプによって異なります：<br/>• `select`：`id`、`value`、`label` を持つオブジェクト<br/>• `multiSelect`：`id`、`value`、`label` を持つオブジェクトの配列<br/>• `input`：`type`、`value` を持つオブジェクト<br/>• `datePicker`：`day`、`month`、`year` を持つオブジェクト |
+
+<Details>
+<summary>保存されたデータの例（実装によって異なる場合があります）</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## ユースケース \{#use-cases\}
+
+### ユーザープロファイルをデータで充実させる \{#enrich-user-profiles-with-data\}
+
+入力データをユーザープロファイルにすぐに紐付けて、同じ情報を二度聞かないようにするには、アクションを処理する際に入力データで[ユーザープロファイルを更新](setting-user-attributes)する必要があります。
+
+例えば、`name` というIDを持つテキストフィールドにユーザーの名前を入力してもらい、そのフィールドの値をユーザーの名前として設定したいとします。また、`email` フィールドにメールアドレスを入力してもらう場合、アプリのコードは次のようになります：
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
+    // Store user preferences or responses
+    switch action.params {
+    case .input(let params):
+        // Handle text input
+        let builder = AdaptyProfileParameters.Builder()
+
+        // Map elementId to appropriate profile field
+        switch action.elementId {
+        case "name":
+            builder.with(firstName: params.value.value)
+        case "email":
+            builder.with(email: params.value.value)
+        default:
+            break
+        }
+
+        // Delegate methods are synchronous; kick off the async update in a Task.
+        Task {
+            do {
+                try await Adapty.updateProfile(params: builder.build())
+            } catch {
+                // handle the error
+            }
+        }
+    default:
+        break
+    }
+}
+```
+
+### 回答に基づいてペイウォールをカスタマイズする \{#customize-paywalls-based-on-answers\}
+
+オンボーディングのクイズを活用して、ユーザーがオンボーディングを完了した後に表示するペイウォールをカスタマイズすることもできます。
+
+例えば、スポーツの経験について質問し、ユーザーグループごとに異なるCTAとプロダクトを表示することができます。
+
+1. オンボーディングビルダーで[クイズを追加](onboarding-quizzes)し、各オプションにわかりやすいIDを割り当てます。
+
+<ZoomImage id="experience.webp" />
+
+2. IDに基づいてクイズの回答を処理し、ユーザーに[カスタム属性を設定](setting-user-attributes)します。
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
+    // Handle quiz responses and set custom attributes
+    switch action.params {
+    case .select(let params):
+        // Handle quiz selection
+        let builder = AdaptyProfileParameters.Builder()
+
+        // Map quiz responses to custom attributes
+        switch action.elementId {
+        case "experience":
+            // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+            try? builder.with(customAttribute: params.value.value, forKey: "experience")
+        default:
+            break
+        }
+
+        // Delegate methods are synchronous; kick off the async update in a Task.
+        Task {
+            do {
+                try await Adapty.updateProfile(params: builder.build())
+            } catch {
+                // handle the error
+            }
+        }
+    default:
+        break
+    }
+}
+```
+
+3. カスタム属性の値ごとに[セグメントを作成](segments)します。
+4. [プレースメント](placements)を作成し、作成した各セグメントの[オーディエンス](audience)を追加します。
+5. アプリのコードでそのプレースメントの[ペイウォールを表示](ios-paywalls)します。オンボーディングにペイウォールを開くボタンがある場合は、[そのボタンのアクションへの応答](ios-handling-onboarding-events#opening-a-paywall)としてペイウォールのコードを実装してください。

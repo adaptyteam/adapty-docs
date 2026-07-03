@@ -1,0 +1,180 @@
+---
+title: "Google Cloud Storage"
+description: "AdaptyとのセキュアなデータストレージのためのGoogle Cloud Storage連携。"
+metadataTitle: "Google Cloud Storage連携 | Adapty ドキュメント"
+---
+
+Google Cloud Storage連携を有効にすると、[サブスクリプションイベント](events)と[ペイウォール訪問データ](paywall-metrics)を一か所、つまりGoogle Cloud Storageバケットに安全に保存できます。
+
+毎日UTC午前4時に、Adaptyは前日のデータを含む.csvファイルをバケットにアップロードします。**イベント**データ、**ペイウォール訪問**データ、または**両方**を受け取るかどうかを選択できます。また、任意の期間のデータをいつでも[手動でエクスポート](#manual-data-export)することもできます。
+
+連携を設定するには、Google Cloud コンソールで[バケットアクセスキーを生成](#create-google-cloud-storage-credentials)し、[Adaptyの設定に追加](#set-up-google-cloud-storage-integration)します。
+
+## アップロードスケジュールと所要時間 \{#upload-schedule-and-duration\}
+
+AdapyはUTC 04:00に24時間ごとにGoogle Cloud Storageへデータをアップロードします。
+
+ファイルには前の暦日（UTC）に作成されたイベントのデータが含まれます。3月8日にアップロードされるファイルには、3月7日の00:00:00〜23:59:59 UTCに作成されたすべてのイベントが含まれます。
+
+キュー内のファイルの総数やご自身がリクエストしたデータ量によっては、処理に数時間かかる場合があります。初回アップロードに過去のデータが含まれる場合、以降の毎日のアップロードより時間がかかります。
+
+## Google Cloud Storage連携の設定 \{#set-up-google-cloud-storage-integration\}
+
+**書き込みアクセス権**を持つ有効なGoogle Cloudサービスアカウントキーが必要です。生成方法については、[認証情報の作成](#create-google-cloud-storage-credentials)セクションの手順に従ってください。
+
+:::warning
+イベントとペイウォール訪問に対して、それぞれ異なるバケットと認証情報を使用できます。ただし、**いずれか**の認証情報が無効な場合、[**両方のアップロードが失敗します**](#troubleshooting)。
+:::
+
+[**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage) に移動し、必要なタブ（**Events** または **Paywall visits**）を開きます。連携を有効にします。
+
+**Google Cloudサービスアカウントキー**を含むファイルをアップロードします。対象の**バケット**と**フォルダー**を指定します。変更を保存します。
+
+<ZoomImage id="google-cloud-storage-setup.webp" width="700px" />
+
+### イベントデータのオプション設定 \{#optional-settings-for-event-data\}
+
+レポートに含めるイベントを指定したり、イベントにカスタム名を設定したりできます。利用可能なイベントの全一覧は[イベント](events)の記事をご覧ください。
+
+<ZoomImage id="event-specific-settings.webp" width="700px" />
+
+| 名前 | デフォルト | 説明 |
+| ------------------------------ | ----------------- | ----------- |
+| Exclude historical events      | true    | AdaptySDKをアプリに統合する前に発生したイベントの情報を除外します。<br /> <br />アナリティクスプラットフォームがAdapty導入**前**にサブスクリプションイベントを受け取っていた場合、このオプションによって重複イベントの受信を防げます。<Details summary="実際の例"><p>ユーザーが1月10日に月次サブスクリプションを購入しました。3月1日のアプリアップデートが初めてAdapty SDKを含むものでした。<br /> <br /> この設定が**オン**の場合、レポートには1月の「サブスクリプション開始」イベントも2月の「サブスクリプション更新」イベントも含まれません。3月10日の「サブスクリプション更新」イベント**は**含まれます。</p> </Details> |
+| Include events without profile | false | ユーザープロファイルに紐付いていない、または特定ユーザーにすぐに関連付けられないトランザクションを含めます。Adapty SDK導入前の購入や、サーバー通知経由で受け取ったトランザクションが該当します。 |
+| Send user attributes           | false | [カスタムユーザー属性](setting-user-attributes)（ユーザーデータやアプリ使用データなど）を含めます。OneSignalのプランが10個以上のタグをサポートしている場合にこのオプションを選択してください。タグ上限を超えるとエラーが発生する場合があります。 |
+
+## Google Cloud Storageの認証情報の作成 \{#create-google-cloud-storage-credentials\}
+
+このガイドでは、Google Cloud Platform コンソールで必要な認証情報を作成する方法を説明します。
+
+Adaptyが指定のバケットに生データレポートをアップロードするには、サービスアカウントのキーと、対応するバケットへの書き込みアクセス権が必要です。サービスアカウントのキーを提供してバケットへの書き込みアクセスを付与することで、AdaptyがプラットフォームからストレージEnvironmentへ生データレポートを安全かつ効率的に転送できるようになります。
+
+:::warning
+サービスアカウントのHMACキー認証のみをサポートしています。Google Cloud Storageへの適切なアクセスを有効にするため、サービスアカウントのHMACキーに「Storage Object Viewer」「Storage Legacy Bucket Writer」「Storage Object Creator」のロールが追加されていることを確認してください。
+:::
+
+1. まず、Google CloudアカウントのIAMセクション（[IAM](https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts)）に移動し、関連するプロジェクトを選択するか、新しいプロジェクトを作成します。
+
+  <ZoomImage id="30a81ef-CleanShot_2023-03-17_at_15.22.142x.webp" width="700px" />
+
+
+1. 次に、「+ CREATE SERVICE ACCOUNT」ボタンをクリックしてAdapty用の新しいサービスアカウントを作成します。
+
+    <ZoomImage id="98f8ebf-CleanShot_2023-03-17_at_15.40.062x.webp" width="700px" />
+
+2. 最初のステップのフィールドに入力します（アクセス権は後の段階で付与されます）。このページの詳細については、[こちら](https://docs.cloud.google.com/iam/docs/service-accounts-create)のドキュメントをご覧ください。
+
+    <ZoomImage id="2190c50-CleanShot_2023-03-17_at_15.48.552x.webp" width="700px" />
+
+3. [プライベートJSONキー](https://docs.cloud.google.com/iam/docs/keys-create-delete)を作成してダウンロードするには、KEYSセクションに移動し、「ADD KEY」ボタンをクリックします。
+
+    <ZoomImage id="8a45468-CleanShot_2023-03-17_at_15.58.092x.webp" width="700px" />
+
+4. DETAILSセクションで、作成したサービスアカウントに紐付くEmail値を見つけてコピーします。この情報は、アカウントを認証してバケットへの書き込みを許可するための後続手順で必要になります。
+
+    <ZoomImage id="6ccd0f0-CleanShot_2023-03-17_at_16.03.162x.webp" width="700px" />
+    
+
+5. 次に、Google Cloud Storageの[Buckets](https://console.cloud.google.com/storage/browser)ページに移動し、既存のバケットを選択するか、AdapyのイベントまたはVisitsデータレポートを保存するための新しいバケットを作成します。次にPERMISSIONSセクションに移動し、[GRANT ACCESS](https://docs.cloud.google.com/identity/docs/how-to?hl=en)オプションを選択します。
+
+    <ZoomImage id="3cdd937-CleanShot_2023-03-17_at_16.14.232x.webp" width="700px" />
+
+6. PERMISSIONSセクションで、手順5で取得したサービスアカウントのEmailを入力し、Storage Object Creatorロールを選択します。最後にSAVEをクリックして変更を適用します。
+
+
+    <ZoomImage id="62801f4-CleanShot_2023-03-17_at_16.17.312x.webp" width="700px" />
+
+    バケット名は後で使用するので控えておいてください。
+
+## 手動データエクスポート \{#manual-data-export\}
+
+Google Cloud Storageへの自動イベントデータエクスポートに加えて、Adaptyでは手動ファイルエクスポート機能も提供しています。この機能を使用すると、イベントデータの特定の時間範囲を選択して、GCSバケットに手動でエクスポートできます。エクスポートするデータとタイミングをより細かく制御できます。
+
+指定した日付範囲は、日付A 00:00:00 UTCから日付B 23:59:59 UTCまでに作成されたイベントのエクスポートに使用されます。
+
+<ZoomImage id="e347308-CleanShot_2023-03-17_at_17.39.452x.webp" width="700px" />
+
+## データ構造 \{#data-structure\}
+
+Adaptyはデータを表形式でエクスポートするために`.csv`ファイルを使用します。
+
+:::warning
+イベントの内容は、Adaptyまたは連携している3rd partyが新しいデータを追加することで増えることがあります。処理するコードは特定のフィールドに依存させ、構造全体に依存しないよう十分に堅牢にしてください。
+:::
+
+### イベント \{#events\}
+
+レポートに含めるイベントの一覧は[変更可能](#optional-settings-for-event-data)です。
+
+| カラム | 説明 |
+|------|-----------|
+| **profile_id** | AdapyユーザーID。 |
+| **event_type** | 小文字のイベント名。イベントタイプについては[Events](events)セクションを参照してください。 |
+| **event_datetime** | ISO 8601形式の日時。 |
+| **transaction_id** | 購入や更新などのトランザクションの一意の識別子。 |
+| **original_transaction_id** | 元の購入のトランザクション識別子。 |
+| **subscription_expires_at** | サブスクリプションの有効期限。通常は未来の日時。 |
+| **environment** | SandboxまたはProductionのいずれか。 |
+| **revenue_usd** | USD換算の収益。空の場合があります。 |
+| **proceeds_usd** | USD換算の受取額。空の場合があります。 |
+| **net_revenue_usd** | USD換算の純収益（税引後の収入）。空の場合があります。 |
+| **tax_amount_usd** | USD換算の税金控除額。空の場合があります。 |
+| **revenue_local** | 現地通貨での収益。空の場合があります。 |
+| **proceeds_local** | 現地通貨での受取額。空の場合があります。 |
+| **net_revenue_local** | 現地通貨での純収益（税引後の収入）。空の場合があります。 |
+| **tax_amount_local** | 現地通貨での税金控除額。空の場合があります。 |
+| **customer_user_id** | 開発者のユーザーID。ユーザーのUUID、メールアドレス、その他のIDを設定できます。設定していない場合はNull。 |
+| **store** | *app_store*または*play_store*のいずれか。 |
+| **product_id** | Apple App Store、Google Play Store、またはStripeでのプロダクトID。 |
+| **base_plan_id** | Google Play Storeの[ベースプランID](https://support.google.com/googleplay/android-developer/answer/12154973)、またはStripeの[価格ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices)。 |
+| **developer_id** | トランザクションが発生したペイウォールの開発者（SDK）ID。 |
+| **ab_test_name** | トランザクションが発生したA/Bテストの名前。 |
+| **ab_test_revision** | トランザクションが発生したA/Bテストのリビジョン。 |
+| **paywall_name** | トランザクションが発生したペイウォールの名前。 |
+| **paywall_revision** | トランザクションが発生したペイウォールのリビジョン。 |
+| **profile_country** | IPアドレスに基づいてAdapyが判定したプロファイルの国。 |
+| **install_date** | インストールが発生したISO 8601形式の日時。 |
+| **idfv** | iOSデバイスの[identifierForVendor](https://developer.apple.com/documentation/uikit/uidevice/identifierforvendor) |
+| **idfa** | iOSデバイスの[advertisingIdentifier](https://developer.apple.com/documentation/adsupport/asidentifiermanager/advertisingidentifier) |
+| **advertising_id** | Androidオペレーティングシステムが広告主向けに割り当てる、デバイスを一意に識別するための広告ID |
+| **ip_address** | デバイスのIPアドレス（IPv4またはIPv6、利用可能な場合はIPv4優先）。デバイスのIPが変わるたびに更新されます |
+| **cancellation_reason** | <p>ユーザーがサブスクリプションをキャンセルした理由。</p><p></p><p>使用可能な値：</p><p>**iOS & Android** — *voluntarily_cancelled*, *billing_error*, *refund*</p><p>**iOSのみ** — *price_increase*, *product_was_not_available*, *unknown*, *upgraded*</p><p>**Androidのみ** — *new_subscription_replace*, *cancelled_by_developer*</p> |
+| **android_app_set_id** | [AppSetId](https://developer.android.com/design-for-safety/privacy-sandbox/reference/adservices/appsetid/AppSetId) — 非収益化広告用途向けの、デバイスごと・開発者アカウントごとにリセット可能な一意のID。 |
+| **android_id** | Android 8.0（APIレベル26）以降では、アプリの署名キー、ユーザー、デバイスの組み合わせごとに一意な64ビットの数値（16進数文字列として表現）。詳細は[Androidデベロッパードキュメント](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID)を参照してください。 |
+| **device** | エンドユーザーに表示されるデバイスモデル名。 |
+| **currency** | トランザクションの3文字通貨コード（ISO-4217）。 |
+| **store_country** | Apple/Google Storeが判定したプロファイルの国。 |
+| **attribution_source** | アトリビューションソース。 |
+| **attribution_network_user_id** | アトリビューションソースがユーザーに割り当てたID。 |
+| **attribution_status** | organic、non_organic、unknownのいずれか。 |
+| **attribution_channel** | マーケティングチャネル名。 |
+| **attribution_campaign** | マーケティングキャンペーン名。 |
+| **attribution_ad_group** | アトリビューションの広告グループ。 |
+| **attribution_ad_set** | アトリビューションの広告セット。 |
+| **attribution_creative** | アトリビューションのクリエイティブキーワード。 |
+| **attributes** | [カスタムユーザー属性](setting-user-attributes#custom-user-attributes)のJSON。モバイルアプリから送信するよう設定したカスタム属性が含まれます。送信するには、[Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook)ページで**Send User Attributes**オプションを有効にしてください。 |
+| **integration_ids**             | プロファイルに関連付けられたすべての連携ID。ディクショナリ形式。例：&#123;&#39;mixpanel_user_id&#39;: &#39;mixpanelUserId-test&#39;, &#39;facebook_anonymous_id&#39;: &#39;facebookAnonymousId-test&#39;&#125; |
+
+### ペイウォール訪問 \{#paywall-visits\}
+
+| カラム | 説明 |
+| :-------------------- | :----------------------------------------------------------------------------------------------------------- |
+| **profile_id**        | AdapyユーザーID。 |
+| **customer_user_id**  | 開発者のユーザーID。ユーザーのUUID、メールアドレス、その他のIDを設定できます。設定していない場合はNull。 |
+| **profile_country**   | Apple/Google Storeが判定したプロファイルの国。 |
+| **install_date**      | インストールが発生したISO 8601形式の日時。 |
+| **store**             | *app_store*または*play_store*のいずれか。 |
+| **paywall_showed_at** | ペイウォールが顧客に表示された日時。 |
+| **developer_id**      | トランザクションが発生したペイウォールの開発者（SDK）ID。 |
+| **ab_test_name**      | トランザクションが発生したA/Bテストの名前。 |
+| **ab_test_revision**  | トランザクションが発生したA/Bテストのリビジョン。 |
+| **paywall_name**      | トランザクションが発生したペイウォールの名前。 |
+| **paywall_revision**  | トランザクションが発生したペイウォールのリビジョン。 |
+
+
+## トラブルシューティング \{#troubleshooting\}
+
+Adaptyはアップロードを開始する**前に**アクセスキーの有効性を確認します。Google Cloud Storageのキーが1つでも無効な場合、Adaptyは**アップロードを中断**してエラーをスローします。
+
+アップロードが中断されないよう、キーの有効期限が切れる前に更新してください。**イベント**のキーを更新した場合は、**ペイウォール訪問**のキーも忘れずに更新してください（逆も同様です）。

@@ -1,0 +1,184 @@
+---
+title: "React Native SDKでペイウォールビルダーのペイウォールと設定を取得する"
+description: "Adapty for React NativeアプリでPBペイウォールを取得し、サブスクリプション管理を改善する方法をご紹介します。"
+metadataTitle: "AdaptyでPBペイウォールを取得する | Adapty ドキュメント"
+displayed_sidebar: sdkreactnative
+keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+rank: 90
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+
+Adapty ダッシュボードの新しいペイウォールビルダーで[ペイウォールのビジュアルデザインを作成](adapty-paywall-builder)したら、モバイルアプリに表示できます。最初のステップは、プレースメントに関連付けられたペイウォールとそのビュー設定を取得することです。詳細は以下をご覧ください。
+
+:::warning
+新しいペイウォールビルダーは React Native SDK バージョン 3.0 以上で動作します。
+:::
+
+このトピックはペイウォールビルダーでカスタマイズしたペイウォールに関するものです。ペイウォールを手動で実装する場合は、[モバイルアプリのリモートコンフィグペイウォール向けにペイウォールとプロダクトを取得する](fetch-paywalls-and-products-react-native)をご参照ください。
+
+<SampleApp />
+
+<details>
+   <summary>モバイルアプリでペイウォールを表示する前に（クリックして展開）</summary>
+
+1. Adapty ダッシュボードで[プロダクトを作成](create-product)します。
+2. Adapty ダッシュボードで[ペイウォールを作成し、プロダクトを追加](create-paywall)します。
+3. Adapty ダッシュボードで[プレースメントを作成し、ペイウォールを追加](create-placement)します。
+4. モバイルアプリに [Adapty SDK](sdk-installation-reactnative) をインストールします。
+</details>
+
+## ペイウォールビルダーで作成したペイウォールを取得する \{#fetch-paywall-designed-with-paywall-builder\}
+
+[ペイウォールビルダーでペイウォールをデザイン](adapty-paywall-builder)した場合、ユーザーへの表示のためにモバイルアプリのコードでレンダリング処理を実装する必要はありません。このようなペイウォールにはペイウォール内に表示するコンテンツとその表示方法の両方が含まれています。ただし、プレースメントを通じて ID を取得し、ビュー設定を取得してからモバイルアプリに表示する必要があります。
+
+パフォーマンスを最適化するために、ペイウォールとその[ビュー設定](react-native-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)はできるだけ早く取得し、ユーザーに表示する前に画像のダウンロードが完了するよう十分な時間を確保することが重要です。
+
+ペイウォールを取得するには、`getPaywall` メソッドを使用します。
+
+```typescript showLineNumbers
+try {
+    const placementId = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
+
+    const paywall = await adapty.getPaywall(placementId, locale);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
+```
+パラメーター:
+
+| パラメーター      | 必須/任意 | 説明 |
+|-------------------|--------|-----------|
+| **placementId**   | 必須 | 取得したい[プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **locale**        | <p>任意</p><p>デフォルト: `en`</p> | <p>[ペイウォールのローカライゼーション](add-paywall-locale-in-adapty-paywall-builder)の識別子。このパラメーターは、マイナス（**-**）で区切られた1つまたは2つのサブタグで構成される言語コードです。最初のサブタグは言語、2番目は地域を表します。</p><p></p><p>例：`en` は英語、`pt-br` はブラジルポルトガル語を表します。</p><p>ロケールコードの詳細と推奨される使用方法については、[ローカライゼーションとロケールコード](localizations-and-locale-codes)をご覧ください。</p> |
+| **fetchPolicy**   | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDK はサーバーからデータを読み込もうとし、失敗した場合はキャッシュされたデータを返します。ユーザーが常に最新のデータを取得できるため、このオプションを推奨します。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境を使用していると考えられる場合は、`.returnCacheDataElseLoad` を使用してキャッシュデータが存在する場合に返すことを検討してください。この場合、ユーザーは最新のデータを取得できないことがありますが、インターネット接続の状況に関わらず読み込み時間が速くなります。キャッシュは定期的に更新されるため、セッション中はネットワークリクエストを避けるためにキャッシュを使用しても安全です。</p><p></p><p>キャッシュはアプリの再起動後も保持され、アプリの再インストールや手動でのクリアによってのみ削除されます。</p><p></p><p>Adapty SDK はペイウォールをローカルに2層で保存します：上記の定期更新キャッシュと[フォールバックペイウォール](fallback-paywalls)。また、ペイウォールを高速に取得するために CDN を使用し、CDN に到達できない場合に備えてスタンドアロンのフォールバックサーバーも用意しています。このシステムは、インターネット接続が不安定な場合でも信頼性を確保しながら、常に最新バージョンのペイウォールを取得できるように設計されています。</p> |
+| **loadTimeoutMs** | デフォルト: 5秒 | <p>このメソッドのタイムアウトを制限する値です。タイムアウトに達した場合、キャッシュされたデータまたはローカルフォールバックが返されます。</p><p>内部的に複数のリクエストで構成される場合があるため、まれに `loadTimeout` で指定した時間よりも少し遅くタイムアウトすることがあります。</p><p>Android の場合：拡張関数（例：`5.seconds`、`.seconds` は `import com.adapty.utils.seconds` からインポート）または `TimeInterval.seconds(5)` を使用して `TimeInterval` を作成できます。制限なしにするには、`TimeInterval.INFINITE` を使用します。</p> |
+
+レスポンスパラメーター:
+
+| パラメーター | 説明 |
+| :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | プロダクト ID のリスト、ペイウォール識別子、リモートコンフィグ、その他いくつかのプロパティを含む [`AdaptyPaywall`](https://react-native.adapty.io/interfaces/adaptypaywall) オブジェクト。 |
+
+## ペイウォールビルダーで作成したペイウォールのビュー設定を取得する \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+ペイウォールビルダーの **Show on device** トグルを有効にしてください。このオプションが有効になっていない場合、ビュー設定を取得できません。
+:::
+
+ペイウォールを取得したら、`ViewConfiguration` が含まれているか確認します。これはペイウォールビルダーで作成されたことを示します。この情報をもとにペイウォールの表示方法を判断してください。`ViewConfiguration` が存在する場合はペイウォールビルダーのペイウォールとして扱い、存在しない場合は[リモートコンフィグペイウォールとして処理](present-remote-config-paywalls-react-native)してください。
+
+React Native SDK では、ビュー設定を手動で取得せずに `createPaywallView` メソッドを直接呼び出します。
+
+:::warning
+`createPaywallView` メソッドの結果は1回のみ使用できます。再度使用する必要がある場合は、`createPaywallView` メソッドを新たに呼び出してください。再作成せずに2回呼び出すと、`AdaptyUIError.viewAlreadyPresented` エラーが発生することがあります。
+:::
+
+```typescript showLineNumbers
+// for the Adapty SDK < 3.14 – import {createPaywallView} from 'react-native-adapty/dist/ui';
+
+if (paywall.hasViewConfiguration) {
+  try {
+    const view = await createPaywallView(paywall);
+  } catch (error) {
+    // handle the error
+  }
+} else {
+    //use your custom logic
+}
+```
+
+パラメーター:
+
+| パラメーター         | 必須/任意 | 説明                                                  |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **paywall**          | 必須 | 目的のペイウォールのコントローラーを取得するための `AdaptyPaywall` オブジェクト。 |
+| **customTags**       | 任意 | カスタムタグとその解決済み値の辞書を定義します。カスタムタグはペイウォールコンテンツ内のプレースホルダーとして機能し、ペイウォール内のパーソナライズされたコンテンツとして特定の文字列に動的に置き換えられます。詳しくはペイウォールビルダーのカスタムタグのトピックをご参照ください。 |
+| **prefetchProducts** | 任意 | 画面上のプロダクト表示タイミングを最適化するために有効にします。`true` の場合、AdaptyUI は必要なプロダクトを自動的に取得します。デフォルト: `false`。 |
+
+:::note
+複数の言語を使用している場合は、[ペイウォールビルダーのローカライゼーション](add-paywall-locale-in-adapty-paywall-builder)の追加方法と、ロケールコードの正しい使用方法を[こちら](react-native-localizations-and-locale-codes)でご確認ください。
+:::
+
+ビューを取得したら、[ペイウォールを表示](react-native-present-paywalls)します。
+
+## デフォルトオーディエンス向けのペイウォールを取得してより高速に表示する \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+通常、ペイウォールはほぼ瞬時に取得されるため、このプロセスを高速化することを心配する必要はありません。ただし、オーディエンスやペイウォールが多数あり、ユーザーのインターネット接続が遅い場合、ペイウォールの取得に時間がかかることがあります。そのような状況では、ペイウォールを表示しないよりもスムーズなユーザー体験を提供するために、デフォルトのペイウォールを表示したい場合があります。
+
+この問題に対処するために、`getPaywallForDefaultAudience` メソッドを使用できます。このメソッドは、**All Users** オーディエンス向けに指定されたプレースメントのペイウォールを取得します。ただし、推奨されるアプローチは、上記の[ペイウォール情報の取得](#fetch-paywall-designed-with-paywall-builder)セクションで説明したように `getPaywall` メソッドでペイウォールを取得することを理解しておくことが重要です。
+
+:::warning
+`getPaywall` を推奨する理由
+
+`getPaywallForDefaultAudience` メソッドにはいくつかの重大な欠点があります:
+
+- **後方互換性の問題の可能性**: 現在と将来のアプリバージョンで異なるペイウォールを表示する必要がある場合、課題が生じる可能性があります。現在（レガシー）バージョンをサポートするペイウォールを設計するか、現在（レガシー）バージョンのユーザーがレンダリングされないペイウォールで問題が発生することを受け入れるかのどちらかになります。
+- **ターゲティングの喪失**: すべてのユーザーが **All Users** オーディエンス向けに設計された同じペイウォールを見ることになるため、パーソナライズされたターゲティング（国、マーケティングアトリビューション、独自のカスタム属性に基づくターゲティングを含む）が失われます。
+
+ペイウォール取得の高速化というメリットのためにこれらの欠点を受け入れる場合は、以下のように `getPaywallForDefaultAudience` メソッドを使用してください。そうでない場合は、[上記](#fetch-paywall-designed-with-paywall-builder)で説明した `getPaywall` を使用してください。
+:::
+
+```typescript showLineNumbers
+try {
+    const id = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
+
+    const paywall = await adapty.getPaywallForDefaultAudience(id, locale);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
+```
+
+:::note
+`getPaywallForDefaultAudience` メソッドは React Native SDK バージョン 2.11.2 以降で利用できます。
+:::
+
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>[ペイウォールのローカライゼーション](add-remote-config-locale)の識別子。このパラメーターは、マイナス（**-**）で区切られた1つ以上のサブタグで構成される言語コードです。最初のサブタグは言語、2番目は地域を表します。</p><p></p><p>例：`en` は英語、`pt-br` はブラジルポルトガル語を表します。</p><p></p><p>ロケールコードの詳細と推奨される使用方法については、[ローカライゼーションとロケールコード](react-native-localizations-and-locale-codes)をご覧ください。</p> |
+| **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDK はサーバーからデータを読み込もうとし、失敗した場合はキャッシュされたデータを返します。ユーザーが常に最新のデータを取得できるため、このオプションを推奨します。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境を使用していると考えられる場合は、`.returnCacheDataElseLoad` を使用してキャッシュデータが存在する場合に返すことを検討してください。この場合、ユーザーは最新のデータを取得できないことがありますが、インターネット接続の状況に関わらず読み込み時間が速くなります。キャッシュは定期的に更新されるため、セッション中はネットワークリクエストを避けるためにキャッシュを使用しても安全です。</p><p></p><p>キャッシュはアプリの再起動後も保持され、アプリの再インストールや手動でのクリアによってのみ削除されます。</p> |
+
+## アセットのカスタマイズ \{#customize-assets\}
+
+ペイウォール内の画像や動画をカスタマイズするには、カスタムアセットを実装します。
+
+ヒーロー画像とヒーロー動画には定義済みのID（`hero_image` と `hero_video`）があります。カスタムアセットバンドルでは、これらの ID でエレメントをターゲットにしてその動作をカスタマイズします。
+
+その他の画像や動画については、Adapty ダッシュボードで[カスタム ID を設定](custom-media)する必要があります。
+
+例えば、次のようなことができます：
+
+- 特定のユーザーに異なる画像や動画を表示する。
+- リモートのメイン画像を読み込む間、ローカルのプレビュー画像を表示する。
+- 動画の再生前にプレビュー画像を表示する。
+
+:::important
+この機能を使用するには、Adapty React Native SDK をバージョン 3.8.0 以上に更新してください。
+:::
+
+カスタムアセットをシンプルな辞書で提供する方法の例を示します：
+
+```javascript
+const customAssets: Record<string, AdaptyCustomAsset> = {
+  'custom_image': { type: 'image', relativeAssetPath: 'custom_image.png' },
+  'hero_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'custom_video.mp4' },
+      android: { relativeAssetPath: 'videos/custom_video.mp4' }
+    }
+  }
+};
+
+view = await createPaywallView(paywall, { customAssets })
+
+```
+
+:::note
+アセットが見つからない場合、ペイウォールはデフォルトの表示にフォールバックします。
+:::

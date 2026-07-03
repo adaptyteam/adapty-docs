@@ -1,0 +1,205 @@
+---
+title: "Android SDKのカスタムペイウォールで購入を有効にする"
+description: "Adapty SDKをAndroidカスタムペイウォールに統合してアプリ内課金を有効にする方法。"
+metadataTitle: "Adapty クイックスタートガイド | Adapty ドキュメント"
+keywords: ['paywalls Android', 'sdk Android', 'paywall', 'getFlow']
+---
+
+このガイドでは、Adaptyをカスタムペイウォールに統合する方法を説明します。ペイウォールの実装を完全にコントロールしながら、Adapty SDKがプロダクトの取得、新規購入の処理、過去の購入の復元を行います。
+:::important
+**このガイドは、カスタムペイウォールを実装している開発者向けです。** 課金を有効にする最も簡単な方法をお探しであれば、[Adapty Flow Builder](android-quickstart-paywalls) をご利用ください。Flow Builder を使うと、ノーコードのビジュアルエディターでフローを作成でき、すべての購入ロジックは Adapty が自動的に処理します。また、アプリを再公開することなく、さまざまなデザインをテストすることができます。
+:::
+## 始める前に \{#before-you-start\}
+
+### プロダクトを設定する \{#set-up-products\}
+
+アプリ内課金を有効にするには、3つの重要な概念を理解する必要があります。
+- [**プロダクト**](product) – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセスなど）
+- [**ペイウォール**](paywalls) – どのプロダクトを提供するかを定義する設定。Adapty では、プロダクトを取得するにはペイウォールを使う必要がありますが、この設計のおかげでアプリのコードを変更せずにプロダクト、価格、オファーを変更できます。
+- [**プレースメント**](placements) – アプリ内でペイウォールを表示する場所とタイミング（`main`、`onboarding`、`settings` など）。ダッシュボードでプレースメントにペイウォールを設定しておき、コード内でプレースメント ID を指定してリクエストします。これにより、A/B テストの実施や、ユーザーごとに異なるペイウォールの表示が簡単に行えます。
+これらのコンセプトは、カスタムペイウォールを使用する場合でも理解しておく必要があります。基本的には、アプリで販売するプロダクトを管理するための仕組みです。
+
+カスタムペイウォールを実装するには、**ペイウォール**を作成し、**プレースメント**に追加する必要があります。この設定によって、プロダクトを取得できるようになります。ダッシュボードでの操作については、[こちら](quickstart)のクイックスタートガイドを参照してください。
+### ユーザーの管理 \{#manage-users\}
+
+バックエンド認証の有無にかかわらず利用できます。
+
+ただし、Adapty SDKは匿名ユーザーと識別済みユーザーを異なる方法で処理します。詳細を理解し、ユーザーを適切に扱うために、[識別クイックスタートガイド](android-quickstart-identify)をお読みください。
+
+## ステップ 1. プロダクトを取得する \{#step-1-get-products\}
+
+カスタムペイウォール用のプロダクトを取得するには、次の手順が必要です。
+
+1. `getFlow` メソッドに[プレースメント](placements) ID を渡して `flow` オブジェクトを取得する。
+2. `getPaywallProducts` メソッドを使って、このフローのプロダクト配列を取得する。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+fun loadPaywall() {
+    Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
+        when (result) {
+            is AdaptyResult.Success -> {
+                val flow = result.value
+                Adapty.getPaywallProducts(flow) { productResult ->
+                    when (productResult) {
+                        is AdaptyResult.Success -> {
+                            val products = productResult.value
+                            // Use products to build your custom paywall UI
+                        }
+                        is AdaptyResult.Error -> {
+                            val error = productResult.error
+                            // Handle the error
+                        }
+                    }
+                }
+            }
+            is AdaptyResult.Error -> {
+                val error = result.error
+                // Handle the error
+            }
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+
+public void loadPaywall() {
+    Adapty.getFlow("YOUR_PLACEMENT_ID", result -> {
+        if (result instanceof AdaptyResult.Success) {
+            AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) result).getValue();
+            
+            Adapty.getPaywallProducts(flow, productResult -> {
+                if (productResult instanceof AdaptyResult.Success) {
+                    List<AdaptyPaywallProduct> products = ((AdaptyResult.Success<List<AdaptyPaywallProduct>>) productResult).getValue();
+                    // カスタムペイウォールUIの構築にproductsを使用する
+                } else if (productResult instanceof AdaptyResult.Error) {
+                    AdaptyError error = ((AdaptyResult.Error) productResult).getError();
+                    // エラーを処理する
+                }
+            });
+        } else if (result instanceof AdaptyResult.Error) {
+            AdaptyError error = ((AdaptyResult.Error) result).getError();
+            // エラーを処理する
+        }
+    });
+}
+```
+</TabItem>
+</Tabs>
+## ステップ 2. 購入を処理する \{#step-2-accept-purchases\}
+
+カスタムペイウォールでユーザーがプロダクトをタップしたら、選択したプロダクトで `makePurchase` メソッドを呼び出します。これにより購入フローが処理され、更新されたプロファイルが返されます。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+fun purchaseProduct(activity: Activity, product: AdaptyPaywallProduct) {
+    Adapty.makePurchase(activity, product) { result ->
+        when (result) {
+            is AdaptyResult.Success -> {
+                when (val purchaseResult = result.value) {
+                    is AdaptyPurchaseResult.Success -> {
+                        val profile = purchaseResult.profile
+                        // Purchase successful, profile updated
+                    }
+                    is AdaptyPurchaseResult.UserCanceled -> {
+                        // User canceled the purchase
+                    }
+                    is AdaptyPurchaseResult.Pending -> {
+                        // Purchase is pending (e.g., user will pay offline with cash)
+                    }
+                }
+            }
+            is AdaptyResult.Error -> {
+                val error = result.error
+                // Handle the error
+            }
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+public void purchaseProduct(Activity activity, AdaptyPaywallProduct product) {
+    Adapty.makePurchase(activity, product, null, result -> {
+        if (result instanceof AdaptyResult.Success) {
+            AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
+            
+            if (purchaseResult instanceof AdaptyPurchaseResult.Success) {
+                AdaptyProfile profile = ((AdaptyPurchaseResult.Success) purchaseResult).getProfile();
+                // 購入成功、プロファイルが更新されました
+            } else if (purchaseResult instanceof AdaptyPurchaseResult.UserCanceled) {
+                // ユーザーが購入をキャンセルしました
+            } else if (purchaseResult instanceof AdaptyPurchaseResult.Pending) {
+                // 購入が保留中です（例：ユーザーが現金でオフライン支払いを行う場合）
+            }
+        } else if (result instanceof AdaptyResult.Error) {
+            AdaptyError error = ((AdaptyResult.Error) result).getError();
+            // エラーを処理します
+        }
+    });
+}
+```
+</TabItem>
+</Tabs>
+## ステップ 3. 購入を復元する \{#step-3-restore-purchases\}
+
+Google Play などのアプリストアでは、サブスクリプションを提供するすべてのアプリに対して、ユーザーが購入を復元できる方法を用意することを求めています。
+
+ユーザーが復元ボタンをタップしたときに `restorePurchases` メソッドを呼び出してください。これにより、購入履歴が Adapty と同期され、更新されたプロファイルが返されます。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+fun restorePurchases() {
+    Adapty.restorePurchases { result ->
+        when (result) {
+            is AdaptyResult.Success -> {
+                val profile = result.value
+                // Restore successful, profile updated
+            }
+            is AdaptyResult.Error -> {
+                val error = result.error
+                // Handle the error
+            }
+        }
+    }
+}
+```
+</TabItem>
+
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+public void restorePurchases() {
+    Adapty.restorePurchases(result -> {
+        if (result instanceof AdaptyResult.Success) {
+            AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+            // 復元成功、プロファイル更新済み
+        } else if (result instanceof AdaptyResult.Error) {
+            AdaptyError error = ((AdaptyResult.Error) result).getError();
+            // エラーを処理する
+        }
+    });
+}
+```
+</TabItem>
+</Tabs>
+## 次のステップ \{#next-steps\}
+
+<SupportForum />
+
+ペイウォールをアプリに表示する準備が整いました。[Google Play ストアでの購入テスト](testing-on-android)を行い、ペイウォールからテスト購入を完了できることを確認してください。本番環境に対応した実装の例については、サンプルアプリの [ProductListFragment.kt](https://github.com/adaptyteam/AdaptySDK-Android/blob/master/app/src/main/java/com/adapty/example/ProductListFragment.kt) をご覧ください。エラーハンドリング、UI フィードバック、サブスクリプション管理を含む購入処理の実装例が確認できます。
+次に、[ユーザーが購入を完了したかどうかを確認](android-check-subscription-status)して、ペイウォールを表示するか有料機能へのアクセスを付与するかを判断します。

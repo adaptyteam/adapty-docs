@@ -1,0 +1,82 @@
+---
+title: "バックエンドからサブスクリプションアクセスを確認・付与する"
+description: "Adapty のサーバーサイド API を使って、ユーザーのサブスクリプションがアクティブかどうかを確認し、手動でアクセスを付与する方法を AI コーディングエージェントとともに解説します。"
+metadataTitle: "バックエンドからサブスクリプションアクセスを確認・付与する | Adapty ドキュメント"
+---
+バックエンドから Adapty のサーバーサイド API を使って、ユーザーのアクティブなサブスクリプションを確認したり、アクセスを手動で付与したりできます。このガイドでは、最もよく使われる 2 つの呼び出し — `getProfile` と `grantAccessLevel` — を取り上げ、AI コーディングエージェントを使って自分のスタック向けに統合を実装する方法を説明します。
+
+:::tip
+AI コーディングエージェントを使っていますか？タイトル下の **Copy for LLM** をクリックして、このページ全体をエージェントに貼り付けてください。必要な呼び出し、フィールド、注意点がすべて含まれています。
+:::
+## 始める前に \{#before-you-start\}
+
+- **シークレット API キー**: [App settings → General](https://app.adapty.io/settings/general) の **Secret key** フィールドで確認できます。キーはアプリごとに異なります。環境変数（例: `ADAPTY_SECRET_KEY`）に保存し、`Authorization: Api-Key {key}` の形式で送信してください。
+- **ベース URL**: すべてのリクエストは `https://api.adapty.io` に送信します。
+- **ユーザーの識別方法**: `adapty-customer-user-id`（独自のユーザー ID — アプリでユーザーを識別している場合のみ使用可能）または `adapty-profile-id`（Adapty のプロファイル ID）のいずれかを送信します。どちらも同じように使えるので、どちらか一方を使用してください。
+## サブスクリプションを確認する \{#check-a-subscription\}
+
+ステータスを確認するには、`getProfile` を `GET` で呼び出し、ユーザー識別子をヘッダーとして渡します。リクエストボディは不要です。
+```javascript title="check-access.js"
+const res = await fetch("https://api.adapty.io/api/v2/server-side-api/profile/", {
+  headers: {
+    "Authorization": `Api-Key ${process.env.ADAPTY_SECRET_KEY}`,
+    "adapty-customer-user-id": userId,
+  },
+});
+const { data } = await res.json();
+
+function hasActiveAccess(profile, accessLevelId = "premium") {
+  const level = profile.access_levels?.find(a => a.access_level_id === accessLevelId);
+  if (!level) return false;
+  if (level.is_in_grace_period) return true;
+  if (!level.expires_at) return true;             // lifetime / non-expiring
+  return new Date(level.expires_at) > new Date(); // not expired yet
+}
+
+if (hasActiveAccess(data)) {
+  // unlock premium features
+}
+```
+
+SDKのプロファイルとは異なり、サーバーサイドのレスポンスには **`is_active` フィールドがありません**。ステータスは `access_levels[].expires_at` から自分で判定してください。`null` の場合は永続アクセス、未来の日付の場合はアクティブ、過去の日付の場合は期限切れです。`is_in_grace_period` はアクティブとして扱ってください。プロファイルおよびアクセスレベルのフィールドの詳細については、[getProfile](https://adapty.io/docs/ja/api-adapty/operations/getProfile.md) を参照してください。
+## アクセスレベルを手動で付与する \{#grant-access-manually\}
+
+購入なしで有料機能を解放したい場合（プロモーションコード、投資家・ベータアクセス、サポート対応など）は、`grantAccessLevel` を `POST` で呼び出します。
+
+```javascript title="grant-access.js"
+await fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/", {
+  method: "POST",
+  headers: {
+    "Authorization": `Api-Key ${process.env.ADAPTY_SECRET_KEY}`,
+    "adapty-customer-user-id": userId,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ access_level_id: "premium" }), // 一時的なアクセスには "expires_at" を追加
+});
+```
+- **アクセスレベルはダッシュボード（**Access levels**）に事前に存在している必要があります** — `access_level_id` はその識別子であり、新しい名前ではありません。
+- **手動付与はアナリティクスに表示されません**。Webhook インテグレーションと Event Feed にのみ配信されるため、収益やコンバージョンのチャートには反映されません。
+
+リクエストとレスポンスの詳細については、[grantAccessLevel](https://adapty.io/docs/ja/api-adapty/operations/grantAccessLevel.md) を参照してください。
+## AIコーディングエージェントで構築する \{#build-it-with-your-ai-coding-agent\}
+
+このガイドとAPIスペックをMarkdown形式（任意のページURLに`.md`を追加）でAIコーディングエージェントに渡し、使用するスタックを伝えれば、あとはエージェントがAPIコールを書いてくれます：
+
+- [OpenAPI仕様](https://adapty.io/docs/ja/api-specs/adapty-api.yaml)
+- [getProfile](https://adapty.io/docs/ja/api-adapty/operations/getProfile.md)
+- [grantAccessLevel](https://adapty.io/docs/ja/api-adapty/operations/grantAccessLevel.md)
+
+プロンプト例：
+```
+Using the Adapty server-side API spec, write backend functions to check whether a
+user has an active "premium" access level (GET /profile/, derive status from
+expires_at — there's no is_active field) and to grant it (grantAccessLevel).
+Authenticate with ADAPTY_SECRET_KEY and identify users by adapty-customer-user-id.
+```
+
+The agent writes the code, but it can't run your backend or set your keys — you provide the secret key and the user identifiers.
+## 制限 \{#limits\}
+
+- **レート制限**: アプリごとに1分あたり最大40,000リクエスト。
+- **アプリ固有のキー**: 各キーは1つのアプリにのみ使用可能です。アプリごとに対応するキーを使用してください。
+- **識別子の必須指定**: すべてのリクエストには `adapty-customer-user-id` または `adapty-profile-id` が必要です。

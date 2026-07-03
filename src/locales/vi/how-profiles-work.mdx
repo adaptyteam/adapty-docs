@@ -1,0 +1,131 @@
+---
+title: "Cách hồ sơ người dùng hoạt động"
+description: "Hiểu cách Adapty tạo, theo dõi và liên kết hồ sơ người dùng — bao gồm hồ sơ ẩn danh, người dùng đã xác định danh tính, và mối quan hệ parent/inheritor."
+metadataTitle: "Cách Hồ Sơ Người Dùng Adapty Hoạt Động | Tài liệu Adapty"
+keywords: ['profile', 'customer_user_id', 'hồ sơ ẩn danh', 'hồ sơ parent', 'hồ sơ inheritor', 'bản ghi hồ sơ']
+---
+
+import Sharingaccesslevel from '@site/src/locales/vi/reusable/sharingaccesslevel.md';
+
+Mỗi người dùng trong ứng dụng của bạn đều có một hồ sơ người dùng Adapty để theo dõi các giao dịch mua, sự kiện và trạng thái gói đăng ký. Hiểu cách hồ sơ được tạo và liên kết giúp bạn ngăn ngừa lỗi tích hợp, tránh phân mảnh dữ liệu, và diễn giải dữ liệu trong phần [Profiles](profiles-crm).
+
+## Tạo hồ sơ \{#profile-creation\}
+
+Adapty tự động tạo hồ sơ lần đầu tiên người dùng mở ứng dụng của bạn.
+
+**Không có Customer User ID**, hồ sơ là ẩn danh. Một hồ sơ ẩn danh mới được tạo mỗi khi:
+- Người dùng cài lại ứng dụng
+- Người dùng đăng xuất khỏi ứng dụng của bạn (khi ứng dụng gọi `Adapty.logout()`)
+
+Các giao dịch mua được gắn với lần cài đặt ứng dụng, chứ không phải với danh tính người dùng cố định.
+
+**Với Customer User ID**, hồ sơ tồn tại xuyên suốt các lần cài lại và trên nhiều thiết bị. Sử dụng customer user ID cho phép bạn:
+
+1. Theo dõi người dùng qua các lần cài lại ứng dụng và nhiều thiết bị.
+2. Tìm người dùng theo customer user ID của họ trong phần [**Profiles**](profiles-crm).
+3. Sử dụng customer user ID trong [server-side API](getting-started-with-server-side-api).
+4. Adapty gửi customer user ID đến tất cả các tích hợp.
+
+Hành vi hồ sơ với customer user ID phụ thuộc vào thời điểm bạn thiết lập nó:
+
+- **Khi kích hoạt SDK**: Adapty sử dụng hồ sơ hiện có với customer user ID đó (cho người dùng cũ) hoặc tạo hồ sơ mới (cho người dùng lần đầu).
+- **Sau khi kích hoạt SDK**: Adapty tạo hồ sơ ẩn danh khi kích hoạt. Khi bạn xác định danh tính người dùng sau đó, Adapty liên kết customer user ID với hồ sơ ẩn danh (cho người dùng lần đầu) hoặc chuyển sang hồ sơ hiện có với ID đó (cho người dùng cũ).
+
+**Nên dùng cách nào:**
+
+- **Customer user ID có sẵn khi khởi động ứng dụng** (ví dụ: lưu từ phiên trước) — truyền vào `activate()` khi khởi tạo SDK.
+- **Người dùng đăng nhập sau khi ứng dụng khởi động** — gọi `identify()` sau khi xác thực. Adapty liên kết ID với hồ sơ hiện tại (nếu ID mới) hoặc chuyển sang hồ sơ hiện có (nếu ID đã tồn tại).
+- **Người dùng có thể mua trước khi đăng nhập** — gọi `identify()` sau khi đăng nhập. Nếu customer user ID đã tồn tại trong Adapty, hãy lấy lại hồ sơ sau đó để đồng bộ mức độ truy cập hiện tại.
+
+Để biết chi tiết triển khai, xem hướng dẫn SDK về [xác định danh tính người dùng](identifying-users).
+
+:::note
+Nếu người dùng cũ trước đây đã dùng ứng dụng của bạn mà không có customer user ID, những hồ sơ ẩn danh đó sẽ không được tự động gộp khi bạn bắt đầu xác định danh tính tại thời điểm kích hoạt SDK. Để duy trì lịch sử đầy đủ cho những người dùng như vậy, hãy dùng `identify()` sau khi đăng nhập thay thế.
+:::
+
+## Hồ sơ parent và inheritor \{#parent-and-inheritor-profiles\}
+
+Khi cùng một gói đăng ký phía cửa hàng được liên kết với nhiều hơn một hồ sơ người dùng Adapty, Adapty coi các hồ sơ đó là một chuỗi: một hồ sơ **parent** và một hoặc nhiều hồ sơ **inheritor** chia sẻ quyền truy cập từ cùng một giao dịch mua.
+
+Điều này xảy ra khi:
+
+- [Chia sẻ quyền truy cập có trả phí giữa các tài khoản người dùng](sharing-paid-access-between-user-accounts) được bật và người dùng đăng nhập trên thiết bị nơi một hồ sơ khác đã thực hiện giao dịch mua trước đó.
+- Người dùng cài lại ứng dụng mà không có `customer_user_id`, và hồ sơ mới tiếp nhận giao dịch mua từ lần cài đặt trước.
+- Các người dùng đã xác định danh tính khác nhau khôi phục giao dịch mua trên cùng một thiết bị.
+- Ứng dụng được chuyển giữa các Apple Team ID và ứng dụng mới tiếp nhận các giao dịch mua thực hiện dưới Team ID cũ.
+
+**Cách chọn parent.**
+
+Parent là **hồ sơ đầu tiên ghi nhận giao dịch mua** — được xác định theo thứ tự receipt mua trong Adapty, không phải theo thứ tự tạo hồ sơ. Ví dụ: bạn cài ứng dụng và không mua gì, sau đó cài lại và mua gói đăng ký. Hồ sơ thứ hai trở thành parent vì nó thực hiện giao dịch mua. Hồ sơ đầu tiên trở thành inheritor và được cấp quyền truy cập thông qua tính năng chia sẻ.
+
+**Cách phân phối sự kiện:**
+
+- **Sự kiện giao dịch** (mua hàng, gia hạn, hủy, vấn đề thanh toán, thời gian ân hạn, hoàn tiền): Chỉ xuất hiện trên hồ sơ **parent** đã thực hiện giao dịch mua. Tất cả các lần gia hạn và cập nhật gói đăng ký tiếp tục xuất hiện trên hồ sơ này.
+- **Sự kiện `access_level_updated`**: Xuất hiện trên **cả hồ sơ parent lẫn inheritor** bất cứ khi nào trạng thái mức độ truy cập thay đổi. Điều này giúp tất cả các hồ sơ được kết nối luôn cập nhật về trạng thái truy cập hiện tại.
+
+Hồ sơ parent hiển thị toàn bộ lịch sử giao dịch. Các hồ sơ inheritor chỉ hiển thị các cập nhật mức độ truy cập của họ và một liên kết đến hồ sơ parent trong phần **Access level**.
+
+<Zoom>
+  <img src="/assets/shared/img/98d0dad-non-original_profile.webp"
+  style={{
+    border: '1px solid #727272',
+    width: '700px',
+    display: 'block',
+    margin: '0 auto'
+  }}
+/>
+</Zoom>
+
+**Theo dõi cùng một gói đăng ký trên nhiều hồ sơ.**
+
+Mỗi hồ sơ inheritor có `profile_id` riêng, vì vậy `profile_id` không ổn định xuyên suốt một chuỗi. Để xác định cùng một gói đăng ký trên nhiều hồ sơ — ví dụ, khi đối chiếu các sự kiện webhook hoặc khớp hồ sơ dashboard với một người dùng cơ bản — hãy dùng mã định danh phía cửa hàng thay thế.
+
+| Trường | Dùng để |
+| --- | --- |
+| `store_original_transaction_id` | Xác định chuỗi gói đăng ký trên nhiều hồ sơ. Duy nhất cho mỗi gói đăng ký Apple. |
+| `profiles_sharing_access_level` (trường webhook) | Tất cả các hồ sơ hiện đang được cấp quyền bởi gói đăng ký, khi tính năng chia sẻ được bật. |
+| `profile_id` | **Không** phù hợp để theo dõi xuyên hồ sơ — mỗi inheritor có `profile_id` riêng. |
+
+## Giao dịch không có hồ sơ \{#transactions-without-profiles\}
+
+Một số giao dịch trong Adapty không được gắn với hồ sơ nào — chúng xuất hiện trong phân tích và xuất dữ liệu nhưng không xuất hiện trong danh sách Profiles. Điều này xảy ra với **các thông báo cửa hàng server-to-server (S2S)** được gửi cho những người dùng mà tài khoản của họ chưa bao giờ kết nối với ứng dụng của bạn thông qua Adapty SDK. Các nguồn đã biết bao gồm:
+
+- Thông báo S2S của App Store (bao gồm sự kiện hoàn tiền)
+- Thông báo S2S của Google Play
+- Sự kiện webhook của Stripe và Paddle
+
+Các giao dịch này:
+
+- **Xuất hiện trong biểu đồ phân tích** (chúng được tính vào tổng chỉ số)
+- **Xuất hiện trong xuất dữ liệu** (S3, GCS, BigQuery) với `profile_id` được đặt là `null`
+- **Không xuất hiện trong danh sách Profiles** — không có hồ sơ nào để gắn vào
+
+Nếu bạn thấy nhiều sự kiện hơn trong phân tích hoặc xuất dữ liệu so với những gì bạn có thể tìm thấy trong giao diện Profiles, sự khác biệt đó có thể là do các giao dịch không có hồ sơ này. Để tìm chúng trong một bản xuất, hãy lọc các hàng có `profile_id IS NULL`.
+
+## Chia sẻ quyền truy cập có trả phí giữa các tài khoản người dùng \{#sharing-paid-access-between-user-accounts\}
+
+:::link
+Bài viết chính: [Chia sẻ quyền truy cập có trả phí giữa các tài khoản người dùng](sharing-paid-access-between-user-accounts)
+:::
+
+Để thiết lập chính sách chia sẻ mức độ truy cập, trên trang cài đặt [**General**](general), hãy chọn một tùy chọn chia sẻ. Bạn có thể đặt chính sách riêng cho [môi trường sandbox](test-purchases-in-sandbox).
+
+<Sharingaccesslevel />
+
+## Dấu thời gian sự kiện có ngày trong tương lai (Apple/iOS) \{#event-timestamps-with-future-dates-appleios\}
+
+Hành vi này chỉ xảy ra với Apple App Store. Hệ thống thông báo của Google Play không gửi sự kiện trước.
+
+Dấu thời gian sự kiện trong hồ sơ và tích hợp có thể hiển thị ngày trong tương lai vì Apple gửi sự kiện gia hạn trước.
+
+- **Lý do xảy ra**: Apple làm điều này để đảm bảo gói đăng ký gia hạn tự động trước khi hết hạn, ngăn ngừa gián đoạn dịch vụ cho người dùng. Để biết thêm chi tiết, xem Diễn đàn nhà phát triển Apple: [Server Notifications for Subscriptions](https://developer.apple.com/forums/tags/app-store-server-notifications).
+- **Các loại sự kiện bị ảnh hưởng**: Thông thường, điều này áp dụng cho các lần gia hạn gói đăng ký và chuyển đổi từ dùng thử sang trả phí. Các sự kiện này có thể có dấu thời gian trong tương lai vì Apple thông báo cho hệ thống về chúng trước.
+- **Các loại sự kiện khác**: Các in-app purchase bổ sung và thay đổi gói đăng ký được ghi lại với dấu thời gian thực tế vì những sự kiện này không thể được dự đoán trước.
+- **Ảnh hưởng đến Analytics và Event Feed**: Các sự kiện này sẽ chỉ xuất hiện trong **Analytics** và **Event Feed** sau khi dấu thời gian của chúng đã qua. Các sự kiện có dấu thời gian trong tương lai không hiển thị trong cả hai phần.
+- **Ảnh hưởng đến Integrations**: Adapty gửi sự kiện đến các tích hợp ngay khi nhận được. Nếu một sự kiện có dấu thời gian trong tương lai, Adapty gửi nó đến tích hợp của bạn với dấu thời gian trong tương lai không thay đổi.
+
+## Bước tiếp theo \{#next-steps\}
+
+- Để dùng dashboard Profiles để tìm và quản lý người dùng, xem [Profiles](profiles-crm).
+- Để thiết lập xác định danh tính người dùng trong ứng dụng, xem hướng dẫn SDK về [xác định danh tính người dùng](identifying-users).
+- Để cấu hình chính sách chia sẻ quyền truy cập, xem [Chia sẻ quyền truy cập có trả phí giữa các tài khoản người dùng](sharing-paid-access-between-user-accounts).

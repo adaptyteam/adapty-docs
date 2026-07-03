@@ -1,0 +1,325 @@
+---
+title: "Xử lý hành động nút trong React Native SDK"
+description: "Xử lý các hành động nút trên paywall trong React Native bằng Adapty để tối ưu hóa doanh thu ứng dụng."
+metadataTitle: "Xử lý hành động nút trên paywall | Tài liệu Adapty"
+toc_max_heading_level: 4
+keywords: ['nút paywall', 'nút', 'hành động nút paywall', 'xử lý hành động']
+---
+
+Nếu bạn đang xây dựng paywall bằng Adapty paywall builder, việc thiết lập các nút đúng cách là rất quan trọng:
+
+1. Thêm [nút trong paywall builder](paywall-buttons) và gán cho nó một hành động có sẵn hoặc tạo một ID hành động tùy chỉnh.
+2. Viết code trong ứng dụng để xử lý từng hành động bạn đã gán.
+
+Hướng dẫn này hướng dẫn cách xử lý các hành động tùy chỉnh và các hành động có sẵn trong code của bạn.
+
+:::warning
+**Chỉ các hành động mua hàng, khôi phục, đóng paywall và mở URL được xử lý tự động.** Tất cả các hành động nút khác đều cần được triển khai xử lý trong code ứng dụng.
+:::
+
+## Đóng paywall \{#close-paywalls\}
+
+Để thêm nút đóng paywall:
+
+1. Trong paywall builder, thêm một nút và gán cho nó hành động **Close**.
+2. Trong code ứng dụng, triển khai handler cho hành động `close` để đóng paywall.
+
+:::info
+Trong React Native SDK, hành động `close` mặc định sẽ kích hoạt việc đóng paywall. Tuy nhiên, bạn có thể ghi đè hành vi này trong code nếu cần. Ví dụ: đóng một paywall có thể kích hoạt mở một paywall khác.
+:::
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+Với React component, xử lý hành động đóng thông qua các prop handler sự kiện riêng lẻ:
+
+```javascript
+
+function MyPaywall({ paywall }) {
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
+    // Handle close button press - navigate away or hide component
+    navigation.goBack();
+  }, [navigation]);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Với modal presentation, triển khai handler đóng:
+
+```javascript
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+    onCloseButtonPress() {
+        return true; // allow paywall closing
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+Với SDK version < 3.14, chỉ hỗ trợ modal presentation:
+
+```javascript
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.registerEventHandlers({
+    onCloseButtonPress() {
+        return true; // allow paywall closing
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+## Mở URL từ paywall \{#open-urls-from-paywalls\}
+
+:::tip
+Nếu bạn muốn thêm một nhóm liên kết (ví dụ: điều khoản sử dụng và khôi phục mua hàng), hãy thêm một phần tử **Link** trong paywall builder và xử lý nó giống như các nút có hành động **Open URL**.
+:::
+
+Để thêm nút mở liên kết từ paywall (ví dụ: **Terms of use** hoặc **Privacy policy**):
+
+1. Trong paywall builder, thêm một nút, gán cho nó hành động **Open URL** và nhập URL bạn muốn mở.
+2. Trong code ứng dụng, triển khai handler cho hành động `openUrl` để mở URL nhận được trong trình duyệt.
+
+:::info
+Trong React Native SDK, hành động `openUrl` mặc định sẽ kích hoạt việc mở URL. Tuy nhiên, bạn có thể ghi đè hành vi này trong code nếu cần.
+:::
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+Với React component, xử lý việc mở URL thông qua prop handler sự kiện:
+
+```javascript
+
+function MyPaywall({ paywall }) {
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onUrlPress={onUrlPress}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Với modal presentation, triển khai handler URL:
+
+```javascript
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+    onUrlPress(url) {
+        Linking.openURL(url);
+        return false; // Keep paywall open
+    },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+Với SDK version < 3.14, chỉ hỗ trợ modal presentation:
+
+```javascript
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.registerEventHandlers({
+    onUrlPress(url) {
+        Linking.openURL(url);
+        return false; // Keep paywall open
+    },
+});
+```
+
+</TabItem>
+</Tabs>
+
+## Đăng nhập vào ứng dụng \{#log-into-the-app\}
+
+Để thêm nút cho phép người dùng đăng nhập vào ứng dụng:
+
+1. Trong paywall builder, thêm một nút và gán cho nó hành động **Login**.
+2. Trong code ứng dụng, triển khai handler cho hành động `login` để xác định người dùng.
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+Với React component, xử lý đăng nhập thông qua prop handler sự kiện:
+
+```javascript
+
+function MyPaywall({ paywall }) {
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
+    if (actionId === 'login') {
+      navigation.navigate('Login');
+    }
+  }, [navigation]);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCustomAction={onCustomAction}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Với modal presentation, triển khai handler đăng nhập:
+
+```javascript
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.setEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'login') {
+            navigation.navigate('Login');
+        }
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+Với SDK version < 3.14, chỉ hỗ trợ modal presentation:
+
+```javascript
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.registerEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'login') {
+            navigation.navigate('Login');
+        }
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+## Xử lý hành động tùy chỉnh \{#handle-custom-actions\}
+
+Để thêm nút xử lý các hành động khác:
+
+1. Trong paywall builder, thêm một nút, gán cho nó hành động **Custom** và đặt một ID cho nó.
+2. Trong code ứng dụng, triển khai handler cho ID hành động bạn đã tạo.
+
+Ví dụ: nếu bạn có thêm một bộ ưu đãi gói đăng ký hoặc sản phẩm mua một lần, bạn có thể thêm nút để hiển thị một paywall khác:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+Với React component, xử lý các hành động tùy chỉnh thông qua prop handler sự kiện:
+
+```javascript
+
+function MyPaywall({ paywall }) {
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {
+    if (actionId === 'openNewPaywall') {
+      // Display another paywall
+    }
+  }, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCustomAction={onCustomAction}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Với modal presentation, triển khai các handler hành động tùy chỉnh:
+
+```javascript
+const unsubscribe = view.setEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'openNewPaywall') {
+            // Display another paywall
+        }
+    },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+
+<TabItem value="old" label="SDK version < 3.14" default>
+
+Với SDK version < 3.14, chỉ hỗ trợ modal presentation:
+
+```javascript
+const unsubscribe = view.registerEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'openNewPaywall') {
+            // Display another paywall
+        }
+    },
+});
+```
+
+</TabItem>
+</Tabs>

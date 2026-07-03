@@ -1,0 +1,110 @@
+---
+title: "React Native SDKのエラー処理"
+description: "React Native SDKでのエラー処理。"
+metadataTitle: "React Nativeのエラー処理 | Adapty ドキュメント"
+---
+
+import CrossPlatformErrors from '@site/src/locales/ja/reusable/CrossPlatformErrors.md';
+
+SDKから返されるエラーはすべて `AdaptyErrorCode` です。以下に例を示します。
+
+:::tip
+**デバッグ前に詳細ログを有効にしてください。** ほとんどの `AdaptyError` は、内部にStoreKit、Play Billing、ネットワーク、またはバックエンドのエラーをラップしています。詳細ログ（`adapty.setLogLevel('verbose')` — [純粋なRN](sdk-installation-react-native-pure#logging)または[Expo](sdk-installation-react-native-expo#logging)のログ記録を参照）を有効にすると、ラップされたエラーがコンソールに出力され、実際の原因を特定しやすくなります。
+:::
+
+:::important
+これらの解決策で問題が解決しない場合は、サポートチームへのお問い合わせ前に[その他の問題](#other-issues)のセクションをご確認ください。より迅速にサポートできるよう、事前の確認をお願いしています。
+:::
+
+```typescript showLineNumbers
+try {
+  const params: MakePurchaseParamsInput = {};
+  await adapty.makePurchase(product, params);
+} catch (error) {
+  if (
+    error instanceof AdaptyError &&
+    error.adaptyCode === getErrorCode(ErrorCode['2'])
+  ) {
+    // payment cancelled
+  }
+}
+```
+
+## システムStoreKitコード \{#system-storekit-codes\}
+
+| エラー | コード | 解決策 |
+|-----|----|-----------|
+| [unknown](https://developer.apple.com/documentation/storekit/skerror/code/unknown)                                                         | 0    | 不明または予期しないエラーが発生したことを示すエラーコードです。<br/> 再試行するか、[その他の問題](#other-issues)セクションを参照してください。                                                                                                                                                                                                                                                                                                                                  |
+| [clientInvalid](https://developer.apple.com/documentation/storekit/skerror/code/clientinvalid)                                             | 1    | クライアントが試みた操作を実行する権限がないことを示すエラーコードです。                                                                                                                                                                                                                                                                                                                                                           |
+| [paymentCancelled](https://developer.apple.com/documentation/storekit/skerror/code/paymentcancelled)                                       | 2    | <p>ユーザーが支払いリクエストをキャンセルしたことを示すエラーコードです。</p><p>特別な対応は不要ですが、ビジネスロジックの観点から、ユーザーに割引を提供したり、後でリマインドしたりすることを検討できます。</p>                                                                                                                                                                                                                                             |
+| [paymentInvalid](https://developer.apple.com/documentation/storekit/skerror/code/paymentinvalid)                                           | 3    | 支払いパラメーターのいずれかがApp Storeに認識されなかったことを示すエラーです。                                                                                                                                                                                                                                                                                                                                                       |
+| [paymentNotAllowed](https://developer.apple.com/documentation/storekit/skerror/code/paymentnotallowed)                                     | 4    | ユーザーが支払いの承認を許可されていないことを示すエラーコードです。                                                                                                                                                                                                                                                                                                                                                                       |
+| [storeProductNotAvailable](https://developer.apple.com/documentation/storekit/skerror/code/storeproductnotavailable)                       | 5    | リクエストされたプロダクトがストアで利用できないことを示すエラーコードです。<br/> アプリを再インストールしてみてください。                                                                                                                                                                                                                                                                                                                                               |
+| [cloudServicePermissionDenied](https://developer.apple.com/documentation/storekit/skerror/code/cloudservicepermissiondenied)               | 6    | ユーザーがCloudサービス情報へのアクセスを許可していないことを示すエラーコードです。                                                                                                                                                                                                                                                                                                                                                        |
+| [cloudServiceNetworkConnectionFailed](https://developer.apple.com/documentation/storekit/skerror/code/cloudservicenetworkconnectionfailed) | 7    | デバイスがネットワークに接続できなかったことを示すエラーコードです。                                                                                                                                                                                                                                                                                                                                                                         |
+| [cloudServiceRevoked](https://developer.apple.com/documentation/storekit/skerror/code/cloudservicerevoked/)                                | 8    | ユーザーがこのクラウドサービスの使用許可を取り消したことを示すエラーコードです。                                                                                                                                                                                                                                                                                                                                                           |
+| [privacyAcknowledgementRequired](https://developer.apple.com/documentation/storekit/skerror/code/privacyacknowledgementrequired)           | 9    | ユーザーがAppleのプライバシーポリシーをまだ承認していないことを示すエラーコードです。                                                                                                                                                                                                                                                                                                                                                            |
+| [unauthorizedRequestData](https://developer.apple.com/documentation/storekit/skerror/code/unauthorizedrequestdata)                         | 10   | アプリが必要なエンタイトルメントを持っていないプロパティを使用しようとしていることを示すエラーコードです。                                                                                                                                                                                                                                                                                                                                         |
+| [invalidOfferIdentifier](https://developer.apple.com/documentation/storekit/skerror/code/invalidofferidentifier)                           | 11   | <p>オファーの[`identifier`](https://developer.apple.com/documentation/storekit/skpaymentdiscount/identifier)が有効ではありません。例えば、App Storeでそのidentifierのオファーを設定していない場合や、オファーを失効させた場合などです。</p><p>AppStore Connectで必要なオファーを設定し、有効なオファーidentifierを渡していることを確認してください。</p>                                                                                           |
+| [invalidSignature](https://developer.apple.com/documentation/storekit/skerror/code/invalidsignature)                                       | 12   | 支払い割引の署名が有効ではないことを示すエラーコードです。                                                                                                                                                                                                                                                                                                                                                                    |
+| [missingOfferParams](https://developer.apple.com/documentation/storekit/skerror/code/missingofferparams)                                   | 13   | 支払い割引のパラメーターが不足していることを示すエラーコードです。                                                                                                                                                                                                                                                                                                                                                                        |
+| [invalidOfferPrice](https://developer.apple.com/documentation/storekit/skerror/code/invalidofferprice/)                                    | 14   | App Store Connectで指定した価格が無効になったことを示すエラーコードです。オファーは常に割引価格である必要があります。                                                                                                                                                                                                                                                                                                                    |
+
+## カスタムAndroidコード \{#custom-android-codes\}
+
+| エラー | コード | 解決策 |
+|-----|----|-----------|
+| adaptyNotInitialized | 20 | `Adapty.activate` メソッドでAdapty SDKを適切に設定する必要があります。[React Native向け](sdk-installation-reactnative)の設定方法を参照してください。 |
+| productNotFound | 22 | 購入リクエストされたプロダクトがストアで利用できないことを示すエラーです。 |
+| invalidJson | 23 | ペイウォールのJSONが有効ではありません。Adapty ダッシュボードで修正してください。修正方法の詳細については、[リモートコンフィグでペイウォールをカスタマイズする](customize-paywall-with-remote-config)をご覧ください。 |
+| currentSubscriptionToUpdateNotFoundInHistory | 24 | 更新が必要な元のサブスクリプションが見つかりません。 |
+| pendingPurchase | 25 | 購入状態が「購入済み」ではなく「保留中」であることを示すエラーです。詳細については、Android Developerドキュメントの[保留中のトランザクションの処理](https://developer.android.com/google/play/billing/integrate#pending)を参照してください。 |
+| billingServiceTimeout | 97 | Google Playが応答する前にリクエストが最大タイムアウトに達したことを示すエラーです。例えば、Play Billing Libraryの呼び出しによってリクエストされたアクションの実行に遅延が発生した場合などに起こります。 |
+| featureNotSupported | 98 | リクエストされた機能が、現在のデバイスのPlay Storeでサポートされていません。 |
+| billingServiceDisconnected | 99 | `BillingClient` を介したクライアントアプリとGoogle Play Storeサービスの接続が切断されたことを示す致命的なエラーです。 |
+| billingServiceUnavailable | 102 | Google Play Billingサービスが現在利用できないことを示す一時的なエラーです。ほとんどの場合、クライアントデバイスとGoogle Play Billingサービス間のどこかでネットワーク接続の問題があることを意味します。 |
+| billingUnavailable | 103 | <p>購入処理中にユーザーの課金エラーが発生したことを示すエラーです。発生する可能性がある例：</p><p></p><p>1\. ユーザーのデバイスのPlay Storeアプリが古い。</p><p>2. ユーザーがサポートされていない国にいる。</p><p>3. ユーザーがエンタープライズユーザーであり、エンタープライズ管理者がユーザーの購入を無効にしている。</p><p>4. Google Playがユーザーの支払い方法に請求できない。例えば、クレジットカードの有効期限が切れている場合など。</p><p>5. ユーザーがPlay Storeアプリにログインしていない。</p> |
+| developerError | 105 | APIの不適切な使用を示す致命的なエラーです。 |
+| billingError | 106 | Google Play自体の内部問題を示す致命的なエラーです。 |
+| itemAlreadyOwned | 107 | 消耗型アイテムがすでに購入されています。 |
+| itemNotOwned | 108 | アイテムに対してリクエストされたアクションが失敗したことを示すエラーです。 |
+
+## カスタムStoreKitコード \{#custom-storekit-codes\}
+
+| エラー | コード | 解決策 |
+|-----|----|-----------|
+| noProductIDsFound | 1000 | <p>ペイウォールでリクエストしたプロダクトがApp Storeに登録されているにもかかわらず、購入可能な状態でないことを示すエラーです。このエラーに `InvalidProductIdentifiers` の警告が伴う場合があります。エラーなしに警告のみが表示される場合は、無視して問題ありません。</p><p>このエラーが発生している場合は、[Code-1000 `noProductIDsFound` エラーの修正](InvalidProductIdentifiers-react-native)セクションの手順に従ってください。</p> |
+| productRequestFailed | 1002 | <p>現時点で利用可能なプロダクトを取得できません。考えられる原因：</p><p></p><p>- まだキャッシュが作成されておらず、かつインターネット接続もない。</p> |
+| cantMakePayments | 1003 | このデバイスではアプリ内課金が許可されていません。トラブルシューティング[ガイド](cantMakePayments-react-native)を参照してください。 |
+| noPurchasesToRestore | 1004 | Google Playが復元する購入を見つけられなかったことを示すエラーです。 |
+| cantReadReceipt | 1005 | <p>デバイスに有効なレシートがありません。サンドボックステスト中に問題になることがあります。</p><p>特別な対応は不要ですが、ビジネスロジックの観点から、ユーザーに割引を提供したり、後でリマインドしたりすることを検討できます。</p> |
+| productPurchaseFailed | 1006 | プロダクトの購入に失敗しました。このエラーは内部のStoreKitエラーをラップしています。実際の原因は、ラップされたエラーを確認するか、詳細ログを有効にしてコンソールで確認してください。ラップされたエラーは通常、上記の表にあるStoreKitコード0〜14のいずれかで、最もよく見られるのは `paymentCancelled`、`paymentInvalid`、`paymentNotAllowed`、`invalidOfferPrice` です。特定の原因を特定できない場合は、新しい[サンドボックスプロファイル](test-purchases-in-sandbox)を試してください。それでも失敗する場合はAppleサポートにお問い合わせください。 |
+| refreshReceiptFailed | 1010 | レシートが受信されなかったことを示すエラーです。StoreKit 1にのみ適用されます。 |
+| receiveRestoredTransactionsFailed | 1011 | 購入の復元に失敗しました。 |
+
+## カスタムネットワークコード \{#custom-network-codes\}
+
+| エラー                | コード | 解決策                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| :------------------- | :--- |:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| notActivated   | 2002 | Adapty SDKが有効化されていません。<br/> スプラッシュスクリーンや早期のUIフックが `adapty.activate` の完了前にAdaptyメソッドを呼び出している場合によく見られます。この症状は断続的で、実機とシミュレーターでタイミングが異なるため再現しないことがあります。他のSDK呼び出しをスケジュールする前に `activate` を `await` してください。完全なシーケンスについては[React Native SDKの呼び出し順序](react-native-sdk-call-order)を参照してください。 |
+| badRequest     | 2003 | 不正なリクエストです。<br/> [App Storeとの連携](app-store-connection-configuration)に必要なすべての手順を完了していることを確認してください。                                                                                                                                                                                                                                                                                           |
+| serverError    | 2004 | サーバーエラーです。<br/> しばらくしてから再試行してください。問題が解決しない場合は、Adaptyサポートチームにお問い合わせください。                                                                                                                                                                                                                                                                                                                      |
+| networkFailed  | 2005 | ユーザーのデバイスのネットワーク接続に問題があることを示すエラーです。<br/> VPNを無効にするか、モバイルデータ通信からWiFiに切り替えるか、またはその逆を試してください。                                                                                                                                                                                                                                                                   |
+| decodingFailed | 2006 | レスポンスのデコードに失敗したことを示すエラーです。<br/> コードを確認し、送信するパラメーターが有効であることを確認してください。例えば、無効なAPIキーを使用している場合にこのエラーが発生することがあります。                                                                                                                                                                                                                       |
+| encodingFailed | 2009 | リクエストのエンコードに失敗したことを示すエラーです。                                                                                                                                                                                                                                                                                                                                                                                 |
+| missingURL     | 2010 | リクエストされたURLがnilです。                                                                                                                                                                                                                                                                                                                                                                                                          |
+| analyticsDisabled    | 3000 | [アナリティクスをオプトアウト](analytics-integration#disabling-external-analytics-for-a-specific-customer)しているため、アナリティクスイベントを処理できません。                                                                                                                                                                                                                                                                                         |
+| wrongParam           | 3001 | いくつかのパラメーターが正しくないことを示すエラーです。<br/> Adaptyのペイウォールビルダーを使用していてこのエラーでペイウォールを表示できない場合は、ペイウォールビルダーで **Show on device** をオンにしてください。<br/> もう一つの考えられる原因は、ローカルの[フォールバック](fallback-paywalls)ファイルのバージョンがSDKバージョンと一致していないことです。ダッシュボードで新しいファイルをダウンロードしてください。 |
+| activateOnceError    | 3005 | `.activate` メソッドを複数回呼び出すことはできません。                                                                                                                                                                                                                                                                                                                                                                                      |
+| profileWasChanged    | 3006 | 操作中にユーザープロファイルが変更されました。<br/> `adapty.identify` の実行中に別のメソッドが呼び出されると、進行中の呼び出しがまもなく切り替わるプロファイルに対して処理され、SDKがそれを拒否します。ユーザーアクションの呼び出しの前に必ず `identify` を `await` してください。[React Native SDKの呼び出し順序](react-native-sdk-call-order)を参照してください。                                                                                                                                                                                          |
+| unsupportedData      | 3007 | データ形式がSDKでサポートされていないことを示すエラーです。                                                                                                                                                                                                                                                                                                                                                                             |
+| persistingDataError  | 3100 | データの保存中にエラーが発生しました。                                                                                                                                                                                                                                                                                                                                                                                                 |
+| fetchTimeoutError    | 3101 | フェッチ操作がタイムアウトしたことを示すエラーです。                                                                                                                                                                                                                                                                                                                                                                           |
+
+## その他の問題 \{#other-issues\}
+
+まだ解決策が見つからない場合は、以下の手順をお試しください。
+
+- **SDKを最新バージョンにアップグレードする**: 最新のSDKバージョンはより安定しており、既知の問題の修正が含まれているため、常に最新版へのアップグレードをお勧めします。
+- **サポートチームに連絡するか、[サポートフォーラム](https://adapty.featurebase.app/)で他の開発者に助けを求める**。
+- **[support@adapty.io](mailto:support@adapty.io)またはチャットでサポートチームに連絡する**: SDKのアップグレードができない場合や、アップグレードしても解決しない場合は、サポートチームにお問い合わせください。[詳細ログを有効にして](sdk-installation-reactnative)ログをチームと共有することで、問題の解決が早まります。関連するコードスニペットも添付できます。

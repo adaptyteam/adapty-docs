@@ -1,0 +1,94 @@
+---
+title: "Sử dụng fallback paywall trong dự án Expo"
+description: "Cấu hình fallback paywall trong dự án Expo React Native thông qua config plugin react-native-adapty."
+metadataTitle: "Sử dụng Fallback Paywalls trong Expo | Tài liệu Adapty"
+keywords: ['fallback paywalls', 'expo', 'react native', 'config plugin', 'prebuild', 'offline paywalls']
+---
+import FallbackPaywallIntroduction from '@site/src/locales/vi/reusable/FallbackPaywallIntroduction.md';
+
+:::important
+Hướng dẫn này áp dụng cho **dự án Expo**.
+Nếu bạn đang dùng **React Native thuần (không dùng Expo)**, hãy xem [hướng dẫn fallback cho React Native thuần](react-native-use-fallback-paywalls-pure).
+:::
+
+<FallbackPaywallIntroduction />
+
+SDK Adapty đọc file fallback từ bundle **native** — một resource iOS bên trong package `.app`, hoặc một entry trong `android/app/src/main/assets/`. Trong dự án Expo, lệnh `npx expo prebuild --clean` sẽ tái tạo lại các thư mục đó sau mỗi lần chạy, nên bạn không thể đặt file vào thủ công. Config plugin `react-native-adapty` sẽ tự động tích hợp file vào bundle native cho bạn.
+
+:::tip
+Một ví dụ hoàn chỉnh đã được cung cấp trong [ứng dụng mẫu `FocusJournalExpo`](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo).
+:::
+
+## Cấu hình \{#configuration\}
+
+1. Đặt các file JSON fallback ở bất kỳ đâu trong dự án — thường là cạnh các asset khác:
+
+   ```
+   <your-project>/
+   └── assets/
+       ├── ios_fallback.json
+       └── android_fallback.json
+   ```
+
+2. Thêm tùy chọn `fallbackFile` vào mục `react-native-adapty` trong `app.json` (hoặc `app.config.js`). Mỗi key của platform là tùy chọn — chỉ cần cấu hình những platform bạn cần:
+
+   ```json title="app.json"
+   {
+     "expo": {
+       "plugins": [
+         [
+           "react-native-adapty",
+           {
+             "fallbackFile": {
+               "ios": "./assets/ios_fallback.json",
+               "android": "./assets/android_fallback.json"
+             }
+           }
+         ]
+       ]
+     }
+   }
+   ```
+
+   :::note
+   Adapty xuất file JSON fallback khác nhau cho từng platform — ID sản phẩm của Apple trên iOS, ID sản phẩm Google Play trên Android. Hãy trỏ từng platform đến file của riêng nó.
+   :::
+
+3. Tái tạo lại các dự án native:
+
+   ```sh title="Shell"
+   npx expo prebuild
+   ```
+
+   Plugin sẽ thêm file iOS vào bundle resources của dự án Xcode và sao chép file Android vào `android/app/src/main/assets/`. Output của prebuild sẽ có các dòng như sau:
+
+   ```
+   [react-native-adapty] Registered ios_fallback.json as iOS bundle resource
+   [react-native-adapty] Copied android_fallback.json to android assets/
+   ```
+
+4. Đăng ký file với SDK lúc runtime:
+
+   ```typescript showLineNumbers title="App.tsx"
+   import { adapty } from 'react-native-adapty';
+
+   await adapty.activate('PUBLIC_SDK_KEY');
+
+   await adapty.setFallback({
+     ios: { fileName: 'ios_fallback.json' },
+     android: { relativeAssetPath: 'android_fallback.json' },
+   });
+   ```
+
+   Tên file truyền vào `setFallback` phải khớp với tên cơ sở (basename) của các file đã cấu hình trong `fallbackFile`.
+
+:::important
+`setFallback` phải chạy trước khi SDK fetch bất kỳ paywall hoặc onboarding nào.
+:::
+
+## Kiểm tra \{#verification\}
+
+Sau khi chạy `npx expo prebuild`, hãy kiểm tra cả hai platform:
+
+- **Android**: Liệt kê nội dung của `android/app/src/main/assets/`. File đã cấu hình trong `fallbackFile.android` phải có mặt ở đây, và tên file chỉ dành cho iOS không được xuất hiện ở đây.
+- **iOS**: Tìm kiếm tên file iOS trong `ios/<ProjectName>.xcodeproj/project.pbxproj`. Nó phải xuất hiện trong `PBXFileReference`, nhóm `Resources`, và `PBXResourcesBuildPhase`. Tên file chỉ dành cho Android không được xuất hiện trong `project.pbxproj`.

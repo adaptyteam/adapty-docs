@@ -48,6 +48,16 @@ const METADATA_TITLE_SUFFIXES = {
 };
 ```
 
+Then add the new language's **refusal patterns** to `REFUSAL_PATTERNS` (search for the `// Russian (ru)` comment to find the localized block). The auto-translator occasionally injects a refusal / "this is only code, not a full document" meta-message **in the target language** — sometimes mid-output, after translating the leading prose — instead of translating. `looksLikeRefusal()` must recognize it so the existing hardened-retry / English-fallback path kicks in; otherwise the broken reply lands on `main` and fails the production deploy's `check-mdx-parse` gate (this is what happened on 2026-06-16). Scope patterns to refusal-meta phrasing — references to the input/document being incomplete, or a request to "provide the full document" — and **avoid generic words** like "code snippet" that appear in real docs:
+
+```js
+  // {LANGUAGE} ({LOCALE})
+  /<refusal phrase>/iu,   // e.g. "I don't see the full MDX document"
+  /<request-for-full-doc phrase>/iu,
+```
+
+To collect real phrasings, translate the known English refusals into the new language: *"I don't see the full MDX document / you sent only a code fragment"*, *"please provide the complete MDX document"*, *"this is just a code block, no translation needed"*. Then add the new locale's refusal strings to the regression test `scripts/__tests__/refusal-detection.test.mjs`, which asserts every active locale's refusal is caught (and that a normal translated body is not).
+
 ### 1c. `src/locales/ui-strings.ts`
 
 Add translations for every key in every group. Groups: `feedback`, `header`, `search`, `articleButtons`, `toc`, `mobileSidebar`, `footer`. Pattern:
@@ -123,29 +133,16 @@ const T = {
 } as const;
 ```
 
-### 1g. `src/components/Header.astro`
+### 1g. `src/components/Header.astro` — auto-handled, just verify
 
-The header is `transition:persist` and uses two client-side JS objects (in the inline `<script>`) that mirror other locale files but must be updated independently:
+The header is `transition:persist` and its inline `<script>` still reads two client-side objects (`LOCALE_NAMES_CLIENT`, `UI_STRINGS_CLIENT`), **but these are no longer hardcoded.** The frontmatter now injects them as JSON from the canonical sources:
 
-**`LOCALE_NAMES_CLIENT`** (around line 387) — mirrors `src/data/locales.ts`:
-```js
-const LOCALE_NAMES_CLIENT: Record<string, string> = { zh: '中文', tr: 'Türkçe', '{LOCALE}': '{NativeName}' };
+```astro
+<script id="cc-locale-names" type="application/json" set:html={JSON.stringify(LOCALE_NAMES)} />
+<script id="cc-ui-strings" type="application/json" set:html={JSON.stringify(clientUIStrings)} />
 ```
 
-**`UI_STRINGS_CLIENT`** (around line 390) — a subset of `ui-strings.ts` for client-side reactivity. Add a new locale key:
-```js
-'{LOCALE}': {
-  documentation: '...',
-  mobileSdk: '...',
-  serverApi: '...',
-  whatsNew: '...',
-  supportForum: '...',
-  signIn: '...',
-  signUpFree: '...',
-  searchPlaceholder: '...',
-  searchNoResults: '...',
-},
-```
+`LOCALE_NAMES` comes from `src/data/locales.ts` (1a) and `clientUIStrings` is built from `getUIStrings()` over `['en', ...SUPPORTED_LOCALES]` (1c). So **once 1a and 1c are done, the header picks up the new locale automatically — no edit to Header.astro is required.** Just confirm the locale switcher shows the new language after building. (If a future refactor reintroduces a hardcoded client map, add the locale key there too.)
 
 ### 1h. `src/layouts/DocsLayout.astro`
 
@@ -189,6 +186,33 @@ const T: Record<string, { label: string; desc: string; linkText: string }> = {
 ```
 
 Locale detection reuses `SUPPORTED_LOCALES` from `src/data/locales.ts` (1a) — once the locale is added there, the component recognizes it automatically; you only add the `T` entry here. A missing entry falls back to English.
+
+### 1k. `src/components/MethodPromo.astro`
+
+Same situation as `SkillPromo` (1j) and `Homepage.tsx` (1f): MethodPromo carries its own hardcoded `T` constant — **separate from `ui-strings.ts` and not touched by the translate script**. It renders the "What `getFlow` retrieves" promo box on the present-paywalls / get-paywalls articles. Crucially, the visible defaults (`items`, `note`, `noteLinkText`, and the `label` template) live in this component, **not** in the MDX — when an article writes `<MethodPromo method="getFlow" />` with no props, those defaults render in **English on every localized page** unless this `T` table has an entry for the locale. (Explicit props like `label="..."` written in MDX *are* translated by the script; the component defaults are not.) Add a new locale key with all four fields:
+
+```ts
+const T: Record<string, { label: string; items: Item[]; note: string; noteLinkText: string }> = {
+  en: { ... },
+  zh: { ... },
+  tr: { ... },
+  ru: { ... },
+  es: { ... },
+  '{LOCALE}': {
+    label: "{method} で取得される内容",   // MUST contain the literal "{method}" placeholder — it is replaced with the method name and rendered as <code>, then split on that name
+    items: [
+      { title: "...", desc: "...", beta: true },  // "Flows" item — keep "Flow Builder"/"Paywall Builder" product names in English
+      { title: "...", desc: "..." },              // "Paywall Builder paywalls" item
+    ],
+    note: "...",          // e.g. "Building a custom paywall?"
+    noteLinkText: "...",  // e.g. "See the manual integration guide."
+  },
+};
+```
+
+Locale detection reuses `SUPPORTED_LOCALES` (1a), like SkillPromo. Keep the `{method}` placeholder intact — the component does `t.label.replace('{method}', method)` and then splits the result on the method name to wrap it in `<code>`, so the literal method name must survive translation.
+
+> **General rule:** any component with its own hardcoded `T` locale table — currently `Homepage.tsx` (1f), `SkillPromo.astro` (1j), and `MethodPromo.astro` (1k) — is invisible to `translate.mjs` and must get a new locale key by hand. Before finishing, `grep -rl "const T" src/components` to catch any added since this skill was written.
 
 ---
 
@@ -241,7 +265,7 @@ The translation script creates `.mdx` files and `.hashes/` automatically. You on
 
 ## Step 6 — Translate content (phased, gated by native-speaker reviews)
 
-> **Flow overview:** (1) research dictionary terminology → (2) native speaker reviews word-pair list → (3) translate tutorial 7 articles → (4) deploy to develop → (5) native speaker reviews rendered pages → (6) translate the rest → (7) on "we are done", run MDX lint + parse checks locally and auto-fix.
+> **Flow overview:** (1) research dictionary terminology → (2) native speaker reviews word-pair list → (3) translate tutorial 7 articles → (4) deploy to develop → (5) native speaker reviews rendered pages → (6) translate the rest → (7) on "we are done", run MDX lint + parse + localized link checks locally and auto-fix.
 >
 > **Note on `CustomDocCardList`:** This component is already locale-aware — it reads titles from `_sidebar-labels.json` and descriptions from the translated article frontmatter automatically. No extra step is needed; it works correctly once sidebar labels (Step 6f `--sidebars`) and article translations are done.
 
@@ -386,7 +410,7 @@ This translates the YAML specs in `src/api-reference/specs/` (e.g. `adapty-api.y
 
 **Trigger:** the user says "we're done", "that's it", "everything is translated", or otherwise signals end of translation work. Do not run this earlier — broken intermediate state is normal during translation.
 
-Two CI checks must pass before merging to `main` (and they're enforced in `s3-deploy-production.yml` via `lint-mdx` and `check-mdx-parse` jobs). Run them locally and resolve issues before the user pushes:
+Three checks must pass before merging to `main` (and they're enforced in `s3-deploy-production.yml` via the `lint-mdx`, `check-mdx-parse`, and `check-localized-links` jobs). Run them locally and resolve issues before the user pushes:
 
 **1. Run the lint check with auto-fix:**
 
@@ -404,9 +428,28 @@ node scripts/check-mdx-parse.mjs
 
 This compiles every `.mdx` under `src/content/docs/`, `src/locales/`, and `src/components/reusable/` using the same MDX plugins Astro uses. It reports every parse error at once (Astro's locale build halts at the first, so this surfaces hidden failures stacked behind it).
 
-**3. Auto-fix the remainder:**
+**3. Run the localized link check:**
 
-For every remaining issue from either script, read the file at the reported line, identify the cause, and edit it directly. Common causes after translation:
+```bash
+node scripts/check-links/index.mjs --locales={LOCALE} --internal-only
+```
+
+This checks internal links in the new locale's files only, resolving each
+against the English doc set with the locale's translated pages overlaid. It
+catches links a translation corrupted into a non-existent slug. Anchors
+(`#heading`) are intentionally not validated (the translator preserves English
+anchor ids), so the report stays focused on broken page links. A non-zero exit
+means at least one broken link — the same gate runs at deploy
+(`check-localized-links`), so resolve everything before pushing.
+
+Link breakage is **not** auto-fixable: for each broken link, open the flagged
+file at the reported line, compare to the English source, and fix the slug
+(usually the translator mangled a bare slug or invented a target). Re-run after
+each fix.
+
+**4. Auto-fix the remainder:**
+
+For every remaining issue from the lint/parse scripts, read the file at the reported line, identify the cause, and edit it directly. Common causes after translation:
 
 - **JSX comments** (`{/* ... */}`) inside MDX — crash the content collection. Replace with `:::note` callouts.
 - **Inline callout syntax** — `:::note text :::` on one line. Split into three lines: `:::note`, content, `:::`.
@@ -414,7 +457,7 @@ For every remaining issue from either script, read the file at the reported line
 - **Smart-quote contamination** in attribute values (e.g. `title=" "`) — replace with straight ASCII quotes.
 - **Stray backslashes** in heading anchors — `\{#id\}` must keep its backslash escapes exactly.
 
-After each edit pass, re-run both scripts. Loop until both exit clean. Only then tell the user the locale is ready to deploy.
+After each edit pass, re-run all three scripts. Loop until they all exit clean. Only then tell the user the locale is ready to deploy.
 
 ---
 
@@ -441,7 +484,7 @@ Create a new index named `adapty_{LOCALE}` in Algolia. Copy replica/ranking sett
 
 ## Step 8 — Update GitHub Actions deploy workflows
 
-The `translate.yml` workflow is locale-agnostic (uses `src/locales/*/` glob) — no changes needed there.
+The `translate.yml` workflow is locale-agnostic (uses `src/locales/*/` glob) — no changes needed there. The `check-localized-links` gate in `s3-deploy-production.yml` is also locale-agnostic (runs `--locales` over every locale dir) — no edit needed when adding a locale.
 
 Both deploy workflows have `[zh, tr]` hardcoded and **must be updated** in multiple places each.
 
@@ -513,15 +556,16 @@ strategy:
 | # | What | File(s) |
 |---|------|---------|
 | 1a | Add to `SUPPORTED_LOCALES` + `LOCALE_NAMES` | `src/data/locales.ts` |
-| 1b | Add to `LANGUAGE_NAMES` + `METADATA_TITLE_SUFFIXES` | `scripts/translate.mjs` |
+| 1b | Add to `LANGUAGE_NAMES` + `METADATA_TITLE_SUFFIXES` + localized `REFUSAL_PATTERNS` (+ regression test) | `scripts/translate.mjs`, `scripts/__tests__/refusal-detection.test.mjs` |
 | 1c | Add UI string translations for all groups | `src/locales/ui-strings.ts` |
 | 1d | Add dictionary translations | `src/locales/dictionary.json` |
 | 1e | Add to `LOCALE_INDEX` + `data-index-name-{LOCALE}` attr | `src/components/Search.astro` |
 | 1f | Add locale key to `T` object (~20 strings) | `src/components/Homepage.tsx` |
-| 1g | Add to `LOCALE_NAMES_CLIENT` + `UI_STRINGS_CLIENT` | `src/components/Header.astro` |
+| 1g | **Auto-handled** — Header now injects `LOCALE_NAMES` + `getUIStrings` as JSON (sourced from 1a + 1c). No edit needed; just verify after 1a/1c. | `src/components/Header.astro` |
 | 1h | Add auto-redirect block | `src/layouts/DocsLayout.astro` |
 | 1i | Add to `SUPPORTED_LOCALES` (scopes the locales collection glob per CI job) | `src/content.config.ts` |
 | 1j | Add locale key to `T` object (label, desc, linkText) — like 1f; detection reuses `SUPPORTED_LOCALES` | `src/components/SkillPromo.astro` |
+| 1k | Add locale key to `T` object (label, items, note, noteLinkText) — like 1j; keep `{method}` placeholder | `src/components/MethodPromo.astro` |
 | 2 | Add env vars | `.env` + deployment config |
 | 3 | Create sitemap files + update astro.config.mjs | `src/pages/sitemap-{LOCALE}*.xml.ts`, `astro.config.mjs` |
 | 4 | Add npm scripts (optional) | `package.json` |
@@ -535,7 +579,7 @@ strategy:
 | 6g | Output command to translate reusable snippets (skipped by targeted runs) | `--reusables` |
 | 6h | Output commands to translate platform article docs | `--platform` per sidebar |
 | 6i | Output command to translate API specs | `--api-specs` |
-| 6j | **BLOCKING on "we are done":** Run lint-mdx --fix + check-mdx-parse; auto-fix remaining issues | `scripts/lint-mdx.mjs`, `scripts/check-mdx-parse.mjs` |
+| 6j | **BLOCKING on "we are done":** Run lint-mdx --fix + check-mdx-parse + localized link check (`--locales={LOCALE} --internal-only`); auto-fix/​resolve remaining issues | `scripts/lint-mdx.mjs`, `scripts/check-mdx-parse.mjs`, `scripts/check-links/index.mjs` |
 | 7a | Update English crawler exclusion | Algolia dashboard |
 | 7b | Create new locale crawler | Algolia dashboard |
 | 7c | Create new Algolia index | Algolia dashboard |

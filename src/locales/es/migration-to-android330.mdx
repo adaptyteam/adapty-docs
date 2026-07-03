@@ -1,21 +1,21 @@
 ---
-title: "Migrar el SDK de Adapty para Android a la v. 3.3"
+title: "Migrar el SDK de Adapty para Android a v3.3"
 description: "Migra al SDK de Adapty para Android v3.3 para mejorar el rendimiento y acceder a nuevas funciones de monetización."
 metadataTitle: "Migración al SDK de Adapty para Android v3.3 | Documentación de Adapty"
 ---
 
-El SDK de Adapty 3.3.0 es una versión mayor que incluye mejoras que, no obstante, pueden requerir algunos pasos de migración por tu parte.
-1. Actualiza cómo gestionas las compras en paywalls que no se han creado con Paywall Builder. Deja de procesar los códigos de error `USER_CANCELED` y `PENDING_PURCHASE`. Una compra cancelada ya no se considera un error y ahora aparecerá en los resultados de compra sin error.
-2. Sustituye los eventos `onPurchaseCanceled` y `onPurchaseSuccess` por el nuevo evento `onPurchaseFinished` para paywalls creados con Paywall Builder. Este cambio se debe al mismo motivo: las compras canceladas ya no se tratan como errores y se incluirán en los resultados de compra sin error.
+Adapty SDK 3.3.0 es una versión principal que incorpora algunas mejoras que, sin embargo, pueden requerir ciertos pasos de migración de tu parte.
+1. Actualiza la forma en que gestionas las compras en paywalls no creadas con Paywall Builder. Deja de procesar los códigos de error `USER_CANCELED` y `PENDING_PURCHASE`. Una compra cancelada ya no se considera un error y ahora aparecerá en los resultados de compra sin error.
+2. Reemplaza los eventos `onPurchaseCanceled` y `onPurchaseSuccess` por el nuevo evento `onPurchaseFinished` para paywalls creadas con Paywall Builder. Este cambio se debe a la misma razón: las compras canceladas ya no se tratan como errores y se incluirán en los resultados de compra sin error.
 3. Cambia la firma del método `onAwaitingSubscriptionUpdateParams` para paywalls de Paywall Builder.
-4. Actualiza el método utilizado para proporcionar paywalls de respaldo si pasas el URI del archivo directamente.
+4. Actualiza el método utilizado para proporcionar paywalls de respaldo si pasas el URI de archivo directamente.
 5. Actualiza las configuraciones de integración para Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase y Google Analytics, Mixpanel, OneSignal, Pushwoosh.
 ## Actualizar la compra \{#update-making-purchase\}
 
 Las compras canceladas y pendientes anteriormente se consideraban errores y devolvían los códigos `USER_CANCELED` y `PENDING_PURCHASE`, respectivamente.
 
 Ahora se usa una nueva clase `AdaptyPurchaseResult` para indicar compras canceladas, exitosas y pendientes. Actualiza el código de compra de la siguiente manera:
-```diff
+~~~diff
 Adapty.makePurchase(activity, product) { result ->
      when (result) {
          is AdaptyResult.Success -> {
@@ -48,30 +48,32 @@ Adapty.makePurchase(activity, product) { result ->
          }
      }
  }
-```
+~~~
+
 Para ver el ejemplo de código completo, consulta la página [Realizar compras en la app móvil](android-making-purchases#make-purchase).
-## Modificar eventos de compra en el Paywall Builder \{#modify-paywall-builder-purchase-events\}
+## Modificar eventos de compra del Paywall Builder \{#modify-paywall-builder-purchase-events\}
 
 1. Añade el evento `onPurchaseFinished`:
-```diff showLineNumbers
-+ public override fun onPurchaseFinished(
-+     purchaseResult: AdaptyPurchaseResult,
-+     product: AdaptyPaywallProduct,
-+     context: Context,
-+ ) {
-+    when (purchaseResult) {
-+        is AdaptyPurchaseResult.Success -> {
-+            // Otorgar acceso a las funciones de pago
-+        }
-+        is AdaptyPurchaseResult.UserCanceled -> {
-+            // Manejar el caso en que el usuario canceló la compra
-+        }
-+        is AdaptyPurchaseResult.Pending -> {
-+            // Manejar compras diferidas (p. ej., el usuario pagará en efectivo fuera de línea)
-+        }
-+    }
-+ }
-```
+   ```diff showLineNumbers
+   + public override fun onPurchaseFinished(
+   +     purchaseResult: AdaptyPurchaseResult,
+   +     product: AdaptyPaywallProduct,
+   +     context: Context,
+   + ) {
+   +    when (purchaseResult) {
+   +        is AdaptyPurchaseResult.Success -> {
+   +            // Grant access to the paid features
+   +        }
+   +        is AdaptyPurchaseResult.UserCanceled -> {
+   +            // Handle the case where the user canceled the purchase
+   +        }
+   +        is AdaptyPurchaseResult.Pending -> {
+   +            // Handle deferred purchases (e.g., the user will pay offline with cash)
+   +        }
+   +    }
+   + }
+   ```
+
 Para ver el ejemplo de código completo, consulta [Compra exitosa, cancelada o pendiente](android-handling-events#successful-canceled-or-pending-purchase) y la descripción del evento.
 
 2. Elimina el procesamiento del evento `onPurchaseCancelled`:
@@ -84,7 +86,6 @@ Para ver el ejemplo de código completo, consulta [Compra exitosa, cancelada o p
    ```
 
 3. Elimina `onPurchaseSuccess`:
-
    ```diff showLineNumbers
    
    - public override fun onPurchaseSuccess(
@@ -95,10 +96,11 @@ Para ver el ejemplo de código completo, consulta [Compra exitosa, cancelada o p
    -     // Your logic on successful purchase
    - }
    ```
+
 ## Cambiar la firma del método onAwaitingSubscriptionUpdateParams \{#change-the-signature-of-on-awaiting-subscription-update-params-method\}
 
-Ahora, si se compra una nueva suscripción mientras otra sigue activa, llama a `onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters...))` si la nueva suscripción debe reemplazar a la que está activa, o a `onSubscriptionUpdateParamsReceived(null)` si la suscripción activa debe permanecer activa y la nueva debe añadirse por separado:
-```diff showLineNumbers
+Ahora, si se compra una nueva suscripción mientras otra sigue activa, llama a `onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters...))` si la nueva suscripción debe reemplazar a la actualmente activa, o a `onSubscriptionUpdateParamsReceived(null)` si la suscripción activa debe permanecer y la nueva debe añadirse por separado:
+ ```diff showLineNumbers
 - public override fun onAwaitingSubscriptionUpdateParams(
 -     product: AdaptyPaywallProduct,
 -     context: Context,
@@ -113,10 +115,11 @@ Ahora, si se compra una nueva suscripción mientras otra sigue activa, llama a `
 +     onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
 + }
  ```
-Consulta la sección [Actualizar suscripción](android-handling-events#upgrade-subscription) de la documentación para ver el ejemplo de código completo.
-## Actualización del método para proporcionar paywalls de respaldo \{#update-providing-fallback-paywalls\}
 
-Si pasas una URI de archivo para proporcionar paywalls de respaldo, actualiza la forma en que lo haces de la siguiente manera:
+Consulta la sección de documentación [Actualización de suscripción](android-handling-events#upgrade-subscription) para ver el ejemplo de código final.
+## Actualización para proporcionar paywalls de respaldo \{#update-providing-fallback-paywalls\}
+
+Si pasas una URI de archivo para proporcionar paywalls de respaldo, actualiza la forma en que lo haces así:
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
@@ -130,7 +133,7 @@ val fileUri: Uri = // Get the URI for the file with fallback paywalls
 </TabItem>
 <TabItem value="java" label="Java" default>
 ```diff showLineNumbers
-Uri fileUri = // Obtén el URI del archivo con los paywalls de respaldo
+Uri fileUri = // Get the URI for the file with fallback paywalls
 - Adapty.setFallbackPaywalls(fileUri, callback);
 + Adapty.setFallbackPaywalls(FileLocation.fromFileUri(fileUri), callback);
 ```
@@ -142,7 +145,7 @@ Uri fileUri = // Obtén el URI del archivo con los paywalls de respaldo
 Para garantizar que las integraciones funcionen correctamente con el SDK de Android de Adapty 3.3.0 y versiones posteriores, actualiza las configuraciones del SDK para las siguientes integraciones tal como se describe en las secciones a continuación.
 ### Adjust
 
-Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [configuración del SDK para la integración con Adjust](adjust#connect-your-app-to-adjust).
+Actualiza el código de tu app móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [configuración del SDK para la integración con Adjust](adjust#connect-your-app-to-adjust).
 
 <Tabs groupId="current-os" queryString>
 
@@ -180,6 +183,7 @@ Actualiza el código de tu aplicación móvil como se muestra a continuación. P
 +     }
 + }
 ```
+
 </TabItem>
 
 <TabItem value="v4" label="Adjust 4.x" default>
@@ -225,9 +229,10 @@ Actualiza el código de tu aplicación móvil como se muestra a continuación. P
      }
  })
 ```
+
 ### Amplitude
 
-Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [configuración del SDK para la integración con Amplitude](amplitude#sdk-configuration).
+Actualiza el código de tu app móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [configuración del SDK para la integración con Amplitude](amplitude#sdk-configuration).
 ```diff showLineNumbers
  // For Amplitude maintenance SDK (obsolete)
  val amplitude = Amplitude.getInstance()
@@ -268,9 +273,10 @@ Actualiza el código de tu aplicación móvil como se muestra a continuación. P
 +     }
 + }
 ```
+
 ### AppMetrica
 
-Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [configuración del SDK para la integración con AppMetrica](appmetrica#sdk-configuration).
+Actualiza el código de tu aplicación como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [configuración del SDK para la integración con AppMetrica](appmetrica#sdk-configuration).
 ```diff showLineNumbers
  val startupParamsCallback = object: StartupParamsCallback {
      override fun onReceive(result: StartupParamsCallback.Result?) {
@@ -309,9 +315,10 @@ Actualiza el código de tu aplicación móvil como se muestra a continuación. P
 
  AppMetrica.requestStartupParams(context, startupParamsCallback, listOf(StartupParamsCallback.APPMETRICA_DEVICE_ID))
 ```
+
 ### AppsFlyer
 
-Actualiza el código de tu app como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [configuración del SDK para la integración con AppsFlyer](appsflyer#connect-your-app-to-appsflyer).
+Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [configuración del SDK para la integración con AppsFlyer](appsflyer#connect-your-app-to-appsflyer).
 ```diff showLineNumbers
  val conversionListener: AppsFlyerConversionListener = object : AppsFlyerConversionListener {
      override fun onConversionDataSuccess(conversionData: Map<String, Any>) {
@@ -339,6 +346,7 @@ Actualiza el código de tu app como se muestra a continuación. Para ver el ejem
      }
  }
 ```
+
 ### Branch
 
 Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [configuración del SDK para la integración con Branch](branch#connect-your-app-to-branch).
@@ -363,9 +371,10 @@ Actualiza el código de tu aplicación móvil como se muestra a continuación. P
  // Logout
  Branch.getAutoInstance(context).logout()
 ```
+
 ### Facebook Ads
 
-Actualiza el código de tu aplicación móvil como se indica a continuación. Para ver el ejemplo de código completo, consulta la [configuración del SDK para la integración con Facebook Ads](facebook-ads#connect-your-app-to-facebook-ads).
+Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [configuración del SDK para la integración con Facebook Ads](facebook-ads#connect-your-app-to-facebook-ads).
 ```diff showLineNumbers
 - val builder = AdaptyProfileParameters.Builder()
 -     .withFacebookAnonymousId(AppEventsLogger.getAnonymousAppDeviceGUID(context))
@@ -385,9 +394,10 @@ Actualiza el código de tu aplicación móvil como se indica a continuación. Pa
 +     }
 + }
 ```
+
 ### Firebase y Google Analytics \{#firebase-and-google-analytics\}
 
-Actualiza el código de tu app móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [configuración del SDK para la integración con Firebase y Google Analytics](firebase-and-google-analytics).
+Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [configuración del SDK para la integración de Firebase y Google Analytics](firebase-and-google-analytics).
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
@@ -411,10 +421,11 @@ Actualiza el código de tu app móvil como se muestra a continuación. Para ver 
 +    }
  }
 ```
+
 </TabItem>
 <TabItem value="java" label="Java" default>
 ```diff showLineNumbers
-// Después de Adapty.activate()
+// After Adapty.activate()
 
 - FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
 -     AdaptyProfileParameters params = new AdaptyProfileParameters.Builder()
@@ -436,6 +447,7 @@ Actualiza el código de tu app móvil como se muestra a continuación. Para ver 
 +     });
 + });
 ```
+
 </TabItem>
 </Tabs>
 ### Mixpanel
@@ -487,6 +499,7 @@ Actualiza el código de tu aplicación móvil como se muestra a continuación. P
      }
  }
 ```
+
 </TabItem>
 <TabItem value="java" label="(Android) Java" default>
 
@@ -554,16 +567,17 @@ Actualiza el código de tu aplicación móvil como se muestra a continuación. P
      }
  };
 ```
+
 </TabItem>
 
 </Tabs>
 
- </TabItem>
+</TabItem>
 
 </Tabs>
 ### Pushwoosh
 
-Actualiza el código de tu app móvil como se muestra a continuación. Para ver el ejemplo completo de código, consulta la [configuración del SDK para la integración con Pushwoosh](pushwoosh#sdk-configuration).
+Actualiza el código de tu aplicación móvil como se muestra a continuación. Para ver el ejemplo de código completo, consulta la [configuración del SDK para la integración con Pushwoosh](pushwoosh#sdk-configuration).
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>

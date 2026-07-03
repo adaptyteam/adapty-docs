@@ -1,0 +1,310 @@
+---
+title: "Android SDKでFlow Builderを使ったアプリ内課金の有効化"
+description: "Adapty Flow Builderを使ったアプリ内課金の設定クイックスタートガイド。"
+metadataTitle: "Adapty Flow Builder クイックスタート | Adapty ドキュメント"
+keywords: ['flows android', 'paywalls android', 'sdk android', 'flow builder', 'getFlow']
+rank: 90
+---
+
+アプリ内課金を有効化するには、3つの重要なコンセプトを理解する必要があります。
+- [**プロダクト**](product) – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセス）
+- [**フロー**](adapty-flow-builder) – プロダクトをユーザーに提示するための画面シーケンスで、ノーコードのフロービルダーで作成します。SDK は `getFlow` を使って取得します。独自のコードでUIを構築したい場合はペイウォールを使ってください — [ペイウォールを手動で実装する](android-quickstart-manual)をご覧ください。
+- [**プレースメント**](placements) – アプリ内でフローを表示する場所とタイミング（`main`、`onboarding`、`settings` など）。ダッシュボードでフローをプレースメントに紐付けておき、コード内でプレースメント ID を使ってリクエストします。これにより、A/B テストの実行や、ユーザーごとに異なるフローの表示が簡単に行えます。
+Adapty では、アプリで購入機能を有効にする方法を3つ提供しています。アプリの要件に応じていずれかを選択してください。
+| 実装方法 | 複雑さ | 使用場面 |
+|---|---|---|
+| Adapty フロービルダー | ✅ 簡単 | [ノーコードビルダーで購入可能な完全なフローを作成します](quickstart-paywalls)。Adapty が自動的にレンダリングし、購入フロー・レシート検証・サブスクリプション管理をすべて裏側で処理します。 |
+| 手動作成のペイウォール | 🟡 中程度 | アプリのコードでペイウォール UI を実装しますが、プロダクト提供の柔軟性を保つために Adapty からフローオブジェクトを取得します。[ガイド](android-quickstart-manual)を参照してください。 |
+| オブザーバーモード | 🔴 難しい | すでに独自の購入処理インフラがあり、それを引き続き使用したい場合に選択します。オブザーバーモードには Adapty における制限があります。[記事](observer-vs-full-mode)を参照してください。 |
+:::important
+**以下の手順では、Adapty Flow Builder で作成したフローの実装方法を説明します。**
+
+ペイウォールの UI を自分でビルドしたい場合は、[ペイウォールを手動で実装する](android-quickstart-manual)をご覧ください。
+:::
+
+Adapty Flow Builder で作成したフローをアプリに表示するには、以下の手順だけで対応できます。
+
+1. **フローを取得する**: Adapty からフローを取得します。
+2. **表示する（購入処理は Adapty が担当）**: アプリにビューを表示します。
+3. **ボタンアクションを処理する**: ユーザーの操作に対するアプリの反応を設定します。たとえば、リンクを開いたり、ユーザーがボタンをタップしたときにフローを閉じたりします。
+## 始める前に \{#before-you-start\}
+
+始める前に、以下の手順を完了してください：
+
+1. Adapty ダッシュボードで[アプリを Google Play に接続する](initial-android)。
+2. Adapty で[プロダクトを作成する](create-product)。
+3. [フローを作成してプロダクトを追加する](create-paywall)。
+4. [プレースメントを作成してフローを追加する](create-placement)。
+5. アプリのコードに [Adapty SDK をインストールして有効化する](sdk-installation-android)。このガイドでは Adapty Android SDK v4 (beta) の API を使用します。
+:::tip
+これらの手順を最も素早く完了する方法は、[クイックスタートガイド](quickstart)に従うか、[Developer CLI](developer-cli-quickstart)を使ってフローとプレースメントを作成することです。
+:::
+## 1. フローを取得する \{#1-get-the-flow\}
+
+フローはダッシュボードで設定されたプレースメントに関連付けられています。プレースメントを使うと、異なるオーディエンスに対して異なるフローを表示したり、[A/B テスト](ab-tests)を実施したりできます。
+
+Adapty フロービルダーで作成したフローを取得するには、次の手順を行います。
+
+1. `getFlow` メソッドを使って[プレースメント](placements) ID から `flow` オブジェクトを取得し、ビュー設定が含まれているか確認します。
+
+2. `getFlowConfiguration` メソッドを使ってビュー設定を取得します。ビュー設定には、フローを表示するために必要な UI 要素とスタイリング情報が含まれています。
+:::important
+ビュー設定を取得するには、Flow Builder の **Show on device** トグルをオンにする必要があります。オンにしないと、空のビュー設定が返され、フローが表示されません。
+:::
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
+    if (result is AdaptyResult.Success) {
+        val flow = result.value
+        
+        if (!flow.hasViewConfiguration) {
+            return@getFlow
+        }
+        
+        AdaptyUI.getFlowConfiguration(flow) { configResult ->
+            if (configResult is AdaptyResult.Success) {
+                val flowConfiguration = configResult.value
+            }
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+Adapty.getFlow("YOUR_PLACEMENT_ID", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) result).getValue();
+        
+        if (!flow.hasViewConfiguration()) {
+            return;
+        }
+        
+        AdaptyUI.getFlowConfiguration(flow, configResult -> {
+            if (configResult instanceof AdaptyResult.Success) {
+                AdaptyUI.FlowConfiguration flowConfiguration =
+                    ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) configResult).getValue();
+                // 読み込んだ設定を使用する
+            }
+        });
+    }
+});
+```
+</TabItem>
+</Tabs>
+## 2. フローを表示する \{#display-the-flow\}
+
+フローの設定が完了したら、数行追加するだけでフローを表示できます。
+
+デバイス画面にビジュアルフローを表示するには、まず設定を行う必要があります。そのためには、`AdaptyUI.getFlowView()` メソッドを呼び出すか、`AdaptyFlowView` を直接作成してください：
+
+<Tabs groupId="current-os" queryString>
+  <TabItem value="kotlin" label="Kotlin (option 1)" default>
+```kotlin showLineNumbers
+   val flowView = AdaptyUI.getFlowView(
+       activity,
+       flowConfiguration,
+       null, // products = null means auto-fetch
+       eventListener,
+   )
+```
+</TabItem>
+<TabItem value="kotlin2" label="Kotlin (option 2)" default>
+
+```kotlin showLineNumbers
+   val flowView =
+        AdaptyFlowView(activity) // or retrieve it from xml
+   ...
+   with(flowView) {
+       showFlow(
+           flowConfiguration,
+           null, // products = null means auto-fetch
+		   eventListener,
+       )
+   }
+```
+
+</TabItem>
+<TabItem value="java" label="Java (option 1)" default>
+```java showLineNumbers
+AdaptyFlowView flowView = AdaptyUI.getFlowView(
+        activity,
+        flowConfiguration,
+        null, // products = null means auto-fetch
+        eventListener
+);
+```
+</TabItem>
+<TabItem value="java2" label="Java (option 2)" default>
+
+```java showLineNumbers
+AdaptyFlowView flowView =
+  new AdaptyFlowView(activity); //add to the view hierarchy if needed, or you receive it from xml
+...
+flowView.showFlow(flowConfiguration, products, eventListener);
+```
+
+</TabItem>
+<TabItem value="XML" label="XML" default>
+```xml showLineNumbers
+<com.adapty.ui.AdaptyFlowView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />
+```
+</TabItem>
+</Tabs>
+
+ビューが正常に作成されたら、ビュー階層に追加してデバイスの画面に表示できます。
+
+:::tip
+フローの表示方法の詳細については、[ガイド](android-present-paywalls)をご覧ください。
+:::
+## 3. ボタンのアクションを処理する \{#handle-button-actions\}
+
+ユーザーがフロー内のボタンをタップすると、Android SDK は購入、リストア、フローのクローズ、リンクの開封を自動的に処理します。
+
+ただし、カスタムIDまたは事前定義済みIDを持つボタンは、コード上でアクションを処理する必要があります。また、デフォルトの動作を上書きしたい場合もあるでしょう。
+
+たとえば、以下はクローズボタンのデフォルト動作です。コードに追加する必要はありませんが、必要な場合にどのように実装するかを確認できます。
+:::tip
+ボタンの[アクション](android-handle-paywall-actions)と[イベント](android-handling-events)の処理方法については、ガイドをご覧ください。
+:::
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
+    when (action) {
+        AdaptyUI.Action.Close -> (context as? Activity)?.onBackPressed() // default behavior
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+@Override
+public void onActionPerformed(@NonNull AdaptyUI.Action action, @NonNull Context context) {
+    if (action instanceof AdaptyUI.Action.Close) {
+        if (context instanceof Activity) {
+            ((Activity) context).onBackPressed();
+        }
+    }
+}
+```
+</TabItem>
+
+</Tabs>
+## 次のステップ \{#next-steps\}
+
+<SupportForum />
+
+ペイウォールをアプリに表示する準備が整いました。[Google Play Storeでのテスト購入](testing-on-android)を行い、ペイウォールからテスト購入を完了できることを確認してください。
+
+次に、適切なユーザーにペイウォールを表示したり有料機能へのアクセスを付与したりするために、[ユーザーのアクセスレベルを確認する](android-check-subscription-status)必要があります。
+
+## 完全な例 \{#full-example\}
+
+これらのすべてのステップをアプリに統合する方法を示します。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers title="Kotlin"
+class MainActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        Adapty.getFlow("YOUR_PLACEMENT_ID") { flowResult ->
+            if (flowResult is AdaptyResult.Success) {
+                val flow = flowResult.value
+
+                if (!flow.hasViewConfiguration) {
+                    // Use custom logic
+                    return@getFlow
+                }
+
+                AdaptyUI.getFlowConfiguration(flow) { configResult ->
+                    if (configResult is AdaptyResult.Success) {
+                        val flowConfiguration = configResult.value
+
+                        val flowView = AdaptyUI.getFlowView(
+                            this,
+                            flowConfiguration,
+                            null, // products = null means auto-fetch
+                            object : AdaptyFlowDefaultEventListener() {
+                                override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
+                                    when (action) {
+                                        is AdaptyUI.Action.Close -> {
+                                            (context as? Activity)?.onBackPressed()
+                                        }
+                                    }
+                                }
+                            }
+                        )
+
+                        setContentView(flowView)
+                    }
+                }
+            }
+        }
+    }
+}
+
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        Adapty.getFlow("YOUR_PLACEMENT_ID", flowResult -> {
+            if (flowResult instanceof AdaptyResult.Success) {
+                AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) flowResult).getValue();
+
+                if (!flow.hasViewConfiguration()) {
+                    // Use custom logic
+                    return;
+                }
+
+                AdaptyUI.getFlowConfiguration(flow, configResult -> {
+                    if (configResult instanceof AdaptyResult.Success) {
+                        AdaptyUI.FlowConfiguration flowConfiguration =
+                            ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) configResult).getValue();
+
+                        AdaptyFlowView flowView = AdaptyUI.getFlowView(
+                            this,
+                            flowConfiguration,
+                            null, // products = null means auto-fetch
+                            new AdaptyFlowDefaultEventListener() {
+                               @Override
+                                    public void onActionPerformed(@NonNull AdaptyUI.Action action, @NonNull Context context) {
+                                        if (action instanceof AdaptyUI.Action.Close) {
+                                            if (context instanceof Activity) {
+                                                ((Activity) context).onBackPressed();
+                                            }
+                                        }
+                                    }
+                            }
+                        );
+
+                        setContentView(flowView);
+                    }
+                });
+            }
+        });
+    }
+}
+
+```
+</TabItem>
+</Tabs>

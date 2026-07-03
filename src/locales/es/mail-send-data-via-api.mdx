@@ -1,0 +1,101 @@
+---
+title: "Enviar emails y transacciones a través de la API de Adapty Mail"
+description: "Envía perfiles de usuario y transacciones a Adapty Mail directamente desde tu servidor, sin necesidad del SDK de Adapty."
+metadataTitle: "Enviar datos a través de la API de Adapty Mail | Documentación de Adapty"
+---
+
+La API de Adapty Mail te permite enviar perfiles de usuario y transacciones a Adapty Mail directamente desde tu servidor, sin enrutar los datos a través del SDK de Adapty. Úsala cuando quieras:
+- Añadir suscriptores cuando todavía no tienes una base en Adapty Mail.
+- Reutilizar la base de suscriptores de tus otras apps.
+- Alimentar Adapty Mail de servidor a servidor, con tu backend como fuente de verdad.
+
+:::note
+**¿API o SDK?** La mayoría de las apps envían datos a Adapty Mail a través del SDK de Adapty, que recoge emails y compras de forma automática. Elige la API cuando tu app no tiene el SDK de Adapty integrado, cuando los datos ya residen en tu servidor, o cuando importas suscriptores desde otra fuente.
+:::
+## Antes de empezar \{#before-you-start\}
+
+:::warning
+Termina de configurar Adapty Mail antes de enviar datos: necesitas una campaña, segmentos (si los necesitas), un paywall web y un flow lanzado. Adapty Mail solo envía correos a los perfiles creados después de completar esta configuración; los perfiles que envíes antes no recibirán ningún correo. Sigue primero [Primeros pasos con Adapty Mail](mail-get-started) y luego vuelve aquí.
+:::
+
+También necesitas tu clave API y la URL base:
+- **Clave API secreta**: En Adapty Mail, ve a **Settings** y copia tu clave API secreta. La clave es específica del proyecto, de modo que la API sabe a qué proyecto pertenecen los datos.
+- **URL base**: Todas las solicitudes van a `https://api-mail.adapty.io`.
+- **Autenticación**: Envía la clave en el encabezado **Authorization** como `Bearer {your_secret_api_key}`.
+
+:::important
+Obtén el consentimiento explícito antes de recopilar correos electrónicos y enviarlos a Adapty Mail. Eres responsable del cumplimiento del RGPD, CAN-SPAM y normativas similares en tus mercados.
+:::
+## Enviar perfiles de usuario \{#send-user-profiles\}
+
+Un perfil contiene el email y los atributos del usuario. Para crear o actualizar uno, envía una solicitud POST a `/api/v1/profile/save/`.
+
+Se requieren tres campos:
+- Un `external_profile_id` estable que tu app o backend gestione
+- El `email` al que Adapty Mail envía las campañas
+- `external_created_at` — la fecha de creación del usuario, que puedes usar en segmentos
+
+:::important
+Envía siempre un `external_profile_id` estable, nunca un valor anónimo o por instalación. Adapty Mail lo usa para vincular emails, clics y compras a un único perfil.
+:::
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/save/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "external_profile_id": "user_12345",
+    "external_created_at": "2026-06-01T10:30:00Z",
+    "email": "jane@example.com",
+    "country": "US",
+    "custom_attributes": {
+      "plan": "trial"
+    }
+  }'
+```
+
+Consulta la referencia de [Save profile](api-mail/operations/saveProfile) para ver todos los campos disponibles.
+## Enviar eventos de transacción \{#send-transaction-events\}
+
+:::note
+Con un perfil que tenga email es suficiente para llegar a los usuarios en el flow de **nunca han comprado**. Los usuarios en cualquier otro flow también necesitan eventos de transacción.
+:::
+
+Todos los flows excepto el de **nunca han comprado** se basan en el historial de compras. Envía los eventos de transacción de un perfil a medida que gestiones compras, renovaciones y cancelaciones, para que Adapty Mail pueda ubicarlo en el flow correcto. Los eventos de transacción también alimentan la atribución de ingresos. Omítelos solo si ejecutas campañas exclusivamente de **nunca han comprado**.
+Para registrar una transacción, envía una petición POST a `/api/v1/profile/transaction-event/save/`. Usa el mismo `external_profile_id` que enviaste con el perfil para que Adapty Mail vincule la transacción al usuario correcto.
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/transaction-event/save/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "event_type": "subscription_started",
+    "event_id": "evt_abc123",
+    "event_datetime": "2026-06-10T14:20:05Z",
+    "external_profile_id": "user_12345",
+    "store": "app_store",
+    "store_product_id": "premium_monthly",
+    "store_transaction_id": "1000000123456789",
+    "store_original_transaction_id": "1000000123456789",
+    "purchased_at": "2026-06-10T14:20:00Z",
+    "originally_purchased_at": "2026-06-10T14:20:00Z",
+    "price_usd": "9.99"
+  }'
+```
+
+Consulta la referencia de [evento Save transaction](api-mail/operations/saveTransactionEvent) para ver todos los campos disponibles.
+### Asigna tus eventos a los flows \{#map-your-events-to-flows\}
+
+Envía el `event_type` que corresponda a lo que ocurrió. Adapty Mail deduce el estado del perfil a partir del historial de eventos y lo enruta al flow correspondiente.
+| `event_type` | Envíalo cuando | Flow |
+| --- | --- | --- |
+| `subscription_started` | Un usuario inicia una nueva suscripción. | Activo — sin flow de reenganche |
+| `subscription_renewed` | Una suscripción se renueva automáticamente. | Activo — sin flow de reenganche |
+| `subscription_renewal_reactivated` | Un usuario reactiva la renovación automática. | Activo — sin flow de reenganche |
+| `non_subscription_purchase` | Un usuario realiza una compra única. | Activo — sin flow de reenganche |
+| `subscription_renewal_cancelled` | Un usuario desactiva la renovación automática (sigue activa hasta que expire). | Renovación cancelada |
+| `billing_issue_detected` | Falla el pago de una renovación. | Problema de facturación |
+| `entered_grace_period` | El pago falla pero el usuario sigue en el período de gracia. | Problema de facturación |
+| `subscription_expired` | Una suscripción caduca y se pierde el acceso. | Expirada |
+| `subscription_refunded` | Se reembolsa una compra de suscripción. | Reembolsada |
+| `non_subscription_purchase_refunded` | Se reembolsa una compra única. | Reembolsada |

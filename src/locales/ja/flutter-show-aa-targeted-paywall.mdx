@@ -1,0 +1,113 @@
+---
+title: "FlutterSDKで初回起動時にApple Ads向けペイウォールを表示する"
+description: "Flutterで初回起動時、Apple Adsのアトリビューションを短時間待ってからペイウォールを表示し、タイムアウト時はデフォルトオーディエンスにフォールバックします。AdaptyProfile.appliedAttributionSourcesを使用します。"
+metadataTitle: "初回起動時にApple Ads向けペイウォールを表示する | Flutter SDK | Adapty ドキュメント"
+---
+Apple Ads (AA) のアトリビューションは `Adapty().activate()` の後に非同期で届きます。初回起動時はまだ届いていないことが多いため、すぐに `getPaywall` を呼び出すと、Adapty はデフォルトオーディエンスに基づいてリクエストを解決してしまい、Apple Ads ユーザーが AA セグメント向けペイウォールを見逃してしまいます。ペイウォールを表示してから差し替えるのではなく、何も表示する前に AA アトリビューションを少しの間待ちましょう。アトリビューションが短いタイムアウト内に届けばターゲット向けペイウォールを、届かなければデフォルトオーディエンスのペイウォールを表示します。`AdaptyProfile.appliedAttributionSources` を使うと、AA アトリビューションが適用済みかどうかを確認できます。
+## 始める前に \{#before-you-start\}
+
+必要なもの：
+- Adapty Flutter SDK **3.17.0** 以降。
+- AdaptyでアプリのApple Adsが設定済みであること。詳しくは[Apple Ads](apple-search-ads)を参照してください。
+## 仕組み \{#how-it-works\}
+
+`Adapty().activate()` を呼び出すと、SDKはバックグラウンドでApple Ads（AA）のアトリビューション情報をAppleに問い合わせ、その結果をAdaptyのバックエンドに転送します。AAがそのプロファイルのアクティブなアトリビューションソースになると、SDKは`didUpdateProfileStream`リスナーに更新済みの`AdaptyProfile`を届けます。このとき、`appliedAttributionSources`リストには`AdaptyAttributionSource.appleAds`が含まれています。
+
+初回起動時には、次の2つのケースを処理する必要があります：
+1. **タイムアウト内にアトリビューションが届いた場合。** `getPaywall` を呼び出すと、Adapty が Apple Ads のオーディエンスに対してリクエストを解決し、ターゲットのペイウォールを返します。
+2. **先にタイムアウトが経過した場合。** 代わりにデフォルトオーディエンスのペイウォールを表示し、Apple Ads のアトリビューションがないユーザーを待たせないようにしましょう。`getPaywallForDefaultAudience` はセグメント処理を待たずに即座に返します。
+
+`appliedAttributionSources` は空になることがあります。これは次のいずれかを意味します：
+
+- このプロファイルに対する Apple Ads のアトリビューションがまだ処理されていない、または
+- アトリビューション自体が届いていない。
+いずれの場合も、`getPaywallForDefaultAudience` は安全に呼び出せます — プロファイルの状態に関わらず、デフォルトオーディエンス向けのペイウォールを返します。
+
+:::important
+この待機が発生するのは初回起動時のみです。Apple Ads のアトリビューションが一度記録されると、プロファイルに永続的に保存されます。2回目以降の起動では、キャッシュされたプロファイルには既に `appliedAttributionSources` に `AdaptyAttributionSource.appleAds` が含まれているため、アトリビューションのパスはすぐに解決され、`getPaywall` は遅延なく Apple Ads セグメント向けのペイウォールを返します。
+:::
+## 実装 \{#implementation\}
+
+初回起動時は `AdaptyAttributionSource.appleAds` を待ち、ハードタイムアウトを設定してください。Apple Ads のアトリビューションが届かなかった場合でも、該当ユーザーにはペイウォールを表示する必要があります。
+1. **SDKを有効化する。** [Flutter SDKのインストールと設定](sdk-installation-flutter)を参照してください。
+2. **`Adapty().didUpdateProfileStream.listen(…)`でプロファイルの更新を購読する。** リスナーをまだ設定していない場合は、[サブスクリプションの更新をリッスンする](flutter-check-subscription-status#listen-to-subscription-updates)を参照してください。
+3. **`appliedAttributionSources`に`AdaptyAttributionSource.appleAds`が現れるのを監視する。** それが現れたら、`getPaywall`でペイウォールを読み込みます — AdaptyはAAセグメント済みのバリアントを返します:
+```dart
+final subscription = Adapty().didUpdateProfileStream.listen((profile) async {
+  if (!profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) return;
+  final paywall = await Adapty().getPaywall(placementId: placementId);
+  // セグメント済みのペイウォールを表示し、サブスクリプションとタイマーをキャンセルする
+});
+```
+
+   `didUpdateProfileStream` はブロードキャストストリームであり、過去のイベントを再生しません。そのため、`getProfile()` を使って現在のプロファイルも一度確認してください。アプリを再起動した場合、保存済みのアトリビューションはすでに適用済みのため、再度イベントは発行されません。
+4. **サブスクリプションと並行して3〜5秒のタイマーを起動します。** タイマーが`AdaptyAttributionSource.appleAds`の受信より先に発火した場合は、代わりに`getPaywallForDefaultAudience`を使用してデフォルトオーディエンスのペイウォールを読み込みます。最初に解決した方のペイウォールを表示し、もう一方のパスをキャンセルして、ペイウォールが二重に取得されないようにします。ネットワークリクエストが失敗してもユーザーが行き詰まらないよう、プレースメントに[フォールバックペイウォール](flutter-use-fallback-paywalls)を設定してください。
+## 完全な実装例 \{#complete-example\}
+
+以下の実装では、アトリビューションとタイムアウトを競合させながら、デフォルトオーディエンス向けのペイウォールを並行してプリフェッチし、適切なペイウォールを返します。呼び出し元は単一の関数を待つだけでよく、コールサイトでリスナーやステートフラグを管理する必要はありません。
+
+- アトリビューションが `timeout` 以内に届いた場合、`getPaywall` を通じてセグメント化されたペイウォールを返します。
+- `timeout` が先に経過した場合、`getPaywallForDefaultAudience` を通じてプリフェッチ済みのデフォルトオーディエンス向けペイウォールを返します。
+```dart title="apple_ads_paywall.dart"
+
+/// Returns the Apple Ads-segmented paywall if attribution is applied within
+/// [timeout], otherwise the default-audience paywall. Call after Adapty().activate().
+Future<AdaptyPaywall> getPaywallOrDefault({
+  required String placementId,
+  required Duration timeout,
+}) {
+  // Prefetch the default-audience paywall right away so the timeout path resolves
+  // without an extra network round-trip. `getPaywallForDefaultAudience` skips the
+  // wait for segmentation data. `..ignore()` keeps an unused prefetch from surfacing
+  // as an unhandled error; the error still reaches the caller if this paywall wins.
+  final defaultPaywall =
+      Adapty().getPaywallForDefaultAudience(placementId: placementId)..ignore();
+
+  final completer = Completer<AdaptyPaywall>();
+  late final StreamSubscription<AdaptyProfile> subscription;
+  late final Timer timer;
+
+  void resolve(Future<AdaptyPaywall> paywall) {
+    if (completer.isCompleted) return;
+    timer.cancel();
+    subscription.cancel();
+    completer.complete(paywall);
+  }
+
+  void onProfile(AdaptyProfile profile) {
+    if (profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) {
+      resolve(Adapty().getPaywall(placementId: placementId));
+    }
+  }
+
+  // Attribution path: react to profile updates as attribution is applied.
+  subscription = Adapty().didUpdateProfileStream.listen(onProfile);
+
+  // The stream is a broadcast stream and doesn't replay, so check the current
+  // profile too — on relaunches attribution is already stored and won't re-emit.
+  Adapty().getProfile().then(onProfile).ignore();
+
+  // Timeout path: fall back to the prefetched default-audience paywall.
+  timer = Timer(timeout, () => resolve(defaultPaywall));
+
+  return completer.future;
+}
+```
+
+スプラッシュ画面から呼び出し、解決後にペイウォールを表示します：
+
+```dart
+try {
+  final paywall = await getPaywallOrDefault(
+    placementId: 'YOUR_PLACEMENT_ID',
+    timeout: const Duration(seconds: 5),
+  );
+  // present the paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error or show a fallback paywall
+} catch (e) {
+  // handle the error
+}
+```
+`timeout` を調整して、ペイウォールが表示されるまでユーザーを待たせる時間を設定してください。ほとんどのユーザーはApple Adsのアトリビューションを持っていないため、設定したタイムアウトの全時間を待つことになります。3〜5秒が現実的なバランスです。アトリビューションが来る場合は、通常、アプリ起動から数秒以内に届きます。
+アプリがすでに別の目的（例：[サブスクリプションステータスの確認](flutter-check-subscription-status#listen-to-subscription-updates)）で `didUpdateProfileStream` をリッスンしている場合、変更する必要はありません。`didUpdateProfileStream` はブロードキャストストリームなので、複数の独立したリスナーが互いに影響を与えることなく使用できます。

@@ -1,0 +1,112 @@
+---
+title: "Flutter SDKでカスタムペイウォールの購入機能を有効にする"
+description: "Adapty SDKをFlutterのカスタムペイウォールに統合して、アプリ内課金を有効にします。"
+metadataTitle: "Adapty クイックスタートガイド | Adapty ドキュメント"
+keywords: ['paywalls Flutter', 'sdk Flutter', 'paywall', 'getPaywall']
+---
+
+このガイドでは、Adaptyをカスタムペイウォールに統合する方法を説明します。ペイウォールの実装を完全にコントロールしながら、Adapty SDKがプロダクトの取得、新規購入の処理、過去の購入の復元を担います。
+
+:::important
+**このガイドはカスタムペイウォールを実装する開発者向けです。** 最も簡単に購入機能を有効にしたい場合は、[Adapty ペイウォールビルダー](flutter-quickstart-paywalls)をご利用ください。ペイウォールビルダーを使えば、ノーコードのビジュアルエディターでペイウォールを作成でき、Adaptyがすべての購入ロジックを自動で処理します。また、アプリを再公開することなく異なるデザインをテストできます。
+:::
+
+## 始める前に \{#before-you-start\}
+
+### プロダクトのセットアップ \{#set-up-products\}
+
+アプリ内課金を有効にするには、3つの重要な概念を理解する必要があります。
+
+- [**プロダクト**](product) – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセスなど）
+- [**ペイウォール**](paywalls) – 提供するプロダクトを定義する設定。Adaptyではペイウォールを通じてのみプロダクトを取得できますが、この設計によりアプリのコードを変更せずにプロダクト、価格、オファーを変更できます。
+- [**プレースメント**](placements) – アプリ内でペイウォールを表示する場所とタイミング（`main`、`onboarding`、`settings` など）。ダッシュボードでプレースメントにペイウォールを設定し、コード内でプレースメントIDを使ってリクエストします。これにより、A/Bテストの実施や異なるユーザーへの異なるペイウォールの表示が簡単になります。
+
+カスタムペイウォールを使用する場合でも、これらの概念を理解しておくことが重要です。基本的には、アプリで販売するプロダクトを管理するための手段です。
+
+カスタムペイウォールを実装するには、**ペイウォール**を作成して**プレースメント**に追加する必要があります。この設定でプロダクトを取得できるようになります。ダッシュボードで必要な作業を理解するには、[こちら](quickstart)のクイックスタートガイドをご覧ください。
+
+### ユーザーの管理 \{#manage-users\}
+
+バックエンド認証の有無にかかわらず利用できます。
+
+ただし、Adapty SDKは匿名ユーザーと識別済みユーザーを異なる方法で扱います。詳細を確認してユーザーを適切に扱えるよう、[識別クイックスタートガイド](flutter-quickstart-identify)をご覧ください。
+
+## ステップ1. プロダクトを取得する \{#step-1-get-products\}
+
+カスタムペイウォール用のプロダクトを取得するには、次の手順を実行します。
+
+1. `getPaywall` メソッドに[プレースメント](placements)IDを渡して `paywall` オブジェクトを取得する。
+2. `getPaywallProducts` メソッドを使ってそのペイウォールのプロダクト配列を取得する。
+
+```dart showLineNumbers
+
+Future<void> loadPaywall() async {
+  try {
+    final paywall = await Adapty().getPaywall(placementId: 'YOUR_PLACEMENT_ID');
+    final products = await Adapty().getPaywallProducts(paywall: paywall);
+    
+    // Use products to build your custom paywall UI
+  } on AdaptyError catch (adaptyError) {
+    // Handle the error
+  } catch (e) {
+    // Handle the error
+  }
+}
+```
+
+## ステップ2. 購入を受け付ける \{#step-2-accept-purchases\}
+
+ユーザーがカスタムペイウォールでプロダクトをタップしたら、選択したプロダクトを引数に `makePurchase` メソッドを呼び出します。これにより購入フローが処理され、更新されたプロファイルが返されます。
+
+```dart showLineNumbers
+
+Future<void> purchaseProduct(AdaptyPaywallProduct product) async {
+  try {
+    final purchaseResult = await Adapty().makePurchase(product: product);
+    
+    switch (purchaseResult) {
+      case AdaptyPurchaseResultSuccess(profile: final profile):
+        // Purchase successful, profile updated
+        break;
+      case AdaptyPurchaseResultUserCancelled():
+        // User canceled the purchase
+        break;
+      case AdaptyPurchaseResultPending():
+        // Purchase is pending (e.g., user will pay offline with cash)
+        break;
+    }
+  } on AdaptyError catch (adaptyError) {
+    // Handle the error
+  } catch (e) {
+    // Handle the error
+  }
+}
+```
+
+## ステップ3. 購入を復元する \{#step-3-restore-purchases\}
+
+アプリストアは、サブスクリプションを提供するすべてのアプリに対して、ユーザーが購入を復元できる方法を提供することを求めています。
+
+ユーザーが復元ボタンをタップしたら `restorePurchases` メソッドを呼び出します。これにより購入履歴がAdaptyと同期され、更新されたプロファイルが返されます。
+
+```dart showLineNumbers
+
+Future<void> restorePurchases() async {
+  try {
+    final profile = await Adapty().restorePurchases();
+    // Restore successful, profile updated
+  } on AdaptyError catch (adaptyError) {
+    // Handle the error
+  } catch (e) {
+    // Handle the error
+  }
+}
+```
+
+## 次のステップ \{#next-steps\}
+
+<SupportForum />
+
+ペイウォールをアプリで表示する準備が整いました。[App Storeサンドボックス](test-purchases-in-sandbox)または[Google Play Store](testing-on-android)でテスト購入が正しく完了できることを確認してください。本番環境に近い実装例については、サンプルアプリの[PurchasesObserver](https://github.com/adaptyteam/AdaptySDK-Flutter/blob/master/example/lib/purchase_observer.dart)を参照してください。エラーハンドリング、UIオブザーバー、包括的なSDK統合を含む購入処理の実装例が確認できます。
+
+次は、[ユーザーが購入を完了しているか確認する](flutter-check-subscription-status)ことで、ペイウォールを表示すべきか有料機能へのアクセスを許可すべきかを判断できます。

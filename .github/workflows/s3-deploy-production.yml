@@ -55,6 +55,29 @@ jobs:
       - run: npm install github-slugger
       - run: node scripts/check-links/index.mjs --diff --base=last-production-deploy --internal-only
 
+  # Blocking gate for the translation-only deploy path: checks internal links in
+  # the localized files changed since the last production deploy. Internal-only
+  # (external URLs don't vary by locale), so no puppeteer is needed. A broken
+  # translated link fails this job and blocks build-locale-only/deploy-translations.
+  check-localized-links:
+    name: Check localized links
+    needs: classify
+    if: needs.classify.outputs.translation_only == 'true'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: check-localized-links-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm install github-slugger
+      - run: node scripts/check-links/index.mjs --diff --base=last-production-deploy --locales --internal-only
+
   # Fast-fail static checks for translator-introduced regressions
   # (missing blank line after imports, missing client:load imports).
   # Gates both content and translation-only deploy paths.
@@ -116,12 +139,17 @@ jobs:
 
       - name: Build English only
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
+          NODE_OPTIONS: --max-old-space-size=12288
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=none npx astro build
 
       - name: Generate markdown exports
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
+          NODE_OPTIONS: --max-old-space-size=12288
+          # English-only: locale .md/llms files come from each locale's own
+          # matrix job and overwrite this job's output at deploy anyway. Without
+          # this the generators default to ALL locales (BUILD_LOCALES unset), so
+          # this job redundantly re-walked every locale's corpus.
+          BUILD_LOCALES: none
         run: npm run build:md:prod
 
       - uses: actions/upload-artifact@v4
@@ -135,7 +163,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr, ru, es]
+        locale: [zh, tr, ru, es, ja, vi]
     concurrency:
       group: build-locale-full-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -160,7 +188,7 @@ jobs:
 
       - name: Build locale ${{ matrix.locale }}
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
+          NODE_OPTIONS: --max-old-space-size=12288
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} npx astro build
 
       # Generate locale .md / llms.txt / llms-full.txt exports into
@@ -169,7 +197,7 @@ jobs:
       # wipes them from S3 on every translator commit.
       - name: Generate locale markdown exports
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
+          NODE_OPTIONS: --max-old-space-size=12288
           BUILD_LOCALES: ${{ matrix.locale }}
         run: npm run build:md:prod
 
@@ -219,6 +247,16 @@ jobs:
           name: build-es
           path: build/es/
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-ja
+          path: build/ja/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-vi
+          path: build/vi/
+
       - name: Deploy
         uses: reggionick/s3-deploy@v4
         with:
@@ -239,12 +277,12 @@ jobs:
   # Translation-only deploy: build + upload only locale dirs
   # ──────────────────────────────────────────────────────────────
   build-locale-only:
-    needs: [classify, lint-mdx, check-mdx-parse]
+    needs: [classify, check-localized-links, lint-mdx, check-mdx-parse]
     if: needs.classify.outputs.translation_only == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr, ru, es]
+        locale: [zh, tr, ru, es, ja, vi]
     concurrency:
       group: build-locale-only-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -269,7 +307,7 @@ jobs:
 
       - name: Build locale ${{ matrix.locale }}
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
+          NODE_OPTIONS: --max-old-space-size=12288
         run: npm run prebuild && ASTRO_TELEMETRY_DISABLED=1 BUILD_LOCALES=${{ matrix.locale }} npx astro build
 
       # Generate locale .md / llms.txt / llms-full.txt exports into
@@ -279,7 +317,7 @@ jobs:
       # update.
       - name: Generate locale markdown exports
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
+          NODE_OPTIONS: --max-old-space-size=12288
           BUILD_LOCALES: ${{ matrix.locale }}
         run: npm run build:md:prod
 
@@ -324,20 +362,32 @@ jobs:
           name: build-tr-only-es
           path: build/es/
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-tr-only-ja
+          path: build/ja/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-tr-only-vi
+          path: build/vi/
+
       # Sync locale directories to S3 using AWS CLI —
-      # only overwrites zh/, tr/, ru/, and es/ prefixes, leaves English untouched.
+      # only overwrites zh/, tr/, ru/, es/, ja/, and vi/ prefixes, leaves English untouched.
       - name: Deploy translations to S3
         run: |
           aws s3 sync build/zh/ s3://${{ secrets.S3_BUCKET }}/zh/ --delete
           aws s3 sync build/tr/ s3://${{ secrets.S3_BUCKET }}/tr/ --delete
           aws s3 sync build/ru/ s3://${{ secrets.S3_BUCKET }}/ru/ --delete
           aws s3 sync build/es/ s3://${{ secrets.S3_BUCKET }}/es/ --delete
+          aws s3 sync build/ja/ s3://${{ secrets.S3_BUCKET }}/ja/ --delete
+          aws s3 sync build/vi/ s3://${{ secrets.S3_BUCKET }}/vi/ --delete
 
       - name: Invalidate locale paths
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/zh/*" "/tr/*" "/ru/*" "/es/*"
+            --paths "/zh/*" "/tr/*" "/ru/*" "/es/*" "/ja/*" "/vi/*"
 
       - name: Update deployment tag
         run: |

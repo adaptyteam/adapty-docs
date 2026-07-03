@@ -1,0 +1,96 @@
+---
+title: "Capacitor SDKでサブスクリプションステータスを確認する"
+description: "AdaptyでCapacitorアプリのサブスクリプションステータスを確認する方法を学びましょう。"
+metadataTitle: "サブスクリプションステータスの確認 | Adapty ドキュメント"
+displayed_sidebar: sdkcapacitor
+---
+
+ユーザーが有料コンテンツにアクセスできるか、またはペイウォールを表示するかを決めるには、プロファイルの[アクセスレベル](access-level)を確認する必要があります。
+
+この記事では、ユーザーにペイウォールを表示するか、有料機能へのアクセスを許可するかを判断するために、プロファイルの状態を取得する方法を説明します。
+
+## サブスクリプションステータスを取得する \{#get-subscription-status\}
+
+ペイウォールまたは有料コンテンツを表示するかどうかを判断する際、ユーザーのプロファイルにある[アクセスレベル](access-level)を確認します。方法は2つあります：
+
+- アプリ起動時など、すぐに最新のプロファイルデータが必要な場合や強制的に更新したい場合は`getProfile`を呼び出します。
+- サブスクリプションのステータスが変わるたびに自動的に更新されるローカルコピーを保持するには、**自動プロファイル更新**を設定します。
+
+### プロファイルを取得する \{#get-profile\}
+
+サブスクリプションステータスを取得する最も簡単な方法は、`getProfile`メソッドを使ってプロファイルにアクセスすることです：
+
+```typescript showLineNumbers
+try {
+  const profile = await adapty.getProfile();
+} catch (error) {
+  // handle the error
+}
+```
+
+### サブスクリプション更新をリッスンする \{#listen-to-subscription-updates\}
+
+アプリでプロファイルの更新を自動的に受け取るには：
+
+1. `adapty.addListener('onLatestProfileLoad')`を使ってプロファイルの変化をリッスンします。ユーザーのサブスクリプションステータスが変わるたびに、Adaptyが自動的にこのメソッドを呼び出します。
+2. このメソッドが呼び出されたときに更新されたプロファイルデータを保存しておくと、追加のネットワークリクエストなしにアプリ全体で利用できます。
+
+```typescript showLineNumbers
+class SubscriptionManager {
+  private currentProfile: any = null;
+  
+  constructor() {
+    // Listen for profile updates
+    adapty.addListener('onLatestProfileLoad', (data) => {
+      this.currentProfile = data.profile;
+      // Update UI, unlock content, etc.
+    });
+  }
+  
+  // Use stored profile instead of calling getProfile()
+  hasAccess(): boolean {
+    return this.currentProfile?.accessLevels?.['YOUR_ACCESS_LEVEL']?.isActive ?? false;
+  }
+}
+```
+
+:::note
+Adaptyはアプリ起動時に自動的に`onLatestProfileLoad`イベントリスナーを呼び出し、デバイスがオフラインの場合でもキャッシュされたサブスクリプションデータを提供します。
+:::
+
+## プロファイルとペイウォールのロジックを連携させる \{#connect-profile-with-paywall-logic\}
+
+ペイウォールの表示や有料機能へのアクセス許可をすぐに判断する必要がある場合は、ユーザーのプロファイルを直接確認できます。このアプローチは、アプリ起動時、プレミアムセクションへの入室時、特定コンテンツの表示前などのシナリオに役立ちます。
+
+```typescript showLineNumbers
+const checkAccessLevel = async () => {
+  try {
+    const profile = await adapty.getProfile();
+    return profile?.accessLevels?.['YOUR_ACCESS_LEVEL']?.isActive === true;
+  } catch (error) {
+    console.warn('Error checking access level:', error);
+    return false; // Show paywall if access check fails
+  }
+};
+
+const getAccessLevel = () => {
+  return profile?.accessLevels?.['YOUR_ACCESS_LEVEL'];
+};
+
+const initializePaywall = async () => {
+  try {
+    await loadPaywall();
+    
+    const hasAccess = await checkAccessLevel();
+    if (!hasAccess) {
+      // Show paywall if no access
+    }
+  } catch (error) {
+    console.warn('Error initializing paywall:', error);
+  }
+};
+```
+
+## 次のステップ \{#next-steps\}
+
+サブスクリプションステータスの確認方法がわかったら、次は[ユーザープロファイルの操作](capacitor-quickstart-identify)について学び、ユーザーが購入したコンテンツに確実にアクセスできるようにしましょう。

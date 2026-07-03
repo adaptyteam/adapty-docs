@@ -1,0 +1,146 @@
+---
+title: "iOS SDKでモバイルアプリの購入を行う"
+description: "Adaptyを使用したアプリ内課金とサブスクリプションの処理に関するガイド。"
+metadataTitle: "AdaptyでのアプリInne課金の処理 | Adapty ドキュメント"
+keywords: ['makePurchase', 'pending', 'purchase', 'presentCodeRedemptionSheet', 'offer code']
+rank: 100
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/ja/reusable/OfferCodesInfo.mdx';
+
+モバイルアプリ内でペイウォールを表示することは、ユーザーにプレミアムコンテンツやサービスへのアクセスを提供するための重要なステップです。ただし、[ペイウォールビルダー](adapty-paywall-builder)を使用してペイウォールをカスタマイズしている場合に限り、ペイウォールを表示するだけで購入処理が完結します。
+
+ペイウォールビルダーを使用しない場合は、購入を完了してコンテンツをアンロックするために `.makePurchase()` という別のメソッドを使用する必要があります。このメソッドは、ユーザーがペイウォールで操作を行い、目的のトランザクションを進めるための窓口となります。
+
+ペイウォールにユーザーが購入しようとしているプロダクトに対して有効なプロモーションオファーがある場合、Adaptyは購入時に自動的にそれを適用します。
+
+:::warning
+初回オファーが自動的に適用されるのは、ペイウォールビルダーで設定されたペイウォールを使用している場合のみです。
+
+それ以外の場合は、[iOS での初回オファーの利用資格を確認](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios)する必要があります。この手順を省略すると、リリース時にアプリが審査で却下される可能性があります。また、初回オファーの対象ユーザーに通常価格が請求される可能性もあります。
+:::
+
+一つのステップも省略せずに[初期設定](quickstart)を完了していることを確認してください。設定が完了していないと、購入の検証ができません。
+
+## 購入を行う \{#make-purchase\}
+
+:::note
+**[ペイウォールビルダー](adapty-paywall-builder)を使用していますか？** 購入は自動的に処理されます。このステップはスキップできます。
+
+**ステップバイステップのガイドが必要ですか？** 完全なコンテキストとエンドツーエンドの実装手順については、[クイックスタートガイド](ios-implement-paywalls-manually)をご覧ください。
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let purchaseResult = try await Adapty.makePurchase(product: product)
+
+    switch purchaseResult {
+        case .userCancelled:
+            // Handle the case where the user canceled the purchase
+        case .pending:
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
+        case let .success(profile, transaction):
+            if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // Grant access to the paid features
+            }
+    }
+} catch {
+    // Handle the error
+}
+```
+
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.makePurchase(product: product) { result in
+    switch result {
+    case let .success(purchaseResult):
+        switch purchaseResult {
+            case .userCancelled:
+                // Handle the case where the user canceled the purchase
+            case .pending:
+                // Handle deferred purchases (e.g., the user will pay offline with cash)
+            case let .success(profile, transaction):
+                if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+                    // Grant access to the paid features
+                }
+        }
+    case let .failure(error):
+        // Handle the error
+    }
+}
+```
+
+</TabItem>
+
+</Tabs>
+
+リクエストパラメーター：
+
+| パラメーター | 必須 | 説明 |
+| :---------- | :------- | :-------------------------------------------------------------------------------------------------- |
+| **Product** | 必須 | ペイウォールから取得した [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) オブジェクト。 |
+
+レスポンスパラメーター：
+
+| パラメーター | 説明 |
+|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>リクエストが成功した場合、レスポンスにはこのオブジェクトが含まれます。[AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile) オブジェクトは、アプリ内でのユーザーのアクセスレベル、サブスクリプション、非サブスクリプション購入に関する包括的な情報を提供します。</p><p>ユーザーがアプリへの必要なアクセス権を持っているかどうかを確認するために、アクセスレベルのステータスをチェックしてください。</p> |
+
+:::warning
+**注意：** Apple の StoreKit バージョンが v2.0 未満、かつ Adapty SDK バージョンが v2.9.0 未満の場合は、代わりに [Apple App Store 共有シークレット](app-store-connection-configuration#step-5-enter-app-store-shared-secret)を提供する必要があります。このメソッドは現在 Apple によって非推奨とされています。
+:::
+
+## App Store からのアプリ内課金 \{#in-app-purchases-from-the-app-store\}
+
+ユーザーが App Store で購入を開始し、トランザクションがアプリに引き継がれる場合、2つの選択肢があります：
+
+- **トランザクションを即座に処理する：** `shouldAddStorePayment` で `true` を返します。これにより、Apple の購入システム画面がすぐに表示されます。
+- **後処理のためにプロダクトオブジェクトを保存する：** `shouldAddStorePayment` で `false` を返し、後で保存したプロダクトを使って `makePurchase` を呼び出します。購入をトリガーする前にユーザーにカスタム画面を表示したい場合に便利です。
+
+完全なコード例を以下に示します：
+
+```swift showLineNumbers title="Swift"
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
+        // 1a.
+        // Return `true` to continue the transaction in your app. The Apple purchase system screen will show automatically.
+
+        // 1b.
+        // Store the product object and return `false` to defer or cancel the transaction.
+        false
+    }
+    
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase` when the timing is appropriate
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyDeferredProduct = // get the product object from 1b.
+        do {
+            try await Adapty.makePurchase(product: storedProduct)
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+## iOS でオファーコードを利用する \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+アプリ内でコード引き換えシートを表示するには：
+
+```swift showLineNumbers
+Adapty.presentCodeRedemptionSheet()
+```
+
+:::danger
+確認された問題として、一部のアプリでオファーコード引き換えシートが正常に動作しない場合があります。ユーザーを直接 App Store にリダイレクトすることをお勧めします。
+
+そのためには、以下の形式の URL を開く必要があります：
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::

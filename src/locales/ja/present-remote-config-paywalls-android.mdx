@@ -1,0 +1,165 @@
+---
+title: "Android SDKでリモートコンフィグによるペイウォールをレンダリングする"
+description: "Adapty Android SDKでリモートコンフィグペイウォールを表示し、ユーザー体験をパーソナライズする方法を説明します。"
+metadataTitle: "リモートコンフィグペイウォールの表示 | Android SDK | Adapty ドキュメント"
+keywords: ['remote config', 'logShowFlow', 'logShowPaywall']
+displayed_sidebar: sdkandroid
+---
+
+<SDKv4>
+リモートコンフィグを使ってペイウォールをカスタマイズした場合は、ユーザーに表示するためのレンダリングをアプリのコードで実装する必要があります。リモートコンフィグはニーズに合わせた柔軟性を提供するため、何を含めるか、またペイウォールの見た目をどうするかはあなた次第です。Adapty はリモートコンフィグを取得するメソッドを提供しており、カスタムペイウォールを自由に表示できます。
+## フローのリモートコンフィグを取得して表示する \{#get-flow-remote-config-and-present-it\}
+
+v4 では、フローは `remoteConfigs` 配列に設定済みロケールごとに 1 つの `AdaptyRemoteConfig` エントリを持ちます。ユーザーの設定に合ったロケールを選択し、必要な値を読み取ってください。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val flow = result.value
+            val config = flow.remoteConfigs.firstOrNull { it.locale == "en" }
+                ?: flow.remoteConfigs.firstOrNull()
+            val headerText = config?.dataMap?.get("header_text") as? String
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getFlow("YOUR_PLACEMENT_ID", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) result).getValue();
+
+        AdaptyRemoteConfig config = null;
+        for (AdaptyRemoteConfig remoteConfig : flow.getRemoteConfigs()) {
+            if ("en".equals(remoteConfig.getLocale())) {
+                config = remoteConfig;
+                break;
+            }
+        }
+        if (config == null && !flow.getRemoteConfigs().isEmpty()) {
+            config = flow.getRemoteConfigs().get(0);
+        }
+
+        if (config != null && config.getDataMap().get("header_text") instanceof String) {
+            String headerText = (String) config.getDataMap().get("header_text");
+        }
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+</Tabs>
+必要な値をすべて取得したら、次はそれらをレンダリングして視覚的に魅力的なページに組み立てましょう。さまざまなスマートフォンの画面サイズや向きに対応したデザインにして、デバイスを問わずシームレスで使いやすい体験を提供してください。
+
+:::warning
+Adapty アナリティクスがファネルや A/B テストの情報を収集できるように、以下で説明する[ペイウォール表示イベントの記録](present-remote-config-paywalls-android#track-paywall-view-events)を必ず行ってください。
+:::
+ペイウォールの表示が完了したら、次は購入フローの設定に進みます。ユーザーが購入を行う際は、フローからプロダクトを渡して `.makePurchase()` を呼び出すだけです。`.makePurchase()` メソッドの詳細については、[購入の実装](android-making-purchases)をご覧ください。
+
+[フォールバックペイウォールと呼ばれるバックアップペイウォールの作成](android-use-fallback-paywalls)をお勧めします。このバックアップは、インターネット接続がない場合やキャッシュが利用できない場合にユーザーに表示され、そのような状況でもスムーズな体験を提供します。
+## ペイウォールの表示イベントをトラッキングする \{#track-paywall-view-events\}
+
+Adapty はフローやペイウォールのパフォーマンス測定をサポートしています。購入データは自動的に収集されますが、表示イベントのログ記録はユーザー側で行う必要があります。ユーザーがフローを見るタイミングを把握できるのは開発者だけだからです。
+
+表示イベントをログに記録するには、`.logShowFlow(flow)` を呼び出すだけです。ファネルや A/B テストの指標にすぐ反映されます。
+:::important
+[フローBuilder](adapty-flow-builder)や[ペイウォールビルダー](adapty-paywall-builder)でレンダリングされたフローやペイウォールを表示する場合、`.logShowFlow(flow)`を呼び出す必要はありません。その場合、Adaptyは自動的にビューをトラッキングします。
+:::
+
+```kotlin showLineNumbers
+Adapty.logShowFlow(flow)
+```
+
+リクエストパラメーター:
+| パラメーター | 必須/任意 | 説明                                                                                      |
+| :---------- | :-------- |:------------------------------------------------------------------------------------------|
+| **flow**    | 必須      | `Adapty.getFlow` で取得した `AdaptyFlow` オブジェクト。 |
+
+</SDKv4>
+
+<SDKv3>
+リモートコンフィグを使ってペイウォールをカスタマイズした場合、ユーザーに表示するためのレンダリングをアプリのコード内で実装する必要があります。リモートコンフィグはニーズに合わせた柔軟性を提供するため、ペイウォールに含める内容や表示方法はすべて自由に決められます。リモートコンフィグで設定したカスタムペイウォールを表示できるよう、リモートコンフィグを取得するメソッドを提供しています。
+## ペイウォールのリモートコンフィグを取得して表示する \{#get-paywall-remote-config-and-present-it\}
+
+ペイウォールのリモートコンフィグを取得するには、`remoteConfig` プロパティにアクセスして必要な値を取り出します。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            val headerText = paywall.remoteConfig?.dataMap?.get("header_text") as? String
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        
+        AdaptyPaywall.RemoteConfig remoteConfig = paywall.getRemoteConfig();
+        
+        if (remoteConfig != null) {
+            if (remoteConfig.getDataMap().get("header_text") instanceof String) {
+                String headerText = (String) remoteConfig.getDataMap().get("header_text");
+            }
+        }
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+</TabItem>
+</Tabs>
+この時点で、必要な値をすべて取得したら、それらをレンダリングして視覚的に魅力的なページに組み立てましょう。さまざまなスマートフォンの画面サイズや向きに対応したデザインにして、デバイスを問わずシームレスで使いやすい体験を提供してください。
+
+:::warning
+後述のとおり、[ペイウォールの表示イベントを必ず記録](present-remote-config-paywalls-android#track-paywall-view-events)してください。これにより、Adapty アナリティクスがファネルおよび A/B テスト用の情報を収集できるようになります。
+:::
+ペイウォールの表示が完了したら、購入フローのセットアップに進みます。ユーザーが購入を行う際は、ペイウォールのプロダクトを使って `.makePurchase()` を呼び出すだけです。`.makePurchase()` メソッドの詳細については、[購入処理](android-making-purchases)をご覧ください。
+
+[フォールバックペイウォールと呼ばれるバックアップペイウォールの作成](android-use-fallback-paywalls)をおすすめします。このバックアップは、インターネット接続がない場合やキャッシュが利用できない場合にユーザーへ表示され、こうした状況でもスムーズな体験を提供します。
+## ペイウォールの表示イベントを記録する \{#track-paywall-view-events\}
+
+Adapty はペイウォールのパフォーマンス計測をサポートしています。購入データは自動的に収集されますが、ペイウォールの表示ログはユーザー自身が記録する必要があります。ペイウォールがいつ表示されるかを把握しているのはあなただけだからです。
+
+ペイウォールの表示イベントを記録するには、`.logShowPaywall(paywall)` を呼び出すだけです。記録されたデータは、ファネルや A/B テストのペイウォール指標に反映されます。
+
+:::important
+[ペイウォールビルダー](adapty-paywall-builder)で作成したペイウォールを表示している場合は、`.logShowPaywall(paywall)` を呼び出す必要はありません。
+:::
+```kotlin showLineNumbers
+Adapty.logShowPaywall(paywall)
+```
+
+リクエストパラメータ：
+
+| パラメータ      | 必須/任意 | 説明                                                                                                        |
+| :---------- | :------- |:------------------------------------------------------------------------------------------------------------|
+| **paywall** | 必須 | [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/) オブジェクト。 |
+
+</SDKv3>

@@ -1,0 +1,125 @@
+---
+title: "Xác định người dùng trong React Native SDK"
+description: "Tìm hiểu cách xác định người dùng trong ứng dụng React Native với Adapty SDK."
+metadataTitle: "Xác định người dùng | React Native SDK | Tài liệu Adapty"
+customSlug: /react-native-identifying-users
+displayed_sidebar: sdkreactnative
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+import CrossDeviceDetection from '@site/src/locales/vi/reusable/CrossDeviceDetection.mdx';
+
+Adapty tạo một internal profile ID cho mỗi người dùng. Tuy nhiên, nếu bạn có hệ thống xác thực riêng, bạn nên đặt Customer User ID của mình. Bạn có thể tìm người dùng theo Customer User ID trong mục [Profiles](profiles-crm) và sử dụng nó trong [server-side API](getting-started-with-server-side-api), vốn sẽ được gửi đến tất cả các tích hợp.
+
+### Đặt customer user ID khi cấu hình \{#setting-customer-user-id-on-configuration\}
+
+Nếu bạn đã có user ID trong quá trình cấu hình, chỉ cần truyền nó làm tham số `customerUserId` vào phương thức `.activate()`:
+
+```typescript showLineNumbers
+adapty.activate("PUBLIC_SDK_KEY", {
+    customerUserId: "YOUR_USER_ID"
+});
+```
+
+<SampleApp />
+
+### Đặt customer user ID sau khi cấu hình \{#setting-customer-user-id-after-configuration\}
+
+Nếu bạn chưa có user ID trong cấu hình SDK, bạn có thể đặt nó sau bất kỳ lúc nào bằng phương thức `.identify()`. Các trường hợp phổ biến nhất khi dùng phương thức này là sau khi đăng ký hoặc đăng nhập, khi người dùng chuyển từ trạng thái ẩn danh sang người dùng đã xác thực.
+
+```typescript showLineNumbers
+try {
+    await adapty.identify("YOUR_USER_ID");
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```
+
+Tham số yêu cầu:
+
+- **Customer User ID** (bắt buộc): chuỗi định danh người dùng.
+
+:::warning
+Gửi lại dữ liệu người dùng quan trọng
+
+Trong một số trường hợp, chẳng hạn khi người dùng đăng nhập lại vào tài khoản, máy chủ Adapty đã có thông tin về người dùng đó. Trong các tình huống này, Adapty SDK sẽ tự động chuyển sang làm việc với người dùng mới. Nếu bạn đã truyền dữ liệu cho người dùng ẩn danh, chẳng hạn như thuộc tính tùy chỉnh hoặc attribution từ các mạng bên thứ ba, bạn cần gửi lại dữ liệu đó cho người dùng đã được xác định.
+
+Ngoài ra, bạn cũng cần gọi lại tất cả paywall và sản phẩm sau khi xác định người dùng, vì dữ liệu của người dùng mới có thể khác.
+:::
+
+### Đăng xuất và đăng nhập \{#logging-out-and-logging-in\}
+
+Bạn có thể đăng xuất người dùng bất cứ lúc nào bằng cách gọi phương thức `.logout()`:
+
+```typescript showLineNumbers
+try {
+    await adapty.logout();
+    // successful logout
+} catch (error) {
+    // handle the error
+}
+```
+
+Sau đó bạn có thể đăng nhập người dùng bằng phương thức `.identify()`.
+
+## Gán `appAccountToken` (iOS) \{#assign-appaccounttoken-ios\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) là một **UUID** cho phép bạn liên kết các giao dịch App Store với danh tính người dùng nội bộ của mình.  
+StoreKit gắn token này vào mỗi giao dịch, giúp backend của bạn có thể khớp dữ liệu App Store với người dùng.
+
+Hãy sử dụng một UUID ổn định được tạo cho mỗi người dùng và tái sử dụng nó cho cùng một tài khoản trên nhiều thiết bị.
+Điều này đảm bảo rằng các lần mua và thông báo App Store luôn được liên kết chính xác.
+
+Bạn có thể đặt token theo hai cách – trong quá trình kích hoạt SDK hoặc khi xác định người dùng.
+
+:::important
+Bạn phải luôn truyền `appAccountToken` cùng với `customerUserId`.
+Nếu chỉ truyền token mà không có `customerUserId`, nó sẽ không được đưa vào giao dịch.
+:::
+
+```typescript showLineNumbers
+// During configuration:
+adapty.activate("PUBLIC_SDK_KEY", {
+    customerUserId: "YOUR_USER_ID",
+    ios: { appAccountToken: "YOUR_APP_ACCOUNT_TOKEN" },
+});
+
+// Or when identifying users
+try {
+    await adapty.identify("YOUR_USER_ID", {
+        ios: {appAccountToken: 'YOUR_APP_ACCOUNT_TOKEN'}
+    });
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```
+
+### Đặt obfuscated account ID (Android) \{#set-obfuscated-account-ids-android\}
+
+Google Play yêu cầu obfuscated account ID cho một số trường hợp sử dụng nhất định nhằm tăng cường quyền riêng tư và bảo mật cho người dùng. Các ID này giúp Google Play xác định giao dịch mua trong khi vẫn giữ thông tin người dùng ẩn danh, điều này đặc biệt quan trọng để ngăn chặn gian lận và phân tích.
+
+Bạn có thể cần đặt các ID này nếu ứng dụng của bạn xử lý dữ liệu người dùng nhạy cảm hoặc nếu bạn phải tuân thủ các quy định về quyền riêng tư cụ thể. Các obfuscated ID cho phép Google Play theo dõi giao dịch mua mà không làm lộ định danh người dùng thực.
+
+```typescript showLineNumbers
+// During configuration:
+adapty.activate("PUBLIC_SDK_KEY", {
+    customerUserId: "YOUR_USER_ID",
+    android: { obfuscatedAccountId: 'YOUR_OBFUSCATED_ACCOUNT_ID' }
+});
+
+// Or when identifying users
+try {
+    await adapty.identify("YOUR_USER_ID", {
+        android: { obfuscatedAccountId: 'YOUR_OBFUSCATED_ACCOUNT_ID' }
+    });
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```
+
+## Phát hiện người dùng trên nhiều thiết bị \{#detect-users-across-devices\}
+
+<CrossDeviceDetection />

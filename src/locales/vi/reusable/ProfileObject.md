@@ -1,0 +1,12 @@
+| Tham số | Kiểu | Nullable | Mô tả |
+| ----------------- | ---------- | ------------------ | ------------------------------------------------------------ |
+| app_id | String | :heavy_minus_sign: | ID nội bộ của ứng dụng. Bạn có thể xem trong Adapty Dashboard: [App Settings -> General tab](https://app.adapty.io/settings/general). |
+| profile_id | UUID | :heavy_minus_sign: | ID hồ sơ người dùng Adapty. Bạn có thể xem trong trường **Adapty ID** trên Adapty Dashboard -> [Profiles](https://app.adapty.io/profiles/users) -> trang hồ sơ cụ thể. |
+| customer_user_id | String | :heavy_plus_sign: | ID người dùng của bạn trong hệ thống. Bạn có thể xem trong trường **Customer user ID** trên Adapty Dashboard -> [Profiles](https://app.adapty.io/profiles/users) -> trang hồ sơ cụ thể. Tham số này chỉ hoạt động nếu bạn [xác định người dùng](identifying-users) trong code ứng dụng qua Adapty SDK. |
+| total_revenue_usd | Float | :heavy_minus_sign: | Giá trị float thể hiện tổng doanh thu tính bằng USD kiếm được từ hồ sơ người dùng. |
+| segment_hash | String | :heavy_minus_sign: | Tham số nội bộ. |
+| timestamp | Integer | :heavy_minus_sign: | Thời gian phản hồi tính bằng mili giây, dùng để giải quyết race condition. |
+| custom_attributes | Array | :heavy_minus_sign: | <p>Hồ sơ người dùng cho phép tối đa 30 thuộc tính tùy chỉnh. Nếu bạn cung cấp mảng `custom_attributes`, phải có ít nhất một khóa thuộc tính.</p><p>**Key:** Khóa phải là chuỗi không quá 30 ký tự. Chỉ được dùng chữ cái, chữ số, dấu gạch ngang, dấu chấm và dấu gạch dưới.</p><p>**Value:** Giá trị thuộc tính không được vượt quá 30 ký tự. Chỉ chấp nhận chuỗi và số thực (float); giá trị boolean sẽ được chuyển đổi thành float. Gửi giá trị rỗng hoặc null để xóa thuộc tính.</p> |
+| access_levels | Array | :heavy_plus_sign: | Mảng các đối tượng [Access level](server-side-api-objects#access-level). Có thể null nếu người dùng không có mức độ truy cập nào. |
+| subscriptions | Array | :heavy_plus_sign: | Mảng các đối tượng [Subscription](server-side-api-objects#subscription). Có thể null nếu người dùng không có gói đăng ký nào. |
+| non_subscriptions | Array | :heavy_plus_sign: | Mảng các đối tượng [Non-Subscription](server-side-api-objects#non-subscription). Có thể null nếu người dùng chưa có giao dịch mua nào. |

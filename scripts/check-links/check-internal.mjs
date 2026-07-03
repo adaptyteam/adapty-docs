@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { getAllDocFiles, extractReusableImports } from './scan.mjs';
+import { fileURLToPath } from 'node:url';
+import { getAllDocFiles, extractReusableImports, toInternalPath } from './scan.mjs';
 import { curlCheck, checkExternalUrl } from './check-external.mjs';
 import GithubSlugger from 'github-slugger';
 
@@ -9,7 +10,63 @@ const RUNTIME_ROUTE_PREFIXES = [
   'api-adapty/',
   'api-web/',
   'api-export-analytics/',
+  'api-mail/',
 ];
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const API_CONFIG_PATH = path.join(__dirname, '../../src/api-reference/config.json');
+const API_SPECS_DIR = path.join(__dirname, '../../src/api-reference/specs');
+
+// Registry of locally-registered API references: slug -> { ops: Set<operationId>, specLoaded }.
+// Runtime API routes (api-*/operations/*) are generated at build time from these
+// specs, so a route that resolves here will exist after deploy even if it isn't on
+// the live site yet — e.g. a brand-new API reference added in the same PR.
+let apiRouteIndex = null;
+async function buildApiRouteIndex() {
+  if (apiRouteIndex) return apiRouteIndex;
+  apiRouteIndex = new Map();
+  let apis;
+  try {
+    apis = JSON.parse(await readFile(API_CONFIG_PATH, 'utf-8'));
+  } catch {
+    return apiRouteIndex; // no config — every runtime route falls back to the live check
+  }
+  for (const api of apis) {
+    if (!api.slug || !api.specFile) continue;
+    const ops = new Set();
+    let specLoaded = false;
+    try {
+      const spec = await readFile(path.join(API_SPECS_DIR, api.specFile), 'utf-8');
+      const re = /^\s*operationId:\s*["']?([^"'\s]+)["']?\s*$/gm;
+      let m;
+      while ((m = re.exec(spec)) !== null) ops.add(m[1]);
+      specLoaded = true;
+    } catch { /* spec unreadable — landing still resolves, operations fall back to live */ }
+    apiRouteIndex.set(api.slug, { ops, specLoaded });
+  }
+  return apiRouteIndex;
+}
+
+/**
+ * Resolve a runtime API route (e.g. `api-mail/operations/saveProfile`) against the
+ * local config + spec. Returns:
+ *   true  — route is generated from this checkout (valid; will deploy)
+ *   false — slug is registered but the operation doesn't exist (genuine broken link)
+ *   null  — can't decide locally (slug not registered, or spec unreadable) → caller
+ *           should fall back to checking the live site.
+ */
+async function resolveApiRouteLocally(rawSlug) {
+  const index = await buildApiRouteIndex();
+  const [apiSlug, section, op] = rawSlug.split('/');
+  const entry = index.get(apiSlug);
+  if (!entry) return null;                  // not a locally-registered reference
+  if (!section) return true;                // landing page, e.g. /api-mail
+  if (section === 'operations' && op) {
+    if (!entry.specLoaded) return null;     // couldn't read spec — don't risk a false break
+    return entry.ops.has(op);
+  }
+  return null;                              // unexpected sub-route — let the live check decide
+}
 
 const MALFORMED_URL_RE = /^[a-z]https?:\/\//i;
 
@@ -85,7 +142,13 @@ async function getHeadingIds(filePath) {
   return ids;
 }
 
-// Doc index: Map<lowercased-slug, filePath>
+// Doc index: Map<lowercased-slug, filePath>. Built from the ENGLISH source only,
+// and used for both English and localized link checking. A bare-slug link in a
+// localized file renders to the no-locale URL /docs/<slug> at runtime (verified
+// against production), so its validity depends on the ENGLISH page existing — a
+// translated page with the same slug but no English source is NOT reachable that
+// way, so it must not be treated as resolving. (Do not overlay locale pages here:
+// doing so masks links to orphaned translations that 404 in production.)
 let docIndex = null;
 async function buildDocIndex(docsDir) {
   if (docIndex) return docIndex;
@@ -119,7 +182,14 @@ export { buildDocIndex };
  * Check an internal doc link. Resolves slug to file, checks anchors,
  * falls back to live site for redirects.
  */
-export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs }) {
+export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs, skipAnchors = false }) {
+  // Self-referential absolute URLs (https://adapty.io/docs/<...>) are internal
+  // links written the long way — reduce them to the internal path so they
+  // resolve against the repo index. On a miss, the live fallback then hits the
+  // exact URL (locale segment preserved), catching orphaned-slug 404s.
+  const internalPath = toInternalPath(url);
+  if (internalPath !== null) url = internalPath;
+
   const [urlWithoutAnchor, anchor] = url.split('#');
   if (!urlWithoutAnchor) return { ok: true, status: 'anchor-only' };
 
@@ -130,10 +200,20 @@ export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs 
 
   const rawSlug = urlWithoutAnchor.replace(/^\.?\//, '').replace(/\/$/, '').replace(/\.(md|mdx)$/, '');
 
-  // Runtime API routes → check against live site (preserve original case).
-  // Retries with backoff because these HTTP checks are sensitive to transient
-  // network issues on CI runners (DNS blips, CDN edge cache misses, etc.).
+  // Runtime API routes → resolve against the local config + spec first (preserve
+  // original case). The repo is the source of truth for what will deploy, so a
+  // route that resolves locally is valid even if it isn't on the live site yet
+  // (e.g. a new API reference added in this same PR).
   if (RUNTIME_ROUTE_PREFIXES.some(p => rawSlug.startsWith(p))) {
+    const local = await resolveApiRouteLocally(rawSlug);
+    if (local === true) return { ok: true, status: 'found' };
+    if (local === false) {
+      return { ok: false, status: 'NOT_FOUND', error: 'API operation not found in local spec' };
+    }
+
+    // Can't resolve locally → fall back to the live site (preserve original case).
+    // Retries with backoff because these HTTP checks are sensitive to transient
+    // network issues on CI runners (DNS blips, CDN edge cache misses, etc.).
     const liveUrl = `${liveSiteBase}/${rawSlug}`;
     const RETRY_BACKOFF = [2000, 5000];
     let result;
@@ -152,7 +232,7 @@ export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs 
     };
   }
 
-  // Case-insensitive lookup against the doc index
+  // Case-insensitive lookup against the English doc index.
   const slug = rawSlug.toLowerCase();
   const index = await buildDocIndex(docsDir);
 
@@ -172,7 +252,7 @@ export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs 
     return { ok: false, status: 'NOT_FOUND', error: 'Page not found in docs' };
   }
 
-  if (anchor) {
+  if (anchor && !skipAnchors) {
     const headings = await getHeadingIds(filePath);
     if (!headings.has(anchor)) {
       return { ok: true, anchorMissing: `#${anchor} not found` };

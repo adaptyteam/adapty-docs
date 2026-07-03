@@ -1,0 +1,111 @@
+---
+title: "アトリビューション連携"
+description: "Adapty をアトリビューションツールと連携して、ユーザー獲得と LTV を追跡しましょう。"
+metadataTitle: "アトリビューション連携ガイド | Adapty ドキュメント"
+keywords: ['attribution', 'updateAttribution']
+---
+
+Adapty はサードパーティサービスとの情報交換を行い、サブスクリプションイベントを特定のマーケティングキャンペーンに紐付けることができます。これにより、次のことが可能になります。
+
+* どのマーケティング戦略が最も多くの収益をもたらしているかを把握できる
+* アトリビューションで Adapty の[サブスクリプションチャート](charts)を絞り込める
+* サードパーティサービスの機能を活用して Adapty のサブスクリプションデータを分析できる
+
+設定方法は以下の2通りです。
+* [統合アトリビューション](#integrated-attribution)は最小限のセットアップで利用でき、9つの主要プラットフォームとデータを連携できます。
+* [手動アトリビューション](#manual-attribution)では、サードパーティサービスのAPIからアトリビューションデータを自分で取得してから、Adaptyに送信する必要があります。
+
+:::tip
+アプリのエコノミーを包括的に把握するには、[Adapty Attribution](user-acquisition) を有効にしてください。
+
+Adapty Attribution は設定が簡単なウェブダッシュボードで、さまざまなソースのデータを統合して効果的なユーザー獲得戦略を見つけ出せます。
+:::
+:::warning
+データをクリーンに保ちましょう：イベントの重複やアトリビューションの競合を防いでください。新しいデータソースがアナリティクスを汚染しないよう、**[データの問題を防ぐ](#prevent-data-issues)** セクションのアドバイスに従ってください。
+:::
+## 統合アトリビューション \{#integrated-attribution\}
+
+Adaptyは、9つの人気サービスとのアトリビューション統合をすぐに利用できる形で提供しています。これらのプラットフォームはAdaptyから[サブスクリプションデータ](events)を自動的に受け取り、各購入を処理して、適切なアトリビューションを返します。
+
+各プラットフォームによってワークフローは異なりますが、手順はどれも同様にシンプルです：
+1. **自動データ共有を設定する。** Adaptyが選択したプラットフォームと通信できるよう認証します。
+2. **Adapty SDKを統合する。** プラットフォームによっては、アトリビューションデータを設定するための追加コードが必要になります。
+3. **他のイベント共有サービスやアトリビューションソースを無効にする。** [イベントの重複](#avoid-event-duplication)や[データの競合](#select-a-single-attribution-source)を防ぐためです。
+
+詳細な統合の概要については、各プラットフォームのガイドをご覧ください：
+- [Adjust](adjust)
+- [Airbridge](airbridge)
+- [Apple Search Ads](apple-search-ads)
+- [AppsFlyer](appsflyer)
+- [Asapty](asapty)
+- [Branch](branch)
+- [Facebook Ads](facebook-ads)
+- [Singular](singular)
+- [Tenjin](tenjin)
+
+:::note
+リストを拡充してほしい場合は、[機能リクエストを作成](https://adapty.featurebase.app/en?b=6979f233ebd3cffd4f425ba0)して、特定のサービスへの関心をお知らせください。
+:::
+## 手動アトリビューション \{#manual-attribution\}
+
+Adaptyが選択したサービスとの[統合アトリビューション](#integrated-attribution)を提供していない場合は、アトリビューションソースとデータをやり取りするコードを自分で記述する必要があります。
+
+1. **アトリビューションサービスからデータを取得する**。サービスのAPIを使用してアトリビューションデータをリクエストします。
+2. **取得したアトリビューションデータを含むディクショナリを作成する。**
+
+    ディクショナリには以下のキーを含めることができます：
+
+    - `status`（`organic`、`non-organic`、または `unknown`）
+    - `channel`
+    - `campaign`
+    - `ad_group`
+    - `ad_set`
+    - `creative`
+:::important
+* すべてのキーはオプションです。
+* リストにないキーはAdaptyに無視されます。
+* 各キーの値は最大50文字まで指定できます。
+:::
+
+**例**:
+
+```swift showLineNumbers title="Swift"
+let attribution = [
+    "status": "non_organic",
+    "channel": "Google Ads",
+    "campaign": "Christmas Sale",
+    "ad_group": "ad group 1",
+    "ad_set": "ad set 1",
+    "creative": "creative id 1"
+]
+```
+
+3. **アトリビューションデータを設定する**:
+アトリビューションディクショナリを `updateAttribution` メソッドに渡します。一度アトリビューション値を設定すると、上書きすることはできません。
+
+```swift showLineNumbers title="Swift"
+Adapty.updateAttribution(attribution, source: "custom") { error in
+    if error == nil {
+        // successful attribution update
+    }
+}
+```
+
+**パラメータ:**
+
+- `attribution`（必須）: アトリビューションデータを含むディクショナリ。
+- `source`（必須）: アトリビューションソース。アトリビューションプロバイダーが[統合アトリビューション](#integrated-attribution)をサポートしていない場合は `.custom` を設定してください。
+4. **他のイベント共有サービスとアトリビューションソースを無効化する** — [イベントの重複](#avoid-event-duplication)や[データの競合](#select-a-single-attribution-source)を防ぐためです。
+## データの問題を防ぐ \{#prevent-data-issues\}
+
+### アトリビューションソースは1つだけ選択してください \{#select-a-single-attribution-source\}
+
+複数のプラットフォームとのアトリビューション連携を同時に有効にしないでください。Adapty が受け付けられるアトリビューションソースは一度に1つだけで、一度保存されたアトリビューション値は上書きできません。
+
+複数のアトリビューションソースを有効にした場合、Adapty は最も多くのデータを持つソースを選択しますが、それが必ずしも最適なデータとは限りません。
+例えば、iOS ではオーガニックでない [Apple Search Ads のアトリビューション](apple-search-ads)が常に優先されます。Apple Search Ads のアトリビューションをオフにするには、[**App Settings** -> **Apple Search Ads** タブ](https://app.adapty.io/settings/apple-search-ads)を開き、**Receive Apple Search Ads attribution** スイッチをオフにしてください。
+### イベントの重複を避ける \{#avoid-event-duplication\}
+
+Adaptyを使ってリアルタイムのサブスクリプションデータをアトリビューションサービスと共有している場合、同じ目的を果たす他のサービスを**無効にする必要があります**。FacebookアカウントをAppsFlyer、Adjust、またはBranchに接続している場合、オプトアウトしない限り、これらのサービスにイベントが自動的に転送されます。
+
+イベントが重複するとアナリティクスが歪み、データの解釈が困難になります。Adaptyのイベント共有を設定したら、サードパーティのイベント転送機能を**オフ**にしてください。

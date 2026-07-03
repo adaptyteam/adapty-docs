@@ -1,0 +1,70 @@
+---
+title: "インストール"
+description: "Adaptyを使ってアプリのインストール数を追跡し、サブスクリプションへの影響を把握しましょう。"
+metadataTitle: "インストールとアトリビューションの追跡 | Adapty ドキュメント"
+---
+
+インストールチャートは、選択した期間にアプリをインストールしたユーザー数を表示します。何がインストールとしてカウントされるか、またどのようにグループ化されるかは、インストールのカウント設定によって異なります。
+
+この記事では、適切なカウントモードの選択方法と、さまざまなアナリティクスソース間で[生じる可能性のある差異のトラブルシューティング](#troubleshooting)について説明します。
+
+<ZoomImage id="62c4c2c-small-CleanShot_2023-04-28_at_16.24.292x.webp" width="700px" alt="インストールチャート" />
+
+## インストールとしてカウントされるもの \{#what-counts-as-an-install\}
+
+Adapty SDKは、ユーザーがアプリを初めて起動したときに「インストール」として登録し、Adaptyに送信します。
+
+これには2つの影響があります。
+
+- Adaptyへのインストール記録は、ユーザーが初めてアプリを開いたタイミングで行われるため、ダウンロードから数時間〜数日後になることがあります。
+- ユーザーがダウンロードしてもアプリを一度も開かない場合、Adaptyにはカウントされません。
+
+**App Settings**のレポートタイムゾーンによって、各インストールがどの日付に反映されるかが決まります。たとえば、UTC 6月1日の23:30のインストールは、タイムゾーンが+02:00の場合は6月2日として記録されますが、App Store ConnectやGoogle Playでは6月1日として表示される場合があります。
+
+### カウントモード \{#counting-modes\}
+
+**Installs definition for analytics** 設定により、新規インストールとしてカウントされる条件が決まります。変更するには、[App Settings → General → Installs definition for analytics](general#4-installs-definition-for-analytics)を開いてください。
+
+| モード | カウント対象 | 例 | サードパーティの指標 | 差異が生じる可能性 |
+| --- | --- | --- | --- | --- |
+| **New device_ids**（推奨） | 再インストールを含む**すべてのアプリインストール**。認証、プロファイル作成、バージョンアップグレードはカウントに含まれません。 | 1ユーザーが5台のデバイスを使用 = 5インストール。<br /> <br /> 同じデバイスで再インストール = 2インストール。 | App Store: <br /> **Total Active Devices**  <br /> <br /> Google Play: **Devices** | 再インストールが多い場合、**アプリダウンロード数より多くなる**可能性があります。<br /> <br /> アプリを開かずにダウンロードするユーザーが多い場合、**アプリダウンロード数より少なくなる**可能性があります。 |
+| **New customer_user_ids** | [識別済みユーザー](identifying-users)ごとの**初回インストールのみ**。追加デバイスや匿名ユーザーはカウントされません。 | 1ユーザーが5台のデバイスを使用 = 1インストール。<br /> <br /> 再インストール後にログインし直しても新規インストールとしてカウントされません。<br /> <br /> アカウントなしでアプリを使用した場合もカウントされません。 | アプリの認証システムのサインアップ統計 | ユーザーをまったく識別しない場合、**データが空のまま**になります。 |
+| **New profiles in Adapty**（レガシー） | すべてのインストールと再インストール、さらに**ログアウト時に作成された匿名プロファイル**もカウントします。 | 1ユーザー・1デバイスで3回ログアウト = 4インストール。 | なし | **すべての外部指標より高くなります**。ログアウト時に作成される匿名プロファイルもインストールとしてカウントされます。 |
+
+特別な理由がない限り、**New device_ids** を使用してください。
+
+## トラブルシューティング \{#troubleshooting\}
+
+### AdaptyのカウントがApp Store ConnectやGoogle Playより多い \{#adaptys-count-is-higher-than-app-store-connect-or-google-play\}
+
+主な原因は2つあります。
+
+- **再インストール。** [カウントモード](#counting-modes)が **New device_ids** に設定されている場合、Adaptyは初回起動と再インストールの両方をカウントします。App Store Connectの「Total Downloads」は初回ダウンロードのみをカウントします。
+- **初回起動日 ≠ ダウンロード日。** ストアはダウンロード日をもとに集計します。アプリを遅れて開いたユーザーは別の日付に記録されます。
+
+より正確に比較するには、**App Store Connect → Total Active Devices** または **Google Play → Devices** を確認してください。これらの指標はデバイス単位で集計されており、Adaptyの **New device_ids** モードに近い数値になります。
+
+### Adaptyのカウントがゼロになる \{#adaptys-count-is-zero\}
+
+カウントモードが **New customer_user_ids** に設定されているにもかかわらず、<InlineTooltip tooltip="ユーザーを認証する">[iOS](identifying-users)、[Android](android-identifying-users)、[React Native](react-native-identifying-users)、[Flutter](flutter-identifying-users)、[Unity](unity-identifying-users)、[Kotlin Multiplatform](kmp-quickstart-identify)、[Capacitor](capacitor-quickstart-identify)</InlineTooltip>を実装していない場合、Adaptyはインストールを記録しません。このモードでは、匿名インストールは除外されます。**New device_ids** に切り替えるか、ユーザー識別を実装してください。
+
+### AdaptyのカウントがAppsFlyerやAdjustと異なる \{#adaptys-count-differs-from-appsflyer-or-adjust\}
+
+MMP（モバイル計測パートナー）は、独自のSDK初期化またはファーストタッチイベントを基準にインストールを計測します。これらのタイミングはAdaptyのSDK初回起動とは異なるため、ある程度の差異が生じるのは正常です。
+
+## 利用可能なフィルターとグループ化 \{#available-filters-and-grouping\}
+
+:::link
+メイン記事：[アナリティクスの操作](controls-filters-grouping-compare-proceeds)
+:::
+
+- ✅ フィルター：アトリビューション、国、A/B テスト、セグメント、ストア
+- ✅ グループ化：国、ストア、セグメント、アトリビューション
+
+## 関連指標 \{#similar-metrics\}
+
+これらの指標の比較一覧については、[指標比較表](metric-comparison-table#subscribers-and-conversion)をご覧ください。
+
+- [新規サブスクリプション](reactivated-subscriptions)
+- [アクティブサブスクリプション](active-subscriptions)
+- [新規トライアル](new-trials)

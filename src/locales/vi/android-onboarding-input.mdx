@@ -1,0 +1,202 @@
+---
+title: "Xử lý dữ liệu từ onboardings trong Android SDK"
+description: "Lưu và sử dụng dữ liệu từ onboardings trong ứng dụng Android của bạn với Adapty SDK."
+metadataTitle: "Onboardings | Android SDK | Tài liệu Adapty"
+---
+:::tip
+**Bắt đầu từ SDK v4 (beta)**, bạn có thể xây dựng [flow](android-get-pb-paywalls) như một giải pháp thay thế mạnh mẽ hơn cho onboarding. Khác với onboarding chạy trong WebView, flow render trực tiếp trên thiết bị — mang lại animation mượt hơn, giao diện Android nhất quán, tốc độ tải nhanh hơn và không phụ thuộc vào WebView runtime. Xem [Lấy flow & paywall](android-get-pb-paywalls) và [Hiển thị flow & paywall](android-present-paywalls) để bắt đầu.
+:::
+Khi người dùng trả lời một câu hỏi quiz hoặc nhập dữ liệu vào trường nhập liệu, phương thức `onStateUpdatedAction` sẽ được gọi. Bạn có thể lưu hoặc xử lý loại trường đó trong code của mình.
+
+Ví dụ:
+```kotlin
+override fun onStateUpdatedAction(action: AdaptyOnboardingStateUpdatedAction, context: Context) {
+    // Store user preferences or responses
+    when (val params = action.params) {
+        is AdaptyOnboardingStateUpdatedParams.Select -> {
+            // Handle single selection
+        }
+        is AdaptyOnboardingStateUpdatedParams.MultiSelect -> {
+            // Handle multiple selections
+        }
+        is AdaptyOnboardingStateUpdatedParams.Input -> {
+            // Handle text input
+        }
+        is AdaptyOnboardingStateUpdatedParams.DatePicker -> {
+            // Handle date selection
+        }
+    }
+}
+```
+
+Xem định dạng action [tại đây](https://android.adapty.io/adapty-ui/com.adapty.ui.onboardings.actions/-adapty-onboarding-state-updated-action/).
+
+<Details>
+<summary>Ví dụ về dữ liệu đã lưu (định dạng có thể khác trong quá trình triển khai của bạn)</summary>
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+## Trường hợp sử dụng \{#use-cases\}
+
+### Enrich user profiles with data \{#enrich-user-profiles-with-data\}
+
+Nếu bạn muốn liên kết ngay dữ liệu đầu vào với hồ sơ người dùng và tránh hỏi lại cùng một thông tin, bạn cần [cập nhật hồ sơ người dùng](android-setting-user-attributes) với dữ liệu đầu vào đó khi xử lý action.
+
+Ví dụ: bạn yêu cầu người dùng nhập tên của họ vào trường văn bản có ID là `name`, và bạn muốn đặt giá trị của trường này làm tên người dùng. Ngoài ra, bạn yêu cầu họ nhập email vào trường `email`. Trong code ứng dụng của bạn, nó có thể trông như thế này:
+```kotlin showLineNumbers
+override fun onStateUpdatedAction(action: AdaptyOnboardingStateUpdatedAction, context: Context) {
+    // Store user preferences or responses
+    when (val params = action.params) {
+        is AdaptyOnboardingStateUpdatedParams.Input -> {
+            // Handle text input
+            val builder = AdaptyProfileParameters.Builder()
+            
+            // Map elementId to appropriate profile field
+            when (action.elementId) {
+                "name" -> {
+                    when (val inputParams = params.params) {
+                        is AdaptyOnboardingInputParams.Text -> {
+                            builder.withFirstName(inputParams.value)
+                        }
+                    }
+                }
+                "email" -> {
+                    when (val inputParams = params.params) {
+                        is AdaptyOnboardingInputParams.Email -> {
+                            builder.withEmail(inputParams.value)
+                        }
+                    }
+                }
+            }
+            
+            Adapty.updateProfile(builder.build()) { error ->
+                if (error != null) {
+                    // handle the error
+                }
+            }
+        }
+    }
+}
+```
+
+### Tuỳ chỉnh paywall dựa trên câu trả lời \{#customize-paywalls-based-on-answers\}
+
+Khi dùng quiz trong onboarding, bạn cũng có thể tuỳ chỉnh paywall hiển thị cho người dùng sau khi họ hoàn thành onboarding.
+
+Ví dụ: bạn có thể hỏi người dùng về kinh nghiệm thể thao của họ và hiển thị các CTA và sản phẩm khác nhau cho từng nhóm người dùng.
+
+1. [Thêm quiz](onboarding-quizzes) vào onboarding builder và gán ID có ý nghĩa cho các lựa chọn.
+
+<ZoomImage id="experience.webp" />
+
+2. Xử lý các câu trả lời quiz dựa trên ID của chúng và [đặt thuộc tính tuỳ chỉnh](android-setting-user-attributes) cho người dùng.
+```kotlin showLineNumbers
+override fun onStateUpdatedAction(action: AdaptyOnboardingStateUpdatedAction, context: Context) {
+    // Handle quiz responses and set custom attributes
+    when (val params = action.params) {
+        is AdaptyOnboardingStateUpdatedParams.Select -> {
+            // Handle quiz selection
+            val builder = AdaptyProfileParameters.Builder()
+            
+            // Map quiz responses to custom attributes
+            when (action.elementId) {
+                "experience" -> {
+                    // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+                    builder.withCustomAttribute("experience", params.params.value)
+                }
+            }
+            
+            Adapty.updateProfile(builder.build()) { error ->
+                if (error != null) {
+                    // handle the error
+                }
+            }
+        }
+    }
+}
+```
+
+3. [Tạo phân khúc](segments) cho từng giá trị thuộc tính tùy chỉnh.
+4. Tạo một [placement](placements) và thêm [đối tượng](audience) cho từng phân khúc bạn đã tạo.
+5. [Hiển thị paywall](android-paywalls) cho placement trong code ứng dụng của bạn. Nếu onboarding của bạn có nút mở paywall, hãy triển khai code paywall như một [phản hồi cho hành động của nút này](android-handle-onboarding-events#opening-a-paywall).

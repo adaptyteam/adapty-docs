@@ -1,0 +1,92 @@
+---
+title: "Kiểm tra trạng thái gói đăng ký trong Flutter SDK"
+description: "Tìm hiểu cách kiểm tra trạng thái gói đăng ký trong ứng dụng Flutter của bạn với Adapty."
+metadataTitle: "Kiểm tra trạng thái gói đăng ký | Tài liệu Adapty"
+displayed_sidebar: sdkflutter
+keywords: ['getProfile', 'subscription status']
+rank: 85
+---
+
+Để quyết định xem người dùng có thể truy cập nội dung trả phí hay cần xem paywall, bạn cần kiểm tra [mức độ truy cập](access-level) của họ trong hồ sơ người dùng.
+
+Bài viết này hướng dẫn bạn cách truy cập trạng thái hồ sơ người dùng để quyết định nên hiển thị gì cho họ — paywall hay nội dung trả phí.
+
+## Lấy trạng thái gói đăng ký \{#get-subscription-status\}
+
+Khi quyết định hiển thị paywall hay nội dung trả phí cho người dùng, bạn kiểm tra [mức độ truy cập](access-level) trong hồ sơ của họ. Có hai lựa chọn:
+
+- Gọi `getProfile` khi cần dữ liệu hồ sơ mới nhất ngay lập tức (ví dụ: khi khởi động ứng dụng) hoặc muốn buộc cập nhật.
+- Thiết lập **cập nhật hồ sơ tự động** để giữ một bản sao cục bộ được tự động làm mới mỗi khi trạng thái gói đăng ký thay đổi.
+
+### Lấy hồ sơ người dùng \{#get-profile\}
+
+Cách đơn giản nhất để lấy trạng thái gói đăng ký là dùng phương thức `getProfile`:
+
+```javascript showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  // check the access
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+### Lắng nghe cập nhật gói đăng ký \{#listen-to-subscription-updates\}
+
+Để tự động nhận các cập nhật hồ sơ trong ứng dụng:
+
+1. Dùng `Adapty().didUpdateProfileStream.listen()` để lắng nghe các thay đổi hồ sơ — Adapty sẽ tự động gọi phương thức này mỗi khi trạng thái gói đăng ký của người dùng thay đổi.
+2. Lưu dữ liệu hồ sơ được cập nhật khi phương thức này được gọi, để bạn có thể sử dụng xuyên suốt ứng dụng mà không cần thực hiện thêm request mạng.
+
+```dart
+class SubscriptionManager {
+  AdaptyProfile? _currentProfile;
+  
+  SubscriptionManager() {
+    // Listen for profile updates
+    Adapty().didUpdateProfileStream.listen((profile) {
+      _currentProfile = profile;
+      // Update UI, unlock content, etc.
+    });
+  }
+  
+  // Use stored profile instead of calling getProfile()
+  bool hasAccess() {
+    return _currentProfile?.accessLevels['premium']?.isActive ?? false;
+  }
+}
+```
+
+:::note
+Adapty tự động gọi stream listener cập nhật hồ sơ khi ứng dụng khởi động, cung cấp dữ liệu gói đăng ký đã lưu cache ngay cả khi thiết bị không có kết nối mạng.
+:::
+
+## Kết nối hồ sơ với logic paywall \{#connect-profile-with-paywall-logic\}
+
+Khi cần đưa ra quyết định ngay lập tức về việc hiển thị paywall hay cấp quyền truy cập nội dung trả phí, bạn có thể kiểm tra trực tiếp hồ sơ người dùng. Cách này hữu ích trong các tình huống như khi khởi động ứng dụng, khi vào các mục premium, hoặc trước khi hiển thị nội dung cụ thể.
+
+```dart
+Future<bool> _checkAccessLevel() async {
+  try {
+    final profile = await Adapty().getProfile();
+    return profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive ?? false;
+  } catch (e) {
+    print('Error checking access level: $e');
+    return false; // Show paywall if access check fails
+  }
+}
+
+Future<void> _initializePaywall() async {
+  await _loadPaywall();
+  
+  final hasAccess = await _checkAccessLevel();
+  if (!hasAccess) {
+    // Show paywall if no access
+  }
+}
+``` 
+
+## Bước tiếp theo \{#next-steps\}
+
+Sau khi đã biết cách theo dõi trạng thái gói đăng ký, hãy tìm hiểu cách [làm việc với hồ sơ người dùng](flutter-quickstart-identify) để đảm bảo họ có thể truy cập những gì đã thanh toán.

@@ -187,7 +187,7 @@ async function runWithConcurrency(tasks, limit) {
  * If the resolved ref doesn't exist (e.g. deploy tag on first run),
  * returns null so the caller can fall back to a full scan.
  */
-async function resolveDiffBase(mode, explicitBase) {
+export async function resolveDiffBase(mode, explicitBase) {
   if (mode === 'dev') {
     try {
       const { stdout } = await execFileAsync('git', ['rev-parse', '--abbrev-ref', '@{upstream}']);
@@ -322,26 +322,17 @@ export async function orchestrateDiff(config) {
   // 5. Load config
   const { whitelist, jsRendered } = await loadConfig();
 
-  // 6. Lint: .md extensions and self-links
+  // 6. Lint: .md extensions
   const errors = [];
   const warnings = [];
 
   const MD_EXT_RE = /\.(md|mdx)(#|$)/;
-  const SELF_DOCS_RE = /^https?:\/\/(www\.)?adapty\.io\/docs(\/|$)/;
-  const SELF_LINK_EXCEPTIONS = /\.(txt|md)$|\/api-adapty\/|\/api-web\/|\/api-export-analytics\//;
   const mdExtUrls = new Set();
 
   for (const link of allInternal) {
     if (MD_EXT_RE.test(link.url)) {
       errors.push({ ...link, type: 'internal', status: 'MD_EXTENSION', error: 'Remove .md/.mdx extension from internal link' });
       mdExtUrls.add(link.url);
-    }
-  }
-  if (!internalOnly) {
-    for (const link of externalLinks) {
-      if (SELF_DOCS_RE.test(link.url) && !SELF_LINK_EXCEPTIONS.test(link.url)) {
-        errors.push({ ...link, type: 'external', status: 'SELF_LINK', error: 'Use an internal link instead of a full URL to adapty.io/docs' });
-      }
     }
   }
 
@@ -372,8 +363,7 @@ export async function orchestrateDiff(config) {
 
   // 8. Check external links
   if (!internalOnly && uniqueExternalUrls.length > 0) {
-    const selfLinkUrls = new Set(errors.filter(e => e.status === 'SELF_LINK').map(e => e.url));
-    const urlsToCheck = uniqueExternalUrls.filter(url => !selfLinkUrls.has(url));
+    const urlsToCheck = uniqueExternalUrls;
 
     console.log(`Checking ${urlsToCheck.length} external URLs (concurrency: ${concurrency})...`);
     const externalResultsByUrl = new Map();

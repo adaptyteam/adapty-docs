@@ -1,0 +1,90 @@
+---
+title: "Chế độ Kids Mode trong iOS SDK"
+description: "Dễ dàng bật Kids Mode để tuân thủ chính sách của Apple. Không thu thập IDFA hay dữ liệu quảng cáo trong iOS SDK."
+metadataTitle: "Chế độ Kids Mode trong iOS SDK | Tài liệu Adapty"
+---
+
+Nếu ứng dụng iOS của bạn dành cho trẻ em, bạn phải tuân thủ các chính sách của [Apple](https://developer.apple.com/kids/). Nếu đang sử dụng Adapty SDK, bạn chỉ cần thực hiện vài bước đơn giản để cấu hình SDK theo đúng các chính sách này và vượt qua quy trình kiểm duyệt của cửa hàng.
+
+## Yêu cầu cần thực hiện \{#whats-required\}
+
+Bạn cần cấu hình Adapty SDK để tắt việc thu thập:
+
+- [IDFA (Identifier for Advertisers)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers)
+- [Địa chỉ IP](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
+Ngoài ra, chúng tôi khuyến nghị sử dụng customer user ID một cách cẩn thận. ID người dùng có định dạng `<FirstName.LastName>` chắc chắn sẽ bị xem là thu thập dữ liệu cá nhân, cũng như việc dùng email. Trong Kids Mode, cách tốt nhất là sử dụng các định danh ngẫu nhiên hoặc ẩn danh (ví dụ: hashed ID hoặc UUID do thiết bị tạo ra) để đảm bảo tuân thủ.
+
+## Bật Kids Mode \{#enabling-kids-mode\}
+
+### Cập nhật trong Adapty Dashboard \{#updates-in-the-adapty-dashboard\}
+
+Trong Adapty Dashboard, bạn cần tắt tính năng thu thập địa chỉ IP. Để thực hiện, vào [App settings](https://app.adapty.io/settings/general) và nhấn **Disable IP address collection** trong phần **Collect users' IP address**.
+
+### Cập nhật trong code của ứng dụng \{#updates-in-your-mobile-app-code\}
+
+Để tuân thủ các chính sách, hãy tắt việc thu thập IDFA và địa chỉ IP của người dùng.
+
+<Tabs>
+<TabItem value="spm" label="Swift Package Manager" default>
+Nếu bạn dùng Swift Package Manager, bạn có thể bật Kids Mode bằng cách chọn module **Adapty_KidsMode** trong Xcode khi cài đặt SDK.
+
+Trong Xcode, vào **File** -> **Add Package Dependency...**. Lưu ý rằng các bước thêm package dependency có thể khác nhau giữa các phiên bản Xcode, hãy tham khảo tài liệu Xcode nếu cần.
+
+1. Nhập URL repository:
+   ```
+   https://github.com/adaptyteam/AdaptySDK-iOS.git
+   ```
+2. Chọn phiên bản (khuyến nghị dùng phiên bản ổn định mới nhất) và nhấn **Add Package**.
+3. Trong cửa sổ **Choose Package Products**, chọn các module bạn cần:
+   - **Adapty_KidsMode** (module cốt lõi)
+   - **AdaptyUI_KidsMode** (tùy chọn - chỉ cần nếu bạn dự định dùng Paywall Builder)
+
+   Bạn không cần thêm bất kỳ package nào khác.
+4. Nhấn **Add Package** để hoàn tất cài đặt.
+
+5. Trong code của bạn, viết `import Adapty_KidsMode` thay vì `import Adapty`, và `import AdaptyUI_KidsMode` thay vì `import AdaptyUI`:
+
+```swift
+```
+
+</TabItem>
+<TabItem value="cocoapods" label="CocoaPods">
+1. Cập nhật Podfile của bạn:
+
+   - Nếu bạn **chưa có** phần `post_install`, hãy thêm toàn bộ đoạn code bên dưới.
+   - Nếu bạn **đã có** phần `post_install`, hãy hợp nhất các dòng được đánh dấu vào đó.
+
+   ```ruby showLineNumbers title="Podfile"
+   def adapty_enable_kids_mode(installer)
+     installer.pods_project.targets.each do |target|
+       next unless target.name == 'Adapty'
+       target.build_configurations.each do |config|
+         flags = config.build_settings['OTHER_SWIFT_FLAGS'] || '$(inherited)'
+         flags = flags.join(' ') if flags.is_a?(Array)
+         config.build_settings['OTHER_SWIFT_FLAGS'] = "#{flags} -DADAPTY_KIDS_MODE"
+       end
+       target.frameworks_build_phase.files.dup.each do |bf|
+         target.frameworks_build_phase.remove_build_file(bf) if bf.display_name.to_s.include?('AdSupport')
+       end
+     end
+     installer.pods_project.save
+     Dir.glob(File.join(installer.sandbox.root, 'Target Support Files', '**', '*.xcconfig')).each do |xc|
+       File.write(xc, File.read(xc).gsub(/\s*-framework\s+"?AdSupport"?/, ''))
+     end
+   end
+
+   post_install do |installer|
+     # ... keep your existing post_install body (Flutter adds one automatically) ...
+
+     adapty_enable_kids_mode(installer)   # <-- enable Adapty Kids Mode
+   end
+   ```
+
+2. Chạy lệnh sau để áp dụng các thay đổi:
+
+   ```sh showLineNumbers title="Shell"
+   pod install
+   ```
+</TabItem>
+</Tabs>

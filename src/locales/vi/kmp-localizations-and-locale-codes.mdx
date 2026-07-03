@@ -1,0 +1,103 @@
+---
+title: "Sử dụng localizations và locale codes trong Kotlin Multiplatform SDK"
+description: "Quản lý localizations và locale codes để tiếp cận người dùng toàn cầu trong ứng dụng Kotlin Multiplatform của bạn."
+metadataTitle: "Bản địa hóa Paywall | Kotlin Multiplatform SDK | Tài liệu Adapty"
+displayed_sidebar: sdkkmp
+---
+
+## Tại sao điều này quan trọng \{#why-this-is-important\}
+
+Có một số tình huống mà locale codes được sử dụng — ví dụ, khi bạn cần lấy đúng paywall cho localization hiện tại của ứng dụng.
+
+Vì locale codes khá phức tạp và có thể khác nhau giữa các nền tảng, chúng tôi sử dụng một chuẩn nội bộ cho tất cả các nền tảng được hỗ trợ. Tuy nhiên, do các mã này phức tạp, bạn cần hiểu rõ mình đang gửi gì đến máy chủ để nhận đúng localization và điều gì xảy ra tiếp theo — để bạn luôn nhận được kết quả như mong đợi.
+
+## Chuẩn locale code tại Adapty \{#locale-code-standard-at-adapty\}
+
+Đối với locale codes, Adapty sử dụng phiên bản được điều chỉnh nhẹ của [chuẩn BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): mỗi mã gồm các subtag viết thường, phân cách bằng dấu gạch ngang. Một số ví dụ: `en` (Tiếng Anh), `pt-br` (Tiếng Bồ Đào Nha (Brazil)), `zh` (Tiếng Trung Giản thể), `zh-hant` (Tiếng Trung Phồn thể).
+
+## Khớp locale code \{#locale-code-matching\}
+
+Khi Adapty nhận được lệnh gọi từ SDK phía client với locale code và bắt đầu tìm kiếm localization tương ứng của một paywall, quá trình xử lý diễn ra như sau:
+
+1. Chuỗi locale đầu vào được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay thế bằng dấu gạch ngang (`-`)
+2. Chúng tôi tìm kiếm localization có locale code khớp hoàn toàn
+3. Nếu không tìm thấy kết quả khớp, chúng tôi lấy chuỗi con trước dấu gạch ngang đầu tiên (`pt` từ `pt-br`) và tiếp tục tìm kiếm localization khớp
+4. Nếu vẫn không tìm thấy, chúng tôi trả về localization mặc định `en`
+
+Theo cách này, một thiết bị iOS gửi `'pt_BR'`, một thiết bị Android gửi `pt-BR`, và một thiết bị khác gửi `pt-br` đều sẽ nhận được kết quả giống nhau.
+
+## Triển khai localizations: cách được khuyến nghị \{#implementing-localizations-recommended-way\}
+
+Nếu bạn đang quan tâm đến localizations, nhiều khả năng bạn đã làm việc với các string resources được bản địa hóa trong dự án. Trong trường hợp đó, chúng tôi khuyến nghị đặt một cặp key-value chứa Adapty locale code dự kiến vào mỗi file resource cho localization tương ứng. Sau đó trích xuất giá trị của key này khi gọi SDK của chúng tôi, như sau:
+
+```kotlin showLineNumbers
+// 1. Add the Adapty locale code to your Compose Multiplatform resources
+
+/*
+composeResources/values/strings.xml (default — English)
+*/
+<string name="adapty_paywalls_locale">en</string>
+
+/*
+composeResources/values-es/strings.xml (Spanish)
+*/
+<string name="adapty_paywalls_locale">es</string>
+
+/*
+composeResources/values-pt-rBR/strings.xml (Portuguese — Brazil)
+*/
+<string name="adapty_paywalls_locale">pt-br</string>
+
+// 2. Extract and use the locale code
+
+suspend fun fetchPaywall() {
+    val locale = getString(Res.string.adapty_paywalls_locale)
+    Adapty.getPaywall(
+        placementId = "YOUR_PLACEMENT_ID",
+        locale = locale
+    ).onSuccess { paywall ->
+        // the requested paywall
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+Cách này giúp bạn kiểm soát hoàn toàn localization nào sẽ được lấy cho mỗi người dùng của ứng dụng.
+
+Nếu bạn không sử dụng Compose Multiplatform resources, ý tưởng tương tự cũng áp dụng cho bất kỳ thư viện localization nào bạn đang dùng (ví dụ: [moko-resources](https://github.com/icerockdev/moko-resources)) — lưu Adapty locale code dưới dạng string trong resource bundle của từng locale và đọc nó trước khi gọi SDK.
+
+## Triển khai localizations: cách khác \{#implementing-localizations-the-other-way\}
+
+Bạn có thể đạt được kết quả tương tự (nhưng không hoàn toàn giống nhau) mà không cần định nghĩa rõ ràng locale codes cho từng localization. Cách đó là trích xuất locale code trực tiếp từ thiết bị — điều này yêu cầu khai báo `expect`/`actual`, vì không có shared locale API trong `commonMain`:
+
+```kotlin showLineNumbers
+// commonMain
+expect fun currentLocaleTag(): String
+
+// androidMain
+actual fun currentLocaleTag(): String = Locale.getDefault().toLanguageTag()
+
+// iosMain
+actual fun currentLocaleTag(): String = NSLocale.currentLocale.localeIdentifier
+
+// commonMain — pass the locale code to Adapty
+
+suspend fun fetchPaywall() {
+    Adapty.getPaywall(
+        placementId = "YOUR_PLACEMENT_ID",
+        locale = currentLocaleTag()
+    ).onSuccess { paywall ->
+        // the requested paywall
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+Lưu ý rằng chúng tôi không khuyến nghị cách tiếp cận này vì một số lý do:
+
+1. Trên iOS, ngôn ngữ ưa thích của người dùng và locale khu vực của thiết bị không giống nhau. `NSLocale.currentLocale.localeIdentifier` trả về locale khu vực, có thể khác với ngôn ngữ người dùng thực sự đọc ứng dụng của bạn. Các ứng dụng iOS sử dụng file string được bản địa hóa dựa vào logic phân giải của Apple để kết hợp cả hai — điều này hoạt động tự động với cách tiếp cận được khuyến nghị ở trên.
+2. Rất khó đoán thiết bị sẽ trả về chính xác gì và liệu nó có khớp với localization trong Adapty hay không. Locale của thiết bị có thể bao gồm các extension hoặc mã khu vực mà bạn chưa cấu hình trong Adapty, trong trường hợp đó SDK sẽ fallback về kết quả khớp subtag đầu tiên hoặc cuối cùng là `en`.
+
+Nếu bạn vẫn quyết định sử dụng cách này — hãy đảm bảo bạn đã xử lý tất cả các trường hợp sử dụng liên quan.

@@ -1,0 +1,375 @@
+---
+title: "iOS SDKでFlow Builderを使ってアプリ内課金を有効にする"
+description: "Adapty Flow Builderを使ったアプリ内課金のクイックスタートガイド。"
+metadataTitle: "Adapty Flow Builder クイックスタート | Adapty ドキュメント"
+keywords: ['flows ios', 'paywalls ios', 'sdk ios', 'flow builder', 'paywall']
+rank: 90
+---
+
+アプリ内課金を有効にするには、3つの重要なコンセプトを理解する必要があります。
+
+- [**プロダクト**](product) – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセスなど）
+- [**フロー**](adapty-flow-builder) – ノーコードのFlow Builderで作成された、ユーザーにプロダクトを提示する画面シーケンス。SDKは`getFlow`を通じてフローを取得します。UIを自分のコードで構築したい場合はペイウォールを使ってください。詳しくは[ペイウォールを手動で実装する](ios-quickstart-manual)を参照してください。
+- [**プレースメント**](placements) – アプリのどこでいつフローを表示するかを定義します（`main`、`onboarding`、`settings`など）。ダッシュボードでフローをプレースメントに紐付けて、コードではプレースメントIDで取得します。これにより、A/Bテストの実行や異なるユーザーへの異なるフロー表示が簡単になります。
+
+Adaptyでは、アプリ内課金を有効にする3つの方法を提供しています。アプリの要件に応じて選択してください。
+
+| 実装方法 | 複雑さ | 使用タイミング |
+|---|---|---|
+| Adapty Flow Builder | ✅ 簡単 | [ノーコードビルダーで購入準備が整ったフローを作成](quickstart-paywalls)します。Adaptyが自動的にレンダリングし、複雑な購入フロー、レシート検証、サブスクリプション管理をすべて処理します。 |
+| 手動で作成したペイウォール | 🟡 中程度 | アプリのコードでペイウォールUIを実装しつつ、プロダクト提供の柔軟性を保つためにAdaptyからフローオブジェクトを取得します。詳しくは[ガイド](ios-quickstart-manual)を参照してください。 |
+| オブザーバーモード | 🔴 難しい | すでに独自の購入処理インフラがあり、それを継続して使いたい場合。オブザーバーモードにはAdaptyでの制限があります。詳しくは[こちら](observer-vs-full-mode)を参照してください。 |
+
+:::important
+**以下の手順は、Adapty Flow Builderで作成したフローを実装する方法を示しています。**
+
+ペイウォールUIを自分で構築したい場合は、[ペイウォールを手動で実装する](ios-quickstart-manual)を参照してください。
+:::
+
+Adapty Flow Builderで作成したフローをアプリで表示するには、コードで行うことは次の3つだけです。
+
+1. **フローの取得**: Adaptyからフローを取得します。
+2. **表示する — 購入はAdaptyが処理**: アプリにビューを表示します。
+3. **ボタンアクションの処理**: ユーザーの操作をアプリの応答に紐付けます。例えば、リンクを開いたり、ユーザーがボタンをタップしたときにフローを閉じたりします。
+
+## 始める前に \{#before-you-start\}
+
+始める前に、以下の手順を完了してください。
+
+1. Adapty ダッシュボードで[アプリをApp Storeに接続](initial_ios)する。
+2. Adaptyで[プロダクトを作成](create-product)する。
+3. [フローを作成してプロダクトを追加](create-paywall)する。
+4. [プレースメントを作成してフローを追加](create-placement)する。
+5. アプリのコードに[Adapty SDKをインストールして有効化](sdk-installation-ios)する。このガイドではAdapty iOS SDK v4（ベータ版）のAPIを使用します。
+
+## 1. フローを取得する \{#1-get-the-flow\}
+
+フローはダッシュボードで設定したプレースメントに紐付けられています。プレースメントを使うと、異なるオーディエンスに対して異なるフローを実行したり、[A/Bテスト](ab-tests)を実行したりできます。
+
+Adapty Flow Builderで作成したフローを取得するには、次の手順を行います。
+
+1. `getFlow`メソッドを使って[プレースメント](placements)IDからフローオブジェクトを取得し、ビュー設定があるかどうかを確認する。
+2. `getFlowConfiguration`メソッドを使ってビュー設定を取得する。このビュー設定には、フローの表示に必要なUI要素とスタイリングが含まれています。
+
+```swift
+
+func loadFlow() async {
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+
+    guard flow.hasViewConfiguration else {
+        print("Flow doesn't have a view configuration")
+        return
+    }
+
+    flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow)
+}
+```
+
+## 2. フローを表示する \{#2-display-the-flow\}
+
+フロー設定を取得したら、数行追加するだけでフローを表示できます。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+
+SwiftUIでは、フローを表示する際にイベントも処理する必要があります。`didFailPurchase`、`didFinishRestore`、`didFailRestore`、`didReceiveError`は必須です。テスト中は、以下のスニペットのコードをコピーしてこれらのイベントをログ出力することができます。
+
+:::tip
+`didFinishPurchase`の処理は必須ではありませんが、購入成功後にアクションを実行したい場合に便利です。このコールバックを実装しない場合、フローは自動的に閉じられます。
+:::
+
+```swift
+.flow(
+    isPresented: $flowPresented,
+    flowConfiguration: flowConfiguration,
+    didFailPurchase: { product, error in
+        print("Purchase failed: \(error)")
+    },
+    didFinishRestore: { profile in
+        print("Restore finished successfully")
+    },
+    didFailRestore: { error in
+        print("Restore failed: \(error)")
+    },
+    didReceiveError: { error in
+        flowPresented = false
+        print("Flow error: \(error)")
+    }
+)
+```
+</TabItem>
+
+<TabItem value="uikit" label="UIKit" default>
+
+```swift
+
+func presentFlow(with config: AdaptyUI.FlowConfiguration) {
+    let flowController = try AdaptyUI.flowController(
+        with: config,
+        delegate: self
+    )
+    present(flowController, animated: true)
+}
+```
+
+イベントを処理するために`AdaptyFlowControllerDelegate`を実装します。最低限、デフォルト実装がない3つのメソッド（必須のエラーハンドラー）を実装してください。
+
+```swift
+extension YourViewController: AdaptyFlowControllerDelegate {
+    func flowController(_ controller: AdaptyFlowController,
+                        didFailPurchase product: AdaptyPaywallProduct,
+                        error: AdaptyError) {
+        print("Purchase failed: \(error)")
+    }
+
+    func flowController(_ controller: AdaptyFlowController,
+                        didFinishRestoreWith profile: AdaptyProfile) {
+        print("Restore finished successfully")
+    }
+
+    func flowController(_ controller: AdaptyFlowController,
+                        didFailRestoreWith error: AdaptyError) {
+        print("Restore failed: \(error)")
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+:::info
+フローの表示方法の詳細については、[ガイド](ios-present-paywalls)を参照してください。
+:::
+
+## 3. ボタンアクションを処理する \{#3-handle-button-actions\}
+
+ユーザーがボタンをタップすると、iOS SDKは購入、復元、フローのクローズ、リンクの開封を自動的に処理します。
+
+ただし、他のボタンにはカスタムまたは事前定義されたIDがあり、コードでアクションを処理する必要があります。または、デフォルトの動作を上書きしたい場合もあります。
+
+例えば、クローズボタンの処理方法を次に示します。UIKitでは、`.close`が発火すると SDKが自動的にコントローラーを閉じます — カスタム動作が必要な場合のみオーバーライドしてください。SwiftUIでは、`isPresented`バインディングを自分で`false`に設定する必要があります。
+
+:::tip
+ボタンの[アクション](handle-paywall-actions)と[イベント](ios-handling-events)の処理方法については、各ガイドを参照してください。
+:::
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+
+```swift
+.flow(
+    isPresented: $flowPresented,
+    flowConfiguration: flowConfiguration,
+    didPerformAction: { action in
+        switch action {
+            case .close:
+                flowPresented = false // dismiss the flow when the user taps close
+            default:
+                break
+        }
+    },
+    didFailPurchase: { product, error in /* handle the error */ },
+    didFinishRestore: { profile in /* check access level and dismiss */ },
+    didFailRestore: { error in /* handle the error */ },
+    didReceiveError: { error in flowPresented = false }
+)
+```
+</TabItem>
+
+<TabItem value="uikit" label="UIKit" default>
+
+```swift
+extension YourViewController: AdaptyFlowControllerDelegate {
+    func flowController(_ controller: AdaptyFlowController,
+                        didPerform action: AdaptyUI.Action) {
+        switch action {
+            case .close:
+                controller.dismiss(animated: true) // default behavior — override only if needed
+            default:
+                break
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## 次のステップ \{#next-steps\}
+
+<SupportForum />
+
+フローをアプリで表示する準備ができました。[サンドボックスモードで購入をテスト](test-purchases-in-sandbox)して、テスト購入が正常に完了できることを確認してください。
+
+次に、適切なユーザーにフローを表示したり有料機能へのアクセスを付与したりするために、[ユーザーのアクセスレベルを確認](ios-check-subscription-status)する必要があります。
+
+## 完全なサンプル \{#full-example\}
+
+このガイドのすべての手順をアプリに統合した例を以下に示します。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swiftui" label="SwiftUI" default>
+
+```swift
+
+struct ContentView: View {
+    @State private var flowPresented = false
+    @State private var flowConfiguration: AdaptyUI.FlowConfiguration?
+    @State private var isLoading = false
+    @State private var hasInitialized = false
+
+    var body: some View {
+        VStack {
+            if isLoading {
+                ProgressView("Loading...")
+            } else {
+                Text("Your App Content")
+            }
+        }
+        .task {
+            guard !hasInitialized else { return }
+            await initializeFlow()
+            hasInitialized = true
+        }
+        .flow(
+            isPresented: $flowPresented,
+            flowConfiguration: flowConfiguration,
+            didPerformAction: { action in
+                switch action {
+                case .close:
+                    flowPresented = false
+                default:
+                    break
+                }
+            },
+            didFailPurchase: { product, error in
+                print("Purchase failed: \(error)")
+            },
+            didFinishRestore: { profile in
+                print("Restore finished successfully")
+            },
+            didFailRestore: { error in
+                print("Restore failed: \(error)")
+            },
+            didReceiveError: { error in
+                print("Flow error: \(error)")
+                flowPresented = false
+            }
+        )
+    }
+
+    private func initializeFlow() async {
+        isLoading = true
+        defer { isLoading = false }
+
+        await loadFlow()
+        flowPresented = true
+    }
+
+    private func loadFlow() async {
+        do {
+            let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+            guard flow.hasViewConfiguration else {
+                print("Flow doesn't have a view configuration")
+                return
+            }
+            flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow)
+        } catch {
+            print("Failed to load: \(error)")
+        }
+    }
+}
+```
+</TabItem>
+
+<TabItem value="uikit" label="UIKit" default>
+
+```swift
+
+class ViewController: UIViewController {
+    private var flowConfiguration: AdaptyUI.FlowConfiguration?
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        Task {
+            await initializeFlow()
+        }
+    }
+
+    private func initializeFlow() async {
+        do {
+            flowConfiguration = try await loadFlow()
+
+            if let flowConfiguration {
+                await MainActor.run {
+                    presentFlow(with: flowConfiguration)
+                }
+            }
+        } catch {
+            print("Error initializing: \(error)")
+        }
+    }
+
+    private func loadFlow() async throws -> AdaptyUI.FlowConfiguration? {
+        let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+
+        guard flow.hasViewConfiguration else {
+            print("Flow doesn't have a view configuration")
+            return nil
+        }
+
+        return try await AdaptyUI.getFlowConfiguration(forFlow: flow)
+    }
+
+    private func presentFlow(with config: AdaptyUI.FlowConfiguration) {
+        guard let flowController = try? AdaptyUI.flowController(
+            with: config,
+            delegate: self
+        ) else { return }
+
+        present(flowController, animated: true)
+    }
+}
+
+extension ViewController: AdaptyFlowControllerDelegate {
+    func flowController(_ controller: AdaptyFlowController,
+                        didFailPurchase product: AdaptyPaywallProduct,
+                        error: AdaptyError) {
+        print("Purchase failed for \(product.vendorProductId): \(error)")
+
+        guard error.adaptyErrorCode != .paymentCancelled else { return }
+
+        let message = switch error.adaptyErrorCode {
+        case .paymentNotAllowed:
+            "Purchases are not allowed on this device."
+        default:
+            "Purchase failed. Please try again."
+        }
+
+        let alert = UIAlertController(title: "Purchase Error", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+
+    func flowController(_ controller: AdaptyFlowController,
+                        didFinishRestoreWith profile: AdaptyProfile) {
+        print("Restore finished successfully")
+        controller.dismiss(animated: true)
+    }
+
+    func flowController(_ controller: AdaptyFlowController,
+                        didFailRestoreWith error: AdaptyError) {
+        print("Restore failed: \(error)")
+    }
+
+    func flowController(_ controller: AdaptyFlowController,
+                        didReceiveError error: AdaptyUIError) {
+        print("Flow error: \(error)")
+        controller.dismiss(animated: true)
+    }
+}
+```
+</TabItem>
+</Tabs>

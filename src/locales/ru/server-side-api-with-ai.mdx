@@ -1,0 +1,82 @@
+---
+title: "Проверка и предоставление доступа к подписке через бэкенд"
+description: "Используйте серверный API Adapty, чтобы проверить наличие активной подписки у пользователя и предоставить доступ вручную с помощью AI-агента."
+metadataTitle: "Проверка и предоставление доступа к подписке через бэкенд | Документация Adapty"
+---
+Используйте серверный API Adapty, чтобы из вашего бэкенда проверять наличие активной подписки у пользователя и вручную выдавать доступ. В этом гайде рассмотрены два самых распространённых запроса — `getProfile` и `grantAccessLevel` — и показано, как поручить AI-агенту написать интеграцию под ваш стек.
+
+:::tip
+Используете AI-агент? Нажмите **Copy for LLM** под заголовком и вставьте всю эту страницу в агент — там есть все вызовы, поля и важные нюансы.
+:::
+## Прежде чем начать \{#before-you-start\}
+
+- **Секретный ключ API**: Найдите его в [App settings → General](https://app.adapty.io/settings/general), в поле **Secret key**. Ключи привязаны к конкретному приложению. Сохраните его в переменную окружения (например, `ADAPTY_SECRET_KEY`) и передавайте в заголовке `Authorization: Api-Key {key}`.
+- **Базовый URL**: Все запросы отправляются на `https://api.adapty.io`.
+- **Способ идентифицировать пользователя**: Передавайте либо `adapty-customer-user-id` (ваш собственный идентификатор пользователя — работает только если вы идентифицируете пользователей в приложении), либо `adapty-profile-id` (идентификатор профиля Adapty). Они взаимозаменяемы — используйте любой из них.
+## Проверка подписки \{#check-a-subscription\}
+
+Чтобы проверить статус, вызовите `getProfile` с методом `GET` и передайте идентификатор пользователя в заголовке — тело запроса не требуется.
+```javascript title="check-access.js"
+const res = await fetch("https://api.adapty.io/api/v2/server-side-api/profile/", {
+  headers: {
+    "Authorization": `Api-Key ${process.env.ADAPTY_SECRET_KEY}`,
+    "adapty-customer-user-id": userId,
+  },
+});
+const { data } = await res.json();
+
+function hasActiveAccess(profile, accessLevelId = "premium") {
+  const level = profile.access_levels?.find(a => a.access_level_id === accessLevelId);
+  if (!level) return false;
+  if (level.is_in_grace_period) return true;
+  if (!level.expires_at) return true;             // lifetime / non-expiring
+  return new Date(level.expires_at) > new Date(); // not expired yet
+}
+
+if (hasActiveAccess(data)) {
+  // unlock premium features
+}
+```
+
+В отличие от профиля в SDK, серверный ответ **не содержит поля `is_active`**. Определяйте статус самостоятельно по `access_levels[].expires_at`: `null` означает пожизненный доступ, дата в будущем — активная подписка, дата в прошлом — истёкшая. Считайте `is_in_grace_period` активным состоянием. Полное описание полей профиля и уровней доступа см. в [getProfile](https://adapty.io/docs/ru/api-adapty/operations/getProfile.md).
+## Предоставление доступа вручную \{#grant-access-manually\}
+
+Чтобы разблокировать платные функции без покупки — промокоды, доступ для инвесторов или бета-тестеров, решение обращений в поддержку — вызовите `grantAccessLevel` через `POST`.
+
+```javascript title="grant-access.js"
+await fetch("https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/", {
+  method: "POST",
+  headers: {
+    "Authorization": `Api-Key ${process.env.ADAPTY_SECRET_KEY}`,
+    "adapty-customer-user-id": userId,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ access_level_id: "premium" }), // add "expires_at" for temporary access
+});
+```
+- **Уровень доступа должен уже существовать** в вашем дашборде (**Access levels**) — `access_level_id` это его идентификатор, а не новое имя.
+- **Ручные выдачи не отображаются в аналитике**. Они доставляются только в вебхук-интеграцию и Event Feed, поэтому в графиках доходов и конверсий они не учитываются.
+
+Подробнее о запросе и ответе см. [grantAccessLevel](https://adapty.io/docs/ru/api-adapty/operations/grantAccessLevel.md).
+## Создайте это с помощью AI-агента
+
+Передайте своему AI-агенту этот гайд и спецификацию API в формате Markdown (добавьте `.md` к любому URL страницы), укажите свой стек — и пусть он напишет вызовы:
+
+- [Спецификация OpenAPI](https://adapty.io/docs/ru/api-specs/adapty-api.yaml)
+- [getProfile](https://adapty.io/docs/ru/api-adapty/operations/getProfile.md)
+- [grantAccessLevel](https://adapty.io/docs/ru/api-adapty/operations/grantAccessLevel.md)
+
+Пример промпта:
+```
+Using the Adapty server-side API spec, write backend functions to check whether a
+user has an active "premium" access level (GET /profile/, derive status from
+expires_at — there's no is_active field) and to grant it (grantAccessLevel).
+Authenticate with ADAPTY_SECRET_KEY and identify users by adapty-customer-user-id.
+```
+
+The agent writes the code, but it can't run your backend or set your keys — you provide the secret key and the user identifiers.
+## Ограничения \{#limits\}
+
+- **Лимит запросов**: до 40 000 запросов в минуту на приложение.
+- **Ключи привязаны к приложению**: каждый ключ работает только для одного приложения — используйте соответствующий ключ для каждого из них.
+- **Обязательный идентификатор**: каждый запрос должен содержать `adapty-customer-user-id` или `adapty-profile-id`.

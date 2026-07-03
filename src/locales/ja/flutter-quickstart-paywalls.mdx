@@ -1,0 +1,299 @@
+---
+title: "Flutter SDK のペイウォールを使ってアプリ内課金を有効にする"
+description: "アプリ内サブスクリプション管理のために Adapty をセットアップするクイックスタートガイド。"
+metadataTitle: "Adapty クイックスタートガイド | Adapty ドキュメント"
+keywords: [ 'paywall', 'paywall builder', 'getPaywall']
+rank: 70
+displayed_sidebar: sdkflutter
+---
+
+import PaywallsIntro from '@site/src/locales/ja/reusable/PaywallsIntro.md';
+
+アプリ内課金を有効にするには、3つの重要な概念を理解する必要があります。
+- [**プロダクト**](product) – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセス）
+- [**ペイウォール**](paywalls) – どのプロダクトを提供するかを定義する設定です。Adapty では、ペイウォールがプロダクトを取得する唯一の手段ですが、この設計のおかげでアプリのコードを変更せずにオファー内容・価格・プロダクトの組み合わせを変更できます。
+- [**プレースメント**](placements) – アプリ内でペイウォールを表示する場所とタイミング（`main`、`onboarding`、`settings` など）。ダッシュボードでプレースメントにペイウォールを設定しておき、コード内からプレースメント ID で呼び出します。これにより、A/B テストの実施や、ユーザーごとに異なるペイウォールの表示が簡単に行えます。
+Adaptyでは、アプリ内課金を有効にする方法を3つ提供しています。アプリの要件に応じていずれかをお選びください：
+| 実装方法 | 複雑さ | 使用するタイミング |
+|------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty ペイウォールビルダー | ✅ 簡単 | ノーコードビルダーで[購入可能な完全なペイウォールを作成](quickstart-paywalls)します。Adapty が自動的にレンダリングし、複雑な購入フロー、レシート検証、サブスクリプション管理をすべて処理します。 |
+| 手動で作成したペイウォール | 🟡 中程度 | アプリのコードでペイウォール UI を実装しますが、プロダクト提供の柔軟性を維持するために Adapty からペイウォールオブジェクトを取得します。[ガイド](flutter-quickstart-manual)を参照してください。 |
+| オブザーバーモード | 🔴 難しい | すでに独自の購入処理インフラを持っており、それを引き続き使用したい場合に使用します。オブザーバーモードには Adapty での制限があることに注意してください。[こちらの記事](observer-vs-full-mode)を参照してください。 |
+:::important
+**以下の手順では、Adapty ペイウォールビルダーで作成したペイウォールの実装方法を説明します。**
+
+ペイウォールビルダーを使用しない場合は、[手動で作成したペイウォールでの購入処理に関するガイド](flutter-making-purchases)をご覧ください。
+:::
+
+Adapty ペイウォールビルダーで作成したペイウォールを表示するには、アプリのコードで以下のことだけを行います。
+1. **ペイウォールを取得する**: Adapty からペイウォールを取得します。
+2. **ペイウォールを表示する（購入処理は Adapty が担当）**: 取得したペイウォールのコンテナをアプリ内に表示します。
+3. **ボタンアクションを処理する**: ペイウォール上のユーザー操作とアプリの応答を紐付けます。たとえば、ユーザーがボタンをタップしたときにリンクを開いたり、ペイウォールを閉じたりします。
+## 始める前に \{#before-you-start\}
+
+始める前に、以下の手順を完了してください：
+
+1. Adapty ダッシュボードでアプリを [App Store](initial_ios) および/または [Google Play](initial-android) に接続する。
+2. Adapty で[プロダクトを作成する](create-product)。
+3. [ペイウォールを作成してプロダクトを追加する](create-paywall)。
+4. [プレースメントを作成してペイウォールを追加する](create-placement)。
+5. アプリのコードに [Adapty SDK をインストールして有効化する](sdk-installation-flutter)。
+:::tip
+これらの手順を最速で完了するには、[クイックスタートガイド](quickstart)に従うか、[Developer CLI](developer-cli-quickstart)を使ってペイウォールとプレースメントを作成してください。
+:::
+## 1. ペイウォールを取得する \{#1-get-the-paywall\}
+
+ペイウォールは、ダッシュボードで設定したプレースメントに紐づいています。プレースメントを使うと、オーディエンスごとに異なるペイウォールを表示したり、[A/B テスト](ab-tests)を実施したりできます。
+
+Adapty のペイウォールビルダーで作成したペイウォールを取得するには、以下の手順が必要です。
+
+1. `getPaywall` メソッドを使って[プレースメント](placements) ID から `paywall` オブジェクトを取得し、`hasViewConfiguration` プロパティでペイウォールビルダーで作成されたものかどうかを確認します。
+2. `createPaywallView` メソッドを使用してペイウォールビューを作成します。このビューには、ペイウォールを表示するために必要なUI要素とスタイルが含まれています。
+
+:::important
+ビューの設定を取得するには、ペイウォールビルダーで **Show on device** トグルをオンにする必要があります。オンにしないと、空のビュー設定が返され、ペイウォールが表示されません。
+:::
+```dart showLineNumbers
+
+try {
+  final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en");
+  // the requested paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+
+try {
+  final view = await AdaptyUI().createPaywallView(
+        paywall: paywall,
+      );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+## 2. ペイウォールを表示する \{#display-the-paywall\}
+
+ペイウォールの設定が完了したら、あとは数行追加するだけでペイウォールを表示できます。
+
+ペイウォールを表示するには、`createPaywallView` メソッドで作成した `view` に対して `view.present()` メソッドを呼び出します。各 `view` は一度しか使用できません。再度ペイウォールを表示する必要がある場合は、`createPaywallView` をもう一度呼び出して新しい `view` インスタンスを作成してください。
+
+```dart showLineNumbers title="Flutter"
+try {
+  await view.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+:::tip
+ペイウォールの表示方法についての詳細は、[ガイド](flutter-present-paywalls)をご覧ください。
+:::
+## 3. ボタンアクションを処理する \{#handle-button-actions\}
+
+ユーザーがペイウォール上のボタンをクリックすると、Flutter SDK は購入と復元を自動的に処理します。ただし、その他のボタンにはカスタムまたは事前定義されたIDが付与されており、コード内でアクションを処理する必要があります。
+
+ペイウォール画面上のプロセスを制御・監視するには、`AdaptyUIPaywallsEventsObserver` のメソッドを実装し、画面を表示する前にオブザーバーを設定してください。ユーザーが何らかのアクションを実行すると、`paywallViewDidPerformAction` が呼び出されるため、アクション ID に応じてアプリが適切に応答する必要があります。
+例えば、ペイウォールには閉じるボタンやURL（利用規約やプライバシーポリシーなど）を開くリンクがあるはずです。そのため、`Close` および `OpenUrl` というIDのアクションに対応する必要があります。
+
+:::tip
+ボタンの[アクション](flutter-handle-paywall-actions)や[イベント](flutter-handling-events)の処理方法については、ガイドをご参照ください。
+:::
+オブザーバーは、ウィジェットではなく専用の長期存続オブジェクトとして実装してください。アプリ全体で単一のグローバルなオブザーバースロットが共有されるため、`State` にバインドするとスクリーンがリークし（SDKがそれへの強参照を保持します）、次のスクリーンが登録されたときに静かに上書きされてしまいます。`extends` を使うことでSDKのデフォルト動作も継承されるため、必要なコールバックだけをオーバーライドすれば済みます。
+```dart showLineNumbers title="Flutter"
+// A dedicated, long-lived handler for paywall events.
+// It does NOT live inside a Widget/State, so it never leaks and is never
+// silently replaced when screens are pushed or popped.
+class PaywallEventsHandler extends AdaptyUIPaywallsEventsObserver {
+  // A single, app-wide instance — same idiom as Adapty() and AdaptyUI().
+  static final PaywallEventsHandler _instance = PaywallEventsHandler._();
+  factory PaywallEventsHandler() => _instance;
+  PaywallEventsHandler._();
+
+  // This method is called when user performs an action on the paywall UI
+  @override
+  void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL using url_launcher package
+        _launchUrl(url);
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Dismiss the paywall once a restore succeeds
+  @override
+  void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
+    view.dismiss();
+  }
+
+  // Handle failures while the paywall is being rendered
+  @override
+  void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
+    print('Paywall rendering failed: $error');
+  }
+
+  // Helper method to launch URLs
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Handle case where URL cannot be launched
+        print('Could not launch $url');
+      }
+    } catch (e) {
+      // Handle any errors
+      print('Error launching URL: $e');
+    }
+  }
+}
+```
+
+ハンドラーは、ペイウォールが表示される前のアプリ起動時に**1回だけ**登録してください:
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setPaywallsEventsObserver(PaywallEventsHandler());
+```
+## 次のステップ \{#next-steps\}
+
+<SupportForum />
+
+ペイウォールはアプリに表示する準備が整いました。[App Store サンドボックス](test-purchases-in-sandbox)または[Google Play Store](testing-on-android)でテスト購入を試して、ペイウォールからテスト購入が完了できることを確認してください。
+
+次に、[ユーザーのアクセスレベルを確認](flutter-check-subscription-status)して、適切なユーザーにペイウォールを表示したり有料機能へのアクセスを付与したりできるようにする必要があります。
+
+## 完全な例 \{#full-example\}
+
+以下は、これらすべてのステップをアプリに統合する方法の例です。
+```dart
+
+void main() {
+  // Register a single, long-lived observer once, before any paywall is shown.
+  // It is intentionally a plain object (NOT a Widget/State): its lifetime is the
+  // whole app, so it never leaks and is never silently replaced when screens are
+  // pushed or popped.
+  AdaptyUI().setPaywallsEventsObserver(PaywallEventsHandler());
+
+  runApp(MaterialApp(home: PaywallScreen()));
+}
+
+/// A dedicated handler for AdaptyUI paywall events.
+///
+/// It `extends` [AdaptyUIPaywallsEventsObserver] (rather than being implemented
+/// by a `State`), which gives you two things for free:
+///   * the SDK's sensible defaults (e.g. auto-dismiss on close/finish), so you
+///     only override what you actually care about;
+///   * a lifecycle that is independent of the widget tree — there is no strong
+///     reference back into a `Widget`, so nothing leaks and there is nothing to
+///     unregister.
+///
+/// Every callback receives the [AdaptyUIPaywallView] it relates to, so handling
+/// paywall actions never requires a `BuildContext` or widget state.
+class PaywallEventsHandler extends AdaptyUIPaywallsEventsObserver {
+  // A single, app-wide instance — same idiom as Adapty() and AdaptyUI().
+  static final PaywallEventsHandler _instance = PaywallEventsHandler._();
+  factory PaywallEventsHandler() => _instance;
+  PaywallEventsHandler._();
+
+  // Called when the user performs an action on the paywall UI.
+  @override
+  void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL using the url_launcher package.
+        _launchUrl(url);
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Dismiss the paywall once a restore succeeds.
+  @override
+  void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
+    view.dismiss();
+  }
+
+  // Handle failures while the paywall is being rendered.
+  @override
+  void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
+    print('Paywall rendering failed: $error');
+  }
+
+  // Helper method to launch URLs.
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Handle case where URL cannot be launched.
+        print('Could not launch $url');
+      }
+    } catch (e) {
+      // Handle any errors.
+      print('Error launching URL: $e');
+    }
+  }
+}
+
+class PaywallScreen extends StatefulWidget {
+  const PaywallScreen({super.key});
+
+  @override
+  State<PaywallScreen> createState() => _PaywallScreenState();
+}
+
+class _PaywallScreenState extends State<PaywallScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _showPaywallIfNeeded();
+  }
+
+  Future<void> _showPaywallIfNeeded() async {
+    try {
+      final paywall = await Adapty().getPaywall(
+        placementId: 'YOUR_PLACEMENT_ID',
+      );
+
+      if (!paywall.hasViewConfiguration) return;
+
+      final view = await AdaptyUI().createPaywallView(paywall: paywall);
+
+      await view.present();
+    } catch (_) {
+      // Handle any errors (network, SDK issues, etc.)
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Adapty Paywall Example')),
+      body: Center(
+        // Add a button to re-trigger the paywall for testing purposes.
+        child: ElevatedButton(
+          onPressed: _showPaywallIfNeeded,
+          child: const Text('Show Paywall'),
+        ),
+      ),
+    );
+  }
+}
+```

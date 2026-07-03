@@ -1,0 +1,144 @@
+---
+title: "Unity SDKでユーザーを識別する"
+description: "Adapty SDKを使用してUnityアプリでユーザーを識別する方法をご紹介します。"
+metadataTitle: "ユーザーの識別 | Unity SDK | Adapty ドキュメント"
+customSlug: /unity-identifying-users
+displayed_sidebar: sdkunity
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+import CrossDeviceDetection from '@site/src/locales/ja/reusable/CrossDeviceDetection.mdx';
+
+Adaptyはすべてのユーザーに対して内部プロファイルIDを作成します。ただし、独自の認証システムをお持ちの場合は、Customer User IDを設定することをお勧めします。[Profiles](profiles-crm)セクションでCustomer User IDによってユーザーを検索したり、すべてのインテグレーションに送信される[サーバーサイドAPI](getting-started-with-server-side-api)でも使用できます。
+
+### 設定時にCustomer User IDを設定する \{#setting-customer-user-id-on-configuration\}
+
+設定時にユーザーIDがある場合は、`.activate()`メソッドの`customerUserId`パラメーターとして渡すだけです。
+
+```csharp showLineNumbers
+using UnityEngine;
+using AdaptySDK;
+
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID");
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+```
+
+<SampleApp />
+
+### 設定後にCustomer User IDを設定する \{#setting-customer-user-id-after-configuration\}
+
+SDK設定時にユーザーIDがない場合は、`.identify()`メソッドを使っていつでも後から設定できます。このメソッドが最もよく使われるのは、登録後や認証後、つまりユーザーが匿名ユーザーから認証済みユーザーに切り替わるタイミングです。
+
+```csharp showLineNumbers
+Adapty.Identify("YOUR_USER_ID", (error) => {
+  if(error == null) {
+    // successful identify
+  }
+});
+```
+
+リクエストパラメーター：
+
+- **Customer User ID**（必須）：文字列のユーザー識別子。
+
+:::warning
+重要なユーザーデータの再送信について
+
+ユーザーが再度ログインした場合など、Adaptyのサーバーにすでにそのユーザーの情報が存在していることがあります。このような場合、Adapty SDKは自動的に新しいユーザーとして切り替わります。カスタム属性やサードパーティネットワークからのアトリビューションなど、匿名ユーザーに対して送信したデータがある場合は、識別されたユーザーに対してそのデータを再送信する必要があります。
+
+また、新しいユーザーのデータが異なる場合があるため、ユーザーを識別した後はすべてのペイウォールとプロダクトを再取得する必要があることにも注意してください。
+:::
+
+### ログアウトとログイン \{#logging-out-and-logging-in\}
+
+`.logout()`メソッドを呼び出すことで、いつでもユーザーをログアウトできます。
+
+```csharp showLineNumbers
+Adapty.Logout((error) => {
+  if(error == null) {
+    // successful logout
+  }
+});
+```
+
+その後、`.identify()`メソッドを使ってユーザーをログインさせることができます。
+
+## `appAccountToken`を設定する（iOS） \{#assign-appaccounttoken-ios\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:))は、App Storeのトランザクションと内部ユーザーIDを紐づけるための**UUID**です。  
+StoreKitはこのトークンをすべてのトランザクションに関連付けるため、バックエンドでApp Storeのデータを自社ユーザーと照合できます。
+
+ユーザーごとに安定したUUIDを生成し、デバイスをまたいで同じアカウントに再利用してください。
+これにより、購入情報やApp Storeの通知が正しく紐づけられます。
+
+トークンの設定方法は2通りあります。SDK有効化時とユーザー識別時です。
+
+:::important
+`appAccountToken`は必ず`customerUserId`と一緒に渡してください。
+トークンだけを渡しても、トランザクションには含まれません。
+:::
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+using System;
+
+// During configuration:
+var appAccountToken = new Guid("YOUR_APP_ACCOUNT_TOKEN");
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID", appAccountToken);
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+
+// Or when identifying users
+Adapty.Identify("YOUR_USER_ID", appAccountToken, (error) => {
+    if (error == null) {
+        // successful identify
+    }
+});
+```
+
+## 難読化アカウントIDを設定する（Android） \{#set-obfuscated-account-ids-android\}
+
+Google Playでは、ユーザーのプライバシーとセキュリティを強化するために、特定のユースケースで難読化アカウントIDが必要です。これらのIDにより、Google Playはユーザー情報を匿名に保ちながら購入を識別できます。これは特に不正防止やアナリティクスにおいて重要です。
+
+アプリが機密性の高いユーザーデータを扱う場合や、特定のプライバシー規制への準拠が求められる場合に、これらのIDを設定する必要が生じることがあります。難読化IDを使用することで、Google Playは実際のユーザー識別子を公開せずに購入を追跡できます。
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+// During configuration:
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID", null, "YOUR_OBFUSCATED_ACCOUNT_ID");
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+});
+
+// Or when identifying users
+Adapty.Identify("YOUR_USER_ID", null, "YOUR_OBFUSCATED_ACCOUNT_ID", (error) => {
+    if (error == null) {
+        // successful identify
+    }
+});
+```
+
+## デバイスをまたいでユーザーを検出する \{#detect-users-across-devices\}
+
+<CrossDeviceDetection />

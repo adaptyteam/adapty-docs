@@ -1,0 +1,322 @@
+---
+title: "Amazon S3"
+description: "高度な分析とレポートのためにサブスクリプションデータをS3にエクスポートします。"
+metadataTitle: "S3 エクスポートとデータ管理 | Adapty ドキュメント"
+---
+
+Adapty の Amazon S3 インテグレーションを使用すると、イベントデータとペイウォール訪問データを一か所に安全に保存できます。[サブスクリプションイベント](events)を .csv ファイルとして Amazon S3 バケットに保存することが可能です。  
+このインテグレーションを設定するには、AWS コンソールと Adapty ダッシュボードでいくつかの簡単な手順を行う必要があります。
+:::note
+スケジュール
+
+Adapty はデータを**24時間ごと**、UTC 4:00 に送信します。
+
+各ファイルには、UTC の前日カレンダー全体で作成されたイベントのデータが含まれます。たとえば、3月8日 UTC 4:00 に自動エクスポートされるデータには、3月7日の 00:00:00〜23:59:59（UTC）に作成されたすべてのイベントが含まれます。
+:::
+## Amazon S3 インテグレーションの設定方法 \{#how-to-set-up-amazon-s3-integration\}
+
+データの受信を開始するには、以下の認証情報が必要です：
+
+1. アクセスキー ID
+2. シークレットアクセスキー
+3. S3 バケット名
+4. S3 バケット内のフォルダ名
+
+:::note
+ネストされたディレクトリ
+
+Amazon S3 バケット名フィールドにネストされたディレクトリを指定できます（例：adapty-events/com.sample-app）
+:::
+
+Amazon S3 のインテグレーションを設定するには、[**Integrations** -> **Amazon S3**](https://app.adapty.io/integrations/s3) に移動し、トグルをオフからオンに切り替えて、各フィールドに入力してください。
+
+まず、Amazon S3 と Adapty プロファイルの接続を確立するための認証情報を設定します。
+<Zoom>
+  <img src="/assets/shared/img/2b1a6e3-CleanShot_2023-03-24_at_14.51.272x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Adapty ダッシュボードでは、接続を設定するために以下のフィールドが必要です：
+| フィールド | 説明 |
+| :--------------------------- | :----------------------------------------------------------- |
+| **Access Key ID** | AWS サービスへのアクセスを認証するために使用される一意の識別子です。ダウンロードした [csv ファイル](s3-exports#how-to-create-amazon-s3-credentials) で確認できます。 |
+| **Secret Access Key** | Access Key ID と組み合わせて AWS サービスへのアクセスを認証するためのプライベートキーです。ダウンロードした [csv ファイル](s3-exports#how-to-create-amazon-s3-credentials) で確認できます。 |
+| **S3 Bucket Name** | AWS クラウド内の特定の S3 バケットを識別するグローバルに一意の名前です。S3 バケットはシンプルなストレージサービスで、ファイルや画像などのデータオブジェクトをクラウド上に保存・取得できます。 |
+| **Folder Inside the Bucker** | 選択した S3 バケット内に作成するフォルダーの名前です。S3 はオブジェクトキーのプレフィックス（実質的にフォルダー名）を使用してフォルダーを疑似的に表現している点にご注意ください。 |
+## Amazon S3 認証情報の作成方法 \{#how-to-create-amazon-s3-credentials\}
+
+このガイドでは、AWS コンソールで必要な認証情報を作成する手順を説明します。
+### 1\. アクセスポリシーの作成 \{#1-create-access-policy\}
+
+まず、AWS コンソールの [IAM ポリシーダッシュボード](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/policies) に移動し、**Create Policy** を選択します。
+
+<Zoom>
+  <img src="/assets/shared/img/7af075c-CleanShot_2023-03-21_at_10.52.002x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+In the Policy editor, paste the following JSON and change `adapty-s3-integration-test` to your bucket name:
+```json showLineNumbers title="Json"
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowListObjectsInBucket",
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        },
+        {
+            "Sid": "AllowAllObjectActions",
+            "Effect": "Allow",
+            "Action": "s3:*Object",
+            "Resource": [
+                "arn:aws:s3:::adapty-s3-integration-test/*",
+                "arn:aws:s3:::adapty-s3-integration-test"
+            ]
+        },
+        {
+            "Sid": "AllowBucketLocation",
+            "Effect": "Allow",
+            "Action": "s3:GetBucketLocation",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        }
+    ]
+}
+```
+
+<Zoom>
+  <img src="/assets/shared/img/d4e474a-CleanShot_2023-03-21_at_10.56.212x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+ポリシーの設定が完了したら、タグを追加する（任意）かどうかを選択し、**Next** をクリックして最終ステップに進みます。このステップでポリシーに名前を付け、**Create policy** ボタンをクリックするだけで作成が完了します。
+<Zoom>
+  <img src="/assets/shared/img/7dcb02f-CleanShot_2023-03-21_at_11.03.372x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+### 2\. IAM ユーザーの作成 \{#2-create-iam-user\}
+
+Adapty がローデータレポートをバケットにアップロードできるようにするには、対象バケットへの書き込みアクセス権を持つユーザーの Access Key ID と Secret Access Key を提供する必要があります。
+
+手順を進めるには、IAM コンソールにアクセスし、[Users セクション](https://console.aws.amazon.com/iamv2/home#/users)を選択してください。次に、**Add users** ボタンをクリックします。
+<Zoom>
+  <img src="/assets/shared/img/bb612c8-CleanShot_2023-03-21_at_11.12.392x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+ユーザーに名前を付け、**Access key – Programmatic access** を選択して、権限の設定に進みます。
+<Zoom>
+  <img src="/assets/shared/img/467ee4d-j6aoX.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+次のステップでは、**Add user to group** オプションを選択し、**Create group** ボタンをクリックしてください。
+<Zoom>
+  <img src="/assets/shared/img/bfd0e80-CleanShot_2023-03-21_at_11.24.592x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+次に、User Group の名前を入力し、先ほど作成したポリシーを選択します。ポリシーを選択したら、**Create group** ボタンをクリックして完了です。
+<Zoom>
+  <img src="/assets/shared/img/df29c12-CleanShot_2023-03-21_at_11.28.052x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+グループの作成が完了したら、**それを選択**して次のステップに進んでください。
+<Zoom>
+  <img src="/assets/shared/img/1f3722e-CleanShot_2023-03-21_at_11.36.192x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+このセクションの最後のステップなので、**Create User** ボタンをクリックして進んでください。
+<Zoom>
+  <img src="/assets/shared/img/ea43722-CleanShot_2023-03-21_at_11.40.462x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+最後に、認証情報を**.csv 形式でダウンロード**するか、ダッシュボードから直接コピー＆ペーストすることができます。
+<Zoom>
+  <img src="/assets/shared/img/bcf35e1-S3created.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+## 手動データエクスポート \{#manual-data-export\}
+
+Amazon S3 への自動イベントデータエクスポートに加えて、Adapty では手動ファイルエクスポート機能も提供しています。この機能を使うと、エクスポートするイベントデータの期間を指定し、S3 バケットに手動でエクスポートできます。これにより、エクスポートするデータとそのタイミングをより細かく管理できます。
+
+指定した日付範囲では、Date A の 00:00:00 UTC から Date B の 23:59:59 UTC までに作成されたイベントがエクスポートされます。
+<Zoom>
+  <img src="/assets/shared/img/466bd29-CleanShot_2023-03-21_at_12.35.252x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+## テーブル構造 \{#table-structure\}
+
+AWS S3 連携では、Adapty はトランザクションイベントおよびペイウォール訪問の履歴データを保存するテーブルを提供します。このテーブルには、ユーザープロファイル、収益および収益額、元のストアなど、さまざまなデータが含まれています。基本的に、これらのテーブルはアプリが一定期間に生成したすべてのトランザクションを記録します。
+:::warning
+この構造は、今後私たちまたは連携するサードパーティによって新しいデータが追加され、拡張される可能性があります。この構造を処理するコードは、構造全体に依存するのではなく、特定のフィールドに依存する形で堅牢に作成してください。
+:::
+
+以下はイベントのテーブル構造です。
+| カラム                          | 説明                                                                                                                                                                                                                                                                                                                                            |
+|---------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **profile_id**                  | Adapty ユーザー ID。                                                                                                                                                                                                                                                                                                                        |
+| **event_type**                  | 小文字のイベント名。イベントの種類については [Events](events) セクションを参照してください。                                                                                                                                                                                                                                                    |
+| **event_datetime**              | ISO 8601 形式の日付。                                                                                                                                                                                                                                                                                                                         |
+| **transaction_id**              | 購入や更新などのトランザクションの一意の識別子。                                                                                                                                                                                                                                                                                                |
+| **original_transaction_id**     | 最初の購入のトランザクション識別子。                                                                                                                                                                                                                                                                                                           |
+| **subscription_expires_at**     | サブスクリプションの有効期限。通常は未来の日時。                                                                                                                                                                                                                                                                                            |
+| **environment**                 | Sandbox または Production。                                                                                                                                                                                                                                                                                                        |
+| **revenue_usd**                 | USD での売上。空の場合があります。                                                                                                                                                                                                                                                                                                          |
+| **proceeds_usd**                | USD での収益。空の場合があります。                                                                                                                                                                                                                                                                                                         |
+| **net_revenue_usd**             | USD での純収益（税引き後の収入）。空の場合があります。                                                                                                                                                                                                                                                                                                 |
+| **tax_amount_usd**              | USD での税額。空の場合があります。                                                                                                                                                                                                                                                                                                               |
+| **revenue_local**               | 現地通貨での売上。空の場合があります。                                                                                                                                                                                                                                                                                                               |
+| **proceeds_local**              | 現地通貨での収益。空の場合があります。                                                                                                                                                                                                                                                                                                              |
+| **net_revenue_local**           | 現地通貨での純収益（税引き後の収入）。空の場合があります。                                                                                                                                                                                                                                                                                      |
+| **tax_amount_local**            | 現地通貨での税額。空の場合があります。                                                                                                                                                                                                                                                                                                    |
+| **customer_user_id**            | 開発者のユーザー ID。たとえば、ユーザーの UUID、メールアドレス、その他の ID を使用できます。設定していない場合は Null。                                                                                                                                                                                                                           |
+| **store**                       | _app_store_ または _play_store_。                                                                                                                                                                                                                                                                                                  |
+| **product_id**                  | Apple App Store、Google Play Store、または Stripe でのプロダクト ID。                                                                                                                                                                                                                                                                       |
+| **base_plan_id**                | Google Play Store での [ベースプラン ID](https://support.google.com/googleplay/android-developer/answer/12154973) または Stripe での [価格 ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices)。                                                                                                      |
+| **developer_id**                | トランザクションが発生したペイウォールの開発者（SDK）ID。                                                                                                                                                                                                                                                                                    |
+| **ab_test_name**                | トランザクションが発生した A/B テストの名前。                                                                                                                                                                                                                                                                                                 |
+| **ab_test_revision**            | トランザクションが発生した A/B テストのリビジョン。                                                                                                                                                                                                                                                                                             |
+| **paywall_name**                | トランザクションが発生したペイウォールの名前。                                                                                                                                                                                                                                                                                                  |
+| **paywall_revision**            | トランザクションが発生したペイウォールのリビジョン。                                                                                                                                                                                                                                                                                              |
+| **profile_county**              | IP アドレスをもとに Adapty が判定したプロファイルの国。                                                                                                                                                                                                                                                                                     |
+| **install_date**                | インストールが行われた日付（ISO 8601 形式）。                                                                                                                                                                                                                                                                                          |
+| **idfv**                        | iOS デバイスの [identifierForVendor](https://developer.apple.com/documentation/uikit/uidevice/identifierforvendor)                                                                                                                                                                                                             |
+| **idfa**                        | iOS デバイスの [advertisingIdentifier](https://developer.apple.com/documentation/adsupport/asidentifiermanager/advertisingidentifier)                                                                                                                                                                                                  |
+| **advertising_id**              | Android オペレーティングシステムが割り当てる一意のコードで、広告主がユーザーのデバイスを識別するために使用する広告 ID。                                                                                                                                                                                                                           |
+| **ip_address**                  | デバイスの IP アドレス（IPv4 または IPv6。利用可能な場合は IPv4 を優先）。デバイスの IP が変わるたびに更新されます。                                                                                                                                                                                                                                 |
+| **cancellation_reason**         | <p>ユーザーがサブスクリプションをキャンセルした理由。</p><p></p><p>以下の値が設定されます：</p><p>**iOS & Android**  _voluntarily_cancelled_、_billing_error_、_refund_</p><p>**iOS**  _price_increase_、_product_was_not_available_、_unknown_、_upgraded_</p><p>**Android** _new_subscription_replace_、_cancelled_by_developer_</p>                      |
+| **android_app_set_id**          | [AppSetId](https://developer.android.com/design-for-safety/privacy-sandbox/reference/adservices/appsetid/AppSetId) — デバイスおよび開発者アカウントごとに一意で、ユーザーがリセット可能な、非収益化広告用途向けの ID。                                                                                                                         |
+| **android_id**                  | Android 8.0（API レベル 26）以降では、アプリの署名キー、ユーザー、デバイスの組み合わせごとに一意な 64 ビットの数値（16 進数文字列で表現）。詳細は [Android 開発者ドキュメント](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID) を参照してください。 |
+| **device**                      | エンドユーザーに表示されるデバイスのモデル名。                                                                                                                                                                                                                                                                                                |
+| **currency**                    | トランザクションの 3 文字の通貨コード（ISO-4217）。                                                                                                                                                                                                                                                                                              |
+| **store_country**               | Apple/Google ストアが判定したプロファイルの国。                                                                                                                                                                                                                                                                                      |
+| **attribution_source**          | アトリビューションソース。                                                                                                                                                                                                                                                                                                                    |
+| **attribution_network_user_id** | アトリビューションソースがユーザーに割り当てた ID。                                                                                                                                                                                                                                                                                         |
+| **attribution_status**          | organic、non_organic、または unknown。                                                                                                                                                                                                                                                                                                |
+| **attribution_channel**         | マーケティングチャネル名。                                                                                                                                                                                                                                                                                                                    |
+| **attribution_campaign**        | マーケティングキャンペーン名。                                                                                                                                                                                                                                                                                                               |
+| **attribution_ad_group**        | アトリビューションの広告グループ。                                                                                                                                                                                                                                                                                                          |
+| **attribution_ad_set**          | アトリビューションの広告セット。                                                                                                                                                                                                                                                                                                    |
+| **attribution_creative**        | アトリビューションのクリエイティブキーワード。                                                                                                                                                                                                                                                                                          |
+| **attributes**                  | [カスタムユーザー属性](setting-user-attributes#custom-user-attributes) の JSON。モバイルアプリから送信するよう設定したカスタム属性が含まれます。送信するには、[Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) ページで **Send User Attributes** オプションを有効にしてください。                 |
+| **integration_ids**             | プロファイルに関連付けられたすべてのインテグレーション ID。ディクショナリ形式。例: &#123;&#39;mixpanel_user_id&#39;: &#39;mixpanelUserId-test&#39;, &#39;facebook_anonymous_id&#39;: &#39;facebookAnonymousId-test&#39;&#125;                                                                                                                         |
+ここにペイウォール訪問数のテーブル構造を示します：
+| カラム                | 説明                                                                                                  |
+| :-------------------- | :----------------------------------------------------------------------------------------------------------- |
+| **profile_id**        | Adapty のユーザー ID。                                                                                              |
+| **customer_user_id**  | 開発者のユーザー ID。例えば、ユーザーの UUID、メールアドレス、その他の ID などを設定できます。未設定の場合は Null。 |
+| **profile_country**   | Apple/Google ストアによって決定されるプロファイルの国。                                                            |
+| **install_date**      | インストールが行われた日時（ISO 8601 形式）。                                                                |
+| **store**             | _app_store_ または _play_store_ のいずれか。                                                                        |
+| **paywall_showed_at** | ペイウォールがユーザーに表示された日時。                                                |
+| **developer_id**      | トランザクションが発生したペイウォールの開発者（SDK）ID。                                                       |
+| **ab_test_name**      | トランザクションが発生した A/B テストの名前。                                                      |
+| **ab_test_revision**  | トランザクションが発生した A/B テストのリビジョン。                                                   |
+| **paywall_name**      | トランザクションが発生したペイウォールの名前。                                                        |
+| **paywall_revision**  | トランザクションが発生したペイウォールのリビジョン。                                                    |
+## イベントとタグ \{#events-and-tags\}
+
+インテグレーションで通信するデータを管理できます。このインテグレーションでは、以下の設定オプションを利用できます。
+| 設定 | 説明 |
+| :--------------------------------- | :----------------------------------------------------------- |
+| **Exclude Historical Events** | Adapty SDK を含むアプリをユーザーがインストールする前に発生したイベントを除外するかどうかを選択します。これにより、イベントの重複を防ぎ、正確なレポートを確保できます。たとえば、ユーザーが 1 月 10 日に月次サブスクリプションを有効化し、3 月 6 日に Adapty SDK を含むアプリにアップデートした場合、Adapty は 3 月 6 日より前のイベントを除外し、以降のイベントのみを保持します。 |
+| **Include events without profile** | Adapty のユーザープロファイルに紐付いていないトランザクションを含めるかどうかを選択します。これには、Adapty SDK のインストール前に行われた購入や、特定のユーザーにすぐに関連付けられないストアのサーバー通知から受信したトランザクションが含まれる場合があります。 |
+| **Send User Attributes** | 言語設定などのユーザー固有の属性を送信したい場合で、かつ OneSignal のプランが 10 個を超えるタグをサポートしている場合は、このオプションを選択します。有効にすると、デフォルトの 10 タグを超える追加情報を含めることができます。タグの上限を超えるとエラーが発生する可能性がある点に注意してください。 |
+<Zoom>
+  <img src="/assets/shared/img/s3-settings.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+インテグレーション設定の下には、Adapty から Amazon S3 にエクスポート・送信・保存できるイベントが3つのグループに分かれています。必要なものをオンにするだけです。Adapty が提供するイベントの全一覧は[こちら](events)をご確認ください。
+<Zoom>
+  <img src="/assets/shared/img/fd5ccb9-CleanShot_2023-08-17_at_14.49.282x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>

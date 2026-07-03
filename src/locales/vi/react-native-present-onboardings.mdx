@@ -1,0 +1,307 @@
+---
+title: "Hiển thị onboarding trong React Native SDK"
+description: "Khám phá cách hiển thị onboarding trên React Native để tăng tỷ lệ chuyển đổi và doanh thu."
+metadataTitle: "Hiển thị onboarding trên React Native | Tài liệu Adapty"
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+
+Nếu bạn đã tùy chỉnh onboarding bằng builder, bạn không cần lo lắng về việc render nó trong code ứng dụng di động để hiển thị cho người dùng. Onboarding đó chứa cả nội dung cần hiển thị lẫn cách hiển thị.
+
+Trước khi bắt đầu, hãy đảm bảo rằng:
+
+1. Bạn đã cài đặt [Adapty React Native SDK](sdk-installation-reactnative) phiên bản 3.8.0 trở lên.
+2. Bạn đã [tạo một onboarding](create-onboarding).
+3. Bạn đã thêm onboarding vào một [placement](placements).
+
+Adapty React Native SDK cung cấp hai cách để hiển thị onboarding:
+- **React component**: Embedded component cho phép bạn tích hợp vào kiến trúc và hệ thống điều hướng của ứng dụng.
+
+- **Modal presentation**
+## React component \{#react-component\}
+
+Để nhúng một onboarding vào cây component hiện có của bạn, hãy sử dụng component `AdaptyOnboardingView` trực tiếp trong cấu trúc phân cấp component React Native. Component nhúng này cho phép bạn tích hợp nó vào kiến trúc và hệ thống điều hướng của ứng dụng.
+
+:::note
+Trên Android, chúng tôi khuyến nghị cấu hình bổ sung cho `AdaptyOnboardingView` để tránh hiện tượng lỗi hiển thị trực quan. Xem [Giao diện hệ thống chồng lên nội dung onboarding trên Android](#system-ui-overlaps-onboarding-content-on-android).
+:::
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK phiên bản 3.14 trở lên" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
+  const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      onAnalytics={onAnalytics}
+      onClose={onClose}
+      onCustom={onCustom}
+      onPaywall={onPaywall}
+      onStateUpdated={onStateUpdated}
+      onFinishedLoading={onFinishedLoading}
+      onError={onError}
+    />
+  );
+}
+```
+</TabItem>
+<TabItem value="old" label="Phiên bản SDK < 3.14" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={{ flex: 1 }}
+      eventHandlers={{
+        onAnalytics(event, meta) { 
+          // Handle analytics events
+        },
+        onClose(actionId, meta) { 
+          // Handle close actions
+        },
+        onCustom(actionId, meta) { 
+          // Handle custom actions
+        },
+        onPaywall(actionId, meta) { 
+          // Handle paywall actions
+        },
+        onStateUpdated(action, meta) { 
+          // Handle state updates
+        },
+        onFinishedLoading(meta) { 
+          // Handle when onboarding finishes loading
+        },
+        onError(error) { 
+          // Handle errors
+        },
+      }}
+    />
+  );
+}
+```
+</TabItem>
+</Tabs>
+## Hiển thị dạng modal \{#modal-presentation\}
+
+Để hiển thị onboarding dưới dạng màn hình độc lập mà người dùng có thể đóng lại, sử dụng phương thức `view.present()` trên `view` được tạo bởi phương thức `createOnboardingView`. Mỗi `view` chỉ có thể được sử dụng một lần. Nếu bạn cần hiển thị lại onboarding, hãy gọi `createOnboardingView` thêm một lần nữa để tạo một `view` mới.
+
+:::warning
+Không được tái sử dụng cùng một `view` mà không tạo lại. Việc này sẽ dẫn đến lỗi `AdaptyUIError.viewAlreadyPresented`.
+:::
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK version 3.14 or later" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createOnboardingView(onboarding);
+
+// Optional: handle onboarding events (close, custom actions, etc)
+// view.setEventHandlers({ ... });
+
+try {
+    await view.present();
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="old" label="SDK version < 3.14" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createOnboardingView(onboarding);
+
+view.registerEventHandlers(); // handle close press, etc
+
+try {
+    await view.present();
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+</Tabs>
+### Cấu hình kiểu hiển thị trên iOS \{#configure-ios-presentation-style\}
+
+Cấu hình cách paywall được hiển thị trên iOS bằng cách truyền tham số `iosPresentationStyle` vào phương thức `present()`. Tham số này chấp nhận các giá trị `'full_screen'` (mặc định) hoặc `'page_sheet'`.
+
+```typescript showLineNumbers
+try {
+  await view.present({ iosPresentationStyle: 'page_sheet' });
+} catch (error) {
+  // handle the error
+}
+```
+
+## Loader trong quá trình hiển thị onboarding \{#loader-during-onboarding\}
+
+Khi hiển thị onboarding trong React Native, bạn có thể thấy một màn hình trắng hoặc màn hình loading ngắn xuất hiện trước khi onboarding hiện ra. Điều này xảy ra trong khi native view bên dưới đang được khởi tạo. Bạn có thể xử lý vấn đề này theo nhiều cách khác nhau tùy thuộc vào nhu cầu và quy trình làm việc của bạn.
+
+#### Kiểm soát splash screen bằng onFinishedLoading \{#control-splash-screen-using-onfinishedloading\}
+
+:::note
+Cách này chỉ khả dụng khi sử dụng React component. Không áp dụng được cho modal presentation.
+:::
+Cách được khuyến nghị cho React Native là giữ màn hình chờ (splash screen) hoặc lớp phủ tùy chỉnh hiển thị cho đến khi onboarding tải xong hoàn toàn, sau đó ẩn nó đi theo cách thủ công.
+
+Khi sử dụng React component (`AdaptyOnboardingView`), hãy chờ sự kiện `onFinishedLoading` trước khi ẩn splash screen hoặc lớp phủ:
+
+<Tabs groupId="version" queryString>
+<TabItem value="new" label="SDK phiên bản 3.14 trở lên" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const [isLoading, setIsLoading] = useState(true);
+
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {
+    // Hide your splash screen or custom overlay here
+    setIsLoading(false);
+  }, []);
+
+  return (
+    <>
+      <AdaptyOnboardingView
+        onboarding={onboarding}
+        onFinishedLoading={onFinishedLoading}
+        // ... other callbacks
+      />
+      {isLoading && <YourCustomLoadingOverlay />}
+    </>
+  );
+}
+```
+
+</TabItem>
+
+<TabItem value="old" label="Phiên bản SDK < 3.14">
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const [isLoading, setIsLoading] = useState(true);
+
+  return (
+    <>
+      <AdaptyOnboardingView
+        onboarding={onboarding}
+        eventHandlers={{
+          onFinishedLoading(meta) {
+            // Hide your splash screen or custom overlay here
+            setIsLoading(false);
+          },
+          // ... other handlers
+        }}
+      />
+      {isLoading && <YourCustomLoadingOverlay />}
+    </>
+  );
+}
+```
+
+</TabItem>
+</Tabs>
+
+#### Tùy chỉnh native loader \{#customize-native-loader\}
+
+:::important
+Expo-managed workflow không hỗ trợ việc đặt các layout native tùy chỉnh (ví dụ: `res/layout` trên Android). Đối với ứng dụng Expo, cách duy nhất khả thi là kiểm soát splash screen hoặc sử dụng React Native overlay.
+:::
+
+Bạn có thể thay thế native loader bằng các layout theo từng nền tảng trên Android và iOS. Nếu bạn đang sử dụng modal presentation, đây là lựa chọn duy nhất của bạn.
+
+Tuy nhiên, cách tiếp cận này thường kém tiện lợi hơn đối với ứng dụng React Native:
+
+- Yêu cầu triển khai riêng biệt cho Android và iOS
+- Không tương thích với Expo-managed workflow
+Xác định placeholder cho từng nền tảng:
+
+- **iOS**: Thêm `AdaptyOnboardingPlaceholderView.xib` vào dự án Xcode của bạn. [Tìm hiểu thêm](ios-present-onboardings#add-smooth-transitions-between-the-splash-screen-and-onboarding).
+- **Android**: Tạo `adapty_onboarding_placeholder_view.xml` trong `res/layout` và định nghĩa placeholder tại đó. [Tìm hiểu thêm](android-present-onboardings#add-smooth-transitions-between-the-splash-screen-and-onboarding).
+## Tùy chỉnh cách mở liên kết trong onboardings \{#customize-how-links-open-in-onboardings\}
+
+:::important
+Tính năng tùy chỉnh cách mở liên kết trong onboardings được hỗ trợ từ Adapty SDK v3.15.1 trở lên.
+:::
+
+Theo mặc định, các liên kết trong onboardings sẽ mở trong trình duyệt nội bộ của ứng dụng. Điều này mang lại trải nghiệm liền mạch cho người dùng bằng cách hiển thị các trang web ngay trong ứng dụng, giúp họ xem nội dung mà không cần rời khỏi app.
+
+Nếu bạn muốn mở liên kết bằng trình duyệt bên ngoài, bạn có thể tùy chỉnh hành vi này bằng cách đặt tham số `externalUrlsPresentation` thành `WebPresentation.BrowserOutApp`:
+<Tabs groupId="rn-onboarding-views" queryString>
+<TabItem value="component" label="React component" default>
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyOnboarding({ onboarding }) {
+  const onAnalytics = useCallback<OnboardingEventHandlers['onAnalytics']>((event, meta) => {}, []);
+  const onClose = useCallback<OnboardingEventHandlers['onClose']>((actionId, meta) => {}, []);
+  const onCustom = useCallback<OnboardingEventHandlers['onCustom']>((actionId, meta) => {}, []);
+  const onPaywall = useCallback<OnboardingEventHandlers['onPaywall']>((actionId, meta) => {}, []);
+  const onStateUpdated = useCallback<OnboardingEventHandlers['onStateUpdated']>((action, meta) => {}, []);
+  const onFinishedLoading = useCallback<OnboardingEventHandlers['onFinishedLoading']>((meta) => {}, []);
+  const onError = useCallback<OnboardingEventHandlers['onError']>((error) => {}, []);
+
+  return (
+    <AdaptyOnboardingView
+      onboarding={onboarding}
+      style={styles.container}
+      externalUrlsPresentation={WebPresentation.BrowserOutApp} // default – BrowserInApp
+      onAnalytics={onAnalytics}
+      onClose={onClose}
+      onCustom={onCustom}
+      onPaywall={onPaywall}
+      onStateUpdated={onStateUpdated}
+      onFinishedLoading={onFinishedLoading}
+      onError={onError}
+    />
+  );
+}
+```
+</TabItem>
+<TabItem value="modal" label="Modal presentation">
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createOnboardingView(
+  onboarding, 
+  { externalUrlsPresentation: WebPresentation.BrowserOutApp } // default – BrowserInApp
+);
+
+try {
+    await view.present();
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+</Tabs>
+## Xử lý sự cố \{#troubleshooting\}
+
+### Giao diện hệ thống che khuất nội dung onboarding trên Android \{#system-ui-overlaps-onboarding-content-on-android\}
+
+:::note
+Cài đặt này chỉ được hỗ trợ trong các dự án React Native thuần (bare).
+
+Nếu bạn đang dùng Expo managed workflow, bạn không thể thêm Android resource này trực tiếp. Để áp dụng cài đặt này, bạn cần tạo một custom Expo config plugin để thêm Android resource tương ứng và đăng ký nó trong `app.config.js`. Điều này là bắt buộc vì Expo quản lý native Android project cho bạn.
+:::
+Khi sử dụng `AdaptyOnboardingView` trên Android, các thành phần giao diện hệ thống như thanh trạng thái và thanh điều hướng có thể hiển thị đè lên nội dung paywall. Để tránh điều này, hãy thêm tài nguyên boolean sau vào ứng dụng của bạn:
+
+1. Truy cập `android/app/src/main/res/values`. Nếu chưa có file `bools.xml`, hãy tạo mới.
+
+2. Thêm tài nguyên sau:
+
+```xml
+<resources>
+    <bool name="adapty_onboarding_enable_safe_area_paddings">false</bool>
+</resources>
+```
+
+Lưu ý rằng thay đổi này áp dụng toàn cục cho tất cả các onboarding trong ứng dụng của bạn.
+## Các bước tiếp theo \{#next-steps\}
+
+Sau khi hiển thị onboarding, bạn sẽ muốn [xử lý các tương tác và sự kiện của người dùng](react-native-handling-onboarding-events). Tìm hiểu cách xử lý các sự kiện onboarding để phản hồi hành động của người dùng và theo dõi analytics.

@@ -1,0 +1,294 @@
+---
+title: "React Native SDKでペイウォールを使ってアプリ内課金を有効にする"
+description: "Adapty SDKを使ってReact NativeアプリでペイウォールをPresentする方法を学びましょう。"
+metadataTitle: "ペイウォールの表示 | React Native SDK | Adapty ドキュメント"
+customSlug: /react-native-quickstart-paywalls
+displayed_sidebar: sdkreactnative
+keywords: [ 'paywall', 'paywall builder', 'getPaywall']
+rank: 70
+---
+
+import PaywallsIntro from '@site/src/locales/ja/reusable/PaywallsIntro.md';
+
+アプリ内課金を有効にするには、3つの重要な概念を理解する必要があります。
+
+- [**プロダクト**](product) – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセスなど）
+- [**ペイウォール**](paywalls) – 提供するプロダクトを定義する設定です。Adaptyでは、プロダクトを取得する唯一の方法がペイウォールですが、この設計によりアプリのコードを変更せずに、提供内容・価格・プロダクトの組み合わせを変更できます。
+- [**プレースメント**](placements) – アプリ内でペイウォールを表示する場所とタイミング（`main`、`onboarding`、`settings` など）。ダッシュボードでプレースメントにペイウォールを設定し、コードではプレースメントIDを使って取得します。これにより、A/B テストの実施や、ユーザーごとに異なるペイウォールの表示が簡単にできます。
+
+Adaptyでは、アプリ内課金を有効にする方法を3つ提供しています。アプリの要件に応じて選択してください。
+
+| 実装方法                      | 複雑さ     | 使用ケース                                                                                                                                                                                                                                |
+|-------------------------------|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty ペイウォールビルダー   | ✅ 簡単    | [ノーコードビルダーで完全な購入対応ペイウォールを作成](quickstart-paywalls)します。Adaptyが自動でレンダリングし、複雑な購入フロー・レシート検証・サブスクリプション管理をすべて裏側で処理します。 |
+| 手動作成のペイウォール        | 🟡 中程度  | ペイウォールのUIはアプリのコードで実装しますが、プロダクト提供の柔軟性を維持するためにAdaptyからペイウォールオブジェクトを取得します。[ガイド](react-native-quickstart-manual)を参照してください。                                        |
+| オブザーバーモード            | 🔴 難しい  | 独自の購入処理インフラがすでにあり、それを引き続き使いたい場合。オブザーバーモードにはAdaptyでの制限があります。[記事](observer-vs-full-mode)を参照してください。                                                                          |
+
+:::important
+**以下の手順は、Adaptyペイウォールビルダーで作成したペイウォールの実装方法を示しています。**
+
+ペイウォールビルダーを使用しない場合は、[手動作成ペイウォールでの購入処理ガイド](react-native-making-purchases)を参照してください。
+:::
+
+Adaptyペイウォールビルダーで作成したペイウォールを表示するには、アプリのコードで以下の手順を実施するだけです。
+
+1. **ペイウォールを取得する**: AdaptyからペイウォールオブジェクトをGetします。
+2. **ペイウォールを表示してAdaptyに購入を処理させる**: 取得したペイウォールコンテナをアプリに表示します。
+3. **ボタン操作を処理する**: ペイウォール上のユーザー操作とアプリの応答を関連付けます。例えば、ユーザーがボタンをクリックしたときにリンクを開いたりペイウォールを閉じたりします。
+
+## 始める前に \{#before-you-start\}
+
+始める前に、以下の手順を完了してください。
+
+1. Adapty ダッシュボードで[App Store](initial_ios)および/または[Google Play](initial-android)にアプリを接続します。
+2. Adaptyで[プロダクトを作成](create-product)します。
+3. [ペイウォールを作成してプロダクトを追加](create-paywall)します。
+4. [プレースメントを作成してペイウォールを追加](create-placement)します。
+5. アプリコードに[Adapty SDKをインストールして有効化](sdk-installation-reactnative)します。
+
+:::tip
+これらの手順を最速で完了するには、[クイックスタートガイド](quickstart)に従うか、[Developer CLI](developer-cli-quickstart)を使ってペイウォールとプレースメントを作成してください。
+:::
+
+## 1. ペイウォールを取得する \{#1-get-the-paywall\}
+
+ペイウォールは、ダッシュボードで設定したプレースメントに関連付けられています。プレースメントを使うと、異なるオーディエンスに別々のペイウォールを表示したり、[A/B テスト](ab-tests)を実施したりできます。
+
+Adaptyペイウォールビルダーで作成したペイウォールを取得するには、以下の手順を実施します。
+
+1. `getPaywall`メソッドを使って[プレースメント](placements)IDで`paywall`オブジェクトを取得し、`hasViewConfiguration`プロパティでビルダーで作成したペイウォールかどうかを確認します。
+
+2. `createPaywallView`メソッドを使ってペイウォールビューを作成します。このビューには、ペイウォールを表示するためのUI要素とスタイリングが含まれています。
+
+:::important
+ビュー設定を取得するには、ペイウォールビルダーで **Show on device** トグルをオンにする必要があります。オフの場合、空のビュー設定が返され、ペイウォールが表示されません。
+:::
+
+```typescript showLineNumbers title="React Native"
+
+try {
+    const placementId = 'YOUR_PLACEMENT_ID';
+
+    const paywall = await adapty.getPaywall(placementId);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
+
+if (paywall.hasViewConfiguration) {
+    try {
+        const view = await createPaywallView(paywall);
+    } catch (error) {
+        // handle the error
+    }
+} else {
+    //use your custom logic
+}
+```
+
+## 2. ペイウォールを表示する \{#2-display-the-paywall\}
+
+ペイウォールの設定を取得したら、数行のコードを追加するだけでペイウォールを表示できます。
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+既存のコンポーネントツリーにペイウォールを埋め込むには、React Nativeコンポーネント階層に`AdaptyPaywallView`コンポーネントを直接使用します。
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyPaywall({ paywall }) {
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+      onUrlPress={onUrlPress}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+ペイウォールをスタンドアロンスクリーンとして表示するには、`createPaywallView`メソッドで作成した`view`の`view.present()`メソッドを使用します。各`view`は一度しか使用できません。再度ペイウォールを表示する必要がある場合は、`createPaywallView`をもう一度呼び出して新しい`view`インスタンスを作成してください。
+
+```typescript showLineNumbers title="React Native"
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::tip
+ペイウォールの表示方法の詳細については、[ガイド](react-native-present-paywalls)を参照してください。
+:::
+
+## 3. ボタン操作を処理する \{#3-handle-button-actions\}
+
+ユーザーがペイウォール内のボタンをクリックすると、React Native SDKは購入・リストア・ペイウォールのクローズ・URLのオープンを自動で処理します。
+
+ただし、カスタムまたは事前定義済みのIDを持つボタンについては、アプリのコードでアクションを処理する必要があります。また、デフォルトの動作をオーバーライドしたい場合もあります。
+
+例えば、以下はクローズボタンのデフォルト動作です。コードに追加する必要はありませんが、必要な場合の実装方法を確認できます。
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+Reactコンポーネントの場合、`AdaptyPaywallView`コンポーネント内でアクションを直接処理します。
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyPaywall({ paywall }) {
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onCustomAction = useCallback<EventHandlers['onCustomAction']>((actionId) => {}, []);
+
+  return (
+    <AdaptyPaywallView
+      paywall={paywall}
+      style={styles.container}
+      onUrlPress={onUrlPress}
+      onCloseButtonPress={onCloseButtonPress}
+      onCustomAction={onCustomAction}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+モーダル表示の場合、`setEventHandlers`を使ってイベントハンドラーを実装します。
+
+```typescript showLineNumbers title="React Native"
+const unsubscribe = view.setEventHandlers({
+    onCloseButtonPress() {
+        return true; // allow paywall closing
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+
+:::tip
+ボタンの[アクション](react-native-handle-paywall-actions)と[イベント](react-native-handling-events-1)の処理方法については、各ガイドを参照してください。
+:::
+
+## 次のステップ \{#next-steps\}
+
+<SupportForum />
+
+これでアプリにペイウォールを表示する準備が整いました。[App Store サンドボックス](test-purchases-in-sandbox)または[Google Play Store](testing-on-android)でテスト購入を行い、ペイウォールからテスト購入を完了できることを確認してください。
+
+次に、適切なユーザーにペイウォールを表示したり有料機能へのアクセスを付与したりするために、[ユーザーのアクセスレベルを確認](react-native-check-subscription-status)する必要があります。
+
+## 完全なサンプル \{#full-example\}
+
+すべての手順をアプリに統合した例を以下に示します。
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+```javascript showLineNumbers title="React Native (TSX)"
+
+export default function PaywallScreen() {
+  const [paywall, setPaywall] = useState(null);
+
+  const loadPaywall = async () => {
+    try {
+      const paywallData = await adapty.getPaywall('YOUR_PLACEMENT_ID');
+
+      if (paywallData.hasViewConfiguration) {
+        setPaywall(paywallData);
+      }
+    } catch (error) {
+      console.warn('Error loading paywall:', error);
+    }
+  };
+
+  const onUrlPress = useCallback<EventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+
+  const onCloseButtonPress = useCallback<EventHandlers['onCloseButtonPress']>(() => {
+    // Handle close button press
+  }, []);
+
+  useEffect(() => {
+    loadPaywall();
+  }, []);
+
+  return (
+    <View style={{ flex: 1 }}>
+      {paywall ? (
+        <AdaptyPaywallView
+          paywall={paywall}
+          style={{ flex: 1 }}
+          onUrlPress={onUrlPress}
+          onCloseButtonPress={onCloseButtonPress}
+        />
+      ) : (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Button title="Load Paywall" onPress={loadPaywall} />
+        </View>
+      )}
+    </View>
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+```javascript showLineNumbers title="React Native"
+
+export default function PaywallScreen() {
+  const showPaywall = async () => {
+    try {
+      const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID');
+
+      if (!paywall.hasViewConfiguration) {
+        // use your custom logic
+        return;
+      }
+
+      const view = await createPaywallView(paywall);
+
+      view.setEventHandlers({
+          onCloseButtonPress() {
+              return true;
+        },
+      });
+
+      await view.present();
+    } catch (error) {
+      // handle any error that may occur during the process
+      console.warn('Error showing paywall:', error);
+    }
+  };
+
+  // you can add a button to manually trigger the paywall for testing purposes
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Button title="Show Paywall" onPress={showPaywall} />
+    </View>
+  );
+}
+```
+
+</TabItem>
+</Tabs>

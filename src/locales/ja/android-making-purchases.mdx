@@ -1,0 +1,227 @@
+---
+title: "Android SDKでモバイルアプリのアプリ内課金を行う"
+description: "Adaptyを使ってアプリ内課金とサブスクリプションを処理するガイド。"
+metadataTitle: "Adaptyでのアプリ内課金の処理 | Adapty ドキュメント"
+keywords: ['makePurchase', 'pending']
+rank: 95
+displayed_sidebar: sdkandroid
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+
+モバイルアプリにペイウォールを表示することは、ユーザーにプレミアムコンテンツやサービスへのアクセスを提供するうえで欠かせないステップです。ただし、[ペイウォールビルダー](adapty-paywall-builder)を使ってペイウォールをカスタマイズしている場合に限り、ペイウォールを表示するだけで購入処理を完結できます。
+
+ペイウォールビルダーを使用しない場合は、`.makePurchase()` という別のメソッドを使って購入を完了し、目的のコンテンツを解放する必要があります。このメソッドは、ユーザーがペイウォールを通じて希望のトランザクションを進めるための入口となります。
+
+ペイウォールに、ユーザーが購入しようとしているプロダクトに対して有効なプロモーションオファーが設定されている場合、Adapty は購入時に自動的にそのオファーを適用します。
+
+:::warning
+初回オファーは、ペイウォールビルダーで設定したペイウォールを使用している場合にのみ自動的に適用されることに注意してください。
+
+それ以外の場合は、[iOSで初回オファーの適用資格を確認する](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios)必要があります。このステップを省略すると、リリース時にアプリが審査でリジェクトされる可能性があります。さらに、初回オファーの対象ユーザーに通常価格が請求されてしまう恐れもあります。
+:::
+
+[初期設定](quickstart)を一つも省かずに完了させていることを確認してください。設定が完了していないと、購入の検証ができません。
+
+## 購入を行う \{#make-purchase\}
+
+:::note
+**[ペイウォールビルダー](adapty-paywall-builder)をお使いですか？** 購入は自動的に処理されるため、このステップはスキップできます。
+
+**ステップバイステップのガイドをお探しですか？** 全体のコンテキストを含む実装手順については、[クイックスタートガイド](android-implement-paywalls-manually)をご確認ください。
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.makePurchase(activity, product, null) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            when (val purchaseResult = result.value) {
+                is AdaptyPurchaseResult.Success -> {
+                    val profile = purchaseResult.profile
+                    if (profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true) {
+                        // Grant access to the paid features
+                    }
+                }
+
+                is AdaptyPurchaseResult.UserCanceled -> {
+                    // Handle the case where the user canceled the purchase
+                }
+
+                is AdaptyPurchaseResult.Pending -> {
+                    // Handle deferred purchases (e.g., the user will pay offline with cash)
+                }
+            }
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.makePurchase(activity, product, null, result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
+
+        if (purchaseResult instanceof AdaptyPurchaseResult.Success) {
+            AdaptyProfile profile = ((AdaptyPurchaseResult.Success) purchaseResult).getProfile();
+            AdaptyProfile.AccessLevel premium = profile.getAccessLevels().get("YOUR_ACCESS_LEVEL");
+
+            if (premium != null && premium.isActive()) {
+                // Grant access to the paid features
+            }
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.UserCanceled) {
+            // Handle the case where the user canceled the purchase
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.Pending) {
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
+        }
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // Handle the error
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+リクエストパラメータ：
+
+| パラメータ   | 必須 | 説明                                                                                         |
+| :---------- | :------- | :-------------------------------------------------------------------------------------------------- |
+| **Product** | 必須 | ペイウォールから取得した [`AdaptyPaywallProduct`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall-product/) オブジェクト。 |
+
+レスポンスパラメータ：
+
+| パラメータ | 説明                                                                                                                                                                                                                                                                                                                                                                            |
+|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>リクエストが成功した場合、レスポンスにはこのオブジェクトが含まれます。[AdaptyProfile](https://android.adapty.io/adapty/com.adapty.models/-adapty-profile/) オブジェクトは、アプリ内のユーザーのアクセスレベル、サブスクリプション、および買い切り購入に関する包括的な情報を提供します。</p><p>アクセスレベルのステータスを確認して、ユーザーがアプリへの必要なアクセス権を持っているかどうかを確認してください。</p> |
+
+:::warning
+**注意：** Apple の StoreKit バージョンが v2.0 未満で、Adapty SDK バージョンが v2.9.0 未満の場合は、代わりに [Apple App Store 共有シークレット](app-store-connection-configuration#step-5-enter-app-store-shared-secret)を提供する必要があります。この方法は現在 Apple によって非推奨とされています。
+:::
+
+## 購入時にサブスクリプションを変更する \{#change-subscription-when-making-a-purchase\}
+
+ユーザーが現在のサブスクリプションを更新する代わりに新しいサブスクリプションを選択した場合、その動作はアプリストアによって異なります。Google Play では、サブスクリプションは自動的に更新されません。以下に説明するように、モバイルアプリのコードで切り替えを管理する必要があります。
+
+Android でサブスクリプションを別のものに変更するには、追加パラメータを指定して `.makePurchase()` メソッドを呼び出します：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.makePurchase(
+    activity, 
+    product, 
+    AdaptyPurchaseParameters.Builder()
+        .withSubscriptionUpdateParams(subscriptionUpdateParams)
+        .build()
+) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            when (val purchaseResult = result.value) {
+                is AdaptyPurchaseResult.Success -> {
+                    val profile = purchaseResult.profile
+
+                    // successful cross-grade
+                }
+
+                is AdaptyPurchaseResult.UserCanceled -> {
+                    // user canceled the purchase flow
+                }
+
+                is AdaptyPurchaseResult.Pending -> {
+                    // the purchase has not been finished yet, e.g. user will pay offline by cash
+                }
+            }
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // Handle the error
+        }
+    }
+}
+```
+追加リクエストパラメータ：
+
+| パラメータ                    | 必須 | 説明                                                  |
+| :--------------------------- | :------- | :----------------------------------------------------------- |
+| **subscriptionUpdateParams** | 必須 | [`AdaptySubscriptionUpdateParameters`](https://android.adapty.io/adapty/com.adapty.models/-adapty-subscription-update-parameters/) オブジェクト。 |
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.makePurchase(
+    activity, 
+    product, 
+    new AdaptyPurchaseParameters.Builder()
+        .withSubscriptionUpdateParams(subscriptionUpdateParams)
+        .build(),
+    result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPurchaseResult purchaseResult = ((AdaptyResult.Success<AdaptyPurchaseResult>) result).getValue();
+
+        if (purchaseResult instanceof AdaptyPurchaseResult.Success) {
+            AdaptyProfile profile = ((AdaptyPurchaseResult.Success) purchaseResult).getProfile();
+
+            // successful cross-grade
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.UserCanceled) {
+            // user canceled the purchase flow
+        } else if (purchaseResult instanceof AdaptyPurchaseResult.Pending) {
+            // the purchase has not been finished yet, e.g. user will pay offline by cash
+        }
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // Handle the error
+    }
+});
+```
+追加リクエストパラメータ：
+
+| パラメータ                    | 必須 | 説明                                                  |
+| :--------------------------- | :------- | :----------------------------------------------------------- |
+| **subscriptionUpdateParams** | 必須 | [`AdaptySubscriptionUpdateParameters`](https://android.adapty.io/adapty/com.adapty.models/-adapty-subscription-update-parameters/) オブジェクト。 |
+
+</TabItem>
+
+</Tabs>
+
+サブスクリプションと置き換えモードの詳細については、Google Developer のドキュメントをご覧ください：
+
+- [置き換えモードについて](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [置き換えモードに関する Google の推奨事項](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- 置き換えモード [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE())。注意：このメソッドはサブスクリプションのアップグレードにのみ利用可能です。ダウングレードはサポートされていません。
+- 置き換えモード [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED())。注意：実際のサブスクリプション変更は、現在のサブスクリプションの請求期間が終了した時点でのみ発生します。
+
+### プリペイドプランを管理する \{#manage-prepaid-plans\}
+
+アプリユーザーが[プリペイドプラン](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans)（例：数ヶ月分の非自動更新サブスクリプションを購入）を利用できる場合、プリペイドプランの[保留中のトランザクション](https://developer.android.com/google/play/billing/subscriptions#pending)を有効にできます。
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withEnablePendingPrepaidPlans(true)
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withEnablePendingPrepaidPlans(true)
+    .build();
+```
+</TabItem>
+</Tabs>

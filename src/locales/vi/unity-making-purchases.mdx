@@ -1,0 +1,148 @@
+---
+title: "Thực hiện mua hàng trong ứng dụng với Unity SDK"
+description: "Hướng dẫn xử lý in-app purchase và gói đăng ký bằng Adapty."
+metadataTitle: "Xử lý In-App Purchase trong Adapty | Tài liệu Adapty"
+keywords: ['makePurchase', 'pending', 'offer code']
+rank: 60
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/vi/reusable/OfferCodesInfo.mdx';
+
+Hiển thị paywall trong ứng dụng là bước quan trọng để cung cấp cho người dùng quyền truy cập vào nội dung hoặc dịch vụ cao cấp. Tuy nhiên, chỉ hiển thị paywall là đủ để hỗ trợ mua hàng nếu bạn sử dụng [Paywall Builder](adapty-paywall-builder) để tuỳ chỉnh paywall của mình.
+
+Nếu bạn không dùng Paywall Builder, bạn cần sử dụng một phương thức riêng là `.makePurchase()` để hoàn tất giao dịch và mở khóa nội dung mong muốn. Phương thức này là cổng để người dùng tương tác với paywall và thực hiện giao dịch của họ.
+
+Nếu paywall của bạn có ưu đãi đang hoạt động cho sản phẩm mà người dùng đang muốn mua, Adapty sẽ tự động áp dụng ưu đãi đó tại thời điểm mua hàng.
+
+:::warning
+Lưu ý rằng ưu đãi giới thiệu chỉ được áp dụng tự động nếu bạn sử dụng paywall được thiết lập qua Paywall Builder.
+
+Trong các trường hợp khác, bạn cần [xác minh điều kiện của người dùng để nhận ưu đãi giới thiệu trên iOS](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios). Bỏ qua bước này có thể khiến ứng dụng của bạn bị từ chối khi phát hành. Hơn nữa, điều này có thể dẫn đến việc tính giá đầy đủ cho những người dùng đủ điều kiện nhận ưu đãi giới thiệu.
+:::
+
+Hãy đảm bảo bạn đã [hoàn tất cấu hình ban đầu](quickstart) mà không bỏ sót bất kỳ bước nào. Nếu không, chúng tôi không thể xác thực các giao dịch mua hàng.
+
+## Thực hiện mua hàng \{#make-purchase\}
+
+:::note
+**Đang sử dụng [Paywall Builder](adapty-paywall-builder)?** Việc mua hàng được xử lý tự động — bạn có thể bỏ qua bước này.
+
+**Cần hướng dẫn từng bước?** Xem [hướng dẫn quickstart](unity-implement-paywalls-manually) để có hướng dẫn triển khai đầy đủ từ đầu đến cuối.
+:::
+
+```csharp showLineNumbers
+using AdaptySDK;
+
+void MakePurchase(AdaptyPaywallProduct product) {
+  Adapty.MakePurchase(product, (result, error) => {
+    switch (result.Type) {
+      case AdaptyPurchaseResultType.Pending:
+        // handle pending purchase
+        break;
+      case AdaptyPurchaseResultType.UserCancelled:
+        // handle purchase cancellation
+        break;
+      case AdaptyPurchaseResultType.Success:
+        var profile = result.Profile;
+        // handle successfull purchase
+        break;
+      default:
+        break;
+    }
+  });
+}
+```
+
+Tham số yêu cầu:
+
+| Tham số     | Bắt buộc | Mô tả                                                                                                 |
+| :---------- | :------- |:------------------------------------------------------------------------------------------------------|
+| **Product** | bắt buộc | Một đối tượng [`AdaptyPaywallProduct`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall_product.html) lấy từ paywall. |
+
+Tham số phản hồi:
+
+| Tham số | Mô tả                                                                                                                                                                                                                                                                                                                                                                        |
+|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>Nếu yêu cầu thành công, phản hồi sẽ chứa đối tượng này. Đối tượng [AdaptyProfile](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_profile.html) cung cấp thông tin đầy đủ về mức độ truy cập, gói đăng ký và các sản phẩm mua một lần của người dùng trong ứng dụng.</p><p>Kiểm tra trạng thái mức độ truy cập để xác định xem người dùng có quyền truy cập cần thiết vào ứng dụng hay không.</p> |
+
+:::warning
+**Lưu ý:** nếu bạn vẫn đang dùng StoreKit của Apple phiên bản thấp hơn v2.0 và Adapty SDK phiên bản thấp hơn v2.9.0, bạn cần cung cấp [Apple App Store shared secret](app-store-connection-configuration#step-5-enter-app-store-shared-secret) thay thế. Phương thức này hiện đã bị Apple ngừng hỗ trợ.
+:::
+
+## Thay đổi gói đăng ký khi mua hàng \{#change-subscription-when-making-a-purchase\}
+
+Khi người dùng chọn một gói đăng ký mới thay vì gia hạn gói hiện tại, cách hoạt động phụ thuộc vào cửa hàng:
+
+- Đối với App Store, gói đăng ký được tự động cập nhật trong cùng nhóm gói đăng ký. Nếu người dùng mua gói đăng ký từ một nhóm trong khi đã có gói đăng ký từ nhóm khác, cả hai gói sẽ được kích hoạt đồng thời.
+- Đối với Google Play, gói đăng ký không được tự động cập nhật. Bạn cần quản lý việc chuyển đổi trong code ứng dụng như mô tả bên dưới.
+
+Để thay thế gói đăng ký bằng một gói khác trên Android, gọi phương thức `.makePurchase()` với tham số bổ sung:
+
+```csharp showLineNumbers
+// Create subscription update parameters
+var subscriptionUpdateParams = new AdaptySubscriptionUpdateParameters(
+    "old_product_id", // Product ID of the current subscription
+    AdaptySubscriptionUpdateReplacementMode.WithTimeProration
+);
+
+Adapty.MakePurchase(product, subscriptionUpdateParams, (profile, error) => {
+  if(error != null) {
+      // Handle the error
+      return;
+  }
+
+  // successful cross-grade
+});
+```
+
+Tham số yêu cầu bổ sung:
+
+| Tham số                      | Bắt buộc | Mô tả                                                                                                  |
+| :--------------------------- | :------- |:-------------------------------------------------------------------------------------------------------|
+| **subscriptionUpdateParams** | bắt buộc | Một đối tượng [`AdaptySubscriptionUpdateParameters`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_subscription_update_parameters.html). |
+
+Bạn có thể đọc thêm về gói đăng ký và các chế độ thay thế trong tài liệu Google Developer:
+
+- [Về các chế độ thay thế](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Khuyến nghị của Google về các chế độ thay thế](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Chế độ thay thế [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Lưu ý: phương thức này chỉ áp dụng cho việc nâng cấp gói đăng ký. Không hỗ trợ hạ cấp.
+- Chế độ thay thế [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Lưu ý: Việc thay đổi gói đăng ký thực sự chỉ xảy ra khi chu kỳ thanh toán hiện tại kết thúc.
+
+## Đổi mã ưu đãi trên iOS \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+Để hiển thị trang đổi mã trong ứng dụng của bạn:
+
+```csharp showLineNumbers
+Adapty.PresentCodeRedemptionSheet((error) => {
+  // handle the error
+});
+```
+
+:::danger
+Theo quan sát của chúng tôi, trang Offer Code Redemption trong một số ứng dụng có thể không hoạt động ổn định. Chúng tôi khuyến nghị chuyển hướng người dùng trực tiếp đến App Store.
+
+Để thực hiện điều này, bạn cần mở URL theo định dạng sau:
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
+
+## Quản lý prepaid plans (Android) \{#manage-prepaid-plans-android\}
+
+Nếu người dùng ứng dụng của bạn có thể mua [prepaid plans](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (ví dụ: mua gói đăng ký không tự gia hạn trong vài tháng), bạn có thể bật [pending transactions](https://developer.android.com/google/play/billing/subscriptions#pending) cho prepaid plans.
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetGoogleEnablePendingPrepaidPlans(true);
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+```

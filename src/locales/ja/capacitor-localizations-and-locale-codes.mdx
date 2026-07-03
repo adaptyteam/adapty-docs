@@ -1,0 +1,99 @@
+---
+title: "Capacitor SDKでローカライズとロケールコードを使用する"
+description: "Adapty SDKを使ってCapacitorアプリのペイウォールをローカライズする方法を学びましょう。"
+metadataTitle: "ペイウォールのローカライズ | Capacitor SDK | Adapty ドキュメント"
+customSlug: /capacitor-localizations-and-locale-codes
+displayed_sidebar: sdkcapacitor
+---
+
+## なぜこれが重要なのか \{#why-this-is-important\}
+
+ロケールコードが関係するシナリオはいくつかあります。たとえば、アプリの現在のローカライズに対応した正しいペイウォールを取得しようとする場合などです。
+
+ロケールコードは複雑で、プラットフォームによって異なることがあるため、Adaptyでは対応するすべてのプラットフォームに共通の内部標準を採用しています。ただし、コードが複雑なため、サーバーに何を送信しているか、そして次に何が起こるかを正確に理解しておくことが非常に重要です。そうすることで、常に期待どおりの結果が得られます。
+
+## AdaptyのロケールコードLSの標準 \{#locale-code-standard-at-adapty\}
+
+ロケールコードについて、Adaptyは少し修正した[BCP 47標準](https://en.wikipedia.org/wiki/IETF_language_tag)を使用しています。各コードは小文字のサブタグで構成され、ハイフンで区切られます。例：`en`（英語）、`pt-br`（ポルトガル語（ブラジル））、`zh`（簡体字中国語）、`zh-hant`（繁体字中国語）。
+
+## ロケールコードのマッチング \{#locale-code-matching\}
+
+Adaptyがクライアント側SDKからロケールコードの呼び出しを受け取り、ペイウォールの対応するローカライズを検索するとき、以下のことが起こります：
+
+1. 受信したロケール文字列が小文字に変換され、アンダースコア（`_`）がすべてハイフン（`-`）に置換されます
+2. 完全に一致するロケールコードのローカライズを検索します
+3. 一致するものが見つからなかった場合、最初のハイフンの前の部分文字列（`pt-br`の場合は`pt`）を取得し、一致するローカライズを検索します
+4. それでも一致するものが見つからなかった場合、デフォルトの`en`ローカライズを返します
+
+これにより、`'pt_BR'`を送信したiOSデバイス、`pt-BR`を送信したAndroidデバイス、`pt-br`を送信した別のデバイスはすべて同じ結果を得られます。
+
+## ローカライズの実装：推奨する方法 \{#implementing-localizations-recommended-way\}
+
+ローカライズについて検討しているなら、すでにプロジェクト内のローカライズ済み文字列ファイルを扱っている可能性があります。その場合は、各ローカライズに対応するAdaptyのロケールコードをキーと値のペアとしてファイルに記述することをおすすめします。そして、SDKを呼び出す際にそのキーの値を取り出して使用します：
+
+```javascript showLineNumbers
+// 1. Modify your localization files (e.g., using react-i18next)
+
+/*
+en.json
+*/
+{
+  "adapty_paywalls_locale": "en"
+}
+
+/*
+es.json
+*/
+{
+  "adapty_paywalls_locale": "es"
+}
+
+/*
+pt-BR.json
+*/
+{
+  "adapty_paywalls_locale": "pt-br"
+}
+
+// 2. Extract and use the locale code
+
+const MyComponent = () => {
+  const { t } = useTranslation();
+  
+  const fetchPaywall = async () => {
+    const locale = t('adapty_paywalls_locale');
+    // pass locale code to adapty.getPaywall or adapty.getPaywallForDefaultAudience method
+    const paywall = await adapty.getPaywallForDefaultAudience('placement_id', locale);
+  };
+};
+```
+
+これにより、アプリのすべてのユーザーに対してどのローカライズが取得されるかを完全にコントロールできます。
+
+## ローカライズの実装：別の方法 \{#implementing-localizations-the-other-way\}
+
+すべてのローカライズに対してロケールコードを明示的に定義しなくても、同様の（ただし完全に同一ではない）結果を得ることができます。それはプラットフォームが提供する別のオブジェクトからロケールコードを取り出すことを意味します：
+
+```javascript showLineNumbers
+
+const getLocaleCode = () => {
+  if (Capacitor.getPlatform() === 'ios') {
+    return navigator.language || 'en';
+  } else {
+    return navigator.language || 'en';
+  }
+};
+
+const fetchPaywall = async () => {
+  const locale = getLocaleCode();
+  // pass locale code to adapty.getPaywall or adapty.getPaywallForDefaultAudience method
+  const paywall = await adapty.getPaywallForDefaultAudience('placement_id', locale);
+};
+```
+
+この方法はいくつかの理由からおすすめしません：
+
+1. iOSでは、優先言語と現在のロケールは同一ではありません。ローカライズが正しく選択されるようにするには、Appleのロジックに任せるか（推奨するローカライズ済み文字列ファイルを使用するアプローチであれば自動的に機能します）、それを自分で再現する必要があります。
+2. Adaptyのサーバーが実際に何を受け取るか予測しにくいです。たとえば、iOSでは`ar_OM@numbers='latn'`のようなロケールをデバイスから取得してサーバーに送信することがあります。この場合、期待していた`ar-om`ローカライズではなく`ar`が返ってきます。これはおそらく意図しない結果です。
+
+それでもこのアプローチを使用する場合は、関連するすべてのユースケースをカバーしていることを確認してください。

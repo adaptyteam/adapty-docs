@@ -1,0 +1,558 @@
+---
+title: "Migrate Adapty iOS SDK sang v3.3"
+description: "Migrate lên Adapty iOS SDK v3.3 để cải thiện hiệu năng và sử dụng các tính năng kiếm tiền mới."
+metadataTitle: "Migrate lên Adapty iOS SDK v3.3 | Tài liệu Adapty"
+---
+
+Adapty SDK 3.3.0 là một bản phát hành lớn mang lại nhiều cải tiến, tuy nhiên bạn có thể cần thực hiện một số bước migration.
+
+1. Đổi tên `Adapty.Configuration` thành `AdaptyConfiguration`.
+2. Đổi tên phương thức `getViewConfiguration` thành `getPaywallConfiguration`.
+3. Xóa các tham số `didCancelPurchase` và `paywall` khỏi SwiftUI, đồng thời đổi tên tham số `viewConfiguration` thành `paywallConfiguration`.
+4. Cập nhật cách xử lý promotional in-app purchase từ App Store bằng cách xóa tham số `defermentCompletion` khỏi phương thức `AdaptyDelegate`.
+5. Xóa phương thức `getProductsIntroductoryOfferEligibility`.
+6. Cập nhật cấu hình tích hợp cho Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase và Google Analytics, Mixpanel, OneSignal, Pushwoosh.
+7. Cập nhật cách triển khai Observer mode.
+
+<div style={{ textAlign: 'center' }}>
+  <iframe 
+    width="560" 
+    height="315" 
+    src="https://www.youtube.com/embed/9Xs8d0lt_RY?si=xvWhUO2tlG1tKP5f" 
+    title="YouTube video player" 
+    frameborder="0" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    referrerpolicy="strict-origin-when-cross-origin" 
+    allowfullscreen>
+  </iframe>
+</div>
+
+## Đổi tên Adapty.Configuration thành AdaptyConfiguration \{#rename-adaptyconfiguration-to-adaptyconfiguration\}
+
+Cập nhật code khởi động Adapty iOS SDK như sau:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```diff showLineNumbers
+// In your AppDelegate class:
+
+let configurationBuilder =
+-        Adapty.Configuration
++        AdaptyConfiguration
+          .builder(withAPIKey: "PUBLIC_SDK_KEY")
+          .with(observerMode: false)
+          .with(customerUserId: "YOUR_USER_ID")
+          .with(idfaCollectionDisabled: false)
+          .with(ipAddressCollectionDisabled: false)
+
+Adapty.activate(with: configurationBuilder) { error in
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+```diff showLineNumbers
+
+@main
+struct SampleApp: App {
+    init() 
+      let configurationBuilder =
+-        Adapty.Configuration
++        AdaptyConfiguration
+          .builder(withAPIKey: "PUBLIC_SDK_KEY")
+          .with(observerMode: false) // optional
+          .with(customerUserId: "YOUR_USER_ID") // optional
+          .with(idfaCollectionDisabled: false) // optional
+          .with(ipAddressCollectionDisabled: false) // optional
+
+        Task {
+            try await Adapty.activate(with: configurationBuilder)
+        }
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Đổi tên phương thức getViewConfiguration thành getPaywallConfiguration \{#rename-getviewconfiguration-method-to-getpaywallconfiguration\}
+
+Cập nhật tên phương thức để lấy `viewConfiguration` của paywall:
+
+```diff showLineNumbers
+
+guard paywall.hasViewConfiguration else {
+    //  use your custom logic
+    return
+}
+
+do {
+-    let paywallConfiguration = try await AdaptyUI.getViewConfiguration(
++    let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(
+            forPaywall: paywall
+    )
+    // use loaded configuration
+} catch {
+    // handle the error
+}
+```
+
+Để biết thêm chi tiết về phương thức này, hãy xem [Lấy view configuration của paywall được thiết kế bằng Paywall Builder](get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder).
+
+## Thay đổi tham số trong SwiftUI \{#change-parameters-in-swiftui\}
+
+Các cập nhật sau đã được thực hiện với SwiftUI:
+
+1. Tham số `didCancelPurchase` đã bị xóa. Hãy dùng `didFinishPurchase` thay thế.
+2. Phương thức `.paywall()` không còn nhận đối tượng paywall nữa.
+3. Tham số `paywallConfiguration` đã thay thế tham số `viewConfiguration`.
+
+Cập nhật code của bạn như sau:
+
+```diff showLineNumbers
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+-         paywall: <paywall object>,
+-         viewConfiguration: <LocalizedViewConfiguration>,
++         paywallConfiguration: <AdaptyUI.PaywallConfiguration>,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  default:
+                      // Handle other actions
+                      break
+              }
+          },
+-         didFinishPurchase: { product, profile in paywallPresented = false },
++         didFinishPurchase: { product, purchaseResult in /* handle the result*/ },
+          didFailPurchase: { product, error in /* handle the error */ },
+          didFinishRestore: { profile in /* check access level and dismiss */  },
+          didFailRestore: { error in /* handle the error */ },
+          didFailRendering: { error in paywallPresented = false }
+-         didCancelPurchase: { product in /* handle the result*/}
+
+      )
+}
+```
+
+## Cập nhật cách xử lý promotional in-app purchase từ App Store \{#update-handling-of-promotional-in-app-purchases-from-app-store\}
+
+Cập nhật cách xử lý promotional in-app purchase từ App Store bằng cách xóa tham số `defermentCompletion` khỏi phương thức `AdaptyDelegate`, như ví dụ dưới đây:
+
+```swift showLineNumbers title="Swift"
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
+        // 1a.
+        // Return `true` to continue the transaction in your app.
+
+        // 1b.
+        // Store the product object and return `false` to defer or cancel the transaction.
+        false
+    }
+    
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase`
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyDeferredProduct = // get the product object from the 1b.
+        do {
+            try await Adapty.makePurchase(product: storedProduct)
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+## Xóa phương thức getProductsIntroductoryOfferEligibility \{#remove-getproductsintroductoryoffereligibility-method\}
+
+Trước Adapty iOS SDK 3.3.0, đối tượng sản phẩm luôn bao gồm các ưu đãi, bất kể người dùng có đủ điều kiện hay không. Bạn phải tự kiểm tra điều kiện hợp lệ trước khi sử dụng ưu đãi.
+
+Hiện tại, đối tượng sản phẩm chỉ bao gồm ưu đãi khi người dùng đủ điều kiện. Điều này có nghĩa là bạn không cần kiểm tra điều kiện hợp lệ nữa — nếu có ưu đãi, người dùng đã đủ điều kiện.
+
+Nếu bạn vẫn muốn xem ưu đãi cho những người dùng không đủ điều kiện, hãy tham khảo `sk1Product` và `sk2Product`.
+
+## Cập nhật cấu hình SDK tích hợp bên thứ ba \{#update-third-party-integration-sdk-configuration\}
+
+Bắt đầu từ Adapty iOS SDK 3.3.0, chúng tôi đã cập nhật API công khai cho phương thức `updateAttribution`. Trước đây, nó nhận dictionary `[AnyHashable: Any]`, cho phép bạn truyền trực tiếp các đối tượng attribution từ nhiều dịch vụ khác nhau. Hiện tại, nó yêu cầu `[String: any Sendable]`, vì vậy bạn cần chuyển đổi các đối tượng attribution trước khi truyền vào.
+
+Để đảm bảo các tích hợp hoạt động đúng với Adapty iOS SDK 3.3.0 trở lên, hãy cập nhật cấu hình SDK cho các tích hợp sau theo hướng dẫn trong các phần bên dưới.
+
+### Adjust
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp Adjust](adjust#connect-your-app-to-adjust).
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="v5" label="Adjust 5.x+" default>
+
+```diff showLineNumbers
+class AdjustModuleImplementation {
+-    func updateAdjustAttribution() {
+-        Adjust.attribution { attribution in
+-            guard let attributionDictionary = attribution?.dictionary()?.toSendableDict() else { return }
+-
+-            Adjust.adid { adid in
+-                guard let adid else { return }
+-
+-                Adapty.updateAttribution(attributionDictionary, source: .adjust, networkUserId: adid) { error in
+-                    // handle the error
+-                }
+-            }
+-        }
+-    }
+
++    func updateAdjustAdid() {
++        Adjust.adid { adid in
++            guard let adid else { return }
++
++            Adapty.setIntegrationIdentifier(key: "adjust_device_id", value: adid)
++        }
++    }
++
++    func updateAdjustAttribution() {
++        Adjust.attribution { attribution in
++            guard let attribution = attribution?.dictionary() else { 
++                return
++            }
++            
++            Adapty.updateAttribution(attribution, source: "adjust")
++        }
++    }
+}
+```
+
+</TabItem>
+
+<TabItem value="v4" label="Adjust 4.x" default>
+
+```diff showLineNumbers
+class YourAdjustDelegateImplementation {
+    // Find your implementation of AdjustDelegate 
+    // and update adjustAttributionChanged method:
+    func adjustAttributionChanged(_ attribution: ADJAttribution?) {
+-       if let attribution = attribution?.dictionary()?.toSendableDict() {
+-           Adapty.updateAttribution(attribution, source: .adjust)
++       if let attribution = attribution?.dictionary() {
++           Adapty.updateAttribution(attribution, source: "adjust")
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+### AirBridge
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp AirBridge](airbridge#connect-your-app-to-airbridge).
+
+```diff showLineNumbers
+ import AirBridge
+
+- let builder = AdaptyProfileParameters.Builder()
+-             .with(airbridgeDeviceId: AirBridge.deviceUUID())
+-
+- Adapty.updateProfile(params: builder.build())
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "airbridge_device_id", 
++         value: AirBridge.deviceUUID()
++     )
++ } catch {
++     // handle the error
++ }
+```
+
+### Amplitude
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp Amplitude](amplitude#sdk-configuration).
+
+```diff showLineNumbers
+ import Amplitude 
+
+- let builder = AdaptyProfileParameters.Builder()
+-             .with(amplitudeUserId: Amplitude.instance().userId)
+-             .with(amplitudeDeviceId: Amplitude.instance().deviceId)
+-
+- Adapty.updateProfile(params: builder.build())
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "amplitude_user_id", 
++         value: Amplitude.instance().userId
++     )
++     try await Adapty.setIntegrationIdentifier(
++         key: "amplitude_device_id", 
++         value: Amplitude.instance().deviceId
++     )
++ } catch {
++     // handle the error
++ }
+
+```
+
+### AppMetrica
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp AppMetrica](appmetrica#sdk-configuration).
+
+```diff showLineNumbers
+ import AppMetricaCore
+        
+- if let deviceID = AppMetrica.deviceID {
+-   let builder = AdaptyProfileParameters.Builder()
+-     .with(appmetricaDeviceId: deviceID)
+-     .with(appmetricaProfileId: "YOUR_ADAPTY_CUSTOMER_USER_ID")
+-
+-   Adapty.updateProfile(params: builder.build())
+- }
+
++ if let deviceID = AppMetrica.deviceID {
++     do {
++         try await Adapty.setIntegrationIdentifier(
++             key: "appmetrica_device_id", 
++             value: deviceID
++         )
++         try await Adapty.setIntegrationIdentifier(
++             key: "appmetrica_profile_id", 
++             value: "YOUR_ADAPTY_CUSTOMER_USER_ID"
++         )
++     } catch {
++         // handle the error
++     }
++ }
+
+```
+
+### AppsFlyer
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp AppsFlyer](appsflyer#connect-your-app-to-appsflyer).
+
+```diff showLineNumbers
+class YourAppsFlyerLibDelegateImplementation {
+    // Find your implementation of AppsFlyerLibDelegate 
+    // and update onConversionDataSuccess method:
+     func onConversionDataSuccess(_ conversionInfo: [AnyHashable : Any]) {
+         let uid = AppsFlyerLib.shared().getAppsFlyerUID()
+
+-        Adapty.updateAttribution(
+-           conversionInfo.toSendableDict(),
+-            source: .appsflyer,
+-            networkUserId: uid
+-        )
++        Adapty.setIntegrationIdentifier(key: "appsflyer_id", value: uid)
++        Adapty.updateAttribution(conversionInfo, source: "appsflyer")
+    }
+}
+```
+
+### Branch
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp Branch](branch#connect-your-app-to-branch).
+
+```diff showLineNumbers
+class YourBranchImplementation {
+    func initializeBranch() {
+        // Pass the attribution you receive from the initializing method of Branch iOS SDK to Adapty.
+        Branch.getInstance().initSession(launchOptions: launchOptions) { (data, error) in
+-           if let data = data?.toSendableDict() {
+-                Adapty.updateAttribution(data, source: .branch)
+-           }
++           if let data {
++               Adapty.updateAttribution(data, source: "branch")
++           }
+        }
+    }
+}
+```
+
+### Facebook Ads
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp Facebook Ads](facebook-ads#connect-your-app-to-facebook-ads).
+
+```diff showLineNumbers
+ import FacebookCore
+
+- let builder = AdaptyProfileParameters.Builder()
+-     .with(facebookAnonymousId: AppEvents.shared.anonymousID)
+-
+- do {
+-     try Adapty.updateProfile(params: builder.build())
+- } catch {
+-     // handle the error
+- }
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "facebook_anonymous_id", 
++         value: AppEvents.shared.anonymousID
++     )
++ } catch {
++     // handle the error
++ }
+
+```
+
+### Firebase và Google Analytics
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp Firebase và Google Analytics](firebase-and-google-analytics).
+
+```diff showLineNumbers
+ import FirebaseCore
+ import FirebaseAnalytics
+
+ FirebaseApp.configure()
+        
+- if let appInstanceId = Analytics.appInstanceID() {            
+-     let builder = AdaptyProfileParameters.Builder()
+-         .with(firebaseAppInstanceId: appInstanceId)
+            
+-     Adapty.updateProfile(params: builder.build()) { error in
+-         // handle error
+-     }
+- }
+
++ if let appInstanceId = Analytics.appInstanceID() {            
++     do {
++         try await Adapty.setIntegrationIdentifier(
++             key: "firebase_app_instance_id", 
++             value: appInstanceId
++         )
++     } catch {
++         // handle the error
++     }
++ }
+```
+
+### Mixpanel
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp Mixpanel](mixpanel#sdk-configuration).
+
+```diff showLineNumbers
+ import Mixpanel
+
+- let builder = AdaptyProfileParameters.Builder()
+-             .with(mixpanelUserId: Mixpanel.mainInstance().distinctId)
+-
+- do {
+-     try await Adapty.updateProfile(params: builder.build())
+- } catch {
+-     // handle the error
+- }
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "mixpanel_user_id", 
++         value: Mixpanel.mainInstance().distinctId
++     )
++ } catch {
++     // handle the error
++ }
+
+```
+
+### OneSignal
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp OneSignal](onesignal#sdk-configuration).
+
+```diff showLineNumbers
+ // PlayerID (pre-v5 OneSignal SDK)
+ // in your OSSubscriptionObserver implementation
+ func onOSSubscriptionChanged(_ stateChanges: OSSubscriptionStateChanges) {
+     if let playerId = stateChanges.to.userId {
+-         let params = AdaptyProfileParameters.Builder()
+-             .with(oneSignalPlayerId: playerId)
+-             .build()
+-
+-         Adapty.updateProfile(params:params) { error in
+-             // check error
+-         }
++         Task {
++             try await Adapty.setIntegrationIdentifier(
++                 key: "one_signal_player_id", 
++                 value: playerId
++             )
++         }
+     }
+ }
+
+ // SubscriptionID (v5+ OneSignal SDK)
+ OneSignal.Notifications.requestPermission({ accepted in
+-     let id = OneSignal.User.pushSubscription.id
+-
+-     let builder = AdaptyProfileParameters.Builder()
+-         .with(oneSignalSubscriptionId: id)
+-
+-     Adapty.updateProfile(params: builder.build())
++     Task {
++         try await Adapty.setIntegrationIdentifier(
++             key: "one_signal_subscription_id", 
++             value: OneSignal.User.pushSubscription.id
++         )
++     }
+ }, fallbackToSettings: true)
+```
+
+### Pushwoosh
+
+Cập nhật code ứng dụng của bạn như bên dưới. Để xem ví dụ code đầy đủ, hãy xem [Cấu hình SDK cho tích hợp Pushwoosh](pushwoosh#sdk-configuration).
+
+```diff showLineNumbers
+- let params = AdaptyProfileParameters.Builder()
+-     .with(pushwooshHWID: Pushwoosh.sharedInstance().getHWID())
+-     .build()
+-
+- Adapty.updateProfile(params: params) { error in
+-     // handle the error
+- }
+
++ do {
++     try await Adapty.setIntegrationIdentifier(
++         key: "pushwoosh_hwid", 
++         value: Pushwoosh.sharedInstance().getHWID()
++     )
++ } catch {
++     // handle the error
++ }
+```
+
+## Cập nhật cách triển khai Observer mode \{#update-observer-mode-implementation\}
+
+Cập nhật cách bạn liên kết paywall với giao dịch. Trước đây, bạn dùng phương thức `setVariationId` để gán `variationId`. Hiện tại, bạn có thể đưa `variationId` trực tiếp khi ghi lại giao dịch bằng phương thức `reportTransaction` mới. Xem ví dụ code hoàn chỉnh tại [Liên kết paywall với giao dịch mua trong Observer mode](report-transactions-observer-mode).
+
+:::warning
+
+Nhớ ghi lại giao dịch bằng phương thức `reportTransaction`. Nếu bỏ qua bước này, Adapty sẽ không nhận ra giao dịch, không cấp mức độ truy cập, không đưa vào analytics, cũng không gửi đến các tích hợp. Đây là bước bắt buộc!
+
+:::
+
+```diff showLineNumbers
+- let variationId = paywall.variationId
+-
+- // There are two overloads: for StoreKit 1 and StoreKit 2
+- Adapty.setVariationId(variationId, forPurchasedTransaction: transaction) { error in
+-     if error == nil {
+-         // successful binding
+-     }
+- }
+
++ do {
++     // every time when calling transaction.finish()
++     try await Adapty.reportTransaction(transaction, withVariationId: <YOUR_PAYWALL_VARIATION_ID>)
++ } catch {
++     // handle the error
++ }
+```

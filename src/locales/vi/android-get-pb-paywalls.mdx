@@ -1,0 +1,523 @@
+---
+title: "Lấy flows & paywalls - Android"
+description: "Lấy flows và paywalls từ Adapty trong ứng dụng Android của bạn."
+metadataTitle: "Lấy Flows & Paywalls - Android | Tài liệu Adapty"
+displayed_sidebar: sdkandroid
+keywords: ['getFlow', 'getPaywall', 'getFlowConfiguration', 'getFlowForDefaultAudience']
+rank: 95
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+
+<SDKv4>
+
+<MethodPromo method="getFlow" />
+Sau khi [bạn đã thiết kế flow hoặc paywall bằng Paywall Builder](adapty-paywall-builder), bạn có thể hiển thị nó trong ứng dụng di động của mình. Bước đầu tiên là lấy flow hoặc paywall được liên kết với placement cùng cấu hình hiển thị của nó như mô tả bên dưới.
+
+<SampleApp />
+
+<details>
+   <summary>Trước khi bắt đầu hiển thị flow trong ứng dụng di động của bạn (nhấn để mở rộng)</summary>
+1. [Tạo sản phẩm của bạn](create-product) trong Adapty Dashboard.
+2. [Tạo flow/paywall và thêm sản phẩm vào đó](create-paywall) trong Adapty Dashboard.
+3. [Tạo placement và thêm flow/paywall vào đó](create-placement) trong Adapty Dashboard.
+4. Cài đặt [Adapty SDK](sdk-installation-android) vào ứng dụng di động của bạn.
+</details>
+## Lấy flow/paywall \{#fetch-flowpaywall\}
+
+Nếu bạn đã thiết kế flow hoặc paywall bằng Flow Builder hoặc Paywall Builder, bạn không cần lo việc render nó trong code ứng dụng di động để hiển thị cho người dùng. Flow hoặc paywall như vậy đã bao gồm cả nội dung hiển thị lẫn cách hiển thị. Tuy nhiên, bạn vẫn cần lấy ID của nó thông qua placement, cấu hình view, rồi mới hiển thị nó trong ứng dụng di động.
+Để đảm bảo hiệu suất tối ưu, điều quan trọng là cần lấy flow hoặc paywall và [cấu hình view](android-get-pb-paywalls#fetch-the-view-configuration) của nó càng sớm càng tốt, tạo đủ thời gian để tải ảnh trước khi hiển thị cho người dùng.
+
+Để lấy một flow hoặc paywall, sử dụng phương thức `getFlow`:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+...
+
+Adapty.getFlow("YOUR_PLACEMENT_ID", loadTimeout = 10.seconds) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val flow = result.value
+            // the requested flow/paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+...
+
+Adapty.getFlow("YOUR_PLACEMENT_ID", TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) result).getValue();
+        // the requested flow/paywall
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+Tham số:
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements) mong muốn. Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **fetchPolicy** | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ server và trả về dữ liệu đã cache nếu thất bại. Chúng tôi khuyến nghị tùy chọn này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường xuyên gặp tình trạng mất mạng, hãy cân nhắc dùng `.returnCacheDataElseLoad` để trả về dữ liệu đã cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng tốc độ tải sẽ nhanh hơn dù kết nối mạng không ổn định. Cache được cập nhật thường xuyên, nên hoàn toàn an toàn khi dùng trong phiên để tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng cache vẫn còn nguyên sau khi khởi động lại ứng dụng và chỉ bị xóa khi cài đặt lại ứng dụng hoặc dọn dẹp thủ công.</p><p></p><p>Adapty SDK lưu trữ flow và paywall cục bộ theo hai lớp: cache được cập nhật thường xuyên như mô tả ở trên và [paywall dự phòng](fallback-paywalls). Chúng tôi cũng dùng CDN để tải nhanh hơn và một server dự phòng độc lập trong trường hợp CDN không khả dụng. Hệ thống này được thiết kế để đảm bảo bạn luôn nhận được phiên bản mới nhất đồng thời đảm bảo độ tin cậy ngay cả khi kết nối mạng kém.</p> |
+| **loadTimeout** | mặc định: 5 giây | <p>Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu hết thời gian chờ, dữ liệu đã cache hoặc fallback cục bộ sẽ được trả về.</p><p>Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ trễ hơn một chút so với giá trị đã chỉ định trong `loadTimeout`, vì thao tác này có thể bao gồm nhiều yêu cầu khác nhau bên dưới.</p><p>Đối với Android: Bạn có thể tạo `TimeInterval` bằng các extension function (như `5.seconds`, trong đó `.seconds` đến từ `import com.adapty.utils.seconds`), hoặc `TimeInterval.seconds(5)`. Để không giới hạn thời gian, dùng `TimeInterval.INFINITE`.</p> |
+Tham số phản hồi:
+
+| Tham số | Mô tả |
+| :-------- | :---------- |
+| Flow   | Một đối tượng `AdaptyFlow` chứa placement, các định danh (`id`, `variationId`), tên, Remote Config và cờ `hasViewConfiguration` cho biết flow có bao gồm cấu hình giao diện hay không. Để lấy danh sách sản phẩm thực tế phục vụ việc tải trước, giao diện tùy chỉnh hoặc kiểm tra theo chương trình, hãy gọi `getPaywallProducts(flow)`. |
+## Lấy cấu hình giao diện \{#fetch-the-view-configuration\}
+
+Sau khi tải flow hoặc paywall, hãy kiểm tra xem nó có chứa cấu hình giao diện hay không thông qua `flow.hasViewConfiguration`. Cờ này cho biết placement được thiết kế theo cách nào trong Adapty Dashboard:
+- **`true`** — placement được thiết kế trong **Flow Builder** (một flow) hoặc **Paywall Builder** (một paywall). Adapty sẽ tự render giao diện cho bạn. Tiếp tục với các bước bên dưới để lấy cấu hình view và [hiển thị flow hoặc paywall](android-present-paywalls).
+- **`false`** — placement là một paywall tùy chỉnh không có giao diện Builder. [Xử lý như một paywall Remote Config](present-remote-config-paywalls-android).
+
+:::important
+Hãy đảm bảo bật toggle **Show on device** trong Flow Builder. Nếu tùy chọn này chưa được bật, cấu hình view sẽ không thể lấy được.
+:::
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+Sử dụng phương thức `getFlowConfiguration` để tải cấu hình view.
+```kotlin showLineNumbers
+if (!flow.hasViewConfiguration) {
+    // use your custom logic
+    return
+}
+
+AdaptyUI.getFlowConfiguration(flow, loadTimeout = 10.seconds) { result ->
+    when(result) {
+        is AdaptyResult.Success -> {
+            val flowConfiguration = result.value
+            // use loaded configuration
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+| Tham số         | Bắt buộc       | Mô tả                                                        |
+| :-------------- | :------------- | :----------------------------------------------------------- |
+| **flow**        | bắt buộc       | Đối tượng `AdaptyFlow` lấy được thông qua `Adapty.getFlow`. |
+| **locale**      | <p>tùy chọn</p><p>mặc định: ngôn ngữ thiết bị</p> | Mã định danh của [bản dịch](add-paywall-locale-in-adapty-paywall-builder), được nhập dưới dạng mã ngôn ngữ với một hoặc hai subtag phân tách bằng `-` (ví dụ: `en`, `pt-br`). Xem [Bản dịch và mã ngôn ngữ](android-localizations-and-locale-codes). |
+| **loadTimeout** | mặc định: 5 giây | Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu hết thời gian chờ, dữ liệu đã lưu trong bộ nhớ cache hoặc fallback cục bộ sẽ được trả về. Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết hạn muộn hơn một chút so với thời gian chỉ định trong `loadTimeout`, vì quá trình thực thi có thể bao gồm nhiều yêu cầu khác nhau bên dưới. |
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+Sử dụng phương thức `getFlowConfiguration` để tải cấu hình view.
+```java showLineNumbers
+if (!flow.hasViewConfiguration()) {
+    // use your custom logic
+    return;
+}
+
+AdaptyUI.getFlowConfiguration(flow, TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyUI.FlowConfiguration flowConfiguration =
+          ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) result).getValue();
+        // use loaded configuration
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+| Tham số         | Bắt buộc       | Mô tả                                                        |
+| :-------------- | :------------- | :----------------------------------------------------------- |
+| **flow**        | bắt buộc       | Một đối tượng `AdaptyFlow` lấy được qua `Adapty.getFlow`. |
+| **locale**      | <p>tùy chọn</p><p>mặc định: ngôn ngữ thiết bị</p> | Mã định danh của [bản địa hóa](add-paywall-locale-in-adapty-paywall-builder), được truyền dưới dạng mã ngôn ngữ gồm một hoặc hai thẻ con ngăn cách bởi `-` (ví dụ: `en`, `pt-br`). Xem [Các bản địa hóa và mã ngôn ngữ](android-localizations-and-locale-codes). |
+| **loadTimeout** | mặc định: 5 giây | Giá trị này giới hạn thời gian chờ của phương thức. Nếu hết thời gian chờ, dữ liệu đã được cache hoặc fallback cục bộ sẽ được trả về. Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ muộn hơn một chút so với giá trị đã chỉ định trong `loadTimeout`, do quá trình xử lý có thể bao gồm nhiều yêu cầu khác nhau bên dưới. |
+</TabItem>
+
+</Tabs>
+
+:::note
+Nếu bạn đang sử dụng nhiều ngôn ngữ, hãy tìm hiểu cách thêm [bản địa hóa trong Builder](add-paywall-locale-in-adapty-paywall-builder) và cách sử dụng mã ngôn ngữ đúng cách [tại đây](android-localizations-and-locale-codes).
+:::
+
+Sau khi tải xong, [hiển thị flow hoặc paywall](android-present-paywalls).
+## Lấy flow hoặc paywall cho đối tượng mặc định để tải nhanh hơn \{#get-a-flow-or-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Thông thường, flow và paywall được tải gần như ngay lập tức, vì vậy bạn không cần lo lắng về việc tăng tốc quá trình này. Tuy nhiên, trong những trường hợp bạn có nhiều đối tượng và placement, và người dùng có kết nối internet yếu, việc tải flow hoặc paywall có thể mất nhiều thời gian hơn mong muốn. Trong tình huống đó, bạn có thể muốn hiển thị flow hoặc paywall mặc định để đảm bảo trải nghiệm người dùng mượt mà thay vì không hiển thị gì cả.
+Để giải quyết vấn đề này, bạn có thể dùng phương thức `getFlowForDefaultAudience`, phương thức này lấy flow hoặc paywall của placement được chỉ định cho đối tượng **All Users**. Tuy nhiên, điều quan trọng cần hiểu là cách tiếp cận được khuyến nghị là lấy flow hoặc paywall bằng phương thức `getFlow`, như đã trình bày trong phần [Lấy flow/paywall](#fetch-flowpaywall) ở trên.
+
+:::warning
+Lý do chúng tôi khuyến nghị dùng `getFlow`
+
+Phương thức `getFlowForDefaultAudience` có một số hạn chế đáng kể:
+- **Các vấn đề tương thích ngược tiềm ẩn**: Nếu bạn cần hiển thị các flow khác nhau cho các phiên bản ứng dụng khác nhau (hiện tại và tương lai), bạn có thể gặp khó khăn. Bạn sẽ phải thiết kế các flow hỗ trợ phiên bản hiện tại (legacy) hoặc chấp nhận rằng người dùng đang dùng phiên bản hiện tại (legacy) có thể gặp sự cố với các flow không được hiển thị.
+- **Mất khả năng nhắm mục tiêu**: Tất cả người dùng sẽ thấy cùng một flow được thiết kế cho đối tượng **All Users**, nghĩa là bạn mất đi khả năng nhắm mục tiêu cá nhân hóa (bao gồm theo quốc gia, attribution marketing hoặc các thuộc tính tùy chỉnh của riêng bạn).
+Nếu bạn sẵn sàng chấp nhận những hạn chế này để đổi lấy tốc độ tải flow hoặc paywall nhanh hơn, hãy sử dụng phương thức `getFlowForDefaultAudience` như sau. Nếu không, hãy tiếp tục dùng `getFlow` được mô tả [ở trên](#fetch-flowpaywall).
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val flow = result.value
+            // the requested flow
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) result).getValue();
+        // the requested flow
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+
+    }
+});
+```
+</TabItem>
+</Tabs>
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements). Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **fetchPolicy** | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ server và trả về dữ liệu đã cache nếu thất bại. Chúng tôi khuyến nghị dùng tùy chọn này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng thường xuyên gặp tình trạng mạng không ổn định, hãy cân nhắc dùng `.returnCacheDataElseLoad` để trả về dữ liệu đã cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng thời gian tải sẽ nhanh hơn bất kể chất lượng kết nối internet. Cache được cập nhật thường xuyên, nên hoàn toàn an toàn khi dùng trong phiên làm việc để tránh các yêu cầu mạng không cần thiết.</p><p></p><p>Lưu ý rằng cache vẫn được giữ nguyên khi khởi động lại ứng dụng và chỉ bị xóa khi gỡ cài đặt ứng dụng hoặc thực hiện dọn dẹp thủ công.</p> |
+## Tùy chỉnh assets \{#customize-assets\}
+
+Để tùy chỉnh hình ảnh và video trong flow hoặc paywall của bạn, hãy triển khai custom assets.
+
+Hero image và video có các ID được định sẵn: `hero_image` và `hero_video`. Trong một custom asset bundle, bạn nhắm đến các phần tử này theo ID của chúng và tùy chỉnh hành vi của chúng.
+
+Đối với các hình ảnh và video khác, bạn cần [đặt ID tùy chỉnh](custom-media) trong Adapty dashboard.
+
+Ví dụ, bạn có thể:
+
+- Hiển thị hình ảnh hoặc video khác nhau cho một số người dùng.
+- Hiển thị ảnh xem trước cục bộ trong khi ảnh chính từ xa đang tải.
+- Hiển thị ảnh xem trước trước khi phát video.
+Here's an example of how you can provide custom assets via a simple dictionary:
+```kotlin showLineNumbers
+val customAssets = AdaptyCustomAssets.of(
+    "hero_image" to
+            AdaptyCustomImageAsset.remote(
+                url = "https://example.com/image.jpg",
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromAsset("images/hero_image_preview.png"),
+                )
+            ),
+    "hero_video" to
+            AdaptyCustomVideoAsset.file(
+                FileLocation.fromResId(requireContext(), R.raw.custom_video),
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromResId(requireContext(), R.drawable.video_preview),
+                ),
+            ),
+)
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products,
+    eventListener,
+    insets,
+    customAssets,
+)
+```
+
+:::note
+Nếu không tìm thấy asset, flow sẽ hiển thị giao diện mặc định của nó.
+:::
+
+Đối với video, bạn có thể tùy chọn truyền `resolution` để giữ chỗ layout và đặt tỷ lệ khung hình (`width / height`) trước khi video tải:
+
+```kotlin showLineNumbers
+AdaptyCustomVideoAsset.file(
+    FileLocation.fromResId(requireContext(), R.raw.custom_video),
+    preview = AdaptyCustomImageAsset.file(
+        FileLocation.fromResId(requireContext(), R.drawable.video_preview),
+    ),
+    resolution = AdaptyCustomVideoAsset.Resolution(width = 1080, height = 1920),
+)
+```
+
+</SDKv4>
+
+<SDKv3>
+Sau khi [bạn đã thiết kế phần giao diện cho paywall của mình](adapty-paywall-builder) bằng Paywall Builder mới trong Adapty Dashboard, bạn có thể hiển thị nó trong ứng dụng di động. Bước đầu tiên trong quá trình này là lấy paywall được liên kết với placement cùng cấu hình giao diện của nó như mô tả bên dưới.
+
+:::warning
+Paywall Builder mới hoạt động với Android SDK phiên bản 3.0 trở lên.
+:::
+Vui lòng lưu ý rằng chủ đề này đề cập đến các paywall được tùy chỉnh bằng Paywall Builder. Nếu bạn đang triển khai paywall theo cách thủ công, hãy tham khảo chủ đề [Lấy paywall và sản phẩm cho Remote Config paywall trong ứng dụng di động](fetch-paywalls-and-products-android).
+
+<SampleApp />
+
+<details>
+   <summary>Trước khi bắt đầu hiển thị paywall trong ứng dụng di động của bạn (nhấn để mở rộng)</summary>
+1. [Tạo sản phẩm của bạn](create-product) trong Adapty Dashboard.
+2. [Tạo một paywall và thêm các sản phẩm vào đó](create-paywall) trong Adapty Dashboard.
+3. [Tạo các placement và thêm paywall vào đó](create-placement) trong Adapty Dashboard.
+4. Cài đặt [Adapty SDK](sdk-installation-android) trong ứng dụng di động của bạn.
+</details>
+## Tải paywall được thiết kế bằng Paywall Builder \{#fetch-paywall-designed-with-paywall-builder\}
+
+Nếu bạn đã [thiết kế paywall bằng Paywall Builder](adapty-paywall-builder), bạn không cần lo về việc render nó trong code ứng dụng để hiển thị cho người dùng. Paywall như vậy đã bao gồm cả nội dung hiển thị lẫn cách hiển thị. Tuy nhiên, bạn vẫn cần lấy ID của nó thông qua placement, cấu hình view của nó, rồi mới hiển thị trong ứng dụng.
+Để đảm bảo hiệu suất tối ưu, bạn nên lấy paywall và [cấu hình view](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) của nó càng sớm càng tốt, để ảnh có đủ thời gian tải xuống trước khi hiển thị cho người dùng.
+
+Để lấy paywall, sử dụng phương thức `getPaywall`:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+
+...
+
+Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en", loadTimeout = 10.seconds) { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            // the requested paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+
+...
+
+Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        // the requested paywall
+      
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+      
+    }
+});
+```
+</TabItem>
+
+</Tabs>
+
+Tham số:
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Mã định danh của [Placement](placements) mong muốn. Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **locale** | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Mã định danh của [bản địa hóa paywall](add-paywall-locale-in-adapty-paywall-builder). Tham số này phải là mã ngôn ngữ gồm một hoặc hai thẻ con được phân tách bằng ký tự dấu trừ (**-**). Thẻ con đầu tiên là ngôn ngữ, thẻ con thứ hai là khu vực.</p><p></p><p>Ví dụ: `en` là tiếng Anh, `pt-br` là tiếng Bồ Đào Nha (Brazil).</p><p>Xem [Bản địa hóa và mã locale](localizations-and-locale-codes) để biết thêm thông tin về mã locale và cách chúng tôi khuyến nghị sử dụng chúng.</p> |
+| **fetchPolicy** | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ máy chủ và trả về dữ liệu đã lưu trong cache nếu thất bại. Chúng tôi khuyến nghị tùy chọn này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường xuyên gặp vấn đề với kết nối internet không ổn định, hãy cân nhắc dùng `.returnCacheDataElseLoad` để trả về dữ liệu cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng thời gian tải sẽ nhanh hơn dù kết nối internet có kém đến đâu. Cache được cập nhật thường xuyên nên hoàn toàn an toàn khi dùng trong phiên làm việc để tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng cache vẫn được giữ nguyên khi khởi động lại ứng dụng và chỉ bị xóa khi gỡ cài đặt ứng dụng hoặc xóa thủ công.</p><p></p><p>Adapty SDK lưu trữ paywall cục bộ theo hai lớp: cache được cập nhật thường xuyên như mô tả ở trên và [paywall dự phòng](fallback-paywalls). Chúng tôi cũng dùng CDN để tải paywall nhanh hơn và một máy chủ dự phòng độc lập trong trường hợp CDN không khả dụng. Hệ thống này được thiết kế để đảm bảo bạn luôn nhận được phiên bản paywall mới nhất trong khi vẫn đảm bảo độ tin cậy ngay cả khi kết nối internet kém.</p> |
+| **loadTimeout** | mặc định: 5 giây | <p>Giá trị này giới hạn thời gian chờ của phương thức này. Nếu hết thời gian chờ, dữ liệu cache hoặc fallback cục bộ sẽ được trả về.</p><p>Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ muộn hơn một chút so với giá trị được chỉ định trong `loadTimeout`, do thao tác có thể bao gồm nhiều yêu cầu khác nhau bên dưới.</p><p>Đối với Android: Bạn có thể tạo `TimeInterval` bằng các hàm mở rộng (như `5.seconds`, trong đó `.seconds` đến từ `import com.adapty.utils.seconds`), hoặc `TimeInterval.seconds(5)`. Để không giới hạn thời gian, dùng `TimeInterval.INFINITE`.</p> |
+Các tham số phản hồi:
+
+| Tham số | Mô tả                                                                                                                                                     |
+| :-------- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | Một đối tượng [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/) chứa danh sách ID sản phẩm, định danh paywall, Remote Config và một số thuộc tính khác. |
+## Lấy cấu hình hiển thị của paywall được thiết kế bằng Paywall Builder \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+Hãy đảm bảo bật toggle **Show on device** trong Paywall Builder. Nếu tùy chọn này chưa được bật, cấu hình hiển thị sẽ không thể lấy được.
+:::
+
+Sau khi fetch paywall, hãy kiểm tra xem nó có chứa `ViewConfiguration` hay không — đây là dấu hiệu cho thấy paywall được tạo bằng Paywall Builder. Thông tin này sẽ giúp bạn xác định cách hiển thị paywall. Nếu có `ViewConfiguration`, hãy xử lý nó như một paywall Paywall Builder; nếu không, [xử lý nó như một paywall Remote Config](present-remote-config-paywalls).
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+Sử dụng phương thức `getViewConfiguration` để tải cấu hình view.
+```kotlin showLineNumbers
+if (!paywall.hasViewConfiguration) {
+    // use your custom logic
+    return
+}
+
+AdaptyUI.getViewConfiguration(paywall, loadTimeout = 10.seconds) { result ->
+    when(result) {
+        is AdaptyResult.Success -> {
+            val viewConfiguration = result.value
+            // use loaded configuration
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+| Tham số         | Bắt buộc            | Mô tả                                                        |
+| :-------------- | :------------------ | :----------------------------------------------------------- |
+| **paywall**     | bắt buộc            | Đối tượng `AdaptyPaywall` dùng để lấy controller cho paywall mong muốn. |
+| **loadTimeout** | mặc định: 5 giây | Giá trị này giới hạn thời gian chờ của phương thức. Nếu hết thời gian, dữ liệu được cache hoặc fallback cục bộ sẽ được trả về. Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức có thể hết thời gian chờ muộn hơn một chút so với giá trị đặt trong `loadTimeout`, vì thao tác có thể bao gồm nhiều request khác nhau bên dưới. |
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+Sử dụng phương thức `getViewConfiguration` để tải cấu hình view.
+```java showLineNumbers
+if (!paywall.hasViewConfiguration()) {
+    // use your custom logic
+    return;
+}
+
+AdaptyUI.getViewConfiguration(paywall, TimeInterval.seconds(10), result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyUI.LocalizedViewConfiguration viewConfiguration =
+          ((AdaptyResult.Success<AdaptyUI.LocalizedViewConfiguration>) result).getValue();
+        // use loaded configuration
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+| Tham số                  | Bắt buộc       | Mô tả                                                        |
+| :----------------------- | :------------- | :----------------------------------------------------------- |
+| **paywall**              | bắt buộc       | Đối tượng `AdaptyPaywall` để lấy controller cho paywall mong muốn. |
+| **loadTimeout**          | mặc định: 5 giây | Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu hết thời gian chờ, dữ liệu được lưu trong bộ nhớ cache hoặc fallback cục bộ sẽ được trả về. Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ muộn hơn một chút so với giá trị được chỉ định trong `loadTimeout`, vì thao tác có thể bao gồm nhiều yêu cầu khác nhau bên dưới. |
+</TabItem>
+
+</Tabs>
+
+:::note
+Nếu bạn đang sử dụng nhiều ngôn ngữ, hãy tìm hiểu cách thêm [bản địa hóa Paywall Builder](add-paywall-locale-in-adapty-paywall-builder) và cách sử dụng mã ngôn ngữ đúng cách [tại đây](android-localizations-and-locale-codes).
+:::
+
+Sau khi tải xong, [hiển thị paywall](android-present-paywalls).
+## Lấy paywall cho đối tượng mặc định để tải nhanh hơn \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Thông thường, paywall được tải gần như ngay lập tức, nên bạn không cần lo về việc tối ưu tốc độ. Tuy nhiên, nếu bạn có nhiều đối tượng và paywall, hoặc người dùng đang kết nối internet yếu, việc tải paywall có thể mất nhiều thời gian hơn mong muốn. Trong trường hợp đó, bạn có thể muốn hiển thị một paywall mặc định để đảm bảo trải nghiệm mượt mà cho người dùng thay vì không hiển thị gì cả.
+Để giải quyết vấn đề này, bạn có thể sử dụng phương thức `getPaywallForDefaultAudience`, phương thức này lấy paywall của placement được chỉ định cho đối tượng **All Users**. Tuy nhiên, điều quan trọng cần hiểu là cách tiếp cận được khuyến nghị là lấy paywall bằng phương thức `getPaywall`, như đã trình bày chi tiết trong phần [Lấy thông tin Paywall](#fetch-paywall-designed-with-paywall-builder) ở trên.
+
+:::warning
+Lý do chúng tôi khuyến nghị sử dụng `getPaywall`
+
+Phương thức `getPaywallForDefaultAudience` có một số hạn chế đáng kể:
+- **Các vấn đề tương thích ngược tiềm ẩn**: Nếu bạn cần hiển thị các paywall khác nhau cho các phiên bản ứng dụng khác nhau (hiện tại và tương lai), bạn có thể gặp khó khăn. Bạn sẽ phải thiết kế các paywall hỗ trợ phiên bản hiện tại (legacy), hoặc chấp nhận rằng người dùng đang dùng phiên bản hiện tại (legacy) có thể gặp sự cố với các paywall không hiển thị được.
+- **Mất khả năng nhắm mục tiêu**: Tất cả người dùng sẽ thấy cùng một paywall được thiết kế cho đối tượng **All Users**, nghĩa là bạn mất đi khả năng cá nhân hóa (bao gồm nhắm mục tiêu theo quốc gia, attribution marketing hoặc các thuộc tính tùy chỉnh của riêng bạn).
+Nếu bạn chấp nhận những hạn chế này để đổi lấy tốc độ tải paywall nhanh hơn, hãy sử dụng phương thức `getPaywallForDefaultAudience` như sau. Nếu không, hãy tiếp tục dùng `getPaywall` đã mô tả [ở trên](#fetch-paywall-designed-with-paywall-builder).
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            // the requested paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        // the requested paywall
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+      
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+:::note
+Phương thức `getPaywallForDefaultAudience` khả dụng từ Android SDK 2.11.3 trở lên
+:::
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements). Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **locale** | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Định danh của [bản địa hóa paywall](add-remote-config-locale). Tham số này là mã ngôn ngữ gồm một hoặc nhiều thẻ con phân tách bằng dấu trừ (**-**). Thẻ đầu tiên là ngôn ngữ, thẻ thứ hai là vùng.</p><p></p><p>Ví dụ: `en` là tiếng Anh, `pt-br` là tiếng Bồ Đào Nha (Brazil).</p><p></p><p>Xem [Bản địa hóa và mã locale](localizations-and-locale-codes) để biết thêm thông tin về mã locale và cách chúng tôi khuyến nghị sử dụng chúng.</p> |
+| **fetchPolicy** | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ máy chủ và trả về dữ liệu đã lưu trong cache nếu thất bại. Chúng tôi khuyến nghị tùy chọn này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường gặp sự cố kết nối internet không ổn định, hãy cân nhắc dùng `.returnCacheDataElseLoad` để trả về dữ liệu cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng thời gian tải sẽ nhanh hơn bất kể kết nối internet của họ kém đến đâu. Cache được cập nhật thường xuyên nên có thể sử dụng an toàn trong phiên để tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng cache vẫn được giữ nguyên khi khởi động lại ứng dụng và chỉ bị xóa khi gỡ cài đặt ứng dụng hoặc thực hiện xóa thủ công.</p> |
+## Tùy chỉnh assets \{#customize-assets\}
+
+Để tùy chỉnh hình ảnh và video trong paywall, hãy triển khai custom assets.
+
+Hero image và video có ID được định sẵn: `hero_image` và `hero_video`. Trong một custom asset bundle, bạn nhắm đến các phần tử này theo ID của chúng và tùy chỉnh hành vi của chúng.
+
+Đối với các hình ảnh và video khác, bạn cần [đặt custom ID](custom-media) trong Adapty dashboard.
+
+Ví dụ, bạn có thể:
+
+- Hiển thị hình ảnh hoặc video khác nhau cho một số người dùng.
+- Hiển thị ảnh xem trước cục bộ trong khi hình ảnh chính từ xa đang tải.
+- Hiển thị ảnh xem trước trước khi phát video.
+:::important
+Để sử dụng tính năng này, hãy cập nhật Adapty Android SDK lên phiên bản 3.7.0 trở lên.
+:::
+
+Đây là ví dụ về cách bạn có thể cung cấp các tài nguyên tùy chỉnh thông qua một dictionary đơn giản:
+```kotlin showLineNumbers
+val customAssets = AdaptyCustomAssets.of(
+    "hero_image" to
+            AdaptyCustomImageAsset.remote(
+                url = "https://example.com/image.jpg",
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromAsset("images/hero_image_preview.png"),
+                )
+            ),
+    "hero_video" to
+            AdaptyCustomVideoAsset.file(
+                FileLocation.fromResId(requireContext(), R.raw.custom_video),
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromResId(requireContext(), R.drawable.video_preview),
+                ),
+            ),
+)
+
+val paywallView = AdaptyUI.getPaywallView(
+    activity,
+    viewConfiguration,
+    products,
+    eventListener,
+    insets,
+    customAssets,
+)
+```
+
+:::note
+Nếu không tìm thấy asset, paywall sẽ hiển thị với giao diện mặc định của nó.
+:::
+
+</SDKv3>

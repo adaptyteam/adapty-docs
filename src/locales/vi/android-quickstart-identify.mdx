@@ -1,0 +1,193 @@
+---
+title: "Xác định người dùng trong Android SDK"
+description: "Hướng dẫn nhanh thiết lập Adapty để quản lý gói đăng ký in-app trên Android."
+metadataTitle: "Hướng dẫn Bắt đầu Nhanh Adapty | Tài liệu Adapty"
+keywords: ['identify', 'xác định người dùng', 'customeruserid']
+rank: 90
+---
+
+:::important
+Hướng dẫn này dành cho bạn nếu bạn có hệ thống xác thực riêng. Tại đây, bạn sẽ học cách làm việc với hồ sơ người dùng trong Adapty để đảm bảo nó phù hợp với hệ thống xác thực hiện có của bạn.
+:::
+
+Cách bạn quản lý giao dịch mua của người dùng phụ thuộc vào mô hình xác thực của ứng dụng:
+- Nếu ứng dụng không sử dụng xác thực backend và không lưu trữ dữ liệu người dùng, hãy xem [phần về người dùng ẩn danh](#anonymous-users).
+- Nếu ứng dụng có (hoặc sẽ có) xác thực backend, hãy xem [phần về người dùng đã xác định](#identified-users).
+
+**Các khái niệm chính**:
+- **Hồ sơ người dùng** là các thực thể cần thiết để SDK hoạt động. Adapty tự động tạo chúng.
+- Chúng có thể là ẩn danh **(không có customer user ID)** hoặc đã xác định **(có customer user ID)**.
+- Bạn cung cấp **customer user ID** để liên kết chéo hồ sơ người dùng trong Adapty với hệ thống xác thực nội bộ của bạn.
+
+Đây là sự khác biệt giữa người dùng ẩn danh và người dùng đã xác định:
+
+|                         | Người dùng ẩn danh                                   | Người dùng đã xác định                                                        |
+|-------------------------|---------------------------------------------------|-------------------------------------------------------------------------|
+| **Quản lý giao dịch mua** | Khôi phục giao dịch mua ở cấp độ cửa hàng | Duy trì lịch sử giao dịch mua trên các thiết bị thông qua customer user ID của họ |
+| **Quản lý hồ sơ người dùng**  | Hồ sơ người dùng mới sau mỗi lần cài đặt lại | Cùng một hồ sơ người dùng trên các phiên và thiết bị |
+| **Lưu trữ dữ liệu**    | Dữ liệu người dùng ẩn danh gắn với lần cài đặt ứng dụng | Dữ liệu người dùng đã xác định được lưu trữ qua các lần cài đặt ứng dụng |
+
+## Người dùng ẩn danh \{#anonymous-users\}
+
+Nếu bạn không có xác thực backend, **bạn không cần xử lý xác thực trong code ứng dụng**:
+
+1. Khi SDK được kích hoạt lần đầu tiên khi khởi động ứng dụng, Adapty **tạo hồ sơ người dùng mới cho người dùng**.
+2. Khi người dùng mua bất kỳ thứ gì trong ứng dụng, giao dịch mua này được **liên kết với hồ sơ người dùng Adapty và tài khoản cửa hàng của họ**.
+3. Khi người dùng **cài đặt lại** ứng dụng hoặc cài đặt trên **thiết bị mới**, Adapty **tạo hồ sơ người dùng ẩn danh mới khi kích hoạt**.
+4. Nếu người dùng đã từng mua hàng trong ứng dụng của bạn, theo mặc định, giao dịch mua của họ sẽ tự động được đồng bộ từ App Store khi kích hoạt SDK.
+
+Với người dùng ẩn danh, hồ sơ người dùng mới sẽ được tạo sau mỗi lần cài đặt, nhưng điều đó không phải là vấn đề vì trong phân tích Adapty, bạn có thể [cấu hình những gì sẽ được tính là lần cài đặt mới](general#4-installs-definition-for-analytics).
+
+Đối với người dùng ẩn danh, bạn cần đếm số lần cài đặt theo **ID thiết bị**. Trong trường hợp này, mỗi lần cài đặt ứng dụng trên thiết bị được tính là một lần cài đặt, bao gồm cả cài đặt lại.
+
+## Người dùng đã xác định \{#identified-users\}
+
+Bạn có hai lựa chọn để xác định người dùng trong ứng dụng:
+
+- [**Trong quá trình đăng nhập/đăng ký:**](#during-loginsignup) Nếu người dùng đăng nhập sau khi ứng dụng khởi động, hãy gọi `identify()` với customer user ID khi họ xác thực.
+
+- [**Trong quá trình kích hoạt SDK:**](#during-the-sdk-activation) Nếu bạn đã có customer user ID được lưu trữ khi ứng dụng khởi động, hãy gửi nó khi gọi `activate()`.
+
+:::important
+Theo mặc định, khi Adapty nhận được giao dịch mua từ Customer User ID hiện đang được liên kết với Customer User ID khác, mức độ truy cập sẽ được chia sẻ, vì vậy cả hai hồ sơ người dùng đều có quyền truy cập trả phí. Bạn có thể cấu hình cài đặt này để chuyển quyền truy cập trả phí từ hồ sơ người dùng này sang hồ sơ người dùng khác hoặc tắt hoàn toàn việc chia sẻ. Xem [bài viết](general#6-sharing-paid-access-between-user-accounts) để biết thêm chi tiết.
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/identify-diagram.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Trong quá trình đăng nhập/đăng ký \{#during-loginsignup\}
+
+Nếu bạn xác định người dùng sau khi ứng dụng khởi động (ví dụ: sau khi họ đăng nhập vào ứng dụng hoặc đăng ký), hãy sử dụng phương thức `identify` để thiết lập customer user ID của họ.
+
+- Nếu bạn **chưa từng sử dụng customer user ID này trước đây**, Adapty sẽ tự động liên kết nó với hồ sơ người dùng hiện tại.
+- Nếu bạn **đã từng sử dụng customer user ID này để xác định người dùng trước đây**, Adapty sẽ chuyển sang làm việc với hồ sơ người dùng được liên kết với customer user ID này.
+
+:::important
+Customer user ID phải là duy nhất cho mỗi người dùng. Nếu bạn hardcode giá trị tham số, tất cả người dùng sẽ được coi là một người.
+:::
+
+Hãy chờ callback hoàn thành `identify` được kích hoạt trước khi gọi các phương thức SDK khác. Các cuộc gọi đồng thời có thể rơi vào hồ sơ người dùng ẩn danh thay vì hồ sơ người dùng đã xác định. Xem [Thứ tự gọi trong Android SDK](android-sdk-call-order).
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.identify("YOUR_USER_ID") { error -> // Unique for each user
+    if (error == null) {
+        // successful identify
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+// User IDs must be unique for each user
+Adapty.identify("YOUR_USER_ID", error -> {
+    if (error == null) {
+        // successful identify
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+### Trong quá trình kích hoạt SDK \{#during-the-sdk-activation\}
+
+Nếu bạn đã biết customer user ID khi kích hoạt SDK, bạn có thể gửi nó trong phương thức `activate` thay vì gọi `identify` riêng.
+
+Nếu bạn biết customer user ID nhưng chỉ thiết lập nó sau khi kích hoạt, điều đó có nghĩa là khi kích hoạt, Adapty sẽ tạo hồ sơ người dùng ẩn danh mới và chỉ chuyển sang hồ sơ người dùng hiện có sau khi bạn gọi `identify`.
+
+Bạn có thể truyền customer user ID đã có (cái bạn đã dùng trước đây) hoặc một cái mới. Nếu bạn truyền một cái mới, hồ sơ người dùng mới được tạo khi kích hoạt sẽ được tự động liên kết với customer user ID đó.
+
+:::note
+Theo mặc định, việc tạo hồ sơ người dùng ẩn danh không ảnh hưởng đến dashboard phân tích, vì số lần cài đặt được tính dựa trên ID thiết bị.
+
+ID thiết bị đại diện cho một lần cài đặt ứng dụng duy nhất từ cửa hàng trên thiết bị và chỉ được tạo lại sau khi ứng dụng được cài đặt lại.  
+Nó không phụ thuộc vào việc đây là lần cài đặt đầu tiên hay lần cài đặt lặp lại, hay liệu có sử dụng customer user ID hiện có hay không.
+
+Việc tạo hồ sơ người dùng (khi kích hoạt SDK hoặc đăng xuất), đăng nhập, hoặc nâng cấp ứng dụng mà không cài đặt lại không tạo ra sự kiện cài đặt bổ sung.
+
+Nếu bạn muốn đếm số lần cài đặt dựa trên người dùng duy nhất thay vì thiết bị, hãy vào **App settings** và cấu hình [**Installs definition for analytics**](general#4-installs-definition-for-analytics).
+:::
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withCustomerUserId("user123") // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withCustomerUserId("user123") // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+    .build();
+```
+</TabItem>
+</Tabs>
+
+### Đăng xuất người dùng \{#log-users-out\}
+
+Nếu bạn có nút để đăng xuất người dùng, hãy sử dụng phương thức `logout`.
+
+:::important
+Đăng xuất người dùng sẽ tạo hồ sơ người dùng ẩn danh mới cho người dùng.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.logout { error ->
+    if (error == null) {
+        // successful logout
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.logout(error -> {
+    if (error == null) {
+        // successful logout
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+:::info
+Để đăng nhập lại người dùng vào ứng dụng, hãy sử dụng phương thức `identify`.
+:::
+
+### Cho phép mua hàng mà không cần đăng nhập \{#allow-purchases-without-login\}
+
+Nếu người dùng có thể thực hiện giao dịch mua cả trước và sau khi đăng nhập vào ứng dụng, bạn cần đảm bảo rằng họ sẽ giữ quyền truy cập sau khi đăng nhập:
+
+1. Khi người dùng chưa đăng nhập thực hiện giao dịch mua, Adapty liên kết nó với ID hồ sơ người dùng ẩn danh của họ.
+2. Khi người dùng đăng nhập vào tài khoản, Adapty chuyển sang làm việc với hồ sơ người dùng đã xác định của họ.
+    - Nếu đây là customer user ID mới (ví dụ: giao dịch mua đã được thực hiện trước khi đăng ký), Adapty gán customer user ID cho hồ sơ người dùng hiện tại, vì vậy toàn bộ lịch sử giao dịch mua được duy trì.
+    - Nếu đây là customer user ID đã tồn tại (customer user ID đã được liên kết với hồ sơ người dùng), bạn cần lấy mức độ truy cập thực tế sau khi chuyển hồ sơ người dùng. Bạn có thể gọi [`getProfile`](android-check-subscription-status) ngay sau khi xác định, hoặc [lắng nghe cập nhật hồ sơ người dùng](android-check-subscription-status) để dữ liệu tự động đồng bộ.
+
+## Bước tiếp theo \{#next-steps\}
+
+Chúc mừng! Bạn đã triển khai logic thanh toán in-app trong ứng dụng của mình! Chúc bạn thành công với việc kiếm tiền từ ứng dụng!
+
+Để khai thác tối đa Adapty, bạn có thể khám phá các chủ đề sau:
+- [**Kiểm thử**](troubleshooting-test-purchases): Đảm bảo rằng mọi thứ hoạt động như mong đợi
+- [**Onboardings**](android-onboardings): Thu hút người dùng bằng onboarding và tăng tỷ lệ giữ chân
+- [**Tích hợp**](configuration): Tích hợp với dịch vụ attribution marketing và phân tích chỉ với một dòng code
+- [**Thiết lập thuộc tính hồ sơ người dùng tùy chỉnh**](android-setting-user-attributes): Thêm thuộc tính tùy chỉnh vào hồ sơ người dùng và tạo phân khúc, để bạn có thể khởi chạy A/B test hoặc hiển thị các paywall khác nhau cho những người dùng khác nhau

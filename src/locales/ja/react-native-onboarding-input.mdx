@@ -1,0 +1,263 @@
+---
+title: "React Native SDKでオンボーディングのデータを処理する"
+description: "Adapty SDKを使用してReact NativeアプリでオンボーディングからのデータをSaveし、活用する方法を紹介します。"
+metadataTitle: "オンボーディング | React Native SDK | Adapty ドキュメント"
+---
+
+ユーザーがクイズの質問に回答したり、入力フィールドにデータを入力したりすると、`onStateUpdatedAction` メソッドが呼び出されます。フィールドのタイプをコード内でSaveしたり、処理したりすることができます。
+
+例：
+```javascript
+// Full-screen presentation
+const unsubscribe = view.setEventHandlers({
+  onStateUpdated(action, meta) {
+    // Process data 
+  },
+});
+
+// Embedded widget
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onStateUpdated(action, meta) {
+      // Process data 
+    },
+  }}
+/>
+```
+
+アクションのフォーマットについては[こちら](https://react-native.adapty.io/types/onboardingstateupdatedaction)を参照してください。
+
+<Details>
+<summary>保存されたデータの例（実装によってフォーマットが異なる場合があります）</summary>
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+## ユースケース \{#use-cases\}
+
+### ユーザープロファイルにデータを付加する \{#enrich-user-profiles-with-data\}
+
+入力データをユーザープロファイルとすぐに紐付けて、同じ情報を二度尋ねないようにするには、アクションを処理する際に入力データで[ユーザープロファイルを更新](react-native-setting-user-attributes)する必要があります。
+
+たとえば、`name` というIDのテキストフィールドでユーザーに名前を入力してもらい、その値をユーザーのファーストネームとして設定したいとします。また、`email` フィールドでメールアドレスも入力してもらうとします。アプリのコードでは、次のようになります。
+```javascript showLineNumbers
+// Full-screen presentation
+const unsubscribe = view.setEventHandlers({
+  onStateUpdated(action, meta) {
+    // Store user preferences or responses
+    if (action.elementType === 'input') {
+      const profileParams = {};
+      
+      // Map elementId to appropriate profile field
+      switch (action.elementId) {
+        case 'name':
+          if (action.value.type === 'text') {
+            profileParams.firstName = action.value.value;
+          }
+          break;
+        case 'email':
+          if (action.value.type === 'email') {
+            profileParams.email = action.value.value;
+          }
+          break;
+      }
+      
+      // Update profile if we have data to update
+      if (Object.keys(profileParams).length > 0) {
+        adapty.updateProfile(profileParams).catch(error => {
+          // handle the error
+        });
+      }
+    }
+  },
+});
+
+// Embedded widget
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onStateUpdated(action, meta) {
+      // Store user preferences or responses
+      if (action.elementType === 'input') {
+        const profileParams = {};
+        
+        // Map elementId to appropriate profile field
+        switch (action.elementId) {
+          case 'name':
+            if (action.value.type === 'text') {
+              profileParams.firstName = action.value.value;
+            }
+            break;
+          case 'email':
+            if (action.value.type === 'email') {
+              profileParams.email = action.value.value;
+            }
+            break;
+        }
+        
+        // Update profile if we have data to update
+        if (Object.keys(profileParams).length > 0) {
+          adapty.updateProfile(profileParams).catch(error => {
+            // handle the error
+          });
+        }
+      }
+    },
+  }}
+/>
+```
+
+### アンケートの回答に基づいてペイウォールをカスタマイズする \{#customize-paywalls-based-on-answers\}
+
+オンボーディングでクイズを使用することで、オンボーディング完了後にユーザーに表示するペイウォールをカスタマイズすることもできます。
+
+たとえば、スポーツの経験についてユーザーに質問し、ユーザーグループごとに異なるCTAやプロダクトを表示することができます。
+
+1. オンボーディングビルダーで[クイズを追加](onboarding-quizzes)し、各選択肢に意味のあるIDを割り当てます。
+
+<ZoomImage id="experience.webp" />
+
+2. IDに基づいてクイズの回答を処理し、ユーザーに[カスタム属性を設定](react-native-setting-user-attributes)します。
+```javascript showLineNumbers
+// Full-screen presentation
+const unsubscribe = view.setEventHandlers({
+  onStateUpdated(action, meta) {
+    // Handle quiz responses and set custom attributes
+    if (action.elementType === 'select') {
+      const profileParams = {};
+      
+      // Map quiz responses to custom attributes
+      switch (action.elementId) {
+        case 'experience':
+          // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+          profileParams.codableCustomAttributes = {
+            experience: action.value.value
+          };
+          break;
+      }
+      
+      // Update profile if we have data to update
+      if (Object.keys(profileParams).length > 0) {
+        adapty.updateProfile(profileParams).catch(error => {
+          // handle the error
+        });
+      }
+    }
+  },
+});
+
+// Embedded widget
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onStateUpdated(action, meta) {
+      // Handle quiz responses and set custom attributes
+      if (action.elementType === 'select') {
+        const profileParams = {};
+        
+        // Map quiz responses to custom attributes
+        switch (action.elementId) {
+          case 'experience':
+            // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+            profileParams.codableCustomAttributes = {
+              experience: action.value.value
+            };
+            break;
+        }
+        
+        // Update profile if we have data to update
+        if (Object.keys(profileParams).length > 0) {
+          adapty.updateProfile(profileParams).catch(error => {
+            // handle the error
+          });
+        }
+      }
+    },
+  }}
+/>
+```
+
+3. カスタム属性の値ごとに[セグメントを作成](segments)します。
+4. [プレースメント](placements)を作成し、作成した各セグメントに対して[オーディエンス](audience)を追加します。
+5. アプリのコードで、そのプレースメントに対する[ペイウォールを表示](react-native-paywalls)します。オンボーディングにペイウォールを開くボタンがある場合は、[このボタンのアクションへの応答](react-native-handling-onboarding-events#opening-a-paywall)としてペイウォールのコードを実装してください。

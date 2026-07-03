@@ -1,0 +1,193 @@
+---
+title: "Android SDKでのユーザー識別"
+description: "AndroidアプリにおけるAdaptyのアプリ内サブスクリプション管理のクイックスタートガイド。"
+metadataTitle: "Adapty クイックスタートガイド | Adapty ドキュメント"
+keywords: ['identify', 'identifying users', 'customeruserid']
+rank: 90
+---
+
+:::important
+このガイドは、独自の認証システムを持つ方を対象としています。ここでは、既存の認証システムと連携させるために、Adaptyのユーザープロファイルを操作する方法を説明します。
+:::
+
+ユーザーの購入履歴の管理方法は、アプリの認証モデルによって異なります。
+- アプリにバックエンド認証がなく、ユーザーデータを保存しない場合は、[匿名ユーザーに関するセクション](#anonymous-users)を参照してください。
+- アプリにバックエンド認証がある（または今後追加する予定の）場合は、[識別済みユーザーに関するセクション](#identified-users)を参照してください。
+
+**主要な概念**:
+- **プロファイル**はSDKが動作するために必要なエンティティです。Adaptyが自動的に作成します。
+- プロファイルは匿名（**カスタマーユーザーIDなし**）または識別済み（**カスタマーユーザーIDあり**）のいずれかです。
+- **カスタマーユーザーID**を提供することで、Adaptyのプロファイルと内部認証システムを相互参照できます。
+
+匿名ユーザーと識別済みユーザーの違いは以下の通りです。
+
+|                         | 匿名ユーザー                                   | 識別済みユーザー                                                        |
+|-------------------------|---------------------------------------------------|-------------------------------------------------------------------------|
+| **購入の管理** | ストアレベルでの購入履歴の復元                  | カスタマーユーザーIDを通じて端末をまたいで購入履歴を維持 |
+| **プロファイルの管理**  | 再インストールのたびに新しいプロファイルが作成される                    | セッションや端末をまたいで同一プロファイルが使われる                            |
+| **データの永続性**    | 匿名ユーザーのデータはアプリのインストールに紐づく | 識別済みユーザーのデータはアプリの再インストール後も維持される                |
+
+## 匿名ユーザー \{#anonymous-users\}
+
+バックエンド認証を使用しない場合、**アプリのコードで認証処理を実装する必要はありません**。
+
+1. アプリの初回起動時にSDKが有効化されると、Adaptyは**ユーザーの新しいプロファイルを作成します**。
+2. ユーザーがアプリ内で何かを購入すると、その購入は**Adaptyプロファイルとストアアカウントに関連付けられます**。
+3. ユーザーがアプリを**再インストール**したり、**新しい端末**にインストールしたりすると、Adaptyは**有効化時に新しい匿名プロファイルを作成します**。
+4. ユーザーが過去にアプリで購入を行っている場合、デフォルトではSDKの有効化時にApp Storeから購入履歴が自動的に同期されます。
+
+匿名ユーザーの場合、インストールのたびに新しいプロファイルが作成されますが、Adaptyのアナリティクスでは[新規インストールとみなす条件を設定](general#4-installs-definition-for-analytics)できるため、これは問題になりません。
+
+匿名ユーザーの場合、**デバイスID**でインストールをカウントする必要があります。この場合、端末への各アプリインストール（再インストールを含む）が1回のインストールとしてカウントされます。
+
+## 識別済みユーザー \{#identified-users\}
+
+アプリでユーザーを識別するには、2つの方法があります。
+
+- [**ログイン/サインアップ時：**](#during-loginsignup) ユーザーがアプリ起動後にサインインする場合、認証時にカスタマーユーザーIDを指定して`identify()`を呼び出します。
+
+- [**SDK有効化時：**](#during-the-sdk-activation) アプリ起動時にすでにカスタマーユーザーIDが保存されている場合、`activate()`を呼び出す際に一緒に送信します。
+
+:::important
+デフォルトでは、Adaptyが別のカスタマーユーザーIDに現在関連付けられているカスタマーユーザーIDからの購入を受け取った場合、アクセスレベルは共有され、両方のプロファイルが有料アクセスを持ちます。この設定を変更して、有料アクセスを一方のプロファイルから別のプロファイルに移行したり、共有を完全に無効にしたりすることができます。詳細は[こちらの記事](general#6-sharing-paid-access-between-user-accounts)をご覧ください。
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/identify-diagram.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### ログイン/サインアップ時 \{#during-loginsignup\}
+
+アプリ起動後にユーザーを識別する場合（例：ログインまたはサインアップ後）、`identify`メソッドを使用してカスタマーユーザーIDを設定します。
+
+- このカスタマーユーザーIDを**まだ使用したことがない場合**、Adaptyは自動的に現在のプロファイルにリンクします。
+- このカスタマーユーザーIDを**以前にユーザーの識別に使用したことがある場合**、Adaptyはそのカスタマーユーザーに紐づくプロファイルに切り替えます。
+
+:::important
+カスタマーユーザーIDは各ユーザーに対して一意である必要があります。パラメータの値をハードコードすると、すべてのユーザーが同一人物とみなされます。
+:::
+
+他のSDKメソッドを呼び出す前に、`identify`の完了コールバックが呼ばれるまで待機してください。同時に呼び出すと、識別済みプロファイルではなく匿名プロファイルに処理が紐づく場合があります。詳細は[Android SDKの呼び出し順序](android-sdk-call-order)をご覧ください。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.identify("YOUR_USER_ID") { error -> // Unique for each user
+    if (error == null) {
+        // successful identify
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+// User IDs must be unique for each user
+Adapty.identify("YOUR_USER_ID", error -> {
+    if (error == null) {
+        // successful identify
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+### SDK有効化時 \{#during-the-sdk-activation\}
+
+SDKを有効化する時点でカスタマーユーザーIDが分かっている場合、`identify`を別途呼び出す代わりに、`activate`メソッドに含めて送信できます。
+
+カスタマーユーザーIDが分かっていても有効化後に設定する場合、有効化時にAdaptyは新しい匿名プロファイルを作成し、`identify`を呼び出した後にのみ既存のプロファイルに切り替えます。
+
+既存のカスタマーユーザーID（以前に使用したもの）でも新しいものでも渡すことができます。新しいカスタマーユーザーIDを渡した場合、有効化時に作成された新しいプロファイルが自動的にそのカスタマーユーザーIDにリンクされます。
+
+:::note
+デフォルトでは、匿名プロファイルの作成はアナリティクスのダッシュボードに影響しません。インストールはデバイスIDに基づいてカウントされるためです。
+
+デバイスIDはストアからの端末へのアプリの単一インストールを表し、アプリを再インストールした場合にのみ再生成されます。
+初回インストールか再インストールか、または既存のカスタマーユーザーIDが使用されているかどうかは関係ありません。
+
+プロファイルの作成（SDKの有効化またはログアウト時）、ログイン、アプリの再インストールを伴わないアップグレードでは、追加のインストールイベントは発生しません。
+
+デバイスではなく一意のユーザーに基づいてインストールをカウントしたい場合は、**App settings**から[**Installs definition for analytics**](general#4-installs-definition-for-analytics)を設定してください。
+:::
+
+<Tabs>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withCustomerUserId("user123") // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+    .build()
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+    .withCustomerUserId("user123") // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+    .build();
+```
+</TabItem>
+</Tabs>
+
+### ユーザーのログアウト \{#log-users-out\}
+
+ユーザーをログアウトさせるボタンがある場合は、`logout`メソッドを使用してください。
+
+:::important
+ユーザーをログアウトすると、そのユーザー用に新しい匿名プロファイルが作成されます。
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.logout { error ->
+    if (error == null) {
+        // successful logout
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers
+Adapty.logout(error -> {
+    if (error == null) {
+        // successful logout
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+:::info
+ユーザーをアプリに再ログインさせるには、`identify`メソッドを使用してください。
+:::
+
+### ログインなしでの購入を許可する \{#allow-purchases-without-login\}
+
+ユーザーがアプリへのログイン前後どちらでも購入できる場合、ログイン後もアクセスが維持されるようにする必要があります。
+
+1. ログアウト状態のユーザーが購入を行うと、Adaptyはその購入を匿名プロファイルIDに紐付けます。
+2. ユーザーがアカウントにログインすると、Adaptyは識別済みプロファイルへの切り替えを行います。
+    - 新しいカスタマーユーザーIDの場合（例：登録前に購入が行われた場合）、Adaptyは現在のプロファイルにカスタマーユーザーIDを割り当てるため、すべての購入履歴が維持されます。
+    - 既存のカスタマーユーザーIDの場合（そのカスタマーユーザーIDがすでにプロファイルにリンクされている場合）、プロファイル切り替え後に実際のアクセスレベルを取得する必要があります。識別後すぐに[`getProfile`](android-check-subscription-status)を呼び出すか、[プロファイルの更新をリッスン](android-check-subscription-status)してデータが自動的に同期されるようにすることができます。
+
+## 次のステップ \{#next-steps\}
+
+おめでとうございます！アプリにアプリ内課金のロジックを実装できました！アプリのマネタイズが順調に進むことを願っています！
+
+Adaptyをさらに活用するために、以下のトピックもご覧ください。
+- [**テスト**](troubleshooting-test-purchases): すべてが期待通りに動作することを確認する
+- [**オンボーディング**](android-onboardings): オンボーディングでユーザーを引き付け、リテンションを高める
+- [**インテグレーション**](configuration): マーケティングアトリビューションや分析サービスとたった1行のコードで連携する
+- [**カスタムプロファイル属性の設定**](android-setting-user-attributes): ユーザープロファイルにカスタム属性を追加してセグメントを作成し、A/Bテストを実施したり、ユーザーごとに異なるペイウォールを表示したりする

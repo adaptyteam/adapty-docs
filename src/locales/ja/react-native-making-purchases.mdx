@@ -1,0 +1,161 @@
+---
+title: "React Native SDKでモバイルアプリ内購入を行う"
+description: "Adaptyを使ったアプリ内課金とサブスクリプション処理のガイド。"
+metadataTitle: "Adaptyでのアプリ内課金の処理 | Adapty ドキュメント"
+keywords: ['makePurchase', 'offer code']
+rank: 90
+displayed_sidebar: sdkreactnative
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/ja/reusable/OfferCodesInfo.mdx';
+
+モバイルアプリ内にペイウォールを表示することは、ユーザーにプレミアムコンテンツやサービスへのアクセスを提供する上で欠かせないステップです。ただし、[ペイウォールビルダー](adapty-paywall-builder)を使ってペイウォールをカスタマイズしている場合に限り、ペイウォールを表示するだけで購入が完了します。
+
+ペイウォールビルダーを使用しない場合は、`.makePurchase()` という別のメソッドを使って購入を完了し、目的のコンテンツをアンロックする必要があります。このメソッドは、ユーザーがペイウォールを通じて取引を進めるための入り口となります。
+
+ペイウォールに、ユーザーが購入しようとしているプロダクトに対するアクティブなプロモーションオファーがある場合、Adaptyは購入時に自動的にそれを適用します。
+
+:::warning
+初回オファーが自動的に適用されるのは、ペイウォールビルダーを使って設定したペイウォールを使用している場合のみです。
+
+それ以外の場合は、[iOSで初回オファーの利用資格をユーザーが持っているか確認する](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios)必要があります。このステップをスキップすると、リリース時にアプリが審査で却下される可能性があります。また、初回オファーの対象ユーザーに通常価格が請求されてしまう恐れもあります。
+:::
+
+すべてのステップを漏れなく完了した上で[初期設定](quickstart)を終えていることを確認してください。設定が完了していないと、購入の検証ができません。
+
+## 購入を行う \{#make-purchase\}
+
+:::note
+**[ペイウォールビルダー](adapty-paywall-builder)を使用していますか？** 購入は自動的に処理されます。このステップはスキップできます。
+
+**ステップバイステップのガイドをお探しですか？** フルコンテキストのエンドツーエンド実装手順については、[クイックスタートガイド](react-native-implement-paywalls-manually)をご覧ください。
+:::
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+
+リクエストパラメーター：
+
+| パラメーター | 必須 | 説明 |
+| :---------- | :------- |:-------------------------------------------------------------------------------------------------------------------------------|
+| **Product** | 必須 | ペイウォールから取得した [`AdaptyPaywallProduct`](https://react-native.adapty.io/interfaces/adaptypaywallproduct) オブジェクト。 |
+
+レスポンスパラメーター：
+
+| パラメーター | 説明 |
+|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>リクエストが成功した場合、このオブジェクトがレスポンスに含まれます。[AdaptyProfile](https://react-native.adapty.io/interfaces/adaptyprofile) オブジェクトは、アプリ内のユーザーのアクセスレベル、サブスクリプション、および買い切り購入に関する包括的な情報を提供します。</p><p>アクセスレベルのステータスを確認して、ユーザーがアプリへの必要なアクセス権を持っているかどうかを判断してください。</p> |
+
+:::warning
+**注意:** Apple の StoreKit バージョンが v2.0 未満、かつ Adapty SDK バージョンが v2.9.0 未満の場合は、代わりに [Apple App Store の共有シークレット](app-store-connection-configuration#step-5-enter-app-store-shared-secret)を提供する必要があります。この方法は現在 Apple によって非推奨とされています。
+:::
+
+## 購入時にサブスクリプションを変更する \{#change-subscription-when-making-a-purchase\}
+
+ユーザーが現在のサブスクリプションを更新する代わりに新しいサブスクリプションを選択した場合の動作は、アプリストアによって異なります。
+
+- App Store の場合、サブスクリプションはサブスクリプショングループ内で自動的に更新されます。ユーザーがあるグループのサブスクリプションを購入している状態で別のグループのサブスクリプションを購入した場合、両方のサブスクリプションが同時にアクティブになります。
+- Google Play の場合、サブスクリプションは自動的に更新されません。以下で説明するように、モバイルアプリのコードで切り替えを管理する必要があります。
+
+Android でサブスクリプションを別のものに置き換えるには、追加パラメーターを指定して `.makePurchase()` メソッドを呼び出します。
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product, params);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+
+追加のリクエストパラメーター：
+
+| パラメーター | 必須 | 説明 |
+| :--------- | :------- | :----------------------------------------------------------- |
+| **params** | 必須 | [`MakePurchaseParamsInput`](https://react-native.adapty.io/types/makepurchaseparamsinput) 型のオブジェクト。 |
+
+:::info
+**バージョン 3.8.2 以降**: `MakePurchaseParamsInput` の構造が更新されました。`oldSubVendorProductId` と `prorationMode` は `subscriptionUpdateParams` 配下にネストされ、`isOfferPersonalized` は上位レベルに移動しました。
+
+例：
+```javascript
+makePurchase(product, {
+    android: {
+        subscriptionUpdateParams: {
+            oldSubVendorProductId: 'old_product_id',
+            prorationMode: 'charge_prorated_price'
+        },
+        isOfferPersonalized: true
+    }
+});
+```
+:::
+
+サブスクリプションと置き換えモードの詳細については、Google デベロッパードキュメントをご覧ください：
+
+- [置き換えモードについて](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [置き換えモードに関する Google の推奨事項](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- 置き換えモード [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE())。注意: このメソッドはサブスクリプションのアップグレードにのみ使用できます。ダウングレードはサポートされていません。
+- 置き換えモード [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED())。注意: 実際のサブスクリプション変更は、現在のサブスクリプションの請求期間が終了したときにのみ行われます。
+
+## iOSでオファーコードを利用する \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+アプリ内にコード利用シートを表示するには：
+
+```typescript showLineNumbers
+adapty.presentCodeRedemptionSheet();
+```
+
+:::danger
+弊社の観測によると、一部のアプリではオファーコード利用シートが正常に動作しない場合があります。ユーザーを App Store に直接リダイレクトすることをお勧めします。
+
+そのためには、以下の形式のURLを開く必要があります：
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
+
+## プリペイドプランの管理（Android） \{#manage-prepaid-plans-android\}
+
+アプリのユーザーが[プリペイドプラン](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans)（例：数ヶ月分の非更新型サブスクリプションを購入）を利用できる場合、プリペイドプランの[保留中のトランザクション](https://developer.android.com/google/play/billing/subscriptions#pending)を有効にすることができます。
+
+```typescript showLineNumbers
+adapty.activate("PUBLIC_SDK_KEY", {
+    android: { pendingPrepaidPlansEnabled: true }
+});
+```

@@ -1,0 +1,144 @@
+---
+title: "Xác định người dùng trong Unity SDK"
+description: "Tìm hiểu cách xác định người dùng trong ứng dụng Unity của bạn với Adapty SDK."
+metadataTitle: "Xác Định Người Dùng | Unity SDK | Tài liệu Adapty"
+customSlug: /unity-identifying-users
+displayed_sidebar: sdkunity
+---
+
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+import CrossDeviceDetection from '@site/src/locales/vi/reusable/CrossDeviceDetection.mdx';
+
+Adapty tạo một ID hồ sơ nội bộ cho mỗi người dùng. Tuy nhiên, nếu bạn có hệ thống xác thực riêng, bạn nên đặt Customer User ID của mình. Bạn có thể tìm người dùng theo Customer User ID của họ trong phần [Profiles](profiles-crm) và sử dụng nó trong [server-side API](getting-started-with-server-side-api), thông tin này sẽ được gửi đến tất cả các tích hợp.
+
+### Đặt customer user ID khi cấu hình \{#setting-customer-user-id-on-configuration\}
+
+Nếu bạn có user ID trong quá trình cấu hình, chỉ cần truyền nó dưới dạng tham số `customerUserId` vào phương thức `.activate()`:
+
+```csharp showLineNumbers
+using UnityEngine;
+using AdaptySDK;
+
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID");
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+```
+
+<SampleApp />
+
+### Đặt customer user ID sau khi cấu hình \{#setting-customer-user-id-after-configuration\}
+
+Nếu bạn không có user ID trong cấu hình SDK, bạn có thể đặt nó sau bất kỳ lúc nào bằng phương thức `.identify()`. Các trường hợp phổ biến nhất khi sử dụng phương thức này là sau khi đăng ký hoặc đăng nhập, khi người dùng chuyển từ người dùng ẩn danh sang người dùng đã xác thực.
+
+```csharp showLineNumbers
+Adapty.Identify("YOUR_USER_ID", (error) => {
+  if(error == null) {
+    // successful identify
+  }
+});
+```
+
+Tham số yêu cầu:
+
+- **Customer User ID** (bắt buộc): chuỗi định danh người dùng.
+
+:::warning
+Gửi lại dữ liệu người dùng quan trọng
+
+Trong một số trường hợp, chẳng hạn khi người dùng đăng nhập lại vào tài khoản của họ, máy chủ của Adapty đã có thông tin về người dùng đó. Trong những trường hợp này, Adapty SDK sẽ tự động chuyển sang làm việc với người dùng mới. Nếu bạn đã truyền bất kỳ dữ liệu nào cho người dùng ẩn danh, chẳng hạn như thuộc tính tùy chỉnh hoặc attribution từ các mạng bên thứ ba, bạn nên gửi lại dữ liệu đó cho người dùng đã được xác định.
+
+Ngoài ra, điều quan trọng cần lưu ý là bạn nên yêu cầu lại tất cả các paywall và sản phẩm sau khi xác định người dùng, vì dữ liệu của người dùng mới có thể khác.
+:::
+
+### Đăng xuất và đăng nhập \{#logging-out-and-logging-in\}
+
+Bạn có thể đăng xuất người dùng bất kỳ lúc nào bằng cách gọi phương thức `.logout()`:
+
+```csharp showLineNumbers
+Adapty.Logout((error) => {
+  if(error == null) {
+    // successful logout
+  }
+});
+```
+
+Sau đó bạn có thể đăng nhập lại người dùng bằng phương thức `.identify()`.
+
+## Gán `appAccountToken` (iOS) \{#assign-appaccounttoken-ios\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) là một **UUID** cho phép bạn liên kết các giao dịch App Store với danh tính người dùng nội bộ của mình.  
+StoreKit gắn token này với mọi giao dịch, để backend của bạn có thể khớp dữ liệu App Store với người dùng của mình.
+
+Hãy sử dụng một UUID ổn định được tạo cho mỗi người dùng và tái sử dụng nó cho cùng một tài khoản trên các thiết bị khác nhau.
+Điều này đảm bảo rằng các giao dịch mua và thông báo App Store được liên kết chính xác.
+
+Bạn có thể đặt token theo hai cách – trong quá trình kích hoạt SDK hoặc khi xác định người dùng.
+
+:::important
+Bạn phải luôn truyền `appAccountToken` cùng với `customerUserId`.
+Nếu bạn chỉ truyền token, nó sẽ không được đưa vào giao dịch.
+:::
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+using System;
+
+// During configuration:
+var appAccountToken = new Guid("YOUR_APP_ACCOUNT_TOKEN");
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID", appAccountToken);
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+}); 
+
+// Or when identifying users
+Adapty.Identify("YOUR_USER_ID", appAccountToken, (error) => {
+    if (error == null) {
+        // successful identify
+    }
+});
+```
+
+## Đặt obfuscated account ID (Android) \{#set-obfuscated-account-ids-android\}
+
+Google Play yêu cầu obfuscated account ID cho một số trường hợp sử dụng nhất định nhằm tăng cường quyền riêng tư và bảo mật của người dùng. Các ID này giúp Google Play xác định các giao dịch mua trong khi vẫn giữ thông tin người dùng ẩn danh, điều này đặc biệt quan trọng để ngăn chặn gian lận và phân tích.
+
+Bạn có thể cần đặt các ID này nếu ứng dụng của bạn xử lý dữ liệu người dùng nhạy cảm hoặc nếu bạn cần tuân thủ các quy định về quyền riêng tư cụ thể. Các obfuscated ID cho phép Google Play theo dõi các giao dịch mua mà không để lộ định danh người dùng thực tế.
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+// During configuration:
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+    .SetCustomerUserId("YOUR_USER_ID", null, "YOUR_OBFUSCATED_ACCOUNT_ID");
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+});
+
+// Or when identifying users
+Adapty.Identify("YOUR_USER_ID", null, "YOUR_OBFUSCATED_ACCOUNT_ID", (error) => {
+    if (error == null) {
+        // successful identify
+    }
+});
+```
+
+## Phát hiện người dùng trên nhiều thiết bị \{#detect-users-across-devices\}
+
+<CrossDeviceDetection />

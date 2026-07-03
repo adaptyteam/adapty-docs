@@ -1,0 +1,189 @@
+---
+title: "Adapty アトリビューションにおける Google Cloud Storage"
+description: "Google Cloud Storage を Adapty アトリビューションと統合して、ユーザー獲得データを安全に保存しましょう。"
+metadataTitle: "Google Cloud Storage | Adapty アトリビューション | Adapty ドキュメント"
+keywords: ['adapty attribution', 'adapty ua', 'ユーザー獲得', 'google cloud', 'gcs']
+---
+
+Adapty AttributionとGoogle Cloud Storageの連携により、ユーザー獲得キャンペーンデータを一か所に安全に保存できます。キャンペーンパフォーマンスデータ、アトリビューションデータ、ユーザー獲得イベントを.csvファイルとしてGoogle Cloud Storageバケットに保存できます。  
+この連携を設定するには、Google Cloud ConsoleとAdapty Attribution ダッシュボードでいくつかの簡単な手順を実行する必要があります。
+
+:::note
+スケジュール
+
+Adapty Attributionは毎日UTC 4:00にGoogle Cloud Storageへデータを送信します。
+各ファイルには、UTC基準で前日の1日分（カレンダーデー）に作成されたイベントのデータが含まれます。たとえば、3月8日 4:00 UTC に自動エクスポートされるデータには、3月7日の 00:00:00〜23:59:59 UTC に作成されたすべてのイベントが含まれます。
+:::
+## Google Cloud Storage 連携の設定方法 \{#how-to-set-up-google-cloud-storage-integration\}
+
+### ステップ 1. Google Cloud Storage の認証情報を作成する \{#step-1-create-google-cloud-storage-credentials\}
+
+このガイドでは、Google Cloud Platform コンソールで必要な認証情報を作成する手順を説明します。
+
+Adapty Attribution が指定したバケットにローデータレポートをアップロードするには、サービスアカウントのキーと、対応するバケットへの書き込みアクセス権が必要です。サービスアカウントのキーを提供し、バケットへの書き込みアクセスを許可することで、Adapty Attribution がプラットフォームからストレージ環境へローデータレポートを安全かつ効率的に転送できるようになります。
+:::warning
+サービスアカウントのHMACキー認証のみをサポートしています。Google Cloud Storageへの適切なアクセスを有効にするため、サービスアカウントのHMACキーに「Storage Object Viewer」、「Storage Legacy Bucket Writer」、「Storage Object Creator」のロールが追加されていることを確認してください。
+:::
+
+#### 2.1. サービスアカウントの作成 \{#21-create-service-account\}
+
+1. Google Cloudアカウントの[IAM](https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts)セクションに移動し、対象のプロジェクトを選択するか、新しいプロジェクトを作成します。
+<Zoom>
+  <img src="/assets/shared/img/30a81ef-CleanShot_2023-03-17_at_15.22.142x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. 次に、「+ CREATE SERVICE ACCOUNT」ボタンをクリックして、Adapty アトリビューション用の新しいサービスアカウントを作成します。
+<Zoom>
+  <img src="/assets/shared/img/98f8ebf-CleanShot_2023-03-17_at_15.40.062x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. アクセス権限は後の手順で付与するため、最初のステップではフィールドに必要事項を入力してください。このページの詳細については、[こちら](https://docs.cloud.google.com/iam/docs/service-accounts-create)のドキュメントをご参照ください。
+<Zoom>
+  <img src="/assets/shared/img/2190c50-CleanShot_2023-03-17_at_15.48.552x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. [プライベートJSONキー](https://docs.cloud.google.com/iam/docs/keys-create-delete)を作成してダウンロードするには、KEYSセクションに移動し、「ADD KEY」ボタンをクリックします
+<Zoom>
+  <img src="/assets/shared/img/8a45468-CleanShot_2023-03-17_at_15.58.092x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+5. DETAILS セクションで、先ほど作成したサービスアカウントに紐づいている Email の値を見つけ、コピーしてください。この情報は、後続の手順でアカウントを認証し、バケットへの書き込みを許可するために必要になります。
+<Zoom>
+  <img src="/assets/shared/img/6ccd0f0-CleanShot_2023-03-17_at_16.03.162x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+#### 2.2. バケットの権限を設定する \{#22-configure-bucket-permissions\}
+6. Google Cloud Storageの[Buckets](https://console.cloud.google.com/storage/browser)ページに移動し、既存のバケットを選択するか、Adapty アトリビューションのユーザー獲得データレポートを保存するための新しいバケットを作成します。
+7. **PERMISSIONS**セクションに移動し、[アクセスを付与する](https://docs.cloud.google.com/identity/docs/how-to?hl=en)オプションを選択します。
+<Zoom>
+  <img src="/assets/shared/img/3cdd937-CleanShot_2023-03-17_at_16.14.232x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+8. PERMISSIONS セクションで、先ほど第5ステップで取得したサービスアカウントのメールアドレスを入力し、Storage Object Creator ロールを選択します
+9. 最後に SAVE をクリックして変更を適用します
+<Zoom>
+  <img src="/assets/shared/img/62801f4-CleanShot_2023-03-17_at_16.17.312x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+10. バケット名は後で使用するため、必ず控えておいてください。
+
+11. これらの手順が完了すると、Google Cloud Console での必要なセットアップが完了です！最後のステップとして、バケット名を入力し、Adapty アトリビューションで使用するための JSON ファイルをダウンロードします。
+<Zoom>
+  <img src="/assets/shared/img/c967e16-CleanShot_2023-03-17_at_16.23.332x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+### ステップ 2. Adapty Attribution でインテグレーションを設定する \{#step-2-configure-integration-in-adapty-attribution\}
+
+1. [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/ua/integrations/google-cloud-storage) に移動します
+2. **Export install events to Google Cloud Storage** トグルをオンにします
+3. Google Cloud Storage と Adapty Attribution 間の接続を構築するために、必要なフィールドを入力します:
+| フィールド                                    | 説明                                                                                                                                                                                          |
+|:------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Google Cloud service account key file** | ダウンロードしたプライベート [JSON キーファイル](ua-google-cloud-storage#step-1-create-google-cloud-storage-credentials)。                                                                    |
+| **Google Cloud bucket name**              | データを保存する Google Cloud Storage 上のバケット名。Google Cloud Storage 環境内で一意である必要があり、スペースを含めることはできません。                                                   |
+| **Folder inside the bucket**              | バケット内でデータを保存するフォルダ名。バケット内で一意である必要があり、データの整理に利用できます。このフィールドへの入力は任意です。                                                      |
+<ZoomImage id="ua-google-cloud.webp" width="700px" />
+## 手動データエクスポート \{#manual-data-export\}
+
+Google Cloud Storage への自動イベントデータエクスポートに加えて、Adapty UA は手動ファイルエクスポート機能も提供しています。この機能を使用すると、ユーザー獲得データの特定の日付を選択し、GCS バケットへ手動でエクスポートできます。エクスポートするデータとタイミングをより細かく制御できます。
+
+## テーブル構造 \{#table-structure\}
+
+Google Cloud Storage 連携では、Adapty アトリビューションがインストールイベントの履歴データを保存するテーブルを提供します。テーブルには、ユーザープロファイル、収益と手取り額、配信元ストアなどのデータが含まれます。
+
+:::warning
+この構造は、Adapty または連携している第三者サービスによる新しいデータの追加により、今後変更される可能性があります。この構造に依存するコードを作成する際は、特定のフィールドのみを参照するよう、堅牢な実装を心がけてください。
+:::
+
+イベントのテーブル構造は以下のとおりです。
+| カラム                   | 説明                                      |
+|--------------------------|-------------------------------------------|
+| `adapty_profile_id`      | Adapty プロファイルの一意識別子           |
+| `install_id`             | インストールの一意識別子                  |
+| `created_at`             | レコード作成タイムスタンプ（ISO 8601）    |
+| `installed_at`           | アプリインストールタイムスタンプ（ISO 8601） |
+| `store`                  | アプリストア（`ios`、`android`）          |
+| `country`                | ユーザーの国コード（ISO 3166-1 alpha-2）  |
+| `ip_address`             | クライアント IP アドレス                  |
+| `idfa`                   | iOS 広告識別子（IDFA）                    |
+| `idfv`                   | iOS ベンダー識別子（IDFV）                |
+| `gaid`                   | Google 広告 ID（Android）                 |
+| `android_id`             | Android デバイス ID                       |
+| `app_set_id`             | Android App Set ID                        |
+| `channel`                | アトリビューションチャネル                |
+| `campaign_id`            | キャンペーン識別子                        |
+| `campaign_name`          | キャンペーン名                            |
+| `adset_id`               | 広告セット識別子                          |
+| `adset_name`             | 広告セット名                              |
+| `ad_id`                  | 広告識別子                                |
+| `ad_name`                | 広告名                                    |
+| `keyword_id`             | キーワード識別子                          |
+| `keyword_name`           | キーワード名                              |
+| `asa_org_id`             | Apple Search Ads 組織 ID                  |
+| `asa_keyword_match_type` | ASA キーワードマッチタイプ（`Exact`、`Broad`） |
+| `asa_attribution`        | ASA アトリビューションデータ（JSON 文字列） |
+| `asa_conversion_type`    | ASA コンバージョンタイプ                  |
+| `asa_country_or_region`  | ASA の国またはリージョン                  |
+| `asa_creative_set_name`  | ASA クリエイティブセット名                |
+| `fbclid`                 | Facebook クリック ID                      |
+| `ttclid`                 | TikTok クリック ID                        |
+| `utm_source`             | UTM source パラメータ                     |
+| `utm_medium`             | UTM medium パラメータ                     |
+| `utm_campaign`           | UTM campaign パラメータ                   |
+| `utm_term`               | UTM term パラメータ                       |
+| `utm_content`            | UTM content パラメータ                    |

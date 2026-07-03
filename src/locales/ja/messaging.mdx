@@ -1,0 +1,118 @@
+---
+title: "メッセージングサービスの連携"
+description: "Adaptyのメッセージングツールを使ってサブスクリプションのエンゲージメントと継続率を向上させましょう。"
+metadataTitle: "メッセージングと通知 | Adapty ドキュメント"
+---
+
+モバイル市場が拡大するにつれ、ユーザーの獲得はますます難しくコストも高くなっています。そのため、獲得したユーザーを賢く活用することが、特に競争の激しいジャンルではユニットエコノミクスの改善につながります。
+
+Adaptyはユーザーの主要な支払いアクションをリアルタイムで把握できます。トライアルを開始したタイミング、支払いのトラブルが発生したタイミング、サブスクリプションを購入してその後キャンセルを決めたタイミングなど、こうしたイベントはすべてユーザーの状態変化を示しています。そしてこれが、オファーや特別プレゼントなどでユーザーを引き留める絶好のタイミングです。
+
+プッシュ通知プラットフォームでは、標準・カスタム両方のタグでユーザーを分類し、効果的な自動リテンションシステムを構築できます。このシステムを機能させるには、メッセージを送信するタイミングをシステムに伝えるトリガーイベントが必要です。これらのイベントは、設定済みの連携を通じてAdaptyからプッシュプラットフォームへ送信されます。
+
+連携したいサービスを選んで手順に従ってください：
+
+- [Braze](braze)
+- [OneSignal](onesignal)
+- [Pushwoosh](pushwoosh)
+- [Slack](slack)
+
+:::note
+お探しのアトリビューションプロバイダーが見当たりませんか？
+
+ぜひお知らせください！[機能リクエストを作成](https://adapty.featurebase.app/en?b=6979f233ebd3cffd4f425ba0)していただければ、追加を検討します。
+:::
+
+## イベントのプロパティ \{#event-properties\}
+
+WebhookイベントはJSON形式で送信されます。すべてのイベントは同じ構造に従いますが、フィールドはイベントの種類、ストア、および設定によって異なります。
+
+| プロパティ                      | 型          | 説明                                                  |
+| ----------------------------- | ------------- | ------------------------------------------------------------ |
+| **profile_id**                | uuid          | AdaptyのユーザーID。                                              |
+| **currency**                  | str           | ローカル通貨（デフォルトはUSD）。                            |
+| **price_usd**                 | float         | Apple/Googleの手数料控除前のプロダクト価格。売上高。              |
+| **proceeds_usd**              | float         | Apple/Googleの手数料控除後のプロダクト価格。純売上高。           |
+| **net_revenue_usd**           | float         | USD換算の純収益（Apple/Googleの手数料および税金控除後）。空の場合があります。 |
+| **price_local**               | float         | ローカル通貨でのApple/Googleの手数料控除前のプロダクト価格。売上高。 |
+| **proceeds_local**            | float         | ローカル通貨でのApple/Googleの手数料控除後のプロダクト価格。純売上高。 |
+| **transaction_id**            | str           | 購入や更新などのトランザクションの一意の識別子。 |
+| **original_transaction_id**   | str           | 最初の購入のトランザクション識別子。         |
+| **purchase_date**             | ISO 8601 date | プロダクト購入の日時。                       |
+| **original_purchase_date**    | ISO 8601 date | 最初の購入の日時。                  |
+| **environment**               | str           | _Sandbox_ または _Production_ のいずれか。                            |
+| **vendor_product_id**         | str           | Apple App Store、Google Play Store、またはStripeのプロダクトID。 |
+| **base_plan_id**              | str           | Google Play Storeの[ベースプランID](https://support.google.com/googleplay/android-developer/answer/12154973)またはStripeの[価格ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices)。 |
+| **event_datetime**            | ISO 8601 date | イベントの日時。                              |
+| **store**                     | str           | _app_store_ または _play_store_ のいずれか。                          |
+| **trial_duration**            | str           | トライアル期間の日数。"{} days"形式で送信されます（例：「7 days」）。 |
+| **cancellation_reason**       | str           | <p>ユーザーがサブスクリプションをキャンセルした理由。</p><p></p><p>以下のいずれかになります</p><p>iOS & Android</p><p>_voluntarily\_cancelled_, _billing\_error_, _refund_</p><p>iOS</p><p>_price\_increase_, _product\_was\_not\_available_, _unknown_</p><p>Android</p><p>_new\_subscription\_replace_, _cancelled\_by\_developer_</p> |
+| **subscription_expires_at**   | ISO 8601 date | サブスクリプションの有効期限。通常は将来の日時。  |
+| **consecutive_payments**      | int           | ユーザーが中断なくサブスクリプションを継続している期間数。現在の期間を含みます。 |
+| **rate_after_first_year**     | bool          | 1年間継続して更新された後、サブスクリプションが引き下げられた手数料率（通常15%）の対象となるかどうかを示すブール値。手数料率はプログラムの適格性や国によって異なります。詳細は[ストアの手数料と税金](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue)をご覧ください。 |
+| **promotional_offer_id**      | str           | Adapty ダッシュボードのプロダクトセクションに記載されているプロモーションオファーのID |
+| **store_offer_category**      | str           | _introductory_ または _promotional_ のいずれか。                      |
+| **store_offer_discount_type** | str           | _free_trial_、_pay_as_you_go_、または _pay_up_front_ のいずれか。      |
+| **paywall_name**              | str           | トランザクションが発生したペイウォールの名前。        |
+| **paywall_revision**          | int           | トランザクションが発生したペイウォールのリビジョン。値は1に設定されます。 |
+| **developer_id**              | str           | トランザクションが発生したプレースメントのデベロッパー（SDK）ID。 |
+| **ab_test_name**              | str           | トランザクションが発生したA/B テストの名前。       |
+| **ab_test_revision**          | int           | トランザクションが発生したA/B テストのリビジョン。値は1に設定されます。 |
+| **cohort_name**               | str           | プロファイルが属するオーディエンスの名前。        |
+| **profile_event_id**          | uuid          | 重複排除に使用できる一意のイベントID。          |
+| **store_country**             | str           | ストアから送信された国情報。                         |
+| **profile_ip_address**        | str           | プロファイルのIPアドレス（IPv4またはIPv6。IPv4が利用可能な場合は優先されます）。デバイスのIPが変更されるたびに更新されます。 |
+| **profile_country**           | str           | プロファイルのIPをもとにAdaptyが判定した国。                   |
+| **profile_total_revenue_usd** | float         | プロファイルの累計売上高（返金分を含む）。             |
+| **variation_id**              | uuid          | 購入が行われたペイウォールの一意のID。        |
+| **access_level_id**           | str           | 有料アクセスレベルのID                                         |
+| **is_active**                 | bool          | プロファイルの有料アクセスレベルが有効かどうかを示すブール値。 |
+| **will_renew**                | bool          | 有料アクセスレベルが更新されるかどうかを示すブール値。 |
+| **is_refund**                 | bool          | トランザクションが返金済みかどうかを示すブール値。          |
+| **is_lifetime**               | bool          | 有料アクセスレベルが永続アクセスかどうかを示すブール値。    |
+| **is_in_grace_period**        | bool          | プロファイルがグレース期間中かどうかを示すブール値。       |
+| **starts_at**                 | ISO 8601 date | ユーザーへの有料アクセスレベルの開始日時。    |
+| **renewed_at**                | ISO 8601 date | 有料アクセスが更新される日時。              |
+| **expires_at**                | ISO 8601 date | 有料アクセスの有効期限の日時。                  |
+| **activated_at**              | ISO 8601 date | 有料アクセスが有効化された日時。                |
+| **billing_issue_detected_at** | ISO 8601 date | 請求問題が発生した日時。                              |
+| **profile_has_access_level**  | Bool          | プロファイルにアクティブなアクセスレベルがあるかどうかを示すブール値（Webhookのみ）。 |
+
+各イベントには以下のプロパティが含まれます：
+
+`transaction_id, original_transaction_id, purchase_date, original_purchase_date, environment, vendor_product_id, event_datetime, store`
+
+また、一部のイベントには追加のプロパティがあります。`subscription_refunded` および `non_subscription_purchase_refunded` イベントについては、追加プロパティとして `price_usd` と `proceeds_usd` の値を必ず指定する必要があります。
+
+| イベント名                          | プロパティ                                                   |
+| :---------------------------------- | :----------------------------------------------------------- |
+| **subscription\_initial\_purchase** | price\_usd, proceeds\_usd, subscription\_expires\_at, consecutive\_payments, rate\_after\_first\_year, trial\_duration |
+| **subscription\_renewed**           | price\_usd, proceeds\_usd, subscription\_expires\_at, consecutive\_payments, rate\_after\_first\_year, trial\_duration |
+| **subscription\_cancelled**         | cancellation\_reason, trial\_duration                        |
+| **trial\_started**                  | subscription\_expires\_at, trial\_duration                   |
+| **trial\_converted**                | price\_usd, proceeds\_usd, subscription\_expires\_at, consecutive\_payments, rate\_after\_first\_year, trial\_duration |
+| **trial\_cancelled**                | cancellation\_reason, trial\_duration                        |
+| **non\_subscription\_purchase**     | price\_usd, proceeds\_usd                                    |
+| **billing\_issue\_detected**        | subscription\_expires\_at, trial\_duration                   |
+| **entered\_grace\_period**          | subscription\_expires\_at, trial\_duration                   |
+
+イベントの例
+
+```json title="Json"
+{
+    "price_usd": 9.99,
+    "proceeds_usd": 6.99,
+    "transaction_id": "1000000628581600",
+    "original_transaction_id": "1000000628581600",
+    "purchase_date": "2020-02-18T18:40:22.000000+0000",
+    "original_purchase_date": "2020-02-18T18:40:22.000000+0000",
+    "environment": "Sandbox",
+    "vendor_product_id": "premium",
+    "event_datetime": "2020-02-18T18:40:22.000000+0000",
+    "store": "app_store"
+}
+```
+
+Adaptyはイベントをサーバーおよびサードパーティの分析システムに送信します。
+
+**profile_ip_address** プロパティは現在のデバイスIPと同期されます。AdaptyのサーバーがSDKから情報を受信するたびに、記録済みのIPと異なる場合はIPが更新されます。

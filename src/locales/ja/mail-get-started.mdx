@@ -1,0 +1,194 @@
+---
+title: "Adapty Mail を始めよう"
+description: "Adapty Mail をセットアップして、最初のメールフローを起動しましょう。"
+metadataTitle: "Adapty Mail を始めよう | Adapty ドキュメント"
+keywords: ['adapty mail']
+---
+
+このガイドでは、Adapty Mail をセットアップして、最初のメールフローを起動する手順を説明します。
+:::note
+Adapty SDK を使わず、独自のサーバーから Adapty Mail にデータを送ることも可能です。ユーザーのメールアドレスや購入情報をバックエンドで管理している場合、または別のソースからサブスクライバーをインポートする場合は、[Adapty Mail API 経由でメールとトランザクションを送信する](mail-send-data-via-api)をご参照ください。
+:::
+
+セットアップは6つのパートに分かれています：
+1. [Adapty SDK を設定する](#1-configure-your-adapty-sdk)
+2. [送信ドメインを設定する](#2-set-up-your-sending-domain)
+3. [ウェブペイウォールを作成する](#3-create-a-web-paywall)
+4. [AI でキャンペーンを生成する](#4-generate-a-campaign-with-ai)
+5. [フローを起動する](#5-launch-a-flow)
+6. [送信を有効にする](#6-enable-sending)
+:::tip
+Adapty 経由で Adapty Mail にサインアップした場合、**ブランドプロファイル**はプロジェクトのストア URL から自動的に作成されます。**Brand** をいつでも開いて確認・修正できます — [ブランド](mail-brand)を参照してください。スタンドアロンでサインアップした場合は、キャンペーンやウェブペイウォールを作成する前に同じページでブランドを設定してください。
+:::
+## 始める前に \{#before-you-start\}
+
+開始前に以下を確認してください：
+
+- **DNSアクセス**: ルートドメインにレコードを追加できること。
+- **Web決済プロバイダー**: サブスクリプションプロダクトが設定済みのStripe、Paddle、またはPayPalアカウントを持っていること。
+
+## 1. Adapty SDKを設定する \{#1-configure-your-adapty-sdk\}
+
+:::important
+Adapty Mailは**スタンドアロンプロダクト**です。ペイウォール、サブスクリプション、アナリティクスをAdaptyで管理していなくても利用できます。既存のスタック全体を移行する必要はありません。
+
+正確な収益データを取得するには、最低限の設定としてAdapty SDKをオブザーバーモードでインストールし、App Serverの通知を有効にしてください。
+:::
+
+Adapty Mailがアプリに必要なものは3つです。購入データ（各コンバージョンを誘導したメールに収益を紐付けるため）、安定したユーザー識別子、そしてユーザーのメールアドレスです。
+1. **Adaptyで収益を追跡する。** 最初のステップは、すでにアプリ内課金を実装しているかどうかによって異なります：
+   - **AdaptyでアプリIn内課金をすでに実装している**場合は、この段階で追加の作業は不要です。
+   - **Adaptyを使わずにアプリ内課金をすでに実装していて**、Adaptyへの移行を予定していない場合は、各プラットフォームのAdapty SDKをオブザーバーモードでインストールしてください。この段階では、SDKをプロジェクトに追加し、オブザーバーモードを有効にして起動し、トランザクションを報告するだけで構いません。プラットフォーム別ガイド：[iOS](implement-observer-mode)、[Android](implement-observer-mode-android)、[React Native](implement-observer-mode-react-native)、[Flutter](implement-observer-mode-flutter)、[Unity](implement-observer-mode-unity)、[Kotlin Multiplatform](implement-observer-mode-kmp)、[Capacitor](implement-observer-mode-capacitor)。
+   - **アプリ内課金をまだ実装しておらず、Adaptyを使いたい**場合は、[クイックスタートガイド](quickstart)の手順に従って、購入処理をAdaptyに委任してください。
+次に、[Adapty で App Store サーバー通知を有効化](enable-app-store-server-notifications)して、App Store から収益関連の更新を直接受け取れるようにします。
+
+2. **ユーザー識別を設定する。** バックエンドのユーザー ID、Firebase UID などの安定した ID を、`Adapty.identify()` を呼び出すか、SDK 起動時に `.activate()` へ `customerUserId` として渡すことで設定します。`customer_user_id` は、Adapty Mail がキャンペーン、クリック、購入を正しいプロファイルに紐付けるための識別子です。
+プラットフォームガイド: [iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), [Unity](unity-identifying-users), [Kotlin Multiplatform](kmp-identifying-users), [Capacitor](capacitor-identifying-users).
+
+3. **ユーザーのメールアドレスを収集する。** ユーザーがアプリ内でメールアドレスを入力したタイミング（サインアップやチェックアウトなど）で、`updateProfile` にメール属性を指定して Adapty に渡してください。キャンペーンの受信者全員にこの値が必要です。
+プラットフォーム別ガイド: [iOS](setting-user-attributes)、[Android](android-setting-user-attributes)、[React Native](react-native-setting-user-attributes)、[Flutter](flutter-setting-user-attributes)、[Unity](unity-setting-user-attributes)、[Kotlin Multiplatform](kmp-setting-user-attributes)、[Capacitor](capacitor-setting-user-attributes)
+
+アプリでまだメールアドレスを収集していない場合は、[メール収集戦略](mail-collect-emails#email-collection-strategies)をご覧ください。
+## 2. 送信ドメインを設定する \{#set-up-your-sending-domain\}
+
+Adapty Mail を開く: ヘッダーの Adapty ロゴをクリックして **Mail** を選択します。
+
+<ZoomImage id="product-switcher.webp" width="500px" alt="Adapty product switcher" />
+
+Adapty Mail はあなた自身のドメインから送信します。DNS レコードを一度追加すれば、すべてのキャンペーンで同じ検証済みドメインが使われます。
+
+1. Adapty Mail で **Settings → Email Domains** に移動します。
+2. ルートドメイン（例：`yourapp.com`）を入力し、**Preview** をクリックします。受け付けられるのは apex ドメインのみです。`app.yourapp.com` のようなサブドメインは入力時に拒否されます。
+
+<ZoomImage id="mail-email-domains.webp" width="500px" />
+3. Adaptly は2つの送信サブドメイン（`mail.yourapp.com` と `email.yourapp.com`）を生成します。**Confirm** をクリックして、必要な DNS レコードを表示します。
+
+<ZoomImage id="confirm-subdomains.webp" width="500px" />
+
+4. ドメインレジストラーで、表示された 10 件の DNS レコードを追加します（サブドメインごとに 5 件）:
+   - サブドメインごとに CNAME レコード 3 件（DKIM）
+   - サブドメインごとに MX レコード 1 件（Mail-From）
+   - サブドメインごとに TXT レコード 1 件（SPF、`v=spf1 include:amazonses.com ~all`）
+5. 任意で、ルートドメインに DMARC TXT レコードを追加します（推奨）。
+6. **Settings → Email Domains** に戻り、**Check Verification** をクリックします。
+<ZoomImage id="email-domains.webp" width="500px" />
+
+確認のタイミングについて：
+
+- **自動ポーリング**：送信後約5分で最初のチェックが実行されます。レコードが見つかるまで、間隔は最大1時間ごとに拡大されます。
+- **手動チェック**：**Check Verification** をクリックすると、いつでも即座にチェックを実行できます。
+- **DNS伝播**：通常は数分で完了しますが、まれに最大48時間かかる場合があります。
+- **確認ウィンドウ**：7日間です。期限が切れても、DNSレコードはそのまま残ります。**Settings → Email Domains** でドメインを再入力すると、新しいウィンドウが開始されます。
+各レコードタイプとドメインウォームアップの詳細については、[送信ドメインの設定](mail-sending-domain)を参照してください。
+## 3. Webペイウォールを作成する \{#3-create-a-web-paywall\}
+
+すべてのメールはWebペイウォールにリンクしています — CTAをクリックしたユーザーが訪れるチェックアウトページです。2つの選択肢があります：
+
+- **AIで生成する**: バンドルされたWebペイウォールビルダーがアプリ向けに自動生成します。
+- **独自のホスト済みペイウォールを使用する**: すでにホストしているペイウォールを接続します。
+
+開始するには、Adapty Mailで**Web Paywalls → Create**に移動します。
+
+<ZoomImage id="new-web-paywall.webp" width="500px" />
+
+### オプション A: AIで生成する \{#option-a-generate-with-ai\}
+
+ページに表示される **Prerequisites** チェックリストのインラインボタンを順番に進めてから、戻って生成してください。チェックリストには、ペイウォールビルダーへのログイン、Stripeの接続、プロダクトの追加、結果の確認が含まれています。詳細な手順は[チェックアウトの設定](mail-checkout)を参照してください。
+
+すべての前提条件が緑になったら、**Generate** をクリックして生成ダイアログを開きます：
+- **Environment**: **Production** または **Sandbox** を選択します。Sandbox は Stripe のテストモードプロダクトを使用し、開発環境やローカル環境ではこちらが安全なデフォルトです。
+- **Plans**: **Stripe のプランを最大 3 つ**選択します（各プランはプロダクト＋価格の組み合わせです）。これらが、生成されたペイウォールでチェックアウト時にユーザーに提示されるオファーになります。
+
+**Generate** をクリックしてビルドを実行します。完了したら、エディターを開いて内容を確認し、公開してください。
+
+:::important
+ペイウォールは公開しないとチェックアウトのトラフィックを処理できません。未公開のペイウォールは、ユーザーがメールのチェックアウトリンクをクリックするとエラーを返します。
+:::
+### オプションB: 独自のホスト済みペイウォールを使用する \{#option-b-use-your-own-hosted-paywall\}
+
+1. **Enter URL manually**を選択します。
+2. ホスト済みペイウォールのURLを貼り付けます。URLにはクエリパラメーターとして`{email}`と`{external_profile_id}`のプレースホルダーを含める必要があります — Adapty Mailが受信者ごとにこれらを埋め込むことで、チェックアウトページが訪問者を識別できるようになります。例：
+
+   ```
+   https://example.com/paywall?email={email}&profile={external_profile_id}
+   ```
+3. 保存して公開します。
+
+チェックアウトファネルの構造とパーソナライゼーションの仕組みについては、[チェックアウトの設定](mail-checkout)をご覧ください。
+
+<ZoomImage id="generate-web-paywall.webp" width="500px" />
+
+## 4. AIでキャンペーンを生成する \{#generate-a-campaign-with-ai\}
+
+AIがメールシーケンス全体を自動生成します — コピー、デザイン、ヒーロー画像、パーソナライズされたチェックアウトリンクまで、すべてあなたのブランドに合わせて作成されます。
+
+1. Adapty Mail で **Campaigns** に移動し、**Create** をクリックします。
+2. キャンペーン名を設定します。
+3. **Web paywall** ドロップダウンで、前のステップで追加したウェブペイウォールを選択します。
+
+<ZoomImage id="mail-new-campaign.webp" width="500px" />
+4. **Generate emails** をクリックします。
+5. 生成ダイアログに入力します。トーン、言語、任意のカスタムプロンプト（最大2,000文字）、メール数（1〜15件、デフォルト4件）を設定します。各フィールドの詳細は[キャンペーンを作成する](mail-create-campaign)を参照してください。
+
+<ZoomImage id="generate-emails.webp" width="500px" />
+6. **Generate**をクリックします。生成には通常数分かかります。完了できない場合は5分後にタイムアウトするので、その場合は再試行してください。
+7. 各メールをプレビューで確認します。プレビューのヘッダーには**Theme toggle**（Auto・Light・Dark）があり、プレビューの表示方法を切り替えられます。なお、生成されたコンテンツ自体はどのモードでも同じです。メールを個別に再生成したり、文章を編集したり、HTMLエディターを開いて細かく調整したりすることもできます。
+
+<ZoomImage id="generated-emails.webp" width="700px" />
+
+8. **Create**をクリックしてキャンペーンを保存します。
+キャンペーンは**下書き**として保存され、まだ送信されません。キャンペーンはフローに紐付けられたときにのみ有効になります（次のステップ）。キャンペーンエディター内に「公開」という独立したアクションはありません。
+## 5. フローを起動する \{#launch-a-flow\}
+
+フローは**トリガー**（サブスクリプションの期限切れなどのイベント）と**セグメント**を組み合わせ、そのセグメントに選択した**キャンペーン**を送信します。Adapty Mail には5つの固定トリガーが用意されており、それぞれ専用のフロービューがあります。
+1. Adapty Mail で **Flows** に移動し、設定したいトリガーを開きます：
+   - **Never purchased** — サインアップしたがまだ購入していないユーザー。
+   - **Renewal cancelled** — 自動更新をオフにしているが、まだアクティブなサブスクリプションを持つユーザー。
+   - **Billing issue** — 支払い失敗、カード拒否・期限切れ、またはグレース期間中のユーザー。
+   - **Expired** — サブスクリプションが失効し、アクセスが失われたユーザー。
+   - **Refunded** — 購入後に返金を申請したユーザー。
+
+   各トリガーの目的とトーンについては、[フロー](mail-flows)を参照してください。
+
+2. **Create** をクリックしてダイアログを開きます。
+<ZoomImage id="create-flow-mail.webp" width="500px" />
+
+3. ダイアログで以下を設定します：
+   - **Segment** を選択します（例：**All Users** でこのトリガーに到達した全員を対象にする、またはプロファイル属性に基づいて新しいセグメントを作成する）。
+   - コンテンツタイプは **Campaign** のままにします（A/B テストオプションについては [A/B テスト](mail-ab-testing) を参照してください）。
+   - ステップ 4 で保存した **Campaign** を選択します。
+4. **Save** をクリックします。
+
+フローはすぐに有効になります — 別途起動する手順はありません。この時点から、セグメントに一致するユーザーはトリガーイベントに到達した時点でキャンペーンの受信が始まります。
+:::note
+1つのトリガーに複数のセグメント→キャンペーン行を追加できます。行は優先順位の高い順に実行されます。**All Users** 行を使用する場合は、より具体的なセグメントにマッチしなかったすべてのユーザーをキャッチできるよう、最後（最低優先順位）の行に配置してください。
+:::
+
+<ZoomImage id="mail-flow-details.webp" width="500px" />
+## 6. 送信を有効にする \{#enable-sending\}
+
+ここまでの設定でキャンペーンは接続されていますが、まだ実際には動作していません。サブスクリプションイベントを Adapty Mail に同期する **Adapty integration** がまだオフになっているためです。これをオンにすることが最後のステップです。イベントが流れ始め、セグメントがマッチし始め、メールが送信され始めます。
+
+このステップはステップ 5 が完了した後にのみ実行できます。フローを起動する前は、**Settings → Integrations** の **Enable** ボタンが無効になっており、*「Set up at least one flow before enabling Adapty integration.」* というツールチップが表示されます。
+1. Adapty Mail で、**Settings → Integrations** に移動します。
+2. **Enable Adapty integration**（または、以前のセットアップからインテグレーションが既に存在する場合は **Enable**）をクリックします。
+
+有効にすると、Adapty はすべてのサブスクリプションイベント（新規サブスクリプション、更新、トライアル、コンバージョン、返金、請求の問題）を Adapty Mail に送信します。これらのイベントにより、セグメントのメンバーシップ、キャンペーンのルーティング、およびユーザーがコンバートしたときにシーケンスを一時停止するストップ条件が機能します。
+
+<ZoomImage id="adapty-mail-adapty-integration.webp" width="500px" />
+:::note
+**Settings** の **Adapty integration** トグルは、Adapty Mail にサインインした Adapty パートナーワークスペースとは異なります。パートナーワークスペースはアカウントを作成し（Adapty 経由でサインアップした場合は）ブランドを作成したものです。ここにある integration トグルはイベントの同期を制御するもので、プロジェクトごとに有効にする必要があります。
+:::
+## トラブルシューティング \{#troubleshooting\}
+| 問題 | 解決策 |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| DNS検証がスタックしている | レコードが正確に一致していることを確認してください（末尾のドット不要、CNAMEターゲットが正しいか）。5〜10分待ってから **Check Verification** をクリックしてください |
+| 検証ウィンドウが期限切れ | レコードはそのまま残っています。**Settings → Email Domains** でドメインを再入力して新しいウィンドウを開始してください |
+| 生成に失敗またはタイムアウト | インターネット接続を確認して再試行してください。問題が解決しない場合は、Adaptyサポートにお問い合わせください |
+## 詳細情報 \{#learn-more\}
+
+- **[ユーザーメールアドレスの収集](mail-collect-emails)**: アプリでまだ収集していない場合のメールカバレッジ取得戦略。
+- **[送信ドメインの設定](mail-sending-domain)**: DNSレコードの詳細、ウォームアップ階層、トラブルシューティング。
+- **[チェックアウトの設定](mail-checkout)**: チェックアウトファネルの構造とパーソナライゼーション。
+- **[キャンペーンアナリティクス](mail-analytics)**: 配信、エンゲージメント、収益のトラッキング。
+- **[A/B テスト](mail-ab-testing)**: 複数のシーケンスバージョンのテスト。

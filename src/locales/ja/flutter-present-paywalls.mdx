@@ -1,0 +1,142 @@
+---
+title: "Flutter - 新しいペイウォールビルダーのペイウォールを表示する"
+description: "Adaptyのマネタイズ機能を使ってFlutterアプリでペイウォールを表示します。"
+metadataTitle: "Flutterでのペイウォール表示 | Adapty ドキュメント"
+---
+
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md'; 
+
+ペイウォールビルダーを使ってペイウォールをカスタマイズした場合、モバイルアプリのコードでレンダリングしてユーザーに表示する必要はありません。このようなペイウォールには、表示する内容と表示方法の両方が含まれています。
+
+:::warning
+
+このガイドは、SDK v3.2.0 以降が必要な**新しいペイウォールビルダーのペイウォール**専用です。ペイウォールの表示方法は、ペイウォールビルダーのバージョンやリモートコンフィグのペイウォールによって異なります。
+
+- **リモートコンフィグのペイウォール**を表示する場合は、[リモートコンフィグで設計されたペイウォールのレンダリング](present-remote-config-paywalls)を参照してください。
+
+:::
+
+Adapty Flutter SDK では、ペイウォールを表示する方法が2つあります。
+
+- **スタンドアロンスクリーン**
+
+- **埋め込みウィジェット**
+
+## スタンドアロンスクリーンとして表示する \{#present-as-standalone-screen\}
+
+ペイウォールをスタンドアロンスクリーンとして表示するには、[`createPaywallView`](flutter-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) メソッドで作成した `view` に対して `view.present()` メソッドを使用します。各 `view` は一度しか使用できません。ペイウォールを再度表示する必要がある場合は、`createPaywallView` をもう一度呼び出して新しい `view` インスタンスを作成してください。
+
+:::warning
+
+同じ `view` を再作成せずに再利用すると、`AdaptyUIError.viewAlreadyPresented` エラーが発生する可能性があります。
+:::
+
+```dart showLineNumbers title="Flutter"
+try {
+  await view.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+<SampleApp />
+
+### ペイウォールを閉じる \{#dismiss-the-paywall\}
+
+プログラムからペイウォールを閉じる必要がある場合は、`dismiss()` メソッドを使用します。
+
+```dart showLineNumbers title="Flutter"
+try {
+  await view.dismiss();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+### ダイアログを表示する \{#show-dialog\}
+
+Android でペイウォールビューが表示されているときは、ネイティブのアラートダイアログの代わりにこのメソッドを使用してください。Android では、通常のアラートがペイウォールビューの背後に表示されるため、ユーザーには見えません。このメソッドを使用することで、すべてのプラットフォームでペイウォールの上に正しくダイアログが表示されます。
+
+```dart showLineNumbers title="Flutter"
+try {
+  final action = await view.showDialog(
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  );
+  
+  if (action == AdaptyUIDialogActionType.secondary) {
+    // User confirmed - close the paywall
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (e) {
+  // handle error
+}
+```
+
+### iOS の表示スタイルを設定する \{#configure-ios-presentation-style\}
+
+`present()` メソッドに `iosPresentationStyle` パラメータを渡すことで、iOS でのペイウォールの表示方法を設定できます。パラメータには `AdaptyUIIOSPresentationStyle.fullScreen`（デフォルト）または `AdaptyUIIOSPresentationStyle.pageSheet` を指定できます。
+
+```dart showLineNumbers
+try {
+  await view.present(iosPresentationStyle: AdaptyUIIOSPresentationStyle.pageSheet);
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+## ウィジェット階層に埋め込む \{#embed-in-widget-hierarchy\}
+
+既存のウィジェットツリーにペイウォールを埋め込むには、Flutter のウィジェット階層に `AdaptyUIPaywallPlatformView` ウィジェットを直接使用します。
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIPaywallPlatformView(
+  paywall: paywall, // The paywall object you fetched
+  onDidAppear: (view) {
+  },
+  onDidDisappear: (view) {
+  },
+  onDidPerformAction: (view, action) {
+  },
+  onDidSelectProduct: (view, productId) {
+  },
+  onDidStartPurchase: (view, product) {
+  },
+  onDidFinishPurchase: (view, product, purchaseResult) {
+  },
+  onDidFailPurchase: (view, product, error) {
+  },
+  onDidStartRestore: (view) {
+  },
+  onDidFinishRestore: (view, profile) {
+  },
+  onDidFailRestore: (view, error) {
+  },
+  onDidFailRendering: (view, error) {
+  },
+  onDidFailLoadingProducts: (view, error) {
+  },
+  onDidFinishWebPaymentNavigation: (view, product, error) {
+  },
+)
+```
+
+:::note 
+Android プラットフォームビューを機能させるには、`MainActivity` が `FlutterFragmentActivity` を継承していることを確認してください。
+
+```kotlin showLineNumbers title="Kotlin"
+class MainActivity : FlutterFragmentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
+}
+```
+:::

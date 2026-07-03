@@ -1,0 +1,94 @@
+---
+title: "React Native SDKでサブスクリプションステータスを確認する"
+description: "AdaptyでReact Nativeアプリのサブスクリプションステータスを確認する方法を学びましょう。"
+metadataTitle: "サブスクリプションステータスの確認 | Adapty ドキュメント"
+displayed_sidebar: sdkreactnative
+keywords: ['getProfile', 'subscription status']
+rank: 90
+---
+
+ユーザーが有料コンテンツにアクセスできるか、またはペイウォールを表示すべきかを判断するには、プロファイルの[アクセスレベル](access-level)を確認する必要があります。
+
+この記事では、プロファイルの状態にアクセスして、ユーザーにペイウォールを表示するか有料機能へのアクセスを許可するかを判断する方法を説明します。
+
+## サブスクリプションステータスを取得する \{#get-subscription-status\}
+
+ペイウォールを表示するか有料コンテンツを表示するかを決める際は、プロファイル内のユーザーの[アクセスレベル](access-level)を確認します。2つの方法があります：
+
+- 最新のプロファイルデータがすぐに必要な場合（アプリ起動時など）や強制的に更新したい場合は、`getProfile` を呼び出す。
+- **自動プロファイル更新**を設定して、サブスクリプションステータスが変わるたびに自動で更新されるローカルコピーを保持する。
+
+### プロファイルを取得する \{#get-profile\}
+
+サブスクリプションステータスを取得する最も簡単な方法は、`getProfile` メソッドでプロファイルにアクセスすることです：
+
+```typescript showLineNumbers
+try {
+    const profile = await adapty.getProfile();
+} catch (error) {
+  // handle the error
+}
+```
+
+### サブスクリプション更新を購読する \{#listen-to-subscription-updates\}
+
+アプリでプロファイルの更新を自動的に受け取るには：
+
+1. `adapty.addEventListener('onLatestProfileLoad')` を使ってプロファイルの変更を監視します。ユーザーのサブスクリプションステータスが変わるたびに、Adaptyが自動的にこのメソッドを呼び出します。
+2. このメソッドが呼び出されたときに更新されたプロファイルデータを保存しておくと、追加のネットワークリクエストなしにアプリ全体で利用できます。
+
+```javascript
+class SubscriptionManager {
+    private currentProfile: any = null;
+    
+    constructor() {
+        // Listen for profile updates
+        adapty.addEventListener('onLatestProfileLoad', (profile) => {
+            this.currentProfile = profile;
+            // Update UI, unlock content, etc.
+        });
+    }
+    
+    // Use stored profile instead of calling getProfile()
+    hasAccess(): boolean {
+        return this.currentProfile?.accessLevels?.['premium']?.isActive ?? false;
+    }
+}
+```
+
+:::note
+Adaptyはアプリ起動時に `onLatestProfileLoad` イベントリスナーを自動的に呼び出し、デバイスがオフラインの場合でもキャッシュされたサブスクリプションデータを提供します。
+:::
+
+## プロファイルとペイウォールのロジックを連携させる \{#connect-profile-with-paywall-logic\}
+
+ペイウォールの表示や有料機能へのアクセス許可をすぐに判断する必要がある場合は、ユーザーのプロファイルを直接確認できます。この方法は、アプリ起動時、プレミアムセクションへの移動時、特定コンテンツの表示前などのシナリオで役立ちます。
+
+```javascript
+const checkAccessLevel = async () => {
+  try {
+    const profile = await adapty.getProfile();
+    return profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive === true;
+  } catch (error) {
+    console.warn('Error checking access level:', error);
+    return false; // Show paywall if access check fails
+  }
+};
+
+const initializePaywall = async () => {
+  try {
+    await loadPaywall();
+    
+    const hasAccess = await checkAccessLevel();
+    if (!hasAccess) {
+      // Show paywall if no access
+    }
+  } catch (error) {
+    console.warn('Error initializing paywall:', error);
+  }
+};
+``` 
+
+## 次のステップ \{#next-steps\}
+
+サブスクリプションステータスの追跡方法がわかったら、ユーザーが支払済みのコンテンツにアクセスできるよう[ユーザープロファイルの操作](react-native-quickstart-identify)について学びましょう。

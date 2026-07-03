@@ -1,0 +1,30 @@
+---
+title: "Tối ưu hóa việc lấy paywall trong Unity SDK"
+description: "Lấy paywall Adapty đáng tin cậy: thời điểm, caching và các pattern dự phòng cho Unity."
+metadataTitle: "Tối ưu hóa việc lấy paywall | Unity SDK | Tài liệu Adapty"
+---
+
+Một lần lấy paywall đáng tin cậy trong Unity cần làm được ba việc: hiển thị nhanh, trả về đúng paywall theo đối tượng, và dự phòng hợp lý khi mạng chậm. Các quy tắc dưới đây bao gồm thời điểm, caching và các pattern dự phòng để đạt được điều đó.
+
+:::tip
+Các quy tắc này giả định `Adapty.Activate()` và `Adapty.Identify()` đã được thực thi xong. Xem [Thứ tự gọi trong Unity SDK](unity-sdk-call-order).
+:::
+
+## Quy tắc và những lỗi thường gặp \{#rules-and-pitfalls\}
+
+| Nên làm | Không nên làm | Lý do |
+|---|---|---|
+| Lấy placement bạn sắp hiển thị.                                                                                  | Prefetch tất cả các placement đồng thời lúc khởi động.        | Bulk prefetch chặn main thread và gây màn hình đen trong quá trình tải.                                  |
+| Gọi `GetPaywall` sau khi attribution đã có thời gian xử lý xong — ví dụ, 1–2 giây sau `Activate` hoặc sau khi `OnLoadLatestProfile` kích hoạt. | Gọi `GetPaywall` trong `Awake()`.                        | Attribution chưa được cập nhật. Paywall sẽ được xử lý theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
+| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement.                             | Chờ `GetPaywall` vô thời hạn.                     | Không có timeout, người dùng có kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phục hồi — hoặc thoát app.     |
+
+Xem [Lấy paywall và sản phẩm](fetch-paywalls-and-products-unity) để tham khảo các tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn đúng placement.
+
+## Tối ưu cho kết nối kém \{#tune-for-poor-connectivity\}
+
+Đối với những thị trường có kết nối liên tục kém (vùng nông thôn, khi đang di chuyển, khu vực bị ảnh hưởng bởi định tuyến mạng):
+
+- Đặt `fetchPolicy` thành `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` cho mọi lần lấy ngoại trừ lần đầu tiên.
+- Cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement trong Adapty Dashboard.
+- Đặt `loadTimeout` từ 3–5 giây và chấp nhận fallback khi timeout kích hoạt.
+- Đừng chặn việc hiển thị paywall bằng `GetProfile`. Gọi `GetPaywall` độc lập để một profile chậm không chặn giao diện người dùng.
