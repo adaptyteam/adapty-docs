@@ -1,0 +1,397 @@
+---
+import data from '../data/product-map.json';
+
+const { stageColumnLabel, columns, rows } = data;
+---
+
+<div class="product-map-wrapper">
+  <div class="product-map">
+    <div class="product-map-header product-map-journey-header">{stageColumnLabel}</div>
+    {columns.map(col => (
+      <div class={`product-map-header product-map-header-${col.id}`}>{col.label}</div>
+    ))}
+
+    {rows.map(row => (
+      <>
+        <div class={`product-map-stage${row.isLast ? ' product-map-stage-last' : ''}`}>
+          <span class="product-map-stage-node">{row.stage}</span>
+        </div>
+        {columns.map(col => {
+          const links = row.cells[col.id];
+          if (!links || links.length === 0) {
+            return (
+              <div class={`product-map-cell-${col.id} product-map-empty`}>—</div>
+            );
+          }
+          return (
+            <div class={`product-map-cell-${col.id}`}>
+              {links.map((link, i) => (
+                <>
+                  {i > 0 && ', '}
+                  <a
+                    href={link.href}
+                    class={link.tooltip ? 'tooltip-link' : ''}
+                    data-tooltip={link.tooltip || undefined}
+                  >
+                    {link.text}
+                  </a>
+                </>
+              ))}
+            </div>
+          );
+        })}
+      </>
+    ))}
+  </div>
+</div>
+
+<script>
+  // Tooltip behavior on `.tooltip-link` anchors.
+  //
+  // The tooltip is a single portal element appended to <body> so it escapes
+  // ancestor `overflow: hidden|auto|clip` boundaries (the product-map wrapper
+  // scrolls horizontally, which used to clip nested tooltip spans).
+  //
+  //   Desktop (hover-capable): mouseenter/mouseleave shows/hides the portal.
+  //   Touch (hover: none):     first tap reveals the tooltip and swallows the
+  //                            click; second tap follows the link. Outside-tap
+  //                            dismisses.
+
+  function ensurePortal(): HTMLDivElement {
+    let el = document.getElementById('product-map-tooltip-portal') as HTMLDivElement | null;
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'product-map-tooltip-portal';
+    el.setAttribute('role', 'tooltip');
+    el.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(el);
+    return el;
+  }
+
+  function positionTooltip(portal: HTMLDivElement, link: HTMLAnchorElement) {
+    const rect = link.getBoundingClientRect();
+    // Position anchor: horizontally centered on the link, vertically above.
+    // Actual translate handled in CSS so opacity/transform can animate together.
+    portal.style.left = `${rect.left + rect.width / 2}px`;
+    portal.style.top = `${rect.top}px`;
+    // Prevent the tooltip from going off the left/right edges of the viewport.
+    // Read tooltip width, then shift horizontally as needed.
+    requestAnimationFrame(() => {
+      const tipRect = portal.getBoundingClientRect();
+      const overflowLeft = 8 - tipRect.left;
+      const overflowRight = tipRect.right - (window.innerWidth - 8);
+      let adjust = 0;
+      if (overflowLeft > 0) adjust = overflowLeft;
+      else if (overflowRight > 0) adjust = -overflowRight;
+      portal.style.setProperty('--tooltip-shift', `${adjust}px`);
+    });
+  }
+
+  function showTooltip(link: HTMLAnchorElement) {
+    const text = link.dataset.tooltip;
+    if (!text) return;
+    const portal = ensurePortal();
+    portal.textContent = text;
+    portal.style.setProperty('--tooltip-shift', '0px');
+    positionTooltip(portal, link);
+    portal.classList.add('visible');
+    portal.setAttribute('aria-hidden', 'false');
+  }
+
+  function hideTooltip() {
+    const portal = document.getElementById('product-map-tooltip-portal');
+    if (!portal) return;
+    portal.classList.remove('visible');
+    portal.setAttribute('aria-hidden', 'true');
+  }
+
+  const touchLinkState = new WeakMap<HTMLAnchorElement, { revealed: boolean; timer: ReturnType<typeof setTimeout> | null }>();
+
+  function initTooltipLinks() {
+    const isTouch = window.matchMedia('(hover: none)').matches;
+    const links = document.querySelectorAll<HTMLAnchorElement>('a.tooltip-link');
+
+    links.forEach(link => {
+      if (!isTouch) {
+        link.addEventListener('mouseenter', () => showTooltip(link));
+        link.addEventListener('mouseleave', hideTooltip);
+        link.addEventListener('focus', () => showTooltip(link));
+        link.addEventListener('blur', hideTooltip);
+        return;
+      }
+
+      // Touch: first tap = reveal + prevent nav, second tap = navigate.
+      touchLinkState.set(link, { revealed: false, timer: null });
+      link.addEventListener('click', event => {
+        const state = touchLinkState.get(link)!;
+        if (state.revealed) return;
+        event.preventDefault();
+        state.revealed = true;
+        showTooltip(link);
+        if (state.timer) clearTimeout(state.timer);
+        state.timer = setTimeout(() => {
+          state.revealed = false;
+          hideTooltip();
+        }, 4000);
+      });
+    });
+
+    if (isTouch) {
+      document.addEventListener('click', event => {
+        const target = event.target as Node;
+        if (!(target instanceof Element)) return;
+        const isTooltipLink = target.closest('a.tooltip-link');
+        if (isTooltipLink) return;
+        hideTooltip();
+        // Reset every link's revealed state so the next tap re-reveals.
+        touchLinkState.forEach(state => {
+          state.revealed = false;
+          if (state.timer) {
+            clearTimeout(state.timer);
+            state.timer = null;
+          }
+        });
+      });
+    }
+
+    // Hide the tooltip on scroll — its position is stale.
+    window.addEventListener('scroll', hideTooltip, { passive: true });
+    window.addEventListener('resize', hideTooltip);
+  }
+
+  initTooltipLinks();
+  document.addEventListener('astro:page-load', initTooltipLinks);
+</script>
+
+<style is:global>
+  /* Product map — 6-column stage × product matrix used in the ecosystem
+   * overview. The left column is styled as a vertical flowchart (purple node
+   * badges + arrows between rows). The other 5 columns are tabular per-product
+   * cells. Styles are is:global so the runtime-injected .tooltip-content span
+   * matches too. */
+  .product-map-wrapper {
+      margin: 2rem 0;
+      overflow-x: auto;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border-primary, #e2e8f0);
+      background: #ffffff;
+  }
+
+  .dark .product-map-wrapper {
+      background: #0a0a0b;
+      border-color: rgb(100 116 139 / 0.4);
+  }
+
+  .product-map {
+      display: grid;
+      grid-template-columns: minmax(140px, 0.9fr) repeat(5, minmax(160px, 1fr));
+      gap: 0;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      min-width: 900px;
+  }
+
+  /* All cells share basic padding + a subtle right/bottom hairline separator. */
+  .product-map > * {
+      padding: 0.85rem 1rem;
+      border-right: 1px solid var(--border-primary, #e2e8f0);
+      border-bottom: 1px solid var(--border-primary, #e2e8f0);
+  }
+
+  .dark .product-map > * {
+      border-right-color: rgb(100 116 139 / 0.3);
+      border-bottom-color: rgb(100 116 139 / 0.3);
+  }
+
+  .product-map > *:nth-child(6n) { border-right: 0; }
+  .product-map > *:nth-last-child(-n+6) { border-bottom: 0; }
+
+  /* Left column doesn't get bottom borders — the arrow provides the visual
+   * continuity between stages. */
+  .product-map-stage { border-bottom: 0 !important; }
+
+  /* Header row */
+  .product-map-header {
+      font-weight: 600;
+      color: #ffffff;
+      text-align: center;
+      font-size: 0.95rem;
+  }
+
+  .product-map-journey-header {
+      background: #f8fafc;
+      color: #0f172a;
+      text-align: left;
+  }
+
+  .dark .product-map-journey-header {
+      background: #0f0f10;
+      color: #e2e8f0;
+  }
+
+  .product-map-header-core        { background: #6720ff; }
+  .product-map-header-ads         { background: #4777ff; }
+  .product-map-header-attribution { background: #fb845c; }
+  .product-map-header-mail        { background: #6C2EF5; }
+  .product-map-header-also        { background: #64748b; }
+
+  /* Stage cell — styled as a flowchart node with an arrow connecting to the
+   * next row's stage below. */
+  .product-map-stage {
+      background: transparent;
+      padding: 1.25rem 1rem 1.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+  }
+
+  .product-map-stage-node {
+      display: inline-block;
+      background: #6720ff;
+      color: #ffffff;
+      padding: 0.55rem 1.1rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(103, 32, 255, 0.25);
+      white-space: nowrap;
+  }
+
+  /* Arrow from this stage to the next row's stage — hidden on the last stage. */
+  .product-map-stage:not(.product-map-stage-last)::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 0.35rem;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 1.15rem;
+      background: #94a3b8;
+  }
+  .product-map-stage:not(.product-map-stage-last)::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 0.1rem;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid #94a3b8;
+      z-index: 2;
+  }
+
+  .dark .product-map-stage:not(.product-map-stage-last)::after {
+      background: #64748b;
+  }
+  .dark .product-map-stage:not(.product-map-stage-last)::before {
+      border-top-color: #64748b;
+  }
+
+  /* Body cells — very pale tint of the column's brand color */
+  .product-map-cell-core        { background: rgb(103 32 255 / 0.05); }
+  .product-map-cell-ads         { background: rgb(71 119 255 / 0.05); }
+  .product-map-cell-attribution { background: rgb(251 132 92 / 0.06); }
+  .product-map-cell-mail        { background: rgb(108 46 245 / 0.05); }
+  .product-map-cell-also        { background: rgb(100 116 139 / 0.05); }
+
+  .dark .product-map-cell-core        { background: rgb(103 32 255 / 0.12); }
+  .dark .product-map-cell-ads         { background: rgb(71 119 255 / 0.12); }
+  .dark .product-map-cell-attribution { background: rgb(251 132 92 / 0.14); }
+  .dark .product-map-cell-mail        { background: rgb(108 46 245 / 0.12); }
+  .dark .product-map-cell-also        { background: rgb(100 116 139 / 0.14); }
+
+  .product-map-cell-core,
+  .product-map-cell-ads,
+  .product-map-cell-attribution,
+  .product-map-cell-mail,
+  .product-map-cell-also {
+      color: #0f172a;
+  }
+
+  .dark .product-map-cell-core,
+  .dark .product-map-cell-ads,
+  .dark .product-map-cell-attribution,
+  .dark .product-map-cell-mail,
+  .dark .product-map-cell-also {
+      color: #e2e8f0;
+  }
+
+  .product-map-empty {
+      color: #94a3b8;
+      text-align: center;
+  }
+
+  .dark .product-map-empty {
+      color: #475569;
+  }
+
+  .product-map a {
+      color: inherit;
+      text-decoration: underline;
+      text-decoration-color: currentColor;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 2px;
+  }
+
+  .product-map a:hover {
+      text-decoration-thickness: 2px;
+  }
+
+  /* Tooltip-link visual affordance — dotted underline, help cursor. */
+  a.tooltip-link {
+      cursor: help;
+      text-decoration-style: dotted;
+  }
+
+  /* Tooltip portal — single element appended to <body>. Positioned via
+   * inline top/left set by JS from the link's bounding rect. `position: fixed`
+   * escapes any ancestor overflow-x/y clipping. */
+  #product-map-tooltip-portal {
+      position: fixed;
+      z-index: 9999;
+      max-width: 300px;
+      width: max-content;
+      padding: 0.6rem 0.75rem;
+      background: #0f172a;
+      color: #f1f5f9;
+      border-radius: 0.5rem;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      text-align: center;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25);
+      opacity: 0;
+      pointer-events: none;
+      /* Translate anchors on the link's top-center. --tooltip-shift is set by
+       * JS when the tooltip would overflow the viewport horizontally. */
+      transform: translate(calc(-50% + var(--tooltip-shift, 0px)), calc(-100% - 10px));
+      transition: opacity 150ms ease;
+  }
+
+  #product-map-tooltip-portal.visible {
+      opacity: 1;
+  }
+
+  #product-map-tooltip-portal::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(calc(-50% - var(--tooltip-shift, 0px)));
+      border: 6px solid transparent;
+      border-top-color: #0f172a;
+  }
+
+  .dark #product-map-tooltip-portal {
+      background: #e2e8f0;
+      color: #0f172a;
+  }
+
+  .dark #product-map-tooltip-portal::after {
+      border-top-color: #e2e8f0;
+  }
+</style>
