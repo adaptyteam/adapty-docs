@@ -119,14 +119,17 @@ For example, your paywall probably has a close button and URLs to open (e.g., te
 Read our guides on how to handle button [actions](flutter-handle-paywall-actions) and [events](flutter-handling-events).
 :::
 
+Implement the observer as a dedicated, long-lived object rather than a widget. Because a single global observer slot is shared across the whole app, binding it to a `State` would leak the screen (the SDK keeps a strong reference to it) and would be silently replaced when the next screen registers itself. Using `extends` also inherits the SDK's default behavior, so you only override the callbacks you care about.
+
 ```dart showLineNumbers title="Flutter"
-class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywallsEventsObserver {
-  @override
-  void initState() {
-    super.initState();
-    // Register this class as the paywalls event observer
-    AdaptyUI().setPaywallsEventsObserver(this);
-  }
+// A dedicated, long-lived handler for paywall events.
+// It does NOT live inside a Widget/State, so it never leaks and is never
+// silently replaced when screens are pushed or popped.
+class PaywallEventsHandler extends AdaptyUIPaywallsEventsObserver {
+  // A single, app-wide instance — same idiom as Adapty() and AdaptyUI().
+  static final PaywallEventsHandler _instance = PaywallEventsHandler._();
+  factory PaywallEventsHandler() => _instance;
+  PaywallEventsHandler._();
 
   // This method is called when user performs an action on the paywall UI
   @override
@@ -140,7 +143,21 @@ class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywal
         // Open the URL using url_launcher package
         _launchUrl(url);
         break;
+      default:
+        break;
     }
+  }
+
+  // Dismiss the paywall once a restore succeeds
+  @override
+  void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
+    view.dismiss();
+  }
+
+  // Handle failures while the paywall is being rendered
+  @override
+  void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
+    print('Paywall rendering failed: $error');
   }
 
   // Helper method to launch URLs
@@ -159,7 +176,12 @@ class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywal
     }
   }
 }
+```
 
+Register the handler **once** at app start, before any paywall is shown:
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setPaywallsEventsObserver(PaywallEventsHandler());
 ```
 
 ## Next steps
@@ -179,27 +201,96 @@ import 'package:flutter/material.dart';
 import 'package:adapty_flutter/adapty_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-void main() async {
+void main() {
+  // Register a single, long-lived observer once, before any paywall is shown.
+  // It is intentionally a plain object (NOT a Widget/State): its lifetime is the
+  // whole app, so it never leaks and is never silently replaced when screens are
+  // pushed or popped.
+  AdaptyUI().setPaywallsEventsObserver(PaywallEventsHandler());
+
   runApp(MaterialApp(home: PaywallScreen()));
 }
 
+/// A dedicated handler for AdaptyUI paywall events.
+///
+/// It `extends` [AdaptyUIPaywallsEventsObserver] (rather than being implemented
+/// by a `State`), which gives you two things for free:
+///   * the SDK's sensible defaults (e.g. auto-dismiss on close/finish), so you
+///     only override what you actually care about;
+///   * a lifecycle that is independent of the widget tree — there is no strong
+///     reference back into a `Widget`, so nothing leaks and there is nothing to
+///     unregister.
+///
+/// Every callback receives the [AdaptyUIPaywallView] it relates to, so handling
+/// paywall actions never requires a `BuildContext` or widget state.
+class PaywallEventsHandler extends AdaptyUIPaywallsEventsObserver {
+  // A single, app-wide instance — same idiom as Adapty() and AdaptyUI().
+  static final PaywallEventsHandler _instance = PaywallEventsHandler._();
+  factory PaywallEventsHandler() => _instance;
+  PaywallEventsHandler._();
+
+  // Called when the user performs an action on the paywall UI.
+  @override
+  void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL using the url_launcher package.
+        _launchUrl(url);
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Dismiss the paywall once a restore succeeds.
+  @override
+  void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
+    view.dismiss();
+  }
+
+  // Handle failures while the paywall is being rendered.
+  @override
+  void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
+    print('Paywall rendering failed: $error');
+  }
+
+  // Helper method to launch URLs.
+  Future<void> _launchUrl(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Handle case where URL cannot be launched.
+        print('Could not launch $url');
+      }
+    } catch (e) {
+      // Handle any errors.
+      print('Error launching URL: $e');
+    }
+  }
+}
+
 class PaywallScreen extends StatefulWidget {
+  const PaywallScreen({super.key});
+
   @override
   State<PaywallScreen> createState() => _PaywallScreenState();
 }
 
-class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywallsEventsObserver {
+class _PaywallScreenState extends State<PaywallScreen> {
   @override
   void initState() {
     super.initState();
-    // Register this class as the paywalls event observer
-    AdaptyUI().setPaywallsEventsObserver(this);
     _showPaywallIfNeeded();
   }
 
   Future<void> _showPaywallIfNeeded() async {
     try {
-
       final paywall = await Adapty().getPaywall(
         placementId: 'YOUR_PLACEMENT_ID',
       );
@@ -214,50 +305,18 @@ class _PaywallScreenState extends State<PaywallScreen> implements AdaptyUIPaywal
     }
   }
 
-  // This method is called when user performs an action on the paywall UI
-  @override
-  void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
-    switch (action) {
-      case const CloseAction():
-      case const AndroidSystemBackAction():
-        view.dismiss();
-        break;
-      case OpenUrlAction(url: final url):
-        // Open the URL using url_launcher package
-        _launchUrl(url);
-        break;
-    }
-  }
-
-  // Helper method to launch URLs
-  Future<void> _launchUrl(String url) async {
-    try {
-      final Uri uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        // Handle case where URL cannot be launched
-        print('Could not launch $url');
-      }
-    } catch (e) {
-      // Handle any errors
-      print('Error launching URL: $e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Adapty Paywall Example')),
+      appBar: AppBar(title: const Text('Adapty Paywall Example')),
       body: Center(
-        // Add a button to re-trigger the paywall for testing purposes
+        // Add a button to re-trigger the paywall for testing purposes.
         child: ElevatedButton(
           onPressed: _showPaywallIfNeeded,
-          child: Text('Show Paywall'),
+          child: const Text('Show Paywall'),
         ),
       ),
     );
   }
 }
-
 ```
