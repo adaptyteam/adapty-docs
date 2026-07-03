@@ -1,32 +1,177 @@
 ---
-title: "在 React Native SDK 中获取付费墙编辑工具的付费墙及其配置"
-description: "了解如何在 Adapty 中检索付费墙编辑工具的付费墙，以便在 React Native 应用中更好地控制订阅。"
-metadataTitle: "在 Adapty 中检索付费墙编辑工具的付费墙 | Adapty 文档"
+title: "获取 flow 与付费墙 - React Native"
+description: "在 React Native 应用中从 Adapty 获取 flow 和付费墙。"
+metadataTitle: "获取 Flow 与付费墙 - React Native | Adapty 文档"
 displayed_sidebar: sdkreactnative
-keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+keywords: ['getFlow', 'getPaywall', 'createFlowView', 'createPaywallView', 'getFlowForDefaultAudience', 'getPaywallForDefaultAudience']
 rank: 90
 ---
 
 import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
 
-在 [Adapty 看板中使用新版付费墙编辑工具完成付费墙的视觉设计](adapty-paywall-builder)之后，你可以在移动应用中展示它。整个流程的第一步，是获取与版位关联的付费墙及其视图配置，具体方法如下。
+<SDKv4>
+
+<MethodPromo method="getFlow" />
+在[设计好流程或付费墙编辑工具付费墙](adapty-paywall-builder)之后，您可以在移动应用中展示它。第一步是获取与版位关联的流程或付费墙及其视图配置，具体步骤如下所述。
+
+请注意，本主题涉及流程和付费墙编辑工具自定义的付费墙。如果您是手动实现付费墙，请参阅[在移动应用中获取远程配置付费墙的付费墙和产品](fetch-paywalls-and-products-react-native)主题。
+
+<SampleApp />
+<details>
+   <summary>在开始于移动应用中展示流程和付费墙之前（点击展开）</summary>
+
+1. 在 Adapty 看板中[创建您的产品](create-product)。
+2. 在 Adapty 看板中[创建流程/付费墙并将产品添加到其中](create-paywall)。
+3. 在 Adapty 看板中[创建版位并将您的流程/付费墙添加到其中](create-placement)。
+4. 在移动应用中安装 [Adapty SDK](sdk-installation-reactnative)。
+</details>
+## 获取流程/付费墙 \{#fetch-flowpaywall\}
+
+如果你已通过 Flow Builder 或付费墙编辑工具设计了流程或付费墙，则无需在移动端代码中手动处理其渲染逻辑来向用户展示它。这类流程或付费墙已包含展示内容与展示方式的完整定义。即便如此，你仍需通过版位获取其 ID 和视图配置，然后在移动端进行呈现。
+尽早获取流程或付费墙并创建其[视图](react-native-get-pb-paywalls#fetch-the-view-configuration) — 最好在展示之前提前完成。`createFlowView` 方法会加载视图配置，并在后台开始下载和缓存图片。调用越早，这些下载就有越充裕的时间完成。等到真正展示流程或付费墙时，其配置和图片可能已经缓存完毕，随时可以显示。
+
+要获取流程或付费墙，请使用 `getFlow` 方法：
+```typescript showLineNumbers
+try {
+    const placementId = 'YOUR_PLACEMENT_ID';
+
+    const flow = await adapty.getFlow(placementId);
+  // the requested flow/paywall
+} catch (error) {
+    // handle the error
+}
+```
+参数：
+| 参数 | 是否必填 | 描述 |
+|-------------------|--------|-----------|
+| **placementId** | 必填 | 目标[版位](placements)的标识符。这是你在 Adapty 看板中创建版位时指定的值。 |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若请求失败则返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果你认为用户的网络环境不稳定，可以考虑使用 `.returnCacheDataElseLoad`，当缓存存在时优先返回缓存数据。这种情况下，用户可能无法获取最新数据，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍会保留，只有在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 通过两层机制在本地存储付费墙：上述定期更新的缓存，以及[备用付费墙](fallback-paywalls)。我们还使用 CDN 加速付费墙的获取，并在 CDN 不可用时提供独立的备用服务器。该系统旨在确保你始终获取最新版本的付费墙，同时即便在网络条件较差的情况下也能保证可靠性。</p> |
+| **loadTimeoutMs** | 默认值：5 秒 | <p>该值限制此方法的超时时间。若达到超时时间，将返回缓存数据或本地备用数据。</p><p>请注意，在极少数情况下，该方法的实际超时时间可能略晚于 `loadTimeout` 中指定的值，因为底层操作可能由多个请求组成。</p><p>对于 Android：你可以使用扩展函数创建 `TimeInterval`（例如 `5.seconds`，其中 `.seconds` 来自 `import com.adapty.utils.seconds`），或使用 `TimeInterval.seconds(5)`。若不设置限制，请使用 `TimeInterval.INFINITE`。</p> |
+响应参数：
+| 参数 | 描述                                                                                                                                                                            |
+| :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Flow   | 一个 `AdaptyFlow` 对象，包含流程的标识符（`id`、`variationId`）、名称、版位、付费墙实验变体（`paywalls`）以及任何远程配置（`remoteConfigs`）。 |
+## 获取视图配置 \{#fetch-the-view-configuration\}
+
+:::important
+请确保在编辑工具中启用 **Show on device** 开关。如果未开启此选项，将无法获取视图配置。
+:::
+
+如果版位是在 **Flow Builder** 或 **Paywall Builder** 中设计的，Adapty 会为你渲染 UI。使用 `createFlowView` 创建视图，然后[展示流程或付费墙](react-native-present-paywalls)。如果版位是没有编辑工具 UI 的自定义付费墙，请改为[将其作为远程配置付费墙处理](present-remote-config-paywalls-react-native)。
+在 React Native SDK 中，直接调用 `createFlowView` 即可——无需提前获取视图配置。
+
+:::warning
+`createFlowView` 方法的返回结果只能使用一次。如需再次使用，请重新调用 `createFlowView` 方法。若不重新创建而直接调用两次，可能会导致 `AdaptyUIError.viewAlreadyPresented` 错误。
+:::
+
+```typescript showLineNumbers
+
+try {
+  const view = await createFlowView(flow);
+} catch (error) {
+  // handle the error
+}
+```
+
+参数：
+| 参数 | 是否必填 | 描述 |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **flow** | 必填 | 一个 `AdaptyFlow` 对象，用于获取所需流程/付费墙的控制器。 |
+| **customTags** | 可选 | 定义自定义标签及其解析值的字典。自定义标签作为内容中的占位符，会被动态替换为特定字符串，从而在流程/付费墙中实现个性化内容。详情请参阅付费墙编辑工具中的自定义标签主题。 |
+| **prefetchProducts** | 可选 | 启用后可优化产品在屏幕上的显示时机。设为 `true` 时，AdaptyUI 将自动预取所需产品。默认值：`false`。 |
+| **enableSafeArea** | 可选 | 仅适用于 Android（iOS 上忽略此参数）。设为 `true` 时，流程视图会应用安全区域内边距。模态展示（`createFlowView` + `present()`）默认为 `true`，嵌入式 `AdaptyFlowView` 组件默认为 `false`。默认值适用于大多数场景。 |
+:::note
+如果您使用多种语言，请了解如何添加[流程本地化](add-paywall-locale-in-adapty-paywall-builder)，以及如何正确使用语言区域代码（[查看详情](react-native-localizations-and-locale-codes)）。
+:::
+
+获取视图后，请[展示流程/付费墙](react-native-present-paywalls)。
+## 为默认目标受众获取流程或付费墙以加快获取速度 \{#get-a-flow-or-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+通常，流程和付费墙的获取几乎是即时的，无需担心速度问题。但当你拥有大量目标受众和版位，且用户网络连接较弱时，获取流程或付费墙的时间可能会比预期更长。在这种情况下，你可能希望展示一个默认的流程或付费墙，以确保良好的用户体验，而不是让用户看到空白页面。
+为了解决这个问题，你可以使用 `getFlowForDefaultAudience` 方法，该方法会获取指定版位中 **All Users** 目标受众的流程或付费墙。但请务必了解，推荐的做法是通过 `getFlow` 方法来获取流程或付费墙，详情请参阅上方的[获取流程/付费墙](#fetch-flowpaywall)章节。
+
+:::warning
+为什么我们推荐使用 `getFlow`
+
+`getFlowForDefaultAudience` 方法存在以下几个明显的缺陷：
+- **潜在的向后兼容性问题**：如果你需要为不同的应用版本（当前版本和未来版本）展示不同的付费墙，可能会遇到挑战。你要么必须设计能够支持当前（旧版）版本的付费墙，要么接受使用当前（旧版）版本的用户可能遇到付费墙无法渲染的问题。
+- **失去精准定向**：所有用户都将看到为 **All Users** 目标受众设计的同一个付费墙，这意味着你将失去个性化定向能力（包括基于国家/地区、营销归因或自定义属性的定向）。
+如果您愿意接受这些缺点以换取更快的 flow 或付费墙获取速度，请按以下方式使用 `getFlowForDefaultAudience` 方法。否则，请继续使用[上文](#fetch-flowpaywall)介绍的 `getFlow`。
+:::
+
+```typescript showLineNumbers
+try {
+    const id = 'YOUR_PLACEMENT_ID';
+
+    const flow = await adapty.getFlowForDefaultAudience(id);
+  // the requested flow/paywall
+} catch (error) {
+    // handle the error
+}
+```
+| 参数 | 是否必填 | 描述 |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若加载失败则返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>不过，如果您认为用户的网络连接不稳定，可以考虑使用 `.returnCacheDataElseLoad`——当缓存数据存在时直接返回缓存。这种情况下，用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存来避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后依然保留，只有在应用重新安装或手动清除时才会被清空。</p> |
+## 自定义素材 \{#customize-assets\}
+
+要自定义流程/付费墙中的图片和视频，请实现自定义素材。
+
+主图和视频有预定义 ID：`hero_image` 和 `hero_video`。在自定义素材包中，你通过这些 ID 来定位对应元素并自定义其行为。
+
+对于其他图片和视频，你需要在 Adapty 看板中[设置自定义 ID](custom-media)。
+
+例如，你可以：
+
+- 向部分用户展示不同的图片或视频。
+- 在远程主图加载时先显示本地预览图。
+- 在播放视频前先展示预览图。
+:::important
+要使用此功能，请将 Adapty React Native SDK 更新至 3.8.0 或更高版本。
+:::
+
+以下是通过简单字典提供自定义素材资源的示例：
+
+```javascript
+const customAssets: Record<string, AdaptyCustomAsset> = {
+  'custom_image': { type: 'image', relativeAssetPath: 'custom_image.png' },
+  'hero_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'custom_video.mp4' },
+      android: { relativeAssetPath: 'videos/custom_video.mp4' }
+    }
+  }
+};
+
+view = await createFlowView(flow, { customAssets })
+
+```
+
+:::note
+如果找不到某个资源，流程/付费墙将回退到其默认外观。
+:::
+
+</SDKv4>
+
+<SDKv3>
+
+在 Adapty 看板中使用新版付费墙编辑工具[完成付费墙的视觉设计](adapty-paywall-builder)后，你可以在移动应用中展示它。第一步是获取与版位关联的付费墙及其视图配置，具体如下所述。
 
 :::warning
 新版付费墙编辑工具需要 React Native SDK 3.0 或更高版本。
 :::
-请注意，本文主要介绍通过付费墙编辑工具自定义的付费墙。如果您是手动实现付费墙，请参阅[在移动应用中获取远程配置付费墙的付费墙和产品](fetch-paywalls-and-products-react-native)。
+在开始在移动应用中展示付费墙之前，请注意本主题适用于通过付费墙编辑工具自定义的付费墙。如果您是手动实现付费墙，请参阅[在移动应用中为远程配置付费墙获取付费墙和产品](fetch-paywalls-and-products-react-native)主题。
 
 <SampleApp />
 
 <details>
-   <summary>在移动应用中展示付费墙之前（点击展开）</summary>
-
+   <summary>在移动应用中开始展示付费墙之前（点击展开）</summary>
 1. 在 Adapty 看板中[创建产品](create-product)。
-2. 在 Adapty 看板中[创建付费墙并将产品添加到其中](create-paywall)。
-3. 在 Adapty 看板中[创建版位并将付费墙添加到其中](create-placement)。
+2. 在 Adapty 看板中[创建付费墙并将产品加入其中](create-paywall)。
+3. 在 Adapty 看板中[创建版位并将付费墙加入其中](create-placement)。
 4. 在移动应用中安装 [Adapty SDK](sdk-installation-reactnative)。
 </details>
-
 ## 获取用付费墙编辑工具设计的付费墙 \{#fetch-paywall-designed-with-paywall-builder\}
 
 如果你已经[使用付费墙编辑工具设计了付费墙](adapty-paywall-builder)，就无需在移动应用代码中手动编写渲染逻辑来向用户展示它。这类付费墙同时包含展示内容和展示方式。不过，你仍需通过版位获取其 ID 和视图配置，然后在移动应用中将其呈现出来。
@@ -153,7 +298,7 @@ try {
 要使用此功能，请将 Adapty React Native SDK 更新至 3.8.0 或更高版本。
 :::
 
-以下是通过简单字典提供自定义素材资源的示例：
+以下示例展示了如何通过简单的字典来提供自定义资源：
 
 ```javascript
 const customAssets: Record<string, AdaptyCustomAsset> = {
@@ -170,7 +315,8 @@ const customAssets: Record<string, AdaptyCustomAsset> = {
 view = await createPaywallView(paywall, { customAssets })
 
 ```
-
 :::note
-如果找不到某个素材资源，付费墙将回退到其默认外观。
+如果找不到资源，付费墙将回退到其默认外观。
 :::
+
+</SDKv3>

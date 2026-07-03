@@ -1,11 +1,13 @@
 ---
 title: "React Native SDK 中的儿童模式"
-description: "轻松启用儿童模式以符合 Apple 和 Google 政策。React Native SDK 不收集 IDFA、GAID 或广告数据。"
+description: "轻松启用儿童模式，符合 Apple 和 Google 政策。React Native SDK 不会收集 IDFA、GAID 或广告数据。"
 metadataTitle: "React Native SDK 中的儿童模式 | Adapty 文档"
 ---
 
-如果您的 React Native 应用面向儿童，您必须遵守 [Apple](https://developer.apple.com/kids/) 和 [Google](https://support.google.com/googleplay/android-developer/answer/9893335) 的相关政策。如果您正在使用 Adapty SDK，只需几个简单的步骤即可将其配置为符合这些政策，并通过应用商店审核。
-
+如果你的 React Native 应用面向儿童，则必须遵守 [Apple](https://developer.apple.com/kids/) 和 [Google](https://support.google.com/googleplay/android-developer/answer/9893335) 的相关政策。如果你正在使用 Adapty SDK，只需几个简单的步骤即可将其配置为符合这些政策，并顺利通过应用商店审核。
+:::important
+在 iOS 上，Kids Mode 通过 `KidsMode` Swift package trait 启用，该 trait 会在编译时移除所有 IDFA、AdSupport 和 AppTrackingTransparency 相关代码。此功能需要 v4 SDK（通过 Swift Package Manager 安装原生 iOS SDK）以及 **Xcode 26** 或更高版本。详见下方的[更新 iOS Podfile](#updates-in-your-ios-podfile)。
+:::
 ## 需要做什么？\{#whats-required\}
 
 你需要配置 Adapty SDK，禁用以下数据的收集：
@@ -41,6 +43,37 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
   },
 });
 ```
+### 更新你的 iOS Podfile \{#updates-in-your-ios-podfile\}
+
+为了满足 App Store 儿童分类（或 COPPA 合规）的要求，原生 iOS SDK 必须使用 `KidsMode` Swift 包特性进行构建，该特性会在编译时移除所有 IDFA、AdSupport 和 AppTrackingTransparency 相关代码。React Native 通过 Swift Package Manager 安装原生 SDK，但 Swift Package Manager 无法传递包特性，因此 SDK 提供了一个 Podfile 辅助工具来帮你应用该特性。此步骤需要 **Xcode 26** 或更高版本。
+
+在 `ios/Podfile` 中，引入辅助工具并在 `react_native_post_install` **之后**调用它：
+```ruby showLineNumbers title="ios/Podfile"
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native-adapty/ios/adapty_kids_mode.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+# ...
+
+post_install do |installer|
+  react_native_post_install(
+    installer,
+    config[:reactNativePath],
+    :mac_catalyst_enabled => false
+  )
+
+  adapty_enable_kids_mode(installer)
+end
+```
+
+然后运行 `pod install`：
+
+```sh showLineNumbers title="Shell"
+cd ios && pod install
+```
+要确认 Kids Mode 已激活，请检查 `adapty.activate(...)` 日志行是否显示 `kids_mode_enabled: true`。请将辅助调用永久保留在 `post_install` 中——React Native 每次执行 `pod install` 时都会重新创建 Swift Package 引用，辅助函数会在每次执行时重新应用该特性。
 ### 更新 Android 清单 \{#updates-in-your-android-manifest\}
 
 :::note

@@ -1,0 +1,244 @@
+---
+title: "Migrate Adapty React Native SDK sang v. 4.0"
+description: "Migrate sang Adapty React Native SDK v4.0 (beta) bằng cách thay thế các API paywall bằng API flow, tương thích với cả Flow Builder và Paywall Builder."
+metadataTitle: "Migrate sang Adapty React Native SDK v4.0 (beta) | Tài liệu Adapty"
+---
+
+Adapty React Native SDK 4.0 (beta) giới thiệu flows và đổi tên các API paywall tương ứng. Các API mới hoạt động với cả Flow Builder mới và Paywall Builder hiện có — không cần thay đổi cấu hình nào trên Adapty Dashboard.
+## Tham khảo nhanh \{#quick-reference\}
+| v3 | v4 |
+|---|---|
+| `adapty.getPaywall(placementId, locale?, params?)` | `adapty.getFlow(placementId, params?)` |
+| `adapty.getPaywallForDefaultAudience(placementId, locale?, params?)` | `adapty.getFlowForDefaultAudience(placementId, params?)` |
+| `adapty.getPaywallProducts(paywall)` | `adapty.getPaywallProducts(flow)` |
+| `adapty.logShowPaywall(paywall)` | `adapty.logShowFlow(flow)` |
+| `AdaptyPaywall` (kiểu) | `AdaptyFlow` |
+| `createPaywallView(paywall)` | `createFlowView(flow)` |
+| `AdaptyPaywallView` (component) | `AdaptyFlowView` |
+| `EventHandlers` (kiểu) | `FlowEventHandlers` |
+| `onPaywallShown` | `onAppeared` |
+| `onPaywallClosed` | `onDisappeared` |
+| `onRenderingFailed` | `onError` |
+`AdaptyPaywallProduct` vẫn giữ nguyên tên — sản phẩm vẫn thuộc về một flow, và `getPaywallProducts` giờ nhận vào một `AdaptyFlow`. Các phương thức `getFlow` và `getFlowForDefaultAudience` không còn nhận tham số `locale` nữa. Các phương thức view `present`, `dismiss`, `setEventHandlers`, và `showDialog`, cùng các event handler `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished`, và `onAndroidSystemBack` vẫn giữ nguyên tên như trong v3. Một số hành vi mặc định đã thay đổi — xem [Thay đổi hành vi mặc định](#default-behavior-changes).
+## Phiên bản iOS tối thiểu \{#minimum-ios-version\}
+
+Adapty React Native SDK 4.0 nâng phiên bản iOS deployment target tối thiểu từ iOS 13.0 lên **iOS 15.0**. Hãy đặt iOS deployment target của bạn thành 15.0 hoặc cao hơn trước khi nâng cấp.
+## Cài đặt \{#installation\}
+### Cập nhật gói
+
+v4.0 là bản phát hành thử nghiệm (pre-release), vì vậy hãy chỉ định chính xác phiên bản — npm không tự động chọn các phiên bản pre-release qua cú pháp caret/tilde:
+
+```bash showLineNumbers
+npm install react-native-adapty@4.0.0-beta.1
+# or
+yarn add react-native-adapty@4.0.0-beta.1
+```
+### iOS: các SDK gốc hiện được phân phối qua Swift Package Manager \{#ios-native-sdks-now-come-through-swift-package-manager\}
+
+[Kho spec của CocoaPods sẽ chuyển sang chế độ chỉ đọc vào tháng 12 năm 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), vì vậy kể từ v4, các SDK gốc `Adapty`, `AdaptyUI`, và `AdaptyPlugin` **không còn được kéo vào dưới dạng sub-dependency của CocoaPods nữa** — podspec sẽ kéo chúng thông qua **Swift Package Manager** (thông qua helper `spm_dependency`). Điều này yêu cầu hai thứ:
+- **React Native 0.75 trở lên** — cần thiết cho helper `spm_dependency` trong podspec. Nếu dùng phiên bản cũ hơn, `pod install` sẽ báo lỗi; hãy nâng cấp React Native trước, hoặc tiếp tục dùng `react-native-adapty` 3.x.
+- **Dynamic frameworks** — Các dependency SPM yêu cầu liên kết động. Cách bật tính năng này khác nhau giữa Expo và React Native thuần.
+
+#### Expo
+
+Thêm config plugin [`expo-build-properties`](https://docs.expo.dev/versions/latest/sdk/build-properties/) và đặt iOS frameworks thành dynamic trong `app.json` (hoặc `app.config.js`):
+```json showLineNumbers title="app.json"
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "dynamic"
+          }
+        }
+      ]
+    ]
+  }
+}
+```
+
+Sau đó cài plugin và tạo lại native project:
+
+```bash showLineNumbers
+npx expo install expo-build-properties
+npx expo prebuild --clean
+```
+
+#### Bare React Native
+
+Thêm dynamic frameworks vào iOS target, sau đó cài lại pods:
+
+```ruby showLineNumbers title="ios/Podfile"
+use_frameworks! :linkage => :dynamic
+```
+```bash showLineNumbers
+cd ios && pod install --repo-update
+```
+
+Nếu trước đây bạn đã thêm `Adapty`, `AdaptyUI`, hoặc `AdaptyPlugin` dưới dạng sub-dependencies của CocoaPods, hãy xóa các dòng `pod 'Adapty'`, `pod 'AdaptyUI'`, hoặc `pod 'AdaptyPlugin'` khỏi `Podfile` trước.
+:::warning
+Chuyển từ liên kết tĩnh mặc định sang dynamic frameworks có thể xung đột với các thư viện chưa hỗ trợ modular headers, và không tương thích với Flipper. Nếu gặp lỗi build, xem bài viết này về [tích hợp Swift Package Manager với các thư viện React Native](https://www.callstack.com/blog/integrating-swift-package-manager-with-react-native-libraries).
+:::
+
+Xem [Cài đặt Adapty SDK](sdk-installation-reactnative) để biết hướng dẫn thiết lập đầy đủ.
+## Lấy flows \{#fetching-flows\}
+### getPaywall → getFlow
+
+Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và tham số `locale` bị loại bỏ — khi bạn render một flow, locale được tự động xác định; với các paywall tùy chỉnh, tất cả các locale được trả về trong `flow.remoteConfigs`:
+
+```diff showLineNumbers
+- const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID', 'en');
++ const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
+```
+
+`getPaywallForDefaultAudience` được đổi tên theo cách tương tự:
+```diff showLineNumbers
+- const paywall = await adapty.getPaywallForDefaultAudience('YOUR_PLACEMENT_ID', 'en');
++ const flow = await adapty.getFlowForDefaultAudience('YOUR_PLACEMENT_ID');
+```
+
+### getPaywallProducts(paywall) → getPaywallProducts(flow)
+
+`getPaywallProducts` giữ nguyên tên nhưng giờ nhận một `AdaptyFlow`:
+
+```diff showLineNumbers
+- const products = await adapty.getPaywallProducts(paywall);
++ const products = await adapty.getPaywallProducts(flow);
+```
+## Mô hình dữ liệu \{#data-model\}
+
+`getFlow` trả về một `AdaptyFlow` thay vì `AdaptyPaywall`, và cấu trúc của đối tượng đã thay đổi:
+| Trường `AdaptyPaywall` v3 | Trường `AdaptyFlow` v4 | Hành động |
+|---|---|---|
+| `remoteConfig?` (đơn) | `remoteConfigs?: AdaptyRemoteConfig[]` (mảng) | Một flow chứa một remote config cho mỗi ngôn ngữ được cấu hình. Đọc cái phù hợp với người dùng: `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
+| `products` | `flow.paywalls[i].productIdentifiers` | Các mã định danh sản phẩm giờ nằm trên từng biến thể của flow, không phải trên flow. |
+| `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | Đã chuyển từ flow sang từng biến thể paywall. |
+| `version?: number` | `flowVersionId?: string` | Đổi tên, và kiểu dữ liệu thay đổi từ `number` sang `string`. |
+| `hasViewConfiguration` | đã xóa | Xóa mọi kiểm tra `hasViewConfiguration` khỏi code của bạn. |
+| `requestLocale` | đã xóa | Locale không còn là một phần của model nữa. |
+| _(mới)_ | `paywalls: AdaptyFlowPaywall[]` | Mỗi mục là một biến thể paywall trong flow. |
+| _(mới)_ | `responseCreatedAt: number` | Timestamp phản hồi từ server, tính bằng mili giây. |
+Product identifiers moved from the flow to each variation:
+
+```diff showLineNumbers
+- const ids = paywall.products;
++ const ids = flow.paywalls[0].productIdentifiers;
+```
+## Các phương thức Web paywall \{#web-paywall-methods\}
+
+`openWebPaywall` và `createWebPaywallUrl` vẫn giữ nguyên tên, nhưng tham số đầu tiên bây giờ là `AdaptyFlowPaywall` (một biến thể flow) thay vì `AdaptyPaywall`. Bạn vẫn có thể truyền vào `AdaptyPaywallProduct`.
+
+```diff showLineNumbers
+  const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
+- await adapty.openWebPaywall(paywall);
++ await adapty.openWebPaywall(flow.paywalls[0]);
+```
+## Theo dõi lượt xem flow \{#tracking-flow-views\}
+### logShowPaywall → logShowFlow
+
+`logShowPaywall` được đổi tên thành `logShowFlow` và giờ nhận vào một `AdaptyFlow`. Sự kiện vẫn được ghi lại theo cùng một biến thể, nên các chỉ số funnel và A/B test hiện có vẫn hoạt động bình thường mà không cần thay đổi trên dashboard.
+
+```diff showLineNumbers
+- await adapty.logShowPaywall(paywall);
++ await adapty.logShowFlow(flow);
+```
+
+Giống như ở v3, bạn không cần gọi phương thức này khi hiển thị các flow hoặc paywall được dựng bởi [Flow Builder](adapty-flow-builder) hoặc [Paywall Builder](adapty-paywall-builder) — Adapty tự động theo dõi các lượt xem đó.
+## Hiển thị flow \{#displaying-flows\}
+### createPaywallView → createFlowView
+
+Đổi tên hàm factory và truyền vào `AdaptyFlow`. Các phương thức của controller được trả về (`present`, `dismiss`, `setEventHandlers`, `showDialog`) không thay đổi:
+
+```diff showLineNumbers
+- import { createPaywallView } from 'react-native-adapty';
++ import { createFlowView } from 'react-native-adapty';
+
+- const view = await createPaywallView(paywall);
++ const view = await createFlowView(flow);
+  await view.present();
+```
+### AdaptyPaywallView → AdaptyFlowView
+
+Nếu bạn render bằng React component, hãy đổi tên component và truyền prop `flow`:
+
+```diff showLineNumbers
+- import { AdaptyPaywallView } from 'react-native-adapty';
++ import { AdaptyFlowView } from 'react-native-adapty';
+
+- <AdaptyPaywallView paywall={paywall} /* … */ />
++ <AdaptyFlowView flow={flow} /* … */ />
+```
+:::note
+Một flow view được tạo bằng `createFlowView` chỉ dùng một lần: sau khi gọi `dismiss()`, view đó sẽ bị hủy, vì vậy hãy gọi lại `createFlowView` để hiển thị flow một lần nữa. Một `AdaptyFlowView` được nhúng vào sẽ bị đóng khi unmount — việc trả về `true` từ một handler không đóng embedded view, vì vậy hãy tự thay đổi state của bạn, ví dụ trong `onCloseButtonPress`.
+:::
+## Xử lý sự kiện \{#handling-events\}
+
+Giao diện event-handler được đổi tên từ `EventHandlers` thành `FlowEventHandlers`, và ba callback được đổi tên. Phần thân handler hiện có không cần thay đổi code — chỉ cần đổi tên:
+
+```diff showLineNumbers
+- onPaywallShown: () => { /* … */ },
++ onAppeared: () => { /* … */ },
+
+- onPaywallClosed: () => { /* … */ },
++ onDisappeared: () => { /* … */ },
+
+- onRenderingFailed: (error) => { /* … */ },
++ onError: (error) => { /* … */ },
+```
+Tất cả các event handler khác vẫn giữ nguyên tên. Hai handler cũng có thêm tham số thứ hai: `onPurchaseCompleted` thành `(purchaseResult, product)` và `onPurchaseFailed` thành `(error, product)`, trong đó `product` là `AdaptyPaywallProduct` liên quan. Xem [Xử lý sự kiện flow & paywall](react-native-handling-events-1) để biết danh sách đầy đủ.
+
+:::note
+`onDisappeared` chỉ kích hoạt với flow được trình bày theo dạng modal bằng `createFlowView().present()`. Component `AdaptyFlowView` không hỗ trợ prop này — để ẩn một embedded view, hãy unmount nó.
+:::
+
+v4 cũng bổ sung thêm một số tính năng bạn có thể tuỳ chọn bật:
+- Phương thức `adapty.openWebUrl(url, openIn?)` và `adapty.requestAppReview()` — các phương thức này hỗ trợ các handler mặc định `onUrlPress` và `onRequestAppReview`, nên URL và lời nhắc đánh giá ứng dụng được xử lý natively ngay từ đầu. Chỉ gọi trực tiếp khi bạn ghi đè các handler đó.
+- Xử lý giao dịch mua trong Observer mode bên trong flow thông qua các handler mới `onObserverPurchaseInitiated` / `onObserverRestoreInitiated`. Xem [Xử lý giao dịch mua trong Observer mode](react-native-handling-events-1#handle-purchases-in-observer-mode).
+## Các API đã bị xóa và deprecated \{#removed-and-deprecated-apis\}
+### setFallbackPaywalls → setFallback
+
+`setFallbackPaywalls` đã bị xóa. Hãy dùng `setFallback`, nhận cùng tham số:
+
+```diff showLineNumbers
+- await adapty.setFallbackPaywalls(fileLocation);
++ await adapty.setFallback(fileLocation);
+```
+### Các export đã bị xóa \{#removed-exports\}
+
+Các symbol này không còn được export từ `react-native-adapty` nữa. Hãy xóa các import liên quan:
+
+- **`AdaptyPaywall`**: Dùng `AdaptyFlow` thay thế.
+- **`ProductReference`**: Dùng `AdaptyProductIdentifier`, đọc từ `flow.paywalls[i].productIdentifiers`.
+- **`AdaptyPaywallBuilder`**: Đã bị xóa. Flow và paywall được render natively.
+- **`AdaptyAndroidSubscriptionUpdateParameters`**: Dùng shape lồng nhau `subscriptionUpdateParams` (xem bên dưới).
+### activate: lockMethodsUntilReady
+
+`lockMethodsUntilReady` đã bị xóa và hành vi này hiện luôn được bật. Hãy xóa nó khỏi lệnh gọi `activate` — giữ lại nó sẽ gây lỗi biên dịch:
+
+```diff showLineNumbers
+- await adapty.activate('PUBLIC_SDK_KEY', { lockMethodsUntilReady: true });
++ await adapty.activate('PUBLIC_SDK_KEY');
+```
+### Cập nhật gói đăng ký Android trong makePurchase \{#makepurchase-android-subscription-update\}
+
+Cấu trúc phẳng cho việc cập nhật gói đăng ký Android đã bị loại bỏ. Hãy chuyển `oldSubVendorProductId` và `prorationMode` vào một object lồng nhau tên là `subscriptionUpdateParams`, và giữ `isOfferPersonalized` ở cấp cao nhất. Xem [Thực hiện mua hàng](react-native-making-purchases) để xem ví dụ đầy đủ.
+### Android: safe-area paddings
+
+Tài nguyên boolean Android `<bool name="adapty_paywall_enable_safe_area_paddings">…</bool>` đã bị xóa. Hãy xóa nó khỏi `res/values/bools.xml` và kiểm soát safe-area paddings tại runtime bằng tham số `enableSafeArea` khi bạn tạo flow view. Mặc định là `true` cho kiểu hiển thị modal và `false` cho component nhúng.
+### Chế độ mock \{#mock-mode\}
+
+Nếu bạn chạy SDK ở chế độ mock (Expo Go hoặc web preview), hãy đổi tên khóa cấu hình mock `paywalls` thành `flows`.
+## Thay đổi hành vi mặc định \{#default-behavior-changes\}
+
+Những thay đổi này không gây ra lỗi biên dịch, vì vậy hãy kiểm tra chúng lúc runtime:
+- **`onAndroidSystemBack`**: Mặc định đã thay đổi từ đóng view sang giữ nguyên. Để khôi phục hành vi cũ, hãy trả về `true` từ handler.
+- **`onPurchaseCompleted`**: Mặc định đã thay đổi từ đóng view (trừ khi người dùng hủy mua) sang luôn giữ nguyên. Để khôi phục hành vi cũ, hãy trả về `purchaseResult.type !== 'user_cancelled'` từ handler.
+- **`onRestoreCompleted`**: Mặc định đã thay đổi từ đóng view sau khi khôi phục thành công sang giữ nguyên. Để khôi phục hành vi cũ, hãy trả về `true` từ handler.
+- **`onUrlPress`**: Mặc định hiện tại sẽ mở URL thông qua tầng native, tuân theo cài đặt trình duyệt in-app hoặc bên ngoài từ dashboard. Ghi đè handler để tự xử lý việc mở URL.
+## Onboarding API không còn được hỗ trợ \{#onboarding-api-deprecation\}
+
+Onboarding API cũ đã bị deprecated trong v4.0, thay thế bằng [Flow Builder](adapty-flow-builder). API này vẫn hoạt động bình thường, và IDE của bạn sẽ đánh dấu các symbol bị deprecated thông qua annotation `@deprecated` — không có cảnh báo nào xuất hiện lúc runtime. Các symbol này sẽ bị xóa trong một bản phát hành tương lai, vì vậy hãy lên kế hoạch migration các onboarding của bạn sang Flow Builder.
+
+Các symbol bị deprecated: `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView`, và `AdaptyOnboardingView`.

@@ -1,10 +1,13 @@
 ---
-title: "Modo Infantil en el SDK de React Native"
-description: "Activa fácilmente el Modo Infantil para cumplir con las políticas de Apple y Google. No se recopilan IDFA, GAID ni datos publicitarios en el SDK de React Native."
-metadataTitle: "Modo Infantil en el SDK de React Native | Documentación de Adapty"
+title: "Modo Kids en React Native SDK"
+description: "Activa fácilmente el Modo Kids para cumplir con las políticas de Apple y Google. Sin IDFA, GAID ni datos publicitarios en React Native SDK."
+metadataTitle: "Modo Kids en React Native SDK | Documentación de Adapty"
 ---
 
-Si tu aplicación React Native está destinada a niños, debes seguir las políticas de [Apple](https://developer.apple.com/kids/) y [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Si usas el SDK de Adapty, unos pocos pasos sencillos te permitirán configurarlo para cumplir con estas políticas y superar las revisiones de las stores.
+Si tu aplicación React Native está destinada a niños, debes seguir las políticas de [Apple](https://developer.apple.com/kids/) y [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Si usas el SDK de Adapty, unos pocos pasos sencillos te ayudarán a configurarlo para cumplir con estas políticas y superar las revisiones de las tiendas.
+:::important
+En iOS, el modo Kids se activa mediante el trait de Swift Package `KidsMode`, que elimina en compilación todo el código relacionado con IDFA, AdSupport y AppTrackingTransparency. Requiere el SDK v4 (que instala el SDK nativo de iOS a través de Swift Package Manager) y **Xcode 26** o posterior. Consulta [Actualizaciones en tu iOS Podfile](#updates-in-your-ios-podfile) a continuación.
+:::
 ## ¿Qué se necesita? \{#whats-required\}
 
 Tienes que configurar el SDK para desactivar la recopilación de:
@@ -38,6 +41,37 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
   },
 });
 ```
+### Actualizaciones en tu Podfile de iOS \{#updates-in-your-ios-podfile\}
+
+Para la categoría Niños del App Store (o cumplimiento con COPPA), el SDK nativo de iOS debe compilarse con el trait de paquete Swift `KidsMode`, que elimina del código todo lo relacionado con IDFA, AdSupport y AppTrackingTransparency. React Native instala el SDK nativo a través de Swift Package Manager, que no puede reenviar traits de paquete, por lo que el SDK incluye un helper para Podfile que aplica el trait por ti. Este paso requiere **Xcode 26** o posterior.
+
+En `ios/Podfile`, añade el helper y llámalo **después** de `react_native_post_install`:
+```ruby showLineNumbers title="ios/Podfile"
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native-adapty/ios/adapty_kids_mode.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+# ...
+
+post_install do |installer|
+  react_native_post_install(
+    installer,
+    config[:reactNativePath],
+    :mac_catalyst_enabled => false
+  )
+
+  adapty_enable_kids_mode(installer)
+end
+```
+
+Luego ejecuta `pod install`:
+
+```sh showLineNumbers title="Shell"
+cd ios && pod install
+```
+Para confirmar que Kids Mode está activo, comprueba que la línea de log `adapty.activate(...)` muestra `kids_mode_enabled: true`. Mantén la llamada al helper en `post_install` de forma permanente: React Native regenera las referencias del paquete Swift en cada `pod install`, y el helper vuelve a aplicar el trait cada vez.
 ### Actualizaciones en tu manifiesto de Android \{#updates-in-your-android-manifest\}
 
 :::note

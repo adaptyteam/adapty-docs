@@ -1,33 +1,361 @@
 ---
-title: "React Native - 处理付费墙事件"
-description: "在 React Native 中使用 Adapty SDK 处理订阅事件。"
-metadataTitle: "在 React Native 中处理事件 | Adapty 文档"
+title: "处理流程与付费墙事件 - React Native"
+description: "使用 Adapty SDK 在 React Native 应用中处理流程和付费墙事件。"
+metadataTitle: "处理流程与付费墙事件 - React Native | Adapty 文档"
 toc_max_heading_level: 4
-keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed', 'onPaywallClosed', 'onPaywallShown', 'onWebPaymentNavigationFinished']
+keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onError', 'onDisappeared', 'onAppeared', 'onWebPaymentNavigationFinished', 'FlowEventHandlers']
 ---
-
 import PaywallAction from '@site/src/locales/zh/reusable/PaywallAction.md';
 
+<SDKv4>
 :::important
-本指南介绍购买、恢复、产品选择及付费墙渲染的事件处理。你还需要实现按钮操作处理（关闭付费墙、打开链接等）。详情请参阅[按钮操作处理指南](react-native-handle-paywall-actions)。
+本指南涵盖购买、恢复、产品选择和流程渲染的事件处理。你也可以设置按钮处理（关闭流程、打开链接、自定义操作等）。详情请参阅[按钮操作处理指南](react-native-handle-paywall-actions)。
 :::
+流程和使用 Flow Builder 构建的付费墙无需额外代码即可完成购买和恢复购买操作。但它们会生成一些事件，你的应用可以对这些事件做出响应。这些事件包括按钮点击（关闭按钮、URL、产品选择等）以及流程中与购买相关操作的通知。请参阅以下内容了解如何响应这些事件。
 
-使用[付费墙编辑工具](adapty-paywall-builder)配置的付费墙无需额外代码即可完成购买和恢复。不过，它们会产生一些你的应用可以响应的事件，包括按钮点击（关闭按钮、URL、产品选择等）以及付费墙上购买相关操作的通知。下面介绍如何响应这些事件。
+要在移动应用中控制或监控流程页面上发生的操作，请实现事件处理器：
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+对于 React 组件，你可以通过 `AdaptyFlowView` 组件中各自的事件处理器 props 来处理事件：
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyFlow({ flow }) {
+  const onCloseButtonPress = useCallback<FlowEventHandlers['onCloseButtonPress']>(() => {}, []);
+  const onProductSelected = useCallback<FlowEventHandlers['onProductSelected']>((productId) => {}, []);
+  const onPurchaseStarted = useCallback<FlowEventHandlers['onPurchaseStarted']>((product) => {}, []);
+  const onPurchaseCompleted = useCallback<FlowEventHandlers['onPurchaseCompleted']>((purchaseResult, product) => {}, []);
+  const onPurchaseFailed = useCallback<FlowEventHandlers['onPurchaseFailed']>((error, product) => {}, []);
+  const onRestoreStarted = useCallback<FlowEventHandlers['onRestoreStarted']>(() => {}, []);
+  const onRestoreCompleted = useCallback<FlowEventHandlers['onRestoreCompleted']>((profile) => {}, []);
+  const onRestoreFailed = useCallback<FlowEventHandlers['onRestoreFailed']>((error) => {}, []);
+  const onAppeared = useCallback<FlowEventHandlers['onAppeared']>(() => {}, []);
+  const onError = useCallback<FlowEventHandlers['onError']>((error) => {}, []);
+  const onLoadingProductsFailed = useCallback<FlowEventHandlers['onLoadingProductsFailed']>((error) => {}, []);
+  const onUrlPress = useCallback<FlowEventHandlers['onUrlPress']>((url, openIn) => {
+    adapty.openWebUrl(url, openIn);
+    return false;
+  }, []);
+  const onCustomAction = useCallback<FlowEventHandlers['onCustomAction']>((actionId) => {}, []);
+  const onWebPaymentNavigationFinished = useCallback<FlowEventHandlers['onWebPaymentNavigationFinished']>(() => {}, []);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+      onProductSelected={onProductSelected}
+      onPurchaseStarted={onPurchaseStarted}
+      onPurchaseCompleted={onPurchaseCompleted}
+      onPurchaseFailed={onPurchaseFailed}
+      onRestoreStarted={onRestoreStarted}
+      onRestoreCompleted={onRestoreCompleted}
+      onRestoreFailed={onRestoreFailed}
+      onAppeared={onAppeared}
+      onError={onError}
+      onLoadingProductsFailed={onLoadingProductsFailed}
+      onUrlPress={onUrlPress}
+      onCustomAction={onCustomAction}
+      onWebPaymentNavigationFinished={onWebPaymentNavigationFinished}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+对于模态展示，请实现事件处理方法。
+
+:::important
+多次调用 `setEventHandlers` 会覆盖你设置的处理器，替换掉这些特定事件的默认处理器和之前设置的处理器。
+:::
+```javascript showLineNumbers title="React Native (TSX)"
+
+const view = await createFlowView(flow);
+
+const unsubscribe = view.setEventHandlers({
+  onCloseButtonPress() {
+    return true;
+  },
+  onAndroidSystemBack() {
+    return true;
+  },
+  onPurchaseCompleted(purchaseResult, product) {
+    return purchaseResult.type !== 'user_cancelled';
+  },
+  onPurchaseStarted(product) { /***/},
+  onPurchaseFailed(error, product) { /***/ },
+  onRestoreCompleted(profile) { /***/ },
+  onRestoreFailed(error) { /***/ },
+  onProductSelected(productId) { /***/},
+  onError(error) { /***/ },
+  onLoadingProductsFailed(error) { /***/ },
+  onUrlPress(url, openIn) {
+      adapty.openWebUrl(url, openIn);
+      return false; // Keep flow open
+  },
+  onAppeared() { /***/ },
+  onDisappeared() { /***/ },
+  onWebPaymentNavigationFinished() { /***/ },
+});
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+```javascript
+// onCloseButtonPress
+{
+  //Record the event
+}
+
+// onAndroidSystemBack
+{
+  //Record the event
+}
+
+// onUrlPress
+{
+  "url": "https://example.com/terms"
+}
+
+// onCustomAction
+{
+  "actionId": "login"
+}
+
+// onProductSelected
+{
+  "productId": "premium_monthly"
+}
+
+// onPurchaseStarted
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
+    }
+  }
+}
+
+// onPurchaseCompleted - Success
+{
+  "purchaseResult": {
+    "type": "success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
+    }
+  }
+}
+
+// onPurchaseCompleted - Cancelled
+{
+  "purchaseResult": {
+    "type": "user_cancelled"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
+    }
+  }
+}
+
+// onPurchaseFailed
+{
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
+    }
+  }
+}
+
+// onRestoreCompleted
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+
+// onRestoreFailed
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+
+// onError
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render flow interface",
+    "details": {
+      "underlyingError": "Invalid flow configuration"
+    }
+  }
+}
+
+// onLoadingProductsFailed
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+
+// onAppeared
+{
+  //Record the event
+}
+
+// onDisappeared
+{
+  //Record the event
+}
+
+// onWebPaymentNavigationFinished
+{
+  //Record the event
+}
+```
+</Details>
+您可以只注册需要的事件处理器，忽略不需要的。这样就不会创建多余的事件监听器。所有事件处理器均为可选项。
+
+事件处理器返回一个布尔值。若返回 `true`，则视为展示流程已完成，流程页面随即关闭，并移除该视图的所有事件监听器。
+某些事件处理器有默认行为，你可以按需覆盖：
+- `onCloseButtonPress`：按下关闭按钮时关闭流程。
+- `onUrlPress`：打开点击的 URL 并保持流程开启。
+- `onAndroidSystemBack`（仅适用于模态展示）：按下 **Back** 键时保持流程开启。返回 `true` 可关闭流程。
+- `onRestoreCompleted`：恢复购买成功后保持流程开启。返回 `true` 可关闭流程。
+- `onPurchaseCompleted`：购买完成后保持流程开启。返回 `true` 可关闭流程。
+- `onError`：流程渲染失败时关闭流程。
+### 事件处理器 \{#event-handlers\}
+| 事件处理器 | 描述 |
+|:-----------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onCustomAction** | 当用户执行自定义操作时触发，例如点击[自定义按钮](paywall-buttons)。 |
+| **onUrlPress** | 当用户点击流程中的 URL 时触发。 |
+| **onAndroidSystemBack** | 仅限模态弹出模式：当用户点击 Android 系统 **Back** 按钮时触发。 |
+| **onCloseButtonPress** | 当关闭按钮可见且用户点击时触发。建议在此处理器中关闭流程页面。 |
+| **onPurchaseCompleted** | 购买完成时触发，无论成功、被用户取消还是待审批。购买成功时会返回更新后的 `AdaptyProfile`。用户取消和待支付（如需要家长审批）也会触发此事件，而非 `onPurchaseFailed`。 |
+| **onPurchaseStarted** | 当用户点击"购买"操作按钮以开始购买流程时触发。 |
+| **onPurchaseFailed** | 因错误导致购买失败时触发（如支付限制、无效产品、网络故障、交易验证失败）。用户取消或待支付不会触发此事件，而是触发 `onPurchaseCompleted`。 |
+| **onRestoreStarted** | 当用户开始恢复购买流程时触发。 |
+| **onRestoreCompleted** | 购买恢复成功时触发，并返回更新后的 `AdaptyProfile`。如果用户已具备所需的 `accessLevel`，建议关闭页面。请参阅[订阅状态](react-native-listen-subscription-changes)了解如何检查。 |
+| **onRestoreFailed** | 恢复流程失败时触发，并返回 `AdaptyError`。 |
+| **onProductSelected** | 当用户在流程视图中选择任意产品时触发，可监控用户购买前的选择情况。 |
+| **onError** | 视图渲染过程中发生错误时触发，并返回 `AdaptyError`。此类错误不应出现，如遇到请告知我们。 |
+| **onLoadingProductsFailed** | 产品加载失败时触发，并返回 `AdaptyError`。如果在创建视图时未设置 `prefetchProducts: true`，AdaptyUI 会自行从服务器获取所需对象。 |
+| **onAppeared** | 当流程显示给用户时触发。在 iOS 上，当用户点击流程内的[网页付费墙按钮](web-paywall#step-2a-add-a-web-purchase-button)并在应用内浏览器中打开网页付费墙时也会触发。 |
+| **onDisappeared** | 仅限模态弹出模式：当用户关闭流程时触发。在 iOS 上，从流程中打开的[网页付费墙](web-paywall#step-2a-add-a-web-purchase-button)在应用内浏览器中消失时也会触发。 |
+| **onWebPaymentNavigationFinished** | 尝试打开[网页付费墙](web-paywall)进行购买后触发，无论成功或失败。 |
+| **onAnalytics** | 保留用于流程中的自定义分析事件。目前流程不会向您的代码发送此类事件，无需实现。 |
+| **onRequestAppReview** | 保留用于流程中的应用评价请求。目前流程不会触发应用评价请求，无需实现。 |
+| **onRequestPermission** | 保留用于流程中的系统权限请求（如推送通知或相机访问）。目前流程不会触发权限请求，无需实现。 |
+| **onObserverPurchaseInitiated** | 仅限观察者模式：当用户在流程中点击购买按钮时触发。Adapty 不会执行购买——请使用您自己的购买代码完成购买，然后将交易报告给 Adapty。详见下方[在观察者模式下处理购买](#handle-purchases-in-observer-mode)。 |
+| **onObserverRestoreInitiated** | 仅限观察者模式：当用户在流程中点击恢复按钮时触发。Adapty 不会执行恢复——请自行完成恢复，然后报告已恢复的交易。详见下方[在观察者模式下处理购买](#handle-purchases-in-observer-mode)。 |
+### 在观察者模式下处理购买 \{#handle-purchases-in-observer-mode\}
+
+如果你以[观察者模式](implement-observer-mode-react-native)（`observerMode: true`）激活了 SDK 并展示了 Adapty 渲染的流程，SDK 不会自动为你发起购买。当用户点击购买或恢复按钮时，SDK 会调用 `onObserverPurchaseInitiated` 或 `onObserverRestoreInitiated`。请用你自己的代码执行购买或恢复操作，通过提供的回调驱动流程的加载指示器，并在完成后[向 Adapty 上报交易](report-transactions-observer-mode-react-native)。
+```typescript showLineNumbers
+const unsubscribe = view.setEventHandlers({
+  onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
+    onStartPurchase(); // show the flow's loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) => adapty.reportTransaction(transactionId))
+      .finally(() => onFinishPurchase()); // hide the loading indicator
+    return false; // keep the flow open; dismiss it yourself after success
+  },
+  onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
+    onStartRestore();
+    myRestoreApi()
+      .finally(() => onFinishRestore());
+    return false;
+  },
+});
+```
+
+</SDKv4>
+
+<SDKv3>
+
+:::important
+本指南介绍购买、恢复、产品选择和付费墙渲染的事件处理方式。你还需要实现按钮处理功能（关闭付费墙、打开链接等）。详情请参阅[按钮操作处理指南](react-native-handle-paywall-actions)。
+:::
+通过[付费墙编辑工具](adapty-paywall-builder)配置的付费墙无需额外代码即可完成购买和恢复购买操作。不过，这些付费墙会生成一些事件供应用响应，包括按钮点击（关闭按钮、URL、产品选择等）以及付费墙上购买相关操作的通知。请参阅下文了解如何响应这些事件。
 
 :::warning
 本指南仅适用于**新版付费墙编辑工具付费墙**，需要 Adapty SDK v3.0 或更高版本。
 :::
-
-要在移动应用中控制或监控付费墙屏幕上发生的流程，请实现事件处理器：
-
-<Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.14 or later" default>
+要控制或监控移动应用中付费墙屏幕上发生的流程，请实现以下事件处理器：
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
 
-对于 React 组件，可通过 `AdaptyPaywallView` 组件中各个独立的事件处理器 prop 来处理事件：
-
+对于 React 组件，你可以通过 `AdaptyPaywallView` 组件中各自对应的事件处理器属性来处理事件：
 ```typescript showLineNumbers title="React Native (TSX)"
 
 function MyPaywall({ paywall }) {
@@ -74,12 +402,11 @@ function MyPaywall({ paywall }) {
 </TabItem>
 <TabItem value="standalone" label="Modal presentation">
 
-对于模态展示方式，请实现事件处理器方法。
+对于模态展示，请实现事件处理方法。
 
 :::important
-多次调用 `setEventHandlers` 会覆盖你提供的处理器，替换这些特定事件的默认处理器以及之前设置的处理器。
+多次调用 `setEventHandlers` 会覆盖你提供的处理程序，同时替换这些特定事件的默认处理程序和之前设置的处理程序。
 :::
-
 ```javascript showLineNumbers title="React Native (TSX)"
 
 const view = await createPaywallView(paywall);
@@ -96,46 +423,6 @@ const unsubscribe = view.setEventHandlers({
   },
   onPurchaseStarted(product) { /***/},
   onPurchaseFailed(error) { /***/ },
-  onRestoreCompleted(profile) { /***/ },
-  onRestoreFailed(error, product) { /***/ },
-  onProductSelected(productId) { /***/},
-  onRenderingFailed(error) { /***/ },
-  onLoadingProductsFailed(error) { /***/ },
-  onUrlPress(url) {
-      Linking.openURL(url);
-      return false; // Keep paywall open
-  },
-  onPaywallShown() { /***/ },
-  onPaywallClosed() { /***/ },
-  onWebPaymentNavigationFinished() { /***/ },  
-});
-```
-
-</TabItem>
-</Tabs>
-
-</TabItem>
-
-<TabItem value="old" label="SDK version < 3.14" default>
-
-SDK 版本 < 3.14 仅支持模态展示方式：
-
-```javascript showLineNumbers title="React Native (TSX)"
-
-const view = await createPaywallView(paywall);
-
-const unsubscribe = view.registerEventHandlers({
-  onCloseButtonPress() {
-    return true;
-  },
-  onAndroidSystemBack() {
-    return true;
-  },
-  onPurchaseCompleted(purchaseResult, product) {
-    return purchaseResult.type !== 'user_cancelled';
-  },
-  onPurchaseStarted(product) { /***/},
-  onPurchaseFailed(error, product) { /***/ },
   onRestoreCompleted(profile) { /***/ },
   onRestoreFailed(error) { /***/ },
   onProductSelected(productId) { /***/},
@@ -156,52 +443,49 @@ const unsubscribe = view.registerEventHandlers({
 
 <Details>
 <summary>事件示例（点击展开）</summary>
-
 ```javascript
 // onCloseButtonPress
 {
-  "event": "close_button_press"
+  //Record the event
 }
 
 // onAndroidSystemBack
 {
-  "event": "android_system_back"
+  //Record the event
 }
 
 // onUrlPress
 {
-  "event": "url_press",
   "url": "https://example.com/terms"
 }
 
 // onCustomAction
 {
-  "event": "custom_action",
   "actionId": "login"
 }
 
 // onProductSelected
 {
-  "event": "product_selected",
   "productId": "premium_monthly"
 }
 
 // onPurchaseStarted
 {
-  "event": "purchase_started",
   "product": {
     "vendorProductId": "premium_monthly",
     "localizedTitle": "Premium Monthly",
     "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
+    }
   }
 }
 
 // onPurchaseCompleted - Success
 {
-  "event": "purchase_completed",
   "purchaseResult": {
     "type": "success",
     "profile": {
@@ -218,15 +502,17 @@ const unsubscribe = view.registerEventHandlers({
     "vendorProductId": "premium_monthly",
     "localizedTitle": "Premium Monthly",
     "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
+    }
   }
 }
 
 // onPurchaseCompleted - Cancelled
 {
-  "event": "purchase_completed",
   "purchaseResult": {
     "type": "user_cancelled"
   },
@@ -234,35 +520,39 @@ const unsubscribe = view.registerEventHandlers({
     "vendorProductId": "premium_monthly",
     "localizedTitle": "Premium Monthly",
     "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
+    }
   }
 }
 
 // onPurchaseFailed
 {
-  "event": "purchase_failed",
   "error": {
     "code": "purchase_failed",
     "message": "Purchase failed due to insufficient funds",
     "details": {
       "underlyingError": "Insufficient funds in account"
-    },
-    "product": {
-        "vendorProductId": "premium_monthly",
-            "localizedTitle": "Premium Monthly",
-            "localizedDescription": "Premium subscription for 1 month",
-            "localizedPrice": "$9.99",
-            "price": 9.99,
-            "currencyCode": "USD"
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "price": {
+      "amount": 9.99,
+      "currencyCode": "USD",
+      "currencySymbol": "$",
+      "localizedString": "$9.99"
     }
   }
 }
 
 // onRestoreCompleted
 {
-  "event": "restore_completed",
   "profile": {
     "accessLevels": {
       "premium": {
@@ -283,7 +573,6 @@ const unsubscribe = view.registerEventHandlers({
 
 // onRestoreFailed
 {
-  "event": "restore_failed",
   "error": {
     "code": "restore_failed",
     "message": "Purchase restoration failed",
@@ -295,7 +584,6 @@ const unsubscribe = view.registerEventHandlers({
 
 // onRenderingFailed
 {
-  "event": "rendering_failed",
   "error": {
     "code": "rendering_failed",
     "message": "Failed to render paywall interface",
@@ -307,7 +595,6 @@ const unsubscribe = view.registerEventHandlers({
 
 // onLoadingProductsFailed
 {
-  "event": "loading_products_failed",
   "error": {
     "code": "products_loading_failed",
     "message": "Failed to load products from the server",
@@ -319,50 +606,47 @@ const unsubscribe = view.registerEventHandlers({
 
 // onPaywallShown
 {
-  "event": "paywall_shown"
+  //Record the event
 }
 
 // onPaywallClosed
 {
-  "event": "paywall_closed"
+  //Record the event
 }
 
 // onWebPaymentNavigationFinished
 {
-  "event": "web_payment_navigation_finished"
+  //Record the event
 }
 ```
 </Details>
+您可以只注册所需的事件处理器，忽略不需要的。这样就不会创建未使用的事件监听器。所有事件处理器均为可选。
 
-你可以只注册需要的事件处理器，忽略不需要的。未使用的事件监听器不会被创建。所有事件处理器均为可选。
-
-事件处理器返回一个布尔值。若返回 `true`，则视为展示流程已完成，付费墙屏幕关闭，该视图的事件监听器也会被移除。
-
-部分事件处理器有默认行为，你可以按需覆盖：
+事件处理器返回一个布尔值。若返回 `true`，则视为展示流程已完成，付费墙界面随即关闭，该视图的事件监听器也会被移除。
+某些事件处理程序具有默认行为，您可以根据需要覆盖它们：
 - `onCloseButtonPress`：点击关闭按钮时关闭付费墙。
-- `onUrlPress`：打开点击的 URL，并保持付费墙开启。
-- `onAndroidSystemBack`（仅限模态展示）：点击**返回**按钮时关闭付费墙。
+- `onUrlPress`：打开点击的 URL 并保持付费墙不关闭。
+- `onAndroidSystemBack`（仅适用于模态展示）：按下 **Back** 按钮时关闭付费墙。
 - `onRestoreCompleted`：恢复成功后关闭付费墙。
 - `onPurchaseCompleted`：除非用户取消，否则关闭付费墙。
-- `onRenderingFailed`：渲染失败时关闭付费墙。
-
-### 事件处理器 \{#event-handlers\}
-
+- `onRenderingFailed`：付费墙渲染失败时关闭付费墙。
+### 事件处理程序 \{#event-handlers\}
 | 事件处理器 | 描述 |
 |:-----------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **onCustomAction** | 用户执行自定义操作时触发，例如点击[自定义按钮](paywall-buttons)。 |
-| **onUrlPress** | 用户点击付费墙中的 URL 时触发。 |
-| **onAndroidSystemBack** | 仅限模态展示：用户点击 Android 系统**返回**按钮时触发。 |
-| **onCloseButtonPress** | 关闭按钮可见且用户点击时触发。建议在此处理器中关闭付费墙屏幕。 |
-| **onPurchaseCompleted** | 购买完成时触发，无论成功、被用户取消还是待审批。购买成功时提供更新后的 `AdaptyProfile`。用户取消和待处理支付（如需家长批准）会触发此事件，而非 `onPurchaseFailed`。 |
-| **onPurchaseStarted** | 用户点击"购买"操作按钮开始购买流程时触发。 |
-| **onPurchaseFailed** | 购买因错误失败时触发（如支付限制、无效产品、网络故障、交易验证失败）。用户取消或待处理支付不会触发此事件，这些情况会触发 `onPurchaseCompleted`。 |
-| **onRestoreStarted** | 用户开始恢复购买流程时触发。 |
-| **onRestoreCompleted** | 购买恢复成功时触发，并提供更新后的 `AdaptyProfile`。如果用户已拥有所需的 `accessLevel`，建议关闭屏幕。请参阅[订阅状态](react-native-listen-subscription-changes)主题了解如何检查。 |
-| **onRestoreFailed** | 恢复流程失败时触发，并提供 `AdaptyError`。 |
-| **onProductSelected** | 付费墙视图中任意产品被选中时触发，让你能够监控用户在购买前的选择。 |
-| **onRenderingFailed** | 视图渲染过程中发生错误时触发，并提供 `AdaptyError`。此类错误通常不应出现，如有遇到请告知我们。 |
-| **onLoadingProductsFailed** | 产品加载失败时触发，并提供 `AdaptyError`。如果你在创建视图时未设置 `prefetchProducts: true`，AdaptyUI 会自行从服务器获取所需对象。 |
-| **onPaywallShown** | 付费墙展示给用户时触发。在 iOS 上，当用户点击付费墙内的[网页付费墙按钮](web-paywall#step-2a-add-a-web-purchase-button)并在应用内浏览器中打开网页付费墙时，也会触发此事件。 |
-| **onPaywallClosed** | 仅限模态展示：付费墙被用户关闭时触发。在 iOS 上，从付费墙在应用内浏览器中打开的[网页付费墙](web-paywall#step-2a-add-a-web-purchase-button)从屏幕消失时，也会触发此事件。 |
-| **onWebPaymentNavigationFinished** | 尝试打开[网页付费墙](web-paywall)进行购买后触发，无论成功或失败。 |
+| **onCustomAction** | 当用户执行自定义操作时触发，例如点击[自定义按钮](paywall-buttons)。 |
+| **onUrlPress** | 当用户点击付费墙中的 URL 时触发。 |
+| **onAndroidSystemBack** | 仅限模态展示：当用户点击 Android 系统的 **Back** 按钮时触发。 |
+| **onCloseButtonPress** | 当关闭按钮可见且用户点击它时触发。建议在此处理器中关闭付费墙页面。 |
+| **onPurchaseCompleted** | 当购买完成时触发，无论是成功、被用户取消还是待审批。购买成功时会提供更新后的 `AdaptyProfile`。用户取消和待处理的付款（例如需要家长批准）会触发此事件，而非 `onPurchaseFailed`。 |
+| **onPurchaseStarted** | 当用户点击"购买"操作按钮以启动购买流程时触发。 |
+| **onPurchaseFailed** | 当购买因错误失败时触发（例如付款限制、无效产品、网络故障、交易验证失败）。用户取消或待处理付款不会触发此事件，那些情况会触发 `onPurchaseCompleted`。 |
+| **onRestoreStarted** | 当用户开始购买恢复流程时触发。 |
+| **onRestoreCompleted** | 当购买恢复成功时触发，并提供更新后的 `AdaptyProfile`。如果用户已获得所需的 `accessLevel`，建议关闭页面。请参阅[订阅状态](react-native-listen-subscription-changes)主题了解如何检查。 |
+| **onRestoreFailed** | 当恢复流程失败时触发，并提供 `AdaptyError`。 |
+| **onProductSelected** | 当付费墙视图中的任意产品被选中时触发，可让你监控用户在购买前选择的内容。 |
+| **onRenderingFailed** | 当视图渲染过程中发生错误时触发，并提供 `AdaptyError`。此类错误通常不应发生，如果遇到，请告知我们。 |
+| **onLoadingProductsFailed** | 当产品加载失败时触发，并提供 `AdaptyError`。如果你在创建视图时未设置 `prefetchProducts: true`，AdaptyUI 将自行从服务器获取所需对象。 |
+| **onPaywallShown** | 当付费墙展示给用户时触发。在 iOS 上，当用户点击付费墙内的[网页付费墙按钮](web-paywall#step-2a-add-a-web-purchase-button)并在应用内浏览器中打开网页付费墙时，也会触发此事件。 |
+| **onPaywallClosed** | 仅限模态展示：当用户关闭付费墙时触发。在 iOS 上，当从付费墙在应用内浏览器中打开的[网页付费墙](web-paywall#step-2a-add-a-web-purchase-button)从屏幕上消失时，也会触发此事件。 |
+| **onWebPaymentNavigationFinished** | 在尝试打开[网页付费墙](web-paywall)进行购买后触发，无论成功或失败。 |
+</SDKv3>
