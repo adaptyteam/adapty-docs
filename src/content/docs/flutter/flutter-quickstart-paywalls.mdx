@@ -1,8 +1,8 @@
 ---
-title: "Enable purchases by using paywalls in Flutter SDK"
-description: "Quickstart guide to setting up Adapty for in-app subscription management."
-metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
-keywords: [ 'paywall', 'paywall builder', 'getPaywall']
+title: "Enable purchases with Flow Builder in Flutter SDK"
+description: "Quickstart guide to enabling in-app purchases with Adapty Flow Builder."
+metadataTitle: "Adapty Flow Builder Quickstart | Adapty Docs"
+keywords: [ 'flows flutter', 'paywalls flutter', 'flow builder', 'paywall', 'getFlow']
 rank: 70
 displayed_sidebar: sdkflutter
 ---
@@ -14,28 +14,28 @@ import PaywallsIntro from '@site/src/components/reusable/PaywallsIntro.md';
 To enable in-app purchases, you need to understand three key concepts:
 
 - [**Products**](product) – anything users can buy (subscriptions, consumables, lifetime access)
-- [**Paywalls**](paywalls) are configurations that define which products to offer. In Adapty, paywalls are the only way to retrieve products, but this design lets you modify offerings, pricing, and product combinations without touching your app code.
-- [**Placements**](placements) – where and when you show paywalls in your app (like `main`, `onboarding`, `settings`). You set up paywalls for placements in the dashboard, then request them by placement ID in your code. This makes it easy to run A/B tests and show different paywalls to different users.
+- [**Flows**](adapty-flow-builder) – screen sequences that present products to users, built in the no-code Flow Builder. The SDK retrieves them via `getFlow`. If you'd rather build the UI in your own code, use a paywall instead — see [Implement paywalls manually](flutter-quickstart-manual).
+- [**Placements**](placements) – where and when you show flows in your app (like `main`, `onboarding`, `settings`). You attach flows to placements in the dashboard, then request them by placement ID in your code. This makes it easy to run A/B tests and show different flows to different users.
 
 Adapty offers you three ways to enable purchases in your app. Select one of them depending on your app requirements:
 
 | Implementation         | Complexity | When to use                                                                                                                                                                                                                                |
 |------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Adapty Paywall Builder | ✅ Easy     | You [create a complete, purchase-ready paywall in the no-code builder](quickstart-paywalls). Adapty automatically renders it and handles all the complex purchase flow, receipt validation, and subscription management behind the scenes. |
-| Manually created paywalls | 🟡 Medium  | You implement your paywall UI in your app code, but still get the paywall object from Adapty to maintain flexibility in product offerings. See the [guide](flutter-quickstart-manual).                                                     |
+| Adapty Flow Builder | ✅ Easy     | You [create a complete, purchase-ready flow in the no-code builder](quickstart-paywalls). Adapty automatically renders it and handles all the complex purchase flow, receipt validation, and subscription management behind the scenes. |
+| Manually created paywalls | 🟡 Medium  | You implement your paywall UI in your app code, but still get the flow object from Adapty to maintain flexibility in product offerings. See the [guide](flutter-quickstart-manual).                                                     |
 | Observer mode              | 🔴 Hard    | You already have your own purchase handling infrastructure and want to keep using it. Note that the observer mode has its limitations in Adapty. See the [article](observer-vs-full-mode).                                                 |
 
 :::important
-**The steps below show how to implement a paywall created in the Adapty paywall builder.**
+**The steps below show how to implement a flow created in the Adapty Flow Builder.**
 
-If you don't want to use the paywall builder, see the [guide for handling purchases in manually created paywalls](flutter-making-purchases).
+If you'd rather build the paywall UI yourself, see [Implement paywalls manually](flutter-quickstart-manual).
 :::
 
-To display a paywall created in the Adapty paywall builder, in your app code, you only need to:
+To display a flow created in the Adapty Flow Builder, in your app code, you only need to:
 
-1. **Get the paywall**: Get the paywall from Adapty.
-2. **Display the paywall and Adapty will handle purchases for you**: Show the paywall container you've got in your app.
-3. **Handle button actions**: Associate user interactions with the paywall with your app's response to them. For example, open links or close the paywall when users click buttons.
+1. **Get the flow**: Get it from Adapty.
+2. **Display it and Adapty will handle purchases for you**: Show the view in your app.
+3. **Handle button actions**: Associate user interactions with your app's response to them. For example, open links or close the flow when users click buttons.
 
 ## Before you start
 
@@ -43,36 +43,36 @@ Before you start, complete these steps:
 
 1. Connect your app to the [App Store](initial_ios) and/or [Google Play](initial-android) in the Adapty Dashboard.
 2. [Create your products](create-product) in Adapty.
-3. [Create a paywall and add products to it](create-paywall).
-4. [Create a placement and add your paywall to it](create-placement).
-5. [Install and activate the Adapty SDK](sdk-installation-flutter) in your app code.
+3. [Create a flow and add products to it](create-paywall).
+4. [Create a placement and add your flow to it](create-placement).
+5. [Install and activate the Adapty SDK](sdk-installation-flutter) in your app code. This guide uses Adapty Flutter SDK v4 APIs.
 
 :::tip
 The fastest way to complete these steps is to follow the [quickstart guide](quickstart) or create paywalls and placements using the [Developer CLI](developer-cli-quickstart).
 :::
 
-## 1. Get the paywall
+## 1. Get the flow
 
-Your paywalls are associated with placements configured in the dashboard. Placements allow you to run different paywalls for different audiences or to run [A/B tests](ab-tests).
+Your flows are associated with placements configured in the dashboard. Placements allow you to run different flows for different audiences or to run [A/B tests](ab-tests).
 
-To get a paywall created in the Adapty paywall builder, you need to:
+To get a flow created in the Adapty Flow Builder, you need to:
 
-1. Get the `paywall` object by the [placement](placements) ID using the `getPaywall` method and check whether it is a paywall created in the builder using the `hasViewConfiguration` property.
+1. Get the `flow` object by the [placement](placements) ID using the `getFlow` method and check whether it was created in the builder using the `hasViewConfiguration` property.
 
-2. Create the paywall view using the `createPaywallView` method. The view contains the UI elements and styling needed to display the paywall.
+2. Create the flow view using the `createFlowView` method. The view contains the UI elements and styling needed to display the flow.
 
 :::important
-To get the view configuration, you must switch on the **Show on device** toggle in the Paywall Builder. Otherwise, you will get an empty view configuration, and the paywall won't be displayed.
+To get the view configuration, you must switch on the **Show on device** toggle in the builder. Otherwise, you will get an empty view configuration, and the flow won't be displayed.
 :::
 
 ```dart showLineNumbers
 import 'package:adapty_flutter/adapty_flutter.dart';
 
 try {
-  // the requested paywall
-  final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en");
-  final view = await AdaptyUI().createPaywallView(
-    paywall: paywall,
+  // the requested flow
+  final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
   );
 } on AdaptyError catch (adaptyError) {
   // handle the error
@@ -81,11 +81,11 @@ try {
 }
 ```
 
-## 2. Display the paywall
+## 2. Display the flow
 
-Now, when you have the paywall configuration, it's enough to add a few lines to display your paywall.
+Now, when you have the flow view, it's enough to add a few lines to display it.
 
-To display the paywall, use the `view.present()` method on the `view` created by the `createPaywallView` method. Each `view` can only be used once. If you need to display the paywall again, call `createPaywallView` one more to create a new `view` instance.
+To display the flow, use the `view.present()` method on the `view` created by the `createFlowView` method. Each `view` can only be used once: after you dismiss it, the view is released from memory. If you need to display the flow again, call `createFlowView` one more time to create a new `view` instance.
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -98,93 +98,87 @@ try {
 ```
 
 :::tip
-For more details on how to display a paywall, see our [guide](flutter-present-paywalls).
+For more details on how to display a flow, see our [guide](flutter-present-paywalls).
 :::
 
 ## 3. Handle button actions
 
-When users click buttons in the paywall, the Flutter SDK automatically handles purchases and restoration. However, other buttons have custom or pre-defined IDs and require handling actions in your code.
+When users click buttons in the flow, the Flutter SDK automatically handles purchases, restoration, closing the view, and opening URLs. However, other buttons have custom or pre-defined IDs and require handling actions in your code.
 
-To control or monitor processes on the paywall screen, implement the `AdaptyUIPaywallsEventsObserver` methods and set the observer before presenting any screen. If a user has performed some action, te `paywallViewDidPerformAction` will be invoked, and your app needs to respond depending on the action ID.
+To control or monitor processes on the flow screen, implement the `AdaptyUIFlowsEventsObserver` methods and set the observer before presenting any screen. If a user has performed some action, the `flowViewDidPerformAction` will be invoked, and your app needs to respond depending on the action ID.
 
-For example, your paywall probably has a close button and URLs to open (e.g., terms of use and privacy policy). So, you need to respond to actions with the `Close` and `OpenUrl` IDs.
+Three observer methods are **required**: `flowViewDidFinishPurchase`, `flowViewDidFinishRestore`, and `flowViewDidReceiveError` — your class won't compile without them.
 
 :::tip
 Read our guides on how to handle button [actions](flutter-handle-paywall-actions) and [events](flutter-handling-events).
 :::
 
-Implement the observer as a dedicated, long-lived object rather than a widget. Because a single global observer slot is shared across the whole app, binding it to a `State` would leak the screen (the SDK keeps a strong reference to it) and would be silently replaced when the next screen registers itself. Using `extends` also inherits the SDK's default behavior, so you only override the callbacks you care about.
+Implement the observer as a dedicated, long-lived object rather than a widget. Because a single global observer slot is shared across the whole app, binding it to a `State` would leak the screen (the SDK keeps a strong reference to it) and would be silently replaced when the next screen registers itself. Using `extends` also inherits the SDK's default behavior, so besides the three required methods you only override the callbacks you care about.
 
 ```dart showLineNumbers title="Flutter"
-// A dedicated, long-lived handler for paywall events.
+// A dedicated, long-lived handler for flow events.
 // It does NOT live inside a Widget/State, so it never leaks and is never
 // silently replaced when screens are pushed or popped.
-class PaywallEventsHandler extends AdaptyUIPaywallsEventsObserver {
+class FlowEventsHandler extends AdaptyUIFlowsEventsObserver {
   // A single, app-wide instance — same idiom as Adapty() and AdaptyUI().
-  static final PaywallEventsHandler _instance = PaywallEventsHandler._();
-  factory PaywallEventsHandler() => _instance;
-  PaywallEventsHandler._();
+  static final FlowEventsHandler _instance = FlowEventsHandler._();
+  factory FlowEventsHandler() => _instance;
+  FlowEventsHandler._();
 
-  // This method is called when user performs an action on the paywall UI
+  // This method is called when user performs an action on the flow UI.
+  // Overriding it replaces the default behavior (dismiss on close, open URLs),
+  // so keep those cases if you want to preserve it.
   @override
-  void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+  void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
     switch (action) {
       case const CloseAction():
-      case const AndroidSystemBackAction():
+      case const AndroidSystemBackAction(): // close the flow on the Android back button
         view.dismiss();
         break;
-      case OpenUrlAction(url: final url):
-        // Open the URL using url_launcher package
-        _launchUrl(url);
+      case OpenUrlAction(:final url, :final openIn):
+        AdaptyUI().openUrl(url, openIn: openIn);
         break;
       default:
         break;
     }
   }
 
-  // Dismiss the paywall once a restore succeeds
+  // Required: decide what happens after a purchase finishes
   @override
-  void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
+  void flowViewDidFinishPurchase(AdaptyUIFlowView view,
+      AdaptyPaywallProduct product, AdaptyPurchaseResult purchaseResult) {
+    if (purchaseResult is! AdaptyPurchaseResultUserCancelled) {
+      view.dismiss();
+    }
+  }
+
+  // Required: dismiss the flow once a restore succeeds
+  @override
+  void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
     view.dismiss();
   }
 
-  // Handle failures while the paywall is being rendered
+  // Required: handle rendering and other view errors
   @override
-  void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
-    print('Paywall rendering failed: $error');
-  }
-
-  // Helper method to launch URLs
-  Future<void> _launchUrl(String url) async {
-    try {
-      final Uri uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        // Handle case where URL cannot be launched
-        print('Could not launch $url');
-      }
-    } catch (e) {
-      // Handle any errors
-      print('Error launching URL: $e');
-    }
+  void flowViewDidReceiveError(AdaptyUIFlowView view, AdaptyError error) {
+    print('Flow error: $error');
   }
 }
 ```
 
-Register the handler **once** at app start, before any paywall is shown:
+Register the handler **once** at app start, before any flow is shown:
 
 ```dart showLineNumbers title="Flutter"
-AdaptyUI().setPaywallsEventsObserver(PaywallEventsHandler());
+AdaptyUI().setFlowsEventsObserver(FlowEventsHandler());
 ```
 
 ## Next steps
 
 <SupportForum />
 
-Your paywall is ready to be displayed in the app. Test your purchases in the [App Store sandbox](test-purchases-in-sandbox) or in [Google Play Store](testing-on-android) to make sure you can complete a test purchase from the paywall.
+Your flow is ready to be displayed in the app. Test your purchases in the [App Store sandbox](test-purchases-in-sandbox) or in [Google Play Store](testing-on-android) to make sure you can complete a test purchase from the flow.
 
-Now, you need to [check the users' access level](flutter-check-subscription-status) to ensure you display a paywall or give access to paid features to right users.
+Now, you need to [check the users' access level](flutter-check-subscription-status) to ensure you display a flow or give access to paid features to right users.
 
 ## Full example
 
@@ -193,105 +187,97 @@ Here is how all those steps can be integrated in your app together.
 ```dart
 import 'package:flutter/material.dart';
 import 'package:adapty_flutter/adapty_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 void main() {
-  // Register a single, long-lived observer once, before any paywall is shown.
+  // Register a single, long-lived observer once, before any flow is shown.
   // It is intentionally a plain object (NOT a Widget/State): its lifetime is the
   // whole app, so it never leaks and is never silently replaced when screens are
   // pushed or popped.
-  AdaptyUI().setPaywallsEventsObserver(PaywallEventsHandler());
+  AdaptyUI().setFlowsEventsObserver(FlowEventsHandler());
 
-  runApp(MaterialApp(home: PaywallScreen()));
+  runApp(MaterialApp(home: FlowScreen()));
 }
 
-/// A dedicated handler for AdaptyUI paywall events.
+/// A dedicated handler for AdaptyUI flow events.
 ///
-/// It `extends` [AdaptyUIPaywallsEventsObserver] (rather than being implemented
+/// It `extends` [AdaptyUIFlowsEventsObserver] (rather than being implemented
 /// by a `State`), which gives you two things for free:
-///   * the SDK's sensible defaults (e.g. auto-dismiss on close/finish), so you
-///     only override what you actually care about;
+///   * the SDK's sensible defaults for optional callbacks, so besides the three
+///     required methods you only override what you actually care about;
 ///   * a lifecycle that is independent of the widget tree — there is no strong
 ///     reference back into a `Widget`, so nothing leaks and there is nothing to
 ///     unregister.
 ///
-/// Every callback receives the [AdaptyUIPaywallView] it relates to, so handling
-/// paywall actions never requires a `BuildContext` or widget state.
-class PaywallEventsHandler extends AdaptyUIPaywallsEventsObserver {
+/// Every callback receives the [AdaptyUIFlowView] it relates to, so handling
+/// flow actions never requires a `BuildContext` or widget state.
+class FlowEventsHandler extends AdaptyUIFlowsEventsObserver {
   // A single, app-wide instance — same idiom as Adapty() and AdaptyUI().
-  static final PaywallEventsHandler _instance = PaywallEventsHandler._();
-  factory PaywallEventsHandler() => _instance;
-  PaywallEventsHandler._();
+  static final FlowEventsHandler _instance = FlowEventsHandler._();
+  factory FlowEventsHandler() => _instance;
+  FlowEventsHandler._();
 
-  // Called when the user performs an action on the paywall UI.
+  // Called when the user performs an action on the flow UI.
   @override
-  void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
+  void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
     switch (action) {
       case const CloseAction():
-      case const AndroidSystemBackAction():
+      case const AndroidSystemBackAction(): // close the flow on the Android back button
         view.dismiss();
         break;
-      case OpenUrlAction(url: final url):
-        // Open the URL using the url_launcher package.
-        _launchUrl(url);
+      case OpenUrlAction(:final url, :final openIn):
+        // Open the URL natively, honoring the dashboard browser setting.
+        AdaptyUI().openUrl(url, openIn: openIn);
         break;
       default:
         break;
     }
   }
 
-  // Dismiss the paywall once a restore succeeds.
+  // Required: decide what happens after a purchase finishes.
   @override
-  void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
+  void flowViewDidFinishPurchase(AdaptyUIFlowView view,
+      AdaptyPaywallProduct product, AdaptyPurchaseResult purchaseResult) {
+    if (purchaseResult is! AdaptyPurchaseResultUserCancelled) {
+      view.dismiss();
+    }
+  }
+
+  // Required: dismiss the flow once a restore succeeds.
+  @override
+  void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
     view.dismiss();
   }
 
-  // Handle failures while the paywall is being rendered.
+  // Required: handle rendering and other view errors.
   @override
-  void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
-    print('Paywall rendering failed: $error');
-  }
-
-  // Helper method to launch URLs.
-  Future<void> _launchUrl(String url) async {
-    try {
-      final Uri uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        // Handle case where URL cannot be launched.
-        print('Could not launch $url');
-      }
-    } catch (e) {
-      // Handle any errors.
-      print('Error launching URL: $e');
-    }
+  void flowViewDidReceiveError(AdaptyUIFlowView view, AdaptyError error) {
+    print('Flow error: $error');
   }
 }
 
-class PaywallScreen extends StatefulWidget {
-  const PaywallScreen({super.key});
+class FlowScreen extends StatefulWidget {
+  const FlowScreen({super.key});
 
   @override
-  State<PaywallScreen> createState() => _PaywallScreenState();
+  State<FlowScreen> createState() => _FlowScreenState();
 }
 
-class _PaywallScreenState extends State<PaywallScreen> {
+class _FlowScreenState extends State<FlowScreen> {
   @override
   void initState() {
     super.initState();
-    _showPaywallIfNeeded();
+    _showFlowIfNeeded();
   }
 
-  Future<void> _showPaywallIfNeeded() async {
+  Future<void> _showFlowIfNeeded() async {
     try {
-      final paywall = await Adapty().getPaywall(
+      final flow = await Adapty().getFlow(
         placementId: 'YOUR_PLACEMENT_ID',
       );
 
-      if (!paywall.hasViewConfiguration) return;
+      if (!flow.hasViewConfiguration) return;
 
-      final view = await AdaptyUI().createPaywallView(paywall: paywall);
+      final view = await AdaptyUI().createFlowView(flow: flow);
 
       await view.present();
     } catch (_) {
@@ -302,12 +288,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Adapty Paywall Example')),
+      appBar: AppBar(title: const Text('Adapty Flow Example')),
       body: Center(
-        // Add a button to re-trigger the paywall for testing purposes.
+        // Add a button to re-trigger the flow for testing purposes.
         child: ElevatedButton(
-          onPressed: _showPaywallIfNeeded,
-          child: const Text('Show Paywall'),
+          onPressed: _showFlowIfNeeded,
+          child: const Text('Show Flow'),
         ),
       ),
     );
