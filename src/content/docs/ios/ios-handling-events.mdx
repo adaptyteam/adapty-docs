@@ -45,6 +45,7 @@ var body: some View {
             },
             didSelectProduct: { product in /* Handle the event */ },
             didStartPurchase: { product in /* Handle the event */ },
+            didFinishPurchase: { product, purchaseResult in /* dismiss, or do nothing to let the flow continue */ },
             didFailPurchase: { product, error in /* handle the error */ },
             didStartRestore: { /* Handle the event */ },
             didFinishRestore: { profile in /* check access level and dismiss */ },
@@ -66,6 +67,7 @@ You can register only the closure parameters you need and omit those you do not 
 |:-----------------------|:---------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **isPresented**        | required | A binding that manages whether the flow or paywall screen is displayed.                                                                                                                                                                             |
 | **flowConfiguration**  | required | An `AdaptyUI.FlowConfiguration` object containing visual details of the flow or paywall. Refer to [Get flows and paywalls](get-pb-paywalls) for more details.                                                                                       |
+| **didFinishPurchase**  | required | Invoked when `Adapty.makePurchase()` completes successfully. The flow does not dismiss automatically — set your presentation binding to `false` here, or do nothing to let the flow continue past the purchase.                                     |
 | **didFailPurchase**    | required | Invoked when `Adapty.makePurchase()` fails.                                                                                                                                                                                                         |
 | **didFinishRestore**   | required | Invoked when `Adapty.restorePurchases()` completes successfully.                                                                                                                                                                                    |
 | **didFailRestore**     | required | Invoked when `Adapty.restorePurchases()` fails.                                                                                                                                                                                                     |
@@ -77,7 +79,6 @@ You can register only the closure parameters you need and omit those you do not 
 | **didPerformAction**   | optional | Invoked when a user clicks a button. Two action IDs are pre-defined: `close` and `openURL`; others are custom and can be set in the builder.                                                                                                        |
 | **didSelectProduct**   | optional | Invoked when a product is selected for purchase by the user or by the system.                                                                                                                                                                       |
 | **didStartPurchase**   | optional | Invoked when the user begins the purchase process.                                                                                                                                                                                                  |
-| **didFinishPurchase**  | optional | Invoked when `Adapty.makePurchase()` completes successfully.                                                                                                                                                                                        |
 | **didFinishWebPaymentNavigation** | optional | Invoked when web payment navigation finishes.                                                                                                                                                                                          |
 | **didStartRestore**    | optional | Invoked when the user starts the restore process.                                                                                                                                                                                                   |
 | **didFailLoadingProducts** | optional | Invoked when errors occur during product loading. Return `true` to retry loading.                                                                                                                                                              |
@@ -89,7 +90,7 @@ You can register only the closure parameters you need and omit those you do not 
 
 For UIKit apps, events are handled through the `AdaptyFlowControllerDelegate` protocol. See [Display flows & paywalls - iOS](ios-present-paywalls) for how to set up `AdaptyFlowController` with `AdaptyFlowControllerDelegate`.
 
-The protocol declares 13 methods. Three of them have no default implementation and must be implemented when conforming: `didFailPurchase`, `didFinishRestoreWith`, and `didFailRestoreWith`. The rest provide default no-op implementations and can be overridden when you want custom behavior. Methods are grouped below by purpose.
+The protocol declares 13 methods. Four of them have no default implementation and must be implemented when conforming: `didFinishPurchase`, `didFailPurchase`, `didFinishRestoreWith`, and `didFailRestoreWith`. The rest provide default no-op implementations and can be overridden when you want custom behavior. Methods are grouped below by purpose.
 
 ### Lifecycle
 
@@ -139,7 +140,9 @@ func flowController(
     didFinishPurchase product: AdaptyPaywallProduct,
     purchaseResult: AdaptyPurchaseResult
 ) {
-    // Default: dismiss the controller unless the purchase was cancelled.
+    if !purchaseResult.isPurchaseCancelled {
+        controller.dismiss(animated: true) // or do nothing to let the flow continue
+    }
 }
 
 func flowController(
@@ -149,7 +152,7 @@ func flowController(
 ) { }
 ```
 
-`didFailPurchase` is the only purchase event without a default implementation. `didFinishPurchase` defaults to dismissing the controller on success; override only if you need custom post-purchase logic.
+`didFinishPurchase` and `didFailPurchase` have no default implementations and must be implemented. The controller does not dismiss itself after a successful purchase — call `controller.dismiss(animated:)` when appropriate, or do nothing to let a multi-screen flow continue past the purchase.
 
 ### Restore events
 

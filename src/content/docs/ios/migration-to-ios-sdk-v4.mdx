@@ -20,6 +20,8 @@ Adapty iOS SDK 4.0 (beta) introduces flows and renames the paywall APIs accordin
 | `.paywall()` (SwiftUI modifier) | `.flow()` |
 | `AdaptyPaywallView` | `AdaptyFlowView` |
 | `didFailRenderingWith:` / `didFailRendering:` | `didReceiveError:` |
+| `didFinishPurchase` (optional, auto-dismisses on success) | `didFinishPurchase` (required, no auto-dismiss) |
+| `Adapty_KidsMode` / `AdaptyUI_KidsMode` package products | `KidsMode` package trait |
 | `Adapty.updateAttribution(_:source:)` (`source: String`) | `Adapty.updateAttribution(_:source:)` (`source: AdaptyAttributionSource`) |
 | `Adapty.setIntegrationIdentifier(key:value:)` | `Adapty.setIntegrationIdentifier(_:)` (`AdaptyIntegrationIdentifier`) |
 
@@ -32,6 +34,37 @@ Adapty iOS SDK 4.0 raises the minimum deployment target from iOS 13.0 to **iOS 1
 Adapty iOS SDK 4.0 drops CocoaPods support. Install the SDK with [Swift Package Manager](sdk-installation-ios#install-adapty-sdk).
 
 If your project still uses CocoaPods, remove the `Adapty` and `AdaptyUI` pods from your `Podfile`, run `pod install` to clean them up, then add the package in Xcode via **File → Add Package Dependency** using `https://github.com/adaptyteam/AdaptySDK-iOS.git`.
+
+## Kids Mode: separate products replaced by a package trait
+
+In v3, you enabled [Kids Mode](kids-mode) by selecting the separate **Adapty_KidsMode** and **AdaptyUI_KidsMode** package products and renaming your imports. Starting from `4.0.0-beta.2`, these products are removed. Kids Mode is now a Swift package trait named `KidsMode` on the regular Adapty package — enabling it compiles out IDFA and AdSupport across the whole SDK.
+
+To migrate:
+
+1. In the **Choose Package Products** window, select the regular **Adapty** and **AdaptyUI** products instead of **Adapty_KidsMode** and **AdaptyUI_KidsMode**.
+
+2. Enable the `KidsMode` trait. In Xcode 26.4 or later, enable it for the AdaptySDK-iOS dependency in the **Package Dependencies** view of your project. If you add Adapty as a dependency in `Package.swift` (requires `swift-tools-version` 6.1 or later), enable it there:
+
+   ```swift showLineNumbers title="Package.swift"
+   .package(
+       url: "https://github.com/adaptyteam/AdaptySDK-iOS.git",
+       exact: "4.0.0-beta.2",
+       traits: ["KidsMode"]
+   )
+   ```
+
+3. Change your imports back to the regular modules:
+
+   ```diff showLineNumbers
+   - import Adapty_KidsMode
+   - import AdaptyUI_KidsMode
+   + import Adapty
+   + import AdaptyUI
+   ```
+
+:::note
+Xcode versions earlier than 26.4 can't enable traits for an Xcode project from the UI. In that case, add a small local Swift package that depends on Adapty with the `KidsMode` trait enabled, and make your app target depend on that package.
+:::
 
 ## Removed APIs
 
@@ -81,6 +114,27 @@ The returned types change from `AdaptyPaywall` / `AdaptyUI.PaywallConfiguration`
 
 As in v3, you do not need to call this method when displaying flows or paywalls rendered by the [Flow Builder](adapty-flow-builder) or the [Paywall Builder](adapty-paywall-builder) — Adapty tracks those views automatically.
 
+## didFinishPurchase is now required
+
+In v3, `didFinishPurchase` was optional: if you didn't implement it, the paywall dismissed itself after a successful purchase. Starting from `4.0.0-beta.2`, this default auto-dismiss implementation is removed so that a flow can continue after a successful purchase — for example, to show the remaining screens of your flow. You now decide what happens after a purchase: dismiss the screen, or do nothing to let the flow continue.
+
+- **UIKit**: `AdaptyFlowControllerDelegate` conformers must implement `didFinishPurchase` — it no longer has a default implementation.
+- **SwiftUI**: the `didFinishPurchase` closure of `.flow(...)` and `AdaptyFlowView(...)` is now non-optional, matching `didFailPurchase` and `didFinishRestore`.
+
+To keep the v3 behavior, dismiss the screen yourself:
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishPurchase product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    if !purchaseResult.isPurchaseCancelled {
+        controller.dismiss(animated: true)
+    }
+}
+```
+
 ## UIKit
 
 ### AdaptyPaywallController → AdaptyFlowController
@@ -100,7 +154,7 @@ Rename the controller type and the factory method:
 
 ### AdaptyPaywallControllerDelegate → AdaptyFlowControllerDelegate
 
-Rename the protocol and update every method signature. Note that `didSelectProduct` now receives `AdaptyPaywallProduct` instead of the removed `AdaptyPaywallProductWithoutDeterminingOffer`.
+Rename the protocol and update every method signature. Note that `didSelectProduct` now receives `AdaptyPaywallProduct` instead of the removed `AdaptyPaywallProductWithoutDeterminingOffer`, and `didFinishPurchase` [must now be implemented](#didfinishpurchase-is-now-required) — it no longer has a default implementation.
 
 ```diff showLineNumbers
 - class YourClass: AdaptyPaywallControllerDelegate {
@@ -182,7 +236,7 @@ Rename the protocol and update every method signature. Note that `didSelectProdu
 
 ### .paywall() modifier → .flow()
 
-Rename the modifier and update the configuration parameter name:
+Rename the modifier, update the configuration parameter name, and add the [now-required](#didfinishpurchase-is-now-required) `didFinishPurchase` closure:
 
 ```diff showLineNumbers
  @State var flowPresented = false // rename freely — the variable name is your choice
@@ -194,6 +248,7 @@ Rename the modifier and update the configuration parameter name:
              isPresented: $flowPresented,
 -            paywallConfiguration: paywallConfiguration,
 +            flowConfiguration: flowConfiguration,
++            didFinishPurchase: { product, purchaseResult in /* dismiss, or do nothing to let the flow continue */ },
              didFailPurchase: { product, error in /* handle the error */ },
              didFinishRestore: { profile in /* check access level and dismiss */ },
              didFailRestore: { error in /* handle the error */ },
@@ -207,7 +262,7 @@ The renamed callback fires for the same rendering errors as `didFailRendering` d
 
 ### AdaptyPaywallView → AdaptyFlowView
 
-Rename the view, update the configuration parameter, and update any `didSelectProduct` closure — it now receives `AdaptyPaywallProduct` instead of the removed `AdaptyPaywallProductWithoutDeterminingOffer`:
+Rename the view, update the configuration parameter, add the [now-required](#didfinishpurchase-is-now-required) `didFinishPurchase` closure, and update any `didSelectProduct` closure — it now receives `AdaptyPaywallProduct` instead of the removed `AdaptyPaywallProductWithoutDeterminingOffer`:
 
 ```diff showLineNumbers
 - AdaptyPaywallView(
@@ -216,6 +271,7 @@ Rename the view, update the configuration parameter, and update any `didSelectPr
 + AdaptyFlowView(
 +     flowConfiguration: flowConfiguration,
 +     didSelectProduct: { product: AdaptyPaywallProduct in /* handle */ },
++     didFinishPurchase: { product, purchaseResult in /* dismiss, or do nothing to let the flow continue */ },
      didFailPurchase: { product, error in /* handle the error */ },
      didFinishRestore: { profile in /* check access level and dismiss */ },
      didFailRestore: { error in /* handle the error */ },

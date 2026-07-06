@@ -78,16 +78,20 @@ Now, when you have the flow configuration, it's enough to add a few lines to dis
 
 <TabItem value="swiftui" label="SwiftUI" default>
 
-In SwiftUI, when displaying the flow, you also need to handle events. `didFailPurchase`, `didFinishRestore`, `didFailRestore`, and `didReceiveError` are required. When testing, you can just copy the code from the snippet below to log these events.
+In SwiftUI, when displaying the flow, you also need to handle events. `didFinishPurchase`, `didFailPurchase`, `didFinishRestore`, `didFailRestore`, and `didReceiveError` are required. When testing, you can just copy the code from the snippet below to log these events.
 
 :::tip
-Handling `didFinishPurchase` isn't required, but is useful when you want to perform actions after a successful purchase. If you don't implement that callback, the flow will dismiss automatically.
+The flow does not dismiss automatically after a successful purchase. In `didFinishPurchase`, set your presentation binding to `false` to dismiss it, or do nothing to let the flow continue to its next screens.
 :::
 
 ```swift
 .flow(
     isPresented: $flowPresented,
     flowConfiguration: flowConfiguration,
+    didFinishPurchase: { product, purchaseResult in
+        print("Purchase finished successfully")
+        flowPresented = false // or do nothing to let the flow continue
+    },
     didFailPurchase: { product, error in
         print("Purchase failed: \(error)")
     },
@@ -120,10 +124,18 @@ func presentFlow(with config: AdaptyUI.FlowConfiguration) {
 }
 ```
 
-Implement `AdaptyFlowControllerDelegate` to handle events. At minimum, implement the required error handlers (the three methods that have no default implementation):
+Implement `AdaptyFlowControllerDelegate` to handle events. At minimum, implement the four methods that have no default implementation. Note that the controller does not dismiss itself after a successful purchase — dismiss it in `didFinishPurchase`, or do nothing to let the flow continue to its next screens:
 
 ```swift
 extension YourViewController: AdaptyFlowControllerDelegate {
+    func flowController(_ controller: AdaptyFlowController,
+                        didFinishPurchase product: AdaptyPaywallProduct,
+                        purchaseResult: AdaptyPurchaseResult) {
+        if !purchaseResult.isPurchaseCancelled {
+            controller.dismiss(animated: true) // or do nothing to let the flow continue
+        }
+    }
+
     func flowController(_ controller: AdaptyFlowController,
                         didFailPurchase product: AdaptyPaywallProduct,
                         error: AdaptyError) {
@@ -176,6 +188,7 @@ Read our guides on how to handle button [actions](handle-paywall-actions) and [e
                 break
         }
     },
+    didFinishPurchase: { product, purchaseResult in flowPresented = false },
     didFailPurchase: { product, error in /* handle the error */ },
     didFinishRestore: { profile in /* check access level and dismiss */ },
     didFailRestore: { error in /* handle the error */ },
@@ -252,6 +265,10 @@ struct ContentView: View {
                 default:
                     break
                 }
+            },
+            didFinishPurchase: { product, purchaseResult in
+                print("Purchase finished successfully")
+                flowPresented = false // or do nothing to let the flow continue
             },
             didFailPurchase: { product, error in
                 print("Purchase failed: \(error)")
@@ -347,6 +364,14 @@ class ViewController: UIViewController {
 }
 
 extension ViewController: AdaptyFlowControllerDelegate {
+    func flowController(_ controller: AdaptyFlowController,
+                        didFinishPurchase product: AdaptyPaywallProduct,
+                        purchaseResult: AdaptyPurchaseResult) {
+        if !purchaseResult.isPurchaseCancelled {
+            controller.dismiss(animated: true) // or do nothing to let the flow continue
+        }
+    }
+
     func flowController(_ controller: AdaptyFlowController,
                         didFailPurchase product: AdaptyPaywallProduct,
                         error: AdaptyError) {
