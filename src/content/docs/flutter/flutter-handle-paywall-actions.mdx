@@ -3,10 +3,130 @@ title: "Respond to button actions in Flutter SDK"
 description: "Handle paywall button actions in Flutter using Adapty for better app monetization."
 metadataTitle: "Handling paywall button actions | Adapty Docs"
 toc_max_heading_level: 4
-keywords: ['paywall button', 'button', 'paywall button actions', 'handle actions']
+keywords: ['paywall button', 'button', 'paywall button actions', 'handle actions', 'flowViewDidPerformAction', 'AndroidSystemBackAction']
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+
+<SDKv4>
+
+If you are building flows or paywalls using the Adapty builder, it's crucial to set up buttons properly:
+
+1. Add a [button in the builder](paywall-buttons) and assign it either a pre-existing action or create a custom action ID.
+2. Write code in your app to handle each action you've assigned.
+
+This guide shows how to handle custom and pre-existing actions in your code.
+
+:::warning
+**Closing the view and opening URLs are handled automatically** by the default `flowViewDidPerformAction` implementation, and the SDK itself processes purchases and restorations. All the other button actions, such as logging in or opening another flow, require implementing proper responses in the app code. Note that responding to *completed* purchases and restores happens in the required observer callbacks — see [Handle flow & paywall events](flutter-handling-events).
+:::
+
+## Close flows and paywalls
+
+To add a button that will close your flow or paywall, in the builder, add a button and assign it the **Close** action. No code is required: the default `flowViewDidPerformAction` implementation dismisses the view when it receives `CloseAction`.
+
+:::info
+The Android system **Back** button no longer closes the view by default. It is delivered to `flowViewDidPerformAction` as `AndroidSystemBackAction` — handle it yourself if you want the back button to close the flow or paywall.
+:::
+
+Override `flowViewDidPerformAction` if you need custom behavior — for example, to also close the view on the Android system back button, as in v3:
+
+```dart
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(:final url, :final openIn):
+        AdaptyUI().openUrl(url, openIn: openIn);
+        break;
+      default:
+        break;
+    }
+}
+```
+
+:::warning
+Overriding `flowViewDidPerformAction` replaces the default implementation entirely — keep the `CloseAction` and `OpenUrlAction` cases if you want to preserve the default closing and URL-opening behavior.
+:::
+
+## Open URLs from flows and paywalls
+
+:::tip
+If you want to add a group of links (e.g., terms of use and purchase restoration), add a **Link** element in the builder and handle it the same way as buttons with the **Open URL** action.
+:::
+
+To add a button that opens a link (e.g., **Terms of use** or **Privacy policy**), in the builder, add a button, assign it the **Open URL** action, and enter the URL you want to open.
+
+No code is required: the default `flowViewDidPerformAction` implementation opens the URL natively via `AdaptyUI().openUrl`, honoring the in-app or external browser setting from the dashboard.
+
+If you want to open URLs yourself — for example, through the `url_launcher` plugin — override the handler:
+
+```dart
+// You have to install url_launcher plugin in order to handle urls:
+// https://pub.dev/packages/url_launcher
+import 'package:url_launcher/url_launcher.dart';
+
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        final Uri uri = Uri.parse(url);
+        launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+        break;
+      default:
+        break;
+    }
+}
+```
+
+## Log into the app
+
+To add a button that logs users into your app:
+
+1. In the builder, add a button and assign it the **Login** action.
+2. In your app code, implement a handler for the `login` action that identifies your user.
+
+```dart
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+    switch (action) {
+      case CustomAction(action: 'login'):
+        // Handle login action
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => LoginScreen()));
+        break;
+      default:
+        break;
+    }
+}
+```
+
+## Handle custom actions
+
+To add a button that handles any other actions:
+
+1. In the builder, add a button, assign it the **Custom** action, and assign it an ID.
+2. In your app code, implement a handler for the action ID you've created.
+
+For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another flow or paywall:
+
+```dart
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+   switch (action) {
+     case CustomAction(action: 'openNewPaywall'):
+       // Display another flow or paywall
+       break;
+     default:
+       break;
+   }
+}
+```
+
+</SDKv4>
+
+<SDKv3>
 
 If you are building paywalls using the Adapty paywall builder, it's crucial to set up buttons properly:
 
@@ -57,9 +177,9 @@ To add a button that opens a link from your paywall (e.g., **Terms of use** or *
 ```dart
 // You have to install url_launcher plugin in order to handle urls:
 // https://pub.dev/packages/url_launcher
-import 'package:url_launcher/url_launcher_string.dart'; 
+import 'package:url_launcher/url_launcher.dart';
 
-void paywallViewDidPerformAction(AdaptyUIView view, AdaptyUIAction action) {
+void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
     switch (action) {
       case OpenUrlAction(url: final url):
         final Uri uri = Uri.parse(url);
@@ -111,3 +231,5 @@ void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action
    }
 }
 ```
+
+</SDKv3>

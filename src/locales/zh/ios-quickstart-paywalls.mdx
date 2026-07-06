@@ -57,7 +57,7 @@ func loadFlow() async {
     flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow)
 }
 ```
-## 2. 展示流程 \{#2-display-the-flow\}
+## 2. 展示流程 \{#display-the-flow\}
 
 现在，当你获取到流程配置后，只需添加几行代码即可展示你的流程。
 
@@ -65,14 +65,18 @@ func loadFlow() async {
 
 <TabItem value="swiftui" label="SwiftUI" default>
 
-在 SwiftUI 中，展示流程时还需要处理事件。`didFailPurchase`、`didFinishRestore`、`didFailRestore` 和 `didReceiveError` 是必须处理的。在测试阶段，你可以直接复制下方代码片段来记录这些事件。
+在 SwiftUI 中展示流程时，你还需要处理相关事件。`didFinishPurchase`、`didFailPurchase`、`didFinishRestore`、`didFailRestore` 和 `didReceiveError` 是必填项。在测试阶段，你可以直接复制下方代码片段来记录这些事件。
 :::tip
-处理 `didFinishPurchase` 不是必须的，但在购买成功后需要执行某些操作时会很有用。如果不实现该回调，流程将自动关闭。
+流程在购买成功后不会自动关闭。在 `didFinishPurchase` 中，将你的展示绑定设置为 `false` 以关闭它，或者不做任何操作，让流程继续进入下一个界面。
 :::
 ```swift
 .flow(
     isPresented: $flowPresented,
     flowConfiguration: flowConfiguration,
+    didFinishPurchase: { product, purchaseResult in
+        print("Purchase finished successfully")
+        flowPresented = false // or do nothing to let the flow continue
+    },
     didFailPurchase: { product, error in
         print("Purchase failed: \(error)")
     },
@@ -89,8 +93,8 @@ func loadFlow() async {
 )
 ```
 </TabItem>
-
 <TabItem value="uikit" label="UIKit" default>
+
 ```swift
 
 func presentFlow(with config: AdaptyUI.FlowConfiguration) {
@@ -101,10 +105,17 @@ func presentFlow(with config: AdaptyUI.FlowConfiguration) {
     present(flowController, animated: true)
 }
 ```
-
-实现 `AdaptyFlowControllerDelegate` 以处理事件。至少需要实现必要的错误处理方法（以下三个没有默认实现的方法）：
+实现 `AdaptyFlowControllerDelegate` 来处理事件。至少需要实现四个没有默认实现的方法。注意，控制器在购买成功后不会自动关闭——请在 `didFinishPurchase` 中手动关闭，或者不做任何操作以让流程继续跳转到后续页面：
 ```swift
 extension YourViewController: AdaptyFlowControllerDelegate {
+    func flowController(_ controller: AdaptyFlowController,
+                        didFinishPurchase product: AdaptyPaywallProduct,
+                        purchaseResult: AdaptyPurchaseResult) {
+        if !purchaseResult.isPurchaseCancelled {
+            controller.dismiss(animated: true) // or do nothing to let the flow continue
+        }
+    }
+
     func flowController(_ controller: AdaptyFlowController,
                         didFailPurchase product: AdaptyPaywallProduct,
                         error: AdaptyError) {
@@ -148,14 +159,15 @@ extension YourViewController: AdaptyFlowControllerDelegate {
     didPerformAction: { action in
         switch action {
             case .close:
-                flowPresented = false // 当用户点击关闭时，关闭流程
+                flowPresented = false // dismiss the flow when the user taps close
             default:
                 break
         }
     },
-    didFailPurchase: { product, error in /* 处理错误 */ },
-    didFinishRestore: { profile in /* 检查访问等级并关闭 */ },
-    didFailRestore: { error in /* 处理错误 */ },
+    didFinishPurchase: { product, purchaseResult in flowPresented = false },
+    didFailPurchase: { product, error in /* handle the error */ },
+    didFinishRestore: { profile in /* check access level and dismiss */ },
+    didFailRestore: { error in /* handle the error */ },
     didReceiveError: { error in flowPresented = false }
 )
 ```
@@ -222,6 +234,10 @@ struct ContentView: View {
                 default:
                     break
                 }
+            },
+            didFinishPurchase: { product, purchaseResult in
+                print("Purchase finished successfully")
+                flowPresented = false // or do nothing to let the flow continue
             },
             didFailPurchase: { product, error in
                 print("Purchase failed: \(error)")
@@ -312,6 +328,14 @@ class ViewController: UIViewController {
 }
 
 extension ViewController: AdaptyFlowControllerDelegate {
+    func flowController(_ controller: AdaptyFlowController,
+                        didFinishPurchase product: AdaptyPaywallProduct,
+                        purchaseResult: AdaptyPurchaseResult) {
+        if !purchaseResult.isPurchaseCancelled {
+            controller.dismiss(animated: true) // or do nothing to let the flow continue
+        }
+    }
+
     func flowController(_ controller: AdaptyFlowController,
                         didFailPurchase product: AdaptyPaywallProduct,
                         error: AdaptyError) {

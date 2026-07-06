@@ -1,41 +1,204 @@
 ---
-title: "React Native SDKでボタンアクションに対応する"
-description: "AdaptyのReact Nativeでペイウォールのボタンアクションを処理して、アプリのマネタイズを改善しましょう。"
-metadataTitle: "ペイウォールのボタンアクションの処理 | Adapty ドキュメント"
+title: "フローアクションへの対応 - React Native"
+description: "Adapty を使用して React Native のフローとペイウォールのボタンアクションを処理し、アプリのマネタイズを向上させます。"
+metadataTitle: "フローアクションへの対応 - React Native | Adapty ドキュメント"
 toc_max_heading_level: 4
-keywords: ['ペイウォールボタン', 'ボタン', 'ペイウォールボタンアクション', 'アクションの処理']
+keywords: ['ペイウォールボタン', 'ボタン', 'ペイウォールボタンアクション', 'アクション処理']
 ---
 
-Adaptypのペイウォールビルダーを使ってペイウォールを作成する場合、ボタンを正しく設定することが重要です：
+<SDKv4>
 
-1. [ペイウォールビルダーでボタンを追加](paywall-buttons)し、既存のアクションを割り当てるか、カスタムアクションIDを作成します。
-2. 割り当てた各アクションを処理するコードをアプリに記述します。
+Adapty のフロービルダーやペイウォールビルダーを使ってフローやペイウォールを構築する場合、ボタンを適切に設定することが重要です。
+1. [フロー/ペイウォールビルダーでボタンを追加](paywall-buttons)し、既存のアクションを割り当てるか、カスタムアクション ID を作成します。
+2. 割り当てたアクションごとに処理するコードをアプリに記述します。
 
-このガイドでは、コード内でカスタムアクションおよび既存アクションを処理する方法を説明します。
+このガイドでは、カスタムアクションおよび既存アクションをコードで処理する方法を説明します。
 
 :::warning
-**購入、復元、ペイウォールのクローズ、URLの開放は自動的に処理されます。** それ以外のボタンアクションはすべて、アプリコードで適切な処理を実装する必要があります。
+**購入、復元、フロー/ペイウォールのクローズ、URL オープンは自動的に処理されます。** デフォルトの動作を設定したり、カスタムアクションへの応答を実装したりすることができます。
+:::
+:::note
+SDKは、プッシュ通知やカメラアクセスなどのシステム権限リクエスト用に `onRequestPermission` フローハンドラーを公開しています。現時点ではフローがこれらのリクエストをトリガーしないため、今すぐ実装する必要はありません。
+:::
+## フローとペイウォールを閉じる \{#close-flows-and-paywalls\}
+
+フローまたはペイウォールを閉じるボタンを追加するには：
+
+1. ビルダーでボタンを追加し、**Close** アクションを割り当てます。
+2. アプリのコードで、フローまたはペイウォールを閉じる `close` アクションのハンドラーを実装します。
+
+:::info
+React Native SDK では、`close` アクションはデフォルトでフローまたはペイウォールを閉じる動作をトリガーします。ただし、必要に応じてコード内でこの動作をオーバーライドできます。たとえば、あるフローを閉じると別のフローが開くようにすることも可能です。
 :::
 
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+For React component, handle the close action through individual event handler props:
+```javascript
+
+function MyPaywall({ flow }) {
+  const onCloseButtonPress = useCallback<FlowEventHandlers['onCloseButtonPress']>(() => {
+    // Handle close button press - navigate away or hide component
+    navigation.goBack();
+  }, [navigation]);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+モーダル表示の場合は、クローズハンドラーを実装します：
+
+```javascript
+
+const view = await createFlowView(flow);
+
+const unsubscribe = view.setEventHandlers({
+    onCloseButtonPress() {
+        return true; // allow flow or paywall closing
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+## フローやペイウォールからURLを開く \{#open-urls-from-flows-and-paywalls\}
+
+:::tip
+リンクのグループ（利用規約や購入の復元など）を追加したい場合は、ビルダーで **Link** 要素を追加し、**Open URL** アクションが設定されたボタンと同じ方法で処理してください。
+:::
+
+フローやペイウォールにリンクを開くボタン（**Terms of use** や **Privacy policy** など）を追加するには：
+
+1. ビルダーでボタンを追加し、**Open URL** アクションを割り当て、開きたいURLを入力します。
+2. アプリのコードで、受け取ったURLをブラウザで開く `openUrl` アクションのハンドラーを実装します。
+:::info
+React Native SDKでは、`openUrl`アクションはデフォルトでURLを開く動作をトリガーします。ただし、必要に応じてコード内でこの動作を上書きできます。
+:::
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+Reactコンポーネントの場合は、イベントハンドラープロップを通じてURLの開き方を制御します：
+```javascript
+
+function MyPaywall({ flow }) {
+  const onUrlPress = useCallback<FlowEventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      style={styles.container}
+      onUrlPress={onUrlPress}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="モーダル表示">
+For modal presentation, implement the URL handler:
+
+```javascript
+
+const view = await createFlowView(flow);
+
+const unsubscribe = view.setEventHandlers({
+    onUrlPress(url) {
+        Linking.openURL(url);
+        return false; // Keep flow or paywall open
+    },
+});
+```
+
+</TabItem>
+</Tabs>
+## カスタムアクションの処理 \{#handle-custom-actions\}
+
+ほかのアクションを処理するボタンを追加するには、次の手順に従います。
+
+1. ビルダーでボタンを追加し、**Custom** アクションを割り当てて、IDを設定します。
+2. アプリのコードで、作成したアクションIDのハンドラーを実装します。
+
+たとえば、別のサブスクリプションオファーや買い切り購入がある場合、別のフローやペイウォールを表示するボタンを追加できます。
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+Reactコンポーネントの場合は、イベントハンドラープロップを通じてカスタムアクションを処理します。
+```javascript
+
+function MyPaywall({ flow }) {
+  const onCustomAction = useCallback<FlowEventHandlers['onCustomAction']>((actionId) => {
+    if (actionId === 'openNewPaywall') {
+      // Display another flow or paywall
+    }
+  }, []);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      style={styles.container}
+      onCustomAction={onCustomAction}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="モーダル表示">
+モーダル表示の場合は、カスタムアクションハンドラーを実装します：
+
+```javascript
+const unsubscribe = view.setEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'openNewPaywall') {
+            // Display another flow or paywall
+        }
+    },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</SDKv4>
+
+<SDKv3>
+
+Adapty ペイウォールビルダーを使用してペイウォールを構築する場合は、ボタンを適切に設定することが重要です：
+1. [ペイウォールビルダーにボタンを追加](paywall-buttons)し、既存のアクションを割り当てるか、カスタムアクションIDを作成します。
+2. 割り当てた各アクションを処理するコードをアプリに記述します。
+
+このガイドでは、カスタムおよび既存のアクションをコードで処理する方法を説明します。
+
+:::warning
+**購入・復元・ペイウォールの閉鎖・URL開封は自動で処理されます。** それ以外のボタンアクションはすべて、アプリのコードで適切に対応を実装する必要があります。
+:::
 ## ペイウォールを閉じる \{#close-paywalls\}
 
 ペイウォールを閉じるボタンを追加するには：
 
 1. ペイウォールビルダーでボタンを追加し、**Close** アクションを割り当てます。
-2. アプリコードで、ペイウォールを閉じる `close` アクションのハンドラーを実装します。
+2. アプリのコードで、ペイウォールを閉じる `close` アクションのハンドラーを実装します。
 
 :::info
-React Native SDKでは、`close` アクションはデフォルトでペイウォールを閉じます。ただし、必要に応じてコードでこの動作をオーバーライドできます。たとえば、あるペイウォールを閉じると別のペイウォールが開くようにすることもできます。
+React Native SDK では、`close` アクションはデフォルトでペイウォールを閉じる動作をトリガーします。ただし、必要に応じてコードでこの動作をオーバーライドできます。たとえば、あるペイウォールを閉じると別のペイウォールが開くようにすることも可能です。
 :::
-
-<Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.14 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
-
-Reactコンポーネントの場合、個別のイベントハンドラーpropを通じてcloseアクションを処理します：
-
+For React component, handle the close action through individual event handler props:
 ```javascript
 
 function MyPaywall({ paywall }) {
@@ -57,7 +220,7 @@ function MyPaywall({ paywall }) {
 </TabItem>
 <TabItem value="standalone" label="Modal presentation">
 
-モーダル表示の場合、closeハンドラーを実装します：
+モーダル表示の場合は、クローズハンドラーを実装してください：
 
 ```javascript
 
@@ -72,50 +235,24 @@ const unsubscribe = view.setEventHandlers({
 
 </TabItem>
 </Tabs>
-
-</TabItem>
-
-<TabItem value="old" label="SDK version < 3.14" default>
-
-SDKバージョン3.14未満では、モーダル表示のみサポートされています：
-
-```javascript
-
-const view = await createPaywallView(paywall);
-
-const unsubscribe = view.registerEventHandlers({
-    onCloseButtonPress() {
-        return true; // allow paywall closing
-    }
-});
-```
-
-</TabItem>
-</Tabs>
-
 ## ペイウォールからURLを開く \{#open-urls-from-paywalls\}
 
 :::tip
-リンクのグループ（利用規約や購入の復元など）を追加したい場合は、ペイウォールビルダーに **Link** 要素を追加し、**Open URL** アクションが設定されたボタンと同様に処理してください。
+リンクのグループ（利用規約や購入の復元など）を追加したい場合は、ペイウォールビルダーで **Link** 要素を追加し、**Open URL** アクションを持つボタンと同じ方法で処理してください。
 :::
 
-ペイウォールからリンク（**利用規約**や**プライバシーポリシー**など）を開くボタンを追加するには：
+ペイウォールからリンクを開くボタン（**Terms of use** や **Privacy policy** など）を追加するには：
 
 1. ペイウォールビルダーでボタンを追加し、**Open URL** アクションを割り当て、開きたいURLを入力します。
-2. アプリコードで、受け取ったURLをブラウザで開く `openUrl` アクションのハンドラーを実装します。
-
+2. アプリのコードで、受け取ったURLをブラウザで開く `openUrl` アクションのハンドラーを実装します。
 :::info
-React Native SDKでは、`openUrl` アクションはデフォルトでURLを開きます。ただし、必要に応じてコードでこの動作をオーバーライドできます。
+React Native SDK では、`openUrl` アクションはデフォルトでURLを開く動作をします。ただし、必要に応じてコード内でこの動作をオーバーライドできます。
 :::
-
-<Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.14 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
 
-Reactコンポーネントの場合、イベントハンドラーpropを通じてURLの開放を処理します：
-
+Reactコンポーネントの場合、イベントハンドラーのプロパティを通じてURLを開く処理を行います：
 ```javascript
 
 function MyPaywall({ paywall }) {
@@ -134,9 +271,8 @@ function MyPaywall({ paywall }) {
 ```
 
 </TabItem>
-<TabItem value="standalone" label="Modal presentation">
-
-モーダル表示の場合、URLハンドラーを実装します：
+<TabItem value="standalone" label="モーダル表示">
+For modal presentation, implement the URL handler:
 
 ```javascript
 
@@ -152,43 +288,17 @@ const unsubscribe = view.setEventHandlers({
 
 </TabItem>
 </Tabs>
-
-</TabItem>
-
-<TabItem value="old" label="SDK version < 3.14" default>
-
-SDKバージョン3.14未満では、モーダル表示のみサポートされています：
-
-```javascript
-
-const view = await createPaywallView(paywall);
-
-const unsubscribe = view.registerEventHandlers({
-    onUrlPress(url) {
-        Linking.openURL(url);
-        return false; // Keep paywall open
-    },
-});
-```
-
-</TabItem>
-</Tabs>
-
 ## アプリにログインする \{#log-into-the-app\}
 
 ユーザーをアプリにログインさせるボタンを追加するには：
 
 1. ペイウォールビルダーでボタンを追加し、**Login** アクションを割り当てます。
-2. アプリコードで、ユーザーを識別する `login` アクションのハンドラーを実装します。
-
-<Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.14 or later" default>
+2. アプリのコードで、ユーザーを識別する `login` アクションのハンドラーを実装します。
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
 
-Reactコンポーネントの場合、イベントハンドラーpropを通じてログインを処理します：
-
+React component の場合、イベントハンドラーのプロパティを通じてログインを処理します：
 ```javascript
 
 function MyPaywall({ paywall }) {
@@ -209,9 +319,9 @@ function MyPaywall({ paywall }) {
 ```
 
 </TabItem>
-<TabItem value="standalone" label="Modal presentation">
+<TabItem value="standalone" label="モーダル表示">
 
-モーダル表示の場合、ログインハンドラーを実装します：
+モーダル表示の場合は、ログインハンドラーを実装してください：
 
 ```javascript
 
@@ -228,46 +338,19 @@ const unsubscribe = view.setEventHandlers({
 
 </TabItem>
 </Tabs>
+## カスタムアクションの処理 \{#handle-custom-actions\}
 
-</TabItem>
+ほかのアクションを処理するボタンを追加するには：
 
-<TabItem value="old" label="SDK version < 3.14" default>
+1. ペイウォールビルダーでボタンを追加し、**Custom** アクションを割り当てて、IDを付与します。
+2. アプリのコードで、作成したアクションIDに対応するハンドラーを実装します。
 
-SDKバージョン3.14未満では、モーダル表示のみサポートされています：
-
-```javascript
-
-const view = await createPaywallView(paywall);
-
-const unsubscribe = view.registerEventHandlers({
-    onCustomAction(actionId) {
-        if (actionId === 'login') {
-            navigation.navigate('Login');
-        }
-    }
-});
-```
-
-</TabItem>
-</Tabs>
-
-## カスタムアクションを処理する \{#handle-custom-actions\}
-
-その他のアクションを処理するボタンを追加するには：
-
-1. ペイウォールビルダーでボタンを追加し、**Custom** アクションを割り当て、IDを設定します。
-2. アプリコードで、作成したアクションIDのハンドラーを実装します。
-
-たとえば、別のサブスクリプションオファーや買い切り購入のセットがある場合、別のペイウォールを表示するボタンを追加できます：
-
-<Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.14 or later" default>
+たとえば、別のサブスクリプションオファーや買い切り購入がある場合、別のペイウォールを表示するボタンを追加できます：
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
 
-Reactコンポーネントの場合、イベントハンドラーpropを通じてカスタムアクションを処理します：
-
+React componentの場合は、イベントハンドラーのプロップでカスタムアクションを処理します：
 ```javascript
 
 function MyPaywall({ paywall }) {
@@ -288,9 +371,8 @@ function MyPaywall({ paywall }) {
 ```
 
 </TabItem>
-<TabItem value="standalone" label="Modal presentation">
-
-モーダル表示の場合、カスタムアクションハンドラーを実装します：
+<TabItem value="standalone" label="モーダル表示">
+モーダル表示の場合は、カスタムアクションハンドラーを実装します:
 
 ```javascript
 const unsubscribe = view.setEventHandlers({
@@ -305,21 +387,4 @@ const unsubscribe = view.setEventHandlers({
 </TabItem>
 </Tabs>
 
-</TabItem>
-
-<TabItem value="old" label="SDK version < 3.14" default>
-
-SDKバージョン3.14未満では、モーダル表示のみサポートされています：
-
-```javascript
-const unsubscribe = view.registerEventHandlers({
-    onCustomAction(actionId) {
-        if (actionId === 'openNewPaywall') {
-            // Display another paywall
-        }
-    },
-});
-```
-
-</TabItem>
-</Tabs>
+</SDKv3>

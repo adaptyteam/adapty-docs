@@ -1,0 +1,244 @@
+---
+title: "Adapty React Native SDK を v. 4.0 に移行する"
+description: "ペイウォール API をフロー API に置き換えることで、Adapty React Native SDK v4.0（ベータ版）に移行します。フロービルダーとペイウォールビルダーの両方に対応しています。"
+metadataTitle: "Adapty React Native SDK v4.0（ベータ版）への移行 | Adapty ドキュメント"
+---
+
+Adapty React Native SDK 4.0（ベータ版）ではフローが導入され、ペイウォール API の名称が変更されました。新しい API はフロービルダーと既存のペイウォールビルダーの両方に対応しており、Adapty ダッシュボード側での設定変更は不要です。
+## クイックリファレンス \{#quick-reference\}
+| v3 | v4 |
+|---|---|
+| `adapty.getPaywall(placementId, locale?, params?)` | `adapty.getFlow(placementId, params?)` |
+| `adapty.getPaywallForDefaultAudience(placementId, locale?, params?)` | `adapty.getFlowForDefaultAudience(placementId, params?)` |
+| `adapty.getPaywallProducts(paywall)` | `adapty.getPaywallProducts(flow)` |
+| `adapty.logShowPaywall(paywall)` | `adapty.logShowFlow(flow)` |
+| `AdaptyPaywall`（型） | `AdaptyFlow` |
+| `createPaywallView(paywall)` | `createFlowView(flow)` |
+| `AdaptyPaywallView`（コンポーネント） | `AdaptyFlowView` |
+| `EventHandlers`（型） | `FlowEventHandlers` |
+| `onPaywallShown` | `onAppeared` |
+| `onPaywallClosed` | `onDisappeared` |
+| `onRenderingFailed` | `onError` |
+`AdaptyPaywallProduct` は名前を維持します。プロダクトは引き続きフローに属し、`getPaywallProducts` は `AdaptyFlow` を受け取るようになりました。`getFlow` および `getFlowForDefaultAudience` メソッドは `locale` パラメーターを受け取らなくなりました。ビューメソッド `present`、`dismiss`、`setEventHandlers`、`showDialog`、およびイベントハンドラー `onCloseButtonPress`、`onUrlPress`、`onCustomAction`、`onProductSelected`、`onPurchaseStarted`、`onPurchaseCompleted`、`onPurchaseFailed`、`onRestoreStarted`、`onRestoreCompleted`、`onRestoreFailed`、`onLoadingProductsFailed`、`onWebPaymentNavigationFinished`、`onAndroidSystemBack` は v3 と同じ名前を維持します。一部のデフォルト動作が変更されました。詳細は[デフォルト動作の変更](#default-behavior-changes)を参照してください。
+## 最低 iOS バージョン \{#minimum-ios-version\}
+
+Adapty React Native SDK 4.0 では、iOS の最低デプロイメントターゲットが iOS 13.0 から **iOS 15.0** に引き上げられました。アップグレードの前に、iOS デプロイメントターゲットを 15.0 以降に設定してください。
+## インストール \{#installation\}
+### パッケージのアップデート \{#update-the-package\}
+
+v4.0 はプレリリース版のため、正確なバージョンを指定してインストールしてください。npm はキャレット/チルダの範囲指定ではプレリリース版を選択しません。
+
+```bash showLineNumbers
+npm install react-native-adapty@4.0.0-beta.1
+# or
+yarn add react-native-adapty@4.0.0-beta.1
+```
+### iOS：ネイティブSDKがSwift Package Manager経由で提供されるようになりました \{#ios-native-sdks-now-come-through-swift-package-manager\}
+
+[CocoaPodsのスペックリポジトリは2026年12月に読み取り専用になります](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)。そのため、v4以降ではネイティブの`Adapty`・`AdaptyUI`・`AdaptyPlugin` SDKは**CocoaPodsのサブ依存関係としては取得されなくなりました**。代わりに、podspecが**Swift Package Manager**（`spm_dependency`ヘルパー経由）を通じて取得する仕組みに変わっています。これにより、次の2点が必要となります。
+- **React Native 0.75 以降** — `spm_dependency` podspec ヘルパーに必要です。古いバージョンでは `pod install` が明示的なエラーで失敗するため、先に React Native をアップグレードするか、`react-native-adapty` 3.x を使用してください。
+- **ダイナミックフレームワーク** — SPM の依存関係にはダイナミックリンクが必要です。有効にする方法は Expo とベアの React Native で異なります。
+
+#### Expo
+
+[`expo-build-properties`](https://docs.expo.dev/versions/latest/sdk/build-properties/) 設定プラグインを追加し、`app.json`（または `app.config.js`）で iOS フレームワークをダイナミックに設定します。
+```json showLineNumbers title="app.json"
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "dynamic"
+          }
+        }
+      ]
+    ]
+  }
+}
+```
+
+次に、プラグインをインストールしてネイティブプロジェクトを再生成します：
+
+```bash showLineNumbers
+npx expo install expo-build-properties
+npx expo prebuild --clean
+```
+
+#### Bare React Native \{#bare-react-native\}
+
+iOS ターゲットにダイナミックフレームワークを追加し、pod を再インストールします：
+
+```ruby showLineNumbers title="ios/Podfile"
+use_frameworks! :linkage => :dynamic
+```
+```bash showLineNumbers
+cd ios && pod install --repo-update
+```
+
+以前に `Adapty`、`AdaptyUI`、または `AdaptyPlugin` を CocoaPods のサブ依存関係として追加していた場合は、先に `Podfile` から `pod 'Adapty'`、`pod 'AdaptyUI'`、または `pod 'AdaptyPlugin'` の行を削除してください。
+:::warning
+デフォルトの静的リンクからダイナミックフレームワークへの切り替えは、モジュラーヘッダーをまだサポートしていないライブラリと競合する可能性があり、Flipper とも互換性がありません。ビルドに問題が発生した場合は、[Swift Package Manager と React Native ライブラリの統合に関するこちらの記事](https://www.callstack.com/blog/integrating-swift-package-manager-with-react-native-libraries)を参照してください。
+:::
+
+完全なセットアップ手順については、[Adapty SDK のインストール](sdk-installation-reactnative)を参照してください。
+## フローの取得 \{#fetching-flows\}
+### getPaywall → getFlow
+
+返り値の型が `AdaptyPaywall` から `AdaptyFlow` に変わり、`locale` パラメータが削除されました — フローをレンダリングする際、ロケールは自動的に解決されます。カスタムペイウォールの場合、すべてのロケールは `flow.remoteConfigs` に返されます：
+
+```diff showLineNumbers
+- const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID', 'en');
++ const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
+```
+
+`getPaywallForDefaultAudience` も同様にリネームされています：
+```diff showLineNumbers
+- const paywall = await adapty.getPaywallForDefaultAudience('YOUR_PLACEMENT_ID', 'en');
++ const flow = await adapty.getFlowForDefaultAudience('YOUR_PLACEMENT_ID');
+```
+
+### getPaywallProducts(paywall) → getPaywallProducts(flow)
+
+`getPaywallProducts` は名前はそのままですが、`AdaptyFlow` を受け取るようになりました：
+
+```diff showLineNumbers
+- const products = await adapty.getPaywallProducts(paywall);
++ const products = await adapty.getPaywallProducts(flow);
+```
+## データモデル \{#data-model\}
+
+`getFlow` は `AdaptyPaywall` の代わりに `AdaptyFlow` を返し、オブジェクトの形状が変更されました：
+| v3 `AdaptyPaywall` フィールド | v4 `AdaptyFlow` フィールド | 対応内容 |
+|---|---|---|
+| `remoteConfig?`（単一） | `remoteConfigs?: AdaptyRemoteConfig[]`（配列） | フローは設定された言語ごとに 1 つのリモートコンフィグを持ちます。ユーザーに合うものを取得するには `flow.remoteConfigs?.find((c) => c.lang === 'en')` を使います。 |
+| `products` | `flow.paywalls[i].productIdentifiers` | プロダクト識別子はフロー全体ではなく、各フローバリアントに移動しました。 |
+| `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | フロー全体からペイウォールバリアントごとに移動しました。 |
+| `version?: number` | `flowVersionId?: string` | 名称が変更され、型が `number` から `string` に変わりました。 |
+| `hasViewConfiguration` | 削除 | コードから `hasViewConfiguration` のチェックをすべて削除してください。 |
+| `requestLocale` | 削除 | ロケールはモデルの一部ではなくなりました。 |
+| _（新規）_ | `paywalls: AdaptyFlowPaywall[]` | 各エントリはフロー内のペイウォールバリアントを表します。 |
+| _（新規）_ | `responseCreatedAt: number` | サーバーレスポンスのタイムスタンプ（ミリ秒単位）。 |
+Product identifiers moved from the flow to each variation:
+
+```diff showLineNumbers
+- const ids = paywall.products;
++ const ids = flow.paywalls[0].productIdentifiers;
+```
+## Webペイウォールのメソッド \{#web-paywall-methods\}
+
+`openWebPaywall` と `createWebPaywallUrl` はメソッド名を変更しませんが、第1引数が `AdaptyPaywall` の代わりに `AdaptyFlowPaywall`（フローのバリアント）になりました。引き続き `AdaptyPaywallProduct` も渡せます。
+
+```diff showLineNumbers
+  const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
+- await adapty.openWebPaywall(paywall);
++ await adapty.openWebPaywall(flow.paywalls[0]);
+```
+## フローのビュー数を計測する \{#tracking-flow-views\}
+### logShowPaywall → logShowFlow
+
+`logShowPaywall` は `logShowFlow` に名称変更され、`AdaptyFlow` を受け取るようになりました。イベントは引き続き同じバリエーションに対してログが記録されるため、既存のファネルや A/B テストの指標はダッシュボードの変更なしに引き続き機能します。
+
+```diff showLineNumbers
+- await adapty.logShowPaywall(paywall);
++ await adapty.logShowFlow(flow);
+```
+
+v3 と同様に、[フロービルダー](adapty-flow-builder)や[ペイウォールビルダー](adapty-paywall-builder)でレンダリングされたフローやペイウォールを表示する際は、このメソッドを呼び出す必要はありません。Adapty がそれらのビューを自動的に追跡します。
+## フローの表示 \{#displaying-flows\}
+### createPaywallView → createFlowView
+
+ファクトリー関数の名前を変更し、`AdaptyFlow` を渡します。返されるコントローラーのメソッド（`present`、`dismiss`、`setEventHandlers`、`showDialog`）は変わりません：
+
+```diff showLineNumbers
+- import { createPaywallView } from 'react-native-adapty';
++ import { createFlowView } from 'react-native-adapty';
+
+- const view = await createPaywallView(paywall);
++ const view = await createFlowView(flow);
+  await view.present();
+```
+### AdaptyPaywallView → AdaptyFlowView
+
+Reactコンポーネントでレンダリングする場合は、名前を変更して `flow` プロップを渡してください：
+
+```diff showLineNumbers
+- import { AdaptyPaywallView } from 'react-native-adapty';
++ import { AdaptyFlowView } from 'react-native-adapty';
+
+- <AdaptyPaywallView paywall={paywall} /* … */ />
++ <AdaptyFlowView flow={flow} /* … */ />
+```
+:::note
+`createFlowView` で作成したフロービューは一度きりの使用です。`dismiss()` を呼び出すとビューが破棄されるため、再度フローを表示するには `createFlowView` を再度呼び出してください。埋め込み型の `AdaptyFlowView` はアンマウントすることで閉じられます。ハンドラーから `true` を返しても埋め込みビューは閉じられないため、代わりに `onCloseButtonPress` などで自分自身の状態を変更してください。
+:::
+## イベントの処理 \{#handling-events\}
+
+イベントハンドラーのインターフェースは `EventHandlers` から `FlowEventHandlers` に名前が変更され、3つのコールバックも名前が変わりました。ハンドラーの中身はそのままで、名前だけ変更してください：
+
+```diff showLineNumbers
+- onPaywallShown: () => { /* … */ },
++ onAppeared: () => { /* … */ },
+
+- onPaywallClosed: () => { /* … */ },
++ onDisappeared: () => { /* … */ },
+
+- onRenderingFailed: (error) => { /* … */ },
++ onError: (error) => { /* … */ },
+```
+他のイベントハンドラーはそのまま名前が変わりません。また、2つのハンドラーは第2引数が追加されています：`onPurchaseCompleted` は `(purchaseResult, product)`、`onPurchaseFailed` は `(error, product)` となり、`product` は関連する `AdaptyPaywallProduct` です。完全なリストは[フロー＆ペイウォールイベントの処理](react-native-handling-events-1)を参照してください。
+
+:::note
+`onDisappeared` は `createFlowView().present()` でモーダル表示されたフローでのみ発火します。`AdaptyFlowView` コンポーネントはこれをプロップとして公開していません。埋め込みビューを閉じるにはアンマウントしてください。
+:::
+
+v4 にはオプトインで使用できる機能がいくつか追加されています：
+- `adapty.openWebUrl(url, openIn?)` および `adapty.requestAppReview()` メソッド — これらはデフォルトの `onUrlPress` および `onRequestAppReview` ハンドラーを支えているため、URLとアプリレビューのプロンプトはそのままネイティブに処理されます。これらのハンドラーをオーバーライドする場合のみ、直接呼び出してください。
+- 新しい `onObserverPurchaseInitiated` / `onObserverRestoreInitiated` ハンドラーを使用した、フロー内でのオブザーバーモードによる購入処理。詳しくは[オブザーバーモードでの購入処理](react-native-handling-events-1#handle-purchases-in-observer-mode)をご覧ください。
+## 削除・非推奨のAPI \{#removed-and-deprecated-apis\}
+### setFallbackPaywalls → setFallback
+
+`setFallbackPaywalls` は削除されました。代わりに同じ引数を受け取る `setFallback` を使用してください:
+
+```diff showLineNumbers
+- await adapty.setFallbackPaywalls(fileLocation);
++ await adapty.setFallback(fileLocation);
+```
+### 削除されたエクスポート \{#removed-exports\}
+
+以下のシンボルは `react-native-adapty` からエクスポートされなくなりました。これらのインポートは削除してください：
+
+- **`AdaptyPaywall`**: 代わりに `AdaptyFlow` を使用してください。
+- **`ProductReference`**: 代わりに `AdaptyProductIdentifier` を使用し、`flow.paywalls[i].productIdentifiers` から読み取ってください。
+- **`AdaptyPaywallBuilder`**: 削除されました。フローとペイウォールはネイティブでレンダリングされます。
+- **`AdaptyAndroidSubscriptionUpdateParameters`**: ネストされた `subscriptionUpdateParams` の形式を使用してください（下記参照）。
+### activate: lockMethodsUntilReady
+
+`lockMethodsUntilReady` は削除され、この動作は常に有効になりました。`activate` の呼び出しから削除してください。残しているとコンパイルエラーになります:
+
+```diff showLineNumbers
+- await adapty.activate('PUBLIC_SDK_KEY', { lockMethodsUntilReady: true });
++ await adapty.activate('PUBLIC_SDK_KEY');
+```
+### makePurchase: Android サブスクリプションの更新 \{#makepurchase-android-subscription-update\}
+
+フラットな Android サブスクリプション更新の形式は廃止されました。`oldSubVendorProductId` と `prorationMode` をネストされた `subscriptionUpdateParams` オブジェクトに移動し、`isOfferPersonalized` はトップレベルに残してください。完全な例については[購入の実装](react-native-making-purchases)を参照してください。
+### Android: セーフエリアのパディング \{#android-safe-area-paddings\}
+
+Android のブール型リソース `<bool name="adapty_paywall_enable_safe_area_paddings">…</bool>` は削除されました。`res/values/bools.xml` からこのリソースを削除し、フロービューを作成する際に `enableSafeArea` パラメータを使ってセーフエリアのパディングをランタイムで制御してください。デフォルト値は、モーダル表示の場合は `true`、埋め込みコンポーネントの場合は `false` です。
+### モックモード \{#mock-mode\}
+
+モックモード（Expo Go またはウェブプレビュー）で SDK を実行する場合は、モックコンフィグのキー `paywalls` を `flows` に変更してください。
+## デフォルト動作の変更 \{#default-behavior-changes\}
+
+これらの変更はコンパイルエラーを引き起こさないため、実行時にテストしてください。
+- **`onAndroidSystemBack`**: デフォルトの動作が、ビューを閉じる動作からビューを開いたままにする動作に変更されました。以前の動作に戻すには、ハンドラーから `true` を返してください。
+- **`onPurchaseCompleted`**: デフォルトの動作が、（ユーザーが購入をキャンセルした場合を除いて）ビューを閉じる動作から、常にビューを開いたままにする動作に変更されました。以前の動作に戻すには、ハンドラーから `purchaseResult.type !== 'user_cancelled'` を返してください。
+- **`onRestoreCompleted`**: デフォルトの動作が、復元成功後にビューを閉じる動作からビューを開いたままにする動作に変更されました。以前の動作に戻すには、ハンドラーから `true` を返してください。
+- **`onUrlPress`**: デフォルトの動作が変更され、ダッシュボードのアプリ内ブラウザまたは外部ブラウザの設定に従い、ネイティブレイヤーを通じて URL を開くようになりました。URL を独自に処理したい場合は、ハンドラーをオーバーライドしてください。
+## オンボーディング API の非推奨化 \{#onboarding-api-deprecation\}
+
+レガシーオンボーディング API は、[Flow Builder](adapty-flow-builder) への移行に伴い v4.0 で非推奨となりました。引き続き動作はしますが、IDE は `@deprecated` アノテーションを通じて非推奨のシンボルを警告します（実行時の警告はありません）。これらのシンボルは将来のリリースで削除される予定ですので、オンボーディングの Flow Builder への移行を計画してください。
+
+非推奨のシンボル: `getOnboarding`、`getOnboardingForDefaultAudience`、`createOnboardingView`、`AdaptyOnboardingView`。

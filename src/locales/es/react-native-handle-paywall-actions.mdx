@@ -1,22 +1,190 @@
 ---
-title: "Responder a acciones de botones en React Native SDK"
-description: "Gestiona las acciones de botones del paywall en React Native usando Adapty para mejorar la monetización de tu app."
-metadataTitle: "Gestión de acciones de botones del paywall | Documentación de Adapty"
+title: "Responder a las acciones de flow - React Native"
+description: "Gestiona las acciones de botones de flows y paywalls en React Native usando Adapty para una mejor monetización de la app."
+metadataTitle: "Responder a las acciones de flow - React Native | Documentación de Adapty"
 toc_max_heading_level: 4
-keywords: ['botón de paywall', 'botón', 'acciones de botones del paywall', 'gestionar acciones']
+keywords: ['botón de paywall', 'botón', 'acciones de botón de paywall', 'gestionar acciones']
 ---
 
-Si estás creando paywalls con el Paywall Builder de Adapty, es fundamental configurar los botones correctamente:
+<SDKv4>
 
-1. Añade un [botón en el Paywall Builder](paywall-buttons) y asígnale una acción predefinida o crea un ID de acción personalizado.
-2. Escribe código en tu app para gestionar cada acción que hayas asignado.
+Si estás creando flows o paywalls con el Adapty Flow Builder o el Paywall Builder, es fundamental configurar los botones correctamente:
+1. Añade un [botón en el flow/paywall builder](paywall-buttons) y asígnale una acción predefinida o crea un ID de acción personalizado.
+2. Escribe el código en tu app para gestionar cada acción que hayas asignado.
 
-Esta guía muestra cómo gestionar acciones personalizadas y predefinidas en tu código.
+Esta guía explica cómo gestionar acciones personalizadas y predefinidas en tu código.
 
 :::warning
-**Solo las compras, restauraciones, cierres del paywall y apertura de URLs se gestionan automáticamente.** El resto de acciones de botones requieren una implementación adecuada en el código de la app.
+**Las compras, restauraciones, cierres de flow/paywall y la apertura de URLs se gestionan automáticamente.** Puedes configurar su comportamiento predeterminado o implementar respuestas para acciones personalizadas.
+:::
+:::note
+El SDK expone un handler de flow `onRequestPermission` para solicitudes de permisos del sistema, como notificaciones push o acceso a la cámara. Los flows todavía no desencadenan estas solicitudes, por lo que no necesitas implementarlo por ahora.
+:::
+## Cerrar flows y paywalls \{#close-flows-and-paywalls\}
+
+Para añadir un botón que cierre tu flow o paywall:
+
+1. En el builder, añade un botón y asígnale la acción **Close**.
+2. En el código de tu app, implementa un manejador para la acción `close` que descarte el flow o paywall.
+
+:::info
+En el SDK de React Native, la acción `close` activa el cierre del flow o paywall por defecto. Sin embargo, puedes sobreescribir este comportamiento en tu código si lo necesitas. Por ejemplo, cerrar un flow podría desencadenar la apertura de otro.
 :::
 
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+Para el componente React, gestiona la acción de cierre a través de props individuales de manejadores de eventos:
+```javascript
+
+function MyPaywall({ flow }) {
+  const onCloseButtonPress = useCallback<FlowEventHandlers['onCloseButtonPress']>(() => {
+    // Handle close button press - navigate away or hide component
+    navigation.goBack();
+  }, [navigation]);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      style={styles.container}
+      onCloseButtonPress={onCloseButtonPress}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Para la presentación modal, implementa el manejador de cierre:
+
+```javascript
+
+const view = await createFlowView(flow);
+
+const unsubscribe = view.setEventHandlers({
+    onCloseButtonPress() {
+        return true; // allow flow or paywall closing
+    }
+});
+```
+
+</TabItem>
+</Tabs>
+## Abrir URLs desde flows y paywalls \{#open-urls-from-flows-and-paywalls\}
+
+:::tip
+Si quieres añadir un grupo de enlaces (por ejemplo, términos de uso y restauración de compras), añade un elemento **Link** en el builder y trátalo igual que los botones con la acción **Open URL**.
+:::
+
+Para añadir un botón que abra un enlace desde tu flow o paywall (por ejemplo, **Terms of use** o **Privacy policy**):
+
+1. En el builder, añade un botón, asígnale la acción **Open URL** e introduce la URL que quieras abrir.
+2. En el código de tu app, implementa un handler para la acción `openUrl` que abra la URL recibida en un navegador.
+:::info
+En el SDK de React Native, la acción `openUrl` abre la URL de forma predeterminada. Sin embargo, puedes sobrescribir este comportamiento en tu código si lo necesitas.
+:::
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+Para el componente React, gestiona la apertura de URLs mediante la prop del manejador de eventos:
+```javascript
+
+function MyPaywall({ flow }) {
+  const onUrlPress = useCallback<FlowEventHandlers['onUrlPress']>((url) => {
+    Linking.openURL(url);
+  }, []);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      style={styles.container}
+      onUrlPress={onUrlPress}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Presentación modal">
+Para la presentación modal, implementa el manejador de URL:
+
+```javascript
+
+const view = await createFlowView(flow);
+
+const unsubscribe = view.setEventHandlers({
+    onUrlPress(url) {
+        Linking.openURL(url);
+        return false; // Keep flow or paywall open
+    },
+});
+```
+
+</TabItem>
+</Tabs>
+## Gestionar acciones personalizadas \{#handle-custom-actions\}
+
+Para añadir un botón que gestione cualquier otra acción:
+
+1. En el builder, añade un botón, asígnale la acción **Custom** y dale un ID.
+2. En el código de tu app, implementa un handler para el ID de acción que hayas creado.
+
+Por ejemplo, si tienes otro conjunto de ofertas de suscripción o compras únicas, puedes añadir un botón que muestre otro flow o paywall:
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+Para el componente React, gestiona las acciones personalizadas a través del prop del manejador de eventos:
+```javascript
+
+function MyPaywall({ flow }) {
+  const onCustomAction = useCallback<FlowEventHandlers['onCustomAction']>((actionId) => {
+    if (actionId === 'openNewPaywall') {
+      // Display another flow or paywall
+    }
+  }, []);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      style={styles.container}
+      onCustomAction={onCustomAction}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Presentación modal">
+Para la presentación modal, implementa manejadores de acciones personalizadas:
+
+```javascript
+const unsubscribe = view.setEventHandlers({
+    onCustomAction(actionId) {
+        if (actionId === 'openNewPaywall') {
+            // Display another flow or paywall
+        }
+    },
+});
+```
+
+</TabItem>
+</Tabs>
+
+</SDKv4>
+
+<SDKv3>
+
+Si estás creando paywalls con el Paywall Builder de Adapty, es fundamental configurar correctamente los botones:
+1. Añade un [botón en el Paywall Builder](paywall-buttons) y asígnale una acción ya existente o crea un ID de acción personalizado.
+2. Escribe el código en tu app para gestionar cada acción que hayas asignado.
+
+Esta guía muestra cómo gestionar acciones personalizadas y existentes en tu código.
+
+:::warning
+**Solo las compras, restauraciones, cierres de paywall y apertura de URLs se gestionan automáticamente.** Todas las demás acciones de botón requieren una implementación adecuada en el código de la app.
+:::
 ## Cerrar paywalls \{#close-paywalls\}
 
 Para añadir un botón que cierre tu paywall:
@@ -25,17 +193,12 @@ Para añadir un botón que cierre tu paywall:
 2. En el código de tu app, implementa un handler para la acción `close` que descarte el paywall.
 
 :::info
-En el SDK de React Native, la acción `close` desencadena el cierre del paywall por defecto. Sin embargo, puedes cambiar este comportamiento en tu código si lo necesitas. Por ejemplo, cerrar un paywall puede desencadenar la apertura de otro.
+En el SDK de React Native, la acción `close` activa el cierre del paywall por defecto. Sin embargo, puedes sobrescribir este comportamiento en tu código si lo necesitas. Por ejemplo, cerrar un paywall podría disparar la apertura de otro.
 :::
-
-<Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.14 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
-
-Para el componente React, gestiona la acción de cierre mediante las props de handler de eventos individuales:
-
+Para el componente React, gestiona la acción de cierre mediante props de controladores de eventos individuales:
 ```javascript
 
 function MyPaywall({ paywall }) {
@@ -57,7 +220,7 @@ function MyPaywall({ paywall }) {
 </TabItem>
 <TabItem value="standalone" label="Modal presentation">
 
-Para la presentación modal, implementa el handler de cierre:
+Para la presentación modal, implementa el manejador de cierre:
 
 ```javascript
 
@@ -72,50 +235,24 @@ const unsubscribe = view.setEventHandlers({
 
 </TabItem>
 </Tabs>
-
-</TabItem>
-
-<TabItem value="old" label="SDK version < 3.14" default>
-
-Para la versión del SDK < 3.14, solo se admite la presentación modal:
-
-```javascript
-
-const view = await createPaywallView(paywall);
-
-const unsubscribe = view.registerEventHandlers({
-    onCloseButtonPress() {
-        return true; // allow paywall closing
-    }
-});
-```
-
-</TabItem>
-</Tabs>
-
 ## Abrir URLs desde paywalls \{#open-urls-from-paywalls\}
 
 :::tip
-Si quieres añadir un grupo de enlaces (por ejemplo, términos de uso y restauración de compras), añade un elemento **Link** en el Paywall Builder y gestíonalo igual que los botones con la acción **Open URL**.
+Si quieres añadir un grupo de enlaces (por ejemplo, términos de uso y restauración de compras), añade un elemento **Link** en el Paywall Builder y trátalo igual que los botones con la acción **Open URL**.
 :::
 
-Para añadir un botón que abra un enlace desde tu paywall (p. ej., **Terms of use** o **Privacy policy**):
+Para añadir un botón que abra un enlace desde tu paywall (por ejemplo, **Terms of use** o **Privacy policy**):
 
 1. En el Paywall Builder, añade un botón, asígnale la acción **Open URL** e introduce la URL que quieres abrir.
-2. En el código de tu app, implementa un handler para la acción `openUrl` que abra la URL recibida en un navegador.
-
+2. En el código de tu app, implementa un manejador para la acción `openUrl` que abra la URL recibida en un navegador.
 :::info
-En el SDK de React Native, la acción `openUrl` desencadena la apertura de la URL por defecto. Sin embargo, puedes cambiar este comportamiento en tu código si lo necesitas.
+En el SDK de React Native, la acción `openUrl` activa la apertura de la URL por defecto. Sin embargo, puedes sobrescribir este comportamiento en tu código si lo necesitas.
 :::
-
-<Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.14 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
 
-Para el componente React, gestiona la apertura de URLs mediante la prop de handler de eventos:
-
+Para el componente React, gestiona la apertura de URLs a través de la prop del manejador de eventos:
 ```javascript
 
 function MyPaywall({ paywall }) {
@@ -134,9 +271,8 @@ function MyPaywall({ paywall }) {
 ```
 
 </TabItem>
-<TabItem value="standalone" label="Modal presentation">
-
-Para la presentación modal, implementa el handler de URL:
+<TabItem value="standalone" label="Presentación modal">
+Para la presentación modal, implementa el manejador de URL:
 
 ```javascript
 
@@ -152,43 +288,17 @@ const unsubscribe = view.setEventHandlers({
 
 </TabItem>
 </Tabs>
+## Iniciar sesión en la aplicación \{#log-into-the-app\}
 
-</TabItem>
+Para añadir un botón que permita a los usuarios iniciar sesión en tu aplicación:
 
-<TabItem value="old" label="SDK version < 3.14" default>
-
-Para la versión del SDK < 3.14, solo se admite la presentación modal:
-
-```javascript
-
-const view = await createPaywallView(paywall);
-
-const unsubscribe = view.registerEventHandlers({
-    onUrlPress(url) {
-        Linking.openURL(url);
-        return false; // Keep paywall open
-    },
-});
-```
-
-</TabItem>
-</Tabs>
-
-## Iniciar sesión en la app \{#log-into-the-app\}
-
-Para añadir un botón que permita a los usuarios iniciar sesión en tu app:
-
-1. En el Paywall Builder, añade un botón y asígnale la acción **Login**.
-2. En el código de tu app, implementa un handler para la acción `login` que identifique a tu usuario.
-
-<Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.14 or later" default>
+1. En el paywall builder, añade un botón y asígnale la acción **Login**.
+2. En el código de tu aplicación, implementa un manejador para la acción `login` que identifique a tu usuario.
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
 
-Para el componente React, gestiona el inicio de sesión mediante la prop de handler de eventos:
-
+Para el componente React, gestiona el inicio de sesión a través del prop del manejador de eventos:
 ```javascript
 
 function MyPaywall({ paywall }) {
@@ -209,9 +319,9 @@ function MyPaywall({ paywall }) {
 ```
 
 </TabItem>
-<TabItem value="standalone" label="Modal presentation">
+<TabItem value="standalone" label="Presentación modal">
 
-Para la presentación modal, implementa el handler de inicio de sesión:
+Para la presentación modal, implementa el manejador de inicio de sesión:
 
 ```javascript
 
@@ -228,46 +338,19 @@ const unsubscribe = view.setEventHandlers({
 
 </TabItem>
 </Tabs>
-
-</TabItem>
-
-<TabItem value="old" label="SDK version < 3.14" default>
-
-Para la versión del SDK < 3.14, solo se admite la presentación modal:
-
-```javascript
-
-const view = await createPaywallView(paywall);
-
-const unsubscribe = view.registerEventHandlers({
-    onCustomAction(actionId) {
-        if (actionId === 'login') {
-            navigation.navigate('Login');
-        }
-    }
-});
-```
-
-</TabItem>
-</Tabs>
-
 ## Gestionar acciones personalizadas \{#handle-custom-actions\}
 
 Para añadir un botón que gestione cualquier otra acción:
 
 1. En el Paywall Builder, añade un botón, asígnale la acción **Custom** y asígnale un ID.
-2. En el código de tu app, implementa un handler para el ID de acción que hayas creado.
+2. En el código de tu app, implementa un handler para el ID de acción que has creado.
 
 Por ejemplo, si tienes otro conjunto de ofertas de suscripción o compras únicas, puedes añadir un botón que muestre otro paywall:
-
-<Tabs groupId="version" queryString>
-<TabItem value="new" label="SDK version 3.14 or later" default>
 
 <Tabs groupId="presentation-method" queryString>
 <TabItem value="platform" label="React component" default>
 
-Para el componente React, gestiona las acciones personalizadas mediante la prop de handler de eventos:
-
+Para el componente React, gestiona las acciones personalizadas a través del prop del manejador de eventos:
 ```javascript
 
 function MyPaywall({ paywall }) {
@@ -288,9 +371,8 @@ function MyPaywall({ paywall }) {
 ```
 
 </TabItem>
-<TabItem value="standalone" label="Modal presentation">
-
-Para la presentación modal, implementa los handlers de acciones personalizadas:
+<TabItem value="standalone" label="Presentación modal">
+Para la presentación modal, implementa manejadores de acciones personalizadas:
 
 ```javascript
 const unsubscribe = view.setEventHandlers({
@@ -305,21 +387,4 @@ const unsubscribe = view.setEventHandlers({
 </TabItem>
 </Tabs>
 
-</TabItem>
-
-<TabItem value="old" label="SDK version < 3.14" default>
-
-Para la versión del SDK < 3.14, solo se admite la presentación modal:
-
-```javascript
-const unsubscribe = view.registerEventHandlers({
-    onCustomAction(actionId) {
-        if (actionId === 'openNewPaywall') {
-            // Display another paywall
-        }
-    },
-});
-```
-
-</TabItem>
-</Tabs>
+</SDKv3>

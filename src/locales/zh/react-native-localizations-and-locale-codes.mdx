@@ -1,35 +1,67 @@
 ---
-title: "在 React Native SDK 中使用本地化和区域代码"
-description: "了解如何在 React Native 应用中通过 Adapty SDK 实现付费墙本地化。"
+title: "在 React Native SDK 中使用本地化和语言代码"
+description: "了解如何使用 Adapty SDK 在 React Native 应用中对付费墙进行本地化。"
 metadataTitle: "付费墙本地化 | React Native SDK | Adapty 文档"
 customSlug: /react-native-localizations-and-locale-codes
 ---
 
+<SDKv4>
 ## 为什么这很重要 \{#why-this-is-important\}
 
-区域代码会在多种场景下发挥作用——例如，当你需要根据应用的当前本地化设置获取对应的付费墙时。
+当 Adapty 为流程选择本地化内容，以及当你读取自定义付费墙的远程配置时，语言区域代码就会发挥作用。
 
-由于区域代码较为复杂，且在不同平台之间可能存在差异，我们为所有支持的平台制定了统一的内部标准。正因为这些代码比较复杂，理解你向服务器发送的具体内容以及后续处理流程就显得尤为重要——这样才能确保你始终获取到预期的本地化结果。
+语言区域代码比较复杂，在不同平台上可能存在差异，因此 Adapty 在其支持的所有平台上统一采用一套内部标准。了解这套标准，有助于你预判用户最终会收到哪种本地化内容。
+## Adapty 中的语言代码标准 \{#locale-code-standard-at-adapty\}
 
-## Adapty 的区域代码标准 \{#locale-code-standard-at-adapty\}
+Adapty 的语言代码采用略微修改过的 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：每个代码由小写子标签组成，以连字符分隔。例如：`en`（英语）、`pt-br`（葡萄牙语（巴西））、`zh`（简体中文）、`zh-hant`（繁体中文）。
+## 语言区域代码匹配 \{#locale-code-matching\}
 
-Adapty 使用经过略微修改的 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：每个代码由小写子标签组成，以连字符分隔。例如：`en`（英语）、`pt-br`（葡萄牙语（巴西））、`zh`（简体中文）、`zh-hant`（繁体中文）。
+当 Adapty 查找与用户语言区域匹配的本地化内容时，会按以下步骤处理：
 
-## 区域代码匹配 \{#locale-code-matching\}
+1. 将语言区域字符串转换为小写，并将所有下划线（`_`）替换为连字符（`-`）
+2. Adapty 查找与完整语言区域代码完全匹配的本地化内容
+3. 如果未找到匹配项，Adapty 取第一个连字符之前的子字符串（例如 `pt-br` 取 `pt`），并查找匹配的本地化内容
+4. 如果仍未找到匹配项，Adapty 返回默认的 `en` 本地化内容
 
-当 Adapty 收到客户端 SDK 发来的区域代码请求并开始查找付费墙对应本地化版本时，处理流程如下：
+这样一来，`'pt_BR'`、`pt-BR` 和 `pt-br` 都会解析为同一个本地化内容。
+## 实现本地化 \{#implementing-localizations\}
 
-1. 传入的区域字符串转换为小写，所有下划线（`_`）替换为连字符（`-`）
-2. 查找区域代码完全匹配的本地化版本
-3. 若未找到匹配，截取第一个连字符前的子字符串（如 `pt-br` 取 `pt`），再次查找
-4. 若仍未找到，返回默认的 `en` 本地化版本
+在 SDK v4 中，获取 flow 时无需传入语言代码。
 
-这样一来，发送 `'pt_BR'` 的 iOS 设备、发送 `pt-BR` 的 Android 设备以及发送 `pt-br` 的其他设备，都会获得相同的结果。
+- **流程编辑工具和付费墙编辑工具付费墙**：Adapty 会根据设备语言以及您在编辑工具中配置的本地化自动解析本地化设置。使用 `createFlowView` 渲染 flow，无需传入语言代码。
+- **自定义（远程配置）付费墙**：`getFlow` 会在 `flow.remoteConfigs` 中返回所有已配置的本地化内容。每条记录包含一个 `lang` 语言代码和一个 `data` 对象。请自行选择与用户匹配的条目，并实现相应的回退逻辑：
+```typescript showLineNumbers
 
+const flow = await adapty.getFlow('placement_id');
+const config = flow.remoteConfigs?.find((c) => c.lang === 'en') ?? flow.remoteConfigs?.[0];
+// read your values from config?.data
+```
+
+以上语言代码匹配规则描述了 Adapty 如何规范化每个远程配置中存储的 `lang` 代码。
+
+</SDKv4>
+
+<SDKv3>
+## 为什么这很重要 \{#why-this-is-important\}
+
+有几种场景会用到语言区域代码——例如，当你需要为应用的当前语言版本获取正确的付费墙时。
+
+由于语言区域代码较为复杂，且在不同平台之间可能存在差异，我们为所有支持的平台制定了统一的内部标准。但正因为这些代码比较复杂，了解你实际发送给服务器的内容是什么、以及后续处理流程如何，就显得尤为重要——只有这样，你才能始终获取到预期的语言版本。
+## Adapty 的语言代码标准 \{#locale-code-standard-at-adapty\}
+
+在语言代码方面，Adapty 使用略经调整的 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：每个代码由小写子标签组成，以连字符分隔。示例：`en`（英语）、`pt-br`（葡萄牙语（巴西））、`zh`（简体中文）、`zh-hant`（繁体中文）。
+## 语言区域代码匹配 \{#locale-code-matching\}
+
+当 Adapty 收到客户端 SDK 发来的语言区域代码请求，并开始查找对应的付费墙本地化版本时，会依次执行以下步骤：
+
+1. 将传入的语言区域字符串转换为小写，并将所有下划线（`_`）替换为连字符（`-`）
+2. 查找与完整语言区域代码完全匹配的本地化版本
+3. 如果未找到匹配项，则截取第一个连字符之前的子字符串（例如 `pt-br` 取 `pt`），再次查找匹配的本地化版本
+4. 如果仍未找到匹配项，则返回默认的 `en` 本地化版本
+这样，发送 `'pt_BR'` 的 iOS 设备、发送 `pt-BR` 的 Android 设备以及发送 `pt-br` 的另一台设备都会得到相同的结果。
 ## 实现本地化：推荐方式 \{#implementing-localizations-recommended-way\}
 
-如果你在考虑本地化问题，很可能已经在项目中使用本地化字符串文件了。在这种情况下，我们建议在每个本地化文件中加入一个键值对，用于存储对应的 Adapty 区域代码。然后在调用 SDK 时提取该键对应的值，示例如下：
-
+如果你在考虑本地化问题，很可能已经在项目中处理过本地化字符串文件了。如果是这样，我们建议在每个本地化文件中添加一个键值对，其值为对应的 Adapty 语言区域代码，然后在调用 SDK 时提取该键对应的值，示例如下：
 ```javascript showLineNumbers
 // 1. Modify your localization files (e.g., using react-i18next)
 
@@ -67,12 +99,10 @@ const MyComponent = () => {
 };
 ```
 
-通过这种方式，你可以完全掌控每位用户获取的本地化版本。
+这样，您可以完全掌控应用中每位用户获取到的本地化内容。
+## 另一种实现本地化的方式 \{#implementing-localizations-the-other-way\}
 
-## 实现本地化：其他方式 \{#implementing-localizations-the-other-way\}
-
-你也可以在不为每种本地化显式定义区域代码的情况下获得类似（但并不完全相同）的效果。这需要从设备中提取区域代码，例如通过 [`react-native-localize`](https://github.com/zoontek/react-native-localize)：
-
+你也可以不为每个本地化显式指定语言区域代码，而是从设备中提取语言区域代码，例如通过 [`react-native-localize`](https://github.com/zoontek/react-native-localize) 来实现类似（但并不完全相同）的效果：
 ```javascript showLineNumbers
 
 const fetchPaywall = async () => {
@@ -83,9 +113,9 @@ const fetchPaywall = async () => {
 };
 ```
 
-我们不推荐这种方式，原因如下：
+请注意，由于以下几个原因，我们不推荐使用这种方式：
+1. 在 iOS 上，首选语言与当前区域语言环境并不相同。如果想让本地化正确匹配，要么依赖 Apple 的解析逻辑——使用推荐的本地化字符串文件方式时开箱即用——要么自行实现同样的逻辑。
+2. 设备语言环境可能与你在 Adapty 中配置的任何本地化都不匹配。在这种情况下，SDK 会回退到语言标签前缀匹配，若仍无匹配则最终回退到 `en`——但这未必是你希望为该用户显示的默认语言。
+Should you decide to use this approach anyway — make sure you've covered all the relevant use cases.
 
-1. 在 iOS 上，首选语言与当前地区设置并不相同。如果希望正确识别本地化，你要么依赖 Apple 的解析逻辑——使用推荐的本地化字符串文件方式时这会自动生效——要么自行重新实现该逻辑。
-2. 设备区域可能与你在 Adapty 中配置的本地化版本不匹配。此时 SDK 会回退到子标签匹配，或最终回退到 `en`——而这可能并不是你希望该用户看到的默认语言。
-
-如果你仍决定使用这种方式，请确保已覆盖所有相关使用场景。
+</SDKv3>

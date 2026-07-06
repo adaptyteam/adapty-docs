@@ -18,8 +18,10 @@ Adapty iOS SDK 4.0 (beta) ではフローが導入され、それに伴いペイ
 | `.paywall()` (SwiftUI modifier) | `.flow()` |
 | `AdaptyPaywallView` | `AdaptyFlowView` |
 | `didFailRenderingWith:` / `didFailRendering:` | `didReceiveError:` |
-| `Adapty.updateAttribution(_:source:)` (`source: String`) | `Adapty.updateAttribution(_:source:)` (`source: AdaptyAttributionSource`) |
-| `Adapty.setIntegrationIdentifier(key:value:)` | `Adapty.setIntegrationIdentifier(_:)` (`AdaptyIntegrationIdentifier`) |
+| `didFinishPurchase`（オプション、成功時に自動で閉じる） | `didFinishPurchase`（必須、自動では閉じない） |
+| `Adapty_KidsMode` / `AdaptyUI_KidsMode` パッケージプロダクト | `KidsMode` パッケージトレイト |
+| `Adapty.updateAttribution(_:source:)` （`source: String`） | `Adapty.updateAttribution(_:source:)` （`source: AdaptyAttributionSource`） |
+| `Adapty.setIntegrationIdentifier(key:value:)` | `Adapty.setIntegrationIdentifier(_:)` （`AdaptyIntegrationIdentifier`） |
 ## iOS 最小バージョン \{#minimum-ios-version\}
 
 Adapty iOS SDK 4.0 では、最小デプロイメントターゲットが iOS 13.0 から **iOS 15.0** に引き上げられました。アップグレードの前に、プロジェクトの iOS Deployment Target を 15.0 以上に設定してください。
@@ -28,6 +30,33 @@ Adapty iOS SDK 4.0 では、最小デプロイメントターゲットが iOS 13
 Adapty iOS SDK 4.0 では CocoaPods のサポートが廃止されました。SDK のインストールには [Swift Package Manager](sdk-installation-ios#install-adapty-sdk) をご利用ください。
 
 プロジェクトで引き続き CocoaPods を使用している場合は、`Podfile` から `Adapty` および `AdaptyUI` の pod を削除し、`pod install` を実行してクリーンアップした後、Xcode の **File → Add Package Dependency** から `https://github.com/adaptyteam/AdaptySDK-iOS.git` を使ってパッケージを追加してください。
+## キッズモード: 独立パッケージから Package Trait への移行 \{#kids-mode-separate-products-replaced-by-a-package-trait\}
+
+v3 では、[キッズモード](kids-mode)を有効にするには専用の **Adapty_KidsMode** および **AdaptyUI_KidsMode** パッケージプロダクトを選択してインポートを変更する必要がありました。`4.0.0-beta.2` 以降、これらのプロダクトは廃止されました。キッズモードは通常の Adapty パッケージ上に `KidsMode` という Swift package trait として実装され、これを有効にすることで SDK 全体から IDFA および AdSupport がコンパイル時に除外されます。
+
+移行手順:
+1. **Choose Package Products** ウィンドウで、**Adapty_KidsMode** と **AdaptyUI_KidsMode** の代わりに、通常の **Adapty** と **AdaptyUI** プロダクトを選択します。
+
+2. `KidsMode` トレイトを有効にします。Xcode 26.4 以降を使用している場合は、プロジェクトの **Package Dependencies** ビューで AdaptySDK-iOS 依存関係に対して有効にしてください。`Package.swift` で Adapty を依存関係として追加する場合（`swift-tools-version` 6.1 以降が必要）は、そちらで有効にします：
+```swift showLineNumbers title="Package.swift"
+   .package(
+       url: "https://github.com/adaptyteam/AdaptySDK-iOS.git",
+       exact: "4.0.0-beta.2",
+       traits: ["KidsMode"]
+   )
+   ```
+
+3. 通常のモジュールに戻してインポートし直してください:
+
+   ```diff showLineNumbers
+   - import Adapty_KidsMode
+   - import AdaptyUI_KidsMode
+   + import Adapty
+   + import AdaptyUI
+   ```
+:::note
+Xcode 26.4より前のバージョンでは、UIからXcodeプロジェクトのトレイトを有効にできません。その場合は、`KidsMode`トレイトを有効にしてAdaptyに依存する小さなローカルSwiftパッケージを作成し、アプリターゲットがそのパッケージに依存するようにしてください。
+:::
 ## 削除された API \{#removed-apis\}
 
 - **`Adapty.getPaywallProductsWithoutDeterminingOffer(paywall:)`** — 削除されました。すべてのプロダクトにオファー情報が含まれるようになったため、個別の対象資格確認パスは不要になりました。
@@ -68,6 +97,25 @@ StoreKit 2 への移行の一環として、Adapty iOS SDK 4.0 では App Store 
 + try await Adapty.logShowFlow(flow)
 ```
 v3と同様に、[Flow Builder](adapty-flow-builder)や[Paywall Builder](adapty-paywall-builder)でレンダリングされたフローやペイウォールを表示する際には、このメソッドを呼び出す必要はありません。これらのビューはAdaptyが自動的にトラッキングします。
+## didFinishPurchase が必須になりました \{#didfinishpurchase-is-now-required\}
+
+v3 では `didFinishPurchase` は省略可能で、実装しなかった場合は購入成功後にペイウォールが自動で閉じられていました。`4.0.0-beta.2` 以降、この自動クローズの実装は削除されました。これにより、購入成功後もフローを継続できるようになっています。たとえば、フローの残りの画面を表示し続けることができます。購入後の動作はご自身で決定してください。画面を閉じるか、何もしないでフローを継続させるかを選べます。
+- **UIKit**: `AdaptyFlowControllerDelegate` の準拠者は `didFinishPurchase` を実装する必要があります。デフォルト実装は廃止されました。
+- **SwiftUI**: `.flow(...)` および `AdaptyFlowView(...)` の `didFinishPurchase` クロージャが必須になりました。`didFailPurchase` および `didFinishRestore` と同様です。
+
+v3 の動作を維持するには、自分で画面を閉じてください:
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishPurchase product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    if !purchaseResult.isPurchaseCancelled {
+        controller.dismiss(animated: true)
+    }
+}
+```
+
 ## UIKit \{#uikit\}
 ### AdaptyPaywallController → AdaptyFlowController
 
@@ -85,7 +133,7 @@ v3と同様に、[Flow Builder](adapty-flow-builder)や[Paywall Builder](adapty-
 ```
 ### AdaptyPaywallControllerDelegate → AdaptyFlowControllerDelegate
 
-プロトコルの名前を変更し、すべてのメソッドシグネチャを更新してください。なお、`didSelectProduct` は削除された `AdaptyPaywallProductWithoutDeterminingOffer` の代わりに `AdaptyPaywallProduct` を受け取るようになりました。
+プロトコル名を変更し、すべてのメソッドシグネチャを更新してください。`didSelectProduct` が削除された `AdaptyPaywallProductWithoutDeterminingOffer` の代わりに `AdaptyPaywallProduct` を受け取るようになった点、および `didFinishPurchase` は[実装が必須になった](#didfinishpurchase-is-now-required)点（デフォルト実装がなくなりました）に注意してください。
 ```diff showLineNumbers
 - class YourClass: AdaptyPaywallControllerDelegate {
 + class YourClass: AdaptyFlowControllerDelegate {
@@ -163,9 +211,9 @@ v3と同様に、[Flow Builder](adapty-flow-builder)や[Paywall Builder](adapty-
 ```
 
 ## SwiftUI \{#swiftui\}
-### .paywall() モディファイアを .flow() に変更する \{#paywall-modifier--flow\}
+### .paywall() モディファイア → .flow() \{#paywall-modifier--flow\}
 
-モディファイアの名前を変更し、設定パラメータ名を更新してください。
+モディファイアの名前を変更し、設定パラメータ名を更新して、[必須となった](#didfinishpurchase-is-now-required) `didFinishPurchase` クロージャを追加します。
 ```diff showLineNumbers
  @State var flowPresented = false // rename freely — the variable name is your choice
 
@@ -176,6 +224,7 @@ v3と同様に、[Flow Builder](adapty-flow-builder)や[Paywall Builder](adapty-
              isPresented: $flowPresented,
 -            paywallConfiguration: paywallConfiguration,
 +            flowConfiguration: flowConfiguration,
++            didFinishPurchase: { product, purchaseResult in /* dismiss, or do nothing to let the flow continue */ },
              didFailPurchase: { product, error in /* handle the error */ },
              didFinishRestore: { profile in /* check access level and dismiss */ },
              didFailRestore: { error in /* handle the error */ },
@@ -188,7 +237,7 @@ v3と同様に、[Flow Builder](adapty-flow-builder)や[Paywall Builder](adapty-
 名前が変更されたコールバックは、`didFailRendering` が対応していたのと同じレンダリングエラーに加え、フロースクリプトの新しいランタイムエラー（`AdaptyUIError` コード `4105` — `.jsException` の JavaScript 例外）にも対応します。既存のハンドラー本体はコードを変更する必要はありません。パラメーターの名前を変更するだけです。
 ### AdaptyPaywallView → AdaptyFlowView
 
-ビューの名前を変更し、設定パラメーターを更新し、`didSelectProduct` クロージャを更新してください — `AdaptyPaywallProductWithoutDeterminingOffer` が削除され、代わりに `AdaptyPaywallProduct` を受け取るようになりました:
+ビューの名前を変更し、設定パラメータを更新し、[現在必須となった](#didfinishpurchase-is-now-required) `didFinishPurchase` クロージャを追加して、`didSelectProduct` クロージャを更新してください。このクロージャは、削除された `AdaptyPaywallProductWithoutDeterminingOffer` の代わりに `AdaptyPaywallProduct` を受け取るようになりました。
 ```diff showLineNumbers
 - AdaptyPaywallView(
 -     paywallConfiguration: paywallConfiguration,
@@ -196,6 +245,7 @@ v3と同様に、[Flow Builder](adapty-flow-builder)や[Paywall Builder](adapty-
 + AdaptyFlowView(
 +     flowConfiguration: flowConfiguration,
 +     didSelectProduct: { product: AdaptyPaywallProduct in /* handle */ },
++     didFinishPurchase: { product, purchaseResult in /* dismiss, or do nothing to let the flow continue */ },
      didFailPurchase: { product, error in /* handle the error */ },
      didFinishRestore: { profile in /* check access level and dismiss */ },
      didFailRestore: { error in /* handle the error */ },

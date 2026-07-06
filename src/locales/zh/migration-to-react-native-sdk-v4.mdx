@@ -1,0 +1,244 @@
+---
+title: "将 Adapty React Native SDK 迁移至 v. 4.0"
+description: "通过将付费墙 API 替换为 flow API，迁移至 Adapty React Native SDK v4.0（测试版），兼容 Flow Builder 和 付费墙编辑工具。"
+metadataTitle: "迁移至 Adapty React Native SDK v4.0（测试版）| Adapty 文档"
+---
+
+Adapty React Native SDK 4.0（测试版）引入了 flow 功能，并相应地重命名了付费墙 API。新 API 同时兼容全新的 Flow Builder 和现有的付费墙编辑工具——无需在 Adapty 看板端进行任何配置变更。
+## 快速参考 \{#quick-reference\}
+| v3 | v4 |
+|---|---|
+| `adapty.getPaywall(placementId, locale?, params?)` | `adapty.getFlow(placementId, params?)` |
+| `adapty.getPaywallForDefaultAudience(placementId, locale?, params?)` | `adapty.getFlowForDefaultAudience(placementId, params?)` |
+| `adapty.getPaywallProducts(paywall)` | `adapty.getPaywallProducts(flow)` |
+| `adapty.logShowPaywall(paywall)` | `adapty.logShowFlow(flow)` |
+| `AdaptyPaywall`（类型） | `AdaptyFlow` |
+| `createPaywallView(paywall)` | `createFlowView(flow)` |
+| `AdaptyPaywallView`（组件） | `AdaptyFlowView` |
+| `EventHandlers`（类型） | `FlowEventHandlers` |
+| `onPaywallShown` | `onAppeared` |
+| `onPaywallClosed` | `onDisappeared` |
+| `onRenderingFailed` | `onError` |
+`AdaptyPaywallProduct` 保持原名不变——产品仍属于某个 flow，`getPaywallProducts` 现在接收 `AdaptyFlow` 参数。`getFlow` 和 `getFlowForDefaultAudience` 方法不再接收 `locale` 参数。视图方法 `present`、`dismiss`、`setEventHandlers`、`showDialog`，以及事件处理器 `onCloseButtonPress`、`onUrlPress`、`onCustomAction`、`onProductSelected`、`onPurchaseStarted`、`onPurchaseCompleted`、`onPurchaseFailed`、`onRestoreStarted`、`onRestoreCompleted`、`onRestoreFailed`、`onLoadingProductsFailed`、`onWebPaymentNavigationFinished` 和 `onAndroidSystemBack` 均与 v3 中的名称保持一致。部分默认行为有所变更——详见[默认行为变更](#default-behavior-changes)。
+## 最低 iOS 版本 \{#minimum-ios-version\}
+
+Adapty React Native SDK 4.0 将最低 iOS 部署目标从 iOS 13.0 提升至 **iOS 15.0**。升级前，请将您的 iOS 部署目标设置为 15.0 或更高版本。
+## 安装 \{#installation\}
+### 更新软件包 \{#update-the-package\}
+
+v4.0 为预发布版本，请固定精确版本号——npm 不会通过 caret/tilde 范围选取预发布版本：
+
+```bash showLineNumbers
+npm install react-native-adapty@4.0.0-beta.1
+# or
+yarn add react-native-adapty@4.0.0-beta.1
+```
+### iOS：原生 SDK 现已通过 Swift Package Manager 提供 \{#ios-native-sdks-now-come-through-swift-package-manager\}
+
+[CocoaPods 的 spec 仓库将于 2026 年 12 月转为只读](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)，因此从 v4 开始，原生 `Adapty`、`AdaptyUI` 和 `AdaptyPlugin` SDK **不再作为 CocoaPods 子依赖项引入** —— podspec 改为通过 **Swift Package Manager**（借助 `spm_dependency` 助手）来拉取它们。这需要满足以下两个条件：
+- **React Native 0.75 或更高版本** — 需要 `spm_dependency` podspec 辅助工具。在旧版本中，`pod install` 会报错并明确提示；请先升级 React Native，或继续使用 `react-native-adapty` 3.x。
+- **动态框架** — SPM 依赖需要动态链接。启用方式因 Expo 和裸 React Native 项目而有所不同。
+
+#### Expo
+
+添加 [`expo-build-properties`](https://docs.expo.dev/versions/latest/sdk/build-properties/) 配置插件，并在 `app.json`（或 `app.config.js`）中将 iOS 框架设置为动态：
+```json showLineNumbers title="app.json"
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "dynamic"
+          }
+        }
+      ]
+    ]
+  }
+}
+```
+
+然后安装插件并重新生成原生项目：
+
+```bash showLineNumbers
+npx expo install expo-build-properties
+npx expo prebuild --clean
+```
+
+#### 裸 React Native \{#bare-react-native\}
+
+将动态框架添加到你的 iOS target，然后重新安装 pods：
+
+```ruby showLineNumbers title="ios/Podfile"
+use_frameworks! :linkage => :dynamic
+```
+```bash showLineNumbers
+cd ios && pod install --repo-update
+```
+
+如果你之前通过 CocoaPods 将 `Adapty`、`AdaptyUI` 或 `AdaptyPlugin` 作为子依赖项引入，请先从 `Podfile` 中删除所有显式的 `pod 'Adapty'`、`pod 'AdaptyUI'` 或 `pod 'AdaptyPlugin'` 行。
+:::warning
+从默认的静态链接切换到动态框架，可能与尚未支持模块化头文件的库发生冲突，且与 Flipper 不兼容。如果遇到构建问题，请参阅这篇[将 Swift Package Manager 与 React Native 库集成的文章](https://www.callstack.com/blog/integrating-swift-package-manager-with-react-native-libraries)。
+:::
+
+完整安装步骤请参阅[安装 Adapty SDK](sdk-installation-reactnative)。
+## 获取流程 \{#fetching-flows\}
+### getPaywall → getFlow
+
+返回类型从 `AdaptyPaywall` 变更为 `AdaptyFlow`，并移除了 `locale` 参数——当你渲染一个 flow 时，语言环境会自动解析；对于自定义付费墙，所有语言环境均通过 `flow.remoteConfigs` 返回：
+
+```diff showLineNumbers
+- const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID', 'en');
++ const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
+```
+
+`getPaywallForDefaultAudience` 以相同方式重命名：
+```diff showLineNumbers
+- const paywall = await adapty.getPaywallForDefaultAudience('YOUR_PLACEMENT_ID', 'en');
++ const flow = await adapty.getFlowForDefaultAudience('YOUR_PLACEMENT_ID');
+```
+
+### getPaywallProducts(paywall) → getPaywallProducts(flow)
+
+`getPaywallProducts` 保持名称不变，但现在接受 `AdaptyFlow`：
+
+```diff showLineNumbers
+- const products = await adapty.getPaywallProducts(paywall);
++ const products = await adapty.getPaywallProducts(flow);
+```
+## 数据模型 \{#data-model\}
+
+`getFlow` 返回 `AdaptyFlow` 而非 `AdaptyPaywall`，对象结构也发生了变化：
+| v3 `AdaptyPaywall` 字段 | v4 `AdaptyFlow` 字段 | 操作 |
+|---|---|---|
+| `remoteConfig?`（单个） | `remoteConfigs?: AdaptyRemoteConfig[]`（数组） | 一个流程为每种配置语言携带一个远程配置。读取与用户匹配的那个：`flow.remoteConfigs?.find((c) => c.lang === 'en')`。 |
+| `products` | `flow.paywalls[i].productIdentifiers` | 产品标识符现在位于每个流程变体上，而不在流程本身。 |
+| `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | 从流程移至每个付费墙变体。 |
+| `version?: number` | `flowVersionId?: string` | 已重命名，类型从 `number` 改为 `string`。 |
+| `hasViewConfiguration` | 已移除 | 从代码中删除所有 `hasViewConfiguration` 检查。 |
+| `requestLocale` | 已移除 | 语言区域设置不再是模型的一部分。 |
+| _(新增)_ | `paywalls: AdaptyFlowPaywall[]` | 每个条目是流程中的一个付费墙变体。 |
+| _(新增)_ | `responseCreatedAt: number` | 服务器响应时间戳，单位为毫秒。 |
+产品标识符已从流程移至每个实验变体：
+
+```diff showLineNumbers
+- const ids = paywall.products;
++ const ids = flow.paywalls[0].productIdentifiers;
+```
+## Web 付费墙方法 \{#web-paywall-methods\}
+
+`openWebPaywall` 和 `createWebPaywallUrl` 方法名保持不变，但第一个参数现在是 `AdaptyFlowPaywall`（流程变体），而非 `AdaptyPaywall`。你仍然可以传入 `AdaptyPaywallProduct`。
+
+```diff showLineNumbers
+  const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
+- await adapty.openWebPaywall(paywall);
++ await adapty.openWebPaywall(flow.paywalls[0]);
+```
+## 追踪流程查看次数 \{#tracking-flow-views\}
+### logShowPaywall → logShowFlow
+
+`logShowPaywall` 已重命名为 `logShowFlow`，现在接收一个 `AdaptyFlow` 参数。事件仍会记录到同一实验变体，因此现有的漏斗和 A/B 测试数据图表无需修改看板即可继续正常使用。
+
+```diff showLineNumbers
+- await adapty.logShowPaywall(paywall);
++ await adapty.logShowFlow(flow);
+```
+
+与 v3 相同，当使用 [Flow Builder](adapty-flow-builder) 或[付费墙编辑工具](adapty-paywall-builder)渲染流程或付费墙时，无需手动调用此方法——Adapty 会自动追踪这些页面的展示。
+## 展示流程 \{#displaying-flows\}
+### createPaywallView → createFlowView
+
+重命名工厂函数并传入 `AdaptyFlow`。返回的控制器方法（`present`、`dismiss`、`setEventHandlers`、`showDialog`）保持不变：
+
+```diff showLineNumbers
+- import { createPaywallView } from 'react-native-adapty';
++ import { createFlowView } from 'react-native-adapty';
+
+- const view = await createPaywallView(paywall);
++ const view = await createFlowView(flow);
+  await view.present();
+```
+### AdaptyPaywallView → AdaptyFlowView
+
+如果你使用 React 组件进行渲染，请重命名组件并传入 `flow` prop：
+
+```diff showLineNumbers
+- import { AdaptyPaywallView } from 'react-native-adapty';
++ import { AdaptyFlowView } from 'react-native-adapty';
+
+- <AdaptyPaywallView paywall={paywall} /* … */ />
++ <AdaptyFlowView flow={flow} /* … */ />
+```
+:::note
+使用 `createFlowView` 创建的流程视图是一次性的：调用 `dismiss()` 后，该视图会被销毁，如需再次展示流程，请重新调用 `createFlowView`。嵌入式 `AdaptyFlowView` 通过卸载组件来关闭——从处理函数中返回 `true` 并不会关闭嵌入式视图，因此请改为管理自己的状态，例如在 `onCloseButtonPress` 中处理。
+:::
+## 处理事件 \{#handling-events\}
+
+事件处理器接口已从 `EventHandlers` 重命名为 `FlowEventHandlers`，同时有三个回调也进行了重命名。现有的处理器逻辑无需修改——只需重命名即可：
+
+```diff showLineNumbers
+- onPaywallShown: () => { /* … */ },
++ onAppeared: () => { /* … */ },
+
+- onPaywallClosed: () => { /* … */ },
++ onDisappeared: () => { /* … */ },
+
+- onRenderingFailed: (error) => { /* … */ },
++ onError: (error) => { /* … */ },
+```
+所有其他事件处理器保留原有名称。其中两个新增了第二个参数：`onPurchaseCompleted` 现在为 `(purchaseResult, product)`，`onPurchaseFailed` 现在为 `(error, product)`，其中 `product` 是参与购买的 `AdaptyPaywallProduct`。完整列表请参阅[处理 flow 与付费墙事件](react-native-handling-events-1)。
+
+:::note
+`onDisappeared` 仅在通过 `createFlowView().present()` 以模态方式呈现的 flow 中触发。`AdaptyFlowView` 组件不将其作为 prop 暴露——如需关闭嵌入式视图，请通过卸载组件的方式实现。
+:::
+
+v4 还新增了一些可选功能：
+- `adapty.openWebUrl(url, openIn?)` 和 `adapty.requestAppReview()` 方法——这两个方法支持默认的 `onUrlPress` 和 `onRequestAppReview` 处理程序，因此 URL 和应用评价请求均可开箱即用地通过原生方式处理。仅在覆盖这些处理程序时才需要直接调用它们。
+- 通过新的 `onObserverPurchaseInitiated` / `onObserverRestoreInitiated` 处理程序，在流程中支持观察者模式下的购买处理。详见[在观察者模式下处理购买](react-native-handling-events-1#handle-purchases-in-observer-mode)。
+## 已移除和废弃的 API \{#removed-and-deprecated-apis\}
+### setFallbackPaywalls → setFallback
+
+`setFallbackPaywalls` 已被移除。请使用 `setFallback`，参数保持不变：
+
+```diff showLineNumbers
+- await adapty.setFallbackPaywalls(fileLocation);
++ await adapty.setFallback(fileLocation);
+```
+### 已移除的导出 \{#removed-exports\}
+
+这些符号已不再从 `react-native-adapty` 导出，请移除相关导入：
+
+- **`AdaptyPaywall`**：请改用 `AdaptyFlow`。
+- **`ProductReference`**：请改用 `AdaptyProductIdentifier`，从 `flow.paywalls[i].productIdentifiers` 读取。
+- **`AdaptyPaywallBuilder`**：已移除。流程和付费墙均以原生方式渲染。
+- **`AdaptyAndroidSubscriptionUpdateParameters`**：请改用嵌套的 `subscriptionUpdateParams` 结构（详见下文）。
+### activate: lockMethodsUntilReady
+
+`lockMethodsUntilReady` 已被移除，该行为现在默认始终开启。请从 `activate` 调用中删除它——保留该参数将导致编译错误：
+
+```diff showLineNumbers
+- await adapty.activate('PUBLIC_SDK_KEY', { lockMethodsUntilReady: true });
++ await adapty.activate('PUBLIC_SDK_KEY');
+```
+### makePurchase：Android 订阅更新 \{#makepurchase-android-subscription-update\}
+
+原有的 Android 订阅更新扁平结构已移除。请将 `oldSubVendorProductId` 和 `prorationMode` 移入嵌套的 `subscriptionUpdateParams` 对象中，并将 `isOfferPersonalized` 保留在顶层。完整示例请参阅[发起购买](react-native-making-purchases)。
+### Android：安全区域内边距 \{#android-safe-area-paddings\}
+
+Android 布尔资源 `<bool name="adapty_paywall_enable_safe_area_paddings">…</bool>` 已被移除。请从 `res/values/bools.xml` 中删除该条目，并在创建流程视图时通过 `enableSafeArea` 参数在运行时控制安全区域内边距。该参数在模态展示时默认为 `true`，在嵌入式组件中默认为 `false`。
+### 模拟模式 \{#mock-mode\}
+
+如果你在模拟模式下运行 SDK（Expo Go 或 Web 预览），请将模拟配置的键名 `paywalls` 改为 `flows`。
+## 默认行为变更 \{#default-behavior-changes\}
+
+以下变更不会导致编译错误，请在运行时进行测试：
+- **`onAndroidSystemBack`**: 默认行为已从关闭视图改为保持视图打开。要恢复之前的行为，请在处理函数中返回 `true`。
+- **`onPurchaseCompleted`**: 默认行为已从关闭视图（除非用户取消购买）改为始终保持视图打开。要恢复之前的行为，请在处理函数中返回 `purchaseResult.type !== 'user_cancelled'`。
+- **`onRestoreCompleted`**: 默认行为已从恢复成功后关闭视图改为保持视图打开。要恢复之前的行为，请在处理函数中返回 `true`。
+- **`onUrlPress`**: 现在默认通过原生层打开 URL，遵循看板中配置的应用内浏览器或外部浏览器设置。如需自行处理 URL 打开方式，请覆盖该处理函数。
+## 用户引导 API 弃用 \{#onboarding-api-deprecation\}
+
+旧版用户引导 API 已在 v4.0 中弃用，请改用 [Flow Builder](adapty-flow-builder)。该 API 目前仍可正常使用，IDE 会通过 `@deprecated` 注解标记已弃用的符号——不会产生任何运行时警告。这些符号将在未来版本中移除，请提前将您的用户引导迁移至 Flow Builder。
+
+已弃用的符号：`getOnboarding`、`getOnboardingForDefaultAudience`、`createOnboardingView` 和 `AdaptyOnboardingView`。

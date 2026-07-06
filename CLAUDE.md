@@ -33,11 +33,29 @@ rank: 100          # Sort priority, default 50
 customSlug: "override-url"  # Optional URL override
 ```
 
-### Navigation
+### Navigation and Article Discovery
 
-Sidebars are defined per platform in `src/data/sidebars/*.json` (ios, android, react-native, flutter, unity, kmp, capacitor, tutorial, api). Each entry references an article by its filename-based `id`. To add an article to navigation, add its id to the appropriate sidebar JSON.
+The `src/data/sidebars/` folder stores JSON representations of the docs' structure and article hierarchy. The sidebar files reference articles by their filename-based `id`:
 
-**Always use sidebar JSON files as the source of truth** for discovering which articles exist in a section. Do not glob MDX files — the sidebar defines what is published and how it is organized. Match the feature area to the correct sidebar file first, then read the relevant entries.
+```json
+{
+"type": "doc",
+"id": "builder-ui", /* full filename: builder-ui.mdx */
+"label": "Interface overview" /* article title */
+}
+```
+
+Do not `grep`, `find`, or `glob` the docs to find the right article. **Always use sidebar JSON files as the source of truth** for article discovery. They determine the content of the navigation sidebar when the reader is viewing a specific section of the docs.
+
+1. The `tutorial.json` sidebar is visible when the user views the Dashboard docs. It includes non-framework-specific articles that cover general subjects and the use of the Adapty Dashboard.
+2. Framework-specific sidebar files are visible when viewing SDK documentation for that specific framework. They named after the framework (`ios.json`, `android.json`, `react-native.json`, `flutter.json`, `unity.json`, `kmp.json`, `capacitor.json`).
+3. The `api.json` file contains the API documentation sidebar. The OpenAPI specs it references live in `src/api-reference/specs/`.
+
+#### Rules and Exceptions
+
+- To add an article to navigation, add its id to the appropriate sidebar JSON.
+- Do not rely on the file's name to determine its content. For SEO purposes, some filenames remain unchanged, even as their content changes over time.
+- Some legacy articles are explicitly excluded from the sidebar. Such articles are available via direct link but can't be discovered spontaneously.
 
 ### Images
 
@@ -59,15 +77,18 @@ Translated versions of articles live in `src/locales/{locale}/` (e.g., `src/loca
 
 ## Key components
 
-| Component | Import required? | Usage |
-|-----------|-----------------|-------|
-| `ZoomImage` | Yes | `<ZoomImage id="file.png" width="700px" alt="..." />` — add `float="right"` or `float="left"` to float image beside text |
-| `Tabs`/`TabItem` | Yes | `<Tabs groupId="platform"><TabItem value="ios" label="iOS">...</TabItem></Tabs>` |
-| `Details` | Yes | `<Details summary="Title">content</Details>` |
-| `InlineTooltip` | Yes | `<InlineTooltip tooltip="hover text">[link](page.md)</InlineTooltip>` |
-| `CustomDocCardList` | Yes | `<CustomDocCardList ids={['id1','id2']} />` or `<CustomDocCardList />` for auto |
-| `Button` | **No** (auto-registered) | `<Button id="page-id">Text</Button>` or `<Button href="url">Text</Button>` |
-| `Callout` | **No** (remark plugin) | `:::note`, `:::tip`, `:::info`, `:::warning`, `:::danger`, `:::important`, `:::link` |
+The components below are **auto-registered** in `src/pages/[...slug].astro` — no `import` statement needed in articles. Other components in `src/components/` require an explicit import (see pattern at the bottom of this section).
+
+| Component | Usage |
+|-----------|-------|
+| `ZoomImage` | `<ZoomImage id="file.png" width="700px" alt="..." />` — add `float="right"` or `float="left"` to float image beside text |
+| `Tabs`/`TabItem` | `<Tabs groupId="platform"><TabItem value="ios" label="iOS">...</TabItem></Tabs>` |
+| `Details` | `<Details summary="Title">content</Details>` |
+| `InlineTooltip` | `<InlineTooltip tooltip="hover text">[link](page.md)</InlineTooltip>` |
+| `CustomDocCardList` | `<CustomDocCardList ids={['id1','id2']} />` or `<CustomDocCardList />` for auto |
+| `Button` | `<Button id="page-id">Text</Button>` or `<Button href="url">Text</Button>` |
+| `Inline` | `<Inline id="icon.svg" alt="..." />` — inline SVG/image icon from `src/assets/Inline/` |
+| `Callout` (remark plugin) | `:::note`, `:::tip`, `:::info`, `:::warning`, `:::danger`, `:::important`, `:::link` |
 
 Import path pattern: `import Component from '@site/src/components/Component.astro';`
 

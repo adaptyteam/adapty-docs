@@ -1,0 +1,281 @@
+---
+title: "Adapty React Native SDK'yı v. 4.0'a geçirme"
+description: "Paywall API'lerini flow API'leriyle değiştirerek Adapty React Native SDK v4.0 (beta) sürümüne geçin — hem Flow Builder hem de Paywall Builder ile uyumludur."
+metadataTitle: "Adapty React Native SDK v4.0'a geçiş (beta) | Adapty Dokümanları"
+---
+
+Adapty React Native SDK 4.0 (beta), flow'ları tanıtır ve paywall API'lerini buna göre yeniden adlandırır. Yeni API'ler hem yeni Flow Builder hem de mevcut Paywall Builder ile çalışır — Adapty Kontrol Paneli tarafında herhangi bir kurulum değişikliği gerekmez.
+
+## Hızlı referans \{#quick-reference\}
+
+| v3 | v4 |
+|---|---|
+| `adapty.getPaywall(placementId, locale?, params?)` | `adapty.getFlow(placementId, params?)` |
+| `adapty.getPaywallForDefaultAudience(placementId, locale?, params?)` | `adapty.getFlowForDefaultAudience(placementId, params?)` |
+| `adapty.getPaywallProducts(paywall)` | `adapty.getPaywallProducts(flow)` |
+| `adapty.logShowPaywall(paywall)` | `adapty.logShowFlow(flow)` |
+| `AdaptyPaywall` (tür) | `AdaptyFlow` |
+| `createPaywallView(paywall)` | `createFlowView(flow)` |
+| `AdaptyPaywallView` (bileşen) | `AdaptyFlowView` |
+| `EventHandlers` (tür) | `FlowEventHandlers` |
+| `onPaywallShown` | `onAppeared` |
+| `onPaywallClosed` | `onDisappeared` |
+| `onRenderingFailed` | `onError` |
+
+`AdaptyPaywallProduct` adını korur — ürünler hâlâ bir flow'a aittir ve `getPaywallProducts` artık bir `AdaptyFlow` alır. `getFlow` ve `getFlowForDefaultAudience` metotları artık `locale` parametresi almaz. `present`, `dismiss`, `setEventHandlers` ve `showDialog` view metotları ile `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished` ve `onAndroidSystemBack` olay işleyicileri v3'teki adlarını korur. Bazı varsayılan davranışlar değişti — bkz. [Varsayılan davranış değişiklikleri](#default-behavior-changes).
+
+## Minimum iOS sürümü \{#minimum-ios-version\}
+
+Adapty React Native SDK 4.0, minimum iOS dağıtım hedefini iOS 13.0'dan **iOS 15.0**'a yükseltir. Yükseltmeden önce iOS dağıtım hedefinizi 15.0 veya sonrasına ayarlayın.
+
+## Kurulum \{#installation\}
+
+### Paketi güncelleyin \{#update-the-package\}
+
+v4.0 bir ön sürümdür, bu yüzden tam sürümü sabitleyin — npm, caret/tilde aralıkları üzerinden ön sürümleri seçmez:
+
+```bash showLineNumbers
+npm install react-native-adapty@4.0.0-beta.1
+# or
+yarn add react-native-adapty@4.0.0-beta.1
+```
+
+### iOS: yerel SDK'lar artık Swift Package Manager üzerinden geliyor \{#ios-native-sdks-now-come-through-swift-package-manager\}
+
+[CocoaPods'un spec deposu Aralık 2026'da salt okunur hâle geliyor](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), bu yüzden v4'ten itibaren yerel `Adapty`, `AdaptyUI` ve `AdaptyPlugin` SDK'ları **artık CocoaPods alt bağımlılıkları olarak çekilmiyor** — podspec bunları **Swift Package Manager** aracılığıyla (`spm_dependency` yardımcısıyla) çeker. Bunun için iki şey gerekir:
+
+- **React Native 0.75 veya sonrası** — `spm_dependency` podspec yardımcısı için gereklidir. Daha eski bir sürümde `pod install` açık bir hatayla başarısız olur; önce React Native'i yükseltin ya da `react-native-adapty` 3.x'te kalın.
+- **Dinamik framework'ler** — SPM bağımlılıkları dinamik bağlama gerektirir. Bunu etkinleştirme yönteminiz Expo ve bare React Native için farklıdır.
+
+#### Expo
+
+`app.json` (veya `app.config.js`) içinde [`expo-build-properties`](https://docs.expo.dev/versions/latest/sdk/build-properties/) yapılandırma eklentisini ekleyin ve iOS framework'lerini dinamik olarak ayarlayın:
+
+```json showLineNumbers title="app.json"
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "dynamic"
+          }
+        }
+      ]
+    ]
+  }
+}
+```
+
+Ardından eklentiyi yükleyin ve yerel projeyi yeniden oluşturun:
+
+```bash showLineNumbers
+npx expo install expo-build-properties
+npx expo prebuild --clean
+```
+
+#### Bare React Native
+
+iOS hedefinize dinamik framework'ler ekleyin, ardından pod'ları yeniden yükleyin:
+
+```ruby showLineNumbers title="ios/Podfile"
+use_frameworks! :linkage => :dynamic
+```
+
+```bash showLineNumbers
+cd ios && pod install --repo-update
+```
+
+Daha önce `Adapty`, `AdaptyUI` veya `AdaptyPlugin`'i CocoaPods alt bağımlılıkları olarak çektiyseniz, önce `Podfile`'ınızdaki tüm açık `pod 'Adapty'`, `pod 'AdaptyUI'` veya `pod 'AdaptyPlugin'` satırlarını kaldırın.
+
+:::warning
+Varsayılan statik bağlamadan dinamik framework'lere geçmek, henüz modular headers desteklemeyen kütüphanelerle çakışabilir ve Flipper ile uyumlu değildir. Derleme sorunlarıyla karşılaşırsanız, [Swift Package Manager'ı React Native kütüphaneleriyle entegre etme üzerine bu yazıya](https://www.callstack.com/blog/integrating-swift-package-manager-with-react-native-libraries) bakın.
+:::
+
+Tam kurulum için bkz. [Adapty SDK'yı yükleyin](sdk-installation-reactnative).
+
+## Flow'ları getirme \{#fetching-flows\}
+
+### getPaywall → getFlow
+
+Dönen tür `AdaptyPaywall`'dan `AdaptyFlow`'a değişir ve `locale` parametresi kaldırılır — bir flow'u render ettiğinizde locale otomatik olarak çözümlenir; özel paywall'lar için tüm locale'ler `flow.remoteConfigs` içinde döndürülür:
+
+```diff showLineNumbers
+- const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID', 'en');
++ const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
+```
+
+`getPaywallForDefaultAudience` de aynı şekilde yeniden adlandırılır:
+
+```diff showLineNumbers
+- const paywall = await adapty.getPaywallForDefaultAudience('YOUR_PLACEMENT_ID', 'en');
++ const flow = await adapty.getFlowForDefaultAudience('YOUR_PLACEMENT_ID');
+```
+
+### getPaywallProducts(paywall) → getPaywallProducts(flow)
+
+`getPaywallProducts` adını korur ancak artık bir `AdaptyFlow` alır:
+
+```diff showLineNumbers
+- const products = await adapty.getPaywallProducts(paywall);
++ const products = await adapty.getPaywallProducts(flow);
+```
+
+## Veri modeli \{#data-model\}
+
+`getFlow`, bir `AdaptyPaywall` yerine bir `AdaptyFlow` döndürür ve nesnenin yapısı değişti:
+
+| v3 `AdaptyPaywall` alanı | v4 `AdaptyFlow` alanı | Eylem |
+|---|---|---|
+| `remoteConfig?` (tekli) | `remoteConfigs?: AdaptyRemoteConfig[]` (dizi) | Bir flow, yapılandırılmış her dil için bir remote config taşır. Kullanıcıya uyanı okuyun: `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
+| `products` | `flow.paywalls[i].productIdentifiers` | Ürün tanımlayıcıları artık flow'un kendisinde değil, her flow varyasyonunda bulunur. |
+| `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | Flow'dan her paywall varyasyonuna taşındı. |
+| `version?: number` | `flowVersionId?: string` | Yeniden adlandırıldı ve tür `number`'dan `string`'e değişti. |
+| `hasViewConfiguration` | kaldırıldı | Kodunuzdaki tüm `hasViewConfiguration` kontrollerini kaldırın. |
+| `requestLocale` | kaldırıldı | Locale artık modelin bir parçası değil. |
+| _(yeni)_ | `paywalls: AdaptyFlowPaywall[]` | Her giriş, flow içindeki bir paywall varyasyonudur. |
+| _(yeni)_ | `responseCreatedAt: number` | Sunucu yanıtının zaman damgası, milisaniye cinsinden. |
+
+Ürün tanımlayıcıları flow'dan her varyasyona taşındı:
+
+```diff showLineNumbers
+- const ids = paywall.products;
++ const ids = flow.paywalls[0].productIdentifiers;
+```
+
+## Web paywall metotları \{#web-paywall-methods\}
+
+`openWebPaywall` ve `createWebPaywallUrl` adlarını korur, ancak ilk argüman artık `AdaptyPaywall` yerine bir `AdaptyFlowPaywall`'dır (bir flow varyasyonu). Yine de bir `AdaptyPaywallProduct` geçirebilirsiniz.
+
+```diff showLineNumbers
+  const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
+- await adapty.openWebPaywall(paywall);
++ await adapty.openWebPaywall(flow.paywalls[0]);
+```
+
+## Flow görüntülemelerini izleme \{#tracking-flow-views\}
+
+### logShowPaywall → logShowFlow
+
+`logShowPaywall`, `logShowFlow` olarak yeniden adlandırıldı ve artık bir `AdaptyFlow` alır. Olay hâlâ aynı varyasyona kaydedilir, dolayısıyla mevcut huni ve A/B testi metrikleri kontrol paneli değişiklikleri olmadan çalışmaya devam eder.
+
+```diff showLineNumbers
+- await adapty.logShowPaywall(paywall);
++ await adapty.logShowFlow(flow);
+```
+
+v3'te olduğu gibi, [Flow Builder](adapty-flow-builder) veya [Paywall Builder](adapty-paywall-builder) tarafından render edilen flow'ları ya da paywall'ları görüntülerken bu metodu çağırmanız gerekmez — Adapty bu görüntülemeleri otomatik olarak izler.
+
+## Flow'ları görüntüleme \{#displaying-flows\}
+
+### createPaywallView → createFlowView
+
+Fabrika fonksiyonunu yeniden adlandırın ve `AdaptyFlow`'u geçirin. Dönen denetleyicinin metotları (`present`, `dismiss`, `setEventHandlers`, `showDialog`) değişmedi:
+
+```diff showLineNumbers
+- import { createPaywallView } from 'react-native-adapty';
++ import { createFlowView } from 'react-native-adapty';
+
+- const view = await createPaywallView(paywall);
++ const view = await createFlowView(flow);
+  await view.present();
+```
+
+### AdaptyPaywallView → AdaptyFlowView
+
+React bileşeniyle render ediyorsanız, adını değiştirin ve `flow` prop'unu geçirin:
+
+```diff showLineNumbers
+- import { AdaptyPaywallView } from 'react-native-adapty';
++ import { AdaptyFlowView } from 'react-native-adapty';
+
+- <AdaptyPaywallView paywall={paywall} /* … */ />
++ <AdaptyFlowView flow={flow} /* … */ />
+```
+
+:::note
+`createFlowView` ile oluşturulan bir flow view tek kullanımlıktır: `dismiss()` çağrısından sonra view yok edilir, dolayısıyla flow'u yeniden sunmak için `createFlowView`'u tekrar çağırın. Gömülü bir `AdaptyFlowView`, unmount edilerek kapatılır — bir işleyiciden `true` döndürmek gömülü bir view'i kapatmaz, bunun yerine kendi durumunuzu değiştirin; örneğin `onCloseButtonPress` içinde.
+:::
+
+## Olayları yönetme \{#handling-events\}
+
+Olay işleyici arayüzü `EventHandlers`'tan `FlowEventHandlers`'a yeniden adlandırıldı ve üç callback de yeniden adlandırıldı. Mevcut işleyici gövdelerinde kod değişikliği gerekmez — yalnızca yeniden adlandırın:
+
+```diff showLineNumbers
+- onPaywallShown: () => { /* … */ },
++ onAppeared: () => { /* … */ },
+
+- onPaywallClosed: () => { /* … */ },
++ onDisappeared: () => { /* … */ },
+
+- onRenderingFailed: (error) => { /* … */ },
++ onError: (error) => { /* … */ },
+```
+
+Diğer tüm olay işleyicileri adlarını korur. İkisi de ikinci bir argüman kazanır: `onPurchaseCompleted` artık `(purchaseResult, product)`, `onPurchaseFailed` ise artık `(error, product)` şeklindedir; burada `product`, ilgili `AdaptyPaywallProduct`'tır. Tam liste için bkz. [Flow ve paywall olaylarını yönetme](react-native-handling-events-1).
+
+:::note
+`onDisappeared` yalnızca `createFlowView().present()` ile modal olarak sunulan bir flow için tetiklenir. `AdaptyFlowView` bileşeni bunu bir prop olarak sunmaz — gömülü bir view'i unmount ederek kapatın.
+:::
+
+v4 ayrıca isteğe bağlı olarak kullanabileceğiniz birkaç özellik daha ekler:
+
+- `adapty.openWebUrl(url, openIn?)` ve `adapty.requestAppReview()` metotları — bunlar varsayılan `onUrlPress` ve `onRequestAppReview` işleyicilerinin arkasındaki metotlardır; böylece URL'ler ve uygulama değerlendirme istemleri hazır şekilde yerel olarak işlenir. Bunları yalnızca söz konusu işleyicileri geçersiz kılıyorsanız doğrudan çağırın.
+- Yeni `onObserverPurchaseInitiated` / `onObserverRestoreInitiated` işleyicileri aracılığıyla flow'lar içinde gözlemci modu satın alma yönetimi. Bkz. [Gözlemci modunda satın almaları yönetme](react-native-handling-events-1#handle-purchases-in-observer-mode).
+
+## Kaldırılan ve kullanımdan kaldırılan API'ler \{#removed-and-deprecated-apis\}
+
+### setFallbackPaywalls → setFallback
+
+`setFallbackPaywalls` kaldırıldı. Aynı argümanı alan `setFallback`'i kullanın:
+
+```diff showLineNumbers
+- await adapty.setFallbackPaywalls(fileLocation);
++ await adapty.setFallback(fileLocation);
+```
+
+### Kaldırılan dışa aktarımlar \{#removed-exports\}
+
+Bu semboller artık `react-native-adapty`'den dışa aktarılmıyor. İçe aktarımlarını kaldırın:
+
+- **`AdaptyPaywall`**: Bunun yerine `AdaptyFlow` kullanın.
+- **`ProductReference`**: `AdaptyProductIdentifier` kullanın; `flow.paywalls[i].productIdentifiers`'tan okuyun.
+- **`AdaptyPaywallBuilder`**: Kaldırıldı. Flow'lar ve paywall'lar yerel olarak render edilir.
+- **`AdaptyAndroidSubscriptionUpdateParameters`**: İç içe `subscriptionUpdateParams` yapısını kullanın (aşağıya bakın).
+
+### activate: lockMethodsUntilReady
+
+`lockMethodsUntilReady` kaldırıldı ve bu davranış artık her zaman etkin. `activate` çağrınızdan kaldırın — bırakmanız durumunda artık derlenmez:
+
+```diff showLineNumbers
+- await adapty.activate('PUBLIC_SDK_KEY', { lockMethodsUntilReady: true });
++ await adapty.activate('PUBLIC_SDK_KEY');
+```
+
+### makePurchase: Android abonelik güncellemesi \{#makepurchase-android-subscription-update\}
+
+Düz Android abonelik güncelleme yapısı kaldırıldı. `oldSubVendorProductId` ve `prorationMode` değerlerini iç içe bir `subscriptionUpdateParams` nesnesine taşıyın ve `isOfferPersonalized`'ı üst düzeyde tutun. Tam örnek için bkz. [Satın alma işlemleri](react-native-making-purchases).
+
+### Android: güvenli alan dolguları \{#android-safe-area-paddings\}
+
+Android boolean kaynağı `<bool name="adapty_paywall_enable_safe_area_paddings">…</bool>` kaldırıldı. Bunu `res/values/bools.xml`'den silin ve güvenli alan dolgularını çalışma zamanında, flow view'i oluştururken `enableSafeArea` parametresiyle kontrol edin. Modal sunum için varsayılan olarak `true`, gömülü bileşen için `false` değerini alır.
+
+### Mock modu \{#mock-mode\}
+
+SDK'yı mock modunda (Expo Go veya web önizlemesi) çalıştırıyorsanız, mock yapılandırma anahtarı `paywalls`'ı `flows` olarak yeniden adlandırın.
+
+## Varsayılan davranış değişiklikleri \{#default-behavior-changes\}
+
+Bu değişiklikler derleme hatalarına yol açmaz, bu yüzden onları çalışma zamanında test edin:
+
+- **`onAndroidSystemBack`**: Varsayılan davranış, view'i kapatmaktan onu açık tutmaya değişti. Önceki davranışı geri getirmek için işleyiciden `true` döndürün.
+- **`onPurchaseCompleted`**: Varsayılan davranış, view'i kapatmaktan (kullanıcı satın almayı iptal etmediği sürece) her zaman açık tutmaya değişti. Önceki davranışı geri getirmek için işleyiciden `purchaseResult.type !== 'user_cancelled'` döndürün.
+- **`onRestoreCompleted`**: Varsayılan davranış, başarılı bir geri yükleme sonrasında view'i kapatmaktan onu açık tutmaya değişti. Önceki davranışı geri getirmek için işleyiciden `true` döndürün.
+- **`onUrlPress`**: Varsayılan davranış artık URL'yi yerel katman aracılığıyla açar ve kontrol panelindeki uygulama içi veya harici tarayıcı ayarına uyar. URL'leri kendiniz açmak için işleyiciyi geçersiz kılın.
+
+## Onboarding API'sinin kullanımdan kaldırılması \{#onboarding-api-deprecation\}
+
+Eski onboarding API'si, v4.0'da [Flow Builder](adapty-flow-builder) lehine kullanımdan kaldırıldı. Hâlâ çalışıyor ve IDE'niz kullanımdan kaldırılan sembolleri `@deprecated` ek açıklamaları aracılığıyla işaretler — çalışma zamanı uyarısı yoktur. Bu semboller gelecekteki bir sürümde kaldırılacak, bu yüzden onboarding'lerinizi Flow Builder'a taşımayı planlayın.
+
+Kullanımdan kaldırılan semboller: `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView` ve `AdaptyOnboardingView`.

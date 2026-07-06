@@ -18,6 +18,8 @@ Adapty iOS SDK 4.0 (beta), flow'ları tanıtır ve paywall API'lerini buna göre
 | `.paywall()` (SwiftUI modifier) | `.flow()` |
 | `AdaptyPaywallView` | `AdaptyFlowView` |
 | `didFailRenderingWith:` / `didFailRendering:` | `didReceiveError:` |
+| `didFinishPurchase` (isteğe bağlı, başarıda otomatik kapanır) | `didFinishPurchase` (zorunlu, otomatik kapanma yok) |
+| `Adapty_KidsMode` / `AdaptyUI_KidsMode` paket ürünleri | `KidsMode` paket trait'i |
 | `Adapty.updateAttribution(_:source:)` (`source: String`) | `Adapty.updateAttribution(_:source:)` (`source: AdaptyAttributionSource`) |
 | `Adapty.setIntegrationIdentifier(key:value:)` | `Adapty.setIntegrationIdentifier(_:)` (`AdaptyIntegrationIdentifier`) |
 ## Minimum iOS sürümü \{#minimum-ios-version\}
@@ -28,6 +30,33 @@ Adapty iOS SDK 4.0, minimum deployment target'ı iOS 13.0'dan **iOS 15.0**'a yü
 Adapty iOS SDK 4.0, CocoaPods desteğini kaldırdı. SDK'yı [Swift Package Manager](sdk-installation-ios#install-adapty-sdk) ile yükleyin.
 
 Projeniz hâlâ CocoaPods kullanıyorsa `Podfile` dosyanızdan `Adapty` ve `AdaptyUI` pod'larını kaldırın, `pod install` çalıştırarak temizleyin, ardından Xcode'da **File → Add Package Dependency** seçeneğiyle `https://github.com/adaptyteam/AdaptySDK-iOS.git` adresini kullanarak paketi ekleyin.
+## Çocuk Modu: ayrı ürünler yerine paket özelliği \{#kids-mode-separate-products-replaced-by-a-package-trait\}
+
+v3'te [Çocuk Modu](kids-mode)'nu, ayrı **Adapty_KidsMode** ve **AdaptyUI_KidsMode** paket ürünlerini seçerek ve import'larınızı yeniden adlandırarak etkinleştiriyordunuz. `4.0.0-beta.2` sürümünden itibaren bu ürünler kaldırıldı. Çocuk Modu artık normal Adapty paketinde `KidsMode` adlı bir Swift paket özelliğidir — etkinleştirdiğinizde tüm SDK genelinde IDFA ve AdSupport derleme dışı bırakılır.
+
+Geçiş yapmak için:
+1. **Choose Package Products** penceresinde, **Adapty_KidsMode** ve **AdaptyUI_KidsMode** yerine standart **Adapty** ve **AdaptyUI** ürünlerini seçin.
+
+2. `KidsMode` trait'ini etkinleştirin. Xcode 26.4 veya daha yeni bir sürümde, bunu projenizin **Package Dependencies** görünümündeki AdaptySDK-iOS bağımlılığı için etkinleştirin. Adapty'yi `Package.swift` dosyasına bağımlılık olarak ekliyorsanız (`swift-tools-version` 6.1 veya daha yenisi gerekir), orada etkinleştirin:
+```swift showLineNumbers title="Package.swift"
+   .package(
+       url: "https://github.com/adaptyteam/AdaptySDK-iOS.git",
+       exact: "4.0.0-beta.2",
+       traits: ["KidsMode"]
+   )
+   ```
+
+3. Import'larınızı normal modüllere geri değiştirin:
+
+   ```diff showLineNumbers
+   - import Adapty_KidsMode
+   - import AdaptyUI_KidsMode
+   + import Adapty
+   + import AdaptyUI
+   ```
+:::note
+26.4'ten önceki Xcode sürümleri, Xcode projesinde trait'leri arayüzden etkinleştiremez. Bu durumda, `KidsMode` trait'i etkin olarak Adapty'ye bağımlı küçük bir yerel Swift paketi oluşturun ve uygulama hedefi bu pakete bağımlı olsun.
+:::
 ## Kaldırılan API'ler \{#removed-apis\}
 
 - **`Adapty.getPaywallProductsWithoutDeterminingOffer(paywall:)`** — kaldırıldı. Artık tüm ürünler teklif bilgisini içerdiğinden, ayrı bir uygunluk kontrolü adımına gerek kalmadı.
@@ -67,6 +96,25 @@ Döndürülen türler `AdaptyPaywall` / `AdaptyUI.PaywallConfiguration` yerine `
 + try await Adapty.logShowFlow(flow)
 ```
 v3'te olduğu gibi, [Flow Builder](adapty-flow-builder) veya [Paywall Builder](adapty-paywall-builder) tarafından oluşturulan flow veya paywall'ları görüntülerken bu metodu çağırmanız gerekmez — Adapty bu görüntülemeleri otomatik olarak takip eder.
+## didFinishPurchase artık zorunlu \{#didfinishpurchase-is-now-required\}
+
+v3'te `didFinishPurchase` isteğe bağlıydı: uygulamazsanız, başarılı bir satın alma işleminin ardından paywall kendiliğinden kapanıyordu. `4.0.0-beta.2` sürümünden itibaren bu varsayılan otomatik kapanma davranışı kaldırıldı; böylece bir flow, başarılı bir satın alma işleminin ardından devam edebilir — örneğin flow'unuzun kalan ekranlarını göstermek için. Satın alma işleminin ardından ne olacağına artık siz karar veriyorsunuz: ekranı kapatabilir ya da flow'un devam etmesi için hiçbir şey yapmayabilirsiniz.
+- **UIKit**: `AdaptyFlowControllerDelegate` uyumluları artık `didFinishPurchase` metodunu uygulamak zorundadır — bu metodun artık varsayılan bir implementasyonu yoktur.
+- **SwiftUI**: `.flow(...)` ve `AdaptyFlowView(...)` içindeki `didFinishPurchase` closure'ı artık zorunludur (non-optional); bu durum `didFailPurchase` ve `didFinishRestore` ile tutarlı hale getirilmiştir.
+
+v3 davranışını korumak için ekranı kendiniz kapatın:
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishPurchase product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    if !purchaseResult.isPurchaseCancelled {
+        controller.dismiss(animated: true)
+    }
+}
+```
+
 ## UIKit \{#uikit\}
 ### AdaptyPaywallController → AdaptyFlowController
 
@@ -84,7 +132,7 @@ Kontrolcü türünü ve fabrika metodunu yeniden adlandırın:
 ```
 ### AdaptyPaywallControllerDelegate → AdaptyFlowControllerDelegate
 
-Protokolü yeniden adlandırın ve her method imzasını güncelleyin. `didSelectProduct`'ın artık kaldırılmış `AdaptyPaywallProductWithoutDeterminingOffer` yerine `AdaptyPaywallProduct` aldığına dikkat edin.
+Protokolü yeniden adlandırın ve her metot imzasını güncelleyin. `didSelectProduct` artık kaldırılan `AdaptyPaywallProductWithoutDeterminingOffer` yerine `AdaptyPaywallProduct` alıyor; `didFinishPurchase` ise [artık zorunlu olarak uygulanmalıdır](#didfinishpurchase-is-now-required) — varsayılan bir implementasyonu kalmadı.
 ```diff showLineNumbers
 - class YourClass: AdaptyPaywallControllerDelegate {
 + class YourClass: AdaptyFlowControllerDelegate {
@@ -161,11 +209,11 @@ Protokolü yeniden adlandırın ve her method imzasını güncelleyin. `didSelec
  }
 ```
 ## SwiftUI \{#swiftui\}
-### .paywall() değiştirici → .flow() \{#paywall-modifier--flow\}
+### .paywall() modifier → .flow() \{#paywall-modifier--flow\}
 
-`.paywall()` değiştiricisini `.flow()` olarak yeniden adlandırın ve konfigürasyon parametre adını güncelleyin:
+Modifier adını değiştirin, yapılandırma parametre adını güncelleyin ve [artık zorunlu olan](#didfinishpurchase-is-now-required) `didFinishPurchase` closure'ını ekleyin:
 ```diff showLineNumbers
- @State var flowPresented = false // adı istediğiniz gibi değiştirebilirsiniz
+ @State var flowPresented = false // rename freely — the variable name is your choice
 
  var body: some View {
      Text("Hello, AdaptyUI!")
@@ -174,9 +222,10 @@ Protokolü yeniden adlandırın ve her method imzasını güncelleyin. `didSelec
              isPresented: $flowPresented,
 -            paywallConfiguration: paywallConfiguration,
 +            flowConfiguration: flowConfiguration,
-             didFailPurchase: { product, error in /* hatayı işleyin */ },
-             didFinishRestore: { profile in /* access level'i kontrol edin ve kapatın */ },
-             didFailRestore: { error in /* hatayı işleyin */ },
++            didFinishPurchase: { product, purchaseResult in /* dismiss, or do nothing to let the flow continue */ },
+             didFailPurchase: { product, error in /* handle the error */ },
+             didFinishRestore: { profile in /* check access level and dismiss */ },
+             didFailRestore: { error in /* handle the error */ },
 -            didFailRendering: { error in flowPresented = false }
 +            didReceiveError: { error in flowPresented = false }
          )
@@ -185,7 +234,7 @@ Protokolü yeniden adlandırın ve her method imzasını güncelleyin. `didSelec
 Yeniden adlandırılan callback, `didFailRendering`'in tetiklendiği tüm render hatalarında olduğu gibi, flow script'inden gelen yeni çalışma zamanı hatalarında da (`AdaptyUIError` kodu `4105` — `.jsException` olan JavaScript istisnaları) tetiklenir. Mevcut handler gövdelerinde kod değişikliği gerekmez — yalnızca parametreyi yeniden adlandırın.
 ### AdaptyPaywallView → AdaptyFlowView
 
-Görünümü yeniden adlandırın, yapılandırma parametresini güncelleyin ve `didSelectProduct` closure'ını güncelleyin — artık kaldırılan `AdaptyPaywallProductWithoutDeterminingOffer` yerine `AdaptyPaywallProduct` alıyor:
+Görünümü yeniden adlandırın, yapılandırma parametresini güncelleyin, [artık zorunlu olan](#didfinishpurchase-is-now-required) `didFinishPurchase` closure'ını ekleyin ve varsa `didSelectProduct` closure'ını güncelleyin — artık kaldırılan `AdaptyPaywallProductWithoutDeterminingOffer` yerine `AdaptyPaywallProduct` alıyor:
 ```diff showLineNumbers
 - AdaptyPaywallView(
 -     paywallConfiguration: paywallConfiguration,
@@ -193,6 +242,7 @@ Görünümü yeniden adlandırın, yapılandırma parametresini güncelleyin ve 
 + AdaptyFlowView(
 +     flowConfiguration: flowConfiguration,
 +     didSelectProduct: { product: AdaptyPaywallProduct in /* handle */ },
++     didFinishPurchase: { product, purchaseResult in /* dismiss, or do nothing to let the flow continue */ },
      didFailPurchase: { product, error in /* handle the error */ },
      didFinishRestore: { profile in /* check access level and dismiss */ },
      didFailRestore: { error in /* handle the error */ },

@@ -4,7 +4,10 @@ description: "Легко включите режим для детей, чтоб
 metadataTitle: "Режим для детей в React Native SDK | Документация Adapty"
 ---
 
-Если ваше React Native приложение предназначено для детей, вы обязаны соблюдать политики [Apple](https://developer.apple.com/kids/) и [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Если вы используете Adapty SDK, несколько простых шагов помогут настроить его в соответствии с этими политиками и пройти проверку в сторах.
+Если ваше приложение на React Native предназначено для детей, вы должны соблюдать политики [Apple](https://developer.apple.com/kids/) и [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Если вы используете Adapty SDK, несколько простых шагов помогут настроить его в соответствии с этими политиками и пройти проверку в сторах.
+:::important
+На iOS Kids Mode включается через трейт Swift Package `KidsMode`, который исключает из сборки весь код, связанный с IDFA, AdSupport и AppTrackingTransparency. Для этого требуется SDK v4 (который устанавливает нативный iOS SDK через Swift Package Manager) и **Xcode 26** или новее. См. раздел [Изменения в iOS Podfile](#updates-in-your-ios-podfile) ниже.
+:::
 ## Что нужно настроить? \{#whats-required\}
 
 Вам нужно настроить SDK, чтобы отключить сбор следующих данных:
@@ -38,6 +41,37 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
   },
 });
 ```
+### Обновления в iOS Podfile \{#updates-in-your-ios-podfile\}
+
+Для категории App Store Kids (или соответствия требованиям COPPA) нативный iOS SDK должен быть собран с трейтом Swift-пакета `KidsMode`, который исключает из компиляции весь код, связанный с IDFA, AdSupport и AppTrackingTransparency. React Native устанавливает нативный SDK через Swift Package Manager, который не может передавать трейты пакетов, поэтому SDK предоставляет вспомогательный инструмент для Podfile, применяющий трейт автоматически. Для этого шага требуется **Xcode 26** или новее.
+
+В файле `ios/Podfile` подключите вспомогательный инструмент и вызовите его **после** `react_native_post_install`:
+```ruby showLineNumbers title="ios/Podfile"
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native-adapty/ios/adapty_kids_mode.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+# ...
+
+post_install do |installer|
+  react_native_post_install(
+    installer,
+    config[:reactNativePath],
+    :mac_catalyst_enabled => false
+  )
+
+  adapty_enable_kids_mode(installer)
+end
+```
+
+Затем выполните `pod install`:
+
+```sh showLineNumbers title="Shell"
+cd ios && pod install
+```
+Чтобы убедиться, что режим Kids Mode активен, проверьте, что в логе `adapty.activate(...)` указано `kids_mode_enabled: true`. Оставьте вызов хелпера в `post_install` на постоянной основе — React Native пересоздаёт ссылки на Swift-пакеты при каждом запуске `pod install`, а хелпер заново применяет нужный атрибут каждый раз.
 ### Обновления в вашем Android-манифесте \{#updates-in-your-android-manifest\}
 
 :::note
