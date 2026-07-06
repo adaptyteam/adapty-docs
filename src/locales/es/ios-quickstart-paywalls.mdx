@@ -71,14 +71,18 @@ Ahora que tienes la configuración del flow, basta con añadir unas pocas línea
 
 <TabItem value="swiftui" label="SwiftUI" default>
 
-En SwiftUI, al mostrar el flow, también necesitas gestionar los eventos. `didFailPurchase`, `didFinishRestore`, `didFailRestore` y `didReceiveError` son obligatorios. Durante las pruebas, puedes copiar el código del fragmento de abajo para registrar estos eventos.
+En SwiftUI, al mostrar el flow, también necesitas gestionar los eventos. `didFinishPurchase`, `didFailPurchase`, `didFinishRestore`, `didFailRestore` y `didReceiveError` son obligatorios. Durante las pruebas, puedes copiar el código del fragmento de abajo para registrar estos eventos.
 :::tip
-Manejar `didFinishPurchase` no es obligatorio, pero resulta útil cuando quieres ejecutar acciones tras una compra exitosa. Si no implementas ese callback, el flow se cerrará automáticamente.
+El flow no se cierra automáticamente tras una compra exitosa. En `didFinishPurchase`, establece tu binding de presentación en `false` para cerrarlo, o no hagas nada para que el flow continúe a sus siguientes pantallas.
 :::
 ```swift
 .flow(
     isPresented: $flowPresented,
     flowConfiguration: flowConfiguration,
+    didFinishPurchase: { product, purchaseResult in
+        print("Purchase finished successfully")
+        flowPresented = false // or do nothing to let the flow continue
+    },
     didFailPurchase: { product, error in
         print("Purchase failed: \(error)")
     },
@@ -95,8 +99,8 @@ Manejar `didFinishPurchase` no es obligatorio, pero resulta útil cuando quieres
 )
 ```
 </TabItem>
-
 <TabItem value="uikit" label="UIKit" default>
+
 ```swift
 
 func presentFlow(with config: AdaptyUI.FlowConfiguration) {
@@ -107,10 +111,17 @@ func presentFlow(with config: AdaptyUI.FlowConfiguration) {
     present(flowController, animated: true)
 }
 ```
-
-Implementa `AdaptyFlowControllerDelegate` para gestionar eventos. Como mínimo, implementa los manejadores de error obligatorios (los tres métodos que no tienen implementación por defecto):
+Implementa `AdaptyFlowControllerDelegate` para gestionar eventos. Como mínimo, implementa los cuatro métodos que no tienen implementación por defecto. Ten en cuenta que el controlador no se cierra automáticamente tras una compra exitosa — ciérralo en `didFinishPurchase`, o no hagas nada para dejar que el flow continúe a sus siguientes pantallas:
 ```swift
 extension YourViewController: AdaptyFlowControllerDelegate {
+    func flowController(_ controller: AdaptyFlowController,
+                        didFinishPurchase product: AdaptyPaywallProduct,
+                        purchaseResult: AdaptyPurchaseResult) {
+        if !purchaseResult.isPurchaseCancelled {
+            controller.dismiss(animated: true) // or do nothing to let the flow continue
+        }
+    }
+
     func flowController(_ controller: AdaptyFlowController,
                         didFailPurchase product: AdaptyPaywallProduct,
                         error: AdaptyError) {
@@ -159,6 +170,7 @@ Lee nuestras guías sobre cómo gestionar [acciones](handle-paywall-actions) y [
                 break
         }
     },
+    didFinishPurchase: { product, purchaseResult in flowPresented = false },
     didFailPurchase: { product, error in /* handle the error */ },
     didFinishRestore: { profile in /* check access level and dismiss */ },
     didFailRestore: { error in /* handle the error */ },
@@ -229,6 +241,10 @@ struct ContentView: View {
                 default:
                     break
                 }
+            },
+            didFinishPurchase: { product, purchaseResult in
+                print("Purchase finished successfully")
+                flowPresented = false // or do nothing to let the flow continue
             },
             didFailPurchase: { product, error in
                 print("Purchase failed: \(error)")
@@ -319,6 +335,14 @@ class ViewController: UIViewController {
 }
 
 extension ViewController: AdaptyFlowControllerDelegate {
+    func flowController(_ controller: AdaptyFlowController,
+                        didFinishPurchase product: AdaptyPaywallProduct,
+                        purchaseResult: AdaptyPurchaseResult) {
+        if !purchaseResult.isPurchaseCancelled {
+            controller.dismiss(animated: true) // or do nothing to let the flow continue
+        }
+    }
+
     func flowController(_ controller: AdaptyFlowController,
                         didFailPurchase product: AdaptyPaywallProduct,
                         error: AdaptyError) {

@@ -58,22 +58,26 @@ func loadFlow() async {
     flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow)
 }
 ```
-## 2. Flow'u görüntüleme \{#display-the-flow\}
+## 2. Flow'u göster \{#display-the-flow\}
 
-Artık flow konfigürasyonuna sahip olduğunuza göre, flow'unuzu görüntülemek için birkaç satır kod eklemeniz yeterli.
+Artık flow konfigürasyonuna sahipsiniz; flow'u göstermek için birkaç satır kod eklemeniz yeterli.
 
 <Tabs groupId="current-os" queryString>
 
 <TabItem value="swiftui" label="SwiftUI" default>
 
-SwiftUI'da flow'u görüntülerken aynı zamanda olayları da yönetmeniz gerekir. `didFailPurchase`, `didFinishRestore`, `didFailRestore` ve `didReceiveError` zorunludur. Test sırasında bu olayları kayıt altına almak için aşağıdaki kod parçacığını olduğu gibi kopyalayabilirsiniz.
+SwiftUI'da flow'u gösterirken aynı zamanda olayları da ele almanız gerekir. `didFinishPurchase`, `didFailPurchase`, `didFinishRestore`, `didFailRestore` ve `didReceiveError` zorunludur. Test sırasında bu olayları kaydetmek için aşağıdaki kod parçacığını doğrudan kopyalayabilirsiniz.
 :::tip
-`didFinishPurchase` callback'ini işlemek zorunlu değildir, ancak başarılı bir satın alma işleminden sonra belirli eylemleri gerçekleştirmek istediğinizde kullanışlıdır. Bu callback'i uygulamazsanız flow otomatik olarak kapanır.
+Flow, başarılı bir satın alma işleminin ardından otomatik olarak kapanmaz. `didFinishPurchase` içinde, flow'u kapatmak için sunum bağlantınızı `false` olarak ayarlayın ya da flow'un sonraki ekranlarına devam etmesi için hiçbir şey yapmayın.
 :::
 ```swift
 .flow(
     isPresented: $flowPresented,
     flowConfiguration: flowConfiguration,
+    didFinishPurchase: { product, purchaseResult in
+        print("Purchase finished successfully")
+        flowPresented = false // or do nothing to let the flow continue
+    },
     didFailPurchase: { product, error in
         print("Purchase failed: \(error)")
     },
@@ -90,8 +94,8 @@ SwiftUI'da flow'u görüntülerken aynı zamanda olayları da yönetmeniz gereki
 )
 ```
 </TabItem>
-
 <TabItem value="uikit" label="UIKit" default>
+
 ```swift
 
 func presentFlow(with config: AdaptyUI.FlowConfiguration) {
@@ -102,10 +106,17 @@ func presentFlow(with config: AdaptyUI.FlowConfiguration) {
     present(flowController, animated: true)
 }
 ```
-
-`AdaptyFlowControllerDelegate` implementasyonunu yaparak olayları yönetin. En azından zorunlu hata yöneticilerini implemente edin (varsayılan implementasyonu bulunmayan üç metot):
+`AdaptyFlowControllerDelegate`'i olayları ele almak için uygulayın. En azından varsayılan uygulaması olmayan dört metodu implemente edin. Dikkat: controller başarılı bir satın almanın ardından kendini kapatmaz — `didFinishPurchase` içinde kapatın ya da flow'un sonraki ekranlarına devam etmesine izin vermek için hiçbir şey yapmayın:
 ```swift
 extension YourViewController: AdaptyFlowControllerDelegate {
+    func flowController(_ controller: AdaptyFlowController,
+                        didFinishPurchase product: AdaptyPaywallProduct,
+                        purchaseResult: AdaptyPurchaseResult) {
+        if !purchaseResult.isPurchaseCancelled {
+            controller.dismiss(animated: true) // or do nothing to let the flow continue
+        }
+    }
+
     func flowController(_ controller: AdaptyFlowController,
                         didFailPurchase product: AdaptyPaywallProduct,
                         error: AdaptyError) {
@@ -149,14 +160,15 @@ Buton [aksiyonlarını](handle-paywall-actions) ve [olayları](ios-handling-even
     didPerformAction: { action in
         switch action {
             case .close:
-                flowPresented = false // kullanıcı kapat'a bastığında flow'u kapat
+                flowPresented = false // dismiss the flow when the user taps close
             default:
                 break
         }
     },
-    didFailPurchase: { product, error in /* hatayı işle */ },
-    didFinishRestore: { profile in /* access level'ı kontrol et ve kapat */ },
-    didFailRestore: { error in /* hatayı işle */ },
+    didFinishPurchase: { product, purchaseResult in flowPresented = false },
+    didFailPurchase: { product, error in /* handle the error */ },
+    didFinishRestore: { profile in /* check access level and dismiss */ },
+    didFailRestore: { error in /* handle the error */ },
     didReceiveError: { error in flowPresented = false }
 )
 ```
@@ -224,6 +236,10 @@ struct ContentView: View {
                 default:
                     break
                 }
+            },
+            didFinishPurchase: { product, purchaseResult in
+                print("Purchase finished successfully")
+                flowPresented = false // or do nothing to let the flow continue
             },
             didFailPurchase: { product, error in
                 print("Purchase failed: \(error)")
@@ -316,6 +332,14 @@ class ViewController: UIViewController {
 }
 
 extension ViewController: AdaptyFlowControllerDelegate {
+    func flowController(_ controller: AdaptyFlowController,
+                        didFinishPurchase product: AdaptyPaywallProduct,
+                        purchaseResult: AdaptyPurchaseResult) {
+        if !purchaseResult.isPurchaseCancelled {
+            controller.dismiss(animated: true) // or do nothing to let the flow continue
+        }
+    }
+
     func flowController(_ controller: AdaptyFlowController,
                         didFailPurchase product: AdaptyPaywallProduct,
                         error: AdaptyError) {

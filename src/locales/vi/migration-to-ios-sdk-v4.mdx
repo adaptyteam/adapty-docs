@@ -1,13 +1,11 @@
 ---
 title: "Migrate Adapty iOS SDK sang v4.0"
-description: "Migrate sang Adapty iOS SDK v4.0 (beta) bằng cách thay thế các paywall API bằng flow API, tương thích với cả Flow Builder và Paywall Builder."
-metadataTitle: "Migrate lên Adapty iOS SDK v4.0 (beta) | Tài liệu Adapty"
+description: "Migrate sang Adapty iOS SDK v4.0 (beta) bằng cách thay thế các API paywall bằng API flow, tương thích với cả Flow Builder và Paywall Builder."
+metadataTitle: "Migrate sang Adapty iOS SDK v4.0 (beta) | Tài liệu Adapty"
 ---
 
-Adapty iOS SDK 4.0 (beta) giới thiệu flow và đổi tên các paywall API cho phù hợp. Các API mới hoạt động với cả Flow Builder mới và Paywall Builder hiện có — không cần thay đổi cấu hình trên Adapty Dashboard.
-
+Adapty iOS SDK 4.0 (beta) giới thiệu flows và đổi tên các API paywall tương ứng. Các API mới hoạt động với cả Flow Builder mới và Paywall Builder hiện có — không cần thay đổi cấu hình nào trên Adapty Dashboard.
 ## Tham chiếu nhanh \{#quick-reference\}
-
 | v3 | v4 |
 |---|---|
 | `Adapty.getPaywall(placementId:locale:)` | `Adapty.getFlow(placementId:)` |
@@ -20,38 +18,60 @@ Adapty iOS SDK 4.0 (beta) giới thiệu flow và đổi tên các paywall API c
 | `.paywall()` (SwiftUI modifier) | `.flow()` |
 | `AdaptyPaywallView` | `AdaptyFlowView` |
 | `didFailRenderingWith:` / `didFailRendering:` | `didReceiveError:` |
+| `didFinishPurchase` (tùy chọn, tự động đóng khi thành công) | `didFinishPurchase` (bắt buộc, không tự động đóng) |
+| Sản phẩm package `Adapty_KidsMode` / `AdaptyUI_KidsMode` | Package trait `KidsMode` |
 | `Adapty.updateAttribution(_:source:)` (`source: String`) | `Adapty.updateAttribution(_:source:)` (`source: AdaptyAttributionSource`) |
 | `Adapty.setIntegrationIdentifier(key:value:)` | `Adapty.setIntegrationIdentifier(_:)` (`AdaptyIntegrationIdentifier`) |
-
 ## Phiên bản iOS tối thiểu \{#minimum-ios-version\}
 
-Adapty iOS SDK 4.0 nâng deployment target tối thiểu từ iOS 13.0 lên **iOS 15.0**. Hãy đặt iOS Deployment Target của dự án lên 15.0 hoặc cao hơn trước khi nâng cấp.
-
+Adapty iOS SDK 4.0 nâng yêu cầu deployment target tối thiểu từ iOS 13.0 lên **iOS 15.0**. Hãy đặt iOS Deployment Target của dự án lên 15.0 hoặc cao hơn trước khi nâng cấp.
 ## Cài đặt: CocoaPods không còn được hỗ trợ \{#installation-cocoapods-no-longer-supported\}
 
-Adapty iOS SDK 4.0 bỏ hỗ trợ CocoaPods. Hãy cài đặt SDK bằng [Swift Package Manager](sdk-installation-ios#install-adapty-sdk).
+Adapty iOS SDK 4.0 không còn hỗ trợ CocoaPods. Hãy cài đặt SDK bằng [Swift Package Manager](sdk-installation-ios#install-adapty-sdk).
 
-Nếu dự án của bạn vẫn đang dùng CocoaPods, hãy xóa các pod `Adapty` và `AdaptyUI` khỏi `Podfile`, chạy `pod install` để dọn sạch, rồi thêm package trong Xcode qua **File → Add Package Dependency** với URL `https://github.com/adaptyteam/AdaptySDK-iOS.git`.
+Nếu dự án của bạn vẫn đang dùng CocoaPods, hãy xóa các pod `Adapty` và `AdaptyUI` khỏi `Podfile`, chạy `pod install` để dọn dẹp, sau đó thêm package trong Xcode qua **File → Add Package Dependency** với đường dẫn `https://github.com/adaptyteam/AdaptySDK-iOS.git`.
+## Chế độ Kids Mode: sản phẩm riêng biệt được thay thế bằng package trait \{#kids-mode-separate-products-replaced-by-a-package-trait\}
 
+Trong v3, bạn bật [Kids Mode](kids-mode) bằng cách chọn các sản phẩm package riêng biệt **Adapty_KidsMode** và **AdaptyUI_KidsMode** rồi đổi tên các import. Kể từ `4.0.0-beta.2`, các sản phẩm này đã bị loại bỏ. Kids Mode hiện là một Swift package trait có tên `KidsMode` trên package Adapty thông thường — khi bật lên, IDFA và AdSupport sẽ bị loại ra khỏi toàn bộ SDK trong quá trình biên dịch.
+
+Để migrate:
+1. Trong cửa sổ **Choose Package Products**, chọn sản phẩm **Adapty** và **AdaptyUI** thông thường thay vì **Adapty_KidsMode** và **AdaptyUI_KidsMode**.
+
+2. Bật trait `KidsMode`. Trong Xcode 26.4 trở lên, bật trait này cho dependency AdaptySDK-iOS trong phần **Package Dependencies** của dự án. Nếu bạn thêm Adapty dưới dạng dependency trong `Package.swift` (yêu cầu `swift-tools-version` 6.1 trở lên), hãy bật tại đó:
+```swift showLineNumbers title="Package.swift"
+   .package(
+       url: "https://github.com/adaptyteam/AdaptySDK-iOS.git",
+       exact: "4.0.0-beta.2",
+       traits: ["KidsMode"]
+   )
+   ```
+
+3. Đổi lại các import về module thông thường:
+
+   ```diff showLineNumbers
+   - import Adapty_KidsMode
+   - import AdaptyUI_KidsMode
+   + import Adapty
+   + import AdaptyUI
+   ```
+:::note
+Các phiên bản Xcode trước 26.4 không thể bật trait cho dự án Xcode từ giao diện. Trong trường hợp đó, hãy thêm một Swift package cục bộ nhỏ phụ thuộc vào Adapty với trait `KidsMode` được bật, rồi để app target của bạn phụ thuộc vào package đó.
+:::
 ## Các API đã bị xóa \{#removed-apis\}
 
-- **`Adapty.getPaywallProductsWithoutDeterminingOffer(paywall:)`** — đã xóa. Tất cả sản phẩm giờ đây đã bao gồm thông tin ưu đãi, nên bước kiểm tra tính đủ điều kiện riêng biệt không còn cần thiết nữa.
-- **`AdaptyPaywallProductWithoutDeterminingOffer`** — đã xóa. Các callback trước đây nhận kiểu này (chẳng hạn `didSelectProduct`) giờ nhận `AdaptyPaywallProduct`.
+- **`Adapty.getPaywallProductsWithoutDeterminingOffer(paywall:)`** — đã bị xóa. Tất cả sản phẩm hiện đã bao gồm thông tin ưu đãi, vì vậy không cần thêm bước kiểm tra tính đủ điều kiện riêng nữa.
+- **`AdaptyPaywallProductWithoutDeterminingOffer`** — đã bị xóa. Các callback trước đây truyền kiểu này (chẳng hạn như `didSelectProduct`) nay sẽ truyền `AdaptyPaywallProduct`.
+## Tính năng in-app purchase được quảng bá trên App Store tạm thời bị gỡ bỏ \{#app-store-promoted-in-app-purchases-temporarily-removed\}
 
-## Tạm thời xóa tính năng mua in-app purchase được quảng bá trên App Store \{#app-store-promoted-in-app-purchases-temporarily-removed\}
-
-Trong quá trình migrate sang StoreKit 2, Adapty iOS SDK 4.0 xóa hỗ trợ cho in-app purchase được quảng bá trên App Store. Phương thức delegate `shouldAddStorePayment(for:)` và kiểu `AdaptyDeferredProduct` mà nó nhận đều không khả dụng trong phiên bản 4.0.
+Trong quá trình migrate sang StoreKit 2, Adapty iOS SDK 4.0 loại bỏ hỗ trợ cho in-app purchase được quảng bá trên App Store. Phương thức delegate `shouldAddStorePayment(for:)` và kiểu `AdaptyDeferredProduct` mà nó nhận đều không khả dụng trong phiên bản 4.0.
 
 :::warning
-Việc xóa này chỉ là tạm thời — hỗ trợ in-app purchase được quảng bá sẽ quay trở lại trong một bản phát hành 4.x tiếp theo. Nếu ứng dụng của bạn phụ thuộc vào in-app purchase được quảng bá, hãy tiếp tục dùng iOS SDK 3.x cho đến khi tính năng này được khôi phục.
+Việc gỡ bỏ này chỉ là tạm thời — hỗ trợ in-app purchase được quảng bá sẽ trở lại trong một bản phát hành 4.x sau này. Nếu ứng dụng của bạn phụ thuộc vào tính năng này, hãy tiếp tục sử dụng iOS SDK 3.x cho đến khi hỗ trợ được khôi phục.
 :::
+## Lấy paywalls \{#fetching-paywalls\}
+### getPaywall + getPaywallConfiguration → getFlow + getFlowConfiguration
 
-## Lấy paywall \{#fetching-paywalls\}
-
-### getPaywall + getPaywallConfiguration → getFlow + getFlowConfiguration \{#getpaywall--getpaywallconfiguration--getflow--getflowconfiguration\}
-
-Các kiểu trả về thay đổi từ `AdaptyPaywall` / `AdaptyUI.PaywallConfiguration` sang `AdaptyFlow` / `AdaptyUI.FlowConfiguration`. Tham số `locale` được chuyển ra khỏi lệnh gọi fetch và sang `getFlowConfiguration`:
-
+Các kiểu trả về thay đổi từ `AdaptyPaywall` / `AdaptyUI.PaywallConfiguration` sang `AdaptyFlow` / `AdaptyUI.FlowConfiguration`. Tham số `locale` được chuyển ra khỏi lệnh gọi fetch và đưa vào `getFlowConfiguration`:
 ```diff showLineNumbers
 - let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en")
 - let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
@@ -59,31 +79,45 @@ Các kiểu trả về thay đổi từ `AdaptyPaywall` / `AdaptyUI.PaywallConfi
 + let flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow, locale: "en")
 ```
 
-### getPaywallProducts(paywall:) → getPaywallProducts(flow:) \{#getpaywallproductspaywall--getpaywallproductsflow\}
+### getPaywallProducts(paywall:) → getPaywallProducts(flow:)
 
-`getPaywallProducts` giờ nhận `AdaptyFlow` được trả về bởi `Adapty.getFlow`:
+`getPaywallProducts` hiện nhận một `AdaptyFlow` được trả về bởi `Adapty.getFlow`:
 
 ```diff showLineNumbers
 - let products = try await Adapty.getPaywallProducts(paywall: paywall)
 + let products = try await Adapty.getPaywallProducts(flow: flow)
 ```
-
 ## Theo dõi lượt xem paywall \{#tracking-paywall-views\}
+### logShowPaywall(_:) → logShowFlow(_:)
 
-### logShowPaywall(_:) → logShowFlow(_:) \{#logshowpaywall_--logshowflow_\}
-
-`logShowPaywall` được đổi tên thành `logShowFlow` và giờ nhận `AdaptyFlow` thay vì `AdaptyPaywall`. Sự kiện vẫn được ghi lại theo cùng một biến thể, vì vậy các chỉ số funnel và A/B test hiện có vẫn hoạt động bình thường mà không cần thay đổi trên dashboard.
+`logShowPaywall` được đổi tên thành `logShowFlow` và nhận vào một `AdaptyFlow` thay vì `AdaptyPaywall`. Sự kiện vẫn được ghi lại theo cùng một biến thể, do đó các chỉ số funnel và A/B test hiện có vẫn hoạt động bình thường mà không cần thay đổi gì trên dashboard.
 
 ```diff showLineNumbers
 - try await Adapty.logShowPaywall(paywall)
 + try await Adapty.logShowFlow(flow)
 ```
+Như trong v3, bạn không cần gọi phương thức này khi hiển thị các flow hoặc paywall được render bởi [Flow Builder](adapty-flow-builder) hoặc [Paywall Builder](adapty-paywall-builder) — Adapty tự động theo dõi các lượt xem đó.
+## didFinishPurchase hiện là bắt buộc \{#didfinishpurchase-is-now-required\}
 
-Như trong v3, bạn không cần gọi phương thức này khi hiển thị flow hoặc paywall được render bởi [Flow Builder](adapty-flow-builder) hoặc [Paywall Builder](adapty-paywall-builder) — Adapty tự động theo dõi các lượt xem đó.
+Trong v3, `didFinishPurchase` là tùy chọn: nếu bạn không implement nó, paywall sẽ tự đóng sau khi mua hàng thành công. Bắt đầu từ `4.0.0-beta.2`, tính năng tự động đóng mặc định này đã bị loại bỏ để flow có thể tiếp tục sau khi mua hàng thành công — ví dụ: để hiển thị các màn hình còn lại trong flow của bạn. Bây giờ bạn tự quyết định điều gì xảy ra sau khi mua: đóng màn hình, hoặc không làm gì để flow tiếp tục.
+- **UIKit**: Những đối tượng tuân theo `AdaptyFlowControllerDelegate` phải triển khai `didFinishPurchase` — phương thức này không còn có phần triển khai mặc định nữa.
+- **SwiftUI**: closure `didFinishPurchase` của `.flow(...)` và `AdaptyFlowView(...)` giờ là bắt buộc (non-optional), giống với `didFailPurchase` và `didFinishRestore`.
+
+Để giữ nguyên hành vi của v3, hãy tự dismiss màn hình:
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishPurchase product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    if !purchaseResult.isPurchaseCancelled {
+        controller.dismiss(animated: true)
+    }
+}
+```
 
 ## UIKit \{#uikit\}
-
-### AdaptyPaywallController → AdaptyFlowController \{#adaptypaywall controller--adaptyflo wcontroller\}
+### AdaptyPaywallController → AdaptyFlowController
 
 Đổi tên kiểu controller và factory method:
 
@@ -97,11 +131,9 @@ Như trong v3, bạn không cần gọi phương thức này khi hiển thị fl
 +     delegate: self
 + )
 ```
+### AdaptyPaywallControllerDelegate → AdaptyFlowControllerDelegate
 
-### AdaptyPaywallControllerDelegate → AdaptyFlowControllerDelegate \{#adaptypaywall controllerdelegate--adaptyflo wcontrollerdelegate\}
-
-Đổi tên protocol và cập nhật mọi chữ ký phương thức. Lưu ý rằng `didSelectProduct` giờ nhận `AdaptyPaywallProduct` thay vì `AdaptyPaywallProductWithoutDeterminingOffer` đã bị xóa.
-
+Đổi tên protocol và cập nhật tất cả các method signature. Lưu ý rằng `didSelectProduct` hiện nhận `AdaptyPaywallProduct` thay vì `AdaptyPaywallProductWithoutDeterminingOffer` đã bị xóa, và `didFinishPurchase` [phải được implement](#didfinishpurchase-is-now-required) — nó không còn có default implementation nữa.
 ```diff showLineNumbers
 - class YourClass: AdaptyPaywallControllerDelegate {
 + class YourClass: AdaptyFlowControllerDelegate {
@@ -179,13 +211,11 @@ Như trong v3, bạn không cần gọi phương thức này khi hiển thị fl
 ```
 
 ## SwiftUI \{#swiftui\}
+### Modifier `.paywall()` → `.flow()` \{#paywall-modifier--flow\}
 
-### Modifier .paywall() → .flow() \{#paywall-modifier--flow\}
-
-Đổi tên modifier và cập nhật tên tham số cấu hình:
-
+Đổi tên modifier, cập nhật tên tham số cấu hình, và thêm closure `didFinishPurchase` [bắt buộc](#didfinishpurchase-is-now-required):
 ```diff showLineNumbers
- @State var flowPresented = false // đổi tên tùy ý — tên biến là do bạn chọn
+ @State var flowPresented = false // rename freely — the variable name is your choice
 
  var body: some View {
      Text("Hello, AdaptyUI!")
@@ -194,6 +224,7 @@ Như trong v3, bạn không cần gọi phương thức này khi hiển thị fl
              isPresented: $flowPresented,
 -            paywallConfiguration: paywallConfiguration,
 +            flowConfiguration: flowConfiguration,
++            didFinishPurchase: { product, purchaseResult in /* dismiss, or do nothing to let the flow continue */ },
              didFailPurchase: { product, error in /* handle the error */ },
              didFinishRestore: { profile in /* check access level and dismiss */ },
              didFailRestore: { error in /* handle the error */ },
@@ -203,12 +234,10 @@ Như trong v3, bạn không cần gọi phương thức này khi hiển thị fl
  }
 ```
 
-Callback được đổi tên này kích hoạt cho các lỗi render giống như `didFailRendering` trước đây, cộng thêm các lỗi runtime mới từ flow script (JavaScript exception trên `AdaptyUIError` code `4105` — `.jsException`). Phần thân handler hiện có không cần thay đổi code — chỉ cần đổi tên tham số.
+Callback được đổi tên này kích hoạt cho những lỗi render giống như `didFailRendering` trước đây, cộng thêm các lỗi runtime mới từ flow script (JavaScript exception với mã `AdaptyUIError` là `4105` — `.jsException`). Phần thân handler hiện có không cần thay đổi code — chỉ cần đổi tên tham số.
+### AdaptyPaywallView → AdaptyFlowView
 
-### AdaptyPaywallView → AdaptyFlowView \{#adaptypaywall view--adaptyflo wview\}
-
-Đổi tên view, cập nhật tham số cấu hình, và cập nhật bất kỳ closure `didSelectProduct` nào — giờ nó nhận `AdaptyPaywallProduct` thay vì `AdaptyPaywallProductWithoutDeterminingOffer` đã bị xóa:
-
+Đổi tên view, cập nhật tham số cấu hình, thêm closure `didFinishPurchase` [bắt buộc](#didfinishpurchase-is-now-required), và cập nhật closure `didSelectProduct` nếu có — giờ đây nó nhận `AdaptyPaywallProduct` thay cho `AdaptyPaywallProductWithoutDeterminingOffer` đã bị xóa:
 ```diff showLineNumbers
 - AdaptyPaywallView(
 -     paywallConfiguration: paywallConfiguration,
@@ -216,6 +245,7 @@ Callback được đổi tên này kích hoạt cho các lỗi render giống nh
 + AdaptyFlowView(
 +     flowConfiguration: flowConfiguration,
 +     didSelectProduct: { product: AdaptyPaywallProduct in /* handle */ },
++     didFinishPurchase: { product, purchaseResult in /* dismiss, or do nothing to let the flow continue */ },
      didFailPurchase: { product, error in /* handle the error */ },
      didFinishRestore: { profile in /* check access level and dismiss */ },
      didFailRestore: { error in /* handle the error */ },
@@ -224,15 +254,13 @@ Callback được đổi tên này kích hoạt cho các lỗi render giống nh
  )
 ```
 
-## Asset tùy chỉnh của AdaptyUI \{#adaptyui-custom-assets\}
+## Tài nguyên tùy chỉnh của AdaptyUI \{#adaptyui-custom-assets\}
+### AdaptyUICustomVideoAsset
 
-### AdaptyUICustomVideoAsset \{#adaptyuicustomvideoasset\}
+Có hai thay đổi ảnh hưởng đến tất cả các call site hiện có:
 
-Có hai thay đổi ảnh hưởng đến mọi call site hiện có:
-
-- `.player` giờ nhận `AVPlayer` thay vì `AVQueuePlayer`.
-- Mỗi case được thêm tham số cuối `resolution: CGSize?`. Truyền `nil` để giữ nguyên hành vi hiện tại, hoặc truyền kích thước pixel thực tế để player có thể dành trước không gian layout (tỷ lệ khung hình = `width / height`) trước khi video tải xong.
-
+- `.player` hiện nhận `AVPlayer` thay vì `AVQueuePlayer`.
+- Mỗi case đều có thêm tham số `resolution: CGSize?` ở cuối. Truyền `nil` để giữ nguyên hành vi hiện tại, hoặc truyền kích thước pixel thực tế để player có thể dành chỗ bố cục (tỉ lệ khung hình = `width / height`) trước khi video tải xong.
 ```diff showLineNumbers
 - case file(url: URL, preview: AdaptyUICustomImageAsset?)
 - case remote(url: URL, preview: AdaptyUICustomImageAsset?)
@@ -242,22 +270,19 @@ Có hai thay đổi ảnh hưởng đến mọi call site hiện có:
 + case player(item: AVPlayerItem, player: AVPlayer, preview: AdaptyUICustomImageAsset?, resolution: CGSize?)
 ```
 
-## Attribution và integration identifier \{#attribution-and-integration-identifiers\}
+## Định danh attribution và tích hợp \{#attribution-and-integration-identifiers\}
+### updateAttribution(_:source:)
 
-### updateAttribution(_:source:) \{#updateattribution_source\}
-
-Tham số `source` thay đổi từ `String` sang kiểu `AdaptyAttributionSource` mới, và `AdaptyProfile.AttributionSource` trước đây được lồng bên trong giờ được đổi tên thành `AdaptyAttributionSource` ở cấp độ top-level. Sử dụng một trong các source được định nghĩa sẵn, hoặc truyền string literal cho bất kỳ source nào khác — `AdaptyAttributionSource` tuân thủ `ExpressibleByStringLiteral`, nên các lệnh gọi dùng string literal hiện có vẫn biên dịch được.
-
+Tham số `source` thay đổi từ kiểu `String` sang kiểu `AdaptyAttributionSource` mới, và `AdaptyProfile.AttributionSource` trước đây được đặt lồng nhau nay được đổi tên thành `AdaptyAttributionSource` ở cấp độ top-level. Sử dụng một trong các source được định nghĩa sẵn, hoặc truyền một string literal cho bất kỳ source nào khác — `AdaptyAttributionSource` tuân theo `ExpressibleByStringLiteral`, vì vậy các lệnh gọi dùng string literal hiện có vẫn tiếp tục biên dịch được.
 ```diff showLineNumbers
 - try await Adapty.updateAttribution(attribution, source: "adjust")
 + try await Adapty.updateAttribution(attribution, source: .adjust)
 ```
 
-Các source được định nghĩa sẵn: `.appleAds`, `.adjust`, `.appsflyer`, `.branch`, `.tenjin`. Nếu bạn lưu source trong biến `String`, hãy wrap nó lại: `AdaptyAttributionSource(rawValue: yourSource)`.
+Nguồn được định sẵn: `.appleAds`, `.adjust`, `.appsflyer`, `.branch`, `.tenjin`. Nếu bạn lưu nguồn trong biến `String`, hãy bọc nó lại: `AdaptyAttributionSource(rawValue: yourSource)`.
+### setIntegrationIdentifier(_:)
 
-### setIntegrationIdentifier(_:) \{#setintegrationidentifier_\}
-
-`setIntegrationIdentifier(key:value:)` được thay thế bằng một phương thức variadic nhận một hoặc nhiều giá trị `AdaptyIntegrationIdentifier`. Sử dụng các factory method được định nghĩa sẵn thay vì raw string key:
+`setIntegrationIdentifier(key:value:)` được thay thế bằng một phương thức variadic nhận một hoặc nhiều giá trị `AdaptyIntegrationIdentifier`. Hãy dùng các factory method có sẵn thay vì chuỗi key thô:
 
 ```diff showLineNumbers
 - try await Adapty.setIntegrationIdentifier(key: "appsflyer_id", value: uid)
@@ -272,10 +297,8 @@ try await Adapty.setIntegrationIdentifier(
     .adjustDeviceId(adid)
 )
 ```
-
-Thay thế mỗi chuỗi key cũ bằng factory method tương ứng:
-
-| Key v3 | Factory v4 |
+Thay thế từng chuỗi key cũ bằng factory method tương ứng:
+| v3 key | v4 factory |
 |---|---|
 | `"adjust_device_id"` | `.adjustDeviceId(_:)` |
 | `"airbridge_device_id"` | `.airbridgeDeviceId(_:)` |
