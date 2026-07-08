@@ -212,7 +212,17 @@ const T: Record<string, { label: string; items: Item[]; note: string; noteLinkTe
 
 Locale detection reuses `SUPPORTED_LOCALES` (1a), like SkillPromo. Keep the `{method}` placeholder intact — the component does `t.label.replace('{method}', method)` and then splits the result on the method name to wrap it in `<code>`, so the literal method name must survive translation.
 
-> **General rule:** any component with its own hardcoded `T` locale table — currently `Homepage.tsx` (1f), `SkillPromo.astro` (1j), and `MethodPromo.astro` (1k) — is invisible to `translate.mjs` and must get a new locale key by hand. Before finishing, `grep -rl "const T" src/components` to catch any added since this skill was written.
+### 1l. `src/data/product-map.{LOCALE}.json` (ProductMap component)
+
+The ecosystem overview's product map (`src/components/ProductMap.astro`) reads its data from `src/data/product-map.json` (English) and — unlike the `const T` components above — keeps each locale's strings in a **separate JSON file**, `src/data/product-map.{LOCALE}.json`. The component detects the locale from the URL and loads the matching file automatically, falling back to English when none exists. `translate.mjs` does not touch this data file, so create the localized copy by hand:
+
+1. Copy `src/data/product-map.json` to `src/data/product-map.{LOCALE}.json`.
+2. Translate only the display strings: `stageColumnLabel`, each column's `label`, each row's `stage`, and every cell entry's `text` and `tooltip`.
+3. Keep every `href`, `isLast`, and the overall structure **identical** — hrefs are shared English slugs.
+
+Until this file exists, the product map renders in English on that locale's pages.
+
+> **General rule:** any component with its own hardcoded `T` locale table — currently `Homepage.tsx` (1f), `SkillPromo.astro` (1j), and `MethodPromo.astro` (1k) — is invisible to `translate.mjs` and must get a new locale key by hand. `ProductMap.astro` (1l) is the same story but keeps its strings in a per-locale JSON data file rather than a `const T`. Before finishing, `grep -rl "const T" src/components` **and** check for `src/data/product-map.*.json` to catch anything added since this skill was written.
 
 ---
 
@@ -566,6 +576,7 @@ strategy:
 | 1i | Add to `SUPPORTED_LOCALES` (scopes the locales collection glob per CI job) | `src/content.config.ts` |
 | 1j | Add locale key to `T` object (label, desc, linkText) — like 1f; detection reuses `SUPPORTED_LOCALES` | `src/components/SkillPromo.astro` |
 | 1k | Add locale key to `T` object (label, items, note, noteLinkText) — like 1j; keep `{method}` placeholder | `src/components/MethodPromo.astro` |
+| 1l | Create translated copy of the product map — strings only, keep hrefs/structure | `src/data/product-map.{LOCALE}.json` |
 | 2 | Add env vars | `.env` + deployment config |
 | 3 | Create sitemap files + update astro.config.mjs | `src/pages/sitemap-{LOCALE}*.xml.ts`, `astro.config.mjs` |
 | 4 | Add npm scripts (optional) | `package.json` |

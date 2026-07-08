@@ -6,6 +6,10 @@ const T = {
     hero: "Adapty is a powerful and adaptable in-app purchase platform that helps you grow your subscriber base. Whether you're just starting or already have millions of users, Adapty makes it easy to set up the best subscription prices, test different approaches, and see what works best for your app's success.",
     discoverTitle: "Is Adapty right for me?",
     discoverDesc: "Find your use case — whether you're launching a new app, optimizing revenue, or migrating from another tool.",
+    discoverCta: "See if it fits",
+    ecosystemTitle: "The Adapty ecosystem",
+    ecosystemDesc: "A suite of products that work together — acquire users with ad campaigns, convert them with paywalls, keep them with email.",
+    ecosystemCta: "Explore the products",
     quickstartTitle: "Quickstart guide",
     quickstartDesc: "Connect Adapty to your store accounts, configure your products, and let Adapty handle purchases in your app.",
     quickstartBtn: "Set up Adapty in my app",
@@ -206,11 +210,22 @@ const Homepage: React.FC<HomepageProps> = ({ locale }) => {
           <div className="discover-card-content">
             <h3>{t.discoverTitle}</h3>
             <p className="discover-card-description">{t.discoverDesc}</p>
+            <span className="discover-card-cta">{(t as any).discoverCta ?? T.en.discoverCta}</span>
           </div>
-          <div className="discover-card-arrow">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round"/>
+        </a>
+
+        <a href={`${base}/adapty-ecosystem`} className="discover-card ecosystem">
+          <div className="discover-card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 17l10 5 10-5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 12l10 5 10-5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
+          </div>
+          <div className="discover-card-content">
+            <h3>{(t as any).ecosystemTitle ?? T.en.ecosystemTitle}</h3>
+            <p className="discover-card-description">{(t as any).ecosystemDesc ?? T.en.ecosystemDesc}</p>
+            <span className="discover-card-cta">{(t as any).ecosystemCta ?? T.en.ecosystemCta}</span>
           </div>
         </a>
       </section>

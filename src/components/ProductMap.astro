@@ -1,7 +1,25 @@
 ---
-import data from '../data/product-map.json';
+import en from '../data/product-map.json';
+import { SUPPORTED_LOCALES } from '../data/locales';
 
-const { stageColumnLabel, columns, rows } = data;
+// Detect locale from the URL (/docs/{locale}/... on localized pages); English otherwise.
+const segments = Astro.url.pathname.split('/').filter(Boolean);
+const locale = segments.find((s) => (SUPPORTED_LOCALES as readonly string[]).includes(s)) ?? 'en';
+
+// Per-locale product maps live in src/data/product-map.{locale}.json — same shape as
+// product-map.json, with translated `label`/`stage`/`text`/`tooltip` strings and
+// identical `id`/`href`/structure. This data file is NOT touched by translate.mjs, so
+// each locale's copy is added by hand via the localize skill. Falls back to English
+// until a locale file exists.
+const localizedMaps = import.meta.glob('../data/product-map.*.json', { eager: true }) as Record<string, { default: typeof en }>;
+const data = (locale !== 'en' && localizedMaps[`../data/product-map.${locale}.json`]?.default) || en;
+
+type Cell = { text: string; href: string; tooltip?: string };
+const { stageColumnLabel, columns, rows } = data as {
+  stageColumnLabel: string;
+  columns: { id: string; label: string }[];
+  rows: { stage: string; isLast?: boolean; cells: Record<string, Cell[]> }[];
+};
 ---
 
 <div class="product-map-wrapper">
@@ -342,9 +360,10 @@ const { stageColumnLabel, columns, rows } = data;
       text-decoration-thickness: 2px;
   }
 
-  /* Tooltip-link visual affordance — dotted underline, help cursor. */
+  /* Tooltip-link visual affordance — dotted underline, pointer cursor
+   * (every entry is a link, so signal clickability, not a help/definition). */
   a.tooltip-link {
-      cursor: help;
+      cursor: pointer;
       text-decoration-style: dotted;
   }
 
