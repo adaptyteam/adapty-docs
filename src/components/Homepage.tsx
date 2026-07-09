@@ -222,6 +222,32 @@ const Homepage: React.FC<HomepageProps> = ({ locale }) => {
         <p className="hero-text">{t.hero}</p>
       </div>
 
+      {/* Get Started Section */}
+        <section className="get-started-section">
+          <div className="primary-card">
+            <div className="primary-card-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 19l7-7 3 3-7 7-3-3z" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M2 2l7.586 7.586" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="11" cy="11" r="2"/>
+              </svg>
+            </div>
+            <div className="primary-card-content">
+              <div className="primary-card-text">
+                <h3>{t.quickstartTitle}</h3>
+                <p className="primary-card-description">{t.quickstartDesc}</p>
+              </div>
+              <a href={`${base}/quickstart`} className="primary-card-button">
+                {t.quickstartBtn}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </section>
+
       {/* Discover Section */}
       <section className="discover-section">
         <a href={`${base}/is-adapty-right-for-me`} className="discover-card">
@@ -253,32 +279,6 @@ const Homepage: React.FC<HomepageProps> = ({ locale }) => {
           </div>
         </a>
       </section>
-
-      {/* Get Started Section */}
-        <section className="get-started-section">
-          <div className="primary-card">
-            <div className="primary-card-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 19l7-7 3 3-7 7-3-3z" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M2 2l7.586 7.586" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="11" cy="11" r="2"/>
-              </svg>
-            </div>
-            <div className="primary-card-content">
-              <div className="primary-card-text">
-                <h3>{t.quickstartTitle}</h3>
-                <p className="primary-card-description">{t.quickstartDesc}</p>
-              </div>
-              <a href={`${base}/quickstart`} className="primary-card-button">
-                {t.quickstartBtn}
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </a>
-            </div>
-          </div>
-        </section>
 
       {/* Step 2 Section */}
       <section className="step2-section">
