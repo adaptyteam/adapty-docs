@@ -1,0 +1,75 @@
+---
+title: "用户点击关闭时显示优惠"
+description: "拦截第一次点击关闭的操作，在用户离开付费墙前展示最后机会优惠。"
+metadataTitle: "用户点击关闭时显示优惠 | Flow Builder | Adapty 文档"
+---
+
+当用户点击关闭按钮时，他们即将不付款就离开。这个方案会拦截第一次点击关闭的操作：不立即关闭付费墙，而是弹出一个最后机会优惠的浮层。当用户关闭该优惠后，关闭按钮才正常工作并退出流程。
+
+整个逻辑只需要一个自定义布尔变量和一个条件操作：
+- `close_tapped` 初始值为 `False`。
+- 第一次点击关闭按钮时，会显示优惠覆盖层并将 `close_tapped` 设为 `True`。
+- 此后再次点击关闭按钮时，会退出流程。
+## 开始之前 \{#before-you-start\}
+
+- 构建一个带有关闭按钮的付费墙页面——例如，参考[创建基础付费墙页面](basic-paywall-screen)。
+- [创建一个产品](create-product)，并为其添加要在弹窗中推广的[优惠](offers)。
+## 1. 创建变量 \{#1-create-the-variable\}
+
+有关自定义变量的更多信息，请参阅[变量](onboarding-variables#custom-variables)。
+
+1. 在左侧面板中，点击 **&#123; &#125;** 图标以打开 **Variables**。
+2. 在 **Custom** 标签页中，点击 **+**。
+3. 将变量命名为 `close_tapped`，并将 **Value Type** 设置为 **Boolean**。将 **Initial Value** 保持为 **False**。
+4. 点击 **Create variable**。
+
+<ZoomImage id="close-offer-variable.webp" width="500px" alt="Creating the close_tapped variable with Value Type set to Boolean and Initial Value set to False" />
+## 2. 构建优惠弹层 \{#2-build-the-offer-overlay\}
+
+弹层是一个固定在设备屏幕上、覆盖在付费墙之上的容器。构建时请保持可见状态——隐藏的元素无法编辑，因此等内容布局完成后，再在第 4 步将其隐藏。
+1. 点击 **+** > **Layout** > **Vertical Container**。
+2. 选中该容器后，打开 **Design** 标签页，将 **Position** 设置为 **Fixed**。将水平对齐方式设置为 **Left & Right**，垂直对齐方式设置为 **Top**。由于没有垂直居中选项，请输入顶部偏移值（例如 `300`），将覆盖层移至屏幕中部位置。
+3. 在 **Fill** 下设置背景——可以是纯色或图片。容器默认为透明，若不填充背景，付费墙内容将透过覆盖层显示出来。
+4. 添加优惠内容。在 **Layers** 面板中选中该容器，点击 **+** > **Text** > **H2**。如需显示折扣价格，可在 **Content** 字段中插入[优惠变量](onboarding-variables#product-variables)，例如 `offer_price`。
+5. 点击 **+** > **Products**，选择一个布局预设，并将其拖入覆盖层。在画布上选中产品卡片，然后在 **Design** 标签页中选择产品和优惠。
+6. 点击 **+** > **Buttons**，选择一个按钮预设，并将其拖入覆盖层。在 **Interactions** 标签页中，点击 **Add trigger** > **On tap** > **Add action**，将 **Action** 设置为 **Purchase**，将 **Product** 设置为您的优惠产品。
+<ZoomImage id="close-offer-overlay.webp" width="700px" alt="画布上的优惠浮层，包含优惠文案、产品卡片和购买按钮，以及设计选项卡中的固定位置设置" />
+## 3. 为遮罩层添加关闭按钮 \{#add-the-dismiss-button-to-the-overlay\}
+
+遮罩层需要有自己的关闭按钮。该按钮的操作应隐藏遮罩层，而不是关闭整个流程。
+
+1. 选中遮罩层后，点击 **+** > **Buttons** > **Close flow**。
+2. 选中该按钮后，打开 **Interactions** 标签页。预设中已预配置了 **Close Flow** 操作。点击该操作，将其类型改为 **Hide element**，并将目标设置为遮罩层容器。
+:::important
+不要在弹窗的关闭按钮上保留预配置的 **Close Flow** 操作——这会关闭整个流程，而不是隐藏弹窗。
+:::
+
+<ZoomImage id="close-offer-dismiss.webp" width="700px" alt="Hide element action on the overlay's dismiss button with the overlay container as the target" />
+## 4. 隐藏遮罩层 \{#hide-the-overlay\}
+
+遮罩层必须在第一次点击关闭之前保持不可见。
+
+在 **Layers** 面板中，选中遮罩层容器，将其状态设置为 **Hide** <Inline id="visibility-hide.svg" alt="Hide" />。遮罩层仍保留在图层树中，但不再在画布上渲染。
+
+<ZoomImage id="close-offer-hide.webp" width="700px" alt="Overlay container set to Hide in the Layers panel and no longer rendered on the canvas" />
+## 5. 设置关闭按钮 \{#5-set-up-the-close-button\}
+
+将关闭按钮的默认操作替换为基于 `close_tapped` 条件分支的条件操作。
+
+有关条件操作的更多信息，请参阅[操作——条件操作](onboarding-actions#conditional-actions)。
+1. 选择付费墙的关闭按钮——即屏幕上的那个，而非遮罩层的关闭按钮。
+2. 打开 **Interactions** 标签页，点击预配置的 **Close Flow** 动作，将其类型更改为 **Conditional Action**。
+3. 在 **if** 块中，点击 **Add condition** 并设置：`close_tapped` **Equals** **False**。
+4. 在 **then** 块中，添加两个动作：
+    - **Set Variable**：将 `close_tapped` 设置为 **True**。
+- **Show element**：将目标设置为优惠弹层。
+
+      <ZoomImage id="close-offer-conditional-2.webp" width="500px" alt="Show element action in the then block targeting the offer overlay" />
+5. 在 **else** 块中，添加 **Close Flow** 操作。
+
+   <ZoomImage id="close-offer-conditional-3.webp" width="500px" alt="Close Flow action in the else block of the conditional action" />
+现在，第一次点击关闭按钮会显示优惠。用户关闭优惠后，再次点击关闭按钮将匹配 **else** 分支并退出流程。
+## 后续步骤 \{#next-steps\}
+
+- [保存并发布您的流程](builder-save-publish)。
+- [将流程添加到版位](create-placement)，开始向用户展示。
