@@ -4,7 +4,7 @@ description: "Show a paywall immediately and upgrade it for Apple Ads users once
 metadataTitle: "Show AA-targeted paywall on first launch | Capacitor SDK | Adapty Docs"
 ---
 
-Apple Ads (AA) attribution arrives asynchronously after `adapty.activate()`. On first launch it usually hasn't landed yet, so `getPaywall` resolves against the default audience and Apple Ads users miss your AA-segmented paywall. Rather than delay the paywall until attribution lands, show one immediately and refresh it once AA attribution is applied — so Apple Ads users get the targeted variant and everyone else sees a paywall with no wait. `AdaptyProfile.appliedAttributionSources` tells you when AA attribution has been applied.
+Apple Ads (AA) attribution arrives asynchronously after `adapty.activate()`. On first launch it usually hasn't landed yet, so `getFlow` resolves against the default audience and Apple Ads users miss your AA-segmented paywall. Rather than delay the paywall until attribution lands, show one immediately and refresh it once AA attribution is applied — so Apple Ads users get the targeted variant and everyone else sees a paywall with no wait. `AdaptyProfile.appliedAttributionSources` tells you when AA attribution has been applied.
 
 ## Before you start
 
@@ -18,8 +18,8 @@ After `adapty.activate()`, the SDK requests Apple Ads attribution from Apple in 
 
 This lets you load the paywall in two steps:
 
-1. Call `getPaywall` right away. With no attribution applied yet, Adapty resolves the request against the default audience, so the user sees a paywall immediately.
-2. When `'apple_search_ads'` appears, call `getPaywall` again. Adapty now resolves the request against the Apple Ads audience and returns the targeted paywall, which replaces the first one.
+1. Call `getFlow` right away. With no attribution applied yet, Adapty resolves the request against the default audience, so the user sees a paywall immediately.
+2. When `'apple_search_ads'` appears, call `getFlow` again. Adapty now resolves the request against the Apple Ads audience and returns the targeted paywall, which replaces the first one.
 
 `appliedAttributionSources` can be empty or absent. That means either:
 
@@ -29,7 +29,7 @@ This lets you load the paywall in two steps:
 Either way, step 1 is safe — Adapty resolves the request against whichever audience matches the current profile state, typically the default audience. Step 2 runs only once `'apple_search_ads'` appears.
 
 :::important
-On every subsequent launch, the cached profile already carries `'apple_search_ads'` in `appliedAttributionSources`, so the first `getPaywall` already returns the Apple-Ads-segmented paywall — there's no second fetch or visible change. The two-step flow only matters on the first launch, while attribution is still in flight.
+On every subsequent launch, the cached profile already carries `'apple_search_ads'` in `appliedAttributionSources`, so the first `getFlow` already returns the Apple-Ads-segmented paywall — there's no second fetch or visible change. The two-step flow only matters on the first launch, while attribution is still in flight.
 :::
 
 ## Implementation
@@ -37,14 +37,14 @@ On every subsequent launch, the cached profile already carries `'apple_search_ad
 Show a paywall right away, then listen for `'apple_search_ads'` and refresh the paywall when it arrives.
 
 1. **Activate the SDK.** See [Install & configure the Capacitor SDK](sdk-installation-capacitor).
-2. **Load and present a paywall** with `getPaywall` as usual — don't block on attribution.
+2. **Load and present a paywall** with `getFlow` as usual — don't block on attribution.
 3. **Subscribe to profile updates** with `adapty.addListener('onLatestProfileLoad', …)` and watch for `'apple_search_ads'`. When it appears, fetch the paywall again and present the updated one. If you haven't set up the listener yet, see [Listen to subscription updates](capacitor-check-subscription-status#listen-to-subscription-updates):
 
 ```typescript
 const listener = await adapty.addListener('onLatestProfileLoad', async ({ profile }) => {
   if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
-  const targeted = await adapty.getPaywall({ placementId });
-  // present the targeted paywall in place of the first one
+  const targeted = await adapty.getFlow({ placementId });
+  // present the targeted flow in place of the first one
 });
 
 // Call listener.remove() after the upgrade, or after a timeout (see below).
@@ -99,12 +99,12 @@ export function onAppleAdsAttribution(timeoutMs: number): Promise<void> {
   });
 }
 
-let paywall = await adapty.getPaywall({ placementId });
+let flow = await adapty.getFlow({ placementId });
 
 onAppleAdsAttribution(30_000)
-  .then(() => adapty.getPaywall({ placementId }))
+  .then(() => adapty.getFlow({ placementId }))
   .then(updated => {
-    paywall = updated;
+    flow = updated;
   })
   .catch(() => {
     console.log('Apple Ads attribution or loading failed');
