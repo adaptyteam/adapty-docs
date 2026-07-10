@@ -29,7 +29,7 @@ Adapty Android SDK 4.0 (beta), flow'ları tanıtır ve paywall API'lerini buna g
 `AdaptyPaywallProduct` adını korur — ürünler hâlâ bir flow'a aittir ve `getPaywallProducts` artık bir `AdaptyFlow` alır. Diğer `AdaptyFlowEventListener` metotları (`onProductSelected`, `onPurchaseStarted`, `onPurchaseFinished`, `onPurchaseFailure`, `onRestoreSuccess`, `onRestoreFailure`, `onActionPerformed`, `onAwaitingPurchaseParams`, `onLoadingProductsFailure` ve diğerleri) adlarını ve imzalarını korur.
 ## Kurulum \{#installation\}
 
-Adapty Android SDK 4.0 ön sürüm olduğundan, dinamik bir aralık yerine tam sürümü sabitlemeniz gerekir — `adapty-bom` sürümünü `4.0.0-beta.1` olarak ayarlayın ve projeyi senkronize edin. BOM, sizin için uygun `android-sdk` ve `android-ui` sürümlerini otomatik olarak çözer. Bağımlılık tanımlamaları için [Adapty SDK'yı Yükle](sdk-installation-android) sayfasına bakın.
+`adapty-bom` sürümünü `4.0.0-beta.2` olarak ayarlayın ve projeyi senkronize edin. BOM, sizin için uygun `android-sdk` ve `android-ui` sürümlerini otomatik olarak belirler. Bağımlılık bildirimleri için [Adapty SDK'yı Yükle](sdk-installation-android) sayfasına bakın.
 ## Kaldırılan ve kullanımdan kaldırılan API'ler \{#removed-and-deprecated-apis\}
 
 - **`Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized, callback)`** — kaldırıldı. Bu aşırı yükleme v3'te kullanımdan kaldırılmıştı. Aynı seçenekleri bunun yerine `AdaptyPurchaseParameters` üzerinden iletin:
@@ -150,6 +150,8 @@ Olay dinleyicisi `AdaptyUiEventListener`'dan `AdaptyFlowEventListener`'a (ve `Ad
 ```
 
 Mevcut handler gövdelerinde kod değişikliği gerekmez — sadece türü ve override'ları yeniden adlandırın. `onError`, `onRenderingError`'ın tetiklendiği rendering hatalarının yanı sıra diğer satın alma dışı runtime hatalarında da tetiklenir. Callback'lerin tam listesi için bkz. [Flow & paywall olaylarını yönetme](android-handling-events).
+v4 ayrıca bir `onBackPressed(context): Boolean` callback'i ekler ve varsayılan davranışı sistem geri tuşunun nasıl çalıştığını değiştirir. Önceden geri tuşuna basmak (veya geri gesturı) aktivitenize ya da fragment'ınıza geçer ve genellikle paywall'ı kapatırdı. v4'te varsayılan uygulama bu basışı tüketir; dolayısıyla **sistem geri tuşu artık bir flow'u kendi başına kapatmaz** — flow'un sistem gesturıyla kapatılamadığı iOS davranışıyla aynı hizaya gelir. Kullanıcılara açık bir çıkış yolu sunun (bir **Close** düğmesi veya bir `on_device_back` aksiyonu) ya da eski davranışı geri kazanmak için `onBackPressed`'i `false` döndürecek şekilde geçersiz kılın. Ayrıntılar için [Sistem geri tuşu](android-handling-events#system-back-button) bölümüne bakın.
+Varsayılan satın alma işleyicisi artık ekranı kapatmayı da durduruyor. v3'te, varsayılan `onPurchaseFinished`, kullanıcının iptal etmediği her tamamlanmış satın almanın (başarılı veya beklemedeki satın alma) ardından paywallı kapatıyordu. v4'te bu işlem hiçbir şey yapmıyor, dolayısıyla **siz kapatana kadar bir flow, satın alma sonrasında açık kalıyor** — bu da iOS davranışıyla örtüşüyor. Bu otomatik kapanmaya güveniyorsanız, satın alma tamamlandığında ekranı kendiniz kapatın. Örnek için [Başarılı, iptal edilmiş veya beklemedeki satın alma](android-handling-events#successful-canceled-or-pending-purchase) konusuna bakın.
 ## Attribution ve entegrasyon tanımlayıcıları \{#attribution-and-integration-identifiers\}
 ### updateAttribution
 
@@ -162,41 +164,40 @@ Mevcut handler gövdelerinde kod değişikliği gerekmez — sadece türü ve ov
 Önceden tanımlanmış kaynaklar: `AdaptyAttributionSource.APPLE_ADS`, `.ADJUST`, `.APPSFLYER`, `.BRANCH`, `.TENJIN`. Diğer kaynaklar için bir dizeden oluşturun: `AdaptyAttributionSource("your_source")`.
 ### setIntegrationIdentifier
 
-`setIntegrationIdentifier(key, value)` metodu, bir veya daha fazla `AdaptyIntegrationIdentifier` değeri alan bir metotla değiştirildi. Ham string anahtarlar yerine önceden tanımlanmış `Key` sabitlerini kullanın:
+`setIntegrationIdentifier(key, value)`, bir veya daha fazla `AdaptyIntegrationIdentifier` değeri alan bir yöntemle değiştirilmiştir. Ham bir string key geçirmek yerine, her tanımlayıcıyı bir kolaylık yöntemiyle oluşturun:
 
 ```diff showLineNumbers
 - Adapty.setIntegrationIdentifier("appsflyer_id", appsFlyerId) { error -> /* handle the error */ }
-+ Adapty.setIntegrationIdentifier(
-+     AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.APPSFLYER_ID, appsFlyerId)
-+ ) { error -> /* handle the error */ }
++ Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier.appsflyerId(appsFlyerId)) { error -> /* handle the error */ }
 ```
 
 Tek bir çağrıda birden fazla tanımlayıcı ayarlayabilirsiniz:
 ```kotlin showLineNumbers
 Adapty.setIntegrationIdentifier(
     listOf(
-        AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.APPSFLYER_ID, appsFlyerId),
-        AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.ADJUST_DEVICE_ID, adjustDeviceId),
+        AdaptyIntegrationIdentifier.appsflyerId(appsFlyerId),
+        AdaptyIntegrationIdentifier.adjustDeviceId(adjustDeviceId),
     )
 ) { error -> /* handle the error */ }
 ```
 
-Her eski anahtar dizesini ilgili `Key` sabitiyle değiştirin:
-| v3 key | v4 `AdaptyIntegrationIdentifier.Key` |
+Eski her anahtar dizesini ilgili kolaylık metoduyla değiştirin:
+| v3 anahtarı | v4 `AdaptyIntegrationIdentifier` metodu |
 |---|---|
-| `"adjust_device_id"` | `ADJUST_DEVICE_ID` |
-| `"airbridge_device_id"` | `AIRBRIDGE_DEVICE_ID` |
-| `"amplitude_user_id"` | `AMPLITUDE_USER_ID` |
-| `"amplitude_device_id"` | `AMPLITUDE_DEVICE_ID` |
-| `"appmetrica_device_id"` | `APPMETRICA_DEVICE_ID` |
-| `"appmetrica_profile_id"` | `APPMETRICA_PROFILE_ID` |
-| `"appsflyer_id"` | `APPSFLYER_ID` |
-| `"branch_id"` | `BRANCH_ID` |
-| `"facebook_anonymous_id"` | `FACEBOOK_ANONYMOUS_ID` |
-| `"firebase_app_instance_id"` | `FIREBASE_APP_INSTANCE_ID` |
-| `"mixpanel_user_id"` | `MIXPANEL_USER_ID` |
-| `"one_signal_subscription_id"` | `ONE_SIGNAL_SUBSCRIPTION_ID` |
-| `"one_signal_player_id"` | `ONE_SIGNAL_PLAYER_ID` |
-| `"posthog_distinct_user_id"` | `POSTHOG_DISTINCT_USER_ID` |
-| `"pushwoosh_hwid"` | `PUSHWOOSH_HWID` |
-| `"tenjin_analytics_installation_id"` | `TENJIN_ANALYTICS_INSTALLATION_ID` |
+| `"adjust_device_id"` | `adjustDeviceId(value)` |
+| `"airbridge_device_id"` | `airbridgeDeviceId(value)` |
+| `"amplitude_user_id"` | `amplitudeUserId(value)` |
+| `"amplitude_device_id"` | `amplitudeDeviceId(value)` |
+| `"appmetrica_device_id"` | `appmetricaDeviceId(value)` |
+| `"appmetrica_profile_id"` | `appmetricaProfileId(value)` |
+| `"appsflyer_id"` | `appsflyerId(value)` |
+| `"branch_id"` | `branchId(value)` |
+| `"facebook_anonymous_id"` | `facebookAnonymousId(value)` |
+| `"firebase_app_instance_id"` | `firebaseAppInstanceId(value)` |
+| `"mixpanel_user_id"` | `mixpanelUserId(value)` |
+| `"one_signal_subscription_id"` | `oneSignalSubscriptionId(value)` |
+| `"one_signal_player_id"` | `oneSignalPlayerId(value)` |
+| `"posthog_distinct_user_id"` | `posthogDistinctUserId(value)` |
+| `"pushwoosh_hwid"` | `pushwooshHWID(value)` |
+| `"tenjin_analytics_installation_id"` | `tenjinAnalyticsInstallationId(value)` |
+`AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key("custom"), customValue)` şeklinde özel bir `Key` kullanarak bu listede olmayan bir anahtar için identifier'ı doğrudan oluşturabilirsiniz.

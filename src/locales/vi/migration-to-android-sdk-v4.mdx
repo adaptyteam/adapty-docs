@@ -29,7 +29,7 @@ Adapty Android SDK 4.0 (beta) giới thiệu flows và đổi tên các API payw
 `AdaptyPaywallProduct` giữ nguyên tên — các sản phẩm vẫn thuộc về một flow, và `getPaywallProducts` giờ nhận vào một `AdaptyFlow`. Các phương thức khác của `AdaptyFlowEventListener` (`onProductSelected`, `onPurchaseStarted`, `onPurchaseFinished`, `onPurchaseFailure`, `onRestoreSuccess`, `onRestoreFailure`, `onActionPerformed`, `onAwaitingPurchaseParams`, `onLoadingProductsFailure`, v.v.) giữ nguyên tên và chữ ký.
 ## Cài đặt \{#installation\}
 
-Adapty Android SDK 4.0 là phiên bản pre-release, vì vậy bạn phải chỉ định chính xác phiên bản thay vì dùng dải phiên bản động — đặt phiên bản `adapty-bom` thành `4.0.0-beta.1` và đồng bộ dự án. BOM sẽ tự động xác định phiên bản `android-sdk` và `android-ui` tương ứng cho bạn. Xem [Cài đặt Adapty SDK](sdk-installation-android) để biết cách khai báo dependency.
+Đặt phiên bản `adapty-bom` thành `4.0.0-beta.2` và đồng bộ dự án. BOM sẽ tự động xác định các phiên bản `android-sdk` và `android-ui` tương thích cho bạn. Xem [Cài đặt Adapty SDK](sdk-installation-android) để biết cách khai báo dependency.
 ## Các API đã bị xóa và không còn được hỗ trợ \{#removed-and-deprecated-apis\}
 
 - **`Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized, callback)`** — đã bị xóa. Overload này đã bị deprecated từ v3. Thay vào đó, hãy truyền các tùy chọn tương tự thông qua `AdaptyPurchaseParameters`:
@@ -150,6 +150,8 @@ Event listener được đổi tên từ `AdaptyUiEventListener` thành `AdaptyF
 ```
 
 Phần thân handler hiện có không cần thay đổi code — chỉ cần đổi tên kiểu và các override. `onError` sẽ kích hoạt cho cùng các lỗi render như `onRenderingError` đã làm, cộng thêm các lỗi runtime không liên quan đến mua hàng. Xem [Xử lý sự kiện flow & paywall](android-handling-events) để biết danh sách đầy đủ các callback.
+v4 cũng bổ sung callback `onBackPressed(context): Boolean`, và giá trị mặc định của nó thay đổi cách nút back hệ thống hoạt động. Trước đây, nút back (hoặc cử chỉ vuốt back) sẽ được chuyển xuống activity hoặc fragment của bạn, thường là đóng paywall lại. Trong v4, implementation mặc định sẽ tiêu thụ sự kiện đó, vì vậy **nút back hệ thống không còn tự đóng flow nữa** — giống với iOS, nơi flow không thể bị đóng bằng cử chỉ hệ thống. Hãy cung cấp cho người dùng một cách thoát rõ ràng (nút **Close** hoặc action `on_device_back`), hoặc override `onBackPressed` trả về `false` để khôi phục hành vi cũ. Xem [Nút back hệ thống](android-handling-events#system-back-button) để biết thêm chi tiết.
+Handler mua hàng mặc định cũng không còn tự động đóng màn hình nữa. Trong v3, `onPurchaseFinished` mặc định sẽ đóng paywall sau bất kỳ giao dịch mua hàng nào đã hoàn thành mà không phải do người dùng hủy (giao dịch thành công hoặc đang chờ xử lý). Trong v4, nó là no-op, vì vậy **flow vẫn mở sau khi mua hàng cho đến khi bạn tự đóng nó** — điều này cũng tương tự như iOS. Nếu bạn đang dựa vào tính năng tự động đóng đó, hãy tự đóng màn hình sau khi giao dịch mua hàng hoàn tất. Xem [Mua hàng thành công, bị hủy hoặc đang chờ xử lý](android-handling-events#successful-canceled-or-pending-purchase) để xem ví dụ.
 ## Mã định danh attribution và tích hợp \{#attribution-and-integration-identifiers\}
 ### updateAttribution
 
@@ -162,41 +164,40 @@ Tham số `source` thay đổi từ `String` sang kiểu `AdaptyAttributionSourc
 Các nguồn được định sẵn: `AdaptyAttributionSource.APPLE_ADS`, `.ADJUST`, `.APPSFLYER`, `.BRANCH`, `.TENJIN`. Với bất kỳ nguồn nào khác, hãy tạo từ một chuỗi: `AdaptyAttributionSource("your_source")`.
 ### setIntegrationIdentifier
 
-`setIntegrationIdentifier(key, value)` được thay thế bằng một phương thức nhận một hoặc nhiều giá trị `AdaptyIntegrationIdentifier`. Hãy dùng các hằng số `Key` được định nghĩa sẵn thay vì chuỗi key thô:
+`setIntegrationIdentifier(key, value)` được thay thế bằng một phương thức nhận một hoặc nhiều giá trị `AdaptyIntegrationIdentifier`. Tạo từng identifier bằng convenience method thay vì truyền trực tiếp chuỗi key:
 
 ```diff showLineNumbers
 - Adapty.setIntegrationIdentifier("appsflyer_id", appsFlyerId) { error -> /* handle the error */ }
-+ Adapty.setIntegrationIdentifier(
-+     AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.APPSFLYER_ID, appsFlyerId)
-+ ) { error -> /* handle the error */ }
++ Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier.appsflyerId(appsFlyerId)) { error -> /* handle the error */ }
 ```
 
 Bạn có thể đặt nhiều identifier trong một lần gọi:
 ```kotlin showLineNumbers
 Adapty.setIntegrationIdentifier(
     listOf(
-        AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.APPSFLYER_ID, appsFlyerId),
-        AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.ADJUST_DEVICE_ID, adjustDeviceId),
+        AdaptyIntegrationIdentifier.appsflyerId(appsFlyerId),
+        AdaptyIntegrationIdentifier.adjustDeviceId(adjustDeviceId),
     )
 ) { error -> /* handle the error */ }
 ```
 
-Thay mỗi chuỗi key cũ bằng hằng số `Key` tương ứng:
-| v3 key | v4 `AdaptyIntegrationIdentifier.Key` |
+Thay thế mỗi chuỗi key cũ bằng phương thức tiện lợi tương ứng:
+| Khóa v3 | Phương thức `AdaptyIntegrationIdentifier` v4 |
 |---|---|
-| `"adjust_device_id"` | `ADJUST_DEVICE_ID` |
-| `"airbridge_device_id"` | `AIRBRIDGE_DEVICE_ID` |
-| `"amplitude_user_id"` | `AMPLITUDE_USER_ID` |
-| `"amplitude_device_id"` | `AMPLITUDE_DEVICE_ID` |
-| `"appmetrica_device_id"` | `APPMETRICA_DEVICE_ID` |
-| `"appmetrica_profile_id"` | `APPMETRICA_PROFILE_ID` |
-| `"appsflyer_id"` | `APPSFLYER_ID` |
-| `"branch_id"` | `BRANCH_ID` |
-| `"facebook_anonymous_id"` | `FACEBOOK_ANONYMOUS_ID` |
-| `"firebase_app_instance_id"` | `FIREBASE_APP_INSTANCE_ID` |
-| `"mixpanel_user_id"` | `MIXPANEL_USER_ID` |
-| `"one_signal_subscription_id"` | `ONE_SIGNAL_SUBSCRIPTION_ID` |
-| `"one_signal_player_id"` | `ONE_SIGNAL_PLAYER_ID` |
-| `"posthog_distinct_user_id"` | `POSTHOG_DISTINCT_USER_ID` |
-| `"pushwoosh_hwid"` | `PUSHWOOSH_HWID` |
-| `"tenjin_analytics_installation_id"` | `TENJIN_ANALYTICS_INSTALLATION_ID` |
+| `"adjust_device_id"` | `adjustDeviceId(value)` |
+| `"airbridge_device_id"` | `airbridgeDeviceId(value)` |
+| `"amplitude_user_id"` | `amplitudeUserId(value)` |
+| `"amplitude_device_id"` | `amplitudeDeviceId(value)` |
+| `"appmetrica_device_id"` | `appmetricaDeviceId(value)` |
+| `"appmetrica_profile_id"` | `appmetricaProfileId(value)` |
+| `"appsflyer_id"` | `appsflyerId(value)` |
+| `"branch_id"` | `branchId(value)` |
+| `"facebook_anonymous_id"` | `facebookAnonymousId(value)` |
+| `"firebase_app_instance_id"` | `firebaseAppInstanceId(value)` |
+| `"mixpanel_user_id"` | `mixpanelUserId(value)` |
+| `"one_signal_subscription_id"` | `oneSignalSubscriptionId(value)` |
+| `"one_signal_player_id"` | `oneSignalPlayerId(value)` |
+| `"posthog_distinct_user_id"` | `posthogDistinctUserId(value)` |
+| `"pushwoosh_hwid"` | `pushwooshHWID(value)` |
+| `"tenjin_analytics_installation_id"` | `tenjinAnalyticsInstallationId(value)` |
+Đối với khóa không có trong danh sách này, hãy tạo mã định danh trực tiếp từ `Key` tùy chỉnh: `AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key("custom"), customValue)`.
