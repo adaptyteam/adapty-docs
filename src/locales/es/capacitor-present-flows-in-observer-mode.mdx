@@ -1,0 +1,65 @@
+---
+title: "Presentar flows en modo observador en el SDK de Capacitor"
+description: "Presenta flows y paywalls del Paywall Builder en modo observador en tu aplicación de Capacitor mientras gestionas las compras con tu propio código."
+metadataTitle: "Presentar flows en modo observador | Documentación de Adapty"
+keywords: ['modo observador', 'onObserverPurchaseInitiated', 'onObserverRestoreInitiated', 'flow']
+---
+Si has personalizado un flow o paywall usando el builder, no necesitas preocuparte por renderizarlo en el código de tu app para mostrárselo al usuario. Ese flow o paywall ya contiene tanto qué mostrar como cómo mostrarlo.
+
+:::warning
+Esta sección hace referencia únicamente al [modo Observer](observer-vs-full-mode). Si no trabajas en modo Observer, consulta el tema [Mostrar flows y paywalls](capacitor-present-paywalls).
+:::
+:::info
+Esta funcionalidad requiere Adapty Capacitor SDK 4.0 o posterior — anteriormente solo estaba disponible en los SDKs nativos de iOS y Android. Consulta la [guía de migración](migration-to-capacitor-sdk-v4) para actualizar.
+:::
+
+<details>
+   <summary>Antes de empezar a mostrar flows (haz clic para expandir)</summary>
+1. Configura la integración inicial de Adapty [con App Store](initial_ios) y [con Google Play](initial-android).
+   2. Instala y configura el SDK de Adapty. Asegúrate de establecer el parámetro `observerMode` en `true`. Consulta la [guía de instalación del SDK de Capacitor](sdk-installation-capacitor#activate-adapty-module-of-adapty-sdk).
+   3. [Crea productos](create-product) en el Adapty Dashboard.
+   4. [Configura flows o paywalls en los builders](create-paywall) y asígnales productos.
+   5. [Crea placements y asígnales tus flows o paywalls](create-placement).
+   6. [Obtén los flows y su configuración](capacitor-get-pb-paywalls) en el código de tu app.
+</details>
+
+En el modo Observer, el SDK no realiza compras por ti. Cuando un usuario pulsa el botón de compra o restauración en un flow o paywall renderizado por Adapty, el SDK invoca tu manejador de eventos `onObserverPurchaseInitiated` o `onObserverRestoreInitiated` en su lugar — realiza la compra o restauración con tu propio código allí.
+
+1. Establece los manejadores de eventos del modo observer en la vista. A diferencia de otras plataformas, no hay un objeto resolver separado — los manejadores forman parte de los [manejadores de eventos](capacitor-handling-events) habituales, así que establécelos en cada vista que crees:
+   ```typescript showLineNumbers title="Capacitor"
+   import { adapty, createFlowView } from '@adapty/capacitor';
+
+   const view = await createFlowView(flow);
+
+   const unsubscribe = await view.setEventHandlers({
+     onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
+       onStartPurchase(); // the view shows its loading indicator
+       myPurchaseApi(product.vendorProductId)
+         .then((transactionId) =>
+           adapty.reportTransaction({ transactionId, variationId: flow.variationId }),
+         )
+         .finally(() => onFinishPurchase()); // the view hides the loading indicator
+       return false; // keep the flow open; dismiss it yourself after success
+     },
+     onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
+       onStartRestore();
+       myRestoreApi().finally(() => onFinishRestore());
+       return false;
+     },
+   });
+   ```
+
+El handler `onObserverPurchaseInitiated` te informa de que el usuario ha iniciado una compra, y `onObserverRestoreInitiated` — de que el usuario ha iniciado una restauración. Activa tu flow de compra o restauración personalizado en respuesta.
+
+Además, recuerda invocar los siguientes callbacks para notificar a AdaptyUI sobre el proceso de compra o restauración. Esto es necesario para el comportamiento correcto del flow, como mostrar el loader, entre otras cosas:
+| Callback           | Description                                                                      |
+   | :----------------- | :------------------------------------------------------------------------------- |
+   | onStartPurchase()  | Se debe invocar este callback para notificar a AdaptyUI que la compra ha comenzado.  |
+   | onFinishPurchase() | Se debe invocar este callback para notificar a AdaptyUI que la compra ha finalizado. |
+   | onStartRestore()   | Se debe invocar este callback para notificar a AdaptyUI que la restauración ha comenzado.   |
+   | onFinishRestore()  | Se debe invocar este callback para notificar a AdaptyUI que la restauración ha finalizado.  |
+2. Presenta la vista del flow como de costumbre: [obtén el flow y crea su vista](capacitor-get-pb-paywalls), luego [preséntala](capacitor-present-paywalls). No se necesitan parámetros adicionales — los handlers se activan solo cuando el SDK fue activado con `observerMode: true`.
+
+:::warning
+No olvides [reportar la transacción y asociarla con el paywall](report-transactions-observer-mode-capacitor). De lo contrario, Adapty no reconocerá la transacción y no podrá determinar el paywall origen de la compra.
+:::

@@ -1,24 +1,131 @@
 ---
-title: "Capacitor SDK'da Paywall Builder paywalllarını gösterme"
-description: "Capacitor uygulamalarında Adapty kullanarak paywallları gösterin."
-metadataTitle: "Capacitor'da Paywallları Gösterme | Adapty Dokümanları"
+title: "Flow ve paywallları görüntüle - Capacitor"
+description: "Adapty ile Capacitor uygulamanızda kullanıcılara flow ve paywallları sunun."
+metadataTitle: "Capacitor'da Flow ve Paywallları Görüntüleme | Adapty Dokümanları"
 ---
 
-import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
 
-Paywall Builder kullanarak bir paywall özelleştirdiyseniz, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmenize gerek yoktur. Bu tür bir paywall, hem paywall içinde ne gösterileceğini hem de nasıl gösterileceğini içerir.
+<SDKv4>
+Flow Builder'da bir flow veya paywall oluşturduysanız, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Bu tür bir flow, içinde ne gösterileceğini ve nasıl gösterileceğini zaten barındırır.
+
+Başlamadan önce şunlardan emin olun:
+
+1. [Bir flow veya paywall oluşturduğunuzdan](create-paywall).
+2. Bunu bir [placement](placements)'a eklediğinizden.
+3. [Flow'u fetch edip view'ı hazırladığınızdan](capacitor-get-pb-paywalls).
 
 :::warning
-Bu kılavuz yalnızca **Paywall Builder paywallları** içindir. Paywallların gösterilme süreci remote config paywalllarında farklıdır. **Remote config paywalllarını** göstermek için bkz. [Remote config ile tasarlanan paywallı render etme](present-remote-config-paywalls).
-:::
+Bu kılavuz yalnızca **flow'lar ve Paywall Builder paywallları** içindir; SDK v4.0 veya üzeri gerektirir. Flow'ların sunulma süreci, remote config paywalllarından farklıdır.
 
-Bir paywall görüntülemek için [`createPaywallView`](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) metoduyla oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir. Paywallı tekrar görüntülemeniz gerekiyorsa yeni bir `view` örneği oluşturmak için `createPaywallView`'ı bir kez daha çağırın.
+- **Remote config paywalllarını** sunmak için bkz. [Remote config ile tasarlanmış paywallı göster](present-remote-config-paywalls-capacitor).
+
+:::
+Bir flow veya paywall'ı bağımsız bir ekran olarak görüntülemek için, [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration) metoduyla oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir. Flow'u tekrar görüntülemeniz gerekiyorsa, yeni bir `view` örneği oluşturmak için `createFlowView`'ı bir kez daha çağırın.
+
+:::warning
+Aynı `view`'ı yeniden oluşturmadan kullanmak yasaktır. Bu bir hataya yol açar.
+:::
+```typescript showLineNumbers
+
+const view = await createFlowView(flow);
+
+// İsteğe bağlı: flow olaylarını yönetin (kapat, satın alma, geri yükleme, vb.)
+// await view.setEventHandlers({ ... });
+
+try {
+  await view.present();
+} catch (error) {
+  // hatayı yönetin
+}
+```
+
+:::important
+`setEventHandlers` fonksiyonunu birden fazla kez çağırmak, sağladığınız işleyicilerin üzerine yazar; bu durum hem varsayılan hem de daha önce belirli olaylar için ayarlanmış işleyicilerin yerini alır.
+:::
+## iOS sunum stilini yapılandırma \{#configure-ios-presentation-style\}
+
+`present()` metoduna `iosPresentationStyle` parametresini geçirerek flow'un iOS'ta nasıl sunulacağını yapılandırın. Parametre `'full_screen'` (varsayılan) veya `'page_sheet'` değerlerini kabul eder. Android'de flow'lar her zaman tam ekran activity olarak görüntülenir.
+
+```typescript showLineNumbers
+try {
+  await view.present({ iosPresentationStyle: 'page_sheet' });
+} catch (error) {
+  // handle the error
+}
+```
+## Geliştirici tanımlı zamanlayıcı kullanma \{#use-developer-defined-timer\}
+
+Mobil uygulamanızda geliştirici tanımlı zamanlayıcıları kullanmak için `timerId` değerini, bu örnekte `CUSTOM_TIMER_NY`'yi kullanın; bu, Adapty kontrol panelinde ayarladığınız geliştirici tanımlı zamanlayıcının **Timer ID**'sidir. Bu sayede uygulamanız zamanlayıcıyı doğru değerle (örneğin, zamanlayıcının bitiş zamanı olan Yılbaşı gününden mevcut zamanın çıkarılmasıyla hesaplanan `13d 09h 03m 34s` gibi) dinamik olarak günceller.
+
+```typescript showLineNumbers
+const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+
+const view = await createFlowView(flow, { customTimers });
+```
+
+Bu örnekte `CUSTOM_TIMER_NY`, Adapty kontrol panelinde ayarladığınız geliştirici tanımlı zamanlayıcının **Timer ID**'sidir. Zamanlayıcı, uygulamanızın zamanlayıcıyı doğru değerle (örneğin, zamanlayıcının bitiş zamanı olan Yılbaşı gününden mevcut zamanın çıkarılmasıyla hesaplanan `13d 09h 03m 34s` gibi) dinamik olarak güncellemesini sağlar.
+
+## İletişim kutusunu göster \{#show-dialog\}
+
+Android'de bir flow görünümü sunulduğunda, native uyarı iletişim kutuları yerine bu yöntemi kullanın. Android'de normal uyarılar, flow görünümünün arkasında görünür ve bu da kullanıcılar tarafından görülememelerine neden olur. Bu yöntem, tüm platformlarda flow'un üzerinde iletişim kutusunun doğru şekilde gösterilmesini sağlar.
+```typescript showLineNumbers
+try {
+  const action = await view.showDialog({
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  });
+
+  if (action === 'secondary') {
+    // User confirmed - close the flow
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (error) {
+  // handle error
+}
+```
+
+## Bir aboneliği diğeriyle değiştirme \{#replace-one-subscription-with-another\}
+
+Android'de bir kullanıcı aktif bir aboneliği varken yeni bir abonelik satın almaya çalıştığında, flow view oluşturulurken abonelik güncelleme parametreleri geçirerek yeni satın alma işleminin nasıl ele alınacağını kontrol edebilirsiniz. Mevcut aboneliği yenisiyle değiştirmek için `createFlowView` içinde `productPurchaseParams` kullanırken `oldSubVendorProductId` ve `prorationMode` parametrelerini belirtin.
+```typescript showLineNumbers
+
+const productPurchaseParams = flow.paywalls
+  .flatMap((paywall) => paywall.productIdentifiers)
+  .map((productId) => {
+    const params: MakePurchaseParamsInput = {};
+    if (Capacitor.getPlatform() === 'android') {
+      params.android = {
+        subscriptionUpdateParams: {
+          oldSubVendorProductId: 'PRODUCT_ID_OF_THE_CURRENT_ACTIVE_SUBSCRIPTION',
+          prorationMode: 'with_time_proration',
+        },
+      };
+    }
+    return { productId, params };
+  });
+
+const view = await createFlowView(flow, { productPurchaseParams });
+```
+
+</SDKv4>
+
+<SDKv3>
+
+Paywall Builder kullanarak bir paywall özelleştirdiyseniz, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Bu tür bir paywall, hem içeriği hem de görüntülenme biçimini barındırır.
+
+:::warning
+Bu kılavuz yalnızca **Paywall Builder paywallları** içindir. Remote config paywallları için sunum süreci farklıdır. **Remote config paywalllarını** sunmak için bkz. [Remote config ile tasarlanan paywall'ı render etme](present-remote-config-paywalls).
+:::
+Bir paywall'ı görüntülemek için, [`createPaywallView`](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) metodu ile oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir. Paywall'ı tekrar görüntülemeniz gerekiyorsa, yeni bir `view` örneği oluşturmak için `createPaywallView`'ı bir kez daha çağırın.
 
 :::warning
 
-`view`'ı yeniden oluşturmadan tekrar kullanmak hataya neden olabilir.
+Aynı `view`'ı yeniden oluşturmadan kullanmak hataya yol açabilir.
 :::
-
 ```typescript showLineNumbers
 
 const view = await createPaywallView(paywall);
@@ -26,7 +133,7 @@ const view = await createPaywallView(paywall);
 view.setEventHandlers({
   onUrlPress(url) {
     window.open(url, '_blank');
-    return false; 
+    return false;
   },
 });
 
@@ -37,18 +144,16 @@ try {
 }
 ```
 
-## Geliştirici tanımlı zamanlayıcı kullanma \{#use-developer-defined-timer\}
+## Geliştirici tanımlı zamanlayıcıyı kullanma \{#use-developer-defined-timer\}
 
-Mobil uygulamanızda geliştirici tanımlı zamanlayıcıları kullanmak için `timerId` değerini, bu örnekte `CUSTOM_TIMER_NY`'yi kullanın; bu, Adapty kontrol panelinde ayarladığınız geliştirici tanımlı zamanlayıcının **Timer ID**'sidir. Bu sayede uygulamanız zamanlayıcıyı doğru değerle (örneğin, zamanlayıcının bitiş zamanı olan Yılbaşı gününden mevcut zamanın çıkarılmasıyla hesaplanan `13d 09h 03m 34s` gibi) dinamik olarak günceller.
+Mobil uygulamanızda geliştirici tanımlı zamanlayıcıları kullanmak için `timerId`'yi, bu örnekte `CUSTOM_TIMER_NY`'yi, yani Adapty kontrol panelinde ayarladığınız geliştirici tanımlı zamanlayıcının **Timer ID**'sini kullanın. Bu sayede uygulamanız zamanlayıcıyı doğru değerle dinamik olarak günceller; örneğin `13d 09h 03m 34s` (zamanlayıcının bitiş zamanı olan Yılbaşı gibi bir tarihin, o anki zamandan çıkarılmasıyla hesaplanır).
 
 ```typescript showLineNumbers
 const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
 
 const view = await createPaywallView(paywall, { customTimers });
 ```
-
-Bu örnekte `CUSTOM_TIMER_NY`, Adapty kontrol panelinde ayarladığınız geliştirici tanımlı zamanlayıcının **Timer ID**'sidir. Zamanlayıcı, uygulamanızın zamanlayıcıyı doğru değerle (örneğin, zamanlayıcının bitiş zamanı olan Yılbaşı gününden mevcut zamanın çıkarılmasıyla hesaplanan `13d 09h 03m 34s` gibi) dinamik olarak güncellemesini sağlar.
-
+Bu örnekte, `CUSTOM_TIMER_NY` Adapty kontrol panelinde belirlediğiniz geliştirici tanımlı zamanlayıcının **Timer ID**'sidir. Zamanlayıcı, uygulamanızın zamanlayıcıyı doğru değerle dinamik olarak güncellemesini sağlar—örneğin `13d 09h 03m 34s` (zamanlayıcının bitiş saatinden, Yılbaşı gibi, mevcut zaman çıkarılarak hesaplanır).
 ## İletişim kutusu gösterme \{#show-dialog\}
 
 Android'de bir paywall görünümü sunulduğunda, yerel uyarı iletişim kutuları yerine bu metodu kullanın. Android'de normal uyarılar paywall görünümünün arkasında göründüğünden kullanıcılar tarafından görülemez. Bu metod, tüm platformlarda iletişim kutusunun paywall'ın üzerinde doğru şekilde gösterilmesini sağlar.
@@ -61,7 +166,7 @@ try {
     primaryActionTitle: 'Stay',
     secondaryActionTitle: 'Close',
   });
-  
+
   if (action === 'secondary') {
     // User confirmed - close the paywall
     await view.dismiss();
@@ -72,10 +177,12 @@ try {
 }
 ```
 
-## iOS sunum stilini yapılandırma \{#configure-ios-presentation-style\}
+## iOS sunum stilini yapılandırın \{#configure-ios-presentation-style\}
 
-`present()` metoduna `iosPresentationStyle` parametresini geçirerek paywallın iOS'ta nasıl sunulacağını yapılandırın. Parametre `'full_screen'` (varsayılan) veya `'page_sheet'` değerlerini kabul eder.
+`iosPresentationStyle` parametresini `present()` metoduna geçirerek paywallın iOS'ta nasıl sunulacağını yapılandırın. Parametre `'full_screen'` (varsayılan) veya `'page_sheet'` değerlerini kabul eder.
 
 ```typescript showLineNumbers
 await view.present({ iosPresentationStyle: 'page_sheet' });
 ```
+
+</SDKv3>
