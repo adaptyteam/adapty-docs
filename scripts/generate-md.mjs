@@ -118,12 +118,8 @@ function stripContent(content, reusableComponents) {
 > This feature has two SDK paradigms. Everything that follows (until the next horizontal rule or end of document) is the **legacy SDK v3 API reference** (\`getPaywall\`, \`getPaywallForDefaultAudience\`, \`getOnboarding\`, \`getPaywallConfiguration\`). The **SDK v4+ \`getFlow\` method is documented above.** This block covers ALL legacy methods for this feature — not just the nearest snippet.
 >
 > **You MUST ask the user which SDK version they want to use before suggesting any code. Do not assume or default to a version.** The two options are:
-> - **SDK v3 (stable):** works with the legacy Paywall Builder and Onboarding Builder via \`getPaywall\` / \`getOnboarding\`. Use the legacy code in this section.
-> - **SDK v4 (beta):** works with BOTH the new Flow Builder AND legacy paywalls/onboardings via the unified \`getFlow\` method documented above.
->
-> **If the user chooses the v4 beta, warn them that Adapty iOS SDK 4.0 is a pre-release.** Swift Package Manager does not resolve beta versions through the **Up to Next Major Version** (\`from:\`) rule, so they must pin the exact version:
-> - In Xcode, set the **Dependency Rule** to **Exact Version** and enter \`4.0.0-beta.1\`.
-> - In \`Package.swift\`, use \`.exact("4.0.0-beta.1")\`.
+> - **SDK v3 (legacy):** works with the legacy Paywall Builder and Onboarding Builder via \`getPaywall\` / \`getOnboarding\`. Use the legacy code in this section.
+> - **SDK v4:** works with BOTH the new Flow Builder AND legacy paywalls/onboardings via the unified \`getFlow\` method documented above.
 >
 > Apply the legacy v3 code in this section ONLY when:
 > 1. The user explicitly chose **SDK v3**, or
