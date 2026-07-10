@@ -51,6 +51,7 @@ const LANGUAGE_NAMES = {
   ru: "Russian (ru-RU)",
   es: "Spanish (es-ES)",
   vi: "Vietnamese (vi-VN)",
+  fr: "French (fr-FR)",
 };
 
 // Locale-specific suffix for metadataTitle values (the part after the page title)
@@ -61,6 +62,7 @@ const METADATA_TITLE_SUFFIXES = {
   ru: "| Документация Adapty",
   es: "| Documentación de Adapty",
   vi: "| Tài liệu Adapty",
+  fr: "| Documentation Adapty",
 };
 
 // ---------------------------------------------------------------------------
@@ -3399,6 +3401,12 @@ const REFUSAL_PATTERNS = [
   /(vui lòng|hãy|xin)[^.\n]{0,30}(cung cấp|gửi|chia sẻ)[^.\n]{0,40}(MDX|tài liệu)/iu, // "please provide the full MDX document"
   /(chỉ là|chỉ có)[^.\n]{0,25}(đoạn|khối)\s*(mã|code)/iu, // "this is just a code snippet/block"
   /không cần (phải )?dịch(?!\s*vụ)/iu, // "doesn't need translation" — negative lookahead guards against "dịch vụ" (= service)
+
+  // French (fr)
+  /je ne vois pas[^.\n]{0,40}(MDX|document)/iu, // "I don't see the (full) MDX document"
+  /(veuillez|merci de|pourriez-vous)[^.\n]{0,40}(fournir|envoyer|partager)[^.\n]{0,40}(MDX|document)/iu, // "please provide the full MDX document"
+  /(seulement|uniquement|juste)[^.\n]{0,20}(un |d'un )?(fragment|bloc|extrait) de code/iu, // "only a code fragment/block"
+  /aucune traduction (n'est |n'était )?(nécessaire|requise)/iu, // "no translation needed"
 ];
 export function looksLikeRefusal(text) {
   if (!text) return false;

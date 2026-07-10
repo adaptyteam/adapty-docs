@@ -89,7 +89,7 @@ export default defineConfig({
     react(),
     sitemap({
       // Exclude localized pages — they are covered by locale-specific sitemaps (e.g. sitemap-zh-index.xml)
-      filter: (page) => !page.includes('/docs/zh/') && !page.includes('/docs/tr/') && !page.includes('/docs/ru/') && !page.includes('/docs/es/') && !page.includes('/docs/ja/') && !page.includes('/docs/vi/'),
+      filter: (page) => !page.includes('/docs/zh/') && !page.includes('/docs/tr/') && !page.includes('/docs/ru/') && !page.includes('/docs/es/') && !page.includes('/docs/ja/') && !page.includes('/docs/vi/') && !page.includes('/docs/fr/'),
       // Strip trailing slashes so sitemap URLs match the canonical tags emitted by DocsLayout.
       // The canonical strips trailing slashes for content pages, so the sitemap must too.
       // Mismatch causes the Algolia crawler (ignoreCanonicalTo: false) to skip sitemap entries.

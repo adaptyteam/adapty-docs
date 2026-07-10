@@ -1,6 +1,6 @@
-export const SUPPORTED_LOCALES = ['zh', 'tr', 'ru', 'es', 'ja', 'vi'] as const;
+export const SUPPORTED_LOCALES = ['zh', 'tr', 'ru', 'es', 'ja', 'vi', 'fr'] as const;
 export type Locale = typeof SUPPORTED_LOCALES[number];
-export const LOCALE_NAMES: Record<Locale, string> = { zh: '中文', tr: 'Türkçe', ru: 'Русский', es: 'Español', ja: '日本語', vi: 'Tiếng Việt' };
+export const LOCALE_NAMES: Record<Locale, string> = { zh: '中文', tr: 'Türkçe', ru: 'Русский', es: 'Español', ja: '日本語', vi: 'Tiếng Việt', fr: 'Français' };
 
 /**
  * Returns the subset of SUPPORTED_LOCALES to build in this run.
