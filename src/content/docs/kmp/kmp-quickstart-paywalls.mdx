@@ -1,39 +1,39 @@
 ---
-title: "Enable purchases by using paywalls in Kotlin Multiplatform SDK"
-description: "Quickstart guide to setting up Adapty for in-app subscription management."
-metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
-keywords: ['paywalls kotlin multiplatform', 'sdk kotlin multiplatform', 'paywall', 'paywall builder', 'getPaywall']
-rank: 70
+title: "Enable purchases with Flow Builder in Kotlin Multiplatform SDK"
+description: "Quickstart guide to enabling in-app purchases with Adapty Flow Builder."
+metadataTitle: "Adapty Flow Builder Quickstart | Adapty Docs"
+keywords: ['flows kotlin multiplatform', 'flow builder', 'getFlow', 'paywalls kotlin multiplatform', 'sdk kotlin multiplatform', 'paywall', 'paywall builder', 'getPaywall']
+rank: 90
 displayed_sidebar: sdkkmp
 ---
 
-import PaywallsIntro from '@site/src/components/reusable/PaywallsIntro.md';
+This guide uses Adapty Kotlin Multiplatform SDK v4 (beta) APIs. If you're on v3, see the [migration guide](migration-to-kmp-sdk-v4) for the corresponding method names.
 
 To enable in-app purchases, you need to understand three key concepts:
 
 - [**Products**](product) – anything users can buy (subscriptions, consumables, lifetime access)
-- [**Paywalls**](paywalls) are configurations that define which products to offer. In Adapty, paywalls are the only way to retrieve products, but this design lets you modify offerings, pricing, and product combinations without touching your app code.
-- [**Placements**](placements) – where and when you show paywalls in your app (like `main`, `onboarding`, `settings`). You set up paywalls for placements in the dashboard, then request them by placement ID in your code. This makes it easy to run A/B tests and show different paywalls to different users.
+- [**Flows**](adapty-flow-builder) – screen sequences that present products to users, built in the no-code Flow Builder. The SDK retrieves them via `getFlow`. If you'd rather build the UI in your own code, use a paywall instead — see [Implement paywalls manually](kmp-quickstart-manual).
+- [**Placements**](placements) – where and when you show flows in your app (like `main`, `onboarding`, `settings`). You attach flows to placements in the dashboard, then request them by placement ID in your code. This makes it easy to run A/B tests and show different flows to different users.
 
 Adapty offers you three ways to enable purchases in your app. Select one of them depending on your app requirements:
 
-| Implementation            | Complexity | When to use                                                                                                                                                                                                                                |
-|---------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Adapty Paywall Builder    | ✅ Easy     | You [create a complete, purchase-ready paywall in the no-code builder](quickstart-paywalls). Adapty automatically renders it and handles all the complex purchase flow, receipt validation, and subscription management behind the scenes. |
-| Manually created paywalls | 🟡 Medium  | You implement your paywall UI in your app code, but still get the paywall object from Adapty to maintain flexibility in product offerings. See the [guide](kmp-quickstart-manual).                                                         |
-| Observer mode             | 🔴 Hard    | You already have your own purchase handling infrastructure and want to keep using it. Note that the observer mode has its limitations in Adapty. See the [article](observer-vs-full-mode).                                                 |
+| Implementation | Complexity | When to use |
+|---|---|---|
+| Adapty Flow Builder | ✅ Easy | You [create a complete, purchase-ready flow in the no-code builder](quickstart-paywalls). Adapty automatically renders it and handles all the complex purchase flow, receipt validation, and subscription management behind the scenes. |
+| Manually created paywalls | 🟡 Medium | You implement your paywall UI in your app code, but still get the flow object from Adapty to maintain flexibility in product offerings. See the [guide](kmp-quickstart-manual). |
+| Observer mode | 🔴 Hard | You already have your own purchase handling infrastructure and want to keep using it. Note that the observer mode has its limitations in Adapty. See the [article](observer-vs-full-mode). |
 
 :::important
-**The steps below show how to implement a paywall created in the Adapty paywall builder.**
+**The steps below show how to implement a flow created in the Adapty Flow Builder.**
 
-If you don't want to use the paywall builder, see the [guide for handling purchases in manually created paywalls](kmp-making-purchases).
+If you'd rather build the paywall UI yourself, see [Implement paywalls manually](kmp-quickstart-manual).
 :::
 
-To display a paywall created in the Adapty paywall builder, in your app code, you only need to:
+To display a flow created in the Adapty Flow Builder, in your app code, you only need to:
 
-1. **Get the paywall**: Get the paywall from Adapty.
-2. **Display the paywall and Adapty will handle purchases for you**: Show the paywall container you've got in your app.
-3. **Handle button actions**: Associate user interactions with the paywall with your app's response to them. For example, open links or close the paywall when users click buttons.
+1. **Get the flow**: Get it from Adapty.
+2. **Display it and Adapty will handle purchases for you**: Show the view in your app.
+3. **Handle button actions**: Associate user interactions with your app's response to them. For example, open links or close the flow when users click buttons.
 
 ## Before you start
 
@@ -41,77 +41,95 @@ Before you start, complete these steps:
 
 1. Connect your app to the [App Store](initial_ios) and/or [Google Play](initial-android) in the Adapty Dashboard.
 2. [Create your products](create-product) in Adapty.
-3. [Create a paywall and add products to it](create-paywall).
-4. [Create a placement and add your paywall to it](create-placement).
+3. [Create a flow and add products to it](create-paywall).
+4. [Create a placement and add your flow to it](create-placement).
 5. [Install and activate the Adapty SDK](sdk-installation-kotlin-multiplatform) in your app code.
 
 :::tip
-The fastest way to complete these steps is to follow the [quickstart guide](quickstart) or create paywalls and placements using the [Developer CLI](developer-cli-quickstart).
+The fastest way to complete these steps is to follow the [quickstart guide](quickstart) or create flows and placements using the [Developer CLI](developer-cli-quickstart).
 :::
 
-## 1. Get the paywall
+## 1. Get the flow
 
-Your paywalls are associated with placements configured in the dashboard. Placements allow you to run different paywalls for different audiences or to run [A/B tests](ab-tests).
+Your flows are associated with placements configured in the dashboard. Placements allow you to run different flows for different audiences or to run [A/B tests](ab-tests).
 
-To get a paywall created in the Adapty paywall builder, you need to:
+To get a flow created in the Adapty Flow Builder, you need to:
 
-1. Get the `paywall` object by the [placement](placements) ID using the `getPaywall` method and check whether it is a paywall created in the builder.
+1. Get the `flow` object by the [placement](placements) ID using the `getFlow` method.
 
-2. Get the paywall view configuration using the `createPaywallView` method. The view configuration contains the UI elements and styling needed to display the paywall.
+2. Create the flow view using the `createFlowView` method. The view contains the UI elements and styling needed to display the flow. If the flow has no view configured, `createFlowView` returns an error — handle it in `onError`.
 
 :::important
-To get the view configuration, you must switch on the **Show on device** toggle in the Paywall Builder. Otherwise, you will get an empty view configuration, and the paywall won't be displayed.
+To get the view, you must switch on the **Show on device** toggle in the Flow Builder. Otherwise, `createFlowView` will return an error, and the flow won't be displayed.
 :::
 
 ```kotlin showLineNumbers
-Adapty.getPaywall("YOUR_PLACEMENT_ID")
-    .onSuccess { paywall ->
-        if (!paywall.hasViewConfiguration) {
-            return@onSuccess
-        }
-        
-        val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
-        paywallView?.present()
+Adapty.getFlow("YOUR_PLACEMENT_ID")
+    .onSuccess { flow ->
+        AdaptyUI.createFlowView(flow)
+            .onSuccess { view ->
+                view.present()
+            }
+            .onError { error ->
+                // the flow has no view configured, or view creation failed
+            }
     }
     .onError { error ->
         // handle the error
     }
 ```
 
-## 2. Display the paywall
+## 2. Display the flow
 
-Now, when you have the paywall configuration, it's enough to add a few lines to display your paywall.
+Now, when you have the flow, it's enough to add a few lines to display it.
 
-In order to display the visual paywall on the device screen, you must first configure it. To do this, call the method `AdaptyUI.createPaywallView()`:
+In order to display the visual flow on the device screen, you must first create the view. To do this, call the method `AdaptyUI.createFlowView()`:
 
 ```kotlin showLineNumbers
-val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
-paywallView?.present()
+AdaptyUI.createFlowView(flow)
+    .onSuccess { view ->
+        view.present()
+    }
+    .onError { error ->
+        // handle the error
+    }
 ```
 
-After the view has been successfully created, you can present it on the screen of the device.
+After the view has been successfully created, you can present it on the screen of the device. Each view can only be used once: after you call `dismiss()`, call `createFlowView` again to display the flow one more time.
 
 :::tip
-For more details on how to display a paywall, see our [guide](kmp-present-paywalls).
+For more details on how to display a flow, see our [guide](kmp-present-paywalls).
 :::
 
 ## 3. Handle button actions
 
-When users click buttons in the paywall, the Kotlin Multiplatform SDK automatically handles purchases, restoration, closing the paywall, and opening links.
+When users click buttons in the flow, the Kotlin Multiplatform SDK automatically handles purchases, restoration, closing the flow, and opening links.
 
 However, other buttons have custom or pre-defined IDs and require handling actions in your code. Or, you may want to override their default behavior.
 
 For example, here is the default behavior for the close button. You don't need to add it in the code, but here, you can see how it is done if needed.
+
+Note that, by default, the flow stays open after a successful purchase. If you want to close it once the purchase finishes, dismiss the view in the `flowViewDidFinishPurchase` callback.
 
 :::tip
 Read our guides on how to handle button [actions](kmp-handle-paywall-actions) and [events](kmp-handling-events).
 :::
 
 ```kotlin showLineNumbers
-AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
-    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
         when (action) {
-            AdaptyUIAction.CloseAction, AdaptyUIAction.AndroidSystemBackAction -> view.dismiss()
+            is AdaptyUIAction.CloseAction -> view.dismiss()
+        }
+    }
+
+    override fun flowViewDidFinishPurchase(
+        view: AdaptyUIFlowView,
+        product: AdaptyPaywallProduct,
+        purchaseResult: AdaptyPurchaseResult
+    ) {
+        if (purchaseResult !is AdaptyPurchaseResult.UserCanceled) {
+            view.dismiss()
         }
     }
 })
@@ -119,34 +137,44 @@ AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
 
 ## Next steps
 
-Your paywall is ready to be displayed in the app. Test your purchases in the [App Store sandbox](test-purchases-in-sandbox) or in [Google Play Store](testing-on-android) to make sure you can complete a test purchase from the paywall.
+Your flow is ready to be displayed in the app. Test your purchases in the [App Store sandbox](test-purchases-in-sandbox) or in [Google Play Store](testing-on-android) to make sure you can complete a test purchase from the flow.
 
-Now, you need to [check the users' access level](kmp-check-subscription-status) to ensure you display a paywall or give access to paid features to right users.
+Now, you need to [check the users' access level](kmp-check-subscription-status) to ensure you display a flow or give access to paid features to right users.
 
 ## Full example
 
 Here is how all those steps can be integrated in your app together.
 
 ```kotlin showLineNumbers
-// Set up the observer for handling paywall actions
-AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
-    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+// Set up the observer for handling flow events
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
         when (action) {
             is AdaptyUIAction.CloseAction -> view.dismiss()
         }
     }
+
+    override fun flowViewDidFinishPurchase(
+        view: AdaptyUIFlowView,
+        product: AdaptyPaywallProduct,
+        purchaseResult: AdaptyPurchaseResult
+    ) {
+        if (purchaseResult !is AdaptyPurchaseResult.UserCanceled) {
+            view.dismiss()
+        }
+    }
 })
 
-// Get and display the paywall
-Adapty.getPaywall("YOUR_PLACEMENT_ID")
-    .onSuccess { paywall ->
-        if (!paywall.hasViewConfiguration) {
-            // Use custom logic
-            return@onSuccess
-        }
-
-        val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
-        paywallView?.present()
+// Get and display the flow
+Adapty.getFlow("YOUR_PLACEMENT_ID")
+    .onSuccess { flow ->
+        AdaptyUI.createFlowView(flow)
+            .onSuccess { view ->
+                view.present()
+            }
+            .onError { error ->
+                // the flow has no view configured — use custom logic
+            }
     }
     .onError { error ->
         // handle the error

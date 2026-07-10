@@ -1,15 +1,466 @@
 ---
-title: "Kotlin Multiplatform - Handle paywall events"
-description: "Handle Kotlin Multiplatform subscription events efficiently with Adapty's event tracking tools."
-metadataTitle: "Handling Events in Kotlin Multiplatform | Adapty Docs"
+title: "Handle flow & paywall events - Kotlin Multiplatform"
+description: "Handle flow and paywall events in your Kotlin Multiplatform app."
+metadataTitle: "Handle Flow Events - Kotlin Multiplatform | Adapty Docs"
 toc_max_heading_level: 4
-keywords: ['AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+keywords: ['AdaptyUIFlowsEventsObserver', 'flowViewDidPerformAction', 'flowViewDidSelectProduct', 'flowViewDidStartPurchase', 'flowViewDidFinishPurchase', 'flowViewDidFailPurchase', 'flowViewDidStartRestore', 'flowViewDidFinishRestore', 'flowViewDidFailRestore', 'flowViewDidFailLoadingProducts', 'flowViewDidFail', 'AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
 
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import Details from '@site/src/components/Details';
+
+<SDKv4>
+
+:::important
+This guide covers event handling for purchases, restorations, product selection, and flow rendering. You must also implement button handling (closing the flow, opening links, etc.). See our [guide on handling flow actions](kmp-handle-paywall-actions) for details.
+:::
+
+Flows and paywalls configured with the [Flow Builder](adapty-flow-builder) or [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions. Learn how to respond to these events below.
+
+To control or monitor processes occurring on the flow screen within your mobile app, implement the `AdaptyUIFlowsEventsObserver` interface methods and register your observer with `AdaptyUI.setFlowsEventsObserver()`. Some methods have default implementations that handle common scenarios automatically, so override only the methods you want to change:
+
+```kotlin showLineNumbers title="Kotlin"
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+    // override only the methods you want to change
+})
+```
+
+:::note
+These methods are where you add your custom logic to respond to flow events. You can use `view.dismiss()` to close the flow, or implement any other custom behavior you need.
+:::
+
+### User-generated events
+
+#### Flow appearance and disappearance
+
+When a flow appears or disappears, these methods will be invoked:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidAppear(view: AdaptyUIFlowView) {
+    // Handle flow appearance
+    // You can track analytics or update UI here
+}
+
+override fun flowViewDidDisappear(view: AdaptyUIFlowView) {
+    // Handle flow disappearance
+    // You can track analytics or update UI here
+}
+```
+
+:::note
+- On iOS, `flowViewDidAppear` is also invoked when a user taps the [web paywall button](web-paywall#step-2a-add-a-web-purchase-button) inside a flow, and a web paywall opens in an in-app browser.
+- On iOS, `flowViewDidDisappear` is also invoked when a [web paywall](web-paywall#step-2a-add-a-web-purchase-button) opened from a flow in an in-app browser disappears from the screen.
+:::
+
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Flow appeared
+{
+  // No additional data
+}
+
+// Flow disappeared
+{
+  // No additional data
+}
+```
+</Details>
+
+#### Product selection
+
+If a user selects a product for purchase, this method will be invoked:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidSelectProduct(view: AdaptyUIFlowView, productId: String) {
+    // Handle product selection
+    // You can update UI or track analytics here
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+#### Started purchase
+
+If a user initiates the purchase process, this method will be invoked:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidStartPurchase(view: AdaptyUIFlowView, product: AdaptyPaywallProduct) {
+    // Handle purchase start
+    // You can show loading indicators or track analytics here
+}
+```
+
+:::note
+In [Observer mode](kmp-present-flows-in-observer-mode), purchases started from a flow are delivered through dedicated observer-mode callbacks instead.
+:::
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Successful, canceled, or pending purchase
+
+If a purchase finishes, this method will be invoked. By default, it does nothing — the flow stays open after the purchase until you dismiss it, so call `view.dismiss()` yourself once the user gets access:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFinishPurchase(
+    view: AdaptyUIFlowView,
+    product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            // Check if user has access to premium features
+            if (purchaseResult.profile.accessLevels["premium"]?.isActive == true) {
+                view.dismiss()
+            }
+        }
+        AdaptyPurchaseResult.Pending -> {
+            // Handle pending purchase (e.g., user will pay offline with cash)
+        }
+        AdaptyPurchaseResult.UserCanceled -> {
+            // Handle user cancellation
+        }
+    }
+}
+```
+
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+
+// User canceled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCanceled"
+  }
+}
+```
+</Details>
+
+We recommend dismissing the flow screen in case of successful purchase.
+
+#### Failed purchase
+
+If a purchase fails due to an error, this method will be invoked. This includes StoreKit/Google Play Billing errors (payment restrictions, invalid products, network failures), transaction verification failures, and system errors. Note that user cancellations trigger `flowViewDidFinishPurchase` with a cancelled result instead, and pending payments do not trigger this method.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFailPurchase(
+    view: AdaptyUIFlowView,
+    product: AdaptyPaywallProduct,
+    error: AdaptyError
+) {
+    // Add your purchase failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+#### Started restore
+
+If a user initiates the restore process, this method will be invoked:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidStartRestore(view: AdaptyUIFlowView) {
+    // Handle restore start
+    // You can show loading indicators or track analytics here
+}
+```
+
+#### Successful restore
+
+If restoring a purchase succeeds, this method will be invoked:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFinishRestore(view: AdaptyUIFlowView, profile: AdaptyProfile) {
+    // Add your successful restore handling logic here
+    // For example: show success message, update UI, or dismiss the flow
+
+    // Check if user has access to premium features
+    if (profile.accessLevels["premium"]?.isActive == true) {
+        view.dismiss()
+    }
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+We recommend dismissing the screen if the user has the required `accessLevel`. Refer to the [Subscription status](subscription-status) topic to learn how to check it.
+
+#### Failed restore
+
+If `Adapty.restorePurchases()` fails, this method will be invoked:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFailRestore(view: AdaptyUIFlowView, error: AdaptyError) {
+    // Add your restore failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### Web payment navigation completion
+
+If a user initiates the purchase process using a [web paywall](web-paywall), this method will be invoked:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFinishWebPaymentNavigation(
+    view: AdaptyUIFlowView,
+    product: AdaptyPaywallProduct?,
+    error: AdaptyError?
+) {
+    if (error != null) {
+        // Handle web payment navigation error
+    } else {
+        // Handle successful web payment navigation
+    }
+}
+```
+
+<Details>
+<summary>Event examples (Click to expand)</summary>
+
+```javascript
+// Successful web payment navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed web payment navigation
+{
+  "product": null,
+  "error": {
+    "code": "web_payment_failed",
+    "message": "Web payment navigation failed",
+    "details": {
+      "underlyingError": "Network connection error"
+    }
+  }
+}
+```
+</Details>
+
+### Data fetching and rendering
+
+#### Product loading errors
+
+If you don't pass the products during the initialization, AdaptyUI will retrieve the necessary objects from the server by itself. If this operation fails, AdaptyUI will report the error by calling this method:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFailLoadingProducts(view: AdaptyUIFlowView, error: AdaptyError) {
+    // Add your product loading failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+#### Rendering and runtime errors
+
+If an error occurs during the interface rendering, or another non-purchase runtime error occurs, it will be reported by this method:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFail(view: AdaptyUIFlowView, error: AdaptyError) {
+    // Handle the error
+    // In a normal situation, such errors should not occur
+    // If you come across one, please let us know
+}
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+    "error": {
+        "code": "rendering_failed",
+            "message": "Failed to render flow interface",
+            "details": {
+            "underlyingError": "Invalid flow configuration"
+        }
+    }
+}
+```
+</Details>
+
+In a normal situation, such errors should not occur, so if you come across one, please let us know.
+
+### Navigation
+
+#### Android system back button
+
+By default, a flow can't be dismissed with the Android system back button or back gesture — the default `flowViewDidPerformAction` implementation dismisses the flow only on `CloseAction` and ignores `AndroidSystemBackAction`, so the user leaves the flow through a path you define, such as a **Close** button or an `on_device_back` action in the builder. If you want the system back button to dismiss the flow, handle the action yourself:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+    when (action) {
+        AdaptyUIAction.CloseAction -> view.dismiss() // default behavior
+        AdaptyUIAction.AndroidSystemBackAction -> view.dismiss() // not handled by default
+        else -> Unit
+    }
+}
+```
+
+See the [guide on handling flow actions](kmp-handle-paywall-actions) for the full list of actions.
+
+</SDKv4>
+
+<SDKv3>
 
 Paywalls configured with the [Paywall Builder](adapty-paywall-builder) don't need extra code to make and restore purchases. However, they generate some events that your app can respond to. Those events include button presses (close buttons, URLs, product selections, and so on) as well as notifications on purchase-related actions taken on the paywall. Learn how to respond to these events below.
 
@@ -427,3 +878,4 @@ override fun paywallViewDidFailRendering(view: AdaptyUIPaywallView, error: Adapt
 </Details>
 
 In a normal situation, such errors should not occur, so if you come across one, please let us know.
+</SDKv3>
