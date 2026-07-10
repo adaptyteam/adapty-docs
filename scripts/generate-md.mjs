@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -37,6 +38,30 @@ function filterLocales(allAvailableLocales) {
 const MD_BASENAME_OVERRIDES = new Map([
     ['migration-guide-to-server-side-API-v2', 'migration-guide-to-server-side-api-v2'],
 ]);
+
+// Renders the product-map JSON as a markdown table. Kept in sync with
+// src/components/ProductMap.astro — both read the same JSON file so the
+// exported .md and the rendered HTML never drift.
+let _cachedProductMap = null;
+function renderProductMapMarkdown() {
+    if (!_cachedProductMap) {
+        const jsonPath = path.resolve(__dirname, '../src/data/product-map.json');
+        _cachedProductMap = JSON.parse(fsSync.readFileSync(jsonPath, 'utf-8'));
+    }
+    const { stageColumnLabel, columns, rows } = _cachedProductMap;
+    const renderCell = (links) => {
+        if (!links || links.length === 0) return '—';
+        return links.map(l => `[${l.text}](${l.href})`).join(', ');
+    };
+    const headerRow = [stageColumnLabel, ...columns.map(c => c.label)];
+    const sep = headerRow.map(() => '---');
+    const bodyRows = rows.map(row => [
+        row.stage,
+        ...columns.map(col => renderCell(row.cells[col.id])),
+    ]);
+    const line = arr => `| ${arr.join(' | ')} |`;
+    return [line(headerRow), line(sep), ...bodyRows.map(line)].join('\n');
+}
 
 // Helper to convert kebab-case file name to PascalCase component name
 const toPascalCase = (str) => {
@@ -117,6 +142,14 @@ ${content}
     processed = processed.replace(
         /<SkillPromo\b[^>]*\/>/g,
         'For a fully automated integration, use the [adapty-sdk-integration skill](https://github.com/adaptyteam/adapty-sdk-integration-skill): it runs the whole integration from your AI coding tool in one command.'
+    );
+
+    // Convert <ProductMap /> into a proper markdown table. The component is
+    // rendered from src/data/product-map.json; this reproduces the same table
+    // as markdown so LLM consumers get the same content.
+    processed = processed.replace(
+        /<ProductMap\s*\/?>(?:<\/ProductMap>)?/g,
+        () => renderProductMapMarkdown()
     );
 
     // 3. Inline Reusable Components
