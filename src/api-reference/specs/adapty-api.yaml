@@ -1288,7 +1288,7 @@ paths:
       description: |
         Credits or debits one or more virtual currencies for a profile in a single atomic transaction. Use a positive `amount` to credit (grant) and a negative `amount` to debit (spend). All items are applied together — if any item fails, none are applied.
 
-        Each currency code may appear only once per request. A credit through this endpoint always creates non-expiring balance.
+        Each currency code may appear only once per request. A credit through this endpoint always creates a non-expiring balance.
       operationId: createVirtualCurrencyTransaction
       tags:
         - Virtual Currency
@@ -1406,7 +1406,10 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: |
-            Conflict. A request with the same `Idempotency-Key` is still being processed. Retry after the interval in the `Retry-After` response header.
+            Conflict. The `error_code` field identifies the cause:
+
+            - `idempotency_in_flight` — a request with the same `Idempotency-Key` is still being processed. Retry after the interval in the `Retry-After` response header.
+            - `duplicate_source_transaction` — the underlying store transaction was already credited, so it is not applied again.
           content:
             application/json:
               schema:
@@ -1426,7 +1429,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '429':
           description: |
-            Too many requests. The per-app or global rate limit was exceeded. The default limits are 600 requests per minute per app and 6000 requests per minute globally.
+            Too many requests. The per-app or global rate limit was exceeded (`error_code` is `rate_limited`). The default limits are 600 requests per minute per app and 6000 requests per minute globally.
           content:
             application/json:
               schema:
@@ -1494,7 +1497,6 @@ paths:
                     metadata:
                       reason: "promo_bonus"
                     created_at: "2026-05-23T10:30:00Z"
-                    hold_id: null
                   - transaction_id: "0190e7b2-9a44-7c10-bb31-7d2e9f0a1c55"
                     transaction_type: "store_purchase"
                     items:
@@ -1502,7 +1504,6 @@ paths:
                         amount: 1000
                         balance_after: 12450
                     created_at: "2026-05-22T18:05:12Z"
-                    hold_id: null
                   - transaction_id: "0190e5c0-3f18-7b9a-9e6d-44a1c8b27e03"
                     transaction_type: "subscription_renewal"
                     items:
@@ -1510,7 +1511,6 @@ paths:
                         amount: 200
                         balance_after: 3280
                     created_at: "2026-05-20T09:00:00Z"
-                    hold_id: null
                 pagination:
                   next_cursor: "MjAyNi0wNS0yMFQwOTowMDowMFowMTkwZTVjMC0zZjE4LTdiOWEtOWU2ZC00NGExYzhiMjdlMDM="
         '400':
@@ -1571,7 +1571,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/VirtualCurrencyBalanceListResponse'
               example:
-                version: 1779791400000
+                response_created_at: 1779791400000
                 data:
                   - code: "COINS"
                     name: "Gold Coins"
@@ -3430,16 +3430,16 @@ components:
       type: object
       description: Current balances for all virtual currencies of a profile.
       properties:
-        version:
+        response_created_at:
           type: integer
           format: int64
-          description: Response version as a Unix timestamp in milliseconds.
+          description: When the response was generated, as a Unix timestamp in milliseconds.
         data:
           type: array
           items:
             $ref: '#/components/schemas/VirtualCurrencyProfileBalanceItem'
       required:
-        - version
+        - response_created_at
         - data
 
     VirtualCurrencyProfileBalanceItem:
@@ -3512,10 +3512,6 @@ components:
           type: string
           format: date-time
           description: When the transaction was recorded.
-        hold_id:
-          type: string
-          nullable: true
-          description: Reserved for the holds feature. Currently always null.
       required:
         - transaction_id
         - transaction_type
