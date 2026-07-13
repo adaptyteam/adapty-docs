@@ -804,6 +804,12 @@ async function translateForLang(
 
 const SYNC_CONCURRENCY = 5;
 
+// Abort a batch that has produced ZERO new completions for this many minutes — a
+// server-side stall (batch accepted but never scheduled), distinct from a large
+// batch that is merely slow. Any completion resets the timer, so batch size is
+// irrelevant: only a genuinely frozen batch ever trips this.
+const BATCH_STALL_ABORT_MIN = 30;
+
 async function translateSync(
   client,
   files,
@@ -1068,6 +1074,15 @@ async function seedSectionCache(file, localesDir, hashesDir, lang) {
 // Section-level incremental translation (--incremental only)
 // ---------------------------------------------------------------------------
 
+// A LEGACY positional section ID is "-p" + a small integer paragraph index
+// ("h2-foo-p1"). The current scheme is "-p" + an 8-char content hash
+// ("h2-foo-p56123480"). A content hash that happens to be all decimal digits
+// also matches /-p\d+$/, so exclude the 8-hex-char form — otherwise a valid
+// section cache is wrongly discarded on every run, freezing its translations.
+function hasLegacyPositionalIds(cacheIds) {
+  return cacheIds.some((id) => /-p\d+$/.test(id) && !/-p[0-9a-f]{8}$/.test(id));
+}
+
 async function translateFileWithSections(
   client,
   file,
@@ -1095,7 +1110,7 @@ async function translateFileWithSections(
     // without needing an explicit stale invalidation.
     if (storedData?.sections) {
       const cacheIds = Object.keys(storedData.sections);
-      const hasOldPositionalIds = cacheIds.some((id) => /-p\d+$/.test(id));
+      const hasOldPositionalIds = hasLegacyPositionalIds(cacheIds);
       if (hasOldPositionalIds) {
         storedData = { fileHash: storedData.fileHash };
       }
@@ -1108,11 +1123,11 @@ async function translateFileWithSections(
   // Covers files translated via batch (which stores only fileHash, no sections),
   // and the post-migration run where the cache was discarded due to stale IDs.
   //
-  // Para chunks are only seeded when the file hash is unchanged (cold cache recovery).
-  // When the file has changed (we are in toTranslate), para chunks are intentionally
-  // NOT seeded: seeding stores the current English hash as contentHash, which would
-  // make prose-changed paragraphs look like cache hits, causing the zh to go stale.
-  // Heading sections are always safe to seed (they are structural, never sent to Claude).
+  // Sections are seeded from the on-disk translation ONLY when the file hash is
+  // unchanged (cold-cache recovery) — then the existing translation provably matches
+  // the current English. When the file has changed (we are in toTranslate), seeding
+  // would bind the new English hash to the old translation and freeze it, so ALL
+  // sections — heading/short AND para chunks — are left uncached and sent to Claude.
   const fileHashChanged =
     storedData?.fileHash && storedData.fileHash !== (await fileHash(file));
   if (!storedData?.sections) {
@@ -1157,12 +1172,14 @@ async function translateFileWithSections(
 
         const seeded = {};
         for (const s of sections) {
+          // File changed → don't seed any section from the (possibly stale) on-disk
+          // translation; leave it uncached so the main loop sends it to Claude.
+          if (fileHashChanged) continue;
           const isParaChunk = /-p[0-9a-f]{8}$/.test(s.id);
           if (!isParaChunk) {
             const zhContent = zhByHeadId.get(s.id);
             if (zhContent) seeded[s.id] = makeSeedEntry(s.content, zhContent);
-          } else if (!fileHashChanged) {
-            // Skip para chunk seeding when file changed — prose-changed chunks must go to Claude.
+          } else {
             const headId = s.id.replace(/-p[0-9a-f]{8}$/, "");
             const pairs = paraChunksByHead.get(headId);
             if (!pairs) continue;
@@ -1360,7 +1377,7 @@ async function buildSectionPlan(file, lang, localesDir, hashesDir) {
     storedData = JSON.parse(await fs.readFile(hashFile, "utf-8"));
     if (storedData?.sections) {
       const cacheIds = Object.keys(storedData.sections);
-      if (cacheIds.some((id) => /-p\d+$/.test(id))) {
+      if (hasLegacyPositionalIds(cacheIds)) {
         storedData = { fileHash: storedData.fileHash };
       }
     }
@@ -1398,11 +1415,14 @@ async function buildSectionPlan(file, lang, localesDir, hashesDir) {
         }
         const seeded = {};
         for (const s of sections) {
+          // File changed → don't seed any section from the (possibly stale) on-disk
+          // translation; leave it uncached so the plan sends it to Claude.
+          if (fileHashChanged) continue;
           const isParaChunk = /-p[0-9a-f]{8}$/.test(s.id);
           if (!isParaChunk) {
             const zhContent = zhByHeadId.get(s.id);
             if (zhContent) seeded[s.id] = makeSeedEntry(s.content, zhContent);
-          } else if (!fileHashChanged) {
+          } else {
             const headId = s.id.replace(/-p[0-9a-f]{8}$/, "");
             const pairs = paraChunksByHead.get(headId);
             if (!pairs) continue;
@@ -1571,26 +1591,47 @@ async function translateBatchSections(
 
     const startedAt = Date.now();
     let current = await client.messages.batches.retrieve(batch.id);
-    const warnAfterMin = Math.min(60, 15 + Math.ceil(allEntries.length * 0.1));
+    let lastProgressAt = Date.now();
+    let lastDone = -1;
+    let stalled = false;
     while (current.processing_status !== "ended") {
       const counts = current.request_counts ?? {};
+      const done =
+        (counts.succeeded ?? 0) + (counts.errored ?? 0) +
+        (counts.canceled ?? 0) + (counts.expired ?? 0);
+      if (done > lastDone) {
+        lastDone = done;
+        lastProgressAt = Date.now();
+      }
       const elapsedMin = Math.floor((Date.now() - startedAt) / 60000);
-      const elapsed = elapsedMin >= 1 ? ` (${elapsedMin}m elapsed)` : "";
-      const warning =
-        elapsedMin >= warnAfterMin && (counts.succeeded ?? 0) === 0
-          ? ` ⚠️  no progress in ${warnAfterMin}m`
-          : "";
+      const stalledMin = Math.floor((Date.now() - lastProgressAt) / 60000);
       console.log(
-        `  Status: ${current.processing_status} — succeeded: ${counts.succeeded ?? "?"}, ` +
-          `errored: ${counts.errored ?? "?"}${elapsed}${warning}`,
+        `  Status: ${current.processing_status} — done ${done}/${allEntries.length}, ` +
+          `errored: ${counts.errored ?? "?"} (${elapsedMin}m elapsed` +
+          `${stalledMin >= 5 ? `, no progress ${stalledMin}m` : ""})`,
       );
+      if (stalledMin >= BATCH_STALL_ABORT_MIN) {
+        console.warn(
+          `${tag} Batch ${batch.id} stalled — no completions in ${stalledMin}m; cancelling. ` +
+            `Affected files stay unwritten and retry on the next push.`,
+        );
+        try {
+          await client.messages.batches.cancel(batch.id);
+        } catch (e) {
+          console.warn(`  cancel failed: ${e.message}`);
+        }
+        hadErrors = true;
+        stalled = true;
+        break;
+      }
       await sleep(30_000);
       current = await client.messages.batches.retrieve(batch.id);
     }
 
-    console.log(`${tag} Batch complete. Retrieving results...`);
-    const results = await client.messages.batches.results(batch.id);
-    for await (const r of results) {
+    if (!stalled) {
+      console.log(`${tag} Batch complete. Retrieving results...`);
+      const results = await client.messages.batches.results(batch.id);
+      for await (const r of results) {
       if (r.result.type === "succeeded") {
         if (r.result.message.stop_reason === "max_tokens") {
           const meta = customIdLookup[r.custom_id];
@@ -1632,6 +1673,7 @@ async function translateBatchSections(
           `  ✗ ${customIdLookup[r.custom_id]?.basename}::${customIdLookup[r.custom_id]?.sectionId} (${r.custom_id}): ${JSON.stringify(r.result)}`,
         );
         hadErrors = true;
+      }
       }
     }
   }
@@ -1820,21 +1862,38 @@ async function waitAndRetrieve(
 
   const startedAt = Date.now();
   let batch = await client.messages.batches.retrieve(batchId);
-  // Warn threshold: 15 min base + 30s per request, capped at 60 min.
   const requestCount = Object.keys(fileMap).length;
-  const warnAfterMin = Math.min(60, 15 + Math.ceil(requestCount * 0.5));
+  let lastProgressAt = Date.now();
+  let lastDone = -1;
   while (batch.processing_status !== "ended") {
     const counts = batch.request_counts ?? {};
+    const done =
+      (counts.succeeded ?? 0) + (counts.errored ?? 0) +
+      (counts.canceled ?? 0) + (counts.expired ?? 0);
+    if (done > lastDone) {
+      lastDone = done;
+      lastProgressAt = Date.now();
+    }
     const elapsedMin = Math.floor((Date.now() - startedAt) / 60000);
-    const elapsed = elapsedMin >= 1 ? ` (${elapsedMin}m elapsed)` : "";
-    const warning =
-      elapsedMin >= warnAfterMin && (counts.succeeded ?? 0) === 0
-        ? ` ⚠️  no progress in ${warnAfterMin}m — API may be slow or use --sync to bypass batch`
-        : "";
+    const stalledMin = Math.floor((Date.now() - lastProgressAt) / 60000);
     console.log(
-      `  Status: ${batch.processing_status} — processing: ${counts.processing ?? "?"}, ` +
-        `succeeded: ${counts.succeeded ?? "?"}, errored: ${counts.errored ?? "?"}${elapsed}${warning}`,
+      `  Status: ${batch.processing_status} — done ${done}/${requestCount}, ` +
+        `errored: ${counts.errored ?? "?"} (${elapsedMin}m elapsed` +
+        `${stalledMin >= 5 ? `, no progress ${stalledMin}m` : ""})`,
     );
+    if (stalledMin >= BATCH_STALL_ABORT_MIN) {
+      console.warn(
+        `${tag} Batch ${batchId} stalled — no completions in ${stalledMin}m; cancelling. ` +
+          `These files stay untranslated and retry on the next push.`,
+      );
+      try {
+        await client.messages.batches.cancel(batchId);
+      } catch (e) {
+        console.warn(`  cancel failed: ${e.message}`);
+      }
+      hadErrors = true;
+      return;
+    }
     await sleep(30_000);
     batch = await client.messages.batches.retrieve(batchId);
   }
