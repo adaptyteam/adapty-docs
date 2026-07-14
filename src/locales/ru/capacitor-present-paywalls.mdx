@@ -1,24 +1,129 @@
 ---
-title: "Отображение пейволов Paywall Builder в Capacitor SDK"
-description: "Отображение пейволов в Capacitor-приложениях с помощью Adapty."
-metadataTitle: "Отображение пейволов в Capacitor | Документация Adapty"
+title: "Отображение флоу и пейволов — Capacitor"
+description: "Показывайте флоу и пейволы пользователям в вашем Capacitor-приложении с помощью Adapty."
+metadataTitle: "Отображение флоу и пейволов в Capacitor | Документация Adapty"
 ---
 
-import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
 
-Если вы настроили пейвол с помощью Paywall Builder, вам не нужно думать о его рендеринге в коде мобильного приложения — всё необходимое уже содержится в самом пейволе: и что показывать, и как это показывать.
+<SDKv4>
+Если вы создали флоу или пейвол в Flow Builder, вам не нужно беспокоиться об его отображении в коде мобильного приложения — такой флоу уже содержит и что показывать, и как показывать.
+
+Перед началом убедитесь, что вы:
+
+1. [Создали флоу или пейвол](create-paywall).
+2. Добавили его в [плейсмент](placements).
+3. [Получили флоу и подготовили отображение](capacitor-get-pb-paywalls).
 
 :::warning
-Этот гайд предназначен только для пейволов **Paywall Builder**. Процесс отображения пейволов Remote Config отличается. Для отображения **пейволов Remote Config** см. [Отображение пейвола, созданного с помощью Remote Config](present-remote-config-paywalls).
-:::
+Этот гайд предназначен **только для флоу и пейволов Paywall Builder**, для которых требуется SDK v4.0 или выше. Процесс отображения флоу отличается для пейволов на основе Remote Config.
 
-Чтобы показать пейвол, вызовите метод `view.present()` на объекте `view`, созданном методом [`createPaywallView`](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Каждый объект `view` можно использовать только один раз. Если нужно показать пейвол повторно, снова вызовите `createPaywallView`, чтобы создать новый экземпляр `view`.
+- Для отображения **пейволов на основе Remote Config** смотрите [Отображение пейвола, созданного с помощью Remote Config](present-remote-config-paywalls-capacitor).
+
+:::
+Чтобы отобразить флоу или пейвол как отдельный экран, используйте метод `view.present()` на `view`, созданном методом [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration). Каждый `view` можно использовать только один раз. Если нужно показать флоу повторно, вызовите `createFlowView` ещё раз, чтобы создать новый экземпляр `view`.
+
+:::warning
+Повторно использовать один и тот же `view` без пересоздания запрещено. Это приведёт к ошибке.
+:::
+```typescript showLineNumbers
+
+const view = await createFlowView(flow);
+
+// Optional: handle flow events (close, purchase, restore, etc)
+// await view.setEventHandlers({ ... });
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+:::important
+Повторный вызов `setEventHandlers` переопределит обработчики, которые вы передаёте, заменив как обработчики по умолчанию, так и ранее установленные обработчики для указанных событий.
+:::
+## Настройка стиля отображения на iOS \{#configure-ios-presentation-style\}
+
+Настройте способ отображения флоу на iOS, передав параметр `iosPresentationStyle` в метод `present()`. Параметр принимает значения `'full_screen'` (по умолчанию) или `'page_sheet'`. На Android флоу всегда отображается как полноэкранная активность.
+
+```typescript showLineNumbers
+try {
+  await view.present({ iosPresentationStyle: 'page_sheet' });
+} catch (error) {
+  // handle the error
+}
+```
+## Использование таймера, заданного разработчиком \{#use-developer-defined-timer\}
+
+Чтобы использовать таймеры, заданные разработчиком, в своём мобильном приложении, укажите `timerId` — в данном примере `CUSTOM_TIMER_NY`, **Timer ID** таймера, который вы задали в дашборде Adapty. Это гарантирует, что приложение будет динамически обновлять таймер с правильным значением — например, `13d 09h 03m 34s` (рассчитывается как время окончания таймера, например Новый год, минус текущее время).
+
+```typescript showLineNumbers
+const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+
+const view = await createFlowView(flow, { customTimers });
+```
+В этом примере `CUSTOM_TIMER_NY` — это **Timer ID** таймера, заданного разработчиком в дашборде Adapty. Таймер обеспечивает динамическое обновление значения в приложении — например, `13d 09h 03m 34s` (вычисляется как разница между временем окончания таймера, например Новым годом, и текущим временем).
+## Показ диалогового окна \{#show-dialog\}
+
+Используйте этот метод вместо нативных диалогов-алертов, когда на Android отображается флоу. На Android обычные алерты появляются за флоу и становятся невидимы для пользователей. Этот метод гарантирует корректное отображение диалогового окна поверх флоу на всех платформах.
+```typescript showLineNumbers
+try {
+  const action = await view.showDialog({
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  });
+
+  if (action === 'secondary') {
+    // User confirmed - close the flow
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (error) {
+  // handle error
+}
+```
+
+## Замена одной подписки на другую \{#replace-one-subscription-with-another\}
+
+Когда пользователь пытается купить новую подписку при наличии активной на Android, вы можете управлять тем, как должна обрабатываться новая покупка, передав параметры обновления подписки при создании представления флоу. Чтобы заменить текущую подписку на новую, используйте `productPurchaseParams` в `createFlowView` с параметрами `oldSubVendorProductId` и `prorationMode`.
+```typescript showLineNumbers
+
+const productPurchaseParams = flow.paywalls
+  .flatMap((paywall) => paywall.productIdentifiers)
+  .map((productId) => {
+    const params: MakePurchaseParamsInput = {};
+    if (Capacitor.getPlatform() === 'android') {
+      params.android = {
+        subscriptionUpdateParams: {
+          oldSubVendorProductId: 'PRODUCT_ID_OF_THE_CURRENT_ACTIVE_SUBSCRIPTION',
+          prorationMode: 'with_time_proration',
+        },
+      };
+    }
+    return { productId, params };
+  });
+
+const view = await createFlowView(flow, { productPurchaseParams });
+```
+
+</SDKv4>
+
+<SDKv3>
+
+Если вы настроили пейвол с помощью Paywall Builder, вам не нужно беспокоиться о его отображении в коде мобильного приложения — он уже содержит всё необходимое: и что показывать, и как показывать.
+
+:::warning
+Этот гайд предназначен **только для пейволов, созданных в Paywall Builder**. Процесс отображения пейволов на основе Remote Config отличается. Подробнее см. в разделе [Отображение пейвола на основе Remote Config](present-remote-config-paywalls).
+:::
+Чтобы отобразить пейвол, используйте метод `view.present()` на объекте `view`, созданном методом [`createPaywallView`](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Каждый `view` можно использовать только один раз. Если нужно показать пейвол повторно, вызовите `createPaywallView` ещё раз, чтобы создать новый экземпляр `view`.
 
 :::warning
 
-Повторное использование одного и того же объекта `view` без его пересоздания может привести к ошибке.
+Повторное использование одного и того же `view` без его пересоздания может привести к ошибке.
 :::
-
 ```typescript showLineNumbers
 
 const view = await createPaywallView(paywall);
@@ -26,7 +131,7 @@ const view = await createPaywallView(paywall);
 view.setEventHandlers({
   onUrlPress(url) {
     window.open(url, '_blank');
-    return false; 
+    return false;
   },
 });
 
@@ -37,22 +142,19 @@ try {
 }
 ```
 
-## Таймер, заданный разработчиком \{#use-developer-defined-timer\}
+## Использование таймера, заданного разработчиком \{#use-developer-defined-timer\}
 
-Чтобы использовать таймеры, заданные разработчиком, в своём мобильном приложении, укажите `timerId` — в данном примере `CUSTOM_TIMER_NY`, **Timer ID** таймера, заданного разработчиком в дашборде Adapty. Это позволяет приложению динамически обновлять таймер с корректным значением — например, `13д 09ч 03м 34с` (рассчитывается как время окончания таймера, например Новый год, минус текущее время).
+Чтобы использовать таймеры, заданные разработчиком, в своём мобильном приложении, укажите `timerId` — в данном примере `CUSTOM_TIMER_NY`, **Timer ID** таймера, который вы задали в дашборде Adapty. Это позволяет приложению динамически обновлять таймер с нужным значением — например, `13d 09h 03m 34s` (вычисляется как время окончания таймера, например Новый год, минус текущее время).
 
 ```typescript showLineNumbers
 const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
 
 const view = await createPaywallView(paywall, { customTimers });
 ```
+В этом примере `CUSTOM_TIMER_NY` — это **Timer ID** таймера, заданного разработчиком в дашборде Adapty. Таймер динамически обновляет значение в приложении — например, `13d 09h 03m 34s` (рассчитывается как разница между временем окончания таймера, например Новым годом, и текущим временем).
+## Показ диалогов \{#show-dialog\}
 
-В этом примере `CUSTOM_TIMER_NY` — это **Timer ID** таймера, заданного разработчиком в дашборде Adapty. Таймер обеспечивает динамическое обновление значения в приложении — например, `13д 09ч 03м 34с` (рассчитывается как время окончания таймера, например Новый год, минус текущее время).
-
-## Диалоговое окно \{#show-dialog\}
-
-Используйте этот метод вместо стандартных диалоговых окон, когда на Android отображается пейвол. На Android обычные алерты появляются позади пейвола и становятся невидимы для пользователя. Данный метод гарантирует корректное отображение диалога поверх пейвола на всех платформах.
-
+Используйте этот метод вместо нативных диалоговых окон, когда на Android отображается пейвол. На Android обычные алерты появляются позади пейвола и становятся невидимы для пользователей. Этот метод обеспечивает корректное отображение диалогов поверх пейвола на всех платформах.
 ```typescript showLineNumbers title="Capacitor"
 try {
   const action = await view.showDialog({
@@ -61,7 +163,7 @@ try {
     primaryActionTitle: 'Stay',
     secondaryActionTitle: 'Close',
   });
-  
+
   if (action === 'secondary') {
     // User confirmed - close the paywall
     await view.dismiss();
@@ -74,8 +176,10 @@ try {
 
 ## Настройка стиля отображения на iOS \{#configure-ios-presentation-style\}
 
-Настройте способ отображения пейвола на iOS, передав параметр `iosPresentationStyle` в метод `present()`. Параметр принимает значения `'full_screen'` (по умолчанию) или `'page_sheet'`.
+Укажите, как пейвол отображается на iOS, передав параметр `iosPresentationStyle` в метод `present()`. Параметр принимает значения `'full_screen'` (по умолчанию) или `'page_sheet'`.
 
 ```typescript showLineNumbers
 await view.present({ iosPresentationStyle: 'page_sheet' });
 ```
+
+</SDKv3>

@@ -26,24 +26,50 @@ El [SDK de Adapty para Capacitor](https://github.com/adaptyteam/AdaptySDK-Capaci
 | 3.16.0+                   | 8                    | 15.0+          |
 | 3.15                      | 7                    | 14.0+          |
 
-Las versiones 6 e inferiores de Capacitor no son compatibles.
+Las versiones 6 e inferiores de Capacitor no están soportadas.
+Construir para iOS con Adapty SDK v4 (beta) requiere **Xcode 26** o posterior — el SDK nativo de iOS que usa está compilado con Swift tools 6.2. Los requisitos de iOS 15.0+, Capacitor 8 y Android minSdk 24 son los mismos que para SDK 3.16+.
 
 :::info
-A partir del SDK v3.17, el SDK de Adapty usa Google Play Billing Library v8.0.0 por defecto.
+A partir de SDK v3.17, Adapty SDK usa Google Play Billing Library v8.0.0 por defecto.
 :::
 
 <InstallationPrereqs />
 ## Instalar el SDK de Adapty \{#install-adapty-sdk\}
 
+:::important
+Los pasos a continuación instalan Adapty SDK 3.x. SDK v4 (beta) — necesario para el [Flow Builder](adapty-flow-builder) y utilizado por el [quickstart](capacitor-quickstart-paywalls) — se instala de forma diferente: sigue [Adapty SDK 4.0 (beta)](#adapty-sdk-40-beta) más abajo, o consulta la [guía de migración](migration-to-capacitor-sdk-v4).
+:::
+
 [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-Capacitor.svg?style=flat&logo=capacitor)](https://github.com/adaptyteam/AdaptySDK-Capacitor/releases)
 
 Instala el SDK de Adapty:
-
 ```sh
 npm install @adapty/capacitor
 npx cap sync
 ```
 
+### Adapty SDK 4.0 (beta)
+
+Capacitor SDK 4.0 — que añade soporte para [Flow Builder](adapty-flow-builder) — es una versión preliminar. Instala la versión exacta (npm no resuelve versiones preliminares con rangos caret/tilde) y luego sincroniza:
+
+```sh
+npm install @adapty/capacitor@4.0.0-beta.1
+```
+
+```sh
+npx cap sync
+```
+
+En iOS, la v4 obtiene los SDK nativos de Adapty exclusivamente a través de **Swift Package Manager** — el podspec de CocoaPods ha sido eliminado ([el repositorio de specs de CocoaPods pasará a ser de solo lectura en diciembre de 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)). El proyecto iOS de tu app debe usar la integración SPM de Capacitor:
+- Para apps nuevas, añade la plataforma iOS con el gestor de paquetes SPM:
+
+  ```sh
+  npx cap add ios --packagemanager SPM
+  ```
+
+- Para apps existentes, migra el proyecto iOS de CocoaPods a SPM siguiendo [la guía de Capacitor para usar SPM en un proyecto existente](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project).
+
+Para ver la lista completa de cambios de API en v4, consulta [Migrar el SDK de Adapty para Capacitor a v4](migration-to-capacitor-sdk-v4).
 ## Activar el módulo Adapty del SDK \{#activate-adapty-module-of-adapty-sdk\}
 
 :::note
@@ -195,7 +221,7 @@ Cuando `clearDataOnBackup` se establece en `true`, el SDK detecta cuándo se res
 :::note
 Solo se elimina la caché local del SDK. El historial de transacciones con Apple y los datos del usuario en los servidores de Adapty no se ven afectados.
 :::
-```swift showLineNumbers
+```typescript showLineNumbers
 await adapty.activate({
     apiKey: 'YOUR_PUBLIC_SDK_KEY',
     params: {
@@ -232,38 +258,43 @@ try {
 
 #### Error de versión mínima de iOS \{#minimum-ios-version-error\}
 
-Si recibes un error de versión mínima de iOS, actualiza tu Podfile:
+:::note
+Esto aplica a proyectos basados en CocoaPods con **SDK 3.x**. El SDK 4.0 se instala en iOS a través de Swift Package Manager únicamente (no hay `Podfile`) y requiere iOS 15.0 — establece tu deployment target en 15.0 en Xcode.
+:::
+
+Si obtienes un error de versión mínima de iOS con el SDK 3.x, actualiza tu Podfile:
 
 ```diff
 -platform :ios, min_ios_version_supported
-+platform :ios, '14.0'  # For core features only
-# OR
-+platform :ios, '15.0'  # If using paywalls created in the paywall builder
++platform :ios, '15.0'
 ```
 
 #### Reglas de copia de seguridad de Android (configuración de Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
 
 <AndroidBackupRules />
-
 :::tip
 Después de modificar archivos nativos de Android, ejecuta `npx cap sync android` para que Capacitor recoja los recursos actualizados si regeneras la plataforma.
 :::
 
 #### Las compras fallan al volver desde otra app en Android \{#purchases-fail-after-returning-from-another-app-in-android\}
-Si la Activity que inicia el flujo de compra utiliza un `launchMode` no predeterminado, Android puede recrearla o reutilizarla incorrectamente cuando el usuario regresa desde Google Play, una app bancaria o un navegador. Esto puede provocar que el resultado de la compra se pierda o se trate como cancelado.
 
-Para que las compras funcionen correctamente, usa únicamente los modos de lanzamiento `standard` o `singleTop` para la Activity que inicia el flujo de compra, y evita cualquier otro modo.
+Si la Activity que inicia el flow de compra usa un `launchMode` distinto al predeterminado, Android puede recrearla o reutilizarla de forma incorrecta cuando el usuario vuelve desde Google Play, una app bancaria o un navegador. Esto puede hacer que el resultado de la compra se pierda o se trate como cancelado.
+Para asegurarte de que las compras funcionen correctamente, usa únicamente los modos de lanzamiento `standard` o `singleTop` para la Activity que inicia el flow de compra, y evita cualquier otro modo.
 
-En tu `AndroidManifest.xml`, asegúrate de que la Activity que inicia el flujo de compra esté configurada como `standard` o `singleTop`:
+En tu `AndroidManifest.xml`, asegúrate de que la Activity que inicia el flow de compra esté configurada como `standard` o `singleTop`:
+
 ```xml
 <activity
     android:name=".MainActivity"
     android:launchMode="standard" />
 ```
 
-#### Errores de compilación de Swift 6 causados por la sobrescritura de SWIFT_VERSION en el Podfile \{#swift-6-build-errors-caused-by-podfile-swift_version-override\}
+#### Errores de compilación en Swift 6 causados por la sobreescritura de SWIFT_VERSION en el Podfile \{#swift-6-build-errors-caused-by-podfile-swift-version-override\}
+:::note
+Esto se aplica a proyectos basados en CocoaPods con **SDK 3.x**. El SDK 4.0 instala los SDKs nativos a través de Swift Package Manager, por lo que no hay ningún `Podfile` que ajustar.
+:::
 
-Al compilar tu app de Capacitor para iOS, es posible que veas errores de compilación de Swift 6 en los targets de los pods de Adapty. Los síntomas típicos incluyen discrepancias de `@Sendable` en `AdaptyUIBuilderLogic`, falta de conformidad con `Sendable` en los tipos de Adapty, o errores de aislamiento de actores.
+Al compilar tu app de Capacitor para iOS, es posible que veas errores de compilación de Swift 6 en los targets de los pods de Adapty. Los síntomas más comunes incluyen incompatibilidades de `@Sendable` en `AdaptyUIBuilderLogic`, conformidad `Sendable` ausente en los tipos de Adapty, o errores de aislamiento de actores.
 El pod de Adapty declara `s.swift_version = '6.0'` y requiere Swift 6 para compilarse. Tu propio código de la app puede quedarse en Swift 5 — solo los targets del pod de Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`) necesitan compilarse con Swift 6.
 
 La causa más común es un hook `post_install` en `ios/App/Podfile` que reescribe `SWIFT_VERSION` para todos los targets del pod:

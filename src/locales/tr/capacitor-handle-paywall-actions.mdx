@@ -1,29 +1,118 @@
 ---
-title: "Capacitor SDK'da buton eylemlerine yanıt verme"
-description: "Daha iyi uygulama monetizasyonu için Adapty ile Capacitor'da paywall buton eylemlerini yönetin."
-metadataTitle: "Paywall buton eylemlerini yönetme | Adapty Dokümanları"
+title: "Flow aksiyonlarına yanıt verme - Capacitor"
+description: "Capacitor'da Adapty kullanarak flow'lardan ve paywall'lardan gelen buton aksiyonlarını yönetin, uygulama monetizasyonunu iyileştirin."
+metadataTitle: "Flow Aksiyonlarına Yanıt Verme - Capacitor | Adapty Dokümanları"
 toc_max_heading_level: 4
-keywords: ['paywall butonu', 'buton', 'paywall buton eylemleri', 'eylemleri yönetme']
+keywords: ['paywall butonu', 'buton', 'paywall buton aksiyonları', 'aksiyonları yönet']
 ---
 
-Adapty paywall builder kullanarak paywall oluşturuyorsanız butonları doğru şekilde ayarlamanız kritik öneme sahiptir:
+<SDKv4>
 
-1. [Paywall builder'a bir buton ekleyin](paywall-buttons) ve ona önceden tanımlanmış bir eylem atayın ya da özel bir eylem ID'si oluşturun.
-2. Atadığınız her eylemi uygulamanızda ele almak için kod yazın.
+Adapty [Flow Builder](adapty-flow-builder) veya [Paywall Builder](adapty-paywall-builder) kullanarak flow'lar ya da paywall'lar oluşturuyorsanız, butonları doğru şekilde ayarlamak çok önemlidir:
+1. [Builder'da bir buton ekleyin](paywall-buttons) ve ona mevcut bir eylem atayın ya da özel bir eylem ID'si oluşturun.
+2. Atadığınız her eylemi işlemek için uygulamanıza kod yazın.
 
-Bu kılavuz, kodunuzda özel ve önceden tanımlanmış eylemleri nasıl yöneteceğinizi göstermektedir.
+Bu kılavuz, özel ve mevcut eylemlerin kodunuzda nasıl işleneceğini gösterir.
 
-## Paywall'ları kapatma \{#close-paywalls\}
-
-Paywall'ınızı kapatacak bir buton eklemek için:
-
-1. Paywall builder'da bir buton ekleyin ve **Close** eylemini atayın.
-2. Uygulama kodunuzda, paywall'ı kapatan `close` eylemi için bir işleyici oluşturun.
-
-:::info
-Capacitor SDK'da `close` eylemi, paywall'ı varsayılan olarak kapatmayı tetikler. Ancak gerekirse bu davranışı kodunuzda geçersiz kılabilirsiniz. Örneğin, bir paywall'ı kapatmak başka bir paywall'ı açmayı tetikleyebilir.
+:::warning
+**Satın almalar, geri yüklemeler, flow ve paywall kapatma işlemleri ile URL açma otomatik olarak gerçekleştirilir.** Varsayılan davranışlarını yapılandırabilir ya da özel eylemler için yanıtlar uygulayabilirsiniz.
 :::
 
+:::note
+Bir olay için handler ayarlamak, o olayın varsayılan davranışının tamamen yerine geçer. Ayarlamadığınız handler'lar varsayılan davranışlarını korur.
+:::
+## Flow ve paywall'ları kapatma \{#close-flows-and-paywalls\}
+
+Flow veya paywall'ınıza kapatma düğmesi eklemek için:
+
+1. Builder'da bir düğme ekleyin ve ona **Close** eylemini atayın.
+2. Uygulama kodunuzda, flow veya paywall'ı kapatan `close` eylemi için bir işleyici uygulayın.
+
+:::info
+Capacitor SDK'da `close` eylemi, varsayılan olarak flow veya paywall'ı kapatmayı tetikler. Ancak gerekirse bu davranışı kodunuzda geçersiz kılabilirsiniz. Örneğin, bir flow'u kapatmak başka bir flow'un açılmasını tetikleyebilir.
+:::
+```typescript showLineNumbers
+
+const view = await createFlowView(flow);
+
+const unsubscribe = await view.setEventHandlers({
+  onCloseButtonPress() {
+    return true; // allow the flow to close
+  },
+});
+```
+
+Android'de sistem **Geri** düğmesi ve geri hareketi ayrı bir `onAndroidSystemBack` olayını tetikler. SDK v4'te bu olay artık varsayılan olarak flow'u kapatmaz. **Geri** düğmesinin flow'u kapatmasını istiyorsanız handler'dan `true` döndürün:
+```typescript showLineNumbers
+const unsubscribe = await view.setEventHandlers({
+  onAndroidSystemBack() {
+    return true; // close the flow when the Back button is pressed
+  },
+});
+```
+
+## Flow ve paywall'lardan URL açma \{#open-urls-from-flows-and-paywalls\}
+
+:::tip
+Bir grup bağlantı eklemek istiyorsanız (örneğin, kullanım koşulları ve satın alma iadesi), builder'da bir **Link** elementi ekleyin ve bunu **Open URL** aksiyonuyla butonlarla aynı şekilde ele alın.
+:::
+
+Flow'unuzdan veya paywall'ınızdan bir bağlantı açan buton eklemek için (örneğin, **Terms of use** veya **Privacy policy**):
+
+1. Builder'da bir buton ekleyin, **Open URL** aksiyonunu atayın ve açmak istediğiniz URL'yi girin.
+2. Gerekirse, uygulama kodunuzda alınan URL'yi kendi yönteminizle açan `openUrl` aksiyonu için bir işleyici uygulayın.
+:::info
+Capacitor SDK'da, bir URL'ye dokunulduğunda bu URL varsayılan olarak yerel tarayıcıda açılır: SDK, builder'da ayarladığınız **Open in** seçeneğini dikkate alarak `adapty.openWebUrl({ url, openIn })` fonksiyonunu çağırır ve flow'u açık tutar. Ancak gerekirse bu davranışı kodunuzda geçersiz kılabilirsiniz.
+:::
+
+```typescript showLineNumbers
+
+const unsubscribe = await view.setEventHandlers({
+  onUrlPress(url) {
+    // Open the URL your own way, e.g. with the Capacitor Browser plugin
+    Browser.open({ url });
+    return false; // keep the flow open
+  },
+});
+```
+## Özel işlemleri yönetme \{#handle-custom-actions\}
+
+Başka işlemleri yürüten bir buton eklemek için:
+
+1. Builder'da bir buton ekleyin, ona **Custom** işlemini atayın ve bir kimlik (ID) verin.
+2. Uygulama kodunuzda, oluşturduğunuz işlem kimliği için bir işleyici (handler) uygulayın.
+
+Örneğin, farklı bir abonelik teklifleri setin ya da tek seferlik satın alımlarınız varsa, başka bir flow veya paywall gösterecek bir buton ekleyebilirsiniz:
+
+```typescript showLineNumbers
+const unsubscribe = await view.setEventHandlers({
+  onCustomAction(actionId) {
+    if (actionId === 'openNewPaywall') {
+      // Display another flow or paywall
+    }
+  },
+});
+```
+</SDKv4>
+
+<SDKv3>
+
+Adapty paywall builder kullanarak paywall oluşturuyorsanız, düğmeleri doğru şekilde ayarlamak önemlidir:
+
+1. [Paywall builder'a bir düğme ekleyin](paywall-buttons) ve bu düğmeye mevcut bir action atayın ya da özel bir action ID oluşturun.
+2. Atadığınız her action'ı işlemek için uygulamanıza kod yazın.
+
+Bu rehber, kodunuzda özel ve mevcut action'ları nasıl yöneteceğinizi göstermektedir.
+## Paywallları kapatma \{#close-paywalls\}
+
+Paywallınızı kapatacak bir buton eklemek için:
+
+1. Paywall builder'da bir buton ekleyin ve ona **Close** eylemini atayın.
+2. Uygulama kodunuzda, paywallı kapatan `close` eyleminin işleyicisini uygulayın.
+
+:::info
+Capacitor SDK'sında `close` eylemi, varsayılan olarak paywallı kapatmayı tetikler. Ancak gerekirse bu davranışı kodunuzda geçersiz kılabilirsiniz. Örneğin, bir paywallı kapatmak başka bir paywallın açılmasını tetikleyebilir.
+:::
 ```typescript showLineNumbers
 
 const view = await createPaywallView(paywall);
@@ -39,16 +128,15 @@ const unsubscribe = view.setEventHandlers({
 ## Paywall'lardan URL açma \{#open-urls-from-paywalls\}
 
 :::tip
-Bir grup bağlantı eklemek istiyorsanız (ör. kullanım koşulları ve satın alma iadesi), paywall builder'da bir **Link** öğesi ekleyin ve bunu **Open URL** eylemine sahip butonlarla aynı şekilde yönetin.
+Bir grup bağlantı eklemek istiyorsanız (ör. kullanım koşulları ve satın alma geri yükleme), paywall builder'da bir **Link** öğesi ekleyin ve bunu **Open URL** eylemiyle butonlarla aynı şekilde işleyin.
 :::
 
 Paywall'ınızdan bir bağlantı açan bir buton eklemek için (ör. **Terms of use** veya **Privacy policy**):
 
-1. Paywall builder'da bir buton ekleyin, **Open URL** eylemini atayın ve açmak istediğiniz URL'yi girin.
-2. Uygulama kodunuzda, alınan URL'yi tarayıcıda açan `openUrl` eylemi için bir işleyici oluşturun.
-
+1. Paywall builder'da bir buton ekleyin, buna **Open URL** eylemini atayın ve açmak istediğiniz URL'yi girin.
+2. Uygulama kodunuzda, alınan URL'yi bir tarayıcıda açan `openUrl` eylemi için bir işleyici uygulayın.
 :::info
-Capacitor SDK'da `window.open` eylemi, URL'yi varsayılan olarak açmayı tetikler. Ancak gerekirse bu davranışı kodunuzda geçersiz kılabilirsiniz.
+Capacitor SDK'da `window.open` eylemi varsayılan olarak URL'yi açar. Ancak gerekirse bu davranışı kodunuzda geçersiz kılabilirsiniz.
 :::
 
 ```typescript showLineNumbers
@@ -62,13 +150,12 @@ const unsubscribe = view.setEventHandlers({
   },
 });
 ```
-
 ## Uygulamaya giriş yapma \{#log-into-the-app\}
 
 Kullanıcıların uygulamanıza giriş yapmasını sağlayan bir buton eklemek için:
 
-1. Paywall builder'da bir buton ekleyin ve **Login** eylemini atayın.
-2. Uygulama kodunuzda, kullanıcınızı tanımlayan `login` eylemi için bir işleyici oluşturun.
+1. Paywall builder'da bir buton ekleyin ve ona **Login** aksiyonunu atayın.
+2. Uygulama kodunuzda, kullanıcınızı tanımlayan `login` aksiyonu için bir handler uygulayın.
 
 ```typescript showLineNumbers
 
@@ -83,23 +170,23 @@ const unsubscribe = view.setEventHandlers({
   }
 });
 ```
+## Özel işlemleri yönetme \{#handle-custom-actions\}
 
-## Özel eylemleri yönetme \{#handle-custom-actions\}
+Herhangi bir işlemi yöneten bir buton eklemek için:
 
-Diğer eylemleri yöneten bir buton eklemek için:
+1. Paywall builder'da bir buton ekleyin, butona **Custom** eylemini atayın ve bir ID verin.
+2. Uygulama kodunuzda, oluşturduğunuz eylem ID'si için bir işleyici uygulayın.
 
-1. Paywall builder'da bir buton ekleyin, **Custom** eylemini atayın ve bir ID belirleyin.
-2. Uygulama kodunuzda, oluşturduğunuz eylem ID'si için bir işleyici oluşturun.
-
-Örneğin, başka bir abonelik teklifi ya da tek seferlik satın alma seçeneğiniz varsa başka bir paywall görüntüleyen bir buton ekleyebilirsiniz:
+Örneğin, başka bir abonelik teklifi setiniz veya tek seferlik satın almalarınız varsa, başka bir paywall görüntüleyen bir buton ekleyebilirsiniz:
 
 ```typescript showLineNumbers
 const unsubscribe = view.setEventHandlers({
   onCustomAction(actionId) {
     if (actionId === 'openNewPaywall') {
       // Display another paywall
-      console.log('User requested new paywall');
     }
   },
 });
 ```
+
+</SDKv3>

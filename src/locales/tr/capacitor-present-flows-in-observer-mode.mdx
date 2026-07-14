@@ -1,0 +1,65 @@
+---
+title: "Capacitor SDK'da Observer modunda flow sunma"
+description: "Kendi kodunuzla satın almaları yönetirken Capacitor uygulamanızda Observer modunda flow'ları ve Paywall Builder paywall'larını sunun."
+metadataTitle: "Observer Modunda Flow Sunma | Adapty Dokümanları"
+keywords: ['observer mode', 'onObserverPurchaseInitiated', 'onObserverRestoreInitiated', 'flow']
+---
+Builder ile bir flow veya paywall özelleştirdiyseniz, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Böyle bir flow veya paywall, hem ne gösterileceğini hem de nasıl gösterileceğini içerir.
+
+:::warning
+Bu bölüm yalnızca [Observer mode](observer-vs-full-mode) için geçerlidir. Observer mode'da çalışmıyorsanız [Display flows & paywalls](capacitor-present-paywalls) konusuna bakın.
+:::
+:::info
+Bu özellik, Adapty Capacitor SDK 4.0 veya sonraki sürümlerini gerektirir; daha önce yalnızca yerel iOS ve Android SDK'larında kullanılabilirdi. Yükseltmek için [geçiş kılavuzuna](migration-to-capacitor-sdk-v4) bakın.
+:::
+
+<details>
+   <summary>Flow sunmaya başlamadan önce (Genişletmek için tıklayın)</summary>
+1. Adapty'nin [App Store ile](initial_ios) ve [Google Play ile](initial-android) ilk entegrasyonunu ayarlayın.
+   2. Adapty SDK'yı yükleyin ve yapılandırın. `observerMode` parametresini `true` olarak ayarladığınızdan emin olun. [Capacitor SDK kurulum kılavuzuna](sdk-installation-capacitor#activate-adapty-module-of-adapty-sdk) bakın.
+   3. Adapty Kontrol Paneli'nde [ürünler oluşturun](create-product).
+   4. [Builderlarda flow'lar veya paywalllar yapılandırın](create-paywall) ve ürünleri bunlara atayın.
+   5. [Placementlar oluşturun ve flow'larınızı veya paywalllarınızı bunlara atayın](create-placement).
+   6. Mobil uygulama kodunuzda [flow'ları ve yapılandırmalarını alın](capacitor-get-pb-paywalls).
+</details>
+
+Observer modunda SDK, satın alma işlemlerini sizin adınıza gerçekleştirmez. Bir kullanıcı, Adapty tarafından render edilen bir flow veya paywallda satın alma ya da geri yükleme düğmesine dokunduğunda, SDK doğrudan satın alma veya geri yükleme yapmak yerine `onObserverPurchaseInitiated` veya `onObserverRestoreInitiated` olay işleyicinizi çağırır — satın alma veya geri yükleme işlemini orada kendi kodunuzla gerçekleştirin.
+
+1. View üzerindeki observer modu olay işleyicilerini ayarlayın. Diğer platformlardan farklı olarak, ayrı bir resolver nesnesi yoktur — işleyiciler, normal [olay işleyicilerinin](capacitor-handling-events) bir parçasıdır; bu nedenle oluşturduğunuz her view'da bunları ayarlayın:
+   ```typescript showLineNumbers title="Capacitor"
+   import { adapty, createFlowView } from '@adapty/capacitor';
+
+   const view = await createFlowView(flow);
+
+   const unsubscribe = await view.setEventHandlers({
+     onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
+       onStartPurchase(); // the view shows its loading indicator
+       myPurchaseApi(product.vendorProductId)
+         .then((transactionId) =>
+           adapty.reportTransaction({ transactionId, variationId: flow.variationId }),
+         )
+         .finally(() => onFinishPurchase()); // the view hides the loading indicator
+       return false; // keep the flow open; dismiss it yourself after success
+     },
+     onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
+       onStartRestore();
+       myRestoreApi().finally(() => onFinishRestore());
+       return false;
+     },
+   });
+   ```
+
+`onObserverPurchaseInitiated` handler, kullanıcının bir satın alma başlattığını bildirir; `onObserverRestoreInitiated` ise kullanıcının bir geri yükleme başlattığını. Bu olaylara yanıt olarak kendi özel satın alma veya geri yükleme flow'unuzu tetikleyin.
+
+Ayrıca, satın alma veya geri yükleme sürecini AdaptyUI'a bildirmek için aşağıdaki callback'leri çağırmayı unutmayın. Bu, yükleyiciyi göstermek gibi düzgün flow davranışı için gereklidir:
+| Callback           | Description                                                                      |
+   | :----------------- | :------------------------------------------------------------------------------- |
+   | onStartPurchase()  | Satın alma işleminin başladığını AdaptyUI'ya bildirmek için bu callback çağrılmalıdır.  |
+   | onFinishPurchase() | Satın alma işleminin tamamlandığını AdaptyUI'ya bildirmek için bu callback çağrılmalıdır. |
+   | onStartRestore()   | Geri yükleme işleminin başladığını AdaptyUI'ya bildirmek için bu callback çağrılmalıdır.   |
+   | onFinishRestore()  | Geri yükleme işleminin tamamlandığını AdaptyUI'ya bildirmek için bu callback çağrılmalıdır.  |
+2. Flow görünümünü her zamanki gibi sunun: [flow'u alın ve görünümünü oluşturun](capacitor-get-pb-paywalls), ardından [sunun](capacitor-present-paywalls). Ekstra parametre gerekmez — handler'lar yalnızca SDK `observerMode: true` ile etkinleştirildiğinde tetiklenir.
+
+:::warning
+[İşlemi bildirmeyi ve paywall ile ilişkilendirmeyi](report-transactions-observer-mode-capacitor) unutmayın. Aksi takdirde Adapty işlemi tanımaz ve satın almanın hangi paywall'dan geldiğini belirleyemez.
+:::

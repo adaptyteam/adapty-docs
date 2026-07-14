@@ -1,0 +1,204 @@
+---
+title: "Перенос Adapty Capacitor SDK на версию 4.0"
+description: "Перейдите на Adapty Capacitor SDK v4.0 (beta): замените paywall API на flow API, совместимые с Flow Builder и Paywall Builder."
+metadataTitle: "Переход на Adapty Capacitor SDK v4.0 (beta) | Документация Adapty"
+---
+
+Adapty Capacitor SDK 4.0 (beta) вводит флоу и переименовывает paywall API соответствующим образом. Новые API работают как с новым Flow Builder, так и с существующим Paywall Builder — никаких изменений в настройках дашборда Adapty не требуется.
+## Краткий справочник \{#quick-reference\}
+| v3 | v4 |
+|---|---|
+| `adapty.getPaywall({ placementId, locale?, params? })` | `adapty.getFlow({ placementId, params? })` |
+| `adapty.getPaywallForDefaultAudience({ placementId, locale?, params? })` | `adapty.getFlowForDefaultAudience({ placementId, params? })` |
+| `adapty.getPaywallProducts({ paywall })` | `adapty.getPaywallProducts({ flow })` |
+| `adapty.logShowPaywall({ paywall })` | `adapty.logShowFlow({ flow })` |
+| `AdaptyPaywall` (тип) | `AdaptyFlow` + `AdaptyFlowPaywall` |
+| `createPaywallView(paywall, params?)` | `createFlowView(flow, params?)` |
+| `PaywallViewController` | `FlowViewController` |
+| `EventHandlers` (тип) | `FlowEventHandlers` |
+| `CreatePaywallViewParamsInput` | `CreateFlowViewParamsInput` |
+| `onRenderingFailed` | `onError` |
+`AdaptyPaywallProduct` сохраняет своё название — продукты по-прежнему принадлежат флоу, и `getPaywallProducts` тоже сохраняет название, теперь принимая `AdaptyFlow`. Методы `getFlow` и `getFlowForDefaultAudience` больше не принимают параметр `locale`. API покупок и профиля (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) и резервные пейволы через `setFallback` остались без изменений. Методы отображения `present`, `dismiss`, `setEventHandlers` и `showDialog`, а также обработчики событий `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished` и `onAndroidSystemBack` сохраняют те же названия, что и в v3. Методы онбординга по-прежнему работают, но объявлены устаревшими — см. [Устаревание Onboarding API](#onboarding-api-deprecation). Некоторые стандартные поведения изменились — см. [Изменения стандартного поведения](#default-behavior-changes).
+## Минимальные версии \{#minimum-versions\}
+
+Требования к среде выполнения не изменились по сравнению с v3.16+: **iOS 15.0**, **Android minSdk 24** и **Capacitor 8**. Изменения deployment target не требуются.
+
+Появилось одно новое требование к сборке: **Xcode 26 или новее** — нативный Adapty iOS SDK 4.0.0-beta.2, входящий в этот релиз, использует Swift tools 6.2.
+
+v4 включает нативные Adapty SDK: iOS 4.0.0-beta.2 и Android BOM 4.0.0-beta.1.
+## Установка \{#installation\}
+### Обновление пакета \{#update-the-package\}
+
+v4.0 — предрелизная версия, поэтому укажите точную версию: npm не выбирает предрелизные версии через диапазоны с `^` или `~`:
+
+```bash showLineNumbers
+npm install @adapty/capacitor@4.0.0-beta.1
+```
+
+Затем синхронизируйте нативные проекты:
+
+```bash showLineNumbers
+npx cap sync
+```
+### iOS: только Swift Package Manager \{#ios-swift-package-manager-only\}
+
+[Репозиторий спецификаций CocoaPods станет доступен только для чтения в декабре 2026 года](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), поэтому начиная с v4 файл `AdaptyCapacitor.podspec` удалён, и SDK устанавливается на iOS **только через Swift Package Manager (SPM)**. iOS-проект вашего приложения должен использовать интеграцию Capacitor с SPM:
+
+- Новые приложения: добавьте iOS-платформу с менеджером пакетов SPM:
+
+```bash showLineNumbers
+npx cap add ios --packagemanager SPM
+```
+- Для существующих приложений на базе CocoaPods: перенесите iOS-проект, следуя [руководству Capacitor по использованию SPM в существующем проекте](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project).
+
+Подробнее об установке см. в [Установке Adapty SDK](sdk-installation-capacitor).
+## Получение флоу \{#fetching-flows\}
+### getPaywall → getFlow
+
+Возвращаемый тип изменяется с `AdaptyPaywall` на `AdaptyFlow`, а опция `locale` убрана — при рендеринге флоу локаль определяется автоматически; для кастомных пейволов все локали возвращаются в `flow.remoteConfigs`:
+
+```diff showLineNumbers
+- const paywall = await adapty.getPaywall({ placementId: 'YOUR_PLACEMENT_ID', locale: 'en' });
++ const flow = await adapty.getFlow({ placementId: 'YOUR_PLACEMENT_ID' });
+```
+
+`getPaywallForDefaultAudience` переименовывается аналогично:
+```diff showLineNumbers
+- const paywall = await adapty.getPaywallForDefaultAudience({ placementId: 'YOUR_PLACEMENT_ID', locale: 'en' });
++ const flow = await adapty.getFlowForDefaultAudience({ placementId: 'YOUR_PLACEMENT_ID' });
+```
+
+### getPaywallProducts(paywall) → getPaywallProducts(flow)
+
+`getPaywallProducts` сохраняет своё название, но теперь принимает `AdaptyFlow`:
+
+```diff showLineNumbers
+- const products = await adapty.getPaywallProducts({ paywall });
++ const products = await adapty.getPaywallProducts({ flow });
+```
+## Модель данных \{#data-model\}
+
+`getFlow` возвращает `AdaptyFlow` вместо `AdaptyPaywall`, и структура объекта изменилась:
+| Поле `AdaptyPaywall` (v3) | Поле `AdaptyFlow` (v4) | Действие |
+|---|---|---|
+| `remoteConfig?` (одно) | `remoteConfigs?: AdaptyRemoteConfig[]` (массив) | Флоу содержит один Remote Config на каждый настроенный язык. Получите нужный для пользователя: `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
+| `products` | `flow.paywalls[i].productIdentifiers` | Идентификаторы продуктов теперь хранятся в каждом варианте флоу, а не в самом флоу. |
+| `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | Перенесено из флоу в каждый вариант пейвола. |
+| `version?: number` | `flowVersionId?: string` | Переименовано, тип изменён с `number` на `string`. |
+| `hasViewConfiguration` | удалено | Удалите все проверки `hasViewConfiguration` из кода — теперь `createFlowView` выбрасывает исключение (см. [Отображение флоу](#displaying-flows)). |
+| `requestLocale` | удалено | Локаль больше не является частью модели. |
+| _(новое)_ | `paywalls: AdaptyFlowPaywall[]` | Каждый элемент — один вариант пейвола во флоу. |
+| _(новое)_ | `responseCreatedAt: number` | Временная метка ответа сервера в миллисекундах. |
+`hasViewConfiguration` и `requestLocale` остаются на `AdaptyOnboarding` — только модель флоу их убирает.
+
+Идентификаторы продуктов перенесены из флоу в каждый вариант:
+
+```diff showLineNumbers
+- const ids = paywall.products;
++ const ids = flow.paywalls[0].productIdentifiers;
+```
+## Методы веб-пейвола \{#web-paywall-methods\}
+
+`openWebPaywall` и `createWebPaywallUrl` сохраняют свои названия, но опция `paywallOrProduct` теперь принимает `AdaptyFlowPaywall` (вариант флоу) вместо `AdaptyPaywall`. По-прежнему можно передать `AdaptyPaywallProduct`. Перед обращением к первому элементу убедитесь, что `flow.paywalls` не пустой:
+
+```diff showLineNumbers
+  const flow = await adapty.getFlow({ placementId: 'YOUR_PLACEMENT_ID' });
+- await adapty.openWebPaywall({ paywallOrProduct: paywall });
++ await adapty.openWebPaywall({ paywallOrProduct: flow.paywalls[0] });
+```
+## Отслеживание просмотров флоу \{#tracking-flow-views\}
+### logShowPaywall → logShowFlow
+
+`logShowPaywall` переименован в `logShowFlow` и теперь принимает `AdaptyFlow`. Событие по-прежнему фиксируется для той же вариации, поэтому метрики воронки и A/B-тестов продолжат работать без изменений в дашборде.
+
+```diff showLineNumbers
+- await adapty.logShowPaywall({ paywall });
++ await adapty.logShowFlow({ flow });
+```
+
+Как и в v3, вызывать этот метод при отображении флоу или пейволов, созданных с помощью [Flow Builder](adapty-flow-builder) или [Paywall Builder](adapty-paywall-builder), не нужно — Adapty отслеживает эти просмотры автоматически.
+## Отображение флоу \{#displaying-flows\}
+### createPaywallView → createFlowView
+
+Переименуйте фабричную функцию и передайте `AdaptyFlow`. Возвращаемый контроллер переименован с `PaywallViewController` на `FlowViewController`, но его методы (`present`, `dismiss`, `setEventHandlers`, `showDialog`) остались прежними. Тип параметров переименован с `CreatePaywallViewParamsInput` на `CreateFlowViewParamsInput`:
+```diff showLineNumbers
+- import { createPaywallView } from '@adapty/capacitor';
++ import { createFlowView } from '@adapty/capacitor';
+
+- const view = await createPaywallView(paywall);
++ const view = await createFlowView(flow);
+  await view.present();
+```
+
+`createFlowView` выбрасывает `AdaptyError`, если для флоу не настроено представление — это заменяет проверку `hasViewConfiguration` из v3:
+```diff showLineNumbers
+- if (paywall.hasViewConfiguration) {
+-   const view = await createPaywallView(paywall);
+-   await view.present();
+- }
++ try {
++   const view = await createFlowView(flow);
++   await view.present();
++ } catch (error) {
++   // the flow has no view configured, or view creation failed
++ }
+```
+
+:::note
+Представление флоу одноразовое: после вызова `dismiss()` оно уничтожается и обработчики событий очищаются — чтобы снова показать флоу, вызовите `createFlowView` заново.
+:::
+### Безопасные отступы Android \{#android-safe-area-paddings\}
+
+`CreateFlowViewParamsInput` добавляет один новый параметр: `enableSafeArea`, который управляет безопасными отступами Android во время выполнения. Он находится под ключом `android` и по умолчанию равен `true`:
+
+```typescript showLineNumbers
+const view = await createFlowView(flow, {
+  android: { enableSafeArea: true },
+});
+```
+## Обработка событий \{#handling-events\}
+
+Интерфейс обработчика событий переименован с `EventHandlers` на `FlowEventHandlers`, а один из коллбэков тоже переименован. Тела существующих обработчиков менять не нужно — просто переименуйте:
+
+```diff showLineNumbers
+- onRenderingFailed: (error) => { /* … */ },
++ onError: (error) => { /* … */ },
+```
+Все остальные обработчики событий сохраняют свои названия. Два из них также получают второй аргумент: `onPurchaseCompleted` теперь принимает `(purchaseResult, product)`, а `onPurchaseFailed` — `(error, product)`, где `product` — это задействованный `AdaptyPaywallProduct`. Полный список см. в [Обработка событий флоу и пейвола](capacitor-handling-events).
+
+В v4 также добавлено несколько возможностей, которые можно подключить по желанию:
+- Методы `adapty.openWebUrl({ url, openIn })` и `adapty.requestAppReview()` — они обеспечивают работу стандартных обработчиков `onUrlPress` и `onRequestAppReview`, поэтому URL-адреса и запросы на оценку приложения обрабатываются нативно «из коробки». Вызывайте их напрямую только если переопределяете эти обработчики.
+- Обработка покупок в режиме Observer внутри флоу через новые обработчики `onObserverPurchaseInitiated` / `onObserverRestoreInitiated`. См. [Показ флоу в режиме Observer](capacitor-present-flows-in-observer-mode).
+## Изменения в поведении по умолчанию \{#default-behavior-changes\}
+
+Эти изменения не вызывают ошибок компиляции, поэтому проверяйте их во время выполнения:
+- **`onAndroidSystemBack`**: По умолчанию поведение изменилось: вместо закрытия вью теперь она остаётся открытой. Чтобы вернуть прежнее поведение, верните `true` из обработчика.
+- **`onPurchaseCompleted`**: По умолчанию поведение изменилось: вместо закрытия вью (если пользователь не отменил покупку) теперь она всегда остаётся открытой. Чтобы вернуть прежнее поведение, верните `purchaseResult.type !== 'user_cancelled'` из обработчика.
+- **`onRestoreCompleted`**: По умолчанию поведение изменилось: вместо закрытия вью после успешного восстановления она теперь остаётся открытой. Чтобы вернуть прежнее поведение, верните `true` из обработчика.
+- **`onUrlPress`**: Теперь по умолчанию URL открывается через нативный слой с учётом настройки встроенного или внешнего браузера из дашборда. Переопределите обработчик, чтобы открывать URL самостоятельно.
+- **Вью одноразовые**: после вызова `dismiss()` вью уничтожается. Чтобы снова показать флоу, вызовите `createFlowView` заново.
+## Удалённые API \{#removed-apis\}
+### Удалённые экспорты
+
+Эти символы больше не экспортируются из `@adapty/capacitor`. Удалите их из импортов:
+
+- **`AdaptyPaywall`**: Используйте `AdaptyFlow` и `AdaptyFlowPaywall` вместо них.
+- **`ProductReference`**: Используйте `AdaptyProductIdentifier`, доступный в `flow.paywalls[i].productIdentifiers`.
+- **`AdaptyPaywallBuilder`**: Удалён. Флоу и пейволы рендерятся нативно.
+- **`AdaptyAndroidSubscriptionUpdateParameters`**: Используйте вложенную структуру параметров покупки `android` (см. ниже).
+### activate: lockMethodsUntilReady
+
+`lockMethodsUntilReady` (уже устаревший no-op в v3) удалён. Уберите его из вызова `activate` — с ним код больше не компилируется:
+
+```diff showLineNumbers
+- await adapty.activate({ apiKey: 'PUBLIC_SDK_KEY', params: { lockMethodsUntilReady: true } });
++ await adapty.activate({ apiKey: 'PUBLIC_SDK_KEY' });
+```
+### makePurchase: параметры Android \{#makepurchase-android-parameters\}
+
+Устаревший плоский Android-формат `MakePurchaseParamsInput` удалён — теперь используется только вложенная форма. Перенесите все параметры Android-покупки в `params: { android: { ... } }`. Полный пример см. в разделе [Совершение покупок](capacitor-making-purchases).
+## Устаревший API онбординга \{#onboarding-api-deprecation\}
+
+Устаревший API онбординга объявлен устаревшим в v4.0 в пользу [Flow Builder](adapty-flow-builder). Он по-прежнему работает, но будет удалён в одном из будущих релизов — запланируйте перенос ваших онбордингов во Flow Builder.
+
+Устаревшие символы: `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView` и `OnboardingViewController`.

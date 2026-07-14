@@ -1,35 +1,137 @@
 ---
-title: "在 Capacitor SDK 中展示付费墙编辑工具付费墙"
-description: "在 Capacitor 应用中使用 Adapty 展示付费墙。"
-metadataTitle: "在 Capacitor 中展示付费墙 | Adapty 文档"
+title: "展示流程与付费墙 - Capacitor"
+description: "在您的 Capacitor 应用中向用户展示流程和付费墙。"
+metadataTitle: "在 Capacitor 中展示流程与付费墙 | Adapty 文档"
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
-import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
 
-如果您已使用付费墙编辑工具自定义了付费墙，则无需在移动应用代码中手动处理其渲染逻辑来向用户展示它。此类付费墙已同时包含展示内容和展示方式。
+<SDKv4>
+如果你在付费墙编辑工具中创建了流程或付费墙，无需在移动端代码中手动渲染，即可将其展示给用户。这样的流程已包含展示内容和展示方式的完整配置。
+
+在开始之前，请确保：
+
+1. 你已[创建流程或付费墙](create-paywall)。
+2. 你已将其添加到[版位](placements)。
+3. 你已[获取流程并准备好视图](capacitor-get-pb-paywalls)。
 
 :::warning
-本指南仅适用于**付费墙编辑工具付费墙**。远程配置付费墙的展示流程有所不同。如需展示**远程配置付费墙**，请参阅[渲染由远程配置设计的付费墙](present-remote-config-paywalls)。
-:::
+本指南仅适用于**流程和付费墙编辑工具付费墙**，需要 SDK v4.0 或更高版本。呈现流程的方式与远程配置付费墙有所不同。
 
-要展示付费墙，请对由 [`createPaywallView`](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) 方法创建的 `view` 调用 `view.present()` 方法。每个 `view` 只能使用一次。如果需要再次展示付费墙，请重新调用 `createPaywallView` 以创建新的 `view` 实例。
+- 如需呈现**远程配置付费墙**，请参阅[渲染远程配置设计的付费墙](present-remote-config-paywalls-capacitor)。
+
+:::
+要将流程或付费墙显示为独立屏幕，请在由 [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration) 方法创建的 `view` 上调用 `view.present()` 方法。每个 `view` 只能使用一次。如果需要再次显示流程，请再次调用 `createFlowView` 以创建新的 `view` 实例。
 
 :::warning
-
-在未重新创建 `view` 的情况下复用同一个 `view` 可能会导致错误。
+禁止在未重新创建的情况下复用同一个 `view`，否则将导致错误。
 :::
+```typescript showLineNumbers
+
+const view = await createFlowView(flow);
+
+// Optional: handle flow events (close, purchase, restore, etc)
+// await view.setEventHandlers({ ... });
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+:::important
+多次调用 `setEventHandlers` 会覆盖你设置的处理器，替换掉对应事件之前设置的默认处理器和自定义处理器。
+:::
+## 配置 iOS 展示样式 \{#configure-ios-presentation-style\}
+
+通过向 `present()` 方法传递 `iosPresentationStyle` 参数，可以配置流程在 iOS 上的展示方式。该参数接受 `'full_screen'`（默认值）或 `'page_sheet'` 两个值。在 Android 上，流程始终以全屏 Activity 的形式展示。
 
 ```typescript showLineNumbers
-import { adapty, createPaywallView } from '@adapty/capacitor';
+try {
+  await view.present({ iosPresentationStyle: 'page_sheet' });
+} catch (error) {
+  // handle the error
+}
+```
+## 使用开发者自定义计时器 \{#use-developer-defined-timer\}
+
+要在移动应用中使用开发者自定义计时器，请使用 `timerId`，在本例中为 `CUSTOM_TIMER_NY`，即你在 Adapty 看板中设置的开发者自定义计时器的 **Timer ID**。这可确保你的应用动态更新计时器，显示正确的值——例如 `13d 09h 03m 34s`（计算方式为计时器的结束时间（如元旦）减去当前时间）。
+
+```typescript showLineNumbers
+const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+
+const view = await createFlowView(flow, { customTimers });
+```
+在此示例中，`CUSTOM_TIMER_NY` 是你在 Adapty 看板中设置的开发者自定义计时器的**计时器 ID**。计时器会确保你的应用动态更新并显示正确的倒计时值——例如 `13d 09h 03m 34s`（由计时器的结束时间（如元旦）减去当前时间计算得出）。
+## 显示对话框 \{#show-dialog\}
+
+当 Android 上展示 flow 视图时，请使用此方法代替原生的 alert 对话框。在 Android 上，普通 alert 会出现在 flow 视图的后面，导致用户无法看到。此方法可确保在所有平台上，对话框都能正确显示在 flow 的上层。
+```typescript showLineNumbers
+try {
+  const action = await view.showDialog({
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  });
+
+  if (action === 'secondary') {
+    // User confirmed - close the flow
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (error) {
+  // handle error
+}
+```
+
+## 用新订阅替换旧订阅 \{#replace-one-subscription-with-another\}
+
+当 Android 用户在已有活跃订阅的情况下尝试购买新订阅时，你可以在创建流程视图时传入订阅更新参数，来控制新购买的处理方式。如需用新订阅替换当前订阅，请在 `createFlowView` 中使用 `productPurchaseParams`，并传入 `oldSubVendorProductId` 和 `prorationMode` 参数。
+```typescript showLineNumbers
+
+const productPurchaseParams = flow.paywalls
+  .flatMap((paywall) => paywall.productIdentifiers)
+  .map((productId) => {
+    const params: MakePurchaseParamsInput = {};
+    if (Capacitor.getPlatform() === 'android') {
+      params.android = {
+        subscriptionUpdateParams: {
+          oldSubVendorProductId: 'PRODUCT_ID_OF_THE_CURRENT_ACTIVE_SUBSCRIPTION',
+          prorationMode: 'with_time_proration',
+        },
+      };
+    }
+    return { productId, params };
+  });
+
+const view = await createFlowView(flow, { productPurchaseParams });
+```
+
+</SDKv4>
+
+<SDKv3>
+
+如果你已经使用付费墙编辑工具自定义了付费墙，就不需要在移动端代码中手动处理渲染逻辑来向用户展示它。这类付费墙已经包含了展示内容和展示方式的完整配置。
+
+:::warning
+本指南仅适用于**付费墙编辑工具构建的付费墙**。远程配置付费墙的展示流程有所不同。如需了解**远程配置付费墙**的展示方法，请参阅[渲染远程配置设计的付费墙](present-remote-config-paywalls)。
+:::
+要显示付费墙，请在由 [`createPaywallView`](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) 方法创建的 `view` 上调用 `view.present()` 方法。每个 `view` 只能使用一次。如果需要再次显示付费墙，请重新调用 `createPaywallView` 创建新的 `view` 实例。
+
+:::warning
+
+重复使用同一个 `view` 而不重新创建，可能会导致错误。
+:::
+```typescript showLineNumbers
 
 const view = await createPaywallView(paywall);
 
 view.setEventHandlers({
   onUrlPress(url) {
     window.open(url, '_blank');
-    return false; 
+    return false;
   },
 });
 
@@ -42,20 +144,17 @@ try {
 
 ## 使用开发者自定义计时器 \{#use-developer-defined-timer\}
 
-要在移动应用中使用开发者自定义计时器，请使用 `timerId`，本示例中为 `CUSTOM_TIMER_NY`，即您在 Adapty 看板中设置的开发者自定义计时器的 **Timer ID**。这可确保您的应用动态更新计时器并显示正确的值，例如 `13d 09h 03m 34s`（由计时器结束时间（如元旦）减去当前时间计算得出）。
+要在移动应用中使用开发者自定义计时器，请使用 `timerId`，本示例中为 `CUSTOM_TIMER_NY`，即你在 Adapty 看板中设置的开发者自定义计时器的 **Timer ID**。这样可以确保应用动态更新计时器，显示正确的值——例如 `13d 09h 03m 34s`（计算方式为计时器的结束时间（如元旦）减去当前时间）。
 
 ```typescript showLineNumbers
 const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
 
 const view = await createPaywallView(paywall, { customTimers });
 ```
-
-在本示例中，`CUSTOM_TIMER_NY` 是您在 Adapty 看板中设置的开发者自定义计时器的 **Timer ID**。该计时器可确保您的应用动态更新计时器并显示正确的值，例如 `13d 09h 03m 34s`（由计时器结束时间（如元旦）减去当前时间计算得出）。
-
+在此示例中，`CUSTOM_TIMER_NY` 是你在 Adapty 看板中设置的开发者自定义计时器的**计时器 ID**。该计时器可确保你的应用动态更新计时器显示值，例如 `13d 09h 03m 34s`（计算方式为计时器的结束时间（如元旦）减去当前时间）。
 ## 显示对话框 \{#show-dialog\}
 
-当付费墙视图在 Android 上展示时，请使用此方法代替原生警告对话框。在 Android 上，常规警告会显示在付费墙视图后方，导致用户无法看到。此方法可确保在所有平台上对话框正确显示于付费墙上方。
-
+在 Android 上展示付费墙视图时，请使用此方法代替原生的 alert 对话框。在 Android 上，普通的 alert 会出现在付费墙视图的后面，导致用户看不到它。此方法可确保对话框在所有平台上都能正确显示在付费墙上方。
 ```typescript showLineNumbers title="Capacitor"
 try {
   const action = await view.showDialog({
@@ -64,7 +163,7 @@ try {
     primaryActionTitle: 'Stay',
     secondaryActionTitle: 'Close',
   });
-  
+
   if (action === 'secondary') {
     // User confirmed - close the paywall
     await view.dismiss();
@@ -77,8 +176,10 @@ try {
 
 ## 配置 iOS 展示样式 \{#configure-ios-presentation-style\}
 
-通过向 `present()` 方法传递 `iosPresentationStyle` 参数，可配置付费墙在 iOS 上的展示方式。该参数接受 `'full_screen'`（默认值）或 `'page_sheet'` 值。
+通过向 `present()` 方法传递 `iosPresentationStyle` 参数，可以配置付费墙在 iOS 上的展示方式。该参数接受 `'full_screen'`（默认值）或 `'page_sheet'` 两个值。
 
 ```typescript showLineNumbers
 await view.present({ iosPresentationStyle: 'page_sheet' });
 ```
+
+</SDKv3>

@@ -1,0 +1,204 @@
+---
+title: "Migrate Adapty Capacitor SDK sang v. 4.0"
+description: "Migrate lên Adapty Capacitor SDK v4.0 (beta) bằng cách thay thế các API paywall bằng API flow, tương thích với cả Flow Builder và Paywall Builder."
+metadataTitle: "Migrate lên Adapty Capacitor SDK v4.0 (beta) | Tài liệu Adapty"
+---
+
+Adapty Capacitor SDK 4.0 (beta) giới thiệu flows và đổi tên các API paywall tương ứng. Các API mới hoạt động với cả Flow Builder mới và Paywall Builder hiện có — không cần thay đổi cấu hình nào trên Adapty Dashboard.
+## Tham khảo nhanh \{#quick-reference\}
+| v3 | v4 |
+|---|---|
+| `adapty.getPaywall({ placementId, locale?, params? })` | `adapty.getFlow({ placementId, params? })` |
+| `adapty.getPaywallForDefaultAudience({ placementId, locale?, params? })` | `adapty.getFlowForDefaultAudience({ placementId, params? })` |
+| `adapty.getPaywallProducts({ paywall })` | `adapty.getPaywallProducts({ flow })` |
+| `adapty.logShowPaywall({ paywall })` | `adapty.logShowFlow({ flow })` |
+| `AdaptyPaywall` (kiểu) | `AdaptyFlow` + `AdaptyFlowPaywall` |
+| `createPaywallView(paywall, params?)` | `createFlowView(flow, params?)` |
+| `PaywallViewController` | `FlowViewController` |
+| `EventHandlers` (kiểu) | `FlowEventHandlers` |
+| `CreatePaywallViewParamsInput` | `CreateFlowViewParamsInput` |
+| `onRenderingFailed` | `onError` |
+`AdaptyPaywallProduct` giữ nguyên tên — sản phẩm vẫn thuộc về một flow, và `getPaywallProducts` cũng giữ nguyên tên, nhưng giờ nhận vào một `AdaptyFlow`. Các phương thức `getFlow` và `getFlowForDefaultAudience` không còn nhận tham số `locale` nữa. Các API mua hàng và hồ sơ người dùng (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) và fallback qua `setFallback` không thay đổi. Các phương thức view `present`, `dismiss`, `setEventHandlers`, và `showDialog`, cùng các event handler `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished`, và `onAndroidSystemBack` giữ nguyên tên như trong v3. Các phương thức onboarding vẫn hoạt động nhưng đã bị deprecated — xem [Deprecation API Onboarding](#onboarding-api-deprecation). Một số hành vi mặc định đã thay đổi — xem [Thay đổi hành vi mặc định](#default-behavior-changes).
+## Phiên bản tối thiểu \{#minimum-versions\}
+
+Yêu cầu runtime không thay đổi so với v3.16+: **iOS 15.0**, **Android minSdk 24**, và **Capacitor 8**. Không cần thay đổi deployment target.
+
+Có một yêu cầu build mới: **Xcode 26 trở lên** — native Adapty iOS SDK 4.0.0-beta.2 đi kèm với bản phát hành này sử dụng Swift tools 6.2.
+
+v4 đi kèm với native Adapty SDK iOS 4.0.0-beta.2 và Android BOM 4.0.0-beta.1.
+## Cài đặt \{#installation\}
+### Cập nhật gói
+
+v4.0 là bản phát hành thử nghiệm (pre-release), vì vậy hãy chỉ định chính xác phiên bản — npm sẽ không tự chọn các phiên bản pre-release qua cú pháp caret/tilde:
+
+```bash showLineNumbers
+npm install @adapty/capacitor@4.0.0-beta.1
+```
+
+Sau đó đồng bộ các dự án native:
+
+```bash showLineNumbers
+npx cap sync
+```
+### iOS: Chỉ dùng Swift Package Manager \{#ios-swift-package-manager-only\}
+
+[Repo spec của CocoaPods sẽ chuyển sang chế độ chỉ đọc vào tháng 12 năm 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), vì vậy kể từ v4, `AdaptyCapacitor.podspec` đã bị xóa và SDK chỉ cài đặt trên iOS **thông qua Swift Package Manager (SPM)**. Dự án iOS của ứng dụng bạn phải sử dụng tích hợp SPM của Capacitor:
+
+- Ứng dụng mới: thêm platform iOS với package manager SPM:
+
+```bash showLineNumbers
+npx cap add ios --packagemanager SPM
+```
+- Ứng dụng đang dùng CocoaPods: migrate dự án iOS theo [hướng dẫn của Capacitor về việc dùng SPM trong dự án hiện có](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project).
+
+Xem [Cài đặt Adapty SDK](sdk-installation-capacitor) để biết toàn bộ các bước thiết lập.
+## Tải flow \{#fetching-flows\}
+### getPaywall → getFlow
+
+Kiểu trả về thay đổi từ `AdaptyPaywall` thành `AdaptyFlow`, và tùy chọn `locale` bị loại bỏ — khi bạn render một flow, locale sẽ được tự động xác định; đối với paywall tùy chỉnh, tất cả các locale được trả về trong `flow.remoteConfigs`:
+
+```diff showLineNumbers
+- const paywall = await adapty.getPaywall({ placementId: 'YOUR_PLACEMENT_ID', locale: 'en' });
++ const flow = await adapty.getFlow({ placementId: 'YOUR_PLACEMENT_ID' });
+```
+
+`getPaywallForDefaultAudience` được đổi tên theo cách tương tự:
+```diff showLineNumbers
+- const paywall = await adapty.getPaywallForDefaultAudience({ placementId: 'YOUR_PLACEMENT_ID', locale: 'en' });
++ const flow = await adapty.getFlowForDefaultAudience({ placementId: 'YOUR_PLACEMENT_ID' });
+```
+
+### getPaywallProducts(paywall) → getPaywallProducts(flow)
+
+`getPaywallProducts` giữ nguyên tên nhưng giờ nhận vào một `AdaptyFlow`:
+
+```diff showLineNumbers
+- const products = await adapty.getPaywallProducts({ paywall });
++ const products = await adapty.getPaywallProducts({ flow });
+```
+## Mô hình dữ liệu \{#data-model\}
+
+`getFlow` trả về một `AdaptyFlow` thay vì `AdaptyPaywall`, và cấu trúc đối tượng đã thay đổi:
+| Trường `AdaptyPaywall` v3 | Trường `AdaptyFlow` v4 | Hành động |
+|---|---|---|
+| `remoteConfig?` (đơn) | `remoteConfigs?: AdaptyRemoteConfig[]` (mảng) | Một flow mang một Remote Config cho mỗi ngôn ngữ đã cấu hình. Đọc ngôn ngữ phù hợp với người dùng: `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
+| `products` | `flow.paywalls[i].productIdentifiers` | Mã định danh sản phẩm giờ nằm trong từng biến thể flow, không nằm trên flow nữa. |
+| `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | Chuyển từ flow sang từng biến thể paywall. |
+| `version?: number` | `flowVersionId?: string` | Đổi tên, và kiểu dữ liệu thay đổi từ `number` sang `string`. |
+| `hasViewConfiguration` | đã xóa | Xóa mọi kiểm tra `hasViewConfiguration` khỏi code — `createFlowView` giờ sẽ throw thay thế (xem [Hiển thị flow](#displaying-flows)). |
+| `requestLocale` | đã xóa | Locale không còn là một phần của model nữa. |
+| _(mới)_ | `paywalls: AdaptyFlowPaywall[]` | Mỗi mục là một biến thể paywall trong flow. |
+| _(mới)_ | `responseCreatedAt: number` | Timestamp phản hồi từ server, tính bằng mili giây. |
+`hasViewConfiguration` và `requestLocale` vẫn nằm trên `AdaptyOnboarding` — chỉ có flow model là bỏ chúng.
+
+Mã định danh sản phẩm được chuyển từ flow sang từng variation:
+
+```diff showLineNumbers
+- const ids = paywall.products;
++ const ids = flow.paywalls[0].productIdentifiers;
+```
+## Phương thức Web Paywall \{#web-paywall-methods\}
+
+`openWebPaywall` và `createWebPaywallUrl` giữ nguyên tên, nhưng tùy chọn `paywallOrProduct` giờ nhận một `AdaptyFlowPaywall` (biến thể flow) thay vì `AdaptyPaywall`. Bạn vẫn có thể truyền vào `AdaptyPaywallProduct`. Hãy kiểm tra `flow.paywalls` không rỗng trước khi đọc phần tử đầu tiên:
+
+```diff showLineNumbers
+  const flow = await adapty.getFlow({ placementId: 'YOUR_PLACEMENT_ID' });
+- await adapty.openWebPaywall({ paywallOrProduct: paywall });
++ await adapty.openWebPaywall({ paywallOrProduct: flow.paywalls[0] });
+```
+## Theo dõi lượt xem flow \{#tracking-flow-views\}
+### logShowPaywall → logShowFlow
+
+`logShowPaywall` được đổi tên thành `logShowFlow` và giờ nhận vào một `AdaptyFlow`. Sự kiện vẫn được ghi lại theo cùng một variation, do đó các chỉ số funnel và A/B test hiện có vẫn hoạt động bình thường mà không cần thay đổi trên dashboard.
+
+```diff showLineNumbers
+- await adapty.logShowPaywall({ paywall });
++ await adapty.logShowFlow({ flow });
+```
+
+Cũng giống như trong v3, bạn không cần gọi phương thức này khi hiển thị các flow hoặc paywall được dựng bởi [Flow Builder](adapty-flow-builder) hoặc [Paywall Builder](adapty-paywall-builder) — Adapty sẽ tự động theo dõi các lượt xem đó.
+## Hiển thị flows \{#displaying-flows\}
+### createPaywallView → createFlowView
+
+Đổi tên hàm factory và truyền vào `AdaptyFlow`. Controller trả về được đổi tên từ `PaywallViewController` thành `FlowViewController`, nhưng các phương thức của nó (`present`, `dismiss`, `setEventHandlers`, `showDialog`) vẫn giữ nguyên. Kiểu params được đổi tên từ `CreatePaywallViewParamsInput` thành `CreateFlowViewParamsInput`:
+```diff showLineNumbers
+- import { createPaywallView } from '@adapty/capacitor';
++ import { createFlowView } from '@adapty/capacitor';
+
+- const view = await createPaywallView(paywall);
++ const view = await createFlowView(flow);
+  await view.present();
+```
+
+`createFlowView` sẽ throw một `AdaptyError` nếu flow chưa được cấu hình view — thay thế cho việc kiểm tra `hasViewConfiguration` ở v3:
+```diff showLineNumbers
+- if (paywall.hasViewConfiguration) {
+-   const view = await createPaywallView(paywall);
+-   await view.present();
+- }
++ try {
++   const view = await createFlowView(flow);
++   await view.present();
++ } catch (error) {
++   // the flow has no view configured, or view creation failed
++ }
+```
+
+:::note
+Flow view chỉ dùng một lần: sau khi bạn gọi `dismiss()`, view sẽ bị hủy và các event handler của nó sẽ bị xóa, vì vậy hãy gọi lại `createFlowView` nếu muốn hiển thị flow thêm một lần nữa.
+:::
+### Vùng an toàn trên Android \{#android-safe-area-paddings\}
+
+`CreateFlowViewParamsInput` bổ sung một tham số mới: `enableSafeArea`, kiểm soát padding vùng an toàn trên Android khi chạy ứng dụng. Tham số này nằm trong khóa `android` và mặc định là `true`:
+
+```typescript showLineNumbers
+const view = await createFlowView(flow, {
+  android: { enableSafeArea: true },
+});
+```
+## Xử lý sự kiện \{#handling-events\}
+
+Giao diện event-handler được đổi tên từ `EventHandlers` sang `FlowEventHandlers`, và một callback cũng được đổi tên. Phần thân handler hiện tại không cần thay đổi code — chỉ cần đổi tên:
+
+```diff showLineNumbers
+- onRenderingFailed: (error) => { /* … */ },
++ onError: (error) => { /* … */ },
+```
+Tất cả các event handler khác vẫn giữ nguyên tên. Hai handler sau cũng nhận thêm tham số thứ hai: `onPurchaseCompleted` trở thành `(purchaseResult, product)` và `onPurchaseFailed` trở thành `(error, product)`, trong đó `product` là `AdaptyPaywallProduct` liên quan. Xem [Xử lý sự kiện flow & paywall](capacitor-handling-events) để biết danh sách đầy đủ.
+
+v4 cũng bổ sung thêm một số tính năng bạn có thể tùy chọn sử dụng:
+- Phương thức `adapty.openWebUrl({ url, openIn })` và `adapty.requestAppReview()` — hỗ trợ các handler mặc định `onUrlPress` và `onRequestAppReview`, giúp xử lý URL và yêu cầu đánh giá ứng dụng ngay mà không cần cấu hình thêm. Chỉ gọi trực tiếp khi bạn override các handler đó.
+- Xử lý giao dịch trong Observer mode bên trong flow thông qua các handler mới `onObserverPurchaseInitiated` / `onObserverRestoreInitiated`. Xem [Hiển thị flow trong Observer mode](capacitor-present-flows-in-observer-mode).
+## Thay đổi hành vi mặc định \{#default-behavior-changes\}
+
+Những thay đổi này không gây ra lỗi biên dịch, vì vậy hãy kiểm tra chúng trong thời gian chạy:
+- **`onAndroidSystemBack`**: Mặc định đã thay đổi từ đóng view sang giữ nguyên. Để khôi phục hành vi cũ, hãy trả về `true` từ handler.
+- **`onPurchaseCompleted`**: Mặc định đã thay đổi từ đóng view (trừ khi người dùng hủy mua) sang luôn giữ nguyên. Để khôi phục hành vi cũ, hãy trả về `purchaseResult.type !== 'user_cancelled'` từ handler.
+- **`onRestoreCompleted`**: Mặc định đã thay đổi từ đóng view sau khi khôi phục thành công sang giữ nguyên. Để khôi phục hành vi cũ, hãy trả về `true` từ handler.
+- **`onUrlPress`**: Mặc định hiện mở URL thông qua native layer, tuân theo cài đặt trình duyệt in-app hoặc bên ngoài từ dashboard. Ghi đè handler để tự mở URL.
+- **View chỉ dùng một lần**: Sau khi gọi `dismiss()`, view sẽ bị hủy. Gọi lại `createFlowView` để hiển thị flow một lần nữa.
+## Các API đã bị xóa \{#removed-apis\}
+### Các export đã bị xóa \{#removed-exports\}
+
+Các symbol này không còn được export từ `@adapty/capacitor` nữa. Hãy xóa các import tương ứng:
+
+- **`AdaptyPaywall`**: Dùng `AdaptyFlow` và `AdaptyFlowPaywall` thay thế.
+- **`ProductReference`**: Dùng `AdaptyProductIdentifier`, đọc từ `flow.paywalls[i].productIdentifiers`.
+- **`AdaptyPaywallBuilder`**: Đã bị xóa. Flow và paywall được render trực tiếp trên thiết bị.
+- **`AdaptyAndroidSubscriptionUpdateParameters`**: Dùng cấu trúc tham số mua hàng `android` lồng nhau (xem bên dưới).
+### activate: lockMethodsUntilReady
+
+`lockMethodsUntilReady` (đã bị deprecated và không hoạt động từ v3) đã được xóa. Hãy xóa nó khỏi lời gọi `activate` — giữ lại sẽ không thể biên dịch:
+
+```diff showLineNumbers
+- await adapty.activate({ apiKey: 'PUBLIC_SDK_KEY', params: { lockMethodsUntilReady: true } });
++ await adapty.activate({ apiKey: 'PUBLIC_SDK_KEY' });
+```
+### makePurchase: Tham số Android \{#makepurchase-android-parameters\}
+
+Kiểu dữ liệu phẳng (flat) đã bị deprecated của `MakePurchaseParamsInput` dành cho Android đã bị xóa — chỉ còn dạng lồng nhau (nested). Hãy chuyển các tham số mua hàng Android vào `params: { android: { ... } }`. Xem [Thực hiện mua hàng](capacitor-making-purchases) để xem ví dụ đầy đủ.
+## API onboarding cũ không còn được hỗ trợ \{#onboarding-api-deprecation\}
+
+API onboarding cũ đã bị deprecated trong v4.0, thay thế bằng [Flow Builder](adapty-flow-builder). API này vẫn hoạt động, nhưng sẽ bị xóa trong phiên bản tương lai, vì vậy hãy lên kế hoạch migration các onboarding của bạn sang Flow Builder.
+
+Các symbol bị deprecated: `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView`, và `OnboardingViewController`.

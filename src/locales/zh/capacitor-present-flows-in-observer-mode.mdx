@@ -1,0 +1,65 @@
+---
+title: "在 Capacitor SDK 中以 Observer 模式展示流程"
+description: "在 Capacitor 应用中以 Observer 模式展示流程和付费墙编辑工具付费墙，同时使用自己的代码处理购买。"
+metadataTitle: "以 Observer 模式展示流程 | Adapty 文档"
+keywords: ['observer mode', 'onObserverPurchaseInitiated', 'onObserverRestoreInitiated', 'flow']
+---
+如果你已经使用编辑工具自定义了流程或付费墙，则无需在移动应用代码中手动处理其渲染逻辑来向用户展示它。这类流程或付费墙本身已包含展示内容和展示方式的完整定义。
+
+:::warning
+本节仅适用于[观察者模式](observer-vs-full-mode)。如果你未使用观察者模式，请参阅[展示流程与付费墙](capacitor-present-paywalls)主题。
+:::
+:::info
+此功能需要 Adapty Capacitor SDK 4.0 或更高版本——此前仅在原生 iOS 和 Android SDK 中可用。请参阅[迁移指南](migration-to-capacitor-sdk-v4)进行升级。
+:::
+
+<details>
+   <summary>开始展示流程前的准备工作（点击展开）</summary>
+1. 完成 Adapty [与 App Store 的初始集成](initial_ios)以及[与 Google Play 的初始集成](initial-android)。
+   2. 安装并配置 Adapty SDK，确保将 `observerMode` 参数设置为 `true`。请参阅 [Capacitor SDK 安装指南](sdk-installation-capacitor#activate-adapty-module-of-adapty-sdk)。
+   3. 在 Adapty 看板中[创建产品](create-product)。
+   4. [在编辑工具中配置流程或付费墙](create-paywall)，并为其分配产品。
+   5. [创建版位并将流程或付费墙分配给对应版位](create-placement)。
+   6. 在移动应用代码中[获取流程及其配置](capacitor-get-pb-paywalls)。
+</details>
+
+在 Observer 模式下，SDK 不会替你发起购买。当用户点击 Adapty 渲染的流程或付费墙中的购买或恢复按钮时，SDK 会调用你的 `onObserverPurchaseInitiated` 或 `onObserverRestoreInitiated` 事件处理器——请在其中用你自己的代码执行购买或恢复操作。
+
+1. 在视图上设置 observer 模式事件处理器。与其他平台不同，这里没有单独的 resolver 对象——这些处理器是常规[事件处理器](capacitor-handling-events)的一部分，因此需要在每个创建的视图上进行设置：
+   ```typescript showLineNumbers title="Capacitor"
+   import { adapty, createFlowView } from '@adapty/capacitor';
+
+   const view = await createFlowView(flow);
+
+   const unsubscribe = await view.setEventHandlers({
+     onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
+       onStartPurchase(); // the view shows its loading indicator
+       myPurchaseApi(product.vendorProductId)
+         .then((transactionId) =>
+           adapty.reportTransaction({ transactionId, variationId: flow.variationId }),
+         )
+         .finally(() => onFinishPurchase()); // the view hides the loading indicator
+       return false; // keep the flow open; dismiss it yourself after success
+     },
+     onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
+       onStartRestore();
+       myRestoreApi().finally(() => onFinishRestore());
+       return false;
+     },
+   });
+   ```
+
+`onObserverPurchaseInitiated` 处理器会在用户发起购买时通知你，`onObserverRestoreInitiated` 则会在用户发起恢复购买时通知你。收到通知后，触发你自定义的购买或恢复流程。
+
+此外，请记得调用以下回调，将购买或恢复的进度通知 AdaptyUI。这对于正确的流程行为（例如显示加载动画等）是必要的：
+| 回调函数 | 描述 |
+| :----------------- | :------------------------------------------------------------------------------- |
+| onStartPurchase()  | 应调用此回调函数以通知 AdaptyUI 购买已开始。  |
+| onFinishPurchase() | 应调用此回调函数以通知 AdaptyUI 购买已完成。 |
+| onStartRestore()   | 应调用此回调函数以通知 AdaptyUI 恢复购买已开始。   |
+| onFinishRestore()  | 应调用此回调函数以通知 AdaptyUI 恢复购买已完成。  |
+2. 像往常一样展示流程视图：[获取流程并创建其视图](capacitor-get-pb-paywalls)，然后[展示它](capacitor-present-paywalls)。无需额外参数——只有在 SDK 以 `observerMode: true` 激活时，处理器才会触发。
+
+:::warning
+别忘了[上报交易并将其与付费墙关联](report-transactions-observer-mode-capacitor)。否则，Adapty 将无法识别该交易，也无法确定购买来源的付费墙。
+:::

@@ -1,26 +1,140 @@
 ---
-title: "Capacitor - 处理付费墙事件"
-description: "使用 Adapty SDK 在 Capacitor 中处理订阅事件。"
-metadataTitle: "在 Capacitor 中处理事件 | Adapty 文档"
+title: "处理 flow 与付费墙事件 - Capacitor"
+description: "使用 Adapty SDK 在 Capacitor 应用中处理 flow 与付费墙事件。"
+metadataTitle: "处理 Flow 与付费墙事件 - Capacitor | Adapty 文档"
 toc_max_heading_level: 4
-keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed', 'onAppeared', 'onDisappeared']
+keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed', 'onError', 'onAppeared', 'onDisappeared', 'onWebPaymentNavigationFinished', 'onRequestPermission', 'onRequestAppReview', 'onObserverPurchaseInitiated', 'onObserverRestoreInitiated', 'FlowEventHandlers']
 ---
-
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
 import PaywallAction from '@site/src/locales/zh/reusable/PaywallAction.md';
-import Details from '@site/src/components/Details';
+
+<SDKv4>
 
 :::important
-本指南涵盖购买、恢复、产品选择及付费墙渲染的事件处理。您还必须实现按钮处理（关闭付费墙、打开链接等）。详情请参阅我们的[按钮操作处理指南](capacitor-handle-paywall-actions)。
+本指南介绍购买、恢复、产品选择及流程渲染的事件处理。你也可以设置按钮处理（关闭流程、打开链接、自定义操作等）。详情请参阅[按钮操作处理指南](capacitor-handle-paywall-actions)。
 :::
+[流程编辑工具](adapty-flow-builder)构建的流程和付费墙无需额外代码即可完成购买和恢复购买。但它们会生成一些你的应用可以响应的事件，包括按钮点击（关闭按钮、URL、产品选择等）以及与流程中购买相关操作的通知。请参阅下文了解如何响应这些事件。
 
-使用[付费墙编辑工具](adapty-paywall-builder)配置的付费墙无需额外代码即可完成购买和恢复操作。但它们会生成一些您的应用可以响应的事件。这些事件包括按钮点击（关闭按钮、URL、产品选择等）以及付费墙上购买相关操作的通知。请参阅以下内容了解如何响应这些事件。
-
-要在移动应用中控制或监控付费墙屏幕上发生的流程，请实现 `view.setEventHandlers` 方法：
-
+要在移动应用中控制或监听流程界面上发生的事件，请实现 `view.setEventHandlers` 方法：
+:::important
+每个事件只能设置一个处理器：多次调用 `setEventHandlers` 会覆盖你提供的处理器，同时替换掉那些特定事件的默认处理器和之前设置的处理器。未设置的处理器保持默认行为。`setEventHandlers` 返回一个取消订阅的函数，`view.dismiss()` 会清除所有处理器。
+:::
 ```typescript showLineNumbers
-import { adapty, createPaywallView } from '@adapty/capacitor';
+
+const view = await createFlowView(flow);
+
+const unsubscribe = await view.setEventHandlers({
+  onCloseButtonPress() {
+    return true; // close the flow (default behavior)
+  },
+  onAndroidSystemBack() {
+    return true; // close the flow; by default, it stays open
+  },
+  onPurchaseCompleted(purchaseResult, product) {
+    return purchaseResult.type === 'success'; // close the flow on a successful purchase, keep it open for cancelled or pending purchases
+  },
+  onPurchaseStarted(product) { /***/ },
+  onPurchaseFailed(error, product) { /***/ },
+  onRestoreCompleted(profile) { /***/ },
+  onRestoreFailed(error) { /***/ },
+  onProductSelected(productId) { /***/ },
+  onError(error) { /***/ },
+  onLoadingProductsFailed(error) { /***/ },
+  onUrlPress(url, openIn) {
+    adapty.openWebUrl({ url, openIn }).catch(console.warn); // same as the SDK default
+    return false; // keep the flow open
+  },
+  onAppeared() { /***/ },
+  onDisappeared() { /***/ },
+  onWebPaymentNavigationFinished() { /***/ },
+});
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+以下示例展示了每个处理程序中可用的属性，注释中提供了说明性的值。
+```typescript
+// onUrlPress
+url;    // 'https://example.com/terms'
+openIn; // 'browser_in_app' or 'browser_out_app'
+
+// onCustomAction
+actionId; // 'login'
+
+// onProductSelected
+productId; // 'premium_monthly'
+
+// onPurchaseStarted, onPurchaseCompleted, onPurchaseFailed
+product.vendorProductId;        // 'premium_monthly'
+product.localizedTitle;         // 'Premium Monthly'
+product.localizedDescription;   // 'Premium subscription for 1 month'
+product.price?.amount;          // 9.99
+product.price?.currencyCode;    // 'USD'
+product.price?.localizedString; // '$9.99'
+
+// onPurchaseCompleted
+purchaseResult.type; // 'success', 'pending', or 'user_cancelled'
+if (purchaseResult.type === 'success') {
+  purchaseResult.profile.accessLevels['premium']?.isActive; // true
+}
+
+// onRestoreCompleted
+profile.accessLevels['premium']?.isActive; // true
+
+// onPurchaseFailed, onRestoreFailed, onError, onLoadingProductsFailed
+error.message; // 'Purchase failed due to insufficient funds'
+```
+</Details>
+
+您可以只注册需要的事件处理程序，忽略不需要的。这样就不会创建多余的事件监听器。所有事件处理程序均为可选。
+
+事件处理程序返回一个布尔值。如果返回 `true`，则认为展示流程已完成，流程屏幕随即关闭，并移除该视图的所有事件监听器。
+某些事件处理器具有默认行为，您可以根据需要进行覆盖：
+- `onCloseButtonPress`：当用户按下关闭按钮时，关闭流程。
+- `onUrlPress`：通过 `adapty.openWebUrl` 在原生浏览器中打开被点击的 URL，遵循编辑工具中设置的 **Open in** 选项，并保持流程开启。
+- `onAndroidSystemBack`：当用户按下 **Back** 按钮时，保持流程开启。返回 `true` 可关闭流程。
+- `onPurchaseCompleted`：购买完成后保持流程开启。返回 `true` 可关闭流程。
+- `onRestoreCompleted`：成功恢复购买后保持流程开启。返回 `true` 可关闭流程。
+- `onError`：如果流程渲染失败，则关闭流程。
+### 事件处理程序 \{#event-handlers\}
+
+| 事件处理器 | 描述 |
+|:-----------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onCustomAction** | 当用户执行自定义操作时触发，例如点击[自定义按钮](paywall-buttons)。 |
+| **onUrlPress** | 当用户点击流程中的 URL 时触发。 |
+| **onAndroidSystemBack** | 当用户点击 Android 系统的 **Back** 按钮时触发。默认情况下流程保持打开；返回 `true` 可关闭它。 |
+| **onCloseButtonPress** | 当关闭按钮可见且用户点击它时触发。建议在此处理器中关闭流程页面。 |
+| **onPurchaseCompleted** | 购买完成时触发，无论结果是成功、用户取消还是待审批。购买成功时会提供更新后的 `AdaptyProfile`。用户取消及待处理付款（如需家长审批）会触发此事件，而非 `onPurchaseFailed`。 |
+| **onPurchaseStarted** | 当用户点击"购买"操作按钮以开始购买流程时触发。 |
+| **onPurchaseFailed** | 因错误导致购买失败时触发（如付款限制、无效产品、网络故障、交易验证失败等）。用户取消或待处理付款不会触发此事件，这些情况会触发 `onPurchaseCompleted`。 |
+| **onRestoreStarted** | 当用户开始恢复购买流程时触发。 |
+| **onRestoreCompleted** | 购买恢复成功时触发，并提供更新后的 `AdaptyProfile`。如果用户已具备所需的 `accessLevel`，建议关闭页面。请参阅[订阅状态](capacitor-listen-subscription-changes)了解如何检查。 |
+| **onRestoreFailed** | 恢复流程失败时触发，并提供 `AdaptyError`。 |
+| **onProductSelected** | 当用户在流程视图中选择任意产品时触发，可用于监控用户在购买前的选择。 |
+| **onError** | 视图渲染过程中发生错误时触发，并提供 `AdaptyError`。此类错误本不应出现，如果遇到，请告知我们。 |
+| **onLoadingProductsFailed** | 产品加载失败时触发，并提供 `AdaptyError`。如果在创建视图时未设置 `prefetchProducts: true`，AdaptyUI 会自行从服务器获取所需对象。 |
+| **onAppeared** | 当流程展示给用户时触发。在 iOS 上，当用户点击流程中的 [Web 付费墙按钮](web-paywall#step-2a-add-a-web-purchase-button) 且 Web 付费墙在应用内浏览器中打开时，也会触发此事件。 |
+| **onDisappeared** | 当用户关闭流程时触发。在 iOS 上，当从流程中在应用内浏览器打开的 [Web 付费墙](web-paywall#step-2a-add-a-web-purchase-button) 从屏幕消失时，也会触发此事件。 |
+| **onWebPaymentNavigationFinished** | 尝试打开 [Web 付费墙](web-paywall) 进行购买后触发，无论成功与否。 |
+| **onRequestAppReview** | 为流程中的应用评价请求预留。目前流程尚不会触发应用评价请求，无需实现。 |
+| **onAnalytics** | 为流程中的自定义分析事件预留。目前流程尚不会向你的代码发送这些事件，无需实现。 |
+| **onRequestPermission** | 为流程中的系统权限请求（如推送通知或相机访问）预留。目前流程尚不会触发权限请求，无需实现。 |
+| **onObserverPurchaseInitiated** | 仅限观察者模式：当用户在流程中点击购买按钮时触发。Adapty 不会执行购买——请使用你自己的购买代码完成购买，然后将交易上报给 Adapty。详见下方[在观察者模式下处理购买](#handle-purchases-in-observer-mode)。 |
+| **onObserverRestoreInitiated** | 仅限观察者模式：当用户在流程中点击恢复按钮时触发。Adapty 不会执行恢复——请自行恢复，然后上报所有已恢复的交易。详见下方[在观察者模式下处理购买](#handle-purchases-in-observer-mode)。 |
+### 在观察者模式下处理购买 \{#handle-purchases-in-observer-mode\}
+
+如果你以[观察者模式](implement-observer-mode-capacitor)（`observerMode: true`）激活了 SDK 并展示 Adapty 渲染的流程，SDK 不会为你执行购买操作。当用户点击购买或恢复按钮时，SDK 会调用 `onObserverPurchaseInitiated` 或 `onObserverRestoreInitiated`，你可以用自己的代码来处理购买或恢复逻辑。完整设置请参阅[在观察者模式下展示流程](capacitor-present-flows-in-observer-mode)。
+
+</SDKv4>
+
+<SDKv3>
+:::important
+本指南涵盖购买、恢复、产品选择和付费墙渲染的事件处理。你还必须实现按钮处理（关闭付费墙、打开链接等）。详情请参阅我们的[按钮操作处理指南](capacitor-handle-paywall-actions)。
+:::
+通过[付费墙编辑工具](adapty-paywall-builder)配置的付费墙无需额外代码即可完成购买和恢复购买操作。但它们会生成一些事件，供您的应用响应。这些事件包括按钮点击（关闭按钮、URL、产品选择等），以及付费墙上与购买相关操作的通知。请参阅下文了解如何响应这些事件。
+
+如需在移动应用中控制或监控付费墙界面上发生的流程，请实现 `view.setEventHandlers` 方法：
+```typescript showLineNumbers
 
 const view = await createPaywallView(paywall);
 
@@ -81,7 +195,6 @@ const unsubscribe = view.setEventHandlers({
 
 <Details>
 <summary>事件示例（点击展开）</summary>
-
 ```typescript
 // onCloseButtonPress
 {
@@ -245,21 +358,17 @@ const unsubscribe = view.setEventHandlers({
 }
 ```
 </Details>
+您可以只注册需要的事件处理器，无需注册的可以忽略。这样就不会创建多余的事件监听器。所有事件处理器均为可选。
 
-您可以注册所需的事件处理程序，忽略不需要的部分。未使用的事件监听器不会被创建。所有事件处理程序均为可选。
-
-事件处理程序返回一个布尔值。若返回 `true`，则认为显示流程已完成，付费墙屏幕将关闭，并移除该视图的所有事件监听器。
-
-部分事件处理程序具有默认行为，您可以根据需要进行覆盖：
-- `onCloseButtonPress`：按下关闭按钮时关闭付费墙。
+事件处理器返回一个布尔值。若返回 `true`，则视为展示流程已完成，付费墙页面将关闭，该视图的所有事件监听器也会随之移除。
+某些事件处理程序具有默认行为，您可以根据需要进行覆盖：
+- `onCloseButtonPress`：点击关闭按钮时关闭付费墙。
 - `onAndroidSystemBack`：按下 **Back** 按钮时关闭付费墙。
 - `onRestoreCompleted`：恢复成功后关闭付费墙。
 - `onPurchaseCompleted`：除非用户取消，否则关闭付费墙。
-- `onRenderingFailed`：渲染失败时关闭付费墙。
-- `onUrlPress`：在系统浏览器中打开 URL 并保持付费墙开启。
-
-### 事件处理程序 \{#event-handlers\}
-
+- `onRenderingFailed`：付费墙渲染失败时关闭付费墙。
+- `onUrlPress`：在系统浏览器中打开 URL，并保持付费墙开启。
+### 事件处理器 \{#event-handlers\}
 | 事件处理程序                | 描述                                                                                                                                                                                                                                                                                                    |
 |:----------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **onCustomAction**          | 当用户执行自定义操作时触发，例如点击[自定义按钮](paywall-buttons)。                                                                                                                                                                                                                                     |
@@ -278,3 +387,4 @@ const unsubscribe = view.setEventHandlers({
 | **onDisappeared**           | 付费墙视图从屏幕消失时触发。在 iOS 上，当从付费墙在应用内浏览器中打开的[网页付费墙](web-paywall#step-2a-add-a-web-purchase-button)从屏幕消失时，也会触发此事件。                                                                                                                                        |
 | **onRenderingFailed**       | 视图渲染期间发生错误时触发，并提供 `AdaptyError`。此类错误不应出现，如遇到请告知我们。                                                                                                                                                                                                                  |
 | **onLoadingProductsFailed** | 产品加载失败时触发，并提供 `AdaptyError`。如果您在创建视图时未设置 `prefetchProducts: true`，AdaptyUI 将自行从服务器获取所需对象。                                                                                                                                                                       |
+</SDKv3>
