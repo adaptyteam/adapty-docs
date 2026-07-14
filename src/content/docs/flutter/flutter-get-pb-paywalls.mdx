@@ -1,9 +1,9 @@
 ---
-title: "Fetch Paywall Builder paywalls and their configuration in Flutter SDK"
-description: "Learn how to retrieve PB paywalls in Adapty for better subscription control in Flutter."
-metadataTitle: "Retrieving PB Paywalls in Adapty | Adapty Docs"
+title: "Get flows & paywalls - Flutter"
+description: "Fetch flows and paywalls from Adapty in your Flutter app."
+metadataTitle: "Get Flows & Paywalls - Flutter | Adapty Docs"
 displayed_sidebar: sdkflutter
-keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+keywords: ['getFlow', 'getPaywall', 'createFlowView', 'createPaywallView', 'getFlowForDefaultAudience', 'getPaywallForDefaultAudience']
 rank: 85
 ---
 
@@ -11,6 +11,208 @@ import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+
+<SDKv4>
+
+<MethodPromo method="getFlow" />
+
+After [you designed your flow or Paywall Builder paywall](adapty-paywall-builder), you can display it in your mobile app. The first step is to get the flow or paywall associated with the placement and its view configuration as described below.
+
+Please be aware that this topic refers to flows and Paywall Builder-customized paywalls. If you are implementing your paywalls manually, please refer to the [Fetch paywalls and products for remote config paywalls in your mobile app](fetch-paywalls-and-products-flutter) topic.
+
+<SampleApp />
+
+<details>
+   <summary>Before you start displaying flows and paywalls in your mobile app (click to expand)</summary>
+
+1. [Create your products](create-product) in the Adapty Dashboard.
+2. [Create a flow/paywall and incorporate the products into it](create-paywall) in the Adapty Dashboard.
+3. [Create placements and incorporate your flow/paywall into it](create-placement) in the Adapty Dashboard.
+4. Install [Adapty SDK](sdk-installation-flutter) in your mobile app.
+</details>
+
+## Fetch flow/paywall
+
+If you've designed a flow or paywall using the Flow Builder or Paywall Builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a flow or paywall contains both what should be shown within it and how it should be shown. Nevertheless, you need to get its ID via the placement, its view configuration, and then present it in your mobile app.
+
+Fetch the flow or paywall and create its [view](flutter-get-pb-paywalls#fetch-the-view-configuration) as early as possible — ideally well before you present it. The `createFlowView` method loads the view configuration and starts downloading and caching its images in the background. The earlier you call it, the more time these downloads have to complete. By the time you present the flow or paywall, its configuration and images can already be cached and ready to display.
+
+To get a flow or paywall, use the `getFlow` method:
+
+```dart showLineNumbers
+try {
+  final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
+  // the requested flow/paywall
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+Parameters:
+
+| Parameter | Presence | Description |
+|---------|--------|-----------|
+| **placementId** | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard. |
+| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
+| **loadTimeout** | default: 5 sec | <p>A `Duration` that limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
+
+Response parameters:
+
+| Parameter | Description                                                                                                                                                                            |
+| :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Flow   | An `AdaptyFlow` object with the flow's identifiers (`instanceIdentity`, `variationId`), name, placement, its paywall variations (`paywalls`), and any remote configs (`remoteConfigs`). |
+
+## Fetch the view configuration
+
+:::important
+Make sure to enable the **Show on device** toggle in the builder. If this option isn't turned on, the view configuration won't be available to retrieve.
+:::
+
+If the placement was designed in the **Flow Builder** or the **Paywall Builder**, Adapty renders the UI for you — the `hasViewConfiguration` property of the fetched flow is `true`. Create the view with `createFlowView`, then [present the flow or paywall](flutter-present-paywalls). If the placement is a custom paywall with no Builder UI (`hasViewConfiguration` is `false`), [handle it as a remote config paywall](present-remote-config-paywalls-flutter) instead.
+
+:::warning
+The result of the `createFlowView` method can only be presented once. If you need to present it again, call the `createFlowView` method anew.
+:::
+
+```dart showLineNumbers
+import 'package:adapty_flutter/adapty_flutter.dart';
+
+try {
+  final view = await AdaptyUI().createFlowView(flow: flow);
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+Parameters:
+
+| Parameter            | Presence | Description                                                  |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **flow**             | required | An `AdaptyFlow` object to obtain a view for the desired flow/paywall. |
+| **customTags**       | optional | Define a map of custom tags and their resolved values. Custom tags serve as placeholders in the content, dynamically replaced with specific strings for personalized content within the flow/paywall. Refer to [Custom tags in paywall builder](custom-tags-in-paywall-builder) topic for more details. |
+| **preloadProducts** | optional | Enable to optimize the display timing of products on the screen. When `true` AdaptyUI will automatically fetch the necessary products. Default: `false`. |
+| **loadTimeout** | optional | A `Duration` that limits the view configuration loading time. If the timeout is reached, cached data or local fallback will be used. |
+
+:::note
+If you are using multiple languages, learn how to add a [flow localization](add-paywall-locale-in-adapty-paywall-builder) and how to use locale codes correctly [here](flutter-localizations-and-locale-codes).
+:::
+
+Once you have the view, [present the flow/paywall](flutter-present-paywalls).
+
+## Get a flow or paywall for a default audience to fetch it faster
+
+Typically, flows and paywalls are fetched almost instantly, so you don’t need to worry about speeding up this process. However, in cases where you have numerous audiences and placements, and your users have a weak internet connection, fetching a flow or paywall may take longer than you'd like. In such situations, you might want to display a default flow or paywall to ensure a smooth user experience rather than showing nothing at all.
+
+To address this, you can use the `getFlowForDefaultAudience` method, which fetches the flow or paywall of the specified placement for the **All Users** audience. However, it's crucial to understand that the recommended approach is to fetch the flow or paywall by the `getFlow` method, as detailed in the [Fetch flow/paywall](#fetch-flowpaywall) section above.
+
+:::warning
+Why we recommend using `getFlow`
+
+The `getFlowForDefaultAudience` method comes with a few significant drawbacks:
+
+- **Potential backward compatibility issues**: If you need to show different paywalls for different app versions (current and future), you may face challenges. You’ll either have to design paywalls that support the current (legacy) version or accept that users with the current (legacy) version might encounter issues with non-rendered paywalls.
+- **Loss of targeting**: All users will see the same paywall designed for the **All Users** audience, which means you lose personalized targeting (including based on countries, marketing attribution or your own custom attributes).
+
+If you're willing to accept these drawbacks to benefit from faster flow or paywall fetching, use the `getFlowForDefaultAudience` method as follows. Otherwise stick to `getFlow` described [above](#fetch-flowpaywall).
+:::
+
+```dart showLineNumbers
+try {
+  final flow = await Adapty().getFlowForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
+  // the requested flow/paywall
+} on AdaptyError catch (adaptyError) {
+  // handle error
+} catch (e) {
+  // handle unknown error
+}
+```
+
+| Parameter | Presence | Description |
+|---------|--------|-----------|
+| **placementId** | required | The identifier of the [Placement](placements). This is the value you specified when creating a placement in your Adapty Dashboard. |
+| **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>By default, SDK will try to load data from the server and will return cached data in case of failure. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider using `.returnCacheDataElseLoad` to return cached data if it exists. In this scenario, users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p> |
+
+## Customize assets
+
+To customize images and videos in your flow/paywall, implement the custom assets.
+
+Hero images and videos have predefined IDs: `hero_image` and `hero_video`. In a custom asset bundle, you target these elements by their IDs and customize their behavior.
+
+For other images and videos, you need to [set a custom ID](custom-media) in the Adapty dashboard.
+
+For example, you can:
+
+- Show a different image or video to some users.
+- Show a local preview image while a remote main image is loading.
+- Show a preview image before running a video.
+
+Here’s an example of how you can provide custom assets via a simple dictionary:
+
+```dart
+import 'package:adapty_flutter/adapty_flutter.dart';
+
+final customAssets = {
+    // Show a local image using a custom ID
+    'custom_image': AdaptyCustomAsset.localImageAsset(
+        assetId: 'assets/images/image_name.png',
+    ),
+
+    // Show a local video with a preview image
+    'hero_video': AdaptyCustomAsset.localVideoAsset(
+        assetId: 'assets/videos/custom_video.mp4',
+    ),
+};
+
+try {
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+    customAssets: customAssets,
+  );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+:::note
+If an asset is not found, the flow/paywall will fall back to its default appearance.
+:::
+
+## Set up developer-defined timers
+
+To use custom timers in your mobile app, pass a `customTimers` map to the `createFlowView` method. Each map key is a timer ID, and its value is a `DateTime` object that defines when the timer ends. Here is an example:
+
+```dart showLineNumbers
+import 'package:adapty_flutter/adapty_flutter.dart';
+
+try {
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+    customTimers: {
+      'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
+      'CUSTOM_TIMER_NY': DateTime(2027, 1, 1), // New Year 2027
+    },
+  );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `customTimers` map ensures your app dynamically updates each timer with the correct value. For example:
+
+- `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
+- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the flow.
+
+</SDKv4>
+
+<SDKv3>
 
 After [you designed the visual part for your paywall](adapty-paywall-builder) with the new Paywall Builder in the Adapty Dashboard, you can display it in your mobile app. The first step in this process is to get the paywall associated with the placement and its view configuration as described below.
 
@@ -143,7 +345,7 @@ For example, you can:
 To use this feature, update the Adapty Flutter SDK to version 3.8.0 or higher.
 :::
 
-Here’s an example of how you can provide custom asssets via a simple dictionary:
+Here’s an example of how you can provide custom assets via a simple dictionary:
 
 ```dart
 import 'package:adapty_flutter/adapty_flutter.dart';
@@ -161,15 +363,14 @@ final customAssets = {
 };
 
 try {
-    final view = await AdaptyUI().createPaywallView(
-        paywall: paywall,
-        customAssets: <CUSTOM_ASSETS>,
-        preloadProducts: preloadProducts,
-        );
-    } on AdaptyError catch (e) {
-        // handle the error
-    } catch (e) {
-// handle the error
+  final view = await AdaptyUI().createPaywallView(
+    paywall: paywall,
+    customAssets: customAssets,
+  );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
 }
 ```
 
@@ -179,7 +380,7 @@ If an asset is not found, the paywall will fall back to its default appearance.
 
 ## Set up developer-defined timers
 
-To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. Here is an example:
+To use custom timers in your mobile app, pass a `customTimers` map to the `createPaywallView` method. Each map key is a timer ID, and its value is a `DateTime` object that defines when the timer ends. Here is an example:
 
 ```dart showLineNumbers
 import 'package:adapty_flutter/adapty_flutter.dart';
@@ -199,7 +400,9 @@ try {
 }
 ```
 
-In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value. For example:
+In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `customTimers` map ensures your app dynamically updates each timer with the correct value. For example:
 
 - `CUSTOM_TIMER_NY`: The time remaining until the timer’s end, such as New Year’s Day.
 - `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
+
+</SDKv3>
