@@ -1,0 +1,75 @@
+---
+title: "Показ флоу в режиме Observer в Flutter SDK"
+description: "Показывайте флоу и пейволы Paywall Builder в режиме Observer в вашем Flutter-приложении, обрабатывая покупки собственным кодом."
+metadataTitle: "Показ флоу в режиме Observer | Документация Adapty"
+keywords: ['режим observer', 'AdaptyUIObserverModeResolver', 'setObserverModeResolver', 'флоу']
+---
+
+Если вы настроили флоу или пейвол с помощью билдера, вам не нужно беспокоиться об их рендеринге в коде мобильного приложения для отображения пользователю. Такой флоу или пейвол уже содержит и то, что нужно показать, и то, как именно это должно выглядеть.
+
+:::warning
+Этот раздел относится только к [режиму Observer](observer-vs-full-mode). Если вы не работаете в режиме Observer, обратитесь к разделу [Отображение флоу и пейволов](flutter-present-paywalls).
+:::
+:::info
+Эта функция доступна начиная с Adapty Flutter SDK 4.0 — ранее она была доступна только в нативных SDK для iOS и Android. Ознакомьтесь с [руководством по миграции](migration-to-flutter-sdk-v4), чтобы выполнить обновление.
+:::
+
+<details>
+   <summary>Прежде чем начать показывать флоу (нажмите, чтобы развернуть)</summary>
+1. Настройте начальную интеграцию Adapty [с App Store](initial_ios) и [с Google Play](initial-android).
+   2. Установите и настройте Adapty SDK. Обязательно задайте параметр `observerMode` равным `true`. Обратитесь к [гайду по установке Flutter SDK](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk).
+   3. [Создайте продукты](create-product) в дашборде Adapty.
+   4. [Настройте флоу или пейволы в билдерах](create-paywall) и привяжите к ним продукты.
+   5. [Создайте плейсменты и назначьте им флоу или пейволы](create-placement).
+   6. [Получите флоу и их конфигурацию](flutter-get-pb-paywalls) в коде мобильного приложения.
+</details>
+
+В режиме Observer SDK не выполняет покупки самостоятельно. Когда пользователь нажимает кнопку покупки или восстановления во флоу или пейволе, отрисованном Adapty, SDK вызывает ваш `AdaptyUIObserverModeResolver` — выполните покупку или восстановление там с помощью собственного кода.
+
+1. Реализуйте `AdaptyUIObserverModeResolver`:
+   ```dart showLineNumbers title="Flutter"
+   class MyObserverModeResolver extends AdaptyUIObserverModeResolver {
+     @override
+     void observerModeDidInitiatePurchase(
+       AdaptyUIFlowView view,
+       AdaptyPaywallProduct product,
+       void Function() onStartPurchase,
+       void Function() onFinishPurchase,
+     ) {
+       onStartPurchase(); // the view shows its loading indicator
+       // make the purchase with your own code, then:
+       onFinishPurchase(); // the view hides the loading indicator
+     }
+
+     @override
+     void observerModeDidInitiateRestore(
+       AdaptyUIFlowView view,
+       void Function() onStartRestore,
+       void Function() onFinishRestore,
+     ) {
+       onStartRestore();
+       // restore purchases with your own code, then:
+       onFinishRestore();
+     }
+   }
+   ```
+
+Метод `observerModeDidInitiatePurchase` сообщает вам о том, что пользователь инициировал покупку, а `observerModeDidInitiateRestore` — что пользователь инициировал восстановление. В ответ на эти события запустите своё кастомное флоу покупки или восстановления.
+
+Также не забудьте вызвать следующие коллбэки, чтобы уведомить AdaptyUI о процессе покупки или восстановления. Это необходимо для корректного поведения флоу — например, для отображения лоадера:
+| Callback           | Description                                                                                      |
+   | :----------------- | :----------------------------------------------------------------------------------------------- |
+   | onStartPurchase()  | Коллбэк должен вызываться, чтобы уведомить AdaptyUI о начале покупки.    |
+   | onFinishPurchase() | Коллбэк должен вызываться, чтобы уведомить AdaptyUI о завершении покупки. |
+   | onStartRestore()   | Коллбэк должен вызываться, чтобы уведомить AdaptyUI о начале восстановления.   |
+   | onFinishRestore()  | Коллбэк должен вызываться, чтобы уведомить AdaptyUI о завершении восстановления.  |
+2. Зарегистрируйте резолвер до отображения любого экрана:
+
+   ```dart showLineNumbers title="Flutter"
+   AdaptyUI().setObserverModeResolver(MyObserverModeResolver());
+   ```
+
+3. Создайте и отобразите флоу как обычно: [получите флоу и создайте его представление](flutter-get-pb-paywalls), затем [отобразите его](flutter-present-paywalls). Никаких дополнительных параметров не требуется — после регистрации резолвера все покупки и восстановления в пейволах и флоу Adapty будут проходить через него.
+:::warning
+Не забудьте [сообщить о транзакции и связать её с пейволом](report-transactions-observer-mode-flutter). В противном случае Adapty не распознает транзакцию и не определит, с какого пейвола была совершена покупка.
+:::

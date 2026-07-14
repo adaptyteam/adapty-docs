@@ -1,27 +1,156 @@
 ---
-title: "Flutter - Yeni Paywall Builder paywalllarını sunma"
-description: "Adapty'nin monetizasyon özelliklerini kullanarak Flutter uygulamalarında paywalllar sunun."
-metadataTitle: "Flutter'da Paywallları Sunma | Adapty Dokümanları"
+title: "Flow ve paywallları görüntüleme - Flutter"
+description: "Adapty'nin monetizasyon özelliklerini kullanarak Flutter uygulamalarında flow ve paywallları gösterin."
+metadataTitle: "Flutter'da Flow ve Paywallları Görüntüleme | Adapty Dokümanları"
 ---
 
 import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md'; 
 
-Paywall Builder ile bir paywall özelleştirdiyseniz, onu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmenize gerek yoktur. Bu tür bir paywall, hem ne gösterileceğini hem de nasıl gösterileceğini içerir.
+<SDKv4>
+Flow Builder veya Paywall Builder kullanarak bir flow ya da paywall tasarladıysanız, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Böyle bir flow veya paywall, hem neyin gösterileceğini hem de nasıl gösterileceğini içerir.
 
 :::warning
 
-Bu kılavuz yalnızca SDK v3.2.0 veya üzerini gerektiren **yeni Paywall Builder paywallları** içindir. Paywall sunma süreci, farklı Paywall Builder sürümleriyle tasarlanan paywalllar ve remote config paywalllar için farklılık gösterir.
-
-- **Remote config paywalllarını** sunmak için bkz. [Remote config ile tasarlanan paywall'ı render etme](present-remote-config-paywalls).
+Bu kılavuz, flow'lar ve Paywall Builder paywall'ları içindir. **Remote config paywall'larını** sunmak için bkz. [Remote config ile tasarlanmış paywall'ı render etme](present-remote-config-paywalls-flutter).
 
 :::
 
-Adapty Flutter SDK, paywallları sunmak için iki yöntem sunar:
+Adapty Flutter SDK, flow'ları ve paywall'ları sunmak için iki yol sunar:
 
 - **Bağımsız ekran**
 
 - **Gömülü widget**
+## Bağımsız ekran olarak göster \{#present-as-standalone-screen\}
 
+Bir flow veya paywall'ı bağımsız bir ekran olarak göstermek için, [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration) metoduyla oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Her `view` yalnızca bir kez gösterilebilir: kapatıldıktan sonra `view` bellekten serbest bırakılır. Flow veya paywall'ı tekrar göstermeniz gerekirse, yeni bir `view` örneği oluşturmak için `createFlowView` metodunu bir kez daha çağırın.
+```dart showLineNumbers title="Flutter"
+try {
+  await view.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+<SampleApp />
+
+### Flow veya paywall'ı kapat \{#dismiss-the-flow-or-paywall\}
+
+Flow veya paywall'ı programatik olarak kapatmanız gerektiğinde `dismiss()` metodunu kullanın:
+
+```dart showLineNumbers title="Flutter"
+try {
+  await view.dismiss();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+:::note
+Bir view kapatıldığında bellekten silinir — kapatılmış bir view artık yeniden gösterilemez. Bunun yerine `createFlowView` ile yeni bir tane oluşturun.
+:::
+### Diyalog göster \{#show-dialog\}
+
+Android'de bir flow veya paywall görünümü gösterildiğinde, native uyarı diyalogları yerine bu metodu kullanın. Android'de normal uyarılar görünümün arkasında kalır ve kullanıcılar tarafından görülemez. Bu metod, diyaloğun tüm platformlarda flow veya paywall'ın üzerinde düzgün şekilde gösterilmesini sağlar.
+```dart showLineNumbers title="Flutter"
+try {
+  final action = await view.showDialog(
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  );
+  
+  if (action == AdaptyUIDialogActionType.secondary) {
+    // User confirmed - close the paywall
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (e) {
+  // handle error
+}
+```
+
+### iOS sunum stilini yapılandırın \{#configure-ios-presentation-style\}
+
+`present()` metoduna `iosPresentationStyle` parametresini geçirerek flow veya paywall'ın iOS'ta nasıl sunulacağını yapılandırın. Bu parametre `AdaptyUIIOSPresentationStyle.fullScreen` (varsayılan) veya `AdaptyUIIOSPresentationStyle.pageSheet` değerlerini kabul eder.
+
+```dart showLineNumbers
+try {
+  await view.present(iosPresentationStyle: AdaptyUIIOSPresentationStyle.pageSheet);
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+## Widget hiyerarşisine gömme \{#embed-in-widget-hierarchy\}
+
+Mevcut widget ağacınıza bir flow veya paywall gömmek için `AdaptyUIFlowPlatformView` widget'ını doğrudan Flutter widget hiyerarşinizde kullanın.
+```dart showLineNumbers title="Flutter"
+AdaptyUIFlowPlatformView(
+  flow: flow, // The flow object you fetched
+  onDidAppear: (view) {
+  },
+  onDidDisappear: (view) {
+  },
+  onDidPerformAction: (view, action) {
+  },
+  onDidSelectProduct: (view, productId) {
+  },
+  onDidStartPurchase: (view, product) {
+  },
+  onDidFinishPurchase: (view, product, purchaseResult) {
+  },
+  onDidFailPurchase: (view, product, error) {
+  },
+  onDidStartRestore: (view) {
+  },
+  onDidFinishRestore: (view, profile) {
+  },
+  onDidFailRestore: (view, error) {
+  },
+  onDidReceiveError: (view, error) {
+  },
+  onDidFailLoadingProducts: (view, error) {
+  },
+  onDidFinishWebPaymentNavigation: (view, product, error) {
+  },
+)
+```
+
+:::note 
+Android platform view'ın çalışması için `MainActivity`'nizin `FlutterFragmentActivity`'yi genişlettiğinden emin olun:
+
+```kotlin showLineNumbers title="Kotlin"
+class MainActivity : FlutterFragmentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
+}
+```
+:::
+
+</SDKv4>
+
+<SDKv3>
+
+Paywall Builder kullanarak bir paywall özelleştirdiyseniz, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Böyle bir paywall, hem ne gösterileceğini hem de nasıl gösterileceğini içerir.
+
+:::warning
+Bu kılavuz yalnızca SDK v3.2.0 veya sonrasını gerektiren **yeni Paywall Builder paywall'ları** içindir. Paywall'ları sunma süreci, farklı Paywall Builder sürümleriyle tasarlanan paywall'lar ve remote config paywall'lar için farklılık gösterir.
+
+- **Remote config paywall'larını** sunmak için bkz. [Remote config ile tasarlanan paywall'ı render etme](present-remote-config-paywalls-flutter).
+
+:::
+
+Adapty Flutter SDK, paywall'ları sunmak için iki yöntem sunar:
+
+- **Bağımsız ekran**
+
+- **Gömülü widget**
 ## Bağımsız ekran olarak sunma \{#present-as-standalone-screen\}
 
 Bir paywall'ı bağımsız ekran olarak görüntülemek için, [`createPaywallView`](flutter-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) metoduyla oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir. Paywall'ı tekrar göstermeniz gerekiyorsa, yeni bir `view` örneği oluşturmak için `createPaywallView`'ı bir kez daha çağırın.
@@ -41,7 +170,6 @@ try {
 }
 ```
 <SampleApp />
-
 ### Paywall'ı kapatma \{#dismiss-the-paywall\}
 
 Paywall'ı programatik olarak kapatmanız gerektiğinde `dismiss()` metodunu kullanın:
@@ -79,9 +207,9 @@ try {
 }
 ```
 
-### iOS sunum stilini yapılandırma \{#configure-ios-presentation-style\}
+### iOS sunum stilini yapılandırın \{#configure-ios-presentation-style\}
 
-`present()` metoduna `iosPresentationStyle` parametresini geçirerek paywall'ın iOS'ta nasıl sunulacağını yapılandırın. Parametre, `AdaptyUIIOSPresentationStyle.fullScreen` (varsayılan) veya `AdaptyUIIOSPresentationStyle.pageSheet` değerlerini kabul eder.
+`present()` metoduna `iosPresentationStyle` parametresini geçirerek paywallın iOS'ta nasıl sunulacağını yapılandırın. Parametre, `AdaptyUIIOSPresentationStyle.fullScreen` (varsayılan) veya `AdaptyUIIOSPresentationStyle.pageSheet` değerlerini kabul eder.
 
 ```dart showLineNumbers
 try {
@@ -92,7 +220,6 @@ try {
   // handle the error
 }
 ```
-
 ## Widget hiyerarşisine gömme \{#embed-in-widget-hierarchy\}
 
 Bir paywall'ı mevcut widget ağacınıza gömmek için `AdaptyUIPaywallPlatformView` widget'ını doğrudan Flutter widget hiyerarşinizde kullanın.
@@ -129,8 +256,8 @@ AdaptyUIPaywallPlatformView(
 )
 ```
 
-:::note 
-Android platform görünümünün çalışması için `MainActivity`'nizin `FlutterFragmentActivity`'yi genişlettiğinden emin olun:
+:::note
+Android platform view'un çalışması için `MainActivity` sınıfınızın `FlutterFragmentActivity`'yi extend ettiğinden emin olun:
 
 ```kotlin showLineNumbers title="Kotlin"
 class MainActivity : FlutterFragmentActivity() {
@@ -140,3 +267,5 @@ class MainActivity : FlutterFragmentActivity() {
 }
 ```
 :::
+
+</SDKv3>

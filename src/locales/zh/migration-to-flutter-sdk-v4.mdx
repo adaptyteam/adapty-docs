@@ -1,0 +1,207 @@
+---
+title: "迁移 Adapty Flutter SDK 至 v. 4.0"
+description: "通过将付费墙 API 替换为流程 API，迁移至 Adapty Flutter SDK v4.0（测试版），兼容 Flow Builder 和 Paywall Builder。"
+metadataTitle: "迁移至 Adapty Flutter SDK v4.0（测试版）| Adapty 文档"
+---
+
+Adapty Flutter SDK 4.0（测试版）引入了流程功能，并相应重命名了付费墙 API。新 API 同时兼容全新的 Flow Builder 和现有的 Paywall Builder——无需在 Adapty 看板侧进行任何配置变更。
+## 快速参考 \{#quick-reference\}
+| v3 | v4 |
+|---|---|
+| `Adapty().getPaywall(placementId: id)` | `Adapty().getFlow(placementId: id)` |
+| `Adapty().getPaywallForDefaultAudience(placementId: id)` | `Adapty().getFlowForDefaultAudience(placementId: id)` |
+| `Adapty().getPaywallProducts(paywall: paywall)` | `Adapty().getPaywallProducts(flow: flow)` |
+| `Adapty().logShowPaywall(paywall: paywall)` | `Adapty().logShowFlow(flow: flow)` |
+| `AdaptyPaywall`（类型） | `AdaptyFlow` |
+| `AdaptyPaywallFetchPolicy`（类型） | `AdaptyFlowFetchPolicy` |
+| `AdaptyUI().createPaywallView(paywall: paywall)` | `AdaptyUI().createFlowView(flow: flow)` |
+| `AdaptyUIPaywallView`（类型） | `AdaptyUIFlowView` |
+| `AdaptyUIPaywallPlatformView`（widget） | `AdaptyUIFlowPlatformView` |
+| `AdaptyUI().presentPaywallView(view)` / `dismissPaywallView(view)` | `AdaptyUI().presentFlowView(view)` / `dismissFlowView(view)` |
+| `AdaptyUIPaywallsEventsObserver` | `AdaptyUIFlowsEventsObserver` |
+| `AdaptyUI().setPaywallsEventsObserver(observer)` | `AdaptyUI().setFlowsEventsObserver(observer)` |
+| `paywallViewDid*` 回调 | `flowViewDid*` 回调 |
+| `paywallViewDidFailRendering` | `flowViewDidReceiveError` |
+`AdaptyPaywallProduct` 保持其名称不变——产品仍属于某个 flow，`getPaywallProducts` 现在接受 `AdaptyFlow` 作为参数。获取 flow 时不再需要传入 `locale`。购买和用户画像相关的 API（`makePurchase`、`restorePurchases`、`getProfile`、`identify` 等）保持不变，视图方法 `present`、`dismiss` 和 `showDialog` 也同样不变。部分默认行为有所改动——详见[默认行为变更](#default-behavior-changes)。
+## 最低版本要求 \{#minimum-versions\}
+
+Adapty Flutter SDK 4.0 提高了最低要求：
+
+- **iOS 15.0** — 最低 iOS 部署目标，从 iOS 13.0 提升。
+- **Xcode 26** 或更高版本 — 原生 iOS SDK 使用 Swift tools 6.2。
+- **Flutter 3.32.0**（Dart 3.8.0）或更高版本。
+## 安装 \{#installation\}
+### 更新包 \{#update-the-package\}
+
+v4.0 是预发布版本，请在 `pubspec.yaml` 中锁定确切版本——pub 无法通过插入符号范围解析预发布版本：
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: 4.0.0-beta.1
+```
+### iOS：原生 SDK 现在通过 Swift Package Manager 分发 \{#ios-native-sdks-now-come-through-swift-package-manager\}
+
+[CocoaPods 的 spec 仓库将于 2026 年 12 月进入只读模式](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)，因此从 v4 开始，原生 iOS SDK **不再通过 CocoaPods 分发** — 插件仅通过 **Swift Package Manager** 拉取依赖。
+
+如果你使用的是 Flutter 3.32–3.43，请执行以下命令一次性启用 Swift Package Manager 支持：
+
+```bash
+flutter config --enable-swift-package-manager
+```
+
+Flutter 3.44 及更高版本默认启用 Swift Package Manager，无需额外操作。
+## 获取流程 \{#fetching-flows\}
+### getPaywall → getFlow
+
+返回类型从 `AdaptyPaywall` 变更为 `AdaptyFlow`，并且不再需要传入 `locale` 参数——渲染 flow 时会自动解析本地化；对于自定义付费墙，所有已配置的语言版本将通过 `flow.remoteConfigs` 返回：
+
+```diff showLineNumbers
+- final paywall = await Adapty().getPaywall(placementId: 'YOUR_PLACEMENT_ID', locale: 'en');
++ final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
+```
+
+`getPaywallForDefaultAudience` 也以同样的方式重命名：
+```diff showLineNumbers
+- final paywall = await Adapty().getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID', locale: 'en');
++ final flow = await Adapty().getFlowForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
+```
+
+fetch policy 类型从 `AdaptyPaywallFetchPolicy` 重命名为 `AdaptyFlowFetchPolicy`；其选项（`reloadRevalidatingCacheData`、`returnCacheDataElseLoad`、`returnCacheDataIfNotExpiredElseLoad`）保持不变。
+### getPaywallProducts(paywall) → getPaywallProducts(flow)
+
+`getPaywallProducts` 保持名称不变，但现在通过 `flow` 参数接收 `AdaptyFlow`：
+
+```diff showLineNumbers
+- final products = await Adapty().getPaywallProducts(paywall: paywall);
++ final products = await Adapty().getPaywallProducts(flow: flow);
+```
+## 数据模型 \{#data-model\}
+
+`getFlow` 返回的是 `AdaptyFlow` 而非 `AdaptyPaywall`，对象结构也有所变化：
+| v3 `AdaptyPaywall` 成员 | v4 `AdaptyFlow` 成员 | 操作 |
+|---|---|---|
+| `remoteConfig`（单个，可为空） | `remoteConfigs`（列表） | 一个流程为每种已配置的语言各携带一份远程配置。`remoteConfig` getter 仍然存在，返回第一个条目；若需指定语言，可按 `locale` 在 `remoteConfigs` 中查找。 |
+| `productIdentifiers` | `productIdentifiers` | 保留，但现在会汇总流程中所有付费墙变体的标识符。各变体的标识符存放在 `flow.paywalls[i].productIdentifiers`。 |
+| `hasViewConfiguration` | `hasViewConfiguration` | 不变。 |
+| `placementId`（已弃用） | 已移除 | 使用 `flow.placement.id`。 |
+| `revision`（已弃用） | 已移除 | 使用 `flow.placement.revision`。 |
+| `vendorProductIds`（已弃用） | 已移除 | 使用 `productIdentifiers`。 |
+| _（新增）_ | `paywalls`（`AdaptyFlowPaywall` 列表） | 每个条目对应流程中的一个付费墙变体，包含各自的 `name`、`variationId` 和 `productIdentifiers`。 |
+`AdaptyPaywallViewConfiguration` 不再对外暴露——视图配置现在是不透明的。请删除所有对该类型的引用。
+## Web 付费墙方法 \{#web-paywall-methods\}
+
+`openWebPaywall` 和 `createWebPaywallUrl` 的名称保持不变，但 `paywall` 参数现在接受 `AdaptyFlowPaywall`（流程变体），而不再是 `AdaptyPaywall`。你仍然可以传入 `AdaptyPaywallProduct`。
+
+```diff showLineNumbers
+  final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
+- await Adapty().openWebPaywall(paywall: paywall);
++ if (flow.paywalls.isNotEmpty) {
++   await Adapty().openWebPaywall(paywall: flow.paywalls[0]);
++ }
+```
+## 追踪流程视图 \{#tracking-flow-views\}
+### logShowPaywall → logShowFlow
+
+`logShowPaywall` 已重命名为 `logShowFlow`，现在接收一个 `AdaptyFlow` 参数。事件仍会记录在相同的变体下，因此现有的转化漏斗和 A/B 测试数据图表无需在看板中做任何更改即可继续正常使用。
+
+```diff showLineNumbers
+- await Adapty().logShowPaywall(paywall: paywall);
++ await Adapty().logShowFlow(flow: flow);
+```
+
+与 v3 相同，当通过[流程编辑工具](adapty-flow-builder)或[付费墙编辑工具](adapty-paywall-builder)渲染流程或付费墙时，无需手动调用此方法——Adapty 会自动追踪这些页面的展示。
+## 显示流程 \{#displaying-flows\}
+### createPaywallView → createFlowView
+
+将方法重命名，并通过 `flow` 参数传入 `AdaptyFlow`。其他参数（`loadTimeout`、`preloadProducts`、`customTags`、`customTimers`、`customAssets`、`productPurchaseParams`）保持不变，视图方法 `present`、`dismiss` 和 `showDialog` 同样不变：
+
+```diff showLineNumbers
+- final view = await AdaptyUI().createPaywallView(paywall: paywall);
++ final view = await AdaptyUI().createFlowView(flow: flow);
+  await view.present();
+```
+### AdaptyUIPaywallView → AdaptyUIFlowView
+
+视图类型已重命名。其已废弃的 `paywallVariationId` 属性已移除——请改用 `variationId`：
+
+```diff showLineNumbers
+- void flowViewDidAppear(AdaptyUIPaywallView view) {
++ void flowViewDidAppear(AdaptyUIFlowView view) {
+```
+### AdaptyUIPaywallPlatformView → AdaptyUIFlowPlatformView
+
+如果你将视图作为 widget 嵌入到 widget 树中，请重命名它并传入 `flow` 参数。事件回调（`onDidAppear`、`onDidFinishPurchase` 等）名称保持不变：
+
+```diff showLineNumbers
+- AdaptyUIPaywallPlatformView(
+-   paywall: paywall,
++ AdaptyUIFlowPlatformView(
++   flow: flow,
+    onDidFinishPurchase: (view, product, purchaseResult) { /* … */ },
+  )
+```
+:::note
+使用 `createFlowView` 创建的流程视图只能使用一次：调用 `dismiss()` 后，该视图会从内存中释放，无法再次展示——如需再次展示流程，请重新调用 `createFlowView`。
+:::
+## 处理事件 \{#handling-events\}
+
+观察者类已从 `AdaptyUIPaywallsEventsObserver` 更名为 `AdaptyUIFlowsEventsObserver`，其注册方法已从 `setPaywallsEventsObserver` 更名为 `setFlowsEventsObserver`，所有 `paywallViewDid*` 回调也已更名为 `flowViewDid*`：
+```diff showLineNumbers
+- class MyObserver extends AdaptyUIPaywallsEventsObserver {
++ class MyObserver extends AdaptyUIFlowsEventsObserver {
+    @override
+-   void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
++   void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+      // …
+    }
+  }
+
+- AdaptyUI().setPaywallsEventsObserver(this);
++ AdaptyUI().setFlowsEventsObserver(this);
+```
+
+现在有三个回调是**必须实现的**——缺少它们将导致编译错误：
+- **`flowViewDidFinishPurchase`**: 在 v3 中为可选项，默认行为是购买后关闭视图。现在由你决定后续操作：继续流程或调用 `view.dismiss()`。
+- **`flowViewDidFinishRestore`**: 必填项，与 v3 相同。
+- **`flowViewDidReceiveError`**: 替代 `paywallViewDidFailRendering`，同时还可接收其他视图错误。
+
+另外两个小改动：
+- `setFlowsEventsObserver`（以及 `setOnboardingsEventsObserver`）现在接受 `null` 来解除之前设置的观察者，SDK 不再持有对它的引用。
+- 新增的可选回调 `flowViewDidReceiveAnalyticEvent` 用于接收 flow 中的自定义分析事件。目前 flow 尚未向你的代码发送此类事件，因此无需实现该回调。
+
+v4 还新增了一些可按需启用的功能：
+- `AdaptyUI().setObserverModeResolver(...)` 配合 `AdaptyUIObserverModeResolver` — 在 SDK 以[观察者模式](implement-observer-mode-flutter)运行时，处理从流程发起的购买和恢复操作。此前该功能仅在原生 iOS 和 Android SDK 中可用。请参阅[在观察者模式下展示流程](flutter-present-flows-in-observer-mode)。
+- `AdaptyUI().setSystemRequestsHandler(...)` 配合 `AdaptyUISystemRequestsHandler` — 用于处理流程中的系统请求（系统权限提示和 App Store 评价请求）。目前流程尚未触发这些请求，因此无需注册处理器。
+## 已移除的 API \{#removed-apis\}
+
+以下符号在 3.x 中已被标记为弃用，并在 v4 中正式移除：
+### setFallbackPaywalls → setFallback
+
+```diff showLineNumbers
+- await Adapty().setFallbackPaywalls(assetId);
++ await Adapty().setFallback(assetId);
+```
+### withIdfaCollectionDisabled → withAppleIdfaCollectionDisabled
+
+```diff showLineNumbers
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+-   ..withIdfaCollectionDisabled(true),
++   ..withAppleIdfaCollectionDisabled(true),
+```
+### 其他已移除的成员 \{#other-removed-members\}
+
+- **`AdaptyPurchaseResultSuccess.jwsTransaction`**：请使用 `appleJwsTransaction`。
+- **`AdaptyUIFlowView.paywallVariationId`**：请使用 `variationId`。
+- **`AdaptyUIObserver` 和 `AdaptyUI().setObserver(...)`**：请使用 `AdaptyUIFlowsEventsObserver` 和 `setFlowsEventsObserver(...)`。
+## 默认行为变更 \{#default-behavior-changes\}
+
+这些变更不会导致编译错误，请在运行时进行测试：
+- **成功购买**：在 v3 中，默认的 `paywallViewDidFinishPurchase` 会关闭视图。在 v4 中，`flowViewDidFinishPurchase` 是必须实现的，且没有默认行为——如果你希望关闭视图，需要自行处理。
+- **Android 系统返回按钮**：默认情况下，它不再关闭流程。该操作会以 `AndroidSystemBackAction` 的形式传递给 `flowViewDidPerformAction`——如果你希望返回按钮关闭流程，请在此处处理。
+- **URL 打开**：默认的 `flowViewDidPerformAction` 现在会通过 `OpenUrlAction` 以原生方式打开 URL（遵循看板中的应用内或外部浏览器设置），同时在 `CloseAction` 时关闭视图。如需自行处理 URL，请覆盖此回调。
+- **视图错误**：`flowViewDidReceiveError` 是必须实现的，是否关闭视图取决于你的实现。如果你的 v3 集成依赖于渲染错误时自动关闭视图的行为，请在此回调中调用 `view.dismiss()`。
+- **视图生命周期**：关闭流程或用户引导视图后，该视图会从内存中释放。已关闭的视图无法再次显示——请重新创建一个新视图。
+## 用户引导 API 已弃用 \{#onboarding-api-deprecation\}
+
+旧版用户引导 API 已在 v4.0 中弃用，请改用 [Flow Builder](adapty-flow-builder)。该 API 目前仍可正常使用，IDE 会通过 `@Deprecated` 注解标记已弃用的符号，不会产生任何运行时警告。这些符号将在未来版本中移除，请提前规划将你的用户引导迁移至 Flow Builder。
+已废弃的符号：`getOnboarding`、`getOnboardingForDefaultAudience`、`createOnboardingView`、`presentOnboardingView`、`dismissOnboardingView`、`setOnboardingsEventsObserver`、`AdaptyOnboarding`、`AdaptyUIOnboardingView`、`AdaptyUIOnboardingPlatformView`、`AdaptyUIOnboardingsEventsObserver`，以及用户引导的状态、输入和分析模型。

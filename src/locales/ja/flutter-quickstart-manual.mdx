@@ -1,49 +1,40 @@
 ---
-title: "Flutter SDKでカスタムペイウォールの購入機能を有効にする"
+title: "Flutter SDKのカスタムペイウォールで購入を有効にする"
 description: "Adapty SDKをFlutterのカスタムペイウォールに統合して、アプリ内課金を有効にします。"
 metadataTitle: "Adapty クイックスタートガイド | Adapty ドキュメント"
-keywords: ['paywalls Flutter', 'sdk Flutter', 'paywall', 'getPaywall']
+keywords: ['paywalls Flutter', 'sdk Flutter', 'paywall', 'getFlow', 'getPaywall']
 ---
-
-このガイドでは、Adaptyをカスタムペイウォールに統合する方法を説明します。ペイウォールの実装を完全にコントロールしながら、Adapty SDKがプロダクトの取得、新規購入の処理、過去の購入の復元を担います。
-
+このガイドでは、カスタムペイウォールへのAdapty統合方法を説明します。ペイウォールの実装を完全にコントロールしながら、Adapty SDKがプロダクトの取得、新規購入の処理、過去の購入の復元を担当します。このガイドはAdapty Flutter SDK v4のAPIを使用しています。v3をお使いの場合は、対応するメソッド名について[マイグレーションガイド](migration-to-flutter-sdk-v4)をご参照ください。
 :::important
-**このガイドはカスタムペイウォールを実装する開発者向けです。** 最も簡単に購入機能を有効にしたい場合は、[Adapty ペイウォールビルダー](flutter-quickstart-paywalls)をご利用ください。ペイウォールビルダーを使えば、ノーコードのビジュアルエディターでペイウォールを作成でき、Adaptyがすべての購入ロジックを自動で処理します。また、アプリを再公開することなく異なるデザインをテストできます。
+**このガイドは、カスタムペイウォールを実装する開発者向けです。** 最も簡単に購入機能を有効にしたい場合は、[Adapty ペイウォールビルダー](flutter-quickstart-paywalls)をご利用ください。ペイウォールビルダーを使えば、ノーコードのビジュアルエディターでペイウォールを作成でき、購入ロジックはすべて Adapty が自動で処理します。また、アプリを再公開することなく異なるデザインをテストできます。
 :::
-
 ## 始める前に \{#before-you-start\}
-
-### プロダクトのセットアップ \{#set-up-products\}
+### プロダクトの設定 \{#set-up-products\}
 
 アプリ内課金を有効にするには、3つの重要な概念を理解する必要があります。
-
 - [**プロダクト**](product) – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセスなど）
-- [**ペイウォール**](paywalls) – 提供するプロダクトを定義する設定。Adaptyではペイウォールを通じてのみプロダクトを取得できますが、この設計によりアプリのコードを変更せずにプロダクト、価格、オファーを変更できます。
-- [**プレースメント**](placements) – アプリ内でペイウォールを表示する場所とタイミング（`main`、`onboarding`、`settings` など）。ダッシュボードでプレースメントにペイウォールを設定し、コード内でプレースメントIDを使ってリクエストします。これにより、A/Bテストの実施や異なるユーザーへの異なるペイウォールの表示が簡単になります。
+- [**ペイウォール**](paywalls) – どのプロダクトを提示するかを定義する設定。Adapty ではペイウォールを通じてのみプロダクトを取得できます。この設計により、アプリのコードを変更せずにプロダクト・価格・オファーを更新できます。SDK v4 では、プレースメントのペイウォールのバリアントは **flow** オブジェクトで管理されます。flow を取得してプロダクトを参照します。
+- [**プレースメント**](placements) – アプリ内でペイウォールを表示する場所やタイミング（`main`、`onboarding`、`settings` など）。ダッシュボードでプレースメントにペイウォールを設定し、コードからプレースメント ID で呼び出します。これにより A/B テストの実施や、ユーザーごとに異なるペイウォールの表示が簡単に行えます。
+これらのコンセプトは、カスタムペイウォールを使用する場合でも必ず理解しておいてください。基本的に、これらはアプリで販売するプロダクトを管理するための仕組みです。
 
-カスタムペイウォールを使用する場合でも、これらの概念を理解しておくことが重要です。基本的には、アプリで販売するプロダクトを管理するための手段です。
+カスタムペイウォールを実装するには、**ペイウォール**を作成して**プレースメント**に追加する必要があります。この設定によって、プロダクトを取得できるようになります。ダッシュボードでの操作手順については、[こちら](quickstart)のクイックスタートガイドをご覧ください。
+### ユーザーを管理する \{#manage-users\}
 
-カスタムペイウォールを実装するには、**ペイウォール**を作成して**プレースメント**に追加する必要があります。この設定でプロダクトを取得できるようになります。ダッシュボードで必要な作業を理解するには、[こちら](quickstart)のクイックスタートガイドをご覧ください。
+バックエンド認証の有無に関わらず、どちらの方法でも利用できます。
 
-### ユーザーの管理 \{#manage-users\}
-
-バックエンド認証の有無にかかわらず利用できます。
-
-ただし、Adapty SDKは匿名ユーザーと識別済みユーザーを異なる方法で扱います。詳細を確認してユーザーを適切に扱えるよう、[識別クイックスタートガイド](flutter-quickstart-identify)をご覧ください。
-
-## ステップ1. プロダクトを取得する \{#step-1-get-products\}
+ただし、Adapty SDK は匿名ユーザーと識別済みユーザーを異なる方法で扱います。詳細を理解し、ユーザーを適切に管理するために、[識別クイックスタートガイド](flutter-quickstart-identify) をご覧ください。
+## ステップ 1. プロダクトを取得する \{#step-1-get-products\}
 
 カスタムペイウォール用のプロダクトを取得するには、次の手順を実行します。
 
-1. `getPaywall` メソッドに[プレースメント](placements)IDを渡して `paywall` オブジェクトを取得する。
-2. `getPaywallProducts` メソッドを使ってそのペイウォールのプロダクト配列を取得する。
-
+1. [プレースメント](placements) ID を `getFlow` メソッドに渡して、`flow` オブジェクトを取得します。
+2. `getPaywallProducts` メソッドを使用して、このフローのプロダクト配列を取得します。
 ```dart showLineNumbers
 
 Future<void> loadPaywall() async {
   try {
-    final paywall = await Adapty().getPaywall(placementId: 'YOUR_PLACEMENT_ID');
-    final products = await Adapty().getPaywallProducts(paywall: paywall);
+    final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
+    final products = await Adapty().getPaywallProducts(flow: flow);
     
     // Use products to build your custom paywall UI
   } on AdaptyError catch (adaptyError) {
@@ -54,10 +45,9 @@ Future<void> loadPaywall() async {
 }
 ```
 
-## ステップ2. 購入を受け付ける \{#step-2-accept-purchases\}
+## ステップ 2. 購入を受け付ける \{#step-2-accept-purchases\}
 
-ユーザーがカスタムペイウォールでプロダクトをタップしたら、選択したプロダクトを引数に `makePurchase` メソッドを呼び出します。これにより購入フローが処理され、更新されたプロファイルが返されます。
-
+カスタムペイウォールでユーザーがプロダクトをタップしたら、選択したプロダクトを引数として `makePurchase` メソッドを呼び出してください。これにより購入フローが処理され、更新されたプロファイルが返されます。
 ```dart showLineNumbers
 
 Future<void> purchaseProduct(AdaptyPaywallProduct product) async {
@@ -85,10 +75,9 @@ Future<void> purchaseProduct(AdaptyPaywallProduct product) async {
 
 ## ステップ3. 購入を復元する \{#step-3-restore-purchases\}
 
-アプリストアは、サブスクリプションを提供するすべてのアプリに対して、ユーザーが購入を復元できる方法を提供することを求めています。
+アプリストアでは、サブスクリプションを提供するすべてのアプリに、ユーザーが購入を復元できる手段を設けることを義務付けています。
 
-ユーザーが復元ボタンをタップしたら `restorePurchases` メソッドを呼び出します。これにより購入履歴がAdaptyと同期され、更新されたプロファイルが返されます。
-
+ユーザーが復元ボタンをタップしたときに `restorePurchases` メソッドを呼び出してください。これにより購入履歴が Adapty と同期され、更新されたプロファイルが返されます。
 ```dart showLineNumbers
 
 Future<void> restorePurchases() async {
@@ -103,10 +92,27 @@ Future<void> restorePurchases() async {
 }
 ```
 
+## ステップ 4. サブスクリプションのステータスを確認する \{#step-4-check-the-subscription-status\}
+
+購入やリストアの後、[アクセスレベル](access-level)を確認して、ペイウォールを表示するか有料機能を解放するかを決定します。`makePurchase` メソッドと `restorePurchases` メソッドはすでに更新されたプロファイルを返しますが、アプリの他の場所で現在のステータスが必要な場合は、`getProfile` メソッドを使用してください。
+```dart showLineNumbers
+
+Future<bool> hasPremiumAccess() async {
+  try {
+    final profile = await Adapty().getProfile();
+    return profile.accessLevels['premium']?.isActive ?? false;
+  } on AdaptyError catch (adaptyError) {
+    // Handle the error
+  } catch (e) {
+    // Handle the error
+  }
+  return false;
+}
+```
+
+サブスクリプションステータスの確認方法やリアルタイム更新のリスニングなど、詳細については[サブスクリプションステータスの確認](flutter-check-subscription-status)をご覧ください。
 ## 次のステップ \{#next-steps\}
 
 <SupportForum />
 
-ペイウォールをアプリで表示する準備が整いました。[App Storeサンドボックス](test-purchases-in-sandbox)または[Google Play Store](testing-on-android)でテスト購入が正しく完了できることを確認してください。本番環境に近い実装例については、サンプルアプリの[PurchasesObserver](https://github.com/adaptyteam/AdaptySDK-Flutter/blob/master/example/lib/purchase_observer.dart)を参照してください。エラーハンドリング、UIオブザーバー、包括的なSDK統合を含む購入処理の実装例が確認できます。
-
-次は、[ユーザーが購入を完了しているか確認する](flutter-check-subscription-status)ことで、ペイウォールを表示すべきか有料機能へのアクセスを許可すべきかを判断できます。
+ペイウォールをアプリに表示する準備ができました。[App Store サンドボックス](test-purchases-in-sandbox)または [Google Play Store](testing-on-android) でテスト購入を行い、ペイウォールからテスト購入を完了できることを確認してください。本番環境に近い実装例を確認したい場合は、サンプルアプリの [PurchasesObserver](https://github.com/adaptyteam/AdaptySDK-Flutter/blob/master/example/lib/purchase_observer.dart) をご覧ください。エラーハンドリング、UI オブザーバー、包括的な SDK インテグレーションを含む購入処理の実装例が確認できます。

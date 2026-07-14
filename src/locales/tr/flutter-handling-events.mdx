@@ -1,16 +1,255 @@
 ---
-title: "Flutter - Paywall olaylarını yönetme"
-description: "Flutter'da Adapty kullanarak abonelikle ilgili olayları nasıl yöneteceğinizi ve kullanıcı etkileşimlerini nasıl etkili biçimde takip edeceğinizi keşfedin."
+title: "Flutter - Flow ve paywall etkinliklerini yönetme"
+description: "Kullanıcı etkileşimlerini etkin şekilde izlemek için Adapty ile Flutter'da abonelikle ilgili olayları nasıl yöneteceğinizi keşfedin."
 metadataTitle: "Flutter'da Olayları Yönetme | Adapty Dokümanları"
-keywords: ['event', 'paywallViewDidAppear', 'paywallViewDidDisappear', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+keywords: ['event', 'flowViewDidAppear', 'flowViewDidDisappear', 'flowViewDidPerformAction', 'flowViewDidSelectProduct', 'flowViewDidStartPurchase', 'flowViewDidFinishPurchase', 'flowViewDidFailPurchase', 'flowViewDidStartRestore', 'flowViewDidFinishRestore', 'flowViewDidFailRestore', 'flowViewDidFailLoadingProducts', 'flowViewDidReceiveError', 'flowViewDidReceiveAnalyticEvent', 'paywallViewDidAppear', 'paywallViewDidDisappear', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
 import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
 import PaywallAction from '@site/src/locales/tr/reusable/PaywallAction.md';
 
+<SDKv4>
+
 :::important
-Bu kılavuz; satın alımlar, yenilemeler, ürün seçimi ve paywall görüntüleme için olay işlemeyi ele almaktadır. Bunların yanı sıra düğme işlemlerini de (paywall kapatma, bağlantı açma vb.) uygulamanız gerekir. Ayrıntılar için [düğme eylemlerini işleme kılavuzumuza](flutter-handle-paywall-actions) bakın.
+Bu kılavuz; satın alma, geri yükleme, ürün seçimi ve render etme olaylarını kapsar. Görünümü kapatma ve bağlantı açma işlemleri, varsayılan `flowViewDidPerformAction` uygulaması tarafından yönetilir — bunları geçersiz kılmak veya özel buton eylemlerini işlemek için [buton eylemlerini yönetme kılavuzumuza](flutter-handle-paywall-actions) bakın.
 :::
-[Paywall Builder](adapty-paywall-builder) ile yapılandırılmış paywalllar, satın alma yapmak ve geri yüklemek için ekstra kod gerektirmez. Ancak uygulamanızın yanıt verebileceği bazı olaylar üretirler. Bu olaylar arasında düğme basışları (kapat düğmeleri, URL'ler, ürün seçimleri vb.) ve paywall üzerinde gerçekleştirilen satın alma ile ilgili eylemler hakkındaki bildirimler yer alır. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenebilirsiniz.
+Flow ve Paywall Builder ile oluşturulan paywall'lar, satın alma yapmak ve geri yüklemek için ekstra kod gerektirmez. Ancak uygulamanızın yanıt verebileceği bazı olaylar üretirler. Bu olaylar; buton tıklamaları (kapatma düğmeleri, URL'ler, ürün seçimleri vb.) ve flow veya paywall üzerinde gerçekleştirilen satın alma işlemlerine ilişkin bildirimleri kapsar. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenebilirsiniz.
+
+Mobil uygulamanızdaki flow veya paywall ekranında gerçekleşen süreçleri kontrol etmek veya izlemek için `AdaptyUIFlowsEventsObserver` metodlarını uygulayın ve herhangi bir ekran gösterilmeden önce observer'ı ayarlayın:
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setFlowsEventsObserver(this);
+```
+
+Üç observer metodu **zorunludur** — sınıfınız bunlar olmadan derlenmez: `flowViewDidFinishPurchase`, `flowViewDidFinishRestore` ve `flowViewDidReceiveError`. Diğer tüm metodlar isteğe bağlıdır. Daha önce ayarlanmış bir observer'ı kaldırmak için `setFlowsEventsObserver`'a `null` geçin.
+
+<SampleApp />
+
+Aşağıdaki olay örnekleri, her nesne üzerinde mevcut olan özellikleri ve yorumlarda örnek değerleri göstermektedir.
+### Kullanıcı tarafından oluşturulan olaylar \{#user-generated-events\}
+
+#### Görünüm belirdi \{#view-appeared\}
+
+Bu metot, flow veya paywall görünümü ekranda gösterildiğinde çağrılır.
+
+:::note
+iOS'ta, kullanıcı bir paywall içindeki [web paywall butonuna](web-paywall#step-2a-add-a-web-purchase-button) dokunduğunda ve bir web paywall uygulama içi tarayıcıda açıldığında da çağrılır.
+:::
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidAppear(AdaptyUIFlowView view) {
+}
+```
+
+#### Görünüm kayboldu \{#view-disappeared\}
+
+Bu metot, flow veya paywall görünümü ekrandan kaldırıldığında çağrılır.
+:::note
+iOS'ta ayrıca, bir paywall'dan açılan [web paywall](web-paywall#step-2a-add-a-web-purchase-button)'ı uygulama içi tarayıcıda kapandığında da tetiklenir.
+:::
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidDisappear(AdaptyUIFlowView view) {
+}
+```
+
+#### Ürün seçimi \{#product-selection\}
+
+Bir ürün satın alma için seçildiğinde (kullanıcı ya da sistem tarafından), bu metot çağrılır:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidSelectProduct(AdaptyUIFlowView view, String productId) {
+}
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+```dart
+void flowViewDidSelectProduct(AdaptyUIFlowView view, String productId) {
+  // productId is a String:
+  productId; // 'premium_monthly'
+}
+```
+</Details>
+
+#### Satın alma başlatıldı \{#started-purchase\}
+
+Bir kullanıcı satın alma sürecini başlatırsa bu metot çağrılır:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidStartPurchase(AdaptyUIFlowView view, AdaptyPaywallProduct product) {
+}
+```
+
+<Details>
+<summary>Etkinlik örneği (Genişletmek için tıklayın)</summary>
+```dart
+void flowViewDidStartPurchase(AdaptyUIFlowView view, AdaptyPaywallProduct product) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId;        // 'premium_monthly'
+  product.localizedTitle;         // 'Premium Monthly'
+  product.localizedDescription;   // 'Premium subscription for 1 month'
+  product.price.amount;           // 9.99            (double)
+  product.price.currencyCode;     // 'USD'
+  product.price.localizedString;  // '$9.99'
+}
+```
+</Details>
+
+#### Tamamlanan satın alma \{#finished-purchase\}
+Bu yöntem **zorunludur**. Bir satın alma başarıyla tamamlandığında, kullanıcı satın almayı iptal ettiğinde veya satın alma işlemi beklemede göründüğünde çağrılır:
+```dart showLineNumbers title="Flutter"
+void flowViewDidFinishPurchase(AdaptyUIFlowView view, 
+                               AdaptyPaywallProduct product, 
+                               AdaptyPurchaseResult purchaseResult) {
+    switch (purchaseResult) {
+      case AdaptyPurchaseResultSuccess(profile: final profile):
+        // successful purchase
+        break;
+      case AdaptyPurchaseResultPending():
+        // purchase is pending
+        break;
+      case AdaptyPurchaseResultUserCancelled():
+        // user cancelled the purchase
+        break;
+      default:
+        break;
+    }
+}
+```
+
+<Details>
+<summary>Olay örnekleri (Genişletmek için tıklayın)</summary>
+```dart
+void flowViewDidFinishPurchase(AdaptyUIFlowView view,
+                               AdaptyPaywallProduct product,
+                               AdaptyPurchaseResult purchaseResult) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId; // 'premium_monthly'
+
+  switch (purchaseResult) {
+    case AdaptyPurchaseResultSuccess(profile: final profile):
+      // profile — AdaptyProfile:
+      profile.accessLevels['premium']?.isActive;  // true
+      profile.accessLevels['premium']?.expiresAt; // DateTime(2027, 2, 15, 10, 30)
+      break;
+    case AdaptyPurchaseResultPending():
+      // no additional data
+      break;
+    case AdaptyPurchaseResultUserCancelled():
+      // no additional data
+      break;
+  }
+}
+```
+</Details>
+:::info
+v3'ten farklı olarak, bu metodun varsayılan bir davranışı yoktur — başarılı bir satın alma sonrasında görünüm artık otomatik olarak kapatılmaz. Bundan sonra ne olacağına siz karar verin: flow'a devam edin veya `view.dismiss()` çağrısı yapın. Bir ekranı kapatma hakkında ayrıntılar için [Buton eylemlerine yanıt verme](flutter-handle-paywall-actions) bölümüne bakın.
+:::
+
+#### Web ödeme navigasyonu tamamlandı \{#finished-web-payment-navigation\}
+
+Bu metod, belirli bir ürün için bir [web paywall](web-paywall) açma girişiminin ardından çağrılır. Hem başarılı hem de başarısız navigasyon girişimleri dahildir:
+```dart showLineNumbers title="Flutter"
+void flowViewDidFinishWebPaymentNavigation(AdaptyUIFlowView view, 
+                                           AdaptyPaywallProduct? product, 
+                                           AdaptyError? error) {
+}
+```
+
+**Parametreler:**
+| Parametre   | Açıklama                                                                                              |
+|:------------|:------------------------------------------------------------------------------------------------------|
+| **product** | Web paywallın açıldığı `AdaptyPaywallProduct`. `null` olabilir.                                       |
+| **error**   | Web paywall navigasyonu başarısız olduysa `AdaptyError` nesnesi; navigasyon başarılıysa `null`. |
+
+#### Başarısız satın alma \{#failed-purchase\}
+Bu yöntem, bir satın alma başarısız olduğunda (örneğin, ödeme sorunları veya ağ hataları nedeniyle) çağrılır. Kullanıcının başlattığı iptaller veya bekleyen işlemler için **tetiklenmez** — bunlar `flowViewDidFinishPurchase` tarafından ele alınır:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFailPurchase(AdaptyUIFlowView view, 
+                             AdaptyPaywallProduct product, 
+                             AdaptyError error) {
+}
+```
+
+#### Geri yükleme başlatıldı \{#started-restore\}
+
+Bir kullanıcı geri yükleme işlemini başlatırsa bu yöntem çağrılır:
+```dart showLineNumbers title="Flutter"
+void flowViewDidStartRestore(AdaptyUIFlowView view) {
+}
+```
+
+#### Başarılı geri yükleme \{#successful-restore\}
+
+Bu metod **zorunludur**. Bir satın alma geri yükleme işlemi başarılı olursa çağrılır:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
+}
+```
+
+<Details>
+<summary>Etkinlik örneği (Genişletmek için tıklayın)</summary>
+```dart
+void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
+  // profile — AdaptyProfile:
+  profile.accessLevels['premium']?.isActive;            // true
+  profile.accessLevels['premium']?.expiresAt;           // DateTime(2027, 2, 15, 10, 30)
+  profile.subscriptions['premium_monthly']?.isActive;   // true
+  profile.subscriptions['premium_monthly']?.expiresAt;  // DateTime(2027, 2, 15, 10, 30)
+}
+```
+</Details>
+Kullanıcının gerekli `accessLevel`'a sahip olması durumunda ekranı kapatmanızı öneririz. Bunu nasıl kontrol edeceğinizi öğrenmek için [Abonelik durumu](flutter-listen-subscription-changes) konusuna, ekranı nasıl kapatacağınızı öğrenmek için ise [Buton eylemlerine yanıt verme](flutter-handle-paywall-actions) konusuna bakın.
+
+#### Başarısız geri yükleme \{#failed-restore\}
+
+Bir satın alma geri yüklemesi başarısız olursa şu metod çağrılır:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFailRestore(AdaptyUIFlowView view, AdaptyError error) {
+}
+```
+### Veri çekme ve render etme \{#data-fetching-and-rendering\}
+
+#### Ürün yükleme hataları \{#product-loading-errors\}
+
+Başlatma sırasında ürün dizisini geçmezseniz, AdaptyUI gerekli nesneleri sunucudan kendisi alır. Bu işlem başarısız olursa, AdaptyUI hatayı şu metodu çağırarak bildirir:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFailLoadingProducts(AdaptyUIFlowView view, AdaptyError error) {
+}
+```
+
+#### Görünüm hataları \{#view-errors\}
+Bu yöntem **zorunludur**. v3'teki `paywallViewDidFailRendering` yönteminin yerini alır: arayüz oluşturma sırasında meydana gelen hatalar ve diğer görünüm hataları bu yöntem çağrılarak raporlanır. Bir kez uyguladığınızda, kapatma işlemi size kalmıştır — bu tür hatalarda görünümü kapatmanızı öneririz; hiçbir gözlemci ayarlanmadığında SDK'nın yerleşik varsayılanı da bunu yapar:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveError(AdaptyUIFlowView view, AdaptyError error) {
+  // log the error and dismiss the broken view
+  view.dismiss();
+}
+```
+Normal bir durumda render hataları oluşmamalıdır; eğer biriyle karşılaşırsanız lütfen bize bildirin.
+### Analitik olayları \{#analytics-events\}
+
+İsteğe bağlı `flowViewDidReceiveAnalyticEvent` metodu, bir flow'dan gelen özel analitik olaylar için ayrılmıştır. Flow'lar henüz bu olayları kodunuza iletmediğinden, bu metodu uygulamanıza gerek yoktur.
+### Observer mode'da satın almaları yönetme \{#handle-purchases-in-observer-mode\}
+
+SDK'yı [Observer mode](implement-observer-mode-flutter)'da etkinleştirdiyseniz ve Adapty tarafından oluşturulan bir flow veya paywall sunuyorsanız, SDK satın alma işlemlerini sizin adınıza gerçekleştirmez. Kullanıcı satın alma veya geri yükleme düğmesine dokunduğunda SDK, `AdaptyUIObserverModeResolver`'ınızı çağırır. Tam kurulum için bkz. [Observer mode'da flow sunma](flutter-present-flows-in-observer-mode).
+### Sistem isteklerini yönetme \{#handle-system-requests\}
+
+`AdaptyUISystemRequestsHandler` (`AdaptyUI().setSystemRequestsHandler(...)` aracılığıyla kaydedilir), bir flow'dan gelen sistem istekleri için ayrılmıştır: işletim sistemi izin istemleri (push bildirimleri veya kamera erişimi gibi) ve App Store inceleme istekleri. Flow'lar henüz bu istekleri tetiklemiyor, dolayısıyla bir handler kaydetmeniz gerekmiyor.
+Eğer birini kayıt ederseniz, `handlePermission`'ın sınıfın zorunlu metodu olduğunu unutmayın — izni kendi kodunuzla isteyin, ardından `AdaptyUIPermissionResult.granted()` veya `AdaptyUIPermissionResult.denied()` döndürün; `handleAppReviewRequest` ise isteğe bağlıdır.
+
+</SDKv4>
+
+<SDKv3>
+
+:::important
+Bu kılavuz; satın alma, geri yükleme, ürün seçimi ve paywall render işlemlerine ait olay yönetimini ele almaktadır. Bunların yanı sıra düğme yönetimini de (paywall'ı kapatma, bağlantı açma vb.) uygulamanız gerekir. Ayrıntılar için [düğme eylemlerini yönetme kılavuzumuza](flutter-handle-paywall-actions) bakın.
+:::
+[Paywall Builder](adapty-paywall-builder) ile yapılandırılmış paywalllar, satın alma ve geri yükleme işlemleri için ekstra kod gerektirmez. Ancak uygulamanızın yanıt verebileceği bazı olaylar üretirler. Bu olaylar; buton tıklamalarını (kapatma butonları, URL'ler, ürün seçimleri vb.) ve paywall'da gerçekleştirilen satın alma ile ilgili eylemlerin bildirimlerini içerir. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenebilirsiniz.
 
 :::warning
 
@@ -19,167 +258,136 @@ Bu kılavuz yalnızca Adapty SDK v3.0 veya üzerini gerektiren **yeni Paywall Bu
 :::
 Mobil uygulamanızdaki paywall ekranında gerçekleşen süreçleri kontrol etmek veya izlemek için `AdaptyUIPaywallsEventsObserver` metodlarını uygulayın ve herhangi bir ekran gösterilmeden önce observer'ı ayarlayın:
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 AdaptyUI().setPaywallsEventsObserver(this);
 ```
 
 <SampleApp />
-### Kullanıcı tarafından tetiklenen etkinlikler \{#user-generated-events\}
 
-#### Paywall görüntülendi \{#paywall-appeared\}
+Aşağıdaki olay örnekleri, her nesnede bulunan özellikleri ve yorumlarda açıklayıcı değerleri göstermektedir.
+### Kullanıcı tarafından tetiklenen olaylar
 
-Bu metot, paywall görünümü ekranda gösterildiğinde çağrılır.
+#### Paywall göründü \{#paywall-appeared\}
+
+Bu yöntem, paywall görünümü ekranda gösterildiğinde çağrılır.
 
 :::note
-iOS'ta, bir kullanıcı paywall içindeki [web paywall düğmesine](web-paywall#step-2a-add-a-web-purchase-button) dokunduğunda ve bir web paywall uygulama içi tarayıcıda açıldığında da çağrılır.
+iOS'ta, ayrıca kullanıcı bir paywall içindeki [web paywall düğmesine](web-paywall#step-2a-add-a-web-purchase-button) dokunduğunda ve web paywall uygulama içi tarayıcıda açıldığında da çağrılır.
 :::
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidAppear(AdaptyUIPaywallView view) {
 }
 ```
 
-#### Paywall kapatıldı \{#paywall-disappeared\}
+#### Paywall kayboldu \{#paywall-disappeared\}
 
-Bu metot, paywall görünümü ekrandan kaldırıldığında çağrılır.
+Bu yöntem, paywall görünümü ekrandan kaldırıldığında çağrılır.
 :::note
-iOS'ta, bir paywall'dan açılan [web paywall](web-paywall#step-2a-add-a-web-purchase-button)'ın uygulama içi tarayıcıda ekrandan kaybolması durumunda da tetiklenir.
+iOS'ta, bir paywall'dan açılan [web paywall](web-paywall#step-2a-add-a-web-purchase-button)'ın uygulama içi tarayıcıdan ekrandan kaybolması durumunda da çağrılır.
 :::
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidDisappear(AdaptyUIPaywallView view) {
 }
 ```
 
 #### Ürün seçimi \{#product-selection\}
 
-Bir ürün satın alma için seçildiğinde (kullanıcı veya sistem tarafından), bu metot çağrılır:
+Bir ürün satın alma için seçildiğinde (kullanıcı veya sistem tarafından), bu metod çağrılır:
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidSelectProduct(AdaptyUIPaywallView view, String productId) {
 }
 ```
 
 <Details>
 <summary>Olay örneği (Genişletmek için tıklayın)</summary>
-```javascript
-{
-  "productId": "premium_monthly"
+```dart
+void paywallViewDidSelectProduct(AdaptyUIPaywallView view, String productId) {
+  // productId is a String:
+  productId; // 'premium_monthly'
 }
 ```
 </Details>
 
 #### Satın alma başlatıldı \{#started-purchase\}
 
-Bir kullanıcı satın alma işlemini başlatırsa bu metot çağrılır:
+Bir kullanıcı satın alma işlemini başlatırsa bu metod çağrılır:
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) {
 }
 ```
 
 <Details>
-<summary>Etkinlik örneği (Genişletmek için tıklayın)</summary>
-```javascript
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  }
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+```dart
+void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId;        // 'premium_monthly'
+  product.localizedTitle;         // 'Premium Monthly'
+  product.localizedDescription;   // 'Premium subscription for 1 month'
+  product.price.amount;           // 9.99            (double)
+  product.price.currencyCode;     // 'USD'
+  product.price.localizedString;  // '$9.99'
 }
 ```
 </Details>
 
 #### Tamamlanan satın alma \{#finished-purchase\}
-
-Bu metot, bir satın alma başarıyla tamamlandığında, kullanıcı satın almayı iptal ettiğinde veya satın alma işlemi beklemede göründüğünde çağrılır:
-```javascript showLineNumbers title="Flutter"
+Bu metot, bir satın alma işlemi başarıyla tamamlandığında, kullanıcı satın alma işlemini iptal ettiğinde veya satın alma işlemi beklemede göründüğünde çağrılır:
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFinishPurchase(AdaptyUIPaywallView view, 
                                   AdaptyPaywallProduct product, 
                                   AdaptyPurchaseResult purchaseResult) {
     switch (purchaseResult) {
       case AdaptyPurchaseResultSuccess(profile: final profile):
-        // satın alma başarılı
+        // successful purchase
         break;
       case AdaptyPurchaseResultPending():
-        // satın alma beklemede
+        // purchase is pending
         break;
       case AdaptyPurchaseResultUserCancelled():
-        // kullanıcı satın almayı iptal etti
+        // user cancelled the purchase
         break;
       default:
         break;
     }
 }
 ```
+
 <Details>
-<summary>Etkinlik örnekleri (Genişletmek için tıklayın)</summary>
-```javascript
-// Başarılı satın alma
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "purchaseResult": {
-    "type": "AdaptyPurchaseResultSuccess",
-    "profile": {
-      "accessLevels": {
-        "premium": {
-          "id": "premium",
-          "isActive": true,
-          "expiresAt": "2024-02-15T10:30:00Z"
-        }
-      }
-    }
-  }
-}
+<summary>Olay örnekleri (Genişletmek için tıklayın)</summary>
+```dart
+void paywallViewDidFinishPurchase(AdaptyUIPaywallView view,
+                                  AdaptyPaywallProduct product,
+                                  AdaptyPurchaseResult purchaseResult) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId; // 'premium_monthly'
 
-// Bekleyen satın alma
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "purchaseResult": {
-    "type": "AdaptyPurchaseResultPending"
-  }
-}
-
-// Kullanıcı satın almayı iptal etti
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "purchaseResult": {
-    "type": "AdaptyPurchaseResultUserCancelled"
+  switch (purchaseResult) {
+    case AdaptyPurchaseResultSuccess(profile: final profile):
+      // profile — AdaptyProfile:
+      profile.accessLevels['premium']?.isActive;  // true
+      profile.accessLevels['premium']?.expiresAt; // DateTime(2027, 2, 15, 10, 30)
+      break;
+    case AdaptyPurchaseResultPending():
+      // no additional data
+      break;
+    case AdaptyPurchaseResultUserCancelled():
+      // no additional data
+      break;
   }
 }
 ```
 </Details>
-Bu durumda ekranı kapatmanızı öneririz. Paywall ekranını kapatma hakkında ayrıntılı bilgi için [Düğme eylemlerine yanıt verme](flutter-handle-paywall-actions) bölümüne bakın.
+Bu durumda ekranı kapatmanızı öneririz. Bir paywall ekranını kapatma hakkında ayrıntılı bilgi için [Düğme eylemlerine yanıt verme](flutter-handle-paywall-actions) bölümüne bakın.
 
-#### Web ödeme navigasyonu tamamlandı \{#finished-web-payment-navigation\}
+#### Web ödeme gezintisi tamamlandı \{#finished-web-payment-navigation\}
 
-Bu method, belirli bir ürün için [web paywall](web-paywall) açma girişiminin ardından çağrılır. Hem başarılı hem de başarısız navigasyon girişimlerini kapsar:
-```javascript showLineNumbers title="Flutter"
+Bu metot, belirli bir ürün için [web paywall](web-paywall) açma girişiminin ardından çağrılır. Başarılı ve başarısız gezinti girişimlerinin her ikisini de kapsar:
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view, 
                                                AdaptyPaywallProduct? product, 
                                                AdaptyError? error) {
@@ -187,52 +395,36 @@ void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view,
 ```
 
 **Parametreler:**
-| Parametre   | Açıklama                                                                                                           |
-|:------------|:-------------------------------------------------------------------------------------------------------------------|
-| **product** | Web paywallın açıldığı `AdaptyPaywallProduct`. `null` olabilir.                                                    |
+| Parametre   | Açıklama                                                                                                        |
+|:------------|:----------------------------------------------------------------------------------------------------------------|
+| **product** | Web paywallın açıldığı `AdaptyPaywallProduct`. `null` olabilir.                                                 |
 | **error**   | Web paywall navigasyonu başarısız olduysa `AdaptyError` nesnesi; navigasyon başarılıysa `null`. |
 
 <Details>
 <summary>Olay örnekleri (Genişletmek için tıklayın)</summary>
-```javascript
-// Başarılı navigasyon
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "error": null
-}
+```dart
+void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view,
+                                               AdaptyPaywallProduct? product,
+                                               AdaptyError? error) {
+  // product — AdaptyPaywallProduct?:
+  product?.vendorProductId; // 'premium_monthly'
 
-// Başarısız navigasyon
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "error": {
-    "code": "web_navigation_failed",
-    "message": "Failed to open web paywall",
-    "details": {
-      "underlyingError": "Browser unavailable"
-    }
+  if (error == null) {
+    // navigation succeeded
+  } else {
+    // error — AdaptyError:
+    error.code;    // AdaptyErrorCode.networkFailed (2005)
+    error.message; // 'Network request failed'
+    error.detail;  // platform-specific underlying error, or null
   }
 }
 ```
 </Details>
 #### Başarısız satın alma \{#failed-purchase\}
 
-Bu metot, bir satın alma işlemi başarısız olduğunda (örneğin, ödeme sorunları veya ağ hataları nedeniyle) çağrılır. Kullanıcının iptal ettiği veya beklemedeki işlemler için **çalışmaz**; bunlar `paywallViewDidFinishPurchase` tarafından ele alınır:
+Bu yöntem, bir satın alma işlemi başarısız olduğunda (örneğin, ödeme sorunları veya ağ hataları nedeniyle) çağrılır. Kullanıcının iptal ettiği veya beklemedeki işlemler için **tetiklenmez**; bunlar `paywallViewDidFinishPurchase` tarafından işlenir:
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailPurchase(AdaptyUIPaywallView view, 
                                 AdaptyPaywallProduct product, 
                                 AdaptyError error) {
@@ -240,90 +432,70 @@ void paywallViewDidFailPurchase(AdaptyUIPaywallView view,
 ```
 
 <Details>
-<summary>Olay örneği (Genişletmek için tıklayın)</summary>
-```javascript
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "error": {
-    "code": "purchase_failed",
-    "message": "Purchase failed due to insufficient funds",
-    "details": {
-      "underlyingError": "Insufficient funds in account"
-    }
-  }
+<summary>Etkinlik örneği (Genişletmek için tıklayın)</summary>
+```dart
+void paywallViewDidFailPurchase(AdaptyUIPaywallView view,
+                                AdaptyPaywallProduct product,
+                                AdaptyError error) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId; // 'premium_monthly'
+
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.productPurchaseFailed (1006)
+  error.message; // 'Product purchase failed.'
+  error.detail;  // platform-specific underlying error, or null
 }
 ```
 </Details>
 
 #### Geri yükleme başlatıldı \{#started-restore\}
 
-Kullanıcı geri yükleme işlemini başlatırsa bu method çağrılır:
-```javascript showLineNumbers title="Flutter"
+Bir kullanıcı geri yükleme işlemini başlatırsa bu metot çağrılır:
+```dart showLineNumbers title="Flutter"
 void paywallViewDidStartRestore(AdaptyUIPaywallView view) {
 }
 ```
 
 #### Başarılı geri yükleme \{#successful-restore\}
 
-Satın alma geri yükleme işlemi başarılı olursa, şu metot çağrılır:
+Bir satın alma başarıyla geri yüklenirse şu metot çağrılır:
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
 }
 ```
 
 <Details>
-<summary>Etkinlik örneği (Genişletmek için tıklayın)</summary>
-```javascript
-{
-  "profile": {
-    "accessLevels": {
-      "premium": {
-        "id": "premium",
-        "isActive": true,
-        "expiresAt": "2024-02-15T10:30:00Z"
-      }
-    },
-    "subscriptions": [
-      {
-        "vendorProductId": "premium_monthly",
-        "isActive": true,
-        "expiresAt": "2024-02-15T10:30:00Z"
-      }
-    ]
-  }
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+```dart
+void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
+  // profile — AdaptyProfile:
+  profile.accessLevels['premium']?.isActive;            // true
+  profile.accessLevels['premium']?.expiresAt;           // DateTime(2027, 2, 15, 10, 30)
+  profile.subscriptions['premium_monthly']?.isActive;   // true
+  profile.subscriptions['premium_monthly']?.expiresAt;  // DateTime(2027, 2, 15, 10, 30)
 }
 ```
 </Details>
-Kullanıcı gerekli `accessLevel`'a sahipse ekranı kapatmanızı öneririz. Bunu nasıl kontrol edeceğinizi öğrenmek için [Abonelik durumu](flutter-listen-subscription-changes) konusuna, paywall ekranını kapatmak için ise [Buton aksiyonlarını yönetme](flutter-handle-paywall-actions) konusuna bakın.
+Kullanıcının gerekli `accessLevel`'a sahip olması durumunda ekranı kapatmanızı öneririz. Bunu nasıl kontrol edeceğinizi öğrenmek için [Abonelik durumu](flutter-listen-subscription-changes) konusuna, paywall ekranını nasıl kapatacağınızı öğrenmek için [Düğme eylemlerine yanıt verme](flutter-handle-paywall-actions) konusuna bakın.
 
-#### Geri yükleme başarısız \{#failed-restore\}
+#### Geri yükleme başarısız oldu \{#failed-restore\}
 
-Bir satın alma işlemi geri yüklenemezse şu metot çağrılır:
+Bir satın alma geri yüklemesi başarısız olursa bu metot çağrılır:
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
 }
 ```
 
 <Details>
 <summary>Olay örneği (Genişletmek için tıklayın)</summary>
-```javascript
-{
-  "error": {
-    "code": "restore_failed",
-    "message": "Purchase restoration failed",
-    "details": {
-      "underlyingError": "No previous purchases found"
-    }
-  }
+```dart
+void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.receiveRestoredTransactionsFailed (1011)
+  error.message; // 'Error occurred in the process of restoring purchases.'
+  error.detail;  // platform-specific underlying error, or null
 }
 ```
 </Details>
@@ -331,53 +503,51 @@ void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
 
 #### Ürün yükleme hataları \{#product-loading-errors\}
 
-Başlatma sırasında ürün dizisi geçmezseniz, AdaptyUI gerekli nesneleri sunucudan kendisi alır. Bu işlem başarısız olursa, AdaptyUI hatayı şu metodu çağırarak bildirir:
+Başlatma sırasında ürün dizisini geçmezseniz, AdaptyUI gerekli nesneleri sunucudan kendisi alır. Bu işlem başarısız olursa AdaptyUI, hatayı şu metodu çağırarak bildirir:
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) {
 }
 ```
 
 <Details>
 <summary>Olay örneği (Genişletmek için tıklayın)</summary>
-```javascript
-{
-  "error": {
-    "code": "products_loading_failed",
-    "message": "Failed to load products from the server",
-    "details": {
-      "underlyingError": "Network timeout"
-    }
-  }
+```dart
+void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) {
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.productRequestFailed (1002)
+  error.message; // 'Unable to fetch available In-App Purchase products at the moment.'
+  error.detail;  // platform-specific underlying error, or null
 }
 ```
 </Details>
 
 #### Render hataları \{#rendering-errors\}
+Arayüz oluşturma sırasında bir hata oluşursa, bu metot çağrılarak hata bildirilir. Varsayılan olarak (v3.15.2'den itibaren), oluşturma hatası meydana geldiğinde paywall otomatik olarak kapatılır; ancak gerekirse bu davranışı değiştirebilirsiniz.
 
-Arayüz render edilirken bir hata oluşursa, bu yöntem çağrılarak hata raporlanır. Varsayılan olarak (v3.15.2'den itibaren), render hatası oluştuğunda paywall otomatik olarak kapatılır; ancak gerekirse bu davranışı değiştirebilirsiniz.
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
-  // Varsayılan davranış: view.dismiss()
-  // Gerekirse özel mantıkla geçersiz kılın, örneğin:
-  // - Hatayı kaydedin
-  // - Kullanıcıya bir hata mesajı gösterin
+  // Default behavior: view.dismiss()
+  // Override with custom logic if needed, for example:
+  // - Log the error
+  // - Show an error message to the user
 }
 ```
 
 <Details>
-<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+<summary>Etkinlik örneği (Genişletmek için tıklayın)</summary>
+```dart
+void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.jsException (4105)
+  error.message; // 'An exception was thrown from JS during AdaptyUI flow execution.'
+  error.detail;  // platform-specific underlying error, or null
 
-```javascript
-{
-  "error": {
-    "code": "rendering_failed",
-    "message": "Failed to render paywall interface",
-    "details": {
-      "underlyingError": "Invalid paywall configuration"
-    }
-  }
+  // Default behavior: view.dismiss()
 }
 ```
 </Details>
-Normal şartlarda bu tür hatalar oluşmamalıdır; eğer böyle bir hatayla karşılaşırsanız lütfen bize bildirin.
+
+Normal şartlarda böyle hatalarla karşılaşılmamalıdır; eğer bununla karşılaşırsanız lütfen bize bildirin.
+
+</SDKv3>

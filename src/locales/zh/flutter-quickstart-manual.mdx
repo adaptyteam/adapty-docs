@@ -1,50 +1,42 @@
 ---
-title: "在 Flutter SDK 中为自定义付费墙启用购买功能"
+title: "在 Flutter SDK 的自定义付费墙中启用购买功能"
 description: "将 Adapty SDK 集成到您的自定义 Flutter 付费墙中，以启用应用内购买。"
 metadataTitle: "Adapty 快速入门指南 | Adapty 文档"
-keywords: ['paywalls Flutter', 'sdk Flutter', 'paywall', 'getPaywall']
+keywords: ['paywalls Flutter', 'sdk Flutter', 'paywall', 'getFlow', 'getPaywall']
 ---
-
-本指南介绍如何将 Adapty 集成到您的自定义付费墙中。您可以完全掌控付费墙的实现方式，同时由 Adapty SDK 负责获取产品、处理新购买以及恢复历史购买。
-
+本指南介绍如何将 Adapty 集成到自定义付费墙中。您可以完全掌控付费墙的实现方式，同时由 Adapty SDK 负责获取产品、处理新购买以及恢复历史购买记录。本指南使用 Adapty Flutter SDK v4 API——如果您使用的是 v3，请参阅[迁移指南](migration-to-flutter-sdk-v4)了解对应的方法名称。
 :::important
-**本指南面向正在实现自定义付费墙的开发者。** 如果您希望以最简单的方式启用购买功能，请使用 [Adapty 付费墙编辑工具](flutter-quickstart-paywalls)。借助付费墙编辑工具，您可以在无代码可视化编辑器中创建付费墙，Adapty 会自动处理所有购买逻辑，并且无需重新发布应用即可测试不同的设计方案。
+**本指南适用于需要实现自定义付费墙的开发者。** 如果你想以最简便的方式开启购买功能，请使用 [Adapty 付费墙编辑工具](flutter-quickstart-paywalls)。借助付费墙编辑工具，你可以在无代码可视化编辑器中创建付费墙，Adapty 自动处理所有购买逻辑，无需重新发布应用即可测试不同设计方案。
 :::
-
 ## 开始之前 \{#before-you-start\}
 
 ### 设置产品 \{#set-up-products\}
 
-要启用应用内购买，您需要了解三个关键概念：
+要启用应用内购买，你需要了解以下三个核心概念：
+- [**产品**](product) – 用户可以购买的一切内容（订阅、消耗型商品、永久授权）
+- [**付费墙**](paywalls) – 定义向用户展示哪些产品的配置。在 Adapty 中，付费墙是获取产品的唯一途径，但这种设计让你无需修改应用代码即可调整产品、价格和优惠。在 SDK v4 中，版位的付费墙变体由 **flow** 对象承载——你获取一个 flow，然后查询其中的产品。
+- [**版位**](placements) – 应用中展示付费墙的位置和时机（例如 `main`、`onboarding`、`settings`）。你在看板中为版位配置付费墙，然后在代码中通过版位 ID 请求对应内容。这样就能轻松运行 A/B 测试，并向不同用户展示不同的付费墙。
+确保你理解这些概念，即使你使用的是自定义付费墙。简单来说，这些不过是你管理应用内销售产品的方式。
 
-- [**产品**](product) – 用户可以购买的任何内容（订阅、消耗型商品、永久授权）
-- [**付费墙**](paywalls) – 定义提供哪些产品的配置。在 Adapty 中，付费墙是检索产品的唯一方式，但这种设计让您无需修改应用代码即可调整产品、价格和优惠。
-- [**版位**](placements) – 在应用中展示付费墙的位置和时机（例如 `main`、`onboarding`、`settings`）。您在看板中为版位设置付费墙，然后在代码中通过版位 ID 请求它们。这使得运行 A/B 测试和向不同用户展示不同付费墙变得非常便捷。
-
-即使您使用自定义付费墙，也请确保理解这些概念。简而言之，这些概念只是您管理应用内销售产品的方式。
-
-要实现自定义付费墙，您需要创建一个**付费墙**并将其添加到**版位**中。此设置允许您检索产品。如需了解在看板中需要执行哪些操作，请参阅[此处](quickstart)的快速入门指南。
-
+要实现自定义付费墙，你需要创建一个**付费墙**并将其添加到一个**版位**中。这样才能获取你的产品。如需了解在看板中具体需要做什么，请参考[这里](quickstart)的快速入门指南。
 ### 管理用户 \{#manage-users\}
 
 您可以选择是否使用后端身份验证。
 
 但是，Adapty SDK 对匿名用户和已识别用户的处理方式有所不同。请阅读[身份识别快速入门指南](flutter-quickstart-identify)以了解具体细节，并确保您正确处理用户信息。
 
-## 第一步：获取产品 \{#step-1-get-products\}
+## 步骤 1：获取产品 \{#step-1-get-products\}
 
-要为自定义付费墙检索产品，您需要：
+要为自定义付费墙获取产品，你需要：
 
-1. 通过将[版位](placements) ID 传递给 `getPaywall` 方法来获取 `paywall` 对象。
-2. 使用 `getPaywallProducts` 方法获取该付费墙的产品数组。
-
+1. 通过将[版位](placements) ID 传入 `getFlow` 方法来获取 `flow` 对象。
+2. 使用 `getPaywallProducts` 方法获取该流程的产品数组。
 ```dart showLineNumbers
-import 'package:adapty_flutter/adapty_flutter.dart';
 
 Future<void> loadPaywall() async {
   try {
-    final paywall = await Adapty().getPaywall(placementId: 'YOUR_PLACEMENT_ID');
-    final products = await Adapty().getPaywallProducts(paywall: paywall);
+    final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
+    final products = await Adapty().getPaywallProducts(flow: flow);
     
     // Use products to build your custom paywall UI
   } on AdaptyError catch (adaptyError) {
@@ -55,12 +47,10 @@ Future<void> loadPaywall() async {
 }
 ```
 
-## 第二步：接受购买 \{#step-2-accept-purchases\}
+## 第二步：处理购买 \{#step-2-accept-purchases\}
 
-当用户点击自定义付费墙中的产品时，使用所选产品调用 `makePurchase` 方法。该方法将处理购买流程并返回更新后的用户画像。
-
+当用户在自定义付费墙中点击某个产品时，调用 `makePurchase` 方法并传入所选产品。该方法会处理购买流程并返回更新后的用户画像。
 ```dart showLineNumbers
-import 'package:adapty_flutter/adapty_flutter.dart';
 
 Future<void> purchaseProduct(AdaptyPaywallProduct product) async {
   try {
@@ -85,14 +75,12 @@ Future<void> purchaseProduct(AdaptyPaywallProduct product) async {
 }
 ```
 
-## 第三步：恢复购买 \{#step-3-restore-purchases\}
+## 步骤 3：恢复购买 \{#step-3-restore-purchases\}
 
-应用商店要求所有含订阅功能的应用提供用户恢复购买的方式。
+应用商店要求所有包含订阅的应用为用户提供恢复购买的途径。
 
-当用户点击恢复按钮时，调用 `restorePurchases` 方法。该方法将把用户的购买历史与 Adapty 同步，并返回更新后的用户画像。
-
+当用户点击恢复按钮时，调用 `restorePurchases` 方法。这将把用户的购买历史与 Adapty 同步，并返回更新后的用户画像。
 ```dart showLineNumbers
-import 'package:adapty_flutter/adapty_flutter.dart';
 
 Future<void> restorePurchases() async {
   try {
@@ -106,10 +94,27 @@ Future<void> restorePurchases() async {
 }
 ```
 
-## 后续步骤 \{#next-steps\}
+## 第四步：检查订阅状态 \{#step-4-check-the-subscription-status\}
+
+购买或恢复购买后，检查用户的[访问等级](access-level)，以决定是否显示付费墙或解锁付费功能。`makePurchase` 和 `restorePurchases` 方法已经返回更新后的用户画像；如果在应用的其他地方需要获取当前状态，请使用 `getProfile` 方法：
+```dart showLineNumbers
+
+Future<bool> hasPremiumAccess() async {
+  try {
+    final profile = await Adapty().getProfile();
+    return profile.accessLevels['premium']?.isActive ?? false;
+  } on AdaptyError catch (adaptyError) {
+    // Handle the error
+  } catch (e) {
+    // Handle the error
+  }
+  return false;
+}
+```
+
+有关检查和监控订阅状态的更多方法（包括监听实时更新），请参阅[检查订阅状态](flutter-check-subscription-status)。
+## 下一步 \{#next-steps\}
 
 <SupportForum />
 
-您的付费墙已准备好在应用中展示。请在 [App Store 沙盒](test-purchases-in-sandbox)或 [Google Play Store](testing-on-android) 中测试购买功能，以确保您可以从付费墙完成测试购买。如需查看生产环境中的实现示例，请参阅我们示例应用中的 [PurchasesObserver](https://github.com/adaptyteam/AdaptySDK-Flutter/blob/master/example/lib/purchase_observer.dart)，其中展示了包含完善错误处理、UI 观察者以及全面 SDK 集成的购买处理方式。
-
-接下来，[检查用户是否已完成购买](flutter-check-subscription-status)，以决定是显示付费墙还是授予付费功能的访问权限。
+您的付费墙已准备好在应用中展示。在 [App Store 沙盒](test-purchases-in-sandbox) 或 [Google Play Store](testing-on-android) 中测试您的购买流程，确保能够从付费墙完成测试购买。如需了解生产环境中的完整实现示例，请参考我们示例应用中的 [PurchasesObserver](https://github.com/adaptyteam/AdaptySDK-Flutter/blob/master/example/lib/purchase_observer.dart)，其中演示了包含完善的错误处理、UI 观察者及全面 SDK 集成的购买处理逻辑。

@@ -1,111 +1,343 @@
 ---
-title: "Flutter - ペイウォールイベントの処理"
-description: "Adapty を使用して Flutter でサブスクリプション関連イベントを処理し、ユーザーのインタラクションを効果的に追跡する方法を説明します。"
+title: "Flutter - フロー & ペイウォールイベントの処理"
+description: "Adapty を使って Flutter でサブスクリプション関連のイベントを処理し、ユーザーの操作を効果的に追跡する方法を解説します。"
 metadataTitle: "Flutter でのイベント処理 | Adapty ドキュメント"
-keywords: ['event', 'paywallViewDidAppear', 'paywallViewDidDisappear', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+keywords: ['event', 'flowViewDidAppear', 'flowViewDidDisappear', 'flowViewDidPerformAction', 'flowViewDidSelectProduct', 'flowViewDidStartPurchase', 'flowViewDidFinishPurchase', 'flowViewDidFailPurchase', 'flowViewDidStartRestore', 'flowViewDidFinishRestore', 'flowViewDidFailRestore', 'flowViewDidFailLoadingProducts', 'flowViewDidReceiveError', 'flowViewDidReceiveAnalyticEvent', 'paywallViewDidAppear', 'paywallViewDidDisappear', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
-
 import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
 import PaywallAction from '@site/src/locales/ja/reusable/PaywallAction.md';
 
+<SDKv4>
+
 :::important
-このガイドでは、購入・復元・プロダクト選択・ペイウォールレンダリングのイベント処理について説明します。ボタン操作（ペイウォールを閉じる、リンクを開くなど）の処理も実装する必要があります。詳細は[ボタン操作の処理に関するガイド](flutter-handle-paywall-actions)を参照してください。
+このガイドでは、購入・復元・プロダクト選択・レンダリングのイベント処理について説明します。ビューを閉じる処理とリンクを開く処理は、デフォルトの `flowViewDidPerformAction` 実装によって行われます。これらをオーバーライドしたり、カスタムボタンアクションを処理したりする方法については、[ボタンアクションの処理に関するガイド](flutter-handle-paywall-actions)をご覧ください。
 :::
+ビルダーで設定したフローやペイウォールは、購入や復元のために追加のコードは不要です。ただし、アプリが応答できるイベントがいくつか生成されます。これらのイベントには、ボタン押下（閉じるボタン、URL、プロダクト選択など）や、フローまたはペイウォール上での購入関連アクションの通知が含まれます。これらのイベントへの対応方法については、以下をご確認ください。
 
-[ペイウォールビルダー](adapty-paywall-builder)で設定されたペイウォールは、購入や復元を行うための追加コードは不要です。ただし、アプリが応答できるイベントが生成されます。これらのイベントには、ボタン操作（閉じるボタン、URL、プロダクト選択など）やペイウォール上の購入関連アクションの通知が含まれます。これらのイベントへの対応方法を以下で説明します。
-
-:::warning
-
-このガイドは、Adapty SDK v3.0 以降が必要な**新しいペイウォールビルダーのペイウォール**専用です。
-
-:::
-
-モバイルアプリのペイウォール画面で発生するプロセスを制御・監視するには、`AdaptyUIPaywallsEventsObserver` のメソッドを実装し、画面を表示する前にオブザーバーを設定してください。
-
-```javascript showLineNumbers title="Flutter"
-AdaptyUI().setPaywallsEventsObserver(this);
+モバイルアプリ内でフローまたはペイウォール画面上の処理を制御・監視するには、`AdaptyUIFlowsEventsObserver` のメソッドを実装し、画面を表示する前にオブザーバーを設定してください。
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setFlowsEventsObserver(this);
 ```
+
+3つのオブザーバーメソッドは**必須**です — `flowViewDidFinishPurchase`、`flowViewDidFinishRestore`、`flowViewDidReceiveError` がないとクラスがコンパイルされません。その他のメソッドはすべて任意です。設定済みのオブザーバーを解除するには、`setFlowsEventsObserver` に `null` を渡してください。
 
 <SampleApp />
 
+以下のイベント例では、各オブジェクトで使用できるプロパティをコメント内の例示値とともに示しています。
 ### ユーザー生成イベント \{#user-generated-events\}
 
-#### ペイウォールの表示 \{#paywall-appeared\}
+#### 画面表示 \{#view-appeared\}
 
-このメソッドは、ペイウォールビューが画面に表示されたときに呼び出されます。
+このメソッドは、フローまたはペイウォールのビューが画面に表示されたときに呼び出されます。
 
 :::note
 iOS では、ユーザーがペイウォール内の[ウェブペイウォールボタン](web-paywall#step-2a-add-a-web-purchase-button)をタップし、アプリ内ブラウザでウェブペイウォールが開いたときにも呼び出されます。
 :::
 
-```javascript showLineNumbers title="Flutter"
-void paywallViewDidAppear(AdaptyUIPaywallView view) {
+```dart showLineNumbers title="Flutter"
+void flowViewDidAppear(AdaptyUIFlowView view) {
 }
 ```
 
-#### ペイウォールの非表示 \{#paywall-disappeared\}
+#### 画面非表示 \{#view-disappeared\}
 
-このメソッドは、ペイウォールビューが画面から閉じられたときに呼び出されます。
-
+このメソッドは、フローまたはペイウォールのビューが画面から消えたときに呼び出されます。
 :::note
-iOS では、ペイウォールからアプリ内ブラウザで開いた[ウェブペイウォール](web-paywall#step-2a-add-a-web-purchase-button)が画面から消えたときにも呼び出されます。
+iOSでは、ペイウォールのアプリ内ブラウザから開いた[ウェブペイウォール](web-paywall#step-2a-add-a-web-purchase-button)が画面から消えた場合にも呼び出されます。
 :::
 
-```javascript showLineNumbers title="Flutter"
-void paywallViewDidDisappear(AdaptyUIPaywallView view) {
+```dart showLineNumbers title="Flutter"
+void flowViewDidDisappear(AdaptyUIFlowView view) {
 }
 ```
 
-#### プロダクト選択 \{#product-selection\}
+#### プロダクトの選択 \{#product-selection\}
 
-プロダクトが購入のために選択された場合（ユーザーまたはシステムによる）、このメソッドが呼び出されます。
+ユーザーまたはシステムによってプロダクトが選択された場合、このメソッドが呼び出されます：
 
-```javascript showLineNumbers title="Flutter"
-void paywallViewDidSelectProduct(AdaptyUIPaywallView view, String productId) {
+```dart showLineNumbers title="Flutter"
+void flowViewDidSelectProduct(AdaptyUIFlowView view, String productId) {
 }
 ```
 
 <Details>
 <summary>イベントの例（クリックして展開）</summary>
-
-```javascript
-{
-  "productId": "premium_monthly"
+```dart
+void flowViewDidSelectProduct(AdaptyUIFlowView view, String productId) {
+  // productId is a String:
+  productId; // 'premium_monthly'
 }
 ```
 </Details>
 
 #### 購入の開始 \{#started-purchase\}
 
-ユーザーが購入プロセスを開始した場合、このメソッドが呼び出されます。
+ユーザーが購入プロセスを開始すると、このメソッドが呼び出されます：
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
+void flowViewDidStartPurchase(AdaptyUIFlowView view, AdaptyPaywallProduct product) {
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+```dart
+void flowViewDidStartPurchase(AdaptyUIFlowView view, AdaptyPaywallProduct product) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId;        // 'premium_monthly'
+  product.localizedTitle;         // 'Premium Monthly'
+  product.localizedDescription;   // 'Premium subscription for 1 month'
+  product.price.amount;           // 9.99            (double)
+  product.price.currencyCode;     // 'USD'
+  product.price.localizedString;  // '$9.99'
+}
+```
+</Details>
+
+#### 購入完了 \{#finished-purchase\}
+このメソッドは**必須**です。購入が成功したとき、ユーザーが購入をキャンセルしたとき、または購入が保留中と判断されたときに呼び出されます。
+```dart showLineNumbers title="Flutter"
+void flowViewDidFinishPurchase(AdaptyUIFlowView view, 
+                               AdaptyPaywallProduct product, 
+                               AdaptyPurchaseResult purchaseResult) {
+    switch (purchaseResult) {
+      case AdaptyPurchaseResultSuccess(profile: final profile):
+        // successful purchase
+        break;
+      case AdaptyPurchaseResultPending():
+        // purchase is pending
+        break;
+      case AdaptyPurchaseResultUserCancelled():
+        // user cancelled the purchase
+        break;
+      default:
+        break;
+    }
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+```dart
+void flowViewDidFinishPurchase(AdaptyUIFlowView view,
+                               AdaptyPaywallProduct product,
+                               AdaptyPurchaseResult purchaseResult) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId; // 'premium_monthly'
+
+  switch (purchaseResult) {
+    case AdaptyPurchaseResultSuccess(profile: final profile):
+      // profile — AdaptyProfile:
+      profile.accessLevels['premium']?.isActive;  // true
+      profile.accessLevels['premium']?.expiresAt; // DateTime(2027, 2, 15, 10, 30)
+      break;
+    case AdaptyPurchaseResultPending():
+      // no additional data
+      break;
+    case AdaptyPurchaseResultUserCancelled():
+      // no additional data
+      break;
+  }
+}
+```
+</Details>
+:::info
+v3 とは異なり、このメソッドにはデフォルトの動作がありません。購入が成功しても画面は自動的に閉じられません。次の動作は自分で決める必要があります。フローを続けるか、`view.dismiss()` を呼び出してください。画面を閉じる方法については、[ボタンアクションへの対応](flutter-handle-paywall-actions)を参照してください。
+:::
+
+#### ウェブ決済ナビゲーションの完了 \{#finished-web-payment-navigation\}
+
+このメソッドは、特定のプロダクトに対して[ウェブペイウォール](web-paywall)を開こうとした後に呼び出されます。ナビゲーションの成功・失敗に関わらず、両方のケースで呼び出されます。
+```dart showLineNumbers title="Flutter"
+void flowViewDidFinishWebPaymentNavigation(AdaptyUIFlowView view, 
+                                           AdaptyPaywallProduct? product, 
+                                           AdaptyError? error) {
+}
+```
+
+**パラメーター:**
+| パラメーター | 説明 |
+|:------------|:---------------------------------------------------------------------------------------------------|
+| **product** | ウェブペイウォールが開かれた `AdaptyPaywallProduct`。`null` の場合があります。 |
+| **error** | ウェブペイウォールのナビゲーションに失敗した場合は `AdaptyError` オブジェクト。成功した場合は `null`。 |
+
+#### 購入失敗 \{#failed-purchase\}
+このメソッドは、購入が失敗した場合（例：決済エラーやネットワークエラー）に呼び出されます。ユーザーが自らキャンセルした場合や保留中のトランザクションには**呼び出されません**—それらは`flowViewDidFinishPurchase`で処理されます：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFailPurchase(AdaptyUIFlowView view, 
+                             AdaptyPaywallProduct product, 
+                             AdaptyError error) {
+}
+```
+
+#### 復元の開始 \{#started-restore\}
+
+ユーザーが復元プロセスを開始した場合、このメソッドが呼び出されます：
+```dart showLineNumbers title="Flutter"
+void flowViewDidStartRestore(AdaptyUIFlowView view) {
+}
+```
+
+#### 復元の成功 \{#successful-restore\}
+
+このメソッドは**必須**です。購入の復元が成功した場合に呼び出されます：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+```dart
+void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
+  // profile — AdaptyProfile:
+  profile.accessLevels['premium']?.isActive;            // true
+  profile.accessLevels['premium']?.expiresAt;           // DateTime(2027, 2, 15, 10, 30)
+  profile.subscriptions['premium_monthly']?.isActive;   // true
+  profile.subscriptions['premium_monthly']?.expiresAt;  // DateTime(2027, 2, 15, 10, 30)
+}
+```
+</Details>
+ユーザーが必要な `accessLevel` を持っている場合は、画面を閉じることをお勧めします。確認方法については [サブスクリプションステータス](flutter-listen-subscription-changes) を、画面を閉じる方法については [ボタン操作への対応](flutter-handle-paywall-actions) を参照してください。
+
+#### リストアの失敗 \{#failed-restore\}
+
+購入のリストアに失敗した場合、このメソッドが呼び出されます：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFailRestore(AdaptyUIFlowView view, AdaptyError error) {
+}
+```
+### データの取得とレンダリング \{#data-fetching-and-rendering\}
+
+#### プロダクト読み込みエラー \{#product-loading-errors\}
+
+初期化時にプロダクト配列を渡さなかった場合、AdaptyUI はサーバーから必要なオブジェクトを自動的に取得します。この処理が失敗した場合、AdaptyUI は次のメソッドを呼び出してエラーを通知します。
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFailLoadingProducts(AdaptyUIFlowView view, AdaptyError error) {
+}
+```
+
+#### ビューのエラー \{#view-errors\}
+このメソッドは**必須**です。v3 の `paywallViewDidFailRendering` メソッドの代替となります。インターフェースのレンダリング中に発生したエラーやその他のビューエラーは、このメソッドを呼び出すことで報告されます。実装後の画面の閉じ方はご自身で決定できますが、このようなエラー時にはビューを閉じることをお勧めします。これは、オブザーバーが設定されていない場合の SDK 組み込みのデフォルト動作でもあります：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveError(AdaptyUIFlowView view, AdaptyError error) {
+  // log the error and dismiss the broken view
+  view.dismiss();
+}
+```
+通常、レンダリングエラーは発生しないため、もし遭遇した場合はご連絡ください。
+### アナリティクスイベント \{#analytics-events\}
+
+オプションの `flowViewDidReceiveAnalyticEvent` メソッドは、フローからのカスタムアナリティクスイベント用に予約されています。現時点ではフローからこのコードへのイベント送信は行われないため、実装は不要です。
+### オブザーバーモードで購入を処理する \{#handle-purchases-in-observer-mode\}
+
+SDKを[オブザーバーモード](implement-observer-mode-flutter)で有効化し、Adaptyがレンダリングするフローやペイウォールを表示している場合、SDKは代わりに購入処理を行いません。ユーザーが購入ボタンまたは復元ボタンをタップすると、SDKは代わりに`AdaptyUIObserverModeResolver`を呼び出します。詳細なセットアップ手順については、[オブザーバーモードでフローを表示する](flutter-present-flows-in-observer-mode)を参照してください。
+### システムリクエストの処理 \{#handle-system-requests\}
+
+`AdaptyUISystemRequestsHandler`（`AdaptyUI().setSystemRequestsHandler(...)` で登録）は、フローからのシステムリクエスト（プッシュ通知やカメラアクセスなどのOS権限プロンプト、App Storeレビューリクエスト）のために予約されています。現時点ではフローがこれらのリクエストをトリガーすることはないため、ハンドラーを登録する必要はありません。
+`handlePermission` はクラスの必須メソッドです。独自のコードでパーミッションをリクエストし、`AdaptyUIPermissionResult.granted()` または `AdaptyUIPermissionResult.denied()` を返してください。`handleAppReviewRequest` は任意です。
+
+</SDKv4>
+
+<SDKv3>
+
+:::important
+このガイドでは、購入・復元・プロダクト選択・ペイウォールレンダリングのイベント処理について説明します。ボタン操作（ペイウォールを閉じる、リンクを開くなど）の実装も必要です。詳細は[ボタンアクションの処理に関するガイド](flutter-handle-paywall-actions)をご参照ください。
+:::
+[ペイウォールビルダー](adapty-paywall-builder)で設定されたペイウォールは、購入や復元のために追加のコードは不要です。ただし、アプリが応答できるいくつかのイベントが生成されます。これらのイベントには、ボタン押下（閉じるボタン、URL、プロダクト選択など）や、ペイウォール上での購入関連アクションの通知が含まれます。これらのイベントへの応答方法については、以下をご覧ください。
+
+:::warning
+
+このガイドは、Adapty SDK v3.0 以降が必要な**新しいペイウォールビルダーのペイウォール**専用です。
+
+:::
+ペイウォール画面で発生するプロセスを制御または監視するには、`AdaptyUIPaywallsEventsObserver` のメソッドを実装し、画面を表示する前にオブザーバーを設定してください。
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setPaywallsEventsObserver(this);
+```
+
+<SampleApp />
+
+以下のイベントの例では、各オブジェクトで利用可能なプロパティと、コメント内の説明用の値を示しています。
+### ユーザー生成イベント \{#user-generated-events\}
+
+#### ペイウォールが表示された \{#paywall-appeared\}
+
+このメソッドは、ペイウォールビューが画面に表示されたときに呼び出されます。
+
+:::note
+iOS では、ユーザーがペイウォール内の[ウェブペイウォールボタン](web-paywall#step-2a-add-a-web-purchase-button)をタップしてインアプリブラウザでウェブペイウォールが開いた場合にも呼び出されます。
+:::
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidAppear(AdaptyUIPaywallView view) {
+}
+```
+
+#### ペイウォールが非表示になった \{#paywall-disappeared\}
+
+このメソッドは、ペイウォールビューが画面から閉じられたときに呼び出されます。
+:::note
+iOSでは、ペイウォール内のアプリ内ブラウザで開いた[ウェブペイウォール](web-paywall#step-2a-add-a-web-purchase-button)が画面から消えたときにも呼び出されます。
+:::
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidDisappear(AdaptyUIPaywallView view) {
+}
+```
+
+#### プロダクトの選択 \{#product-selection\}
+
+ユーザーまたはシステムによってプロダクトが購入のために選択されると、このメソッドが呼び出されます：
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidSelectProduct(AdaptyUIPaywallView view, String productId) {
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+```dart
+void paywallViewDidSelectProduct(AdaptyUIPaywallView view, String productId) {
+  // productId is a String:
+  productId; // 'premium_monthly'
+}
+```
+</Details>
+
+#### 購入開始 \{#started-purchase\}
+
+ユーザーが購入プロセスを開始すると、このメソッドが呼び出されます：
+
+```dart showLineNumbers title="Flutter"
 void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) {
 }
 ```
 
 <Details>
 <summary>イベントの例（クリックして展開）</summary>
-
-```javascript
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  }
+```dart
+void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId;        // 'premium_monthly'
+  product.localizedTitle;         // 'Premium Monthly'
+  product.localizedDescription;   // 'Premium subscription for 1 month'
+  product.price.amount;           // 9.99            (double)
+  product.price.currencyCode;     // 'USD'
+  product.price.localizedString;  // '$9.99'
 }
 ```
 </Details>
 
-#### 購入の完了 \{#finished-purchase\}
-
-このメソッドは、購入が成功した場合、ユーザーが購入をキャンセルした場合、または購入が保留中になった場合に呼び出されます。
-
-```javascript showLineNumbers title="Flutter"
+#### 購入完了 \{#finished-purchase\}
+この方法は、購入が成功した場合、ユーザーが購入をキャンセルした場合、または購入が保留中と判断された場合に呼び出されます。
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFinishPurchase(AdaptyUIPaywallView view, 
                                   AdaptyPaywallProduct product, 
                                   AdaptyPurchaseResult purchaseResult) {
@@ -127,71 +359,35 @@ void paywallViewDidFinishPurchase(AdaptyUIPaywallView view,
 
 <Details>
 <summary>イベントの例（クリックして展開）</summary>
+```dart
+void paywallViewDidFinishPurchase(AdaptyUIPaywallView view,
+                                  AdaptyPaywallProduct product,
+                                  AdaptyPurchaseResult purchaseResult) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId; // 'premium_monthly'
 
-```javascript
-// Successful purchase
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "purchaseResult": {
-    "type": "AdaptyPurchaseResultSuccess",
-    "profile": {
-      "accessLevels": {
-        "premium": {
-          "id": "premium",
-          "isActive": true,
-          "expiresAt": "2024-02-15T10:30:00Z"
-        }
-      }
-    }
-  }
-}
-
-// Pending purchase
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "purchaseResult": {
-    "type": "AdaptyPurchaseResultPending"
-  }
-}
-
-// User cancelled purchase
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "purchaseResult": {
-    "type": "AdaptyPurchaseResultUserCancelled"
+  switch (purchaseResult) {
+    case AdaptyPurchaseResultSuccess(profile: final profile):
+      // profile — AdaptyProfile:
+      profile.accessLevels['premium']?.isActive;  // true
+      profile.accessLevels['premium']?.expiresAt; // DateTime(2027, 2, 15, 10, 30)
+      break;
+    case AdaptyPurchaseResultPending():
+      // no additional data
+      break;
+    case AdaptyPurchaseResultUserCancelled():
+      // no additional data
+      break;
   }
 }
 ```
 </Details>
-
-この場合は画面を閉じることを推奨します。ペイウォール画面を閉じる方法については、[ボタン操作への対応](flutter-handle-paywall-actions)を参照してください。
+このような場合はスクリーンを閉じることをおすすめします。ペイウォール画面を閉じる方法については、[ボタンアクションへの対応](flutter-handle-paywall-actions)を参照してください。
 
 #### ウェブ決済ナビゲーションの完了 \{#finished-web-payment-navigation\}
 
-このメソッドは、特定のプロダクトに対して[ウェブペイウォール](web-paywall)を開こうとした後に呼び出されます。ナビゲーションの成功・失敗にかかわらず呼び出されます。
-
-```javascript showLineNumbers title="Flutter"
+このメソッドは、特定のプロダクトに対して[ウェブペイウォール](web-paywall)を開こうとした後に呼び出されます。ナビゲーションの成功・失敗いずれの場合も対象となります。
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view, 
                                                AdaptyPaywallProduct? product, 
                                                AdaptyError? error) {
@@ -199,55 +395,36 @@ void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view,
 ```
 
 **パラメーター:**
-
-| パラメーター | 説明                                                                                                    |
-|:------------|:-------------------------------------------------------------------------------------------------------|
-| **product** | ウェブペイウォールが開かれた `AdaptyPaywallProduct`。`null` の場合があります。                           |
-| **error**   | ウェブペイウォールのナビゲーションが失敗した場合は `AdaptyError` オブジェクト。成功した場合は `null`。   |
+| パラメーター | 説明                                                                                        |
+|:------------|:---------------------------------------------------------------------------------------------------|
+| **product** | ウェブペイウォールが開かれた `AdaptyPaywallProduct`。`null` の場合があります。                     |
+| **error**   | ウェブペイウォールのナビゲーションに失敗した場合は `AdaptyError` オブジェクト。成功した場合は `null`。 |
 
 <Details>
-<summary>イベントの例（クリックして展開）</summary>
+<summary>イベント例（クリックして展開）</summary>
+```dart
+void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view,
+                                               AdaptyPaywallProduct? product,
+                                               AdaptyError? error) {
+  // product — AdaptyPaywallProduct?:
+  product?.vendorProductId; // 'premium_monthly'
 
-```javascript
-// Successful navigation
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "error": null
-}
-
-// Failed navigation
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "error": {
-    "code": "web_navigation_failed",
-    "message": "Failed to open web paywall",
-    "details": {
-      "underlyingError": "Browser unavailable"
-    }
+  if (error == null) {
+    // navigation succeeded
+  } else {
+    // error — AdaptyError:
+    error.code;    // AdaptyErrorCode.networkFailed (2005)
+    error.message; // 'Network request failed'
+    error.detail;  // platform-specific underlying error, or null
   }
 }
 ```
 </Details>
+#### 購入失敗 \{#failed-purchase\}
 
-#### 購入の失敗 \{#failed-purchase\}
+このメソッドは、支払いの問題やネットワークエラーなどにより購入が失敗した場合に呼び出されます。ユーザーが自発的にキャンセルした場合やペンディング中のトランザクションには**呼び出されません**。それらは `paywallViewDidFinishPurchase` で処理されます：
 
-このメソッドは、購入が失敗した場合（決済エラーやネットワークエラーなど）に呼び出されます。ユーザーによるキャンセルや保留中のトランザクションには**呼び出されません**。それらは `paywallViewDidFinishPurchase` で処理されます。
-
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailPurchase(AdaptyUIPaywallView view, 
                                 AdaptyPaywallProduct product, 
                                 AdaptyError error) {
@@ -256,130 +433,99 @@ void paywallViewDidFailPurchase(AdaptyUIPaywallView view,
 
 <Details>
 <summary>イベントの例（クリックして展開）</summary>
+```dart
+void paywallViewDidFailPurchase(AdaptyUIPaywallView view,
+                                AdaptyPaywallProduct product,
+                                AdaptyError error) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId; // 'premium_monthly'
 
-```javascript
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "error": {
-    "code": "purchase_failed",
-    "message": "Purchase failed due to insufficient funds",
-    "details": {
-      "underlyingError": "Insufficient funds in account"
-    }
-  }
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.productPurchaseFailed (1006)
+  error.message; // 'Product purchase failed.'
+  error.detail;  // platform-specific underlying error, or null
 }
 ```
 </Details>
 
 #### 復元の開始 \{#started-restore\}
 
-ユーザーが復元プロセスを開始した場合、このメソッドが呼び出されます。
-
-```javascript showLineNumbers title="Flutter"
+ユーザーが復元プロセスを開始すると、このメソッドが呼び出されます：
+```dart showLineNumbers title="Flutter"
 void paywallViewDidStartRestore(AdaptyUIPaywallView view) {
 }
 ```
 
-#### 復元の成功 \{#successful-restore\}
+#### 復元成功 \{#successful-restore\}
 
-購入の復元が成功した場合、このメソッドが呼び出されます。
+購入の復元が成功すると、このメソッドが呼び出されます：
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
 }
 ```
 
 <Details>
-<summary>イベントの例（クリックして展開）</summary>
-
-```javascript
-{
-  "profile": {
-    "accessLevels": {
-      "premium": {
-        "id": "premium",
-        "isActive": true,
-        "expiresAt": "2024-02-15T10:30:00Z"
-      }
-    },
-    "subscriptions": [
-      {
-        "vendorProductId": "premium_monthly",
-        "isActive": true,
-        "expiresAt": "2024-02-15T10:30:00Z"
-      }
-    ]
-  }
+<summary>イベント例（クリックして展開）</summary>
+```dart
+void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
+  // profile — AdaptyProfile:
+  profile.accessLevels['premium']?.isActive;            // true
+  profile.accessLevels['premium']?.expiresAt;           // DateTime(2027, 2, 15, 10, 30)
+  profile.subscriptions['premium_monthly']?.isActive;   // true
+  profile.subscriptions['premium_monthly']?.expiresAt;  // DateTime(2027, 2, 15, 10, 30)
 }
 ```
 </Details>
-
-ユーザーが必要な `accessLevel` を持っている場合は、画面を閉じることを推奨します。確認方法については[サブスクリプションのステータス](flutter-listen-subscription-changes)を、ペイウォール画面の閉じ方については[ボタン操作への対応](flutter-handle-paywall-actions)を参照してください。
+ユーザーが必要な `accessLevel` を持っている場合は、画面を閉じることを推奨します。確認方法については [サブスクリプションのステータス](flutter-listen-subscription-changes) を、ペイウォール画面を閉じる方法については [ボタン操作への対応](flutter-handle-paywall-actions) を参照してください。
 
 #### 復元の失敗 \{#failed-restore\}
 
-購入の復元が失敗した場合、このメソッドが呼び出されます。
+購入の復元に失敗した場合、このメソッドが呼び出されます：
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
 }
 ```
 
 <Details>
 <summary>イベントの例（クリックして展開）</summary>
-
-```javascript
-{
-  "error": {
-    "code": "restore_failed",
-    "message": "Purchase restoration failed",
-    "details": {
-      "underlyingError": "No previous purchases found"
-    }
-  }
+```dart
+void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.receiveRestoredTransactionsFailed (1011)
+  error.message; // 'Error occurred in the process of restoring purchases.'
+  error.detail;  // platform-specific underlying error, or null
 }
 ```
 </Details>
-
 ### データの取得とレンダリング \{#data-fetching-and-rendering\}
 
 #### プロダクト読み込みエラー \{#product-loading-errors\}
 
-初期化時にプロダクト配列を渡さない場合、AdaptyUI は必要なオブジェクトをサーバーから自動的に取得します。この操作が失敗した場合、AdaptyUI はこのメソッドを呼び出してエラーを通知します。
+初期化時にプロダクト配列を渡さなかった場合、AdaptyUIはサーバーから必要なオブジェクトを自動的に取得します。この処理が失敗した場合、AdaptyUIは以下のメソッドを呼び出してエラーを通知します：
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) {
 }
 ```
 
 <Details>
-<summary>イベントの例（クリックして展開）</summary>
-
-```javascript
-{
-  "error": {
-    "code": "products_loading_failed",
-    "message": "Failed to load products from the server",
-    "details": {
-      "underlyingError": "Network timeout"
-    }
-  }
+<summary>イベント例（クリックして展開）</summary>
+```dart
+void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) {
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.productRequestFailed (1002)
+  error.message; // 'Unable to fetch available In-App Purchase products at the moment.'
+  error.detail;  // platform-specific underlying error, or null
 }
 ```
 </Details>
 
 #### レンダリングエラー \{#rendering-errors\}
+インターフェースのレンダリング中にエラーが発生した場合、このメソッドを呼び出すことでエラーが報告されます。デフォルトでは（v3.15.2以降）、レンダリングエラーが発生するとペイウォールは自動的に閉じられますが、必要に応じてこの動作をオーバーライドできます。
 
-インターフェースのレンダリング中にエラーが発生した場合、このメソッドが呼び出されます。デフォルト（v3.15.2 以降）では、レンダリングエラーが発生するとペイウォールは自動的に閉じられますが、必要に応じてこの動作をオーバーライドできます。
-
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
   // Default behavior: view.dismiss()
   // Override with custom logic if needed, for example:
@@ -390,18 +536,18 @@ void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
 
 <Details>
 <summary>イベントの例（クリックして展開）</summary>
+```dart
+void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.jsException (4105)
+  error.message; // 'An exception was thrown from JS during AdaptyUI flow execution.'
+  error.detail;  // platform-specific underlying error, or null
 
-```javascript
-{
-  "error": {
-    "code": "rendering_failed",
-    "message": "Failed to render paywall interface",
-    "details": {
-      "underlyingError": "Invalid paywall configuration"
-    }
-  }
+  // Default behavior: view.dismiss()
 }
 ```
 </Details>
 
-通常の状況ではこのようなエラーは発生しないため、もし遭遇した場合はお知らせください。
+通常の状況では、このようなエラーは発生しないはずです。もし遭遇した場合は、ぜひご連絡ください。
+
+</SDKv3>
