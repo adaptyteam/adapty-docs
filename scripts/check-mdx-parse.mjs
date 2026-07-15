@@ -12,10 +12,25 @@
  *
  * Run: `node scripts/check-mdx-parse.mjs`
  * Exits non-zero if any file fails to compile.
+ *
+ * `--repair-broken-locales` (used by translate.yml's apply job): instead of
+ * failing, run the deterministic mdx-guard repairs (restore blank lines
+ * dropped before block-level markup, using the English source as the
+ * reference; fix invalid \' YAML escapes in frontmatter) on every broken file
+ * under src/locales/ and rewrite it in place when the repair makes it
+ * compile. Only files that STILL fail after repair are reverted to their last
+ * committed state — together with their section-hash cache, so the next
+ * translation run retries them (new files with nothing to revert to are
+ * deleted). Always exits 0. This is the last-resort gate that makes it
+ * impossible for the translation bot to commit a locale file that would fail
+ * the production deploy's MDX parse. Broken files OUTSIDE src/locales/ are
+ * reported but never touched — they came from a human commit and are the
+ * deploy gate's job.
  */
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { compile } from '@mdx-js/mdx';
 import remarkDirective from 'remark-directive';
@@ -91,7 +106,107 @@ async function checkFile(file) {
   }
 }
 
+/**
+ * Map a locale content file to its translation hash-cache file, e.g.
+ *   src/locales/tr/fallback-flows.mdx        → src/locales/tr/.hashes/fallback-flows.json
+ *   src/locales/tr/reusable/ProfileWeb.mdx   → src/locales/tr/.hashes/reusable/ProfileWeb.json
+ * Returns null for paths outside src/locales/.
+ */
+export function hashPathFor(localeFile) {
+  const m = localeFile.match(/^(src\/locales\/[^/]+)\/(.+)\.(mdx?|md)$/);
+  if (!m) return null;
+  return `${m[1]}/.hashes/${m[2]}.json`;
+}
+
+/**
+ * Locate the English source for a locale file. Article filenames are unique
+ * across src/content/docs (URLs are derived from the filename alone), so a
+ * basename match is authoritative; reusable snippets live flat under
+ * src/components/reusable/. Returns an absolute path or null.
+ */
+async function englishSourceFor(localeFile) {
+  const m = localeFile.match(/^src\/locales\/[^/]+\/(reusable\/)?([^/]+)$/);
+  if (!m) return null;
+  const [, isReusable, name] = m;
+  if (isReusable) {
+    for (const candidate of [name, name.replace(/\.md$/, '.mdx')]) {
+      const p = path.join(ROOT, 'src/components/reusable', candidate);
+      try { await fs.access(p); return p; } catch { /* keep looking */ }
+    }
+    return null;
+  }
+  for await (const f of walk(path.join(ROOT, 'src/content/docs'))) {
+    if (path.basename(f) === name) return f;
+  }
+  return null;
+}
+
+/**
+ * Repair broken locale files in place with the deterministic mdx-guard fixes;
+ * revert (or delete, when new) only the files that still fail afterwards, so
+ * the next translation run retries them. Returns the files that are broken
+ * even at HEAD (they need a human).
+ */
+async function repairBrokenLocales(issues) {
+  // Dynamic import: mdx-guard statically imports frontmatterError from this
+  // file, so a static import here would create a module cycle.
+  const guard = await import('./mdx-guard.mjs');
+  const stillBroken = [];
+  for (const issue of issues) {
+    if (!issue.file.startsWith('src/locales/')) {
+      console.warn(`::warning file=${issue.file}::MDX parse error outside src/locales — not touching it (fix in the source commit): ${issue.message}`);
+      continue;
+    }
+    const abs = path.join(ROOT, issue.file);
+
+    // 1. Repair: same pure fixes translate.mjs applies, re-run here against
+    //    the English source so a gap in the translator's own gate still heals.
+    let repaired = null;
+    try {
+      let candidate = guard.fixFrontmatterBackslashQuotes(await fs.readFile(abs, 'utf-8'));
+      const englishPath = await englishSourceFor(issue.file);
+      if (englishPath) {
+        const english = await fs.readFile(englishPath, 'utf-8');
+        candidate = guard.normalizeSectionBoundaries(
+          guard.restoreBlankLinesBeforeBlocks(candidate, english),
+          english,
+        );
+      }
+      if (!(await guard.validateLocaleMdx(candidate))) repaired = candidate;
+    } catch { /* unreadable — fall through to revert */ }
+
+    if (repaired !== null) {
+      await fs.writeFile(abs, repaired, 'utf-8');
+      console.warn(`::warning file=${issue.file}::translated file failed MDX parse (${issue.message}) — repaired in place`);
+      continue;
+    }
+
+    // 2. Revert: last resort for files the deterministic fixes can't save.
+    const targets = [issue.file, hashPathFor(issue.file)].filter(Boolean);
+    for (const target of targets) {
+      try {
+        execFileSync('git', ['checkout', 'HEAD', '--', target], { cwd: ROOT, stdio: 'pipe' });
+      } catch {
+        // Not tracked at HEAD (newly translated file) — delete instead.
+        await fs.rm(path.join(ROOT, target), { force: true });
+      }
+    }
+    // A reverted file can still be broken if HEAD itself is broken — surface
+    // that loudly; it needs a human fix regardless of this run.
+    const recheck = await checkFile(abs).catch(() => null);
+    if (recheck) {
+      stillBroken.push(recheck);
+      console.warn(`::warning file=${issue.file}::still fails MDX parse after revert — broken at HEAD, needs a manual fix: ${recheck.message}`);
+    } else {
+      console.warn(`::warning file=${issue.file}::translated file failed MDX parse (${issue.message}) — unrepairable, reverted to last committed state; it will be retranslated on the next run`);
+    }
+  }
+  return stillBroken;
+}
+
 async function main() {
+  const repairMode = process.argv.includes('--repair-broken-locales');
+
   const files = [];
   for (const dir of SCAN_DIRS) {
     for await (const f of walk(path.join(ROOT, dir))) files.push(f);
@@ -117,6 +232,15 @@ async function main() {
     console.error(`  ${loc}`);
     console.error(`    ${i.message}\n`);
   }
+
+  if (repairMode) {
+    await repairBrokenLocales(issues);
+    // Never fail in repair mode: broken locale output has been repaired or
+    // rolled back, so the translation commit is safe; anything else is the
+    // deploy gate's job.
+    process.exit(0);
+  }
+
   process.exit(1);
 }
 
