@@ -2,6 +2,7 @@
 title: "Present flows in Observer mode - Kotlin Multiplatform"
 description: "Present flows and Paywall Builder paywalls in Observer mode in your Kotlin Multiplatform app while handling purchases with your own code."
 metadataTitle: "Present flows in Observer mode - Kotlin Multiplatform | Adapty Docs"
+keywords: ['observer mode', 'AdaptyUIObserverModeResolver', 'setObserverModeResolver', 'flow']
 ---
 
 If you've customized a flow or paywall using the builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a flow or paywall contains both what should be shown and how it should be shown.
@@ -26,37 +27,41 @@ This capability requires Adapty Kotlin Multiplatform SDK 4.0 (beta) or later —
 
 </details>
 
-In Observer mode, the SDK does not make purchases for you. When a user taps the purchase or restore button in an Adapty-rendered flow or paywall, the SDK invokes your `flowViewDidInitiatePurchaseInObserverMode` or `flowViewDidInitiateRestoreInObserverMode` callback instead — perform the purchase or restore with your own code there.
+In Observer mode, the SDK does not make purchases for you. When a user taps the purchase or restore button in an Adapty-rendered flow or paywall, the SDK calls your `AdaptyUIObserverModeResolver` instead — perform the purchase or restore with your own code there.
 
-1. Implement the observer-mode callbacks. Unlike the native SDKs, there is no separate resolver object — the callbacks are part of the regular [events observer](kmp-handling-events), so implement them in the `AdaptyUIFlowsEventsObserver` you set:
+1. Implement the `AdaptyUIObserverModeResolver` interface:
 
    ```kotlin showLineNumbers
-   AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
-       override fun flowViewDidInitiatePurchaseInObserverMode(
+   import com.adapty.kmp.AdaptyUIObserverModeResolver
+   import com.adapty.kmp.models.AdaptyPaywallProduct
+   import com.adapty.kmp.models.AdaptyUIFlowView
+
+   class MyObserverModeResolver : AdaptyUIObserverModeResolver {
+       override fun observerModeDidInitiatePurchase(
            view: AdaptyUIFlowView,
            product: AdaptyPaywallProduct,
            onStartPurchase: () -> Unit,
            onFinishPurchase: () -> Unit
        ) {
            onStartPurchase() // the view shows its loading indicator
-           // perform the purchase with your own code,
-           // then report the transaction to Adapty
+           // make the purchase with your own code,
+           // then report the transaction to Adapty and call:
            onFinishPurchase() // the view hides the loading indicator
        }
 
-       override fun flowViewDidInitiateRestoreInObserverMode(
+       override fun observerModeDidInitiateRestore(
            view: AdaptyUIFlowView,
            onStartRestore: () -> Unit,
            onFinishRestore: () -> Unit
        ) {
            onStartRestore()
-           // restore purchases with your own code
+           // restore purchases with your own code, then:
            onFinishRestore()
        }
-   })
+   }
    ```
 
-   The `flowViewDidInitiatePurchaseInObserverMode` callback informs you that the user has initiated a purchase, and `flowViewDidInitiateRestoreInObserverMode` — that the user has initiated a restore. Trigger your custom purchase or restore flow in response.
+   The `observerModeDidInitiatePurchase` method informs you that the user has initiated a purchase, and `observerModeDidInitiateRestore` — that the user has initiated a restore. Trigger your custom purchase or restore flow in response.
 
    Also, remember to invoke the following callbacks to notify AdaptyUI about the process of the purchase or restore. This is necessary for proper flow behavior, such as showing the loader, among other things:
 
@@ -67,9 +72,19 @@ In Observer mode, the SDK does not make purchases for you. When a user taps the 
    | onStartRestore()   | The callback should be invoked to notify AdaptyUI that the restore is started.   |
    | onFinishRestore()  | The callback should be invoked to notify AdaptyUI that the restore is finished.  |
 
-   The flow stays open while your code runs — dismiss it yourself with `view.dismiss()` after a successful purchase or restore.
+   The flow stays open while your code runs — dismiss it yourself after a successful purchase or restore.
 
-2. Present the flow view as usual: [fetch the flow and create its view](kmp-get-pb-paywalls), then [present it](kmp-present-paywalls). No extra parameters are needed — the callbacks fire only when the SDK was activated in Observer mode.
+2. Register the resolver before presenting any screen:
+
+   ```kotlin showLineNumbers
+   import com.adapty.kmp.AdaptyUI
+
+   AdaptyUI.setObserverModeResolver(MyObserverModeResolver())
+   ```
+
+   Without a registered resolver, the flow view has no way to hand the purchase over to your code, and nothing happens when the user taps the purchase button.
+
+3. Create and present the flow view as usual: [fetch the flow and create its view](kmp-get-pb-paywalls), then [present it](kmp-present-paywalls). No extra parameters are needed — once the resolver is registered, every Adapty-rendered flow or paywall routes purchases and restores through it.
 
 :::warning
 Don't forget to [report the transaction and associate it with the paywall](report-transactions-observer-mode-kmp). Otherwise, Adapty will not recognize the transaction and will not determine the source paywall of the purchase.

@@ -19,7 +19,7 @@ If you are building flows or paywalls using the Adapty Flow Builder or Paywall B
 This guide shows how to handle custom and pre-existing actions in your code.
 
 :::warning
-**Only purchases, restorations, and flow/paywall closures are handled automatically.** All other button actions, such as opening links, require proper response implementation in the app code.
+**Only purchases, restorations, flow/paywall closures, and opening links are handled automatically.** All other button actions, such as custom actions, require proper response implementation in the app code.
 :::
 
 ## Set up the AdaptyUIFlowsEventsObserver
@@ -35,6 +35,10 @@ AdaptyUI.setFlowsEventsObserver(MyAdaptyUIFlowsEventsObserver())
 ```
 
 All button actions arrive in the `flowViewDidPerformAction(view, action)` callback as an `AdaptyUIAction` sealed class: `CloseAction`, `AndroidSystemBackAction`, `OpenUrlAction`, or `CustomAction`.
+
+:::warning
+Overriding `flowViewDidPerformAction` replaces the default handling for **all** actions, not just the one you're interested in. Keep the default branches for `CloseAction` (dismiss the flow) and `OpenUrlAction` (open the URL) unless you mean to change them, as shown in the examples below.
+:::
 
 ## Close flows and paywalls
 
@@ -52,11 +56,15 @@ import com.adapty.kmp.AdaptyUI
 import com.adapty.kmp.AdaptyUIFlowsEventsObserver
 import com.adapty.kmp.models.AdaptyUIAction
 import com.adapty.kmp.models.AdaptyUIFlowView
+import kotlinx.coroutines.launch
 
 class MyAdaptyUIFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
     override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
         when (action) {
-            AdaptyUIAction.CloseAction -> view.dismiss() // default behavior
+            is AdaptyUIAction.CloseAction ->
+                mainUiScope.launch { view.dismiss() } // default behavior
+            is AdaptyUIAction.OpenUrlAction ->
+                AdaptyUI.openWebUrl(action.url, action.openIn) // default behavior
             else -> Unit
         }
     }
@@ -76,8 +84,12 @@ Pressing the Android system back button (or using the back gesture) emits `Adapt
 class MyAdaptyUIFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
     override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
         when (action) {
-            AdaptyUIAction.CloseAction -> view.dismiss() // default behavior
-            AdaptyUIAction.AndroidSystemBackAction -> view.dismiss() // not handled by default
+            is AdaptyUIAction.CloseAction ->
+                mainUiScope.launch { view.dismiss() } // default behavior
+            is AdaptyUIAction.AndroidSystemBackAction ->
+                mainUiScope.launch { view.dismiss() } // not handled by default
+            is AdaptyUIAction.OpenUrlAction ->
+                AdaptyUI.openWebUrl(action.url, action.openIn) // default behavior
             else -> Unit
         }
     }
@@ -90,14 +102,9 @@ class MyAdaptyUIFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
 If you want to add a group of links (e.g., terms of use and purchase restoration), add a **Link** element in the builder and handle it the same way as buttons with the **Open URL** action.
 :::
 
-To add a button that opens a link from your flow or paywall (e.g., **Terms of use** or **Privacy policy**):
+To add a button that opens a link from your flow or paywall (e.g., **Terms of use** or **Privacy policy**), in the builder, add a button, assign it the **Open URL** action, and enter the URL you want to open.
 
-1. In the builder, add a button, assign it the **Open URL** action, and enter the URL you want to open.
-2. In your app code, implement a handler for the `openUrl` action that opens the received URL in a browser.
-
-:::info
-In the Kotlin Multiplatform SDK, the `OpenUrlAction` provides the URL that should be opened. You can implement custom logic to handle URL opening, such as showing a confirmation dialog or using your app's preferred URL handling method.
-:::
+By default, the SDK opens the received URL natively — in an external or in-app browser, depending on `action.openIn` — so no code is required. Override the handler only if you want custom logic, such as showing a confirmation dialog first:
 
 ```kotlin
 import androidx.compose.ui.platform.UriHandler
@@ -107,6 +114,7 @@ import com.adapty.kmp.models.AdaptyUIAction
 import com.adapty.kmp.models.AdaptyUIDialogActionType
 import com.adapty.kmp.models.AdaptyUIFlowView
 import com.adapty.kmp.models.getOrNull
+import kotlinx.coroutines.launch
 
 class MyAdaptyUIFlowsEventsObserver(
     private val uriHandler: UriHandler

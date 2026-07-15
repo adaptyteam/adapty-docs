@@ -3,7 +3,7 @@ title: "Handle flow & paywall events - Kotlin Multiplatform"
 description: "Handle flow and paywall events in your Kotlin Multiplatform app."
 metadataTitle: "Handle Flow Events - Kotlin Multiplatform | Adapty Docs"
 toc_max_heading_level: 4
-keywords: ['AdaptyUIFlowsEventsObserver', 'flowViewDidPerformAction', 'flowViewDidSelectProduct', 'flowViewDidStartPurchase', 'flowViewDidFinishPurchase', 'flowViewDidFailPurchase', 'flowViewDidStartRestore', 'flowViewDidFinishRestore', 'flowViewDidFailRestore', 'flowViewDidFailLoadingProducts', 'flowViewDidFail', 'AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+keywords: ['AdaptyUIFlowsEventsObserver', 'flowViewDidPerformAction', 'flowViewDidSelectProduct', 'flowViewDidStartPurchase', 'flowViewDidFinishPurchase', 'flowViewDidFailPurchase', 'flowViewDidStartRestore', 'flowViewDidFinishRestore', 'flowViewDidFailRestore', 'flowViewDidFailLoadingProducts', 'flowViewDidReceiveError', 'AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
 
 import Zoom from 'react-medium-image-zoom';
@@ -28,7 +28,7 @@ AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
 ```
 
 :::note
-These methods are where you add your custom logic to respond to flow events. You can use `view.dismiss()` to close the flow, or implement any other custom behavior you need.
+These methods are where you add your custom logic to respond to flow events. You can use `view.dismiss()` to close the flow, or implement any other custom behavior you need. Note that `dismiss()` is a suspend function — inside a callback, launch it on the observer's `mainUiScope`: `mainUiScope.launch { view.dismiss() }`.
 :::
 
 ### User-generated events
@@ -103,7 +103,7 @@ override fun flowViewDidStartPurchase(view: AdaptyUIFlowView, product: AdaptyPay
 ```
 
 :::note
-In [Observer mode](kmp-present-flows-in-observer-mode), purchases started from a flow are delivered through dedicated observer-mode callbacks instead.
+In [Observer mode](kmp-present-flows-in-observer-mode), purchases started from a flow are delivered to your `AdaptyUIObserverModeResolver` instead.
 :::
 
 <Details>
@@ -137,7 +137,7 @@ override fun flowViewDidFinishPurchase(
         is AdaptyPurchaseResult.Success -> {
             // Check if user has access to premium features
             if (purchaseResult.profile.accessLevels["premium"]?.isActive == true) {
-                view.dismiss()
+                mainUiScope.launch { view.dismiss() }
             }
         }
         AdaptyPurchaseResult.Pending -> {
@@ -264,7 +264,7 @@ override fun flowViewDidStartRestore(view: AdaptyUIFlowView) {
 
 #### Successful restore
 
-If restoring a purchase succeeds, this method will be invoked:
+If restoring a purchase succeeds, this method will be invoked. By default, it does nothing — the flow stays open after the restore until you dismiss it:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun flowViewDidFinishRestore(view: AdaptyUIFlowView, profile: AdaptyProfile) {
@@ -273,7 +273,7 @@ override fun flowViewDidFinishRestore(view: AdaptyUIFlowView, profile: AdaptyPro
 
     // Check if user has access to premium features
     if (profile.accessLevels["premium"]?.isActive == true) {
-        view.dismiss()
+        mainUiScope.launch { view.dismiss() }
     }
 }
 ```
@@ -412,13 +412,13 @@ override fun flowViewDidFailLoadingProducts(view: AdaptyUIFlowView, error: Adapt
 
 #### Rendering and runtime errors
 
-If an error occurs during the interface rendering, or another non-purchase runtime error occurs, it will be reported by this method:
+If an error occurs during the interface rendering, or another non-purchase runtime error occurs, it will be reported by this method. By default, the flow is dismissed on error — override the method to keep it open or add your own handling:
 
 ```kotlin showLineNumbers title="Kotlin"
-override fun flowViewDidFail(view: AdaptyUIFlowView, error: AdaptyError) {
+override fun flowViewDidReceiveError(view: AdaptyUIFlowView, error: AdaptyError) {
     // Handle the error
-    // In a normal situation, such errors should not occur
-    // If you come across one, please let us know
+    // The default implementation dismisses the flow;
+    // once you override this method, dismissal is up to you
 }
 ```
 
@@ -440,6 +440,20 @@ override fun flowViewDidFail(view: AdaptyUIFlowView, error: AdaptyError) {
 
 In a normal situation, such errors should not occur, so if you come across one, please let us know.
 
+#### Analytics events
+
+The `flowViewDidReceiveAnalyticEvent` callback is reserved for custom analytic events from a flow. Flows don't emit these events to your code yet, so you don't need to implement it:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String
+) {
+    // Reserved for custom analytic events from a flow
+}
+```
+
 ### Navigation
 
 #### Android system back button
@@ -449,8 +463,12 @@ By default, a flow can't be dismissed with the Android system back button or bac
 ```kotlin showLineNumbers title="Kotlin"
 override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
     when (action) {
-        AdaptyUIAction.CloseAction -> view.dismiss() // default behavior
-        AdaptyUIAction.AndroidSystemBackAction -> view.dismiss() // not handled by default
+        is AdaptyUIAction.CloseAction ->
+            mainUiScope.launch { view.dismiss() } // default behavior
+        is AdaptyUIAction.AndroidSystemBackAction ->
+            mainUiScope.launch { view.dismiss() } // not handled by default
+        is AdaptyUIAction.OpenUrlAction ->
+            AdaptyUI.openWebUrl(action.url, action.openIn) // default behavior
         else -> Unit
     }
 }
