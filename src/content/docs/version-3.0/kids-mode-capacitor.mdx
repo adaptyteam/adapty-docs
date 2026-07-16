@@ -55,7 +55,34 @@ try {
 
 ### Platform-specific configurations
 
-#### iOS: Enable Kids Mode using CocoaPods
+#### iOS
+
+<SDKv4>
+
+Even with IDFA collection disabled in code (above), your build still includes the `AdSupport` framework. The App Store Kids Category doesn't allow it. And because the v4 SDK installs the native iOS SDK through Swift Package Manager, there's no Podfile step to strip that framework.
+
+To comply with Apple's requirements, add the `adapty-kids-mode` command shipped with the SDK to your app's `postinstall`. The limitations will be re-applied on every install:
+
+```json showLineNumbers title="package.json"
+{
+  "scripts": {
+    "postinstall": "adapty-kids-mode"
+  }
+}
+```
+
+Then reinstall + re-resolve the iOS packages, and build with **Xcode 26** or later:
+
+```sh showLineNumbers title="Shell"
+npm install
+npx cap sync ios
+```
+
+To turn Kids Mode off, run `adapty-kids-mode disable` and sync again.
+
+</SDKv4>
+
+<SDKv3>
 
 If you're using CocoaPods for iOS, you can also enable Kids Mode at the native level:
 
@@ -96,19 +123,28 @@ If you're using CocoaPods for iOS, you can also enable Kids Mode at the native l
    pod install
    ```
 
-#### Android: Enable Kids Mode using Gradle
+</SDKv3>
 
-For Android, you can also enable Kids Mode at the native level by adding the following to your app's `build.gradle`:
+#### Android: remove the advertising ID permission
 
-```groovy showLineNumbers title="android/app/build.gradle"
-android {
-    defaultConfig {
-        // ... existing config ...
+Setting `adIdCollectionDisabled: true` (above) stops Adapty from collecting the advertising ID, but the SDK still declares the `AD_ID` permission. If your app targets children **only** and compiles against Android 13 (API 33) or higher, Google Play prohibits you from even requesting it.
 
-        // Enable Kids Mode
-        buildConfigField "boolean", "ADAPTY_KIDS_MODE", "true"
-    }
-}
+Make two additions to your `<manifest>` element:
+
+1. Declare the `tools` namespace (Capacitor's default manifest omits it).
+2. Add a `<uses-permission>` entry for `AD_ID` with `tools:node="remove"` to strip it.
+
+```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
+
+    <!-- your existing manifest content -->
+</manifest>
 ```
 
 ## Next steps
