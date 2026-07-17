@@ -49,17 +49,45 @@ try {
 }
 ```
 
-### 平台专属配置 \{#platform-specific-configurations\}
+### 平台特定配置 \{#platform-specific-configurations\}
 
-#### iOS：通过 CocoaPods 启用儿童模式 \{#ios-enable-kids-mode-using-cocoapods\}
+#### iOS \{#ios\}
 
-如果你在 iOS 项目中使用 CocoaPods，也可以在原生层面启用儿童模式：
+<SDKv4>
 
-1. 更新你的 Podfile：
+即使在代码中禁用了 IDFA 收集（如上所述），您的构建文件仍然包含 `AdSupport` 和 `AppTrackingTransparency` 框架。App Store 儿童类别不允许使用这些框架。由于 v4 SDK 通过 Swift Package Manager 安装原生 iOS SDK，因此无法通过 Podfile 步骤将其移除。
 
-   - 如果你**没有** `post_install` 部分，请添加下方完整代码块。
+为符合 Apple 的要求，请将 SDK 自带的 `adapty-kids-mode` 命令添加到您应用的 `postinstall` 中。该命令会启用 SDK 的 `KidsMode` 特性，从而在编译时排除相关代码。每次执行 install 时该命令都会重新生效：
+
+```json showLineNumbers title="package.json"
+{
+  "scripts": {
+    "postinstall": "adapty-kids-mode"
+  }
+}
+```
+
+然后重新安装并重新解析 iOS 包，并使用 **Xcode 26** 或更高版本进行构建：
+
+```sh showLineNumbers title="Shell"
+npm install
+npx cap sync ios
+```
+
+如需关闭 Kids Mode，运行 `adapty-kids-mode disable` 并再次同步。
+
+</SDKv4>
+
+<SDKv3>
+
+如果您在 iOS 上使用 CocoaPods，也可以在原生层面启用 Kids Mode：
+
+1. 更新您的 Podfile：
+
+- 如果你**没有** `post_install` 部分，请添加下方的完整代码块。
    - 如果你**已有** `post_install` 部分，请将高亮行合并进去。
-```ruby showLineNumbers title="Podfile"
+
+   ```ruby showLineNumbers title="Podfile"
    def adapty_enable_kids_mode(installer)
      installer.pods_project.targets.each do |target|
        next unless target.name == 'Adapty'
@@ -77,32 +105,42 @@ try {
        File.write(xc, File.read(xc).gsub(/\s*-framework\s+"?AdSupport"?/, ''))
      end
    end
-```groovy showLineNumbers title="build.gradle"
-   android {
-     defaultConfig {
-       manifestPlaceholders = [AdaptyKidsMode: "true"]
-     }
-   }
+
+   post_install do |installer|
+     # ... keep your existing post_install body (Flutter adds one automatically) ...
+
+     adapty_enable_kids_mode(installer)   # <-- enable Adapty Kids Mode
+   end
    ```
 
-2. 运行以下命令应用更改：
+2. 运行以下命令以应用更改：
 
    ```sh showLineNumbers title="Shell"
    pod install
    ```
 
-#### Android：使用 Gradle 启用儿童模式 \{#android-enable-kids-mode-using-gradle\}
+</SDKv3>
 
-对于 Android，你也可以通过在应用的 `build.gradle` 中添加以下内容，在原生层启用儿童模式：
-```groovy showLineNumbers title="android/app/build.gradle"
-android {
-    defaultConfig {
-        // ... existing config ...
+#### Android：移除广告 ID 权限 \{#android-remove-the-advertising-id-permission\}
 
-        // Enable Kids Mode
-        buildConfigField "boolean", "ADAPTY_KIDS_MODE", "true"
-    }
-}
+将 `adIdCollectionDisabled: true`（如上所示）设置后，Adapty 将停止收集广告 ID，但 SDK 仍会声明 `AD_ID` 权限。如果你的应用仅面向儿童，且编译目标为 Android 13（API 33）或更高版本，Google Play 将禁止你申请该权限。
+
+在 `<manifest>` 元素中添加以下两项内容：
+
+1. 声明 `tools` 命名空间（Capacitor 的默认清单文件中未包含此命名空间）。
+2. 添加一个带有 `tools:node="remove"` 属性的 `<uses-permission>` 条目，用于移除 `AD_ID` 权限。
+
+```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
+
+    <!-- your existing manifest content -->
+</manifest>
 ```
 
 ## 后续步骤 \{#next-steps\}
