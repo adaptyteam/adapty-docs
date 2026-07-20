@@ -1,0 +1,326 @@
+---
+title: "Gestión de errores en el SDK de Kotlin Multiplatform"
+description: "Aprende a gestionar errores en tu app de Kotlin Multiplatform con Adapty."
+metadataTitle: "Gestión de errores | SDK de Kotlin Multiplatform | Documentación de Adapty"
+displayed_sidebar: sdkkmp
+---
+
+Esta página cubre la gestión de errores en el SDK de Adapty para Kotlin Multiplatform.
+
+## Conceptos básicos de gestión de errores \{#error-handling-basics\}
+
+Todos los métodos del SDK de Adapty devuelven resultados que pueden ser éxito o error. Gestiona siempre ambos casos:
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+            // Handle success
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // Handle error
+            Log.e("Adapty", "Error: ${error.message}")
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        // Handle success
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // Handle error
+        Log.e("Adapty", "Error: " + error.getMessage());
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+## Códigos de error más comunes \{#common-error-codes\}
+
+| Código de error | Descripción | Solución |
+|------------|-------------|----------|
+| 1000 | No se encontraron IDs de producto | Revisa la configuración de productos en el dashboard |
+| 1001 | Error de red | Verifica la conexión a internet |
+| 1002 | Clave SDK inválida | Verifica tu clave SDK |
+| 1003 | No se pueden realizar pagos | El dispositivo no admite pagos |
+| 1004 | Producto no disponible | El producto no está configurado en el store |
+
+## Gestión de errores específicos \{#handle-specific-errors\}
+
+### Errores de red \{#network-errors\}
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+Adapty.getPaywall("main") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            // Use paywall
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            when (error.code) {
+                1001 -> {
+                    // Network error - show offline message
+                    showOfflineMessage()
+                }
+                else -> {
+                    // Other errors
+                    showErrorMessage(error.message)
+                }
+            }
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+Adapty.getPaywall("main", result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+        // Use paywall
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        switch (error.getCode()) {
+            case 1001:
+                // Network error - show offline message
+                showOfflineMessage();
+                break;
+            default:
+                // Other errors
+                showErrorMessage(error.getMessage());
+                break;
+        }
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+### Errores de compra \{#purchase-errors\}
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+product.makePurchase { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val purchase = result.value
+            // Purchase successful
+            showSuccessMessage()
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            when (error.code) {
+                1003 -> {
+                    // Can't make payments
+                    showPaymentNotAvailableMessage()
+                }
+                1004 -> {
+                    // Product not available
+                    showProductNotAvailableMessage()
+                }
+                else -> {
+                    // Other purchase errors
+                    showPurchaseErrorMessage(error.message)
+                }
+            }
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+product.makePurchase(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyPurchase purchase = ((AdaptyResult.Success<AdaptyPurchase>) result).getValue();
+        // Purchase successful
+        showSuccessMessage();
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        switch (error.getCode()) {
+            case 1003:
+                // Can't make payments
+                showPaymentNotAvailableMessage();
+                break;
+            case 1004:
+                // Product not available
+                showProductNotAvailableMessage();
+                break;
+            default:
+                // Other purchase errors
+                showPurchaseErrorMessage(error.getMessage());
+                break;
+        }
+    }
+});
+```
+</TabItem>
+</Tabs>
+
+## Estrategias de recuperación ante errores \{#error-recovery-strategies\}
+
+### Reintentar en errores de red \{#retry-on-network-errors\}
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+fun getPaywallWithRetry(placementId: String, maxRetries: Int = 3) {
+    var retryCount = 0
+    
+    fun attemptGetPaywall() {
+        Adapty.getPaywall(placementId) { result ->
+            when (result) {
+                is AdaptyResult.Success -> {
+                    val paywall = result.value
+                    // Use paywall
+                }
+                is AdaptyResult.Error -> {
+                    val error = result.error
+                    if (error.code == 1001 && retryCount < maxRetries) {
+                        // Network error - retry
+                        retryCount++
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            attemptGetPaywall()
+                        }, 1000 * retryCount) // Exponential backoff
+                    } else {
+                        // Max retries reached or other error
+                        showErrorMessage(error.message)
+                    }
+                }
+            }
+        }
+    }
+    
+    attemptGetPaywall()
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+public void getPaywallWithRetry(String placementId, int maxRetries) {
+    AtomicInteger retryCount = new AtomicInteger(0);
+    
+    Runnable attemptGetPaywall = new Runnable() {
+        @Override
+        public void run() {
+            Adapty.getPaywall(placementId, result -> {
+                if (result instanceof AdaptyResult.Success) {
+                    AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+                    // Use paywall
+                } else if (result instanceof AdaptyResult.Error) {
+                    AdaptyError error = ((AdaptyResult.Error) result).getError();
+                    if (error.getCode() == 1001 && retryCount.get() < maxRetries) {
+                        // Network error - retry
+                        retryCount.incrementAndGet();
+                        new Handler(Looper.getMainLooper()).postDelayed(this, 1000 * retryCount.get());
+                    } else {
+                        // Max retries reached or other error
+                        showErrorMessage(error.getMessage());
+                    }
+                }
+            });
+        }
+    };
+    
+    attemptGetPaywall.run();
+}
+```
+</TabItem>
+</Tabs>
+
+### Recurrir a datos en caché \{#fallback-to-cached-data\}
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+class PaywallManager {
+    private var cachedPaywall: AdaptyPaywall? = null
+    
+    fun getPaywall(placementId: String) {
+        Adapty.getPaywall(placementId) { result ->
+            when (result) {
+                is AdaptyResult.Success -> {
+                    val paywall = result.value
+                    cachedPaywall = paywall
+                    showPaywall(paywall)
+                }
+                is AdaptyResult.Error -> {
+                    val error = result.error
+                    if (error.code == 1001 && cachedPaywall != null) {
+                        // Network error - use cached paywall
+                        showPaywall(cachedPaywall!!)
+                        showOfflineIndicator()
+                    } else {
+                        // No cache available or other error
+                        showErrorMessage(error.message)
+                    }
+                }
+            }
+        }
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+public class PaywallManager {
+    private AdaptyPaywall cachedPaywall;
+    
+    public void getPaywall(String placementId) {
+        Adapty.getPaywall(placementId, result -> {
+            if (result instanceof AdaptyResult.Success) {
+                AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
+                cachedPaywall = paywall;
+                showPaywall(paywall);
+            } else if (result instanceof AdaptyResult.Error) {
+                AdaptyError error = ((AdaptyResult.Error) result).getError();
+                if (error.getCode() == 1001 && cachedPaywall != null) {
+                    // Network error - use cached paywall
+                    showPaywall(cachedPaywall);
+                    showOfflineIndicator();
+                } else {
+                    // No cache available or other error
+                    showErrorMessage(error.getMessage());
+                }
+            }
+        });
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## Próximos pasos \{#next-steps\}
+
+- [Solución para el error Code-1000 noProductIDsFound](InvalidProductIdentifiers-kmp)
+- [Solución para el error Code-1003 cantMakePayments](cantMakePayments-kmp)
+- [Referencia completa de la API](https://android.adapty.io) - Documentación completa del SDK
