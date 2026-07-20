@@ -26,6 +26,10 @@
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --incremental --batch --only-files "src/content/docs/foo.mdx"
  *                                                                                              # incremental + Batch API (50% off), CI default
  *   node scripts/translate.mjs --incremental --batch --dry-run --only-files "..."             # show batch plan without submitting (no API key needed)
+ *   node scripts/translate.mjs --lang zh --seed-only                                          # backfill section caches from existing translations for
+ *                                                                                              # provably up-to-date files (stored fileHash matches current
+ *                                                                                              # English). Zero API calls, no API key needed. Changed files
+ *                                                                                              # are reported and left for a real run.
  */
 
 import fs from "node:fs/promises";
@@ -47,6 +51,11 @@ const SIDEBARS_DIR = path.resolve(__dirname, "../src/data/sidebars");
 const LOCALES_BASE = path.resolve(__dirname, "../src/locales");
 const BATCH_ID_FILE = path.resolve(__dirname, "../.translate-batch-id");
 const API_SPECS_DIR = path.resolve(__dirname, "../src/api-reference/specs");
+
+// API specs that must never be translated. Filtered out at collection time in
+// translateApiSpecsForLang, so no mode (full run, --incremental, --only-files,
+// --file) can see them. Basenames without extension.
+const UNTRANSLATED_SPECS = new Set(["developer-api"]);
 const REUSABLE_DIR = path.resolve(__dirname, "../src/components/reusable");
 
 const LANGUAGE_NAMES = {
@@ -90,7 +99,13 @@ const langIdx = args.indexOf("--lang");
 const lang = langIdx !== -1 ? args[langIdx + 1] : null;
 
 const flagAll = args.includes("--all");
-const flagIncremental = args.includes("--incremental");
+// --seed-only: build section-level hash caches from existing translations for
+// files whose stored fileHash matches the current English (i.e. provably
+// up-to-date), then exit — zero API calls, no API key needed. Files that
+// changed (or have no trustworthy hash) are reported and left for a real run.
+// Backfill tool for fileHash-only caches produced by the whole-file batch path.
+const flagSeedOnly = args.includes("--seed-only");
+const flagIncremental = args.includes("--incremental") || flagSeedOnly;
 const flagSync = args.includes("--sync");
 const flagBatch = args.includes("--batch");
 const flagDryRun = args.includes("--dry-run");
@@ -401,7 +416,7 @@ function cachedSystem(text) {
 async function main() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
-  if (!apiKey && !flagDryRun) {
+  if (!apiKey && !flagDryRun && !flagSeedOnly) {
     if (flagIncremental) {
       console.error(
         "[translate] No ANTHROPIC_API_KEY set — cannot run incremental translation.",
@@ -487,6 +502,9 @@ async function main() {
     function collectIds(items) {
       for (const item of items) {
         if (item.id) sidebarReferencedIds.add(item.id);
+        // Category landing pages — same shape as in getAllSidebarIds.
+        if (item.link?.type === "doc" && item.link.id)
+          sidebarReferencedIds.add(item.link.id);
         if (item.items) collectIds(item.items);
       }
     }
@@ -529,12 +547,13 @@ async function main() {
       // translating all 60+ snippets when only one article is requested.
       // To translate reusables in isolation: --reusables [--lang xx]
       if (
-        (!sidebarName &&
+        !flagSeedOnly &&
+        ((!sidebarName &&
           !flagSidebarsOnly &&
           !fileId &&
           !fileIds &&
           !platform) ||
-        flagReusables
+          flagReusables)
       ) {
         await translateReusableForLang(
           client,
@@ -586,7 +605,7 @@ async function main() {
       }
 
       // Sidebars are not file/platform-specific; skip for --file/--ids and --reusables targeting
-      if (!fileId && !fileIds && !flagReusables) {
+      if (!fileId && !fileIds && !flagReusables && !flagSeedOnly) {
         await translateSidebarsForLang(
           client,
           currentLang,
@@ -601,7 +620,7 @@ async function main() {
       }
     }
 
-    if (flagApiSpecs || flagIncremental || isFullRun) {
+    if (!flagSeedOnly && (flagApiSpecs || flagIncremental || isFullRun)) {
       await translateApiSpecsForLang(
         client,
         currentLang,
@@ -732,15 +751,26 @@ async function translateForLang(
         // changed in this commit, so trust that signal and translate it even without
         // a stored hash to compare against.
         const explicitlyChanged = onlyDocIds?.has(basename);
-        if (!explicitlyChanged) {
+        // Under --seed-only, never apply this heuristic: it assumes the
+        // existing translation matches the CURRENT English, which cannot be
+        // verified without a stored hash. Seed-only must not freeze
+        // potentially-stale translations; such files are reported instead.
+        if (!explicitlyChanged && !flagSeedOnly) {
           try {
             await fs.access(translatedPath);
-            await fs.mkdir(hashesDir, { recursive: true });
-            await fs.writeFile(
-              path.join(hashesDir, `${basename}.json`),
-              JSON.stringify({ fileHash: currentHash }),
-              "utf-8",
-            );
+            // CAUTION: this records the existing translation as CURRENT for
+            // today's English — sound for cold-cache recovery, but wrong if
+            // the translation is actually stale (e.g. its hash file was
+            // deleted by a repair-or-revert and the English moved on). Keep
+            // dry-run strictly read-only so audits can't freeze stale files.
+            if (!flagDryRun) {
+              await fs.mkdir(hashesDir, { recursive: true });
+              await fs.writeFile(
+                path.join(hashesDir, `${basename}.json`),
+                JSON.stringify({ fileHash: currentHash }),
+                "utf-8",
+              );
+            }
             toSeed.push(file);
             continue; // already translated — record hash + queue section seeding
           } catch {
@@ -765,7 +795,7 @@ async function translateForLang(
   // Seed section caches for up-to-date files that have no section-level cache.
   // This runs synchronously before translation so that subsequent incremental runs
   // on any of these files can use patchCodeBlocks instead of retranslating everything.
-  if (toSeed.length > 0 && flagIncremental && syncMode) {
+  if (toSeed.length > 0 && flagIncremental && (syncMode || flagSeedOnly)) {
     for (const file of toSeed) {
       try {
         await seedSectionCache(file, localesDir, hashesDir, lang);
@@ -773,6 +803,18 @@ async function translateForLang(
         /* seeding is best-effort — don't abort the run */
       }
     }
+  }
+
+  if (flagSeedOnly) {
+    console.log(
+      `${tag} Seed-only: ${toSeed.length} up-to-date file(s) checked for seeding.` +
+        (toTranslate.length > 0
+          ? ` ${toTranslate.length} file(s) changed or lack a trustworthy hash and were NOT seeded — they need a real translation run: ${toTranslate
+              .map((f) => path.basename(f, ".mdx"))
+              .join(", ")}`
+          : " Nothing needs translation."),
+    );
+    return;
   }
 
   if (toTranslate.length === 0) {
@@ -1112,7 +1154,7 @@ async function translateFileWithSections(
     // without needing an explicit stale invalidation.
     if (storedData?.sections) {
       const cacheIds = Object.keys(storedData.sections);
-      const hasOldPositionalIds = cacheIds.some((id) => /-p\d+$/.test(id));
+      const hasOldPositionalIds = cacheIds.some(isLegacyPositionalId);
       if (hasOldPositionalIds) {
         storedData = { fileHash: storedData.fileHash };
       }
@@ -1125,13 +1167,17 @@ async function translateFileWithSections(
   // Covers files translated via batch (which stores only fileHash, no sections),
   // and the post-migration run where the cache was discarded due to stale IDs.
   //
-  // Para chunks are only seeded when the file hash is unchanged (cold cache recovery).
-  // When the file has changed (we are in toTranslate), para chunks are intentionally
-  // NOT seeded: seeding stores the current English hash as contentHash, which would
-  // make prose-changed paragraphs look like cache hits, causing the zh to go stale.
-  // Heading sections are always safe to seed (they are structural, never sent to Claude).
-  const fileHashChanged =
-    storedData?.fileHash && storedData.fileHash !== (await fileHash(file));
+  // Seeding is only sound when the stored fileHash matches the current file —
+  // that proves the on-disk translation corresponds to the CURRENT English.
+  // When the file changed, or no fileHash is recorded at all (hash file deleted,
+  // e.g. by check-mdx-parse --repair-broken-locales), pairing the current English
+  // with the old translation stamps changed sections with the current content
+  // hash — fabricated cache hits that silently freeze the translation. This
+  // applies to heading sections too: sections ≤ PARAGRAPH_FALLBACK_CHARS are
+  // sent to Claude whole, so a stale heading-section seed suppresses real edits.
+  // Without seeding, uncached sections simply go to Claude.
+  const canSeedFromTranslation =
+    storedData?.fileHash === (await fileHash(file));
   if (!storedData?.sections) {
     const translatedPath = path.join(localesDir, `${basename}.mdx`);
     try {
@@ -1144,7 +1190,11 @@ async function translateFileWithSections(
         splitIntoSections(existingTranslation, { paragraphFallback: false }),
       );
 
-      if (engHeadSecs.length !== zhHeadSecs.length) {
+      if (!canSeedFromTranslation) {
+        console.warn(
+          `  ⚠ ${basename}: section cache missing and file changed since last recorded translation — seeding skipped; uncached sections will be retranslated`,
+        );
+      } else if (engHeadSecs.length !== zhHeadSecs.length) {
         console.warn(
           `  ⚠ ${basename}: inline seed skipped — heading count mismatch (en=${engHeadSecs.length}, locale=${zhHeadSecs.length}); all uncached sections will be retranslated`,
         );
@@ -1166,7 +1216,7 @@ async function translateFileWithSections(
             paraSkipReasons.push(s.id);
           }
         }
-        if (paraSkipReasons.length > 0 && !fileHashChanged) {
+        if (paraSkipReasons.length > 0) {
           console.warn(
             `  ⚠ ${basename}: inline seed skipped para-chunks for ${paraSkipReasons.length} heading section(s) [${paraSkipReasons.slice(0, 3).join(", ")}${paraSkipReasons.length > 3 ? ", …" : ""}] — en/locale block-count mismatch; any prose edit in those sections retranslates them whole`,
           );
@@ -1178,8 +1228,7 @@ async function translateFileWithSections(
           if (!isParaChunk) {
             const zhContent = zhByHeadId.get(s.id);
             if (zhContent) seeded[s.id] = makeSeedEntry(s.content, zhContent);
-          } else if (!fileHashChanged) {
-            // Skip para chunk seeding when file changed — prose-changed chunks must go to Claude.
+          } else {
             const headId = s.id.replace(/-p[0-9a-f]{8}$/, "");
             const pairs = paraChunksByHead.get(headId);
             if (!pairs) continue;
@@ -1407,7 +1456,7 @@ async function buildSectionPlan(file, lang, localesDir, hashesDir) {
     storedData = JSON.parse(await fs.readFile(hashFile, "utf-8"));
     if (storedData?.sections) {
       const cacheIds = Object.keys(storedData.sections);
-      if (cacheIds.some((id) => /-p\d+$/.test(id))) {
+      if (cacheIds.some(isLegacyPositionalId)) {
         storedData = { fileHash: storedData.fileHash };
       }
     }
@@ -1416,11 +1465,15 @@ async function buildSectionPlan(file, lang, localesDir, hashesDir) {
   }
 
   const fileHashCurrent = await fileHash(file);
-  const fileHashChanged =
-    storedData?.fileHash && storedData.fileHash !== fileHashCurrent;
 
   // Seed from existing translation when no section cache exists.
-  // Mirrors translateFileWithSections:711-762.
+  // Mirrors translateFileWithSections — see the guard rationale there: seeding
+  // is only sound when the stored fileHash matches the current file, proving
+  // the on-disk translation corresponds to the CURRENT English. Otherwise the
+  // seed would stamp changed sections (heading sections included — short ones
+  // are sent to Claude whole) with the current content hash, turning real
+  // edits into fabricated cache hits that silently freeze the translation.
+  const canSeedFromTranslation = storedData?.fileHash === fileHashCurrent;
   if (!storedData?.sections) {
     const translatedPath = path.join(localesDir, `${basename}.mdx`);
     try {
@@ -1432,7 +1485,11 @@ async function buildSectionPlan(file, lang, localesDir, hashesDir) {
         splitIntoSections(existingTranslation, { paragraphFallback: false }),
       );
 
-      if (engHeadSecs.length === zhHeadSecs.length) {
+      if (!canSeedFromTranslation) {
+        console.warn(
+          `  ⚠ ${basename}: section cache missing and file changed since last recorded translation — seeding skipped; uncached sections will be retranslated`,
+        );
+      } else if (engHeadSecs.length === zhHeadSecs.length) {
         const zhByHeadId = new Map(
           engHeadSecs.map((s, i) => [s.id, zhHeadSecs[i].content]),
         );
@@ -1449,7 +1506,7 @@ async function buildSectionPlan(file, lang, localesDir, hashesDir) {
           if (!isParaChunk) {
             const zhContent = zhByHeadId.get(s.id);
             if (zhContent) seeded[s.id] = makeSeedEntry(s.content, zhContent);
-          } else if (!fileHashChanged) {
+          } else {
             const headId = s.id.replace(/-p[0-9a-f]{8}$/, "");
             const pairs = paraChunksByHead.get(headId);
             if (!pairs) continue;
@@ -1520,7 +1577,14 @@ async function buildSectionPlan(file, lang, localesDir, hashesDir) {
     }
   }
 
-  return { basename, sections, decisions, storedSections, fileHashCurrent };
+  return {
+    basename,
+    sections,
+    decisions,
+    storedSections,
+    fileHashCurrent,
+    storedFileHash: storedData?.fileHash ?? null,
+  };
 }
 
 /**
@@ -1780,6 +1844,24 @@ async function translateBatchSections(
       );
       written++;
       console.log(`  ✓ ${plan.basename}`);
+    } else if (
+      plan.storedFileHash !== plan.fileHashCurrent &&
+      !flagDryRun
+    ) {
+      // All sections were cache hits but the stored fileHash drifted (an edit
+      // whose resulting sections were all already cached, e.g. content moved
+      // across chunk boundaries). The locale .mdx is already correct — refresh
+      // only the hash file so the file stops being re-planned on every run.
+      await fs.mkdir(hashesDir, { recursive: true });
+      await fs.writeFile(
+        path.join(hashesDir, `${plan.basename}.json`),
+        JSON.stringify({
+          fileHash: plan.fileHashCurrent,
+          sections: newSections,
+        }),
+        "utf-8",
+      );
+      console.log(`  · ${plan.basename} (all cached, hash refreshed)`);
     } else {
       console.log(`  · ${plan.basename} (all cached, no write)`);
     }
@@ -2258,6 +2340,16 @@ async function translateReusableForLang(
   }
 
   console.log(`${tag} ${toTranslate.length} reusable snippet(s) to translate.`);
+
+  if (flagDryRun) {
+    console.log(
+      `${tag} Dry run — not submitting. Reusables that would be translated: ${toTranslate
+        .map((f) => f.name)
+        .join(", ")}`,
+    );
+    return;
+  }
+
   await fs.mkdir(reusableLocalesDir, { recursive: true });
   await fs.mkdir(reusableHashesDir, { recursive: true });
 
@@ -2282,7 +2374,9 @@ async function translateReusableForLang(
       const content = await fs.readFile(file.full, "utf-8");
       const response = await client.messages.create({
         model: "claude-sonnet-4-6",
-        max_tokens: 4096,
+        // 8192 (not 4096): translations of CJK/Vietnamese expand in output
+        // tokens; a ~9KB snippet truncated at 4096 (CrossPlatformErrors.md, vi)
+        max_tokens: 8192,
         system: cachedSystem(systemPrompt),
         messages: [{ role: "user", content }],
       });
@@ -2328,7 +2422,8 @@ async function translateReusableForLang(
           custom_id: `reusable_${file.basename}`,
           params: {
             model: "claude-sonnet-4-6",
-            max_tokens: 4096,
+            // 8192 — see the sync path above (vi truncation at 4096)
+            max_tokens: 8192,
             system: cachedSystem(systemPrompt),
             messages: [{ role: "user", content }],
           },
@@ -2910,7 +3005,8 @@ async function translateApiSpecsForLang(
       name: e.name,
       full: path.join(API_SPECS_DIR, e.name),
       basename: path.basename(e.name, ".yaml"),
-    }));
+    }))
+    .filter((s) => !UNTRANSLATED_SPECS.has(s.basename));
 
   // Apply --only-files filter
   if (onlySpecIds) {
@@ -3382,6 +3478,20 @@ function mergeYamlSections(originalDoc, existingLocaleDoc, newSectionContents) {
   return yaml.dump(merged, { lineWidth: -1, noRefs: true });
 }
 
+/**
+ * True for legacy positional para-chunk IDs ("h2-foo-p1", "h2-foo-p12") that
+ * predate the content-hash scheme and must invalidate the section cache.
+ *
+ * Modern chunk IDs end in exactly 8 hex chars ("h2-foo-p3f7c1b2a") — and a
+ * hex hash can come out all-digits (~2.3% of chunks), so "any digits after
+ * -p" is NOT a legacy marker. Treating it as one discards a healthy section
+ * cache and silently forces a full retranslation on every edit of any file
+ * that happens to contain such a chunk.
+ */
+export function isLegacyPositionalId(id) {
+  return /-p\d+$/.test(id) && !/-p[0-9a-f]{8}$/.test(id);
+}
+
 /** Append -2, -3 suffixes for duplicate section ids. */
 function deduplicateSectionIds(sections) {
   const counts = new Map();
@@ -3622,6 +3732,10 @@ async function getAllSidebarIds() {
   function extract(items) {
     for (const item of items) {
       if (item.id) ids.add(item.id);
+      // Category landing pages: { type: "category", link: { type: "doc", id } }.
+      // Missing them here silently excludes those articles from incremental
+      // translation — their locale files go permanently stale.
+      if (item.link?.type === "doc" && item.link.id) ids.add(item.link.id);
       if (item.items) extract(item.items);
     }
   }
@@ -3655,6 +3769,8 @@ async function getSidebarIds(platformName, tag) {
   function extract(items) {
     for (const item of items) {
       if (item.id) ids.add(item.id);
+      // Category landing pages — same shape as in getAllSidebarIds.
+      if (item.link?.type === "doc" && item.link.id) ids.add(item.link.id);
       if (item.items) extract(item.items);
     }
   }

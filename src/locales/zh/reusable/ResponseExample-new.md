@@ -1,3 +1,4 @@
+
 ```json showLineNumbers title="JSON"
 {
   "errors": {
