@@ -1,0 +1,229 @@
+---
+title: "Migrate Adapty Kotlin Multiplatform SDK to v. 4.0"
+description: "Migrate to Adapty Kotlin Multiplatform SDK v4.0 (beta) by replacing paywall APIs with flow APIs, compatible with both Flow Builder and Paywall Builder."
+metadataTitle: "Migrating to Adapty Kotlin Multiplatform SDK v4.0 (beta) | Adapty Docs"
+---
+
+Adapty Kotlin Multiplatform SDK 4.0 (beta) introduces flows and renames the paywall APIs accordingly. The new APIs work with both the new Flow Builder and the existing Paywall Builder — no setup changes are required on the Adapty Dashboard side.
+
+## Quick reference
+
+| v3 | v4 |
+|---|---|
+| `Adapty.getPaywall(placementId, locale)` | `Adapty.getFlow(placementId)` |
+| `Adapty.getPaywallForDefaultAudience(placementId, locale)` | `Adapty.getFlowForDefaultAudience(placementId)` |
+| `Adapty.getPaywallProducts(paywall)` | `Adapty.getPaywallProducts(flow)` |
+| `Adapty.logShowPaywall(paywall)` | `Adapty.logShowFlow(flow)` |
+| `AdaptyPaywall` | `AdaptyFlow` |
+| `AdaptyUI.createPaywallView(paywall, ...)` | `AdaptyUI.createFlowView(flow, ...)` |
+| `AdaptyUI.createNativePaywallView(...)` → `AdaptyNativePaywallView` | `AdaptyUI.createNativeFlowView(...)` → `AdaptyNativeFlowView` |
+| `AdaptyUIPaywallView` | `AdaptyUIFlowView` |
+| `AdaptyUI.presentPaywallView(view)` / `dismissPaywallView(view)` | `AdaptyUI.presentFlowView(view)` / `dismissFlowView(view)` |
+| `AdaptyUI.setPaywallsEventsObserver(observer)` | `AdaptyUI.setFlowsEventsObserver(observer)` |
+| `AdaptyUI.registerPaywallEventsListener` / `unregisterPaywallEventsListener` | `AdaptyUI.registerFlowEventsListener` / `unregisterFlowEventsListener` |
+| `AdaptyUIPaywallsEventsObserver` | `AdaptyUIFlowsEventsObserver` |
+| `AdaptyUIPaywallPlatformView(paywall, ...)` | `AdaptyUIFlowPlatformView(flow, ...)` |
+| `paywallViewDidPerformAction`, `paywallViewDidAppear`, and other `paywallView...` callbacks | `flowViewDidPerformAction`, `flowViewDidAppear`, and other `flowView...` callbacks |
+| `paywallViewDidFailRendering` | `flowViewDidReceiveError` |
+
+`AdaptyPaywallProduct` keeps its name — products still belong to a flow, and `getPaywallProducts` keeps its name too, now taking an `AdaptyFlow`. The `getFlow` and `getFlowForDefaultAudience` methods no longer take a `locale` parameter. The purchase and profile APIs (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) and fallbacks via `setFallback` are unchanged. The onboarding methods still work but are deprecated — see [Onboarding API deprecation](#onboarding-api-deprecation). Some default behaviors changed — see [Default behavior changes](#default-behavior-changes).
+
+## Installation
+
+v4.0 is a pre-release, so pin the exact version — Gradle does not select pre-release versions through dynamic ranges:
+
+```toml showLineNumbers title="libs.versions.toml"
+[versions]
+adapty-kmp = "4.0.0-beta.1"
+
+[libraries]
+adapty-kmp = { module = "io.adapty:adapty-kmp", version.ref = "adapty-kmp" }
+adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp" }
+```
+
+The `adapty-kmp-ui` module is only needed if you render flows and paywalls with the Compose Multiplatform layer (`view.present()`). See [Install Adapty SDK](sdk-installation-kotlin-multiplatform) for the full setup.
+
+The underlying native Adapty SDKs are bumped to 4.0.0 on both platforms and are resolved automatically — no build changes are needed. The iOS deployment target stays **15.0**, unchanged by this release.
+
+## Fetching flows
+
+### getPaywall → getFlow
+
+The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale` parameter is removed — when you render a flow, the locale is resolved automatically; for custom paywalls, all locales are returned in `flow.remoteConfigs`:
+
+```diff showLineNumbers
+- Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en")
+-     .onSuccess { paywall ->
+-         // use the paywall
++ Adapty.getFlow("YOUR_PLACEMENT_ID")
++     .onSuccess { flow ->
++         // use the flow
+      }
+      .onError { error ->
+          // handle the error
+      }
+```
+
+`getPaywallForDefaultAudience` is renamed the same way:
+
+```diff showLineNumbers
+- Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en")
++ Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID")
+```
+
+### getPaywallProducts(paywall) → getPaywallProducts(flow)
+
+`getPaywallProducts` keeps its name but now takes an `AdaptyFlow`:
+
+```diff showLineNumbers
+- Adapty.getPaywallProducts(paywall)
++ Adapty.getPaywallProducts(flow)
+      .onSuccess { products ->
+          // use the products
+      }
+```
+
+## Data model
+
+`getFlow` returns an `AdaptyFlow` instead of an `AdaptyPaywall`, and the object shape changed:
+
+| v3 `AdaptyPaywall` property | v4 `AdaptyFlow` property | Action |
+|---|---|---|
+| `remoteConfig: AdaptyRemoteConfig?` (single) | `remoteConfigs: List<AdaptyRemoteConfig>` | A flow carries one remote config per configured language. Read the one that matches the user: `flow.remoteConfigs.firstOrNull { it.locale == "en" }`. |
+| _(new)_ | `paywalls: List<AdaptyFlowPaywall>` | Each entry is one paywall variation in the flow, with its own `name`, `variationId`, and `productIdentifiers`. The web paywall methods take an `AdaptyFlowPaywall` — see [Web paywall methods](#web-paywall-methods). |
+| `productIdentifiers` | moved | Product identifiers now live on each variation: `flow.paywalls[i].productIdentifiers`. To fetch products, keep calling `getPaywallProducts(flow)`. |
+| `hasViewConfiguration` | removed | Remove any `hasViewConfiguration` check from your code — `createFlowView` returns an error instead (see [Displaying flows](#displaying-flows)). |
+
+`hasViewConfiguration` remains on `AdaptyOnboarding` — only the flow model drops it.
+
+## Web paywall methods
+
+`openWebPaywall` and `createWebPaywallUrl` keep their names, but the `paywall` parameter is replaced by a `flowPaywall` parameter taking an `AdaptyFlowPaywall` — one of the variations in `flow.paywalls`. You can still pass an `AdaptyPaywallProduct` instead:
+
+```diff showLineNumbers
+- Adapty.openWebPaywall(paywall = paywall)
++ flow.paywalls.firstOrNull()?.let { flowPaywall ->
++     Adapty.openWebPaywall(flowPaywall = flowPaywall)
++ }
+```
+
+## Tracking flow views
+
+### logShowPaywall → logShowFlow
+
+`logShowPaywall` is renamed to `logShowFlow` and now takes an `AdaptyFlow`. The event is still logged against the same variation, so existing funnel and A/B test metrics continue to work without dashboard changes.
+
+```diff showLineNumbers
+- Adapty.logShowPaywall(paywall)
++ Adapty.logShowFlow(flow)
+```
+
+As in v3, you do not need to call this method when displaying flows or paywalls rendered by the [Flow Builder](adapty-flow-builder) or the [Paywall Builder](adapty-paywall-builder) — Adapty tracks those views automatically.
+
+## Displaying flows
+
+### createPaywallView → createFlowView
+
+Rename the factory method and pass the `AdaptyFlow`. The returned view type is renamed from `AdaptyUIPaywallView` to `AdaptyUIFlowView`, but its methods (`present`, `dismiss`) and the optional parameters (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) are unchanged:
+
+```diff showLineNumbers
+- AdaptyUI.createPaywallView(paywall)
++ AdaptyUI.createFlowView(flow)
+      .onSuccess { view ->
+          view.present()
+      }
+      .onError { error ->
+          // handle the error
+      }
+```
+
+If you don't use Compose Multiplatform, the native factory method is renamed the same way:
+
+```diff showLineNumbers
+- AdaptyUI.createNativePaywallView(paywall)
++ AdaptyUI.createNativeFlowView(flow)
+```
+
+`createFlowView` returns an `AdaptyResult.Error` if the flow has no view configured — this replaces the v3 `hasViewConfiguration` check:
+
+```diff showLineNumbers
+- if (paywall.hasViewConfiguration) {
+-     AdaptyUI.createPaywallView(paywall)
+-         .onSuccess { view -> view.present() }
+- }
++ AdaptyUI.createFlowView(flow)
++     .onSuccess { view -> view.present() }
++     .onError { error ->
++         // the flow has no view configured, or view creation failed
++     }
+```
+
+:::note
+A flow view is single-use: after you call `dismiss()`, the view is destroyed, so call `createFlowView` again to present the flow once more.
+:::
+
+## Handling events
+
+The events observer is renamed from `AdaptyUIPaywallsEventsObserver` to `AdaptyUIFlowsEventsObserver`, and its callbacks change the `paywallView` prefix to `flowView`. Existing handler bodies don't need code changes — just rename the type and the overrides:
+
+```diff showLineNumbers
+- AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
+-     override fun paywallViewDidFinishPurchase(
+-         view: AdaptyUIPaywallView,
++ AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
++     override fun flowViewDidFinishPurchase(
++         view: AdaptyUIFlowView,
+          product: AdaptyPaywallProduct,
+          purchaseResult: AdaptyPurchaseResult
+      ) {
+          // custom logic after purchase
+      }
+  })
+```
+
+One callback is also renamed: `paywallViewDidFailRendering` becomes `flowViewDidReceiveError`. It fires for the same rendering errors as before, plus other non-purchase runtime errors:
+
+```diff showLineNumbers
+- override fun paywallViewDidFailRendering(view: AdaptyUIPaywallView, error: AdaptyError) {}
++ override fun flowViewDidReceiveError(view: AdaptyUIFlowView, error: AdaptyError) {}
+```
+
+See [Handle flow & paywall events](kmp-handling-events) for the full list of callbacks.
+
+### Compose platform view
+
+If you embed views with the Compose Multiplatform composable, `AdaptyUIPaywallPlatformView(paywall, ...)` is renamed to `AdaptyUIFlowPlatformView(flow, ...)`. The event callbacks keep their `onDid...` names, except `onDidFailRendering`, which becomes `onDidReceiveError`:
+
+```diff showLineNumbers
+- AdaptyUIPaywallPlatformView(
+-     paywall = paywall,
++ AdaptyUIFlowPlatformView(
++     flow = flow,
+      onDidFinishPurchase = { view, product, result -> /* ... */ },
+  )
+```
+
+As in v3, the callbacks you pass here (and any observer registered via `registerFlowEventsListener`) run **in addition to** the global observer, not instead of it — your callback observes an event; it does not replace the global default. Keep the [changed defaults](#default-behavior-changes) in mind: for example, the global default no longer dismisses the view after a purchase.
+
+### New APIs
+
+- `AdaptyUI.setObserverModeResolver(...)` with an `AdaptyUIObserverModeResolver` — drive purchases and restores initiated from flows while the SDK runs in [Observer mode](implement-observer-mode-kmp). Previously this was available only in the native iOS and Android SDKs. See [Present flows in Observer mode](kmp-present-flows-in-observer-mode).
+- `AdaptyUI.setSystemRequestsHandler(...)` with an `AdaptyUISystemRequestsHandler` — reserved for system requests from a flow (OS permission prompts and app review requests). Flows don't trigger these requests yet, so you don't need to register a handler.
+- The new optional `flowViewDidReceiveAnalyticEvent` callback is reserved for custom analytic events from a flow. Flows don't emit these to your code yet, so you don't need to implement it.
+- `AdaptyUI.openWebUrl(url, openIn)` and `AdaptyUI.requestAppReview()` — these back the default `OpenUrlAction` handling and the default `handleAppReviewRequest`, so URLs and app-review prompts are handled natively out of the box. Call them directly only if you override those defaults.
+- `AdaptyConfig.ServerCluster.CN` — a new server cluster option alongside `DEFAULT` and `EU`, for connecting your app to [Adapty's China servers](china-cluster).
+
+## Default behavior changes
+
+These changes do not cause compile errors, so test them at runtime:
+
+- **Purchase completion**: In v3, the default `paywallViewDidFinishPurchase` dismissed the view after any purchase result other than `AdaptyPurchaseResult.UserCanceled`. In v4, the default `flowViewDidFinishPurchase` is a no-op, so **a flow stays open after a purchase until you dismiss it** — matching iOS. If you relied on that auto-close, call `view.dismiss()` yourself once the purchase finishes.
+- **Android system back**: In v3, the default `paywallViewDidPerformAction` dismissed the view on both `CloseAction` and `AndroidSystemBackAction`. In v4, the default handles only `CloseAction` — **the system back button no longer closes a flow on its own**, matching iOS, where a flow can't be dismissed by a system gesture. Give users an explicit way out (a **Close** button or an `on_device_back` action), or dismiss the view yourself in `flowViewDidPerformAction`.
+- **View errors**: In v3, the default `paywallViewDidFailRendering` did nothing. In v4, the default `flowViewDidReceiveError` **dismisses the view** — override it if you want to keep the view open or handle the error differently.
+- **Views are single-use**: After `dismiss()`, the view is destroyed. Call `createFlowView` again to present the flow once more.
+
+## Onboarding API deprecation
+
+The legacy onboarding API is deprecated in v4.0 in favor of the [Flow Builder](adapty-flow-builder). It still works, but will be removed in a future release, so plan migration of your onboardings to the Flow Builder.
+
+Deprecated symbols: `getOnboarding`, `getOnboardingForDefaultAudience`, `AdaptyUI.createOnboardingView`, `AdaptyUI.createNativeOnboardingView`, and `AdaptyUIOnboardingsEventsObserver`.
