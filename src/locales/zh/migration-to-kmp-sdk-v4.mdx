@@ -1,0 +1,229 @@
+---
+title: "将 Adapty Kotlin Multiplatform SDK 迁移至 v. 4.0"
+description: "通过将付费墙 API 替换为流程 API，迁移至 Adapty Kotlin Multiplatform SDK v4.0（测试版），兼容流程编辑工具和付费墙编辑工具。"
+metadataTitle: "迁移至 Adapty Kotlin Multiplatform SDK v4.0（测试版）| Adapty 文档"
+---
+
+Adapty Kotlin Multiplatform SDK 4.0（测试版）引入了流程功能，并相应地重命名了付费墙 API。新 API 同时支持新版流程编辑工具和现有的付费墙编辑工具——Adapty 看板端无需进行任何配置更改。
+
+## 快速参考 \{#quick-reference\}
+
+| v3 | v4 |
+|---|---|
+| `Adapty.getPaywall(placementId, locale)` | `Adapty.getFlow(placementId)` |
+| `Adapty.getPaywallForDefaultAudience(placementId, locale)` | `Adapty.getFlowForDefaultAudience(placementId)` |
+| `Adapty.getPaywallProducts(paywall)` | `Adapty.getPaywallProducts(flow)` |
+| `Adapty.logShowPaywall(paywall)` | `Adapty.logShowFlow(flow)` |
+| `AdaptyPaywall` | `AdaptyFlow` |
+| `AdaptyUI.createPaywallView(paywall, ...)` | `AdaptyUI.createFlowView(flow, ...)` |
+| `AdaptyUI.createNativePaywallView(...)` → `AdaptyNativePaywallView` | `AdaptyUI.createNativeFlowView(...)` → `AdaptyNativeFlowView` |
+| `AdaptyUIPaywallView` | `AdaptyUIFlowView` |
+| `AdaptyUI.presentPaywallView(view)` / `dismissPaywallView(view)` | `AdaptyUI.presentFlowView(view)` / `dismissFlowView(view)` |
+| `AdaptyUI.setPaywallsEventsObserver(observer)` | `AdaptyUI.setFlowsEventsObserver(observer)` |
+| `AdaptyUI.registerPaywallEventsListener` / `unregisterPaywallEventsListener` | `AdaptyUI.registerFlowEventsListener` / `unregisterFlowEventsListener` |
+| `AdaptyUIPaywallsEventsObserver` | `AdaptyUIFlowsEventsObserver` |
+| `AdaptyUIPaywallPlatformView(paywall, ...)` | `AdaptyUIFlowPlatformView(flow, ...)` |
+| `paywallViewDidPerformAction`、`paywallViewDidAppear` 及其他 `paywallView...` 回调 | `flowViewDidPerformAction`、`flowViewDidAppear` 及其他 `flowView...` 回调 |
+| `paywallViewDidFailRendering` | `flowViewDidReceiveError` |
+
+`AdaptyPaywallProduct` 保持原名不变——产品仍然属于某个流程，`getPaywallProducts` 方法名也保持不变，现在接受一个 `AdaptyFlow` 参数。`getFlow` 和 `getFlowForDefaultAudience` 方法不再接受 `locale` 参数。购买和用户画像相关的 API（`makePurchase`、`restorePurchases`、`getProfile`、`identify`、`updateProfile`）以及通过 `setFallback` 设置备用付费墙的功能均保持不变。用户引导方法仍然可用，但已被废弃——详见[用户引导 API 废弃说明](#onboarding-api-deprecation)。部分默认行为有所变更——详见[默认行为变更](#default-behavior-changes)。
+
+## 安装 \{#installation\}
+
+v4.0 是预发布版本，因此需要固定精确版本——Gradle 不会通过动态范围选择预发布版本：
+
+```toml showLineNumbers title="libs.versions.toml"
+[versions]
+adapty-kmp = "4.0.0-beta.1"
+
+[libraries]
+adapty-kmp = { module = "io.adapty:adapty-kmp", version.ref = "adapty-kmp" }
+adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp" }
+```
+
+`adapty-kmp-ui` 模块仅在使用 Compose Multiplatform 层（`view.present()`）渲染流程和付费墙时才需要。完整安装步骤请参阅[安装 Adapty SDK](sdk-installation-kotlin-multiplatform)。
+
+底层原生 Adapty SDK 在两个平台上均已升级至 4.0.0，并会自动解析——无需修改构建配置。iOS 部署目标保持 **15.0**，本次发布未作更改。
+
+## 获取流程 \{#fetching-flows\}
+
+### getPaywall → getFlow
+
+返回类型从 `AdaptyPaywall` 变更为 `AdaptyFlow`，同时移除了 `locale` 参数——渲染流程时，语言环境会自动解析；对于自定义付费墙，所有语言环境均通过 `flow.remoteConfigs` 返回：
+
+```diff showLineNumbers
+- Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en")
+-     .onSuccess { paywall ->
+-         // use the paywall
++ Adapty.getFlow("YOUR_PLACEMENT_ID")
++     .onSuccess { flow ->
++         // use the flow
+      }
+      .onError { error ->
+          // handle the error
+      }
+```
+
+`getPaywallForDefaultAudience` 已按相同方式重命名：
+
+```diff showLineNumbers
+- Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en")
++ Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID")
+```
+
+### getPaywallProducts(paywall) → getPaywallProducts(flow)
+
+`getPaywallProducts` 保持原名，但现在接受 `AdaptyFlow` 参数：
+
+```diff showLineNumbers
+- Adapty.getPaywallProducts(paywall)
++ Adapty.getPaywallProducts(flow)
+      .onSuccess { products ->
+          // use the products
+      }
+```
+
+## 数据模型 \{#data-model\}
+
+`getFlow` 返回 `AdaptyFlow` 而非 `AdaptyPaywall`，对象结构也发生了变化：
+
+| v3 `AdaptyPaywall` 属性 | v4 `AdaptyFlow` 属性 | 操作 |
+|---|---|---|
+| `remoteConfig: AdaptyRemoteConfig?`（单个） | `remoteConfigs: List<AdaptyRemoteConfig>` | 一个流程为每种已配置的语言携带一个远程配置。读取与用户匹配的那个：`flow.remoteConfigs.firstOrNull { it.locale == "en" }`。 |
+| _(新增)_ | `paywalls: List<AdaptyFlowPaywall>` | 每个条目是流程中的一个付费墙变体，包含其自身的 `name`、`variationId` 和 `productIdentifiers`。Web 付费墙方法接受 `AdaptyFlowPaywall` 参数——请参阅 [Web 付费墙方法](#web-paywall-methods)。 |
+| `productIdentifiers` | 已迁移 | 产品标识符现在位于每个变体上：`flow.paywalls[i].productIdentifiers`。获取产品时，继续调用 `getPaywallProducts(flow)`。 |
+| `hasViewConfiguration` | 已移除 | 从代码中移除所有 `hasViewConfiguration` 检查——`createFlowView` 会返回错误（请参阅[展示流程](#displaying-flows)）。 |
+
+`hasViewConfiguration` 保留在 `AdaptyOnboarding` 上——只有流程模型会移除它。
+
+## Web 付费墙方法 \{#web-paywall-methods\}
+
+`openWebPaywall` 和 `createWebPaywallUrl` 保持原有名称，但 `paywall` 参数已替换为 `flowPaywall` 参数，接受 `AdaptyFlowPaywall` 类型——即 `flow.paywalls` 中的某个实例。你也可以继续传入 `AdaptyPaywallProduct`：
+
+```diff showLineNumbers
+- Adapty.openWebPaywall(paywall = paywall)
++ flow.paywalls.firstOrNull()?.let { flowPaywall ->
++     Adapty.openWebPaywall(flowPaywall = flowPaywall)
++ }
+```
+
+## 跟踪流程查看次数 \{#tracking-flow-views\}
+
+### logShowPaywall → logShowFlow
+
+`logShowPaywall` 已重命名为 `logShowFlow`，现在接受一个 `AdaptyFlow` 参数。事件仍针对相同的实验变体进行记录，因此现有的漏斗和 A/B 测试数据图表无需更改看板配置即可继续使用。
+
+```diff showLineNumbers
+- Adapty.logShowPaywall(paywall)
++ Adapty.logShowFlow(flow)
+```
+
+与 v3 相同，当通过 [Flow Builder](adapty-flow-builder) 或[付费墙编辑工具](adapty-paywall-builder)渲染流程或付费墙时，无需手动调用此方法——Adapty 会自动追踪这些浏览行为。
+
+## 显示流程 \{#displaying-flows\}
+
+### createPaywallView → createFlowView
+
+重命名工厂方法并传入 `AdaptyFlow`。返回的视图类型从 `AdaptyUIPaywallView` 重命名为 `AdaptyUIFlowView`，但其方法（`present`、`dismiss`）和可选参数（`loadTimeout`、`preloadProducts`、`customTags`、`customTimers`、`customAssets`、`productPurchaseParams`）保持不变：
+
+```diff showLineNumbers
+- AdaptyUI.createPaywallView(paywall)
++ AdaptyUI.createFlowView(flow)
+      .onSuccess { view ->
+          view.present()
+      }
+      .onError { error ->
+          // handle the error
+      }
+```
+
+如果你不使用 Compose Multiplatform，原生工厂方法的重命名方式相同：
+
+```diff showLineNumbers
+- AdaptyUI.createNativePaywallView(paywall)
++ AdaptyUI.createNativeFlowView(flow)
+```
+
+`createFlowView` 在流程未配置视图时返回 `AdaptyResult.Error`，这取代了 v3 中的 `hasViewConfiguration` 检查：
+
+```diff showLineNumbers
+- if (paywall.hasViewConfiguration) {
+-     AdaptyUI.createPaywallView(paywall)
+-         .onSuccess { view -> view.present() }
+- }
++ AdaptyUI.createFlowView(flow)
++     .onSuccess { view -> view.present() }
++     .onError { error ->
++         // the flow has no view configured, or view creation failed
++     }
+```
+
+:::note
+流程视图是一次性的：调用 `dismiss()` 后，视图会被销毁，如需再次展示该流程，请重新调用 `createFlowView`。
+:::
+
+## 处理事件 \{#handling-events\}
+
+事件观察器从 `AdaptyUIPaywallsEventsObserver` 更名为 `AdaptyUIFlowsEventsObserver`，其回调方法的 `paywallView` 前缀改为 `flowView`。现有的处理器主体无需修改代码——只需重命名类型和重写方法即可：
+
+```diff showLineNumbers
+- AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
+-     override fun paywallViewDidFinishPurchase(
+-         view: AdaptyUIPaywallView,
++ AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
++     override fun flowViewDidFinishPurchase(
++         view: AdaptyUIFlowView,
+          product: AdaptyPaywallProduct,
+          purchaseResult: AdaptyPurchaseResult
+      ) {
+          // custom logic after purchase
+      }
+  })
+```
+
+一个回调也已重命名：`paywallViewDidFailRendering` 改为 `flowViewDidReceiveError`。它会在与之前相同的渲染错误时触发，同时还涵盖其他非购买类运行时错误：
+
+```diff showLineNumbers
+- override fun paywallViewDidFailRendering(view: AdaptyUIPaywallView, error: AdaptyError) {}
++ override fun flowViewDidReceiveError(view: AdaptyUIFlowView, error: AdaptyError) {}
+```
+
+完整回调列表请参阅[处理流程与付费墙事件](kmp-handling-events)。
+
+### Compose 平台视图 \{#compose-platform-view\}
+
+如果你使用 Compose Multiplatform 的 composable 嵌入视图，`AdaptyUIPaywallPlatformView(paywall, ...)` 已重命名为 `AdaptyUIFlowPlatformView(flow, ...)`。事件回调保留原有的 `onDid...` 命名，但 `onDidFailRendering` 更名为 `onDidReceiveError`：
+
+```diff showLineNumbers
+- AdaptyUIPaywallPlatformView(
+-     paywall = paywall,
++ AdaptyUIFlowPlatformView(
++     flow = flow,
+      onDidFinishPurchase = { view, product, result -> /* ... */ },
+  )
+```
+
+与 v3 相同，此处传入的回调（以及通过 `registerFlowEventsListener` 注册的任何观察者）会**在**全局观察者**之外**额外执行，而非取而代之——你的回调只是观察某个事件，并不会替换全局默认行为。请留意[已更改的默认行为](#default-behavior-changes)：例如，全局默认行为不再在购买后关闭视图。
+
+### 新 API \{#new-apis\}
+
+- `AdaptyUI.setObserverModeResolver(...)` 配合 `AdaptyUIObserverModeResolver` — 在 SDK 以[观察者模式](implement-observer-mode-kmp)运行时，驱动从流程发起的购买与恢复操作。此前该功能仅在原生 iOS 和 Android SDK 中可用。请参阅[在观察者模式下呈现流程](kmp-present-flows-in-observer-mode)。
+- `AdaptyUI.setSystemRequestsHandler(...)` 配合 `AdaptyUISystemRequestsHandler` — 用于处理流程中的系统请求（系统权限提示和应用评价请求）。流程目前尚未触发这些请求，因此无需注册处理器。
+- 新的可选回调 `flowViewDidReceiveAnalyticEvent` 用于接收流程中的自定义分析事件。流程目前尚未向代码发送这些事件，因此无需实现该回调。
+- `AdaptyUI.openWebUrl(url, openIn)` 和 `AdaptyUI.requestAppReview()` — 这两个方法分别支撑默认的 `OpenUrlAction` 处理逻辑和默认的 `handleAppReviewRequest`，因此 URL 跳转和应用评价提示均可开箱即用地以原生方式处理。仅在覆盖默认行为时才需直接调用它们。
+- `AdaptyConfig.ServerCluster.CN` — 新增的服务器集群选项，与 `DEFAULT` 和 `EU` 并列，用于将应用连接至 [Adapty 中国服务器](china-cluster)。
+
+## 默认行为变更 \{#default-behavior-changes\}
+
+这些变更不会导致编译错误，请在运行时进行测试：
+
+- **购买完成**：在 v3 中，默认的 `paywallViewDidFinishPurchase` 会在除 `AdaptyPurchaseResult.UserCanceled` 以外的任何购买结果后关闭视图。在 v4 中，默认的 `flowViewDidFinishPurchase` 不执行任何操作，因此**购买完成后流程会保持打开状态，直到你主动关闭它**——与 iOS 行为一致。如果你依赖之前的自动关闭逻辑，请在购买完成后自行调用 `view.dismiss()`。
+- **Android 系统返回**：在 v3 中，默认的 `paywallViewDidPerformAction` 会在 `CloseAction` 和 `AndroidSystemBackAction` 时关闭视图。在 v4 中，默认行为仅处理 `CloseAction`——**系统返回按钮不再自动关闭流程**，与 iOS 保持一致（iOS 上流程无法通过系统手势关闭）。请为用户提供明确的退出方式（如 **Close** 按钮或 `on_device_back` 动作），或在 `flowViewDidPerformAction` 中自行关闭视图。
+- **视图错误**：在 v3 中，默认的 `paywallViewDidFailRendering` 不执行任何操作。在 v4 中，默认的 `flowViewDidReceiveError` 会**关闭视图**——如需保持视图打开或自定义错误处理逻辑，请覆盖该方法。
+- **视图仅可使用一次**：调用 `dismiss()` 后，视图将被销毁。如需再次展示流程，请重新调用 `createFlowView`。
+
+## 用户引导 API 弃用 \{#onboarding-api-deprecation\}
+
+旧版用户引导 API 已在 v4.0 中弃用，请迁移至 [Flow Builder](adapty-flow-builder)。目前仍可正常使用，但将在未来版本中移除，请尽快将用户引导迁移至 Flow Builder。
+
+已弃用的符号：`getOnboarding`、`getOnboardingForDefaultAudience`、`AdaptyUI.createOnboardingView`、`AdaptyUI.createNativeOnboardingView` 和 `AdaptyUIOnboardingsEventsObserver`。

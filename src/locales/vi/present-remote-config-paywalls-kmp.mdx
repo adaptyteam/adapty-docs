@@ -1,16 +1,78 @@
 ---
-title: "Hiển thị paywall được thiết kế bằng remote config trong Kotlin Multiplatform SDK"
-description: "Khám phá cách trình bày paywall remote config trong Adapty Kotlin Multiplatform SDK để cá nhân hóa trải nghiệm người dùng."
+title: "Hiển thị paywall được thiết kế bằng Remote Config trong Kotlin Multiplatform SDK"
+description: "Khám phá cách trình bày paywall Remote Config trong Adapty Kotlin Multiplatform SDK để cá nhân hóa trải nghiệm người dùng."
 metadataTitle: "Trình bày Paywall Remote Config | Kotlin Multiplatform SDK | Tài liệu Adapty"
-keywords: ['remote config']
+keywords: ['remote config', 'logShowFlow', 'logShowPaywall']
 displayed_sidebar: sdkkmp
 ---
 
-Nếu bạn đã tùy chỉnh paywall bằng Remote Config, bạn cần tự triển khai phần hiển thị trong code của ứng dụng để trình bày nó cho người dùng. Vì Remote Config linh hoạt và phụ thuộc vào nhu cầu của bạn, bạn hoàn toàn kiểm soát những gì được đưa vào và giao diện paywall sẽ trông như thế nào. Chúng tôi cung cấp một phương thức để lấy cấu hình remote, giúp bạn tự do hiển thị paywall tùy chỉnh được cấu hình qua Remote Config.
+<SDKv4>
 
-## Lấy remote config của paywall và hiển thị nó \{#get-paywall-remote-config-and-present-it\}
+Nếu bạn đã tùy chỉnh paywall bằng Remote Config, bạn cần tự triển khai phần hiển thị trong code ứng dụng để người dùng có thể thấy nó. Vì Remote Config linh hoạt và hoàn toàn do bạn kiểm soát, bạn quyết định những gì có trong paywall và giao diện của nó trông như thế nào. Adapty cung cấp một phương thức để lấy cấu hình remote, giúp bạn tự do trình bày paywall tùy chỉnh của mình.
 
-Để lấy remote config của một paywall, hãy truy cập thuộc tính `remoteConfig` và trích xuất các giá trị cần thiết.
+## Lấy remote config của flow và hiển thị nó \{#get-flow-remote-config-and-present-it\}
+
+Trong v4, một flow chứa một mục `AdaptyRemoteConfig` cho mỗi ngôn ngữ đã cấu hình trong danh sách `remoteConfigs`. Chọn ngôn ngữ phù hợp với tùy chọn của người dùng, sau đó đọc các giá trị bạn cần.
+
+```kotlin showLineNumbers
+
+Adapty.getFlow("YOUR_PLACEMENT_ID")
+    .onSuccess { flow ->
+        val config = flow.remoteConfigs.firstOrNull { it.locale == "en" }
+            ?: flow.remoteConfigs.firstOrNull()
+        val headerText = config?.dataMap?.get("header_text") as? String
+        // use the remote config values
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+Tại thời điểm này, khi bạn đã nhận được tất cả các giá trị cần thiết, đã đến lúc render và ghép chúng thành một trang trông thật hấp dẫn. Hãy đảm bảo thiết kế phù hợp với nhiều kích thước màn hình và hướng hiển thị khác nhau của điện thoại di động, mang lại trải nghiệm mượt mà và thân thiện với người dùng trên mọi thiết bị.
+
+:::warning
+Hãy đảm bảo [ghi lại sự kiện xem paywall](present-remote-config-paywalls-kmp#track-paywall-view-events) như mô tả bên dưới, để Adapty analytics có thể thu thập thông tin cho các funnel và A/B test.
+:::
+
+Sau khi hiển thị paywall, hãy tiếp tục thiết lập flow thanh toán. Khi người dùng thực hiện mua hàng, chỉ cần gọi `.makePurchase()` với sản phẩm từ flow của bạn. Để biết thêm chi tiết về phương thức `.makePurchase()`, hãy đọc [Thực hiện mua hàng](kmp-making-purchases).
+
+Chúng tôi khuyến nghị [tạo một paywall dự phòng](kmp-use-fallback-paywalls). Paywall dự phòng này sẽ hiển thị cho người dùng khi không có kết nối internet hoặc không có cache, đảm bảo trải nghiệm mượt mà ngay cả trong những tình huống đó.
+
+## Theo dõi sự kiện xem paywall \{#track-paywall-view-events\}
+
+Adapty giúp bạn đo lường hiệu suất của các flow và paywall. Trong khi chúng tôi tự động thu thập dữ liệu về các giao dịch mua, việc ghi lại lượt xem cần có sự tham gia của bạn vì chỉ bạn mới biết khi nào khách hàng nhìn thấy một flow.
+
+Để ghi lại sự kiện xem, chỉ cần gọi `.logShowFlow(flow)`, và nó sẽ được phản ánh trong các chỉ số của bạn trong funnels và A/B test.
+
+:::important
+Không cần gọi `.logShowFlow(flow)` nếu bạn đang hiển thị các flow hoặc paywall được render bởi [Flow Builder](adapty-flow-builder) hoặc [Paywall Builder](adapty-paywall-builder). Adapty tự động theo dõi lượt xem trong những trường hợp đó.
+:::
+
+```kotlin showLineNumbers
+Adapty.logShowFlow(flow)
+    .onSuccess {
+        // flow view logged successfully
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+Tham số yêu cầu:
+
+| Tham số | Bắt buộc | Mô tả                                                    |
+| :-------- | :------- |:-----------------------------------------------------------------|
+| **flow**  | bắt buộc | Một đối tượng `AdaptyFlow` lấy được qua `Adapty.getFlow`. |
+
+</SDKv4>
+
+<SDKv3>
+
+Nếu bạn đã tùy chỉnh paywall bằng Remote Config, bạn cần tự triển khai phần hiển thị trong code của ứng dụng để người dùng có thể thấy nó. Vì Remote Config cho phép linh hoạt theo nhu cầu của bạn, bạn hoàn toàn kiểm soát nội dung hiển thị cũng như giao diện của paywall. Chúng tôi cung cấp một phương thức để lấy cấu hình remote, giúp bạn chủ động hiển thị paywall tùy chỉnh đã được thiết lập qua Remote Config.
+
+## Lấy Remote Config của paywall và hiển thị \{#get-paywall-remote-config-and-present-it\}
+
+Để lấy Remote Config của một paywall, hãy truy cập thuộc tính `remoteConfig` và lấy ra các giá trị cần thiết.
 
 ```kotlin showLineNumbers
 
@@ -27,24 +89,24 @@ Adapty.getPaywall(
 }
 ```
 
-Tại đây, sau khi đã nhận được tất cả các giá trị cần thiết, đã đến lúc render và lắp ráp chúng thành một trang có giao diện hấp dẫn. Hãy đảm bảo thiết kế phù hợp với nhiều kích thước màn hình và hướng xoay khác nhau của điện thoại, mang lại trải nghiệm liền mạch và thân thiện với người dùng trên nhiều thiết bị.
+Tại thời điểm này, sau khi đã nhận được tất cả các giá trị cần thiết, bước tiếp theo là render và kết hợp chúng thành một trang có giao diện hấp dẫn. Hãy đảm bảo thiết kế phù hợp với nhiều loại màn hình và hướng hiển thị khác nhau trên thiết bị di động, mang lại trải nghiệm mượt mà và thân thiện với người dùng trên mọi thiết bị.
 
 :::warning
-Hãy đảm bảo [ghi lại sự kiện xem paywall](present-remote-config-paywalls-kmp#track-paywall-view-events) như mô tả bên dưới, để Adapty analytics có thể thu thập thông tin cho các funnel và A/B test.
+Hãy đảm bảo [ghi lại sự kiện xem paywall](present-remote-config-paywalls-kmp#track-paywall-view-events-1) như mô tả bên dưới, để Adapty analytics có thể thu thập thông tin cho các funnel và A/B test.
 :::
 
-Sau khi hoàn tất việc hiển thị paywall, hãy tiếp tục thiết lập luồng mua hàng. Khi người dùng thực hiện mua hàng, chỉ cần gọi `.makePurchase()` với sản phẩm từ paywall của bạn. Để biết thêm chi tiết về phương thức `.makePurchase()`, hãy đọc [Thực hiện mua hàng](kmp-making-purchases).
+Sau khi hiển thị paywall xong, hãy tiếp tục thiết lập luồng mua hàng. Khi người dùng thực hiện mua hàng, chỉ cần gọi `.makePurchase()` với sản phẩm từ paywall của bạn. Để biết chi tiết về phương thức `.makePurchase()`, hãy đọc [Thực hiện mua hàng](kmp-making-purchases).
 
-Chúng tôi khuyên bạn nên [tạo một paywall dự phòng gọi là fallback paywall](kmp-use-fallback-paywalls). Paywall dự phòng này sẽ hiển thị cho người dùng khi không có kết nối internet hoặc không có cache, đảm bảo trải nghiệm mượt mà ngay cả trong các tình huống này.
+Chúng tôi khuyến nghị [tạo một paywall dự phòng](kmp-use-fallback-paywalls). Paywall dự phòng này sẽ hiển thị cho người dùng khi không có kết nối internet hoặc không có cache, đảm bảo trải nghiệm mượt mà ngay cả trong những tình huống đó.
 
-## Ghi lại sự kiện xem paywall \{#track-paywall-view-events\}
+## Theo dõi sự kiện xem paywall \{#track-paywall-view-events\}
 
-Adapty giúp bạn đo lường hiệu suất của các paywall. Trong khi chúng tôi tự động thu thập dữ liệu về các lần mua hàng, việc ghi lại lượt xem paywall cần có sự tham gia của bạn vì chỉ bạn mới biết khi nào người dùng nhìn thấy một paywall.
+Adapty giúp bạn đo lường hiệu suất của các paywall. Trong khi dữ liệu mua hàng được thu thập tự động, việc ghi lại lượt xem paywall cần có sự can thiệp của bạn vì chỉ bạn mới biết khi nào khách hàng nhìn thấy paywall.
 
-Để ghi lại sự kiện xem paywall, chỉ cần gọi `.logShowPaywall(paywall)`, và nó sẽ được phản ánh trong các chỉ số paywall của bạn trong funnel và A/B test.
+Để ghi lại sự kiện xem paywall, chỉ cần gọi `.logShowPaywall(paywall)`, và sự kiện này sẽ được phản ánh trong các chỉ số paywall của bạn trong funnel và A/B test.
 
 :::important
-Không cần gọi `.logShowPaywall(paywall)` nếu bạn đang hiển thị các paywall được tạo trong [paywall builder](adapty-paywall-builder).
+Không cần gọi `.logShowPaywall(paywall)` nếu bạn đang hiển thị các paywall được tạo trong [Paywall Builder](adapty-paywall-builder).
 :::
 
 ```kotlin showLineNumbers
@@ -59,6 +121,8 @@ Adapty.logShowPaywall(paywall = paywall)
 
 Tham số yêu cầu:
 
-| Tham số     | Bắt buộc | Mô tả                                                                                                  |
+| Tham số | Bắt buộc | Mô tả |
 | :---------- | :------- |:-------------------------------------------------------------------------------------------------------|
 | **paywall** | bắt buộc | Một đối tượng [`AdaptyPaywall`](https://kmp.adapty.io//////adapty/com.adapty.kmp.models/-adapty-paywall/). |
+
+</SDKv3>

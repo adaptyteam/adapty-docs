@@ -1,26 +1,214 @@
 ---
-title: "Xử lý hành động nút trong Kotlin Multiplatform SDK"
-description: "Xử lý các hành động nút trên paywall trong Kotlin Multiplatform bằng Adapty để tối ưu hóa doanh thu ứng dụng."
-metadataTitle: "Xử lý hành động nút trên paywall | Tài liệu Adapty"
+title: "Phản hồi các hành động trong flow - Kotlin Multiplatform"
+description: "Xử lý các hành động nút từ flow và paywall trong ứng dụng Kotlin Multiplatform của bạn."
+metadataTitle: "Phản hồi các hành động trong Flow - Kotlin Multiplatform | Tài liệu Adapty"
 displayed_sidebar: sdkkmp
 toc_max_heading_level: 4
 keywords: ['nút paywall', 'nút', 'hành động nút paywall', 'xử lý hành động']
 ---
 
+<SDKv4>
+
+Nếu bạn đang xây dựng flow hoặc paywall bằng Adapty Flow Builder hoặc Paywall Builder, việc thiết lập các nút đúng cách là rất quan trọng:
+
+1. Thêm [nút trong builder](paywall-buttons) và gán cho nó một action có sẵn hoặc tạo một custom action ID.
+2. Viết code trong ứng dụng của bạn để xử lý từng action bạn đã gán.
+
+Hướng dẫn này cho thấy cách xử lý các custom action và action có sẵn trong code của bạn.
+
 :::warning
-**Chỉ có các giao dịch mua và khôi phục được xử lý tự động.** Tất cả các hành động nút khác, như đóng paywall hoặc mở liên kết, đều cần được triển khai phản hồi trong mã ứng dụng.
+**Chỉ có các thao tác mua hàng, khôi phục, đóng flow/paywall và mở liên kết được xử lý tự động.** Tất cả các action nút khác, chẳng hạn như custom action, đều yêu cầu triển khai xử lý phù hợp trong code ứng dụng.
 :::
 
-Nếu bạn đang xây dựng paywall bằng Adapty Paywall Builder, việc thiết lập các nút đúng cách là rất quan trọng:
+## Thiết lập AdaptyUIFlowsEventsObserver \{#set-up-the-adaptyuiflowseventsobserver\}
 
-1. Thêm một [nút trong paywall builder](paywall-buttons) và gán cho nó một hành động có sẵn hoặc tạo một ID hành động tùy chỉnh.
-2. Viết mã trong ứng dụng của bạn để xử lý từng hành động bạn đã gán.
+Để xử lý các hành động trong flow, bạn cần implement interface `AdaptyUIFlowsEventsObserver` và thiết lập nó với `AdaptyUI.setFlowsEventsObserver()`. Bước này nên được thực hiện sớm trong vòng đời ứng dụng, thường là trong activity chính hoặc khi khởi tạo ứng dụng.
 
-Hướng dẫn này trình bày cách xử lý các hành động tùy chỉnh và hành động có sẵn trong mã của bạn.
+```kotlin
 
-## Thiết lập AdaptyUIPaywallsEventsObserver \{#set-up-the-adaptyuipaywallseventsObserver\}
+// In your app initialization
+AdaptyUI.setFlowsEventsObserver(MyAdaptyUIFlowsEventsObserver())
+```
 
-Để xử lý các hành động paywall, bạn cần triển khai interface `AdaptyUIPaywallsEventsObserver` và thiết lập nó bằng `AdaptyUI.setPaywallsEventsObserver()`. Việc này nên được thực hiện sớm trong vòng đời ứng dụng, thường là trong activity chính hoặc khởi tạo ứng dụng.
+Tất cả các hành động của nút đều được truyền vào callback `flowViewDidPerformAction(view, action)` dưới dạng sealed class `AdaptyUIAction`: `CloseAction`, `AndroidSystemBackAction`, `OpenUrlAction`, hoặc `CustomAction`.
+
+:::warning
+Việc override `flowViewDidPerformAction` sẽ thay thế toàn bộ xử lý mặc định cho **tất cả** các hành động, không chỉ hành động bạn quan tâm. Hãy giữ nguyên các nhánh mặc định cho `CloseAction` (đóng flow) và `OpenUrlAction` (mở URL) trừ khi bạn muốn thay đổi chúng, như được minh họa trong các ví dụ bên dưới.
+:::
+
+## Đóng flow và paywall \{#close-flows-and-paywalls\}
+
+Để thêm nút đóng flow hoặc paywall:
+
+1. Trong builder, thêm một nút và gán cho nó hành động **Close**.
+2. Trong code ứng dụng, triển khai trình xử lý cho hành động `close` để đóng flow.
+
+:::info
+Trong Kotlin Multiplatform SDK, `CloseAction` mặc định sẽ kích hoạt việc đóng flow hoặc paywall. Tuy nhiên, bạn có thể ghi đè hành vi này trong code nếu cần. Ví dụ, đóng một flow có thể kích hoạt mở một flow khác.
+:::
+
+```kotlin
+
+class MyAdaptyUIFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CloseAction ->
+                mainUiScope.launch { view.dismiss() } // default behavior
+            is AdaptyUIAction.OpenUrlAction ->
+                AdaptyUI.openWebUrl(action.url, action.openIn) // default behavior
+            else -> Unit
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setFlowsEventsObserver(MyAdaptyUIFlowsEventsObserver())
+```
+
+Nếu bạn đang dùng [`createNativeFlowView`](kmp-present-paywalls#without-compose-multiplatform), việc gọi `view.dismiss()` sẽ không có tác dụng — view được nhúng vào layout của bạn, không được hiển thị qua stack KMP. Hãy xóa view khỏi layout và gọi `dispose()` trên đó thay thế.
+
+## Xử lý nút back của hệ thống Android \{#handle-the-android-system-back-button\}
+
+Khi nhấn nút back của hệ thống Android (hoặc dùng cử chỉ vuốt back), sự kiện `AdaptyUIAction.AndroidSystemBackAction` sẽ được phát ra. Mặc định, hành động này bị bỏ qua — flow vẫn mở, và người dùng thoát khỏi nó theo đường dẫn bạn định nghĩa, chẳng hạn nút **Close** hoặc hành động `on_device_back` trong builder. Nếu bạn muốn nút back của hệ thống đóng flow lại, hãy tự xử lý hành động đó:
+
+```kotlin
+class MyAdaptyUIFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CloseAction ->
+                mainUiScope.launch { view.dismiss() } // default behavior
+            is AdaptyUIAction.AndroidSystemBackAction ->
+                mainUiScope.launch { view.dismiss() } // not handled by default
+            is AdaptyUIAction.OpenUrlAction ->
+                AdaptyUI.openWebUrl(action.url, action.openIn) // default behavior
+            else -> Unit
+        }
+    }
+}
+```
+
+## Mở URL từ flow và paywall \{#open-urls-from-flows-and-paywalls\}
+
+:::tip
+Nếu bạn muốn thêm một nhóm liên kết (ví dụ: điều khoản sử dụng và khôi phục mua hàng), hãy thêm phần tử **Link** trong builder và xử lý nó theo cách tương tự như các nút với hành động **Open URL**.
+:::
+
+Để thêm nút mở liên kết từ flow hoặc paywall của bạn (ví dụ: **Terms of use** hoặc **Privacy policy**), trong builder, hãy thêm một nút, gán cho nó hành động **Open URL**, và nhập URL bạn muốn mở.
+
+Theo mặc định, SDK sẽ mở URL nhận được theo cách tự nhiên — trong trình duyệt ngoài hoặc trình duyệt trong ứng dụng, tùy thuộc vào `action.openIn` — nên bạn không cần viết thêm code. Chỉ cần ghi đè handler khi bạn muốn xử lý tùy chỉnh, ví dụ như hiển thị hộp thoại xác nhận trước:
+
+```kotlin
+
+class MyAdaptyUIFlowsEventsObserver(
+    private val uriHandler: UriHandler
+) : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.OpenUrlAction -> {
+                // Show confirmation dialog before opening URL
+                mainUiScope.launch {
+                    val selectedAction = view.showDialog(
+                        title = "Open URL?",
+                        content = action.url,
+                        primaryActionTitle = "Cancel",
+                        secondaryActionTitle = "Open"
+                    ).getOrNull()
+
+                    when (selectedAction) {
+                        AdaptyUIDialogActionType.PRIMARY -> {
+                            // User cancelled
+                        }
+                        AdaptyUIDialogActionType.SECONDARY -> {
+                            // User confirmed - open URL
+                            uriHandler.openUri(action.url)
+                        }
+                        else -> Unit
+                    }
+                }
+            }
+            else -> Unit
+        }
+    }
+}
+
+// Set up the observer with UriHandler
+AdaptyUI.setFlowsEventsObserver(MyAdaptyUIFlowsEventsObserver(uriHandler))
+```
+
+## Đăng nhập vào ứng dụng \{#log-into-the-app\}
+
+Để thêm nút cho phép người dùng đăng nhập vào ứng dụng:
+
+1. Trong builder, thêm một nút và gán cho nó hành động **Custom** với ID "login".
+2. Trong code ứng dụng của bạn, triển khai một handler cho hành động tùy chỉnh đó để xác định người dùng.
+
+```kotlin
+
+class MyAdaptyUIFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                if (action.action == "login") {
+                    // Handle login action - navigate to login screen
+                    // This depends on your app's navigation system
+                    // For example, in Compose Multiplatform:
+                    // navController.navigate("login")
+                }
+            }
+            else -> Unit
+        }
+    }
+}
+```
+
+## Xử lý các action tùy chỉnh \{#handle-custom-actions\}
+
+Để thêm một nút xử lý các action khác:
+
+1. Trong builder, thêm một nút, gán cho nó action **Custom**, và đặt cho nó một ID.
+2. Trong code ứng dụng của bạn, triển khai một handler cho action ID mà bạn đã tạo.
+
+Ví dụ: nếu bạn có một tập hợp ưu đãi gói đăng ký hoặc sản phẩm mua một lần khác, bạn có thể thêm một nút sẽ hiển thị một flow hoặc paywall khác:
+
+```kotlin
+
+class MyAdaptyUIFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                when (action.action) {
+                    "openNewFlow" -> {
+                        // Display another flow or paywall
+                    }
+                }
+            }
+            else -> Unit
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setFlowsEventsObserver(MyAdaptyUIFlowsEventsObserver())
+```
+
+</SDKv4>
+
+<SDKv3>
+
+:::warning
+**Chỉ có giao dịch mua và khôi phục được xử lý tự động.** Tất cả các hành động nút khác, chẳng hạn như đóng paywall hoặc mở liên kết, đều cần được xử lý trong code của ứng dụng.
+:::
+
+Nếu bạn đang xây dựng paywall bằng Adapty paywall builder, việc thiết lập nút đúng cách là rất quan trọng:
+
+1. Thêm [nút trong paywall builder](paywall-buttons) và gán cho nó một hành động có sẵn hoặc tạo một ID hành động tùy chỉnh.
+2. Viết code trong ứng dụng để xử lý từng hành động bạn đã gán.
+
+Hướng dẫn này mô tả cách xử lý các hành động tùy chỉnh và hành động có sẵn trong code của bạn.
+
+## Thiết lập AdaptyUIPaywallsEventsObserver \{#set-up-the-adaptyuipaywallsevents-observer\}
+
+Để xử lý các hành động trên paywall, bạn cần triển khai interface `AdaptyUIPaywallsEventsObserver` và thiết lập nó với `AdaptyUI.setPaywallsEventsObserver()`. Bước này nên được thực hiện sớm trong vòng đời của ứng dụng, thường là trong activity chính hoặc khi khởi tạo ứng dụng.
 
 ```kotlin
 
@@ -30,13 +218,13 @@ AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
 
 ## Đóng paywall \{#close-paywalls\}
 
-Để thêm một nút sẽ đóng paywall của bạn:
+Để thêm nút đóng paywall:
 
-1. Trong paywall builder, thêm một nút và gán cho nó hành động **Close**.
-2. Trong mã ứng dụng của bạn, triển khai trình xử lý cho hành động `close` để đóng paywall.
+1. Trong Paywall Builder, thêm một nút và gán cho nó hành động **Close**.
+2. Trong code ứng dụng của bạn, triển khai một handler cho hành động `close` để đóng paywall.
 
 :::info
-Trong Kotlin Multiplatform SDK, `CloseAction` và `AndroidSystemBackAction` sẽ kích hoạt đóng paywall theo mặc định. Tuy nhiên, bạn có thể ghi đè hành vi này trong mã của mình nếu cần. Ví dụ, đóng một paywall có thể kích hoạt mở một paywall khác.
+Trong Kotlin Multiplatform SDK, `CloseAction` và `AndroidSystemBackAction` sẽ kích hoạt việc đóng paywall theo mặc định. Tuy nhiên, bạn có thể ghi đè hành vi này trong code nếu cần. Ví dụ: đóng một paywall có thể kích hoạt việc mở một paywall khác.
 :::
 
 ```kotlin
@@ -53,21 +241,21 @@ class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
 AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
 ```
 
-Nếu bạn đang sử dụng [`createNativePaywallView`](kmp-present-paywalls#without-compose-multiplatform), việc gọi `view.dismiss()` sẽ không có hiệu lực — view được nhúng vào layout của bạn, không được hiển thị thông qua stack KMP. Thay vào đó, hãy xóa view khỏi layout và gọi `dispose()` trên nó.
+Nếu bạn đang sử dụng [`createNativePaywallView`](kmp-present-paywalls#without-compose-multiplatform), việc gọi `view.dismiss()` sẽ không có tác dụng — view được nhúng vào layout của bạn, không được hiển thị qua stack KMP. Thay vào đó, hãy xóa view khỏi layout và gọi `dispose()` trên nó.
 
 ## Mở URL từ paywall \{#open-urls-from-paywalls\}
 
 :::tip
-Nếu bạn muốn thêm một nhóm liên kết (ví dụ: điều khoản sử dụng và khôi phục giao dịch mua), hãy thêm phần tử **Link** trong paywall builder và xử lý nó giống như các nút có hành động **Open URL**.
+Nếu bạn muốn thêm một nhóm liên kết (ví dụ: điều khoản sử dụng và khôi phục mua hàng), hãy thêm phần tử **Link** trong paywall builder và xử lý nó theo cách tương tự như các nút với hành động **Open URL**.
 :::
 
 Để thêm một nút mở liên kết từ paywall của bạn (ví dụ: **Terms of use** hoặc **Privacy policy**):
 
 1. Trong paywall builder, thêm một nút, gán cho nó hành động **Open URL**, và nhập URL bạn muốn mở.
-2. Trong mã ứng dụng của bạn, triển khai trình xử lý cho hành động `openUrl` để mở URL nhận được trong trình duyệt.
+2. Trong code của ứng dụng, triển khai một handler cho hành động `openUrl` để mở URL nhận được trong trình duyệt.
 
 :::info
-Trong Kotlin Multiplatform SDK, `OpenUrlAction` cung cấp URL cần được mở. Bạn có thể triển khai logic tùy chỉnh để xử lý việc mở URL, chẳng hạn như hiển thị hộp thoại xác nhận hoặc sử dụng phương thức xử lý URL ưa thích của ứng dụng.
+Trong Kotlin Multiplatform SDK, `OpenUrlAction` cung cấp URL cần mở. Bạn có thể triển khai logic tùy chỉnh để xử lý việc mở URL, chẳng hạn như hiển thị hộp thoại xác nhận hoặc sử dụng phương thức xử lý URL ưa thích của ứng dụng.
 :::
 
 ```kotlin
@@ -109,10 +297,10 @@ AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver(uriHandler))
 
 ## Đăng nhập vào ứng dụng \{#log-into-the-app\}
 
-Để thêm một nút cho phép người dùng đăng nhập vào ứng dụng:
+Để thêm nút cho phép người dùng đăng nhập vào ứng dụng của bạn:
 
-1. Trong paywall builder, thêm một nút và gán cho nó hành động **Custom** với ID "login".
-2. Trong mã ứng dụng của bạn, triển khai trình xử lý cho hành động tùy chỉnh để xác định người dùng của bạn.
+1. Trong Paywall Builder, thêm một nút và gán cho nó hành động **Custom** với ID "login".
+2. Trong code ứng dụng của bạn, triển khai một handler cho hành động tùy chỉnh đó để xác định danh tính người dùng.
 
 ```kotlin
 
@@ -132,14 +320,14 @@ class MyAdaptyUIObserver : AdaptyUIObserver {
 }
 ```
 
-## Xử lý hành động tùy chỉnh \{#handle-custom-actions\}
+## Xử lý các hành động tùy chỉnh \{#handle-custom-actions\}
 
 Để thêm một nút xử lý các hành động khác:
 
-1. Trong paywall builder, thêm một nút, gán cho nó hành động **Custom**, và gán cho nó một ID.
-2. Trong mã ứng dụng của bạn, triển khai trình xử lý cho ID hành động bạn đã tạo.
+1. Trong Paywall Builder, thêm một nút, gán cho nó hành động **Custom**, và đặt cho nó một ID.
+2. Trong code của ứng dụng, triển khai một handler cho action ID bạn đã tạo.
 
-Ví dụ, nếu bạn có một bộ ưu đãi gói đăng ký hoặc sản phẩm mua một lần khác, bạn có thể thêm một nút sẽ hiển thị một paywall khác:
+Ví dụ: nếu bạn có một bộ ưu đãi gói đăng ký khác hoặc sản phẩm mua một lần, bạn có thể thêm một nút để hiển thị một paywall khác:
 
 ```kotlin
 
@@ -163,3 +351,4 @@ class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
 // Set up the observer
 AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
 ```
+</SDKv3>

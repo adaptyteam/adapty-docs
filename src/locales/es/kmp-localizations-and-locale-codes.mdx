@@ -1,17 +1,68 @@
 ---
 title: "Usar localizaciones y códigos de idioma en el SDK de Kotlin Multiplatform"
-description: "Gestiona las localizaciones y códigos de idioma de tu app para llegar a una audiencia global en tu aplicación Kotlin Multiplatform."
+description: "Gestiona las localizaciones de la app y los códigos de idioma para llegar a una audiencia global en tu app de Kotlin Multiplatform."
 metadataTitle: "Localizar Paywalls | SDK de Kotlin Multiplatform | Documentación de Adapty"
 displayed_sidebar: sdkkmp
 ---
+
+<SDKv4>
+
 ## Por qué esto es importante \{#why-this-is-important\}
 
-Hay varios escenarios en los que los códigos de idioma entran en juego — por ejemplo, cuando intentas obtener el paywall correcto para la localización actual de tu app.
+Los códigos de idioma entran en juego cuando Adapty selecciona la localización para un flow y cuando lees un Remote Config para un paywall personalizado.
 
-Como los códigos de idioma son complejos y pueden variar de una plataforma a otra, nos basamos en un estándar interno para todas las plataformas que soportamos. Sin embargo, precisamente por esa complejidad, es muy importante que entiendas exactamente qué estás enviando a nuestro servidor para obtener la localización correcta y qué ocurre después — así siempre recibirás lo que esperas.
+Los códigos de idioma son complejos y pueden variar de una plataforma a otra, por lo que Adapty se basa en un estándar interno único para todas las plataformas que admite. Entender ese estándar te ayuda a predecir qué localización recibirá un usuario.
+
 ## Estándar de códigos de idioma en Adapty \{#locale-code-standard-at-adapty\}
 
 Para los códigos de idioma, Adapty utiliza una versión ligeramente modificada del [estándar BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): cada código está formado por subetiquetas en minúsculas separadas por guiones. Algunos ejemplos: `en` (inglés), `pt-br` (portugués de Brasil), `zh` (chino simplificado), `zh-hant` (chino tradicional).
+## Coincidencia de códigos de idioma \{#locale-code-matching\}
+
+Cuando Adapty busca la localización que coincide con el idioma de un usuario, ocurre lo siguiente:
+
+1. La cadena de idioma se convierte a minúsculas y todos los guiones bajos (`_`) se reemplazan por guiones (`-`)
+2. Adapty busca la localización con el código de idioma exactamente coincidente
+3. Si no se encuentra ninguna coincidencia, Adapty toma la subcadena antes del primer guion (`pt` para `pt-br`) y busca la localización correspondiente
+4. Si tampoco se encuentra ninguna coincidencia, Adapty devuelve la localización predeterminada `en`
+
+De esta forma, `'pt_BR'`, `pt-BR` y `pt-br` se resuelven en la misma localización.
+
+## Implementación de localizaciones \{#implementing-localizations\}
+
+En el SDK v4, no es necesario pasar un código de idioma al obtener un flow.
+
+- **Paywalls del Flow Builder y del Paywall Builder**: Adapty resuelve la localización automáticamente a partir del dispositivo y las localizaciones que configuraste en el builder. Renderiza el flow con `createFlowView` — no se necesita ningún código de idioma.
+- **Paywalls personalizados (Remote Config)**: `getFlow` devuelve todas las localizaciones configuradas en `flow.remoteConfigs`. Cada entrada es un `AdaptyRemoteConfig` con un código `locale` y un `dataMap`. Selecciona la entrada que corresponda al usuario, con tu propio fallback:
+
+```kotlin showLineNumbers
+
+Adapty.getFlow("YOUR_PLACEMENT_ID")
+    .onSuccess { flow ->
+        val config = flow.remoteConfigs.firstOrNull { it.locale == "en" }
+            ?: flow.remoteConfigs.firstOrNull()
+        // read your values from config?.dataMap
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+Las reglas de coincidencia de códigos de idioma descritas anteriormente explican cómo Adapty normaliza los códigos `locale` almacenados en cada Remote Config.
+
+</SDKv4>
+
+<SDKv3>
+
+## Por qué esto es importante \{#why-this-is-important\}
+
+Hay algunos escenarios en los que los códigos de idioma entran en juego — por ejemplo, cuando intentas obtener el paywall correcto para la localización actual de tu app.
+
+Como los códigos de idioma son complicados y pueden variar de una plataforma a otra, nos basamos en un estándar interno para todas las plataformas que soportamos. Sin embargo, precisamente por esa complejidad, es muy importante que entiendas exactamente qué le estás enviando a nuestro servidor para obtener la localización correcta y qué ocurre después — así siempre recibirás lo que esperas.
+
+## Estándar de códigos de idioma en Adapty \{#locale-code-standard-at-adapty\}
+
+Para los códigos de idioma, Adapty utiliza una versión ligeramente modificada del [estándar BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): cada código se compone de subetiquetas en minúsculas separadas por guiones. Algunos ejemplos: `en` (inglés), `pt-br` (portugués (Brasil)), `zh` (chino simplificado), `zh-hant` (chino tradicional).
+
 ## Coincidencia de códigos de idioma \{#locale-code-matching\}
 
 Cuando Adapty recibe una llamada del SDK con el código de idioma y empieza a buscar la localización correspondiente de un paywall, ocurre lo siguiente:
@@ -88,4 +139,6 @@ suspend fun fetchPaywall() {
 Ten en cuenta que no recomendamos este enfoque por varias razones:
 1. En iOS, el idioma preferido del usuario y el locale regional del dispositivo no son idénticos. `NSLocale.currentLocale.localeIdentifier` devuelve el locale regional, que puede diferir del idioma en que los usuarios leen tu app. Las apps iOS que usan archivos de cadenas localizadas dependen de la lógica de resolución de Apple para combinar ambos, lo que funciona de forma automática con el enfoque recomendado anteriormente.
 2. Es difícil predecir exactamente qué devolverá el dispositivo y si coincide con una localización de Adapty. El locale del dispositivo puede incluir extensiones o códigos regionales que no hayas configurado en Adapty; en ese caso, el SDK recurre a la coincidencia del primer subtag o, en último término, a `en`.
-Igualmente, si decides usar este enfoque de todas formas, asegúrate de haber cubierto todos los casos de uso relevantes.
+Should you decide to use this approach anyway — make sure you've covered all the relevant use cases.
+
+</SDKv3>

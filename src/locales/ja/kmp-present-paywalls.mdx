@@ -1,30 +1,307 @@
 ---
-title: "Kotlin Multiplatform - 新しいペイウォールビルダーのペイウォールを表示する"
-description: "Kotlin Multiplatformでペイウォールを表示して効果的なマネタイズを実現する方法を学びましょう。"
-metadataTitle: "Kotlin Multiplatformでのペイウォール表示 | Adapty ドキュメント"
+title: "フローとペイウォールの表示 - Kotlin Multiplatform"
+description: "Kotlin Multiplatformアプリでユーザーにフローとペイウォールを表示します。"
+metadataTitle: "フローとペイウォールの表示 - Kotlin Multiplatform | Adapty ドキュメント"
 ---
 
-ペイウォールビルダーを使ってペイウォールをカスタマイズした場合、モバイルアプリのコードでレンダリングをゼロから実装する必要はありません。ペイウォールには「何を表示するか」と「どのように表示するか」の情報が含まれています。
+<SDKv4>
+
+<MethodPromo method="getFlow" label="フローとペイウォールの表示" />
+
+フローまたはペイウォールを作成した場合、それをモバイルアプリのコードでレンダリングしてユーザーに表示する方法を心配する必要はありません。フローまたはペイウォールには、表示する内容とその表示方法の両方が含まれています。
 
 :::warning
 
-このガイドは**新しいペイウォールビルダーのペイウォール**専用です。リモートコンフィグで設計されたペイウォールや [Observer モード](observer-vs-full-mode) では、ペイウォールの表示方法が異なります。
+このガイドは、Adapty によってレンダリングされるフローと**新しいペイウォールビルダーのペイウォール**を対象としています。リモートコンフィグのペイウォールと [Observer モード](observer-vs-full-mode) では、処理方法が異なります。
 
-**リモートコンフィグのペイウォール**を表示する方法については、[リモートコンフィグで設計されたペイウォールをレンダリングする](present-remote-config-paywalls-kmp) をご覧ください。
+- **リモートコンフィグペイウォール**を表示する場合は、[リモートコンフィグで設計されたペイウォールのレンダリング](present-remote-config-paywalls-kmp)を参照してください。
+- **オブザーバーモード**でフローを表示する場合は、[オブザーバーモードでフローを表示する](kmp-present-flows-in-observer-mode)を参照してください。
 
 :::
 
-Adapty Kotlin Multiplatform SDK では、ペイウォールを表示する方法が 2 つあります。
+以下で使用する `flow` オブジェクトの取得方法については、[フローとペイウォールの取得](kmp-get-pb-paywalls)を参照してください。
 
-- **Compose Multiplatform を使用する**
-- **Compose Multiplatform を使用しない**
+Adapty Kotlin Multiplatform SDK では、フローとペイウォールを表示する方法が2つあります：
 
-## Compose Multiplatform を使用する \{#with-compose-multiplatform\}
+- **Compose Multiplatform を使用する場合**
+- **Compose Multiplatform を使用しない場合**
 
-ペイウォールを表示するには、[`createPaywallView`](kmp-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) メソッドで作成した `view` に対して `view.present()` メソッドを呼び出します。各 `view` は一度しか使用できません。ペイウォールを再度表示する必要がある場合は、`createPaywallView` を再度呼び出して新しい `view` インスタンスを作成してください。
+## Compose Multiplatform の場合 \{#with-compose-multiplatform\}
+
+フローまたはペイウォールを表示するには、[`createFlowView`](kmp-get-pb-paywalls#fetch-the-view-configuration) メソッドで作成した `view` に対して `view.present()` メソッドを呼び出します。各 `view` は一度しか使用できません。フローを再度表示する必要がある場合は、`createFlowView` をもう一度呼び出して新しい `view` インスタンスを作成してください。
 
 :::warning
-`view` を再作成せずに使い回すとエラーが発生する場合があります。
+同じ `view` を再作成せずに再利用すると、エラーが発生する場合があります。
+:::
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    AdaptyUI.createFlowView(flow = flow).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+### ダイアログを表示する \{#show-dialog\}
+
+Android でフローまたはペイウォールが表示されている場合は、ネイティブのアラートダイアログの代わりにこのメソッドを使用してください。Android では、通常のアラートがフロービューの背後に表示されるため、ユーザーには見えません。このメソッドを使用することで、すべてのプラットフォームでフローの上に正しくダイアログが表示されます。
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    view.showDialog(
+        title = "Close this screen?",
+        content = "You will lose access to exclusive offers.",
+        primaryActionTitle = "Stay",
+        secondaryActionTitle = "Close"
+    ).onSuccess { action ->
+        if (action == AdaptyUIDialogActionType.SECONDARY) {
+            // User confirmed - close the flow
+            view.dismiss()
+        }
+        // If primary - do nothing, user stays
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+### iOSのプレゼンテーションスタイルを設定する \{#configure-ios-presentation-style\}
+
+`present()` メソッドに `iosPresentationStyle` パラメータを渡すことで、iOS でのフローまたはペイウォールの表示スタイルを設定できます。このパラメータには `AdaptyUIIOSPresentationStyle.FULLSCREEN`（デフォルト）または `AdaptyUIIOSPresentationStyle.PAGESHEET` を指定できます。
+
+```kotlin showLineNumbers
+
+viewModelScope.launch {
+    val view = AdaptyUI.createFlowView(flow = flow).getOrNull()
+    view?.present(iosPresentationStyle = AdaptyUIIOSPresentationStyle.PAGESHEET)
+}
+```
+
+## Compose Multiplatformを使わない場合 \{#without-compose-multiplatform\}
+
+:::note
+`createNativeFlowView` はコアモジュール `io.adapty:adapty-kmp` の一部です。Compose Multiplatform を使用しないプロジェクトでは、`io.adapty:adapty-kmp-ui` の依存関係は不要です。
+:::
+
+Compose Multiplatform を使わずにフローやペイウォールを埋め込むには、`createNativeFlowView` を呼び出してください。返された `AdaptyNativeFlowView` をレイアウトに追加します。
+
+<Tabs>
+<TabItem value="android" label="Android">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    context = context,
+    viewModelStoreOwner = activity,
+    flow = flow,
+    observer = myFlowObserver,
+)
+
+// Embed in your Compose layout:
+AndroidView(
+    factory = { nativeView.view },
+    modifier = Modifier.fillMaxSize()
+)
+```
+</TabItem>
+<TabItem value="ios" label="iOS">
+KMP インターフェースのデフォルトメソッドは Swift では `@required` になるため、Swift から `AdaptyUIFlowsEventsObserver` を直接実装することはできません。まず `iosMain` でオープンな基底クラスを宣言してください：
+
+```kotlin showLineNumbers title="iosMain (Kotlin)"
+open class BaseFlowObserver : AdaptyUIFlowsEventsObserver
+```
+
+次に、必要なメソッドだけをオーバーライドしてSwiftでサブクラスを作成します。
+
+```swift showLineNumbers title="Swift"
+class MyFlowObserver: BaseFlowObserver {
+    override func flowViewDidPerformAction(view: AdaptyUIFlowView, action: any AdaptyUIAction) {
+        if action is AdaptyUIActionCloseAction {
+            // remove nativeView from your view hierarchy
+        }
+    }
+}
+
+let nativeView = AdaptyUI.shared.createNativeFlowView(
+    flow: flow,
+    observer: MyFlowObserver()
+)
+// nativeView.viewController is a UIViewController.
+// Add it to your SwiftUI view or UIKit hierarchy.
+```
+</TabItem>
+</Tabs>
+
+### ビューの破棄 \{#dispose-the-view\}
+
+ビューをレイアウトから削除する際は `dispose()` を呼び出してください。これにより、イベントリスナーの登録が解除され、内部リソースが解放されます。
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+nativeView.dispose()
+```
+
+## カスタムタグ \{#custom-tags\}
+
+カスタムタグを使えば、シナリオごとに別々のフローやペイウォールを作成する手間を省けます。ユーザーデータに基づいて動的に変化する単一のフローを想像してみてください。たとえば、「こんにちは！」という汎用的な挨拶の代わりに、「こんにちは、John さん！」や「こんにちは、Ann さん！」といった個人に向けた挨拶を表示できます。
+
+カスタムタグの活用例をいくつか紹介します：
+
+- フローやペイウォールにユーザーの名前やメールアドレスを表示する。
+- 今日の曜日を表示して購買意欲を高める（例：「ハッピーサーズデー」）。
+- 販売しているプロダクトに関するパーソナライズされた詳細情報を追加する（フィットネスプログラムの名前や VoIP アプリの電話番号など）。
+
+カスタムタグを使うと、さまざまな状況に適応する柔軟なフローを作成でき、アプリのインターフェースをよりパーソナライズされた魅力的なものにできます。
+
+:::warning
+場合によっては、アプリがカスタムタグの置換内容を把握できないことがあります。特にユーザーが古いバージョンの AdaptyUI SDK を使用している場合がそれにあたります。これを防ぐため、未知のカスタムタグを含む行を置き換えるフォールバックテキストを必ず追加してください。これを設定しないと、ユーザーにタグがコード（`<USERNAME/>`）のまま表示されることがあります。
+:::
+
+フローやペイウォールでカスタムタグを使用するには、フロービューを作成する際にタグを渡します。
+
+<Tabs>
+<TabItem value="standalone" label="With Compose Multiplatform" default>
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    val customTags = mapOf(
+        "USERNAME" to "John",
+        "DAY_OF_WEEK" to "Thursday"
+    )
+
+    AdaptyUI.createFlowView(
+        flow = flow,
+        customTags = customTags
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="native" label="Without Compose Multiplatform">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val customTags = mapOf(
+    "USERNAME" to "John",
+    "DAY_OF_WEEK" to "Thursday"
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    context = context,
+    viewModelStoreOwner = activity,
+    flow = flow,
+    observer = myFlowObserver,
+    customTags = customTags,
+)
+```
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+
+val customTags = mapOf(
+    "USERNAME" to "John",
+    "DAY_OF_WEEK" to "Thursday"
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    flow = flow,
+    observer = myFlowObserver,
+    customTags = customTags,
+)
+```
+</TabItem>
+</Tabs>
+
+## カスタムタイマー \{#custom-timers\}
+
+タイマーは、期間限定のスペシャルオファーやシーズンオファーを訴求するのに役立つツールです。ただし、このタイマーはオファーの有効期限やキャンペーンの期間とは連動していません。設定した値からゼロに向かってカウントダウンするだけのシンプルなスタンドアロンのカウントダウンです。タイマーがゼロに達しても何も起こらず、そのままゼロの状態が続きます。
+
+タイマーの前後にテキストをカスタマイズして、「オファー終了まで：10:00 秒」のようなメッセージを作成できます。
+
+フローまたはペイウォールでカスタムタイマーを使用するには、フロービューを作成する際に渡してください：
+
+<Tabs>
+<TabItem value="standalone" label="With Compose Multiplatform" default>
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    val customTimers = mapOf(
+        "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+        "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+    )
+
+    AdaptyUI.createFlowView(
+        flow = flow,
+        customTimers = customTimers
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="native" label="Without Compose Multiplatform">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val customTimers = mapOf(
+    "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+    "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    context = context,
+    viewModelStoreOwner = activity,
+    flow = flow,
+    observer = myFlowObserver,
+    customTimers = customTimers,
+)
+```
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+
+val customTimers = mapOf(
+    "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+    "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    flow = flow,
+    observer = myFlowObserver,
+    customTimers = customTimers,
+)
+```
+</TabItem>
+</Tabs>
+
+</SDKv4>
+
+<SDKv3>
+
+ペイウォールビルダーを使ってペイウォールをカスタマイズした場合、モバイルアプリのコードでレンダリングしてユーザーに表示する手間はかかりません。このようなペイウォールには、表示する内容と表示方法の両方が含まれています。
+
+:::warning
+
+このガイドは**新しいペイウォールビルダーのペイウォール**専用です。リモートコンフィグで設計されたペイウォールや [Observer mode](observer-vs-full-mode) では、ペイウォールの表示方法が異なります。
+
+**リモートコンフィグのペイウォール**を表示する方法については、[リモートコンフィグで設計されたペイウォールのレンダリング](present-remote-config-paywalls-kmp)を参照してください。
+
+:::
+
+Adapty Kotlin Multiplatform SDKは、ペイウォールを表示する2つの方法を提供します：
+
+- **Compose Multiplatformを使用する場合**
+- **Compose Multiplatformを使用しない場合**
+
+## Compose Multiplatform を使用する場合 \{#with-compose-multiplatform\}
+
+ペイウォールを表示するには、[`createPaywallView`](kmp-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) メソッドで作成した `view` の `view.present()` メソッドを使用します。各 `view` は一度しか使用できません。再度ペイウォールを表示する必要がある場合は、`createPaywallView` をもう一度呼び出して新しい `view` インスタンスを作成してください。
+
+:::warning
+同じ `view` を再作成せずに再利用すると、エラーが発生することがあります。
 :::
 
 ```kotlin showLineNumbers title="Kotlin Multiplatform"
@@ -40,7 +317,7 @@ viewModelScope.launch {
 
 ### ダイアログを表示する \{#show-dialog\}
 
-Android でペイウォールビューが表示されている場合は、ネイティブのアラートダイアログの代わりにこのメソッドを使用してください。Android では通常のアラートがペイウォールビューの背後に表示されてしまい、ユーザーから見えなくなります。このメソッドを使うことで、すべてのプラットフォームでペイウォールの上にダイアログが正しく表示されます。
+Android でペイウォールが表示されている場合、ネイティブのアラートダイアログの代わりにこのメソッドを使用してください。Android では、通常のアラートはペイウォールの背面に表示されるため、ユーザーから見えなくなります。このメソッドを使用することで、すべてのプラットフォームでペイウォールの上に正しくダイアログを表示できます。
 
 ```kotlin showLineNumbers title="Kotlin Multiplatform"
 
@@ -62,9 +339,9 @@ viewModelScope.launch {
 }
 ```
 
-### iOS の表示スタイルを設定する \{#configure-ios-presentation-style\}
+### iOS のプレゼンテーションスタイルを設定する \{#configure-ios-presentation-style\}
 
-`present()` メソッドに `iosPresentationStyle` パラメータを渡すことで、iOS でのペイウォールの表示スタイルを設定できます。このパラメータには `AdaptyUIIOSPresentationStyle.FULLSCREEN`（デフォルト）または `AdaptyUIIOSPresentationStyle.PAGESHEET` を指定できます。
+`present()` メソッドに `iosPresentationStyle` パラメータを渡すことで、iOS でのペイウォールの表示方法を設定できます。パラメータには `AdaptyUIIOSPresentationStyle.FULLSCREEN`（デフォルト）または `AdaptyUIIOSPresentationStyle.PAGESHEET` を指定できます。
 
 ```kotlin showLineNumbers
 
@@ -74,13 +351,13 @@ viewModelScope.launch {
 }
 ```
 
-## Compose Multiplatform を使用しない \{#without-compose-multiplatform\}
+## Compose Multiplatformなしで使う \{#without-compose-multiplatform\}
 
 :::note
-`createNativePaywallView` はコアモジュール `io.adapty:adapty-kmp` に含まれています。プロジェクトで Compose Multiplatform を使用していない場合、`io.adapty:adapty-kmp-ui` への依存は不要です。
+`createNativePaywallView`はコア`io.adapty:adapty-kmp`モジュールの一部です。Compose Multiplatformを使用しないプロジェクトでは、`io.adapty:adapty-kmp-ui`依存関係は不要です。
 :::
 
-Compose Multiplatform を使用せずにペイウォールを埋め込むには、`createNativePaywallView` を呼び出します。このメソッドはレイアウトに追加できる `AdaptyNativePaywallView` を返します。
+Compose Multiplatformなしでペイウォールを埋め込むには、`createNativePaywallView`を呼び出します。これはレイアウトに追加する`AdaptyNativePaywallView`を返します：
 
 <Tabs>
 <TabItem value="android" label="Android">
@@ -101,13 +378,13 @@ AndroidView(
 ```
 </TabItem>
 <TabItem value="ios" label="iOS">
-KMP インターフェースのデフォルトメソッドは Swift では `@required` になるため、Swift から直接 `AdaptyUIPaywallsEventsObserver` を実装することはできません。まず `iosMain` にオープンな基底クラスを宣言してください。
+KMP インターフェースのデフォルトメソッドは Swift では `@required` になるため、Swift から直接 `AdaptyUIPaywallsEventsObserver` を実装することはできません。まず `iosMain` でオープン基底クラスを宣言してください：
 
 ```kotlin showLineNumbers title="iosMain (Kotlin)"
 open class BasePaywallObserver : AdaptyUIPaywallsEventsObserver
 ```
 
-次に Swift でサブクラスを作成し、必要なメソッドのみオーバーライドします。
+次に、Swift でサブクラス化し、必要なメソッドのみをオーバーライドします:
 
 ```swift showLineNumbers title="Swift"
 class MyPaywallObserver: BasePaywallObserver {
@@ -128,9 +405,9 @@ let nativeView = AdaptyUI.shared.createNativePaywallView(
 </TabItem>
 </Tabs>
 
-### ビューを破棄する \{#dispose-the-view\}
+### ビューの破棄 \{#dispose-the-view\}
 
-レイアウトからビューを削除する際は `dispose()` を呼び出してください。これによりイベントリスナーの登録が解除され、内部リソースが解放されます。
+ビューをレイアウトから削除する際は `dispose()` を呼び出してください。これにより、イベントリスナーの登録が解除され、内部リソースが解放されます。
 
 ```kotlin showLineNumbers title="Kotlin Multiplatform"
 nativeView.dispose()
@@ -138,21 +415,21 @@ nativeView.dispose()
 
 ## カスタムタグ \{#custom-tags\}
 
-カスタムタグを使うと、シナリオごとに別々のペイウォールを作らずに済みます。ユーザーデータに応じて動的に変化するペイウォールを 1 つ用意するイメージです。たとえば、"Hello!" という汎用的な文言の代わりに、"Hello, John!" や "Hello, Ann!" のようにユーザーに合わせた挨拶を表示できます。
+カスタムタグを使うと、シナリオごとに別々のペイウォールを作成しなくて済みます。ユーザーデータに基づいて動的に変化する1つのペイウォールを想像してみてください。たとえば、「こんにちは！」という汎用的な挨拶の代わりに、「こんにちは、John！」や「こんにちは、Ann！」のようにユーザーを名前で呼ぶことができます。
 
-カスタムタグの活用例を以下に示します。
+カスタムタグの活用例をいくつかご紹介します：
 
 - ペイウォールにユーザーの名前やメールアドレスを表示する。
-- 売上促進のために現在の曜日を表示する（例：「Happy Thursday」）。
-- 販売中のプロダクトに関するパーソナライズされた情報（フィットネスプログラムの名称や VoIP アプリの電話番号など）を追加する。
+- 売上アップのために現在の曜日を表示する（例：「ハッピーサーズデー」）。
+- 販売しているプロダクトに関するパーソナライズされた詳細を追加する（フィットネスプログラムの名前や、VoIPアプリの電話番号など）。
 
-カスタムタグを使うと、様々な状況に柔軟に対応できるペイウォールを作成でき、アプリのインターフェースをよりパーソナライズして魅力的にできます。
+カスタムタグを使用すると、さまざまな状況に適応する柔軟なペイウォールを作成でき、アプリのインターフェースをよりパーソナライズされた魅力的なものにできます。
 
 :::warning
-AdaptyUI SDK の古いバージョンを使用しているユーザーを対象とするケースなど、カスタムタグの置換先が不明な場合があります。そのため、未知のカスタムタグを含む行を置き換えるフォールバックテキストを必ず設定してください。設定しないと、タグがコード（`<USERNAME/>`）としてそのまま表示されてしまいます。
+アプリが カスタムタグの置換内容を認識できない場合があります—特にユーザーが古いバージョンの AdaptyUI SDK を使用している場合です。これを防ぐため、未知のカスタムタグを含む行を置き換えるフォールバックテキストを必ず追加してください。設定しないと、ユーザーにタグがコード（`<USERNAME/>`）としてそのまま表示される可能性があります。
 :::
 
-ペイウォールでカスタムタグを使用するには、ペイウォールビューを作成する際に渡します。
+ペイウォールでカスタムタグを使用するには、ペイウォールビューを作成する際にカスタムタグを渡します：
 
 <Tabs>
 <TabItem value="standalone" label="With Compose Multiplatform" default>
@@ -210,14 +487,14 @@ val nativeView = AdaptyUI.createNativePaywallView(
 
 ## カスタムタイマー \{#custom-timers\}
 
-ペイウォールのタイマーは、期間限定の特別オファーや季節限定オファーを訴求する優れたツールです。ただし、このタイマーはオファーの有効期間やキャンペーンの期間とは連動していません。設定した値からゼロに向かってカウントダウンするだけのスタンドアロンのタイマーです。タイマーがゼロになっても何も起こりません。ゼロのまま停止するだけです。
+ペイウォールタイマーは、期間限定の特別オファーや季節オファーを宣伝するのに便利なツールです。ただし、このタイマーはオファーの有効期限やキャンペーンの期間とは連動していません。設定した値からゼロまでカウントダウンするだけのシンプルなタイマーです。タイマーがゼロになっても特に何も起こらず、ゼロのまま表示され続けます。
 
-タイマーの前後にテキストをカスタマイズして、「残り時間：10:00 秒」のようなメッセージを作成できます。
+タイマーの前後にテキストをカスタマイズして、「オファー終了まで: 10:00 秒」のようなメッセージを作成できます。
 
-ペイウォールでカスタムタイマーを使用するには、ペイウォールビューを作成する際に渡します。
+ペイウォールでカスタムタイマーを使用するには、ペイウォールビューを作成する際に渡してください:
 
 <Tabs>
-<TabItem value="standalone" label="With Compose Multiplatform" default>
+<TabItem value="standalone" label="Compose Multiplatform を使用する場合" default>
 ```kotlin showLineNumbers title="Kotlin Multiplatform"
 
 viewModelScope.launch {
@@ -237,7 +514,7 @@ viewModelScope.launch {
 }
 ```
 </TabItem>
-<TabItem value="native" label="Without Compose Multiplatform">
+<TabItem value="native" label="Compose Multiplatform を使用しない場合">
 ```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
 
 val customTimers = mapOf(
@@ -269,3 +546,5 @@ val nativeView = AdaptyUI.createNativePaywallView(
 ```
 </TabItem>
 </Tabs>
+
+</SDKv3>

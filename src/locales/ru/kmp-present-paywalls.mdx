@@ -1,30 +1,307 @@
 ---
-title: "Kotlin Multiplatform - Отображение пейволов, созданных в новом Paywall Builder"
-description: "Узнайте, как отображать пейволы в Kotlin Multiplatform для эффективной монетизации."
-metadataTitle: "Отображение пейволов в Kotlin Multiplatform | Документация Adapty"
+title: "Отображение флоу и пейволов - Kotlin Multiplatform"
+description: "Показывайте флоу и пейволы пользователям в вашем приложении Kotlin Multiplatform."
+metadataTitle: "Отображение флоу и пейволов - Kotlin Multiplatform | Документация Adapty"
 ---
 
-Если вы настроили пейвол с помощью Paywall Builder, вам не нужно беспокоиться о его рендеринге в коде мобильного приложения для отображения пользователю. Такой пейвол содержит как то, что должно быть показано, так и то, как именно это должно отображаться.
+<SDKv4>
+
+<MethodPromo method="getFlow" label="Display flows and paywalls" />
+
+Если вы создали флоу или пейвол, вам не нужно беспокоиться об их отрисовке в коде мобильного приложения для отображения пользователю. Такой флоу или пейвол уже содержит всё необходимое: что именно показывать и как это показывать.
 
 :::warning
 
-Этот гайд предназначен **только для пейволов нового Paywall Builder**. Процесс отображения пейволов отличается для пейволов, созданных с помощью Remote Config, и для [режима Observer](observer-vs-full-mode).
+Этот гайд охватывает флоу и **пейволы нового Paywall Builder**, которые отрисовывает Adapty. Для Remote Config пейволов и режима [Observer mode](observer-vs-full-mode) процесс отличается.
 
-Для отображения **пейволов Remote Config** см. [Рендеринг пейвола, созданного с помощью Remote Config](present-remote-config-paywalls-kmp).
+- Для отображения **пейволов с Remote Config** см. [Отображение пейволов на основе Remote Config](present-remote-config-paywalls-kmp).
+- Для отображения флоу в **режиме Observer**, см. [Отображение флоу в режиме Observer](kmp-present-flows-in-observer-mode).
 
 :::
 
-Adapty Kotlin Multiplatform SDK предоставляет два способа отображения пейволов:
+Чтобы получить объект `flow`, используемый далее, см. [Получение флоу и пейволов](kmp-get-pb-paywalls).
+
+Adapty Kotlin Multiplatform SDK предоставляет два способа отображения флоу и пейволов:
 
 - **С Compose Multiplatform**
 - **Без Compose Multiplatform**
 
 ## С Compose Multiplatform \{#with-compose-multiplatform\}
 
-Для отображения пейвола используйте метод `view.present()` на объекте `view`, созданном методом [`createPaywallView`](kmp-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Каждый объект `view` можно использовать только один раз. Если нужно показать пейвол ещё раз, вызовите `createPaywallView` повторно, чтобы создать новый экземпляр `view`.
+Чтобы отобразить флоу или пейвол, используйте метод `view.present()` на объекте `view`, созданном методом [`createFlowView`](kmp-get-pb-paywalls#fetch-the-view-configuration). Каждый `view` можно использовать только один раз. Если нужно отобразить флоу повторно, вызовите `createFlowView` ещё раз, чтобы создать новый экземпляр `view`.
 
 :::warning
-Повторное использование одного и того же объекта `view` без его пересоздания может привести к ошибке.
+Повторное использование одного и того же `view` без его пересоздания может привести к ошибке.
+:::
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    AdaptyUI.createFlowView(flow = flow).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+### Показ диалога \{#show-dialog\}
+
+Используйте этот метод вместо нативных диалоговых окон alert, когда флоу или пейвол отображается на Android. На Android обычные alert появляются позади слоя флоу, что делает их невидимыми для пользователей. Этот метод обеспечивает корректное отображение диалога поверх флоу на всех платформах.
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    view.showDialog(
+        title = "Close this screen?",
+        content = "You will lose access to exclusive offers.",
+        primaryActionTitle = "Stay",
+        secondaryActionTitle = "Close"
+    ).onSuccess { action ->
+        if (action == AdaptyUIDialogActionType.SECONDARY) {
+            // User confirmed - close the flow
+            view.dismiss()
+        }
+        // If primary - do nothing, user stays
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+### Настройка стиля отображения на iOS \{#configure-ios-presentation-style\}
+
+Настройте способ отображения флоу или пейвола на iOS, передав параметр `iosPresentationStyle` в метод `present()`. Параметр принимает значения `AdaptyUIIOSPresentationStyle.FULLSCREEN` (по умолчанию) или `AdaptyUIIOSPresentationStyle.PAGESHEET`.
+
+```kotlin showLineNumbers
+
+viewModelScope.launch {
+    val view = AdaptyUI.createFlowView(flow = flow).getOrNull()
+    view?.present(iosPresentationStyle = AdaptyUIIOSPresentationStyle.PAGESHEET)
+}
+```
+
+## Без Compose Multiplatform \{#without-compose-multiplatform\}
+
+:::note
+`createNativeFlowView` является частью основного модуля `io.adapty:adapty-kmp`. Если ваш проект не использует Compose Multiplatform, зависимость `io.adapty:adapty-kmp-ui` вам не нужна.
+:::
+
+Чтобы встроить флоу или пейвол без Compose Multiplatform, вызовите `createNativeFlowView`. Метод возвращает `AdaptyNativeFlowView`, который нужно добавить в ваш лейаут:
+
+<Tabs>
+<TabItem value="android" label="Android">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    context = context,
+    viewModelStoreOwner = activity,
+    flow = flow,
+    observer = myFlowObserver,
+)
+
+// Embed in your Compose layout:
+AndroidView(
+    factory = { nativeView.view },
+    modifier = Modifier.fillMaxSize()
+)
+```
+</TabItem>
+<TabItem value="ios" label="iOS">
+Поскольку методы по умолчанию KMP-интерфейсов становятся `@required` в Swift, реализовать `AdaptyUIFlowsEventsObserver` напрямую из Swift не получится. Сначала объявите открытый базовый класс в `iosMain`:
+
+```kotlin showLineNumbers title="iosMain (Kotlin)"
+open class BaseFlowObserver : AdaptyUIFlowsEventsObserver
+```
+
+Затем создайте подкласс в Swift, переопределяя только нужное:
+
+```swift showLineNumbers title="Swift"
+class MyFlowObserver: BaseFlowObserver {
+    override func flowViewDidPerformAction(view: AdaptyUIFlowView, action: any AdaptyUIAction) {
+        if action is AdaptyUIActionCloseAction {
+            // remove nativeView from your view hierarchy
+        }
+    }
+}
+
+let nativeView = AdaptyUI.shared.createNativeFlowView(
+    flow: flow,
+    observer: MyFlowObserver()
+)
+// nativeView.viewController is a UIViewController.
+// Add it to your SwiftUI view or UIKit hierarchy.
+```
+</TabItem>
+</Tabs>
+
+### Освобождение ресурсов представления \{#dispose-the-view\}
+
+Вызовите `dispose()` при удалении представления из макета. Это снимает регистрацию слушателя событий и освобождает внутренние ресурсы.
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+nativeView.dispose()
+```
+
+## Кастомные теги \{#custom-tags\}
+
+Кастомные теги позволяют не создавать отдельные флоу или пейволы для разных сценариев. Представьте один флоу, который динамически адаптируется под данные пользователя. Например, вместо безликого «Привет!» можно приветствовать пользователей лично: «Привет, Иван!» или «Привет, Анна!»
+
+Вот несколько примеров использования кастомных тегов:
+
+- Отображать имя или email пользователя на флоу или пейволе.
+- Показывать текущий день недели для стимулирования продаж (например, «С четвергом!»).
+- Добавлять персонализированные детали о продаваемых продуктах (например, название фитнес-программы или номер телефона в VoIP-приложении).
+
+Пользовательские теги помогают создать гибкий флоу, который адаптируется к различным ситуациям, делая интерфейс вашего приложения более персонализированным и привлекательным.
+
+:::warning
+В некоторых случаях приложение может не знать, чем заменить пользовательский тег — особенно если пользователи работают на старой версии AdaptyUI SDK. Чтобы избежать этого, всегда добавляйте резервный текст, который будет подставляться вместо строк с неизвестными тегами. Без этого пользователи могут видеть теги в виде кода (`<USERNAME/>`).
+:::
+
+Чтобы использовать пользовательские теги в вашем флоу или пейволе, передайте их при создании представления флоу:
+
+<Tabs>
+<TabItem value="standalone" label="With Compose Multiplatform" default>
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    val customTags = mapOf(
+        "USERNAME" to "John",
+        "DAY_OF_WEEK" to "Thursday"
+    )
+
+    AdaptyUI.createFlowView(
+        flow = flow,
+        customTags = customTags
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="native" label="Without Compose Multiplatform">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val customTags = mapOf(
+    "USERNAME" to "John",
+    "DAY_OF_WEEK" to "Thursday"
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    context = context,
+    viewModelStoreOwner = activity,
+    flow = flow,
+    observer = myFlowObserver,
+    customTags = customTags,
+)
+```
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+
+val customTags = mapOf(
+    "USERNAME" to "John",
+    "DAY_OF_WEEK" to "Thursday"
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    flow = flow,
+    observer = myFlowObserver,
+    customTags = customTags,
+)
+```
+</TabItem>
+</Tabs>
+
+## Пользовательские таймеры \{#custom-timers\}
+
+Таймер — отличный инструмент для продвижения специальных и сезонных предложений с ограниченным сроком действия. Важно понимать, что этот таймер не связан со сроком действия предложения или продолжительностью кампании. Это просто самостоятельный обратный отсчёт, который стартует с заданного вами значения и уменьшается до нуля. Когда таймер достигает нуля, ничего не происходит — он просто остаётся на нуле.
+
+Вы можете настроить текст до и после таймера, чтобы сформировать нужное сообщение, например: «Предложение заканчивается через: 10:00 сек.»
+
+Чтобы использовать пользовательские таймеры в вашем флоу или пейволе, передайте их при создании представления флоу:
+
+<Tabs>
+<TabItem value="standalone" label="С Compose Multiplatform" default>
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    val customTimers = mapOf(
+        "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+        "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+    )
+
+    AdaptyUI.createFlowView(
+        flow = flow,
+        customTimers = customTimers
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="native" label="Без Compose Multiplatform">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val customTimers = mapOf(
+    "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+    "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    context = context,
+    viewModelStoreOwner = activity,
+    flow = flow,
+    observer = myFlowObserver,
+    customTimers = customTimers,
+)
+```
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+
+val customTimers = mapOf(
+    "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+    "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    flow = flow,
+    observer = myFlowObserver,
+    customTimers = customTimers,
+)
+```
+</TabItem>
+</Tabs>
+
+</SDKv4>
+
+<SDKv3>
+
+Если вы настроили пейвол с помощью Paywall Builder, вам не нужно беспокоиться о его рендеринге в коде мобильного приложения для отображения пользователю. Такой пейвол содержит как то, что должно быть показано, так и то, как это должно быть показано.
+
+:::warning
+
+Этот гайд предназначен только для пейволов, созданных с помощью **нового Paywall Builder**. Процесс отображения пейволов отличается для пейволов на основе Remote Config и [режима Observer](observer-vs-full-mode).
+
+Для отображения **пейволов на основе Remote Config** см. [Рендеринг пейвола, созданного с помощью Remote Config](present-remote-config-paywalls-kmp).
+
+:::
+
+SDK Adapty Kotlin Multiplatform предоставляет два способа отображения пейволов:
+
+- **С Compose Multiplatform**
+- **Без Compose Multiplatform**
+
+## С Compose Multiplatform \{#with-compose-multiplatform\}
+
+Чтобы отобразить пейвол, вызовите метод `view.present()` на объекте `view`, созданном методом [`createPaywallView`](kmp-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Каждый объект `view` можно использовать только один раз. Если нужно показать пейвол повторно, вызовите `createPaywallView` ещё раз, чтобы создать новый экземпляр `view`.
+
+:::warning
+Повторное использование одного и того же `view` без его пересоздания может привести к ошибке.
 :::
 
 ```kotlin showLineNumbers title="Kotlin Multiplatform"
@@ -38,9 +315,9 @@ viewModelScope.launch {
 }
 ```
 
-### Показ диалога \{#show-dialog\}
+### Показ диалогов \{#show-dialog\}
 
-Используйте этот метод вместо стандартных диалоговых окон, когда пейвол отображается на Android. На Android обычные алерты появляются позади пейвола и остаются невидимыми для пользователей. Этот метод гарантирует корректное отображение диалога поверх пейвола на всех платформах.
+Используйте этот метод вместо нативных диалогов alert, когда на Android отображается пейвол. На Android стандартные алерты появляются позади пейвола и становятся невидимы для пользователей. Этот метод гарантирует корректное отображение диалога поверх пейвола на всех платформах.
 
 ```kotlin showLineNumbers title="Kotlin Multiplatform"
 
@@ -62,7 +339,7 @@ viewModelScope.launch {
 }
 ```
 
-### Настройка стиля презентации на iOS \{#configure-ios-presentation-style\}
+### Настройка стиля отображения на iOS \{#configure-ios-presentation-style\}
 
 Настройте способ отображения пейвола на iOS, передав параметр `iosPresentationStyle` в метод `present()`. Параметр принимает значения `AdaptyUIIOSPresentationStyle.FULLSCREEN` (по умолчанию) или `AdaptyUIIOSPresentationStyle.PAGESHEET`.
 
@@ -77,10 +354,10 @@ viewModelScope.launch {
 ## Без Compose Multiplatform \{#without-compose-multiplatform\}
 
 :::note
-`createNativePaywallView` входит в основной модуль `io.adapty:adapty-kmp`. Если в вашем проекте не используется Compose Multiplatform, зависимость `io.adapty:adapty-kmp-ui` не нужна.
+`createNativePaywallView` входит в основной модуль `io.adapty:adapty-kmp`. Если ваш проект не использует Compose Multiplatform, зависимость `io.adapty:adapty-kmp-ui` не нужна.
 :::
 
-Чтобы встроить пейвол без Compose Multiplatform, вызовите `createNativePaywallView`. Метод возвращает `AdaptyNativePaywallView`, который нужно добавить в ваш layout:
+Чтобы встроить пейвол без Compose Multiplatform, вызовите `createNativePaywallView`. Метод возвращает `AdaptyNativePaywallView`, который добавляется в ваш layout:
 
 <Tabs>
 <TabItem value="android" label="Android">
@@ -101,13 +378,13 @@ AndroidView(
 ```
 </TabItem>
 <TabItem value="ios" label="iOS">
-Поскольку дефолтные методы KMP-интерфейса становятся `@required` в Swift, вы не можете напрямую реализовать `AdaptyUIPaywallsEventsObserver` в Swift. Сначала объявите открытый базовый класс в `iosMain`:
+Поскольку методы по умолчанию KMP-интерфейсов становятся `@required` в Swift, вы не можете реализовать `AdaptyUIPaywallsEventsObserver` напрямую из Swift. Сначала объявите открытый базовый класс в `iosMain`:
 
 ```kotlin showLineNumbers title="iosMain (Kotlin)"
 open class BasePaywallObserver : AdaptyUIPaywallsEventsObserver
 ```
 
-Затем создайте подкласс в Swift, переопределив только нужные методы:
+Затем создайте подкласс в Swift, переопределив только то, что нужно:
 
 ```swift showLineNumbers title="Swift"
 class MyPaywallObserver: BasePaywallObserver {
@@ -128,34 +405,34 @@ let nativeView = AdaptyUI.shared.createNativePaywallView(
 </TabItem>
 </Tabs>
 
-### Удаление представления \{#dispose-the-view\}
+### Освобождение ресурсов \{#dispose-the-view\}
 
-Вызовите `dispose()` при удалении представления из layout. Это отменяет регистрацию обработчика событий и освобождает внутренние ресурсы.
+Вызовите `dispose()` при удалении представления из макета. Это отменяет регистрацию слушателя событий и освобождает внутренние ресурсы.
 
 ```kotlin showLineNumbers title="Kotlin Multiplatform"
 nativeView.dispose()
 ```
 
-## Кастомные теги \{#custom-tags\}
+## Пользовательские теги \{#custom-tags\}
 
-Кастомные теги позволяют избежать создания отдельных пейволов для разных сценариев. Представьте пейвол, который динамически адаптируется на основе данных пользователя. Например, вместо обобщённого «Привет!» вы можете персонально приветствовать пользователей: «Привет, Иван!» или «Привет, Анна!»
+Пользовательские теги позволяют не создавать отдельные пейволы для разных сценариев. Представьте один пейвол, который динамически подстраивается под данные пользователя. Например, вместо безликого «Привет!» можно приветствовать пользователей лично: «Привет, Иван!» или «Привет, Анна!»
 
-Вот несколько способов использования кастомных тегов:
+Вот несколько способов применения пользовательских тегов:
 
-- Отображение имени или email пользователя на пейволе.
-- Показ текущего дня недели для стимулирования продаж (например, «Счастливый четверг»).
-- Добавление персонализированных деталей о продаваемых продуктах (например, название фитнес-программы или номер телефона в VoIP-приложении).
+- Отображать имя или email пользователя на пейволе.
+- Показывать текущий день недели для повышения продаж (например, «Хорошего четверга»).
+- Добавлять персонализированные сведения о продаваемых продуктах (например, название фитнес-программы или номер телефона в VoIP-приложении).
 
-Кастомные теги помогают создать гибкий пейвол, адаптирующийся к различным ситуациям, делая интерфейс вашего приложения более персонализированным и привлекательным.
+Пользовательские теги помогают создать гибкий пейвол, который адаптируется к различным ситуациям, делая интерфейс вашего приложения более персонализированным и привлекательным.
 
 :::warning
-В некоторых случаях приложение может не знать, чем заменить кастомный тег — особенно если пользователи используют старую версию AdaptyUI SDK. Чтобы этого избежать, всегда добавляйте запасной текст, который заменит строки с неизвестными кастомными тегами. Без этого пользователи могут видеть теги в виде кода (`<USERNAME/>`).
+В некоторых случаях приложение может не знать, чем заменить пользовательский тег — особенно если пользователи работают со старой версией AdaptyUI SDK. Чтобы избежать этого, всегда добавляйте резервный текст, который будет заменять строки с неизвестными пользовательскими тегами. Без него пользователи могут увидеть теги в виде кода (`<USERNAME/>`).
 :::
 
-Чтобы использовать кастомные теги в пейволе, передайте их при создании представления пейвола:
+Чтобы использовать пользовательские теги в пейволе, передайте их при создании представления пейвола:
 
 <Tabs>
-<TabItem value="standalone" label="С Compose Multiplatform" default>
+<TabItem value="standalone" label="With Compose Multiplatform" default>
 ```kotlin showLineNumbers title="Kotlin Multiplatform"
 
 viewModelScope.launch {
@@ -175,7 +452,7 @@ viewModelScope.launch {
 }
 ```
 </TabItem>
-<TabItem value="native" label="Без Compose Multiplatform">
+<TabItem value="native" label="Without Compose Multiplatform">
 ```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
 
 val customTags = mapOf(
@@ -208,16 +485,16 @@ val nativeView = AdaptyUI.createNativePaywallView(
 </TabItem>
 </Tabs>
 
-## Кастомные таймеры \{#custom-timers\}
+## Пользовательские таймеры \{#custom-timers\}
 
-Таймер на пейволе — отличный инструмент для продвижения специальных и сезонных предложений с ограниченным сроком действия. Важно учитывать, что этот таймер не связан со сроком действия предложения или продолжительностью акции. Это просто автономный обратный отсчёт, который начинается с заданного вами значения и уменьшается до нуля. Когда таймер достигает нуля, ничего не происходит — он просто остаётся на нуле.
+Таймер на пейволе — отличный инструмент для продвижения специальных и сезонных предложений с ограниченным сроком действия. Важно учитывать, что этот таймер не связан ни со сроком действия предложения, ни с продолжительностью кампании. Это просто автономный обратный отсчёт, который начинается с заданного вами значения и уменьшается до нуля. Когда таймер достигает нуля, ничего не происходит — он просто остаётся на нуле.
 
-Вы можете настроить текст до и после таймера, чтобы создать нужное сообщение, например: «Предложение заканчивается через: 10:00 сек.»
+Вы можете настроить текст до и после таймера, чтобы сформировать нужное сообщение, например: «Предложение заканчивается через: 10:00 сек.»
 
-Чтобы использовать кастомные таймеры в пейволе, передайте их при создании представления пейвола:
+Чтобы использовать пользовательские таймеры на пейволе, передайте их при создании представления пейвола:
 
 <Tabs>
-<TabItem value="standalone" label="С Compose Multiplatform" default>
+<TabItem value="standalone" label="With Compose Multiplatform" default>
 ```kotlin showLineNumbers title="Kotlin Multiplatform"
 
 viewModelScope.launch {
@@ -237,7 +514,7 @@ viewModelScope.launch {
 }
 ```
 </TabItem>
-<TabItem value="native" label="Без Compose Multiplatform">
+<TabItem value="native" label="Without Compose Multiplatform">
 ```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
 
 val customTimers = mapOf(
@@ -269,3 +546,5 @@ val nativeView = AdaptyUI.createNativePaywallView(
 ```
 </TabItem>
 </Tabs>
+
+</SDKv3>

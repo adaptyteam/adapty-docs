@@ -1,0 +1,91 @@
+---
+title: "Показ флоу в режиме Observer — Kotlin Multiplatform"
+description: "Показывайте флоу и пейволы Paywall Builder в режиме Observer в вашем приложении на Kotlin Multiplatform, обрабатывая покупки собственным кодом."
+metadataTitle: "Показ флоу в режиме Observer — Kotlin Multiplatform | Документация Adapty"
+keywords: ['observer mode', 'AdaptyUIObserverModeResolver', 'setObserverModeResolver', 'flow']
+---
+
+Если вы настроили флоу или пейвол с помощью билдера, вам не нужно беспокоиться о его отрисовке в коде мобильного приложения для показа пользователю. Такой флоу или пейвол содержит и то, что должно быть показано, и то, как это должно быть показано.
+
+:::warning
+Этот раздел относится только к [режиму Observer](observer-vs-full-mode). Если вы не работаете в режиме Observer, обратитесь к разделу [Отображение флоу и пейволов](kmp-present-paywalls).
+:::
+
+:::info
+Эта возможность требует Adapty Kotlin Multiplatform SDK 4.0 (бета) или более поздней версии — ранее она была доступна только в нативных SDK для iOS и Android. Смотрите [руководство по миграции](migration-to-kmp-sdk-v4) для обновления.
+:::
+
+<details>
+   <summary>Перед тем как начать отображать флоу (нажмите, чтобы развернуть)</summary>
+
+1. Настройте первоначальную интеграцию Adapty [с App Store](initial_ios) и [с Google Play](initial-android).
+   2. Установите и настройте SDK. Убедитесь, что в конфигурационном билдере вызывается `withObserverMode(true)`. Обратитесь к [руководству по установке Kotlin Multiplatform SDK](sdk-installation-kotlin-multiplatform#activate-adapty-sdk).
+   3. [Создайте продукты](create-product) в дашборде Adapty.
+   4. [Настройте флоу или пейволы в билдерах](create-paywall) и привяжите к ним продукты.
+   5. [Создайте плейсменты и назначьте им флоу или пейволы](create-placement).
+   6. [Получите флоу и их конфигурацию](kmp-get-pb-paywalls) в коде мобильного приложения.
+
+</details>
+
+В режиме Observer SDK не выполняет покупки самостоятельно. Когда пользователь нажимает кнопку покупки или восстановления во флоу или пейволе, отрисованном Adapty, SDK вызывает ваш `AdaptyUIObserverModeResolver` — выполните покупку или восстановление с помощью собственного кода там.
+
+1. Реализуйте интерфейс `AdaptyUIObserverModeResolver`:
+
+   ```kotlin showLineNumbers
+   import com.adapty.kmp.AdaptyUIObserverModeResolver
+   import com.adapty.kmp.models.AdaptyPaywallProduct
+   import com.adapty.kmp.models.AdaptyUIFlowView
+
+   class MyObserverModeResolver : AdaptyUIObserverModeResolver {
+       override fun observerModeDidInitiatePurchase(
+           view: AdaptyUIFlowView,
+           product: AdaptyPaywallProduct,
+           onStartPurchase: () -> Unit,
+           onFinishPurchase: () -> Unit
+       ) {
+           onStartPurchase() // the view shows its loading indicator
+           // make the purchase with your own code,
+           // then report the transaction to Adapty and call:
+           onFinishPurchase() // the view hides the loading indicator
+       }
+
+       override fun observerModeDidInitiateRestore(
+           view: AdaptyUIFlowView,
+           onStartRestore: () -> Unit,
+           onFinishRestore: () -> Unit
+       ) {
+           onStartRestore()
+           // restore purchases with your own code, then:
+           onFinishRestore()
+       }
+   }
+   ```
+
+`observerModeDidInitiatePurchase` уведомляет вас о том, что пользователь инициировал покупку, а `observerModeDidInitiateRestore` — что пользователь инициировал восстановление. В ответ запустите ваш собственный флоу покупки или восстановления.
+
+Также не забудьте вызвать следующие колбэки, чтобы уведомить AdaptyUI о процессе покупки или восстановления. Это необходимо для корректного поведения флоу, например для отображения загрузчика:
+
+| Callback           | Description                                                                                         |
+   | :----------------- | :-------------------------------------------------------------------------------------------------- |
+   | onStartPurchase()  | Колбэк необходимо вызвать, чтобы уведомить AdaptyUI о начале покупки.    |
+   | onFinishPurchase() | Колбэк необходимо вызвать, чтобы уведомить AdaptyUI о завершении покупки. |
+   | onStartRestore()   | Колбэк необходимо вызвать, чтобы уведомить AdaptyUI о начале восстановления.   |
+   | onFinishRestore()  | Колбэк необходимо вызвать, чтобы уведомить AdaptyUI о завершении восстановления.  |
+
+Флоу остаётся открытым, пока выполняется ваш код — закройте его самостоятельно после успешной покупки или восстановления.
+
+2. Зарегистрируйте resolver до показа любого экрана:
+
+   ```kotlin showLineNumbers
+   import com.adapty.kmp.AdaptyUI
+
+   AdaptyUI.setObserverModeResolver(MyObserverModeResolver())
+   ```
+
+   Без зарегистрированного resolver флоу не может передать покупку вашему коду, и нажатие кнопки покупки ни к чему не приводит.
+
+3. Создайте и отобразите флоу как обычно: [получите флоу и создайте его view](kmp-get-pb-paywalls), затем [отобразите его](kmp-present-paywalls). Дополнительные параметры не нужны — как только резолвер зарегистрирован, все флоу и пейволы, отображаемые через Adapty, маршрутизируют покупки и восстановления через него.
+
+:::warning
+Не забудьте [сообщить о транзакции и связать её с пейволом](report-transactions-observer-mode-kmp). Иначе Adapty не распознает транзакцию и не определит, с какого пейвола была совершена покупка.
+:::

@@ -1,25 +1,80 @@
 ---
-title: "Kotlin Multiplatform SDK'da remote config ile tasarlanan paywall'ı gösterme"
-description: "Adapty Kotlin Multiplatform SDK'da remote config paywall'larının nasıl sunulacağını keşfedin ve kullanıcı deneyimini kişiselleştirin."
+title: "Kotlin Multiplatform SDK'da remote config ile tasarlanmış paywall'ı render etme"
+description: "Adapty Kotlin Multiplatform SDK'da kullanıcı deneyimini kişiselleştirmek için remote config paywall'larını nasıl sunacağınızı keşfedin."
 metadataTitle: "Remote Config Paywall'larını Sunma | Kotlin Multiplatform SDK | Adapty Dokümanları"
-keywords: ['remote config']
+keywords: ['remote config', 'logShowFlow', 'logShowPaywall']
 displayed_sidebar: sdkkmp
 ---
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
+<SDKv4>
 
-Remote config ile bir paywall özelleştirdiyseniz, bunu kullanıcılara göstermek için mobil uygulamanızın kodunda render işlemini kendiniz yapmanız gerekir. Remote config ihtiyaçlarınıza göre esneklik sunduğundan, paywall görünümünüze nelerin dahil edileceğine ve nasıl görüneceğine siz karar verirsiniz. Remote config ile yapılandırılmış özel paywall'ınızı sunabilmeniz için remote yapılandırmayı getirmeye yarayan bir metot sağlıyoruz.
+Remote config kullanarak bir paywall özelleştirdiyseniz, bunu kullanıcılara göstermek için mobil uygulamanızın kodunda render işlemini kendiniz uygulamanız gerekir. Remote config, ihtiyaçlarınıza göre esneklik sunduğundan, paywall görünümünüze nelerin dahil edileceğini ve nasıl görüneceğini siz belirlersiniz. Adapty, remote configuration'ı almanız için bir yöntem sunar; özel paywall'ınızı nasıl göstereceğiniz tamamen size kalmıştır.
+
+## Flow remote config'ini alın ve sunun \{#get-flow-remote-config-and-present-it\}
+
+v4'te bir flow, `remoteConfigs` listesinde yapılandırılmış her locale için bir `AdaptyRemoteConfig` girişi taşır. Kullanıcının tercihine uyan locale'i seçin, ardından ihtiyacınız olan değerleri okuyun.
+
+```kotlin showLineNumbers
+
+Adapty.getFlow("YOUR_PLACEMENT_ID")
+    .onSuccess { flow ->
+        val config = flow.remoteConfigs.firstOrNull { it.locale == "en" }
+            ?: flow.remoteConfigs.firstOrNull()
+        val headerText = config?.dataMap?.get("header_text") as? String
+        // use the remote config values
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+Bu noktada, gerekli tüm değerleri aldıktan sonra bunları görsel açıdan çekici bir sayfada işleme ve bir araya getirme zamanı gelmiştir. Tasarımın farklı mobil telefon ekranlarına ve yönlendirmelerine uyum sağladığından, çeşitli cihazlarda sorunsuz ve kullanıcı dostu bir deneyim sunduğundan emin olun.
+
+:::warning
+Adapty analytics'in funnel'lar ve A/B testleri için bilgi toplayabilmesi amacıyla, aşağıda açıklandığı şekilde [paywall görüntüleme olayını kaydettiğinizden](present-remote-config-paywalls-kmp#track-paywall-view-events) emin olun.
+:::
+
+Paywallı görüntüledikten sonra satın alma flow'unu ayarlamaya devam edin. Kullanıcı bir satın alma işlemi yaptığında, flow'unuzdaki ürünle birlikte `.makePurchase()` metodunu çağırmanız yeterlidir. `.makePurchase()` metodu hakkında daha fazla bilgi için [Satın alma yapma](kmp-making-purchases) sayfasını okuyun.
+
+[Yedek paywall olarak adlandırılan bir yedek paywall oluşturmanızı](kmp-use-fallback-paywalls) öneririz. Bu yedek, internet bağlantısı olmadığında veya önbellek mevcut olmadığında kullanıcıya gösterilerek bu durumlarda bile sorunsuz bir deneyim sağlar.
+
+## Flow görüntüleme olaylarını takip edin \{#track-paywall-view-events\}
+
+Adapty, flow'larınızın ve paywall'larınızın performansını ölçmenize yardımcı olur. Satın alma verilerini otomatik olarak toplasak da, görüntüleme olaylarını kaydetmek için sizin müdahaleniz gereklidir; çünkü bir kullanıcının flow'u ne zaman gördüğünü yalnızca siz bilebilirsiniz.
+
+Görüntüleme olayı kaydetmek için `.logShowFlow(flow)` metodunu çağırmanız yeterlidir; bu, huniler ve A/B testlerindeki metriklerinize yansıyacaktır.
+
+:::important
+[Flow Builder](adapty-flow-builder) veya [Paywall Builder](adapty-paywall-builder) tarafından oluşturulan flow veya paywall'ları görüntülüyorsanız `.logShowFlow(flow)` çağrısı yapmanıza gerek yoktur. Bu durumlarda Adapty görüntülemeleri otomatik olarak takip eder.
+:::
+
+```kotlin showLineNumbers
+Adapty.logShowFlow(flow)
+    .onSuccess {
+        // flow view logged successfully
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+İstek parametreleri:
+
+| Parametre | Varlık | Açıklama                                                    |
+| :-------- | :------- |:-----------------------------------------------------------------|
+| **flow**  | zorunlu | `Adapty.getFlow` aracılığıyla elde edilen bir `AdaptyFlow` nesnesi. |
+
+</SDKv4>
+
+<SDKv3>
+
+Remote config kullanarak bir paywall özelleştirdiyseniz, bunu kullanıcılara göstermek için mobil uygulamanızın kodunda render işlemini kendiniz uygulamanız gerekir. Remote config, ihtiyaçlarınıza göre esneklik sunduğundan, paywallınızın içeriği ve görünümü tamamen size kalmıştır. Remote config aracılığıyla yapılandırılan özel paywallınızı göstermek için remote config'i çekmeye yarayan bir metot sunuyoruz.
 
 ## Paywall remote config'ini alma ve gösterme \{#get-paywall-remote-config-and-present-it\}
 
 Bir paywall'ın remote config'ini almak için `remoteConfig` özelliğine erişin ve ihtiyacınız olan değerleri çıkarın.
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
 
 Adapty.getPaywall(
     placementId = "YOUR_PLACEMENT_ID",
@@ -34,10 +89,10 @@ Adapty.getPaywall(
 }
 ```
 
-Gerekli tüm değerleri aldıktan sonra bunları görsel açıdan çekici bir sayfaya dönüştürme zamanı gelmiştir. Tasarımın farklı ekran boyutlarına ve yönelimlerine uyum sağladığından emin olun; böylece tüm cihazlarda sorunsuz ve kullanıcı dostu bir deneyim sunmuş olursunuz.
+Bu noktada, gerekli tüm değerleri aldıktan sonra bunları görsel açıdan çekici bir sayfada render etme ve bir araya getirme zamanı gelmiştir. Tasarımın farklı mobil telefon ekranlarına ve yönlendirmelerine uyum sağladığından, farklı cihazlarda sorunsuz ve kullanıcı dostu bir deneyim sunduğundan emin olun.
 
 :::warning
-Huniler ve A/B testleri için Adapty analitiğinin veri toplayabilmesi adına aşağıda açıklanan şekilde [paywall görüntüleme olayını kaydettiğinizden](present-remote-config-paywalls-kmp#track-paywall-view-events) emin olun.
+Adapty analitiğinin dönüşüm hunileri ve A/B testleri için bilgi toplayabilmesi amacıyla aşağıda açıklandığı şekilde [paywall görüntüleme olayını kaydettiğinizden](present-remote-config-paywalls-kmp#track-paywall-view-events-1) emin olun.
 :::
 
 Paywall'ı gösterdikten sonra satın alma akışını kurmaya devam edin. Kullanıcı bir satın alma yaptığında, paywall'ınızdaki ürünle birlikte `.makePurchase()` metodunu çağırmanız yeterlidir. `.makePurchase()` metodu hakkında ayrıntılı bilgi için [Satın alma yapma](kmp-making-purchases) bölümüne bakın.
@@ -67,5 +122,7 @@ Adapty.logShowPaywall(paywall = paywall)
 İstek parametreleri:
 
 | Parametre   | Zorunluluk | Açıklama                                                                                            |
-| :---------- | :------- |:-------------------------------------------------------------------------------------------------------|
+| :---------- | :--------- |:----------------------------------------------------------------------------------------------------|
 | **paywall** | zorunlu | Bir [`AdaptyPaywall`](https://kmp.adapty.io//////adapty/com.adapty.kmp.models/-adapty-paywall/) nesnesi. |
+
+</SDKv3>
