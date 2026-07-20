@@ -1,0 +1,91 @@
+---
+title: "Present flows in Observer mode - Unity"
+description: "Present flows and Paywall Builder paywalls in Observer mode in your Unity app while handling purchases with your own code."
+metadataTitle: "Present flows in Observer mode - Unity | Adapty Docs"
+keywords: ['observer mode', 'IAdaptyUIObserverModeResolver', 'SetObserverModeResolver', 'flow']
+---
+
+If you've customized a flow or paywall using the builder, you don't need to worry about rendering it in your mobile app code to display it to the user. Such a flow or paywall contains both what should be shown and how it should be shown.
+
+:::warning
+This section refers to [Observer mode](observer-vs-full-mode) only. If you do not work in the Observer mode, refer to the [Display flows & paywalls](unity-present-paywalls) topic.
+:::
+
+:::info
+This capability requires Adapty Unity SDK 4.0 or later — previously it was available only in the native iOS and Android SDKs. See the [migration guide](migration-to-unity-sdk-v4) to upgrade.
+:::
+
+<details>
+   <summary>Before you start presenting flows (Click to Expand)</summary>
+
+   1. Set up initial integration of Adapty [with the App Store](initial_ios) and [with Google Play](initial-android).
+   2. Install and configure Adapty SDK. Make sure to call `SetObserverMode(true)` on the configuration builder. Refer to the [Unity SDK installation guide](sdk-installation-unity#activate-adapty-module-of-adapty-sdk).
+   3. [Create products](create-product) in the Adapty Dashboard.
+   4. [Configure flows or paywalls in the builders](create-paywall) and assign products to them.
+   5. [Create placements and assign your flows or paywalls to them](create-placement).
+   6. [Fetch flows and their configuration](unity-get-pb-paywalls) in your mobile app code.
+
+</details>
+
+In Observer mode, the SDK does not make purchases for you. When a user taps the purchase or restore button in an Adapty-rendered flow or paywall, the SDK calls your `IAdaptyUIObserverModeResolver` instead — perform the purchase or restore with your own code there.
+
+1. Implement the `IAdaptyUIObserverModeResolver` interface:
+
+   ```csharp showLineNumbers
+   using System;
+   using AdaptySDK;
+
+   public class MyObserverModeResolver : IAdaptyUIObserverModeResolver
+   {
+       public void FlowViewDidInitiatePurchase(
+           AdaptyUIFlowView view,
+           AdaptyPaywallProduct product,
+           Action onStartPurchase,
+           Action onFinishPurchase
+       )
+       {
+           onStartPurchase(); // the view shows its loading indicator
+           // make the purchase with your own code,
+           // then report the transaction to Adapty and call:
+           onFinishPurchase(); // the view hides the loading indicator
+       }
+
+       public void FlowViewDidInitiateRestore(
+           AdaptyUIFlowView view,
+           Action onStartRestore,
+           Action onFinishRestore
+       )
+       {
+           onStartRestore();
+           // restore purchases with your own code, then:
+           onFinishRestore();
+       }
+   }
+   ```
+
+   The `FlowViewDidInitiatePurchase` method informs you that the user has initiated a purchase, and `FlowViewDidInitiateRestore` — that the user has initiated a restore. Trigger your custom purchase or restore flow in response.
+
+   Also, remember to invoke the following callbacks to notify AdaptyUI about the process of the purchase or restore. This is necessary for proper flow behavior, such as showing the loader, among other things:
+
+   | Callback           | Description                                                                      |
+   | :----------------- | :------------------------------------------------------------------------------- |
+   | onStartPurchase()  | The callback should be invoked to notify AdaptyUI that the purchase is started.  |
+   | onFinishPurchase() | The callback should be invoked to notify AdaptyUI that the purchase is finished. |
+   | onStartRestore()   | The callback should be invoked to notify AdaptyUI that the restore is started.   |
+   | onFinishRestore()  | The callback should be invoked to notify AdaptyUI that the restore is finished.  |
+
+   The flow stays open while your code runs — dismiss it yourself after a successful purchase or restore.
+
+2. Register the resolver before presenting any screen:
+
+   ```csharp showLineNumbers
+   Adapty.SetObserverModeResolver(new MyObserverModeResolver());
+   ```
+
+   Without a registered resolver, the flow view has no way to hand the purchase over to your code, and nothing happens when the user taps the purchase button.
+
+3. Create and present the flow view as usual: [fetch the flow and create its view](unity-get-pb-paywalls), then [present it](unity-present-paywalls). No extra parameters are needed — once the resolver is registered, every Adapty-rendered flow or paywall routes purchases and restores through it.
+
+:::warning
+Don't forget to [report the transaction and associate it with the paywall](report-transactions-observer-mode-unity). Otherwise, Adapty will not recognize the transaction and will not determine the source paywall of the purchase.
+:::
