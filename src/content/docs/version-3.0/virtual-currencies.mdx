@@ -5,22 +5,99 @@ metadataTitle: "Virtual currencies | Adapty Docs"
 keywords: ['virtual currency', 'virtual currencies', 'in-app currency']
 ---
 
-<CustomDocCardList ids={['create-virtual-currency', 'vc-balance']} />
+<CustomDocCardList ids={['create-virtual-currency', 'virtual-currency-balance']} />
 
-A virtual currency is an in-app currency — such as coins, gems, or credits — that users earn or buy and then spend inside your app. In Adapty, you define each currency once and link it to your products. Purchases then grant credits automatically, and Adapty tracks a separate balance for every user. Your app keeps its own spending logic: it reads balances and grants or spends credits through the Server API.
+Grant your users in-app credits (coins, gems, or points) when they buy products or renew subscriptions. Define a currency once, link it to the products that should award it, and Adapty credits each user automatically and keeps their balance. Your app reads and spends that balance through the Server API.
+
+<ZoomImage id="virtual-currency-tab.webp" width="700px" alt="The Virtual currency tab under Products, empty, with the New virtual currency button" />
 
 ## How it works
 
-1. **Create a currency**: Define a currency in the dashboard with a code, a name, and an optional description.
-2. **Link it to products**: Map the currency to consumable or subscription products and set how many credits each purchase grants.
-3. **Credits are granted automatically**: When a user buys a linked consumable or renews a linked subscription, Adapty adds the configured credits to their balance.
+1. [Create a virtual currency](create-virtual-currency): Open **Products** and click the **Virtual currency** tab. Click **New virtual currency**. Define a currency with a code, a name, and an optional description.
+2. **Link the currency to products**: Map the currency to one-time or subscription products and set how many credits each purchase grants.
+3. **Credits are granted automatically**: When a user buys a linked one-time product or renews a linked subscription, Adapty adds the configured credits to their balance.
 4. **Read and spend the balance**: Your app reads each user's balance and grants or spends credits through the Server API.
-5. **Track every change**: Adapty records each balance change as a transaction and shows it in the user's profile.
+5. **Track every change**: Each balance change is listed on the [user's profile](virtual-currency-balance).
+
+:::note
+When you link a currency to a product, existing subscribers don't get credits immediately. Adapty grants them on the next renewal.
+:::
 
 ## Use cases
 
-- **Subscription allowances**: Grant a set number of credits on each renewal, and expire unused credits at the end of the billing cycle.
-- **Consumable packs**: Sell coin or gem packs as consumable products that grant non-expiring credits.
-- **Rewards and loyalty**: Grant credits automatically when a user makes a purchase.
-- **In-app economies**: Run several currencies at once — for example, gold, silver, and gems — and convert between them.
-- **Manual grants**: Top up a user's balance from their profile to compensate a user, run a promo, or test a flow.
+- **Bundle coins with subscriptions**: Grant a set number of credits on each renewal; unused credits expire at the end of the billing cycle.
+- **One-time coin purchases**: Sell coin or gem packs as one-time products that grant non-expiring credits.
+- **Rewards and loyalty**: Grant credits when a user makes a different purchase.
+- **In-app economies**: Run several currencies at once — for example, gold, silver, and gems — and [convert between them](#example-convert-between-currencies).
+- **Manual grants**: Grant credits through the Server API to compensate a user, run a promo, or seed a test account.
+
+## Limitations
+
+- **Balances are profile-specific**: Each profile has its own coin balance. Unlike access levels, this balance is not inherited by the same user's other profiles. If an anonymous user purchases your currency, they won't be able to access it across devices. See [Balances, profiles, and devices](virtual-currency-balance#balances-profiles-and-devices).
+- **Server-side only**: There is no SDK method to read or spend a balance yet, so your app needs a backend. It reads balances and grants or spends credits through the Server API.
+- **Excluded from analytics**: Virtual currency has no monetary value, so credits you grant or spend never appear in analytics, webhooks, or exports — only on the user's profile. The purchase that deposits them is still tracked as revenue, like any other purchase.
+
+## Example: Granting and spending coins
+
+Imagine your game grants subscribers a monthly coin allowance. Players spend those coins on power-ups, and you grant bonus coins to win back lapsed players.
+
+Your game server will own this economy. But the Adapty [Server API](server-side-api-specs) will take care of the bookkeeping, so you don't have to track balances or worry about user tampering.
+
+1. Follow the [Create virtual currency](create-virtual-currency) guide to create a new currency. Link it to a subscription, and set **Credit per cycle**.
+
+   <ZoomImage id="new-currency-combined.webp" width="700px" alt="New virtual currency creation screens" />
+
+2. Set up Server API access. If a call returns `403`, contact Adapty support to enable the feature. See [Getting started with the Server API](getting-started-with-server-side-api) for the complete overview.
+
+3. Use the server API to read the player's balance, for example, when opening the store:
+
+   ```bash title="Read balances"
+   curl https://api.adapty.io/api/v2/server-side-api/vc/balances/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: player-42"
+   ```
+
+   The response lists every currency the player holds, for example 500 `COINS`:
+
+   ```json title="Response"
+   {
+     "data": [
+       { "code": "COINS", "name": "Gold Coins", "balance": 500, "held": 0, "available": 500 }
+     ]
+   }
+   ```
+4. When the player buys a power-up, spend the coins with a negative `amount`. In this example, the power-up costs 120 coins:
+
+   ```bash title="Spend coins"
+   curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: player-42" \
+     -H "Content-Type: application/json" \
+     -d '{"items": [{"currency_code": "COINS", "amount": -120}]}' 
+   ```
+
+   The transaction is atomic and returns the updated balance. If the player can't cover the cost, the request returns `insufficient_balance` and nothing changes. Include an `Idempotency-Key` header to safely attempt retries.
+5. To run a win-back promo, grant coins through the same endpoint with a **positive** `amount`. Credits you grant this way never expire.
+6. Review every change in the player's [profile](virtual-currency-balance) or in the [transaction history](api-adapty/operations/listVirtualCurrencyTransactions), so you can audit the economy at any time.
+
+## Example: convert between currencies
+
+To convert one currency into another, send a single transaction that debits the source currency and credits the target. The transaction is atomic, so both sides apply together or neither does. Adapty has no exchange rate of its own — your app sets the rate.
+
+For example, to exchange 100 SILVER for 10 GOLD:
+
+```bash title="Convert currencies"
+curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+  -H "Authorization: Api-Key {your secret key}" \
+  -H "adapty-customer-user-id: player-42" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+      { "currency_code": "SILVER", "amount": -100 },
+      { "currency_code": "GOLD", "amount": 10 }
+    ],
+    "metadata": { "reason": "exchange" }
+  }'
+```
+
+If the player can't cover the debit, the request returns `insufficient_balance` and neither balance changes. Each currency can appear only once per transaction, and a transaction holds up to 20 items — so you can convert across several currencies at once.
