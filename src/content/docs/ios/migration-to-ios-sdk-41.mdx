@@ -1,0 +1,63 @@
+---
+title: "Migrate Adapty iOS SDK to v4.1"
+description: "Migrate to Adapty iOS SDK v4.1: enable Adapty Attribution explicitly and adopt the renamed external attribution APIs."
+metadataTitle: "Migrating to Adapty iOS SDK v4.1 | Adapty Docs"
+---
+
+Adapty iOS SDK 4.1 changes how Adapty Attribution is enabled and renames the external attribution APIs. It also brings back support for App Store promoted in-app purchases, which were removed in 4.0.
+
+## Quick reference
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty Attribution enabled automatically | Adapty Attribution disabled by default; opt in with `.with(adaptyAttributionEnabled: true)` |
+| `Adapty.updateAttribution(_:source:)` | `Adapty.updateExternalAttribution(_:provider:)` |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| Promoted in-app purchases not supported | `didReceivePromotedPurchase(_:)` delegate method and `AdaptyPromotedProduct` |
+
+## Adapty Attribution is disabled by default
+
+In 4.0 and earlier, the SDK registered installs for [Adapty Attribution](user-acquisition) automatically. Starting from 4.1, this is off by default: the SDK doesn't register installs, and the `onInstallationDetailsSuccess` and `onInstallationDetailsFail` delegate callbacks never fire. `getCurrentInstallationStatus()` returns `.notAvailable`.
+
+If you use Adapty Attribution, enable it when activating the SDK:
+
+```diff showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
++   .with(adaptyAttributionEnabled: true)
+```
+
+If you don't use Adapty Attribution, no changes are needed.
+
+## Renamed external attribution APIs
+
+### updateAttribution(_:source:) → updateExternalAttribution(_:provider:)
+
+The method that passes attribution data from an external provider (Adjust, AppsFlyer, Branch, Tenjin, or a custom one) is renamed, and its `source` parameter is renamed to `provider`:
+
+```diff showLineNumbers
+- try await Adapty.updateAttribution(attribution, source: .adjust)
++ try await Adapty.updateExternalAttribution(attribution, provider: .adjust)
+```
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+The type is renamed; its members are unchanged: `.appleAds`, `.adjust`, `.appsflyer`, `.branch`, `.tenjin`. It still conforms to `ExpressibleByStringLiteral`, so string-literal arguments keep compiling. If you keep the provider in a `String` variable, wrap it: `AdaptyExternalAttributionProvider(rawValue: yourProvider)`.
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+The profile property that lists attribution providers applied to the profile is renamed. Its element type changes accordingly:
+
+```diff showLineNumbers
+- if profile.appliedAttributionSources.contains(.appleAds) {
++ if profile.appliedExternalAttributionProviders.contains(.appleAds) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+## App Store promoted in-app purchases return
+
+SDK 4.1 restores support for App Store promoted in-app purchases, which [4.0 removed](migration-to-ios-sdk-v4#app-store-promoted-in-app-purchases-temporarily-removed). This is a new feature, not a migration step: it doesn't change any 4.0 behavior.
+
+If you migrate from 3.x and used `shouldAddStorePayment(for:)` with `AdaptyDeferredProduct`, adopt the new `didReceivePromotedPurchase(_:)` delegate method with `AdaptyPromotedProduct` instead. Unlike `shouldAddStorePayment`, the new method doesn't return a value: if you don't implement it, the SDK starts the purchase immediately; to defer the purchase, implement it, store the product, and pass the product to `makePurchase` later. See [In-app purchases from the App Store](making-purchases#in-app-purchases-from-the-app-store).
