@@ -5,7 +5,7 @@ metadataTitle: "Virtual currency balance | Adapty Docs"
 ---
 
 :::link
-Main article: [Virtual currencies](virtual-currencies.md)
+Main article: [Virtual currencies](virtual-currencies)
 :::
 
 Every user profile in [Profiles/CRM](profiles-crm) shows that user's virtual currency balance, along with a history of every change.
@@ -23,7 +23,7 @@ Each row shows:
 
 Balances update as the user earns, spends, or receives credits. A profile with no balances shows an empty card.
 
-To read a balance from your own code instead, call [List virtual currency balances](server-side-api-specs) in the Server API.
+To read a balance from your own code instead, call [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) in the server-side API.
 
 ## Review balance changes in the event history
 
@@ -32,7 +32,7 @@ Every balance change appears in the profile's event history, newest first. Each 
 The history shows three virtual currency events:
 
 - **Virtual currency credited**: A purchase, renewal, or trial start granted credits.
-- **Virtual currency transaction**: A Server API call credited or debited the balance.
+- **Virtual currency transaction**: A server-side API call credited or debited the balance.
 - **Virtual currency expired**: Expiring credits reset at the end of a billing cycle, or when the subscription ended.
 
 Each entry lists, for every currency it changed:
@@ -41,25 +41,19 @@ Each entry lists, for every currency it changed:
 - **Amount**: The signed change — positive for a credit, negative for a debit.
 - **Balance after**: The currency's balance once the change applied.
 
-One event can change several currencies at once — for example, a Server API call that [converts one currency into another](virtual-currencies#example-convert-between-currencies).
+One event can change several currencies at once — for example, a server-side API call that [converts one currency into another](virtual-currencies#example-convert-between-currencies).
 
 ## Balances, profiles, and devices
 
-Each balance belongs to one Adapty profile, identified by its `profile_id`. Adapty keeps a separate balance per currency for each profile. A customer user ID does not hold a balance directly — it resolves to a profile, and that profile holds the balance.
+A balance always belongs to exactly one [profile](profiles-crm) and never moves to another one. Adapty does not share or transfer balances between profiles the way it can [share access levels between user accounts](profiles-crm#sharing-paid-access-between-user-accounts).
 
-Through the [Server API](server-side-api-specs), address a profile by `adapty-profile-id` or `adapty-customer-user-id`. For an anonymous profile, use `adapty-profile-id` — it has no customer user ID yet.
+In practice, this means:
 
-### Anonymous profiles
+- **Identified users**: A customer user ID always resolves to the same profile, so the user sees the same balance on every device where they log in.
+- **Anonymous users**: An anonymous profile can earn and spend credits, but it exists only on one device. When the same user opens your app on another device without logging in, Adapty creates a new anonymous profile with a zero balance.
 
-An anonymous profile holds a balance like any other. It earns credits from purchases and accepts Server API calls, addressed by its `profile_id`.
+So, to run a virtual currency economy across devices, identify your users. You can identify them in the app code through the SDK (see [Identify users](ios-quickstart-identify) in the quickstart) or from your backend through the [server-side API](getting-started-with-server-side-api).
 
-What happens when the user logs in depends on the customer user ID:
+Identifying a user late has a caveat of its own: if a user earns credits anonymously and then logs in with a customer user ID that already belongs to another profile, the device switches to that profile and its balance. The credits earned anonymously stay on the old profile and become unreachable. If the customer user ID is new, it attaches to the current profile, and the user keeps the balance. To be safe, identify users before they can earn or buy credits.
 
-- **A new customer user ID**: The ID attaches to the same profile, so the balance carries over unchanged.
-- **A customer user ID that already exists**: The device switches to the profile that already owns that ID, along with its balance. The balance on the earlier anonymous profile stays behind.
-
-### Multiple devices
-
-Adapty keeps a balance on one profile and does not share it across profiles. Access levels can be [shared between profiles](profiles-crm#sharing-paid-access-between-user-accounts); virtual currency balances cannot.
-
-A logged-in user resolves to the same profile on every device, so the balance is the same everywhere. Each anonymous install is a separate profile with its own balance.
+In [server-side API](getting-started-with-server-side-api) calls, identify the profile with the `adapty-profile-id` or `adapty-customer-user-id` header — both resolve to a single profile. For anonymous profiles, use `adapty-profile-id`.
