@@ -1,0 +1,46 @@
+---
+title: "虚拟货币快速入门"
+description: "端到端配置虚拟货币：创建代币货币、通过订阅授予代币，并通过服务端 API 进行消耗。"
+metadataTitle: "虚拟货币快速入门 | Adapty 文档"
+---
+
+:::link
+主要文章：[虚拟货币](virtual-currencies)
+:::
+
+本快速入门将端到端配置代币货币：订阅每月为用户授予 1000 个代币，应用内的付费操作消耗代币。Adapty 负责维护所有余额，你的后端只需读取和消耗代币即可。
+
+1. 按照[创建虚拟货币](create-virtual-currency)指南创建一个 `TOKENS` 货币。将其与您的 Pro 订阅关联，并将 **Credit per cycle** 设置为 1000。如需出售额外的代币，也可以关联一次性代币包产品。
+
+   <ZoomImage id="new-currency-combined.webp" width="700px" alt="New virtual currency creation screens" />
+
+2. 在开始生成之前，调用[列出虚拟货币余额](api-adapty/operations/listVirtualCurrencyBalances)接口读取用户余额，示例如下：
+
+```bash title="Read balances"
+   curl https://api.adapty.io/api/v2/server-side-api/vc/balances/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: user-42"
+   ```
+
+   响应会列出该用户持有的所有货币，例如 1000 个 `TOKENS`：
+
+```json title="Response"
+   {
+     "data": [
+       { "code": "TOKENS", "name": "Tokens", "balance": 1000, "held": 0, "available": 1000 }
+     ]
+   }
+   ```
+3. 当用户执行生成操作时，通过调用 [创建虚拟货币交易](api-adapty/operations/createVirtualCurrencyTransaction) 并传入负数 `amount` 来扣除代币。在本示例中，生成一张图片需消耗 100 个代币：
+
+   ```bash title="Spend tokens"
+   curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: user-42" \
+     -H "Content-Type: application/json" \
+     -d '{"items": [{"currency_code": "TOKENS", "amount": -100}]}'
+   ```
+
+该事务是原子性的，并返回更新后的余额。如果用户余额不足以覆盖费用，请求将返回 `insufficient_balance`，且不会发生任何变更。请在请求中添加 `Idempotency-Key` 标头以安全地重试请求。
+4. 要运行赢回优惠活动，可通过同一端点传入正数 `amount` 来为用户充值代币。以这种方式授予的额度永不过期。
+5. 在用户的[用户画像](virtual-currency-balance)或[交易记录](api-adapty/operations/listVirtualCurrencyTransactions)中查看每一次变更，以便随时审计经济体系。

@@ -1,0 +1,46 @@
+---
+title: "Inicio rápido de moneda virtual"
+description: "Configura una moneda virtual de extremo a extremo: crea una moneda de tokens, otorga tokens con una suscripción y gástalos a través de la API del lado del servidor."
+metadataTitle: "Inicio rápido de moneda virtual | Documentación de Adapty"
+---
+
+:::link
+Artículo principal: [Monedas virtuales](virtual-currencies)
+:::
+
+Este inicio rápido configura una moneda de tokens de extremo a extremo: una suscripción otorga a los usuarios 1000 tokens al mes, y las acciones de pago en tu app cuestan tokens. Adapty gestiona cada saldo, por lo que tu backend solo necesita leerlos y gastarlos.
+
+1. Sigue la guía [Crear moneda virtual](create-virtual-currency) para crear una moneda `TOKENS`. Vincúlala a tu suscripción Pro y establece **Credit per cycle** en 1000. Para vender paquetes de tokens adicionales, vincula también productos de paquetes de tokens de compra única.
+
+   <ZoomImage id="new-currency-combined.webp" width="700px" alt="Pantallas de creación de nueva moneda virtual" />
+
+2. Llama a [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) para leer el saldo del usuario, por ejemplo, antes de iniciar una generación:
+
+```bash title="Read balances"
+   curl https://api.adapty.io/api/v2/server-side-api/vc/balances/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: user-42"
+   ```
+
+   La respuesta muestra todas las monedas que tiene el usuario, por ejemplo 1000 `TOKENS`:
+
+```json title="Response"
+   {
+     "data": [
+       { "code": "TOKENS", "name": "Tokens", "balance": 1000, "held": 0, "available": 1000 }
+     ]
+   }
+   ```
+3. Cuando el usuario ejecute una generación, gasta los tokens llamando a [Crear transacción de moneda virtual](api-adapty/operations/createVirtualCurrencyTransaction) con un `amount` negativo. En este ejemplo, una generación de imagen cuesta 100 tokens:
+
+   ```bash title="Spend tokens"
+   curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: user-42" \
+     -H "Content-Type: application/json" \
+     -d '{"items": [{"currency_code": "TOKENS", "amount": -100}]}'
+   ```
+
+La transacción es atómica y devuelve el saldo actualizado. Si el usuario no puede cubrir el coste, la solicitud devuelve `insufficient_balance` y no se produce ningún cambio. Incluye una cabecera `Idempotency-Key` para reintentar solicitudes de forma segura.
+4. Para lanzar una promo de recuperación, otorga tokens a través del mismo endpoint con un `amount` positivo. Los créditos otorgados de esta forma nunca expiran.
+5. Revisa cada cambio en el [perfil](virtual-currency-balance) del usuario o en el [historial de transacciones](api-adapty/operations/listVirtualCurrencyTransactions) para auditar la economía en cualquier momento.

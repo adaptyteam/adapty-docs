@@ -1,0 +1,46 @@
+---
+title: "Быстрый старт: виртуальная валюта"
+description: "Настройка виртуальной валюты с нуля: создайте токен-валюту, начисляйте токены с подпиской и списывайте их через серверный API."
+metadataTitle: "Быстрый старт: виртуальная валюта | Документация Adapty"
+---
+
+:::link
+Основная статья: [Виртуальные валюты](virtual-currencies)
+:::
+
+Это руководство поможет настроить токен-валюту с нуля: подписка начисляет пользователям 1000 токенов в месяц, а платные действия в приложении списывают токены. Adapty хранит все балансы — вашему бэкенду остаётся только читать и тратить их.
+
+1. Следуйте [гайду по созданию виртуальной валюты](create-virtual-currency), чтобы создать валюту `TOKENS`. Привяжите её к подписке Pro и установите **Credit per cycle** равным 1000. Для продажи дополнительных токенов также привяжите разовые продукты с наборами токенов.
+
+   <ZoomImage id="new-currency-combined.webp" width="700px" alt="New virtual currency creation screens" />
+
+2. Вызовите [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances), чтобы получить баланс пользователя, например, перед запуском генерации:
+
+```bash title="Read balances"
+   curl https://api.adapty.io/api/v2/server-side-api/vc/balances/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: user-42"
+   ```
+
+   В ответе будут перечислены все валюты пользователя, например 1000 `TOKENS`:
+
+```json title="Response"
+   {
+     "data": [
+       { "code": "TOKENS", "name": "Tokens", "balance": 1000, "held": 0, "available": 1000 }
+     ]
+   }
+   ```
+3. Когда пользователь запускает генерацию, спишите токены, вызвав [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) с отрицательным `amount`. В этом примере одна генерация изображения стоит 100 токенов:
+
+   ```bash title="Spend tokens"
+   curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: user-42" \
+     -H "Content-Type: application/json" \
+     -d '{"items": [{"currency_code": "TOKENS", "amount": -100}]}'
+   ```
+
+Транзакция атомарна и возвращает обновлённый баланс. Если у пользователя недостаточно средств, запрос возвращает `insufficient_balance` и ничего не меняется. Добавьте заголовок `Idempotency-Key`, чтобы безопасно повторять запросы.
+4. Для проведения win-back promo начислите токены через тот же эндпоинт с положительным значением `amount`. Начисленные таким образом кредиты не имеют срока действия.
+5. Отслеживайте все изменения в [профиле](virtual-currency-balance) пользователя или в [истории транзакций](api-adapty/operations/listVirtualCurrencyTransactions) — это позволит в любой момент провести аудит экономики.

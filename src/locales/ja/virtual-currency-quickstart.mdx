@@ -1,0 +1,46 @@
+---
+title: "仮想通貨クイックスタート"
+description: "仮想通貨をエンドツーエンドでセットアップする：トークン通貨の作成、サブスクリプションによるトークン付与、サーバーサイドAPIを通じた消費。"
+metadataTitle: "仮想通貨クイックスタート | Adapty ドキュメント"
+---
+
+:::link
+メイン記事: [仮想通貨](virtual-currencies)
+:::
+
+このクイックスタートでは、トークン通貨をエンドツーエンドでセットアップします。サブスクリプションによってユーザーに毎月1000トークンが付与され、アプリ内の有料アクションでトークンを消費します。Adaptyがすべての残高を管理するため、バックエンドは残高の読み取りと消費のみを行います。
+
+1. [仮想通貨を作成する](create-virtual-currency)ガイドに従って、`TOKENS`通貨を作成します。Proサブスクリプションにリンクし、**Credit per cycle**を1000に設定します。追加トークンを販売するには、買い切り型のトークンパックプロダクトもリンクします。
+
+   <ZoomImage id="new-currency-combined.webp" width="700px" alt="New virtual currency creation screens" />
+
+2. [仮想通貨残高の一覧を取得する](api-adapty/operations/listVirtualCurrencyBalances)を呼び出して、たとえばコンテンツ生成を開始する前にユーザーの残高を確認します。
+
+```bash title="Read balances"
+   curl https://api.adapty.io/api/v2/server-side-api/vc/balances/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: user-42"
+   ```
+
+   レスポンスには、ユーザーが保有しているすべての通貨が表示されます。たとえば 1000 `TOKENS`:
+
+```json title="Response"
+   {
+     "data": [
+       { "code": "TOKENS", "name": "Tokens", "balance": 1000, "held": 0, "available": 1000 }
+     ]
+   }
+   ```
+3. ユーザーが生成を実行したら、負の `amount` を指定して [仮想通貨トランザクションの作成](api-adapty/operations/createVirtualCurrencyTransaction) を呼び出してトークンを消費します。この例では、画像1枚の生成に100トークンかかります：
+
+   ```bash title="Spend tokens"
+   curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: user-42" \
+     -H "Content-Type: application/json" \
+     -d '{"items": [{"currency_code": "TOKENS", "amount": -100}]}'
+   ```
+
+トランザクションはアトミックで、更新後の残高を返します。ユーザーがコストを賄えない場合、リクエストは `insufficient_balance` を返し、何も変更されません。リクエストを安全に再試行するには、`Idempotency-Key` ヘッダーを含めてください。
+4. ウィンバックプロモを実施するには、同じエンドポイントで正の `amount` を指定してトークンを付与します。この方法で付与したクレジットは有効期限がありません。
+5. ユーザーの[プロファイル](virtual-currency-balance)や[トランザクション履歴](api-adapty/operations/listVirtualCurrencyTransactions)のすべての変更を確認することで、いつでもエコノミーを監査できます。
