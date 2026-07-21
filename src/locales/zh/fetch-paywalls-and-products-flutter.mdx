@@ -1,28 +1,22 @@
 ---
 title: "在 Flutter SDK 中获取远程配置付费墙的付费墙和产品"
-description: "在 Adapty Flutter SDK 中获取付费墙和产品，以增强用户变现能力。"
+description: "在 Adapty Flutter SDK 中获取付费墙和产品，提升用户变现效果。"
 metadataTitle: "获取付费墙与产品 | Flutter SDK | Adapty 文档"
-keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'Flutter']
+keywords: ['getFlow', 'getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getFlowForDefaultAudience', 'getPaywallForDefaultAudience', 'remote config', 'Flutter']
 displayed_sidebar: sdkflutter
 rank: 85
 ---
-
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
-import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md'; 
 
-在展示远程配置和自定义付费墙之前，您需要先获取相关信息。请注意，本主题涉及远程配置和自定义付费墙。有关获取付费墙编辑工具自定义付费墙的指导，请参阅[获取付费墙编辑工具付费墙及其配置](flutter-get-pb-paywalls)。
+<SDKv4>
+在展示远程配置和自定义付费墙之前，你需要先获取相关信息。请注意，本主题涉及远程配置和自定义付费墙。有关获取流程和付费墙编辑工具自定义付费墙的指导，请参阅[获取流程与付费墙](flutter-get-pb-paywalls)。
 
 <SampleApp />
 
 <details>
-   <summary>在您开始在移动应用中获取付费墙和产品之前（点击展开）</summary>
+   <summary>在你的移动应用中开始获取付费墙和产品之前（点击展开）</summary>
 
-   1. 在 Adapty 看板中[创建您的产品](create-product)。
-
+   1. 在 Adapty 看板中[创建你的产品](create-product)。
 2. 在 Adapty 看板中[创建付费墙并将产品添加到付费墙](create-paywall)。
 
 3. 在 Adapty 看板中[创建版位并将付费墙添加到版位](create-placement)。
@@ -30,6 +24,113 @@ import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
 4. 在您的移动应用中[安装 Adapty SDK](sdk-installation-flutter)。
 </details>
 
+## 获取流程信息 \{#fetch-flow-information\}
+
+在 Adapty 中，[产品](product)是 App Store 和 Google Play 产品的统一组合。这些跨平台产品被整合到付费墙中，让你能够在移动应用的特定版位中展示它们。
+
+要展示产品，你需要通过 `getFlow` 方法从某个[版位](placements)获取 `AdaptyFlow`。
+:::important
+**不要硬编码产品 ID。** 唯一需要硬编码的是版位 ID。付费墙是远程配置的，因此产品数量和可用优惠随时可能发生变化。你的应用必须动态处理这些变化——如果一个付费墙今天返回两个产品，明天返回三个，则无需修改代码即可全部展示。
+:::
+
+```dart showLineNumbers
+try {
+  final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
+  // the requested flow
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若加载失败则返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>不过，如果您认为用户的网络环境不稳定，可以考虑使用 `.returnCacheDataElseLoad`，在缓存数据存在时直接返回缓存。这种情况下，用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存来减少网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍会保留，只有在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 通过两层机制存储付费墙：上述定期更新的缓存，以及[备用付费墙](flutter-use-fallback-paywalls)。我们还使用 CDN 来加快付费墙的获取速度，并在 CDN 不可用时启用独立的备用服务器。整套系统旨在确保您始终能获取最新版本的付费墙，同时在网络连接不稳定的情况下也能保持可靠性。</p> |
+| **loadTimeout** | 默认值：5 秒 | <p>该值限制此方法的超时时间。若超时，将返回缓存数据或本地备用数据。</p><p></p><p>请注意，在极少数情况下，此方法的实际超时时间可能略晚于 `loadTimeout` 中指定的时间，因为该操作在底层可能由多个不同请求组成。</p> |
+:::note
+在 v4 中，`getFlow` 不接受 `locale` 参数。对于自定义付费墙，所有可用的本地化内容都会通过流程的远程配置（`flow.remoteConfigs`）返回——从中选取与用户设备或应用设置匹配的那个。详见[本地化与语言代码](flutter-localizations-and-locale-codes)。
+:::
+
+返回参数：
+| 参数 | 描述 |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flow   | 一个 `AdaptyFlow` 对象，包含流程的标识符（`instanceIdentity`、`variationId`）、名称、版位、付费墙实验变体（`paywalls`）以及远程配置（`remoteConfigs`）。 |
+## 获取产品 \{#fetch-products\}
+
+获取到 flow 后，你可以查询与其对应的产品数组：
+
+```dart showLineNumbers
+try {
+  final products = await Adapty().getPaywallProducts(flow: flow);
+  // the requested products array
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+响应参数：
+| 参数 | 描述 |
+| :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Products  | [`AdaptyPaywallProduct`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywallProduct-class.html) 对象列表，包含：产品标识符、产品名称、价格、货币、订阅时长及其他几个属性。 |
+
+在实现自定义付费墙设计时，您可能需要访问 [`AdaptyPaywallProduct`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywallProduct-class.html) 对象中的这些属性。下面列出了最常用的属性，有关所有可用属性的完整详情，请参阅链接文档。
+
+| 属性 | 描述 |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Title（标题）** | 要显示产品标题，请使用 `product.localizedTitle`。请注意，本地化基于用户选择的商店国家/地区，而非设备本身的语言区域设置。 |
+| **Price（价格）** | 要显示本地化版本的价格，请使用 `product.price.localizedString`。该本地化基于设备的语言区域信息。您也可以使用 `product.price.amount` 以数字形式访问价格，该值以本地货币提供。要获取关联的货币符号，请使用 `product.price.currencySymbol`。 |
+| **Subscription Period（订阅周期）** | 要显示订阅周期（例如周、月、年等），请使用 `product.subscription?.localizedPeriod`。该本地化基于设备的语言区域设置。要以编程方式获取订阅周期，请使用 `product.subscription?.period`。从中可以访问 `unit` 枚举以获取时长（即天、周、月、年或未知）。`numberOfUnits` 值将获取周期单位的数量。例如，对于季度订阅，`unit` 属性中将显示 `AdaptyPeriodUnit.month`，`numberOfUnits` 属性中将显示 `3`。 |
+| **Introductory Offer（新用户优惠）** | 要显示标记或其他指示符以表明订阅包含新用户优惠，请查看 `product.subscription?.offer?.phases` 属性。这是一个最多可包含两个折扣阶段的列表：免费试用阶段和优惠价格阶段。每个阶段对象包含以下有用属性：<br/>• `paymentMode`：枚举值为 `AdaptyPaymentMode.freeTrial`、`AdaptyPaymentMode.payAsYouGo`、`AdaptyPaymentMode.payUpFront` 和 `AdaptyPaymentMode.unknown`。免费试用为 `AdaptyPaymentMode.freeTrial` 类型。<br/>• `price`：折扣价格（数字形式）。免费试用时此处为 `0`。<br/>• `localizedNumberOfPeriods`：使用设备语言区域本地化的字符串，描述优惠时长。例如，三天试用优惠在此字段中显示为 `3 days`。<br/>• `subscriptionPeriod`：或者，您可以使用此属性获取优惠周期的各项详情。其工作方式与上一节描述的订阅周期相同。<br/>• `localizedSubscriptionPeriod`：针对用户语言区域格式化的折扣订阅周期。 |
+
+## 使用默认目标受众流程加快流程获取速度 \{#speed-up-flow-fetching-with-default-audience-flow\}
+
+通常情况下，流程获取几乎是即时完成的，无需担心速度问题。但如果你的版位和目标受众数量较多，且用户网络连接较差，流程获取可能会比预期慢。在这种情况下，你可能希望展示一个默认流程，以确保用户体验流畅，而不是让用户看到空白页面。
+要解决这个问题，你可以使用 `getFlowForDefaultAudience` 方法，该方法会获取指定版位中**所有用户**目标受众的流程。但请务必了解，推荐的做法是通过 `getFlow` 方法来获取流程，详情请参阅上方的[获取流程信息](fetch-paywalls-and-products-flutter#fetch-flow-information)部分。
+
+:::warning
+为什么我们推荐使用 `getFlow`
+
+`getFlowForDefaultAudience` 方法存在以下几个明显的缺陷：
+- **潜在的向后兼容性问题**：如果你需要针对不同的应用版本（当前版本和未来版本）展示不同的付费墙，可能会遇到挑战。你要么设计出同时兼容当前（旧版）版本的付费墙，要么接受使用当前（旧版）版本的用户可能遇到付费墙无法渲染的问题。
+- **失去精准定向能力**：所有用户都将看到为 **All Users** 目标受众设计的同一个付费墙，这意味着你将失去个性化定向能力（包括基于国家/地区、营销归因或自定义属性的定向）。
+如果您愿意接受这些缺点以换取更快的流程获取速度，请按以下方式使用 `getFlowForDefaultAudience` 方法。否则，请继续使用[上文](fetch-paywalls-and-products-flutter#fetch-flow-information)介绍的 `getFlow`。
+:::
+
+```dart showLineNumbers
+try {
+  final flow = await Adapty().getFlowForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
+  // the requested flow
+} on AdaptyError catch (adaptyError) {
+  // handle error
+} catch (e) {
+  // handle unknown error
+}
+```
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时所指定的值。 |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若失败则返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络环境不稳定，可以考虑使用 `.returnCacheDataElseLoad`——在缓存存在时优先返回缓存数据。这样用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，重启应用后缓存依然保留，只有在重新安装应用或手动清除时才会被清空。</p> |
+</SDKv4>
+
+<SDKv3>
+
+在展示远程配置和自定义付费墙之前，你需要先获取相关信息。请注意，本主题涉及远程配置和自定义付费墙。有关获取付费墙编辑工具自定义付费墙的指南，请参阅[获取付费墙编辑工具付费墙及其配置](flutter-get-pb-paywalls)。
+
+<SampleApp />
+
+<details>
+   <summary>在移动应用中开始获取付费墙和产品之前（点击展开）</summary>
+
+   1. 在 Adapty 看板中[创建你的产品](create-product)。
+2. 在 Adapty 看板中[创建付费墙并将产品添加到付费墙](create-paywall)。
+
+3. 在 Adapty 看板中[创建版位并将付费墙添加到版位](create-placement)。
+
+4. 在您的移动应用中[安装 Adapty SDK](sdk-installation-flutter)。
+</details>
 ## 获取付费墙信息 \{#fetch-paywall-information\}
 
 在 Adapty 中，[产品](product)是来自 App Store 和 Google Play 的产品组合。这些跨平台产品被整合到付费墙中，使您能够在特定的移动应用版位中展示它们。
@@ -42,7 +143,7 @@ import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
 
 ```dart showLineNumbers
 try {
-  final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID", locale: "en");
+  final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en");
   // the requested paywall
 } on AdaptyError catch (adaptyError) {
   // handle the error
@@ -84,17 +185,14 @@ try {
 
 | 参数 | 描述 |
 | :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Products  | [`AdaptyPaywallProduct`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywallProduct-class.html) 对象列表，包含：产品标识符、产品名称、价格、货币、订阅时长及其他几个属性。 |
-
-在实现自定义付费墙设计时，您可能需要访问 [`AdaptyPaywallProduct`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywallProduct-class.html) 对象中的这些属性。下面列出了最常用的属性，有关所有可用属性的完整详情，请参阅链接文档。
-
+| Products  | [`AdaptyPaywallProduct`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywallProduct-class.html) 对象列表，包含：产品标识符、产品名称、价格、货币、订阅时长及其他多个属性。 |
+在实现自定义付费墙设计时，你可能需要访问 [`AdaptyPaywallProduct`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywallProduct-class.html) 对象中的这些属性。以下列出了最常用的属性，完整属性列表请参阅上方链接文档。
 | 属性 | 描述 |
 |-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Title（标题）** | 要显示产品标题，请使用 `product.localizedTitle`。请注意，本地化基于用户选择的商店国家/地区，而非设备本身的语言区域设置。 |
-| **Price（价格）** | 要显示本地化版本的价格，请使用 `product.price.localizedString`。该本地化基于设备的语言区域信息。您也可以使用 `product.price.amount` 以数字形式访问价格，该值以本地货币提供。要获取关联的货币符号，请使用 `product.price.currencySymbol`。 |
-| **Subscription Period（订阅周期）** | 要显示订阅周期（例如周、月、年等），请使用 `product.subscription?.localizedPeriod`。该本地化基于设备的语言区域设置。要以编程方式获取订阅周期，请使用 `product.subscription?.period`。从中可以访问 `unit` 枚举以获取时长（即天、周、月、年或未知）。`numberOfUnits` 值将获取周期单位的数量。例如，对于季度订阅，`unit` 属性中将显示 `AdaptyPeriodUnit.month`，`numberOfUnits` 属性中将显示 `3`。 |
-| **Introductory Offer（新用户优惠）** | 要显示标记或其他指示符以表明订阅包含新用户优惠，请查看 `product.subscription?.offer?.phases` 属性。这是一个最多可包含两个折扣阶段的列表：免费试用阶段和优惠价格阶段。每个阶段对象包含以下有用属性：<br/>• `paymentMode`：枚举值为 `AdaptyPaymentMode.freeTrial`、`AdaptyPaymentMode.payAsYouGo`、`AdaptyPaymentMode.payUpFront` 和 `AdaptyPaymentMode.unknown`。免费试用为 `AdaptyPaymentMode.freeTrial` 类型。<br/>• `price`：折扣价格（数字形式）。免费试用时此处为 `0`。<br/>• `localizedNumberOfPeriods`：使用设备语言区域本地化的字符串，描述优惠时长。例如，三天试用优惠在此字段中显示为 `3 days`。<br/>• `subscriptionPeriod`：或者，您可以使用此属性获取优惠周期的各项详情。其工作方式与上一节描述的订阅周期相同。<br/>• `localizedSubscriptionPeriod`：针对用户语言区域格式化的折扣订阅周期。 |
-
+| **Title** | 使用 `product.localizedTitle` 显示产品名称。请注意，本地化基于用户在商店中选择的国家/地区，而非设备本身的语言环境。 |
+| **Price** | 使用 `product.price.localizedString` 显示本地化价格，该本地化基于设备的语言环境信息。也可以通过 `product.price.amount` 以数字形式获取价格，其值以本地货币计。如需获取对应的货币符号，请使用 `product.price.currencySymbol`。 |
+| **Subscription Period** | 使用 `product.subscription?.localizedPeriod` 显示订阅周期（如周、月、年等），该本地化基于设备语言环境。如需以编程方式获取订阅周期，请使用 `product.subscription?.period`，通过 `unit` 枚举可获取周期长度（即 day、week、month、year 或 unknown），`numberOfUnits` 则表示周期单位的数量。例如，对于季度订阅，`unit` 属性值为 `AdaptyPeriodUnit.month`，`numberOfUnits` 属性值为 `3`。 |
+| **Introductory Offer** | 如需显示徽章或其他标识以表明订阅包含新用户优惠，请查看 `product.subscription?.offer?.phases` 属性。这是一个列表，最多包含两个折扣阶段：免费试用阶段和新用户价格阶段。每个阶段对象包含以下实用属性：<br/>• `paymentMode`：枚举类型，可选值为 `AdaptyPaymentMode.freeTrial`、`AdaptyPaymentMode.payAsYouGo`、`AdaptyPaymentMode.payUpFront` 和 `AdaptyPaymentMode.unknown`。免费试用对应 `AdaptyPaymentMode.freeTrial` 类型。<br/>• `price`：折扣价格（数字形式）。免费试用时该值为 `0`。<br/>• `localizedNumberOfPeriods`：根据设备语言环境本地化的字符串，描述优惠时长。例如，三天试用优惠在此字段显示为 `3 days`。<br/>• `subscriptionPeriod`：也可通过此属性获取优惠周期的具体信息，其使用方式与上一节描述的订阅周期一致。<br/>• `localizedSubscriptionPeriod`：按用户语言环境格式化的折扣订阅周期字符串。 |
 ## 使用默认目标受众付费墙加速付费墙获取 \{#speed-up-paywall-fetching-with-default-audience-paywall\}
 
 通常情况下，付费墙几乎可以立即获取，因此您无需担心加速此过程。但是，在您拥有大量目标受众和付费墙，且用户网络连接较弱的情况下，获取付费墙可能需要比预期更长的时间。在这种情况下，您可能希望显示默认付费墙，以确保流畅的用户体验，而不是完全不显示付费墙。
@@ -109,15 +207,24 @@ try {
 - **潜在的向后兼容性问题**：如果您需要为不同的应用版本（当前版本和未来版本）显示不同的付费墙，可能会面临挑战。您要么必须设计支持当前（旧版）版本的付费墙，要么接受使用当前（旧版）版本的用户可能遇到付费墙无法渲染的问题。
 - **失去精准定向**：所有用户都将看到为 **All Users** 目标受众设计的同一付费墙，这意味着您将失去个性化定向能力（包括基于国家/地区、营销归因或您自定义属性的定向）。
 
-如果您愿意接受这些缺点以换取更快的付费墙获取速度，请按以下方式使用 `getPaywallForDefaultAudience` 方法。否则，请继续使用[上述](#fetch-paywall-information)的 `getPaywall`。
+如果你愿意接受上述缺点以换取更快的付费墙获取速度，请按如下方式使用 `getPaywallForDefaultAudience` 方法。否则，请继续使用[上文](fetch-paywalls-and-products-flutter#fetch-paywall-information)介绍的 `getPaywall`。
 :::
 
+```dart showLineNumbers
+try {
+    final paywall = await Adapty().getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
+} on AdaptyError catch (adaptyError) {
+    // handle error
+} catch (e) {
+    // handle unknown error
+}
+```
 :::note
-Flutter SDK 暂不支持 `getPaywallForDefaultAudience` 方法，但即将添加支持。
+`getPaywallForDefaultAudience` 方法从 Flutter SDK 3.2.0 版本开始支持。
 :::
-
 | 参数 | 是否必填 | 描述 |
 |---------|--------|-----------|
 | **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
 | **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为由一个或多个以减号（**-**）分隔的子标签组成的语言代码。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言代码及其推荐用法的更多信息，请参阅[本地化与语言代码](flutter-localizations-and-locale-codes)。</p> |
 | **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 将尝试从服务器加载数据，如果失败则返回缓存数据。我们推荐此方式，因为它确保用户始终获得最新数据。</p><p></p><p>但是，如果您认为用户网络不稳定，可以考虑使用 `.returnCacheDataElseLoad`，在缓存存在时返回缓存数据。在这种情况下，用户可能无法获取最新数据，但无论网络状况多差，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，重启应用后缓存保持不变，只有在卸载应用或手动清理时才会被清除。</p> |
+</SDKv3>

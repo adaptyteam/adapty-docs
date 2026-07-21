@@ -1,33 +1,134 @@
 ---
 title: "Xử lý hành động nút trong Flutter SDK"
-description: "Xử lý hành động nút paywall trong Flutter bằng Adapty để tối ưu hóa việc kiếm tiền từ ứng dụng."
+description: "Xử lý các hành động nút paywall trong Flutter bằng Adapty để tối ưu hóa doanh thu ứng dụng."
 metadataTitle: "Xử lý hành động nút paywall | Tài liệu Adapty"
 toc_max_heading_level: 4
-keywords: ['nút paywall', 'nút', 'hành động nút paywall', 'xử lý hành động']
+keywords: ['nút paywall', 'nút', 'hành động nút paywall', 'xử lý hành động', 'flowViewDidPerformAction', 'AndroidSystemBackAction']
 ---
 
-Nếu bạn đang xây dựng paywall bằng Adapty Paywall Builder, việc thiết lập các nút đúng cách là rất quan trọng:
+<SDKv4>
 
-1. Thêm [nút trong Paywall Builder](paywall-buttons) và gán cho nó một hành động có sẵn hoặc tạo một ID hành động tùy chỉnh.
-2. Viết code trong ứng dụng của bạn để xử lý từng hành động đã gán.
+Nếu bạn đang xây dựng flow hoặc paywall bằng Adapty builder, việc thiết lập các nút đúng cách là rất quan trọng:
+1. Thêm [nút trong builder](paywall-buttons) và gán cho nút đó một action có sẵn hoặc tạo custom action ID.
+2. Viết code trong ứng dụng để xử lý từng action bạn đã gán.
 
-Hướng dẫn này hướng dẫn cách xử lý các hành động tùy chỉnh và hành động có sẵn trong code của bạn.
-
+Hướng dẫn này trình bày cách xử lý các custom action và action có sẵn trong code của bạn.
 :::warning
-**Chỉ có giao dịch mua và khôi phục được xử lý tự động.** Tất cả các hành động nút khác, chẳng hạn như đóng paywall hoặc mở liên kết, đều yêu cầu triển khai xử lý phù hợp trong code ứng dụng.
+**Đóng màn hình và mở URL được xử lý tự động** bởi cài đặt mặc định của `flowViewDidPerformAction`, và SDK tự xử lý các giao dịch mua và khôi phục. Tất cả các hành động nút khác, chẳng hạn như đăng nhập hoặc mở một flow khác, cần được xử lý trong mã ứng dụng. Lưu ý rằng việc phản hồi các giao dịch mua và khôi phục *đã hoàn thành* diễn ra trong các callback observer bắt buộc — xem [Xử lý sự kiện flow & paywall](flutter-handling-events).
+:::
+## Đóng flow và paywall \{#close-flows-and-paywalls\}
+
+Để thêm nút đóng flow hoặc paywall, trong builder, hãy thêm một nút và gán cho nó hành động **Close**. Không cần viết code: implementation mặc định của `flowViewDidPerformAction` sẽ tự động đóng view khi nhận được `CloseAction`.
+
+:::info
+Nút **Back** của hệ thống Android không còn tự động đóng view theo mặc định nữa. Nó được chuyển đến `flowViewDidPerformAction` dưới dạng `AndroidSystemBackAction` — bạn cần tự xử lý nếu muốn nút back đóng flow hoặc paywall.
+:::
+Ghi đè `flowViewDidPerformAction` nếu bạn cần hành vi tùy chỉnh — ví dụ: đóng view khi người dùng nhấn nút back của hệ thống Android, như trong v3:
+
+```dart
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(:final url, :final openIn):
+        AdaptyUI().openUrl(url, openIn: openIn);
+        break;
+      default:
+        break;
+    }
+}
+```
+:::warning
+Việc ghi đè `flowViewDidPerformAction` sẽ thay thế hoàn toàn phần cài đặt mặc định — hãy giữ lại các case `CloseAction` và `OpenUrlAction` nếu bạn muốn giữ nguyên hành vi đóng và mở URL mặc định.
+:::
+## Mở URL từ flow và paywall \{#open-urls-from-flows-and-paywalls\}
+
+:::tip
+Nếu bạn muốn thêm một nhóm liên kết (ví dụ: điều khoản sử dụng và khôi phục giao dịch mua), hãy thêm phần tử **Link** trong builder và xử lý giống như các nút có hành động **Open URL**.
 :::
 
+Để thêm nút mở liên kết (ví dụ: **Terms of use** hoặc **Privacy policy**), trong builder, hãy thêm một nút, gán cho nó hành động **Open URL**, rồi nhập URL bạn muốn mở.
+Không cần viết code: phần triển khai mặc định của `flowViewDidPerformAction` sẽ mở URL theo cách native thông qua `AdaptyUI().openUrl`, tuân theo cài đặt mở trong trình duyệt trong ứng dụng hoặc trình duyệt ngoài từ dashboard.
+
+Hành vi mặc định là đủ cho hầu hết các trường hợp. Nếu bạn vẫn muốn tự xử lý việc mở URL, hãy ghi đè handler:
+```dart
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL in whatever way fits your app
+        break;
+      default:
+        break;
+    }
+}
+```
+
+## Đăng nhập vào ứng dụng \{#log-into-the-app\}
+
+Để thêm nút cho phép người dùng đăng nhập vào ứng dụng:
+
+1. Trong builder, thêm một nút và gán cho nó action **Login**.
+2. Trong code ứng dụng, triển khai handler cho action `login` để xác định người dùng của bạn.
+
+```dart
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+    switch (action) {
+      case CustomAction(action: 'login'):
+        // Navigate to your login screen in whatever way fits your app
+        break;
+      default:
+        break;
+    }
+}
+```
+## Xử lý các hành động tùy chỉnh \{#handle-custom-actions\}
+
+Để thêm nút xử lý các hành động khác:
+
+1. Trong builder, thêm một nút, gán cho nó hành động **Custom** và đặt cho nó một ID.
+2. Trong code của ứng dụng, triển khai một handler cho ID hành động bạn đã tạo.
+
+Ví dụ: nếu bạn có một bộ ưu đãi gói đăng ký hoặc sản phẩm mua một lần khác, bạn có thể thêm một nút để hiển thị một flow hoặc paywall khác:
+```dart
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+   switch (action) {
+     case CustomAction(action: 'openNewPaywall'):
+       // Display another flow or paywall
+       break;
+     default:
+       break;
+   }
+}
+```
+
+</SDKv4>
+
+<SDKv3>
+
+Nếu bạn đang xây dựng paywall bằng Adapty paywall builder, việc thiết lập các nút đúng cách là rất quan trọng:
+
+1. Thêm một [nút trong paywall builder](paywall-buttons) và gán cho nó một hành động có sẵn hoặc tạo một ID hành động tùy chỉnh.
+2. Viết code trong ứng dụng của bạn để xử lý từng hành động bạn đã gán.
+Hướng dẫn này chỉ cách xử lý các hành động tùy chỉnh và có sẵn trong code của bạn.
+
+:::warning
+**Chỉ có giao dịch mua và khôi phục là được xử lý tự động.** Tất cả các hành động nút khác, chẳng hạn như đóng paywall hoặc mở liên kết, đều cần bạn tự triển khai xử lý trong code của ứng dụng.
+:::
 ## Đóng paywall \{#close-paywalls\}
 
 Để thêm nút đóng paywall:
 
 1. Trong Paywall Builder, thêm một nút và gán cho nó hành động **Close**.
-2. Trong code ứng dụng, triển khai trình xử lý cho các hành động `CloseAction` và `AndroidSystemBackAction`.
+2. Trong code ứng dụng, triển khai handler cho các hành động `CloseAction` và `AndroidSystemBackAction`.
 
 :::info
-Trong Flutter SDK, các hành động `CloseAction` và `AndroidSystemBackAction` mặc định sẽ kích hoạt việc đóng paywall. Tuy nhiên, bạn có thể ghi đè hành vi này trong code nếu cần. Ví dụ, đóng một paywall có thể kích hoạt mở paywall khác.
+Trong Flutter SDK, các hành động `CloseAction` và `AndroidSystemBackAction` mặc định sẽ kích hoạt việc đóng paywall. Tuy nhiên, bạn có thể ghi đè hành vi này trong code nếu cần. Ví dụ, đóng một paywall có thể kích hoạt mở một paywall khác.
 :::
-
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
     switch (action) {
@@ -44,19 +145,18 @@ void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action
 ## Mở URL từ paywall \{#open-urls-from-paywalls\}
 
 :::tip
-Nếu bạn muốn thêm một nhóm liên kết (ví dụ: điều khoản sử dụng và khôi phục giao dịch mua), hãy thêm phần tử **Link** trong Paywall Builder và xử lý nó giống như nút với hành động **Open URL**.
+Nếu bạn muốn thêm một nhóm liên kết (ví dụ: điều khoản sử dụng và khôi phục giao dịch), hãy thêm phần tử **Link** trong paywall builder và xử lý nó theo cách tương tự như các nút với hành động **Open URL**.
 :::
 
-Để thêm nút mở liên kết từ paywall (ví dụ: **Điều khoản sử dụng** hoặc **Chính sách bảo mật**):
+Để thêm một nút mở liên kết từ paywall của bạn (ví dụ: **Terms of use** hoặc **Privacy policy**):
 
-1. Trong Paywall Builder, thêm một nút, gán cho nó hành động **Open URL**, và nhập URL bạn muốn mở.
-2. Trong code ứng dụng, triển khai trình xử lý cho hành động `openUrl` để mở URL nhận được trong trình duyệt.
-
+1. Trong paywall builder, thêm một nút, gán cho nó hành động **Open URL**, và nhập URL bạn muốn mở.
+2. Trong code ứng dụng của bạn, triển khai một handler cho hành động `openUrl` để mở URL nhận được trong trình duyệt.
 ```dart
 // You have to install url_launcher plugin in order to handle urls:
 // https://pub.dev/packages/url_launcher
 
-void paywallViewDidPerformAction(AdaptyUIView view, AdaptyUIAction action) {
+void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
     switch (action) {
       case OpenUrlAction(url: final url):
         final Uri uri = Uri.parse(url);
@@ -70,33 +170,30 @@ void paywallViewDidPerformAction(AdaptyUIView view, AdaptyUIAction action) {
 
 ## Đăng nhập vào ứng dụng \{#log-into-the-app\}
 
-Để thêm nút đăng nhập người dùng vào ứng dụng:
+Để thêm nút cho phép người dùng đăng nhập vào ứng dụng:
 
-1. Trong Paywall Builder, thêm một nút và gán cho nó hành động **Login**.
-2. Trong code ứng dụng, triển khai trình xử lý cho hành động `login` để xác định người dùng.
+1. Trong paywall builder, thêm một nút và gán cho nó hành động **Login**.
+2. Trong code ứng dụng, triển khai một handler cho hành động `login` để xác định người dùng.
 
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
     switch (action) {
       case CustomAction(action: 'login'):
-        // Handle login action
-        Navigator.of(context).push(MaterialPageRoute(builder: (context) => LoginScreen()));
+        // Navigate to your login screen in whatever way fits your app
         break;
       default:
         break;
     }
 }
 ```
+## Xử lý custom action \{#handle-custom-actions\}
 
-## Xử lý hành động tùy chỉnh \{#handle-custom-actions\}
-
-Để thêm nút xử lý các hành động khác:
+Để thêm nút xử lý bất kỳ hành động nào khác:
 
 1. Trong Paywall Builder, thêm một nút, gán cho nó hành động **Custom**, và đặt cho nó một ID.
-2. Trong code ứng dụng, triển khai trình xử lý cho ID hành động bạn đã tạo.
+2. Trong code của ứng dụng, hãy triển khai handler cho action ID mà bạn đã tạo.
 
-Ví dụ, nếu bạn có một bộ ưu đãi gói đăng ký khác hoặc sản phẩm mua một lần, bạn có thể thêm nút để hiển thị một paywall khác:
-
+Ví dụ: nếu bạn có một bộ ưu đãi đăng ký hoặc sản phẩm mua một lần khác, bạn có thể thêm một nút để hiển thị paywall khác:
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
    switch (action) {
@@ -108,3 +205,5 @@ void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action
    }
 }
 ```
+
+</SDKv3>

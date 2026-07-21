@@ -1,33 +1,134 @@
 ---
-title: "Responder a las acciones de botones en el SDK de Flutter"
-description: "Gestiona las acciones de botones en paywalls de Flutter con Adapty para mejorar la monetización de tu app."
-metadataTitle: "Gestión de acciones de botones en paywalls | Documentación de Adapty"
+title: "Responder a acciones de botones en Flutter SDK"
+description: "Gestiona las acciones de botones de paywall en Flutter usando Adapty para una mejor monetización de tu app."
+metadataTitle: "Gestión de acciones de botones de paywall | Documentación de Adapty"
 toc_max_heading_level: 4
-keywords: ['botón de paywall', 'botón', 'acciones de botones en paywall', 'gestionar acciones']
+keywords: ['botón de paywall', 'botón', 'acciones de botones de paywall', 'gestionar acciones', 'flowViewDidPerformAction', 'AndroidSystemBackAction']
 ---
+
+<SDKv4>
+
+Si estás creando flows o paywalls con el builder de Adapty, es fundamental configurar los botones correctamente:
+1. Añade un [botón en el builder](paywall-buttons) y asígnale una acción existente o crea un ID de acción personalizado.
+2. Escribe código en tu app para gestionar cada acción que hayas asignado.
+
+Esta guía muestra cómo gestionar acciones personalizadas y existentes en tu código.
+:::warning
+**El cierre de la vista y la apertura de URLs se gestionan automáticamente** por la implementación predeterminada de `flowViewDidPerformAction`, y el propio SDK procesa las compras y restauraciones. El resto de acciones de botón, como iniciar sesión o abrir otro flow, requieren implementar las respuestas correspondientes en el código de la app. Ten en cuenta que la respuesta a las compras y restauraciones *completadas* se gestiona en los callbacks de observador requeridos — consulta [Gestionar eventos de flow y paywall](flutter-handling-events).
+:::
+## Cerrar flows y paywalls \{#close-flows-and-paywalls\}
+
+Para añadir un botón que cierre tu flow o paywall, en el builder añade un botón y asígnale la acción **Close**. No se necesita código: la implementación predeterminada de `flowViewDidPerformAction` cierra la vista cuando recibe `CloseAction`.
+
+:::info
+El botón **Back** del sistema Android ya no cierra la vista por defecto. Se entrega a `flowViewDidPerformAction` como `AndroidSystemBackAction` — gestiónalo tú mismo si quieres que el botón de retroceso cierre el flow o el paywall.
+:::
+Sobreescribe `flowViewDidPerformAction` si necesitas un comportamiento personalizado — por ejemplo, para cerrar también la vista al pulsar el botón de retroceso del sistema Android, como en v3:
+
+```dart
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(:final url, :final openIn):
+        AdaptyUI().openUrl(url, openIn: openIn);
+        break;
+      default:
+        break;
+    }
+}
+```
+:::warning
+Sobrescribir `flowViewDidPerformAction` reemplaza completamente la implementación predeterminada — conserva los casos `CloseAction` y `OpenUrlAction` si quieres mantener el comportamiento predeterminado de cierre y apertura de URLs.
+:::
+## Abrir URLs desde flows y paywalls \{#open-urls-from-flows-and-paywalls\}
+
+:::tip
+Si quieres añadir un grupo de enlaces (por ejemplo, términos de uso y restauración de compras), añade un elemento **Link** en el builder y trátalo igual que los botones con la acción **Open URL**.
+:::
+
+Para añadir un botón que abra un enlace (por ejemplo, **Términos de uso** o **Política de privacidad**), añade un botón en el builder, asígnale la acción **Open URL** e introduce la URL que quieres abrir.
+No se necesita código: la implementación predeterminada de `flowViewDidPerformAction` abre la URL de forma nativa mediante `AdaptyUI().openUrl`, respetando la configuración de navegador interno o externo del dashboard.
+
+El comportamiento predeterminado es suficiente para la mayoría de los casos. Si aun así quieres abrir las URLs tú mismo, sobreescribe el handler:
+```dart
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL in whatever way fits your app
+        break;
+      default:
+        break;
+    }
+}
+```
+
+## Iniciar sesión en la app \{#log-into-the-app\}
+
+Para añadir un botón que permita a los usuarios iniciar sesión en tu app:
+
+1. En el builder, añade un botón y asígnale la acción **Login**.
+2. En el código de tu app, implementa un manejador para la acción `login` que identifique a tu usuario.
+
+```dart
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+    switch (action) {
+      case CustomAction(action: 'login'):
+        // Navigate to your login screen in whatever way fits your app
+        break;
+      default:
+        break;
+    }
+}
+```
+## Gestionar acciones personalizadas \{#handle-custom-actions\}
+
+Para añadir un botón que gestione cualquier otra acción:
+
+1. En el builder, añade un botón, asígnale la acción **Custom** y dale un ID.
+2. En el código de tu app, implementa un handler para el ID de acción que hayas creado.
+
+Por ejemplo, si tienes otro conjunto de ofertas de suscripción o compras únicas, puedes añadir un botón que muestre otro flow o paywall:
+```dart
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+   switch (action) {
+     case CustomAction(action: 'openNewPaywall'):
+       // Display another flow or paywall
+       break;
+     default:
+       break;
+   }
+}
+```
+
+</SDKv4>
+
+<SDKv3>
 
 Si estás creando paywalls con el Paywall Builder de Adapty, es fundamental configurar los botones correctamente:
 
-1. Añade un [botón en el Paywall Builder](paywall-buttons) y asígnale una acción predefinida o crea un ID de acción personalizado.
+1. Añade un [botón en el Paywall Builder](paywall-buttons) y asígnale una acción existente o crea un ID de acción personalizado.
 2. Escribe código en tu app para gestionar cada acción que hayas asignado.
-
-Esta guía muestra cómo gestionar acciones personalizadas y predefinidas en tu código.
+Esta guía explica cómo gestionar acciones personalizadas y predefinidas en tu código.
 
 :::warning
-**Solo las compras y restauraciones se gestionan automáticamente.** El resto de acciones de botones, como cerrar paywalls o abrir enlaces, requieren implementar las respuestas correspondientes en el código de la app.
+**Solo las compras y restauraciones se gestionan automáticamente.** El resto de acciones de botón, como cerrar paywalls o abrir enlaces, requieren implementar las respuestas correspondientes en el código de la app.
 :::
-
 ## Cerrar paywalls \{#close-paywalls\}
 
 Para añadir un botón que cierre tu paywall:
 
 1. En el Paywall Builder, añade un botón y asígnale la acción **Close**.
-2. En el código de tu app, implementa un manejador para las acciones `CloseAction` y `AndroidSystemBackAction`.
+2. En el código de tu app, implementa un handler para las acciones `CloseAction` y `AndroidSystemBackAction`.
 
 :::info
-En el SDK de Flutter, las acciones `CloseAction` y `AndroidSystemBackAction` cierran el paywall por defecto. Sin embargo, puedes sobrescribir este comportamiento en tu código si lo necesitas. Por ejemplo, cerrar un paywall podría disparar la apertura de otro.
+En el SDK de Flutter, las acciones `CloseAction` y `AndroidSystemBackAction` cierran el paywall por defecto. Sin embargo, puedes sobrescribir este comportamiento en tu código si lo necesitas. Por ejemplo, cerrar un paywall podría desencadenar la apertura de otro.
 :::
-
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
     switch (action) {
@@ -44,19 +145,18 @@ void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action
 ## Abrir URLs desde paywalls \{#open-urls-from-paywalls\}
 
 :::tip
-Si quieres añadir un grupo de enlaces (por ejemplo, términos de uso y restauración de compras), añade un elemento **Link** en el Paywall Builder y gestiónalo de la misma manera que los botones con la acción **Open URL**.
+Si quieres añadir un grupo de enlaces (por ejemplo, términos de uso y restauración de compras), añade un elemento **Link** en el Paywall Builder y trátalo igual que los botones con la acción **Open URL**.
 :::
 
 Para añadir un botón que abra un enlace desde tu paywall (por ejemplo, **Terms of use** o **Privacy policy**):
 
-1. En el Paywall Builder, añade un botón, asígnale la acción **Open URL** e introduce la URL que quieres abrir.
-2. En el código de tu app, implementa un manejador para la acción `openUrl` que abra la URL recibida en un navegador.
-
+1. En el Paywall Builder, añade un botón, asígnale la acción **Open URL** e introduce la URL que quieras abrir.
+2. En el código de tu app, implementa un handler para la acción `openUrl` que abra la URL recibida en un navegador.
 ```dart
 // You have to install url_launcher plugin in order to handle urls:
 // https://pub.dev/packages/url_launcher
 
-void paywallViewDidPerformAction(AdaptyUIView view, AdaptyUIAction action) {
+void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
     switch (action) {
       case OpenUrlAction(url: final url):
         final Uri uri = Uri.parse(url);
@@ -72,31 +172,28 @@ void paywallViewDidPerformAction(AdaptyUIView view, AdaptyUIAction action) {
 
 Para añadir un botón que permita a los usuarios iniciar sesión en tu app:
 
-1. En el Paywall Builder, añade un botón y asígnale la acción **Login**.
+1. En el paywall builder, añade un botón y asígnale la acción **Login**.
 2. En el código de tu app, implementa un manejador para la acción `login` que identifique a tu usuario.
 
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
     switch (action) {
       case CustomAction(action: 'login'):
-        // Handle login action
-        Navigator.of(context).push(MaterialPageRoute(builder: (context) => LoginScreen()));
+        // Navigate to your login screen in whatever way fits your app
         break;
       default:
         break;
     }
 }
 ```
-
 ## Gestionar acciones personalizadas \{#handle-custom-actions\}
 
 Para añadir un botón que gestione cualquier otra acción:
 
 1. En el Paywall Builder, añade un botón, asígnale la acción **Custom** y asígnale un ID.
-2. En el código de tu app, implementa un manejador para el ID de acción que hayas creado.
+2. En el código de tu app, implementa un manejador para el ID de acción que has creado.
 
 Por ejemplo, si tienes otro conjunto de ofertas de suscripción o compras únicas, puedes añadir un botón que muestre otro paywall:
-
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
    switch (action) {
@@ -108,3 +205,5 @@ void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action
    }
 }
 ```
+
+</SDKv3>

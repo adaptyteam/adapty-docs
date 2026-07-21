@@ -1,0 +1,75 @@
+---
+title: "Presentar flows en modo Observer en el SDK de Flutter"
+description: "Presenta flows y paywalls del Paywall Builder en modo Observer en tu app de Flutter mientras gestionas las compras con tu propio código."
+metadataTitle: "Presentar flows en modo Observer | Documentación de Adapty"
+keywords: ['modo observer', 'AdaptyUIObserverModeResolver', 'setObserverModeResolver', 'flow']
+---
+
+Si has personalizado un flow o paywall con el builder, no necesitas preocuparte por renderizarlo en el código de tu app móvil para mostrárselo al usuario. Ese flow o paywall ya contiene tanto qué mostrar como cómo mostrarlo.
+
+:::warning
+Esta sección hace referencia únicamente al [modo Observer](observer-vs-full-mode). Si no trabajas en modo Observer, consulta el tema [Mostrar flows y paywalls](flutter-present-paywalls).
+:::
+:::info
+Esta funcionalidad requiere el SDK de Adapty para Flutter 4.0 o posterior; antes solo estaba disponible en los SDKs nativos de iOS y Android. Consulta la [guía de migración](migration-to-flutter-sdk-v4) para actualizar.
+:::
+
+<details>
+   <summary>Antes de empezar a mostrar flows (haz clic para expandir)</summary>
+1. Configura la integración inicial de Adapty [con App Store](initial_ios) y [con Google Play](initial-android).
+   2. Instala y configura el SDK de Adapty. Asegúrate de establecer el parámetro `observerMode` en `true`. Consulta la [guía de instalación del SDK de Flutter](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk).
+   3. [Crea productos](create-product) en el Adapty Dashboard.
+   4. [Configura flows o paywalls en los builders](create-paywall) y asígnales productos.
+   5. [Crea placements y asígnales tus flows o paywalls](create-placement).
+   6. [Obtén los flows y su configuración](flutter-get-pb-paywalls) en el código de tu aplicación móvil.
+</details>
+
+En el modo Observer, el SDK no realiza las compras por ti. Cuando un usuario pulsa el botón de compra o restauración en un flow o paywall renderizado por Adapty, el SDK llama a tu `AdaptyUIObserverModeResolver` en su lugar — realiza la compra o restauración con tu propio código ahí.
+
+1. Implementa el `AdaptyUIObserverModeResolver`:
+   ```dart showLineNumbers title="Flutter"
+   class MyObserverModeResolver extends AdaptyUIObserverModeResolver {
+     @override
+     void observerModeDidInitiatePurchase(
+       AdaptyUIFlowView view,
+       AdaptyPaywallProduct product,
+       void Function() onStartPurchase,
+       void Function() onFinishPurchase,
+     ) {
+       onStartPurchase(); // the view shows its loading indicator
+       // make the purchase with your own code, then:
+       onFinishPurchase(); // the view hides the loading indicator
+     }
+
+     @override
+     void observerModeDidInitiateRestore(
+       AdaptyUIFlowView view,
+       void Function() onStartRestore,
+       void Function() onFinishRestore,
+     ) {
+       onStartRestore();
+       // restore purchases with your own code, then:
+       onFinishRestore();
+     }
+   }
+   ```
+
+El método `observerModeDidInitiatePurchase` te informa de que el usuario ha iniciado una compra, y `observerModeDidInitiateRestore` — de que el usuario ha iniciado una restauración. Activa tu flow de compra o restauración personalizado en respuesta.
+
+Además, recuerda invocar los siguientes callbacks para notificar a AdaptyUI sobre el proceso de compra o restauración. Esto es necesario para que el flow funcione correctamente, por ejemplo, para mostrar el loader, entre otras cosas:
+| Callback           | Descripción                                                                                          |
+   | :----------------- | :--------------------------------------------------------------------------------------------------- |
+   | onStartPurchase()  | El callback debe invocarse para notificar a AdaptyUI que la compra ha comenzado.  |
+   | onFinishPurchase() | El callback debe invocarse para notificar a AdaptyUI que la compra ha finalizado. |
+   | onStartRestore()   | El callback debe invocarse para notificar a AdaptyUI que la restauración ha comenzado.   |
+   | onFinishRestore()  | El callback debe invocarse para notificar a AdaptyUI que la restauración ha finalizado.  |
+2. Registra el resolver antes de mostrar cualquier pantalla:
+
+   ```dart showLineNumbers title="Flutter"
+   AdaptyUI().setObserverModeResolver(MyObserverModeResolver());
+   ```
+
+3. Crea y presenta la vista del flow como de costumbre: [obtén el flow y crea su vista](flutter-get-pb-paywalls), luego [preséntala](flutter-present-paywalls). No se necesitan parámetros adicionales — una vez registrado el resolver, todo flow o paywall renderizado por Adapty enrutará las compras y restauraciones a través de él.
+:::warning
+No olvides [informar la transacción y asociarla con el paywall](report-transactions-observer-mode-flutter). De lo contrario, Adapty no reconocerá la transacción y no podrá determinar el paywall de origen de la compra.
+:::

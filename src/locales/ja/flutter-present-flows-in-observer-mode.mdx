@@ -1,0 +1,75 @@
+---
+title: "FlutterのSDKでObserverモードのフローを表示する"
+description: "FlutterアプリでObserverモードのフローとペイウォールビルダーのペイウォールを表示しながら、独自のコードで購入処理を行います。"
+metadataTitle: "ObserverモードでのFlowの表示 | Adapty ドキュメント"
+keywords: ['observer mode', 'AdaptyUIObserverModeResolver', 'setObserverModeResolver', 'flow']
+---
+
+ビルダーを使ってフローやペイウォールをカスタマイズした場合、モバイルアプリのコード内でそれをレンダリングしてユーザーに表示する方法を気にする必要はありません。そのようなフローやペイウォールには、表示する内容と表示方法の両方が含まれています。
+
+:::warning
+このセクションは[オブザーバーモード](observer-vs-full-mode)専用の説明です。オブザーバーモードで作業していない場合は、[フローとペイウォールの表示](flutter-present-paywalls)のトピックを参照してください。
+:::
+:::info
+この機能を利用するには Adapty Flutter SDK 4.0 以降が必要です。以前はネイティブの iOS および Android SDK でのみ利用可能でした。アップグレードするには[移行ガイド](migration-to-flutter-sdk-v4)をご参照ください。
+:::
+
+<details>
+   <summary>フローの表示を始める前に（クリックして展開）</summary>
+1. Adapty と [App Store](initial_ios) および [Google Play](initial-android) の初期連携を設定します。
+   2. Adapty SDK をインストールして設定します。`observerMode` パラメータを `true` に設定してください。詳しくは [Flutter SDK インストールガイド](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk) を参照してください。
+   3. Adapty ダッシュボードで [プロダクトを作成](create-product) します。
+   4. [ビルダーでフローまたはペイウォールを設定](create-paywall) し、プロダクトを割り当てます。
+   5. [プレースメントを作成し、フローまたはペイウォールを割り当てます](create-placement)。
+   6. モバイルアプリのコードで [フローとその設定を取得します](flutter-get-pb-paywalls)。
+</details>
+
+オブザーバーモードでは、SDKが代わりに購入処理を行いません。ユーザーがAdaptyのフローやペイウォール上で購入ボタンまたは復元ボタンをタップすると、SDKはあなたの`AdaptyUIObserverModeResolver`を呼び出します。購入や復元の処理は、そこで独自のコードを使って行ってください。
+
+1. `AdaptyUIObserverModeResolver`を実装します：
+   ```dart showLineNumbers title="Flutter"
+   class MyObserverModeResolver extends AdaptyUIObserverModeResolver {
+     @override
+     void observerModeDidInitiatePurchase(
+       AdaptyUIFlowView view,
+       AdaptyPaywallProduct product,
+       void Function() onStartPurchase,
+       void Function() onFinishPurchase,
+     ) {
+       onStartPurchase(); // the view shows its loading indicator
+       // make the purchase with your own code, then:
+       onFinishPurchase(); // the view hides the loading indicator
+     }
+
+     @override
+     void observerModeDidInitiateRestore(
+       AdaptyUIFlowView view,
+       void Function() onStartRestore,
+       void Function() onFinishRestore,
+     ) {
+       onStartRestore();
+       // restore purchases with your own code, then:
+       onFinishRestore();
+     }
+   }
+   ```
+
+`observerModeDidInitiatePurchase` メソッドはユーザーが購入を開始したことを、`observerModeDidInitiateRestore` はユーザーがリストアを開始したことをそれぞれ通知します。これらに応じて、カスタムの購入またはリストアフローを起動してください。
+
+また、購入またはリストアの処理状況を AdaptyUI に通知するために、以下のコールバックを呼び出すことを忘れないでください。これは、ローダーの表示など、フローを正常に動作させるために必要です。
+| コールバック | 説明 |
+| :----------------- | :------------------------------------------------------------------------------- |
+| onStartPurchase() | 購入が開始されたことを AdaptyUI に通知するために呼び出すコールバックです。 |
+| onFinishPurchase() | 購入が完了したことを AdaptyUI に通知するために呼び出すコールバックです。 |
+| onStartRestore() | 復元が開始されたことを AdaptyUI に通知するために呼び出すコールバックです。 |
+| onFinishRestore() | 復元が完了したことを AdaptyUI に通知するために呼び出すコールバックです。 |
+2. スクリーンを表示する前にリゾルバーを登録してください:
+
+   ```dart showLineNumbers title="Flutter"
+   AdaptyUI().setObserverModeResolver(MyObserverModeResolver());
+   ```
+
+3. 通常どおりフロービューを作成して表示してください: [フローを取得してビューを作成し](flutter-get-pb-paywalls)、その後[表示します](flutter-present-paywalls)。追加のパラメーターは不要です — リゾルバーを登録すれば、Adapty がレンダリングするすべてのフローおよびペイウォールの購入・復元がそこを通じて処理されます。
+:::warning
+[トランザクションを報告してペイウォールと関連付ける](report-transactions-observer-mode-flutter)ことを忘れないでください。これを行わないと、Adaptyはトランザクションを認識できず、購入元のペイウォールを特定できません。
+:::

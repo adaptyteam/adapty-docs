@@ -1,25 +1,22 @@
 ---
 title: "Tối ưu hóa việc tải paywall trong Flutter SDK"
-description: "Tải paywall Adapty một cách đáng tin cậy: thời điểm, bộ nhớ cache và các mẫu fallback cho Flutter."
+description: "Tải paywall Adapty một cách đáng tin cậy: thời điểm, bộ nhớ đệm và các pattern dự phòng cho Flutter."
 metadataTitle: "Tối ưu hóa việc tải Paywall | Flutter SDK | Tài liệu Adapty"
 ---
 
-Một lần tải paywall đáng tin cậy trên Flutter cần đảm bảo ba điều: hiển thị nhanh, trả về đúng paywall theo đối tượng, và fallback một cách linh hoạt khi mạng chậm. Các quy tắc dưới đây bao gồm thời điểm, bộ nhớ cache và các mẫu fallback để đạt được điều đó.
-
+Một lần tải paywall đáng tin cậy trên Flutter cần đảm bảo ba điều: hiển thị nhanh, trả về đúng paywall theo đối tượng người dùng, và xử lý dự phòng khi mạng chậm. Các quy tắc dưới đây đề cập đến thời điểm, bộ nhớ đệm và các pattern dự phòng để đạt được điều đó.
 :::tip
-Các quy tắc này giả định rằng `Adapty().activate()` và `Adapty().identify()` đã hoàn tất. Xem [Thứ tự gọi trong Flutter SDK](flutter-sdk-call-order).
+Các quy tắc này giả định rằng `Adapty().activate()` và `Adapty().identify()` đã được giải quyết xong. Xem [Thứ tự gọi trong Flutter SDK](flutter-sdk-call-order).
 :::
 
-## Quy tắc và những lỗi thường gặp \{#rules-and-pitfalls\}
-
+Các hướng dẫn dưới đây sử dụng tên phương thức v3. Trong SDK v4, `getPaywall` được đổi tên thành `getFlow` và kiểu fetch policy thành `AdaptyFlowFetchPolicy` — mọi quy tắc đều áp dụng không thay đổi.
+## Quy tắc và lưu ý \{#rules-and-pitfalls\}
 | Nên làm | Không nên làm | Lý do |
 |---|---|---|
-| Tải placement bạn sắp hiển thị.                                                                                  | Tải trước tất cả các placement đồng thời khi khởi động.        | Tải trước hàng loạt sẽ chặn luồng chính và gây màn hình đen trong thời gian đó.                                  |
-| Gọi `getPaywall` sau khi attribution đã có cơ hội xử lý xong — ví dụ, 1–2 giây sau khi `activate` hoặc sau khi `didUpdateProfileStream` kích hoạt. | Gọi `getPaywall` trong `main()` trước `runApp`.         | Attribution chưa được ghi nhận. Paywall sẽ được xác định theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
-| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement.                             | Chờ `getPaywall` vô thời hạn.                     | Nếu không có timeout, người dùng kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phục hồi — hoặc họ sẽ thoát ứng dụng.     |
-
-Xem [Tải paywall và sản phẩm](fetch-paywalls-and-products-flutter) để tham khảo các tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn đúng placement.
-
+| Fetch placement bạn sắp hiển thị.                                                                                  | Prefetch tất cả placement đồng thời khi khởi động.        | Bulk prefetch chặn main thread và gây màn hình đen trong thời gian burst.                                  |
+| Fetch `getPaywall` sau khi attribution đã có thời gian xử lý — ví dụ, 1–2 giây sau `activate` hoặc sau khi `didUpdateProfileStream` kích hoạt. | Gọi `getPaywall` trong `main()` trước `runApp`.         | Attribution chưa được xử lý xong. Paywall sẽ được resolve theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như ASA personalization. |
+| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement.                             | Chờ `getPaywall` vô thời hạn.                     | Không có timeout, người dùng có kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phản hồi — hoặc họ sẽ đóng ứng dụng.     |
+Xem [Tải paywall và sản phẩm](fetch-paywalls-and-products-flutter) để tham khảo thông số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn placement phù hợp.
 ## Tối ưu cho kết nối kém \{#tune-for-poor-connectivity\}
 
 Đối với các thị trường có kết nối liên tục kém (khu vực nông thôn, phương tiện công cộng, vùng bị ảnh hưởng bởi định tuyến mạng):
