@@ -1,0 +1,46 @@
+---
+title: "Virtual currency quickstart"
+description: "Set up a virtual currency end to end: create a token currency, grant tokens with a subscription, and spend them through the server-side API."
+metadataTitle: "Virtual currency quickstart | Adapty Docs"
+---
+
+:::link
+Main article: [Virtual currencies](virtual-currencies)
+:::
+
+This quickstart sets up a token currency end to end: a subscription grants users 1000 tokens per month, and paid actions in your app cost tokens. Adapty keeps every balance, so your backend only reads and spends them.
+
+1. Follow the [Create virtual currency](create-virtual-currency) guide to create a `TOKENS` currency. Link it to your Pro subscription and set **Credit per cycle** to 1000. To sell extra tokens, link one-time token pack products as well.
+
+   <ZoomImage id="new-currency-combined.webp" width="700px" alt="New virtual currency creation screens" />
+
+2. Call [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) to read the user's balance, for example, before starting a generation:
+
+   ```bash title="Read balances"
+   curl https://api.adapty.io/api/v2/server-side-api/vc/balances/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: user-42"
+   ```
+
+   The response lists every currency the user holds, for example 1000 `TOKENS`:
+
+   ```json title="Response"
+   {
+     "data": [
+       { "code": "TOKENS", "name": "Tokens", "balance": 1000, "held": 0, "available": 1000 }
+     ]
+   }
+   ```
+3. When the user runs a generation, spend the tokens by calling [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) with a negative `amount`. In this example, one image generation costs 100 tokens:
+
+   ```bash title="Spend tokens"
+   curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: user-42" \
+     -H "Content-Type: application/json" \
+     -d '{"items": [{"currency_code": "TOKENS", "amount": -100}]}'
+   ```
+
+   The transaction is atomic and returns the updated balance. If the user can't cover the cost, the request returns `insufficient_balance` and nothing changes. Include an `Idempotency-Key` header to safely retry requests.
+4. To run a win-back promo, grant tokens through the same endpoint with a positive `amount`. Credits you grant this way never expire.
+5. Review every change in the user's [profile](virtual-currency-balance) or in the [transaction history](api-adapty/operations/listVirtualCurrencyTransactions), so you can audit the economy at any time.
