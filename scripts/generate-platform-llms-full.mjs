@@ -39,18 +39,29 @@ const toPascalCase = (str) => {
     return str.replace(/(^\w|-\w)/g, clear => clear.replace('-', '').toUpperCase());
 };
 
+// Reusable snippets may be .mdx with frontmatter, import lines, and <Callout>
+// JSX wrappers — normalize to plain markdown before inlining into .md exports.
+function cleanReusableContent(content) {
+    let cleaned = content.replace(/<!---.*?--->\s*\n?/gs, '');
+    cleaned = cleaned.replace(/^\s*---\n[\s\S]*?\n---\s*\n?/, '');
+    cleaned = cleaned.replace(/^import\s+.*?;?\s*$/gm, '');
+    cleaned = cleaned.replace(
+        /<Callout\s+type="([\w-]+)"[^>]*>\s*([\s\S]*?)\s*<\/Callout>/g,
+        (_, type, body) => `:::${type}\n${body}\n:::`
+    );
+    return cleaned.trim();
+}
+
 // Get reusable components
 async function getReusableComponents() {
     const components = {};
     try {
         const files = await fs.readdir(REUSABLE_COMPONENTS_DIR);
         for (const file of files) {
-            if (file.endsWith('.md')) {
+            if (file.endsWith('.md') || file.endsWith('.mdx')) {
                 const content = await fs.readFile(path.join(REUSABLE_COMPONENTS_DIR, file), 'utf-8');
-                // Clean comments from reusable components
-                const cleanedContent = content.replace(/<!---.*?--->\s*\n?/gs, '').trim();
-                const componentName = toPascalCase(file.replace('.md', ''));
-                components[componentName] = cleanedContent;
+                const componentName = toPascalCase(file.replace(/\.(md|mdx)$/, ''));
+                components[componentName] = cleanReusableContent(content);
             }
         }
     } catch (e) {
@@ -69,9 +80,8 @@ async function getLocaleReusableComponents(baseComponents, locale) {
         for (const file of files) {
             if (file.endsWith('.md') || file.endsWith('.mdx')) {
                 const content = await fs.readFile(path.join(localeReusableDir, file), 'utf-8');
-                const cleanedContent = content.replace(/<!---.*?--->\s*\n?/gs, '').trim();
                 const componentName = toPascalCase(file.replace(/\.(md|mdx)$/, ''));
-                components[componentName] = cleanedContent;
+                components[componentName] = cleanReusableContent(content);
             }
         }
     } catch { /* no locale-specific reusable overrides */ }
