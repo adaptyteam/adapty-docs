@@ -1,0 +1,375 @@
+---
+import agentTools from '../data/agent-tools.json';
+import platformsData from '../data/platforms.json';
+import { getUIStrings } from '../locales/ui-strings';
+
+interface Props {
+    currentLocale?: string;
+}
+
+const { currentLocale } = Astro.props;
+const t = getUIStrings(currentLocale).installTools;
+
+// platform id -> dedicated skill-article slug (same map as SkillPromo)
+const SKILL_SLUGS: Record<string, string> = {
+    ios: 'adapty-sdk-integration-skill',
+    android: 'adapty-sdk-integration-skill-android',
+    'react-native': 'adapty-sdk-integration-skill-react-native',
+    flutter: 'adapty-sdk-integration-skill-flutter',
+    unity: 'adapty-sdk-integration-skill-unity',
+    kmp: 'adapty-sdk-integration-skill-kmp',
+    capacitor: 'adapty-sdk-integration-skill-capacitor',
+};
+
+// Detect the platform from the current page's sidebar membership (same approach as SkillPromo)
+const sidebars = import.meta.glob('../data/sidebars/*.json', { eager: true });
+const currentSlug = Astro.url.pathname.split('/').filter(Boolean).pop() ?? '';
+
+function containsSlug(items: any[], target: string): boolean {
+    for (const item of items) {
+        const id = item.id ?? item.link?.id;
+        if (id === target) return true;
+        if (item.items && containsSlug(item.items, target)) return true;
+    }
+    return false;
+}
+
+let detected: string | null = null;
+for (const [filepath, mod] of Object.entries(sidebars)) {
+    const pid = filepath.split('/').pop()!.replace('.json', '');
+    if (!platformsData.sdkPlatforms.some((p) => p.id === pid)) continue;
+    if (containsSlug((mod as any).default, currentSlug)) {
+        detected = pid;
+        break;
+    }
+}
+
+const learnMoreHref = SKILL_SLUGS[detected ?? 'ios'] ?? SKILL_SLUGS.ios;
+// Resolve optional per-tool notes ("note" holds a key into the installTools string group)
+const tools = agentTools.tools.map((tool) => ({
+    ...tool,
+    noteText: 'note' in tool ? (t as Record<string, string>)[tool.note] : undefined,
+}));
+---
+
+<div id="install-tools-modal" class="itm-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="install-tools-title">
+    <div class="itm-card">
+        <div class="itm-header">
+            <h2 id="install-tools-title" class="itm-title">{t.title}</h2>
+            <button type="button" class="itm-close" aria-label={t.close}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <p class="itm-desc">
+            {t.description}
+            <a href={learnMoreHref} class="itm-learn-more">{t.learnMore}</a>
+        </p>
+        <div class="itm-tabs" role="tablist">
+            {
+                tools.map((tool, i) => (
+                    <button type="button" class={`itm-tab${i === 0 ? ' active' : ''}`} role="tab" aria-selected={i === 0 ? 'true' : 'false'} data-tool={tool.id}>
+                        {tool.label}
+                    </button>
+                ))
+            }
+        </div>
+        {
+            tools.map((tool, i) => (
+                <div class="itm-panel" role="tabpanel" data-tool={tool.id} hidden={i !== 0}>
+                    {tool.noteText && <p class="itm-note">{tool.noteText}</p>}
+                    <div class="itm-code">
+                        <div class="itm-cmd">{tool.commands.join('\n')}</div>
+                        <button type="button" class="itm-copy" title={t.copy} aria-label={t.copy}>
+                            <svg class="itm-copy-icon-default" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                            </svg>
+                            <svg class="itm-copy-icon-done" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            ))
+        }
+        <p class="itm-usage">{t.usageNote}</p>
+        <div class="itm-code">
+            <div class="itm-cmd">{agentTools.usageCommand}</div>
+            <button type="button" class="itm-copy" title={t.copy} aria-label={t.copy}>
+                <svg class="itm-copy-icon-default" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <svg class="itm-copy-icon-done" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .itm-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: rgba(15, 15, 16, 0.5);
+    }
+
+    .itm-overlay[hidden] {
+        display: none;
+    }
+
+    :root.dark .itm-overlay {
+        background: rgba(0, 0, 0, 0.65);
+    }
+
+    .itm-card {
+        width: 100%;
+        max-width: 44rem;
+        max-height: 85vh;
+        overflow-y: auto;
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        border: 1px solid var(--border-primary);
+        background: var(--bg-primary);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .itm-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .itm-title {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .itm-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.375rem;
+        border: none;
+        border-radius: 0.375rem;
+        background: transparent;
+        color: var(--text-secondary);
+        cursor: pointer;
+    }
+
+    .itm-close:hover {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+
+    .itm-desc {
+        margin: 0.625rem 0 0;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        color: var(--text-secondary);
+    }
+
+    .itm-learn-more {
+        color: var(--accent-primary);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .itm-learn-more:hover {
+        text-decoration: underline;
+    }
+
+    .itm-tabs {
+        display: flex;
+        gap: 0.25rem;
+        margin-top: 1.125rem;
+        border-bottom: 1px solid var(--border-primary);
+    }
+
+    .itm-tab {
+        padding: 0.5rem 0.75rem;
+        border: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        background: transparent;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        white-space: nowrap;
+        color: var(--text-secondary);
+        cursor: pointer;
+    }
+
+    .itm-tab:hover {
+        color: var(--text-primary);
+    }
+
+    .itm-tab.active {
+        color: var(--accent-primary);
+        border-bottom-color: var(--accent-primary);
+    }
+
+    .itm-panel {
+        margin-top: 1rem;
+    }
+
+    .itm-code {
+        position: relative;
+        border: 1px solid var(--border-primary);
+        border-radius: 0.5rem;
+        background: var(--bg-secondary);
+    }
+
+    .itm-cmd {
+        margin: 0;
+        padding: 0.75rem 2.75rem 0.75rem 0.875rem;
+        overflow-x: auto;
+        white-space: pre;
+        font-family: 'Fira Code', monospace;
+        font-size: 0.75rem;
+        line-height: 1.6;
+        color: var(--text-primary);
+    }
+
+    .itm-copy {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.375rem;
+        border: 1px solid var(--border-primary);
+        border-radius: 0.375rem;
+        background: var(--bg-primary);
+        color: var(--text-secondary);
+        cursor: pointer;
+    }
+
+    .itm-copy:hover {
+        color: var(--text-primary);
+    }
+
+    .itm-copy-icon-done {
+        display: none;
+    }
+
+    .itm-copy.copied {
+        color: #166534;
+        border-color: #86efac;
+        background: #f0fdf4;
+    }
+
+    :root.dark .itm-copy.copied {
+        color: #4ade80;
+        border-color: #166534;
+        background: #052e16;
+    }
+
+    .itm-copy.copied .itm-copy-icon-default {
+        display: none;
+    }
+
+    .itm-copy.copied .itm-copy-icon-done {
+        display: inline-block;
+    }
+
+    .itm-usage {
+        margin: 1.125rem 0 0.5rem;
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+    }
+
+    .itm-note {
+        margin: 0 0 0.5rem;
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+    }
+</style>
+
+<script>
+    function initInstallToolsModal() {
+        const modal = document.getElementById('install-tools-modal');
+        const openBtn = document.getElementById('install-tools-btn');
+        if (!modal || !openBtn) return;
+
+        const closeBtn = modal.querySelector<HTMLButtonElement>('.itm-close');
+        let lastFocus: HTMLElement | null = null;
+
+        function open() {
+            lastFocus = document.activeElement as HTMLElement | null;
+            modal!.hidden = false;
+            document.body.style.overflow = 'hidden';
+            closeBtn?.focus();
+        }
+
+        function close() {
+            modal!.hidden = true;
+            document.body.style.overflow = '';
+            lastFocus?.focus();
+        }
+
+        openBtn.addEventListener('click', open);
+        closeBtn?.addEventListener('click', close);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) close();
+        });
+
+        // Bind Escape once globally: look the modal up at event time so the
+        // handler stays correct across Astro view transitions.
+        if (!(window as any).__installToolsEscBound) {
+            (window as any).__installToolsEscBound = true;
+            document.addEventListener('keydown', (e) => {
+                const m = document.getElementById('install-tools-modal');
+                if (e.key === 'Escape' && m && !m.hidden) {
+                    m.hidden = true;
+                    document.body.style.overflow = '';
+                }
+            });
+        }
+
+        // Tabs
+        const tabs = Array.from(modal.querySelectorAll<HTMLButtonElement>('.itm-tab'));
+        const panels = Array.from(modal.querySelectorAll<HTMLElement>('.itm-panel'));
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', () => {
+                tabs.forEach((t2) => {
+                    t2.classList.toggle('active', t2 === tab);
+                    t2.setAttribute('aria-selected', t2 === tab ? 'true' : 'false');
+                });
+                panels.forEach((p) => {
+                    p.hidden = p.dataset.tool !== tab.dataset.tool;
+                });
+            });
+        });
+
+        // Copy buttons
+        modal.querySelectorAll<HTMLButtonElement>('.itm-copy').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const code = btn.parentElement?.querySelector('.itm-cmd');
+                if (!code) return;
+                try {
+                    await navigator.clipboard.writeText(code.textContent ?? '');
+                    btn.classList.add('copied');
+                    setTimeout(() => btn.classList.remove('copied'), 2000);
+                } catch (err) {
+                    console.error('Failed to copy command', err);
+                }
+            });
+        });
+    }
+
+    initInstallToolsModal();
+    document.addEventListener('astro:page-load', initInstallToolsModal);
+</script>
