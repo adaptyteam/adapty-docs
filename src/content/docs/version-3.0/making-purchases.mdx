@@ -102,12 +102,47 @@ Response parameters:
 
 ## In-app purchases from the App Store
 
-When a user initiates a purchase in the App Store and the transaction carries over to your app, you have two options:
+When a user initiates a purchase in the App Store and the transaction carries over to your app, the SDK calls the `didReceivePromotedPurchase` delegate method with an `AdaptyPromotedProduct` object. You have two options:
+
+- **Process the transaction immediately:** Don't implement `didReceivePromotedPurchase`. The default implementation starts the purchase right away, and the Apple purchase system screen shows automatically.
+- **Store the product object for later processing:** Implement `didReceivePromotedPurchase`, store the product, then call `makePurchase` with the stored product later. This may be useful if you need to show something custom to your user before triggering a purchase.
+
+If the promoted product carries a subscription offer, the SDK applies it at purchase automatically.
+
+Here's the complete snippet:
+
+```swift showLineNumbers title="Swift"
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    // 1. Store the product object to defer the transaction.
+    // To process the transaction immediately instead, don't implement this method —
+    // the default implementation starts the purchase right away.
+    nonisolated func didReceivePromotedPurchase(_ product: AdaptyPromotedProduct) {
+        // store the product object
+    }
+
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase` when the timing is appropriate
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyPromotedProduct = // get the product object from 1.
+        do {
+            let purchaseResult = try await Adapty.makePurchase(product: storedProduct)
+            // process the purchase result
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+:::info
+The `didReceivePromotedPurchase` API is available starting from SDK version 4.1. SDK version 4.0 doesn't support promoted in-app purchases.
+:::
+
+<Details summary="Using Adapty SDK 3.x?">
+
+In SDK 3.x, the SDK calls the `shouldAddStorePayment` delegate method instead:
 
 - **Process the transaction immediately:** Return `true` in `shouldAddStorePayment`. This will trigger the Apple purchase system screen right away.
-- **Store the product object for later processing:** Return `false` in `shouldAddStorePayment`, then call `makePurchase` with the stored product later. This may be useful if you need to show something custom to your user before triggering a purchase.
-
-Here’s the complete snippet:
+- **Store the product object for later processing:** Return `false` in `shouldAddStorePayment`, then call `makePurchase` with the stored product later.
 
 ```swift showLineNumbers title="Swift"
 final class YourAdaptyDelegateImplementation: AdaptyDelegate {
@@ -131,6 +166,8 @@ final class YourAdaptyDelegateImplementation: AdaptyDelegate {
     }
 }
 ```
+
+</Details>
 
 ## Redeem offer codes in iOS
 
