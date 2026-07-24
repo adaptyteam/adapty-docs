@@ -34,6 +34,11 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
 import yaml from "js-yaml";
+import {
+  repairLocaleMdx,
+  normalizeSectionBoundaries,
+  restoreBlankLinesBeforeBlocks,
+} from "./mdx-guard.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -220,6 +225,18 @@ PRESERVE exactly (never translate):
 - heading anchor IDs written as \\{#my-anchor\\} — keep them exactly as written including the backslash escapes
 - link hrefs and URL fragments — in [text](url#fragment), translate only the display text; href and fragment stay byte-for-byte identical
 - JSX tag balance: every \`<Tag>\` opening must have exactly one matching \`</Tag>\` closing in the input — output the same number of opens and closes. Do not invent extra closing tags to "fix" what looks unbalanced; the input is balanced when read whole.
+
+CRITICAL — blank lines are block structure (the build breaks without them):
+Reproduce the blank-line layout of the input exactly: every blank line in the input must appear in your output at the same position, and you must not add new ones. In particular:
+- keep the blank line above any line that starts with \`<\` (a component/JSX block such as \`<div style={{\` or \`<Tabs>\`) — deleting it merges the block into the preceding list or paragraph and the MDX build fails
+- if the input ends with one or more blank lines, your output must end with the same blank lines; same for blank lines at the start
+- preserve each line's leading whitespace byte-for-byte — code fences, paragraphs, and callouts nested inside list items must keep their exact indentation
+
+CRITICAL — frontmatter must remain valid YAML:
+- NEVER use backslash escapes inside YAML strings: \\' is invalid in both single- and double-quoted YAML and breaks the build
+- if a translated value contains an apostrophe (e.g. flow'lar, l'utente), wrap the whole value in double quotes: "flow'lar"
+- if a translated value contains double quotes, wrap it in single quotes instead
+- keep the exact same set of frontmatter keys as the input, in the same order
 
 HEADING ANCHOR RULE (critical for internal links):
 Every translated heading must end with a \\{#anchor-id\\} that matches what the English source would auto-generate.
@@ -1283,6 +1300,13 @@ async function translateFileWithSections(
           translation = retried;
         }
       }
+      // Deterministic structure repair: models trim blank lines that MDX
+      // treats as block separators. Restore them from the English source
+      // before the translation is cached or assembled.
+      translation = normalizeSectionBoundaries(
+        restoreBlankLinesBeforeBlocks(translation, section.content),
+        section.content,
+      );
       apiCallCount++;
     }
 
@@ -1290,13 +1314,36 @@ async function translateFileWithSections(
     translatedParts.push(translation);
   }
 
-  const reconstructed = lang
-    ? postProcessTranslation(translatedParts.join("\n"), lang)
-    : translatedParts.join("\n");
+  const reassemble = (parts) =>
+    lang ? postProcessTranslation(parts.join("\n"), lang) : parts.join("\n");
+  // Compile gate: never write a locale file that fails the deploy gate's MDX
+  // parse. repairLocaleMdx tries deterministic fixes, then an English fallback
+  // for a single broken section; if nothing helps, the previous translation
+  // (and its hash cache) stays on disk and this file is retried next run.
+  const guarded = await repairLocaleMdx({
+    content: reassemble(translatedParts),
+    sections: sections.map((s) => ({
+      id: s.id,
+      english: s.content,
+      translation: newSections[s.id].translation,
+    })),
+    reassemble,
+    label: basename,
+  });
+  if (!guarded.ok) {
+    console.error(
+      `  ✗ ${basename}: translated file fails MDX parse (${guarded.error.message}) — left unwritten, will retry next run`,
+    );
+    return;
+  }
+  // Sections replaced by their English source must not be cached as
+  // translated — dropping the cache entry makes the next run retranslate them.
+  for (const id of guarded.fallbackSectionIds) delete newSections[id];
+
   await fs.mkdir(localesDir, { recursive: true });
   await fs.writeFile(
     path.join(localesDir, `${basename}.mdx`),
-    reconstructed,
+    guarded.content,
     "utf-8",
   );
 
@@ -1659,6 +1706,12 @@ async function translateBatchSections(
           allOk = false;
           break;
         }
+        // Deterministic structure repair: restore blank lines the model
+        // trimmed, using the English section as the source of truth.
+        translation = normalizeSectionBoundaries(
+          restoreBlankLinesBeforeBlocks(translation, decision.section.content),
+          decision.section.content,
+        );
       }
       newSections[decision.section.id] = {
         contentHash: decision.contentHash,
@@ -1676,14 +1729,40 @@ async function translateBatchSections(
       continue;
     }
 
-    const reconstructed = lang
-      ? postProcessTranslation(parts.join("\n"), lang)
-      : parts.join("\n");
+    const reassemble = (p) =>
+      lang ? postProcessTranslation(p.join("\n"), lang) : p.join("\n");
+    let reconstructed = reassemble(parts);
     await fs.mkdir(localesDir, { recursive: true });
     // Invariant: .hashes/<basename>.json and locales/.../<basename>.mdx must never
     // disagree on which sections are translated. Skip both writes when every section
     // was a cache hit — the on-disk state is already correct.
     if (!allHits) {
+      // Compile gate: never write a locale file that fails the deploy gate's
+      // MDX parse. Deterministic repair → single-section English fallback →
+      // otherwise leave the previous translation in place and retry next run.
+      const guarded = await repairLocaleMdx({
+        content: reconstructed,
+        sections: plan.decisions.map((d) => ({
+          id: d.section.id,
+          english: d.section.content,
+          translation: newSections[d.section.id].translation,
+        })),
+        reassemble,
+        label: plan.basename,
+      });
+      if (!guarded.ok) {
+        console.error(
+          `  ✗ ${plan.basename}: translated file fails MDX parse (${guarded.error.message}) — left unwritten, will retry next run`,
+        );
+        articlesFailed++;
+        continue;
+      }
+      // Sections replaced by English must not be cached as translated — the
+      // next run retranslates them.
+      for (const id of guarded.fallbackSectionIds)
+        delete newSections[id];
+      reconstructed = guarded.content;
+
       await fs.writeFile(
         path.join(localesDir, `${plan.basename}.mdx`),
         reconstructed,
@@ -2083,10 +2162,30 @@ async function writeReusableResult(
   reusableLocalesDir,
   reusableHashesDir,
 ) {
+  // Deterministic structure repair + compile gate, mirroring writeTranslation.
+  try {
+    const english = await fs.readFile(file.full, "utf-8");
+    text = normalizeSectionBoundaries(
+      restoreBlankLinesBeforeBlocks(text, english),
+      english,
+    );
+  } catch {
+    /* source unreadable — skip repair, still validate below */
+  }
   const translatedContent = postProcessTranslation(text, lang);
+  const guarded = await repairLocaleMdx({
+    content: translatedContent,
+    label: `reusable/${file.name}`,
+  });
+  if (!guarded.ok) {
+    console.error(
+      `  ✗ reusable/${file.name}: translated snippet fails MDX parse (${guarded.error.message}) — left unwritten, will retry next run`,
+    );
+    return;
+  }
   await fs.writeFile(
     path.join(reusableLocalesDir, file.name),
-    translatedContent,
+    guarded.content,
     "utf-8",
   );
   const hash = await fileHash(file.full);
@@ -3647,7 +3746,30 @@ async function writeTranslation(
   hashesDir,
   lang = null,
 ) {
+  // Deterministic structure repair against the English source, when available.
+  if (sourceFile) {
+    try {
+      const english = await fs.readFile(sourceFile, "utf-8");
+      content = normalizeSectionBoundaries(
+        restoreBlankLinesBeforeBlocks(content, english),
+        english,
+      );
+    } catch {
+      /* source unreadable — skip repair, still validate below */
+    }
+  }
   if (lang) content = postProcessTranslation(content, lang);
+  // Compile gate: never write a locale file that fails the deploy gate's MDX
+  // parse. On failure the previous translation (and hash) stays on disk, so
+  // the file is retried on the next run instead of breaking main.
+  const guarded = await repairLocaleMdx({ content, label: basename });
+  if (!guarded.ok) {
+    console.error(
+      `  ✗ ${basename}: translated file fails MDX parse (${guarded.error.message}) — left unwritten, will retry next run`,
+    );
+    return;
+  }
+  content = guarded.content;
   await fs.mkdir(localesDir, { recursive: true });
   await fs.writeFile(
     path.join(localesDir, `${basename}.mdx`),
