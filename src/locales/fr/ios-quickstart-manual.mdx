@@ -1,0 +1,192 @@
+---
+title: "Activer les achats dans votre paywall personnalisé sur iOS SDK"
+description: "Intégrez le SDK Adapty dans vos paywalls iOS personnalisés pour activer les achats intégrés."
+metadataTitle: "Guide de démarrage rapide Adapty | Documentation Adapty"
+keywords: ['paywalls ios', 'sdk ios', 'paywall', 'getFlow']
+---
+
+Ce guide décrit comment intégrer Adapty dans vos paywalls personnalisés. Gardez un contrôle total sur l'implémentation du paywall, tandis que le SDK Adapty récupère les produits, gère les nouveaux achats et restaure les précédents.
+
+:::important
+**Ce guide s'adresse aux développeurs qui implémentent des paywalls personnalisés.** Si vous souhaitez la solution la plus simple pour activer les achats, utilisez [Adapty Flow Builder](ios-quickstart-paywalls). Avec Flow Builder, vous créez des flows dans un éditeur visuel sans code, Adapty gère automatiquement toute la logique d'achat, et vous pouvez tester différents designs sans republier votre application.
+:::
+
+## Avant de commencer \{#before-you-start\}
+
+### Configurer les produits \{#set-up-products\}
+
+Pour activer les achats intégrés, vous devez comprendre trois concepts clés :
+
+- [**Produits**](product) – tout ce que les utilisateurs peuvent acheter (abonnements, consommables, accès à vie)
+- [**Paywalls**](paywalls) – des configurations qui définissent quels produits proposer. Dans Adapty, les paywalls sont le seul moyen de récupérer des produits, mais cette conception vous permet de modifier les produits, les prix et les offres sans toucher au code de votre application.
+- [**Placements**](placements) – où et quand vous affichez les paywalls dans votre application (comme `main`, `onboarding`, `settings`). Vous configurez les paywalls pour les placements dans le tableau de bord, puis vous les demandez par ID de placement dans votre code. Cela facilite l'exécution de tests A/B et l'affichage de différents paywalls à différents utilisateurs.
+
+Assurez-vous de comprendre ces concepts même si vous travaillez avec votre paywall personnalisé. En gros, ils représentent simplement votre façon de gérer les produits que vous vendez dans votre application.
+
+Pour implémenter votre paywall personnalisé, vous devrez créer un **paywall** et l'ajouter à un **placement**. Cette configuration vous permet de récupérer vos produits. Pour comprendre ce que vous devez faire dans le tableau de bord, suivez le guide de démarrage rapide [ici](quickstart).
+
+### Gérer les utilisateurs \{#manage-users\}
+
+Vous pouvez travailler avec ou sans authentification backend de votre côté.
+
+Cependant, le SDK Adapty gère différemment les utilisateurs anonymes et identifiés. Lisez le [guide de démarrage rapide sur l'identification](ios-quickstart-identify) pour comprendre les spécificités et vous assurer que vous gérez correctement les utilisateurs.
+
+## Étape 1. Récupérer les produits \{#step-1-get-products\}
+
+Pour récupérer les produits de votre paywall personnalisé, vous devez :
+
+1. Obtenir l'objet `flow` en passant l'ID de [placement](placements) à la méthode `getFlow`.
+2. Obtenir le tableau de produits pour ce flow à l'aide de la méthode `getPaywallProducts`.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swift" label="Swift" default>
+
+```swift
+
+func loadPaywall() async {
+    do {
+        let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+        let products = try await Adapty.getPaywallProducts(flow: flow)
+
+        // Use products to build your custom paywall UI
+    } catch {
+        // Handle the error
+    }
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift
+
+func loadPaywall() {
+    Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID") { result in
+        switch result {
+        case let .success(flow):
+            Adapty.getPaywallProducts(flow: flow) { result in
+                switch result {
+                case let .success(products):
+                    // Use products to build your custom paywall UI
+                case let .failure(error):
+                    // Handle the error
+                }
+            }
+        case let .failure(error):
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## Étape 2. Accepter les achats \{#step-2-accept-purchases\}
+
+Lorsqu'un utilisateur appuie sur un produit dans votre paywall personnalisé, appelez la méthode `makePurchase` avec le produit sélectionné. Cela gérera le flux d'achat et retournera le profil mis à jour.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swift" label="Swift" default>
+
+```swift
+
+func purchaseProduct(_ product: AdaptyPaywallProduct) async {
+    do {
+        let purchaseResult = try await Adapty.makePurchase(product: product)
+        
+        switch purchaseResult {
+        case .userCancelled:
+            // User canceled the purchase
+            break
+        case .pending:
+            // Purchase is pending (e.g., awaiting parental approval)
+            break
+        case let .success(profile, transaction):
+            // Purchase successful, profile updated
+            break
+        }
+    } catch {
+        // Handle the error
+    }
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift
+
+func purchaseProduct(_ product: AdaptyPaywallProduct) {
+    Adapty.makePurchase(product: product) { result in
+        switch result {
+        case let .success(purchaseResult):
+            switch purchaseResult {
+            case .userCancelled:
+                // User canceled the purchase
+                break
+            case .pending:
+                // Purchase is pending (e.g., awaiting parental approval)
+                break
+            case let .success(profile, transaction):
+                // Purchase successful, profile updated
+                break
+            }
+        case let .failure(error):
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## Étape 3. Restaurer les achats \{#step-3-restore-purchases\}
+
+Apple exige que toutes les applications avec des abonnements proposent un moyen aux utilisateurs de restaurer leurs achats. Bien que les achats soient automatiquement restaurés lorsqu'un utilisateur se connecte avec son identifiant Apple, vous devez quand même implémenter un bouton de restauration dans votre application.
+
+Appelez la méthode `restorePurchases` lorsque l'utilisateur appuie sur le bouton de restauration. Cela synchronisera son historique d'achats avec Adapty et retournera le profil mis à jour.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="swift" label="Swift" default>
+
+```swift
+
+func restorePurchases() async {
+    do {
+        let profile = try await Adapty.restorePurchases()
+        // Restore successful, profile updated
+    } catch {
+        // Handle the error
+    }
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift
+
+func restorePurchases() {
+    Adapty.restorePurchases { result in
+        switch result {
+        case let .success(profile):
+            // Restore successful, profile updated
+        case let .failure(error):
+            // Handle the error
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+## Étapes suivantes \{#next-steps\}
+
+<SupportForum />
+
+Votre paywall est prêt à être affiché dans l'application. [Testez vos achats en mode sandbox](test-purchases-in-sandbox) pour vous assurer de pouvoir effectuer un achat test depuis le paywall.
+
+Ensuite, [vérifiez si les utilisateurs ont finalisé leur achat](ios-check-subscription-status) pour déterminer s'il faut afficher le paywall ou accorder l'accès aux fonctionnalités payantes.

@@ -1,0 +1,46 @@
+---
+title: "Hướng dẫn nhanh về tiền tệ ảo"
+description: "Thiết lập tiền tệ ảo từ đầu đến cuối: tạo tiền tệ token, cấp token kèm theo gói đăng ký, và tiêu token qua API phía máy chủ."
+metadataTitle: "Hướng dẫn nhanh về tiền tệ ảo | Tài liệu Adapty"
+---
+
+:::link
+Bài viết chính: [Tiền tệ ảo](virtual-currencies)
+:::
+
+Hướng dẫn nhanh này thiết lập một tiền tệ token từ đầu đến cuối: một gói đăng ký cấp cho người dùng 1000 token mỗi tháng, và các hành động có trả phí trong ứng dụng sẽ tốn token. Adapty quản lý toàn bộ số dư, vì vậy backend của bạn chỉ cần đọc và tiêu token.
+
+1. Làm theo hướng dẫn [Tạo tiền tệ ảo](create-virtual-currency) để tạo loại tiền tệ `TOKENS`. Liên kết nó với gói đăng ký Pro và đặt **Credit per cycle** thành 1000. Để bán thêm token, hãy liên kết thêm các sản phẩm gói token mua một lần.
+
+   <ZoomImage id="new-currency-combined.webp" width="700px" alt="Màn hình tạo tiền tệ ảo mới" />
+
+2. Gọi [Lấy danh sách số dư tiền tệ ảo](api-adapty/operations/listVirtualCurrencyBalances) để đọc số dư của người dùng, ví dụ trước khi bắt đầu một lần tạo nội dung:
+
+```bash title="Read balances"
+   curl https://api.adapty.io/api/v2/server-side-api/vc/balances/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: user-42"
+   ```
+
+   Phản hồi liệt kê tất cả các loại tiền tệ mà người dùng có, ví dụ 1000 `TOKENS`:
+
+```json title="Response"
+   {
+     "data": [
+       { "code": "TOKENS", "name": "Tokens", "balance": 1000, "held": 0, "available": 1000 }
+     ]
+   }
+   ```
+3. Khi người dùng chạy một lần tạo ảnh, hãy trừ token bằng cách gọi [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) với `amount` âm. Trong ví dụ này, một lần tạo ảnh tốn 100 token:
+
+   ```bash title="Spend tokens"
+   curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: user-42" \
+     -H "Content-Type: application/json" \
+     -d '{"items": [{"currency_code": "TOKENS", "amount": -100}]}'
+   ```
+
+Giao dịch mang tính nguyên tử và trả về số dư đã cập nhật. Nếu người dùng không đủ số dư để thanh toán, yêu cầu sẽ trả về `insufficient_balance` và không có gì thay đổi. Hãy thêm header `Idempotency-Key` để retry yêu cầu một cách an toàn.
+4. Để chạy promo ưu đãi thu hút khách hàng cũ, cấp token thông qua cùng một endpoint với `amount` dương. Các khoản tín dụng bạn cấp theo cách này không bao giờ hết hạn.
+5. Xem lại mọi thay đổi trong [hồ sơ người dùng](virtual-currency-balance) hoặc trong [lịch sử giao dịch](api-adapty/operations/listVirtualCurrencyTransactions), để bạn có thể kiểm toán kinh tế ảo bất kỳ lúc nào.

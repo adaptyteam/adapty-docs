@@ -1,0 +1,88 @@
+---
+title: "Vérifier le statut d'abonnement dans le SDK Unity"
+description: "Suivez et gérez le statut d'abonnement des utilisateurs dans Adapty pour améliorer la rétention dans votre app Unity."
+metadataTitle: "Comprendre le statut d'abonnement | Documentation Adapty"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md';
+
+Avec Adapty, suivre le statut d'abonnement est simple. Pas besoin d'insérer manuellement des identifiants de produits dans votre code. Il vous suffit de vérifier la présence d'un [niveau d'accès](access-level) actif pour confirmer le statut d'abonnement d'un utilisateur.
+
+<details>
+   <summary>Avant de vérifier le statut d'abonnement (cliquez pour développer)</summary>
+
+- Pour iOS, configurez les [App Store Server Notifications](enable-app-store-server-notifications)
+- Pour Android, configurez les [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn)
+</details>
+
+## Niveau d'accès et l'objet AdaptyProfile \{#access-level-and-the-adaptyprofile-object\}
+
+Les niveaux d'accès sont des propriétés de l'objet [AdaptyProfile](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_profile.html). Nous recommandons de récupérer le profil au démarrage de l'app, par exemple lors de l'[identification d'un utilisateur](unity-identifying-users#setting-customer-user-id-on-configuration), puis de le mettre à jour à chaque modification. Vous pouvez ainsi utiliser l'objet profil sans le redemander à chaque fois.
+
+Pour être notifié des mises à jour du profil, écoutez les changements comme décrit dans la section [Écouter les mises à jour du statut d'abonnement](#listening-for-subscription-status-updates) ci-dessous.
+
+<SampleApp />
+
+## Récupérer le niveau d'accès depuis le serveur \{#retrieving-the-access-level-from-the-server\}
+
+Pour obtenir le niveau d'accès depuis le serveur, utilisez la méthode `.GetProfile()` :
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+// check the access
+});
+```
+
+Paramètres de la réponse :
+
+| Paramètre | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------- |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Profile   | <p>Un objet [AdaptyProfile](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_profile.html). En général, il suffit de vérifier le statut du niveau d'accès du profil pour déterminer si l'utilisateur bénéficie d'un accès premium à l'app.</p><p></p><p>La méthode `.getProfile` fournit le résultat le plus récent car elle interroge toujours l'API. Si pour une raison quelconque (par exemple, pas de connexion internet), le SDK Adapty ne parvient pas à récupérer les informations depuis le serveur, les données du cache sont retournées. Il est également important de noter que le SDK Adapty met à jour régulièrement le cache d'`AdaptyProfile` afin de maintenir ces informations aussi à jour que possible.</p> |
+
+La méthode `.getProfile()` vous fournit le profil utilisateur à partir duquel vous pouvez obtenir le statut du niveau d'accès. Vous pouvez avoir plusieurs niveaux d'accès par app. Par exemple, si vous avez une application d'actualités et que vous vendez des abonnements à différentes thématiques indépendamment, vous pouvez créer les niveaux d'accès « sports » et « science ». Mais la plupart du temps, un seul niveau d'accès suffit — dans ce cas, utilisez simplement le niveau d'accès « premium » par défaut.
+
+Voici un exemple de vérification du niveau d'accès « premium » par défaut :
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+// "premium" is an identifier of default access level
+var accessLevel = profile.AccessLevels["premium"];
+if (accessLevel != null && accessLevel.IsActive) {
+// grant access to premium features
+}
+});
+```
+
+### Écouter les mises à jour du statut d'abonnement \{#listening-for-subscription-status-updates\}
+
+À chaque modification de l'abonnement d'un utilisateur, Adapty déclenche un événement.
+
+Pour recevoir les messages d'Adapty, une configuration supplémentaire est nécessaire :
+
+```csharp showLineNumbers
+// Extend `AdaptyEventListener ` with `OnLoadLatestProfile ` method:
+public class AdaptyListener : MonoBehaviour, AdaptyEventListener {
+  public void OnLoadLatestProfile(AdaptyProfile profile) {
+    // handle any changes to subscription state
+  }
+}
+```
+
+Adapty déclenche également un événement au démarrage de l'application. Dans ce cas, le statut d'abonnement mis en cache est transmis.
+
+### Cache du statut d'abonnement \{#subscription-status-cache\}
+
+Le cache du SDK Adapty stocke le statut d'abonnement du profil. Ainsi, même si le serveur est indisponible, les données mises en cache restent accessibles pour fournir les informations sur le statut d'abonnement du profil.
+
+Il est toutefois important de noter qu'il n'est pas possible d'interroger directement le cache. Le SDK interroge périodiquement le serveur toutes les minutes pour vérifier les mises à jour relatives au profil. Si des modifications sont détectées — nouvelles transactions ou autres changements — elles sont répercutées dans le cache afin de le maintenir synchronisé avec le serveur.

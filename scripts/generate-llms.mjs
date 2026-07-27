@@ -74,7 +74,10 @@ function extractDescription(content) {
 function collectDocIds(items, ids) {
     for (const item of items) {
         if (item.type === 'category') {
+            // A category can BE an article two ways: docusaurus-style
+            // link {type:'doc'} or our sidebar shorthand - a bare `id`.
             if (item.link && item.link.type === 'doc') ids.add(item.link.id);
+            else if (item.id) ids.add(item.id);
             if (item.items) collectDocIds(item.items, ids);
         } else if (item.type === 'doc' && item.id) {
             ids.add(item.id);
@@ -288,11 +291,13 @@ function parseItems(items, ctx, depth = 0) {
                 }
             }
 
-            // If category has a link, add it as a doc item too
-            if (item.link && item.link.type === 'doc') {
-                const desc = descriptions.get(item.link.id);
+            // If the category itself is an article (docusaurus link {type:'doc'}
+            // or our sidebar shorthand - a bare `id`), add it as a doc item too.
+            const categoryDocId = item.link && item.link.type === 'doc' ? item.link.id : item.id;
+            if (categoryDocId) {
+                const desc = descriptions.get(categoryDocId);
                 const suffix = desc ? `: ${desc}` : '';
-                output += `${indent}  - [Overview](${BASE_URL}${urlPrefix}/${item.link.id}.md)${suffix}\n`;
+                output += `${indent}  - [Overview](${BASE_URL}${urlPrefix}/${categoryDocId}.md)${suffix}\n`;
             }
 
             // Process children

@@ -1,0 +1,234 @@
+---
+title: "Traiter les données des onboardings dans le SDK Unity"
+description: "Enregistrez et utilisez les données des onboardings dans votre application Unity avec le SDK Adapty."
+metadataTitle: "Onboardings | SDK Unity | Documentation Adapty"
+displayed_sidebar: sdkunity
+---
+
+Lorsque vos utilisateurs répondent à une question de quiz ou saisissent des données dans un champ de saisie, la méthode `OnboardingViewOnStateUpdatedAction` est appelée. Vous pouvez enregistrer ou traiter le type de champ dans votre code.
+
+Implémentez la méthode `OnboardingViewOnStateUpdatedAction` dans votre classe :
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnStateUpdatedAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string elementId,
+        AdaptyOnboardingsStateUpdatedParams @params
+    )
+    {
+        switch (@params) {
+            case AdaptyOnboardingsSelectParams selectParams:
+                // handle single selection
+                break;
+            case AdaptyOnboardingsMultiSelectParams multiSelectParams:
+                // handle multiple selections
+                break;
+            case AdaptyOnboardingsInputParams inputParams:
+                // handle text input
+                break;
+            case AdaptyOnboardingsDatePickerParams datePickerParams:
+                // handle date selection
+                break;
+        }
+    }
+    
+    // ... other interface methods
+}
+```
+
+Les paramètres sont les suivants :
+
+| Paramètre      | Description                                                                                                                                                                                                                                                                                     |
+|----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `elementId`    | Un identifiant unique pour l'élément de saisie. Vous pouvez l'utiliser pour associer les questions aux réponses lors de leur enregistrement.                                                                                                                                                    |
+| `@params`       | L'objet de données saisi par l'utilisateur. Peut être l'un des types suivants.                                                                                                                                                                                                              |
+| `AdaptyOnboardingsSelectParams`  | Sélection unique parmi des options. Contient `Id`, `Value`, `Label`                                                                           |
+| `AdaptyOnboardingsMultiSelectParams` | Sélections multiples parmi des options. Contient une liste de `Params` (chacun avec `Id`, `Value`, `Label`)<br/>• `input` : objet avec `type`, `value`<br/>• `datePicker` : objet avec `day`, `month`, `year` |
+| `AdaptyOnboardingsInputParams` | Champ de saisie de texte. Contient `Input` qui peut être `AdaptyOnboardingsTextInput`, `AdaptyOnboardingsEmailInput` ou `AdaptyOnboardingsNumberInput` |
+| `AdaptyOnboardingsDatePickerParams` | Sélection de date. Contient les champs nullable `Day`, `Month`, `Year` |
+
+<Details>
+<summary>Exemples de données enregistrées (peuvent différer selon votre implémentation)</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## Cas d'utilisation \{#use-cases\}
+
+### Enrichir les profils utilisateurs avec des données \{#enrich-user-profiles-with-data\}
+
+Si vous souhaitez associer immédiatement les données saisies au profil utilisateur et éviter de leur demander deux fois les mêmes informations, vous devez [mettre à jour le profil utilisateur](unity-setting-user-attributes) avec les données saisies lors du traitement de l'action.
+
+Par exemple, vous demandez aux utilisateurs de saisir leur nom dans le champ texte avec l'ID `name`, et vous souhaitez définir la valeur de ce champ comme prénom de l'utilisateur. Vous leur demandez également de saisir leur adresse e-mail dans le champ `email`. Dans le code de votre application, cela peut ressembler à ceci :
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnStateUpdatedAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string elementId,
+        AdaptyOnboardingsStateUpdatedParams @params
+    )
+    {
+        if (@params is AdaptyOnboardingsInputParams inputParams) {
+            var builder = new AdaptyProfileParameters.Builder();
+            
+            switch (elementId) {
+                case "name":
+                    if (inputParams.Input is AdaptyOnboardingsTextInput textInput) {
+                        builder.SetFirstName(textInput.Value);
+                    }
+                    break;
+                case "email":
+                    if (inputParams.Input is AdaptyOnboardingsEmailInput emailInput) {
+                        builder.SetEmail(emailInput.Value);
+                    }
+                    break;
+            }
+            
+            Adapty.UpdateProfile(builder.Build(), (error) => {
+                if (error != null) {
+                    // handle the error
+                }
+            });
+        }
+    }
+    
+    // ... other interface methods
+}
+```
+
+### Personnaliser les paywalls selon les réponses \{#customize-paywalls-based-on-answers\}
+
+En utilisant des quiz dans les onboardings, vous pouvez également personnaliser les paywalls affichés aux utilisateurs après qu'ils ont terminé l'onboarding.
+
+Par exemple, vous pouvez interroger les utilisateurs sur leur expérience sportive et afficher différents CTAs et produits à différents groupes d'utilisateurs.
+
+1. [Ajoutez un quiz](onboarding-quizzes) dans le générateur d'onboarding et attribuez des IDs significatifs à ses options.
+
+<ZoomImage id="experience.webp" />
+
+2. Traitez les réponses au quiz en fonction de leurs IDs et [définissez des attributs personnalisés](unity-setting-user-attributes) pour les utilisateurs.
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnStateUpdatedAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string elementId,
+        AdaptyOnboardingsStateUpdatedParams @params
+    )
+    {
+        if (@params is AdaptyOnboardingsSelectParams selectParams) {
+            var builder = new AdaptyProfileParameters.Builder();
+            
+            switch (elementId) {
+                case "experience":
+                    // set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+                    builder.SetCustomStringAttribute("experience", selectParams.Value);
+                    break;
+            }
+            
+            Adapty.UpdateProfile(builder.Build(), (error) => {
+                if (error != null) {
+                    // handle the error
+                }
+            });
+        }
+    }
+    
+    // ... other interface methods
+}
+```
+
+3. [Créez des segments](segments) pour chaque valeur d'attribut personnalisé.
+4. Créez un [placement](placements) et ajoutez des [audiences](audience) pour chaque segment créé.
+5. [Affichez un paywall](unity-paywalls) pour le placement dans le code de votre application. Si votre onboarding comporte un bouton qui ouvre un paywall, implémentez le code du paywall en tant que [réponse à l'action de ce bouton](unity-handling-onboarding-events#opening-a-paywall).
+

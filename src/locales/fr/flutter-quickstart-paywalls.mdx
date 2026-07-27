@@ -1,0 +1,299 @@
+---
+title: "Activer les achats avec Flow Builder dans le SDK Flutter"
+description: "Guide de démarrage rapide pour activer les achats intégrés avec Adapty Flow Builder."
+metadataTitle: "Adapty Flow Builder - Démarrage rapide | Documentation Adapty"
+keywords: [ 'flows flutter', 'paywalls flutter', 'flow builder', 'paywall', 'getFlow']
+rank: 70
+displayed_sidebar: sdkflutter
+---
+
+import PaywallsIntro from '@site/src/locales/fr/reusable/PaywallsIntro.md';
+
+Pour activer les achats intégrés, vous devez comprendre trois concepts clés :
+
+- [**Produits**](product) – tout ce que les utilisateurs peuvent acheter (abonnements, consommables, accès à vie)
+- [**Flows**](adapty-flow-builder) – des séquences d'écrans qui présentent des produits aux utilisateurs, créées dans le Flow Builder sans code. Le SDK les récupère via `getFlow`. Si vous préférez construire l'interface dans votre propre code, utilisez un paywall à la place — voir [Implémenter les paywalls manuellement](flutter-quickstart-manual).
+- [**Placements**](placements) – où et quand vous affichez les flows dans votre application (par exemple `main`, `onboarding`, `settings`). Vous associez les flows aux placements dans le tableau de bord, puis vous les demandez par ID de placement dans votre code. Cela facilite les tests A/B et l'affichage de flows différents selon les utilisateurs.
+
+Adapty vous propose trois façons d'activer les achats dans votre application. Choisissez celle qui correspond aux besoins de votre app :
+
+| Implémentation         | Complexité | Quand l'utiliser                                                                                                                                                                                                                                |
+|------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Adapty Flow Builder | ✅ Facile     | Vous [créez un flow complet et prêt à l'achat dans le builder sans code](quickstart-paywalls). Adapty le rend automatiquement et gère tout le flux d'achat complexe, la validation des reçus et la gestion des abonnements en coulisses. |
+| Paywalls créés manuellement | 🟡 Moyen  | Vous implémentez l'interface de votre paywall dans le code de votre application, mais vous récupérez quand même l'objet flow depuis Adapty pour garder de la flexibilité dans les offres de produits. Voir le [guide](flutter-quickstart-manual).                                                     |
+| Mode observateur              | 🔴 Difficile    | Vous avez déjà votre propre infrastructure de gestion des achats et souhaitez continuer à l'utiliser. Notez que le mode observateur a ses limites dans Adapty. Voir l'[article](observer-vs-full-mode).                                                 |
+
+:::important
+**Les étapes ci-dessous montrent comment implémenter un flow créé dans Adapty Flow Builder.**
+
+Si vous préférez construire l'interface du paywall vous-même, voir [Implémenter les paywalls manuellement](flutter-quickstart-manual).
+:::
+
+Pour afficher un flow créé dans Adapty Flow Builder, vous n'avez besoin que de quelques lignes dans le code de votre application :
+
+1. **Récupérer le flow** : Obtenez-le depuis Adapty.
+2. **L'afficher et laisser Adapty gérer les achats** : Affichez la vue dans votre application.
+3. **Gérer les actions des boutons** : Associez les interactions utilisateur aux réponses de votre application. Par exemple, ouvrir des liens ou fermer le flow quand les utilisateurs cliquent sur des boutons.
+
+## Avant de commencer \{#before-you-start\}
+
+Avant de commencer, effectuez ces étapes :
+
+1. Connectez votre application à l'[App Store](initial_ios) et/ou à [Google Play](initial-android) dans Adapty Dashboard.
+2. [Créez vos produits](create-product) dans Adapty.
+3. [Créez un flow et ajoutez-y des produits](create-paywall).
+4. [Créez un placement et ajoutez-y votre flow](create-placement).
+5. [Installez et activez le SDK Adapty](sdk-installation-flutter) dans le code de votre application. Ce guide utilise les APIs du SDK Adapty Flutter v4.
+
+:::tip
+La façon la plus rapide de réaliser ces étapes est de suivre le [guide de démarrage rapide](quickstart) ou de créer des paywalls et des placements via la [CLI développeur](developer-cli-quickstart).
+:::
+
+## 1. Récupérer le flow \{#1-get-the-flow\}
+
+Vos flows sont associés à des placements configurés dans le tableau de bord. Les placements vous permettent d'exécuter des flows différents pour différentes audiences ou de lancer des [tests A/B](ab-tests).
+
+Pour récupérer un flow créé dans Adapty Flow Builder, vous devez :
+
+1. Obtenir l'objet `flow` par l'ID de [placement](placements) en utilisant la méthode `getFlow` et vérifier s'il a été créé dans le builder grâce à la propriété `hasViewConfiguration`.
+
+2. Créer la vue du flow en utilisant la méthode `createFlowView`. La vue contient les éléments d'interface et le style nécessaires pour afficher le flow.
+
+:::important
+Pour obtenir la configuration de la vue, vous devez activer le bouton **Show on device** dans le builder. Sinon, vous obtiendrez une configuration de vue vide et le flow ne sera pas affiché.
+:::
+
+```dart showLineNumbers
+
+try {
+  // the requested flow
+  final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+  );
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+## 2. Afficher le flow \{#2-display-the-flow\}
+
+Maintenant que vous avez la vue du flow, quelques lignes suffisent pour l'afficher.
+
+Pour afficher le flow, utilisez la méthode `view.present()` sur la `view` créée par la méthode `createFlowView`. Chaque `view` ne peut être présentée qu'une seule fois : une fois fermée, elle est libérée de la mémoire. Si vous avez besoin d'afficher le flow à nouveau, appelez `createFlowView` une nouvelle fois pour créer une nouvelle instance de `view`.
+
+```dart showLineNumbers title="Flutter"
+try {
+  await view.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+:::tip
+Pour plus de détails sur l'affichage d'un flow, consultez notre [guide](flutter-present-paywalls).
+:::
+
+## 3. Gérer les actions des boutons \{#3-handle-button-actions\}
+
+Quand les utilisateurs cliquent sur des boutons dans le flow, le SDK Flutter gère automatiquement les achats, la restauration, la fermeture de la vue et l'ouverture des URLs. Cependant, les autres boutons ont des IDs personnalisés ou prédéfinis et nécessitent une gestion des actions dans votre code.
+
+Pour contrôler ou surveiller les processus sur l'écran du flow, implémentez les méthodes `AdaptyUIFlowsEventsObserver` et définissez l'observateur avant d'afficher n'importe quel écran. Si un utilisateur a effectué une action, `flowViewDidPerformAction` sera appelé et votre application devra répondre en fonction de l'ID de l'action.
+
+Trois méthodes d'observateur sont **obligatoires** : `flowViewDidFinishPurchase`, `flowViewDidFinishRestore` et `flowViewDidReceiveError` — votre classe ne compilera pas sans elles.
+
+:::tip
+Consultez nos guides sur la gestion des [actions](flutter-handle-paywall-actions) et des [événements](flutter-handling-events) des boutons.
+:::
+
+Implémentez l'observateur comme un objet dédié à longue durée de vie plutôt que comme un widget. Comme un seul slot d'observateur global est partagé dans toute l'application, le lier à un `State` entraînerait une fuite de l'écran (le SDK conserve une référence forte vers lui) et serait silencieusement remplacé lorsque le prochain écran s'enregistre. Utiliser `extends` hérite également du comportement par défaut du SDK, donc en dehors des trois méthodes obligatoires, vous ne surchargez que les callbacks qui vous intéressent.
+
+```dart showLineNumbers title="Flutter"
+// A dedicated, long-lived handler for flow events.
+// It does NOT live inside a Widget/State, so it never leaks and is never
+// silently replaced when screens are pushed or popped.
+class FlowEventsHandler extends AdaptyUIFlowsEventsObserver {
+  // A single, app-wide instance — same idiom as Adapty() and AdaptyUI().
+  static final FlowEventsHandler _instance = FlowEventsHandler._();
+  factory FlowEventsHandler() => _instance;
+  FlowEventsHandler._();
+
+  // This method is called when user performs an action on the flow UI.
+  // Overriding it replaces the default behavior (dismiss on close, open URLs),
+  // so keep those cases if you want to preserve it.
+  @override
+  void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction(): // close the flow on the Android back button
+        view.dismiss();
+        break;
+      case OpenUrlAction(:final url, :final openIn):
+        AdaptyUI().openUrl(url, openIn: openIn);
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Required: decide what happens after a purchase finishes
+  @override
+  void flowViewDidFinishPurchase(AdaptyUIFlowView view,
+      AdaptyPaywallProduct product, AdaptyPurchaseResult purchaseResult) {
+    if (purchaseResult is! AdaptyPurchaseResultUserCancelled) {
+      view.dismiss();
+    }
+  }
+
+  // Required: dismiss the flow once a restore succeeds
+  @override
+  void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
+    view.dismiss();
+  }
+
+  // Required: handle rendering and other view errors
+  @override
+  void flowViewDidReceiveError(AdaptyUIFlowView view, AdaptyError error) {
+    print('Flow error: $error');
+    view.dismiss();
+  }
+}
+```
+
+Enregistrez le handler **une seule fois** au démarrage de l'application, avant qu'un flow ne soit affiché :
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setFlowsEventsObserver(FlowEventsHandler());
+```
+
+## Étapes suivantes \{#next-steps\}
+
+<SupportForum />
+
+Votre flow est prêt à être affiché dans l'application. Testez vos achats dans le [sandbox App Store](test-purchases-in-sandbox) ou dans [Google Play Store](testing-on-android) pour vous assurer de pouvoir effectuer un achat test depuis le flow.
+
+Vous devez maintenant [vérifier le niveau d'accès des utilisateurs](flutter-check-subscription-status) pour vous assurer d'afficher un flow ou de donner accès aux fonctionnalités payantes aux bons utilisateurs.
+
+## Exemple complet \{#full-example\}
+
+Voici comment toutes ces étapes peuvent être intégrées ensemble dans votre application.
+
+```dart
+
+void main() {
+  // Register a single, long-lived observer once, before any flow is shown.
+  // It is intentionally a plain object (NOT a Widget/State): its lifetime is the
+  // whole app, so it never leaks and is never silently replaced when screens are
+  // pushed or popped.
+  AdaptyUI().setFlowsEventsObserver(FlowEventsHandler());
+
+  runApp(MaterialApp(home: FlowScreen()));
+}
+
+/// A dedicated handler for AdaptyUI flow events.
+///
+/// It `extends` [AdaptyUIFlowsEventsObserver] (rather than being implemented
+/// by a `State`), which gives you two things for free:
+///   * the SDK's sensible defaults for optional callbacks, so besides the three
+///     required methods you only override what you actually care about;
+///   * a lifecycle that is independent of the widget tree — there is no strong
+///     reference back into a `Widget`, so nothing leaks and there is nothing to
+///     unregister.
+///
+/// Every callback receives the [AdaptyUIFlowView] it relates to, so handling
+/// flow actions never requires a `BuildContext` or widget state.
+class FlowEventsHandler extends AdaptyUIFlowsEventsObserver {
+  // A single, app-wide instance — same idiom as Adapty() and AdaptyUI().
+  static final FlowEventsHandler _instance = FlowEventsHandler._();
+  factory FlowEventsHandler() => _instance;
+  FlowEventsHandler._();
+
+  // Called when the user performs an action on the flow UI.
+  @override
+  void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction(): // close the flow on the Android back button
+        view.dismiss();
+        break;
+      case OpenUrlAction(:final url, :final openIn):
+        // Open the URL natively, honoring the dashboard browser setting.
+        AdaptyUI().openUrl(url, openIn: openIn);
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Required: decide what happens after a purchase finishes.
+  @override
+  void flowViewDidFinishPurchase(AdaptyUIFlowView view,
+      AdaptyPaywallProduct product, AdaptyPurchaseResult purchaseResult) {
+    if (purchaseResult is! AdaptyPurchaseResultUserCancelled) {
+      view.dismiss();
+    }
+  }
+
+  // Required: dismiss the flow once a restore succeeds.
+  @override
+  void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
+    view.dismiss();
+  }
+
+  // Required: handle rendering and other view errors.
+  @override
+  void flowViewDidReceiveError(AdaptyUIFlowView view, AdaptyError error) {
+    print('Flow error: $error');
+    view.dismiss();
+  }
+}
+
+class FlowScreen extends StatefulWidget {
+  const FlowScreen({super.key});
+
+  @override
+  State<FlowScreen> createState() => _FlowScreenState();
+}
+
+class _FlowScreenState extends State<FlowScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _showFlowIfNeeded();
+  }
+
+  Future<void> _showFlowIfNeeded() async {
+    try {
+      final flow = await Adapty().getFlow(
+        placementId: 'YOUR_PLACEMENT_ID',
+      );
+
+      if (!flow.hasViewConfiguration) return;
+
+      final view = await AdaptyUI().createFlowView(flow: flow);
+
+      await view.present();
+    } catch (_) {
+      // Handle any errors (network, SDK issues, etc.)
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Adapty Flow Example')),
+      body: Center(
+        // Add a button to re-trigger the flow for testing purposes.
+        child: ElevatedButton(
+          onPressed: _showFlowIfNeeded,
+          child: const Text('Show Flow'),
+        ),
+      ),
+    );
+  }
+}
+```

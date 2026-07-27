@@ -1,0 +1,264 @@
+---
+title: "Traiter les données des onboardings dans le SDK React Native"
+description: "Enregistrez et utilisez les données des onboardings dans votre application React Native avec le SDK Adapty."
+metadataTitle: "Onboardings | SDK React Native | Documentation Adapty"
+---
+
+:::warning
+**Les onboardings sont dépréciés dans le SDK v4 et seront supprimés dans une prochaine version.** Ils ne reçoivent plus de correctifs ni d'améliorations. Utilisez les [flows](react-native-get-pb-paywalls) à la place : contrairement aux onboardings qui s'exécutent dans une WebView, les flows s'affichent nativement sur l'appareil — vous offrant des animations plus fluides, un rendu natif cohérent, des temps de chargement plus rapides et aucune dépendance au runtime WebView. Consultez [Obtenir les flows & paywalls](react-native-get-pb-paywalls) et [Afficher les flows & paywalls](react-native-present-paywalls) pour commencer.
+:::
+
+Lorsque vos utilisateurs répondent à une question de quiz ou saisissent des données dans un champ, la méthode `onStateUpdatedAction` est invoquée. Vous pouvez enregistrer ou traiter le type de champ dans votre code.
+
+Par exemple :
+
+```javascript
+// Présentation plein écran
+const unsubscribe = view.setEventHandlers({
+  onStateUpdated(action, meta) {
+    // Traiter les données 
+  },
+});
+
+// Widget intégré
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onStateUpdated(action, meta) {
+      // Traiter les données 
+    },
+  }}
+/>
+```
+
+Consultez le format de l'action [ici](https://react-native.adapty.io/types/onboardingstateupdatedaction).
+
+<Details>
+<summary>Exemples de données enregistrées (le format peut différer selon votre implémentation)</summary>
+
+```javascript
+// Exemple d'une action de sélection enregistrée
+{
+    "elementId": "preference_selector",
+    "elementType": "select",
+    "value": {
+        "id": "option_1",
+        "value": "premium",
+        "label": "Premium Plan"
+    },
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "totalScreens": 3
+    }
+}
+
+// Exemple d'une action de sélection multiple enregistrée
+{
+    "elementId": "interests_selector",
+    "elementType": "multi_select",
+    "value": [
+        {
+            "id": "interest_1",
+            "value": "sports",
+            "label": "Sports"
+        },
+        {
+            "id": "interest_2",
+            "value": "music",
+            "label": "Music"
+        }
+    ],
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "totalScreens": 3
+    }
+}
+
+// Exemple d'une action de saisie enregistrée
+{
+    "elementId": "name_input",
+    "elementType": "input",
+    "value": {
+        "type": "text",
+        "value": "John Doe"
+    },
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "totalScreens": 3
+    }
+}
+
+// Exemple d'une action de sélecteur de date enregistrée
+{
+    "elementId": "birthday_picker",
+    "elementType": "date_picker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+    },
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "totalScreens": 3
+    }
+}
+```
+</Details>
+
+## Cas d'utilisation \{#use-cases\}
+
+### Enrichir les profils utilisateurs avec des données \{#enrich-user-profiles-with-data\}
+
+Si vous souhaitez associer immédiatement les données saisies au profil utilisateur et éviter de leur demander deux fois les mêmes informations, vous devez [mettre à jour le profil utilisateur](react-native-setting-user-attributes) avec les données saisies lors du traitement de l'action.
+
+Par exemple, vous demandez aux utilisateurs de saisir leur nom dans le champ texte avec l'ID `name`, et vous souhaitez définir la valeur de ce champ comme prénom de l'utilisateur. Vous leur demandez également de saisir leur e-mail dans le champ `email`. Dans le code de votre application, cela peut ressembler à ceci :
+
+```javascript showLineNumbers
+// Présentation plein écran
+const unsubscribe = view.setEventHandlers({
+  onStateUpdated(action, meta) {
+    // Enregistrer les préférences ou réponses de l'utilisateur
+    if (action.elementType === 'input') {
+      const profileParams = {};
+      
+      // Associer elementId au champ de profil approprié
+      switch (action.elementId) {
+        case 'name':
+          if (action.value.type === 'text') {
+            profileParams.firstName = action.value.value;
+          }
+          break;
+        case 'email':
+          if (action.value.type === 'email') {
+            profileParams.email = action.value.value;
+          }
+          break;
+      }
+      
+      // Mettre à jour le profil si des données sont disponibles
+      if (Object.keys(profileParams).length > 0) {
+        adapty.updateProfile(profileParams).catch(error => {
+          // gérer l'erreur
+        });
+      }
+    }
+  },
+});
+
+// Widget intégré
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onStateUpdated(action, meta) {
+      // Enregistrer les préférences ou réponses de l'utilisateur
+      if (action.elementType === 'input') {
+        const profileParams = {};
+        
+        // Associer elementId au champ de profil approprié
+        switch (action.elementId) {
+          case 'name':
+            if (action.value.type === 'text') {
+              profileParams.firstName = action.value.value;
+            }
+            break;
+          case 'email':
+            if (action.value.type === 'email') {
+              profileParams.email = action.value.value;
+            }
+            break;
+        }
+        
+        // Mettre à jour le profil si des données sont disponibles
+        if (Object.keys(profileParams).length > 0) {
+          adapty.updateProfile(profileParams).catch(error => {
+            // gérer l'erreur
+          });
+        }
+      }
+    },
+  }}
+/>
+```
+
+### Personnaliser les paywalls selon les réponses \{#customize-paywalls-based-on-answers\}
+
+En utilisant des quiz dans les onboardings, vous pouvez également personnaliser les paywalls affichés aux utilisateurs une fois l'onboarding terminé.
+
+Par exemple, vous pouvez interroger les utilisateurs sur leur expérience sportive et afficher différents CTA et produits à différents groupes d'utilisateurs.
+
+1. [Ajoutez un quiz](onboarding-quizzes) dans le constructeur d'onboarding et attribuez des IDs significatifs à ses options.
+
+<ZoomImage id="experience.webp" />
+
+2. Traitez les réponses au quiz en fonction de leurs IDs et [définissez des attributs personnalisés](react-native-setting-user-attributes) pour les utilisateurs.
+
+```javascript showLineNumbers
+// Présentation plein écran
+const unsubscribe = view.setEventHandlers({
+  onStateUpdated(action, meta) {
+    // Gérer les réponses au quiz et définir des attributs personnalisés
+    if (action.elementType === 'select') {
+      const profileParams = {};
+      
+      // Associer les réponses au quiz aux attributs personnalisés
+      switch (action.elementId) {
+        case 'experience':
+          // Définir l'attribut personnalisé 'experience' avec la valeur sélectionnée (beginner, amateur, pro)
+          profileParams.codableCustomAttributes = {
+            experience: action.value.value
+          };
+          break;
+      }
+      
+      // Mettre à jour le profil si des données sont disponibles
+      if (Object.keys(profileParams).length > 0) {
+        adapty.updateProfile(profileParams).catch(error => {
+          // gérer l'erreur
+        });
+      }
+    }
+  },
+});
+
+// Widget intégré
+<AdaptyOnboardingView
+  onboarding={onboarding}
+  eventHandlers={{
+    onStateUpdated(action, meta) {
+      // Gérer les réponses au quiz et définir des attributs personnalisés
+      if (action.elementType === 'select') {
+        const profileParams = {};
+        
+        // Associer les réponses au quiz aux attributs personnalisés
+        switch (action.elementId) {
+          case 'experience':
+            // Définir l'attribut personnalisé 'experience' avec la valeur sélectionnée (beginner, amateur, pro)
+            profileParams.codableCustomAttributes = {
+              experience: action.value.value
+            };
+            break;
+        }
+        
+        // Mettre à jour le profil si des données sont disponibles
+        if (Object.keys(profileParams).length > 0) {
+          adapty.updateProfile(profileParams).catch(error => {
+            // gérer l'erreur
+          });
+        }
+      }
+    },
+  }}
+/>
+```
+
+3. [Créez des segments](segments) pour chaque valeur d'attribut personnalisé.
+4. Créez un [placement](placements) et ajoutez des [audiences](audience) pour chaque segment créé.
+5. [Affichez un paywall](react-native-paywalls) pour le placement dans le code de votre application. Si votre onboarding comporte un bouton qui ouvre un paywall, implémentez le code du paywall comme [réponse à l'action de ce bouton](react-native-handling-onboarding-events#opening-a-paywall).

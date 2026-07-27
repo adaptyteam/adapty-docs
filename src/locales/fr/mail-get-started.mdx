@@ -1,0 +1,222 @@
+---
+title: "Démarrer avec Adapty Mail"
+description: "Configurez Adapty Mail et lancez votre premier flow d'emails."
+metadataTitle: "Démarrer avec Adapty Mail | Documentation Adapty"
+keywords: ['adapty mail']
+---
+
+Dans ce guide, vous allez configurer Adapty Mail et lancer votre premier flow d'emails.
+
+:::note
+Vous pouvez également envoyer des données à Adapty Mail depuis votre propre serveur, sans le SDK Adapty. Si vous détenez déjà les emails des utilisateurs et les achats sur votre backend, ou si vous importez des abonnés depuis une autre source, consultez [Envoyer des emails et des transactions via l'API Adapty Mail](mail-send-data-via-api).
+:::
+
+La configuration comporte six étapes :
+
+1. [Configurer votre SDK Adapty](#1-configure-your-adapty-sdk)
+2. [Configurer votre domaine d'envoi](#2-set-up-your-sending-domain)
+3. [Créer un paywall web](#3-create-a-web-paywall)
+4. [Générer une campagne avec l'IA](#4-generate-a-campaign-with-ai)
+5. [Lancer un flow](#5-launch-a-flow)
+6. [Activer l'envoi](#6-enable-sending)
+
+:::tip
+Si vous vous êtes inscrit à Adapty Mail via Adapty, votre **profil de marque** est créé automatiquement à partir de l'URL du store de votre projet. Ouvrez **Brand** à tout moment pour le consulter ou l'affiner — voir [Brand](mail-brand). Si vous vous êtes inscrit de façon autonome, configurez votre marque sur la même page avant de générer des campagnes ou des paywalls web.
+:::
+
+## Avant de commencer \{#before-you-start\}
+
+Assurez-vous que les éléments suivants sont en place avant de commencer :
+
+- **Accès DNS** : vous pouvez ajouter des enregistrements à votre domaine racine.
+- **Prestataire de paiement web** : vous disposez d'un compte Stripe, Paddle ou PayPal avec vos produits d'abonnement configurés.
+
+## 1. Configurer votre SDK Adapty \{#1-configure-your-adapty-sdk\}
+
+:::important
+Adapty Mail est un **produit autonome**. Vous pouvez l'utiliser même si vos paywalls, abonnements ou analyses ne sont pas gérés par Adapty — migrer l'intégralité de votre stack n'est pas obligatoire.
+
+Pour obtenir des données de revenus précises, la configuration minimale consiste à installer le SDK Adapty en mode observateur et à activer les notifications serveur de l'App Store.
+:::
+
+Adapty Mail a besoin de trois éléments de votre application : les données d'achat (pour attribuer les revenus à l'email qui a généré chaque conversion), un identifiant utilisateur stable et les emails des utilisateurs.
+
+1. **Permettez à Adapty de suivre vos revenus.** La première étape dépend de si vous avez déjà mis en œuvre des achats intégrés :
+   - Si vous **avez déjà mis en œuvre des achats intégrés avec Adapty**, vous n'avez rien d'autre à faire à cette étape.
+   - Si vous **avez déjà mis en œuvre des achats intégrés sans Adapty** et ne prévoyez pas de migrer vers Adapty, installez le SDK Adapty pour votre plateforme en mode observateur. À cette étape, vous devez seulement ajouter le SDK à votre projet, l'activer avec le mode observateur activé, et signaler les transactions. Guides par plateforme : [iOS](implement-observer-mode), [Android](implement-observer-mode-android), [React Native](implement-observer-mode-react-native), [Flutter](implement-observer-mode-flutter), [Unity](implement-observer-mode-unity), [Kotlin Multiplatform](implement-observer-mode-kmp), [Capacitor](implement-observer-mode-capacitor).
+   - Si vous **n'avez pas encore mis en œuvre des achats intégrés et souhaitez utiliser Adapty**, suivez les étapes du [guide de démarrage rapide](quickstart) pour déléguer la gestion des achats à Adapty.
+
+   Ensuite, [activez les notifications serveur de l'App Store dans Adapty](enable-app-store-server-notifications) pour recevoir les mises à jour liées aux revenus directement depuis l'App Store.
+
+2. **Configurez l'identification des utilisateurs.** Transmettez un identifiant stable — votre identifiant utilisateur backend, Firebase UID, ou similaire — soit en appelant `Adapty.identify()`, soit en passant `customerUserId` à `.activate()` au démarrage du SDK. Le `customer_user_id` est ce qu'Adapty Mail utilise pour relier les campagnes, les clics et les achats au bon profil.
+
+   Guides par plateforme : [iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), [Unity](unity-identifying-users), [Kotlin Multiplatform](kmp-identifying-users), [Capacitor](capacitor-identifying-users).
+
+3. **Collectez les emails des utilisateurs.** Dès qu'un utilisateur fournit son email dans votre application (par exemple, lors de l'inscription ou du paiement), transmettez-le à Adapty en appelant `updateProfile` avec l'attribut email. Chaque destinataire d'une campagne a besoin de cette valeur.
+
+   Guides par plateforme : [iOS](setting-user-attributes), [Android](android-setting-user-attributes), [React Native](react-native-setting-user-attributes), [Flutter](flutter-setting-user-attributes), [Unity](unity-setting-user-attributes), [Kotlin Multiplatform](kmp-setting-user-attributes), [Capacitor](capacitor-setting-user-attributes).
+
+   Si votre application ne collecte pas encore les emails, consultez [Stratégies de collecte d'emails](mail-collect-emails#email-collection-strategies).
+
+## 2. Configurer votre domaine d'envoi \{#2-set-up-your-sending-domain\}
+
+Ouvrez Adapty Mail : cliquez sur le logo Adapty dans l'en-tête et choisissez **Mail**.
+
+<ZoomImage id="product-switcher.webp" width="500px" alt="Sélecteur de produit Adapty" />
+
+Adapty Mail envoie depuis votre propre domaine. Vous ajoutez les enregistrements DNS une seule fois — toutes les campagnes utilisent le même domaine vérifié.
+
+1. Dans Adapty Mail, allez dans **Settings → Email Domains**.
+2. Saisissez votre domaine racine (par exemple, `votreapp.com`) et cliquez sur **Preview**. Seuls les domaines apex sont acceptés — les sous-domaines comme `app.votreapp.com` sont refusés à la saisie.
+
+<ZoomImage id="mail-email-domains.webp" width="500px" />
+
+3. Adapty génère deux sous-domaines d'envoi (`mail.votreapp.com` et `email.votreapp.com`). Cliquez sur **Confirm** pour afficher les enregistrements DNS requis.
+
+<ZoomImage id="confirm-subdomains.webp" width="500px" />
+
+4. Dans votre registrar de domaine, ajoutez les 10 enregistrements DNS affichés (5 par sous-domaine) :
+   - 3 enregistrements CNAME (DKIM) par sous-domaine
+   - 1 enregistrement MX (Mail-From) par sous-domaine
+   - 1 enregistrement TXT (SPF, `v=spf1 include:amazonses.com ~all`) par sous-domaine
+5. Optionnellement, ajoutez un enregistrement TXT DMARC sur votre domaine racine (recommandé).
+6. Revenez dans **Settings → Email Domains** et cliquez sur **Check Verification**.
+
+<ZoomImage id="email-domains.webp" width="500px" />
+
+Délais de vérification en bref :
+
+- **Vérification automatique** : la première vérification s'effectue environ 5 minutes après votre soumission. Les intervalles augmentent jusqu'à une fois par heure jusqu'à ce que les enregistrements soient trouvés.
+- **Vérification manuelle** : cliquez sur **Check Verification** à tout moment pour déclencher une vérification immédiate.
+- **Propagation DNS** : généralement en quelques minutes, jusqu'à 48 heures dans de rares cas.
+- **Fenêtre de vérification** : 7 jours. Si elle expire, vos enregistrements DNS restent en place — saisissez à nouveau votre domaine dans **Settings → Email Domains** pour démarrer une nouvelle fenêtre.
+
+Pour plus de détails sur chaque type d'enregistrement et le préchauffage du domaine, consultez [Configurer votre domaine d'envoi](mail-sending-domain).
+
+## 3. Créer un paywall web \{#3-create-a-web-paywall\}
+
+Chaque email renvoie vers un paywall web — la page de paiement sur laquelle les utilisateurs arrivent lorsqu'ils cliquent sur un CTA. Vous avez deux options :
+
+- **Générer avec l'IA** : laissez le générateur de paywall web intégré en créer un pour votre application.
+- **Utiliser votre propre paywall hébergé** : intégrez un paywall que vous hébergez déjà.
+
+Pour commencer, dans Adapty Mail, allez dans **Web Paywalls → Create**.
+
+<ZoomImage id="new-web-paywall.webp" width="500px" />
+
+### Option A : Générer avec l'IA \{#option-a-generate-with-ai\}
+
+La page affiche une liste de contrôle **Prerequisites** avec des boutons intégrés — parcourez-la dans l'ordre, puis revenez pour générer. La liste couvre la connexion au générateur de paywall, la connexion à Stripe, l'ajout de produits et la vérification du résultat. Consultez [Configurer le paiement](mail-checkout) pour la procédure complète.
+
+Quand tous les prérequis sont validés, cliquez sur **Generate** pour ouvrir la boîte de dialogue de génération :
+
+- **Environment** : choisissez **Production** ou **Sandbox**. Sandbox utilise vos produits en mode test Stripe et est l'option par défaut sécurisée pour les environnements de développement et locaux.
+- **Plans** : sélectionnez jusqu'à **3 plans Stripe** (chaque plan est un produit + un prix). Ce sont les offres que le paywall généré présente aux utilisateurs lors du paiement.
+
+Cliquez sur **Generate** pour lancer la génération. Lorsqu'elle est terminée, ouvrez l'éditeur pour vérifier et publier.
+
+:::important
+Le paywall doit être publié avant de pouvoir traiter le trafic de paiement. Les paywalls non publiés renvoient une erreur lorsque les utilisateurs cliquent sur les liens de paiement dans les emails.
+:::
+
+### Option B : Utiliser votre propre paywall hébergé \{#option-b-use-your-own-hosted-paywall\}
+
+1. Sélectionnez **Enter URL manually**.
+2. Collez l'URL de votre paywall hébergé. L'URL doit inclure les paramètres `{email}` et `{external_profile_id}` en tant que paramètres de requête — Adapty Mail les renseigne pour chaque destinataire afin que la page de paiement sache qui est le visiteur. Exemple :
+
+   ```
+   https://example.com/paywall?email={email}&profile={external_profile_id}
+   ```
+3. Enregistrez et publiez.
+
+Pour l'anatomie du tunnel de paiement et le fonctionnement de la personnalisation, consultez [Configurer le paiement](mail-checkout).
+
+<ZoomImage id="generate-web-paywall.webp" width="500px" />
+
+## 4. Générer une campagne avec l'IA \{#4-generate-a-campaign-with-ai\}
+
+L'IA crée la séquence d'emails complète pour vous — texte, design, images hero et liens de paiement personnalisés, le tout adapté à votre marque.
+
+1. Dans Adapty Mail, allez dans **Campaigns** et cliquez sur **Create**.
+2. Définissez le nom de la campagne.
+3. Dans le menu déroulant **Web paywall**, sélectionnez le paywall web que vous avez ajouté à l'étape précédente.
+
+<ZoomImage id="mail-new-campaign.webp" width="500px" />
+
+4. Cliquez sur **Generate emails**.
+5. Remplissez la boîte de dialogue de génération — ton, langue, une invite personnalisée optionnelle (jusqu'à 2 000 caractères) et le nombre d'emails (1 à 15, par défaut 4). Consultez [Créer une campagne](mail-create-campaign) pour savoir ce que fait chaque champ.
+
+<ZoomImage id="generate-emails.webp" width="500px" />
+
+6. Cliquez sur **Generate**. La génération prend généralement quelques minutes. Le système expire après 5 minutes s'il ne parvient pas à terminer — réessayez si cela se produit.
+7. Prévisualisez chaque email. L'en-tête de prévisualisation dispose d'un **bouton de thème** (Auto, Light, Dark) qui contrôle l'affichage de la prévisualisation — le contenu généré est identique dans tous les modes. Vous pouvez régénérer des emails individuels, modifier le texte ou ouvrir l'éditeur HTML pour un contrôle précis.
+
+<ZoomImage id="generated-emails.webp" width="700px" />
+
+8. Cliquez sur **Create** pour enregistrer la campagne.
+
+La campagne est enregistrée en tant que **brouillon** et n'envoie pas encore — les campagnes ne deviennent actives que lorsqu'elles sont associées à un flow (étape suivante). Il n'y a pas d'action "publier" distincte dans l'éditeur de campagne.
+
+## 5. Lancer un flow \{#5-launch-a-flow\}
+
+Un flow associe un **déclencheur** (un événement comme l'expiration d'un abonnement) à un **segment**, et envoie à ce segment la **campagne** que vous choisissez. Adapty Mail est livré avec cinq déclencheurs fixes, chacun avec sa propre vue de flow.
+
+1. Dans Adapty Mail, allez dans **Flows**, puis ouvrez le déclencheur que vous souhaitez configurer :
+   - **Never purchased** — utilisateurs qui se sont inscrits mais n'ont pas encore effectué d'achat.
+   - **Renewal cancelled** — utilisateurs qui ont désactivé le renouvellement automatique mais disposent encore d'un abonnement actif.
+   - **Billing issue** — échec de paiement, carte refusée ou expirée, ou délai de grâce.
+   - **Expired** — l'abonnement a expiré et l'accès est révoqué.
+   - **Refunded** — utilisateurs qui ont demandé un remboursement après un achat.
+
+   Consultez [Flows](mail-flows) pour les objectifs et les conseils de ton associés à chaque déclencheur.
+
+2. Cliquez sur **Create** pour ouvrir la boîte de dialogue.
+
+<ZoomImage id="create-flow-mail.webp" width="500px" />
+
+3. Dans la boîte de dialogue :
+   - Choisissez un **Segment** (par exemple, **All Users** pour cibler tous ceux qui atteignent ce déclencheur, ou créez un nouveau segment basé sur les attributs du profil).
+   - Laissez le type de contenu défini sur **Campaign** (l'option A/B Test est décrite dans [Tests A/B](mail-ab-testing)).
+   - Sélectionnez la **Campaign** que vous avez enregistrée à l'étape 4.
+4. Cliquez sur **Save**.
+
+Le flow est actif immédiatement — il n'y a pas d'étape de lancement distincte. À partir de ce moment, les utilisateurs correspondant au segment commenceront à recevoir la campagne dès qu'ils atteignent l'événement déclencheur.
+
+:::note
+Vous pouvez ajouter plusieurs lignes segment → campagne au même déclencheur ; elles s'exécutent par ordre de priorité. La ligne **All Users**, si elle est utilisée, doit être la dernière (priorité la plus basse) afin de capturer tous ceux qui ne correspondent pas à un segment plus spécifique.
+:::
+
+<ZoomImage id="mail-flow-details.webp" width="500px" />
+
+## 6. Activer l'envoi \{#6-enable-sending\}
+
+Jusqu'à présent, votre campagne est configurée mais n'envoie pas réellement — l'**intégration Adapty** qui synchronise les événements d'abonnement dans Adapty Mail est encore désactivée. L'activer est le dernier interrupteur : les événements commencent à circuler, les segments commencent à correspondre, et les emails commencent à être envoyés.
+
+Cette étape n'est débloquée qu'après l'étape 5. Avant de lancer un flow, le bouton **Enable** dans **Settings → Integrations** est désactivé avec l'info-bulle *« Set up at least one flow before enabling Adapty integration. »*
+
+1. Dans Adapty Mail, allez dans **Settings → Integrations**.
+2. Cliquez sur **Enable Adapty integration** (ou **Enable** si l'intégration existe déjà suite à une configuration précédente).
+
+Une fois activée, Adapty envoie chaque événement d'abonnement — nouveaux abonnements, renouvellements, essais, conversions, remboursements, problèmes de facturation — dans Adapty Mail. Ces événements alimentent l'appartenance aux segments, le routage des campagnes et les conditions d'arrêt qui mettent en pause une séquence lorsqu'un utilisateur convertit.
+
+<ZoomImage id="adapty-mail-adapty-integration.webp" width="500px" />
+
+:::note
+Le bouton **Adapty integration** dans les paramètres n'est *pas* le même que l'espace de travail partenaire Adapty qui vous a connecté à Adapty Mail. L'espace de travail partenaire est ce qui a créé votre compte et (si vous vous êtes inscrit via Adapty) votre marque. Le bouton d'intégration ici contrôle la synchronisation des événements — il doit être activé par projet.
+:::
+
+## Dépannage \{#troubleshooting\}
+
+| Problème                                  | Solution                                                                                                                                                             |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vérification DNS bloquée                  | Vérifiez que les enregistrements correspondent exactement — pas de points finaux, cibles CNAME correctes. Attendez 5 à 10 minutes, puis cliquez à nouveau sur **Check Verification** |
+| Fenêtre de vérification expirée           | Vos enregistrements restent en place. Saisissez à nouveau votre domaine dans **Settings → Email Domains** pour démarrer une nouvelle fenêtre                          |
+| Génération échouée ou expirée             | Vérifiez votre connexion internet et réessayez. Si le problème persiste, contactez le support Adapty                                                                 |
+
+## En savoir plus \{#learn-more\}
+
+- **[Collecter les emails des utilisateurs](mail-collect-emails)** : stratégies pour obtenir la couverture email si votre application ne les collecte pas encore.
+- **[Configurer votre domaine d'envoi](mail-sending-domain)** : détails des enregistrements DNS, niveaux de préchauffage et dépannage.
+- **[Configurer le paiement](mail-checkout)** : anatomie du tunnel de paiement et personnalisation.
+- **[Analytique des campagnes](mail-analytics)** : suivez la délivrabilité, l'engagement et les revenus.
+- **[Tests A/B](mail-ab-testing)** : testez plusieurs versions de séquences.

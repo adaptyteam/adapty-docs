@@ -5,9 +5,9 @@ metadataTitle: "Virtual currencies | Adapty Docs"
 keywords: ['virtual currency', 'virtual currencies', 'in-app currency']
 ---
 
-<CustomDocCardList ids={['create-virtual-currency', 'virtual-currency-balance']} />
+<CustomDocCardList ids={['virtual-currency-quickstart', 'create-virtual-currency', 'virtual-currency-balance']} />
 
-Grant your users in-app credits (coins, gems, or points) when they buy products or renew subscriptions. Define a currency once, link it to the products that should award it, and Adapty credits each user automatically and keeps their balance. Your app reads and spends that balance through the [server-side API](getting-started-with-server-side-api).
+Grant your users virtual currency — AI tokens, credits, or coins — when they buy products or renew subscriptions. Define a currency once, link it to the products that should award it, and Adapty credits each user automatically and keeps their balance. Your app reads and spends that balance through the [server-side API](getting-started-with-server-side-api) — for example, to charge tokens per generation.
 
 <ZoomImage id="virtual-currency-tab.webp" width="700px" alt="The Virtual currency tab under Products, empty, with the New virtual currency button" />
 
@@ -19,83 +19,24 @@ Grant your users in-app credits (coins, gems, or points) when they buy products 
 4. **Read and spend the balance**: Your app reads each user's balance and grants or spends credits through the server-side API.
 5. **Track every change**: Each balance change is listed on the [user's profile](virtual-currency-balance).
 
-:::note
-When you link a currency to a product, existing subscribers don't get credits immediately. Adapty grants them on the next renewal.
-:::
+For a complete walkthrough — from currency setup to spending credits through the API — follow the [Virtual currency quickstart](virtual-currency-quickstart).
 
 ## Use cases
 
-- **Bundle coins with subscriptions**: Grant a set number of credits on each renewal; unused credits expire at the end of the billing cycle.
-- **One-time coin purchases**: Sell coin or gem packs as one-time products that grant non-expiring credits.
-- **Rewards and loyalty**: Grant credits when a user makes a different purchase.
-- **In-app economies**: Run several currencies at once — for example, gold, silver, and gems — and [convert between them](#example-convert-between-currencies).
-- **Manual grants**: Grant credits through the server-side API to compensate a user, run a promo, or seed a test account.
+| App type | How to use virtual currencies |
+|----------|-------------------------------|
+| **AI apps** (image, video, or text generation) | Charge credits per generation. Include a monthly credit allowance in the subscription and sell credit packs as one-time products. |
+| **Short drama and video apps** | Charge coins to unlock an episode. Grant subscribers a recurring coin allowance and sell coin packs as one-time products. |
+| **Language learning and education** | Give free users a limited allowance of hearts or lives through the server-side API. Grant a larger allowance, or skip the balance check entirely, on a paid plan. |
+| **Mobile games** | Run a soft and a hard currency side by side: grant gold for gameplay through the server-side API, sell gems for money, and convert between them in a single atomic transaction. |
+| **Productivity apps** | Meter expensive actions, such as OCR or exports, with credits. Give free users a small allowance, grant more with a subscription, and sell credit packs for batch work. |
+
+:::tip
+For subscription allowances, turn on [credit expiration](create-virtual-currency#link-products). When unused credits reset at each renewal, the allowance stays a reason to keep the subscription, and heavy users buy credit packs instead of spending down a stockpile.
+:::
 
 ## Limitations
 
-- **Balances are profile-specific**: Each profile has its own coin balance. Unlike access levels, a balance is never shared or transferred between profiles, so an anonymous user's balance stays on the device where they earned it. See [Balances, profiles, and devices](virtual-currency-balance#balances-profiles-and-devices).
+- **Cross-device access requires identification**: A balance belongs to one profile. An anonymous user keeps their balance on the device where they earned it, so identify users to make their balance available on every device. See [Balances, profiles, and devices](virtual-currency-balance#balances-profiles-and-devices).
 - **Server-side only**: There is no SDK method to read or spend a balance yet, so your app needs a backend. It reads balances and grants or spends credits through the server-side API.
-- **Excluded from analytics**: Virtual currency has no monetary value, so credits you grant or spend never appear in analytics, webhooks, or exports — only on the user's profile. The purchase that deposits them is still tracked as revenue, like any other purchase.
-
-## Example: Granting and spending coins
-
-Imagine your game grants subscribers a monthly coin allowance. Users spend those coins on power-ups, and you grant bonus coins to win back lapsed users.
-
-Your game server will own this economy. But the Adapty [server-side API](getting-started-with-server-side-api) will take care of the bookkeeping, so you don't have to track balances or worry about user tampering.
-
-1. Follow the [Create virtual currency](create-virtual-currency) guide to create a new currency. Link it to a subscription, and set **Credit per cycle**.
-
-   <ZoomImage id="new-currency-combined.webp" width="700px" alt="New virtual currency creation screens" />
-
-2. Call [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) to read the user's balance, for example, when opening the store:
-
-   ```bash title="Read balances"
-   curl https://api.adapty.io/api/v2/server-side-api/vc/balances/ \
-     -H "Authorization: Api-Key {your secret key}" \
-     -H "adapty-customer-user-id: user-42"
-   ```
-
-   The response lists every currency the user holds, for example 500 `COINS`:
-
-   ```json title="Response"
-   {
-     "data": [
-       { "code": "COINS", "name": "Gold Coins", "balance": 500, "held": 0, "available": 500 }
-     ]
-   }
-   ```
-3. When the user buys a power-up, spend the coins by calling [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) with a negative `amount`. In this example, the power-up costs 120 coins:
-
-   ```bash title="Spend coins"
-   curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
-     -H "Authorization: Api-Key {your secret key}" \
-     -H "adapty-customer-user-id: user-42" \
-     -H "Content-Type: application/json" \
-     -d '{"items": [{"currency_code": "COINS", "amount": -120}]}' 
-   ```
-
-   The transaction is atomic and returns the updated balance. If the user can't cover the cost, the request returns `insufficient_balance` and nothing changes. Include an `Idempotency-Key` header to safely attempt retries.
-4. To run a win-back promo, grant coins through the same endpoint with a **positive** `amount`. Credits you grant this way never expire.
-5. Review every change in the user's [profile](virtual-currency-balance) or in the [transaction history](api-adapty/operations/listVirtualCurrencyTransactions), so you can audit the economy at any time.
-
-## Example: convert between currencies
-
-To convert one currency into another, send a single [transaction](api-adapty/operations/createVirtualCurrencyTransaction) that debits the source currency and credits the target. The transaction is atomic, so both sides apply together or neither does. Adapty has no exchange rate of its own — your app sets the rate.
-
-For example, to exchange 100 SILVER for 10 GOLD:
-
-```bash title="Convert currencies"
-curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
-  -H "Authorization: Api-Key {your secret key}" \
-  -H "adapty-customer-user-id: user-42" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "items": [
-      { "currency_code": "SILVER", "amount": -100 },
-      { "currency_code": "GOLD", "amount": 10 }
-    ],
-    "metadata": { "reason": "exchange" }
-  }'
-```
-
-If the user can't cover the debit, the request returns `insufficient_balance` and neither balance changes. Each currency can appear only once per transaction, and a transaction holds up to 20 items — so you can convert across several currencies at once.
+- **Up to 20 currencies per app**: You can create up to 20 virtual currencies in one app.

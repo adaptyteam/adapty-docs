@@ -1,0 +1,362 @@
+openapi: 3.1.0
+info:
+  title: Adapty Mail API
+  version: 1.0.0
+  description: |
+    Adapty Mail API 允许您直接从服务器将用户画像和交易事件发送到 Adapty Mail，
+    无需通过 Adapty SDK 路由数据。
+
+    使用场景：
+
+    - 在 Adapty Mail 中尚无用户基础时添加订阅者。
+    - 复用其他应用的订阅者基础。
+    - 以您的后端作为数据来源，通过服务器到服务器的方式向 Adapty Mail 提供数据。
+
+    包含电子邮件的用户画像足以触发 **从未购买** 流程。其他所有流程
+    （取消续订、账单问题、已过期、已退款）均由购买历史驱动，因此这些
+    用户画像还需要交易事件才能被纳入正确的流程。
+
+    有关分步操作说明，请参阅 [通过 Adapty Mail API 发送电子邮件和交易数据](/docs/mail-send-data-via-api)。
+servers:
+  - url: https://api-mail.adapty.io
+    description: 生产服务器
+paths:
+  /api/v1/profile/save/:
+    post:
+      summary: 保存用户画像
+      description: |
+        在 Adapty Mail 中创建或更新用户画像。用户画像包含用户的电子邮件和属性，
+        Adapty Mail 使用这些信息来识别收件人并构建[市场细分](/docs/mail-segments)。
+
+        通过稳定的 `external_profile_id` 标识每个用户。再次发送相同的 `external_profile_id`
+        将更新现有用户画像，而不会创建重复记录。
+      operationId: saveProfile
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileDTO'
+            examples:
+              basic:
+                summary: 包含电子邮件、可用于"从未购买"流程的用户画像
+                value:
+                  external_profile_id: "user_12345"
+                  external_created_at: "2026-06-01T10:30:00Z"
+                  email: "jane@example.com"
+                  country: "US"
+                  custom_attributes:
+                    plan: "trial"
+      responses:
+        '200':
+          description: 用户画像保存成功。响应体为空对象。
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                default:
+                  value: {}
+        '400':
+          description: 验证失败——必填字段缺失或无效。`field_name` 指示出错的字段。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Field required"
+                        error_code: "base_error"
+                        status_code: 400
+                        field_name: "email"
+        '403':
+          description: 缺少或无效的密钥 API 密钥。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Secret key doesn't exist"
+                        error_code: "secret_key_does_not_exist_error"
+                        status_code: 403
+                        field_name: null
+  /api/v1/profile/transaction-event/save/:
+    post:
+      summary: 保存交易事件
+      description: |
+        为用户画像记录一条商店交易事件。Adapty Mail 使用交易事件将用户画像纳入基于购买的流程——
+        `event_type` 对应取消续订、账单问题、已过期和已退款等流程——并用于收入归因。
+
+        在处理购买、续订和取消操作时发送这些事件。只有 **从未购买** 流程不需要交易事件即可运行。
+      operationId: saveTransactionEvent
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionEventDTO'
+            examples:
+              basic:
+                summary: 一次新的月度订阅购买
+                value:
+                  event_type: "subscription_started"
+                  event_id: "evt_abc123"
+                  event_datetime: "2026-06-10T14:20:05Z"
+                  external_profile_id: "user_12345"
+                  store: "app_store"
+                  store_product_id: "premium_monthly"
+                  store_transaction_id: "1000000123456789"
+                  store_original_transaction_id: "1000000123456789"
+                  purchased_at: "2026-06-10T14:20:00Z"
+                  originally_purchased_at: "2026-06-10T14:20:00Z"
+                  price_usd: "9.99"
+                  expires_at: "2026-07-10T14:20:00Z"
+      responses:
+        '200':
+          description: 交易事件保存成功。响应体为空对象。
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                default:
+                  value: {}
+        '400':
+          description: 验证失败——必填字段缺失或无效。`field_name` 指示出错的字段。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Field required"
+                        error_code: "base_error"
+                        status_code: 400
+                        field_name: "event_type"
+        '403':
+          description: 缺少或无效的密钥 API 密钥。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Secret key doesn't exist"
+                        error_code: "secret_key_does_not_exist_error"
+                        status_code: 403
+                        field_name: null
+components:
+  securitySchemes:
+    apikeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        使用您的 Adapty Mail 密钥 API 密钥对每个请求进行身份验证，将其作为 **Authorization**
+        请求头发送，值格式为 `Bearer {your_secret_api_key}`，例如 `Bearer secret_live_...`。
+
+        在 Adapty Mail 的 **Settings** 中找到此密钥。该密钥与项目绑定——它标识数据所属的
+        项目，因此用户画像和交易端点无需传入项目 ID。
+  schemas:
+    ProfileDTO:
+      type: object
+      required:
+        - external_profile_id
+        - external_created_at
+        - email
+      properties:
+        external_profile_id:
+          type: string
+          description: |
+            由您的应用或后端持有的用户稳定标识符。在多次请求中复用相同的值，
+            以便 Adapty Mail 将电子邮件、点击和购买关联到同一用户画像。
+            切勿使用匿名或按安装生成的标识符。
+        external_created_at:
+          type: string
+          format: date-time
+          description: |
+            用户创建时间，采用 ISO 8601 格式（例如 `"2026-06-01T10:30:00Z"`）。
+            您可以在市场细分中使用此日期。
+        email:
+          type: string
+          format: email
+          description: 用户的电子邮件地址。Adapty Mail 将营销邮件投递至此地址。
+        first_name:
+          type: string
+          description: 用户的名字。
+        last_name:
+          type: string
+          description: 用户的姓氏。
+        gender:
+          type: string
+          description: 用户的性别。
+        birthday:
+          type: string
+          format: date
+          description: 用户的出生日期，采用 ISO 8601 格式（例如 `"1990-05-21"`）。
+        country:
+          type: string
+          description: 用户所在国家/地区，采用两位大写字母的 ISO 3166-1 alpha-2 代码（例如 `US`）。
+        store_country:
+          type: string
+          description: 用户的商店地区，采用两位大写字母的 ISO 3166-1 alpha-2 代码（例如 `US`）。
+        custom_attributes:
+          type: object
+          description: |
+            附加到用户画像的任意键值对（字符串或数字类型的值）。可用于构建
+            [市场细分](/docs/mail-segments)——例如 `plan`、`signup_source` 或 `trial_days`。
+        device_info:
+          $ref: '#/components/schemas/DeviceInfoDTO'
+    DeviceInfoDTO:
+      type: object
+      required:
+        - platform
+      properties:
+        platform:
+          type: string
+          description: 用户所使用的平台，例如 `iOS` 或 `Android`。
+        device:
+          type: string
+          description: 设备型号，例如 `iPhone15,2`。
+        os:
+          type: string
+          description: 操作系统版本，例如 `17.5`。
+        locale:
+          type: string
+          description: 用户的语言区域设置，例如 `en-US`。
+        timezone:
+          type: string
+          description: 用户的时区，例如 `America/New_York`。
+        app_version:
+          type: string
+          description: 用户正在运行的应用版本，例如 `3.1.0`。
+    TransactionEventDTO:
+      type: object
+      required:
+        - event_type
+        - event_id
+        - event_datetime
+        - external_profile_id
+        - store
+        - store_product_id
+        - store_transaction_id
+        - store_original_transaction_id
+        - purchased_at
+        - originally_purchased_at
+      properties:
+        event_type:
+          $ref: '#/components/schemas/TransactionEventType'
+        event_id:
+          type: string
+          description: 由您的系统持有的此事件唯一标识符。用于保证事件的幂等性。
+        event_datetime:
+          type: string
+          format: date-time
+          description: 事件的记录时间，采用 ISO 8601 格式。
+        external_profile_id:
+          type: string
+          description: 与保存用户画像时相同的稳定 `external_profile_id`。用于将交易关联到对应的用户画像。
+        store:
+          type: string
+          description: 交易来源的商店，例如 `app_store`、`play_store` 或 `stripe`。
+        store_product_id:
+          type: string
+          description: 商店中已购产品的标识符。
+        store_transaction_id:
+          type: string
+          description: 此交易在商店中的标识符。
+        store_original_transaction_id:
+          type: string
+          description: 订阅链中首次交易的标识符。对于首次购买，此值与 `store_transaction_id` 相同。
+        purchased_at:
+          type: string
+          format: date-time
+          description: 此交易的发生时间，采用 ISO 8601 格式。
+        originally_purchased_at:
+          type: string
+          format: date-time
+          description: 订阅首次购买的时间，采用 ISO 8601 格式。
+        price_usd:
+          type: string
+          description: 交易金额（以美元计），采用十进制字符串格式（例如 `"9.99"`）。
+        expires_at:
+          type: string
+          format: date-time
+          description: 订阅到期或已到期的时间，采用 ISO 8601 格式。非订阅类购买请忽略此字段。
+        offer:
+          $ref: '#/components/schemas/Offer'
+    TransactionEventType:
+      type: string
+      description: 交易事件的类型。基于购买的流程由这些值触发。
+      enum:
+        - subscription_started
+        - subscription_renewed
+        - subscription_renewal_cancelled
+        - subscription_renewal_reactivated
+        - billing_issue_detected
+        - entered_grace_period
+        - subscription_refunded
+        - subscription_expired
+        - non_subscription_purchase
+        - non_subscription_purchase_refunded
+    Offer:
+      type: object
+      description: 适用于此交易的促销活动或新用户优惠的详细信息。
+      required:
+        - category
+        - offer_type
+      properties:
+        category:
+          $ref: '#/components/schemas/OfferCategory'
+        offer_type:
+          $ref: '#/components/schemas/OfferType'
+        offer_id:
+          type: string
+          description: 商店中该优惠的标识符（如有）。
+    OfferCategory:
+      type: string
+      enum:
+        - introductory
+        - promotional
+        - offer_code
+        - win_back
+    OfferType:
+      type: string
+      enum:
+        - free_trial
+        - pay_as_you_go
+        - pay_up_front
+    Errors:
+      type: object
+      description: 标准错误响应。每次失败均返回包含此结构的 4XX 状态码。
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: string
+                description: 错误的可读描述。
+              error_code:
+                type: string
+                description: 机器可读的错误标识符。
+              status_code:
+                type: integer
+                description: 此错误对应的 HTTP 状态码。
+              field_name:
+                type: string
+                description: 导致错误的请求字段，若错误与特定字段无关则为 `null`。

@@ -1,0 +1,13 @@
+
+| Paramètre         | Type       | Nullable           | Description                                                  |
+| ----------------- | ---------- | ------------------ | ------------------------------------------------------------ |
+| app_id            | String     | :heavy_minus_sign: | L'ID interne de votre application. Vous pouvez le voir dans l'Adapty Dashboard : [App Settings -> General tab](https://app.adapty.io/settings/general). |
+| profile_id        | UUID       | :heavy_minus_sign: | ID de profil Adapty. Vous pouvez le voir dans le champ **Adapty ID** sur l'Adapty Dashboard -> [Profiles](https://app.adapty.io/profiles/users) -> page du profil concerné. |
+| customer_user_id  | String     | :heavy_plus_sign:  | L'ID de votre utilisateur dans votre système. Vous pouvez le voir dans le champ **Customer user ID** sur l'Adapty Dashboard -> [Profiles](https://app.adapty.io/profiles/users) -> page du profil concerné. Cela ne fonctionne que si vous [identifiez les utilisateurs](identifying-users) dans le code de votre application mobile via le SDK Adapty. |
+| total_revenue_usd | Float      | :heavy_minus_sign: | Valeur décimale représentant le revenu total en USD généré par le profil. |
+| segment_hash      | String     | :heavy_minus_sign: | Paramètre interne.                                           |
+| timestamp         | Integer    | :heavy_minus_sign: | Temps de réponse en millisecondes, nécessaire pour résoudre une condition de concurrence. |
+| custom_attributes | Array      | :heavy_minus_sign: | <p>Un maximum de 30 attributs personnalisés peuvent être définis sur le profil. Si vous fournissez le tableau `custom_attributes`, vous devez inclure au moins une clé d'attribut.</p><p>**Clé :** La clé doit être une chaîne de 30 caractères maximum. Seuls les lettres, chiffres, tirets, points et underscores sont autorisés.</p><p>**Valeur :** La valeur de l'attribut ne doit pas dépasser 30 caractères. Seules les chaînes et les nombres décimaux sont acceptés comme valeurs ; les booléens seront convertis en nombres décimaux. Envoyez une valeur vide ou null pour supprimer l'attribut.</p> |
+| access_levels     | Array      | :heavy_plus_sign:  | Tableau d'objets [Niveau d'accès](server-side-api-objects#access-level). Peut être null si le client n'a aucun niveau d'accès. |
+| subscriptions     | Array      | :heavy_plus_sign:  | Tableau d'objets [Abonnement](server-side-api-objects#subscription). Peut être null si le client n'a aucun abonnement. |
+| non_subscriptions | Array      | :heavy_plus_sign:  | Tableau d'objets [Non-Subscription](server-side-api-objects#non-subscription). Peut être null si le client n'a effectué aucun achat. |

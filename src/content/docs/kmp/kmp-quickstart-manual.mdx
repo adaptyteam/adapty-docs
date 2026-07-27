@@ -2,13 +2,13 @@
 title: "Enable purchases in your custom paywall in Kotlin Multiplatform SDK"
 description: "Integrate Adapty SDK into your custom Kotlin Multiplatform paywalls to enable in-app purchases."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
-keywords: ['paywalls kmp', 'sdk kmp', 'paywall', 'getPaywall']
+keywords: ['paywalls kmp', 'sdk kmp', 'paywall', 'getFlow', 'getPaywall']
 ---
 
-This guide describes how to integrate Adapty into your custom paywalls. Keep full control over paywall implementation, while the Adapty SDK fetches products, handles new purchases, and restores previous ones.
+This guide describes how to integrate Adapty into your custom paywalls. Keep full control over paywall implementation, while the Adapty SDK fetches products, handles new purchases, and restores previous ones. This guide uses Adapty Kotlin Multiplatform SDK v4 (beta) APIs — if you're on v3, see the [migration guide](migration-to-kmp-sdk-v4) for the corresponding method names.
 
 :::important
-**This guide is for developers who are implementing custom paywalls.** If you want the easiest way to enable purchases, use the [Adapty Paywall Builder](kmp-quickstart-paywalls). With Paywall Builder, you create paywalls in a no-code visual editor, Adapty handles all purchase logic automatically, and you can test different designs without republishing your app.
+**This guide is for developers who are implementing custom paywalls.** If you want the easiest way to enable purchases, use the [Adapty Flow Builder](kmp-quickstart-paywalls). With Flow Builder, you create flows in a no-code visual editor, Adapty handles all purchase logic automatically, and you can test different designs without republishing your app.
 :::
 
 ## Before you start
@@ -18,7 +18,7 @@ This guide describes how to integrate Adapty into your custom paywalls. Keep ful
 To enable in-app purchases, you need to understand three key concepts:
 
 - [**Products**](product) – anything users can buy (subscriptions, consumables, lifetime access)
-- [**Paywalls**](paywalls) – configurations that define which products to offer. In Adapty, paywalls are the only way to retrieve products, but this design lets you modify products, prices, and offers without touching your app code.
+- [**Paywalls**](paywalls) – configurations that define which products to offer. In Adapty, paywalls are the only way to retrieve products, but this design lets you modify products, prices, and offers without touching your app code. In SDK v4, the paywall variations for a placement are carried by a **flow** object — you fetch a flow and query its products.
 - [**Placements**](placements) – where and when you show paywalls in your app (like `main`, `onboarding`, `settings`). You set up paywalls for placements in the dashboard, then request them by placement ID in your code. This makes it easy to run A/B tests and show different paywalls to different users.
 
 Make sure you understand these concepts even if you work with your custom paywall. Basically, they are just your way to manage the products you sell in your app.
@@ -35,8 +35,8 @@ However, the Adapty SDK handles anonymous and identified users differently. Read
 
 To retrieve products for your custom paywall, you need to:
 
-1. Get the `paywall` object by passing [placement](placements) ID to the `getPaywall` method.
-2. Get the products array for this paywall using the `getPaywallProducts` method.
+1. Get the `flow` object by passing [placement](placements) ID to the `getFlow` method.
+2. Get the products array for this flow using the `getPaywallProducts` method.
 
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
@@ -44,9 +44,9 @@ import com.adapty.kmp.models.onSuccess
 import com.adapty.kmp.models.onError
 
 fun loadPaywall() {
-    Adapty.getPaywall(placementId = "YOUR_PLACEMENT_ID")
-        .onSuccess { paywall ->
-            Adapty.getPaywallProducts(paywall = paywall)
+    Adapty.getFlow(placementId = "YOUR_PLACEMENT_ID")
+        .onSuccess { flow ->
+            Adapty.getPaywallProducts(flow = flow)
                 .onSuccess { products ->
                     // Use products to build your custom paywall UI
                 }
@@ -115,10 +115,31 @@ fun restorePurchases() {
 }
 ```
 
+## Step 4. Check the subscription status
+
+After a purchase or restore, check the user's [access level](access-level) to decide whether to show the paywall or unlock paid features. The `makePurchase` and `restorePurchases` methods already return the updated profile; whenever you need the current status elsewhere in the app, use the `getProfile` method:
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.onSuccess
+import com.adapty.kmp.models.onError
+
+fun checkPremiumAccess() {
+    Adapty.getProfile()
+        .onSuccess { profile ->
+            val hasPremiumAccess = profile.accessLevels["premium"]?.isActive == true
+            // Grant access to paid features if hasPremiumAccess is true
+        }
+        .onError { error ->
+            // Handle the error
+        }
+}
+```
+
+For more ways to check and monitor the subscription status, including listening to real-time updates, see [Check the subscription status](kmp-check-subscription-status).
+
 ## Next steps
 
 <SupportForum />
 
 Your paywall is ready to be displayed in the app. Test your purchases in the [App Store sandbox](test-purchases-in-sandbox) or in [Google Play Store](testing-on-android) to make sure you can complete a test purchase from the paywall. To see how this works in a production-ready implementation, check out the [AppViewModel.kt](https://github.com/adaptyteam/AdaptySDK-KMP/blob/main/example/composeMultiplatformApp/composeApp/src/commonMain/kotlin/com/adapty/exampleapp/AppViewModel.kt) in our example app, which demonstrates purchase handling with proper error handling and state management.
-
-Next, [check whether users have completed their purchase](kmp-check-subscription-status) to determine whether to display the paywall or grant access to paid features.

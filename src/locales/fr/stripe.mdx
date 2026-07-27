@@ -1,0 +1,371 @@
+---
+title: "Intégration initiale avec Stripe"
+description: "Intégrez Stripe avec Adapty pour un traitement fluide des paiements d'abonnements."
+metadataTitle: "Guide d'intégration Stripe | Documentation Adapty"
+keywords: ['stripe', 'intégration stripe']
+rank: 50
+---
+
+Adapty prend en charge les flows web2app en suivant les paiements et abonnements web effectués via [Stripe](https://stripe.com/).
+
+Cette intégration couvre les achats initiés depuis le web (Stripe Checkout, pages de paiement hébergées ou flows web personnalisés) et les synchronise avec l'accès aux applications mobiles et les analyses.
+
+Elle est utile dans les cas suivants :
+
+- Accorder automatiquement l'accès aux fonctionnalités payantes aux utilisateurs qui ont acheté sur le web mais ont ensuite installé l'application et s'y sont connectés
+- Centraliser toutes les analyses d'abonnements dans un seul Adapty Dashboard (cohortes, prédictions et le reste de notre boîte à outils d'analyses)
+
+Même si les achats sur le web gagnent en popularité pour les applications, l'Apple App Store n'autorise un système différent des achats intégrés pour les biens numériques qu'aux États-Unis. Assurez-vous de ne pas promouvoir vos abonnements web dans votre application pour les autres pays, sous peine de voir votre application rejetée ou bannie.
+
+Les étapes ci-dessous expliquent comment configurer l'intégration Stripe.
+
+:::important
+Cette intégration est axée sur le suivi et la synchronisation des achats Stripe sur le web. Si vous souhaitez envoyer des utilisateurs depuis l'application vers un paiement web, consultez [Web paywalls](web-paywall).
+:::
+
+## 1\. Connecter Stripe à Adapty \{#1-connect-stripe-to-adapty\}
+
+Cette intégration repose principalement sur la récupération par Adapty des données d'abonnement depuis Stripe via le webhook. Vous devez donc connecter votre compte Adapty à votre compte Stripe en fournissant des clés API et en utilisant l'URL webhook d'Adapty dans Stripe. Pour automatiser la configuration de votre webhook, installez l'application Adapty dans Stripe :
+
+:::note
+Les étapes ci-dessous sont identiques pour les modes Production et Test de Stripe, mais vous devrez utiliser des clés API différentes pour chacun.
+:::
+
+0. Déterminez si vous connectez Stripe en mode test ou en mode live. Si vous commencez en mode test, vous devrez répéter les étapes ci-dessous pour le mode live.
+
+1. Rendez-vous sur le [Stripe App Marketplace](https://marketplace.stripe.com/apps/adapty) et installez l'application Adapty. Notez que le mode sandbox ne prend pas en charge l'installation d'applications. Vous ne pouvez le faire qu'en mode production ou test.
+
+<Zoom>
+      <img src="/assets/shared/img/stripe1.png"/>
+</Zoom>
+
+2. Accordez les autorisations requises à l'application. Cela permettra à Adapty d'accéder aux données et à l'historique des abonnements. Cliquez ensuite sur **Continue to app settings** pour continuer.
+
+En bas de la fenêtre contextuelle des autorisations, vous pouvez choisir d'installer l'application en mode live ou test.
+
+<Zoom>
+      <img src="/assets/shared/img/stripe2.png"/>
+</Zoom>
+
+3. Dans la fenêtre contextuelle, générez une nouvelle clé restreinte. Vous devrez vérifier votre identité par e-mail, Touch ID ou clé de sécurité. Une fois la clé générée, vous ne pourrez plus la consulter ; conservez-la donc en sécurité dans un gestionnaire de mots de passe ou un coffre-fort.
+
+<Zoom>
+      <img src="/assets/shared/img/stripe4.png"/>
+</Zoom>
+
+4. Copiez la clé générée depuis la fenêtre contextuelle et rendez-vous dans **App Settings → Stripe** d'Adapty [App Settings → Stripe](https://app.adapty.io/settings/stripe). Collez la clé dans la section **Stripe App Restricted API Key** selon votre mode. Notez que vous devez générer des clés différentes pour les modes test et live.
+
+<Zoom>
+      <img src="/assets/shared/img/Stripe3.png"/>
+</Zoom>
+
+C'est tout ! Créez maintenant vos produits sur Stripe et ajoutez-les à Adapty.
+
+<Details>
+
+<summary>Flux d'installation obsolète</summary>
+
+1. Rendez-vous dans [Developers → API Keys](https://dashboard.stripe.com/apikeys) dans Stripe :
+
+<Zoom>
+  <img src="/assets/shared/img/6549602-CleanShot_2023-12-06_at_17.29.122x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+2. Cliquez sur le bouton **Reveal live (test) key button** à côté du titre **Secret key**, copiez-la et rendez-vous dans [App Settings → Stripe](https://app.adapty.io/settings/stripe) d'Adapty. Collez la clé ici :
+
+<Zoom>
+  <img src="/assets/shared/img/2989508-CleanShot_2023-12-07_at_14.59.122x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Copiez ensuite l'URL du webhook en bas de la même page dans Adapty. Rendez-vous dans [**Developers** → **Webhooks**](https://dashboard.stripe.com/webhooks) dans Stripe et cliquez sur le bouton **Add endpoint** :
+
+<Zoom>
+  <img src="/assets/shared/img/e7149f5-CleanShot_2023-12-07_at_17.31.392x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. Collez l'URL du webhook d'Adapty dans le champ **Endpoint URL**. Choisissez ensuite **Latest API version** dans le champ **Version** du webhook. Puis sélectionnez les événements suivants :
+
+   - charge.refunded
+   - customer.subscription.created
+   - customer.subscription.deleted
+   - customer.subscription.paused
+   - customer.subscription.resumed
+   - customer.subscription.updated
+   - invoice.created
+   - invoice.updated
+   - payment_intent.succeeded
+
+<Zoom>
+  <img src="/assets/shared/img/cbc5404-CleanShot_2023-12-07_at_17.36.232x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+5. Cliquez sur « Add endpoint », puis sur « Reveal » sous « Signing secret ». C'est la clé utilisée pour décoder les données du webhook côté Adapty ; copiez-la après l'avoir affichée :
+
+<Zoom>
+  <img src="/assets/shared/img/0460cbb-CleanShot_2023-12-07_at_17.52.582x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+6. Enfin, collez cette clé dans App Settings → Stripe d'Adapty, sous « Stripe Webhook Secret » :
+
+<Zoom>
+  <img src="/assets/shared/img/055db20-CleanShot_2023-12-07_at_14.56.212x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+</Details>
+
+## 2\. Créer des produits sur Stripe \{#2-create-products-on-stripe\}
+
+:::note
+Si vous configurez cela en mode test, assurez-vous que Stripe est également en mode Test avant de continuer.
+:::
+
+Rendez-vous dans le [catalogue de produits](https://dashboard.stripe.com/products?active=true) de Stripe et créez les produits que vous souhaitez vendre ainsi que leurs plans tarifaires. Notez que Stripe permet d'avoir plusieurs plans tarifaires par produit, ce qui est utile pour adapter votre offre sans avoir à créer des produits supplémentaires.
+
+<Zoom>
+  <img src="/assets/shared/img/b202e2e-CleanShot_2023-12-06_at_15.06.262x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::warning
+Adapty ne prend en charge que les tarifications **Flat rate** (9,99 $/mois) ou **Package pricing** (9,99 $/10 unités), car elles fonctionnent de manière similaire aux stores d'applications. Les options **Tiered pricing**, **Usage-based fee** et **Customer chooses price** ne sont pas prises en charge.
+:::
+
+## 3\. Ajouter des produits Stripe à Adapty \{#3-add-stripe-products-to-adapty\}
+
+:::warning
+
+Les produits sont obligatoires ! Assurez-vous de créer vos produits Stripe dans l'Adapty Dashboard. Adapty ne suit les événements que pour les transactions liées à ces produits, alors ne sautez pas cette étape — sinon, aucun événement de transaction ne sera créé.
+
+:::
+
+Nous traitons Stripe de la même façon que l'App Store et Google Play : c'est simplement un autre store où vous vendez vos produits numériques. La configuration est donc similaire : ajoutez simplement les produits Stripe (à savoir leur `product_id` et `price_id`) dans la section Produits d'Adapty :
+
+<Zoom>
+  <img src="/assets/shared/img/stripe-add-product.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '500px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Les ID de produits dans Stripe ressemblent à `prod_...` et les ID de prix à `price_...`. Ils sont faciles à trouver pour chaque produit dans le [catalogue de produits](https://dashboard.stripe.com/products?active=true) Stripe, en ouvrant n'importe quel produit :
+
+<Zoom>
+  <img src="/assets/shared/img/14a72d7-CleanShot_2023-12-06_at_17.32.512x.webp"
+  style={{
+    border: 'none', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Une fois tous les produits nécessaires ajoutés, l'étape suivante consiste à indiquer à Stripe quel utilisateur effectue l'achat, afin qu'Adapty puisse l'identifier !
+
+## 4\. Enrichir les achats web avec votre ID utilisateur \{#4-enrich-purchases-made-on-the-web-with-your-user-id\}
+
+Adapty s'appuie sur les webhooks de Stripe comme seule source d'information pour fournir et mettre à jour les niveaux d'accès des utilisateurs. Vous devez donc fournir des informations supplémentaires de votre côté lors de l'utilisation de Stripe pour que cette intégration fonctionne correctement.
+
+Pour que les niveaux d'accès soient cohérents sur toutes les plateformes (web ou mobile), vous devez vous assurer qu'il existe un ID utilisateur unique sur lequel Adapty peut s'appuyer depuis les webhooks. Il peut s'agir de l'adresse e-mail, du numéro de téléphone ou de tout autre ID issu du système d'authentification que vous utilisez.
+
+Déterminez l'ID que vous souhaitez utiliser pour identifier vos utilisateurs. Ensuite, accédez à la partie de votre code qui initialise le paiement via Stripe — et ajoutez cet ID utilisateur à l'objet `metadata` de l'objet [Stripe Subscription](https://docs.stripe.com/api/subscriptions/object#subscription_object-metadata) (`sub_...`) ou [Checkout Session](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-metadata) (`ses_...`) en tant que `customer_user_id` comme suit :
+
+```json showLineNumbers title="Stripe Metadata contents"
+{'customer_user_id': "YOUR_USER_ID"}
+```
+
+Cette simple addition est la seule chose que vous devez faire dans votre code. Ensuite, Adapty analysera tous les webhooks reçus de Stripe, en extraira ce `metadata` et associera correctement les abonnements à vos clients.
+
+:::warning
+L'ID utilisateur est obligatoire
+
+Sans lui, nous n'avons aucun moyen d'identifier cet utilisateur et de lui accorder le niveau d'accès sur mobile.
+
+Si vous ne fournissez pas `customer_user_id` dans le `metadata`, vous aurez la possibilité de demander à Adapty de chercher `customer_user_id` ailleurs : soit dans le champ `email` de l'objet Customer de Stripe, soit dans `client_reference_id` de la Session Stripe.
+
+Pour en savoir plus sur la configuration du comportement de création de profil, consultez la section [ci-dessous](stripe#profile-creation-behavior).
+:::
+
+:::note
+Un Customer Stripe est également obligatoire
+
+Si vous utilisez des Checkout Sessions, [assurez-vous de créer un Customer Stripe](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-customer_creation) en définissant `customer_creation` sur `always`.
+:::
+
+## 5\. Donner accès aux utilisateurs sur mobile \{#5-provide-access-to-users-on-the-mobile\}
+
+Pour vous assurer que vos utilisateurs mobiles venant du web peuvent accéder aux fonctionnalités payantes, appelez simplement `Adapty.activate()` ou `Adapty.identify()` avec le même `customer_user_id` que celui fourni à l'étape précédente (voir <InlineTooltip tooltip="Identification des utilisateurs">[iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), et [Unity](unity-identifying-users)</InlineTooltip> pour plus d'informations).
+
+## 6\. Tester votre intégration \{#6-test-your-integration\}
+
+Assurez-vous d'avoir effectué les étapes ci-dessus pour le Sandbox ainsi que pour la Production. Les transactions effectuées depuis le mode Test de Stripe seront considérées comme Sandbox dans Adapty.
+
+:::info
+C'est tout !
+
+Vos utilisateurs peuvent désormais effectuer des achats sur le web et accéder aux fonctionnalités payantes dans votre application. Et vous pouvez également consulter toutes vos analyses d'abonnements en un seul endroit.
+:::
+
+## Comportement de création de profil \{#profile-creation-behavior\}
+
+Adapty doit lier un achat à un [profil client](profiles-crm) pour qu'il soit disponible sur mobile — par défaut, il crée donc des profils à la réception des webhooks de Stripe. Vous pouvez choisir ce qui sera utilisé comme ID utilisateur dans Adapty :
+
+1. **Par défaut et recommandé :** le `customer_user_id` que vous avez fourni dans les métadonnées à [l'étape 4 ci-dessus](stripe#4-enrich-purchases-made-on-the-web-with-your-user-id)
+2. `email` dans l'objet Customer de Stripe (voir [la documentation Stripe](https://docs.stripe.com/api/customers/object#customer_object-email))
+3. `client_reference_id` dans l'objet Session de Stripe (voir [la documentation Stripe](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-client_reference_id))
+
+Vous pouvez configurer l'ID à utiliser dans [App Settings → Stripe](https://app.adapty.io/settings/stripe).
+
+:::warning
+**Remarque :** si une transaction particulière de Stripe ne contient pas l'ID spécifié, nous ne créerons pas de profil du tout. Cette transaction restera anonyme jusqu'à ce qu'un profil la prenne en charge (par exemple, si vous utilisez [S2S validate](api-adapty/operations/validateStripePurchase) par la suite et nous informez manuellement de cette transaction).
+
+Elle apparaîtra dans Analytics mais pas dans les sections qui reposent sur le comptage des profils (LTV, Cohortes, Conversions, etc.) et vous ne pourrez pas la voir dans le fil d'événements.
+:::
+
+Vous avez également une quatrième option : ne pas créer de profils du tout, mais cela n'est pas recommandé en raison des limitations analytiques mentionnées ci-dessus.
+
+## Limitations actuelles \{#current-limitations\}
+
+### Mises à niveau, rétrogradations et proratisation \{#upgrading-downgrading-and-proration\}
+
+Les changements d'abonnement tels que les mises à niveau ou les rétrogradations peuvent entraîner des frais au prorata. Adapty ne tiendra pas compte de ces frais dans les calculs de revenus. Il est préférable de désactiver ces options manuellement via le tableau de bord Stripe. Vous pouvez également les désactiver en définissant la valeur de l'attribut `proration_behaviour` sur `none` via l'API Stripe.
+
+### Annulations \{#cancellations\}
+
+Stripe propose deux options d'annulation d'abonnement :
+
+1. Annulation immédiate : l'abonnement est annulé immédiatement, avec ou sans option de proratisation
+2. Annulation en fin de période : l'abonnement est annulé à la fin de la période de facturation en cours (similaire aux abonnements intégrés sur les stores d'applications).
+
+Adapty prend en charge les deux options, mais le calcul des revenus pour l'annulation immédiate ne tiendra pas compte de la proratisation.
+
+### Problèmes de facturation et délai de grâce \{#billing-issues-and-grace-period\}
+
+Lorsqu'un client rencontre un problème de paiement, Adapty génère un événement de problème de facturation et l'accès est révoqué. Nous ne prenons pas encore en charge le délai de grâce de Stripe — cela fera partie des prochaines versions.
+
+### Remboursements \{#refunds\}
+
+Adapty ne suit que les remboursements complets. Les remboursements au prorata ou partiels ne sont actuellement pas pris en charge.
+
+### Unicité des ID de transaction \{#transaction-id-uniqueness\}
+
+Adapty fait correspondre les profils et les transactions à l'aide de `store_transaction_id` et `store_original_transaction_id`. Ces valeurs **doivent être uniques** entre les environnements Test et Production.
+
+#### Pourquoi c'est important \{#why-this-matters\}
+
+Si le même ID de transaction existe dans les deux environnements, Adapty les traite comme une seule transaction, ce qui entraîne :
+- Des niveaux d'accès et des ID de produits de test hérités par les achats de production
+- Des ID de produits et des environnements incorrects dans les réponses API
+- Des perturbations dans la liaison des profils et les événements d'abonnement
+
+#### Comment garantir l'unicité \{#how-to-ensure-uniqueness\}
+
+Les ID de factures Stripe peuvent se chevaucher entre les environnements Test et Live. Pour éviter les collisions entre environnements, choisissez l'une des approches suivantes.
+
+#### Option 1 : numérotation au niveau du compte avec préfixes d'environnement \{#option-1-account-level-numbering-with-environment-prefixes\}
+
+Configurez des préfixes séparément pour chaque environnement :
+
+1. Dans le tableau de bord Stripe, passez en mode Test.
+2. Rendez-vous dans [Settings → Billing → Invoices](https://dashboard.stripe.com/settings/account/?support_details=true).
+3. Définissez **Invoice numbering** sur **Sequentially across your account**.
+4. Définissez **Invoice prefix** sur TEST- (ou tout autre préfixe spécifique à l'environnement de test).
+5. Passez en mode Live et répétez les étapes 2 à 4, en utilisant LIVE- (ou tout autre préfixe spécifique à l'environnement live) comme préfixe.
+
+#### Option 2 : numérotation au niveau du client \{#option-2-customer-level-numbering\}
+
+Définissez **Invoice numbering** dans [**Stripe settings** -> **Billing** -> **Invoices** tab](https://dashboard.stripe.com/settings/account/?support_details=true) sur **Sequentially for each customer (customer-level)**.
+
+Même avec la configuration ci-dessus, si vous supprimez une facture, Stripe peut réutiliser cet ID pour les nouvelles factures du même client. Il est donc préférable d'éviter de supprimer des factures autant que possible.
+
+### Achats uniques via Stripe Checkout ou Payment Links \{#one-time-purchases-via-stripe-checkout-or-payment-links\}
+
+Adapty ne suit les achats uniques (non-abonnements) effectués via Stripe Checkout (`mode=payment`) ou Payment Links que si Stripe génère une facture pour l'achat. Par défaut, Stripe ne crée pas de facture pour les achats Checkout uniques. Dans ce cas, `payment_intent.succeeded` arrive sans données de facture, ce qui n'est pas suffisant pour qu'Adapty enregistre la transaction.
+
+Pour suivre les achats Checkout uniques dans Adapty, [activez la création de facture](https://docs.stripe.com/payments/checkout/receipts?payment-ui=stripe-hosted#paid-invoices-hosted) lors de la création de la session. Stripe génère alors une facture et émet les événements `invoice.created` et `invoice.updated` associés, qu'Adapty traite pour enregistrer la transaction.
+
+## Exploiter davantage vos données Stripe \{#get-more-from-your-stripe-data\}
+Une fois l'intégration avec Stripe effectuée, Adapty est prêt à fournir des insights immédiatement. Pour tirer le meilleur parti de vos données Stripe, vous pouvez configurer des intégrations Adapty supplémentaires pour transférer les événements Stripe — en centralisant toutes vos analyses d'abonnements dans un seul Adapty Dashboard.
+
+:::tip
+Pour des analyses enrichies, vous pouvez inclure un `variation_id` dans vos métadonnées Stripe afin d'attribuer les achats à des instances de paywall spécifiques. C'est particulièrement utile lors de la mise en place de paywalls web maison, où vous souhaitez suivre quel affichage de paywall a conduit à la conversion.
+
+Notez que `variation_id` n'est lu que depuis les métadonnées des objets Stripe Subscription (`sub_...`) et Checkout Session (`ses_...`) :
+
+```json showLineNumbers title="Stripe Metadata with variation_id"
+{
+  'customer_user_id': "YOUR_USER_ID",
+  'variation_id': "YOUR_VARIATION_ID"
+}
+```
+:::
+
+Intégrations disponibles pour transférer et analyser vos événements Stripe :
+- [Amplitude](amplitude/)
+- [Webhook](webhook)
+- [Firebase](firebase-and-google-analytics)
+- [Mixpanel](mixpanel)
+- [Posthog](posthog)
+
+### Événements Stripe pris en charge \{#supported-stripe-events\}
+Adapty prend en charge les événements Stripe suivants :
+- charge.refunded
+- customer.subscription.created
+- customer.subscription.deleted
+- customer.subscription.paused
+- customer.subscription.resumed
+- customer.subscription.updated
+- invoice.created
+- invoice.updated
+- payment_intent.succeeded

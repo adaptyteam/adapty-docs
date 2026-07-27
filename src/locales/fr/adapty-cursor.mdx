@@ -1,0 +1,265 @@
+---
+title: "Intégrer Adapty dans votre app iOS avec l'aide de l'IA"
+description: "Un guide étape par étape pour intégrer Adapty dans votre app iOS avec Cursor, Context7, ChatGPT, Claude ou d'autres outils IA."
+metadataTitle: "Intégrer Adapty avec l'aide de l'IA pour iOS | Documentation Adapty"
+---
+
+Ce guide vous accompagne pas à pas dans l'intégration d'Adapty dans votre app iOS avec un outil de codage IA — vous lui fournissez la bonne documentation Adapty dans le bon ordre.
+
+<SkillPromo />
+
+## Avant de commencer : configuration du tableau de bord \{#before-you-start-dashboard-setup\}
+
+Adapty nécessite une configuration dans le tableau de bord avant d'écrire le moindre code SDK. Vous pouvez le faire avec un skill LLM interactif, ou manuellement via le Dashboard.
+
+### Approche par skill (recommandée) \{#skill-approach-recommended\}
+
+Le skill Adapty CLI permet à votre LLM de configurer votre app, vos produits, niveaux d'accès, paywalls et placements directement — sans avoir à ouvrir le Dashboard à chaque étape. Vous devez uniquement [connecter votre store](integrate-payments) dans le Dashboard.
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+Une fois le skill ajouté, lancez `/adapty-cli` dans votre agent. Il vous guidera à chaque étape — y compris pour savoir quand ouvrir le Dashboard afin de connecter votre store.
+
+### Approche manuelle \{#dashboard-approach\}
+
+Si vous préférez tout configurer manuellement, voici ce dont vous avez besoin avant d'écrire du code. Votre LLM ne peut pas récupérer les valeurs du tableau de bord à votre place — vous devrez les lui fournir.
+
+1. **Connectez votre app store** : Dans l'Adapty Dashboard, allez dans **App settings → General**. C'est indispensable pour que les achats fonctionnent.
+   [Connecter l'App Store](integrate-payments)
+
+2. **Copiez votre clé SDK publique** : Dans l'Adapty Dashboard, allez dans **App settings → General**, puis trouvez la section **API keys**. Dans le code, c'est la chaîne que vous passez à `Adapty.activate("YOUR_PUBLIC_SDK_KEY")`.
+
+3. **Créez au moins un produit** : Dans l'Adapty Dashboard, rendez-vous sur la page **Products**. Vous ne référencez pas les produits directement dans le code — Adapty les transmet via des flows ou des paywalls.
+   [Ajouter des produits](quickstart-products)
+
+4. **Créez un flow ou un paywall et un placement** : Dans l'Adapty Dashboard, créez un flow (ou un paywall si vous construisez l'interface vous-même), puis assignez-le à un placement sur la page **Placements**. Dans le code, l'ID de placement est la chaîne que vous passez à `Adapty.getFlow("YOUR_PLACEMENT_ID")`.
+   [Créer un flow](quickstart-paywalls)
+
+5. **Configurez les niveaux d'accès** : Dans l'Adapty Dashboard, configurez-les par produit sur la page **Products**. Dans le code, la chaîne vérifiée dans `profile.accessLevels["premium"]`. Le niveau d'accès `premium` par défaut convient à la plupart des apps. Si les utilisateurs payants ont accès à des fonctionnalités différentes selon le produit (par exemple, un plan `basic` vs. un plan `pro`), [créez des niveaux d'accès supplémentaires](assigning-access-level-to-a-product) avant de commencer à coder.
+
+:::tip
+Une fois ces cinq éléments en place, vous êtes prêt à écrire du code. Dites à votre LLM : « Ma clé SDK publique est X, mon ID de placement est Y » pour qu'il puisse générer le bon code d'initialisation et de récupération du paywall.
+:::
+
+### À configurer quand vous êtes prêt \{#set-up-when-ready\}
+
+Ces éléments ne sont pas indispensables pour commencer à coder, mais vous en aurez besoin au fur et à mesure que votre intégration évolue :
+
+- **Tests A/B** : Configurez-les sur la page **Placements**. Aucun changement de code requis.
+  [Tests A/B](ab-tests)
+- **Flows et placements supplémentaires** : Ajoutez d'autres appels `getFlow` avec différents IDs de placement.
+- **Intégrations analytics** : Configurez-les sur la page **Integrations**. La procédure varie selon l'intégration. Voir [intégrations analytics](analytics-integration) et [intégrations attribution](attribution-integration).
+
+## Fournir la documentation Adapty à votre LLM \{#feed-adapty-docs-to-your-llm\}
+
+### Utiliser Context7 (recommandé) \{#use-context7-recommended\}
+
+[Context7](https://context7.com) est un serveur MCP qui donne à votre LLM un accès direct à la documentation Adapty à jour. Votre LLM récupère automatiquement les bons docs en fonction de vos questions — pas besoin de coller des URLs manuellement.
+
+Context7 fonctionne avec **Cursor**, **Claude Code**, **Windsurf** et d'autres outils compatibles MCP. Pour le configurer, lancez :
+
+```
+npx ctx7 setup
+```
+
+Cela détecte votre éditeur et configure le serveur Context7. Pour une configuration manuelle, consultez le [dépôt GitHub de Context7](https://github.com/upstash/context7).
+
+Une fois configuré, référencez la bibliothèque Adapty dans vos prompts :
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the iOS SDK
+```
+
+:::warning
+Même si Context7 évite de coller des liens manuellement, l'ordre d'implémentation est important. Suivez le [parcours d'implémentation](#implementation-walkthrough) ci-dessous étape par étape pour que tout fonctionne correctement.
+:::
+
+### Utiliser les docs en texte brut \{#use-plain-text-docs\}
+
+Vous pouvez accéder à n'importe quelle page de documentation Adapty en texte brut Markdown. Ajoutez `.md` à la fin de son URL, ou cliquez sur **Copy for LLM** sous le titre de l'article. Par exemple : [adapty-cursor.md](https://adapty.io/docs/fr/adapty-cursor.md).
+
+Chaque étape du [parcours d'implémentation](#implementation-walkthrough) ci-dessous inclut un bloc « À envoyer à votre LLM » avec des liens `.md` à coller.
+
+Pour accéder à plus de documentation en une fois, consultez les [fichiers index et sous-ensembles par plateforme](#plain-text-doc-index-files) ci-dessous.
+
+## Parcours d'implémentation \{#implementation-walkthrough\}
+
+La suite de ce guide parcourt l'intégration d'Adapty dans l'ordre d'implémentation. Chaque étape inclut les docs à envoyer à votre LLM, ce que vous devriez voir une fois terminé, et les problèmes courants.
+
+### Planifier votre intégration \{#plan-your-integration\}
+
+Avant de plonger dans le code, demandez à votre LLM d'analyser votre projet et de créer un plan d'implémentation. Si votre outil IA dispose d'un mode de planification (comme le mode plan de Cursor ou de Claude Code), utilisez-le pour que le LLM puisse lire à la fois la structure de votre projet et la documentation Adapty avant d'écrire du code.
+
+Indiquez à votre LLM quelle approche vous utilisez pour les achats — cela détermine les guides à suivre :
+
+- [**Adapty Flow Builder**](adapty-flow-builder) : Vous créez des flows dans le builder no-code d'Adapty, et le SDK les affiche automatiquement.
+- [**Paywalls créés manuellement**](ios-quickstart-manual) : Vous construisez votre propre interface de paywall dans le code, mais utilisez quand même Adapty pour récupérer les produits et gérer les achats.
+- [**Mode Observer**](observer-vs-full-mode) : Vous conservez votre infrastructure d'achats existante et utilisez Adapty uniquement pour les analytics et les intégrations.
+
+Vous ne savez pas lequel choisir ? Lisez le [tableau comparatif dans le quickstart](ios-quickstart-paywalls).
+
+### Installer et configurer le SDK \{#install-and-configure-the-sdk\}
+
+Installez le package SDK Adapty via Swift Package Manager dans Xcode et activez-le avec votre clé SDK publique. C'est la base — rien d'autre ne fonctionnera sans ça.
+
+**Guide :** [Installer et configurer le SDK Adapty](sdk-installation-ios)
+
+À envoyer à votre LLM :
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/fr/sdk-installation-ios.md
+```
+
+:::tip[Checkpoint]
+- **Attendu :** L'app se build et se lance. La console Xcode affiche le log d'activation d'Adapty.
+- **Piège :** « Public API key is missing » → vérifiez que vous avez remplacé le placeholder par votre vraie clé depuis App settings.
+:::
+
+### Afficher les flows ou paywalls et gérer les achats \{#show-flows-or-paywalls-and-handle-purchases\}
+
+Récupérez un flow ou un paywall par son ID de placement, affichez-le et gérez les événements d'achat. Les guides nécessaires dépendent de votre approche pour les achats.
+
+Testez chaque achat en sandbox au fur et à mesure — n'attendez pas la fin. Consultez [Tester les achats en sandbox](test-purchases-in-sandbox) pour les instructions de configuration.
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Flow Builder" default>
+
+**Guides :**
+- [Activer les achats avec Flow Builder (quickstart)](ios-quickstart-paywalls)
+- [Récupérer les flows et leur configuration](get-pb-paywalls)
+- [Afficher les flows](ios-present-paywalls)
+- [Gérer les événements de flow](ios-handling-events)
+- [Répondre aux actions des boutons](handle-paywall-actions)
+
+À envoyer à votre LLM :
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/fr/ios-quickstart-paywalls.md
+- https://adapty.io/docs/fr/get-pb-paywalls.md
+- https://adapty.io/docs/fr/ios-present-paywalls.md
+- https://adapty.io/docs/fr/ios-handling-events.md
+- https://adapty.io/docs/fr/handle-paywall-actions.md
+```
+
+:::tip[Checkpoint]
+- **Attendu :** Le flow s'affiche avec vos produits configurés. Appuyer sur un produit déclenche la boîte de dialogue d'achat sandbox.
+- **Piège :** Flow vide ou erreur `getFlow` → vérifiez que l'ID de placement correspond exactement à celui du tableau de bord et que le placement a une audience assignée.
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Paywalls manuels">
+
+**Guides :**
+- [Activer les achats dans votre paywall personnalisé (quickstart)](ios-quickstart-manual)
+- [Récupérer les paywalls et les produits](fetch-paywalls-and-products)
+- [Afficher un paywall conçu avec Remote Config](present-remote-config-paywalls)
+- [Effectuer des achats](making-purchases)
+- [Restaurer les achats](restore-purchase)
+
+À envoyer à votre LLM :
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/fr/ios-quickstart-manual.md
+- https://adapty.io/docs/fr/fetch-paywalls-and-products.md
+- https://adapty.io/docs/fr/present-remote-config-paywalls.md
+- https://adapty.io/docs/fr/making-purchases.md
+- https://adapty.io/docs/fr/restore-purchase.md
+```
+
+:::tip[Checkpoint]
+- **Attendu :** Votre paywall personnalisé affiche les produits récupérés depuis Adapty. Appuyer sur un produit déclenche la boîte de dialogue d'achat sandbox.
+- **Piège :** Tableau de produits vide → vérifiez que le paywall a des produits assignés dans le tableau de bord et que le placement a une audience.
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Mode Observer">
+
+**Guides :**
+- [Vue d'ensemble du mode Observer](observer-vs-full-mode)
+- [Implémenter le mode Observer](implement-observer-mode)
+- [Signaler les transactions en mode Observer](report-transactions-observer-mode)
+
+À envoyer à votre LLM :
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/fr/observer-vs-full-mode.md
+- https://adapty.io/docs/fr/implement-observer-mode.md
+- https://adapty.io/docs/fr/report-transactions-observer-mode.md
+```
+
+:::tip[Checkpoint]
+- **Attendu :** Après un achat sandbox via votre flux d'achat existant, la transaction apparaît dans le **Event Feed** du tableau de bord Adapty.
+- **Piège :** Aucun événement → vérifiez que vous signalez bien les transactions à Adapty et que les App Store Server Notifications sont configurées.
+:::
+
+</TabItem>
+
+</Tabs>
+
+### Vérifier le statut de l'abonnement \{#check-subscription-status\}
+
+Après un achat, vérifiez le profil utilisateur pour détecter un niveau d'accès actif et restreindre le contenu premium.
+
+**Guide :** [Vérifier le statut de l'abonnement](ios-check-subscription-status)
+
+À envoyer à votre LLM :
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/fr/ios-check-subscription-status.md
+```
+
+:::tip[Checkpoint]
+- **Attendu :** Après un achat sandbox, `profile.accessLevels["premium"]?.isActive` retourne `true`.
+- **Piège :** `accessLevels` vide après un achat → vérifiez que le produit a un niveau d'accès assigné dans le tableau de bord.
+:::
+
+### Identifier les utilisateurs \{#identify-users\}
+
+Liez les comptes utilisateurs de votre app aux profils Adapty pour que les achats persistent sur tous les appareils.
+
+:::important
+Ignorez cette étape si votre app ne gère pas l'authentification.
+:::
+
+**Guide :** [Identifier les utilisateurs](ios-quickstart-identify)
+
+À envoyer à votre LLM :
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/fr/ios-quickstart-identify.md
+```
+
+:::tip[Checkpoint]
+- **Attendu :** Après avoir appelé `Adapty.identify("your-user-id")`, la section **Profiles** du tableau de bord affiche votre ID utilisateur personnalisé.
+- **Piège :** Appelez `identify` après l'activation mais avant de récupérer les paywalls pour éviter une attribution au profil anonyme.
+:::
+
+### Préparer la mise en production \{#prepare-for-release\}
+
+Une fois votre intégration validée en sandbox, parcourez la checklist de mise en production pour vous assurer que tout est prêt.
+
+**Guide :** [Checklist de mise en production](release-checklist)
+
+À envoyer à votre LLM :
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/fr/release-checklist.md
+```
+
+:::tip[Checkpoint]
+- **Attendu :** Tous les éléments de la checklist sont confirmés : connexion au store, notifications serveur, flux d'achat, vérifications des niveaux d'accès et exigences de confidentialité.
+- **Piège :** App Store Server Notifications manquantes → configurez-les dans **App settings → iOS SDK** sinon les événements n'apparaîtront pas dans le tableau de bord.
+:::
+
+## Fichiers index de documentation en texte brut \{#plain-text-doc-index-files\}
+
+Si vous avez besoin de donner à votre LLM un contexte plus large au-delà des pages individuelles, nous hébergeons des fichiers index qui listent ou regroupent toute la documentation Adapty :
+
+- [`llms.txt`](https://adapty.io/docs/fr/llms.txt) : Liste toutes les pages avec des liens `.md`. Un [standard émergent](https://llmstxt.org/) pour rendre les sites web accessibles aux LLMs. Notez que pour certains agents IA (par ex. ChatGPT), vous devrez télécharger `llms.txt` et le joindre au chat en tant que fichier.
+- [`llms-full.txt`](https://adapty.io/docs/fr/llms-full.txt) : L'intégralité de la documentation Adapty regroupée en un seul fichier. Très volumineux — à utiliser uniquement quand vous avez besoin de la vue d'ensemble complète.
+- Sous-ensembles spécifiques iOS [`ios-llms.txt`](https://adapty.io/docs/fr/ios-llms.txt) et [`ios-llms-full.txt`](https://adapty.io/docs/fr/ios-llms-full.txt) : Des sous-ensembles par plateforme qui économisent des tokens par rapport au site complet.

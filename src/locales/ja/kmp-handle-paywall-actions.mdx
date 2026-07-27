@@ -1,26 +1,214 @@
 ---
-title: "Kotlin Multiplatform SDKでボタンアクションに応答する"
-description: "Adaptyを使用してKotlin Multiplatformでペイウォールのボタンアクションを処理し、アプリの収益化を向上させます。"
-metadataTitle: "ペイウォールのボタンアクションの処理 | Adapty ドキュメント"
+title: "フローアクションへの応答 - Kotlin Multiplatform"
+description: "Kotlin Multiplatformアプリでフローやペイウォールのボタンアクションを処理します。"
+metadataTitle: "フローアクションへの応答 - Kotlin Multiplatform | Adapty ドキュメント"
 displayed_sidebar: sdkkmp
 toc_max_heading_level: 4
 keywords: ['paywall button', 'button', 'paywall button actions', 'handle actions']
 ---
 
-:::warning
-**購入と復元のみが自動で処理されます。** ペイウォールを閉じたりリンクを開いたりするような、それ以外のボタンアクションはすべて、アプリのコードで適切なレスポンスを実装する必要があります。
-:::
+<SDKv4>
 
-Adaptyのペイウォールビルダーを使ってペイウォールを作成する場合、ボタンを適切に設定することが重要です：
+Adapty Flow Builder またはペイウォールビルダーを使用してフローやペイウォールを構築する場合、ボタンを適切に設定することが重要です。
 
-1. [ペイウォールビルダーにボタンを追加](paywall-buttons)し、既存のアクションを割り当てるか、カスタムアクションIDを作成します。
+1. [ビルダーでボタンを追加](paywall-buttons)し、既存のアクションを割り当てるか、カスタムアクションIDを作成します。
 2. 割り当てた各アクションを処理するコードをアプリに記述します。
 
-このガイドでは、コード内でカスタムアクションと既存アクションを処理する方法を説明します。
+このガイドでは、カスタムアクションおよび既存のアクションをコードで処理する方法を説明します。
 
-## AdaptyUIPaywallsEventsObserverを設定する \{#set-up-the-adaptyuipaywallsevents-observer\}
+:::warning
+**購入、リストア、フロー/ペイウォールのクローズ、リンクの開封は自動的に処理されます。** カスタムアクションなど、それ以外のボタンアクションはすべて、アプリコードで適切なレスポンス実装が必要です。
+:::
 
-ペイウォールのアクションを処理するには、`AdaptyUIPaywallsEventsObserver`インターフェースを実装し、`AdaptyUI.setPaywallsEventsObserver()`で設定する必要があります。これはアプリのライフサイクルの早い段階、通常はメインアクティビティやアプリの初期化時に行います。
+## AdaptyUIFlowsEventsObserverを設定する \{#set-up-the-adaptyuiflowseventsob-server\}
+
+フローのアクションを処理するには、`AdaptyUIFlowsEventsObserver`インターフェースを実装し、`AdaptyUI.setFlowsEventsObserver()`で設定する必要があります。これはアプリのライフサイクルの早い段階、通常はメインアクティビティまたはアプリの初期化時に行ってください。
+
+```kotlin
+
+// In your app initialization
+AdaptyUI.setFlowsEventsObserver(MyAdaptyUIFlowsEventsObserver())
+```
+
+すべてのボタンアクションは、`AdaptyUIAction` シールドクラス（`CloseAction`、`AndroidSystemBackAction`、`OpenUrlAction`、`CustomAction`）として `flowViewDidPerformAction(view, action)` コールバックに渡されます。
+
+:::warning
+`flowViewDidPerformAction` をオーバーライドすると、特定のアクションだけでなく**すべて**のアクションに対するデフォルト処理が置き換えられます。以下の例に示すように、動作を変更する意図がない限り、`CloseAction`（フローを閉じる）および `OpenUrlAction`（URLを開く）のデフォルト処理はそのまま残してください。
+:::
+
+## フローとペイウォールを閉じる \{#close-flows-and-paywalls\}
+
+フローまたはペイウォールを閉じるボタンを追加するには：
+
+1. ビルダーでボタンを追加し、**Close** アクションを割り当てます。
+2. アプリのコードで、フローを閉じる `close` アクションのハンドラーを実装します。
+
+:::info
+Kotlin Multiplatform SDK では、`CloseAction` はデフォルトでフローまたはペイウォールを閉じる動作をトリガーします。ただし、必要に応じてコード内でこの動作をオーバーライドできます。たとえば、あるフローを閉じると別のフローが開くようにすることも可能です。
+:::
+
+```kotlin
+
+class MyAdaptyUIFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CloseAction ->
+                mainUiScope.launch { view.dismiss() } // default behavior
+            is AdaptyUIAction.OpenUrlAction ->
+                AdaptyUI.openWebUrl(action.url, action.openIn) // default behavior
+            else -> Unit
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setFlowsEventsObserver(MyAdaptyUIFlowsEventsObserver())
+```
+
+[`createNativeFlowView`](kmp-present-paywalls#without-compose-multiplatform)を使用している場合、`view.dismiss()`を呼び出しても効果はありません。ビューはKMPスタックを通じて表示されるのではなく、レイアウトに埋め込まれているためです。代わりに、レイアウトからビューを削除し、`dispose()`を呼び出してください。
+
+## Android のシステムバックボタンを処理する \{#handle-the-android-system-back-button\}
+
+Android のシステムバックボタンを押す（またはバックジェスチャーを使用する）と、`AdaptyUIAction.AndroidSystemBackAction` が発行されます。デフォルトでは、このアクションは無視されます。フローは開いたままになり、ユーザーは **Close** ボタンやビルダーの `on_device_back` アクションなど、あなたが定義したパスを通じてフローを終了します。システムバックボタンでフローを閉じたい場合は、このアクションを自分で処理してください：
+
+```kotlin
+class MyAdaptyUIFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CloseAction ->
+                mainUiScope.launch { view.dismiss() } // default behavior
+            is AdaptyUIAction.AndroidSystemBackAction ->
+                mainUiScope.launch { view.dismiss() } // not handled by default
+            is AdaptyUIAction.OpenUrlAction ->
+                AdaptyUI.openWebUrl(action.url, action.openIn) // default behavior
+            else -> Unit
+        }
+    }
+}
+```
+
+## フローとペイウォールからURLを開く \{#open-urls-from-flows-and-paywalls\}
+
+:::tip
+リンクのグループ（利用規約と購入履歴の復元など）を追加したい場合は、ビルダーで **Link** 要素を追加し、**Open URL** アクションを持つボタンと同じ方法で処理してください。
+:::
+
+フローやペイウォールからリンクを開くボタン（**Terms of use** や **Privacy policy** など）を追加するには、ビルダーでボタンを追加し、**Open URL** アクションを割り当てて、開きたいURLを入力してください。
+
+デフォルトでは、SDKは受け取ったURLを`action.openIn`に応じて外部ブラウザまたはアプリ内ブラウザでネイティブに開くため、コードは不要です。確認ダイアログを先に表示するなど、カスタムロジックが必要な場合のみハンドラーをオーバーライドしてください。
+
+```kotlin
+
+class MyAdaptyUIFlowsEventsObserver(
+    private val uriHandler: UriHandler
+) : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.OpenUrlAction -> {
+                // Show confirmation dialog before opening URL
+                mainUiScope.launch {
+                    val selectedAction = view.showDialog(
+                        title = "Open URL?",
+                        content = action.url,
+                        primaryActionTitle = "Cancel",
+                        secondaryActionTitle = "Open"
+                    ).getOrNull()
+
+                    when (selectedAction) {
+                        AdaptyUIDialogActionType.PRIMARY -> {
+                            // User cancelled
+                        }
+                        AdaptyUIDialogActionType.SECONDARY -> {
+                            // User confirmed - open URL
+                            uriHandler.openUri(action.url)
+                        }
+                        else -> Unit
+                    }
+                }
+            }
+            else -> Unit
+        }
+    }
+}
+
+// Set up the observer with UriHandler
+AdaptyUI.setFlowsEventsObserver(MyAdaptyUIFlowsEventsObserver(uriHandler))
+```
+
+## アプリにログインする \{#log-into-the-app\}
+
+アプリへのログインボタンを追加するには：
+
+1. ビルダーでボタンを追加し、ID「login」の **Custom** アクションを割り当てます。
+2. アプリのコードで、ユーザーを識別するカスタムアクションのハンドラーを実装します。
+
+```kotlin
+
+class MyAdaptyUIFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                if (action.action == "login") {
+                    // Handle login action - navigate to login screen
+                    // This depends on your app's navigation system
+                    // For example, in Compose Multiplatform:
+                    // navController.navigate("login")
+                }
+            }
+            else -> Unit
+        }
+    }
+}
+```
+
+## カスタムアクションの処理 \{#handle-custom-actions\}
+
+その他のアクションを処理するボタンを追加するには:
+
+1. ビルダーでボタンを追加し、**Custom** アクションを割り当て、IDを設定します。
+2. アプリのコードに、作成したアクション ID のハンドラーを実装します。
+
+たとえば、別のサブスクリプションオファーや買い切り購入がある場合、別のフローやペイウォールを表示するボタンを追加できます。
+
+```kotlin
+
+class MyAdaptyUIFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                when (action.action) {
+                    "openNewFlow" -> {
+                        // Display another flow or paywall
+                    }
+                }
+            }
+            else -> Unit
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setFlowsEventsObserver(MyAdaptyUIFlowsEventsObserver())
+```
+
+</SDKv4>
+
+<SDKv3>
+
+:::warning
+**購入と復元のみ自動で処理されます。** ペイウォールを閉じる、リンクを開くなど、その他のボタンアクションはすべてアプリコード内で適切なレスポンスを実装する必要があります。
+:::
+
+Adaptyのペイウォールビルダーを使ってペイウォールを構築する場合、ボタンを正しく設定することが重要です：
+
+1. [ペイウォールビルダーでボタンを追加](paywall-buttons)し、既存のアクションを割り当てるか、カスタムアクションIDを作成します。
+2. 割り当てた各アクションを処理するコードをアプリに記述します。
+
+このガイドでは、カスタムアクションおよびあらかじめ用意されたアクションをコード内で処理する方法を説明します。
+
+## AdaptyUIPaywallsEventsObserverの設定 \{#set-up-the-adaptyuipaywallseventsObserver\}
+
+ペイウォールのアクションを処理するには、`AdaptyUIPaywallsEventsObserver` インターフェースを実装し、`AdaptyUI.setPaywallsEventsObserver()` で設定する必要があります。これはアプリのライフサイクルの早い段階、通常はメインアクティビティまたはアプリの初期化時に行ってください。
 
 ```kotlin
 
@@ -30,13 +218,13 @@ AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
 
 ## ペイウォールを閉じる \{#close-paywalls\}
 
-ペイウォールを閉じるボタンを追加するには：
+ペイウォールを閉じるボタンを追加するには:
 
-1. ペイウォールビルダーでボタンを追加し、**Close**アクションを割り当てます。
-2. アプリのコードで、ペイウォールを閉じる`close`アクションのハンドラーを実装します。
+1. ペイウォールビルダーでボタンを追加し、**Close** アクションを割り当てます。
+2. アプリのコードで、ペイウォールを閉じる `close` アクションのハンドラーを実装します。
 
 :::info
-Kotlin Multiplatform SDKでは、`CloseAction`と`AndroidSystemBackAction`がデフォルトでペイウォールを閉じます。ただし、必要に応じてコードでこの動作をオーバーライドできます。たとえば、あるペイウォールを閉じたときに別のペイウォールを開くといった使い方が可能です。
+Kotlin Multiplatform SDK では、`CloseAction` と `AndroidSystemBackAction` はデフォルトでペイウォールを閉じる動作をします。ただし、必要に応じてコード内でこの動作をオーバーライドできます。たとえば、あるペイウォールを閉じることで別のペイウォールを開くといったことが可能です。
 :::
 
 ```kotlin
@@ -53,21 +241,21 @@ class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
 AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
 ```
 
-[`createNativePaywallView`](kmp-present-paywalls#without-compose-multiplatform)を使用している場合、`view.dismiss()`を呼び出しても効果はありません。このビューはKMPスタックを通じて表示されるのではなく、レイアウトに埋め込まれているためです。代わりに、レイアウトからビューを削除し、`dispose()`を呼び出してください。
+[`createNativePaywallView`](kmp-present-paywalls#without-compose-multiplatform) を使用している場合、`view.dismiss()` を呼び出しても効果はありません。このビューはレイアウトに埋め込まれており、KMP スタック経由で表示されているわけではないためです。代わりに、レイアウトからビューを削除し、`dispose()` を呼び出してください。
 
 ## ペイウォールからURLを開く \{#open-urls-from-paywalls\}
 
 :::tip
-リンクのグループ（利用規約や購入の復元など）を追加したい場合は、ペイウォールビルダーに**Link**要素を追加し、**Open URL**アクションが設定されたボタンと同じ方法で処理してください。
+リンクのグループ（利用規約や購入の復元など）を追加したい場合は、ペイウォールビルダーで **Link** 要素を追加し、**Open URL** アクションを持つボタンと同じ方法で処理してください。
 :::
 
-ペイウォールからリンクを開くボタン（例：**利用規約**や**プライバシーポリシー**）を追加するには：
+ペイウォールからリンクを開くボタン（**Terms of use** や **Privacy policy** など）を追加するには：
 
-1. ペイウォールビルダーでボタンを追加し、**Open URL**アクションを割り当てて、開きたいURLを入力します。
-2. アプリのコードで、受け取ったURLをブラウザで開く`openUrl`アクションのハンドラーを実装します。
+1. ペイウォールビルダーでボタンを追加し、**Open URL** アクションを割り当てて、開きたいURLを入力します。
+2. アプリのコードで、受け取ったURLをブラウザで開く `openUrl` アクションのハンドラーを実装します。
 
 :::info
-Kotlin Multiplatform SDKでは、`OpenUrlAction`が開くべきURLを提供します。確認ダイアログの表示やアプリ独自のURL処理方法を使用するなど、URL開封処理のカスタムロジックを実装できます。
+Kotlin Multiplatform SDK では、`OpenUrlAction` が開くべき URL を提供します。確認ダイアログを表示したり、アプリ独自の URL 処理方法を使用したりするなど、URL の開き方についてカスタムロジックを実装できます。
 :::
 
 ```kotlin
@@ -107,11 +295,11 @@ class MyAdaptyUIPaywallsEventsObserver(
 AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver(uriHandler))
 ```
 
-## アプリへのログイン \{#log-into-the-app\}
+## アプリにログインする \{#log-into-the-app\}
 
-ユーザーをアプリにログインさせるボタンを追加するには：
+アプリにユーザーをログインさせるボタンを追加するには：
 
-1. ペイウォールビルダーでボタンを追加し、ID「login」の**Custom**アクションを割り当てます。
+1. ペイウォールビルダーでボタンを追加し、ID「login」の**カスタム**アクションを割り当てます。
 2. アプリのコードで、ユーザーを識別するカスタムアクションのハンドラーを実装します。
 
 ```kotlin
@@ -132,14 +320,14 @@ class MyAdaptyUIObserver : AdaptyUIObserver {
 }
 ```
 
-## カスタムアクションを処理する \{#handle-custom-actions\}
+## カスタムアクションの処理 \{#handle-custom-actions\}
 
-その他のアクションを処理するボタンを追加するには：
+ボタンを追加して任意のアクションを処理するには:
 
-1. ペイウォールビルダーでボタンを追加し、**Custom**アクションを割り当ててIDを設定します。
-2. アプリのコードで、作成したアクションIDのハンドラーを実装します。
+1. ペイウォールビルダーでボタンを追加し、**Custom** アクションを割り当て、ID を設定します。
+2. アプリのコードで、作成したアクション ID に対するハンドラーを実装します。
 
-たとえば、別のサブスクリプションオファーや買い切り購入がある場合、別のペイウォールを表示するボタンを追加できます：
+例えば、別のサブスクリプションオファーや買い切り購入のセットがある場合、別のペイウォールを表示するボタンを追加できます:
 
 ```kotlin
 
@@ -163,3 +351,4 @@ class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
 // Set up the observer
 AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
 ```
+</SDKv3>

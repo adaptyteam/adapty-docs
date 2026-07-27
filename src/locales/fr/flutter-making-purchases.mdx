@@ -1,0 +1,149 @@
+---
+title: "Effectuer des achats dans une application mobile avec le SDK Flutter"
+description: "Guide pour gérer les achats intégrés et les abonnements avec Adapty."
+metadataTitle: "Gérer les achats intégrés avec Adapty | Documentation Adapty"
+keywords: ['makePurchase', 'offer code']
+rank: 85
+displayed_sidebar: sdkflutter
+---
+
+import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/fr/reusable/OfferCodesInfo.mdx';
+
+Afficher des paywalls dans votre application mobile est une étape essentielle pour offrir aux utilisateurs l'accès à des contenus ou services premium. Cela dit, afficher ces paywalls suffit à gérer les achats uniquement si vous utilisez le [Paywall Builder](adapty-paywall-builder) pour les personnaliser.
+
+Si vous n'utilisez pas le Paywall Builder, vous devez utiliser une méthode distincte appelée `.makePurchase()` pour finaliser un achat et débloquer le contenu souhaité. Cette méthode sert de point d'entrée pour que les utilisateurs interagissent avec les paywalls et réalisent leurs transactions.
+
+Si votre paywall comporte une offre promotionnelle active pour le produit qu'un utilisateur souhaite acheter, Adapty l'appliquera automatiquement au moment de l'achat.
+
+:::warning
+Gardez à l'esprit que l'offre de lancement ne sera appliquée automatiquement que si vous utilisez des paywalls configurés avec le Paywall Builder.
+
+Dans les autres cas, vous devrez [vérifier l'éligibilité de l'utilisateur à une offre de lancement sur iOS](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios). Ignorer cette étape peut entraîner le rejet de votre application lors de sa publication. De plus, cela pourrait conduire à facturer le plein tarif à des utilisateurs pourtant éligibles à une offre de lancement.
+:::
+
+Assurez-vous d'avoir [effectué la configuration initiale](quickstart) sans sauter la moindre étape. Sans cela, nous ne pouvons pas valider les achats.
+
+## Effectuer un achat \{#make-purchase\}
+
+:::note
+**Vous utilisez le [Paywall Builder](adapty-paywall-builder) ?** Les achats sont traités automatiquement — vous pouvez ignorer cette étape.
+
+**Vous cherchez un guide pas à pas ?** Consultez le [guide de démarrage rapide](flutter-implement-paywalls-manually) pour des instructions d'implémentation complètes avec tout le contexte nécessaire.
+:::
+
+```dart showLineNumbers
+try {
+  final purchaseResult = await Adapty().makePurchase(product: product);
+    switch (purchaseResult) {
+      case AdaptyPurchaseResultSuccess(profile: final profile):
+        if (profile.accessLevels['premium']?.isActive ?? false) {
+          // Grant access to the paid features
+        }
+        break;
+      case AdaptyPurchaseResultPending():
+        break;
+      case AdaptyPurchaseResultUserCancelled():
+        break;
+      default:
+        break;
+    }
+} on AdaptyError catch (adaptyError) {
+    // Handle the error
+} catch (e) {
+    // Handle the error
+}
+```
+
+Paramètres de la requête :
+
+| Paramètre   | Présence | Description                                                                                         |
+| :---------- | :------- | :-------------------------------------------------------------------------------------------------- |
+| **Product** | requis | Un objet [`AdaptyPaywallProduct`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywallProduct-class.html) récupéré depuis le paywall. |
+
+Paramètres de la réponse :
+
+| Paramètre | Description                                                                                                                                                                                                                                                                                                                                                            |
+|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>Si la requête a abouti, la réponse contient cet objet. Un objet [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html) fournit des informations complètes sur les niveaux d'accès, les abonnements et les achats uniques d'un utilisateur dans l'application.</p><p>Vérifiez le statut du niveau d'accès pour déterminer si l'utilisateur dispose de l'accès requis à l'application.</p> |
+
+:::warning
+**Remarque :** si vous utilisez encore la version StoreKit d'Apple inférieure à v2.0 et une version du SDK Adapty inférieure à v2.9.0, vous devez fournir le [secret partagé de l'App Store Apple](app-store-connection-configuration#step-5-enter-app-store-shared-secret) à la place. Cette méthode est désormais dépréciée par Apple.
+:::
+
+## Changer d'abonnement lors d'un achat \{#change-subscription-when-making-a-purchase\}
+
+Lorsqu'un utilisateur opte pour un nouvel abonnement plutôt que de renouveler l'abonnement en cours, le comportement dépend du store :
+
+- Pour l'App Store, l'abonnement est automatiquement mis à jour au sein du groupe d'abonnements. Si un utilisateur souscrit un abonnement d'un groupe alors qu'il possède déjà un abonnement d'un autre groupe, les deux abonnements seront actifs simultanément.
+- Pour Google Play, l'abonnement n'est pas automatiquement mis à jour. Vous devrez gérer le changement dans le code de votre application mobile comme décrit ci-dessous.
+
+Pour remplacer un abonnement par un autre sur Android, appelez la méthode `.makePurchase()` avec le paramètre supplémentaire :
+
+```dart showLineNumbers
+try {
+  final subscriptionUpdateParams = AdaptyAndroidSubscriptionUpdateParameters(
+    'OLD_PRODUCT_ID',
+    AdaptyAndroidSubscriptionUpdateReplacementMode.immediateWithTimeProration,
+  );
+
+  final result = await Adapty().makePurchase(
+    product: product,
+    parameters: AdaptyPurchaseParameters(
+      subscriptionUpdateParams: subscriptionUpdateParams,
+    ),
+  );
+  
+  // successful cross-grade
+} on AdaptyError catch (adaptyError) {
+  // Handle the error
+} catch (e) {
+  // Handle the error
+}
+```
+Paramètre de requête supplémentaire :
+
+| Paramètre                    | Présence | Description                                                                                             |
+| :--------------------------- | :------- |:--------------------------------------------------------------------------------------------------------|
+| **parameters** | requis | un objet `AdaptyPurchaseParameters` dont le champ `subscriptionUpdateParams` est défini sur un objet [`AdaptyAndroidSubscriptionUpdateParameters`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyAndroidSubscriptionUpdateParameters-class.html). |
+
+Vous pouvez en savoir plus sur les abonnements et les modes de remplacement dans la documentation Google Developer :
+
+- [À propos des modes de remplacement](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Recommandations de Google pour les modes de remplacement](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Mode de remplacement [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Remarque : cette méthode est disponible uniquement pour les montées de version d'abonnement. Les passages à une version inférieure ne sont pas pris en charge.
+- Mode de remplacement [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Remarque : le changement d'abonnement effectif n'aura lieu qu'à la fin de la période de facturation en cours.
+
+## Utiliser des codes promo sur iOS \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+Pour afficher la feuille de saisie de code de rachat dans votre application :
+
+```dart showLineNumbers
+try {
+  await Adapty().presentCodeRedemptionSheet();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+:::danger
+D'après nos observations, la feuille de rachat de codes promo peut ne pas fonctionner de manière fiable dans certaines applications. Nous recommandons de rediriger l'utilisateur directement vers l'App Store.
+
+Pour ce faire, vous devez ouvrir une URL au format suivant :
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
+
+### Gérer les forfaits prépayés (Android) \{#manage-prepaid-plans-android\}
+
+Si les utilisateurs de votre application peuvent acheter des [forfaits prépayés](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (par exemple, souscrire un abonnement non renouvelable pour plusieurs mois), vous pouvez activer les [transactions en attente](https://developer.android.com/google/play/billing/subscriptions#pending) pour ces forfaits.
+
+```dart showLineNumbers title="main.dart"
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+    ..withGoogleEnablePendingPrepaidPlans(true),
+);
+```

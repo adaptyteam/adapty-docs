@@ -1,0 +1,396 @@
+---
+title: "Gérer les événements d'onboarding dans le SDK Unity"
+description: "Gérez les événements liés à l'onboarding dans Unity avec Adapty."
+metadataTitle: "Gestion des événements d'onboarding dans Unity | Documentation Adapty"
+toc_max_heading_level: 4
+keywords: ['onCloseAction', 'AdaptyOnboardingsCloseAction', 'onStateUpdatedAction', 'onPaywallAction', 'didFinishLoading', 'onAnalyticsEvent']
+---
+
+Avant de commencer, assurez-vous que :
+
+1. Vous avez installé le [SDK Adapty Unity](sdk-installation-unity) 3.14.0 ou une version ultérieure.
+2. Vous avez [créé un onboarding](create-onboarding).
+3. Vous avez ajouté l'onboarding à un [placement](placements).
+
+Les onboardings configurés avec le builder génèrent des événements auxquels votre application peut réagir. Découvrez comment répondre à ces événements ci-dessous.
+
+Pour contrôler ou surveiller les processus qui se déroulent sur l'écran d'onboarding dans votre application Unity, implémentez l'interface `AdaptyOnboardingsEventsListener`.
+
+## Actions personnalisées \{#custom-actions\}
+
+Dans le builder, vous pouvez ajouter une action **custom** à un bouton et lui attribuer un ID.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Vous pouvez ensuite utiliser cet ID dans votre code et le gérer comme une action personnalisée. Par exemple, si un utilisateur appuie sur un bouton personnalisé tel que **Login** ou **Allow notifications**, la méthode `OnboardingViewOnCustomAction` sera déclenchée avec le paramètre `actionId` correspondant à l'**Action ID** défini dans le builder. Vous pouvez créer vos propres IDs, comme « allowNotifications ».
+
+Pour gérer les événements d'onboarding, implémentez l'interface `AdaptyOnboardingsEventsListener` :
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetOnboardingsEventsListener(this);
+    }
+
+    public void OnboardingViewOnCustomAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string actionId
+    )
+    {
+        if (actionId == "allowNotifications") {
+            // request notification permissions
+        }
+    }
+    
+    public void OnboardingViewDidFailWithError(
+        AdaptyUIOnboardingView view,
+        AdaptyError error
+    )
+    {
+        // handle errors
+    }
+
+    // Implement other required interface methods (see examples below)
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquez pour développer)</summary>
+
+```json
+{
+  "actionId": "allowNotifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+## Fermeture de l'onboarding \{#closing-onboarding\}
+
+L'onboarding est considéré comme fermé lorsqu'un utilisateur appuie sur un bouton auquel l'action **Close** est assignée.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+Notez que vous devez gérer ce qui se passe lorsqu'un utilisateur ferme l'onboarding. Par exemple, vous devez arrêter l'affichage de l'onboarding lui-même.
+:::
+
+Implémentez la méthode `OnboardingViewOnCloseAction` dans votre classe :
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnCloseAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string actionId
+    )
+    {
+        view.Dismiss((error) => {
+            if (error != null) {
+                // handle the error
+            }
+        });
+    }
+    
+    // ... other interface methods
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquez pour développer)</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+
+</Details>
+
+## Ouverture d'un paywall \{#opening-a-paywall\}
+
+:::tip
+Gérez cet événement pour ouvrir un paywall si vous souhaitez l'afficher à l'intérieur de l'onboarding. Si vous préférez ouvrir un paywall après la fermeture de l'onboarding, il existe une méthode plus directe : gérez [`OnboardingViewOnCloseAction`](#closing-onboarding) et ouvrez un paywall sans vous appuyer sur les données de l'événement.
+:::
+
+La façon la plus fluide de travailler avec les paywalls dans les onboardings est de faire correspondre l'ID d'action à un ID de placement de paywall. Ainsi, après l'événement `OnboardingViewOnPaywallAction`, vous pouvez utiliser l'ID de placement pour récupérer et ouvrir directement le paywall.
+
+Notez que, sur iOS, une seule vue (paywall ou onboarding) peut être affichée à l'écran à la fois. Si vous présentez un paywall par-dessus un onboarding, vous ne pouvez pas contrôler l'onboarding en arrière-plan par programmation. Tenter de fermer l'onboarding fermera le paywall à la place, laissant l'onboarding visible. Pour éviter cela, fermez toujours la vue d'onboarding avant de présenter le paywall.
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnPaywallAction(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        string actionId
+    )
+    {
+        // Dismiss onboarding before presenting paywall
+        view.Dismiss((dismissError) => {
+            if (dismissError != null) {
+                // handle the error
+                return;
+            }
+
+            Adapty.GetPaywall(actionId, (paywall, error) => {
+                if (error != null) {
+                    // handle the error
+                    return;
+                }
+
+                AdaptyUI.CreatePaywallView(paywall, (paywallView, createError) => {
+                    if (createError != null) {
+                        // handle the error
+                        return;
+                    }
+
+                    paywallView.Present((presentError) => {
+                        if (presentError != null) {
+                            // handle the error
+                        }
+                    });
+                });
+            });
+        });
+    }
+    
+    // ... other interface methods
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquez pour développer)</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## Fin du chargement de l'onboarding \{#finishing-loading-onboarding\}
+
+Lorsqu'un onboarding finit de se charger, implémentez la méthode `OnboardingViewDidFinishLoading` :
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewDidFinishLoading(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta
+    )
+    {
+        // handle loading completion
+    }
+    
+    // ... other interface methods
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquez pour développer)</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## Suivi de la navigation \{#tracking-navigation\}
+
+La méthode `OnboardingViewOnAnalyticsEvent` est appelée lors de divers événements analytiques survenant au cours du flow d'onboarding.
+
+L'objet `analyticsEvent` peut être de l'un des types suivants :
+|Type | Description |
+|------------|-------------|
+| `AdaptyOnboardingsAnalyticsEventOnboardingStarted` | Lorsque l'onboarding a été chargé |
+| `AdaptyOnboardingsAnalyticsEventScreenPresented` | Lorsqu'un écran est affiché |
+| `AdaptyOnboardingsAnalyticsEventScreenCompleted` | Lorsqu'un écran est complété. Inclut un `ElementId` optionnel (identifiant de l'élément complété) et une `Reply` optionnelle (réponse de l'utilisateur). Déclenché lorsque les utilisateurs effectuent une action pour quitter l'écran. |
+| `AdaptyOnboardingsAnalyticsEventSecondScreenPresented` | Lorsque le deuxième écran est affiché |
+| `AdaptyOnboardingsAnalyticsEventUserEmailCollected` | Déclenché lorsque l'adresse e-mail de l'utilisateur est collectée via le champ de saisie |
+| `AdaptyOnboardingsAnalyticsEventOnboardingCompleted` | Déclenché lorsqu'un utilisateur atteint un écran avec l'ID `final`. Si vous avez besoin de cet événement, [assignez l'ID `final` au dernier écran](design-onboarding). |
+| `AdaptyOnboardingsAnalyticsEventUnknown` | Pour tout type d'événement non reconnu. Inclut `Name` (le nom de l'événement inconnu) et `meta` (métadonnées supplémentaires) |
+
+Chaque événement inclut des informations `meta` contenant :
+| Champ | Description |
+|------------|-------------|
+| `OnboardingId` | Identifiant unique du flow d'onboarding |
+| `ScreenClientId` | Identifiant de l'écran actuel |
+| `ScreenIndex` | Position de l'écran actuel dans le flow |
+| `ScreensTotal` | Nombre total d'écrans dans le flow |
+
+Voici un exemple d'utilisation des événements analytiques pour le suivi :
+
+```csharp showLineNumbers title="Unity"
+public class OnboardingManager : MonoBehaviour, AdaptyOnboardingsEventsListener
+{
+    public void OnboardingViewOnAnalyticsEvent(
+        AdaptyUIOnboardingView view,
+        AdaptyUIOnboardingMeta meta,
+        AdaptyOnboardingsAnalyticsEvent analyticsEvent
+    )
+    {
+        switch (analyticsEvent) {
+            case AdaptyOnboardingsAnalyticsEventOnboardingStarted:
+                // track onboarding start
+                TrackEvent("onboarding_started", meta);
+                break;
+            case AdaptyOnboardingsAnalyticsEventScreenPresented:
+                // track screen presentation
+                TrackEvent("screen_presented", meta);
+                break;
+            case AdaptyOnboardingsAnalyticsEventScreenCompleted screenCompleted:
+                // track screen completion with user response
+                TrackEvent("screen_completed", meta, screenCompleted.ElementId, screenCompleted.Reply);
+                break;
+            case AdaptyOnboardingsAnalyticsEventOnboardingCompleted:
+                // track successful onboarding completion
+                TrackEvent("onboarding_completed", meta);
+                break;
+            case AdaptyOnboardingsAnalyticsEventUnknown unknownEvent:
+                // handle unknown events
+                TrackEvent(unknownEvent.Name, meta);
+                break;
+            // handle other cases as needed
+        }
+    }
+    
+    // ... other interface methods
+}
+```
+
+:::note
+La méthode `TrackEvent` est un placeholder que vous devez implémenter vous-même pour envoyer des données analytiques à votre service d'analyse préféré.
+:::
+
+<Details>
+<summary>Exemples d'événements (cliquez pour développer)</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+
+```
+
+</Details>
+

@@ -1,117 +1,136 @@
 ---
-title: "Kotlin Multiplatform SDKのペイウォールを使用してアプリ内課金を有効にする"
-description: "アプリ内サブスクリプション管理のためにAdaptyをセットアップするクイックスタートガイド。"
-metadataTitle: "Adaptyクイックスタートガイド | Adapty ドキュメント"
-keywords: ['paywalls kotlin multiplatform', 'sdk kotlin multiplatform', 'paywall', 'paywall builder', 'getPaywall']
-rank: 70
+title: "Kotlin Multiplatform SDKでFlow Builderを使ったアプリ内課金の有効化"
+description: "AdaptyのFlow Builderでアプリ内課金を有効化するためのクイックスタートガイド。"
+metadataTitle: "Adapty Flow Builder クイックスタート | Adapty ドキュメント"
+keywords: ['flows kotlin multiplatform', 'flow builder', 'getFlow', 'paywalls kotlin multiplatform', 'sdk kotlin multiplatform', 'paywall', 'paywall builder', 'getPaywall']
+rank: 90
 displayed_sidebar: sdkkmp
 ---
 
-import PaywallsIntro from '@site/src/locales/ja/reusable/PaywallsIntro.md';
+このガイドでは、Adapty Kotlin Multiplatform SDK v4（ベータ版）の API を使用しています。v3 をお使いの場合は、対応するメソッド名について[移行ガイド](migration-to-kmp-sdk-v4)を参照してください。
 
-アプリ内課金を有効にするには、3つの重要な概念を理解する必要があります：
+アプリ内課金を有効にするには、3 つの重要な概念を理解する必要があります：
 
-- [**プロダクト**](product) – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセスなど）
-- [**ペイウォール**](paywalls) – どのプロダクトを提供するかを定義する設定です。Adaptyでは、ペイウォールがプロダクトを取得する唯一の手段ですが、この設計によりアプリのコードを変更せずに商品内容、価格、プロダクトの組み合わせを変更できます。
-- [**プレースメント**](placements) – アプリ内でペイウォールを表示する場所とタイミング（`main`、`onboarding`、`settings`など）。ダッシュボードでプレースメントにペイウォールを設定し、コード内ではプレースメントIDで取得します。これにより、A/B テストの実施やユーザーごとに異なるペイウォールの表示が簡単になります。
+- [**プロダクト**](product) – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセス）
+- [**フロー**](adapty-flow-builder) – ノーコードのフロービルダーで作成した、プロダクトをユーザーに提示する画面シーケンス。SDKは`getFlow`で取得します。独自のコードでUIを構築したい場合はペイウォールを使用してください（[ペイウォールを手動で実装する](kmp-quickstart-manual)を参照）。
+- [**プレースメント**](placements) – アプリのどこでいつフローを表示するかを指定します（`main`、`onboarding`、`settings`など）。ダッシュボードでフローをプレースメントに紐付け、コードからはプレースメントIDで取得します。これにより、A/B テストの実施や異なるユーザーへの異なるフローの表示が簡単にできます。
 
-Adaptyでは、アプリ内課金を有効にする3つの方法を提供しています。アプリの要件に応じていずれかを選択してください：
+Adapty では、アプリで購入を有効にする方法を3つ提供しています。アプリの要件に応じて、いずれかを選択してください。
 
-| 実装方法                      | 複雑さ     | 適した場面                                                                                                                                                                                                                                   |
-|---------------------------|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Adapty ペイウォールビルダー    | ✅ 簡単     | [ノーコードビルダーで完全な購入対応のペイウォールを作成](quickstart-paywalls)します。Adaptyが自動的にレンダリングし、複雑な購入フロー、レシート検証、サブスクリプション管理をすべて裏側で処理します。 |
-| 手動作成のペイウォール | 🟡 中程度  | アプリコードでペイウォールUIを実装しますが、プロダクト提供の柔軟性を維持するためAdaptyからペイウォールオブジェクトを取得します。[ガイド](kmp-quickstart-manual)を参照してください。                                                         |
-| オブザーバーモード             | 🔴 難しい    | 既に独自の購入処理インフラを持っており、それを引き続き使用したい場合。オブザーバーモードにはAdaptyでの制限があります。[記事](observer-vs-full-mode)を参照してください。                                                                 |
+| 実装方法 | 複雑さ | 使用するタイミング |
+|---|---|---|
+| Adapty フロービルダー | ✅ 簡単 | [ノーコードビルダーで購入対応フローを完全に作成します](quickstart-paywalls)。Adapty が自動的にレンダリングし、購入フロー全体、レシート検証、サブスクリプション管理をすべて裏側で処理します。 |
+| 手動作成ペイウォール | 🟡 中程度 | ペイウォールの UI はアプリのコードで実装しますが、プロダクトの柔軟性を維持するためにフローオブジェクトは Adapty から取得します。[ガイド](kmp-quickstart-manual)を参照してください。 |
+| オブザーバーモード | 🔴 難しい | すでに独自の購入処理インフラがあり、それを引き続き使用したい場合に選択します。オブザーバーモードには Adapty における制限がある点に注意してください。[記事](observer-vs-full-mode)を参照してください。 |
 
 :::important
-**以下の手順は、Adaptyペイウォールビルダーで作成したペイウォールの実装方法を示しています。**
+**以下の手順は、Adapty フロービルダーで作成したフローを実装する方法を示しています。**
 
-ペイウォールビルダーを使用しない場合は、[手動作成のペイウォールで購入を処理するガイド](kmp-making-purchases)を参照してください。
+ペイウォールのUIを自分でビルドしたい場合は、[ペイウォールを手動で実装する](kmp-quickstart-manual)を参照してください。
 :::
 
-Adaptyペイウォールビルダーで作成したペイウォールをアプリコードに表示するには、以下の手順だけが必要です：
+Adapty フロービルダーで作成したフローを表示するには、アプリのコード内で以下の操作だけ行えばOKです。
 
-1. **ペイウォールを取得する**：AdaptyからペイウォールのPaywallオブジェクトを取得します。
-2. **ペイウォールを表示し、Adaptyが購入を処理する**：取得したペイウォールコンテナをアプリに表示します。
-3. **ボタンアクションを処理する**：ペイウォール上のユーザー操作と、アプリの応答を関連付けます。たとえば、ユーザーがボタンをクリックしたときにリンクを開いたり、ペイウォールを閉じたりします。
+1. **フローを取得する**: Adaptyからフローを取得します。
+2. **表示する（購入処理はAdaptyが担当）**: アプリ内にビューを表示します。
+3. **ボタンアクションを処理する**: ユーザーの操作に対するアプリの応答を関連付けます。たとえば、リンクを開いたり、ユーザーがボタンをクリックしたときにフローを閉じたりします。
 
-## 開始前の準備 \{#before-you-start\}
+## はじめる前に \{#before-you-start\}
 
-開始前に、以下の手順を完了してください：
+始める前に、以下の手順を完了してください：
 
-1. Adapty ダッシュボードでアプリを[App Store](initial_ios)や[Google Play](initial-android)に接続します。
-2. Adaptyで[プロダクトを作成](create-product)します。
-3. [ペイウォールを作成してプロダクトを追加](create-paywall)します。
-4. [プレースメントを作成してペイウォールを追加](create-placement)します。
-5. アプリコードに[Adapty SDKをインストールして有効化](sdk-installation-kotlin-multiplatform)します。
+1. Adapty ダッシュボードで、アプリを [App Store](initial_ios) および/または [Google Play](initial-android) に接続する。
+2. Adapty で[プロダクトを作成する](create-product)。
+3. [フローを作成してプロダクトを追加する](create-paywall)。
+4. [プレースメントを作成してフローを追加する](create-placement)。
+5. アプリのコードに [Adapty SDK をインストールして有効化する](sdk-installation-kotlin-multiplatform)。
 
 :::tip
-これらの手順を最も素早く完了するには、[クイックスタートガイド](quickstart)に従うか、[Developer CLI](developer-cli-quickstart)を使用してペイウォールとプレースメントを作成してください。
+これらの手順を最も素早く完了するには、[クイックスタートガイド](quickstart)に従うか、[Developer CLI](developer-cli-quickstart)を使用してフローとプレースメントを作成してください。
 :::
 
-## 1. ペイウォールを取得する \{#1-get-the-paywall\}
+## 1. フローを取得する \{#1-get-the-flow\}
 
-ペイウォールはダッシュボードで設定されたプレースメントに紐付けられています。プレースメントを使用することで、異なるオーディエンスに異なるペイウォールを表示したり、[A/B テスト](ab-tests)を実施したりできます。
+フローはダッシュボードで設定したプレースメントに紐付けられています。プレースメントを使うと、オーディエンスごとに異なるフローを表示したり、[A/B テスト](ab-tests)を実施したりできます。
 
-Adaptyペイウォールビルダーで作成したペイウォールを取得するには、以下の手順が必要です：
+Adapty フロービルダーで作成したフローを取得するには、次の手順を行います。
 
-1. `getPaywall`メソッドを使用して[プレースメント](placements)IDから`paywall`オブジェクトを取得し、それがビルダーで作成されたペイウォールかどうかを確認します。
+1. `getFlow` メソッドを使って、[プレースメント](placements) ID から `flow` オブジェクトを取得します。
 
-2. `createPaywallView`メソッドを使用してペイウォールのビュー設定を取得します。ビュー設定にはペイウォールを表示するために必要なUI要素とスタイリングが含まれています。
+2. `createFlowView` メソッドを使って、フローのビューを作成します。ビューにはフローを表示するために必要な UI 要素とスタイリングが含まれています。フローにビューが設定されていない場合、`createFlowView` はエラーを返すため、`onError` でハンドリングしてください。
 
 :::important
-ビュー設定を取得するには、ペイウォールビルダーで **Show on device** トグルをオンにする必要があります。オンにしないと空のビュー設定が返され、ペイウォールが表示されません。
+ビューを取得するには、フロービルダーで **Show on device** トグルをオンにする必要があります。オンにしていない場合、`createFlowView` はエラーを返し、フローは表示されません。
 :::
 
 ```kotlin showLineNumbers
-Adapty.getPaywall("YOUR_PLACEMENT_ID")
-    .onSuccess { paywall ->
-        if (!paywall.hasViewConfiguration) {
-            return@onSuccess
-        }
-        
-        val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
-        paywallView?.present()
+Adapty.getFlow("YOUR_PLACEMENT_ID")
+    .onSuccess { flow ->
+        AdaptyUI.createFlowView(flow)
+            .onSuccess { view ->
+                view.present()
+            }
+            .onError { error ->
+                // the flow has no view configured, or view creation failed
+            }
     }
     .onError { error ->
         // handle the error
     }
 ```
 
-## 2. ペイウォールを表示する \{#2-display-the-paywall\}
+## 2. フローを表示する \{#display-the-flow\}
 
-ペイウォールの設定を取得したら、数行追加するだけでペイウォールを表示できます。
+フローを取得したら、数行のコードを追加するだけで表示できます。
 
-デバイス画面にビジュアルなペイウォールを表示するには、まず設定を行う必要があります。`AdaptyUI.createPaywallView()`メソッドを呼び出してください：
+デバイス画面にビジュアルフローを表示するには、まずビューを作成する必要があります。そのために、`AdaptyUI.createFlowView()` メソッドを呼び出します：
 
 ```kotlin showLineNumbers
-val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
-paywallView?.present()
+AdaptyUI.createFlowView(flow)
+    .onSuccess { view ->
+        view.present()
+    }
+    .onError { error ->
+        // handle the error
+    }
 ```
 
-ビューの作成が完了したら、デバイスの画面に表示できます。
+ビューが正常に作成されたら、デバイスの画面に表示できます。各ビューは一度しか使用できません。`dismiss()` を呼び出した後、再度フローを表示するには `createFlowView` を呼び出してください。
 
 :::tip
-ペイウォールの表示方法の詳細については、[ガイド](kmp-present-paywalls)を参照してください。
+フローの表示方法の詳細については、[ガイド](kmp-present-paywalls)をご覧ください。
 :::
 
-## 3. ボタンアクションを処理する \{#3-handle-button-actions\}
+## 3. ボタンアクションを処理する \{#handle-button-actions\}
 
-ユーザーがペイウォール内のボタンをクリックすると、Kotlin Multiplatform SDKが購入、復元、ペイウォールのクローズ、リンクの開封を自動的に処理します。
+ユーザーがフロー内のボタンをクリックすると、Kotlin Multiplatform SDK は購入、復元、フローのクローズ、リンクの開封を自動的に処理します。
 
-ただし、カスタムまたは事前定義されたIDを持つボタンについては、コード内でアクションを処理する必要があります。または、デフォルトの動作をオーバーライドしたい場合もあります。
+ただし、カスタムまたは事前定義された ID を持つボタンは、コードでアクションを処理する必要があります。また、デフォルトの動作を上書きしたい場合もあります。
 
-たとえば、以下は閉じるボタンのデフォルトの動作です。コードに追加する必要はありませんが、必要な場合にどのように実装するかを確認できます。
+例えば、以下はクローズボタンのデフォルト動作です。コードに追加する必要はありませんが、必要な場合にどのように実装するかを確認できます。
+
+デフォルトでは、購入が完了してもフローは開いたままになります。購入完了後にフローを閉じたい場合は、`flowViewDidFinishPurchase` コールバック内でビューを閉じてください。
 
 :::tip
-ボタンの[アクション](kmp-handle-paywall-actions)と[イベント](kmp-handling-events)の処理方法については、ガイドをお読みください。
+ボタンの[アクション](kmp-handle-paywall-actions)と[イベント](kmp-handling-events)の処理方法については、ガイドをご覧ください。
 :::
 
 ```kotlin showLineNumbers
-AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
-    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
         when (action) {
-            AdaptyUIAction.CloseAction, AdaptyUIAction.AndroidSystemBackAction -> view.dismiss()
+            is AdaptyUIAction.CloseAction -> mainUiScope.launch { view.dismiss() }
+            else -> Unit
+        }
+    }
+
+    override fun flowViewDidFinishPurchase(
+        view: AdaptyUIFlowView,
+        product: AdaptyPaywallProduct,
+        purchaseResult: AdaptyPurchaseResult
+    ) {
+        if (purchaseResult !is AdaptyPurchaseResult.UserCanceled) {
+            mainUiScope.launch { view.dismiss() }
         }
     }
 })
@@ -125,28 +144,39 @@ AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
 
 ## 完全な例 \{#full-example\}
 
-以下は、これらの手順をアプリにまとめて統合する方法です。
+以下は、これらのステップをアプリにまとめて統合する方法です。
 
 ```kotlin showLineNumbers
-// Set up the observer for handling paywall actions
-AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
-    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+// Set up the observer for handling flow events
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
         when (action) {
-            is AdaptyUIAction.CloseAction -> view.dismiss()
+            is AdaptyUIAction.CloseAction -> mainUiScope.launch { view.dismiss() }
+            else -> Unit
+        }
+    }
+
+    override fun flowViewDidFinishPurchase(
+        view: AdaptyUIFlowView,
+        product: AdaptyPaywallProduct,
+        purchaseResult: AdaptyPurchaseResult
+    ) {
+        if (purchaseResult !is AdaptyPurchaseResult.UserCanceled) {
+            mainUiScope.launch { view.dismiss() }
         }
     }
 })
 
-// Get and display the paywall
-Adapty.getPaywall("YOUR_PLACEMENT_ID")
-    .onSuccess { paywall ->
-        if (!paywall.hasViewConfiguration) {
-            // Use custom logic
-            return@onSuccess
-        }
-
-        val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
-        paywallView?.present()
+// Get and display the flow
+Adapty.getFlow("YOUR_PLACEMENT_ID")
+    .onSuccess { flow ->
+        AdaptyUI.createFlowView(flow)
+            .onSuccess { view ->
+                view.present()
+            }
+            .onError { error ->
+                // the flow has no view configured — use custom logic
+            }
     }
     .onError { error ->
         // handle the error

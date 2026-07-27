@@ -1,0 +1,154 @@
+---
+title: "Afficher un paywall ciblé par AA au premier lancement dans le SDK iOS"
+description: "Attendez l'attribution Apple Ads avant de demander le paywall sur iOS en utilisant AdaptyProfile.appliedAttributionSources."
+metadataTitle: "Afficher un paywall ciblé par AA au premier lancement | SDK iOS | Documentation Adapty"
+---
+
+L'attribution Apple Ads (AA) arrive de manière asynchrone après `Adapty.activate()`. Si vous appelez `getPaywall` trop tôt, l'attribution n'a souvent pas encore été reçue et Adapty résout le placement par rapport à l'audience par défaut — contournant ainsi vos paywalls segmentés par AA. `AdaptyProfile.appliedAttributionSources` permet à l'app de détecter quand l'attribution AA a été appliquée au profil, afin que la requête de paywall puisse attendre que la segmentation AA se résolve correctement.
+
+## Avant de commencer \{#before-you-start\}
+
+Vous avez besoin de :
+- SDK Adapty iOS **3.17.1** ou version ultérieure.
+- Apple Ads configuré pour l'app dans Adapty. Voir [Apple Ads](apple-search-ads).
+
+## Fonctionnement \{#how-it-works\}
+
+Après `Adapty.activate()`, le SDK demande l'attribution Apple Ads à Apple en arrière-plan et transmet le résultat au backend d'Adapty. Lorsqu'AA devient la source d'attribution active pour le profil, le SDK délivre un `AdaptyProfile` mis à jour dont le tableau `appliedAttributionSources` contient `.appleAds`.
+
+Un tableau vide peut signifier l'un des cas suivants :
+
+- L'attribution Apple Ads n'a pas encore été traitée pour ce profil.
+- Aucune attribution n'est arrivée du tout.
+
+Même avec un tableau vide, `getPaywall` reste sûr à appeler — Adapty résout la requête par rapport à l'audience qui correspond à l'état actuel du profil, généralement l'audience par défaut.
+
+:::important
+L'attente s'applique uniquement au **premier lancement**. Une fois l'attribution Apple Ads enregistrée, elle est stockée définitivement sur le profil. À chaque lancement suivant, le profil en cache contient déjà `.appleAds` dans `appliedAttributionSources`, `didLoadLatestProfile` se déclenche immédiatement avec cette valeur, et `getPaywall` retourne le paywall segmenté par Apple Ads sans aucun délai.
+:::
+
+## Implémentation \{#implementation\}
+
+Au premier lancement, surveillez `.appleAds` dans le profil et appliquez un délai d'expiration strict — si l'attribution Apple Ads n'arrive jamais, ces utilisateurs doivent quand même voir un paywall.
+
+1. **Activez le SDK.** Voir [Installer et configurer le SDK iOS](sdk-installation-ios).
+2. **Abonnez-vous aux mises à jour du profil** en vous conformant à `AdaptyDelegate` et en implémentant `didLoadLatestProfile`. Si vous n'avez pas encore configuré le délégué, voir [Écouter les mises à jour d'abonnement](ios-check-subscription-status#listen-to-subscription-updates).
+3. **Surveillez `.appleAds` dans `appliedAttributionSources`.** Lorsqu'il apparaît, demandez le paywall — Adapty retournera la variante segmentée par AA :
+
+```swift
+extension <YourAdaptyDelegateImpl>: AdaptyDelegate {
+    nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
+        if profile.appliedAttributionSources.contains(where: { $0 == .appleAds }) {
+            // load paywall via Adapty.getPaywall(placementId:)
+        }
+    }
+}
+```
+
+4. **Démarrez un minuteur de 3 à 5 secondes en parallèle de l'abonnement.** Si le minuteur se déclenche avant l'apparition de `.appleAds`, demandez le paywall quand même :
+
+La première des deux voies à se déclencher doit charger le paywall ; l'autre doit être ignorée. Utilisez un indicateur d'état unique (par exemple, `hasLoadedPaywall`) pour éviter les doublons afin que le paywall ne soit pas récupéré deux fois. Configurez un [paywall de secours](fallback-paywalls) pour le placement afin que l'utilisateur ne reste jamais bloqué si la requête réseau échoue.
+
+## Exemple complet \{#complete-example\}
+
+L'implémentation ci-dessous met en compétition l'attribution contre un délai d'expiration, pré-charge le paywall de l'audience par défaut en parallèle, et retourne le paywall approprié. L'appelant attend une seule fonction async — pas de délégués ni d'indicateurs d'état à gérer côté appelant.
+
+`ProfileObserver` est un singleton réutilisable qui publie les mises à jour de profil depuis `AdaptyDelegate`. `PaywallLoader.getPaywallOrDefault` lance la course en utilisant un `TaskGroup` à concurrence structurée :
+
+- Si l'attribution arrive avant `timeout`, il retourne le paywall segmenté via `getPaywall(placementId:)`.
+- Si `timeout` s'écoule en premier, il retourne le paywall de l'audience par défaut pré-chargé via `getPaywallForDefaultAudience(placementId:)`.
+
+```swift title="PaywallLoader.swift"
+
+/// Demonstrates how to fetch a paywall that depends on attribution being applied,
+/// falling back to the default-audience paywall if attribution doesn't arrive in time.
+///
+/// Stateless and self-contained: every call kicks off its own default-audience
+/// prefetch and races it against attribution + segmented fetch.
+enum PaywallLoader {
+    static func getPaywallOrDefault(
+        placementId: String,
+        timeout: TimeInterval
+    ) async throws -> AdaptyPaywall {
+        struct TimedOut: Error {}
+
+        // Kick off the default-audience request immediately so it has the full
+        // `timeout` window to load. We'll either cancel it on success or await
+        // its result on timeout — never a duplicate network call.
+        let defaultPaywallTask = Task {
+            try await Adapty.getPaywallForDefaultAudience(placementId: placementId)
+        }
+
+        do {
+            // Race two child tasks: whichever finishes first wins.
+            let result = try await withThrowingTaskGroup(of: AdaptyPaywall.self) { group in
+                // 1. Wait for attribution, then ask Adapty for the segmented paywall.
+                group.addTask {
+                    await waitForAttribution()
+                    return try await Adapty.getPaywall(placementId: placementId)
+                }
+                // 2. Time-bomb: throws `TimedOut` after `timeout` seconds.
+                group.addTask {
+                    try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                    throw TimedOut()
+                }
+                guard let value = try await group.next() else { throw CancellationError() }
+                group.cancelAll() // stop the loser (sleeper or the attribution wait).
+                return value
+            }
+            // Segmented paywall won — we no longer need the default-audience prefetch.
+            defaultPaywallTask.cancel()
+            return result
+        } catch is TimedOut {
+            // Attribution didn't apply in time — return the prefetched default
+            // (instant if already done, otherwise we await the in-flight request).
+            return try await defaultPaywallTask.value
+        }
+    }
+
+    /// Suspends until a profile with the desired attribution source is observed.
+    /// `@Published.values` emits the current profile immediately on subscription,
+    /// so this returns on the first iteration if attribution is already applied.
+    @MainActor
+    private static func waitForAttribution() async {
+        for await profile in ProfileObserver.shared.$profile.values {
+            if profile?.appliedAttributionSources.contains(.appleAds) == true { return }
+        }
+    }
+}
+
+@MainActor
+final class ProfileObserver: AdaptyDelegate {
+    static let shared = ProfileObserver()
+
+    @Published private(set) var profile: AdaptyProfile?
+
+    nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
+        Task { @MainActor [weak self] in
+            self?.profile = profile
+        }
+    }
+}
+```
+
+Reliez `ProfileObserver` à `AdaptyDelegate` une seule fois, après la complétion de `Adapty.activate()` :
+
+```swift
+Adapty.delegate = ProfileObserver.shared
+```
+
+Appelez depuis l'écran de démarrage :
+
+```swift
+do {
+    let paywall = try await PaywallLoader.getPaywallOrDefault(
+        placementId: "YOUR_PLACEMENT_ID",
+        timeout: 5
+    )
+    // present the paywall
+} catch {
+    // handle the error or show a fallback paywall
+}
+```
+
+Si votre app utilise déjà un `AdaptyDelegate` à d'autres fins (par exemple, [écouter les mises à jour d'abonnement](ios-check-subscription-status#listen-to-subscription-updates)), transmettez `didLoadLatestProfile` à `ProfileObserver.shared` depuis votre délégué existant plutôt que de définir `Adapty.delegate = ProfileObserver.shared`.

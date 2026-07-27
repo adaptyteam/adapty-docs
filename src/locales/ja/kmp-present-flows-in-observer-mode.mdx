@@ -1,0 +1,91 @@
+---
+title: "Observerモードでフローを表示する - Kotlin Multiplatform"
+description: "Kotlin MultiplatformアプリでObserverモードのフローおよびペイウォールビルダーのペイウォールを表示し、独自のコードで購入を処理する方法を説明します。"
+metadataTitle: "Observerモードでフローを表示する - Kotlin Multiplatform | Adapty ドキュメント"
+keywords: ['observer mode', 'AdaptyUIObserverModeResolver', 'setObserverModeResolver', 'flow']
+---
+
+ビルダーを使ってフローやペイウォールをカスタマイズした場合、モバイルアプリのコードでレンダリングしてユーザーに表示する方法を気にする必要はありません。このようなフローやペイウォールには、表示する内容と表示方法の両方が含まれています。
+
+:::warning
+このセクションは[オブザーバーモード](observer-vs-full-mode)のみを対象としています。オブザーバーモードで作業していない場合は、[フローとペイウォールの表示](kmp-present-paywalls)のトピックを参照してください。
+:::
+
+:::info
+この機能を使用するには、Adapty Kotlin Multiplatform SDK 4.0（ベータ版）以降が必要です。以前はネイティブの iOS および Android SDK でのみ利用可能でした。アップグレードするには[移行ガイド](migration-to-kmp-sdk-v4)をご参照ください。
+:::
+
+<details>
+   <summary>フローの表示を開始する前に（クリックして展開）</summary>
+
+1. Adapty の初期連携を設定します（[App Store との連携](initial_ios)および [Google Play との連携](initial-android)）。
+   2. Adapty SDK をインストールして設定します。設定ビルダーで `withObserverMode(true)` を呼び出してください。[Kotlin Multiplatform SDK インストールガイド](sdk-installation-kotlin-multiplatform#activate-adapty-sdk)を参照してください。
+   3. Adapty ダッシュボードで[プロダクトを作成](create-product)します。
+   4. [ビルダーでフローまたはペイウォールを設定](create-paywall)し、プロダクトを割り当てます。
+   5. [プレースメントを作成し、フローまたはペイウォールを割り当てます](create-placement)。
+   6. モバイルアプリのコードで[フローとその設定を取得](kmp-get-pb-paywalls)します。
+
+</details>
+
+オブザーバーモードでは、SDKが代わりに購入処理を行うことはありません。ユーザーがAdaptyでレンダリングされたフローまたはペイウォールの購入ボタンや復元ボタンをタップすると、SDKはあなたの`AdaptyUIObserverModeResolver`を呼び出します。そちらで独自のコードを使って購入または復元を実行してください。
+
+1. `AdaptyUIObserverModeResolver`インターフェースを実装します：
+
+   ```kotlin showLineNumbers
+   import com.adapty.kmp.AdaptyUIObserverModeResolver
+   import com.adapty.kmp.models.AdaptyPaywallProduct
+   import com.adapty.kmp.models.AdaptyUIFlowView
+
+   class MyObserverModeResolver : AdaptyUIObserverModeResolver {
+       override fun observerModeDidInitiatePurchase(
+           view: AdaptyUIFlowView,
+           product: AdaptyPaywallProduct,
+           onStartPurchase: () -> Unit,
+           onFinishPurchase: () -> Unit
+       ) {
+           onStartPurchase() // the view shows its loading indicator
+           // make the purchase with your own code,
+           // then report the transaction to Adapty and call:
+           onFinishPurchase() // the view hides the loading indicator
+       }
+
+       override fun observerModeDidInitiateRestore(
+           view: AdaptyUIFlowView,
+           onStartRestore: () -> Unit,
+           onFinishRestore: () -> Unit
+       ) {
+           onStartRestore()
+           // restore purchases with your own code, then:
+           onFinishRestore()
+       }
+   }
+   ```
+
+`observerModeDidInitiatePurchase` メソッドはユーザーが購入を開始したことを通知し、`observerModeDidInitiateRestore` はユーザーがリストアを開始したことを通知します。これに応じて、カスタムの購入またはリストアフローをトリガーしてください。
+
+また、購入またはリストアのプロセスについて AdaptyUI に通知するため、以下のコールバックを呼び出すことを忘れないでください。これは、ローダーの表示など、フローが正しく動作するために必要です。
+
+| コールバック | 説明 |
+   | :----------------- | :------------------------------------------------------------------------------- |
+   | onStartPurchase()  | 購入が開始されたことを AdaptyUI に通知するために呼び出すコールバックです。  |
+   | onFinishPurchase() | 購入が完了したことを AdaptyUI に通知するために呼び出すコールバックです。 |
+   | onStartRestore()   | 復元が開始されたことを AdaptyUI に通知するために呼び出すコールバックです。   |
+   | onFinishRestore()  | 復元が完了したことを AdaptyUI に通知するために呼び出すコールバックです。  |
+
+フローは、コード実行中は開いたまま維持されます。購入またはリストアが成功したら、自分でフローを閉じてください。
+
+2. 画面を表示する前にリゾルバーを登録します:
+
+   ```kotlin showLineNumbers
+   import com.adapty.kmp.AdaptyUI
+
+   AdaptyUI.setObserverModeResolver(MyObserverModeResolver())
+   ```
+
+   リゾルバーを登録しないと、フロービューは購入をコードに引き渡す手段がなく、ユーザーが購入ボタンをタップしても何も起こりません。
+
+3. フローのビューを通常通り作成して表示します: [フローを取得してビューを作成](kmp-get-pb-paywalls)し、[表示します](kmp-present-paywalls)。追加のパラメーターは不要です。リゾルバーを登録すると、Adapty がレンダリングするすべてのフローやペイウォールの購入とリストアがそこを通じてルーティングされます。
+
+:::warning
+[トランザクションを報告してペイウォールに関連付けること](report-transactions-observer-mode-kmp)を忘れないでください。これを行わないと、Adapty がトランザクションを認識できず、購入元のペイウォールを特定できません。
+:::

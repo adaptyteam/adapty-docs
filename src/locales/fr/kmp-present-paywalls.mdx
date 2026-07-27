@@ -1,0 +1,552 @@
+---
+title: "Afficher les flows et paywalls - Kotlin Multiplatform"
+description: "Présentez les flows et paywalls aux utilisateurs dans votre application Kotlin Multiplatform."
+metadataTitle: "Afficher les flows et paywalls - Kotlin Multiplatform | Documentation Adapty"
+---
+
+<SDKv4>
+
+<MethodPromo method="getFlow" label="Afficher les flows et paywalls" />
+
+Si vous avez créé un flow ou un paywall, vous n'avez pas à vous soucier de son rendu dans le code de votre application mobile pour l'afficher à l'utilisateur. Un tel flow ou paywall contient à la fois ce qui doit être affiché et comment il doit l'être.
+
+:::warning
+
+Ce guide couvre les flows et les **paywalls du nouveau Paywall Builder** rendus par Adapty. Le processus diffère pour les paywalls en Remote Config et le [mode Observateur](observer-vs-full-mode).
+
+- Pour présenter des **paywalls en Remote Config**, consultez [Afficher un paywall conçu avec Remote Config](present-remote-config-paywalls-kmp).
+- Pour présenter des flows en **mode Observateur**, consultez [Présenter des flows en mode Observateur](kmp-present-flows-in-observer-mode).
+
+:::
+
+Pour obtenir l'objet `flow` utilisé ci-dessous, consultez [Récupérer les flows et paywalls](kmp-get-pb-paywalls).
+
+Le SDK Kotlin Multiplatform d'Adapty offre deux façons de présenter les flows et les paywalls :
+
+- **Avec Compose Multiplatform**
+- **Sans Compose Multiplatform**
+
+## Avec Compose Multiplatform \{#with-compose-multiplatform\}
+
+Pour afficher un flow ou un paywall, utilisez la méthode `view.present()` sur la `view` créée par la méthode [`createFlowView`](kmp-get-pb-paywalls#fetch-the-view-configuration). Chaque `view` ne peut être utilisée qu'une seule fois. Si vous devez afficher le flow à nouveau, appelez `createFlowView` une nouvelle fois pour créer une nouvelle instance de `view`.
+
+:::warning
+Réutiliser la même `view` sans la recréer peut entraîner une erreur.
+:::
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    AdaptyUI.createFlowView(flow = flow).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+### Afficher une boîte de dialogue \{#show-dialog\}
+
+Utilisez cette méthode plutôt que les boîtes de dialogue natives lorsqu'un flow ou un paywall est présenté sur Android. Sur Android, les alertes classiques apparaissent derrière la vue du flow, ce qui les rend invisibles pour les utilisateurs. Cette méthode garantit un affichage correct de la boîte de dialogue au-dessus du flow sur toutes les plateformes.
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    view.showDialog(
+        title = "Close this screen?",
+        content = "You will lose access to exclusive offers.",
+        primaryActionTitle = "Stay",
+        secondaryActionTitle = "Close"
+    ).onSuccess { action ->
+        if (action == AdaptyUIDialogActionType.SECONDARY) {
+            // User confirmed - close the flow
+            view.dismiss()
+        }
+        // If primary - do nothing, user stays
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+### Configurer le style de présentation iOS \{#configure-ios-presentation-style\}
+
+Configurez la façon dont le flow ou le paywall est présenté sur iOS en passant le paramètre `iosPresentationStyle` à la méthode `present()`. Le paramètre accepte les valeurs `AdaptyUIIOSPresentationStyle.FULLSCREEN` (par défaut) ou `AdaptyUIIOSPresentationStyle.PAGESHEET`.
+
+```kotlin showLineNumbers
+
+viewModelScope.launch {
+    val view = AdaptyUI.createFlowView(flow = flow).getOrNull()
+    view?.present(iosPresentationStyle = AdaptyUIIOSPresentationStyle.PAGESHEET)
+}
+```
+
+## Sans Compose Multiplatform \{#without-compose-multiplatform\}
+
+:::note
+`createNativeFlowView` fait partie du module principal `io.adapty:adapty-kmp`. Si votre projet n'utilise pas Compose Multiplatform, vous n'avez pas besoin de la dépendance `io.adapty:adapty-kmp-ui`.
+:::
+
+Pour intégrer un flow ou un paywall sans Compose Multiplatform, appelez `createNativeFlowView`. La méthode retourne un `AdaptyNativeFlowView` que vous ajoutez à votre mise en page :
+
+<Tabs>
+<TabItem value="android" label="Android">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    context = context,
+    viewModelStoreOwner = activity,
+    flow = flow,
+    observer = myFlowObserver,
+)
+
+// Embed in your Compose layout:
+AndroidView(
+    factory = { nativeView.view },
+    modifier = Modifier.fillMaxSize()
+)
+```
+
+Par défaut, une vue intégrée n'applique pas les marges de zone de sécurité — votre mise en page est censée gérer les insets elle-même. Si vous souhaitez que la vue les applique elle-même, passez `androidEnableSafeArea = true` à `createNativeFlowView`. Ce paramètre est spécifique à Android.
+</TabItem>
+<TabItem value="ios" label="iOS">
+Comme les méthodes par défaut des interfaces KMP deviennent `@required` en Swift, vous ne pouvez pas implémenter `AdaptyUIFlowsEventsObserver` directement depuis Swift. Déclarez d'abord une classe de base ouverte dans `iosMain` :
+
+```kotlin showLineNumbers title="iosMain (Kotlin)"
+open class BaseFlowObserver : AdaptyUIFlowsEventsObserver
+```
+
+Créez ensuite une sous-classe en Swift, en ne redéfinissant que ce dont vous avez besoin :
+
+```swift showLineNumbers title="Swift"
+class MyFlowObserver: BaseFlowObserver {
+    override func flowViewDidPerformAction(view: AdaptyUIFlowView, action: any AdaptyUIAction) {
+        if action is AdaptyUIActionCloseAction {
+            // remove nativeView from your view hierarchy
+        }
+    }
+}
+
+let nativeView = AdaptyUI.shared.createNativeFlowView(
+    flow: flow,
+    observer: MyFlowObserver()
+)
+// nativeView.viewController is a UIViewController.
+// Add it to your SwiftUI view or UIKit hierarchy.
+```
+</TabItem>
+</Tabs>
+
+### Libérer la vue \{#dispose-the-view\}
+
+Appelez `dispose()` lorsque vous retirez la vue de votre mise en page. Cela désenregistre l'écouteur d'événements et libère les ressources internes.
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+nativeView.dispose()
+```
+
+## Tags personnalisés \{#custom-tags\}
+
+Les tags personnalisés vous permettent d'éviter de créer des flows ou des paywalls distincts pour différents scénarios. Imaginez un seul flow qui s'adapte dynamiquement selon les données de l'utilisateur. Par exemple, au lieu d'un générique « Bonjour ! », vous pourriez accueillir les utilisateurs personnellement avec « Bonjour, John ! » ou « Bonjour, Ann ! »
+
+Voici quelques façons d'utiliser les tags personnalisés :
+
+- Afficher le nom ou l'e-mail de l'utilisateur sur le flow ou le paywall.
+- Afficher le jour de la semaine actuel pour stimuler les ventes (par ex., « Bonne journée de jeudi »).
+- Ajouter des détails personnalisés sur les produits que vous vendez (comme le nom d'un programme fitness ou un numéro de téléphone dans une application VoIP).
+
+Les tags personnalisés vous aident à créer un flow flexible qui s'adapte à diverses situations, rendant l'interface de votre application plus personnalisée et engageante.
+
+:::warning
+Dans certains cas, votre application peut ne pas savoir par quoi remplacer un tag personnalisé — notamment si les utilisateurs utilisent une ancienne version du SDK AdaptyUI. Pour éviter ce problème, ajoutez toujours un texte de repli qui remplacera les lignes contenant des tags inconnus. Sans cela, les utilisateurs pourraient voir les tags affichés sous forme de code (`<USERNAME/>`).
+:::
+
+Pour utiliser des tags personnalisés dans votre flow ou paywall, passez-les lors de la création de la vue de flow :
+
+<Tabs>
+<TabItem value="standalone" label="Avec Compose Multiplatform" default>
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    val customTags = mapOf(
+        "USERNAME" to "John",
+        "DAY_OF_WEEK" to "Thursday"
+    )
+
+    AdaptyUI.createFlowView(
+        flow = flow,
+        customTags = customTags
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="native" label="Sans Compose Multiplatform">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val customTags = mapOf(
+    "USERNAME" to "John",
+    "DAY_OF_WEEK" to "Thursday"
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    context = context,
+    viewModelStoreOwner = activity,
+    flow = flow,
+    observer = myFlowObserver,
+    customTags = customTags,
+)
+```
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+
+val customTags = mapOf(
+    "USERNAME" to "John",
+    "DAY_OF_WEEK" to "Thursday"
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    flow = flow,
+    observer = myFlowObserver,
+    customTags = customTags,
+)
+```
+</TabItem>
+</Tabs>
+
+## Minuteries personnalisées \{#custom-timers\}
+
+La minuterie est un excellent outil pour promouvoir des offres spéciales et saisonnières avec une limite de temps. Notez cependant que cette minuterie n'est pas liée à la validité de l'offre ni à la durée de la campagne. Il s'agit simplement d'un compte à rebours autonome qui démarre à partir de la valeur que vous définissez et diminue jusqu'à zéro. Lorsque la minuterie atteint zéro, rien ne se passe — elle reste simplement à zéro.
+
+Vous pouvez personnaliser le texte avant et après la minuterie pour créer le message souhaité, par exemple : « Offre se termine dans : 10:00 sec. »
+
+Pour utiliser des minuteries personnalisées dans votre flow ou paywall, passez-les lors de la création de la vue de flow :
+
+<Tabs>
+<TabItem value="standalone" label="Avec Compose Multiplatform" default>
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    val customTimers = mapOf(
+        "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+        "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+    )
+
+    AdaptyUI.createFlowView(
+        flow = flow,
+        customTimers = customTimers
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="native" label="Sans Compose Multiplatform">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val customTimers = mapOf(
+    "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+    "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    context = context,
+    viewModelStoreOwner = activity,
+    flow = flow,
+    observer = myFlowObserver,
+    customTimers = customTimers,
+)
+```
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+
+val customTimers = mapOf(
+    "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+    "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    flow = flow,
+    observer = myFlowObserver,
+    customTimers = customTimers,
+)
+```
+</TabItem>
+</Tabs>
+
+</SDKv4>
+
+<SDKv3>
+
+Si vous avez personnalisé un paywall avec le Paywall Builder, vous n'avez pas à vous soucier de son rendu dans le code de votre application mobile pour l'afficher à l'utilisateur. Un tel paywall contient à la fois ce qui doit être affiché et comment il doit l'être.
+
+:::warning
+
+Ce guide concerne uniquement les **paywalls du nouveau Paywall Builder**. Le processus de présentation diffère pour les paywalls conçus avec Remote Config et le [mode Observateur](observer-vs-full-mode).
+
+Pour présenter des **paywalls en Remote Config**, consultez [Afficher un paywall conçu avec Remote Config](present-remote-config-paywalls-kmp).
+
+:::
+
+Le SDK Kotlin Multiplatform d'Adapty offre deux façons de présenter les paywalls :
+
+- **Avec Compose Multiplatform**
+- **Sans Compose Multiplatform**
+
+## Avec Compose Multiplatform \{#with-compose-multiplatform\}
+
+Pour afficher un paywall, utilisez la méthode `view.present()` sur la `view` créée par la méthode [`createPaywallView`](kmp-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Chaque `view` ne peut être utilisée qu'une seule fois. Si vous devez afficher le paywall à nouveau, appelez `createPaywallView` une nouvelle fois pour créer une nouvelle instance de `view`.
+
+:::warning
+Réutiliser la même `view` sans la recréer peut entraîner une erreur.
+:::
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    AdaptyUI.createPaywallView(paywall = paywall).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+### Afficher une boîte de dialogue \{#show-dialog\}
+
+Utilisez cette méthode plutôt que les boîtes de dialogue natives lorsqu'une vue de paywall est présentée sur Android. Sur Android, les alertes classiques apparaissent derrière la vue du paywall, ce qui les rend invisibles pour les utilisateurs. Cette méthode garantit un affichage correct de la boîte de dialogue au-dessus du paywall sur toutes les plateformes.
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    view.showDialog(
+        title = "Close paywall?",
+        content = "You will lose access to exclusive offers.",
+        primaryActionTitle = "Stay",
+        secondaryActionTitle = "Close"
+    ).onSuccess { action ->
+        if (action == AdaptyUIDialogActionType.SECONDARY) {
+            // User confirmed - close the paywall
+            view.dismiss()
+        }
+        // If primary - do nothing, user stays
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+### Configurer le style de présentation iOS \{#configure-ios-presentation-style\}
+
+Configurez la façon dont le paywall est présenté sur iOS en passant le paramètre `iosPresentationStyle` à la méthode `present()`. Le paramètre accepte les valeurs `AdaptyUIIOSPresentationStyle.FULLSCREEN` (par défaut) ou `AdaptyUIIOSPresentationStyle.PAGESHEET`.
+
+```kotlin showLineNumbers
+
+viewModelScope.launch {
+    val view = AdaptyUI.createPaywallView(paywall = paywall).getOrNull()
+    view?.present(iosPresentationStyle = AdaptyUIIOSPresentationStyle.PAGESHEET)
+}
+```
+
+## Sans Compose Multiplatform \{#without-compose-multiplatform\}
+
+:::note
+`createNativePaywallView` fait partie du module principal `io.adapty:adapty-kmp`. Si votre projet n'utilise pas Compose Multiplatform, vous n'avez pas besoin de la dépendance `io.adapty:adapty-kmp-ui`.
+:::
+
+Pour intégrer un paywall sans Compose Multiplatform, appelez `createNativePaywallView`. La méthode retourne un `AdaptyNativePaywallView` que vous ajoutez à votre mise en page :
+
+<Tabs>
+<TabItem value="android" label="Android">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val nativeView = AdaptyUI.createNativePaywallView(
+    context = context,
+    viewModelStoreOwner = activity,
+    paywall = paywall,
+    observer = myPaywallObserver,
+)
+
+// Embed in your Compose layout:
+AndroidView(
+    factory = { nativeView.view },
+    modifier = Modifier.fillMaxSize()
+)
+```
+</TabItem>
+<TabItem value="ios" label="iOS">
+Comme les méthodes par défaut des interfaces KMP deviennent `@required` en Swift, vous ne pouvez pas implémenter `AdaptyUIPaywallsEventsObserver` directement depuis Swift. Déclarez d'abord une classe de base ouverte dans `iosMain` :
+
+```kotlin showLineNumbers title="iosMain (Kotlin)"
+open class BasePaywallObserver : AdaptyUIPaywallsEventsObserver
+```
+
+Créez ensuite une sous-classe en Swift, en ne redéfinissant que ce dont vous avez besoin :
+
+```swift showLineNumbers title="Swift"
+class MyPaywallObserver: BasePaywallObserver {
+    override func paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: any AdaptyUIAction) {
+        if action is AdaptyUIActionCloseAction {
+            // remove nativeView from your view hierarchy
+        }
+    }
+}
+
+let nativeView = AdaptyUI.shared.createNativePaywallView(
+    paywall: paywall,
+    observer: MyPaywallObserver()
+)
+// nativeView.viewController is a UIViewController.
+// Add it to your SwiftUI view or UIKit hierarchy.
+```
+</TabItem>
+</Tabs>
+
+### Libérer la vue \{#dispose-the-view\}
+
+Appelez `dispose()` lorsque vous retirez la vue de votre mise en page. Cela désenregistre l'écouteur d'événements et libère les ressources internes.
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+nativeView.dispose()
+```
+
+## Tags personnalisés \{#custom-tags\}
+
+Les tags personnalisés vous permettent d'éviter de créer des paywalls distincts pour différents scénarios. Imaginez un seul paywall qui s'adapte dynamiquement selon les données de l'utilisateur. Par exemple, au lieu d'un générique « Bonjour ! », vous pourriez accueillir les utilisateurs personnellement avec « Bonjour, John ! » ou « Bonjour, Ann ! »
+
+Voici quelques façons d'utiliser les tags personnalisés :
+
+- Afficher le nom ou l'e-mail de l'utilisateur sur le paywall.
+- Afficher le jour de la semaine actuel pour stimuler les ventes (par ex., « Bonne journée de jeudi »).
+- Ajouter des détails personnalisés sur les produits que vous vendez (comme le nom d'un programme fitness ou un numéro de téléphone dans une application VoIP).
+
+Les tags personnalisés vous aident à créer un paywall flexible qui s'adapte à diverses situations, rendant l'interface de votre application plus personnalisée et engageante.
+
+:::warning
+Dans certains cas, votre application peut ne pas savoir par quoi remplacer un tag personnalisé — notamment si les utilisateurs utilisent une ancienne version du SDK AdaptyUI. Pour éviter ce problème, ajoutez toujours un texte de repli qui remplacera les lignes contenant des tags inconnus. Sans cela, les utilisateurs pourraient voir les tags affichés sous forme de code (`<USERNAME/>`).
+:::
+
+Pour utiliser des tags personnalisés dans votre paywall, passez-les lors de la création de la vue de paywall :
+
+<Tabs>
+<TabItem value="standalone" label="Avec Compose Multiplatform" default>
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    val customTags = mapOf(
+        "USERNAME" to "John",
+        "DAY_OF_WEEK" to "Thursday"
+    )
+
+    AdaptyUI.createPaywallView(
+        paywall = paywall,
+        customTags = customTags
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="native" label="Sans Compose Multiplatform">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val customTags = mapOf(
+    "USERNAME" to "John",
+    "DAY_OF_WEEK" to "Thursday"
+)
+
+val nativeView = AdaptyUI.createNativePaywallView(
+    context = context,
+    viewModelStoreOwner = activity,
+    paywall = paywall,
+    observer = myPaywallObserver,
+    customTags = customTags,
+)
+```
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+
+val customTags = mapOf(
+    "USERNAME" to "John",
+    "DAY_OF_WEEK" to "Thursday"
+)
+
+val nativeView = AdaptyUI.createNativePaywallView(
+    paywall = paywall,
+    observer = myPaywallObserver,
+    customTags = customTags,
+)
+```
+</TabItem>
+</Tabs>
+
+## Minuteries personnalisées \{#custom-timers\}
+
+La minuterie de paywall est un excellent outil pour promouvoir des offres spéciales et saisonnières avec une limite de temps. Notez cependant que cette minuterie n'est pas liée à la validité de l'offre ni à la durée de la campagne. Il s'agit simplement d'un compte à rebours autonome qui démarre à partir de la valeur que vous définissez et diminue jusqu'à zéro. Lorsque la minuterie atteint zéro, rien ne se passe — elle reste simplement à zéro.
+
+Vous pouvez personnaliser le texte avant et après la minuterie pour créer le message souhaité, par exemple : « Offre se termine dans : 10:00 sec. »
+
+Pour utiliser des minuteries personnalisées dans votre paywall, passez-les lors de la création de la vue de paywall :
+
+<Tabs>
+<TabItem value="standalone" label="Avec Compose Multiplatform" default>
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    val customTimers = mapOf(
+        "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+        "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+    )
+
+    AdaptyUI.createPaywallView(
+        paywall = paywall,
+        customTimers = customTimers
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="native" label="Sans Compose Multiplatform">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val customTimers = mapOf(
+    "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+    "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+)
+
+val nativeView = AdaptyUI.createNativePaywallView(
+    context = context,
+    viewModelStoreOwner = activity,
+    paywall = paywall,
+    observer = myPaywallObserver,
+    customTimers = customTimers,
+)
+```
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+
+val customTimers = mapOf(
+    "CUSTOM_TIMER_NY" to LocalDateTime(2025, 1, 1, 0, 0, 0),
+    "CUSTOM_TIMER_SALE" to LocalDateTime(2024, 12, 31, 23, 59, 59)
+)
+
+val nativeView = AdaptyUI.createNativePaywallView(
+    paywall = paywall,
+    observer = myPaywallObserver,
+    customTimers = customTimers,
+)
+```
+</TabItem>
+</Tabs>
+
+</SDKv3>

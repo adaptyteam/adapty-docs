@@ -1,0 +1,94 @@
+---
+title: "Vérifier le statut d'abonnement dans le SDK React Native"
+description: "Découvrez comment vérifier le statut d'abonnement dans votre application React Native avec Adapty."
+metadataTitle: "Vérifier le statut d'abonnement | Documentation Adapty"
+displayed_sidebar: sdkreactnative
+keywords: ['getProfile', 'subscription status']
+rank: 90
+---
+
+Pour décider si les utilisateurs peuvent accéder au contenu payant ou voir un paywall, vous devez vérifier leur [niveau d'accès](access-level) dans le profil.
+
+Cet article vous montre comment accéder à l'état du profil pour décider ce que les utilisateurs doivent voir — que ce soit un paywall ou l'accès aux fonctionnalités payantes.
+
+## Obtenir le statut d'abonnement \{#get-subscription-status\}
+
+Lorsque vous décidez d'afficher un paywall ou du contenu payant à un utilisateur, vous vérifiez son [niveau d'accès](access-level) dans son profil. Deux options s'offrent à vous :
+
+- Appelez `getProfile` si vous avez besoin des dernières données de profil immédiatement (par exemple au lancement de l'application) ou si vous souhaitez forcer une mise à jour.
+- Configurez les **mises à jour automatiques du profil** pour conserver une copie locale qui se rafraîchit automatiquement à chaque changement de statut d'abonnement.
+
+### Récupérer le profil \{#get-profile\}
+
+La façon la plus simple d'obtenir le statut d'abonnement est d'utiliser la méthode `getProfile` pour accéder au profil :
+
+```typescript showLineNumbers
+try {
+    const profile = await adapty.getProfile();
+} catch (error) {
+  // handle the error
+}
+```
+
+### Écouter les mises à jour d'abonnement \{#listen-to-subscription-updates\}
+
+Pour recevoir automatiquement les mises à jour du profil dans votre application :
+
+1. Utilisez `adapty.addEventListener('onLatestProfileLoad')` pour écouter les changements de profil — Adapty appellera automatiquement cette méthode à chaque changement de statut d'abonnement de l'utilisateur.
+2. Stockez les données de profil mises à jour lorsque cette méthode est appelée, afin de pouvoir les utiliser dans toute votre application sans effectuer de requêtes réseau supplémentaires.
+
+```javascript
+class SubscriptionManager {
+    private currentProfile: any = null;
+    
+    constructor() {
+        // Listen for profile updates
+        adapty.addEventListener('onLatestProfileLoad', (profile) => {
+            this.currentProfile = profile;
+            // Update UI, unlock content, etc.
+        });
+    }
+    
+    // Use stored profile instead of calling getProfile()
+    hasAccess(): boolean {
+        return this.currentProfile?.accessLevels?.['premium']?.isActive ?? false;
+    }
+}
+```
+
+:::note
+Adapty appelle automatiquement le listener d'événement `onLatestProfileLoad` au démarrage de votre application, fournissant des données d'abonnement en cache même si l'appareil est hors ligne.
+:::
+
+## Associer le profil à la logique de paywall \{#connect-profile-with-paywall-logic\}
+
+Lorsque vous devez prendre des décisions immédiates concernant l'affichage des paywalls ou l'accès aux fonctionnalités payantes, vous pouvez vérifier le profil de l'utilisateur directement. Cette approche est utile pour des scénarios tels que le lancement de l'application, l'accès aux sections premium, ou avant d'afficher du contenu spécifique.
+
+```javascript
+const checkAccessLevel = async () => {
+  try {
+    const profile = await adapty.getProfile();
+    return profile.accessLevels['YOUR_ACCESS_LEVEL']?.isActive === true;
+  } catch (error) {
+    console.warn('Error checking access level:', error);
+    return false; // Show paywall if access check fails
+  }
+};
+
+const initializePaywall = async () => {
+  try {
+    await loadPaywall();
+    
+    const hasAccess = await checkAccessLevel();
+    if (!hasAccess) {
+      // Show paywall if no access
+    }
+  } catch (error) {
+    console.warn('Error initializing paywall:', error);
+  }
+};
+``` 
+
+## Prochaines étapes \{#next-steps\}
+
+Maintenant que vous savez comment suivre le statut d'abonnement, découvrez comment [travailler avec les profils utilisateur](react-native-quickstart-identify) pour vous assurer qu'ils peuvent accéder à ce pour quoi ils ont payé.

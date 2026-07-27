@@ -1,30 +1,499 @@
 ---
-title: "Kotlin Multiplatform - Xử lý sự kiện paywall"
-description: "Xử lý các sự kiện gói đăng ký trong Kotlin Multiplatform hiệu quả với các công cụ theo dõi sự kiện của Adapty."
-metadataTitle: "Xử lý sự kiện trong Kotlin Multiplatform | Tài liệu Adapty"
+title: "Xử lý sự kiện flow & paywall - Kotlin Multiplatform"
+description: "Xử lý các sự kiện flow và paywall trong ứng dụng Kotlin Multiplatform của bạn."
+metadataTitle: "Xử lý Sự kiện Flow - Kotlin Multiplatform | Tài liệu Adapty"
 toc_max_heading_level: 4
-keywords: ['AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+keywords: ['AdaptyUIFlowsEventsObserver', 'flowViewDidPerformAction', 'flowViewDidSelectProduct', 'flowViewDidStartPurchase', 'flowViewDidFinishPurchase', 'flowViewDidFailPurchase', 'flowViewDidStartRestore', 'flowViewDidFinishRestore', 'flowViewDidFailRestore', 'flowViewDidFailLoadingProducts', 'flowViewDidReceiveError', 'AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
 
 import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
 
-Các paywall được cấu hình bằng [Paywall Builder](adapty-paywall-builder) không cần thêm code để thực hiện và khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể phản hồi. Những sự kiện đó bao gồm thao tác nhấn nút (nút đóng, URL, chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua trên paywall. Tìm hiểu cách phản hồi các sự kiện này bên dưới.
+<SDKv4>
+
+:::important
+Hướng dẫn này đề cập đến việc xử lý sự kiện cho các giao dịch mua, khôi phục, lựa chọn sản phẩm và hiển thị flow. Bạn cũng phải triển khai xử lý nút (đóng flow, mở liên kết, v.v.). Xem [hướng dẫn xử lý hành động trong flow](kmp-handle-paywall-actions) để biết thêm chi tiết.
+:::
+
+Flow và paywall được cấu hình bằng [Flow Builder](adapty-flow-builder) hoặc [Paywall Builder](adapty-paywall-builder) không cần thêm code để thực hiện và khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể phản hồi. Các sự kiện đó bao gồm thao tác nhấn nút (nút đóng, URL, lựa chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua. Tìm hiểu cách phản hồi những sự kiện này bên dưới.
+
+Để kiểm soát hoặc theo dõi các tiến trình xảy ra trên màn hình flow trong ứng dụng di động của bạn, hãy triển khai các phương thức của interface `AdaptyUIFlowsEventsObserver` và đăng ký observer với `AdaptyUI.setFlowsEventsObserver()`. Một số phương thức có sẵn các implementation mặc định xử lý các tình huống phổ biến một cách tự động, vì vậy chỉ cần override những phương thức bạn muốn thay đổi:
+
+```kotlin showLineNumbers title="Kotlin"
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+    // override only the methods you want to change
+})
+```
+
+:::note
+Đây là nơi bạn thêm logic tùy chỉnh để xử lý các sự kiện flow. Bạn có thể dùng `view.dismiss()` để đóng flow, hoặc triển khai bất kỳ hành vi tùy chỉnh nào khác bạn cần. Lưu ý rằng `dismiss()` là một suspend function — bên trong callback, hãy khởi chạy nó trên `mainUiScope` của observer: `mainUiScope.launch { view.dismiss() }`.
+:::
+
+### Sự kiện do người dùng tạo ra
+
+#### Flow xuất hiện và biến mất
+
+Khi một flow xuất hiện hoặc biến mất, các phương thức sau sẽ được gọi:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidAppear(view: AdaptyUIFlowView) {
+    // Handle flow appearance
+    // You can track analytics or update UI here
+}
+
+override fun flowViewDidDisappear(view: AdaptyUIFlowView) {
+    // Handle flow disappearance
+    // You can track analytics or update UI here
+}
+```
+
+:::note
+- Trên iOS, `flowViewDidAppear` cũng được gọi khi người dùng nhấn vào [nút web paywall](web-paywall#step-2a-add-a-web-purchase-button) bên trong một flow, và web paywall mở trong trình duyệt trong ứng dụng.
+- Trên iOS, `flowViewDidDisappear` cũng được gọi khi một [web paywall](web-paywall#step-2a-add-a-web-purchase-button) được mở từ một flow trong trình duyệt trong ứng dụng biến mất khỏi màn hình.
+:::
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+// Flow appeared
+{
+  // No additional data
+}
+
+// Flow disappeared
+{
+  // No additional data
+}
+```
+</Details>
+
+#### Chọn sản phẩm \{#product-selection\}
+
+Nếu người dùng chọn một sản phẩm để mua, phương thức này sẽ được gọi:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidSelectProduct(view: AdaptyUIFlowView, productId: String) {
+    // Handle product selection
+    // You can update UI or track analytics here
+}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+#### Bắt đầu mua hàng \{#started-purchase\}
+
+Nếu người dùng bắt đầu quá trình mua hàng, phương thức này sẽ được gọi:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidStartPurchase(view: AdaptyUIFlowView, product: AdaptyPaywallProduct) {
+    // Handle purchase start
+    // You can show loading indicators or track analytics here
+}
+```
+
+:::note
+Trong [chế độ Observer](kmp-present-flows-in-observer-mode), các giao dịch mua được bắt đầu từ một flow sẽ được chuyển đến `AdaptyUIObserverModeResolver` của bạn.
+:::
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Mua hàng thành công, bị hủy, hoặc đang chờ xử lý \{#successful-canceled-or-pending-purchase\}
+
+Phương thức này sẽ được gọi khi một giao dịch mua hoàn tất. Mặc định, nó không làm gì cả — flow vẫn mở sau khi mua hàng cho đến khi bạn tự đóng nó, vì vậy hãy tự gọi `view.dismiss()` sau khi người dùng được cấp quyền truy cập:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFinishPurchase(
+    view: AdaptyUIFlowView,
+    product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            // Check if user has access to premium features
+            if (purchaseResult.profile.accessLevels["premium"]?.isActive == true) {
+                mainUiScope.launch { view.dismiss() }
+            }
+        }
+        AdaptyPurchaseResult.Pending -> {
+            // Handle pending purchase (e.g., user will pay offline with cash)
+        }
+        AdaptyPurchaseResult.UserCanceled -> {
+            // Handle user cancellation
+        }
+    }
+}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+
+// User canceled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCanceled"
+  }
+}
+```
+</Details>
+
+Chúng tôi khuyến nghị đóng màn hình flow khi mua hàng thành công.
+
+#### Mua hàng thất bại \{#failed-purchase\}
+
+Phương thức này sẽ được gọi khi một giao dịch mua hàng thất bại do lỗi. Điều này bao gồm các lỗi từ StoreKit/Google Play Billing (hạn chế thanh toán, sản phẩm không hợp lệ, lỗi mạng), lỗi xác minh giao dịch và lỗi hệ thống. Lưu ý rằng khi người dùng hủy, `flowViewDidFinishPurchase` sẽ được gọi với kết quả bị hủy thay vì phương thức này, và các thanh toán đang chờ xử lý cũng không kích hoạt phương thức này.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFailPurchase(
+    view: AdaptyUIFlowView,
+    product: AdaptyPaywallProduct,
+    error: AdaptyError
+) {
+    // Add your purchase failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+#### Bắt đầu khôi phục \{#started-restore\}
+
+Nếu người dùng khởi động quá trình khôi phục, phương thức này sẽ được gọi:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidStartRestore(view: AdaptyUIFlowView) {
+    // Handle restore start
+    // You can show loading indicators or track analytics here
+}
+```
+
+#### Khôi phục thành công \{#successful-restore\}
+
+Nếu việc khôi phục giao dịch mua thành công, phương thức này sẽ được gọi. Theo mặc định, nó không làm gì — flow vẫn mở sau khi khôi phục cho đến khi bạn đóng nó:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFinishRestore(view: AdaptyUIFlowView, profile: AdaptyProfile) {
+    // Add your successful restore handling logic here
+    // For example: show success message, update UI, or dismiss the flow
+
+    // Check if user has access to premium features
+    if (profile.accessLevels["premium"]?.isActive == true) {
+        mainUiScope.launch { view.dismiss() }
+    }
+}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Chúng tôi khuyến nghị đóng màn hình nếu người dùng có `accessLevel` yêu cầu. Tham khảo chủ đề [Trạng thái gói đăng ký](subscription-status) để tìm hiểu cách kiểm tra.
+
+#### Khôi phục thất bại \{#failed-restore\}
+
+Nếu `Adapty.restorePurchases()` thất bại, phương thức này sẽ được gọi:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFailRestore(view: AdaptyUIFlowView, error: AdaptyError) {
+    // Add your restore failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>Ví dụ về sự kiện (Nhấp để mở rộng)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### Hoàn tất điều hướng thanh toán web \{#web-payment-navigation-completion\}
+
+Nếu người dùng bắt đầu quá trình mua hàng thông qua [web paywall](web-paywall), phương thức này sẽ được gọi:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFinishWebPaymentNavigation(
+    view: AdaptyUIFlowView,
+    product: AdaptyPaywallProduct?,
+    error: AdaptyError?
+) {
+    if (error != null) {
+        // Handle web payment navigation error
+    } else {
+        // Handle successful web payment navigation
+    }
+}
+```
+
+<Details>
+<summary>Ví dụ về sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+// Successful web payment navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed web payment navigation
+{
+  "product": null,
+  "error": {
+    "code": "web_payment_failed",
+    "message": "Web payment navigation failed",
+    "details": {
+      "underlyingError": "Network connection error"
+    }
+  }
+}
+```
+</Details>
+
+### Tải dữ liệu và hiển thị \{#data-fetching-and-rendering\}
+
+#### Lỗi tải sản phẩm \{#product-loading-errors\}
+
+Nếu bạn không truyền sản phẩm trong quá trình khởi tạo, AdaptyUI sẽ tự động lấy các đối tượng cần thiết từ server. Nếu thao tác này thất bại, AdaptyUI sẽ báo lỗi bằng cách gọi phương thức sau:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFailLoadingProducts(view: AdaptyUIFlowView, error: AdaptyError) {
+    // Add your product loading failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+#### Lỗi hiển thị và lỗi runtime \{#rendering-and-runtime-errors\}
+
+Nếu xảy ra lỗi trong quá trình hiển thị giao diện, hoặc một lỗi runtime không liên quan đến việc mua hàng, lỗi đó sẽ được báo cáo qua phương thức này. Theo mặc định, flow sẽ bị đóng khi có lỗi — ghi đè phương thức này để giữ flow mở hoặc thêm cách xử lý riêng của bạn:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveError(view: AdaptyUIFlowView, error: AdaptyError) {
+    // Handle the error
+    // The default implementation dismisses the flow;
+    // once you override this method, dismissal is up to you
+}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+{
+    "error": {
+        "code": "rendering_failed",
+            "message": "Failed to render flow interface",
+            "details": {
+            "underlyingError": "Invalid flow configuration"
+        }
+    }
+}
+```
+</Details>
+
+Trong tình huống bình thường, những lỗi này không nên xảy ra, vì vậy nếu bạn gặp phải, hãy cho chúng tôi biết.
+
+#### Sự kiện analytics \{#analytics-events\}
+
+Callback `flowViewDidReceiveAnalyticEvent` được dành cho các sự kiện analytics tùy chỉnh từ một flow. Các flow chưa phát ra những sự kiện này đến code của bạn, vì vậy bạn không cần triển khai nó:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String
+) {
+    // Reserved for custom analytic events from a flow
+}
+```
+
+### Điều hướng \{#navigation\}
+
+#### Nút Back hệ thống Android \{#android-system-back-button\}
+
+Mặc định, một flow không thể bị đóng bằng nút back hệ thống Android hoặc thao tác vuốt để quay lại — cài đặt mặc định của `flowViewDidPerformAction` chỉ đóng flow khi nhận `CloseAction` và bỏ qua `AndroidSystemBackAction`, do đó người dùng chỉ rời khỏi flow qua con đường bạn định nghĩa, chẳng hạn như nút **Close** hoặc action `on_device_back` trong builder. Nếu muốn nút back hệ thống có thể đóng flow, hãy tự xử lý action đó:
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+    when (action) {
+        is AdaptyUIAction.CloseAction ->
+            mainUiScope.launch { view.dismiss() } // default behavior
+        is AdaptyUIAction.AndroidSystemBackAction ->
+            mainUiScope.launch { view.dismiss() } // not handled by default
+        is AdaptyUIAction.OpenUrlAction ->
+            AdaptyUI.openWebUrl(action.url, action.openIn) // default behavior
+        else -> Unit
+    }
+}
+```
+
+Xem [hướng dẫn xử lý các hành động flow](kmp-handle-paywall-actions) để biết danh sách đầy đủ các hành động.
+
+</SDKv4>
+
+<SDKv3>
+
+Các paywall được cấu hình bằng [Paywall Builder](adapty-paywall-builder) không cần thêm code để thực hiện và khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể phản hồi. Các sự kiện đó bao gồm các lần nhấn nút (nút đóng, URL, lựa chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua được thực hiện trên paywall. Tìm hiểu cách phản hồi các sự kiện này bên dưới.
 
 :::warning
 Hướng dẫn này chỉ dành cho **paywall Paywall Builder mới**.
 :::
 
-Để kiểm soát hoặc theo dõi các quy trình diễn ra trên màn hình paywall trong ứng dụng di động của bạn, hãy triển khai các phương thức của interface `AdaptyUIPaywallsEventsObserver`. Một số phương thức có triển khai mặc định tự động xử lý các tình huống phổ biến.
+Để kiểm soát hoặc theo dõi các sự kiện xảy ra trên màn hình paywall trong ứng dụng của bạn, hãy implement các phương thức của interface `AdaptyUIPaywallsEventsObserver`. Một số phương thức có implementation mặc định xử lý các trường hợp phổ biến một cách tự động.
 
 :::note
-Đây là nơi bạn thêm logic tùy chỉnh để phản hồi các sự kiện paywall. Bạn có thể dùng `view.dismiss()` để đóng paywall, hoặc triển khai bất kỳ hành vi tùy chỉnh nào khác mà bạn cần.
+Đây là nơi bạn thêm logic tùy chỉnh để phản hồi các sự kiện trên paywall. Bạn có thể dùng `view.dismiss()` để đóng paywall, hoặc implement bất kỳ hành vi tùy chỉnh nào khác mà bạn cần.
 :::
 
 ## Sự kiện do người dùng tạo ra \{#user-generated-events\}
 
-### Paywall hiển thị và ẩn đi \{#paywall-appearance-and-disappearance\}
+### Giao diện paywall hiện và ẩn \{#paywall-appearance-and-disappearance\}
 
-Khi một paywall xuất hiện hoặc biến mất, các phương thức này sẽ được gọi:
+Khi paywall hiện ra hoặc ẩn đi, các phương thức sau sẽ được gọi:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidAppear(view: AdaptyUIPaywallView) {
@@ -39,12 +508,12 @@ override fun paywallViewDidDisappear(view: AdaptyUIPaywallView) {
 ```
 
 :::note
-- Trên iOS, `paywallViewDidAppear` cũng được gọi khi người dùng nhấn vào [nút web paywall](web-paywall#step-2a-add-a-web-purchase-button) bên trong một paywall, và một web paywall mở trong trình duyệt trong ứng dụng.
-- Trên iOS, `paywallViewDidDisappear` cũng được gọi khi một [web paywall](web-paywall#step-2a-add-a-web-purchase-button) mở từ paywall trong trình duyệt trong ứng dụng biến mất khỏi màn hình.
+- Trên iOS, `paywallViewDidAppear` cũng được gọi khi người dùng nhấn vào [nút web paywall](web-paywall#step-2a-add-a-web-purchase-button) bên trong một paywall, và web paywall mở trong trình duyệt trong ứng dụng.
+- Trên iOS, `paywallViewDidDisappear` cũng được gọi khi một [web paywall](web-paywall#step-2a-add-a-web-purchase-button) được mở từ paywall trong trình duyệt trong ứng dụng biến mất khỏi màn hình.
 :::
 
 <Details>
-<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+<summary>Ví dụ về sự kiện (Nhấp để mở rộng)</summary>
 
 ```javascript
 // Paywall appeared
@@ -80,9 +549,9 @@ override fun paywallViewDidSelectProduct(view: AdaptyUIPaywallView, productId: S
 ```
 </Details>
 
-### Bắt đầu mua \{#started-purchase\}
+### Bắt đầu mua hàng \{#started-purchase\}
 
-Nếu người dùng khởi tạo quá trình mua, phương thức này sẽ được gọi:
+Nếu người dùng bắt đầu quá trình mua hàng, phương thức này sẽ được gọi:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidStartPurchase(view: AdaptyUIPaywallView, product: AdaptyPaywallProduct) {
@@ -108,9 +577,9 @@ override fun paywallViewDidStartPurchase(view: AdaptyUIPaywallView, product: Ada
 ```
 </Details>
 
-### Mua thành công, bị hủy hoặc đang chờ xử lý \{#successful-canceled-or-pending-purchase\}
+### Mua hàng thành công, bị hủy hoặc đang chờ xử lý \{#successful-canceled-or-pending-purchase\}
 
-Nếu giao dịch mua thành công, phương thức này sẽ được gọi. Theo mặc định, nó sẽ tự động đóng paywall trừ khi người dùng hủy giao dịch:
+Nếu một giao dịch mua thành công, phương thức này sẽ được gọi. Theo mặc định, nó sẽ tự động đóng paywall trừ khi giao dịch bị người dùng hủy:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFinishPurchase(
@@ -195,11 +664,11 @@ override fun paywallViewDidFinishPurchase(
 ```
 </Details>
 
-Chúng tôi khuyến nghị đóng màn hình paywall khi giao dịch mua thành công.
+Chúng tôi khuyến nghị đóng màn hình paywall khi mua hàng thành công.
 
-### Mua thất bại \{#failed-purchase\}
+### Mua hàng thất bại \{#failed-purchase\}
 
-Nếu giao dịch mua thất bại do lỗi, phương thức này sẽ được gọi. Điều này bao gồm các lỗi StoreKit/Google Play Billing (giới hạn thanh toán, sản phẩm không hợp lệ, lỗi mạng), lỗi xác minh giao dịch và lỗi hệ thống. Lưu ý rằng việc người dùng hủy sẽ kích hoạt `paywallViewDidFinishPurchase` với kết quả đã hủy, và các khoản thanh toán đang chờ xử lý không kích hoạt phương thức này.
+Nếu giao dịch mua hàng thất bại do lỗi, phương thức này sẽ được gọi. Điều này bao gồm các lỗi từ StoreKit/Google Play Billing (hạn chế thanh toán, sản phẩm không hợp lệ, lỗi mạng), lỗi xác minh giao dịch và lỗi hệ thống. Lưu ý rằng khi người dùng hủy giao dịch, `paywallViewDidFinishPurchase` sẽ được gọi với kết quả đã hủy, còn các khoản thanh toán đang chờ xử lý sẽ không kích hoạt phương thức này.
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFailPurchase(
@@ -238,7 +707,7 @@ override fun paywallViewDidFailPurchase(
 
 ### Bắt đầu khôi phục \{#started-restore\}
 
-Nếu người dùng khởi tạo quá trình khôi phục, phương thức này sẽ được gọi:
+Nếu người dùng khởi động quá trình khôi phục, phương thức này sẽ được gọi:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidStartRestore(view: AdaptyUIPaywallView) {
@@ -249,7 +718,7 @@ override fun paywallViewDidStartRestore(view: AdaptyUIPaywallView) {
 
 ### Khôi phục thành công \{#successful-restore\}
 
-Nếu khôi phục giao dịch mua thành công, phương thức này sẽ được gọi:
+Nếu việc khôi phục giao dịch mua thành công, phương thức này sẽ được gọi:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFinishRestore(view: AdaptyUIPaywallView, profile: AdaptyProfile) {
@@ -288,7 +757,7 @@ override fun paywallViewDidFinishRestore(view: AdaptyUIPaywallView, profile: Ada
 ```
 </Details>
 
-Chúng tôi khuyến nghị đóng màn hình nếu người dùng có `accessLevel` cần thiết. Tham khảo chủ đề [Trạng thái gói đăng ký](subscription-status) để tìm hiểu cách kiểm tra.
+Chúng tôi khuyến nghị đóng màn hình nếu người dùng có `accessLevel` cần thiết. Tham khảo mục [Trạng thái gói đăng ký](subscription-status) để tìm hiểu cách kiểm tra.
 
 ### Khôi phục thất bại \{#failed-restore\}
 
@@ -319,7 +788,7 @@ override fun paywallViewDidFailRestore(view: AdaptyUIPaywallView, error: AdaptyE
 
 ### Hoàn tất điều hướng thanh toán web \{#web-payment-navigation-completion\}
 
-Nếu người dùng khởi tạo quá trình mua bằng [web paywall](web-paywall), phương thức này sẽ được gọi:
+Nếu người dùng bắt đầu quá trình mua hàng thông qua [web paywall](web-paywall), phương thức này sẽ được gọi:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFinishWebPaymentNavigation(
@@ -336,7 +805,7 @@ override fun paywallViewDidFinishWebPaymentNavigation(
 ```
 
 <Details>
-<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+<summary>Ví dụ về sự kiện (Nhấp để mở rộng)</summary>
 
 ```javascript
 // Successful web payment navigation
@@ -366,11 +835,11 @@ override fun paywallViewDidFinishWebPaymentNavigation(
 ```
 </Details>
 
-## Tải dữ liệu và hiển thị \{#data-fetching-and-rendering\}
+## Tải và hiển thị dữ liệu \{#data-fetching-and-rendering\}
 
 ### Lỗi tải sản phẩm \{#product-loading-errors\}
 
-Nếu bạn không truyền sản phẩm trong quá trình khởi tạo, AdaptyUI sẽ tự động lấy các đối tượng cần thiết từ máy chủ. Nếu thao tác này thất bại, AdaptyUI sẽ báo lỗi bằng cách gọi phương thức này:
+Nếu bạn không truyền các sản phẩm trong quá trình khởi tạo, AdaptyUI sẽ tự lấy các đối tượng cần thiết từ máy chủ. Nếu thao tác này thất bại, AdaptyUI sẽ báo lỗi bằng cách gọi phương thức này:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFailLoadingProducts(view: AdaptyUIPaywallView, error: AdaptyError) {
@@ -397,7 +866,7 @@ override fun paywallViewDidFailLoadingProducts(view: AdaptyUIPaywallView, error:
 
 ### Lỗi hiển thị \{#rendering-errors\}
 
-Nếu xảy ra lỗi trong quá trình hiển thị giao diện, lỗi đó sẽ được báo cáo bởi phương thức này:
+Nếu có lỗi xảy ra trong quá trình hiển thị giao diện, lỗi đó sẽ được báo cáo qua phương thức này:
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFailRendering(view: AdaptyUIPaywallView, error: AdaptyError) {
@@ -423,4 +892,5 @@ override fun paywallViewDidFailRendering(view: AdaptyUIPaywallView, error: Adapt
 ```
 </Details>
 
-Trong điều kiện bình thường, các lỗi như vậy không nên xảy ra, vì vậy nếu bạn gặp phải, hãy cho chúng tôi biết.
+Trong trường hợp bình thường, các lỗi này không nên xảy ra, vì vậy nếu bạn gặp phải, vui lòng thông báo cho chúng tôi.
+</SDKv3>
