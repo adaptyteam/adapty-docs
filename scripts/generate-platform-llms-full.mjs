@@ -161,9 +161,12 @@ function cleanFrontmatter(content) {
 function extractDocIds(items, docIds = []) {
     for (const item of items) {
         if (item.type === 'category') {
-            // If category has a link, add it
+            // If the category itself is an article (docusaurus link {type:'doc'}
+            // or our sidebar shorthand - a bare `id`), add it.
             if (item.link && item.link.type === 'doc') {
                 docIds.push(item.link.id);
+            } else if (item.id) {
+                docIds.push(item.id);
             }
             // Process children
             if (item.items) {
