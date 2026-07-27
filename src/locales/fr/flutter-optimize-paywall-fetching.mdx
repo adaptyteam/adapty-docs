@@ -1,0 +1,32 @@
+---
+title: "Optimiser la récupération des paywalls dans le SDK Flutter"
+description: "Récupérez les paywalls Adapty de manière fiable : timing, mise en cache et stratégies de secours pour Flutter."
+metadataTitle: "Optimiser la récupération des paywalls | SDK Flutter | Documentation Adapty"
+---
+
+Une récupération fiable de paywall sous Flutter fait trois choses : s'affiche rapidement, retourne le paywall ciblé par audience et bascule gracieusement lorsque le réseau est lent. Les règles ci-dessous couvrent le timing, la mise en cache et les stratégies de secours pour y parvenir.
+
+:::tip
+Ces règles supposent que `Adapty().activate()` et `Adapty().identify()` ont déjà été résolus. Voir [Ordre d'appel dans le SDK Flutter](flutter-sdk-call-order).
+:::
+
+Les conseils ci-dessous utilisent les noms de méthodes v3. Dans le SDK v4, `getPaywall` est renommé en `getFlow` et le type de politique de récupération en `AdaptyFlowFetchPolicy` — toutes les règles s'appliquent sans changement.
+
+## Règles et pièges \{#rules-and-pitfalls\}
+
+| À faire | À éviter | Pourquoi |
+|---|---|---|
+| Récupérez le placement que vous êtes sur le point d'afficher.                                                                                  | Pré-charger tous les placements en parallèle au démarrage.        | Un pré-chargement en masse bloque le thread principal et provoque un écran noir pendant la rafale.                                  |
+| Appelez `getPaywall` une fois que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `activate` ou après le déclenchement de `didUpdateProfileStream`. | Appeler `getPaywall` dans `main()` avant `runApp`.         | L'attribution n'est pas encore arrivée. Le paywall se résout contre l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
+| Définissez un `loadTimeout` et configurez un [paywall de secours](fallback-paywalls) pour chaque placement.                             | Attendre indéfiniment `getPaywall`.                     | Sans délai d'expiration, les utilisateurs avec une mauvaise connectivité voient un écran vide jusqu'à ce que le réseau se rétablisse — ou ferment l'application.     |
+
+Voir [Récupérer les paywalls et les produits](fetch-paywalls-and-products-flutter) pour la référence des paramètres `fetchPolicy` et `loadTimeout`, et [Placements](placements) pour choisir le bon placement.
+
+## Optimiser pour une mauvaise connectivité \{#tune-for-poor-connectivity\}
+
+Pour les marchés avec une connectivité régulièrement médiocre (zones rurales, transports en commun, régions affectées par le routage) :
+
+- Définissez `fetchPolicy: AdaptyPaywallFetchPolicy.returnCacheDataElseLoad` sur chaque récupération sauf la toute première.
+- Configurez un [paywall de secours](fallback-paywalls) pour chaque placement dans l'Adapty Dashboard.
+- Définissez `loadTimeout` entre 3 et 5 secondes et acceptez le paywall de secours lorsque le délai expire.
+- Ne conditionnez pas l'affichage du paywall à `getProfile()`. Appelez `getPaywall` indépendamment pour qu'un profil lent ne bloque pas l'interface.

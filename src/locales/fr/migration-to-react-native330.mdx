@@ -1,0 +1,548 @@
+---
+title: "Migrer le SDK Adapty React Native vers la v3.3"
+description: "Migrez vers le SDK Adapty React Native v3.3 pour de meilleures performances et de nouvelles fonctionnalités de monétisation."
+metadataTitle: "Migration vers le SDK Adapty React Native v3.3 | Documentation Adapty"
+---
+
+Le SDK Adapty 3.3.1 est une version majeure qui apporte des améliorations pouvant nécessiter quelques étapes de migration de votre part.
+
+1. Mettre à niveau vers le SDK Adapty v3.3.x.
+2. Mettre à jour les modèles.
+3. Supprimer la méthode `getProductsIntroductoryOfferEligibility`.
+4. Mettre à jour la création d'achat.
+5. Mettre à jour la présentation des paywalls du Paywall Builder.
+6. Revoir l'implémentation des timers définis par le développeur.
+7. Mettre à jour la gestion des événements d'achat du Paywall Builder.
+8. Mettre à jour la gestion des événements d'action personnalisée du Paywall Builder.
+9. Modifier le callback `onProductSelected`.
+10. Supprimer les paramètres d'intégration tiers de la méthode `updateProfile`.
+11. Mettre à jour les configurations d'intégration pour Adjust, AirBridge, Amplitude, AppMetrica, Appsflyer, Branch, Facebook Ads, Firebase et Google Analytics, Mixpanel, OneSignal et Pushwoosh.
+12. Mettre à jour l'implémentation du mode Observer.
+
+## Mettre à niveau le SDK Adapty React Native vers la 3.3.x \{#upgrade-adapty-react-native-sdk-to-33x\}
+
+Avant la version 3.3.1, le SDK `react-native-adapty` était le SDK principal et obligatoire pour qu'Adapty fonctionne correctement dans votre application. Le SDK `@adapty/react-native-ui` était optionnel et nécessaire uniquement si vous utilisiez le Paywall Builder d'Adapty.
+
+À partir de la version 3.3.1, le SDK `@adapty/react-native-ui` est déprécié et ses fonctionnalités ont été intégrées dans le SDK `react-native-adapty`. Pour mettre à niveau vers la version 3.3.1, suivez ces étapes :
+
+1. Mettez à jour le package `react-native-adapty` vers la version 3.3.1.
+2. Supprimez le package `@adapty/react-native-ui` des dépendances de votre projet.
+3. Synchronisez les dépendances de votre projet pour appliquer les modifications.
+
+## Modifications des modèles \{#changes-in-models\}
+
+### Nouveaux modèles \{#new-models\}
+
+1. [AdaptySubscriptionOffer](https://react-native.adapty.io/interfaces/adaptysubscriptionoffer) :
+
+    ```typescript showLineNumbers
+    export interface AdaptySubscriptionOffer {
+      readonly identifier: AdaptySubscriptionOfferId;
+
+      phases: AdaptyDiscountPhase[];
+
+      android?: {
+        offerTags?: string[];
+      };
+    }
+    ```
+
+2. [AdaptySubscriptionOfferId](https://react-native.adapty.io/types/adaptysubscriptionofferid) :
+
+    ```typescript showLineNumbers
+    export type AdaptySubscriptionOfferId =
+      | { id?: string; type: 'introductory'; }
+      | { id: string; type: 'promotional' | 'win_back'; };
+    ```
+
+### Modèles modifiés \{#changed-models\}
+
+1. [AdaptyPaywallProduct](https://react-native.adapty.io/interfaces/adaptypaywallproduct) :
+   
+    - La propriété `subscriptionDetails` a été renommée en `subscription`.
+      
+      <p> </p>
+      
+     ```diff showLineNumbers
+     -  subscriptionDetails?: AdaptySubscriptionDetails; 
+     +  subscription?: AdaptySubscriptionDetails;
+     ```
+    
+2. [AdaptySubscriptionDetails](https://react-native.adapty.io/interfaces/adaptysubscriptiondetails) :
+
+    - `promotionalOffer` est supprimé. L'offre promotionnelle est désormais transmise via la propriété `offer` uniquement si elle est disponible. Dans ce cas, `offer?.identifier?.type` sera `'promotional'`. 
+
+    - `introductoryOfferEligibility` est supprimé (les offres ne sont retournées que si l'utilisateur est éligible).
+
+    - `offerId` est supprimé. L'identifiant de l'offre est désormais stocké dans `AdaptySubscriptionOffer.identifier`.
+
+    - `offerTags` est déplacé vers `AdaptySubscriptionOffer.android`.
+      
+      <p> </p>
+
+    ```diff showLineNumbers
+    -  introductoryOffers?: AdaptyDiscountPhase[];
+    +  offer?: AdaptySubscriptionOffer;
+    
+       ios?: {
+    -    promotionalOffer?: AdaptyDiscountPhase;
+         subscriptionGroupIdentifier?: string;
+       };
+    
+       android?: {
+    -    offerId?: string;
+         basePlanId: string;
+    -    introductoryOfferEligibility: OfferEligibility;
+    -    offerTags?: string[];
+         renewalType?: 'prepaid' | 'autorenewable';
+       };
+     }
+    ```
+3. [AdaptyDiscountPhase](https://react-native.adapty.io/interfaces/adaptydiscountphase) :
+   
+    - Le champ `identifier` est supprimé du modèle `AdaptyDiscountPhase`. L'identifiant de l'offre est désormais stocké dans `AdaptySubscriptionOffer.identifier`.
+      
+      <p> </p>
+      
+     ```diff showLineNumbers
+     -  ios?: {
+     -    readonly identifier?: string;
+     -  };
+     ```
+
+### Modèles supprimés \{#remove-models\}
+
+1. `AttributionSource` :
+   - Une chaîne de caractères est désormais utilisée aux endroits où `AttributionSource` était précédemment utilisé.
+2. `OfferEligibility` :
+   - Ce modèle a été supprimé car il n'est plus nécessaire. Désormais, une offre n'est retournée que si l'utilisateur est éligible.
+
+## Supprimer la méthode `getProductsIntroductoryOfferEligibility` \{#remove-getproductsintroductoryoffereligibility-method\}
+
+Avant le SDK Adapty 3.3.1, les objets produit incluaient toujours les offres, même si l'utilisateur n'était pas éligible. Vous deviez donc vérifier manuellement l'éligibilité avant d'utiliser l'offre.
+
+À partir de la version 3.3.1, l'objet produit n'inclut les offres que si l'utilisateur est éligible. Cela simplifie le processus, car vous pouvez supposer que l'utilisateur est éligible si une offre est présente.
+
+## Mettre à jour la création d'achat \{#update-making-purchase\}
+
+Dans les versions précédentes, les achats annulés et en attente étaient traités comme des erreurs et retournaient les codes `2: 'paymentCancelled'` et `25: 'pendingPurchase'` respectivement.
+
+À partir de la version 3.3.1, les achats annulés et en attente sont désormais considérés comme des résultats réussis et doivent être gérés en conséquence :
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+
+## Mettre à jour la présentation des paywalls du Paywall Builder \{#update-paywall-builder-paywall-presentation\}
+
+Pour des exemples mis à jour, consultez la documentation [Présenter les nouveaux paywalls du Paywall Builder dans React Native](react-native-present-paywalls).
+
+```diff showLineNumbers
+- import { createPaywallView } from '@adapty/react-native-ui';
++ import { createPaywallView } from 'react-native-adapty/dist/ui';
+
+const view = await createPaywallView(paywall);
+
+view.registerEventHandlers(); // handle close press, etc
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+## Mettre à jour l'implémentation des timers définis par le développeur \{#update-developer-defined-timer-implementation\}
+
+Renommez le paramètre `timerInfo` en `customTimers` :
+
+```diff showLineNumbers
+- let timerInfo = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
++ let customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) }
+ //and then you can pass it to createPaywallView as follows:
+- view = await createPaywallView(paywall, { timerInfo })
++ view = await createPaywallView(paywall, { customTimers })
+```
+
+## Modifier les événements d'achat du Paywall Builder \{#modify-paywall-builder-purchase-events\}
+
+Précédemment :
+
+- Les achats annulés déclenchaient le callback `onPurchaseCancelled`.
+- Les achats en attente retournaient le code d'erreur `25: 'pendingPurchase'`.
+
+Maintenant :
+
+- Les deux sont gérés par le callback `onPurchaseCompleted`.
+
+#### Étapes de migration : \{#steps-to-migrate\}
+
+1. Supprimez le callback `onPurchaseCancelled`.
+2. Supprimez la gestion du code d'erreur `25: 'pendingPurchase'`.
+3. Mettez à jour le callback `onPurchaseCompleted` :
+
+```typescript showLineNumbers
+
+const view = await createPaywallView(paywall);
+
+const unsubscribe = view.registerEventHandlers({
+  // ... other optional callbacks
+  onPurchaseCompleted(purchaseResult, product) {
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+// highlight-start
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+// highlight-end
+    }
+// highlight-start
+    return purchaseResult.type !== 'user_cancelled';
+// highlight-end
+  },
+});
+```
+
+## Modifier les événements d'action personnalisée du Paywall Builder \{#modify-paywall-builder-custom-action-events\}
+
+Callbacks supprimés :
+
+-  `onAction`
+-  `onCustomEvent`
+
+Callback ajouté :
+
+- Nouveau callback `onCustomAction(actionId)`. Utilisez-le pour les actions personnalisées.
+
+## Modifier le callback `onProductSelected` \{#modify-onproductselected-callback\}
+
+Précédemment, `onProductSelected` nécessitait l'objet `product`. Il requiert maintenant `productId` sous forme de chaîne de caractères.
+
+## Supprimer les paramètres d'intégration tiers de la méthode `updateProfile` \{#remove-third-party-integration-parameters-from-updateprofile-method\}
+
+Les identifiants d'intégration tiers sont désormais définis via la méthode `setIntegrationIdentifier`. La méthode `updateProfile` ne les accepte plus.
+
+## Mettre à jour la configuration des SDK d'intégration tiers \{#update-third-party-integration-sdk-configuration\}
+
+Pour garantir le bon fonctionnement des intégrations avec le SDK Adapty React Native 3.3.1 et versions ultérieures, mettez à jour vos configurations SDK pour les intégrations suivantes comme décrit dans les sections ci-dessous. 
+
+De plus, si vous utilisiez `AttributionSource` pour obtenir l'identifiant d'attribution, modifiez votre code pour fournir l'identifiant requis sous forme de chaîne de caractères.
+
+### Adjust \{#adjust\}
+
+Mettez à jour le code de votre application mobile comme indiqué ci-dessous. Pour l'exemple de code complet, consultez la [configuration SDK pour l'intégration Adjust](adjust#connect-your-app-to-adjust).
+
+```diff showLineNumbers
+ import { Adjust, AdjustConfig } from "react-native-adjust";
+ import { adapty } from "react-native-adapty";
+
+ var adjustConfig = new AdjustConfig(appToken, environment);
+
+ // Before submiting Adjust config...
+ adjustConfig.setAttributionCallbackListener(attribution => {
+   // Make sure Adapty SDK is activated at this point
+   // You may want to lock this thread awaiting of `activate`
+   adapty.updateAttribution(attribution, "adjust");
+ });
+
+ // ...
+ Adjust.create(adjustConfig);
+
++ Adjust.getAdid((adid) => {
++   if (adid)
++     adapty.setIntegrationIdentifier("adjust_device_id", adid);
++ });
+```
+
+### AirBridge \{#airbridge\}
+
+Mettez à jour le code de votre application mobile comme indiqué ci-dessous. Pour l'exemple de code complet, consultez la [configuration SDK pour l'intégration AirBridge](airbridge#connect-your-app-to-airbridge).
+
+```diff showLineNumbers
+ import Airbridge from 'airbridge-react-native-sdk';
+ import { adapty } from 'react-native-adapty';
+
+ try {
+   const deviceId = await Airbridge.state.deviceUUID();
+
+-  await adapty.updateProfile({
+-    airbridgeDeviceId: deviceId,
+-  });
++  await adapty.setIntegrationIdentifier("airbridge_device_id", deviceId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### Amplitude \{#amplitude\}
+
+Mettez à jour le code de votre application mobile comme indiqué ci-dessous. Pour l'exemple de code complet, consultez la [configuration SDK pour l'intégration Amplitude](amplitude#sdk-configuration).
+
+```diff showLineNumbers
+  import { adapty } from 'react-native-adapty';
+
+ try {
+-   await adapty.updateProfile({
+-     amplitudeDeviceId: deviceId,
+-     amplitudeUserId: userId,
+-   });
++   await adapty.setIntegrationIdentifier("amplitude_device_id", deviceId);
++   await adapty.setIntegrationIdentifier("amplitude_user_id", userId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### AppMetrica \{#appmetrica\}
+
+Mettez à jour le code de votre application mobile comme indiqué ci-dessous. Pour l'exemple de code complet, consultez la [configuration SDK pour l'intégration AppMetrica](appmetrica#sdk-configuration).
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import AppMetrica, { DEVICE_ID_KEY, StartupParams, StartupParamsReason } from '@appmetrica/react-native-analytics';
+
+ // ...
+ const startupParamsCallback = async (
+   params?: StartupParams,
+   reason?: StartupParamsReason
+ ) => {
+   const deviceId = params?.deviceId
+   if (deviceId) {
+     try {
+-       await adapty.updateProfile({
+-         appmetricaProfileId: 'YOUR_ADAPTY_CUSTOMER_USER_ID',
+-         appmetricaDeviceId: deviceId,
+-       });
++       await adapty.setIntegrationIdentifier("appmetrica_profile_id", 'YOUR_ADAPTY_CUSTOMER_USER_ID');
++       await adapty.setIntegrationIdentifier("appmetrica_device_id", deviceId);
+     } catch (error) {
+       // handle `AdaptyError`
+     }
+   }
+ }
+
+ AppMetrica.requestStartupParams(startupParamsCallback, [DEVICE_ID_KEY])
+```
+
+### AppsFlyer \{#appsflyer\}
+
+Mettez à jour le code de votre application mobile comme indiqué ci-dessous. Pour l'exemple de code complet, consultez la [configuration SDK pour l'intégration AppsFlyer](appsflyer#connect-your-app-to-appsflyer).
+
+```diff showLineNumbers
+ import { adapty, AttributionSource } from 'react-native-adapty';
+ import appsFlyer from 'react-native-appsflyer';
+
+ appsFlyer.onInstallConversionData(installData => {
+     try {
+-        const networkUserId = appsFlyer.getAppsFlyerUID();
+-        adapty.updateAttribution(installData, AttributionSource.AppsFlyer, networkUserId);
++        const uid = appsFlyer.getAppsFlyerUID();
++        adapty.setIntegrationIdentifier("appsflyer_id", uid);
++        adapty.updateAttribution(installData, "appsflyer");
+     } catch (error) {
+         // handle the error
+     }
+ });
+
+ // ...
+ appsFlyer.initSdk(/*...*/);
+```
+
+### Branch \{#branch\}
+
+Mettez à jour le code de votre application mobile comme indiqué ci-dessous. Pour l'exemple de code complet, consultez la [configuration SDK pour l'intégration Branch](branch#connect-your-app-to-branch).
+
+```diff showLineNumbers
+ import { adapty, AttributionSource } from 'react-native-adapty';
+ import branch from 'react-native-branch';
+
+ branch.subscribe({
+   enComplete: ({
+     params,
+   }) => {
+-    adapty.updateAttribution(params, AttributionSource.Branch);
++    adapty.updateAttribution(params, "branch");
+   },
+ });
+```
+
+### Facebook Ads \{#facebook-ads\}
+
+Mettez à jour le code de votre application mobile comme indiqué ci-dessous. Pour l'exemple de code complet, consultez la [configuration SDK pour l'intégration Facebook Ads](facebook-ads#connect-your-app-to-facebook-ads).
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import { AppEventsLogger } from 'react-native-fbsdk-next';
+
+ try {
+   const anonymousId = await AppEventsLogger.getAnonymousID();
+
+-  await adapty.updateProfile({
+-    facebookAnonymousId: anonymousId,
+-  });
++  await adapty.setIntegrationIdentifier("facebook_anonymous_id", anonymousId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### Firebase et Google Analytics \{#firebase-and-google-analytics\}
+
+Mettez à jour le code de votre application mobile comme indiqué ci-dessous. Pour l'exemple de code complet, consultez la [configuration SDK pour l'intégration Firebase et Google Analytics](firebase-and-google-analytics).
+
+```diff showLineNumbers
+ import analytics from '@react-native-firebase/analytics';
+ import { adapty } from 'react-native-adapty';
+
+ try {
+   const appInstanceId = await analytics().getAppInstanceId();
+
+-   await adapty.updateProfile({
+-     firebaseAppInstanceId: appInstanceId,
+-   });
++   await adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### Mixpanel \{#mixpanel\}
+
+Mettez à jour le code de votre application mobile comme indiqué ci-dessous. Pour l'exemple de code complet, consultez la [configuration SDK pour l'intégration Mixpanel](mixpanel#sdk-configuration).
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import { Mixpanel } from 'mixpanel-react-native';
+
+ // ...
+ try {
+-   await adapty.updateProfile({
+-     mixpanelUserId: mixpanelUserId,
+-   });
++   await adapty.setIntegrationIdentifier("mixpanel_user_id", mixpanelUserId);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+### OneSignal \{#onesignal\}
+
+Mettez à jour le code de votre application mobile comme indiqué ci-dessous. Pour l'exemple de code complet, consultez la [configuration SDK pour l'intégration OneSignal](onesignal#sdk-configuration).
+
+<Tabs groupId="current-os" queryString> 
+
+<TabItem value="v5+" label="OneSignal SDK v5+ (current)" default> 
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import OneSignal from 'react-native-onesignal';
+
+ OneSignal.User.pushSubscription.addEventListener('change', (subscription) => {
+   const subscriptionId = subscription.current.id;
+
+   if (subscriptionId) {
+-    adapty.updateProfile({
+-      oneSignalSubscriptionId: subscriptionId,
+-    });
++    adapty.setIntegrationIdentifier("one_signal_subscription_id", subscriptionId);
+   }
+ });
+```
+
+ </TabItem> 
+
+<TabItem value="pre-v5" label="OneSignal SDK v. up to 4.x (legacy)" default> 
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import OneSignal from 'react-native-onesignal';
+
+ OneSignal.addSubscriptionObserver(event => {
+   const playerId = event.to.userId;
+   
+-  adapty.updateProfile({
+-    oneSignalPlayerId: playerId,
+-  });
++  adapty.setIntegrationIdentifier("one_signal_player_id", playerId);
+ });
+```
+
+ </TabItem> 
+
+</Tabs>
+
+### Pushwoosh \{#pushwoosh\}
+
+Mettez à jour le code de votre application mobile comme indiqué ci-dessous. Pour l'exemple de code complet, consultez la [configuration SDK pour l'intégration Pushwoosh](pushwoosh#sdk-configuration).
+
+```diff showLineNumbers
+ import { adapty } from 'react-native-adapty';
+ import Pushwoosh from 'pushwoosh-react-native-plugin';
+
+ // ...
+ try {
+-  await adapty.updateProfile({
+-    pushwooshHWID: hwid,
+-  });
++  await adapty.setIntegrationIdentifier("pushwoosh_hwid", hwid);
+ } catch (error) {
+   // handle `AdaptyError`
+ }
+```
+
+## Mettre à jour l'implémentation du mode Observer \{#update-observer-mode-implementation\}
+
+Mettez à jour la façon dont vous associez les paywalls aux transactions. Précédemment, vous utilisiez la méthode `setVariationId` pour assigner le `variationId`. Désormais, vous pouvez inclure le `variationId` directement lors de l'enregistrement de la transaction en utilisant la nouvelle méthode `reportTransaction`. Consultez l'exemple de code final dans [Associer les paywalls aux transactions d'achat en mode Observer](report-transactions-observer-mode-react-native).
+
+:::warning
+
+N'oubliez pas d'enregistrer la transaction avec la méthode `reportTransaction`. Si vous omettez cette étape, Adapty ne reconnaîtra pas la transaction, n'accordera pas les niveaux d'accès, ne l'inclura pas dans les analyses et ne l'enverra pas aux intégrations. Cette étape est indispensable !
+
+:::
+
+:::note
+
+Veuillez noter que l'ordre des paramètres de la méthode `reportTransaction` diffère de celui de la méthode `setVariationId`.
+
+:::
+
+```diff showLineNumbers
+  const variationId = paywall.variationId;
+
+ try {
+-    await adapty.setVariationId(variationId, transactionId);
++    await adapty.reportTransaction(transactionId, variationId);
+ } catch (error) {
+     // handle the `AdaptyError`
+ }
+
+```
+

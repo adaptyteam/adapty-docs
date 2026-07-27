@@ -1,0 +1,87 @@
+---
+title: "Implémenter les paywalls web"
+description: "Apprenez à implémenter les paywalls web dans votre application Capacitor avec le SDK Adapty."
+metadataTitle: "Implémenter les paywalls web | SDK Capacitor | Documentation Adapty"
+customSlug: /capacitor-web-paywall
+displayed_sidebar: sdkcapacitor
+---
+
+:::important
+Avant de commencer, assurez-vous d'avoir [configuré votre paywall web dans le tableau de bord](web-paywall) et d'avoir installé la version 3.6.1 ou ultérieure du SDK Adapty.
+:::
+
+## Ouvrir les paywalls web \{#open-web-paywalls\}
+
+Si vous travaillez avec un paywall que vous avez développé vous-même, vous devez gérer les paywalls web via la méthode du SDK. La méthode `.openWebPaywall` :
+1. Génère une URL unique permettant à Adapty d'associer un paywall spécifique affiché à un utilisateur particulier à la page web vers laquelle il est redirigé.
+2. Détecte quand vos utilisateurs reviennent dans l'application, puis appelle `.getProfile` à intervalles courts pour déterminer si les droits d'accès du profil ont été mis à jour.
+
+Ainsi, si le paiement a réussi et que les droits d'accès ont été mis à jour, l'abonnement s'active dans l'application presque immédiatement.
+
+```typescript showLineNumbers
+
+try {
+  await adapty.openWebPaywall({ paywallOrProduct: product });
+} catch (error) {
+  console.error('Failed to open web paywall:', error);
+}
+```
+
+:::note
+Il existe deux versions de la méthode `openWebPaywall` :
+1. `openWebPaywall({ paywallOrProduct: product })` qui génère des URLs par paywall et ajoute également les données du produit aux URLs.
+2. `openWebPaywall({ paywallOrProduct: paywall })` qui génère des URLs par paywall sans ajouter les données du produit aux URLs. Utilisez-la quand vos produits dans le paywall Adapty diffèrent de ceux du paywall web.
+
+Dans le SDK v4, le côté paywall de `paywallOrProduct` prend un `AdaptyFlowPaywall` — une variante paywall du flow récupéré. Vérifiez que `flow.paywalls` n'est pas vide avant d'y accéder par index, par exemple `flow.paywalls[0]`.
+:::
+
+#### Gérer les erreurs \{#handle-errors\}
+
+| Erreur                                  | Description                                                         | Action recommandée                                                                     |
+|-----------------------------------------|---------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| AdaptyError.paywallWithoutPurchaseUrl   | Le paywall n'a pas d'URL d'achat web configurée                     | Vérifiez que le paywall a été correctement configuré dans l'Adapty Dashboard           |
+| AdaptyError.productWithoutPurchaseUrl   | Le produit n'a pas d'URL d'achat web                                | Vérifiez la configuration du produit dans l'Adapty Dashboard                          |
+| AdaptyError.failedOpeningWebPaywallUrl  | Impossible d'ouvrir l'URL dans le navigateur                        | Vérifiez les paramètres de l'appareil ou proposez une autre méthode d'achat            |
+| AdaptyError.failedDecodingWebPaywallUrl | Impossible d'encoder correctement les paramètres dans l'URL         | Vérifiez que les paramètres d'URL sont valides et correctement formatés                |
+
+## Obtenir l'URL du paywall web sans l'ouvrir \{#get-the-web-paywall-url-without-opening-it\}
+
+Si vous souhaitez afficher vous-même la page d'achat web plutôt que de laisser le SDK l'ouvrir, utilisez `createWebPaywallUrl`. Elle retourne la même URL unique que celle qu'`openWebPaywall` ouvrirait, vous permettant ainsi de l'afficher dans votre propre vue web ou de gérer la redirection à votre façon. Elle accepte le même argument `paywallOrProduct` — une variante paywall du flow récupéré (`AdaptyFlowPaywall`) ou un `AdaptyPaywallProduct`.
+
+```typescript showLineNumbers
+
+try {
+  const url = await adapty.createWebPaywallUrl({ paywallOrProduct: product });
+  // open `url` in your own web view, or handle the redirect yourself
+} catch (error) {
+  console.error('Failed to create web paywall URL:', error);
+}
+```
+
+:::note
+Pour ouvrir une URL arbitraire (pas un paywall web) dans le navigateur natif — par exemple, depuis le bouton d'un flow — utilisez plutôt [`adapty.openWebUrl`](capacitor-handle-paywall-actions#open-urls-from-flows-and-paywalls).
+:::
+
+## Ouvrir les paywalls web dans un navigateur intégré \{#open-web-paywalls-in-an-in-app-browser\}
+
+:::important
+L'ouverture des paywalls web dans un navigateur intégré est prise en charge à partir du SDK Adapty v3.15.
+:::
+
+Par défaut, les paywalls web s'ouvrent dans le navigateur externe.
+
+Pour offrir une expérience utilisateur fluide, vous pouvez ouvrir les paywalls web dans un navigateur intégré. Cela affiche la page d'achat web directement dans votre application, permettant aux utilisateurs de finaliser leurs transactions sans changer d'application.
+
+Pour activer cette option, définissez `openIn` sur `WebPresentation.BrowserInApp` dans `openWebPaywall` :
+
+```typescript showLineNumbers
+
+try {
+    await adapty.openWebPaywall({
+        paywallOrProduct: product,
+        openIn: WebPresentation.BrowserInApp, // default – WebPresentation.BrowserOutApp
+    });
+} catch (error) {
+    console.error('Failed to open web paywall:', error);
+}
+```

@@ -1,0 +1,318 @@
+---
+title: "Firebase et Google Analytics"
+description: "Envoyez les événements d'abonnement Adapty vers Firebase et Google Analytics — alimentez Audiences, Remote Config, l'attribution Google Ads et d'autres outils Firebase."
+metadataTitle: "Firebase et Google Analytics | Documentation Adapty"
+keywords: ['firebase', 'google analytics', 'ga4']
+---
+
+Adapty peut transmettre les événements d'abonnement — achats, renouvellements, remboursements, démarrages d'essai — vers Firebase et Google Analytics, de sorte qu'une seule intégration alimente les deux plateformes.
+
+:::warning
+Vous avez besoin d'un projet Firebase et d'une propriété Google Analytics liée — même si vous n'en utilisez qu'une seule. Firebase et Google Analytics partagent les mêmes données dans deux consoles distinctes.
+:::
+
+Les événements d'achat et de remboursement arrivent avec les détails de revenus, de devise et de produit associés. Ces mêmes données alimentent les outils mobiles de Firebase (Audiences, Remote Config, etc.) et les rapports dans Google Analytics.
+
+Il s'agit d'une intégration analytique, pas d'un outil d'attribution Google Ads — voir [Limitations](#limitations).
+
+## Ce que vous pouvez faire avec cette intégration \{#what-you-can-do-with-this-integration\}
+
+Adapty regroupe les utilisateurs par `subscription_state` (`subscribed`, `active_trial`, `never_subscribed`, etc.) et transmet les événements du cycle de vie des abonnements vers Firebase et Google Analytics.
+
+- **Audiences** : Créez des audiences d'abonnés dans Firebase et Google Analytics pour des canaux externes — reciblage Google Ads, campagnes FCM, modélisation de sosies.
+- **Conversions Google Ads** *(Google Analytics)* : Utilisez `purchase` et `refund` comme objectifs de conversion Google Ads.
+- **Firebase Remote Config** : Modifiez les limites d'utilisation, les textes ou les indicateurs de fonctionnalités sans mise à jour de l'application — conditionnez-les sur l'état de l'abonnement. (À ne pas confondre avec [Adapty Remote Config](customize-paywall-with-remote-config), qui configure le contenu des flows/paywalls.)
+- **Cloud Messaging** : Notifications push aux abonnés inactifs lorsque l'application est fermée.
+- **Suivi multi-appareils** *(Google Analytics)* : Adapty envoie le `customer_user_id` à Google Analytics pour que Google Ads puisse suivre la même personne sur plusieurs appareils.
+- **Entonnoirs de conversion** *(Google Analytics)* : Observez ce que les utilisateurs ont fait dans votre application avant de convertir ou de se désabonner.
+- **Prédictions** : Anticipez le taux d'attrition et les dépenses à partir de l'historique d'achats.
+- **Tests A/B** : Testez des fonctionnalités de l'application sur des cohortes d'abonnés — par exemple, déployez un nouveau schéma de navigation auprès des utilisateurs en essai et mesurez la durée des sessions. (Pour les variantes de paywall, utilisez les [tests A/B Adapty](ab-tests).)
+
+## Comment fonctionne l'intégration \{#how-the-integration-works\}
+
+1. Lorsqu'un utilisateur ouvre votre application pour la première fois, le SDK Firebase crée un identifiant unique pour l'installation — le **Firebase App Instance ID**. Firebase et Google Analytics utilisent cet identifiant pour identifier l'installation responsable de chaque événement.
+2. Votre application transmet le Firebase App Instance ID au SDK Adapty. Adapty relie le profil de l'utilisateur à cette installation Firebase.
+3. Lorsque l'utilisateur effectue un achat, les serveurs d'Adapty transmettent l'événement à Firebase avec le Firebase App Instance ID joint. Les données sont échangées de serveur à serveur, en dehors de l'application.
+4. Firebase associe l'achat à l'installation, ce qui vous permet de voir les achats aux côtés de tout ce que l'utilisateur a fait dans l'application.
+
+:::note
+Un Firebase App Instance ID est spécifique à un appareil. Lorsque le même utilisateur Adapty ouvre l'application sur un autre appareil, le nouvel identifiant Firebase remplace le précédent. Utilisez un [customer user ID](identifying-users) pour maintenir l'identité de l'utilisateur sur plusieurs appareils.
+:::
+
+### Achats Stripe \{#stripe-purchases\}
+
+Un achat Stripe n'atteint Firebase que si l'acheteur a lancé votre application mobile **en premier**. Le Firebase App Instance ID doit être défini **avant** que l'achat Stripe ne se déclenche.
+
+Pour les achats App Store et Play Store, cela se produit automatiquement. Ils proviennent de votre application mobile, aux côtés de l'appel [`setIntegrationIdentifier`](#configure-your-app-code). L'identifiant Firebase est présent au moment de l'achat.
+
+Les achats Stripe proviennent de l'extérieur de l'application, depuis votre serveur. Votre application mobile doit appeler `setIntegrationIdentifier` au lancement — avant tout achat Stripe. Sinon, Adapty n'a pas d'identifiant à joindre et l'achat Stripe n'atteint jamais Firebase.
+
+### Limitations \{#limitations\}
+
+- **Pas un outil d'attribution Google Ads.** Cette intégration envoie les événements Adapty dans Firebase et Google Analytics à des fins analytiques. Elle n'attribue pas les installations d'applications aux campagnes Google Ads (UAC / Universal App Campaigns) et ne distingue pas le trafic payant du trafic organique. Pour l'attribution des installations, utilisez [Adapty Attribution](adapty-user-acquisition) intégré à Adapty.
+- **Pas de remplissage historique.** Adapty transmet les événements à partir du moment où vous activez l'intégration — les achats, renouvellements et remboursements passés n'atteignent jamais Firebase. (Les données passées sont disponibles dans les exports [S3](s3-exports) / [GCS](google-cloud-storage) d'Adapty, mais leur importation dans Firebase ne fait pas partie de cette intégration.)
+- **Les acheteurs web uniquement n'atteignent pas Firebase.** Adapty transmet les achats à Firebase via le Firebase App Instance ID défini par votre application mobile. Les acheteurs qui n'ont jamais installé l'application n'ont pas d'identifiant — leurs achats n'atteignent pas Firebase. Consultez [Achats Stripe](#stripe-purchases) ci-dessus pour plus de détails, et envisagez [l'intégration Firebase de FunnelFox](https://funnelfox.com/docs/integrations/subscription-management/adapty) ou un flux de données web Google Analytics pour le suivi web.
+- **Les achats Paddle ne sont pas inclus.** Cette intégration ne prend actuellement pas en charge Paddle. Les achats Paddle restent dans Adapty Analytics et n'atteignent pas Firebase via ce chemin.
+- **Les achats Stripe héritent des limitations spécifiques à Stripe.** Voir [limitations de l'intégration Stripe](stripe#current-limitations).
+
+
+## Instructions de configuration \{#setup-instructions\}
+
+### Configurer Firebase \{#configure-firebase\}
+
+1. Ouvrez la [Firebase Console](https://console.firebase.google.com/) et sélectionnez ou créez un projet. Pour garder les analyses de production à l'abri des événements sandbox, utilisez un projet Firebase séparé pour les builds de développement.
+2. Liez le projet à une propriété Google Analytics. Firebase vous y invite lors de la création du projet, ou ajoutez-le plus tard via **Project settings** > **Integrations** > **Google Analytics**.
+
+    <ZoomImage id="firebase-analytics-integration-settings.webp" width="700px" alt="Page des paramètres d'intégration Firebase dans l'Adapty Dashboard" />
+
+3. Dans **Project settings** > **General** > **Your apps**, ajoutez une entrée pour chaque plateforme sur laquelle vous publiez (iOS / Android / Web). Pour Stripe, ajoutez une entrée Web app — il n'existe pas de type d'application Stripe natif. Chaque entrée génère un **Firebase App ID** unique et un flux de données correspondant dans Google Analytics. Vous collerez cet identifiant dans les paramètres d'intégration Firebase d'Adapty lors de la configuration.
+
+    <ZoomImage id="firebase-app-id.webp" width="700px" alt="Firebase Console affichant l'App ID pour une entrée d'application iOS" />
+
+### Configurer Adapty \{#configure-adapty\}
+
+1. Ouvrez [**Integrations** > **Firebase**](https://app.adapty.io/integrations/firebase) dans l'Adapty Dashboard.
+
+2. Activez le bouton **Firebase integration**.
+
+3. Saisissez les identifiants pour chaque plateforme sur laquelle vous publiez. Adapty a besoin d'un **Firebase App ID** et d'un **Google Analytics secret** pour chaque plateforme — chaque valeur diffère selon iOS, Android et Stripe.
+
+   | Adapty Dashboard | Google Analytics | Où le trouver |
+   | --- | --- | --- |
+   | **Firebase App ID** | **App ID** | Firebase Console > **Project settings** > **General** > **Your apps** |
+   | **Google Analytics secret** | **Measurement Protocol API secret** | Google Analytics > **Admin** > **Data streams** > **Measurement Protocol API secrets** > **Create** |
+
+   <ZoomImage id="ga4-firebase-secret.webp" width="700px" alt="Écran de création du secret Measurement Protocol API dans Google Analytics" />
+
+4. Configurez la manière dont Adapty transmet les revenus et les données utilisateur. Les quatre contrôles partagent une même ligne dans le tableau de bord :
+
+   - Menu déroulant **Revenue definition** : Revenus bruts, Produits après commission du store, ou [Produits après commission du store et taxes](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue).
+   - Bouton **Send user properties** : Lorsqu'il est activé, les événements incluent `subscription_state` et `subscription_product_id`. Pour les utiliser dans des rapports ou des audiences, voir [Utiliser les données d'abonnement dans les rapports](#use-subscription-data-in-reports-and-audiences).
+   - Bouton **Report user's currency** : Lorsqu'il est activé, Adapty convertit la devise locale de chaque transaction dans la devise de reporting de votre compte avant de la transmettre à Google Analytics.
+   - Bouton **Send trial price** : Les démarrages d'essai sont précieux — la plupart des utilisateurs payants commencent souvent par un essai. Mais l'optimisation des enchères Google Ads ne considère que les événements avec des revenus comme valant la peine d'être ciblés. Activez ce bouton pour attribuer un prix fictif à chaque essai afin que Google les considère comme des conversions et optimise les dépenses publicitaires pour acquérir des utilisateurs d'essai. Lorsqu'il est activé, le champ **Trial price percentage** apparaît. Définissez-le sur la part du prix d'abonnement complet que Google doit considérer comme la valeur de chaque essai — par exemple, `50%` signale la moitié du prix de l'abonnement pendant l'essai.
+
+   <ZoomImage id="revenue-data-options-firebase.webp" width="700px" alt="Ligne de données de revenus de l'intégration Firebase avec les quatre contrôles" />
+
+5. Associez les événements Adapty aux noms d'événements Firebase/Google Analytics. Adapty expose des mappages d'événements séparés pour **iOS** et **Android** afin que vous puissiez utiliser des noms différents par plateforme. **Les achats Stripe utilisent le mappage d'événements iOS** — il n'existe pas de mappage Stripe séparé.
+
+    Google Analytics applique des limites strictes sur le Measurement Protocol — noms d'événements de 40 caractères, noms de propriétés utilisateur de 24 caractères et valeurs de 36 caractères. Google Analytics ignore silencieusement les événements personnalisés qui dépassent ces limites.
+
+    :::warning
+    Certains événements utilisent le vocabulaire e-commerce réservé dans Firebase et Google Analytics — `purchase` et `refund`. L'import de conversions Google Ads, les rapports de revenus Google Analytics et les audiences prédictives dépendent de ces chaînes exactes. Ne modifiez les valeurs par défaut que si vous n'avez pas besoin de ces fonctionnalités.
+    :::
+
+   <ZoomImage id="ios-event-map-firebase.webp" width="700px" alt="Configuration des noms d'événements Firebase dans l'Adapty Dashboard" />
+
+6. Cliquez sur **Save**. Adapty commence à transmettre les événements à Firebase en quelques minutes.
+
+### Configurer le code de votre application \{#configure-your-app-code\}
+
+:::tip
+Assurez-vous que votre application inclut le <InlineTooltip tooltip="SDK Firebase">[iOS](https://firebase.google.com/docs/ios/setup), [Android](https://firebase.google.com/docs/android/setup), [Flutter](https://firebase.google.com/docs/flutter/setup), [Unity](https://firebase.google.com/docs/unity/setup), [React Native](https://rnfirebase.io/), et [Capacitor](https://github.com/capawesome-team/capacitor-firebase)</InlineTooltip>.
+:::
+
+Adapty doit inclure le **Firebase App Instance ID** avec chaque événement — sinon rien n'atteint Firebase (`MISSING_INTEGRATION_ID`).
+
+Après `FirebaseApp.configure()` et `Adapty.activate()`, demandez au SDK Firebase l'App Instance ID. Transmettez-le à Adapty via `setIntegrationIdentifier`. Exécutez cela une fois par lancement d'application, avant tout flux d'achat.
+
+<SdkIntegrationNote />
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
+
+<Tabs groupId="sdk-version" queryString>
+<TabItem value="v4" label="Adapty SDK v4+">
+
+```swift showLineNumbers
+
+FirebaseApp.configure()
+
+if let appInstanceId = Analytics.appInstanceID() {
+    do {
+        try await Adapty.setIntegrationIdentifier(.firebaseAppInstanceId(appInstanceId))
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="v3" label="Adapty SDK v3" default>
+
+```swift showLineNumbers
+
+FirebaseApp.configure()
+
+if let appInstanceId = Analytics.appInstanceID() {
+    do {
+        try await Adapty.setIntegrationIdentifier(
+            key: "firebase_app_instance_id",
+            value: appInstanceId
+        )
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)">
+
+```kotlin showLineNumbers
+// after Adapty.activate()
+
+FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appInstanceId ->
+    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId) { error ->
+        if (error != null) {
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Android (Java)">
+
+```java showLineNumbers
+// after Adapty.activate()
+
+FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
+    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId, error -> {
+        if (error != null) {
+            // handle the error
+        }
+    });
+});
+```
+
+</TabItem>
+<TabItem value="flutter" label="Flutter (Dart)">
+
+```dart showLineNumbers
+
+final appInstanceId = await FirebaseAnalytics.instance.appInstanceId;
+
+if (appInstanceId != null) {
+    try {
+        await Adapty().setIntegrationIdentifier(
+            key: "firebase_app_instance_id",
+            value: appInstanceId,
+        );
+    } on AdaptyError catch (adaptyError) {
+        // handle the error
+    } catch (e) {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="unity" label="Unity (C#)">
+
+```csharp showLineNumbers
+using AdaptySDK;
+using Firebase.Analytics;
+
+FirebaseAnalytics
+    .GetAnalyticsInstanceIdAsync()
+    .ContinueWithOnMainThread((task) => {
+        if (!task.IsCompletedSuccessfully) {
+            // handle the error
+            return;
+        }
+
+        Adapty.SetIntegrationIdentifier(
+            "firebase_app_instance_id",
+            task.Result,
+            (error) => {
+                // handle the error
+            }
+        );
+    });
+```
+
+</TabItem>
+<TabItem value="rn" label="React Native (TS)">
+
+```typescript showLineNumbers
+
+try {
+    const appInstanceId = await analytics().getAppInstanceId();
+    if (appInstanceId) {
+        await adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId);
+    }
+} catch (error) {
+    // handle `AdaptyError`
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Vérifier l'intégration \{#verify-the-integration\}
+
+Le moyen le plus rapide de confirmer que les événements arrivent bien est Firebase DebugView :
+
+1. Sur un appareil de test, lancez votre application avec le [mode debug Firebase activé](https://firebase.google.com/docs/analytics/debugview#enable_debug_mode).
+2. Déclenchez un achat sandbox ou tout événement que vous avez activé dans l'Adapty Dashboard.
+3. Ouvrez Firebase Console > **Analytics** > **DebugView**. Les événements apparaissent en quelques secondes, avec tous leurs paramètres.
+
+Les rapports standard — Realtime, Reports, audiences — se remplissent en quelques minutes à 24 heures, selon le rapport. DebugView est le seul endroit pour confirmer en temps réel.
+
+## Utiliser les données d'abonnement dans les rapports et les audiences \{#use-subscription-data-in-reports-and-audiences\}
+
+Activez **Send user properties** dans le tableau de bord Adapty ([Configurer Adapty](#configure-adapty), étape 4). Sans cela, Adapty ne transmet pas `subscription_state` ni `subscription_product_id` — et le reste de cette section ne servira à rien.
+
+Par défaut, Firebase et Google Analytics n'exposent pas les propriétés utilisateur. Enregistrez chacune d'elles comme dimension personnalisée. Cela rend `subscription_state` et `subscription_product_id` disponibles dans les rapports, les Explorations et les audiences. Configurez les dimensions dans l'administration de Google Analytics. Vous pouvez ensuite les interroger dans Firebase et Google Analytics — ils partagent un backend commun.
+
+Utile pour créer des audiences Google Ads d'utilisateurs payants ou alimenter des modèles prédictifs.
+
+Une fois la configuration terminée, Adapty renseignera ces propriétés pour les événements à venir. Les événements existants ne seront pas mis à jour.
+
+1. Dans Google Analytics, ouvrez **Admin** > **Custom definitions**.
+    <ZoomImage id="firebase-ga4-custom-definitions.webp" width="700px" alt="Définitions personnalisées Google Analytics" />
+2. Cliquez sur **Create custom dimensions**.
+3. Pour chaque propriété, définissez :
+   - **Dimension name** : N'importe quel nom lisible, par exemple "Subscription state".
+   - **Scope** : **User**.
+   - **User property** : `subscription_state` ou `subscription_product_id`. Le nom doit correspondre exactement — Google Analytics est sensible à la casse.
+
+    <ZoomImage id="ga4-new-custom-dimension.webp" width="500px" alt="Nouvelle définition personnalisée dans Google Analytics" />
+
+## Résolution des problèmes \{#troubleshooting\}
+
+### Les événements n'apparaissent pas dans Firebase \{#events-dont-appear-in-firebase\}
+
+- Confirmez que le Firebase App Instance ID est défini **avant** le premier achat. Les événements sans identifiant Firebase n'atteignent pas Firebase et génèrent une erreur.
+- Confirmez que la propriété Google Analytics liée dans la Firebase Console correspond au flux de données.
+- Confirmez que les identifiants (ID + secret) dans Adapty correspondent à la plateforme.
+
+### `access_level_updated` apparaît comme échoué dans l'Event Feed \{#access_level_updated-shows-as-failed-in-the-event-feed\}
+
+`access_level_updated` est un **événement webhook uniquement**. Adapty ne tente jamais de le transmettre à Firebase — mais l'Event Feed l'affiche quand même comme une livraison échouée. Ignorez cette ligne. Votre intégration fonctionne correctement. Pour utiliser cet événement, configurez [l'intégration webhook](webhook).
+
+### Les événements sandbox polluent les données de production \{#sandbox-events-pollute-production-data\}
+
+Adapty transmet les transactions sandbox et de production vers le même projet Firebase. Consultez [Configurer Firebase](#configure-firebase) — l'utilisation d'un projet Firebase séparé pour les builds de développement évite entièrement ce problème.
+
+### Firebase sous-estime les revenus pour les applications StoreKit 2 \{#firebase-undercounts-revenue-for-storekit-2-apps\}
+
+Firebase enregistre automatiquement un événement `in_app_purchase` pour chaque achat StoreKit 1 — sans code requis. StoreKit 2 utilise une API différente. Firebase ne voit jamais ces transactions.
+
+La conséquence : les applications fortement axées sur SK2 sans pipeline de revenus séparé sous-déclarent de moitié ou plus — dans Firebase, dans Google Analytics et dans chaque campagne Google Ads en aval. L'optimisation des enchères s'appuie sur un mauvais chiffre. Les rapports de revenus n'offrent qu'une vue partielle.
+
+La solution : transmettez `firebase_app_instance_id` à Adapty (voir [Configurer le code de votre application](#configure-your-app-code)). Adapty transmet chaque achat via le Measurement Protocol — revenus, devise et produit inclus.
+
+### Les chiffres d'Adapty Analytics et de Firebase divergent \{#adapty-analytics-and-firebase-numbers-diverge\}
+
+- **StoreKit 2** : De loin la principale cause. Voir [Firebase sous-estime les revenus pour les applications StoreKit 2](#firebase-undercounts-revenue-for-storekit-2-apps).
+- **Adoption du SDK** : Firebase ne comptabilise que les événements des utilisateurs dont l'application envoie un Firebase App Instance ID. Les anciennes versions de l'application ne font pas cet appel. Adapty comptabilise quand même ces utilisateurs ; Firebase ne le fait pas.
+- **Événements sandbox** : Adapty transmet également les transactions sandbox à Firebase. Utilisez un projet Firebase séparé pour les builds de développement afin de les distinguer.
+- **Échantillonnage** : Google Analytics Explorations échantillonne les grands ensembles de données. Pour des chiffres non échantillonnés, consultez la vue Realtime ou les rapports standard.
+
+### Les noms d'événements personnalisés sont rejetés par Google Analytics \{#custom-event-names-are-rejected-by-google-analytics\}
+
+Google Analytics limite les noms d'événements à 40 caractères, alphanumériques et underscores uniquement, commençant par une lettre. Renommez dans le tableau de bord tout événement Adapty personnalisé qui enfreint ces limites.

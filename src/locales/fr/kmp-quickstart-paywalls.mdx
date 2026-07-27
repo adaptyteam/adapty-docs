@@ -1,0 +1,184 @@
+---
+title: "Activer les achats avec Flow Builder dans le SDK Kotlin Multiplatform"
+description: "Guide de démarrage rapide pour activer les achats intégrés avec Adapty Flow Builder."
+metadataTitle: "Démarrage rapide Adapty Flow Builder | Documentation Adapty"
+keywords: ['flows kotlin multiplatform', 'flow builder', 'getFlow', 'paywalls kotlin multiplatform', 'sdk kotlin multiplatform', 'paywall', 'paywall builder', 'getPaywall']
+rank: 90
+displayed_sidebar: sdkkmp
+---
+
+Ce guide utilise les API du SDK Adapty Kotlin Multiplatform v4 (bêta). Si vous utilisez la v3, consultez le [guide de migration](migration-to-kmp-sdk-v4) pour les noms de méthodes correspondants.
+
+Pour activer les achats intégrés, vous devez comprendre trois concepts clés :
+
+- [**Produits**](product) – tout ce que les utilisateurs peuvent acheter (abonnements, consommables, accès à vie)
+- [**Flows**](adapty-flow-builder) – des séquences d'écrans qui présentent des produits aux utilisateurs, créées dans le Flow Builder sans code. Le SDK les récupère via `getFlow`. Si vous préférez construire l'interface dans votre propre code, utilisez plutôt un paywall — voir [Implémenter les paywalls manuellement](kmp-quickstart-manual).
+- [**Placements**](placements) – où et quand vous affichez les flows dans votre application (par exemple `main`, `onboarding`, `settings`). Vous associez des flows aux placements dans le tableau de bord, puis vous les demandez par ID de placement dans votre code. Cela facilite l'exécution de tests A/B et l'affichage de flows différents selon les utilisateurs.
+
+Adapty vous propose trois façons d'activer les achats dans votre application. Choisissez celle qui correspond à vos besoins :
+
+| Implémentation | Complexité | Quand l'utiliser |
+|---|---|---|
+| Adapty Flow Builder | ✅ Facile | Vous [créez un flow complet et prêt à l'achat dans le builder sans code](quickstart-paywalls). Adapty le rend automatiquement et gère tout le flux d'achat, la validation des reçus et la gestion des abonnements en coulisses. |
+| Paywalls créés manuellement | 🟡 Moyen | Vous implémentez l'interface de votre paywall dans le code de votre application, mais récupérez quand même l'objet flow depuis Adapty pour garder de la flexibilité sur les offres produits. Voir le [guide](kmp-quickstart-manual). |
+| Mode observateur | 🔴 Difficile | Vous disposez déjà de votre propre infrastructure de gestion des achats et souhaitez continuer à l'utiliser. Notez que le mode observateur présente des limitations dans Adapty. Voir l'[article](observer-vs-full-mode). |
+
+:::important
+**Les étapes ci-dessous montrent comment implémenter un flow créé dans Adapty Flow Builder.**
+
+Si vous préférez construire l'interface du paywall vous-même, voir [Implémenter les paywalls manuellement](kmp-quickstart-manual).
+:::
+
+Pour afficher un flow créé dans Adapty Flow Builder, vous n'avez besoin que de :
+
+1. **Récupérer le flow** : Obtenez-le depuis Adapty.
+2. **L'afficher et laisser Adapty gérer les achats** : Affichez la vue dans votre application.
+3. **Gérer les actions des boutons** : Associez les interactions utilisateur aux réponses de votre application. Par exemple, ouvrir des liens ou fermer le flow lorsque les utilisateurs cliquent sur des boutons.
+
+## Avant de commencer \{#before-you-start\}
+
+Avant de commencer, effectuez ces étapes :
+
+1. Connectez votre application à l'[App Store](initial_ios) et/ou à [Google Play](initial-android) dans l'Adapty Dashboard.
+2. [Créez vos produits](create-product) dans Adapty.
+3. [Créez un flow et ajoutez-y des produits](create-paywall).
+4. [Créez un placement et ajoutez-y votre flow](create-placement).
+5. [Installez et activez le SDK Adapty](sdk-installation-kotlin-multiplatform) dans le code de votre application.
+
+:::tip
+La façon la plus rapide de réaliser ces étapes est de suivre le [guide de démarrage rapide](quickstart) ou de créer des flows et des placements avec la [Developer CLI](developer-cli-quickstart).
+:::
+
+## 1. Récupérer le flow \{#1-get-the-flow\}
+
+Vos flows sont associés à des placements configurés dans le tableau de bord. Les placements vous permettent d'exécuter différents flows pour différentes audiences ou de lancer des [tests A/B](ab-tests).
+
+Pour récupérer un flow créé dans Adapty Flow Builder, vous devez :
+
+1. Obtenir l'objet `flow` par l'ID du [placement](placements) en utilisant la méthode `getFlow`.
+
+2. Créer la vue du flow avec la méthode `createFlowView`. La vue contient les éléments d'interface et le style nécessaires pour afficher le flow. Si aucune vue n'est configurée pour le flow, `createFlowView` retourne une erreur — gérez-la dans `onError`.
+
+:::important
+Pour obtenir la vue, vous devez activer le bouton **Show on device** dans le Flow Builder. Sinon, `createFlowView` retournera une erreur et le flow ne sera pas affiché.
+:::
+
+```kotlin showLineNumbers
+Adapty.getFlow("YOUR_PLACEMENT_ID")
+    .onSuccess { flow ->
+        AdaptyUI.createFlowView(flow)
+            .onSuccess { view ->
+                view.present()
+            }
+            .onError { error ->
+                // the flow has no view configured, or view creation failed
+            }
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+## 2. Afficher le flow \{#2-display-the-flow\}
+
+Une fois que vous avez le flow, quelques lignes suffisent pour l'afficher.
+
+Pour afficher le flow visuel à l'écran de l'appareil, vous devez d'abord créer la vue. Pour ce faire, appelez la méthode `AdaptyUI.createFlowView()` :
+
+```kotlin showLineNumbers
+AdaptyUI.createFlowView(flow)
+    .onSuccess { view ->
+        view.present()
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+Une fois la vue créée avec succès, vous pouvez la présenter à l'écran de l'appareil. Chaque vue ne peut être utilisée qu'une seule fois : après avoir appelé `dismiss()`, appelez à nouveau `createFlowView` pour afficher le flow une nouvelle fois.
+
+:::tip
+Pour plus de détails sur l'affichage d'un flow, consultez notre [guide](kmp-present-paywalls).
+:::
+
+## 3. Gérer les actions des boutons \{#3-handle-button-actions\}
+
+Lorsque les utilisateurs cliquent sur des boutons dans le flow, le SDK Kotlin Multiplatform gère automatiquement les achats, la restauration, la fermeture du flow et l'ouverture des liens.
+
+Cependant, d'autres boutons ont des ID personnalisés ou prédéfinis et nécessitent une gestion des actions dans votre code. Ou vous souhaitez peut-être remplacer leur comportement par défaut.
+
+Par exemple, voici le comportement par défaut du bouton de fermeture. Vous n'avez pas besoin de l'ajouter dans le code, mais vous pouvez voir ici comment procéder si nécessaire.
+
+Notez que, par défaut, le flow reste ouvert après un achat réussi. Si vous souhaitez le fermer une fois l'achat terminé, ignorez la vue dans le callback `flowViewDidFinishPurchase`.
+
+:::tip
+Consultez nos guides sur la gestion des [actions](kmp-handle-paywall-actions) et des [événements](kmp-handling-events) des boutons.
+:::
+
+```kotlin showLineNumbers
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CloseAction -> mainUiScope.launch { view.dismiss() }
+            else -> Unit
+        }
+    }
+
+    override fun flowViewDidFinishPurchase(
+        view: AdaptyUIFlowView,
+        product: AdaptyPaywallProduct,
+        purchaseResult: AdaptyPurchaseResult
+    ) {
+        if (purchaseResult !is AdaptyPurchaseResult.UserCanceled) {
+            mainUiScope.launch { view.dismiss() }
+        }
+    }
+})
+```
+
+## Prochaines étapes \{#next-steps\}
+
+Votre flow est prêt à être affiché dans l'application. Testez vos achats dans le [sandbox App Store](test-purchases-in-sandbox) ou dans [Google Play Store](testing-on-android) pour vous assurer de pouvoir effectuer un achat test depuis le flow.
+
+Vous devez ensuite [vérifier le niveau d'accès des utilisateurs](kmp-check-subscription-status) pour vous assurer d'afficher un flow ou d'accorder l'accès aux fonctionnalités payantes aux bons utilisateurs.
+
+## Exemple complet \{#full-example\}
+
+Voici comment toutes ces étapes peuvent être intégrées ensemble dans votre application.
+
+```kotlin showLineNumbers
+// Set up the observer for handling flow events
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CloseAction -> mainUiScope.launch { view.dismiss() }
+            else -> Unit
+        }
+    }
+
+    override fun flowViewDidFinishPurchase(
+        view: AdaptyUIFlowView,
+        product: AdaptyPaywallProduct,
+        purchaseResult: AdaptyPurchaseResult
+    ) {
+        if (purchaseResult !is AdaptyPurchaseResult.UserCanceled) {
+            mainUiScope.launch { view.dismiss() }
+        }
+    }
+})
+
+// Get and display the flow
+Adapty.getFlow("YOUR_PLACEMENT_ID")
+    .onSuccess { flow ->
+        AdaptyUI.createFlowView(flow)
+            .onSuccess { view ->
+                view.present()
+            }
+            .onError { error ->
+                // the flow has no view configured — use custom logic
+            }
+    }
+    .onError { error ->
+        // handle the error
+    }
+```

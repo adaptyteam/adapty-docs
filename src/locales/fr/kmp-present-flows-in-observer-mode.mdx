@@ -1,0 +1,91 @@
+---
+title: "Présenter les flows en mode Observer - Kotlin Multiplatform"
+description: "Présentez des flows et des paywalls Paywall Builder en mode Observer dans votre application Kotlin Multiplatform tout en gérant les achats avec votre propre code."
+metadataTitle: "Présenter les flows en mode Observer - Kotlin Multiplatform | Documentation Adapty"
+keywords: ['observer mode', 'AdaptyUIObserverModeResolver', 'setObserverModeResolver', 'flow']
+---
+
+Si vous avez personnalisé un flow ou un paywall avec le builder, vous n'avez pas à vous soucier de son rendu dans le code de votre application pour l'afficher à l'utilisateur. Un tel flow ou paywall contient à la fois ce qui doit être affiché et comment il doit l'être.
+
+:::warning
+Cette section concerne uniquement le [mode Observer](observer-vs-full-mode). Si vous ne travaillez pas en mode Observer, consultez la rubrique [Afficher les flows et paywalls](kmp-present-paywalls).
+:::
+
+:::info
+Cette fonctionnalité nécessite le SDK Adapty Kotlin Multiplatform 4.0 (beta) ou une version ultérieure — elle n'était auparavant disponible que dans les SDK natifs iOS et Android. Consultez le [guide de migration](migration-to-kmp-sdk-v4) pour effectuer la mise à niveau.
+:::
+
+<details>
+   <summary>Avant de commencer à présenter des flows (Cliquez pour développer)</summary>
+
+   1. Configurez l'intégration initiale d'Adapty [avec l'App Store](initial_ios) et [avec Google Play](initial-android).
+   2. Installez et configurez le SDK Adapty. Assurez-vous d'appeler `withObserverMode(true)` dans le builder de configuration. Consultez le [guide d'installation du SDK Kotlin Multiplatform](sdk-installation-kotlin-multiplatform#activate-adapty-sdk).
+   3. [Créez des produits](create-product) dans l'Adapty Dashboard.
+   4. [Configurez des flows ou des paywalls dans les builders](create-paywall) et associez-leur des produits.
+   5. [Créez des placements et assignez-leur vos flows ou paywalls](create-placement).
+   6. [Récupérez les flows et leur configuration](kmp-get-pb-paywalls) dans le code de votre application.
+
+</details>
+
+En mode Observer, le SDK n'effectue pas les achats à votre place. Lorsqu'un utilisateur appuie sur le bouton d'achat ou de restauration dans un flow ou paywall rendu par Adapty, le SDK appelle votre `AdaptyUIObserverModeResolver` à la place — effectuez l'achat ou la restauration avec votre propre code à cet endroit.
+
+1. Implémentez l'interface `AdaptyUIObserverModeResolver` :
+
+   ```kotlin showLineNumbers
+   import com.adapty.kmp.AdaptyUIObserverModeResolver
+   import com.adapty.kmp.models.AdaptyPaywallProduct
+   import com.adapty.kmp.models.AdaptyUIFlowView
+
+   class MyObserverModeResolver : AdaptyUIObserverModeResolver {
+       override fun observerModeDidInitiatePurchase(
+           view: AdaptyUIFlowView,
+           product: AdaptyPaywallProduct,
+           onStartPurchase: () -> Unit,
+           onFinishPurchase: () -> Unit
+       ) {
+           onStartPurchase() // the view shows its loading indicator
+           // make the purchase with your own code,
+           // then report the transaction to Adapty and call:
+           onFinishPurchase() // the view hides the loading indicator
+       }
+
+       override fun observerModeDidInitiateRestore(
+           view: AdaptyUIFlowView,
+           onStartRestore: () -> Unit,
+           onFinishRestore: () -> Unit
+       ) {
+           onStartRestore()
+           // restore purchases with your own code, then:
+           onFinishRestore()
+       }
+   }
+   ```
+
+   La méthode `observerModeDidInitiatePurchase` vous informe que l'utilisateur a initié un achat, et `observerModeDidInitiateRestore` — que l'utilisateur a initié une restauration. Déclenchez votre flow d'achat ou de restauration personnalisé en réponse.
+
+   N'oubliez pas non plus d'invoquer les callbacks suivants pour notifier AdaptyUI de l'avancement de l'achat ou de la restauration. Cela est nécessaire pour le bon fonctionnement du flow, notamment l'affichage du chargement :
+
+   | Callback           | Description                                                                                    |
+   | :----------------- | :--------------------------------------------------------------------------------------------- |
+   | onStartPurchase()  | Ce callback doit être invoqué pour notifier AdaptyUI que l'achat a démarré.                   |
+   | onFinishPurchase() | Ce callback doit être invoqué pour notifier AdaptyUI que l'achat est terminé.                 |
+   | onStartRestore()   | Ce callback doit être invoqué pour notifier AdaptyUI que la restauration a démarré.           |
+   | onFinishRestore()  | Ce callback doit être invoqué pour notifier AdaptyUI que la restauration est terminée.        |
+
+   Le flow reste ouvert pendant l'exécution de votre code — fermez-le vous-même après un achat ou une restauration réussi.
+
+2. Enregistrez le resolver avant d'afficher un écran :
+
+   ```kotlin showLineNumbers
+   import com.adapty.kmp.AdaptyUI
+
+   AdaptyUI.setObserverModeResolver(MyObserverModeResolver())
+   ```
+
+   Sans resolver enregistré, la vue du flow n'a aucun moyen de transmettre l'achat à votre code, et rien ne se passe lorsque l'utilisateur appuie sur le bouton d'achat.
+
+3. Créez et présentez la vue du flow comme d'habitude : [récupérez le flow et créez sa vue](kmp-get-pb-paywalls), puis [présentez-la](kmp-present-paywalls). Aucun paramètre supplémentaire n'est nécessaire — une fois le resolver enregistré, chaque flow ou paywall rendu par Adapty achemine les achats et les restaurations à travers lui.
+
+:::warning
+N'oubliez pas de [signaler la transaction et de l'associer au paywall](report-transactions-observer-mode-kmp). Sinon, Adapty ne reconnaîtra pas la transaction et ne pourra pas déterminer le paywall source de l'achat.
+:::

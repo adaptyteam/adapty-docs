@@ -1,0 +1,100 @@
+---
+title: "Mode Enfants dans le SDK Flutter"
+description: "Activez facilement le Mode Enfants pour respecter les politiques d'Apple et de Google. Aucune donnée IDFA, GAID ni publicitaire collectée dans le SDK Flutter."
+metadataTitle: "Mode Enfants dans le SDK Flutter | Documentation Adapty"
+---
+
+Si votre application Flutter est destinée aux enfants, vous devez respecter les politiques d'[Apple](https://developer.apple.com/kids/) et de [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Si vous utilisez le SDK Adapty, quelques étapes simples vous permettront de le configurer pour satisfaire ces politiques et passer les revues des stores.
+
+## Qu'est-ce qui est requis ? \{#whats-required\}
+
+Vous devez configurer le SDK Adapty pour désactiver la collecte de :
+
+- [IDFA (Identifier for Advertisers)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers) (iOS)
+- [Android Advertising ID (AAID/GAID)](https://support.google.com/googleplay/android-developer/answer/6048248) (Android)
+- [adresse IP](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
+De plus, nous recommandons d'utiliser l'identifiant utilisateur client avec précaution. Un identifiant au format `<Prénom.Nom>` sera inévitablement considéré comme une collecte de données personnelles, tout comme l'utilisation d'un e-mail. Pour le Mode Enfants, la bonne pratique consiste à utiliser des identifiants aléatoires ou anonymisés (par exemple, des identifiants hachés ou des UUID générés par l'appareil) pour garantir la conformité.
+
+## Activer le Mode Enfants \{#enabling-kids-mode\}
+
+### Mises à jour dans l'Adapty Dashboard \{#updates-in-the-adapty-dashboard\}
+
+Dans l'Adapty Dashboard, vous devez désactiver la collecte des adresses IP. Pour ce faire, accédez à [App settings](https://app.adapty.io/settings/general) et cliquez sur **Disable IP address collection** sous **Collect users' IP address**.
+
+### Mises à jour dans le code de votre application mobile \{#updates-in-your-mobile-app-code\}
+
+Pour respecter les politiques, désactivez la collecte de l'IDFA de l'utilisateur (pour iOS), du GAID/AAID (pour Android) et de l'adresse IP.
+
+**Android : Mettez à jour votre configuration SDK**
+
+```dart showLineNumbers title="Dart"
+try {
+    await Adapty().activate(
+        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+      // highlight-start
+          ..withGoogleAdvertisingIdCollectionDisabled(true)  // set to `true`
+          ..withIpAddressCollectionDisabled(true),  // set to `true`
+      // highlight-end
+    );
+} catch (e) {
+    // handle the error
+}
+```
+
+**iOS : Activez le Mode Enfants dans le SDK v4**
+
+:::important
+Dans le SDK v4, le SDK iOS natif est installé via Swift Package Manager, et le Mode Enfants est activé grâce au trait Swift Package `KidsMode`, qui supprime à la compilation tout le code lié à l'IDFA, AdSupport et AppTrackingTransparency. Cela nécessite **Xcode 26** ou une version ultérieure.
+:::
+
+Dans le SDK v4, utilisez le package `adapty_flutter_kids` à la place de `adapty_flutter` dans votre `pubspec.yaml`. Il s'agit d'une variante Mode Enfants du plugin avec la même API publique et la même version — la seule différence est que son SDK iOS natif est compilé avec le trait `KidsMode` :
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: 4.0.0
+```
+
+Votre code Dart reste identique — mettez simplement à jour l'import avec le nouveau nom de package :
+
+```dart showLineNumbers title="Dart"
+```
+
+**iOS : Activez le Mode Enfants avec CocoaPods (SDK v3)**
+
+1. Mettez à jour votre Podfile :
+
+   - Si vous **n'avez pas** de section `post_install`, ajoutez l'intégralité du bloc de code ci-dessous.
+   - Si vous **avez** déjà une section `post_install`, intégrez les lignes mises en évidence dans celle-ci.
+
+    ```ruby showLineNumbers title="Podfile"
+    def adapty_enable_kids_mode(installer)
+      installer.pods_project.targets.each do |target|
+        next unless target.name == 'Adapty'
+        target.build_configurations.each do |config|
+          flags = config.build_settings['OTHER_SWIFT_FLAGS'] || '$(inherited)'
+          flags = flags.join(' ') if flags.is_a?(Array)
+          config.build_settings['OTHER_SWIFT_FLAGS'] = "#{flags} -DADAPTY_KIDS_MODE"
+        end
+        target.frameworks_build_phase.files.dup.each do |bf|
+          target.frameworks_build_phase.remove_build_file(bf) if bf.display_name.to_s.include?('AdSupport')
+        end
+      end
+      installer.pods_project.save
+      Dir.glob(File.join(installer.sandbox.root, 'Target Support Files', '**', '*.xcconfig')).each do |xc|
+        File.write(xc, File.read(xc).gsub(/\s*-framework\s+"?AdSupport"?/, ''))
+      end
+    end
+
+    post_install do |installer|
+      # ... keep your existing post_install body (Flutter adds one automatically) ...
+
+      adapty_enable_kids_mode(installer)   # <-- enable Adapty Kids Mode
+    end
+    ```
+
+2. Appliquez les modifications en exécutant
+
+    ```sh showLineNumbers title="Shell"
+    pod install
+    ```

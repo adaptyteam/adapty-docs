@@ -1,0 +1,160 @@
+---
+title: "Effectuer des achats dans une application mobile avec le SDK React Native"
+description: "Guide sur la gestion des achats intégrés et des abonnements avec Adapty."
+metadataTitle: "Gestion des achats intégrés dans Adapty | Documentation Adapty"
+keywords: ['makePurchase', 'offer code']
+rank: 90
+displayed_sidebar: sdkreactnative
+---
+
+import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/fr/reusable/OfferCodesInfo.mdx';
+
+Afficher des paywalls dans votre application mobile est une étape essentielle pour offrir aux utilisateurs l'accès à des contenus ou services premium. Cependant, afficher ces paywalls suffit uniquement si vous utilisez le [Paywall Builder](adapty-paywall-builder) pour les personnaliser.
+
+Si vous n'utilisez pas le Paywall Builder, vous devez utiliser une méthode distincte appelée `.makePurchase()` pour finaliser un achat et déverrouiller le contenu souhaité. Cette méthode constitue la passerelle permettant aux utilisateurs d'interagir avec les paywalls et de procéder aux transactions souhaitées.
+
+Si votre paywall dispose d'une offre promotionnelle active pour le produit qu'un utilisateur souhaite acheter, Adapty l'appliquera automatiquement au moment de l'achat.
+
+:::warning
+Gardez à l'esprit que l'offre de lancement ne sera appliquée automatiquement que si vous utilisez des paywalls configurés via le Paywall Builder.
+
+Dans les autres cas, vous devrez [vérifier l'éligibilité de l'utilisateur à une offre de lancement sur iOS](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios). Ignorer cette étape peut entraîner le rejet de votre application lors de la publication. De plus, cela pourrait conduire à facturer le plein tarif à des utilisateurs éligibles à une offre de lancement.
+:::
+
+Assurez-vous d'avoir [effectué la configuration initiale](quickstart) sans sauter une seule étape. Sans cela, nous ne pouvons pas valider les achats.
+
+## Effectuer un achat \{#make-purchase\}
+
+:::note
+**Vous utilisez le [Paywall Builder](adapty-paywall-builder) ?** Les achats sont traités automatiquement — vous pouvez ignorer cette étape.
+
+**Vous cherchez des instructions pas à pas ?** Consultez le [guide de démarrage rapide](react-native-implement-paywalls-manually) pour des instructions d'implémentation complètes avec tout le contexte nécessaire.
+:::
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+
+Paramètres de la requête :
+
+| Paramètre   | Présence  | Description                                                                                                                    |
+| :---------- | :-------- |:-------------------------------------------------------------------------------------------------------------------------------|
+| **Product** | requis    | Un objet [`AdaptyPaywallProduct`](https://react-native.adapty.io/interfaces/adaptypaywallproduct) récupéré depuis le paywall. |
+
+Paramètres de la réponse :
+
+| Paramètre   | Description                                                                                                                                                                                                                                                                                                                                                                      |
+|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>Si la requête a réussi, la réponse contient cet objet. Un objet [AdaptyProfile](https://react-native.adapty.io/interfaces/adaptyprofile) fournit des informations complètes sur les niveaux d'accès, les abonnements et les achats uniques d'un utilisateur dans l'application.</p><p>Vérifiez le statut du niveau d'accès pour déterminer si l'utilisateur dispose de l'accès requis à l'application.</p> |
+
+:::warning
+**Remarque :** si vous utilisez encore la version StoreKit d'Apple inférieure à v2.0 et une version du SDK Adapty inférieure à v2.9.0, vous devez fournir le [secret partagé de l'App Store Apple](app-store-connection-configuration#step-5-enter-app-store-shared-secret) à la place. Cette méthode est actuellement dépréciée par Apple.
+:::
+
+## Changer d'abonnement lors d'un achat \{#change-subscription-when-making-a-purchase\}
+
+Lorsqu'un utilisateur choisit un nouvel abonnement plutôt que de renouveler l'abonnement actuel, le comportement dépend du store :
+
+- Pour l'App Store, l'abonnement est automatiquement mis à jour au sein du groupe d'abonnements. Si un utilisateur achète un abonnement d'un groupe alors qu'il a déjà un abonnement d'un autre groupe, les deux abonnements seront actifs simultanément.
+- Pour Google Play, l'abonnement n'est pas automatiquement mis à jour. Vous devrez gérer le changement dans le code de votre application mobile comme décrit ci-dessous.
+
+Pour remplacer l'abonnement par un autre sur Android, appelez la méthode `.makePurchase()` avec le paramètre supplémentaire :
+
+```typescript showLineNumbers
+try {
+    const purchaseResult = await adapty.makePurchase(product, params);
+    switch (purchaseResult.type) {
+      case 'success':
+        const isSubscribed = purchaseResult.profile?.accessLevels['YOUR_ACCESS_LEVEL']?.isActive;
+
+        if (isSubscribed) {
+          // Grant access to the paid features
+        }
+        break;
+      case 'user_cancelled':
+        // Handle the case where the user canceled the purchase
+        break;
+      case 'pending':
+        // Handle deferred purchases (e.g., the user will pay offline with cash)
+        break;
+    }
+} catch (error) {
+    // Handle the error
+}
+```
+Paramètre de requête supplémentaire :
+
+| Paramètre  | Présence | Description                                                  |
+| :--------- | :------- | :----------------------------------------------------------- |
+| **params** | requis   | un objet de type [`MakePurchaseParamsInput`](https://react-native.adapty.io/types/makepurchaseparamsinput). |
+
+:::info
+**Version 3.8.2+** : La structure `MakePurchaseParamsInput` a été mise à jour. `oldSubVendorProductId` et `prorationMode` sont désormais imbriqués sous `subscriptionUpdateParams`, et `isOfferPersonalized` est déplacé au niveau supérieur.
+
+Exemple :
+```javascript
+makePurchase(product, {
+    android: {
+        subscriptionUpdateParams: {
+            oldSubVendorProductId: 'old_product_id',
+            prorationMode: 'charge_prorated_price'
+        },
+        isOfferPersonalized: true
+    }
+});
+```
+:::
+
+Vous pouvez en savoir plus sur les abonnements et les modes de remplacement dans la documentation Google Developer :
+
+- [À propos des modes de remplacement](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Recommandations de Google pour les modes de remplacement](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Mode de remplacement [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Remarque : cette méthode est disponible uniquement pour les mises à niveau d'abonnement. Les rétrogradations ne sont pas prises en charge.
+- Mode de remplacement [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Remarque : le changement d'abonnement réel n'aura lieu qu'à la fin de la période de facturation de l'abonnement actuel.
+
+## Utiliser des codes promotionnels sur iOS \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+Pour afficher la feuille de saisie du code dans votre application :
+
+```typescript showLineNumbers
+adapty.presentCodeRedemptionSheet();
+```
+
+:::danger
+D'après nos observations, la feuille de saisie de code promotionnel peut ne pas fonctionner de manière fiable dans certaines applications. Nous recommandons de rediriger l'utilisateur directement vers l'App Store.
+
+Pour ce faire, vous devez ouvrir l'URL au format suivant :
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::
+
+## Gérer les plans prépayés (Android) \{#manage-prepaid-plans-android\}
+
+Si les utilisateurs de votre application peuvent acheter des [plans prépayés](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (par exemple, acheter un abonnement non renouvelable pour plusieurs mois), vous pouvez activer les [transactions en attente](https://developer.android.com/google/play/billing/subscriptions#pending) pour les plans prépayés.
+
+```typescript showLineNumbers
+adapty.activate("PUBLIC_SDK_KEY", {
+    android: { pendingPrepaidPlansEnabled: true }
+});
+```

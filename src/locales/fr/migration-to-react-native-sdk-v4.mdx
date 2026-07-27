@@ -1,0 +1,289 @@
+---
+title: "Migrer le SDK Adapty React Native vers la v. 4.0"
+description: "Migrez vers le SDK Adapty React Native v4.0 en remplaçant les APIs paywall par des APIs flow, compatibles avec le Flow Builder et le Paywall Builder."
+metadataTitle: "Migration vers le SDK Adapty React Native v4.0 | Documentation Adapty"
+---
+
+Le SDK Adapty React Native 4.0 introduit les flows et renomme les APIs paywall en conséquence. Les nouvelles APIs fonctionnent aussi bien avec le nouveau Flow Builder qu'avec le Paywall Builder existant — aucune modification de configuration n'est requise côté Adapty Dashboard.
+
+## Référence rapide \{#quick-reference\}
+
+| v3 | v4 |
+|---|---|
+| `adapty.getPaywall(placementId, locale?, params?)` | `adapty.getFlow(placementId, params?)` |
+| `adapty.getPaywallForDefaultAudience(placementId, locale?, params?)` | `adapty.getFlowForDefaultAudience(placementId, params?)` |
+| `adapty.getPaywallProducts(paywall)` | `adapty.getPaywallProducts(flow)` |
+| `adapty.logShowPaywall(paywall)` | `adapty.logShowFlow(flow)` |
+| `AdaptyPaywall` (type) | `AdaptyFlow` |
+| `createPaywallView(paywall)` | `createFlowView(flow)` |
+| `AdaptyPaywallView` (composant) | `AdaptyFlowView` |
+| `EventHandlers` (type) | `FlowEventHandlers` |
+| `onPaywallShown` | `onAppeared` |
+| `onPaywallClosed` | `onDisappeared` |
+| `onRenderingFailed` | `onError` |
+
+`AdaptyPaywallProduct` conserve son nom — les produits appartiennent toujours à un flow, et `getPaywallProducts` accepte désormais un `AdaptyFlow`. Les méthodes `getFlow` et `getFlowForDefaultAudience` n'acceptent plus de paramètre `locale`. Les méthodes de vue `present`, `dismiss`, `setEventHandlers`, et `showDialog`, ainsi que les handlers d'événements `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished`, et `onAndroidSystemBack` conservent les mêmes noms qu'en v3. Certains comportements par défaut ont changé — voir [Changements de comportement par défaut](#default-behavior-changes).
+
+## Version iOS minimale \{#minimum-ios-version\}
+
+Le SDK Adapty React Native 4.0 relève la cible de déploiement iOS minimale d'iOS 13.0 à **iOS 15.0**. Configurez votre cible de déploiement iOS à 15.0 ou supérieur avant de mettre à jour.
+
+## Installation \{#installation\}
+
+### Mettre à jour le package \{#update-the-package\}
+
+Mettez à jour le package `react-native-adapty` vers la v4.0 :
+
+```bash showLineNumbers
+npm install react-native-adapty@4.0.0
+# or
+yarn add react-native-adapty@4.0.0
+```
+
+### iOS : les SDK natifs passent par Swift Package Manager \{#ios-native-sdks-now-come-through-swift-package-manager\}
+
+[Le dépôt de specs CocoaPods passe en lecture seule en décembre 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), donc à partir de la v4, les SDK natifs `Adapty`, `AdaptyUI` et `AdaptyPlugin` **ne sont plus téléchargés en tant que sous-dépendances CocoaPods** — le podspec les récupère via **Swift Package Manager** (via le helper `spm_dependency`). Deux prérequis :
+
+- **React Native 0.75 ou supérieur** — nécessaire pour le helper podspec `spm_dependency`. Sur une version antérieure, `pod install` échoue avec un message d'erreur explicite ; mettez à jour React Native en premier, ou restez sur `react-native-adapty` 3.x.
+- **Frameworks dynamiques** — les dépendances SPM requièrent un lien dynamique. La façon de l'activer diffère selon que vous utilisez Expo ou React Native nu.
+
+#### Expo \{#expo\}
+
+Ajoutez le plugin de configuration [`expo-build-properties`](https://docs.expo.dev/versions/latest/sdk/build-properties/) et définissez les frameworks iOS en dynamique dans `app.json` (ou `app.config.js`) :
+
+```json showLineNumbers title="app.json"
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "dynamic"
+          }
+        }
+      ]
+    ]
+  }
+}
+```
+
+Ensuite, installez le plugin et régénérez le projet natif :
+
+```bash showLineNumbers
+npx expo install expo-build-properties
+npx expo prebuild --clean
+```
+
+#### React Native nu \{#bare-react-native\}
+
+Ajoutez les frameworks dynamiques à votre cible iOS, puis réinstallez les pods :
+
+```ruby showLineNumbers title="ios/Podfile"
+use_frameworks! :linkage => :dynamic
+```
+
+```bash showLineNumbers
+cd ios && pod install --repo-update
+```
+
+Si vous récupériez précédemment `Adapty`, `AdaptyUI` ou `AdaptyPlugin` en tant que sous-dépendances CocoaPods, supprimez d'abord toutes les lignes `pod 'Adapty'`, `pod 'AdaptyUI'` ou `pod 'AdaptyPlugin'` explicites de votre `Podfile`.
+
+:::warning
+Passer du lien statique par défaut aux frameworks dynamiques peut entrer en conflit avec des bibliothèques qui ne prennent pas encore en charge les en-têtes modulaires, et est incompatible avec Flipper. Si vous rencontrez des erreurs de build, consultez cet [article sur l'intégration de Swift Package Manager avec les bibliothèques React Native](https://www.callstack.com/blog/integrating-swift-package-manager-with-react-native-libraries).
+:::
+
+Consultez [Installer le SDK Adapty](sdk-installation-reactnative) pour la configuration complète.
+
+## Récupérer les flows \{#fetching-flows\}
+
+### getPaywall → getFlow \{#getpaywall--getflow\}
+
+Le type retourné passe de `AdaptyPaywall` à `AdaptyFlow`, et le paramètre `locale` est supprimé — lors du rendu d'un flow, la locale est résolue automatiquement ; pour les paywalls personnalisés, toutes les locales sont retournées dans `flow.remoteConfigs` :
+
+```diff showLineNumbers
+- const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID', 'en');
++ const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
+```
+
+`getPaywallForDefaultAudience` est renommé de la même façon :
+
+```diff showLineNumbers
+- const paywall = await adapty.getPaywallForDefaultAudience('YOUR_PLACEMENT_ID', 'en');
++ const flow = await adapty.getFlowForDefaultAudience('YOUR_PLACEMENT_ID');
+```
+
+### getPaywallProducts(paywall) → getPaywallProducts(flow) \{#getpaywallproductspaywall--getpaywallproductsflow\}
+
+`getPaywallProducts` conserve son nom mais accepte désormais un `AdaptyFlow` :
+
+```diff showLineNumbers
+- const products = await adapty.getPaywallProducts(paywall);
++ const products = await adapty.getPaywallProducts(flow);
+```
+
+## Modèle de données \{#data-model\}
+
+`getFlow` retourne un `AdaptyFlow` à la place d'un `AdaptyPaywall`, et la structure de l'objet a changé :
+
+| Champ v3 `AdaptyPaywall` | Champ v4 `AdaptyFlow` | Action |
+|---|---|---|
+| `remoteConfig?` (unique) | `remoteConfigs?: AdaptyRemoteConfig[]` (tableau) | Un flow porte une Remote Config par langue configurée. Lisez celle qui correspond à l'utilisateur : `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
+| `products` | `flow.paywalls[i].productIdentifiers` | Les identifiants de produits se trouvent désormais sur chaque variante du flow, pas sur le flow lui-même. |
+| `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | Déplacé du flow vers chaque variante de paywall. |
+| `version?: number` | `flowVersionId?: string` | Renommé, et le type est passé de `number` à `string`. |
+| `hasViewConfiguration` | supprimé | Supprimez tout contrôle `hasViewConfiguration` de votre code. |
+| `requestLocale` | supprimé | La locale ne fait plus partie du modèle. |
+| _(nouveau)_ | `paywalls: AdaptyFlowPaywall[]` | Chaque entrée est une variante de paywall dans le flow. |
+| _(nouveau)_ | `responseCreatedAt: number` | Horodatage de la réponse serveur, en millisecondes. |
+
+Les identifiants de produits ont été déplacés du flow vers chaque variante :
+
+```diff showLineNumbers
+- const ids = paywall.products;
++ const ids = flow.paywalls[0].productIdentifiers;
+```
+
+## Méthodes de paywall web \{#web-paywall-methods\}
+
+`openWebPaywall` et `createWebPaywallUrl` conservent leurs noms, mais le premier argument est désormais un `AdaptyFlowPaywall` (une variante de flow) au lieu d'un `AdaptyPaywall`. Vous pouvez toujours passer un `AdaptyPaywallProduct`.
+
+```diff showLineNumbers
+  const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
+- await adapty.openWebPaywall(paywall);
++ await adapty.openWebPaywall(flow.paywalls[0]);
+```
+
+## Suivi des vues de flow \{#tracking-flow-views\}
+
+### logShowPaywall → logShowFlow \{#logshowpaywall--logshowflow\}
+
+`logShowPaywall` est renommé en `logShowFlow` et accepte désormais un `AdaptyFlow`. L'événement est toujours enregistré pour la même variante, donc les métriques de funnel et de test A/B existantes continuent de fonctionner sans modification côté tableau de bord.
+
+```diff showLineNumbers
+- await adapty.logShowPaywall(paywall);
++ await adapty.logShowFlow(flow);
+```
+
+Comme en v3, vous n'avez pas besoin d'appeler cette méthode lors de l'affichage des flows ou paywalls rendus par le [Flow Builder](adapty-flow-builder) ou le [Paywall Builder](adapty-paywall-builder) — Adapty suit ces vues automatiquement.
+
+## Afficher les flows \{#displaying-flows\}
+
+### createPaywallView → createFlowView \{#createpaywallview--createflowview\}
+
+Renommez la fonction factory et passez l'`AdaptyFlow`. Les méthodes du contrôleur retourné (`present`, `dismiss`, `setEventHandlers`, `showDialog`) sont inchangées :
+
+```diff showLineNumbers
+- import { createPaywallView } from 'react-native-adapty';
++ import { createFlowView } from 'react-native-adapty';
+
+- const view = await createPaywallView(paywall);
++ const view = await createFlowView(flow);
+  await view.present();
+```
+
+### AdaptyPaywallView → AdaptyFlowView \{#adaptypaywalview--adaptylowview\}
+
+Si vous effectuez le rendu avec le composant React, renommez-le et passez la prop `flow` :
+
+```diff showLineNumbers
+- import { AdaptyPaywallView } from 'react-native-adapty';
++ import { AdaptyFlowView } from 'react-native-adapty';
+
+- <AdaptyPaywallView paywall={paywall} /* … */ />
++ <AdaptyFlowView flow={flow} /* … */ />
+```
+
+:::note
+Une vue de flow créée avec `createFlowView` est à usage unique : après avoir appelé `dismiss()`, la vue est détruite, donc appelez à nouveau `createFlowView` pour présenter le flow une nouvelle fois. Un `AdaptyFlowView` intégré est fermé en le démontant — retourner `true` depuis un handler ne ferme pas une vue intégrée, modifiez donc votre propre état à la place, par exemple dans `onCloseButtonPress`.
+:::
+
+## Gérer les événements \{#handling-events\}
+
+L'interface des handlers d'événements est renommée de `EventHandlers` en `FlowEventHandlers`, et trois callbacks sont renommés. Les corps des handlers existants ne nécessitent pas de modification de code — renommez simplement :
+
+```diff showLineNumbers
+- onPaywallShown: () => { /* … */ },
++ onAppeared: () => { /* … */ },
+
+- onPaywallClosed: () => { /* … */ },
++ onDisappeared: () => { /* … */ },
+
+- onRenderingFailed: (error) => { /* … */ },
++ onError: (error) => { /* … */ },
+```
+
+Tous les autres handlers d'événements conservent leurs noms. Deux d'entre eux gagnent également un second argument : `onPurchaseCompleted` devient `(purchaseResult, product)` et `onPurchaseFailed` devient `(error, product)`, où `product` est l'`AdaptyPaywallProduct` concerné. Consultez [Gérer les événements de flow et de paywall](react-native-handling-events-1) pour la liste complète.
+
+:::note
+`onDisappeared` se déclenche uniquement pour un flow présenté en modal avec `createFlowView().present()`. Le composant `AdaptyFlowView` ne l'expose pas en tant que prop — fermez une vue intégrée en la démontant.
+:::
+
+La v4 ajoute également quelques fonctionnalités que vous pouvez activer :
+
+- Les méthodes `adapty.openWebUrl(url, openIn?)` et `adapty.requestAppReview()` — elles servent de support aux handlers par défaut `onUrlPress` et `onRequestAppReview`, de sorte que les URLs et les demandes d'avis sont gérées nativement par défaut. Appelez-les directement uniquement si vous surchargez ces handlers.
+- Gestion des achats en mode observateur dans les flows via les nouveaux handlers `onObserverPurchaseInitiated` / `onObserverRestoreInitiated`. Voir [Gérer les achats en mode observateur](react-native-handling-events-1#handle-purchases-in-observer-mode).
+
+## APIs supprimées et dépréciées \{#removed-and-deprecated-apis\}
+
+### setFallbackPaywalls → setFallback \{#setfallbackpaywalls--setfallback\}
+
+`setFallbackPaywalls` est supprimé. Utilisez `setFallback`, qui accepte le même argument :
+
+```diff showLineNumbers
+- await adapty.setFallbackPaywalls(fileLocation);
++ await adapty.setFallback(fileLocation);
+```
+
+### Exports supprimés \{#removed-exports\}
+
+Ces symboles ne sont plus exportés depuis `react-native-adapty`. Supprimez leurs imports :
+
+- **`AdaptyPaywall`** : Utilisez `AdaptyFlow` à la place.
+- **`ProductReference`** : Utilisez `AdaptyProductIdentifier`, lu depuis `flow.paywalls[i].productIdentifiers`.
+- **`AdaptyPaywallBuilder`** : Supprimé. Les flows et paywalls s'affichent nativement.
+- **`AdaptyAndroidSubscriptionUpdateParameters`** : Utilisez la structure imbriquée `subscriptionUpdateParams` (voir ci-dessous).
+
+### activate : lockMethodsUntilReady \{#activate-lockmethodsuntilready\}
+
+`lockMethodsUntilReady` est supprimé et ce comportement est désormais toujours activé. Supprimez-le de votre appel `activate` — le conserver empêche la compilation :
+
+```diff showLineNumbers
+- await adapty.activate('PUBLIC_SDK_KEY', { lockMethodsUntilReady: true });
++ await adapty.activate('PUBLIC_SDK_KEY');
+```
+
+### makePurchase : mise à jour d'abonnement Android \{#makepurchase-android-subscription-update\}
+
+La structure plate de mise à jour d'abonnement Android est supprimée. Déplacez `oldSubVendorProductId` et `prorationMode` dans un objet `subscriptionUpdateParams` imbriqué, et conservez `isOfferPersonalized` au niveau supérieur. Consultez [Effectuer des achats](react-native-making-purchases) pour l'exemple complet.
+
+### Android : marges de zone sécurisée \{#android-safe-area-paddings\}
+
+La ressource booléenne Android `<bool name="adapty_paywall_enable_safe_area_paddings">…</bool>` est supprimée. Supprimez-la de `res/values/bools.xml` et contrôlez les marges de zone sécurisée à l'exécution avec le paramètre `android.enableSafeArea` lors de la création de la vue de flow. La valeur par défaut est `true` pour la présentation modale et `false` pour le composant intégré :
+
+```typescript showLineNumbers
+const view = await createFlowView(flow, {
+  android: {
+    enableSafeArea: false,
+  },
+});
+```
+
+### Mode mock \{#mock-mode\}
+
+Si vous exécutez le SDK en mode mock (Expo Go ou aperçu web), renommez la clé de configuration mock `paywalls` en `flows`.
+
+## Changements de comportement par défaut \{#default-behavior-changes\}
+
+Ces changements ne causent pas d'erreurs de compilation, testez-les donc à l'exécution :
+
+- **`onAndroidSystemBack`** : Le comportement par défaut est passé de la fermeture de la vue à son maintien ouvert. Pour rétablir le comportement précédent, retournez `true` depuis le handler.
+- **`onPurchaseCompleted`** : Le comportement par défaut est passé de la fermeture de la vue (sauf si l'utilisateur a annulé l'achat) à son maintien toujours ouvert. Pour rétablir le comportement précédent, retournez `purchaseResult.type !== 'user_cancelled'` depuis le handler.
+- **`onRestoreCompleted`** : Le comportement par défaut est passé de la fermeture de la vue après une restauration réussie à son maintien ouvert. Pour rétablir le comportement précédent, retournez `true` depuis le handler.
+- **`onUrlPress`** : Le comportement par défaut ouvre désormais l'URL via la couche native, en respectant le paramètre de navigateur intégré ou externe défini dans le tableau de bord. Surchargez le handler pour ouvrir les URLs vous-même.
+
+## Dépréciation de l'API onboarding \{#onboarding-api-deprecation\}
+
+L'API onboarding historique est dépréciée en v4.0 au profit du [Flow Builder](adapty-flow-builder). Elle fonctionne toujours, mais sera supprimée dans une prochaine version, donc prévoyez la migration de vos onboardings vers le Flow Builder.
+
+Symboles dépréciés : `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView`, et `AdaptyOnboardingView`.
