@@ -1,0 +1,65 @@
+---
+title: "Отображение флоу в режиме Observer в Capacitor SDK"
+description: "Отображайте флоу и пейволы Paywall Builder в режиме Observer в вашем Capacitor-приложении, обрабатывая покупки собственным кодом."
+metadataTitle: "Отображение флоу в режиме Observer | Документация Adapty"
+keywords: ['режим observer', 'onObserverPurchaseInitiated', 'onObserverRestoreInitiated', 'флоу']
+---
+Если вы настроили флоу или пейвол с помощью билдера, вам не нужно беспокоиться об их отображении в коде мобильного приложения — всё, что нужно показать и как именно это показать, уже задано внутри самого флоу или пейвола.
+
+:::warning
+Этот раздел относится только к [режиму Observer](observer-vs-full-mode). Если вы не работаете в режиме Observer, обратитесь к теме [Отображение флоу и пейволов](capacitor-present-paywalls).
+:::
+:::info
+Эта функция требует Adapty Capacitor SDK версии 4.0 или выше — ранее она была доступна только в нативных SDK для iOS и Android. Ознакомьтесь с [руководством по миграции](migration-to-capacitor-sdk-v4) для обновления.
+:::
+
+<details>
+   <summary>Перед тем как начать показывать флоу (нажмите, чтобы раскрыть)</summary>
+1. Настройте начальную интеграцию Adapty [с App Store](initial_ios) и [с Google Play](initial-android).
+   2. Установите и настройте Adapty SDK. Обязательно установите параметр `observerMode` в значение `true`. Обратитесь к [гайду по установке Capacitor SDK](sdk-installation-capacitor#activate-adapty-module-of-adapty-sdk).
+   3. [Создайте продукты](create-product) в дашборде Adapty.
+   4. [Настройте флоу или пейволы в билдерах](create-paywall) и привяжите к ним продукты.
+   5. [Создайте плейсменты и назначьте им флоу или пейволы](create-placement).
+   6. [Загрузите флоу и их конфигурацию](capacitor-get-pb-paywalls) в коде мобильного приложения.
+</details>
+
+В режиме Observer SDK не выполняет покупки за вас. Когда пользователь нажимает кнопку покупки или восстановления во флоу или пейволе, отрендеренном Adapty, SDK вызывает ваш обработчик события `onObserverPurchaseInitiated` или `onObserverRestoreInitiated` — именно там нужно выполнить покупку или восстановление с помощью вашего кода.
+
+1. Установите обработчики событий режима Observer на представление. В отличие от других платформ, отдельного объекта resolver нет — обработчики являются частью обычных [обработчиков событий](capacitor-handling-events), поэтому устанавливайте их для каждого создаваемого представления:
+   ```typescript showLineNumbers title="Capacitor"
+   import { adapty, createFlowView } from '@adapty/capacitor';
+
+   const view = await createFlowView(flow);
+
+   const unsubscribe = await view.setEventHandlers({
+     onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
+       onStartPurchase(); // the view shows its loading indicator
+       myPurchaseApi(product.vendorProductId)
+         .then((transactionId) =>
+           adapty.reportTransaction({ transactionId, variationId: flow.variationId }),
+         )
+         .finally(() => onFinishPurchase()); // the view hides the loading indicator
+       return false; // keep the flow open; dismiss it yourself after success
+     },
+     onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
+       onStartRestore();
+       myRestoreApi().finally(() => onFinishRestore());
+       return false;
+     },
+   });
+   ```
+
+`onObserverPurchaseInitiated` сообщает, что пользователь инициировал покупку, а `onObserverRestoreInitiated` — что пользователь инициировал восстановление. В ответ на эти события запустите свой кастомный флоу покупки или восстановления.
+
+Также не забудьте вызвать следующие коллбэки, чтобы уведомить AdaptyUI о ходе покупки или восстановления. Это необходимо для корректной работы флоу, например для отображения загрузчика:
+| Callback           | Description                                                                                           |
+   | :----------------- | :---------------------------------------------------------------------------------------------------- |
+   | onStartPurchase()  | Этот колбэк нужно вызвать, чтобы уведомить AdaptyUI о начале покупки.   |
+   | onFinishPurchase() | Этот колбэк нужно вызвать, чтобы уведомить AdaptyUI о завершении покупки. |
+   | onStartRestore()   | Этот колбэк нужно вызвать, чтобы уведомить AdaptyUI о начале восстановления покупок.   |
+   | onFinishRestore()  | Этот колбэк нужно вызвать, чтобы уведомить AdaptyUI о завершении восстановления покупок.  |
+2. Отобразите флоу как обычно: [получите флоу и создайте его представление](capacitor-get-pb-paywalls), затем [покажите его](capacitor-present-paywalls). Дополнительные параметры не нужны — обработчики срабатывают только тогда, когда SDK был активирован с `observerMode: true`.
+
+:::warning
+Не забудьте [сообщить о транзакции и привязать её к пейволу](report-transactions-observer-mode-capacitor). Иначе Adapty не распознает транзакцию и не определит исходный пейвол покупки.
+:::

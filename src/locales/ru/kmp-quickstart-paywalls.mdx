@@ -1,117 +1,136 @@
 ---
-title: "Включение покупок с помощью пейволов в Kotlin Multiplatform SDK"
-description: "Быстрый старт по настройке Adapty для управления встроенными подписками."
-metadataTitle: "Быстрый старт с Adapty | Документация Adapty"
-keywords: ['paywalls kotlin multiplatform', 'sdk kotlin multiplatform', 'paywall', 'paywall builder', 'getPaywall']
-rank: 70
+title: "Включение покупок через Flow Builder в Kotlin Multiplatform SDK"
+description: "Быстрый старт по настройке встроенных покупок с помощью Adapty Flow Builder."
+metadataTitle: "Adapty Flow Builder — быстрый старт | Документация Adapty"
+keywords: ['flows kotlin multiplatform', 'flow builder', 'getFlow', 'paywalls kotlin multiplatform', 'sdk kotlin multiplatform', 'paywall', 'paywall builder', 'getPaywall']
+rank: 90
 displayed_sidebar: sdkkmp
 ---
 
-import PaywallsIntro from '@site/src/locales/ru/reusable/PaywallsIntro.md';
+Это руководство использует API Adapty Kotlin Multiplatform SDK v4 (beta). Если вы используете v3, ознакомьтесь с [руководством по миграции](migration-to-kmp-sdk-v4) для получения соответствующих имён методов.
 
-Чтобы включить встроенные покупки, нужно понять три ключевых концепции:
+Чтобы подключить встроенные покупки, вам нужно разобраться с тремя ключевыми концепциями:
 
-- [**Продукты**](product) — всё, что пользователи могут купить (подписки, расходуемые покупки, пожизненный доступ).
-- [**Пейволы**](paywalls) — конфигурации, определяющие, какие продукты предлагать. В Adapty пейволы — единственный способ получить продукты, и такой подход позволяет менять предложения, цены и комбинации продуктов без изменения кода приложения.
-- [**Плейсменты**](placements) — где и когда показывать пейволы в приложении (например, `main`, `onboarding`, `settings`). Вы настраиваете пейволы для плейсментов в дашборде, а затем запрашиваете их по ID плейсмента в коде. Это упрощает запуск A/B-тестов и показ разных пейволов разным пользователям.
+- [**Products**](product) – всё, что пользователи могут купить (подписки, расходуемые покупки, пожизненный доступ)
+- [**Flows**](adapty-flow-builder) – последовательности экранов, которые показывают продукты пользователям и создаются в конструкторе флоу без кода. SDK получает их с помощью `getFlow`. Если вы предпочитаете строить интерфейс в собственном коде, используйте пейвол — см. [Реализация пейволов вручную](kmp-quickstart-manual).
+- [**Placements**](placements) – где и когда в приложении показываются флоу (например, `main`, `onboarding`, `settings`). Вы прикрепляете флоу к плейсментам в дашборде, а затем запрашиваете их по ID плейсмента в коде. Это упрощает проведение A/B-тестов и показ разных флоу разным пользователям.
 
-Adapty предлагает три способа включить покупки в приложении. Выберите подходящий в зависимости от требований:
+Adapty предлагает три способа подключить покупки в приложении. Выберите один из них в зависимости от требований вашего приложения:
 
-| Реализация                | Сложность   | Когда использовать                                                                                                                                                                                                                                      |
-|---------------------------|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Adapty Paywall Builder    | ✅ Просто    | Вы [создаёте готовый к покупкам пейвол в no-code конструкторе](quickstart-paywalls). Adapty автоматически отображает его и берёт на себя весь сложный процесс покупки, валидацию чеков и управление подписками. |
-| Пейволы, созданные вручную | 🟡 Средне  | Вы реализуете UI пейвола в коде приложения, но всё равно получаете объект пейвола из Adapty для гибкого управления предложениями. См. [гайд](kmp-quickstart-manual).                                                         |
-| Режим наблюдателя         | 🔴 Сложно   | У вас уже есть собственная инфраструктура обработки покупок и вы хотите её сохранить. Учтите, что режим наблюдателя имеет ограничения в Adapty. См. [статью](observer-vs-full-mode).                                                 |
+| Реализация | Сложность | Когда использовать |
+|---|---|---|
+| Adapty Flow Builder | ✅ Просто | Вы [создаёте готовый к покупке флоу в no-code конструкторе](quickstart-paywalls). Adapty автоматически отображает его и берёт на себя весь сложный процесс покупки, валидацию чеков и управление подписками. |
+| Пейволы, созданные вручную | 🟡 Средне | Вы реализуете интерфейс пейвола в коде приложения, но всё равно получаете объект флоу от Adapty, сохраняя гибкость в управлении продуктами. См. [гайд](kmp-quickstart-manual). |
+| Observer mode | 🔴 Сложно | У вас уже есть собственная инфраструктура обработки покупок, и вы хотите продолжать её использовать. Обратите внимание, что observer mode имеет ограничения в Adapty. См. [статью](observer-vs-full-mode). |
 
 :::important
-**Шаги ниже показывают, как реализовать пейвол, созданный в Adapty Paywall Builder.**
+**Шаги ниже показывают, как реализовать флоу, созданный в Adapty Flow Builder.**
 
-Если вы не хотите использовать Paywall Builder, см. [гайд по обработке покупок в пейволах, созданных вручную](kmp-making-purchases).
+Если вы предпочитаете создавать UI пейвола самостоятельно, смотрите [Реализация пейволов вручную](kmp-quickstart-manual).
 :::
 
-Чтобы показать пейвол, созданный в Adapty Paywall Builder, в коде приложения достаточно:
+Чтобы отобразить флоу, созданный в Adapty Flow Builder, в коде приложения нужно сделать следующее:
 
-1. **Получить пейвол**: запросить пейвол из Adapty.
-2. **Показать пейвол, и Adapty обработает покупки за вас**: отобразить полученный контейнер пейвола в приложении.
-3. **Обработать действия кнопок**: связать взаимодействия пользователя с пейволом с реакцией приложения на них. Например, открывать ссылки или закрывать пейвол при нажатии кнопок.
+1. **Получить флоу**: Получите его из Adapty.
+2. **Отобразить его — Adapty сам обработает покупки**: Покажите view в вашем приложении.
+3. **Обработать действия кнопок**: Свяжите действия пользователя с реакцией приложения на них. Например, открывайте ссылки или закрывайте флоу при нажатии кнопок.
 
-## Перед началом работы \{#before-you-start\}
+## Прежде чем начать \{#before-you-start\}
 
-Выполните следующие шаги:
+Прежде чем начать, выполните следующие шаги:
 
-1. Подключите приложение к [App Store](initial_ios) и/или [Google Play](initial-android) в дашборде Adapty.
+1. Подключите ваше приложение к [App Store](initial_ios) и/или [Google Play](initial-android) в дашборде Adapty.
 2. [Создайте продукты](create-product) в Adapty.
-3. [Создайте пейвол и добавьте в него продукты](create-paywall).
-4. [Создайте плейсмент и добавьте в него пейвол](create-placement).
-5. [Установите и активируйте Adapty SDK](sdk-installation-kotlin-multiplatform) в коде приложения.
+3. [Создайте флоу и добавьте в него продукты](create-paywall).
+4. [Создайте плейсмент и добавьте в него флоу](create-placement).
+5. [Установите и активируйте SDK](sdk-installation-kotlin-multiplatform) в коде вашего приложения.
 
 :::tip
-Самый быстрый способ выполнить эти шаги — следовать [краткому руководству](quickstart) или создать пейволы и плейсменты с помощью [Developer CLI](developer-cli-quickstart).
+Самый быстрый способ выполнить эти шаги — следовать [руководству по быстрому старту](quickstart) или создавать флоу и плейсменты с помощью [Developer CLI](developer-cli-quickstart).
 :::
 
-## 1. Получите пейвол \{#1-get-the-paywall\}
+## 1. Получение флоу \{#1-get-the-flow\}
 
-Ваши пейволы привязаны к плейсментам, настроенным в дашборде. Плейсменты позволяют показывать разные пейволы разным аудиториям или запускать [A/B-тесты](ab-tests).
+Флоу привязаны к плейсментам, настроенным в дашборде. Плейсменты позволяют показывать разные флоу разным аудиториям или запускать [A/B-тесты](ab-tests).
 
-Чтобы получить пейвол, созданный в Adapty Paywall Builder, нужно:
+Чтобы получить флоу, созданный в Adapty Flow Builder, нужно:
 
-1. Получить объект `paywall` по ID [плейсмента](placements) с помощью метода `getPaywall` и проверить, создан ли пейвол в конструкторе.
+1. Получить объект `flow` по ID [плейсмента](placements) с помощью метода `getFlow`.
 
-2. Получить конфигурацию представления пейвола с помощью метода `createPaywallView`. Конфигурация содержит элементы UI и стили, необходимые для отображения пейвола.
+2. Создать представление флоу с помощью метода `createFlowView`. Представление содержит UI-элементы и стили, необходимые для отображения флоу. Если у флоу нет настроенного представления, `createFlowView` возвращает ошибку — обработайте её в `onError`.
 
 :::important
-Чтобы получить конфигурацию представления, необходимо включить переключатель **Show on device** в Paywall Builder. Иначе вы получите пустую конфигурацию, и пейвол не отобразится.
+Чтобы получить отображение, необходимо включить переключатель **Show on device** во Flow Builder. В противном случае `createFlowView` вернёт ошибку, и флоу не отобразится.
 :::
 
 ```kotlin showLineNumbers
-Adapty.getPaywall("YOUR_PLACEMENT_ID")
-    .onSuccess { paywall ->
-        if (!paywall.hasViewConfiguration) {
-            return@onSuccess
-        }
-        
-        val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
-        paywallView?.present()
+Adapty.getFlow("YOUR_PLACEMENT_ID")
+    .onSuccess { flow ->
+        AdaptyUI.createFlowView(flow)
+            .onSuccess { view ->
+                view.present()
+            }
+            .onError { error ->
+                // the flow has no view configured, or view creation failed
+            }
     }
     .onError { error ->
         // handle the error
     }
 ```
 
-## 2. Отобразите пейвол \{#2-display-the-paywall\}
+## 2. Отобразите флоу \{#2-display-the-flow\}
 
-Когда конфигурация пейвола получена, достаточно добавить несколько строк, чтобы его отобразить.
+Теперь, когда у вас есть флоу, достаточно добавить несколько строк, чтобы отобразить его.
 
-Для отображения визуального пейвола на экране устройства его необходимо предварительно настроить. Вызовите метод `AdaptyUI.createPaywallView()`:
+Чтобы показать визуальный флоу на экране устройства, нужно сначала создать представление. Для этого вызовите метод `AdaptyUI.createFlowView()`:
 
 ```kotlin showLineNumbers
-val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
-paywallView?.present()
+AdaptyUI.createFlowView(flow)
+    .onSuccess { view ->
+        view.present()
+    }
+    .onError { error ->
+        // handle the error
+    }
 ```
 
-После успешного создания представления вы можете показать его на экране устройства.
+После успешного создания представления его можно отобразить на экране устройства. Каждое представление можно использовать только один раз: после вызова `dismiss()` вызовите `createFlowView` ещё раз, чтобы снова показать флоу.
 
 :::tip
-Подробнее об отображении пейвола — в нашем [гайде](kmp-present-paywalls).
+Подробнее о том, как отображать флоу, читайте в нашем [гайде](kmp-present-paywalls).
 :::
 
-## 3. Обработайте действия кнопок \{#3-handle-button-actions\}
+## 3. Обработка нажатий на кнопки \{#3-handle-button-actions\}
 
-Когда пользователи нажимают кнопки в пейволе, Kotlin Multiplatform SDK автоматически обрабатывает покупки, восстановление, закрытие пейвола и открытие ссылок.
+Когда пользователи нажимают кнопки во флоу, Kotlin Multiplatform SDK автоматически обрабатывает покупки, восстановление, закрытие флоу и открытие ссылок.
 
-Однако другие кнопки имеют пользовательские или предопределённые ID и требуют обработки действий в вашем коде. Также вы можете переопределить их поведение по умолчанию.
+Однако у других кнопок есть пользовательские или предопределённые идентификаторы, и их действия нужно обрабатывать в вашем коде. Также вы можете переопределить их поведение по умолчанию.
 
-Например, ниже показано поведение кнопки закрытия по умолчанию. Добавлять его в код необязательно, но здесь видно, как это делается при необходимости.
+Например, ниже показано поведение кнопки закрытия по умолчанию. Добавлять его в код не нужно, но здесь вы можете увидеть, как это делается при необходимости.
+
+Обратите внимание, что по умолчанию флоу остаётся открытым после успешной покупки. Если вы хотите закрыть его после завершения покупки, скройте вью в колбэке `flowViewDidFinishPurchase`.
 
 :::tip
 Читайте наши гайды о том, как обрабатывать [действия](kmp-handle-paywall-actions) и [события](kmp-handling-events) кнопок.
 :::
 
 ```kotlin showLineNumbers
-AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
-    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
         when (action) {
-            AdaptyUIAction.CloseAction, AdaptyUIAction.AndroidSystemBackAction -> view.dismiss()
+            is AdaptyUIAction.CloseAction -> mainUiScope.launch { view.dismiss() }
+            else -> Unit
+        }
+    }
+
+    override fun flowViewDidFinishPurchase(
+        view: AdaptyUIFlowView,
+        product: AdaptyPaywallProduct,
+        purchaseResult: AdaptyPurchaseResult
+    ) {
+        if (purchaseResult !is AdaptyPurchaseResult.UserCanceled) {
+            mainUiScope.launch { view.dismiss() }
         }
     }
 })
@@ -125,28 +144,39 @@ AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
 
 ## Полный пример \{#full-example\}
 
-Вот как все эти шаги можно объединить в приложении.
+Вот как все эти шаги можно объединить в вашем приложении.
 
 ```kotlin showLineNumbers
-// Set up the observer for handling paywall actions
-AdaptyUI.setPaywallsEventsObserver(object : AdaptyUIPaywallsEventsObserver {
-    override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
+// Set up the observer for handling flow events
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
         when (action) {
-            is AdaptyUIAction.CloseAction -> view.dismiss()
+            is AdaptyUIAction.CloseAction -> mainUiScope.launch { view.dismiss() }
+            else -> Unit
+        }
+    }
+
+    override fun flowViewDidFinishPurchase(
+        view: AdaptyUIFlowView,
+        product: AdaptyPaywallProduct,
+        purchaseResult: AdaptyPurchaseResult
+    ) {
+        if (purchaseResult !is AdaptyPurchaseResult.UserCanceled) {
+            mainUiScope.launch { view.dismiss() }
         }
     }
 })
 
-// Get and display the paywall
-Adapty.getPaywall("YOUR_PLACEMENT_ID")
-    .onSuccess { paywall ->
-        if (!paywall.hasViewConfiguration) {
-            // Use custom logic
-            return@onSuccess
-        }
-
-        val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
-        paywallView?.present()
+// Get and display the flow
+Adapty.getFlow("YOUR_PLACEMENT_ID")
+    .onSuccess { flow ->
+        AdaptyUI.createFlowView(flow)
+            .onSuccess { view ->
+                view.present()
+            }
+            .onError { error ->
+                // the flow has no view configured — use custom logic
+            }
     }
     .onError { error ->
         // handle the error

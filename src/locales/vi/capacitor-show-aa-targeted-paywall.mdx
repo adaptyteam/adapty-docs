@@ -1,11 +1,9 @@
 ---
-title: "Hiển thị paywall nhắm mục tiêu AA ngay lần khởi chạy đầu tiên trong Capacitor SDK"
-description: "Hiển thị paywall ngay lập tức và nâng cấp cho người dùng Apple Ads khi attribution được áp dụng trong Capacitor, sử dụng AdaptyProfile.appliedAttributionSources."
-metadataTitle: "Hiển thị paywall nhắm mục tiêu AA ngay lần đầu khởi chạy | Capacitor SDK | Tài liệu Adapty"
+title: "Hiển thị paywall được nhắm mục tiêu AA khi khởi chạy lần đầu trong Capacitor SDK"
+description: "Hiển thị paywall ngay lập tức và nâng cấp cho người dùng Apple Ads sau khi attribution được áp dụng trong Capacitor, sử dụng AdaptyProfile.appliedAttributionSources."
+metadataTitle: "Hiển thị paywall được nhắm mục tiêu AA khi khởi chạy lần đầu | Capacitor SDK | Tài liệu Adapty"
 ---
-
-Attribution của Apple Ads (AA) đến bất đồng bộ sau `adapty.activate()`. Ở lần khởi chạy đầu tiên, attribution thường chưa có, nên `getPaywall` sẽ xử lý theo đối tượng mặc định và người dùng Apple Ads bỏ lỡ paywall nhắm mục tiêu AA của bạn. Thay vì trì hoãn việc hiển thị paywall cho đến khi attribution đến, hãy hiển thị ngay một paywall và làm mới nó khi attribution AA được áp dụng — như vậy người dùng Apple Ads sẽ nhận được biến thể nhắm mục tiêu còn những người khác thấy paywall mà không phải chờ. `AdaptyProfile.appliedAttributionSources` cho bạn biết khi nào attribution AA đã được áp dụng.
-
+Attribution từ Apple Ads (AA) được gửi về bất đồng bộ sau khi gọi `adapty.activate()`. Ở lần khởi chạy đầu tiên, dữ liệu này thường chưa kịp về, nên `getFlow` sẽ trả về kết quả theo đối tượng mặc định và người dùng đến từ Apple Ads sẽ bỏ lỡ paywall được nhắm mục tiêu theo AA. Thay vì chờ attribution về rồi mới hiển thị paywall, hãy hiển thị ngay một paywall và làm mới nó khi attribution AA được áp dụng — như vậy người dùng Apple Ads sẽ thấy đúng biến thể được nhắm mục tiêu, còn những người dùng khác không phải chờ đợi gì. `AdaptyProfile.appliedAttributionSources` cho bạn biết khi nào attribution AA đã được áp dụng.
 ## Trước khi bắt đầu \{#before-you-start\}
 
 Bạn cần:
@@ -14,48 +12,41 @@ Bạn cần:
 
 ## Cách hoạt động \{#how-it-works\}
 
-Sau `adapty.activate()`, SDK yêu cầu attribution Apple Ads từ Apple trong nền và chuyển kết quả đến backend của Adapty. Khi AA trở thành nguồn attribution đang hoạt động cho hồ sơ người dùng, SDK sẽ gửi một `AdaptyProfile` đã cập nhật đến listener `onLatestProfileLoad` của bạn, với `'apple_search_ads'` trong mảng `appliedAttributionSources`.
+Sau khi gọi `adapty.activate()`, SDK sẽ ngầm yêu cầu dữ liệu attribution từ Apple Ads và chuyển kết quả về backend của Adapty. Khi AA trở thành nguồn attribution đang hoạt động của hồ sơ người dùng, SDK sẽ gửi một `AdaptyProfile` đã cập nhật đến listener `onLatestProfileLoad` của bạn, với `'apple_search_ads'` trong mảng `appliedAttributionSources`.
 
-Điều này cho phép bạn tải paywall theo hai bước:
-
-1. Gọi `getPaywall` ngay lập tức. Khi chưa có attribution nào được áp dụng, Adapty xử lý yêu cầu theo đối tượng mặc định, vì vậy người dùng thấy paywall ngay lập tức.
-2. Khi `'apple_search_ads'` xuất hiện, gọi `getPaywall` lần nữa. Lúc này Adapty xử lý yêu cầu theo đối tượng Apple Ads và trả về paywall nhắm mục tiêu, thay thế paywall đầu tiên.
+Nhờ đó, bạn có thể tải paywall theo hai bước:
+1. Gọi `getFlow` ngay lập tức. Vì chưa có attribution nào được áp dụng, Adapty sẽ xử lý yêu cầu dựa trên đối tượng mặc định, do đó người dùng thấy paywall ngay lập tức.
+2. Khi `'apple_search_ads'` xuất hiện, gọi lại `getFlow`. Adapty lúc này sẽ xử lý yêu cầu dựa trên đối tượng Apple Ads và trả về paywall được nhắm mục tiêu, thay thế paywall trước đó.
 
 `appliedAttributionSources` có thể rỗng hoặc vắng mặt. Điều đó có nghĩa là:
 
-- Attribution Apple Ads chưa được xử lý cho hồ sơ người dùng này, hoặc
-- Không có attribution nào đến cả.
-
-Dù thế nào, bước 1 vẫn an toàn — Adapty xử lý yêu cầu theo đối tượng phù hợp với trạng thái hồ sơ người dùng hiện tại, thường là đối tượng mặc định. Bước 2 chỉ chạy khi `'apple_search_ads'` xuất hiện.
+- Attribution của Apple Ads chưa được xử lý cho hồ sơ người dùng này, hoặc
+- chưa có attribution nào được ghi nhận.
+Dù thế nào, bước 1 vẫn an toàn — Adapty xử lý yêu cầu dựa trên đối tượng phù hợp với trạng thái hồ sơ hiện tại, thường là đối tượng mặc định. Bước 2 chỉ chạy khi `'apple_search_ads'` xuất hiện.
 
 :::important
-Ở mọi lần khởi chạy tiếp theo, hồ sơ người dùng được cache đã có sẵn `'apple_search_ads'` trong `appliedAttributionSources`, nên `getPaywall` đầu tiên đã trả về paywall nhắm mục tiêu Apple Ads — không có lần fetch thứ hai hay thay đổi hiển thị nào. Flow hai bước chỉ quan trọng ở lần khởi chạy đầu tiên, khi attribution vẫn đang trong quá trình xử lý.
+Ở mọi lần khởi động tiếp theo, hồ sơ đã được cache sẵn sẽ có `'apple_search_ads'` trong `appliedAttributionSources`, nên lần `getFlow` đầu tiên đã trả về paywall được phân khúc theo Apple Ads — không có lần fetch thứ hai hay thay đổi nào hiển thị ra. Luồng hai bước chỉ quan trọng ở lần khởi động đầu tiên, khi attribution vẫn đang được xử lý.
 :::
-
 ## Triển khai \{#implementation\}
 
-Hiển thị paywall ngay lập tức, sau đó lắng nghe `'apple_search_ads'` và làm mới paywall khi nó đến.
-
+Hiển thị paywall ngay lập tức, sau đó lắng nghe sự kiện `'apple_search_ads'` và làm mới paywall khi nhận được.
 1. **Kích hoạt SDK.** Xem [Cài đặt & cấu hình Capacitor SDK](sdk-installation-capacitor).
-2. **Tải và hiển thị paywall** với `getPaywall` như thường — đừng chờ attribution.
-3. **Đăng ký nhận cập nhật hồ sơ người dùng** với `adapty.addListener('onLatestProfileLoad', …)` và theo dõi `'apple_search_ads'`. Khi nó xuất hiện, fetch lại paywall và hiển thị paywall đã cập nhật. Nếu bạn chưa thiết lập listener, xem [Lắng nghe cập nhật gói đăng ký](capacitor-check-subscription-status#listen-to-subscription-updates):
-
+2. **Tải và hiển thị paywall** bằng `getFlow` như bình thường — đừng chặn luồng chờ attribution.
+3. **Đăng ký nhận cập nhật hồ sơ người dùng** với `adapty.addListener('onLatestProfileLoad', …)` và theo dõi `'apple_search_ads'`. Khi xuất hiện, tải lại paywall và hiển thị phiên bản đã cập nhật. Nếu bạn chưa thiết lập listener, xem [Lắng nghe cập nhật gói đăng ký](capacitor-check-subscription-status#listen-to-subscription-updates):
 ```typescript
 const listener = await adapty.addListener('onLatestProfileLoad', async ({ profile }) => {
   if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
-  const targeted = await adapty.getPaywall({ placementId });
-  // present the targeted paywall in place of the first one
+  const targeted = await adapty.getFlow({ placementId });
+  // present the targeted flow in place of the first one
 });
 
 // Call listener.remove() after the upgrade, or after a timeout (see below).
 ```
 
-4. **Dừng lắng nghe sau một khoảng thời gian chờ.** Hầu hết người dùng không bao giờ nhận được attribution Apple Ads, vì vậy hãy xóa listener sau một thời gian thay vì giữ nó mở suốt phiên. Cấu hình [paywall dự phòng](capacitor-use-fallback-paywalls) cho placement để người dùng luôn thấy gì đó nếu yêu cầu thất bại.
+4. **Dừng lắng nghe sau một khoảng thời gian chờ.** Hầu hết người dùng không có attribution từ Apple Ads, vì vậy hãy xóa listener sau một thời gian thay vì giữ nó suốt cả phiên. Hãy cấu hình [paywall dự phòng](capacitor-use-fallback-paywalls) cho placement đó để người dùng luôn thấy gì đó nếu yêu cầu thất bại.
+## Ví dụ hoàn chỉnh \{#complete-example\}
 
-## Ví dụ đầy đủ \{#complete-example\}
-
-`onAppleAdsAttribution` resolve khi attribution Apple Ads được áp dụng, hoặc reject sau `timeoutMs`. Cách dùng bên dưới tải paywall ngay lập tức, sau đó fetch lại khi attribution đến — người dùng Apple Ads nhận được paywall nhắm mục tiêu, và nếu attribution không bao giờ đến thì paywall đầu tiên vẫn được giữ nguyên:
-
+`onAppleAdsAttribution` sẽ resolve khi attribution của Apple Ads được áp dụng, hoặc reject sau `timeoutMs`. Ví dụ dưới đây tải paywall ngay lập tức, sau đó tải lại khi attribution được nhận — người dùng Apple Ads sẽ thấy paywall đúng mục tiêu, và nếu attribution không bao giờ đến thì paywall đầu tiên vẫn được giữ nguyên:
 ```typescript
 
 const APPLE_ADS_SOURCE = 'apple_search_ads';
@@ -97,18 +88,17 @@ export function onAppleAdsAttribution(timeoutMs: number): Promise<void> {
   });
 }
 
-let paywall = await adapty.getPaywall({ placementId });
+let flow = await adapty.getFlow({ placementId });
 
 onAppleAdsAttribution(30_000)
-  .then(() => adapty.getPaywall({ placementId }))
+  .then(() => adapty.getFlow({ placementId }))
   .then(updated => {
-    paywall = updated;
+    flow = updated;
   })
   .catch(() => {
     console.log('Apple Ads attribution or loading failed');
   });
 ```
 
-Ở lần khởi chạy đầu tiên, người dùng Apple Ads sẽ thấy paywall mặc định trong giây lát trước khi nó được thay thế. Nếu bạn hiển thị paywall bằng Paywall Builder, hãy cân nhắc xem việc hiển thị lại có chấp nhận được không, hoặc chỉ áp dụng nâng cấp trước khi paywall được hiển thị. Điều chỉnh `timeoutMs` theo thời gian bạn sẵn lòng tiếp tục lắng nghe — attribution đang đến thường xuất hiện trong vài giây kể từ khi khởi chạy.
-
-Nếu ứng dụng của bạn đã lắng nghe `onLatestProfileLoad` cho các mục đích khác (ví dụ: [kiểm tra trạng thái gói đăng ký](capacitor-check-subscription-status#listen-to-subscription-updates)), bạn không cần thay đổi gì. `adapty.addListener` hỗ trợ nhiều listener độc lập, vì vậy đoạn code này thêm listener riêng của nó mà không ảnh hưởng đến những cái khác.
+Khi khởi động lần đầu, người dùng Apple Ads có thể thấy thoáng qua paywall mặc định trước khi nó được thay thế. Nếu bạn hiển thị paywall bằng Paywall Builder, hãy cân nhắc xem việc hiển thị lại có chấp nhận được không, hoặc chỉ áp dụng cập nhật trước khi paywall được hiển thị. Hãy điều chỉnh `timeoutMs` theo thời gian bạn sẵn sàng chờ — attribution nếu có thường đến trong vài giây sau khi khởi động.
+Nếu ứng dụng của bạn đã lắng nghe `onLatestProfileLoad` cho các mục đích khác (ví dụ: [kiểm tra trạng thái gói đăng ký](capacitor-check-subscription-status#listen-to-subscription-updates)), bạn không cần thay đổi gì. `adapty.addListener` hỗ trợ nhiều listener độc lập, vì vậy listener này sẽ được thêm vào mà không ảnh hưởng đến các listener khác.

@@ -1,10 +1,11 @@
 ---
-title: "Adapty Android SDK を v. 4.0 へ移行する"
-description: "ペイウォール API をフロー API に置き換えて Adapty Android SDK v4.0（ベータ）へ移行します。Flow Builder と Paywall Builder の両方に対応しています。"
-metadataTitle: "Adapty Android SDK v4.0（ベータ）への移行 | Adapty ドキュメント"
+title: "Adapty Android SDK を v. 4.0 に移行する"
+description: "ペイウォール API をフロー API に置き換えることで、Adapty Android SDK v4.0 に移行できます。Flow Builder と Paywall Builder の両方に対応しています。"
+metadataTitle: "Adapty Android SDK v4.0 への移行 | Adapty ドキュメント"
 ---
 
-Adapty Android SDK 4.0（ベータ）ではフローが導入され、ペイウォール API の名称が変更されました。新しい API は新しい Flow Builder と既存の Paywall Builder の両方で動作します。Adapty ダッシュボード側での設定変更は不要です。
+Adapty Android SDK 4.0 ではフローが導入され、ペイウォール API の名称が変更されました。新しい API は、新しい Flow Builder と既存の Paywall Builder の両方で動作します。Adapty ダッシュボード側での設定変更は不要です。
+
 ## クイックリファレンス \{#quick-reference\}
 | v3 | v4 |
 |---|---|
@@ -29,7 +30,8 @@ Adapty Android SDK 4.0（ベータ）ではフローが導入され、ペイウ�
 `AdaptyPaywallProduct` はその名前を保持します。プロダクトは引き続きフローに属しており、`getPaywallProducts` は `AdaptyFlow` を受け取るようになります。その他の `AdaptyFlowEventListener` メソッド（`onProductSelected`、`onPurchaseStarted`、`onPurchaseFinished`、`onPurchaseFailure`、`onRestoreSuccess`、`onRestoreFailure`、`onActionPerformed`、`onAwaitingPurchaseParams`、`onLoadingProductsFailure` など）は、名前とシグネチャを変更しません。
 ## インストール \{#installation\}
 
-Adapty Android SDK 4.0 はプレリリース版のため、動的なバージョン範囲ではなく正確なバージョンを指定する必要があります。`adapty-bom` のバージョンを `4.0.0-beta.1` に設定してプロジェクトを同期してください。BOM が対応する `android-sdk` と `android-ui` のバージョンを自動で解決します。依存関係の宣言方法については、[Adapty SDK のインストール](sdk-installation-android) を参照してください。
+`adapty-bom` のバージョンを `4.0.0`（以降）に設定し、プロジェクトを同期してください。BOM が対応する `android-sdk` と `android-ui` のバージョンを自動で解決します。依存関係の宣言方法については、[Adapty SDK のインストール](sdk-installation-android)を参照してください。
+
 ## 削除および非推奨のAPI \{#removed-and-deprecated-apis\}
 
 - **`Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized, callback)`** — 削除されました。このオーバーロードはv3で非推奨になりました。代わりに `AdaptyPurchaseParameters` を使って同じオプションを渡してください：
@@ -150,6 +152,8 @@ Jetpack Compose では、コンポーザブルの名前を変更し、設定パ�
 ```
 
 既存のハンドラー本体はコードを変更する必要はありません。型名とオーバーライドの名前を変更するだけです。`onError` は、`onRenderingError` が対象としていたのと同じレンダリングエラーに加えて、その他の購入以外のランタイムエラーも対象としています。コールバックの完全な一覧については、[フロー＆ペイウォールイベントの処理](android-handling-events)を参照してください。
+v4では`onBackPressed(context): Boolean`コールバックも追加され、そのデフォルト動作がシステムの戻るボタンの挙動を変更しています。以前は戻るボタン（または戻るジェスチャー）がアクティビティやフラグメントにフォールスルーし、通常はペイウォールを閉じていました。v4ではデフォルト実装がそのプレスを消費するため、**システムの戻るボタンだけではフローが閉じなくなりました**。これはiOSの挙動（フローはシステムジェスチャーで閉じられない）に合わせたものです。ユーザーに明示的な退出手段（**Close**ボタンまたは`on_device_back`アクション）を提供するか、`onBackPressed`をオーバーライドして`false`を返すことで以前の動作に戻すことができます。詳細は[システムの戻るボタン](android-handling-events#system-back-button)を参照してください。
+デフォルトの購入ハンドラーは、画面を閉じる動作も行わなくなりました。v3 では、デフォルトの `onPurchaseFinished` がユーザーのキャンセル以外の購入完了時（成功または保留中の購入）にペイウォールを閉じていました。v4 では何もしない（no-op）ため、**購入が完了してもフローは閉じられず、明示的に閉じるまで表示されたままになります** — これも iOS の動作と一致しています。自動クローズの動作に依存していた場合は、購入完了後に自分で画面を閉じてください。例については[購入の成功・キャンセル・保留](android-handling-events#successful-canceled-or-pending-purchase)を参照してください。
 ## アトリビューションと統合識別子 \{#attribution-and-integration-identifiers\}
 ### updateAttribution
 
@@ -162,41 +166,40 @@ Jetpack Compose では、コンポーザブルの名前を変更し、設定パ�
 定義済みのソース: `AdaptyAttributionSource.APPLE_ADS`、`.ADJUST`、`.APPSFLYER`、`.BRANCH`、`.TENJIN`。その他のソースには、文字列からソースを作成してください: `AdaptyAttributionSource("your_source")`。
 ### setIntegrationIdentifier
 
-`setIntegrationIdentifier(key, value)` は、1つまたは複数の `AdaptyIntegrationIdentifier` 値を受け取るメソッドに置き換えられました。生の文字列キーの代わりに、定義済みの `Key` 定数を使用してください：
+`setIntegrationIdentifier(key, value)` は、1つ以上の `AdaptyIntegrationIdentifier` 値を受け取るメソッドに置き換えられました。生の文字列キーを渡す代わりに、コンビニエンスメソッドで各識別子を作成してください：
 
 ```diff showLineNumbers
 - Adapty.setIntegrationIdentifier("appsflyer_id", appsFlyerId) { error -> /* handle the error */ }
-+ Adapty.setIntegrationIdentifier(
-+     AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.APPSFLYER_ID, appsFlyerId)
-+ ) { error -> /* handle the error */ }
++ Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier.appsflyerId(appsFlyerId)) { error -> /* handle the error */ }
 ```
 
 1回の呼び出しで複数の識別子を設定することもできます：
 ```kotlin showLineNumbers
 Adapty.setIntegrationIdentifier(
     listOf(
-        AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.APPSFLYER_ID, appsFlyerId),
-        AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.ADJUST_DEVICE_ID, adjustDeviceId),
+        AdaptyIntegrationIdentifier.appsflyerId(appsFlyerId),
+        AdaptyIntegrationIdentifier.adjustDeviceId(adjustDeviceId),
     )
 ) { error -> /* handle the error */ }
 ```
 
-古いキー文字列をそれぞれの `Key` 定数に置き換えてください：
-| v3 キー | v4 `AdaptyIntegrationIdentifier.Key` |
+古いキー文字列をそれぞれの便利メソッドに置き換えてください：
+| v3 キー | v4 `AdaptyIntegrationIdentifier` メソッド |
 |---|---|
-| `"adjust_device_id"` | `ADJUST_DEVICE_ID` |
-| `"airbridge_device_id"` | `AIRBRIDGE_DEVICE_ID` |
-| `"amplitude_user_id"` | `AMPLITUDE_USER_ID` |
-| `"amplitude_device_id"` | `AMPLITUDE_DEVICE_ID` |
-| `"appmetrica_device_id"` | `APPMETRICA_DEVICE_ID` |
-| `"appmetrica_profile_id"` | `APPMETRICA_PROFILE_ID` |
-| `"appsflyer_id"` | `APPSFLYER_ID` |
-| `"branch_id"` | `BRANCH_ID` |
-| `"facebook_anonymous_id"` | `FACEBOOK_ANONYMOUS_ID` |
-| `"firebase_app_instance_id"` | `FIREBASE_APP_INSTANCE_ID` |
-| `"mixpanel_user_id"` | `MIXPANEL_USER_ID` |
-| `"one_signal_subscription_id"` | `ONE_SIGNAL_SUBSCRIPTION_ID` |
-| `"one_signal_player_id"` | `ONE_SIGNAL_PLAYER_ID` |
-| `"posthog_distinct_user_id"` | `POSTHOG_DISTINCT_USER_ID` |
-| `"pushwoosh_hwid"` | `PUSHWOOSH_HWID` |
-| `"tenjin_analytics_installation_id"` | `TENJIN_ANALYTICS_INSTALLATION_ID` |
+| `"adjust_device_id"` | `adjustDeviceId(value)` |
+| `"airbridge_device_id"` | `airbridgeDeviceId(value)` |
+| `"amplitude_user_id"` | `amplitudeUserId(value)` |
+| `"amplitude_device_id"` | `amplitudeDeviceId(value)` |
+| `"appmetrica_device_id"` | `appmetricaDeviceId(value)` |
+| `"appmetrica_profile_id"` | `appmetricaProfileId(value)` |
+| `"appsflyer_id"` | `appsflyerId(value)` |
+| `"branch_id"` | `branchId(value)` |
+| `"facebook_anonymous_id"` | `facebookAnonymousId(value)` |
+| `"firebase_app_instance_id"` | `firebaseAppInstanceId(value)` |
+| `"mixpanel_user_id"` | `mixpanelUserId(value)` |
+| `"one_signal_subscription_id"` | `oneSignalSubscriptionId(value)` |
+| `"one_signal_player_id"` | `oneSignalPlayerId(value)` |
+| `"posthog_distinct_user_id"` | `posthogDistinctUserId(value)` |
+| `"pushwoosh_hwid"` | `pushwooshHWID(value)` |
+| `"tenjin_analytics_installation_id"` | `tenjinAnalyticsInstallationId(value)` |
+キーがこのリストにない場合は、カスタム `Key` から識別子を直接作成します: `AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key("custom"), customValue)`。

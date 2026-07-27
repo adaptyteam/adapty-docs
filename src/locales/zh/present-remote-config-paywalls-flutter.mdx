@@ -1,20 +1,79 @@
 ---
-title: "在 Flutter SDK 中渲染通过远程配置设计的付费墙"
+title: "在 Flutter SDK 中渲染远程配置设计的付费墙"
 description: "了解如何在 Adapty Flutter SDK 中展示远程配置付费墙，以个性化用户体验。"
 metadataTitle: "展示远程配置付费墙 | Flutter SDK | Adapty 文档"
 keywords: ['remote config']
 displayed_sidebar: sdkflutter
 ---
 
+<SDKv4>
 如果您已使用远程配置自定义了付费墙，则需要在移动应用的代码中实现渲染逻辑，以便向用户展示该付费墙。由于远程配置提供了灵活性以满足您的需求，您可以完全掌控付费墙视图所包含的内容及其呈现方式。我们提供了一个获取远程配置的方法，让您能够自主展示通过远程配置设置的自定义付费墙。
 
+## 获取付费墙远程配置并展示 \{#get-paywall-remote-config-and-present-it\}
+
+在 v4 中，流程包含一个 `remoteConfigs` 列表——每个已配置的本地化对应一条远程配置。选取与用户语言区域匹配的条目并提取所需的值。请参阅[本地化与语言区域代码](flutter-localizations-and-locale-codes)，了解如何选择正确的本地化。
+```dart showLineNumbers
+
+try {
+  final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
+
+  // one entry per configured localization; fall back to the first one
+  final config = flow.remoteConfigs.firstWhereOrNull((c) => c.locale == 'en') ??
+      flow.remoteConfig;
+
+  final String? headerText = config?.dictionary?['header_text'] as String?;
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+至此，获取所有必要数据后，就可以将其渲染并组合成一个美观的页面了。请确保设计能够适配各种手机屏幕尺寸和方向，在不同设备上提供流畅且友好的用户体验。
+
+:::warning
+请务必按照以下说明记录付费墙查看事件，以便 Adapty 分析系统能够收集漏斗和 A/B 测试所需的数据。
+:::
+展示付费墙后，请继续设置购买流程。当用户发起购买时，只需使用付费墙中的产品调用 `.makePurchase()`。有关 `.makePurchase()` 方法的详细信息，请参阅[发起购买](flutter-making-purchases)。
+
+我们建议[创建一个备用付费墙（即备用付费墙）](flutter-use-fallback-paywalls)。当用户没有网络连接或缓存不可用时，该备用付费墙将自动展示，确保在上述情况下依然能为用户提供流畅的体验。
+
+## 追踪付费墙展示事件 \{#track-paywall-view-events\}
+
+Adapty 帮助你衡量付费墙的表现。购买数据会自动收集，但付费墙的展示事件需要你手动记录，因为只有你知道用户何时看到了付费墙。
+
+要记录付费墙展示事件，只需调用 `.logShowFlow(flow: flow)`，该事件将反映在漏斗和 A/B 测试的付费墙数据指标中。
+
+:::important
+如果你展示的是通过[编辑工具](adapty-paywall-builder)创建的流程或付费墙，则无需调用 `.logShowFlow(flow: flow)`。
+:::
+```dart showLineNumbers
+try {
+  await Adapty().logShowFlow(flow: flow);
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+请求参数：
+
+| 参数   | 是否必填 | 描述                                                           |
+| :---------- | :------- |:----------------------------------------------------------------------|
+| **flow** | 必填 | 一个 `AdaptyFlow` 对象。        | 
+
+</SDKv4>
+
+<SDKv3>
+如果你通过远程配置自定义了付费墙，则需要在移动应用代码中自行实现渲染逻辑，才能将其展示给用户。由于远程配置的灵活性完全由你掌控，付费墙视图的内容和样式也由你决定。我们提供了一个获取远程配置的方法，让你能够自主展示通过远程配置搭建的自定义付费墙。
 ## 获取付费墙远程配置并展示它 \{#get-paywall-remote-config-and-present-it\}
 
 要获取付费墙的远程配置，请访问 `remoteConfig` 属性并提取所需的值。
 
 ```dart showLineNumbers
 try {
-  final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID");
+  final paywall = await Adapty().getPaywall(placementId: "YOUR_PLACEMENT_ID");
   final String? headerText = paywall.remoteConfig?.dictionary?['header_text'] as String?;
 } on AdaptyError catch (adaptyError) {
   // handle the error
@@ -22,16 +81,14 @@ try {
 }
 ```
 
-此时，一旦您获取了所有必要的值，就可以将它们渲染并组合成一个视觉效果出色的页面。请确保设计能够适配各种手机屏幕尺寸和方向，为不同设备上的用户提供流畅且友好的体验。
+至此，一旦获取到所有必要的值，就可以将它们渲染并组合成视觉效果出色的页面了。请确保设计能够适配各种手机屏幕尺寸和方向，在不同设备上提供流畅、易用的体验。
 
 :::warning
-请务必按照下文所述[记录付费墙展示事件](present-remote-config-paywalls-flutter#track-paywall-view-events)，以便 Adapty 分析系统能够为漏斗分析和 A/B 测试收集相关数据。
+请务必按照以下说明记录付费墙查看事件，以便 Adapty 分析系统能够采集漏斗和 A/B 测试所需的数据。
 :::
+展示付费墙之后，接下来需要配置购买流程。当用户发起购买时，直接调用 `.makePurchase()` 并传入付费墙中的产品即可。有关 `.makePurchase()` 方法的详细说明，请参阅[发起购买](flutter-making-purchases)。
 
-展示付费墙后，请继续设置购买流程。当用户发起购买时，只需使用付费墙中的产品调用 `.makePurchase()`。有关 `.makePurchase()` 方法的详细信息，请参阅[发起购买](flutter-making-purchases)。
-
-我们建议[创建一个备用付费墙（即备用付费墙）](flutter-use-fallback-paywalls)。当用户没有网络连接或缓存不可用时，该备用付费墙将自动展示，确保在上述情况下依然能为用户提供流畅的体验。
-
+建议[创建备用付费墙（即备用付费墙）](flutter-use-fallback-paywalls)。当用户没有网络连接或无可用缓存时，将展示该备用付费墙，从而保证在这些情况下依然有流畅的体验。
 ## 追踪付费墙展示事件 \{#track-paywall-view-events\}
 
 Adapty 可帮助您衡量付费墙的表现。虽然我们会自动收集购买数据，但付费墙展示事件需要您手动记录，因为只有您才知道用户何时看到了付费墙。
@@ -53,6 +110,8 @@ try {
 
 请求参数：
 
-| 参数        | 是否必填 | 描述                                                                                                                                                                           |
-| :---------- | :------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **paywall** | 必填     | 一个 [`AdaptyPaywall`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywall-class.html) 对象。 |
+| 参数          | 是否必填 | 描述                                                                  |
+| :---------- | :------- |:----------------------------------------------------------------------|
+| **paywall** | 必填 | 一个 [`AdaptyPaywall`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyPaywall-class.html) 对象。        |
+
+</SDKv3>

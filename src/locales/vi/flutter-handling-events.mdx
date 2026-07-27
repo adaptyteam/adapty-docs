@@ -1,58 +1,53 @@
 ---
-title: "Flutter - Xử lý sự kiện paywall"
+title: "Flutter - Xử lý sự kiện flow & paywall"
 description: "Khám phá cách xử lý các sự kiện liên quan đến gói đăng ký trong Flutter bằng Adapty để theo dõi tương tác người dùng hiệu quả."
 metadataTitle: "Xử lý sự kiện trong Flutter | Tài liệu Adapty"
-keywords: ['event', 'paywallViewDidAppear', 'paywallViewDidDisappear', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+keywords: ['event', 'flowViewDidAppear', 'flowViewDidDisappear', 'flowViewDidPerformAction', 'flowViewDidSelectProduct', 'flowViewDidStartPurchase', 'flowViewDidFinishPurchase', 'flowViewDidFailPurchase', 'flowViewDidStartRestore', 'flowViewDidFinishRestore', 'flowViewDidFailRestore', 'flowViewDidFailLoadingProducts', 'flowViewDidReceiveError', 'flowViewDidReceiveAnalyticEvent', 'paywallViewDidAppear', 'paywallViewDidDisappear', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
-
 import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
 import PaywallAction from '@site/src/locales/vi/reusable/PaywallAction.md';
 
+<SDKv4>
+
 :::important
-Hướng dẫn này đề cập đến việc xử lý sự kiện cho các giao dịch mua, khôi phục, chọn sản phẩm và hiển thị paywall. Bạn cũng cần triển khai xử lý nút bấm (đóng paywall, mở liên kết, v.v.). Xem [hướng dẫn xử lý hành động nút bấm](flutter-handle-paywall-actions) để biết thêm chi tiết.
+Hướng dẫn này đề cập đến việc xử lý sự kiện cho các giao dịch mua, khôi phục, lựa chọn sản phẩm và hiển thị. Việc đóng view và mở liên kết được xử lý bởi implementation mặc định của `flowViewDidPerformAction` — xem [hướng dẫn xử lý hành động button](flutter-handle-paywall-actions) để ghi đè chúng hoặc xử lý các hành động button tùy chỉnh.
 :::
+Flows và paywalls được cấu hình bằng builder không cần thêm code để thực hiện và khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể phản hồi. Những sự kiện này bao gồm các lần nhấn nút (nút đóng, URL, lựa chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua diễn ra trên flow hoặc paywall. Tìm hiểu cách phản hồi các sự kiện này bên dưới.
 
-Các paywall được cấu hình bằng [Paywall Builder](adapty-paywall-builder) không cần thêm code để thực hiện và khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể phản hồi. Các sự kiện đó bao gồm thao tác nhấn nút (nút đóng, URL, chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua trên paywall. Tìm hiểu cách phản hồi các sự kiện này bên dưới.
-
-:::warning
-
-Hướng dẫn này chỉ dành cho **paywall Paywall Builder mới** yêu cầu Adapty SDK v3.0 trở lên.
-
-:::
-
-Để kiểm soát hoặc theo dõi các tiến trình diễn ra trên màn hình paywall trong ứng dụng di động của bạn, hãy triển khai các phương thức `AdaptyUIPaywallsEventsObserver` và thiết lập observer trước khi hiển thị bất kỳ màn hình nào:
-
-```javascript showLineNumbers title="Flutter"
-AdaptyUI().setPaywallsEventsObserver(this);
+Để kiểm soát hoặc theo dõi các tiến trình xảy ra trên màn hình flow hoặc paywall trong ứng dụng di động của bạn, hãy triển khai các phương thức `AdaptyUIFlowsEventsObserver` và thiết lập observer trước khi hiển thị bất kỳ màn hình nào:
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setFlowsEventsObserver(this);
 ```
+
+Ba phương thức observer là **bắt buộc** — class của bạn sẽ không biên dịch được nếu thiếu chúng: `flowViewDidFinishPurchase`, `flowViewDidFinishRestore`, và `flowViewDidReceiveError`. Tất cả các phương thức còn lại là tùy chọn. Để hủy kết nối một observer đã được thiết lập trước đó, truyền `null` vào `setFlowsEventsObserver`.
 
 <SampleApp />
 
+Các ví dụ sự kiện dưới đây hiển thị các thuộc tính có sẵn trên từng đối tượng, với các giá trị minh họa trong phần chú thích.
 ### Sự kiện do người dùng tạo ra \{#user-generated-events\}
 
-#### Paywall xuất hiện \{#paywall-appeared\}
+#### View appeared \{#view-appeared\}
 
-Phương thức này được gọi khi màn hình paywall được hiển thị trên màn hình.
+Phương thức này được gọi khi flow hoặc màn hình paywall xuất hiện trên màn hình.
 
 :::note
-Trên iOS, cũng được gọi khi người dùng nhấn vào [nút web paywall](web-paywall#step-2a-add-a-web-purchase-button) bên trong paywall và một web paywall mở ra trong trình duyệt trong ứng dụng.
+Trên iOS, phương thức này cũng được gọi khi người dùng nhấn vào [nút web paywall](web-paywall#step-2a-add-a-web-purchase-button) bên trong một paywall, và web paywall mở ra trong trình duyệt trong ứng dụng.
 :::
 
-```javascript showLineNumbers title="Flutter"
-void paywallViewDidAppear(AdaptyUIPaywallView view) {
+```dart showLineNumbers title="Flutter"
+void flowViewDidAppear(AdaptyUIFlowView view) {
 }
 ```
 
-#### Paywall biến mất \{#paywall-disappeared\}
+#### View disappeared \{#view-disappeared\}
 
-Phương thức này được gọi khi màn hình paywall bị đóng khỏi màn hình.
-
+Phương thức này được gọi khi flow hoặc màn hình paywall bị đóng khỏi màn hình.
 :::note
-Trên iOS, cũng được gọi khi một [web paywall](web-paywall#step-2a-add-a-web-purchase-button) được mở từ paywall trong trình duyệt trong ứng dụng biến mất khỏi màn hình.
+Trên iOS, cũng được gọi khi một [web paywall](web-paywall#step-2a-add-a-web-purchase-button) mở từ paywall trong trình duyệt trong ứng dụng biến mất khỏi màn hình.
 :::
 
-```javascript showLineNumbers title="Flutter"
-void paywallViewDidDisappear(AdaptyUIPaywallView view) {
+```dart showLineNumbers title="Flutter"
+void flowViewDidDisappear(AdaptyUIFlowView view) {
 }
 ```
 
@@ -60,52 +55,289 @@ void paywallViewDidDisappear(AdaptyUIPaywallView view) {
 
 Nếu một sản phẩm được chọn để mua (bởi người dùng hoặc hệ thống), phương thức này sẽ được gọi:
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
+void flowViewDidSelectProduct(AdaptyUIFlowView view, String productId) {
+}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+```dart
+void flowViewDidSelectProduct(AdaptyUIFlowView view, String productId) {
+  // productId is a String:
+  productId; // 'premium_monthly'
+}
+```
+</Details>
+
+#### Đã bắt đầu mua hàng \{#started-purchase\}
+
+Nếu người dùng bắt đầu quá trình mua hàng, phương thức này sẽ được gọi:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidStartPurchase(AdaptyUIFlowView view, AdaptyPaywallProduct product) {
+}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+```dart
+void flowViewDidStartPurchase(AdaptyUIFlowView view, AdaptyPaywallProduct product) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId;        // 'premium_monthly'
+  product.localizedTitle;         // 'Premium Monthly'
+  product.localizedDescription;   // 'Premium subscription for 1 month'
+  product.price.amount;           // 9.99            (double)
+  product.price.currencyCode;     // 'USD'
+  product.price.localizedString;  // '$9.99'
+}
+```
+</Details>
+
+#### Hoàn tất giao dịch mua \{#finished-purchase\}
+Phương thức này là **bắt buộc**. Nó được gọi khi một giao dịch mua thành công, người dùng hủy giao dịch, hoặc giao dịch có vẻ đang chờ xử lý:
+```dart showLineNumbers title="Flutter"
+void flowViewDidFinishPurchase(AdaptyUIFlowView view, 
+                               AdaptyPaywallProduct product, 
+                               AdaptyPurchaseResult purchaseResult) {
+    switch (purchaseResult) {
+      case AdaptyPurchaseResultSuccess(profile: final profile):
+        // successful purchase
+        break;
+      case AdaptyPurchaseResultPending():
+        // purchase is pending
+        break;
+      case AdaptyPurchaseResultUserCancelled():
+        // user cancelled the purchase
+        break;
+      default:
+        break;
+    }
+}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+```dart
+void flowViewDidFinishPurchase(AdaptyUIFlowView view,
+                               AdaptyPaywallProduct product,
+                               AdaptyPurchaseResult purchaseResult) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId; // 'premium_monthly'
+
+  switch (purchaseResult) {
+    case AdaptyPurchaseResultSuccess(profile: final profile):
+      // profile — AdaptyProfile:
+      profile.accessLevels['premium']?.isActive;  // true
+      profile.accessLevels['premium']?.expiresAt; // DateTime(2027, 2, 15, 10, 30)
+      break;
+    case AdaptyPurchaseResultPending():
+      // no additional data
+      break;
+    case AdaptyPurchaseResultUserCancelled():
+      // no additional data
+      break;
+  }
+}
+```
+</Details>
+:::info
+Khác với v3, phương thức này không có hành vi mặc định — view sẽ không tự động bị đóng sau khi mua thành công. Bạn tự quyết định bước tiếp theo: tiếp tục flow hoặc gọi `view.dismiss()`. Tham khảo [Xử lý hành động nút](flutter-handle-paywall-actions) để biết thêm chi tiết về cách đóng màn hình.
+:::
+
+#### Hoàn tất điều hướng thanh toán web \{#finished-web-payment-navigation\}
+
+Phương thức này được gọi sau khi có một lần thử mở [web paywall](web-paywall) cho một sản phẩm cụ thể. Điều này bao gồm cả các lần điều hướng thành công lẫn thất bại:
+```dart showLineNumbers title="Flutter"
+void flowViewDidFinishWebPaymentNavigation(AdaptyUIFlowView view, 
+                                           AdaptyPaywallProduct? product, 
+                                           AdaptyError? error) {
+}
+```
+
+**Tham số:**
+| Tham số | Mô tả |
+|:------------|:---------------------------------------------------------------------------------------------------|
+| **product** | Một `AdaptyPaywallProduct` mà web paywall đã được mở. Có thể là `null`. |
+| **error** | Một đối tượng `AdaptyError` nếu điều hướng web paywall thất bại; `null` nếu điều hướng thành công. |
+
+#### Giao dịch thất bại \{#failed-purchase\}
+Phương thức này được gọi khi một giao dịch mua thất bại (ví dụ: do sự cố thanh toán hoặc lỗi mạng). Nó **không** kích hoạt khi người dùng tự hủy hoặc khi giao dịch đang chờ xử lý—những trường hợp đó được xử lý bởi `flowViewDidFinishPurchase`:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFailPurchase(AdaptyUIFlowView view, 
+                             AdaptyPaywallProduct product, 
+                             AdaptyError error) {
+}
+```
+
+#### Bắt đầu khôi phục \{#started-restore\}
+
+Nếu người dùng bắt đầu quá trình khôi phục, phương thức này sẽ được gọi:
+```dart showLineNumbers title="Flutter"
+void flowViewDidStartRestore(AdaptyUIFlowView view) {
+}
+```
+
+#### Khôi phục thành công \{#successful-restore\}
+
+Phương thức này là **bắt buộc**. Nếu việc khôi phục mua hàng thành công, nó sẽ được gọi:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
+}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+```dart
+void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
+  // profile — AdaptyProfile:
+  profile.accessLevels['premium']?.isActive;            // true
+  profile.accessLevels['premium']?.expiresAt;           // DateTime(2027, 2, 15, 10, 30)
+  profile.subscriptions['premium_monthly']?.isActive;   // true
+  profile.subscriptions['premium_monthly']?.expiresAt;  // DateTime(2027, 2, 15, 10, 30)
+}
+```
+</Details>
+Chúng tôi khuyến nghị đóng màn hình nếu người dùng đã có `accessLevel` yêu cầu. Tham khảo chủ đề [Trạng thái gói đăng ký](flutter-listen-subscription-changes) để tìm hiểu cách kiểm tra và chủ đề [Phản hồi các hành động nút](flutter-handle-paywall-actions) để tìm hiểu cách đóng màn hình.
+
+#### Khôi phục thất bại \{#failed-restore\}
+
+Nếu việc khôi phục giao dịch mua thất bại, phương thức này sẽ được gọi:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFailRestore(AdaptyUIFlowView view, AdaptyError error) {
+}
+```
+### Tải dữ liệu và hiển thị \{#data-fetching-and-rendering\}
+
+#### Lỗi tải sản phẩm \{#product-loading-errors\}
+
+Nếu bạn không truyền mảng sản phẩm trong quá trình khởi tạo, AdaptyUI sẽ tự động lấy các đối tượng cần thiết từ máy chủ. Nếu thao tác này thất bại, AdaptyUI sẽ báo lỗi bằng cách gọi phương thức sau:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFailLoadingProducts(AdaptyUIFlowView view, AdaptyError error) {
+}
+```
+
+#### Lỗi view \{#view-errors\}
+Phương thức này là **bắt buộc**. Nó thay thế phương thức `paywallViewDidFailRendering` của v3: các lỗi xảy ra trong quá trình render giao diện, cũng như các lỗi view khác, sẽ được báo cáo thông qua lần gọi này. Sau khi bạn implement nó, việc đóng view là tùy bạn quyết định — chúng tôi khuyến nghị đóng view khi gặp các lỗi như vậy, đây cũng chính là hành vi mặc định tích hợp sẵn của SDK khi không có observer nào được thiết lập:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveError(AdaptyUIFlowView view, AdaptyError error) {
+  // log the error and dismiss the broken view
+  view.dismiss();
+}
+```
+Trong trường hợp bình thường, lỗi hiển thị không nên xảy ra, vì vậy nếu bạn gặp phải, hãy cho chúng tôi biết.
+### Sự kiện phân tích \{#analytics-events\}
+
+Phương thức tùy chọn `flowViewDidReceiveAnalyticEvent` được dành riêng cho các sự kiện phân tích tùy chỉnh từ một flow. Hiện tại, các flow chưa phát các sự kiện này đến code của bạn, vì vậy bạn chưa cần triển khai nó.
+### Xử lý giao dịch mua hàng trong Observer mode \{#handle-purchases-in-observer-mode\}
+
+Nếu bạn đã kích hoạt SDK ở chế độ [Observer mode](implement-observer-mode-flutter) và hiển thị một flow hoặc paywall do Adapty render, SDK sẽ không thực hiện giao dịch mua hàng thay bạn. Khi người dùng nhấn nút mua hàng hoặc khôi phục, SDK sẽ gọi `AdaptyUIObserverModeResolver` của bạn. Xem [Hiển thị flow trong Observer mode](flutter-present-flows-in-observer-mode) để biết cách thiết lập đầy đủ.
+### Xử lý các yêu cầu hệ thống \{#handle-system-requests\}
+
+`AdaptyUISystemRequestsHandler` (đăng ký qua `AdaptyUI().setSystemRequestsHandler(...)`) được dành riêng cho các yêu cầu hệ thống từ một flow: các lời nhắc cấp quyền của hệ điều hành (như thông báo đẩy hoặc quyền truy cập camera) và yêu cầu đánh giá trên App Store. Hiện tại các flow chưa kích hoạt những yêu cầu này, nên bạn chưa cần đăng ký handler.
+Nếu bạn có đăng ký một cái, hãy lưu ý rằng `handlePermission` là phương thức bắt buộc của class — hãy yêu cầu quyền bằng code của riêng bạn, sau đó trả về `AdaptyUIPermissionResult.granted()` hoặc `AdaptyUIPermissionResult.denied()`; còn `handleAppReviewRequest` là tùy chọn.
+
+</SDKv4>
+
+<SDKv3>
+
+:::important
+Hướng dẫn này đề cập đến việc xử lý sự kiện cho các giao dịch mua, khôi phục, chọn sản phẩm và hiển thị paywall. Bạn cũng cần triển khai xử lý nút (đóng paywall, mở liên kết, v.v.). Xem [hướng dẫn xử lý hành động nút](flutter-handle-paywall-actions) để biết thêm chi tiết.
+:::
+Các paywall được cấu hình bằng [Paywall Builder](adapty-paywall-builder) không cần thêm code để thực hiện và khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể phản hồi. Các sự kiện đó bao gồm các lần nhấn nút (nút đóng, URL, chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua được thực hiện trên paywall. Hãy xem cách phản hồi các sự kiện này bên dưới.
+
+:::warning
+
+Hướng dẫn này chỉ dành cho **paywall Paywall Builder mới** yêu cầu Adapty SDK v3.0 trở lên.
+
+:::
+Để kiểm soát hoặc theo dõi các sự kiện xảy ra trên màn hình paywall trong ứng dụng di động của bạn, hãy implement các phương thức `AdaptyUIPaywallsEventsObserver` và đặt observer trước khi hiển thị bất kỳ màn hình nào:
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setPaywallsEventsObserver(this);
+```
+
+<SampleApp />
+
+Các ví dụ về sự kiện bên dưới hiển thị các thuộc tính có sẵn trên mỗi đối tượng, cùng với các giá trị minh họa trong phần chú thích.
+### Sự kiện do người dùng tạo ra \{#user-generated-events\}
+
+#### Paywall xuất hiện \{#paywall-appeared\}
+
+Phương thức này được gọi khi màn hình paywall hiển thị trên màn hình.
+
+:::note
+Trên iOS, cũng được gọi khi người dùng nhấn [nút web paywall](web-paywall#step-2a-add-a-web-purchase-button) bên trong một paywall, và web paywall mở ra trong trình duyệt trong ứng dụng.
+:::
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidAppear(AdaptyUIPaywallView view) {
+}
+```
+
+#### Paywall biến mất \{#paywall-disappeared\}
+
+Phương thức này được gọi khi màn hình paywall bị đóng khỏi màn hình.
+:::note
+Trên iOS, cũng được gọi khi một [web paywall](web-paywall#step-2a-add-a-web-purchase-button) mở từ một paywall trong trình duyệt trong ứng dụng biến mất khỏi màn hình.
+:::
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidDisappear(AdaptyUIPaywallView view) {
+}
+```
+
+#### Chọn sản phẩm \{#product-selection\}
+
+Nếu một sản phẩm được chọn để mua (bởi người dùng hoặc bởi hệ thống), phương thức này sẽ được gọi:
+
+```dart showLineNumbers title="Flutter"
 void paywallViewDidSelectProduct(AdaptyUIPaywallView view, String productId) {
 }
 ```
 
 <Details>
 <summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
-
-```javascript
-{
-  "productId": "premium_monthly"
+```dart
+void paywallViewDidSelectProduct(AdaptyUIPaywallView view, String productId) {
+  // productId is a String:
+  productId; // 'premium_monthly'
 }
 ```
 </Details>
 
-#### Bắt đầu mua \{#started-purchase\}
+#### Bắt đầu mua hàng \{#started-purchase\}
 
-Nếu người dùng khởi tạo quá trình mua, phương thức này sẽ được gọi:
+Khi người dùng bắt đầu quá trình mua hàng, phương thức này sẽ được gọi:
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) {
 }
 ```
 
 <Details>
 <summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
-
-```javascript
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  }
+```dart
+void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId;        // 'premium_monthly'
+  product.localizedTitle;         // 'Premium Monthly'
+  product.localizedDescription;   // 'Premium subscription for 1 month'
+  product.price.amount;           // 9.99            (double)
+  product.price.currencyCode;     // 'USD'
+  product.price.localizedString;  // '$9.99'
 }
 ```
 </Details>
 
-#### Hoàn thành mua \{#finished-purchase\}
-
-Phương thức này được gọi khi giao dịch mua thành công, người dùng hủy giao dịch mua, hoặc giao dịch mua đang ở trạng thái chờ xử lý:
-
-```javascript showLineNumbers title="Flutter"
+#### Hoàn tất thanh toán \{#finished-purchase\}
+Phương thức này được gọi khi giao dịch mua thành công, người dùng hủy giao dịch, hoặc giao dịch đang ở trạng thái chờ xử lý:
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFinishPurchase(AdaptyUIPaywallView view, 
                                   AdaptyPaywallProduct product, 
                                   AdaptyPurchaseResult purchaseResult) {
@@ -127,71 +359,35 @@ void paywallViewDidFinishPurchase(AdaptyUIPaywallView view,
 
 <Details>
 <summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+```dart
+void paywallViewDidFinishPurchase(AdaptyUIPaywallView view,
+                                  AdaptyPaywallProduct product,
+                                  AdaptyPurchaseResult purchaseResult) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId; // 'premium_monthly'
 
-```javascript
-// Successful purchase
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "purchaseResult": {
-    "type": "AdaptyPurchaseResultSuccess",
-    "profile": {
-      "accessLevels": {
-        "premium": {
-          "id": "premium",
-          "isActive": true,
-          "expiresAt": "2024-02-15T10:30:00Z"
-        }
-      }
-    }
-  }
-}
-
-// Pending purchase
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "purchaseResult": {
-    "type": "AdaptyPurchaseResultPending"
-  }
-}
-
-// User cancelled purchase
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "purchaseResult": {
-    "type": "AdaptyPurchaseResultUserCancelled"
+  switch (purchaseResult) {
+    case AdaptyPurchaseResultSuccess(profile: final profile):
+      // profile — AdaptyProfile:
+      profile.accessLevels['premium']?.isActive;  // true
+      profile.accessLevels['premium']?.expiresAt; // DateTime(2027, 2, 15, 10, 30)
+      break;
+    case AdaptyPurchaseResultPending():
+      // no additional data
+      break;
+    case AdaptyPurchaseResultUserCancelled():
+      // no additional data
+      break;
   }
 }
 ```
 </Details>
+Chúng tôi khuyến nghị đóng màn hình trong trường hợp đó. Tham khảo [Phản hồi các hành động nút](flutter-handle-paywall-actions) để biết chi tiết về cách đóng màn hình paywall.
 
-Chúng tôi khuyến nghị đóng màn hình trong trường hợp đó. Tham khảo [Phản hồi hành động nút bấm](flutter-handle-paywall-actions) để biết chi tiết về cách đóng màn hình paywall.
+#### Hoàn tất điều hướng thanh toán web \{#finished-web-payment-navigation\}
 
-#### Hoàn thành điều hướng thanh toán web \{#finished-web-payment-navigation\}
-
-Phương thức này được gọi sau khi thử mở một [web paywall](web-paywall) cho một sản phẩm cụ thể. Điều này bao gồm cả các lần điều hướng thành công và thất bại:
-
-```javascript showLineNumbers title="Flutter"
+Phương thức này được gọi sau khi có lần thử mở [web paywall](web-paywall) cho một sản phẩm cụ thể. Điều này bao gồm cả các lần điều hướng thành công và thất bại:
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view, 
                                                AdaptyPaywallProduct? product, 
                                                AdaptyError? error) {
@@ -199,55 +395,36 @@ void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view,
 ```
 
 **Tham số:**
-
-| Tham số     | Mô tả                                                                                                          |
-|:------------|:---------------------------------------------------------------------------------------------------------------|
-| **product** | Một `AdaptyPaywallProduct` mà web paywall được mở cho. Có thể là `null`.                                       |
-| **error**   | Một đối tượng `AdaptyError` nếu điều hướng web paywall thất bại; `null` nếu điều hướng thành công.             |
+| Tham số | Mô tả |
+|:------------|:---------------------------------------------------------------------------------------------------|
+| **product** | Một `AdaptyPaywallProduct` mà web paywall được mở cho. Có thể là `null`. |
+| **error** | Một đối tượng `AdaptyError` nếu điều hướng web paywall thất bại; `null` nếu điều hướng thành công. |
 
 <Details>
-<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+<summary>Ví dụ về sự kiện (Nhấn để mở rộng)</summary>
+```dart
+void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view,
+                                               AdaptyPaywallProduct? product,
+                                               AdaptyError? error) {
+  // product — AdaptyPaywallProduct?:
+  product?.vendorProductId; // 'premium_monthly'
 
-```javascript
-// Successful navigation
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "error": null
-}
-
-// Failed navigation
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "error": {
-    "code": "web_navigation_failed",
-    "message": "Failed to open web paywall",
-    "details": {
-      "underlyingError": "Browser unavailable"
-    }
+  if (error == null) {
+    // navigation succeeded
+  } else {
+    // error — AdaptyError:
+    error.code;    // AdaptyErrorCode.networkFailed (2005)
+    error.message; // 'Network request failed'
+    error.detail;  // platform-specific underlying error, or null
   }
 }
 ```
 </Details>
+#### Mua hàng thất bại \{#failed-purchase\}
 
-#### Mua thất bại \{#failed-purchase\}
+Phương thức này được gọi khi một giao dịch mua thất bại (ví dụ: do lỗi thanh toán hoặc lỗi mạng). Nó **không** kích hoạt khi người dùng chủ động huỷ hoặc giao dịch đang chờ xử lý — những trường hợp đó được xử lý bởi `paywallViewDidFinishPurchase`:
 
-Phương thức này được gọi khi giao dịch mua thất bại (ví dụ: do lỗi thanh toán hoặc lỗi mạng). Phương thức này **không** kích hoạt khi người dùng chủ động hủy hoặc giao dịch đang chờ xử lý — những trường hợp đó được xử lý bởi `paywallViewDidFinishPurchase`:
-
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailPurchase(AdaptyUIPaywallView view, 
                                 AdaptyPaywallProduct product, 
                                 AdaptyError error) {
@@ -256,130 +433,99 @@ void paywallViewDidFailPurchase(AdaptyUIPaywallView view,
 
 <Details>
 <summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+```dart
+void paywallViewDidFailPurchase(AdaptyUIPaywallView view,
+                                AdaptyPaywallProduct product,
+                                AdaptyError error) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId; // 'premium_monthly'
 
-```javascript
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "error": {
-    "code": "purchase_failed",
-    "message": "Purchase failed due to insufficient funds",
-    "details": {
-      "underlyingError": "Insufficient funds in account"
-    }
-  }
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.productPurchaseFailed (1006)
+  error.message; // 'Product purchase failed.'
+  error.detail;  // platform-specific underlying error, or null
 }
 ```
 </Details>
 
 #### Bắt đầu khôi phục \{#started-restore\}
 
-Nếu người dùng khởi tạo quá trình khôi phục, phương thức này sẽ được gọi:
-
-```javascript showLineNumbers title="Flutter"
+Nếu người dùng khởi động quá trình khôi phục, phương thức này sẽ được gọi:
+```dart showLineNumbers title="Flutter"
 void paywallViewDidStartRestore(AdaptyUIPaywallView view) {
 }
 ```
 
 #### Khôi phục thành công \{#successful-restore\}
 
-Nếu khôi phục giao dịch mua thành công, phương thức này sẽ được gọi:
+Nếu việc khôi phục giao dịch thành công, phương thức này sẽ được gọi:
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
 }
 ```
 
 <Details>
 <summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
-
-```javascript
-{
-  "profile": {
-    "accessLevels": {
-      "premium": {
-        "id": "premium",
-        "isActive": true,
-        "expiresAt": "2024-02-15T10:30:00Z"
-      }
-    },
-    "subscriptions": [
-      {
-        "vendorProductId": "premium_monthly",
-        "isActive": true,
-        "expiresAt": "2024-02-15T10:30:00Z"
-      }
-    ]
-  }
+```dart
+void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
+  // profile — AdaptyProfile:
+  profile.accessLevels['premium']?.isActive;            // true
+  profile.accessLevels['premium']?.expiresAt;           // DateTime(2027, 2, 15, 10, 30)
+  profile.subscriptions['premium_monthly']?.isActive;   // true
+  profile.subscriptions['premium_monthly']?.expiresAt;  // DateTime(2027, 2, 15, 10, 30)
 }
 ```
 </Details>
-
-Chúng tôi khuyến nghị đóng màn hình nếu người dùng có `accessLevel` yêu cầu. Tham khảo chủ đề [Trạng thái gói đăng ký](flutter-listen-subscription-changes) để tìm hiểu cách kiểm tra và chủ đề [Phản hồi hành động nút bấm](flutter-handle-paywall-actions) để tìm hiểu cách đóng màn hình paywall.
+Chúng tôi khuyến nghị đóng màn hình nếu người dùng đã có `accessLevel` yêu cầu. Tham khảo chủ đề [Trạng thái gói đăng ký](flutter-listen-subscription-changes) để biết cách kiểm tra và chủ đề [Xử lý hành động nút](flutter-handle-paywall-actions) để biết cách đóng màn hình paywall.
 
 #### Khôi phục thất bại \{#failed-restore\}
 
-Nếu khôi phục giao dịch mua thất bại, phương thức này sẽ được gọi:
+Nếu việc khôi phục giao dịch thất bại, phương thức này sẽ được gọi:
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
 }
 ```
 
 <Details>
-<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
-
-```javascript
-{
-  "error": {
-    "code": "restore_failed",
-    "message": "Purchase restoration failed",
-    "details": {
-      "underlyingError": "No previous purchases found"
-    }
-  }
+<summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
+```dart
+void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.receiveRestoredTransactionsFailed (1011)
+  error.message; // 'Error occurred in the process of restoring purchases.'
+  error.detail;  // platform-specific underlying error, or null
 }
 ```
 </Details>
-
 ### Tải dữ liệu và hiển thị \{#data-fetching-and-rendering\}
 
 #### Lỗi tải sản phẩm \{#product-loading-errors\}
 
-Nếu bạn không truyền mảng sản phẩm trong quá trình khởi tạo, AdaptyUI sẽ tự động lấy các đối tượng cần thiết từ máy chủ. Nếu thao tác này thất bại, AdaptyUI sẽ báo lỗi bằng cách gọi phương thức này:
+Nếu bạn không truyền mảng sản phẩm trong quá trình khởi tạo, AdaptyUI sẽ tự động lấy các đối tượng cần thiết từ server. Nếu thao tác này thất bại, AdaptyUI sẽ báo lỗi bằng cách gọi phương thức sau:
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) {
 }
 ```
 
 <Details>
 <summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
-
-```javascript
-{
-  "error": {
-    "code": "products_loading_failed",
-    "message": "Failed to load products from the server",
-    "details": {
-      "underlyingError": "Network timeout"
-    }
-  }
+```dart
+void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) {
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.productRequestFailed (1002)
+  error.message; // 'Unable to fetch available In-App Purchase products at the moment.'
+  error.detail;  // platform-specific underlying error, or null
 }
 ```
 </Details>
 
-#### Lỗi hiển thị \{#rendering-errors\}
+#### Lỗi khi hiển thị \{#rendering-errors\}
+Nếu xảy ra lỗi trong quá trình render giao diện, lỗi đó sẽ được báo cáo thông qua phương thức này. Theo mặc định (từ v3.15.2), paywall sẽ tự động bị đóng khi gặp lỗi render, nhưng bạn có thể ghi đè hành vi này nếu cần.
 
-Nếu xảy ra lỗi trong quá trình hiển thị giao diện, lỗi đó sẽ được báo cáo bằng cách gọi phương thức này. Theo mặc định (kể từ v3.15.2), paywall sẽ tự động bị đóng khi xảy ra lỗi hiển thị, nhưng bạn có thể ghi đè hành vi này nếu cần.
-
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
   // Default behavior: view.dismiss()
   // Override with custom logic if needed, for example:
@@ -390,18 +536,18 @@ void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
 
 <Details>
 <summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+```dart
+void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.jsException (4105)
+  error.message; // 'An exception was thrown from JS during AdaptyUI flow execution.'
+  error.detail;  // platform-specific underlying error, or null
 
-```javascript
-{
-  "error": {
-    "code": "rendering_failed",
-    "message": "Failed to render paywall interface",
-    "details": {
-      "underlyingError": "Invalid paywall configuration"
-    }
-  }
+  // Default behavior: view.dismiss()
 }
 ```
 </Details>
 
-Trong điều kiện bình thường, các lỗi như vậy không nên xảy ra, vì vậy nếu bạn gặp phải, hãy cho chúng tôi biết.
+Trong trường hợp bình thường, các lỗi này không nên xảy ra, vì vậy nếu bạn gặp phải, hãy cho chúng tôi biết.
+
+</SDKv3>

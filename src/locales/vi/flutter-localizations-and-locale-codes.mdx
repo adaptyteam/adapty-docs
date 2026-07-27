@@ -1,35 +1,68 @@
 ---
-title: "Sử dụng localizations và mã locale trong Flutter SDK"
-description: "Quản lý localizations và mã locale của ứng dụng để tiếp cận người dùng toàn cầu."
-metadataTitle: "Quản lý Localizations & Mã Locale | Tài liệu Adapty"
+title: "Sử dụng localizations và locale codes trong Flutter SDK"
+description: "Quản lý localizations và locale codes của ứng dụng để tiếp cận người dùng toàn cầu."
+metadataTitle: "Quản lý Localizations & Locale Codes | Tài liệu Adapty"
 displayed_sidebar: sdkflutter
 ---
 
+<SDKv4>
 ## Tại sao điều này quan trọng \{#why-this-is-important\}
 
-Có một số tình huống mà mã locale phát huy tác dụng — ví dụ, khi bạn cần lấy paywall phù hợp với localization hiện tại của ứng dụng.
+Mã ngôn ngữ (locale code) được sử dụng khi Adapty chọn bản dịch cho một flow, và khi bạn đọc Remote Config cho một paywall tùy chỉnh.
 
-Vì mã locale khá phức tạp và có thể khác nhau tùy nền tảng, chúng tôi sử dụng một tiêu chuẩn nội bộ cho tất cả các nền tảng được hỗ trợ. Tuy nhiên, chính vì độ phức tạp đó, bạn cần hiểu rõ mình đang gửi gì lên server để nhận đúng localization — và điều gì xảy ra tiếp theo — để luôn nhận được kết quả như mong đợi.
+Mã ngôn ngữ khá phức tạp và có thể khác nhau giữa các nền tảng, vì vậy Adapty sử dụng một tiêu chuẩn nội bộ thống nhất trên mọi nền tảng được hỗ trợ. Hiểu được tiêu chuẩn đó sẽ giúp bạn dự đoán bản dịch nào người dùng sẽ nhận được.
+## Tiêu chuẩn mã ngôn ngữ tại Adapty \{#locale-code-standard-at-adapty\}
 
-## Tiêu chuẩn mã locale tại Adapty \{#locale-code-standard-at-adapty\}
+Đối với mã ngôn ngữ, Adapty sử dụng một phiên bản điều chỉnh nhỏ của [tiêu chuẩn BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): mỗi mã bao gồm các subtag viết thường, phân cách bằng dấu gạch ngang. Một số ví dụ: `en` (tiếng Anh), `pt-br` (tiếng Bồ Đào Nha (Brazil)), `zh` (tiếng Trung Giản thể), `zh-hant` (tiếng Trung Phồn thể).
+## Khớp mã ngôn ngữ \{#locale-code-matching\}
 
-Đối với mã locale, Adapty sử dụng phiên bản được điều chỉnh nhẹ của [tiêu chuẩn BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): mỗi mã gồm các subtag viết thường, phân cách bằng dấu gạch ngang. Một số ví dụ: `en` (tiếng Anh), `pt-br` (tiếng Bồ Đào Nha (Brazil)), `zh` (tiếng Trung giản thể), `zh-hant` (tiếng Trung phồn thể).
+Khi Adapty tìm kiếm bản địa hóa phù hợp với ngôn ngữ của người dùng, quá trình diễn ra như sau:
 
-## Khớp mã locale \{#locale-code-matching\}
+1. Chuỗi ngôn ngữ được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay thế bằng dấu gạch ngang (`-`)
+2. Adapty tìm kiếm bản địa hóa có mã ngôn ngữ khớp hoàn toàn
+3. Nếu không tìm thấy, Adapty lấy chuỗi con trước dấu gạch ngang đầu tiên (`pt` từ `pt-br`) và tìm kiếm bản địa hóa phù hợp
+4. Nếu vẫn không tìm thấy, Adapty trả về bản địa hóa mặc định `en`
 
-Khi Adapty nhận được yêu cầu từ SDK phía client kèm mã locale và bắt đầu tìm localization tương ứng của paywall, quá trình diễn ra như sau:
+Nhờ cách này, `'pt_BR'`, `pt-BR` và `pt-br` đều được phân giải về cùng một bản địa hóa.
+## Triển khai localization \{#implementing-localizations\}
 
-1. Chuỗi locale đầu vào được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay bằng dấu gạch ngang (`-`)
-2. Hệ thống tìm kiếm localization có mã locale khớp hoàn toàn
-3. Nếu không tìm thấy, hệ thống lấy phần trước dấu gạch ngang đầu tiên (`pt` từ `pt-br`) và tiếp tục tìm kiếm
-4. Nếu vẫn không tìm thấy, hệ thống trả về localization mặc định `en`
+Trong SDK v4, bạn không cần truyền mã locale khi lấy một flow.
 
-Nhờ vậy, một thiết bị iOS gửi `'pt_BR'`, một thiết bị Android gửi `pt-BR`, và một thiết bị khác gửi `pt-br` đều nhận được kết quả giống nhau.
+- **Paywall dùng Flow Builder và Paywall Builder**: Adapty tự động xác định localization dựa trên thiết bị và các localization bạn đã cấu hình trong builder. Render flow bằng `createFlowView` — không cần mã locale.
+- **Paywall tùy chỉnh (remote config)**: `getFlow` trả về tất cả các localization đã cấu hình trong `flow.remoteConfigs`. Mỗi mục có mã `locale` và nội dung config (chuỗi `data`, hoặc `dictionary` đã được parse). Hãy chọn mục phù hợp với người dùng, kèm theo logic fallback của riêng bạn:
+```dart showLineNumbers
 
-## Triển khai localizations: cách khuyến nghị \{#implementing-localizations-recommended-way\}
+final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
+final config = flow.remoteConfigs.firstWhereOrNull((c) => c.locale == 'en') ??
+    flow.remoteConfig; // the first remote config, if present
+// read your values from config?.dictionary
+```
 
-Nếu bạn đang quan tâm đến localizations, nhiều khả năng bạn đã làm việc với các file chuỗi đã được bản địa hóa trong dự án. Trong trường hợp đó, chúng tôi khuyến nghị thêm một cặp key-value chứa mã locale Adapty tương ứng vào mỗi file localization. Sau đó, lấy giá trị của key đó khi gọi SDK, như sau:
+Các quy tắc khớp mã locale ở trên mô tả cách Adapty chuẩn hóa các mã `locale` được lưu trữ trên mỗi Remote Config.
 
+</SDKv4>
+
+<SDKv3>
+## Tại sao điều này quan trọng \{#why-this-is-important\}
+
+Có một vài tình huống mà mã ngôn ngữ (locale code) trở nên quan trọng — ví dụ, khi bạn cần lấy đúng paywall phù hợp với ngôn ngữ hiện tại của ứng dụng.
+
+Vì mã ngôn ngữ khá phức tạp và có thể khác nhau tùy từng nền tảng, chúng tôi sử dụng một tiêu chuẩn nội bộ thống nhất cho tất cả các nền tảng được hỗ trợ. Tuy nhiên, chính vì sự phức tạp đó, bạn cần hiểu rõ mình đang gửi gì lên server để nhận đúng bản ngôn ngữ mong muốn — và điều gì xảy ra tiếp theo — để luôn nhận được kết quả như kỳ vọng.
+## Tiêu chuẩn mã ngôn ngữ tại Adapty \{#locale-code-standard-at-adapty\}
+
+Đối với mã ngôn ngữ, Adapty sử dụng chuẩn [BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) được chỉnh sửa nhẹ: mỗi mã bao gồm các subtag viết thường, ngăn cách nhau bằng dấu gạch ngang. Một số ví dụ: `en` (tiếng Anh), `pt-br` (tiếng Bồ Đào Nha (Brazil)), `zh` (tiếng Trung giản thể), `zh-hant` (tiếng Trung phồn thể).
+## Đối sánh mã ngôn ngữ \{#locale-code-matching\}
+
+Khi Adapty nhận được lệnh gọi từ SDK phía client kèm theo mã ngôn ngữ và bắt đầu tìm kiếm bản bản địa hóa tương ứng của paywall, quá trình diễn ra như sau:
+
+1. Chuỗi ngôn ngữ đầu vào được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay thế bằng dấu gạch ngang (`-`)
+2. Chúng tôi tìm kiếm bản bản địa hóa có mã ngôn ngữ khớp hoàn toàn
+3. Nếu không tìm thấy kết quả khớp, chúng tôi lấy chuỗi con trước dấu gạch ngang đầu tiên (`pt` trong `pt-br`) và tìm kiếm bản bản địa hóa tương ứng
+4. Nếu vẫn không tìm thấy kết quả khớp, chúng tôi trả về bản bản địa hóa mặc định `en`
+Bằng cách này, một thiết bị iOS gửi `'pt_BR'`, một thiết bị Android gửi `pt-BR`, và một thiết bị khác gửi `pt-br` đều sẽ nhận được cùng một kết quả.
+## Triển khai bản địa hóa: cách được khuyến nghị \{#implementing-localizations-recommended-way\}
+
+Nếu bạn đang tìm hiểu về bản địa hóa, có thể bạn đã làm việc với các file chuỗi đã được bản địa hóa trong dự án của mình. Trong trường hợp đó, chúng tôi khuyến nghị bạn thêm một cặp key-value với mã locale Adapty tương ứng vào mỗi file cho từng bản địa hóa. Sau đó, trích xuất giá trị của key đó khi gọi SDK, như ví dụ dưới đây:
 ```dart showLineNumbers
 // 1. Modify your app_en.arb, app_es.arb, app_pt_br.arb files
 
@@ -53,20 +86,19 @@ final locale = AppLocalizations.of(context)!.adapty_paywalls_locale;
 // pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
 ```
 
-Cách này giúp bạn kiểm soát hoàn toàn localization nào sẽ được lấy về cho từng người dùng của ứng dụng.
+Bằng cách này, bạn có thể đảm bảo kiểm soát hoàn toàn ngôn ngữ nào sẽ được tải về cho từng người dùng trong ứng dụng của bạn.
+## Triển khai bản địa hóa theo cách khác \{#implementing-localizations-the-other-way\}
 
-## Triển khai localizations: cách khác \{#implementing-localizations-the-other-way\}
-
-Bạn cũng có thể đạt được kết quả tương tự (nhưng không hoàn toàn giống) mà không cần định nghĩa mã locale một cách tường minh cho từng localization. Điều đó có nghĩa là lấy mã locale từ các đối tượng khác mà nền tảng cung cấp, như sau:
+Bạn có thể đạt được kết quả tương tự (nhưng không hoàn toàn giống) mà không cần định nghĩa rõ ràng mã ngôn ngữ cho từng bản địa hóa. Điều đó có nghĩa là trích xuất mã ngôn ngữ từ các đối tượng khác mà nền tảng của bạn cung cấp, như sau:
 
 ```dart showLineNumbers
 final locale = Localizations.localeOf(context).languageCode;
 // pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
 ```
 
-Lưu ý rằng chúng tôi không khuyến nghị cách này vì một số lý do:
+Lưu ý rằng chúng tôi không khuyến nghị cách tiếp cận này vì một số lý do:
+1. Trên iOS, ngôn ngữ ưu tiên và locale hiện tại không giống nhau. Nếu muốn bản địa hóa được chọn đúng, bạn cần dựa vào logic của Apple — hoạt động tự động nếu bạn dùng cách tiếp cận được khuyến nghị với các file string đã bản địa hóa — hoặc tự tái tạo lại logic đó.
+2. Rất khó dự đoán chính xác những gì server của Adapty sẽ nhận được. Ví dụ: trên iOS, có thể lấy được một locale như `ar_OM@numbers='latn'` từ thiết bị và gửi lên server. Khi đó, thay vì nhận được bản địa hóa `ar-om` như mong muốn, bạn sẽ nhận được `ar` — điều này có thể nằm ngoài kỳ vọng.
+Should you decide to use this approach anyway — make sure you've covered all the relevant use cases.
 
-1. Trên iOS, ngôn ngữ ưu tiên và locale hiện tại không giống nhau. Nếu muốn localization được chọn đúng, bạn phải dựa vào logic của Apple — vốn hoạt động tốt nếu bạn dùng cách khuyến nghị với file chuỗi đã được bản địa hóa — hoặc tự tái tạo logic đó.
-2. Rất khó dự đoán chính xác server của Adapty sẽ nhận được gì. Ví dụ, trên iOS, có thể lấy được một locale như `ar_OM@numbers='latn'` từ thiết bị và gửi lên server. Khi đó bạn sẽ không nhận được localization `ar-om` như mong đợi, mà thay vào đó là `ar` — điều có thể gây bất ngờ.
-
-Nếu bạn vẫn quyết định dùng cách này, hãy đảm bảo đã xử lý tất cả các trường hợp liên quan.
+</SDKv3>

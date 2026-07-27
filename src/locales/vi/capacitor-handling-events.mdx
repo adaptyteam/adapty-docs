@@ -1,21 +1,137 @@
 ---
-title: "Capacitor - Xử lý sự kiện paywall"
-description: "Xử lý sự kiện gói đăng ký trong Capacitor với SDK của Adapty."
-metadataTitle: "Xử lý sự kiện trong Capacitor | Tài liệu Adapty"
+title: "Xử lý sự kiện flow & paywall - Capacitor"
+description: "Xử lý sự kiện flow và paywall trong ứng dụng Capacitor của bạn với SDK của Adapty."
+metadataTitle: "Xử lý Sự Kiện Flow & Paywall - Capacitor | Tài liệu Adapty"
 toc_max_heading_level: 4
-keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed', 'onAppeared', 'onDisappeared']
+keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed', 'onError', 'onAppeared', 'onDisappeared', 'onWebPaymentNavigationFinished', 'onRequestPermission', 'onRequestAppReview', 'onObserverPurchaseInitiated', 'onObserverRestoreInitiated', 'FlowEventHandlers']
 ---
-
 import PaywallAction from '@site/src/locales/vi/reusable/PaywallAction.md';
 
+<SDKv4>
+
 :::important
-Hướng dẫn này đề cập đến việc xử lý sự kiện cho các giao dịch mua, khôi phục, chọn sản phẩm và hiển thị paywall. Bạn cũng cần triển khai xử lý nút bấm (đóng paywall, mở liên kết, v.v.). Xem [hướng dẫn xử lý hành động nút bấm](capacitor-handle-paywall-actions) để biết thêm chi tiết.
+Hướng dẫn này đề cập đến việc xử lý sự kiện cho các giao dịch mua, khôi phục, lựa chọn sản phẩm và hiển thị flow. Bạn cũng có thể thiết lập xử lý nút (đóng flow, mở liên kết, hành động tùy chỉnh, v.v.). Xem [hướng dẫn xử lý hành động nút](capacitor-handle-paywall-actions) để biết thêm chi tiết.
 :::
+Flow và paywall được xây dựng bằng [Flow Builder](adapty-flow-builder) không cần thêm code để thực hiện và khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể phản hồi. Các sự kiện đó bao gồm các lần nhấn nút (nút đóng, URL, lựa chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua được thực hiện trên flow. Tìm hiểu cách phản hồi các sự kiện này bên dưới.
 
-Các paywall được cấu hình bằng [Paywall Builder](adapty-paywall-builder) không cần thêm code để thực hiện và khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể phản hồi. Những sự kiện đó bao gồm các lần nhấn nút (nút đóng, URL, chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua trên paywall. Tìm hiểu cách phản hồi những sự kiện này bên dưới.
+Để kiểm soát hoặc theo dõi các tiến trình xảy ra trên màn hình flow trong ứng dụng di động của bạn, hãy triển khai phương thức `view.setEventHandlers`:
+:::important
+Bạn chỉ có thể đặt một handler cho mỗi sự kiện: gọi `setEventHandlers` nhiều lần sẽ ghi đè các handler bạn đã cung cấp, thay thế cả handler mặc định lẫn các handler đã đặt trước đó cho những sự kiện cụ thể đó. Các handler bạn không đặt vẫn giữ nguyên hành vi mặc định. `setEventHandlers` trả về một hàm hủy đăng ký, và `view.dismiss()` sẽ xóa tất cả các handler.
+:::
+```typescript showLineNumbers
 
-Để kiểm soát hoặc theo dõi các quy trình diễn ra trên màn hình paywall trong ứng dụng di động của bạn, hãy triển khai phương thức `view.setEventHandlers`:
+const view = await createFlowView(flow);
 
+const unsubscribe = await view.setEventHandlers({
+  onCloseButtonPress() {
+    return true; // close the flow (default behavior)
+  },
+  onAndroidSystemBack() {
+    return true; // close the flow; by default, it stays open
+  },
+  onPurchaseCompleted(purchaseResult, product) {
+    return purchaseResult.type === 'success'; // close the flow on a successful purchase, keep it open for cancelled or pending purchases
+  },
+  onPurchaseStarted(product) { /***/ },
+  onPurchaseFailed(error, product) { /***/ },
+  onRestoreCompleted(profile) { /***/ },
+  onRestoreFailed(error) { /***/ },
+  onProductSelected(productId) { /***/ },
+  onError(error) { /***/ },
+  onLoadingProductsFailed(error) { /***/ },
+  onUrlPress(url, openIn) {
+    adapty.openWebUrl({ url, openIn }).catch(console.warn); // same as the SDK default
+    return false; // keep the flow open
+  },
+  onAppeared() { /***/ },
+  onDisappeared() { /***/ },
+  onWebPaymentNavigationFinished() { /***/ },
+});
+```
+
+<Details>
+<summary>Ví dụ về sự kiện (Nhấp để mở rộng)</summary>
+
+Các ví dụ dưới đây hiển thị các thuộc tính có sẵn trong mỗi handler, với các giá trị minh họa trong phần chú thích.
+```typescript
+// onUrlPress
+url;    // 'https://example.com/terms'
+openIn; // 'browser_in_app' or 'browser_out_app'
+
+// onCustomAction
+actionId; // 'login'
+
+// onProductSelected
+productId; // 'premium_monthly'
+
+// onPurchaseStarted, onPurchaseCompleted, onPurchaseFailed
+product.vendorProductId;        // 'premium_monthly'
+product.localizedTitle;         // 'Premium Monthly'
+product.localizedDescription;   // 'Premium subscription for 1 month'
+product.price?.amount;          // 9.99
+product.price?.currencyCode;    // 'USD'
+product.price?.localizedString; // '$9.99'
+
+// onPurchaseCompleted
+purchaseResult.type; // 'success', 'pending', or 'user_cancelled'
+if (purchaseResult.type === 'success') {
+  purchaseResult.profile.accessLevels['premium']?.isActive; // true
+}
+
+// onRestoreCompleted
+profile.accessLevels['premium']?.isActive; // true
+
+// onPurchaseFailed, onRestoreFailed, onError, onLoadingProductsFailed
+error.message; // 'Purchase failed due to insufficient funds'
+```
+</Details>
+Bạn có thể đăng ký các event handler mà bạn cần, và bỏ qua những cái không cần. Như vậy, các event listener không dùng đến sẽ không được tạo ra. Không có event handler nào là bắt buộc.
+
+Các event handler trả về một giá trị boolean. Nếu trả về `true`, quá trình hiển thị được coi là hoàn tất, flow screen sẽ đóng lại và các event listener cho view này sẽ bị xóa.
+Một số event handler có hành vi mặc định mà bạn có thể ghi đè nếu cần:
+- `onCloseButtonPress`: đóng flow khi người dùng nhấn nút đóng.
+- `onUrlPress`: mở URL được nhấn trong trình duyệt gốc thông qua `adapty.openWebUrl`, tuân theo tùy chọn **Open in** đã thiết lập trong builder, và giữ flow mở.
+- `onAndroidSystemBack`: giữ flow mở khi người dùng nhấn nút **Back**. Trả về `true` để đóng flow.
+- `onPurchaseCompleted`: giữ flow mở sau khi hoàn tất giao dịch mua. Trả về `true` để đóng flow.
+- `onRestoreCompleted`: giữ flow mở sau khi khôi phục thành công. Trả về `true` để đóng flow.
+- `onError`: đóng flow nếu quá trình render thất bại.
+### Trình xử lý sự kiện \{#event-handlers\}
+| Trình xử lý sự kiện | Mô tả |
+|:-----------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onCustomAction** | Được gọi khi người dùng thực hiện một hành động tùy chỉnh, ví dụ: nhấp vào [nút tùy chỉnh](paywall-buttons). |
+| **onUrlPress** | Được gọi khi người dùng nhấp vào một URL trong flow của bạn. |
+| **onAndroidSystemBack** | Được gọi khi người dùng nhấn nút **Back** hệ thống của Android. Theo mặc định, flow vẫn mở; trả về `true` để đóng flow. |
+| **onCloseButtonPress** | Được gọi khi nút đóng hiển thị và người dùng nhấn vào nó. Nên đóng màn hình flow trong trình xử lý này. |
+| **onPurchaseCompleted** | Được gọi khi giao dịch mua hoàn tất, dù thành công, bị người dùng hủy, hay đang chờ phê duyệt. Nếu mua thành công, sự kiện cung cấp `AdaptyProfile` đã được cập nhật. Trường hợp người dùng hủy và thanh toán đang chờ xử lý (ví dụ: cần phê duyệt của phụ huynh) sẽ kích hoạt sự kiện này, không phải `onPurchaseFailed`. |
+| **onPurchaseStarted** | Được gọi khi người dùng nhấn nút hành động "Mua" để bắt đầu quá trình thanh toán. |
+| **onPurchaseFailed** | Được gọi khi giao dịch mua thất bại do lỗi (ví dụ: hạn chế thanh toán, sản phẩm không hợp lệ, lỗi mạng, lỗi xác minh giao dịch). Không được gọi khi người dùng hủy hoặc thanh toán đang chờ xử lý — những trường hợp đó sẽ kích hoạt `onPurchaseCompleted`. |
+| **onRestoreStarted** | Được gọi khi người dùng bắt đầu quá trình khôi phục giao dịch mua. |
+| **onRestoreCompleted** | Được gọi khi khôi phục giao dịch mua thành công và cung cấp `AdaptyProfile` đã được cập nhật. Nên đóng màn hình nếu người dùng có `accessLevel` yêu cầu. Xem chủ đề [Trạng thái gói đăng ký](capacitor-listen-subscription-changes) để biết cách kiểm tra. |
+| **onRestoreFailed** | Được gọi khi quá trình khôi phục thất bại và cung cấp `AdaptyError`. |
+| **onProductSelected** | Được gọi khi bất kỳ sản phẩm nào trong giao diện flow được chọn, cho phép bạn theo dõi lựa chọn của người dùng trước khi mua. |
+| **onError** | Được gọi khi xảy ra lỗi trong quá trình render giao diện và cung cấp `AdaptyError`. Những lỗi như vậy không nên xảy ra, vì vậy nếu bạn gặp phải, hãy cho chúng tôi biết. |
+| **onLoadingProductsFailed** | Được gọi khi tải sản phẩm thất bại và cung cấp `AdaptyError`. Nếu bạn chưa đặt `prefetchProducts: true` khi tạo giao diện, AdaptyUI sẽ tự động lấy các đối tượng cần thiết từ máy chủ. |
+| **onAppeared** | Được gọi khi flow được hiển thị cho người dùng. Trên iOS, cũng được gọi khi người dùng nhấn [nút web paywall](web-paywall#step-2a-add-a-web-purchase-button) bên trong một flow và một web paywall mở trong trình duyệt trong ứng dụng. |
+| **onDisappeared** | Được gọi khi người dùng đóng flow. Trên iOS, cũng được gọi khi một [web paywall](web-paywall#step-2a-add-a-web-purchase-button) được mở từ flow trong trình duyệt trong ứng dụng biến mất khỏi màn hình. |
+| **onWebPaymentNavigationFinished** | Được gọi sau khi cố gắng mở một [web paywall](web-paywall) để mua, dù thành công hay thất bại. |
+| **onRequestAppReview** | Dành riêng cho yêu cầu đánh giá ứng dụng từ một flow. Các flow chưa kích hoạt yêu cầu đánh giá ứng dụng, nên bạn không cần triển khai nó. |
+| **onAnalytics** | Dành riêng cho các sự kiện phân tích tùy chỉnh từ một flow. Các flow chưa phát ra những sự kiện này vào mã của bạn, nên bạn không cần triển khai nó. |
+| **onRequestPermission** | Dành riêng cho các yêu cầu quyền hệ thống (như thông báo đẩy hoặc quyền truy cập camera) từ một flow. Các flow chưa kích hoạt yêu cầu quyền, nên bạn không cần triển khai nó. |
+| **onObserverPurchaseInitiated** | Chỉ dành cho chế độ observer: Được gọi khi người dùng nhấn nút mua trong một flow. Adapty không thực hiện giao dịch mua — hãy thực hiện bằng mã mua hàng của riêng bạn, sau đó báo cáo giao dịch cho Adapty. Xem [Xử lý giao dịch mua trong chế độ observer](#handle-purchases-in-observer-mode) bên dưới. |
+| **onObserverRestoreInitiated** | Chỉ dành cho chế độ observer: Được gọi khi người dùng nhấn nút khôi phục trong một flow. Adapty không thực hiện khôi phục — hãy tự thực hiện, sau đó báo cáo bất kỳ giao dịch nào đã khôi phục. Xem [Xử lý giao dịch mua trong chế độ observer](#handle-purchases-in-observer-mode) bên dưới. |
+### Xử lý mua hàng trong Observer mode \{#handle-purchases-in-observer-mode\}
+
+Nếu bạn khởi tạo SDK ở chế độ [Observer mode](implement-observer-mode-capacitor) (`observerMode: true`) và hiển thị flow được Adapty render, SDK sẽ không tự thực hiện mua hàng cho bạn. Khi người dùng nhấn nút mua hoặc khôi phục, SDK sẽ gọi `onObserverPurchaseInitiated` hoặc `onObserverRestoreInitiated` để bạn có thể tự xử lý việc mua hoặc khôi phục bằng code của riêng mình. Xem [Hiển thị flow trong Observer mode](capacitor-present-flows-in-observer-mode) để biết cách thiết lập đầy đủ.
+
+</SDKv4>
+
+<SDKv3>
+:::important
+Hướng dẫn này đề cập đến việc xử lý sự kiện cho các lần mua, khôi phục, chọn sản phẩm và hiển thị paywall. Bạn cũng cần triển khai xử lý nút bấm (đóng paywall, mở liên kết, v.v.). Xem [hướng dẫn xử lý hành động nút bấm](capacitor-handle-paywall-actions) của chúng tôi để biết thêm chi tiết.
+:::
+Paywall được cấu hình bằng [Paywall Builder](adapty-paywall-builder) không cần thêm code để thực hiện và khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể phản hồi. Những sự kiện này bao gồm các lần nhấn nút (nút đóng, URL, chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua được thực hiện trên paywall. Hãy xem cách phản hồi các sự kiện này bên dưới.
+
+Để kiểm soát hoặc theo dõi các tiến trình xảy ra trên màn hình paywall trong ứng dụng di động của bạn, hãy triển khai phương thức `view.setEventHandlers`:
 ```typescript showLineNumbers
 
 const view = await createPaywallView(paywall);
@@ -77,7 +193,6 @@ const unsubscribe = view.setEventHandlers({
 
 <Details>
 <summary>Ví dụ sự kiện (Nhấp để mở rộng)</summary>
-
 ```typescript
 // onCloseButtonPress
 {
@@ -241,36 +356,33 @@ const unsubscribe = view.setEventHandlers({
 }
 ```
 </Details>
+Bạn có thể đăng ký những event handler cần thiết và bỏ qua những cái không cần. Như vậy, các event listener không dùng đến sẽ không được tạo ra. Không có event handler nào là bắt buộc.
 
-Bạn có thể đăng ký những event handler mà bạn cần và bỏ qua những cái không cần. Trong trường hợp đó, các event listener không dùng đến sẽ không được tạo. Không có event handler nào là bắt buộc.
-
-Các event handler trả về kiểu boolean. Nếu trả về `true`, quá trình hiển thị được coi là hoàn tất, màn hình paywall sẽ đóng lại và các event listener của view này sẽ bị gỡ bỏ.
-
+Event handler trả về giá trị boolean. Nếu trả về `true`, quá trình hiển thị được coi là hoàn tất, paywall sẽ đóng lại và các event listener của view đó sẽ bị xóa.
 Một số event handler có hành vi mặc định mà bạn có thể ghi đè nếu cần:
 - `onCloseButtonPress`: đóng paywall khi nhấn nút đóng.
 - `onAndroidSystemBack`: đóng paywall khi nhấn nút **Back**.
 - `onRestoreCompleted`: đóng paywall sau khi khôi phục thành công.
 - `onPurchaseCompleted`: đóng paywall trừ khi người dùng hủy.
-- `onRenderingFailed`: đóng paywall nếu hiển thị thất bại.
-- `onUrlPress`: mở URL trên trình duyệt hệ thống và giữ paywall mở.
-
-### Các event handler \{#event-handlers\}
-
-| Event handler               | Mô tả                                                                                                                                                                                                                                                                                                                        |
-|:----------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **onCustomAction**          | Được gọi khi người dùng thực hiện một hành động tùy chỉnh, ví dụ: nhấp vào [nút tùy chỉnh](paywall-buttons).                                                                                                                                                                                                                |
-| **onUrlPress**              | Được gọi khi người dùng nhấp vào một URL trong paywall.                                                                                                                                                                                                                                                                      |
-| **onAndroidSystemBack**     | Được gọi khi người dùng nhấn nút **Back** của hệ thống Android.                                                                                                                                                                                                                                                              |
-| **onCloseButtonPress**      | Được gọi khi nút đóng hiển thị và người dùng nhấp vào đó. Nên đóng màn hình paywall trong handler này.                                                                                                                                                                                                                      |
-| **onPurchaseCompleted**     | Được gọi khi giao dịch mua hoàn tất, dù thành công, bị người dùng hủy hay đang chờ phê duyệt. Trong trường hợp mua thành công, sự kiện này cung cấp `AdaptyProfile` đã được cập nhật. Người dùng hủy và thanh toán đang chờ xử lý (ví dụ: cần phê duyệt của phụ huynh) sẽ kích hoạt sự kiện này, không phải `onPurchaseFailed`. |
-| **onPurchaseStarted**       | Được gọi khi người dùng nhấn nút hành động "Mua" để bắt đầu quá trình mua.                                                                                                                                                                                                                                                  |
-| **onPurchaseCancelled**     | Được gọi khi người dùng khởi tạo quá trình mua và tự tay ngắt nó (hủy hộp thoại thanh toán).                                                                                                                                                                                                                                |
-| **onPurchaseFailed**        | Được gọi khi giao dịch mua thất bại do lỗi (ví dụ: hạn chế thanh toán, sản phẩm không hợp lệ, lỗi mạng, xác minh giao dịch thất bại). Không được gọi khi người dùng hủy hoặc thanh toán đang chờ xử lý — những trường hợp này sẽ kích hoạt `onPurchaseCompleted`.                                                          |
-| **onRestoreStarted**        | Được gọi khi người dùng bắt đầu quá trình khôi phục giao dịch mua.                                                                                                                                                                                                                                                          |
-| **onRestoreCompleted**      | Được gọi khi khôi phục giao dịch mua thành công và cung cấp `AdaptyProfile` đã được cập nhật. Nên đóng màn hình nếu người dùng có `accessLevel` cần thiết. Tham khảo chủ đề [Trạng thái gói đăng ký](capacitor-listen-subscription-changes) để biết cách kiểm tra.                                                          |
-| **onRestoreFailed**         | Được gọi khi quá trình khôi phục thất bại và cung cấp `AdaptyError`.                                                                                                                                                                                                                                                         |
-| **onProductSelected**       | Được gọi khi bất kỳ sản phẩm nào trong paywall view được chọn, cho phép bạn theo dõi những gì người dùng chọn trước khi mua.                                                                                                                                                                                                 |
-| **onAppeared**              | Được gọi khi paywall view xuất hiện trên màn hình. Trên iOS, cũng được gọi khi người dùng nhấn [nút web paywall](web-paywall#step-2a-add-a-web-purchase-button) bên trong một paywall và web paywall mở ra trong trình duyệt trong ứng dụng.                                                                                  |
-| **onDisappeared**           | Được gọi khi paywall view biến mất khỏi màn hình. Trên iOS, cũng được gọi khi [web paywall](web-paywall#step-2a-add-a-web-purchase-button) được mở từ một paywall trong trình duyệt trong ứng dụng biến mất khỏi màn hình.                                                                                                   |
-| **onRenderingFailed**       | Được gọi khi xảy ra lỗi trong quá trình hiển thị view và cung cấp `AdaptyError`. Những lỗi như vậy không nên xảy ra, vì vậy nếu bạn gặp phải, hãy cho chúng tôi biết.                                                                                                                                                       |
-| **onLoadingProductsFailed** | Được gọi khi tải sản phẩm thất bại và cung cấp `AdaptyError`. Nếu bạn chưa đặt `prefetchProducts: true` khi tạo view, AdaptyUI sẽ tự động lấy các đối tượng cần thiết từ máy chủ.                                                                                                                                           |
+- `onRenderingFailed`: đóng paywall nếu việc hiển thị thất bại.
+- `onUrlPress`: mở URL trong trình duyệt hệ thống và giữ paywall mở.
+### Trình xử lý sự kiện \{#event-handlers\}
+| Event handler               | Mô tả                                                                                                                                                                                                                                                                                                                          |
+|:----------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onCustomAction**          | Được gọi khi người dùng thực hiện một hành động tùy chỉnh, ví dụ: nhấp vào [nút tùy chỉnh](paywall-buttons).                                                                                                                                                                                                                  |
+| **onUrlPress**              | Được gọi khi người dùng nhấp vào một URL trong paywall.                                                                                                                                                                                                                                                                        |
+| **onAndroidSystemBack**     | Được gọi khi người dùng nhấn nút **Back** hệ thống của Android.                                                                                                                                                                                                                                                                |
+| **onCloseButtonPress**      | Được gọi khi nút đóng hiển thị và người dùng nhấn vào đó. Nên đóng màn hình paywall trong handler này.                                                                                                                                                                                                                         |
+| **onPurchaseCompleted**     | Được gọi khi quá trình mua hoàn tất, bất kể thành công, người dùng hủy hay đang chờ phê duyệt. Trong trường hợp mua thành công, sự kiện này cung cấp một `AdaptyProfile` đã được cập nhật. Việc người dùng hủy và các khoản thanh toán đang chờ (ví dụ: cần phê duyệt của phụ huynh) sẽ kích hoạt sự kiện này, không phải `onPurchaseFailed`. |
+| **onPurchaseStarted**       | Được gọi khi người dùng nhấn nút hành động "Mua" để bắt đầu quá trình mua.                                                                                                                                                                                                                                                     |
+| **onPurchaseCancelled**     | Được gọi khi người dùng bắt đầu quá trình mua nhưng tự ý ngắt nó (hủy hộp thoại thanh toán).                                                                                                                                                                                                                                  |
+| **onPurchaseFailed**        | Được gọi khi giao dịch mua thất bại do lỗi (ví dụ: hạn chế thanh toán, sản phẩm không hợp lệ, lỗi mạng, lỗi xác minh giao dịch). Không được gọi khi người dùng hủy hoặc khi thanh toán đang chờ — những trường hợp đó sẽ kích hoạt `onPurchaseCompleted`.                                                                    |
+| **onRestoreStarted**        | Được gọi khi người dùng bắt đầu quá trình khôi phục giao dịch mua.                                                                                                                                                                                                                                                             |
+| **onRestoreCompleted**      | Được gọi khi khôi phục giao dịch mua thành công và cung cấp một `AdaptyProfile` đã được cập nhật. Nên đóng màn hình nếu người dùng có `accessLevel` cần thiết. Xem thêm tại [Trạng thái gói đăng ký](capacitor-listen-subscription-changes) để biết cách kiểm tra.                                                             |
+| **onRestoreFailed**         | Được gọi khi quá trình khôi phục thất bại và cung cấp `AdaptyError`.                                                                                                                                                                                                                                                           |
+| **onProductSelected**       | Được gọi khi người dùng chọn bất kỳ sản phẩm nào trong paywall, giúp bạn theo dõi lựa chọn của người dùng trước khi mua.                                                                                                                                                                                                       |
+| **onAppeared**              | Được gọi khi màn hình paywall xuất hiện trên màn hình. Trên iOS, cũng được gọi khi người dùng nhấn [nút web paywall](web-paywall#step-2a-add-a-web-purchase-button) bên trong paywall và một web paywall mở ra trong trình duyệt trong ứng dụng.                                                                               |
+| **onDisappeared**           | Được gọi khi màn hình paywall biến mất khỏi màn hình. Trên iOS, cũng được gọi khi một [web paywall](web-paywall#step-2a-add-a-web-purchase-button) được mở từ paywall trong trình duyệt trong ứng dụng biến mất khỏi màn hình.                                                                                                 |
+| **onRenderingFailed**       | Được gọi khi xảy ra lỗi trong quá trình render giao diện và cung cấp `AdaptyError`. Các lỗi như vậy không nên xảy ra, vì vậy nếu bạn gặp phải, vui lòng thông báo cho chúng tôi.                                                                                                                                              |
+| **onLoadingProductsFailed** | Được gọi khi tải sản phẩm thất bại và cung cấp `AdaptyError`. Nếu bạn chưa đặt `prefetchProducts: true` khi tạo view, AdaptyUI sẽ tự động lấy các đối tượng cần thiết từ máy chủ.                                                                                                                                             |
+</SDKv3>

@@ -1,12 +1,12 @@
 ---
 title: "在 Flutter SDK 中处理用户引导数据"
-description: "使用 Adapty SDK 在 Flutter 应用中保存和使用用户引导中的数据。"
+description: "使用 Adapty SDK 在 Flutter 应用中保存和使用用户引导数据。"
 metadataTitle: "用户引导 | Flutter SDK | Adapty 文档"
 ---
-import Details from '@site/src/components/Details';
-import ZoomImage from '@site/src/components/ZoomImage';
-
-当用户回答测验问题或在输入框中输入数据时，`onStateUpdatedAction` 方法将被调用。您可以在代码中保存或处理字段类型。
+:::warning
+**用户引导功能在 SDK v4 中已弃用，将在未来版本中移除。** 该功能不再接受修复或改进。请改用 [flows](flutter-get-pb-paywalls)：与运行在 WebView 中的用户引导不同，flows 直接在设备上原生渲染，带来更流畅的动画效果、一致的原生外观、更快的加载速度，且无需依赖 WebView 运行时。请参阅 [获取 flows 和付费墙](flutter-get-pb-paywalls) 及 [展示 flows 和付费墙](flutter-present-paywalls) 以开始使用。
+:::
+当用户回答测验问题或在输入字段中输入数据时，`onStateUpdatedAction` 方法将被调用。您可以在代码中保存或处理字段类型。
 
 例如：
 
@@ -26,105 +26,67 @@ onStateUpdatedAction: (meta, elementId, params) {
   // Process data 
 }
 ```
-
-请在[此处](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyUIOnboardingPlatformView/onStateUpdatedAction.html)查看操作格式。
+有关动作格式，请参阅[此处](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyUIOnboardingPlatformView/onStateUpdatedAction.html)。
 
 <Details>
-<summary>已保存数据示例（格式可能因实现方式而异）</summary>
+<summary>每种参数类型的属性结构（点击展开）</summary>
+```dart
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // elementId is a String:
+  elementId; // 'preference_selector'
 
-```javascript
-// Example of a saved select action
-{
-    "elementId": "preference_selector",
-    "meta": {
-        "onboardingId": "onboarding_123",
-        "screenClientId": "preferences_screen",
-        "screenIndex": 1,
-        "screensTotal": 3
-    },
-    "params": {
-        "type": "select",
-        "value": {
-            "id": "option_1",
-            "value": "premium",
-            "label": "Premium Plan"
-        }
-    }
-}
+  // meta — AdaptyUIOnboardingMeta:
+  meta.onboardingId;   // 'onboarding_123'
+  meta.screenClientId; // 'preferences_screen'
+  meta.screenIndex;    // 1
+  meta.screensTotal;   // 3
 
-// Example of a saved multi-select action
-{
-    "elementId": "interests_selector",
-    "meta": {
-        "onboardingId": "onboarding_123",
-        "screenClientId": "interests_screen",
-        "screenIndex": 2,
-        "screensTotal": 3
-    },
-    "params": {
-        "type": "multiSelect",
-        "value": [
-            {
-                "id": "interest_1",
-                "value": "sports",
-                "label": "Sports"
-            },
-            {
-                "id": "interest_2",
-                "value": "music",
-                "label": "Music"
-            }
-        ]
-    }
-}
-
-// Example of a saved input action
-{
-    "elementId": "name_input",
-    "meta": {
-        "onboardingId": "onboarding_123",
-        "screenClientId": "profile_screen",
-        "screenIndex": 0,
-        "screensTotal": 3
-    },
-    "params": {
-        "type": "input",
-        "value": {
-            "type": "text",
-            "value": "John Doe"
-        }
-    }
-}
-
-// Example of a saved date picker action
-{
-    "elementId": "birthday_picker",
-    "meta": {
-        "onboardingId": "onboarding_123",
-        "screenClientId": "profile_screen",
-        "screenIndex": 0,
-        "screensTotal": 3
-    },
-"params": {
-    "type": "datePicker",
-    "value": {
-        "day": 15,
-        "month": 6,
-        "year": 1990
-        }
-    }
+  // params is one of the AdaptyOnboardingsStateUpdatedParams subclasses:
+  switch (params) {
+    case AdaptyOnboardingsSelectParams(:final id, :final value, :final label):
+      // a single selected option
+      id;    // 'option_1'
+      value; // 'premium'
+      label; // 'Premium Plan'
+      break;
+    case AdaptyOnboardingsMultiSelectParams(:final params):
+      // a list of selected options, each an AdaptyOnboardingsSelectParams
+      params; // [(id: 'interest_1', value: 'sports', label: 'Sports'), (id: 'interest_2', value: 'music', label: 'Music')]
+      break;
+    case AdaptyOnboardingsInputParams(:final input):
+      switch (input) {
+        case AdaptyOnboardingsTextInput(:final value):
+          value; // 'John Doe'
+          break;
+        case AdaptyOnboardingsEmailInput(:final value):
+          value; // 'user@example.com'
+          break;
+        case AdaptyOnboardingsNumberInput(:final value):
+          value; // 25.0 (a double)
+          break;
+      }
+      break;
+    case AdaptyOnboardingsDatePickerParams(:final day, :final month, :final year):
+      day;   // 15
+      month; // 6
+      year;  // 1990
+      break;
+  }
 }
 ```
 </Details>
-
 ## 使用场景 \{#use-cases\}
 
-### 使用数据丰富用户画像 \{#enrich-user-profiles-with-data\}
+### 用户画像数据填充 \{#enrich-user-profiles-with-data\}
 
-如果您希望立即将输入数据与用户画像关联，避免重复询问相同信息，则需要在处理操作时使用输入数据[更新用户画像](flutter-setting-user-attributes)。
+如果你希望立即将用户输入的数据与用户画像关联起来，避免重复询问相同信息，可以在处理操作时通过[更新用户画像](flutter-setting-user-attributes)的方式写入这些数据。
 
-例如，您让用户在 ID 为 `name` 的文本框中输入姓名，并希望将该字段的值设置为用户的名字；同时让他们在 `email` 字段中输入电子邮件。在您的应用代码中，实现如下：
-
+例如，你让用户在 ID 为 `name` 的文本框中输入姓名，并希望将该值设置为用户的名字；同时，你还让用户在 `email` 字段中输入邮箱地址。在你的应用代码中，实现方式如下：
 ```dart showLineNumbers
 // Full-screen presentation
 void onboardingViewOnStateUpdatedAction(
@@ -186,18 +148,17 @@ onStateUpdatedAction: (meta, elementId, params) {
 }
 ```
 
-### 根据回答自定义付费墙 \{#customize-paywalls-based-on-answers\}
+### 根据答案自定义付费墙 \{#customize-paywalls-based-on-answers\}
 
-通过用户引导中的测验，您还可以自定义在用户完成用户引导后向其展示的付费墙。
+在用户引导中使用问卷，你可以根据用户完成用户引导后的答案来自定义展示给他们的付费墙。
 
-例如，您可以询问用户的运动经验，并向不同用户群体展示不同的 CTA 和产品。
+例如，你可以询问用户的运动经验，并向不同的用户群体展示不同的 CTA 和产品。
 
-1. 在用户引导编辑工具中[添加测验](onboarding-quizzes)，并为其选项分配有意义的 ID。
+1. 在用户引导编辑器中[添加问卷](onboarding-quizzes)，并为各选项分配有意义的 ID。
 
 <ZoomImage id="experience.webp" />
 
-2. 根据 ID 处理测验响应，并为用户[设置自定义属性](flutter-setting-user-attributes)。
-
+2. 根据 ID 处理问卷响应，并为用户[设置自定义属性](flutter-setting-user-attributes)。
 ```dart showLineNumbers
 // Full-screen presentation
 void onboardingViewOnStateUpdatedAction(
@@ -248,5 +209,5 @@ onStateUpdatedAction: (meta, elementId, params) {
 ```
 
 3. 为每个自定义属性值[创建市场细分](segments)。
-4. 创建一个[版位](placements)，并为您创建的每个细分添加[目标受众](audience)。
-5. 在应用代码中为该版位[展示付费墙](flutter-paywalls)。如果您的用户引导中有一个打开付费墙的按钮，请将付费墙代码实现为[对该按钮操作的响应](flutter-handling-onboarding-events#opening-a-paywall)。
+4. 创建一个[版位](placements)，并为你创建的每个市场细分添加[目标受众](audience)。
+5. 在应用代码中为该版位[展示付费墙](flutter-paywalls)。如果你的用户引导中有一个打开付费墙的按钮，请将付费墙代码作为[此按钮操作的响应](flutter-handling-onboarding-events#opening-a-paywall)来实现。

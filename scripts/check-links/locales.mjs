@@ -205,7 +205,13 @@ export async function orchestrateLocales(config) {
     const mdExtUrls = new Set();
     for (const link of internalLinks) {
       if (MD_EXT_RE.test(link.url)) {
-        errors.push({ ...link, type: 'internal', status: 'MD_EXTENSION', error: 'Remove .md/.mdx extension from internal link' });
+        if (/^https?:\/\//.test(link.url)) {
+          // Absolute URLs to the runtime .md exports are real pages (generate-md
+          // emits them per locale too) — the AI guides link them on purpose.
+          warnings.push({ ...link, type: 'internal', severity: 'md-extension' });
+        } else {
+          errors.push({ ...link, type: 'internal', status: 'MD_EXTENSION', error: 'Remove .md/.mdx extension from internal link' });
+        }
         mdExtUrls.add(link.url);
       }
     }

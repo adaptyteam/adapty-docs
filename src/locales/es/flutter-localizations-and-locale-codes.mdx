@@ -1,18 +1,56 @@
 ---
 title: "Usar localizaciones y códigos de idioma en el SDK de Flutter"
 description: "Gestiona las localizaciones de la app y los códigos de idioma para llegar a una audiencia global."
-metadataTitle: "Gestión de Localizaciones y Códigos de Idioma | Documentación de Adapty"
+metadataTitle: "Gestión de localizaciones y códigos de idioma | Documentación de Adapty"
 displayed_sidebar: sdkflutter
 ---
 
+<SDKv4>
 ## Por qué esto es importante \{#why-this-is-important\}
 
-Hay algunos casos en los que los códigos de idioma entran en juego — por ejemplo, cuando intentas obtener el paywall correcto para la localización actual de tu app.
+Los códigos de idioma entran en juego cuando Adapty selecciona la localización para un flow y cuando lees un Remote Config para un paywall personalizado.
 
-Como los códigos de idioma son complejos y pueden variar de una plataforma a otra, nos apoyamos en un estándar interno para todas las plataformas que soportamos. Sin embargo, precisamente por esa complejidad, es muy importante que entiendas exactamente qué estás enviando a nuestro servidor para obtener la localización correcta y qué ocurre a continuación — así siempre recibirás lo que esperas.
+Los códigos de idioma son complicados y pueden variar de una plataforma a otra, por lo que Adapty se basa en un estándar interno único para todas las plataformas que soporta. Entender ese estándar te ayuda a predecir qué localización recibirá un usuario.
 ## Estándar de códigos de idioma en Adapty \{#locale-code-standard-at-adapty\}
 
 Para los códigos de idioma, Adapty utiliza una versión ligeramente modificada del [estándar BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): cada código consiste en subtags en minúsculas separadas por guiones. Algunos ejemplos: `en` (inglés), `pt-br` (portugués (Brasil)), `zh` (chino simplificado), `zh-hant` (chino tradicional).
+## Coincidencia de códigos de idioma \{#locale-code-matching\}
+
+Cuando Adapty busca la localización que coincide con el idioma de un usuario, ocurre lo siguiente:
+
+1. La cadena de idioma se convierte a minúsculas y todos los guiones bajos (`_`) se reemplazan con guiones (`-`)
+2. Adapty busca la localización con el código de idioma que coincida exactamente
+3. Si no se encuentra ninguna coincidencia, Adapty toma la subcadena antes del primer guión (`pt` para `pt-br`) y busca la localización correspondiente
+4. Si tampoco se encuentra ninguna coincidencia, Adapty devuelve la localización predeterminada `en`
+
+De este modo, `'pt_BR'`, `pt-BR` y `pt-br` se resuelven a la misma localización.
+## Implementación de localizaciones \{#implementing-localizations\}
+
+En SDK v4, no es necesario pasar un código de idioma al obtener un flow.
+
+- **Paywalls de Flow Builder y Paywall Builder**: Adapty resuelve la localización automáticamente a partir del dispositivo y las localizaciones que hayas configurado en el builder. Renderiza el flow con `createFlowView` — no se necesita ningún código de idioma.
+- **Paywalls personalizados (Remote Config)**: `getFlow` devuelve todas las localizaciones configuradas en `flow.remoteConfigs`. Cada entrada tiene un código `locale` y el contenido de la configuración (cadena `data`, o el `dictionary` ya procesado). Selecciona la entrada que coincida con el usuario, aplicando tu propio mecanismo de respaldo:
+```dart showLineNumbers
+
+final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
+final config = flow.remoteConfigs.firstWhereOrNull((c) => c.locale == 'en') ??
+    flow.remoteConfig; // the first remote config, if present
+// read your values from config?.dictionary
+```
+
+Las reglas de coincidencia de código de idioma descritas anteriormente explican cómo Adapty normaliza los códigos `locale` almacenados en cada Remote Config.
+
+</SDKv4>
+
+<SDKv3>
+## Por qué esto es importante \{#why-this-is-important\}
+
+Hay algunos escenarios en los que los códigos de idioma entran en juego — por ejemplo, cuando intentas obtener el paywall correcto para la localización actual de tu app.
+
+Como los códigos de idioma son complicados y pueden variar de una plataforma a otra, nos basamos en un estándar interno para todas las plataformas que soportamos. Sin embargo, precisamente por esa complejidad, es muy importante que entiendas exactamente qué estás enviando a nuestro servidor para obtener la localización correcta, y qué ocurre a continuación — así siempre recibirás lo que esperas.
+## Estándar de códigos de idioma en Adapty \{#locale-code-standard-at-adapty\}
+
+Para los códigos de idioma, Adapty usa una versión ligeramente modificada del [estándar BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): cada código está formado por subetiquetas en minúsculas separadas por guiones. Algunos ejemplos: `en` (inglés), `pt-br` (portugués (Brasil)), `zh` (chino simplificado), `zh-hant` (chino tradicional).
 ## Coincidencia de códigos de configuración regional \{#locale-code-matching\}
 
 Cuando Adapty recibe una llamada desde el SDK con el código de configuración regional y busca la localización correspondiente de un paywall, ocurre lo siguiente:
@@ -61,4 +99,6 @@ final locale = Localizations.localeOf(context).languageCode;
 Ten en cuenta que no recomendamos este enfoque por las siguientes razones:
 1. En iOS, los idiomas preferidos y la configuración regional actual no son idénticos. Si quieres que la localización se seleccione correctamente, tendrás que apoyarte en la lógica de Apple, que funciona de forma nativa si usas el enfoque recomendado con archivos de cadenas localizadas, o bien recrearla tú mismo.
 2. Es difícil predecir exactamente qué recibirá el servidor de Adapty. Por ejemplo, en iOS es posible obtener una configuración regional como `ar_OM@numbers='latn'` en el dispositivo y enviarla a nuestro servidor. Para esa llamada no obtendrás la localización `ar-om` que buscabas, sino `ar`, lo cual probablemente no es lo esperado.
-Aunque decidas usar este enfoque de todos modos, asegúrate de haber cubierto todos los casos de uso relevantes.
+Aun así, si decides usar este enfoque, asegúrate de haber cubierto todos los casos de uso relevantes.
+
+</SDKv3>

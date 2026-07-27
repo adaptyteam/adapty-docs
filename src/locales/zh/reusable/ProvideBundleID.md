@@ -2,9 +2,9 @@
 no_index: true 
 ---
 
-1. 打开 [App Store Connect](https://appstoreconnect.apple.com/apps)。选择您的应用，然后进入 **General** → **App Information** 部分。
+1. 打开 [App Store Connect](https://appstoreconnect.apple.com/apps)。选择你的应用，进入 **General** → **App Information** 页面。
 
-2. 在 **General Information** 子部分中复制 **Bundle ID**。
+2. 在 **General Information** 子区块中复制 **Bundle ID**。
 
    
 
@@ -22,7 +22,7 @@ no_index: true
 
 
 
-3. 从 Adapty 顶部菜单打开 [**App settings** -> **iOS SDK** 标签页](https://app.adapty.io/settings/ios-sdk)，将复制的值粘贴到 **Bundle ID** 字段中。
+3. 在 Adapty 顶部菜单中打开 [**App settings** -> **iOS SDK** 标签页](https://app.adapty.io/settings/ios-sdk)，将复制的值粘贴到 **Bundle ID** 字段中。
 
    
 
@@ -37,5 +37,5 @@ no_index: true
 />
 </Zoom>
 
-4. 返回 App Store Connect 中的 **App information** 页面，从中复制 **Apple ID**。
+4. 返回 App Store Connect 中的 **App information** 页面，复制其中的 **Apple ID**。
 5. 在 Adapty 看板的 [**App settings** -> **iOS SDK**](https://app.adapty.io/settings/ios-sdk) 页面中，将该 ID 粘贴到 **Apple app ID** 字段。

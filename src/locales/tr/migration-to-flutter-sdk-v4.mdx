@@ -1,0 +1,219 @@
+---
+title: "Adapty Flutter SDK'yı v. 4.0'a Geçirin"
+description: "Adapty Flutter SDK v4.0'a geçiş yapın: paywall API'lerini flow API'leriyle değiştirin; hem Flow Builder hem de Paywall Builder ile uyumludur."
+metadataTitle: "Adapty Flutter SDK v4.0'a Geçiş | Adapty Dokümanları"
+---
+
+Adapty Flutter SDK 4.0, flow'ları tanıtır ve paywall API'lerini buna göre yeniden adlandırır. Yeni API'ler hem yeni Flow Builder hem de mevcut Paywall Builder ile çalışır — Adapty Kontrol Paneli tarafında herhangi bir kurulum değişikliği gerekmez.
+## Hızlı başvuru \{#quick-reference\}
+| v3 | v4 |
+|---|---|
+| `Adapty().getPaywall(placementId: id)` | `Adapty().getFlow(placementId: id)` |
+| `Adapty().getPaywallForDefaultAudience(placementId: id)` | `Adapty().getFlowForDefaultAudience(placementId: id)` |
+| `Adapty().getPaywallProducts(paywall: paywall)` | `Adapty().getPaywallProducts(flow: flow)` |
+| `Adapty().logShowPaywall(paywall: paywall)` | `Adapty().logShowFlow(flow: flow)` |
+| `AdaptyPaywall` (tür) | `AdaptyFlow` |
+| `AdaptyPaywallFetchPolicy` (tür) | `AdaptyFlowFetchPolicy` |
+| `AdaptyUI().createPaywallView(paywall: paywall)` | `AdaptyUI().createFlowView(flow: flow)` |
+| `AdaptyUIPaywallView` (tür) | `AdaptyUIFlowView` |
+| `AdaptyUIPaywallPlatformView` (widget) | `AdaptyUIFlowPlatformView` |
+| `AdaptyUI().presentPaywallView(view)` / `dismissPaywallView(view)` | `AdaptyUI().presentFlowView(view)` / `dismissFlowView(view)` |
+| `AdaptyUIPaywallsEventsObserver` | `AdaptyUIFlowsEventsObserver` |
+| `AdaptyUI().setPaywallsEventsObserver(observer)` | `AdaptyUI().setFlowsEventsObserver(observer)` |
+| `paywallViewDid*` callback'leri | `flowViewDid*` callback'leri |
+| `paywallViewDidFailRendering` | `flowViewDidReceiveError` |
+`AdaptyPaywallProduct` adını korur — ürünler hâlâ bir flow'a aittir ve `getPaywallProducts` artık bir `AdaptyFlow` alır. Bir flow çekerken artık `locale` geçirmenize gerek yoktur. Satın alma ve profil API'leri (`makePurchase`, `restorePurchases`, `getProfile`, `identify` vb.) değişmeden kalmıştır; `present`, `dismiss` ve `showDialog` view metodları da aynı şekilde. Bazı varsayılan davranışlar değişti — bkz. [Varsayılan davranış değişiklikleri](#default-behavior-changes).
+## Minimum sürümler \{#minimum-versions\}
+
+Adapty Flutter SDK 4.0, minimum gereksinimleri yükseltiyor:
+
+- **iOS 15.0** — minimum iOS deployment target, iOS 13.0'dan yükseltildi.
+- **Xcode 26** veya daha yenisi — yerel iOS SDK'sı Swift tools 6.2 kullanıyor.
+- **Flutter 3.32.0** (Dart 3.8.0) veya daha yenisi.
+## Kurulum \{#installation\}
+### Paketi güncelleyin \{#update-the-package\}
+
+Hangi paketi yükleyeceğiniz, uygulamanızın Kids Mode kullanıp kullanmadığına bağlıdır.
+
+Çoğu uygulama için `pubspec.yaml` dosyanızda `adapty_flutter` paketini v4.0'a güncelleyin:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: 4.0.0
+```
+
+Uygulamanız Kids Mode kullanıyorsa bunun yerine `adapty_flutter_kids` belirtin:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: 4.0.0
+```
+Bu **bağımsız** paket, App Store gereksinimlerine uymak için IDFA ve reklam takip kodlarını kaldırır. Dart import yolunu `package:adapty_flutter_kids/adapty_flutter.dart` olarak güncelleyin. Bunun dışında, migration işlemi normal paketle tamamen aynıdır.
+
+Kids Mode ayrıca Adapty Kontrol Paneli'nde IP adresi toplamanın devre dışı bırakılmasını gerektirir — tam kurulum için [Kids Mode](kids-mode-flutter) sayfasına bakın.
+### iOS: yerel SDK'lar artık Swift Package Manager üzerinden geliyor \{#ios-native-sdks-now-come-through-swift-package-manager\}
+
+[CocoaPods'ın spec deposu Aralık 2026'da salt okunur hale geliyor](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), bu nedenle v4 itibarıyla yerel iOS SDK'sı **artık CocoaPods üzerinden dağıtılmıyor** — eklenti bunu yalnızca **Swift Package Manager** aracılığıyla çekiyor.
+
+Flutter 3.32–3.43 kullanıyorsanız, Swift Package Manager desteğini bir kez etkinleştirin:
+
+```bash
+flutter config --enable-swift-package-manager
+```
+
+Flutter 3.44 ve sonrası Swift Package Manager'ı varsayılan olarak etkinleştiriyor, dolayısıyla bu sürümlerde herhangi bir işlem yapmanıza gerek yok.
+## Flow'ları getirme \{#fetching-flows\}
+### getPaywall → getFlow
+
+Dönen tür `AdaptyPaywall` yerine `AdaptyFlow` olarak değişti ve artık `locale` parametresi geçmiyorsunuz — bir flow render ettiğinizde yerelleştirme otomatik olarak çözümlenir; özel paywalllar için yapılandırılmış tüm locale'lar `flow.remoteConfigs` içinde döner:
+
+```diff showLineNumbers
+- final paywall = await Adapty().getPaywall(placementId: 'YOUR_PLACEMENT_ID', locale: 'en');
++ final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
+```
+
+`getPaywallForDefaultAudience` da aynı şekilde yeniden adlandırıldı:
+```diff showLineNumbers
+- final paywall = await Adapty().getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID', locale: 'en');
++ final flow = await Adapty().getFlowForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
+```
+
+Fetch policy türü `AdaptyPaywallFetchPolicy`'den `AdaptyFlowFetchPolicy`'ye yeniden adlandırıldı; seçenekleri (`reloadRevalidatingCacheData`, `returnCacheDataElseLoad`, `returnCacheDataIfNotExpiredElseLoad`) değişmedi.
+### getPaywallProducts(paywall) → getPaywallProducts(flow)
+
+`getPaywallProducts` adını korur ancak artık `flow` parametresi aracılığıyla bir `AdaptyFlow` alır:
+
+```diff showLineNumbers
+- final products = await Adapty().getPaywallProducts(paywall: paywall);
++ final products = await Adapty().getPaywallProducts(flow: flow);
+```
+## Veri modeli \{#data-model\}
+
+`getFlow`, `AdaptyPaywall` yerine bir `AdaptyFlow` döndürür ve nesne yapısı değişti:
+| v3 `AdaptyPaywall` üyesi | v4 `AdaptyFlow` üyesi | İşlem |
+|---|---|---|
+| `remoteConfig` (tekil, nullable) | `remoteConfigs` (liste) | Bir flow, yapılandırılmış her dil için bir remote config taşır. `remoteConfig` getter'ı hâlâ mevcuttur ve ilk girişi döndürür; belirli bir dil seçmek için `remoteConfigs` içinde `locale` değerine göre arama yapın. |
+| `productIdentifiers` | `productIdentifiers` | Korundu, ancak artık flow'un tüm paywall varyasyonlarından derleniyor. Varyasyon bazındaki tanımlayıcılar `flow.paywalls[i].productIdentifiers` üzerinde bulunur. |
+| `hasViewConfiguration` | `hasViewConfiguration` | Değişmedi. |
+| `placementId` (kullanımdan kalktı) | kaldırıldı | `flow.placement.id` kullanın. |
+| `revision` (kullanımdan kalktı) | kaldırıldı | `flow.placement.revision` kullanın. |
+| `vendorProductIds` (kullanımdan kalktı) | kaldırıldı | `productIdentifiers` kullanın. |
+| _(yeni)_ | `paywalls` (`AdaptyFlowPaywall` listesi) | Her giriş, flow içindeki bir paywall varyasyonunu temsil eder ve kendine ait `name`, `variationId` ve `productIdentifiers` değerlerine sahiptir. |
+`AdaptyPaywallViewConfiguration` artık açık değil — görünüm yapılandırması artık opak. Bu türe yapılan tüm referansları kaldırın.
+## Web paywall metodları \{#web-paywall-methods\}
+
+`openWebPaywall` ve `createWebPaywallUrl` isimlerini korur, ancak `paywall` parametresi artık `AdaptyPaywall` yerine `AdaptyFlowPaywall` (bir flow varyasyonu) alır. Yine de bunun yerine `AdaptyPaywallProduct` geçirebilirsiniz.
+
+```diff showLineNumbers
+  final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
+- await Adapty().openWebPaywall(paywall: paywall);
++ if (flow.paywalls.isNotEmpty) {
++   await Adapty().openWebPaywall(paywall: flow.paywalls[0]);
++ }
+```
+## Flow görüntülemelerini takip etme \{#tracking-flow-views\}
+### logShowPaywall → logShowFlow
+
+`logShowPaywall`, `logShowFlow` olarak yeniden adlandırıldı ve artık bir `AdaptyFlow` alıyor. Olay aynı varyasyon üzerinden kaydedilmeye devam eder; bu sayede mevcut funnel ve A/B testi metrikleri kontrol panelinde herhangi bir değişiklik yapmadan çalışmayı sürdürür.
+
+```diff showLineNumbers
+- await Adapty().logShowPaywall(paywall: paywall);
++ await Adapty().logShowFlow(flow: flow);
+```
+
+v3'te olduğu gibi, [Flow Builder](adapty-flow-builder) veya [Paywall Builder](adapty-paywall-builder) tarafından oluşturulan flow'ları ya da paywall'ları görüntülerken bu metodu çağırmanıza gerek yoktur — Adapty bu görüntülemeleri otomatik olarak takip eder.
+## Flow'ları görüntüleme \{#displaying-flows\}
+### createPaywallView → createFlowView
+
+Metodu yeniden adlandırın ve `AdaptyFlow`'u `flow` parametresi aracılığıyla geçirin. Diğer parametreler (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) ve view metodları `present`, `dismiss` ve `showDialog` değişmeden kalır:
+
+```diff showLineNumbers
+- final view = await AdaptyUI().createPaywallView(paywall: paywall);
++ final view = await AdaptyUI().createFlowView(flow: flow);
+  await view.present();
+```
+### AdaptyUIPaywallView → AdaptyUIFlowView
+
+Görünüm türü yeniden adlandırıldı. Kullanımdan kaldırılmış `paywallVariationId` özelliği kaldırıldı — bunun yerine `variationId` kullanın:
+
+```diff showLineNumbers
+- void flowViewDidAppear(AdaptyUIPaywallView view) {
++ void flowViewDidAppear(AdaptyUIFlowView view) {
+```
+### AdaptyUIPaywallPlatformView → AdaptyUIFlowPlatformView
+
+Görünümü widget ağacınıza widget olarak gömmek istiyorsanız, adını değiştirin ve `flow` parametresini geçin. Olay callback'leri (`onDidAppear`, `onDidFinishPurchase` vb.) aynı isimlerini korur:
+
+```diff showLineNumbers
+- AdaptyUIPaywallPlatformView(
+-   paywall: paywall,
++ AdaptyUIFlowPlatformView(
++   flow: flow,
+    onDidFinishPurchase: (view, product, purchaseResult) { /* … */ },
+  )
+```
+:::note
+`createFlowView` ile oluşturulan bir flow görünümü tek kullanımlıktır: `dismiss()` çağrıldıktan sonra görünüm bellekten serbest bırakılır ve bir daha gösterilemez — flow'u tekrar göstermek için `createFlowView`'ı yeniden çağırın.
+:::
+## Olayları Yönetme \{#handling-events\}
+
+Observer sınıfı `AdaptyUIPaywallsEventsObserver`'dan `AdaptyUIFlowsEventsObserver`'a, kayıt metodu `setPaywallsEventsObserver`'dan `setFlowsEventsObserver`'a ve tüm `paywallViewDid*` callback'leri `flowViewDid*`'e yeniden adlandırıldı:
+```diff showLineNumbers
+- class MyObserver extends AdaptyUIPaywallsEventsObserver {
++ class MyObserver extends AdaptyUIFlowsEventsObserver {
+    @override
+-   void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
++   void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+      // …
+    }
+  }
+
+- AdaptyUI().setPaywallsEventsObserver(this);
++ AdaptyUI().setFlowsEventsObserver(this);
+```
+
+Artık üç callback **zorunludur** — bunlar olmadan observer'ınız derlenmez:
+- **`flowViewDidFinishPurchase`**: v3'te isteğe bağlıydı; varsayılan davranış satın alma sonrasında görünümü kapatıyordu. Artık ne olacağına siz karar veriyorsunuz: flow'a devam edin ya da `view.dismiss()` çağırın.
+- **`flowViewDidFinishRestore`**: v3'te olduğu gibi zorunludur.
+- **`flowViewDidReceiveError`**: `paywallViewDidFailRendering` yerine gelir ve artık diğer görünüm hatalarını da alır.
+
+İki küçük değişiklik daha:
+- `setFlowsEventsObserver` (ve `setOnboardingsEventsObserver`) artık önceden ayarlanmış bir observer'ı ayırmak için `null` kabul ediyor; bu sayede SDK artık onu tutmuyor.
+- Yeni isteğe bağlı `flowViewDidReceiveAnalyticEvent` callback'i, bir flow'dan gelen özel analitik olaylar için ayrılmıştır. Flow'lar henüz bu olayları kodunuza iletmiyor, dolayısıyla bunu uygulamanız gerekmiyor.
+
+v4 ayrıca isteğe bağlı olarak kullanabileceğiniz yeni özellikler ekliyor:
+- `AdaptyUI().setObserverModeResolver(...)` ile birlikte `AdaptyUIObserverModeResolver` — SDK [Observer mode](implement-observer-mode-flutter) olarak çalışırken flow'lardan başlatılan satın alma ve geri yüklemeleri yönetir. Daha önce bu yalnızca native iOS ve Android SDK'larında kullanılabiliyordu. Bkz. [Flow'ları Observer mode'da sunma](flutter-present-flows-in-observer-mode).
+- `AdaptyUI().setSystemRequestsHandler(...)` ile birlikte `AdaptyUISystemRequestsHandler` — bir flow'dan gelen sistem istekleri (işletim sistemi izin istemleri ve App Store inceleme istekleri) için ayrılmıştır. Flow'lar henüz bu istekleri tetiklemediğinden bir handler kaydetmeniz gerekmez.
+## Kaldırılan API'lar \{#removed-apis\}
+
+Bu semboller 3.x sürümünde kullanımdan kaldırılmıştı ve v4'te tamamen kaldırılmıştır:
+### setFallbackPaywalls → setFallback
+
+```diff showLineNumbers
+- await Adapty().setFallbackPaywalls(assetId);
++ await Adapty().setFallback(assetId);
+```
+### withIdfaCollectionDisabled → withAppleIdfaCollectionDisabled
+
+```diff showLineNumbers
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+-   ..withIdfaCollectionDisabled(true),
++   ..withAppleIdfaCollectionDisabled(true),
+```
+### Kaldırılan diğer üyeler \{#other-removed-members\}
+
+- **`AdaptyPurchaseResultSuccess.jwsTransaction`**: `appleJwsTransaction` kullanın.
+- **`AdaptyUIFlowView.paywallVariationId`**: `variationId` kullanın.
+- **`AdaptyUIObserver` ve `AdaptyUI().setObserver(...)`**: `AdaptyUIFlowsEventsObserver` ve `setFlowsEventsObserver(...)` kullanın.
+## Varsayılan davranış değişiklikleri \{#default-behavior-changes\}
+
+Bu değişiklikler derleme hatası oluşturmaz, bu nedenle çalışma zamanında test edin:
+- **Başarılı satın alma**: v3'te varsayılan `paywallViewDidFinishPurchase` görünümü kapatıyordu. v4'te `flowViewDidFinishPurchase` zorunludur ve varsayılan davranışı yoktur — bu davranışı istiyorsanız görünümü kendiniz kapatın.
+- **Android sistem geri tuşu**: Artık varsayılan olarak bir flow'u kapatmaz. Eylem, `AndroidSystemBackAction` olarak `flowViewDidPerformAction`'a iletilir — geri tuşunun flow'u kapatmasını istiyorsanız bunu orada ele alın.
+- **URL açma**: Varsayılan `flowViewDidPerformAction` artık `OpenUrlAction`'ı URL'yi yerel olarak açarak işler (kontrol panelindeki uygulama içi veya harici tarayıcı ayarına uyar); `CloseAction`'da ise görünümü kapatmaya devam eder. URL'leri kendiniz işlemek istiyorsanız callback'i geçersiz kılın.
+- **Görünüm hataları**: `flowViewDidReceiveError` zorunludur ve kapatma işlemi sizin implementasyonunuza bağlıdır. v3 entegrasyonunuz render hatalarında görünümün otomatik olarak kapanmasına dayanıyorsa, bu callback içinde `view.dismiss()` çağırın.
+- **Görünüm yaşam döngüsü**: Bir flow veya onboarding görünümünü kapatmak, onu bellekten serbest bırakır. Kapatılmış bir görünüm artık yeniden gösterilemez — bunun yerine yeni bir tane oluşturun.
+## Onboarding API'sinin kullanımdan kaldırılması \{#onboarding-api-deprecation\}
+
+Eski onboarding API'si, v4.0'da [Flow Builder](adapty-flow-builder) lehine kullanımdan kaldırılmıştır. Çalışmaya devam etmektedir; IDE'niz `@Deprecated` anotasyonları aracılığıyla kullanımdan kaldırılan sembolleri işaretler — çalışma zamanında herhangi bir uyarı gösterilmez. Bu semboller gelecekteki bir sürümde kaldırılacağından, onboarding'lerinizi Flow Builder'a taşımayı planlamanız önerilir.
+Kullanımdan kaldırılan semboller: `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView`, `presentOnboardingView`, `dismissOnboardingView`, `setOnboardingsEventsObserver`, `AdaptyOnboarding`, `AdaptyUIOnboardingView`, `AdaptyUIOnboardingPlatformView`, `AdaptyUIOnboardingsEventsObserver` ve onboarding durum, girdi ile analitik modelleri.

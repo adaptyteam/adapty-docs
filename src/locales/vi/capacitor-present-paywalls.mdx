@@ -1,24 +1,129 @@
 ---
-title: "Hiển thị paywall Paywall Builder trong Capacitor SDK"
-description: "Hiển thị paywall trong ứng dụng Capacitor bằng Adapty."
-metadataTitle: "Hiển thị Paywall trong Capacitor | Tài liệu Adapty"
+title: "Hiển thị flows & paywalls - Capacitor"
+description: "Trình bày flows và paywalls cho người dùng trong ứng dụng Capacitor của bạn với Adapty."
+metadataTitle: "Hiển thị Flows & Paywalls trong Capacitor | Tài liệu Adapty"
 ---
 
-import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
 
-Nếu bạn đã tùy chỉnh paywall bằng Paywall Builder, bạn không cần lo lắng về việc render nó trong code ứng dụng di động để hiển thị cho người dùng. Paywall như vậy chứa cả nội dung cần hiển thị lẫn cách thức hiển thị.
+<SDKv4>
+Nếu bạn đã tạo một flow hoặc paywall trong Flow Builder, bạn không cần lo lắng về việc render nó trong code ứng dụng để hiển thị cho người dùng. Flow đó đã bao gồm cả nội dung cần hiển thị lẫn cách hiển thị.
+
+Trước khi bắt đầu, hãy đảm bảo rằng:
+
+1. Bạn đã [tạo một flow hoặc paywall](create-paywall).
+2. Bạn đã thêm nó vào một [placement](placements).
+3. Bạn đã [lấy flow và chuẩn bị view](capacitor-get-pb-paywalls).
 
 :::warning
-Hướng dẫn này chỉ dành cho **paywall Paywall Builder**. Quy trình hiển thị paywall khác nhau đối với remote config paywall. Để hiển thị **remote config paywall**, xem [Render paywall được thiết kế bằng remote config](present-remote-config-paywalls).
-:::
+Hướng dẫn này chỉ dành cho **flows và paywall được tạo bằng Paywall Builder**, yêu cầu SDK v4.0 trở lên. Quy trình hiển thị flows khác với paywall remote config.
 
-Để hiển thị một paywall, sử dụng phương thức `view.present()` trên `view` được tạo bởi phương thức [`createPaywallView`](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Mỗi `view` chỉ có thể được sử dụng một lần. Nếu bạn cần hiển thị lại paywall, hãy gọi `createPaywallView` thêm một lần nữa để tạo một `view` mới.
+- Để hiển thị **paywall remote config**, xem [Hiển thị paywall được thiết kế bằng remote config](present-remote-config-paywalls-capacitor).
+
+:::
+Để hiển thị một flow hoặc paywall dưới dạng màn hình độc lập, hãy dùng phương thức `view.present()` trên `view` được tạo bởi phương thức [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration). Mỗi `view` chỉ có thể dùng một lần. Nếu cần hiển thị lại flow, hãy gọi `createFlowView` thêm một lần nữa để tạo instance `view` mới.
+
+:::warning
+Không được tái sử dụng cùng một `view` mà không tạo lại. Điều này sẽ gây ra lỗi.
+:::
+```typescript showLineNumbers
+
+const view = await createFlowView(flow);
+
+// Optional: handle flow events (close, purchase, restore, etc)
+// await view.setEventHandlers({ ... });
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+:::important
+Gọi `setEventHandlers` nhiều lần sẽ ghi đè các handler bạn đã cung cấp, thay thế cả handler mặc định lẫn các handler đã thiết lập trước đó cho những sự kiện cụ thể đó.
+:::
+## Cấu hình kiểu hiển thị trên iOS \{#configure-ios-presentation-style\}
+
+Cấu hình cách flow hiển thị trên iOS bằng cách truyền tham số `iosPresentationStyle` vào phương thức `present()`. Tham số này nhận giá trị `'full_screen'` (mặc định) hoặc `'page_sheet'`. Trên Android, flow luôn được hiển thị dưới dạng full-screen activity.
+
+```typescript showLineNumbers
+try {
+  await view.present({ iosPresentationStyle: 'page_sheet' });
+} catch (error) {
+  // handle the error
+}
+```
+## Sử dụng timer do nhà phát triển định nghĩa \{#use-developer-defined-timer\}
+
+Để sử dụng timer do nhà phát triển định nghĩa trong ứng dụng di động, hãy dùng `timerId`, trong ví dụ này là `CUSTOM_TIMER_NY` — **Timer ID** của timer bạn đã thiết lập trong Adapty dashboard. Điều này đảm bảo ứng dụng tự động cập nhật timer với giá trị chính xác — chẳng hạn `13d 09h 03m 34s` (được tính bằng thời gian kết thúc của timer, như Năm Mới, trừ đi thời gian hiện tại).
+
+```typescript showLineNumbers
+const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+
+const view = await createFlowView(flow, { customTimers });
+```
+Trong ví dụ này, `CUSTOM_TIMER_NY` là **Timer ID** của timer do bạn tự định nghĩa trong Adapty dashboard. Timer này đảm bảo ứng dụng của bạn tự động cập nhật giá trị đếm ngược chính xác—ví dụ như `13d 09h 03m 34s` (được tính bằng thời điểm kết thúc của timer, chẳng hạn như Ngày đầu năm mới, trừ đi thời điểm hiện tại).
+## Hiển thị hộp thoại \{#show-dialog\}
+
+Dùng phương thức này thay cho hộp thoại alert mặc định khi một flow view đang được hiển thị trên Android. Trên Android, các alert thông thường sẽ bị che khuất phía sau flow view, khiến người dùng không nhìn thấy. Phương thức này đảm bảo hộp thoại luôn hiển thị đúng vị trí, phía trên flow, trên mọi nền tảng.
+```typescript showLineNumbers
+try {
+  const action = await view.showDialog({
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  });
+
+  if (action === 'secondary') {
+    // User confirmed - close the flow
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (error) {
+  // handle error
+}
+```
+
+## Thay thế một gói đăng ký bằng gói khác \{#replace-one-subscription-with-another\}
+
+Khi người dùng cố mua một gói đăng ký mới trong khi đã có một gói đăng ký đang hoạt động trên Android, bạn có thể kiểm soát cách xử lý giao dịch mua mới bằng cách truyền các tham số cập nhật gói đăng ký khi tạo flow view. Để thay thế gói đăng ký hiện tại bằng gói mới, hãy dùng `productPurchaseParams` trong `createFlowView` với các tham số `oldSubVendorProductId` và `prorationMode`.
+```typescript showLineNumbers
+
+const productPurchaseParams = flow.paywalls
+  .flatMap((paywall) => paywall.productIdentifiers)
+  .map((productId) => {
+    const params: MakePurchaseParamsInput = {};
+    if (Capacitor.getPlatform() === 'android') {
+      params.android = {
+        subscriptionUpdateParams: {
+          oldSubVendorProductId: 'PRODUCT_ID_OF_THE_CURRENT_ACTIVE_SUBSCRIPTION',
+          prorationMode: 'with_time_proration',
+        },
+      };
+    }
+    return { productId, params };
+  });
+
+const view = await createFlowView(flow, { productPurchaseParams });
+```
+
+</SDKv4>
+
+<SDKv3>
+
+Nếu bạn đã tùy chỉnh paywall bằng Paywall Builder, bạn không cần lo lắng về việc render nó trong code ứng dụng di động để hiển thị cho người dùng. Paywall như vậy đã bao gồm cả nội dung hiển thị lẫn cách thức hiển thị.
+
+:::warning
+Hướng dẫn này chỉ dành cho **paywall được tạo bằng Paywall Builder**. Quy trình hiển thị paywall khác đối với Remote Config paywall. Để hiển thị **Remote Config paywall**, xem [Render paywall được thiết kế bằng Remote Config](present-remote-config-paywalls).
+:::
+Để hiển thị paywall, sử dụng phương thức `view.present()` trên `view` được tạo bởi phương thức [`createPaywallView`](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Mỗi `view` chỉ có thể dùng một lần. Nếu cần hiển thị lại paywall, hãy gọi `createPaywallView` thêm một lần nữa để tạo một `view` instance mới.
 
 :::warning
 
-Tái sử dụng cùng một `view` mà không tạo lại có thể dẫn đến lỗi.
+Việc tái sử dụng cùng một `view` mà không tạo lại có thể dẫn đến lỗi.
 :::
-
 ```typescript showLineNumbers
 
 const view = await createPaywallView(paywall);
@@ -26,7 +131,7 @@ const view = await createPaywallView(paywall);
 view.setEventHandlers({
   onUrlPress(url) {
     window.open(url, '_blank');
-    return false; 
+    return false;
   },
 });
 
@@ -37,22 +142,19 @@ try {
 }
 ```
 
-## Sử dụng timer do developer định nghĩa \{#use-developer-defined-timer\}
+## Sử dụng timer do nhà phát triển định nghĩa \{#use-developer-defined-timer\}
 
-Để sử dụng timer do developer định nghĩa trong ứng dụng di động của bạn, hãy dùng `timerId`, trong ví dụ này là `CUSTOM_TIMER_NY` — **Timer ID** của timer do developer định nghĩa mà bạn đã thiết lập trong Adapty dashboard. Điều này đảm bảo ứng dụng của bạn cập nhật timer động với giá trị chính xác — như `13d 09h 03m 34s` (được tính bằng thời gian kết thúc của timer, chẳng hạn như Ngày đầu năm mới, trừ đi thời gian hiện tại).
+Để sử dụng timer do nhà phát triển định nghĩa trong ứng dụng, hãy dùng `timerId`, trong ví dụ này là `CUSTOM_TIMER_NY` — **Timer ID** của timer do nhà phát triển định nghĩa mà bạn đã cấu hình trên Adapty dashboard. Điều này đảm bảo ứng dụng tự động cập nhật timer với giá trị chính xác — ví dụ `13d 09h 03m 34s` (được tính bằng thời điểm kết thúc của timer, chẳng hạn Ngày đầu năm mới, trừ đi thời điểm hiện tại).
 
 ```typescript showLineNumbers
 const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
 
 const view = await createPaywallView(paywall, { customTimers });
 ```
-
-Trong ví dụ này, `CUSTOM_TIMER_NY` là **Timer ID** của timer do developer định nghĩa mà bạn đã thiết lập trong Adapty dashboard. Timer này đảm bảo ứng dụng của bạn cập nhật động với giá trị chính xác — như `13d 09h 03m 34s` (được tính bằng thời gian kết thúc của timer, chẳng hạn như Ngày đầu năm mới, trừ đi thời gian hiện tại).
-
+Trong ví dụ này, `CUSTOM_TIMER_NY` là **Timer ID** của timer do nhà phát triển định nghĩa mà bạn đã thiết lập trong Adapty dashboard. Timer này đảm bảo ứng dụng của bạn tự động cập nhật bộ đếm với giá trị chính xác—chẳng hạn như `13d 09h 03m 34s` (được tính bằng thời điểm kết thúc của timer, ví dụ như Ngày đầu năm mới, trừ đi thời điểm hiện tại).
 ## Hiển thị hộp thoại \{#show-dialog\}
 
-Sử dụng phương thức này thay cho các hộp thoại alert thông thường khi một paywall view đang được hiển thị trên Android. Trên Android, các alert thông thường xuất hiện phía sau paywall view, khiến người dùng không nhìn thấy chúng. Phương thức này đảm bảo hộp thoại được hiển thị đúng cách phía trên paywall trên mọi nền tảng.
-
+Sử dụng phương thức này thay vì các hộp thoại alert thông thường khi một paywall view đang được hiển thị trên Android. Trên Android, các alert thông thường sẽ xuất hiện phía sau paywall view, khiến người dùng không thể nhìn thấy chúng. Phương thức này đảm bảo hộp thoại được hiển thị đúng cách phía trên paywall trên mọi nền tảng.
 ```typescript showLineNumbers title="Capacitor"
 try {
   const action = await view.showDialog({
@@ -61,7 +163,7 @@ try {
     primaryActionTitle: 'Stay',
     secondaryActionTitle: 'Close',
   });
-  
+
   if (action === 'secondary') {
     // User confirmed - close the paywall
     await view.dismiss();
@@ -72,10 +174,12 @@ try {
 }
 ```
 
-## Cấu hình kiểu trình bày trên iOS \{#configure-ios-presentation-style\}
+## Cấu hình kiểu hiển thị trên iOS \{#configure-ios-presentation-style\}
 
-Cấu hình cách paywall được hiển thị trên iOS bằng cách truyền tham số `iosPresentationStyle` vào phương thức `present()`. Tham số này chấp nhận các giá trị `'full_screen'` (mặc định) hoặc `'page_sheet'`.
+Cấu hình cách paywall được hiển thị trên iOS bằng cách truyền tham số `iosPresentationStyle` vào phương thức `present()`. Tham số này nhận giá trị `'full_screen'` (mặc định) hoặc `'page_sheet'`.
 
 ```typescript showLineNumbers
 await view.present({ iosPresentationStyle: 'page_sheet' });
 ```
+
+</SDKv3>

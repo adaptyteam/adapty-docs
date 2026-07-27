@@ -49,10 +49,12 @@ If a section for the target month already exists, stop and ask the user whether 
 Run from the repo root:
 
 ```bash
-git log --since=<start> --until=<end> --pretty=format:"%h|%s" --name-only main
+git log --since=<start> --until=<end> --invert-grep --grep="^chore: update translations" --pretty=format:"%h|%s" --name-only main
 ```
 
-This gives commit hash, subject, and changed files for each commit. Keep the full list in working memory — you'll need files-changed to classify.
+`--invert-grep --grep="^chore: update translations"` drops the auto-generated translation-chore commits up front — they're never user-facing (see "Skip" below), so filtering them here keeps the list short instead of hand-skipping ~50 of them per month. Every other commit still needs classifying.
+
+This gives commit hash, subject, and changed files for each remaining commit. Keep the full list in working memory — you'll need files-changed to classify.
 
 If the range is wide and the list is long (>~80 commits), batch the analysis but classify every commit.
 

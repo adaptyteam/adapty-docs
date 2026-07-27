@@ -1,29 +1,29 @@
 ---
-title: "在 Kotlin Multiplatform SDK 的自定义付费墙中启用购买功能"
-description: "将 Adapty SDK 集成到您的自定义 Kotlin Multiplatform 付费墙中，以启用应用内购买功能。"
+title: "在 Kotlin Multiplatform SDK 中为自定义付费墙启用购买功能"
+description: "将 Adapty SDK 集成到您的自定义 Kotlin Multiplatform 付费墙中，以启用应用内购买。"
 metadataTitle: "Adapty 快速入门指南 | Adapty 文档"
-keywords: ['paywalls kmp', 'sdk kmp', 'paywall', 'getPaywall']
+keywords: ['paywalls kmp', 'sdk kmp', 'paywall', 'getFlow', 'getPaywall']
 ---
 
-本指南介绍如何将 Adapty 集成到您的自定义付费墙中。您可以完全掌控付费墙的实现，同时让 Adapty SDK 负责获取产品、处理新购买以及恢复历史购买记录。
+本指南介绍如何将 Adapty 集成到您的自定义付费墙中。您可以完全掌控付费墙的实现方式，同时由 Adapty SDK 负责获取产品、处理新购买以及恢复历史购买记录。本指南使用 Adapty Kotlin Multiplatform SDK v4（测试版）API——如果您使用的是 v3 版本，请参阅[迁移指南](migration-to-kmp-sdk-v4)了解对应的方法名称。
 
 :::important
-**本指南面向正在实现自定义付费墙的开发者。** 如果您希望以最简单的方式启用购买功能，请使用 [Adapty 付费墙编辑工具](kmp-quickstart-paywalls)。使用付费墙编辑工具，您可以在无代码可视化编辑器中创建付费墙，Adapty 自动处理所有购买逻辑，并且无需重新发布应用即可测试不同的设计方案。
+**本指南面向实现自定义付费墙的开发者。** 如果你想用最简便的方式开启购买功能，请使用 [Adapty Flow Builder](kmp-quickstart-paywalls)。通过 Flow Builder，你可以在无代码可视化编辑器中创建流程，Adapty 自动处理所有购买逻辑，无需重新发布应用即可测试不同设计。
 :::
 
 ## 开始之前 \{#before-you-start\}
 
-### 配置产品 \{#set-up-products\}
+### 设置产品 \{#set-up-products\}
 
-要启用应用内购买，您需要了解三个核心概念：
+要启用应用内购买，你需要了解三个关键概念：
 
-- [**产品**](product) — 用户可以购买的任何内容（订阅、消耗型商品、永久授权）
-- [**付费墙**](paywalls) — 定义向用户提供哪些产品的配置。在 Adapty 中，付费墙是检索产品的唯一方式，但这种设计让您无需修改应用代码即可调整产品、价格和优惠。
-- [**版位**](placements) — 应用中展示付费墙的位置和时机（例如 `main`、`onboarding`、`settings`）。您在看板中为版位配置付费墙，然后在代码中通过版位 ID 请求对应的付费墙。这使得运行 A/B 测试和向不同用户展示不同付费墙变得更加简便。
+- [**产品**](product) – 用户可以购买的任何内容（订阅、消耗型商品、永久授权）
+- [**付费墙**](paywalls) – 定义向用户展示哪些产品的配置。在 Adapty 中，付费墙是获取产品的唯一方式，但这种设计让你无需修改应用代码即可更改产品、价格和优惠。在 SDK v4 中，版位的付费墙变体由一个 **flow** 对象承载——你获取 flow 并从中查询产品。
+- [**版位**](placements) – 在应用中展示付费墙的位置和时机（如 `main`、`onboarding`、`settings`）。你在看板中为版位配置付费墙，然后在代码中通过版位 ID 请求。这样可以方便地进行 A/B 测试，向不同用户展示不同的付费墙。
 
-即使您使用自定义付费墙，也请确保理解这些概念。从本质上说，它们只是您管理应用内销售产品的一种方式。
+即使使用自定义付费墙，也请确保理解这些概念。简单来说，它们就是你在应用中管理销售产品的方式。
 
-要实现自定义付费墙，您需要创建一个**付费墙**并将其添加到某个**版位**。此配置允许您检索产品。若要了解需要在看板中执行的操作，请参阅[此处的快速入门指南](quickstart)。
+要实现自定义付费墙，你需要创建一个**付费墙**并将其添加到**版位**中。这样才能获取你的产品。要了解在看板中需要完成哪些操作，请参考[这里](quickstart)的快速入门指南。
 
 ### 管理用户 \{#manage-users\}
 
@@ -33,20 +33,17 @@ keywords: ['paywalls kmp', 'sdk kmp', 'paywall', 'getPaywall']
 
 ## 第一步：获取产品 \{#step-1-get-products\}
 
-要为自定义付费墙检索产品，您需要：
+要为自定义付费墙获取产品，你需要：
 
-1. 通过将[版位](placements) ID 传入 `getPaywall` 方法来获取 `paywall` 对象。
-2. 使用 `getPaywallProducts` 方法获取该付费墙的产品数组。
+1. 通过将[版位](placements) ID 传入 `getFlow` 方法来获取 `flow` 对象。
+2. 使用 `getPaywallProducts` 方法获取该流程的产品数组。
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.onSuccess
-import com.adapty.kmp.models.onError
 
 fun loadPaywall() {
-    Adapty.getPaywall(placementId = "YOUR_PLACEMENT_ID")
-        .onSuccess { paywall ->
-            Adapty.getPaywallProducts(paywall = paywall)
+    Adapty.getFlow(placementId = "YOUR_PLACEMENT_ID")
+        .onSuccess { flow ->
+            Adapty.getPaywallProducts(flow = flow)
                 .onSuccess { products ->
                     // Use products to build your custom paywall UI
                 }
@@ -60,16 +57,11 @@ fun loadPaywall() {
 }
 ```
 
-## 第二步：接受购买 \{#step-2-accept-purchases\}
+## 第二步：处理购买 \{#step-2-accept-purchases\}
 
 当用户在自定义付费墙中点击某个产品时，调用 `makePurchase` 方法并传入所选产品。该方法将处理购买流程并返回更新后的用户画像。
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywallProduct
-import com.adapty.kmp.models.AdaptyPurchaseResult
-import com.adapty.kmp.models.onSuccess
-import com.adapty.kmp.models.onError
 
 fun purchaseProduct(product: AdaptyPaywallProduct) {
     Adapty.makePurchase(product = product)
@@ -93,16 +85,13 @@ fun purchaseProduct(product: AdaptyPaywallProduct) {
 }
 ```
 
-## 第三步：恢复购买 \{#step-3-restore-purchases\}
+## 步骤 3. 恢复购买 \{#step-3-restore-purchases\}
 
-应用商店要求所有包含订阅的应用为用户提供恢复购买的途径。
+应用商店要求所有包含订阅功能的应用为用户提供恢复购买的途径。
 
-当用户点击恢复按钮时，调用 `restorePurchases` 方法。该方法将把用户的购买历史与 Adapty 同步，并返回更新后的用户画像。
+当用户点击恢复购买按钮时，调用 `restorePurchases` 方法。这将把用户的购买历史与 Adapty 同步，并返回更新后的用户画像。
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.onSuccess
-import com.adapty.kmp.models.onError
 
 fun restorePurchases() {
     Adapty.restorePurchases()
@@ -115,10 +104,28 @@ fun restorePurchases() {
 }
 ```
 
+## 第四步：检查订阅状态 \{#step-4-check-the-subscription-status\}
+
+购买或恢复后，检查用户的[访问等级](access-level)，以决定是否显示付费墙或解锁付费功能。`makePurchase` 和 `restorePurchases` 方法已返回更新后的用户画像；在应用的其他地方需要获取当前状态时，请使用 `getProfile` 方法：
+
+```kotlin showLineNumbers
+
+fun checkPremiumAccess() {
+    Adapty.getProfile()
+        .onSuccess { profile ->
+            val hasPremiumAccess = profile.accessLevels["premium"]?.isActive == true
+            // Grant access to paid features if hasPremiumAccess is true
+        }
+        .onError { error ->
+            // Handle the error
+        }
+}
+```
+
+如需了解检查和监控订阅状态的更多方式（包括监听实时更新），请参阅[检查订阅状态](kmp-check-subscription-status)。
+
 ## 后续步骤 \{#next-steps\}
 
 <SupportForum />
 
-您的付费墙已准备好在应用中展示。请在 [App Store 沙盒](test-purchases-in-sandbox)或 [Google Play Store](testing-on-android) 中测试购买流程，确保能够从付费墙完成测试购买。如需了解生产环境中的完整实现，请参阅我们示例应用中的 [AppViewModel.kt](https://github.com/adaptyteam/AdaptySDK-KMP/blob/main/example/composeApp/src/commonMain/kotlin/com/adapty/exampleapp/AppViewModel.kt)，其中演示了包含完善错误处理和状态管理的购买处理方案。
-
-接下来，[检查用户是否已完成购买](kmp-check-subscription-status)，以决定是否展示付费墙或授予用户访问付费功能的权限。
+您的付费墙已准备好在应用中展示。在 [App Store 沙盒](test-purchases-in-sandbox)或 [Google Play Store](testing-on-android) 中测试您的购买，确保能够从付费墙完成测试购买。如需查看生产环境下的完整实现示例，请参阅我们示例应用中的 [AppViewModel.kt](https://github.com/adaptyteam/AdaptySDK-KMP/blob/main/example/composeMultiplatformApp/composeApp/src/commonMain/kotlin/com/adapty/exampleapp/AppViewModel.kt)，其中演示了包含完整错误处理和状态管理的购买流程。

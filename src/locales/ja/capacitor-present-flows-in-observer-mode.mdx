@@ -1,0 +1,65 @@
+---
+title: "Capacitor SDKのObserverモードでフローを表示する"
+description: "Capacitor アプリの Observer モードでフローとペイウォールビルダーのペイウォールを表示し、独自のコードで購入を処理します。"
+metadataTitle: "Observerモードでのフローの表示 | Adapty ドキュメント"
+keywords: ['observer mode', 'onObserverPurchaseInitiated', 'onObserverRestoreInitiated', 'flow']
+---
+ビルダーを使用してフローやペイウォールをカスタマイズした場合、それをモバイルアプリのコードでレンダリングしてユーザーに表示する方法を気にする必要はありません。このようなフローやペイウォールには、表示する内容と表示方法の両方が含まれています。
+
+:::warning
+このセクションは[オブザーバーモード](observer-vs-full-mode)専用です。オブザーバーモードで作業していない場合は、[フローとペイウォールの表示](capacitor-present-paywalls)のトピックを参照してください。
+:::
+:::info
+この機能を使用するには Adapty Capacitor SDK 4.0 以降が必要です。以前はネイティブの iOS および Android SDK でのみ利用可能でした。アップグレードするには[移行ガイド](migration-to-capacitor-sdk-v4)を参照してください。
+:::
+
+<details>
+   <summary>フローの表示を始める前に（クリックして展開）</summary>
+1. Adaptyを[App Storeと連携](initial_ios)、および[Google Playと連携](initial-android)するための初期設定を行います。
+   2. Adapty SDKをインストールして設定します。`observerMode`パラメータを`true`に設定してください。[Capacitor SDKインストールガイド](sdk-installation-capacitor#activate-adapty-module-of-adapty-sdk)を参照してください。
+   3. Adapty ダッシュボードで[プロダクトを作成](create-product)します。
+   4. [ビルダーでフローまたはペイウォールを設定](create-paywall)し、プロダクトを割り当てます。
+   5. [プレースメントを作成し、フローまたはペイウォールを割り当てます](create-placement)。
+   6. モバイルアプリのコード内で[フローとその設定を取得](capacitor-get-pb-paywalls)します。
+</details>
+
+オブザーバーモードでは、SDKが代わりに購入処理を行うことはありません。ユーザーがAdaptyでレンダリングされたフローまたはペイウォールの購入ボタンや復元ボタンをタップすると、SDKは購入や復元を実行する代わりに `onObserverPurchaseInitiated` または `onObserverRestoreInitiated` イベントハンドラーを呼び出します。そこで独自のコードを使って購入・復元処理を行ってください。
+
+1. ビューにオブザーバーモードのイベントハンドラーを設定します。他のプラットフォームとは異なり、リゾルバーオブジェクトは別途存在せず、ハンドラーは通常の[イベントハンドラー](capacitor-handling-events)の一部です。そのため、作成するすべてのビューに設定してください。
+   ```typescript showLineNumbers title="Capacitor"
+   import { adapty, createFlowView } from '@adapty/capacitor';
+
+   const view = await createFlowView(flow);
+
+   const unsubscribe = await view.setEventHandlers({
+     onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
+       onStartPurchase(); // the view shows its loading indicator
+       myPurchaseApi(product.vendorProductId)
+         .then((transactionId) =>
+           adapty.reportTransaction({ transactionId, variationId: flow.variationId }),
+         )
+         .finally(() => onFinishPurchase()); // the view hides the loading indicator
+       return false; // keep the flow open; dismiss it yourself after success
+     },
+     onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
+       onStartRestore();
+       myRestoreApi().finally(() => onFinishRestore());
+       return false;
+     },
+   });
+   ```
+
+`onObserverPurchaseInitiated` ハンドラーはユーザーが購入を開始したことを、`onObserverRestoreInitiated` はユーザーがリストアを開始したことをそれぞれ通知します。これらを受け取ったら、カスタムの購入またはリストアフローを実行してください。
+
+また、購入やリストアの処理状況を AdaptyUI に通知するために、以下のコールバックも必ず呼び出してください。ローダーの表示など、フローが正しく動作するために必要です。
+| コールバック | 説明 |
+   | :----------------- | :------------------------------------------------------------------------------- |
+   | onStartPurchase()  | 購入が開始されたことを AdaptyUI に通知するために呼び出すコールバックです。  |
+   | onFinishPurchase() | 購入が完了したことを AdaptyUI に通知するために呼び出すコールバックです。 |
+   | onStartRestore()   | 復元が開始されたことを AdaptyUI に通知するために呼び出すコールバックです。   |
+   | onFinishRestore()  | 復元が完了したことを AdaptyUI に通知するために呼び出すコールバックです。  |
+2. 通常通りフロービューを表示します：[フローを取得してビューを作成し](capacitor-get-pb-paywalls)、[表示します](capacitor-present-paywalls)。追加のパラメータは不要です — ハンドラーは SDK が `observerMode: true` で起動された場合にのみ実行されます。
+
+:::warning
+[トランザクションを報告してペイウォールと関連付ける](report-transactions-observer-mode-capacitor)ことを忘れないでください。これを行わないと、Adapty はトランザクションを認識できず、購入元のペイウォールを特定できません。
+:::

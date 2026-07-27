@@ -28,10 +28,12 @@ All articles live in `src/content/docs` as `.mdx` files. Subdirectories are for 
 title: "Required display title"
 description: "SEO description"
 metadataTitle: "Browser tab title | Adapty Docs"
-keywords: ['array', 'of', 'keywords']
+keywords: ['array', 'of', 'keywords']  # Don't add or expand unless explicitly asked — see note below
 rank: 100          # Sort priority, default 50
 customSlug: "override-url"  # Optional URL override
 ```
+
+**Do not add `keywords` to frontmatter unless the user explicitly asks.** Keywords feed doc search; adding speculative keywords pollutes search results. When writing or editing an article, leave `keywords` out entirely (or untouched if already present). Only populate it on explicit request, and keep it to a few terms.
 
 ### Navigation and Article Discovery
 

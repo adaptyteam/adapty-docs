@@ -69,17 +69,28 @@ const toPascalCase = (str) => {
     return str.replace(/(^\w|-\w)/g, clear => clear.replace('-', '').toUpperCase());
 };
 
+// Reusable snippets may be .mdx with frontmatter, import lines, and <Callout>
+// JSX wrappers — normalize to plain markdown before inlining into .md exports.
+function cleanReusableContent(content) {
+    let cleaned = content.replace(/<!---.*?--->\s*\n?/gs, '');
+    cleaned = cleaned.replace(/^\s*---\n[\s\S]*?\n---\s*\n?/, '');
+    cleaned = cleaned.replace(/^import\s+.*?;?\s*$/gm, '');
+    cleaned = cleaned.replace(
+        /<Callout\s+type="([\w-]+)"[^>]*>\s*([\s\S]*?)\s*<\/Callout>/g,
+        (_, type, body) => `:::${type}\n${body}\n:::`
+    );
+    return cleaned.trim();
+}
+
 async function getReusableComponents() {
     const components = {};
     try {
         const files = await fs.readdir(REUSABLE_COMPONENTS_DIR);
         for (const file of files) {
-            if (file.endsWith('.md')) {
+            if (file.endsWith('.md') || file.endsWith('.mdx')) {
                 const content = await fs.readFile(path.join(REUSABLE_COMPONENTS_DIR, file), 'utf-8');
-                // Clean comments from reusable components
-                const cleanedContent = content.replace(/<!---.*?--->\s*\n?/gs, '').trim();
-                const componentName = toPascalCase(file.replace('.md', ''));
-                components[componentName] = cleanedContent;
+                const componentName = toPascalCase(file.replace(/\.(md|mdx)$/, ''));
+                components[componentName] = cleanReusableContent(content);
             }
         }
     } catch (e) {
@@ -118,12 +129,8 @@ function stripContent(content, reusableComponents) {
 > This feature has two SDK paradigms. Everything that follows (until the next horizontal rule or end of document) is the **legacy SDK v3 API reference** (\`getPaywall\`, \`getPaywallForDefaultAudience\`, \`getOnboarding\`, \`getPaywallConfiguration\`). The **SDK v4+ \`getFlow\` method is documented above.** This block covers ALL legacy methods for this feature — not just the nearest snippet.
 >
 > **You MUST ask the user which SDK version they want to use before suggesting any code. Do not assume or default to a version.** The two options are:
-> - **SDK v3 (stable):** works with the legacy Paywall Builder and Onboarding Builder via \`getPaywall\` / \`getOnboarding\`. Use the legacy code in this section.
-> - **SDK v4 (beta):** works with BOTH the new Flow Builder AND legacy paywalls/onboardings via the unified \`getFlow\` method documented above.
->
-> **If the user chooses the v4 beta, warn them that Adapty iOS SDK 4.0 is a pre-release.** Swift Package Manager does not resolve beta versions through the **Up to Next Major Version** (\`from:\`) rule, so they must pin the exact version:
-> - In Xcode, set the **Dependency Rule** to **Exact Version** and enter \`4.0.0-beta.1\`.
-> - In \`Package.swift\`, use \`.exact("4.0.0-beta.1")\`.
+> - **SDK v3 (legacy):** works with the legacy Paywall Builder and Onboarding Builder via \`getPaywall\` / \`getOnboarding\`. Use the legacy code in this section.
+> - **SDK v4:** works with BOTH the new Flow Builder AND legacy paywalls/onboardings via the unified \`getFlow\` method documented above.
 >
 > Apply the legacy v3 code in this section ONLY when:
 > 1. The user explicitly chose **SDK v3**, or
@@ -237,9 +244,8 @@ async function processLocaleFiles(locale, baseComponents, englishFiles) {
         for (const file of files) {
             if (file.endsWith('.md') || file.endsWith('.mdx')) {
                 const content = await fs.readFile(path.join(localeReusableDir, file), 'utf-8');
-                const cleanedContent = content.replace(/<!---.*?--->\s*\n?/gs, '').trim();
                 const componentName = toPascalCase(file.replace(/\.(md|mdx)$/, ''));
-                components[componentName] = cleanedContent;
+                components[componentName] = cleanReusableContent(content);
             }
         }
     } catch { /* no locale-specific reusable overrides */ }

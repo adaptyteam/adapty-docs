@@ -1283,6 +1283,340 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  # Virtual Currencies
+  /api/v2/server-side-api/vc/transactions/:
+    post:
+      summary: Create virtual currency transaction
+      description: |
+        Credits or debits one or more virtual currencies for a profile in a single atomic transaction. Use a positive `amount` to credit (grant) and a negative `amount` to debit (spend). All items are applied together — if any item fails, none are applied.
+
+        Each currency code may appear only once per request. A credit through this endpoint always creates a non-expiring balance.
+      operationId: createVirtualCurrencyTransaction
+      tags:
+        - Virtual Currency
+      security:
+        - apikeyAuth: []
+      parameters:
+        - name: adapty-customer-user-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: The unique ID of the customer in your system. Either `adapty-customer-user-id` or `adapty-profile-id` is required.
+        - name: adapty-profile-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: The unique ID of the profile in your system. Your best option if you are working with anonymous profiles. Either `adapty-customer-user-id` or `adapty-profile-id` is required.
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: |
+            A UUID v4 that makes the request idempotent. If you retry a request with the same key, Adapty returns the result of the original transaction without changing balances again. Must be a valid UUID v4.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VirtualCurrencyTransactionRequest'
+            examples:
+              debit:
+                summary: Spend (debit) one currency
+                value:
+                  items:
+                    - currency_code: "COINS"
+                      amount: -10
+              credit:
+                summary: Grant (credit) one currency
+                value:
+                  items:
+                    - currency_code: "COINS"
+                      amount: 500
+              multi_currency:
+                summary: Debit two currencies at once
+                value:
+                  items:
+                    - currency_code: "GOLD"
+                      amount: -50
+                    - currency_code: "SILVER"
+                      amount: -200
+              conversion:
+                summary: Convert one currency into another
+                value:
+                  items:
+                    - currency_code: "SILVER"
+                      amount: -100
+                    - currency_code: "GOLD"
+                      amount: 10
+                  metadata:
+                    reason: "exchange"
+      responses:
+        '200':
+          description: Transaction applied successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VirtualCurrencyTransactionResponse'
+              example:
+                transaction_id: "0190e8a4-1c2b-7def-8abc-2c1a4b6d8e90"
+                balances:
+                  - code: "COINS"
+                    name: "Gold Coins"
+                    balance: 12950
+                    held: 0
+                    available: 12950
+        '400':
+          description: |
+            Bad request. The `error_code` field identifies the cause: `insufficient_balance`, `unknown_currency`, `duplicate_currency`, `amount_zero`, `balance_overflow`, `empty_items`, or `idempotency_key_invalid`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                errors:
+                  - source: "currency_code"
+                    errors: ["Insufficient balance for currency COINS"]
+                error_code: "insufficient_balance"
+                status_code: 400
+        '401':
+          description: Unauthorized. The API key is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden. The Server API for virtual currencies is not enabled for this app. Contact Adapty support to request access.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                errors:
+                  - source: null
+                    errors: ["Server API for virtual currencies is not enabled for this app. Contact Adapty support to request access."]
+                error_code: "feature_not_enabled"
+                status_code: 403
+        '404':
+          description: Profile not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            Conflict. The `error_code` field identifies the cause:
+
+            - `idempotency_in_flight` — a request with the same `Idempotency-Key` is still being processed. Retry after the interval in the `Retry-After` response header.
+            - `duplicate_source_transaction` — the underlying store transaction was already credited, so it is not applied again.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                errors:
+                  - source: null
+                    errors: ["A similar request is being processed."]
+                error_code: "idempotency_in_flight"
+                status_code: 409
+        '422':
+          description: |
+            Unprocessable entity. The request body failed schema validation — for example, `items` contains more than 20 entries, or a `metadata` key or value breaks its constraints.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: |
+            Too many requests. The per-app or global rate limit was exceeded (`error_code` is `rate_limited`). The default limits are 600 requests per minute per app and 6000 requests per minute globally.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+    get:
+      summary: List virtual currency transactions
+      description: |
+        Returns the virtual currency transaction history for a profile, newest first. Results use cursor pagination: when the response includes a non-null `pagination.next_cursor`, pass it back as the `cursor` query parameter to fetch the next page.
+      operationId: listVirtualCurrencyTransactions
+      tags:
+        - Virtual Currency
+      security:
+        - apikeyAuth: []
+      parameters:
+        - name: adapty-customer-user-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: The unique ID of the customer in your system. Either `adapty-customer-user-id` or `adapty-profile-id` is required.
+        - name: adapty-profile-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: The unique ID of the profile in your system. Your best option if you are working with anonymous profiles. Either `adapty-customer-user-id` or `adapty-profile-id` is required.
+        - name: currency_code
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter the history to a single virtual currency code.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Opaque pagination cursor returned as `pagination.next_cursor` in a previous response. Omit to fetch the first page.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+          description: Maximum number of transactions to return per page. Defaults to 50.
+      responses:
+        '200':
+          description: Transaction history returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VirtualCurrencyTransactionsHistoryResponse'
+              example:
+                data:
+                  - transaction_id: "0190e8a4-1c2b-7def-8abc-2c1a4b6d8e90"
+                    transaction_type: "api_transaction"
+                    items:
+                      - currency_code: "COINS"
+                        amount: 500
+                        balance_after: 12950
+                    metadata:
+                      reason: "promo_bonus"
+                    created_at: "2026-05-23T10:30:00Z"
+                  - transaction_id: "0190e7b2-9a44-7c10-bb31-7d2e9f0a1c55"
+                    transaction_type: "store_purchase"
+                    items:
+                      - currency_code: "COINS"
+                        amount: 1000
+                        balance_after: 12450
+                    created_at: "2026-05-22T18:05:12Z"
+                  - transaction_id: "0190e5c0-3f18-7b9a-9e6d-44a1c8b27e03"
+                    transaction_type: "subscription_renewal"
+                    items:
+                      - currency_code: "GEMS"
+                        amount: 200
+                        balance_after: 3280
+                    created_at: "2026-05-20T09:00:00Z"
+                pagination:
+                  next_cursor: "MjAyNi0wNS0yMFQwOTowMDowMFowMTkwZTVjMC0zZjE4LTdiOWEtOWU2ZC00NGExYzhiMjdlMDM="
+        '400':
+          description: Bad request. The `cursor` value is invalid (`error_code` is `invalid_cursor`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized. The API key is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden. The Server API for virtual currencies is not enabled for this app.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Profile not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+
+  /api/v2/server-side-api/vc/balances/:
+    get:
+      summary: List virtual currency balances
+      description: |
+        Returns the current balance of every virtual currency for a profile. If the app has no virtual currencies, `data` is an empty array.
+      operationId: listVirtualCurrencyBalances
+      tags:
+        - Virtual Currency
+      security:
+        - apikeyAuth: []
+      parameters:
+        - name: adapty-customer-user-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: The unique ID of the customer in your system. Either `adapty-customer-user-id` or `adapty-profile-id` is required.
+        - name: adapty-profile-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: The unique ID of the profile in your system. Your best option if you are working with anonymous profiles. Either `adapty-customer-user-id` or `adapty-profile-id` is required.
+      responses:
+        '200':
+          description: Balances returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VirtualCurrencyBalanceListResponse'
+              example:
+                response_created_at: 1779791400000
+                data:
+                  - code: "COINS"
+                    name: "Gold Coins"
+                    balance: 12450
+                    held: 0
+                    available: 12450
+                  - code: "GEMS"
+                    name: "Gems"
+                    balance: 3280
+                    held: 0
+                    available: 3280
+                  - code: "ENERGY"
+                    name: "Energy"
+                    balance: 840
+                    held: 0
+                    available: 840
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized. The API key is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden. The Server API for virtual currencies is not enabled for this app.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Profile not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
 components:
   securitySchemes:
     apikeyAuth:
@@ -2766,3 +3100,211 @@ components:
         - count
         - page
         - pages
+
+    # Virtual Currencies
+    VirtualCurrencyTransactionRequest:
+      type: object
+      description: Request body for creating a virtual currency transaction.
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 20
+          description: Balance adjustments to apply atomically. Each currency code may appear only once.
+          items:
+            $ref: '#/components/schemas/VirtualCurrencyBalanceAdjustment'
+        metadata:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+          description: |
+            Optional key-value pairs stored with the transaction. At most 5 keys. Each key matches `^[a-z0-9_]{1,30}$`, and each value is at most 200 characters.
+      required:
+        - items
+
+    VirtualCurrencyBalanceAdjustment:
+      type: object
+      properties:
+        currency_code:
+          type: string
+          description: The virtual currency code to adjust.
+        amount:
+          type: integer
+          format: int32
+          description: |
+            The amount to apply. A positive value credits (grants) the currency; a negative value debits (spends) it. Cannot be zero.
+      required:
+        - currency_code
+        - amount
+
+    VirtualCurrencyTransactionResponse:
+      type: object
+      description: Result of a virtual currency transaction.
+      properties:
+        transaction_id:
+          type: string
+          format: uuid
+          description: Unique ID of the created transaction.
+        balances:
+          type: array
+          description: |
+            Post-transaction balance for each currency affected by this request (one entry per item in `items`). To read the full balance list for the profile, use `GET /api/v2/server-side-api/vc/balances/`.
+          items:
+            $ref: '#/components/schemas/VirtualCurrencyBalanceSnapshot'
+      required:
+        - transaction_id
+        - balances
+
+    VirtualCurrencyBalanceSnapshot:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Virtual currency code.
+        name:
+          type: string
+          description: Display name of the virtual currency.
+        balance:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Total balance, including amounts currently held.
+        held:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Sum of all active holds (reserved amounts). Currently always 0.
+        available:
+          type: integer
+          format: int32
+          description: Balance available to spend, computed as `balance - held`.
+      required:
+        - code
+        - name
+        - balance
+        - held
+        - available
+
+    VirtualCurrencyBalanceListResponse:
+      type: object
+      description: Current balances for all virtual currencies of a profile.
+      properties:
+        response_created_at:
+          type: integer
+          format: int64
+          description: When the response was generated, as a Unix timestamp in milliseconds.
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VirtualCurrencyProfileBalanceItem'
+      required:
+        - response_created_at
+        - data
+
+    VirtualCurrencyProfileBalanceItem:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Unique virtual currency code within the app. ASCII letters, digits, and underscore.
+        name:
+          type: string
+          description: Display name of the virtual currency.
+        balance:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Total balance, including amounts currently held.
+        held:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Sum of all active holds (reserved amounts). Currently always 0.
+        available:
+          type: integer
+          format: int32
+          description: Balance available to spend, computed as `balance - held`.
+      required:
+        - code
+        - name
+        - balance
+        - held
+        - available
+
+    VirtualCurrencyTransactionsHistoryResponse:
+      type: object
+      description: Paginated list of virtual currency transactions for a profile.
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VirtualCurrencyTransactionsHistoryItem'
+        pagination:
+          $ref: '#/components/schemas/VirtualCurrencyHistoryPagination'
+      required:
+        - data
+        - pagination
+
+    VirtualCurrencyTransactionsHistoryItem:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+          format: uuid
+          description: Unique ID of the transaction.
+        transaction_type:
+          type: string
+          description: |
+            The source of the transaction. One of `store_purchase`, `subscription_renewal`, `trial_start`, `api_transaction`, `dashboard_transaction`, `refund`, or `expiry`.
+        items:
+          type: array
+          description: Per-currency balance changes recorded in this transaction.
+          items:
+            $ref: '#/components/schemas/VirtualCurrencyBalanceChange'
+        metadata:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+          description: Key-value pairs stored with the transaction, if any.
+        created_at:
+          type: string
+          format: date-time
+          description: When the transaction was recorded.
+      required:
+        - transaction_id
+        - transaction_type
+        - items
+        - created_at
+
+    VirtualCurrencyBalanceChange:
+      type: object
+      properties:
+        currency_code:
+          type: string
+          description: The virtual currency code.
+        amount:
+          type: integer
+          format: int32
+          description: The signed change applied to the balance. A positive value is a credit, a negative value is a debit.
+        balance_after:
+          type: integer
+          format: int32
+          minimum: 0
+          description: The currency balance after this transaction was applied.
+      required:
+        - currency_code
+        - amount
+        - balance_after
+
+    VirtualCurrencyHistoryPagination:
+      type: object
+      properties:
+        next_cursor:
+          type: string
+          nullable: true
+          description: |
+            Opaque cursor for the next page. Pass it as the `cursor` query parameter to fetch more results. Null when there are no more pages.
+      required:
+        - next_cursor

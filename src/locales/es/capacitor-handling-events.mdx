@@ -1,21 +1,137 @@
 ---
-title: "Capacitor - Gestionar eventos del paywall"
-description: "Gestiona eventos de suscripción en Capacitor con el SDK de Adapty."
-metadataTitle: "Gestionar eventos en Capacitor | Documentación de Adapty"
+title: "Gestionar eventos de flow y paywall - Capacitor"
+description: "Gestiona eventos de flow y paywall en tu app de Capacitor con el SDK de Adapty."
+metadataTitle: "Gestionar Eventos de Flow y Paywall - Capacitor | Documentación de Adapty"
 toc_max_heading_level: 4
-keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed', 'onAppeared', 'onDisappeared']
+keywords: ['onCustomAction', 'onUrlPress', 'onAndroidSystemBack', 'onCloseButtonPress', 'onPurchaseStarted', 'onPurchaseCompleted', 'onPurchaseFailed', 'onPurchaseCancelled', 'onRestoreStarted', 'onRestoreFailed', 'onRestoreCompleted', 'onProductSelected', 'onLoadingProductsFailed', 'onRenderingFailed', 'onError', 'onAppeared', 'onDisappeared', 'onWebPaymentNavigationFinished', 'onRequestPermission', 'onRequestAppReview', 'onObserverPurchaseInitiated', 'onObserverRestoreInitiated', 'FlowEventHandlers']
 ---
-
 import PaywallAction from '@site/src/locales/es/reusable/PaywallAction.md';
 
+<SDKv4>
+
 :::important
-Esta guía cubre la gestión de eventos para compras, restauraciones, selección de productos y renderizado del paywall. También debes implementar la gestión de botones (cerrar el paywall, abrir enlaces, etc.). Consulta nuestra [guía sobre la gestión de acciones de botones](capacitor-handle-paywall-actions) para más detalles.
+Esta guía cubre el manejo de eventos para compras, restauraciones, selección de productos y renderizado de flows. También puedes configurar el manejo de botones (cerrar el flow, abrir enlaces, acciones personalizadas, etc.). Consulta nuestra [guía sobre el manejo de acciones de botones](capacitor-handle-paywall-actions) para más detalles.
 :::
+Los flows y paywalls creados con el [Flow Builder](adapty-flow-builder) no necesitan código adicional para realizar y restaurar compras. Sin embargo, generan algunos eventos a los que tu app puede responder. Estos eventos incluyen pulsaciones de botones (botones de cierre, URLs, selección de productos, etc.), así como notificaciones sobre acciones relacionadas con compras realizadas en el flow. A continuación se explica cómo responder a estos eventos.
 
-Los paywalls configurados con el [Paywall Builder](adapty-paywall-builder) no necesitan código adicional para realizar y restaurar compras. Sin embargo, generan ciertos eventos a los que tu aplicación puede responder. Estos eventos incluyen pulsaciones de botones (botones de cierre, URLs, selecciones de productos, etc.), así como notificaciones sobre acciones relacionadas con compras realizadas en el paywall. A continuación aprenderás cómo responder a estos eventos.
+Para controlar o monitorizar los procesos que ocurren en la pantalla del flow dentro de tu app, implementa el método `view.setEventHandlers`:
+:::important
+Solo puedes establecer un handler por evento: llamar a `setEventHandlers` varias veces sobreescribirá los handlers que proporciones, reemplazando tanto los predeterminados como los establecidos previamente para esos eventos específicos. Los handlers que no establezcas conservarán su comportamiento predeterminado. `setEventHandlers` devuelve una función para cancelar la suscripción, y `view.dismiss()` elimina todos los handlers.
+:::
+```typescript showLineNumbers
 
-Para controlar o monitorizar los procesos que ocurren en la pantalla del paywall dentro de tu aplicación, implementa el método `view.setEventHandlers`:
+const view = await createFlowView(flow);
 
+const unsubscribe = await view.setEventHandlers({
+  onCloseButtonPress() {
+    return true; // close the flow (default behavior)
+  },
+  onAndroidSystemBack() {
+    return true; // close the flow; by default, it stays open
+  },
+  onPurchaseCompleted(purchaseResult, product) {
+    return purchaseResult.type === 'success'; // close the flow on a successful purchase, keep it open for cancelled or pending purchases
+  },
+  onPurchaseStarted(product) { /***/ },
+  onPurchaseFailed(error, product) { /***/ },
+  onRestoreCompleted(profile) { /***/ },
+  onRestoreFailed(error) { /***/ },
+  onProductSelected(productId) { /***/ },
+  onError(error) { /***/ },
+  onLoadingProductsFailed(error) { /***/ },
+  onUrlPress(url, openIn) {
+    adapty.openWebUrl({ url, openIn }).catch(console.warn); // same as the SDK default
+    return false; // keep the flow open
+  },
+  onAppeared() { /***/ },
+  onDisappeared() { /***/ },
+  onWebPaymentNavigationFinished() { /***/ },
+});
+```
+
+<Details>
+<summary>Ejemplos de eventos (haz clic para expandir)</summary>
+
+Los ejemplos a continuación muestran las propiedades disponibles en cada manejador, con valores ilustrativos en los comentarios.
+```typescript
+// onUrlPress
+url;    // 'https://example.com/terms'
+openIn; // 'browser_in_app' or 'browser_out_app'
+
+// onCustomAction
+actionId; // 'login'
+
+// onProductSelected
+productId; // 'premium_monthly'
+
+// onPurchaseStarted, onPurchaseCompleted, onPurchaseFailed
+product.vendorProductId;        // 'premium_monthly'
+product.localizedTitle;         // 'Premium Monthly'
+product.localizedDescription;   // 'Premium subscription for 1 month'
+product.price?.amount;          // 9.99
+product.price?.currencyCode;    // 'USD'
+product.price?.localizedString; // '$9.99'
+
+// onPurchaseCompleted
+purchaseResult.type; // 'success', 'pending', or 'user_cancelled'
+if (purchaseResult.type === 'success') {
+  purchaseResult.profile.accessLevels['premium']?.isActive; // true
+}
+
+// onRestoreCompleted
+profile.accessLevels['premium']?.isActive; // true
+
+// onPurchaseFailed, onRestoreFailed, onError, onLoadingProductsFailed
+error.message; // 'Purchase failed due to insufficient funds'
+```
+</Details>
+Puedes registrar solo los manejadores de eventos que necesites y omitir los que no. De este modo, no se crearán listeners para eventos no utilizados. No hay manejadores de eventos obligatorios.
+
+Los manejadores de eventos devuelven un booleano. Si devuelven `true`, el proceso de visualización se considera completado, por lo que la pantalla del flow se cierra y los listeners de eventos de esa vista se eliminan.
+Algunos manejadores de eventos tienen un comportamiento predeterminado que puedes modificar si lo necesitas:
+- `onCloseButtonPress`: cierra el flow cuando se pulsa el botón de cerrar.
+- `onUrlPress`: abre la URL pulsada en el navegador nativo mediante `adapty.openWebUrl`, respetando la opción **Open in** definida en el builder, y mantiene el flow abierto.
+- `onAndroidSystemBack`: mantiene el flow abierto cuando se pulsa el botón **Back**. Devuelve `true` para cerrarlo.
+- `onPurchaseCompleted`: mantiene el flow abierto tras completar una compra. Devuelve `true` para cerrarlo.
+- `onRestoreCompleted`: mantiene el flow abierto tras una restauración exitosa. Devuelve `true` para cerrarlo.
+- `onError`: cierra el flow si falla su renderizado.
+### Controladores de eventos \{#event-handlers\}
+| Manejador de eventos | Descripción |
+|:-----------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onCustomAction** | Se invoca cuando el usuario realiza una acción personalizada, por ejemplo, hace clic en un [botón personalizado](paywall-buttons). |
+| **onUrlPress** | Se invoca cuando el usuario hace clic en una URL dentro de tu flow. |
+| **onAndroidSystemBack** | Se invoca cuando el usuario pulsa el botón **Back** del sistema Android. El flow permanece abierto por defecto; devuelve `true` para cerrarlo. |
+| **onCloseButtonPress** | Se invoca cuando el botón de cierre es visible y el usuario lo pulsa. Se recomienda cerrar la pantalla del flow en este manejador. |
+| **onPurchaseCompleted** | Se invoca cuando la compra finaliza, ya sea con éxito, cancelada por el usuario o pendiente de aprobación. En caso de compra exitosa, proporciona un `AdaptyProfile` actualizado. Las cancelaciones del usuario y los pagos pendientes (p. ej., que requieren aprobación parental) activan este evento, no `onPurchaseFailed`. |
+| **onPurchaseStarted** | Se invoca cuando el usuario pulsa el botón de acción "Comprar" para iniciar el proceso de compra. |
+| **onPurchaseFailed** | Se invoca cuando una compra falla debido a errores (p. ej., restricciones de pago, productos no válidos, fallos de red, errores de verificación de transacciones). No se invoca en cancelaciones del usuario ni en pagos pendientes, que activan `onPurchaseCompleted` en su lugar. |
+| **onRestoreStarted** | Se invoca cuando el usuario inicia el proceso de restauración de compras. |
+| **onRestoreCompleted** | Se invoca cuando la restauración de compras se realiza correctamente y proporciona un `AdaptyProfile` actualizado. Se recomienda cerrar la pantalla si el usuario tiene el `accessLevel` requerido. Consulta el tema [Estado de la suscripción](capacitor-listen-subscription-changes) para saber cómo comprobarlo. |
+| **onRestoreFailed** | Se invoca cuando el proceso de restauración falla y proporciona un `AdaptyError`. |
+| **onProductSelected** | Se invoca cuando se selecciona cualquier producto en la vista del flow, lo que permite monitorizar qué selecciona el usuario antes de la compra. |
+| **onError** | Se invoca cuando ocurre un error durante el renderizado de la vista y proporciona un `AdaptyError`. Estos errores no deberían producirse, así que si encuentras uno, comunícanoslo. |
+| **onLoadingProductsFailed** | Se invoca cuando falla la carga de productos y proporciona un `AdaptyError`. Si no has establecido `prefetchProducts: true` al crear la vista, AdaptyUI recuperará los objetos necesarios del servidor por sí mismo. |
+| **onAppeared** | Se invoca cuando el flow se muestra al usuario. En iOS, también se invoca cuando el usuario pulsa el [botón de paywall web](web-paywall#step-2a-add-a-web-purchase-button) dentro de un flow y el paywall web se abre en un navegador in-app. |
+| **onDisappeared** | Se invoca cuando el usuario cierra el flow. En iOS, también se invoca cuando un [paywall web](web-paywall#step-2a-add-a-web-purchase-button) abierto desde un flow en un navegador in-app desaparece de la pantalla. |
+| **onWebPaymentNavigationFinished** | Se invoca tras intentar abrir un [paywall web](web-paywall) para realizar una compra, independientemente de si tuvo éxito o falló. |
+| **onRequestAppReview** | Reservado para solicitudes de valoración de la app desde un flow. Los flows todavía no activan solicitudes de valoración, por lo que no es necesario implementarlo. |
+| **onAnalytics** | Reservado para eventos analíticos personalizados desde un flow. Los flows todavía no emiten estos eventos a tu código, por lo que no es necesario implementarlo. |
+| **onRequestPermission** | Reservado para solicitudes de permisos del sistema (como notificaciones push o acceso a la cámara) desde un flow. Los flows todavía no activan solicitudes de permisos, por lo que no es necesario implementarlo. |
+| **onObserverPurchaseInitiated** | Solo en modo observador: se invoca cuando el usuario pulsa el botón de compra en un flow. Adapty no realiza la compra — efectúala con tu propio código de compra y luego notifica la transacción a Adapty. Consulta [Gestionar compras en modo observador](#handle-purchases-in-observer-mode) más abajo. |
+| **onObserverRestoreInitiated** | Solo en modo observador: se invoca cuando el usuario pulsa el botón de restauración en un flow. Adapty no restaura — hazlo tú mismo y luego notifica las transacciones restauradas. Consulta [Gestionar compras en modo observador](#handle-purchases-in-observer-mode) más abajo. |
+### Gestionar compras en modo observer \{#handle-purchases-in-observer-mode\}
+
+Si activaste el SDK en [modo Observer](implement-observer-mode-capacitor) (`observerMode: true`) y muestras un flow renderizado por Adapty, el SDK no realiza las compras por ti. Cuando un usuario pulsa el botón de compra o restauración, el SDK invoca `onObserverPurchaseInitiated` o `onObserverRestoreInitiated`, para que puedas realizar la compra o restauración con tu propio código. Consulta [Presentar flows en modo Observer](capacitor-present-flows-in-observer-mode) para ver la configuración completa.
+
+</SDKv4>
+
+<SDKv3>
+:::important
+Esta guía cubre el manejo de eventos para compras, restauraciones, selección de productos y renderizado de paywalls. También debes implementar el manejo de botones (cerrar el paywall, abrir enlaces, etc.). Consulta nuestra [guía sobre el manejo de acciones de botones](capacitor-handle-paywall-actions) para más detalles.
+:::
+Los paywall configurados con el [Paywall Builder](adapty-paywall-builder) no necesitan código adicional para realizar ni restaurar compras. Sin embargo, generan ciertos eventos a los que tu app puede responder. Estos eventos incluyen pulsaciones de botones (botones de cierre, URLs, selecciones de productos, etc.), así como notificaciones sobre acciones relacionadas con compras realizadas en el paywall. A continuación te explicamos cómo responder a estos eventos.
+
+Para controlar o monitorizar los procesos que ocurren en la pantalla del paywall dentro de tu app, implementa el método `view.setEventHandlers`:
 ```typescript showLineNumbers
 
 const view = await createPaywallView(paywall);
@@ -76,8 +192,7 @@ const unsubscribe = view.setEventHandlers({
 ```
 
 <Details>
-<summary>Ejemplos de eventos (haz clic para expandir)</summary>
-
+<summary>Ejemplos de eventos (haz clic para ampliar)</summary>
 ```typescript
 // onCloseButtonPress
 {
@@ -241,36 +356,33 @@ const unsubscribe = view.setEventHandlers({
 }
 ```
 </Details>
+Puedes registrar solo los manejadores de eventos que necesites y omitir los que no uses. Así no se crean listeners innecesarios. No hay manejadores de eventos obligatorios.
 
-Puedes registrar solo los manejadores de eventos que necesites y omitir los que no uses. En ese caso, no se crearán los listeners de eventos no utilizados. No hay manejadores de eventos obligatorios.
-
-Los manejadores de eventos devuelven un booleano. Si se devuelve `true`, el proceso de visualización se considera completado, por lo que la pantalla del paywall se cierra y se eliminan los listeners de eventos para esa vista.
-
+Los manejadores de eventos devuelven un booleano. Si devuelven `true`, el proceso de visualización se considera completado, por lo que la pantalla del paywall se cierra y los listeners de eventos de esa vista se eliminan.
 Algunos manejadores de eventos tienen un comportamiento predeterminado que puedes sobrescribir si lo necesitas:
-- `onCloseButtonPress`: cierra el paywall al pulsar el botón de cierre.
-- `onAndroidSystemBack`: cierra el paywall al pulsar el botón **Back**.
+- `onCloseButtonPress`: cierra el paywall cuando se pulsa el botón de cerrar.
+- `onAndroidSystemBack`: cierra el paywall cuando se pulsa el botón **Back**.
 - `onRestoreCompleted`: cierra el paywall tras una restauración exitosa.
-- `onPurchaseCompleted`: cierra el paywall a menos que el usuario haya cancelado.
+- `onPurchaseCompleted`: cierra el paywall salvo que el usuario haya cancelado.
 - `onRenderingFailed`: cierra el paywall si falla su renderizado.
 - `onUrlPress`: abre las URLs en el navegador del sistema y mantiene el paywall abierto.
-
 ### Manejadores de eventos \{#event-handlers\}
-
-| Manejador de evento         | Descripción                                                                                                                                                                                                                                                                                                         |
-|:----------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **onCustomAction**          | Se invoca cuando el usuario realiza una acción personalizada, p. ej., hace clic en un [botón personalizado](paywall-buttons).                                                                                                                                                                                        |
-| **onUrlPress**              | Se invoca cuando el usuario hace clic en una URL del paywall.                                                                                                                                                                                                                                                       |
-| **onAndroidSystemBack**     | Se invoca cuando el usuario pulsa el botón **Back** del sistema Android.                                                                                                                                                                                                                                            |
-| **onCloseButtonPress**      | Se invoca cuando el botón de cierre es visible y el usuario lo pulsa. Se recomienda cerrar la pantalla del paywall en este manejador.                                                                                                                                                                               |
-| **onPurchaseCompleted**     | Se invoca cuando la compra se completa, ya sea con éxito, cancelada por el usuario o pendiente de aprobación. En caso de compra exitosa, proporciona un `AdaptyProfile` actualizado. Las cancelaciones del usuario y los pagos pendientes (p. ej., aprobación parental requerida) disparan este evento, no `onPurchaseFailed`. |
-| **onPurchaseStarted**       | Se invoca cuando el usuario pulsa el botón de acción "Comprar" para iniciar el proceso de compra.                                                                                                                                                                                                                   |
-| **onPurchaseCancelled**     | Se invoca cuando el usuario inicia el proceso de compra y lo interrumpe manualmente (cancela el diálogo de pago).                                                                                                                                                                                                   |
-| **onPurchaseFailed**        | Se invoca cuando una compra falla debido a errores (p. ej., restricciones de pago, productos no válidos, fallos de red, errores de verificación de transacciones). No se invoca por cancelaciones del usuario ni pagos pendientes, que disparan `onPurchaseCompleted` en su lugar.                                  |
-| **onRestoreStarted**        | Se invoca cuando el usuario inicia un proceso de restauración de compras.                                                                                                                                                                                                                                           |
-| **onRestoreCompleted**      | Se invoca cuando la restauración de compras tiene éxito y proporciona un `AdaptyProfile` actualizado. Se recomienda cerrar la pantalla si el usuario tiene el `accessLevel` requerido. Consulta el tema [Estado de la suscripción](capacitor-listen-subscription-changes) para saber cómo comprobarlo.               |
-| **onRestoreFailed**         | Se invoca cuando el proceso de restauración falla y proporciona un `AdaptyError`.                                                                                                                                                                                                                                   |
-| **onProductSelected**       | Se invoca cuando se selecciona cualquier producto en la vista del paywall, lo que te permite monitorizar qué elige el usuario antes de la compra.                                                                                                                                                                   |
-| **onAppeared**              | Se invoca cuando la vista del paywall aparece en pantalla. En iOS, también se invoca cuando el usuario pulsa el [botón de paywall web](web-paywall#step-2a-add-a-web-purchase-button) dentro de un paywall y se abre un paywall web en un navegador in-app.                                                          |
-| **onDisappeared**           | Se invoca cuando la vista del paywall desaparece de la pantalla. En iOS, también se invoca cuando un [paywall web](web-paywall#step-2a-add-a-web-purchase-button) abierto desde un paywall en un navegador in-app desaparece de la pantalla.                                                                         |
-| **onRenderingFailed**       | Se invoca cuando ocurre un error durante el renderizado de la vista y proporciona un `AdaptyError`. Estos errores no deberían ocurrir, así que si te encuentras con uno, comunícanoslo.                                                                                                                             |
-| **onLoadingProductsFailed** | Se invoca cuando la carga de productos falla y proporciona un `AdaptyError`. Si no has establecido `prefetchProducts: true` al crear la vista, AdaptyUI recuperará los objetos necesarios del servidor por sí mismo.                                                                                                 |
+| Manejador de eventos        | Descripción                                                                                                                                                                                                                                                                                                          |
+|:----------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **onCustomAction**          | Se invoca cuando el usuario realiza una acción personalizada, p. ej., pulsa un [botón personalizado](paywall-buttons).                                                                                                                                                                                               |
+| **onUrlPress**              | Se invoca cuando el usuario pulsa una URL en tu paywall.                                                                                                                                                                                                                                                             |
+| **onAndroidSystemBack**     | Se invoca cuando el usuario pulsa el botón de sistema **Back** de Android.                                                                                                                                                                                                                                           |
+| **onCloseButtonPress**      | Se invoca cuando el botón de cierre está visible y el usuario lo pulsa. Se recomienda cerrar la pantalla del paywall en este manejador.                                                                                                                                                                               |
+| **onPurchaseCompleted**     | Se invoca cuando la compra finaliza, ya sea con éxito, cancelada por el usuario o pendiente de aprobación. En caso de compra exitosa, proporciona un `AdaptyProfile` actualizado. Las cancelaciones del usuario y los pagos pendientes (p. ej., requieren aprobación parental) disparan este evento, no `onPurchaseFailed`. |
+| **onPurchaseStarted**       | Se invoca cuando el usuario pulsa el botón de acción "Comprar" para iniciar el proceso de compra.                                                                                                                                                                                                                    |
+| **onPurchaseCancelled**     | Se invoca cuando el usuario inicia el proceso de compra y lo interrumpe manualmente (cancela el diálogo de pago).                                                                                                                                                                                                    |
+| **onPurchaseFailed**        | Se invoca cuando una compra falla por errores (p. ej., restricciones de pago, productos no válidos, fallos de red, fallos en la verificación de la transacción). No se invoca para cancelaciones del usuario ni pagos pendientes, que en su lugar disparan `onPurchaseCompleted`.                                    |
+| **onRestoreStarted**        | Se invoca cuando el usuario inicia un proceso de restauración de compras.                                                                                                                                                                                                                                            |
+| **onRestoreCompleted**      | Se invoca cuando la restauración de compras se completa con éxito y proporciona un `AdaptyProfile` actualizado. Se recomienda cerrar la pantalla si el usuario tiene el `accessLevel` requerido. Consulta el tema [Estado de suscripción](capacitor-listen-subscription-changes) para saber cómo comprobarlo.        |
+| **onRestoreFailed**         | Se invoca cuando el proceso de restauración falla y proporciona `AdaptyError`.                                                                                                                                                                                                                                       |
+| **onProductSelected**       | Se invoca cuando se selecciona cualquier producto en la vista del paywall, lo que te permite monitorizar lo que el usuario elige antes de la compra.                                                                                                                                                                  |
+| **onAppeared**              | Se invoca cuando la vista del paywall aparece en pantalla. En iOS, también se invoca cuando el usuario pulsa el [botón de paywall web](web-paywall#step-2a-add-a-web-purchase-button) dentro de un paywall y se abre un paywall web en un navegador integrado en la app.                                              |
+| **onDisappeared**           | Se invoca cuando la vista del paywall desaparece de la pantalla. En iOS, también se invoca cuando un [paywall web](web-paywall#step-2a-add-a-web-purchase-button) abierto desde un paywall en un navegador integrado en la app desaparece de la pantalla.                                                             |
+| **onRenderingFailed**       | Se invoca cuando ocurre un error durante el renderizado de la vista y proporciona `AdaptyError`. Estos errores no deberían producirse, así que si te encuentras con uno, comunícanoslo.                                                                                                                               |
+| **onLoadingProductsFailed** | Se invoca cuando la carga de productos falla y proporciona `AdaptyError`. Si no has establecido `prefetchProducts: true` en la creación de la vista, AdaptyUI recuperará los objetos necesarios del servidor por su cuenta.                                                                                           |
+</SDKv3>

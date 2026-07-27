@@ -152,6 +152,7 @@ Check for: missing intro before first heading, H4 overuse, non-parallel headings
 
 - **Title/description scope mismatch**: the frontmatter `title` or `description` claims coverage the article doesn't provide. ❌ `description: "Show or hide elements and screens"` when only elements are covered → fix to match actual scope
 - **Product/feature name capitalization**: "Flow Builder" not "Flow builder". Check that multi-word product names are consistently capitalized as proper nouns throughout
+- **Speculative `keywords`**: `keywords` feeds doc search — do not add or expand it unless the user explicitly asks. Flag frontmatter where keywords were added during writing/editing without a request; propose removing them. If keywords are requested, keep the list to a few specific terms.
 
 See `references/article-structure.md`
 
@@ -250,6 +251,7 @@ Files in `src/locales/` are automatically translated and updated by a GitHub Act
 - Do not invent Adapty features — ask if unsure
 - Extract facts from source material, rewrite in STE
 - Always use Write tool — don't deliver as chat message
+- **No keywords**: Leave `keywords` out of frontmatter unless the user explicitly asks for them. Keywords feed doc search, and speculative ones pollute results. If requested, keep the list to a few specific terms.
 - **Add to sidebar**: After creating, add entry to `src/data/sidebars/`
 
 ### Writing a Section for an Existing Article

@@ -1,22 +1,124 @@
 ---
 title: "Flutter SDK'da buton eylemlerine yanıt verme"
-description: "Daha iyi uygulama monetizasyonu için Adapty kullanarak Flutter'da paywall buton eylemlerini yönetin."
+description: "Adapty kullanarak Flutter'da paywall buton eylemlerini daha iyi uygulama monetizasyonu için yönetin."
 metadataTitle: "Paywall buton eylemlerini yönetme | Adapty Dokümanları"
 toc_max_heading_level: 4
-keywords: ['paywall butonu', 'buton', 'paywall buton eylemleri', 'eylemleri yönetme']
+keywords: ['paywall butonu', 'buton', 'paywall buton eylemleri', 'eylemleri yönetme', 'flowViewDidPerformAction', 'AndroidSystemBackAction']
 ---
 
-Adapty paywall builder kullanarak paywall oluşturuyorsanız, butonları doğru şekilde yapılandırmak çok önemlidir:
+<SDKv4>
 
-1. [Paywall builder'da bir buton ekleyin](paywall-buttons) ve ona mevcut bir eylem atayın ya da özel bir eylem ID'si oluşturun.
-2. Atadığınız her eylemi yönetmek için uygulama kodunuzu yazın.
+Adapty builder kullanarak flow veya paywall oluşturuyorsanız, butonları doğru şekilde ayarlamak çok önemlidir:
+1. [Builder'da bir buton ekleyin](paywall-buttons) ve ona mevcut bir eylem atayın ya da özel bir eylem ID'si oluşturun.
+2. Uygulamanızda atadığınız her eylemi işlemek için kod yazın.
 
-Bu kılavuz, kodunuzda özel ve mevcut eylemleri nasıl yöneteceğinizi gösterir.
-
+Bu kılavuz, kodunuzda özel ve mevcut eylemlerin nasıl işleneceğini göstermektedir.
 :::warning
-**Yalnızca satın almalar ve restorasyon işlemleri otomatik olarak yönetilir.** Paywall kapatma veya link açma gibi diğer tüm buton eylemleri, uygulama kodunda uygun yanıtların uygulanmasını gerektirir.
+**Görünümü kapatma ve URL'leri açma işlemleri**, varsayılan `flowViewDidPerformAction` uygulaması tarafından **otomatik olarak gerçekleştirilir** ve SDK'nın kendisi satın alma ile geri yükleme işlemlerini yönetir. Giriş yapma veya başka bir flow açma gibi diğer tüm buton eylemleri, uygulama kodunda uygun yanıtların yazılmasını gerektirir. *Tamamlanan* satın alma ve geri yükleme işlemlerine yanıt verme ise zorunlu gözlemci callback'lerinde gerçekleşir — bkz. [Flow & paywall olaylarını yönetme](flutter-handling-events).
+:::
+## Flow ve paywallları kapatma \{#close-flows-and-paywalls\}
+
+Flow veya paywallınıza kapatma düğmesi eklemek için builder'da bir düğme ekleyin ve bu düğmeye **Close** aksiyonunu atayın. Herhangi bir kod yazmanıza gerek yok: varsayılan `flowViewDidPerformAction` implementasyonu, `CloseAction` aldığında görünümü otomatik olarak kapatır.
+
+:::info
+Android sistem **Back** düğmesi artık görünümü varsayılan olarak kapatmıyor. Bu düğme, `flowViewDidPerformAction`'a `AndroidSystemBackAction` olarak iletilir; back düğmesinin flow veya paywallı kapatmasını istiyorsanız bunu kendiniz ele almanız gerekir.
+:::
+Özel bir davranışa ihtiyaç duyuyorsanız `flowViewDidPerformAction` metodunu override edin — örneğin, v3'te olduğu gibi Android sistem geri tuşunda da görünümü kapatmak için:
+
+```dart
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+      case const AndroidSystemBackAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(:final url, :final openIn):
+        AdaptyUI().openUrl(url, openIn: openIn);
+        break;
+      default:
+        break;
+    }
+}
+```
+:::warning
+`flowViewDidPerformAction` metodunu override etmek, varsayılan implementasyonun tamamının yerini alır — varsayılan kapatma ve URL açma davranışını korumak istiyorsanız `CloseAction` ve `OpenUrlAction` case'lerini eklemeyi unutmayın.
+:::
+## Flow ve paywall'lardan URL açma \{#open-urls-from-flows-and-paywalls\}
+
+:::tip
+Bir grup bağlantı eklemek istiyorsanız (ör. kullanım koşulları ve satın alma geri yükleme), builder'da bir **Link** öğesi ekleyin ve bunu **Open URL** eylemiyle düğmelerle aynı şekilde yönetin.
 :::
 
+Bir bağlantı açan düğme eklemek için (ör. **Terms of use** veya **Privacy policy**), builder'da bir düğme ekleyin, **Open URL** eylemini atayın ve açmak istediğiniz URL'yi girin.
+Varsayılan `flowViewDidPerformAction` implementasyonu URL'yi `AdaptyUI().openUrl` aracılığıyla yerel olarak açar; kontrol panelindeki uygulama içi veya harici tarayıcı ayarını dikkate alır. Bu nedenle herhangi bir kod yazmanız gerekmez.
+
+Varsayılan davranış çoğu durum için yeterlidir. URL'leri kendiniz açmak istiyorsanız handler'ı geçersiz kılın:
+```dart
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+    switch (action) {
+      case const CloseAction():
+        view.dismiss();
+        break;
+      case OpenUrlAction(url: final url):
+        // Open the URL in whatever way fits your app
+        break;
+      default:
+        break;
+    }
+}
+```
+
+## Uygulamaya giriş yapma \{#log-into-the-app\}
+
+Kullanıcıların uygulamanıza giriş yapmasını sağlayan bir buton eklemek için:
+
+1. Builder'da bir buton ekleyin ve **Login** aksiyonunu atayın.
+2. Uygulama kodunuzda, kullanıcınızı tanımlayan `login` aksiyonu için bir işleyici uygulayın.
+
+```dart
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+    switch (action) {
+      case CustomAction(action: 'login'):
+        // Navigate to your login screen in whatever way fits your app
+        break;
+      default:
+        break;
+    }
+}
+```
+## Özel eylemleri yönetme \{#handle-custom-actions\}
+
+Başka eylemleri yöneten bir buton eklemek için:
+
+1. Builder'da bir buton ekleyin, **Custom** eylemini atayın ve bir ID verin.
+2. Uygulama kodunuzda, oluşturduğunuz eylem ID'si için bir işleyici uygulayın.
+
+Örneğin, başka bir abonelik teklifleri veya tek seferlik satın alma seçenekleri setiniz varsa, başka bir flow veya paywall görüntüleyecek bir buton ekleyebilirsiniz:
+```dart
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+   switch (action) {
+     case CustomAction(action: 'openNewPaywall'):
+       // Display another flow or paywall
+       break;
+     default:
+       break;
+   }
+}
+```
+
+</SDKv4>
+
+<SDKv3>
+
+Adapty paywall builder kullanarak paywall oluşturuyorsanız, butonları doğru şekilde ayarlamak çok önemlidir:
+
+1. [Paywall builder'a bir buton ekleyin](paywall-buttons) ve bu butona mevcut bir eylem atayın ya da özel bir eylem ID'si oluşturun.
+2. Uygulamanızda, atadığınız her eylemi işleyecek kodu yazın.
+Bu rehber, kodunuzda özel ve mevcut aksiyonları nasıl ele alacağınızı gösterir.
+
+:::warning
+**Yalnızca satın almalar ve yenilemeler otomatik olarak işlenir.** Paywall'ları kapatma veya bağlantı açma gibi diğer tüm buton aksiyonları, uygulama kodunda uygun yanıtların uygulanmasını gerektirir.
+:::
 ## Paywall'ları kapatma \{#close-paywalls\}
 
 Paywall'ınızı kapatacak bir buton eklemek için:
@@ -56,7 +158,7 @@ Paywall'ınızdan link açan bir buton eklemek için (ör. **Kullanım Koşullar
 // You have to install url_launcher plugin in order to handle urls:
 // https://pub.dev/packages/url_launcher
 
-void paywallViewDidPerformAction(AdaptyUIView view, AdaptyUIAction action) {
+void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
     switch (action) {
       case OpenUrlAction(url: final url):
         final Uri uri = Uri.parse(url);
@@ -70,24 +172,22 @@ void paywallViewDidPerformAction(AdaptyUIView view, AdaptyUIAction action) {
 
 ## Uygulamaya giriş yapma \{#log-into-the-app\}
 
-Kullanıcıları uygulamanıza giriş yaptıracak bir buton eklemek için:
+Kullanıcıların uygulamanıza giriş yapmasını sağlayan bir buton eklemek için:
 
 1. Paywall builder'da bir buton ekleyin ve ona **Login** eylemini atayın.
-2. Uygulama kodunuzda, kullanıcınızı tanımlayan `login` eylemi için bir handler uygulayın.
+2. Uygulama kodunuzda, kullanıcıyı tanımlayan `login` eylemi için bir işleyici uygulayın.
 
 ```dart
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
     switch (action) {
       case CustomAction(action: 'login'):
-        // Handle login action
-        Navigator.of(context).push(MaterialPageRoute(builder: (context) => LoginScreen()));
+        // Navigate to your login screen in whatever way fits your app
         break;
       default:
         break;
     }
 }
 ```
-
 ## Özel eylemleri yönetme \{#handle-custom-actions\}
 
 Diğer eylemleri yönetecek bir buton eklemek için:
@@ -101,10 +201,12 @@ Diğer eylemleri yönetecek bir buton eklemek için:
 void paywallViewDidPerformAction(AdaptyUIPaywallView view, AdaptyUIAction action) {
    switch (action) {
      case CustomAction(action: 'openNewPaywall'):
-       // Display another paywall
+       // Başka bir paywall göster
        break;
      default:
        break;
    }
 }
 ```
+
+</SDKv3>

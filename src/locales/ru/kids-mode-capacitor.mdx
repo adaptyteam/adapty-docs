@@ -51,15 +51,43 @@ try {
 
 ### Конфигурация для отдельных платформ \{#platform-specific-configurations\}
 
-#### iOS: включение режима Kids Mode через CocoaPods \{#ios-enable-kids-mode-using-cocoapods\}
+#### iOS \{#ios\}
 
-Если вы используете CocoaPods для iOS, вы также можете включить Kids Mode на нативном уровне:
+<SDKv4>
 
-1. Обновите ваш Podfile:
+Даже если сбор IDFA отключён в коде (см. выше), ваш билд всё равно включает фреймворки `AdSupport` и `AppTrackingTransparency`. Категория Kids в App Store их не допускает. А поскольку SDK v4 устанавливает нативный iOS SDK через Swift Package Manager, убрать их через Podfile не получится.
 
-   - Если у вас **нет** секции `post_install`, добавьте весь блок кода ниже целиком.
-   - Если у вас **есть** секция `post_install`, добавьте в неё выделенные строки.
-```ruby showLineNumbers title="Podfile"
+Чтобы соответствовать требованиям Apple, добавьте команду `adapty-kids-mode`, поставляемую вместе с SDK, в `postinstall` вашего приложения. Она включает трейт `KidsMode` в SDK, который исключает этот код из компиляции. Команда применяется заново при каждой установке:
+
+```json showLineNumbers title="package.json"
+{
+  "scripts": {
+    "postinstall": "adapty-kids-mode"
+  }
+}
+```
+
+Затем переустановите и пересоберите iOS-пакеты, после чего выполните сборку в **Xcode 26** или новее:
+
+```sh showLineNumbers title="Shell"
+npm install
+npx cap sync ios
+```
+
+Чтобы отключить Kids Mode, выполните `adapty-kids-mode disable` и синхронизируйте проект снова.
+
+</SDKv4>
+
+<SDKv3>
+
+Если вы используете CocoaPods для iOS, Kids Mode можно также включить на нативном уровне:
+
+1. Обновите Podfile:
+
+- Если у вас **нет** раздела `post_install`, добавьте весь блок кода ниже.
+   - Если раздел `post_install` у вас **есть**, добавьте в него выделенные строки.
+
+   ```ruby showLineNumbers title="Podfile"
    def adapty_enable_kids_mode(installer)
      installer.pods_project.targets.each do |target|
        next unless target.name == 'Adapty'
@@ -77,43 +105,8 @@ try {
        File.write(xc, File.read(xc).gsub(/\s*-framework\s+"?AdSupport"?/, ''))
      end
    end
-```groovy showLineNumbers title="build.gradle"
-   android {
-       defaultConfig {
-           manifestPlaceholders = [
-               AdaptyKidsMode: "true"
-           ]
-       }
-   }
-   ```
 
-## Disable Kids Mode \{#disable-kids-mode\}
-
-If you need to disable Kids Mode...
-```
-
-Переведи следующий MDX-документ с английского на русский (ru-RU):
-
-```mdx
-  post_install do |installer|
-     # ... keep your existing post_install body (Flutter adds one automatically) ...
-
-     adapty_enable_kids_mode(installer)   # <-- enable Adapty Kids Mode
-   end
-   ```
-
-2. Run the following command to apply the changes:
-
-   ```sh showLineNumbers title="Shell"
-   pod install
-   ```
-
-#### Android: Enable Kids Mode using Gradle
-
-For Android, you can also enable Kids Mode at the native level by adding the following to your app's `build.gradle`:
-```
-
-  post_install do |installer|
+   post_install do |installer|
      # ... keep your existing post_install body (Flutter adds one automatically) ...
 
      adapty_enable_kids_mode(installer)   # <-- enable Adapty Kids Mode
@@ -126,18 +119,28 @@ For Android, you can also enable Kids Mode at the native level by adding the fol
    pod install
    ```
 
-#### Android: включение Kids Mode через Gradle \{#android-enable-kids-mode-using-gradle\}
+</SDKv3>
 
-Для Android Kids Mode также можно включить на нативном уровне, добавив следующее в `build.gradle` вашего приложения:
-```groovy showLineNumbers title="android/app/build.gradle"
-android {
-    defaultConfig {
-        // ... existing config ...
+#### Android: удаление разрешения на рекламный идентификатор \{#android-remove-the-advertising-id-permission\}
 
-        // Enable Kids Mode
-        buildConfigField "boolean", "ADAPTY_KIDS_MODE", "true"
-    }
-}
+Установка `adIdCollectionDisabled: true` (выше) останавливает сбор рекламного идентификатора в Adapty, однако SDK по-прежнему объявляет разрешение `AD_ID`. Если ваше приложение ориентировано **исключительно** на детей и компилируется под Android 13 (API 33) или выше, Google Play запрещает его запрашивать.
+
+Добавьте два элемента в тег `<manifest>`:
+
+1. Объявите пространство имён `tools` (в манифесте Capacitor по умолчанию оно отсутствует).
+2. Добавьте запись `<uses-permission>` для `AD_ID` с атрибутом `tools:node="remove"`, чтобы удалить его.
+
+```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
+
+    <!-- your existing manifest content -->
+</manifest>
 ```
 
 ## Следующие шаги \{#next-steps\}

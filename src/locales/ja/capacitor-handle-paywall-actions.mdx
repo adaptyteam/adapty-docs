@@ -1,29 +1,118 @@
 ---
-title: "Capacitor SDKでボタンアクションに応答する"
-description: "CapacitorでAdaptyを使用してペイウォールのボタンアクションを処理し、アプリの収益化を改善します。"
-metadataTitle: "ペイウォールのボタンアクションを処理する | Adapty ドキュメント"
+title: "フローのアクションに応答する - Capacitor"
+description: "AdaptyのCapacitorを使用して、フローやペイウォールのボタンアクションを処理し、アプリの収益化を向上させましょう。"
+metadataTitle: "フローのアクションに応答する - Capacitor | Adapty ドキュメント"
 toc_max_heading_level: 4
-keywords: ['ペイウォールボタン', 'ボタン', 'ペイウォールボタンアクション', 'アクションを処理する']
+keywords: ['ペイウォールボタン', 'ボタン', 'ペイウォールボタンアクション', 'アクションの処理']
 ---
 
-Adaptyのペイウォールビルダーを使ってペイウォールを構築する場合、ボタンを正しく設定することが重要です：
+<SDKv4>
 
-1. [ペイウォールビルダーにボタンを追加し](paywall-buttons)、既存のアクションを割り当てるか、カスタムアクションIDを作成します。
+Adaptyの[フロービルダー](adapty-flow-builder)や[ペイウォールビルダー](adapty-paywall-builder)を使ってフローやペイウォールを構築している場合、ボタンを適切に設定することが重要です。
+1. [ビルダーでボタンを追加](paywall-buttons)し、既存のアクションを割り当てるか、カスタムアクション ID を作成します。
 2. 割り当てた各アクションを処理するコードをアプリに記述します。
 
-このガイドでは、コード内でカスタムアクションや既存のアクションを処理する方法を説明します。
+このガイドでは、カスタムアクションおよび既存アクションをコードで処理する方法を説明します。
 
+:::warning
+**購入、復元、フローとペイウォールのクローズ、URL のオープンは自動的に処理されます。** デフォルトの動作をカスタマイズしたり、カスタムアクションに対するレスポンスを実装したりできます。
+:::
+
+:::note
+イベントのハンドラーを設定すると、そのデフォルトの動作が完全に置き換えられます。設定しないハンドラーはデフォルトの動作を維持します。
+:::
+## フローとペイウォールを閉じる \{#close-flows-and-paywalls\}
+
+フローやペイウォールを閉じるボタンを追加するには：
+
+1. ビルダーでボタンを追加し、**Close** アクションを割り当てます。
+2. アプリのコードで、フローやペイウォールを閉じる `close` アクションのハンドラーを実装します。
+
+:::info
+Capacitor SDK では、`close` アクションはデフォルトでフローまたはペイウォールを閉じます。ただし、必要に応じてコード内でこの動作をオーバーライドできます。たとえば、あるフローを閉じると同時に別のフローを開くといった実装が可能です。
+:::
+```typescript showLineNumbers
+
+const view = await createFlowView(flow);
+
+const unsubscribe = await view.setEventHandlers({
+  onCloseButtonPress() {
+    return true; // allow the flow to close
+  },
+});
+```
+
+Androidでは、システムの **Back** ボタンとバックジェスチャーが別の `onAndroidSystemBack` イベントをトリガーします。SDK v4では、デフォルトでフローを閉じなくなりました。**Back** ボタンでフローを閉じたい場合は、ハンドラーから `true` を返してください：
+```typescript showLineNumbers
+const unsubscribe = await view.setEventHandlers({
+  onAndroidSystemBack() {
+    return true; // close the flow when the Back button is pressed
+  },
+});
+```
+
+## フローおよびペイウォールからURLを開く \{#open-urls-from-flows-and-paywalls\}
+
+:::tip
+リンクをまとめて追加したい場合（利用規約や購入の復元など）は、ビルダーで **Link** 要素を追加し、**Open URL** アクションを持つボタンと同じ方法で処理してください。
+:::
+
+フローやペイウォールにリンクを開くボタンを追加するには（**Terms of use** や **Privacy policy** など）：
+
+1. ビルダーでボタンを追加し、**Open URL** アクションを割り当てて、開きたいURLを入力します。
+2. 必要に応じて、アプリのコードに `openUrl` アクションのハンドラーを実装し、受け取ったURLを独自の方法で開きます。
+:::info
+Capacitor SDKでは、URLをタップするとデフォルトでネイティブブラウザで開きます。SDKは`adapty.openWebUrl({ url, openIn })`を呼び出し、ビルダーで設定した**Open in**オプションに従いつつ、フローを開いたままにします。ただし、必要に応じてコードでこの動作を上書きすることも可能です。
+:::
+
+```typescript showLineNumbers
+
+const unsubscribe = await view.setEventHandlers({
+  onUrlPress(url) {
+    // Open the URL your own way, e.g. with the Capacitor Browser plugin
+    Browser.open({ url });
+    return false; // keep the flow open
+  },
+});
+```
+## カスタムアクションを処理する \{#handle-custom-actions\}
+
+他のアクションを処理するボタンを追加するには:
+
+1. ビルダーでボタンを追加し、**Custom** アクションを割り当てて、IDを設定します。
+2. アプリのコードで、作成したアクションIDのハンドラーを実装します。
+
+たとえば、別のサブスクリプションオファーや買い切り購入がある場合、別のフローやペイウォールを表示するボタンを追加できます:
+
+```typescript showLineNumbers
+const unsubscribe = await view.setEventHandlers({
+  onCustomAction(actionId) {
+    if (actionId === 'openNewPaywall') {
+      // Display another flow or paywall
+    }
+  },
+});
+```
+</SDKv4>
+
+<SDKv3>
+
+Adapty ペイウォールビルダーを使ってペイウォールを作成する場合、ボタンを適切に設定することが重要です。
+
+1. [ペイウォールビルダーにボタンを追加し](paywall-buttons)、既存のアクションを割り当てるか、カスタムアクション ID を作成します。
+2. 割り当てた各アクションを処理するコードをアプリに記述します。
+
+このガイドでは、コード内でカスタムアクションおよび既存アクションを処理する方法を説明します。
 ## ペイウォールを閉じる \{#close-paywalls\}
 
 ペイウォールを閉じるボタンを追加するには：
 
 1. ペイウォールビルダーでボタンを追加し、**Close** アクションを割り当てます。
-2. アプリのコードに、ペイウォールを閉じる `close` アクションのハンドラーを実装します。
+2. アプリのコードで、ペイウォールを閉じる `close` アクションのハンドラーを実装します。
 
 :::info
-Capacitor SDKでは、`close` アクションはデフォルトでペイウォールを閉じる動作をトリガーします。ただし、必要に応じてコードでこの動作をオーバーライドできます。たとえば、あるペイウォールを閉じたときに別のペイウォールを開くようにすることもできます。
+Capacitor SDK では、`close` アクションはデフォルトでペイウォールを閉じる動作をトリガーします。ただし、必要に応じてコードでこの動作をオーバーライドできます。たとえば、あるペイウォールを閉じたときに別のペイウォールを開くようにすることも可能です。
 :::
-
 ```typescript showLineNumbers
 
 const view = await createPaywallView(paywall);
@@ -39,16 +128,15 @@ const unsubscribe = view.setEventHandlers({
 ## ペイウォールからURLを開く \{#open-urls-from-paywalls\}
 
 :::tip
-リンクのグループ（利用規約や購入の復元など）を追加したい場合は、ペイウォールビルダーで **Link** 要素を追加し、**Open URL** アクションが割り当てられたボタンと同じ方法で処理してください。
+リンクのグループ（利用規約や購入の復元など）を追加したい場合は、ペイウォールビルダーで **Link** 要素を追加し、**Open URL** アクションが設定されたボタンと同じ方法で処理してください。
 :::
 
-ペイウォールからリンクを開くボタン（**Terms of use** や **Privacy policy** など）を追加するには：
+ペイウォールにリンクを開くボタン（**Terms of use** や **Privacy policy** など）を追加するには：
 
 1. ペイウォールビルダーでボタンを追加し、**Open URL** アクションを割り当てて、開きたいURLを入力します。
-2. アプリのコードに、受け取ったURLをブラウザで開く `openUrl` アクションのハンドラーを実装します。
-
+2. アプリのコードで、受け取ったURLをブラウザで開く `openUrl` アクションのハンドラーを実装します。
 :::info
-Capacitor SDKでは、`window.open` アクションはデフォルトでURLを開く動作をトリガーします。ただし、必要に応じてコードでこの動作をオーバーライドできます。
+Capacitor SDK では、`window.open` アクションはデフォルトで URL を開く動作をします。ただし、必要に応じてコード内でこの動作をオーバーライドできます。
 :::
 
 ```typescript showLineNumbers
@@ -62,13 +150,12 @@ const unsubscribe = view.setEventHandlers({
   },
 });
 ```
-
 ## アプリにログインする \{#log-into-the-app\}
 
 ユーザーをアプリにログインさせるボタンを追加するには：
 
 1. ペイウォールビルダーでボタンを追加し、**Login** アクションを割り当てます。
-2. アプリのコードに、ユーザーを識別する `login` アクションのハンドラーを実装します。
+2. アプリのコードで、ユーザーを識別する `login` アクションのハンドラーを実装します。
 
 ```typescript showLineNumbers
 
@@ -83,12 +170,11 @@ const unsubscribe = view.setEventHandlers({
   }
 });
 ```
-
 ## カスタムアクションを処理する \{#handle-custom-actions\}
 
 その他のアクションを処理するボタンを追加するには：
 
-1. ペイウォールビルダーでボタンを追加し、**Custom** アクションを割り当てて、IDを設定します。
+1. ペイウォールビルダーでボタンを追加し、**Custom** アクションを割り当て、IDを設定します。
 2. アプリのコードに、作成したアクションIDのハンドラーを実装します。
 
 たとえば、別のサブスクリプションオファーや買い切り購入がある場合、別のペイウォールを表示するボタンを追加できます：
@@ -98,8 +184,9 @@ const unsubscribe = view.setEventHandlers({
   onCustomAction(actionId) {
     if (actionId === 'openNewPaywall') {
       // Display another paywall
-      console.log('User requested new paywall');
     }
   },
 });
 ```
+
+</SDKv3>

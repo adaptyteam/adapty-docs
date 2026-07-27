@@ -1,33 +1,205 @@
 ---
-title: "Flutter SDK'da Paywall Builder paywall'larını ve konfigürasyonlarını getirme"
-description: "Flutter'da Adapty ile PB paywall'larını nasıl alacağınızı öğrenin."
-metadataTitle: "Adapty'de PB Paywall'larını Getirme | Adapty Dokümanları"
+title: "Flow'ları ve paywall'ları getir - Flutter"
+description: "Flutter uygulamanızda Adapty'den flow'ları ve paywall'ları çekin."
+metadataTitle: "Flow'ları ve Paywall'ları Getir - Flutter | Adapty Dokümanları"
 displayed_sidebar: sdkflutter
-keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+keywords: ['getFlow', 'getPaywall', 'createFlowView', 'createPaywallView', 'getFlowForDefaultAudience', 'getPaywallForDefaultAudience']
 rank: 85
 ---
 
 import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
 
-Adapty Kontrol Paneli'ndeki yeni Paywall Builder ile [paywall'ınızın görsel kısmını tasarladıktan](adapty-paywall-builder) sonra, bunu mobil uygulamanızda gösterebilirsiniz. Bu sürecin ilk adımı, aşağıda açıklandığı gibi placement ile ilişkili paywall'ı ve görünüm konfigürasyonunu almaktır.
+<SDKv4>
 
+<MethodPromo method="getFlow" />
+[Flow veya Paywall Builder paywallınızı tasarladıktan](adapty-paywall-builder) sonra, bunu mobil uygulamanızda gösterebilirsiniz. İlk adım, aşağıda açıklandığı gibi placement ile ilişkili flow veya paywall'ı ve görünüm yapılandırmasını almaktır.
+
+Bu konunun flow'lar ve Paywall Builder ile özelleştirilmiş paywalllar için geçerli olduğunu unutmayın. Paywalllarınızı manuel olarak uyguluyorsanız, lütfen [Mobil uygulamanızda remote config paywalllar için paywallları ve ürünleri getirme](fetch-paywalls-and-products-flutter) konusuna bakın.
+
+<SampleApp />
+<details>
+   <summary>Mobil uygulamanızda flow ve paywallları görüntülemeye başlamadan önce (genişletmek için tıklayın)</summary>
+
+1. Adapty Kontrol Paneli'nde [ürünlerinizi oluşturun](create-product).
+2. Adapty Kontrol Paneli'nde [bir flow/paywall oluşturun ve ürünleri ekleyin](create-paywall).
+3. Adapty Kontrol Paneli'nde [placement'lar oluşturun ve flow/paywall'ınızı ekleyin](create-placement).
+4. Mobil uygulamanıza [Adapty SDK](sdk-installation-flutter)'yı yükleyin.
+</details>
+## Flow/paywall getir \{#fetch-flowpaywall\}
+
+Flow Builder veya Paywall Builder ile bir flow veya paywall tasarladıysanız, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Bu tür bir flow veya paywall, içinde neyin ve nasıl gösterileceğini zaten içerir. Yine de placement aracılığıyla ID'sini, görünüm konfigürasyonunu almanız ve ardından mobil uygulamanızda sunmanız gerekir.
+Flow veya paywall'ı mümkün olduğunca erken — ideally sunarken değil, çok daha önce — çekin ve [görünümünü](flutter-get-pb-paywalls#fetch-the-view-configuration) oluşturun. `createFlowView` metodu görünüm yapılandırmasını yükler ve arka planda görselleri indirip önbelleğe almaya başlar. Bu metodu ne kadar erken çağırırsanız, indirmelerin tamamlanması için o kadar fazla zaman olur. Flow veya paywall'ı sunduğunuzda, yapılandırma ve görseller zaten önbellekte hazır olabilir.
+
+Bir flow veya paywall almak için `getFlow` metodunu kullanın:
+```dart showLineNumbers
+try {
+  final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
+  // istenen flow/paywall
+} on AdaptyError catch (adaptyError) {
+  // hatayı işle
+} catch (e) {
+  // hatayı işle
+}
+```
+
+Parametreler:
+| Parametre | Varlık | Açıklama |
+|---------|--------|-----------|
+| **placementId** | zorunlu | İstenen [Placement](placements)'ın tanımlayıcısı. Bu, Adapty Kontrol Paneli'nde bir placement oluştururken belirttiğiniz değerdir. |
+| **fetchPolicy** | varsayılan: `.reloadRevalidatingCacheData` | <p>SDK varsayılan olarak sunucudan veri yüklemeye çalışır; başarısız olursa önbelleğe alınmış veriyi döndürür. Kullanıcılarınızın her zaman en güncel veriye erişmesini sağladığı için bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internet bağlantısıyla karşılaştığını düşünüyorsanız, önbellekte veri varsa onu döndürmek için `.returnCacheDataElseLoad` kullanmayı değerlendirebilirsiniz. Bu senaryoda kullanıcılar en son veriye ulaşamayabilir; ancak internet bağlantısı ne kadar kesintili olursa olsun daha hızlı yükleme süreleri yaşarlar. Önbellek düzenli olarak güncellenir, bu nedenle oturum süresince ağ isteklerini azaltmak için güvenle kullanılabilir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında silinmediğini; yalnızca uygulama kaldırılıp yeniden yüklendiğinde veya manuel temizleme yapıldığında sıfırlandığını unutmayın.</p><p></p><p>Adapty SDK, paywallları yerel olarak iki katmanda depolar: yukarıda açıklanan düzenli olarak güncellenen önbellek ve [yedek paywalllar](fallback-paywalls). Paywallları daha hızlı getirmek için CDN, CDN'e erişilemediği durumlarda ise bağımsız bir yedek sunucu kullanırız. Bu sistem, internet bağlantısının yetersiz olduğu durumlarda dahi güvenilirliği korurken her zaman paywalllarınızın en güncel sürümünü almanızı sağlamak için tasarlanmıştır.</p> |
+| **loadTimeout** | varsayılan: 5 sn | <p>Bu metodun zaman aşımını sınırlayan bir `Duration` değeri. Zaman aşımına ulaşıldığında önbelleğe alınmış veri veya yerel yedek döndürülür.</p><p>Nadir durumlarda bu metodun `loadTimeout`'ta belirtilenden biraz daha geç zaman aşımına uğrayabileceğini unutmayın; çünkü işlem arka planda farklı isteklerden oluşuyor olabilir.</p> |
+## Yanıt parametreleri \{#response-parameters\}
+| Parametre | Açıklama                                                                                                                                                                            |
+| :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Flow   | Flow'un tanımlayıcılarını (`instanceIdentity`, `variationId`), adını, placement'ını, paywall varyasyonlarını (`paywalls`) ve remote config'leri (`remoteConfigs`) içeren bir `AdaptyFlow` nesnesi. |
+## View konfigürasyonunu getirme \{#fetch-the-view-configuration\}
+
+:::important
+Builder'da **Show on device** geçiş düğmesini etkinleştirdiğinizden emin olun. Bu seçenek açık değilse, view konfigürasyonu getirilemez.
+:::
+Eğer placement **Flow Builder** veya **Paywall Builder** ile tasarlandıysa, Adapty kullanıcı arayüzünü sizin için oluşturur — alınan flow'un `hasViewConfiguration` özelliği `true` olur. `createFlowView` ile görünümü oluşturun, ardından [flow veya paywall'ı gösterin](flutter-present-paywalls). Eğer placement, Builder arayüzü olmayan özel bir paywall ise (`hasViewConfiguration` değeri `false`), bunun yerine [remote config paywall olarak ele alın](present-remote-config-paywalls-flutter).
 :::warning
-Yeni Paywall Builder, Flutter SDK 3.3.0 veya daha yüksek sürümüyle çalışır.
+`createFlowView` metodunun sonucu yalnızca bir kez sunulabilir. Tekrar sunmanız gerekiyorsa `createFlowView` metodunu yeniden çağırın.
 :::
 
-Bu konunun Paywall Builder ile özelleştirilmiş paywall'lara atıfta bulunduğunu lütfen unutmayın. Paywall'larınızı manuel olarak uyguluyorsanız, [Mobil uygulamanızda remote config paywall'ları için paywall'ları ve ürünleri getirme](fetch-paywalls-and-products-flutter) konusuna başvurun.
+```dart showLineNumbers
+
+try {
+  final view = await AdaptyUI().createFlowView(flow: flow);
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+Parametreler:
+| Parametre            | Zorunluluk | Açıklama                                                  |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **flow**             | zorunlu | İstenen flow/paywall için bir görünüm elde etmek üzere kullanılan `AdaptyFlow` nesnesi. |
+| **customTags**       | opsiyonel | Özel etiketlerin ve çözümlenmiş değerlerinin bir haritasını tanımlar. Özel etiketler içerikte yer tutucu işlevi görerek flow/paywall içindeki kişiselleştirilmiş içerik için belirli dizelerle dinamik olarak değiştirilir. Daha fazla ayrıntı için [Paywall Builder'da özel etiketler](custom-tags-in-paywall-builder) konusuna bakın. |
+| **preloadProducts** | opsiyonel | Ekranda ürünlerin gösterilme zamanlamasını optimize etmek için etkinleştirin. `true` olduğunda AdaptyUI gerekli ürünleri otomatik olarak getirir. Varsayılan: `false`. |
+| **loadTimeout** | opsiyonel | Görünüm yapılandırmasının yüklenme süresini sınırlayan bir `Duration`. Zaman aşımına ulaşıldığında önbelleğe alınmış veriler veya yerel yedek kullanılır. |
+:::note
+Birden fazla dil kullanıyorsanız, [flow yerelleştirmesi eklemeyi](add-paywall-locale-in-adapty-paywall-builder) ve yerel ayar kodlarını doğru kullanmayı [buradan](flutter-localizations-and-locale-codes) öğrenin.
+:::
+
+Görünümü elde ettikten sonra, [flow/paywall'ı gösterin](flutter-present-paywalls).
+## Varsayılan kitle için bir flow veya paywall alın, daha hızlı getirmek için \{#get-a-flow-or-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Genellikle flow'lar ve paywall'lar neredeyse anında getirilir, bu yüzden bu süreci hızlandırmak için endişelenmenize gerek yoktur. Ancak çok sayıda kitle ve placement'a sahip olduğunuz ve kullanıcılarınızın zayıf bir internet bağlantısı bulunduğu durumlarda, bir flow veya paywall getirmek istediğinizden daha uzun sürebilir. Bu gibi durumlarda, hiçbir şey göstermek yerine sorunsuz bir kullanıcı deneyimi sağlamak amacıyla varsayılan bir flow veya paywall görüntülemek isteyebilirsiniz.
+Bunu çözmek için, belirtilen placement'ın **Tüm Kullanıcılar** kitlesi için flow veya paywall'ı getiren `getFlowForDefaultAudience` metodunu kullanabilirsiniz. Ancak önerilen yaklaşımın, yukarıdaki [Flow/paywall getirme](#fetch-flowpaywall) bölümünde ayrıntılı olarak açıklandığı üzere, `getFlow` metoduyla flow veya paywall getirmek olduğunu anlamak kritik önem taşır.
+
+:::warning
+Neden `getFlow` kullanmanızı öneriyoruz
+
+`getFlowForDefaultAudience` metodunun birkaç önemli dezavantajı vardır:
+- **Olası geriye dönük uyumluluk sorunları**: Farklı uygulama sürümleri (mevcut ve gelecekteki) için farklı paywall'lar göstermeniz gerekiyorsa, bazı zorluklarla karşılaşabilirsiniz. Ya mevcut (eski) sürümü destekleyen paywall'lar tasarlamanız gerekecek ya da mevcut (eski) sürümdeki kullanıcıların render edilemeyen paywall'larla karşılaşabileceğini kabul etmek durumunda kalacaksınız.
+- **Hedefleme kaybı**: Tüm kullanıcılar **All Users** kitlesi için tasarlanmış aynı paywall'ı görecektir; bu da kişiselleştirilmiş hedeflemeyi (ülkelere, pazarlama attribution'ına veya kendi özel özelliklerinize göre) kaybetmeniz anlamına gelir.
+Bu dezavantajları kabul etmeye hazırsanız ve daha hızlı flow veya paywall yüklemenin avantajlarından yararlanmak istiyorsanız, `getFlowForDefaultAudience` yöntemini aşağıdaki gibi kullanın. Aksi takdirde [yukarıda](#fetch-flowpaywall) açıklanan `getFlow` yöntemini kullanmaya devam edin.
+:::
+
+```dart showLineNumbers
+try {
+  final flow = await Adapty().getFlowForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
+  // the requested flow/paywall
+} on AdaptyError catch (adaptyError) {
+  // handle error
+} catch (e) {
+  // handle unknown error
+}
+```
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|-----------|
+| **placementId** | zorunlu | [Placement](placements) tanımlayıcısı. Adapty Kontrol Paneli'nde bir placement oluştururken belirttiğiniz değerdir. |
+| **fetchPolicy** | varsayılan: `.reloadRevalidatingCacheData` | <p>SDK varsayılan olarak sunucudan veri yüklemeye çalışır; başarısız olursa önbellekteki veriyi döndürür. Bu seçeneği öneriyoruz çünkü kullanıcılarınızın her zaman en güncel verilere ulaşmasını sağlar.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internet bağlantısıyla karşılaştığını düşünüyorsanız, önbellekte veri varsa onu döndürmek için `.returnCacheDataElseLoad` kullanmayı değerlendirin. Bu senaryoda kullanıcılar her zaman en son verilere ulaşamayabilir; ancak internet bağlantısı ne kadar zayıf olursa olsun daha hızlı yükleme süreleri yaşarlar. Önbellek düzenli olarak güncellenir, bu nedenle ağ isteklerini azaltmak amacıyla oturum boyunca kullanmak güvenlidir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında silinmediğini, yalnızca uygulama kaldırılıp yeniden yüklendiğinde veya manuel temizlik yapıldığında temizlendiğini unutmayın.</p> |
+## Öğeleri özelleştir \{#customize-assets\}
+
+Flow/paywall'ınızdaki görsel ve videoları özelleştirmek için özel öğeleri uygulayın.
+
+Hero görseller ve videolar önceden tanımlanmış ID'lere sahiptir: `hero_image` ve `hero_video`. Özel bir öğe paketinde, bu öğeleri ID'leri üzerinden hedefleyerek davranışlarını özelleştirirsiniz.
+
+Diğer görseller ve videolar için Adapty kontrol panelinde [özel bir ID belirlemeniz](custom-media) gerekir.
+
+Örneğin şunları yapabilirsiniz:
+
+- Bazı kullanıcılara farklı bir görsel veya video gösterme.
+- Uzak ana görsel yüklenirken yerel bir önizleme görseli gösterme.
+- Video başlamadan önce bir önizleme görseli gösterme.
+Here's an example of how you can provide custom assets via a simple dictionary:
+```dart
+
+final customAssets = {
+    // Show a local image using a custom ID
+    'custom_image': AdaptyCustomAsset.localImageAsset(
+        assetId: 'assets/images/image_name.png',
+    ),
+
+    // Show a local video with a preview image
+    'hero_video': AdaptyCustomAsset.localVideoAsset(
+        assetId: 'assets/videos/custom_video.mp4',
+    ),
+};
+
+try {
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+    customAssets: customAssets,
+  );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+:::note
+Bir varlık bulunamazsa, flow/paywall varsayılan görünümüne geri döner.
+:::
+## Geliştirici tanımlı zamanlayıcıları ayarlama \{#set-up-developer-defined-timers\}
+
+Mobil uygulamanızda özel zamanlayıcılar kullanmak için `createFlowView` metoduna bir `customTimers` map'i geçirin. Her map anahtarı bir zamanlayıcı ID'si, değeri ise zamanlayıcının ne zaman sona ereceğini tanımlayan bir `DateTime` nesnesidir. İşte bir örnek:
+```dart showLineNumbers
+
+try {
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+    customTimers: {
+      'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
+      'CUSTOM_TIMER_NY': DateTime(2027, 1, 1), // New Year 2027
+    },
+  );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+Bu örnekte, `CUSTOM_TIMER_NY` ve `CUSTOM_TIMER_6H`, Adapty Kontrol Paneli'nde ayarladığınız geliştirici tanımlı zamanlayıcıların **Timer ID**'leridir. `customTimers` haritası, uygulamanızın her zamanlayıcıyı doğru değerle dinamik olarak güncellemesini sağlar. Örneğin:
+
+- `CUSTOM_TIMER_NY`: Zamanlayıcının bitiş zamanına (örneğin Yılbaşı Günü) kalan süre.
+- `CUSTOM_TIMER_6H`: Kullanıcının flow'u açtığı andan itibaren başlayan 6 saatlik sürede kalan zaman.
+
+</SDKv4>
+
+<SDKv3>
+[Adapty Kontrol Paneli'nde yeni Paywall Builder ile paywall'ınızın görsel kısmını tasarladıktan](adapty-paywall-builder) sonra, onu mobil uygulamanızda görüntüleyebilirsiniz. Bu süreçteki ilk adım, aşağıda açıklandığı gibi placement ile ilişkili paywall'ı ve görünüm yapılandırmasını almaktır.
+
+:::warning
+Yeni Paywall Builder, Flutter SDK 3.3.0 veya daha yüksek sürümlerle çalışır.
+:::
+Lütfen bu konunun Paywall Builder ile özelleştirilmiş paywall'lara atıfta bulunduğunu unutmayın. Paywall'larınızı manuel olarak uyguluyorsanız, [Mobil uygulamanızda remote config paywall'ları için paywall ve ürünleri getirin](fetch-paywalls-and-products-flutter) konusuna bakın.
 
 <SampleApp />
 
 <details>
-   <summary>Mobil uygulamanızda paywall'ları göstermeye başlamadan önce (genişletmek için tıklayın)</summary>
-
-   1. Adapty Kontrol Paneli'nde [ürünlerinizi oluşturun](create-product).
-2. Adapty Kontrol Paneli'nde [bir paywall oluşturun ve ürünleri buna ekleyin](create-paywall).
-3. Adapty Kontrol Paneli'nde [placement'lar oluşturun ve paywall'ınızı buna ekleyin](create-placement).
-4. Mobil uygulamanıza [Adapty SDK](sdk-installation-flutter)'yı yükleyin.
+   <summary>Mobil uygulamanızda paywall'ları görüntülemeye başlamadan önce (genişletmek için tıklayın)</summary>
+1. Adapty Kontrol Paneli'nde [ürünlerinizi oluşturun](create-product).
+2. Adapty Kontrol Paneli'nde [bir paywall oluşturun ve ürünleri ekleyin](create-paywall).
+3. Adapty Kontrol Paneli'nde [placement'lar oluşturun ve paywallınızı ekleyin](create-placement).
+4. Mobil uygulamanıza [Adapty SDK](sdk-installation-flutter)'yı kurun.
 </details>
-
 ## Paywall Builder ile tasarlanan paywall'ı getirme \{#fetch-paywall-designed-with-paywall-builder\}
 
 [Paywall Builder kullanarak bir paywall tasarladıysanız](adapty-paywall-builder), bunu kullanıcıya göstermek için mobil uygulama kodunuzda render etme konusunda endişelenmenize gerek yok. Bu tür bir paywall, paywall içinde ne gösterileceğini ve nasıl gösterileceğini içerir. Bununla birlikte, placement aracılığıyla kimliğini, görünüm konfigürasyonunu almanız ve ardından mobil uygulamanızda sunmanız gerekir.
@@ -139,8 +311,7 @@ Diğer görseller ve videolar için Adapty kontrol panelinde [özel bir kimlik a
 Bu özelliği kullanmak için Adapty Flutter SDK'yı 3.8.0 veya daha yüksek bir sürüme güncelleyin.
 :::
 
-Basit bir sözlük aracılığıyla özel varlıklar sağlamanın bir örneği:
-
+İşte basit bir sözlük aracılığıyla özel varlıkları nasıl sağlayabileceğinize dair bir örnek:
 ```dart
 
 final customAssets = {
@@ -156,15 +327,14 @@ final customAssets = {
 };
 
 try {
-    final view = await AdaptyUI().createPaywallView(
-        paywall: paywall,
-        customAssets: <CUSTOM_ASSETS>,
-        preloadProducts: preloadProducts,
-        );
-    } on AdaptyError catch (e) {
-        // handle the error
-    } catch (e) {
-// handle the error
+  final view = await AdaptyUI().createPaywallView(
+    paywall: paywall,
+    customAssets: customAssets,
+  );
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
 }
 ```
 
@@ -174,8 +344,7 @@ Bir varlık bulunamazsa, paywall varsayılan görünümüne geri döner.
 
 ## Geliştirici tanımlı zamanlayıcıları ayarlama \{#set-up-developer-defined-timers\}
 
-Mobil uygulamanızda özel zamanlayıcılar kullanmak için `AdaptyTimerResolver` protokolünü izleyen bir nesne oluşturun. Bu nesne, her özel zamanlayıcının nasıl render edileceğini tanımlar. İsterseniz, bu protokole zaten uygun olduğundan doğrudan bir `[String: Date]` sözlüğü kullanabilirsiniz. İşte bir örnek:
-
+Mobil uygulamanızda özel zamanlayıcılar kullanmak için `createPaywallView` metoduna bir `customTimers` haritası geçirin. Haritadaki her anahtar bir zamanlayıcı ID'sidir ve değeri zamanlayıcının ne zaman sona ereceğini tanımlayan bir `DateTime` nesnesidir. İşte bir örnek:
 ```dart showLineNumbers
 
 try {
@@ -193,7 +362,9 @@ try {
 }
 ```
 
-Bu örnekte, `CUSTOM_TIMER_NY` ve `CUSTOM_TIMER_6H`, Adapty Kontrol Paneli'nde ayarladığınız geliştirici tanımlı zamanlayıcıların **Timer ID**'leridir. `timerResolver`, uygulamanızın her zamanlayıcıyı doğru değerle dinamik olarak güncellemesini sağlar. Örneğin:
+Bu örnekte, `CUSTOM_TIMER_NY` ve `CUSTOM_TIMER_6H`, Adapty Kontrol Paneli'nde ayarladığınız geliştirici tanımlı zamanlayıcıların **Timer ID**'leridir. `customTimers` haritası, uygulamanızın her zamanlayıcıyı doğru değerle dinamik olarak güncellemesini sağlar. Örneğin:
 
-- `CUSTOM_TIMER_NY`: Zamanlayıcının bitimine kalan süre, örneğin Yılbaşı Günü.
+- `CUSTOM_TIMER_NY`: Yeni Yıl Günü gibi zamanlayıcının bitiş anına kadar kalan süre.
 - `CUSTOM_TIMER_6H`: Kullanıcının paywall'ı açtığı andan itibaren başlayan 6 saatlik sürede kalan zaman.
+
+</SDKv3>

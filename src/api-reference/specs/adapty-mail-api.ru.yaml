@@ -1,0 +1,364 @@
+openapi: 3.1.0
+info:
+  title: Adapty Mail API
+  version: 1.0.0
+  description: |
+    Adapty Mail API позволяет отправлять профили пользователей и события транзакций в Adapty Mail напрямую
+    с вашего сервера, без передачи данных через SDK.
+
+    Используйте его для:
+
+    - Добавления подписчиков, если у вас ещё нет базы в Adapty Mail.
+    - Повторного использования базы подписчиков из других ваших приложений.
+    - Передачи данных в Adapty Mail в режиме server-to-server, когда ваш бэкенд является источником данных.
+
+    Профиль с email достаточен для флоу **never purchased**. Все остальные флоу
+    (renewal cancelled, billing issue, expired, refunded) основаны на истории покупок, поэтому для таких
+    профилей также необходимо передавать события транзакций, чтобы они попали в нужный флоу.
+
+    Пошаговое руководство см. в [Send emails and transactions via the Adapty Mail API](/docs/mail-send-data-via-api).
+servers:
+  - url: https://api-mail.adapty.io
+    description: Продакшн-сервер
+paths:
+  /api/v1/profile/save/:
+    post:
+      summary: Сохранить профиль
+      description: |
+        Создаёт или обновляет профиль в Adapty Mail. Профиль содержит email пользователя и атрибуты,
+        которые Adapty Mail использует для идентификации получателей и построения [сегментов](/docs/mail-segments).
+
+        Идентифицируйте каждого пользователя с помощью стабильного `external_profile_id`. Повторная отправка
+        того же `external_profile_id` обновляет существующий профиль, а не создаёт дубликат.
+      operationId: saveProfile
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileDTO'
+            examples:
+              basic:
+                summary: Профиль с email, готовый для флоу "never purchased"
+                value:
+                  external_profile_id: "user_12345"
+                  external_created_at: "2026-06-01T10:30:00Z"
+                  email: "jane@example.com"
+                  country: "US"
+                  custom_attributes:
+                    plan: "trial"
+      responses:
+        '200':
+          description: Профиль успешно сохранён. Тело ответа — пустой объект.
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                default:
+                  value: {}
+        '400':
+          description: Ошибка валидации — обязательное поле отсутствует или содержит недопустимое значение. `field_name` указывает, какое поле вызвало ошибку.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Field required"
+                        error_code: "base_error"
+                        status_code: 400
+                        field_name: "email"
+        '403':
+          description: Секретный API-ключ отсутствует или недействителен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Secret key doesn't exist"
+                        error_code: "secret_key_does_not_exist_error"
+                        status_code: 403
+                        field_name: null
+  /api/v1/profile/transaction-event/save/:
+    post:
+      summary: Сохранить событие транзакции
+      description: |
+        Записывает событие транзакции стора для профиля. Adapty Mail использует события транзакций для
+        помещения профилей в флоу на основе покупок — `event_type` соответствует флоу, таким как
+        renewal cancelled, billing issue, expired и refunded — а также для атрибуции выручки.
+
+        Отправляйте эти события по мере обработки покупок, продлений и отмен. Без них работает только
+        флоу **never purchased**.
+      operationId: saveTransactionEvent
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionEventDTO'
+            examples:
+              basic:
+                summary: Новая покупка ежемесячной подписки
+                value:
+                  event_type: "subscription_started"
+                  event_id: "evt_abc123"
+                  event_datetime: "2026-06-10T14:20:05Z"
+                  external_profile_id: "user_12345"
+                  store: "app_store"
+                  store_product_id: "premium_monthly"
+                  store_transaction_id: "1000000123456789"
+                  store_original_transaction_id: "1000000123456789"
+                  purchased_at: "2026-06-10T14:20:00Z"
+                  originally_purchased_at: "2026-06-10T14:20:00Z"
+                  price_usd: "9.99"
+                  expires_at: "2026-07-10T14:20:00Z"
+      responses:
+        '200':
+          description: Событие транзакции успешно сохранено. Тело ответа — пустой объект.
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                default:
+                  value: {}
+        '400':
+          description: Ошибка валидации — обязательное поле отсутствует или содержит недопустимое значение. `field_name` указывает, какое поле вызвало ошибку.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Field required"
+                        error_code: "base_error"
+                        status_code: 400
+                        field_name: "event_type"
+        '403':
+          description: Секретный API-ключ отсутствует или недействителен.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Secret key doesn't exist"
+                        error_code: "secret_key_does_not_exist_error"
+                        status_code: 403
+                        field_name: null
+components:
+  securitySchemes:
+    apikeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        Аутентифицируйте каждый запрос с помощью секретного API-ключа Adapty Mail, передавая его в заголовке **Authorization**
+        со значением `Bearer {your_secret_api_key}`, например `Bearer secret_live_...`.
+
+        Найдите этот ключ в Adapty Mail в разделе **Settings**. Ключ привязан к конкретному проекту — он идентифицирует
+        проект, которому принадлежат данные, поэтому эндпоинты профиля и транзакций не принимают идентификатор проекта.
+  schemas:
+    ProfileDTO:
+      type: object
+      required:
+        - external_profile_id
+        - external_created_at
+        - email
+      properties:
+        external_profile_id:
+          type: string
+          description: |
+            Стабильный идентификатор пользователя, принадлежащий вашему приложению или бэкенду. Используйте одно
+            и то же значение в разных запросах, чтобы Adapty Mail связывал письма, клики и покупки с одним профилем.
+            Никогда не используйте анонимный или привязанный к установке идентификатор.
+        external_created_at:
+          type: string
+          format: date-time
+          description: |
+            Время создания пользователя в формате ISO 8601 (например, `"2026-06-01T10:30:00Z"`).
+            Эту дату можно использовать в сегментах.
+        email:
+          type: string
+          format: email
+          description: Email-адрес пользователя. Adapty Mail доставляет рассылки на этот адрес.
+        first_name:
+          type: string
+          description: Имя пользователя.
+        last_name:
+          type: string
+          description: Фамилия пользователя.
+        gender:
+          type: string
+          description: Пол пользователя.
+        birthday:
+          type: string
+          format: date
+          description: Дата рождения пользователя в формате ISO 8601 (например, `"1990-05-21"`).
+        country:
+          type: string
+          description: Страна пользователя в виде двухбуквенного кода ISO 3166-1 alpha-2 в верхнем регистре (например, `US`).
+        store_country:
+          type: string
+          description: Регион стора пользователя в виде двухбуквенного кода ISO 3166-1 alpha-2 в верхнем регистре (например, `US`).
+        custom_attributes:
+          type: object
+          description: |
+            Произвольные пары ключ-значение (строковые или числовые значения) для добавления к профилю. Используйте их для
+            построения [сегментов](/docs/mail-segments) — например, `plan`, `signup_source` или `trial_days`.
+        device_info:
+          $ref: '#/components/schemas/DeviceInfoDTO'
+    DeviceInfoDTO:
+      type: object
+      required:
+        - platform
+      properties:
+        platform:
+          type: string
+          description: Платформа пользователя, например `iOS` или `Android`.
+        device:
+          type: string
+          description: Модель устройства, например `iPhone15,2`.
+        os:
+          type: string
+          description: Версия операционной системы, например `17.5`.
+        locale:
+          type: string
+          description: Локаль пользователя, например `en-US`.
+        timezone:
+          type: string
+          description: Часовой пояс пользователя, например `America/New_York`.
+        app_version:
+          type: string
+          description: Версия вашего приложения, которую использует пользователь, например `3.1.0`.
+    TransactionEventDTO:
+      type: object
+      required:
+        - event_type
+        - event_id
+        - event_datetime
+        - external_profile_id
+        - store
+        - store_product_id
+        - store_transaction_id
+        - store_original_transaction_id
+        - purchased_at
+        - originally_purchased_at
+      properties:
+        event_type:
+          $ref: '#/components/schemas/TransactionEventType'
+        event_id:
+          type: string
+          description: Уникальный идентификатор этого события, принадлежащий вашей системе. Используйте его для обеспечения идемпотентности событий.
+        event_datetime:
+          type: string
+          format: date-time
+          description: Время записи события в формате ISO 8601.
+        external_profile_id:
+          type: string
+          description: Тот же стабильный `external_profile_id`, который вы передаёте при сохранении профиля. Связывает транзакцию с нужным профилем.
+        store:
+          type: string
+          description: Стор, из которого пришла транзакция, например `app_store`, `play_store` или `stripe`.
+        store_product_id:
+          type: string
+          description: Идентификатор приобретённого продукта в сторе.
+        store_transaction_id:
+          type: string
+          description: Идентификатор данной транзакции в сторе.
+        store_original_transaction_id:
+          type: string
+          description: Идентификатор первой транзакции в цепочке подписки. Для первой покупки совпадает с `store_transaction_id`.
+        purchased_at:
+          type: string
+          format: date-time
+          description: Время совершения данной транзакции в формате ISO 8601.
+        originally_purchased_at:
+          type: string
+          format: date-time
+          description: Время первой покупки подписки в формате ISO 8601.
+        price_usd:
+          type: string
+          description: Сумма транзакции в USD в виде десятичной строки (например, `"9.99"`).
+        expires_at:
+          type: string
+          format: date-time
+          description: Время истечения или истёкшего срока действия подписки в формате ISO 8601. Не указывайте для разовых покупок.
+        offer:
+          $ref: '#/components/schemas/Offer'
+    TransactionEventType:
+      type: string
+      description: Тип события транзакции. Флоу на основе покупок запускаются этими значениями.
+      enum:
+        - subscription_started
+        - subscription_renewed
+        - subscription_renewal_cancelled
+        - subscription_renewal_reactivated
+        - billing_issue_detected
+        - entered_grace_period
+        - subscription_refunded
+        - subscription_expired
+        - non_subscription_purchase
+        - non_subscription_purchase_refunded
+    Offer:
+      type: object
+      description: Детали promotional offer или introductory offer, применённого к транзакции.
+      required:
+        - category
+        - offer_type
+      properties:
+        category:
+          $ref: '#/components/schemas/OfferCategory'
+        offer_type:
+          $ref: '#/components/schemas/OfferType'
+        offer_id:
+          type: string
+          description: Идентификатор офера в сторе, если применимо.
+    OfferCategory:
+      type: string
+      enum:
+        - introductory
+        - promotional
+        - offer_code
+        - win_back
+    OfferType:
+      type: string
+      enum:
+        - free_trial
+        - pay_as_you_go
+        - pay_up_front
+    Errors:
+      type: object
+      description: Стандартный ответ об ошибке. Каждый сбой возвращает статус 4XX с этой структурой.
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: string
+                description: Описание ошибки в читаемом виде.
+              error_code:
+                type: string
+                description: Машиночитаемый идентификатор ошибки.
+              status_code:
+                type: integer
+                description: HTTP-код статуса для данной ошибки.
+              field_name:
+                type: string
+                description: Поле запроса, вызвавшее ошибку, или `null`, если ошибка не связана с конкретным полем.

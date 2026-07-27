@@ -1,0 +1,75 @@
+---
+title: "Hiển thị flow trong Observer mode trong Flutter SDK"
+description: "Hiển thị flow và paywall được tạo bằng Paywall Builder trong Observer mode trong ứng dụng Flutter của bạn trong khi xử lý các giao dịch mua bằng code của riêng bạn."
+metadataTitle: "Hiển thị Flow trong Observer Mode | Tài liệu Adapty"
+keywords: ['observer mode', 'AdaptyUIObserverModeResolver', 'setObserverModeResolver', 'flow']
+---
+
+Nếu bạn đã tùy chỉnh flow hoặc paywall bằng builder, bạn không cần lo lắng về việc render nó trong code ứng dụng di động để hiển thị cho người dùng. Flow hoặc paywall như vậy đã bao gồm cả nội dung hiển thị lẫn cách hiển thị.
+
+:::warning
+Phần này chỉ áp dụng cho [Observer mode](observer-vs-full-mode). Nếu bạn không làm việc ở Observer mode, hãy tham khảo chủ đề [Hiển thị flows & paywalls](flutter-present-paywalls).
+:::
+:::info
+Tính năng này yêu cầu Adapty Flutter SDK 4.0 trở lên — trước đây chỉ có trong các SDK gốc iOS và Android. Xem [hướng dẫn migration](migration-to-flutter-sdk-v4) để nâng cấp.
+:::
+
+<details>
+   <summary>Trước khi bắt đầu hiển thị flow (Nhấp để mở rộng)</summary>
+1. Thiết lập tích hợp ban đầu của Adapty [với App Store](initial_ios) và [với Google Play](initial-android).
+   2. Cài đặt và cấu hình Adapty SDK. Đảm bảo đặt tham số `observerMode` thành `true`. Tham khảo [hướng dẫn cài đặt Flutter SDK](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk).
+   3. [Tạo sản phẩm](create-product) trong Adapty Dashboard.
+   4. [Cấu hình flow hoặc paywall trong các builder](create-paywall) và gán sản phẩm vào chúng.
+   5. [Tạo placement và gán flow hoặc paywall vào chúng](create-placement).
+   6. [Lấy flow và cấu hình của chúng](flutter-get-pb-paywalls) trong code ứng dụng di động của bạn.
+</details>
+
+Trong Observer mode, SDK không thực hiện giao dịch mua hàng thay cho bạn. Khi người dùng nhấn nút mua hàng hoặc khôi phục trong một flow hoặc paywall do Adapty hiển thị, SDK sẽ gọi `AdaptyUIObserverModeResolver` của bạn — hãy thực hiện việc mua hàng hoặc khôi phục bằng code của chính bạn tại đó.
+
+1. Implement `AdaptyUIObserverModeResolver`:
+   ```dart showLineNumbers title="Flutter"
+   class MyObserverModeResolver extends AdaptyUIObserverModeResolver {
+     @override
+     void observerModeDidInitiatePurchase(
+       AdaptyUIFlowView view,
+       AdaptyPaywallProduct product,
+       void Function() onStartPurchase,
+       void Function() onFinishPurchase,
+     ) {
+       onStartPurchase(); // the view shows its loading indicator
+       // make the purchase with your own code, then:
+       onFinishPurchase(); // the view hides the loading indicator
+     }
+
+     @override
+     void observerModeDidInitiateRestore(
+       AdaptyUIFlowView view,
+       void Function() onStartRestore,
+       void Function() onFinishRestore,
+     ) {
+       onStartRestore();
+       // restore purchases with your own code, then:
+       onFinishRestore();
+     }
+   }
+   ```
+
+`observerModeDidInitiatePurchase` thông báo cho bạn biết rằng người dùng đã khởi tạo một giao dịch mua, và `observerModeDidInitiateRestore` — rằng người dùng đã khởi tạo thao tác khôi phục. Hãy kích hoạt flow mua hàng hoặc khôi phục tùy chỉnh của bạn để phản hồi.
+
+Ngoài ra, hãy nhớ gọi các callback sau để thông báo cho AdaptyUI về quá trình mua hàng hoặc khôi phục. Điều này cần thiết để đảm bảo flow hoạt động đúng, chẳng hạn như hiển thị loader, v.v.:
+| Callback           | Mô tả                                                                                        |
+   | :----------------- | :------------------------------------------------------------------------------------------- |
+   | onStartPurchase()  | Callback này cần được gọi để thông báo cho AdaptyUI rằng quá trình mua hàng đã bắt đầu.     |
+   | onFinishPurchase() | Callback này cần được gọi để thông báo cho AdaptyUI rằng quá trình mua hàng đã hoàn thành.  |
+   | onStartRestore()   | Callback này cần được gọi để thông báo cho AdaptyUI rằng quá trình khôi phục đã bắt đầu.    |
+   | onFinishRestore()  | Callback này cần được gọi để thông báo cho AdaptyUI rằng quá trình khôi phục đã hoàn thành. |
+2. Đăng ký resolver trước khi hiển thị bất kỳ màn hình nào:
+
+   ```dart showLineNumbers title="Flutter"
+   AdaptyUI().setObserverModeResolver(MyObserverModeResolver());
+   ```
+
+3. Tạo và hiển thị flow view như bình thường: [lấy flow và tạo view của nó](flutter-get-pb-paywalls), sau đó [hiển thị nó](flutter-present-paywalls). Không cần thêm tham số nào — một khi resolver đã được đăng ký, mọi flow hoặc paywall do Adapty render đều sẽ xử lý việc mua và khôi phục thông qua nó.
+:::warning
+Đừng quên [báo cáo giao dịch và liên kết nó với paywall](report-transactions-observer-mode-flutter). Nếu không, Adapty sẽ không nhận ra giao dịch và sẽ không xác định được paywall nguồn của lần mua.
+:::

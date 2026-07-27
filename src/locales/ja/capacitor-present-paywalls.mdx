@@ -1,24 +1,129 @@
 ---
-title: "Capacitor SDKでペイウォールビルダーのペイウォールを表示する"
-description: "Adaptyを使用してCapacitorアプリにペイウォールを表示します。"
-metadataTitle: "Capacitorでのペイウォール表示 | Adapty ドキュメント"
+title: "フローとペイウォールの表示 - Capacitor"
+description: "Capacitor アプリで Adapty を使用してフローとペイウォールをユーザーに表示します。"
+metadataTitle: "Capacitor でのフローとペイウォールの表示 | Adapty ドキュメント"
 ---
 
-import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md'; 
+import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
 
-ペイウォールビルダーを使ってペイウォールをカスタマイズした場合、モバイルアプリのコードでレンダリングを行う必要はありません。ペイウォールビルダーのペイウォールには、表示内容と表示方法の両方が含まれているためです。
+<SDKv4>
+フローまたはペイウォールをフローエビルダーで作成した場合、それをモバイルアプリのコードでレンダリングしてユーザーに表示する方法を気にする必要はありません。フローには、表示する内容とその表示方法の両方が含まれています。
+
+始める前に、以下を確認してください。
+
+1. [フローまたはペイウォールを作成](create-paywall)している。
+2. [プレースメント](placements)に追加している。
+3. [フローをフェッチしてビューを準備](capacitor-get-pb-paywalls)している。
 
 :::warning
-このガイドは**ペイウォールビルダーのペイウォール**専用です。リモートコンフィグのペイウォールを表示する場合は、手順が異なります。**リモートコンフィグのペイウォール**の表示については、[リモートコンフィグで設計されたペイウォールのレンダリング](present-remote-config-paywalls)を参照してください。
-:::
+このガイドは**フローおよびペイウォールビルダーのペイウォール**専用です。SDK v4.0以降が必要です。リモートコンフィグペイウォールの表示方法は異なります。
 
-ペイウォールを表示するには、[`createPaywallView`](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)メソッドで作成した`view`に対して`view.present()`メソッドを呼び出します。各`view`は一度しか使用できません。ペイウォールを再度表示する必要がある場合は、`createPaywallView`を再度呼び出して新しい`view`インスタンスを作成してください。
+- **リモートコンフィグペイウォール**の表示については、[リモートコンフィグで設計したペイウォールを表示する](present-remote-config-paywalls-capacitor)を参照してください。
+
+:::
+フローまたはペイウォールをスタンドアロン画面として表示するには、[`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration) メソッドで作成した `view` に対して `view.present()` メソッドを使用します。各 `view` は一度しか使用できません。フローを再度表示する必要がある場合は、`createFlowView` を再度呼び出して新しい `view` インスタンスを作成してください。
+
+:::warning
+同じ `view` を再作成せずに再利用することは禁止されています。エラーが発生します。
+:::
+```typescript showLineNumbers
+
+const view = await createFlowView(flow);
+
+// Optional: handle flow events (close, purchase, restore, etc)
+// await view.setEventHandlers({ ... });
+
+try {
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+:::important
+`setEventHandlers` を複数回呼び出すと、指定したハンドラーが上書きされ、そのイベントに対するデフォルトおよび以前に設定したハンドラーが置き換えられます。
+:::
+## iOSのプレゼンテーションスタイルを設定する \{#configure-ios-presentation-style\}
+
+`present()` メソッドに `iosPresentationStyle` パラメータを渡すことで、iOS でのフローの表示スタイルを設定できます。このパラメータは `'full_screen'`（デフォルト）または `'page_sheet'` を受け付けます。Android では、フローは常にフルスクリーンのアクティビティとして表示されます。
+
+```typescript showLineNumbers
+try {
+  await view.present({ iosPresentationStyle: 'page_sheet' });
+} catch (error) {
+  // handle the error
+}
+```
+## 開発者定義タイマーを使用する \{#use-developer-defined-timer\}
+
+モバイルアプリで開発者定義タイマーを使用するには、`timerId`（この例では `CUSTOM_TIMER_NY`）を使用します。これは Adapty ダッシュボードで設定した開発者定義タイマーの **Timer ID** です。これにより、アプリはタイマーを正しい値（例：タイマーの終了時刻（元日など）から現在時刻を引いた `13d 09h 03m 34s`）で動的に更新できます。
+
+```typescript showLineNumbers
+const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+
+const view = await createFlowView(flow, { customTimers });
+```
+この例では、`CUSTOM_TIMER_NY` は Adapty ダッシュボードで設定した開発者定義タイマーの **Timer ID** です。タイマーを使うことで、アプリが正しい値（例: `13d 09h 03m 34s`、元日などのタイマー終了時刻から現在時刻を引いた値）を動的に表示できます。
+## ダイアログを表示する \{#show-dialog\}
+
+Android でフロービューが表示されている場合、ネイティブのアラートダイアログの代わりにこのメソッドを使用してください。Android では、通常のアラートがフロービューの後ろに表示されるため、ユーザーには見えません。このメソッドを使用することで、すべてのプラットフォームでフローの上に正しくダイアログが表示されます。
+```typescript showLineNumbers
+try {
+  const action = await view.showDialog({
+    title: 'Close paywall?',
+    content: 'You will lose access to exclusive offers.',
+    primaryActionTitle: 'Stay',
+    secondaryActionTitle: 'Close',
+  });
+
+  if (action === 'secondary') {
+    // User confirmed - close the flow
+    await view.dismiss();
+  }
+  // If primary - do nothing, user stays
+} catch (error) {
+  // handle error
+}
+```
+
+## 別のサブスクリプションへの切り替え \{#replace-one-subscription-with-another\}
+
+Android でユーザーが別のサブスクリプションを有効にした状態で新しいサブスクリプションを購入しようとする場合、フロービューを作成する際にサブスクリプション更新パラメータを渡すことで、新しい購入の処理方法を制御できます。現在のサブスクリプションを新しいものに切り替えるには、`createFlowView` の `productPurchaseParams` に `oldSubVendorProductId` と `prorationMode` パラメータを指定してください。
+```typescript showLineNumbers
+
+const productPurchaseParams = flow.paywalls
+  .flatMap((paywall) => paywall.productIdentifiers)
+  .map((productId) => {
+    const params: MakePurchaseParamsInput = {};
+    if (Capacitor.getPlatform() === 'android') {
+      params.android = {
+        subscriptionUpdateParams: {
+          oldSubVendorProductId: 'PRODUCT_ID_OF_THE_CURRENT_ACTIVE_SUBSCRIPTION',
+          prorationMode: 'with_time_proration',
+        },
+      };
+    }
+    return { productId, params };
+  });
+
+const view = await createFlowView(flow, { productPurchaseParams });
+```
+
+</SDKv4>
+
+<SDKv3>
+
+ペイウォールビルダーを使ってペイウォールをカスタマイズした場合、モバイルアプリのコードでそれをレンダリングしてユーザーに表示する手間はありません。このようなペイウォールには、表示する内容と表示方法の両方が含まれています。
+
+:::warning
+このガイドは**ペイウォールビルダーのペイウォール**専用です。リモートコンフィグのペイウォールを表示するプロセスは異なります。**リモートコンフィグのペイウォール**の表示については、[リモートコンフィグで設計したペイウォールのレンダリング](present-remote-config-paywalls)をご覧ください。
+:::
+ペイウォールを表示するには、[`createPaywallView`](capacitor-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) メソッドで作成した `view` に対して `view.present()` メソッドを呼び出します。各 `view` は一度しか使用できません。ペイウォールを再度表示する必要がある場合は、`createPaywallView` をもう一度呼び出して新しい `view` インスタンスを作成してください。
 
 :::warning
 
-`view`を再作成せずに再利用すると、エラーが発生する場合があります。
+同じ `view` を再作成せずに再利用すると、エラーが発生する場合があります。
 :::
-
 ```typescript showLineNumbers
 
 const view = await createPaywallView(paywall);
@@ -26,7 +131,7 @@ const view = await createPaywallView(paywall);
 view.setEventHandlers({
   onUrlPress(url) {
     window.open(url, '_blank');
-    return false; 
+    return false;
   },
 });
 
@@ -37,22 +142,19 @@ try {
 }
 ```
 
-## デベロッパー定義タイマーの使用 \{#use-developer-defined-timer\}
+## 開発者定義タイマーを使用する \{#use-developer-defined-timer\}
 
-モバイルアプリでデベロッパー定義タイマーを使用するには、`timerId`を指定します。この例では`CUSTOM_TIMER_NY`が、Adaptyダッシュボードで設定したデベロッパー定義タイマーの**Timer ID**です。これにより、アプリは`13d 09h 03m 34s`のような正しい値（タイマーの終了時刻（例：元日）から現在時刻を引いた値）でタイマーを動的に更新できます。
+モバイルアプリで開発者定義タイマーを使用するには、`timerId`（この例では `CUSTOM_TIMER_NY`）を使用します。これは、Adapty ダッシュボードで設定した開発者定義タイマーの **Timer ID** です。これにより、アプリはタイマーを正しい値（例：元旦までの残り時間を現在時刻から引いた `13d 09h 03m 34s` など）で動的に更新できます。
 
 ```typescript showLineNumbers
 const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
 
 const view = await createPaywallView(paywall, { customTimers });
 ```
-
-この例では、`CUSTOM_TIMER_NY`はAdaptyダッシュボードで設定したデベロッパー定義タイマーの**Timer ID**です。タイマーにより、アプリは`13d 09h 03m 34s`のような正しい値（タイマーの終了時刻（例：元日）から現在時刻を引いた値）でタイマーを動的に更新します。
-
+この例では、`CUSTOM_TIMER_NY` は Adapty ダッシュボードで設定した開発者定義タイマーの **Timer ID** です。タイマーを使用することで、アプリは正しい値（例: `13d 09h 03m 34s`、タイマーの終了時刻（元日など）から現在時刻を引いて算出）でタイマーを動的に更新できます。
 ## ダイアログの表示 \{#show-dialog\}
 
-Androidでペイウォールビューが表示されている場合は、ネイティブのアラートダイアログの代わりにこのメソッドを使用してください。Androidでは通常のアラートがペイウォールビューの背後に表示されるため、ユーザーには見えません。このメソッドを使用することで、すべてのプラットフォームでペイウォールの上に適切にダイアログが表示されます。
-
+Android でペイウォールビューが表示されている場合は、ネイティブのアラートダイアログの代わりにこのメソッドを使用してください。Android では、通常のアラートがペイウォールビューの背後に表示されてしまい、ユーザーには見えなくなります。このメソッドを使用することで、すべてのプラットフォームでペイウォールの上に正しくダイアログを表示できます。
 ```typescript showLineNumbers title="Capacitor"
 try {
   const action = await view.showDialog({
@@ -61,7 +163,7 @@ try {
     primaryActionTitle: 'Stay',
     secondaryActionTitle: 'Close',
   });
-  
+
   if (action === 'secondary') {
     // User confirmed - close the paywall
     await view.dismiss();
@@ -72,10 +174,12 @@ try {
 }
 ```
 
-## iOSプレゼンテーションスタイルの設定 \{#configure-ios-presentation-style\}
+## iOSの表示スタイルを設定する \{#configure-ios-presentation-style\}
 
-`present()`メソッドに`iosPresentationStyle`パラメーターを渡すことで、iOSでのペイウォールの表示方法を設定できます。パラメーターには`'full_screen'`（デフォルト）または`'page_sheet'`を指定できます。
+`present()` メソッドに `iosPresentationStyle` パラメーターを渡すことで、iOSでのペイウォールの表示スタイルを設定できます。このパラメーターには `'full_screen'`（デフォルト）または `'page_sheet'` を指定できます。
 
 ```typescript showLineNumbers
 await view.present({ iosPresentationStyle: 'page_sheet' });
 ```
+
+</SDKv3>

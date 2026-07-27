@@ -52,18 +52,45 @@ try {
 }
 ```
 
-### Platforma özgü yapılandırmalar \{#platform-specific-configurations\}
+### Platforma Özgü Yapılandırmalar \{#platform-specific-configurations\}
 
-#### iOS: CocoaPods kullanarak Kids Mode'u etkinleştirme \{#ios-enable-kids-mode-using-cocoapods\}
+#### iOS \{#ios\}
 
-iOS için CocoaPods kullanıyorsanız Kids Mode'u yerel düzeyde de etkinleştirebilirsiniz:
+<SDKv4>
+
+IDFA koleksiyonu kodda devre dışı bırakılmış olsa bile (yukarıda), derlemeniz `AdSupport` ve `AppTrackingTransparency` framework'lerini hâlâ içerir. App Store Çocuklar Kategorisi bunlara izin vermez. v4 SDK, yerel iOS SDK'yı Swift Package Manager aracılığıyla yüklediğinden, bu framework'leri kaldırmak için bir Podfile adımı da yoktur.
+
+Apple'ın gereksinimlerine uymak için, SDK ile birlikte gelen `adapty-kids-mode` komutunu uygulamanızın `postinstall` betiğine ekleyin. Bu komut, SDK'nın `KidsMode` özelliğini etkinleştirerek söz konusu kodun derleme dışında bırakılmasını sağlar. Komut, her kurulumda yeniden uygulanır:
+
+```json showLineNumbers title="package.json"
+{
+  "scripts": {
+    "postinstall": "adapty-kids-mode"
+  }
+}
+```
+
+Ardından iOS paketlerini yeniden yükleyin ve çözümleyin, ardından **Xcode 26** veya sonraki bir sürümle derleyin:
+
+```sh showLineNumbers title="Shell"
+npm install
+npx cap sync ios
+```
+
+Kids Mode'u kapatmak için `adapty-kids-mode disable` komutunu çalıştırın ve tekrar senkronize edin.
+
+</SDKv4>
+
+<SDKv3>
+
+iOS için CocoaPods kullanıyorsanız, Kids Mode'u native düzeyde de etkinleştirebilirsiniz:
 
 1. Podfile'ınızı güncelleyin:
 
-   - `post_install` bölümünüz **yoksa** aşağıdaki kod bloğunun tamamını ekleyin.
-   - `post_install` bölümünüz **varsa** vurgulanan satırları mevcut bölümünüzle birleştirin.
+- Eğer `post_install` bölümünüz **yoksa**, aşağıdaki kod bloğunun tamamını ekleyin.
+   - Eğer `post_install` bölümünüz **varsa**, vurgulanan satırları mevcut bölümle birleştirin.
 
-```ruby showLineNumbers title="Podfile"
+   ```ruby showLineNumbers title="Podfile"
    def adapty_enable_kids_mode(installer)
      installer.pods_project.targets.each do |target|
        next unless target.name == 'Adapty'
@@ -81,22 +108,42 @@ iOS için CocoaPods kullanıyorsanız Kids Mode'u yerel düzeyde de etkinleştir
        File.write(xc, File.read(xc).gsub(/\s*-framework\s+"?AdSupport"?/, ''))
      end
    end
-```sh showLineNumbers title="Shell"
+
+   post_install do |installer|
+     # ... keep your existing post_install body (Flutter adds one automatically) ...
+
+     adapty_enable_kids_mode(installer)   # <-- enable Adapty Kids Mode
+   end
+   ```
+
+2. Değişiklikleri uygulamak için aşağıdaki komutu çalıştırın:
+
+   ```sh showLineNumbers title="Shell"
    pod install
    ```
 
-#### Android: Gradle Kullanarak Kids Mode'u Etkinleştirme \{#android-enable-kids-mode-using-gradle\}
+</SDKv3>
 
-Android için, uygulamanızın `build.gradle` dosyasına aşağıdakileri ekleyerek Kids Mode'u yerel düzeyde etkinleştirebilirsiniz:
-```groovy showLineNumbers title="android/app/build.gradle"
-android {
-    defaultConfig {
-        // ... existing config ...
+#### Android: reklam kimliği iznini kaldırma \{#android-remove-the-advertising-id-permission\}
 
-        // Enable Kids Mode
-        buildConfigField "boolean", "ADAPTY_KIDS_MODE", "true"
-    }
-}
+`adIdCollectionDisabled: true` ayarı (yukarıda) Adapty'nin reklam kimliğini toplamasını durdurur, ancak SDK yine de `AD_ID` iznini bildirir. Uygulamanız **yalnızca** çocuklara yönelikse ve Android 13 (API 33) veya üzerini hedefliyorsa, Google Play bu izni talep etmenizi dahi yasaklar.
+
+`<manifest>` öğenize iki ekleme yapın:
+
+1. `tools` isim alanını tanımlayın (Capacitor'ın varsayılan manifest dosyası bunu içermez).
+2. `AD_ID` iznini kaldırmak için `tools:node="remove"` özelliğiyle bir `<uses-permission>` girişi ekleyin.
+
+```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
+
+    <!-- your existing manifest content -->
+</manifest>
 ```
 
 ## Sonraki adımlar \{#next-steps\}

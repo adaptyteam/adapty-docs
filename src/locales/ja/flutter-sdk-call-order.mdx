@@ -1,38 +1,31 @@
 ---
-title: "Flutter SDK のコール順序"
-description: "Adapty SDK メソッドを正しい順序でコールすることで、プレミアムアクセスの喪失、アトリビューションの欠落、断続的な #2002 エラーを防ぎます。"
-metadataTitle: "Flutter SDK コール順序 | Adapty ドキュメント"
+title: "Flutter SDKの呼び出し順序"
+description: "Adapty SDKのメソッドを正しい順序で呼び出すことで、プレミアムアクセスの喪失、アトリビューションの欠落、断続的な#2002エラーを防ぎましょう。"
+metadataTitle: "Flutter SDK 呼び出し順序 | Adapty ドキュメント"
 ---
 
-`Adapty().activate()` が完了してから、他の Adapty SDK メソッドを呼び出してください。解決されるまで SDK には状態がありません。`activate()` より前、または並行して発行されたコールはすべて [`#2002 notActivated`](error-handling-on-flutter-react-native-unity#custom-network-codes) でエラーになります。
-
-アプリがユーザー認証を行い、起動後に customer user ID を収集する場合は、そのタイミングで `Adapty().identify()` を呼び出してください。`identify` が解決されるまでユーザーアクションメソッドを呼び出してはいけません。`identify` と競合するコールは [`#3006 profileWasChanged`](error-handling-on-flutter-react-native-unity#custom-network-codes) でエラーになるか、アクティベーション時に作成された匿名プロファイルに対して実行されてしまいます。これが起きると、アトリビューション、`appsflyer_id` などの MMP ID、およびインストールの所有権が識別済みプロファイルに引き継がれないことがあります。アプリがユーザー認証を行わない場合は `identify` をスキップし、匿名プロファイルのまま使用し続けてください。
-
-MMP やアナリティクス SDK（AppsFlyer、Adjust、Branch、PostHog）も同じルールに従います。それらを先に初期化し、UID コールバックを受け取ってから `Adapty().activate` を呼び出してください。そうしないと MMP ID が一時的な匿名プロファイルに記録され、識別済みプロファイルに必ずしも引き継がれません。AppsFlyer の詳細については [AppsFlyer](appsflyer) をご覧ください。
-
+`Adapty().activate()` の完了前に他のAdapty SDKメソッドを呼び出してはいけません。`activate()` が解決するまで、SDKは何の状態も持ちません。`activate()` の前または並行して発行された呼び出しはすべて [`#2002 notActivated`](error-handling-on-flutter-react-native-unity#custom-network-codes) で失敗します。
+アプリがユーザーを認証していて、起動後にカスタマーユーザーIDを取得する場合は、そのタイミングで `Adapty().identify()` を呼び出してください。`identify` が完了するまで、ユーザー操作に関するメソッドは呼び出さないでください。`identify` と競合する呼び出しは、[`#3006 profileWasChanged`](error-handling-on-flutter-react-native-unity#custom-network-codes) エラーで失敗するか、アクティベーション時に作成された匿名プロファイルに対して実行されてしまいます。この場合、アトリビューション・`appsflyer_id` などのMMP ID・インストールの帰属情報が、識別済みプロファイルに引き継がれないことがあります。アプリがユーザーを認証しない場合は、`identify` を呼び出さず、匿名プロファイルのまま利用を続けてください。
+MMP およびアナリティクス SDK（AppsFlyer、Adjust、Branch、PostHog）も同じルールに従います。それらを先に初期化し、UID コールバックを受け取ってから `Adapty().activate` を呼び出してください。そうしないと、MMP の ID が一時的な匿名プロファイルに紐付いてしまい、識別済みプロファイルに引き継がれないことがあります。AppsFlyer 固有の詳細については、[AppsFlyer](appsflyer) を参照してください。
 ## 正しい順序 \{#the-correct-order\}
 
-どのパスをたどるかは、customer user ID をいつ取得できるか、および MMP やアナリティクス SDK を使用するかどうかの 2 点によって決まります。
+どのパスをたどるかは、カスタマーユーザーIDをいつ取得できるか、そしてMMPやアナリティクスSDKを使用するかどうかによって決まります。
 
-- **ステップ 2 と 5**: すべてのアプリで必須です。SDK をアクティベートしてから SDK メソッドを呼び出します。
-- **ステップ 1 と 3**: MMP やアナリティクス SDK（AppsFlyer、Adjust、Branch、PostHog）を統合する場合のみ必要です。
-- **ステップ 4**: アプリがユーザー認証を行い、起動後に customer user ID を収集する場合のみ必要です。
-
-アプリ起動時に customer user ID が分かっている場合は、`activate()` に直接渡してください（ステップ 2a）。このパスでは匿名プロファイルが作成されないため、ステップ 4 は不要です。
-
-| ステップ | コール | タイミング | 備考 |
+- **ステップ2と5**: すべてのアプリで必須です。SDKを有効化し、その後SDKメソッドを呼び出します。
+- **ステップ1と3**: MMPまたはアナリティクスSDK（AppsFlyer、Adjust、Branch、PostHog）を統合する場合のみ必要です。
+- **ステップ4**: アプリがユーザー認証を行い、起動後にカスタマーユーザーIDを収集する場合のみ必要です。
+アプリ起動時にカスタマーユーザーIDがわかっている場合は、`activate()` に直接渡してください（ステップ2a）。この方法では匿名プロファイルが作成されないため、ステップ4は不要です。
+| ステップ | 呼び出し                                                                                                          | タイミング                                                                                   | 備考                                                                                          |
 |------|---------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| 1    | MMP またはアナリティクス SDK（AppsFlyer、Adjust、PostHog、Branch）を初期化する | アプリ起動時、最初に | MMP の UID コールバック（例: `getAppsFlyerUID`）を待ちます。 |
-| 2a   | `Adapty().activate(configuration: ...)` に `withCustomerUserId` を設定して呼び出す | アプリ起動時、ステップ 1 の後、customer user ID が分かっている場合 | 推奨。匿名プロファイルは一切作成されません。 |
-| 2b   | `Adapty().activate(configuration: ...)` を `withCustomerUserId` なしで呼び出す | アプリ起動時、ステップ 1 の後、customer user ID が分からない場合（または収集しない場合） | Adapty が匿名プロファイルを作成します。 |
-| 3    | 各 MMP に対して `Adapty().setIntegrationIdentifier(key: ..., value: ...)` を呼び出す | ステップ 2 の後、ユーザーアクションコールの前 | MMP ID が正しいプロファイルに記録されるために必要です。 |
-| 4    | `await Adapty().identify(customerUserId)` | ステップ 3 の後（MMP がない場合はステップ 2 の後）、ステップ 5 の前 — 認証ありのパス 2b の場合のみ | 必ず `await` してください。`identify` 中の並行コールは `#3006 profileWasChanged` を引き起こします。 |
-| 5    | `getPaywall`、`getPaywallProducts`、`restorePurchases`、`makePurchase`、`updateAttribution`、`updateProfile` | `identify` を呼び出す場合はステップ 4 の後、それ以外はステップ 3 の後（MMP がない場合はステップ 2 の後） | これらのコールには安定したプロファイルが必要です。 |
-
+| 1    | MMP またはアナリティクス SDK を初期化する（AppsFlyer、Adjust、PostHog、Branch）                                     | アプリ起動時、最初に実行                                                                      | MMP の UID コールバック（例：`getAppsFlyerUID`）を待機する。                                |
+| 2a   | `Adapty().activate(configuration: ...)` に `withCustomerUserId` を設定                                    | アプリ起動時、ステップ 1 の後。カスタマーユーザー ID がある場合                             | 推奨。匿名プロファイルは作成されない。                                                           |
+| 2b   | `Adapty().activate(configuration: ...)` に `withCustomerUserId` を設定しない                                          | アプリ起動時、ステップ 1 の後。カスタマーユーザー ID がない場合（または収集しない場合） | Adapty が匿名プロファイルを作成する。                                                           |
+| 3    | 各 MMP に対して `Adapty().setIntegrationIdentifier(key: ..., value: ...)` を呼び出す                                        | ステップ 2 の後、ユーザーアクション呼び出しの前                                              | MMP の ID を正しいプロファイルに紐付けるために必須。                                               |
+| 4    | `await Adapty().identify(customerUserId)`                                                                     | ステップ 3 の後（MMP がない場合はステップ 2 の後）、ステップ 5 の前。パス 2b で認証を行う場合のみ | 必ず `await` を使用する。`identify` 中に並行して呼び出すと `#3006 profileWasChanged` が発生する。          |
+| 5    | `getPaywall`（SDK v4 では `getFlow`）、`getPaywallProducts`、`restorePurchases`、`makePurchase`、`updateAttribution`、`updateProfile`  | `identify` を呼び出す場合はステップ 4 の後、それ以外はステップ 3 の後（MMP がない場合はステップ 2 の後）      | これらの呼び出しには安定したプロファイルが必要。                                                     |
 :::important
-これらのステップをスキップすると、復帰ユーザーのプレミアムアクセスが失われたり、プロファイルに `appsflyer_id` が記録されなかったり、間違ったオーディエンスに対してペイウォールが返されたりする原因になります。
+これらのステップをスキップすると、復帰ユーザーのプレミアムアクセスが失われたり、プロファイルに `appsflyer_id` が設定されなかったり、間違ったオーディエンスに対してペイウォールが返されたりする原因になります。
 :::
-
 ## Web2app およびウェブファネル経由のインストール \{#web2app-and-web-funnel-installs\}
 
 ユーザーがウェブのチェックアウト（Stripe、Paddle）で購入してからネイティブアプリをインストールする場合、デバイス上で最初に `activate()` を呼び出すと新しい匿名プロファイルが作成されます。このプロファイルはウェブのプロファイルとは紐付けられません。アプリ起動前に（認証フローやインストールリファラーから）customer user ID を解決できる場合は、`activate()` に直接渡してください。そうでない場合、`identify("YOUR_USER_ID")` を呼び出してから `restorePurchases` を実行するまで、ウェブでの購入はデバイス上で表示されません。

@@ -1,25 +1,494 @@
 ---
-title: "Kotlin Multiplatform - 处理付费墙事件"
-description: "使用 Adapty 的事件追踪工具高效处理 Kotlin Multiplatform 订阅事件。"
-metadataTitle: "在 Kotlin Multiplatform 中处理事件 | Adapty 文档"
+title: "处理流程与付费墙事件 - Kotlin Multiplatform"
+description: "在 Kotlin Multiplatform 应用中处理流程和付费墙事件。"
+metadataTitle: "处理流程事件 - Kotlin Multiplatform | Adapty 文档"
 toc_max_heading_level: 4
-keywords: ['AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+keywords: ['AdaptyUIFlowsEventsObserver', 'flowViewDidPerformAction', 'flowViewDidSelectProduct', 'flowViewDidStartPurchase', 'flowViewDidFinishPurchase', 'flowViewDidFailPurchase', 'flowViewDidStartRestore', 'flowViewDidFinishRestore', 'flowViewDidFailRestore', 'flowViewDidFailLoadingProducts', 'flowViewDidReceiveError', 'AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
-import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
-import Details from '@site/src/components/Details';
 
-使用[付费墙编辑工具](adapty-paywall-builder)配置的付费墙无需额外代码即可完成购买和恢复购买操作。但是，它们会生成一些您的应用可以响应的事件。这些事件包括按钮点击（关闭按钮、URL、产品选择等）以及付费墙上与购买相关操作的通知。请参阅以下内容了解如何响应这些事件。
+import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
+
+<SDKv4>
+
+:::important
+本指南介绍购买、恢复、产品选择和流程渲染的事件处理。你还需要实现按钮处理（关闭流程、打开链接等）。详情请参阅[流程操作处理指南](kmp-handle-paywall-actions)。
+:::
+
+使用[流程编辑工具](adapty-flow-builder)或[付费墙编辑工具](adapty-paywall-builder)配置的流程和付费墙无需额外代码即可完成购买和恢复购买。但它们会触发一些事件，供你的应用响应。这些事件包括按钮点击（关闭按钮、URL、产品选择等）以及购买相关操作的通知。请阅读以下内容了解如何响应这些事件。
+
+要控制或监听移动应用中流程页面上发生的事件，请实现 `AdaptyUIFlowsEventsObserver` 接口的方法，并通过 `AdaptyUI.setFlowsEventsObserver()` 注册您的观察者。部分方法已有默认实现，可自动处理常见场景，因此只需覆盖您想要修改的方法即可：
+
+```kotlin showLineNumbers title="Kotlin"
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+    // override only the methods you want to change
+})
+```
+
+:::note
+这些方法是您添加自定义逻辑以响应流程事件的地方。您可以使用 `view.dismiss()` 关闭流程，或实现任何其他所需的自定义行为。请注意，`dismiss()` 是一个挂起函数——在回调中，请在观察者的 `mainUiScope` 上启动它：`mainUiScope.launch { view.dismiss() }`。
+:::
+
+### 用户生成的事件 \{#user-generated-events\}
+
+#### 流程的显示与隐藏 \{#flow-appearance-and-disappearance\}
+
+当流程出现或消失时，以下方法将被调用：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidAppear(view: AdaptyUIFlowView) {
+    // Handle flow appearance
+    // You can track analytics or update UI here
+}
+
+override fun flowViewDidDisappear(view: AdaptyUIFlowView) {
+    // Handle flow disappearance
+    // You can track analytics or update UI here
+}
+```
+
+:::note
+- 在 iOS 上，当用户点击流程中的[网页付费墙按钮](web-paywall#step-2a-add-a-web-purchase-button)，且网页付费墙在应用内浏览器中打开时，`flowViewDidAppear` 也会被触发。
+- 在 iOS 上，当从流程中在应用内浏览器打开的[网页付费墙](web-paywall#step-2a-add-a-web-purchase-button)从屏幕上消失时，`flowViewDidDisappear` 也会被触发。
+:::
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+// Flow appeared
+{
+  // No additional data
+}
+
+// Flow disappeared
+{
+  // No additional data
+}
+```
+</Details>
+
+#### 产品选择 \{#product-selection\}
+
+如果用户选择了某个产品进行购买，将触发以下方法：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidSelectProduct(view: AdaptyUIFlowView, productId: String) {
+    // Handle product selection
+    // You can update UI or track analytics here
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+#### 开始购买 \{#started-purchase\}
+
+如果用户发起了购买流程，将触发以下方法：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidStartPurchase(view: AdaptyUIFlowView, product: AdaptyPaywallProduct) {
+    // Handle purchase start
+    // You can show loading indicators or track analytics here
+}
+```
+
+:::note
+在[观察者模式](kmp-present-flows-in-observer-mode)下，从流程发起的购买会被传递到你的 `AdaptyUIObserverModeResolver`，而不是这里。
+:::
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### 购买成功、取消或待处理 \{#successful-canceled-or-pending-purchase\}
+
+购买完成后，此方法将被调用。默认情况下，它不执行任何操作——购买完成后流程保持打开状态，直到你手动关闭它，因此请在用户获得访问权限后自行调用 `view.dismiss()`：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFinishPurchase(
+    view: AdaptyUIFlowView,
+    product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            // Check if user has access to premium features
+            if (purchaseResult.profile.accessLevels["premium"]?.isActive == true) {
+                mainUiScope.launch { view.dismiss() }
+            }
+        }
+        AdaptyPurchaseResult.Pending -> {
+            // Handle pending purchase (e.g., user will pay offline with cash)
+        }
+        AdaptyPurchaseResult.UserCanceled -> {
+            // Handle user cancellation
+        }
+    }
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+
+// User canceled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCanceled"
+  }
+}
+```
+</Details>
+
+我们建议在购买成功后关闭流程页面。
+
+#### 购买失败 \{#failed-purchase\}
+
+如果购买因错误而失败，此方法将被调用。这包括 StoreKit/Google Play Billing 错误（支付限制、无效产品、网络故障）、交易验证失败以及系统错误。请注意，用户取消操作会触发 `flowViewDidFinishPurchase` 并返回已取消的结果，而待处理的付款不会触发此方法。
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFailPurchase(
+    view: AdaptyUIFlowView,
+    product: AdaptyPaywallProduct,
+    error: AdaptyError
+) {
+    // Add your purchase failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+#### 开始恢复购买 \{#started-restore\}
+
+当用户发起恢复购买流程时，将调用此方法：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidStartRestore(view: AdaptyUIFlowView) {
+    // Handle restore start
+    // You can show loading indicators or track analytics here
+}
+```
+
+#### 恢复成功 \{#successful-restore\}
+
+如果购买恢复成功，此方法将被调用。默认情况下，它不执行任何操作——恢复完成后流程保持开启，直到你关闭它：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFinishRestore(view: AdaptyUIFlowView, profile: AdaptyProfile) {
+    // Add your successful restore handling logic here
+    // For example: show success message, update UI, or dismiss the flow
+
+    // Check if user has access to premium features
+    if (profile.accessLevels["premium"]?.isActive == true) {
+        mainUiScope.launch { view.dismiss() }
+    }
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+我们建议在用户已拥有所需 `accessLevel` 时关闭该界面。请参阅[订阅状态](subscription-status)主题，了解如何检查订阅状态。
+
+#### 恢复失败 \{#failed-restore\}
+
+如果 `Adapty.restorePurchases()` 失败，将调用此方法：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFailRestore(view: AdaptyUIFlowView, error: AdaptyError) {
+    // Add your restore failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### 网页支付导航完成 \{#web-payment-navigation-completion\}
+
+如果用户通过 [web paywall](web-paywall) 发起购买流程，将会调用此方法：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFinishWebPaymentNavigation(
+    view: AdaptyUIFlowView,
+    product: AdaptyPaywallProduct?,
+    error: AdaptyError?
+) {
+    if (error != null) {
+        // Handle web payment navigation error
+    } else {
+        // Handle successful web payment navigation
+    }
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+// Successful web payment navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed web payment navigation
+{
+  "product": null,
+  "error": {
+    "code": "web_payment_failed",
+    "message": "Web payment navigation failed",
+    "details": {
+      "underlyingError": "Network connection error"
+    }
+  }
+}
+```
+</Details>
+
+### 数据获取与渲染 \{#data-fetching-and-rendering\}
+
+#### 产品加载错误 \{#product-loading-errors\}
+
+如果您在初始化时未传入产品信息，AdaptyUI 会自行从服务器获取所需对象。若此操作失败，AdaptyUI 将通过调用以下方法来报告错误：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFailLoadingProducts(view: AdaptyUIFlowView, error: AdaptyError) {
+    // Add your product loading failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+#### 渲染和运行时错误 \{#rendering-and-runtime-errors\}
+
+如果在界面渲染过程中发生错误，或出现其他非购买类运行时错误，该方法将予以上报。默认情况下，流程会在出错时关闭——可以重写此方法以保持流程继续运行，或添加自定义处理逻辑：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveError(view: AdaptyUIFlowView, error: AdaptyError) {
+    // Handle the error
+    // The default implementation dismisses the flow;
+    // once you override this method, dismissal is up to you
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+    "error": {
+        "code": "rendering_failed",
+            "message": "Failed to render flow interface",
+            "details": {
+            "underlyingError": "Invalid flow configuration"
+        }
+    }
+}
+```
+</Details>
+
+在正常情况下，这类错误不应该出现，如果你遇到了，请告知我们。
+
+#### 分析事件 \{#analytics-events\}
+
+`flowViewDidReceiveAnalyticEvent` 回调专用于接收来自流程的自定义分析事件。目前流程尚未向你的代码发送此类事件，因此无需实现它：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String
+) {
+    // Reserved for custom analytic events from a flow
+}
+```
+
+### 导航 \{#navigation\}
+
+#### Android 系统返回按钮 \{#android-system-back-button\}
+
+默认情况下，流程无法通过 Android 系统返回按钮或返回手势关闭——默认的 `flowViewDidPerformAction` 实现仅在 `CloseAction` 时关闭流程，并忽略 `AndroidSystemBackAction`，因此用户只能通过你定义的路径离开流程，例如 **Close** 按钮或编辑器中的 `on_device_back` 动作。如果你希望系统返回按钮能够关闭流程，请自行处理该动作：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+    when (action) {
+        is AdaptyUIAction.CloseAction ->
+            mainUiScope.launch { view.dismiss() } // default behavior
+        is AdaptyUIAction.AndroidSystemBackAction ->
+            mainUiScope.launch { view.dismiss() } // not handled by default
+        is AdaptyUIAction.OpenUrlAction ->
+            AdaptyUI.openWebUrl(action.url, action.openIn) // default behavior
+        else -> Unit
+    }
+}
+```
+
+有关操作的完整列表，请参阅[处理流程操作的指南](kmp-handle-paywall-actions)。
+
+</SDKv4>
+
+<SDKv3>
+
+使用[付费墙编辑工具](adapty-paywall-builder)配置的付费墙无需额外代码即可完成购买和恢复购买。不过，它们会产生一些你的应用可以响应的事件，包括按钮点击（关闭按钮、URL、产品选择等）以及付费墙上购买相关操作的通知。请参阅下文了解如何响应这些事件。
 
 :::warning
 本指南仅适用于**新版付费墙编辑工具付费墙**。
 :::
-要控制或监控移动应用中付费墙界面上发生的过程，请实现 `AdaptyUIPaywallsEventsObserver` 接口方法。某些方法具有默认实现，可自动处理常见场景。
+
+要在移动应用的付费墙页面中监控或控制各类事件，请实现 `AdaptyUIPaywallsEventsObserver` 接口的方法。其中部分方法已有默认实现，可自动处理常见场景。
 
 :::note
-这些方法是您添加自定义逻辑以响应付费墙事件的位置。您可以使用 `view.dismiss()` 关闭付费墙，或实现任何其他所需的自定义行为。
+这些方法是你添加自定义逻辑以响应付费墙事件的地方。你可以调用 `view.dismiss()` 关闭付费墙，或根据需要实现任何其他自定义行为。
 :::
+
 ## 用户生成的事件 \{#user-generated-events\}
 
 ### 付费墙的显示与隐藏 \{#paywall-appearance-and-disappearance\}
@@ -402,4 +871,5 @@ override fun paywallViewDidFailRendering(view: AdaptyUIPaywallView, error: Adapt
 ```
 </Details>
 
-在正常情况下，此类错误不应发生，因此如果您遇到此类错误，请告知我们。
+正常情况下不应出现此类错误，如果遇到，请及时告知我们。
+</SDKv3>

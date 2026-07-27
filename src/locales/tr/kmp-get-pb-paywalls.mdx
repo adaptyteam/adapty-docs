@@ -1,30 +1,234 @@
 ---
-title: "Kotlin Multiplatform SDK'da Paywall Builder paywalllarını ve yapılandırmalarını getirme"
-description: "Kotlin Multiplatform uygulamanızda abonelik kontrolünü iyileştirmek için Adapty'de PB paywalllarını nasıl alacağınızı öğrenin."
-metadataTitle: "Adapty'de PB Paywalllarını Alma | Adapty Dokümanları"
+title: "Flow ve paywall alma - Kotlin Multiplatform"
+description: "Kotlin Multiplatform uygulamanızda Adapty'den flow ve paywall'ları getirin."
+metadataTitle: "Flow ve Paywall Alma - Kotlin Multiplatform | Adapty Dokümanları"
 displayed_sidebar: sdkkmp
-keywords: ['getPaywall', 'hasViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+keywords: ['getFlow', 'createFlowView', 'getFlowForDefaultAudience', 'getPaywall', 'hasViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
 rank: 70
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-import Details from '@site/src/components/Details';
-import SampleApp from '@site/src/components/reusable/SampleApp.md';
+import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
 
-Adapty Kontrol Paneli'ndeki yeni Paywall Builder ile [paywallınızın görsel tasarımını tamamladıktan](adapty-paywall-builder) sonra, bunu mobil uygulamanızda gösterebilirsiniz. Bu sürecin ilk adımı, placement ile ilişkilendirilmiş paywall'ı ve görünüm yapılandırmasını aşağıda anlatıldığı şekilde almaktır.
+<SDKv4>
 
-Bu konunun Paywall Builder ile özelleştirilmiş paywalllar için geçerli olduğunu unutmayın. Paywalllarınızı manuel olarak uyguluyorsanız, [Mobil uygulamanızda remote config paywalllar için paywallları ve ürünleri getirme](fetch-paywalls-and-products-kmp) konusuna bakın.
+<MethodPromo method="getFlow" />
+
+[Flow veya Paywall Builder paywallınızı tasarladıktan](adapty-paywall-builder) sonra, bunu mobil uygulamanızda görüntüleyebilirsiniz. İlk adım, aşağıda açıklandığı gibi placement ile ilişkili flow veya paywallı ve bunların görünüm yapılandırmasını almaktır.
 
 <SampleApp />
 
 <details>
-   <summary>Mobil uygulamanızda paywall göstermeye başlamadan önce (genişletmek için tıklayın)</summary>
+   <summary>Mobil uygulamanızda flow'ları görüntülemeye başlamadan önce (genişletmek için tıklayın)</summary>
 
 1. Adapty Kontrol Paneli'nde [ürünlerinizi oluşturun](create-product).
-2. Adapty Kontrol Paneli'nde [bir paywall oluşturun ve ürünleri bu paywall'a ekleyin](create-paywall).
-3. Adapty Kontrol Paneli'nde [placementlar oluşturun ve paywallınızı bu placementa ekleyin](create-placement).
-4. Mobil uygulamanıza [Adapty SDK](sdk-installation-kotlin-multiplatform)'yı kurun.
+2. Adapty Kontrol Paneli'nde [bir flow/paywall oluşturun ve ürünleri ekleyin](create-paywall).
+3. Adapty Kontrol Paneli'nde [placement'lar oluşturun ve flow/paywall'ınızı ekleyin](create-placement).
+4. Mobil uygulamanıza [Adapty SDK](sdk-installation-kotlin-multiplatform) kurun.
+</details>
+
+## Flow/paywall getirme \{#fetch-flowpaywall\}
+
+Flow Builder veya Paywall Builder ile bir flow ya da paywall tasarladıysanız, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Böyle bir flow veya paywall, içinde neyin ve nasıl gösterileceğini zaten barındırır. Yine de placement aracılığıyla ID'sini, görünüm yapılandırmasını almanız ve ardından mobil uygulamanızda sunmanız gerekir.
+
+En iyi performansı sağlamak için, flow veya paywall'ı ve bunların [görünüm yapılandırmasını](kmp-get-pb-paywalls#fetch-the-view-configuration) mümkün olduğunca erken almanız kritik öneme sahiptir; böylece görseller kullanıcıya sunulmadan önce indirmek için yeterli süre tanınmış olur.
+
+Bir flow veya paywall almak için `getFlow` metodunu kullanın:
+
+```kotlin showLineNumbers
+
+Adapty.getFlow(
+    placementId = "YOUR_PLACEMENT_ID",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+    loadTimeout = 5.seconds
+).onSuccess { flow ->
+    // istenen flow/paywall
+}.onError { error ->
+    // hatayı işle
+}
+```
+
+Parametreler:
+
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|-----------|
+| **placementId** | zorunlu | İstenen [Placement](placements)'ın tanımlayıcısı. Adapty Kontrol Paneli'nde bir placement oluştururken belirttiğiniz değerdir. |
+| **fetchPolicy** | varsayılan: `AdaptyPaywallFetchPolicy.Default` | <p>SDK varsayılan olarak sunucudan veri yüklemeye çalışır; başarısız olursa önbelleğe alınmış veriyi döndürür. Kullanıcılarınızın her zaman en güncel verilere ulaşmasını sağladığından bu seçeneği öneriyoruz.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internet bağlantısıyla çalıştığını düşünüyorsanız, önbellekte veri varsa onu döndürmek için `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` seçeneğini kullanabilirsiniz. Bu durumda kullanıcılar en son verilere ulaşamayabilir; ancak internet bağlantısı ne kadar kesintili olursa olsun daha hızlı yükleme süreleri yaşarlar. Önbellek düzenli olarak güncellendiğinden, oturum sırasında gereksiz ağ isteklerini önlemek amacıyla kullanmak güvenlidir.</p><p></p><p>Önbelleğin uygulama yeniden başlatıldığında silinmediğini, yalnızca uygulama yeniden yüklendiğinde veya manuel temizleme yapıldığında temizlendiğini unutmayın.</p><p></p><p>Adapty SDK, flow'ları ve paywall'ları yerel olarak iki katmanda saklar: yukarıda açıklanan düzenli olarak güncellenen önbellek ve [yedek paywall'lar](fallback-paywalls). Ayrıca daha hızlı yükleme için CDN, CDN'e ulaşılamadığında ise bağımsız bir yedek sunucu kullanırız. Bu sistem, internet bağlantısının yetersiz olduğu durumlarda bile güvenilirliği sağlarken her zaman en son sürümü almanızı garanti edecek şekilde tasarlanmıştır.</p> |
+| **loadTimeout** | varsayılan: 5 sn | <p>Bu değer, metodun zaman aşımı süresini sınırlar. Zaman aşımına ulaşılırsa önbelleğe alınmış veriler veya yerel yedek döndürülür.</p><p>İşlemin arka planda farklı isteklerden oluşabileceği göz önünde bulundurulduğunda, nadir durumlarda bu metodun `loadTimeout` içinde belirtilenden biraz daha geç zaman aşımına uğrayabileceğini unutmayın.</p><p>Kotlin Multiplatform için: `Duration` nesnesini `5.seconds` gibi uzantı fonksiyonlarıyla oluşturabilirsiniz; burada `.seconds`, `kotlin.time.Duration.Companion.seconds` kaynağından gelir.</p> |
+
+Yanıt parametreleri:
+
+| Parametre | Açıklama |
+| :-------- | :---------- |
+| Flow   | Placement'ı, tanımlayıcıları (`instanceIdentity`, `variationId`), adı, paywall varyasyonlarını (`paywalls` — `AdaptyFlowPaywall` listesi) ve remote config'leri (`remoteConfigs` — her locale için bir girdi içeren liste) barındıran `AdaptyFlow` nesnesi. Ön yükleme, özel arayüz veya programatik kontroller için gerçek ürünleri getirmek istiyorsanız `getPaywallProducts(flow)` metodunu çağırın. |
+
+## View yapılandırmasını getir \{#fetch-the-view-configuration\}
+
+Flow veya paywall'ı getirdikten sonra, `createFlowView` metoduyla view yapılandırmasını yükleyin ve view'ı tek adımda oluşturun. Kontrol etmeniz gereken ayrı bir bayrak yoktur: placement **Flow Builder**'da (flow) veya **Paywall Builder**'da (paywall) tasarlanmışsa, `createFlowView` sunuma hazır view'ı döndürür. Placement, Builder arayüzü olmayan özel bir paywall ise `createFlowView` bir `AdaptyResult.Error` döndürür — [bunu remote config paywall olarak ele alın](present-remote-config-paywalls-kmp).
+
+:::important
+Flow Builder'da **Show on device** geçişinin etkin olduğundan emin olun. Bu seçenek açık değilse, görünüm yapılandırması alınamaz.
+:::
+
+```kotlin showLineNumbers
+
+AdaptyUI.createFlowView(
+    flow = flow,
+    loadTimeout = 5.seconds,
+    preloadProducts = true
+).onSuccess { view ->
+    // use view
+}.onError { error ->
+    // the flow has no view configured, or view creation failed
+}
+```
+
+| Parametre                    | Zorunluluk     | Açıklama                                                     |
+| :--------------------------- | :------------- | :----------------------------------------------------------- |
+| **flow**                     | zorunlu        | `Adapty.getFlow` aracılığıyla elde edilen bir `AdaptyFlow` nesnesi. |
+| **loadTimeout**              | isteğe bağlı   | Bu değer, metodun zaman aşımı süresini sınırlar. Zaman aşımına ulaşılırsa, önbelleğe alınmış veriler veya yerel yedek döndürülür. Nadir durumlarda bu metod, `loadTimeout` içinde belirtilenden biraz daha geç zaman aşımına uğrayabilir; çünkü işlem arka planda farklı isteklerden oluşabilir. `kotlin.time.Duration.Companion` paketinden `5.seconds` gibi uzantı fonksiyonlarını kullanabilirsiniz. |
+| **preloadProducts**          | isteğe bağlı   | Daha iyi performans için ürünleri önceden yüklemek üzere `true` olarak ayarlayın. Etkinleştirildiğinde, ürünler önceden yüklenerek flow veya paywall'ın görüntülenmesi için gereken süre azaltılır. |
+| **productPurchaseParameters** | isteğe bağlı  | [`AdaptyProductIdentifier`](https://kmp.adapty.io/adapty/com.adapty.kmp.models/-adapty-product-identifier/) ile [`AdaptyPurchaseParameters`](https://kmp.adapty.io/adapty/com.adapty.kmp.models/-adapty-purchase-parameters/) arasındaki bir eşleme. Flow veya paywall'daki bireysel ürünler için kişiselleştirilmiş teklifler veya abonelik güncelleme parametreleri gibi satın alma'ya özgü parametreleri yapılandırmak için kullanın. |
+
+:::note
+Birden fazla dil kullanıyorsanız, [Builder yerelleştirmesi](add-paywall-locale-in-adapty-paywall-builder) eklemeyi öğrenin.
+:::
+
+Yüklendikten sonra [flow veya paywall'ı gösterin](kmp-present-paywalls).
+
+## Varsayılan kitle için flow veya paywall alarak daha hızlı yükleme sağlayın \{#get-a-flow-or-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Genellikle flow'lar ve paywall'lar neredeyse anında yüklenir, bu yüzden bu süreci hızlandırmak için endişelenmenize gerek yoktur. Ancak çok sayıda kitle ve placement'ınız varsa ve kullanıcılarınızın internet bağlantısı zayıfsa, bir flow veya paywall'ı yüklemek istediğinizden daha uzun sürebilir. Bu gibi durumlarda, hiçbir şey göstermek yerine sorunsuz bir kullanıcı deneyimi sağlamak için varsayılan bir flow veya paywall görüntülemek isteyebilirsiniz.
+
+Bunu gidermek için, belirtilen placement'ın **All Users** kitlesi için flow veya paywall'ını çeken `getFlowForDefaultAudience` metodunu kullanabilirsiniz. Ancak şunu anlamak kritik önem taşır: önerilen yaklaşım, flow veya paywall'ı yukarıdaki [Flow/paywall'ı getir](#fetch-flowpaywall) bölümünde ayrıntılı olarak açıklandığı şekilde `getFlow` metoduyla çekmektir.
+
+:::warning
+Neden `getFlow` kullanmanızı öneriyoruz
+
+`getFlowForDefaultAudience` metodunun birkaç önemli dezavantajı vardır:
+
+- **Potansiyel geriye dönük uyumluluk sorunları**: Farklı uygulama sürümleri için (mevcut ve gelecekteki) farklı flow'lar göstermeniz gerekirse zorluklarla karşılaşabilirsiniz. Ya mevcut (eski) sürümü destekleyen flow'lar tasarlamanız ya da mevcut (eski) sürüme sahip kullanıcıların render edilemeyen flow'larla sorun yaşayabileceğini kabul etmeniz gerekecektir.
+- **Hedefleme kaybı**: Tüm kullanıcılar **All Users** kitlesine yönelik tasarlanmış aynı flow'u görecektir; bu da kişiselleştirilmiş hedeflemeyi (ülkelere, pazarlama attribution'ına veya kendi özel özelliklerinize göre hedefleme dahil) kaybettiğiniz anlamına gelir.
+
+Bu dezavantajları göze alarak daha hızlı flow veya paywall getirme işleminden yararlanmak istiyorsanız, `getFlowForDefaultAudience` metodunu aşağıdaki gibi kullanın. Aksi takdirde [yukarıda](#fetch-flowpaywall) açıklanan `getFlow` metodunu kullanmaya devam edin.
+:::
+
+```kotlin showLineNumbers
+
+Adapty.getFlowForDefaultAudience(
+    placementId = "YOUR_PLACEMENT_ID",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+).onSuccess { flow ->
+    // the requested flow
+}.onError { error ->
+    // handle the error
+}
+```
+
+| Parametre | Zorunluluk | Açıklama |
+|---------|--------|-----------|
+| **placementId** | zorunlu | [Placement](placements) tanımlayıcısı. Adapty Kontrol Paneli'nde placement oluştururken belirttiğiniz değerdir. |
+| **fetchPolicy** | varsayılan: `AdaptyPaywallFetchPolicy.Default` | <p>SDK, varsayılan olarak sunucudan veri yüklemeye çalışır; başarısız olursa önbelleğe alınmış veriyi döndürür. Kullanıcılarınızın her zaman en güncel verilere ulaşmasını sağladığından bu seçeneği kullanmanızı öneririz.</p><p></p><p>Ancak kullanıcılarınızın kararsız bir internet bağlantısıyla karşılaştığını düşünüyorsanız, önbelleğe alınmış veri mevcutsa onu döndürmek için `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` seçeneğini kullanabilirsiniz. Bu senaryoda kullanıcılar en güncel verilere ulaşamayabilir, ancak internet bağlantısı ne kadar kesintili olursa olsun daha hızlı yükleme süreleri yaşarlar. Önbellek düzenli olarak güncellenir; dolayısıyla oturum sırasında ağ isteklerinden kaçınmak için güvenle kullanılabilir.</p><p></p><p>Önbelleğin, uygulama yeniden başlatıldığında silinmediğini; yalnızca uygulama kaldırılıp yeniden yüklendiğinde ya da manuel temizlik yapıldığında temizlendiğini unutmayın.</p> |
+
+## Varlıkları özelleştirme \{#customize-assets\}
+
+Flow veya paywallınızdaki görselleri ve videoları özelleştirmek için özel varlıkları uygulayın.
+
+Hero görseller ve videolar önceden tanımlanmış ID'lere sahiptir: `hero_image` ve `hero_video`. Özel bir varlık paketinde, bu öğeleri ID'leriyle hedefler ve davranışlarını özelleştirirsiniz.
+
+Diğer görseller ve videolar için Adapty kontrol panelinde [özel bir ID belirlemeniz](custom-media) gerekir.
+
+Örneğin şunları yapabilirsiniz:
+
+- Bazı kullanıcılara farklı bir görsel veya video gösterme.
+- Uzak ana görsel yüklenirken yerel bir önizleme görseli gösterme.
+- Video başlamadan önce bir önizleme görseli gösterme.
+
+İşte özel varlıkları bir map aracılığıyla nasıl sağlayabileceğinize dair bir örnek:
+
+:::info
+Kotlin Multiplatform SDK yalnızca yerel varlıkları destekler. Uzak içerikler için, bunları özel varlıklarda kullanmadan önce indirip yerel olarak önbelleğe almanız gerekir.
+:::
+
+```kotlin showLineNumbers
+// Import generated Res class for accessing resources
+
+viewModelScope.launch {
+    // Get URIs for bundled resources using Res.getUri()
+    val heroImagePath = Res.getUri("files/images/hero_image.png")
+    val demoVideoPath = Res.getUri("files/videos/demo_video.mp4")
+
+    // Or read image as byte data
+    val imageByteData = Res.readBytes("files/images/avatar.png")
+
+    // Create custom assets map
+    val customAssets: Map<String, AdaptyCustomAsset> = mapOf(
+        // Load image from app resources (bundled with the app)
+        // Files should be placed in commonMain/composeResources/files/
+        "hero_image" to AdaptyCustomAsset.localImageResource(
+            path = heroImagePath
+        ),
+
+        // Or use image byte data
+        "avatar" to AdaptyCustomAsset.localImageData(
+            data = imageByteData
+        ),
+
+        // Load video from app resources
+        "demo_video" to AdaptyCustomAsset.localVideoResource(
+            path = demoVideoPath
+        ),
+
+        // Or use a video file from device storage
+        "intro_video" to AdaptyCustomAsset.localVideoFile(
+            path = "/path/to/local/video.mp4"
+        ),
+
+        // Apply custom brand colors
+        "brand_primary" to AdaptyCustomAsset.color(
+            colorHex = "#FF6B35"
+        ),
+
+        // Create gradient background
+        "card_gradient" to AdaptyCustomAsset.linearGradient(
+            colors = listOf("#1E3A8A", "#3B82F6", "#60A5FA"),
+            stops = listOf(0.0f, 0.5f, 1.0f)
+        )
+    )
+
+    // Use custom assets when creating the flow view
+    AdaptyUI.createFlowView(
+        flow = flow,
+        customAssets = customAssets
+    ).onSuccess { view ->
+        // Present the flow with custom assets
+        view.present()
+    }.onError { error ->
+        // Handle the error - the flow will fall back to default appearance
+    }
+}
+```
+
+:::note
+Bir varlık bulunamazsa veya yüklenemezse, flow veya paywall Builder'da yapılandırılan varsayılan görünümüne geri döner.
+:::
+
+</SDKv4>
+
+<SDKv3>
+
+Adapty Kontrol Paneli'ndeki yeni Paywall Builder ile [paywall'unuzun görsel kısmını tasarladıktan](adapty-paywall-builder) sonra, bunu mobil uygulamanızda gösterebilirsiniz. Bu süreçteki ilk adım, aşağıda açıklandığı gibi placement ile ilişkili paywall'u ve görünüm yapılandırmasını almaktır.
+
+Paywall Builder ile özelleştirilmiş paywalllar için bu konuya başvurduğunuzu unutmayın. Paywalllarınızı manuel olarak uyguluyorsanız, lütfen [Mobil uygulamanızda remote config paywalllar için paywallları ve ürünleri getirme](fetch-paywalls-and-products-kmp) konusuna bakın.
+
+<SampleApp />
+
+<details>
+   <summary>Mobil uygulamanızda paywallları göstermeye başlamadan önce (genişletmek için tıklayın)</summary>
+
+1. Adapty Kontrol Paneli'nde [ürünlerinizi oluşturun](create-product).
+2. Adapty Kontrol Paneli'nde [bir paywall oluşturun ve ürünleri ekleyin](create-paywall).
+3. Adapty Kontrol Paneli'nde [placement'lar oluşturun ve paywallı ekleyin](create-placement).
+4. Mobil uygulamanıza [Adapty SDK](sdk-installation-kotlin-multiplatform) yükleyin.
 </details>
 
 ## Paywall Builder ile tasarlanan paywall'ı getirme \{#fetch-paywall-designed-with-paywall-builder\}
@@ -36,8 +240,6 @@ En iyi performansı sağlamak için, görsellerin kullanıcıya sunulmadan önce
 Paywall almak için `getPaywall` metodunu kullanın:
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
 
 Adapty.getPaywall(
     placementId = "YOUR_PLACEMENT_ID",
@@ -77,8 +279,6 @@ Paywall'ı aldıktan sonra, Paywall Builder kullanılarak oluşturulduğunu gös
 Görünüm yapılandırmasını yüklemek için `createPaywallView` metodunu kullanın.
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.AdaptyUI
-import kotlin.time.Duration.Companion.seconds
 
 if (paywall.hasViewConfiguration) {
     AdaptyUI.createPaywallView(
@@ -126,9 +326,6 @@ Daha hızlı paywall getirme avantajından yararlanmak için bu dezavantajları 
 :::
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywall
-import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
 
 Adapty.getPaywallForDefaultAudience(
     placementId = "YOUR_PLACEMENT_ID",
@@ -172,11 +369,7 @@ Kotlin Multiplatform SDK yalnızca yerel varlıkları destekler. Uzak içerikler
 :::
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.AdaptyUI
-import com.adapty.kmp.models.AdaptyCustomAsset
-import kotlinx.coroutines.launch
 // Import generated Res class for accessing resources
-import myapp.composeapp.generated.resources.Res
 
 viewModelScope.launch {
     // Get URIs for bundled resources using Res.getUri()
@@ -235,5 +428,7 @@ viewModelScope.launch {
 ```
 
 :::note
-Bir varlık bulunamazsa veya yüklenemezse, paywall Paywall Builder'da yapılandırılmış varsayılan görünümüne geri döner.
+Bir asset bulunamaz veya yüklenemezse, paywall Paywall Builder'da yapılandırılmış varsayılan görünümüne geri döner.
 :::
+
+</SDKv3>

@@ -1,10 +1,11 @@
 ---
 title: "将 Adapty Android SDK 迁移至 v. 4.0"
-description: "通过将付费墙 API 替换为 flow API，将项目迁移至 Adapty Android SDK v4.0（beta），兼容 Flow Builder 和 Paywall Builder。"
-metadataTitle: "迁移至 Adapty Android SDK v4.0（beta）| Adapty 文档"
+description: "通过将付费墙 API 替换为流程 API，迁移至 Adapty Android SDK v4.0，兼容流程编辑工具和付费墙编辑工具。"
+metadataTitle: "迁移至 Adapty Android SDK v4.0 | Adapty 文档"
 ---
 
-Adapty Android SDK 4.0（beta）引入了 flow 功能，并对付费墙 API 进行了相应重命名。新 API 同时兼容新版 Flow Builder 和现有的 Paywall Builder，无需在 Adapty 看板侧进行任何配置变更。
+Adapty Android SDK 4.0 引入了流程功能，并相应地对付费墙 API 进行了重命名。新 API 同时兼容新版流程编辑工具和现有的付费墙编辑工具——无需在 Adapty 看板端进行任何配置变更。
+
 ## 快速参考 \{#quick-reference\}
 | v3 | v4 |
 |---|---|
@@ -29,7 +30,8 @@ Adapty Android SDK 4.0（beta）引入了 flow 功能，并对付费墙 API 进�
 `AdaptyPaywallProduct` 保持原名不变——产品仍属于某个 flow，`getPaywallProducts` 现在接收 `AdaptyFlow` 参数。其他 `AdaptyFlowEventListener` 方法（`onProductSelected`、`onPurchaseStarted`、`onPurchaseFinished`、`onPurchaseFailure`、`onRestoreSuccess`、`onRestoreFailure`、`onActionPerformed`、`onAwaitingPurchaseParams`、`onLoadingProductsFailure` 等）保持原有名称和签名不变。
 ## 安装 \{#installation\}
 
-Adapty Android SDK 4.0 目前为预发布版本，因此你必须指定精确版本号，而不能使用动态版本范围——将 `adapty-bom` 版本设置为 `4.0.0-beta.1` 并同步项目。BOM 会自动为你解析匹配的 `android-sdk` 和 `android-ui` 版本。依赖声明详情请参阅[安装 Adapty SDK](sdk-installation-android)。
+将 `adapty-bom` 版本设置为 `4.0.0`（或更高版本）并同步项目。BOM 会自动为你解析匹配的 `android-sdk` 和 `android-ui` 版本。依赖项声明请参见[安装 Adapty SDK](sdk-installation-android)。
+
 ## 已移除和废弃的 API \{#removed-and-deprecated-apis\}
 
 - **`Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized, callback)`** — 已移除。此重载方法在 v3 中已废弃。请改用 `AdaptyPurchaseParameters` 传入相同的选项：
@@ -150,6 +152,8 @@ Adapty Android SDK 4.0 目前为预发布版本，因此你必须指定精确版
 ```
 
 现有的处理器主体无需修改代码——只需重命名类型和重写方法即可。`onError` 触发的场景与 `onRenderingError` 相同，还额外涵盖其他非购买类运行时错误。完整的回调列表请参阅[处理流程与付费墙事件](android-handling-events)。
+v4 还新增了 `onBackPressed(context): Boolean` 回调，其默认行为也改变了系统返回键的处理方式。此前，返回键（或返回手势）会透传给 Activity 或 Fragment，通常会关闭付费墙。v4 中默认实现会消费该按键事件，因此**系统返回键不再自动关闭流程**——与 iOS 保持一致（iOS 上流程无法通过系统手势关闭）。请为用户提供明确的退出方式（添加 **Close** 按钮或 `on_device_back` 操作），或者重写 `onBackPressed` 并返回 `false` 以恢复旧有行为。详情请参阅[系统返回键](android-handling-events#system-back-button)。
+默认购买处理器也不再自动关闭屏幕。在 v3 中，默认的 `onPurchaseFinished` 会在任何非用户主动取消的购买完成后（成功或待处理的购买）关闭付费墙。在 v4 中它是一个空操作，因此**流程在购买完成后会保持打开状态，直到你手动关闭它**——这与 iOS 的行为一致。如果你之前依赖自动关闭功能，请在购买完成后自行关闭屏幕。具体示例请参阅[购买成功、取消或待处理](android-handling-events#successful-canceled-or-pending-purchase)。
 ## 归因与集成标识符 \{#attribution-and-integration-identifiers\}
 ### updateAttribution
 
@@ -162,41 +166,40 @@ Adapty Android SDK 4.0 目前为预发布版本，因此你必须指定精确版
 预定义来源：`AdaptyAttributionSource.APPLE_ADS`、`.ADJUST`、`.APPSFLYER`、`.BRANCH`、`.TENJIN`。如需使用其他来源，可通过字符串构建：`AdaptyAttributionSource("your_source")`。
 ### setIntegrationIdentifier
 
-`setIntegrationIdentifier(key, value)` 已被替换为一个接受一个或多个 `AdaptyIntegrationIdentifier` 值的方法。请使用预定义的 `Key` 常量，而不是原始字符串键：
+`setIntegrationIdentifier(key, value)` 已被替换为接受一个或多个 `AdaptyIntegrationIdentifier` 值的方法。请使用便捷方法构建每个标识符，而不是传入原始字符串键：
 
 ```diff showLineNumbers
 - Adapty.setIntegrationIdentifier("appsflyer_id", appsFlyerId) { error -> /* handle the error */ }
-+ Adapty.setIntegrationIdentifier(
-+     AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.APPSFLYER_ID, appsFlyerId)
-+ ) { error -> /* handle the error */ }
++ Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier.appsflyerId(appsFlyerId)) { error -> /* handle the error */ }
 ```
 
-您可以在一次调用中设置多个标识符：
+你可以在一次调用中设置多个标识符：
 ```kotlin showLineNumbers
 Adapty.setIntegrationIdentifier(
     listOf(
-        AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.APPSFLYER_ID, appsFlyerId),
-        AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key.ADJUST_DEVICE_ID, adjustDeviceId),
+        AdaptyIntegrationIdentifier.appsflyerId(appsFlyerId),
+        AdaptyIntegrationIdentifier.adjustDeviceId(adjustDeviceId),
     )
 ) { error -> /* handle the error */ }
 ```
 
-将每个旧的键字符串替换为对应的 `Key` 常量：
-| v3 key | v4 `AdaptyIntegrationIdentifier.Key` |
+将每个旧的键字符串替换为对应的便捷方法：
+| v3 键名 | v4 `AdaptyIntegrationIdentifier` 方法 |
 |---|---|
-| `"adjust_device_id"` | `ADJUST_DEVICE_ID` |
-| `"airbridge_device_id"` | `AIRBRIDGE_DEVICE_ID` |
-| `"amplitude_user_id"` | `AMPLITUDE_USER_ID` |
-| `"amplitude_device_id"` | `AMPLITUDE_DEVICE_ID` |
-| `"appmetrica_device_id"` | `APPMETRICA_DEVICE_ID` |
-| `"appmetrica_profile_id"` | `APPMETRICA_PROFILE_ID` |
-| `"appsflyer_id"` | `APPSFLYER_ID` |
-| `"branch_id"` | `BRANCH_ID` |
-| `"facebook_anonymous_id"` | `FACEBOOK_ANONYMOUS_ID` |
-| `"firebase_app_instance_id"` | `FIREBASE_APP_INSTANCE_ID` |
-| `"mixpanel_user_id"` | `MIXPANEL_USER_ID` |
-| `"one_signal_subscription_id"` | `ONE_SIGNAL_SUBSCRIPTION_ID` |
-| `"one_signal_player_id"` | `ONE_SIGNAL_PLAYER_ID` |
-| `"posthog_distinct_user_id"` | `POSTHOG_DISTINCT_USER_ID` |
-| `"pushwoosh_hwid"` | `PUSHWOOSH_HWID` |
-| `"tenjin_analytics_installation_id"` | `TENJIN_ANALYTICS_INSTALLATION_ID` |
+| `"adjust_device_id"` | `adjustDeviceId(value)` |
+| `"airbridge_device_id"` | `airbridgeDeviceId(value)` |
+| `"amplitude_user_id"` | `amplitudeUserId(value)` |
+| `"amplitude_device_id"` | `amplitudeDeviceId(value)` |
+| `"appmetrica_device_id"` | `appmetricaDeviceId(value)` |
+| `"appmetrica_profile_id"` | `appmetricaProfileId(value)` |
+| `"appsflyer_id"` | `appsflyerId(value)` |
+| `"branch_id"` | `branchId(value)` |
+| `"facebook_anonymous_id"` | `facebookAnonymousId(value)` |
+| `"firebase_app_instance_id"` | `firebaseAppInstanceId(value)` |
+| `"mixpanel_user_id"` | `mixpanelUserId(value)` |
+| `"one_signal_subscription_id"` | `oneSignalSubscriptionId(value)` |
+| `"one_signal_player_id"` | `oneSignalPlayerId(value)` |
+| `"posthog_distinct_user_id"` | `posthogDistinctUserId(value)` |
+| `"pushwoosh_hwid"` | `pushwooshHWID(value)` |
+| `"tenjin_analytics_installation_id"` | `tenjinAnalyticsInstallationId(value)` |
+对于不在此列表中的键，可以直接使用自定义 `Key` 来构建标识符：`AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key("custom"), customValue)`。

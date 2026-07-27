@@ -1,40 +1,281 @@
 ---
-title: "Flutter - 处理付费墙事件"
-description: "了解如何在 Flutter 中使用 Adapty 处理订阅相关事件，有效追踪用户交互行为。"
+title: "Flutter - 处理 flow 与付费墙事件"
+description: "了解如何在 Flutter 中使用 Adapty 处理订阅相关事件，从而有效追踪用户交互。"
 metadataTitle: "在 Flutter 中处理事件 | Adapty 文档"
-keywords: ['event', 'paywallViewDidAppear', 'paywallViewDidDisappear', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+keywords: ['event', 'flowViewDidAppear', 'flowViewDidDisappear', 'flowViewDidPerformAction', 'flowViewDidSelectProduct', 'flowViewDidStartPurchase', 'flowViewDidFinishPurchase', 'flowViewDidFailPurchase', 'flowViewDidStartRestore', 'flowViewDidFinishRestore', 'flowViewDidFailRestore', 'flowViewDidFailLoadingProducts', 'flowViewDidReceiveError', 'flowViewDidReceiveAnalyticEvent', 'paywallViewDidAppear', 'paywallViewDidDisappear', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
 import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
 import PaywallAction from '@site/src/locales/zh/reusable/PaywallAction.md';
 
+<SDKv4>
+
 :::important
-本指南涵盖购买、恢复、产品选择及付费墙渲染的事件处理。你还必须实现按钮处理（关闭付费墙、打开链接等）。详情请参阅[按钮操作处理指南](flutter-handle-paywall-actions)。
+本指南涵盖购买、恢复、产品选择和渲染的事件处理。关闭视图和打开链接由默认的 `flowViewDidPerformAction` 实现处理——如需覆盖这些行为或处理自定义按钮动作，请参阅[按钮动作处理指南](flutter-handle-paywall-actions)。
 :::
-使用[付费墙编辑工具](adapty-paywall-builder)配置的付费墙无需额外代码即可完成购买和恢复购买操作。但它们会生成一些事件，供你的应用响应。这些事件包括按钮点击（关闭按钮、URL、产品选择等）以及付费墙上与购买相关的操作通知。请阅读下文，了解如何响应这些事件。
+通过编辑工具配置的流程和付费墙无需额外代码即可完成购买和恢复购买操作。但它们会产生一些事件供你的应用响应，包括按钮点击（关闭按钮、URL、产品选择等）以及流程或付费墙上与购买相关的操作通知。请参阅以下内容了解如何响应这些事件。
+
+如需在移动应用中控制或监控流程或付费墙屏幕上发生的过程，请实现 `AdaptyUIFlowsEventsObserver` 方法，并在展示任何屏幕之前设置观察者：
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setFlowsEventsObserver(this);
+```
+
+有三个观察者方法是**必须实现**的——缺少它们类将无法编译：`flowViewDidFinishPurchase`、`flowViewDidFinishRestore` 和 `flowViewDidReceiveError`。其他方法均为可选。若要移除已设置的观察者，请向 `setFlowsEventsObserver` 传入 `null`。
+
+<SampleApp />
+
+以下事件示例展示了每个对象上可用的属性，注释中提供了示意性的参考值。
+### 用户生成的事件 \{#user-generated-events\}
+
+#### 视图已出现 \{#view-appeared\}
+
+当流程或付费墙视图显示在屏幕上时，将调用此方法。
+
+:::note
+在 iOS 上，当用户点击付费墙内的[网页付费墙按钮](web-paywall#step-2a-add-a-web-purchase-button)，且网页付费墙在应用内浏览器中打开时，也会调用此方法。
+:::
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidAppear(AdaptyUIFlowView view) {
+}
+```
+
+#### 视图已消失 \{#view-disappeared\}
+
+当流程或付费墙视图从屏幕上关闭时，将调用此方法。
+:::note
+在 iOS 上，当从付费墙中在应用内浏览器打开的 [web 付费墙](web-paywall#step-2a-add-a-web-purchase-button) 从屏幕消失时，也会触发此方法。
+:::
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidDisappear(AdaptyUIFlowView view) {
+}
+```
+
+#### 产品选择 \{#product-selection\}
+
+当某个产品被选中购买（由用户或系统触发）时，将调用此方法：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidSelectProduct(AdaptyUIFlowView view, String productId) {
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+```dart
+void flowViewDidSelectProduct(AdaptyUIFlowView view, String productId) {
+  // productId is a String:
+  productId; // 'premium_monthly'
+}
+```
+</Details>
+
+#### 开始购买 \{#started-purchase\}
+
+当用户发起购买流程时，将调用此方法：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidStartPurchase(AdaptyUIFlowView view, AdaptyPaywallProduct product) {
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+```dart
+void flowViewDidStartPurchase(AdaptyUIFlowView view, AdaptyPaywallProduct product) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId;        // 'premium_monthly'
+  product.localizedTitle;         // 'Premium Monthly'
+  product.localizedDescription;   // 'Premium subscription for 1 month'
+  product.price.amount;           // 9.99            (double)
+  product.price.currencyCode;     // 'USD'
+  product.price.localizedString;  // '$9.99'
+}
+```
+</Details>
+
+#### 完成购买 \{#finished-purchase\}
+此方法为**必需**。当购买成功、用户取消购买或购买处于待处理状态时，系统会调用此方法：
+```dart showLineNumbers title="Flutter"
+void flowViewDidFinishPurchase(AdaptyUIFlowView view, 
+                               AdaptyPaywallProduct product, 
+                               AdaptyPurchaseResult purchaseResult) {
+    switch (purchaseResult) {
+      case AdaptyPurchaseResultSuccess(profile: final profile):
+        // successful purchase
+        break;
+      case AdaptyPurchaseResultPending():
+        // purchase is pending
+        break;
+      case AdaptyPurchaseResultUserCancelled():
+        // user cancelled the purchase
+        break;
+      default:
+        break;
+    }
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+```dart
+void flowViewDidFinishPurchase(AdaptyUIFlowView view,
+                               AdaptyPaywallProduct product,
+                               AdaptyPurchaseResult purchaseResult) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId; // 'premium_monthly'
+
+  switch (purchaseResult) {
+    case AdaptyPurchaseResultSuccess(profile: final profile):
+      // profile — AdaptyProfile:
+      profile.accessLevels['premium']?.isActive;  // true
+      profile.accessLevels['premium']?.expiresAt; // DateTime(2027, 2, 15, 10, 30)
+      break;
+    case AdaptyPurchaseResultPending():
+      // no additional data
+      break;
+    case AdaptyPurchaseResultUserCancelled():
+      // no additional data
+      break;
+  }
+}
+```
+</Details>
+:::info
+与 v3 不同，此方法没有默认行为——视图不再在购买成功后自动关闭。请自行决定后续操作：继续流程或调用 `view.dismiss()`。有关关闭屏幕的详细信息，请参阅[响应按钮操作](flutter-handle-paywall-actions)。
+:::
+
+#### 完成 Web 支付导航 \{#finished-web-payment-navigation\}
+
+此方法在尝试为特定产品打开 [Web 付费墙](web-paywall)后调用，包括导航成功和失败的情况：
+```dart showLineNumbers title="Flutter"
+void flowViewDidFinishWebPaymentNavigation(AdaptyUIFlowView view, 
+                                           AdaptyPaywallProduct? product, 
+                                           AdaptyError? error) {
+}
+```
+
+**参数：**
+| 参数 | 描述 |
+|:------------|:---------------------------------------------------------------------------------------------------|
+| **product** | 打开 Web 付费墙时对应的 `AdaptyPaywallProduct`。可以为 `null`。 |
+| **error** | 如果 Web 付费墙导航失败，则为 `AdaptyError` 对象；导航成功时为 `null`。 |
+
+#### 购买失败 \{#failed-purchase\}
+当购买失败时（例如由于支付问题或网络错误），此方法将被调用。对于用户主动取消或待处理的交易，**不会**触发此方法——这些情况由 `flowViewDidFinishPurchase` 处理：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFailPurchase(AdaptyUIFlowView view, 
+                             AdaptyPaywallProduct product, 
+                             AdaptyError error) {
+}
+```
+
+#### 开始恢复购买 \{#started-restore\}
+
+如果用户发起恢复流程，此方法将被调用：
+```dart showLineNumbers title="Flutter"
+void flowViewDidStartRestore(AdaptyUIFlowView view) {
+}
+```
+
+#### 恢复成功 \{#successful-restore\}
+
+此方法为**必需**。如果购买恢复成功，将会调用此方法：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+```dart
+void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
+  // profile — AdaptyProfile:
+  profile.accessLevels['premium']?.isActive;            // true
+  profile.accessLevels['premium']?.expiresAt;           // DateTime(2027, 2, 15, 10, 30)
+  profile.subscriptions['premium_monthly']?.isActive;   // true
+  profile.subscriptions['premium_monthly']?.expiresAt;  // DateTime(2027, 2, 15, 10, 30)
+}
+```
+</Details>
+如果用户已拥有所需的 `accessLevel`，我们建议关闭该页面。请参阅[订阅状态](flutter-listen-subscription-changes)了解如何检查，以及[响应按钮操作](flutter-handle-paywall-actions)了解如何关闭页面。
+
+#### 恢复失败 \{#failed-restore\}
+
+如果恢复购买失败，将触发此方法：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFailRestore(AdaptyUIFlowView view, AdaptyError error) {
+}
+```
+### 数据获取与渲染 \{#data-fetching-and-rendering\}
+
+#### 产品加载错误 \{#product-loading-errors\}
+
+如果你在初始化时没有传入产品数组，AdaptyUI 会自动从服务器获取所需对象。如果该操作失败，AdaptyUI 会通过调用以下方法来上报错误：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFailLoadingProducts(AdaptyUIFlowView view, AdaptyError error) {
+}
+```
+
+#### 视图错误 \{#view-errors\}
+此方法为**必填项**。它替代了 v3 的 `paywallViewDidFailRendering` 方法：界面渲染过程中发生的错误以及其他视图错误，都会通过调用此方法来上报。实现此方法后，关闭视图的逻辑由你来决定——我们建议在发生此类错误时关闭视图，这也是未设置观察者时 SDK 内置默认行为的处理方式：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveError(AdaptyUIFlowView view, AdaptyError error) {
+  // log the error and dismiss the broken view
+  view.dismiss();
+}
+```
+正常情况下不应出现渲染错误，如果遇到，请告知我们。
+### 分析事件 \{#analytics-events\}
+
+可选的 `flowViewDidReceiveAnalyticEvent` 方法用于接收来自流程的自定义分析事件。目前流程尚未向您的代码发送此类事件，因此无需实现该方法。
+### 在观察者模式下处理购买 \{#handle-purchases-in-observer-mode\}
+
+如果你以[观察者模式](implement-observer-mode-flutter)激活了 SDK，并展示了由 Adapty 渲染的流程或付费墙，SDK 不会自动为你发起购买。当用户点击购买或恢复购买按钮时，SDK 会调用你的 `AdaptyUIObserverModeResolver`。完整的配置说明请参阅[在观察者模式下展示流程](flutter-present-flows-in-observer-mode)。
+### 处理系统请求 \{#handle-system-requests\}
+
+`AdaptyUISystemRequestsHandler`（通过 `AdaptyUI().setSystemRequestsHandler(...)` 注册）用于处理来自流程的系统请求：操作系统权限提示（如推送通知或相机访问）以及 App Store 评价请求。目前流程尚未触发此类请求，因此无需注册处理程序。
+如果你注册了处理器，请注意：`handlePermission` 是该类的必需方法——用你自己的代码请求权限，然后返回 `AdaptyUIPermissionResult.granted()` 或 `AdaptyUIPermissionResult.denied()`；`handleAppReviewRequest` 是可选的。
+
+</SDKv4>
+
+<SDKv3>
+
+:::important
+本指南介绍购买、恢复、产品选择和付费墙渲染的事件处理。你还必须实现按钮处理（关闭付费墙、打开链接等）。详情请参阅[按钮操作处理指南](flutter-handle-paywall-actions)。
+:::
+使用[付费墙编辑工具](adapty-paywall-builder)配置的付费墙无需额外代码即可完成购买和恢复购买操作。但它们会产生一些事件，供你的应用响应。这些事件包括按钮点击（关闭按钮、URL、产品选择等）以及付费墙上与购买相关操作的通知。请参阅以下内容了解如何响应这些事件。
 
 :::warning
 
 本指南仅适用于**新版付费墙编辑工具付费墙**，需要 Adapty SDK v3.0 或更高版本。
 
 :::
-要控制或监控移动应用付费墙页面上发生的事件，请实现 `AdaptyUIPaywallsEventsObserver` 的各个方法，并在展示任何页面之前设置观察者：
+要控制或监控移动应用中付费墙屏幕上发生的事件，请实现 `AdaptyUIPaywallsEventsObserver` 的相关方法，并在展示任何屏幕之前设置观察者：
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 AdaptyUI().setPaywallsEventsObserver(this);
 ```
 
 <SampleApp />
+
+以下事件示例展示了每个对象上可用的属性，注释中提供了示例值。
 ### 用户生成的事件 \{#user-generated-events\}
 
 #### 付费墙已显示 \{#paywall-appeared\}
 
-当付费墙视图呈现在屏幕上时，会调用此方法。
+当付费墙视图显示在屏幕上时，会调用此方法。
 
 :::note
-在 iOS 上，当用户点击付费墙内的 [Web 付费墙按钮](web-paywall#step-2a-add-a-web-purchase-button)，且 Web 付费墙在应用内浏览器中打开时，也会调用此方法。
+在 iOS 上，当用户点击付费墙内的[网页付费墙按钮](web-paywall#step-2a-add-a-web-purchase-button)，且网页付费墙在应用内浏览器中打开时，也会调用此方法。
 :::
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidAppear(AdaptyUIPaywallView view) {
 }
 ```
@@ -43,143 +284,110 @@ void paywallViewDidAppear(AdaptyUIPaywallView view) {
 
 当付费墙视图从屏幕上消失时，会调用此方法。
 :::note
-在 iOS 上，当从付费墙中打开的[网页付费墙](web-paywall#step-2a-add-a-web-purchase-button)在应用内浏览器中从屏幕消失时，也会触发此方法。
+在 iOS 上，当从付费墙中打开的[网页付费墙](web-paywall#step-2a-add-a-web-purchase-button)在应用内浏览器中消失时，也会触发此方法。
 :::
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidDisappear(AdaptyUIPaywallView view) {
 }
 ```
 
-#### 选择产品 \{#product-selection\}
+#### 商品选择 \{#product-selection\}
 
-当用户或系统选择某个产品进行购买时，将调用此方法：
+当用户或系统选中某个商品进行购买时，会触发此方法：
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidSelectProduct(AdaptyUIPaywallView view, String productId) {
 }
 ```
 
 <Details>
 <summary>事件示例（点击展开）</summary>
-```javascript
-{
-  "productId": "premium_monthly"
+```dart
+void paywallViewDidSelectProduct(AdaptyUIPaywallView view, String productId) {
+  // productId is a String:
+  productId; // 'premium_monthly'
 }
 ```
 </Details>
 
-#### 已开始购买 \{#started-purchase\}
+#### 开始购买 \{#started-purchase\}
 
-当用户发起购买流程时，将调用此方法：
+当用户发起购买流程时，将触发此方法：
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) {
 }
 ```
 
 <Details>
 <summary>事件示例（点击展开）</summary>
-```javascript
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  }
+```dart
+void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId;        // 'premium_monthly'
+  product.localizedTitle;         // 'Premium Monthly'
+  product.localizedDescription;   // 'Premium subscription for 1 month'
+  product.price.amount;           // 9.99            (double)
+  product.price.currencyCode;     // 'USD'
+  product.price.localizedString;  // '$9.99'
 }
 ```
 </Details>
 
 #### 购买完成 \{#finished-purchase\}
-
 当购买成功、用户取消购买或购买处于待处理状态时，将调用此方法：
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFinishPurchase(AdaptyUIPaywallView view, 
                                   AdaptyPaywallProduct product, 
                                   AdaptyPurchaseResult purchaseResult) {
     switch (purchaseResult) {
       case AdaptyPurchaseResultSuccess(profile: final profile):
-        // 购买成功
+        // successful purchase
         break;
       case AdaptyPurchaseResultPending():
-        // 购买待处理
+        // purchase is pending
         break;
       case AdaptyPurchaseResultUserCancelled():
-        // 用户取消了购买
+        // user cancelled the purchase
         break;
       default:
         break;
     }
 }
 ```
+
 <Details>
 <summary>事件示例（点击展开）</summary>
-```javascript
-// Successful purchase
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "purchaseResult": {
-    "type": "AdaptyPurchaseResultSuccess",
-    "profile": {
-      "accessLevels": {
-        "premium": {
-          "id": "premium",
-          "isActive": true,
-          "expiresAt": "2024-02-15T10:30:00Z"
-        }
-      }
-    }
-  }
-}
+```dart
+void paywallViewDidFinishPurchase(AdaptyUIPaywallView view,
+                                  AdaptyPaywallProduct product,
+                                  AdaptyPurchaseResult purchaseResult) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId; // 'premium_monthly'
 
-// Pending purchase
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "purchaseResult": {
-    "type": "AdaptyPurchaseResultPending"
-  }
-}
-
-// User cancelled purchase
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "purchaseResult": {
-    "type": "AdaptyPurchaseResultUserCancelled"
+  switch (purchaseResult) {
+    case AdaptyPurchaseResultSuccess(profile: final profile):
+      // profile — AdaptyProfile:
+      profile.accessLevels['premium']?.isActive;  // true
+      profile.accessLevels['premium']?.expiresAt; // DateTime(2027, 2, 15, 10, 30)
+      break;
+    case AdaptyPurchaseResultPending():
+      // no additional data
+      break;
+    case AdaptyPurchaseResultUserCancelled():
+      // no additional data
+      break;
   }
 }
 ```
 </Details>
-我们建议在这种情况下关闭该界面。详情请参阅[响应按钮操作](flutter-handle-paywall-actions)中关于关闭付费墙界面的说明。
+我们建议在这种情况下关闭该页面。有关关闭付费墙页面的详细信息，请参阅[响应按钮操作](flutter-handle-paywall-actions)。
 
-#### 网页支付导航完成 \{#finished-web-payment-navigation\}
+#### 完成 Web 支付跳转 \{#finished-web-payment-navigation\}
 
-该方法在尝试为特定产品打开[网页付费墙](web-paywall)后触发，涵盖导航成功和失败两种情况：
-```javascript showLineNumbers title="Flutter"
+此方法在尝试为特定产品打开 [Web 付费墙](web-paywall)后触发，无论跳转成功还是失败均会调用：
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view, 
                                                AdaptyPaywallProduct? product, 
                                                AdaptyError? error) {
@@ -190,49 +398,33 @@ void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view,
 | 参数 | 描述 |
 |:------------|:---------------------------------------------------------------------------------------------------|
 | **product** | 打开网页付费墙时对应的 `AdaptyPaywallProduct`。可以为 `null`。 |
-| **error** | 若网页付费墙导航失败，则为 `AdaptyError` 对象；导航成功时为 `null`。 |
+| **error** | 如果网页付费墙跳转失败，则为 `AdaptyError` 对象；跳转成功则为 `null`。 |
 
 <Details>
 <summary>事件示例（点击展开）</summary>
-```javascript
-// Successful navigation
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "error": null
-}
+```dart
+void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view,
+                                               AdaptyPaywallProduct? product,
+                                               AdaptyError? error) {
+  // product — AdaptyPaywallProduct?:
+  product?.vendorProductId; // 'premium_monthly'
 
-// Failed navigation
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "error": {
-    "code": "web_navigation_failed",
-    "message": "Failed to open web paywall",
-    "details": {
-      "underlyingError": "Browser unavailable"
-    }
+  if (error == null) {
+    // navigation succeeded
+  } else {
+    // error — AdaptyError:
+    error.code;    // AdaptyErrorCode.networkFailed (2005)
+    error.message; // 'Network request failed'
+    error.detail;  // platform-specific underlying error, or null
   }
 }
 ```
 </Details>
 #### 购买失败 \{#failed-purchase\}
 
-当购买失败时（例如，由于支付问题或网络错误），会调用此方法。对于用户主动取消或待处理的交易，**不会**触发此方法——这些情况由 `paywallViewDidFinishPurchase` 处理：
+当购买失败时（例如因为支付问题或网络错误）会触发此方法。它**不会**在用户主动取消或待处理交易时触发——这些情况由 `paywallViewDidFinishPurchase` 处理：
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailPurchase(AdaptyUIPaywallView view, 
                                 AdaptyPaywallProduct product, 
                                 AdaptyError error) {
@@ -241,89 +433,69 @@ void paywallViewDidFailPurchase(AdaptyUIPaywallView view,
 
 <Details>
 <summary>事件示例（点击展开）</summary>
-```javascript
-{
-  "product": {
-    "vendorProductId": "premium_monthly",
-    "localizedTitle": "Premium Monthly",
-    "localizedDescription": "Premium subscription for 1 month",
-    "localizedPrice": "$9.99",
-    "price": 9.99,
-    "currencyCode": "USD"
-  },
-  "error": {
-    "code": "purchase_failed",
-    "message": "Purchase failed due to insufficient funds",
-    "details": {
-      "underlyingError": "Insufficient funds in account"
-    }
-  }
+```dart
+void paywallViewDidFailPurchase(AdaptyUIPaywallView view,
+                                AdaptyPaywallProduct product,
+                                AdaptyError error) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId; // 'premium_monthly'
+
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.productPurchaseFailed (1006)
+  error.message; // 'Product purchase failed.'
+  error.detail;  // platform-specific underlying error, or null
 }
 ```
 </Details>
 
 #### 开始恢复购买 \{#started-restore\}
 
-当用户发起恢复购买流程时，将调用此方法：
-```javascript showLineNumbers title="Flutter"
+当用户发起恢复购买流程时，将触发此方法：
+```dart showLineNumbers title="Flutter"
 void paywallViewDidStartRestore(AdaptyUIPaywallView view) {
 }
 ```
 
 #### 恢复成功 \{#successful-restore\}
 
-如果恢复购买成功，将触发以下方法：
+如果恢复购买成功，将调用此方法：
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
 }
 ```
 
 <Details>
 <summary>事件示例（点击展开）</summary>
-```javascript
-{
-  "profile": {
-    "accessLevels": {
-      "premium": {
-        "id": "premium",
-        "isActive": true,
-        "expiresAt": "2024-02-15T10:30:00Z"
-      }
-    },
-    "subscriptions": [
-      {
-        "vendorProductId": "premium_monthly",
-        "isActive": true,
-        "expiresAt": "2024-02-15T10:30:00Z"
-      }
-    ]
-  }
+```dart
+void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
+  // profile — AdaptyProfile:
+  profile.accessLevels['premium']?.isActive;            // true
+  profile.accessLevels['premium']?.expiresAt;           // DateTime(2027, 2, 15, 10, 30)
+  profile.subscriptions['premium_monthly']?.isActive;   // true
+  profile.subscriptions['premium_monthly']?.expiresAt;  // DateTime(2027, 2, 15, 10, 30)
 }
 ```
 </Details>
-我们建议在用户已拥有所需 `accessLevel` 时关闭该页面。请参阅[订阅状态](flutter-listen-subscription-changes)主题了解如何检查订阅状态，以及[响应按钮操作](flutter-handle-paywall-actions)主题了解如何关闭付费墙页面。
+如果用户已拥有所需的 `accessLevel`，我们建议关闭该页面。请参阅[订阅状态](flutter-listen-subscription-changes)主题了解如何检查，以及[响应按钮操作](flutter-handle-paywall-actions)主题了解如何关闭付费墙页面。
 
 #### 恢复失败 \{#failed-restore\}
 
-如果恢复购买失败，将触发以下方法：
+如果恢复购买失败，将调用以下方法：
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
 }
 ```
 
 <Details>
 <summary>事件示例（点击展开）</summary>
-```javascript
-{
-  "error": {
-    "code": "restore_failed",
-    "message": "Purchase restoration failed",
-    "details": {
-      "underlyingError": "No previous purchases found"
-    }
-  }
+```dart
+void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.receiveRestoredTransactionsFailed (1011)
+  error.message; // 'Error occurred in the process of restoring purchases.'
+  error.detail;  // platform-specific underlying error, or null
 }
 ```
 </Details>
@@ -331,32 +503,29 @@ void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
 
 #### 产品加载错误 \{#product-loading-errors\}
 
-如果你在初始化时没有传入产品数组，AdaptyUI 会自动从服务器获取所需对象。如果此操作失败，AdaptyUI 会通过以下方法回调来上报错误：
+如果你在初始化时未传入产品数组，AdaptyUI 会自行从服务器获取所需对象。若此操作失败，AdaptyUI 将通过调用以下方法报告错误：
 
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) {
 }
 ```
 
 <Details>
 <summary>事件示例（点击展开）</summary>
-```javascript
-{
-  "error": {
-    "code": "products_loading_failed",
-    "message": "Failed to load products from the server",
-    "details": {
-      "underlyingError": "Network timeout"
-    }
-  }
+```dart
+void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) {
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.productRequestFailed (1002)
+  error.message; // 'Unable to fetch available In-App Purchase products at the moment.'
+  error.detail;  // platform-specific underlying error, or null
 }
 ```
 </Details>
 
 #### 渲染错误 \{#rendering-errors\}
+如果在界面渲染过程中发生错误，系统会通过调用此方法来上报该错误。默认情况下（自 v3.15.2 起），当渲染错误发生时，付费墙会自动关闭，但你可以根据需要覆盖此行为。
 
-如果界面渲染过程中发生错误，系统会通过调用此方法来上报。默认情况下（自 v3.15.2 起），发生渲染错误时付费墙会自动关闭，但你可以根据需要覆盖此行为。
-```javascript showLineNumbers title="Flutter"
+```dart showLineNumbers title="Flutter"
 void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
   // Default behavior: view.dismiss()
   // Override with custom logic if needed, for example:
@@ -367,17 +536,18 @@ void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
 
 <Details>
 <summary>事件示例（点击展开）</summary>
+```dart
+void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.jsException (4105)
+  error.message; // 'An exception was thrown from JS during AdaptyUI flow execution.'
+  error.detail;  // platform-specific underlying error, or null
 
-```javascript
-{
-  "error": {
-    "code": "rendering_failed",
-    "message": "Failed to render paywall interface",
-    "details": {
-      "underlyingError": "Invalid paywall configuration"
-    }
-  }
+  // Default behavior: view.dismiss()
 }
 ```
 </Details>
+
 正常情况下不应出现此类错误，如果遇到，请告知我们。
+
+</SDKv3>

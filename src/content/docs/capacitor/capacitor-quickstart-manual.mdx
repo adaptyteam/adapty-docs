@@ -2,10 +2,10 @@
 title: "Enable purchases in your custom paywall in Capacitor SDK"
 description: "Integrate Adapty SDK into your custom Capacitor paywalls to enable in-app purchases."
 metadataTitle: "Adapty Quickstart Guide | Adapty Docs"
-keywords: ['paywalls capacitor', 'sdk capacitor', 'paywall', 'getPaywall']
+keywords: ['paywalls capacitor', 'sdk capacitor', 'paywall', 'getFlow', 'getPaywall']
 ---
 
-This guide describes how to integrate Adapty into your custom paywalls. Keep full control over paywall implementation, while the Adapty SDK fetches products, handles new purchases, and restores previous ones.
+This guide describes how to integrate Adapty into your custom paywalls. Keep full control over paywall implementation, while the Adapty SDK fetches products, handles new purchases, and restores previous ones. This guide uses Adapty Capacitor SDK v4 APIs — if you're on v3, see the [migration guide](migration-to-capacitor-sdk-v4) for the corresponding method names.
 
 :::important
 **This guide is for developers who are implementing custom paywalls.** If you want the easiest way to enable purchases, use the [Adapty Paywall Builder](capacitor-quickstart-paywalls). With Paywall Builder, you create paywalls in a no-code visual editor, Adapty handles all purchase logic automatically, and you can test different designs without republishing your app.
@@ -18,7 +18,7 @@ This guide describes how to integrate Adapty into your custom paywalls. Keep ful
 To enable in-app purchases, you need to understand three key concepts:
 
 - [**Products**](product) – anything users can buy (subscriptions, consumables, lifetime access)
-- [**Paywalls**](paywalls) – configurations that define which products to offer. In Adapty, paywalls are the only way to retrieve products, but this design lets you modify products, prices, and offers without touching your app code.
+- [**Paywalls**](paywalls) – configurations that define which products to offer. In Adapty, paywalls are the only way to retrieve products, but this design lets you modify products, prices, and offers without touching your app code. In SDK v4, the paywall variations for a placement are carried by a **flow** object — you fetch a flow and query its products.
 - [**Placements**](placements) – where and when you show paywalls in your app (like `main`, `onboarding`, `settings`). You set up paywalls for placements in the dashboard, then request them by placement ID in your code. This makes it easy to run A/B tests and show different paywalls to different users.
 
 Make sure you understand these concepts even if you work with your custom paywall. Basically, they are just your way to manage the products you sell in your app.
@@ -35,21 +35,21 @@ However, the Adapty SDK handles anonymous and identified users differently. Read
 
 To retrieve products for your custom paywall, you need to:
 
-1. Get the `paywall` object by passing [placement](placements) ID to the `getPaywall` method.
-2. Get the products array for this paywall using the `getPaywallProducts` method.
+1. Get the `flow` object by passing [placement](placements) ID to the `getFlow` method.
+2. Get the products array for this flow using the `getPaywallProducts` method.
 
 ```typescript showLineNumbers
 import { adapty } from '@adapty/capacitor';
-import type { AdaptyPaywall, AdaptyPaywallProduct } from '@adapty/capacitor';
+import type { AdaptyFlow, AdaptyPaywallProduct } from '@adapty/capacitor';
 
 async function loadPaywall() {
   try {
-    const paywall: AdaptyPaywall = await adapty.getPaywall({
+    const flow: AdaptyFlow = await adapty.getFlow({
       placementId: 'YOUR_PLACEMENT_ID'
     });
 
     const products: AdaptyPaywallProduct[] = await adapty.getPaywallProducts({
-      paywall
+      flow
     });
 
     // Use products to build your custom paywall UI
@@ -104,10 +104,28 @@ async function restorePurchases() {
 }
 ```
 
+## Step 4. Check the subscription status
+
+After a purchase or restore, check the user's [access level](access-level) to decide whether to show the paywall or unlock paid features. The `makePurchase` and `restorePurchases` methods already return the updated profile; whenever you need the current status elsewhere in the app, use the `getProfile` method:
+
+```typescript showLineNumbers
+import { adapty } from '@adapty/capacitor';
+
+async function hasPremiumAccess(): Promise<boolean> {
+  try {
+    const profile = await adapty.getProfile();
+    return profile.accessLevels?.['premium']?.isActive ?? false;
+  } catch (error) {
+    // Handle the error
+  }
+  return false;
+}
+```
+
+For more ways to check and monitor the subscription status, including listening to real-time updates, see [Check the subscription status](capacitor-check-subscription-status).
+
 ## Next steps
 
 <SupportForum />
 
 Your paywall is ready to be displayed in the app. Test your purchases in the [App Store sandbox](test-purchases-in-sandbox) or in [Google Play Store](testing-on-android) to make sure you can complete a test purchase from the paywall. To see how this works in a production-ready implementation, check out the [App.tsx](https://github.com/adaptyteam/AdaptySDK-Capacitor/blob/master/examples/adapty-devtools/src/screens/app/App.tsx) in our example app, which demonstrates purchase handling with proper error handling, loading states, and comprehensive SDK integration.
-
-Next, [check whether users have completed their purchase](capacitor-check-subscription-status) to determine whether to display the paywall or grant access to paid features.

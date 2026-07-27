@@ -1,32 +1,214 @@
 ---
-title: "在 Kotlin Multiplatform SDK 中响应按钮操作"
-description: "使用 Adapty 在 Kotlin Multiplatform 中处理付费墙按钮操作，以提升应用变现效果。"
-metadataTitle: "处理付费墙按钮操作 | Adapty 文档"
+title: "响应流程操作 - Kotlin Multiplatform"
+description: "在你的 Kotlin Multiplatform 应用中处理流程和付费墙的按钮操作。"
+metadataTitle: "响应流程操作 - Kotlin Multiplatform | Adapty 文档"
 displayed_sidebar: sdkkmp
 toc_max_heading_level: 4
-keywords: ['付费墙按钮', '按钮', '付费墙按钮操作', '处理操作']
+keywords: ['paywall button', 'button', 'paywall button actions', 'handle actions']
 ---
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
+
+<SDKv4>
+
+如果你使用 Adapty Flow Builder 或付费墙编辑工具构建流程或付费墙，正确设置按钮至关重要：
+
+1. 在[编辑工具中添加按钮](paywall-buttons)，并为其分配已有操作或创建自定义操作 ID。
+2. 在应用代码中为每个已分配的操作编写处理逻辑。
+
+本指南介绍如何在代码中处理自定义操作和已有操作。
+
+:::warning
+**只有购买、恢复、关闭流程/付费墙以及打开链接会被自动处理。** 其他所有按钮操作（如自定义操作）均需在应用代码中实现相应的处理逻辑。
+:::
+
+## 设置 AdaptyUIFlowsEventsObserver \{#set-up-the-adaptyuiflowsevents-observer\}
+
+要处理流程操作，您需要实现 `AdaptyUIFlowsEventsObserver` 接口，并通过 `AdaptyUI.setFlowsEventsObserver()` 进行设置。该操作应在应用生命周期的早期完成，通常在主 Activity 或应用初始化阶段。
+
+```kotlin
+
+// In your app initialization
+AdaptyUI.setFlowsEventsObserver(MyAdaptyUIFlowsEventsObserver())
+```
+
+所有按钮操作都会作为 `AdaptyUIAction` 密封类（包含 `CloseAction`、`AndroidSystemBackAction`、`OpenUrlAction` 或 `CustomAction`）通过 `flowViewDidPerformAction(view, action)` 回调传入。
+
+:::warning
+覆盖 `flowViewDidPerformAction` 会替换**所有**操作的默认处理逻辑，而不仅仅是你感兴趣的那一个。除非你有意修改，否则请保留 `CloseAction`（关闭流程）和 `OpenUrlAction`（打开 URL）的默认处理分支，如下方示例所示。
+:::
+
+## 关闭流程和付费墙 \{#close-flows-and-paywalls\}
+
+要添加一个关闭流程或付费墙的按钮：
+
+1. 在编辑工具中，添加一个按钮并为其分配 **Close** 操作。
+2. 在应用代码中，实现一个 `close` 操作的处理程序，用于关闭流程。
+
+:::info
+在 Kotlin Multiplatform SDK 中，`CloseAction` 默认会触发关闭流程或付费墙。但如果需要，你可以在代码中覆盖此行为。例如，关闭一个流程时可以触发打开另一个流程。
+:::
+
+```kotlin
+
+class MyAdaptyUIFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CloseAction ->
+                mainUiScope.launch { view.dismiss() } // default behavior
+            is AdaptyUIAction.OpenUrlAction ->
+                AdaptyUI.openWebUrl(action.url, action.openIn) // default behavior
+            else -> Unit
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setFlowsEventsObserver(MyAdaptyUIFlowsEventsObserver())
+```
+
+如果您使用的是 [`createNativeFlowView`](kmp-present-paywalls#without-compose-multiplatform)，调用 `view.dismiss()` 不会有任何效果——该视图是嵌入在您的布局中的，而非通过 KMP 堆栈呈现的。请将该视图从布局中移除，并对其调用 `dispose()`。
+
+## 处理 Android 系统返回按钮 \{#handle-the-android-system-back-button\}
+
+按下 Android 系统返回按钮（或使用返回手势）会触发 `AdaptyUIAction.AndroidSystemBackAction`。默认情况下，此操作会被忽略——流程保持打开状态，用户通过你定义的路径（例如 **Close** 按钮或编辑工具中的 `on_device_back` 操作）退出流程。如果你希望系统返回按钮能够关闭流程，请自行处理该操作：
+
+```kotlin
+class MyAdaptyUIFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CloseAction ->
+                mainUiScope.launch { view.dismiss() } // default behavior
+            is AdaptyUIAction.AndroidSystemBackAction ->
+                mainUiScope.launch { view.dismiss() } // not handled by default
+            is AdaptyUIAction.OpenUrlAction ->
+                AdaptyUI.openWebUrl(action.url, action.openIn) // default behavior
+            else -> Unit
+        }
+    }
+}
+```
+
+## 从流程和付费墙中打开 URL \{#open-urls-from-flows-and-paywalls\}
+
+:::tip
+如果你想添加一组链接（例如使用条款和购买恢复），可以在编辑工具中添加一个 **Link** 元素，并以与 **Open URL** 操作按钮相同的方式处理它。
+:::
+
+要在流程或付费墙中添加一个打开链接的按钮（例如**使用条款**或**隐私政策**），请在编辑工具中添加一个按钮，为其分配 **Open URL** 操作，然后输入你想打开的 URL。
+
+默认情况下，SDK 会原生打开接收到的 URL——使用外部浏览器还是应用内浏览器取决于 `action.openIn`——无需编写任何代码。仅当需要自定义逻辑时（例如先显示确认对话框），才需要覆盖该处理程序：
+
+```kotlin
+
+class MyAdaptyUIFlowsEventsObserver(
+    private val uriHandler: UriHandler
+) : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.OpenUrlAction -> {
+                // Show confirmation dialog before opening URL
+                mainUiScope.launch {
+                    val selectedAction = view.showDialog(
+                        title = "Open URL?",
+                        content = action.url,
+                        primaryActionTitle = "Cancel",
+                        secondaryActionTitle = "Open"
+                    ).getOrNull()
+
+                    when (selectedAction) {
+                        AdaptyUIDialogActionType.PRIMARY -> {
+                            // User cancelled
+                        }
+                        AdaptyUIDialogActionType.SECONDARY -> {
+                            // User confirmed - open URL
+                            uriHandler.openUri(action.url)
+                        }
+                        else -> Unit
+                    }
+                }
+            }
+            else -> Unit
+        }
+    }
+}
+
+// Set up the observer with UriHandler
+AdaptyUI.setFlowsEventsObserver(MyAdaptyUIFlowsEventsObserver(uriHandler))
+```
+
+## 登录应用 \{#log-into-the-app\}
+
+要添加一个让用户登录应用的按钮：
+
+1. 在编辑工具中，添加一个按钮，并为其分配一个 ID 为 "login" 的**自定义**操作。
+2. 在应用代码中，实现一个自定义操作的处理器，用于识别用户身份。
+
+```kotlin
+
+class MyAdaptyUIFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                if (action.action == "login") {
+                    // Handle login action - navigate to login screen
+                    // This depends on your app's navigation system
+                    // For example, in Compose Multiplatform:
+                    // navController.navigate("login")
+                }
+            }
+            else -> Unit
+        }
+    }
+}
+```
+## 处理自定义操作 \{#handle-custom-actions\}
+
+要添加一个处理其他操作的按钮：
+
+1. 在编辑工具中，添加一个按钮，为其指定 **Custom** 操作，并为其分配一个 ID。
+2. 在应用代码中，为您创建的操作 ID 实现处理程序。
+
+例如，如果您有另一组订阅优惠或一次性购买，可以添加一个按钮，用于显示另一个流程或付费墙：
+
+```kotlin
+
+class MyAdaptyUIFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+    override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+        when (action) {
+            is AdaptyUIAction.CustomAction -> {
+                when (action.action) {
+                    "openNewFlow" -> {
+                        // Display another flow or paywall
+                    }
+                }
+            }
+            else -> Unit
+        }
+    }
+}
+
+// Set up the observer
+AdaptyUI.setFlowsEventsObserver(MyAdaptyUIFlowsEventsObserver())
+```
+</SDKv4>
+
+<SDKv3>
 
 :::warning
 **只有购买和恢复操作会被自动处理。** 所有其他按钮操作，例如关闭付费墙或打开链接，都需要在应用代码中实现相应的响应逻辑。
 :::
 
-如果您正在使用 Adapty 付费墙编辑工具构建付费墙，正确设置按钮至关重要：
+如果你正在使用 Adapty 付费墙编辑工具构建付费墙，正确设置按钮至关重要：
 
-1. 在[付费墙编辑工具中添加按钮](paywall-buttons)，并为其分配一个已有操作或创建自定义操作 ID。
-2. 在应用代码中编写逻辑，以处理您所分配的每个操作。
+1. 在[付费墙编辑工具中添加按钮](paywall-buttons)，并为其分配已有的操作或创建自定义操作 ID。
+2. 在应用中编写代码，处理你已分配的每个操作。
 
-本指南介绍如何在代码中处理自定义操作和已有操作。
+本指南介绍如何在代码中处理自定义操作和预置操作。
+
 ## 设置 AdaptyUIPaywallsEventsObserver \{#set-up-the-adaptyuipaywallseventsobserver\}
 
 要处理付费墙操作，您需要实现 `AdaptyUIPaywallsEventsObserver` 接口，并通过 `AdaptyUI.setPaywallsEventsObserver()` 进行配置。这应在应用生命周期的早期完成，通常在主 Activity 或应用初始化时进行。
 
 ```kotlin
-import com.adapty.kmp.AdaptyUI
-
-import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
 
 // In your app initialization
 AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
@@ -43,12 +225,6 @@ AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
 在 Kotlin Multiplatform SDK 中，`CloseAction` 和 `AndroidSystemBackAction` 默认会触发关闭付费墙。但如果需要，您可以在代码中覆盖此行为。例如，关闭一个付费墙可能会触发打开另一个付费墙。
 :::
 ```kotlin
-import com.adapty.kmp.AdaptyUI
-
-import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
-import com.adapty.kmp.models.AdaptyUIAction
-
-import com.adapty.kmp.models.AdaptyUIPaywallView
 
 class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
     override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
@@ -76,16 +252,6 @@ AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
 在 Kotlin Multiplatform SDK 中，`OpenUrlAction` 提供了需要打开的 URL。您可以实现自定义逻辑来处理 URL 的打开方式，例如显示确认对话框或使用应用程序首选的 URL 处理方法。
 :::
 ```kotlin
-import androidx.compose.ui.platform.UriHandler
-
-import com.adapty.kmp.AdaptyUI
-import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
-
-import com.adapty.kmp.models.AdaptyUIAction
-import com.adapty.kmp.models.AdaptyUIDialogActionType
-
-import com.adapty.kmp.models.AdaptyUIPaywallView
-import com.adapty.kmp.models.getOrNull
 
 class MyAdaptyUIPaywallsEventsObserver(
     private val uriHandler: UriHandler
@@ -128,10 +294,6 @@ AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver(uriHandler))
 1. 在付费墙编辑工具中，添加一个按钮并为其分配一个 ID 为 "login" 的 **Custom** 动作。
 2. 在应用代码中，实现一个自定义动作处理器来识别您的用户。
 ```kotlin
-import com.adapty.kmp.AdaptyUIObserver
-
-import com.adapty.kmp.models.AdaptyUIAction
-import com.adapty.kmp.models.AdaptyUIView
 
 class MyAdaptyUIObserver : AdaptyUIObserver {
     override fun paywallViewDidPerformAction(view: AdaptyUIView, action: AdaptyUIAction) {
@@ -148,6 +310,7 @@ class MyAdaptyUIObserver : AdaptyUIObserver {
     }
 }
 ```
+
 ## 处理自定义动作 \{#handle-custom-actions\}
 
 要添加一个处理任意其他动作的按钮：
@@ -157,12 +320,6 @@ class MyAdaptyUIObserver : AdaptyUIObserver {
 
 例如，如果您有另一组订阅优惠或一次性购买，可以添加一个按钮来显示另一个付费墙：
 ```kotlin
-import com.adapty.kmp.AdaptyUI
-
-import com.adapty.kmp.AdaptyUIPaywallsEventsObserver
-import com.adapty.kmp.models.AdaptyUIAction
-
-import com.adapty.kmp.models.AdaptyUIPaywallView
 
 class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
     override fun paywallViewDidPerformAction(view: AdaptyUIPaywallView, action: AdaptyUIAction) {
@@ -184,3 +341,4 @@ class MyAdaptyUIPaywallsEventsObserver : AdaptyUIPaywallsEventsObserver {
 // Set up the observer
 AdaptyUI.setPaywallsEventsObserver(MyAdaptyUIPaywallsEventsObserver())
 ```
+</SDKv3>
