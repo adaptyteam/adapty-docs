@@ -1,0 +1,266 @@
+---
+title: "Intégrer Adapty dans votre application Flutter avec l'aide de l'IA"
+description: "Un guide étape par étape pour intégrer Adapty dans votre application Flutter avec Cursor, Context7, ChatGPT, Claude ou d'autres outils IA."
+metadataTitle: "Intégrer Adapty avec l'aide de l'IA pour Flutter | Documentation Adapty"
+displayed_sidebar: sdkflutter
+---
+
+Ce guide vous accompagne pas à pas dans l'intégration d'Adapty dans votre application Flutter à l'aide d'un outil IA — vous lui fournissez les bonnes docs Adapty dans le bon ordre.
+
+<SkillPromo />
+
+## Avant de commencer : configuration du tableau de bord \{#before-you-start-dashboard-setup\}
+
+Adapty nécessite une configuration du tableau de bord avant d'écrire le moindre code SDK. Vous pouvez le faire via un skill LLM interactif ou manuellement depuis le Dashboard.
+
+### Approche par skill (recommandée) \{#skill-approach-recommended\}
+
+Le skill Adapty CLI permet à votre LLM de configurer votre app, vos produits, vos niveaux d'accès, vos paywalls et vos placements directement — sans ouvrir le Dashboard à chaque étape. Vous avez seulement besoin de [connecter vos stores](integrate-payments) dans le Dashboard.
+
+```
+npx skills add adaptyteam/adapty-cli --skill adapty-cli
+```
+
+Une fois le skill ajouté, lancez `/adapty-cli` dans votre agent. Il vous guidera à travers chaque étape — y compris quand ouvrir le Dashboard pour connecter vos stores.
+
+### Approche manuelle \{#dashboard-approach\}
+
+Si vous préférez tout configurer manuellement, voici ce dont vous avez besoin avant d'écrire du code. Votre LLM ne peut pas récupérer les valeurs du tableau de bord à votre place — vous devrez les lui fournir.
+
+1. **Connectez vos stores** : Dans l'Adapty Dashboard, allez dans **App settings → General**. Connectez l'App Store et Google Play si votre application Flutter cible les deux plateformes. C'est indispensable pour que les achats fonctionnent.
+   [Connecter les stores](integrate-payments)
+
+2. **Copiez votre clé SDK publique** : Dans l'Adapty Dashboard, allez dans **App settings → General**, puis trouvez la section **API keys**. Dans le code, c'est la chaîne que vous passez à la configuration d'Adapty.
+
+3. **Créez au moins un produit** : Dans l'Adapty Dashboard, allez sur la page **Products**. Vous ne référencez pas les produits directement dans le code — Adapty les fournit via les paywalls.
+   [Ajouter des produits](quickstart-products)
+
+4. **Créez un paywall et un placement** : Dans l'Adapty Dashboard, créez un paywall sur la page **Paywalls**, puis assignez-le à un placement sur la page **Placements**. Dans le code, l'ID de placement est la chaîne que vous passez à `Adapty().getPaywall()`.
+   [Créer un paywall](quickstart-paywalls)
+
+5. **Configurez les niveaux d'accès** : Dans l'Adapty Dashboard, configurez-les par produit sur la page **Products**. Dans le code, la chaîne vérifiée dans `profile.accessLevels['premium']?.isActive`. Le niveau d'accès `premium` par défaut convient à la plupart des apps. Si les utilisateurs payants accèdent à des fonctionnalités différentes selon le produit (par exemple, un plan `basic` vs. un plan `pro`), [créez des niveaux d'accès supplémentaires](assigning-access-level-to-a-product) avant de commencer à coder.
+
+:::tip
+Une fois ces cinq éléments en place, vous êtes prêt à coder. Dites à votre LLM : « Ma clé SDK publique est X, mon ID de placement est Y » pour qu'il génère le code d'initialisation et de récupération des paywalls correct.
+:::
+
+### À configurer quand vous serez prêt \{#set-up-when-ready\}
+
+Ces éléments ne sont pas nécessaires pour commencer à coder, mais ils deviendront utiles à mesure que votre intégration avance :
+
+- **Tests A/B** : À configurer sur la page **Placements**. Aucune modification de code requise.
+  [Tests A/B](ab-tests)
+- **Paywalls et placements supplémentaires** : Ajoutez des appels `getPaywall` avec différents IDs de placement.
+- **Intégrations analytiques** : À configurer sur la page **Integrations**. La configuration varie selon l'intégration. Voir [intégrations analytiques](analytics-integration) et [intégrations d'attribution](attribution-integration).
+
+## Fournir la documentation Adapty à votre LLM \{#feed-adapty-docs-to-your-llm\}
+
+### Utiliser Context7 (recommandé) \{#use-context7-recommended\}
+
+[Context7](https://context7.com) est un serveur MCP qui donne à votre LLM un accès direct à la documentation Adapty à jour. Votre LLM récupère automatiquement les bonnes docs en fonction de vos questions — sans avoir à coller des URLs manuellement.
+
+Context7 fonctionne avec **Cursor**, **Claude Code**, **Windsurf** et d'autres outils compatibles MCP. Pour le configurer, exécutez :
+
+```
+npx ctx7 setup
+```
+
+Cette commande détecte votre éditeur et configure le serveur Context7. Pour une configuration manuelle, consultez le [dépôt GitHub de Context7](https://github.com/upstash/context7).
+
+Une fois configuré, référencez la bibliothèque Adapty dans vos prompts :
+
+```
+Use the adaptyteam/adapty-docs library to look up how to install the Flutter SDK
+```
+
+:::warning
+Même si Context7 élimine le besoin de coller des liens de documentation manuellement, l'ordre d'implémentation est important. Suivez le [guide d'implémentation](#implementation-walkthrough) ci-dessous étape par étape pour vous assurer que tout fonctionne.
+:::
+
+### Utiliser les docs en texte brut \{#use-plain-text-docs\}
+
+Vous pouvez accéder à n'importe quelle doc Adapty en Markdown brut. Ajoutez `.md` à la fin de son URL, ou cliquez sur **Copy for LLM** sous le titre de l'article. Par exemple : [adapty-cursor-flutter.md](https://adapty.io/docs/fr/adapty-cursor-flutter.md).
+
+Chaque étape du [guide d'implémentation](#implementation-walkthrough) ci-dessous contient un bloc « À envoyer à votre LLM » avec des liens `.md` à coller.
+
+Pour accéder à davantage de documentation d'un coup, consultez les [fichiers d'index et sous-ensembles spécifiques à chaque plateforme](#plain-text-doc-index-files) ci-dessous.
+
+## Guide d'implémentation \{#implementation-walkthrough\}
+
+La suite de ce guide parcourt l'intégration d'Adapty dans l'ordre d'implémentation. Chaque étape inclut les docs à envoyer à votre LLM, ce que vous devriez observer une fois terminé, et les problèmes courants.
+
+### Planifier votre intégration \{#plan-your-integration\}
+
+Avant de vous lancer dans le code, demandez à votre LLM d'analyser votre projet et de créer un plan d'implémentation. Si votre outil IA prend en charge un mode de planification (comme le mode plan de Cursor ou Claude Code), utilisez-le pour que le LLM puisse lire à la fois la structure de votre projet et les docs Adapty avant d'écrire du code.
+
+Dites à votre LLM quelle approche vous utilisez pour les achats — cela détermine les guides à suivre :
+
+- [**Adapty Paywall Builder**](adapty-paywall-builder) : Vous créez des paywalls dans l'éditeur no-code d'Adapty, et le SDK les affiche automatiquement.
+- [**Paywalls créés manuellement**](flutter-making-purchases) : Vous construisez votre propre interface de paywall dans le code, mais utilisez quand même Adapty pour récupérer les produits et gérer les achats.
+- [**Mode Observer**](observer-vs-full-mode) : Vous conservez votre infrastructure d'achats existante et utilisez Adapty uniquement pour les analyses et les intégrations.
+
+Vous ne savez pas quoi choisir ? Lisez le [tableau comparatif dans le guide de démarrage rapide](flutter-quickstart-paywalls).
+
+### Installer et configurer le SDK \{#install-and-configure-the-sdk\}
+
+Ajoutez la dépendance au SDK Adapty avec `flutter pub add` et activez-le avec votre clé SDK publique. C'est la base — rien d'autre ne fonctionnera sans ça.
+
+**Guide :** [Installer et configurer le SDK Adapty](sdk-installation-flutter)
+
+À envoyer à votre LLM :
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/fr/sdk-installation-flutter.md
+```
+
+:::tip[Point de contrôle]
+- **Attendu :** L'application se compile et s'exécute sur iOS et Android. La console de débogage affiche le log d'activation d'Adapty.
+- **Point d'attention :** « Public API key is missing » → vérifiez que vous avez remplacé le placeholder par votre vraie clé depuis les paramètres de l'app.
+:::
+
+### Afficher les paywalls et gérer les achats \{#show-paywalls-and-handle-purchases\}
+
+Récupérez un paywall par ID de placement, affichez-le et gérez les événements d'achat. Les guides dont vous avez besoin dépendent de votre approche pour les achats.
+
+Testez chaque achat en sandbox au fur et à mesure — n'attendez pas la fin. Consultez [Tester les achats en sandbox](test-purchases-in-sandbox) pour les instructions de configuration.
+
+<Tabs groupId="paywall-approach">
+
+<TabItem value="builder" label="Paywall Builder" default>
+
+**Guides :**
+- [Activer les achats via les paywalls (guide de démarrage rapide)](flutter-quickstart-paywalls)
+- [Récupérer les paywalls du Paywall Builder et leur configuration](flutter-get-pb-paywalls)
+- [Afficher les paywalls](flutter-present-paywalls)
+- [Gérer les événements de paywall](flutter-handling-events)
+- [Répondre aux actions des boutons](flutter-handle-paywall-actions)
+
+À envoyer à votre LLM :
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/fr/flutter-quickstart-paywalls.md
+- https://adapty.io/docs/fr/flutter-get-pb-paywalls.md
+- https://adapty.io/docs/fr/flutter-present-paywalls.md
+- https://adapty.io/docs/fr/flutter-handling-events.md
+- https://adapty.io/docs/fr/flutter-handle-paywall-actions.md
+```
+
+:::tip[Point de contrôle]
+- **Attendu :** Le paywall s'affiche avec vos produits configurés. Appuyer sur un produit déclenche la boîte de dialogue d'achat en sandbox.
+- **Point d'attention :** Paywall vide ou erreur `getPaywall` → vérifiez que l'ID de placement correspond exactement au tableau de bord et que le placement a une audience assignée.
+:::
+
+</TabItem>
+
+<TabItem value="manual" label="Paywalls manuels">
+
+**Guides :**
+- [Activer les achats dans votre paywall personnalisé (guide de démarrage rapide)](flutter-quickstart-manual)
+- [Récupérer les paywalls et les produits](fetch-paywalls-and-products-flutter)
+- [Afficher un paywall conçu via Remote Config](present-remote-config-paywalls-flutter)
+- [Effectuer des achats](flutter-making-purchases)
+- [Restaurer les achats](flutter-restore-purchase)
+
+À envoyer à votre LLM :
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/fr/flutter-quickstart-manual.md
+- https://adapty.io/docs/fr/fetch-paywalls-and-products-flutter.md
+- https://adapty.io/docs/fr/present-remote-config-paywalls-flutter.md
+- https://adapty.io/docs/fr/flutter-making-purchases.md
+- https://adapty.io/docs/fr/flutter-restore-purchase.md
+```
+
+:::tip[Point de contrôle]
+- **Attendu :** Votre paywall personnalisé affiche les produits récupérés depuis Adapty. Appuyer sur un produit déclenche la boîte de dialogue d'achat en sandbox.
+- **Point d'attention :** Tableau de produits vide → vérifiez que le paywall a des produits assignés dans le tableau de bord et que le placement a une audience.
+:::
+
+</TabItem>
+
+<TabItem value="observer" label="Mode Observer">
+
+**Guides :**
+- [Présentation du mode Observer](observer-vs-full-mode)
+- [Implémenter le mode Observer](implement-observer-mode-flutter)
+- [Signaler les transactions en mode Observer](report-transactions-observer-mode-flutter)
+
+À envoyer à votre LLM :
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/fr/observer-vs-full-mode.md
+- https://adapty.io/docs/fr/implement-observer-mode-flutter.md
+- https://adapty.io/docs/fr/report-transactions-observer-mode-flutter.md
+```
+
+:::tip[Point de contrôle]
+- **Attendu :** Après un achat en sandbox via votre flux d'achat existant, la transaction apparaît dans le tableau de bord Adapty sous **Event Feed**.
+- **Point d'attention :** Aucun événement → vérifiez que vous signalez les transactions à Adapty et que les notifications serveur sont configurées pour les deux stores.
+:::
+
+</TabItem>
+
+</Tabs>
+
+### Vérifier le statut de l'abonnement \{#check-subscription-status\}
+
+Après un achat, vérifiez le profil utilisateur pour un niveau d'accès actif afin de bloquer l'accès au contenu premium.
+
+**Guide :** [Vérifier le statut de l'abonnement](flutter-check-subscription-status)
+
+À envoyer à votre LLM :
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/fr/flutter-check-subscription-status.md
+```
+
+:::tip[Point de contrôle]
+- **Attendu :** Après un achat en sandbox, `profile.accessLevels['premium']?.isActive` retourne `true`.
+- **Point d'attention :** `accessLevels` vide après l'achat → vérifiez que le produit a un niveau d'accès assigné dans le tableau de bord.
+:::
+
+### Identifier les utilisateurs \{#identify-users\}
+
+Liez les comptes utilisateurs de votre app aux profils Adapty pour que les achats persistent sur tous les appareils.
+
+:::important
+Ignorez cette étape si votre application ne gère pas l'authentification.
+:::
+
+**Guide :** [Identifier les utilisateurs](flutter-quickstart-identify)
+
+À envoyer à votre LLM :
+```
+Read these Adapty docs before writing code:
+- https://adapty.io/docs/fr/flutter-quickstart-identify.md
+```
+
+:::tip[Point de contrôle]
+- **Attendu :** Après avoir appelé `Adapty().identify()`, la section **Profiles** du tableau de bord affiche votre ID utilisateur personnalisé.
+- **Point d'attention :** Appelez `identify` après l'activation mais avant de récupérer les paywalls pour éviter une attribution de profil anonyme.
+:::
+
+### Préparer le lancement \{#prepare-for-release\}
+
+Une fois votre intégration fonctionnelle en sandbox, parcourez la checklist de lancement pour vous assurer que tout est prêt pour la production.
+
+**Guide :** [Checklist de lancement](release-checklist)
+
+À envoyer à votre LLM :
+```
+Read these Adapty docs before releasing:
+- https://adapty.io/docs/fr/release-checklist.md
+```
+
+:::tip[Point de contrôle]
+- **Attendu :** Tous les éléments de la checklist confirmés : connexions aux stores, notifications serveur, flux d'achat, vérifications du niveau d'accès et exigences de confidentialité.
+- **Point d'attention :** Notifications serveur manquantes → configurez les App Store Server Notifications dans **App settings → iOS SDK** et les Google Play Real-Time Developer Notifications dans **App settings → Android SDK**.
+:::
+
+## Fichiers d'index de documentation en texte brut \{#plain-text-doc-index-files\}
+
+Si vous avez besoin de donner à votre LLM un contexte plus large que des pages individuelles, nous hébergeons des fichiers d'index qui listent ou regroupent l'ensemble de la documentation Adapty :
+
+- [`llms.txt`](https://adapty.io/docs/fr/llms.txt) : Liste toutes les pages avec des liens `.md`. Un [standard émergent](https://llmstxt.org/) pour rendre les sites web accessibles aux LLMs. Notez que pour certains agents IA (par exemple ChatGPT), vous devrez télécharger `llms.txt` et le joindre à la conversation en tant que fichier.
+- [`llms-full.txt`](https://adapty.io/docs/fr/llms-full.txt) : L'intégralité de la documentation Adapty regroupée en un seul fichier. Très volumineux — à utiliser uniquement quand vous avez besoin d'une vue d'ensemble complète.
+- Sous-ensembles Flutter [`flutter-llms.txt`](https://adapty.io/docs/fr/flutter-llms.txt) et [`flutter-llms-full.txt`](https://adapty.io/docs/fr/flutter-llms-full.txt) : Sous-ensembles spécifiques à la plateforme qui économisent des tokens par rapport au site complet.

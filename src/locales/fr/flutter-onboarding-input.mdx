@@ -1,0 +1,220 @@
+---
+title: "Traiter les données des onboardings dans le SDK Flutter"
+description: "Enregistrez et utilisez les données des onboardings dans votre application Flutter avec le SDK Adapty."
+metadataTitle: "Onboardings | SDK Flutter | Documentation Adapty"
+---
+
+:::warning
+**Les onboardings sont dépréciés dans le SDK v4 et seront supprimés dans une prochaine version.** Ils ne bénéficient plus de corrections ni d'améliorations. Utilisez plutôt les [flows](flutter-get-pb-paywalls) : contrairement aux onboardings qui s'exécutent dans une WebView, les flows s'affichent nativement sur l'appareil — ce qui offre des animations plus fluides, un aspect natif cohérent, des temps de chargement réduits et aucune dépendance au moteur WebView. Consultez [Obtenir des flows et paywalls](flutter-get-pb-paywalls) et [Afficher des flows et paywalls](flutter-present-paywalls) pour commencer.
+:::
+
+Lorsque vos utilisateurs répondent à une question de quiz ou saisissent des données dans un champ de saisie, la méthode `onStateUpdatedAction` est invoquée. Vous pouvez enregistrer ou traiter le type de champ dans votre code.
+
+Par exemple :
+
+```dart
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Process data 
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  // Process data 
+}
+```
+
+Consultez le format de l'action [ici](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyUIOnboardingPlatformView/onStateUpdatedAction.html).
+
+<Details>
+<summary>Formes des propriétés pour chaque type de params (cliquez pour développer)</summary>
+
+```dart
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // elementId is a String:
+  elementId; // 'preference_selector'
+
+  // meta — AdaptyUIOnboardingMeta:
+  meta.onboardingId;   // 'onboarding_123'
+  meta.screenClientId; // 'preferences_screen'
+  meta.screenIndex;    // 1
+  meta.screensTotal;   // 3
+
+  // params is one of the AdaptyOnboardingsStateUpdatedParams subclasses:
+  switch (params) {
+    case AdaptyOnboardingsSelectParams(:final id, :final value, :final label):
+      // a single selected option
+      id;    // 'option_1'
+      value; // 'premium'
+      label; // 'Premium Plan'
+      break;
+    case AdaptyOnboardingsMultiSelectParams(:final params):
+      // a list of selected options, each an AdaptyOnboardingsSelectParams
+      params; // [(id: 'interest_1', value: 'sports', label: 'Sports'), (id: 'interest_2', value: 'music', label: 'Music')]
+      break;
+    case AdaptyOnboardingsInputParams(:final input):
+      switch (input) {
+        case AdaptyOnboardingsTextInput(:final value):
+          value; // 'John Doe'
+          break;
+        case AdaptyOnboardingsEmailInput(:final value):
+          value; // 'user@example.com'
+          break;
+        case AdaptyOnboardingsNumberInput(:final value):
+          value; // 25.0 (a double)
+          break;
+      }
+      break;
+    case AdaptyOnboardingsDatePickerParams(:final day, :final month, :final year):
+      day;   // 15
+      month; // 6
+      year;  // 1990
+      break;
+  }
+}
+```
+</Details>
+
+## Cas d'usage \{#use-cases\}
+
+### Enrichir les profils utilisateurs avec des données \{#enrich-user-profiles-with-data\}
+
+Si vous souhaitez associer immédiatement les données saisies au profil utilisateur et éviter de leur demander deux fois les mêmes informations, vous devez [mettre à jour le profil utilisateur](flutter-setting-user-attributes) avec les données saisies lors du traitement de l'action.
+
+Par exemple, vous demandez aux utilisateurs de saisir leur nom dans le champ texte avec l'ID `name`, et vous souhaitez définir la valeur de ce champ comme prénom de l'utilisateur. Vous leur demandez également de saisir leur e-mail dans le champ `email`. Dans le code de votre application, cela peut ressembler à ceci :
+
+```dart showLineNumbers
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Store user preferences or responses
+  if (params is AdaptyOnboardingsInputParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map elementId to appropriate profile field
+    switch (elementId) {
+      case 'name':
+        if (params.input is AdaptyOnboardingsTextInput) {
+          builder.setFirstName((params.input as AdaptyOnboardingsTextInput).value);
+        }
+        break;
+      case 'email':
+        if (params.input is AdaptyOnboardingsEmailInput) {
+          builder.setEmail((params.input as AdaptyOnboardingsEmailInput).value);
+        }
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  // Store user preferences or responses
+  if (params is AdaptyOnboardingsInputParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map elementId to appropriate profile field
+    switch (elementId) {
+      case 'name':
+        if (params.input is AdaptyOnboardingsTextInput) {
+          builder.setFirstName((params.input as AdaptyOnboardingsTextInput).value);
+        }
+        break;
+      case 'email':
+        if (params.input is AdaptyOnboardingsEmailInput) {
+          builder.setEmail((params.input as AdaptyOnboardingsEmailInput).value);
+        }
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+```
+
+### Personnaliser les paywalls en fonction des réponses \{#customize-paywalls-based-on-answers\}
+
+En utilisant des quiz dans les onboardings, vous pouvez également personnaliser les paywalls affichés aux utilisateurs après qu'ils ont terminé l'onboarding.
+
+Par exemple, vous pouvez interroger les utilisateurs sur leur expérience sportive et afficher des CTA et des produits différents selon les groupes d'utilisateurs.
+
+1. [Ajoutez un quiz](onboarding-quizzes) dans le constructeur d'onboarding et attribuez des IDs significatifs à ses options.
+
+<ZoomImage id="experience.webp" />
+
+2. Traitez les réponses au quiz en fonction de leurs IDs et [définissez des attributs personnalisés](flutter-setting-user-attributes) pour les utilisateurs.
+
+```dart showLineNumbers
+// Full-screen presentation
+void onboardingViewOnStateUpdatedAction(
+  AdaptyUIOnboardingView view,
+  AdaptyUIOnboardingMeta meta,
+  String elementId,
+  AdaptyOnboardingsStateUpdatedParams params,
+) {
+  // Handle quiz responses and set custom attributes
+  if (params is AdaptyOnboardingsSelectParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map quiz responses to custom attributes
+    switch (elementId) {
+      case 'experience':
+        // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+        builder.setCustomStringAttribute(params.value, 'experience');
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+
+// Embedded widget
+onStateUpdatedAction: (meta, elementId, params) {
+  // Handle quiz responses and set custom attributes
+  if (params is AdaptyOnboardingsSelectParams) {
+    final builder = AdaptyProfileParametersBuilder();
+    
+    // Map quiz responses to custom attributes
+    switch (elementId) {
+      case 'experience':
+        // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+        builder.setCustomStringAttribute(params.value, 'experience');
+        break;
+    }
+    
+    // Update profile
+    Adapty().updateProfile(builder.build()).catchError((error) {
+      // handle the error
+    });
+  }
+}
+```
+
+3. [Créez des segments](segments) pour chaque valeur d'attribut personnalisé.
+4. Créez un [placement](placements) et ajoutez des [audiences](audience) pour chaque segment créé.
+5. [Affichez un paywall](flutter-paywalls) pour le placement dans le code de votre application. Si votre onboarding comporte un bouton qui ouvre un paywall, implémentez le code du paywall en tant que [réponse à l'action de ce bouton](flutter-handling-onboarding-events#opening-a-paywall).

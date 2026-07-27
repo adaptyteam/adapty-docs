@@ -1,0 +1,124 @@
+---
+title: "Deeplinks différés dans Adapty Attribution"
+description: "Configurez des deeplinks différés dans Adapty Attribution."
+metadataTitle: "Deeplinks différés | Adapty Attribution | Documentation Adapty"
+keywords: ['adapty attribution', 'adapty ua', 'acquisition utilisateur', 'deeplink', 'deeplink différé']
+---
+
+Les deeplinks différés vous permettent de transmettre des données personnalisées à votre application lorsque des utilisateurs l'installent après avoir cliqué sur vos publicités. Par exemple, vous pouvez les rediriger vers un endroit spécifique de votre application dès qu'ils l'installent et la lancent.
+
+Voici comment cela fonctionne :
+
+1. Quand un utilisateur clique sur votre publicité, Adapty enregistre les données du clic.
+2. Quand Adapty détecte l'événement d'installation, il récupère les données différées à partir du clic.
+3. Après que l'utilisateur a installé votre application et qu'elle est lancée pour la première fois, Adapty récupère les données stockées et votre application reçoit les paramètres personnalisés, ce qui vous permet de réagir à différentes valeurs dans le code de l'application.
+
+Adapty prend en charge les paramètres de données différées suivants :
+
+- `ios_deferred_data`
+- `android_deferred_data`
+- `deferred_data_sub[1-10]`
+
+Pour ajouter des paramètres de données différées, ajoutez-les à votre lien dans les paramètres de votre campagne :
+
+1. Ouvrez votre campagne depuis la page **Integrations -> Meta/TikTok Ads**. Ou bien, ouvrez votre lien de suivi depuis la page **Tracking links**. Copiez le lien de clic que vous utiliserez dans votre campagne.
+
+<ZoomImage id="ua-lnk.webp" width="900px" />
+
+2. Dans votre plateforme publicitaire (Meta, TikTok, Google Ads, etc.), collez le lien dans le champ URL de destination de l'annonce, puis ajoutez-y les paramètres de données différées en tant que paramètres de requête supplémentaires — chacun précédé de `&`. Par exemple, pour envoyer les utilisateurs iOS vers un écran « Welcome » après l'installation, ajoutez `&ios_deferred_data=welcome`. L'URL de destination finale ressemblera à ceci :
+
+```
+https://api-ua.adapty.io/api/v1/attribution/click?adpt_cid=__ADAPTY__ID__&ios_deferred_data=welcome&campaign_id=__CAMPAIGN_ID__&adset_id=__AID__&ad_id=__CID__&campaign_name=__CAMPAIGN_NAME__&adset_name=__AID_NAME__&ad_name=__CID_NAME__&redirect_url=__APP_LINK__
+```
+
+3. Réagissez aux paramètres dans le code de votre application. Notez que les paramètres de données différées se trouvent dans le paramètre `payload`, et que `payload` est un JSON échappé — vous devez donc le parser dans le code de votre application.
+
+Par exemple, voici comment gérer les installations où `ios_deferred_data` vaut `welcome` :
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+Adapty.delegate = self
+
+nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetails) {
+    guard
+        let payloadStr = details.payload,
+        let data = payloadStr.data(using: .utf8),
+        let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+        let deeplink = payload["ios_deferred_data"] as? String,
+        deeplink == "welcome"
+    else { return }
+
+    DispatchQueue.main.async {
+        print("Navigate to welcome screen")
+        // navigate to your screen here
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="android" label="Kotlin">
+
+```kotlin showLineNumbers
+Adapty.setOnInstallationDetailsListener(object : OnInstallationDetailsListener {
+    override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
+        details.payload?.let {
+            runCatching {
+                val json = JSONObject(it)
+                if (json.optString("android_deferred_data") == "welcome") {
+                    println("Navigate to welcome screen")
+                    // navigate here
+                }
+            }.onFailure(Throwable::printStackTrace)
+        }
+    }
+})
+
+```
+
+</TabItem>
+
+<TabItem value="rn" label="React Native" default>
+
+```typescript showLineNumbers
+adapty.addEventListener('onInstallationDetailsSuccess', details => {
+    // Parse the payload JSON and navigate to welcome screen if needed
+    try {
+        if (details.payload) {
+            const payload = JSON.parse(details.payload);
+            if (payload.ios_deferred_data === 'welcome') {
+                // Navigate to welcome screen
+                // Replace with your app's navigation logic
+                // For example, using React Navigation:
+                // navigation.navigate('Welcome');
+                console.log('Navigate to welcome screen');
+            }
+        }
+    } catch (error) {
+        console.error('Error parsing installation details payload:', error);
+    }
+});
+```
+
+</TabItem>
+
+<TabItem value="flutter" label="Flutter">
+
+```dart showLineNumbers
+Adapty().onUpdateInstallationDetailsSuccessStream.listen((details) {
+  final payloadStr = details.payload;
+  if (payloadStr == null) return;
+
+  final payload = json.decode(payloadStr) as Map<String, dynamic>;
+  if (payload['ios_deferred_data'] == 'welcome') {
+    print('Navigate to welcome screen');
+  }
+});
+
+```
+
+</TabItem>
+
+</Tabs>

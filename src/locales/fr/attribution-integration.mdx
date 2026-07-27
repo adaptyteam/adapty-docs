@@ -1,0 +1,123 @@
+---
+title: "Intégration de l'attribution"
+description: "Intégrez Adapty avec des outils d'attribution pour suivre l'acquisition d'utilisateurs et la LTV."
+metadataTitle: "Guide d'intégration de l'attribution | Documentation Adapty"
+keywords: ['attribution', 'updateAttribution']
+---
+
+Adapty peut échanger des informations avec des services tiers pour attribuer les événements d'abonnement à des campagnes marketing spécifiques. Cet échange vous permet de :
+
+* Découvrir quelles stratégies marketing génèrent le plus de revenus
+* Filtrer les [graphiques d'abonnements](charts) Adapty par attribution
+* Utiliser les fonctionnalités d'un service tiers pour analyser les données d'abonnements Adapty
+
+Vous pouvez le configurer de deux façons :
+
+* [L'attribution intégrée](#integrated-attribution) nécessite une configuration minimale et permet à Adapty d'échanger des données avec 9 plateformes populaires.
+* [L'attribution manuelle](#manual-attribution) vous oblige à récupérer vous-même les données d'attribution depuis les API de services tiers avant de pouvoir les envoyer à Adapty.
+
+:::tip
+Activez [Adapty Attribution](user-acquisition) pour une vue complète de l'économie de votre application.
+
+Adapty Attribution est un tableau de bord web facile à configurer qui consolide les données de différentes sources pour identifier les stratégies d'acquisition d'utilisateurs efficaces.
+:::
+
+:::warning
+Gardez vos données propres : évitez la duplication d'événements et les conflits d'attribution. Suivez les conseils de la section **[Éviter les problèmes de données](#prevent-data-issues)** pour vous assurer qu'une nouvelle source de données ne pollue pas vos analyses.
+:::
+
+## Attribution intégrée \{#integrated-attribution\}
+
+Adapty propose une intégration d'attribution clé en main avec 9 services populaires. Ces plateformes peuvent automatiquement recevoir les [données d'abonnements](events) d'Adapty, traiter chaque achat et répondre avec une attribution appropriée.
+
+Chaque plateforme a un fonctionnement différent, mais les étapes sont similairement simples :
+
+1. **Configurez le partage automatique des données.** Autorisez Adapty à communiquer avec la plateforme de votre choix.
+2. **Intégrez le SDK Adapty.** Certaines plateformes nécessitent du code supplémentaire pour définir les données d'attribution.
+3. **Désactivez les autres services de partage d'événements et sources d'attribution** pour éviter la [duplication d'événements](#avoid-event-duplication) et les [conflits de données](#select-a-single-attribution-source).
+
+Consultez le guide spécifique à chaque plateforme pour un aperçu détaillé de l'intégration :
+
+- [Adjust](adjust)
+- [Airbridge](airbridge)
+- [Apple Search Ads](apple-search-ads)
+- [AppsFlyer](appsflyer)
+- [Asapty](asapty)
+- [Branch](branch)
+- [Facebook Ads](facebook-ads)
+- [Singular](singular)
+- [Tenjin](tenjin)
+
+:::note
+Si vous souhaitez qu'Adapty étende cette liste, [créez une demande de fonctionnalité](https://adapty.featurebase.app/en?b=6979f233ebd3cffd4f425ba0) et exprimez votre intérêt pour un service particulier.
+:::
+
+## Attribution manuelle \{#manual-attribution\}
+
+Si Adapty ne propose pas d'[attribution intégrée](#integrated-attribution) avec le service de votre choix, vous devez écrire votre propre code pour échanger des données avec la source d'attribution.
+
+1. **Récupérez les données depuis le service d'attribution**. Utilisez l'API du service pour demander les données d'attribution.
+2. **Créez un dictionnaire avec les données d'attribution reçues.**
+
+    Le dictionnaire peut contenir les clés suivantes :
+
+    - `status` (`organic`, `non-organic` ou `unknown`)
+    - `channel`
+    - `campaign`
+    - `ad_group`
+    - `ad_set`
+    - `creative`
+
+    :::important
+    * Toutes les clés sont optionnelles.
+    * Adapty ignore les clés qui ne figurent pas dans la liste.
+    * La valeur de chaque clé peut comporter jusqu'à 50 caractères.
+    :::
+
+    **Exemple** :
+
+    ```swift showLineNumbers title="Swift"
+    let attribution = [
+        "status": "non_organic",
+        "channel": "Google Ads",
+        "campaign": "Christmas Sale",
+        "ad_group": "ad group 1",
+        "ad_set": "ad set 1",
+        "creative": "creative id 1"
+    ]
+    ```
+
+3. **Définissez les données d'attribution** :
+
+    Transmettez le dictionnaire d'attribution à la méthode `updateAttribution`. Une fois la valeur d'attribution définie, elle ne peut plus être remplacée :
+
+    ```swift showLineNumbers title="Swift"
+    Adapty.updateAttribution(attribution, source: "custom") { error in
+        if error == nil {
+            // successful attribution update
+        }
+    }
+    ```
+
+    **Paramètres :**
+
+    - `attribution` (requis) : dictionnaire contenant les données d'attribution.
+    - `source` (requis) : source d'attribution. Définissez-la sur `.custom` si votre fournisseur d'attribution ne prend pas en charge l'[attribution intégrée](#integrated-attribution).
+
+4. **Désactivez les autres services de partage d'événements et sources d'attribution** pour éviter la [duplication d'événements](#avoid-event-duplication) et les [conflits de données](#select-a-single-attribution-source).
+
+## Éviter les problèmes de données \{#prevent-data-issues\}
+
+### Choisir une seule source d'attribution \{#select-a-single-attribution-source\}
+
+N'activez pas l'intégration d'attribution avec plusieurs plateformes simultanément. Adapty ne peut accepter qu'une seule source d'attribution à la fois, et une fois qu'il enregistre la valeur d'attribution, il ne peut plus la remplacer.
+
+Si vous activez plusieurs sources d'attribution, Adapty sélectionnera la source avec le plus de données — pas nécessairement les meilleures.
+
+Par exemple, l'[attribution Apple Search Ads](apple-search-ads) non organique aura toujours la priorité sur iOS. Pour désactiver l'attribution Apple Search Ads, ouvrez l'onglet [**App Settings** -> **Apple Search Ads**](https://app.adapty.io/settings/apple-search-ads) et désactivez le bouton **Receive Apple Search Ads attribution**.
+
+### Éviter la duplication d'événements \{#avoid-event-duplication\}
+
+Si vous utilisez Adapty pour partager des données d'abonnements en temps réel avec vos services d'attribution, **vous devez désactiver** les autres services qui remplissent le même rôle. Si vous avez connecté votre compte Facebook à AppsFlyer, Adjust ou Branch, vos événements seront automatiquement transmis à ces services, sauf si vous vous y opposez.
+
+Les événements en double peuvent fausser vos analyses et rendre l'interprétation des données difficile. Une fois la configuration du partage d'événements Adapty terminée, désactivez les fonctionnalités de transfert d'événements tiers.

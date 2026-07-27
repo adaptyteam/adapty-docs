@@ -1,0 +1,94 @@
+---
+title: "Utiliser les paywalls de secours dans un projet Expo"
+description: "Configurez les paywalls de secours dans un projet Expo React Native via le plugin de configuration react-native-adapty."
+metadataTitle: "Utilisation des flows de secours sur React Native | Documentation Adapty"
+keywords: ['paywalls de secours', 'expo', 'react native', 'plugin de configuration', 'prebuild', 'paywalls hors ligne']
+---
+import FallbackPaywallIntroduction from '@site/src/locales/fr/reusable/FallbackPaywallIntroduction.md';
+
+:::important
+Ce guide s'applique aux **projets Expo**.
+Si vous utilisez **React Native pur (sans Expo)**, suivez plutôt le [guide de secours pour React Native pur](react-native-use-fallback-paywalls-pure).
+:::
+
+<FallbackPaywallIntroduction />
+
+Le SDK Adapty lit le fichier de secours depuis le bundle **natif** — une ressource iOS à l'intérieur du package `.app`, ou une entrée sous `android/app/src/main/assets/`. Dans un projet Expo, `npx expo prebuild --clean` régénère ces répertoires à chaque exécution, il n'est donc pas possible d'y déposer les fichiers manuellement. Le plugin de configuration `react-native-adapty` intègre le fichier dans le bundle natif à votre place.
+
+:::tip
+Une configuration complète et fonctionnelle est disponible dans l'exemple d'application [`FocusJournalExpo`](https://github.com/adaptyteam/AdaptySDK-React-Native/tree/master/examples/FocusJournalExpo).
+:::
+
+## Configuration \{#configuration\}
+
+1. Placez les fichiers JSON de secours n'importe où dans votre projet — généralement à côté des autres ressources :
+
+   ```
+   <your-project>/
+   └── assets/
+       ├── ios_fallback.json
+       └── android_fallback.json
+   ```
+
+2. Ajoutez l'option `fallbackFile` à l'entrée `react-native-adapty` dans `app.json` (ou `app.config.js`). Chaque clé de plateforme est optionnelle — ne configurez que les plateformes dont vous avez besoin :
+
+   ```json title="app.json"
+   {
+     "expo": {
+       "plugins": [
+         [
+           "react-native-adapty",
+           {
+             "fallbackFile": {
+               "ios": "./assets/ios_fallback.json",
+               "android": "./assets/android_fallback.json"
+             }
+           }
+         ]
+       ]
+     }
+   }
+   ```
+
+   :::note
+   Adapty exporte un fichier JSON de secours différent pour chaque plateforme — les identifiants de produits Apple sur iOS, les identifiants de produits Google Play sur Android. Pointez chaque plateforme vers son propre fichier.
+   :::
+
+3. Régénérez les projets natifs :
+
+   ```sh title="Shell"
+   npx expo prebuild
+   ```
+
+   Le plugin ajoute le fichier iOS aux ressources du bundle du projet Xcode et copie le fichier Android dans `android/app/src/main/assets/`. La sortie du prebuild inclut des lignes comme :
+
+   ```
+   [react-native-adapty] Registered ios_fallback.json as iOS bundle resource
+   [react-native-adapty] Copied android_fallback.json to android assets/
+   ```
+
+4. Enregistrez le fichier auprès du SDK au moment de l'exécution :
+
+   ```typescript showLineNumbers title="App.tsx"
+   import { adapty } from 'react-native-adapty';
+
+   await adapty.activate('PUBLIC_SDK_KEY');
+
+   await adapty.setFallback({
+     ios: { fileName: 'ios_fallback.json' },
+     android: { relativeAssetPath: 'android_fallback.json' },
+   });
+   ```
+
+   Les noms de fichiers passés à `setFallback` doivent correspondre aux noms de base des fichiers configurés sous `fallbackFile`.
+
+:::important
+`setFallback` doit s'exécuter avant que le SDK ne récupère le flow, le paywall ou l'onboarding cible.
+:::
+
+## Vérification \{#verification\}
+
+Après `npx expo prebuild`, vérifiez les deux plateformes :
+
+- **Android** : Listez le contenu de `android/app/src/main/assets/`. Le fichier configuré sous `fallbackFile.android` doit être présent, et le nom de fichier réservé à iOS ne doit pas apparaître ici.
+- **iOS** : Recherchez le nom de fichier iOS dans `ios/<ProjectName>.xcodeproj/project.pbxproj`. Il doit apparaître dans `PBXFileReference`, le groupe `Resources`, et `PBXResourcesBuildPhase`. Le nom de fichier réservé à Android ne doit pas apparaître dans `project.pbxproj`.

@@ -1,0 +1,214 @@
+---
+title: "Traiter les données des onboardings dans le SDK iOS"
+description: "Enregistrez et utilisez les données des onboardings dans votre application iOS avec le SDK Adapty."
+metadataTitle: "Onboardings | SDK iOS | Documentation Adapty"
+displayed_sidebar: sdkios
+---
+
+:::tip
+**À partir du SDK v4**, vous pouvez créer des [flows](get-pb-paywalls) comme alternative plus puissante aux onboardings. Contrairement aux onboardings qui s'exécutent dans une WebView, les flows s'affichent nativement sur l'appareil — ce qui vous offre des animations plus fluides, un look and feel iOS cohérent, des temps de chargement plus rapides et aucune dépendance au runtime WebView. Consultez [Obtenir des flows et des paywalls](get-pb-paywalls) et [Afficher des flows et des paywalls](ios-present-paywalls) pour commencer.
+:::
+
+Lorsque vos utilisateurs répondent à une question de quiz ou saisissent des données dans un champ de texte, la méthode `onStateUpdatedAction` est invoquée. Vous pouvez enregistrer ou traiter le type de champ dans votre code.
+
+Par exemple :
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
+    // Store user preferences or responses
+    switch action.params {
+    case .select(let params):
+        // Handle single selection
+    case .multiSelect(let params):
+        // Handle multiple selections
+    case .input(let params):
+        // Handle text input
+    case .datePicker(let params):
+        // Handle date selection
+    }
+}
+```
+
+L'objet `action` contient :
+
+| Paramètre      | Description                                                                                                                                                                                                                                                                                     |
+|----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `elementId`    | Un identifiant unique pour l'élément de saisie. Vous pouvez l'utiliser pour associer les questions aux réponses lors de leur enregistrement.                                                                                                                                                    |
+| `params`       | L'objet de données de saisie de l'utilisateur contenant les propriétés de type et de valeur.                                                                                                                                                                                                   |
+| `params.type`  | Le type d'élément de saisie. Peut être :<br/>• `"select"` - Sélection unique parmi des options<br/>• `"multiSelect"` - Sélections multiples parmi des options<br/>• `"input"` - Champ de saisie de texte<br/>• `"datePicker"` - Sélection de date                                               |
+| `params.value` | La ou les valeurs sélectionnées ou saisies par l'utilisateur. La structure dépend du type :<br/>• `select` : Objet avec `id`, `value`, `label`<br/>• `multiSelect` : Tableau d'objets avec `id`, `value`, `label`<br/>• `input` : Objet avec `type`, `value`<br/>• `datePicker` : Objet avec `day`, `month`, `year` |
+
+<Details>
+<summary>Exemples de données enregistrées (peuvent différer selon votre implémentation)</summary>
+
+```javascript
+// Example of a saved select action
+{
+    "elementId": "preference_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "preferences_screen",
+        "screenIndex": 1,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "select",
+        "value": {
+            "id": "option_1",
+            "value": "premium",
+            "label": "Premium Plan"
+        }
+    }
+}
+
+// Example of a saved multi-select action
+{
+    "elementId": "interests_selector",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "interests_screen",
+        "screenIndex": 2,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "multiSelect",
+        "value": [
+            {
+                "id": "interest_1",
+                "value": "sports",
+                "label": "Sports"
+            },
+            {
+                "id": "interest_2",
+                "value": "music",
+                "label": "Music"
+            }
+        ]
+    }
+}
+
+// Example of a saved input action
+{
+    "elementId": "name_input",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+    "params": {
+        "type": "input",
+        "value": {
+            "type": "text",
+            "value": "John Doe"
+        }
+    }
+}
+
+// Example of a saved date picker action
+{
+    "elementId": "birthday_picker",
+    "meta": {
+        "onboardingId": "onboarding_123",
+        "screenClientId": "profile_screen",
+        "screenIndex": 0,
+        "screensTotal": 3
+    },
+"params": {
+    "type": "datePicker",
+    "value": {
+        "day": 15,
+        "month": 6,
+        "year": 1990
+        }
+    }
+}
+```
+</Details>
+
+## Cas d'usage \{#use-cases\}
+
+### Enrichir les profils utilisateurs avec des données \{#enrich-user-profiles-with-data\}
+
+Si vous souhaitez associer immédiatement les données saisies au profil utilisateur et éviter de lui demander deux fois les mêmes informations, vous devez [mettre à jour le profil utilisateur](setting-user-attributes) avec les données saisies lors du traitement de l'action.
+
+Par exemple, vous demandez aux utilisateurs de saisir leur nom dans le champ texte avec l'ID `name`, et vous souhaitez définir la valeur de ce champ comme prénom de l'utilisateur. Vous leur demandez également de saisir leur e-mail dans le champ `email`. Dans le code de votre application, cela peut ressembler à ceci :
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
+    // Store user preferences or responses
+    switch action.params {
+    case .input(let params):
+        // Handle text input
+        let builder = AdaptyProfileParameters.Builder()
+
+        // Map elementId to appropriate profile field
+        switch action.elementId {
+        case "name":
+            builder.with(firstName: params.value.value)
+        case "email":
+            builder.with(email: params.value.value)
+        default:
+            break
+        }
+
+        // Delegate methods are synchronous; kick off the async update in a Task.
+        Task {
+            do {
+                try await Adapty.updateProfile(params: builder.build())
+            } catch {
+                // handle the error
+            }
+        }
+    default:
+        break
+    }
+}
+```
+
+### Personnaliser les paywalls selon les réponses \{#customize-paywalls-based-on-answers\}
+
+En utilisant des quiz dans les onboardings, vous pouvez également personnaliser les paywalls affichés aux utilisateurs après qu'ils ont terminé l'onboarding.
+
+Par exemple, vous pouvez interroger les utilisateurs sur leur expérience sportive et afficher des CTA et des produits différents selon les groupes d'utilisateurs.
+
+1. [Ajoutez un quiz](onboarding-quizzes) dans le constructeur d'onboarding et assignez des ID significatifs à ses options.
+
+<ZoomImage id="experience.webp" />
+
+2. Traitez les réponses au quiz en fonction de leurs ID et [définissez des attributs personnalisés](setting-user-attributes) pour les utilisateurs.
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onStateUpdatedAction action: AdaptyOnboardingsStateUpdatedAction) {
+    // Handle quiz responses and set custom attributes
+    switch action.params {
+    case .select(let params):
+        // Handle quiz selection
+        let builder = AdaptyProfileParameters.Builder()
+
+        // Map quiz responses to custom attributes
+        switch action.elementId {
+        case "experience":
+            // Set custom attribute 'experience' with the selected value (beginner, amateur, pro)
+            try? builder.with(customAttribute: params.value.value, forKey: "experience")
+        default:
+            break
+        }
+
+        // Delegate methods are synchronous; kick off the async update in a Task.
+        Task {
+            do {
+                try await Adapty.updateProfile(params: builder.build())
+            } catch {
+                // handle the error
+            }
+        }
+    default:
+        break
+    }
+}
+```
+
+3. [Créez des segments](segments) pour chaque valeur d'attribut personnalisé.
+4. Créez un [placement](placements) et ajoutez des [audiences](audience) pour chaque segment créé.
+5. [Affichez un paywall](ios-paywalls) pour le placement dans le code de votre application. Si votre onboarding comporte un bouton qui ouvre un paywall, implémentez le code du paywall en tant que [réponse à l'action de ce bouton](ios-handling-onboarding-events#opening-a-paywall).

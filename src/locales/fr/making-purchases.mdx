@@ -1,0 +1,146 @@
+---
+title: "Effectuer des achats dans une application mobile avec le SDK iOS"
+description: "Guide pour gérer les achats intégrés et les abonnements avec Adapty."
+metadataTitle: "Gestion des achats intégrés avec Adapty | Documentation Adapty"
+keywords: ['makePurchase', 'pending', 'purchase', 'presentCodeRedemptionSheet', 'offer code']
+rank: 100
+---
+
+import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/fr/reusable/OfferCodesInfo.mdx';
+
+Afficher des paywalls dans votre application mobile est une étape indispensable pour proposer aux utilisateurs l'accès à du contenu ou des services premium. Cependant, présenter ces paywalls suffit à gérer les achats uniquement si vous utilisez le [Paywall Builder](adapty-paywall-builder) pour personnaliser vos paywalls.
+
+Si vous n'utilisez pas le Paywall Builder, vous devez utiliser une méthode séparée appelée `.makePurchase()` pour finaliser un achat et débloquer le contenu souhaité. Cette méthode est la porte d'entrée permettant aux utilisateurs d'interagir avec les paywalls et de procéder à leurs transactions.
+
+Si votre paywall comporte une offre promotionnelle active pour le produit qu'un utilisateur souhaite acheter, Adapty l'appliquera automatiquement au moment de l'achat.
+
+:::warning
+Gardez à l'esprit que l'offre de lancement ne sera appliquée automatiquement que si vous utilisez des paywalls configurés avec le Paywall Builder.
+
+Dans les autres cas, vous devrez [vérifier l'éligibilité de l'utilisateur à une offre de lancement sur iOS](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios). Ignorer cette étape peut entraîner le rejet de votre application lors de sa publication. De plus, cela pourrait conduire à facturer le plein tarif à des utilisateurs éligibles à une offre de lancement.
+:::
+
+Assurez-vous d'avoir [effectué la configuration initiale](quickstart) sans sauter une seule étape. Sans cela, nous ne pouvons pas valider les achats.
+
+## Effectuer un achat \{#make-purchase\}
+
+:::note
+**Vous utilisez le [Paywall Builder](adapty-paywall-builder) ?** Les achats sont traités automatiquement — vous pouvez ignorer cette étape.
+
+**Vous cherchez un guide pas à pas ?** Consultez le [guide de démarrage rapide](ios-implement-paywalls-manually) pour des instructions d'implémentation complètes avec tout le contexte nécessaire.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let purchaseResult = try await Adapty.makePurchase(product: product)
+
+    switch purchaseResult {
+        case .userCancelled:
+            // Handle the case where the user canceled the purchase
+        case .pending:
+            // Handle deferred purchases (e.g., the user will pay offline with cash)
+        case let .success(profile, transaction):
+            if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // Grant access to the paid features
+            }
+    }
+} catch {
+    // Handle the error
+}
+```
+
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.makePurchase(product: product) { result in
+    switch result {
+    case let .success(purchaseResult):
+        switch purchaseResult {
+            case .userCancelled:
+                // Handle the case where the user canceled the purchase
+            case .pending:
+                // Handle deferred purchases (e.g., the user will pay offline with cash)
+            case let .success(profile, transaction):
+                if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+                    // Grant access to the paid features
+                }
+        }
+    case let .failure(error):
+        // Handle the error
+    }
+}
+```
+
+</TabItem>
+
+</Tabs>
+
+Paramètres de la requête :
+
+| Paramètre   | Présence | Description                                                                                         |
+| :---------- | :------- | :-------------------------------------------------------------------------------------------------- |
+| **Product** | requis | Un objet [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) récupéré depuis le paywall. |
+
+Paramètres de la réponse :
+
+| Paramètre | Description                                                                                                                                                                                                                                                                                                                                                            |
+|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Profile** | <p>Si la requête a abouti, la réponse contient cet objet. Un objet [AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile) fournit des informations complètes sur les niveaux d'accès, les abonnements et les achats uniques d'un utilisateur au sein de l'application.</p><p>Vérifiez le statut du niveau d'accès pour déterminer si l'utilisateur dispose de l'accès requis à l'application.</p> |
+
+:::warning
+**Remarque :** si vous utilisez encore StoreKit d'Apple en version inférieure à v2.0 et le SDK Adapty en version inférieure à v2.9.0, vous devez fournir le [secret partagé de l'App Store Apple](app-store-connection-configuration#step-5-enter-app-store-shared-secret) à la place. Cette méthode est actuellement dépréciée par Apple.
+:::
+
+## Achats intégrés depuis l'App Store \{#in-app-purchases-from-the-app-store\}
+
+Lorsqu'un utilisateur initie un achat dans l'App Store et que la transaction est transmise à votre application, vous avez deux options :
+
+- **Traiter la transaction immédiatement :** Retournez `true` dans `shouldAddStorePayment`. L'écran d'achat Apple s'affichera immédiatement.
+- **Stocker l'objet produit pour un traitement ultérieur :** Retournez `false` dans `shouldAddStorePayment`, puis appelez `makePurchase` avec le produit stocké plus tard. Cela peut être utile si vous souhaitez afficher quelque chose de personnalisé à l'utilisateur avant de déclencher un achat.
+
+Voici le code complet :
+
+```swift showLineNumbers title="Swift"
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
+        // 1a.
+        // Return `true` to continue the transaction in your app. The Apple purchase system screen will show automatically.
+
+        // 1b.
+        // Store the product object and return `false` to defer or cancel the transaction.
+        false
+    }
+    
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase` when the timing is appropriate
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyDeferredProduct = // get the product object from 1b.
+        do {
+            try await Adapty.makePurchase(product: storedProduct)
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+## Utiliser des codes de réduction sur iOS \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+Pour afficher la feuille de saisie de code de réduction dans votre application :
+
+```swift showLineNumbers
+Adapty.presentCodeRedemptionSheet()
+```
+
+:::danger
+D'après nos observations, la feuille de saisie de code de réduction peut ne pas fonctionner de manière fiable dans certaines applications. Nous recommandons de rediriger l'utilisateur directement vers l'App Store.
+
+Pour ce faire, vous devez ouvrir l'URL au format suivant :
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::

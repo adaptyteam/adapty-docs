@@ -1,0 +1,352 @@
+---
+title: "Obtenir les flows et paywalls - React Native"
+description: "Récupérez les flows et les paywalls depuis Adapty dans votre application React Native."
+metadataTitle: "Obtenir les flows et paywalls - React Native | Documentation Adapty"
+displayed_sidebar: sdkreactnative
+keywords: ['getFlow', 'getPaywall', 'createFlowView', 'createPaywallView', 'getFlowForDefaultAudience', 'getPaywallForDefaultAudience']
+rank: 90
+---
+
+import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md';
+
+<SDKv4>
+
+<MethodPromo method="getFlow" />
+
+Après avoir [conçu votre flow ou votre paywall avec le Paywall Builder](adapty-paywall-builder), vous pouvez l'afficher dans votre application mobile. La première étape consiste à récupérer le flow ou le paywall associé au placement ainsi que sa configuration de vue, comme décrit ci-dessous.
+
+Notez que cette rubrique concerne les flows et les paywalls personnalisés avec le Paywall Builder. Si vous implémentez vos paywalls manuellement, consultez la rubrique [Récupérer les paywalls et les produits pour les paywalls avec Remote Config dans votre application mobile](fetch-paywalls-and-products-react-native).
+
+<SampleApp />
+
+<details>
+   <summary>Avant de commencer à afficher des flows et des paywalls dans votre application mobile (cliquer pour développer)</summary>
+
+1. [Créez vos produits](create-product) dans l'Adapty Dashboard.
+2. [Créez un flow/paywall et intégrez-y les produits](create-paywall) dans l'Adapty Dashboard.
+3. [Créez des placements et intégrez-y votre flow/paywall](create-placement) dans l'Adapty Dashboard.
+4. Installez le [SDK Adapty](sdk-installation-reactnative) dans votre application mobile.
+</details>
+
+## Récupérer un flow/paywall \{#fetch-flowpaywall\}
+
+Si vous avez conçu un flow ou un paywall avec le Flow Builder ou le Paywall Builder, vous n'avez pas à vous soucier du rendu dans le code de votre application mobile. Un tel flow ou paywall contient à la fois ce qui doit être affiché et la manière dont cela doit l'être. Vous devez néanmoins récupérer son identifiant via le placement, sa configuration de vue, puis le présenter dans votre application mobile.
+
+Récupérez le flow ou le paywall et créez sa [vue](react-native-get-pb-paywalls#fetch-the-view-configuration) le plus tôt possible — idéalement bien avant de le présenter. La méthode `createFlowView` charge la configuration de vue et commence à télécharger et mettre en cache les images en arrière-plan. Plus tôt vous l'appelez, plus les téléchargements auront de temps pour se terminer. Au moment où vous présentez le flow ou le paywall, sa configuration et ses images peuvent déjà être en cache et prêtes à l'affichage.
+
+Pour obtenir un flow ou un paywall, utilisez la méthode `getFlow` :
+
+```typescript showLineNumbers
+try {
+    const placementId = 'YOUR_PLACEMENT_ID';
+
+    const flow = await adapty.getFlow(placementId);
+  // the requested flow/paywall
+} catch (error) {
+    // handle the error
+}
+```
+Paramètres :
+
+| Paramètre         | Présence | Description |
+|-------------------|--------|-----------|
+| **placementId**   | requis | L'identifiant du [Placement](placements) souhaité. Il s'agit de la valeur que vous avez spécifiée lors de la création d'un placement dans l'Adapty Dashboard. |
+| **fetchPolicy**   | défaut : `.reloadRevalidatingCacheData` | <p>Par défaut, le SDK tente de charger les données depuis le serveur et renvoie les données en cache en cas d'échec. Nous recommandons cette option, car elle garantit que vos utilisateurs reçoivent toujours les données les plus récentes.</p><p></p><p>Cependant, si vos utilisateurs ont une connexion internet instable, envisagez d'utiliser `.returnCacheDataElseLoad` pour renvoyer les données en cache lorsqu'elles existent. Dans ce cas, les utilisateurs pourraient ne pas obtenir les toutes dernières données, mais ils bénéficieront de temps de chargement plus rapides, quelle que soit la qualité de leur connexion. Le cache est mis à jour régulièrement, ce qui le rend fiable à utiliser pendant la session pour éviter des requêtes réseau.</p><p></p><p>Notez que le cache reste intact lors du redémarrage de l'application et n'est effacé que lors de la désinstallation de l'application ou d'un nettoyage manuel.</p><p></p><p>Le SDK Adapty stocke les paywalls localement en deux couches : le cache régulièrement mis à jour décrit ci-dessus et les [paywalls de secours](fallback-paywalls). Nous utilisons également un CDN pour récupérer les paywalls plus rapidement et un serveur de secours indépendant au cas où le CDN serait inaccessible. Ce système est conçu pour garantir que vous obtenez toujours la dernière version de vos paywalls, tout en assurant la fiabilité même lorsque la connexion internet est faible.</p> |
+| **loadTimeoutMs** | défaut : 5 sec | <p>Cette valeur limite le délai d'attente de cette méthode. Si le délai est atteint, les données en cache ou le fallback local seront renvoyés.</p><p>Notez que dans de rares cas, cette méthode peut expirer légèrement après le délai spécifié dans `loadTimeout`, car l'opération peut comporter différentes requêtes en coulisses.</p><p>Pour Android : vous pouvez créer un `TimeInterval` avec des fonctions d'extension (comme `5.seconds`, où `.seconds` provient de `import com.adapty.utils.seconds`), ou `TimeInterval.seconds(5)`. Pour ne pas fixer de limite, utilisez `TimeInterval.INFINITE`.</p> |
+
+Paramètres de réponse :
+
+| Paramètre | Description                                                                                                                                                                            |
+| :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Flow   | Un objet `AdaptyFlow` avec les identifiants du flow (`id`, `variationId`), son nom, son placement, ses variantes de paywall (`paywalls`) et les éventuels Remote Configs (`remoteConfigs`). |
+
+## Récupérer la configuration de vue \{#fetch-the-view-configuration\}
+
+:::important
+Assurez-vous d'activer le bouton **Show on device** dans le builder. Si cette option n'est pas activée, la configuration de vue ne sera pas disponible.
+:::
+
+Si le placement a été conçu dans le **Flow Builder** ou le **Paywall Builder**, Adapty génère l'interface utilisateur à votre place. Créez la vue avec `createFlowView`, puis [présentez le flow ou le paywall](react-native-present-paywalls). Si le placement est un paywall personnalisé sans interface Builder, [traitez-le comme un paywall avec Remote Config](present-remote-config-paywalls-react-native).
+
+Dans le SDK React Native, appelez directement `createFlowView` — vous n'avez pas besoin de récupérer la configuration de vue au préalable.
+
+:::warning
+Le résultat de la méthode `createFlowView` ne peut être utilisé qu'une seule fois. Si vous devez l'utiliser à nouveau, appelez de nouveau la méthode `createFlowView`. L'appeler deux fois sans recréer la vue peut entraîner l'erreur `AdaptyUIError.viewAlreadyPresented`.
+:::
+
+```typescript showLineNumbers
+
+try {
+  const view = await createFlowView(flow);
+} catch (error) {
+  // handle the error
+}
+```
+
+Paramètres :
+
+| Paramètre            | Présence | Description                                                  |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **flow**             | requis | Un objet `AdaptyFlow` permettant d'obtenir un contrôleur pour le flow/paywall souhaité. |
+| **customTags**       | optionnel | Définissez un dictionnaire de tags personnalisés et leurs valeurs résolues. Les tags personnalisés servent de marqueurs dans le contenu, remplacés dynamiquement par des chaînes spécifiques pour un contenu personnalisé dans le flow/paywall. Consultez la rubrique sur les tags personnalisés dans le Paywall Builder pour plus de détails. |
+| **prefetchProducts** | optionnel | Activez cette option pour optimiser le moment d'affichage des produits à l'écran. Lorsque `true`, AdaptyUI récupère automatiquement les produits nécessaires. Défaut : `false`. |
+| **android.enableSafeArea** | optionnel | Android uniquement (ignoré sur iOS). À passer en objet imbriqué : `android: { enableSafeArea: true }`. Lorsque `true`, la vue du flow applique des marges de zone sécurisée. Par défaut `true` pour la présentation modale (`createFlowView` + `present()`) et `false` pour le composant `AdaptyFlowView` intégré. La valeur par défaut convient à la plupart des cas. |
+
+:::note
+Si vous utilisez plusieurs langues, découvrez comment ajouter une [localisation de flow](add-paywall-locale-in-adapty-paywall-builder) et comment utiliser correctement les codes de langue [ici](react-native-localizations-and-locale-codes).
+:::
+
+Une fois la vue obtenue, [présentez le flow/paywall](react-native-present-paywalls).
+
+## Obtenir un flow ou un paywall pour l'audience par défaut afin de le récupérer plus rapidement \{#get-a-flow-or-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+En général, les flows et les paywalls sont récupérés presque instantanément, vous n'avez donc pas à vous soucier d'accélérer ce processus. Cependant, si vous avez de nombreuses audiences et placements, et que vos utilisateurs ont une connexion internet faible, la récupération d'un flow ou d'un paywall peut prendre plus de temps que souhaité. Dans ces situations, vous pouvez afficher un flow ou un paywall par défaut pour garantir une expérience utilisateur fluide plutôt que de ne rien afficher du tout.
+
+Pour cela, vous pouvez utiliser la méthode `getFlowForDefaultAudience`, qui récupère le flow ou le paywall du placement spécifié pour l'audience **All Users**. Cependant, il est important de comprendre que l'approche recommandée est de récupérer le flow ou le paywall avec la méthode `getFlow`, comme décrit dans la section [Récupérer un flow/paywall](#fetch-flowpaywall) ci-dessus.
+
+:::warning
+Pourquoi nous recommandons d'utiliser `getFlow`
+
+La méthode `getFlowForDefaultAudience` présente quelques inconvénients importants :
+
+- **Problèmes potentiels de compatibilité ascendante** : si vous devez afficher des paywalls différents selon les versions de l'application (actuelles et futures), vous pourriez rencontrer des difficultés. Vous devrez soit concevoir des paywalls compatibles avec la version actuelle (ancienne), soit accepter que les utilisateurs de cette version puissent rencontrer des problèmes avec des paywalls non rendus.
+- **Perte de ciblage** : tous les utilisateurs verront le même paywall conçu pour l'audience **All Users**, ce qui signifie que vous perdez le ciblage personnalisé (notamment selon les pays, l'attribution marketing ou vos propres attributs personnalisés).
+
+Si vous acceptez ces inconvénients pour bénéficier d'une récupération plus rapide du flow ou du paywall, utilisez la méthode `getFlowForDefaultAudience` comme suit. Sinon, restez sur `getFlow` décrit [ci-dessus](#fetch-flowpaywall).
+:::
+
+```typescript showLineNumbers
+try {
+    const id = 'YOUR_PLACEMENT_ID';
+
+    const flow = await adapty.getFlowForDefaultAudience(id);
+  // the requested flow/paywall
+} catch (error) {
+    // handle the error
+}
+```
+
+| Paramètre | Présence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | requis | L'identifiant du [Placement](placements). Il s'agit de la valeur que vous avez spécifiée lors de la création d'un placement dans votre Adapty Dashboard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **fetchPolicy** | défaut : `.reloadRevalidatingCacheData` | <p>Par défaut, le SDK tente de charger les données depuis le serveur et renvoie les données en cache en cas d'échec. Nous recommandons cette option, car elle garantit que vos utilisateurs reçoivent toujours les données les plus récentes.</p><p></p><p>Cependant, si vos utilisateurs ont une connexion internet instable, envisagez d'utiliser `.returnCacheDataElseLoad` pour renvoyer les données en cache lorsqu'elles existent. Dans ce cas, les utilisateurs pourraient ne pas obtenir les toutes dernières données, mais ils bénéficieront de temps de chargement plus rapides, quelle que soit la qualité de leur connexion. Le cache est mis à jour régulièrement, ce qui le rend fiable à utiliser pendant la session pour éviter des requêtes réseau.</p><p></p><p>Notez que le cache reste intact lors du redémarrage de l'application et n'est effacé que lors de la désinstallation de l'application ou d'un nettoyage manuel.</p> |
+
+## Personnaliser les assets \{#customize-assets\}
+
+Pour personnaliser les images et vidéos dans votre flow/paywall, utilisez les assets personnalisés.
+
+Les images et vidéos hero ont des identifiants prédéfinis : `hero_image` et `hero_video`. Dans un bundle d'assets personnalisés, vous ciblez ces éléments par leurs identifiants et personnalisez leur comportement.
+
+Pour les autres images et vidéos, vous devez [définir un identifiant personnalisé](custom-media) dans le tableau de bord Adapty.
+
+Par exemple, vous pouvez :
+
+- Afficher une image ou une vidéo différente à certains utilisateurs.
+- Afficher une image de prévisualisation locale pendant le chargement de l'image principale distante.
+- Afficher une image de prévisualisation avant de lancer une vidéo.
+
+:::important
+Pour utiliser cette fonctionnalité, mettez à jour le SDK Adapty React Native vers la version 3.8.0 ou supérieure.
+:::
+
+Voici un exemple de la manière de fournir des assets personnalisés via un simple dictionnaire :
+
+```javascript
+const customAssets: Record<string, AdaptyCustomAsset> = {
+  'custom_image': { type: 'image', relativeAssetPath: 'custom_image.png' },
+  'hero_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'custom_video.mp4' },
+      android: { relativeAssetPath: 'videos/custom_video.mp4' }
+    }
+  }
+};
+
+view = await createFlowView(flow, { customAssets })
+
+```
+
+:::note
+Si un asset est introuvable, le flow/paywall reviendra à son apparence par défaut.
+:::
+
+</SDKv4>
+
+<SDKv3>
+
+Après avoir [conçu la partie visuelle de votre paywall](adapty-paywall-builder) avec le nouveau Paywall Builder dans l'Adapty Dashboard, vous pouvez l'afficher dans votre application mobile. La première étape de ce processus consiste à récupérer le paywall associé au placement ainsi que sa configuration de vue, comme décrit ci-dessous.
+
+:::warning
+Le nouveau Paywall Builder fonctionne avec le SDK React Native version 3.0 ou supérieure.
+:::
+
+Notez que cette rubrique concerne les paywalls personnalisés avec le Paywall Builder. Si vous implémentez vos paywalls manuellement, consultez la rubrique [Récupérer les paywalls et les produits pour les paywalls avec Remote Config dans votre application mobile](fetch-paywalls-and-products-react-native).
+
+<SampleApp />
+
+<details>
+   <summary>Avant de commencer à afficher des paywalls dans votre application mobile (cliquer pour développer)</summary>
+
+1. [Créez vos produits](create-product) dans l'Adapty Dashboard.
+2. [Créez un paywall et intégrez-y les produits](create-paywall) dans l'Adapty Dashboard.
+3. [Créez des placements et intégrez-y votre paywall](create-placement) dans l'Adapty Dashboard.
+4. Installez le [SDK Adapty](sdk-installation-reactnative) dans votre application mobile.
+</details>
+
+## Récupérer un paywall conçu avec le Paywall Builder \{#fetch-paywall-designed-with-paywall-builder\}
+
+Si vous avez [conçu un paywall avec le Paywall Builder](adapty-paywall-builder), vous n'avez pas à vous soucier du rendu dans le code de votre application mobile. Un tel paywall contient à la fois ce qui doit être affiché et la manière dont cela doit l'être. Vous devez néanmoins récupérer son identifiant via le placement, sa configuration de vue, puis le présenter dans votre application mobile.
+
+Pour garantir des performances optimales, il est essentiel de récupérer le paywall et sa [configuration de vue](react-native-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) le plus tôt possible, afin de laisser suffisamment de temps aux images pour se télécharger avant de les présenter à l'utilisateur.
+
+Pour obtenir un paywall, utilisez la méthode `getPaywall` :
+
+```typescript showLineNumbers
+try {
+    const placementId = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
+
+    const paywall = await adapty.getPaywall(placementId, locale);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
+```
+Paramètres :
+
+| Paramètre         | Présence | Description |
+|-------------------|--------|-----------|
+| **placementId**   | requis | L'identifiant du [Placement](placements) souhaité. Il s'agit de la valeur que vous avez spécifiée lors de la création d'un placement dans l'Adapty Dashboard. |
+| **locale**        | <p>optionnel</p><p>défaut : `en`</p> | <p>L'identifiant de la [localisation du paywall](add-paywall-locale-in-adapty-paywall-builder). Ce paramètre doit être un code de langue composé d'un ou deux sous-tags séparés par le tiret (**-**). Le premier sous-tag correspond à la langue, le second à la région.</p><p></p><p>Exemple : `en` signifie anglais, `pt-br` représente le portugais brésilien.</p><p>Consultez [Localisations et codes de langue](localizations-and-locale-codes) pour plus d'informations sur les codes de langue et la façon dont nous recommandons de les utiliser.</p> |
+| **fetchPolicy**   | défaut : `.reloadRevalidatingCacheData` | <p>Par défaut, le SDK tente de charger les données depuis le serveur et renvoie les données en cache en cas d'échec. Nous recommandons cette option, car elle garantit que vos utilisateurs reçoivent toujours les données les plus récentes.</p><p></p><p>Cependant, si vos utilisateurs ont une connexion internet instable, envisagez d'utiliser `.returnCacheDataElseLoad` pour renvoyer les données en cache lorsqu'elles existent. Dans ce cas, les utilisateurs pourraient ne pas obtenir les toutes dernières données, mais ils bénéficieront de temps de chargement plus rapides, quelle que soit la qualité de leur connexion. Le cache est mis à jour régulièrement, ce qui le rend fiable à utiliser pendant la session pour éviter des requêtes réseau.</p><p></p><p>Notez que le cache reste intact lors du redémarrage de l'application et n'est effacé que lors de la désinstallation de l'application ou d'un nettoyage manuel.</p><p></p><p>Le SDK Adapty stocke les paywalls localement en deux couches : le cache régulièrement mis à jour décrit ci-dessus et les [paywalls de secours](fallback-paywalls). Nous utilisons également un CDN pour récupérer les paywalls plus rapidement et un serveur de secours indépendant au cas où le CDN serait inaccessible. Ce système est conçu pour garantir que vous obtenez toujours la dernière version de vos paywalls, tout en assurant la fiabilité même lorsque la connexion internet est faible.</p> |
+| **loadTimeoutMs** | défaut : 5 sec | <p>Cette valeur limite le délai d'attente de cette méthode. Si le délai est atteint, les données en cache ou le fallback local seront renvoyés.</p><p>Notez que dans de rares cas, cette méthode peut expirer légèrement après le délai spécifié dans `loadTimeout`, car l'opération peut comporter différentes requêtes en coulisses.</p><p>Pour Android : vous pouvez créer un `TimeInterval` avec des fonctions d'extension (comme `5.seconds`, où `.seconds` provient de `import com.adapty.utils.seconds`), ou `TimeInterval.seconds(5)`. Pour ne pas fixer de limite, utilisez `TimeInterval.INFINITE`.</p> |
+
+Paramètres de réponse :
+
+| Paramètre | Description                                                                                                                                                                            |
+| :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Paywall   | Un objet [`AdaptyPaywall`](https://react-native.adapty.io/interfaces/adaptypaywall) avec une liste d'identifiants de produits, l'identifiant du paywall, le Remote Config et plusieurs autres propriétés. |
+
+## Récupérer la configuration de vue d'un paywall conçu avec le Paywall Builder \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+
+:::important
+Assurez-vous d'activer le bouton **Show on device** dans le Paywall Builder. Si cette option n'est pas activée, la configuration de vue ne sera pas disponible.
+:::
+
+Après avoir récupéré le paywall, vérifiez s'il inclut une `ViewConfiguration`, ce qui indique qu'il a été créé avec le Paywall Builder. Cela vous guidera sur la façon d'afficher le paywall. Si la `ViewConfiguration` est présente, traitez-le comme un paywall Paywall Builder ; sinon, [traitez-le comme un paywall avec Remote Config](present-remote-config-paywalls-react-native).
+
+Dans le SDK React Native, appelez directement la méthode `createPaywallView` sans récupérer manuellement la configuration de vue au préalable.
+
+:::warning
+Le résultat de la méthode `createPaywallView` ne peut être utilisé qu'une seule fois. Si vous devez l'utiliser à nouveau, appelez de nouveau la méthode `createPaywallView`. L'appeler deux fois sans recréer la vue peut entraîner l'erreur `AdaptyUIError.viewAlreadyPresented`.
+:::
+
+```typescript showLineNumbers
+// for the Adapty SDK < 3.14 – import {createPaywallView} from 'react-native-adapty/dist/ui';
+
+if (paywall.hasViewConfiguration) {
+  try {
+    const view = await createPaywallView(paywall);
+  } catch (error) {
+    // handle the error
+  }
+} else {
+    //use your custom logic
+}
+```
+
+Paramètres :
+
+| Paramètre            | Présence | Description                                                  |
+| :------------------- | :------- | :----------------------------------------------------------- |
+| **paywall**          | requis | Un objet `AdaptyPaywall` permettant d'obtenir un contrôleur pour le paywall souhaité. |
+| **customTags**       | optionnel | Définissez un dictionnaire de tags personnalisés et leurs valeurs résolues. Les tags personnalisés servent de marqueurs dans le contenu du paywall, remplacés dynamiquement par des chaînes spécifiques pour un contenu personnalisé dans le paywall. Consultez la rubrique sur les tags personnalisés dans le Paywall Builder pour plus de détails. |
+| **prefetchProducts** | optionnel | Activez cette option pour optimiser le moment d'affichage des produits à l'écran. Lorsque `true`, AdaptyUI récupère automatiquement les produits nécessaires. Défaut : `false`. |
+
+:::note
+Si vous utilisez plusieurs langues, découvrez comment ajouter une [localisation de Paywall Builder](add-paywall-locale-in-adapty-paywall-builder) et comment utiliser correctement les codes de langue [ici](react-native-localizations-and-locale-codes).
+:::
+
+Une fois la vue obtenue, [présentez le paywall](react-native-present-paywalls).
+
+## Obtenir un paywall pour l'audience par défaut afin de le récupérer plus rapidement \{#get-a-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+En général, les paywalls sont récupérés presque instantanément, vous n'avez donc pas à vous soucier d'accélérer ce processus. Cependant, si vous avez de nombreuses audiences et paywalls, et que vos utilisateurs ont une connexion internet faible, la récupération d'un paywall peut prendre plus de temps que souhaité. Dans ces situations, vous pouvez afficher un paywall par défaut pour garantir une expérience utilisateur fluide plutôt que de ne rien afficher du tout.
+
+Pour cela, vous pouvez utiliser la méthode `getPaywallForDefaultAudience`, qui récupère le paywall du placement spécifié pour l'audience **All Users**. Cependant, il est important de comprendre que l'approche recommandée est de récupérer le paywall avec la méthode `getPaywall`, comme décrit dans la section [Récupérer un paywall conçu avec le Paywall Builder](#fetch-paywall-designed-with-paywall-builder) ci-dessus.
+
+:::warning
+Pourquoi nous recommandons d'utiliser `getPaywall`
+
+La méthode `getPaywallForDefaultAudience` présente quelques inconvénients importants :
+
+- **Problèmes potentiels de compatibilité ascendante** : si vous devez afficher des paywalls différents selon les versions de l'application (actuelles et futures), vous pourriez rencontrer des difficultés. Vous devrez soit concevoir des paywalls compatibles avec la version actuelle (ancienne), soit accepter que les utilisateurs de cette version puissent rencontrer des problèmes avec des paywalls non rendus.
+- **Perte de ciblage** : tous les utilisateurs verront le même paywall conçu pour l'audience **All Users**, ce qui signifie que vous perdez le ciblage personnalisé (notamment selon les pays, l'attribution marketing ou vos propres attributs personnalisés).
+
+Si vous acceptez ces inconvénients pour bénéficier d'une récupération plus rapide du paywall, utilisez la méthode `getPaywallForDefaultAudience` comme suit. Sinon, restez sur `getPaywall` décrit [ci-dessus](#fetch-paywall-designed-with-paywall-builder).
+:::
+
+```typescript showLineNumbers
+try {
+    const id = 'YOUR_PLACEMENT_ID';
+    const locale = 'en';
+
+    const paywall = await adapty.getPaywallForDefaultAudience(id, locale);
+  // the requested paywall
+} catch (error) {
+    // handle the error
+}
+```
+
+:::note
+La méthode `getPaywallForDefaultAudience` est disponible à partir de la version 2.11.2 du SDK React Native.
+:::
+
+| Paramètre | Présence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | requis | L'identifiant du [Placement](placements). Il s'agit de la valeur que vous avez spécifiée lors de la création d'un placement dans votre Adapty Dashboard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **locale** | <p>optionnel</p><p>défaut : `en`</p> | <p>L'identifiant de la [localisation du paywall](add-remote-config-locale). Ce paramètre doit être un code de langue composé d'un ou plusieurs sous-tags séparés par le tiret (**-**). Le premier sous-tag correspond à la langue, le second à la région.</p><p></p><p>Exemple : `en` signifie anglais, `pt-br` représente le portugais brésilien.</p><p></p><p>Consultez [Localisations et codes de langue](react-native-localizations-and-locale-codes) pour plus d'informations sur les codes de langue et la façon dont nous recommandons de les utiliser.</p>                                                                                                                                                                                                                                       |
+| **fetchPolicy** | défaut : `.reloadRevalidatingCacheData` | <p>Par défaut, le SDK tente de charger les données depuis le serveur et renvoie les données en cache en cas d'échec. Nous recommandons cette option, car elle garantit que vos utilisateurs reçoivent toujours les données les plus récentes.</p><p></p><p>Cependant, si vos utilisateurs ont une connexion internet instable, envisagez d'utiliser `.returnCacheDataElseLoad` pour renvoyer les données en cache lorsqu'elles existent. Dans ce cas, les utilisateurs pourraient ne pas obtenir les toutes dernières données, mais ils bénéficieront de temps de chargement plus rapides, quelle que soit la qualité de leur connexion. Le cache est mis à jour régulièrement, ce qui le rend fiable à utiliser pendant la session pour éviter des requêtes réseau.</p><p></p><p>Notez que le cache reste intact lors du redémarrage de l'application et n'est effacé que lors de la désinstallation de l'application ou d'un nettoyage manuel.</p> |
+
+## Personnaliser les assets \{#customize-assets\}
+
+Pour personnaliser les images et vidéos dans votre paywall, utilisez les assets personnalisés.
+
+Les images et vidéos hero ont des identifiants prédéfinis : `hero_image` et `hero_video`. Dans un bundle d'assets personnalisés, vous ciblez ces éléments par leurs identifiants et personnalisez leur comportement.
+
+Pour les autres images et vidéos, vous devez [définir un identifiant personnalisé](custom-media) dans le tableau de bord Adapty.
+
+Par exemple, vous pouvez :
+
+- Afficher une image ou une vidéo différente à certains utilisateurs.
+- Afficher une image de prévisualisation locale pendant le chargement de l'image principale distante.
+- Afficher une image de prévisualisation avant de lancer une vidéo.
+
+:::important
+Pour utiliser cette fonctionnalité, mettez à jour le SDK Adapty React Native vers la version 3.8.0 ou supérieure.
+:::
+
+Voici un exemple de la manière de fournir des assets personnalisés via un simple dictionnaire :
+
+```javascript
+const customAssets: Record<string, AdaptyCustomAsset> = {
+  'custom_image': { type: 'image', relativeAssetPath: 'custom_image.png' },
+  'hero_video': {
+    type: 'video',
+    fileLocation: {
+      ios: { fileName: 'custom_video.mp4' },
+      android: { relativeAssetPath: 'videos/custom_video.mp4' }
+    }
+  }
+};
+
+view = await createPaywallView(paywall, { customAssets })
+
+```
+
+:::note
+Si un asset est introuvable, le paywall reviendra à son apparence par défaut.
+:::
+
+</SDKv3>
