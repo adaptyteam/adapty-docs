@@ -1,15 +1,17 @@
 ---
 title: "Usar localizaciones y códigos de idioma en el SDK de Android"
-description: "Gestiona las localizaciones de tu app y los códigos de idioma para llegar a una audiencia global (Android)."
-metadataTitle: "Gestión de Localizaciones y Códigos de Idioma | Documentación de Adapty"
+description: "Gestiona las localizaciones y códigos de idioma de tu app para llegar a una audiencia global (Android)."
+metadataTitle: "Gestión de localizaciones y códigos de idioma | Documentación de Adapty"
 displayed_sidebar: sdkandroid
 ---
 
-## Por qué es importante \{#why-this-is-important\}
+<SDKv4>
 
-Hay varios escenarios en los que los códigos de idioma entran en juego; por ejemplo, cuando intentas obtener el paywall correcto para la localización actual de tu app.
+## Por qué esto es importante \{#why-this-is-important\}
 
-Como los códigos de idioma son complejos y pueden variar de una plataforma a otra, nos basamos en un estándar interno para todas las plataformas que admitimos. Sin embargo, precisamente por esa complejidad, es muy importante que entiendas exactamente qué le estás enviando a nuestro servidor para obtener la localización correcta y qué ocurre después, de modo que siempre recibas lo que esperas.
+Los códigos de idioma entran en juego cuando Adapty elige la localización para un flow y cuando lees un Remote Config para un paywall personalizado.
+
+Los códigos de idioma son complejos y pueden variar de una plataforma a otra, por lo que Adapty utiliza un estándar interno único para todas las plataformas que admite. Entender ese estándar te ayuda a predecir qué localización recibirá un usuario.
 
 ## Estándar de códigos de idioma en Adapty \{#locale-code-standard-at-adapty\}
 
@@ -17,12 +19,62 @@ Para los códigos de idioma, Adapty utiliza una versión ligeramente modificada 
 
 ## Coincidencia de códigos de idioma \{#locale-code-matching\}
 
-Cuando Adapty recibe una llamada del SDK con el código de idioma y empieza a buscar la localización correspondiente de un paywall, ocurre lo siguiente:
+Cuando Adapty busca la localización que coincide con el idioma del usuario, ocurre lo siguiente:
 
-1. La cadena de idioma entrante se convierte a minúsculas y todos los guiones bajos (`_`) se reemplazan por guiones (`-`).
-2. A continuación, buscamos la localización cuyo código de idioma coincida exactamente.
-3. Si no se encuentra ninguna coincidencia, tomamos la subcadena antes del primer guion (`pt` para `pt-br`) y buscamos la localización que coincida.
-4. Si tampoco se encuentra ninguna coincidencia, devolvemos la localización predeterminada `en`.
+1. La cadena de idioma se convierte a minúsculas y todos los guiones bajos (`_`) se reemplazan por guiones (`-`)
+2. Adapty busca la localización con el código de idioma que coincida exactamente
+3. Si no encuentra coincidencia, Adapty toma la subcadena antes del primer guión (`pt` para `pt-br`) y busca la localización correspondiente
+4. Si tampoco encuentra coincidencia, Adapty devuelve el contenido del idioma predeterminado del flow
+
+Esta forma hace que `'pt_BR'`, `pt-BR` y `pt-br` se resuelvan a la misma localización.
+
+## Implementación de localizaciones \{#implementing-localizations\}
+
+En SDK v4, no necesitas pasar un código de idioma al obtener un flow — `getFlow` devuelve el flow con todas sus localizaciones.
+
+- **Flows creados en el builder**: el SDK no lee el idioma del dispositivo, así que resuélvelo en tu app y pásalo como argumento `locale` en `AdaptyUI.getFlowConfiguration`. El argumento es opcional: si lo omites, el flow se renderiza en su [idioma predeterminado](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale).
+- **Paywalls personalizados (Remote Config)**: `getFlow` devuelve todas las localizaciones configuradas en `flow.remoteConfigs`. Cada entrada tiene un código `locale` y el contenido de la configuración (`jsonString` o el `dataMap` ya procesado). Selecciona la entrada que corresponda al usuario, con tu propia lógica de respaldo:
+
+```kotlin showLineNumbers
+Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val flow = result.value
+            val config = flow.remoteConfigs.firstOrNull { it.locale == "en" }
+                ?: flow.remoteConfigs.firstOrNull()
+            // read your values from config?.dataMap
+        }
+        is AdaptyResult.Error -> {
+            // handle the error
+        }
+    }
+}
+```
+
+Las reglas de coincidencia de códigos de idioma descritas arriba explican cómo Adapty normaliza los códigos `locale` almacenados en cada Remote Config.
+
+</SDKv4>
+
+<SDKv3>
+
+## Por qué esto es importante \{#why-this-is-important\}
+
+Hay algunos escenarios en los que los códigos de idioma entran en juego; por ejemplo, cuando intentas obtener el paywall correcto para la localización actual de tu app.
+
+Como los códigos de idioma son complejos y pueden variar de una plataforma a otra, nos basamos en un estándar interno para todas las plataformas que soportamos. Sin embargo, precisamente por esa complejidad, es muy importante que entiendas qué estás enviando exactamente a nuestro servidor para obtener la localización correcta y qué ocurre después, para que siempre recibas lo que esperas.
+
+## Estándar de códigos de idioma en Adapty \{#locale-code-standard-at-adapty\}
+
+Para los códigos de idioma, Adapty utiliza una versión ligeramente modificada del [estándar BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): cada código se compone de subetiquetas en minúsculas separadas por guiones. Algunos ejemplos: `en` (inglés), `pt-br` (portugués (Brasil)), `zh` (chino simplificado), `zh-hant` (chino tradicional).
+
+## Coincidencia de código de idioma \{#locale-code-matching\}
+
+Cuando Adapty recibe una llamada del SDK con el código de idioma y comienza a buscar la localización correspondiente de un paywall, ocurre lo siguiente:
+
+1. La cadena de idioma entrante se convierte a minúsculas y todos los guiones bajos (`_`) se reemplazan por guiones (`-`)
+2. A continuación, buscamos la localización con el código de idioma que coincida exactamente
+3. Si no se encuentra ninguna coincidencia, tomamos la subcadena antes del primer guión (`pt` para `pt-br`) y buscamos la localización correspondiente
+4. Si tampoco se encuentra ninguna coincidencia, devolvemos el contenido del idioma predeterminado del paywall
 
 De este modo, un dispositivo iOS que envíe `'pt_BR'`, un dispositivo Android que envíe `pt-BR` y otro dispositivo que envíe `pt-br` obtendrán el mismo resultado.
 
@@ -67,4 +119,6 @@ val localeCode = locale.toLanguageTag()
 
 Ten en cuenta que no recomendamos este enfoque, ya que es difícil predecir exactamente qué recibirá el servidor de Adapty.
 
-Si aun así decides usarlo, asegúrate de haber cubierto todos los casos de uso relevantes.
+Si decides utilizarlo de todas formas, asegúrate de haber cubierto todos los casos de uso relevantes.
+
+</SDKv3>

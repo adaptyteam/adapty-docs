@@ -1,14 +1,16 @@
 ---
-title: "iOS SDK'da yerelleştirme ve yerel ayar kodlarını kullanma"
-description: "iOS uygulamanızda global bir kitleye ulaşmak için uygulama yerelleştirmelerini ve yerel ayar kodlarını yönetin."
-metadataTitle: "Yerelleştirme ve Yerel Ayar Kodlarını Yönetme | Adapty Dokümanları"
+title: "iOS SDK'da yerelleştirmeleri ve yerel ayar kodlarını kullanma"
+description: "Global bir kitleye ulaşmak için iOS uygulamanızda uygulama yerelleştirmelerini ve yerel ayar kodlarını yönetin."
+metadataTitle: "Yerelleştirmeleri ve Yerel Ayar Kodlarını Yönetme | Adapty Dokümanları"
 ---
 
-## Neden önemli \{#why-this-is-important\}
+<SDKv4>
 
-Yerel ayar kodlarının devreye girdiği birkaç senaryo vardır; örneğin uygulamanızın mevcut yerelleştirmesi için doğru paywallı getirmeye çalışırken bu durumla karşılaşabilirsiniz.
+## Bu neden önemli \{#why-this-is-important\}
 
-Yerel ayar kodları karmaşık bir yapıya sahip olduğundan ve platformdan platforma farklılık gösterebildiğinden, desteklediğimiz tüm platformlarda ortak bir iç standart kullanıyoruz. Ancak bu kodların karmaşıklığı nedeniyle, sunucumuza tam olarak ne gönderdiğinizi ve ardından ne olduğunu anlamanız son derece önemlidir; böylece her zaman beklediğiniz sonucu alırsınız.
+Locale kodları, Adapty'nin bir flow için lokalizasyon seçerken ve özel bir paywall için remote config okurken devreye girer.
+
+Locale kodları karmaşık bir yapıya sahiptir ve platformdan platforma farklılık gösterebilir; bu nedenle Adapty desteklediği her platformda tek bir iç standarda dayanır. Bu standardı anlamak, bir kullanıcının hangi lokalizasyonu alacağını öngörmenizi sağlar.
 
 ## Adapty'de yerel ayar kodu standardı \{#locale-code-standard-at-adapty\}
 
@@ -16,12 +18,57 @@ Adapty, yerel ayar kodları için hafifçe değiştirilmiş bir [BCP 47 standard
 
 ## Yerel ayar kodu eşleştirme \{#locale-code-matching\}
 
-Adapty, istemci taraflı SDK'dan yerel ayar koduyla bir çağrı aldığında ve bir paywallın ilgili yerelleştirmesini aramaya başladığında şu adımlar gerçekleşir:
+Adapty, bir kullanıcının yerel ayarıyla eşleşen lokalizasyonu ararken şu adımlar gerçekleşir:
 
-1. Gelen yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgilerle (`-`) değiştirilir.
-2. Tam eşleşen yerel ayar koduna sahip yerelleştirme aranır.
-3. Eşleşme bulunamazsa, ilk kısa çizgiden önceki alt dize alınır (`pt-br` için `pt`) ve eşleşen yerelleştirme aranır.
-4. Yine eşleşme bulunamazsa, varsayılan `en` yerelleştirmesi döndürülür.
+1. Yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgiyle (`-`) değiştirilir
+2. Adapty, tam olarak eşleşen yerel ayar koduna sahip lokalizasyonu arar
+3. Eşleşme bulunamazsa Adapty, ilk kısa çizgiden önceki alt dizeyi alır (`pt-br` için `pt`) ve eşleşen lokalizasyonu arar
+4. Yine eşleşme bulunamazsa Adapty, flow'un varsayılan yerel ayarı için içeriği döndürür
+
+Bu sayede `'pt_BR'`, `pt-BR` ve `pt-br` ifadelerinin tamamı aynı yerelleştirmeye çözümlenir.
+
+## Lokalizasyonları uygulama \{#implementing-localizations\}
+
+SDK v4'te, bir flow çekerken locale kodu geçmezsiniz — `getFlow` flow'u tüm lokalizasyonlarıyla birlikte döndürür.
+
+- **Builder ile oluşturulan flow'lar**: SDK cihaz dilini okumaz; bu nedenle dili uygulamanızda belirleyip `AdaptyUI.getFlowConfiguration(forFlow:locale:)` fonksiyonuna geçirin. Parametre isteğe bağlıdır — belirtmezseniz flow `en` dilinde render edilir ya da flow'da `en` yerelleştirmesi yoksa [varsayılan locale](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) kullanılır.
+- **Özel (remote config) paywall'lar**: `getFlow`, yapılandırılmış tüm yerelleştirmeleri `flow.remoteConfigs` içinde döndürür. Her giriş bir `locale` kodu ile config içeriğini (`jsonString` veya ayrıştırılmış `dictionary`) içerir. Kendi geri dönüş mekanizmanızla kullanıcıya uyan girişi seçin:
+
+```swift showLineNumbers
+do {
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+    let config = flow.remoteConfigs.first(where: { $0.locale == "en" })
+        ?? flow.remoteConfigs.first
+    // read your values from config?.dictionary
+} catch {
+    // handle the error
+}
+```
+
+Yukarıdaki locale kodu eşleştirme kuralları, Adapty'nin her remote config üzerinde depolanan `locale` kodlarını nasıl normalleştirdiğini açıklar.
+
+</SDKv4>
+
+<SDKv3>
+
+## Bu Neden Önemli \{#why-this-is-important\}
+
+Locale kodlarının devreye girdiği birkaç senaryo vardır — örneğin, uygulamanızın mevcut yerelleştirmesi için doğru paywall'ı almaya çalışırken.
+
+Locale kodları karmaşık olduğundan ve platformdan platforma farklılık gösterebildiğinden, desteklediğimiz tüm platformlar için dahili bir standarda dayanıyoruz. Ancak bu kodlar karmaşık olduğu için, sunucumuza tam olarak ne gönderdiğinizi ve bundan sonra ne olduğunu anlamanız son derece önemlidir; böylece her zaman beklediğinizi alırsınız.
+
+## Adapty'de yerel ayar kodu standardı \{#locale-code-standard-at-adapty\}
+
+Yerel ayar kodları için Adapty, biraz değiştirilmiş bir [BCP 47 standardı](https://en.wikipedia.org/wiki/IETF_language_tag) kullanır: her kod, kısa çizgiyle ayrılmış küçük harfli alt etiketlerden oluşur. Birkaç örnek: `en` (İngilizce), `pt-br` (Portekizce (Brezilya)), `zh` (Basitleştirilmiş Çince), `zh-hant` (Geleneksel Çince).
+
+## Locale kod eşleştirme \{#locale-code-matching\}
+
+Adapty, istemci tarafı SDK'dan locale koduyla birlikte bir çağrı aldığında ve bir paywall'ın karşılık gelen yerelleştirmesini aramaya başladığında şunlar olur:
+
+1. Gelen locale dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgilerle (`-`) değiştirilir
+2. Ardından tam olarak eşleşen locale koduyla yerelleştirmeyi ararız
+3. Eşleşme bulunamazsa, ilk kısa çizgiden önceki alt dizeyi alırız (`pt-br` için `pt`) ve eşleşen yerelleştirmeyi ararız
+4. Yine eşleşme bulunamazsa, paywall'ın varsayılan locale'i için içeriği döndürürüz
 
 Bu sayede `'pt_BR'` gönderen bir iOS cihazı, `pt-BR` gönderen bir Android cihazı ve `pt-br` gönderen başka bir cihaz aynı sonucu alır.
 
@@ -61,4 +108,6 @@ Bu yaklaşımı birkaç nedenden dolayı önermiyoruz:
 1. iOS'ta tercih edilen diller ile mevcut yerel ayar aynı şey değildir. Yerelleştirmenin doğru seçilmesini istiyorsanız ya Apple'ın mantığına güvenmeniz gerekir (bu, yerelleştirilmiş string dosyalarıyla önerilen yaklaşımı kullandığınızda zaten otomatik olarak çalışır) ya da bu mantığı kendiniz yeniden oluşturmanız gerekir.
 2. Adapty sunucusunun tam olarak ne alacağını öngörmek güçtür. Örneğin iOS'ta bir cihazdan `ar_OM@numbers='latn'` gibi bir yerel ayar elde edip sunucumuza göndermek mümkündür. Bu durumda aradığınız `ar-om` yerelleştirmesini değil, büyük ihtimalle beklenmedik olan `ar` yerelleştirmesini alırsınız.
 
-Bu yaklaşımı kullanmaya karar verirseniz, ilgili tüm kullanım senaryolarını kapsadığınızdan emin olun.
+Bu yaklaşımı yine de kullanmaya karar verirseniz, ilgili tüm kullanım senaryolarını kapsadığınızdan emin olun.
+
+</SDKv3>

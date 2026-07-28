@@ -1,28 +1,80 @@
 ---
-title: "Android SDK'da yerelleştirme ve yerel ayar kodlarını kullanma"
+title: "Android SDK'da yerelleştirmeleri ve yerel ayar kodlarını kullanma"
 description: "Global bir kitleye ulaşmak için uygulama yerelleştirmelerini ve yerel ayar kodlarını yönetin (Android)."
-metadataTitle: "Yerelleştirme ve Yerel Ayar Kodlarını Yönetme | Adapty Dokümanları"
+metadataTitle: "Yerelleştirmeleri ve Yerel Ayar Kodlarını Yönetme | Adapty Dokümanları"
 displayed_sidebar: sdkandroid
 ---
 
+<SDKv4>
+
 ## Bu neden önemli \{#why-this-is-important\}
 
-Yerel ayar kodlarının devreye girdiği birkaç senaryo vardır; örneğin uygulamanızın mevcut yerelleştirmesi için doğru paywall'ı çekmeye çalışırken.
+Locale kodları, Adapty bir flow için yerelleştirme seçerken ve özel bir paywall için remote config okurken devreye girer.
 
-Yerel ayar kodları karmaşık bir yapıya sahip olup platformdan platforma farklılık gösterebildiğinden, desteklediğimiz tüm platformlar için dahili bir standart kullanıyoruz. Ancak bu kodların karmaşıklığı nedeniyle, sunucumuza tam olarak ne gönderdiğinizi ve bundan sonra ne olacağını anlamanız son derece önemlidir; böylece her zaman beklediğiniz sonucu alırsınız.
+Locale kodları karmaşık olabilir ve platformdan platforma farklılık gösterebilir; bu nedenle Adapty desteklediği her platformda tek bir dahili standarda dayanır. Bu standardı anlamak, bir kullanıcının hangi yerelleştirmeyi alacağını tahmin etmenize yardımcı olur.
 
 ## Adapty'de yerel ayar kodu standardı \{#locale-code-standard-at-adapty\}
 
 Adapty, yerel ayar kodları için hafifçe değiştirilmiş bir [BCP 47 standardı](https://en.wikipedia.org/wiki/IETF_language_tag) kullanır: her kod, kısa çizgilerle ayrılmış küçük harfli alt etiketlerden oluşur. Bazı örnekler: `en` (İngilizce), `pt-br` (Portekizce (Brezilya)), `zh` (Basitleştirilmiş Çince), `zh-hant` (Geleneksel Çince).
 
+## Yerel kod eşleştirme \{#locale-code-matching\}
+
+Adapty, bir kullanıcının yerel ayarına uygun lokalizasyonu ararken şu adımlar izlenir:
+
+1. Yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgi (`-`) ile değiştirilir
+2. Adapty, yerel kod tam olarak eşleşen lokalizasyonu arar
+3. Eşleşme bulunamazsa, Adapty ilk kısa çizgiden önceki alt dizeyi alır (`pt-br` için `pt`) ve eşleşen lokalizasyonu arar
+4. Yine eşleşme bulunamazsa, Adapty flow'un varsayılan yerel ayarına ait içeriği döndürür
+
+Bu sayede `'pt_BR'`, `pt-BR` ve `pt-br` hepsi aynı yerelleştirmeye çözümlenir.
+
+## Yerelleştirmeleri uygulama \{#implementing-localizations\}
+
+SDK v4'te bir flow çekerken locale kodu geçmenize gerek yok; `getFlow` fonksiyonu flow'u tüm yerelleştirmeleriyle birlikte döndürür.
+
+- **Builder'da oluşturulan flow'lar**: SDK cihaz dilini okumaz; bu yüzden dili uygulamanızda belirleyip `AdaptyUI.getFlowConfiguration` metodunun `locale` argümanı olarak geçin. Bu argüman isteğe bağlıdır — atarsanız flow, [varsayılan dilde](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) görüntülenir.
+- **Özel (remote config) paywall'lar**: `getFlow`, yapılandırılmış tüm yerelleştirmeleri `flow.remoteConfigs` içinde döndürür. Her girdinin bir `locale` kodu ve config içeriği (`jsonString` veya ayrıştırılmış `dataMap`) bulunur. Kullanıcıya uygun girdiyi kendi yedek mantığınızla seçin:
+
+```kotlin showLineNumbers
+Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val flow = result.value
+            val config = flow.remoteConfigs.firstOrNull { it.locale == "en" }
+                ?: flow.remoteConfigs.firstOrNull()
+            // read your values from config?.dataMap
+        }
+        is AdaptyResult.Error -> {
+            // handle the error
+        }
+    }
+}
+```
+
+Yukarıdaki yerel ayar kodu eşleştirme kuralları, Adapty'nin her remote config'de saklanan `locale` kodlarını nasıl normalleştirdiğini açıklar.
+
+</SDKv4>
+
+<SDKv3>
+
+## Bu neden önemli \{#why-this-is-important\}
+
+Yerel ayar kodlarının devreye girdiği birkaç senaryo vardır — örneğin, uygulamanızın mevcut yerelleştirmesi için doğru paywall'ı getirmeye çalıştığınızda.
+
+Yerel ayar kodları karmaşık olabilir ve platformdan platforma farklılık gösterebilir; bu nedenle desteklediğimiz tüm platformlar için dahili bir standarda güveniyoruz. Ancak bu kodlar karmaşık olduğundan, sunucumuza doğru yerelleştirmeyi almak için tam olarak ne gönderdiğinizi ve bundan sonra ne olduğunu anlamanız son derece önemlidir — böylece her zaman beklediğinizi alırsınız.
+
+## Adapty'de yerel ayar kodu standardı \{#locale-code-standard-at-adapty\}
+
+Adapty, yerel ayar kodları için hafifçe değiştirilmiş bir [BCP 47 standardı](https://en.wikipedia.org/wiki/IETF_language_tag) kullanır: her kod, kısa çizgiyle ayrılmış küçük harf alt etiketlerden oluşur. Birkaç örnek: `en` (İngilizce), `pt-br` (Portekizce (Brezilya)), `zh` (Basitleştirilmiş Çince), `zh-hant` (Geleneksel Çince).
+
 ## Yerel ayar kodu eşleştirme \{#locale-code-matching\}
 
-Adapty, istemci tarafı SDK'dan yerel ayar koduyla birlikte bir çağrı aldığında ve bir paywall için karşılık gelen yerelleştirmeyi aramaya başladığında şunlar gerçekleşir:
+Adapty, istemci tarafı SDK'dan yerel ayar koduyla birlikte bir çağrı aldığında ve paywall'ın karşılık gelen yerelleştirmesini aramaya başladığında şunlar gerçekleşir:
 
-1. Gelen yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`), kısa çizgilerle (`-`) değiştirilir
-2. Ardından tam olarak eşleşen yerel ayar koduna sahip yerelleştirme aranır
+1. Gelen yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgiyle (`-`) değiştirilir
+2. Ardından tam olarak eşleşen yerel ayar koduyla yerelleştirme aranır
 3. Eşleşme bulunamazsa, ilk kısa çizgiden önceki alt dize alınır (`pt-br` için `pt`) ve eşleşen yerelleştirme aranır
-4. Yine eşleşme bulunamazsa, varsayılan `en` yerelleştirmesi döndürülür
+4. Yine eşleşme bulunamazsa, paywall'ın varsayılan yerel ayarındaki içerik döndürülür
 
 Bu sayede `'pt_BR'` gönderen bir iOS cihazı, `pt-BR` gönderen bir Android cihazı ve `pt-br` gönderen başka bir cihaz aynı sonucu alır.
 
@@ -65,6 +117,8 @@ val localeCode = locale.toLanguageTag()
 // pass locale code to AdaptyUI.getViewConfiguration or Adapty.getPaywall method
 ```
 
-Bu yaklaşımı önermiyoruz; çünkü Adapty sunucusunun tam olarak ne alacağını tahmin etmek güçtür.
+Bu yaklaşımı önermiyoruz, çünkü Adapty'nin sunucusuna tam olarak neyin gönderileceğini öngörmek güçtür.
 
-Yine de bu yaklaşımı kullanmaya karar verirseniz, tüm ilgili kullanım senaryolarını ele aldığınızdan emin olun.
+Yine de bu yaklaşımı kullanmaya karar verirseniz — ilgili tüm kullanım senaryolarını kapsadığınızdan emin olun.
+
+</SDKv3>
