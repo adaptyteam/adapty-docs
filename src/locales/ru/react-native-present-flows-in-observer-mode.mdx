@@ -1,0 +1,119 @@
+---
+title: "Отображение флоу в режиме Observer — React Native"
+description: "Отображайте флоу и пейволы Paywall Builder в режиме Observer в вашем React Native приложении, обрабатывая покупки собственным кодом."
+metadataTitle: "Отображение флоу в режиме Observer — React Native | Документация Adapty"
+---
+
+Если вы настроили флоу или пейвол с помощью конструктора, вам не нужно беспокоиться о его рендеринге в коде мобильного приложения для показа пользователю. Такой флоу или пейвол содержит как то, что должно быть показано, так и то, как именно это должно отображаться.
+
+:::warning
+Этот раздел относится только к [режиму Observer](observer-vs-full-mode). Если вы не работаете в режиме Observer, обратитесь к разделу [Отображение флоу и пейволов](react-native-present-paywalls).
+:::
+
+:::info
+Эта функция требует Adapty React Native SDK 4.0 или выше — ранее она была доступна только в нативных SDK для iOS и Android. Для обновления ознакомьтесь с [гайдом по миграции](migration-to-react-native-sdk-v4).
+:::
+
+<details>
+   <summary>Прежде чем начать показывать флоу (нажмите, чтобы развернуть)</summary>
+
+1. Настройте первоначальную интеграцию Adapty [с App Store](initial_ios) и [с Google Play](initial-android).
+   2. Установите и настройте Adapty SDK. Убедитесь, что параметр `observerMode` установлен в значение `true`. Обратитесь к [руководству по установке React Native SDK](sdk-installation-reactnative).
+   3. [Создайте продукты](create-product) в дашборде Adapty.
+   4. [Настройте флоу или пейволы в билдерах](create-paywall) и привяжите к ним продукты.
+   5. [Создайте плейсменты и назначьте им флоу или пейволы](create-placement).
+   6. [Получите флоу и их конфигурацию](react-native-get-pb-paywalls) в коде мобильного приложения.
+
+</details>
+
+В режиме Observer SDK не совершает покупки за вас. Когда пользователь нажимает кнопку покупки или восстановления в флоу или пейволе, отрисованном Adapty, SDK вызывает ваш обработчик события `onObserverPurchaseInitiated` или `onObserverRestoreInitiated` — выполните покупку или восстановление с помощью собственного кода там.
+
+## Установите обработчики событий в режиме наблюдателя \{#set-the-observer-mode-event-handlers\}
+
+В отличие от других платформ, здесь нет отдельного объекта-резолвера — обработчики являются частью обычных [обработчиков событий](react-native-handling-events-1), поэтому устанавливайте их для каждого флоу, который вы показываете.
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+Для React-компонента передайте обработчики как пропсы в `AdaptyFlowView`:
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyFlow({ flow }) {
+  const onObserverPurchaseInitiated = useCallback<
+    FlowEventHandlers['onObserverPurchaseInitiated']
+  >((product, onStartPurchase, onFinishPurchase) => {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) => adapty.reportTransaction(transactionId, flow.variationId))
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+  }, [flow]);
+
+  const onObserverRestoreInitiated = useCallback<
+    FlowEventHandlers['onObserverRestoreInitiated']
+  >((onStartRestore, onFinishRestore) => {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+  }, []);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      onObserverPurchaseInitiated={onObserverPurchaseInitiated}
+      onObserverRestoreInitiated={onObserverRestoreInitiated}
+      // ... your other event handlers
+    />
+  );
+}
+```
+
+:::note
+Во встроенном компоненте возвращаемое обработчиком значение не закрывает флоу — размонтируйте компонент самостоятельно после успешной покупки или восстановления.
+:::
+
+</TabItem>
+<TabItem value="standalone" label="Модальное представление">
+
+Для модального представления задайте обработчики на созданном представлении:
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createFlowView(flow);
+
+const unsubscribe = view.setEventHandlers({
+  onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) => adapty.reportTransaction(transactionId, flow.variationId))
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+    return false; // keep the flow open; dismiss it yourself after success
+  },
+  onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+    return false;
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+Обработчик `onObserverPurchaseInitiated` уведомляет вас о том, что пользователь инициировал покупку, а `onObserverRestoreInitiated` — что пользователь инициировал восстановление покупок. В ответ запустите свой кастомный флоу покупки или восстановления.
+
+Также не забудьте вызвать следующие колбэки, чтобы уведомить AdaptyUI о ходе покупки или восстановления. Это необходимо для корректного поведения флоу — например, для отображения загрузчика:
+
+| Callback           | Description                                                                                         |
+| :----------------- | :-------------------------------------------------------------------------------------------------- |
+| onStartPurchase()  | Коллбэк следует вызывать, чтобы уведомить AdaptyUI о начале покупки.    |
+| onFinishPurchase() | Коллбэк следует вызывать, чтобы уведомить AdaptyUI о завершении покупки. |
+| onStartRestore()   | Коллбэк следует вызывать, чтобы уведомить AdaptyUI о начале восстановления покупок.   |
+| onFinishRestore()  | Коллбэк следует вызывать, чтобы уведомить AdaptyUI о завершении восстановления покупок.  |
+
+## Показ флоу \{#present-the-flow\}
+
+Показывайте флоу как обычно: [получите флоу и создайте его отображение](react-native-get-pb-paywalls), затем [покажите его](react-native-present-paywalls). Никаких дополнительных параметров не требуется — обработчики срабатывают только тогда, когда SDK был активирован с `observerMode: true`.
+
+:::warning
+Не забудьте [передать транзакцию и привязать её к пейволу](report-transactions-observer-mode-react-native). В противном случае Adapty не распознает транзакцию и не определит пейвол-источник покупки.
+:::
