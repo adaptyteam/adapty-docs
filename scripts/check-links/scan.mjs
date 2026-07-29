@@ -24,6 +24,10 @@ export async function getAllDocFiles(dir) {
 export function extractLinks(content, filePath, docsDir) {
   const links = [];
   const relPath = path.relative(docsDir, filePath);
+  // Absolute path to the containing file. Same-page anchor links (#foo) resolve
+  // against THIS file's headings, so the checker needs to know where they came
+  // from — `source` alone is relative to a per-caller base dir.
+  const sourcePath = path.resolve(filePath);
 
   const lineAt = (idx) => content.substring(0, idx).split('\n').length;
 
@@ -41,14 +45,14 @@ export function extractLinks(content, filePath, docsDir) {
     }
     let url = content.substring(start, i).trim();
     url = url.replace(/\s+"[^"]*"$/, '');
-    if (url) links.push({ url, source: relPath, line: lineAt(match.index) });
+    if (url) links.push({ url, source: relPath, sourcePath, line: lineAt(match.index) });
   }
 
   // href="url"
   const hrefRe = /href=["']([^"']+)["']/g;
   while ((match = hrefRe.exec(content)) !== null) {
     const url = match[1].trim();
-    if (url) links.push({ url, source: relPath, line: lineAt(match.index) });
+    if (url) links.push({ url, source: relPath, sourcePath, line: lineAt(match.index) });
   }
 
   // src="url" (external only)
@@ -56,7 +60,7 @@ export function extractLinks(content, filePath, docsDir) {
   while ((match = srcRe.exec(content)) !== null) {
     const url = match[1].trim();
     if (url && /^https?:\/\//.test(url)) {
-      links.push({ url, source: relPath, line: lineAt(match.index) });
+      links.push({ url, source: relPath, sourcePath, line: lineAt(match.index) });
     }
   }
 
@@ -108,8 +112,47 @@ export function toInternalPath(url) {
 }
 
 /**
- * Split links into external vs internal, discarding mailto/tel/anchor-only/javascript.
- * Self-referential absolute URLs (see toInternalPath) are treated as internal.
+ * Same-page anchor link: `#some-heading`, with no page part.
+ *
+ * These used to be discarded as uncheckable alongside mailto:/tel:, which meant
+ * a link to a heading that had been renamed inside the very same article was
+ * never validated (e.g. sdk-installation-ios.mdx's
+ * `#set-up-media-cache-configuration-for-adaptyui`, fixed in 038aeb51). They ARE
+ * checkable — the target is the source file's own heading set.
+ */
+export function isAnchorOnlyUrl(url) {
+  return /^#/.test(url) && url.length > 1;
+}
+
+/**
+ * Cache/dedup key for a link result.
+ *
+ * Ordinary URLs resolve identically wherever they appear, so the URL alone is a
+ * valid key. Anchor-only links do NOT: `#overview` means a different target in
+ * every file, so they must be keyed per source file or one file's result would
+ * be reused for another's.
+ */
+export function linkKey(link) {
+  return isAnchorOnlyUrl(link.url) ? `${link.sourcePath}\u0000${link.url}` : link.url;
+}
+
+/**
+ * Deduplicate links by linkKey, returning one representative link per key
+ * (preserving `sourcePath`, which anchor-only checks need).
+ */
+export function uniqueByKey(links) {
+  const byKey = new Map();
+  for (const link of links) {
+    const key = linkKey(link);
+    if (!byKey.has(key)) byKey.set(key, link);
+  }
+  return [...byKey.values()];
+}
+
+/**
+ * Split links into external vs internal, discarding mailto/tel/javascript and
+ * the bare `#` placeholder. Self-referential absolute URLs (see toInternalPath)
+ * and same-page anchors (see isAnchorOnlyUrl) are treated as internal.
  */
 export function categorizeLinks(allLinks) {
   const externalLinks = [];
@@ -121,8 +164,10 @@ export function categorizeLinks(allLinks) {
       internalLinks.push(link);
     } else if (/^https?:\/\//.test(url)) {
       externalLinks.push(link);
+    } else if (isAnchorOnlyUrl(url)) {
+      internalLinks.push(link);
     } else if (/^mailto:/.test(url) || /^tel:/.test(url) || /^#/.test(url) || /^javascript:/.test(url)) {
-      // skip
+      // skip — including the bare "#" placeholder, which has no target
     } else {
       internalLinks.push(link);
     }

@@ -10,7 +10,7 @@
 
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { getAllDocFiles, extractLinks, extractReusableImports, categorizeLinks } from './scan.mjs';
+import { getAllDocFiles, extractLinks, extractReusableImports, categorizeLinks, linkKey, uniqueByKey } from './scan.mjs';
 import { checkExternalUrl, closeBrowser } from './check-external.mjs';
 import { checkInternalLink, isLoginRedirect, isCaptchaRedirect } from './check-internal.mjs';
 import { classifyResults } from './classify.mjs';
@@ -71,15 +71,16 @@ async function scanFiles(docsDir) {
   const { externalLinks, internalLinks } = categorizeLinks(allLinks);
 
   const uniqueExternalUrls = [...new Set(externalLinks.map(l => l.url))];
-  const uniqueInternalUrls = [...new Set(internalLinks.map(l => l.url))];
+  // Deduped by linkKey, not by URL: same-page anchors resolve per source file.
+  const uniqueInternalLinks = uniqueByKey(internalLinks);
   console.log(`\nExternal URLs: ${uniqueExternalUrls.length} unique (${externalLinks.length} total references)`);
-  console.log(`Internal links: ${uniqueInternalUrls.length} unique (${internalLinks.length} total references)\n`);
+  console.log(`Internal links: ${uniqueInternalLinks.length} unique (${internalLinks.length} total references)\n`);
 
   return {
     files: [...docFiles, ...reusableFiles],
     allLinks,
     externalLinks, internalLinks,
-    uniqueExternalUrls, uniqueInternalUrls,
+    uniqueExternalUrls, uniqueInternalLinks,
     reusableImporters, reusableFileNames,
     docsDir, reusableDir: path.resolve(reusableDir),
   };
@@ -154,21 +155,23 @@ async function checkExternal(uniqueUrls, allLinks, existingErrors, { concurrency
 
 // ── Stage 3b: Internal checks ────────────────────────────────────
 
-async function checkInternal(uniqueUrls, allLinks, mdExtUrls, { docsDir, liveSiteBase, timeoutMs }) {
-  const urlsToCheck = uniqueUrls.filter(url => !mdExtUrls.has(url));
+async function checkInternal(uniqueLinks, allLinks, mdExtUrls, { docsDir, liveSiteBase, timeoutMs }) {
+  const linksToCheck = uniqueLinks.filter(l => !mdExtUrls.has(l.url));
 
-  console.log(`Checking ${urlsToCheck.length} internal links...`);
-  const resultsByUrl = new Map();
+  console.log(`Checking ${linksToCheck.length} internal links...`);
+  const resultsByKey = new Map();
 
-  for (const url of urlsToCheck) {
-    resultsByUrl.set(url, await checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs }));
+  for (const link of linksToCheck) {
+    resultsByKey.set(linkKey(link), await checkInternalLink(link.url, {
+      docsDir, liveSiteBase, timeoutMs, sourcePath: link.sourcePath,
+    }));
   }
 
   const errors = [];
   const warnings = [];
 
   for (const link of allLinks) {
-    const result = resultsByUrl.get(link.url);
+    const result = resultsByKey.get(linkKey(link));
     if (!result) continue;
 
     if (!result.ok) {
@@ -215,7 +218,7 @@ export async function orchestrate(config) {
   // 5. Check internal links
   if (!externalOnly) {
     const int = await checkInternal(
-      scan.uniqueInternalUrls, scan.internalLinks, lint.mdExtUrls,
+      scan.uniqueInternalLinks, scan.internalLinks, lint.mdExtUrls,
       { docsDir, liveSiteBase, timeoutMs },
     );
     errors.push(...int.errors);

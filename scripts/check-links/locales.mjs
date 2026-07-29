@@ -20,17 +20,23 @@
  * filenames and the translator preserves English anchor ids, so a translation
  * cannot break an incoming link that the English check wouldn't already catch.
  *
- * Anchor fragments (#heading) are NOT validated for locales. The translator
- * preserves English anchor ids verbatim (as escaped \{#id\} on translated
- * headings), so anchors carry over from English; validating them here only
- * re-surfaces English-origin anchors. We verify the target page exists.
+ * Anchor fragments are validated only for SAME-PAGE links (#heading), against
+ * the locale file's own headings. Cross-page anchors stay unchecked: those
+ * resolve against the English index (resolution here is locale-independent), so
+ * their anchors are already covered by the English run, and re-checking them
+ * would just duplicate English-origin findings under every locale.
+ *
+ * This relies on check-internal.mjs handling the ESCAPED custom-id form —
+ * translated headings carry the English id as `\{#id\}`. Before that was fixed,
+ * enabling anchor checks here produced 2,342 findings of which only 148 were
+ * real, which is why locale anchors were skipped wholesale.
  */
 
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
-import { getAllDocFiles, extractLinks, categorizeLinks } from './scan.mjs';
+import { getAllDocFiles, extractLinks, categorizeLinks, isAnchorOnlyUrl, linkKey, uniqueByKey } from './scan.mjs';
 import { checkInternalLink, isLoginRedirect, isCaptchaRedirect } from './check-internal.mjs';
 import { checkExternalUrl, closeBrowser } from './check-external.mjs';
 import { classifyResults } from './classify.mjs';
@@ -176,7 +182,10 @@ export async function orchestrateLocales(config) {
   const allLinks = [];
   const allFiles = [];
   const externalByLocale = []; // collected, checked once at the end
-  const internalResultsByUrl = new Map(); // url -> result, shared across locales (resolution is locale-independent)
+  // linkKey -> result. Cross-page URLs key on the URL alone and so are shared
+  // across locales (resolution is locale-independent); same-page anchors key on
+  // their source file, so each locale's copy is checked separately.
+  const internalResultsByKey = new Map();
 
   // 3. Per-locale: extract & lint, then check internal links against the English index.
   for (const [code, { dir, files }] of filesByLocale) {
@@ -218,22 +227,28 @@ export async function orchestrateLocales(config) {
 
     if (externalOnly) continue;
 
-    // Internal checks. Resolution is locale-independent (English index + live
-    // fallback), so check each URL once and reuse the result across locales.
-    // skipAnchors: anchor validation lives in the English check; the translator
-    // preserves English anchor ids (escaped \{#id\}), so re-checking here only
-    // re-flags English-origin anchors. We verify the target page exists.
-    const uniqueInternal = [...new Set(internalLinks.map(l => l.url))].filter(u => !mdExtUrls.has(u));
+    // Internal checks. Cross-page resolution is locale-independent (English
+    // index + live fallback), so those URLs are checked once and reused across
+    // locales — hence skipAnchors, see the module header. Same-page anchors are
+    // the exception: they resolve against this locale file's own headings, so
+    // they're keyed per source file and always checked.
+    const uniqueInternal = uniqueByKey(internalLinks).filter(l => !mdExtUrls.has(l.url));
     let newlyChecked = 0;
-    for (const url of uniqueInternal) {
-      if (internalResultsByUrl.has(url)) continue;
-      internalResultsByUrl.set(url, await checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs, skipAnchors: true }));
+    for (const link of uniqueInternal) {
+      const key = linkKey(link);
+      if (internalResultsByKey.has(key)) continue;
+      const anchorOnly = isAnchorOnlyUrl(link.url);
+      internalResultsByKey.set(key, await checkInternalLink(link.url, {
+        docsDir, liveSiteBase, timeoutMs,
+        skipAnchors: !anchorOnly,
+        sourcePath: link.sourcePath,
+      }));
       newlyChecked++;
     }
     console.log(`[${code}] ${uniqueInternal.length} internal links (${newlyChecked} newly checked)`);
 
     for (const link of internalLinks) {
-      const result = internalResultsByUrl.get(link.url);
+      const result = internalResultsByKey.get(linkKey(link));
       if (!result) continue;
       if (!result.ok) {
         errors.push({ ...link, type: 'internal', status: result.status, error: result.error });
