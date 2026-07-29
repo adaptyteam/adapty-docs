@@ -304,6 +304,12 @@ const tools = agentTools.tools.map((tool) => ({
         const openBtn = document.getElementById('install-tools-btn');
         if (!modal || !openBtn) return;
 
+        // Guard against double-binding: this runs both at module eval and on
+        // the initial astro:page-load. After a ClientRouter swap the modal is
+        // a fresh element, so the flag is gone and listeners bind again.
+        if (modal.dataset.init === '1') return;
+        modal.dataset.init = '1';
+
         const closeBtn = modal.querySelector<HTMLButtonElement>('.itm-close');
         let lastFocus: HTMLElement | null = null;
 
@@ -312,6 +318,7 @@ const tools = agentTools.tools.map((tool) => ({
             modal!.hidden = false;
             document.body.style.overflow = 'hidden';
             closeBtn?.focus();
+            (window as any).docsTrack?.('docs_install_tools_opened');
         }
 
         function close() {
@@ -361,6 +368,11 @@ const tools = agentTools.tools.map((tool) => ({
                 if (!code) return;
                 try {
                     await navigator.clipboard.writeText(code.textContent ?? '');
+                    // Panel copy buttons report their tool id; the bottom
+                    // usage-command block sits outside any panel.
+                    (window as any).docsTrack?.('docs_install_tool_copied', {
+                        tool: btn.closest<HTMLElement>('.itm-panel')?.dataset.tool ?? 'usage-command',
+                    });
                     btn.classList.add('copied');
                     setTimeout(() => btn.classList.remove('copied'), 2000);
                 } catch (err) {
