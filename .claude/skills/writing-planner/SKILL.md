@@ -89,9 +89,9 @@ Sidebar files define the docs navigation structure. Each file is a JSON array of
 - **Use hierarchy for priority**: Articles higher in the sidebar are more general/important. Deeply nested articles are more specific/niche. When multiple articles match, prioritize those higher in the sidebar hierarchy — they're more likely to be overview/root pages that many readers land on.
 - **Identify neighbors**: The sidebar shows which articles are siblings. Neighboring articles in the same category often need coordinated updates.
 
-After narrowing via sidebar, proceed with content search:
+After narrowing via sidebar, proceed with content search. Prefer the context-mill skill's lookup mode (grep `.claude/context-mill/docs-map.jsonl` + `docs-enrichment.jsonl`) over grepping raw MDX — it is cheaper and also matches task-language terms that don't appear literally in articles:
 
-1. **Search by feature keywords**: Grep for the feature name, UI element names, and related terms across the relevant docs
+1. **Search by feature keywords**: Grep for the feature name, UI element names, and related terms across the context-mill map (fall back to the relevant docs if the map misses)
 2. **Search by product area**: If the task mentions "autopilot," search for all articles containing "autopilot." If it mentions "A/B tests," find every article that covers A/B test configuration, results, or related workflows.
 3. **Think about ripple effects**: A feature change may affect more than the obvious article. Ask yourself:
    - Does this feature appear in a **getting started** or **quickstart** guide?
