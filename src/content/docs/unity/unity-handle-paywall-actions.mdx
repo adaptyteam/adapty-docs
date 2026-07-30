@@ -1,13 +1,196 @@
 ---
-title: "Respond to button actions in Unity SDK"
-description: "Handle paywall button actions in Unity using Adapty for better app monetization."
-metadataTitle: "Handling paywall button actions | Adapty Docs"
+title: "Respond to flow actions - Unity"
+description: "Handle button actions from flows and paywalls in your Unity app."
+metadataTitle: "Respond to Flow Actions - Unity | Adapty Docs"
 toc_max_heading_level: 4
 rank: 40
 keywords: ['paywall button', 'button', 'paywall button actions', 'handle actions']
 ---
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+
+<SDKv4>
+
+If you are building flows or paywalls using the Adapty Flow Builder or Paywall Builder, it's crucial to set up buttons properly:
+
+1. Add a [button in the builder](paywall-buttons) and assign it either a pre-existing action or create a custom action ID.
+2. Write code in your app to handle each action you've assigned.
+
+This guide shows how to handle custom and pre-existing actions in your code.
+
+:::warning
+**Only purchases and restorations are handled automatically.** All other button actions, such as closing flows or opening links, require proper response implementation in the app code.
+:::
+
+## Set up the flows events listener
+
+To handle flow actions, implement the `IAdaptyFlowsEventsListener` interface and register it with `Adapty.SetFlowsEventsListener()`. This should be done early in your app's lifecycle, typically in your main scene or app initialization.
+
+```csharp showLineNumbers title="Unity"
+using AdaptySDK;
+
+public class FlowsListener : MonoBehaviour, IAdaptyFlowsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetFlowsEventsListener(this);
+    }
+
+    // implement all IAdaptyFlowsEventsListener methods here
+}
+```
+
+`IAdaptyFlowsEventsListener` is a C# interface, so implement all of its methods — see [Handle flow & paywall events](unity-handling-events) for the full list. The examples below show only the `FlowViewDidPerformAction` method.
+
+All button actions arrive in the `FlowViewDidPerformAction(view, action)` callback as an `AdaptyUIUserAction` object with a `Type` of `Close`, `SystemBack`, `OpenUrl`, or `Custom`, plus an optional `Value` (the URL or the custom action ID).
+
+## Close flows and paywalls
+
+To add a button that will close your flow or paywall:
+
+1. In the builder, add a button and assign it the **Close** action.
+2. In your app code, implement a handler for the `Close` action that dismisses the flow.
+
+:::info
+A dismissed view is destroyed and can't be presented again. To display the flow one more time, call `CreateFlowView` again.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Handle the Android system back button
+
+Pressing the Android system back button (or using the back gesture) emits an action of the `SystemBack` type. It does not dismiss the flow on its own — the flow stays open, and the user leaves it through a path you define, such as a **Close** button or an `on_device_back` action in the builder. If you want the system back button to dismiss the flow, handle the action yourself:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+        case AdaptyUIUserActionType.SystemBack:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Open URLs from flows and paywalls
+
+:::tip
+If you want to add a group of links (e.g., terms of use and purchase restoration), add a **Link** element in the builder and handle it the same way as buttons with the **Open URL** action.
+:::
+
+To add a button that opens a link from your flow or paywall (e.g., **Terms of use** or **Privacy policy**):
+
+1. In the builder, add a button, assign it the **Open URL** action, and enter the URL you want to open.
+2. In your app code, implement a handler for the `OpenUrl` action that opens the received URL.
+
+Use the `AdaptyUI.OpenUrl` method to open the URL natively, honoring the external or in-app browser option (`action.OpenIn`) configured in the builder:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.OpenUrl:
+            var urlString = action.Value;
+            if (!string.IsNullOrWhiteSpace(urlString)) {
+                AdaptyUI.OpenUrl(
+                    urlString,
+                    action.OpenIn ?? AdaptyWebPresentation.ExternalBrowser,
+                    (error) => {
+                        // handle the error
+                    }
+                );
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Log into the app
+
+To add a button that logs users into your app:
+
+1. In the builder, add a button and assign it the **Custom** action with ID `login`.
+2. In your app code, implement a handler for the `login` custom action that identifies your user.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Custom:
+            if (action.Value == "login") {
+                // Navigate to login scene
+                SceneManager.LoadScene("LoginScene");
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Handle custom actions
+
+To add a button that handles any other actions:
+
+1. In the builder, add a button, assign it the **Custom** action, and assign it an ID.
+2. In your app code, implement a handler for the action ID you've created.
+
+For example, if you have another set of subscription offers or one-time purchases, you can add a button that will display another flow or paywall:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Custom:
+            if (action.Value == "openNewFlow") {
+                // Display another flow or paywall
+                ShowAlternativeFlow();
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+
+private void ShowAlternativeFlow() {
+    // Implement your logic to show an alternative flow
+}
+```
+
+</SDKv4>
+
+<SDKv3>
 
 If you are building paywalls using the Adapty paywall builder, it's crucial to set up buttons properly:
 
@@ -129,3 +312,4 @@ private void ShowAlternativePaywall() {
     // Implement your logic to show alternative paywall
 }
 ```
+</SDKv3>
