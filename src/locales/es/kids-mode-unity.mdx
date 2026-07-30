@@ -1,10 +1,12 @@
 ---
-title: "Kids Mode en Unity SDK"
-description: "Activa fácilmente el Modo Niños para cumplir con las políticas de Apple y Google. No se recopilan IDFA, GAID ni datos publicitarios en Unity SDK."
-metadataTitle: "Kids Mode en Unity SDK | Documentación de Adapty"
+title: "Modo Infantil en el SDK de Unity"
+description: "Activa fácilmente el Modo Infantil para cumplir con las políticas de Apple y Google. Sin IDFA, GAID ni datos publicitarios en el SDK de Unity."
+metadataTitle: "Modo Infantil en el SDK de Unity | Documentación de Adapty"
 ---
 
-Si tu aplicación Unity está destinada a niños, debes seguir las políticas de [Apple](https://developer.apple.com/kids/) y [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Si usas el SDK de Adapty, unos pocos pasos sencillos te ayudarán a configurarlo para cumplir con estas políticas y superar las revisiones de las tiendas.
+<SDKv4>
+
+Si tu aplicación de Unity está destinada a niños, debes seguir las políticas de [Apple](https://developer.apple.com/kids/) y [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Si usas el SDK de Adapty, unos pocos pasos sencillos te ayudarán a configurarlo para cumplir con estas políticas y superar las revisiones de la tienda.
 
 ## ¿Qué se necesita? \{#whats-required\}
 
@@ -22,10 +24,97 @@ Además, te recomendamos usar el ID de usuario del cliente con cuidado. Un ID en
 
 En el Adapty Dashboard, debes desactivar la recopilación de direcciones IP. Para ello, ve a [App settings](https://app.adapty.io/settings/general) y haz clic en **Disable IP address collection** en **Collect users' IP address**.
 
-### Cambios en el código de tu app \{#updates-in-your-mobile-app-code\}
+### Actualizaciones en el código de tu app \{#updates-in-your-app-code\}
 
-¡La compatibilidad con el Modo Niños en Unity estará disponible próximamente!
+Desactiva la recopilación del Android Advertising ID y la dirección IP al activar el SDK:
 
-Por ahora, puedes seguir las guías de plataformas nativas:
-- [Kids Mode en iOS SDK](kids-mode) para la configuración en iOS
-- [Kids Mode en Android SDK](kids-mode-android) para la configuración en Android
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+// highlight-start
+    .SetGoogleAdvertisingIdCollectionDisabled(true) // set to `true`
+    .SetIPAddressCollectionDisabled(true); // set to `true`
+// highlight-end
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+});
+```
+
+En iOS, no es necesario llamar a `SetAppleIDFACollectionDisabled` — al activar el modo Kids para la compilación de iOS (ver más abajo), la recopilación de IDFA se deshabilita automáticamente en la configuración del SDK.
+
+### Habilitar el modo Kids para la compilación de iOS \{#enable-kids-mode-for-the-ios-build\}
+
+:::important
+En iOS, el modo Kids es un trait de Swift Package llamado `KidsMode`. Al habilitarlo, IDFA, AdSupport y AppTrackingTransparency se excluyen del binario del SDK en tiempo de compilación. Requiere SDK 4.0 o posterior —que instala el SDK nativo de iOS mediante Swift Package Manager— y **Xcode 26** o posterior, ya que las versiones anteriores de Xcode no admiten traits de Swift Package.
+:::
+
+1. En el Unity Editor, ve a **Player Settings** > **Other Settings** y añade `ADAPTY_KIDS_MODE` en **Scripting Define Symbols** para la plataforma iOS.
+2. Compila tu proyecto para iOS como de costumbre. Adapty activa el trait `KidsMode` en la referencia del paquete AdaptySDK-iOS en el proyecto Xcode generado y fuerza `apple_idfa_collection_disabled` en la configuración de ejecución.
+
+:::warning
+Añade el define en **Player Settings**, no en un perfil de compilación. Los scripting defines de un perfil de compilación solo llegan a los ensamblados del Editor después de que Unity los recompile, por lo que una compilación iniciada en la misma sesión puede producir un binario que reporte Kids Mode en tiempo de ejecución mientras sigue enlazando IDFA. Adapty falla la compilación de iOS cuando detecta ese estado. `BuildPlayerOptions.extraScriptingDefines` no es compatible en absoluto, ya que nunca llega a los ensamblados del Editor.
+:::
+
+### Actualizaciones en tu manifiesto de Android \{#updates-in-your-android-manifest\}
+
+Si tu app está dirigida **únicamente** a niños y compila contra Android 13 (API 33) o superior, Google Play exige que no solicites el permiso `AD_ID`. Deshabilitar la recopilación en la configuración del SDK evita que Adapty recopile el ID, pero no elimina un permiso que otro plugin declare mediante la fusión de manifiestos.
+
+Para eliminar el permiso, activa **Custom Main Manifest** en **Player Settings** > **Publishing Settings**, y luego añade lo siguiente dentro del elemento `<manifest>` de `Assets/Plugins/Android/AndroidManifest.xml`. El elemento `<manifest>` debe declarar `xmlns:tools="http://schemas.android.com/tools"`.
+
+```xml showLineNumbers title="AndroidManifest.xml"
+<uses-permission
+    android:name="com.google.android.gms.permission.AD_ID"
+    tools:node="remove" />
+```
+
+</SDKv4>
+
+<SDKv3>
+
+Si tu aplicación Unity está destinada a niños, debes cumplir con las políticas de [Apple](https://developer.apple.com/kids/) y [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Si utilizas el SDK de Adapty, unos sencillos pasos te ayudarán a configurarlo para cumplir con estas políticas y superar las revisiones de las tiendas.
+
+## ¿Qué se necesita? \{#whats-required\}
+
+Debes configurar el SDK para desactivar la recopilación de:
+
+- [IDFA (Identifier for Advertisers)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers) (iOS)
+- [Android Advertising ID (AAID/GAID)](https://support.google.com/googleplay/android-developer/answer/6048248) (Android)
+- [Dirección IP](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
+Además, recomendamos usar el customer user ID con cuidado. Un ID de usuario con formato `<FirstName.LastName>` se considerará sin duda una recopilación de datos personales, al igual que el uso del correo electrónico. Para el modo Kids, la mejor práctica es utilizar identificadores aleatorios o anonimizados (por ejemplo, IDs hasheados o UUIDs generados por el dispositivo) para garantizar el cumplimiento normativo.
+
+## Activar el modo infantil \{#enabling-kids-mode\}
+
+### Actualizaciones en el Adapty Dashboard
+
+En el Adapty Dashboard, debes desactivar la recopilación de direcciones IP. Para ello, ve a [App settings](https://app.adapty.io/settings/general) y haz clic en **Disable IP address collection** dentro de **Collect users' IP address**.
+
+### Actualizaciones en el código de tu app \{#updates-in-your-app-code\}
+
+Desactiva la recopilación del Android Advertising ID y la dirección IP al activar el SDK:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+// highlight-start
+    .SetGoogleAdvertisingIdCollectionDisabled(true) // set to `true`
+    .SetIPAddressCollectionDisabled(true); // set to `true`
+// highlight-end
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+});
+```
+
+### Habilitar el modo Kids para la compilación de iOS \{#enable-kids-mode-for-the-ios-build\}
+
+Compilar IDFA y AdSupport fuera del binario de iOS requiere Adapty Unity SDK 4.0 o posterior. Actualiza con la [guía de migración](migration-to-unity-sdk-v4) y sigue las instrucciones del SDK 4.0 en esta página.
+
+En SDK 3.x, puedes deshabilitar la recopilación de IDFA en la configuración del SDK con `SetAppleIDFACollectionDisabled(true)`, pero el código de IDFA y AdSupport permanece en el binario. Para las opciones de configuración nativas, consulta [Modo Kids en iOS SDK](kids-mode) y [Modo Kids en Android SDK](kids-mode-android).
+
+</SDKv3>

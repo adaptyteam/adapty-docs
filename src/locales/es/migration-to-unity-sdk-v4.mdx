@@ -1,0 +1,226 @@
+---
+title: "Migrar el SDK de Adapty Unity a v. 4.0"
+description: "Migra al SDK de Adapty Unity v4.0 (beta) reemplazando las APIs de paywall por APIs de flow, compatibles tanto con el Flow Builder como con el Paywall Builder."
+metadataTitle: "Migración al SDK de Adapty Unity v4.0 (beta) | Documentación de Adapty"
+---
+
+El SDK de Adapty Unity 4.0 (beta) introduce los flows y renombra las APIs de paywall en consecuencia. Las nuevas APIs funcionan tanto con el nuevo Flow Builder como con el Paywall Builder existente — no se requieren cambios de configuración en el Adapty Dashboard.
+
+## Referencia rápida \{#quick-reference\}
+
+| v3 | v4 |
+|---|---|
+| `Adapty.GetPaywall(placementId, locale, ...)` | `Adapty.GetFlow(placementId, ...)` |
+| `Adapty.GetPaywallForDefaultAudience(placementId, locale, ...)` | `Adapty.GetFlowForDefaultAudience(placementId, ...)` |
+| `Adapty.GetPaywallProducts(paywall, ...)` | `Adapty.GetPaywallProducts(flow, ...)` |
+| `Adapty.LogShowPaywall(paywall, ...)` | `Adapty.LogShowFlow(flow, ...)` |
+| `AdaptyPaywall` | `AdaptyFlow` |
+| `AdaptyUI.CreatePaywallView(paywall, ...)` | `AdaptyUI.CreateFlowView(flow, ...)` |
+| `AdaptyUICreatePaywallViewParameters` | `AdaptyUICreateFlowViewParameters` |
+| `AdaptyUIPaywallView` | `AdaptyUIFlowView` |
+| `AdaptyUI.PresentPaywallView(view, ...)` / `DismissPaywallView(view, ...)` | `AdaptyUI.PresentFlowView(view, ...)` / `DismissFlowView(view, ...)` |
+| `Adapty.SetPaywallsEventsListener(listener)` | `Adapty.SetFlowsEventsListener(listener)` |
+| `AdaptyPaywallsEventsListener` | `IAdaptyFlowsEventsListener` |
+| `AdaptyEventListener` | `IAdaptyEventListener` |
+| `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
+| `PaywallViewDidPerformAction`, `PaywallViewDidAppear` y otros callbacks `PaywallView...` | `FlowViewDidPerformAction`, `FlowViewDidAppear` y otros callbacks `FlowView...` |
+| `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
+| `Adapty.SetFallbackPaywalls(...)` (obsoleto en v3) | eliminado — usa `Adapty.SetFallback(fileName, ...)` |
+| `Builder.SetIDFACollectionDisabled(...)` (obsoleto en v3) | eliminado — usa `Builder.SetAppleIDFACollectionDisabled(...)` |
+
+`AdaptyPaywallProduct` mantiene su nombre — los productos siguen perteneciendo a un flow, y `GetPaywallProducts` también mantiene su nombre, ahora tomando un `AdaptyFlow`. Los métodos `GetFlow` y `GetFlowForDefaultAudience` ya no aceptan un parámetro `locale`. Las APIs de compra y perfil (`MakePurchase`, `RestorePurchases`, `GetProfile`, `Identify`, `UpdateProfile`) y los respaldos mediante `SetFallback` no han cambiado. Los métodos de onboarding siguen funcionando pero están obsoletos — consulta [Obsolescencia de la API de Onboarding](#onboarding-api-deprecation). Algunos comportamientos predeterminados han cambiado — consulta [Cambios en el comportamiento predeterminado](#default-behavior-changes).
+
+## Instalación \{#installation\}
+
+La versión 4.0 es una versión preliminar, así que indica la etiqueta beta exacta al instalarla. Mediante Unity Package Manager, usa la URL de Git con la etiqueta en lugar de `#upm`:
+
+```
+https://github.com/adaptyteam/AdaptySDK-Unity.git?path=Packages/com.adapty.unity-sdk#4.0.0-beta.1
+```
+
+Si instalas mediante el paquete de Unity, descarga `adapty-unity-plugin-4.0.0-beta.1.unitypackage` desde la carpeta [Releases](https://github.com/adaptyteam/AdaptySDK-Unity/tree/main/Releases). Consulta [Instalar el SDK de Adapty](sdk-installation-unity#install-adapty-sdk) para ver la configuración completa.
+
+La versión 4 incluye dos cambios en la configuración de compilación:
+
+- **Las dependencias de iOS cambian a Swift Package Manager.** El SDK nativo de Adapty para iOS 4.0 se declara como un paquete remoto de Swift en lugar de un pod de CocoaPods. Actualiza el [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) a la versión **1.2.188 o posterior** — las versiones anteriores no son compatibles con las dependencias de Swift Package Manager. Los pasos de CocoaPods (`iOS Resolver -> Install Cocoapods`, abrir `Unity-iPhone.xcworkspace`) ya no aplican.
+- **El destino de despliegue de iOS debe ser 15.0 o posterior.** Un nuevo validador de compilación en el Unity Editor detiene la compilación para iOS si el destino es inferior.
+
+Las versiones nativas del SDK de Adapty se actualizan a la 4.x en ambas plataformas y se resuelven automáticamente; no se necesitan cambios adicionales en la compilación.
+
+## Recuperar flows \{#fetching-flows\}
+
+### GetPaywall → GetFlow
+
+El tipo devuelto cambia de `AdaptyPaywall` a `AdaptyFlow`, y el parámetro `locale` se elimina — cuando renderizas un flow, el idioma se resuelve automáticamente; para paywalls personalizados, todos los idiomas se devuelven en `flow.RemoteConfigs`:
+
+```diff showLineNumbers
+- Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
++ Adapty.GetFlow("YOUR_PLACEMENT_ID", (flow, error) => {
+      if (error != null) {
+          // handle the error
+          return;
+      }
+-     // use the paywall
++     // use the flow
+  });
+```
+
+`GetPaywallForDefaultAudience` se renombra de la misma manera:
+
+```diff showLineNumbers
+- Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => { /* ... */ });
++ Adapty.GetFlowForDefaultAudience("YOUR_PLACEMENT_ID", (flow, error) => { /* ... */ });
+```
+
+### GetPaywallProducts(paywall) → GetPaywallProducts(flow)
+
+`GetPaywallProducts` mantiene su nombre pero ahora acepta un `AdaptyFlow`:
+
+```diff showLineNumbers
+- Adapty.GetPaywallProducts(paywall, (products, error) => {
++ Adapty.GetPaywallProducts(flow, (products, error) => {
+      if (error != null) {
+          // handle the error
+          return;
+      }
+      // use the products
+  });
+```
+
+## Modelo de datos \{#data-model\}
+
+`GetFlow` devuelve un `AdaptyFlow` en lugar de un `AdaptyPaywall`, y la forma del objeto ha cambiado:
+
+| Propiedad v3 de `AdaptyPaywall` | Propiedad v4 de `AdaptyFlow` | Acción |
+|---|---|---|
+| `RemoteConfig` (única, nullable) | `RemoteConfigs` (lista) | Un flow lleva un Remote Config por idioma configurado. Lee el que corresponda al usuario desde `flow.RemoteConfigs`. El acceso directo `flow.RemoteConfig` devuelve la primera entrada. |
+| _(nuevo)_ | `Paywalls` (lista de `AdaptyFlowPaywall`) | Cada entrada es una variación de paywall del flow, con su propio `Name`, `VariationId` y `ProductIdentifiers`. Los métodos de paywall web reciben un `AdaptyFlowPaywall` — consulta [Métodos de paywall web](#web-paywall-methods). |
+| `ProductIdentifiers`, `VendorProductIds` | se mantienen | En `AdaptyFlow`, estos agregan los productos de todas las variaciones de paywall. Cada variación también expone sus propios `ProductIdentifiers` y `VendorProductIds`. Para obtener productos, sigue llamando a `GetPaywallProducts(flow)`. |
+| `HasViewConfiguration` | eliminada | Elimina cualquier comprobación de `HasViewConfiguration` en tu código — `CreateFlowView` devuelve un error en su lugar (consulta [Mostrar flows](#displaying-flows)). |
+
+## Métodos de paywall web \{#web-paywall-methods\}
+
+`OpenWebPaywall` y `CreateWebPaywallUrl` mantienen sus nombres, pero el argumento `paywall` ahora acepta un `AdaptyFlowPaywall` — una de las variaciones en `flow.Paywalls`. Aún puedes pasar un `AdaptyPaywallProduct` en su lugar:
+
+```diff showLineNumbers
+- Adapty.OpenWebPaywall(paywall, AdaptyWebPresentation.ExternalBrowser, (error) => { /* ... */ });
++ var flowPaywall = flow.Paywalls.FirstOrDefault();
++ if (flowPaywall != null) {
++     Adapty.OpenWebPaywall(flowPaywall, AdaptyWebPresentation.ExternalBrowser, (error) => { /* ... */ });
++ }
+```
+
+## Seguimiento de visualizaciones de flows \{#tracking-flow-views\}
+
+### LogShowPaywall → LogShowFlow
+
+`LogShowPaywall` ha sido renombrado a `LogShowFlow` y ahora acepta un `AdaptyFlow`. El evento sigue registrándose en la misma variación, por lo que las métricas del embudo y de las pruebas A/B siguen funcionando sin cambios en el dashboard.
+
+```diff showLineNumbers
+- Adapty.LogShowPaywall(paywall, (error) => { /* ... */ });
++ Adapty.LogShowFlow(flow, (error) => { /* ... */ });
+```
+
+Al igual que en la v3, no es necesario llamar a este método al mostrar flows o paywalls renderizados por el [Flow Builder](adapty-flow-builder) o el [Paywall Builder](adapty-paywall-builder) — Adapty registra esas vistas automáticamente.
+
+## Mostrando flows \{#displaying-flows\}
+
+### CreatePaywallView → CreateFlowView
+
+Renombra el método de fábrica y pasa el `AdaptyFlow`. El tipo de vista devuelto cambia de `AdaptyUIPaywallView` a `AdaptyUIFlowView`, pero sus métodos (`Present`, `Dismiss`) no cambian, y el objeto de parámetros opcionales mantiene los mismos campos (`LoadTimeout`, `PreloadProducts`, `CustomTags`, `CustomTimers`, `CustomAssets`, `ProductPurchaseParameters`) bajo el nuevo nombre `AdaptyUICreateFlowViewParameters`, además de dos nuevos — `Locale` y `EnableSafeAreaPaddings`:
+
+```diff showLineNumbers
+- AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
++ AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+      if (error != null) {
+          // handle the error
+          return;
+      }
+      view.Present((error) => { /* handle the error */ });
+  });
+```
+
+`CreateFlowView` devuelve un error si el flow no tiene ninguna vista configurada — esto reemplaza la comprobación `HasViewConfiguration` de la v3:
+
+```diff showLineNumbers
+- if (paywall.HasViewConfiguration) {
+-     AdaptyUI.CreatePaywallView(paywall, null, (view, error) => { /* ... */ });
+- }
++ AdaptyUI.CreateFlowView(flow, (view, error) => {
++     if (error != null) {
++         // the flow has no view configured, or view creation failed
++         return;
++     }
++     view.Present((error) => { /* handle the error */ });
++ });
+```
+
+:::note
+Una vista de flow es de un solo uso: después de llamar a `Dismiss`, la vista se destruye, por lo que debes llamar a `CreateFlowView` de nuevo para mostrar el flow otra vez.
+:::
+
+### Rellenos de área segura en Android \{#android-safe-area-paddings\}
+
+`AdaptyUICreateFlowViewParameters` añade `EnableSafeAreaPaddings`, que controla los rellenos de área segura en Android en tiempo de ejecución. Se ignora en iOS y su valor predeterminado es `true`:
+
+```csharp showLineNumbers
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetEnableSafeAreaPaddings(false);
+```
+
+## Manejo de eventos \{#handling-events\}
+
+Las interfaces de listener siguen ahora la convención de prefijo `I` de C#, y no se mantienen alias heredados; renombra `AdaptyEventListener` a `IAdaptyEventListener` y `AdaptyOnboardingsEventsListener` a `IAdaptyOnboardingsEventsListener` en todos los lugares donde las implementes.
+
+El listener de eventos de flow se renombra de `AdaptyPaywallsEventsListener` a `IAdaptyFlowsEventsListener`, su método de registro de `SetPaywallsEventsListener` a `SetFlowsEventsListener`, y sus callbacks cambian el prefijo `PaywallView` por `FlowView`. Los cuerpos de los handlers existentes no necesitan cambios de código: solo hay que renombrar la interfaz y los métodos:
+
+```diff showLineNumbers
+- public class MyListener : MonoBehaviour, AdaptyPaywallsEventsListener {
+-     public void PaywallViewDidFinishPurchase(
+-         AdaptyUIPaywallView view,
++ public class MyListener : MonoBehaviour, IAdaptyFlowsEventsListener {
++     public void FlowViewDidFinishPurchase(
++         AdaptyUIFlowView view,
+          AdaptyPaywallProduct product,
+          AdaptyPurchaseResult purchasedResult
+      ) {
+          // custom logic after purchase
+      }
+      // ...
+  }
+
+- Adapty.SetPaywallsEventsListener(myListener);
++ Adapty.SetFlowsEventsListener(myListener);
+```
+
+Un callback ha sido renombrado: `PaywallViewDidFailRendering` pasa a llamarse `FlowViewDidReceiveError`. Se activa para los mismos errores de renderizado que antes, además de otros errores de ejecución no relacionados con compras:
+
+```diff showLineNumbers
+- public void PaywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) { }
++ public void FlowViewDidReceiveError(AdaptyUIFlowView view, AdaptyError error) { }
+```
+
+Consulta [Gestionar eventos de flow y paywall](unity-handling-events) para ver la lista completa de callbacks.
+
+### Nuevas APIs \{#new-apis\}
+
+- `Adapty.SetObserverModeResolver(...)` con un `IAdaptyUIObserverModeResolver` — gestiona compras y restauraciones iniciadas desde flows mientras el SDK funciona en [modo Observer](implement-observer-mode-unity). Antes esto solo estaba disponible en los SDKs nativos de iOS y Android. Consulta [Presentar flows en modo Observer](unity-present-flows-in-observer-mode).
+- `Adapty.SetSystemRequestsHandler(...)` con un `IAdaptyUISystemRequestsHandler` — reservado para solicitudes del sistema desde un flow: avisos de permisos del SO (`FlowViewDidAskPermission`) y solicitudes de valoración de la app (`FlowViewDidRequestAppReview`). Los flows aún no activan estas solicitudes, por lo que no necesitas registrar un handler.
+- `AdaptyUICreateFlowViewParameters.Locale` — renderiza un flow o paywall con una [localización del Builder](add-paywall-locale-in-adapty-paywall-builder) específica en lugar de la que Adapty resuelve desde el dispositivo. Un flow se localiza cuando se crea su vista, por lo que este es el único momento para elegir su localización, y la vista creada informa de la localización con la que fue construida en `view.Locale`. Consulta [Usar localizaciones y códigos de idioma](unity-localizations-and-locale-codes).
+- El nuevo callback `FlowViewDidReceiveAnalyticEvent` en `IAdaptyFlowsEventsListener` está reservado para eventos analíticos personalizados de un flow. Los flows aún no emiten estos eventos a tu código, así que impleméntalo con un cuerpo vacío.
+- `AdaptyUI.OpenUrl(url, openIn, ...)` y `AdaptyUI.RequestAppReview(...)` — la gestión nativa detrás de las acciones `open_url` y las solicitudes de valoración de la app. Llama a `OpenUrl` desde `FlowViewDidPerformAction` para mantener el comportamiento predeterminado de las URLs; `RequestAppReview` respalda el aviso de valoración predeterminado, que los flows aún no activan.
+
+## Cambios en el comportamiento predeterminado \{#default-behavior-changes\}
+
+Estos cambios no causan errores de compilación, así que compruébalos en tiempo de ejecución:
+
+- **Finalización de la compra**: En v3, la vista se cerraba automáticamente tras una compra exitosa. En v4, **un flow permanece abierto tras una compra o un error hasta que lo cierres tú** — el SDK no aplica ningún comportamiento por defecto. Llama a `view.Dismiss(...)` en `FlowViewDidFinishPurchase` una vez que el usuario obtenga acceso.
+- **Botón Atrás de Android**: El botón Atrás del sistema (o el gesto de retroceso) se entrega a `FlowViewDidPerformAction` como una acción `SystemBack` y ya no cierra un flow por sí solo — igual que en iOS, donde un flow no puede cerrarse con un gesto del sistema. Ofrece a los usuarios una salida explícita (un botón **Close** o una acción `on_device_back`), o cierra la vista tú mismo al gestionar la acción.
+- **Las vistas son de un solo uso**: Después de `Dismiss`, la vista se destruye. Llama a `CreateFlowView` de nuevo para mostrar el flow otra vez.
+- **Transacciones en modo Observer**: `ReportTransaction` ya no devuelve un error de decodificación cuando tiene éxito — en v3 la respuesta de éxito se parseaba incorrectamente, por lo que un reporte exitoso siempre terminaba con un error.
+
+## Baja de la API de onboarding \{#onboarding-api-deprecation\}
+
+La API de onboarding heredada está en desuso desde v4.0 en favor del [Flow Builder](adapty-flow-builder). Sigue funcionando, pero se eliminará en una versión futura, así que planifica la migración de tus onboardings al Flow Builder.
+
+Símbolos en desuso: `GetOnboarding`, `GetOnboardingForDefaultAudience`, `AdaptyUI.CreateOnboardingView`, `AdaptyUI.PresentOnboardingView`, `AdaptyUI.DismissOnboardingView` y `Adapty.SetOnboardingsEventsListener`.

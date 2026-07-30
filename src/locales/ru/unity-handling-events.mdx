@@ -1,7 +1,7 @@
 ---
-title: "Обработка событий пейвола"
-description: "Узнайте, как обрабатывать события пейвола в Unity-приложении с помощью Adapty SDK."
-metadataTitle: "Обработка событий пейвола | Unity SDK | Документация Adapty"
+title: "Обработка событий флоу и пейвола - Unity"
+description: "Обработка событий флоу и пейвола в вашем приложении Unity."
+metadataTitle: "Обработка событий флоу - Unity | Документация Adapty"
 customSlug: /unity-handling-events
 displayed_sidebar: sdkunity
 ---
@@ -9,14 +9,485 @@ displayed_sidebar: sdkunity
 import SampleApp from '@site/src/locales/ru/reusable/SampleApp.md';
 import PaywallAction from '@site/src/locales/ru/reusable/PaywallAction.md';
 
+<SDKv4>
+
 :::important
-Этот гайд охватывает обработку событий для покупок, восстановлений, выбора продуктов и отрисовки пейвола. Также необходимо реализовать обработку кнопок (закрытие пейвола, открытие ссылок и т. д.). Подробнее см. в нашем [гайде по обработке действий с кнопками](unity-handle-paywall-actions).
+Этот гайд описывает обработку событий для покупок, восстановлений, выбора продуктов и отображения флоу. Также необходимо реализовать обработку кнопок (закрытие флоу, открытие ссылок и т. д.). Подробности — в [гайде по обработке действий флоу](unity-handle-paywall-actions).
 :::
 
-Пейволы, настроенные с помощью [Paywall Builder](adapty-paywall-builder), не требуют дополнительного кода для совершения и восстановления покупок. Однако они генерируют ряд событий, на которые ваше приложение может реагировать. Это нажатия кнопок (кнопки закрытия, URL-адреса, выбор продуктов и т. д.), а также уведомления о действиях, связанных с покупками на пейволе. Узнайте, как реагировать на эти события, ниже.
+Флоу и пейволы, настроенные с помощью [Flow Builder](adapty-flow-builder) или [Paywall Builder](adapty-paywall-builder), не требуют дополнительного кода для совершения и восстановления покупок. Однако они генерируют события, на которые ваше приложение может реагировать. К ним относятся нажатия кнопок (кнопки закрытия, URL-адреса, выбор продуктов и т. д.), а также уведомления о действиях, связанных с покупками. Узнайте, как реагировать на эти события, ниже.
+
+<SampleApp />
+
+## Обработка событий \{#handling-events\}
+
+Чтобы контролировать или отслеживать процессы, происходящие на экране флоу в вашем мобильном приложении, реализуйте интерфейс `IAdaptyFlowsEventsListener` и зарегистрируйте его с помощью `Adapty.SetFlowsEventsListener()`:
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+public class FlowEventsHandler : MonoBehaviour, IAdaptyFlowsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetFlowsEventsListener(this);
+    }
+
+    // Implement all interface methods below
+}
+```
+
+:::note
+Здесь вы добавляете свою логику реагирования на события флоу. SDK не применяет к ним никакого поведения по умолчанию: успешная покупка или ошибка не скрывают экран автоматически — вызовите `view.Dismiss(...)` самостоятельно в нужный момент.
+:::
+
+### Пользовательские события \{#user-generated-events\}
+
+#### Флоу появился \{#flow-appeared\}
+
+Вызывается, когда представление флоу отображается на экране.
+
+:::note
+На iOS также вызывается, когда пользователь нажимает [кнопку веб-пейвола](web-paywall#step-2a-add-a-web-purchase-button) внутри флоу и веб-пейвол открывается во встроенном браузере.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidAppear(AdaptyUIFlowView view) { }
+```
+
+#### Флоу исчез \{#flow-disappeared\}
+
+Вызывается, когда представление флоу убирается с экрана.
+
+:::note
+На iOS также вызывается, когда [веб-пейвол](web-paywall#step-2a-add-a-web-purchase-button), открытый из флоу во встроенном браузере, исчезает с экрана.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidDisappear(AdaptyUIFlowView view) { }
+```
+
+#### Выбор продукта \{#product-selection\}
+
+Вызывается при выборе продукта для покупки (пользователем или системой).
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidSelectProduct(
+    AdaptyUIFlowView view,
+    string productId
+) { }
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы раскрыть)</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+#### Начало покупки \{#started-purchase\}
+
+Вызывается, когда пользователь инициирует процесс покупки.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidStartPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product
+) { }
+```
+
+:::note
+В [режиме Observer](unity-present-flows-in-observer-mode), покупки, начатые из флоу, передаются в ваш `IAdaptyUIObserverModeResolver`.
+:::
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Успешная, отменённая или отложенная покупка \{#successful-canceled-or-pending-purchase\}
+
+Этот метод вызывается, если покупка прошла успешно, пользователь её отменил или покупка находится в статусе ожидания. Отмены пользователем и отложенные платежи (например, когда требуется разрешение родителей) вызывают этот метод, а не `FlowViewDidFailPurchase`.
+
+Флоу остаётся открытым после покупки, пока вы его не закроете — вызовите `view.Dismiss(...)` самостоятельно, как только пользователь получит доступ:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyPurchaseResult purchasedResult
+) {
+    switch (purchasedResult.Type) {
+        case AdaptyPurchaseResultType.Success:
+            // Check if user has access to premium features
+            if (purchasedResult.Profile != null
+                && purchasedResult.Profile.AccessLevels.TryGetValue("premium", out var premium)
+                && premium.IsActive) {
+                view.Dismiss(null);
+            }
+            break;
+        case AdaptyPurchaseResultType.Pending:
+            // Handle pending purchase (e.g., user will pay offline with cash)
+            break;
+        case AdaptyPurchaseResultType.UserCancelled:
+            // Handle user cancellation
+            break;
+        default:
+            break;
+    }
+}
+```
+
+<Details>
+<summary>Примеры событий (нажмите, чтобы развернуть)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCancelled"
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+```
+</Details>
+
+Мы рекомендуем закрывать экран флоу при успешной покупке.
+
+#### Ошибка при покупке \{#failed-purchase\}
+
+Этот метод вызывается, если покупка завершилась с ошибкой. Сюда входят ошибки StoreKit/Google Play Billing (ограничения платежей, недействительные продукты, сбои сети), ошибки проверки транзакций и системные ошибки. Обратите внимание, что отмена покупки пользователем вызывает `FlowViewDidFinishPurchase` с результатом отмены, а ожидающие платежи этот метод не вызывают.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+#### Восстановление начато \{#started-restore\}
+
+Вызывается, когда пользователь инициирует процесс восстановления покупок:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidStartRestore(AdaptyUIFlowView view) { }
+```
+
+#### Успешное восстановление \{#successful-restore\}
+
+Вызывается при успешном восстановлении покупок. Флоу остаётся открытым после восстановления, пока вы его не закроете:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishRestore(
+    AdaptyUIFlowView view,
+    AdaptyProfile profile
+) {
+    // Check if user has access to premium features
+    if (profile.AccessLevels.TryGetValue("premium", out var premium) && premium.IsActive) {
+        view.Dismiss(null);
+    }
+}
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Мы рекомендуем закрывать экран, если у пользователя есть требуемый `accessLevel`. Обратитесь к разделу [Статус подписки](unity-listen-subscription-changes), чтобы узнать, как его проверить.
+
+#### Ошибка восстановления \{#failed-restore\}
+
+Вызывается при сбое восстановления покупок:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailRestore(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### Завершение навигации веб-платежа \{#finished-web-payment-navigation\}
+
+После попытки открыть [веб-пейвол](web-paywall) для покупки (успешной или нет) будет вызван этот метод:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishWebPaymentNavigation(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyError error
+) { }
+```
+
+**Параметры:**
+- `product`: Продукт, для которого был открыт (или предпринята попытка открытия) веб-пейвол, либо `null`
+- `error`: `null`, если веб-пейвол успешно открылся, или `AdaptyError` в случае ошибки
+
+<Details>
+<summary>Примеры событий (нажмите, чтобы развернуть)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": null,
+  "error": {
+    "code": "wrong_param",
+    "message": "Current method is not available for this product",
+    "details": {
+      "underlyingError": "Product not configured for web purchases"
+    }
+  }
+}
+```
+</Details>
+
+### Загрузка данных и отрисовка \{#data-fetching-and-rendering\}
+
+#### Ошибки загрузки продуктов \{#product-loading-errors\}
+
+Вызывается при ошибке загрузки продуктов и предоставляет `AdaptyError`. Если при инициализации массив продуктов не был передан, AdaptyUI самостоятельно получит необходимые объекты с сервера. Эта операция может завершиться с ошибкой, о которой AdaptyUI сообщит, вызвав этот метод:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailLoadingProducts(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы развернуть)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+#### Ошибки рендеринга и выполнения \{#rendering-and-runtime-errors\}
+
+Если при рендеринге интерфейса возникает ошибка или происходит другая ошибка выполнения, не связанная с покупкой, она будет передана этим методом. Представление не закрывается автоматически — вызовите `view.Dismiss(...)` самостоятельно, если это необходимо:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveError(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Пример события (нажмите, чтобы раскрыть)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render flow interface",
+    "details": {
+      "underlyingError": "Invalid flow configuration"
+    }
+  }
+}
+```
+</Details>
+
+В штатной ситуации такие ошибки возникать не должны, поэтому если вы с ними столкнулись — пожалуйста, сообщите нам.
+
+#### Аналитические события \{#analytics-events\}
+
+`FlowViewDidReceiveAnalyticEvent` зарезервирован для пользовательских аналитических событий из флоу. Флоу пока не отправляют их в ваш код, поэтому оставьте тело метода пустым — `IAdaptyFlowsEventsListener` является C# интерфейсом, поэтому метод всё равно должен присутствовать:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IDictionary<string, object> @params
+) { }
+```
+
+### Обработка системных запросов \{#handle-system-requests\}
+
+`IAdaptyUISystemRequestsHandler` (регистрируется через `Adapty.SetSystemRequestsHandler(...)`) предназначен для обработки системных запросов из флоу: запросов разрешений ОС (например, на push-уведомления или доступ к камере) и запросов на оценку приложения. Флоу пока не инициируют такие запросы, поэтому регистрировать обработчик не нужно.
+
+### Навигация \{#navigation\}
+
+#### Системная кнопка «Назад» в Android \{#android-system-back-button\}
+
+Системная кнопка «Назад» (или жест «Назад») в Android передаётся в `FlowViewDidPerformAction` как действие `SystemBack` и сама по себе не закрывает флоу — пользователь покидает флоу через путь, который вы определяете, например через кнопку **Close** или действие `on_device_back` в билдере. Если вы хотите, чтобы системная кнопка «Назад» закрывала флоу, обрабатывайте это действие самостоятельно:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+        case AdaptyUIUserActionType.SystemBack:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+Смотрите [гайд по обработке действий флоу](unity-handle-paywall-actions) для полного списка действий.
+
+</SDKv4>
+
+<SDKv3>
+
+:::important
+Этот гайд описывает обработку событий для покупок, восстановлений, выбора продукта и отображения пейвола. Также необходимо реализовать обработку кнопок (закрытие пейвола, открытие ссылок и т. д.). Подробнее см. в [гайде по обработке действий кнопок](unity-handle-paywall-actions).
+:::
+
+Пейволы, настроенные с помощью [Paywall Builder](adapty-paywall-builder), не требуют дополнительного кода для совершения и восстановления покупок. Однако они генерируют события, на которые ваше приложение может реагировать. К таким событиям относятся нажатия кнопок (кнопки закрытия, URL, выбор продуктов и т.д.), а также уведомления о действиях, связанных с покупками, на пейволе. Ниже описано, как реагировать на эти события.
 
 :::warning
-Этот гайд предназначен **только для пейволов нового Paywall Builder**, которые требуют Adapty SDK версии 3.3.0 или выше.
+Этот гайд предназначен **только для пейволов нового Paywall Builder**, для которых требуется Adapty SDK v3.3.0 или выше.
 :::
 
 <SampleApp />
@@ -352,11 +823,11 @@ public void PaywallViewDidFinishWebPaymentNavigation(
 ```
 </Details>
 
-### Загрузка данных и отрисовка \{#data-fetching-and-rendering\}
+### Получение данных и рендеринг \{#data-fetching-and-rendering\}
 
 #### Ошибки загрузки продуктов \{#product-loading-errors\}
 
-Вызывается при ошибке загрузки продуктов и предоставляет `AdaptyError`. Если при инициализации массив продуктов не был передан, AdaptyUI самостоятельно получит необходимые объекты с сервера. Эта операция может завершиться с ошибкой, о которой AdaptyUI сообщит, вызвав этот метод:
+Вызывается при сбое загрузки продуктов и передаёт `AdaptyError`. Если при инициализации вы не передали массив продуктов, AdaptyUI самостоятельно получит необходимые объекты с сервера. Эта операция может завершиться с ошибкой — в таком случае AdaptyUI сообщит о ней, вызвав данный метод:
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailLoadingProducts(
@@ -408,4 +879,7 @@ public void PaywallViewDidFailRendering(
 ```
 </Details>
 
-В нормальных условиях такие ошибки не должны возникать, поэтому если вы с ними столкнётесь — пожалуйста, сообщите нам.
+В штатной ситуации такие ошибки возникать не должны, поэтому если вы с ними столкнулись — пожалуйста, сообщите нам.
+
+
+</SDKv3>

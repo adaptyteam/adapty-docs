@@ -1,12 +1,75 @@
 ---
-title: "Unity SDK'da remote config ile tasarlanan paywallı render etme"
-description: "Adapty Unity SDK'da remote config paywalllarının nasıl sunulacağını ve kullanıcı deneyiminin nasıl kişiselleştirileceğini keşfedin."
-metadataTitle: "Remote Config Paywalllarını Sunma | Unity SDK | Adapty Dokümanları"
-keywords: ['remote config']
+title: "Unity SDK'da remote config ile tasarlanan paywall'ı render etme"
+description: "Adapty Unity SDK'da remote config paywall'larını nasıl sunacağınızı keşfedin ve kullanıcı deneyimini kişiselleştirin."
+metadataTitle: "Remote Config Paywall'larını Sunma | Unity SDK | Adapty Dokümanları"
+keywords: ['remote config', 'LogShowFlow', 'logShowPaywall']
 displayed_sidebar: sdkunity
 ---
 
-Bir paywallı remote config kullanarak özelleştirdiyseniz, kullanıcılara göstermek için mobil uygulama kodunuzda render işlemini kendiniz yapmanız gerekir. Remote config, ihtiyaçlarınıza göre esneklik sunduğundan, paywallınıza nelerin dahil olacağını ve görünümünün nasıl olacağını siz belirlersiniz. Remote config aracılığıyla yapılandırılmış özel paywallınızı gösterebilmek için remote yapılandırmayı çekmeye yarayan bir yöntem sunuyoruz.
+<SDKv4>
+
+Remote config kullanarak bir paywall özelleştirdiyseniz, bunu kullanıcılara göstermek için mobil uygulamanızın kodunda render işlemini kendiniz uygulamanız gerekir. Remote config, ihtiyaçlarınıza göre esneklik sunduğundan, paywall görünümünüzde nelerin yer alacağını ve nasıl görüneceğini tamamen siz belirlersiniz. Adapty, remote config'i çekmek için bir metod sağlar; özel paywall'ınızı nasıl göstereceğiniz ise size kalmıştır.
+
+## Flow remote config'i alın ve sunun \{#get-flow-remote-config-and-present-it\}
+
+v4'te bir flow, `RemoteConfigs` listesinde yapılandırılmış her locale için bir `AdaptyRemoteConfig` girişi taşır. Kullanıcının tercihine uyan locale'i seçin, ardından ihtiyacınız olan değerleri okuyun.
+
+```csharp showLineNumbers
+using System.Linq;
+using AdaptySDK;
+
+Adapty.GetFlow("YOUR_PLACEMENT_ID", (flow, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    var config = flow.RemoteConfigs.FirstOrDefault(c => c.Locale == "en")
+        ?? flow.RemoteConfigs.FirstOrDefault();
+    var headerText = config?.Dictionary?["header_text"] as string;
+
+    // Or access raw JSON data
+    var jsonData = config?.Data;
+});
+```
+
+Bu noktada, gerekli tüm değerleri aldıktan sonra bunları görsel olarak çekici bir sayfada oluşturma ve bir araya getirme zamanı gelmiştir. Tasarımın farklı mobil telefon ekranlarına ve yönelimlerine uyum sağlamasını, çeşitli cihazlarda sorunsuz ve kullanıcı dostu bir deneyim sunmasını sağlayın.
+
+:::warning
+Adapty analitiğinin huniler ve A/B testleri için bilgi toplayabilmesi amacıyla, aşağıda açıklandığı gibi [paywall görüntüleme etkinliğini kaydettiğinizden](present-remote-config-paywalls-unity#track-paywall-view-events) emin olun.
+:::
+
+Paywallı gösterdikten sonra bir satın alma akışı kurmaya devam edin. Kullanıcı bir satın alma işlemi yaptığında, flow'unuzdaki ürünle birlikte `.MakePurchase()` metodunu çağırmanız yeterlidir. `.MakePurchase()` metodu hakkında daha fazla bilgi için [Satın alma işlemleri yapma](unity-making-purchases) bölümünü okuyun.
+
+[Yedek paywall olarak adlandırılan bir yedek paywall oluşturmanızı](unity-use-fallback-paywalls) öneririz. Bu yedek, internet bağlantısı olmadığında veya önbellek mevcut olmadığında kullanıcıya gösterilir ve bu durumlarda bile sorunsuz bir deneyim sağlar.
+
+## Flow görüntüleme olaylarını takip edin \{#track-paywall-view-events\}
+
+Adapty, flow'larınızın ve paywall'larınızın performansını ölçmenize yardımcı olur. Satın alma verilerini otomatik olarak toplasak da, görüntüleme olaylarının kaydedilmesi sizin müdahalenizi gerektirir; çünkü bir müşterinin flow'u ne zaman gördüğünü yalnızca siz bilirsiniz.
+
+Bir görüntüleme olayı kaydetmek için `.LogShowFlow(flow)` metodunu çağırmanız yeterlidir; bu bilgi metriklerinize, funnel'lara ve A/B testlerine yansıtılacaktır.
+
+:::important
+[Flow Builder](adapty-flow-builder) veya [Paywall Builder](adapty-paywall-builder) tarafından oluşturulan flow'ları ya da paywallları görüntülüyorsanız `.LogShowFlow(flow)` çağrısı yapmanız gerekmez. Adapty bu durumlarda görüntülemeleri otomatik olarak takip eder.
+:::
+
+```csharp showLineNumbers
+Adapty.LogShowFlow(flow, (error) => {
+    // handle the error
+});
+```
+
+İstek parametreleri:
+
+| Parametre | Zorunluluk | Açıklama                                                    |
+| :-------- | :------- |:-----------------------------------------------------------------|
+| **flow**  | zorunlu | `Adapty.GetFlow` aracılığıyla elde edilen bir `AdaptyFlow` nesnesi. |
+
+</SDKv4>
+
+<SDKv3>
+
+Remote config kullanarak bir paywall özelleştirdiyseniz, kullanıcılara göstermek için mobil uygulamanızın kodunda render işlemini kendiniz uygulamanız gerekir. Remote config, ihtiyaçlarınıza göre esneklik sunduğundan, paywall görünümünüzde nelerin yer alacağını ve nasıl görüneceğini tamamen siz belirlersiniz. Remote config aracılığıyla yapılandırılmış özel paywall'unuzu göstermek için remote configuration'ı çekmeye yarayan bir metot sunuyoruz.
 
 ## Paywall remote config'ini alın ve sunun \{#get-paywall-remote-config-and-present-it\}
 
@@ -28,10 +91,10 @@ Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
 });
 ```
 
-Bu noktada, gerekli tüm değerleri aldıktan sonra bunları görsel açıdan çekici bir sayfaya dönüştürme zamanı gelmiştir. Tasarımın farklı telefon ekranlarına ve yönlendirmelerine uyum sağladığından, tüm cihazlarda sorunsuz ve kullanıcı dostu bir deneyim sunduğundan emin olun.
+Bu noktada, gerekli tüm değerleri aldıktan sonra bunları görsel olarak çekici bir sayfaya dönüştürme ve bir araya getirme zamanı gelmiştir. Tasarımın farklı mobil telefon ekranlarına ve yönleliklerine uyum sağladığından emin olun; böylece farklı cihazlarda sorunsuz ve kullanıcı dostu bir deneyim sunulur.
 
 :::warning
-Adapty analitiğinin huni ve A/B testi verilerini doğru kaydedebilmesi için aşağıda açıklandığı şekilde [paywall görüntüleme etkinliğini kaydettiğinizden](present-remote-config-paywalls-unity#track-paywall-view-events) emin olun.
+Adapty analitiğinin huniler ve A/B testleri için bilgi toplayabilmesi amacıyla, aşağıda açıklandığı şekilde [paywall görüntüleme etkinliğini kaydettiğinizden](present-remote-config-paywalls-unity#track-paywall-view-events-1) emin olun.
 :::
 
 Paywallı göstermeyi tamamladıktan sonra satın alma akışını kurabilirsiniz. Kullanıcı bir satın alma yaptığında, paywallınızdaki ürünle birlikte `.MakePurchase()` yöntemini çağırmanız yeterlidir. `.MakePurchase()` yöntemi hakkında ayrıntılı bilgi için [Satın alma yapma](unity-making-purchases) bölümüne bakın.
@@ -57,5 +120,6 @@ Adapty.LogShowPaywall(paywall, (error) => {
 İstek parametreleri:
 
 | Parametre   | Zorunluluk | Açıklama                                                       |
-| :---------- | :--------- |:---------------------------------------------------------------|
-| **paywall** | zorunlu    | Bir [`AdaptyPaywall`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall.html) nesnesi. |
+| :---------- | :------- |:------------------------------------------------------------------|
+| **paywall** | zorunlu | Bir [`AdaptyPaywall`](https://unity.adapty.io/class_adapty_s_d_k_1_1_adapty_paywall.html) nesnesi.      | 
+</SDKv3>

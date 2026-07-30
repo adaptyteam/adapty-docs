@@ -1,7 +1,7 @@
 ---
-title: "Gestionar eventos del paywall"
-description: "Aprende a gestionar eventos del paywall en tu aplicación Unity con el SDK de Adapty."
-metadataTitle: "Gestionar Eventos del Paywall | SDK de Unity | Documentación de Adapty"
+title: "Gestionar eventos de flow y paywall - Unity"
+description: "Gestiona los eventos de flow y paywall en tu app de Unity."
+metadataTitle: "Gestionar eventos de flow - Unity | Documentación de Adapty"
 customSlug: /unity-handling-events
 displayed_sidebar: sdkunity
 ---
@@ -9,14 +9,485 @@ displayed_sidebar: sdkunity
 import SampleApp from '@site/src/locales/es/reusable/SampleApp.md';
 import PaywallAction from '@site/src/locales/es/reusable/PaywallAction.md';
 
+<SDKv4>
+
 :::important
-Esta guía cubre la gestión de eventos para compras, restauraciones, selección de productos y renderizado del paywall. También debes implementar el manejo de botones (cerrar paywall, abrir enlaces, etc.). Consulta nuestra [guía sobre el manejo de acciones de botones](unity-handle-paywall-actions) para más detalles.
+Esta guía cubre el manejo de eventos para compras, restauraciones, selección de productos y renderizado de flows. También debes implementar el manejo de botones (cerrar el flow, abrir enlaces, etc.). Consulta nuestra [guía sobre cómo gestionar las acciones del flow](unity-handle-paywall-actions) para más detalles.
 :::
 
-Los paywalls configurados con el [Paywall Builder](adapty-paywall-builder) no necesitan código adicional para realizar y restaurar compras. Sin embargo, generan ciertos eventos a los que tu aplicación puede responder. Estos eventos incluyen pulsaciones de botones (botones de cierre, URLs, selecciones de productos, etc.), así como notificaciones sobre acciones relacionadas con compras realizadas en el paywall. A continuación aprenderás cómo responder a estos eventos.
+Los flows y paywalls configurados con el [Flow Builder](adapty-flow-builder) o el [Paywall Builder](adapty-paywall-builder) no necesitan código adicional para realizar y restaurar compras. Sin embargo, generan ciertos eventos a los que tu aplicación puede reaccionar. Estos eventos incluyen pulsaciones de botones (botones de cierre, URLs, selecciones de productos, etc.), así como notificaciones sobre acciones relacionadas con compras. A continuación encontrarás cómo responder a estos eventos.
+
+<SampleApp />
+
+## Gestión de eventos \{#handling-events\}
+
+Para controlar o monitorear los procesos que ocurren en la pantalla del flow dentro de tu aplicación móvil, implementa la interfaz `IAdaptyFlowsEventsListener` y regístrala con `Adapty.SetFlowsEventsListener()`:
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+public class FlowEventsHandler : MonoBehaviour, IAdaptyFlowsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetFlowsEventsListener(this);
+    }
+
+    // Implement all interface methods below
+}
+```
+
+:::note
+Estos métodos son donde añades tu lógica personalizada para responder a los eventos del flow. El SDK no aplica ningún comportamiento predeterminado: una compra exitosa o un error no cierra la vista automáticamente — llama a `view.Dismiss(...)` tú mismo cuando corresponda.
+:::
+
+### Eventos generados por el usuario
+
+#### Flow appeared
+
+Se invoca cuando la vista del flow aparece en pantalla.
+
+:::note
+En iOS, también se invoca cuando el usuario pulsa el [botón de web paywall](web-paywall#step-2a-add-a-web-purchase-button) dentro de un flow y se abre un web paywall en el navegador integrado.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidAppear(AdaptyUIFlowView view) { }
+```
+
+#### Flow disappeared
+
+Se invoca cuando la vista del flow se cierra de la pantalla.
+
+:::note
+En iOS, también se invoca cuando un [web paywall](web-paywall#step-2a-add-a-web-purchase-button) abierto desde un flow en un navegador in-app desaparece de la pantalla.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidDisappear(AdaptyUIFlowView view) { }
+```
+
+#### Selección de producto \{#product-selection\}
+
+Se invoca cuando se selecciona un producto para su compra (por el usuario o por el sistema).
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidSelectProduct(
+    AdaptyUIFlowView view,
+    string productId
+) { }
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+#### Compra iniciada \{#started-purchase\}
+
+Se invoca cuando un usuario inicia el proceso de compra.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidStartPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product
+) { }
+```
+
+:::note
+En el [modo Observer](unity-present-flows-in-observer-mode), las compras iniciadas desde un flow se entregan a tu `IAdaptyUIObserverModeResolver` en su lugar.
+:::
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Compra exitosa, cancelada o pendiente \{#successful-canceled-or-pending-purchase\}
+
+Este método se invoca si la compra se realiza con éxito, el usuario la cancela o queda en estado pendiente. Las cancelaciones del usuario y los pagos pendientes (por ejemplo, cuando se requiere aprobación parental) activan este método, no `FlowViewDidFailPurchase`.
+
+El flow permanece abierto tras la compra hasta que lo cierres manualmente, así que llama a `view.Dismiss(...)` cuando el usuario obtenga acceso:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyPurchaseResult purchasedResult
+) {
+    switch (purchasedResult.Type) {
+        case AdaptyPurchaseResultType.Success:
+            // Check if user has access to premium features
+            if (purchasedResult.Profile != null
+                && purchasedResult.Profile.AccessLevels.TryGetValue("premium", out var premium)
+                && premium.IsActive) {
+                view.Dismiss(null);
+            }
+            break;
+        case AdaptyPurchaseResultType.Pending:
+            // Handle pending purchase (e.g., user will pay offline with cash)
+            break;
+        case AdaptyPurchaseResultType.UserCancelled:
+            // Handle user cancellation
+            break;
+        default:
+            break;
+    }
+}
+```
+
+<Details>
+<summary>Ejemplos de eventos (haz clic para expandir)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCancelled"
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+```
+</Details>
+
+Recomendamos cerrar la pantalla del flow en caso de compra exitosa.
+
+#### Compra fallida \{#failed-purchase\}
+
+Si una compra falla debido a un error, se invocará este método. Esto incluye errores de StoreKit/Google Play Billing (restricciones de pago, productos no válidos, fallos de red), errores de verificación de transacciones y errores del sistema. Ten en cuenta que las cancelaciones del usuario activan `FlowViewDidFinishPurchase` con un resultado cancelado, y los pagos pendientes no activan este método.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Ejemplo de evento (Haz clic para expandir)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+#### Restauración iniciada \{#started-restore\}
+
+Se invoca cuando el usuario inicia el proceso de restauración:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidStartRestore(AdaptyUIFlowView view) { }
+```
+
+#### Restauración exitosa \{#successful-restore\}
+
+Se invoca cuando la restauración de compras se completa con éxito. El flow permanece abierto tras la restauración hasta que lo cierres:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishRestore(
+    AdaptyUIFlowView view,
+    AdaptyProfile profile
+) {
+    // Check if user has access to premium features
+    if (profile.AccessLevels.TryGetValue("premium", out var premium) && premium.IsActive) {
+        view.Dismiss(null);
+    }
+}
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Recomendamos cerrar la pantalla si el usuario tiene el `accessLevel` requerido. Consulta el tema [Estado de la suscripción](unity-listen-subscription-changes) para saber cómo comprobarlo.
+
+#### Fallo en la restauración \{#failed-restore\}
+
+Se invoca cuando la restauración de una compra falla:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailRestore(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### Navegación web de pago finalizada \{#finished-web-payment-navigation\}
+
+Después de intentar abrir un [paywall web](web-paywall) para realizar una compra (tanto si tuvo éxito como si falló), se invocará este método:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishWebPaymentNavigation(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyError error
+) { }
+```
+
+**Parámetros:**
+- `product`: El producto para el que se abrió (o intentó abrir) el paywall web, o `null`
+- `error`: `null` si el paywall web se abrió correctamente, o un `AdaptyError` si falló
+
+<Details>
+<summary>Ejemplos de eventos (haz clic para expandir)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": null,
+  "error": {
+    "code": "wrong_param",
+    "message": "Current method is not available for this product",
+    "details": {
+      "underlyingError": "Product not configured for web purchases"
+    }
+  }
+}
+```
+</Details>
+
+### Obtención de datos y renderizado \{#data-fetching-and-rendering\}
+
+#### Errores de carga de productos \{#product-loading-errors\}
+
+Se invoca cuando falla la carga de productos y proporciona un `AdaptyError`. Si no pasaste el array de productos durante la inicialización, AdaptyUI recuperará los objetos necesarios del servidor por sí solo. Esta operación puede fallar, y AdaptyUI reportará el error invocando este método:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailLoadingProducts(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Ejemplo de evento (Haz clic para expandir)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+#### Errores de renderizado y en tiempo de ejecución \{#rendering-and-runtime-errors\}
+
+Si ocurre un error durante el renderizado de la interfaz, o cualquier otro error en tiempo de ejecución no relacionado con una compra, este método lo reportará. La vista no se cierra automáticamente — llama a `view.Dismiss(...)` tú mismo si lo deseas:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveError(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Ejemplo de evento (haz clic para expandir)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render flow interface",
+    "details": {
+      "underlyingError": "Invalid flow configuration"
+    }
+  }
+}
+```
+</Details>
+
+En una situación normal, estos errores no deberían producirse, así que si te encuentras con alguno, háznos lo saber.
+
+#### Eventos de análisis \{#analytics-events\}
+
+`FlowViewDidReceiveAnalyticEvent` está reservado para eventos analíticos personalizados de un flow. Los flows aún no emiten estos eventos a tu código, así que deja el cuerpo del método vacío — `IAdaptyFlowsEventsListener` es una interfaz C#, por lo que el método debe estar presente igualmente:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IDictionary<string, object> @params
+) { }
+```
+
+### Gestión de solicitudes del sistema \{#handle-system-requests\}
+
+`IAdaptyUISystemRequestsHandler` (registrado mediante `Adapty.SetSystemRequestsHandler(...)`) está reservado para solicitudes del sistema que provienen de un flow: solicitudes de permisos del SO (como notificaciones push o acceso a la cámara) y solicitudes de valoración de la app. Los flows todavía no generan estas solicitudes, por lo que no es necesario registrar un handler.
+
+### Navegación \{#navigation\}
+
+#### Botón de retroceso del sistema Android \{#android-system-back-button\}
+
+El botón de retroceso del sistema Android (o el gesto de retroceso) se entrega a `FlowViewDidPerformAction` como una acción `SystemBack` y no cierra el flow por sí solo — el usuario abandona el flow a través de una ruta que tú defines, como un botón **Close** o una acción `on_device_back` en el builder. Si quieres que el botón de retroceso del sistema cierre el flow, gestiona la acción tú mismo:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+        case AdaptyUIUserActionType.SystemBack:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+Consulta la [guía sobre cómo gestionar las acciones de flow](unity-handle-paywall-actions) para ver la lista completa de acciones.
+
+</SDKv4>
+
+<SDKv3>
+
+:::important
+Esta guía cubre el manejo de eventos para compras, restauraciones, selección de productos y renderización de paywalls. También debes implementar el manejo de botones (cerrar el paywall, abrir enlaces, etc.). Consulta nuestra [guía sobre el manejo de acciones de botones](unity-handle-paywall-actions) para más detalles.
+:::
+
+Los paywalls configurados con el [Paywall Builder](adapty-paywall-builder) no necesitan código adicional para realizar y restaurar compras. Sin embargo, generan ciertos eventos a los que tu app puede responder. Estos eventos incluyen pulsaciones de botones (botones de cierre, URLs, selecciones de productos, etc.), así como notificaciones sobre acciones relacionadas con compras realizadas en el paywall. A continuación aprenderás cómo responder a estos eventos.
 
 :::warning
-Esta guía es **exclusivamente para paywalls del nuevo Paywall Builder**, que requieren el SDK de Adapty v3.3.0 o posterior.
+Esta guía es exclusivamente para **paywalls del nuevo Paywall Builder**, que requieren la versión 3.3.0 o posterior del SDK de Adapty.
 :::
 
 <SampleApp />
@@ -202,7 +673,7 @@ public void PaywallViewDidFailPurchase(
 ```
 
 <Details>
-<summary>Ejemplo de evento (Haz clic para expandir)</summary>
+<summary>Ejemplo de evento (Clic para expandir)</summary>
 
 ```javascript
 {
@@ -227,7 +698,7 @@ public void PaywallViewDidFailPurchase(
 
 #### Restauración iniciada \{#started-restore\}
 
-Se invoca cuando el usuario inicia el proceso de restauración:
+Se invoca cuando un usuario inicia el proceso de restauración:
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidStartRestore(AdaptyUIPaywallView view) { }
@@ -352,11 +823,11 @@ public void PaywallViewDidFinishWebPaymentNavigation(
 ```
 </Details>
 
-### Obtención de datos y renderizado \{#data-fetching-and-rendering\}
+### Obtención y renderizado de datos \{#data-fetching-and-rendering\}
 
-#### Errores de carga de productos \{#product-loading-errors\}
+#### Errores al cargar productos \{#product-loading-errors\}
 
-Se invoca cuando falla la carga de productos y proporciona un `AdaptyError`. Si no pasaste el array de productos durante la inicialización, AdaptyUI recuperará los objetos necesarios del servidor por sí solo. Esta operación puede fallar, y AdaptyUI reportará el error invocando este método:
+Se invoca cuando falla la carga de productos y proporciona `AdaptyError`. Si no pasaste el array de productos durante la inicialización, AdaptyUI recuperará los objetos necesarios del servidor por sí mismo. Esta operación puede fallar, y AdaptyUI notificará el error invocando este método:
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailLoadingProducts(
@@ -366,7 +837,7 @@ public void PaywallViewDidFailLoadingProducts(
 ```
 
 <Details>
-<summary>Ejemplo de evento (Haz clic para expandir)</summary>
+<summary>Ejemplo de evento (clic para expandir)</summary>
 
 ```javascript
 {
@@ -408,4 +879,7 @@ public void PaywallViewDidFailRendering(
 ```
 </Details>
 
-En condiciones normales, estos errores no deberían producirse, por lo que si encuentras alguno, por favor haznos saber.
+En una situación normal, estos errores no deberían producirse, así que si te encuentras con uno, por favor, comunícanoslo.
+
+
+</SDKv3>

@@ -1,21 +1,215 @@
 ---
-title: "Lấy paywall từ Paywall Builder và cấu hình của chúng trong Unity SDK"
-description: "Tìm hiểu cách lấy paywall PB trong Adapty để kiểm soát gói đăng ký tốt hơn trong ứng dụng Unity của bạn."
-metadataTitle: "Lấy Paywall PB trong Adapty | Tài liệu Adapty"
+title: "Lấy flows & paywalls - Unity"
+description: "Tải flows và paywalls từ Adapty trong ứng dụng Unity của bạn."
+metadataTitle: "Lấy Flows & Paywalls - Unity | Tài liệu Adapty"
 displayed_sidebar: sdkunity
-keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+keywords: ['GetFlow', 'CreateFlowView', 'GetFlowForDefaultAudience', 'getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
 rank: 80
 ---
 
 import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
 
-Sau khi [bạn thiết kế phần giao diện cho paywall của mình](adapty-paywall-builder) bằng Paywall Builder mới trong Adapty Dashboard, bạn có thể hiển thị nó trong ứng dụng di động của mình. Bước đầu tiên trong quy trình này là lấy paywall được liên kết với placement và cấu hình view của nó như mô tả bên dưới.
+<SDKv4>
+
+<MethodPromo method="GetFlow" />
+
+Sau khi [bạn đã thiết kế flow hoặc paywall bằng Paywall Builder](adapty-paywall-builder), bạn có thể hiển thị nó trong ứng dụng di động. Bước đầu tiên là lấy flow hoặc paywall được liên kết với placement cùng cấu hình giao diện như mô tả bên dưới.
+
+<SampleApp />
+
+<details>
+   <summary>Trước khi bắt đầu hiển thị flow trong ứng dụng di động (nhấp để mở rộng)</summary>
+
+1. [Tạo sản phẩm](create-product) trong Adapty Dashboard.
+2. [Tạo flow/paywall và thêm sản phẩm vào đó](create-paywall) trong Adapty Dashboard.
+3. [Tạo placement và thêm flow/paywall vào đó](create-placement) trong Adapty Dashboard.
+4. Cài đặt [Adapty SDK](sdk-installation-unity) trong ứng dụng di động của bạn.
+</details>
+
+## Tải flow/paywall \{#fetch-flowpaywall\}
+
+Nếu bạn đã thiết kế một flow hoặc paywall bằng Flow Builder hoặc Paywall Builder, bạn không cần lo việc render nó trong code ứng dụng di động để hiển thị cho người dùng. Flow hoặc paywall đó đã bao gồm cả nội dung hiển thị lẫn cách hiển thị. Tuy nhiên, bạn vẫn cần lấy ID của nó qua placement, cấu hình view, rồi mới hiển thị nó trong ứng dụng di động.
+
+Để đảm bảo hiệu suất tối ưu, hãy truy xuất flow hoặc paywall cùng với [cấu hình view](unity-get-pb-paywalls#fetch-the-view-configuration) càng sớm càng tốt, nhằm có đủ thời gian tải ảnh trước khi hiển thị cho người dùng.
+
+Để lấy flow hoặc paywall, sử dụng phương thức `GetFlow`:
+
+```csharp showLineNumbers
+Adapty.GetFlow(
+    "YOUR_PLACEMENT_ID",
+    AdaptyPlacementFetchPolicy.Default,
+    TimeSpan.FromSeconds(5),
+    (flow, error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
+
+        // flow - the requested flow/paywall
+    }
+);
+```
+
+Tham số:
+
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Mã định danh của [Placement](placements) mong muốn. Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **fetchPolicy** | mặc định: `AdaptyPlacementFetchPolicy.Default` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ server và trả về dữ liệu đã cache nếu thất bại. Chúng tôi khuyên dùng cách này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường xuyên gặp kết nối internet không ổn định, hãy cân nhắc dùng `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` để trả về dữ liệu đã cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng sẽ có tốc độ tải nhanh hơn bất kể chất lượng kết nối. Cache được cập nhật thường xuyên nên hoàn toàn an toàn khi dùng trong phiên làm việc để tránh các yêu cầu mạng không cần thiết.</p><p></p><p>Lưu ý rằng cache vẫn được giữ nguyên khi khởi động lại ứng dụng và chỉ bị xóa khi gỡ cài đặt ứng dụng hoặc thực hiện dọn dẹp thủ công.</p><p></p><p>Adapty SDK lưu trữ flow và paywall cục bộ theo hai lớp: cache được cập nhật thường xuyên như mô tả ở trên và [paywall dự phòng](fallback-paywalls). Chúng tôi cũng dùng CDN để tải nhanh hơn và một server dự phòng độc lập trong trường hợp CDN không khả dụng. Hệ thống này được thiết kế để đảm bảo bạn luôn nhận được phiên bản mới nhất trong khi vẫn đảm bảo độ tin cậy ngay cả khi kết nối internet yếu.</p> |
+| **loadTimeout** | mặc định: 5 giây | <p>Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu hết thời gian chờ, dữ liệu đã cache hoặc fallback cục bộ sẽ được trả về.</p><p>Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ muộn hơn một chút so với giá trị đã chỉ định trong `loadTimeout`, do thao tác có thể bao gồm nhiều yêu cầu khác nhau bên dưới.</p> |
+
+Thông số phản hồi:
+
+| Thông số | Mô tả |
+| :-------- | :---------- |
+| Flow   | Một đối tượng `AdaptyFlow` chứa placement, các định danh (`InstanceIdentity`, `VariationId`), tên, các biến thể paywall (`Paywalls` — danh sách `AdaptyFlowPaywall`), và Remote Config (`RemoteConfigs` — danh sách với một mục cho mỗi locale). Để lấy các sản phẩm thực tế cho việc tải trước, UI tùy chỉnh, hoặc kiểm tra theo chương trình, hãy gọi `GetPaywallProducts(flow)`. |
+
+## Tải cấu hình giao diện \{#fetch-the-view-configuration\}
+
+Sau khi tải flow hoặc paywall, hãy tải cấu hình giao diện và tạo view trong một bước duy nhất bằng phương thức `CreateFlowView`. Không cần kiểm tra cờ riêng biệt: nếu placement được thiết kế trong **Flow Builder** (một flow) hoặc **Paywall Builder** (một paywall), `CreateFlowView` sẽ trả về view sẵn sàng để hiển thị. Nếu placement là paywall tùy chỉnh không có Builder UI, `CreateFlowView` sẽ trả về lỗi — [xử lý nó như một remote config paywall](present-remote-config-paywalls-unity).
+
+:::important
+Đảm bảo bật toggle **Show on device** trong Flow Builder. Nếu tùy chọn này chưa được bật, cấu hình view sẽ không thể truy xuất được.
+:::
+
+```csharp showLineNumbers
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetPreloadProducts(true)
+    .SetLoadTimeout(TimeSpan.FromSeconds(5));
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    if (error != null) {
+        // the flow has no view configured, or view creation failed
+        return;
+    }
+
+    // use view
+});
+```
+
+| Tham số                      | Bắt buộc       | Mô tả                                                        |
+| :--------------------------- | :------------- | :----------------------------------------------------------- |
+| **flow**                     | bắt buộc       | Đối tượng `AdaptyFlow` lấy được qua `Adapty.GetFlow`. |
+| **Locale**                   | tùy chọn       | Mã định danh của [bản dịch Builder](add-paywall-locale-in-adapty-paywall-builder) dùng để hiển thị flow hoặc paywall, ví dụ `en` hoặc `pt-br`. Flow được bản địa hóa khi view của nó được tạo, vì vậy đây là nơi duy nhất để chọn bản địa hóa. Nếu bỏ qua, Adapty sẽ tự xác định bản địa hóa từ thiết bị. Xem [Sử dụng bản địa hóa và mã locale](unity-localizations-and-locale-codes). |
+| **LoadTimeout**              | tùy chọn       | Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu hết thời gian chờ, dữ liệu đã lưu trong cache hoặc fallback cục bộ sẽ được trả về. Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ muộn hơn một chút so với giá trị được chỉ định trong `LoadTimeout`, vì thao tác có thể bao gồm nhiều yêu cầu khác nhau bên dưới. |
+| **PreloadProducts**          | tùy chọn       | Đặt thành `true` để tải trước sản phẩm nhằm cải thiện hiệu suất. Khi bật, sản phẩm được tải trước, giảm thời gian cần thiết để hiển thị flow hoặc paywall. |
+| **ProductPurchaseParameters** | tùy chọn      | Chỉ dành cho Android (bị bỏ qua trên iOS). Một dictionary ánh xạ `AdaptyProductIdentifier` sang `AdaptyPurchaseParameters`. Dùng để cấu hình các tham số mua hàng cụ thể như ưu đãi cá nhân hóa hoặc tham số cập nhật gói đăng ký cho từng sản phẩm trong flow hoặc paywall. |
+| **EnableSafeAreaPaddings**   | tùy chọn       | Chỉ dành cho Android (bị bỏ qua trên iOS). Khi đặt thành `true`, view của flow áp dụng padding vùng an toàn. Mặc định: `true`. Giá trị mặc định phù hợp với hầu hết các trường hợp. |
+
+:::note
+Nếu bạn đang sử dụng nhiều ngôn ngữ, hãy tìm hiểu cách thêm [bản địa hóa Builder](add-paywall-locale-in-adapty-paywall-builder).
+:::
+
+Sau khi tải xong, [hiển thị flow hoặc paywall](unity-present-paywalls).
+
+## Lấy flow hoặc paywall cho đối tượng mặc định để tải nhanh hơn \{#get-a-flow-or-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+Thông thường, flow và paywall được tải gần như ngay lập tức, nên bạn không cần lo lắng về việc tăng tốc quá trình này. Tuy nhiên, trong trường hợp bạn có nhiều đối tượng và placement, và người dùng có kết nối internet yếu, việc tải flow hoặc paywall có thể mất nhiều thời gian hơn mong muốn. Trong những tình huống như vậy, bạn có thể muốn hiển thị flow hoặc paywall mặc định để đảm bảo trải nghiệm người dùng mượt mà thay vì không hiển thị gì cả.
+
+Để giải quyết vấn đề này, bạn có thể sử dụng phương thức `GetFlowForDefaultAudience`, phương thức này sẽ lấy flow hoặc paywall của placement được chỉ định cho đối tượng **All Users**. Tuy nhiên, điều quan trọng cần hiểu là cách tiếp cận được khuyến nghị là lấy flow hoặc paywall bằng phương thức `GetFlow`, như đã mô tả chi tiết trong phần [Lấy flow/paywall](#fetch-flowpaywall) ở trên.
+
+:::warning
+Lý do chúng tôi khuyến nghị sử dụng `GetFlow`
+
+Phương thức `GetFlowForDefaultAudience` có một số hạn chế đáng kể:
+
+- **Vấn đề tương thích ngược tiềm ẩn**: Nếu bạn cần hiển thị các flow khác nhau cho các phiên bản ứng dụng khác nhau (hiện tại và tương lai), bạn có thể gặp khó khăn. Bạn sẽ phải thiết kế các flow hỗ trợ phiên bản hiện tại (cũ) hoặc chấp nhận rằng người dùng với phiên bản hiện tại (cũ) có thể gặp sự cố với các flow không được hiển thị.
+- **Mất khả năng nhắm mục tiêu**: Tất cả người dùng sẽ thấy cùng một flow được thiết kế cho đối tượng **All Users**, nghĩa là bạn mất đi khả năng nhắm mục tiêu cá nhân hóa (bao gồm theo quốc gia, attribution marketing hoặc các thuộc tính tùy chỉnh của riêng bạn).
+
+Nếu bạn chấp nhận những hạn chế này để đổi lấy tốc độ tải flow hoặc paywall nhanh hơn, hãy sử dụng phương thức `GetFlowForDefaultAudience` như sau. Nếu không, hãy dùng `GetFlow` được mô tả [ở trên](#fetch-flowpaywall).
+:::
+
+```csharp showLineNumbers
+Adapty.GetFlowForDefaultAudience(
+    "YOUR_PLACEMENT_ID",
+    AdaptyPlacementFetchPolicy.Default,
+    (flow, error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
+
+        // flow - the requested flow
+    }
+);
+```
+
+| Tham số | Bắt buộc | Mô tả |
+|---------|--------|-----------|
+| **placementId** | bắt buộc | Định danh của [Placement](placements). Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard. |
+| **fetchPolicy** | mặc định: `AdaptyPlacementFetchPolicy.Default` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ máy chủ và trả về dữ liệu đã lưu trong bộ nhớ đệm nếu thất bại. Chúng tôi khuyến nghị dùng tùy chọn này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường xuyên gặp tình trạng kết nối không ổn định, hãy cân nhắc dùng `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` để trả về dữ liệu đã lưu trong bộ nhớ đệm nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất, nhưng thời gian tải sẽ nhanh hơn bất kể kết nối internet kém ổn định đến đâu. Bộ nhớ đệm được cập nhật thường xuyên nên hoàn toàn an toàn khi dùng trong phiên làm việc để tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng bộ nhớ đệm vẫn được giữ nguyên sau khi khởi động lại ứng dụng và chỉ bị xóa khi gỡ cài đặt ứng dụng hoặc dọn dẹp thủ công.</p> |
+
+## Tùy chỉnh assets \{#customize-assets\}
+
+Để tùy chỉnh hình ảnh và video trong flow hoặc paywall của bạn, hãy triển khai các custom asset.
+
+Hero image và video có ID được định sẵn: `hero_image` và `hero_video`. Trong một custom asset bundle, bạn nhắm đến các phần tử này bằng ID của chúng và tùy chỉnh hành vi của chúng.
+
+Đối với các hình ảnh và video khác, bạn cần [đặt custom ID](custom-media) trong Adapty Dashboard.
+
+Ví dụ, bạn có thể:
+
+- Hiển thị hình ảnh hoặc video khác cho một số người dùng.
+- Hiển thị ảnh preview cục bộ trong khi hình ảnh chính từ xa đang tải.
+- Hiển thị ảnh preview trước khi phát video.
+
+Đây là ví dụ về cách bạn có thể cung cấp custom assets thông qua một dictionary đơn giản:
+
+```csharp showLineNumbers
+var customAssets = new Dictionary<string, AdaptyCustomAsset>
+{
+    { "custom_image", AdaptyCustomAsset.LocalImageFile("custom_assets/images/custom_image.png") },
+    { "hero_video", AdaptyCustomAsset.LocalVideoFile("custom_assets/videos/custom_video.mp4") }
+};
+
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetCustomAssets(customAssets)
+    .SetLoadTimeout(TimeSpan.FromSeconds(3));
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    // handle the result
+});
+```
+
+:::note
+Nếu một asset không tìm thấy hoặc tải thất bại, flow hoặc paywall sẽ quay lại giao diện mặc định đã được cấu hình trong Builder.
+:::
+
+## Thiết lập timer do lập trình viên định nghĩa \{#set-up-developer-defined-timers\}
+
+Để sử dụng timer tùy chỉnh trong ứng dụng Unity của bạn, hãy truyền một dictionary gồm các ID timer và ngày kết thúc tương ứng vào phương thức `SetCustomTimers`. Dưới đây là ví dụ:
+
+```csharp showLineNumbers
+var customTimers = new Dictionary<string, DateTime> {
+    { "CUSTOM_TIMER_6H", DateTime.Now.AddHours(6) },
+    { "CUSTOM_TIMER_NY", new DateTime(2026, 1, 1) }
+};
+
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetCustomTimers(customTimers)
+    .SetLoadTimeout(TimeSpan.FromSeconds(3));
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    // handle the result
+});
+```
+
+Trong ví dụ này, `CUSTOM_TIMER_NY` và `CUSTOM_TIMER_6H` là **Timer ID** của các timer do nhà phát triển định nghĩa mà bạn đã thiết lập trong Adapty Dashboard. Timer resolver đảm bảo ứng dụng của bạn tự động cập nhật từng timer với giá trị chính xác. Ví dụ:
+
+- `CUSTOM_TIMER_NY`: Thời gian còn lại cho đến khi timer kết thúc, chẳng hạn như Ngày đầu năm mới.
+- `CUSTOM_TIMER_6H`: Thời gian còn lại trong khoảng 6 giờ bắt đầu từ khi người dùng mở flow hoặc paywall.
+
+</SDKv4>
+
+<SDKv3>
+
+Sau khi [bạn đã thiết kế phần giao diện cho paywall của mình](adapty-paywall-builder) bằng Paywall Builder mới trong Adapty Dashboard, bạn có thể hiển thị nó trong ứng dụng di động. Bước đầu tiên trong quá trình này là lấy paywall được liên kết với placement và cấu hình view của nó như mô tả bên dưới.
 
 :::warning
 Paywall Builder mới hoạt động với Unity SDK phiên bản 3.3.0 trở lên.
 :::
 
-Lưu ý rằng chủ đề này đề cập đến các paywall được tùy chỉnh bằng Paywall Builder. Nếu bạn đang triển khai paywall theo cách thủ công, hãy tham khảo chủ đề [Lấy paywall và sản phẩm cho paywall remote config trong ứng dụng di động của bạn](fetch-paywalls-and-products-unity).
+Vui lòng lưu ý rằng chủ đề này đề cập đến các paywall được tùy chỉnh bằng Paywall Builder. Nếu bạn đang triển khai paywall theo cách thủ công, vui lòng tham khảo chủ đề [Lấy paywall và sản phẩm cho Remote Config paywall trong ứng dụng di động của bạn](fetch-paywalls-and-products-unity).
 
 <SampleApp />
 
@@ -23,9 +217,9 @@ Lưu ý rằng chủ đề này đề cập đến các paywall được tùy ch
    <summary>Trước khi bắt đầu hiển thị paywall trong ứng dụng di động của bạn (nhấn để mở rộng)</summary>
 
 1. [Tạo sản phẩm của bạn](create-product) trong Adapty Dashboard.
-2. [Tạo paywall và thêm sản phẩm vào đó](create-paywall) trong Adapty Dashboard.
-3. [Tạo placement và thêm paywall vào đó](create-placement) trong Adapty Dashboard.
-4. Cài đặt [Adapty SDK](sdk-installation-unity) trong ứng dụng di động của bạn.
+2. [Tạo một paywall và thêm sản phẩm vào đó](create-paywall) trong Adapty Dashboard.
+3. [Tạo các placement và thêm paywall vào đó](create-placement) trong Adapty Dashboard.
+4. Cài đặt [Adapty SDK](sdk-installation-unity) vào ứng dụng di động của bạn.
 </details>
 
 ## Lấy paywall được thiết kế bằng Paywall Builder \{#fetch-paywall-designed-with-paywall-builder\}
@@ -194,8 +388,9 @@ Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) 
 
 Tham số:
 
-| Tham số | Bắt buộc | Mô tả                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Tham số | Bắt buộc | Mô tả                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 |---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **placementId** | bắt buộc | Mã định danh của [Placement](placements) mong muốn. Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| **locale** | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Mã định danh của bản địa hóa paywall. Tham số này được kỳ vọng là mã ngôn ngữ bao gồm một hoặc hai subtag được phân tách bằng ký tự dấu trừ (**-**). Subtag đầu tiên là cho ngôn ngữ, subtag thứ hai là cho khu vực.</p><p></p><p>Ví dụ: `en` có nghĩa là tiếng Anh, `pt-br` đại diện cho tiếng Bồ Đào Nha Brazil.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| **fetchPolicy** | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố gắng tải dữ liệu từ máy chủ và sẽ trả về dữ liệu đã cache trong trường hợp thất bại. Chúng tôi khuyến nghị tùy chọn này vì nó đảm bảo người dùng của bạn luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình gặp vấn đề với kết nối internet không ổn định, hãy cân nhắc sử dụng `.returnCacheDataElseLoad` để trả về dữ liệu đã cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng họ sẽ trải nghiệm thời gian tải nhanh hơn, bất kể kết nối internet của họ kém đến đâu. Cache được cập nhật thường xuyên, vì vậy việc sử dụng nó trong phiên là an toàn để tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng cache vẫn còn nguyên khi khởi động lại ứng dụng và chỉ bị xóa khi ứng dụng được cài đặt lại hoặc thông qua việc dọn dẹp thủ công.</p><p></p><p>Adapty SDK lưu trữ paywall cục bộ theo hai lớp: cache được cập nhật thường xuyên như mô tả ở trên và paywall dự phòng. Chúng tôi cũng sử dụng CDN để lấy paywall nhanh hơn và một máy chủ dự phòng độc lập trong trường hợp CDN không thể truy cập được. Hệ thống này được thiết kế để đảm bảo bạn luôn nhận được phiên bản mới nhất của paywall trong khi vẫn đảm bảo độ tin cậy ngay cả khi kết nối internet kém.</p> |
+| **placementId** | bắt buộc | Định danh của [Placement](placements) mong muốn. Đây là giá trị bạn đã chỉ định khi tạo placement trong Adapty Dashboard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **locale** | <p>tùy chọn</p><p>mặc định: `en`</p> | <p>Định danh của bản địa hóa paywall. Tham số này được kỳ vọng là mã ngôn ngữ gồm một hoặc hai subtag được phân tách bằng ký tự dấu trừ (**-**). Subtag đầu tiên là mã ngôn ngữ, subtag thứ hai là mã vùng.</p><p></p><p>Ví dụ: `en` là tiếng Anh, `pt-br` là tiếng Bồ Đào Nha (Brazil).</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **fetchPolicy** | mặc định: `.reloadRevalidatingCacheData` | <p>Theo mặc định, SDK sẽ cố tải dữ liệu từ máy chủ và trả về dữ liệu đã cache trong trường hợp thất bại. Chúng tôi khuyến nghị tùy chọn này vì nó đảm bảo người dùng của bạn luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn cho rằng người dùng của mình thường xuyên gặp kết nối internet không ổn định, hãy cân nhắc dùng `.returnCacheDataElseLoad` để trả về dữ liệu đã cache nếu có. Trong trường hợp này, người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng sẽ có tốc độ tải nhanh hơn, bất kể kết nối internet của họ có chập chờn đến đâu. Cache được cập nhật thường xuyên nên hoàn toàn an toàn khi sử dụng trong phiên làm việc để tránh các yêu cầu mạng.</p><p></p><p>Lưu ý rằng cache vẫn còn nguyên sau khi khởi động lại ứng dụng và chỉ bị xóa khi gỡ cài đặt ứng dụng hoặc xóa thủ công.</p><p></p><p>Adapty SDK lưu trữ paywall cục bộ theo hai lớp: cache được cập nhật thường xuyên như mô tả ở trên và paywall dự phòng. Chúng tôi cũng sử dụng CDN để tải paywall nhanh hơn và một máy chủ dự phòng độc lập trong trường hợp CDN không thể truy cập. Hệ thống này được thiết kế để đảm bảo bạn luôn nhận được phiên bản paywall mới nhất trong khi vẫn đảm bảo độ tin cậy ngay cả khi kết nối internet hạn chế.</p> |
+</SDKv3>

@@ -1,30 +1,225 @@
 ---
-title: "Fetch Paywall Builder paywalls and their configuration in Unity SDK"
-description: "Learn how to retrieve PB paywalls in Adapty for better subscription control in your Unity app."
-metadataTitle: "Retrieving PB Paywalls in Adapty | Adapty Docs"
+title: "获取流程与付费墙 - Unity"
+description: "在 Unity 应用中从 Adapty 获取流程和付费墙。"
+metadataTitle: "获取流程与付费墙 - Unity | Adapty 文档"
 displayed_sidebar: sdkunity
-keywords: ['getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+keywords: ['GetFlow', 'CreateFlowView', 'GetFlowForDefaultAudience', 'getPaywall', 'getPaywallConfiguration', 'getViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
 rank: 80
 ---
 
 import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
 
-在 [Adapty 看板中使用新版付费墙编辑工具完成付费墙的视觉设计](adapty-paywall-builder)后，您可以在移动应用中展示它。第一步是获取与版位关联的付费墙及其视图配置，具体步骤如下。
+<SDKv4>
+
+<MethodPromo method="GetFlow" />
+
+在[设计好流程或付费墙编辑工具付费墙](adapty-paywall-builder)之后，您可以在移动应用中展示它。第一步是获取与版位关联的流程或付费墙及其视图配置，如下所述。
+
+<SampleApp />
+
+<details>
+   <summary>在移动应用中展示流程之前（点击展开）</summary>
+
+1. 在 Adapty 看板中[创建产品](create-product)。
+2. 在 Adapty 看板中[创建流程/付费墙并将产品添加到其中](create-paywall)。
+3. 在 Adapty 看板中[创建版位并将流程/付费墙添加到其中](create-placement)。
+4. 在移动应用中安装 [Adapty SDK](sdk-installation-unity)。
+</details>
+
+## 获取流程/付费墙 \{#fetch-flowpaywall\}
+
+如果你已经使用流程编辑工具或付费墙编辑工具设计好了流程或付费墙，则无需在移动端代码中手动处理其渲染逻辑来向用户展示。这类流程或付费墙本身已包含展示内容和展示方式的完整配置。不过，你仍需通过版位获取其 ID 及视图配置，然后在移动应用中将其呈现出来。
+
+为确保最佳性能，应尽早获取流程或付费墙及其[视图配置](unity-get-pb-paywalls#fetch-the-view-configuration)，以便在向用户展示之前有足够的时间下载图片。
+
+使用 `GetFlow` 方法获取流程或付费墙：
+
+```csharp showLineNumbers
+Adapty.GetFlow(
+    "YOUR_PLACEMENT_ID",
+    AdaptyPlacementFetchPolicy.Default,
+    TimeSpan.FromSeconds(5),
+    (flow, error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
+
+        // flow - the requested flow/paywall
+    }
+);
+```
+
+参数：
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | 目标[版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **fetchPolicy** | 默认值：`AdaptyPlacementFetchPolicy.Default` | <p>默认情况下，SDK 会尝试从服务器加载数据，若失败则返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络环境不稳定，可以考虑使用 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`，当缓存存在时直接返回缓存数据。这种方式下用户可能无法获取绝对最新的数据，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>请注意，重启应用后缓存依然保留，只有在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 通过两层机制在本地存储流程和付费墙：上述会定期更新的缓存层，以及[备用付费墙](fallback-paywalls)。我们还使用 CDN 加快获取速度，并在 CDN 不可用时提供独立的备用服务器。该系统旨在确保您始终获取最新版本，同时在网络条件较差的情况下也能保证可靠性。</p> |
+| **loadTimeout** | 默认值：5 秒 | <p>此值限制该方法的超时时间。若达到超时时限，将返回缓存数据或本地备用内容。</p><p>请注意，在极少数情况下，该方法的实际超时时间可能略晚于 `loadTimeout` 中指定的值，因为该操作在底层可能包含多个不同的请求。</p> |
+
+响应参数：
+
+| 参数 | 描述 |
+| :-------- | :---------- |
+| Flow   | 一个 `AdaptyFlow` 对象，包含版位、标识符（`InstanceIdentity`、`VariationId`）、名称、付费墙变体（`Paywalls` — 由 `AdaptyFlowPaywall` 组成的列表）以及远程配置（`RemoteConfigs` — 每个语言区域对应一条记录的列表）。如需预加载产品、自定义 UI 或以编程方式检查产品，请调用 `GetPaywallProducts(flow)`。|
+
+## 获取视图配置 \{#fetch-the-view-configuration\}
+
+获取流程或付费墙后，使用 `CreateFlowView` 方法一步完成视图配置的加载和视图的创建。无需单独检查任何标志：如果版位是在 **Flow Builder**（流程）或**付费墙编辑工具**（付费墙）中设计的，`CreateFlowView` 会返回可直接展示的视图。如果版位是没有编辑工具 UI 的自定义付费墙，`CreateFlowView` 将返回错误——[将其作为远程配置付费墙处理](present-remote-config-paywalls-unity)。
+
+:::important
+请确保在 Flow Builder 中开启 **Show on device** 开关。如果未开启此选项，将无法获取视图配置。
+:::
+
+```csharp showLineNumbers
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetPreloadProducts(true)
+    .SetLoadTimeout(TimeSpan.FromSeconds(5));
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    if (error != null) {
+        // the flow has no view configured, or view creation failed
+        return;
+    }
+
+    // use view
+});
+```
+
+| 参数                          | 是否必填       | 描述                                                         |
+| :--------------------------- | :------------- | :----------------------------------------------------------- |
+| **flow**                     | 必填           | 通过 `Adapty.GetFlow` 获取的 `AdaptyFlow` 对象。 |
+| **Locale**                   | 选填           | 用于渲染流程或付费墙的[编辑工具本地化](add-paywall-locale-in-adapty-paywall-builder)标识符，例如 `en` 或 `pt-br`。流程在创建视图时完成本地化，因此这是选择本地化的唯一时机。若省略此参数，Adapty 将根据设备自动解析本地化设置。请参阅[使用本地化与语言区域代码](unity-localizations-and-locale-codes)。 |
+| **LoadTimeout**              | 选填           | 该值限制此方法的超时时间。若达到超时，将返回缓存数据或本地备用数据。请注意，在极少数情况下，由于该方法底层可能包含多个请求，实际超时时间可能略晚于 `LoadTimeout` 中指定的时间。 |
+| **PreloadProducts**          | 选填           | 设为 `true` 可预加载产品以提升性能。启用后，产品将提前加载，从而减少显示流程或付费墙所需的时间。 |
+| **ProductPurchaseParameters** | 选填          | 仅 Android 有效（iOS 上忽略）。`AdaptyProductIdentifier` 到 `AdaptyPurchaseParameters` 的字典。用于为流程或付费墙中的各个产品配置购买专属参数，例如个性化优惠或订阅更新参数。 |
+| **EnableSafeAreaPaddings**   | 选填           | 仅 Android 有效（iOS 上忽略）。设为 `true` 时，流程视图将应用安全区域内边距。默认值：`true`。默认设置适用于大多数场景。 |
+
+:::note
+如果您使用多种语言，请了解如何添加[付费墙编辑工具本地化](add-paywall-locale-in-adapty-paywall-builder)。
+:::
+
+加载完成后，[展示流程或付费墙](unity-present-paywalls)。
+
+## 为默认目标受众获取流程或付费墙以加快加载速度 \{#get-a-flow-or-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+通常，流程和付费墙的加载几乎是即时的，无需担心速度问题。但如果您的目标受众和版位数量较多，且用户网络状况较差，加载流程或付费墙的时间可能会比预期更长。在这种情况下，您可能希望显示一个默认流程或付费墙，以确保用户体验流畅，而不是什么都不显示。
+
+为了解决这个问题，您可以使用 `GetFlowForDefaultAudience` 方法，该方法会获取指定版位中针对 **All Users** 目标受众的流程或付费墙。但请务必了解，推荐的方式是通过 `GetFlow` 方法获取流程或付费墙，详见上方的[获取流程/付费墙](#fetch-flowpaywall)章节。
+
+:::warning
+为什么我们推荐使用 `GetFlow`
+
+`GetFlowForDefaultAudience` 方法存在几个明显的缺点：
+
+- **潜在的向后兼容性问题**：如果需要为不同的应用版本（当前版本和未来版本）展示不同的流程，可能会遇到挑战。你要么设计兼容当前（旧版）版本的流程，要么接受当前（旧版）版本的用户可能遇到流程无法渲染的问题。
+- **丧失定向能力**：所有用户都将看到为 **All Users** 目标受众设计的同一套流程，这意味着你将失去个性化定向能力（包括基于国家、营销归因或自定义属性的定向）。
+
+如果你愿意接受这些缺点以换取更快的流程或付费墙获取速度，请按如下方式使用 `GetFlowForDefaultAudience` 方法。否则，请继续使用[上文](#fetch-flowpaywall)介绍的 `GetFlow`。
+:::
+
+```csharp showLineNumbers
+Adapty.GetFlowForDefaultAudience(
+    "YOUR_PLACEMENT_ID",
+    AdaptyPlacementFetchPolicy.Default,
+    (flow, error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
+
+        // flow - the requested flow
+    }
+);
+```
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **fetchPolicy** | 默认值：`AdaptyPlacementFetchPolicy.Default` | <p>默认情况下，SDK 会尝试从服务器加载数据，若失败则返回缓存数据。我们推荐此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>不过，如果您认为用户的网络连接不稳定，可以考虑使用 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`，在缓存数据存在时直接返回缓存。这样用户获取的数据可能不是最新的，但加载速度会更快，不受网络波动影响。缓存会定期更新，因此在会话期间使用缓存来避免网络请求是安全的。</p><p></p><p>请注意，缓存在重启应用后仍然保留，只有在重新安装应用或手动清理时才会被清除。</p> |
+
+## 自定义资源 \{#customize-assets\}
+
+要自定义流程或付费墙中的图片和视频，请实现自定义资源。
+
+主图片和视频具有预定义的 ID：`hero_image` 和 `hero_video`。在自定义资源包中，你通过这些 ID 定位对应元素并自定义其行为。
+
+对于其他图片和视频，你需要在 Adapty 看板中[设置自定义 ID](custom-media)。
+
+例如，你可以：
+
+- 向特定用户显示不同的图片或视频。
+- 在远程主图片加载时，先显示本地预览图片。
+- 在视频播放前显示预览图片。
+
+以下是如何通过简单字典提供自定义资源的示例：
+
+```csharp showLineNumbers
+var customAssets = new Dictionary<string, AdaptyCustomAsset>
+{
+    { "custom_image", AdaptyCustomAsset.LocalImageFile("custom_assets/images/custom_image.png") },
+    { "hero_video", AdaptyCustomAsset.LocalVideoFile("custom_assets/videos/custom_video.mp4") }
+};
+
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetCustomAssets(customAssets)
+    .SetLoadTimeout(TimeSpan.FromSeconds(3));
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    // handle the result
+});
+```
+:::note
+如果某个资源未找到或加载失败，流程或付费墙将回退到在编辑工具中配置的默认外观。
+:::
+
+## 设置开发者自定义计时器 \{#set-up-developer-defined-timers\}
+
+要在 Unity 应用中使用自定义计时器，请将计时器 ID 及其结束日期的字典传入 `SetCustomTimers` 方法。示例如下：
+
+```csharp showLineNumbers
+var customTimers = new Dictionary<string, DateTime> {
+    { "CUSTOM_TIMER_6H", DateTime.Now.AddHours(6) },
+    { "CUSTOM_TIMER_NY", new DateTime(2026, 1, 1) }
+};
+
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetCustomTimers(customTimers)
+    .SetLoadTimeout(TimeSpan.FromSeconds(3));
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    // handle the result
+});
+```
+在此示例中，`CUSTOM_TIMER_NY` 和 `CUSTOM_TIMER_6H` 是您在 Adapty 看板中设置的开发者自定义计时器的 **Timer ID**。计时器解析器确保您的应用动态地为每个计时器更新正确的值。例如：
+
+- `CUSTOM_TIMER_NY`：距计时器结束时间（如元旦）的剩余时间。
+- `CUSTOM_TIMER_6H`：用户打开流程或付费墙时开始计算的 6 小时倒计时的剩余时间。
+
+</SDKv4>
+
+<SDKv3>
+
+在 [Adapty 看板中使用新版付费墙编辑工具完成付费墙的视觉设计](adapty-paywall-builder)后，你可以在移动应用中展示它。第一步是获取与版位关联的付费墙及其视图配置，具体步骤如下。
 
 :::warning
 新版付费墙编辑工具需要 Unity SDK 3.3.0 或更高版本。
 :::
-请注意，本文介绍的是使用付费墙编辑工具自定义的付费墙。如果您是手动实现付费墙，请参阅[在移动应用中为远程配置付费墙获取付费墙和产品](fetch-paywalls-and-products-unity)。
+
+请注意，本主题针对使用付费墙编辑工具自定义的付费墙。如果您是手动实现付费墙，请参阅[在移动应用中为远程配置付费墙获取付费墙和产品](fetch-paywalls-and-products-unity)主题。
 
 <SampleApp />
 
 <details>
    <summary>在移动应用中展示付费墙之前（点击展开）</summary>
+
 1. 在 Adapty 看板中[创建产品](create-product)。
-2. 在 Adapty 看板中[创建付费墙并将产品添加到其中](create-paywall)。
-3. 在 Adapty 看板中[创建版位并将付费墙添加到其中](create-placement)。
-4. 在你的移动应用中安装 [Adapty SDK](sdk-installation-unity)。
+2. 在 Adapty 看板中[创建付费墙并将产品添加到付费墙中](create-paywall)。
+3. 在 Adapty 看板中[创建版位并将付费墙添加到版位中](create-placement)。
+4. 在移动应用中安装 [Adapty SDK](sdk-installation-unity)。
 </details>
+
 ## 获取使用付费墙编辑工具设计的付费墙 \{#fetch-paywall-designed-with-paywall-builder\}
 
 如果你已经[使用付费墙编辑工具设计了付费墙](adapty-paywall-builder)，则无需在移动应用代码中手动渲染并展示给用户。这类付费墙已包含展示内容和展示方式的完整配置。不过，你仍需通过版位获取其 ID 和视图配置，然后在移动应用中将其呈现出来。
@@ -123,6 +318,7 @@ AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
     // handle the result
 });
 ```
+
 :::note
 如果找不到对应资源，付费墙将回退到默认外观。
 :::
@@ -143,6 +339,7 @@ AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
     // handle the result
 });
 ```
+
 在此示例中，`CUSTOM_TIMER_NY` 和 `CUSTOM_TIMER_6H` 是您在 Adapty 看板中设置的开发者自定义计时器的**计时器 ID**。计时器解析器确保您的应用为每个计时器动态更新正确的值。例如：
 
 - `CUSTOM_TIMER_NY`：距计时器结束时间（如元旦）的剩余时间。
@@ -173,8 +370,9 @@ Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) 
 ```
 
 参数：
-| 参数 | 是否必填 | 说明 |
+| 参数 | 是否必填 | 描述                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 |---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **placementId** | 必填 | 目标[版位](placements)的标识符。即你在 Adapty 看板中创建版位时指定的值。 |
-| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>付费墙本地化的标识符。该参数应为由一个或两个子标签组成的语言代码，子标签之间以连字符（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p> |
-| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，如果失败则返回缓存数据。我们推荐使用此选项，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果你认为用户的网络连接不稳定，可以考虑使用 `.returnCacheDataElseLoad`——在缓存数据存在时优先返回缓存。这种情况下，用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>请注意，缓存在重启应用后仍会保留，只有在重新安装应用或手动清除时才会被清空。</p><p></p><p>Adapty SDK 通过两层机制在本地存储付费墙：上述定期更新的缓存，以及备用付费墙。我们还使用 CDN 加速付费墙的获取，并配备了独立的备用服务器以应对 CDN 不可用的情况。整套系统旨在确保你始终能获取最新版本的付费墙，同时在网络条件较差的情况下也能保证可靠性。</p> |
+| **placementId** | 必填 | 目标[版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>付费墙本地化的标识符。该参数应为语言代码，由一个或两个子标签组成，以减号（**-**）分隔。第一个子标签表示语言，第二个表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若加载失败则返回缓存数据。我们推荐使用此选项，因为它能确保用户始终获取最新数据。</p><p></p><p>不过，如果您认为用户的网络环境不稳定，可以考虑使用 `.returnCacheDataElseLoad`——当缓存数据存在时直接返回缓存。这种情况下，用户获取的数据可能不是最新的，但无论网络状况如何，都能享受更快的加载速度。缓存会定期更新，因此在会话期间使用缓存来减少网络请求是安全的。</p><p></p><p>请注意，重启应用后缓存依然保留，只有在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 在本地以两层方式存储付费墙：上述定期更新的缓存层，以及备用付费墙层。我们还使用 CDN 来加速付费墙的获取，并在 CDN 不可用时提供独立的备用服务器。该系统旨在确保您始终获取最新版本的付费墙，同时在网络条件较差的情况下也能保证可靠性。</p> |
+</SDKv3>

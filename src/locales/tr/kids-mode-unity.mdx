@@ -1,10 +1,12 @@
 ---
 title: "Unity SDK'da Çocuk Modu"
-description: "Apple ve Google politikalarına uymak için Çocuk Modunu kolayca etkinleştirin. Unity SDK'da IDFA, GAID veya reklam verisi toplanmaz."
+description: "Apple ve Google politikalarına uymak için Çocuk Modu'nu kolayca etkinleştirin. Unity SDK'da IDFA, GAID veya reklam verisi toplanmaz."
 metadataTitle: "Unity SDK'da Çocuk Modu | Adapty Dokümanları"
 ---
 
-Unity uygulamanız çocuklara yönelikse [Apple](https://developer.apple.com/kids/) ve [Google](https://support.google.com/googleplay/android-developer/answer/9893335) politikalarına uymanız gerekir. Adapty SDK kullanıyorsanız, birkaç basit adımla SDK'yı bu politikalara uygun şekilde yapılandırabilir ve uygulama mağazası incelemelerini geçebilirsiniz.
+<SDKv4>
+
+Unity uygulamanız çocuklara yönelikse [Apple](https://developer.apple.com/kids/) ve [Google](https://support.google.com/googleplay/android-developer/answer/9893335) politikalarına uymanız gerekir. Adapty SDK kullanıyorsanız, birkaç basit adımla SDK'yı bu politikalara uyacak ve uygulama mağazası incelemelerini geçecek şekilde yapılandırabilirsiniz.
 
 ## Ne yapmanız gerekiyor? \{#whats-required\}
 
@@ -22,10 +24,97 @@ Bunların yanı sıra, kullanıcı ID'sini dikkatli kullanmanızı öneririz. `<
 
 Adapty Kontrol Paneli'nde IP adresi toplamanın devre dışı bırakılması gerekir. Bunun için [App settings](https://app.adapty.io/settings/general) sayfasına gidin ve **Collect users' IP address** altındaki **Disable IP address collection** seçeneğine tıklayın.
 
-### Mobil uygulama kodunuzda yapılacak güncellemeler \{#updates-in-your-mobile-app-code\}
+### Uygulama kodunuzdaki güncellemeler \{#updates-in-your-app-code\}
 
-Unity'de Çocuk Modu desteği yakında geliyor!
+SDK'yı etkinleştirirken Android Advertising ID ve IP adresi toplanmasını devre dışı bırakın:
 
-Şimdilik aşağıdaki platform kılavuzlarını takip edebilirsiniz:
-- iOS yapılandırması için [iOS SDK'da Çocuk Modu](kids-mode)
-- Android yapılandırması için [Android SDK'da Çocuk Modu](kids-mode-android)
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+// highlight-start
+    .SetGoogleAdvertisingIdCollectionDisabled(true) // set to `true`
+    .SetIPAddressCollectionDisabled(true); // set to `true`
+// highlight-end
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+});
+```
+
+iOS'ta `SetAppleIDFACollectionDisabled` çağırmanıza gerek yok — iOS derlemesi için Çocuklar Modu'nu etkinleştirmek (aşağıya bakın) SDK yapılandırmasında IDFA toplamasını sizin için devre dışı bırakır.
+
+### iOS derlemesi için Çocuk Modunu etkinleştirme \{#enable-kids-mode-for-the-ios-build\}
+
+:::important
+iOS'ta Çocuk Modu, `KidsMode` adlı bir Swift package trait'tir. Bu özelliği etkinleştirmek, IDFA, AdSupport ve AppTrackingTransparency bileşenlerini SDK binary'sinden derleme aşamasında çıkarır. SDK 4.0 veya üzerini gerektirir; bu sürüm, native iOS SDK'yı Swift Package Manager aracılığıyla yükler. Ayrıca **Xcode 26** veya üzeri gereklidir; eski Xcode sürümleri Swift package trait'lerini desteklemez.
+:::
+
+1. Unity Editor'da **Player Settings** > **Other Settings** bölümüne gidin ve iOS platformu için **Scripting Define Symbols** alanına `ADAPTY_KIDS_MODE` ekleyin.
+2. Projenizi iOS için her zamanki gibi derleyin. Adapty, oluşturulan Xcode projesindeki AdaptySDK-iOS paket referansında `KidsMode` trait'ini etkinleştirir ve runtime yapılandırmasında `apple_idfa_collection_disabled` seçeneğini zorunlu kılar.
+
+:::warning
+Bu tanımlamayı bir derleme profiline değil, **Player Settings** bölümüne ekleyin. Bir derleme profilinin scripting define'ları, Unity yeniden derleyene kadar yalnızca Editor assembly'lerine ulaşır; bu nedenle aynı oturumda başlatılan bir derleme, çalışma zamanında Kids Mode bildirirken IDFA'yı hâlâ bağlayan bir binary üretebilir. Adapty, bu durumu tespit ettiğinde iOS derlemesini hatayla sonlandırır. `BuildPlayerOptions.extraScriptingDefines` hiç desteklenmez; çünkü Editor assembly'lerine hiçbir zaman ulaşamaz.
+:::
+
+### Android manifest güncellemeleri \{#updates-in-your-android-manifest\}
+
+Uygulamanız **yalnızca** çocuklara yönelikse ve Android 13 (API 33) veya üzeri için derleniyorsa, Google Play `AD_ID` iznini talep etmemenizi zorunlu kılar. SDK yapılandırmasında bu koleksiyonu devre dışı bırakmak, Adapty'nin kimliği toplamasını engeller; ancak başka bir eklentinin manifest birleştirme yoluyla tanımladığı bir izni kaldırmaz.
+
+İzni kaldırmak için **Player Settings** > **Publishing Settings** bölümünde **Custom Main Manifest** seçeneğini etkinleştirin, ardından `Assets/Plugins/Android/AndroidManifest.xml` dosyasındaki `<manifest>` öğesinin içine aşağıdakini ekleyin. `<manifest>` öğesi `xmlns:tools="http://schemas.android.com/tools"` bildirimini içermelidir.
+
+```xml showLineNumbers title="AndroidManifest.xml"
+<uses-permission
+    android:name="com.google.android.gms.permission.AD_ID"
+    tools:node="remove" />
+```
+
+</SDKv4>
+
+<SDKv3>
+
+Unity uygulamanız çocuklara yönelikse [Apple](https://developer.apple.com/kids/) ve [Google](https://support.google.com/googleplay/android-developer/answer/9893335) politikalarına uymanız gerekir. Adapty SDK kullanıyorsanız, birkaç basit adımla bu politikalara uyacak ve uygulama mağazası incelemelerini geçecek şekilde yapılandırabilirsiniz.
+
+## Ne gerekiyor? \{#whats-required\}
+
+Adapty SDK'yı şu verilerin toplanmasını devre dışı bırakacak şekilde yapılandırmanız gerekiyor:
+
+- [IDFA (Reklamverenler için Tanımlayıcı)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers) (iOS)
+- [Android Reklam Kimliği (AAID/GAID)](https://support.google.com/googleplay/android-developer/answer/6048248) (Android)
+- [IP adresi](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
+Ayrıca, customer user ID kullanırken dikkatli olmanızı öneririz. `<FirstName.LastName>` formatındaki kullanıcı kimliği, e-posta kullanımı gibi kişisel veri toplama olarak değerlendirilecektir. Çocuklar Modu için en iyi uygulama, uyumluluğu sağlamak amacıyla rastgele veya anonimleştirilmiş tanımlayıcılar (örneğin, karma kimlikler veya cihaz tarafından oluşturulan UUID'ler) kullanmaktır.
+
+## Çocuk Modunu Etkinleştirme \{#enabling-kids-mode\}
+
+### Adapty Kontrol Paneli'nde Yapılacak Güncellemeler \{#updates-in-the-adapty-dashboard\}
+
+Adapty Kontrol Paneli'nde IP adresi toplama özelliğini devre dışı bırakmanız gerekir. Bunun için [App settings](https://app.adapty.io/settings/general) sayfasına gidin ve **Collect users' IP address** altındaki **Disable IP address collection** seçeneğine tıklayın.
+
+### Uygulama kodunuzdaki güncellemeler \{#updates-in-your-app-code\}
+
+SDK'yı etkinleştirirken Android Advertising ID ve IP adresi toplamasını devre dışı bırakın:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+// highlight-start
+    .SetGoogleAdvertisingIdCollectionDisabled(true) // set to `true`
+    .SetIPAddressCollectionDisabled(true); // set to `true`
+// highlight-end
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+});
+```
+
+### iOS Build için Kids Modunu Etkinleştirin \{#enable-kids-mode-for-the-ios-build\}
+
+IDFA ve AdSupport kodunu iOS binary'sinden çıkarmak için Adapty Unity SDK 4.0 veya üzeri gereklidir. [Geçiş kılavuzunu](migration-to-unity-sdk-v4) kullanarak güncelleme yapın, ardından bu sayfadaki SDK 4.0 talimatlarını izleyin.
+
+SDK 3.x kullanıyorsanız, `SetAppleIDFACollectionDisabled(true)` ile SDK yapılandırmasında IDFA toplamasını devre dışı bırakabilirsiniz; ancak IDFA ve AdSupport kodu binary içinde kalmaya devam eder. Native yapılandırma seçenekleri için [iOS SDK'da Kids Modu](kids-mode) ve [Android SDK'da Kids Modu](kids-mode-android) sayfalarına bakın.
+
+</SDKv3>

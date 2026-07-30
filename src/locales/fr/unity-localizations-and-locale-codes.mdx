@@ -1,14 +1,86 @@
 ---
-title: "Utiliser les localisations et codes de langue dans le SDK Unity"
-description: "Apprenez à localiser les paywalls dans votre application Unity avec le SDK Adapty."
+title: "Utiliser les localisations et les codes de langue dans le SDK Unity"
+description: "Découvrez comment localiser les paywalls dans votre application Unity avec le SDK Adapty."
 metadataTitle: "Localiser les paywalls | SDK Unity | Documentation Adapty"
 ---
 
+<SDKv4>
+
 ## Pourquoi c'est important \{#why-this-is-important\}
 
-Les codes de locale entrent en jeu dans plusieurs scénarios — par exemple, lorsque vous essayez de récupérer le bon paywall pour la localisation actuelle de votre application.
+Les codes de locale interviennent lorsqu'Adapty sélectionne la localisation d'un flow et lorsque vous lisez un Remote Config pour un paywall personnalisé.
 
-Les codes de locale sont complexes et peuvent varier d'une plateforme à l'autre. Nous nous appuyons donc sur un standard interne pour toutes les plateformes que nous supportons. Cependant, compte tenu de cette complexité, il est vraiment important que vous compreniez exactement ce que vous envoyez à notre serveur pour obtenir la bonne localisation, et ce qui se passe ensuite — afin que vous receviez toujours ce que vous attendez.
+Les codes de locale sont complexes et peuvent varier d'une plateforme à l'autre. Adapty s'appuie donc sur un standard interne unique pour toutes les plateformes qu'il prend en charge. Comprendre ce standard vous permet de prédire quelle localisation un utilisateur recevra.
+
+## Standard des codes de langue chez Adapty \{#locale-code-standard-at-adapty\}
+
+Pour les codes de langue, Adapty utilise une version légèrement modifiée du [standard BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) : chaque code est composé de sous-balises en minuscules, séparées par des tirets. Quelques exemples : `en` (anglais), `pt-br` (portugais (Brésil)), `zh` (chinois simplifié), `zh-hant` (chinois traditionnel).
+
+## Correspondance des codes de langue \{#locale-code-matching\}
+
+Lorsqu'Adapty cherche la localisation correspondant à la langue d'un utilisateur, voici ce qui se passe :
+
+1. La chaîne de langue est convertie en minuscules et tous les tirets bas (`_`) sont remplacés par des tirets (`-`)
+2. Adapty recherche la localisation dont le code de langue correspond exactement
+3. Si aucune correspondance n'est trouvée, Adapty extrait la sous-chaîne avant le premier tiret (`pt` pour `pt-br`) et recherche la localisation correspondante
+4. Si aucune correspondance n'est encore trouvée, Adapty renvoie la localisation `en` par défaut
+
+Ainsi, `'pt_BR'`, `pt-BR` et `pt-br` correspondent tous à la même localisation.
+
+## Implémentation des localisations \{#implementing-localizations\}
+
+Avec le SDK v4, vous ne transmettez pas de code de langue lors de la récupération d'un flow — le flow est localisé au moment de la création de sa vue.
+
+- **Paywalls Flow Builder et Paywall Builder** : Adapty résout automatiquement la localisation depuis l'appareil et les localisations que vous avez configurées dans le builder, donc `CreateFlowView` n'a pas besoin de code de locale. Pour choisir vous-même la localisation, [remplacez-la lors de la création de la vue](#override-the-localization-of-a-flow).
+- **Paywalls personnalisés (Remote Config)** : `GetFlow` retourne toutes les localisations configurées dans `flow.RemoteConfigs`. Chaque entrée est un `AdaptyRemoteConfig` avec un code `Locale` et un `Dictionary` de valeurs. Sélectionnez l'entrée qui correspond à l'utilisateur, avec votre propre fallback :
+
+```csharp showLineNumbers
+using System.Linq;
+using AdaptySDK;
+
+Adapty.GetFlow("YOUR_PLACEMENT_ID", (flow, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    var config = flow.RemoteConfigs.FirstOrDefault(c => c.Locale == "en")
+        ?? flow.RemoteConfigs.FirstOrDefault();
+    // read your values from config?.Dictionary
+});
+```
+
+Les règles de correspondance des codes de locale décrites ci-dessus expliquent comment Adapty normalise les codes `Locale` stockés dans chaque Remote Config.
+
+### Remplacer la localisation d'un flow \{#override-the-localization-of-a-flow\}
+
+Pour afficher un flow ou un paywall avec une localisation spécifique plutôt que celle qu'Adapty résout depuis l'appareil, passez le code de langue à `SetLocale` lors de la création de la vue :
+
+```csharp showLineNumbers
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetLocale("pt-br");
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // view.Locale — the localization the view was built with
+});
+```
+
+La vue indique la localisation avec laquelle elle a réellement été construite dans `view.Locale` : celle que vous avez demandée si cette localisation existe, ou la localisation par défaut du flow dans le cas contraire.
+
+</SDKv4>
+
+<SDKv3>
+
+## Pourquoi c'est important \{#why-this-is-important\}
+
+Les codes de langue entrent en jeu dans plusieurs scénarios — par exemple, quand vous cherchez à récupérer le bon paywall selon la localisation actuelle de votre application.
+
+Les codes de langue sont complexes et peuvent varier d'une plateforme à l'autre. Nous nous appuyons donc sur une norme interne pour toutes les plateformes que nous supportons. Cependant, étant donné cette complexité, il est essentiel que vous compreniez exactement ce que vous envoyez à notre serveur pour obtenir la bonne localisation, et ce qui se passe ensuite — afin de toujours recevoir ce que vous attendez.
 
 ## Standard des codes de langue chez Adapty \{#locale-code-standard-at-adapty\}
 
@@ -135,4 +207,5 @@ Notez que nous déconseillons cette approche pour plusieurs raisons :
 1. Sur iOS, les langues préférées et la locale actuelle ne sont pas identiques. Si vous souhaitez que la localisation soit sélectionnée correctement, vous devrez soit vous appuyer sur la logique d'Apple, qui fonctionne telle quelle si vous utilisez l'approche recommandée avec des fichiers de chaînes localisées, soit la recréer vous-même.
 2. Il est difficile de prédire ce que le serveur d'Adapty recevra exactement. Par exemple, sur iOS, il est possible d'obtenir une locale comme `ar_OM@numbers='latn'` sur un appareil et de l'envoyer à notre serveur. Pour cet appel, vous obtiendrez non pas la localisation `ar-om` que vous recherchiez, mais plutôt `ar`, ce qui est probablement inattendu.
 
-Si vous décidez tout de même d'utiliser cette approche, assurez-vous d'avoir couvert tous les cas d'utilisation pertinents.
+Should you decide to use this approach anyway — make sure you've covered all the relevant use cases.
+</SDKv3>

@@ -1,18 +1,90 @@
 ---
-title: "Sử dụng localization và mã locale trong Unity SDK"
-description: "Tìm hiểu cách localize paywall trong ứng dụng Unity của bạn với Adapty SDK."
-metadataTitle: "Localize Paywall | Unity SDK | Tài liệu Adapty"
+title: "Sử dụng bản địa hóa và mã ngôn ngữ trong Unity SDK"
+description: "Tìm hiểu cách bản địa hóa paywall trong ứng dụng Unity của bạn với Adapty SDK."
+metadataTitle: "Bản địa hóa Paywall | Unity SDK | Tài liệu Adapty"
 ---
+
+<SDKv4>
 
 ## Tại sao điều này quan trọng \{#why-this-is-important\}
 
-Có một vài trường hợp mà mã locale phát huy tác dụng — ví dụ, khi bạn cần lấy paywall phù hợp với localization hiện tại của ứng dụng.
+Mã ngôn ngữ (locale code) được dùng khi Adapty chọn bản địa hóa cho một flow, và khi bạn đọc Remote Config cho một paywall tùy chỉnh.
 
-Vì mã locale khá phức tạp và có thể khác nhau tùy từng nền tảng, chúng tôi sử dụng một tiêu chuẩn nội bộ cho tất cả các nền tảng được hỗ trợ. Tuy nhiên, do sự phức tạp này, điều quan trọng là bạn phải hiểu rõ mình đang gửi gì đến máy chủ của chúng tôi để nhận được localization đúng, và điều gì xảy ra tiếp theo — để bạn luôn nhận được kết quả như mong đợi.
+Mã ngôn ngữ khá phức tạp và có thể khác nhau tùy nền tảng, vì vậy Adapty dựa trên một tiêu chuẩn nội bộ thống nhất cho mọi nền tảng mà nó hỗ trợ. Hiểu rõ tiêu chuẩn đó giúp bạn dự đoán bản địa hóa nào người dùng sẽ nhận được.
 
 ## Tiêu chuẩn mã locale tại Adapty \{#locale-code-standard-at-adapty\}
 
 Đối với mã locale, Adapty sử dụng phiên bản được điều chỉnh nhẹ của [tiêu chuẩn BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): mỗi mã gồm các subtag viết thường, phân cách bằng dấu gạch ngang. Một số ví dụ: `en` (tiếng Anh), `pt-br` (tiếng Bồ Đào Nha (Brazil)), `zh` (tiếng Trung Giản thể), `zh-hant` (tiếng Trung Phồn thể).
+
+## Khớp mã ngôn ngữ \{#locale-code-matching\}
+
+Khi Adapty tìm kiếm bản dịch phù hợp với ngôn ngữ của người dùng, quá trình diễn ra như sau:
+
+1. Chuỗi ngôn ngữ được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay thế bằng dấu gạch nối (`-`)
+2. Adapty tìm kiếm bản dịch có mã ngôn ngữ khớp hoàn toàn
+3. Nếu không tìm thấy, Adapty lấy chuỗi con trước dấu gạch nối đầu tiên (`pt` đối với `pt-br`) và tìm kiếm bản dịch phù hợp
+4. Nếu vẫn không tìm thấy, Adapty trả về bản dịch mặc định `en`
+
+Theo cách này, `'pt_BR'`, `pt-BR` và `pt-br` đều trỏ đến cùng một bản dịch.
+
+## Triển khai bản địa hóa \{#implementing-localizations\}
+
+Trong SDK v4, bạn không cần truyền mã ngôn ngữ khi lấy một flow — flow sẽ được bản địa hóa khi view của nó được tạo.
+
+- **Paywall được tạo bằng Flow Builder và Paywall Builder**: Adapty tự động xác định bản địa hóa dựa trên thiết bị và các bản địa hóa bạn đã cấu hình trong builder, nên `CreateFlowView` không cần mã locale. Để tự chọn bản địa hóa, hãy [ghi đè khi tạo view](#override-the-localization-of-a-flow).
+- **Paywall tùy chỉnh (remote config)**: `GetFlow` trả về tất cả các bản địa hóa đã cấu hình trong `flow.RemoteConfigs`. Mỗi mục là một `AdaptyRemoteConfig` với mã `Locale` và một `Dictionary` các giá trị. Chọn mục phù hợp với người dùng, kèm theo fallback của riêng bạn:
+
+```csharp showLineNumbers
+using System.Linq;
+using AdaptySDK;
+
+Adapty.GetFlow("YOUR_PLACEMENT_ID", (flow, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    var config = flow.RemoteConfigs.FirstOrDefault(c => c.Locale == "en")
+        ?? flow.RemoteConfigs.FirstOrDefault();
+    // read your values from config?.Dictionary
+});
+```
+
+Các quy tắc khớp mã ngôn ngữ ở trên mô tả cách Adapty chuẩn hóa các mã `Locale` được lưu trữ trong mỗi Remote Config.
+
+### Ghi đè bản địa hóa của một flow \{#override-the-localization-of-a-flow\}
+
+Để hiển thị một flow hoặc paywall với một bản địa hóa cụ thể thay vì bản mà Adapty tự động xác định từ thiết bị, hãy truyền mã locale vào `SetLocale` khi tạo view:
+
+```csharp showLineNumbers
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetLocale("pt-br");
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // view.Locale — the localization the view was built with
+});
+```
+
+Chế độ xem báo cáo bản địa hóa mà nó thực sự được xây dựng với trong `view.Locale`: bản địa hóa bạn đã yêu cầu khi bản địa hóa đó tồn tại, và bản địa hóa mặc định của flow trong trường hợp còn lại.
+
+</SDKv4>
+
+<SDKv3>
+
+## Tại sao điều này quan trọng \{#why-this-is-important\}
+
+Có một số tình huống mà mã locale đóng vai trò quan trọng — ví dụ, khi bạn cần lấy đúng paywall cho ngôn ngữ hiện tại của ứng dụng.
+
+Vì mã locale khá phức tạp và có thể khác nhau tùy nền tảng, chúng tôi sử dụng một tiêu chuẩn nội bộ thống nhất cho tất cả các nền tảng được hỗ trợ. Tuy nhiên, chính vì sự phức tạp đó, bạn cần hiểu rõ mình đang gửi gì lên server để nhận đúng bản ngôn ngữ mong muốn — và điều gì xảy ra tiếp theo — để luôn nhận được kết quả như kỳ vọng.
+
+## Tiêu chuẩn mã ngôn ngữ tại Adapty \{#locale-code-standard-at-adapty\}
+
+Đối với mã ngôn ngữ, Adapty sử dụng một phiên bản [tiêu chuẩn BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) được chỉnh sửa nhẹ: mỗi mã gồm các subtag viết thường, ngăn cách nhau bằng dấu gạch ngang. Một số ví dụ: `en` (tiếng Anh), `pt-br` (tiếng Bồ Đào Nha (Brazil)), `zh` (tiếng Trung giản thể), `zh-hant` (tiếng Trung phồn thể).
 
 ## Khớp mã ngôn ngữ \{#locale-code-matching\}
 
@@ -135,4 +207,5 @@ Lưu ý rằng chúng tôi không khuyến nghị cách này vì một vài lý 
 1. Trên iOS, ngôn ngữ ưu tiên và locale hiện tại không giống nhau. Nếu muốn localization được chọn đúng, bạn phải hoặc dựa vào logic của Apple (vốn hoạt động tự động nếu dùng cách khuyến nghị với các file chuỗi đã localize), hoặc tự tái tạo lại logic đó.
 2. Khó dự đoán chính xác máy chủ của Adapty sẽ nhận được gì. Chẳng hạn, trên iOS, có thể lấy được locale như `ar_OM@numbers='latn'` từ thiết bị và gửi đến máy chủ. Với yêu cầu này, bạn sẽ không nhận được localization `ar-om` như mong đợi, mà thay vào đó là `ar` — điều này có thể ngoài ý muốn.
 
-Nếu bạn vẫn quyết định dùng cách này — hãy đảm bảo đã kiểm tra tất cả các trường hợp sử dụng liên quan.
+Dù vậy, nếu bạn vẫn quyết định dùng cách này — hãy đảm bảo bạn đã xử lý tất cả các trường hợp liên quan.
+</SDKv3>

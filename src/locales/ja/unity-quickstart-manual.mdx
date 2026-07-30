@@ -1,14 +1,14 @@
 ---
-title: "Unity SDKでカスタムペイウォールの購入を有効にする"
-description: "Adapty SDKをUnityのカスタムペイウォールに統合してアプリ内課金を有効にします。"
+title: "Unity SDKのカスタムペイウォールで購入を有効にする"
+description: "Adapty SDKをカスタムUnityペイウォールに統合してアプリ内課金を有効にします。"
 metadataTitle: "Adaptyクイックスタートガイド | Adapty ドキュメント"
-keywords: ['paywalls Unity', 'sdk Unity', 'paywall', 'getPaywall']
+keywords: ['paywalls Unity', 'sdk Unity', 'paywall', 'GetFlow', 'getPaywall']
 ---
 
-このガイドでは、カスタムペイウォールへのAdapty統合方法を説明します。ペイウォールの実装を完全にコントロールしながら、Adapty SDKがプロダクトの取得、新規購入の処理、過去の購入の復元を担当します。
+このガイドでは、カスタムペイウォールへの Adapty の統合方法について説明します。ペイウォールの実装を完全にコントロールしながら、Adapty SDK がプロダクトの取得、新規購入の処理、過去の購入の復元を行います。このガイドでは Adapty Unity SDK v4 (beta) の API を使用しています。v3 をご利用の場合は、対応するメソッド名について[移行ガイド](migration-to-unity-sdk-v4)を参照してください。
 
 :::important
-**このガイドはカスタムペイウォールを実装する開発者向けです。** 購入を最も簡単に有効にする方法をお探しの場合は、[Adapty ペイウォールビルダー](unity-quickstart-paywalls)をご利用ください。ペイウォールビルダーを使えば、ノーコードのビジュアルエディターでペイウォールを作成でき、購入ロジックはAdaptyが自動処理します。また、アプリを再公開することなく異なるデザインをテストできます。
+**このガイドは、カスタムペイウォールを実装する開発者向けです。** 購入を有効にする最も簡単な方法をお探しであれば、[Adapty フローBuilder](unity-quickstart-paywalls)をご利用ください。フローBuilderを使えば、ノーコードのビジュアルエディタでフローを作成でき、Adaptyがすべての購入ロジックを自動的に処理し、アプリを再公開することなくさまざまなデザインをテストできます。
 :::
 
 ## 始める前に \{#before-you-start\}
@@ -18,8 +18,8 @@ keywords: ['paywalls Unity', 'sdk Unity', 'paywall', 'getPaywall']
 アプリ内課金を有効にするには、次の3つの重要な概念を理解する必要があります：
 
 - [**プロダクト**](product) – ユーザーが購入できるもの（サブスクリプション、消耗型アイテム、永続アクセス）
-- [**ペイウォール**](paywalls) – どのプロダクトを提供するかを定義する設定。Adaptyではペイウォールがプロダクトを取得する唯一の方法ですが、この設計によりアプリコードを変更せずにプロダクト、価格、オファーを変更できます。
-- [**プレースメント**](placements) – アプリ内でペイウォールを表示する場所とタイミング（`main`、`onboarding`、`settings`など）。ダッシュボードでプレースメントにペイウォールを設定し、コード内でプレースメントIDを使ってリクエストします。これにより、A/Bテストの実施や異なるユーザーへの異なるペイウォール表示が簡単になります。
+- [**ペイウォール**](paywalls) – どのプロダクトを提供するかを定義する設定。Adapty ではペイウォールを通じてのみプロダクトを取得できますが、この仕組みにより、アプリのコードを変更せずにプロダクト、価格、オファーを変更できます。SDK v4 では、プレースメントのペイウォールバリアントは **flow** オブジェクトによって管理されます — フローを取得してそのプロダクトを照会します。
+- [**プレースメント**](placements) – アプリ内でペイウォールを表示する場所とタイミング（`main`、`onboarding`、`settings` など）。ダッシュボードでプレースメントごとにペイウォールを設定し、コード内でプレースメント ID を使って取得します。これにより、A/B テストの実施や、ユーザーごとに異なるペイウォールの表示が簡単に行えます。
 
 カスタムペイウォールを使う場合でも、これらの概念を理解しておくことが重要です。基本的に、アプリで販売するプロダクトを管理するための手段です。
 
@@ -31,24 +31,24 @@ keywords: ['paywalls Unity', 'sdk Unity', 'paywall', 'getPaywall']
 
 ただし、Adapty SDKは匿名ユーザーと識別済みユーザーを異なる方法で扱います。詳細を確認し、ユーザーを適切に扱うために[識別クイックスタートガイド](unity-quickstart-identify)をお読みください。
 
-## ステップ1. プロダクトを取得する \{#step-1-get-products\}
+## ステップ 1. プロダクトを取得する \{#step-1-get-products\}
 
-カスタムペイウォール用のプロダクトを取得するには、次の手順が必要です：
+カスタムペイウォール用のプロダクトを取得するには、以下の手順が必要です。
 
-1. `getPaywall`メソッドに[プレースメント](placements)IDを渡して`paywall`オブジェクトを取得します。
-2. `getPaywallProducts`メソッドを使ってこのペイウォールのプロダクト配列を取得します。
+1. [プレースメント](placements) ID を `GetFlow` メソッドに渡して `flow` オブジェクトを取得する。
+2. そのフローのプロダクト配列を `GetPaywallProducts` メソッドで取得する。
 
 ```csharp showLineNumbers
 using AdaptySDK;
 
 void LoadPaywall() {
-    Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
+    Adapty.GetFlow("YOUR_PLACEMENT_ID", (flow, error) => {
         if (error != null) {
             // Handle the error
             return;
         }
 
-        Adapty.GetPaywallProducts(paywall, (products, productsError) => {
+        Adapty.GetPaywallProducts(flow, (products, productsError) => {
             if (productsError != null) {
                 // Handle the error
                 return;
@@ -60,9 +60,9 @@ void LoadPaywall() {
 }
 ```
 
-## ステップ2. 購入を受け付ける \{#step-2-accept-purchases\}
+## ステップ 2. 購入を処理する \{#step-2-accept-purchases\}
 
-ユーザーがカスタムペイウォールでプロダクトをタップしたら、選択されたプロダクトを引数に`makePurchase`メソッドを呼び出します。購入フローが処理され、更新されたプロファイルが返されます。
+カスタムペイウォールでユーザーがプロダクトをタップしたら、選択したプロダクトを引数に `MakePurchase` メソッドを呼び出します。これにより購入フローが処理され、更新されたプロファイルが返されます。
 
 ```csharp showLineNumbers
 using AdaptySDK;
@@ -90,11 +90,11 @@ void PurchaseProduct(AdaptyPaywallProduct product) {
 }
 ```
 
-## ステップ3. 購入を復元する \{#step-3-restore-purchases\}
+## ステップ 3. 購入の復元 \{#step-3-restore-purchases\}
 
-アプリストアは、サブスクリプションのあるすべてのアプリに対して、ユーザーが購入を復元できる手段を提供することを要求しています。
+アプリストアでは、サブスクリプションを提供するすべてのアプリに対して、ユーザーが購入を復元できる手段を設けることを義務付けています。
 
-ユーザーが復元ボタンをタップしたら`restorePurchases`メソッドを呼び出します。購入履歴がAdaptyと同期され、更新されたプロファイルが返されます。
+ユーザーが復元ボタンをタップしたときに `RestorePurchases` メソッドを呼び出してください。これにより、購入履歴が Adapty と同期され、更新されたプロファイルが返されます。
 
 ```csharp showLineNumbers
 using AdaptySDK;
@@ -111,10 +111,31 @@ void RestorePurchases() {
 }
 ```
 
+## ステップ 4. サブスクリプションのステータスを確認する \{#step-4-check-the-subscription-status\}
+
+購入または復元後、ユーザーの[アクセスレベル](access-level)を確認して、ペイウォールを表示するか有料機能をアンロックするかを判断します。`MakePurchase` と `RestorePurchases` メソッドはすでに更新済みのプロファイルを返しますが、アプリ内の他の場所で現在のステータスが必要な場合は、`GetProfile` メソッドを使用してください。
+
+```csharp showLineNumbers
+using AdaptySDK;
+
+void CheckPremiumAccess() {
+    Adapty.GetProfile((profile, error) => {
+        if (error != null) {
+            // Handle the error
+            return;
+        }
+
+        var hasPremiumAccess =
+            profile.AccessLevels.TryGetValue("premium", out var premium) && premium.IsActive;
+        // Grant access to paid features if hasPremiumAccess is true
+    });
+}
+```
+
+サブスクリプションステータスの確認・監視方法（リアルタイム更新のリッスンを含む）については、[サブスクリプションステータスの確認](unity-check-subscription-status)をご覧ください。
+
 ## 次のステップ \{#next-steps\}
 
 <SupportForum />
 
-ペイウォールをアプリに表示する準備が整いました。[App Storeサンドボックス](test-purchases-in-sandbox)または[Google Play Store](testing-on-android)でテスト購入を実施して、ペイウォールからテスト購入を完了できることを確認してください。
-
-次に、[ユーザーが購入を完了したかどうか確認](unity-check-subscription-status)して、ペイウォールを表示するか有料機能へのアクセスを許可するかを判断します。
+ペイウォールの表示準備が整いました。ペイウォールからテスト購入を完了できるか確認するため、[App Store サンドボックス](test-purchases-in-sandbox)または[Google Play Store](testing-on-android)で購入をテストしてください。

@@ -1,7 +1,7 @@
 ---
-title: "Xử lý sự kiện paywall"
-description: "Tìm hiểu cách xử lý các sự kiện paywall trong ứng dụng Unity của bạn với Adapty SDK."
-metadataTitle: "Xử lý Sự kiện Paywall | Unity SDK | Tài liệu Adapty"
+title: "Xử lý sự kiện flow & paywall - Unity"
+description: "Xử lý sự kiện flow và paywall trong ứng dụng Unity của bạn."
+metadataTitle: "Xử lý Sự kiện Flow - Unity | Tài liệu Adapty"
 customSlug: /unity-handling-events
 displayed_sidebar: sdkunity
 ---
@@ -9,11 +9,482 @@ displayed_sidebar: sdkunity
 import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
 import PaywallAction from '@site/src/locales/vi/reusable/PaywallAction.md';
 
+<SDKv4>
+
 :::important
-Hướng dẫn này đề cập đến việc xử lý sự kiện cho các giao dịch mua, khôi phục, lựa chọn sản phẩm và hiển thị paywall. Bạn cũng cần triển khai xử lý nút bấm (đóng paywall, mở liên kết, v.v.). Xem [hướng dẫn xử lý hành động nút bấm](unity-handle-paywall-actions) để biết thêm chi tiết.
+Hướng dẫn này đề cập đến cách xử lý sự kiện cho các lần mua hàng, khôi phục, chọn sản phẩm và hiển thị flow. Bạn cũng cần triển khai xử lý nút bấm (đóng flow, mở liên kết, v.v.). Xem [hướng dẫn xử lý các hành động flow](unity-handle-paywall-actions) của chúng tôi để biết thêm chi tiết.
 :::
 
-Các paywall được cấu hình bằng [Paywall Builder](adapty-paywall-builder) không cần thêm code để thực hiện và khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể phản hồi. Những sự kiện đó bao gồm các lần nhấn nút (nút đóng, URL, lựa chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua được thực hiện trên paywall. Tìm hiểu cách phản hồi các sự kiện này bên dưới.
+Flow và paywall được cấu hình bằng [Flow Builder](adapty-flow-builder) hoặc [Paywall Builder](adapty-paywall-builder) không cần thêm code để thực hiện và khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể xử lý. Các sự kiện đó bao gồm nhấn nút (nút đóng, URL, chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua. Tìm hiểu cách xử lý những sự kiện này bên dưới.
+
+<SampleApp />
+
+## Xử lý sự kiện \{#handling-events\}
+
+Để kiểm soát hoặc theo dõi các tiến trình xảy ra trên màn hình flow trong ứng dụng di động của bạn, hãy implement interface `IAdaptyFlowsEventsListener` và đăng ký nó với `Adapty.SetFlowsEventsListener()`:
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+public class FlowEventsHandler : MonoBehaviour, IAdaptyFlowsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetFlowsEventsListener(this);
+    }
+
+    // Implement all interface methods below
+}
+```
+
+:::note
+Đây là nơi bạn thêm logic tùy chỉnh để xử lý các sự kiện flow. SDK không áp dụng hành vi mặc định nào cho chúng: một lần mua thành công hay lỗi đều không tự động đóng view — hãy tự gọi `view.Dismiss(...)` khi thích hợp.
+:::
+
+### Sự kiện do người dùng tạo ra \{#user-generated-events\}
+
+#### Flow xuất hiện \{#flow-appeared\}
+
+Được gọi khi giao diện flow hiển thị trên màn hình.
+
+:::note
+Trên iOS, cũng được gọi khi người dùng nhấn vào [nút web paywall](web-paywall#step-2a-add-a-web-purchase-button) bên trong một flow và web paywall mở ra trong trình duyệt trong ứng dụng.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidAppear(AdaptyUIFlowView view) { }
+```
+
+#### Flow biến mất \{#flow-disappeared\}
+
+Được gọi khi giao diện flow bị đóng khỏi màn hình.
+
+:::note
+Trên iOS, cũng được gọi khi một [web paywall](web-paywall#step-2a-add-a-web-purchase-button) mở từ một flow trong trình duyệt trong ứng dụng biến mất khỏi màn hình.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidDisappear(AdaptyUIFlowView view) { }
+```
+
+#### Lựa chọn sản phẩm \{#product-selection\}
+
+Được gọi khi một sản phẩm được chọn để mua (bởi người dùng hoặc hệ thống).
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidSelectProduct(
+    AdaptyUIFlowView view,
+    string productId
+) { }
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+#### Bắt đầu mua hàng \{#started-purchase\}
+
+Được gọi khi người dùng bắt đầu quá trình mua hàng.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidStartPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product
+) { }
+```
+
+:::note
+Trong [Observer mode](unity-present-flows-in-observer-mode), các giao dịch mua hàng được khởi tạo từ một flow sẽ được chuyển đến `IAdaptyUIObserverModeResolver` của bạn.
+:::
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Mua thành công, đã hủy hoặc đang chờ xử lý \{#successful-canceled-or-pending-purchase\}
+
+Phương thức này sẽ được gọi khi giao dịch mua thành công, người dùng hủy giao dịch, hoặc giao dịch đang ở trạng thái chờ xử lý. Các trường hợp người dùng hủy và thanh toán đang chờ (ví dụ: cần phê duyệt của phụ huynh) sẽ kích hoạt phương thức này, không phải `FlowViewDidFailPurchase`.
+
+Flow vẫn mở sau khi mua hàng cho đến khi bạn đóng nó, vì vậy hãy tự gọi `view.Dismiss(...)` sau khi người dùng có quyền truy cập:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyPurchaseResult purchasedResult
+) {
+    switch (purchasedResult.Type) {
+        case AdaptyPurchaseResultType.Success:
+            // Check if user has access to premium features
+            if (purchasedResult.Profile != null
+                && purchasedResult.Profile.AccessLevels.TryGetValue("premium", out var premium)
+                && premium.IsActive) {
+                view.Dismiss(null);
+            }
+            break;
+        case AdaptyPurchaseResultType.Pending:
+            // Handle pending purchase (e.g., user will pay offline with cash)
+            break;
+        case AdaptyPurchaseResultType.UserCancelled:
+            // Handle user cancellation
+            break;
+        default:
+            break;
+    }
+}
+```
+
+<Details>
+<summary>Ví dụ về sự kiện (Nhấp để mở rộng)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCancelled"
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+```
+</Details>
+
+Chúng tôi khuyến nghị đóng màn hình flow khi mua hàng thành công.
+
+#### Mua hàng thất bại \{#failed-purchase\}
+
+Nếu mua hàng thất bại do lỗi, phương thức này sẽ được gọi. Điều này bao gồm lỗi StoreKit/Google Play Billing (hạn chế thanh toán, sản phẩm không hợp lệ, lỗi mạng), lỗi xác minh giao dịch và lỗi hệ thống. Lưu ý rằng khi người dùng huỷ, `FlowViewDidFinishPurchase` sẽ được gọi với kết quả đã huỷ thay thế, và các thanh toán đang chờ xử lý không kích hoạt phương thức này.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+#### Bắt đầu khôi phục \{#started-restore\}
+
+Được gọi khi người dùng khởi tạo quá trình khôi phục:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidStartRestore(AdaptyUIFlowView view) { }
+```
+
+#### Khôi phục thành công \{#successful-restore\}
+
+Được gọi khi khôi phục giao dịch mua thành công. Flow vẫn mở sau khi khôi phục cho đến khi bạn đóng nó lại:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishRestore(
+    AdaptyUIFlowView view,
+    AdaptyProfile profile
+) {
+    // Check if user has access to premium features
+    if (profile.AccessLevels.TryGetValue("premium", out var premium) && premium.IsActive) {
+        view.Dismiss(null);
+    }
+}
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Chúng tôi khuyến nghị đóng màn hình nếu người dùng đã có `accessLevel` yêu cầu. Tham khảo chủ đề [Trạng thái gói đăng ký](unity-listen-subscription-changes) để tìm hiểu cách kiểm tra.
+
+#### Khôi phục thất bại \{#failed-restore\}
+
+Được gọi khi quá trình khôi phục giao dịch thất bại:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailRestore(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### Hoàn thành điều hướng thanh toán web \{#finished-web-payment-navigation\}
+
+Sau khi cố gắng mở [web paywall](web-paywall) để thực hiện mua hàng (dù thành công hay thất bại), phương thức này sẽ được gọi:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishWebPaymentNavigation(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyError error
+) { }
+```
+
+**Tham số:**
+- `product`: Sản phẩm mà web paywall được mở (hoặc thử mở), hoặc `null`
+- `error`: `null` nếu web paywall mở thành công, hoặc một `AdaptyError` nếu thất bại
+
+<Details>
+<summary>Ví dụ về sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": null,
+  "error": {
+    "code": "wrong_param",
+    "message": "Current method is not available for this product",
+    "details": {
+      "underlyingError": "Product not configured for web purchases"
+    }
+  }
+}
+```
+</Details>
+
+### Tải dữ liệu và hiển thị \{#data-fetching-and-rendering\}
+
+#### Lỗi tải sản phẩm \{#product-loading-errors\}
+
+Được gọi khi tải sản phẩm thất bại và cung cấp `AdaptyError`. Nếu bạn không truyền mảng sản phẩm trong quá trình khởi tạo, AdaptyUI sẽ tự lấy các đối tượng cần thiết từ máy chủ. Thao tác này có thể thất bại và AdaptyUI sẽ báo lỗi bằng cách gọi phương thức này:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailLoadingProducts(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Ví dụ sự kiện (Nhấn để mở rộng)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+#### Lỗi render và runtime \{#rendering-and-runtime-errors\}
+
+Nếu xảy ra lỗi trong quá trình render giao diện, hoặc một lỗi runtime không liên quan đến giao dịch mua xảy ra, lỗi đó sẽ được báo cáo qua phương thức này. View không tự động bị đóng — hãy tự gọi `view.Dismiss(...)` nếu cần:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveError(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Event example (Click to expand)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render flow interface",
+    "details": {
+      "underlyingError": "Invalid flow configuration"
+    }
+  }
+}
+```
+</Details>
+
+Trong điều kiện bình thường, các lỗi này không nên xảy ra, vì vậy nếu bạn gặp phải, hãy cho chúng tôi biết.
+
+#### Sự kiện analytics \{#analytics-events\}
+
+`FlowViewDidReceiveAnalyticEvent` được dành riêng cho các sự kiện phân tích tùy chỉnh từ một flow. Hiện tại các flow chưa gửi những sự kiện này đến code của bạn, vì vậy hãy để phần thân phương thức trống — `IAdaptyFlowsEventsListener` là một interface C#, nên phương thức vẫn phải có mặt:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IDictionary<string, object> @params
+) { }
+```
+
+### Xử lý các yêu cầu hệ thống \{#handle-system-requests\}
+
+`IAdaptyUISystemRequestsHandler` (đăng ký thông qua `Adapty.SetSystemRequestsHandler(...)`) được dành riêng cho các yêu cầu hệ thống từ một flow: các hộp thoại cấp quyền của hệ điều hành (như thông báo đẩy hoặc quyền truy cập camera) và yêu cầu đánh giá ứng dụng. Hiện tại các flow chưa kích hoạt những yêu cầu này, vì vậy bạn chưa cần đăng ký handler.
+
+### Điều hướng \{#navigation\}
+
+#### Nút back hệ thống Android \{#android-system-back-button\}
+
+Nút back hệ thống Android (hoặc thao tác vuốt back) được chuyển đến `FlowViewDidPerformAction` dưới dạng action `SystemBack` và không tự động đóng flow — người dùng thoát khỏi flow thông qua một đường dẫn bạn định nghĩa, chẳng hạn như nút **Close** hoặc action `on_device_back` trong builder. Nếu bạn muốn nút back hệ thống đóng flow, hãy tự xử lý action đó:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+        case AdaptyUIUserActionType.SystemBack:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+Xem [hướng dẫn xử lý các hành động flow](unity-handle-paywall-actions) để biết danh sách đầy đủ các hành động.
+
+</SDKv4>
+
+<SDKv3>
+
+:::important
+Hướng dẫn này đề cập đến việc xử lý sự kiện cho các lần mua hàng, khôi phục, chọn sản phẩm và hiển thị paywall. Bạn cũng phải triển khai xử lý nút bấm (đóng paywall, mở liên kết, v.v.). Xem [hướng dẫn xử lý hành động nút bấm](unity-handle-paywall-actions) của chúng tôi để biết thêm chi tiết.
+:::
+
+Các paywall được cấu hình bằng [Paywall Builder](adapty-paywall-builder) không cần thêm code để thực hiện và khôi phục giao dịch mua. Tuy nhiên, chúng tạo ra một số sự kiện mà ứng dụng của bạn có thể xử lý. Các sự kiện đó bao gồm thao tác nhấn nút (nút đóng, URL, lựa chọn sản phẩm, v.v.) cũng như thông báo về các hành động liên quan đến giao dịch mua được thực hiện trên paywall. Tìm hiểu cách xử lý các sự kiện này bên dưới.
 
 :::warning
 Hướng dẫn này chỉ dành cho **paywall Paywall Builder mới** yêu cầu Adapty SDK v3.3.0 trở lên.
@@ -227,7 +698,7 @@ public void PaywallViewDidFailPurchase(
 
 #### Bắt đầu khôi phục \{#started-restore\}
 
-Được gọi khi người dùng khởi tạo quá trình khôi phục:
+Được gọi khi người dùng bắt đầu quá trình khôi phục:
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidStartRestore(AdaptyUIPaywallView view) { }
@@ -356,7 +827,7 @@ public void PaywallViewDidFinishWebPaymentNavigation(
 
 #### Lỗi tải sản phẩm \{#product-loading-errors\}
 
-Được gọi khi tải sản phẩm thất bại và cung cấp `AdaptyError`. Nếu bạn không truyền mảng sản phẩm trong quá trình khởi tạo, AdaptyUI sẽ tự lấy các đối tượng cần thiết từ máy chủ. Thao tác này có thể thất bại và AdaptyUI sẽ báo lỗi bằng cách gọi phương thức này:
+Được gọi khi tải sản phẩm thất bại và cung cấp `AdaptyError`. Nếu bạn không truyền mảng sản phẩm trong quá trình khởi tạo, AdaptyUI sẽ tự lấy các đối tượng cần thiết từ server. Quá trình này có thể thất bại, và AdaptyUI sẽ báo lỗi bằng cách gọi phương thức này:
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailLoadingProducts(
@@ -408,4 +879,7 @@ public void PaywallViewDidFailRendering(
 ```
 </Details>
 
-Trong điều kiện bình thường, các lỗi như vậy không nên xảy ra, vì vậy nếu bạn gặp phải, vui lòng thông báo cho chúng tôi.
+Trong trường hợp bình thường, những lỗi như vậy không nên xảy ra, vì vậy nếu bạn gặp phải, hãy cho chúng tôi biết.
+
+
+</SDKv3>

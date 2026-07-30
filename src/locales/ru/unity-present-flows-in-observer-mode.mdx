@@ -1,0 +1,91 @@
+---
+title: "Отображение флоу в режиме Observer - Unity"
+description: "Отображайте флоу и пейволы Paywall Builder в режиме Observer в вашем Unity-приложении, обрабатывая покупки с помощью собственного кода."
+metadataTitle: "Отображение флоу в режиме Observer - Unity | Документация Adapty"
+keywords: ['observer mode', 'IAdaptyUIObserverModeResolver', 'SetObserverModeResolver', 'flow']
+---
+
+Если вы настроили флоу или пейвол с помощью билдера, вам не нужно беспокоиться о его рендеринге в коде мобильного приложения для отображения пользователю. Такой флоу или пейвол содержит как то, что должно быть показано, так и то, как именно это должно быть показано.
+
+:::warning
+Этот раздел относится только к [режиму Observer](observer-vs-full-mode). Если вы не работаете в режиме Observer, обратитесь к теме [Отображение флоу и пейволов](unity-present-paywalls).
+:::
+
+:::info
+Эта функция требует Adapty Unity SDK 4.0 (beta) или более поздней версии — ранее она была доступна только в нативных SDK для iOS и Android. Ознакомьтесь с [руководством по миграции](migration-to-unity-sdk-v4) для обновления.
+:::
+
+<details>
+   <summary>Прежде чем начать показывать флоу (нажмите для раскрытия)</summary>
+
+1. Настройте начальную интеграцию Adapty [с App Store](initial_ios) и [с Google Play](initial-android).
+   2. Установите и настройте Adapty SDK. Не забудьте вызвать `SetObserverMode(true)` в конфигурационном билдере. Обратитесь к [гайду по установке Unity SDK](sdk-installation-unity#activate-adapty-module-of-adapty-sdk).
+   3. [Создайте продукты](create-product) в дашборде Adapty.
+   4. [Настройте флоу или пейволы в билдерах](create-paywall) и привяжите к ним продукты.
+   5. [Создайте плейсменты и назначьте на них флоу или пейволы](create-placement).
+   6. [Загрузите флоу и их конфигурацию](unity-get-pb-paywalls) в коде мобильного приложения.
+
+</details>
+
+В режиме Observer SDK не совершает покупки за вас. Когда пользователь нажимает кнопку покупки или восстановления во флоу или пейволе, отрисованном Adapty, SDK вызывает ваш `IAdaptyUIObserverModeResolver` — выполняйте покупку или восстановление там с помощью собственного кода.
+
+1. Реализуйте интерфейс `IAdaptyUIObserverModeResolver`:
+
+   ```csharp showLineNumbers
+   using System;
+   using AdaptySDK;
+
+   public class MyObserverModeResolver : IAdaptyUIObserverModeResolver
+   {
+       public void FlowViewDidInitiatePurchase(
+           AdaptyUIFlowView view,
+           AdaptyPaywallProduct product,
+           Action onStartPurchase,
+           Action onFinishPurchase
+       )
+       {
+           onStartPurchase(); // the view shows its loading indicator
+           // make the purchase with your own code,
+           // then report the transaction to Adapty and call:
+           onFinishPurchase(); // the view hides the loading indicator
+       }
+
+       public void FlowViewDidInitiateRestore(
+           AdaptyUIFlowView view,
+           Action onStartRestore,
+           Action onFinishRestore
+       )
+       {
+           onStartRestore();
+           // restore purchases with your own code, then:
+           onFinishRestore();
+       }
+   }
+   ```
+
+Метод `FlowViewDidInitiatePurchase` сообщает, что пользователь инициировал покупку, а `FlowViewDidInitiateRestore` — что пользователь инициировал восстановление. В ответ на эти события запустите свой собственный флоу покупки или восстановления.
+
+   Также не забудьте вызывать следующие колбэки, чтобы уведомить AdaptyUI о ходе процесса покупки или восстановления. Это необходимо для корректного поведения флоу, например для отображения индикатора загрузки:
+
+| Callback           | Description                                                                              |
+   | :----------------- | :--------------------------------------------------------------------------------------- |
+   | onStartPurchase()  | Коллбэк следует вызвать, чтобы уведомить AdaptyUI о начале покупки.                     |
+   | onFinishPurchase() | Коллбэк следует вызвать, чтобы уведомить AdaptyUI о завершении покупки.                 |
+   | onStartRestore()   | Коллбэк следует вызвать, чтобы уведомить AdaptyUI о начале восстановления покупок.      |
+   | onFinishRestore()  | Коллбэк следует вызвать, чтобы уведомить AdaptyUI о завершении восстановления покупок.  |
+
+Флоу остаётся открытым, пока выполняется ваш код — закройте его самостоятельно после успешной покупки или восстановления.
+
+2. Зарегистрируйте резолвер до отображения любого экрана:
+
+   ```csharp showLineNumbers
+   Adapty.SetObserverModeResolver(new MyObserverModeResolver());
+   ```
+
+   Без зарегистрированного резолвера флоу не может передать покупку вашему коду, и нажатие кнопки покупки ни к чему не приведёт.
+
+3. Создайте и отобразите флоу как обычно: [получите флоу и создайте его представление](unity-get-pb-paywalls), затем [отобразите его](unity-present-paywalls). Дополнительные параметры не нужны — после регистрации резолвера все покупки и восстановления в любом флоу или пейволе, отрисованном Adapty, будут направляться через него.
+
+:::warning
+Не забудьте [сообщить о транзакции и привязать её к пейволу](report-transactions-observer-mode-unity). Иначе Adapty не распознает транзакцию и не определит, с какого пейвола была совершена покупка.
+:::

@@ -1,18 +1,90 @@
 ---
 title: "Unity SDKでローカライゼーションとロケールコードを使用する"
-description: "Adapty SDKを使用してUnityアプリのペイウォールをローカライズする方法を説明します。"
+description: "Adapty SDKを使用してUnityアプリのペイウォールをローカライズする方法を学びます。"
 metadataTitle: "ペイウォールのローカライズ | Unity SDK | Adapty ドキュメント"
 ---
 
-## なぜこれが重要なのか \{#why-this-is-important\}
+<SDKv4>
 
-ロケールコードが関係するシナリオはいくつかあります。たとえば、アプリの現在のローカライゼーションに合った正しいペイウォールを取得しようとする場合などです。
+## これが重要な理由 \{#why-this-is-important\}
 
-ロケールコードは複雑で、プラットフォームによって異なるため、Adaptyではサポートするすべてのプラットフォームに対して独自の標準を採用しています。ただし、これらのコードが複雑であるがゆえに、サーバーに何を送信して正しいローカライゼーションを取得するのか、そしてその後何が起こるのかを正確に理解することが非常に重要です。そうすれば、常に期待通りの結果を受け取ることができます。
+ロケールコードは、Adapty がフローのローカライズを選択するときや、カスタムペイウォール用のリモートコンフィグを読み取るときに機能します。
+
+ロケールコードはプラットフォームによって異なる複雑なものであるため、Adapty はサポートするすべてのプラットフォームで統一した内部標準を採用しています。この標準を理解することで、ユーザーがどのローカライズを受け取るかを予測できます。
 
 ## AdaptyのロケールコードI標準 \{#locale-code-standard-at-adapty\}
 
 ロケールコードについて、Adaptyはわずかに修正された[BCP 47標準](https://en.wikipedia.org/wiki/IETF_language_tag)を使用しています。各コードは小文字のサブタグで構成され、ハイフンで区切られています。例：`en`（英語）、`pt-br`（ポルトガル語（ブラジル））、`zh`（簡体字中国語）、`zh-hant`（繁体字中国語）。
+
+## ロケールコードのマッチング \{#locale-code-matching\}
+
+Adapty がユーザーのロケールに一致するローカライズを検索する際、以下の手順で処理が行われます。
+
+1. ロケール文字列は小文字に変換され、アンダースコア（`_`）はすべてハイフン（`-`）に置き換えられます
+2. Adapty はロケールコードが完全に一致するローカライズを検索します
+3. 一致するものが見つからない場合、Adapty は最初のハイフンより前の部分文字列（`pt-br` に対する `pt`）を取り出し、一致するローカライズを検索します
+4. それでも一致するものが見つからない場合、Adapty はデフォルトの `en` ローカライズを返します
+
+このため、`'pt_BR'`、`pt-BR`、`pt-br` はすべて同じローカライズに解決されます。
+
+## ローカライゼーションの実装 \{#implementing-localizations\}
+
+SDK v4 では、フローを取得する際にロケールコードを渡す必要はありません。フローのビューが作成されるときにローカライズされます。
+
+- **フロービルダーおよびペイウォールビルダーのペイウォール**: Adapty はデバイスとビルダーで設定したローカライゼーションから自動的に解決するため、`CreateFlowView` にロケールコードは不要です。ローカライゼーションを自分で選択する場合は、[ビューを作成する際にオーバーライドしてください](#override-the-localization-of-a-flow)。
+- **カスタム（リモートコンフィグ）ペイウォール**: `GetFlow` は設定されたすべてのローカライゼーションを `flow.RemoteConfigs` に返します。各エントリは `Locale` コードと値の `Dictionary` を持つ `AdaptyRemoteConfig` です。ユーザーに合ったエントリを、独自のフォールバックを用いて選択してください：
+
+```csharp showLineNumbers
+using System.Linq;
+using AdaptySDK;
+
+Adapty.GetFlow("YOUR_PLACEMENT_ID", (flow, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    var config = flow.RemoteConfigs.FirstOrDefault(c => c.Locale == "en")
+        ?? flow.RemoteConfigs.FirstOrDefault();
+    // read your values from config?.Dictionary
+});
+```
+
+上記のロケールコードマッチングルールは、各リモートコンフィグに保存された `Locale` コードを Adapty がどのように正規化するかを説明しています。
+
+### フローのローカライズを上書きする \{#override-the-localization-of-a-flow\}
+
+デバイスから解決されるローカライズではなく、特定のローカライズでフローまたはペイウォールをレンダリングするには、ビューを作成する際に `SetLocale` にロケールコードを渡します。
+
+```csharp showLineNumbers
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetLocale("pt-br");
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // view.Locale — the localization the view was built with
+});
+```
+
+ビューは、実際にビルドに使用されたローカライゼーションを `view.Locale` で返します。リクエストしたローカライゼーションが存在する場合はそれが、存在しない場合はフローのデフォルトローカライゼーションが返されます。
+
+</SDKv4>
+
+<SDKv3>
+
+## なぜこれが重要なのか \{#why-this-is-important\}
+
+ロケールコードが関係するシナリオはいくつかあります。たとえば、アプリの現在のローカライゼーションに対応した正しいペイウォールを取得しようとする場合などです。
+
+ロケールコードはプラットフォームによって異なる複雑な仕様になっているため、Adapty はサポートするすべてのプラットフォームに対して独自の内部標準を採用しています。ただし、コードが複雑であるがゆえに、サーバーに何を送信しているのか、そして次に何が起こるのかを正確に理解することが非常に重要です。そうすることで、常に期待どおりの結果を受け取れるようになります。
+
+## Adapty でのロケールコード標準 \{#locale-code-standard-at-adapty\}
+
+ロケールコードには、Adapty は若干修正した [BCP 47 標準](https://en.wikipedia.org/wiki/IETF_language_tag) を使用しています。各コードは小文字のサブタグで構成され、ハイフンで区切られます。例：`en`（英語）、`pt-br`（ポルトガル語（ブラジル））、`zh`（簡体字中国語）、`zh-hant`（繁体字中国語）。
 
 ## ロケールコードのマッチング \{#locale-code-matching\}
 
@@ -135,4 +207,5 @@ public class PaywallManager : MonoBehaviour
 1. iOSでは優先言語と現在のロケールは同一ではありません。ローカライゼーションを正しく選択したい場合は、Appleのロジックに頼るか（ローカライズされた文字列ファイルを使った推奨アプローチを使用すれば自動的に機能します）、またはそのロジックを再実装する必要があります。
 2. Adaptyのサーバーが受け取る内容を正確に予測することが難しくなります。たとえばiOSでは、デバイスから`ar_OM@numbers='latn'`のようなロケールを取得してサーバーに送信することがあります。この呼び出しに対して、期待していた`ar-om`ローカライゼーションではなく、`ar`が返されることになり、予期しない結果となる可能性があります。
 
-それでもこのアプローチを使用する場合は、関連するユースケースをすべて網羅していることを確認してください。
+Should you decide to use this approach anyway — make sure you've covered all the relevant use cases.
+</SDKv3>

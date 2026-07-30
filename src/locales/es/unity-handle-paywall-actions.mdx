@@ -1,21 +1,203 @@
 ---
-title: "Responder a acciones de botones en el SDK de Unity"
-description: "Gestiona las acciones de botones de paywall en Unity usando Adapty para una mejor monetización de la app."
-metadataTitle: "Gestión de acciones de botones de paywall | Documentación de Adapty"
+title: "Responder a acciones de flow - Unity"
+description: "Gestiona las acciones de botones de flows y paywalls en tu aplicación Unity."
+metadataTitle: "Responder a acciones de flow - Unity | Documentación de Adapty"
 toc_max_heading_level: 4
 rank: 40
-keywords: ['botón de paywall', 'botón', 'acciones de botones de paywall', 'gestionar acciones']
+keywords: ['botón de paywall', 'botón', 'acciones de botón de paywall', 'gestionar acciones']
 ---
+
+<SDKv4>
+
+Si estás creando flows o paywalls con el Adapty Flow Builder o el Paywall Builder, es fundamental configurar los botones correctamente:
+
+1. Añade un [botón en el builder](paywall-buttons) y asígnale una acción ya existente o crea un ID de acción personalizado.
+2. Escribe código en tu app para gestionar cada acción que hayas asignado.
+
+Esta guía muestra cómo gestionar acciones personalizadas y preexistentes en tu código.
+
+:::warning
+**Las compras y restauraciones se gestionan automáticamente.** El resto de acciones de los botones, como cerrar flows o abrir enlaces, requieren una implementación correcta en el código de la app.
+:::
+
+## Configura el listener de eventos de flows \{#set-up-the-flows-events-listener\}
+
+Para gestionar las acciones de los flows, implementa la interfaz `IAdaptyFlowsEventsListener` y regístrala con `Adapty.SetFlowsEventsListener()`. Esto debe hacerse al inicio del ciclo de vida de tu app, normalmente en la escena principal o en la inicialización de la app.
+
+```csharp showLineNumbers title="Unity"
+using AdaptySDK;
+
+public class FlowsListener : MonoBehaviour, IAdaptyFlowsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetFlowsEventsListener(this);
+    }
+
+    // implement all IAdaptyFlowsEventsListener methods here
+}
+```
+
+`IAdaptyFlowsEventsListener` es una interfaz de C#, así que implementa todos sus métodos — consulta [Gestionar eventos de flow y paywall](unity-handling-events) para ver la lista completa. Los ejemplos a continuación muestran únicamente el método `FlowViewDidPerformAction`.
+
+Todas las acciones de botones llegan al callback `FlowViewDidPerformAction(view, action)` como un objeto `AdaptyUIUserAction` con un `Type` de `Close`, `SystemBack`, `OpenUrl` o `Custom`, más un `Value` opcional (la URL o el ID de la acción personalizada).
+
+## Cerrar flows y paywalls \{#close-flows-and-paywalls\}
+
+Para añadir un botón que cierre tu flow o paywall:
+
+1. En el builder, añade un botón y asígnale la acción **Close**.
+2. En el código de tu app, implementa un manejador para la acción `Close` que descarte el flow.
+
+:::info
+Una vista descartada se destruye y no puede volver a mostrarse. Para mostrar el flow de nuevo, llama otra vez a `CreateFlowView`.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Manejar el botón de retroceso del sistema Android \{#handle-the-android-system-back-button\}
+
+Pulsar el botón de retroceso del sistema Android (o usar el gesto de retroceso) emite una acción del tipo `SystemBack`. Por sí sola no cierra el flow — el flow permanece abierto y el usuario lo abandona por el camino que tú definas, como un botón **Close** o una acción `on_device_back` en el builder. Si quieres que el botón de retroceso del sistema cierre el flow, gestiona la acción tú mismo:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+        case AdaptyUIUserActionType.SystemBack:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Abrir URLs desde flows y paywalls \{#open-urls-from-flows-and-paywalls\}
+
+:::tip
+Si quieres añadir un grupo de enlaces (p. ej., términos de uso y restauración de compras), añade un elemento **Link** en el builder y trátalo igual que los botones con la acción **Open URL**.
+:::
+
+Para añadir un botón que abra un enlace desde tu flow o paywall (p. ej., **Terms of use** o **Privacy policy**):
+
+1. En el builder, añade un botón, asígnale la acción **Open URL** e introduce la URL que quieres abrir.
+2. En el código de tu app, implementa un manejador para la acción `OpenUrl` que abra la URL recibida.
+
+Use el método `AdaptyUI.OpenUrl` para abrir la URL de forma nativa, respetando la opción de navegador externo o interno (`action.OpenIn`) configurada en el builder:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.OpenUrl:
+            var urlString = action.Value;
+            if (!string.IsNullOrWhiteSpace(urlString)) {
+                AdaptyUI.OpenUrl(
+                    urlString,
+                    action.OpenIn ?? AdaptyWebPresentation.ExternalBrowser,
+                    (error) => {
+                        // handle the error
+                    }
+                );
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Iniciar sesión en la app \{#log-into-the-app\}
+
+Para añadir un botón que permita a los usuarios iniciar sesión en tu app:
+
+1. En el builder, añade un botón y asígnale la acción **Custom** con ID `login`.
+2. En el código de tu app, implementa un manejador para la acción personalizada `login` que identifique a tu usuario.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Custom:
+            if (action.Value == "login") {
+                // Navigate to login scene
+                SceneManager.LoadScene("LoginScene");
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+## Gestionar acciones personalizadas \{#handle-custom-actions\}
+
+Para añadir un botón que gestione cualquier otra acción:
+
+1. En el builder, añade un botón, asígnale la acción **Custom** y asígnale un ID.
+2. En el código de tu app, implementa un manejador para el ID de acción que has creado.
+
+Por ejemplo, si tienes otro conjunto de ofertas de suscripción o compras únicas, puedes añadir un botón que muestre otro flow o paywall:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Custom:
+            if (action.Value == "openNewFlow") {
+                // Display another flow or paywall
+                ShowAlternativeFlow();
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+
+private void ShowAlternativeFlow() {
+    // Implement your logic to show an alternative flow
+}
+```
+
+</SDKv4>
+
+<SDKv3>
 
 Si estás creando paywalls con el Paywall Builder de Adapty, es fundamental configurar los botones correctamente:
 
-1. Añade un [botón en el Paywall Builder](paywall-buttons) y asígnale una acción existente o crea un ID de acción personalizado.
+1. Añade un [botón en el paywall builder](paywall-buttons) y asígnale una acción preexistente o crea un ID de acción personalizado.
 2. Escribe código en tu app para gestionar cada acción que hayas asignado.
 
-Esta guía muestra cómo gestionar acciones personalizadas y predefinidas en tu código.
+Esta guía explica cómo gestionar acciones personalizadas y preexistentes en tu código.
 
 :::warning
-**Solo las compras y restauraciones se gestionan automáticamente.** El resto de acciones de botones, como cerrar paywalls o abrir enlaces, requieren implementar respuestas específicas en el código de la app.
+**Solo las compras y restauraciones se gestionan automáticamente.** El resto de acciones de los botones, como cerrar paywalls o abrir enlaces, requieren implementar las respuestas correspondientes en el código de la app.
 :::
 
 ## Cerrar paywalls \{#close-paywalls\}
@@ -127,3 +309,4 @@ private void ShowAlternativePaywall() {
     // Implement your logic to show alternative paywall
 }
 ```
+</SDKv3>
