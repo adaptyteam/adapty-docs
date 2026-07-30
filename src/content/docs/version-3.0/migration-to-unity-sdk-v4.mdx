@@ -42,10 +42,10 @@ If you install via the Unity package, download `adapty-unity-plugin-4.0.0-beta.1
 
 Two build-setup changes come with v4:
 
-- **iOS dependencies switch to Swift Package Manager.** The native Adapty iOS SDK 4.0 is declared as a remote Swift package instead of a CocoaPods pod. Update the [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) to **1.2.187 or later** — earlier versions don't support Swift Package Manager dependencies. The CocoaPods steps (`iOS Resolver -> Install Cocoapods`, opening `Unity-iPhone.xcworkspace`) no longer apply.
+- **iOS dependencies switch to Swift Package Manager.** The native Adapty iOS SDK 4.0 is declared as a remote Swift package instead of a CocoaPods pod. Update the [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) to **1.2.188 or later** — earlier versions don't support Swift Package Manager dependencies. The CocoaPods steps (`iOS Resolver -> Install Cocoapods`, opening `Unity-iPhone.xcworkspace`) no longer apply.
 - **The iOS deployment target must be 15.0 or later.** A new build validator in the Unity Editor stops the iOS build if the target is lower.
 
-The underlying native Adapty SDKs are bumped to 4.0.0 on both platforms and are resolved automatically — no other build changes are needed.
+The underlying native Adapty SDKs are bumped to 4.x on both platforms and are resolved automatically — no other build changes are needed.
 
 ## Fetching flows
 
@@ -98,17 +98,15 @@ The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale`
 | `ProductIdentifiers`, `VendorProductIds` | kept | On `AdaptyFlow`, these aggregate the products across all paywall variations. Each variation also exposes its own `ProductIdentifiers` and `VendorProductIds`. To fetch products, keep calling `GetPaywallProducts(flow)`. |
 | `HasViewConfiguration` | removed | Remove any `HasViewConfiguration` check from your code — `CreateFlowView` returns an error instead (see [Displaying flows](#displaying-flows)). |
 
-`HasViewConfiguration` remains on `AdaptyOnboarding` — only the flow model drops it.
-
 ## Web paywall methods
 
 `OpenWebPaywall` and `CreateWebPaywallUrl` keep their names, but the `paywall` argument now takes an `AdaptyFlowPaywall` — one of the variations in `flow.Paywalls`. You can still pass an `AdaptyPaywallProduct` instead:
 
 ```diff showLineNumbers
-- Adapty.OpenWebPaywall(paywall, (error) => { /* ... */ });
+- Adapty.OpenWebPaywall(paywall, AdaptyWebPresentation.ExternalBrowser, (error) => { /* ... */ });
 + var flowPaywall = flow.Paywalls.FirstOrDefault();
 + if (flowPaywall != null) {
-+     Adapty.OpenWebPaywall(flowPaywall, (error) => { /* ... */ });
++     Adapty.OpenWebPaywall(flowPaywall, AdaptyWebPresentation.ExternalBrowser, (error) => { /* ... */ });
 + }
 ```
 
@@ -129,7 +127,7 @@ As in v3, you do not need to call this method when displaying flows or paywalls 
 
 ### CreatePaywallView → CreateFlowView
 
-Rename the factory method and pass the `AdaptyFlow`. The returned view type is renamed from `AdaptyUIPaywallView` to `AdaptyUIFlowView`, but its methods (`Present`, `Dismiss`) are unchanged, and the optional parameters object keeps the same fields (`LoadTimeout`, `PreloadProducts`, `CustomTags`, `CustomTimers`, `CustomAssets`, `ProductPurchaseParameters`) under the new `AdaptyUICreateFlowViewParameters` name:
+Rename the factory method and pass the `AdaptyFlow`. The returned view type is renamed from `AdaptyUIPaywallView` to `AdaptyUIFlowView`, but its methods (`Present`, `Dismiss`) are unchanged, and the optional parameters object keeps the same fields (`LoadTimeout`, `PreloadProducts`, `CustomTags`, `CustomTimers`, `CustomAssets`, `ProductPurchaseParameters`) under the new `AdaptyUICreateFlowViewParameters` name, plus two new ones — `Locale` and `EnableSafeAreaPaddings`:
 
 ```diff showLineNumbers
 - AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
@@ -160,6 +158,15 @@ Rename the factory method and pass the `AdaptyFlow`. The returned view type is r
 :::note
 A flow view is single-use: after you call `Dismiss`, the view is destroyed, so call `CreateFlowView` again to present the flow once more.
 :::
+
+### Android safe-area paddings
+
+`AdaptyUICreateFlowViewParameters` adds `EnableSafeAreaPaddings`, which controls Android safe-area paddings at runtime. It is ignored on iOS and defaults to `true`:
+
+```csharp showLineNumbers
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetEnableSafeAreaPaddings(false);
+```
 
 ## Handling events
 
@@ -198,9 +205,10 @@ See [Handle flow & paywall events](unity-handling-events) for the full list of c
 ### New APIs
 
 - `Adapty.SetObserverModeResolver(...)` with an `IAdaptyUIObserverModeResolver` — drive purchases and restores initiated from flows while the SDK runs in [Observer mode](implement-observer-mode-unity). Previously this was available only in the native iOS and Android SDKs. See [Present flows in Observer mode](unity-present-flows-in-observer-mode).
-- `Adapty.SetSystemRequestsHandler(...)` with an `IAdaptyUISystemRequestsHandler` — respond to system requests from a flow: OS permission prompts (`FlowViewDidAskPermission`) and app review requests (`FlowViewDidRequestAppReview`). If no handler is registered, permission requests are ignored and app review requests fall back to the native store review prompt.
-- The new `FlowViewDidReceiveAnalyticEvent` callback on `IAdaptyFlowsEventsListener` delivers customer-facing analytics events from a flow.
-- `AdaptyUI.OpenUrl(url, openIn, ...)` and `AdaptyUI.RequestAppReview(...)` — the same handling the SDK applies by default to `open_url` actions and app review requests. Call them to keep the default behavior inside your own handlers.
+- `Adapty.SetSystemRequestsHandler(...)` with an `IAdaptyUISystemRequestsHandler` — reserved for system requests from a flow: OS permission prompts (`FlowViewDidAskPermission`) and app review requests (`FlowViewDidRequestAppReview`). Flows don't trigger these requests yet, so you don't need to register a handler.
+- `AdaptyUICreateFlowViewParameters.Locale` — render a flow or paywall with a specific [Builder localization](add-paywall-locale-in-adapty-paywall-builder) instead of the one Adapty resolves from the device. A flow is localized when its view is created, so this is the only place to choose its localization, and the created view reports the localization it was built with in `view.Locale`. See [Use localizations and locale codes](unity-localizations-and-locale-codes).
+- The new `FlowViewDidReceiveAnalyticEvent` callback on `IAdaptyFlowsEventsListener` is reserved for custom analytic events from a flow. Flows don't emit these to your code yet, so implement it with an empty body.
+- `AdaptyUI.OpenUrl(url, openIn, ...)` and `AdaptyUI.RequestAppReview(...)` — the native handling behind `open_url` actions and app review requests. Call `OpenUrl` from `FlowViewDidPerformAction` to keep the default URL behavior; `RequestAppReview` backs the default app-review prompt, which flows don't trigger yet.
 
 ## Default behavior changes
 
