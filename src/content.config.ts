@@ -19,7 +19,16 @@ const docs = defineCollection({
 // Without this, every matrix job (e.g. BUILD_LOCALES=zh) parses every
 // locale's MDX and OOMs as total locale content grows.
 const SUPPORTED_LOCALES = ['zh', 'tr', 'ru', 'es', 'ja', 'vi', 'fr'] as const;
-const buildLocalesEnv = (process.env.BUILD_LOCALES ?? '').trim();
+// Read through `globalThis` on purpose: astro.config.mjs sets
+// `vite.define['process.env'] = '{}'`, so a bare `process.env` here is
+// statically replaced with an empty object and BUILD_LOCALES always reads as
+// undefined — which silently disabled the scoping below and made every job
+// bundle all ~5000 locale MDX files (~120 MB of source) until it OOMed.
+// `src/data/locales.ts` reads the same var the same way for the same reason.
+const buildLocalesEnv = ((): string => {
+  try { return globalThis.process?.env?.BUILD_LOCALES ?? ''; }
+  catch { return ''; }
+})().trim();
 const selectedLocales = !buildLocalesEnv
   ? [...SUPPORTED_LOCALES]
   : buildLocalesEnv === 'none'
