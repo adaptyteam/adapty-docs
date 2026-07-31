@@ -25,8 +25,11 @@ Adapty Unity SDK 4.0（测试版）引入了流程概念，并相应地重命名
 | `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
 | `PaywallViewDidPerformAction`、`PaywallViewDidAppear` 及其他 `PaywallView...` 回调 | `FlowViewDidPerformAction`、`FlowViewDidAppear` 及其他 `FlowView...` 回调 |
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
-| `Adapty.SetFallbackPaywalls(...)` （v3 中已废弃） | 已移除——请改用 `Adapty.SetFallback(fileName, ...)` |
-| `Builder.SetIDFACollectionDisabled(...)` （v3 中已废弃） | 已移除——请改用 `Builder.SetAppleIDFACollectionDisabled(...)` |
+| `Adapty.SetFallbackPaywalls(...)（v3 中已废弃）` | 已移除——请使用 `Adapty.SetFallback(fileName, ...)` |
+| `Builder.SetIDFACollectionDisabled(...)（v3 中已废弃）` | 已移除——请使用 `Builder.SetAppleIDFACollectionDisabled(...)` |
+| `paywall.Products`（`AdaptyProductReference` 列表） | 已移除——请使用 `ProductIdentifiers` 或 `VendorProductIds`，或调用 `GetPaywallProducts(flow)` 获取完整产品信息 |
+| `AdaptyProductReference` | 已作为公共类型移除——请参阅[数据模型](#data-model) |
+| `paywall.RemoteConfigString` | 已移除——请使用 `flow.RemoteConfig?.Data` |
 
 `AdaptyPaywallProduct` 保持原名不变——产品仍属于一个流程，`GetPaywallProducts` 也保持原名，现在接受 `AdaptyFlow` 参数。`GetFlow` 和 `GetFlowForDefaultAudience` 方法不再接受 `locale` 参数。购买和用户画像相关 API（`MakePurchase`、`RestorePurchases`、`GetProfile`、`Identify`、`UpdateProfile`）以及通过 `SetFallback` 设置备用付费墙的功能保持不变。用户引导方法仍可使用，但已被标记为废弃——请参阅[用户引导 API 废弃说明](#onboarding-api-deprecation)。部分默认行为已发生变更——请参阅[默认行为变更](#default-behavior-changes)。
 
@@ -93,10 +96,15 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
 
 | v3 `AdaptyPaywall` 属性 | v4 `AdaptyFlow` 属性 | 操作 |
 |---|---|---|
-| `RemoteConfig`（单个，可空） | `RemoteConfigs`（列表） | 一个流程为每种已配置的语言携带一个远程配置。从 `flow.RemoteConfigs` 中读取与当前用户匹配的那一项。`flow.RemoteConfig` 快捷方式返回第一条记录。 |
-| _（新增）_ | `Paywalls`（`AdaptyFlowPaywall` 列表） | 每一项代表流程中的一个付费墙变体，包含各自的 `Name`、`VariationId` 和 `ProductIdentifiers`。Web 付费墙方法接受 `AdaptyFlowPaywall` 参数——详见[Web 付费墙方法](#web-paywall-methods)。 |
-| `ProductIdentifiers`、`VendorProductIds` | 保留 | 在 `AdaptyFlow` 上，这些属性聚合了所有付费墙变体的产品。每个变体也会暴露自己的 `ProductIdentifiers` 和 `VendorProductIds`。获取产品时，继续调用 `GetPaywallProducts(flow)` 即可。 |
-| `HasViewConfiguration` | 已移除 | 请从代码中移除所有 `HasViewConfiguration` 检查——`CreateFlowView` 会直接返回错误（详见[展示流程](#displaying-flows)）。 |
+| `RemoteConfig`（单个，可为空） | `RemoteConfigs`（列表） | 一个流程携带每种已配置语言对应的一个远程配置。从 `flow.RemoteConfigs` 中读取与用户匹配的那个。`flow.RemoteConfig` 快捷方式返回第一个条目。 |
+| _（新增）_ | `Paywalls`（`AdaptyFlowPaywall` 列表） | 每个条目是流程中的一个付费墙变体，包含其自身的 `Name`、`VariationId` 和 `ProductIdentifiers`。Web 付费墙方法接受 `AdaptyFlowPaywall` — 参见 [Web 付费墙方法](#web-paywall-methods)。 |
+| `ProductIdentifiers`、`VendorProductIds` | 保留 | 在 `AdaptyFlow` 上，这些属性汇总了所有付费墙变体的产品。每个变体也会暴露其自身的 `ProductIdentifiers` 和 `VendorProductIds`。获取产品时，继续调用 `GetPaywallProducts(flow)` 即可。 |
+| `HasViewConfiguration` | 已移除 | 从代码中移除所有 `HasViewConfiguration` 检查 — `CreateFlowView` 会返回错误（参见[展示流程](#displaying-flows)）。 |
+| `Products`（`AdaptyProductReference` 列表） | 已移除 | `AdaptyProductReference` 不再公开，随之一并移除的还有其携带的 `PromotionalOfferId`、`WinBackOfferId` 和 `AndroidOfferId` 值。请使用 `ProductIdentifiers` — 一个包含 `VendorProductId` 和仅限 Android 的 `BasePlanId`（v3 的 `AndroidBasePlanId`）的 `AdaptyProductIdentifier` 列表 — 或在需要带有价格和优惠信息的完整 `AdaptyPaywallProduct` 对象时调用 `GetPaywallProducts(flow)`。 |
+| `RemoteConfigString` | 已移除 | 直接从远程配置本身读取字符串：`flow.RemoteConfig?.Data`，或从 `flow.RemoteConfigs` 中找到匹配条目。 |
+| _（新增）_ | `FlowVersionId`（可为空） | 流程的版本标识符，或在不可用时为 `null`。 |
+
+`AdaptyPaywallProduct` 新增了一个字段：`FlowProductId`，即产品在流程中的标识符，对于不属于任何流程的产品，该值为 `null`。
 
 ## Web 付费墙方法 \{#web-paywall-methods\}
 
@@ -204,11 +212,11 @@ var parameters = new AdaptyUICreateFlowViewParameters()
 
 ### 新 API \{#new-apis\}
 
-- `Adapty.SetObserverModeResolver(...)` 配合 `IAdaptyUIObserverModeResolver` — 在 SDK 以[观察者模式](implement-observer-mode-unity)运行时，处理从流程发起的购买和恢复操作。此前该功能仅在原生 iOS 和 Android SDK 中可用。详见[在观察者模式下展示流程](unity-present-flows-in-observer-mode)。
-- `Adapty.SetSystemRequestsHandler(...)` 配合 `IAdaptyUISystemRequestsHandler` — 用于处理流程中的系统请求：操作系统权限提示（`FlowViewDidAskPermission`）和应用评价请求（`FlowViewDidRequestAppReview`）。目前流程尚未触发此类请求，因此无需注册处理器。
-- `AdaptyUICreateFlowViewParameters.Locale` — 使用指定的[编辑工具本地化](add-paywall-locale-in-adapty-paywall-builder)语言渲染流程或付费墙，而非 Adapty 根据设备自动解析的语言。流程在视图创建时完成本地化，因此这是选择本地化语言的唯一时机，创建的视图会通过 `view.Locale` 上报其构建时所用的本地化语言。详见[使用本地化语言和区域代码](unity-localizations-and-locale-codes)。
-- `IAdaptyFlowsEventsListener` 上新增的 `FlowViewDidReceiveAnalyticEvent` 回调，用于接收流程中的自定义分析事件。目前流程尚未向代码发送此类事件，因此实现时保持方法体为空即可。
-- `AdaptyUI.OpenUrl(url, openIn, ...)` 和 `AdaptyUI.RequestAppReview(...)` — 分别负责处理 `open_url` 操作和应用评价请求的原生逻辑。在 `FlowViewDidPerformAction` 中调用 `OpenUrl` 可保留默认的 URL 跳转行为；`RequestAppReview` 负责弹出默认的应用评价提示，但流程目前尚未触发该功能。
+- `Adapty.SetObserverModeResolver(...)` 配合 `IAdaptyUIObserverModeResolver` — 在 SDK 运行于[观察者模式](implement-observer-mode-unity)时，驱动从流程发起的购买和恢复操作。此前该功能仅在原生 iOS 和 Android SDK 中可用。详见[在观察者模式下展示流程](unity-present-flows-in-observer-mode)。
+- `Adapty.SetSystemRequestsHandler(...)` 配合 `IAdaptyUISystemRequestsHandler` — 保留用于处理流程中的系统请求：操作系统权限提示（`FlowViewDidAskPermission`）和应用评价请求（`FlowViewDidRequestAppReview`）。目前流程尚不会触发这些请求，因此无需注册处理器。
+- `AdaptyUICreateFlowViewParameters.Locale`（通过 `SetLocale` 设置）— 使用指定的[编辑工具本地化](add-paywall-locale-in-adapty-paywall-builder)来渲染流程或付费墙，而非使用 Adapty 从设备解析的本地化设置。流程在视图创建时完成本地化，因此这是唯一可以选择本地化的时机，创建完成的视图会通过 `view.Locale` 报告其构建时所使用的本地化设置。详见[使用本地化和语言区域代码](unity-localizations-and-locale-codes)。
+- `IAdaptyFlowsEventsListener` 上新增的 `FlowViewDidReceiveAnalyticEvent` 回调保留用于接收流程中的自定义分析事件。目前流程尚不会向您的代码发送这些事件，因此实现时保留空方法体即可。
+- `AdaptyUI.OpenUrl(url, openIn, ...)` 和 `AdaptyUI.RequestAppReview(...)` — `open_url` 动作和应用评价请求背后的原生处理逻辑。在 `FlowViewDidPerformAction` 中调用 `OpenUrl` 可保留默认的 URL 处理行为；`RequestAppReview` 为默认应用评价弹窗提供支持，但目前流程尚不会触发该弹窗。
 
 ## 默认行为变更 \{#default-behavior-changes\}
 

@@ -27,6 +27,9 @@ Le SDK Unity Adapty 4.0 (bêta) introduit les flows et renomme les API paywall e
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
 | `Adapty.SetFallbackPaywalls(...)` (déprécié en v3) | supprimé — utilisez `Adapty.SetFallback(fileName, ...)` |
 | `Builder.SetIDFACollectionDisabled(...)` (déprécié en v3) | supprimé — utilisez `Builder.SetAppleIDFACollectionDisabled(...)` |
+| `paywall.Products` (une liste de `AdaptyProductReference`) | supprimé — utilisez `ProductIdentifiers` ou `VendorProductIds`, ou appelez `GetPaywallProducts(flow)` pour les produits complets |
+| `AdaptyProductReference` | supprimé en tant que type public — voir [Modèle de données](#data-model) |
+| `paywall.RemoteConfigString` | supprimé — utilisez `flow.RemoteConfig?.Data` |
 
 `AdaptyPaywallProduct` garde son nom — les produits appartiennent toujours à un flow, et `GetPaywallProducts` garde également son nom, prenant désormais un `AdaptyFlow`. Les méthodes `GetFlow` et `GetFlowForDefaultAudience` ne prennent plus de paramètre `locale`. Les API d'achat et de profil (`MakePurchase`, `RestorePurchases`, `GetProfile`, `Identify`, `UpdateProfile`) et les fallbacks via `SetFallback` sont inchangés. Les méthodes onboarding fonctionnent toujours mais sont dépréciées — voir [Dépréciation de l'API Onboarding](#onboarding-api-deprecation). Certains comportements par défaut ont changé — voir [Changements de comportement par défaut](#default-behavior-changes).
 
@@ -91,12 +94,17 @@ Le type retourné passe de `AdaptyPaywall` à `AdaptyFlow`, et le paramètre `lo
 
 `GetFlow` retourne un `AdaptyFlow` au lieu d'un `AdaptyPaywall`, et la forme de l'objet a changé :
 
-| Propriété `AdaptyPaywall` v3 | Propriété `AdaptyFlow` v4 | Action |
+| Propriété v3 `AdaptyPaywall` | Propriété v4 `AdaptyFlow` | Action |
 |---|---|---|
-| `RemoteConfig` (unique, nullable) | `RemoteConfigs` (liste) | Un flow contient un Remote Config par langue configurée. Lisez celui qui correspond à l'utilisateur via `flow.RemoteConfigs`. Le raccourci `flow.RemoteConfig` retourne la première entrée. |
-| _(nouveau)_ | `Paywalls` (liste de `AdaptyFlowPaywall`) | Chaque entrée correspond à une variation de paywall dans le flow, avec son propre `Name`, `VariationId` et `ProductIdentifiers`. Les méthodes de paywall web prennent un `AdaptyFlowPaywall` — voir [Méthodes de paywall web](#web-paywall-methods). |
-| `ProductIdentifiers`, `VendorProductIds` | conservées | Sur `AdaptyFlow`, ces propriétés agrègent les produits de toutes les variations de paywall. Chaque variation expose également ses propres `ProductIdentifiers` et `VendorProductIds`. Pour récupérer les produits, continuez d'appeler `GetPaywallProducts(flow)`. |
-| `HasViewConfiguration` | supprimée | Supprimez tout contrôle `HasViewConfiguration` de votre code — `CreateFlowView` retourne une erreur à la place (voir [Affichage des flows](#displaying-flows)). |
+| `RemoteConfig` (unique, nullable) | `RemoteConfigs` (liste) | Un flow contient une Remote Config par langue configurée. Lisez celle qui correspond à l'utilisateur via `flow.RemoteConfigs`. Le raccourci `flow.RemoteConfig` renvoie la première entrée. |
+| _(nouveau)_ | `Paywalls` (liste de `AdaptyFlowPaywall`) | Chaque entrée est une variation de paywall dans le flow, avec son propre `Name`, `VariationId` et `ProductIdentifiers`. Les méthodes de paywall web prennent un `AdaptyFlowPaywall` — voir [Méthodes de paywall web](#web-paywall-methods). |
+| `ProductIdentifiers`, `VendorProductIds` | conservé | Sur `AdaptyFlow`, ces propriétés agrègent les produits de toutes les variations de paywall. Chaque variation expose également ses propres `ProductIdentifiers` et `VendorProductIds`. Pour récupérer les produits, continuez d'appeler `GetPaywallProducts(flow)`. |
+| `HasViewConfiguration` | supprimé | Supprimez tout contrôle `HasViewConfiguration` de votre code — `CreateFlowView` renvoie une erreur à la place (voir [Affichage des flows](#displaying-flows)). |
+| `Products` (liste de `AdaptyProductReference`) | supprimé | `AdaptyProductReference` n'est plus public, et avec lui les valeurs `PromotionalOfferId`, `WinBackOfferId` et `AndroidOfferId` qu'il portait. Utilisez `ProductIdentifiers` — une liste de `AdaptyProductIdentifier` avec `VendorProductId` et le `BasePlanId` réservé à Android (le `AndroidBasePlanId` de la v3) — ou appelez `GetPaywallProducts(flow)` quand vous avez besoin d'objets `AdaptyPaywallProduct` complets avec les prix et les offres. |
+| `RemoteConfigString` | supprimé | Lisez la chaîne directement depuis la Remote Config : `flow.RemoteConfig?.Data`, ou l'entrée correspondante dans `flow.RemoteConfigs`. |
+| _(nouveau)_ | `FlowVersionId` (nullable) | L'identifiant de version du flow, ou `null` s'il n'est pas disponible. |
+
+`AdaptyPaywallProduct` gagne un champ supplémentaire : `FlowProductId`, l'identifiant du produit au sein du flow, qui est `null` pour les produits n'appartenant pas à un flow.
 
 ## Méthodes de paywall web \{#web-paywall-methods\}
 
@@ -204,11 +212,11 @@ Consultez [Gérer les événements de flow et de paywall](unity-handling-events)
 
 ### Nouvelles API \{#new-apis\}
 
-- `Adapty.SetObserverModeResolver(...)` avec un `IAdaptyUIObserverModeResolver` — pilote les achats et les restaurations initiés depuis les flows lorsque le SDK fonctionne en [mode Observer](implement-observer-mode-unity). Auparavant, cette fonctionnalité n'était disponible que dans les SDK natifs iOS et Android. Voir [Présenter des flows en mode Observer](unity-present-flows-in-observer-mode).
-- `Adapty.SetSystemRequestsHandler(...)` avec un `IAdaptyUISystemRequestsHandler` — réservé aux requêtes système d'un flow : demandes de permissions OS (`FlowViewDidAskPermission`) et demandes d'avis sur l'application (`FlowViewDidRequestAppReview`). Les flows ne déclenchent pas encore ces requêtes, vous n'avez donc pas besoin d'enregistrer un gestionnaire.
-- `AdaptyUICreateFlowViewParameters.Locale` — affiche un flow ou un paywall avec une [localisation Builder](add-paywall-locale-in-adapty-paywall-builder) spécifique plutôt que celle qu'Adapty résout à partir de l'appareil. Un flow est localisé au moment de la création de sa vue ; c'est donc le seul endroit où choisir sa localisation, et la vue créée indique la localisation avec laquelle elle a été construite dans `view.Locale`. Voir [Utiliser les localisations et les codes de langue](unity-localizations-and-locale-codes).
-- Le nouveau callback `FlowViewDidReceiveAnalyticEvent` sur `IAdaptyFlowsEventsListener` est réservé aux événements analytiques personnalisés provenant d'un flow. Les flows n'émettent pas encore ces événements vers votre code, donc implémentez-le avec un corps vide.
-- `AdaptyUI.OpenUrl(url, openIn, ...)` et `AdaptyUI.RequestAppReview(...)` — la gestion native derrière les actions `open_url` et les demandes d'avis sur l'application. Appelez `OpenUrl` depuis `FlowViewDidPerformAction` pour conserver le comportement par défaut des URL ; `RequestAppReview` soutient l'invite d'avis par défaut sur l'application, que les flows ne déclenchent pas encore.
+- `Adapty.SetObserverModeResolver(...)` avec un `IAdaptyUIObserverModeResolver` — permet de gérer les achats et restaurations initiés depuis des flows lorsque le SDK fonctionne en [mode Observer](implement-observer-mode-unity). Auparavant, cette fonctionnalité n'était disponible que dans les SDKs natifs iOS et Android. Voir [Présenter des flows en mode Observer](unity-present-flows-in-observer-mode).
+- `Adapty.SetSystemRequestsHandler(...)` avec un `IAdaptyUISystemRequestsHandler` — réservé aux requêtes système issues d'un flow : demandes d'autorisation OS (`FlowViewDidAskPermission`) et demandes d'avis sur l'application (`FlowViewDidRequestAppReview`). Les flows ne déclenchent pas encore ces requêtes, vous n'avez donc pas besoin d'enregistrer un handler.
+- `AdaptyUICreateFlowViewParameters.Locale` (à définir avec `SetLocale`) — affiche un flow ou un paywall avec une [localisation Builder](add-paywall-locale-in-adapty-paywall-builder) spécifique au lieu de celle qu'Adapty déduit de l'appareil. Un flow est localisé au moment de la création de sa vue, c'est donc le seul endroit où choisir sa localisation ; la vue créée indique la localisation avec laquelle elle a été construite dans `view.Locale`. Voir [Utiliser les localisations et les codes de locale](unity-localizations-and-locale-codes).
+- Le nouveau callback `FlowViewDidReceiveAnalyticEvent` sur `IAdaptyFlowsEventsListener` est réservé aux événements analytiques personnalisés provenant d'un flow. Les flows n'émettent pas encore ces événements vers votre code, implémentez-le donc avec un corps vide.
+- `AdaptyUI.OpenUrl(url, openIn, ...)` et `AdaptyUI.RequestAppReview(...)` — la gestion native derrière les actions `open_url` et les demandes d'avis sur l'application. Appelez `OpenUrl` depuis `FlowViewDidPerformAction` pour conserver le comportement URL par défaut ; `RequestAppReview` prend en charge la demande d'avis intégrée, que les flows ne déclenchent pas encore.
 
 ## Changements de comportement par défaut \{#default-behavior-changes\}
 

@@ -27,6 +27,9 @@ Adapty Unity SDK 4.0 (beta) вводит флоу и переименовыва�
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
 | `Adapty.SetFallbackPaywalls(...)` (устарело в v3) | удалено — используйте `Adapty.SetFallback(fileName, ...)` |
 | `Builder.SetIDFACollectionDisabled(...)` (устарело в v3) | удалено — используйте `Builder.SetAppleIDFACollectionDisabled(...)` |
+| `paywall.Products` (список `AdaptyProductReference`) | удалено — используйте `ProductIdentifiers` или `VendorProductIds`, либо вызовите `GetPaywallProducts(flow)` для получения полных продуктов |
+| `AdaptyProductReference` | удалено как публичный тип — см. [Модель данных](#data-model) |
+| `paywall.RemoteConfigString` | удалено — используйте `flow.RemoteConfig?.Data` |
 
 `AdaptyPaywallProduct` сохраняет своё название — продукты по-прежнему принадлежат флоу, и `GetPaywallProducts` тоже сохраняет название, теперь принимая `AdaptyFlow`. Методы `GetFlow` и `GetFlowForDefaultAudience` больше не принимают параметр `locale`. API покупок и профиля (`MakePurchase`, `RestorePurchases`, `GetProfile`, `Identify`, `UpdateProfile`), а также резервные пейволы через `SetFallback` остаются без изменений. Методы онбординга по-прежнему работают, но считаются устаревшими — см. [Устаревание Onboarding API](#onboarding-api-deprecation). Некоторые поведения по умолчанию изменились — см. [Изменения поведения по умолчанию](#default-behavior-changes).
 
@@ -93,10 +96,15 @@ https://github.com/adaptyteam/AdaptySDK-Unity.git?path=Packages/com.adapty.unity
 
 | Свойство `AdaptyPaywall` в v3 | Свойство `AdaptyFlow` в v4 | Действие |
 |---|---|---|
-| `RemoteConfig` (единственный, nullable) | `RemoteConfigs` (список) | Флоу содержит один Remote Config на каждый настроенный язык. Читайте тот, который соответствует пользователю, через `flow.RemoteConfigs`. Свойство `flow.RemoteConfig` возвращает первый элемент. |
-| _(новое)_ | `Paywalls` (список `AdaptyFlowPaywall`) | Каждый элемент — один вариант пейвола во флоу со своими `Name`, `VariationId` и `ProductIdentifiers`. Методы веб-пейвола принимают `AdaptyFlowPaywall` — см. [Методы веб-пейвола](#web-paywall-methods). |
-| `ProductIdentifiers`, `VendorProductIds` | сохранены | В `AdaptyFlow` эти свойства агрегируют продукты по всем вариантам пейвола. Каждый вариант также содержит собственные `ProductIdentifiers` и `VendorProductIds`. Для получения продуктов продолжайте вызывать `GetPaywallProducts(flow)`. |
-| `HasViewConfiguration` | удалено | Удалите все проверки `HasViewConfiguration` из кода — `CreateFlowView` вместо этого вернёт ошибку (см. [Отображение флоу](#displaying-flows)). |
+| `RemoteConfig` (одиночный, nullable) | `RemoteConfigs` (список) | Флоу содержит по одному Remote Config на каждый настроенный язык. Читайте тот, что соответствует пользователю, из `flow.RemoteConfigs`. Шорткат `flow.RemoteConfig` возвращает первую запись. |
+| _(новое)_ | `Paywalls` (список `AdaptyFlowPaywall`) | Каждая запись — один вариант пейвола во флоу со своими `Name`, `VariationId` и `ProductIdentifiers`. Методы веб-пейвола принимают `AdaptyFlowPaywall` — см. [Методы веб-пейвола](#web-paywall-methods). |
+| `ProductIdentifiers`, `VendorProductIds` | сохранены | В `AdaptyFlow` эти поля агрегируют продукты по всем вариантам пейвола. Каждый вариант также предоставляет собственные `ProductIdentifiers` и `VendorProductIds`. Для получения продуктов продолжайте вызывать `GetPaywallProducts(flow)`. |
+| `HasViewConfiguration` | удалено | Удалите все проверки `HasViewConfiguration` из кода — вместо этого `CreateFlowView` вернёт ошибку (см. [Отображение флоу](#displaying-flows)). |
+| `Products` (список `AdaptyProductReference`) | удалено | `AdaptyProductReference` больше не является публичным, вместе с ним недоступны значения `PromotionalOfferId`, `WinBackOfferId` и `AndroidOfferId`. Используйте `ProductIdentifiers` — список `AdaptyProductIdentifier` с `VendorProductId` и Android-только `BasePlanId` (аналог `AndroidBasePlanId` из v3) — или вызывайте `GetPaywallProducts(flow)`, когда нужны полные объекты `AdaptyPaywallProduct` с ценами и офферами. |
+| `RemoteConfigString` | удалено | Читайте строку напрямую из Remote Config: `flow.RemoteConfig?.Data` или соответствующую запись в `flow.RemoteConfigs`. |
+| _(новое)_ | `FlowVersionId` (nullable) | Идентификатор версии флоу или `null`, если он недоступен. |
+
+`AdaptyPaywallProduct` получает одно новое поле: `FlowProductId` — идентификатор продукта внутри флоу, который равен `null` для продуктов, не принадлежащих флоу.
 
 ## Методы Web Paywall \{#web-paywall-methods\}
 
@@ -204,11 +212,11 @@ var parameters = new AdaptyUICreateFlowViewParameters()
 
 ### Новые API \{#new-apis\}
 
-- `Adapty.SetObserverModeResolver(...)` с `IAdaptyUIObserverModeResolver` — управление покупками и восстановлениями, инициированными из флоу, когда SDK работает в [режиме Observer](implement-observer-mode-unity). Ранее это было доступно только в нативных SDK для iOS и Android. См. [Флоу в режиме Observer](unity-present-flows-in-observer-mode).
-- `Adapty.SetSystemRequestsHandler(...)` с `IAdaptyUISystemRequestsHandler` — зарезервировано для системных запросов из флоу: запросы разрешений ОС (`FlowViewDidAskPermission`) и запросы на оценку приложения (`FlowViewDidRequestAppReview`). Флоу пока не инициируют такие запросы, поэтому регистрировать обработчик не нужно.
-- `AdaptyUICreateFlowViewParameters.Locale` — отображение флоу или пейвола с конкретной [локализацией Builder](add-paywall-locale-in-adapty-paywall-builder) вместо той, которую Adapty определяет по устройству. Флоу локализуется при создании представления, поэтому здесь можно задать локализацию единственный раз; созданное представление сообщает использованную локализацию через `view.Locale`. См. [Использование локализаций и кодов локалей](unity-localizations-and-locale-codes).
+- `Adapty.SetObserverModeResolver(...)` с `IAdaptyUIObserverModeResolver` — управляет покупками и восстановлениями, инициированными из флоу, когда SDK работает в [режиме Observer](implement-observer-mode-unity). Ранее это было доступно только в нативных SDK для iOS и Android. См. [Показ флоу в режиме Observer](unity-present-flows-in-observer-mode).
+- `Adapty.SetSystemRequestsHandler(...)` с `IAdaptyUISystemRequestsHandler` — зарезервирован для системных запросов из флоу: запросов разрешений ОС (`FlowViewDidAskPermission`) и запросов оценки приложения (`FlowViewDidRequestAppReview`). Флоу пока не инициируют такие запросы, поэтому регистрировать обработчик не нужно.
+- `AdaptyUICreateFlowViewParameters.Locale` (задаётся через `SetLocale`) — рендерит флоу или пейвол с определённой [локализацией Builder](add-paywall-locale-in-adapty-paywall-builder) вместо той, которую Adapty определяет по устройству. Флоу локализуется при создании представления, поэтому это единственное место для выбора локализации; созданное представление сообщает о применённой локализации в `view.Locale`. См. [Использование локализаций и кодов локалей](unity-localizations-and-locale-codes).
 - Новый колбэк `FlowViewDidReceiveAnalyticEvent` в `IAdaptyFlowsEventsListener` зарезервирован для пользовательских аналитических событий из флоу. Флоу пока не отправляют такие события в ваш код, поэтому реализуйте его с пустым телом.
-- `AdaptyUI.OpenUrl(url, openIn, ...)` и `AdaptyUI.RequestAppReview(...)` — нативная обработка действий `open_url` и запросов на оценку приложения. Вызывайте `OpenUrl` из `FlowViewDidPerformAction`, чтобы сохранить стандартное поведение при открытии URL; `RequestAppReview` обеспечивает стандартный запрос на оценку, который флоу пока не инициируют.
+- `AdaptyUI.OpenUrl(url, openIn, ...)` и `AdaptyUI.RequestAppReview(...)` — нативная обработка действий `open_url` и запросов оценки приложения. Вызывайте `OpenUrl` из `FlowViewDidPerformAction`, чтобы сохранить стандартное поведение при открытии URL; `RequestAppReview` обеспечивает стандартный запрос оценки приложения, который флоу пока не инициируют.
 
 ## Изменения поведения по умолчанию \{#default-behavior-changes\}
 
