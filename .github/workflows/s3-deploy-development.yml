@@ -116,6 +116,16 @@ jobs:
           path: build/${{ matrix.locale }}/
           retention-days: 1
 
+      # Astro writes hashed assets to build/_astro/ at the output root, not
+      # inside build/<locale>/, so the locale directory alone is not
+      # self-contained. Without this, locale pages 404 on the CSS chunks unique
+      # to their own build and render unstyled.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.locale }}-assets
+          path: build/_astro/
+          retention-days: 1
+
   deploy:
     needs: [build-en, build-locale]
     runs-on: ubuntu-latest
@@ -177,6 +187,15 @@ jobs:
         with:
           name: build-fr
           path: build/fr/
+
+      # Merge every locale build's hashed assets into the shared _astro/
+      # alongside English's. Filenames are content-hashed, so identical names
+      # carry identical bytes and English assets cannot be clobbered.
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: build-*-assets
+          merge-multiple: true
+          path: build/_astro/
 
       - name: Deploy
         uses: reggionick/s3-deploy@v4

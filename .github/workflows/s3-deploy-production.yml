@@ -260,6 +260,20 @@ jobs:
           path: build/${{ matrix.locale }}/
           retention-days: 1
 
+      # Astro writes hashed assets to the shared build/_astro/ at the output
+      # root, NOT inside build/<locale>/. Uploading only the locale directory
+      # above therefore dropped every CSS chunk unique to this locale's build,
+      # so locale pages referenced /docs/_astro/*.css files that were never
+      # deployed (only build-en's _astro/ reached S3) and rendered unstyled —
+      # callouts lost their box, Tabs lost their tab strip. Asset filenames are
+      # content-hashed, so merging every locale's _astro/ with English's at
+      # deploy time is collision-free by construction.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.locale }}-assets
+          path: build/_astro/
+          retention-days: 1
+
   deploy-full:
     needs: [build-en, build-locale-full]
     runs-on: ubuntu-latest
@@ -321,6 +335,17 @@ jobs:
         with:
           name: build-fr
           path: build/fr/
+
+      # Merge every locale build's hashed assets into the shared _astro/
+      # alongside English's (which arrived with the build-en artifact above).
+      # Content-hashed filenames mean identical names carry identical bytes, so
+      # this cannot clobber English assets. Without this, locale pages 404 on
+      # the CSS chunks unique to their own build.
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: build-*-assets
+          merge-multiple: true
+          path: build/_astro/
 
       - name: Deploy
         uses: reggionick/s3-deploy@v4
@@ -392,6 +417,14 @@ jobs:
           path: build/${{ matrix.locale }}/
           retention-days: 1
 
+      # See build-locale-full: Astro emits hashed assets to build/_astro/ at the
+      # output root, so the locale directory alone is not self-contained.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-tr-only-${{ matrix.locale }}-assets
+          path: build/_astro/
+          retention-days: 1
+
   deploy-translations:
     needs: build-locale-only
     runs-on: ubuntu-latest
@@ -448,6 +481,21 @@ jobs:
         with:
           name: build-tr-only-fr
           path: build/fr/
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: build-tr-only-*-assets
+          merge-multiple: true
+          path: build/_astro/
+
+      # Publish the locale builds' hashed CSS/JS chunks. Deliberately WITHOUT
+      # --delete: this job must never prune _astro/, because English's assets
+      # live in the same prefix and are not present in this build. Orphaned
+      # chunks accumulate here and are pruned by the next full deploy, which
+      # syncs the complete build/ with delete-removed.
+      - name: Deploy locale build assets to S3
+        run: |
+          aws s3 sync build/_astro/ s3://${{ secrets.S3_BUCKET }}/_astro/
 
       # Sync locale directories to S3 using AWS CLI —
       # only overwrites zh/, tr/, ru/, es/, ja/, vi/, and fr/ prefixes, leaves English untouched.
