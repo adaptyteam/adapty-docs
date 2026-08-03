@@ -52,15 +52,27 @@ jobs:
       group: check-internal-links-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     steps:
+      # No fetch-depth: 0 here. The link checker only ever runs
+      # `git diff --name-only <base>` (base tree vs working tree) and
+      # `git show <base>:<path>` — no merge-base, no log, no history walk — so
+      # two disconnected shallow commits are enough. Under the blobless fetch
+      # that sparse-checkout enables, fetch-depth: 0 costs ~182 MB of commits
+      # and trees for all 623 branches; one commit costs ~0.7 MB.
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           # Exclude src/assets (87% of checkout bytes; unused by this job).
           # sparse-checkout without `filter` ⇒ fetch uses --filter=blob:none.
           sparse-checkout: |
             /*
             !/src/assets
           sparse-checkout-cone-mode: false
+      # Fetch only the tag being diffed against, at depth 1. `git diff <tag>`
+      # compares that tag's trees to the working tree, so no connecting
+      # history is required.
+      - name: Fetch diff base
+        run: |
+          git fetch --filter=blob:none --depth=1 origin \
+            '+refs/tags/last-production-deploy:refs/tags/last-production-deploy'
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -81,15 +93,21 @@ jobs:
       group: check-localized-links-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     steps:
+      # See check-internal-links above: only tree-level diffs against the tag
+      # are needed, so a depth-1 checkout plus a depth-1 tag fetch replaces the
+      # ~182 MB blobless full-history fetch.
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           # Exclude src/assets (87% of checkout bytes; unused by this job).
           # sparse-checkout without `filter` ⇒ fetch uses --filter=blob:none.
           sparse-checkout: |
             /*
             !/src/assets
           sparse-checkout-cone-mode: false
+      - name: Fetch diff base
+        run: |
+          git fetch --filter=blob:none --depth=1 origin \
+            '+refs/tags/last-production-deploy:refs/tags/last-production-deploy'
       - uses: actions/setup-node@v4
         with:
           node-version: 20
