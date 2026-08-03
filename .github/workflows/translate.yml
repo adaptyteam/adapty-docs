@@ -44,6 +44,16 @@ jobs:
           # not just the tip — so a 2-deep clone is insufficient. Manual
           # dispatch may also diff against an arbitrarily old base SHA.
           fetch-depth: 0
+          # Exclude src/assets (689 MB — 87% of this repo's checkout payload).
+          # No step in this job reads it. Setting sparse-checkout WITHOUT
+          # `filter` makes actions/checkout add --filter=blob:none to the fetch,
+          # so this cuts transferred bytes, not just working-tree writes.
+          # Don't add `filter` here: it overrides sparse-checkout, and a full
+          # working tree then lazily re-fetches every blob anyway.
+          sparse-checkout: |
+            /*
+            !/src/assets
+          sparse-checkout-cone-mode: false
 
       - name: Get changed translatable files
         id: diff
@@ -70,10 +80,16 @@ jobs:
             BASE="HEAD^1"
           fi
           echo "Diffing $BASE..HEAD"
+          # The trailing pathspecs are redundant with the greps below, but they
+          # keep `--diff-filter=AMR` rename detection from having to inspect
+          # blobs outside these dirs. Under the blobless fetch above that would
+          # mean lazily downloading src/assets blobs just to score similarity.
           CHANGED=$(git diff --name-only --diff-filter=AMR "$BASE" HEAD \
+            -- src/content/docs src/components/reusable src/data/sidebars src/api-reference/specs \
             | grep -E '^(src/content/docs/.+\.mdx|src/components/reusable/.+\.mdx?|src/data/sidebars/.+\.json|src/api-reference/specs/[^./]+\.yaml)$' \
             | tr '\n' ',' | sed 's/,$//')
           DELETED=$(git diff --name-only --diff-filter=D "$BASE" HEAD \
+            -- src/content/docs src/components/reusable src/api-reference/specs \
             | grep -E '^(src/content/docs/.+\.mdx|src/components/reusable/.+\.mdx?|src/api-reference/specs/[^./]+\.yaml)$' \
             | tr '\n' ',' | sed 's/,$//')
           echo "files=$CHANGED" >> $GITHUB_OUTPUT
@@ -103,6 +119,13 @@ jobs:
         locale: ${{ fromJson(needs.setup.outputs.locales) }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Exclude src/assets (87% of checkout bytes; unused by this job).
+          # sparse-checkout without `filter` ⇒ fetch uses --filter=blob:none.
+          sparse-checkout: |
+            /*
+            !/src/assets
+          sparse-checkout-cone-mode: false
 
       - uses: actions/setup-node@v4
         with:
@@ -159,7 +182,17 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Sparse here is safe for the commit/push below: paths outside the sparse
+      # set keep their SKIP_WORKTREE bit, so `git add`/`git commit` can't drop
+      # src/assets from the tree. This job only stages src/locales/ anyway.
       - uses: actions/checkout@v4
+        with:
+          # Exclude src/assets (87% of checkout bytes; unused by this job).
+          # sparse-checkout without `filter` ⇒ fetch uses --filter=blob:none.
+          sparse-checkout: |
+            /*
+            !/src/assets
+          sparse-checkout-cone-mode: false
 
       - uses: actions/setup-node@v4
         with:
