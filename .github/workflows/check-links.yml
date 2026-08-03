@@ -24,9 +24,14 @@ jobs:
       github.event.inputs.check-type == 'all' ||
       github.event.inputs.check-type == 'internal-only'
     steps:
+      # No fetch-depth: 0. The link checker only runs `git diff --name-only
+      # <base>` (base tree vs working tree) and `git show <base>:<path>` — no
+      # merge-base, no log, no history walk — so the base commit and HEAD need
+      # not be connected. Under the blobless fetch that sparse-checkout
+      # enables, fetch-depth: 0 costs ~182 MB of commits and trees across all
+      # 623 branches; the single commit actually needed costs ~0.7 MB.
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           # Exclude src/assets (689 MB — 87% of this repo's checkout payload).
           # The link checker never reads it. Setting sparse-checkout WITHOUT
           # `filter` makes actions/checkout add --filter=blob:none to the fetch,
@@ -35,6 +40,24 @@ jobs:
             /*
             !/src/assets
           sparse-checkout-cone-mode: false
+
+      # Fetch just the ref each run below diffs against, at depth 1. Passed via
+      # env rather than interpolated into the script, so a branch name can't be
+      # injected into the shell.
+      - name: Fetch diff base (PR base branch)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          git fetch --filter=blob:none --depth=1 origin \
+            "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+
+      - name: Fetch diff base (last production deploy tag)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git fetch --filter=blob:none --depth=1 origin \
+            '+refs/tags/last-production-deploy:refs/tags/last-production-deploy'
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
