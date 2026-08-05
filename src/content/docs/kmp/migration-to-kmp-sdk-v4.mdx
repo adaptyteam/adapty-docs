@@ -26,7 +26,7 @@ Adapty Kotlin Multiplatform SDK 4.0 (beta) introduces flows and renames the payw
 | `paywallViewDidPerformAction`, `paywallViewDidAppear`, and other `paywallView...` callbacks | `flowViewDidPerformAction`, `flowViewDidAppear`, and other `flowView...` callbacks |
 | `paywallViewDidFailRendering` | `flowViewDidReceiveError` |
 
-`AdaptyPaywallProduct` keeps its name — products still belong to a flow, and `getPaywallProducts` keeps its name too, now taking an `AdaptyFlow`. The `getFlow` and `getFlowForDefaultAudience` methods no longer take a `locale` parameter. The purchase and profile APIs (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) and `setFallback` keep the same signatures, but the fallback file itself must be re-downloaded — see [Fallback files](#fallback-files). The onboarding methods still work but are deprecated — see [Onboarding API deprecation](#onboarding-api-deprecation). Some default behaviors changed — see [Default behavior changes](#default-behavior-changes).
+`AdaptyPaywallProduct` keeps its name — products still belong to a flow, and `getPaywallProducts` keeps its name too, now taking an `AdaptyFlow`. The `getFlow` and `getFlowForDefaultAudience` methods no longer take a `locale` parameter — pass it to `createFlowView` instead. The purchase and profile APIs (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) and `setFallback` keep the same signatures, but the fallback file itself must be re-downloaded — see [Fallback files](#fallback-files). The onboarding methods still work but are deprecated — see [Onboarding API deprecation](#onboarding-api-deprecation). Some default behaviors changed — see [Default behavior changes](#default-behavior-changes).
 
 ## Installation
 
@@ -34,7 +34,7 @@ v4.0 is a pre-release, so pin the exact version — Gradle does not select pre-r
 
 ```toml showLineNumbers title="libs.versions.toml"
 [versions]
-adapty-kmp = "4.0.0-beta.1"
+adapty-kmp = "4.0.1-beta.1"
 
 [libraries]
 adapty-kmp = { module = "io.adapty:adapty-kmp", version.ref = "adapty-kmp" }
@@ -49,7 +49,7 @@ The underlying native Adapty SDKs are bumped to their 4.x releases on both platf
 
 ### getPaywall → getFlow
 
-The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale` parameter is removed — when you render a flow, the locale is resolved automatically; for custom paywalls, all locales are returned in `flow.remoteConfigs`:
+The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale` parameter moves from the fetch call to `createFlowView`; for custom paywalls, all locales are returned in `flow.remoteConfigs`:
 
 ```diff showLineNumbers
 - Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en")
@@ -57,12 +57,14 @@ The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale`
 -         // use the paywall
 + Adapty.getFlow("YOUR_PLACEMENT_ID")
 +     .onSuccess { flow ->
-+         // use the flow
++         AdaptyUI.createFlowView(flow = flow, locale = "en")
       }
       .onError { error ->
           // handle the error
       }
 ```
+
+`locale` stays optional on `createFlowView`: omit it and the view renders in `en`, or in the flow's default localization when the flow has no `en`. See [Localizations and locale codes](kmp-localizations-and-locale-codes).
 
 `getPaywallForDefaultAudience` is renamed the same way:
 
@@ -128,7 +130,7 @@ As in v3, you do not need to call this method when displaying flows or paywalls 
 
 ### createPaywallView → createFlowView
 
-Rename the factory method and pass the `AdaptyFlow`. The returned view type is renamed from `AdaptyUIPaywallView` to `AdaptyUIFlowView`, but its methods (`present`, `dismiss`) and the optional parameters (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) are unchanged:
+Rename the factory method and pass the `AdaptyFlow`. The returned view type is renamed from `AdaptyUIPaywallView` to `AdaptyUIFlowView`, but its methods (`present`, `dismiss`) and the optional parameters (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) are unchanged. One optional parameter is new: `locale`, which replaces the `locale` you used to pass to `getPaywall` — see [Fetching flows](#fetching-flows).
 
 ```diff showLineNumbers
 - AdaptyUI.createPaywallView(paywall)
@@ -215,6 +217,7 @@ As in v3, the callbacks you pass here (and any observer registered via `register
 - `AdaptyUI.setSystemRequestsHandler(...)` with an `AdaptyUISystemRequestsHandler` — reserved for system requests from a flow (OS permission prompts and app review requests). Flows don't trigger these requests yet, so you don't need to register a handler.
 - The new optional `flowViewDidReceiveAnalyticEvent` callback is reserved for custom analytic events from a flow. Flows don't emit these to your code yet, so you don't need to implement it.
 - `AdaptyUI.openWebUrl(url, openIn)` and `AdaptyUI.requestAppReview()` — these back the default `OpenUrlAction` handling and the default `handleAppReviewRequest`, so URLs and app-review prompts are handled natively out of the box. Call them directly only if you override those defaults.
+- `AdaptyUIFlowView.locale` — reports the localization the view was built with, so you can tell which one the user actually sees. Requires SDK 4.0.1-beta.1 or later.
 - `AdaptyConfig.ServerCluster.CN` — a new server cluster option alongside `DEFAULT` and `EU`, for connecting your app to [Adapty's China servers](china-cluster).
 
 ## Default behavior changes
