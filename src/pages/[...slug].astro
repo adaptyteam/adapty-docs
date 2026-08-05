@@ -6,6 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import ArticleButtons from '../components/ArticleButtons.astro';
 import { mdxComponents } from '../components/mdxComponents';
+import { buildBreadcrumbs } from '../utils/docs';
 
 
 export async function getStaticPaths() {
@@ -152,51 +153,12 @@ if (entry) {
 }
 
 // 2. Breadcrumbs and Navigation
-function getBreadcrumbs(items, targetId, path = []) {
-    for (const item of items) {
-        let href = item.href;
-
-        if (!href) {
-            const candidateId = item.link?.id || item.id;
-            // Only link if we can resolve it to a real document
-            if (candidateId) {
-                 const docExists = allDocs.some(d =>
-                    d.id && typeof d.id === 'string' && (
-                        d.id === candidateId ||
-                        d.id.replace(/\.(md|mdx)$/, '') === candidateId ||
-                        d.id.split('/').pop()?.replace(/\.(md|mdx)$/, '') === candidateId
-                    )
-                 );
-                 if (docExists) {
-                     href = `${import.meta.env.BASE_URL}/${candidateId}`.replace(/\/+/g, '/');
-                 }
-            }
-        }
-        
-        // Avoid linking to the current page (self-link) - redundant if we slice, but good for safety
-        if (href === `/${targetId}` || href === targetId) {
-            href = undefined;
-        }
-
-        const currentPath = [...path, { label: item.label, href }];
-        
-        if (item.id === targetId || item.link?.id === targetId) {
-            return currentPath;
-        }
-        
-        if (item.items) {
-            const found = getBreadcrumbs(item.items, targetId, currentPath);
-            if (found) return found;
-        }
-    }
-    return null;
-}
-
-// Generate breadcrumbs:
-// 1. Get full path
-// 2. Remove the last item (current page) as requested
-const fullBreadcrumbs = sidebar ? getBreadcrumbs(sidebar, slug || 'what-is-adapty') || [] : [];
-const breadcrumbs = fullBreadcrumbs.length > 0 ? fullBreadcrumbs.slice(0, -1) : [];
+// Shared with the locale route so both trails resolve `customSlug` the same way
+// — without it the root crumb points at an id-named URL that only exists as a
+// redirect stub (e.g. what-is-adapty, whose real slug is "/").
+const breadcrumbs = sidebar
+  ? buildBreadcrumbs(sidebar, slug || 'what-is-adapty', allDocs, import.meta.env.BASE_URL)
+  : [];
 
 // 3. Global Reusable Components
 const reusableComponents = import.meta.glob('../components/reusable/*.{md,mdx}', { eager: true });
