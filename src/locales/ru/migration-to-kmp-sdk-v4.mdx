@@ -26,7 +26,7 @@ Adapty Kotlin Multiplatform SDK 4.0 (beta) вводит флоу и соотве
 | `paywallViewDidPerformAction`, `paywallViewDidAppear` и другие колбэки `paywallView...` | `flowViewDidPerformAction`, `flowViewDidAppear` и другие колбэки `flowView...` |
 | `paywallViewDidFailRendering` | `flowViewDidReceiveError` |
 
-`AdaptyPaywallProduct` сохраняет своё название — продукты по-прежнему принадлежат флоу, и `getPaywallProducts` тоже сохраняет название, теперь принимая `AdaptyFlow`. Методы `getFlow` и `getFlowForDefaultAudience` больше не принимают параметр `locale`. API покупок и профиля (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) и `setFallback` сохраняют те же сигнатуры, однако сам файл резервного пейвола необходимо скачать заново — см. [Резервные файлы](#fallback-files). Методы онбординга по-прежнему работают, но помечены как устаревшие — см. [Устаревание API онбординга](#onboarding-api-deprecation). Некоторые стандартные настройки поведения изменились — см. [Изменения стандартного поведения](#default-behavior-changes).
+`AdaptyPaywallProduct` сохраняет своё название — продукты по-прежнему принадлежат флоу, и `getPaywallProducts` тоже сохраняет название, теперь принимая `AdaptyFlow`. Методы `getFlow` и `getFlowForDefaultAudience` больше не принимают параметр `locale` — передавайте его в `createFlowView`. API покупок и профилей (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) и `setFallback` сохраняют те же сигнатуры, однако файл резервного пейвола необходимо скачать заново — см. [Резервные файлы](#fallback-files). Методы онбординга по-прежнему работают, но считаются устаревшими — см. [Устаревание API онбординга](#onboarding-api-deprecation). Некоторые поведения по умолчанию изменились — см. [Изменения поведения по умолчанию](#default-behavior-changes).
 
 ## Установка \{#installation\}
 
@@ -34,7 +34,7 @@ v4.0 — это предрелизная версия, поэтому указы
 
 ```toml showLineNumbers title="libs.versions.toml"
 [versions]
-adapty-kmp = "4.0.0-beta.1"
+adapty-kmp = "4.0.1-beta.1"
 
 [libraries]
 adapty-kmp = { module = "io.adapty:adapty-kmp", version.ref = "adapty-kmp" }
@@ -49,7 +49,7 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 ### getPaywall → getFlow
 
-Возвращаемый тип изменяется с `AdaptyPaywall` на `AdaptyFlow`, а параметр `locale` удалён — при отображении флоу локаль определяется автоматически; для кастомных пейволов все локали возвращаются в `flow.remoteConfigs`:
+Возвращаемый тип меняется с `AdaptyPaywall` на `AdaptyFlow`, параметр `locale` переносится из вызова fetch в `createFlowView`; для кастомных пейволов все локали возвращаются в `flow.remoteConfigs`:
 
 ```diff showLineNumbers
 - Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en")
@@ -57,12 +57,14 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 -         // use the paywall
 + Adapty.getFlow("YOUR_PLACEMENT_ID")
 +     .onSuccess { flow ->
-+         // use the flow
++         AdaptyUI.createFlowView(flow = flow, locale = "en")
       }
       .onError { error ->
           // handle the error
       }
 ```
+
+`locale` остаётся необязательным параметром в `createFlowView`: если его не указать, вид отобразится на `en` или на языке по умолчанию флоу, если в нём нет `en`. См. [Локализации и коды языков](kmp-localizations-and-locale-codes).
 
 `getPaywallForDefaultAudience` переименован аналогичным образом:
 
@@ -128,7 +130,7 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 ### createPaywallView → createFlowView
 
-Переименуйте фабричный метод и передайте `AdaptyFlow`. Тип возвращаемого представления переименован с `AdaptyUIPaywallView` на `AdaptyUIFlowView`, но его методы (`present`, `dismiss`) и необязательные параметры (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) остались без изменений:
+Переименуйте фабричный метод и передайте `AdaptyFlow`. Тип возвращаемого значения переименован с `AdaptyUIPaywallView` на `AdaptyUIFlowView`, но его методы (`present`, `dismiss`) и необязательные параметры (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) остались прежними. Добавлен один новый необязательный параметр: `locale` — он заменяет `locale`, который раньше передавался в `getPaywall`. Подробнее см. в разделе [Получение флоу](#fetching-flows).
 
 ```diff showLineNumbers
 - AdaptyUI.createPaywallView(paywall)
@@ -141,14 +143,14 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
       }
 ```
 
-Если вы не используете Compose Multiplatform, нативный фабричный метод переименован аналогично:
+Если вы не используете Compose Multiplatform, нативный фабричный метод переименован аналогичным образом:
 
 ```diff showLineNumbers
 - AdaptyUI.createNativePaywallView(paywall)
 + AdaptyUI.createNativeFlowView(flow)
 ```
 
-`createFlowView` возвращает `AdaptyResult.Error`, если для флоу не настроен вид — это заменяет проверку `hasViewConfiguration` из v3:
+`createFlowView` возвращает `AdaptyResult.Error`, если у флоу не настроен view — это заменяет проверку `hasViewConfiguration` из v3:
 
 ```diff showLineNumbers
 - if (paywall.hasViewConfiguration) {
@@ -211,11 +213,12 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 ### Новые API \{#new-apis\}
 
-- `AdaptyUI.setObserverModeResolver(...)` с `AdaptyUIObserverModeResolver` — управляет покупками и восстановлениями, инициированными из флоу, когда SDK работает в [режиме Observer](implement-observer-mode-kmp). Ранее это было доступно только в нативных SDK для iOS и Android. Подробнее — в разделе [Отображение флоу в режиме Observer](kmp-present-flows-in-observer-mode).
+- `AdaptyUI.setObserverModeResolver(...)` с `AdaptyUIObserverModeResolver` — управляет покупками и восстановлениями, инициированными из флоу, пока SDK работает в [режиме наблюдателя](implement-observer-mode-kmp). Ранее это было доступно только в нативных iOS и Android SDK. См. [Отображение флоу в режиме наблюдателя](kmp-present-flows-in-observer-mode).
 - `AdaptyUI.setSystemRequestsHandler(...)` с `AdaptyUISystemRequestsHandler` — зарезервировано для системных запросов из флоу (запросы разрешений ОС и запросы на оценку приложения). Флоу пока не инициируют такие запросы, поэтому регистрировать обработчик не нужно.
-- Новый необязательный коллбэк `flowViewDidReceiveAnalyticEvent` зарезервирован для пользовательских аналитических событий из флоу. Флоу пока не отправляют их в ваш код, так что реализовывать его не обязательно.
-- `AdaptyUI.openWebUrl(url, openIn)` и `AdaptyUI.requestAppReview()` — обеспечивают стандартную обработку `OpenUrlAction` и `handleAppReviewRequest` по умолчанию, поэтому URL и запросы на оценку приложения обрабатываются нативно «из коробки». Вызывайте их напрямую только при переопределении этих настроек по умолчанию.
-- `AdaptyConfig.ServerCluster.CN` — новая опция серверного кластера наряду с `DEFAULT` и `EU`, для подключения приложения к [серверам Adapty в Китае](china-cluster).
+- Новый необязательный коллбэк `flowViewDidReceiveAnalyticEvent` зарезервирован для пользовательских аналитических событий из флоу. Флоу пока не передают их в ваш код, так что реализовывать его не нужно.
+- `AdaptyUI.openWebUrl(url, openIn)` и `AdaptyUI.requestAppReview()` — обеспечивают стандартную обработку `OpenUrlAction` и стандартный `handleAppReviewRequest`, так что URL-адреса и запросы на оценку приложения обрабатываются нативно из коробки. Вызывайте их напрямую только если переопределяете поведение по умолчанию.
+- `AdaptyUIFlowView.locale` — возвращает локализацию, с которой было построено представление, чтобы вы могли определить, какую из них пользователь видит фактически. Требуется SDK 4.0.1-beta.1 или новее.
+- `AdaptyConfig.ServerCluster.CN` — новый вариант серверного кластера наряду с `DEFAULT` и `EU`, для подключения приложения к [серверам Adapty в Китае](china-cluster).
 
 ## Изменения поведения по умолчанию \{#default-behavior-changes\}
 

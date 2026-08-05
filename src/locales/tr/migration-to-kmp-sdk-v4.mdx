@@ -26,7 +26,7 @@ Adapty Kotlin Multiplatform SDK 4.0 (beta), flow'ları tanıtıyor ve paywall AP
 | `paywallViewDidPerformAction`, `paywallViewDidAppear` ve diğer `paywallView...` callback'leri | `flowViewDidPerformAction`, `flowViewDidAppear` ve diğer `flowView...` callback'leri |
 | `paywallViewDidFailRendering` | `flowViewDidReceiveError` |
 
-`AdaptyPaywallProduct` adını korur — ürünler hâlâ bir flow'a aittir ve `getPaywallProducts` de adını korur, artık bir `AdaptyFlow` alır. `getFlow` ve `getFlowForDefaultAudience` metodları artık `locale` parametresi almaz. Satın alma ve profil API'leri (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) ile `setFallback` aynı imzaları korur, ancak yedek dosyanın kendisi yeniden indirilmelidir — bkz. [Yedek dosyalar](#fallback-files). Onboarding metodları hâlâ çalışır ancak kullanımdan kaldırılmıştır — bkz. [Onboarding API kullanımdan kaldırma](#onboarding-api-deprecation). Bazı varsayılan davranışlar değişti — bkz. [Varsayılan davranış değişiklikleri](#default-behavior-changes).
+`AdaptyPaywallProduct` adını korur — ürünler hâlâ bir flow'a aittir ve `getPaywallProducts` da adını korur, artık bir `AdaptyFlow` alır. `getFlow` ve `getFlowForDefaultAudience` metotları artık `locale` parametresi almaz — bunun yerine `createFlowView` metoduna iletin. Satın alma ve profil API'leri (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) ile `setFallback` aynı imzaları korur; ancak yedek dosyanın kendisini yeniden indirmeniz gerekir — bkz. [Yedek dosyalar](#fallback-files). Onboarding metotları hâlâ çalışır ancak kullanımdan kaldırılmıştır — bkz. [Onboarding API kullanım dışı bırakma](#onboarding-api-deprecation). Bazı varsayılan davranışlar değişti — bkz. [Varsayılan davranış değişiklikleri](#default-behavior-changes).
 
 ## Kurulum \{#installation\}
 
@@ -34,7 +34,7 @@ v4.0 bir ön sürüm olduğundan, tam sürümü sabitleyin — Gradle dinamik ar
 
 ```toml showLineNumbers title="libs.versions.toml"
 [versions]
-adapty-kmp = "4.0.0-beta.1"
+adapty-kmp = "4.0.1-beta.1"
 
 [libraries]
 adapty-kmp = { module = "io.adapty:adapty-kmp", version.ref = "adapty-kmp" }
@@ -49,7 +49,7 @@ Altta yatan yerel Adapty SDK'ları her iki platformda da 4.x sürümlerine günc
 
 ### getPaywall → getFlow
 
-Döndürülen tür `AdaptyPaywall` yerine `AdaptyFlow` olarak değişir ve `locale` parametresi kaldırılır — bir flow render ettiğinizde locale otomatik olarak belirlenir; özel paywall'lar için tüm locale'ler `flow.remoteConfigs` içinde döner:
+Döndürülen tür `AdaptyPaywall` yerine `AdaptyFlow` olarak değişir ve `locale` parametresi, fetch çağrısından `createFlowView`'a taşınır; özel paywalllar için tüm locale'ler `flow.remoteConfigs` içinde döndürülür:
 
 ```diff showLineNumbers
 - Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en")
@@ -57,14 +57,16 @@ Döndürülen tür `AdaptyPaywall` yerine `AdaptyFlow` olarak değişir ve `loca
 -         // use the paywall
 + Adapty.getFlow("YOUR_PLACEMENT_ID")
 +     .onSuccess { flow ->
-+         // use the flow
++         AdaptyUI.createFlowView(flow = flow, locale = "en")
       }
       .onError { error ->
           // handle the error
       }
 ```
 
-`getPaywallForDefaultAudience` aynı şekilde yeniden adlandırıldı:
+`locale`, `createFlowView` üzerinde isteğe bağlı olmaya devam eder: bunu atlarsanız görünüm `en` dilinde ya da flow'un `en` yerelleştirmesi yoksa flow'un varsayılan yerelleştirmesinde gösterilir. Bkz. [Yerelleştirmeler ve yerel ayar kodları](kmp-localizations-and-locale-codes).
+
+`getPaywallForDefaultAudience` aynı şekilde yeniden adlandırılmıştır:
 
 ```diff showLineNumbers
 - Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en")
@@ -128,7 +130,7 @@ v3'te olduğu gibi, [Flow Builder](adapty-flow-builder) veya [Paywall Builder](a
 
 ### createPaywallView → createFlowView
 
-Factory metodunun adını değiştirin ve `AdaptyFlow` geçirin. Dönen görünüm türü `AdaptyUIPaywallView`'dan `AdaptyUIFlowView`'a yeniden adlandırılmıştır; ancak metodları (`present`, `dismiss`) ve isteğe bağlı parametreleri (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) değişmeden kalmıştır:
+Factory metodunu yeniden adlandırın ve `AdaptyFlow` nesnesi geçirin. Dönen görünüm tipi `AdaptyUIPaywallView`'dan `AdaptyUIFlowView`'a yeniden adlandırıldı; ancak metodları (`present`, `dismiss`) ve isteğe bağlı parametreleri (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) değişmedi. Yeni bir isteğe bağlı parametre eklendi: `locale`. Bu parametre, daha önce `getPaywall` metoduna geçirdiğiniz `locale` parametresinin yerini alıyor — bkz. [Flow'ları getirme](#fetching-flows).
 
 ```diff showLineNumbers
 - AdaptyUI.createPaywallView(paywall)
@@ -141,14 +143,14 @@ Factory metodunun adını değiştirin ve `AdaptyFlow` geçirin. Dönen görün�
       }
 ```
 
-Compose Multiplatform kullanmıyorsanız, yerel factory metodu aynı şekilde yeniden adlandırılmıştır:
+Compose Multiplatform kullanmıyorsanız, native factory metodu da aynı şekilde yeniden adlandırıldı:
 
 ```diff showLineNumbers
 - AdaptyUI.createNativePaywallView(paywall)
 + AdaptyUI.createNativeFlowView(flow)
 ```
 
-`createFlowView`, flow'un yapılandırılmış bir görünümü yoksa `AdaptyResult.Error` döndürür — bu, v3'teki `hasViewConfiguration` kontrolünün yerini alır:
+`createFlowView`, flow'da görünüm yapılandırması yoksa `AdaptyResult.Error` döndürür — bu, v3'teki `hasViewConfiguration` kontrolünün yerini alır:
 
 ```diff showLineNumbers
 - if (paywall.hasViewConfiguration) {
@@ -211,10 +213,11 @@ v3'te olduğu gibi, burada ilettiğiniz callback'ler (ve `registerFlowEventsList
 
 ### Yeni API'lar
 
-- `AdaptyUI.setObserverModeResolver(...)` ve `AdaptyUIObserverModeResolver` — SDK [Observer modu](implement-observer-mode-kmp)nda çalışırken flow'lardan başlatılan satın alma ve geri yükleme işlemlerini yönetir. Önceden bu yalnızca native iOS ve Android SDK'larında kullanılabilirdi. Bkz. [Observer modunda flow sunma](kmp-present-flows-in-observer-mode).
-- `AdaptyUI.setSystemRequestsHandler(...)` ve `AdaptyUISystemRequestsHandler` — bir flow'dan gelen sistem isteklerine ayrılmıştır (işletim sistemi izin istemleri ve uygulama değerlendirme istekleri). Flow'lar henüz bu istekleri tetiklemediğinden bir handler kaydetmenize gerek yoktur.
-- Yeni isteğe bağlı `flowViewDidReceiveAnalyticEvent` callback'i, bir flow'dan gelen özel analitik olayları için ayrılmıştır. Flow'lar henüz bu olayları kodunuza iletmediğinden bunu uygulamanıza gerek yoktur.
-- `AdaptyUI.openWebUrl(url, openIn)` ve `AdaptyUI.requestAppReview()` — bunlar varsayılan `OpenUrlAction` işlemini ve varsayılan `handleAppReviewRequest`'i destekler; böylece URL'ler ve uygulama değerlendirme istemleri kutudan çıktığı gibi native olarak işlenir. Yalnızca bu varsayılanları geçersiz kılarsanız doğrudan çağırın.
+- `AdaptyUI.setObserverModeResolver(...)` ile bir `AdaptyUIObserverModeResolver` — SDK [Observer mode](implement-observer-mode-kmp)'da çalışırken flow'lardan başlatılan satın almaları ve geri yüklemeleri yönetin. Önceden bu yalnızca yerel iOS ve Android SDK'larında mevcuttu. Bkz. [Flow'ları Observer mode'da sunma](kmp-present-flows-in-observer-mode).
+- `AdaptyUI.setSystemRequestsHandler(...)` ile bir `AdaptyUISystemRequestsHandler` — bir flow'dan gelen sistem istekleri için ayrılmıştır (işletim sistemi izin istemleri ve uygulama değerlendirme istekleri). Flow'lar henüz bu istekleri tetiklemediğinden bir işleyici kaydetmenize gerek yoktur.
+- Yeni isteğe bağlı `flowViewDidReceiveAnalyticEvent` callback'i, bir flow'dan gelen özel analiz olayları için ayrılmıştır. Flow'lar henüz bu olayları kodunuza iletmediğinden bunu uygulamanıza gerek yoktur.
+- `AdaptyUI.openWebUrl(url, openIn)` ve `AdaptyUI.requestAppReview()` — bunlar varsayılan `OpenUrlAction` işlemesini ve varsayılan `handleAppReviewRequest`'i destekler; dolayısıyla URL'ler ve uygulama değerlendirme istemleri kutudan çıktığı gibi yerel olarak işlenir. Bunları yalnızca söz konusu varsayılanları geçersiz kılıyorsanız doğrudan çağırın.
+- `AdaptyUIFlowView.locale` — görünümün hangi yerelleştirmeyle oluşturulduğunu bildirir; böylece kullanıcının gerçekte hangisini gördüğünü anlayabilirsiniz. SDK 4.0.1-beta.1 veya sonrasını gerektirir.
 - `AdaptyConfig.ServerCluster.CN` — uygulamanızı [Adapty'nin Çin sunucularına](china-cluster) bağlamak için `DEFAULT` ve `EU`'nun yanında yeni bir sunucu kümesi seçeneği.
 
 ## Varsayılan davranış değişiklikleri \{#default-behavior-changes\}

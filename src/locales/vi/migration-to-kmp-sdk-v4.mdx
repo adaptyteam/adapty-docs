@@ -26,7 +26,7 @@ Adapty Kotlin Multiplatform SDK 4.0 (beta) giới thiệu các flow và đổi t
 | `paywallViewDidPerformAction`, `paywallViewDidAppear`, và các callback `paywallView...` khác | `flowViewDidPerformAction`, `flowViewDidAppear`, và các callback `flowView...` khác |
 | `paywallViewDidFailRendering` | `flowViewDidReceiveError` |
 
-`AdaptyPaywallProduct` giữ nguyên tên — sản phẩm vẫn thuộc về một flow, và `getPaywallProducts` cũng giữ nguyên tên, nhưng bây giờ nhận vào một `AdaptyFlow`. Các phương thức `getFlow` và `getFlowForDefaultAudience` không còn nhận tham số `locale` nữa. Các API mua hàng và hồ sơ người dùng (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) và `setFallback` giữ nguyên signature, nhưng file fallback phải được tải lại — xem [Fallback files](#fallback-files). Các phương thức onboarding vẫn hoạt động nhưng đã bị deprecated — xem [Onboarding API deprecation](#onboarding-api-deprecation). Một số hành vi mặc định đã thay đổi — xem [Default behavior changes](#default-behavior-changes).
+`AdaptyPaywallProduct` giữ nguyên tên — sản phẩm vẫn thuộc về một flow, và `getPaywallProducts` cũng giữ nguyên tên, giờ nhận vào một `AdaptyFlow`. Các phương thức `getFlow` và `getFlowForDefaultAudience` không còn nhận tham số `locale` nữa — thay vào đó hãy truyền nó vào `createFlowView`. Các API mua hàng và hồ sơ người dùng (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) và `setFallback` giữ nguyên signature, nhưng file fallback phải được tải lại — xem [Fallback files](#fallback-files). Các phương thức onboarding vẫn hoạt động nhưng đã bị deprecated — xem [Onboarding API deprecation](#onboarding-api-deprecation). Một số hành vi mặc định đã thay đổi — xem [Default behavior changes](#default-behavior-changes).
 
 ## Cài đặt \{#installation\}
 
@@ -34,7 +34,7 @@ v4.0 là bản pre-release, vì vậy hãy ghim đúng phiên bản — Gradle k
 
 ```toml showLineNumbers title="libs.versions.toml"
 [versions]
-adapty-kmp = "4.0.0-beta.1"
+adapty-kmp = "4.0.1-beta.1"
 
 [libraries]
 adapty-kmp = { module = "io.adapty:adapty-kmp", version.ref = "adapty-kmp" }
@@ -49,7 +49,7 @@ Các native Adapty SDK bên dưới đã được nâng lên phiên bản 4.x tr
 
 ### getPaywall → getFlow
 
-Kiểu trả về thay đổi từ `AdaptyPaywall` thành `AdaptyFlow`, và tham số `locale` bị loại bỏ — khi bạn render một flow, locale sẽ được tự động xác định; đối với paywall tùy chỉnh, tất cả các locale được trả về trong `flow.remoteConfigs`:
+Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và tham số `locale` chuyển từ lệnh gọi fetch sang `createFlowView`; đối với các paywall tùy chỉnh, tất cả các locale được trả về trong `flow.remoteConfigs`:
 
 ```diff showLineNumbers
 - Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en")
@@ -57,12 +57,14 @@ Kiểu trả về thay đổi từ `AdaptyPaywall` thành `AdaptyFlow`, và tham
 -         // use the paywall
 + Adapty.getFlow("YOUR_PLACEMENT_ID")
 +     .onSuccess { flow ->
-+         // use the flow
++         AdaptyUI.createFlowView(flow = flow, locale = "en")
       }
       .onError { error ->
           // handle the error
       }
 ```
+
+`locale` vẫn là tùy chọn trong `createFlowView`: bỏ qua nó thì view sẽ hiển thị bằng `en`, hoặc theo ngôn ngữ mặc định của flow khi flow không có `en`. Xem [Localizations và mã locale](kmp-localizations-and-locale-codes).
 
 `getPaywallForDefaultAudience` được đổi tên tương tự:
 
@@ -128,7 +130,7 @@ Giống như trong v3, bạn không cần gọi phương thức này khi hiển 
 
 ### createPaywallView → createFlowView
 
-Đổi tên phương thức factory và truyền vào `AdaptyFlow`. Kiểu view trả về được đổi tên từ `AdaptyUIPaywallView` thành `AdaptyUIFlowView`, nhưng các phương thức (`present`, `dismiss`) và các tham số tùy chọn (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) vẫn không thay đổi:
+Đổi tên phương thức factory và truyền vào `AdaptyFlow`. Kiểu view trả về được đổi tên từ `AdaptyUIPaywallView` thành `AdaptyUIFlowView`, nhưng các phương thức (`present`, `dismiss`) và các tham số tùy chọn (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) vẫn giữ nguyên. Có một tham số tùy chọn mới: `locale`, thay thế cho `locale` bạn từng truyền vào `getPaywall` — xem [Fetching flows](#fetching-flows).
 
 ```diff showLineNumbers
 - AdaptyUI.createPaywallView(paywall)
@@ -141,14 +143,14 @@ Giống như trong v3, bạn không cần gọi phương thức này khi hiển 
       }
 ```
 
-Nếu bạn không sử dụng Compose Multiplatform, phương thức factory native cũng được đổi tên tương tự:
+Nếu bạn không sử dụng Compose Multiplatform, phương thức factory gốc cũng được đổi tên tương tự:
 
 ```diff showLineNumbers
 - AdaptyUI.createNativePaywallView(paywall)
 + AdaptyUI.createNativeFlowView(flow)
 ```
 
-`createFlowView` trả về `AdaptyResult.Error` nếu flow không có view được cấu hình — điều này thay thế cho kiểm tra `hasViewConfiguration` ở v3:
+`createFlowView` trả về `AdaptyResult.Error` nếu flow không có view được cấu hình — điều này thay thế kiểm tra `hasViewConfiguration` ở v3:
 
 ```diff showLineNumbers
 - if (paywall.hasViewConfiguration) {
@@ -211,11 +213,12 @@ Giống như trong v3, các callback bạn truyền vào đây (và bất kỳ o
 
 ### API Mới \{#new-apis\}
 
-- `AdaptyUI.setObserverModeResolver(...)` với `AdaptyUIObserverModeResolver` — điều khiển các giao dịch mua và khôi phục được khởi tạo từ flow khi SDK chạy ở [chế độ Observer](implement-observer-mode-kmp). Trước đây, tính năng này chỉ có trong các SDK native iOS và Android. Xem [Hiển thị flow trong chế độ Observer](kmp-present-flows-in-observer-mode).
-- `AdaptyUI.setSystemRequestsHandler(...)` với `AdaptyUISystemRequestsHandler` — dành riêng cho các yêu cầu hệ thống từ flow (lời nhắc cấp quyền OS và yêu cầu đánh giá ứng dụng). Hiện tại flow chưa kích hoạt các yêu cầu này, nên bạn chưa cần đăng ký handler.
-- Callback tùy chọn mới `flowViewDidReceiveAnalyticEvent` được dành riêng cho các sự kiện phân tích tùy chỉnh từ flow. Hiện tại flow chưa phát ra các sự kiện này cho code của bạn, nên bạn chưa cần triển khai.
-- `AdaptyUI.openWebUrl(url, openIn)` và `AdaptyUI.requestAppReview()` — hỗ trợ xử lý mặc định `OpenUrlAction` và `handleAppReviewRequest` mặc định, giúp xử lý URL và lời nhắc đánh giá ứng dụng ngay lập tức mà không cần cấu hình thêm. Chỉ gọi trực tiếp khi bạn ghi đè các giá trị mặc định đó.
-- `AdaptyConfig.ServerCluster.CN` — tùy chọn cụm máy chủ mới bên cạnh `DEFAULT` và `EU`, dùng để kết nối ứng dụng với [máy chủ China của Adapty](china-cluster).
+- `AdaptyUI.setObserverModeResolver(...)` với `AdaptyUIObserverModeResolver` — điều khiển các giao dịch mua và khôi phục được khởi tạo từ flow khi SDK chạy ở [chế độ Observer](implement-observer-mode-kmp). Trước đây tính năng này chỉ có trên native iOS và Android SDK. Xem [Hiển thị flow trong chế độ Observer](kmp-present-flows-in-observer-mode).
+- `AdaptyUI.setSystemRequestsHandler(...)` với `AdaptyUISystemRequestsHandler` — dành riêng cho các yêu cầu hệ thống từ flow (yêu cầu quyền OS và yêu cầu đánh giá ứng dụng). Flow chưa kích hoạt các yêu cầu này, vì vậy bạn không cần đăng ký handler.
+- Callback tùy chọn mới `flowViewDidReceiveAnalyticEvent` được dành riêng cho các sự kiện phân tích tùy chỉnh từ flow. Flow chưa phát các sự kiện này đến code của bạn, vì vậy bạn không cần triển khai nó.
+- `AdaptyUI.openWebUrl(url, openIn)` và `AdaptyUI.requestAppReview()` — hỗ trợ xử lý `OpenUrlAction` mặc định và `handleAppReviewRequest` mặc định, vì vậy URL và yêu cầu đánh giá ứng dụng được xử lý natively ngay từ đầu. Chỉ gọi trực tiếp khi bạn ghi đè các giá trị mặc định đó.
+- `AdaptyUIFlowView.locale` — báo cáo bản địa hóa mà view được xây dựng cùng, để bạn biết người dùng thực sự đang xem bản nào. Yêu cầu SDK 4.0.1-beta.1 trở lên.
+- `AdaptyConfig.ServerCluster.CN` — tùy chọn cụm máy chủ mới bên cạnh `DEFAULT` và `EU`, để kết nối ứng dụng của bạn với [máy chủ China của Adapty](china-cluster).
 
 ## Thay đổi hành vi mặc định \{#default-behavior-changes\}
 

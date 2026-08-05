@@ -26,7 +26,7 @@ Adapty Kotlin Multiplatform SDK 4.0 (beta) ではフローが導入され、そ�
 | `paywallViewDidPerformAction`、`paywallViewDidAppear`、その他の `paywallView...` コールバック | `flowViewDidPerformAction`、`flowViewDidAppear`、その他の `flowView...` コールバック |
 | `paywallViewDidFailRendering` | `flowViewDidReceiveError` |
 
-`AdaptyPaywallProduct` は名前を維持します — プロダクトは引き続きフローに属し、`getPaywallProducts` も名前を維持しますが、現在は `AdaptyFlow` を受け取ります。`getFlow` および `getFlowForDefaultAudience` メソッドは `locale` パラメーターを受け取らなくなりました。購入およびプロファイルAPI（`makePurchase`、`restorePurchases`、`getProfile`、`identify`、`updateProfile`）と `setFallback` はシグネチャを維持していますが、フォールバックファイル自体は再ダウンロードが必要です — [フォールバックファイル](#fallback-files)を参照してください。オンボーディングメソッドは引き続き動作しますが、非推奨となっています — [オンボーディングAPIの非推奨化](#onboarding-api-deprecation)を参照してください。一部のデフォルト動作が変更されました — [デフォルト動作の変更](#default-behavior-changes)を参照してください。
+`AdaptyPaywallProduct` は名前を維持します — プロダクトは引き続きフローに属し、`getPaywallProducts` も名前を維持したまま `AdaptyFlow` を受け取るようになります。`getFlow` と `getFlowForDefaultAudience` メソッドは `locale` パラメーターを受け取らなくなりました — 代わりに `createFlowView` に渡してください。購入およびプロファイルの API（`makePurchase`、`restorePurchases`、`getProfile`、`identify`、`updateProfile`）と `setFallback` はシグネチャを維持しますが、フォールバックファイル自体は再ダウンロードが必要です — [フォールバックファイル](#fallback-files) を参照してください。オンボーディングのメソッドは引き続き動作しますが非推奨となっています — [オンボーディング API の非推奨](#onboarding-api-deprecation) を参照してください。一部のデフォルト動作が変更されました — [デフォルト動作の変更](#default-behavior-changes) を参照してください。
 
 ## インストール \{#installation\}
 
@@ -34,7 +34,7 @@ v4.0 はプレリリース版のため、正確なバージョンを固定して
 
 ```toml showLineNumbers title="libs.versions.toml"
 [versions]
-adapty-kmp = "4.0.0-beta.1"
+adapty-kmp = "4.0.1-beta.1"
 
 [libraries]
 adapty-kmp = { module = "io.adapty:adapty-kmp", version.ref = "adapty-kmp" }
@@ -49,7 +49,7 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 ### getPaywall → getFlow
 
-戻り値の型が `AdaptyPaywall` から `AdaptyFlow` に変わり、`locale` パラメータが削除されました。フローをレンダリングする際、ロケールは自動的に解決されます。カスタムペイウォールの場合、すべてのロケールは `flow.remoteConfigs` に含まれます。
+戻り値の型が `AdaptyPaywall` から `AdaptyFlow` に変わり、`locale` パラメーターはフェッチ呼び出しから `createFlowView` に移動します。カスタムペイウォールの場合、すべてのロケールは `flow.remoteConfigs` で返されます。
 
 ```diff showLineNumbers
 - Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en")
@@ -57,14 +57,16 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 -         // use the paywall
 + Adapty.getFlow("YOUR_PLACEMENT_ID")
 +     .onSuccess { flow ->
-+         // use the flow
++         AdaptyUI.createFlowView(flow = flow, locale = "en")
       }
       .onError { error ->
           // handle the error
       }
 ```
 
-`getPaywallForDefaultAudience` も同様に名前が変更されています：
+`locale` は `createFlowView` でも省略可能です。省略した場合、ビューは `en` でレンダリングされるか、フローに `en` がない場合はフローのデフォルトローカライゼーションで表示されます。詳しくは[ローカライゼーションとロケールコード](kmp-localizations-and-locale-codes)を参照してください。
+
+`getPaywallForDefaultAudience` も同様にリネームされます：
 
 ```diff showLineNumbers
 - Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en")
@@ -128,7 +130,7 @@ v3 と同様に、[フロービルダー](adapty-flow-builder)または[ペイ�
 
 ### createPaywallView → createFlowView
 
-ファクトリーメソッドの名前を変更し、`AdaptyFlow` を渡します。返されるビューの型は `AdaptyUIPaywallView` から `AdaptyUIFlowView` に変更されますが、メソッド（`present`、`dismiss`）およびオプションパラメーター（`loadTimeout`、`preloadProducts`、`customTags`、`customTimers`、`customAssets`、`productPurchaseParams`）は変更ありません：
+ファクトリーメソッドの名前を変更し、`AdaptyFlow` を渡してください。返されるビューの型名は `AdaptyUIPaywallView` から `AdaptyUIFlowView` に変わりましたが、メソッド（`present`、`dismiss`）とオプションパラメーター（`loadTimeout`、`preloadProducts`、`customTags`、`customTimers`、`customAssets`、`productPurchaseParams`）は変更ありません。新しいオプションパラメーターとして `locale` が追加されました。これは以前 `getPaywall` に渡していた `locale` の代替です。詳しくは[フローの取得](#fetching-flows)を参照してください。
 
 ```diff showLineNumbers
 - AdaptyUI.createPaywallView(paywall)
@@ -141,14 +143,14 @@ v3 と同様に、[フロービルダー](adapty-flow-builder)または[ペイ�
       }
 ```
 
-Compose Multiplatformを使用しない場合、ネイティブのファクトリーメソッドも同様にリネームされます：
+Compose Multiplatform を使用しない場合、ネイティブのファクトリメソッドも同様にリネームされます：
 
 ```diff showLineNumbers
 - AdaptyUI.createNativePaywallView(paywall)
 + AdaptyUI.createNativeFlowView(flow)
 ```
 
-`createFlowView` は、フローにビューが設定されていない場合に `AdaptyResult.Error` を返します — これはv3の `hasViewConfiguration` チェックに置き換わります：
+`createFlowView` は、フローにビューが設定されていない場合に `AdaptyResult.Error` を返します。これは v3 の `hasViewConfiguration` チェックに置き換わるものです：
 
 ```diff showLineNumbers
 - if (paywall.hasViewConfiguration) {
@@ -211,11 +213,12 @@ v3と同様に、ここで渡すコールバック（および`registerFlowEvent
 
 ### 新しいAPI \{#new-apis\}
 
-- `AdaptyUI.setObserverModeResolver(...)` に `AdaptyUIObserverModeResolver` を指定することで、SDKが[オブザーバーモード](implement-observer-mode-kmp)で動作している際にフローから開始された購入と復元を処理できます。以前はネイティブのiOSおよびAndroid SDKのみで利用可能でした。詳細は[オブザーバーモードでフローを表示する](kmp-present-flows-in-observer-mode)を参照してください。
-- `AdaptyUI.setSystemRequestsHandler(...)` に `AdaptyUISystemRequestsHandler` を指定することで、フローからのシステムリクエスト（OSの権限プロンプトやアプリレビューリクエスト）を処理するために予約されています。フローはまだこれらのリクエストをトリガーしないため、ハンドラーを登録する必要はありません。
+- `AdaptyUI.setObserverModeResolver(...)` と `AdaptyUIObserverModeResolver` — SDKが[Observerモード](implement-observer-mode-kmp)で動作している間、フローから開始された購入と復元を処理します。以前はネイティブのiOSおよびAndroid SDKでのみ利用可能でした。詳細は[ObserverモードでのFlowの表示](kmp-present-flows-in-observer-mode)を参照してください。
+- `AdaptyUI.setSystemRequestsHandler(...)` と `AdaptyUISystemRequestsHandler` — フローからのシステムリクエスト（OS権限プロンプトやアプリレビューリクエスト）のために予約されています。フローはまだこれらのリクエストをトリガーしないため、ハンドラーを登録する必要はありません。
 - 新しいオプションの `flowViewDidReceiveAnalyticEvent` コールバックは、フローからのカスタム分析イベント用に予約されています。フローはまだこれらをコードに送出しないため、実装する必要はありません。
-- `AdaptyUI.openWebUrl(url, openIn)` および `AdaptyUI.requestAppReview()` — これらはデフォルトの `OpenUrlAction` 処理とデフォルトの `handleAppReviewRequest` を支援するため、URLおよびアプリレビューのプロンプトはそのままネイティブで処理されます。これらのデフォルトをオーバーライドする場合にのみ直接呼び出してください。
-- `AdaptyConfig.ServerCluster.CN` — `DEFAULT` および `EU` と並ぶ新しいサーバークラスターオプションで、アプリを[AdaptyのChinaサーバー](china-cluster)に接続するために使用します。
+- `AdaptyUI.openWebUrl(url, openIn)` と `AdaptyUI.requestAppReview()` — デフォルトの `OpenUrlAction` 処理とデフォルトの `handleAppReviewRequest` を支援するため、URLとアプリレビュープロンプトはネイティブで自動的に処理されます。これらのデフォルトをオーバーライドする場合にのみ、直接呼び出してください。
+- `AdaptyUIFlowView.locale` — ビューが構築されたローカライズを報告するため、ユーザーが実際に表示しているものを確認できます。SDK 4.0.1-beta.1以降が必要です。
+- `AdaptyConfig.ServerCluster.CN` — `DEFAULT` および `EU` と並ぶ新しいサーバークラスターオプションで、アプリを[Adaptyの中国サーバー](china-cluster)に接続します。
 
 ## デフォルト動作の変更 \{#default-behavior-changes\}
 

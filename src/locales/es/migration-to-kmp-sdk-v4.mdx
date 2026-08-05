@@ -26,7 +26,7 @@ El SDK de Adapty Kotlin Multiplatform 4.0 (beta) introduce los flows y renombra 
 | `paywallViewDidPerformAction`, `paywallViewDidAppear` y otros callbacks `paywallView...` | `flowViewDidPerformAction`, `flowViewDidAppear` y otros callbacks `flowView...` |
 | `paywallViewDidFailRendering` | `flowViewDidReceiveError` |
 
-`AdaptyPaywallProduct` mantiene su nombre — los productos siguen perteneciendo a un flow, y `getPaywallProducts` mantiene su nombre también, ahora tomando un `AdaptyFlow`. Los métodos `getFlow` y `getFlowForDefaultAudience` ya no aceptan el parámetro `locale`. Las APIs de compra y perfil (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) y `setFallback` mantienen las mismas firmas, pero el archivo de respaldo debe descargarse de nuevo — consulta [Archivos de respaldo](#fallback-files). Los métodos de onboarding siguen funcionando pero están obsoletos — consulta [Obsolescencia de la API de onboarding](#onboarding-api-deprecation). Algunos comportamientos predeterminados han cambiado — consulta [Cambios en el comportamiento predeterminado](#default-behavior-changes).
+`AdaptyPaywallProduct` mantiene su nombre — los productos siguen perteneciendo a un flow, y `getPaywallProducts` también mantiene su nombre, ahora aceptando un `AdaptyFlow`. Los métodos `getFlow` y `getFlowForDefaultAudience` ya no aceptan un parámetro `locale` — pásalo a `createFlowView` en su lugar. Las APIs de compra y perfil (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) y `setFallback` mantienen las mismas firmas, pero el propio archivo de respaldo debe volver a descargarse — consulta [Archivos de respaldo](#fallback-files). Los métodos de onboarding siguen funcionando pero están obsoletos — consulta [Obsolescencia de la API de onboarding](#onboarding-api-deprecation). Algunos comportamientos predeterminados han cambiado — consulta [Cambios en el comportamiento predeterminado](#default-behavior-changes).
 
 ## Instalación \{#installation\}
 
@@ -34,7 +34,7 @@ v4.0 es una versión previa al lanzamiento, así que fija la versión exacta —
 
 ```toml showLineNumbers title="libs.versions.toml"
 [versions]
-adapty-kmp = "4.0.0-beta.1"
+adapty-kmp = "4.0.1-beta.1"
 
 [libraries]
 adapty-kmp = { module = "io.adapty:adapty-kmp", version.ref = "adapty-kmp" }
@@ -49,7 +49,7 @@ Los SDKs nativos subyacentes de Adapty se han actualizado a sus versiones 4.x en
 
 ### getPaywall → getFlow
 
-El tipo devuelto cambia de `AdaptyPaywall` a `AdaptyFlow`, y el parámetro `locale` se elimina — cuando renderizas un flow, el locale se resuelve automáticamente; para los paywalls personalizados, todos los locales se devuelven en `flow.remoteConfigs`:
+El tipo devuelto cambia de `AdaptyPaywall` a `AdaptyFlow`, y el parámetro `locale` se mueve de la llamada de obtención a `createFlowView`; para paywalls personalizados, todos los locales se devuelven en `flow.remoteConfigs`:
 
 ```diff showLineNumbers
 - Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en")
@@ -57,14 +57,16 @@ El tipo devuelto cambia de `AdaptyPaywall` a `AdaptyFlow`, y el parámetro `loca
 -         // use the paywall
 + Adapty.getFlow("YOUR_PLACEMENT_ID")
 +     .onSuccess { flow ->
-+         // use the flow
++         AdaptyUI.createFlowView(flow = flow, locale = "en")
       }
       .onError { error ->
           // handle the error
       }
 ```
 
-`getPaywallForDefaultAudience` se renombra de la misma manera:
+`locale` sigue siendo opcional en `createFlowView`: omítelo y la vista se renderizará en `en`, o en la localización predeterminada del flow cuando este no tenga `en`. Consulta [Localizaciones y códigos de idioma](kmp-localizations-and-locale-codes).
+
+`getPaywallForDefaultAudience` se renombra de la misma forma:
 
 ```diff showLineNumbers
 - Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en")
@@ -128,7 +130,7 @@ Al igual que en v3, no es necesario llamar a este método al mostrar flows o pay
 
 ### createPaywallView → createFlowView
 
-Renombra el método factory y pasa el `AdaptyFlow`. El tipo de vista devuelto se renombra de `AdaptyUIPaywallView` a `AdaptyUIFlowView`, pero sus métodos (`present`, `dismiss`) y los parámetros opcionales (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) no cambian:
+Renombra el método de fábrica y pasa el `AdaptyFlow`. El tipo de vista devuelto cambia de `AdaptyUIPaywallView` a `AdaptyUIFlowView`, pero sus métodos (`present`, `dismiss`) y los parámetros opcionales (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) no cambian. Hay un nuevo parámetro opcional: `locale`, que reemplaza el `locale` que antes pasabas a `getPaywall` — consulta [Obtención de flows](#fetching-flows).
 
 ```diff showLineNumbers
 - AdaptyUI.createPaywallView(paywall)
@@ -141,14 +143,14 @@ Renombra el método factory y pasa el `AdaptyFlow`. El tipo de vista devuelto se
       }
 ```
 
-Si no usas Compose Multiplatform, el método de fábrica nativo se renombra de la misma forma:
+Si no usas Compose Multiplatform, el método factory nativo se renombra de la misma forma:
 
 ```diff showLineNumbers
 - AdaptyUI.createNativePaywallView(paywall)
 + AdaptyUI.createNativeFlowView(flow)
 ```
 
-`createFlowView` devuelve un `AdaptyResult.Error` si el flow no tiene ninguna vista configurada — esto reemplaza la comprobación `hasViewConfiguration` de la v3:
+`createFlowView` devuelve un `AdaptyResult.Error` si el flow no tiene ninguna vista configurada — esto reemplaza la comprobación `hasViewConfiguration` de v3:
 
 ```diff showLineNumbers
 - if (paywall.hasViewConfiguration) {
@@ -211,10 +213,11 @@ Al igual que en la v3, los callbacks que pasas aquí (y cualquier observador reg
 
 ### Nuevas APIs \{#new-apis\}
 
-- `AdaptyUI.setObserverModeResolver(...)` con un `AdaptyUIObserverModeResolver` — gestiona las compras y restauraciones iniciadas desde flows cuando el SDK funciona en [modo Observer](implement-observer-mode-kmp). Anteriormente esto solo estaba disponible en los SDKs nativos de iOS y Android. Consulta [Presentar flows en modo Observer](kmp-present-flows-in-observer-mode).
-- `AdaptyUI.setSystemRequestsHandler(...)` con un `AdaptyUISystemRequestsHandler` — reservado para solicitudes del sistema desde un flow (prompts de permisos del SO y solicitudes de reseña de la app). Los flows aún no activan estas solicitudes, así que no necesitas registrar un handler.
-- El nuevo callback opcional `flowViewDidReceiveAnalyticEvent` está reservado para eventos analíticos personalizados desde un flow. Los flows aún no emiten estos eventos a tu código, así que no necesitas implementarlo.
-- `AdaptyUI.openWebUrl(url, openIn)` y `AdaptyUI.requestAppReview()` — estos respaldan el manejo predeterminado de `OpenUrlAction` y el `handleAppReviewRequest` por defecto, de modo que las URLs y los prompts de reseña de la app se gestionan de forma nativa sin configuración adicional. Úsalos directamente solo si sobreescribes esos valores predeterminados.
+- `AdaptyUI.setObserverModeResolver(...)` con un `AdaptyUIObserverModeResolver` — gestiona las compras y restauraciones iniciadas desde flows mientras el SDK se ejecuta en [modo Observer](implement-observer-mode-kmp). Anteriormente esto solo estaba disponible en los SDKs nativos de iOS y Android. Consulta [Presentar flows en modo Observer](kmp-present-flows-in-observer-mode).
+- `AdaptyUI.setSystemRequestsHandler(...)` con un `AdaptyUISystemRequestsHandler` — reservado para solicitudes del sistema desde un flow (solicitudes de permisos del sistema operativo y solicitudes de reseña de la app). Los flows todavía no generan estas solicitudes, por lo que no necesitas registrar un handler.
+- El nuevo callback opcional `flowViewDidReceiveAnalyticEvent` está reservado para eventos analíticos personalizados de un flow. Los flows todavía no emiten estos eventos a tu código, por lo que no necesitas implementarlo.
+- `AdaptyUI.openWebUrl(url, openIn)` y `AdaptyUI.requestAppReview()` — son la base del manejo predeterminado de `OpenUrlAction` y del `handleAppReviewRequest` predeterminado, por lo que las URLs y las solicitudes de reseña de la app se gestionan de forma nativa sin configuración adicional. Llámalos directamente solo si sobreescribes esos comportamientos predeterminados.
+- `AdaptyUIFlowView.locale` — indica la localización con la que se construyó la vista, para que puedas saber cuál ve realmente el usuario. Requiere SDK 4.0.1-beta.1 o posterior.
 - `AdaptyConfig.ServerCluster.CN` — una nueva opción de clúster de servidor junto a `DEFAULT` y `EU`, para conectar tu app a los [servidores de Adapty en China](china-cluster).
 
 ## Cambios en el comportamiento predeterminado \{#default-behavior-changes\}

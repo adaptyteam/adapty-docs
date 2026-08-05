@@ -26,7 +26,7 @@ Adapty Kotlin Multiplatform SDK 4.0（测试版）引入了流程功能，并相
 | `paywallViewDidPerformAction`、`paywallViewDidAppear` 及其他 `paywallView...` 回调 | `flowViewDidPerformAction`、`flowViewDidAppear` 及其他 `flowView...` 回调 |
 | `paywallViewDidFailRendering` | `flowViewDidReceiveError` |
 
-`AdaptyPaywallProduct` 保持原名不变——产品仍属于流程，`getPaywallProducts` 也保持原名，现在接受 `AdaptyFlow` 作为参数。`getFlow` 和 `getFlowForDefaultAudience` 方法不再接受 `locale` 参数。购买与用户画像相关的 API（`makePurchase`、`restorePurchases`、`getProfile`、`identify`、`updateProfile`）以及 `setFallback` 保持相同的签名，但备用付费墙文件本身必须重新下载——详见[备用文件](#fallback-files)。用户引导方法仍然可用，但已被标记为弃用——详见[用户引导 API 弃用说明](#onboarding-api-deprecation)。部分默认行为有所变更——详见[默认行为变更](#default-behavior-changes)。
+`AdaptyPaywallProduct` 保持原名——产品仍属于流程，`getPaywallProducts` 也保持原名，现在接受 `AdaptyFlow` 参数。`getFlow` 和 `getFlowForDefaultAudience` 方法不再接受 `locale` 参数——请改为传给 `createFlowView`。购买与用户画像相关的 API（`makePurchase`、`restorePurchases`、`getProfile`、`identify`、`updateProfile`）以及 `setFallback` 保持相同签名，但备用付费墙文件本身需要重新下载——详见[备用文件](#fallback-files)。用户引导方法仍可使用，但已被弃用——详见[用户引导 API 弃用说明](#onboarding-api-deprecation)。部分默认行为有所变更——详见[默认行为变更](#default-behavior-changes)。
 
 ## 安装 \{#installation\}
 
@@ -34,7 +34,7 @@ v4.0 是预发布版本，因此需要固定精确版本——Gradle 不会通�
 
 ```toml showLineNumbers title="libs.versions.toml"
 [versions]
-adapty-kmp = "4.0.0-beta.1"
+adapty-kmp = "4.0.1-beta.1"
 
 [libraries]
 adapty-kmp = { module = "io.adapty:adapty-kmp", version.ref = "adapty-kmp" }
@@ -49,7 +49,7 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 ### getPaywall → getFlow
 
-返回类型从 `AdaptyPaywall` 变更为 `AdaptyFlow`，同时移除了 `locale` 参数——渲染流程时，语言环境会自动解析；对于自定义付费墙，所有语言环境均通过 `flow.remoteConfigs` 返回：
+返回类型从 `AdaptyPaywall` 变为 `AdaptyFlow`，`locale` 参数从获取调用移至 `createFlowView`；对于自定义付费墙，所有语言版本均在 `flow.remoteConfigs` 中返回：
 
 ```diff showLineNumbers
 - Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en")
@@ -57,14 +57,16 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 -         // use the paywall
 + Adapty.getFlow("YOUR_PLACEMENT_ID")
 +     .onSuccess { flow ->
-+         // use the flow
++         AdaptyUI.createFlowView(flow = flow, locale = "en")
       }
       .onError { error ->
           // handle the error
       }
 ```
 
-`getPaywallForDefaultAudience` 已按相同方式重命名：
+`locale` 在 `createFlowView` 中仍是可选参数：省略时，视图将以 `en` 渲染，若流程没有 `en` 本地化，则使用流程的默认本地化。详见[本地化与语言代码](kmp-localizations-and-locale-codes)。
+
+`getPaywallForDefaultAudience` 也以相同方式重命名：
 
 ```diff showLineNumbers
 - Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", locale = "en")
@@ -128,7 +130,7 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 ### createPaywallView → createFlowView
 
-重命名工厂方法并传入 `AdaptyFlow`。返回的视图类型从 `AdaptyUIPaywallView` 重命名为 `AdaptyUIFlowView`，但其方法（`present`、`dismiss`）和可选参数（`loadTimeout`、`preloadProducts`、`customTags`、`customTimers`、`customAssets`、`productPurchaseParams`）保持不变：
+重命名工厂方法，并传入 `AdaptyFlow`。返回的视图类型从 `AdaptyUIPaywallView` 改名为 `AdaptyUIFlowView`，但其方法（`present`、`dismiss`）和可选参数（`loadTimeout`、`preloadProducts`、`customTags`、`customTimers`、`customAssets`、`productPurchaseParams`）保持不变。新增了一个可选参数：`locale`，用于替代之前传给 `getPaywall` 的 `locale` 参数——详见[获取流程](#fetching-flows)。
 
 ```diff showLineNumbers
 - AdaptyUI.createPaywallView(paywall)
@@ -141,14 +143,14 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
       }
 ```
 
-如果你不使用 Compose Multiplatform，原生工厂方法的重命名方式相同：
+如果你不使用 Compose Multiplatform，原生工厂方法也以相同方式重命名：
 
 ```diff showLineNumbers
 - AdaptyUI.createNativePaywallView(paywall)
 + AdaptyUI.createNativeFlowView(flow)
 ```
 
-`createFlowView` 在流程未配置视图时返回 `AdaptyResult.Error`，这取代了 v3 中的 `hasViewConfiguration` 检查：
+如果流程未配置视图，`createFlowView` 会返回 `AdaptyResult.Error`——这取代了 v3 中的 `hasViewConfiguration` 检查：
 
 ```diff showLineNumbers
 - if (paywall.hasViewConfiguration) {
@@ -211,11 +213,12 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 ### 新 API \{#new-apis\}
 
-- `AdaptyUI.setObserverModeResolver(...)` 配合 `AdaptyUIObserverModeResolver` — 在 SDK 以[观察者模式](implement-observer-mode-kmp)运行时，驱动从流程发起的购买与恢复操作。此前该功能仅在原生 iOS 和 Android SDK 中可用。请参阅[在观察者模式下呈现流程](kmp-present-flows-in-observer-mode)。
-- `AdaptyUI.setSystemRequestsHandler(...)` 配合 `AdaptyUISystemRequestsHandler` — 用于处理流程中的系统请求（系统权限提示和应用评价请求）。流程目前尚未触发这些请求，因此无需注册处理器。
-- 新的可选回调 `flowViewDidReceiveAnalyticEvent` 用于接收流程中的自定义分析事件。流程目前尚未向代码发送这些事件，因此无需实现该回调。
-- `AdaptyUI.openWebUrl(url, openIn)` 和 `AdaptyUI.requestAppReview()` — 这两个方法分别支撑默认的 `OpenUrlAction` 处理逻辑和默认的 `handleAppReviewRequest`，因此 URL 跳转和应用评价提示均可开箱即用地以原生方式处理。仅在覆盖默认行为时才需直接调用它们。
-- `AdaptyConfig.ServerCluster.CN` — 新增的服务器集群选项，与 `DEFAULT` 和 `EU` 并列，用于将应用连接至 [Adapty 中国服务器](china-cluster)。
+- `AdaptyUI.setObserverModeResolver(...)` 配合 `AdaptyUIObserverModeResolver` — 在 SDK 以[观察者模式](implement-observer-mode-kmp)运行时，驱动从流程发起的购买和恢复操作。此前该功能仅在 iOS 和 Android 原生 SDK 中可用。详见[在观察者模式下展示流程](kmp-present-flows-in-observer-mode)。
+- `AdaptyUI.setSystemRequestsHandler(...)` 配合 `AdaptyUISystemRequestsHandler` — 用于处理流程中的系统请求（操作系统权限提示和应用评价请求）。目前流程尚未触发这些请求，因此无需注册处理程序。
+- 新增可选回调 `flowViewDidReceiveAnalyticEvent`，用于接收来自流程的自定义分析事件。目前流程尚不会将这些事件发送到您的代码，因此无需实现该回调。
+- `AdaptyUI.openWebUrl(url, openIn)` 和 `AdaptyUI.requestAppReview()` — 这两个方法支持默认的 `OpenUrlAction` 处理和默认的 `handleAppReviewRequest`，因此 URL 跳转和应用评价提示均可原生开箱即用。仅在覆盖默认行为时才需直接调用它们。
+- `AdaptyUIFlowView.locale` — 报告视图构建时所使用的本地化语言，便于您了解用户实际看到的是哪种语言版本。需要 SDK 4.0.1-beta.1 或更高版本。
+- `AdaptyConfig.ServerCluster.CN` — 新增服务器集群选项，与 `DEFAULT` 和 `EU` 并列，用于将您的应用连接至 [Adapty 中国服务器](china-cluster)。
 
 ## 默认行为变更 \{#default-behavior-changes\}
 
