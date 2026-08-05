@@ -14,11 +14,71 @@ The rules assume `Adapty.activate()` and `Adapty.identify()` have already resolv
 
 | Do this | Don't do this | Why |
 |---|---|---|
-| Fetch the placement you're about to show.                                                                                  | Prefetch all placements concurrently on launch.        | Bulk prefetch blocks the main thread and produces a black screen during the burst.                                  |
+| Fetch the placement you're about to show, or warm the cache with [`preloadFlows`](#preload-placements) (SDK 4.1+). | Fan out your own concurrent `getFlow` calls on launch. | A hand-rolled prefetch burst blocks the main thread and produces a black screen. `preloadFlows` is built for this and shares one timeout budget across the batch. |
 | Fetch `getPaywall` after attribution has had a chance to resolve — for example, 1–2 seconds after `activate` or after `onProfileUpdate` fires. | Call `getPaywall` at `App.init()`.                     | Attribution hasn't landed yet. The paywall resolves against the default audience and silently bypasses segments and ASA personalization. |
 | Set a `loadTimeout` and configure a [fallback paywall](fallback-paywalls) for every placement.                             | Wait on `getPaywall` indefinitely.                     | Without a timeout, users on poor connectivity see a blank screen until the network resolves — or close the app.     |
 
 See [Fetch paywalls and products](fetch-paywalls-and-products) for the `fetchPolicy` and `loadTimeout` parameter reference, and [Placements](placements) for picking the right placement.
+
+## Preload placements
+
+:::info
+These methods are available starting from iOS SDK version 4.1.
+:::
+
+`preloadFlows` and `preloadOnboardings` fetch placements into the SDK cache ahead of time. A later `getFlow` or `getOnboarding` call for the same placement then resolves from cache instead of the network, so the paywall renders without a visible wait.
+
+Use them when you know which placements the session will need but don't want to show them yet — for example, right after `activate` and `identify` resolve, for the paywall behind a button the user hasn't tapped.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+try await Adapty.preloadFlows(
+    placementIds: ["onboarding", "main_paywall"],
+    loadTimeout: 5
+)
+
+try await Adapty.preloadOnboardings(
+    placementIds: ["intro"],
+    locale: "en",
+    loadTimeout: 5
+)
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5) { error in
+    if let error {
+        // at least one placement failed to preload
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+**Parameters:**
+
+- `placementIds` (required): the placements to preload. Blank and duplicate IDs are ignored.
+- `locale` (optional, `preloadOnboardings` only): the onboarding locale to cache.
+- `loadTimeout` (optional): timeout in seconds for the whole batch, not per placement. Defaults to 5 seconds.
+
+**Behavior worth knowing:**
+
+- The methods throw only after attempting every placement, and the error aggregates the per-placement failures. A failure for one placement doesn't stop the others.
+- If a placement can't be fetched for the user's audience, the SDK automatically falls back to the default-audience variation for that placement.
+- If the timeout fires before the audience-targeted fetch completes, the SDK still attempts the default-audience variation within the remaining budget.
+- Preloading only warms the cache. It doesn't return content — you still call `getFlow` or `getOnboarding` to display it.
+
+To warm the cache without waiting for audience segmentation at all, use the default-audience variants:
+
+```swift showLineNumbers
+try await Adapty.preloadFlowsForDefaultAudience(placementIds: ["main_paywall"])
+try await Adapty.preloadOnboardingsForDefaultAudience(placementIds: ["intro"])
+```
 
 ## Tune for poor connectivity
 

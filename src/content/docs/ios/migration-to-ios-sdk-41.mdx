@@ -4,7 +4,11 @@ description: "Migrate to Adapty iOS SDK v4.1: enable Adapty Attribution explicit
 metadataTitle: "Migrating to Adapty iOS SDK v4.1 | Adapty Docs"
 ---
 
-Adapty iOS SDK 4.1 changes how Adapty Attribution is enabled and renames the external attribution APIs. It also brings back support for App Store promoted in-app purchases, which were removed in 4.0.
+Adapty iOS SDK 4.1 changes how Adapty Attribution is enabled and renames the external attribution APIs. It also brings back support for App Store promoted in-app purchases, which were removed in 4.0, and adds placement preloading.
+
+:::warning
+The renamed APIs are a hard break. The old names are removed outright — they aren't deprecated, and there are no typealiases or `@available(renamed:)` annotations to bridge them. Code that compiles against 4.0.x will fail to compile on 4.1 until you rename every call site listed below.
+:::
 
 ## Quick reference
 
@@ -12,9 +16,11 @@ Adapty iOS SDK 4.1 changes how Adapty Attribution is enabled and renames the ext
 |---|---|
 | Adapty Attribution enabled automatically | Adapty Attribution disabled by default; opt in with `.with(adaptyAttributionEnabled: true)` |
 | `Adapty.updateAttribution(_:source:)` | `Adapty.updateExternalAttribution(_:provider:)` |
-| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider` |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, with two new providers |
 | `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| `AdaptySubscriptionOfferType` enum | `AdaptySubscriptionOfferType` struct; `.code` removed |
 | Promoted in-app purchases not supported | `didReceivePromotedPurchase(_:)` delegate method and `AdaptyPromotedProduct` |
+| No placement preloading | `Adapty.preloadFlows(placementIds:)` and `Adapty.preloadOnboardings(placementIds:)` |
 
 ## Adapty Attribution is disabled by default
 
@@ -41,9 +47,27 @@ The method that passes attribution data from an external provider (Adjust, AppsF
 + try await Adapty.updateExternalAttribution(attribution, provider: .adjust)
 ```
 
+:::info
+The method returns as soon as the backend accepts the data for asynchronous processing. A successful return doesn't mean the data has been processed or that the profile has already been updated — in particular, `appliedExternalAttributionProviders` won't contain the provider yet. Watch for profile updates in `didLoadLatestProfile` instead of assuming the profile is current right after the call returns.
+:::
+
 ### AdaptyAttributionSource → AdaptyExternalAttributionProvider
 
-The type is renamed; its members are unchanged: `.appleAds`, `.adjust`, `.appsflyer`, `.branch`, `.tenjin`. It still conforms to `ExpressibleByStringLiteral`, so string-literal arguments keep compiling. If you keep the provider in a `String` variable, wrap it: `AdaptyExternalAttributionProvider(rawValue: yourProvider)`.
+The type is renamed, and 4.1 adds two providers to it:
+
+| Provider | Raw value |
+|---|---|
+| `.appleAds` | `apple_search_ads` |
+| `.adjust` | `adjust` |
+| `.appsflyer` | `appsflyer` |
+| `.branch` | `branch` |
+| `.tenjin` | `tenjin` |
+| `.googleODM` *(new in 4.1)* | `google_odm_token` |
+| `.custom` *(new in 4.1)* | `custom` |
+
+Use `.custom` for any attribution provider Adapty doesn't integrate with directly. The predefined values are only a snapshot of what the backend supports at release time — if the backend adds a provider later, pass its identifier with `AdaptyExternalAttributionProvider(rawValue:)` without waiting for an SDK update.
+
+The type still conforms to `ExpressibleByStringLiteral`, so string-literal arguments keep compiling. If you keep the provider in a `String` variable, wrap it: `AdaptyExternalAttributionProvider(rawValue: yourProvider)`.
 
 ### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
 
@@ -55,6 +79,51 @@ The profile property that lists attribution providers applied to the profile is 
       // Apple Ads attribution has been applied
   }
 ```
+
+## AdaptySubscriptionOfferType is now a struct
+
+`AdaptySubscriptionOfferType` — the type of `AdaptySubscriptionOffer.offerType` — changes from an enum to a `RawRepresentable` struct, so the backend can introduce new offer types without an SDK update:
+
+```diff showLineNumbers
+- public enum AdaptySubscriptionOfferType: String, Sendable { ... }
++ public struct AdaptySubscriptionOfferType: Sendable, RawRepresentable, Equatable, Hashable { ... }
+```
+
+This affects your code in three ways:
+
+- **Exhaustive `switch` statements no longer compile.** A struct has no fixed set of cases, so the compiler can't prove a switch is exhaustive. Add a `default` branch:
+
+  ```diff showLineNumbers
+  switch offer.offerType {
+  case .introductory: // ...
+  case .promotional: // ...
+  case .winBack: // ...
+  + default: // handle offer types added later
+  }
+  ```
+
+- **`.code` is removed.** Offer codes are no longer reported through `AdaptySubscriptionOffer.offerType`. Remove any `case .code` branch. See [Redeem offer codes in iOS](making-purchases#redeem-offer-codes-in-ios) for handling offer codes.
+- **`Codable` conformance is dropped.** If you encoded or decoded `AdaptySubscriptionOfferType` directly, persist `offerType.rawValue` (a `String`) instead and rebuild the value with `AdaptySubscriptionOfferType(rawValue:)`.
+
+Comparisons against the predefined values are unchanged: `.introductory`, `.promotional`, and `.winBack` still work in `==` checks and as `case` patterns.
+
+## Preload placements
+
+SDK 4.1 adds methods that fetch placements into the SDK cache ahead of time, so the later `getFlow` or `getOnboarding` call resolves from cache instead of the network. This is a new feature, not a migration step.
+
+```swift showLineNumbers
+try await Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5)
+try await Adapty.preloadOnboardings(placementIds: ["intro"], locale: "en", loadTimeout: 5)
+```
+
+Both methods have completion-handler variants, and both have `...ForDefaultAudience` counterparts that preload the default-audience variation without waiting for segmentation:
+
+```swift showLineNumbers
+try await Adapty.preloadFlowsForDefaultAudience(placementIds: ["main_paywall"])
+try await Adapty.preloadOnboardingsForDefaultAudience(placementIds: ["intro"])
+```
+
+See [Optimize paywall fetching](ios-optimize-paywall-fetching#preload-placements) for when to use them.
 
 ## App Store promoted in-app purchases return
 
