@@ -1,37 +1,270 @@
 ---
 title: "PostHog"
-description: ""
-metadataTitle: ""
+description: "Send Adapty subscription events to PostHog to connect what users bought with what they did in your app."
+metadataTitle: "PostHog | Adapty Docs"
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
+import AccessLevelUpdatedEventFeed from '@site/src/components/reusable/AccessLevelUpdatedEventFeed.mdx';
 
-import Zoom from 'react-medium-image-zoom';
-import 'react-medium-image-zoom/dist/styles.css';
+Adapty can pass subscription events (purchases, renewals, refunds, trial starts) to PostHog's event stream, so they join the rest of your data.
 
-PostHog is an analytics platform that provides tools for tracking user behavior, visualizing product usage, and analyzing retention. With features like event tracking, user flows, and feature flags, it’s designed to help you better understand and improve your product.
+Each event includes revenue, currency, store, and product details, plus the paywall and A/B test variation that produced the purchase. Any PostHog tool can use this data once it arrives.
 
-Integrating PostHog with Adapty enables seamless tracking of subscription-related events, such as trial starts, renewals, and cancellations. By sending these events to PostHog, you can analyze how subscription changes affect user behavior, evaluate paywall performance, and gain deeper insights into your monetization strategies — all within your existing analytics workflow.
+Adapty's subscription events add a revenue dimension to everything you already track in PostHog:
 
-## Integration Characteristics
+- **Which in-app actions predict a subscription?** Correlate your own PostHog events with `trial_started` and `subscription_started` to find the behavior that leads to purchases.
+- **Which experiment variant earned more?** Use Adapty's revenue events as the metric for a PostHog experiment on any product change. Adapty's [A/B tests](ab-tests) cover paywalls and onboardings.
+- **What happens before a refund?** Build an insight on `subscription_refunded`, then open the persons behind it and watch their session recordings.
+- **Do bugs affect renewals?** Cross-reference error tracking with `subscription_renewal_cancelled`, which fires as soon as a user turns off auto-renewal — well ahead of `subscription_expired`.
+- **How do subscribers retain compared to free users?** Build cohorts and retention curves on derived access status — see [How to tell a subscriber from a free user](#how-to-tell-a-subscriber-from-a-free-user).
+- **Which paywall and variation produced the revenue?** Purchase events carry the paywall and variation that produced them, so you can break revenue down by paywall. Capture paywall views with PostHog's SDK to measure view-to-purchase alongside them.
+- **Ask questions across both datasets** with insights or SQL.
 
-| Integration characteristic | Description                                                  |
-| -------------------------- | ------------------------------------------------------------ |
-| Schedule                   | Real-time; events may not appear immediately on the PostHog dashboard. |
-| Data direction             | Adapty events are sent from the Adapty server to the PostHog server. |
-| Adapty integration point   | <ul><li> PostHog and Adapty SDKs in the mobile app code</li><li> Adapty server</li></ul> |
+## How the integration works
+
+PostHog identifies each user by a string called `distinct_id`. Everything about this integration depends on Adapty and PostHog agreeing on that string.
+
+1. The PostHog SDK assigns the user a `distinct_id`. On first launch, this string is device-scoped and anonymous. But you can assign a custom value on login, or reset it on logout.
+2. On every app launch, after `Adapty.activate()` and before any purchase can happen, pass the `distinct_id` to Adapty with `setIntegrationIdentifier()`. Adapty attaches the value to the user's Adapty profile as `posthog_distinct_user_id`.
+3. When the user starts a trial or makes a purchase, Adapty's servers post the event to PostHog's capture API with that `distinct_id` attached. The exchange happens server-to-server, outside your app.
+4. PostHog attaches the event to the person holding that `distinct_id`, so subscription revenue appears next to everything else the user did in your app.
+
+### Match Adapty's ID to PostHog's
+
+Both systems must use the same `distinct_id` for a user, or one person splits into two unconnected entities. You have two ways to avoid the split, and which one fits depends on when a purchase can happen.
+
+**If a purchase requires login**, call PostHog's `identify()` with your **Customer User ID** at the moment the user logs in. Adapty already uses that value when it has nothing else, so both systems match.
+
+**If anonymous users can purchase**, read PostHog's `distinct_id` and pass it to Adapty with `setIntegrationIdentifier`. Call it on every launch after `Adapty.activate()`, and again after every PostHog `reset()`. Anonymous profiles have no Customer User ID, so PostHog's own ID is the only value both systems can share — see [Configure your app code](#configure-your-app-code).
+
+Whichever route you take, the value must survive a reinstall. Adapty creates a new profile on each reinstall, and PostHog a new anonymous `distinct_id` per device, so neither system carries identity across that gap on its own. Adapty does pass paid access between a user's anonymous profiles, but that links access levels rather than analytics identity — the inheriting profile still sends events under its own ID. Without a stable ID your own backend owns, a reinstalling subscriber appears in PostHog as a new person with a renewal and no purchase before it.
+
+:::warning
+PostHog blocks certain values during person merges: `null`, `undefined`, `None`, `0`, `anonymous`, `guest`, `distinct_id`, `id`, `email`, `true`, `false`, `[object Object]`, `NaN`, empty strings, and quoted variants of these. Make sure the value you share can never take one of them. PostHog recommends UUIDs, or validation against that list before you send. See [PostHog's identity resolution guide](https://posthog.com/docs/product-analytics/identity-resolution).
+:::
+
+Mismatched IDs cause data fragmentation — see [One user appears as several persons](#one-user-appears-as-several-persons-in-posthog).
+
+:::important
+Adapty's events carry person properties, which makes every one an *identified event* in PostHog's terms — and PostHog charges up to 4x more to process those than anonymous ones. Adapty sends one event per subscription lifecycle change, so the volume stays small next to client-side analytics. Matching IDs is still worth it: PostHog recommends identifying users in almost all cases.
+:::
+
+## Setup instructions
+
+### Copy your PostHog project token
+
+1. Sign in to the deployment that hosts your data — [US Cloud](https://us.posthog.com/) or [EU Cloud](https://eu.posthog.com/) — and select the project you want to connect.
+
+2. Go to **Settings** > **Project** > **General** and find the **Project token & ID** section.
+
+   <ZoomImage id="posthog-settings.webp" width="700px" alt="PostHog project settings showing the Project token, Project ID, and Region" />
+
+3. Copy the **Project token**. It starts with `phc_`. PostHog describes it as write-only and safe to publish, so you don't need to rotate it.
+
+### Configure Adapty
+
+1. Open [**Integrations** > **PostHog**](https://app.adapty.io/integrations/posthog) in the Adapty Dashboard.
+
+2. Enable the **PostHog** toggle.
+
+3. Paste the token into **Project API key**. Adapty checks it against PostHog on save — if the token is invalid, it fails immediately instead of silently dropping events.
+
+4. The "server location" section depends on your setup.
+
+    - If you use **PostHog Cloud**, set the **Region** to the deployment you signed in to — `US Cloud` or `EU Cloud`. Leave the PostHog Instance URL field empty.
+    - If you run **your own instance**, select **Self-hosted** and populate the **PostHog Instance URL** field. Don't select a region. Adapty must be able to reach the instance without a proxy / VPN.
+
+5. Under **How the revenue data should be send**, choose which revenue figure Adapty sends. The three options match the [Adapty Analytics revenue views](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue), so your choice also names the view your PostHog numbers should agree with.
+
+   | Option | What Adapty sends |
+   | --- | --- |
+   | **Gross revenue** | The full amount the buyer paid, before commission and tax. The default. |
+   | **Proceeds after store commission** | The amount minus the store's commission, with tax still included. |
+   | **Proceeds after store commission and taxes** | The amount minus both. |
+
+6. Set the remaining options:
+
+   | Toggle | When on | Default |
+   | --- | --- | --- |
+   | **Report user's currency** | Adapty reports each sale in the currency the buyer paid in, rather than USD. | Off |
+   | **Send trial price** | Trial starts carry no revenue otherwise. Turn this on to give each one a placeholder price, and a **Trial price percentage** field appears — set it to the share of the subscription price a trial should report. At `60%`, a $10 subscription sends $6. | Off |
+   | **Exclude historical events** | Adapty skips events that happened before the user installed a build containing the Adapty SDK. | **On** |
+
+7. Rename or disable individual events in the **Events names** section. PostHog accepts any non-empty event name, so use whatever your existing taxonomy expects.
+
+8. Click **Save**.
+
+<ZoomImage id="posthog-on.webp" width="700px" alt="Adapty Dashboard PostHog integration page with the toggle, key, server location, revenue settings, and event names" />
+
+### Keep sandbox data out of production
+
+Adapty sends sandbox and production transactions through the same integration, so both land in the same PostHog project. The integration takes one **Project API key**, with no separate sandbox key to point elsewhere.
+
+Giving your development build its own PostHog project won't keep sandbox events out of the production one either. Sandbox is a property of the **store transaction**, not of your build. App Store review and TestFlight purchases are sandbox transactions from a production build.
+
+Instead, separate the two with queries. Every event includes an `environment` property set to `Sandbox` or `Production`. Filter it to isolate actual revenue:
+
+```sql
+WHERE properties.environment = 'Production'
+```
+
+### Configure your app code
+
+1. Ask PostHog's SDK for the current `distinct_id`:
+
+   - **On every app launch**, after `Adapty.activate()` and before any purchase can happen. PostHog attributes any earlier event to [a different person](#one-user-appears-as-several-persons-in-posthog).
+   - **After PostHog's `reset()`**, which most apps run on logout. `reset()` mints a new anonymous ID and doesn't link it to the previous person, so a stale value keeps pointing at the user who just logged out.
+
+2. Pass it to Adapty with `setIntegrationIdentifier()`.
+
+:::note
+No extra call is needed after calling PostHog's `identify()`. PostHog merges the anonymous person with the identified, so Adapty events resolve the same way. See [Match Adapty's ID to PostHog's](#match-adaptys-id-to-posthogs).
+:::
+
+<SdkIntegrationNote />
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
+
+```swift showLineNumbers
+import PostHog
+
+let distinctId = PostHogSDK.shared.getDistinctId()
+
+do {
+    try await Adapty.setIntegrationIdentifier(.posthogDistinctUserId(distinctId))
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)">
+
+```kotlin showLineNumbers
+Adapty.setIntegrationIdentifier(
+    AdaptyIntegrationIdentifier.posthogDistinctUserId(PostHog.distinctId())
+) { error ->
+    if (error != null) {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Android (Java)">
+
+```java showLineNumbers
+Adapty.setIntegrationIdentifier(
+    AdaptyIntegrationIdentifier.posthogDistinctUserId(PostHog.distinctId()),
+    error -> {
+        if (error != null) {
+            // handle the error
+        }
+    }
+);
+```
+
+</TabItem>
+<TabItem value="flutter" label="Flutter (Dart)">
+
+```dart showLineNumbers
+import 'package:posthog_flutter/posthog_flutter.dart';
+
+try {
+    final distinctId = await Posthog().getDistinctId();
+
+    await Adapty().setIntegrationIdentifier(
+        key: "posthog_distinct_user_id",
+        value: distinctId,
+    );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="rn" label="React Native (TS)">
+
+```typescript showLineNumbers
+import { adapty } from 'react-native-adapty';
+import { usePostHog } from 'posthog-react-native';
+
+const posthog = usePostHog();
+
+try {
+    await adapty.setIntegrationIdentifier(
+        "posthog_distinct_user_id",
+        posthog.getDistinctId()
+    );
+} catch (error) {
+    // handle `AdaptyError`
+}
+```
+
+</TabItem>
+<TabItem value="capacitor" label="Capacitor (TS)">
+
+PostHog's Capacitor plugin is community-maintained by [Capawesome](https://capawesome.io/plugins/posthog/), not by PostHog. Read the distinct ID with the plugin's `getDistinctId` and pass it to Adapty with `setIntegrationIdentifier`.
+
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform">
+
+Read the distinct ID with PostHog's [`getDistinctId()`](https://posthog.com/docs/libraries/kmp) and pass it to Adapty with `setIntegrationIdentifier`.
+
+</TabItem>
+<TabItem value="unity" label="Unity (C#)">
+
+PostHog ships an [official Unity SDK](https://posthog.com/docs/libraries/unity) for Windows, Mac, Linux, iOS, Android, and WebGL. Read `PostHog.DistinctId` and pass it to Adapty with `Adapty.SetIntegrationIdentifier(key, value, completionHandler)`.
+
+</TabItem>
+</Tabs>
+
+### Verify the integration
+
+1. Trigger a sandbox purchase, then open the **Event Feed** in the Adapty Dashboard. Each delivery attempt appears with its result. Adapty verifies your **Project API key** and instance URL when you save, so failures at this stage are rare. The usual causes:
+
+   - **A key that stopped working.** PostHog returns `401` if you delete the integration key.
+   - **An instance that stopped responding.** Adapty stops waiting after 10 seconds. May affect self-hosted deployments.
+
+   Hover a failed event to read PostHog's response.
+
+2. In PostHog, open the [**Activity**](https://us.posthog.com/activity/explore) view and look for the event. The `environment` property of your purchase should be `Sandbox`.
+3. Open that person's profile and check the **Distinct IDs** tab. Your app's own events and Adapty's server events should belong to one person. Two persons for the same user means the IDs don't match — see [One user appears as several persons](#one-user-appears-as-several-persons-in-posthog).
+
+:::note
+Adapty's events never reach your app's own PostHog debug output. Adapty posts them from its servers, so they never pass through your app's SDK. An empty local log says nothing about the integration.
+:::
+
+## Report revenue in PostHog
+
+Adapty Analytics stays the source of truth for revenue figures, because it calculates from complete store data while PostHog only receives what this integration forwards. If you also want revenue on a PostHog dashboard next to your product metrics, PostHog's [Revenue Analytics](https://posthog.com/docs/revenue-analytics/managed-views) reads it from event properties you nominate. Open **Data management** > **Revenue** in PostHog and map:
+
+| PostHog field | Adapty property |
+| --- | --- |
+| Revenue | `price_usd`, `proceeds_usd`, or `net_revenue_usd` — match the option you selected under [How the revenue data should be send](#configure-adapty) |
+| Currency | `currency`, or set a static currency if you report in USD |
+| Product | `vendor_product_id` |
+| Subscription | `original_transaction_id` |
+
+Leave PostHog's "values are in cents" option **off**. Adapty sends decimal amounts, not minor units.
 
 ## PostHog event structure
 
-Adapty sends selected events to PostHog as configured in the **Events names** section on the [PostHog Integration page](https://app.adapty.io/integrations/posthog). Each event is structured like this:
+Adapty sends the events you enabled in the **Events names** section of the [PostHog integration page](https://app.adapty.io/integrations/posthog), one capture request per event:
 
 ```json showLineNumbers
 {
+  "api_key": "phc_YOUR_PROJECT_TOKEN",
   "distinct_id": "john.doe@example.com",
-  "timestamp": "2025-01-08T11:06:12+00:00",
+  "timestamp": "2026-01-08T11:06:12+00:00",
   "event": "subscription_started",
   "properties": {
+    "$ip": "10.168.1.1",
+    "$geoip_time_zone": "America/New_York",
+    "$geoip_disable": true,
     "$set": {
       "email": "user@example.com",
       "first_name": "John",
@@ -40,175 +273,173 @@ Adapty sends selected events to PostHog as configured in the **Events names** se
       "gender": "male",
       "os": "iOS"
     },
-    "timezone": "America/New_York",
-    "ip_address": "10.168.1.1",
     "*": "{{other_event_properties}}"
   }
 }
 ```
 
-Where
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `api_key` | String | Your PostHog **Project API key**. |
+| `distinct_id` | String | Identifies the person in PostHog. Adapty uses the first value it finds — see [distinct ID priority](#distinct-id-priority). |
+| `timestamp` | ISO 8601 date & time | When the event occurred. Renewals and trial conversions can be dated in the future — see [Events appear in PostHog before they happen](#events-appear-in-posthog-before-they-happen). |
+| `event` | String | The name you set in the **Events names** section. |
+| `properties` | Object | Adapty's [event properties](messaging#event-properties), the [IP and location properties](#ip-and-location-properties), and [`$set`](#person-properties). Adapty omits any property without a value.|
 
-| **Parameter**   | **Type**             | **Description**                                              |
-| --------------- | -------------------- | ------------------------------------------------------------ |
-| **distinct_id** | String               | Unique identifier for the user (e.g., `profile.posthog_distinct_user_id`, `customer_user_id`, or `profile_id`). |
-| **timestamp**   | ISO 8601 date & time | The date and time of the event.                              |
-| **event**       | String               | The name of the event as you defined it in the Events names section of the [PostHog configuration](https://app.adapty.io/integrations/posthog). |
-| **properties**  | Object               | Contains the [properties.$set](posthog#propertiesset-parameters) and all the [event-specific properties](messaging#event-properties). Each property is optional and won't be sent to PostHog if missing. |
+Five webhook-only properties never appear here — see [Limitations](#limitations).
 
-### properties.$set parameters
+### Distinct ID priority
 
-Each `properties.$set` object parameter is optional and won't be sent to PostHog if missing.
+Adapty uses the first value it detects:
 
-| **Parameter**   | **Type**             | **Description**                                              |
-| --------------- | -------------------- | ------------------------------------------------------------ |
-| **email**           | String        | User's email address.                                        |
-| **first_name**      | String        | User's first name.                                           |
-| **last_name**       | String        | User's last name.                                            |
-| **birthday**        | String (Date) | User's date of birth.                                        |
-| **gender**          | String        | User's gender.                                               |
-| **os**              | String        | Operating system of the user's device.                       |
+| Priority | Value | Set by |
+| --- | --- | --- |
+| 1 | `posthog_distinct_user_id` | Your `setIntegrationIdentifier` call |
+| 2 | **Customer User ID** | `Adapty.activate()` or `Adapty.identify()` |
+| 3 | Adapty's internal profile ID | Adapty, always present |
 
-## Setting up PostHog integration
+Adapty resolves this order per event, not once per user. An event that fires before your `setIntegrationIdentifier` call lands under a lower-priority ID, and PostHog records a second person for the same user.
 
-1. Open the [Integrations -> PostHog](https://app.adapty.io/integrations/posthog) page in the Adapty Dashboard and enable the toggle.
+Pick one of the two setups in [Match Adapty's ID to PostHog's](#match-adaptys-id-to-posthogs), then put the value in place before any event can fire. For persons that already split, see [One user appears as several persons](#one-user-appears-as-several-persons-in-posthog).
 
-   <Zoom>
-     <img src="/assets/shared/img/posthog-on.webp"
-     style={{
-       border: 'none', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-   />
-   </Zoom>
+### IP and location properties
 
-2. Log into the [PostHog Dashboard](https://posthog.com/).
+To segment Adapty events by location, use the `store_country` and `profile_country` properties. Adapty switches off PostHog's location lookup, so PostHog adds no `$geoip_*` values of its own. The three properties below apply per event, so your project settings and your own events are unaffected.
 
-3. Navigate to **Settings -> Project**.
+| Property | Value | Effect |
+| --- | --- | --- |
+| `$ip` | The user's IP address | PostHog stores it on the event. Adapty sends the same value as an `x-forwarded-for` header. |
+| `$geoip_time_zone` | The user's time zone | Adapty sets this value directly. |
+| `$geoip_disable` | Always `true` | Switches off PostHog's location lookup for this event. |
 
-   <Zoom>
-     <img src="/assets/shared/img/posthog-settings.webp"
-     style={{
-       border: 'none', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-   />
-   </Zoom>
+### Person properties
 
-4. In the **Project** window, scroll down to the **Project ID** section and copy the **Project API key**.
+Everything inside `$set` becomes a PostHog **person** property instead of an event property. PostHog attaches person properties to the person rather than to a single event, so they describe the user's current state rather than a moment in time. Adapty omits any field it has no value for, and drops `$set` altogether when it has none of them.
 
-5. Paste the API key into the **Project API key** field in the Adapty Dashboard. PostHog doesn’t have a specific Sandbox mode for server-to-server integration.
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `email` | String | The user's email address. |
+| `first_name` | String | The user's first name. |
+| `last_name` | String | The user's last name. |
+| `birthday` | String (date) | The user's date of birth. |
+| `gender` | String | The user's gender. |
+| `os` | String | The operating system of the user's device. |
 
-6. Choose your **PostHog Deployment**:
+## Limitations
 
-   | Option | Description                                                  |
-   | ------ | ------------------------------------------------------------ |
-   | us/eu  | Default PostHog-hosted deployments.                          |
-   | Custom | For self-hosted instances. Enter your instance URL in the **PostHog Instance URL** field. |
+- **No access level or subscription status.** The `access_level_updated` event is exclusive to [webhook integrations](webhook), so Adapty sends PostHog no field describing what the user currently has access to — see [How to tell a subscriber from a free user](#how-to-tell-a-subscriber-from-a-free-user).
+- **No historical backfill.** Adapty forwards events from the moment you enable the integration. Past purchases never reach PostHog.
+- **PostHog doesn't geo-tag Adapty events.** PostHog infers location from the event source's IP address. The source for Adapty events is always an Adapty server — not the user's device. To avoid data pollution, Adapty tells PostHog to skip the lookup. Adapty populates `$geoip_time_zone`, `store_country`, and `profile_country` — but no finer location data.
+- **You can't filter Adapty events by source.** PostHog records the sending SDK in `$lib` — `posthog-ios`, `posthog-android`, `web` — but Adapty posts straight to PostHog's API without SDK mediation, so that property stays empty. Filter by event name instead.
 
-7. (optional) If you're using a self-hosted PostHog deployment, enter your deployment's address in the **PostHog Instance URL** field.
+## Troubleshooting
 
-8. (optional) Tweak settings like **Reporting Proceeds**, **Exclude Historical Events**, **Report User's Currency**, and **Send Trial Price**. Check the [Integration settings](configuration#integration-settings) for details on these options.
+- [Events don't appear in PostHog](#events-dont-appear-in-posthog)
+- [`access_level_updated` shows as failed in the Event Feed](#access_level_updated-shows-as-failed-in-the-event-feed)
+- [One user appears as several persons in PostHog](#one-user-appears-as-several-persons-in-posthog)
+- [Revenue in PostHog doesn't match Adapty Analytics](#revenue-in-posthog-doesnt-match-adapty-analytics)
+- [Events appear in PostHog before they happen](#events-appear-in-posthog-before-they-happen)
+- [No country or city data on Adapty events](#no-country-or-city-data-on-adapty-events)
+- [How to tell a subscriber from a free user](#how-to-tell-a-subscriber-from-a-free-user)
+- [Paywall views don't appear in PostHog](#paywall-views-dont-appear-in-posthog)
 
-9. (optional) You can also customize which events are sent to PostHog in the **Events names** section. Disable unwanted events or rename them as needed.
+#### Events don't appear in PostHog
 
-10. Click **Save** to finalize the setup.
+- Check the Adapty **Event Feed** first. A failed delivery shows the error PostHog returned.
+- A successful delivery doesn't guarantee PostHog kept the event. PostHog answers `200 OK` once the payload and key are valid, then silently discards events that have no name or an empty `distinct_id`.
+- Confirm the event you're looking for is enabled in the integration settings.
+- If you host PostHog yourself, make sure the server accepts Adapty's POST requests at `/capture`. A successful configuration doesn't guarantee this access exists — Adapty uses a different endpoint to check your key's validity.
 
-## SDK configuration
+#### `access_level_updated` shows as failed in the Event Feed
 
-To enable receiving attribution data from PostHog, pass the `distinctId` value to Adapty as shown below:
+<AccessLevelUpdatedEventFeed />
 
-<SdkIntegrationNote />
+#### One user appears as several persons in PostHog
 
-<Tabs groupId="current-os" queryString>
+PostHog cannot undo most splits after the fact — see [Match Adapty's ID to PostHog's](#match-adaptys-id-to-posthogs).
 
-<TabItem value="swift" label="Swift" default>
+##### Why the IDs diverge
 
-```swift showLineNumbers
-do {
-    let distinctId = PostHogSDK.shared.getDistinctId()
+Each event Adapty sends carries a `distinct_id` from the user's Adapty profile — see [Distinct ID priority](#distinct-id-priority). Adapty reads that value when it sends the event, not when your app calls `setIntegrationIdentifier`. If the `distinct_id` of an Adapty event differs from the internal `distinct_id` of the app install, PostHog attributes the two kinds of events to two different persons.
 
-    try await Adapty.setIntegrationIdentifier(
-        key: "posthog_distinct_user_id",
-        value: distinctId
-    )
-} catch {
-    // handle the error
-}
-```
+Three things produce the mismatch:
 
-</TabItem>
+1. **Your app never calls `setIntegrationIdentifier` on one of the platforms.** Adapty falls back to the Customer User ID or the anonymous profile ID. Check every platform you ship on.
+2. **The `setIntegrationIdentifier` call happens too late.** Subscription events that occur before the call carry the fallback ID.
+3. **The ID you send to PostHog with `identify()` differs from the one you set as the integration identifier.** Adapty keeps the value you last passed and never updates it on its own. PostHog's `reset()` assigns a new anonymous ID, which leaves Adapty with the previous one — so call `setIntegrationIdentifier` again after every `reset()`.
 
-<TabItem value="kotlin" label="Kotlin" default>
+Fix all three, and PostHog records one person per user from then on.
 
-```kotlin showLineNumbers
-Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId()) { error ->
-    if (error != null) {
-        // handle the error
-    }
+##### Merge diverging user IDs at the first identify() call
 
-```
+Your app gets one window to reconcile the divergent IDs: its **first call** to PostHog's `identify()`. PostHog merges the events of the app install into the person you name in that call, so name the ID Adapty sends — see [Match Adapty's ID to PostHog's](#match-adaptys-id-to-posthogs). After that call, PostHog treats the app install as identified, and refuses to merge two identified persons.
 
- </TabItem>
+##### Check for a refused merge
 
-<TabItem value="java" label="Java" default>
+To confirm that PostHog recorded one user as two persons, open [**Data management** > **Ingestion warnings**](https://us.posthog.com/data-management/ingestion-warnings) in PostHog and look for the `Refused to merge an already identified user` error.
 
-```java showLineNumbers
-Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId(), error -> {
-    if (error != null) {
-        // handle the error
-    }
-});
-```
+PostHog also blocks merges when the ID is one of its reserved values — see [Match Adapty's ID to PostHog's](#match-adaptys-id-to-posthogs) for the list.
 
-</TabItem>
+##### Repair an existing split
 
-<TabItem value="flutter" label="Flutter" default>
+Neither `identify()` nor `alias()` recovers a split once the [merge window](#merge-diverging-user-ids-at-the-first-identify-call) has closed. Only PostHog's `$merge_dangerously` can force the merge. PostHog documents it as irreversible, without safeguards, and meant as a one-off recovery from implementation problems.
 
-```javascript showLineNumbers
-try {
-    final distinctId = await Posthog().getDistinctId();
+You send it as an event rather than as a setting, and it names two persons. The direction decides which one survives:
 
-    await Adapty().setIntegrationIdentifier(
-        key: "posthog_distinct_user_id",
-        value: distinctId,
-    );
-} catch (e) {
-    // handle the error
-}
-```
+| Field | Value |
+| --- | --- |
+| `distinct_id` | The person that survives the merge |
+| `properties.alias` | The person merged into it — its events and `distinct_id` transfer to the survivor |
 
-</TabItem>
+Decide which side survives before you send anything. The Adapty person holds the subscription history, and your app's person holds the in-app behavior. Run a single user through it and check the result before any bulk repair. PostHog's [How to merge users](https://posthog.com/docs/product-analytics/identify#how-to-merge-users) has the payload for each of its SDKs.
 
-<TabItem value="unity" label="Unity" default>
+#### Revenue in PostHog doesn't match Adapty Analytics
 
-There is no official PostHog SDK for Unity.
+Adapty and PostHog process the same events differently. These differences account for almost every mismatch.
 
-</TabItem>
+- **Every Adapty event carries three revenue amounts, one for each option under [How the revenue data should be send](#configure-adapty).** Here's how they match to PostHog properties:
 
-<TabItem value="rn" label="React Native (TS)" default>
+  | Adapty Analytics | Event property (In USD) | Event property (In the buyer's currency) |
+  | --- | --- | --- |
+  | Gross revenue | `price_usd` | `price_local` |
+  | Proceeds after store commission | `proceeds_usd` | `proceeds_local` |
+  | Proceeds after store commission and taxes | `net_revenue_usd` | `net_revenue_local` |
 
-```typescript showLineNumbers
-import { adapty } from 'react-native-adapty';
-import { usePostHog } from 'posthog-react-native'
+  Comparing across rows produces a gap equal to the commission, the tax, or both. Adapty sends all six properties on every event, whatever **Report user's currency** is set to.
 
-// ...
-const posthog = usePostHog();
+- **Adapty counts every revenue event in a period; a PostHog insight counts only the events you add to it.** If you omit `subscription_renewed`, you drop most of the revenue for any established app.
 
-// ...
-try {
-  await adapty.setIntegrationIdentifier("posthog_distinct_user_id", posthog.getDistinctId());
-} catch (error) {
-  // handle `AdaptyError`
-}
-```
+- **Adapty's date range covers the whole final day; a `timestamp` filter stops at the instant you give it.** Adapty's Jul 1 – Jul 15 includes every event through Jul 15 23:59:59. In PostHog, `timestamp < 2026-07-15` drops that entire day — use `timestamp < 2026-07-16`.
 
-</TabItem>
+- **Adapty Analytics separates sandbox from production; PostHog mixes them.** Filter on `properties.environment = 'Production'` — see [Keep sandbox data out of production](#keep-sandbox-data-out-of-production).
 
-</Tabs>
+- **Adapty uses your app's reporting timezone; PostHog receives UTC.** Integrations always get UTC timestamps, whatever you set in [App Settings](general#3-reporting-timezone). A purchase at 23:30 UTC on Jul 1 lands on Jul 2 in Adapty if your reporting timezone is +02:00, while PostHog keeps it on Jul 1.
 
-Adapty will now send events to PostHog and receive attribution from it.
+- **PostHog is missing historical events.** Two separate limits keep old events out, so earlier subscriptions and renewals only reach Adapty Analytics. Events your own PostHog SDK captured are unaffected.
+
+  - **Exclude historical events**, a toggle on the [PostHog integration page](https://app.adapty.io/integrations/posthog), is on by default. Adapty doesn't send events dated before the profile existed, and the Event Feed flags each one as expired. A user's Adapty events therefore start at their first launch of an Adapty build. Turn it off to let back-dated events through from that point on.
+  - **No historical backfill** is a [permanent limitation](#limitations). Adapty sends events as it processes them, and never returns for events it processed before you enabled the integration.
+
+- **Events you disabled in the integration settings never reach PostHog.** Adapty Analytics still counts them. Check the **Events names** section in [Configure Adapty](#configure-adapty).
+
+#### Events appear in PostHog before they happen
+
+For renewals and trial conversions, Apple notifies Adapty before the event happens. Adapty forwards these events immediately, with the future `timestamp` unchanged. Adapty Analytics holds them back until that time passes, so PostHog shows events Adapty doesn't report yet. Both are correct. Filter on `timestamp` to exclude them — see [Event timestamps with future dates](how-profiles-work#event-timestamps-with-future-dates-appleios).
+
+#### No country or city data on Adapty events
+
+Use the `store_country` and `profile_country` properties instead. PostHog's own `$geoip_*` values stay empty on Adapty events — see [IP and location properties](#ip-and-location-properties).
+
+#### How to tell a subscriber from a free user
+
+Adapty event reports don't disclose the user's current access. `$set` includes only `email`, `first_name`, `last_name`, `birthday`, `gender`, and `os`. The event properties that describe access levels are populated only on `access_level_updated`, and Adapty shares that event exclusively with the webhook integration.
+
+Two ways forward:
+
+- Derive status inside PostHog from the event history. A person whose most recent Adapty event is `subscription_started`, `subscription_renewed`, or `trial_converted` currently has access; one whose most recent event is `subscription_expired`, `trial_expired`, or `subscription_refunded` does not.
+- Use the [webhook integration](webhook) to receive `access_level_updated`, then forward it into PostHog yourself. PostHog's capture API expects its own payload shape, so this needs a transformation step on your side — Adapty's webhook payload can't be posted to PostHog unchanged.
+
+#### Paywall views don't appear in PostHog
+
+Adapty's SDK captures paywall, flow, and onboarding interactions for Adapty Analytics only. Adapty's server forwards subscription events to integrations, and these interactions aren't subscription events. Webhooks don't include them either. Capture them with PostHog's SDK where you display the paywall.
+
