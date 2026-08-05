@@ -1,31 +1,266 @@
 ---
 title: "PostHog"
-description: ""
-metadataTitle: ""
+description: "Gửi các sự kiện gói đăng ký từ Adapty đến PostHog để kết nối những gì người dùng đã mua với những gì họ đã làm trong ứng dụng của bạn."
+metadataTitle: "PostHog | Tài liệu Adapty"
 ---
 
-PostHog là một nền tảng phân tích cung cấp các công cụ để theo dõi hành vi người dùng, trực quan hóa mức độ sử dụng sản phẩm và phân tích khả năng giữ chân người dùng. Với các tính năng như theo dõi sự kiện, user flows và feature flags, nền tảng này được thiết kế để giúp bạn hiểu rõ hơn và cải thiện sản phẩm của mình.
+import AccessLevelUpdatedEventFeed from '@site/src/locales/vi/reusable/AccessLevelUpdatedEventFeed.mdx';
 
-Tích hợp PostHog với Adapty giúp theo dõi liền mạch các sự kiện liên quan đến gói đăng ký, chẳng hạn như bắt đầu dùng thử, gia hạn và hủy đăng ký. Bằng cách gửi các sự kiện này tới PostHog, bạn có thể phân tích cách các thay đổi gói đăng ký ảnh hưởng đến hành vi người dùng, đánh giá hiệu suất paywall và có được cái nhìn sâu hơn về các chiến lược kiếm tiền — tất cả trong quy trình phân tích hiện có của bạn.
+Adapty có thể chuyển các sự kiện gói đăng ký (mua hàng, gia hạn, hoàn tiền, bắt đầu dùng thử) đến luồng sự kiện của PostHog, để chúng kết hợp với phần còn lại của dữ liệu của bạn.
 
-## Đặc điểm tích hợp \{#integration-characteristics\}
+Mỗi sự kiện bao gồm doanh thu, đơn vị tiền tệ, cửa hàng và thông tin sản phẩm, cùng với paywall và biến thể A/B test đã tạo ra giao dịch mua đó. Bất kỳ công cụ nào của PostHog đều có thể sử dụng dữ liệu này ngay khi nó được nhận.
 
-| Đặc điểm tích hợp | Mô tả                                                        |
-| ------------------ | ------------------------------------------------------------ |
-| Lịch trình         | Thời gian thực; các sự kiện có thể không xuất hiện ngay lập tức trên dashboard PostHog. |
-| Chiều dữ liệu      | Các sự kiện Adapty được gửi từ máy chủ Adapty tới máy chủ PostHog. |
-| Điểm tích hợp Adapty | <ul><li> SDK PostHog và Adapty trong code ứng dụng di động</li><li> Máy chủ Adapty</li></ul> |
+Các sự kiện gói đăng ký của Adapty bổ sung thêm chiều doanh thu vào mọi thứ bạn đã theo dõi trong PostHog:
+
+- **Những hành động in-app nào dự đoán một gói đăng ký?** Tương quan các sự kiện PostHog của bạn với `trial_started` và `subscription_started` để tìm ra hành vi dẫn đến mua hàng.
+- **Biến thể thử nghiệm nào mang lại doanh thu cao hơn?** Dùng các sự kiện doanh thu của Adapty làm chỉ số cho một thử nghiệm PostHog trên bất kỳ thay đổi sản phẩm nào. [A/B test](ab-tests) của Adapty bao gồm cả paywall và onboarding.
+- **Điều gì xảy ra trước khi hoàn tiền?** Tạo một insight từ `subscription_refunded`, sau đó mở hồ sơ người dùng đằng sau đó và xem các bản ghi phiên của họ.
+- **Lỗi có ảnh hưởng đến việc gia hạn không?** Đối chiếu theo dõi lỗi với `subscription_renewal_cancelled`, sự kiện này kích hoạt ngay khi người dùng tắt tự động gia hạn — sớm hơn nhiều so với `subscription_expired`.
+- **Người đăng ký giữ chân tốt hơn người dùng miễn phí như thế nào?** Tạo cohort và đường cong giữ chân dựa trên trạng thái truy cập — xem [Cách phân biệt người đăng ký và người dùng miễn phí](#how-to-tell-a-subscriber-from-a-free-user).
+- **Paywall và biến thể nào tạo ra doanh thu?** Các sự kiện mua hàng mang theo thông tin paywall và biến thể đã tạo ra chúng, giúp bạn phân tích doanh thu theo từng paywall. Ghi lại lượt xem paywall bằng SDK của PostHog để đo tỷ lệ chuyển đổi từ xem sang mua hàng.
+- **Đặt câu hỏi trên cả hai bộ dữ liệu** bằng insights hoặc SQL.
+
+## Cách tích hợp hoạt động \{#how-the-integration-works\}
+
+PostHog nhận diện từng người dùng bằng một chuỗi gọi là `distinct_id`. Toàn bộ tích hợp này phụ thuộc vào việc Adapty và PostHog đồng thuận về chuỗi đó.
+
+1. PostHog SDK gán cho người dùng một `distinct_id`. Khi khởi chạy lần đầu, chuỗi này có phạm vi thiết bị và ẩn danh. Nhưng bạn có thể gán giá trị tùy chỉnh khi đăng nhập, hoặc đặt lại khi đăng xuất.
+2. Mỗi lần khởi chạy ứng dụng, sau `Adapty.activate()` và trước khi bất kỳ giao dịch mua nào có thể xảy ra, hãy truyền `distinct_id` vào Adapty bằng `setIntegrationIdentifier()`. Adapty đính kèm giá trị này vào hồ sơ người dùng Adapty dưới dạng `posthog_distinct_user_id`.
+3. Khi người dùng bắt đầu dùng thử hoặc thực hiện mua hàng, máy chủ của Adapty gửi sự kiện tới API capture của PostHog kèm theo `distinct_id` đó. Quá trình trao đổi diễn ra server-to-server, bên ngoài ứng dụng của bạn.
+4. PostHog đính kèm sự kiện vào người dùng sở hữu `distinct_id` đó, nhờ vậy doanh thu từ gói đăng ký sẽ xuất hiện cùng với mọi hoạt động khác của người dùng trong ứng dụng của bạn.
+
+### Khớp ID của Adapty với PostHog \{#match-adaptys-id-to-posthogs\}
+
+Cả hai hệ thống đều phải dùng cùng một `distinct_id` cho một người dùng, nếu không một người sẽ bị tách thành hai thực thể không liên kết với nhau. Có hai cách để tránh tình trạng này, và cách nào phù hợp phụ thuộc vào thời điểm có thể xảy ra giao dịch mua.
+
+**Nếu giao dịch mua yêu cầu đăng nhập**, hãy gọi `identify()` của PostHog với **Customer User ID** của bạn vào thời điểm người dùng đăng nhập. Adapty đã sử dụng giá trị đó khi không có thông tin nào khác, vì vậy cả hai hệ thống sẽ khớp nhau.
+
+**Nếu người dùng ẩn danh có thể mua hàng**, hãy đọc `distinct_id` của PostHog và truyền vào Adapty qua `setIntegrationIdentifier`. Gọi hàm này mỗi lần khởi động sau `Adapty.activate()`, và gọi lại sau mỗi lần PostHog `reset()`. Hồ sơ người dùng ẩn danh không có Customer User ID, vì vậy ID của chính PostHog là giá trị duy nhất mà cả hai hệ thống có thể dùng chung — xem [Cấu hình mã ứng dụng của bạn](#configure-your-app-code).
+
+Dù bạn chọn cách nào, giá trị đó phải tồn tại qua lần cài đặt lại. Adapty tạo một hồ sơ người dùng mới sau mỗi lần cài đặt lại, còn PostHog tạo một `distinct_id` ẩn danh mới cho mỗi thiết bị, vì vậy cả hai hệ thống đều không tự lưu giữ danh tính qua sự kiện đó. Adapty có chuyển tiếp mức độ truy cập đã trả phí giữa các hồ sơ người dùng ẩn danh của một người dùng, nhưng điều đó chỉ liên kết các mức độ truy cập chứ không liên kết danh tính analytics — hồ sơ người dùng kế thừa vẫn gửi sự kiện dưới ID của chính nó. Nếu không có một ID ổn định do backend của bạn quản lý, một người đăng ký cài đặt lại ứng dụng sẽ hiển thị trong PostHog như một người dùng mới với sự kiện gia hạn nhưng không có giao dịch mua trước đó.
+
+:::warning
+PostHog chặn một số giá trị nhất định trong quá trình merge người dùng: `null`, `undefined`, `None`, `0`, `anonymous`, `guest`, `distinct_id`, `id`, `email`, `true`, `false`, `[object Object]`, `NaN`, chuỗi rỗng và các biến thể có dấu ngoặc kép của những giá trị này. Hãy đảm bảo giá trị bạn truyền vào không bao giờ thuộc danh sách đó. PostHog khuyến nghị dùng UUID, hoặc kiểm tra giá trị so với danh sách trên trước khi gửi. Xem [hướng dẫn phân giải danh tính của PostHog](https://posthog.com/docs/product-analytics/identity-resolution).
+:::
+
+ID không khớp sẽ gây ra phân mảnh dữ liệu — xem [Một người dùng xuất hiện dưới nhiều danh tính](#one-user-appears-as-several-persons-in-posthog).
+
+:::important
+Event của Adapty mang theo thuộc tính người dùng, khiến mỗi event đều là *identified event* theo cách phân loại của PostHog — và PostHog tính phí cao hơn tới 4 lần để xử lý loại này so với anonymous event. Adapty chỉ gửi một event cho mỗi thay đổi trong vòng đời gói đăng ký, nên số lượng vẫn rất nhỏ so với analytics phía client. Dù vậy, việc đồng bộ ID vẫn đáng làm: PostHog khuyến nghị xác định danh tính người dùng trong hầu hết các trường hợp.
+:::
+
+## Hướng dẫn cài đặt \{#setup-instructions\}
+
+### Sao chép project token của PostHog \{#copy-your-posthog-project-token\}
+
+1. Đăng nhập vào deployment lưu trữ dữ liệu của bạn — [US Cloud](https://us.posthog.com/) hoặc [EU Cloud](https://eu.posthog.com/) — và chọn project bạn muốn kết nối.
+
+2. Vào **Settings** > **Project** > **General** và tìm phần **Project token & ID**.
+
+   <ZoomImage id="posthog-settings.webp" width="700px" alt="Cài đặt project PostHog hiển thị Project token, Project ID và Region" />
+
+3. Sao chép **Project token**. Token bắt đầu bằng `phc_`. PostHog mô tả đây là token chỉ ghi và an toàn để công khai, nên bạn không cần phải xoay vòng token này.
+
+### Cấu hình Adapty
+
+1. Mở [**Integrations** > **PostHog**](https://app.adapty.io/integrations/posthog) trong Adapty Dashboard.
+
+2. Bật toggle **PostHog**.
+
+3. Dán token vào **Project API key**. Adapty sẽ kiểm tra token với PostHog khi lưu — nếu token không hợp lệ, thao tác sẽ thất bại ngay lập tức thay vì âm thầm bỏ qua các sự kiện.
+
+4. Phần "server location" phụ thuộc vào cài đặt của bạn.
+
+- Nếu bạn dùng **PostHog Cloud**, đặt **Region** theo deployment bạn đã đăng nhập — `US Cloud` hoặc `EU Cloud`. Để trống trường PostHog Instance URL.
+   - Nếu bạn chạy **instance của riêng mình**, chọn **Self-hosted** và điền vào trường **PostHog Instance URL**. Không cần chọn region. Adapty phải có thể truy cập instance đó mà không cần proxy / VPN.
+
+5. Dưới mục **How the revenue data should be send**, chọn loại doanh thu mà Adapty sẽ gửi đi. Ba tùy chọn tương ứng với [các chế độ xem doanh thu trong Adapty Analytics](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue), vì vậy lựa chọn của bạn cũng xác định chế độ xem mà số liệu PostHog của bạn cần khớp với.
+
+| Tùy chọn | Adapty gửi gì |
+   | --- | --- |
+   | **Gross revenue** | Toàn bộ số tiền người mua đã trả, trước khi trừ hoa hồng và thuế. Mặc định. |
+   | **Proceeds after store commission** | Số tiền sau khi trừ hoa hồng của cửa hàng, vẫn bao gồm thuế. |
+   | **Proceeds after store commission and taxes** | Số tiền sau khi trừ cả hai. |
+
+6. Cấu hình các tùy chọn còn lại:
+
+| Toggle | Khi bật | Mặc định |
+   | --- | --- | --- |
+   | **Report user's currency** | Adapty báo cáo mỗi giao dịch bán hàng theo đơn vị tiền tệ mà người mua đã thanh toán, thay vì USD. | Tắt |
+   | **Send trial price** | Nếu không bật, các lần bắt đầu dùng thử sẽ không ghi nhận doanh thu. Bật tùy chọn này để gán một mức giá tượng trưng cho mỗi lần dùng thử — khi đó trường **Trial price percentage** sẽ hiện ra, cho phép bạn đặt tỷ lệ phần trăm của giá gói đăng ký mà mỗi lần dùng thử sẽ báo cáo. Ví dụ: ở mức `60%`, một gói đăng ký $10 sẽ gửi giá trị $6. | Tắt |
+   | **Exclude historical events** | Adapty bỏ qua các sự kiện xảy ra trước khi người dùng cài đặt bản build có tích hợp Adapty SDK. | **Bật** |
+
+7. Đổi tên hoặc tắt từng sự kiện trong phần **Events names**. PostHog chấp nhận bất kỳ tên sự kiện nào miễn là không rỗng, vì vậy hãy dùng tên phù hợp với hệ thống phân loại hiện tại của bạn.
+
+8. Nhấn **Save**.
+
+<ZoomImage id="posthog-on.webp" width="700px" alt="Adapty Dashboard PostHog integration page with the toggle, key, server location, revenue settings, and event names" />
+
+### Giữ dữ liệu sandbox tách biệt khỏi môi trường production \{#keep-sandbox-data-out-of-production\}
+
+Adapty gửi các giao dịch sandbox và production qua cùng một integration, nên cả hai đều xuất hiện trong cùng một project PostHog. Integration này chỉ nhận một **Project API key** duy nhất, không có key sandbox riêng để trỏ sang nơi khác.
+
+Việc cấp cho bản build phát triển của bạn một project PostHog riêng cũng không ngăn được các sự kiện sandbox xuất hiện trong project production. Sandbox là thuộc tính của **giao dịch từ cửa hàng**, không phải của bản build. Các giao dịch mua qua App Store review và TestFlight đều là giao dịch sandbox từ bản build production.
+
+Instead, separate the two with queries. Every event includes an `environment` property set to `Sandbox` or `Production`. Filter it to isolate actual revenue:
+
+```sql
+WHERE properties.environment = 'Production'
+```
+
+### Cấu hình mã ứng dụng \{#configure-your-app-code\}
+
+1. Lấy `distinct_id` hiện tại từ SDK của PostHog:
+
+   - **Mỗi lần khởi chạy ứng dụng**, sau `Adapty.activate()` và trước khi có bất kỳ giao dịch mua nào xảy ra. PostHog sẽ gán các sự kiện trước đó cho [một người dùng khác](#one-user-appears-as-several-persons-in-posthog).
+   - **Sau khi PostHog gọi `reset()`**, thường được các ứng dụng chạy khi đăng xuất. `reset()` tạo ra một ID ẩn danh mới và không liên kết nó với người dùng trước, vì vậy nếu dùng giá trị cũ sẽ vẫn trỏ đến người dùng vừa đăng xuất.
+
+2. Truyền giá trị đó vào Adapty bằng `setIntegrationIdentifier()`.
+
+:::note
+Không cần thêm lệnh gọi nào sau khi gọi `identify()` của PostHog. PostHog sẽ gộp người dùng ẩn danh với người dùng đã xác định, nên các sự kiện Adapty cũng được phân giải theo cách tương tự. Xem [Khớp ID của Adapty với PostHog](#match-adaptys-id-to-posthogs).
+:::
+
+<SdkIntegrationNote />
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
+
+```swift showLineNumbers
+
+let distinctId = PostHogSDK.shared.getDistinctId()
+
+do {
+    try await Adapty.setIntegrationIdentifier(.posthogDistinctUserId(distinctId))
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)">
+
+```kotlin showLineNumbers
+Adapty.setIntegrationIdentifier(
+    AdaptyIntegrationIdentifier.posthogDistinctUserId(PostHog.distinctId())
+) { error ->
+    if (error != null) {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Android (Java)">
+
+```java showLineNumbers
+Adapty.setIntegrationIdentifier(
+    AdaptyIntegrationIdentifier.posthogDistinctUserId(PostHog.distinctId()),
+    error -> {
+        if (error != null) {
+            // handle the error
+        }
+    }
+);
+```
+
+</TabItem>
+<TabItem value="flutter" label="Flutter (Dart)">
+
+```dart showLineNumbers
+
+try {
+    final distinctId = await Posthog().getDistinctId();
+
+    await Adapty().setIntegrationIdentifier(
+        key: "posthog_distinct_user_id",
+        value: distinctId,
+    );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="rn" label="React Native (TS)">
+
+```typescript showLineNumbers
+
+const posthog = usePostHog();
+
+try {
+    await adapty.setIntegrationIdentifier(
+        "posthog_distinct_user_id",
+        posthog.getDistinctId()
+    );
+} catch (error) {
+    // handle `AdaptyError`
+}
+```
+
+</TabItem>
+<TabItem value="capacitor" label="Capacitor (TS)">
+
+Plugin Capacitor của PostHog được cộng đồng duy trì bởi [Capawesome](https://capawesome.io/plugins/posthog/), không phải PostHog. Đọc distinct ID bằng `getDistinctId` của plugin và truyền vào Adapty qua `setIntegrationIdentifier`.
+
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform">
+
+Đọc distinct ID bằng [`getDistinctId()`](https://posthog.com/docs/libraries/kmp) của PostHog và truyền vào Adapty qua `setIntegrationIdentifier`.
+
+</TabItem>
+<TabItem value="unity" label="Unity (C#)">
+
+PostHog cung cấp một [SDK Unity chính thức](https://posthog.com/docs/libraries/unity) cho Windows, Mac, Linux, iOS, Android và WebGL. Đọc `PostHog.DistinctId` và truyền vào Adapty bằng `Adapty.SetIntegrationIdentifier(key, value, completionHandler)`.
+
+</TabItem>
+</Tabs>
+
+### Xác minh tích hợp \{#verify-the-integration\}
+
+1. Kích hoạt một giao dịch mua sandbox, sau đó mở **Event Feed** trong Adapty Dashboard. Mỗi lần gửi sẽ hiển thị kèm kết quả. Adapty xác minh **Project API key** và URL instance của bạn khi lưu, vì vậy lỗi ở bước này rất hiếm khi xảy ra. Các nguyên nhân thường gặp:
+
+   - **Key ngừng hoạt động.** PostHog trả về `401` nếu bạn xóa key tích hợp.
+   - **Instance ngừng phản hồi.** Adapty dừng chờ sau 10 giây. Có thể ảnh hưởng đến các triển khai tự host.
+
+   Di chuột qua sự kiện thất bại để đọc phản hồi từ PostHog.
+
+2. Trong PostHog, mở giao diện [**Activity**](https://us.posthog.com/activity/explore) và tìm kiếm sự kiện. Thuộc tính `environment` của giao dịch mua của bạn phải là `Sandbox`.
+3. Mở hồ sơ của người dùng đó và kiểm tra tab **Distinct IDs**. Các sự kiện của ứng dụng và sự kiện server của Adapty phải thuộc về cùng một người. Nếu có hai người cho cùng một người dùng, nghĩa là các ID không khớp — xem [Một người dùng xuất hiện thành nhiều người](#one-user-appears-as-several-persons-in-posthog).
+
+:::note
+Các sự kiện của Adapty không bao giờ xuất hiện trong output debug PostHog của chính ứng dụng bạn. Adapty gửi chúng từ server của mình, nên chúng không đi qua SDK của ứng dụng. Log cục bộ trống không nói lên điều gì về tình trạng tích hợp.
+:::
+
+## Báo cáo doanh thu trong PostHog \{#report-revenue-in-posthog\}
+
+Adapty Analytics vẫn là nguồn dữ liệu chính xác cho các con số doanh thu, vì nó tính toán từ dữ liệu đầy đủ của cửa hàng trong khi PostHog chỉ nhận những gì integration này chuyển tiếp. Nếu bạn cũng muốn xem doanh thu trên dashboard PostHog bên cạnh các chỉ số sản phẩm, tính năng [Revenue Analytics](https://posthog.com/docs/revenue-analytics/managed-views) của PostHog đọc dữ liệu từ các thuộc tính event mà bạn chỉ định. Mở **Data management** > **Revenue** trong PostHog và ánh xạ:
+
+| Trường PostHog | Thuộc tính Adapty |
+| --- | --- |
+| Revenue | `price_usd`, `proceeds_usd`, hoặc `net_revenue_usd` — chọn tùy theo tùy chọn bạn đã chọn trong [Cách dữ liệu doanh thu nên được gửi](#configure-adapty) |
+| Currency | `currency`, hoặc đặt một loại tiền tệ cố định nếu bạn báo cáo bằng USD |
+| Product | `vendor_product_id` |
+| Subscription | `original_transaction_id` |
+
+Hãy để tùy chọn "values are in cents" của PostHog ở trạng thái **tắt**. Adapty gửi số thập phân, không phải đơn vị tiền nhỏ nhất.
 
 ## Cấu trúc sự kiện PostHog \{#posthog-event-structure\}
 
-Adapty gửi các sự kiện đã chọn tới PostHog như được cấu hình trong phần **Events names** trên [trang tích hợp PostHog](https://app.adapty.io/integrations/posthog). Mỗi sự kiện có cấu trúc như sau:
+Adapty gửi các sự kiện bạn đã bật trong mục **Events names** trên [trang tích hợp PostHog](https://app.adapty.io/integrations/posthog), mỗi sự kiện tương ứng với một capture request:
 
 ```json showLineNumbers
 {
+  "api_key": "phc_YOUR_PROJECT_TOKEN",
   "distinct_id": "john.doe@example.com",
-  "timestamp": "2025-01-08T11:06:12+00:00",
+  "timestamp": "2026-01-08T11:06:12+00:00",
   "event": "subscription_started",
   "properties": {
+    "$ip": "10.168.1.1",
+    "$geoip_time_zone": "America/New_York",
+    "$geoip_disable": true,
     "$set": {
       "email": "user@example.com",
       "first_name": "John",
@@ -34,173 +269,172 @@ Adapty gửi các sự kiện đã chọn tới PostHog như được cấu hìn
       "gender": "male",
       "os": "iOS"
     },
-    "timezone": "America/New_York",
-    "ip_address": "10.168.1.1",
     "*": "{{other_event_properties}}"
   }
 }
 ```
 
-Trong đó
+| Tham số | Kiểu | Mô tả |
+| --- | --- | --- |
+| `api_key` | String | **Project API key** trong PostHog của bạn. |
+| `distinct_id` | String | Xác định người dùng trong PostHog. Adapty sử dụng giá trị đầu tiên tìm thấy — xem [thứ tự ưu tiên distinct ID](#distinct-id-priority). |
+| `timestamp` | ISO 8601 date & time | Thời điểm sự kiện xảy ra. Các lần gia hạn và chuyển đổi từ trial có thể có ngày trong tương lai — xem [Sự kiện xuất hiện trong PostHog trước khi xảy ra](#events-appear-in-posthog-before-they-happen). |
+| `event` | String | Tên bạn đã đặt trong phần **Events names**. |
+| `properties` | Object | [Thuộc tính sự kiện](messaging#event-properties) của Adapty, [thuộc tính IP và vị trí](#ip-and-location-properties), và [`$set`](#person-properties). Adapty bỏ qua bất kỳ thuộc tính nào không có giá trị. |
 
-| **Tham số**     | **Kiểu**             | **Mô tả**                                                    |
-| --------------- | -------------------- | ------------------------------------------------------------ |
-| **distinct_id** | String               | Mã định danh duy nhất của người dùng (ví dụ: `profile.posthog_distinct_user_id`, `customer_user_id` hoặc `profile_id`). |
-| **timestamp**   | ISO 8601 date & time | Ngày và giờ xảy ra sự kiện.                                  |
-| **event**       | String               | Tên sự kiện như bạn đã định nghĩa trong phần Events names của [cấu hình PostHog](https://app.adapty.io/integrations/posthog). |
-| **properties**  | Object               | Chứa [properties.$set](posthog#propertiesset-parameters) và tất cả [các thuộc tính theo từng sự kiện](messaging#event-properties). Mỗi thuộc tính là tùy chọn và sẽ không được gửi tới PostHog nếu bị thiếu. |
+Năm thuộc tính chỉ dành cho webhook sẽ không xuất hiện ở đây — xem [Giới hạn](#limitations).
 
-### Các tham số properties.$set \{#propertiesset-parameters\}
+### Thứ tự ưu tiên Distinct ID \{#distinct-id-priority\}
 
-Mỗi tham số trong object `properties.$set` là tùy chọn và sẽ không được gửi tới PostHog nếu bị thiếu.
+Adapty sử dụng giá trị đầu tiên mà nó phát hiện được:
 
-| **Tham số**     | **Kiểu**      | **Mô tả**                                                    |
-| --------------- | ------------- | ------------------------------------------------------------ |
-| **email**       | String        | Địa chỉ email của người dùng.                                |
-| **first_name**  | String        | Tên của người dùng.                                          |
-| **last_name**   | String        | Họ của người dùng.                                           |
-| **birthday**    | String (Date) | Ngày sinh của người dùng.                                    |
-| **gender**      | String        | Giới tính của người dùng.                                    |
-| **os**          | String        | Hệ điều hành của thiết bị người dùng.                       |
+| Thứ tự ưu tiên | Giá trị | Được đặt bởi |
+| --- | --- | --- |
+| 1 | `posthog_distinct_user_id` | Lệnh gọi `setIntegrationIdentifier` của bạn |
+| 2 | **Customer User ID** | `Adapty.activate()` hoặc `Adapty.identify()` |
+| 3 | ID hồ sơ nội bộ của Adapty | Adapty, luôn luôn có |
 
-## Thiết lập tích hợp PostHog \{#setting-up-posthog-integration\}
+Adapty xác định thứ tự này theo từng sự kiện, không phải theo từng người dùng. Một sự kiện xảy ra trước khi lệnh gọi `setIntegrationIdentifier` của bạn được thực thi sẽ được ghi nhận với ID có thứ tự ưu tiên thấp hơn, và PostHog sẽ ghi lại một người dùng thứ hai cho cùng một người dùng đó.
 
-1. Mở trang [Integrations -> PostHog](https://app.adapty.io/integrations/posthog) trong Adapty Dashboard và bật toggle.
+Chọn một trong hai cách thiết lập trong [Ghép ID của Adapty với PostHog](#match-adaptys-id-to-posthogs), sau đó đặt giá trị đó trước khi bất kỳ sự kiện nào có thể kích hoạt. Đối với những người dùng đã bị tách, xem [Một người dùng xuất hiện dưới dạng nhiều persons](#one-user-appears-as-several-persons-in-posthog).
 
-   <Zoom>
-     <img src="/assets/shared/img/posthog-on.webp"
-     style={{
-       border: 'none', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-   />
-   </Zoom>
+### Thuộc tính IP và vị trí \{#ip-and-location-properties\}
 
-2. Đăng nhập vào [PostHog Dashboard](https://posthog.com/).
+Để phân khúc các sự kiện Adapty theo vị trí, hãy sử dụng thuộc tính `store_country` và `profile_country`. Adapty tắt tính năng tra cứu vị trí của PostHog, vì vậy PostHog sẽ không tự thêm các giá trị `$geoip_*` nào. Ba thuộc tính dưới đây áp dụng theo từng sự kiện, do đó cài đặt dự án và các sự kiện của bạn sẽ không bị ảnh hưởng.
 
-3. Điều hướng đến **Settings -> Project**.
+| Thuộc tính | Giá trị | Hiệu ứng |
+| --- | --- | --- |
+| `$ip` | Địa chỉ IP của người dùng | PostHog lưu trữ giá trị này trên sự kiện. Adapty gửi cùng giá trị đó dưới dạng header `x-forwarded-for`. |
+| `$geoip_time_zone` | Múi giờ của người dùng | Adapty đặt trực tiếp giá trị này. |
+| `$geoip_disable` | Luôn là `true` | Tắt tính năng tra cứu vị trí của PostHog cho sự kiện này. |
 
-   <Zoom>
-     <img src="/assets/shared/img/posthog-settings.webp"
-     style={{
-       border: 'none', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-   />
-   </Zoom>
+### Thuộc tính người dùng \{#person-properties\}
 
-4. Trong cửa sổ **Project**, cuộn xuống phần **Project ID** và sao chép **Project API key**.
+Mọi thứ bên trong `$set` đều trở thành thuộc tính **person** của PostHog thay vì thuộc tính sự kiện. PostHog gắn thuộc tính person vào người dùng chứ không phải vào một sự kiện đơn lẻ, vì vậy chúng mô tả trạng thái hiện tại của người dùng thay vì một thời điểm cụ thể. Adapty bỏ qua bất kỳ trường nào không có giá trị, và loại bỏ `$set` hoàn toàn khi không có trường nào trong số đó.
 
-5. Dán API key vào trường **Project API key** trong Adapty Dashboard. PostHog không có chế độ Sandbox riêng cho tích hợp server-to-server.
+| Tham số | Kiểu | Mô tả |
+| --- | --- | --- |
+| `email` | String | Địa chỉ email của người dùng. |
+| `first_name` | String | Tên của người dùng. |
+| `last_name` | String | Họ của người dùng. |
+| `birthday` | String (date) | Ngày sinh của người dùng. |
+| `gender` | String | Giới tính của người dùng. |
+| `os` | String | Hệ điều hành của thiết bị người dùng. |
 
-6. Chọn **PostHog Deployment** của bạn:
+## Giới hạn \{#limitations\}
 
-   | Tùy chọn | Mô tả                                                        |
-   | -------- | ------------------------------------------------------------ |
-   | us/eu    | Các deployment mặc định được PostHog lưu trữ.               |
-   | Custom   | Dành cho các instance tự lưu trữ. Nhập URL instance của bạn vào trường **PostHog Instance URL**. |
+- **Không có mức độ truy cập hay trạng thái gói đăng ký.** Sự kiện `access_level_updated` chỉ dành riêng cho [webhook integration](webhook), nên Adapty không gửi bất kỳ trường nào mô tả quyền truy cập hiện tại của người dùng đến PostHog — xem [Cách phân biệt người dùng trả phí và người dùng miễn phí](#how-to-tell-a-subscriber-from-a-free-user).
+- **Không có dữ liệu lịch sử.** Adapty chỉ chuyển tiếp các sự kiện từ thời điểm bạn bật integration. Các giao dịch trong quá khứ sẽ không bao giờ được gửi đến PostHog.
+- **PostHog không gắn thẻ địa lý cho sự kiện Adapty.** PostHog xác định vị trí dựa trên địa chỉ IP của nguồn gửi sự kiện. Nguồn gửi sự kiện Adapty luôn là server của Adapty — không phải thiết bị của người dùng. Để tránh làm ô nhiễm dữ liệu, Adapty yêu cầu PostHog bỏ qua bước tra cứu này. Adapty điền vào `$geoip_time_zone`, `store_country` và `profile_country` — nhưng không có dữ liệu vị trí chi tiết hơn.
+- **Bạn không thể lọc sự kiện Adapty theo nguồn.** PostHog ghi lại SDK đã gửi sự kiện trong `$lib` — `posthog-ios`, `posthog-android`, `web` — nhưng Adapty gửi thẳng đến API của PostHog mà không qua SDK làm trung gian, do đó thuộc tính này sẽ để trống. Hãy lọc theo tên sự kiện thay thế.
 
-7. (Tùy chọn) Nếu bạn đang dùng deployment PostHog tự lưu trữ, nhập địa chỉ deployment của bạn vào trường **PostHog Instance URL**.
+## Khắc phục sự cố \{#troubleshooting\}
 
-8. (Tùy chọn) Điều chỉnh các cài đặt như **Reporting Proceeds**, **Exclude Historical Events**, **Report User's Currency** và **Send Trial Price**. Xem [Cài đặt tích hợp](configuration#integration-settings) để biết thêm chi tiết về các tùy chọn này.
+- [Sự kiện không xuất hiện trong PostHog](#events-dont-appear-in-posthog)
+- [`access_level_updated` hiển thị là thất bại trong Event Feed](#access_level_updated-shows-as-failed-in-the-event-feed)
+- [Một người dùng xuất hiện thành nhiều người trong PostHog](#one-user-appears-as-several-persons-in-posthog)
+- [Doanh thu trong PostHog không khớp với Adapty Analytics](#revenue-in-posthog-doesnt-match-adapty-analytics)
+- [Sự kiện xuất hiện trong PostHog trước khi xảy ra](#events-appear-in-posthog-before-they-happen)
+- [Không có dữ liệu quốc gia hoặc thành phố trên các sự kiện Adapty](#no-country-or-city-data-on-adapty-events)
+- [Cách phân biệt người đăng ký với người dùng miễn phí](#how-to-tell-a-subscriber-from-a-free-user)
+- [Lượt xem paywall không xuất hiện trong PostHog](#paywall-views-dont-appear-in-posthog)
 
-9. (Tùy chọn) Bạn cũng có thể tùy chỉnh các sự kiện nào được gửi tới PostHog trong phần **Events names**. Tắt các sự kiện không cần thiết hoặc đổi tên chúng theo nhu cầu.
+#### Sự kiện không xuất hiện trong PostHog \{#events-dont-appear-in-posthog\}
 
-10. Nhấn **Save** để hoàn tất thiết lập.
+- Kiểm tra **Event Feed** của Adapty trước. Nếu có lỗi giao nhận, lỗi PostHog trả về sẽ hiển thị ở đây.
+- Giao nhận thành công không đồng nghĩa với việc PostHog giữ lại event đó. PostHog trả về `200 OK` khi payload và key hợp lệ, nhưng sẽ âm thầm loại bỏ các event không có tên hoặc có `distinct_id` trống.
+- Xác nhận rằng event bạn cần tìm đã được bật trong cài đặt tích hợp.
+- Nếu bạn tự host PostHog, hãy đảm bảo máy chủ chấp nhận các POST request từ Adapty tại `/capture`. Cấu hình thành công không đảm bảo rằng quyền truy cập này tồn tại — Adapty dùng một endpoint khác để kiểm tra tính hợp lệ của key.
 
-## Cấu hình SDK \{#sdk-configuration\}
+#### `access_level_updated` hiển thị là thất bại trong Event Feed
 
-Để bật tính năng nhận dữ liệu attribution từ PostHog, truyền giá trị `distinctId` vào Adapty như sau:
+<AccessLevelUpdatedEventFeed />
 
-<SdkIntegrationNote />
+#### Một người dùng xuất hiện thành nhiều người trong PostHog
 
-<Tabs groupId="current-os" queryString>
+PostHog không thể hoàn tác hầu hết các lần tách sau khi đã xảy ra — xem [Khớp ID của Adapty với PostHog](#match-adaptys-id-to-posthogs).
 
-<TabItem value="swift" label="Swift" default>
+##### Tại sao các ID bị khác nhau
 
-```swift showLineNumbers
-do {
-    let distinctId = PostHogSDK.shared.getDistinctId()
+Mỗi sự kiện Adapty gửi đi đều mang theo `distinct_id` từ hồ sơ người dùng Adapty — xem [Độ ưu tiên Distinct ID](#distinct-id-priority). Adapty đọc giá trị đó tại thời điểm gửi sự kiện, không phải khi app của bạn gọi `setIntegrationIdentifier`. Nếu `distinct_id` của một sự kiện Adapty khác với `distinct_id` nội bộ của lượt cài đặt app, PostHog sẽ gán hai loại sự kiện đó cho hai người dùng khác nhau.
 
-    try await Adapty.setIntegrationIdentifier(
-        key: "posthog_distinct_user_id",
-        value: distinctId
-    )
-} catch {
-    // handle the error
-}
-```
+Ba nguyên nhân dẫn đến sự không khớp này:
 
-</TabItem>
+1. **Ứng dụng của bạn chưa gọi `setIntegrationIdentifier` trên một trong các nền tảng.** Adapty sẽ dùng Customer User ID hoặc anonymous profile ID làm giá trị dự phòng. Hãy kiểm tra tất cả các nền tảng bạn đang phát hành.
+2. **Lệnh gọi `setIntegrationIdentifier` xảy ra quá muộn.** Các sự kiện gói đăng ký xảy ra trước lệnh gọi này sẽ mang ID dự phòng.
+3. **ID bạn gửi cho PostHog qua `identify()` khác với ID bạn đặt làm integration identifier.** Adapty chỉ lưu giá trị bạn truyền vào lần cuối và không tự cập nhật. `reset()` của PostHog sẽ tạo một anonymous ID mới, khiến Adapty vẫn giữ ID cũ — vì vậy hãy gọi lại `setIntegrationIdentifier` sau mỗi lần gọi `reset()`.
 
-<TabItem value="kotlin" label="Kotlin" default>
+Sửa cả ba, và PostHog sẽ chỉ ghi nhận một người dùng từ đó trở đi.
 
-```kotlin showLineNumbers
-Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId()) { error ->
-    if (error != null) {
-        // handle the error
-    }
+##### Hợp nhất các user ID khác nhau tại lần gọi identify() đầu tiên \{#merge-diverging-user-ids-at-the-first-identify-call\}
 
-```
+Ứng dụng của bạn chỉ có một cơ hội để hợp nhất các ID khác nhau: **lần gọi đầu tiên** đến `identify()` của PostHog. PostHog sẽ gộp các sự kiện từ lần cài đặt ứng dụng vào người dùng bạn đặt tên trong lần gọi đó, vì vậy hãy dùng ID mà Adapty gửi — xem [Khớp ID của Adapty với PostHog](#match-adaptys-id-to-posthogs). Sau lần gọi đó, PostHog coi lần cài đặt ứng dụng là đã được xác định và từ chối hợp nhất hai người dùng đã được xác định.
 
- </TabItem>
+##### Kiểm tra trường hợp từ chối hợp nhất \{#check-for-a-refused-merge\}
 
-<TabItem value="java" label="Java" default>
+Để xác nhận rằng PostHog đã ghi nhận một người dùng thành hai person riêng biệt, hãy mở [**Data management** > **Ingestion warnings**](https://us.posthog.com/data-management/ingestion-warnings) trong PostHog và tìm lỗi `Refused to merge an already identified user`.
 
-```java showLineNumbers
-Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId(), error -> {
-    if (error != null) {
-        // handle the error
-    }
-});
-```
+PostHog cũng chặn việc merge khi ID là một trong các giá trị đã được đặt trước — xem [Khớp ID của Adapty với PostHog](#match-adaptys-id-to-posthogs) để biết danh sách đầy đủ.
 
-</TabItem>
+##### Khắc phục tình trạng split đã xảy ra \{#repair-an-existing-split\}
 
-<TabItem value="flutter" label="Flutter" default>
+Không có `identify()` hay `alias()` nào có thể khôi phục sự phân tách sau khi [cửa sổ merge](#merge-diverging-user-ids-at-the-first-identify-call) đã đóng. Chỉ có `$merge_dangerously` của PostHog mới có thể ép buộc việc merge. PostHog ghi chú rằng thao tác này không thể hoàn tác, không có biện pháp bảo vệ, và chỉ dùng để xử lý sự cố một lần duy nhất do lỗi triển khai.
 
-```javascript showLineNumbers
-try {
-    final distinctId = await Posthog().getDistinctId();
+Bạn gửi nó dưới dạng một event thay vì một cài đặt, và nó chỉ định hai person. Chiều hướng xác định person nào sẽ tồn tại:
 
-    await Adapty().setIntegrationIdentifier(
-        key: "posthog_distinct_user_id",
-        value: distinctId,
-    );
-} catch (e) {
-    // handle the error
-}
-```
+| Trường | Giá trị |
+| --- | --- |
+| `distinct_id` | Người dùng tồn tại sau khi merge |
+| `properties.alias` | Người dùng bị merge vào — các sự kiện và `distinct_id` của họ sẽ chuyển sang người dùng tồn tại |
 
-</TabItem>
+Hãy quyết định bên nào tồn tại trước khi gửi bất kỳ thứ gì. Hồ sơ người dùng Adapty lưu lịch sử gói đăng ký, còn hồ sơ người dùng trong app lưu hành vi in-app. Hãy chạy thử với một người dùng duy nhất và kiểm tra kết quả trước khi xử lý hàng loạt. Tài liệu [How to merge users](https://posthog.com/docs/product-analytics/identify#how-to-merge-users) của PostHog có payload cho từng SDK của họ.
 
-<TabItem value="unity" label="Unity" default>
+#### Doanh thu trong PostHog không khớp với Adapty Analytics \{#revenue-in-posthog-doesnt-match-adapty-analytics\}
 
-Không có SDK PostHog chính thức cho Unity.
+Adapty và PostHog xử lý cùng một sự kiện theo những cách khác nhau. Những khác biệt này là nguyên nhân chính của hầu hết mọi sự không khớp.
 
-</TabItem>
+- **Mỗi sự kiện Adapty đều mang theo ba giá trị doanh thu, tương ứng với ba tùy chọn trong [Cách gửi dữ liệu doanh thu](#configure-adapty).** Đây là cách chúng ánh xạ sang các thuộc tính PostHog:
 
-<TabItem value="rn" label="React Native (TS)" default>
+| Adapty Analytics | Thuộc tính sự kiện (Bằng USD) | Thuộc tính sự kiện (Bằng tiền tệ của người mua) |
+  | --- | --- | --- |
+  | Gross revenue | `price_usd` | `price_local` |
+  | Proceeds after store commission | `proceeds_usd` | `proceeds_local` |
+  | Proceeds after store commission and taxes | `net_revenue_usd` | `net_revenue_local` |
 
-```typescript showLineNumbers
+  So sánh giữa các hàng sẽ thấy sự chênh lệch bằng với phần hoa hồng, thuế, hoặc cả hai. Adapty gửi cả sáu thuộc tính trong mỗi sự kiện, bất kể **Report user's currency** được đặt như thế nào.
 
-// ...
-const posthog = usePostHog();
+- **Adapty tính mọi sự kiện doanh thu trong một khoảng thời gian; một PostHog insight chỉ tính các sự kiện bạn thêm vào đó.** Nếu bỏ qua `subscription_renewed`, bạn sẽ mất phần lớn doanh thu của mọi ứng dụng đã hoạt động ổn định.
 
-// ...
-try {
-  await adapty.setIntegrationIdentifier("posthog_distinct_user_id", posthog.getDistinctId());
-} catch (error) {
-  // handle `AdaptyError`
-}
-```
+- **Khoảng ngày của Adapty bao phủ toàn bộ ngày cuối; bộ lọc `timestamp` dừng lại đúng thời điểm bạn chỉ định.** Khoảng Jul 1 – Jul 15 trong Adapty bao gồm mọi sự kiện đến hết Jul 15 23:59:59. Trong PostHog, `timestamp < 2026-07-15` sẽ loại bỏ toàn bộ ngày đó — hãy dùng `timestamp < 2026-07-16`.
 
-</TabItem>
+- **Adapty Analytics tách biệt sandbox và production; PostHog gộp chung cả hai.** Lọc theo `properties.environment = 'Production'` — xem [Giữ dữ liệu sandbox ngoài production](#keep-sandbox-data-out-of-production).
 
-</Tabs>
+- **Adapty dùng múi giờ báo cáo của ứng dụng; PostHog nhận UTC.** Các tích hợp luôn nhận timestamp theo UTC, bất kể bạn cài đặt gì trong [App Settings](general#3-reporting-timezone). Một giao dịch mua lúc 23:30 UTC ngày 1/7 sẽ xuất hiện vào ngày 2/7 trong Adapty nếu múi giờ báo cáo của bạn là +02:00, trong khi PostHog vẫn giữ ngày 1/7.
 
-Adapty sẽ gửi các sự kiện tới PostHog và nhận attribution từ đó.
+- **PostHog thiếu các sự kiện lịch sử.** Có hai giới hạn riêng biệt khiến các sự kiện cũ không được gửi đến, vì vậy các giao dịch đăng ký và gia hạn trước đó chỉ xuất hiện trong Adapty Analytics. Các sự kiện do PostHog SDK của bạn tự thu thập sẽ không bị ảnh hưởng.
+
+- **Exclude historical events** (Loại trừ sự kiện lịch sử), một tùy chọn bật/tắt trên [trang tích hợp PostHog](https://app.adapty.io/integrations/posthog), được bật theo mặc định. Adapty không gửi các sự kiện có ngày trước khi hồ sơ người dùng tồn tại, và Event Feed đánh dấu từng sự kiện đó là đã hết hạn. Do đó, các sự kiện Adapty của người dùng bắt đầu từ lần đầu tiên họ khởi chạy bản build có Adapty. Tắt tùy chọn này để cho phép các sự kiện có ngày trong quá khứ đi qua kể từ thời điểm đó.
+  - **No historical backfill** là [giới hạn vĩnh viễn](#limitations). Adapty gửi sự kiện khi xử lý chúng và không bao giờ quay lại để gửi các sự kiện đã được xử lý trước khi bạn bật tích hợp.
+
+- **Các sự kiện bạn đã tắt trong cài đặt tích hợp sẽ không bao giờ được gửi đến PostHog.** Adapty Analytics vẫn tính các sự kiện đó. Kiểm tra phần **Events names** trong [Cấu hình Adapty](#configure-adapty).
+
+#### Sự kiện xuất hiện trong PostHog trước khi chúng xảy ra \{#events-appear-in-posthog-before-they-happen\}
+
+Đối với các lần gia hạn và chuyển đổi dùng thử, Apple thông báo cho Adapty trước khi sự kiện xảy ra. Adapty chuyển tiếp các sự kiện này ngay lập tức, giữ nguyên `timestamp` trong tương lai. Adapty Analytics giữ lại chúng cho đến khi thời điểm đó qua đi, vì vậy PostHog hiển thị các sự kiện mà Adapty chưa báo cáo. Cả hai đều đúng. Lọc theo `timestamp` để loại trừ chúng — xem [Dấu thời gian sự kiện với ngày trong tương lai](how-profiles-work#event-timestamps-with-future-dates-appleios).
+
+#### Không có dữ liệu quốc gia hoặc thành phố trên các sự kiện Adapty \{#no-country-or-city-data-on-adapty-events\}
+
+Hãy dùng thuộc tính `store_country` và `profile_country` thay thế. Các giá trị `$geoip_*` của PostHog sẽ luôn trống đối với các sự kiện Adapty — xem [Thuộc tính IP và vị trí](#ip-and-location-properties).
+
+#### Cách phân biệt người dùng trả phí và người dùng miễn phí \{#how-to-tell-a-subscriber-from-a-free-user\}
+
+Báo cáo sự kiện Adapty không tiết lộ quyền truy cập hiện tại của người dùng. `$set` chỉ bao gồm `email`, `first_name`, `last_name`, `birthday`, `gender` và `os`. Các thuộc tính sự kiện mô tả mức độ truy cập chỉ được điền trong sự kiện `access_level_updated`, và Adapty chỉ chia sẻ sự kiện đó với tích hợp webhook.
+
+Hai hướng xử lý:
+
+- Xác định trạng thái trong PostHog dựa trên lịch sử sự kiện. Người dùng có sự kiện Adapty gần nhất là `subscription_started`, `subscription_renewed`, hoặc `trial_converted` hiện đang có quyền truy cập; người dùng có sự kiện gần nhất là `subscription_expired`, `trial_expired`, hoặc `subscription_refunded` thì không có.
+- Sử dụng [tích hợp webhook](webhook) để nhận `access_level_updated`, sau đó tự chuyển tiếp nó vào PostHog. API capture của PostHog yêu cầu định dạng payload riêng, vì vậy bạn cần thực hiện bước chuyển đổi ở phía mình — payload webhook của Adapty không thể gửi trực tiếp vào PostHog mà không qua xử lý.
+
+#### Lượt xem paywall không xuất hiện trong PostHog \{#paywall-views-dont-appear-in-posthog\}
+
+SDK của Adapty chỉ ghi lại các tương tác với paywall, flow và onboarding cho Adapty Analytics. Server của Adapty chỉ chuyển tiếp các sự kiện gói đăng ký đến các tích hợp, còn các tương tác này không phải là sự kiện gói đăng ký. Webhook cũng không bao gồm chúng. Hãy dùng SDK của PostHog để ghi lại những tương tác này ngay tại nơi bạn hiển thị paywall.

@@ -1,31 +1,266 @@
 ---
 title: "PostHog"
-description: ""
-metadataTitle: ""
+description: "AdaptyのサブスクリプションイベントをPostHogに送信して、ユーザーの購入行動とアプリ内の行動を紐づけましょう。"
+metadataTitle: "PostHog | Adapty ドキュメント"
 ---
 
-PostHog は、ユーザー行動のトラッキング、プロダクト利用状況の可視化、リテンション分析などのツールを提供するアナリティクスプラットフォームです。イベントトラッキング、ユーザーフロー、フィーチャーフラグといった機能を備え、プロダクトをより深く理解して改善するために設計されています。
+import AccessLevelUpdatedEventFeed from '@site/src/locales/ja/reusable/AccessLevelUpdatedEventFeed.mdx';
 
-PostHog と Adapty を連携することで、トライアル開始・更新・解約といったサブスクリプション関連イベントをシームレスにトラッキングできます。これらのイベントを PostHog に送信することで、サブスクリプションの変化がユーザー行動に与える影響を分析したり、ペイウォールのパフォーマンスを評価したり、マネタイズ戦略に関するより深いインサイトを得たりできます — すべて既存のアナリティクスワークフロー内で完結します。
+Adaptyはサブスクリプションイベント（購入、更新、返金、トライアル開始など）をPostHogのイベントストリームに送信できるため、既存のデータと一元管理できます。
 
-## 連携の特性 \{#integration-characteristics\}
+各イベントには収益、通貨、ストア、プロダクトの詳細に加え、購入を生み出したペイウォールとA/Bテストのバリアントが含まれます。データが届けば、PostHogのあらゆるツールからこの情報を活用できます。
 
-| 連携の特性 | 説明 |
-| -------------------------- | ------------------------------------------------------------ |
-| スケジュール | リアルタイム。イベントが PostHog ダッシュボードにすぐ表示されない場合があります。 |
-| データの方向 | Adapty のイベントは Adapty サーバーから PostHog サーバーへ送信されます。 |
-| Adapty の連携ポイント | <ul><li>モバイルアプリのコード内の PostHog と Adapty SDK</li><li>Adapty サーバー</li></ul> |
+AdaptyのサブスクリプションイベントをPostHogに連携することで、既存のトラッキングデータに収益の次元が加わります。
 
-## PostHog イベントの構造 \{#posthog-event-structure\}
+- **どのアプリ内アクションがサブスクリプションにつながるか？** 独自のPostHogイベントと`trial_started`・`subscription_started`を照合して、購入につながる行動を特定しましょう。
+- **どの実験バリアントが収益を上げたか？** プロダクトの変更に関するPostHog実験の指標として、Adaptyの収益イベントを活用しましょう。Adaptyの[A/B テスト](ab-tests)はペイウォールとオンボーディングをカバーしています。
+- **返金の前に何が起きているか？** `subscription_refunded`でインサイトを作成し、該当するユーザーを開いてセッション録画を確認しましょう。
+- **バグが更新に影響しているか？** エラートラッキングと`subscription_renewal_cancelled`をクロスリファレンスしましょう。このイベントはユーザーが自動更新をオフにした時点で即座に発火するため、`subscription_expired`よりずっと早く検知できます。
+- **サブスクライバーと無料ユーザーの継続率を比較する** 派生したアクセスステータスをもとにコホートと継続率カーブを作成しましょう。詳しくは[サブスクライバーと無料ユーザーを見分ける方法](#how-to-tell-a-subscriber-from-a-free-user)をご覧ください。
+- **どのペイウォールとバリアントが収益を生んだか？** 購入イベントにはそれを生んだペイウォールとバリアントの情報が含まれているため、ペイウォール別に収益を分析できます。PostHogのSDKでペイウォール表示を計測し、表示から購入までのコンバージョンを一緒に追いましょう。
+- **両方のデータセットにまたがって質問する** にはインサイトまたはSQLを使いましょう。
 
-Adapty は、[PostHog 連携ページ](https://app.adapty.io/integrations/posthog)の **Events names** セクションで設定されたイベントを PostHog に送信します。各イベントの構造は以下のとおりです：
+## インテグレーションの仕組み \{#how-the-integration-works\}
+
+PostHog では、各ユーザーを `distinct_id` という文字列で識別します。このインテグレーション全体は、Adapty と PostHog が同じ文字列を共有することで成り立っています。
+
+1. PostHog SDKは、ユーザーに`distinct_id`を割り当てます。初回起動時、この文字列はデバイス単位の匿名IDです。ログイン時にカスタム値を設定したり、ログアウト時にリセットしたりすることもできます。
+2. アプリ起動のたびに、`Adapty.activate()`の後、購入処理が発生する前に、`setIntegrationIdentifier()`を使って`distinct_id`をAdaptyに渡します。AdaptyはこのをユーザーのAdaptyプロファイルに`posthog_distinct_user_id`として紐付けます。
+3. ユーザーがトライアルを開始するか購入を行うと、Adaptyのサーバーがその`distinct_id`を付加してPostHogのCapture APIにイベントをPOSTします。このやり取りはサーバー間で行われ、アプリの外部で完結します。
+4. PostHogはそのイベントを`distinct_id`を持つユーザーに紐付けるため、サブスクリプションの売上がアプリ内でそのユーザーが行った他のアクティビティと並んで表示されます。
+
+### Adapty のIDをPostHogのIDに合わせる \{#match-adaptys-id-to-posthogs\}
+
+両システムが同じ `distinct_id` を使用しないと、1人のユーザーが2つの独立したエンティティに分かれてしまいます。これを防ぐ方法は2つあり、どちらを選ぶかは購入が発生するタイミングによって異なります。
+
+**購入にログインが必要な場合**、ユーザーがログインした時点でPostHogの `identify()` を**Customer User ID**と共に呼び出してください。Adapty は他に値がない場合にその値を使用するため、両システムで一致します。
+
+**匿名ユーザーが購入できる場合**、PostHog の `distinct_id` を読み取り、`setIntegrationIdentifier` で Adapty に渡してください。`Adapty.activate()` の後の毎回の起動時、および PostHog の `reset()` のたびに呼び出してください。匿名プロファイルには Customer User ID がないため、PostHog 自身の ID が両システムで共有できる唯一の値です。詳細は[アプリコードを設定する](#configure-your-app-code)を参照してください。
+
+どちらの方法を選んでも、その値はアプリの再インストール後も保持される必要があります。Adapty は再インストールのたびに新しいプロファイルを作成し、PostHog もデバイスごとに新しい匿名 `distinct_id` を生成するため、どちらのシステムも単独ではインストールをまたいだ ID の引き継ぎを行いません。Adapty は匿名プロファイル間で有料アクセスを引き継ぎますが、これはアクセスレベルを紐付けるものであり、アナリティクス上の ID を紐付けるものではありません。引き継いだプロファイルは依然として自身の ID でイベントを送信します。バックエンドが管理する安定した ID がなければ、再インストールを行ったサブスクライバーは PostHog 上で「更新はあるが購入履歴のない新規ユーザー」として表示されてしまいます。
+
+:::warning
+PostHog は、ユーザーのマージ時に以下の値をブロックします: `null`、`undefined`、`None`、`0`、`anonymous`、`guest`、`distinct_id`、`id`、`email`、`true`、`false`、`[object Object]`、`NaN`、空文字列、およびこれらの引用符付きバリアント。送信する値がこれらのいずれにもなり得ないことを確認してください。PostHog は UUID の使用、またはこのリストに対する送信前の検証を推奨しています。詳細は [PostHog の ID 解決ガイド](https://posthog.com/docs/product-analytics/identity-resolution) を参照してください。
+:::
+
+IDの不一致はデータの断片化を引き起こします。詳細は[1人のユーザーが複数の人物として表示される](#one-user-appears-as-several-persons-in-posthog)を参照してください。
+
+:::important
+Adaptyのイベントにはpersonプロパティが含まれているため、PostHogの定義では*identified event*として扱われます。PostHogは匿名イベントと比べて最大4倍のコストを請求します。Adaptyはサブスクリプションのライフサイクル変化ごとに1つのイベントを送信するため、クライアントサイドのアナリティクスと比較してボリュームは少なく抑えられます。それでもIDを一致させる価値はあります。PostHogはほぼすべてのケースでユーザーの識別を推奨しています。
+:::
+
+## セットアップ手順 \{#setup-instructions\}
+
+### PostHog プロジェクトトークンをコピーする \{#copy-your-posthog-project-token\}
+
+1. データをホストしているデプロイメント（[US Cloud](https://us.posthog.com/) または [EU Cloud](https://eu.posthog.com/)）にサインインし、接続したいプロジェクトを選択します。
+
+2. **Settings** > **Project** > **General** に移動し、**Project token & ID** セクションを見つけます。
+
+   <ZoomImage id="posthog-settings.webp" width="700px" alt="プロジェクトトークン、プロジェクト ID、リージョンが表示されている PostHog のプロジェクト設定" />
+
+3. **Project token** をコピーします。`phc_` から始まります。PostHog はこれを書き込み専用かつ公開しても安全なものとして説明しているため、ローテーションする必要はありません。
+
+### Adapty を設定する \{#configure-adapty\}
+
+1. Adapty ダッシュボードで [**Integrations** > **PostHog**](https://app.adapty.io/integrations/posthog) を開きます。
+
+2. **PostHog** トグルを有効にします。
+
+3. トークンを **Project API key** に貼り付けます。Adapty は保存時に PostHog に対してトークンを検証します。トークンが無効な場合は、イベントを無音で破棄するのではなく、即座にエラーになります。
+
+4. 「サーバーの場所」セクションはご利用の設定によって異なります。
+
+- **PostHog Cloud** を使用する場合は、サインインしたデプロイメントに合わせて **Region** を `US Cloud` または `EU Cloud` に設定してください。PostHog Instance URL フィールドは空のままにしてください。
+   - **自前のインスタンス**を運用している場合は、**Self-hosted** を選択し、**PostHog Instance URL** フィールドに入力してください。Region は選択しないでください。Adapty がプロキシや VPN なしでそのインスタンスに到達できる必要があります。
+
+5. **How the revenue data should be send** で、Adapty が送信する収益データの種類を選択します。3つのオプションは [Adapty アナリティクスの収益表示](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue) に対応しているため、選択した内容が PostHog の数値と一致する表示になります。
+
+| オプション | Adapty が送信する内容 |
+   | --- | --- |
+   | **Gross revenue** | 手数料・税金差し引き前の購入者が支払った全額。デフォルト。 |
+   | **Proceeds after store commission** | ストア手数料を差し引いた金額（税金は含む）。 |
+   | **Proceeds after store commission and taxes** | 手数料・税金の両方を差し引いた金額。 |
+
+6. 残りのオプションを設定します：
+
+| トグル | オンの場合 | デフォルト |
+   | --- | --- | --- |
+   | **Report user's currency** | 購入者が支払った通貨でAdaptyが各売上を報告します（USDではなく）。 | オフ |
+   | **Send trial price** | トライアル開始時には通常、収益は発生しません。これをオンにすると各トライアルにプレースホルダー価格が設定され、**Trial price percentage** フィールドが表示されます。サブスクリプション価格に対する割合を設定してください。`60%` の場合、$10のサブスクリプションは $6 として報告されます。 | オフ |
+   | **Exclude historical events** | Adapty SDKを含むビルドをユーザーがインストールする前に発生したイベントをAdaptyがスキップします。 | **オン** |
+
+7. **Events names** セクションで個々のイベントの名前を変更したり、無効にしたりします。PostHog は空でないイベント名であれば何でも受け付けるため、既存のタクソノミーに合わせた名前を使用してください。
+
+8. **Save** をクリックします。
+
+<ZoomImage id="posthog-on.webp" width="700px" alt="Adapty Dashboard PostHog integration page with the toggle, key, server location, revenue settings, and event names" />
+
+### サンドボックスデータを本番環境から分離する \{#keep-sandbox-data-out-of-production\}
+
+Adaptyはサンドボックスと本番のトランザクションを同じインテグレーション経由で送信するため、どちらも同じPostHogプロジェクトに届きます。このインテグレーションは **Project API key** を1つ使用し、別のサンドボックス用キーを別の送信先に指定する仕組みはありません。
+
+開発ビルドに専用のPostHogプロジェクトを用意しても、本番プロジェクトへのサンドボックスイベントの混入は防げません。サンドボックスかどうかは**ストアのトランザクション**に紐づくプロパティであり、ビルドの種類には依存しないからです。App Storeの審査やTestFlightでの購入は、本番ビルドから行われるサンドボックストランザクションです。
+
+代わりに、クエリで両者を区別しましょう。すべてのイベントには `environment` プロパティが含まれており、値は `Sandbox` または `Production` に設定されています。実際の収益のみを抽出するには次のフィルターを使用します：
+
+```sql
+WHERE properties.environment = 'Production'
+```
+
+### アプリのコードを設定する \{#configure-your-app-code\}
+
+1. PostHog の SDK から現在の `distinct_id` を取得します:
+
+   - **アプリの起動ごとに**、`Adapty.activate()` の後、かつ購入が発生する前に行ってください。これより前のイベントは PostHog によって[別のユーザー](#one-user-appears-as-several-persons-in-posthog)に紐付けられてしまいます。
+   - **PostHog の `reset()` の後に**行ってください。ほとんどのアプリはログアウト時に `reset()` を呼び出します。`reset()` は新しい匿名 ID を生成し、前のユーザーとは紐付けられないため、古い値を使い続けるとログアウトしたユーザーを指し続けてしまいます。
+
+2. `setIntegrationIdentifier()` を使って Adapty に渡します。
+
+:::note
+PostHog の `identify()` を呼び出した後、追加の操作は不要です。PostHog が匿名ユーザーと識別済みユーザーをマージするため、Adapty のイベントも同様に解決されます。詳しくは[Adapty の ID を PostHog に合わせる](#match-adaptys-id-to-posthogs)を参照してください。
+:::
+
+<SdkIntegrationNote />
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
+
+```swift showLineNumbers
+
+let distinctId = PostHogSDK.shared.getDistinctId()
+
+do {
+    try await Adapty.setIntegrationIdentifier(.posthogDistinctUserId(distinctId))
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)">
+
+```kotlin showLineNumbers
+Adapty.setIntegrationIdentifier(
+    AdaptyIntegrationIdentifier.posthogDistinctUserId(PostHog.distinctId())
+) { error ->
+    if (error != null) {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Android (Java)">
+
+```java showLineNumbers
+Adapty.setIntegrationIdentifier(
+    AdaptyIntegrationIdentifier.posthogDistinctUserId(PostHog.distinctId()),
+    error -> {
+        if (error != null) {
+            // handle the error
+        }
+    }
+);
+```
+
+</TabItem>
+<TabItem value="flutter" label="Flutter (Dart)">
+
+```dart showLineNumbers
+
+try {
+    final distinctId = await Posthog().getDistinctId();
+
+    await Adapty().setIntegrationIdentifier(
+        key: "posthog_distinct_user_id",
+        value: distinctId,
+    );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="rn" label="React Native (TS)">
+
+```typescript showLineNumbers
+
+const posthog = usePostHog();
+
+try {
+    await adapty.setIntegrationIdentifier(
+        "posthog_distinct_user_id",
+        posthog.getDistinctId()
+    );
+} catch (error) {
+    // handle `AdaptyError`
+}
+```
+
+</TabItem>
+<TabItem value="capacitor" label="Capacitor (TS)">
+
+PostHogのCapacitorプラグインはPostHogではなく、[Capawesome](https://capawesome.io/plugins/posthog/)によってコミュニティがメンテナンスしています。プラグインの`getDistinctId`でdistinct IDを読み取り、`setIntegrationIdentifier`でAdaptyに渡してください。
+
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform">
+
+PostHogの[`getDistinctId()`](https://posthog.com/docs/libraries/kmp)でdistinct IDを読み取り、`setIntegrationIdentifier`でAdaptyに渡してください。
+
+</TabItem>
+<TabItem value="unity" label="Unity (C#)">
+
+PostHog は Windows、Mac、Linux、iOS、Android、WebGL 向けの [公式 Unity SDK](https://posthog.com/docs/libraries/unity) を提供しています。`PostHog.DistinctId` を読み取り、`Adapty.SetIntegrationIdentifier(key, value, completionHandler)` を使って Adapty に渡してください。
+
+</TabItem>
+</Tabs>
+
+### インテグレーションを確認する \{#verify-the-integration\}
+
+1. サンドボックス購入をトリガーし、Adapty ダッシュボードの **Event Feed** を開きます。各配信試行はその結果とともに表示されます。Adapty は保存時に **Project API key** とインスタンス URL を検証するため、この段階での失敗はまれです。よくある原因は以下のとおりです：
+
+   - **機能しなくなったキー。** インテグレーションキーを削除すると、PostHog は `401` を返します。
+   - **応答しなくなったインスタンス。** Adapty は 10 秒後に待機を停止します。セルフホスト環境に影響する場合があります。
+
+   失敗したイベントにカーソルを合わせると、PostHog のレスポンスを確認できます。
+
+2. PostHogで[**Activity**](https://us.posthog.com/activity/explore)ビューを開き、イベントを確認します。購入の`environment`プロパティが`Sandbox`になっているはずです。
+3. そのユーザーのプロファイルを開き、**Distinct IDs**タブを確認します。アプリ自身のイベントとAdaptyのサーバーイベントが同一ユーザーに紐づいているはずです。同じユーザーに対して2人分の別ユーザーが表示されている場合、IDが一致していません。[1人のユーザーが複数のユーザーとして表示される](#one-user-appears-as-several-persons-in-posthog)を参照してください。
+
+:::note
+Adaptyのイベントは、アプリ自身のPostHogデバッグ出力には届きません。AdaptyはサーバーからイベントをポストするためPostHogにアクセスするため、アプリのSDKを通りません。ローカルログが空であっても、統合が機能していないことを意味しません。
+:::
+
+## PostHog での収益レポート \{#report-revenue-in-posthog\}
+
+Adapty Analytics は収益データの信頼できる唯一の情報源であり続けます。これは、このインテグレーションが転送するデータのみを受け取る PostHog とは異なり、ストアの完全なデータをもとに計算するためです。PostHog のダッシュボードでプロダクト指標と並べて収益も確認したい場合は、PostHog の [Revenue Analytics](https://posthog.com/docs/revenue-analytics/managed-views) が指定したイベントプロパティから収益を読み取ります。PostHog で **Data management** > **Revenue** を開き、次のようにマッピングしてください。
+
+| PostHog フィールド | Adapty プロパティ |
+| --- | --- |
+| Revenue | `price_usd`、`proceeds_usd`、または `net_revenue_usd` — [収益データの送信方法](#configure-adapty) で選択したオプションに合わせてください |
+| Currency | `currency`、または USD で報告する場合は静的な通貨を設定してください |
+| Product | `vendor_product_id` |
+| Subscription | `original_transaction_id` |
+
+PostHog の「values are in cents」オプションは **オフ** のままにしてください。Adapty は小数点形式の金額を送信します（最小単位ではありません）。
+
+## PostHog イベント構造 \{#posthog-event-structure\}
+
+Adapty は、[PostHog インテグレーションページ](https://app.adapty.io/integrations/posthog) の **Events names** セクションで有効にしたイベントを、イベントごとに 1 件のキャプチャリクエストとして送信します。
 
 ```json showLineNumbers
 {
+  "api_key": "phc_YOUR_PROJECT_TOKEN",
   "distinct_id": "john.doe@example.com",
-  "timestamp": "2025-01-08T11:06:12+00:00",
+  "timestamp": "2026-01-08T11:06:12+00:00",
   "event": "subscription_started",
   "properties": {
+    "$ip": "10.168.1.1",
+    "$geoip_time_zone": "America/New_York",
+    "$geoip_disable": true,
     "$set": {
       "email": "user@example.com",
       "first_name": "John",
@@ -34,173 +269,172 @@ Adapty は、[PostHog 連携ページ](https://app.adapty.io/integrations/postho
       "gender": "male",
       "os": "iOS"
     },
-    "timezone": "America/New_York",
-    "ip_address": "10.168.1.1",
     "*": "{{other_event_properties}}"
   }
 }
 ```
 
-各パラメーターの説明：
+| パラメータ | タイプ | 説明 |
+| --- | --- | --- |
+| `api_key` | String | PostHog の **Project API key**。 |
+| `distinct_id` | String | PostHog 内のユーザーを識別します。Adapty は最初に見つかった値を使用します — [distinct ID の優先順位](#distinct-id-priority)を参照してください。 |
+| `timestamp` | ISO 8601 の日時 | イベントが発生した日時。更新や体験版のコンバージョンは将来の日付になる場合があります — [PostHog でイベントが発生前に表示される](#events-appear-in-posthog-before-they-happen)を参照してください。 |
+| `event` | String | **Events names** セクションで設定した名前。 |
+| `properties` | Object | Adapty の[イベントプロパティ](messaging#event-properties)、[IP と位置情報プロパティ](#ip-and-location-properties)、および [`$set`](#person-properties)。Adapty は値のないプロパティを省略します。|
 
-| **パラメーター** | **型** | **説明** |
-| --------------- | -------------------- | ------------------------------------------------------------ |
-| **distinct_id** | String | ユーザーの一意識別子（例：`profile.posthog_distinct_user_id`、`customer_user_id`、または `profile_id`）。 |
-| **timestamp** | ISO 8601 日時 | イベントの日時。 |
-| **event** | String | [PostHog 設定](https://app.adapty.io/integrations/posthog)の Events names セクションで定義したイベント名。 |
-| **properties** | Object | [properties.$set](posthog#propertiesset-parameters) と [イベント固有のプロパティ](messaging#event-properties)をすべて含みます。各プロパティはオプションであり、値がない場合は PostHog に送信されません。 |
+Webhookのみの5つのプロパティはここには表示されません。[制限事項](#limitations)をご覧ください。
 
-### properties.$set パラメーター \{#propertiesset-parameters\}
+### Distinct ID の優先順位 \{#distinct-id-priority\}
 
-`properties.$set` オブジェクトの各パラメーターはオプションであり、値がない場合は PostHog に送信されません。
+Adapty は最初に検出した値を使用します：
 
-| **パラメーター** | **型** | **説明** |
-| --------------- | -------------------- | ------------------------------------------------------------ |
-| **email** | String | ユーザーのメールアドレス。 |
-| **first_name** | String | ユーザーの名。 |
-| **last_name** | String | ユーザーの姓。 |
-| **birthday** | String (Date) | ユーザーの生年月日。 |
-| **gender** | String | ユーザーの性別。 |
-| **os** | String | ユーザーのデバイスのOS。 |
+| 優先度 | 値 | 設定元 |
+| --- | --- | --- |
+| 1 | `posthog_distinct_user_id` | `setIntegrationIdentifier` の呼び出し |
+| 2 | **Customer User ID** | `Adapty.activate()` または `Adapty.identify()` |
+| 3 | Adapty の内部プロファイル ID | Adapty（常に存在） |
 
-## PostHog 連携の設定 \{#setting-up-posthog-integration\}
+Adapty はこの優先順位をユーザー単位ではなく、イベント単位で評価します。`setIntegrationIdentifier` の呼び出し前に発生したイベントは優先度の低い ID に紐付けられ、PostHog は同一ユーザーに対して別の人物として記録します。
 
-1. Adapty ダッシュボードで [Integrations -> PostHog](https://app.adapty.io/integrations/posthog) ページを開き、トグルを有効にします。
+[Adapty の ID を PostHog に合わせる](#match-adaptys-id-to-posthogs)の2つの設定のいずれかを選択し、イベントが送信される前に値を設定してください。すでに分裂してしまったユーザーについては、[1人のユーザーが複数のユーザーとして表示される](#one-user-appears-as-several-persons-in-posthog)を参照してください。
 
-   <Zoom>
-     <img src="/assets/shared/img/posthog-on.webp"
-     style={{
-       border: 'none', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-   />
-   </Zoom>
+### IPと位置情報のプロパティ \{#ip-and-location-properties\}
 
-2. [PostHog ダッシュボード](https://posthog.com/)にログインします。
+Adaptyのイベントを位置情報でセグメントするには、`store_country`および`profile_country`プロパティを使用してください。AdapityはPostHogの位置情報ルックアップを無効化するため、PostHogは独自の`$geoip_*`値を追加しません。以下の3つのプロパティはイベントごとに適用されるため、プロジェクトの設定や独自のイベントには影響しません。
 
-3. **Settings -> Project** に移動します。
+| プロパティ | 値 | 効果 |
+| --- | --- | --- |
+| `$ip` | ユーザーのIPアドレス | PostHogがイベントに保存します。Adaptyは同じ値を`x-forwarded-for`ヘッダーとして送信します。 |
+| `$geoip_time_zone` | ユーザーのタイムゾーン | Adaptyがこの値を直接設定します。 |
+| `$geoip_disable` | 常に`true` | このイベントに対するPostHogのロケーション検索を無効にします。 |
 
-   <Zoom>
-     <img src="/assets/shared/img/posthog-settings.webp"
-     style={{
-       border: 'none', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-   />
-   </Zoom>
+### Personプロパティ \{#person-properties\}
 
-4. **Project** ウィンドウで下にスクロールして **Project ID** セクションを表示し、**Project API key** をコピーします。
+`$set` 内のすべての項目は、イベントプロパティではなくPostHogの**person**プロパティになります。PostHogはpersonプロパティを個々のイベントではなくユーザー自体に紐付けるため、特定の瞬間ではなくユーザーの現在の状態を表します。Adaptyは値のないフィールドを省略し、すべてのフィールドに値がない場合は`$set`ごと除外します。
 
-5. APIキーを Adapty ダッシュボードの **Project API key** フィールドに貼り付けます。PostHog にはサーバー間連携専用のサンドボックスモードはありません。
+| パラメータ | タイプ | 説明 |
+| --- | --- | --- |
+| `email` | String | ユーザーのメールアドレス。 |
+| `first_name` | String | ユーザーの名前。 |
+| `last_name` | String | ユーザーの苗字。 |
+| `birthday` | String (date) | ユーザーの生年月日。 |
+| `gender` | String | ユーザーの性別。 |
+| `os` | String | ユーザーのデバイスのオペレーティングシステム。 |
 
-6. **PostHog Deployment** を選択します：
+## 制限事項 \{#limitations\}
 
-   | オプション | 説明 |
-   | ------ | ------------------------------------------------------------ |
-   | us/eu | PostHog がホストするデフォルトのデプロイメント。 |
-   | Custom | セルフホスト環境向け。**PostHog Instance URL** フィールドにインスタンスのURLを入力します。 |
+- **アクセスレベルやサブスクリプションステータスは含まれません。** `access_level_updated` イベントは[webhookインテグレーション](webhook)専用であるため、AdaptyはPostHogにユーザーの現在のアクセス権を示すフィールドを送信しません。詳しくは[サブスクライバーと無料ユーザーを見分ける方法](#how-to-tell-a-subscriber-from-a-free-user)をご覧ください。
+- **過去データのバックフィルには対応していません。** Adaptyはインテグレーションを有効にした時点以降のイベントのみを転送します。それ以前の購入はPostHogに届きません。
+- **PostHogはAdaptyイベントをジオタグしません。** PostHogはイベントの送信元IPアドレスから位置情報を推測します。Adaptyイベントの送信元は常にAdaptyのサーバーであり、ユーザーのデバイスではありません。データの汚染を防ぐため、AdaptyはPostHogにこのルックアップをスキップするよう指示します。Adaptyは`$geoip_time_zone`、`store_country`、`profile_country`を設定しますが、より詳細な位置情報は提供されません。
+- **ソースでAdaptyイベントをフィルタリングすることはできません。** PostHogは送信元SDKを`$lib`（`posthog-ios`、`posthog-android`、`web`など）に記録しますが、AdaptyはSDKを介さずPostHogのAPIに直接投稿するため、このプロパティは空のままになります。代わりにイベント名でフィルタリングしてください。
 
-7. （任意）セルフホストの PostHog デプロイメントを使用している場合は、**PostHog Instance URL** フィールドにデプロイメントのアドレスを入力します。
+## トラブルシューティング \{#troubleshooting\}
 
-8. （任意）**Reporting Proceeds**、**Exclude Historical Events**、**Report User's Currency**、**Send Trial Price** などの設定を調整します。これらのオプションの詳細は [Integration settings](configuration#integration-settings) を参照してください。
+- [イベントがPostHogに表示されない](#events-dont-appear-in-posthog)
+- [`access_level_updated`がイベントフィードで失敗として表示される](#access_level_updated-shows-as-failed-in-the-event-feed)
+- [1人のユーザーがPostHogで複数の人物として表示される](#one-user-appears-as-several-persons-in-posthog)
+- [PostHogの収益がAdatyアナリティクスと一致しない](#revenue-in-posthog-doesnt-match-adapty-analytics)
+- [イベントが発生前にPostHogに表示される](#events-appear-in-posthog-before-they-happen)
+- [Adaptyイベントに国・都市データがない](#no-country-or-city-data-on-adapty-events)
+- [サブスクライバーと無料ユーザーを区別する方法](#how-to-tell-a-subscriber-from-a-free-user)
+- [ペイウォールのビューがPostHogに表示されない](#paywall-views-dont-appear-in-posthog)
 
-9. （任意）**Events names** セクションで PostHog に送信するイベントをカスタマイズすることもできます。不要なイベントを無効にしたり、名前を変更したりできます。
+#### PostHogにイベントが表示されない \{#events-dont-appear-in-posthog\}
 
-10. **Save** をクリックして設定を確定します。
+- まず Adapty の **Event Feed** を確認してください。配信失敗の場合、PostHog が返したエラーが表示されます。
+- 配信成功は、PostHog がイベントを保持したことを保証しません。PostHog はペイロードとキーが有効であれば `200 OK` を返しますが、名前がないイベントや `distinct_id` が空のイベントは黙って破棄されます。
+- お探しのイベントがインテグレーション設定で有効になっているか確認してください。
+- PostHog をセルフホストしている場合、サーバーが `/capture` への Adapty の POST リクエストを受け付けるよう設定されているか確認してください。設定が成功していても、このアクセスが存在するとは限りません。Adapty はキーの有効性確認に別のエンドポイントを使用します。
 
-## SDK の設定 \{#sdk-configuration\}
+#### `access_level_updated` がイベントフィードで失敗として表示される \{#access_level_updated-shows-as-failed-in-the-event-feed\}
 
-PostHog からアトリビューションデータを受け取るには、以下のように `distinctId` の値を Adapty に渡してください：
+<AccessLevelUpdatedEventFeed />
 
-<SdkIntegrationNote />
+#### 1人のユーザーがPostHogで複数の人物として表示される \{#one-user-appears-as-several-persons-in-posthog\}
 
-<Tabs groupId="current-os" queryString>
+PostHogはほとんどの分割を後から元に戻すことができません。詳しくは[AdaptyのIDをPostHogに合わせる](#match-adaptys-id-to-posthogs)をご覧ください。
 
-<TabItem value="swift" label="Swift" default>
+##### IDが異なる理由 \{#why-the-ids-diverge\}
 
-```swift showLineNumbers
-do {
-    let distinctId = PostHogSDK.shared.getDistinctId()
+Adaptyが送信する各イベントには、ユーザーのAdaptyプロファイルからの`distinct_id`が含まれています。詳細は[Distinct ID の優先順位](#distinct-id-priority)を参照してください。Adaptyはイベントを送信するタイミングでその値を読み取ります。アプリが`setIntegrationIdentifier`を呼び出したタイミングではありません。AdaptyイベントのDistinct IDがアプリインストールの内部Distinct IDと異なる場合、PostHogは2種類のイベントを別々のユーザーとして扱います。
 
-    try await Adapty.setIntegrationIdentifier(
-        key: "posthog_distinct_user_id",
-        value: distinctId
-    )
-} catch {
-    // handle the error
-}
-```
+不一致が発生する原因は3つあります。
 
-</TabItem>
+1. **いずれかのプラットフォームでアプリが `setIntegrationIdentifier` を呼び出していない。** Adapty はカスタマーユーザー ID または匿名プロファイル ID にフォールバックします。リリース対象のすべてのプラットフォームを確認してください。
+2. **`setIntegrationIdentifier` の呼び出しが遅すぎる。** 呼び出し前に発生したサブスクリプションイベントにはフォールバック ID が付与されます。
+3. **PostHog に `identify()` で送る ID と、インテグレーション識別子として設定した ID が異なる。** Adapty は最後に渡された値を保持し、自動的には更新しません。PostHog の `reset()` は新しい匿名 ID を割り当てますが、Adapty は以前の ID を保持したままになります。そのため、`reset()` を呼び出すたびに `setIntegrationIdentifier` を再度呼び出してください。
 
-<TabItem value="kotlin" label="Kotlin" default>
+これら3つすべてを修正すれば、PostHog はその後1人のユーザーにつき1つのプロファイルを記録します。
 
-```kotlin showLineNumbers
-Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId()) { error ->
-    if (error != null) {
-        // handle the error
-    }
+##### 最初の identify() 呼び出し時に乖離したユーザー ID を統合する \{#merge-diverging-user-ids-at-the-first-identify-call\}
 
-```
+アプリには、乖離した ID を調整できる機会が一度だけあります。それが PostHog の `identify()` への**最初の呼び出し**です。PostHog はアプリインストールのイベントをその呼び出しで指定したプロファイルに統合するため、Adapty が送信する ID を指定してください。詳細は [Adapty の ID を PostHog に合わせる](#match-adaptys-id-to-posthogs) を参照してください。この呼び出し以降、PostHog はアプリインストールを識別済みとして扱い、識別済みの2人のプロファイルを統合することを拒否します。
 
- </TabItem>
+##### 拒否された統合を確認する \{#check-for-a-refused-merge\}
 
-<TabItem value="java" label="Java" default>
+PostHogが1人のユーザーを2人として記録したことを確認するには、PostHogで[**Data management** > **Ingestion warnings**](https://us.posthog.com/data-management/ingestion-warnings)を開き、`Refused to merge an already identified user`エラーを探してください。
 
-```java showLineNumbers
-Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId(), error -> {
-    if (error != null) {
-        // handle the error
-    }
-});
-```
+PostHogはIDが予約済みの値である場合もマージをブロックします。予約済みの値の一覧については、[AdaptyのIDをPostHogのIDに合わせる](#match-adaptys-id-to-posthogs)を参照してください。
 
-</TabItem>
+##### 既存の分割を修復する \{#repair-an-existing-split\}
 
-<TabItem value="flutter" label="Flutter" default>
+`identify()` も `alias()` も、[マージウィンドウ](#merge-diverging-user-ids-at-the-first-identify-call)が閉じた後にスプリットを修復することはできません。強制的にマージするには PostHog の `$merge_dangerously` のみが使えます。PostHog はこれを「不可逆であり、セーフガードなし、実装上の問題からの一度限りの復旧手段」として文書化しています。
 
-```javascript showLineNumbers
-try {
-    final distinctId = await Posthog().getDistinctId();
+設定ではなくイベントとして送信し、2つのpersonを指定します。どちらが残るかは方向性によって決まります：
 
-    await Adapty().setIntegrationIdentifier(
-        key: "posthog_distinct_user_id",
-        value: distinctId,
-    );
-} catch (e) {
-    // handle the error
-}
-```
+| フィールド | 値 |
+| --- | --- |
+| `distinct_id` | マージ後に残るユーザー |
+| `properties.alias` | マージされる側のユーザー — そのイベントと `distinct_id` が残存側に引き継がれる |
 
-</TabItem>
+送信前に、どちら側を残すか決めておきましょう。Adapty のユーザーはサブスクリプション履歴を持ち、アプリ側のユーザーはアプリ内行動のデータを持っています。まず1人のユーザーで試して結果を確認してから、一括修正を行ってください。各 SDK のペイロードについては PostHog の [How to merge users](https://posthog.com/docs/product-analytics/identify#how-to-merge-users) を参照してください。
 
-<TabItem value="unity" label="Unity" default>
+#### PostHog の売上が Adapty アナリティクスと一致しない \{#revenue-in-posthog-doesnt-match-adapty-analytics\}
 
-Unity 向けの公式 PostHog SDK はありません。
+Adapty と PostHog は同じイベントを異なる方法で処理します。この違いが、ほぼすべての不一致の原因です。
 
-</TabItem>
+- **すべての Adapty イベントには 3 種類の売上金額が含まれており、それぞれ [収益データの送信方法](#configure-adapty) の各オプションに対応しています。** PostHog のプロパティとの対応は以下のとおりです。
 
-<TabItem value="rn" label="React Native (TS)" default>
+| Adapty Analytics | イベントプロパティ（USD） | イベントプロパティ（購入者の通貨） |
+  | --- | --- | --- |
+  | 総収益 | `price_usd` | `price_local` |
+  | ストア手数料控除後の収益 | `proceeds_usd` | `proceeds_local` |
+  | ストア手数料および税金控除後の収益 | `net_revenue_usd` | `net_revenue_local` |
 
-```typescript showLineNumbers
+  行を比較すると、手数料、税金、またはその両方に相当する差額が生じます。**Report user's currency** の設定にかかわらず、Adapty はすべてのイベントで6つのプロパティをすべて送信します。
 
-// ...
-const posthog = usePostHog();
+- **Adaptyは期間内のすべての収益イベントをカウントしますが、PostHogのインサイトは追加したイベントのみをカウントします。** `subscription_renewed`を省略すると、定着したアプリの収益の大部分が失われます。
 
-// ...
-try {
-  await adapty.setIntegrationIdentifier("posthog_distinct_user_id", posthog.getDistinctId());
-} catch (error) {
-  // handle `AdaptyError`
-}
-```
+- **Adaptyの日付範囲は最終日全体をカバーしますが、`timestamp`フィルターは指定した時点で止まります。** Adaptyの7月1日〜7月15日は、7月15日23:59:59までのすべてのイベントを含みます。PostHogでは、`timestamp < 2026-07-15`とするとその日全体が除外されるため、`timestamp < 2026-07-16`を使用してください。
 
-</TabItem>
+- **Adapty Analytics はサンドボックスと本番を分けて管理しますが、PostHog では混在します。** `properties.environment = 'Production'` でフィルタリングしてください — [サンドボックスデータを本番から除外する](#keep-sandbox-data-out-of-production)を参照。
 
-</Tabs>
+- **Adapty はアプリのレポートタイムゾーンを使用しますが、PostHog は UTC で受信します。** [App Settings](general#3-reporting-timezone) でどのタイムゾーンを設定していても、インテグレーションは常に UTC タイムスタンプを受け取ります。たとえば、7月1日 23:30 UTC の購入は、レポートタイムゾーンが +02:00 の場合、Adapty では 7月2日として記録されますが、PostHog では 7月1日のままになります。
 
-Adapty は PostHog へのイベント送信とアトリビューションの受信を行えるようになりました。
+- **PostHog に過去のイベントが表示されない。** 過去のイベントが届かない理由は2つの制限によるもので、それ以前のサブスクリプションや更新のイベントは Adapty Analytics にのみ記録されます。PostHog の SDK で独自に取得したイベントには影響しません。
+
+- **Exclude historical events**（履歴イベントを除外）は、[PostHogインテグレーションページ](https://app.adapty.io/integrations/posthog)のトグルで、デフォルトでオンになっています。Adaptyはプロファイルが存在する前の日付のイベントを送信せず、イベントフィードでは各イベントに有効期限切れのフラグが付きます。そのため、ユーザーのAdaptyイベントはAdaptyビルドの初回起動から始まります。オフにすると、それ以降の過去日付のイベントも通過させることができます。
+  - **履歴データのバックフィルなし**は[恒久的な制限事項](#limitations)です。Adaptyはイベントを処理した時点で送信し、インテグレーションを有効化する前に処理したイベントに遡って対応することはありません。
+
+- **インテグレーション設定で無効にしたイベントはPostHogに送信されません。** Adapty Analyticsでは引き続きカウントされます。[Adaptlyの設定](#configure-adapty)の**Events names**セクションを確認してください。
+
+#### イベントが発生前にPostHogに表示される \{#events-appear-in-posthog-before-they-happen\}
+
+更新やトライアルのコンバージョンについては、Appleはイベント発生前にAdaptyへ通知を送ります。Adaptyはこれらのイベントを、将来の`timestamp`をそのままにして即座に転送します。Adapty Analyticsはその時刻が過ぎるまでイベントを保留するため、PostHogにはAdaptyがまだ報告していないイベントが表示されることがあります。どちらの動作も正しいものです。`timestamp`でフィルタリングして除外するには、[将来の日付を持つイベントのタイムスタンプ](how-profiles-work#event-timestamps-with-future-dates-appleios)を参照してください。
+
+#### Adaptyイベントに国・都市データがない \{#no-country-or-city-data-on-adapty-events\}
+
+代わりに `store_country` と `profile_country` プロパティを使用してください。PostHog 独自の `$geoip_*` の値は Adapty イベントでは空になります。詳細は [IP とロケーションプロパティ](#ip-and-location-properties) を参照してください。
+
+#### 有料ユーザーと無料ユーザーを見分けるには \{#how-to-tell-a-subscriber-from-a-free-user\}
+
+Adapty のイベントレポートには、ユーザーの現在のアクセス状態は含まれません。`$set` に含まれるのは `email`、`first_name`、`last_name`、`birthday`、`gender`、`os` のみです。アクセスレベルを説明するイベントプロパティは `access_level_updated` でのみ設定されますが、Adapty はそのイベントを Webhook 連携にのみ共有します。
+
+解決策は 2 つあります。
+
+- PostHog 内のステータスはイベント履歴から導き出してください。直近の Adapty イベントが `subscription_started`、`subscription_renewed`、または `trial_converted` であるユーザーは現在アクセス権を持っており、直近のイベントが `subscription_expired`、`trial_expired`、または `subscription_refunded` であるユーザーはアクセス権を持っていません。
+- [webhook インテグレーション](webhook) を使用して `access_level_updated` を受信し、自分で PostHog に転送してください。PostHog のキャプチャ API は独自のペイロード形式を期待しているため、変換ステップが必要です — Adapty の webhook ペイロードをそのまま PostHog に送信することはできません。
+
+#### ペイウォールのビューがPostHogに表示されない \{#paywall-views-dont-appear-in-posthog\}
+
+AdaptyのSDKは、ペイウォール、フロー、オンボーディングのインタラクションをAdapty Analytics専用に記録します。Adaptyのサーバーはサブスクリプションイベントのみをインテグレーションに転送するため、これらのインタラクションはサブスクリプションイベントには含まれません。Webhookにも含まれません。ペイウォールを表示している箇所でPostHogのSDKを使って直接取得してください。
