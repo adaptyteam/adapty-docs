@@ -1,0 +1,95 @@
+---
+title: "Migrate Adapty iOS SDK to v4.1"
+description: "Migrate to Adapty iOS SDK v4.1: enable Adapty Attribution explicitly and adopt the renamed external attribution APIs."
+metadataTitle: "Migrating to Adapty iOS SDK v4.1 | Adapty Docs"
+---
+
+Adapty iOS SDK 4.1 changes how Adapty Attribution is enabled and renames the external attribution APIs. It also brings back support for App Store promoted in-app purchases, which were removed in 4.0.
+
+:::warning
+The renamed APIs are a hard break. The old names are removed outright — they aren't deprecated, and there are no typealiases or `@available(renamed:)` annotations to bridge them. Code that compiles against 4.0.x will fail to compile on 4.1 until you rename every call site listed below.
+:::
+
+## Quick reference
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty Attribution enabled automatically | Adapty Attribution disabled by default; opt in with `.with(adaptyAttributionEnabled: true)` |
+| `Adapty.updateAttribution(_:source:)` | `Adapty.updateExternalAttribution(_:provider:)` |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| `AdaptySubscriptionOfferType` enum | `AdaptySubscriptionOfferType` struct; `.code` removed |
+| Promoted in-app purchases not supported | `didReceivePromotedPurchase(_:)` delegate method and `AdaptyPromotedProduct` |
+
+## Adapty Attribution is disabled by default
+
+In 4.0 and earlier, the SDK registered installs for [Adapty Attribution](user-acquisition) automatically. Starting from 4.1, this is off by default: the SDK doesn't register installs, and the `onInstallationDetailsSuccess` and `onInstallationDetailsFail` delegate callbacks never fire. `getCurrentInstallationStatus()` returns `.notAvailable`.
+
+If you use Adapty Attribution, enable it when activating the SDK:
+
+```diff showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
++   .with(adaptyAttributionEnabled: true)
+```
+
+If you don't use Adapty Attribution, no changes are needed.
+
+## Renamed external attribution APIs
+
+### updateAttribution(_:source:) → updateExternalAttribution(_:provider:)
+
+The method that passes attribution data from an external provider (Adjust, AppsFlyer, Branch, Tenjin, or a custom one) is renamed, and its `source` parameter is renamed to `provider`:
+
+```diff showLineNumbers
+- try await Adapty.updateAttribution(attribution, source: .adjust)
++ try await Adapty.updateExternalAttribution(attribution, provider: .adjust)
+```
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+The type is renamed. The predefined providers keep the same names: `.appleAds`, `.adjust`, `.appsflyer`, `.branch`, `.tenjin`. It still conforms to `ExpressibleByStringLiteral`, so string-literal arguments keep compiling. If you keep the provider in a `String` variable, wrap it: `AdaptyExternalAttributionProvider(rawValue: yourProvider)`.
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+The profile property that lists attribution providers applied to the profile is renamed. Its element type changes accordingly:
+
+```diff showLineNumbers
+- if profile.appliedAttributionSources.contains(.appleAds) {
++ if profile.appliedExternalAttributionProviders.contains(.appleAds) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+## AdaptySubscriptionOfferType is now a struct
+
+`AdaptySubscriptionOfferType` — the type of `AdaptySubscriptionOffer.offerType` — changes from an enum to a `RawRepresentable` struct, so the backend can introduce new offer types without an SDK update:
+
+```diff showLineNumbers
+- public enum AdaptySubscriptionOfferType: String, Sendable { ... }
++ public struct AdaptySubscriptionOfferType: Sendable, RawRepresentable, Equatable, Hashable { ... }
+```
+
+This affects your code in three ways:
+
+- **Exhaustive `switch` statements no longer compile.** A struct has no fixed set of cases, so the compiler can't prove a switch is exhaustive. Add a `default` branch:
+
+  ```diff showLineNumbers
+  switch offer.offerType {
+  case .introductory: // ...
+  case .promotional: // ...
+  case .winBack: // ...
+  + default: // handle offer types added later
+  }
+  ```
+
+- **`.code` is removed.** Offer codes are no longer reported through `AdaptySubscriptionOffer.offerType`. Remove any `case .code` branch. See [Redeem offer codes in iOS](making-purchases#redeem-offer-codes-in-ios) for handling offer codes.
+- **`Codable` conformance is dropped.** If you encoded or decoded `AdaptySubscriptionOfferType` directly, persist `offerType.rawValue` (a `String`) instead and rebuild the value with `AdaptySubscriptionOfferType(rawValue:)`.
+
+Comparisons against the predefined values are unchanged: `.introductory`, `.promotional`, and `.winBack` still work in `==` checks and as `case` patterns.
+
+## App Store promoted in-app purchases return
+
+SDK 4.1 restores support for App Store promoted in-app purchases, which [4.0 removed](migration-to-ios-sdk-v4#app-store-promoted-in-app-purchases-temporarily-removed). This is a new feature, not a migration step: it doesn't change any 4.0 behavior.
+
+If you migrate from 3.x and used `shouldAddStorePayment(for:)` with `AdaptyDeferredProduct`, adopt the new `didReceivePromotedPurchase(_:)` delegate method with `AdaptyPromotedProduct` instead. Unlike `shouldAddStorePayment`, the new method doesn't return a value: if you don't implement it, the SDK starts the purchase immediately; to defer the purchase, implement it, store the product, and pass the product to `makePurchase` later. See [In-app purchases from the App Store](making-purchases#in-app-purchases-from-the-app-store).
